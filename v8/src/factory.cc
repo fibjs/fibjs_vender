@@ -13,6 +13,7 @@
 #include "src/conversions.h"
 #include "src/isolate-inl.h"
 #include "src/macro-assembler.h"
+#include "src/objects/frame-array-inl.h"
 #include "src/objects/module-info.h"
 #include "src/objects/scope-info.h"
 
@@ -711,10 +712,20 @@ MaybeHandle<String> Factory::NewConsString(Handle<String> left,
             NewRawTwoByteString(length).ToHandleChecked(), left, right);
   }
 
+  bool one_byte = (is_one_byte || is_one_byte_data_in_two_byte_string);
+  return NewConsString(left, right, length, one_byte);
+}
+
+Handle<String> Factory::NewConsString(Handle<String> left, Handle<String> right,
+                                      int length, bool one_byte) {
+  DCHECK(!left->IsThinString());
+  DCHECK(!right->IsThinString());
+  DCHECK_GE(length, ConsString::kMinLength);
+  DCHECK_LE(length, String::kMaxLength);
+
   Handle<ConsString> result =
-      (is_one_byte || is_one_byte_data_in_two_byte_string)
-          ? New<ConsString>(cons_one_byte_string_map(), NEW_SPACE)
-          : New<ConsString>(cons_string_map(), NEW_SPACE);
+      one_byte ? New<ConsString>(cons_one_byte_string_map(), NEW_SPACE)
+               : New<ConsString>(cons_string_map(), NEW_SPACE);
 
   DisallowHeapAllocation no_gc;
   WriteBarrierMode mode = result->GetWriteBarrierMode(no_gc);
@@ -1101,6 +1112,7 @@ Handle<Script> Factory::NewScript(Handle<String> source) {
   script->set_eval_from_position(0);
   script->set_shared_function_infos(*empty_fixed_array(), SKIP_WRITE_BARRIER);
   script->set_flags(0);
+  script->set_preparsed_scope_data(heap->empty_fixed_uint32_array());
 
   heap->set_script_list(*WeakFixedArray::Add(script_list(), script));
   return script;
@@ -1630,7 +1642,7 @@ Handle<ModuleInfo> Factory::NewModuleInfo() {
 Handle<JSObject> Factory::NewExternal(void* value) {
   Handle<Foreign> foreign = NewForeign(static_cast<Address>(value));
   Handle<JSObject> external = NewJSObjectFromMap(external_map());
-  external->SetInternalField(0, *foreign);
+  external->SetEmbedderField(0, *foreign);
   return external;
 }
 
@@ -1682,6 +1694,7 @@ Handle<Code> Factory::NewCode(const CodeDesc& desc,
   code->set_raw_kind_specific_flags1(0);
   code->set_raw_kind_specific_flags2(0);
   code->set_is_crankshafted(crankshafted);
+  code->set_has_tagged_params(true);
   code->set_deoptimization_data(*empty_fixed_array(), SKIP_WRITE_BARRIER);
   code->set_raw_type_feedback_info(Smi::kZero);
   code->set_next_code_link(*undefined_value(), SKIP_WRITE_BARRIER);
@@ -1690,9 +1703,18 @@ Handle<Code> Factory::NewCode(const CodeDesc& desc,
   code->set_prologue_offset(prologue_offset);
   code->set_constant_pool_offset(desc.instr_size - desc.constant_pool_size);
   code->set_builtin_index(-1);
+  code->set_trap_handler_index(Smi::FromInt(-1));
 
-  if (code->kind() == Code::OPTIMIZED_FUNCTION) {
-    code->set_marked_for_deoptimization(false);
+  switch (code->kind()) {
+    case Code::OPTIMIZED_FUNCTION:
+      code->set_marked_for_deoptimization(false);
+      break;
+    case Code::JS_TO_WASM_FUNCTION:
+    case Code::WASM_FUNCTION:
+      code->set_has_tagged_params(false);
+      break;
+    default:
+      break;
   }
 
   if (is_debug) {
@@ -2113,10 +2135,10 @@ void SetupArrayBufferView(i::Isolate* isolate,
   DCHECK(byte_offset + byte_length <=
          static_cast<size_t>(buffer->byte_length()->Number()));
 
-  DCHECK_EQ(obj->GetInternalFieldCount(),
-            v8::ArrayBufferView::kInternalFieldCount);
-  for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
-    obj->SetInternalField(i, Smi::kZero);
+  DCHECK_EQ(obj->GetEmbedderFieldCount(),
+            v8::ArrayBufferView::kEmbedderFieldCount);
+  for (int i = 0; i < v8::ArrayBufferView::kEmbedderFieldCount; i++) {
+    obj->SetEmbedderField(i, Smi::kZero);
   }
 
   obj->set_buffer(*buffer);
@@ -2188,10 +2210,10 @@ Handle<JSTypedArray> Factory::NewJSTypedArray(ElementsKind elements_kind,
                                               size_t number_of_elements,
                                               PretenureFlag pretenure) {
   Handle<JSTypedArray> obj = NewJSTypedArray(elements_kind, pretenure);
-  DCHECK_EQ(obj->GetInternalFieldCount(),
-            v8::ArrayBufferView::kInternalFieldCount);
-  for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
-    obj->SetInternalField(i, Smi::kZero);
+  DCHECK_EQ(obj->GetEmbedderFieldCount(),
+            v8::ArrayBufferView::kEmbedderFieldCount);
+  for (int i = 0; i < v8::ArrayBufferView::kEmbedderFieldCount; i++) {
+    obj->SetEmbedderField(i, Smi::kZero);
   }
 
   size_t element_size = GetFixedTypedArraysElementSize(elements_kind);
@@ -2356,8 +2378,8 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
     Handle<String> name, FunctionKind kind, Handle<Code> code,
     Handle<ScopeInfo> scope_info) {
   DCHECK(IsValidFunctionKind(kind));
-  Handle<SharedFunctionInfo> shared = NewSharedFunctionInfo(
-      name, code, IsConstructable(kind, scope_info->language_mode()));
+  Handle<SharedFunctionInfo> shared =
+      NewSharedFunctionInfo(name, code, IsConstructable(kind));
   shared->set_scope_info(*scope_info);
   shared->set_outer_scope_info(*the_hole_value());
   shared->set_kind(kind);

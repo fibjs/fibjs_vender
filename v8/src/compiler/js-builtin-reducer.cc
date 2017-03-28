@@ -792,19 +792,19 @@ Reduction JSBuiltinReducer::ReduceArrayIsArray(Node* node) {
   control = graph()->NewNode(common()->IfTrue(), control);
 
   // Let the %ArrayIsArray runtime function deal with the JSProxy {value}.
-  value = effect =
+  value = effect = control =
       graph()->NewNode(javascript()->CallRuntime(Runtime::kArrayIsArray), value,
                        context, frame_state, effect, control);
   NodeProperties::SetType(value, Type::Boolean());
-  control = graph()->NewNode(common()->IfSuccess(), value);
 
-  // Rewire any IfException edges on {node} to {value}.
-  for (Edge edge : node->use_edges()) {
-    Node* const user = edge.from();
-    if (user->opcode() == IrOpcode::kIfException) {
-      edge.UpdateTo(value);
-      Revisit(user);
-    }
+  // Update potential {IfException} uses of {node} to point to the above
+  // %ArrayIsArray runtime call node instead.
+  Node* on_exception = nullptr;
+  if (NodeProperties::IsExceptionalCall(node, &on_exception)) {
+    NodeProperties::ReplaceControlInput(on_exception, control);
+    NodeProperties::ReplaceEffectInput(on_exception, effect);
+    control = graph()->NewNode(common()->IfSuccess(), control);
+    Revisit(on_exception);
   }
 
   // The {value} is neither a JSArray nor a JSProxy.
@@ -1513,6 +1513,11 @@ Reduction JSBuiltinReducer::ReduceNumberIsInteger(Node* node) {
 // ES6 section 20.1.2.4 Number.isNaN ( number )
 Reduction JSBuiltinReducer::ReduceNumberIsNaN(Node* node) {
   JSCallReduction r(node);
+  if (r.InputsMatchZero()) {
+    // Number.isNaN() -> #false
+    Node* value = jsgraph()->FalseConstant();
+    return Replace(value);
+  }
   // Number.isNaN(a:number) -> ObjectIsNaN(a)
   Node* input = r.GetJSCallInput(0);
   Node* value = graph()->NewNode(simplified()->ObjectIsNaN(), input);
@@ -1796,6 +1801,37 @@ Reduction JSBuiltinReducer::ReduceStringCharCodeAt(Node* node) {
         ReplaceWithValue(node, value, effect, control);
         return Replace(value);
       }
+    }
+  }
+
+  return NoChange();
+}
+
+// ES6 String.prototype.concat(...args)
+// #sec-string.prototype.concat
+Reduction JSBuiltinReducer::ReduceStringConcat(Node* node) {
+  if (Node* receiver = GetStringWitness(node)) {
+    JSCallReduction r(node);
+    if (r.InputsMatchOne(Type::PlainPrimitive())) {
+      // String.prototype.concat(lhs:string, rhs:plain-primitive)
+      //   -> Call[StringAddStub](lhs, rhs)
+      StringAddFlags flags = r.InputsMatchOne(Type::String())
+                                 ? STRING_ADD_CHECK_NONE
+                                 : STRING_ADD_CONVERT_RIGHT;
+      // TODO(turbofan): Massage the FrameState of the {node} here once we
+      // have an artificial builtin frame type, so that it looks like the
+      // exception from StringAdd overflow came from String.prototype.concat
+      // builtin instead of the calling function.
+      Callable const callable =
+          CodeFactory::StringAdd(isolate(), flags, NOT_TENURED);
+      CallDescriptor const* const desc = Linkage::GetStubCallDescriptor(
+          isolate(), graph()->zone(), callable.descriptor(), 0,
+          CallDescriptor::kNeedsFrameState,
+          Operator::kNoDeopt | Operator::kNoWrite);
+      node->ReplaceInput(0, jsgraph()->HeapConstant(callable.code()));
+      node->ReplaceInput(1, receiver);
+      NodeProperties::ChangeOp(node, common()->Call(desc));
+      return Changed(node);
     }
   }
 
@@ -2203,6 +2239,8 @@ Reduction JSBuiltinReducer::Reduce(Node* node) {
       return ReduceStringCharAt(node);
     case kStringCharCodeAt:
       return ReduceStringCharCodeAt(node);
+    case kStringConcat:
+      return ReduceStringConcat(node);
     case kStringIndexOf:
       return ReduceStringIndexOf(node);
     case kStringIterator:

@@ -77,6 +77,7 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerCheckedTaggedToTaggedPointer(Node* node, Node* frame_state);
   Node* LowerChangeTaggedToFloat64(Node* node);
   Node* LowerTruncateTaggedToBit(Node* node);
+  Node* LowerTruncateTaggedPointerToBit(Node* node);
   Node* LowerTruncateTaggedToFloat64(Node* node);
   Node* LowerTruncateTaggedToWord32(Node* node);
   Node* LowerCheckedTruncateTaggedToWord32(Node* node, Node* frame_state);
@@ -87,6 +88,7 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerObjectIsReceiver(Node* node);
   Node* LowerObjectIsSmi(Node* node);
   Node* LowerObjectIsString(Node* node);
+  Node* LowerObjectIsSymbol(Node* node);
   Node* LowerObjectIsUndetectable(Node* node);
   Node* LowerArgumentsFrame(Node* node);
   Node* LowerArgumentsLength(Node* node);

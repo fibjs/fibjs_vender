@@ -106,8 +106,6 @@ void MipsDebugger::Stop(Instruction* instr) {
   // Get the stop code.
   uint32_t code = instr->Bits(25, 6);
   PrintF("Simulator hit (%u)\n", code);
-  // TODO(yuyin): 2 -> 3?
-  sim_->set_pc(sim_->get_pc() + 3 * Instruction::kInstrSize);
   Debug();
 }
 
@@ -2286,8 +2284,6 @@ void Simulator::HandleStop(uint64_t code, Instruction* instr) {
   if (IsEnabledStop(code)) {
     MipsDebugger dbg(this);
     dbg.Stop(instr);
-  } else {
-    set_pc(get_pc() + 2 * Instruction::kInstrSize);
   }
 }
 
@@ -4080,7 +4076,7 @@ void Simulator::DecodeTypeRegisterSPECIAL3() {
       // Interpret sa field as 5-bit lsb of extract.
       uint16_t lsb = sa();
       uint16_t size = msb + 1;
-      uint64_t mask = (1ULL << size) - 1;
+      uint64_t mask = (size == 64) ? UINT64_MAX : (1ULL << size) - 1;
       alu_out = static_cast<int64_t>((rs_u() & (mask << lsb)) >> lsb);
       SetResult(rt_reg(), alu_out);
       break;
@@ -4091,7 +4087,7 @@ void Simulator::DecodeTypeRegisterSPECIAL3() {
       // Interpret sa field as 5-bit lsb of extract.
       uint16_t lsb = sa();
       uint16_t size = msb + 33;
-      uint64_t mask = (1ULL << size) - 1;
+      uint64_t mask = (size == 64) ? UINT64_MAX : (1ULL << size) - 1;
       alu_out = static_cast<int64_t>((rs_u() & (mask << lsb)) >> lsb);
       SetResult(rt_reg(), alu_out);
       break;
@@ -4102,7 +4098,7 @@ void Simulator::DecodeTypeRegisterSPECIAL3() {
       // Interpret sa field as 5-bit lsb of extract.
       uint16_t lsb = sa() + 32;
       uint16_t size = msb + 1;
-      uint64_t mask = (1ULL << size) - 1;
+      uint64_t mask = (size == 64) ? UINT64_MAX : (1ULL << size) - 1;
       alu_out = static_cast<int64_t>((rs_u() & (mask << lsb)) >> lsb);
       SetResult(rt_reg(), alu_out);
       break;

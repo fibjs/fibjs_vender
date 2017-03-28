@@ -191,8 +191,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
     } else {
-      if (slots <=
-          ConstructorBuiltinsAssembler::MaximumFunctionContextSlots()) {
+      if (slots <= ConstructorBuiltins::MaximumFunctionContextSlots()) {
         Callable callable = CodeFactory::FastNewFunctionContext(
             isolate(), info()->scope()->scope_type());
         __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
@@ -2539,7 +2538,6 @@ void LCodeGen::EmitClassOfTest(Label* is_true, Label* is_false,
   // End with the answer in flags.
 }
 
-
 void LCodeGen::DoClassOfTestAndBranch(LClassOfTestAndBranch* instr) {
   Register input = ToRegister(instr->value());
   Register temp = scratch0();
@@ -2551,7 +2549,6 @@ void LCodeGen::DoClassOfTestAndBranch(LClassOfTestAndBranch* instr) {
 
   EmitBranch(instr, eq);
 }
-
 
 void LCodeGen::DoCmpMapAndBranch(LCmpMapAndBranch* instr) {
   Register reg = ToRegister(instr->value());

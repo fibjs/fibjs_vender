@@ -152,27 +152,45 @@ void Verifier::Visitor::Check(Node* node) {
                   "control");
     }
 
-    // Verify that nodes that can throw only have IfSuccess/IfException control
-    // uses.
+    // Verify that nodes that can throw either have both IfSuccess/IfException
+    // projections as the only control uses or no projections at all.
     if (!node->op()->HasProperty(Operator::kNoThrow)) {
-      int count_success = 0, count_exception = 0;
+      Node* discovered_if_exception = nullptr;
+      Node* discovered_if_success = nullptr;
+      int total_number_of_control_uses = 0;
       for (Edge edge : node->use_edges()) {
         if (!NodeProperties::IsControlEdge(edge)) {
           continue;
         }
+        total_number_of_control_uses++;
         Node* control_use = edge.from();
-        if (control_use->opcode() != IrOpcode::kIfSuccess &&
-            control_use->opcode() != IrOpcode::kIfException) {
-          V8_Fatal(__FILE__, __LINE__,
-                   "#%d:%s should be followed by IfSuccess/IfException, but is "
-                   "followed by #%d:%s",
-                   node->id(), node->op()->mnemonic(), control_use->id(),
-                   control_use->op()->mnemonic());
+        if (control_use->opcode() == IrOpcode::kIfSuccess) {
+          CHECK_NULL(discovered_if_success);  // Only one allowed.
+          discovered_if_success = control_use;
         }
-        if (control_use->opcode() == IrOpcode::kIfSuccess) ++count_success;
-        if (control_use->opcode() == IrOpcode::kIfException) ++count_exception;
-        CHECK_LE(count_success, 1);
-        CHECK_LE(count_exception, 1);
+        if (control_use->opcode() == IrOpcode::kIfException) {
+          CHECK_NULL(discovered_if_exception);  // Only one allowed.
+          discovered_if_exception = control_use;
+        }
+      }
+      if (discovered_if_success && !discovered_if_exception) {
+        V8_Fatal(__FILE__, __LINE__,
+                 "#%d:%s should be followed by IfSuccess/IfException, but is "
+                 "only followed by single #%d:%s",
+                 node->id(), node->op()->mnemonic(),
+                 discovered_if_success->id(),
+                 discovered_if_success->op()->mnemonic());
+      }
+      if (discovered_if_exception && !discovered_if_success) {
+        V8_Fatal(__FILE__, __LINE__,
+                 "#%d:%s should be followed by IfSuccess/IfException, but is "
+                 "only followed by single #%d:%s",
+                 node->id(), node->op()->mnemonic(),
+                 discovered_if_exception->id(),
+                 discovered_if_exception->op()->mnemonic());
+      }
+      if (discovered_if_success || discovered_if_exception) {
+        CHECK_EQ(2, total_number_of_control_uses);
       }
     }
   }
@@ -190,6 +208,10 @@ void Verifier::Visitor::Check(Node* node) {
       CHECK(node->op()->ValueOutputCount() == 0);
       CHECK(node->op()->EffectOutputCount() == 0);
       CHECK(node->op()->ControlOutputCount() == 0);
+      // All inputs are graph terminators.
+      for (const Node* input : node->inputs()) {
+        CHECK(IrOpcode::IsGraphTerminator(input->opcode()));
+      }
       // Type is empty.
       CheckNotTyped(node);
       break;
@@ -513,7 +535,6 @@ void Verifier::Visitor::Check(Node* node) {
     // JavaScript operators
     // --------------------
     case IrOpcode::kJSEqual:
-    case IrOpcode::kJSNotEqual:
     case IrOpcode::kJSStrictEqual:
     case IrOpcode::kJSLessThan:
     case IrOpcode::kJSGreaterThan:
@@ -553,8 +574,7 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::OrderedNumber());
       break;
     case IrOpcode::kJSToLength:
-      // Type is OrderedNumber.
-      CheckTypeIs(node, Type::OrderedNumber());
+      CheckTypeIs(node, Type::Range(0, kMaxSafeInteger, zone));
       break;
     case IrOpcode::kJSToName:
       // Type is Name.
@@ -960,6 +980,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kObjectIsReceiver:
     case IrOpcode::kObjectIsSmi:
     case IrOpcode::kObjectIsString:
+    case IrOpcode::kObjectIsSymbol:
     case IrOpcode::kObjectIsUndetectable:
     case IrOpcode::kArrayBufferWasNeutered:
       CheckValueInputIs(node, 0, Type::Any());
@@ -1112,6 +1133,7 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kTruncateTaggedToBit:
+    case IrOpcode::kTruncateTaggedPointerToBit:
       break;
 
     case IrOpcode::kCheckBounds:
@@ -1370,6 +1392,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kChangeFloat32ToFloat64:
     case IrOpcode::kChangeFloat64ToInt32:
     case IrOpcode::kChangeFloat64ToUint32:
+    case IrOpcode::kChangeFloat64ToUint64:
     case IrOpcode::kFloat64SilenceNaN:
     case IrOpcode::kTruncateFloat64ToUint32:
     case IrOpcode::kTruncateFloat32ToInt32:
@@ -1397,6 +1420,8 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kCheckedStore:
     case IrOpcode::kAtomicLoad:
     case IrOpcode::kAtomicStore:
+    case IrOpcode::kAtomicExchange:
+    case IrOpcode::kAtomicCompareExchange:
 
 #define SIMD_MACHINE_OP_CASE(Name) case IrOpcode::k##Name:
       MACHINE_SIMD_OP_LIST(SIMD_MACHINE_OP_CASE)

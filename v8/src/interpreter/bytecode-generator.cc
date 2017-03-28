@@ -621,6 +621,7 @@ BytecodeGenerator::BytecodeGenerator(CompilationInfo* info)
           info->scope()->num_stack_slots(), info->literal(),
           info->SourcePositionRecordingMode())),
       info_(info),
+      ast_string_constants_(info->isolate()->ast_string_constants()),
       closure_scope_(info->scope()),
       current_scope_(info->scope()),
       globals_builder_(new (zone()) GlobalDeclarationsBuilder(info->zone())),
@@ -632,13 +633,9 @@ BytecodeGenerator::BytecodeGenerator(CompilationInfo* info)
       execution_control_(nullptr),
       execution_context_(nullptr),
       execution_result_(nullptr),
-      generator_resume_points_(info->literal()->yield_count(), info->zone()),
+      generator_resume_points_(info->literal()->suspend_count(), info->zone()),
       generator_state_(),
-      loop_depth_(0),
-      prototype_string_(
-          info->isolate()->ast_string_constants()->prototype_string()),
-      undefined_string_(
-          info->isolate()->ast_string_constants()->undefined_string()) {
+      loop_depth_(0) {
   DCHECK_EQ(closure_scope(), closure_scope()->GetClosureScope());
 }
 
@@ -796,17 +793,17 @@ void BytecodeGenerator::VisitIterationHeader(IterationStatement* stmt,
                                              LoopBuilder* loop_builder) {
   // Recall that stmt->yield_count() is always zero inside ordinary
   // (i.e. non-generator) functions.
-  if (stmt->yield_count() == 0) {
+  if (stmt->suspend_count() == 0) {
     loop_builder->LoopHeader();
   } else {
     // Collect all labels for generator resume points within the loop (if any)
     // so that they can be bound to the loop header below. Also create fresh
     // labels for these resume points, to be used inside the loop.
     ZoneVector<BytecodeLabel> resume_points_in_loop(zone());
-    size_t first_yield = stmt->first_yield_id();
-    DCHECK_LE(first_yield + stmt->yield_count(),
+    size_t first_yield = stmt->first_suspend_id();
+    DCHECK_LE(first_yield + stmt->suspend_count(),
               generator_resume_points_.size());
-    for (size_t id = first_yield; id < first_yield + stmt->yield_count();
+    for (size_t id = first_yield; id < first_yield + stmt->suspend_count();
          id++) {
       auto& label = generator_resume_points_[id];
       resume_points_in_loop.push_back(label);
@@ -820,10 +817,10 @@ void BytecodeGenerator::VisitIterationHeader(IterationStatement* stmt,
     BytecodeLabel not_resuming;
     builder()
         ->LoadLiteral(Smi::FromInt(JSGeneratorObject::kGeneratorExecuting))
-        .CompareOperation(Token::Value::EQ, generator_state_)
+        .CompareOperation(Token::Value::EQ_STRICT, generator_state_)
         .JumpIfTrue(&not_resuming);
-    BuildIndexedJump(generator_state_, first_yield,
-        stmt->yield_count(), generator_resume_points_);
+    BuildIndexedJump(generator_state_, first_yield, stmt->suspend_count(),
+                     generator_resume_points_);
     builder()->Bind(&not_resuming);
   }
 }
@@ -1095,7 +1092,6 @@ void BytecodeGenerator::VisitBreakStatement(BreakStatement* stmt) {
 void BytecodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
   builder()->SetStatementPosition(stmt);
   VisitForAccumulatorValue(stmt->expression());
-
   if (stmt->is_async_return()) {
     execution_control()->AsyncReturnAccumulator();
   } else {
@@ -1556,7 +1552,7 @@ void BytecodeGenerator::VisitClassLiteralProperties(ClassLiteral* expr,
       // do not need to do this for every property.
       BytecodeLabel done;
       builder()
-          ->LoadLiteral(prototype_string())
+          ->LoadLiteral(ast_string_constants()->prototype_string())
           .CompareOperation(Token::Value::EQ_STRICT, key)
           .JumpIfFalse(&done)
           .CallRuntime(Runtime::kThrowStaticPrototypeError)
@@ -1671,7 +1667,7 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
   // Deep-copy the literal boilerplate.
   uint8_t flags = CreateObjectLiteralFlags::Encode(
       expr->IsFastCloningSupported(),
-      ConstructorBuiltinsAssembler::FastCloneShallowObjectPropertiesCount(
+      ConstructorBuiltins::FastCloneShallowObjectPropertiesCount(
           expr->properties_count()),
       expr->ComputeFlags());
 
@@ -1924,7 +1920,7 @@ void BytecodeGenerator::BuildVariableLoad(Variable* variable, FeedbackSlot slot,
       // subsequent expressions assign to the same variable.
       builder()->LoadAccumulatorWithRegister(source);
       if (hole_check_mode == HoleCheckMode::kRequired) {
-        BuildThrowIfHole(variable->raw_name());
+        BuildThrowIfHole(variable);
       }
       break;
     }
@@ -1937,7 +1933,7 @@ void BytecodeGenerator::BuildVariableLoad(Variable* variable, FeedbackSlot slot,
       // subsequent expressions assign to the same variable.
       builder()->LoadAccumulatorWithRegister(source);
       if (hole_check_mode == HoleCheckMode::kRequired) {
-        BuildThrowIfHole(variable->raw_name());
+        BuildThrowIfHole(variable);
       }
       break;
     }
@@ -1945,7 +1941,7 @@ void BytecodeGenerator::BuildVariableLoad(Variable* variable, FeedbackSlot slot,
       // The global identifier "undefined" is immutable. Everything
       // else could be reassigned. For performance, we do a pointer comparison
       // rather than checking if the raw_name is really "undefined".
-      if (variable->raw_name() == undefined_string()) {
+      if (variable->raw_name() == ast_string_constants()->undefined_string()) {
         builder()->LoadUndefined();
       } else {
         builder()->LoadGlobal(variable->raw_name(), feedback_index(slot),
@@ -1972,7 +1968,7 @@ void BytecodeGenerator::BuildVariableLoad(Variable* variable, FeedbackSlot slot,
       builder()->LoadContextSlot(context_reg, variable->index(), depth,
                                  immutable);
       if (hole_check_mode == HoleCheckMode::kRequired) {
-        BuildThrowIfHole(variable->raw_name());
+        BuildThrowIfHole(variable);
       }
       break;
     }
@@ -1985,7 +1981,7 @@ void BytecodeGenerator::BuildVariableLoad(Variable* variable, FeedbackSlot slot,
           builder()->LoadLookupContextSlot(variable->raw_name(), typeof_mode,
                                            local_variable->index(), depth);
           if (hole_check_mode == HoleCheckMode::kRequired) {
-            BuildThrowIfHole(variable->raw_name());
+            BuildThrowIfHole(variable);
           }
           break;
         }
@@ -2005,7 +2001,7 @@ void BytecodeGenerator::BuildVariableLoad(Variable* variable, FeedbackSlot slot,
       int depth = execution_context()->ContextChainDepth(variable->scope());
       builder()->LoadModuleVariable(variable->index(), depth);
       if (hole_check_mode == HoleCheckMode::kRequired) {
-        BuildThrowIfHole(variable->raw_name());
+        BuildThrowIfHole(variable);
       }
       break;
     }
@@ -2026,6 +2022,9 @@ void BytecodeGenerator::BuildReturn() {
     // Runtime returns {result} value, preserving accumulator.
     builder()->StoreAccumulatorInRegister(result).CallRuntime(
         Runtime::kTraceExit, result);
+  }
+  if (info()->literal()->feedback_vector_spec()->HasTypeProfileSlot()) {
+    builder()->CollectTypeProfile(info()->literal()->position());
   }
   builder()->Return();
 }
@@ -2070,12 +2069,19 @@ void BytecodeGenerator::BuildThrowReferenceError(const AstRawString* name) {
       Runtime::kThrowReferenceError, name_reg);
 }
 
-void BytecodeGenerator::BuildThrowIfHole(const AstRawString* name) {
+void BytecodeGenerator::BuildThrowIfHole(Variable* variable) {
   // TODO(interpreter): Can the parser reduce the number of checks
   // performed? Or should there be a ThrowIfHole bytecode.
   BytecodeLabel no_reference_error;
   builder()->JumpIfNotHole(&no_reference_error);
-  BuildThrowReferenceError(name);
+
+  if (variable->is_this()) {
+    DCHECK(variable->mode() == CONST);
+    builder()->CallRuntime(Runtime::kThrowSuperNotCalled);
+  } else {
+    BuildThrowReferenceError(variable->raw_name());
+  }
+
   builder()->Bind(&no_reference_error);
 }
 
@@ -2096,7 +2102,7 @@ void BytecodeGenerator::BuildHoleCheckForVariableAssignment(Variable* variable,
     // Perform an initialization check for let/const declared variables.
     // E.g. let x = (x = 20); is not allowed.
     DCHECK(IsLexicalVariableMode(variable->mode()));
-    BuildThrowIfHole(variable->raw_name());
+    BuildThrowIfHole(variable);
   }
 }
 
@@ -2338,7 +2344,7 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
   }
 }
 
-void BytecodeGenerator::VisitYield(Yield* expr) {
+void BytecodeGenerator::VisitSuspend(Suspend* expr) {
   builder()->SetExpressionPosition(expr);
   Register value = VisitForRegisterValue(expr->expression());
 
@@ -2346,12 +2352,12 @@ void BytecodeGenerator::VisitYield(Yield* expr) {
 
   // Save context, registers, and state. Then return.
   builder()
-      ->LoadLiteral(Smi::FromInt(expr->yield_id()))
+      ->LoadLiteral(Smi::FromInt(expr->suspend_id()))
       .SuspendGenerator(generator)
       .LoadAccumulatorWithRegister(value)
       .Return();  // Hard return (ignore any finally blocks).
 
-  builder()->Bind(&(generator_resume_points_[expr->yield_id()]));
+  builder()->Bind(&(generator_resume_points_[expr->suspend_id()]));
   // Upon resume, we continue here.
 
   {
@@ -2710,17 +2716,21 @@ void BytecodeGenerator::VisitVoid(UnaryOperation* expr) {
   builder()->LoadUndefined();
 }
 
-void BytecodeGenerator::VisitTypeOf(UnaryOperation* expr) {
-  if (expr->expression()->IsVariableProxy()) {
+void BytecodeGenerator::VisitForTypeOfValue(Expression* expr) {
+  if (expr->IsVariableProxy()) {
     // Typeof does not throw a reference error on global variables, hence we
     // perform a non-contextual load in case the operand is a variable proxy.
-    VariableProxy* proxy = expr->expression()->AsVariableProxy();
+    VariableProxy* proxy = expr->AsVariableProxy();
     BuildVariableLoadForAccumulatorValue(
         proxy->var(), proxy->VariableFeedbackSlot(), proxy->hole_check_mode(),
         INSIDE_TYPEOF);
   } else {
-    VisitForAccumulatorValue(expr->expression());
+    VisitForAccumulatorValue(expr);
   }
+}
+
+void BytecodeGenerator::VisitTypeOf(UnaryOperation* expr) {
+  VisitForTypeOfValue(expr->expression());
   builder()->TypeOf();
 }
 
@@ -2788,10 +2798,10 @@ void BytecodeGenerator::VisitDelete(UnaryOperation* expr) {
         builder()
             ->LoadContextSlot(execution_context()->reg(),
                               Context::NATIVE_CONTEXT_INDEX, 0,
-                              BytecodeArrayBuilder::kMutableSlot)
+                              BytecodeArrayBuilder::kImmutableSlot)
             .StoreAccumulatorInRegister(native_context)
             .LoadContextSlot(native_context, Context::EXTENSION_INDEX, 0,
-                             BytecodeArrayBuilder::kMutableSlot)
+                             BytecodeArrayBuilder::kImmutableSlot)
             .StoreAccumulatorInRegister(global_object)
             .LoadLiteral(variable->raw_name())
             .Delete(global_object, language_mode());
@@ -2963,11 +2973,31 @@ void BytecodeGenerator::VisitBinaryOperation(BinaryOperation* binop) {
 }
 
 void BytecodeGenerator::VisitCompareOperation(CompareOperation* expr) {
-  Register lhs = VisitForRegisterValue(expr->left());
-  VisitForAccumulatorValue(expr->right());
-  builder()->SetExpressionPosition(expr);
-  FeedbackSlot slot = expr->CompareOperationFeedbackSlot();
-  builder()->CompareOperation(expr->op(), lhs, feedback_index(slot));
+  // Emit a fast literal comparion for expressions of the form:
+  // typeof(x) === 'string'.
+  Expression* typeof_sub_expr;
+  Literal* literal;
+  if (expr->IsLiteralCompareTypeof(&typeof_sub_expr, &literal)) {
+    VisitForTypeOfValue(typeof_sub_expr);
+    builder()->SetExpressionPosition(expr);
+    TestTypeOfFlags::LiteralFlag literal_flag =
+        TestTypeOfFlags::GetFlagForLiteral(ast_string_constants(), literal);
+    if (literal_flag == TestTypeOfFlags::LiteralFlag::kOther) {
+      builder()->LoadFalse();
+    } else {
+      builder()->CompareTypeOf(literal_flag);
+    }
+  } else {
+    Register lhs = VisitForRegisterValue(expr->left());
+    VisitForAccumulatorValue(expr->right());
+    builder()->SetExpressionPosition(expr);
+    FeedbackSlot slot = expr->CompareOperationFeedbackSlot();
+    if (slot.IsInvalid()) {
+      builder()->CompareOperation(expr->op(), lhs);
+    } else {
+      builder()->CompareOperation(expr->op(), lhs, feedback_index(slot));
+    }
+  }
 }
 
 void BytecodeGenerator::VisitArithmeticExpression(BinaryOperation* expr) {
@@ -3179,8 +3209,7 @@ void BytecodeGenerator::BuildNewLocalActivationContext() {
   } else {
     DCHECK(scope->is_function_scope() || scope->is_eval_scope());
     int slot_count = scope->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
-    if (slot_count <=
-        ConstructorBuiltinsAssembler::MaximumFunctionContextSlots()) {
+    if (slot_count <= ConstructorBuiltins::MaximumFunctionContextSlots()) {
       switch (scope->scope_type()) {
         case EVAL_SCOPE:
           builder()->CreateEvalContext(slot_count);
@@ -3342,17 +3371,17 @@ void BytecodeGenerator::VisitFunctionClosureForContext() {
     builder()
         ->LoadContextSlot(execution_context()->reg(),
                           Context::NATIVE_CONTEXT_INDEX, 0,
-                          BytecodeArrayBuilder::kMutableSlot)
+                          BytecodeArrayBuilder::kImmutableSlot)
         .StoreAccumulatorInRegister(native_context)
         .LoadContextSlot(native_context, Context::CLOSURE_INDEX, 0,
-                         BytecodeArrayBuilder::kMutableSlot);
+                         BytecodeArrayBuilder::kImmutableSlot);
   } else if (closure_scope()->is_eval_scope()) {
     // Contexts created by a call to eval have the same closure as the
     // context calling eval, not the anonymous closure containing the eval
     // code. Fetch it from the context.
     builder()->LoadContextSlot(execution_context()->reg(),
                                Context::CLOSURE_INDEX, 0,
-                               BytecodeArrayBuilder::kMutableSlot);
+                               BytecodeArrayBuilder::kImmutableSlot);
   } else {
     DCHECK(closure_scope()->is_function_scope() ||
            closure_scope()->is_module_scope());

@@ -472,6 +472,7 @@ UnicodeEncoding UnicodeEncodingOf(const Operator* op) {
   V(ChangeTaggedToBit, Operator::kNoProperties, 1, 0)            \
   V(ChangeBitToTagged, Operator::kNoProperties, 1, 0)            \
   V(TruncateTaggedToBit, Operator::kNoProperties, 1, 0)          \
+  V(TruncateTaggedPointerToBit, Operator::kNoProperties, 1, 0)   \
   V(TruncateTaggedToWord32, Operator::kNoProperties, 1, 0)       \
   V(TruncateTaggedToFloat64, Operator::kNoProperties, 1, 0)      \
   V(ObjectIsDetectableCallable, Operator::kNoProperties, 1, 0)   \
@@ -481,6 +482,7 @@ UnicodeEncoding UnicodeEncodingOf(const Operator* op) {
   V(ObjectIsReceiver, Operator::kNoProperties, 1, 0)             \
   V(ObjectIsSmi, Operator::kNoProperties, 1, 0)                  \
   V(ObjectIsString, Operator::kNoProperties, 1, 0)               \
+  V(ObjectIsSymbol, Operator::kNoProperties, 1, 0)               \
   V(ObjectIsUndetectable, Operator::kNoProperties, 1, 0)         \
   V(ConvertTaggedHoleToUndefined, Operator::kNoProperties, 1, 0) \
   V(ReferenceEqual, Operator::kCommutative, 2, 0)                \

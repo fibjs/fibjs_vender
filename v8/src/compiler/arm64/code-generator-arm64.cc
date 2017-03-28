@@ -8,13 +8,15 @@
 
 #include "src/compiler/code-generator.h"
 
+#include "src/arm64/assembler-arm64-inl.h"
 #include "src/arm64/frames-arm64.h"
-#include "src/arm64/macro-assembler-arm64.h"
+#include "src/arm64/macro-assembler-arm64-inl.h"
 #include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
+#include "src/heap/heap-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -102,6 +104,10 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
   Register OutputRegister64() { return OutputRegister(); }
 
   Register OutputRegister32() { return ToRegister(instr_->Output()).W(); }
+
+  Register TempRegister32(size_t index) {
+    return ToRegister(instr_->TempAt(index)).W();
+  }
 
   Operand InputOperand2_32(size_t index) {
     switch (AddressingModeField::decode(instr_->opcode())) {
@@ -529,6 +535,32 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     __ asm_instr(i.InputRegister(2),                                  \
                  MemOperand(i.InputRegister(0), i.InputRegister(1))); \
     __ Dmb(InnerShareable, BarrierAll);                               \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(load_instr, store_instr)      \
+  do {                                                                 \
+    Label exchange;                                                    \
+    __ bind(&exchange);                                                \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1)); \
+    __ load_instr(i.OutputRegister32(), i.TempRegister(0));            \
+    __ store_instr(i.TempRegister32(0), i.InputRegister32(2),          \
+                   i.TempRegister(0));                                 \
+    __ cbnz(i.TempRegister32(0), &exchange);                           \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(load_instr, store_instr) \
+  do {                                                                    \
+    Label compareExchange;                                                \
+    Label exit;                                                           \
+    __ bind(&compareExchange);                                            \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));    \
+    __ load_instr(i.OutputRegister32(), i.TempRegister(0));               \
+    __ cmp(i.TempRegister32(1), i.OutputRegister32());                    \
+    __ B(ne, &exit);                                                      \
+    __ store_instr(i.TempRegister32(0), i.InputRegister32(3),             \
+                   i.TempRegister(0));                                    \
+    __ cbnz(i.TempRegister32(0), &compareExchange);                       \
+    __ bind(&exit);                                                       \
   } while (0)
 
 #define ASSEMBLE_IEEE754_BINOP(name)                                          \
@@ -1163,11 +1195,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kArm64Ubfx:
       __ Ubfx(i.OutputRegister(), i.InputRegister(0), i.InputInt6(1),
-              i.InputInt6(2));
+              i.InputInt32(2));
       break;
     case kArm64Ubfx32:
       __ Ubfx(i.OutputRegister32(), i.InputRegister32(0), i.InputInt5(1),
-              i.InputInt5(2));
+              i.InputInt32(2));
       break;
     case kArm64Ubfiz32:
       __ Ubfiz(i.OutputRegister32(), i.InputRegister32(0), i.InputInt5(1),
@@ -1635,6 +1667,45 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
              MemOperand(i.InputRegister(0), i.InputRegister(1)));
       __ Dmb(InnerShareable, BarrierAll);
       break;
+    case kAtomicExchangeInt8:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldaxrb, stlxrb);
+      __ Sxtb(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicExchangeUint8:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldaxrb, stlxrb);
+      break;
+    case kAtomicExchangeInt16:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldaxrh, stlxrh);
+      __ Sxth(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicExchangeUint16:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldaxrh, stlxrh);
+      break;
+    case kAtomicExchangeWord32:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldaxr, stlxr);
+      break;
+    case kAtomicCompareExchangeInt8:
+      __ Uxtb(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldaxrb, stlxrb);
+      __ Sxtb(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicCompareExchangeUint8:
+      __ Uxtb(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldaxrb, stlxrb);
+      break;
+    case kAtomicCompareExchangeInt16:
+      __ Uxth(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldaxrh, stlxrh);
+      __ Sxth(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicCompareExchangeUint16:
+      __ Uxth(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldaxrh, stlxrh);
+      break;
+    case kAtomicCompareExchangeWord32:
+      __ mov(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldaxr, stlxr);
+      break;
   }
   return kSuccess;
 }  // NOLINT(readability/fn_size)
@@ -1822,7 +1893,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
-  __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  if (isolate()->NeedsSourcePositionsForProfiling()) {
+    __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  }
   __ Call(deopt_entry, RelocInfo::RUNTIME_ENTRY);
   return kSuccess;
 }
@@ -1996,6 +2069,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   __ Ret();
 }
 
+void CodeGenerator::FinishCode() { masm()->CheckConstPool(true, false); }
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {

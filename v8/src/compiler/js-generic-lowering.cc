@@ -73,7 +73,6 @@ REPLACE_STUB_CALL(GreaterThan)
 REPLACE_STUB_CALL(GreaterThanOrEqual)
 REPLACE_STUB_CALL(HasProperty)
 REPLACE_STUB_CALL(Equal)
-REPLACE_STUB_CALL(NotEqual)
 REPLACE_STUB_CALL(ToInteger)
 REPLACE_STUB_CALL(ToLength)
 REPLACE_STUB_CALL(ToNumber)
@@ -257,7 +256,7 @@ void JSGenericLowering::LowerJSStoreGlobal(Node* node) {
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   const StoreGlobalParameters& p = StoreGlobalParametersOf(node->op());
   Callable callable =
-      CodeFactory::StoreICInOptimizedCode(isolate(), p.language_mode());
+      CodeFactory::StoreGlobalICInOptimizedCode(isolate(), p.language_mode());
   Node* vector = jsgraph()->HeapConstant(p.feedback().vector());
   // Load global object from the context.
   Node* native_context = effect =
@@ -282,7 +281,7 @@ void JSGenericLowering::LowerJSStoreGlobal(Node* node) {
 }
 
 void JSGenericLowering::LowerJSStoreDataPropertyInLiteral(Node* node) {
-  DataPropertyParameters const& p = DataPropertyParametersOf(node->op());
+  FeedbackParameter const& p = FeedbackParameterOf(node->op());
   node->InsertInputs(zone(), 4, 2);
   node->ReplaceInput(4, jsgraph()->HeapConstant(p.feedback().vector()));
   node->ReplaceInput(5, jsgraph()->SmiConstant(p.feedback().index()));
@@ -393,8 +392,7 @@ void JSGenericLowering::LowerJSCreateFunctionContext(Node* node) {
   ScopeType scope_type = parameters.scope_type();
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
 
-  if (slot_count <=
-      ConstructorBuiltinsAssembler::MaximumFunctionContextSlots()) {
+  if (slot_count <= ConstructorBuiltins::MaximumFunctionContextSlots()) {
     Callable callable =
         CodeFactory::FastNewFunctionContext(isolate(), scope_type);
     node->InsertInput(zone(), 1, jsgraph()->Int32Constant(slot_count));
@@ -423,8 +421,7 @@ void JSGenericLowering::LowerJSCreateLiteralArray(Node* node) {
   // Use the FastCloneShallowArray builtin only for shallow boilerplates without
   // properties up to the number of elements that the stubs can handle.
   if ((p.flags() & ArrayLiteral::kShallowElements) != 0 &&
-      p.length() <
-          ConstructorBuiltinsAssembler::kMaximumClonedShallowArrayElements) {
+      p.length() < ConstructorBuiltins::kMaximumClonedShallowArrayElements) {
     Callable callable = CodeFactory::FastCloneShallowArray(
         isolate(), DONT_TRACK_ALLOCATION_SITE);
     ReplaceWithStubCall(node, callable, flags);
@@ -446,7 +443,7 @@ void JSGenericLowering::LowerJSCreateLiteralObject(Node* node) {
   // without elements up to the number of properties that the stubs can handle.
   if ((p.flags() & ObjectLiteral::kShallowProperties) != 0 &&
       p.length() <=
-          ConstructorBuiltinsAssembler::kMaximumClonedShallowObjectProperties) {
+          ConstructorBuiltins::kMaximumClonedShallowObjectProperties) {
     Callable callable =
         CodeFactory::FastCloneShallowObject(isolate(), p.length());
     ReplaceWithStubCall(node, callable, flags);
@@ -519,7 +516,7 @@ void JSGenericLowering::LowerJSConstruct(Node* node) {
 }
 
 void JSGenericLowering::LowerJSConstructWithSpread(Node* node) {
-  SpreadWithArityParameters const& p = SpreadWithArityParametersOf(node->op());
+  SpreadWithArityParameter const& p = SpreadWithArityParameterOf(node->op());
   int const arg_count = static_cast<int>(p.arity() - 2);
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   Callable callable = CodeFactory::ConstructWithSpread(isolate());
@@ -572,7 +569,7 @@ void JSGenericLowering::LowerJSCall(Node* node) {
 }
 
 void JSGenericLowering::LowerJSCallWithSpread(Node* node) {
-  SpreadWithArityParameters const& p = SpreadWithArityParametersOf(node->op());
+  SpreadWithArityParameter const& p = SpreadWithArityParameterOf(node->op());
   int const arg_count = static_cast<int>(p.arity() - 2);
   Callable callable = CodeFactory::CallWithSpread(isolate());
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
@@ -655,21 +652,29 @@ void JSGenericLowering::LowerJSStackCheck(Node* node) {
 
   Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
   NodeProperties::ReplaceControlInput(node, if_false);
-  Node* efalse = node;
+  Node* efalse = if_false = node;
 
   Node* merge = graph()->NewNode(common()->Merge(2), if_true, if_false);
   Node* ephi = graph()->NewNode(common()->EffectPhi(2), etrue, efalse, merge);
 
   // Wire the new diamond into the graph, {node} can still throw.
-  NodeProperties::ReplaceUses(node, node, ephi, node, node);
+  NodeProperties::ReplaceUses(node, node, ephi, merge, merge);
+  NodeProperties::ReplaceControlInput(merge, if_false, 1);
   NodeProperties::ReplaceEffectInput(ephi, efalse, 1);
 
-  // TODO(mstarzinger): This iteration cuts out the IfSuccess projection from
-  // the node and places it inside the diamond. Come up with a helper method!
-  for (Node* use : node->uses()) {
-    if (use->opcode() == IrOpcode::kIfSuccess) {
-      use->ReplaceUses(merge);
-      merge->ReplaceInput(1, use);
+  // This iteration cuts out potential {IfSuccess} or {IfException} projection
+  // uses of the original node and places them inside the diamond, so that we
+  // can change the original {node} into the slow-path runtime call.
+  for (Edge edge : merge->use_edges()) {
+    if (!NodeProperties::IsControlEdge(edge)) continue;
+    if (edge.from()->opcode() == IrOpcode::kIfSuccess) {
+      NodeProperties::ReplaceUses(edge.from(), nullptr, nullptr, merge);
+      NodeProperties::ReplaceControlInput(merge, edge.from(), 1);
+      edge.UpdateTo(node);
+    }
+    if (edge.from()->opcode() == IrOpcode::kIfException) {
+      NodeProperties::ReplaceEffectInput(edge.from(), node);
+      edge.UpdateTo(node);
     }
   }
 

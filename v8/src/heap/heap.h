@@ -67,7 +67,6 @@ using v8::MemoryPressureLevel;
   /* This means they are never in new space and never on a page that is     */ \
   /* being compacted.                                                       */ \
   /* Oddballs */                                                               \
-  V(Oddball, no_interceptor_result_sentinel, NoInterceptorResultSentinel)      \
   V(Oddball, arguments_marker, ArgumentsMarker)                                \
   V(Oddball, exception, Exception)                                             \
   V(Oddball, termination_exception, TerminationException)                      \
@@ -178,8 +177,6 @@ using v8::MemoryPressureLevel;
   V(Object, instanceof_cache_map, InstanceofCacheMap)                          \
   V(Object, instanceof_cache_answer, InstanceofCacheAnswer)                    \
   V(FixedArray, natives_source_cache, NativesSourceCache)                      \
-  V(FixedArray, experimental_natives_source_cache,                             \
-    ExperimentalNativesSourceCache)                                            \
   V(FixedArray, extra_natives_source_cache, ExtraNativesSourceCache)           \
   V(FixedArray, experimental_extra_natives_source_cache,                       \
     ExperimentalExtraNativesSourceCache)                                       \
@@ -218,7 +215,6 @@ using v8::MemoryPressureLevel;
   V(Map, boolean_map, BooleanMap)                                              \
   V(Map, uninitialized_map, UninitializedMap)                                  \
   V(Map, arguments_marker_map, ArgumentsMarkerMap)                             \
-  V(Map, no_interceptor_result_sentinel_map, NoInterceptorResultSentinelMap)   \
   V(Map, exception_map, ExceptionMap)                                          \
   V(Map, termination_exception_map, TerminationExceptionMap)                   \
   V(Map, optimized_out_map, OptimizedOutMap)                                   \
@@ -280,7 +276,6 @@ using v8::MemoryPressureLevel;
   V(FixedDoubleArrayMap)                \
   V(WeakCellMap)                        \
   V(TransitionArrayMap)                 \
-  V(NoInterceptorResultSentinel)        \
   V(HashTableMap)                       \
   V(OrderedHashTableMap)                \
   V(EmptyFixedArray)                    \
@@ -318,6 +313,7 @@ using v8::MemoryPressureLevel;
 // Forward declarations.
 class AllocationObserver;
 class ArrayBufferTracker;
+class ConcurrentMarking;
 class GCIdleTimeAction;
 class GCIdleTimeHandler;
 class GCIdleTimeHeapState;
@@ -329,6 +325,7 @@ class Isolate;
 class LocalEmbedderHeapTracer;
 class MemoryAllocator;
 class MemoryReducer;
+class MinorMarkCompactCollector;
 class ObjectIterator;
 class ObjectStats;
 class Page;
@@ -563,7 +560,7 @@ class Heap {
 
   enum FindMementoMode { kForRuntime, kForGC };
 
-  enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT };
+  enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT, MINOR_MARK_COMPACT };
 
   enum UpdateAllocationSiteMode { kGlobal, kCached };
 
@@ -1044,6 +1041,10 @@ class Heap {
 
   MarkCompactCollector* mark_compact_collector() {
     return mark_compact_collector_;
+  }
+
+  MinorMarkCompactCollector* minor_mark_compact_collector() {
+    return minor_mark_compact_collector_;
   }
 
   // ===========================================================================
@@ -1650,15 +1651,15 @@ class Heap {
   }
 
   inline bool ShouldReduceMemory() const {
-    return current_gc_flags_ & kReduceMemoryFootprintMask;
+    return (current_gc_flags_ & kReduceMemoryFootprintMask) != 0;
   }
 
   inline bool ShouldAbortIncrementalMarking() const {
-    return current_gc_flags_ & kAbortIncrementalMarkingMask;
+    return (current_gc_flags_ & kAbortIncrementalMarkingMask) != 0;
   }
 
   inline bool ShouldFinalizeIncrementalMarking() const {
-    return current_gc_flags_ & kFinalizeIncrementalMarkingMask;
+    return (current_gc_flags_ & kFinalizeIncrementalMarkingMask) != 0;
   }
 
   void PreprocessStackTraces();
@@ -2284,12 +2285,14 @@ class Heap {
   Scavenger* scavenge_collector_;
 
   MarkCompactCollector* mark_compact_collector_;
+  MinorMarkCompactCollector* minor_mark_compact_collector_;
 
   MemoryAllocator* memory_allocator_;
 
   StoreBuffer* store_buffer_;
 
   IncrementalMarking* incremental_marking_;
+  ConcurrentMarking* concurrent_marking_;
 
   GCIdleTimeHandler* gc_idle_time_handler_;
 
@@ -2373,6 +2376,7 @@ class Heap {
 
   // Classes in "heap" can be friends.
   friend class AlwaysAllocateScope;
+  friend class ConcurrentMarking;
   friend class GCCallbacksScope;
   friend class GCTracer;
   friend class HeapIterator;
@@ -2381,6 +2385,7 @@ class Heap {
   friend class IncrementalMarkingJob;
   friend class LargeObjectSpace;
   friend class MarkCompactCollector;
+  friend class MinorMarkCompactCollector;
   friend class MarkCompactMarkingVisitor;
   friend class NewSpace;
   friend class ObjectStatsCollector;

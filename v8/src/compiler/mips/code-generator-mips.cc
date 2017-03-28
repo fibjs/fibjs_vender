@@ -1476,7 +1476,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     }
     case kMipsLdc1:
-      __ ldc1(i.OutputDoubleRegister(), i.MemoryOperand());
+      __ Ldc1(i.OutputDoubleRegister(), i.MemoryOperand());
       break;
     case kMipsUldc1:
       __ Uldc1(i.OutputDoubleRegister(), i.MemoryOperand(), kScratchReg);
@@ -1486,7 +1486,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (ft.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {
         __ Move(kDoubleRegZero, 0.0);
       }
-      __ sdc1(ft, i.MemoryOperand());
+      __ Sdc1(ft, i.MemoryOperand());
       break;
     }
     case kMipsUsdc1: {
@@ -1499,7 +1499,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kMipsPush:
       if (instr->InputAt(0)->IsFPRegister()) {
-        __ sdc1(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+        __ Sdc1(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
         __ Subu(sp, sp, Operand(kDoubleSize));
         frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
       } else {
@@ -1516,7 +1516,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (instr->InputAt(0)->IsFPRegister()) {
         LocationOperand* op = LocationOperand::cast(instr->InputAt(0));
         if (op->representation() == MachineRepresentation::kFloat64) {
-          __ sdc1(i.InputDoubleRegister(0), MemOperand(sp, i.InputInt32(1)));
+          __ Sdc1(i.InputDoubleRegister(0), MemOperand(sp, i.InputInt32(1)));
         } else {
           DCHECK_EQ(MachineRepresentation::kFloat32, op->representation());
           __ swc1(i.InputSingleRegister(0), MemOperand(sp, i.InputInt32(1)));
@@ -1549,7 +1549,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_CHECKED_LOAD_FLOAT(Single, lwc1);
       break;
     case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(Double, ldc1);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(Double, Ldc1);
       break;
     case kCheckedStoreWord8:
       ASSEMBLE_CHECKED_STORE_INTEGER(sb);
@@ -1564,7 +1564,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_CHECKED_STORE_FLOAT(Single, swc1);
       break;
     case kCheckedStoreFloat64:
-      ASSEMBLE_CHECKED_STORE_FLOAT(Double, sdc1);
+      ASSEMBLE_CHECKED_STORE_FLOAT(Double, Sdc1);
       break;
     case kCheckedLoadWord64:
     case kCheckedStoreWord64:
@@ -1593,6 +1593,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kAtomicStoreWord32:
       ASSEMBLE_ATOMIC_STORE_INTEGER(sw);
+      break;
+    case kAtomicExchangeInt8:
+    case kAtomicExchangeUint8:
+    case kAtomicExchangeInt16:
+    case kAtomicExchangeUint16:
+    case kAtomicExchangeWord32:
+    case kAtomicCompareExchangeInt8:
+    case kAtomicCompareExchangeUint8:
+    case kAtomicCompareExchangeInt16:
+    case kAtomicCompareExchangeUint16:
+    case kAtomicCompareExchangeWord32:
+      UNREACHABLE();
       break;
   }
   return kSuccess;
@@ -2000,7 +2012,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
-  __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  if (isolate()->NeedsSourcePositionsForProfiling()) {
+    __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  }
   __ Call(deopt_entry, RelocInfo::RUNTIME_ENTRY);
   return kSuccess;
 }
@@ -2127,6 +2141,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   }
 }
 
+void CodeGenerator::FinishCode() {}
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
@@ -2212,7 +2227,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
                                : kScratchDoubleReg;
       __ Move(dst, src.ToFloat64());
       if (destination->IsFPStackSlot()) {
-        __ sdc1(dst, g.ToMemOperand(destination));
+        __ Sdc1(dst, g.ToMemOperand(destination));
       }
     }
   } else if (source->IsFPRegister()) {
@@ -2225,7 +2240,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       MachineRepresentation rep =
           LocationOperand::cast(source)->representation();
       if (rep == MachineRepresentation::kFloat64) {
-        __ sdc1(src, g.ToMemOperand(destination));
+        __ Sdc1(src, g.ToMemOperand(destination));
       } else if (rep == MachineRepresentation::kFloat32) {
         __ swc1(src, g.ToMemOperand(destination));
       } else {
@@ -2239,7 +2254,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
     MachineRepresentation rep = LocationOperand::cast(source)->representation();
     if (destination->IsFPRegister()) {
       if (rep == MachineRepresentation::kFloat64) {
-        __ ldc1(g.ToDoubleRegister(destination), src);
+        __ Ldc1(g.ToDoubleRegister(destination), src);
       } else if (rep == MachineRepresentation::kFloat32) {
         __ lwc1(g.ToDoubleRegister(destination), src);
       } else {
@@ -2249,8 +2264,8 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
     } else {
       FPURegister temp = kScratchDoubleReg;
       if (rep == MachineRepresentation::kFloat64) {
-        __ ldc1(temp, src);
-        __ sdc1(temp, g.ToMemOperand(destination));
+        __ Ldc1(temp, src);
+        __ Sdc1(temp, g.ToMemOperand(destination));
       } else if (rep == MachineRepresentation::kFloat32) {
         __ lwc1(temp, src);
         __ swc1(temp, g.ToMemOperand(destination));
@@ -2311,8 +2326,8 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
           LocationOperand::cast(source)->representation();
       if (rep == MachineRepresentation::kFloat64) {
         __ Move(temp, src);
-        __ ldc1(src, dst);
-        __ sdc1(temp, dst);
+        __ Ldc1(src, dst);
+        __ Sdc1(temp, dst);
       } else if (rep == MachineRepresentation::kFloat32) {
         __ Move(temp, src);
         __ lwc1(src, dst);
@@ -2332,12 +2347,12 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
     if (rep == MachineRepresentation::kFloat64) {
       MemOperand src1(src0.rm(), src0.offset() + kIntSize);
       MemOperand dst1(dst0.rm(), dst0.offset() + kIntSize);
-      __ ldc1(temp_1, dst0);  // Save destination in temp_1.
+      __ Ldc1(temp_1, dst0);  // Save destination in temp_1.
       __ lw(temp_0, src0);    // Then use temp_0 to copy source to destination.
       __ sw(temp_0, dst0);
       __ lw(temp_0, src1);
       __ sw(temp_0, dst1);
-      __ sdc1(temp_1, src0);
+      __ Sdc1(temp_1, src0);
     } else if (rep == MachineRepresentation::kFloat32) {
       __ lwc1(temp_1, dst0);  // Save destination in temp_1.
       __ lw(temp_0, src0);    // Then use temp_0 to copy source to destination.

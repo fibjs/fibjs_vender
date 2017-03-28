@@ -259,7 +259,6 @@ class Typer::Visitor : public Reducer {
   typedef base::Flags<ComparisonOutcomeFlags> ComparisonOutcome;
 
   static ComparisonOutcome Invert(ComparisonOutcome, Typer*);
-  static Type* Invert(Type*, Typer*);
   static Type* FalsifyUndefined(ComparisonOutcome, Typer*);
 
   static Type* ToPrimitive(Type*, Typer*);
@@ -291,6 +290,7 @@ class Typer::Visitor : public Reducer {
   static Type* ObjectIsReceiver(Type*, Typer*);
   static Type* ObjectIsSmi(Type*, Typer*);
   static Type* ObjectIsString(Type*, Typer*);
+  static Type* ObjectIsSymbol(Type*, Typer*);
   static Type* ObjectIsUndetectable(Type*, Typer*);
 
   static ComparisonOutcome JSCompareTyper(Type*, Type*, Typer*);
@@ -302,6 +302,7 @@ class Typer::Visitor : public Reducer {
 
   static Type* JSCallTyper(Type*, Typer*);
 
+  static Type* NumberEqualTyper(Type*, Type*, Typer*);
   static Type* NumberLessThanTyper(Type*, Type*, Typer*);
   static Type* NumberLessThanOrEqualTyper(Type*, Type*, Typer*);
   static Type* ReferenceEqualTyper(Type*, Type*, Typer*);
@@ -391,15 +392,6 @@ Type* Typer::Visitor::TypeBinaryOp(Node* node, BinaryTyperFun f) {
 }
 
 
-Type* Typer::Visitor::Invert(Type* type, Typer* t) {
-  DCHECK(type->Is(Type::Boolean()));
-  DCHECK(type->IsInhabited());
-  if (type->Is(t->singleton_false_)) return t->singleton_true_;
-  if (type->Is(t->singleton_true_)) return t->singleton_false_;
-  return type;
-}
-
-
 Typer::Visitor::ComparisonOutcome Typer::Visitor::Invert(
     ComparisonOutcome outcome, Typer* t) {
   ComparisonOutcome result(0);
@@ -462,9 +454,14 @@ Type* Typer::Visitor::ToLength(Type* type, Typer* t) {
   type = ToInteger(type, t);
   double min = type->Min();
   double max = type->Max();
+  if (max <= 0.0) {
+    return Type::NewConstant(0, t->zone());
+  }
+  if (min >= kMaxSafeInteger) {
+    return Type::NewConstant(kMaxSafeInteger, t->zone());
+  }
   if (min <= 0.0) min = 0.0;
-  if (max > kMaxSafeInteger) max = kMaxSafeInteger;
-  if (max <= min) max = min;
+  if (max >= kMaxSafeInteger) max = kMaxSafeInteger;
   return Type::Range(min, max, t->zone());
 }
 
@@ -547,6 +544,12 @@ Type* Typer::Visitor::ObjectIsSmi(Type* type, Typer* t) {
 Type* Typer::Visitor::ObjectIsString(Type* type, Typer* t) {
   if (type->Is(Type::String())) return t->singleton_true_;
   if (!type->Maybe(Type::String())) return t->singleton_false_;
+  return Type::Boolean();
+}
+
+Type* Typer::Visitor::ObjectIsSymbol(Type* type, Typer* t) {
+  if (type->Is(Type::Symbol())) return t->singleton_true_;
+  if (!type->Maybe(Type::Symbol())) return t->singleton_false_;
   return Type::Boolean();
 }
 
@@ -896,11 +899,6 @@ Type* Typer::Visitor::JSEqualTyper(Type* lhs, Type* rhs, Typer* t) {
     return t->singleton_true_;
   }
   return Type::Boolean();
-}
-
-
-Type* Typer::Visitor::JSNotEqualTyper(Type* lhs, Type* rhs, Typer* t) {
-  return Invert(JSEqualTyper(lhs, rhs, t), t);
 }
 
 
@@ -1705,7 +1703,10 @@ Type* Typer::Visitor::TypeJSDebugger(Node* node) { return Type::Any(); }
 
 Type* Typer::Visitor::TypeBooleanNot(Node* node) { return Type::Boolean(); }
 
-Type* Typer::Visitor::TypeNumberEqual(Node* node) { return Type::Boolean(); }
+// static
+Type* Typer::Visitor::NumberEqualTyper(Type* lhs, Type* rhs, Typer* t) {
+  return JSEqualTyper(ToNumber(lhs, t), ToNumber(rhs, t), t);
+}
 
 // static
 Type* Typer::Visitor::NumberLessThanTyper(Type* lhs, Type* rhs, Typer* t) {
@@ -1720,6 +1721,10 @@ Type* Typer::Visitor::NumberLessThanOrEqualTyper(Type* lhs, Type* rhs,
       Invert(JSCompareTyper(ToNumber(rhs, t), ToNumber(lhs, t), t), t), t);
 }
 
+Type* Typer::Visitor::TypeNumberEqual(Node* node) {
+  return TypeBinaryOp(node, NumberEqualTyper);
+}
+
 Type* Typer::Visitor::TypeNumberLessThan(Node* node) {
   return TypeBinaryOp(node, NumberLessThanTyper);
 }
@@ -1729,7 +1734,7 @@ Type* Typer::Visitor::TypeNumberLessThanOrEqual(Node* node) {
 }
 
 Type* Typer::Visitor::TypeSpeculativeNumberEqual(Node* node) {
-  return Type::Boolean();
+  return TypeBinaryOp(node, NumberEqualTyper);
 }
 
 Type* Typer::Visitor::TypeSpeculativeNumberLessThan(Node* node) {
@@ -1956,6 +1961,10 @@ Type* Typer::Visitor::TypeObjectIsSmi(Node* node) {
 
 Type* Typer::Visitor::TypeObjectIsString(Node* node) {
   return TypeUnaryOp(node, ObjectIsString);
+}
+
+Type* Typer::Visitor::TypeObjectIsSymbol(Node* node) {
+  return TypeUnaryOp(node, ObjectIsSymbol);
 }
 
 Type* Typer::Visitor::TypeObjectIsUndetectable(Node* node) {

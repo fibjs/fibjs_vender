@@ -1244,6 +1244,10 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
   VisitRR(this, kPPC_Uint32ToUint64, node);
 }
+
+void InstructionSelector::VisitChangeFloat64ToUint64(Node* node) {
+  VisitRR(this, kPPC_DoubleToUint64, node);
+}
 #endif
 
 
@@ -2115,6 +2119,12 @@ void InstructionSelector::VisitAtomicStore(Node* node) {
   inputs[input_count++] = g.UseUniqueRegister(value);
   Emit(opcode | AddressingModeField::encode(kMode_MRR),
       0, nullptr, input_count, inputs);
+}
+
+void InstructionSelector::VisitAtomicExchange(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
+  UNIMPLEMENTED();
 }
 
 // static

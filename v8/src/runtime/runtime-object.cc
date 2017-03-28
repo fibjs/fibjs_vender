@@ -50,6 +50,13 @@ static MaybeHandle<Object> KeyedGetObjectProperty(Isolate* isolate,
   //
   // Additionally, we need to make sure that we do not cache results
   // for objects that require access checks.
+
+  // Convert string-index keys to their number variant to avoid internalization
+  // below; and speed up subsequent conversion to index.
+  uint32_t index;
+  if (key_obj->IsString() && String::cast(*key_obj)->AsArrayIndex(&index)) {
+    key_obj = isolate->factory()->NewNumberFromUint(index);
+  }
   if (receiver_obj->IsJSObject()) {
     if (!receiver_obj->IsJSGlobalProxy() &&
         !receiver_obj->IsAccessCheckNeeded() && key_obj->IsName()) {
@@ -659,12 +666,12 @@ RUNTIME_FUNCTION(Runtime_DefineDataPropertyInLiteral) {
     if (name->IsUniqueName()) {
       nexus.ConfigureMonomorphic(name, handle(object->map()));
     } else {
-      nexus.ConfigureMegamorphic();
+      nexus.ConfigureMegamorphic(PROPERTY);
     }
   } else if (nexus.ic_state() == MONOMORPHIC) {
     if (nexus.FindFirstMap() != object->map() ||
         nexus.GetFeedbackExtra() != *name) {
-      nexus.ConfigureMegamorphic();
+      nexus.ConfigureMegamorphic(PROPERTY);
     }
   }
 
@@ -689,6 +696,28 @@ RUNTIME_FUNCTION(Runtime_DefineDataPropertyInLiteral) {
                                                     Object::DONT_THROW)
             .IsJust());
   return *object;
+}
+
+RUNTIME_FUNCTION(Runtime_CollectTypeProfile) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(3, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Smi, position, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
+  CONVERT_ARG_HANDLE_CHECKED(FeedbackVector, vector, 2);
+
+  DCHECK(FLAG_type_profile);
+
+  Handle<Name> type = Object::TypeOf(isolate, value);
+  if (value->IsJSReceiver()) {
+    Handle<JSReceiver> object = Handle<JSReceiver>::cast(value);
+    type = JSReceiver::GetConstructorName(object);
+  }
+
+  DCHECK(vector->metadata()->HasTypeProfileSlot());
+  CollectTypeProfileNexus nexus(vector, vector->GetTypeProfileSlot());
+  nexus.Collect(type, position->value());
+
+  return isolate->heap()->undefined_value();
 }
 
 // Return property without being observable by accessors or interceptors.

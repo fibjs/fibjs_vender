@@ -210,7 +210,6 @@ DebugEvaluate::ContextBuilder::ContextBuilder(Isolate* isolate,
 
 
 void DebugEvaluate::ContextBuilder::UpdateValues() {
-  // TODO(yangguo): remove updating values.
   for (int i = 0; i < context_chain_.length(); i++) {
     ContextChainElement element = context_chain_[i];
     if (!element.materialized_object.is_null()) {
@@ -260,63 +259,68 @@ void DebugEvaluate::ContextBuilder::MaterializeReceiver(
 namespace {
 
 bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
+// Use macro to include both inlined and non-inlined version of an intrinsic.
+#define INTRINSIC_WHITELIST(V)      \
+  /* Conversions */                 \
+  V(ToInteger)                      \
+  V(ToObject)                       \
+  V(ToString)                       \
+  V(ToLength)                       \
+  V(ToNumber)                       \
+  /* Type checks */                 \
+  V(IsJSReceiver)                   \
+  V(IsSmi)                          \
+  V(IsArray)                        \
+  V(IsFunction)                     \
+  V(IsDate)                         \
+  V(IsJSProxy)                      \
+  V(IsRegExp)                       \
+  V(IsTypedArray)                   \
+  V(ClassOf)                        \
+  /* Loads */                       \
+  V(LoadLookupSlotForCall)          \
+  /* Arrays */                      \
+  V(ArraySpeciesConstructor)        \
+  V(NormalizeElements)              \
+  V(GetArrayKeys)                   \
+  V(HasComplexElements)             \
+  V(EstimateNumberOfElements)       \
+  /* Errors */                      \
+  V(ReThrow)                        \
+  V(ThrowReferenceError)            \
+  V(ThrowSymbolIteratorInvalid)     \
+  V(ThrowIteratorResultNotAnObject) \
+  V(NewTypeError)                   \
+  /* Strings */                     \
+  V(StringCharCodeAt)               \
+  V(StringIndexOf)                  \
+  V(StringReplaceOneCharWithString) \
+  V(SubString)                      \
+  V(RegExpInternalReplace)          \
+  /* Literals */                    \
+  V(CreateArrayLiteral)             \
+  V(CreateObjectLiteral)            \
+  V(CreateRegExpLiteral)            \
+  /* Collections */                 \
+  V(JSCollectionGetTable)           \
+  V(FixedArrayGet)                  \
+  V(StringGetRawHashField)          \
+  V(GenericHash)                    \
+  V(MapIteratorInitialize)          \
+  V(MapInitialize)                  \
+  /* Misc. */                       \
+  V(ForInPrepare)                   \
+  V(Call)                           \
+  V(MaxSmi)                         \
+  V(HasInPrototypeChain)
+
+#define CASE(Name)       \
+  case Runtime::k##Name: \
+  case Runtime::kInline##Name:
+
   switch (id) {
-    // Whitelist for intrinsics and runtime functions.
-    // Conversions.
-    case Runtime::kToInteger:
-    case Runtime::kInlineToInteger:
-    case Runtime::kToObject:
-    case Runtime::kInlineToObject:
-    case Runtime::kToString:
-    case Runtime::kInlineToString:
-    case Runtime::kToLength:
-    case Runtime::kInlineToLength:
-    case Runtime::kToNumber:
-    // Type checks.
-    case Runtime::kIsJSReceiver:
-    case Runtime::kInlineIsJSReceiver:
-    case Runtime::kIsSmi:
-    case Runtime::kInlineIsSmi:
-    case Runtime::kIsArray:
-    case Runtime::kInlineIsArray:
-    case Runtime::kIsFunction:
-    case Runtime::kIsDate:
-    case Runtime::kIsJSProxy:
-    case Runtime::kIsRegExp:
-    case Runtime::kIsTypedArray:
-    // Loads.
-    case Runtime::kLoadLookupSlotForCall:
-    // Arrays.
-    case Runtime::kArraySpeciesConstructor:
-    case Runtime::kNormalizeElements:
-    case Runtime::kGetArrayKeys:
-    case Runtime::kHasComplexElements:
-    case Runtime::kEstimateNumberOfElements:
-    // Errors.
-    case Runtime::kReThrow:
-    case Runtime::kThrowReferenceError:
-    case Runtime::kThrowSymbolIteratorInvalid:
-    case Runtime::kThrowIteratorResultNotAnObject:
-    case Runtime::kNewTypeError:
-    // Strings.
-    case Runtime::kInlineStringCharCodeAt:
-    case Runtime::kStringCharCodeAt:
-    case Runtime::kStringIndexOf:
-    case Runtime::kStringReplaceOneCharWithString:
-    case Runtime::kSubString:
-    case Runtime::kInlineSubString:
-    case Runtime::kRegExpInternalReplace:
-    // Literals.
-    case Runtime::kCreateArrayLiteral:
-    case Runtime::kCreateObjectLiteral:
-    case Runtime::kCreateRegExpLiteral:
-    // Misc.
-    case Runtime::kForInPrepare:
-    case Runtime::kInlineCall:
-    case Runtime::kCall:
-    case Runtime::kInlineMaxSmi:
-    case Runtime::kMaxSmi:
-      return true;
+    INTRINSIC_WHITELIST(CASE)
+    return true;
     default:
       if (FLAG_trace_side_effect_free_debug_evaluate) {
         PrintF("[debug-evaluate] intrinsic %s may cause side effect.\n",
@@ -324,6 +328,9 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
       }
       return false;
   }
+
+#undef CASE
+#undef INTRINSIC_WHITELIST
 }
 
 bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
@@ -377,9 +384,11 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
     // Allocations.
     case Bytecode::kCreateClosure:
     case Bytecode::kCreateUnmappedArguments:
+    case Bytecode::kCreateRestParameter:
     // Conversions.
     case Bytecode::kToObject:
     case Bytecode::kToNumber:
+    case Bytecode::kToName:
     // Misc.
     case Bytecode::kForInPrepare:
     case Bytecode::kForInContinue:
@@ -406,7 +415,22 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
   switch (id) {
     // Whitelist for builtins.
     // Object builtins.
+    case Builtins::kObjectCreate:
+    case Builtins::kObjectEntries:
+    case Builtins::kObjectGetOwnPropertyDescriptor:
+    case Builtins::kObjectGetOwnPropertyDescriptors:
+    case Builtins::kObjectGetOwnPropertyNames:
+    case Builtins::kObjectGetOwnPropertySymbols:
+    case Builtins::kObjectGetPrototypeOf:
+    case Builtins::kObjectIs:
+    case Builtins::kObjectIsExtensible:
+    case Builtins::kObjectIsFrozen:
+    case Builtins::kObjectIsSealed:
     case Builtins::kObjectPrototypeValueOf:
+    case Builtins::kObjectValues:
+    case Builtins::kObjectHasOwnProperty:
+    case Builtins::kObjectPrototypePropertyIsEnumerable:
+    case Builtins::kObjectProtoToString:
     // Array builtins.
     case Builtins::kArrayCode:
     case Builtins::kArrayIndexOf:
@@ -415,6 +439,45 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kArrayPrototypeEntries:
     case Builtins::kArrayPrototypeKeys:
     case Builtins::kArrayForEach:
+    case Builtins::kArrayEvery:
+    case Builtins::kArraySome:
+    case Builtins::kArrayReduce:
+    case Builtins::kArrayReduceRight:
+    // Boolean bulitins.
+    case Builtins::kBooleanConstructor:
+    case Builtins::kBooleanPrototypeToString:
+    case Builtins::kBooleanPrototypeValueOf:
+    // Date builtins.
+    case Builtins::kDateConstructor:
+    case Builtins::kDateNow:
+    case Builtins::kDateParse:
+    case Builtins::kDatePrototypeGetDate:
+    case Builtins::kDatePrototypeGetDay:
+    case Builtins::kDatePrototypeGetFullYear:
+    case Builtins::kDatePrototypeGetHours:
+    case Builtins::kDatePrototypeGetMilliseconds:
+    case Builtins::kDatePrototypeGetMinutes:
+    case Builtins::kDatePrototypeGetMonth:
+    case Builtins::kDatePrototypeGetSeconds:
+    case Builtins::kDatePrototypeGetTime:
+    case Builtins::kDatePrototypeGetTimezoneOffset:
+    case Builtins::kDatePrototypeGetUTCDate:
+    case Builtins::kDatePrototypeGetUTCDay:
+    case Builtins::kDatePrototypeGetUTCFullYear:
+    case Builtins::kDatePrototypeGetUTCHours:
+    case Builtins::kDatePrototypeGetUTCMilliseconds:
+    case Builtins::kDatePrototypeGetUTCMinutes:
+    case Builtins::kDatePrototypeGetUTCMonth:
+    case Builtins::kDatePrototypeGetUTCSeconds:
+    case Builtins::kDatePrototypeGetYear:
+    case Builtins::kDatePrototypeToDateString:
+    case Builtins::kDatePrototypeToISOString:
+    case Builtins::kDatePrototypeToUTCString:
+    case Builtins::kDatePrototypeToString:
+    case Builtins::kDatePrototypeToTimeString:
+    case Builtins::kDatePrototypeToJson:
+    case Builtins::kDatePrototypeToPrimitive:
+    case Builtins::kDatePrototypeValueOf:
     // Math builtins.
     case Builtins::kMathAbs:
     case Builtins::kMathAcos:
@@ -470,6 +533,7 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kStringConstructor:
     case Builtins::kStringPrototypeCharAt:
     case Builtins::kStringPrototypeCharCodeAt:
+    case Builtins::kStringPrototypeConcat:
     case Builtins::kStringPrototypeEndsWith:
     case Builtins::kStringPrototypeIncludes:
     case Builtins::kStringPrototypeIndexOf:
@@ -484,9 +548,24 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kStringPrototypeTrimLeft:
     case Builtins::kStringPrototypeTrimRight:
     case Builtins::kStringPrototypeValueOf:
+    // Symbol builtins.
+    case Builtins::kSymbolConstructor:
+    case Builtins::kSymbolKeyFor:
+    case Builtins::kSymbolPrototypeToString:
+    case Builtins::kSymbolPrototypeValueOf:
+    case Builtins::kSymbolPrototypeToPrimitive:
     // JSON builtins.
     case Builtins::kJsonParse:
     case Builtins::kJsonStringify:
+    // Global function builtins.
+    case Builtins::kGlobalDecodeURI:
+    case Builtins::kGlobalDecodeURIComponent:
+    case Builtins::kGlobalEncodeURI:
+    case Builtins::kGlobalEncodeURIComponent:
+    case Builtins::kGlobalEscape:
+    case Builtins::kGlobalUnescape:
+    case Builtins::kGlobalIsFinite:
+    case Builtins::kGlobalIsNaN:
     // Error builtins.
     case Builtins::kMakeError:
     case Builtins::kMakeTypeError:

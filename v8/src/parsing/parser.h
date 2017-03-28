@@ -179,6 +179,7 @@ struct ParserTypes<Parser> {
   typedef v8::internal::FunctionLiteral* FunctionLiteral;
   typedef ObjectLiteral::Property* ObjectLiteralProperty;
   typedef ClassLiteral::Property* ClassLiteralProperty;
+  typedef v8::internal::Suspend* Suspend;
   typedef ZoneList<v8::internal::Expression*>* ExpressionList;
   typedef ZoneList<ObjectLiteral::Property*>* ObjectPropertyList;
   typedef ZoneList<ClassLiteral::Property*>* ClassPropertyList;
@@ -206,7 +207,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     cached_parse_data_ = NULL;
   }
 
-  static bool const IsPreParser() { return false; }
+  static bool IsPreParser() { return false; }
 
   void ParseOnBackground(ParseInfo* info);
 
@@ -230,8 +231,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
  private:
   friend class ParserBase<Parser>;
   friend class v8::internal::ExpressionClassifier<ParserTypes<Parser>>;
-  friend bool v8::internal::parsing::ParseProgram(ParseInfo*, bool);
-  friend bool v8::internal::parsing::ParseFunction(ParseInfo*, bool);
+  friend bool v8::internal::parsing::ParseProgram(ParseInfo*, Isolate*, bool);
+  friend bool v8::internal::parsing::ParseFunction(ParseInfo*, Isolate*, bool);
 
   bool AllowsLazyParsingWithoutUnresolvedVariables() const {
     return scope()->AllowsLazyParsingWithoutUnresolvedVariables(
@@ -297,6 +298,28 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   }
   bool produce_cached_parse_data() const {
     return compile_options_ == ScriptCompiler::kProduceParserCache;
+  }
+
+  PreParser* reusable_preparser() {
+    if (reusable_preparser_ == NULL) {
+      reusable_preparser_ =
+          new PreParser(zone(), &scanner_, stack_limit_, ast_value_factory(),
+                        &pending_error_handler_, runtime_call_stats_,
+                        parsing_on_main_thread_);
+#define SET_ALLOW(name) reusable_preparser_->set_allow_##name(allow_##name());
+      SET_ALLOW(natives);
+      SET_ALLOW(tailcalls);
+      SET_ALLOW(harmony_do_expressions);
+      SET_ALLOW(harmony_function_sent);
+      SET_ALLOW(harmony_trailing_commas);
+      SET_ALLOW(harmony_class_fields);
+      SET_ALLOW(harmony_object_rest_spread);
+      SET_ALLOW(harmony_dynamic_import);
+      SET_ALLOW(harmony_async_iteration);
+      SET_ALLOW(harmony_template_escapes);
+#undef SET_ALLOW
+    }
+    return reusable_preparser_;
   }
 
   void ParseModuleItemList(ZoneList<Statement*>* body, bool* ok);
@@ -651,6 +674,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   Expression* BuildResolvePromise(Expression* value, int pos);
   Expression* BuildRejectPromise(Expression* value, int pos);
   Variable* PromiseVariable();
+  Variable* AsyncGeneratorAwaitVariable();
 
   // Generic AST generator for throwing errors from compiled code.
   Expression* NewThrowError(Runtime::FunctionId function_id,
@@ -665,7 +689,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   Statement* FinalizeForOfStatement(ForOfStatement* loop, Variable* completion,
                                     IteratorType type, int pos);
   void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
-                          Variable* input, Variable* output);
+                          Variable* input, Variable* output, IteratorType type);
   void BuildIteratorCloseForCompletion(Scope* scope,
                                        ZoneList<Statement*>* statements,
                                        Variable* iterator,
@@ -1144,7 +1168,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   Scanner scanner_;
   PreParser* reusable_preparser_;
-  Scope* original_scope_;  // for ES5 function declarations in sloppy eval
   Mode mode_;
 
   friend class ParserTarget;

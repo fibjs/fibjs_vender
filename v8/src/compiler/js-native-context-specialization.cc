@@ -138,9 +138,6 @@ Reduction JSNativeContextSpecialization::ReduceJSGetSuperConstructor(
   DCHECK_EQ(IrOpcode::kJSGetSuperConstructor, node->opcode());
   Node* constructor = NodeProperties::GetValueInput(node, 0);
 
-  // If deoptimization is disabled, we cannot optimize.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
-
   // Check if the input is a known JSFunction.
   HeapObjectMatcher m(constructor);
   if (!m.HasValue()) return NoChange();
@@ -175,9 +172,6 @@ Reduction JSNativeContextSpecialization::ReduceJSInstanceOf(Node* node) {
   Node* context = NodeProperties::GetContextInput(node);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
-
-  // If deoptimization is disabled, we cannot optimize.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
 
   // Check if the right hand side is a known {receiver}.
   HeapObjectMatcher m(constructor);
@@ -217,21 +211,37 @@ Reduction JSNativeContextSpecialization::ReduceJSInstanceOf(Node* node) {
       Reduction const reduction = ReduceJSOrdinaryHasInstance(node);
       return reduction.Changed() ? reduction : Changed(node);
     }
-  } else if (access_info.IsDataConstant()) {
-    DCHECK(access_info.constant()->IsCallable());
-
+  } else if (access_info.IsDataConstant() ||
+             access_info.IsDataConstantField()) {
     // Determine actual holder and perform prototype chain checks.
     Handle<JSObject> holder;
     if (access_info.holder().ToHandle(&holder)) {
       AssumePrototypesStable(access_info.receiver_maps(), holder);
+    } else {
+      holder = receiver;
     }
+
+    Handle<Object> constant;
+    if (access_info.IsDataConstant()) {
+      DCHECK(!FLAG_track_constant_fields);
+      constant = access_info.constant();
+    } else {
+      DCHECK(FLAG_track_constant_fields);
+      DCHECK(access_info.IsDataConstantField());
+      // The value must be callable therefore tagged.
+      DCHECK(CanBeTaggedPointer(access_info.field_representation()));
+      FieldIndex field_index = access_info.field_index();
+      constant = JSObject::FastPropertyAt(holder, Representation::Tagged(),
+                                          field_index);
+    }
+    DCHECK(constant->IsCallable());
 
     // Monomorphic property access.
     effect = BuildCheckMaps(constructor, effect, control,
                             access_info.receiver_maps());
 
     // Call the @@hasInstance handler.
-    Node* target = jsgraph()->Constant(access_info.constant());
+    Node* target = jsgraph()->Constant(constant);
     node->InsertInput(graph()->zone(), 0, target);
     node->ReplaceInput(1, constructor);
     node->ReplaceInput(2, object);
@@ -513,9 +523,6 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadGlobal(Node* node) {
     return Replace(value);
   }
 
-  // Not much we can do if deoptimization support is disabled.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
-
   // Lookup the {name} on the global object instead.
   return ReduceGlobalAccess(node, nullptr, nullptr, name, AccessMode::kLoad);
 }
@@ -539,9 +546,6 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreGlobal(Node* node) {
     return Replace(value);
   }
 
-  // Not much we can do if deoptimization support is disabled.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
-
   // Lookup the {name} on the global object instead.
   return ReduceGlobalAccess(node, nullptr, value, name, AccessMode::kStore);
 }
@@ -561,18 +565,17 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
 
-  // Not much we can do if deoptimization support is disabled.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
-
   // Check if we have an access o.x or o.x=v where o is the current
   // native contexts' global proxy, and turn that into a direct access
   // to the current native contexts' global object instead.
   if (receiver_maps.length() == 1) {
     Handle<Map> receiver_map = receiver_maps.first();
     if (receiver_map->IsJSGlobalProxyMap()) {
-      Context* receiver_context =
-          JSFunction::cast(receiver_map->GetConstructor())->native_context();
-      if (receiver_context == *native_context()) {
+      Object* maybe_constructor = receiver_map->GetConstructor();
+      // Detached global proxies have |null| as their constructor.
+      if (maybe_constructor->IsJSFunction() &&
+          JSFunction::cast(maybe_constructor)->native_context() ==
+              *native_context()) {
         return ReduceGlobalAccess(node, receiver, value, name, access_mode,
                                   index);
       }
@@ -788,19 +791,16 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccessFromNexus(
   Node* const receiver = NodeProperties::GetValueInput(node, 0);
   Node* const effect = NodeProperties::GetEffectInput(node);
 
-  if (flags() & kDeoptimizationEnabled) {
-    // Check if we are accessing the current native contexts' global proxy.
-    HeapObjectMatcher m(receiver);
-    if (m.HasValue() && m.Value().is_identical_to(global_proxy())) {
-      // Optimize accesses to the current native contexts' global proxy.
-      return ReduceGlobalAccess(node, nullptr, value, name, access_mode);
-    }
+  // Check if we are accessing the current native contexts' global proxy.
+  HeapObjectMatcher m(receiver);
+  if (m.HasValue() && m.Value().is_identical_to(global_proxy())) {
+    // Optimize accesses to the current native contexts' global proxy.
+    return ReduceGlobalAccess(node, nullptr, value, name, access_mode);
   }
 
   // Check if the {nexus} reports type feedback for the IC.
   if (nexus.IsUninitialized()) {
-    if ((flags() & kDeoptimizationEnabled) &&
-        (flags() & kBailoutOnUninitialized)) {
+    if (flags() & kBailoutOnUninitialized) {
       return ReduceSoftDeoptimize(
           node,
           DeoptimizeReason::kInsufficientTypeFeedbackForGenericNamedAccess);
@@ -813,8 +813,7 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccessFromNexus(
   if (!ExtractReceiverMaps(receiver, effect, nexus, &receiver_maps)) {
     return NoChange();
   } else if (receiver_maps.length() == 0) {
-    if ((flags() & kDeoptimizationEnabled) &&
-        (flags() & kBailoutOnUninitialized)) {
+    if (flags() & kBailoutOnUninitialized) {
       return ReduceSoftDeoptimize(
           node,
           DeoptimizeReason::kInsufficientTypeFeedbackForGenericNamedAccess);
@@ -845,14 +844,12 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadNamed(Node* node) {
         // {function} in order to be notified about changes to the
         // "prototype" of {function}, so it doesn't make sense to
         // continue unless deoptimization is enabled.
-        if (flags() & kDeoptimizationEnabled) {
-          Handle<Map> initial_map(function->initial_map(), isolate());
-          dependencies()->AssumeInitialMapCantChange(initial_map);
-          Handle<Object> prototype(initial_map->prototype(), isolate());
-          Node* value = jsgraph()->Constant(prototype);
-          ReplaceWithValue(node, value);
-          return Replace(value);
-        }
+        Handle<Map> initial_map(function->initial_map(), isolate());
+        dependencies()->AssumeInitialMapCantChange(initial_map);
+        Handle<Object> prototype(function->prototype(), isolate());
+        Node* value = jsgraph()->Constant(prototype);
+        ReplaceWithValue(node, value);
+        return Replace(value);
       }
     } else if (m.Value()->IsString() &&
                p.name().is_identical_to(factory()->length_string())) {
@@ -912,9 +909,6 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
   Node* frame_state = NodeProperties::FindFrameStateBefore(node);
-
-  // Not much we can do if deoptimization support is disabled.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
 
   // Check for keyed access to strings.
   if (HasOnlyStringMaps(receiver_maps)) {
@@ -1161,41 +1155,40 @@ Reduction JSNativeContextSpecialization::ReduceKeyedAccess(
   if (mreceiver.HasValue() && mreceiver.Value()->IsString()) {
     Handle<String> string = Handle<String>::cast(mreceiver.Value());
 
+    // Strings are immutable in JavaScript.
+    if (access_mode == AccessMode::kStore) return NoChange();
+
+    // Properly deal with constant {index}.
+    NumberMatcher mindex(index);
+    if (mindex.IsInteger() && mindex.IsInRange(0.0, string->length() - 1)) {
+      // Constant-fold the {index} access to {string}.
+      Node* value = jsgraph()->HeapConstant(
+          factory()->LookupSingleCharacterStringFromCode(
+              string->Get(static_cast<int>(mindex.Value()))));
+      ReplaceWithValue(node, value, effect, control);
+      return Replace(value);
+    }
+
     // We can only assume that the {index} is a valid array index if the IC
     // is in element access mode and not MEGAMORPHIC, otherwise there's no
     // guard for the bounds check below.
     if (nexus.ic_state() != MEGAMORPHIC && nexus.GetKeyType() == ELEMENT) {
-      // Strings are immutable in JavaScript.
-      if (access_mode == AccessMode::kStore) return NoChange();
+      // Ensure that {index} is less than {receiver} length.
+      Node* length = jsgraph()->Constant(string->length());
+      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
+                                        length, effect, control);
 
-      // Properly deal with constant {index}.
-      NumberMatcher mindex(index);
-      if (mindex.IsInteger() && mindex.IsInRange(0.0, string->length() - 1)) {
-        // Constant-fold the {index} access to {string}.
-        Node* value = jsgraph()->HeapConstant(
-            factory()->LookupSingleCharacterStringFromCode(
-                string->Get(static_cast<int>(mindex.Value()))));
-        ReplaceWithValue(node, value, effect, control);
-        return Replace(value);
-      } else if (flags() & kDeoptimizationEnabled) {
-        // Ensure that {index} is less than {receiver} length.
-        Node* length = jsgraph()->Constant(string->length());
-        index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                          length, effect, control);
-
-        // Return the character from the {receiver} as single character string.
-        value = graph()->NewNode(simplified()->StringCharAt(), receiver, index,
-                                 control);
-        ReplaceWithValue(node, value, effect, control);
-        return Replace(value);
-      }
+      // Return the character from the {receiver} as single character string.
+      value = graph()->NewNode(simplified()->StringCharAt(), receiver, index,
+                               control);
+      ReplaceWithValue(node, value, effect, control);
+      return Replace(value);
     }
   }
 
   // Check if the {nexus} reports type feedback for the IC.
   if (nexus.IsUninitialized()) {
-    if ((flags() & kDeoptimizationEnabled) &&
-        (flags() & kBailoutOnUninitialized)) {
+    if (flags() & kBailoutOnUninitialized) {
       return ReduceSoftDeoptimize(
           node,
           DeoptimizeReason::kInsufficientTypeFeedbackForGenericKeyedAccess);
@@ -1208,8 +1201,7 @@ Reduction JSNativeContextSpecialization::ReduceKeyedAccess(
   if (!ExtractReceiverMaps(receiver, effect, nexus, &receiver_maps)) {
     return NoChange();
   } else if (receiver_maps.length() == 0) {
-    if ((flags() & kDeoptimizationEnabled) &&
-        (flags() & kBailoutOnUninitialized)) {
+    if (flags() & kBailoutOnUninitialized) {
       return ReduceSoftDeoptimize(
           node,
           DeoptimizeReason::kInsufficientTypeFeedbackForGenericKeyedAccess);
@@ -1331,6 +1323,7 @@ JSNativeContextSpecialization::BuildPropertyAccess(
     DCHECK_EQ(AccessMode::kLoad, access_mode);
     value = jsgraph()->UndefinedConstant();
   } else if (access_info.IsDataConstant()) {
+    DCHECK(!FLAG_track_constant_fields);
     Node* constant_value = jsgraph()->Constant(access_info.constant());
     if (access_mode == AccessMode::kStore) {
       Node* check = graph()->NewNode(simplified()->ReferenceEqual(), value,
@@ -1363,11 +1356,10 @@ JSNativeContextSpecialization::BuildPropertyAccess(
 
         // Introduce the call to the getter function.
         if (access_info.constant()->IsJSFunction()) {
-          value = effect = graph()->NewNode(
+          value = effect = control = graph()->NewNode(
               javascript()->Call(2, 0.0f, VectorSlotPair(),
                                  ConvertReceiverMode::kNotNullOrUndefined),
               target, receiver, context, frame_state0, effect, control);
-          control = graph()->NewNode(common()->IfSuccess(), value);
         } else {
           DCHECK(access_info.constant()->IsFunctionTemplateInfo());
           Handle<FunctionTemplateInfo> function_template_info(
@@ -1400,11 +1392,10 @@ JSNativeContextSpecialization::BuildPropertyAccess(
 
         // Introduce the call to the setter function.
         if (access_info.constant()->IsJSFunction()) {
-          effect = graph()->NewNode(
+          effect = control = graph()->NewNode(
               javascript()->Call(3, 0.0f, VectorSlotPair(),
                                  ConvertReceiverMode::kNotNullOrUndefined),
               target, receiver, value, context, frame_state0, effect, control);
-          control = graph()->NewNode(common()->IfSuccess(), effect);
         } else {
           DCHECK(access_info.constant()->IsFunctionTemplateInfo());
           Handle<FunctionTemplateInfo> function_template_info(
@@ -1669,7 +1660,6 @@ JSNativeContextSpecialization::BuildPropertyAccess(
 
     value = effect = control =
         graph()->NewNode(common()->Call(desc), arraysize(inputs), inputs);
-    control = graph()->NewNode(common()->IfSuccess(), control);
   }
 
   return ValueEffectControl(value, effect, control);
@@ -1679,10 +1669,7 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreDataPropertyInLiteral(
     Node* node) {
   DCHECK_EQ(IrOpcode::kJSStoreDataPropertyInLiteral, node->opcode());
 
-  // If deoptimization is disabled, we cannot optimize.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
-
-  DataPropertyParameters const& p = DataPropertyParametersOf(node->op());
+  FeedbackParameter const& p = FeedbackParameterOf(node->op());
 
   if (!p.feedback().IsValid()) return NoChange();
 
@@ -2115,10 +2102,10 @@ JSNativeContextSpecialization::InlineApiCall(
     inputs[6] = value;
   }
 
+  Node* control0;
   Node* effect0;
-  Node* value0 = effect0 =
+  Node* value0 = effect0 = control0 =
       graph()->NewNode(common()->Call(call_descriptor), index, inputs);
-  Node* control0 = graph()->NewNode(common()->IfSuccess(), value0);
   return ValueEffectControl(value0, effect0, control0);
 }
 

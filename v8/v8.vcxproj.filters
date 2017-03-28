@@ -261,9 +261,6 @@
     <ClInclude Include="include\v8-debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\v8-experimental.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\v8-inspector-protocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -312,9 +309,6 @@
     <ClInclude Include="src\api-arguments.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\api-experimental.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\api-natives.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -325,6 +319,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\asmjs\asm-js.h">
+      <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asmjs\asm-names.h">
+      <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asmjs\asm-parser.h">
+      <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asmjs\asm-scanner.h">
       <Filter>Source Files\asmjs</Filter>
     </ClInclude>
     <ClInclude Include="src\asmjs\asm-typer.h">
@@ -540,22 +543,31 @@
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins\builtins-arguments.h">
+    <ClInclude Include="src\builtins\builtins-arguments-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins\builtins-async.h">
+    <ClInclude Include="src\builtins\builtins-async-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-constructor-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-constructor.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins\builtins-object.h">
+    <ClInclude Include="src\builtins\builtins-descriptors.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins\builtins-promise.h">
+    <ClInclude Include="src\builtins\builtins-forin-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins\builtins-regexp.h">
+    <ClInclude Include="src\builtins\builtins-promise-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-regexp-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-utils-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-utils.h">
@@ -565,6 +577,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\cached-powers.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\callable.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cancelable-task.h">
@@ -586,6 +601,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\code-stub-assembler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\code-stubs-utils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\code-stubs.h">
@@ -1218,9 +1236,6 @@
     <ClInclude Include="src\factory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\fast-accessor-assembler.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\fast-dtoa.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1291,6 +1306,9 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\code-stats.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\concurrent-marking.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\embedder-tracing.h">
@@ -1389,6 +1407,9 @@
     <ClInclude Include="src\ia32\simulator-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
+    <ClInclude Include="src\ia32\sse-instr.h">
+      <Filter>Source Files\ia32</Filter>
+    </ClInclude>
     <ClInclude Include="src\ic\access-compiler-data.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1396,6 +1417,9 @@
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\accessor-assembler.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ic\binary-op-assembler.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\call-optimization.h">
@@ -1506,6 +1530,12 @@
     <ClInclude Include="src\interpreter\interpreter-assembler.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\interpreter-generator.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\interpreter-intrinsics-generator.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\interpreter-intrinsics.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1587,6 +1617,9 @@
     <ClInclude Include="src\machine-type.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\macro-assembler-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\macro-assembler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1613,6 +1646,15 @@
     </ClInclude>
     <ClInclude Include="src\objects.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\descriptor-array.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\frame-array-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\frame-array.h">
+      <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\literal-objects.h">
       <Filter>Source Files\objects</Filter>
@@ -1950,6 +1992,9 @@
     <ClInclude Include="src\transitions.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\trap-handler\trap-handler-internal.h">
+      <Filter>Source Files\trap-handler</Filter>
+    </ClInclude>
     <ClInclude Include="src\trap-handler\trap-handler.h">
       <Filter>Source Files\trap-handler</Filter>
     </ClInclude>
@@ -2144,9 +2189,6 @@
     <ClCompile Include="src\api-arguments.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\api-experimental.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\api-natives.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2157,6 +2199,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\asmjs\asm-js.cc">
+      <Filter>Source Files\asmjs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\asmjs\asm-parser.cc">
+      <Filter>Source Files\asmjs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\asmjs\asm-scanner.cc">
       <Filter>Source Files\asmjs</Filter>
     </ClCompile>
     <ClCompile Include="src\asmjs\asm-typer.cc">
@@ -2318,7 +2366,10 @@
     <ClCompile Include="src\builtins\builtins-api.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-arguments.cc">
+    <ClCompile Include="src\builtins\builtins-arguments-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-array-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-array.cc">
@@ -2327,13 +2378,16 @@
     <ClCompile Include="src\builtins\builtins-arraybuffer.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-async-function.cc">
+    <ClCompile Include="src\builtins\builtins-async-function-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-async-iterator.cc">
+    <ClCompile Include="src\builtins\builtins-async-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-async.cc">
+    <ClCompile Include="src\builtins\builtins-async-iterator-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-boolean-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-boolean.cc">
@@ -2345,13 +2399,16 @@
     <ClCompile Include="src\builtins\builtins-callsite.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-constructor.cc">
+    <ClCompile Include="src\builtins\builtins-constructor-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-conversion.cc">
+    <ClCompile Include="src\builtins\builtins-conversion-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-dataview.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-date-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-date.cc">
@@ -2363,19 +2420,31 @@
     <ClCompile Include="src\builtins\builtins-error.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-forin-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-function-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-function.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-generator.cc">
+    <ClCompile Include="src\builtins\builtins-generator-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-global-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-global.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-handler.cc">
+    <ClCompile Include="src\builtins\builtins-handler-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-ic.cc">
+    <ClCompile Include="src\builtins\builtins-ic-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-internal-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-internal.cc">
@@ -2384,19 +2453,31 @@
     <ClCompile Include="src\builtins\builtins-interpreter.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-intl.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-json.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-math-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-math.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-number-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-number.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-object-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-object.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-promise.cc">
+    <ClCompile Include="src\builtins\builtins-promise-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-proxy.cc">
@@ -2405,22 +2486,37 @@
     <ClCompile Include="src\builtins\builtins-reflect.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-regexp-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-regexp.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-sharedarraybuffer-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-sharedarraybuffer.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-string-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-string.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-symbol-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-symbol.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-typedarray-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-typedarray.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-wasm.cc">
+    <ClCompile Include="src\builtins\builtins-wasm-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins.cc">
@@ -3077,9 +3173,6 @@
     <ClCompile Include="src\factory.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\fast-accessor-assembler.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\fast-dtoa.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3131,9 +3224,6 @@
     <ClCompile Include="src\gen\experimental-extras-libraries.cc">
       <Filter>Source Files\gen</Filter>
     </ClCompile>
-    <ClCompile Include="src\gen\experimental-libraries.cc">
-      <Filter>Source Files\gen</Filter>
-    </ClCompile>
     <ClCompile Include="src\gen\extras-libraries.cc">
       <Filter>Source Files\gen</Filter>
     </ClCompile>
@@ -3150,6 +3240,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\code-stats.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\concurrent-marking.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\embedder-tracing.cc">
@@ -3231,6 +3324,9 @@
       <Filter>Source Files\ic</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\accessor-assembler.cc">
+      <Filter>Source Files\ic</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ic\binary-op-assembler.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\call-optimization.cc">
@@ -3368,6 +3464,12 @@
     <ClCompile Include="src\interpreter\interpreter-assembler.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\interpreter-generator.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\interpreter-intrinsics-generator.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\interpreter-intrinsics.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -3454,9 +3556,6 @@
     </ClCompile>
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\parsing\duplicate-finder.cc">
-      <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\func-name-inferrer.cc">
       <Filter>Source Files\parsing</Filter>
@@ -3814,6 +3913,15 @@
     </ClCompile>
     <ClCompile Include="src\transitions.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trap-handler\handler-inside.cc">
+      <Filter>Source Files\trap-handler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trap-handler\handler-outside.cc">
+      <Filter>Source Files\trap-handler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trap-handler\handler-shared.cc">
+      <Filter>Source Files\trap-handler</Filter>
     </ClCompile>
     <ClCompile Include="src\type-hints.cc">
       <Filter>Source Files</Filter>

@@ -80,6 +80,16 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   return OpParameter<MachineRepresentation>(op);
 }
 
+MachineType AtomicExchangeRepresentationOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kAtomicExchange, op->opcode());
+  return OpParameter<MachineType>(op);
+}
+
+MachineType AtomicCompareExchangeRepresentationOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kAtomicCompareExchange, op->opcode());
+  return OpParameter<MachineType>(op);
+}
+
 #define PURE_BINARY_OP_LIST_32(V)                                           \
   V(Word32And, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
   V(Word32Or, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)     \
@@ -130,12 +140,12 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Word32Clz, Operator::kNoProperties, 1, 0, 1)                           \
   V(Word64Clz, Operator::kNoProperties, 1, 0, 1)                           \
   V(BitcastTaggedToWord, Operator::kNoProperties, 1, 0, 1)                 \
-  V(BitcastWordToTagged, Operator::kNoProperties, 1, 0, 1)                 \
   V(BitcastWordToTaggedSigned, Operator::kNoProperties, 1, 0, 1)           \
   V(TruncateFloat64ToWord32, Operator::kNoProperties, 1, 0, 1)             \
   V(ChangeFloat32ToFloat64, Operator::kNoProperties, 1, 0, 1)              \
   V(ChangeFloat64ToInt32, Operator::kNoProperties, 1, 0, 1)                \
   V(ChangeFloat64ToUint32, Operator::kNoProperties, 1, 0, 1)               \
+  V(ChangeFloat64ToUint64, Operator::kNoProperties, 1, 0, 1)               \
   V(TruncateFloat64ToUint32, Operator::kNoProperties, 1, 0, 1)             \
   V(TruncateFloat32ToInt32, Operator::kNoProperties, 1, 0, 1)              \
   V(TruncateFloat32ToUint32, Operator::kNoProperties, 1, 0, 1)             \
@@ -234,12 +244,12 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Float32x4Max, Operator::kCommutative, 2, 0, 1)                         \
   V(Float32x4MinNum, Operator::kCommutative, 2, 0, 1)                      \
   V(Float32x4MaxNum, Operator::kCommutative, 2, 0, 1)                      \
+  V(Float32x4RecipRefine, Operator::kNoProperties, 2, 0, 1)                \
+  V(Float32x4RecipSqrtRefine, Operator::kNoProperties, 2, 0, 1)            \
   V(Float32x4Equal, Operator::kCommutative, 2, 0, 1)                       \
   V(Float32x4NotEqual, Operator::kCommutative, 2, 0, 1)                    \
   V(Float32x4LessThan, Operator::kNoProperties, 2, 0, 1)                   \
   V(Float32x4LessThanOrEqual, Operator::kNoProperties, 2, 0, 1)            \
-  V(Float32x4GreaterThan, Operator::kNoProperties, 2, 0, 1)                \
-  V(Float32x4GreaterThanOrEqual, Operator::kNoProperties, 2, 0, 1)         \
   V(Float32x4FromInt32x4, Operator::kNoProperties, 1, 0, 1)                \
   V(Float32x4FromUint32x4, Operator::kNoProperties, 1, 0, 1)               \
   V(Int32x4Splat, Operator::kNoProperties, 1, 0, 1)                        \
@@ -253,15 +263,11 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Int32x4NotEqual, Operator::kCommutative, 2, 0, 1)                      \
   V(Int32x4LessThan, Operator::kNoProperties, 2, 0, 1)                     \
   V(Int32x4LessThanOrEqual, Operator::kNoProperties, 2, 0, 1)              \
-  V(Int32x4GreaterThan, Operator::kNoProperties, 2, 0, 1)                  \
-  V(Int32x4GreaterThanOrEqual, Operator::kNoProperties, 2, 0, 1)           \
   V(Int32x4FromFloat32x4, Operator::kNoProperties, 1, 0, 1)                \
   V(Uint32x4Min, Operator::kCommutative, 2, 0, 1)                          \
   V(Uint32x4Max, Operator::kCommutative, 2, 0, 1)                          \
   V(Uint32x4LessThan, Operator::kNoProperties, 2, 0, 1)                    \
   V(Uint32x4LessThanOrEqual, Operator::kNoProperties, 2, 0, 1)             \
-  V(Uint32x4GreaterThan, Operator::kNoProperties, 2, 0, 1)                 \
-  V(Uint32x4GreaterThanOrEqual, Operator::kNoProperties, 2, 0, 1)          \
   V(Uint32x4FromFloat32x4, Operator::kNoProperties, 1, 0, 1)               \
   V(Int16x8Splat, Operator::kNoProperties, 1, 0, 1)                        \
   V(Int16x8Neg, Operator::kNoProperties, 1, 0, 1)                          \
@@ -276,16 +282,12 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Int16x8NotEqual, Operator::kCommutative, 2, 0, 1)                      \
   V(Int16x8LessThan, Operator::kNoProperties, 2, 0, 1)                     \
   V(Int16x8LessThanOrEqual, Operator::kNoProperties, 2, 0, 1)              \
-  V(Int16x8GreaterThan, Operator::kNoProperties, 2, 0, 1)                  \
-  V(Int16x8GreaterThanOrEqual, Operator::kNoProperties, 2, 0, 1)           \
   V(Uint16x8AddSaturate, Operator::kCommutative, 2, 0, 1)                  \
   V(Uint16x8SubSaturate, Operator::kNoProperties, 2, 0, 1)                 \
   V(Uint16x8Min, Operator::kCommutative, 2, 0, 1)                          \
   V(Uint16x8Max, Operator::kCommutative, 2, 0, 1)                          \
   V(Uint16x8LessThan, Operator::kNoProperties, 2, 0, 1)                    \
   V(Uint16x8LessThanOrEqual, Operator::kNoProperties, 2, 0, 1)             \
-  V(Uint16x8GreaterThan, Operator::kNoProperties, 2, 0, 1)                 \
-  V(Uint16x8GreaterThanOrEqual, Operator::kNoProperties, 2, 0, 1)          \
   V(Int8x16Splat, Operator::kNoProperties, 1, 0, 1)                        \
   V(Int8x16Neg, Operator::kNoProperties, 1, 0, 1)                          \
   V(Int8x16Add, Operator::kCommutative, 2, 0, 1)                           \
@@ -299,16 +301,12 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Int8x16NotEqual, Operator::kCommutative, 2, 0, 1)                      \
   V(Int8x16LessThan, Operator::kNoProperties, 2, 0, 1)                     \
   V(Int8x16LessThanOrEqual, Operator::kNoProperties, 2, 0, 1)              \
-  V(Int8x16GreaterThan, Operator::kNoProperties, 2, 0, 1)                  \
-  V(Int8x16GreaterThanOrEqual, Operator::kNoProperties, 2, 0, 1)           \
   V(Uint8x16AddSaturate, Operator::kCommutative, 2, 0, 1)                  \
   V(Uint8x16SubSaturate, Operator::kNoProperties, 2, 0, 1)                 \
   V(Uint8x16Min, Operator::kCommutative, 2, 0, 1)                          \
   V(Uint8x16Max, Operator::kCommutative, 2, 0, 1)                          \
   V(Uint8x16LessThan, Operator::kNoProperties, 2, 0, 1)                    \
   V(Uint8x16LessThanOrEqual, Operator::kNoProperties, 2, 0, 1)             \
-  V(Uint8x16GreaterThan, Operator::kNoProperties, 2, 0, 1)                 \
-  V(Uint8x16GreaterThanOrEqual, Operator::kNoProperties, 2, 0, 1)          \
   V(Simd128Load, Operator::kNoProperties, 2, 0, 1)                         \
   V(Simd128Load1, Operator::kNoProperties, 2, 0, 1)                        \
   V(Simd128Load2, Operator::kNoProperties, 2, 0, 1)                        \
@@ -602,6 +600,44 @@ struct MachineOperatorGlobalCache {
   ATOMIC_REPRESENTATION_LIST(ATOMIC_STORE)
 #undef STORE
 
+#define ATOMIC_EXCHANGE(Type)                                             \
+  struct AtomicExchange##Type##Operator : public Operator1<MachineType> { \
+    AtomicExchange##Type##Operator()                                      \
+        : Operator1<MachineType>(IrOpcode::kAtomicExchange,               \
+                                 Operator::kNoDeopt | Operator::kNoThrow, \
+                                 "AtomicExchange", 3, 1, 1, 1, 1, 0,      \
+                                 MachineType::Type()) {}                  \
+  };                                                                      \
+  AtomicExchange##Type##Operator kAtomicExchange##Type;
+  ATOMIC_TYPE_LIST(ATOMIC_EXCHANGE)
+#undef ATOMIC_EXCHANGE
+
+#define ATOMIC_COMPARE_EXCHANGE(Type)                                       \
+  struct AtomicCompareExchange##Type##Operator                              \
+      : public Operator1<MachineType> {                                     \
+    AtomicCompareExchange##Type##Operator()                                 \
+        : Operator1<MachineType>(IrOpcode::kAtomicCompareExchange,          \
+                                 Operator::kNoDeopt | Operator::kNoThrow,   \
+                                 "AtomicCompareExchange", 4, 1, 1, 1, 1, 0, \
+                                 MachineType::Type()) {}                    \
+  };                                                                        \
+  AtomicCompareExchange##Type##Operator kAtomicCompareExchange##Type;
+  ATOMIC_TYPE_LIST(ATOMIC_COMPARE_EXCHANGE)
+#undef ATOMIC_COMPARE_EXCHANGE
+
+  // The {BitcastWordToTagged} operator must not be marked as pure (especially
+  // not idempotent), because otherwise the splitting logic in the Scheduler
+  // might decide to split these operators, thus potentially creating live
+  // ranges of allocation top across calls or other things that might allocate.
+  // See https://bugs.chromium.org/p/v8/issues/detail?id=6059 for more details.
+  struct BitcastWordToTaggedOperator : public Operator {
+    BitcastWordToTaggedOperator()
+        : Operator(IrOpcode::kBitcastWordToTagged,
+                   Operator::kEliminatable | Operator::kNoWrite,
+                   "BitcastWordToTagged", 1, 0, 0, 1, 0, 0) {}
+  };
+  BitcastWordToTaggedOperator kBitcastWordToTagged;
+
   struct DebugBreakOperator : public Operator {
     DebugBreakOperator()
         : Operator(IrOpcode::kDebugBreak, Operator::kNoThrow, "DebugBreak", 0,
@@ -779,6 +815,10 @@ const Operator* MachineOperatorBuilder::UnsafePointerAdd() {
   return &cache_.kUnsafePointerAdd;
 }
 
+const Operator* MachineOperatorBuilder::BitcastWordToTagged() {
+  return &cache_.kBitcastWordToTagged;
+}
+
 const Operator* MachineOperatorBuilder::DebugBreak() {
   return &cache_.kDebugBreak;
 }
@@ -837,6 +877,28 @@ const Operator* MachineOperatorBuilder::AtomicStore(MachineRepresentation rep) {
   }
   ATOMIC_REPRESENTATION_LIST(STORE)
 #undef STORE
+  UNREACHABLE();
+  return nullptr;
+}
+
+const Operator* MachineOperatorBuilder::AtomicExchange(MachineType rep) {
+#define EXCHANGE(kRep)                    \
+  if (rep == MachineType::kRep()) {       \
+    return &cache_.kAtomicExchange##kRep; \
+  }
+  ATOMIC_TYPE_LIST(EXCHANGE)
+#undef EXCHANGE
+  UNREACHABLE();
+  return nullptr;
+}
+
+const Operator* MachineOperatorBuilder::AtomicCompareExchange(MachineType rep) {
+#define COMPARE_EXCHANGE(kRep)                   \
+  if (rep == MachineType::kRep()) {              \
+    return &cache_.kAtomicCompareExchange##kRep; \
+  }
+  ATOMIC_TYPE_LIST(COMPARE_EXCHANGE)
+#undef COMPARE_EXCHANGE
   UNREACHABLE();
   return nullptr;
 }

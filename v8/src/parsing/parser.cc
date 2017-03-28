@@ -503,11 +503,9 @@ Expression* Parser::NewV8Intrinsic(const AstRawString* name,
 Parser::Parser(ParseInfo* info)
     : ParserBase<Parser>(info->zone(), &scanner_, info->stack_limit(),
                          info->extension(), info->ast_value_factory(),
-                         info->isolate()->counters()->runtime_call_stats(),
-                         true),
+                         info->runtime_call_stats(), true),
       scanner_(info->unicode_cache()),
       reusable_preparser_(nullptr),
-      original_scope_(nullptr),
       mode_(PARSE_EAGERLY),  // Lazy mode must be set explicitly.
       target_stack_(nullptr),
       compile_options_(info->compile_options()),
@@ -543,7 +541,7 @@ Parser::Parser(ParseInfo* info)
                 info->extension() == nullptr && can_compile_lazily;
   set_allow_natives(FLAG_allow_natives_syntax || info->is_native());
   set_allow_tailcalls(FLAG_harmony_tailcalls && !info->is_native() &&
-                      info->isolate()->is_tail_call_elimination_enabled());
+                      info->is_tail_call_elimination_enabled());
   set_allow_harmony_do_expressions(FLAG_harmony_do_expressions);
   set_allow_harmony_function_sent(FLAG_harmony_function_sent);
   set_allow_harmony_restrictive_generators(FLAG_harmony_restrictive_generators);
@@ -560,7 +558,7 @@ Parser::Parser(ParseInfo* info)
   if (info->ast_value_factory() == NULL) {
     // info takes ownership of AstValueFactory.
     info->set_ast_value_factory(new AstValueFactory(
-        zone(), info->isolate()->ast_string_constants(), info->hash_seed()));
+        zone(), info->ast_string_constants(), info->hash_seed()));
     info->set_ast_value_factory_owned();
     ast_value_factory_ = info->ast_value_factory();
     ast_node_factory_.set_ast_value_factory(ast_value_factory_);
@@ -569,7 +567,6 @@ Parser::Parser(ParseInfo* info)
 
 void Parser::DeserializeScopeChain(
     ParseInfo* info, MaybeHandle<ScopeInfo> maybe_outer_scope_info) {
-  DCHECK(ThreadId::Current().Equals(info->isolate()->thread_id()));
   // TODO(wingo): Add an outer SCRIPT_SCOPE corresponding to the native
   // context, which will have the "this" binding for script scopes.
   DeclarationScope* script_scope = NewScriptScope();
@@ -577,9 +574,11 @@ void Parser::DeserializeScopeChain(
   Scope* scope = script_scope;
   Handle<ScopeInfo> outer_scope_info;
   if (maybe_outer_scope_info.ToHandle(&outer_scope_info)) {
+    DCHECK(ThreadId::Current().Equals(
+        outer_scope_info->GetIsolate()->thread_id()));
     scope = Scope::DeserializeScopeChain(
-        info->isolate(), zone(), *outer_scope_info, script_scope,
-        ast_value_factory(), Scope::DeserializationMode::kScopesOnly);
+        zone(), *outer_scope_info, script_scope, ast_value_factory(),
+        Scope::DeserializationMode::kScopesOnly);
     DCHECK(!info->is_module() || scope->is_module_scope());
   }
   original_scope_ = scope;
@@ -624,6 +623,22 @@ FunctionLiteral* Parser::ParseProgram(Isolate* isolate, ParseInfo* info) {
 
   {
     std::unique_ptr<Utf16CharacterStream> stream(ScannerStream::For(source));
+    if (FLAG_use_parse_tasks) {
+      // FIXME(wiktorg) make it useful for something
+      // TODO(wiktorg) make preparser work also with modules
+      if (!info->is_module()) {
+        scanner_.Initialize(stream.get());
+        // NOTE: Some features will be double counted - once here and one more
+        //  time while being fully parsed by a parse task.
+        PreParser::PreParseResult result =
+            reusable_preparser()->PreParseProgram(false, use_counts_);
+        if (result == PreParser::kPreParseStackOverflow) {
+          set_stack_overflow();
+          return nullptr;
+        }
+        stream->Seek(0);
+      }
+    }
     scanner_.Initialize(stream.get());
     result = DoParseProgram(info);
   }
@@ -922,6 +937,10 @@ FunctionLiteral* Parser::DoParseFunction(ParseInfo* info,
             // must produce a FunctionLiteral.
             DCHECK(expression->IsFunctionLiteral());
             result = expression->AsFunctionLiteral();
+            // Rewrite destructuring assignments in the parameters. (The ones
+            // inside the function body are rewritten by
+            // ParseArrowFunctionLiteral.)
+            RewriteDestructuringAssignments();
           } else {
             ok = false;
           }
@@ -1611,9 +1630,6 @@ Expression* Parser::RewriteReturn(Expression* return_value, int pos) {
     return_value = factory()->NewConditional(is_undefined, ThisExpression(pos),
                                              is_object_conditional, pos);
   }
-  if (is_generator()) {
-    return_value = BuildIteratorResult(return_value, true);
-  }
   return return_value;
 }
 
@@ -1665,6 +1681,10 @@ Statement* Parser::RewriteSwitchStatement(Expression* tag,
   Block* cases_block = factory()->NewBlock(NULL, 1, false, kNoSourcePosition);
   cases_block->statements()->Add(switch_statement, zone());
   cases_block->set_scope(scope);
+  DCHECK_IMPLIES(scope != nullptr,
+                 switch_statement->position() >= scope->start_position());
+  DCHECK_IMPLIES(scope != nullptr,
+                 switch_statement->position() < scope->end_position());
   switch_block->statements()->Add(cases_block, zone());
   return switch_block;
 }
@@ -1759,16 +1779,31 @@ Statement* Parser::RewriteTryStatement(Block* try_block, Block* catch_block,
 void Parser::ParseAndRewriteGeneratorFunctionBody(int pos, FunctionKind kind,
                                                   ZoneList<Statement*>* body,
                                                   bool* ok) {
-  // We produce:
+  // For ES6 Generators, we produce:
   //
   // try { InitialYield; ...body...; return {value: undefined, done: true} }
   // finally { %_GeneratorClose(generator) }
   //
+  // For ES2017 Async Generators, we produce:
+  //
+  // try {
+  //   InitialYield;
+  //   ...body...;
+  //   return undefined; // See comment below
+  // } catch (.catch) {
+  //   %AsyncGeneratorReject(generator, .catch);
+  // } finally {
+  //   %_GeneratorClose(generator);
+  // }
+  //
   // - InitialYield yields the actual generator object.
   // - Any return statement inside the body will have its argument wrapped
-  //   in a "done" iterator result object.
+  //   in an iterator result object with a "done" property set to `true`.
   // - If the generator terminates for whatever reason, we must close it.
   //   Hence the finally clause.
+  // - BytecodeGenerator performs special handling for ReturnStatements in
+  //   async generator functions, resolving the appropriate Promise with an
+  //   "done" iterator result object containing a Promise-unwrapped value.
 
   Block* try_block = factory()->NewBlock(nullptr, 3, false, kNoSourcePosition);
   Expression* initial_yield = BuildInitialYield(pos, kind);
@@ -1778,9 +1813,38 @@ void Parser::ParseAndRewriteGeneratorFunctionBody(int pos, FunctionKind kind,
   ParseStatementList(try_block->statements(), Token::RBRACE, ok);
   if (!*ok) return;
 
-  Statement* final_return = factory()->NewReturnStatement(
-      BuildIteratorResult(nullptr, true), kNoSourcePosition);
-  try_block->statements()->Add(final_return, zone());
+  if (IsAsyncGeneratorFunction(kind)) {
+    // Don't create iterator result for async generators, as the resume methods
+    // will create it.
+    Statement* final_return = BuildReturnStatement(
+        factory()->NewUndefinedLiteral(kNoSourcePosition), kNoSourcePosition);
+    try_block->statements()->Add(final_return, zone());
+
+    // For AsyncGenerators, a top-level catch block will reject the Promise.
+    Scope* catch_scope = NewHiddenCatchScopeWithParent(scope());
+
+    ZoneList<Expression*>* args = new (zone()) ZoneList<Expression*>(2, zone());
+    args->Add(factory()->NewVariableProxy(
+                  function_state_->generator_object_variable()),
+              zone());
+    args->Add(factory()->NewVariableProxy(catch_scope->catch_variable()),
+              zone());
+
+    Expression* call = factory()->NewCallRuntime(
+        Runtime::kInlineAsyncGeneratorReject, args, kNoSourcePosition);
+    Block* catch_block = IgnoreCompletion(
+        factory()->NewReturnStatement(call, kNoSourcePosition));
+
+    TryStatement* try_catch = factory()->NewTryCatchStatementForAsyncAwait(
+        try_block, catch_scope, catch_block, kNoSourcePosition);
+
+    try_block = factory()->NewBlock(nullptr, 1, false, kNoSourcePosition);
+    try_block->statements()->Add(try_catch, zone());
+  } else {
+    Statement* final_return = factory()->NewReturnStatement(
+        BuildIteratorResult(nullptr, true), kNoSourcePosition);
+    try_block->statements()->Add(final_return, zone());
+  }
 
   Block* finally_block =
       factory()->NewBlock(nullptr, 1, false, kNoSourcePosition);
@@ -2779,30 +2843,63 @@ Parser::LazyParsingResult Parser::SkipFunction(
     cached_parse_data_->Reject();
   }
 
+  if (FLAG_use_parse_tasks && !is_inner_function &&
+      reusable_preparser()->preparse_data()) {
+    // All top-level functions are already preparsed and parser tasks for eager
+    // functions are already created. Use data gathered during the preparse step
+    // to skip the function.
+    PreParseData::FunctionData data =
+        reusable_preparser()->preparse_data()->GetTopLevelFunctionData(
+            function_scope->start_position());
+    if (data.is_valid()) {
+      if (FLAG_trace_parse_tasks) {
+        PrintF("Skipping top level func @ %d : %d using preparse data\n",
+               data.start, data.end);
+      }
+      function_scope->set_end_position(data.end);
+      scanner()->SeekForward(data.end - 1);
+      Expect(Token::RBRACE, CHECK_OK_VALUE(kLazyParsingComplete));
+      *num_parameters = data.num_parameters;
+      *function_length = data.function_length;
+      *has_duplicate_parameters = data.has_duplicate_parameters;
+      *expected_property_count = data.expected_property_count;
+      SetLanguageMode(function_scope, data.language_mode);
+      if (data.uses_super_property) {
+        function_scope->RecordSuperPropertyUsage();
+      }
+      if (data.calls_eval) {
+        function_scope->RecordEvalCall();
+      }
+      SkipFunctionLiterals(data.num_inner_functions);
+      return kLazyParsingComplete;
+    }
+  }
+
+  // FIXME(marja): There are 3 ways to skip functions now. Unify them.
+  if (preparsed_scope_data_->Consuming()) {
+    DCHECK(FLAG_preparser_scope_analysis);
+    int end_pos = kNoSourcePosition;
+    if (preparsed_scope_data_->FindFunctionEnd(function_scope->start_position(),
+                                               &end_pos)) {
+      function_scope->set_end_position(end_pos);
+      function_scope->set_is_skipped_function(true);
+      function_scope->outer_scope()->SetMustUsePreParsedScopeData();
+      scanner()->SeekForward(end_pos - 1);
+      Expect(Token::RBRACE, CHECK_OK_VALUE(kLazyParsingComplete));
+      // FIXME(marja): SkipFunctionLiterals still needed.
+      return kLazyParsingComplete;
+    }
+  }
+
   // With no cached data, we partially parse the function, without building an
   // AST. This gathers the data needed to build a lazy function.
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.PreParse");
 
-  if (reusable_preparser_ == NULL) {
-    reusable_preparser_ = new PreParser(
-        zone(), &scanner_, stack_limit_, ast_value_factory(),
-        &pending_error_handler_, runtime_call_stats_, parsing_on_main_thread_);
-#define SET_ALLOW(name) reusable_preparser_->set_allow_##name(allow_##name());
-    SET_ALLOW(natives);
-    SET_ALLOW(harmony_do_expressions);
-    SET_ALLOW(harmony_function_sent);
-    SET_ALLOW(harmony_trailing_commas);
-    SET_ALLOW(harmony_class_fields);
-    SET_ALLOW(harmony_object_rest_spread);
-    SET_ALLOW(harmony_dynamic_import);
-    SET_ALLOW(harmony_async_iteration);
-#undef SET_ALLOW
-  }
   // Aborting inner function preparsing would leave scopes in an inconsistent
   // state; we don't parse inner functions in the abortable mode anyway.
   DCHECK(!is_inner_function || !may_abort);
 
-  PreParser::PreParseResult result = reusable_preparser_->PreParseFunction(
+  PreParser::PreParseResult result = reusable_preparser()->PreParseFunction(
       kind, function_scope, parsing_module_, is_inner_function, may_abort,
       use_counts_);
 
@@ -2818,7 +2915,7 @@ Parser::LazyParsingResult Parser::SkipFunction(
     *ok = false;
     return kLazyParsingComplete;
   }
-  PreParserLogger* logger = reusable_preparser_->logger();
+  PreParserLogger* logger = reusable_preparser()->logger();
   function_scope->set_end_position(logger->end());
   Expect(Token::RBRACE, CHECK_OK_VALUE(kLazyParsingComplete));
   total_preparse_skipped_ +=
@@ -3096,6 +3193,15 @@ Variable* Parser::PromiseVariable() {
   return promise;
 }
 
+Variable* Parser::AsyncGeneratorAwaitVariable() {
+  Variable* result = function_state_->scope()->async_generator_await_var();
+  if (result == nullptr) {
+    result = function_state_->scope()->DeclareAsyncGeneratorAwaitVar(
+        ast_value_factory()->empty_string());
+  }
+  return result;
+}
+
 Expression* Parser::BuildInitialYield(int pos, FunctionKind kind) {
   Assignment* assignment = BuildCreateJSGeneratorObject(pos, kind);
   VariableProxy* generator =
@@ -3103,8 +3209,8 @@ Expression* Parser::BuildInitialYield(int pos, FunctionKind kind) {
   // The position of the yield is important for reporting the exception
   // caused by calling the .throw method on a generator suspended at the
   // initial yield (i.e. right after generator instantiation).
-  return factory()->NewYield(generator, assignment, scope()->start_position(),
-                             Yield::kOnExceptionThrow);
+  return BuildSuspend(generator, assignment, scope()->start_position(),
+                      Suspend::kOnExceptionThrow, Suspend::kYield);
 }
 
 ZoneList<Statement*>* Parser::ParseFunction(
@@ -3209,8 +3315,8 @@ void Parser::DeclareClassProperty(const AstRawString* class_name,
     class_info->constructor = GetPropertyValue(property)->AsFunctionLiteral();
     DCHECK_NOT_NULL(class_info->constructor);
     class_info->constructor->set_raw_name(
-        class_name != nullptr ? class_name
-                              : ast_value_factory()->empty_string());
+        class_name != nullptr ? ast_value_factory()->NewConsString(class_name)
+                              : ast_value_factory()->empty_cons_string());
     return;
   }
 
@@ -3811,11 +3917,20 @@ void Parser::RewriteAsyncFunctionBody(ZoneList<Statement*>* body, Block* block,
 }
 
 Expression* Parser::RewriteAwaitExpression(Expression* value, int await_pos) {
-  // yield do {
-  //   tmp = <operand>;
-  //   %AsyncFunctionAwait(.generator_object, tmp, .promise);
-  //   .promise
-  // }
+  // In an Async Function:
+  //   yield do {
+  //     tmp = <operand>;
+  //     %AsyncFunctionAwait(.generator_object, tmp, .promise);
+  //     .promise
+  //   }
+  //
+  // In an Async Generator:
+  //   yield do {
+  //     tmp = <operand>;
+  //     %AsyncGeneratorAwait(.generator_object, tmp)
+  //     .await_result_var
+  //   }
+  //
   // The value of the expression is returned to the caller of the async
   // function for the first yield statement; for this, .promise is the
   // appropriate return value, being a Promise that will be fulfilled or
@@ -3830,6 +3945,10 @@ Expression* Parser::RewriteAwaitExpression(Expression* value, int await_pos) {
   // a break location, and the .promise needs to be read earlier so that it
   // doesn't insert a false location.
   // TODO(littledan): investigate why this ordering is needed in more detail.
+  //
+  // In the case of Async Generators, `.await_result_var` is not actually used
+  // for anything, but exists because of the current requirement that
+  // Do Expressions have a result variable.
   Variable* generator_object_variable =
       function_state_->generator_object_variable();
   DCHECK_NOT_NULL(generator_object_variable);
@@ -3837,8 +3956,6 @@ Expression* Parser::RewriteAwaitExpression(Expression* value, int await_pos) {
   const int nopos = kNoSourcePosition;
 
   Block* do_block = factory()->NewBlock(nullptr, 2, false, nopos);
-
-  Variable* promise = PromiseVariable();
 
   // Wrap value evaluation to provide a break location.
   Variable* temp_var = NewTemporary(ast_value_factory()->empty_string());
@@ -3848,30 +3965,50 @@ Expression* Parser::RewriteAwaitExpression(Expression* value, int await_pos) {
       factory()->NewExpressionStatement(value_assignment, value->position()),
       zone());
 
-  ZoneList<Expression*>* async_function_await_args =
-      new (zone()) ZoneList<Expression*>(3, zone());
   Expression* generator_object =
       factory()->NewVariableProxy(generator_object_variable);
-  async_function_await_args->Add(generator_object, zone());
-  async_function_await_args->Add(factory()->NewVariableProxy(temp_var), zone());
-  async_function_await_args->Add(factory()->NewVariableProxy(promise), zone());
 
-  // The parser emits calls to AsyncFunctionAwaitCaught, but the
-  // AstNumberingVisitor will rewrite this to AsyncFunctionAwaitUncaught
-  // if there is no local enclosing try/catch block.
-  Expression* async_function_await =
-      factory()->NewCallRuntime(Context::ASYNC_FUNCTION_AWAIT_CAUGHT_INDEX,
-                                async_function_await_args, nopos);
+  if (is_async_generator()) {
+    // AsyncGeneratorAwaitCaught will be rewritten to
+    // AsyncGeneratorAwaitUncaught by AstNumberingVisitor if there is no local
+    // enclosing try/catch block (not counting the one implicitly added in
+    // ParseAndRewriteGeneratorFunctionBody)
+    ZoneList<Expression*>* args = new (zone()) ZoneList<Expression*>(2, zone());
+    args->Add(generator_object, zone());
+    args->Add(factory()->NewVariableProxy(temp_var), zone());
+
+    Expression* await = factory()->NewCallRuntime(
+        Context::ASYNC_GENERATOR_AWAIT_CAUGHT, args, nopos);
+    do_block->statements()->Add(
+        factory()->NewExpressionStatement(await, await_pos), zone());
+
+    // Wrap await to provide a break location between value evaluation and
+    // yield.
+    Expression* do_expr = factory()->NewDoExpression(
+        do_block, AsyncGeneratorAwaitVariable(), nopos);
+    return BuildSuspend(generator_object, do_expr, nopos,
+                        Suspend::kOnExceptionRethrow, Suspend::kAwait);
+  }
+
+  // The parser emits calls to AsyncFunctionAwaitCaught or but the
+  // AstNumberingVisitor will rewrite this to AsyncFunctionAwaitUncaught or if
+  // there is no local enclosing try/catch block.
+  ZoneList<Expression*>* args = new (zone()) ZoneList<Expression*>(3, zone());
+  args->Add(generator_object, zone());
+  args->Add(factory()->NewVariableProxy(temp_var), zone());
+  args->Add(factory()->NewVariableProxy(PromiseVariable()), zone());
+
+  Expression* await = factory()->NewCallRuntime(
+      Context::ASYNC_FUNCTION_AWAIT_CAUGHT_INDEX, args, nopos);
   do_block->statements()->Add(
-      factory()->NewExpressionStatement(async_function_await, await_pos),
-      zone());
+      factory()->NewExpressionStatement(await, await_pos), zone());
 
   // Wrap await to provide a break location between value evaluation and yield.
-  Expression* do_expr = factory()->NewDoExpression(do_block, promise, nopos);
+  Expression* do_expr =
+      factory()->NewDoExpression(do_block, PromiseVariable(), nopos);
 
-  generator_object = factory()->NewVariableProxy(generator_object_variable);
-  return factory()->NewYield(generator_object, do_expr, nopos,
-                             Yield::kOnExceptionRethrow);
+  return BuildSuspend(generator_object, do_expr, nopos,
+                      Suspend::kOnExceptionRethrow, Suspend::kAwait);
 }
 
 class NonPatternRewriter : public AstExpressionRewriter {
@@ -4138,10 +4275,11 @@ void Parser::SetFunctionName(Expression* value, const AstRawString* name) {
   if (!value->IsAnonymousFunctionDefinition()) return;
   auto function = value->AsFunctionLiteral();
   if (function != nullptr) {
-    function->set_raw_name(name);
+    function->set_raw_name(ast_value_factory()->NewConsString(name));
   } else {
     DCHECK(value->IsDoExpression());
-    value->AsDoExpression()->represented_function()->set_raw_name(name);
+    value->AsDoExpression()->represented_function()->set_raw_name(
+        ast_value_factory()->NewConsString(name));
   }
 }
 
@@ -4228,6 +4366,8 @@ void Parser::SetFunctionName(Expression* value, const AstRawString* name) {
 Expression* Parser::RewriteYieldStar(Expression* generator,
                                      Expression* iterable, int pos) {
   const int nopos = kNoSourcePosition;
+  IteratorType type =
+      is_async_generator() ? IteratorType::kAsync : IteratorType::kNormal;
 
   // Forward definition for break/continue statements.
   WhileStatement* loop = factory()->NewWhileStatement(nullptr, nopos);
@@ -4270,8 +4410,7 @@ Expression* Parser::RewriteYieldStar(Expression* generator,
   Variable* var_iterator = NewTemporary(ast_value_factory()->empty_string());
   Statement* get_iterator;
   {
-    Expression* iterator =
-        factory()->NewGetIterator(iterable, IteratorType::kNormal, nopos);
+    Expression* iterator = factory()->NewGetIterator(iterable, type, nopos);
     Expression* iterator_proxy = factory()->NewVariableProxy(var_iterator);
     Expression* assignment = factory()->NewAssignment(
         Token::ASSIGN, iterator_proxy, iterator, nopos);
@@ -4290,6 +4429,9 @@ Expression* Parser::RewriteYieldStar(Expression* generator,
     auto args = new (zone()) ZoneList<Expression*>(1, zone());
     args->Add(input_proxy, zone());
     Expression* call = factory()->NewCall(next_property, args, nopos);
+    if (type == IteratorType::kAsync) {
+      call = RewriteAwaitExpression(call, nopos);
+    }
     Expression* output_proxy = factory()->NewVariableProxy(var_output);
     Expression* assignment =
         factory()->NewAssignment(Token::ASSIGN, output_proxy, call, nopos);
@@ -4353,8 +4495,7 @@ Expression* Parser::RewriteYieldStar(Expression* generator,
     Block* then = factory()->NewBlock(nullptr, 4 + 1, false, nopos);
     BuildIteratorCloseForCompletion(
         scope(), then->statements(), var_iterator,
-        factory()->NewSmiLiteral(Parser::kNormalCompletion, nopos),
-        IteratorType::kNormal);
+        factory()->NewSmiLiteral(Parser::kNormalCompletion, nopos), type);
     then->statements()->Add(throw_call, zone());
     check_throw = factory()->NewIfStatement(
         condition, then, factory()->NewEmptyStatement(nopos), nopos);
@@ -4369,6 +4510,9 @@ Expression* Parser::RewriteYieldStar(Expression* generator,
     args->Add(factory()->NewVariableProxy(var_input), zone());
     Expression* call =
         factory()->NewCallRuntime(Runtime::kInlineCall, args, nopos);
+    if (type == IteratorType::kAsync) {
+      call = RewriteAwaitExpression(call, nopos);
+    }
     Expression* assignment = factory()->NewAssignment(
         Token::ASSIGN, factory()->NewVariableProxy(var_output), call, nopos);
     call_throw = factory()->NewExpressionStatement(assignment, nopos);
@@ -4427,8 +4571,9 @@ Expression* Parser::RewriteYieldStar(Expression* generator,
   Statement* yield_output;
   {
     Expression* output_proxy = factory()->NewVariableProxy(var_output);
-    Yield* yield = factory()->NewYield(generator, output_proxy, nopos,
-                                       Yield::kOnExceptionThrow);
+    Suspend* yield =
+        BuildSuspend(generator, output_proxy, nopos, Suspend::kOnExceptionThrow,
+                     Suspend::kYieldStar);
     yield_output = factory()->NewExpressionStatement(yield, nopos);
   }
 
@@ -4479,8 +4624,7 @@ Expression* Parser::RewriteYieldStar(Expression* generator,
     Expression* literal =
         factory()->NewStringLiteral(ast_value_factory()->value_string(), nopos);
     Expression* property = factory()->NewProperty(output_proxy, literal, nopos);
-    Statement* return_value = factory()->NewReturnStatement(
-        BuildIteratorResult(property, true), nopos);
+    Statement* return_value = BuildReturnStatement(property, nopos);
 
     maybe_return_value = factory()->NewIfStatement(
         condition, return_value, factory()->NewEmptyStatement(nopos), nopos);
@@ -4537,7 +4681,7 @@ Expression* Parser::RewriteYieldStar(Expression* generator,
     case_next->Add(factory()->NewBreakStatement(switch_mode, nopos), zone());
 
     auto case_return = new (zone()) ZoneList<Statement*>(5, zone());
-    BuildIteratorClose(case_return, var_iterator, var_input, var_output);
+    BuildIteratorClose(case_return, var_iterator, var_input, var_output, type);
     case_return->Add(factory()->NewBreakStatement(switch_mode, nopos), zone());
 
     auto case_throw = new (zone()) ZoneList<Statement*>(5, zone());
@@ -4621,7 +4765,7 @@ Statement* Parser::CheckCallable(Variable* var, Expression* error, int pos) {
 
 void Parser::BuildIteratorClose(ZoneList<Statement*>* statements,
                                 Variable* iterator, Variable* input,
-                                Variable* var_output) {
+                                Variable* var_output, IteratorType type) {
   //
   // This function adds four statements to [statements], corresponding to the
   // following code:
@@ -4662,8 +4806,7 @@ void Parser::BuildIteratorClose(ZoneList<Statement*>* statements,
 
     Expression* value = factory()->NewVariableProxy(input);
 
-    Statement* return_input =
-        factory()->NewReturnStatement(BuildIteratorResult(value, true), nopos);
+    Statement* return_input = BuildReturnStatement(value, nopos);
 
     check_return = factory()->NewIfStatement(
         condition, return_input, factory()->NewEmptyStatement(nopos), nopos);
@@ -4679,6 +4822,9 @@ void Parser::BuildIteratorClose(ZoneList<Statement*>* statements,
 
     Expression* call =
         factory()->NewCallRuntime(Runtime::kInlineCall, args, nopos);
+    if (type == IteratorType::kAsync) {
+      call = RewriteAwaitExpression(call, nopos);
+    }
     Expression* output_proxy = factory()->NewVariableProxy(var_output);
     Expression* assignment =
         factory()->NewAssignment(Token::ASSIGN, output_proxy, call, nopos);

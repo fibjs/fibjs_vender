@@ -5,6 +5,7 @@
 #include "src/code-factory.h"
 
 #include "src/bootstrapper.h"
+#include "src/builtins/builtins-descriptors.h"
 #include "src/ic/ic.h"
 #include "src/objects-inl.h"
 
@@ -53,6 +54,12 @@ Callable CodeFactory::ApiGetter(Isolate* isolate) {
 // static
 Callable CodeFactory::LoadICInOptimizedCode(Isolate* isolate) {
   return Callable(isolate->builtins()->LoadIC(),
+                  LoadWithVectorDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::LoadICInOptimizedCode_Noninlined(Isolate* isolate) {
+  return Callable(isolate->builtins()->LoadIC_Noninlined(),
                   LoadWithVectorDescriptor(isolate));
 }
 
@@ -117,6 +124,15 @@ Callable CodeFactory::StoreICInOptimizedCode(Isolate* isolate,
                   StoreWithVectorDescriptor(isolate));
 }
 
+// static
+Callable CodeFactory::StoreIC_Uninitialized(Isolate* isolate,
+                                            LanguageMode language_mode) {
+  return Callable(language_mode == STRICT
+                      ? isolate->builtins()->StoreICStrict_Uninitialized()
+                      : isolate->builtins()->StoreIC_Uninitialized(),
+                  StoreWithVectorDescriptor(isolate));
+}
+
 Callable CodeFactory::StoreOwnIC(Isolate* isolate) {
   // TODO(ishell): Currently we use StoreOwnIC only for storing properties that
   // already exist in the boilerplate therefore we can use StoreIC.
@@ -128,6 +144,25 @@ Callable CodeFactory::StoreOwnICInOptimizedCode(Isolate* isolate) {
   // TODO(ishell): Currently we use StoreOwnIC only for storing properties that
   // already exist in the boilerplate therefore we can use StoreIC.
   return Callable(isolate->builtins()->StoreICStrict(),
+                  StoreWithVectorDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::StoreGlobalIC(Isolate* isolate,
+                                    LanguageMode language_mode) {
+  // TODO(ishell): Use StoreGlobalIC[Strict]Trampoline when it's ready.
+  return Callable(language_mode == STRICT
+                      ? isolate->builtins()->StoreICStrictTrampoline()
+                      : isolate->builtins()->StoreICTrampoline(),
+                  StoreDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::StoreGlobalICInOptimizedCode(Isolate* isolate,
+                                                   LanguageMode language_mode) {
+  // TODO(ishell): Use StoreGlobalIC[Strict] when it's ready.
+  return Callable(language_mode == STRICT ? isolate->builtins()->StoreICStrict()
+                                          : isolate->builtins()->StoreIC(),
                   StoreWithVectorDescriptor(isolate));
 }
 
@@ -208,16 +243,10 @@ Callable CodeFactory::StringFromCharCode(Isolate* isolate) {
   return Callable(code, BuiltinDescriptor(isolate));
 }
 
-#define DECLARE_TFS(Name, Kind, Extra, InterfaceDescriptor, result_size) \
-  typedef InterfaceDescriptor##Descriptor Name##Descriptor;
-BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, DECLARE_TFS,
-             IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
-#undef DECLARE_TFS
-
-#define TFS_BUILTIN(Name)                             \
-  Callable CodeFactory::Name(Isolate* isolate) {      \
-    Handle<Code> code(isolate->builtins()->Name());   \
-    return Callable(code, Name##Descriptor(isolate)); \
+#define TFS_BUILTIN(Name)                                                 \
+  Callable CodeFactory::Name(Isolate* isolate) {                          \
+    Handle<Code> code(isolate->builtins()->Name());                       \
+    return Callable(code, Builtin_##Name##_InterfaceDescriptor(isolate)); \
   }
 
 TFS_BUILTIN(ToString)
@@ -237,7 +266,6 @@ TFS_BUILTIN(LessThanOrEqual)
 TFS_BUILTIN(GreaterThan)
 TFS_BUILTIN(GreaterThanOrEqual)
 TFS_BUILTIN(Equal)
-TFS_BUILTIN(NotEqual)
 TFS_BUILTIN(StrictEqual)
 TFS_BUILTIN(CreateIterResultObject)
 TFS_BUILTIN(HasProperty)
@@ -260,6 +288,9 @@ TFS_BUILTIN(NewUnmappedArgumentsElements)
 TFS_BUILTIN(FastCloneRegExp)
 TFS_BUILTIN(FastNewClosure)
 TFS_BUILTIN(FastNewObject)
+TFS_BUILTIN(FastNewRestParameter)
+TFS_BUILTIN(FastNewSloppyArguments)
+TFS_BUILTIN(FastNewStrictArguments)
 TFS_BUILTIN(ForInFilter)
 TFS_BUILTIN(GetSuperConstructor)
 TFS_BUILTIN(LoadIC_Uninitialized)
@@ -270,7 +301,6 @@ TFS_BUILTIN(RegExpSplit)
 TFS_BUILTIN(StringCharAt)
 TFS_BUILTIN(StringCharCodeAt)
 TFS_BUILTIN(StringEqual)
-TFS_BUILTIN(StringNotEqual)
 TFS_BUILTIN(StringLessThan)
 TFS_BUILTIN(StringLessThanOrEqual)
 TFS_BUILTIN(StringGreaterThan)
@@ -291,9 +321,6 @@ Callable CodeFactory::StringCompare(Isolate* isolate, Token::Value token) {
     case Token::EQ:
     case Token::EQ_STRICT:
       return StringEqual(isolate);
-    case Token::NE:
-    case Token::NE_STRICT:
-      return StringNotEqual(isolate);
     case Token::LT:
       return StringLessThan(isolate);
     case Token::GT:
@@ -357,24 +384,6 @@ Callable CodeFactory::FastNewFunctionContext(Isolate* isolate,
                                              ScopeType scope_type) {
   return Callable(isolate->builtins()->NewFunctionContext(scope_type),
                   FastNewFunctionContextDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::FastNewRestParameter(Isolate* isolate) {
-  return Callable(isolate->builtins()->FastNewRestParameter(),
-                  FastNewRestParameterDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::FastNewSloppyArguments(Isolate* isolate) {
-  return Callable(isolate->builtins()->FastNewSloppyArguments(),
-                  FastNewRestParameterDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::FastNewStrictArguments(Isolate* isolate) {
-  return Callable(isolate->builtins()->FastNewStrictArguments(),
-                  FastNewRestParameterDescriptor(isolate));
 }
 
 // static
@@ -496,6 +505,48 @@ Callable CodeFactory::ArrayConstructor(Isolate* isolate) {
 // static
 Callable CodeFactory::ArrayPush(Isolate* isolate) {
   return Callable(isolate->builtins()->ArrayPush(), BuiltinDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArrayFilterLoopContinuation(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayFilterLoopContinuation(),
+                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArrayMapLoopContinuation(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayMapLoopContinuation(),
+                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArrayForEachLoopContinuation(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayForEachLoopContinuation(),
+                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArraySomeLoopContinuation(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArraySomeLoopContinuation(),
+                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArrayEveryLoopContinuation(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayEveryLoopContinuation(),
+                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArrayReduceLoopContinuation(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayReduceLoopContinuation(),
+                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArrayReduceRightLoopContinuation(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayReduceRightLoopContinuation(),
+                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
 }
 
 // static

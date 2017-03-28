@@ -625,13 +625,20 @@ Type* OperationTyper::NumberDivide(Type* lhs, Type* rhs) {
   }
 
   if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) return Type::NaN();
+
   // Division is tricky, so all we do is try ruling out -0 and NaN.
-  bool maybe_minuszero = !lhs->Is(cache_.kPositiveIntegerOrNaN) ||
-                         !rhs->Is(cache_.kPositiveIntegerOrNaN);
   bool maybe_nan =
       lhs->Maybe(Type::NaN()) || rhs->Maybe(cache_.kZeroish) ||
       ((lhs->Min() == -V8_INFINITY || lhs->Max() == +V8_INFINITY) &&
        (rhs->Min() == -V8_INFINITY || rhs->Max() == +V8_INFINITY));
+  lhs = Type::Intersect(lhs, Type::OrderedNumber(), zone());
+  rhs = Type::Intersect(rhs, Type::OrderedNumber(), zone());
+
+  // Try to rule out -0.
+  bool maybe_minuszero =
+      !lhs->Is(cache_.kInteger) ||
+      (lhs->Maybe(cache_.kZeroish) && rhs->Min() < 0.0) ||
+      (rhs->Min() == -V8_INFINITY || rhs->Max() == +V8_INFINITY);
 
   // Take into account the -0 and NaN information computed earlier.
   Type* type = Type::PlainNumber();
@@ -905,6 +912,9 @@ Type* OperationTyper::NumberImul(Type* lhs, Type* rhs) {
 Type* OperationTyper::NumberMax(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
   if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) {
     return Type::NaN();
   }
@@ -928,6 +938,9 @@ Type* OperationTyper::NumberMax(Type* lhs, Type* rhs) {
 Type* OperationTyper::NumberMin(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
   if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) {
     return Type::NaN();
   }

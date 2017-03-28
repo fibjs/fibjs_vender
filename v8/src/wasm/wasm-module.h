@@ -137,6 +137,14 @@ struct WasmExport {
 };
 
 enum ModuleOrigin : uint8_t { kWasmOrigin, kAsmJsOrigin };
+
+inline bool IsWasm(ModuleOrigin Origin) {
+  return Origin == ModuleOrigin::kWasmOrigin;
+}
+inline bool IsAsmJs(ModuleOrigin Origin) {
+  return Origin == ModuleOrigin::kAsmJsOrigin;
+}
+
 struct ModuleWireBytes;
 
 // Static representation of a module.
@@ -154,7 +162,6 @@ struct V8_EXPORT_PRIVATE WasmModule {
   // the fact that we index on uint32_t, so we may technically not be
   // able to represent some start_function_index -es.
   int start_function_index = -1;      // start function, if any
-  ModuleOrigin origin = kWasmOrigin;  // origin of the module
 
   std::vector<WasmGlobal> globals;             // globals in this module.
   uint32_t globals_size = 0;                   // size of globals table.
@@ -182,6 +189,15 @@ struct V8_EXPORT_PRIVATE WasmModule {
   ~WasmModule() {
     if (owned_zone) delete owned_zone;
   }
+
+  ModuleOrigin get_origin() const { return origin_; }
+  void set_origin(ModuleOrigin new_value) { origin_ = new_value; }
+  bool is_wasm() const { return wasm::IsWasm(origin_); }
+  bool is_asm_js() const { return wasm::IsAsmJs(origin_); }
+
+ private:
+  // TODO(kschimpf) - Encapsulate more fields.
+  ModuleOrigin origin_ = kWasmOrigin;  // origin of the module
 };
 
 typedef Managed<WasmModule> WasmModuleWrapper;
@@ -271,10 +287,23 @@ struct V8_EXPORT_PRIVATE ModuleWireBytes {
 // minimal information about the globals, functions, and function tables.
 struct V8_EXPORT_PRIVATE ModuleEnv {
   ModuleEnv(const WasmModule* module, WasmInstance* instance)
-      : module(module), instance(instance) {}
+      : module(module),
+        instance(instance),
+        function_tables(instance ? &instance->function_tables : nullptr),
+        signature_tables(instance ? &instance->signature_tables : nullptr) {}
+  ModuleEnv(const WasmModule* module,
+            std::vector<Handle<FixedArray>>* function_tables,
+            std::vector<Handle<FixedArray>>* signature_tables)
+      : module(module),
+        instance(nullptr),
+        function_tables(function_tables),
+        signature_tables(signature_tables) {}
 
   const WasmModule* module;
   WasmInstance* instance;
+
+  std::vector<Handle<FixedArray>>* function_tables;
+  std::vector<Handle<FixedArray>>* signature_tables;
 
   bool IsValidGlobal(uint32_t index) const {
     return module && index < module->globals.size();
@@ -305,8 +334,9 @@ struct V8_EXPORT_PRIVATE ModuleEnv {
     return &module->function_tables[index];
   }
 
-  bool asm_js() { return module->origin == kAsmJsOrigin; }
+  bool asm_js() { return module->is_asm_js(); }
 
+  // Only used for testing.
   Handle<Code> GetFunctionCode(uint32_t index) {
     DCHECK_NOT_NULL(instance);
     return instance->function_code[index];
@@ -352,9 +382,9 @@ std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name);
 Handle<WasmDebugInfo> GetDebugInfo(Handle<JSObject> wasm);
 
 // Check whether the given object represents a WebAssembly.Instance instance.
-// This checks the number and type of internal fields, so it's not 100 percent
+// This checks the number and type of embedder fields, so it's not 100 percent
 // secure. If it turns out that we need more complete checks, we could add a
-// special marker as internal field, which will definitely never occur anywhere
+// special marker as embedder field, which will definitely never occur anywhere
 // else.
 bool IsWasmInstance(Object* instance);
 
@@ -407,6 +437,9 @@ int32_t GrowWebAssemblyMemory(Isolate* isolate,
 int32_t GrowMemory(Isolate* isolate, Handle<WasmInstanceObject> instance,
                    uint32_t pages);
 
+void DetachWebAssemblyMemoryBuffer(Isolate* isolate,
+                                   Handle<JSArrayBuffer> buffer);
+
 void UpdateDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
                           int index, Handle<JSFunction> js_function);
 
@@ -442,6 +475,47 @@ V8_EXPORT_PRIVATE void AsyncInstantiate(Isolate* isolate,
 V8_EXPORT_PRIVATE void AsyncCompileAndInstantiate(
     Isolate* isolate, Handle<JSPromise> promise, const ModuleWireBytes& bytes,
     MaybeHandle<JSReceiver> imports);
+
+#if V8_TARGET_ARCH_64_BIT
+const bool kGuardRegionsSupported = true;
+#else
+const bool kGuardRegionsSupported = false;
+#endif
+
+inline bool EnableGuardRegions() {
+  return FLAG_wasm_guard_pages && kGuardRegionsSupported;
+}
+
+void UnpackAndRegisterProtectedInstructions(Isolate* isolate,
+                                            Handle<FixedArray> code_table);
+
+// Triggered by the WasmCompileLazy builtin.
+// Walks the stack (top three frames) to determine the wasm instance involved
+// and which function to compile.
+// Then triggers WasmCompiledModule::CompileLazy, taking care of correctly
+// patching the call site or indirect function tables.
+// Returns either the Code object that has been lazily compiled, or Illegal if
+// an error occured. In the latter case, a pending exception has been set, which
+// will be triggered when returning from the runtime function, i.e. the Illegal
+// builtin will never be called.
+Handle<Code> CompileLazy(Isolate* isolate);
+
+// This class orchestrates the lazy compilation of wasm functions. It is
+// triggered by the WasmCompileLazy builtin.
+// It contains the logic for compiling and specializing wasm functions, and
+// patching the calling wasm code.
+// Once we support concurrent lazy compilation, this class will contain the
+// logic to actually orchestrate parallel execution of wasm compilation jobs.
+// TODO(clemensh): Implement concurrent lazy compilation.
+class LazyCompilationOrchestrator {
+  bool CompileFunction(Isolate*, Handle<WasmInstanceObject>,
+                       int func_index) WARN_UNUSED_RESULT;
+
+ public:
+  MaybeHandle<Code> CompileLazy(Isolate*, Handle<WasmInstanceObject>,
+                                Handle<Code> caller, int call_offset,
+                                int exported_func_index, bool patch_caller);
+};
 
 namespace testing {
 void ValidateInstancesChain(Isolate* isolate,

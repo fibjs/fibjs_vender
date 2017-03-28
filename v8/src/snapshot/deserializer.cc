@@ -76,6 +76,10 @@ void Deserializer::Initialize(Isolate* isolate) {
   external_reference_table_ = ExternalReferenceTable::instance(isolate);
   CHECK_EQ(magic_number_,
            SerializedData::ComputeMagicNumber(external_reference_table_));
+  // The current isolate must have at least as many API-provided external
+  // references as the to-be-deserialized snapshot expects and refers to.
+  CHECK_LE(num_extra_references_,
+           SerializedData::GetExtraReferences(external_reference_table_));
 }
 
 void Deserializer::Deserialize(Isolate* isolate) {
@@ -109,6 +113,9 @@ void Deserializer::Deserialize(Isolate* isolate) {
         isolate_->heap()->undefined_value());
   }
 
+  // If needed, print the dissassembly of deserialized code objects.
+  PrintDisassembledCodeObjects();
+
   // Issue code events for newly deserialized code objects.
   LOG_CODE_EVENT(isolate_, LogCodeObjects());
   LOG_CODE_EVENT(isolate_, LogBytecodeHandlers());
@@ -117,7 +124,7 @@ void Deserializer::Deserialize(Isolate* isolate) {
 
 MaybeHandle<Object> Deserializer::DeserializePartial(
     Isolate* isolate, Handle<JSGlobalProxy> global_proxy,
-    v8::DeserializeInternalFieldsCallback internal_fields_deserializer) {
+    v8::DeserializeEmbedderFieldsCallback embedder_fields_deserializer) {
   Initialize(isolate);
   if (!ReserveSpace()) {
     V8::FatalProcessOutOfMemory("deserialize context");
@@ -134,7 +141,7 @@ MaybeHandle<Object> Deserializer::DeserializePartial(
   Object* root;
   VisitPointer(&root);
   DeserializeDeferredObjects();
-  DeserializeInternalFields(internal_fields_deserializer);
+  DeserializeEmbedderFields(embedder_fields_deserializer);
 
   isolate->heap()->RegisterReservationsForBlackAllocation(reservations_);
 
@@ -168,9 +175,11 @@ MaybeHandle<HeapObject> Deserializer::DeserializeObject(Isolate* isolate) {
 }
 
 Deserializer::~Deserializer() {
-  // TODO(svenpanne) Re-enable this assertion when v8 initialization is fixed.
-  // DCHECK(source_.AtEOF());
 #ifdef DEBUG
+  // Do not perform checks if we aborted deserialization.
+  if (source_.position() == 0) return;
+  // Check that we only have padding bytes remaining.
+  while (source_.HasMore()) CHECK_EQ(kNop, source_.Get());
   for (int space = 0; space < kNumberOfPreallocatedSpaces; space++) {
     int chunk_index = current_chunk_[space];
     CHECK_EQ(reservations_[space].length(), chunk_index + 1);
@@ -219,13 +228,13 @@ void Deserializer::DeserializeDeferredObjects() {
   }
 }
 
-void Deserializer::DeserializeInternalFields(
-    v8::DeserializeInternalFieldsCallback internal_fields_deserializer) {
-  if (!source_.HasMore() || source_.Get() != kInternalFieldsData) return;
+void Deserializer::DeserializeEmbedderFields(
+    v8::DeserializeEmbedderFieldsCallback embedder_fields_deserializer) {
+  if (!source_.HasMore() || source_.Get() != kEmbedderFieldsData) return;
   DisallowHeapAllocation no_gc;
   DisallowJavascriptExecution no_js(isolate_);
   DisallowCompilation no_compile(isolate_);
-  DCHECK_NOT_NULL(internal_fields_deserializer.callback);
+  DCHECK_NOT_NULL(embedder_fields_deserializer.callback);
   for (int code = source_.Get(); code != kSynchronize; code = source_.Get()) {
     HandleScope scope(isolate_);
     int space = code & kSpaceMask;
@@ -237,11 +246,31 @@ void Deserializer::DeserializeInternalFields(
     int size = source_.GetInt();
     byte* data = new byte[size];
     source_.CopyRaw(data, size);
-    internal_fields_deserializer.callback(v8::Utils::ToLocal(obj), index,
+    embedder_fields_deserializer.callback(v8::Utils::ToLocal(obj), index,
                                           {reinterpret_cast<char*>(data), size},
-                                          internal_fields_deserializer.data);
+                                          embedder_fields_deserializer.data);
     delete[] data;
   }
+}
+
+void Deserializer::PrintDisassembledCodeObjects() {
+#ifdef ENABLE_DISASSEMBLER
+  if (FLAG_print_builtin_code) {
+    Heap* heap = isolate_->heap();
+    HeapIterator iterator(heap);
+    DisallowHeapAllocation no_gc;
+
+    CodeTracer::Scope tracing_scope(isolate_->GetCodeTracer());
+    OFStream os(tracing_scope.file());
+
+    for (HeapObject* obj = iterator.next(); obj != NULL;
+         obj = iterator.next()) {
+      if (obj->IsCode()) {
+        Code::cast(obj)->Disassemble(nullptr, os);
+      }
+    }
+  }
+#endif
 }
 
 // Used to insert a deserialized internalized string into the string table.

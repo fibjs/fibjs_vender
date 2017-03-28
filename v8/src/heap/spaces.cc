@@ -417,7 +417,7 @@ bool MemoryAllocator::CanFreeMemoryChunk(MemoryChunk* chunk) {
   // Chunks in old generation are unmapped if they are empty.
   DCHECK(chunk->InNewSpace() || chunk->SweepingDone());
   return !chunk->InNewSpace() || mc == nullptr || !FLAG_concurrent_sweeping ||
-         mc->sweeper().IsSweepingCompleted(NEW_SPACE);
+         !mc->sweeper().sweeping_in_progress();
 }
 
 bool MemoryAllocator::CommitMemory(Address base, size_t size,
@@ -508,7 +508,7 @@ void Page::InitializeAsAnchor(Space* space) {
   set_owner(space);
   set_next_chunk(this);
   set_prev_chunk(this);
-  SetFlags(0, ~0);
+  SetFlags(0, static_cast<uintptr_t>(~0));
   SetFlag(ANCHOR);
 }
 
@@ -538,12 +538,12 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   chunk->mutex_ = new base::Mutex();
   chunk->available_in_free_list_ = 0;
   chunk->wasted_memory_ = 0;
-  chunk->ResetLiveBytes();
-  chunk->ClearLiveness();
   chunk->young_generation_bitmap_ = nullptr;
   chunk->set_next_chunk(nullptr);
   chunk->set_prev_chunk(nullptr);
   chunk->local_tracker_ = nullptr;
+
+  MarkingState::Internal(chunk).ClearLiveness();
 
   DCHECK(OFFSET_OF(MemoryChunk, flags_) == kFlagsOffset);
 
@@ -855,9 +855,10 @@ void Page::CreateBlackArea(Address start, Address end) {
   DCHECK_EQ(Page::FromAddress(start), this);
   DCHECK_NE(start, end);
   DCHECK_EQ(Page::FromAddress(end - 1), this);
-  markbits()->SetRange(AddressToMarkbitIndex(start),
-                       AddressToMarkbitIndex(end));
-  IncrementLiveBytes(static_cast<int>(end - start));
+  MarkingState::Internal(this).bitmap()->SetRange(AddressToMarkbitIndex(start),
+                                                  AddressToMarkbitIndex(end));
+  MarkingState::Internal(this).IncrementLiveBytes(
+      static_cast<int>(end - start));
 }
 
 void MemoryAllocator::PartialFreeMemory(MemoryChunk* chunk,
@@ -1037,7 +1038,7 @@ void MemoryAllocator::ZapBlock(Address start, size_t size) {
 void MemoryAllocator::ReportStatistics() {
   size_t size = Size();
   float pct = static_cast<float>(capacity_ - size) / capacity_;
-  PrintF("  capacity: %zu , used: %" V8PRIdPTR ", available: %%%d\n\n",
+  PrintF("  capacity: %zu , used: %" PRIuS ", available: %%%d\n\n",
          capacity_, size, static_cast<int>(pct * 100));
 }
 #endif
@@ -1120,7 +1121,7 @@ void MemoryChunk::ReleaseAllocatedMemory() {
   if (typed_old_to_new_slots_.Value() != nullptr) ReleaseTypedOldToNewSlots();
   if (typed_old_to_old_slots_ != nullptr) ReleaseTypedOldToOldSlots();
   if (local_tracker_ != nullptr) ReleaseLocalTracker();
-  if (young_generation_bitmap_ != nullptr) ReleaseExternalBitmap();
+  if (young_generation_bitmap_ != nullptr) ReleaseYoungGenerationBitmap();
 }
 
 static SlotSet* AllocateSlotSet(size_t size, Address page_start) {
@@ -1186,21 +1187,15 @@ void MemoryChunk::ReleaseLocalTracker() {
   local_tracker_ = nullptr;
 }
 
-void MemoryChunk::AllocateExternalBitmap() {
+void MemoryChunk::AllocateYoungGenerationBitmap() {
   DCHECK_NULL(young_generation_bitmap_);
   young_generation_bitmap_ = static_cast<Bitmap*>(calloc(1, Bitmap::kSize));
-  young_generation_live_byte_count_ = 0;
 }
 
-void MemoryChunk::ReleaseExternalBitmap() {
+void MemoryChunk::ReleaseYoungGenerationBitmap() {
   DCHECK_NOT_NULL(young_generation_bitmap_);
   free(young_generation_bitmap_);
   young_generation_bitmap_ = nullptr;
-}
-
-void MemoryChunk::ClearLiveness() {
-  markbits()->Clear();
-  ResetLiveBytes();
 }
 
 // -----------------------------------------------------------------------------
@@ -1418,9 +1413,11 @@ void PagedSpace::EmptyAllocationInfo() {
 
     // Clear the bits in the unused black area.
     if (current_top != current_limit) {
-      page->markbits()->ClearRange(page->AddressToMarkbitIndex(current_top),
-                                   page->AddressToMarkbitIndex(current_limit));
-      page->IncrementLiveBytes(-static_cast<int>(current_limit - current_top));
+      MarkingState::Internal(page).bitmap()->ClearRange(
+          page->AddressToMarkbitIndex(current_top),
+          page->AddressToMarkbitIndex(current_limit));
+      MarkingState::Internal(page).IncrementLiveBytes(
+          -static_cast<int>(current_limit - current_top));
     }
   }
 
@@ -1434,7 +1431,7 @@ void PagedSpace::IncreaseCapacity(size_t bytes) {
 }
 
 void PagedSpace::ReleasePage(Page* page) {
-  DCHECK_EQ(page->LiveBytes(), 0);
+  DCHECK_EQ(0, MarkingState::Internal(page).live_bytes());
   DCHECK_EQ(page->owner(), this);
 
   free_list_.EvictFreeListItems(page);
@@ -1495,14 +1492,14 @@ void PagedSpace::Verify(ObjectVisitor* visitor) {
       // All the interior pointers should be contained in the heap.
       int size = object->Size();
       object->IterateBody(map->instance_type(), size, visitor);
-      if (ObjectMarking::IsBlack(object)) {
+      if (ObjectMarking::IsBlack(object, MarkingState::Internal(object))) {
         black_size += size;
       }
 
       CHECK(object->address() + size <= top);
       end_of_previous_object = object->address() + size;
     }
-    CHECK_LE(black_size, page->LiveBytes());
+    CHECK_LE(black_size, MarkingState::Internal(page).live_bytes());
   }
   CHECK(allocation_pointer_found_in_space);
 }
@@ -1635,9 +1632,9 @@ bool SemiSpace::EnsureCurrentCapacity() {
       if (current_page == nullptr) return false;
       DCHECK_NOT_NULL(current_page);
       current_page->InsertAfter(anchor());
-      current_page->ClearLiveness();
+      MarkingState::Internal(current_page).ClearLiveness();
       current_page->SetFlags(anchor()->prev_page()->GetFlags(),
-                             Page::kCopyAllFlags);
+                             static_cast<uintptr_t>(Page::kCopyAllFlags));
       heap()->CreateFillerObjectAt(current_page->area_start(),
                                    static_cast<int>(current_page->area_size()),
                                    ClearRecordedSlots::kNo);
@@ -1646,13 +1643,17 @@ bool SemiSpace::EnsureCurrentCapacity() {
   return true;
 }
 
-void LocalAllocationBuffer::Close() {
+AllocationInfo LocalAllocationBuffer::Close() {
   if (IsValid()) {
     heap_->CreateFillerObjectAt(
         allocation_info_.top(),
         static_cast<int>(allocation_info_.limit() - allocation_info_.top()),
         ClearRecordedSlots::kNo);
+    const AllocationInfo old_info = allocation_info_;
+    allocation_info_ = AllocationInfo(nullptr, nullptr);
+    return old_info;
   }
+  return AllocationInfo(nullptr, nullptr);
 }
 
 
@@ -1703,7 +1704,7 @@ void NewSpace::ResetAllocationInfo() {
   UpdateAllocationInfo();
   // Clear all mark-bits in the to-space.
   for (Page* p : to_space_) {
-    p->ClearLiveness();
+    MarkingState::Internal(p).ClearLiveness();
   }
   InlineAllocationStep(old_top, allocation_info_.top(), nullptr, 0);
 }
@@ -2004,7 +2005,7 @@ bool SemiSpace::GrowTo(size_t new_capacity) {
       return false;
     }
     new_page->InsertAfter(last_page);
-    new_page->ClearLiveness();
+    MarkingState::Internal(new_page).ClearLiveness();
     // Duplicate the flags that was set on the old page.
     new_page->SetFlags(last_page->GetFlags(), Page::kCopyOnFlipFlagsMask);
     last_page = new_page;
@@ -2065,7 +2066,7 @@ void SemiSpace::FixPagesFlags(intptr_t flags, intptr_t mask) {
       page->ClearFlag(MemoryChunk::IN_FROM_SPACE);
       page->SetFlag(MemoryChunk::IN_TO_SPACE);
       page->ClearFlag(MemoryChunk::NEW_SPACE_BELOW_AGE_MARK);
-      page->ResetLiveBytes();
+      MarkingState::Internal(page).SetLiveBytes(0);
     } else {
       page->SetFlag(MemoryChunk::IN_FROM_SPACE);
       page->ClearFlag(MemoryChunk::IN_TO_SPACE);
@@ -2090,7 +2091,8 @@ void SemiSpace::RemovePage(Page* page) {
 }
 
 void SemiSpace::PrependPage(Page* page) {
-  page->SetFlags(current_page()->GetFlags(), Page::kCopyAllFlags);
+  page->SetFlags(current_page()->GetFlags(),
+                 static_cast<uintptr_t>(Page::kCopyAllFlags));
   page->set_owner(this);
   page->InsertAfter(anchor());
   pages_used_++;
@@ -2317,7 +2319,7 @@ void NewSpace::ReportStatistics() {
 #ifdef DEBUG
   if (FLAG_heap_stats) {
     float pct = static_cast<float>(Available()) / TotalCapacity();
-    PrintF("  capacity: %" V8PRIdPTR ", available: %" V8PRIdPTR ", %%%d\n",
+    PrintF("  capacity: %" PRIuS ", available: %" PRIuS ", %%%d\n",
            TotalCapacity(), Available(), static_cast<int>(pct * 100));
     PrintF("\n  Object Histogram:\n");
     for (int i = 0; i <= LAST_TYPE; i++) {
@@ -2862,6 +2864,11 @@ HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
   MarkCompactCollector* collector = heap()->mark_compact_collector();
   // Sweeping is still in progress.
   if (collector->sweeping_in_progress()) {
+    if (FLAG_concurrent_sweeping && !is_local() &&
+        !collector->sweeper().AreSweeperTasksRunning()) {
+      collector->EnsureSweepingCompleted();
+    }
+
     // First try to refill the free-list, concurrent sweeper threads
     // may have freed some objects in the meantime.
     RefillFreeList();
@@ -2896,8 +2903,8 @@ HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
 #ifdef DEBUG
 void PagedSpace::ReportStatistics() {
   int pct = static_cast<int>(Available() * 100 / Capacity());
-  PrintF("  capacity: %" V8PRIdPTR ", waste: %" V8PRIdPTR
-         ", available: %" V8PRIdPTR ", %%%d\n",
+  PrintF("  capacity: %" PRIuS ", waste: %" PRIuS
+         ", available: %" PRIuS ", %%%d\n",
          Capacity(), Waste(), Available(), pct);
 
   heap()->mark_compact_collector()->EnsureSweepingCompleted();
@@ -3032,7 +3039,7 @@ AllocationResult LargeObjectSpace::AllocateRaw(int object_size,
                                ClearRecordedSlots::kNo);
 
   if (heap()->incremental_marking()->black_allocation()) {
-    ObjectMarking::WhiteToBlack(object);
+    ObjectMarking::WhiteToBlack(object, MarkingState::Internal(object));
   }
   return object;
 }
@@ -3079,13 +3086,14 @@ LargePage* LargeObjectSpace::FindPage(Address a) {
 void LargeObjectSpace::ClearMarkingStateOfLiveObjects() {
   LargeObjectIterator it(this);
   for (HeapObject* obj = it.Next(); obj != NULL; obj = it.Next()) {
-    if (ObjectMarking::IsBlackOrGrey(obj)) {
-      ObjectMarking::ClearMarkBit(obj);
+    if (ObjectMarking::IsBlackOrGrey(obj, MarkingState::Internal(obj))) {
+      Marking::MarkWhite(
+          ObjectMarking::MarkBitFrom(obj, MarkingState::Internal(obj)));
       MemoryChunk* chunk = MemoryChunk::FromAddress(obj->address());
       chunk->ResetProgressBar();
-      chunk->ResetLiveBytes();
+      MarkingState::Internal(chunk).SetLiveBytes(0);
     }
-    DCHECK(ObjectMarking::IsWhite(obj));
+    DCHECK(ObjectMarking::IsWhite(obj, MarkingState::Internal(obj)));
   }
 }
 
@@ -3127,8 +3135,8 @@ void LargeObjectSpace::FreeUnmarkedObjects() {
   LargePage* current = first_page_;
   while (current != NULL) {
     HeapObject* object = current->GetObject();
-    DCHECK(!ObjectMarking::IsGrey(object));
-    if (ObjectMarking::IsBlack(object)) {
+    DCHECK(!ObjectMarking::IsGrey(object, MarkingState::Internal(object)));
+    if (ObjectMarking::IsBlack(object, MarkingState::Internal(object))) {
       Address free_start;
       if ((free_start = current->GetAddressToShrink()) != 0) {
         // TODO(hpayer): Perform partial free concurrently.
@@ -3238,7 +3246,7 @@ void LargeObjectSpace::Print() {
 
 
 void LargeObjectSpace::ReportStatistics() {
-  PrintF("  size: %" V8PRIdPTR "\n", size_);
+  PrintF("  size: %" PRIuS "\n", size_);
   int num_objects = 0;
   ClearHistograms(heap()->isolate());
   LargeObjectIterator it(this);
@@ -3249,7 +3257,7 @@ void LargeObjectSpace::ReportStatistics() {
 
   PrintF(
       "  number of objects %d, "
-      "size of objects %" V8PRIdPTR "\n",
+      "size of objects %" PRIuS "\n",
       num_objects, objects_size_);
   if (num_objects > 0) ReportHistogram(heap()->isolate(), false);
 }
@@ -3264,7 +3272,8 @@ void Page::Print() {
   unsigned mark_size = 0;
   for (HeapObject* object = objects.Next(); object != NULL;
        object = objects.Next()) {
-    bool is_marked = ObjectMarking::IsBlackOrGrey(object);
+    bool is_marked =
+        ObjectMarking::IsBlackOrGrey(object, MarkingState::Internal(object));
     PrintF(" %c ", (is_marked ? '!' : ' '));  // Indent a little.
     if (is_marked) {
       mark_size += object->Size();
@@ -3273,7 +3282,8 @@ void Page::Print() {
     PrintF("\n");
   }
   printf(" --------------------------------------\n");
-  printf(" Marked: %x, LiveCount: %x\n", mark_size, LiveBytes());
+  printf(" Marked: %x, LiveCount: %" V8PRIdPTR "\n", mark_size,
+         MarkingState::Internal(this).live_bytes());
 }
 
 #endif  // DEBUG

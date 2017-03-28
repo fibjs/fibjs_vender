@@ -378,6 +378,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* TruncateTaggedToWord32();
   const Operator* TruncateTaggedToFloat64();
   const Operator* TruncateTaggedToBit();
+  const Operator* TruncateTaggedPointerToBit();
 
   const Operator* CheckIf();
   const Operator* CheckBounds();
@@ -419,6 +420,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* ObjectIsReceiver();
   const Operator* ObjectIsSmi();
   const Operator* ObjectIsString();
+  const Operator* ObjectIsSymbol();
   const Operator* ObjectIsUndetectable();
 
   const Operator* ArgumentsFrame();

@@ -35,13 +35,13 @@ namespace wasm {
 #define TRACE(...)
 #endif
 
-#define CHECK_PROTOTYPE_OPCODE(flag)                           \
-  if (module_ != nullptr && module_->origin == kAsmJsOrigin) { \
-    error("Opcode not supported for asmjs modules");           \
-  }                                                            \
-  if (!FLAG_##flag) {                                          \
-    error("Invalid opcode (enable with --" #flag ")");         \
-    break;                                                     \
+#define CHECK_PROTOTYPE_OPCODE(flag)                   \
+  if (module_ != nullptr && module_->is_asm_js()) {    \
+    error("Opcode not supported for asmjs modules");   \
+  }                                                    \
+  if (!FLAG_##flag) {                                  \
+    error("Invalid opcode (enable with --" #flag ")"); \
+    break;                                             \
   }
 
 // An SsaEnv environment carries the current local variable renaming
@@ -177,10 +177,7 @@ class WasmDecoder : public Decoder {
     DCHECK_NOT_NULL(type_list);
     // Initialize from signature.
     if (sig != nullptr) {
-      type_list->reserve(sig->parameter_count());
-      for (size_t i = 0; i < sig->parameter_count(); ++i) {
-        type_list->push_back(sig->GetParam(i));
-      }
+      type_list->assign(sig->parameters().begin(), sig->parameters().end());
     }
     // Decode local declarations, if any.
     uint32_t entries = decoder->consume_u32v("local decls count");
@@ -1160,6 +1157,9 @@ class WasmFullDecoder : public WasmDecoder {
           case kExprF64LoadMem:
             len = DecodeLoadMem(kWasmF64, MachineType::Float64());
             break;
+          case kExprS128LoadMem:
+            len = DecodeLoadMem(kWasmS128, MachineType::Simd128());
+            break;
           case kExprI32StoreMem8:
             len = DecodeStoreMem(kWasmI32, MachineType::Int8());
             break;
@@ -1187,11 +1187,14 @@ class WasmFullDecoder : public WasmDecoder {
           case kExprF64StoreMem:
             len = DecodeStoreMem(kWasmF64, MachineType::Float64());
             break;
+          case kExprS128StoreMem:
+            len = DecodeStoreMem(kWasmS128, MachineType::Simd128());
+            break;
           case kExprGrowMemory: {
             if (!CheckHasMemory()) break;
             MemoryIndexOperand operand(this, pc_);
             DCHECK_NOT_NULL(module_);
-            if (module_->origin != kAsmJsOrigin) {
+            if (module_->is_wasm()) {
               Value val = Pop(0, kWasmI32);
               Push(kWasmI32, BUILD(GrowMemory, val.node));
             } else {
@@ -1242,7 +1245,7 @@ class WasmFullDecoder : public WasmDecoder {
             break;
           }
           case kAtomicPrefix: {
-            if (module_ == nullptr || module_->origin != kAsmJsOrigin) {
+            if (module_ == nullptr || !module_->is_asm_js()) {
               error("Atomics are allowed only in AsmJs modules");
               break;
             }
@@ -1261,7 +1264,7 @@ class WasmFullDecoder : public WasmDecoder {
           }
           default: {
             // Deal with special asmjs opcodes.
-            if (module_ != nullptr && module_->origin == kAsmJsOrigin) {
+            if (module_ != nullptr && module_->is_asm_js()) {
               sig = WasmOpcodes::AsmjsSignature(opcode);
               if (sig) {
                 BuildSimpleOperator(opcode, sig);
@@ -1859,22 +1862,20 @@ class WasmFullDecoder : public WasmDecoder {
     env->control = builder_->Loop(env->control);
     env->effect = builder_->EffectPhi(1, &env->effect, env->control);
     builder_->Terminate(env->effect, env->control);
-    if (FLAG_wasm_loop_assignment_analysis) {
-      BitVector* assigned = AnalyzeLoopAssignment(
-          this, pc, static_cast<int>(total_locals()), zone_);
-      if (failed()) return env;
-      if (assigned != nullptr) {
-        // Only introduce phis for variables assigned in this loop.
-        for (int i = EnvironmentCount() - 1; i >= 0; i--) {
-          if (!assigned->Contains(i)) continue;
-          env->locals[i] = builder_->Phi(local_type_vec_[i], 1, &env->locals[i],
-                                         env->control);
-        }
-        SsaEnv* loop_body_env = Split(env);
-        builder_->StackCheck(position(), &(loop_body_env->effect),
-                             &(loop_body_env->control));
-        return loop_body_env;
+    BitVector* assigned = AnalyzeLoopAssignment(
+        this, pc, static_cast<int>(total_locals()), zone_);
+    if (failed()) return env;
+    if (assigned != nullptr) {
+      // Only introduce phis for variables assigned in this loop.
+      for (int i = EnvironmentCount() - 1; i >= 0; i--) {
+        if (!assigned->Contains(i)) continue;
+        env->locals[i] =
+            builder_->Phi(local_type_vec_[i], 1, &env->locals[i], env->control);
       }
+      SsaEnv* loop_body_env = Split(env);
+      builder_->StackCheck(position(), &(loop_body_env->effect),
+                           &(loop_body_env->control));
+      return loop_body_env;
     }
 
     // Conservatively introduce phis for all local variables.

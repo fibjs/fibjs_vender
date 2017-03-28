@@ -224,10 +224,6 @@ class FreeListCategory {
   friend class PagedSpace;
 };
 
-// MarkingMode determines which bitmaps and counters should be used when
-// accessing marking information on MemoryChunk.
-enum class MarkingMode { FULL, YOUNG_GENERATION };
-
 // MemoryChunk represents a memory region owned by a specific space.
 // It is divided into the header and the body. Chunk start is always
 // 1MB aligned. Start of the body is aligned so it can accommodate
@@ -336,8 +332,8 @@ class MemoryChunk {
       + 2 * kPointerSize  // base::VirtualMemory reservation_
       + kPointerSize      // Address owner_
       + kPointerSize      // Heap* heap_
-      + kIntSize          // int progress_bar_
-      + kIntSize          // int live_bytes_count_
+      + kIntptrSize       // intptr_t progress_bar_
+      + kIntptrSize       // intptr_t live_byte_count_
       + kPointerSize      // SlotSet* old_to_new_slots_
       + kPointerSize      // SlotSet* old_to_old_slots_
       + kPointerSize      // TypedSlotSet* typed_old_to_new_slots_
@@ -376,9 +372,6 @@ class MemoryChunk {
   static const intptr_t kPageAlignmentMask = (1 << kPageSizeBits) - 1;
 
   static const int kAllocatableMemory = kPageSize - kObjectStartOffset;
-
-  template <MarkingMode mode = MarkingMode::FULL>
-  static inline void IncrementLiveBytes(HeapObject* object, int by);
 
   // Only works if the pointer is in the first kPageSize of the MemoryChunk.
   static MemoryChunk* FromAddress(Address a) {
@@ -427,33 +420,6 @@ class MemoryChunk {
     return concurrent_sweeping_state().Value() == kSweepingDone;
   }
 
-  // Manage live byte count, i.e., count of bytes in black objects.
-  template <MarkingMode mode = MarkingMode::FULL>
-  inline void ResetLiveBytes();
-  template <MarkingMode mode = MarkingMode::FULL>
-  inline void IncrementLiveBytes(int by);
-
-  template <MarkingMode mode = MarkingMode::FULL>
-  int LiveBytes() {
-    switch (mode) {
-      case MarkingMode::FULL:
-        DCHECK_LE(static_cast<unsigned>(live_byte_count_), size_);
-        return live_byte_count_;
-      case MarkingMode::YOUNG_GENERATION:
-        DCHECK_LE(static_cast<unsigned>(young_generation_live_byte_count_),
-                  size_);
-        return static_cast<int>(young_generation_live_byte_count_);
-    }
-    UNREACHABLE();
-    return 0;
-  }
-
-  void SetLiveBytes(int live_bytes) {
-    DCHECK_GE(live_bytes, 0);
-    DCHECK_LE(static_cast<size_t>(live_bytes), size_);
-    live_byte_count_ = live_bytes;
-  }
-
   size_t size() const { return size_; }
   void set_size(size_t size) { size_ = size; }
 
@@ -483,8 +449,8 @@ class MemoryChunk {
   void ReleaseTypedOldToOldSlots();
   void AllocateLocalTracker();
   void ReleaseLocalTracker();
-  void AllocateExternalBitmap();
-  void ReleaseExternalBitmap();
+  void AllocateYoungGenerationBitmap();
+  void ReleaseYoungGenerationBitmap();
 
   Address area_start() { return area_start_; }
   Address area_end() { return area_end_; }
@@ -499,7 +465,7 @@ class MemoryChunk {
 
   int progress_bar() {
     DCHECK(IsFlagSet(HAS_PROGRESS_BAR));
-    return progress_bar_;
+    return static_cast<int>(progress_bar_);
   }
 
   void set_progress_bar(int progress_bar) {
@@ -513,13 +479,6 @@ class MemoryChunk {
     }
   }
 
-  template <MarkingMode mode = MarkingMode::FULL>
-  inline Bitmap* markbits() const {
-    return mode == MarkingMode::FULL
-               ? Bitmap::FromAddress(address() + kHeaderSize)
-               : young_generation_bitmap_;
-  }
-
   inline uint32_t AddressToMarkbitIndex(Address addr) const {
     return static_cast<uint32_t>(addr - this->address()) >> kPointerSizeLog2;
   }
@@ -528,13 +487,9 @@ class MemoryChunk {
     return this->address() + (index << kPointerSizeLog2);
   }
 
-  void ClearLiveness();
-
-  void PrintMarkbits() { markbits()->Print(); }
-
   void SetFlag(Flag flag) { flags_ |= flag; }
   void ClearFlag(Flag flag) { flags_ &= ~Flags(flag); }
-  bool IsFlagSet(Flag flag) { return flags_ & flag; }
+  bool IsFlagSet(Flag flag) { return (flags_ & flag) != 0; }
 
   // Set or clear multiple flags at a time. The flags in the mask are set to
   // the value in "flags", the rest retain the current value in |flags_|.
@@ -615,9 +570,6 @@ class MemoryChunk {
 
   base::VirtualMemory* reserved_memory() { return &reservation_; }
 
-  template <MarkingMode mode = MarkingMode::FULL>
-  inline void TraceLiveBytes(intptr_t old_value, intptr_t new_value);
-
   size_t size_;
   Flags flags_;
 
@@ -637,10 +589,10 @@ class MemoryChunk {
 
   // Used by the incremental marker to keep track of the scanning progress in
   // large objects that have a progress bar and are scanned in increments.
-  int progress_bar_;
+  intptr_t progress_bar_;
 
   // Count of bytes marked black on page.
-  int live_byte_count_;
+  intptr_t live_byte_count_;
 
   // A single slot set for small pages (of size kPageSize) or an array of slot
   // set for large pages. In the latter case the number of entries in the array
@@ -679,6 +631,7 @@ class MemoryChunk {
  private:
   void InitializeReservedMemory() { reservation_.Reset(); }
 
+  friend class MarkingState;
   friend class MemoryAllocator;
   friend class MemoryChunkValidator;
 };
@@ -687,6 +640,50 @@ DEFINE_OPERATORS_FOR_FLAGS(MemoryChunk::Flags)
 
 static_assert(kMaxRegularHeapObjectSize <= MemoryChunk::kAllocatableMemory,
               "kMaxRegularHeapObjectSize <= MemoryChunk::kAllocatableMemory");
+
+class MarkingState {
+ public:
+  static MarkingState External(HeapObject* object) {
+    return External(MemoryChunk::FromAddress(object->address()));
+  }
+
+  static MarkingState External(MemoryChunk* chunk) {
+    return MarkingState(chunk->young_generation_bitmap_,
+                        &chunk->young_generation_live_byte_count_);
+  }
+
+  static MarkingState Internal(HeapObject* object) {
+    return Internal(MemoryChunk::FromAddress(object->address()));
+  }
+
+  static MarkingState Internal(MemoryChunk* chunk) {
+    return MarkingState(
+        Bitmap::FromAddress(chunk->address() + MemoryChunk::kHeaderSize),
+        &chunk->live_byte_count_);
+  }
+
+  MarkingState(Bitmap* bitmap, intptr_t* live_bytes)
+      : bitmap_(bitmap), live_bytes_(live_bytes) {}
+
+  void IncrementLiveBytes(intptr_t by) const {
+    *live_bytes_ += static_cast<int>(by);
+  }
+  void SetLiveBytes(intptr_t value) const {
+    *live_bytes_ = static_cast<int>(value);
+  }
+
+  void ClearLiveness() const {
+    bitmap_->Clear();
+    *live_bytes_ = 0;
+  }
+
+  Bitmap* bitmap() const { return bitmap_; }
+  intptr_t live_bytes() const { return *live_bytes_; }
+
+ private:
+  Bitmap* bitmap_;
+  intptr_t* live_bytes_;
+};
 
 // -----------------------------------------------------------------------------
 // A page is a memory chunk of a size 1MB. Large object pages may be larger.
@@ -1175,6 +1172,8 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
     void FreeQueuedChunks();
     bool WaitUntilCompleted();
     void TearDown();
+
+    bool has_delayed_chunks() { return delayed_regular_chunks_.size() > 0; }
 
    private:
     static const int kReservedQueueingSlots = 64;
@@ -1930,10 +1929,11 @@ class LocalAllocationBuffer {
   // Returns true if the merge was successful, false otherwise.
   inline bool TryMerge(LocalAllocationBuffer* other);
 
+  // Close a LAB, effectively invalidating it. Returns the unused area.
+  AllocationInfo Close();
+
  private:
   LocalAllocationBuffer(Heap* heap, AllocationInfo allocation_info);
-
-  void Close();
 
   Heap* heap_;
   AllocationInfo allocation_info_;

@@ -6,6 +6,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/assembler-inl.h"
 #include "src/compiler/instruction-selector-impl.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
@@ -1115,7 +1116,7 @@ void InstructionSelector::VisitWord32Shr(Node* node) {
   if (m.left().IsWord32And() && m.right().HasValue()) {
     uint32_t lsb = m.right().Value() & 0x1f;
     Int32BinopMatcher mleft(m.left().node());
-    if (mleft.right().HasValue()) {
+    if (mleft.right().HasValue() && mleft.right().Value() != 0) {
       // Select Ubfx for Shr(And(x, mask), imm) where the result of the mask is
       // shifted into the least-significant bits.
       uint32_t mask = (mleft.right().Value() >> lsb) << lsb;
@@ -1159,7 +1160,7 @@ void InstructionSelector::VisitWord64Shr(Node* node) {
   if (m.left().IsWord64And() && m.right().HasValue()) {
     uint32_t lsb = m.right().Value() & 0x3f;
     Int64BinopMatcher mleft(m.left().node());
-    if (mleft.right().HasValue()) {
+    if (mleft.right().HasValue() && mleft.right().Value() != 0) {
       // Select Ubfx for Shr(And(x, mask), imm) where the result of the mask is
       // shifted into the least-significant bits.
       uint64_t mask = (mleft.right().Value() >> lsb) << lsb;
@@ -1262,6 +1263,7 @@ void InstructionSelector::VisitWord64Ror(Node* node) {
   V(ChangeFloat64ToInt32, kArm64Float64ToInt32)               \
   V(TruncateFloat32ToUint32, kArm64Float32ToUint32)           \
   V(ChangeFloat64ToUint32, kArm64Float64ToUint32)             \
+  V(ChangeFloat64ToUint64, kArm64Float64ToUint64)             \
   V(TruncateFloat64ToUint32, kArm64Float64ToUint32)           \
   V(TruncateFloat64ToFloat32, kArm64Float64ToFloat32)         \
   V(TruncateFloat64ToWord32, kArchTruncateDoubleToI)          \
@@ -2703,6 +2705,81 @@ void InstructionSelector::VisitAtomicStore(Node* node) {
   inputs[input_count++] = g.UseUniqueRegister(value);
   InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
   Emit(code, 0, nullptr, input_count, inputs);
+}
+
+void InstructionSelector::VisitAtomicExchange(Node* node) {
+  Arm64OperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* value = node->InputAt(2);
+  ArchOpcode opcode = kArchNop;
+  MachineType type = AtomicExchangeRepresentationOf(node->op());
+  if (type == MachineType::Int8()) {
+    opcode = kAtomicExchangeInt8;
+  } else if (type == MachineType::Uint8()) {
+    opcode = kAtomicExchangeUint8;
+  } else if (type == MachineType::Int16()) {
+    opcode = kAtomicExchangeInt16;
+  } else if (type == MachineType::Uint16()) {
+    opcode = kAtomicExchangeUint16;
+  } else if (type == MachineType::Int32() || type == MachineType::Uint32()) {
+    opcode = kAtomicExchangeWord32;
+  } else {
+    UNREACHABLE();
+    return;
+  }
+
+  AddressingMode addressing_mode = kMode_MRR;
+  InstructionOperand inputs[3];
+  size_t input_count = 0;
+  inputs[input_count++] = g.UseUniqueRegister(base);
+  inputs[input_count++] = g.UseUniqueRegister(index);
+  inputs[input_count++] = g.UseUniqueRegister(value);
+  InstructionOperand outputs[1];
+  outputs[0] = g.UseUniqueRegister(node);
+  InstructionOperand temp[2];
+  temp[0] = g.TempRegister();
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  Emit(code, 1, outputs, input_count, inputs, 1, temp);
+}
+
+void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
+  Arm64OperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* old_value = node->InputAt(2);
+  Node* new_value = node->InputAt(3);
+  ArchOpcode opcode = kArchNop;
+  MachineType type = AtomicCompareExchangeRepresentationOf(node->op());
+  if (type == MachineType::Int8()) {
+    opcode = kAtomicCompareExchangeInt8;
+  } else if (type == MachineType::Uint8()) {
+    opcode = kAtomicCompareExchangeUint8;
+  } else if (type == MachineType::Int16()) {
+    opcode = kAtomicCompareExchangeInt16;
+  } else if (type == MachineType::Uint16()) {
+    opcode = kAtomicCompareExchangeUint16;
+  } else if (type == MachineType::Int32() || type == MachineType::Uint32()) {
+    opcode = kAtomicCompareExchangeWord32;
+  } else {
+    UNREACHABLE();
+    return;
+  }
+
+  AddressingMode addressing_mode = kMode_MRR;
+  InstructionOperand inputs[4];
+  size_t input_count = 0;
+  inputs[input_count++] = g.UseUniqueRegister(base);
+  inputs[input_count++] = g.UseUniqueRegister(index);
+  inputs[input_count++] = g.UseUniqueRegister(old_value);
+  inputs[input_count++] = g.UseUniqueRegister(new_value);
+  InstructionOperand outputs[1];
+  outputs[0] = g.UseUniqueRegister(node);
+  InstructionOperand temp[2];
+  temp[0] = g.TempRegister();
+  temp[1] = g.TempRegister();
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  Emit(code, 1, outputs, input_count, inputs, 2, temp);
 }
 
 // static

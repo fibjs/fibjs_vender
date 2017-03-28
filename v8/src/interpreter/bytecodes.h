@@ -105,6 +105,7 @@ namespace interpreter {
     OperandType::kReg, OperandType::kIdx)                                      \
   V(StaDataPropertyInLiteral, AccumulatorUse::kRead, OperandType::kReg,        \
     OperandType::kReg, OperandType::kFlag8, OperandType::kIdx)                 \
+  V(CollectTypeProfile, AccumulatorUse::kRead, OperandType::kImm)              \
                                                                                \
   /* Binary Operators */                                                       \
   V(Add, AccumulatorUse::kReadWrite, OperandType::kReg, OperandType::kIdx)     \
@@ -154,8 +155,21 @@ namespace interpreter {
   /* Call operations */                                                        \
   V(Call, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kRegList,    \
     OperandType::kRegCount, OperandType::kIdx)                                 \
+  V(Call0, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kReg,       \
+    OperandType::kIdx)                                                         \
+  V(Call1, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kReg,       \
+    OperandType::kReg, OperandType::kIdx)                                      \
+  V(Call2, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kReg,       \
+    OperandType::kReg, OperandType::kReg, OperandType::kIdx)                   \
   V(CallProperty, AccumulatorUse::kWrite, OperandType::kReg,                   \
     OperandType::kRegList, OperandType::kRegCount, OperandType::kIdx)          \
+  V(CallProperty0, AccumulatorUse::kWrite, OperandType::kReg,                  \
+    OperandType::kReg, OperandType::kIdx)                                      \
+  V(CallProperty1, AccumulatorUse::kWrite, OperandType::kReg,                  \
+    OperandType::kReg, OperandType::kReg, OperandType::kIdx)                   \
+  V(CallProperty2, AccumulatorUse::kWrite, OperandType::kReg,                  \
+    OperandType::kReg, OperandType::kReg, OperandType::kReg,                   \
+    OperandType::kIdx)                                                         \
   V(CallWithSpread, AccumulatorUse::kWrite, OperandType::kReg,                 \
     OperandType::kRegList, OperandType::kRegCount)                             \
   V(TailCall, AccumulatorUse::kWrite, OperandType::kReg,                       \
@@ -180,8 +194,6 @@ namespace interpreter {
   /* Test Operators */                                                         \
   V(TestEqual, AccumulatorUse::kReadWrite, OperandType::kReg,                  \
     OperandType::kIdx)                                                         \
-  V(TestNotEqual, AccumulatorUse::kReadWrite, OperandType::kReg,               \
-    OperandType::kIdx)                                                         \
   V(TestEqualStrict, AccumulatorUse::kReadWrite, OperandType::kReg,            \
     OperandType::kIdx)                                                         \
   V(TestLessThan, AccumulatorUse::kReadWrite, OperandType::kReg,               \
@@ -192,13 +204,13 @@ namespace interpreter {
     OperandType::kIdx)                                                         \
   V(TestGreaterThanOrEqual, AccumulatorUse::kReadWrite, OperandType::kReg,     \
     OperandType::kIdx)                                                         \
+  V(TestEqualStrictNoFeedback, AccumulatorUse::kReadWrite, OperandType::kReg)  \
   V(TestInstanceOf, AccumulatorUse::kReadWrite, OperandType::kReg)             \
   V(TestIn, AccumulatorUse::kReadWrite, OperandType::kReg)                     \
-                                                                               \
-  /* TestEqual with Null or Undefined */                                       \
   V(TestUndetectable, AccumulatorUse::kWrite, OperandType::kReg)               \
   V(TestNull, AccumulatorUse::kWrite, OperandType::kReg)                       \
   V(TestUndefined, AccumulatorUse::kWrite, OperandType::kReg)                  \
+  V(TestTypeOf, AccumulatorUse::kReadWrite, OperandType::kFlag8)               \
                                                                                \
   /* Cast operators */                                                         \
   V(ToName, AccumulatorUse::kRead, OperandType::kRegOut)                       \
@@ -407,7 +419,7 @@ enum class Bytecode : uint8_t {
 class V8_EXPORT_PRIVATE Bytecodes final {
  public:
   //  The maximum number of operands a bytecode may have.
-  static const int kMaxOperands = 4;
+  static const int kMaxOperands = 5;
 
   // Returns string representation of |bytecode|.
   static const char* ToString(Bytecode bytecode);
@@ -487,7 +499,6 @@ class V8_EXPORT_PRIVATE Bytecodes final {
       case Bytecode::kToBooleanLogicalNot:
       case Bytecode::kLogicalNot:
       case Bytecode::kTestEqual:
-      case Bytecode::kTestNotEqual:
       case Bytecode::kTestEqualStrict:
       case Bytecode::kTestLessThan:
       case Bytecode::kTestLessThanOrEqual:
@@ -495,7 +506,9 @@ class V8_EXPORT_PRIVATE Bytecodes final {
       case Bytecode::kTestGreaterThanOrEqual:
       case Bytecode::kTestInstanceOf:
       case Bytecode::kTestIn:
+      case Bytecode::kTestEqualStrictNoFeedback:
       case Bytecode::kTestUndetectable:
+      case Bytecode::kTestTypeOf:
       case Bytecode::kForInContinue:
       case Bytecode::kTestUndefined:
       case Bytecode::kTestNull:
@@ -621,6 +634,12 @@ class V8_EXPORT_PRIVATE Bytecodes final {
   // Returns true if the bytecode is a call or a constructor call.
   static constexpr bool IsCallOrConstruct(Bytecode bytecode) {
     return bytecode == Bytecode::kCall || bytecode == Bytecode::kCallProperty ||
+           bytecode == Bytecode::kCall0 ||
+           bytecode == Bytecode::kCallProperty0 ||
+           bytecode == Bytecode::kCall1 ||
+           bytecode == Bytecode::kCallProperty1 ||
+           bytecode == Bytecode::kCall2 ||
+           bytecode == Bytecode::kCallProperty2 ||
            bytecode == Bytecode::kTailCall ||
            bytecode == Bytecode::kConstruct ||
            bytecode == Bytecode::kCallWithSpread ||
@@ -771,6 +790,7 @@ class V8_EXPORT_PRIVATE Bytecodes final {
       default:
         return 0;
     }
+    UNREACHABLE();
     return 0;
   }
 

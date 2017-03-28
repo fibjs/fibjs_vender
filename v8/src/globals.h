@@ -671,13 +671,6 @@ enum InlineCacheState {
   GENERIC,
 };
 
-enum CacheHolderFlag {
-  kCacheOnPrototype,
-  kCacheOnPrototypeReceiverIsDictionary,
-  kCacheOnPrototypeReceiverIsPrimitive,
-  kCacheOnReceiver
-};
-
 enum WhereToStart { kStartAtReceiver, kStartAtPrototype };
 
 // The Store Buffer (GC).
@@ -785,6 +778,7 @@ enum CpuFeature {
   MIPSr1,
   MIPSr2,
   MIPSr6,
+  MIPS_SIMD,  // MSA instructions
   // ARM64
   ALWAYS_ALIGN_CSP,
   // PPC
@@ -1107,7 +1101,11 @@ enum FunctionKind : uint16_t {
   kClassConstructor =
       kBaseConstructor | kDerivedConstructor | kDefaultConstructor,
   kAsyncArrowFunction = kArrowFunction | kAsyncFunction,
-  kAsyncConciseMethod = kAsyncFunction | kConciseMethod
+  kAsyncConciseMethod = kAsyncFunction | kConciseMethod,
+
+  // https://tc39.github.io/proposal-async-iteration/
+  kAsyncConciseGeneratorMethod = kAsyncFunction | kConciseGeneratorMethod,
+  kAsyncGeneratorFunction = kAsyncFunction | kGeneratorFunction
 };
 
 inline bool IsValidFunctionKind(FunctionKind kind) {
@@ -1126,29 +1124,37 @@ inline bool IsValidFunctionKind(FunctionKind kind) {
          kind == FunctionKind::kDerivedConstructor ||
          kind == FunctionKind::kAsyncFunction ||
          kind == FunctionKind::kAsyncArrowFunction ||
-         kind == FunctionKind::kAsyncConciseMethod;
+         kind == FunctionKind::kAsyncConciseMethod ||
+         kind == FunctionKind::kAsyncConciseGeneratorMethod ||
+         kind == FunctionKind::kAsyncGeneratorFunction;
 }
 
 
 inline bool IsArrowFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kArrowFunction;
+  return (kind & FunctionKind::kArrowFunction) != 0;
 }
 
 
 inline bool IsGeneratorFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kGeneratorFunction;
+  return (kind & FunctionKind::kGeneratorFunction) != 0;
 }
 
 inline bool IsModule(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kModule;
+  return (kind & FunctionKind::kModule) != 0;
 }
 
 inline bool IsAsyncFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kAsyncFunction;
+  return (kind & FunctionKind::kAsyncFunction) != 0;
+}
+
+inline bool IsAsyncGeneratorFunction(FunctionKind kind) {
+  DCHECK(IsValidFunctionKind(kind));
+  const FunctionKind kMask = FunctionKind::kAsyncGeneratorFunction;
+  return (kind & kMask) == kMask;
 }
 
 inline bool IsResumableFunction(FunctionKind kind) {
@@ -1157,49 +1163,48 @@ inline bool IsResumableFunction(FunctionKind kind) {
 
 inline bool IsConciseMethod(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kConciseMethod;
+  return (kind & FunctionKind::kConciseMethod) != 0;
 }
 
 inline bool IsGetterFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kGetterFunction;
+  return (kind & FunctionKind::kGetterFunction) != 0;
 }
 
 inline bool IsSetterFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kSetterFunction;
+  return (kind & FunctionKind::kSetterFunction) != 0;
 }
 
 inline bool IsAccessorFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kAccessorFunction;
+  return (kind & FunctionKind::kAccessorFunction) != 0;
 }
 
 
 inline bool IsDefaultConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kDefaultConstructor;
+  return (kind & FunctionKind::kDefaultConstructor) != 0;
 }
 
 
 inline bool IsBaseConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kBaseConstructor;
+  return (kind & FunctionKind::kBaseConstructor) != 0;
 }
 
 inline bool IsDerivedConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kDerivedConstructor;
+  return (kind & FunctionKind::kDerivedConstructor) != 0;
 }
 
 
 inline bool IsClassConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kClassConstructor;
+  return (kind & FunctionKind::kClassConstructor) != 0;
 }
 
-
-inline bool IsConstructable(FunctionKind kind, LanguageMode mode) {
+inline bool IsConstructable(FunctionKind kind) {
   if (IsAccessorFunction(kind)) return false;
   if (IsConciseMethod(kind)) return false;
   if (IsArrowFunction(kind)) return false;
@@ -1340,6 +1345,56 @@ enum ExternalArrayType {
   kExternalFloat64Array,
   kExternalUint8ClampedArray,
 };
+
+enum class SuspendGeneratorFlags {
+  kYield = 0,
+  kYieldStar = 1,
+  kAwait = 2,
+  kSuspendTypeMask = 3,
+
+  kGenerator = 0 << 2,
+  kAsyncGenerator = 1 << 2,
+  kGeneratorTypeMask = 1 << 2,
+
+  kBitWidth = 3,
+};
+
+inline constexpr SuspendGeneratorFlags operator&(SuspendGeneratorFlags lhs,
+                                                 SuspendGeneratorFlags rhs) {
+  return static_cast<SuspendGeneratorFlags>(static_cast<uint8_t>(lhs) &
+                                            static_cast<uint8_t>(rhs));
+}
+
+inline constexpr SuspendGeneratorFlags operator|(SuspendGeneratorFlags lhs,
+                                                 SuspendGeneratorFlags rhs) {
+  return static_cast<SuspendGeneratorFlags>(static_cast<uint8_t>(lhs) |
+                                            static_cast<uint8_t>(rhs));
+}
+
+inline SuspendGeneratorFlags& operator|=(SuspendGeneratorFlags& lhs,
+                                         SuspendGeneratorFlags rhs) {
+  lhs = lhs | rhs;
+  return lhs;
+}
+
+inline SuspendGeneratorFlags operator~(SuspendGeneratorFlags lhs) {
+  return static_cast<SuspendGeneratorFlags>(~static_cast<uint8_t>(lhs));
+}
+
+inline const char* SuspendTypeFor(SuspendGeneratorFlags flags) {
+  switch (flags & SuspendGeneratorFlags::kSuspendTypeMask) {
+    case SuspendGeneratorFlags::kYield:
+      return "yield";
+    case SuspendGeneratorFlags::kYieldStar:
+      return "yield*";
+    case SuspendGeneratorFlags::kAwait:
+      return "await";
+    default:
+      break;
+  }
+  UNREACHABLE();
+  return "";
+}
 
 }  // namespace internal
 }  // namespace v8

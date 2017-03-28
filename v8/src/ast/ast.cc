@@ -164,7 +164,7 @@ void Expression::MarkTail() {
 bool DoExpression::IsAnonymousFunctionDefinition() const {
   // This is specifically to allow DoExpressions to represent ClassLiterals.
   return represented_function_ != nullptr &&
-         represented_function_->raw_name()->length() == 0;
+         represented_function_->raw_name()->IsEmpty();
 }
 
 bool Statement::IsJump() const {
@@ -250,16 +250,16 @@ static void AssignVectorSlots(Expression* expr, FeedbackVectorSpec* spec,
                               FeedbackSlot* out_slot) {
   Property* property = expr->AsProperty();
   LhsKind assign_type = Property::GetAssignType(property);
-  if ((assign_type == VARIABLE &&
-       expr->AsVariableProxy()->var()->IsUnallocated()) ||
-      assign_type == NAMED_PROPERTY || assign_type == KEYED_PROPERTY) {
-    // TODO(ishell): consider using ICSlotCache for variables here.
-    if (assign_type == KEYED_PROPERTY) {
-      *out_slot = spec->AddKeyedStoreICSlot(language_mode);
+  // TODO(ishell): consider using ICSlotCache for variables here.
+  if (assign_type == VARIABLE &&
+      expr->AsVariableProxy()->var()->IsUnallocated()) {
+    *out_slot = spec->AddStoreGlobalICSlot(language_mode);
 
-    } else {
-      *out_slot = spec->AddStoreICSlot(language_mode);
-    }
+  } else if (assign_type == NAMED_PROPERTY) {
+    *out_slot = spec->AddStoreICSlot(language_mode);
+
+  } else if (assign_type == KEYED_PROPERTY) {
+    *out_slot = spec->AddKeyedStoreICSlot(language_mode);
   }
 }
 
@@ -682,8 +682,8 @@ bool ObjectLiteral::IsFastCloningSupported() const {
   // literals don't support copy-on-write (COW) elements for now.
   // TODO(mvstanton): make object literals support COW elements.
   return fast_elements() && has_shallow_properties() &&
-         properties_count() <= ConstructorBuiltinsAssembler::
-                                   kMaximumClonedShallowObjectProperties;
+         properties_count() <=
+             ConstructorBuiltins::kMaximumClonedShallowObjectProperties;
 }
 
 ElementsKind ArrayLiteral::constant_elements_kind() const {
@@ -787,7 +787,7 @@ void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
 bool ArrayLiteral::IsFastCloningSupported() const {
   return depth() <= 1 &&
          values()->length() <=
-             ConstructorBuiltinsAssembler::kMaximumClonedShallowArrayElements;
+             ConstructorBuiltins::kMaximumClonedShallowArrayElements;
 }
 
 void ArrayLiteral::RewindSpreads() {
@@ -905,24 +905,21 @@ void CompareOperation::AssignFeedbackSlots(FeedbackVectorSpec* spec,
 }
 
 // Check for the pattern: typeof <expression> equals <string literal>.
-static bool MatchLiteralCompareTypeof(Expression* left,
-                                      Token::Value op,
-                                      Expression* right,
-                                      Expression** expr,
-                                      Handle<String>* check) {
+static bool MatchLiteralCompareTypeof(Expression* left, Token::Value op,
+                                      Expression* right, Expression** expr,
+                                      Literal** literal) {
   if (IsTypeof(left) && right->IsStringLiteral() && Token::IsEqualityOp(op)) {
     *expr = left->AsUnaryOperation()->expression();
-    *check = Handle<String>::cast(right->AsLiteral()->value());
+    *literal = right->AsLiteral();
     return true;
   }
   return false;
 }
 
-
 bool CompareOperation::IsLiteralCompareTypeof(Expression** expr,
-                                              Handle<String>* check) {
-  return MatchLiteralCompareTypeof(left_, op(), right_, expr, check) ||
-         MatchLiteralCompareTypeof(right_, op(), left_, expr, check);
+                                              Literal** literal) {
+  return MatchLiteralCompareTypeof(left_, op(), right_, expr, literal) ||
+         MatchLiteralCompareTypeof(right_, op(), left_, expr, literal);
 }
 
 

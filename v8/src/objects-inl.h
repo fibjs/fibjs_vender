@@ -40,6 +40,9 @@
 #include "src/transitions-inl.h"
 #include "src/v8memory.h"
 
+// Has to be the last include (doesn't have include guards):
+#include "src/objects/object-macros.h"
+
 namespace v8 {
 namespace internal {
 
@@ -599,16 +602,6 @@ bool Object::IsMinusZero() const {
 // ------------------------------------
 // Cast operations
 
-#define CAST_ACCESSOR(type)                       \
-  type* type::cast(Object* object) {              \
-    SLOW_DCHECK(object->Is##type());              \
-    return reinterpret_cast<type*>(object);       \
-  }                                               \
-  const type* type::cast(const Object* object) {  \
-    SLOW_DCHECK(object->Is##type());              \
-    return reinterpret_cast<const type*>(object); \
-  }
-
 CAST_ACCESSOR(AbstractCode)
 CAST_ACCESSOR(ArrayList)
 CAST_ACCESSOR(BoilerplateDescription)
@@ -631,7 +624,6 @@ CAST_ACCESSOR(FixedArrayBase)
 CAST_ACCESSOR(FixedDoubleArray)
 CAST_ACCESSOR(FixedTypedArrayBase)
 CAST_ACCESSOR(Foreign)
-CAST_ACCESSOR(FrameArray)
 CAST_ACCESSOR(GlobalDictionary)
 CAST_ACCESSOR(HandlerTable)
 CAST_ACCESSOR(HeapObject)
@@ -1941,18 +1933,14 @@ InterceptorInfo* JSObject::GetNamedInterceptor() {
 
 InterceptorInfo* Map::GetNamedInterceptor() {
   DCHECK(has_named_interceptor());
-  JSFunction* constructor = JSFunction::cast(GetConstructor());
-  DCHECK(constructor->shared()->IsApiFunction());
-  return InterceptorInfo::cast(
-      constructor->shared()->get_api_func_data()->named_property_handler());
+  FunctionTemplateInfo* info = GetFunctionTemplateInfo();
+  return InterceptorInfo::cast(info->named_property_handler());
 }
 
 InterceptorInfo* Map::GetIndexedInterceptor() {
   DCHECK(has_indexed_interceptor());
-  JSFunction* constructor = JSFunction::cast(GetConstructor());
-  DCHECK(constructor->shared()->IsApiFunction());
-  return InterceptorInfo::cast(
-      constructor->shared()->get_api_func_data()->indexed_property_handler());
+  FunctionTemplateInfo* info = GetFunctionTemplateInfo();
+  return InterceptorInfo::cast(info->indexed_property_handler());
 }
 
 double Oddball::to_number_raw() const {
@@ -2017,9 +2005,10 @@ void WeakCell::initialize(HeapObject* val) {
   // We just have to execute the generational barrier here because we never
   // mark through a weak cell and collect evacuation candidates when we process
   // all weak cells.
-  WriteBarrierMode mode = ObjectMarking::IsBlack(this)
-                              ? UPDATE_WRITE_BARRIER
-                              : UPDATE_WEAK_WRITE_BARRIER;
+  WriteBarrierMode mode =
+      ObjectMarking::IsBlack(this, MarkingState::Internal(this))
+          ? UPDATE_WRITE_BARRIER
+          : UPDATE_WEAK_WRITE_BARRIER;
   CONDITIONAL_WRITE_BARRIER(GetHeap(), this, kValueOffset, val, mode);
 }
 
@@ -2121,7 +2110,7 @@ inline bool IsSpecialReceiverInstanceType(InstanceType instance_type) {
   return instance_type <= LAST_SPECIAL_RECEIVER_TYPE;
 }
 
-int JSObject::GetInternalFieldCount(Map* map) {
+int JSObject::GetEmbedderFieldCount(Map* map) {
   int instance_size = map->instance_size();
   if (instance_size == kVariableSizeSentinel) return 0;
   InstanceType instance_type = map->instance_type();
@@ -2129,27 +2118,23 @@ int JSObject::GetInternalFieldCount(Map* map) {
          map->GetInObjectProperties();
 }
 
+int JSObject::GetEmbedderFieldCount() { return GetEmbedderFieldCount(map()); }
 
-int JSObject::GetInternalFieldCount() { return GetInternalFieldCount(map()); }
-
-
-int JSObject::GetInternalFieldOffset(int index) {
-  DCHECK(index < GetInternalFieldCount() && index >= 0);
+int JSObject::GetEmbedderFieldOffset(int index) {
+  DCHECK(index < GetEmbedderFieldCount() && index >= 0);
   return GetHeaderSize() + (kPointerSize * index);
 }
 
-
-Object* JSObject::GetInternalField(int index) {
-  DCHECK(index < GetInternalFieldCount() && index >= 0);
+Object* JSObject::GetEmbedderField(int index) {
+  DCHECK(index < GetEmbedderFieldCount() && index >= 0);
   // Internal objects do follow immediately after the header, whereas in-object
   // properties are at the end of the object. Therefore there is no need
   // to adjust the index here.
   return READ_FIELD(this, GetHeaderSize() + (kPointerSize * index));
 }
 
-
-void JSObject::SetInternalField(int index, Object* value) {
-  DCHECK(index < GetInternalFieldCount() && index >= 0);
+void JSObject::SetEmbedderField(int index, Object* value) {
+  DCHECK(index < GetEmbedderFieldCount() && index >= 0);
   // Internal objects do follow immediately after the header, whereas in-object
   // properties are at the end of the object. Therefore there is no need
   // to adjust the index here.
@@ -2158,9 +2143,8 @@ void JSObject::SetInternalField(int index, Object* value) {
   WRITE_BARRIER(GetHeap(), this, offset, value);
 }
 
-
-void JSObject::SetInternalField(int index, Smi* value) {
-  DCHECK(index < GetInternalFieldCount() && index >= 0);
+void JSObject::SetEmbedderField(int index, Smi* value) {
+  DCHECK(index < GetEmbedderFieldCount() && index >= 0);
   // Internal objects do follow immediately after the header, whereas in-object
   // properties are at the end of the object. Therefore there is no need
   // to adjust the index here.
@@ -2670,35 +2654,6 @@ Object** FixedArray::data_start() {
 
 Object** FixedArray::RawFieldOfElementAt(int index) {
   return HeapObject::RawField(this, OffsetOfElementAt(index));
-}
-
-#define DEFINE_FRAME_ARRAY_ACCESSORS(name, type)                              \
-  type* FrameArray::name(int frame_ix) const {                                \
-    Object* obj =                                                             \
-        get(kFirstIndex + frame_ix * kElementsPerFrame + k##name##Offset);    \
-    return type::cast(obj);                                                   \
-  }                                                                           \
-                                                                              \
-  void FrameArray::Set##name(int frame_ix, type* value) {                     \
-    set(kFirstIndex + frame_ix * kElementsPerFrame + k##name##Offset, value); \
-  }
-FRAME_ARRAY_FIELD_LIST(DEFINE_FRAME_ARRAY_ACCESSORS)
-#undef DEFINE_FRAME_ARRAY_ACCESSORS
-
-bool FrameArray::IsWasmFrame(int frame_ix) const {
-  const int flags = Flags(frame_ix)->value();
-  return (flags & kIsWasmFrame) != 0;
-}
-
-bool FrameArray::IsAsmJsWasmFrame(int frame_ix) const {
-  const int flags = Flags(frame_ix)->value();
-  return (flags & kIsAsmJsWasmFrame) != 0;
-}
-
-int FrameArray::FrameCount() const {
-  const int frame_count = Smi::cast(get(kFrameCountIndex))->value();
-  DCHECK_LE(0, frame_count);
-  return frame_count;
 }
 
 bool DescriptorArray::IsEmpty() {
@@ -4915,6 +4870,16 @@ inline void Code::set_is_crankshafted(bool value) {
   WRITE_UINT32_FIELD(this, kKindSpecificFlags2Offset, updated);
 }
 
+inline bool Code::has_tagged_params() {
+  int flags = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
+  return HasTaggedStackField::decode(flags);
+}
+
+inline void Code::set_has_tagged_params(bool value) {
+  int previous = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
+  int updated = HasTaggedStackField::update(previous, value);
+  WRITE_UINT32_FIELD(this, kKindSpecificFlags2Offset, updated);
+}
 
 inline bool Code::is_turbofanned() {
   return IsTurbofannedField::decode(
@@ -5181,18 +5146,15 @@ Address Code::constant_pool() {
   return constant_pool;
 }
 
-Code::Flags Code::ComputeFlags(Kind kind, ExtraICState extra_ic_state,
-                               CacheHolderFlag holder) {
+Code::Flags Code::ComputeFlags(Kind kind, ExtraICState extra_ic_state) {
   // Compute the bit mask.
-  unsigned int bits = KindField::encode(kind) |
-                      ExtraICStateField::encode(extra_ic_state) |
-                      CacheHolderField::encode(holder);
+  unsigned int bits =
+      KindField::encode(kind) | ExtraICStateField::encode(extra_ic_state);
   return static_cast<Flags>(bits);
 }
 
-Code::Flags Code::ComputeHandlerFlags(Kind handler_kind,
-                                      CacheHolderFlag holder) {
-  return ComputeFlags(Code::HANDLER, handler_kind, holder);
+Code::Flags Code::ComputeHandlerFlags(Kind handler_kind) {
+  return ComputeFlags(Code::HANDLER, handler_kind);
 }
 
 
@@ -5203,16 +5165,6 @@ Code::Kind Code::ExtractKindFromFlags(Flags flags) {
 
 ExtraICState Code::ExtractExtraICStateFromFlags(Flags flags) {
   return ExtraICStateField::decode(flags);
-}
-
-
-CacheHolderFlag Code::ExtractCacheHolderFromFlags(Flags flags) {
-  return CacheHolderField::decode(flags);
-}
-
-Code::Flags Code::RemoveHolderFromFlags(Flags flags) {
-  int bits = flags & ~CacheHolderField::kMask;
-  return static_cast<Flags>(bits);
 }
 
 
@@ -5486,7 +5438,6 @@ ACCESSORS(Map, weak_cell_cache, Object, kWeakCellCacheOffset)
 ACCESSORS(Map, constructor_or_backpointer, Object,
           kConstructorOrBackPointerOffset)
 
-
 Object* Map::GetConstructor() const {
   Object* maybe_constructor = constructor_or_backpointer();
   // Follow any back pointers.
@@ -5497,6 +5448,15 @@ Object* Map::GetConstructor() const {
   return maybe_constructor;
 }
 
+FunctionTemplateInfo* Map::GetFunctionTemplateInfo() const {
+  Object* constructor = GetConstructor();
+  if (constructor->IsJSFunction()) {
+    DCHECK(JSFunction::cast(constructor)->shared()->IsApiFunction());
+    return JSFunction::cast(constructor)->shared()->get_api_func_data();
+  }
+  DCHECK(constructor->IsFunctionTemplateInfo());
+  return FunctionTemplateInfo::cast(constructor);
+}
 
 void Map::SetConstructor(Object* constructor, WriteBarrierMode mode) {
   // Never overwrite a back pointer with a constructor.
@@ -5667,7 +5627,6 @@ BOOL_ACCESSORS(InterceptorInfo, flags, non_masking, kNonMasking)
 
 ACCESSORS(CallHandlerInfo, callback, Object, kCallbackOffset)
 ACCESSORS(CallHandlerInfo, data, Object, kDataOffset)
-ACCESSORS(CallHandlerInfo, fast_handler, Object, kFastHandlerOffset)
 
 ACCESSORS(TemplateInfo, tag, Object, kTagOffset)
 ACCESSORS(TemplateInfo, serial_number, Object, kSerialNumberOffset)
@@ -5704,15 +5663,15 @@ SMI_ACCESSORS(FunctionTemplateInfo, flag, kFlagOffset)
 ACCESSORS(ObjectTemplateInfo, constructor, Object, kConstructorOffset)
 ACCESSORS(ObjectTemplateInfo, data, Object, kDataOffset)
 
-int ObjectTemplateInfo::internal_field_count() const {
+int ObjectTemplateInfo::embedder_field_count() const {
   Object* value = data();
   DCHECK(value->IsSmi());
-  return InternalFieldCount::decode(Smi::cast(value)->value());
+  return EmbedderFieldCount::decode(Smi::cast(value)->value());
 }
 
-void ObjectTemplateInfo::set_internal_field_count(int count) {
+void ObjectTemplateInfo::set_embedder_field_count(int count) {
   return set_data(Smi::FromInt(
-      InternalFieldCount::update(Smi::cast(data())->value(), count)));
+      EmbedderFieldCount::update(Smi::cast(data())->value(), count)));
 }
 
 bool ObjectTemplateInfo::immutable_proto() const {
@@ -5767,6 +5726,8 @@ ACCESSORS(Script, source_url, Object, kSourceUrlOffset)
 ACCESSORS(Script, source_mapping_url, Object, kSourceMappingUrlOffset)
 ACCESSORS_CHECKED(Script, wasm_compiled_module, Object, kEvalFromSharedOffset,
                   this->type() == TYPE_WASM)
+ACCESSORS(Script, preparsed_scope_data, FixedTypedArrayBase,
+          kPreParsedScopeDataOffset)
 
 Script::CompilationType Script::compilation_type() {
   return BooleanBit::get(flags(), kCompilationTypeBit) ?
@@ -5967,6 +5928,8 @@ BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_declaration,
                kIsDeclaration)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, marked_for_tier_up,
                kMarkedForTierUp)
+BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints,
+               has_concurrent_optimization_job, kHasConcurrentOptimizationJob)
 
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, needs_home_object,
                kNeedsHomeObject)
@@ -6027,6 +5990,8 @@ BOOL_ACCESSORS(SharedFunctionInfo, debugger_hints, debug_is_blackboxed,
                kDebugIsBlackboxed)
 BOOL_ACCESSORS(SharedFunctionInfo, debugger_hints, computed_debug_is_blackboxed,
                kComputedDebugIsBlackboxed)
+BOOL_ACCESSORS(SharedFunctionInfo, debugger_hints, has_reported_binary_coverage,
+               kHasReportedBinaryCoverage)
 
 bool Script::HasValidSource() {
   Object* src = this->source();
@@ -6121,7 +6086,6 @@ bool SharedFunctionInfo::is_compiled() const {
   Builtins* builtins = GetIsolate()->builtins();
   DCHECK(code() != builtins->builtin(Builtins::kCompileOptimizedConcurrent));
   DCHECK(code() != builtins->builtin(Builtins::kCompileOptimized));
-  DCHECK(code() != builtins->builtin(Builtins::kCompileBaseline));
   return code() != builtins->builtin(Builtins::kCompileLazy);
 }
 
@@ -6328,7 +6292,7 @@ bool SharedFunctionInfo::IsUserJavaScript() {
   Object* script_obj = script();
   if (script_obj->IsUndefined(GetIsolate())) return false;
   Script* script = Script::cast(script_obj);
-  return static_cast<Script::Type>(script->type()) == Script::TYPE_NORMAL;
+  return script->IsUserJavaScript();
 }
 
 bool SharedFunctionInfo::IsSubjectToDebugging() {
@@ -6350,11 +6314,6 @@ bool JSFunction::IsOptimized() {
 
 bool JSFunction::IsInterpreted() {
   return code()->is_interpreter_trampoline_builtin();
-}
-
-bool JSFunction::IsMarkedForBaseline() {
-  return code() ==
-         GetIsolate()->builtins()->builtin(Builtins::kCompileBaseline);
 }
 
 bool JSFunction::IsMarkedForOptimization() {
@@ -6530,6 +6489,7 @@ Object* JSFunction::prototype() {
     Object* prototype = map()->GetConstructor();
     // The map must have a prototype in that field, not a back pointer.
     DCHECK(!prototype->IsMap());
+    DCHECK(!prototype->IsFunctionTemplateInfo());
     return prototype;
   }
   return instance_prototype();
@@ -6539,7 +6499,6 @@ Object* JSFunction::prototype() {
 bool JSFunction::is_compiled() {
   Builtins* builtins = GetIsolate()->builtins();
   return code() != builtins->builtin(Builtins::kCompileLazy) &&
-         code() != builtins->builtin(Builtins::kCompileBaseline) &&
          code() != builtins->builtin(Builtins::kCompileOptimized) &&
          code() != builtins->builtin(Builtins::kCompileOptimizedConcurrent);
 }
@@ -6652,6 +6611,7 @@ CODE_ACCESSORS(relocation_info, ByteArray, kRelocationInfoOffset)
 CODE_ACCESSORS(handler_table, FixedArray, kHandlerTableOffset)
 CODE_ACCESSORS(deoptimization_data, FixedArray, kDeoptimizationDataOffset)
 CODE_ACCESSORS(source_position_table, ByteArray, kSourcePositionTableOffset)
+CODE_ACCESSORS(trap_handler_index, Smi, kTrapHandlerIndex)
 CODE_ACCESSORS(raw_type_feedback_info, Object, kTypeFeedbackInfoOffset)
 CODE_ACCESSORS(next_code_link, Object, kNextCodeLinkOffset)
 #undef CODE_ACCESSORS
@@ -6994,6 +6954,13 @@ String* JSRegExp::Pattern() {
   return pattern;
 }
 
+Object* JSRegExp::CaptureNameMap() {
+  DCHECK(this->data()->IsFixedArray());
+  DCHECK_EQ(TypeTag(), IRREGEXP);
+  Object* value = DataAt(kIrregexpCaptureNameMapIndex);
+  DCHECK_NE(value, Smi::FromInt(JSRegExp::kUninitializedValue));
+  return value;
+}
 
 Object* JSRegExp::DataAt(int index) {
   DCHECK(TypeTag() != NOT_COMPILED);
@@ -7570,9 +7537,9 @@ bool JSGlobalProxy::IsDetachedFrom(JSGlobalObject* global) const {
   return iter.GetCurrent() != global;
 }
 
-inline int JSGlobalProxy::SizeWithInternalFields(int internal_field_count) {
-  DCHECK_GE(internal_field_count, 0);
-  return kSize + internal_field_count * kPointerSize;
+inline int JSGlobalProxy::SizeWithEmbedderFields(int embedder_field_count) {
+  DCHECK_GE(embedder_field_count, 0);
+  return kSize + embedder_field_count * kPointerSize;
 }
 
 Smi* JSReceiver::GetOrCreateIdentityHash(Isolate* isolate,
@@ -8275,5 +8242,7 @@ SMI_ACCESSORS(JSStringIterator, index, kNextIndexOffset)
 
 }  // namespace internal
 }  // namespace v8
+
+#include "src/objects/object-macros-undef.h"
 
 #endif  // V8_OBJECTS_INL_H_

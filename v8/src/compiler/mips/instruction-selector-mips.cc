@@ -502,7 +502,7 @@ void InstructionSelector::VisitWord32Shr(Node* node) {
   if (m.left().IsWord32And() && m.right().HasValue()) {
     uint32_t lsb = m.right().Value() & 0x1f;
     Int32BinopMatcher mleft(m.left().node());
-    if (mleft.right().HasValue()) {
+    if (mleft.right().HasValue() && mleft.right().Value() != 0) {
       // Select Ext for Shr(And(x, mask), imm) where the result of the mask is
       // shifted into the least-significant bits.
       uint32_t mask = (mleft.right().Value() >> lsb) << lsb;
@@ -1887,6 +1887,12 @@ void InstructionSelector::VisitAtomicStore(Node* node) {
     Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
          addr_reg, g.TempImmediate(0), g.UseRegisterOrImmediateZero(value));
   }
+}
+
+void InstructionSelector::VisitAtomicExchange(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
+  UNIMPLEMENTED();
 }
 
 // static

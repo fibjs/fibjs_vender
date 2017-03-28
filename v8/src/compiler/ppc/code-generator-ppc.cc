@@ -1982,6 +1982,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kAtomicStoreWord32:
       ASSEMBLE_ATOMIC_STORE_INTEGER(stw, stwx);
       break;
+    case kAtomicExchangeInt8:
+    case kAtomicExchangeUint8:
+    case kAtomicExchangeInt16:
+    case kAtomicExchangeUint16:
+    case kAtomicExchangeWord32:
+    case kAtomicCompareExchangeInt8:
+    case kAtomicCompareExchangeUint8:
+    case kAtomicCompareExchangeInt16:
+    case kAtomicCompareExchangeUint16:
+    case kAtomicCompareExchangeWord32:
+      UNREACHABLE();
+      break;
     default:
       UNREACHABLE();
       break;
@@ -2198,7 +2210,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
   // actual final call site and just bl'ing to it here, similar to what we do
   // in the lithium backend.
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
-  __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  if (isolate()->NeedsSourcePositionsForProfiling()) {
+    __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  }
   __ Call(deopt_entry, RelocInfo::RUNTIME_ENTRY);
   return kSuccess;
 }
@@ -2341,6 +2355,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   __ Ret();
 }
 
+void CodeGenerator::FinishCode() {}
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {

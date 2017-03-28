@@ -24,14 +24,15 @@
 namespace v8 {
 namespace internal {
 
-MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size,
+MacroAssembler::MacroAssembler(Isolate* isolate, void* buffer, int size,
                                CodeObjectRequired create_code_object)
-    : Assembler(arg_isolate, buffer, size),
+    : Assembler(isolate, buffer, size),
       generating_stub_(false),
-      has_frame_(false) {
+      has_frame_(false),
+      isolate_(isolate) {
   if (create_code_object == CodeObjectRequired::kYes) {
     code_object_ =
-        Handle<Object>::New(isolate()->heap()->undefined_value(), isolate());
+        Handle<Object>::New(isolate_->heap()->undefined_value(), isolate_);
   }
 }
 
@@ -640,12 +641,12 @@ void MacroAssembler::CanonicalizeNaN(const DoubleRegister dst,
   sdbr(dst, kDoubleRegZero);
 }
 
-void MacroAssembler::ConvertIntToDouble(Register src, DoubleRegister dst) {
+void MacroAssembler::ConvertIntToDouble(DoubleRegister dst, Register src) {
   cdfbr(dst, src);
 }
 
-void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
-                                                DoubleRegister dst) {
+void MacroAssembler::ConvertUnsignedIntToDouble(DoubleRegister dst,
+                                                Register src) {
   if (CpuFeatures::IsSupported(FLOATING_POINT_EXT)) {
     cdlfbr(Condition(5), Condition(0), dst, src);
   } else {
@@ -656,43 +657,37 @@ void MacroAssembler::ConvertUnsignedIntToDouble(Register src,
   }
 }
 
-void MacroAssembler::ConvertIntToFloat(Register src, DoubleRegister dst) {
+void MacroAssembler::ConvertIntToFloat(DoubleRegister dst, Register src) {
   cefbr(Condition(4), dst, src);
 }
 
-void MacroAssembler::ConvertUnsignedIntToFloat(Register src,
-                                               DoubleRegister dst) {
+void MacroAssembler::ConvertUnsignedIntToFloat(DoubleRegister dst,
+                                               Register src) {
   celfbr(Condition(4), Condition(0), dst, src);
 }
 
-#if V8_TARGET_ARCH_S390X
-void MacroAssembler::ConvertInt64ToDouble(Register src,
-                                          DoubleRegister double_dst) {
+void MacroAssembler::ConvertInt64ToFloat(DoubleRegister double_dst,
+                                         Register src) {
+  cegbr(double_dst, src);
+}
+
+void MacroAssembler::ConvertInt64ToDouble(DoubleRegister double_dst,
+                                          Register src) {
   cdgbr(double_dst, src);
 }
 
-void MacroAssembler::ConvertUnsignedInt64ToFloat(Register src,
-                                                 DoubleRegister double_dst) {
+void MacroAssembler::ConvertUnsignedInt64ToFloat(DoubleRegister double_dst,
+                                                 Register src) {
   celgbr(Condition(0), Condition(0), double_dst, src);
 }
 
-void MacroAssembler::ConvertUnsignedInt64ToDouble(Register src,
-                                                  DoubleRegister double_dst) {
+void MacroAssembler::ConvertUnsignedInt64ToDouble(DoubleRegister double_dst,
+                                                  Register src) {
   cdlgbr(Condition(0), Condition(0), double_dst, src);
 }
 
-void MacroAssembler::ConvertInt64ToFloat(Register src,
-                                         DoubleRegister double_dst) {
-  cegbr(double_dst, src);
-}
-#endif
-
-void MacroAssembler::ConvertFloat32ToInt64(const DoubleRegister double_input,
-#if !V8_TARGET_ARCH_S390X
-                                           const Register dst_hi,
-#endif
-                                           const Register dst,
-                                           const DoubleRegister double_dst,
+void MacroAssembler::ConvertFloat32ToInt64(const Register dst,
+                                           const DoubleRegister double_input,
                                            FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
@@ -713,18 +708,10 @@ void MacroAssembler::ConvertFloat32ToInt64(const DoubleRegister double_input,
       break;
   }
   cgebr(m, dst, double_input);
-  ldgr(double_dst, dst);
-#if !V8_TARGET_ARCH_S390X
-  srlg(dst_hi, dst, Operand(32));
-#endif
 }
 
-void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
-#if !V8_TARGET_ARCH_S390X
-                                          const Register dst_hi,
-#endif
-                                          const Register dst,
-                                          const DoubleRegister double_dst,
+void MacroAssembler::ConvertDoubleToInt64(const Register dst,
+                                          const DoubleRegister double_input,
                                           FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
@@ -745,15 +732,34 @@ void MacroAssembler::ConvertDoubleToInt64(const DoubleRegister double_input,
       break;
   }
   cgdbr(m, dst, double_input);
-  ldgr(double_dst, dst);
-#if !V8_TARGET_ARCH_S390X
-  srlg(dst_hi, dst, Operand(32));
-#endif
 }
 
-void MacroAssembler::ConvertFloat32ToInt32(const DoubleRegister double_input,
-                                           const Register dst,
-                                           const DoubleRegister double_dst,
+void MacroAssembler::ConvertDoubleToInt32(const Register dst,
+                                          const DoubleRegister double_input,
+                                          FPRoundingMode rounding_mode) {
+  Condition m = Condition(0);
+  switch (rounding_mode) {
+    case kRoundToZero:
+      m = Condition(5);
+      break;
+    case kRoundToNearest:
+      m = Condition(4);
+      break;
+    case kRoundToPlusInf:
+      m = Condition(6);
+      break;
+    case kRoundToMinusInf:
+      m = Condition(7);
+      break;
+    default:
+      UNIMPLEMENTED();
+      break;
+  }
+  cfdbr(m, dst, double_input);
+}
+
+void MacroAssembler::ConvertFloat32ToInt32(const Register result,
+                                           const DoubleRegister double_input,
                                            FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
@@ -773,17 +779,12 @@ void MacroAssembler::ConvertFloat32ToInt32(const DoubleRegister double_input,
       UNIMPLEMENTED();
       break;
   }
-  cfebr(m, dst, double_input);
-  Label done;
-  b(Condition(0xe), &done, Label::kNear);  // special case
-  LoadImmP(dst, Operand::Zero());
-  bind(&done);
-  ldgr(double_dst, dst);
+  cfebr(m, result, double_input);
 }
 
 void MacroAssembler::ConvertFloat32ToUnsignedInt32(
-    const DoubleRegister double_input, const Register dst,
-    const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
+    const Register result, const DoubleRegister double_input,
+    FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
     case kRoundToZero:
@@ -802,18 +803,12 @@ void MacroAssembler::ConvertFloat32ToUnsignedInt32(
       UNIMPLEMENTED();
       break;
   }
-  clfebr(m, Condition(0), dst, double_input);
-  Label done;
-  b(Condition(0xe), &done, Label::kNear);  // special case
-  LoadImmP(dst, Operand::Zero());
-  bind(&done);
-  ldgr(double_dst, dst);
+  clfebr(m, Condition(0), result, double_input);
 }
 
-#if V8_TARGET_ARCH_S390X
 void MacroAssembler::ConvertFloat32ToUnsignedInt64(
-    const DoubleRegister double_input, const Register dst,
-    const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
+    const Register result, const DoubleRegister double_input,
+    FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
     case kRoundToZero:
@@ -832,13 +827,12 @@ void MacroAssembler::ConvertFloat32ToUnsignedInt64(
       UNIMPLEMENTED();
       break;
   }
-  clgebr(m, Condition(0), dst, double_input);
-  ldgr(double_dst, dst);
+  clgebr(m, Condition(0), result, double_input);
 }
 
 void MacroAssembler::ConvertDoubleToUnsignedInt64(
-    const DoubleRegister double_input, const Register dst,
-    const DoubleRegister double_dst, FPRoundingMode rounding_mode) {
+    const Register dst, const DoubleRegister double_input,
+    FPRoundingMode rounding_mode) {
   Condition m = Condition(0);
   switch (rounding_mode) {
     case kRoundToZero:
@@ -858,10 +852,31 @@ void MacroAssembler::ConvertDoubleToUnsignedInt64(
       break;
   }
   clgdbr(m, Condition(0), dst, double_input);
-  ldgr(double_dst, dst);
 }
 
-#endif
+void MacroAssembler::ConvertDoubleToUnsignedInt32(
+    const Register dst, const DoubleRegister double_input,
+    FPRoundingMode rounding_mode) {
+  Condition m = Condition(0);
+  switch (rounding_mode) {
+    case kRoundToZero:
+      m = Condition(5);
+      break;
+    case kRoundToNearest:
+      UNIMPLEMENTED();
+      break;
+    case kRoundToPlusInf:
+      m = Condition(6);
+      break;
+    case kRoundToMinusInf:
+      m = Condition(7);
+      break;
+    default:
+      UNIMPLEMENTED();
+      break;
+  }
+  clfdbr(m, Condition(0), dst, double_input);
+}
 
 #if !V8_TARGET_ARCH_S390X
 void MacroAssembler::ShiftLeftPair(Register dst_low, Register dst_high,
@@ -1448,14 +1463,6 @@ void MacroAssembler::IsObjectJSStringType(Register object, Register scratch,
   bne(fail);
 }
 
-void MacroAssembler::IsObjectNameType(Register object, Register scratch,
-                                      Label* fail) {
-  LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
-  LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
-  CmpP(scratch, Operand(LAST_NAME_TYPE));
-  bgt(fail);
-}
-
 void MacroAssembler::MaybeDropFrames() {
   // Check whether we need to drop frames to restart a function on the stack.
   ExternalReference restart_fp =
@@ -1879,7 +1886,7 @@ void MacroAssembler::CompareRoot(Register obj, Heap::RootListIndex index) {
 
 void MacroAssembler::SmiToDouble(DoubleRegister value, Register smi) {
   SmiUntag(ip, smi);
-  ConvertIntToDouble(ip, value);
+  ConvertIntToDouble(value, ip);
 }
 
 void MacroAssembler::CompareMap(Register obj, Register scratch, Handle<Map> map,
@@ -1915,26 +1922,6 @@ void MacroAssembler::CheckMap(Register obj, Register scratch,
   LoadP(scratch, FieldMemOperand(obj, HeapObject::kMapOffset));
   CompareRoot(scratch, index);
   bne(fail);
-}
-
-void MacroAssembler::DispatchWeakMap(Register obj, Register scratch1,
-                                     Register scratch2, Handle<WeakCell> cell,
-                                     Handle<Code> success,
-                                     SmiCheckType smi_check_type) {
-  Label fail;
-  if (smi_check_type == DO_SMI_CHECK) {
-    JumpIfSmi(obj, &fail);
-  }
-  LoadP(scratch1, FieldMemOperand(obj, HeapObject::kMapOffset));
-  CmpWeakValue(scratch1, cell, scratch2);
-  Jump(success, RelocInfo::CODE_TARGET, eq);
-  bind(&fail);
-}
-
-void MacroAssembler::CmpWeakValue(Register value, Handle<WeakCell> cell,
-                                  Register scratch, CRegister) {
-  mov(scratch, Operand(cell));
-  CmpP(value, FieldMemOperand(scratch, WeakCell::kValueOffset));
 }
 
 void MacroAssembler::GetWeakValue(Register value, Handle<WeakCell> cell) {
@@ -2017,22 +2004,13 @@ void MacroAssembler::TryDoubleToInt32Exact(Register result,
   Label done;
   DCHECK(!double_input.is(double_scratch));
 
-  ConvertDoubleToInt64(double_input,
-#if !V8_TARGET_ARCH_S390X
-                       scratch,
-#endif
-                       result, double_scratch);
+  ConvertDoubleToInt64(result, double_input);
 
-#if V8_TARGET_ARCH_S390X
-  TestIfInt32(result, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
+  TestIfInt32(result);
   bne(&done);
 
   // convert back and compare
-  lgdr(scratch, double_scratch);
-  cdfbr(double_scratch, scratch);
+  cdfbr(double_scratch, result);
   cdbr(double_scratch, double_input);
   bind(&done);
 }
@@ -2057,23 +2035,14 @@ void MacroAssembler::TryInt32Floor(Register result, DoubleRegister double_input,
   beq(&exception);
 
   // Convert (rounding to -Inf)
-  ConvertDoubleToInt64(double_input,
-#if !V8_TARGET_ARCH_S390X
-                       scratch,
-#endif
-                       result, double_scratch, kRoundToMinusInf);
+  ConvertDoubleToInt64(result, double_input, kRoundToMinusInf);
 
-// Test for overflow
-#if V8_TARGET_ARCH_S390X
-  TestIfInt32(result, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
+  // Test for overflow
+  TestIfInt32(result);
   bne(&exception);
 
   // Test for exactness
-  lgdr(scratch, double_scratch);
-  cdfbr(double_scratch, scratch);
+  cdfbr(double_scratch, result);
   cdbr(double_scratch, double_input);
   beq(exact);
   b(done);
@@ -2084,23 +2053,10 @@ void MacroAssembler::TryInt32Floor(Register result, DoubleRegister double_input,
 void MacroAssembler::TryInlineTruncateDoubleToI(Register result,
                                                 DoubleRegister double_input,
                                                 Label* done) {
-  DoubleRegister double_scratch = kScratchDoubleReg;
-#if !V8_TARGET_ARCH_S390X
-  Register scratch = ip;
-#endif
+  ConvertDoubleToInt64(result, double_input);
 
-  ConvertDoubleToInt64(double_input,
-#if !V8_TARGET_ARCH_S390X
-                       scratch,
-#endif
-                       result, double_scratch);
-
-// Test for overflow
-#if V8_TARGET_ARCH_S390X
-  TestIfInt32(result, r0);
-#else
-  TestIfInt32(scratch, result, r0);
-#endif
+  // Test for overflow
+  TestIfInt32(result);
   beq(done);
 }
 
@@ -2262,24 +2218,6 @@ void MacroAssembler::Assert(Condition cond, BailoutReason reason,
   if (emit_debug_code()) Check(cond, reason, cr);
 }
 
-void MacroAssembler::AssertFastElements(Register elements) {
-  if (emit_debug_code()) {
-    DCHECK(!elements.is(r0));
-    Label ok;
-    push(elements);
-    LoadP(elements, FieldMemOperand(elements, HeapObject::kMapOffset));
-    CompareRoot(elements, Heap::kFixedArrayMapRootIndex);
-    beq(&ok, Label::kNear);
-    CompareRoot(elements, Heap::kFixedDoubleArrayMapRootIndex);
-    beq(&ok, Label::kNear);
-    CompareRoot(elements, Heap::kFixedCOWArrayMapRootIndex);
-    beq(&ok, Label::kNear);
-    Abort(kJSObjectWithFastElementsMapHasSlowElements);
-    bind(&ok);
-    pop(elements);
-  }
-}
-
 void MacroAssembler::Check(Condition cond, BailoutReason reason, CRegister cr) {
   Label L;
   b(cond, &L);
@@ -2427,18 +2365,6 @@ void MacroAssembler::JumpIfEitherSmi(Register reg1, Register reg2,
   JumpIfSmi(reg2, on_either_smi);
 }
 
-void MacroAssembler::AssertNotNumber(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    TestIfSmi(object);
-    Check(ne, kOperandIsANumber, cr0);
-    push(object);
-    CompareObjectType(object, object, object, HEAP_NUMBER_TYPE);
-    pop(object);
-    Check(ne, kOperandIsANumber);
-  }
-}
-
 void MacroAssembler::AssertNotSmi(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
@@ -2452,32 +2378,6 @@ void MacroAssembler::AssertSmi(Register object) {
     STATIC_ASSERT(kSmiTag == 0);
     TestIfSmi(object);
     Check(eq, kOperandIsNotSmi, cr0);
-  }
-}
-
-void MacroAssembler::AssertString(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    TestIfSmi(object);
-    Check(ne, kOperandIsASmiAndNotAString, cr0);
-    push(object);
-    LoadP(object, FieldMemOperand(object, HeapObject::kMapOffset));
-    CompareInstanceType(object, object, FIRST_NONSTRING_TYPE);
-    pop(object);
-    Check(lt, kOperandIsNotAString);
-  }
-}
-
-void MacroAssembler::AssertName(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    TestIfSmi(object);
-    Check(ne, kOperandIsASmiAndNotAName, cr0);
-    push(object);
-    LoadP(object, FieldMemOperand(object, HeapObject::kMapOffset));
-    CompareInstanceType(object, object, LAST_NAME_TYPE);
-    pop(object);
-    Check(le, kOperandIsNotAName);
   }
 }
 
@@ -2514,19 +2414,6 @@ void MacroAssembler::AssertGeneratorObject(Register object) {
     CompareObjectType(object, object, object, JS_GENERATOR_OBJECT_TYPE);
     pop(object);
     Check(eq, kOperandIsNotAGeneratorObject);
-  }
-}
-
-void MacroAssembler::AssertReceiver(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    TestIfSmi(object);
-    Check(ne, kOperandIsASmiAndNotAReceiver, cr0);
-    push(object);
-    STATIC_ASSERT(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
-    CompareObjectType(object, object, object, FIRST_JS_RECEIVER_TYPE);
-    pop(object);
-    Check(ge, kOperandIsNotAReceiver);
   }
 }
 
@@ -5377,7 +5264,7 @@ void MacroAssembler::Popcnt32(Register dst, Register src) {
   ar(dst, r0);
   ShiftRight(r0, dst, Operand(8));
   ar(dst, r0);
-  LoadlB(dst, dst);
+  llgcr(dst, dst);
 }
 
 #ifdef V8_TARGET_ARCH_S390X

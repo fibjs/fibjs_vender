@@ -266,7 +266,7 @@ class RememberedSet : public AllStatic {
 class UpdateTypedSlotHelper {
  public:
   // Updates a cell slot using an untyped slot callback.
-  // The callback accepts (Heap*, Object**) and returns SlotCallbackResult.
+  // The callback accepts Object** and returns SlotCallbackResult.
   template <typename Callback>
   static SlotCallbackResult UpdateCell(RelocInfo* rinfo, Callback callback) {
     DCHECK(rinfo->rmode() == RelocInfo::CELL);
@@ -280,7 +280,7 @@ class UpdateTypedSlotHelper {
   }
 
   // Updates a code entry slot using an untyped slot callback.
-  // The callback accepts (Heap*, Object**) and returns SlotCallbackResult.
+  // The callback accepts Object** and returns SlotCallbackResult.
   template <typename Callback>
   static SlotCallbackResult UpdateCodeEntry(Address entry_address,
                                             Callback callback) {
@@ -295,77 +295,79 @@ class UpdateTypedSlotHelper {
   }
 
   // Updates a code target slot using an untyped slot callback.
-  // The callback accepts (Heap*, Object**) and returns SlotCallbackResult.
+  // The callback accepts Object** and returns SlotCallbackResult.
   template <typename Callback>
   static SlotCallbackResult UpdateCodeTarget(RelocInfo* rinfo,
                                              Callback callback) {
     DCHECK(RelocInfo::IsCodeTarget(rinfo->rmode()));
-    Object* target = Code::GetCodeFromTargetAddress(rinfo->target_address());
-    Object* old_target = target;
-    SlotCallbackResult result = callback(&target);
-    if (target != old_target) {
-      rinfo->set_target_address(Code::cast(target)->instruction_start());
+    Code* old_target = Code::GetCodeFromTargetAddress(rinfo->target_address());
+    Object* new_target = old_target;
+    SlotCallbackResult result = callback(&new_target);
+    if (new_target != old_target) {
+      rinfo->set_target_address(old_target->GetIsolate(),
+                                Code::cast(new_target)->instruction_start());
     }
     return result;
   }
 
   // Updates an embedded pointer slot using an untyped slot callback.
-  // The callback accepts (Heap*, Object**) and returns SlotCallbackResult.
+  // The callback accepts Object** and returns SlotCallbackResult.
   template <typename Callback>
   static SlotCallbackResult UpdateEmbeddedPointer(RelocInfo* rinfo,
                                                   Callback callback) {
     DCHECK(rinfo->rmode() == RelocInfo::EMBEDDED_OBJECT);
-    Object* target = rinfo->target_object();
-    Object* old_target = target;
-    SlotCallbackResult result = callback(&target);
-    if (target != old_target) {
-      rinfo->set_target_object(target);
+    HeapObject* old_target = rinfo->target_object();
+    Object* new_target = old_target;
+    SlotCallbackResult result = callback(&new_target);
+    if (new_target != old_target) {
+      rinfo->set_target_object(HeapObject::cast(new_target));
     }
     return result;
   }
 
   // Updates a debug target slot using an untyped slot callback.
-  // The callback accepts (Heap*, Object**) and returns SlotCallbackResult.
+  // The callback accepts Object** and returns SlotCallbackResult.
   template <typename Callback>
   static SlotCallbackResult UpdateDebugTarget(RelocInfo* rinfo,
                                               Callback callback) {
     DCHECK(RelocInfo::IsDebugBreakSlot(rinfo->rmode()) &&
            rinfo->IsPatchedDebugBreakSlotSequence());
-    Object* target =
+    Code* old_target =
         Code::GetCodeFromTargetAddress(rinfo->debug_call_address());
-    SlotCallbackResult result = callback(&target);
-    rinfo->set_debug_call_address(Code::cast(target)->instruction_start());
+    Object* new_target = old_target;
+    SlotCallbackResult result = callback(&new_target);
+    rinfo->set_debug_call_address(old_target->GetIsolate(),
+                                  Code::cast(new_target)->instruction_start());
     return result;
   }
 
   // Updates a typed slot using an untyped slot callback.
-  // The callback accepts (Heap*, Object**) and returns SlotCallbackResult.
+  // The callback accepts Object** and returns SlotCallbackResult.
   template <typename Callback>
   static SlotCallbackResult UpdateTypedSlot(Isolate* isolate,
                                             SlotType slot_type, Address addr,
                                             Callback callback) {
     switch (slot_type) {
       case CODE_TARGET_SLOT: {
-        RelocInfo rinfo(isolate, addr, RelocInfo::CODE_TARGET, 0, NULL);
+        RelocInfo rinfo(addr, RelocInfo::CODE_TARGET, 0, NULL);
         return UpdateCodeTarget(&rinfo, callback);
       }
       case CELL_TARGET_SLOT: {
-        RelocInfo rinfo(isolate, addr, RelocInfo::CELL, 0, NULL);
+        RelocInfo rinfo(addr, RelocInfo::CELL, 0, NULL);
         return UpdateCell(&rinfo, callback);
       }
       case CODE_ENTRY_SLOT: {
         return UpdateCodeEntry(addr, callback);
       }
       case DEBUG_TARGET_SLOT: {
-        RelocInfo rinfo(isolate, addr, RelocInfo::DEBUG_BREAK_SLOT_AT_POSITION,
-                        0, NULL);
+        RelocInfo rinfo(addr, RelocInfo::DEBUG_BREAK_SLOT_AT_POSITION, 0, NULL);
         if (rinfo.IsPatchedDebugBreakSlotSequence()) {
           return UpdateDebugTarget(&rinfo, callback);
         }
         return REMOVE_SLOT;
       }
       case EMBEDDED_OBJECT_SLOT: {
-        RelocInfo rinfo(isolate, addr, RelocInfo::EMBEDDED_OBJECT, 0, NULL);
+        RelocInfo rinfo(addr, RelocInfo::EMBEDDED_OBJECT, 0, NULL);
         return UpdateEmbeddedPointer(&rinfo, callback);
       }
       case OBJECT_SLOT: {

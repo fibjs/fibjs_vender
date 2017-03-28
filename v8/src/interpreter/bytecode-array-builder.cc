@@ -333,12 +333,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::GetSuperConstructor(Register out) {
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(
     Token::Value op, Register reg, int feedback_slot) {
+  DCHECK(feedback_slot != kNoFeedbackSlot);
   switch (op) {
     case Token::Value::EQ:
       OutputTestEqual(reg, feedback_slot);
-      break;
-    case Token::Value::NE:
-      OutputTestNotEqual(reg, feedback_slot);
       break;
     case Token::Value::EQ_STRICT:
       OutputTestEqualStrict(reg, feedback_slot);
@@ -355,6 +353,18 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(
     case Token::Value::GTE:
       OutputTestGreaterThanOrEqual(reg, feedback_slot);
       break;
+    default:
+      UNREACHABLE();
+  }
+  return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(Token::Value op,
+                                                             Register reg) {
+  switch (op) {
+    case Token::Value::EQ_STRICT:
+      OutputTestEqualStrictNoFeedback(reg);
+      break;
     case Token::Value::INSTANCEOF:
       OutputTestInstanceOf(reg);
       break;
@@ -364,6 +374,13 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(
     default:
       UNREACHABLE();
   }
+  return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::CompareTypeOf(
+    TestTypeOfFlags::LiteralFlag literal_flag) {
+  DCHECK(literal_flag != TestTypeOfFlags::LiteralFlag::kOther);
+  OutputTestTypeOf(TestTypeOfFlags::Encode(literal_flag));
   return *this;
 }
 
@@ -632,6 +649,12 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreDataPropertyInLiteral(
     Register object, Register name, DataPropertyInLiteralFlags flags,
     int feedback_slot) {
   OutputStaDataPropertyInLiteral(object, name, flags, feedback_slot);
+  return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::CollectTypeProfile(int position) {
+  DCHECK(FLAG_type_profile);
+  OutputCollectTypeProfile(position);
   return *this;
 }
 
@@ -1006,9 +1029,26 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Call(Register callable,
   if (tail_call_mode == TailCallMode::kDisallow) {
     if (call_type == Call::NAMED_PROPERTY_CALL ||
         call_type == Call::KEYED_PROPERTY_CALL) {
-      OutputCallProperty(callable, args, args.register_count(), feedback_slot);
+      if (args.register_count() == 1) {
+        OutputCallProperty0(callable, args[0], feedback_slot);
+      } else if (args.register_count() == 2) {
+        OutputCallProperty1(callable, args[0], args[1], feedback_slot);
+      } else if (args.register_count() == 3) {
+        OutputCallProperty2(callable, args[0], args[1], args[2], feedback_slot);
+      } else {
+        OutputCallProperty(callable, args, args.register_count(),
+                           feedback_slot);
+      }
     } else {
-      OutputCall(callable, args, args.register_count(), feedback_slot);
+      if (args.register_count() == 1) {
+        OutputCall0(callable, args[0], feedback_slot);
+      } else if (args.register_count() == 2) {
+        OutputCall1(callable, args[0], args[1], feedback_slot);
+      } else if (args.register_count() == 3) {
+        OutputCall2(callable, args[0], args[1], args[2], feedback_slot);
+      } else {
+        OutputCall(callable, args, args.register_count(), feedback_slot);
+      }
     }
   } else {
     DCHECK(tail_call_mode == TailCallMode::kAllow);

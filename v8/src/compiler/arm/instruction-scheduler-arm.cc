@@ -119,10 +119,19 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmFloat32x4FromUint32x4:
     case kArmFloat32x4Abs:
     case kArmFloat32x4Neg:
+    case kArmFloat32x4RecipApprox:
+    case kArmFloat32x4RecipSqrtApprox:
     case kArmFloat32x4Add:
     case kArmFloat32x4Sub:
+    case kArmFloat32x4Mul:
+    case kArmFloat32x4Min:
+    case kArmFloat32x4Max:
+    case kArmFloat32x4RecipRefine:
+    case kArmFloat32x4RecipSqrtRefine:
     case kArmFloat32x4Equal:
     case kArmFloat32x4NotEqual:
+    case kArmFloat32x4LessThan:
+    case kArmFloat32x4LessThanOrEqual:
     case kArmInt32x4Splat:
     case kArmInt32x4ExtractLane:
     case kArmInt32x4ReplaceLane:
@@ -138,13 +147,13 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmInt32x4Max:
     case kArmInt32x4Equal:
     case kArmInt32x4NotEqual:
-    case kArmInt32x4GreaterThan:
-    case kArmInt32x4GreaterThanOrEqual:
+    case kArmInt32x4LessThan:
+    case kArmInt32x4LessThanOrEqual:
     case kArmUint32x4ShiftRightByScalar:
     case kArmUint32x4Min:
     case kArmUint32x4Max:
-    case kArmUint32x4GreaterThan:
-    case kArmUint32x4GreaterThanOrEqual:
+    case kArmUint32x4LessThan:
+    case kArmUint32x4LessThanOrEqual:
     case kArmInt16x8Splat:
     case kArmInt16x8ExtractLane:
     case kArmInt16x8ReplaceLane:
@@ -160,15 +169,15 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmInt16x8Max:
     case kArmInt16x8Equal:
     case kArmInt16x8NotEqual:
-    case kArmInt16x8GreaterThan:
-    case kArmInt16x8GreaterThanOrEqual:
+    case kArmInt16x8LessThan:
+    case kArmInt16x8LessThanOrEqual:
     case kArmUint16x8ShiftRightByScalar:
     case kArmUint16x8AddSaturate:
     case kArmUint16x8SubSaturate:
     case kArmUint16x8Min:
     case kArmUint16x8Max:
-    case kArmUint16x8GreaterThan:
-    case kArmUint16x8GreaterThanOrEqual:
+    case kArmUint16x8LessThan:
+    case kArmUint16x8LessThanOrEqual:
     case kArmInt8x16Splat:
     case kArmInt8x16ExtractLane:
     case kArmInt8x16ReplaceLane:
@@ -184,15 +193,15 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmInt8x16Max:
     case kArmInt8x16Equal:
     case kArmInt8x16NotEqual:
-    case kArmInt8x16GreaterThan:
-    case kArmInt8x16GreaterThanOrEqual:
+    case kArmInt8x16LessThan:
+    case kArmInt8x16LessThanOrEqual:
     case kArmUint8x16ShiftRightByScalar:
     case kArmUint8x16AddSaturate:
     case kArmUint8x16SubSaturate:
     case kArmUint8x16Min:
     case kArmUint8x16Max:
-    case kArmUint8x16GreaterThan:
-    case kArmUint8x16GreaterThanOrEqual:
+    case kArmUint8x16LessThan:
+    case kArmUint8x16LessThanOrEqual:
     case kArmSimd128Zero:
     case kArmSimd128And:
     case kArmSimd128Or:
@@ -209,6 +218,8 @@ int InstructionScheduler::GetTargetInstructionFlags(
 
     case kArmVldrF32:
     case kArmVldrF64:
+    case kArmVld1F64:
+    case kArmVld1S128:
     case kArmLdrb:
     case kArmLdrsb:
     case kArmLdrh:
@@ -218,6 +229,8 @@ int InstructionScheduler::GetTargetInstructionFlags(
 
     case kArmVstrF32:
     case kArmVstrF64:
+    case kArmVst1F64:
+    case kArmVst1S128:
     case kArmStrb:
     case kArmStrh:
     case kArmStr:

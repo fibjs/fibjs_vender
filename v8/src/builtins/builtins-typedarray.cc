@@ -4,247 +4,12 @@
 
 #include "src/builtins/builtins-utils.h"
 #include "src/builtins/builtins.h"
-#include "src/code-stub-assembler.h"
 #include "src/counters.h"
+#include "src/elements.h"
 #include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
-
-class TypedArrayBuiltinsAssembler : public CodeStubAssembler {
- public:
-  explicit TypedArrayBuiltinsAssembler(compiler::CodeAssemblerState* state)
-      : CodeStubAssembler(state) {}
-
- protected:
-  void GenerateTypedArrayPrototypeGetter(const char* method_name,
-                                         int object_offset);
-  template <IterationKind kIterationKind>
-  void GenerateTypedArrayPrototypeIterationMethod(const char* method_name);
-
-  void LoadMapAndElementsSize(Node* array, Variable* typed_map, Variable* size);
-};
-
-void TypedArrayBuiltinsAssembler::LoadMapAndElementsSize(Node* array,
-                                                         Variable* typed_map,
-                                                         Variable* size) {
-  Label unreachable(this), done(this);
-  Label uint8_elements(this), uint8_clamped_elements(this), int8_elements(this),
-      uint16_elements(this), int16_elements(this), uint32_elements(this),
-      int32_elements(this), float32_elements(this), float64_elements(this);
-  Label* elements_kind_labels[] = {
-      &uint8_elements,  &uint8_clamped_elements, &int8_elements,
-      &uint16_elements, &int16_elements,         &uint32_elements,
-      &int32_elements,  &float32_elements,       &float64_elements};
-  int32_t elements_kinds[] = {
-      UINT8_ELEMENTS,  UINT8_CLAMPED_ELEMENTS, INT8_ELEMENTS,
-      UINT16_ELEMENTS, INT16_ELEMENTS,         UINT32_ELEMENTS,
-      INT32_ELEMENTS,  FLOAT32_ELEMENTS,       FLOAT64_ELEMENTS};
-  const size_t kTypedElementsKindCount = LAST_FIXED_TYPED_ARRAY_ELEMENTS_KIND -
-                                         FIRST_FIXED_TYPED_ARRAY_ELEMENTS_KIND +
-                                         1;
-  DCHECK_EQ(kTypedElementsKindCount, arraysize(elements_kinds));
-  DCHECK_EQ(kTypedElementsKindCount, arraysize(elements_kind_labels));
-
-  Node* array_map = LoadMap(array);
-  Node* elements_kind = LoadMapElementsKind(array_map);
-  Switch(elements_kind, &unreachable, elements_kinds, elements_kind_labels,
-         kTypedElementsKindCount);
-
-  for (int i = 0; i < static_cast<int>(kTypedElementsKindCount); i++) {
-    Bind(elements_kind_labels[i]);
-    {
-      ElementsKind kind = static_cast<ElementsKind>(elements_kinds[i]);
-      ExternalArrayType type =
-          isolate()->factory()->GetArrayTypeFromElementsKind(kind);
-      Handle<Map> map(isolate()->heap()->MapForFixedTypedArray(type));
-      typed_map->Bind(HeapConstant(map));
-      size->Bind(SmiConstant(static_cast<int>(
-          isolate()->factory()->GetExternalArrayElementSize(type))));
-      Goto(&done);
-    }
-  }
-
-  Bind(&unreachable);
-  { Unreachable(); }
-  Bind(&done);
-}
-
-TF_BUILTIN(TypedArrayInitialize, TypedArrayBuiltinsAssembler) {
-  Node* holder = Parameter(1);
-  Node* length = Parameter(2);
-  Node* maybe_buffer = Parameter(3);
-  Node* byte_offset = Parameter(4);
-  Node* byte_length = Parameter(5);
-  Node* initialize = Parameter(6);
-  Node* context = Parameter(9);
-
-  static const int32_t fta_base_data_offset =
-      FixedTypedArrayBase::kDataOffset - kHeapObjectTag;
-
-  Label setup_holder(this), alloc_array_buffer(this), aligned(this),
-      allocate_elements(this), attach_buffer(this), done(this);
-  Variable fixed_typed_map(this, MachineRepresentation::kTagged);
-  Variable element_size(this, MachineRepresentation::kTagged);
-  Variable total_size(this, MachineType::PointerRepresentation());
-
-  // Make sure length is a Smi. The caller guarantees this is the case.
-  length = ToInteger(context, length, CodeStubAssembler::kTruncateMinusZero);
-  CSA_ASSERT(this, TaggedIsSmi(length));
-
-  byte_offset =
-      ToInteger(context, byte_offset, CodeStubAssembler::kTruncateMinusZero);
-  CSA_ASSERT(this, TaggedIsSmi(byte_offset));
-
-  // byte_length can be -0, get rid of it.
-  byte_length =
-      ToInteger(context, byte_length, CodeStubAssembler::kTruncateMinusZero);
-
-  GotoIfNot(IsNull(maybe_buffer), &setup_holder);
-  // If the buffer is null, then we need a Smi byte_length. The caller
-  // guarantees this is the case, because when byte_length >
-  // TypedArrayMaxSizeInHeap, a buffer is allocated and passed in here.
-  CSA_ASSERT(this, TaggedIsSmi(byte_length));
-  Goto(&setup_holder);
-
-  Bind(&setup_holder);
-  {
-    LoadMapAndElementsSize(holder, &fixed_typed_map, &element_size);
-    // Setup the holder (JSArrayBufferView).
-    //  - Set the length.
-    //  - Set the byte_offset.
-    //  - Set the byte_length.
-    //  - Set InternalFields to 0.
-    StoreObjectField(holder, JSTypedArray::kLengthOffset, length);
-    StoreObjectField(holder, JSArrayBufferView::kByteOffsetOffset, byte_offset);
-    StoreObjectField(holder, JSArrayBufferView::kByteLengthOffset, byte_length);
-    for (int offset = JSTypedArray::kSize;
-         offset < JSTypedArray::kSizeWithInternalFields;
-         offset += kPointerSize) {
-      StoreObjectField(holder, offset, SmiConstant(Smi::kZero));
-    }
-
-    Branch(IsNull(maybe_buffer), &alloc_array_buffer, &attach_buffer);
-  }
-
-  Bind(&alloc_array_buffer);
-  {
-    // Allocate a new ArrayBuffer and initialize it with empty properties and
-    // elements.
-    Node* const native_context = LoadNativeContext(context);
-    Node* const map =
-        LoadContextElement(native_context, Context::ARRAY_BUFFER_MAP_INDEX);
-    Node* empty_fixed_array = LoadRoot(Heap::kEmptyFixedArrayRootIndex);
-
-    Node* buffer = Allocate(JSArrayBuffer::kSizeWithInternalFields);
-    StoreMapNoWriteBarrier(buffer, map);
-    StoreObjectFieldNoWriteBarrier(buffer, JSArray::kPropertiesOffset,
-                                   empty_fixed_array);
-    StoreObjectFieldNoWriteBarrier(buffer, JSArray::kElementsOffset,
-                                   empty_fixed_array);
-    // Setup the ArrayBuffer.
-    //  - Set BitField to 0.
-    //  - Set IsExternal and IsNeuterable bits of BitFieldSlot.
-    //  - Set the byte_length field to byte_length.
-    //  - Set backing_store to null/Smi(0).
-    //  - Set all internal fields to Smi(0).
-    StoreObjectFieldNoWriteBarrier(buffer, JSArrayBuffer::kBitFieldSlot,
-                                   SmiConstant(Smi::kZero));
-    int32_t bitfield_value = (1 << JSArrayBuffer::IsExternal::kShift) |
-                             (1 << JSArrayBuffer::IsNeuterable::kShift);
-    StoreObjectFieldNoWriteBarrier(buffer, JSArrayBuffer::kBitFieldOffset,
-                                   Int32Constant(bitfield_value),
-                                   MachineRepresentation::kWord32);
-
-    StoreObjectFieldNoWriteBarrier(buffer, JSArrayBuffer::kByteLengthOffset,
-                                   byte_length);
-    StoreObjectFieldNoWriteBarrier(buffer, JSArrayBuffer::kBackingStoreOffset,
-                                   SmiConstant(Smi::kZero));
-    for (int i = 0; i < v8::ArrayBuffer::kInternalFieldCount; i++) {
-      int offset = JSArrayBuffer::kSize + i * kPointerSize;
-      StoreObjectFieldNoWriteBarrier(buffer, offset, SmiConstant(Smi::kZero));
-    }
-
-    StoreObjectField(holder, JSArrayBufferView::kBufferOffset, buffer);
-
-    // Check the alignment.
-    GotoIf(SmiEqual(SmiMod(element_size.value(), SmiConstant(kObjectAlignment)),
-                    SmiConstant(0)),
-           &aligned);
-
-    // Fix alignment if needed.
-    DCHECK_EQ(0, FixedTypedArrayBase::kHeaderSize & kObjectAlignmentMask);
-    Node* aligned_header_size =
-        IntPtrConstant(FixedTypedArrayBase::kHeaderSize + kObjectAlignmentMask);
-    Node* size = IntPtrAdd(SmiToWord(byte_length), aligned_header_size);
-    total_size.Bind(WordAnd(size, IntPtrConstant(~kObjectAlignmentMask)));
-    Goto(&allocate_elements);
-  }
-
-  Bind(&aligned);
-  {
-    Node* header_size = IntPtrConstant(FixedTypedArrayBase::kHeaderSize);
-    total_size.Bind(IntPtrAdd(SmiToWord(byte_length), header_size));
-    Goto(&allocate_elements);
-  }
-
-  Bind(&allocate_elements);
-  {
-    // Allocate a FixedTypedArray and set the length, base pointer and external
-    // pointer.
-    CSA_ASSERT(this, IsRegularHeapObjectSize(total_size.value()));
-    Node* elements = Allocate(total_size.value());
-
-    StoreMapNoWriteBarrier(elements, fixed_typed_map.value());
-    StoreObjectFieldNoWriteBarrier(elements, FixedArray::kLengthOffset, length);
-    StoreObjectFieldNoWriteBarrier(
-        elements, FixedTypedArrayBase::kBasePointerOffset, elements);
-    StoreObjectFieldNoWriteBarrier(elements,
-                                   FixedTypedArrayBase::kExternalPointerOffset,
-                                   IntPtrConstant(fta_base_data_offset),
-                                   MachineType::PointerRepresentation());
-
-    StoreObjectField(holder, JSObject::kElementsOffset, elements);
-
-    GotoIf(IsFalse(initialize), &done);
-    // Initialize the backing store by filling it with 0s.
-    Node* backing_store = IntPtrAdd(BitcastTaggedToWord(elements),
-                                    IntPtrConstant(fta_base_data_offset));
-    // Call out to memset to perform initialization.
-    Node* memset =
-        ExternalConstant(ExternalReference::libc_memset_function(isolate()));
-    CallCFunction3(MachineType::AnyTagged(), MachineType::Pointer(),
-                   MachineType::IntPtr(), MachineType::UintPtr(), memset,
-                   backing_store, IntPtrConstant(0), SmiToWord(byte_length));
-    Goto(&done);
-  }
-
-  Bind(&attach_buffer);
-  {
-    StoreObjectField(holder, JSArrayBufferView::kBufferOffset, maybe_buffer);
-
-    Node* elements = Allocate(FixedTypedArrayBase::kHeaderSize);
-    StoreMapNoWriteBarrier(elements, fixed_typed_map.value());
-    StoreObjectFieldNoWriteBarrier(elements, FixedArray::kLengthOffset, length);
-    StoreObjectFieldNoWriteBarrier(
-        elements, FixedTypedArrayBase::kBasePointerOffset, SmiConstant(0));
-
-    Node* backing_store =
-        LoadObjectField(maybe_buffer, JSArrayBuffer::kBackingStoreOffset,
-                        MachineType::Pointer());
-    Node* external_pointer = IntPtrAdd(backing_store, SmiToWord(byte_offset));
-    StoreObjectFieldNoWriteBarrier(
-        elements, FixedTypedArrayBase::kExternalPointerOffset, external_pointer,
-        MachineType::PointerRepresentation());
-
-    StoreObjectField(holder, JSObject::kElementsOffset, elements);
-
-    Goto(&done);
-  }
-
-  Bind(&done);
-  { Return(UndefinedConstant()); }
-}
 
 // -----------------------------------------------------------------------------
 // ES6 section 22.2 TypedArray Objects
@@ -254,119 +19,6 @@ BUILTIN(TypedArrayPrototypeBuffer) {
   HandleScope scope(isolate);
   CHECK_RECEIVER(JSTypedArray, typed_array, "get TypedArray.prototype.buffer");
   return *typed_array->GetBuffer();
-}
-
-void TypedArrayBuiltinsAssembler::GenerateTypedArrayPrototypeGetter(
-    const char* method_name, int object_offset) {
-  Node* receiver = Parameter(0);
-  Node* context = Parameter(3);
-
-  // Check if the {receiver} is actually a JSTypedArray.
-  Label receiver_is_incompatible(this, Label::kDeferred);
-  GotoIf(TaggedIsSmi(receiver), &receiver_is_incompatible);
-  GotoIfNot(HasInstanceType(receiver, JS_TYPED_ARRAY_TYPE),
-            &receiver_is_incompatible);
-
-  // Check if the {receiver}'s JSArrayBuffer was neutered.
-  Node* receiver_buffer =
-      LoadObjectField(receiver, JSTypedArray::kBufferOffset);
-  Label if_receiverisneutered(this, Label::kDeferred);
-  GotoIf(IsDetachedBuffer(receiver_buffer), &if_receiverisneutered);
-  Return(LoadObjectField(receiver, object_offset));
-
-  Bind(&if_receiverisneutered);
-  {
-    // The {receiver}s buffer was neutered, default to zero.
-    Return(SmiConstant(0));
-  }
-
-  Bind(&receiver_is_incompatible);
-  {
-    // The {receiver} is not a valid JSTypedArray.
-    CallRuntime(Runtime::kThrowIncompatibleMethodReceiver, context,
-                HeapConstant(
-                    factory()->NewStringFromAsciiChecked(method_name, TENURED)),
-                receiver);
-    Unreachable();
-  }
-}
-
-// ES6 section 22.2.3.2 get %TypedArray%.prototype.byteLength
-TF_BUILTIN(TypedArrayPrototypeByteLength, TypedArrayBuiltinsAssembler) {
-  GenerateTypedArrayPrototypeGetter("get TypedArray.prototype.byteLength",
-                                    JSTypedArray::kByteLengthOffset);
-}
-
-// ES6 section 22.2.3.3 get %TypedArray%.prototype.byteOffset
-TF_BUILTIN(TypedArrayPrototypeByteOffset, TypedArrayBuiltinsAssembler) {
-  GenerateTypedArrayPrototypeGetter("get TypedArray.prototype.byteOffset",
-                                    JSTypedArray::kByteOffsetOffset);
-}
-
-// ES6 section 22.2.3.18 get %TypedArray%.prototype.length
-TF_BUILTIN(TypedArrayPrototypeLength, TypedArrayBuiltinsAssembler) {
-  GenerateTypedArrayPrototypeGetter("get TypedArray.prototype.length",
-                                    JSTypedArray::kLengthOffset);
-}
-
-template <IterationKind kIterationKind>
-void TypedArrayBuiltinsAssembler::GenerateTypedArrayPrototypeIterationMethod(
-    const char* method_name) {
-  Node* receiver = Parameter(0);
-  Node* context = Parameter(3);
-
-  Label throw_bad_receiver(this, Label::kDeferred);
-  Label throw_typeerror(this, Label::kDeferred);
-
-  GotoIf(TaggedIsSmi(receiver), &throw_bad_receiver);
-
-  Node* map = LoadMap(receiver);
-  Node* instance_type = LoadMapInstanceType(map);
-  GotoIf(Word32NotEqual(instance_type, Int32Constant(JS_TYPED_ARRAY_TYPE)),
-         &throw_bad_receiver);
-
-  // Check if the {receiver}'s JSArrayBuffer was neutered.
-  Node* receiver_buffer =
-      LoadObjectField(receiver, JSTypedArray::kBufferOffset);
-  Label if_receiverisneutered(this, Label::kDeferred);
-  GotoIf(IsDetachedBuffer(receiver_buffer), &if_receiverisneutered);
-
-  Return(CreateArrayIterator(receiver, map, instance_type, context,
-                             kIterationKind));
-
-  Variable var_message(this, MachineRepresentation::kTagged);
-  Bind(&throw_bad_receiver);
-  var_message.Bind(SmiConstant(MessageTemplate::kNotTypedArray));
-  Goto(&throw_typeerror);
-
-  Bind(&if_receiverisneutered);
-  var_message.Bind(
-      SmiConstant(Smi::FromInt(MessageTemplate::kDetachedOperation)));
-  Goto(&throw_typeerror);
-
-  Bind(&throw_typeerror);
-  {
-    Node* method_arg = HeapConstant(
-        isolate()->factory()->NewStringFromAsciiChecked(method_name, TENURED));
-    Node* result = CallRuntime(Runtime::kThrowTypeError, context,
-                               var_message.value(), method_arg);
-    Return(result);
-  }
-}
-
-TF_BUILTIN(TypedArrayPrototypeValues, TypedArrayBuiltinsAssembler) {
-  GenerateTypedArrayPrototypeIterationMethod<IterationKind::kValues>(
-      "%TypedArray%.prototype.values()");
-}
-
-TF_BUILTIN(TypedArrayPrototypeEntries, TypedArrayBuiltinsAssembler) {
-  GenerateTypedArrayPrototypeIterationMethod<IterationKind::kEntries>(
-      "%TypedArray%.prototype.entries()");
-}
-
-TF_BUILTIN(TypedArrayPrototypeKeys, TypedArrayBuiltinsAssembler) {
-  GenerateTypedArrayPrototypeIterationMethod<IterationKind::kKeys>(
-      "%TypedArray%.prototype.keys()");
 }
 
 namespace {
@@ -453,6 +105,168 @@ BUILTIN(TypedArrayPrototypeCopyWithin) {
   uint8_t* data = static_cast<uint8_t*>(elements->DataPtr());
   std::memmove(data + to, data + from, count);
 
+  return *array;
+}
+
+BUILTIN(TypedArrayPrototypeFill) {
+  HandleScope scope(isolate);
+
+  Handle<JSTypedArray> array;
+  const char* method = "%TypedArray%.prototype.fill";
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, array, JSTypedArray::Validate(isolate, args.receiver(), method));
+
+  if (V8_UNLIKELY(array->WasNeutered())) return *array;
+
+  int64_t len = array->length_value();
+  int64_t start = 0;
+  int64_t end = len;
+
+  if (args.length() > 2) {
+    Handle<Object> num = args.atOrUndefined(isolate, 2);
+    if (!num->IsUndefined(isolate)) {
+      ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+          isolate, num, Object::ToInteger(isolate, num));
+      start = CapRelativeIndex(num, 0, len);
+
+      num = args.atOrUndefined(isolate, 3);
+      if (!num->IsUndefined(isolate)) {
+        ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+            isolate, num, Object::ToInteger(isolate, num));
+        end = CapRelativeIndex(num, 0, len);
+      }
+    }
+  }
+
+  int64_t count = end - start;
+  if (count <= 0) return *array;
+
+  if (V8_UNLIKELY(array->WasNeutered())) return *array;
+
+  // Ensure processed indexes are within array bounds
+  DCHECK_GE(start, 0);
+  DCHECK_LT(start, len);
+  DCHECK_GE(end, 0);
+  DCHECK_LE(end, len);
+  DCHECK_LE(count, len);
+
+  Handle<Object> obj_value = args.atOrUndefined(isolate, 1);
+
+  return array->GetElementsAccessor()->Fill(isolate, array, obj_value,
+                                            static_cast<uint32_t>(start),
+                                            static_cast<uint32_t>(end));
+}
+
+BUILTIN(TypedArrayPrototypeIncludes) {
+  HandleScope scope(isolate);
+
+  Handle<JSTypedArray> array;
+  const char* method = "%TypedArray%.prototype.includes";
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, array, JSTypedArray::Validate(isolate, args.receiver(), method));
+
+  if (args.length() < 2) return isolate->heap()->false_value();
+
+  int64_t len = array->length_value();
+  if (len == 0) return isolate->heap()->false_value();
+
+  int64_t index = 0;
+  if (args.length() > 2) {
+    Handle<Object> num;
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+        isolate, num, Object::ToInteger(isolate, args.at<Object>(2)));
+    index = CapRelativeIndex(num, 0, len);
+  }
+
+  // TODO(cwhan.tunz): throw. See the above comment in CopyWithin.
+  if (V8_UNLIKELY(array->WasNeutered())) return isolate->heap()->false_value();
+
+  Handle<Object> search_element = args.atOrUndefined(isolate, 1);
+  ElementsAccessor* elements = array->GetElementsAccessor();
+  Maybe<bool> result = elements->IncludesValue(isolate, array, search_element,
+                                               static_cast<uint32_t>(index),
+                                               static_cast<uint32_t>(len));
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return *isolate->factory()->ToBoolean(result.FromJust());
+}
+
+BUILTIN(TypedArrayPrototypeIndexOf) {
+  HandleScope scope(isolate);
+
+  Handle<JSTypedArray> array;
+  const char* method = "%TypedArray%.prototype.indexOf";
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, array, JSTypedArray::Validate(isolate, args.receiver(), method));
+
+  int64_t len = array->length_value();
+  if (len == 0) return Smi::FromInt(-1);
+
+  int64_t index = 0;
+  if (args.length() > 2) {
+    Handle<Object> num;
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+        isolate, num, Object::ToInteger(isolate, args.at<Object>(2)));
+    index = CapRelativeIndex(num, 0, len);
+  }
+
+  // TODO(cwhan.tunz): throw. See the above comment in CopyWithin.
+  if (V8_UNLIKELY(array->WasNeutered())) return Smi::FromInt(-1);
+
+  Handle<Object> search_element = args.atOrUndefined(isolate, 1);
+  ElementsAccessor* elements = array->GetElementsAccessor();
+  Maybe<int64_t> result = elements->IndexOfValue(isolate, array, search_element,
+                                                 static_cast<uint32_t>(index),
+                                                 static_cast<uint32_t>(len));
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return *isolate->factory()->NewNumberFromInt64(result.FromJust());
+}
+
+BUILTIN(TypedArrayPrototypeLastIndexOf) {
+  HandleScope scope(isolate);
+
+  Handle<JSTypedArray> array;
+  const char* method = "%TypedArray%.prototype.lastIndexOf";
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, array, JSTypedArray::Validate(isolate, args.receiver(), method));
+
+  int64_t len = array->length_value();
+  if (len == 0) return Smi::FromInt(-1);
+
+  int64_t index = len - 1;
+  if (args.length() > 2) {
+    Handle<Object> num;
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+        isolate, num, Object::ToInteger(isolate, args.at<Object>(2)));
+    // Set a negative value (-1) for returning -1 if num is negative and
+    // len + num is still negative. Upper bound is len - 1.
+    index = std::min<int64_t>(CapRelativeIndex(num, -1, len), len - 1);
+  }
+
+  if (index < 0) return Smi::FromInt(-1);
+
+  // TODO(cwhan.tunz): throw. See the above comment in CopyWithin.
+  if (V8_UNLIKELY(array->WasNeutered())) return Smi::FromInt(-1);
+
+  Handle<Object> search_element = args.atOrUndefined(isolate, 1);
+  ElementsAccessor* elements = array->GetElementsAccessor();
+  Maybe<int64_t> result = elements->LastIndexOfValue(
+      isolate, array, search_element, static_cast<uint32_t>(index));
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return *isolate->factory()->NewNumberFromInt64(result.FromJust());
+}
+
+BUILTIN(TypedArrayPrototypeReverse) {
+  HandleScope scope(isolate);
+
+  Handle<JSTypedArray> array;
+  const char* method = "%TypedArray%.prototype.reverse";
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, array, JSTypedArray::Validate(isolate, args.receiver(), method));
+
+  if (V8_UNLIKELY(array->WasNeutered())) return *array;
+
+  ElementsAccessor* elements = array->GetElementsAccessor();
+  elements->Reverse(*array);
   return *array;
 }
 

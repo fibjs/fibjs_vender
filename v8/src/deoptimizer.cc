@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "src/accessors.h"
+#include "src/assembler-inl.h"
 #include "src/ast/prettyprinter.h"
 #include "src/codegen.h"
 #include "src/disasm.h"
@@ -145,8 +146,6 @@ void Deoptimizer::VisitAllOptimizedFunctionsForContext(
 
   CHECK(context->IsNativeContext());
 
-  visitor->EnterContext(context);
-
   // Visit the list of optimized functions, removing elements that
   // no longer refer to optimized code.
   JSFunction* prev = NULL;
@@ -180,8 +179,29 @@ void Deoptimizer::VisitAllOptimizedFunctionsForContext(
     }
     element = next;
   }
+}
 
-  visitor->LeaveContext(context);
+void Deoptimizer::UnlinkOptimizedCode(Code* code, Context* native_context) {
+  class CodeUnlinker : public OptimizedFunctionVisitor {
+   public:
+    explicit CodeUnlinker(Code* code) : code_(code) {}
+
+    virtual void VisitFunction(JSFunction* function) {
+      if (function->code() == code_) {
+        if (FLAG_trace_deopt) {
+          PrintF("[removing optimized code for: ");
+          function->ShortPrint();
+          PrintF("]\n");
+        }
+        function->set_code(function->shared()->code());
+      }
+    }
+
+   private:
+    Code* code_;
+  };
+  CodeUnlinker unlinker(code);
+  VisitAllOptimizedFunctionsForContext(native_context, &unlinker);
 }
 
 
@@ -209,8 +229,6 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
   // deoptimized from the functions that refer to it.
   class SelectedCodeUnlinker: public OptimizedFunctionVisitor {
    public:
-    virtual void EnterContext(Context* context) { }  // Don't care.
-    virtual void LeaveContext(Context* context)  { }  // Don't care.
     virtual void VisitFunction(JSFunction* function) {
       Code* code = function->code();
       if (!code->marked_for_deoptimization()) return;
@@ -427,6 +445,24 @@ const char* Deoptimizer::MessageFor(BailoutType type) {
   return NULL;
 }
 
+namespace {
+
+CodeEventListener::DeoptKind DeoptKindOfBailoutType(
+    Deoptimizer::BailoutType bailout_type) {
+  switch (bailout_type) {
+    case Deoptimizer::EAGER:
+      return CodeEventListener::kEager;
+    case Deoptimizer::SOFT:
+      return CodeEventListener::kSoft;
+    case Deoptimizer::LAZY:
+      return CodeEventListener::kLazy;
+  }
+  UNREACHABLE();
+  return CodeEventListener::kEager;
+}
+
+}  // namespace
+
 Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction* function,
                          BailoutType type, unsigned bailout_id, Address from,
                          int fp_to_sp_delta)
@@ -491,7 +527,9 @@ Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction* function,
   disallow_heap_allocation_ = new DisallowHeapAllocation();
 #endif  // DEBUG
   if (compiled_code_->kind() == Code::OPTIMIZED_FUNCTION) {
-    PROFILE(isolate_, CodeDeoptEvent(compiled_code_, from_, fp_to_sp_delta_));
+    PROFILE(isolate_,
+            CodeDeoptEvent(compiled_code_, DeoptKindOfBailoutType(type), from_,
+                           fp_to_sp_delta_));
   }
   unsigned size = ComputeInputFrameSize();
   int parameter_count =
@@ -2263,7 +2301,7 @@ void Deoptimizer::EnsureCodeForDeoptimizationEntry(Isolate* isolate,
   GenerateDeoptimizationEntries(&masm, entry_count, type);
   CodeDesc desc;
   masm.GetCode(&desc);
-  DCHECK(!RelocInfo::RequiresRelocation(desc));
+  DCHECK(!RelocInfo::RequiresRelocation(isolate, desc));
 
   MemoryChunk* chunk = data->deopt_entry_code_[type];
   CHECK(static_cast<int>(Deoptimizer::GetMaxDeoptTableSize()) >=

@@ -11,6 +11,7 @@
 namespace v8 {
 namespace internal {
 
+class Callable;
 template <typename T>
 class Handle;
 class Isolate;
@@ -40,7 +41,7 @@ class Isolate;
 // API: Builtin in C++ for API callbacks. Entered via EXIT frame.
 //      Args: name
 // TFJ: Builtin in Turbofan, with JS linkage (callable as Javascript function).
-//      Args: name, arguments count
+//      Args: name, arguments count, explicit argument names...
 // TFS: Builtin in Turbofan, with CodeStub linkage.
 //      Args: name, code kind, extra IC state, interface descriptor, return_size
 // ASM: Builtin in platform-dependent assembly.
@@ -49,7 +50,8 @@ class Isolate;
 //      Args: name, code kind, extra IC state
 // DBG: Builtin in platform-dependent assembly, used by the debugger.
 //      Args: name
-#define BUILTIN_LIST(CPP, API, TFJ, TFS, ASM, ASH, DBG)                        \
+
+#define BUILTIN_LIST_BASE(CPP, API, TFJ, TFS, ASM, ASH, DBG)                   \
   ASM(Abort)                                                                   \
   /* Code aging */                                                             \
   CODE_AGE_LIST_WITH_ARG(DECLARE_CODE_AGE_BUILTIN, ASM)                        \
@@ -145,7 +147,6 @@ class Isolate;
   TFS(StringIndexOf, BUILTIN, kNoExtraICState, StringIndexOf, 1)               \
   TFS(StringLessThan, BUILTIN, kNoExtraICState, Compare, 1)                    \
   TFS(StringLessThanOrEqual, BUILTIN, kNoExtraICState, Compare, 1)             \
-  TFS(StringNotEqual, BUILTIN, kNoExtraICState, Compare, 1)                    \
                                                                                \
   /* Interpreter */                                                            \
   ASM(InterpreterEntryTrampoline)                                              \
@@ -163,7 +164,6 @@ class Isolate;
   ASM(InterpreterOnStackReplacement)                                           \
                                                                                \
   /* Code life-cycle */                                                        \
-  ASM(CompileBaseline)                                                         \
   ASM(CompileOptimized)                                                        \
   ASM(CompileOptimizedConcurrent)                                              \
   ASM(InOptimizationQueue)                                                     \
@@ -182,7 +182,6 @@ class Isolate;
   API(HandleApiCall)                                                           \
   API(HandleApiCallAsFunction)                                                 \
   API(HandleApiCallAsConstructor)                                              \
-  ASM(HandleFastApiCall)                                                       \
                                                                                \
   /* Adapters for Turbofan into runtime */                                     \
   ASM(AllocateInNewSpace)                                                      \
@@ -222,7 +221,7 @@ class Isolate;
   TFS(ToLength, BUILTIN, kNoExtraICState, TypeConversion, 1)                   \
   TFS(ClassOf, BUILTIN, kNoExtraICState, Typeof, 1)                            \
   TFS(Typeof, BUILTIN, kNoExtraICState, Typeof, 1)                             \
-  TFS(GetSuperConstructor, BUILTIN, kNoExtraICState, TypeConversion, 1)        \
+  TFS(GetSuperConstructor, BUILTIN, kNoExtraICState, Typeof, 1)                \
                                                                                \
   /* Handlers */                                                               \
   TFS(LoadICProtoArray, BUILTIN, kNoExtraICState, LoadICProtoArray, 1)         \
@@ -248,6 +247,9 @@ class Isolate;
   TFS(LoadIC_Uninitialized, BUILTIN, kNoExtraICState, LoadWithVector, 1)       \
   TFS(StoreIC_Miss, BUILTIN, kNoExtraICState, StoreWithVector, 1)              \
   ASH(StoreIC_Setter_ForDeopt, BUILTIN, kNoExtraICState)                       \
+  TFS(StoreIC_Uninitialized, BUILTIN, kNoExtraICState, StoreWithVector, 1)     \
+  TFS(StoreICStrict_Uninitialized, BUILTIN, kNoExtraICState, StoreWithVector,  \
+      1)                                                                       \
                                                                                \
   /* Built-in functions for Javascript */                                      \
   /* Special internal builtins */                                              \
@@ -262,19 +264,53 @@ class Isolate;
   ASM(ArrayCode)                                                               \
   ASM(InternalArrayCode)                                                       \
   CPP(ArrayConcat)                                                             \
-  /* ES6 section 22.1.2.2 Array.isArray */                                     \
-  TFJ(ArrayIsArray, 1)                                                         \
+  /* ES6 #sec-array.isarray */                                                 \
+  TFJ(ArrayIsArray, 1, kArg)                                                   \
   /* ES7 #sec-array.prototype.includes */                                      \
-  TFJ(ArrayIncludes, 2)                                                        \
-  TFJ(ArrayIndexOf, 2)                                                         \
+  TFJ(ArrayIncludes, 2, kSearchElement, kFromIndex)                            \
+  /* ES6 #sec-array.prototype.indexof */                                       \
+  TFJ(ArrayIndexOf, 2, kSearchElement, kFromIndex)                             \
+  /* ES6 #sec-array.prototype.pop */                                           \
   CPP(ArrayPop)                                                                \
+  /* ES6 #sec-array.prototype.push */                                          \
   CPP(ArrayPush)                                                               \
-  TFJ(FastArrayPush, -1)                                                       \
+  TFJ(FastArrayPush, SharedFunctionInfo::kDontAdaptArgumentsSentinel)          \
+  /* ES6 #sec-array.prototype.shift */                                         \
   CPP(ArrayShift)                                                              \
+  /* ES6 #sec-array.prototype.slice */                                         \
   CPP(ArraySlice)                                                              \
+  /* ES6 #sec-array.prototype.splice */                                        \
   CPP(ArraySplice)                                                             \
+  /* ES6 #sec-array.prototype.unshift */                                       \
   CPP(ArrayUnshift)                                                            \
-  TFJ(ArrayForEach, 2)                                                         \
+  /* ES6 #sec-array.prototype.foreach */                                       \
+  TFJ(ArrayForEachLoopContinuation, 7, kCallbackFn, kThisArg, kArray, kObject, \
+      kInitialK, kLength, kTo)                                                 \
+  TFJ(ArrayForEach, 2, kCallbackFn, kThisArg)                                  \
+  /* ES6 #sec-array.prototype.every */                                         \
+  TFJ(ArrayEveryLoopContinuation, 7, kCallbackFn, kThisArg, kArray, kObject,   \
+      kInitialK, kLength, kTo)                                                 \
+  TFJ(ArrayEvery, 2, kCallbackFn, kThisArg)                                    \
+  /* ES6 #sec-array.prototype.some */                                          \
+  TFJ(ArraySomeLoopContinuation, 7, kCallbackFn, kThisArg, kArray, kObject,    \
+      kInitialK, kLength, kTo)                                                 \
+  TFJ(ArraySome, 2, kCallbackFn, kThisArg)                                     \
+  /* ES6 #sec-array.prototype.filter */                                        \
+  TFJ(ArrayFilterLoopContinuation, 7, kCallbackFn, kThisArg, kArray, kObject,  \
+      kInitialK, kLength, kTo)                                                 \
+  TFJ(ArrayFilter, 2, kCallbackFn, kThisArg)                                   \
+  /* ES6 #sec-array.prototype.foreach */                                       \
+  TFJ(ArrayMapLoopContinuation, 7, kCallbackFn, kThisArg, kArray, kObject,     \
+      kInitialK, kLength, kTo)                                                 \
+  TFJ(ArrayMap, 2, kCallbackFn, kThisArg)                                      \
+  /* ES6 #sec-array.prototype.reduce */                                        \
+  TFJ(ArrayReduceLoopContinuation, 7, kCallbackFn, kThisArg, kAccumulator,     \
+      kObject, kInitialK, kLength, kTo)                                        \
+  TFJ(ArrayReduce, 2, kCallbackFn, kInitialValue)                              \
+  /* ES6 #sec-array.prototype.reduceRight */                                   \
+  TFJ(ArrayReduceRightLoopContinuation, 7, kCallbackFn, kThisArg,              \
+      kAccumulator, kObject, kInitialK, kLength, kTo)                          \
+  TFJ(ArrayReduceRight, 2, kCallbackFn, kInitialValue)                         \
   /* ES6 #sec-array.prototype.entries */                                       \
   TFJ(ArrayPrototypeEntries, 0)                                                \
   /* ES6 #sec-array.prototype.keys */                                          \
@@ -292,19 +328,19 @@ class Isolate;
   CPP(ArrayBufferPrototypeSlice)                                               \
                                                                                \
   /* AsyncFunction */                                                          \
-  TFJ(AsyncFunctionAwaitCaught, 3)                                             \
-  TFJ(AsyncFunctionAwaitUncaught, 3)                                           \
-  TFJ(AsyncFunctionAwaitRejectClosure, 1)                                      \
-  TFJ(AsyncFunctionAwaitResolveClosure, 1)                                     \
+  TFJ(AsyncFunctionAwaitCaught, 3, kGenerator, kAwaited, kOuterPromise)        \
+  TFJ(AsyncFunctionAwaitUncaught, 3, kGenerator, kAwaited, kOuterPromise)      \
+  TFJ(AsyncFunctionAwaitRejectClosure, 1, kSentError)                          \
+  TFJ(AsyncFunctionAwaitResolveClosure, 1, kSentValue)                         \
   TFJ(AsyncFunctionPromiseCreate, 0)                                           \
-  TFJ(AsyncFunctionPromiseRelease, 1)                                          \
+  TFJ(AsyncFunctionPromiseRelease, 1, kPromise)                                \
                                                                                \
   /* Boolean */                                                                \
   CPP(BooleanConstructor)                                                      \
   CPP(BooleanConstructor_ConstructStub)                                        \
-  /* ES6 section 19.3.3.2 Boolean.prototype.toString ( ) */                    \
+  /* ES6 #sec-boolean.prototype.tostring */                                    \
   TFJ(BooleanPrototypeToString, 0)                                             \
-  /* ES6 section 19.3.3.3 Boolean.prototype.valueOf ( ) */                     \
+  /* ES6 #sec-boolean.prototype.valueof */                                     \
   TFJ(BooleanPrototypeValueOf, 0)                                              \
                                                                                \
   /* CallSite */                                                               \
@@ -351,46 +387,46 @@ class Isolate;
   /* Date */                                                                   \
   CPP(DateConstructor)                                                         \
   CPP(DateConstructor_ConstructStub)                                           \
-  /* ES6 section 20.3.4.2 Date.prototype.getDate ( ) */                        \
+  /* ES6 #sec-date.prototype.getdate */                                        \
   TFJ(DatePrototypeGetDate, 0)                                                 \
-  /* ES6 section 20.3.4.3 Date.prototype.getDay ( ) */                         \
+  /* ES6 #sec-date.prototype.getday */                                         \
   TFJ(DatePrototypeGetDay, 0)                                                  \
-  /* ES6 section 20.3.4.4 Date.prototype.getFullYear ( ) */                    \
+  /* ES6 #sec-date.prototype.getfullyear */                                    \
   TFJ(DatePrototypeGetFullYear, 0)                                             \
-  /* ES6 section 20.3.4.5 Date.prototype.getHours ( ) */                       \
+  /* ES6 #sec-date.prototype.gethours */                                       \
   TFJ(DatePrototypeGetHours, 0)                                                \
-  /* ES6 section 20.3.4.6 Date.prototype.getMilliseconds ( ) */                \
+  /* ES6 #sec-date.prototype.getmilliseconds */                                \
   TFJ(DatePrototypeGetMilliseconds, 0)                                         \
-  /* ES6 section 20.3.4.7 Date.prototype.getMinutes ( ) */                     \
+  /* ES6 #sec-date.prototype.getminutes */                                     \
   TFJ(DatePrototypeGetMinutes, 0)                                              \
-  /* ES6 section 20.3.4.8 Date.prototype.getMonth */                           \
+  /* ES6 #sec-date.prototype.getmonth */                                       \
   TFJ(DatePrototypeGetMonth, 0)                                                \
-  /* ES6 section 20.3.4.9 Date.prototype.getSeconds ( ) */                     \
+  /* ES6 #sec-date.prototype.getseconds */                                     \
   TFJ(DatePrototypeGetSeconds, 0)                                              \
-  /* ES6 section 20.3.4.10 Date.prototype.getTime ( ) */                       \
+  /* ES6 #sec-date.prototype.gettime */                                        \
   TFJ(DatePrototypeGetTime, 0)                                                 \
-  /* ES6 section 20.3.4.11 Date.prototype.getTimezoneOffset ( ) */             \
+  /* ES6 #sec-date.prototype.gettimezoneoffset */                              \
   TFJ(DatePrototypeGetTimezoneOffset, 0)                                       \
-  /* ES6 section 20.3.4.12 Date.prototype.getUTCDate ( ) */                    \
+  /* ES6 #sec-date.prototype.getutcdate */                                     \
   TFJ(DatePrototypeGetUTCDate, 0)                                              \
-  /* ES6 section 20.3.4.13 Date.prototype.getUTCDay ( ) */                     \
+  /* ES6 #sec-date.prototype.getutcday */                                      \
   TFJ(DatePrototypeGetUTCDay, 0)                                               \
-  /* ES6 section 20.3.4.14 Date.prototype.getUTCFullYear ( ) */                \
+  /* ES6 #sec-date.prototype.getutcfullyear */                                 \
   TFJ(DatePrototypeGetUTCFullYear, 0)                                          \
-  /* ES6 section 20.3.4.15 Date.prototype.getUTCHours ( ) */                   \
+  /* ES6 #sec-date.prototype.getutchours */                                    \
   TFJ(DatePrototypeGetUTCHours, 0)                                             \
-  /* ES6 section 20.3.4.16 Date.prototype.getUTCMilliseconds ( ) */            \
+  /* ES6 #sec-date.prototype.getutcmilliseconds */                             \
   TFJ(DatePrototypeGetUTCMilliseconds, 0)                                      \
-  /* ES6 section 20.3.4.17 Date.prototype.getUTCMinutes ( ) */                 \
+  /* ES6 #sec-date.prototype.getutcminutes */                                  \
   TFJ(DatePrototypeGetUTCMinutes, 0)                                           \
-  /* ES6 section 20.3.4.18 Date.prototype.getUTCMonth ( ) */                   \
+  /* ES6 #sec-date.prototype.getutcmonth */                                    \
   TFJ(DatePrototypeGetUTCMonth, 0)                                             \
-  /* ES6 section 20.3.4.19 Date.prototype.getUTCSeconds ( ) */                 \
+  /* ES6 #sec-date.prototype.getutcseconds */                                  \
   TFJ(DatePrototypeGetUTCSeconds, 0)                                           \
-  /* ES6 section 20.3.4.44 Date.prototype.valueOf ( ) */                       \
+  /* ES6 #sec-date.prototype.valueof */                                        \
   TFJ(DatePrototypeValueOf, 0)                                                 \
-  /* ES6 section 20.3.4.45 Date.prototype [ @@toPrimitive ] ( hint ) */        \
-  TFJ(DatePrototypeToPrimitive, 1)                                             \
+  /* ES6 #sec-date.prototype-@@toprimitive */                                  \
+  TFJ(DatePrototypeToPrimitive, 1, kHint)                                      \
   CPP(DatePrototypeGetYear)                                                    \
   CPP(DatePrototypeSetYear)                                                    \
   CPP(DateNow)                                                                 \
@@ -432,11 +468,13 @@ class Isolate;
   CPP(FunctionConstructor)                                                     \
   ASM(FunctionPrototypeApply)                                                  \
   CPP(FunctionPrototypeBind)                                                   \
+  /* ES6 #sec-function.prototype.bind */                                       \
   TFJ(FastFunctionPrototypeBind,                                               \
       SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   ASM(FunctionPrototypeCall)                                                   \
-  /* ES6 section 19.2.3.6 Function.prototype [ @@hasInstance ] ( V ) */        \
-  TFJ(FunctionPrototypeHasInstance, 1)                                         \
+  /* ES6 #sec-function.prototype-@@hasinstance */                              \
+  TFJ(FunctionPrototypeHasInstance, 1, kV)                                     \
+  /* ES6 #sec-function.prototype.tostring */                                   \
   CPP(FunctionPrototypeToString)                                               \
                                                                                \
   /* Belongs to Objects but is a dependency of GeneratorPrototypeResume */     \
@@ -445,12 +483,12 @@ class Isolate;
                                                                                \
   /* Generator and Async */                                                    \
   CPP(GeneratorFunctionConstructor)                                            \
-  /* ES6 section 25.3.1.2 Generator.prototype.next ( value ) */                \
-  TFJ(GeneratorPrototypeNext, 1)                                               \
-  /* ES6 section 25.3.1.3 Generator.prototype.return ( value ) */              \
-  TFJ(GeneratorPrototypeReturn, 1)                                             \
-  /* ES6 section 25.3.1.4 Generator.prototype.throw ( exception ) */           \
-  TFJ(GeneratorPrototypeThrow, 1)                                              \
+  /* ES6 #sec-generator.prototype.next */                                      \
+  TFJ(GeneratorPrototypeNext, 1, kValue)                                       \
+  /* ES6 #sec-generator.prototype.return */                                    \
+  TFJ(GeneratorPrototypeReturn, 1, kValue)                                     \
+  /* ES6 #sec-generator.prototype.throw */                                     \
+  TFJ(GeneratorPrototypeThrow, 1, kException)                                  \
   CPP(AsyncFunctionConstructor)                                                \
                                                                                \
   /* Global object */                                                          \
@@ -461,10 +499,10 @@ class Isolate;
   CPP(GlobalEscape)                                                            \
   CPP(GlobalUnescape)                                                          \
   CPP(GlobalEval)                                                              \
-  /* ES6 section 18.2.2 isFinite ( number ) */                                 \
-  TFJ(GlobalIsFinite, 1)                                                       \
-  /* ES6 section 18.2.3 isNaN ( number ) */                                    \
-  TFJ(GlobalIsNaN, 1)                                                          \
+  /* ES6 #sec-isfinite-number */                                               \
+  TFJ(GlobalIsFinite, 1, kNumber)                                              \
+  /* ES6 #sec-isnan-number */                                                  \
+  TFJ(GlobalIsNaN, 1, kNumber)                                                 \
                                                                                \
   /* JSON */                                                                   \
   CPP(JsonParse)                                                               \
@@ -472,6 +510,7 @@ class Isolate;
                                                                                \
   /* ICs */                                                                    \
   TFS(LoadIC, LOAD_IC, kNoExtraICState, LoadWithVector, 1)                     \
+  TFS(LoadIC_Noninlined, BUILTIN, kNoExtraICState, LoadWithVector, 1)          \
   TFS(LoadICTrampoline, LOAD_IC, kNoExtraICState, Load, 1)                     \
   TFS(KeyedLoadIC, KEYED_LOAD_IC, kNoExtraICState, LoadWithVector, 1)          \
   TFS(KeyedLoadICTrampoline, KEYED_LOAD_IC, kNoExtraICState, Load, 1)          \
@@ -491,100 +530,100 @@ class Isolate;
       LoadGlobal, 1)                                                           \
                                                                                \
   /* Math */                                                                   \
-  /* ES6 section 20.2.2.1 Math.abs ( x ) */                                    \
-  TFJ(MathAbs, 1)                                                              \
-  /* ES6 section 20.2.2.2 Math.acos ( x ) */                                   \
-  TFJ(MathAcos, 1)                                                             \
-  /* ES6 section 20.2.2.3 Math.acosh ( x ) */                                  \
-  TFJ(MathAcosh, 1)                                                            \
-  /* ES6 section 20.2.2.4 Math.asin ( x ) */                                   \
-  TFJ(MathAsin, 1)                                                             \
-  /* ES6 section 20.2.2.5 Math.asinh ( x ) */                                  \
-  TFJ(MathAsinh, 1)                                                            \
-  /* ES6 section 20.2.2.6 Math.atan ( x ) */                                   \
-  TFJ(MathAtan, 1)                                                             \
-  /* ES6 section 20.2.2.7 Math.atanh ( x ) */                                  \
-  TFJ(MathAtanh, 1)                                                            \
-  /* ES6 section 20.2.2.8 Math.atan2 ( y, x ) */                               \
-  TFJ(MathAtan2, 2)                                                            \
-  /* ES6 section 20.2.2.9 Math.cbrt ( x ) */                                   \
-  TFJ(MathCbrt, 1)                                                             \
-  /* ES6 section 20.2.2.10 Math.ceil ( x ) */                                  \
-  TFJ(MathCeil, 1)                                                             \
-  /* ES6 section 20.2.2.11 Math.clz32 ( x ) */                                 \
-  TFJ(MathClz32, 1)                                                            \
-  /* ES6 section 20.2.2.12 Math.cos ( x ) */                                   \
-  TFJ(MathCos, 1)                                                              \
-  /* ES6 section 20.2.2.13 Math.cosh ( x ) */                                  \
-  TFJ(MathCosh, 1)                                                             \
-  /* ES6 section 20.2.2.14 Math.exp ( x ) */                                   \
-  TFJ(MathExp, 1)                                                              \
-  /* ES6 section 20.2.2.15 Math.expm1 ( x ) */                                 \
-  TFJ(MathExpm1, 1)                                                            \
-  /* ES6 section 20.2.2.16 Math.floor ( x ) */                                 \
-  TFJ(MathFloor, 1)                                                            \
-  /* ES6 section 20.2.2.17 Math.fround ( x ) */                                \
-  TFJ(MathFround, 1)                                                           \
-  /* ES6 section 20.2.2.18 Math.hypot ( value1, value2, ...values ) */         \
+  /* ES6 #sec-math.abs */                                                      \
+  TFJ(MathAbs, 1, kX)                                                          \
+  /* ES6 #sec-math.acos */                                                     \
+  TFJ(MathAcos, 1, kX)                                                         \
+  /* ES6 #sec-math.acosh */                                                    \
+  TFJ(MathAcosh, 1, kX)                                                        \
+  /* ES6 #sec-math.asin */                                                     \
+  TFJ(MathAsin, 1, kX)                                                         \
+  /* ES6 #sec-math.asinh */                                                    \
+  TFJ(MathAsinh, 1, kX)                                                        \
+  /* ES6 #sec-math.atan */                                                     \
+  TFJ(MathAtan, 1, kX)                                                         \
+  /* ES6 #sec-math.atanh */                                                    \
+  TFJ(MathAtanh, 1, kX)                                                        \
+  /* ES6 #sec-math.atan2 */                                                    \
+  TFJ(MathAtan2, 2, kY, kX)                                                    \
+  /* ES6 #sec-math.cbrt */                                                     \
+  TFJ(MathCbrt, 1, kX)                                                         \
+  /* ES6 #sec-math.ceil */                                                     \
+  TFJ(MathCeil, 1, kX)                                                         \
+  /* ES6 #sec-math.clz32 */                                                    \
+  TFJ(MathClz32, 1, kX)                                                        \
+  /* ES6 #sec-math.cos */                                                      \
+  TFJ(MathCos, 1, kX)                                                          \
+  /* ES6 #sec-math.cosh */                                                     \
+  TFJ(MathCosh, 1, kX)                                                         \
+  /* ES6 #sec-math.exp */                                                      \
+  TFJ(MathExp, 1, kX)                                                          \
+  /* ES6 #sec-math.expm1 */                                                    \
+  TFJ(MathExpm1, 1, kX)                                                        \
+  /* ES6 #sec-math.floor */                                                    \
+  TFJ(MathFloor, 1, kX)                                                        \
+  /* ES6 #sec-math.fround */                                                   \
+  TFJ(MathFround, 1, kX)                                                       \
+  /* ES6 #sec-math.hypot */                                                    \
   CPP(MathHypot)                                                               \
-  /* ES6 section 20.2.2.19 Math.imul ( x, y ) */                               \
-  TFJ(MathImul, 2)                                                             \
-  /* ES6 section 20.2.2.20 Math.log ( x ) */                                   \
-  TFJ(MathLog, 1)                                                              \
-  /* ES6 section 20.2.2.21 Math.log1p ( x ) */                                 \
-  TFJ(MathLog1p, 1)                                                            \
-  /* ES6 section 20.2.2.22 Math.log10 ( x ) */                                 \
-  TFJ(MathLog10, 1)                                                            \
-  /* ES6 section 20.2.2.23 Math.log2 ( x ) */                                  \
-  TFJ(MathLog2, 1)                                                             \
-  /* ES6 section 20.2.2.24 Math.max ( value1, value2 , ...values ) */          \
+  /* ES6 #sec-math.imul */                                                     \
+  TFJ(MathImul, 2, kX, kY)                                                     \
+  /* ES6 #sec-math.log */                                                      \
+  TFJ(MathLog, 1, kX)                                                          \
+  /* ES6 #sec-math.log1p */                                                    \
+  TFJ(MathLog1p, 1, kX)                                                        \
+  /* ES6 #sec-math.log10 */                                                    \
+  TFJ(MathLog10, 1, kX)                                                        \
+  /* ES6 #sec-math.log2 */                                                     \
+  TFJ(MathLog2, 1, kX)                                                         \
+  /* ES6 #sec-math.max */                                                      \
   TFJ(MathMax, SharedFunctionInfo::kDontAdaptArgumentsSentinel)                \
-  /* ES6 section 20.2.2.25 Math.min ( value1, value2 , ...values ) */          \
+  /* ES6 #sec-math.min */                                                      \
   TFJ(MathMin, SharedFunctionInfo::kDontAdaptArgumentsSentinel)                \
-  /* ES6 section 20.2.2.26 Math.pow ( x, y ) */                                \
-  TFJ(MathPow, 2)                                                              \
-  /* ES6 section 20.2.2.27 Math.random */                                      \
+  /* ES6 #sec-math.pow */                                                      \
+  TFJ(MathPow, 2, kBase, kExponent)                                            \
+  /* ES6 #sec-math.random */                                                   \
   TFJ(MathRandom, 0)                                                           \
-  /* ES6 section 20.2.2.28 Math.round ( x ) */                                 \
-  TFJ(MathRound, 1)                                                            \
-  /* ES6 section 20.2.2.29 Math.sign ( x ) */                                  \
-  TFJ(MathSign, 1)                                                             \
-  /* ES6 section 20.2.2.30 Math.sin ( x ) */                                   \
-  TFJ(MathSin, 1)                                                              \
-  /* ES6 section 20.2.2.31 Math.sinh ( x ) */                                  \
-  TFJ(MathSinh, 1)                                                             \
-  /* ES6 section 20.2.2.32 Math.sqrt ( x ) */                                  \
-  TFJ(MathTan, 1)                                                              \
-  /* ES6 section 20.2.2.33 Math.tan ( x ) */                                   \
-  TFJ(MathTanh, 1)                                                             \
-  /* ES6 section 20.2.2.34 Math.tanh ( x ) */                                  \
-  TFJ(MathSqrt, 1)                                                             \
-  /* ES6 section 20.2.2.35 Math.trunc ( x ) */                                 \
-  TFJ(MathTrunc, 1)                                                            \
+  /* ES6 #sec-math.round */                                                    \
+  TFJ(MathRound, 1, kX)                                                        \
+  /* ES6 #sec-math.sign */                                                     \
+  TFJ(MathSign, 1, kX)                                                         \
+  /* ES6 #sec-math.sin */                                                      \
+  TFJ(MathSin, 1, kX)                                                          \
+  /* ES6 #sec-math.sinh */                                                     \
+  TFJ(MathSinh, 1, kX)                                                         \
+  /* ES6 #sec-math.sqrt */                                                     \
+  TFJ(MathTan, 1, kX)                                                          \
+  /* ES6 #sec-math.tan */                                                      \
+  TFJ(MathTanh, 1, kX)                                                         \
+  /* ES6 #sec-math.tanh */                                                     \
+  TFJ(MathSqrt, 1, kX)                                                         \
+  /* ES6 #sec-math.trunc */                                                    \
+  TFJ(MathTrunc, 1, kX)                                                        \
                                                                                \
   /* Number */                                                                 \
   /* ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Call]] case */        \
   ASM(NumberConstructor)                                                       \
   /* ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Construct]] case */   \
   ASM(NumberConstructor_ConstructStub)                                         \
-  /* ES6 section 20.1.2.2 Number.isFinite ( number ) */                        \
-  TFJ(NumberIsFinite, 1)                                                       \
-  /* ES6 section 20.1.2.3 Number.isInteger ( number ) */                       \
-  TFJ(NumberIsInteger, 1)                                                      \
-  /* ES6 section 20.1.2.4 Number.isNaN ( number ) */                           \
-  TFJ(NumberIsNaN, 1)                                                          \
-  /* ES6 section 20.1.2.5 Number.isSafeInteger ( number ) */                   \
-  TFJ(NumberIsSafeInteger, 1)                                                  \
-  /* ES6 section 20.1.2.12 Number.parseFloat ( string ) */                     \
-  TFJ(NumberParseFloat, 1)                                                     \
-  /* ES6 section 20.1.2.13 Number.parseInt ( string, radix ) */                \
-  TFJ(NumberParseInt, 2)                                                       \
+  /* ES6 #sec-number.isfinite */                                               \
+  TFJ(NumberIsFinite, 1, kNumber)                                              \
+  /* ES6 #sec-number.isinteger */                                              \
+  TFJ(NumberIsInteger, 1, kNumber)                                             \
+  /* ES6 #sec-number.isnan */                                                  \
+  TFJ(NumberIsNaN, 1, kNumber)                                                 \
+  /* ES6 #sec-number.issafeinteger */                                          \
+  TFJ(NumberIsSafeInteger, 1, kNumber)                                         \
+  /* ES6 #sec-number.parsefloat */                                             \
+  TFJ(NumberParseFloat, 1, kString)                                            \
+  /* ES6 #sec-number.parseint */                                               \
+  TFJ(NumberParseInt, 2, kString, kRadix)                                      \
   CPP(NumberPrototypeToExponential)                                            \
   CPP(NumberPrototypeToFixed)                                                  \
   CPP(NumberPrototypeToLocaleString)                                           \
   CPP(NumberPrototypeToPrecision)                                              \
   CPP(NumberPrototypeToString)                                                 \
-  /* ES6 section 20.1.3.7 Number.prototype.valueOf ( ) */                      \
+  /* ES6 #sec-number.prototype.valueof */                                      \
   TFJ(NumberPrototypeValueOf, 0)                                               \
   TFS(Add, BUILTIN, kNoExtraICState, BinaryOp, 1)                              \
   TFS(Subtract, BUILTIN, kNoExtraICState, BinaryOp, 1)                         \
@@ -602,12 +641,14 @@ class Isolate;
   TFS(GreaterThan, BUILTIN, kNoExtraICState, Compare, 1)                       \
   TFS(GreaterThanOrEqual, BUILTIN, kNoExtraICState, Compare, 1)                \
   TFS(Equal, BUILTIN, kNoExtraICState, Compare, 1)                             \
-  TFS(NotEqual, BUILTIN, kNoExtraICState, Compare, 1)                          \
   TFS(StrictEqual, BUILTIN, kNoExtraICState, Compare, 1)                       \
+  TFS(AddWithFeedback, BUILTIN, kNoExtraICState, BinaryOpWithVector, 1)        \
+  TFS(SubtractWithFeedback, BUILTIN, kNoExtraICState, BinaryOpWithVector, 1)   \
                                                                                \
   /* Object */                                                                 \
   CPP(ObjectAssign)                                                            \
-  TFJ(ObjectCreate, 2)                                                         \
+  /* ES #sec-object.create */                                                  \
+  TFJ(ObjectCreate, 2, kPrototype, kProperties)                                \
   CPP(ObjectDefineGetter)                                                      \
   CPP(ObjectDefineProperties)                                                  \
   CPP(ObjectDefineProperty)                                                    \
@@ -620,8 +661,8 @@ class Isolate;
   CPP(ObjectGetOwnPropertySymbols)                                             \
   CPP(ObjectGetPrototypeOf)                                                    \
   CPP(ObjectSetPrototypeOf)                                                    \
-  /* ES6 section 19.1.3.2 Object.prototype.hasOwnProperty */                   \
-  TFJ(ObjectHasOwnProperty, 1)                                                 \
+  /* ES6 #sec-object.prototype.hasownproperty */                               \
+  TFJ(ObjectHasOwnProperty, 1, kKey)                                           \
   CPP(ObjectIs)                                                                \
   CPP(ObjectIsExtensible)                                                      \
   CPP(ObjectIsFrozen)                                                          \
@@ -630,8 +671,9 @@ class Isolate;
   CPP(ObjectLookupGetter)                                                      \
   CPP(ObjectLookupSetter)                                                      \
   CPP(ObjectPreventExtensions)                                                 \
-  /* ES6 section 19.1.3.6 Object.prototype.toString () */                      \
+  /* ES6 #sec-object.prototype.tostring */                                     \
   TFJ(ObjectProtoToString, 0)                                                  \
+  /* ES6 #sec-object.prototype.valueof */                                      \
   TFJ(ObjectPrototypeValueOf, 0)                                               \
   CPP(ObjectPrototypePropertyIsEnumerable)                                     \
   CPP(ObjectPrototypeGetProto)                                                 \
@@ -649,24 +691,35 @@ class Isolate;
   TFS(ForInPrepare, BUILTIN, kNoExtraICState, ForInPrepare, 3)                 \
                                                                                \
   /* Promise */                                                                \
-  TFJ(PromiseGetCapabilitiesExecutor, 2)                                       \
-  TFJ(NewPromiseCapability, 2)                                                 \
-  TFJ(PromiseConstructor, 1)                                                   \
-  TFJ(PromiseInternalConstructor, 1)                                           \
-  TFJ(IsPromise, 1)                                                            \
-  TFJ(PromiseResolveClosure, 1)                                                \
-  TFJ(PromiseRejectClosure, 1)                                                 \
-  TFJ(PromiseThen, 2)                                                          \
-  TFJ(PromiseCatch, 1)                                                         \
-  TFJ(ResolvePromise, 2)                                                       \
+  /* ES6 #sec-getcapabilitiesexecutor-functions */                             \
+  TFJ(PromiseGetCapabilitiesExecutor, 2, kResolve, kReject)                    \
+  /* ES6 #sec-newpromisecapability */                                          \
+  TFJ(NewPromiseCapability, 2, kConstructor, kDebugEvent)                      \
+  /* ES6 #sec-promise-executor */                                              \
+  TFJ(PromiseConstructor, 1, kExecutor)                                        \
+  TFJ(PromiseInternalConstructor, 1, kParent)                                  \
+  TFJ(IsPromise, 1, kObject)                                                   \
+  /* ES #sec-promise-resolve-functions */                                      \
+  TFJ(PromiseResolveClosure, 1, kValue)                                        \
+  /* ES #sec-promise-reject-functions */                                       \
+  TFJ(PromiseRejectClosure, 1, kValue)                                         \
+  /* ES #sec-promise.prototype.then */                                         \
+  TFJ(PromiseThen, 2, kOnFullfilled, kOnRejected)                              \
+  /* ES #sec-promise.prototype.catch */                                        \
+  TFJ(PromiseCatch, 1, kOnRejected)                                            \
+  /* ES #sec-fulfillpromise */                                                 \
+  TFJ(ResolvePromise, 2, kPromise, kValue)                                     \
   TFS(PromiseHandleReject, BUILTIN, kNoExtraICState, PromiseHandleReject, 1)   \
-  TFJ(PromiseHandle, 5)                                                        \
-  TFJ(PromiseResolve, 1)                                                       \
-  TFJ(PromiseReject, 1)                                                        \
-  TFJ(InternalPromiseReject, 3)                                                \
-  TFJ(PromiseFinally, 1)                                                       \
-  TFJ(PromiseThenFinally, 1)                                                   \
-  TFJ(PromiseCatchFinally, 1)                                                  \
+  TFJ(PromiseHandle, 5, kValue, kHandler, kDeferredPromise,                    \
+      kDeferredOnResolve, kDeferredOnReject)                                   \
+  /* ES #sec-promise.resolve */                                                \
+  TFJ(PromiseResolve, 1, kValue)                                               \
+  /* ES #sec-promise.reject */                                                 \
+  TFJ(PromiseReject, 1, kReason)                                               \
+  TFJ(InternalPromiseReject, 3, kPromise, kReason, kDebugEvent)                \
+  TFJ(PromiseFinally, 1, kOnFinally)                                           \
+  TFJ(PromiseThenFinally, 1, kValue)                                           \
+  TFJ(PromiseCatchFinally, 1, kReason)                                         \
   TFJ(PromiseValueThunkFinally, 0)                                             \
   TFJ(PromiseThrowerFinally, 0)                                                \
                                                                                \
@@ -690,6 +743,8 @@ class Isolate;
   CPP(ReflectSetPrototypeOf)                                                   \
                                                                                \
   /* RegExp */                                                                 \
+  TFS(RegExpPrototypeExecSlow, BUILTIN, kNoExtraICState,                       \
+      RegExpPrototypeExecSlow, 1)                                              \
   CPP(RegExpCapture1Getter)                                                    \
   CPP(RegExpCapture2Getter)                                                    \
   CPP(RegExpCapture3Getter)                                                    \
@@ -699,119 +754,151 @@ class Isolate;
   CPP(RegExpCapture7Getter)                                                    \
   CPP(RegExpCapture8Getter)                                                    \
   CPP(RegExpCapture9Getter)                                                    \
-  TFJ(RegExpConstructor, 2)                                                    \
-  TFJ(RegExpInternalMatch, 2)                                                  \
+  /* ES #sec-regexp-pattern-flags */                                           \
+  TFJ(RegExpConstructor, 2, kPattern, kFlags)                                  \
+  TFJ(RegExpInternalMatch, 2, kRegExp, kString)                                \
   CPP(RegExpInputGetter)                                                       \
   CPP(RegExpInputSetter)                                                       \
   CPP(RegExpLastMatchGetter)                                                   \
   CPP(RegExpLastParenGetter)                                                   \
   CPP(RegExpLeftContextGetter)                                                 \
-  TFJ(RegExpPrototypeCompile, 2)                                               \
-  TFJ(RegExpPrototypeExec, 1)                                                  \
+  /* ES #sec-regexp.prototype.compile */                                       \
+  TFJ(RegExpPrototypeCompile, 2, kPattern, kFlags)                             \
+  /* ES #sec-regexp.prototype.exec */                                          \
+  TFJ(RegExpPrototypeExec, 1, kString)                                         \
+  /* ES #sec-get-regexp.prototype.flags */                                     \
   TFJ(RegExpPrototypeFlagsGetter, 0)                                           \
+  /* ES #sec-get-regexp.prototype.global */                                    \
   TFJ(RegExpPrototypeGlobalGetter, 0)                                          \
+  /* ES #sec-get-regexp.prototype.ignorecase */                                \
   TFJ(RegExpPrototypeIgnoreCaseGetter, 0)                                      \
-  TFJ(RegExpPrototypeMatch, 1)                                                 \
+  /* ES #sec-regexp.prototype-@@match */                                       \
+  TFJ(RegExpPrototypeMatch, 1, kString)                                        \
+  /* ES #sec-get-regexp.prototype.multiline */                                 \
   TFJ(RegExpPrototypeMultilineGetter, 0)                                       \
-  TFJ(RegExpPrototypeSearch, 1)                                                \
+  /* ES #sec-regexp.prototype-@@search */                                      \
+  TFJ(RegExpPrototypeSearch, 1, kString)                                       \
+  /* ES #sec-get-regexp.prototype.source */                                    \
   TFJ(RegExpPrototypeSourceGetter, 0)                                          \
+  /* ES #sec-get-regexp.prototype.sticky */                                    \
   TFJ(RegExpPrototypeStickyGetter, 0)                                          \
-  TFJ(RegExpPrototypeTest, 1)                                                  \
+  /* ES #sec-regexp.prototype.test */                                          \
+  TFJ(RegExpPrototypeTest, 1, kString)                                         \
   CPP(RegExpPrototypeToString)                                                 \
+  /* ES #sec-get-regexp.prototype.unicode */                                   \
   TFJ(RegExpPrototypeUnicodeGetter, 0)                                         \
   CPP(RegExpRightContextGetter)                                                \
                                                                                \
   TFS(RegExpReplace, BUILTIN, kNoExtraICState, RegExpReplace, 1)               \
-  TFJ(RegExpPrototypeReplace, 2)                                               \
+  /* ES #sec-regexp.prototype-@@replace */                                     \
+  TFJ(RegExpPrototypeReplace, 2, kString, kReplaceValue)                       \
                                                                                \
   TFS(RegExpSplit, BUILTIN, kNoExtraICState, RegExpSplit, 1)                   \
-  TFJ(RegExpPrototypeSplit, 2)                                                 \
+  /* ES #sec-regexp.prototype-@@split */                                       \
+  TFJ(RegExpPrototypeSplit, 2, kString, kLimit)                                \
                                                                                \
   /* SharedArrayBuffer */                                                      \
   CPP(SharedArrayBufferPrototypeGetByteLength)                                 \
-  TFJ(AtomicsLoad, 2)                                                          \
-  TFJ(AtomicsStore, 3)                                                         \
+  CPP(SharedArrayBufferPrototypeSlice)                                         \
+  TFJ(AtomicsLoad, 2, kArray, kIndex)                                          \
+  TFJ(AtomicsStore, 3, kArray, kIndex, kValue)                                 \
+  TFJ(AtomicsExchange, 3, kArray, kIndex, kValue)                              \
+  TFJ(AtomicsCompareExchange, 4, kArray, kIndex, kOldValue, kNewValue)         \
+  CPP(AtomicsAdd)                                                              \
+  CPP(AtomicsSub)                                                              \
+  CPP(AtomicsAnd)                                                              \
+  CPP(AtomicsOr)                                                               \
+  CPP(AtomicsXor)                                                              \
+  CPP(AtomicsIsLockFree)                                                       \
+  CPP(AtomicsWait)                                                             \
+  CPP(AtomicsWake)                                                             \
                                                                                \
   /* String */                                                                 \
   ASM(StringConstructor)                                                       \
   ASM(StringConstructor_ConstructStub)                                         \
   CPP(StringFromCodePoint)                                                     \
-  /* ES6 section 21.1.2.1 String.fromCharCode ( ...codeUnits ) */              \
+  /* ES6 #sec-string.fromcharcode */                                           \
   TFJ(StringFromCharCode, SharedFunctionInfo::kDontAdaptArgumentsSentinel)     \
-  /* ES6 section 21.1.3.1 String.prototype.charAt ( pos ) */                   \
-  TFJ(StringPrototypeCharAt, 1)                                                \
-  /* ES6 section 21.1.3.2 String.prototype.charCodeAt ( pos ) */               \
-  TFJ(StringPrototypeCharCodeAt, 1)                                            \
-  /* ES6 section 21.1.3.6 */                                                   \
-  /* String.prototype.endsWith ( searchString [ , endPosition ] ) */           \
+  /* ES6 #sec-string.prototype.charat */                                       \
+  TFJ(StringPrototypeCharAt, 1, kPosition)                                     \
+  /* ES6 #sec-string.prototype.charcodeat */                                   \
+  TFJ(StringPrototypeCharCodeAt, 1, kPosition)                                 \
+  /* ES6 #sec-string.prototype.concat */                                       \
+  TFJ(StringPrototypeConcat, SharedFunctionInfo::kDontAdaptArgumentsSentinel)  \
+  /* ES6 #sec-string.prototype.endswith */                                     \
   CPP(StringPrototypeEndsWith)                                                 \
-  /* ES6 section 21.1.3.7 */                                                   \
-  /* String.prototype.includes ( searchString [ , position ] ) */              \
+  /* ES6 #sec-string.prototype.includes */                                     \
   CPP(StringPrototypeIncludes)                                                 \
-  /* ES6 section #sec-string.prototype.indexof */                              \
-  /* String.prototype.indexOf ( searchString [ , position ] ) */               \
+  /* ES6 #sec-string.prototype.indexof */                                      \
   TFJ(StringPrototypeIndexOf, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
-  /* ES6 section 21.1.3.9 */                                                   \
-  /* String.prototype.lastIndexOf ( searchString [ , position ] ) */           \
+  /* ES6 #sec-string.prototype.lastindexof */                                  \
   CPP(StringPrototypeLastIndexOf)                                              \
-  /* ES6 section 21.1.3.10 String.prototype.localeCompare ( that ) */          \
+  /* ES6 #sec-string.prototype.localecompare */                                \
   CPP(StringPrototypeLocaleCompare)                                            \
-  /* ES6 section 21.1.3.12 String.prototype.normalize ( [form] ) */            \
+  /* ES6 #sec-string.prototype.normalize */                                    \
   CPP(StringPrototypeNormalize)                                                \
-  /* ES6 section 21.1.3.16 String.prototype.replace ( search, replace ) */     \
-  TFJ(StringPrototypeReplace, 2)                                               \
-  /* ES6 section 21.1.3.19 String.prototype.split ( separator, limit )  */     \
-  TFJ(StringPrototypeSplit, 2)                                                 \
-  /* ES6 section B.2.3.1 String.prototype.substr ( start, length ) */          \
-  TFJ(StringPrototypeSubstr, 2)                                                \
-  /* ES6 section 21.1.3.19 String.prototype.substring ( start, end ) */        \
-  TFJ(StringPrototypeSubstring, 2)                                             \
-  /* ES6 section 21.1.3.20 */                                                  \
-  /* String.prototype.startsWith ( searchString [ , position ] ) */            \
+  /* ES6 #sec-string.prototype.replace */                                      \
+  TFJ(StringPrototypeReplace, 2, kSearch, kReplace)                            \
+  /* ES6 #sec-string.prototype.split */                                        \
+  TFJ(StringPrototypeSplit, 2, kSeparator, kLimit)                             \
+  /* ES6 #sec-string.prototype.substr */                                       \
+  TFJ(StringPrototypeSubstr, 2, kStart, kLength)                               \
+  /* ES6 #sec-string.prototype.substring */                                    \
+  TFJ(StringPrototypeSubstring, 2, kStart, kEnd)                               \
+  /* ES6 #sec-string.prototype.startswith */                                   \
   CPP(StringPrototypeStartsWith)                                               \
-  /* ES6 section 21.1.3.25 String.prototype.toString () */                     \
+  /* ES6 #sec-string.prototype.tostring */                                     \
   TFJ(StringPrototypeToString, 0)                                              \
   /* ES #sec-string.prototype.tolocalelowercase */                             \
   CPP(StringPrototypeToLocaleLowerCase)                                        \
   /* ES #sec-string.prototype.tolocaleuppercase */                             \
   CPP(StringPrototypeToLocaleUpperCase)                                        \
-  /* ES #sec-string.prototype.tolowercase */                                   \
+  /* (obsolete) Unibrow version */                                             \
   CPP(StringPrototypeToLowerCase)                                              \
-  /* ES #sec-string.prototype.touppercase */                                   \
+  /* (obsolete) Unibrow version */                                             \
   CPP(StringPrototypeToUpperCase)                                              \
   CPP(StringPrototypeTrim)                                                     \
   CPP(StringPrototypeTrimLeft)                                                 \
   CPP(StringPrototypeTrimRight)                                                \
-  /* ES6 section 21.1.3.28 String.prototype.valueOf () */                      \
+  /* ES6 #sec-string.prototype.valueof */                                      \
   TFJ(StringPrototypeValueOf, 0)                                               \
   /* ES6 #sec-string.prototype-@@iterator */                                   \
   TFJ(StringPrototypeIterator, 0)                                              \
                                                                                \
   /* StringIterator */                                                         \
+  /* ES6 #sec-%stringiteratorprototype%.next */                                \
   TFJ(StringIteratorPrototypeNext, 0)                                          \
                                                                                \
   /* Symbol */                                                                 \
   CPP(SymbolConstructor)                                                       \
   CPP(SymbolConstructor_ConstructStub)                                         \
-  /* ES6 section 19.4.2.1 Symbol.for */                                        \
+  /* ES6 #sec-symbol.for */                                                    \
   CPP(SymbolFor)                                                               \
-  /* ES6 section 19.4.2.5 Symbol.keyFor */                                     \
+  /* ES6 #sec-symbol.keyfor */                                                 \
   CPP(SymbolKeyFor)                                                            \
-  /* ES6 section 19.4.3.4 Symbol.prototype [ @@toPrimitive ] ( hint ) */       \
-  TFJ(SymbolPrototypeToPrimitive, 1)                                           \
-  /* ES6 section 19.4.3.2 Symbol.prototype.toString ( ) */                     \
+  /* ES6 #sec-symbol.prototype-@@toprimitive */                                \
+  TFJ(SymbolPrototypeToPrimitive, 1, kHint)                                    \
+  /* ES6 #sec-symbol.prototype.tostring */                                     \
   TFJ(SymbolPrototypeToString, 0)                                              \
-  /* ES6 section 19.4.3.3 Symbol.prototype.valueOf ( ) */                      \
+  /* ES6 #sec-symbol.prototype.valueof */                                      \
   TFJ(SymbolPrototypeValueOf, 0)                                               \
                                                                                \
   /* TypedArray */                                                             \
-  TFJ(TypedArrayInitialize, 6)                                                 \
+  /* ES6 #sec-typedarray-buffer-byteoffset-length */                           \
+  TFJ(TypedArrayConstructByArrayBuffer, 5, kHolder, kBuffer, kByteOffset,      \
+      kLength, kElementSize)                                                   \
+  TFJ(TypedArrayConstructByArrayLike, 4, kHolder, kArrayLike, kLength,         \
+      kElementSize)                                                            \
+  /* ES6 #sec-typedarray-length */                                             \
+  TFJ(TypedArrayConstructByLength, 3, kHolder, kLength, kElementSize)          \
+  TFJ(TypedArrayInitialize, 6, kHolder, kLength, kBuffer, kByteOffset,         \
+      kByteLength, kInitialize)                                                \
   CPP(TypedArrayPrototypeBuffer)                                               \
-  /* ES6 section 22.2.3.2 get %TypedArray%.prototype.byteLength */             \
+  /* ES6 #sec-get-%typedarray%.prototype.bytelength */                         \
   TFJ(TypedArrayPrototypeByteLength, 0)                                        \
-  /* ES6 section 22.2.3.3 get %TypedArray%.prototype.byteOffset */             \
+  /* ES6 #sec-get-%typedarray%.prototype.byteoffset */                         \
   TFJ(TypedArrayPrototypeByteOffset, 0)                                        \
-  /* ES6 section 22.2.3.18 get %TypedArray%.prototype.length */                \
+  /* ES6 #sec-get-%typedarray%.prototype.length */                             \
   TFJ(TypedArrayPrototypeLength, 0)                                            \
   /* ES6 #sec-%typedarray%.prototype.entries */                                \
   TFJ(TypedArrayPrototypeEntries, 0)                                           \
@@ -821,8 +908,19 @@ class Isolate;
   TFJ(TypedArrayPrototypeValues, 0)                                            \
   /* ES6 #sec-%typedarray%.prototype.copywithin */                             \
   CPP(TypedArrayPrototypeCopyWithin)                                           \
+  /* ES6 #sec-%typedarray%.prototype.fill */                                   \
+  CPP(TypedArrayPrototypeFill)                                                 \
+  /* ES7 #sec-%typedarray%.prototype.includes */                               \
+  CPP(TypedArrayPrototypeIncludes)                                             \
+  /* ES6 #sec-%typedarray%.prototype.indexof */                                \
+  CPP(TypedArrayPrototypeIndexOf)                                              \
+  /* ES6 #sec-%typedarray%.prototype.lastindexof */                            \
+  CPP(TypedArrayPrototypeLastIndexOf)                                          \
+  /* ES6 #sec-%typedarray%.prototype.reverse */                                \
+  CPP(TypedArrayPrototypeReverse)                                              \
                                                                                \
   /* Wasm */                                                                   \
+  ASM(WasmCompileLazy)                                                         \
   TFS(WasmStackGuard, BUILTIN, kNoExtraICState, WasmRuntimeCall, 1)            \
   TFS(ThrowWasmTrapUnreachable, BUILTIN, kNoExtraICState, WasmRuntimeCall, 1)  \
   TFS(ThrowWasmTrapMemOutOfBounds, BUILTIN, kNoExtraICState, WasmRuntimeCall,  \
@@ -840,17 +938,50 @@ class Isolate;
   /* Async-from-Sync Iterator */                                               \
                                                                                \
   /* %AsyncFromSyncIteratorPrototype% */                                       \
-  /* (proposal-async-iteration/#sec-%asyncfromsynciteratorprototype%-object)*/ \
-  TFJ(AsyncFromSyncIteratorPrototypeNext, 1)                                   \
-  TFJ(AsyncFromSyncIteratorPrototypeThrow, 1)                                  \
-  TFJ(AsyncFromSyncIteratorPrototypeReturn, 1)                                 \
-                                                                               \
-  /* proposal-async-iteration/#sec-async-iterator-value-unwrap-functions */    \
-  TFJ(AsyncIteratorValueUnwrap, 1)
+  /* See tc39.github.io/proposal-async-iteration/ */                           \
+  /* #sec-%asyncfromsynciteratorprototype%-object) */                          \
+  TFJ(AsyncFromSyncIteratorPrototypeNext, 1, kValue)                           \
+  /* #sec-%asyncfromsynciteratorprototype%.throw */                            \
+  TFJ(AsyncFromSyncIteratorPrototypeThrow, 1, kReason)                         \
+  /* #sec-%asyncfromsynciteratorprototype%.return */                           \
+  TFJ(AsyncFromSyncIteratorPrototypeReturn, 1, kValue)                         \
+  /* #sec-async-iterator-value-unwrap-functions */                             \
+  TFJ(AsyncIteratorValueUnwrap, 1, kValue)
+
+#ifdef V8_I18N_SUPPORT
+#define BUILTIN_LIST(CPP, API, TFJ, TFS, ASM, ASH, DBG) \
+  BUILTIN_LIST_BASE(CPP, API, TFJ, TFS, ASM, ASH, DBG)  \
+                                                        \
+  /* ES #sec-string.prototype.tolowercase */            \
+  CPP(StringPrototypeToLowerCaseI18N)                   \
+  /* ES #sec-string.prototype.touppercase */            \
+  CPP(StringPrototypeToUpperCaseI18N)
+#else
+#define BUILTIN_LIST(CPP, API, TFJ, TFS, ASM, ASH, DBG) \
+  BUILTIN_LIST_BASE(CPP, API, TFJ, TFS, ASM, ASH, DBG)
+#endif  // V8_I18N_SUPPORT
+
+#define BUILTIN_PROMISE_REJECTION_PREDICTION_LIST(V) \
+  V(AsyncFromSyncIteratorPrototypeNext)              \
+  V(AsyncFromSyncIteratorPrototypeReturn)            \
+  V(AsyncFromSyncIteratorPrototypeThrow)             \
+  V(AsyncFunctionAwaitCaught)                        \
+  V(AsyncFunctionAwaitUncaught)                      \
+  V(PromiseConstructor)                              \
+  V(PromiseHandle)                                   \
+  V(PromiseResolve)                                  \
+  V(PromiseResolveClosure)                           \
+  V(ResolvePromise)
+
+#define BUILTIN_EXCEPTION_CAUGHT_PREDICTION_LIST(V) V(PromiseHandleReject)
 
 #define IGNORE_BUILTIN(...)
 
 #define BUILTIN_LIST_ALL(V) BUILTIN_LIST(V, V, V, V, V, V, V)
+
+#define BUILTIN_LIST_TFS(V)                                       \
+  BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, V, \
+               IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
 
 #define BUILTIN_LIST_C(V)                                            \
   BUILTIN_LIST(V, V, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, \
@@ -863,6 +994,8 @@ class Isolate;
 #define BUILTIN_LIST_DBG(V)                                                    \
   BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, \
                IGNORE_BUILTIN, IGNORE_BUILTIN, V)
+
+#define BUILTINS_WITH_UNTAGGED_PARAMS(V) V(WasmCompileLazy)
 
 // Forward declarations.
 class ObjectVisitor;
@@ -924,6 +1057,8 @@ class Builtins {
   Address builtin_address(Name name) {
     return reinterpret_cast<Address>(&builtins_[name]);
   }
+
+  static Callable CallableFor(Isolate* isolate, Name name);
 
   static const char* name(int index);
 

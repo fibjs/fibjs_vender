@@ -129,7 +129,7 @@ function cp_folder(path, to) {
 
 var gens = [
     '/out.gn/x64.release/gen/libraries.cc',
-    '/out.gn/x64.release/gen/experimental-libraries.cc',
+    // '/out.gn/x64.release/gen/experimental-libraries.cc',
     '/out.gn/x64.release/gen/extras-libraries.cc',
     '/out.gn/x64.release/gen/experimental-extras-libraries.cc',
     '/out.gn/x64.release/gen/bytecode-peephole-table.cc'
@@ -330,6 +330,8 @@ clean_folder('src');
 cp_folder('include');
 cp_folder('src');
 
+patch_plat();
+
 fs.mkdir('include/base');
 cp_folder('base', 'include');
 
@@ -345,7 +347,6 @@ update_plat();
 //patch_samp();
 
 patch_src('src');
-patch_plat();
 patch_trace();
 patch_trace_win();
 patch_macro();

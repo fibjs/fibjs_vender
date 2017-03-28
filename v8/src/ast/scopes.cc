@@ -201,10 +201,11 @@ ModuleScope::ModuleScope(DeclarationScope* script_scope,
   DeclareThis(ast_value_factory);
 }
 
-ModuleScope::ModuleScope(Isolate* isolate, Handle<ScopeInfo> scope_info,
+ModuleScope::ModuleScope(Handle<ScopeInfo> scope_info,
                          AstValueFactory* avfactory)
     : DeclarationScope(avfactory->zone(), MODULE_SCOPE, scope_info) {
   Zone* zone = avfactory->zone();
+  Isolate* isolate = scope_info->GetIsolate();
   Handle<ModuleInfo> module_info(scope_info->ModuleDescriptorInfo(), isolate);
 
   set_language_mode(STRICT);
@@ -262,6 +263,9 @@ Scope::Scope(Zone* zone, ScopeType scope_type, Handle<ScopeInfo> scope_info)
   set_language_mode(scope_info->language_mode());
   num_heap_slots_ = scope_info->ContextLength();
   DCHECK_LE(Context::MIN_CONTEXT_SLOTS, num_heap_slots_);
+  // We don't really need to use the preparsed scope data; this is just to
+  // shorten the recursion in SetMustUsePreParsedScopeData.
+  must_use_preparsed_scope_data_ = true;
 }
 
 DeclarationScope::DeclarationScope(Zone* zone, ScopeType scope_type,
@@ -309,6 +313,7 @@ void DeclarationScope::SetDefaults() {
   rare_data_ = nullptr;
   should_eager_compile_ = false;
   was_lazily_parsed_ = false;
+  is_skipped_function_ = false;
 #ifdef DEBUG
   DeclarationScope* outer_declaration_scope =
       outer_scope_ ? outer_scope_->GetDeclarationScope() : nullptr;
@@ -345,6 +350,8 @@ void Scope::SetDefaults() {
   force_context_allocation_ = false;
 
   is_declaration_scope_ = false;
+
+  must_use_preparsed_scope_data_ = false;
 }
 
 bool Scope::HasSimpleParameters() {
@@ -378,8 +385,7 @@ bool Scope::IsAsmFunction() const {
   return is_function_scope() && AsDeclarationScope()->asm_function();
 }
 
-Scope* Scope::DeserializeScopeChain(Isolate* isolate, Zone* zone,
-                                    ScopeInfo* scope_info,
+Scope* Scope::DeserializeScopeChain(Zone* zone, ScopeInfo* scope_info,
                                     DeclarationScope* script_scope,
                                     AstValueFactory* ast_value_factory,
                                     DeserializationMode deserialization_mode) {
@@ -424,8 +430,8 @@ Scope* Scope::DeserializeScopeChain(Isolate* isolate, Zone* zone,
         outer_scope = new (zone) Scope(zone, BLOCK_SCOPE, handle(scope_info));
       }
     } else if (scope_info->scope_type() == MODULE_SCOPE) {
-      outer_scope = new (zone)
-          ModuleScope(isolate, handle(scope_info), ast_value_factory);
+      outer_scope =
+          new (zone) ModuleScope(handle(scope_info), ast_value_factory);
     } else {
       DCHECK_EQ(scope_info->scope_type(), CATCH_SCOPE);
       DCHECK_EQ(scope_info->LocalCount(), 1);
@@ -435,9 +441,9 @@ Scope* Scope::DeserializeScopeChain(Isolate* isolate, Zone* zone,
       String* name = scope_info->ContextLocalName(0);
       MaybeAssignedFlag maybe_assigned =
           scope_info->ContextLocalMaybeAssignedFlag(0);
-      outer_scope = new (zone)
-          Scope(zone, ast_value_factory->GetString(handle(name, isolate)),
-                maybe_assigned, handle(scope_info));
+      outer_scope =
+          new (zone) Scope(zone, ast_value_factory->GetString(handle(name)),
+                           maybe_assigned, handle(scope_info));
     }
     if (deserialization_mode == DeserializationMode::kScopesOnly) {
       outer_scope->scope_info_ = Handle<ScopeInfo>::null();
@@ -613,11 +619,13 @@ void DeclarationScope::HoistSloppyBlockFunctions(AstNodeFactory* factory) {
   }
 }
 
-void DeclarationScope::Analyze(ParseInfo* info, AnalyzeMode mode) {
-  RuntimeCallTimerScope runtimeTimer(info->isolate(),
+void DeclarationScope::Analyze(ParseInfo* info, Isolate* isolate,
+                               AnalyzeMode mode) {
+  RuntimeCallTimerScope runtimeTimer(isolate,
                                      &RuntimeCallStats::CompileScopeAnalysis);
   DCHECK(info->literal() != NULL);
   DeclarationScope* scope = info->literal()->scope();
+  DCHECK(scope->scope_info_.is_null());
 
   Handle<ScopeInfo> outer_scope_info;
   if (info->maybe_outer_scope_info().ToHandle(&outer_scope_info)) {
@@ -626,7 +634,7 @@ void DeclarationScope::Analyze(ParseInfo* info, AnalyzeMode mode) {
           DeclarationScope(info->zone(), info->ast_value_factory());
       info->set_script_scope(script_scope);
       scope->ReplaceOuterScope(Scope::DeserializeScopeChain(
-          info->isolate(), info->zone(), *outer_scope_info, script_scope,
+          info->zone(), *outer_scope_info, script_scope,
           info->ast_value_factory(),
           Scope::DeserializationMode::kIncludingVariables));
     } else {
@@ -653,13 +661,19 @@ void DeclarationScope::Analyze(ParseInfo* info, AnalyzeMode mode) {
   // The outer scope is never lazy.
   scope->set_should_eager_compile();
 
-  scope->AllocateVariables(info, mode);
+  if (scope->must_use_preparsed_scope_data_) {
+    DCHECK(FLAG_preparser_scope_analysis);
+    DCHECK_NOT_NULL(info->preparsed_scope_data());
+    DCHECK_EQ(scope->scope_type_, ScopeType::FUNCTION_SCOPE);
+    info->preparsed_scope_data()->RestoreData(scope);
+  }
+
+  scope->AllocateVariables(info, isolate, mode);
 
   // Ensuring that the outer script scope has a scope info avoids having
   // special case for native contexts vs other contexts.
   if (info->script_scope()->scope_info_.is_null()) {
-    info->script_scope()->scope_info_ =
-        handle(ScopeInfo::Empty(info->isolate()));
+    info->script_scope()->scope_info_ = handle(ScopeInfo::Empty(isolate));
   }
 
 #ifdef DEBUG
@@ -749,6 +763,16 @@ Variable* DeclarationScope::DeclarePromiseVar(const AstRawString* name) {
   DCHECK(is_function_scope());
   DCHECK_NULL(promise_var());
   Variable* result = EnsureRareData()->promise = NewTemporary(name);
+  result->set_is_used();
+  return result;
+}
+
+Variable* DeclarationScope::DeclareAsyncGeneratorAwaitVar(
+    const AstRawString* name) {
+  DCHECK(is_function_scope());
+  DCHECK_NULL(async_generator_await_var());
+  Variable* result = EnsureRareData()->promise = NewTemporary(name);
+  DCHECK_NULL(promise_var());  // promise is alias for generator await var
   result->set_is_used();
   return result;
 }
@@ -1304,7 +1328,8 @@ Declaration* Scope::CheckLexDeclarationsConflictingWith(
   return nullptr;
 }
 
-void DeclarationScope::AllocateVariables(ParseInfo* info, AnalyzeMode mode) {
+void DeclarationScope::AllocateVariables(ParseInfo* info, Isolate* isolate,
+                                         AnalyzeMode mode) {
   // Module variables must be allocated before variable resolution
   // to ensure that AccessNeedsHoleCheck() can detect import variables.
   if (is_module_scope()) AsModuleScope()->AllocateModuleVariables();
@@ -1315,16 +1340,16 @@ void DeclarationScope::AllocateVariables(ParseInfo* info, AnalyzeMode mode) {
   MaybeHandle<ScopeInfo> outer_scope;
   if (outer_scope_ != nullptr) outer_scope = outer_scope_->scope_info_;
 
-  AllocateScopeInfosRecursively(info->isolate(), outer_scope);
+  AllocateScopeInfosRecursively(isolate, outer_scope);
   if (mode == AnalyzeMode::kDebugger) {
-    AllocateDebuggerScopeInfos(info->isolate(), outer_scope);
+    AllocateDebuggerScopeInfos(isolate, outer_scope);
   }
   // The debugger expects all shared function infos to contain a scope info.
   // Since the top-most scope will end up in a shared function info, make sure
   // it has one, even if it doesn't need a scope info.
   // TODO(jochen|yangguo): Remove this requirement.
   if (scope_info_.is_null()) {
-    scope_info_ = ScopeInfo::Create(info->isolate(), zone(), this, outer_scope);
+    scope_info_ = ScopeInfo::Create(isolate, zone(), this, outer_scope);
   }
 }
 
@@ -1522,11 +1547,10 @@ void DeclarationScope::AnalyzePartially(
       arguments_ = nullptr;
     }
 
-    if (FLAG_preparser_scope_analysis) {
-      // Decide context allocation for the locals and parameters and store the
-      // info away.
-      AllocateVariablesRecursively();
-      CollectVariableData(preparsed_scope_data);
+    if (FLAG_preparser_scope_analysis && preparsed_scope_data->Producing()) {
+      // Store the information needed for allocating the locals of this scope
+      // and its inner scopes.
+      preparsed_scope_data->SaveData(this);
     }
   }
 #ifdef DEBUG
@@ -2301,17 +2325,6 @@ void Scope::AllocateDebuggerScopeInfos(Isolate* isolate,
   for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
     if (scope->is_function_scope()) continue;
     scope->AllocateDebuggerScopeInfos(isolate, outer);
-  }
-}
-
-void Scope::CollectVariableData(PreParsedScopeData* data) {
-  PreParsedScopeData::ScopeScope scope_scope(data, scope_type(),
-                                             start_position(), end_position());
-  for (Variable* local : locals_) {
-    scope_scope.MaybeAddVariable(local);
-  }
-  for (Scope* inner = inner_scope_; inner != nullptr; inner = inner->sibling_) {
-    inner->CollectVariableData(data);
   }
 }
 

@@ -172,8 +172,8 @@ class SerializerDeserializer : public ObjectVisitor {
   // Used for the source code for compiled stubs, which is in the executable,
   // but is referred to from external strings in the snapshot.
   static const int kExtraNativesStringResource = 0x1e;
-  // Used for embedder-provided serialization data for internal fields.
-  static const int kInternalFieldsData = 0x1f;
+  // Used for embedder-provided serialization data for embedder fields.
+  static const int kEmbedderFieldsData = 0x1f;
 
   // 8 hot (recently seen or back-referenced) objects with optional skip.
   static const int kNumberOfHotObjects = 8;
@@ -245,14 +245,26 @@ class SerializedData {
   }
 
   uint32_t GetMagicNumber() const { return GetHeaderValue(kMagicNumberOffset); }
+  uint32_t GetExtraReferences() const {
+    return GetHeaderValue(kExtraExternalReferencesOffset);
+  }
 
   class ChunkSizeBits : public BitField<uint32_t, 0, 31> {};
   class IsLastChunkBits : public BitField<bool, 31, 1> {};
 
   static uint32_t ComputeMagicNumber(ExternalReferenceTable* table) {
-    uint32_t external_refs = table->size();
+    uint32_t external_refs = table->size() - table->num_api_references();
     return 0xC0DE0000 ^ external_refs;
   }
+  static uint32_t GetExtraReferences(ExternalReferenceTable* table) {
+    return table->num_api_references();
+  }
+
+  static const int kMagicNumberOffset = 0;
+  static const int kExtraExternalReferencesOffset =
+      kMagicNumberOffset + kInt32Size;
+  static const int kVersionHashOffset =
+      kExtraExternalReferencesOffset + kInt32Size;
 
  protected:
   void SetHeaderValue(int offset, uint32_t value) {
@@ -271,12 +283,14 @@ class SerializedData {
   static uint32_t ComputeMagicNumber(Isolate* isolate) {
     return ComputeMagicNumber(ExternalReferenceTable::instance(isolate));
   }
+  static uint32_t GetExtraReferences(Isolate* isolate) {
+    return GetExtraReferences(ExternalReferenceTable::instance(isolate));
+  }
 
   void SetMagicNumber(Isolate* isolate) {
     SetHeaderValue(kMagicNumberOffset, ComputeMagicNumber(isolate));
+    SetHeaderValue(kExtraExternalReferencesOffset, GetExtraReferences(isolate));
   }
-
-  static const int kMagicNumberOffset = 0;
 
   byte* data_;
   int size_;

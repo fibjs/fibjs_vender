@@ -4,6 +4,8 @@
 
 #include "src/builtins/builtins.h"
 #include "src/api.h"
+#include "src/assembler-inl.h"
+#include "src/callable.h"
 #include "src/code-events.h"
 #include "src/compiler/code-assembler.h"
 #include "src/ic/ic-state.h"
@@ -135,7 +137,7 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
   code = BuildAdaptor(isolate, FUNCTION_ADDR(Builtin_##Name), EXIT, \
                       kBuiltinFlags, #Name);                        \
   builtins_[index++] = code;
-#define BUILD_TFJ(Name, Argc)                                          \
+#define BUILD_TFJ(Name, Argc, ...)                                     \
   code = BuildWithCodeStubAssemblerJS(isolate, &Generate_##Name, Argc, \
                                       kBuiltinFlags, #Name);           \
   builtins_[index++] = code;
@@ -167,6 +169,23 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
     for (int i = 0; i < builtin_count; i++) {
       Code::cast(builtins_[i])->set_builtin_index(i);
     }
+
+#define SET_PROMISE_REJECTION_PREDICTION(Name) \
+  Code::cast(builtins_[k##Name])->set_is_promise_rejection(true);
+
+    BUILTIN_PROMISE_REJECTION_PREDICTION_LIST(SET_PROMISE_REJECTION_PREDICTION)
+#undef SET_PROMISE_REJECTION_PREDICTION
+
+#define SET_EXCEPTION_CAUGHT_PREDICTION(Name) \
+  Code::cast(builtins_[k##Name])->set_is_exception_caught(true);
+
+    BUILTIN_EXCEPTION_CAUGHT_PREDICTION_LIST(SET_EXCEPTION_CAUGHT_PREDICTION)
+#undef SET_EXCEPTION_CAUGHT_PREDICTION
+
+#define SET_CODE_NON_TAGGED_PARAMS(Name) \
+  Code::cast(builtins_[k##Name])->set_has_tagged_params(false);
+    BUILTINS_WITH_UNTAGGED_PARAMS(SET_CODE_NON_TAGGED_PARAMS)
+#undef SET_CODE_NON_TAGGED_PARAMS
   }
 
   // Mark as initialized.
@@ -188,6 +207,94 @@ const char* Builtins::Lookup(byte* pc) {
     }
   }
   return NULL;
+}
+
+Handle<Code> Builtins::NewFunctionContext(ScopeType scope_type) {
+  switch (scope_type) {
+    case ScopeType::EVAL_SCOPE:
+      return FastNewFunctionContextEval();
+    case ScopeType::FUNCTION_SCOPE:
+      return FastNewFunctionContextFunction();
+    default:
+      UNREACHABLE();
+  }
+  return Handle<Code>::null();
+}
+
+Handle<Code> Builtins::NewCloneShallowArray(
+    AllocationSiteMode allocation_mode) {
+  switch (allocation_mode) {
+    case TRACK_ALLOCATION_SITE:
+      return FastCloneShallowArrayTrack();
+    case DONT_TRACK_ALLOCATION_SITE:
+      return FastCloneShallowArrayDontTrack();
+    default:
+      UNREACHABLE();
+  }
+  return Handle<Code>::null();
+}
+
+Handle<Code> Builtins::NewCloneShallowObject(int length) {
+  switch (length) {
+    case 0:
+      return FastCloneShallowObject0();
+    case 1:
+      return FastCloneShallowObject1();
+    case 2:
+      return FastCloneShallowObject2();
+    case 3:
+      return FastCloneShallowObject3();
+    case 4:
+      return FastCloneShallowObject4();
+    case 5:
+      return FastCloneShallowObject5();
+    case 6:
+      return FastCloneShallowObject6();
+    default:
+      UNREACHABLE();
+  }
+  return Handle<Code>::null();
+}
+
+Handle<Code> Builtins::NonPrimitiveToPrimitive(ToPrimitiveHint hint) {
+  switch (hint) {
+    case ToPrimitiveHint::kDefault:
+      return NonPrimitiveToPrimitive_Default();
+    case ToPrimitiveHint::kNumber:
+      return NonPrimitiveToPrimitive_Number();
+    case ToPrimitiveHint::kString:
+      return NonPrimitiveToPrimitive_String();
+  }
+  UNREACHABLE();
+  return Handle<Code>::null();
+}
+
+Handle<Code> Builtins::OrdinaryToPrimitive(OrdinaryToPrimitiveHint hint) {
+  switch (hint) {
+    case OrdinaryToPrimitiveHint::kNumber:
+      return OrdinaryToPrimitive_Number();
+    case OrdinaryToPrimitiveHint::kString:
+      return OrdinaryToPrimitive_String();
+  }
+  UNREACHABLE();
+  return Handle<Code>::null();
+}
+
+// static
+Callable Builtins::CallableFor(Isolate* isolate, Name name) {
+  switch (name) {
+#define CASE(Name, _, __, InterfaceDescriptor, ...)                      \
+  case k##Name: {                                                        \
+    Handle<Code> code(Code::cast(isolate->builtins()->builtins_[name])); \
+    auto descriptor = InterfaceDescriptor##Descriptor(isolate);          \
+    return Callable(code, descriptor);                                   \
+  }
+    BUILTIN_LIST_TFS(CASE)
+#undef CASE
+    default:
+      UNREACHABLE();
+      return Callable(Handle<Code>::null(), VoidDescriptor(isolate));
+  }
 }
 
 // static

@@ -426,6 +426,36 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     __ dmb(ISH);                                                      \
   } while (0)
 
+#define ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(load_instr, store_instr)             \
+  do {                                                                        \
+    Label exchange;                                                           \
+    __ dmb(ISH);                                                              \
+    __ bind(&exchange);                                                       \
+    __ add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
+    __ load_instr(i.OutputRegister(0), i.TempRegister(0));                    \
+    __ store_instr(i.TempRegister(0), i.InputRegister(2), i.TempRegister(0)); \
+    __ teq(i.TempRegister(0), Operand(0));                                    \
+    __ b(ne, &exchange);                                                      \
+    __ dmb(ISH);                                                              \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(load_instr, store_instr)     \
+  do {                                                                        \
+    Label compareExchange;                                                    \
+    Label exit;                                                               \
+    __ dmb(ISH);                                                              \
+    __ bind(&compareExchange);                                                \
+    __ add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
+    __ load_instr(i.OutputRegister(0), i.TempRegister(0));                    \
+    __ teq(i.TempRegister(1), Operand(i.OutputRegister(0)));                  \
+    __ b(ne, &exit);                                                          \
+    __ store_instr(i.TempRegister(0), i.InputRegister(3), i.TempRegister(0)); \
+    __ teq(i.TempRegister(0), Operand(0));                                    \
+    __ b(ne, &compareExchange);                                               \
+    __ bind(&exit);                                                           \
+    __ dmb(ISH);                                                              \
+  } while (0)
+
 #define ASSEMBLE_IEEE754_BINOP(name)                                           \
   do {                                                                         \
     /* TODO(bmeurer): We should really get rid of this special instruction, */ \
@@ -1417,6 +1447,26 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vstr(i.InputFloatRegister(0), i.InputOffset(1));
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
+    case kArmVld1F64: {
+      __ vld1(Neon8, NeonListOperand(i.OutputDoubleRegister()),
+              NeonMemOperand(i.InputRegister(0)));
+      break;
+    }
+    case kArmVst1F64: {
+      __ vst1(Neon8, NeonListOperand(i.InputDoubleRegister(0)),
+              NeonMemOperand(i.InputRegister(1)));
+      break;
+    }
+    case kArmVld1S128: {
+      __ vld1(Neon8, NeonListOperand(i.OutputSimd128Register()),
+              NeonMemOperand(i.InputRegister(0)));
+      break;
+    }
+    case kArmVst1S128: {
+      __ vst1(Neon8, NeonListOperand(i.InputSimd128Register(0)),
+              NeonMemOperand(i.InputRegister(1)));
+      break;
+    }
     case kArmVldrF64:
       __ vldr(i.OutputDoubleRegister(), i.InputOffset());
       DCHECK_EQ(LeaveCC, i.OutputSBit());
@@ -1540,6 +1590,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vneg(i.OutputSimd128Register(), i.InputSimd128Register(0));
       break;
     }
+    case kArmFloat32x4RecipApprox: {
+      __ vrecpe(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
+    case kArmFloat32x4RecipSqrtApprox: {
+      __ vrsqrte(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
     case kArmFloat32x4Add: {
       __ vadd(i.OutputSimd128Register(), i.InputSimd128Register(0),
               i.InputSimd128Register(1));
@@ -1548,6 +1606,31 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArmFloat32x4Sub: {
       __ vsub(i.OutputSimd128Register(), i.InputSimd128Register(0),
               i.InputSimd128Register(1));
+      break;
+    }
+    case kArmFloat32x4Mul: {
+      __ vmul(i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
+      break;
+    }
+    case kArmFloat32x4Min: {
+      __ vmin(i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
+      break;
+    }
+    case kArmFloat32x4Max: {
+      __ vmax(i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
+      break;
+    }
+    case kArmFloat32x4RecipRefine: {
+      __ vrecps(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kArmFloat32x4RecipSqrtRefine: {
+      __ vrsqrts(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
       break;
     }
     case kArmFloat32x4Equal: {
@@ -1559,6 +1642,16 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Simd128Register dst = i.OutputSimd128Register();
       __ vceq(dst, i.InputSimd128Register(0), i.InputSimd128Register(1));
       __ vmvn(dst, dst);
+      break;
+    }
+    case kArmFloat32x4LessThan: {
+      __ vcgt(i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
+      break;
+    }
+    case kArmFloat32x4LessThanOrEqual: {
+      __ vcge(i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
     case kArmInt32x4Splat: {
@@ -1634,14 +1727,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vmvn(dst, dst);
       break;
     }
-    case kArmInt32x4GreaterThan: {
-      __ vcgt(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmInt32x4LessThan: {
+      __ vcgt(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
-    case kArmInt32x4GreaterThanOrEqual: {
-      __ vcge(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmInt32x4LessThanOrEqual: {
+      __ vcge(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
     case kArmUint32x4ShiftRightByScalar: {
@@ -1659,14 +1752,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
               i.InputSimd128Register(1));
       break;
     }
-    case kArmUint32x4GreaterThan: {
-      __ vcgt(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmUint32x4LessThan: {
+      __ vcgt(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
-    case kArmUint32x4GreaterThanOrEqual: {
-      __ vcge(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmUint32x4LessThanOrEqual: {
+      __ vcge(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
     case kArmInt16x8Splat: {
@@ -1744,14 +1837,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vmvn(dst, dst);
       break;
     }
-    case kArmInt16x8GreaterThan: {
-      __ vcgt(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmInt16x8LessThan: {
+      __ vcgt(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
-    case kArmInt16x8GreaterThanOrEqual: {
-      __ vcge(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmInt16x8LessThanOrEqual: {
+      __ vcge(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
     case kArmUint16x8ShiftRightByScalar: {
@@ -1779,14 +1872,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
               i.InputSimd128Register(1));
       break;
     }
-    case kArmUint16x8GreaterThan: {
-      __ vcgt(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmUint16x8LessThan: {
+      __ vcgt(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
-    case kArmUint16x8GreaterThanOrEqual: {
-      __ vcge(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmUint16x8LessThanOrEqual: {
+      __ vcge(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
     case kArmInt8x16Splat: {
@@ -1863,14 +1956,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vmvn(dst, dst);
       break;
     }
-    case kArmInt8x16GreaterThan: {
-      __ vcgt(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmInt8x16LessThan: {
+      __ vcgt(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
-    case kArmInt8x16GreaterThanOrEqual: {
-      __ vcge(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmInt8x16LessThanOrEqual: {
+      __ vcge(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
     case kArmUint8x16ShiftRightByScalar: {
@@ -1898,14 +1991,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
               i.InputSimd128Register(1));
       break;
     }
-    case kArmUint8x16GreaterThan: {
-      __ vcgt(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmUint8x16LessThan: {
+      __ vcgt(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
-    case kArmUint8x16GreaterThanOrEqual: {
-      __ vcge(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(0),
-              i.InputSimd128Register(1));
+    case kArmUint8x16LessThanOrEqual: {
+      __ vcge(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(1),
+              i.InputSimd128Register(0));
       break;
     }
     case kArmSimd128Zero: {
@@ -2061,6 +2154,45 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kAtomicStoreWord32:
       ASSEMBLE_ATOMIC_STORE_INTEGER(str);
       break;
+    case kAtomicExchangeInt8:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldrexb, strexb);
+      __ sxtb(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicExchangeUint8:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldrexb, strexb);
+      break;
+    case kAtomicExchangeInt16:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldrexh, strexh);
+      __ sxth(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicExchangeUint16:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldrexh, strexh);
+      break;
+    case kAtomicExchangeWord32:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER(ldrex, strex);
+      break;
+    case kAtomicCompareExchangeInt8:
+      __ uxtb(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldrexb, strexb);
+      __ sxtb(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicCompareExchangeUint8:
+      __ uxtb(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldrexb, strexb);
+      break;
+    case kAtomicCompareExchangeInt16:
+      __ uxth(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldrexh, strexh);
+      __ sxth(i.OutputRegister(0), i.OutputRegister(0));
+      break;
+    case kAtomicCompareExchangeUint16:
+      __ uxth(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldrexh, strexh);
+      break;
+    case kAtomicCompareExchangeWord32:
+      __ mov(i.TempRegister(1), i.InputRegister(2));
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER(ldrex, strex);
+      break;
   }
   return kSuccess;
 }  // NOLINT(readability/fn_size)
@@ -2200,7 +2332,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
   // actual final call site and just bl'ing to it here, similar to what we do
   // in the lithium backend.
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
-  __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  if (isolate()->NeedsSourcePositionsForProfiling()) {
+    __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  }
   __ Call(deopt_entry, RelocInfo::RUNTIME_ENTRY);
   __ CheckConstPool(false, false);
   return kSuccess;
@@ -2277,6 +2411,47 @@ void CodeGenerator::AssembleConstructFrame() {
 
   const RegList saves_fp = descriptor->CalleeSavedFPRegisters();
   if (shrink_slots > 0) {
+    if (info()->IsWasm()) {
+      if (shrink_slots > 128) {
+        // For WebAssembly functions with big frames we have to do the stack
+        // overflow check before we construct the frame. Otherwise we may not
+        // have enough space on the stack to call the runtime for the stack
+        // overflow.
+        Label done;
+
+        // If the frame is bigger than the stack, we throw the stack overflow
+        // exception unconditionally. Thereby we can avoid the integer overflow
+        // check in the condition code.
+        if (shrink_slots * kPointerSize < FLAG_stack_size * 1024) {
+          __ Move(kScratchReg,
+                  Operand(ExternalReference::address_of_real_stack_limit(
+                      isolate())));
+          __ ldr(kScratchReg, MemOperand(kScratchReg));
+          __ add(kScratchReg, kScratchReg,
+                 Operand(shrink_slots * kPointerSize));
+          __ cmp(sp, kScratchReg);
+          __ b(cs, &done);
+        }
+
+        if (!frame_access_state()->has_frame()) {
+          __ set_has_frame(true);
+          // There is no need to leave the frame, we will not return from the
+          // runtime call.
+          __ EnterFrame(StackFrame::WASM_COMPILED);
+        }
+        __ Move(cp, Smi::kZero);
+        __ CallRuntime(Runtime::kThrowWasmStackOverflow);
+        // We come from WebAssembly, there are no references for the GC.
+        ReferenceMap* reference_map = new (zone()) ReferenceMap(zone());
+        RecordSafepoint(reference_map, Safepoint::kSimple, 0,
+                        Safepoint::kNoLazyDeopt);
+        if (FLAG_debug_code) {
+          __ stop(GetBailoutReason(kUnexpectedReturnFromThrow));
+        }
+
+        __ bind(&done);
+      }
+    }
     __ sub(sp, sp, Operand(shrink_slots * kPointerSize));
   }
 
@@ -2350,6 +2525,8 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   __ Drop(pop_count);
   __ Ret();
 }
+
+void CodeGenerator::FinishCode() { masm()->CheckConstPool(true, false); }
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {

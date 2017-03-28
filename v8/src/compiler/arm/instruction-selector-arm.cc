@@ -430,8 +430,10 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = kArmLdr;
       break;
+    case MachineRepresentation::kSimd128:
+      opcode = kArmVld1S128;
+      break;
     case MachineRepresentation::kWord64:   // Fall through.
-    case MachineRepresentation::kSimd128:  // Fall through.
     case MachineRepresentation::kSimd1x4:  // Fall through.
     case MachineRepresentation::kSimd1x8:  // Fall through.
     case MachineRepresentation::kSimd1x16:  // Fall through.
@@ -518,8 +520,10 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord32:
         opcode = kArmStr;
         break;
+      case MachineRepresentation::kSimd128:
+        opcode = kArmVst1S128;
+        break;
       case MachineRepresentation::kWord64:   // Fall through.
-      case MachineRepresentation::kSimd128:  // Fall through.
       case MachineRepresentation::kSimd1x4:  // Fall through.
       case MachineRepresentation::kSimd1x8:  // Fall through.
       case MachineRepresentation::kSimd1x16:  // Fall through.
@@ -542,8 +546,8 @@ void InstructionSelector::VisitProtectedStore(Node* node) {
 }
 
 void InstructionSelector::VisitUnalignedLoad(Node* node) {
-  UnalignedLoadRepresentation load_rep =
-      UnalignedLoadRepresentationOf(node->op());
+  MachineRepresentation load_rep =
+      UnalignedLoadRepresentationOf(node->op()).representation();
   ArmOperandGenerator g(this);
   Node* base = node->InputAt(0);
   Node* index = node->InputAt(1);
@@ -551,17 +555,18 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
   InstructionCode opcode = kArmLdr;
   // Only floating point loads need to be specially handled; integer loads
   // support unaligned access. We support unaligned FP loads by loading to
-  // integer registers first, then moving to the destination FP register.
-  switch (load_rep.representation()) {
+  // integer registers first, then moving to the destination FP register. If
+  // NEON is supported, we use the vld1.8 instruction.
+  switch (load_rep) {
     case MachineRepresentation::kFloat32: {
       InstructionOperand temp = g.TempRegister();
       EmitLoad(this, opcode, &temp, base, index);
       Emit(kArmVmovF32U32, g.DefineAsRegister(node), temp);
       return;
     }
-    case MachineRepresentation::kFloat64: {
-      // TODO(arm): use vld1.8 for this when NEON is available.
-      // Compute the address of the least-significant half of the FP value.
+    case MachineRepresentation::kFloat64:
+    case MachineRepresentation::kSimd128: {
+      // Compute the address of the least-significant byte of the FP value.
       // We assume that the base node is unlikely to be an encodable immediate
       // or the result of a shift operation, so only consider the addressing
       // mode that should be used for the index node.
@@ -572,8 +577,8 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
       size_t input_count;
       if (TryMatchImmediateOrShift(this, &add_opcode, index, &input_count,
                                    &inputs[1])) {
-        // input_count has been set by TryMatchImmediateOrShift(), so increment
-        // it to account for the base register in inputs[0].
+        // input_count has been set by TryMatchImmediateOrShift(), so
+        // increment it to account for the base register in inputs[0].
         input_count++;
       } else {
         add_opcode |= AddressingModeField::encode(kMode_Operand2_R);
@@ -584,13 +589,22 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
       InstructionOperand addr = g.TempRegister();
       Emit(add_opcode, 1, &addr, input_count, inputs);
 
-      // Load both halves and move to an FP register.
-      InstructionOperand fp_lo = g.TempRegister();
-      InstructionOperand fp_hi = g.TempRegister();
-      opcode |= AddressingModeField::encode(kMode_Offset_RI);
-      Emit(opcode, fp_lo, addr, g.TempImmediate(0));
-      Emit(opcode, fp_hi, addr, g.TempImmediate(4));
-      Emit(kArmVmovF64U32U32, g.DefineAsRegister(node), fp_lo, fp_hi);
+      if (CpuFeatures::IsSupported(NEON)) {
+        // With NEON we can load directly from the calculated address.
+        ArchOpcode op = load_rep == MachineRepresentation::kFloat64
+                            ? kArmVld1F64
+                            : kArmVld1S128;
+        Emit(op, g.DefineAsRegister(node), addr);
+      } else {
+        DCHECK_NE(MachineRepresentation::kSimd128, load_rep);
+        // Load both halves and move to an FP register.
+        InstructionOperand fp_lo = g.TempRegister();
+        InstructionOperand fp_hi = g.TempRegister();
+        opcode |= AddressingModeField::encode(kMode_Offset_RI);
+        Emit(opcode, fp_lo, addr, g.TempImmediate(0));
+        Emit(opcode, fp_hi, addr, g.TempImmediate(4));
+        Emit(kArmVmovF64U32U32, g.DefineAsRegister(node), fp_lo, fp_hi);
+      }
       return;
     }
     default:
@@ -615,6 +629,7 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
   // Only floating point stores need to be specially handled; integer stores
   // support unaligned access. We support unaligned FP stores by moving the
   // value to integer registers first, then storing to the destination address.
+  // If NEON is supported, we use the vst1.8 instruction.
   switch (store_rep) {
     case MachineRepresentation::kFloat32: {
       inputs[input_count++] = g.TempRegister();
@@ -623,31 +638,63 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
       EmitStore(this, kArmStr, input_count, inputs, index);
       return;
     }
-    case MachineRepresentation::kFloat64: {
-      // TODO(arm): use vst1.8 for this when NEON is available.
-      // Store a 64-bit floating point value using two 32-bit integer stores.
-      // Computing the store address here would require three live temporary
-      // registers (fp<63:32>, fp<31:0>, address), so compute base + 4 after
-      // storing the least-significant half of the value.
+    case MachineRepresentation::kFloat64:
+    case MachineRepresentation::kSimd128: {
+      if (CpuFeatures::IsSupported(NEON)) {
+        InstructionOperand address = g.TempRegister();
+        {
+          // First we have to calculate the actual address.
+          InstructionCode add_opcode = kArmAdd;
+          InstructionOperand inputs[3];
+          inputs[0] = g.UseRegister(base);
 
-      // First, move the 64-bit FP value into two temporary integer registers.
-      InstructionOperand fp[] = {g.TempRegister(), g.TempRegister()};
-      inputs[input_count++] = g.UseRegister(value);
-      Emit(kArmVmovU32U32F64, arraysize(fp), fp, input_count,
-           inputs);
+          size_t input_count;
+          if (TryMatchImmediateOrShift(this, &add_opcode, index, &input_count,
+                                       &inputs[1])) {
+            // input_count has been set by TryMatchImmediateOrShift(), so
+            // increment it to account for the base register in inputs[0].
+            input_count++;
+          } else {
+            add_opcode |= AddressingModeField::encode(kMode_Operand2_R);
+            inputs[1] = g.UseRegister(index);
+            input_count = 2;  // Base register and index.
+          }
 
-      // Store the least-significant half.
-      inputs[0] = fp[0];  // Low 32-bits of FP value.
-      inputs[input_count++] = g.UseRegister(base);  // First store base address.
-      EmitStore(this, kArmStr, input_count, inputs, index);
+          Emit(add_opcode, 1, &address, input_count, inputs);
+        }
 
-      // Store the most-significant half.
-      InstructionOperand base4 = g.TempRegister();
-      Emit(kArmAdd | AddressingModeField::encode(kMode_Operand2_I), base4,
-           g.UseRegister(base), g.TempImmediate(4));  // Compute base + 4.
-      inputs[0] = fp[1];  // High 32-bits of FP value.
-      inputs[1] = base4;  // Second store base + 4 address.
-      EmitStore(this, kArmStr, input_count, inputs, index);
+        inputs[input_count++] = g.UseRegister(value);
+        inputs[input_count++] = address;
+        ArchOpcode op = store_rep == MachineRepresentation::kFloat64
+                            ? kArmVst1F64
+                            : kArmVst1S128;
+        Emit(op, 0, nullptr, input_count, inputs);
+      } else {
+        DCHECK_NE(MachineRepresentation::kSimd128, store_rep);
+        // Store a 64-bit floating point value using two 32-bit integer stores.
+        // Computing the store address here would require three live temporary
+        // registers (fp<63:32>, fp<31:0>, address), so compute base + 4 after
+        // storing the least-significant half of the value.
+
+        // First, move the 64-bit FP value into two temporary integer registers.
+        InstructionOperand fp[] = {g.TempRegister(), g.TempRegister()};
+        inputs[input_count++] = g.UseRegister(value);
+        Emit(kArmVmovU32U32F64, arraysize(fp), fp, input_count, inputs);
+
+        // Store the least-significant half.
+        inputs[0] = fp[0];  // Low 32-bits of FP value.
+        inputs[input_count++] =
+            g.UseRegister(base);  // First store base address.
+        EmitStore(this, kArmStr, input_count, inputs, index);
+
+        // Store the most-significant half.
+        InstructionOperand base4 = g.TempRegister();
+        Emit(kArmAdd | AddressingModeField::encode(kMode_Operand2_I), base4,
+             g.UseRegister(base), g.TempImmediate(4));  // Compute base + 4.
+        inputs[0] = fp[1];  // High 32-bits of FP value.
+        inputs[1] = base4;  // Second store base + 4 address.
+        EmitStore(this, kArmStr, input_count, inputs, index);
+      }
       return;
     }
     default:
@@ -2185,6 +2232,81 @@ void InstructionSelector::VisitAtomicStore(Node* node) {
   Emit(code, 0, nullptr, input_count, inputs);
 }
 
+void InstructionSelector::VisitAtomicExchange(Node* node) {
+  ArmOperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* value = node->InputAt(2);
+  ArchOpcode opcode = kArchNop;
+  MachineType type = AtomicExchangeRepresentationOf(node->op());
+  if (type == MachineType::Int8()) {
+    opcode = kAtomicExchangeInt8;
+  } else if (type == MachineType::Uint8()) {
+    opcode = kAtomicExchangeUint8;
+  } else if (type == MachineType::Int16()) {
+    opcode = kAtomicExchangeInt16;
+  } else if (type == MachineType::Uint16()) {
+    opcode = kAtomicExchangeUint16;
+  } else if (type == MachineType::Int32() || type == MachineType::Uint32()) {
+    opcode = kAtomicExchangeWord32;
+  } else {
+    UNREACHABLE();
+    return;
+  }
+
+  AddressingMode addressing_mode = kMode_Offset_RR;
+  InstructionOperand inputs[3];
+  size_t input_count = 0;
+  inputs[input_count++] = g.UseUniqueRegister(base);
+  inputs[input_count++] = g.UseUniqueRegister(index);
+  inputs[input_count++] = g.UseUniqueRegister(value);
+  InstructionOperand outputs[1];
+  outputs[0] = g.UseUniqueRegister(node);
+  InstructionOperand temp[1];
+  temp[0] = g.TempRegister();
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  Emit(code, 1, outputs, input_count, inputs, 1, temp);
+}
+
+void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
+  ArmOperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* old_value = node->InputAt(2);
+  Node* new_value = node->InputAt(3);
+  ArchOpcode opcode = kArchNop;
+  MachineType type = AtomicCompareExchangeRepresentationOf(node->op());
+  if (type == MachineType::Int8()) {
+    opcode = kAtomicCompareExchangeInt8;
+  } else if (type == MachineType::Uint8()) {
+    opcode = kAtomicCompareExchangeUint8;
+  } else if (type == MachineType::Int16()) {
+    opcode = kAtomicCompareExchangeInt16;
+  } else if (type == MachineType::Uint16()) {
+    opcode = kAtomicCompareExchangeUint16;
+  } else if (type == MachineType::Int32() || type == MachineType::Uint32()) {
+    opcode = kAtomicCompareExchangeWord32;
+  } else {
+    UNREACHABLE();
+    return;
+  }
+
+  AddressingMode addressing_mode = kMode_Offset_RR;
+  InstructionOperand inputs[4];
+  size_t input_count = 0;
+  inputs[input_count++] = g.UseUniqueRegister(base);
+  inputs[input_count++] = g.UseUniqueRegister(index);
+  inputs[input_count++] = g.UseUniqueRegister(old_value);
+  inputs[input_count++] = g.UseUniqueRegister(new_value);
+  InstructionOperand outputs[1];
+  outputs[0] = g.UseUniqueRegister(node);
+  InstructionOperand temp[2];
+  temp[0] = g.TempRegister();
+  temp[1] = g.TempRegister();
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  Emit(code, 1, outputs, input_count, inputs, 2, temp);
+}
+
 #define SIMD_TYPE_LIST(V) \
   V(Float32x4)            \
   V(Int32x4)              \
@@ -2202,90 +2324,99 @@ void InstructionSelector::VisitAtomicStore(Node* node) {
   V(Simd1x8Zero)             \
   V(Simd1x16Zero)
 
-#define SIMD_UNOP_LIST(V)                             \
-  V(Float32x4FromInt32x4, kArmFloat32x4FromInt32x4)   \
-  V(Float32x4FromUint32x4, kArmFloat32x4FromUint32x4) \
-  V(Float32x4Abs, kArmFloat32x4Abs)                   \
-  V(Float32x4Neg, kArmFloat32x4Neg)                   \
-  V(Int32x4FromFloat32x4, kArmInt32x4FromFloat32x4)   \
-  V(Uint32x4FromFloat32x4, kArmUint32x4FromFloat32x4) \
-  V(Int32x4Neg, kArmInt32x4Neg)                       \
-  V(Int16x8Neg, kArmInt16x8Neg)                       \
-  V(Int8x16Neg, kArmInt8x16Neg)                       \
-  V(Simd128Not, kArmSimd128Not)                       \
-  V(Simd1x4Not, kArmSimd128Not)                       \
-  V(Simd1x4AnyTrue, kArmSimd1x4AnyTrue)               \
-  V(Simd1x4AllTrue, kArmSimd1x4AllTrue)               \
-  V(Simd1x8Not, kArmSimd128Not)                       \
-  V(Simd1x8AnyTrue, kArmSimd1x8AnyTrue)               \
-  V(Simd1x8AllTrue, kArmSimd1x8AllTrue)               \
-  V(Simd1x16Not, kArmSimd128Not)                      \
-  V(Simd1x16AnyTrue, kArmSimd1x16AnyTrue)             \
+#define SIMD_UNOP_LIST(V)                                   \
+  V(Float32x4FromInt32x4, kArmFloat32x4FromInt32x4)         \
+  V(Float32x4FromUint32x4, kArmFloat32x4FromUint32x4)       \
+  V(Float32x4Abs, kArmFloat32x4Abs)                         \
+  V(Float32x4Neg, kArmFloat32x4Neg)                         \
+  V(Float32x4RecipApprox, kArmFloat32x4RecipApprox)         \
+  V(Float32x4RecipSqrtApprox, kArmFloat32x4RecipSqrtApprox) \
+  V(Int32x4FromFloat32x4, kArmInt32x4FromFloat32x4)         \
+  V(Uint32x4FromFloat32x4, kArmUint32x4FromFloat32x4)       \
+  V(Int32x4Neg, kArmInt32x4Neg)                             \
+  V(Int16x8Neg, kArmInt16x8Neg)                             \
+  V(Int8x16Neg, kArmInt8x16Neg)                             \
+  V(Simd128Not, kArmSimd128Not)                             \
+  V(Simd1x4Not, kArmSimd128Not)                             \
+  V(Simd1x4AnyTrue, kArmSimd1x4AnyTrue)                     \
+  V(Simd1x4AllTrue, kArmSimd1x4AllTrue)                     \
+  V(Simd1x8Not, kArmSimd128Not)                             \
+  V(Simd1x8AnyTrue, kArmSimd1x8AnyTrue)                     \
+  V(Simd1x8AllTrue, kArmSimd1x8AllTrue)                     \
+  V(Simd1x16Not, kArmSimd128Not)                            \
+  V(Simd1x16AnyTrue, kArmSimd1x16AnyTrue)                   \
   V(Simd1x16AllTrue, kArmSimd1x16AllTrue)
 
-#define SIMD_BINOP_LIST(V)                                      \
-  V(Float32x4Add, kArmFloat32x4Add)                             \
-  V(Float32x4Sub, kArmFloat32x4Sub)                             \
-  V(Float32x4Equal, kArmFloat32x4Equal)                         \
-  V(Float32x4NotEqual, kArmFloat32x4NotEqual)                   \
-  V(Int32x4Add, kArmInt32x4Add)                                 \
-  V(Int32x4Sub, kArmInt32x4Sub)                                 \
-  V(Int32x4Mul, kArmInt32x4Mul)                                 \
-  V(Int32x4Min, kArmInt32x4Min)                                 \
-  V(Int32x4Max, kArmInt32x4Max)                                 \
-  V(Int32x4Equal, kArmInt32x4Equal)                             \
-  V(Int32x4NotEqual, kArmInt32x4NotEqual)                       \
-  V(Int32x4GreaterThan, kArmInt32x4GreaterThan)                 \
-  V(Int32x4GreaterThanOrEqual, kArmInt32x4GreaterThanOrEqual)   \
-  V(Uint32x4Min, kArmUint32x4Min)                               \
-  V(Uint32x4Max, kArmUint32x4Max)                               \
-  V(Uint32x4GreaterThan, kArmUint32x4GreaterThan)               \
-  V(Uint32x4GreaterThanOrEqual, kArmUint32x4GreaterThanOrEqual) \
-  V(Int16x8Add, kArmInt16x8Add)                                 \
-  V(Int16x8AddSaturate, kArmInt16x8AddSaturate)                 \
-  V(Int16x8Sub, kArmInt16x8Sub)                                 \
-  V(Int16x8SubSaturate, kArmInt16x8SubSaturate)                 \
-  V(Int16x8Mul, kArmInt16x8Mul)                                 \
-  V(Int16x8Min, kArmInt16x8Min)                                 \
-  V(Int16x8Max, kArmInt16x8Max)                                 \
-  V(Int16x8Equal, kArmInt16x8Equal)                             \
-  V(Int16x8NotEqual, kArmInt16x8NotEqual)                       \
-  V(Int16x8GreaterThan, kArmInt16x8GreaterThan)                 \
-  V(Int16x8GreaterThanOrEqual, kArmInt16x8GreaterThanOrEqual)   \
-  V(Uint16x8AddSaturate, kArmUint16x8AddSaturate)               \
-  V(Uint16x8SubSaturate, kArmUint16x8SubSaturate)               \
-  V(Uint16x8Min, kArmUint16x8Min)                               \
-  V(Uint16x8Max, kArmUint16x8Max)                               \
-  V(Uint16x8GreaterThan, kArmUint16x8GreaterThan)               \
-  V(Uint16x8GreaterThanOrEqual, kArmUint16x8GreaterThanOrEqual) \
-  V(Int8x16Add, kArmInt8x16Add)                                 \
-  V(Int8x16AddSaturate, kArmInt8x16AddSaturate)                 \
-  V(Int8x16Sub, kArmInt8x16Sub)                                 \
-  V(Int8x16SubSaturate, kArmInt8x16SubSaturate)                 \
-  V(Int8x16Mul, kArmInt8x16Mul)                                 \
-  V(Int8x16Min, kArmInt8x16Min)                                 \
-  V(Int8x16Max, kArmInt8x16Max)                                 \
-  V(Int8x16Equal, kArmInt8x16Equal)                             \
-  V(Int8x16NotEqual, kArmInt8x16NotEqual)                       \
-  V(Int8x16GreaterThan, kArmInt8x16GreaterThan)                 \
-  V(Int8x16GreaterThanOrEqual, kArmInt8x16GreaterThanOrEqual)   \
-  V(Uint8x16AddSaturate, kArmUint8x16AddSaturate)               \
-  V(Uint8x16SubSaturate, kArmUint8x16SubSaturate)               \
-  V(Uint8x16Min, kArmUint8x16Min)                               \
-  V(Uint8x16Max, kArmUint8x16Max)                               \
-  V(Uint8x16GreaterThan, kArmUint8x16GreaterThan)               \
-  V(Uint8x16GreaterThanOrEqual, kArmUint8x16GreaterThanOrEqual) \
-  V(Simd128And, kArmSimd128And)                                 \
-  V(Simd128Or, kArmSimd128Or)                                   \
-  V(Simd128Xor, kArmSimd128Xor)                                 \
-  V(Simd1x4And, kArmSimd128And)                                 \
-  V(Simd1x4Or, kArmSimd128Or)                                   \
-  V(Simd1x4Xor, kArmSimd128Xor)                                 \
-  V(Simd1x8And, kArmSimd128And)                                 \
-  V(Simd1x8Or, kArmSimd128Or)                                   \
-  V(Simd1x8Xor, kArmSimd128Xor)                                 \
-  V(Simd1x16And, kArmSimd128And)                                \
-  V(Simd1x16Or, kArmSimd128Or)                                  \
+#define SIMD_BINOP_LIST(V)                                  \
+  V(Float32x4Add, kArmFloat32x4Add)                         \
+  V(Float32x4Sub, kArmFloat32x4Sub)                         \
+  V(Float32x4Mul, kArmFloat32x4Mul)                         \
+  V(Float32x4Min, kArmFloat32x4Min)                         \
+  V(Float32x4Max, kArmFloat32x4Max)                         \
+  V(Float32x4RecipRefine, kArmFloat32x4RecipRefine)         \
+  V(Float32x4RecipSqrtRefine, kArmFloat32x4RecipSqrtRefine) \
+  V(Float32x4Equal, kArmFloat32x4Equal)                     \
+  V(Float32x4NotEqual, kArmFloat32x4NotEqual)               \
+  V(Float32x4LessThan, kArmFloat32x4LessThan)               \
+  V(Float32x4LessThanOrEqual, kArmFloat32x4LessThanOrEqual) \
+  V(Int32x4Add, kArmInt32x4Add)                             \
+  V(Int32x4Sub, kArmInt32x4Sub)                             \
+  V(Int32x4Mul, kArmInt32x4Mul)                             \
+  V(Int32x4Min, kArmInt32x4Min)                             \
+  V(Int32x4Max, kArmInt32x4Max)                             \
+  V(Int32x4Equal, kArmInt32x4Equal)                         \
+  V(Int32x4NotEqual, kArmInt32x4NotEqual)                   \
+  V(Int32x4LessThan, kArmInt32x4LessThan)                   \
+  V(Int32x4LessThanOrEqual, kArmInt32x4LessThanOrEqual)     \
+  V(Uint32x4Min, kArmUint32x4Min)                           \
+  V(Uint32x4Max, kArmUint32x4Max)                           \
+  V(Uint32x4LessThan, kArmUint32x4LessThan)                 \
+  V(Uint32x4LessThanOrEqual, kArmUint32x4LessThanOrEqual)   \
+  V(Int16x8Add, kArmInt16x8Add)                             \
+  V(Int16x8AddSaturate, kArmInt16x8AddSaturate)             \
+  V(Int16x8Sub, kArmInt16x8Sub)                             \
+  V(Int16x8SubSaturate, kArmInt16x8SubSaturate)             \
+  V(Int16x8Mul, kArmInt16x8Mul)                             \
+  V(Int16x8Min, kArmInt16x8Min)                             \
+  V(Int16x8Max, kArmInt16x8Max)                             \
+  V(Int16x8Equal, kArmInt16x8Equal)                         \
+  V(Int16x8NotEqual, kArmInt16x8NotEqual)                   \
+  V(Int16x8LessThan, kArmInt16x8LessThan)                   \
+  V(Int16x8LessThanOrEqual, kArmInt16x8LessThanOrEqual)     \
+  V(Uint16x8AddSaturate, kArmUint16x8AddSaturate)           \
+  V(Uint16x8SubSaturate, kArmUint16x8SubSaturate)           \
+  V(Uint16x8Min, kArmUint16x8Min)                           \
+  V(Uint16x8Max, kArmUint16x8Max)                           \
+  V(Uint16x8LessThan, kArmUint16x8LessThan)                 \
+  V(Uint16x8LessThanOrEqual, kArmUint16x8LessThanOrEqual)   \
+  V(Int8x16Add, kArmInt8x16Add)                             \
+  V(Int8x16AddSaturate, kArmInt8x16AddSaturate)             \
+  V(Int8x16Sub, kArmInt8x16Sub)                             \
+  V(Int8x16SubSaturate, kArmInt8x16SubSaturate)             \
+  V(Int8x16Mul, kArmInt8x16Mul)                             \
+  V(Int8x16Min, kArmInt8x16Min)                             \
+  V(Int8x16Max, kArmInt8x16Max)                             \
+  V(Int8x16Equal, kArmInt8x16Equal)                         \
+  V(Int8x16NotEqual, kArmInt8x16NotEqual)                   \
+  V(Int8x16LessThan, kArmInt8x16LessThan)                   \
+  V(Int8x16LessThanOrEqual, kArmInt8x16LessThanOrEqual)     \
+  V(Uint8x16AddSaturate, kArmUint8x16AddSaturate)           \
+  V(Uint8x16SubSaturate, kArmUint8x16SubSaturate)           \
+  V(Uint8x16Min, kArmUint8x16Min)                           \
+  V(Uint8x16Max, kArmUint8x16Max)                           \
+  V(Uint8x16LessThan, kArmUint8x16LessThan)                 \
+  V(Uint8x16LessThanOrEqual, kArmUint8x16LessThanOrEqual)   \
+  V(Simd128And, kArmSimd128And)                             \
+  V(Simd128Or, kArmSimd128Or)                               \
+  V(Simd128Xor, kArmSimd128Xor)                             \
+  V(Simd1x4And, kArmSimd128And)                             \
+  V(Simd1x4Or, kArmSimd128Or)                               \
+  V(Simd1x4Xor, kArmSimd128Xor)                             \
+  V(Simd1x8And, kArmSimd128And)                             \
+  V(Simd1x8Or, kArmSimd128Or)                               \
+  V(Simd1x8Xor, kArmSimd128Xor)                             \
+  V(Simd1x16And, kArmSimd128And)                            \
+  V(Simd1x16Or, kArmSimd128Or)                              \
   V(Simd1x16Xor, kArmSimd128Xor)
 
 #define SIMD_SHIFT_OP_LIST(V)   \

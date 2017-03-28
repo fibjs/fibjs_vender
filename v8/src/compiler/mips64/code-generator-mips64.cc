@@ -1225,7 +1225,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (size > 0 && size <= 32 && pos >= 0 && pos < 32) {
         __ Dext(i.OutputRegister(), i.InputRegister(0), i.InputInt8(1),
                 i.InputInt8(2));
-      } else if (size > 32 && size <= 64 && pos > 0 && pos < 32) {
+      } else if (size > 32 && size <= 64 && pos >= 0 && pos < 32) {
         __ Dextm(i.OutputRegister(), i.InputRegister(0), i.InputInt8(1),
                  i.InputInt8(2));
       } else {
@@ -1920,6 +1920,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kAtomicStoreWord32:
       ASSEMBLE_ATOMIC_STORE_INTEGER(sw);
       break;
+    case kAtomicExchangeInt8:
+    case kAtomicExchangeUint8:
+    case kAtomicExchangeInt16:
+    case kAtomicExchangeUint16:
+    case kAtomicExchangeWord32:
+    case kAtomicCompareExchangeInt8:
+    case kAtomicCompareExchangeUint8:
+    case kAtomicCompareExchangeInt16:
+    case kAtomicCompareExchangeUint16:
+    case kAtomicCompareExchangeWord32:
+      UNREACHABLE();
+      break;
     case kMips64AssertEqual:
       __ Assert(eq, static_cast<BailoutReason>(i.InputOperand(2).immediate()),
                 i.InputRegister(0), Operand(i.InputRegister(1)));
@@ -2345,7 +2357,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
-  __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  if (isolate()->NeedsSourcePositionsForProfiling()) {
+    __ RecordDeoptReason(deoptimization_reason, pos, deoptimization_id);
+  }
   __ Call(deopt_entry, RelocInfo::RUNTIME_ENTRY);
   return kSuccess;
 }
@@ -2469,6 +2483,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   }
 }
 
+void CodeGenerator::FinishCode() {}
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {

@@ -1565,8 +1565,7 @@ void AstGraphBuilder::VisitAssignment(Assignment* expr) {
   ast_context()->ProduceValue(expr, value);
 }
 
-
-void AstGraphBuilder::VisitYield(Yield* expr) {
+void AstGraphBuilder::VisitSuspend(Suspend* expr) {
   // Generator functions are supported only by going through Ignition first.
   UNREACHABLE();
 }
@@ -1972,9 +1971,10 @@ void AstGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
   // with the full codegen: We don't push both left and right values onto
   // the expression stack when one side is a special-case literal.
   Expression* sub_expr = nullptr;
-  Handle<String> check;
-  if (expr->IsLiteralCompareTypeof(&sub_expr, &check)) {
-    return VisitLiteralCompareTypeof(expr, sub_expr, check);
+  Literal* literal;
+  if (expr->IsLiteralCompareTypeof(&sub_expr, &literal)) {
+    return VisitLiteralCompareTypeof(expr, sub_expr,
+                                     Handle<String>::cast(literal->value()));
   }
   if (expr->IsLiteralCompareUndefined(&sub_expr)) {
     return VisitLiteralCompareNil(expr, sub_expr,
@@ -1989,9 +1989,6 @@ void AstGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
   switch (expr->op()) {
     case Token::EQ:
       op = javascript()->Equal(hint);
-      break;
-    case Token::NE:
-      op = javascript()->NotEqual(hint);
       break;
     case Token::EQ_STRICT:
       op = javascript()->StrictEqual(hint);
@@ -2811,7 +2808,6 @@ Node* AstGraphBuilder::TryFastToBoolean(Node* input) {
       return jsgraph_->BooleanConstant(object->BooleanValue());
     }
     case IrOpcode::kJSEqual:
-    case IrOpcode::kJSNotEqual:
     case IrOpcode::kJSStrictEqual:
     case IrOpcode::kJSLessThan:
     case IrOpcode::kJSLessThanOrEqual:
@@ -2933,12 +2929,6 @@ Node* AstGraphBuilder::MakeNode(const Operator* op, int value_input_count,
       // Update the current effect dependency for effect-producing nodes.
       if (result->op()->EffectOutputCount() > 0) {
         environment_->UpdateEffectDependency(result);
-      }
-      // Add implicit success continuation for throwing nodes.
-      if (!result->op()->HasProperty(Operator::kNoThrow)) {
-        const Operator* op = common()->IfSuccess();
-        Node* on_success = graph()->NewNode(op, result);
-        environment_->UpdateControlDependency(on_success);
       }
     }
   }

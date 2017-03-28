@@ -11,8 +11,6 @@ namespace v8 {
 namespace internal {
 namespace wasm {
 
-typedef Signature<ValueType> FunctionSig;
-
 #define CASE_OP(name, str) \
   case kExpr##name:        \
     return str;
@@ -129,10 +127,12 @@ const char* WasmOpcodes::OpcodeName(WasmOpcode opcode) {
     CASE_SIGN_OP(INT, LoadMem8, "load8")
     CASE_SIGN_OP(INT, LoadMem16, "load16")
     CASE_SIGN_OP(I64, LoadMem32, "load32")
+    CASE_S128_OP(LoadMem, "load128")
     CASE_ALL_OP(StoreMem, "store")
     CASE_INT_OP(StoreMem8, "store8")
     CASE_INT_OP(StoreMem16, "store16")
     CASE_I64_OP(StoreMem32, "store32")
+    CASE_S128_OP(StoreMem, "store128")
 
     // Non-standard opcodes.
     CASE_OP(Try, "try")
@@ -178,7 +178,9 @@ const char* WasmOpcodes::OpcodeName(WasmOpcode opcode) {
     CASE_F32x4_OP(Sqrt, "sqrt")
     CASE_F32x4_OP(Div, "div")
     CASE_F32x4_OP(RecipApprox, "recip_approx")
-    CASE_F32x4_OP(SqrtApprox, "sqrt_approx")
+    CASE_F32x4_OP(RecipRefine, "recip_refine")
+    CASE_F32x4_OP(RecipSqrtApprox, "recip_sqrt_approx")
+    CASE_F32x4_OP(RecipSqrtRefine, "recip_sqrt_refine")
     CASE_F32x4_OP(Min, "min")
     CASE_F32x4_OP(Max, "max")
     CASE_F32x4_OP(MinNum, "min_num")
@@ -265,15 +267,22 @@ bool WasmOpcodes::IsPrefixOpcode(WasmOpcode opcode) {
 
 std::ostream& operator<<(std::ostream& os, const FunctionSig& sig) {
   if (sig.return_count() == 0) os << "v";
-  for (size_t i = 0; i < sig.return_count(); ++i) {
-    os << WasmOpcodes::ShortNameOf(sig.GetReturn(i));
+  for (auto ret : sig.returns()) {
+    os << WasmOpcodes::ShortNameOf(ret);
   }
   os << "_";
   if (sig.parameter_count() == 0) os << "v";
-  for (size_t i = 0; i < sig.parameter_count(); ++i) {
-    os << WasmOpcodes::ShortNameOf(sig.GetParam(i));
+  for (auto param : sig.parameters()) {
+    os << WasmOpcodes::ShortNameOf(param);
   }
   return os;
+}
+
+bool IsJSCompatibleSignature(const FunctionSig* sig) {
+  for (auto type : sig->all()) {
+    if (type == wasm::kWasmI64 || type == wasm::kWasmS128) return false;
+  }
+  return true;
 }
 
 #define DECLARE_SIG_ENUM(name, ...) kSigEnum_##name,

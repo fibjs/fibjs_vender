@@ -97,6 +97,10 @@ int StackSlotSizeOf(Operator const* op);
 
 MachineRepresentation AtomicStoreRepresentationOf(Operator const* op);
 
+MachineType AtomicExchangeRepresentationOf(Operator const* op);
+
+MachineType AtomicCompareExchangeRepresentationOf(Operator const* op);
+
 // Interface for building machine-level operators. These operators are
 // machine-level but machine-independent and thus define a language suitable
 // for generating code to run on architectures such as ia32, x64, arm, etc.
@@ -299,6 +303,7 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* ChangeFloat32ToFloat64();
   const Operator* ChangeFloat64ToInt32();   // narrowing
   const Operator* ChangeFloat64ToUint32();  // narrowing
+  const Operator* ChangeFloat64ToUint64();
   const Operator* TruncateFloat64ToUint32();
   const Operator* TruncateFloat32ToInt32();
   const Operator* TruncateFloat32ToUint32();
@@ -441,12 +446,12 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* Float32x4Max();
   const Operator* Float32x4MinNum();
   const Operator* Float32x4MaxNum();
+  const Operator* Float32x4RecipRefine();
+  const Operator* Float32x4RecipSqrtRefine();
   const Operator* Float32x4Equal();
   const Operator* Float32x4NotEqual();
   const Operator* Float32x4LessThan();
   const Operator* Float32x4LessThanOrEqual();
-  const Operator* Float32x4GreaterThan();
-  const Operator* Float32x4GreaterThanOrEqual();
   const Operator* Float32x4FromInt32x4();
   const Operator* Float32x4FromUint32x4();
 
@@ -465,8 +470,6 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* Int32x4NotEqual();
   const Operator* Int32x4LessThan();
   const Operator* Int32x4LessThanOrEqual();
-  const Operator* Int32x4GreaterThan();
-  const Operator* Int32x4GreaterThanOrEqual();
   const Operator* Int32x4FromFloat32x4();
 
   const Operator* Uint32x4Min();
@@ -474,8 +477,6 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* Uint32x4ShiftRightByScalar(int32_t);
   const Operator* Uint32x4LessThan();
   const Operator* Uint32x4LessThanOrEqual();
-  const Operator* Uint32x4GreaterThan();
-  const Operator* Uint32x4GreaterThanOrEqual();
   const Operator* Uint32x4FromFloat32x4();
 
   const Operator* Int16x8Splat();
@@ -495,8 +496,6 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* Int16x8NotEqual();
   const Operator* Int16x8LessThan();
   const Operator* Int16x8LessThanOrEqual();
-  const Operator* Int16x8GreaterThan();
-  const Operator* Int16x8GreaterThanOrEqual();
 
   const Operator* Uint16x8AddSaturate();
   const Operator* Uint16x8SubSaturate();
@@ -505,8 +504,6 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* Uint16x8ShiftRightByScalar(int32_t);
   const Operator* Uint16x8LessThan();
   const Operator* Uint16x8LessThanOrEqual();
-  const Operator* Uint16x8GreaterThan();
-  const Operator* Uint16x8GreaterThanOrEqual();
 
   const Operator* Int8x16Splat();
   const Operator* Int8x16ExtractLane(int32_t);
@@ -525,8 +522,6 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* Int8x16NotEqual();
   const Operator* Int8x16LessThan();
   const Operator* Int8x16LessThanOrEqual();
-  const Operator* Int8x16GreaterThan();
-  const Operator* Int8x16GreaterThanOrEqual();
 
   const Operator* Uint8x16AddSaturate();
   const Operator* Uint8x16SubSaturate();
@@ -535,8 +530,6 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* Uint8x16ShiftRightByScalar(int32_t);
   const Operator* Uint8x16LessThan();
   const Operator* Uint8x16LessThanOrEqual();
-  const Operator* Uint8x16GreaterThan();
-  const Operator* Uint8x16GreaterThanOrEqual();
 
   const Operator* Simd128Load();
   const Operator* Simd128Load1();
@@ -618,6 +611,10 @@ class V8_EXPORT_PRIVATE MachineOperatorBuilder final
   const Operator* AtomicLoad(LoadRepresentation rep);
   // atomic-store [base + index], value
   const Operator* AtomicStore(MachineRepresentation rep);
+  // atomic-exchange [base + index], value
+  const Operator* AtomicExchange(MachineType rep);
+  // atomic-compare-exchange [base + index], old_value, new_value
+  const Operator* AtomicCompareExchange(MachineType rep);
 
   // Target machine word-size assumed by this builder.
   bool Is32() const { return word() == MachineRepresentation::kWord32; }

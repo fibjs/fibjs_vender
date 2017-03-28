@@ -14,10 +14,11 @@
 
 #include "src/arm64/decoder-arm64-inl.h"
 #include "src/arm64/simulator-arm64.h"
-#include "src/assembler.h"
+#include "src/assembler-inl.h"
 #include "src/codegen.h"
 #include "src/disasm.h"
 #include "src/macro-assembler.h"
+#include "src/objects-inl.h"
 #include "src/ostreams.h"
 #include "src/runtime/runtime-utils.h"
 
@@ -1965,6 +1966,9 @@ void Simulator::VisitLoadStoreAcquireRelease(Instruction* instr) {
   int32_t is_not_exclusive = instr->LoadStoreXNotExclusive();
   int32_t is_load = instr->LoadStoreXLoad();
   int32_t is_pair = instr->LoadStoreXPair();
+  USE(is_acquire_release);
+  USE(is_not_exclusive);
+  USE(is_pair);
   DCHECK_NE(is_acquire_release, 0);
   DCHECK_EQ(is_not_exclusive, 0);  // Non exclusive unimplemented.
   DCHECK_EQ(is_pair, 0);           // Pair unimplemented.

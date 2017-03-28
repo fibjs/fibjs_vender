@@ -452,8 +452,8 @@ static void JSObjectPrintHeader(std::ostream& os, JSObject* obj,
     os << " (COW)";
   }
   os << "]";
-  if (obj->GetInternalFieldCount() > 0) {
-    os << "\n - internal fields: " << obj->GetInternalFieldCount();
+  if (obj->GetEmbedderFieldCount() > 0) {
+    os << "\n - internal fields: " << obj->GetEmbedderFieldCount();
   }
 }
 
@@ -468,11 +468,11 @@ static void JSObjectPrintBody(std::ostream& os, JSObject* obj,  // NOLINT
     if (obj->PrintElements(os)) os << "\n ";
     os << "}\n";
   }
-  int internal_fields = obj->GetInternalFieldCount();
-  if (internal_fields > 0) {
+  int embedder_fields = obj->GetEmbedderFieldCount();
+  if (embedder_fields > 0) {
     os << " - internal fields = {";
-    for (int i = 0; i < internal_fields; i++) {
-      os << "\n    " << Brief(obj->GetInternalField(i));
+    for (int i = 0; i < embedder_fields; i++) {
+      os << "\n    " << obj->GetEmbedderField(i);
     }
     os << "\n }\n";
   }
@@ -722,7 +722,9 @@ void FeedbackVector::FeedbackVectorPrint(std::ostream& os) {  // NOLINT
       }
       case FeedbackSlotKind::kStoreNamedSloppy:
       case FeedbackSlotKind::kStoreNamedStrict:
-      case FeedbackSlotKind::kStoreOwnNamed: {
+      case FeedbackSlotKind::kStoreOwnNamed:
+      case FeedbackSlotKind::kStoreGlobalSloppy:
+      case FeedbackSlotKind::kStoreGlobalStrict: {
         StoreICNexus nexus(this, slot);
         os << Code::ICState2String(nexus.StateFromFeedback());
         break;
@@ -751,6 +753,7 @@ void FeedbackVector::FeedbackVectorPrint(std::ostream& os) {  // NOLINT
       case FeedbackSlotKind::kCreateClosure:
       case FeedbackSlotKind::kLiteral:
       case FeedbackSlotKind::kGeneral:
+      case FeedbackSlotKind::kTypeProfile:
         break;
       case FeedbackSlotKind::kToBoolean:
       case FeedbackSlotKind::kInvalid:
@@ -789,6 +792,9 @@ void JSMessageObject::JSMessageObjectPrint(std::ostream& os) {  // NOLINT
 
 
 void String::StringPrint(std::ostream& os) {  // NOLINT
+  if (!HasOnlyOneByteChars()) {
+    os << "u";
+  }
   if (StringShape(this).IsInternalized()) {
     os << "#";
   } else if (StringShape(this).IsCons()) {
@@ -1368,7 +1374,7 @@ void ObjectTemplateInfo::ObjectTemplateInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - property_list: " << Brief(property_list());
   os << "\n - property_accessors: " << Brief(property_accessors());
   os << "\n - constructor: " << Brief(constructor());
-  os << "\n - internal_field_count: " << internal_field_count();
+  os << "\n - embedder_field_count: " << embedder_field_count();
   os << "\n - immutable_proto: " << (immutable_proto() ? "true" : "false");
   os << "\n";
 }

@@ -82,7 +82,6 @@
 // Opcodes for JavaScript operators.
 #define JS_COMPARE_BINOP_LIST(V) \
   V(JSEqual)                     \
-  V(JSNotEqual)                  \
   V(JSStrictEqual)               \
   V(JSLessThan)                  \
   V(JSGreaterThan)               \
@@ -202,7 +201,8 @@
   V(ChangeBitToTagged)               \
   V(TruncateTaggedToWord32)          \
   V(TruncateTaggedToFloat64)         \
-  V(TruncateTaggedToBit)
+  V(TruncateTaggedToBit)             \
+  V(TruncateTaggedPointerToBit)
 
 #define SIMPLIFIED_CHECKED_OP_LIST(V) \
   V(CheckedInt32Add)                  \
@@ -339,6 +339,7 @@
   V(ObjectIsReceiver)               \
   V(ObjectIsSmi)                    \
   V(ObjectIsString)                 \
+  V(ObjectIsSymbol)                 \
   V(ObjectIsUndetectable)           \
   V(ArgumentsFrame)                 \
   V(ArgumentsLength)                \
@@ -505,6 +506,7 @@
   V(ChangeFloat32ToFloat64)     \
   V(ChangeFloat64ToInt32)       \
   V(ChangeFloat64ToUint32)      \
+  V(ChangeFloat64ToUint64)      \
   V(Float64SilenceNaN)          \
   V(TruncateFloat64ToUint32)    \
   V(TruncateFloat32ToInt32)     \
@@ -551,6 +553,8 @@
   V(ProtectedStore)             \
   V(AtomicLoad)                 \
   V(AtomicStore)                \
+  V(AtomicExchange)             \
+  V(AtomicCompareExchange)      \
   V(UnsafePointerAdd)
 
 #define MACHINE_SIMD_OP_LIST(V)  \
@@ -570,6 +574,8 @@
   V(Float32x4Max)                \
   V(Float32x4MinNum)             \
   V(Float32x4MaxNum)             \
+  V(Float32x4RecipRefine)        \
+  V(Float32x4RecipSqrtRefine)    \
   V(Float32x4Equal)              \
   V(Float32x4NotEqual)           \
   V(Float32x4LessThan)           \
@@ -770,6 +776,13 @@ class V8_EXPORT_PRIVATE IrOpcode {
 
   static bool IsIfProjectionOpcode(Value value) {
     return kIfTrue <= value && value <= kIfDefault;
+  }
+
+  // Returns true if opcode terminates control flow in a graph (i.e. respective
+  // nodes are expected to have control uses by the graphs {End} node only).
+  static bool IsGraphTerminator(Value value) {
+    return value == kDeoptimize || value == kReturn || value == kTailCall ||
+           value == kTerminate || value == kThrow;
   }
 
   // Returns true if opcode can be inlined.

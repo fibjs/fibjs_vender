@@ -135,6 +135,8 @@ static bool HasFewDifferentCharacters(Handle<String> pattern) {
 MaybeHandle<Object> RegExpImpl::Compile(Handle<JSRegExp> re,
                                         Handle<String> pattern,
                                         JSRegExp::Flags flags) {
+  DCHECK(pattern->IsFlat());
+
   Isolate* isolate = re->GetIsolate();
   Zone zone(isolate->allocator(), ZONE_NAME);
   CompilationCache* compilation_cache = isolate->compilation_cache();
@@ -145,7 +147,7 @@ MaybeHandle<Object> RegExpImpl::Compile(Handle<JSRegExp> re,
     re->set_data(*cached);
     return re;
   }
-  pattern = String::Flatten(pattern);
+
   PostponeInterruptsScope postpone(isolate);
   RegExpCompileData parse_result;
   FlatStringReader reader(isolate, pattern);
@@ -2300,9 +2302,7 @@ int ActionNode::EatsAtLeast(int still_to_find,
 
 void ActionNode::FillInBMInfo(Isolate* isolate, int offset, int budget,
                               BoyerMooreLookahead* bm, bool not_at_start) {
-  if (action_type_ == BEGIN_SUBMATCH) {
-    bm->SetRest(offset);
-  } else if (action_type_ != POSITIVE_SUBMATCH_SUCCESS) {
+  if (action_type_ != POSITIVE_SUBMATCH_SUCCESS) {
     on_success()->FillInBMInfo(isolate, offset, budget - 1, bm, not_at_start);
   }
   SaveBMInfo(bm, not_at_start, offset);

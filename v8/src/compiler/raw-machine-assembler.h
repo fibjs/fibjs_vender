@@ -175,6 +175,16 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->AtomicStore(rep), base, index, value);
   }
 
+  Node* AtomicExchange(MachineType rep, Node* base, Node* index, Node* value) {
+    return AddNode(machine()->AtomicExchange(rep), base, index, value);
+  }
+
+  Node* AtomicCompareExchange(MachineType rep, Node* base, Node* index,
+                              Node* old_value, Node* new_value) {
+    return AddNode(machine()->AtomicCompareExchange(rep), base, index,
+                   old_value, new_value);
+  }
+
   // Arithmetic Operations.
   Node* WordAnd(Node* a, Node* b) {
     return AddNode(machine()->WordAnd(), a, b);
@@ -567,6 +577,9 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   }
   Node* ChangeFloat64ToUint32(Node* a) {
     return AddNode(machine()->ChangeFloat64ToUint32(), a);
+  }
+  Node* ChangeFloat64ToUint64(Node* a) {
+    return AddNode(machine()->ChangeFloat64ToUint64(), a);
   }
   Node* TruncateFloat64ToUint32(Node* a) {
     return AddNode(machine()->TruncateFloat64ToUint32(), a);

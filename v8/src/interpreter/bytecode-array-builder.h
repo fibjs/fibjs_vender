@@ -9,6 +9,7 @@
 #include "src/base/compiler-specific.h"
 #include "src/globals.h"
 #include "src/interpreter/bytecode-array-writer.h"
+#include "src/interpreter/bytecode-flags.h"
 #include "src/interpreter/bytecode-register-allocator.h"
 #include "src/interpreter/bytecode-register.h"
 #include "src/interpreter/bytecodes.h"
@@ -136,6 +137,10 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   BytecodeArrayBuilder& StoreDataPropertyInLiteral(
       Register object, Register name, DataPropertyInLiteralFlags flags,
       int feedback_slot);
+
+  // Collect type information for developer tools. The value for which we
+  // record the type is stored in the accumulator.
+  BytecodeArrayBuilder& CollectTypeProfile(int position);
 
   // Store a property named by a property name. The value to be stored should be
   // in the accumulator.
@@ -305,7 +310,10 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
 
   // Tests.
   BytecodeArrayBuilder& CompareOperation(Token::Value op, Register reg,
-                                         int feedback_slot = kNoFeedbackSlot);
+                                         int feedback_slot);
+  BytecodeArrayBuilder& CompareOperation(Token::Value op, Register reg);
+  BytecodeArrayBuilder& CompareTypeOf(
+      TestTypeOfFlags::LiteralFlag literal_flag);
 
   // Converts accumulator and stores result in register |out|.
   BytecodeArrayBuilder& ConvertAccumulatorToObject(Register out);

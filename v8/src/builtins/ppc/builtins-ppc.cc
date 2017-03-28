@@ -954,6 +954,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ bind(&array_done);
 
   // Check whether we should continue to use the interpreter.
+  // TODO(rmcilroy) Remove self healing once liveedit only has to deal with
+  // Ignition bytecode.
   Label switch_to_different_code_kind;
   __ LoadP(r3, FieldMemOperand(r3, SharedFunctionInfo::kCodeOffset));
   __ mov(ip, Operand(masm->CodeObject()));  // Self-reference to this code.
@@ -1398,10 +1400,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
 }
 
-void Builtins::Generate_CompileBaseline(MacroAssembler* masm) {
-  GenerateTailCallToReturnedCode(masm, Runtime::kCompileBaseline);
-}
-
 void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
   GenerateTailCallToReturnedCode(masm,
                                  Runtime::kCompileOptimized_NotConcurrent);
@@ -1625,107 +1623,6 @@ void Builtins::Generate_NotifySoftDeoptimized(MacroAssembler* masm) {
 
 void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
   Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::LAZY);
-}
-
-// Clobbers registers {r7, r8, r9, r10}.
-void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
-                             Register function_template_info,
-                             Label* receiver_check_failed) {
-  Register signature = r7;
-  Register map = r8;
-  Register constructor = r9;
-  Register scratch = r10;
-
-  // If there is no signature, return the holder.
-  __ LoadP(signature, FieldMemOperand(function_template_info,
-                                      FunctionTemplateInfo::kSignatureOffset));
-  Label receiver_check_passed;
-  __ JumpIfRoot(signature, Heap::kUndefinedValueRootIndex,
-                &receiver_check_passed);
-
-  // Walk the prototype chain.
-  __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  Label prototype_loop_start;
-  __ bind(&prototype_loop_start);
-
-  // Get the constructor, if any.
-  __ GetMapConstructor(constructor, map, scratch, scratch);
-  __ cmpi(scratch, Operand(JS_FUNCTION_TYPE));
-  Label next_prototype;
-  __ bne(&next_prototype);
-  Register type = constructor;
-  __ LoadP(type,
-           FieldMemOperand(constructor, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadP(type,
-           FieldMemOperand(type, SharedFunctionInfo::kFunctionDataOffset));
-
-  // Loop through the chain of inheriting function templates.
-  Label function_template_loop;
-  __ bind(&function_template_loop);
-
-  // If the signatures match, we have a compatible receiver.
-  __ cmp(signature, type);
-  __ beq(&receiver_check_passed);
-
-  // If the current type is not a FunctionTemplateInfo, load the next prototype
-  // in the chain.
-  __ JumpIfSmi(type, &next_prototype);
-  __ CompareObjectType(type, scratch, scratch, FUNCTION_TEMPLATE_INFO_TYPE);
-  __ bne(&next_prototype);
-
-  // Otherwise load the parent function template and iterate.
-  __ LoadP(type,
-           FieldMemOperand(type, FunctionTemplateInfo::kParentTemplateOffset));
-  __ b(&function_template_loop);
-
-  // Load the next prototype.
-  __ bind(&next_prototype);
-  __ lwz(scratch, FieldMemOperand(map, Map::kBitField3Offset));
-  __ DecodeField<Map::HasHiddenPrototype>(scratch, SetRC);
-  __ beq(receiver_check_failed, cr0);
-
-  __ LoadP(receiver, FieldMemOperand(map, Map::kPrototypeOffset));
-  __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  // Iterate.
-  __ b(&prototype_loop_start);
-
-  __ bind(&receiver_check_passed);
-}
-
-void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- r3                 : number of arguments excluding receiver
-  //  -- r4                 : callee
-  //  -- lr                 : return address
-  //  -- sp[0]              : last argument
-  //  -- ...
-  //  -- sp[4 * (argc - 1)] : first argument
-  //  -- sp[4 * argc]       : receiver
-  // -----------------------------------
-
-  // Load the FunctionTemplateInfo.
-  __ LoadP(r6, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kFunctionDataOffset));
-
-  // Do the compatible receiver check.
-  Label receiver_check_failed;
-  __ ShiftLeftImm(r11, r3, Operand(kPointerSizeLog2));
-  __ LoadPX(r5, MemOperand(sp, r11));
-  CompatibleReceiverCheck(masm, r5, r6, &receiver_check_failed);
-
-  // Get the callback offset from the FunctionTemplateInfo, and jump to the
-  // beginning of the code.
-  __ LoadP(r7, FieldMemOperand(r6, FunctionTemplateInfo::kCallCodeOffset));
-  __ LoadP(r7, FieldMemOperand(r7, CallHandlerInfo::kFastHandlerOffset));
-  __ addi(ip, r7, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ JumpToJSEntry(ip);
-
-  // Compatible receiver check failed: throw an Illegal Invocation exception.
-  __ bind(&receiver_check_failed);
-  // Drop the arguments (including the receiver);
-  __ addi(r11, r11, Operand(kPointerSize));
-  __ add(sp, sp, r11);
-  __ TailCallRuntime(Runtime::kThrowIllegalInvocation);
 }
 
 static void Generate_OnStackReplacementHelper(MacroAssembler* masm,
@@ -3130,6 +3027,35 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ CallRuntime(Runtime::kThrowStackOverflow);
     __ bkpt(0);
   }
+}
+
+void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
+  {
+    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+
+    // Save all parameter registers (see wasm-linkage.cc). They might be
+    // overwritten in the runtime call below. We don't have any callee-saved
+    // registers in wasm, so no need to store anything else.
+    const RegList gp_regs = r3.bit() | r4.bit() | r5.bit() | r6.bit() |
+                            r7.bit() | r8.bit() | r9.bit() | r10.bit();
+    const RegList fp_regs = d1.bit() | d2.bit() | d3.bit() | d4.bit() |
+                            d5.bit() | d6.bit() | d7.bit() | d8.bit();
+    __ MultiPush(gp_regs);
+    __ MultiPushDoubles(fp_regs);
+
+    // Initialize cp register with kZero, CEntryStub will use it to set the
+    // current context on the isolate.
+    __ LoadSmiLiteral(cp, Smi::kZero);
+    __ CallRuntime(Runtime::kWasmCompileLazy);
+    // Store returned instruction start in r11.
+    __ addi(r11, r3, Operand(Code::kHeaderSize - kHeapObjectTag));
+
+    // Restore registers.
+    __ MultiPopDoubles(fp_regs);
+    __ MultiPop(gp_regs);
+  }
+  // Now jump to the instructions of the returned code object.
+  __ Jump(r11);
 }
 
 #undef __

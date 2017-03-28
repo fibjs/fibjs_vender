@@ -68,10 +68,8 @@ CompilerDispatcherJob::CompilerDispatcherJob(Isolate* isolate,
     : status_(CompileJobStatus::kInitial),
       isolate_(isolate),
       tracer_(tracer),
-      context_(Handle<Context>::cast(
-          isolate_->global_handles()->Create(isolate->context()))),
-      shared_(Handle<SharedFunctionInfo>::cast(
-          isolate_->global_handles()->Create(*shared))),
+      context_(isolate_->global_handles()->Create(isolate->context())),
+      shared_(isolate_->global_handles()->Create(*shared)),
       max_stack_size_(max_stack_size),
       trace_compiler_dispatcher_jobs_(FLAG_trace_compiler_dispatcher_jobs) {
   DCHECK(!shared_->is_toplevel());
@@ -94,15 +92,13 @@ CompilerDispatcherJob::CompilerDispatcherJob(
     : status_(CompileJobStatus::kAnalyzed),
       isolate_(isolate),
       tracer_(tracer),
-      context_(Handle<Context>::cast(
-          isolate_->global_handles()->Create(isolate->context()))),
-      shared_(Handle<SharedFunctionInfo>::cast(
-          isolate_->global_handles()->Create(*shared))),
+      context_(isolate_->global_handles()->Create(isolate->context())),
+      shared_(isolate_->global_handles()->Create(*shared)),
       max_stack_size_(max_stack_size),
       parse_info_(new ParseInfo(shared_)),
       parse_zone_(parse_zone),
       compile_info_(new CompilationInfo(parse_info_->zone(), parse_info_.get(),
-                                        Handle<JSFunction>::null())),
+                                        isolate_, Handle<JSFunction>::null())),
       trace_compiler_dispatcher_jobs_(FLAG_trace_compiler_dispatcher_jobs) {
   parse_info_->set_literal(literal);
   parse_info_->set_script(script);
@@ -158,8 +154,7 @@ void CompilerDispatcherJob::PrepareToParseOnMainThread() {
     if (isolate_->heap()->lo_space()->Contains(*source)) {
       // We need to globalize the handle to the flattened string here, in
       // case it's not referenced from anywhere else.
-      source_ =
-          Handle<String>::cast(isolate_->global_handles()->Create(*source));
+      source_ = isolate_->global_handles()->Create(*source);
       DisallowHeapAllocation no_allocation;
       String::FlatContent content = source->GetFlatContent();
       DCHECK(content.IsFlat());
@@ -205,14 +200,13 @@ void CompilerDispatcherJob::PrepareToParseOnMainThread() {
                     ->NewExternalStringFromTwoByte(resource)
                     .ToHandleChecked();
     }
-    wrapper_ =
-        Handle<String>::cast(isolate_->global_handles()->Create(*wrapper));
+    wrapper_ = isolate_->global_handles()->Create(*wrapper);
 
     character_stream_.reset(
         ScannerStream::For(wrapper_, shared_->start_position() - offset,
                            shared_->end_position() - offset));
   }
-  parse_info_->set_isolate(isolate_);
+  parse_info_->InitFromIsolate(isolate_);
   parse_info_->set_character_stream(character_stream_.get());
   parse_info_->set_hash_seed(isolate_->heap()->HashSeed());
   parse_info_->set_is_named_expression(shared_->is_named_expression());
@@ -250,16 +244,10 @@ void CompilerDispatcherJob::Parse() {
   DisallowHandleAllocation no_handles;
   DisallowHandleDereference no_deref;
 
-  // Nullify the Isolate temporarily so that the parser doesn't accidentally
-  // use it.
-  parse_info_->set_isolate(nullptr);
-
   uintptr_t stack_limit = GetCurrentStackPosition() - max_stack_size_ * KB;
 
   parser_->set_stack_limit(stack_limit);
   parser_->ParseOnBackground(parse_info_.get());
-
-  parse_info_->set_isolate(isolate_);
 
   status_ = CompileJobStatus::kParsed;
 }
@@ -327,12 +315,13 @@ bool CompilerDispatcherJob::AnalyzeOnMainThread() {
     PrintF("CompilerDispatcherJob[%p]: Analyzing\n", static_cast<void*>(this));
   }
 
-  compile_info_.reset(new CompilationInfo(
-      parse_info_->zone(), parse_info_.get(), Handle<JSFunction>::null()));
+  compile_info_.reset(new CompilationInfo(parse_info_->zone(),
+                                          parse_info_.get(), isolate_,
+                                          Handle<JSFunction>::null()));
 
   DeferredHandleScope scope(isolate_);
   {
-    if (Compiler::Analyze(parse_info_.get())) {
+    if (Compiler::Analyze(compile_info_.get())) {
       status_ = CompileJobStatus::kAnalyzed;
     } else {
       status_ = CompileJobStatus::kFailed;

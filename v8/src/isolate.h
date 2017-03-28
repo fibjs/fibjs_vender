@@ -14,6 +14,7 @@
 #include "src/builtins/builtins.h"
 #include "src/contexts.h"
 #include "src/date.h"
+#include "src/debug/debug-interface.h"
 #include "src/execution.h"
 #include "src/frames.h"
 #include "src/futex-emulation.h"
@@ -394,8 +395,10 @@ typedef List<HeapObject*> DebugObjectCache;
   V(OOMErrorCallback, oom_behavior, nullptr)                                  \
   V(LogEventCallback, event_logger, nullptr)                                  \
   V(AllowCodeGenerationFromStringsCallback, allow_code_gen_callback, nullptr) \
-  V(AllowWasmCompileCallback, allow_wasm_compile_callback, nullptr)           \
-  V(AllowWasmInstantiateCallback, allow_wasm_instantiate_callback, nullptr)   \
+  V(ExtensionCallback, wasm_module_callback, &NoExtension)                    \
+  V(ExtensionCallback, wasm_instance_callback, &NoExtension)                  \
+  V(ExtensionCallback, wasm_compile_callback, &NoExtension)                   \
+  V(ExtensionCallback, wasm_instantiate_callback, &NoExtension)               \
   V(ExternalReferenceRedirectorPointer*, external_reference_redirector,       \
     nullptr)                                                                  \
   /* State for Relocatable. */                                                \
@@ -422,6 +425,8 @@ typedef List<HeapObject*> DebugObjectCache;
   V(bool, formatting_stack_trace, false)                                      \
   /* Perform side effect checks on function call and API callbacks. */        \
   V(bool, needs_side_effect_check, false)                                     \
+  /* Current code coverage mode */                                            \
+  V(debug::Coverage::Mode, code_coverage_mode, debug::Coverage::kBestEffort)  \
   ISOLATE_INIT_SIMULATOR_LIST(V)
 
 #define THREAD_LOCAL_TOP_ACCESSOR(type, name)                        \
@@ -975,7 +980,18 @@ class Isolate {
 
   bool NeedsSourcePositionsForProfiling() const;
 
-  bool IsCodeCoverageEnabled();
+  bool is_best_effort_code_coverage() const {
+    return code_coverage_mode() == debug::Coverage::kBestEffort;
+  }
+
+  bool is_precise_count_code_coverage() const {
+    return code_coverage_mode() == debug::Coverage::kPreciseCount;
+  }
+
+  bool is_precise_binary_code_coverage() const {
+    return code_coverage_mode() == debug::Coverage::kPreciseBinary;
+  }
+
   void SetCodeCoverageList(Object* value);
 
   double time_millis_since_init() {
@@ -1065,7 +1081,7 @@ class Isolate {
   HTracer* GetHTracer();
   CodeTracer* GetCodeTracer();
 
-  void DumpAndResetCompilationStats();
+  void DumpAndResetStats();
 
   FunctionEntryHook function_entry_hook() { return function_entry_hook_; }
   void set_function_entry_hook(FunctionEntryHook function_entry_hook) {
@@ -1243,6 +1259,11 @@ class Isolate {
   // reset to nullptr.
   void UnregisterFromReleaseAtTeardown(ManagedObjectFinalizer** finalizer_ptr);
 
+  // Used by mjsunit tests to force d8 to wait for certain things to run.
+  inline void IncrementWaitCountForTesting() { wait_count_++; }
+  inline void DecrementWaitCountForTesting() { wait_count_--; }
+  inline int GetWaitCountForTesting() { return wait_count_; }
+
  protected:
   explicit Isolate(bool enable_serializer);
   bool IsArrayOrObjectPrototype(Object* object);
@@ -1345,10 +1366,6 @@ class Isolate {
   // If there is no external try-catch or message was successfully propagated,
   // then return true.
   bool PropagatePendingExceptionToExternalTryCatch();
-
-  // Remove per-frame stored materialized objects when we are unwinding
-  // the frame.
-  void RemoveMaterializedObjectsOnUnwind(StackFrame* frame);
 
   void RunMicrotasksInternal();
 
@@ -1527,6 +1544,8 @@ class Isolate {
   ManagedObjectFinalizer managed_object_finalizers_list_;
 
   size_t total_regexp_code_generated_;
+
+  int wait_count_ = 0;
 
   friend class ExecutionAccess;
   friend class HandleScopeImplementer;

@@ -933,6 +933,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ bind(&bytecode_array_loaded);
 
   // Check whether we should continue to use the interpreter.
+  // TODO(rmcilroy) Remove self healing once liveedit only has to deal with
+  // Ignition bytecode.
   Label switch_to_different_code_kind;
   __ lw(a0, FieldMemOperand(a0, SharedFunctionInfo::kCodeOffset));
   __ Branch(&switch_to_different_code_kind, ne, a0,
@@ -1388,10 +1390,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
 }
 
-void Builtins::Generate_CompileBaseline(MacroAssembler* masm) {
-  GenerateTailCallToReturnedCode(masm, Runtime::kCompileBaseline);
-}
-
 void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
   GenerateTailCallToReturnedCode(masm,
                                  Runtime::kCompileOptimized_NotConcurrent);
@@ -1608,104 +1606,6 @@ void Builtins::Generate_NotifySoftDeoptimized(MacroAssembler* masm) {
 
 void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
   Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::LAZY);
-}
-
-// Clobbers {t2, t3, t4, t5}.
-static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
-                                    Register function_template_info,
-                                    Label* receiver_check_failed) {
-  Register signature = t2;
-  Register map = t3;
-  Register constructor = t4;
-  Register scratch = t5;
-
-  // If there is no signature, return the holder.
-  __ lw(signature, FieldMemOperand(function_template_info,
-                                   FunctionTemplateInfo::kSignatureOffset));
-  Label receiver_check_passed;
-  __ JumpIfRoot(signature, Heap::kUndefinedValueRootIndex,
-                &receiver_check_passed);
-
-  // Walk the prototype chain.
-  __ lw(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  Label prototype_loop_start;
-  __ bind(&prototype_loop_start);
-
-  // Get the constructor, if any.
-  __ GetMapConstructor(constructor, map, scratch, scratch);
-  Label next_prototype;
-  __ Branch(&next_prototype, ne, scratch, Operand(JS_FUNCTION_TYPE));
-  Register type = constructor;
-  __ lw(type,
-        FieldMemOperand(constructor, JSFunction::kSharedFunctionInfoOffset));
-  __ lw(type, FieldMemOperand(type, SharedFunctionInfo::kFunctionDataOffset));
-
-  // Loop through the chain of inheriting function templates.
-  Label function_template_loop;
-  __ bind(&function_template_loop);
-
-  // If the signatures match, we have a compatible receiver.
-  __ Branch(&receiver_check_passed, eq, signature, Operand(type),
-            USE_DELAY_SLOT);
-
-  // If the current type is not a FunctionTemplateInfo, load the next prototype
-  // in the chain.
-  __ JumpIfSmi(type, &next_prototype);
-  __ GetObjectType(type, scratch, scratch);
-  __ Branch(&next_prototype, ne, scratch, Operand(FUNCTION_TEMPLATE_INFO_TYPE));
-
-  // Otherwise load the parent function template and iterate.
-  __ lw(type,
-        FieldMemOperand(type, FunctionTemplateInfo::kParentTemplateOffset));
-  __ Branch(&function_template_loop);
-
-  // Load the next prototype and iterate.
-  __ bind(&next_prototype);
-  __ lw(scratch, FieldMemOperand(map, Map::kBitField3Offset));
-  __ DecodeField<Map::HasHiddenPrototype>(scratch);
-  __ Branch(receiver_check_failed, eq, scratch, Operand(zero_reg));
-  __ lw(receiver, FieldMemOperand(map, Map::kPrototypeOffset));
-  __ lw(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-
-  __ Branch(&prototype_loop_start);
-
-  __ bind(&receiver_check_passed);
-}
-
-void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- a0                 : number of arguments excluding receiver
-  //  -- a1                 : callee
-  //  -- ra                 : return address
-  //  -- sp[0]              : last argument
-  //  -- ...
-  //  -- sp[4 * (argc - 1)] : first argument
-  //  -- sp[4 * argc]       : receiver
-  // -----------------------------------
-
-  // Load the FunctionTemplateInfo.
-  __ lw(t1, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
-  __ lw(t1, FieldMemOperand(t1, SharedFunctionInfo::kFunctionDataOffset));
-
-  // Do the compatible receiver check.
-  Label receiver_check_failed;
-  __ Lsa(t8, sp, a0, kPointerSizeLog2);
-  __ lw(t0, MemOperand(t8));
-  CompatibleReceiverCheck(masm, t0, t1, &receiver_check_failed);
-
-  // Get the callback offset from the FunctionTemplateInfo, and jump to the
-  // beginning of the code.
-  __ lw(t2, FieldMemOperand(t1, FunctionTemplateInfo::kCallCodeOffset));
-  __ lw(t2, FieldMemOperand(t2, CallHandlerInfo::kFastHandlerOffset));
-  __ Addu(t2, t2, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ Jump(t2);
-
-  // Compatible receiver check failed: throw an Illegal Invocation exception.
-  __ bind(&receiver_check_failed);
-  // Drop the arguments (including the receiver);
-  __ Addu(t8, t8, Operand(kPointerSize));
-  __ addu(sp, t8, zero_reg);
-  __ TailCallRuntime(Runtime::kThrowIllegalInvocation);
 }
 
 static void Generate_OnStackReplacementHelper(MacroAssembler* masm,
@@ -3109,6 +3009,31 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ CallRuntime(Runtime::kThrowStackOverflow);
     __ break_(0xCC);
   }
+}
+
+void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+
+    // Save all parameter registers (see wasm-linkage.cc). They might be
+    // overwritten in the runtime call below. We don't have any callee-saved
+    // registers in wasm, so no need to store anything else.
+    const RegList gp_regs = a0.bit() | a1.bit() | a2.bit() | a3.bit();
+    const RegList fp_regs = f2.bit() | f4.bit() | f6.bit() | f8.bit() |
+                            f10.bit() | f12.bit() | f14.bit();
+    __ MultiPush(gp_regs);
+    __ MultiPushFPU(fp_regs);
+
+    __ Move(kContextRegister, Smi::kZero);
+    __ CallRuntime(Runtime::kWasmCompileLazy);
+
+    // Restore registers.
+    __ MultiPopFPU(fp_regs);
+    __ MultiPop(gp_regs);
+  }
+  // Now jump to the instructions of the returned code object.
+  __ Addu(at, v0, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ Jump(at);
 }
 
 #undef __

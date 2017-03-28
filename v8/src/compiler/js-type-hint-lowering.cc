@@ -16,9 +16,9 @@ namespace compiler {
 
 class JSSpeculativeBinopBuilder final {
  public:
-  JSSpeculativeBinopBuilder(JSTypeHintLowering* lowering, const Operator* op,
-                            Node* left, Node* right, Node* effect,
-                            Node* control, FeedbackSlot slot)
+  JSSpeculativeBinopBuilder(const JSTypeHintLowering* lowering,
+                            const Operator* op, Node* left, Node* right,
+                            Node* effect, Node* control, FeedbackSlot slot)
       : lowering_(lowering),
         op_(op),
         left_(left),
@@ -112,6 +112,8 @@ class JSSpeculativeBinopBuilder final {
 
   const Operator* SpeculativeCompareOp(NumberOperationHint hint) {
     switch (op_->opcode()) {
+      case IrOpcode::kJSEqual:
+        return simplified()->SpeculativeNumberEqual(hint);
       case IrOpcode::kJSLessThan:
         return simplified()->SpeculativeNumberLessThan(hint);
       case IrOpcode::kJSGreaterThan:
@@ -170,7 +172,7 @@ class JSSpeculativeBinopBuilder final {
   }
 
  private:
-  JSTypeHintLowering* lowering_;
+  const JSTypeHintLowering* lowering_;
   const Operator* op_;
   Node* left_;
   Node* right_;
@@ -180,18 +182,18 @@ class JSSpeculativeBinopBuilder final {
 };
 
 JSTypeHintLowering::JSTypeHintLowering(JSGraph* jsgraph,
-                                       Handle<FeedbackVector> feedback_vector)
-    : jsgraph_(jsgraph), feedback_vector_(feedback_vector) {}
+                                       Handle<FeedbackVector> feedback_vector,
+                                       Flags flags)
+    : jsgraph_(jsgraph), flags_(flags), feedback_vector_(feedback_vector) {}
 
 Reduction JSTypeHintLowering::ReduceBinaryOperation(const Operator* op,
                                                     Node* left, Node* right,
                                                     Node* effect, Node* control,
-                                                    FeedbackSlot slot) {
+                                                    FeedbackSlot slot) const {
   switch (op->opcode()) {
-    case IrOpcode::kJSEqual:
     case IrOpcode::kJSStrictEqual:
-    case IrOpcode::kJSNotEqual:
       break;
+    case IrOpcode::kJSEqual:
     case IrOpcode::kJSLessThan:
     case IrOpcode::kJSGreaterThan:
     case IrOpcode::kJSLessThanOrEqual:
@@ -222,6 +224,23 @@ Reduction JSTypeHintLowering::ReduceBinaryOperation(const Operator* op,
     default:
       UNREACHABLE();
       break;
+  }
+  return Reduction();
+}
+
+Reduction JSTypeHintLowering::ReduceLoadNamedOperation(
+    Node* effect, Node* control, FeedbackSlot slot) const {
+  DCHECK(!slot.IsInvalid());
+  LoadICNexus nexus(feedback_vector(), slot);
+  if ((flags() & kBailoutOnUninitialized) && nexus.IsUninitialized()) {
+    Node* deoptimize = jsgraph()->graph()->NewNode(
+        jsgraph()->common()->Deoptimize(
+            DeoptimizeKind::kSoft,
+            DeoptimizeReason::kInsufficientTypeFeedbackForGenericNamedAccess),
+        jsgraph()->Dead(), effect, control);
+    Node* frame_state = NodeProperties::FindFrameStateBefore(deoptimize);
+    deoptimize->ReplaceInput(0, frame_state);
+    return Reduction(deoptimize);
   }
   return Reduction();
 }

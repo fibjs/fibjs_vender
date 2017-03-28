@@ -41,19 +41,6 @@ RUNTIME_FUNCTION(Runtime_CompileLazy) {
   return function->code();
 }
 
-RUNTIME_FUNCTION(Runtime_CompileBaseline) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
-  StackLimitCheck check(isolate);
-  if (check.JsHasOverflowed(1 * KB)) return isolate->StackOverflow();
-  if (!Compiler::CompileBaseline(function)) {
-    return isolate->heap()->exception();
-  }
-  DCHECK(function->is_compiled());
-  return function->code();
-}
-
 RUNTIME_FUNCTION(Runtime_CompileOptimized_Concurrent) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
@@ -213,14 +200,9 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
   isolate->thread_manager()->IterateArchivedThreads(&activations_finder);
 
   if (!activations_finder.has_code_activations_) {
-    if (function->code() == *optimized_code) {
-      if (FLAG_trace_deopt) {
-        PrintF("[removing optimized code for: ");
-        function->PrintName();
-        PrintF("]\n");
-      }
-      function->ReplaceCode(function->shared()->code());
-    }
+    Deoptimizer::UnlinkOptimizedCode(*optimized_code,
+                                     function->context()->native_context());
+
     // Evict optimized code for this function from the cache so that it
     // doesn't get used for new closures.
     function->shared()->EvictFromOptimizedCodeMap(*optimized_code,

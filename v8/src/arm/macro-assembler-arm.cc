@@ -13,6 +13,7 @@
 #include "src/assembler-inl.h"
 #include "src/base/bits.h"
 #include "src/base/division-by-constant.h"
+#include "src/base/utils/random-number-generator.h"
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
 #include "src/counters.h"
@@ -26,14 +27,19 @@
 namespace v8 {
 namespace internal {
 
-MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size,
+MacroAssembler::MacroAssembler(Isolate* isolate, void* buffer, int size,
                                CodeObjectRequired create_code_object)
-    : Assembler(arg_isolate, buffer, size),
+    : Assembler(isolate, buffer, size),
       generating_stub_(false),
-      has_frame_(false) {
+      has_frame_(false),
+      isolate_(isolate),
+      jit_cookie_(0) {
+  if (FLAG_mask_constants_with_cookie) {
+    jit_cookie_ = isolate->random_number_generator()->NextInt();
+  }
   if (create_code_object == CodeObjectRequired::kYes) {
     code_object_ =
-        Handle<Object>::New(isolate()->heap()->undefined_value(), isolate());
+        Handle<Object>::New(isolate_->heap()->undefined_value(), isolate_);
   }
 }
 
@@ -100,6 +106,8 @@ void MacroAssembler::Call(Address target,
                           RelocInfo::Mode rmode,
                           Condition cond,
                           TargetAddressStorageMode mode) {
+  // Check if we have to emit the constant pool before we block it.
+  MaybeCheckConstPool();
   // Block constant pool for the call instruction sequence.
   BlockConstPoolScope block_const_pool(this);
   Label start;
@@ -145,11 +153,8 @@ int MacroAssembler::CallSize(Handle<Code> code,
   return CallSize(reinterpret_cast<Address>(code.location()), rmode, cond);
 }
 
-
-void MacroAssembler::Call(Handle<Code> code,
-                          RelocInfo::Mode rmode,
-                          TypeFeedbackId ast_id,
-                          Condition cond,
+void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
+                          TypeFeedbackId ast_id, Condition cond,
                           TargetAddressStorageMode mode) {
   Label start;
   bind(&start);
@@ -1922,15 +1927,6 @@ Condition MacroAssembler::IsObjectStringType(Register obj, Register type,
   return eq;
 }
 
-void MacroAssembler::IsObjectNameType(Register object,
-                                      Register scratch,
-                                      Label* fail) {
-  ldr(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
-  ldrb(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
-  cmp(scratch, Operand(LAST_NAME_TYPE));
-  b(hi, fail);
-}
-
 void MacroAssembler::MaybeDropFrames() {
   // Check whether we need to drop frames to restart a function on the stack.
   ExternalReference restart_fp =
@@ -2391,29 +2387,6 @@ void MacroAssembler::CheckMap(Register obj,
 }
 
 
-void MacroAssembler::DispatchWeakMap(Register obj, Register scratch1,
-                                     Register scratch2, Handle<WeakCell> cell,
-                                     Handle<Code> success,
-                                     SmiCheckType smi_check_type) {
-  Label fail;
-  if (smi_check_type == DO_SMI_CHECK) {
-    JumpIfSmi(obj, &fail);
-  }
-  ldr(scratch1, FieldMemOperand(obj, HeapObject::kMapOffset));
-  CmpWeakValue(scratch1, cell, scratch2);
-  Jump(success, RelocInfo::CODE_TARGET, eq);
-  bind(&fail);
-}
-
-
-void MacroAssembler::CmpWeakValue(Register value, Handle<WeakCell> cell,
-                                  Register scratch) {
-  mov(scratch, Operand(cell));
-  ldr(scratch, FieldMemOperand(scratch, WeakCell::kValueOffset));
-  cmp(value, scratch);
-}
-
-
 void MacroAssembler::GetWeakValue(Register value, Handle<WeakCell> cell) {
   mov(value, Operand(cell));
   ldr(value, FieldMemOperand(value, WeakCell::kValueOffset));
@@ -2425,7 +2398,6 @@ void MacroAssembler::LoadWeakValue(Register value, Handle<WeakCell> cell,
   GetWeakValue(value, cell);
   JumpIfSmi(value, miss);
 }
-
 
 void MacroAssembler::GetMapConstructor(Register result, Register map,
                                        Register temp, Register temp2) {
@@ -2728,27 +2700,6 @@ void MacroAssembler::Assert(Condition cond, BailoutReason reason) {
 }
 
 
-void MacroAssembler::AssertFastElements(Register elements) {
-  if (emit_debug_code()) {
-    DCHECK(!elements.is(ip));
-    Label ok;
-    push(elements);
-    ldr(elements, FieldMemOperand(elements, HeapObject::kMapOffset));
-    LoadRoot(ip, Heap::kFixedArrayMapRootIndex);
-    cmp(elements, ip);
-    b(eq, &ok);
-    LoadRoot(ip, Heap::kFixedDoubleArrayMapRootIndex);
-    cmp(elements, ip);
-    b(eq, &ok);
-    LoadRoot(ip, Heap::kFixedCOWArrayMapRootIndex);
-    cmp(elements, ip);
-    b(eq, &ok);
-    Abort(kJSObjectWithFastElementsMapHasSlowElements);
-    bind(&ok);
-    pop(elements);
-  }
-}
-
 
 void MacroAssembler::Check(Condition cond, BailoutReason reason) {
   Label L;
@@ -2920,18 +2871,6 @@ void MacroAssembler::JumpIfEitherSmi(Register reg1,
   b(eq, on_either_smi);
 }
 
-void MacroAssembler::AssertNotNumber(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    tst(object, Operand(kSmiTagMask));
-    Check(ne, kOperandIsANumber);
-    push(object);
-    CompareObjectType(object, object, object, HEAP_NUMBER_TYPE);
-    pop(object);
-    Check(ne, kOperandIsANumber);
-  }
-}
-
 void MacroAssembler::AssertNotSmi(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
@@ -2946,34 +2885,6 @@ void MacroAssembler::AssertSmi(Register object) {
     STATIC_ASSERT(kSmiTag == 0);
     tst(object, Operand(kSmiTagMask));
     Check(eq, kOperandIsNotSmi);
-  }
-}
-
-
-void MacroAssembler::AssertString(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    tst(object, Operand(kSmiTagMask));
-    Check(ne, kOperandIsASmiAndNotAString);
-    push(object);
-    ldr(object, FieldMemOperand(object, HeapObject::kMapOffset));
-    CompareInstanceType(object, object, FIRST_NONSTRING_TYPE);
-    pop(object);
-    Check(lo, kOperandIsNotAString);
-  }
-}
-
-
-void MacroAssembler::AssertName(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    tst(object, Operand(kSmiTagMask));
-    Check(ne, kOperandIsASmiAndNotAName);
-    push(object);
-    ldr(object, FieldMemOperand(object, HeapObject::kMapOffset));
-    CompareInstanceType(object, object, LAST_NAME_TYPE);
-    pop(object);
-    Check(le, kOperandIsNotAName);
   }
 }
 
@@ -3014,20 +2925,6 @@ void MacroAssembler::AssertGeneratorObject(Register object) {
     Check(eq, kOperandIsNotAGeneratorObject);
   }
 }
-
-void MacroAssembler::AssertReceiver(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    tst(object, Operand(kSmiTagMask));
-    Check(ne, kOperandIsASmiAndNotAReceiver);
-    push(object);
-    STATIC_ASSERT(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
-    CompareObjectType(object, object, object, FIRST_JS_RECEIVER_TYPE);
-    pop(object);
-    Check(hs, kOperandIsNotAReceiver);
-  }
-}
-
 
 void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
                                                      Register scratch) {
@@ -3831,7 +3728,6 @@ bool AreAliased(Register reg1,
   return n_of_valid_regs != n_of_non_aliasing_regs;
 }
 #endif
-
 
 CodePatcher::CodePatcher(Isolate* isolate, byte* address, int instructions,
                          FlushICache flush_cache)
