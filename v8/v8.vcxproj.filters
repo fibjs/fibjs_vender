@@ -3914,9 +3914,6 @@
     <ClCompile Include="src\transitions.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\trap-handler\handler-inside.cc">
-      <Filter>Source Files\trap-handler</Filter>
-    </ClCompile>
     <ClCompile Include="src\trap-handler\handler-outside.cc">
       <Filter>Source Files\trap-handler</Filter>
     </ClCompile>

@@ -78,6 +78,7 @@ var files = {
     'src/snapshot/mksnapshot.cc': 1,
     'src/snapshot/natives-external.cc': 1,
     'src/snapshot/snapshot-external.cc': 1,
+    'src/trap-handler/handler-inside.cc': 1,
     'src/base/platform/platform-qnx.cc': 1,
     'src/base/platform/platform-cygwin.cc': 1
 };
