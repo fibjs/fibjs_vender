@@ -78,7 +78,6 @@ var files = {
     'src/snapshot/mksnapshot.cc': 1,
     'src/snapshot/natives-external.cc': 1,
     'src/snapshot/snapshot-external.cc': 1,
-    'src/trap-handler/handler-inside.cc': 1,
     'src/base/platform/platform-qnx.cc': 1,
     'src/base/platform/platform-cygwin.cc': 1
 };
@@ -323,6 +322,22 @@ function patch_ntver() {
     fs.writeFile(fname, txt);
 }
 
+function patch_trap() {
+    var fname = 'src/trap-handler/handler-inside.cc';
+    console.log("patch", fname);
+
+    var txt = fs.readTextFile(fname);
+    txt = "#ifndef _WIN32\n\n" + txt + "\n\n#endif\n";
+    fs.writeFile(fname, txt);
+
+    fname = 'src/api.cc';
+    console.log("patch", fname);
+
+    var txt = fs.readTextFile(fname);
+    txt = txt.replace("V8::TryHandleSignal", "TryHandleSignal");
+    fs.writeFile(fname, txt);
+}
+
 save_plat();
 
 clean_folder('include');
@@ -354,6 +369,7 @@ patch_macro();
 patch_flag();
 patch_serializer();
 patch_ntver();
+patch_trap();
 
 //fs.unlink('src/version_gen.cc');
 
