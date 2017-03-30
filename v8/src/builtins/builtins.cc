@@ -5,6 +5,7 @@
 #include "src/builtins/builtins.h"
 #include "src/api.h"
 #include "src/assembler-inl.h"
+#include "src/builtins/builtins-descriptors.h"
 #include "src/callable.h"
 #include "src/code-events.h"
 #include "src/compiler/code-assembler.h"
@@ -141,30 +142,33 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
   code = BuildWithCodeStubAssemblerJS(isolate, &Generate_##Name, Argc, \
                                       kBuiltinFlags, #Name);           \
   builtins_[index++] = code;
-#define BUILD_TFS(Name, Kind, Extra, InterfaceDescriptor, result_size) \
+#define BUILD_TFS(Name, InterfaceDescriptor, result_size)                   \
+  { InterfaceDescriptor##Descriptor descriptor(isolate); }                  \
+  code = BuildWithCodeStubAssemblerCS(isolate, &Generate_##Name,            \
+                                      CallDescriptors::InterfaceDescriptor, \
+                                      kBuiltinFlags, #Name, result_size);   \
+  builtins_[index++] = code;
+#define BUILD_TFH(Name, Kind, Extra, InterfaceDescriptor)              \
   { InterfaceDescriptor##Descriptor descriptor(isolate); }             \
+  /* Return size for IC builtins/handlers is always 1. */              \
   code = BuildWithCodeStubAssemblerCS(                                 \
       isolate, &Generate_##Name, CallDescriptors::InterfaceDescriptor, \
-      Code::ComputeFlags(Code::Kind, Extra), #Name, result_size);      \
+      Code::ComputeFlags(Code::Kind, Extra), #Name, 1);                \
   builtins_[index++] = code;
 #define BUILD_ASM(Name)                                                        \
   code =                                                                       \
       BuildWithMacroAssembler(isolate, Generate_##Name, kBuiltinFlags, #Name); \
   builtins_[index++] = code;
-#define BUILD_ASH(Name, Kind, Extra)                                           \
-  code = BuildWithMacroAssembler(                                              \
-      isolate, Generate_##Name, Code::ComputeFlags(Code::Kind, Extra), #Name); \
-  builtins_[index++] = code;
 
-    BUILTIN_LIST(BUILD_CPP, BUILD_API, BUILD_TFJ, BUILD_TFS, BUILD_ASM,
-                 BUILD_ASH, BUILD_ASM);
+    BUILTIN_LIST(BUILD_CPP, BUILD_API, BUILD_TFJ, BUILD_TFS, BUILD_TFH,
+                 BUILD_ASM, BUILD_ASM);
 
 #undef BUILD_CPP
 #undef BUILD_API
 #undef BUILD_TFJ
 #undef BUILD_TFS
+#undef BUILD_TFH
 #undef BUILD_ASM
-#undef BUILD_ASH
     CHECK_EQ(builtin_count, index);
     for (int i = 0; i < builtin_count; i++) {
       Code::cast(builtins_[i])->set_builtin_index(i);
@@ -283,13 +287,14 @@ Handle<Code> Builtins::OrdinaryToPrimitive(OrdinaryToPrimitiveHint hint) {
 // static
 Callable Builtins::CallableFor(Isolate* isolate, Name name) {
   switch (name) {
-#define CASE(Name, _, __, InterfaceDescriptor, ...)                      \
+#define CASE(Name, ...)                                                  \
   case k##Name: {                                                        \
     Handle<Code> code(Code::cast(isolate->builtins()->builtins_[name])); \
-    auto descriptor = InterfaceDescriptor##Descriptor(isolate);          \
+    auto descriptor = Builtin_##Name##_InterfaceDescriptor(isolate);     \
     return Callable(code, descriptor);                                   \
   }
-    BUILTIN_LIST_TFS(CASE)
+    BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, CASE, CASE,
+                 IGNORE_BUILTIN, IGNORE_BUILTIN)
 #undef CASE
     default:
       UNREACHABLE();

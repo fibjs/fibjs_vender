@@ -6147,7 +6147,7 @@ bool v8::V8::Initialize() {
 }
 
 #if V8_OS_LINUX && V8_TARGET_ARCH_X64 && !V8_OS_ANDROID
-bool V8::TryHandleSignal(int signum, void* info, void* context) {
+bool TryHandleSignal(int signum, void* info, void* context) {
   return v8::internal::trap_handler::TryHandleSignal(
       signum, static_cast<siginfo_t*>(info), static_cast<ucontext_t*>(context));
 }

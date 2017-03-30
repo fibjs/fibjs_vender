@@ -19,6 +19,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
+class Reduction;
 class SourcePositionTable;
 
 // The BytecodeGraphBuilder produces a high-level IR graph based on
@@ -179,7 +180,17 @@ class BytecodeGraphBuilder {
   // any other invocation of {NewNode} would do.
   Node* TryBuildSimplifiedBinaryOp(const Operator* op, Node* left, Node* right,
                                    FeedbackSlot slot);
-  Node* TryBuildSimplifiedLoadNamed(FeedbackSlot slot);
+  Node* TryBuildSimplifiedLoadNamed(const Operator* op, Node* receiver,
+                                    FeedbackSlot slot);
+  Node* TryBuildSimplifiedLoadKeyed(const Operator* op, Node* receiver,
+                                    Node* key, FeedbackSlot slot);
+  Node* TryBuildSimplifiedStoreNamed(const Operator* op, Node* receiver,
+                                     Node* value, FeedbackSlot slot);
+  Node* TryBuildSimplifiedStoreKeyed(const Operator* op, Node* receiver,
+                                     Node* key, Node* value, FeedbackSlot slot);
+
+  // Applies the given early reduction onto the current environment.
+  void ApplyEarlyReduction(Reduction reduction);
 
   // Check the context chain for extensions, for lookup fast paths.
   Environment* CheckContextExtensions(uint32_t depth);

@@ -968,8 +968,11 @@ class RuntimeCallTimerScope {
      MICROSECOND)                                                              \
   HT(wasm_decode_wasm_module_time, V8.WasmDecodeModuleMicroSeconds, 1000000,   \
      MICROSECOND)                                                              \
-  HT(wasm_decode_function_time, V8.WasmDecodeFunctionMicroSeconds, 1000000,    \
-     MICROSECOND)                                                              \
+  /* TODO(karlschimpf) Update chrome flags to reflect asm/wasm split. */       \
+  HT(wasm_decode_asm_function_time, V8.WasmDecodeFunctionMicroSeconds,         \
+     1000000, MICROSECOND)                                                     \
+  HT(wasm_decode_wasm_function_time, V8.WasmDecodeFunctionMicroSeconds,        \
+     1000000, MICROSECOND)                                                     \
   /* TODO(kschimpf) Update chrome flags to reflect asm/wasm split. */          \
   HT(wasm_compile_asm_module_time, V8.WasmCompileModuleMicroSeconds, 1000000,  \
      MICROSECOND)                                                              \
@@ -1014,9 +1017,13 @@ class RuntimeCallTimerScope {
   HM(wasm_decode_module_peak_memory_bytes, V8.WasmDecodeModulePeakMemoryBytes) \
   HM(wasm_compile_function_peak_memory_bytes,                                  \
      V8.WasmCompileFunctionPeakMemoryBytes)                                    \
-  HM(wasm_min_mem_pages_count, V8.WasmMinMemPagesCount)                        \
+  /* TODO(karlschimpf) Update chrome flags to reflect asm/wasm split. */       \
+  HM(wasm_asm_min_mem_pages_count, V8.WasmMinMemPagesCount)                    \
+  HM(wasm_wasm_min_mem_pages_count, V8.WasmMinMemPagesCount)                   \
   HM(wasm_max_mem_pages_count, V8.WasmMaxMemPagesCount)                        \
-  HM(wasm_function_size_bytes, V8.WasmFunctionSizeBytes)                       \
+  /* TODO(karlschimpf) Update chrome flags to reflect asm/wasm split. */       \
+  HM(wasm_asm_function_size_bytes, V8.WasmFunctionSizeBytes)                   \
+  HM(wasm_wasm_function_size_bytes, V8.WasmFunctionSizeBytes)                  \
   HM(wasm_module_size_bytes, V8.WasmModuleSizeBytes)
 
 // WARNING: STATS_COUNTER_LIST_* is a very large macro that is causing MSVC

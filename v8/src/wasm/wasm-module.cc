@@ -1315,7 +1315,9 @@ class InstantiationHelper {
     MaybeHandle<JSArrayBuffer> old_memory;
 
     uint32_t min_mem_pages = module_->min_mem_pages;
-    isolate_->counters()->wasm_min_mem_pages_count()->AddSample(min_mem_pages);
+    (module_->is_wasm() ? isolate_->counters()->wasm_wasm_min_mem_pages_count()
+                        : isolate_->counters()->wasm_asm_min_mem_pages_count())
+        ->AddSample(min_mem_pages);
 
     if (!memory_.is_null()) {
       // Set externally passed ArrayBuffer non neuterable.
@@ -1835,7 +1837,7 @@ class InstantiationHelper {
                             module_name, import_name);
             return -1;
           }
-          if (FLAG_fast_validate_asm) {
+          if (module_->is_asm_js() && FLAG_fast_validate_asm) {
             if (module_->globals[import.index].type == kWasmI32) {
               value = Object::ToInt32(isolate_, value).ToHandleChecked();
             } else {

@@ -3049,7 +3049,6 @@ class HashTableBase : public FixedArray {
 
   // Tells whether k is a real key.  The hole and undefined are not allowed
   // as keys and can be used to indicate missing or deleted elements.
-  inline bool IsKey(Object* k);
   inline bool IsKey(Isolate* isolate, Object* k);
 
   // Compute the probe offset (quadratic probing).
@@ -3430,10 +3429,6 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
   // Add entry to dictionary. Returns entry value.
   static int AddEntry(Handle<Derived> dictionary, Key key, Handle<Object> value,
                       PropertyDetails details, uint32_t hash);
-  // Generate new enumeration indices to avoid enumeration index overflow.
-  // Returns iteration indices array for the |dictionary|.
-  static Handle<FixedArray> GenerateNewEnumerationIndices(
-      Handle<Derived> dictionary);
 };
 
 
@@ -3499,9 +3494,6 @@ class NameDictionary
 
  public:
   DECLARE_CAST(NameDictionary)
-
-  inline static Handle<FixedArray> DoGenerateNewEnumerationIndices(
-      Handle<NameDictionary> dictionary);
 
   static const int kEntryValueIndex = 1;
   static const int kEntryDetailsIndex = 2;
@@ -8269,6 +8261,7 @@ class JSRegExp: public JSObject {
                                           Handle<String> flags_string);
 
   inline Type TypeTag();
+  // Number of captures (without the match itself).
   inline int CaptureCount();
   inline Flags GetFlags();
   inline String* Pattern();
@@ -8341,7 +8334,7 @@ class JSRegExp: public JSObject {
   // Number of captures in the compiled regexp.
   static const int kIrregexpCaptureCountIndex = kDataIndex + 5;
   // Maps names of named capture groups (at indices 2i) to their corresponding
-  // capture group indices (at indices 2i + 1).
+  // (1-based) capture group indices (at indices 2i + 1).
   static const int kIrregexpCaptureNameMapIndex = kDataIndex + 6;
 
   static const int kIrregexpDataSize = kIrregexpCaptureNameMapIndex + 1;
@@ -9196,10 +9189,15 @@ class String: public Name {
   class Match {
    public:
     virtual Handle<String> GetMatch() = 0;
-    virtual MaybeHandle<String> GetCapture(int i, bool* capture_exists) = 0;
     virtual Handle<String> GetPrefix() = 0;
     virtual Handle<String> GetSuffix() = 0;
+
     virtual int CaptureCount() = 0;
+    virtual bool HasNamedCaptures() = 0;
+    virtual MaybeHandle<String> GetCapture(int i, bool* capture_exists) = 0;
+    virtual MaybeHandle<String> GetNamedCapture(Handle<String> name,
+                                                bool* capture_exists) = 0;
+
     virtual ~Match() {}
   };
 
@@ -9214,6 +9212,11 @@ class String: public Name {
   inline bool Equals(String* other);
   inline static bool Equals(Handle<String> one, Handle<String> two);
   bool IsUtf8EqualTo(Vector<const char> str, bool allow_prefix_match = false);
+
+  // Dispatches to Is{One,Two}ByteEqualTo.
+  template <typename Char>
+  bool IsEqualTo(Vector<const Char> str);
+
   bool IsOneByteEqualTo(Vector<const uint8_t> str);
   bool IsTwoByteEqualTo(Vector<const uc16> str);
 
@@ -10438,6 +10441,9 @@ class JSArrayBuffer: public JSObject {
   inline uint32_t bit_field() const;
   inline void set_bit_field(uint32_t bits);
 
+  // [is_external]: true indicates that the embedder is in charge of freeing the
+  // backing_store, while is_external == false means that v8 will free the
+  // memory block once all ArrayBuffers referencing it are collected by the GC.
   inline bool is_external();
   inline void set_is_external(bool value);
 

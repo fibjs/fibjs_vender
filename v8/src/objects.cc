@@ -5647,13 +5647,8 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
   int number_of_elements = dictionary->NumberOfElements();
   if (number_of_elements > kMaxNumberOfDescriptors) return;
 
-  Handle<FixedArray> iteration_order;
-  if (number_of_elements != dictionary->NextEnumerationIndex()) {
-    iteration_order =
-        NameDictionary::DoGenerateNewEnumerationIndices(dictionary);
-  } else {
-    iteration_order = NameDictionary::IterationIndices(dictionary);
-  }
+  Handle<FixedArray> iteration_order =
+      NameDictionary::IterationIndices(dictionary);
 
   int instance_descriptor_length = iteration_order->length();
   int number_of_fields = 0;
@@ -5727,7 +5722,7 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
   for (int i = 0; i < instance_descriptor_length; i++) {
     int index = Smi::cast(iteration_order->get(i))->value();
     Object* k = dictionary->KeyAt(index);
-    DCHECK(dictionary->IsKey(k));
+    DCHECK(dictionary->IsKey(isolate, k));
     // Dictionary keys are internalized upon insertion.
     // TODO(jkummerow): Turn this into a DCHECK if it's not hit in the wild.
     CHECK(k->IsUniqueName());
@@ -5738,7 +5733,6 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
     PropertyDetails details = dictionary->DetailsAt(index);
     DCHECK_EQ(kField, details.location());
     DCHECK_EQ(kMutable, details.constness());
-    int enumeration_index = details.dictionary_index();
 
     Descriptor d;
     if (details.kind() == kData) {
@@ -5767,7 +5761,7 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
       }
       current_offset += details.field_width_in_words();
     }
-    descriptors->Set(enumeration_index - 1, &d);
+    descriptors->Set(i, &d);
   }
   DCHECK(current_offset == number_of_fields);
 
@@ -11403,6 +11397,8 @@ int String::IndexOf(Isolate* isolate, Handle<String> receiver,
 
 MaybeHandle<String> String::GetSubstitution(Isolate* isolate, Match* match,
                                             Handle<String> replacement) {
+  DCHECK_IMPLIES(match->HasNamedCaptures(), FLAG_harmony_regexp_named_captures);
+
   Factory* factory = isolate->factory();
 
   const int replacement_length = replacement->length();
@@ -11487,6 +11483,37 @@ MaybeHandle<String> String::GetSubstitution(Isolate* isolate, Match* match,
             String);
         if (capture_exists) builder.AppendString(capture);
         continue_from_ix = peek_ix + advance;
+        break;
+      }
+      case '<': {  // $<name> - named capture
+        if (!match->HasNamedCaptures()) {
+          builder.AppendCharacter('$');
+          continue_from_ix = peek_ix;
+          break;
+        }
+
+        Handle<String> bracket_string =
+            factory->LookupSingleCharacterStringFromCode('>');
+        const int closing_bracket_ix =
+            String::IndexOf(isolate, replacement, bracket_string, peek_ix + 1);
+
+        if (closing_bracket_ix == -1) {
+          THROW_NEW_ERROR(
+              isolate,
+              NewSyntaxError(MessageTemplate::kRegExpInvalidReplaceString,
+                             replacement),
+              String);
+        }
+
+        Handle<String> capture_name =
+            factory->NewSubString(replacement, peek_ix + 1, closing_bracket_ix);
+        bool capture_exists;
+        Handle<String> capture;
+        ASSIGN_RETURN_ON_EXCEPTION(
+            isolate, capture,
+            match->GetNamedCapture(capture_name, &capture_exists), String);
+        if (capture_exists) builder.AppendString(capture);
+        continue_from_ix = closing_bracket_ix + 1;
         break;
       }
       default:
@@ -11659,6 +11686,15 @@ bool String::IsUtf8EqualTo(Vector<const char> str, bool allow_prefix_match) {
   return (allow_prefix_match || i == slen) && remaining_in_str == 0;
 }
 
+template <>
+bool String::IsEqualTo(Vector<const uint8_t> str) {
+  return IsOneByteEqualTo(str);
+}
+
+template <>
+bool String::IsEqualTo(Vector<const uc16> str) {
+  return IsTwoByteEqualTo(str);
+}
 
 bool String::IsOneByteEqualTo(Vector<const uint8_t> str) {
   int slen = length();
@@ -16509,7 +16545,7 @@ void HashTable<Derived, Shape, Key>::Rehash(Key key) {
         uint32_t target = EntryForProbe(key, current_key, probe, current);
         if (current == target) continue;
         Object* target_key = KeyAt(target);
-        if (!IsKey(target_key) ||
+        if (!IsKey(isolate, target_key) ||
             EntryForProbe(key, target_key, probe, target) != target) {
           // Put the current element into the correct position.
           Swap(current, target, mode);
@@ -16739,10 +16775,6 @@ template Handle<GlobalDictionary>
 Dictionary<GlobalDictionary, GlobalDictionaryShape, Handle<Name>>::Add(
     Handle<GlobalDictionary>, Handle<Name>, Handle<Object>, PropertyDetails,
     int*);
-
-template Handle<FixedArray> Dictionary<
-    NameDictionary, NameDictionaryShape,
-    Handle<Name> >::GenerateNewEnumerationIndices(Handle<NameDictionary>);
 
 template Handle<SeededNumberDictionary>
 Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>::Add(
@@ -17823,34 +17855,6 @@ Handle<Derived> Dictionary<Derived, Shape, Key>::NewEmpty(
 }
 
 template <typename Derived, typename Shape, typename Key>
-Handle<FixedArray>
-Dictionary<Derived, Shape, Key>::GenerateNewEnumerationIndices(
-    Handle<Derived> dictionary) {
-  int length = dictionary->NumberOfElements();
-
-  Handle<FixedArray> iteration_order = IterationIndices(dictionary);
-  DCHECK(iteration_order->length() == length);
-
-  // Iterate over the dictionary using the enumeration order and update
-  // the dictionary with new enumeration indices.
-  for (int i = 0; i < length; i++) {
-    int index = Smi::cast(iteration_order->get(i))->value();
-    DCHECK(dictionary->IsKey(dictionary->KeyAt(index)));
-
-    int enum_index = PropertyDetails::kInitialIndex + i;
-
-    PropertyDetails details = dictionary->DetailsAt(index);
-    PropertyDetails new_details = details.set_index(enum_index);
-    dictionary->DetailsAtPut(index, new_details);
-  }
-
-  // Set the next enumeration index.
-  dictionary->SetNextEnumerationIndex(PropertyDetails::kInitialIndex+length);
-  return iteration_order;
-}
-
-
-template <typename Derived, typename Shape, typename Key>
 void Dictionary<Derived, Shape, Key>::SetRequiresCopyOnCapacityChange() {
   DCHECK_EQ(0, DerivedHashTable::NumberOfElements());
   DCHECK_EQ(0, DerivedHashTable::NumberOfDeletedElements());
@@ -17867,7 +17871,28 @@ Handle<Derived> Dictionary<Derived, Shape, Key>::EnsureCapacity(
   if (Shape::kIsEnumerable &&
       !PropertyDetails::IsValidIndex(dictionary->NextEnumerationIndex() + n)) {
     // If not, we generate new indices for the properties.
-    GenerateNewEnumerationIndices(dictionary);
+    int length = dictionary->NumberOfElements();
+
+    Handle<FixedArray> iteration_order = IterationIndices(dictionary);
+    DCHECK_EQ(length, iteration_order->length());
+
+    // Iterate over the dictionary using the enumeration order and update
+    // the dictionary with new enumeration indices.
+    for (int i = 0; i < length; i++) {
+      int index = Smi::cast(iteration_order->get(i))->value();
+      DCHECK(dictionary->IsKey(dictionary->GetIsolate(),
+                               dictionary->KeyAt(index)));
+
+      int enum_index = PropertyDetails::kInitialIndex + i;
+
+      PropertyDetails details = dictionary->DetailsAt(index);
+      PropertyDetails new_details = details.set_index(enum_index);
+      dictionary->DetailsAtPut(index, new_details);
+    }
+
+    // Set the next enumeration index.
+    dictionary->SetNextEnumerationIndex(PropertyDetails::kInitialIndex +
+                                        length);
   }
   return DerivedHashTable::EnsureCapacity(dictionary, n, key);
 }
@@ -18799,7 +18824,7 @@ void JSWeakCollection::Set(Handle<JSWeakCollection> weak_collection,
   DCHECK(key->IsJSReceiver() || key->IsSymbol());
   Handle<ObjectHashTable> table(
       ObjectHashTable::cast(weak_collection->table()));
-  DCHECK(table->IsKey(*key));
+  DCHECK(table->IsKey(table->GetIsolate(), *key));
   Handle<ObjectHashTable> new_table =
       ObjectHashTable::Put(table, key, value, hash);
   weak_collection->set_table(*new_table);
@@ -18815,7 +18840,7 @@ bool JSWeakCollection::Delete(Handle<JSWeakCollection> weak_collection,
   DCHECK(key->IsJSReceiver() || key->IsSymbol());
   Handle<ObjectHashTable> table(
       ObjectHashTable::cast(weak_collection->table()));
-  DCHECK(table->IsKey(*key));
+  DCHECK(table->IsKey(table->GetIsolate(), *key));
   bool was_present = false;
   Handle<ObjectHashTable> new_table =
       ObjectHashTable::Remove(table, key, &was_present, hash);

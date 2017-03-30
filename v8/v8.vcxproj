@@ -1243,6 +1243,7 @@
     <ClCompile Include="src\tracing\traced-value.cc" />
     <ClCompile Include="src\tracing\tracing-category-observer.cc" />
     <ClCompile Include="src\transitions.cc" />
+    <ClCompile Include="src\trap-handler\handler-inside.cc" />
     <ClCompile Include="src\trap-handler\handler-outside.cc" />
     <ClCompile Include="src\trap-handler\handler-shared.cc" />
     <ClCompile Include="src\type-hints.cc" />
