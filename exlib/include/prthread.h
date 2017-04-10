@@ -9,16 +9,16 @@ typedef void PRThread;
 
 PRThread* PR_GetCurrentThread();
 
-typedef void (PR_CALLBACK *PRThreadPrivateDTOR)(void *priv);
-PRStatus PR_NewThreadPrivateIndex(PRUintn *newIndex, PRThreadPrivateDTOR destructor);
+typedef void(PR_CALLBACK* PRThreadPrivateDTOR)(void* priv);
+PRStatus PR_NewThreadPrivateIndex(PRUintn* newIndex, PRThreadPrivateDTOR destructor);
 
-PRStatus PR_SetThreadPrivate(PRUintn tpdIndex, void *priv);
+PRStatus PR_SetThreadPrivate(PRUintn tpdIndex, void* priv);
 
 void* PR_GetThreadPrivate(PRUintn tpdIndex);
 
 typedef intptr_t PRCallOnceType;
-typedef PRStatus (PR_CALLBACK *PRCallOnceFN)(void);
-PRStatus PR_CallOnce(PRCallOnceType *once, PRCallOnceFN func);
+typedef PRStatus(PR_CALLBACK* PRCallOnceFN)(void);
+PRStatus PR_CallOnce(PRCallOnceType* once, PRCallOnceFN func);
 
 PR_END_EXTERN_C
 

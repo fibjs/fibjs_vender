@@ -13,10 +13,9 @@
 #include <unistd.h>
 #endif
 
-namespace exlib
-{
+namespace exlib {
 
-bool Locker::lock(Task_base *current)
+bool Locker::lock(Task_base* current)
 {
     if (current == 0)
         current = Thread_base::current();
@@ -26,14 +25,12 @@ bool Locker::lock(Task_base *current)
 
     m_lock.lock();
 
-    if (!m_recursive && current == m_locker)
-    {
+    if (!m_recursive && current == m_locker) {
         m_lock.unlock();
         return true;
     }
 
-    if (m_locker && current != m_locker)
-    {
+    if (m_locker && current != m_locker) {
         m_blocks.putTail(current);
         current->suspend(m_lock);
         return false;
@@ -48,7 +45,7 @@ bool Locker::lock(Task_base *current)
     return true;
 }
 
-bool Locker::trylock(Task_base *current)
+bool Locker::trylock(Task_base* current)
 {
     if (current == 0)
         current = Thread_base::current();
@@ -58,14 +55,12 @@ bool Locker::trylock(Task_base *current)
 
     m_lock.lock();
 
-    if (!m_recursive && current == m_locker)
-    {
+    if (!m_recursive && current == m_locker) {
         m_lock.unlock();
         return false;
     }
 
-    if (m_locker && current != m_locker)
-    {
+    if (m_locker && current != m_locker) {
         m_lock.unlock();
         return false;
     }
@@ -79,14 +74,14 @@ bool Locker::trylock(Task_base *current)
     return true;
 }
 
-void Locker::unlock(Task_base *current)
+void Locker::unlock(Task_base* current)
 {
 #ifdef DEBUG
     if (current == 0)
         current = Thread_base::current();
 #endif
 
-    Task_base *fb = 0;
+    Task_base* fb = 0;
 
     assert(current != 0);
     assert(current == m_locker);
@@ -95,10 +90,8 @@ void Locker::unlock(Task_base *current)
 
     m_lock.lock();
 
-    if (--m_count == 0)
-    {
-        if ((m_locker = m_blocks.getHead()) != 0)
-        {
+    if (--m_count == 0) {
+        if ((m_locker = m_blocks.getHead()) != 0) {
             fb = m_locker;
             m_count = 1;
         }
@@ -110,7 +103,7 @@ void Locker::unlock(Task_base *current)
         fb->resume();
 }
 
-bool Locker::owned(Task_base *current)
+bool Locker::owned(Task_base* current)
 {
     if (current == 0)
         current = Thread_base::current();
@@ -125,5 +118,4 @@ bool Locker::owned(Task_base *current)
 
     return r;
 }
-
 }

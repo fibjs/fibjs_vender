@@ -15,8 +15,7 @@
 #include "service.h"
 #include "thread.h"
 
-namespace exlib
-{
+namespace exlib {
 
 #define FB_STK_ALIGN 256
 
@@ -27,8 +26,7 @@ static Service* s_service = NULL;
 
 void Service::init(int32_t workers)
 {
-    if (!s_service)
-    {
+    if (!s_service) {
         static Service _srv(workers);
         s_service = &_srv;
         s_service->m_main.saveStackGuard();
@@ -51,7 +49,7 @@ Thread_base* Thread_base::current()
     return thread_;
 }
 
-Service *Service::current()
+Service* Service::current()
 {
     OSThread* thread_ = OSThread::current();
 
@@ -73,8 +71,7 @@ void Service::forEach(void (*func)(Fiber*))
 
     linkitem* p = s_fibers.head();
 
-    while (p)
-    {
+    while (p) {
         Fiber* zfb = 0;
         func((Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link)));
 
@@ -86,33 +83,40 @@ void Service::forEach(void (*func)(Fiber*))
 
 #endif
 
-Service::Service() :
-    m_master(s_service), m_main(this, NULL), m_running(&m_main), m_cb(NULL)
+Service::Service()
+    : m_master(s_service)
+    , m_main(this, NULL)
+    , m_running(&m_main)
+    , m_cb(NULL)
 {
     m_main.set_name("main");
     m_main.Ref();
 }
 
-Service::Service(int32_t workers) :
-    m_master(NULL), m_main(this, NULL), m_running(&m_main), m_cb(NULL), m_workers(workers - 1)
+Service::Service(int32_t workers)
+    : m_master(NULL)
+    , m_main(this, NULL)
+    , m_running(&m_main)
+    , m_cb(NULL)
+    , m_workers(workers - 1)
 {
     m_main.set_name("main");
     m_main.Ref();
 
-    if (!s_service_inited)
-    {
+    if (!s_service_inited) {
         s_service_inited = true;
         init_timer();
     }
 }
 
-void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
+void Service::fiber_proc(void* (*func)(void*), Fiber* fb)
 {
-    class cb : public Service::switchConextCallback
-    {
+    class cb : public Service::switchConextCallback {
     public:
-        cb(Fiber* fb) : m_fb(fb)
-        {}
+        cb(Fiber* fb)
+            : m_fb(fb)
+        {
+        }
 
     public:
         virtual void invoke()
@@ -138,55 +142,55 @@ void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
     now->switchConext(&_cb);
 }
 
-void Service::Create(fiber_func func, void *data, int32_t stacksize, const char* name, Fiber** retVal)
+void Service::Create(fiber_func func, void* data, int32_t stacksize, const char* name, Fiber** retVal)
 {
-    Fiber *fb;
-    void **stack;
+    Fiber* fb;
+    void** stack;
 
     stacksize = (stacksize + FB_STK_ALIGN - 1) & ~(FB_STK_ALIGN - 1);
 #ifdef WIN32
-    fb = (Fiber *) VirtualAlloc(NULL, stacksize, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE);
+    fb = (Fiber*)VirtualAlloc(NULL, stacksize, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE);
 #else
-    fb = (Fiber *) malloc(stacksize);
+    fb = (Fiber*)malloc(stacksize);
 #endif
     if (fb == NULL)
         return;
 
-    stack = (void **) fb + stacksize / sizeof(void *) - 6;
+    stack = (void**)fb + stacksize / sizeof(void*) - 6;
 
-    new(fb) Fiber(s_service, data);
+    new (fb) Fiber(s_service, data);
 
-    fb->m_cntxt.sp = (intptr_t) stack;
+    fb->m_cntxt.sp = (intptr_t)stack;
 
 #if defined(amd64)
-    stack[0] = (void *) fiber_proc;
+    stack[0] = (void*)fiber_proc;
 #ifdef _WIN32
-    fb->m_cntxt.Rcx = (intptr_t) func;
-    fb->m_cntxt.Rdx = (intptr_t) fb;
+    fb->m_cntxt.Rcx = (intptr_t)func;
+    fb->m_cntxt.Rdx = (intptr_t)fb;
 #else
-    fb->m_cntxt.Rdi = (intptr_t) func;
-    fb->m_cntxt.Rsi = (intptr_t) fb;
+    fb->m_cntxt.Rdi = (intptr_t)func;
+    fb->m_cntxt.Rsi = (intptr_t)fb;
 #endif
 #elif defined(i386)
-    stack[0] = (void *) fiber_proc;
-    stack[2] = (void *)func;
+    stack[0] = (void*)fiber_proc;
+    stack[2] = (void*)func;
     stack[3] = fb;
 #elif defined(arm)
-    fb->m_cntxt.lr = (intptr_t) fiber_proc;
-    fb->m_cntxt.r0 = (intptr_t) func;
-    fb->m_cntxt.r1 = (intptr_t) fb;
+    fb->m_cntxt.lr = (intptr_t)fiber_proc;
+    fb->m_cntxt.r0 = (intptr_t)func;
+    fb->m_cntxt.r1 = (intptr_t)fb;
 #elif defined(arm64)
-    fb->m_cntxt.lr = (intptr_t) fiber_proc;
-    fb->m_cntxt.x0 = (intptr_t) func;
-    fb->m_cntxt.x1 = (intptr_t) fb;
+    fb->m_cntxt.lr = (intptr_t)fiber_proc;
+    fb->m_cntxt.x0 = (intptr_t)func;
+    fb->m_cntxt.x1 = (intptr_t)fb;
 #elif defined(mips)
-    fb->m_cntxt.ra = (intptr_t) fiber_proc;
-    fb->m_cntxt.a0 = (intptr_t) func;
-    fb->m_cntxt.a1 = (intptr_t) fb;
+    fb->m_cntxt.ra = (intptr_t)fiber_proc;
+    fb->m_cntxt.a0 = (intptr_t)func;
+    fb->m_cntxt.a1 = (intptr_t)fb;
 #elif defined(mips64)
-    fb->m_cntxt.ra = (intptr_t) fiber_proc;
-    fb->m_cntxt.a0 = (intptr_t) func;
-    fb->m_cntxt.a1 = (intptr_t) fb;
+    fb->m_cntxt.ra = (intptr_t)fiber_proc;
+    fb->m_cntxt.a0 = (intptr_t)func;
+    fb->m_cntxt.a1 = (intptr_t)fb;
 #endif
 
 #ifdef DEBUG
@@ -195,8 +199,7 @@ void Service::Create(fiber_func func, void *data, int32_t stacksize, const char*
     s_locker.unlock();
 #endif
 
-    if (retVal)
-    {
+    if (retVal) {
         *retVal = fb;
         fb->Ref();
     }
@@ -213,17 +216,15 @@ void Service::dispatch()
 
 void Service::dispatch_loop()
 {
-    while (true)
-    {
+    while (true) {
         m_running = &m_main;
 
-        if (m_cb)
-        {
+        if (m_cb) {
             m_cb->invoke();
             m_cb = NULL;
         }
 
-        Fiber *fb = next();
+        Fiber* fb = next();
         assert(fb != 0);
 
         m_running = fb;
@@ -231,5 +232,4 @@ void Service::dispatch_loop()
         m_main.m_cntxt.switchto(&fb->m_cntxt);
     }
 }
-
 }

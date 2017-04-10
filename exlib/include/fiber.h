@@ -15,18 +15,17 @@
 #include <string>
 #include "list.h"
 
-namespace exlib
-{
+namespace exlib {
 
-#define TLS_SIZE    8
+#define TLS_SIZE 8
 
 class Locker;
 
-class Task_base : public linkitem
-{
+class Task_base : public linkitem {
 public:
     virtual ~Task_base()
-    {}
+    {
+    }
 
 public:
     virtual void suspend() = 0;
@@ -39,10 +38,10 @@ public:
     }
 };
 
-class Thread_base : public Task_base
-{
+class Thread_base : public Task_base {
 public:
-    Thread_base() : m_stackguard(0)
+    Thread_base()
+        : m_stackguard(0)
     {
         memset(&m_tls, 0, sizeof(m_tls));
     }
@@ -79,34 +78,35 @@ public:
     }
 
 public:
-    typedef void(*tls_free)(void*);
+    typedef void (*tls_free)(void*);
     static int32_t tlsAlloc(tls_free _free = NULL);
-    static void *tlsGet(int32_t idx);
-    static void tlsPut(int32_t idx, void *v);
+    static void* tlsGet(int32_t idx);
+    static void tlsPut(int32_t idx, void* v);
     static void tlsFree(int32_t idx);
 
 protected:
     virtual void destroy();
 
 private:
-    void *m_tls[TLS_SIZE];
+    void* m_tls[TLS_SIZE];
     intptr_t m_stackguard;
     atomic refs_;
 };
 
-class Locker
-{
+class Locker {
 public:
-    Locker(bool recursive = true) :
-        m_recursive(recursive), m_count(0), m_locker(0)
+    Locker(bool recursive = true)
+        : m_recursive(recursive)
+        , m_count(0)
+        , m_locker(0)
     {
     }
 
 public:
-    bool lock(Task_base *current = NULL);
-    void unlock(Task_base *current = NULL);
-    bool trylock(Task_base *current = NULL);
-    bool owned(Task_base *current = NULL);
+    bool lock(Task_base* current = NULL);
+    void unlock(Task_base* current = NULL);
+    bool trylock(Task_base* current = NULL);
+    bool owned(Task_base* current = NULL);
 
     int32_t count()
     {
@@ -124,14 +124,13 @@ private:
     int32_t m_count;
     spinlock m_lock;
     List<Task_base> m_blocks;
-    Task_base *m_locker;
+    Task_base* m_locker;
 };
 
-class autoLocker
-{
+class autoLocker {
 public:
-    autoLocker(Locker &l) :
-        m_l(l)
+    autoLocker(Locker& l)
+        : m_l(l)
     {
         m_l.lock();
     }
@@ -142,11 +141,10 @@ public:
     }
 
 private:
-    Locker &m_l;
+    Locker& m_l;
 };
 
-class Event
-{
+class Event {
 public:
     Event()
     {
@@ -177,10 +175,9 @@ private:
     List<Task_base> m_blocks;
 };
 
-class CondVar
-{
+class CondVar {
 public:
-    void wait(Locker &l);
+    void wait(Locker& l);
     void notify_one();
     void notify_all();
 
@@ -200,11 +197,10 @@ private:
     List<Task_base> m_blocks;
 };
 
-class Semaphore
-{
+class Semaphore {
 public:
-    Semaphore(int32_t count = 0) :
-        m_count(count)
+    Semaphore(int32_t count = 0)
+        : m_count(count)
     {
     }
 
@@ -230,23 +226,22 @@ private:
     List<Task_base> m_blocks;
 };
 
-template<class T>
-class Queue
-{
+template <class T>
+class Queue {
 public:
-    void put(T *pNew)
+    void put(T* pNew)
     {
         m_list.putTail(pNew);
         m_sem.post();
     }
 
-    T *get()
+    T* get()
     {
         m_sem.wait();
         return m_list.getHead();
     }
 
-    T *tryget()
+    T* tryget()
     {
         if (!m_sem.trywait())
             return 0;
@@ -268,15 +263,15 @@ public:
     Semaphore m_sem;
 };
 
-#define FIBER_STACK_SIZE    (65536 * 2)
+#define FIBER_STACK_SIZE (65536 * 2)
 
 class Service;
 
-class Fiber : public Thread_base
-{
+class Fiber : public Thread_base {
 public:
-    Fiber(Service* pService, void* data) :
-        m_pService(pService), m_data(data)
+    Fiber(Service* pService, void* data)
+        : m_pService(pService)
+        , m_data(data)
     {
         memset(&m_cntxt, 0, sizeof(m_cntxt));
         memset(&name_, 0, sizeof(name_));
@@ -300,7 +295,7 @@ private:
     virtual void destroy();
 
 public:
-    void set_name(const char *name)
+    void set_name(const char* name)
     {
         strncpy(name_, name, sizeof(name_));
         name_[sizeof(name_) - 1] = '\0';
@@ -315,7 +310,7 @@ public:
     static void sleep(int32_t ms, Task_base* now = 0);
     static void cancel_sleep(Task_base* now);
 
-    static Fiber *current();
+    static Fiber* current();
 
 public:
     context m_cntxt;
@@ -328,8 +323,6 @@ public:
     linkitem m_link;
 #endif
 };
-
 }
 
 #endif
-

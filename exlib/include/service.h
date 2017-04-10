@@ -12,11 +12,9 @@
 #include "fiber.h"
 #include "thread.h"
 
-namespace exlib
-{
+namespace exlib {
 
-class Service : public OSThread
-{
+class Service : public OSThread {
 private:
     Service();
     Service(int32_t workers);
@@ -42,22 +40,21 @@ private:
     void dispatch_loop();
 
 public:
-    typedef void *(*fiber_func)(void *);
+    typedef void* (*fiber_func)(void*);
 
 public:
     static void init(int32_t workers);
-    static Service *current();
+    static Service* current();
     static void init();
 
-    static void Create(fiber_func func, void *data, int32_t stacksize,
-                       const char* name = NULL, Fiber** retVal = NULL);
+    static void Create(fiber_func func, void* data, int32_t stacksize,
+        const char* name = NULL, Fiber** retVal = NULL);
 
     void post(Fiber* fiber)
     {
         if (m_master)
             m_master->post(fiber);
-        else
-        {
+        else {
             m_resumeList.putTail(fiber);
             m_sem.Post();
         }
@@ -75,12 +72,10 @@ public:
         m_sem.Wait();
         fb = m_resumeList.getHead();
 
-        if (m_idleWorkers.dec() == 0 && m_workers > 0)
-        {
+        if (m_idleWorkers.dec() == 0 && m_workers > 0) {
             if (m_workers.dec() < 0)
                 m_workers.inc();
-            else
-            {
+            else {
                 m_idleWorkers.inc();
                 Service* worker = new Service();
                 worker->start();
@@ -96,11 +91,11 @@ public:
     }
 
 public:
-    class switchConextCallback
-    {
+    class switchConextCallback {
     public:
         virtual ~switchConextCallback()
-        {}
+        {
+        }
 
     public:
         virtual void invoke() = 0;
@@ -127,14 +122,14 @@ public:
 #endif
 
 private:
-    static void fiber_proc(void *(*func)(void *), Fiber* fb);
+    static void fiber_proc(void* (*func)(void*), Fiber* fb);
 
 private:
     Service* m_master;
 
     Fiber m_main;
 
-    Fiber *m_running;
+    Fiber* m_running;
     switchConextCallback* m_cb;
 
     exlib::atomic m_workers;
@@ -142,8 +137,6 @@ private:
     LockedList<Fiber> m_resumeList;
     OSSemaphore m_sem;
 };
-
 }
 
 #endif
-

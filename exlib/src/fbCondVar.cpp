@@ -8,46 +8,44 @@
 
 #include "service.h"
 
-namespace exlib
+namespace exlib {
+
+void CondVar::wait(Locker& l)
 {
+    l.unlock();
 
-void CondVar::wait(Locker &l)
-{
-	l.unlock();
+    Task_base* current = Thread_base::current();
+    assert(current != 0);
 
-	Task_base* current = Thread_base::current();
-	assert(current != 0);
+    m_lock.lock();
+    m_blocks.putTail(current);
+    current->suspend(m_lock);
 
-	m_lock.lock();
-	m_blocks.putTail(current);
-	current->suspend(m_lock);
-
-	l.lock();
+    l.lock();
 }
 
 void CondVar::notify_one()
 {
-	Task_base* fb;
+    Task_base* fb;
 
-	m_lock.lock();
-	fb = m_blocks.getHead();
-	m_lock.unlock();
+    m_lock.lock();
+    fb = m_blocks.getHead();
+    m_lock.unlock();
 
-	if (fb != 0)
-		fb->resume();
+    if (fb != 0)
+        fb->resume();
 }
 
 void CondVar::notify_all()
 {
-	List<Task_base> blocks;
+    List<Task_base> blocks;
 
-	m_lock.lock();
-	m_blocks.getList(blocks);
-	m_lock.unlock();
+    m_lock.lock();
+    m_blocks.getList(blocks);
+    m_lock.unlock();
 
-	Task_base* fb;
-	while ((fb = blocks.getHead()) != 0)
-		fb->resume();
+    Task_base* fb;
+    while ((fb = blocks.getHead()) != 0)
+        fb->resume();
 }
-
 }

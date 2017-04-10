@@ -6,8 +6,6 @@
  *  lion@9465.net
  */
 
-
-
 #ifndef _ex_thread_h__
 #define _ex_thread_h__
 
@@ -33,8 +31,7 @@
 
 #ifdef Darwin
 
-class OSTls
-{
+class OSTls {
 public:
     OSTls();
 
@@ -50,18 +47,18 @@ public:
 
 #if defined(i386)
         asm("movl %%gs:(%1,%2,4), %0;"
-            :"=r"(result)
-            :"r"(kMacTlsBaseOffset), "r"(m_index));
+            : "=r"(result)
+            : "r"(kMacTlsBaseOffset), "r"(m_index));
 #else
         asm("movq %%gs:(%1,%2,8), %0;"
-            :"=r"(result)
-            :"r"(kMacTlsBaseOffset), "r"(m_index));
+            : "=r"(result)
+            : "r"(kMacTlsBaseOffset), "r"(m_index));
 #endif
         return result;
     }
 
-    template<class T>
-    operator T* () const
+    template <class T>
+    operator T*() const
     {
         return (T*)operator intptr_t();
     }
@@ -73,8 +70,7 @@ private:
 
 #elif defined(OpenBSD)
 
-class OSTls
-{
+class OSTls {
 public:
     OSTls()
     {
@@ -87,13 +83,13 @@ public:
         return new_value;
     }
 
-    operator void* () const
+    operator void*() const
     {
         return pthread_getspecific(m_index);
     }
 
-    template<class T>
-    operator T* () const
+    template <class T>
+    operator T*() const
     {
         return (T*)pthread_getspecific(m_index);
     }
@@ -103,18 +99,16 @@ private:
 };
 
 #elif defined(_MSC_VER)
-#define OSTls __declspec(thread) void *
+#define OSTls __declspec(thread) void*
 #else
-#define OSTls __thread void *
+#define OSTls __thread void*
 #endif
 
-namespace exlib
-{
+namespace exlib {
 
 #ifdef _WIN32
 
-class OSMutex
-{
+class OSMutex {
 public:
     OSMutex()
     {
@@ -147,8 +141,7 @@ public:
     CRITICAL_SECTION cs_;
 };
 
-class OSSemaphore
-{
+class OSSemaphore {
 public:
     OSSemaphore(int32_t start_val = 0);
 
@@ -181,10 +174,9 @@ public:
     HANDLE m_sem;
 };
 
-class OSCondVarOld
-{
+class OSCondVarOld {
 public:
-    OSCondVarOld(OSMutex *user_lock);
+    OSCondVarOld(OSMutex* user_lock);
     ~OSCondVarOld();
 
     void Wait()
@@ -195,9 +187,9 @@ public:
     void TimedWait(DWORD dwMilliseconds);
     void Signal();
     void SignalAll();
+
 private:
-    class Event
-    {
+    class Event {
     public:
         Event();
         ~Event();
@@ -205,71 +197,70 @@ private:
         void InitListElement();
 
         bool IsEmpty() const;
-        void PushBack(Event *other);
-        Event *PopFront();
-        Event *PopBack();
+        void PushBack(Event* other);
+        Event* PopFront();
+        Event* PopBack();
 
         HANDLE handle() const;
-        Event *Extract();
+        Event* Extract();
 
         bool IsSingleton() const;
 
     private:
-        bool ValidateAsDistinct(Event *other) const;
+        bool ValidateAsDistinct(Event* other) const;
         bool ValidateAsItem() const;
         bool ValidateAsList() const;
         bool ValidateLinks() const;
 
         HANDLE handle_;
-        Event *next_;
-        Event *prev_;
+        Event* next_;
+        Event* prev_;
     };
 
 private:
-    enum RunState { SHUTDOWN = 0, RUNNING = 64213 };
+    enum RunState { SHUTDOWN = 0,
+        RUNNING = 64213 };
 
-    Event *GetEventForWaiting();
-    void RecycleEvent(Event *used_event);
+    Event* GetEventForWaiting();
+    void RecycleEvent(Event* used_event);
 
     RunState run_state_;
     OSMutex internal_lock_;
-    OSMutex &user_lock_;
+    OSMutex& user_lock_;
     Event waiting_list_;
     Event recycling_list_;
     int32_t recycling_list_size_;
     int32_t allocation_counter_;
 };
 
-class OSCondVarNew
-{
+class OSCondVarNew {
 public:
-    OSCondVarNew(OSMutex *mu);
+    OSCondVarNew(OSMutex* mu);
     ~OSCondVarNew();
     void Wait();
     void Signal();
     void SignalAll();
+
 private:
     CONDITION_VARIABLE _cv;
-    OSMutex *_mu;
+    OSMutex* _mu;
 };
 
-class OSCondVar
-{
+class OSCondVar {
 public:
-    OSCondVar(OSMutex *mu);
+    OSCondVar(OSMutex* mu);
     ~OSCondVar();
     void Wait();
     void Signal();
     void SignalAll();
 
 private:
-    void *_cd;
+    void* _cd;
 };
 
 #else
 
-class OSMutex
-{
+class OSMutex {
 public:
     OSMutex()
     {
@@ -306,8 +297,7 @@ public:
 };
 
 #ifdef Darwin
-class OSSemaphore
-{
+class OSSemaphore {
 public:
     OSSemaphore(int32_t start_val = 0)
     {
@@ -344,8 +334,7 @@ public:
     dispatch_semaphore_t m_sem;
 };
 #else
-class OSSemaphore
-{
+class OSSemaphore {
 public:
     OSSemaphore(int32_t start_val = 0)
     {
@@ -364,7 +353,8 @@ public:
 
     void Wait()
     {
-        while (sem_wait(&m_sem));
+        while (sem_wait(&m_sem))
+            ;
     }
 
     bool TryWait()
@@ -393,11 +383,10 @@ public:
 };
 #endif
 
-
-class OSCondVar
-{
+class OSCondVar {
 public:
-    OSCondVar(OSMutex *mu) : mu_(mu)
+    OSCondVar(OSMutex* mu)
+        : mu_(mu)
     {
         pthread_cond_init(&cv_, NULL);
     }
@@ -424,15 +413,15 @@ public:
 
 private:
     pthread_cond_t cv_;
-    OSMutex *mu_;
+    OSMutex* mu_;
 };
 
 #endif
 
-class AutoLock
-{
+class AutoLock {
 public:
-    AutoLock(OSMutex &mu) : _mu(mu)
+    AutoLock(OSMutex& mu)
+        : _mu(mu)
     {
         _mu.Lock();
     }
@@ -440,14 +429,15 @@ public:
     {
         _mu.Unlock();
     }
+
 private:
-    OSMutex &_mu;
+    OSMutex& _mu;
 };
 
-class AutoUnlock
-{
+class AutoUnlock {
 public:
-    AutoUnlock(OSMutex &mu) : _mu(mu)
+    AutoUnlock(OSMutex& mu)
+        : _mu(mu)
     {
         _mu.Unlock();
     }
@@ -455,12 +445,12 @@ public:
     {
         _mu.Lock();
     }
+
 private:
-    OSMutex &_mu;
+    OSMutex& _mu;
 };
 
-class OSThread : public Thread_base
-{
+class OSThread : public Thread_base {
 public:
     OSThread();
     virtual ~OSThread();
@@ -479,15 +469,14 @@ public:
     void join();
     void yield();
 
-    virtual void Run()
-    {};
+    virtual void Run(){};
 
 private:
     virtual void destroy();
 
 public:
     void start();
-    static OSThread *current();
+    static OSThread* current();
     void bindCurrent();
 
     static void sleep(int32_t ms)
@@ -500,7 +489,7 @@ public:
     }
 
 private:
-    static void *Entry(void *arg);
+    static void* Entry(void* arg);
 
 public:
 #ifdef _WIN32
@@ -515,18 +504,14 @@ public:
 inline void InitOnce(intptr_t* once, void (*initializer)())
 {
     intptr_t state = CompareAndSwap(once, 0, 1);
-    if (state == 0)
-    {
+    if (state == 0) {
         initializer();
         *once = 2;
-    }
-    else if (state == 1)
-    {
+    } else if (state == 1) {
         while (*once != 2)
             OSThread::sleep(0);
     }
 }
-
 }
 
 #endif

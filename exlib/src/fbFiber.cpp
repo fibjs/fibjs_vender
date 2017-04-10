@@ -23,16 +23,16 @@
 #include <dlfcn.h>
 #endif
 
-namespace exlib
-{
+namespace exlib {
 
 class Sleeping : public linkitem,
-    public Service::switchConextCallback
-{
+                 public Service::switchConextCallback {
 public:
-    Sleeping(Task_base* now, int32_t tm) :
-        m_now(now), m_tm(tm)
-    {}
+    Sleeping(Task_base* now, int32_t tm)
+        : m_now(now)
+        , m_tm(tm)
+    {
+    }
 
 public:
     virtual void invoke();
@@ -42,19 +42,20 @@ public:
     int32_t m_tm;
 };
 
-class Canceling : public linkitem
-{
+class Canceling : public linkitem {
 public:
-    Canceling(Task_base* now) : m_now(now)
-    {}
+    Canceling(Task_base* now)
+        : m_now(now)
+    {
+    }
 
 public:
     Task_base* m_now;
 };
 
-Fiber *Fiber::current()
+Fiber* Fiber::current()
 {
-    Service *pService = Service::current();
+    Service* pService = Service::current();
 
     if (pService)
         return pService->running();
@@ -85,11 +86,12 @@ void Fiber::suspend()
 
 void Fiber::suspend(spinlock& lock)
 {
-    class cb : public Service::switchConextCallback
-    {
+    class cb : public Service::switchConextCallback {
     public:
-        cb(spinlock& lock) : m_lock(lock)
-        {}
+        cb(spinlock& lock)
+            : m_lock(lock)
+        {
+        }
 
     public:
         virtual void invoke()
@@ -111,11 +113,12 @@ void Fiber::resume()
 
 void Fiber::yield()
 {
-    class cb : public Service::switchConextCallback
-    {
+    class cb : public Service::switchConextCallback {
     public:
-        cb(Fiber* fb) : m_fb(fb)
-        {}
+        cb(Fiber* fb)
+            : m_fb(fb)
+        {
+        }
 
     public:
         virtual void invoke()
@@ -130,12 +133,11 @@ void Fiber::yield()
     m_pService->switchConext(&_cb);
 }
 
-static class _timerThread: public OSThread
-{
+static class _timerThread : public OSThread {
 public:
     void wait()
     {
-        std::multimap<double, Sleeping *>::iterator e;
+        std::multimap<double, Sleeping*>::iterator e;
 
         e = m_tms.begin();
         if (e != m_tms.end())
@@ -146,29 +148,25 @@ public:
 
     virtual void Run()
     {
-        while (1)
-        {
-            Sleeping *p;
-            Canceling *p1;
-            std::multimap<double, Sleeping *>::iterator e;
+        while (1) {
+            Sleeping* p;
+            Canceling* p1;
+            std::multimap<double, Sleeping*>::iterator e;
 
             wait();
 
             m_tm = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::system_clock::now().time_since_epoch()).count();
+                std::chrono::system_clock::now().time_since_epoch())
+                       .count();
 
-            while ((p = m_acSleep.getHead()) != NULL)
-            {
+            while ((p = m_acSleep.getHead()) != NULL) {
                 m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
             }
 
-            while ((p1 = m_acCancel.getHead()) != NULL)
-            {
+            while ((p1 = m_acCancel.getHead()) != NULL) {
                 e = m_tms.begin();
-                while (e != m_tms.end())
-                {
-                    if (e->second->m_now == p1->m_now)
-                    {
+                while (e != m_tms.end()) {
+                    if (e->second->m_now == p1->m_now) {
                         e->second->m_now->resume();
                         delete e->second;
                         m_tms.erase(e);
@@ -181,8 +179,7 @@ public:
                 delete p1;
             }
 
-            while (1)
-            {
+            while (1) {
                 e = m_tms.begin();
                 if (e == m_tms.end())
                     break;
@@ -213,7 +210,7 @@ private:
     double m_tm;
     LockedList<Sleeping> m_acSleep;
     LockedList<Canceling> m_acCancel;
-    std::multimap<double, Sleeping *> m_tms;
+    std::multimap<double, Sleeping*> m_tms;
 
     friend class Sleeping;
 } s_timer;
@@ -236,23 +233,19 @@ void Fiber::sleep(int32_t ms, Task_base* now)
 
     assert(now != 0);
 
-    if (now->is(Fiber::type))
-    {
+    if (now->is(Fiber::type)) {
         if (ms <= 0)
             ((Fiber*)now)->yield();
-        else
-        {
+        else {
             ((Fiber*)now)->m_pService->switchConext(new Sleeping(now, ms));
         }
-    } else if (now->is(OSThread::type))
-    {
+    } else if (now->is(OSThread::type)) {
         if (ms <= 0)
             ms = 0;
 
         s_timer.post(now, ms);
         now->suspend();
-    } else
-    {
+    } else {
         if (ms <= 0)
             ms = 0;
 
@@ -264,5 +257,4 @@ void Fiber::cancel_sleep(Task_base* now)
 {
     s_timer.cancel(now);
 }
-
 }

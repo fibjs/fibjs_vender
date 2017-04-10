@@ -9,20 +9,20 @@
 #include "pratom.h"
 #include "utils.h"
 
-PRInt32 PR_AtomicIncrement(PRInt32 *val)
+PRInt32 PR_AtomicIncrement(PRInt32* val)
 {
 #ifdef i386
-	return exlib::atom_inc((intptr_t*)val);
+    return exlib::atom_inc((intptr_t*)val);
 #else
-	return exlib::atom_inc(val);
+    return exlib::atom_inc(val);
 #endif
 }
 
-PRInt32 PR_AtomicDecrement(PRInt32 *val)
+PRInt32 PR_AtomicDecrement(PRInt32* val)
 {
 #ifdef i386
-	return exlib::atom_dec((intptr_t*)val);
+    return exlib::atom_dec((intptr_t*)val);
 #else
-	return exlib::atom_dec(val);
+    return exlib::atom_dec(val);
 #endif
 }

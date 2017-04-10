@@ -6,169 +6,156 @@
  *  lion@9465.net
  */
 
-namespace exlib
-{
+namespace exlib {
 
-#pragma pack (1)
+#pragma pack(1)
 
-class registers
-{
+class registers {
 public:
-	intptr_t r0;
-	intptr_t r1;
-	intptr_t r2;
-	intptr_t r3;
-	intptr_t r4;
-	intptr_t r5;
-	intptr_t r6;
-	intptr_t r7;
-	intptr_t r8;
-	intptr_t r9;
-	intptr_t r10;
-	union {
-		intptr_t r11;
-		intptr_t fp;
-	};
-	intptr_t r12;
-	union {
-		intptr_t r13;
-		intptr_t sp;
-	};
-	union {
-		intptr_t r14;
-		intptr_t lr;
-	};
+    intptr_t r0;
+    intptr_t r1;
+    intptr_t r2;
+    intptr_t r3;
+    intptr_t r4;
+    intptr_t r5;
+    intptr_t r6;
+    intptr_t r7;
+    intptr_t r8;
+    intptr_t r9;
+    intptr_t r10;
+    union {
+        intptr_t r11;
+        intptr_t fp;
+    };
+    intptr_t r12;
+    union {
+        intptr_t r13;
+        intptr_t sp;
+    };
+    union {
+        intptr_t r14;
+        intptr_t lr;
+    };
 };
 
-#pragma pack ()
+#pragma pack()
 
 typedef void (*LinuxKernelMemoryBarrierFunc)(void);
 inline void MemoryBarrier()
 {
-	(*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
+    (*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
 }
 
 inline void yield()
 {
-	__asm__ volatile("mov r0,r0 @ nop");
+    __asm__ volatile("mov r0,r0 @ nop");
 }
 
-template<typename T>
-inline T *CompareAndSwap(T *volatile *ptr, T *old_value, T *new_value)
+template <typename T>
+inline T* CompareAndSwap(T* volatile* ptr, T* old_value, T* new_value)
 {
-	T *oldval, *res;
+    T *oldval, *res;
 
-	do
-	{
-		__asm__ volatile(
-		    "ldrex %0, [%3]\n"
-		    "mov %1, #0\n"
-		    "cmp %0, %4\n"
+    do {
+        __asm__ volatile(
+            "ldrex %0, [%3]\n"
+            "mov %1, #0\n"
+            "cmp %0, %4\n"
 #ifdef __thumb2__
-		    "it eq\n"
+            "it eq\n"
 #endif
-		    "strexeq %1, %5, [%3]\n"
-		    : "=&r"(oldval), "=&r"(res), "+m"(*ptr)
-		    : "r"(ptr), "r"(old_value), "r"(new_value)
-		    : "cc", "memory");
-	}
-	while (res != 0);
+            "strexeq %1, %5, [%3]\n"
+            : "=&r"(oldval), "=&r"(res), "+m"(*ptr)
+            : "r"(ptr), "r"(old_value), "r"(new_value)
+            : "cc", "memory");
+    } while (res != 0);
 
-	return oldval;
+    return oldval;
 }
 
-inline intptr_t CompareAndSwap(volatile intptr_t *ptr, intptr_t old_value, intptr_t new_value)
+inline intptr_t CompareAndSwap(volatile intptr_t* ptr, intptr_t old_value, intptr_t new_value)
 {
-	intptr_t oldval, res;
+    intptr_t oldval, res;
 
-	do
-	{
-		__asm__ volatile(
-		    "ldrex %0, [%3]\n"
-		    "mov %1, #0\n"
-		    "cmp %0, %4\n"
+    do {
+        __asm__ volatile(
+            "ldrex %0, [%3]\n"
+            "mov %1, #0\n"
+            "cmp %0, %4\n"
 #ifdef __thumb2__
-		    "it eq\n"
+            "it eq\n"
 #endif
-		    "strexeq %1, %5, [%3]\n"
-		    : "=&r"(oldval), "=&r"(res), "+m"(*ptr)
-		    : "r"(ptr), "r"(old_value), "r"(new_value)
-		    : "cc", "memory");
-	}
-	while (res != 0);
+            "strexeq %1, %5, [%3]\n"
+            : "=&r"(oldval), "=&r"(res), "+m"(*ptr)
+            : "r"(ptr), "r"(old_value), "r"(new_value)
+            : "cc", "memory");
+    } while (res != 0);
 
-	return oldval;
+    return oldval;
 }
 
-inline intptr_t atom_add(volatile intptr_t *dest, intptr_t incr)
+inline intptr_t atom_add(volatile intptr_t* dest, intptr_t incr)
 {
-	intptr_t value;
-	intptr_t res;
+    intptr_t value;
+    intptr_t res;
 
-	do
-	{
-		__asm__ volatile(
-		    "ldrex %0, [%3]\n"
-		    "add %0, %0, %4\n"
-		    "strex %1, %0, [%3]\n"
-		    : "=&r"(value), "=&r"(res), "+m"(*dest)
-		    : "r"(dest), "r"(incr)
-		    : "cc", "memory");
-	}
-	while (res);
-	return value;
+    do {
+        __asm__ volatile(
+            "ldrex %0, [%3]\n"
+            "add %0, %0, %4\n"
+            "strex %1, %0, [%3]\n"
+            : "=&r"(value), "=&r"(res), "+m"(*dest)
+            : "r"(dest), "r"(incr)
+            : "cc", "memory");
+    } while (res);
+    return value;
 }
 
-inline intptr_t atom_inc(volatile intptr_t *dest)
+inline intptr_t atom_inc(volatile intptr_t* dest)
 {
-	return atom_add(dest, 1);
+    return atom_add(dest, 1);
 }
 
-inline intptr_t atom_dec(volatile intptr_t *dest)
+inline intptr_t atom_dec(volatile intptr_t* dest)
 {
-	return atom_add(dest, -1);
+    return atom_add(dest, -1);
 }
 
-inline intptr_t atom_xchg(volatile intptr_t *ptr, intptr_t new_value)
+inline intptr_t atom_xchg(volatile intptr_t* ptr, intptr_t new_value)
 {
-	intptr_t old_value;
-	intptr_t res;
+    intptr_t old_value;
+    intptr_t res;
 
-	do
-	{
-		__asm__ volatile(
-		    "ldrex %0, [%3]\n"
-		    "strex %1, %4, [%3]\n"
-		    : "=&r"(old_value), "=&r"(res), "+m"(*ptr)
-		    : "r"(ptr), "r"(new_value)
-		    : "cc", "memory");
-	}
-	while (res != 0);
-	return old_value;
+    do {
+        __asm__ volatile(
+            "ldrex %0, [%3]\n"
+            "strex %1, %4, [%3]\n"
+            : "=&r"(old_value), "=&r"(res), "+m"(*ptr)
+            : "r"(ptr), "r"(new_value)
+            : "cc", "memory");
+    } while (res != 0);
+    return old_value;
 }
 
-template<typename T>
-inline T *atom_xchg(T *volatile *ptr, T *new_value)
+template <typename T>
+inline T* atom_xchg(T* volatile* ptr, T* new_value)
 {
-	T *old_value;
-	T *res;
+    T* old_value;
+    T* res;
 
-	do
-	{
-		__asm__ volatile(
-		    "ldrex %0, [%3]\n"
-		    "strex %1, %4, [%3]\n"
-		    : "=&r"(old_value), "=&r"(res), "+m"(*ptr)
-		    : "r"(ptr), "r"(new_value)
-		    : "cc", "memory");
-	}
-	while (res != 0);
-	return old_value;
+    do {
+        __asm__ volatile(
+            "ldrex %0, [%3]\n"
+            "strex %1, %4, [%3]\n"
+            : "=&r"(old_value), "=&r"(res), "+m"(*ptr)
+            : "r"(ptr), "r"(new_value)
+            : "cc", "memory");
+    } while (res != 0);
+    return old_value;
 }
 
-inline void *CompareAndSwap(void *volatile *ptr, void *old_value, void *new_value)
+inline void* CompareAndSwap(void* volatile* ptr, void* old_value, void* new_value)
 {
-	return CompareAndSwap((char *volatile *) ptr, (char *) old_value, (char *) new_value);
+    return CompareAndSwap((char* volatile*)ptr, (char*)old_value, (char*)new_value);
 }
-
 }

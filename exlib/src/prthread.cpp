@@ -12,28 +12,28 @@
 
 PRThread* PR_GetCurrentThread()
 {
-	return exlib::Fiber::current();
+    return exlib::Fiber::current();
 }
 
-PRStatus PR_NewThreadPrivateIndex(PRUintn *newIndex, PRThreadPrivateDTOR destructor)
+PRStatus PR_NewThreadPrivateIndex(PRUintn* newIndex, PRThreadPrivateDTOR destructor)
 {
-	*newIndex = exlib::Thread_base::tlsAlloc(destructor);
-	return PR_SUCCESS;
+    *newIndex = exlib::Thread_base::tlsAlloc(destructor);
+    return PR_SUCCESS;
 }
 
-PRStatus PR_SetThreadPrivate(PRUintn tpdIndex, void *priv)
+PRStatus PR_SetThreadPrivate(PRUintn tpdIndex, void* priv)
 {
-	exlib::Thread_base::tlsPut(tpdIndex, priv);
-	return PR_SUCCESS;
+    exlib::Thread_base::tlsPut(tpdIndex, priv);
+    return PR_SUCCESS;
 }
 
 void* PR_GetThreadPrivate(PRUintn tpdIndex)
 {
-	return exlib::Thread_base::tlsGet(tpdIndex);
+    return exlib::Thread_base::tlsGet(tpdIndex);
 }
 
-PRStatus PR_CallOnce(PRCallOnceType *once, PRCallOnceFN func)
+PRStatus PR_CallOnce(PRCallOnceType* once, PRCallOnceFN func)
 {
-	exlib::InitOnce(once, (void (*)())func);
-	return PR_SUCCESS;
+    exlib::InitOnce(once, (void (*)())func);
+    return PR_SUCCESS;
 }

@@ -20,14 +20,13 @@
 #include <process.h>
 #endif
 
-namespace exlib
-{
+namespace exlib {
 
 OSTls th_current;
 
-void *OSThread::Entry(void *arg)
+void* OSThread::Entry(void* arg)
 {
-    OSThread *thread = reinterpret_cast<OSThread *>(arg);
+    OSThread* thread = reinterpret_cast<OSThread*>(arg);
     thread->saveStackGuard();
 
     th_current = thread;
@@ -92,7 +91,8 @@ void OSThread::destroy()
 
 #ifdef _WIN32
 
-OSThread::OSThread() : thread_(0)
+OSThread::OSThread()
+    : thread_(0)
 {
 }
 
@@ -100,8 +100,8 @@ void OSThread::start()
 {
     assert(thread_ == 0);
     Ref();
-    thread_ = (HANDLE)_beginthreadex(NULL, 0, (unsigned (__stdcall*)(void*))Entry,
-                                     this, 0, &thread_id);
+    thread_ = (HANDLE)_beginthreadex(NULL, 0, (unsigned(__stdcall*)(void*))Entry,
+        this, 0, &thread_id);
 }
 
 void OSThread::join()
@@ -113,8 +113,7 @@ void OSThread::join()
 
 OSThread::~OSThread()
 {
-    if (thread_)
-    {
+    if (thread_) {
         CloseHandle(thread_);
         thread_ = NULL;
     }
@@ -122,7 +121,8 @@ OSThread::~OSThread()
 
 #else
 
-OSThread::OSThread() : thread_(0)
+OSThread::OSThread()
+    : thread_(0)
 {
 }
 
@@ -142,14 +142,11 @@ void OSThread::join()
 
 OSThread::~OSThread()
 {
-    if (thread_)
-    {
+    if (thread_) {
         pthread_detach(thread_);
         thread_ = (pthread_t)NULL;
     }
 }
 
 #endif
-
 }
-

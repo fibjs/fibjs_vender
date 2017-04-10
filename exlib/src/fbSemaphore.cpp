@@ -8,23 +8,19 @@
 
 #include "service.h"
 
-namespace exlib
-{
+namespace exlib {
 
 void Semaphore::wait()
 {
     m_lock.lock();
 
-    if (m_count == 0)
-    {
+    if (m_count == 0) {
         Task_base* current = Thread_base::current();
         assert(current != 0);
 
         m_blocks.putTail(current);
         current->suspend(m_lock);
-    }
-    else
-    {
+    } else {
         m_count--;
         m_lock.unlock();
     }
@@ -47,8 +43,7 @@ void Semaphore::post()
 bool Semaphore::trywait()
 {
     m_lock.lock();
-    if (m_count == 0)
-    {
+    if (m_count == 0) {
         m_lock.unlock();
         return false;
     }
@@ -58,5 +53,4 @@ bool Semaphore::trywait()
 
     return true;
 }
-
 }

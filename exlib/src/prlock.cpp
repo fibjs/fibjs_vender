@@ -11,21 +11,21 @@
 
 PRLock* PR_NewLock()
 {
-	return new exlib::Locker();
+    return new exlib::Locker();
 }
 
-void PR_DestroyLock(PRLock *lock)
+void PR_DestroyLock(PRLock* lock)
 {
-	delete ((exlib::Locker*)lock);
+    delete ((exlib::Locker*)lock);
 }
 
-void PR_Lock(PRLock *lock)
+void PR_Lock(PRLock* lock)
 {
-	((exlib::Locker*)lock)->lock();
+    ((exlib::Locker*)lock)->lock();
 }
 
-PRStatus PR_Unlock(PRLock *lock)
+PRStatus PR_Unlock(PRLock* lock)
 {
-	((exlib::Locker*)lock)->unlock();
-	return PR_SUCCESS;
+    ((exlib::Locker*)lock)->unlock();
+    return PR_SUCCESS;
 }

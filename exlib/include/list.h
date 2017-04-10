@@ -13,13 +13,13 @@
 #include "utils.h"
 #include <assert.h>
 
-namespace exlib
-{
+namespace exlib {
 
-class linkitem
-{
+class linkitem {
 public:
-    linkitem() : m_next(0), m_prev(0)
+    linkitem()
+        : m_next(0)
+        , m_prev(0)
 #ifdef DEBUG
         , m_inlist(0)
 #endif
@@ -27,23 +27,24 @@ public:
     }
 
 public:
-    linkitem *m_next;
-    linkitem *m_prev;
+    linkitem* m_next;
+    linkitem* m_prev;
 #ifdef DEBUG
     void* m_inlist;
 #endif
 };
 
-template<class T>
-class List
-{
+template <class T>
+class List {
 public:
-    List() :
-        m_first(0), m_last(0), m_count(0)
+    List()
+        : m_first(0)
+        , m_last(0)
+        , m_count(0)
     {
     }
 
-    void putHead(T *pNew)
+    void putHead(T* pNew)
     {
         assert(pNew->m_inlist == 0);
         assert(pNew->m_next == 0);
@@ -52,8 +53,7 @@ public:
         if (m_first) {
             m_first->m_prev = pNew;
             pNew->m_next = m_first;
-        }
-        else
+        } else
             m_last = pNew;
 
         m_first = pNew;
@@ -65,7 +65,7 @@ public:
         m_count++;
     }
 
-    void putTail(T *pNew)
+    void putTail(T* pNew)
     {
         assert(pNew->m_inlist == 0);
         assert(pNew->m_next == 0);
@@ -74,8 +74,7 @@ public:
         if (m_last) {
             m_last->m_next = pNew;
             pNew->m_prev = m_last;
-        }
-        else
+        } else
             m_first = pNew;
 
         m_last = pNew;
@@ -87,15 +86,14 @@ public:
         m_count++;
     }
 
-    T *getHead()
+    T* getHead()
     {
-        T *pNow = m_first;
+        T* pNow = m_first;
 
-        if (pNow)
-        {
+        if (pNow) {
             assert(pNow->m_inlist == this);
 
-            m_first = (T *)pNow->m_next;
+            m_first = (T*)pNow->m_next;
             if (m_first) {
                 assert(m_first->m_prev == pNow);
 
@@ -114,15 +112,14 @@ public:
         return pNow;
     }
 
-    T *getTail()
+    T* getTail()
     {
-        T *pNow = m_last;
+        T* pNow = m_last;
 
-        if (pNow)
-        {
+        if (pNow) {
             assert(pNow->m_inlist == this);
 
-            m_last = (T *)pNow->m_prev;
+            m_last = (T*)pNow->m_prev;
             if (m_last) {
                 assert(m_last->m_next == pNow);
 
@@ -146,8 +143,7 @@ public:
         linkitem *p1, *p2;
 
         assert(o->m_inlist == this);
-        assert(o->m_next != 0 || o->m_prev != 0 ||
-               (m_first == o && m_last == o));
+        assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
 
         p1 = o->m_next;
         p2 = o->m_prev;
@@ -172,10 +168,10 @@ public:
         o->m_inlist = 0;
 #endif
 
-        m_count --;
+        m_count--;
     }
 
-    void getList(List<T> &list)
+    void getList(List<T>& list)
     {
         assert(list.empty());
 
@@ -184,9 +180,8 @@ public:
         list.m_count = m_count;
 
 #ifdef DEBUG
-        T *p = m_first;
-        while (p)
-        {
+        T* p = m_first;
+        while (p) {
             assert(p->m_inlist == this);
             p->m_inlist = &list;
             p = (T*)p->m_next;
@@ -200,10 +195,9 @@ public:
 
     bool has(T* o) const
     {
-        linkitem *p = m_first;
+        linkitem* p = m_first;
 
-        while (p)
-        {
+        while (p) {
             if (o == (T*)p)
                 return true;
 
@@ -236,8 +230,7 @@ public:
     T* next(T* o) const
     {
         assert(o->m_inlist == this);
-        assert(o->m_next != 0 || o->m_prev != 0 ||
-               (m_first == o && m_last == o));
+        assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
 
         return (T*)o->m_next;
     }
@@ -245,49 +238,47 @@ public:
     T* prev(T* o) const
     {
         assert(o->m_inlist == this);
-        assert(o->m_next != 0 || o->m_prev != 0 ||
-               (m_first == o && m_last == o));
+        assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
 
         return (T*)o->m_prev;
     }
 
 private:
-    T *m_first;
-    T *m_last;
+    T* m_first;
+    T* m_last;
     int32_t m_count;
 };
 
-template<typename T>
-class LockedList : public List<T>
-{
+template <typename T>
+class LockedList : public List<T> {
 public:
-    void putHead(T *pNew)
+    void putHead(T* pNew)
     {
         m_lock.lock();
         List<T>::putHead(pNew);
         m_lock.unlock();
     }
 
-    void putTail(T *pNew)
+    void putTail(T* pNew)
     {
         m_lock.lock();
         List<T>::putTail(pNew);
         m_lock.unlock();
     }
 
-    T *getHead()
+    T* getHead()
     {
         m_lock.lock();
-        T *pNow = List<T>::getHead();
+        T* pNow = List<T>::getHead();
         m_lock.unlock();
 
         return pNow;
     }
 
-    T *getTail()
+    T* getTail()
     {
         m_lock.lock();
-        T *pNow = List<T>::getTail();
+        T* pNow = List<T>::getTail();
         m_lock.unlock();
 
         return pNow;
@@ -309,7 +300,7 @@ public:
         m_lock.unlock();
     }
 
-    void getList(List<T> &list)
+    void getList(List<T>& list)
     {
         m_lock.lock();
         List<T>::getList(list);
@@ -334,7 +325,8 @@ public:
         return r;
     }
 
-    T* head() {
+    T* head()
+    {
         m_lock.lock();
         T* r = List<T>::head();
         m_lock.unlock();
@@ -342,7 +334,8 @@ public:
         return r;
     }
 
-    T* tail() {
+    T* tail()
+    {
         m_lock.lock();
         T* r = List<T>::tail();
         m_lock.unlock();
@@ -350,7 +343,8 @@ public:
         return r;
     }
 
-    T* next(T* o) {
+    T* next(T* o)
+    {
         m_lock.lock();
         T* r = List<T>::next(o);
         m_lock.unlock();
@@ -358,7 +352,8 @@ public:
         return r;
     }
 
-    T* prev(T* o) {
+    T* prev(T* o)
+    {
         m_lock.lock();
         T* r = List<T>::prev(o);
         m_lock.unlock();
@@ -369,9 +364,6 @@ public:
 private:
     spinlock m_lock;
 };
-
-
 }
 
 #endif
-

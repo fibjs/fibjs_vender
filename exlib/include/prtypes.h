@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-#define PR_BEGIN_EXTERN_C       extern "C" {
-#define PR_END_EXTERN_C         }
+#define PR_BEGIN_EXTERN_C extern "C" {
+#define PR_END_EXTERN_C }
 #else
 #define PR_BEGIN_EXTERN_C
 #define PR_END_EXTERN_C
@@ -13,7 +13,8 @@
 
 #define PR_CALLBACK
 
-typedef enum { PR_FAILURE = -1, PR_SUCCESS = 0 } PRStatus;
+typedef enum { PR_FAILURE = -1,
+    PR_SUCCESS = 0 } PRStatus;
 
 typedef uint32_t PRIntervalTime;
 
