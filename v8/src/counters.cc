@@ -7,6 +7,7 @@
 #include <iomanip>
 
 #include "src/base/platform/platform.h"
+#include "src/builtins/builtins-definitions.h"
 #include "src/isolate.h"
 #include "src/log-inl.h"
 #include "src/log.h"
@@ -251,6 +252,30 @@ void Counters::ResetHistograms() {
 
 #define HM(name, caption) name##_.Reset();
     HISTOGRAM_LEGACY_MEMORY_LIST(HM)
+    HISTOGRAM_MEMORY_LIST(HM)
+#undef HM
+}
+
+void Counters::InitializeHistograms() {
+#define HR(name, caption, min, max, num_buckets) name##_.Enabled();
+  HISTOGRAM_RANGE_LIST(HR)
+#undef HR
+
+#define HT(name, caption, max, res) name##_.Enabled();
+  HISTOGRAM_TIMER_LIST(HT)
+#undef HT
+
+#define AHT(name, caption) name##_.Enabled();
+  AGGREGATABLE_HISTOGRAM_TIMER_LIST(AHT)
+#undef AHT
+
+#define HP(name, caption) name##_.Enabled();
+  HISTOGRAM_PERCENTAGE_LIST(HP)
+#undef HP
+
+#define HM(name, caption) name##_.Enabled();
+  HISTOGRAM_LEGACY_MEMORY_LIST(HM)
+  HISTOGRAM_MEMORY_LIST(HM)
 #undef HM
 }
 
@@ -415,6 +440,7 @@ void RuntimeCallStats::Enter(RuntimeCallStats* stats, RuntimeCallTimer* timer,
   DCHECK(counter->name() != nullptr);
   timer->Start(counter, stats->current_timer_.Value());
   stats->current_timer_.SetValue(timer);
+  stats->current_counter_.SetValue(counter);
 }
 
 // static
@@ -429,6 +455,15 @@ void RuntimeCallStats::Leave(RuntimeCallStats* stats, RuntimeCallTimer* timer) {
     while (next && next->parent() != timer) next = next->parent();
     if (next == nullptr) return;
     next->set_parent(timer->Stop());
+  }
+
+  {
+    RuntimeCallTimer* cur_timer = stats->current_timer_.Value();
+    if (cur_timer == nullptr) {
+      stats->current_counter_.SetValue(nullptr);
+    } else {
+      stats->current_counter_.SetValue(cur_timer->counter());
+    }
   }
 }
 
@@ -447,7 +482,9 @@ void RuntimeCallStats::CorrectCurrentCounterId(RuntimeCallStats* stats,
   RuntimeCallTimer* timer = stats->current_timer_.Value();
   // When RCS are enabled dynamically there might be no current timer set up.
   if (timer == nullptr) return;
-  timer->set_counter(&(stats->*counter_id));
+  RuntimeCallCounter* counter = &(stats->*counter_id);
+  timer->set_counter(counter);
+  stats->current_counter_.SetValue(counter);
 }
 
 void RuntimeCallStats::Print(std::ostream& os) {

@@ -63,8 +63,7 @@ class PropertyAccessInfo final {
     kDataConstant,
     kDataField,
     kDataConstantField,
-    kAccessorConstant,
-    kGeneric
+    kAccessorConstant
   };
 
   static PropertyAccessInfo NotFound(MapList const& receiver_maps,
@@ -81,11 +80,11 @@ class PropertyAccessInfo final {
   static PropertyAccessInfo AccessorConstant(MapList const& receiver_maps,
                                              Handle<Object> constant,
                                              MaybeHandle<JSObject> holder);
-  static PropertyAccessInfo Generic(MapList const& receiver_maps);
 
   PropertyAccessInfo();
 
-  bool Merge(PropertyAccessInfo const* that) WARN_UNUSED_RESULT;
+  bool Merge(PropertyAccessInfo const* that, AccessMode access_mode,
+             Zone* zone) WARN_UNUSED_RESULT;
 
   bool IsNotFound() const { return kind() == kNotFound; }
   bool IsDataConstant() const { return kind() == kDataConstant; }
@@ -94,7 +93,6 @@ class PropertyAccessInfo final {
   // is done.
   bool IsDataConstantField() const { return kind() == kDataConstantField; }
   bool IsAccessorConstant() const { return kind() == kAccessorConstant; }
-  bool IsGeneric() const { return kind() == kGeneric; }
 
   bool HasTransitionMap() const { return !transition_map().is_null(); }
 
@@ -152,6 +150,8 @@ class AccessInfoFactory final {
                                   ZoneVector<PropertyAccessInfo>* access_infos);
 
  private:
+  bool ConsolidateElementLoad(MapHandleList const& maps,
+                              ElementAccessInfo* access_info);
   bool LookupSpecialFieldAccessor(Handle<Map> map, Handle<Name> name,
                                   PropertyAccessInfo* access_info);
   bool LookupTransition(Handle<Map> map, Handle<Name> name,

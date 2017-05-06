@@ -111,6 +111,21 @@ bool WasmInstantiateOverride(const v8::FunctionCallbackInfo<v8::Value>& args) {
   return true;
 }
 
+bool GetWasmFromArray(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  CHECK(args.Length() == 1);
+  v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+  v8::Local<v8::Value> module =
+      v8::Local<v8::Object>::Cast(args[0])->Get(context, 0).ToLocalChecked();
+
+  v8::Local<v8::Promise::Resolver> resolver =
+      v8::Promise::Resolver::New(context).ToLocalChecked();
+  args.GetReturnValue().Set(resolver->GetPromise());
+  USE(resolver->Resolve(context, module));
+  return true;
+}
+
+bool NoExtension(const v8::FunctionCallbackInfo<v8::Value>&) { return false; }
+
 }  // namespace
 
 namespace v8 {
@@ -150,6 +165,7 @@ RUNTIME_FUNCTION(Runtime_DeoptimizeFunction) {
     return isolate->heap()->undefined_value();
   }
   Handle<JSFunction> function = Handle<JSFunction>::cast(function_object);
+  function->shared()->set_marked_for_tier_up(false);
 
   // If the function is not optimized, just return.
   if (!function->IsOptimized()) return isolate->heap()->undefined_value();
@@ -210,7 +226,7 @@ RUNTIME_FUNCTION(Runtime_IsConcurrentRecompilationSupported) {
       isolate->concurrent_recompilation_enabled());
 }
 
-RUNTIME_FUNCTION(Runtime_PrintTypeProfile) {
+RUNTIME_FUNCTION(Runtime_TypeProfile) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
 
@@ -221,18 +237,13 @@ RUNTIME_FUNCTION(Runtime_PrintTypeProfile) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
   if (function->has_feedback_vector()) {
     FeedbackVector* vector = function->feedback_vector();
-
-    Object* function_name = vector->shared_function_info()->name();
-    PrintF("Function: %s\n", String::cast(function_name)->ToCString().get());
-
     if (vector->metadata()->HasTypeProfileSlot()) {
       FeedbackSlot slot = vector->GetTypeProfileSlot();
       CollectTypeProfileNexus nexus(vector, slot);
-      nexus.Print();
-      PrintF("\n");
+      return nexus.GetTypeProfile();
     }
   }
-  return isolate->heap()->undefined_value();
+  return *isolate->factory()->NewJSObject(isolate->object_function());
 }
 
 RUNTIME_FUNCTION(Runtime_OptimizeFunctionOnNextCall) {
@@ -269,6 +280,11 @@ RUNTIME_FUNCTION(Runtime_OptimizeFunctionOnNextCall) {
   if (function->IsOptimized()) return isolate->heap()->undefined_value();
 
   function->MarkForOptimization();
+  if (FLAG_trace_opt) {
+    PrintF("[manually marking ");
+    function->ShortPrint();
+    PrintF(" for optimization]\n");
+  }
 
   if (args.length() == 2) {
     CONVERT_ARG_HANDLE_CHECKED(String, type, 1);
@@ -390,6 +406,13 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationCount) {
   return Smi::FromInt(function->shared()->opt_count());
 }
 
+RUNTIME_FUNCTION(Runtime_GetDeoptCount) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
+  return Smi::FromInt(function->shared()->deopt_count());
+}
+
 static void ReturnThis(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(args.This());
 }
@@ -447,6 +470,16 @@ RUNTIME_FUNCTION(Runtime_ClearFunctionFeedback) {
   if (unoptimized->kind() == Code::FUNCTION) {
     unoptimized->ClearInlineCaches();
   }
+  return isolate->heap()->undefined_value();
+}
+
+RUNTIME_FUNCTION(Runtime_SetWasmCompileFromPromiseOverload) {
+  isolate->set_wasm_compile_callback(GetWasmFromArray);
+  return isolate->heap()->undefined_value();
+}
+
+RUNTIME_FUNCTION(Runtime_ResetWasmOverloads) {
+  isolate->set_wasm_compile_callback(NoExtension);
   return isolate->heap()->undefined_value();
 }
 
@@ -952,7 +985,7 @@ RUNTIME_FUNCTION(Runtime_ValidateWasmOrphanedInstance) {
   return isolate->heap()->ToBoolean(true);
 }
 
-RUNTIME_FUNCTION(Runtime_Verify) {
+RUNTIME_FUNCTION(Runtime_HeapObjectVerify) {
   HandleScope shs(isolate);
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
@@ -981,6 +1014,21 @@ RUNTIME_FUNCTION(Runtime_WasmNumInterpretedCalls) {
   return *isolate->factory()->NewNumberFromSize(static_cast<size_t>(num));
 }
 
+RUNTIME_FUNCTION(Runtime_RedirectToWasmInterpreter) {
+  DCHECK_EQ(2, args.length());
+  HandleScope scope(isolate);
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, instance_obj, 0);
+  CONVERT_SMI_ARG_CHECKED(function_index, 1);
+  CHECK(WasmInstanceObject::IsWasmInstanceObject(*instance_obj));
+  Handle<WasmInstanceObject> instance =
+      Handle<WasmInstanceObject>::cast(instance_obj);
+  Handle<WasmDebugInfo> debug_info =
+      WasmInstanceObject::GetOrCreateDebugInfo(instance);
+  WasmDebugInfo::RedirectToInterpreter(debug_info,
+                                       Vector<int>(&function_index, 1));
+  return isolate->heap()->undefined_value();
+}
+
 RUNTIME_FUNCTION(Runtime_IncrementWaitCount) {
   isolate->IncrementWaitCountForTesting();
   return isolate->heap()->undefined_value();
@@ -990,5 +1038,6 @@ RUNTIME_FUNCTION(Runtime_DecrementWaitCount) {
   isolate->DecrementWaitCountForTesting();
   return isolate->heap()->undefined_value();
 }
+
 }  // namespace internal
 }  // namespace v8

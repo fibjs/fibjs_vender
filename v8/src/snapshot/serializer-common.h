@@ -8,6 +8,7 @@
 #include "src/address-map.h"
 #include "src/external-reference-table.h"
 #include "src/globals.h"
+#include "src/visitors.h"
 
 namespace v8 {
 namespace internal {
@@ -73,9 +74,9 @@ class HotObjectsList {
 // The Serializer/Deserializer class is a common superclass for Serializer and
 // Deserializer which is used to store common constants and methods used by
 // both.
-class SerializerDeserializer : public ObjectVisitor {
+class SerializerDeserializer : public RootVisitor {
  public:
-  static void Iterate(Isolate* isolate, ObjectVisitor* visitor);
+  static void Iterate(Isolate* isolate, RootVisitor* visitor);
 
   // No reservation for large object space necessary.
   // We also handle map space differenly.
@@ -166,12 +167,9 @@ class SerializerDeserializer : public ObjectVisitor {
   // Internal reference encoded as offsets of pc and target from code entry.
   static const int kInternalReference = 0x1b;
   static const int kInternalReferenceEncoded = 0x1c;
-  // Used for the source code of the natives, which is in the executable, but
-  // is referred to from external strings in the snapshot.
-  static const int kNativesStringResource = 0x1d;
-  // Used for the source code for compiled stubs, which is in the executable,
-  // but is referred to from external strings in the snapshot.
-  static const int kExtraNativesStringResource = 0x1e;
+  // Used to encode deoptimizer entry code.
+  static const int kDeoptimizerEntryPlain = 0x1d;
+  static const int kDeoptimizerEntryFromCode = 0x1e;
   // Used for embedder-provided serialization data for embedder fields.
   static const int kEmbedderFieldsData = 0x1f;
 
@@ -239,6 +237,11 @@ class SerializedData {
   SerializedData(byte* data, int size)
       : data_(data), size_(size), owns_data_(false) {}
   SerializedData() : data_(NULL), size_(0), owns_data_(false) {}
+  SerializedData(SerializedData&& other)
+      : data_(other.data_), size_(other.size_), owns_data_(other.owns_data_) {
+    // Ensure |other| will not attempt to destroy our data in destructor.
+    other.owns_data_ = false;
+  }
 
   ~SerializedData() {
     if (owns_data_) DeleteArray<byte>(data_);
@@ -295,6 +298,9 @@ class SerializedData {
   byte* data_;
   int size_;
   bool owns_data_;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(SerializedData);
 };
 
 }  // namespace internal

@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef V8_INTL_SUPPORT
+#error Internationalization is expected to be enabled.
+#endif  // V8_INTL_SUPPORT
 
-#ifdef V8_I18N_SUPPORT
 #include "src/runtime/runtime-utils.h"
 
 #include <memory>
@@ -12,9 +14,10 @@
 #include "src/api.h"
 #include "src/arguments.h"
 #include "src/factory.h"
-#include "src/i18n.h"
+#include "src/intl.h"
 #include "src/isolate-inl.h"
 #include "src/messages.h"
+#include "src/objects/intl-objects.h"
 #include "src/utils.h"
 
 #include "unicode/brkiter.h"
@@ -29,7 +32,6 @@
 #include "unicode/fieldpos.h"
 #include "unicode/fpositer.h"
 #include "unicode/locid.h"
-#include "unicode/normalizer2.h"
 #include "unicode/numfmt.h"
 #include "unicode/numsys.h"
 #include "unicode/rbbi.h"
@@ -44,7 +46,6 @@
 #include "unicode/unum.h"
 #include "unicode/ustring.h"
 #include "unicode/uversion.h"
-
 
 namespace v8 {
 namespace internal {
@@ -85,7 +86,6 @@ RUNTIME_FUNCTION(Runtime_CanonicalizeLanguageTag) {
 
   return *factory->NewStringFromAsciiChecked(result);
 }
-
 
 RUNTIME_FUNCTION(Runtime_AvailableLocalesOf) {
   HandleScope scope(isolate);
@@ -131,7 +131,6 @@ RUNTIME_FUNCTION(Runtime_AvailableLocalesOf) {
   return *locales;
 }
 
-
 RUNTIME_FUNCTION(Runtime_GetDefaultICULocale) {
   HandleScope scope(isolate);
   Factory* factory = isolate->factory();
@@ -151,7 +150,6 @@ RUNTIME_FUNCTION(Runtime_GetDefaultICULocale) {
 
   return *factory->NewStringFromStaticChars("und");
 }
-
 
 RUNTIME_FUNCTION(Runtime_GetLanguageTagVariants) {
   HandleScope scope(isolate);
@@ -237,7 +235,6 @@ RUNTIME_FUNCTION(Runtime_GetLanguageTagVariants) {
   return *result;
 }
 
-
 RUNTIME_FUNCTION(Runtime_IsInitializedIntlObject) {
   HandleScope scope(isolate);
 
@@ -252,7 +249,6 @@ RUNTIME_FUNCTION(Runtime_IsInitializedIntlObject) {
   Handle<Object> tag = JSReceiver::GetDataProperty(obj, marker);
   return isolate->heap()->ToBoolean(!tag->IsUndefined(isolate));
 }
-
 
 RUNTIME_FUNCTION(Runtime_IsInitializedIntlObjectOfType) {
   HandleScope scope(isolate);
@@ -271,7 +267,6 @@ RUNTIME_FUNCTION(Runtime_IsInitializedIntlObjectOfType) {
                                     String::cast(*tag)->Equals(*expected_type));
 }
 
-
 RUNTIME_FUNCTION(Runtime_MarkAsInitializedIntlObjectOfType) {
   HandleScope scope(isolate);
 
@@ -285,7 +280,6 @@ RUNTIME_FUNCTION(Runtime_MarkAsInitializedIntlObjectOfType) {
 
   return isolate->heap()->undefined_value();
 }
-
 
 RUNTIME_FUNCTION(Runtime_CreateDateTimeFormat) {
   HandleScope scope(isolate);
@@ -318,7 +312,6 @@ RUNTIME_FUNCTION(Runtime_CreateDateTimeFormat) {
                           WeakCallbackType::kInternalFields);
   return *local_object;
 }
-
 
 RUNTIME_FUNCTION(Runtime_InternalDateFormat) {
   HandleScope scope(isolate);
@@ -407,9 +400,10 @@ bool AddElement(Handle<JSArray> array, int index, int32_t field_id,
 
   icu::UnicodeString field(formatted.tempSubStringBetween(begin, end));
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, value, factory->NewStringFromTwoByte(Vector<const uint16_t>(
-                          reinterpret_cast<const uint16_t*>(field.getBuffer()),
-                          field.length())),
+      isolate, value,
+      factory->NewStringFromTwoByte(Vector<const uint16_t>(
+          reinterpret_cast<const uint16_t*>(field.getBuffer()),
+          field.length())),
       false);
 
   JSObject::AddProperty(element, factory->value_string(), value, NONE);
@@ -508,7 +502,6 @@ RUNTIME_FUNCTION(Runtime_CreateNumberFormat) {
   return *local_object;
 }
 
-
 RUNTIME_FUNCTION(Runtime_InternalNumberFormat) {
   HandleScope scope(isolate);
 
@@ -533,6 +526,29 @@ RUNTIME_FUNCTION(Runtime_InternalNumberFormat) {
                    result.length())));
 }
 
+RUNTIME_FUNCTION(Runtime_CurrencyDigits) {
+  DCHECK_EQ(1, args.length());
+
+  CONVERT_ARG_HANDLE_CHECKED(String, currency, 0);
+
+  // TODO(littledan): Avoid transcoding the string twice
+  v8::String::Utf8Value currency_string(v8::Utils::ToLocal(currency));
+  icu::UnicodeString currency_icu =
+      icu::UnicodeString::fromUTF8(*currency_string);
+
+  DisallowHeapAllocation no_gc;
+  UErrorCode status = U_ZERO_ERROR;
+#if U_ICU_VERSION_MAJOR_NUM >= 59
+  uint32_t fraction_digits = ucurr_getDefaultFractionDigits(
+      icu::toUCharPtr(currency_icu.getTerminatedBuffer()), &status);
+#else
+  uint32_t fraction_digits = ucurr_getDefaultFractionDigits(
+      currency_icu.getTerminatedBuffer(), &status);
+#endif
+  // For missing currency codes, default to the most common, 2
+  if (!U_SUCCESS(status)) fraction_digits = 2;
+  return Smi::FromInt(fraction_digits);
+}
 
 RUNTIME_FUNCTION(Runtime_CreateCollator) {
   HandleScope scope(isolate);
@@ -564,7 +580,6 @@ RUNTIME_FUNCTION(Runtime_CreateCollator) {
                           WeakCallbackType::kInternalFields);
   return *local_object;
 }
-
 
 RUNTIME_FUNCTION(Runtime_InternalCompare) {
   HandleScope scope(isolate);
@@ -602,65 +617,6 @@ RUNTIME_FUNCTION(Runtime_InternalCompare) {
   return *isolate->factory()->NewNumberFromInt(result);
 }
 
-
-RUNTIME_FUNCTION(Runtime_StringNormalize) {
-  HandleScope scope(isolate);
-  static const struct {
-    const char* name;
-    UNormalization2Mode mode;
-  } normalizationForms[] = {
-      {"nfc", UNORM2_COMPOSE},
-      {"nfc", UNORM2_DECOMPOSE},
-      {"nfkc", UNORM2_COMPOSE},
-      {"nfkc", UNORM2_DECOMPOSE},
-  };
-
-  DCHECK_EQ(2, args.length());
-
-  CONVERT_ARG_HANDLE_CHECKED(String, s, 0);
-  CONVERT_NUMBER_CHECKED(int, form_id, Int32, args[1]);
-  CHECK(form_id >= 0 &&
-        static_cast<size_t>(form_id) < arraysize(normalizationForms));
-
-  int length = s->length();
-  s = String::Flatten(s);
-  icu::UnicodeString result;
-  std::unique_ptr<uc16[]> sap;
-  UErrorCode status = U_ZERO_ERROR;
-  {
-    DisallowHeapAllocation no_gc;
-    String::FlatContent flat = s->GetFlatContent();
-    const UChar* src = GetUCharBufferFromFlat(flat, &sap, length);
-    icu::UnicodeString input(false, src, length);
-    // Getting a singleton. Should not free it.
-    const icu::Normalizer2* normalizer =
-        icu::Normalizer2::getInstance(nullptr, normalizationForms[form_id].name,
-                                      normalizationForms[form_id].mode, status);
-    DCHECK(U_SUCCESS(status));
-    CHECK(normalizer != nullptr);
-    int32_t normalized_prefix_length =
-        normalizer->spanQuickCheckYes(input, status);
-    // Quick return if the input is already normalized.
-    if (length == normalized_prefix_length) return *s;
-    icu::UnicodeString unnormalized =
-        input.tempSubString(normalized_prefix_length);
-    // Read-only alias of the normalized prefix.
-    result.setTo(false, input.getBuffer(), normalized_prefix_length);
-    // copy-on-write; normalize the suffix and append to |result|.
-    normalizer->normalizeSecondAndAppend(result, unnormalized, status);
-  }
-
-  if (U_FAILURE(status)) {
-    return isolate->heap()->undefined_value();
-  }
-
-  RETURN_RESULT_OR_FAILURE(
-      isolate, isolate->factory()->NewStringFromTwoByte(Vector<const uint16_t>(
-                   reinterpret_cast<const uint16_t*>(result.getBuffer()),
-                   result.length())));
-}
-
-
 RUNTIME_FUNCTION(Runtime_CreateBreakIterator) {
   HandleScope scope(isolate);
 
@@ -696,7 +652,6 @@ RUNTIME_FUNCTION(Runtime_CreateBreakIterator) {
   return *local_object;
 }
 
-
 RUNTIME_FUNCTION(Runtime_BreakIteratorAdoptText) {
   HandleScope scope(isolate);
 
@@ -727,7 +682,6 @@ RUNTIME_FUNCTION(Runtime_BreakIteratorAdoptText) {
   return isolate->heap()->undefined_value();
 }
 
-
 RUNTIME_FUNCTION(Runtime_BreakIteratorFirst) {
   HandleScope scope(isolate);
 
@@ -741,7 +695,6 @@ RUNTIME_FUNCTION(Runtime_BreakIteratorFirst) {
 
   return *isolate->factory()->NewNumberFromInt(break_iterator->first());
 }
-
 
 RUNTIME_FUNCTION(Runtime_BreakIteratorNext) {
   HandleScope scope(isolate);
@@ -757,7 +710,6 @@ RUNTIME_FUNCTION(Runtime_BreakIteratorNext) {
   return *isolate->factory()->NewNumberFromInt(break_iterator->next());
 }
 
-
 RUNTIME_FUNCTION(Runtime_BreakIteratorCurrent) {
   HandleScope scope(isolate);
 
@@ -771,7 +723,6 @@ RUNTIME_FUNCTION(Runtime_BreakIteratorCurrent) {
 
   return *isolate->factory()->NewNumberFromInt(break_iterator->current());
 }
-
 
 RUNTIME_FUNCTION(Runtime_BreakIteratorBreakType) {
   HandleScope scope(isolate);
@@ -804,7 +755,7 @@ RUNTIME_FUNCTION(Runtime_BreakIteratorBreakType) {
   }
 }
 
-RUNTIME_FUNCTION(Runtime_StringToLowerCaseI18N) {
+RUNTIME_FUNCTION(Runtime_StringToLowerCaseIntl) {
   HandleScope scope(isolate);
   DCHECK_EQ(args.length(), 1);
   CONVERT_ARG_HANDLE_CHECKED(String, s, 0);
@@ -812,7 +763,7 @@ RUNTIME_FUNCTION(Runtime_StringToLowerCaseI18N) {
   return ConvertToLower(s, isolate);
 }
 
-RUNTIME_FUNCTION(Runtime_StringToUpperCaseI18N) {
+RUNTIME_FUNCTION(Runtime_StringToUpperCaseIntl) {
   HandleScope scope(isolate);
   DCHECK_EQ(args.length(), 1);
   CONVERT_ARG_HANDLE_CHECKED(String, s, 0);
@@ -834,7 +785,10 @@ RUNTIME_FUNCTION(Runtime_StringLocaleConvertCase) {
   s = String::Flatten(s);
 
   // All the languages requiring special-handling have two-letter codes.
-  if (V8_UNLIKELY(lang_arg->length() > 2))
+  // Note that we have to check for '!= 2' here because private-use language
+  // tags (x-foo) or grandfathered irregular tags (e.g. i-enochian) would have
+  // only 'x' or 'i' when they get here.
+  if (V8_UNLIKELY(lang_arg->length() != 2))
     return ConvertCase(s, is_upper, isolate);
 
   char c1, c2;
@@ -879,5 +833,3 @@ RUNTIME_FUNCTION(Runtime_DateCacheVersion) {
 
 }  // namespace internal
 }  // namespace v8
-
-#endif  // V8_I18N_SUPPORT

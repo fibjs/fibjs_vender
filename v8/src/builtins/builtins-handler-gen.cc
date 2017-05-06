@@ -30,7 +30,7 @@ TF_BUILTIN(KeyedLoadIC_IndexedString, CodeStubAssembler) {
   Node* result = StringFromCharCode(code);
   Return(result);
 
-  Bind(&miss);
+  BIND(&miss);
   TailCallRuntime(Runtime::kKeyedLoadIC_Miss, context, receiver, index, slot,
                   vector);
 }
@@ -129,23 +129,10 @@ TF_BUILTIN(LoadIC_FunctionPrototype, CodeStubAssembler) {
   Node* vector = Parameter(Descriptor::kVector);
   Node* context = Parameter(Descriptor::kContext);
 
-  Label miss(this);
+  Label miss(this, Label::kDeferred);
+  Return(LoadJSFunctionPrototype(receiver, &miss));
 
-  Node* proto_or_map =
-      LoadObjectField(receiver, JSFunction::kPrototypeOrInitialMapOffset);
-  GotoIf(IsTheHole(proto_or_map), &miss);
-
-  Variable var_result(this, MachineRepresentation::kTagged, proto_or_map);
-  Label done(this, &var_result);
-  GotoIfNot(IsMap(proto_or_map), &done);
-
-  var_result.Bind(LoadMapPrototype(proto_or_map));
-  Goto(&done);
-
-  Bind(&done);
-  Return(var_result.value());
-
-  Bind(&miss);
+  BIND(&miss);
   TailCallRuntime(Runtime::kLoadIC_Miss, context, receiver, name, slot, vector);
 }
 

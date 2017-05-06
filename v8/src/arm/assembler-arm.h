@@ -75,13 +75,13 @@ namespace internal {
 
 #define ALLOCATABLE_DOUBLE_REGISTERS(V)                   \
   V(d0)  V(d1)  V(d2)  V(d3)  V(d4)  V(d5)  V(d6)  V(d7)  \
-  V(d8)  V(d9)  V(d10) V(d11) V(d12) V(d13)               \
+  V(d8)  V(d9)  V(d10) V(d11) V(d12)                      \
   V(d16) V(d17) V(d18) V(d19) V(d20) V(d21) V(d22) V(d23) \
   V(d24) V(d25) V(d26) V(d27) V(d28) V(d29) V(d30) V(d31)
 
 #define ALLOCATABLE_NO_VFP32_DOUBLE_REGISTERS(V)          \
   V(d0)  V(d1)  V(d2)  V(d3)  V(d4)  V(d5)  V(d6)  V(d7)  \
-  V(d8)  V(d9)  V(d10) V(d11) V(d12) V(d13)               \
+  V(d8)  V(d9)  V(d10) V(d11) V(d12) V(d15)               \
 // clang-format on
 
 // CPU Registers.
@@ -142,7 +142,6 @@ struct Register {
 };
 
 // r7: context register
-// r8: constant pool pointer register if FLAG_enable_embedded_constant_pool.
 // r9: lithium scratch
 #define DECLARE_REGISTER(R) constexpr Register R = {Register::kCode_##R};
 GENERAL_REGISTERS(DECLARE_REGISTER)
@@ -424,11 +423,11 @@ constexpr QwNeonRegister q15 = { 15 };
 // Aliases for double registers.
 constexpr LowDwVfpRegister kFirstCalleeSavedDoubleReg = d8;
 constexpr LowDwVfpRegister kLastCalleeSavedDoubleReg = d15;
-// kDoubleRegZero and kScratchDoubleReg must pair to form kScratchQuadReg. SIMD
-// code depends on kDoubleRegZero before kScratchDoubleReg.
-constexpr LowDwVfpRegister kDoubleRegZero  = d14;
-constexpr LowDwVfpRegister kScratchDoubleReg = d15;
-// After using kScratchQuadReg, kDoubleRegZero must be reset to 0.
+constexpr LowDwVfpRegister kDoubleRegZero  = d13;
+constexpr LowDwVfpRegister kScratchDoubleReg = d14;
+// This scratch q-register aliases d14 (kScratchDoubleReg) and d15, but is only
+// used when NEON is supported. d15 is still allocatable if there are only 16
+// VFP registers.
 constexpr QwNeonRegister kScratchQuadReg = q7;
 
 // Coprocessor register
@@ -1372,6 +1371,9 @@ class Assembler : public AssemblerBase {
   void vmax(QwNeonRegister dst, QwNeonRegister src1, QwNeonRegister src2);
   void vmax(NeonDataType dt, QwNeonRegister dst,
             QwNeonRegister src1, QwNeonRegister src2);
+  void vpadd(DwVfpRegister dst, DwVfpRegister src1, DwVfpRegister src2);
+  void vpadd(NeonSize size, DwVfpRegister dst, DwVfpRegister src1,
+             DwVfpRegister src2);
   void vpmin(NeonDataType dt, DwVfpRegister dst, DwVfpRegister src1,
              DwVfpRegister src2);
   void vpmax(NeonDataType dt, DwVfpRegister dst, DwVfpRegister src1,
@@ -1396,11 +1398,14 @@ class Assembler : public AssemblerBase {
             QwNeonRegister src2);
   void vext(QwNeonRegister dst, QwNeonRegister src1, QwNeonRegister src2,
             int bytes);
+  void vzip(NeonSize size, DwVfpRegister src1, DwVfpRegister src2);
   void vzip(NeonSize size, QwNeonRegister src1, QwNeonRegister src2);
+  void vuzp(NeonSize size, DwVfpRegister src1, DwVfpRegister src2);
   void vuzp(NeonSize size, QwNeonRegister src1, QwNeonRegister src2);
   void vrev16(NeonSize size, QwNeonRegister dst, QwNeonRegister src);
   void vrev32(NeonSize size, QwNeonRegister dst, QwNeonRegister src);
   void vrev64(NeonSize size, QwNeonRegister dst, QwNeonRegister src);
+  void vtrn(NeonSize size, DwVfpRegister src1, DwVfpRegister src2);
   void vtrn(NeonSize size, QwNeonRegister src1, QwNeonRegister src2);
   void vtbl(DwVfpRegister dst, const NeonListOperand& list,
             DwVfpRegister index);
@@ -1555,12 +1560,6 @@ class Assembler : public AssemblerBase {
   static int GetBranchOffset(Instr instr);
   static bool IsLdrRegisterImmediate(Instr instr);
   static bool IsVldrDRegisterImmediate(Instr instr);
-  static Instr GetConsantPoolLoadPattern();
-  static Instr GetConsantPoolLoadMask();
-  static bool IsLdrPpRegOffset(Instr instr);
-  static Instr GetLdrPpRegOffsetPattern();
-  static bool IsLdrPpImmediateOffset(Instr instr);
-  static bool IsVldrDPpImmediateOffset(Instr instr);
   static int GetLdrRegisterImmediateOffset(Instr instr);
   static int GetVldrDRegisterImmediateOffset(Instr instr);
   static Instr SetLdrRegisterImmediateOffset(Instr instr, int offset);
@@ -1625,19 +1624,12 @@ class Assembler : public AssemblerBase {
     }
   }
 
-  int EmitEmbeddedConstantPool() {
-    DCHECK(FLAG_enable_embedded_constant_pool);
-    return constant_pool_builder_.Emit(this);
-  }
-
-  bool ConstantPoolAccessIsInOverflow() const {
-    return constant_pool_builder_.NextAccess(ConstantPoolEntry::INTPTR) ==
-           ConstantPoolEntry::OVERFLOWED;
-  }
-
   void PatchConstantPoolAccessInstruction(int pc_offset, int offset,
                                           ConstantPoolEntry::Access access,
-                                          ConstantPoolEntry::Type type);
+                                          ConstantPoolEntry::Type type) {
+    // No embedded constant pool support.
+    UNREACHABLE();
+  }
 
  protected:
   // Relocation for a type-recording IC has the AST id added to it.  This
@@ -1731,6 +1723,9 @@ class Assembler : public AssemblerBase {
   std::vector<ConstantPoolEntry> pending_64_bit_constants_;
 
  private:
+  // Avoid overflows for displacements etc.
+  static const int kMaximalBufferSize = 512 * MB;
+
   int next_buffer_check_;  // pc offset of next buffer check
 
   // Constant pool generation
@@ -1759,8 +1754,6 @@ class Assembler : public AssemblerBase {
   // since the previous constant pool was emitted.
   int first_const_pool_32_use_;
   int first_const_pool_64_use_;
-
-  ConstantPoolBuilder constant_pool_builder_;
 
   // The bound position, before this we cannot do instruction elimination.
   int last_bound_pos_;

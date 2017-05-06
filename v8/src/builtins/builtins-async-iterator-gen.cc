@@ -15,13 +15,6 @@ namespace internal {
 using compiler::Node;
 
 namespace {
-
-// Describe fields of Context associated with the AsyncIterator unwrap closure.
-class ValueUnwrapContext {
- public:
-  enum Fields { kDoneSlot = Context::MIN_CONTEXT_SLOTS, kLength };
-};
-
 class AsyncFromSyncBuiltinsAssembler : public AsyncBuiltinsAssembler {
  public:
   explicit AsyncFromSyncBuiltinsAssembler(compiler::CodeAssemblerState* state)
@@ -42,9 +35,6 @@ class AsyncFromSyncBuiltinsAssembler : public AsyncBuiltinsAssembler {
       Label::Type reject_label_type = Label::kDeferred,
       Node* const initial_exception_value = nullptr);
 
-  Node* AllocateAsyncIteratorValueUnwrapContext(Node* native_context,
-                                                Node* done);
-
   // Load "value" and "done" from an iterator result object. If an exception
   // is thrown at any point, jumps to te `if_exception` label with exception
   // stored in `var_exception`.
@@ -57,8 +47,6 @@ class AsyncFromSyncBuiltinsAssembler : public AsyncBuiltinsAssembler {
                                              Node* const iter_result,
                                              Label* if_exception,
                                              Variable* var_exception);
-
-  Node* CreateUnwrapClosure(Node* const native_context, Node* const done);
 };
 
 void AsyncFromSyncBuiltinsAssembler::ThrowIfNotAsyncFromSyncIterator(
@@ -70,7 +58,7 @@ void AsyncFromSyncBuiltinsAssembler::ThrowIfNotAsyncFromSyncIterator(
   Branch(HasInstanceType(object, JS_ASYNC_FROM_SYNC_ITERATOR_TYPE), &done,
          &if_receiverisincompatible);
 
-  Bind(&if_receiverisincompatible);
+  BIND(&if_receiverisincompatible);
   {
     // If Type(O) is not Object, or if O does not have a [[SyncIterator]]
     // internal slot, then
@@ -86,7 +74,7 @@ void AsyncFromSyncBuiltinsAssembler::ThrowIfNotAsyncFromSyncIterator(
     Goto(if_exception);
   }
 
-  Bind(&done);
+  BIND(&done);
 }
 
 void AsyncFromSyncBuiltinsAssembler::Generate_AsyncFromSyncIteratorMethod(
@@ -97,10 +85,9 @@ void AsyncFromSyncBuiltinsAssembler::Generate_AsyncFromSyncIteratorMethod(
   Node* const native_context = LoadNativeContext(context);
   Node* const promise = AllocateAndInitJSPromise(context);
 
-  Variable var_exception(this, MachineRepresentation::kTagged,
-                         initial_exception_value == nullptr
-                             ? UndefinedConstant()
-                             : initial_exception_value);
+  VARIABLE(var_exception, MachineRepresentation::kTagged,
+           initial_exception_value == nullptr ? UndefinedConstant()
+                                              : initial_exception_value);
   Label reject_promise(this, reject_label_type);
 
   ThrowIfNotAsyncFromSyncIterator(context, iterator, &reject_promise,
@@ -117,7 +104,7 @@ void AsyncFromSyncBuiltinsAssembler::Generate_AsyncFromSyncIteratorMethod(
     GotoIfNot(IsUndefined(method), &if_isnotundefined);
     if_method_undefined(native_context, promise, &reject_promise);
 
-    Bind(&if_isnotundefined);
+    BIND(&if_isnotundefined);
   }
 
   Node* const iter_result = CallJS(CodeFactory::Call(isolate()), context,
@@ -132,7 +119,7 @@ void AsyncFromSyncBuiltinsAssembler::Generate_AsyncFromSyncIteratorMethod(
 
   // Perform ! Call(valueWrapperCapability.[[Resolve]], undefined, «
   // throwValue »).
-  InternalResolvePromise(context, wrapper, value);
+  CallBuiltin(Builtins::kResolveNativePromise, context, wrapper, value);
 
   // Let onFulfilled be a new built-in function object as defined in
   // Async Iterator Value Unwrap Functions.
@@ -141,16 +128,14 @@ void AsyncFromSyncBuiltinsAssembler::Generate_AsyncFromSyncIteratorMethod(
 
   // Perform ! PerformPromiseThen(valueWrapperCapability.[[Promise]],
   //     onFulfilled, undefined, promiseCapability).
-  Node* const undefined = UndefinedConstant();
-  InternalPerformPromiseThen(context, wrapper, on_fulfilled, undefined, promise,
-                             undefined, undefined);
-  Return(promise);
+  Return(CallBuiltin(Builtins::kPerformNativePromiseThen, context, wrapper,
+                     on_fulfilled, UndefinedConstant(), promise));
 
-  Bind(&reject_promise);
+  BIND(&reject_promise);
   {
     Node* const exception = var_exception.value();
-    InternalPromiseReject(context, promise, exception, TrueConstant());
-
+    CallBuiltin(Builtins::kRejectNativePromise, context, promise, exception,
+                TrueConstant());
     Return(promise);
   }
 }
@@ -168,39 +153,39 @@ std::pair<Node*, Node*> AsyncFromSyncBuiltinsAssembler::LoadIteratorResult(
   Node* const fast_iter_result_map =
       LoadContextElement(native_context, Context::ITERATOR_RESULT_MAP_INDEX);
 
-  Variable var_value(this, MachineRepresentation::kTagged);
-  Variable var_done(this, MachineRepresentation::kTagged);
+  VARIABLE(var_value, MachineRepresentation::kTagged);
+  VARIABLE(var_done, MachineRepresentation::kTagged);
   Branch(WordEqual(iter_result_map, fast_iter_result_map), &if_fastpath,
          &if_slowpath);
 
-  Bind(&if_fastpath);
+  BIND(&if_fastpath);
   {
+    var_done.Bind(LoadObjectField(iter_result, JSIteratorResult::kDoneOffset));
     var_value.Bind(
         LoadObjectField(iter_result, JSIteratorResult::kValueOffset));
-    var_done.Bind(LoadObjectField(iter_result, JSIteratorResult::kDoneOffset));
     Goto(&merge);
   }
 
-  Bind(&if_slowpath);
+  BIND(&if_slowpath);
   {
-    // Let nextValue be IteratorValue(nextResult).
-    // IfAbruptRejectPromise(nextValue, promiseCapability).
-    Node* const value =
-        GetProperty(context, iter_result, factory()->value_string());
-    GotoIfException(value, if_exception, var_exception);
-
     // Let nextDone be IteratorComplete(nextResult).
     // IfAbruptRejectPromise(nextDone, promiseCapability).
     Node* const done =
         GetProperty(context, iter_result, factory()->done_string());
     GotoIfException(done, if_exception, var_exception);
 
+    // Let nextValue be IteratorValue(nextResult).
+    // IfAbruptRejectPromise(nextValue, promiseCapability).
+    Node* const value =
+        GetProperty(context, iter_result, factory()->value_string());
+    GotoIfException(value, if_exception, var_exception);
+
     var_value.Bind(value);
     var_done.Bind(done);
     Goto(&merge);
   }
 
-  Bind(&if_notanobject);
+  BIND(&if_notanobject);
   {
     // Sync iterator result is not an object --- Produce a TypeError and jump
     // to the `if_exception` path.
@@ -210,12 +195,12 @@ std::pair<Node*, Node*> AsyncFromSyncBuiltinsAssembler::LoadIteratorResult(
     Goto(if_exception);
   }
 
-  Bind(&merge);
+  BIND(&merge);
   // Ensure `iterResult.done` is a Boolean.
   GotoIf(TaggedIsSmi(var_done.value()), &to_boolean);
   Branch(IsBoolean(var_done.value()), &done, &to_boolean);
 
-  Bind(&to_boolean);
+  BIND(&to_boolean);
   {
     Node* const result =
         CallStub(CodeFactory::ToBoolean(isolate()), context, var_done.value());
@@ -223,34 +208,8 @@ std::pair<Node*, Node*> AsyncFromSyncBuiltinsAssembler::LoadIteratorResult(
     Goto(&done);
   }
 
-  Bind(&done);
+  BIND(&done);
   return std::make_pair(var_value.value(), var_done.value());
-}
-
-Node* AsyncFromSyncBuiltinsAssembler::CreateUnwrapClosure(Node* native_context,
-                                                          Node* done) {
-  Node* const map = LoadContextElement(
-      native_context, Context::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
-  Node* const on_fulfilled_shared = LoadContextElement(
-      native_context, Context::ASYNC_ITERATOR_VALUE_UNWRAP_SHARED_FUN);
-  CSA_ASSERT(this,
-             HasInstanceType(on_fulfilled_shared, SHARED_FUNCTION_INFO_TYPE));
-  Node* const closure_context =
-      AllocateAsyncIteratorValueUnwrapContext(native_context, done);
-  return AllocateFunctionWithMapAndContext(map, on_fulfilled_shared,
-                                           closure_context);
-}
-
-Node* AsyncFromSyncBuiltinsAssembler::AllocateAsyncIteratorValueUnwrapContext(
-    Node* native_context, Node* done) {
-  CSA_ASSERT(this, IsNativeContext(native_context));
-  CSA_ASSERT(this, IsBoolean(done));
-
-  Node* const context =
-      CreatePromiseContext(native_context, ValueUnwrapContext::kLength);
-  StoreContextElementNoWriteBarrier(context, ValueUnwrapContext::kDoneSlot,
-                                    done);
-  return context;
 }
 }  // namespace
 
@@ -309,19 +268,6 @@ TF_BUILTIN(AsyncFromSyncIteratorPrototypeThrow,
       context, iterator, reason, factory()->throw_string(), if_throw_undefined,
       "[Async-from-Sync Iterator].prototype.throw", Label::kNonDeferred,
       reason);
-}
-
-TF_BUILTIN(AsyncIteratorValueUnwrap, AsyncFromSyncBuiltinsAssembler) {
-  Node* const value = Parameter(Descriptor::kValue);
-  Node* const context = Parameter(Descriptor::kContext);
-
-  Node* const done = LoadContextElement(context, ValueUnwrapContext::kDoneSlot);
-  CSA_ASSERT(this, IsBoolean(done));
-
-  Node* const unwrapped_value = CallStub(
-      CodeFactory::CreateIterResultObject(isolate()), context, value, done);
-
-  Return(unwrapped_value);
 }
 
 }  // namespace internal

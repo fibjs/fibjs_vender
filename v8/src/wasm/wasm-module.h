@@ -210,6 +210,7 @@ struct WasmInstance {
   std::vector<Handle<FixedArray>> function_tables;  // indirect function tables.
   std::vector<Handle<FixedArray>>
       signature_tables;                    // indirect signature tables.
+  // TODO(wasm): Remove this vector, since it is only used for testing.
   std::vector<Handle<Code>> function_code;  // code objects for each function.
   // -- raw memory ------------------------------------------------------------
   byte* mem_start = nullptr;  // start of linear memory.
@@ -222,6 +223,22 @@ struct WasmInstance {
         function_tables(m->function_tables.size()),
         signature_tables(m->function_tables.size()),
         function_code(m->functions.size()) {}
+
+  void ReopenHandles(Isolate* isolate) {
+    context = handle(*context, isolate);
+
+    for (auto& table : function_tables) {
+      table = handle(*table, isolate);
+    }
+
+    for (auto& table : signature_tables) {
+      table = handle(*table, isolate);
+    }
+
+    for (auto& code : function_code) {
+      code = handle(*code, isolate);
+    }
+  }
 };
 
 // Interface to the storage (wire bytes) of a wasm module.
@@ -374,8 +391,6 @@ struct WasmFunctionName {
   WasmName name_;
 };
 
-std::ostream& operator<<(std::ostream& os, const WasmModule& module);
-std::ostream& operator<<(std::ostream& os, const WasmFunction& function);
 std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name);
 
 // Get the debug info associated with the given wasm object.
@@ -410,33 +425,17 @@ V8_EXPORT_PRIVATE Handle<JSArray> GetCustomSections(
     Isolate* isolate, Handle<WasmModuleObject> module, Handle<String> name,
     ErrorThrower* thrower);
 
-// Get the offset of the code of a function within a module.
-int GetFunctionCodeOffset(Handle<WasmCompiledModule> compiled_module,
-                          int func_index);
-
 // Assumed to be called with a code object associated to a wasm module instance.
 // Intended to be called from runtime functions.
 // Returns nullptr on failing to get owning instance.
 WasmInstanceObject* GetOwningWasmInstance(Code* code);
 
-MaybeHandle<JSArrayBuffer> GetInstanceMemory(
-    Isolate* isolate, Handle<WasmInstanceObject> instance);
-
-int32_t GetInstanceMemorySize(Isolate* isolate,
-                              Handle<WasmInstanceObject> instance);
-
-int32_t GrowInstanceMemory(Isolate* isolate,
-                           Handle<WasmInstanceObject> instance, uint32_t pages);
-
-Handle<JSArrayBuffer> NewArrayBuffer(Isolate* isolate, size_t size,
+Handle<JSArrayBuffer> NewArrayBuffer(Isolate*, size_t size,
                                      bool enable_guard_regions);
 
-int32_t GrowWebAssemblyMemory(Isolate* isolate,
-                              Handle<WasmMemoryObject> receiver,
-                              uint32_t pages);
-
-int32_t GrowMemory(Isolate* isolate, Handle<WasmInstanceObject> instance,
-                   uint32_t pages);
+Handle<JSArrayBuffer> SetupArrayBuffer(Isolate*, void* backing_store,
+                                       size_t size, bool is_external,
+                                       bool enable_guard_regions);
 
 void DetachWebAssemblyMemoryBuffer(Isolate* isolate,
                                    Handle<JSArrayBuffer> buffer);
@@ -444,13 +443,10 @@ void DetachWebAssemblyMemoryBuffer(Isolate* isolate,
 void UpdateDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
                           int index, Handle<JSFunction> js_function);
 
-void GrowDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
-                        uint32_t old_size, uint32_t count);
-
 //============================================================================
 //== Compilation and instantiation ===========================================
 //============================================================================
-V8_EXPORT_PRIVATE bool SyncValidate(Isolate* isolate, ErrorThrower* thrower,
+V8_EXPORT_PRIVATE bool SyncValidate(Isolate* isolate,
                                     const ModuleWireBytes& bytes);
 
 V8_EXPORT_PRIVATE MaybeHandle<WasmModuleObject> SyncCompileTranslatedAsmJs(
@@ -472,10 +468,6 @@ V8_EXPORT_PRIVATE void AsyncInstantiate(Isolate* isolate,
                                         Handle<JSPromise> promise,
                                         Handle<WasmModuleObject> module_object,
                                         MaybeHandle<JSReceiver> imports);
-
-V8_EXPORT_PRIVATE void AsyncCompileAndInstantiate(
-    Isolate* isolate, Handle<JSPromise> promise, const ModuleWireBytes& bytes,
-    MaybeHandle<JSReceiver> imports);
 
 #if V8_TARGET_ARCH_64_BIT
 const bool kGuardRegionsSupported = true;

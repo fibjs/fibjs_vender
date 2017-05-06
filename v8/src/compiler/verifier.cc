@@ -401,23 +401,6 @@ void Verifier::Visitor::Check(Node* node) {
       // Type is merged from other values in the graph and could be any.
       CheckTypeIs(node, Type::Any());
       break;
-    case IrOpcode::kOsrGuard:
-      // OSR values have a value and a control input.
-      CHECK_EQ(1, value_count);
-      CHECK_EQ(1, effect_count);
-      CHECK_EQ(1, control_count);
-      switch (OsrGuardTypeOf(node->op())) {
-        case OsrGuardType::kUninitialized:
-          CheckTypeIs(node, Type::None());
-          break;
-        case OsrGuardType::kSignedSmall:
-          CheckTypeIs(node, Type::SignedSmall());
-          break;
-        case OsrGuardType::kAny:
-          CheckTypeIs(node, Type::Any());
-          break;
-      }
-      break;
     case IrOpcode::kProjection: {
       // Projection has an input that produces enough values.
       int index = static_cast<int>(ProjectionIndexOf(node->op()));
@@ -509,12 +492,19 @@ void Verifier::Visitor::Check(Node* node) {
       CHECK_EQ(0, control_count);
       CHECK_EQ(0, effect_count);
       CHECK_EQ(6, input_count);
-      for (int i = 0; i < 3; ++i) {
+      // Check that the parameters and registers are kStateValues or
+      // kTypedStateValues.
+      for (int i = 0; i < 2; ++i) {
         CHECK(NodeProperties::GetValueInput(node, i)->opcode() ==
                   IrOpcode::kStateValues ||
               NodeProperties::GetValueInput(node, i)->opcode() ==
                   IrOpcode::kTypedStateValues);
       }
+      // The accumulator (InputAt(2)) cannot be kStateValues, but it can be
+      // kTypedStateValues (to signal the type). Once AST graph builder
+      // is removed, we should check this here. Until then, AST graph
+      // builder can generate expression stack as InputAt(2), which can
+      // still be kStateValues.
       break;
     }
     case IrOpcode::kStateValues:
@@ -598,12 +588,12 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::Object());
       break;
     case IrOpcode::kJSCreateArguments:
-      // Type is OtherObject.
-      CheckTypeIs(node, Type::OtherObject());
+      // Type is Array \/ OtherObject.
+      CheckTypeIs(node, Type::ArrayOrOtherObject());
       break;
     case IrOpcode::kJSCreateArray:
-      // Type is OtherObject.
-      CheckTypeIs(node, Type::OtherObject());
+      // Type is Array.
+      CheckTypeIs(node, Type::Array());
       break;
     case IrOpcode::kJSCreateClosure:
       // Type is Function.
@@ -618,6 +608,9 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::OtherObject());
       break;
     case IrOpcode::kJSCreateLiteralArray:
+      // Type is Array.
+      CheckTypeIs(node, Type::Array());
+      break;
     case IrOpcode::kJSCreateLiteralObject:
     case IrOpcode::kJSCreateLiteralRegExp:
       // Type is OtherObject.
@@ -914,6 +907,11 @@ void Verifier::Visitor::Check(Node* node) {
       CheckValueInputIs(node, 0, Type::Number());
       CheckTypeIs(node, Type::Unsigned32());
       break;
+    case IrOpcode::kSpeculativeToNumber:
+      // Any -> Number
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckTypeIs(node, Type::Number());
+      break;
     case IrOpcode::kPlainPrimitiveToNumber:
       // PlainPrimitive -> Number
       CheckValueInputIs(node, 0, Type::PlainPrimitive());
@@ -1196,8 +1194,8 @@ void Verifier::Visitor::Check(Node* node) {
       break;
 
     case IrOpcode::kCheckFloat64Hole:
-      CheckValueInputIs(node, 0, Type::Number());
-      CheckTypeIs(node, Type::Number());
+      CheckValueInputIs(node, 0, Type::NumberOrHole());
+      CheckTypeIs(node, Type::NumberOrUndefined());
       break;
     case IrOpcode::kCheckTaggedHole:
       CheckValueInputIs(node, 0, Type::Any());
@@ -1270,6 +1268,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kWord32Ctz:
     case IrOpcode::kWord32ReverseBits:
     case IrOpcode::kWord32ReverseBytes:
+    case IrOpcode::kInt32AbsWithOverflow:
     case IrOpcode::kWord32Popcnt:
     case IrOpcode::kWord64And:
     case IrOpcode::kWord64Or:
@@ -1283,6 +1282,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kWord64Ctz:
     case IrOpcode::kWord64ReverseBits:
     case IrOpcode::kWord64ReverseBytes:
+    case IrOpcode::kInt64AbsWithOverflow:
     case IrOpcode::kWord64Equal:
     case IrOpcode::kInt32Add:
     case IrOpcode::kInt32AddWithOverflow:
@@ -1422,6 +1422,11 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kAtomicStore:
     case IrOpcode::kAtomicExchange:
     case IrOpcode::kAtomicCompareExchange:
+    case IrOpcode::kAtomicAdd:
+    case IrOpcode::kAtomicSub:
+    case IrOpcode::kAtomicAnd:
+    case IrOpcode::kAtomicOr:
+    case IrOpcode::kAtomicXor:
 
 #define SIMD_MACHINE_OP_CASE(Name) case IrOpcode::k##Name:
       MACHINE_SIMD_OP_LIST(SIMD_MACHINE_OP_CASE)
@@ -1447,6 +1452,7 @@ void Verifier::Run(Graph* graph, Typing typing, CheckInputs check_inputs) {
     for (Node* other : node->uses()) {
       if (all.IsLive(other) && other != proj &&
           other->opcode() == IrOpcode::kProjection &&
+          other->InputAt(0) == node &&
           ProjectionIndexOf(other->op()) == ProjectionIndexOf(proj->op())) {
         V8_Fatal(__FILE__, __LINE__,
                  "Node #%d:%s has duplicate projections #%d and #%d",

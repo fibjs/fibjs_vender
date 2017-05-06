@@ -3,11 +3,21 @@
 // found in the LICENSE file.
 
 #include "src/builtins/builtins-async-gen.h"
+#include "src/builtins/builtins-utils-gen.h"
 
 namespace v8 {
 namespace internal {
 
 using compiler::Node;
+
+namespace {
+// Describe fields of Context associated with the AsyncIterator unwrap closure.
+class ValueUnwrapContext {
+ public:
+  enum Fields { kDoneSlot = Context::MIN_CONTEXT_SLOTS, kLength };
+};
+
+}  // namespace
 
 Node* AsyncBuiltinsAssembler::Await(
     Node* context, Node* generator, Node* value, Node* outer_promise,
@@ -17,7 +27,7 @@ Node* AsyncBuiltinsAssembler::Await(
   Node* const wrapped_value = AllocateAndInitJSPromise(context);
 
   // Perform ! Call(promiseCapability.[[Resolve]], undefined, « promise »).
-  InternalResolvePromise(context, wrapped_value, value);
+  CallBuiltin(Builtins::kResolveNativePromise, context, wrapped_value, value);
 
   Node* const native_context = LoadNativeContext(context);
 
@@ -66,7 +76,7 @@ Node* AsyncBuiltinsAssembler::Await(
     }
 
     Goto(&common);
-    Bind(&common);
+    BIND(&common);
     // Mark the dependency to outer Promise in case the throwaway Promise is
     // found on the Promise stack
     CSA_SLOW_ASSERT(this, HasInstanceType(outer_promise, JS_PROMISE_TYPE));
@@ -77,12 +87,50 @@ Node* AsyncBuiltinsAssembler::Await(
   }
 
   Goto(&do_perform_promise_then);
-  Bind(&do_perform_promise_then);
-  InternalPerformPromiseThen(context, wrapped_value, on_resolve, on_reject,
-                             throwaway_promise, UndefinedConstant(),
-                             UndefinedConstant());
+  BIND(&do_perform_promise_then);
+  CallBuiltin(Builtins::kPerformNativePromiseThen, context, wrapped_value,
+              on_resolve, on_reject, throwaway_promise);
 
   return wrapped_value;
+}
+
+Node* AsyncBuiltinsAssembler::CreateUnwrapClosure(Node* native_context,
+                                                  Node* done) {
+  Node* const map = LoadContextElement(
+      native_context, Context::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
+  Node* const on_fulfilled_shared = LoadContextElement(
+      native_context, Context::ASYNC_ITERATOR_VALUE_UNWRAP_SHARED_FUN);
+  CSA_ASSERT(this,
+             HasInstanceType(on_fulfilled_shared, SHARED_FUNCTION_INFO_TYPE));
+  Node* const closure_context =
+      AllocateAsyncIteratorValueUnwrapContext(native_context, done);
+  return AllocateFunctionWithMapAndContext(map, on_fulfilled_shared,
+                                           closure_context);
+}
+
+Node* AsyncBuiltinsAssembler::AllocateAsyncIteratorValueUnwrapContext(
+    Node* native_context, Node* done) {
+  CSA_ASSERT(this, IsNativeContext(native_context));
+  CSA_ASSERT(this, IsBoolean(done));
+
+  Node* const context =
+      CreatePromiseContext(native_context, ValueUnwrapContext::kLength);
+  StoreContextElementNoWriteBarrier(context, ValueUnwrapContext::kDoneSlot,
+                                    done);
+  return context;
+}
+
+TF_BUILTIN(AsyncIteratorValueUnwrap, AsyncBuiltinsAssembler) {
+  Node* const value = Parameter(Descriptor::kValue);
+  Node* const context = Parameter(Descriptor::kContext);
+
+  Node* const done = LoadContextElement(context, ValueUnwrapContext::kDoneSlot);
+  CSA_ASSERT(this, IsBoolean(done));
+
+  Node* const unwrapped_value = CallStub(
+      CodeFactory::CreateIterResultObject(isolate()), context, value, done);
+
+  Return(unwrapped_value);
 }
 
 }  // namespace internal

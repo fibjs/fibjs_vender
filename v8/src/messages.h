@@ -280,8 +280,10 @@ class ErrorUtils : public AllStatic {
   T(CallSiteMethod, "CallSite method % expects CallSite as receiver")          \
   T(CannotConvertToPrimitive, "Cannot convert object to primitive value")      \
   T(CannotPreventExt, "Cannot prevent extensions")                             \
+  T(CannotFreeze, "Cannot freeze")                                             \
   T(CannotFreezeArrayBufferView,                                               \
     "Cannot freeze array buffer views with elements")                          \
+  T(CannotSeal, "Cannot seal")                                                 \
   T(CircularStructure, "Converting circular structure to JSON")                \
   T(ConstructAbstractClass, "Abstract class % not directly constructable")     \
   T(ConstAssign, "Assignment to constant variable.")                           \
@@ -339,8 +341,7 @@ class ErrorUtils : public AllStatic {
   T(NotAPromise, "% is not a promise")                                         \
   T(NotConstructor, "% is not a constructor")                                  \
   T(NotDateObject, "this is not a Date object.")                               \
-  T(NotIntlObject, "% is not an i18n object.")                                 \
-  T(NotGeneric, "% is not generic")                                            \
+  T(NotGeneric, "% requires that 'this' be a %")                               \
   T(NotIterable, "% is not iterable")                                          \
   T(NotPropertyName, "% is not a valid property name")                         \
   T(NotTypedArray, "this is not a typed array.")                               \
@@ -459,7 +460,6 @@ class ErrorUtils : public AllStatic {
   T(RegExpInvalidReplaceString, "Invalid replacement string: '%'")             \
   T(RegExpNonObject, "% getter called on non-object %")                        \
   T(RegExpNonRegExp, "% getter called on non-RegExp object")                   \
-  T(ReinitializeIntl, "Trying to re-initialize % object.")                     \
   T(ResolverNotAFunction, "Promise resolver % is not a function")              \
   T(RestrictedFunctionProperties,                                              \
     "'caller' and 'arguments' are restricted function properties and cannot "  \
@@ -523,7 +523,7 @@ class ErrorUtils : public AllStatic {
   T(InvalidTimeValue, "Invalid time value")                                    \
   T(InvalidTypedArrayAlignment, "% of % should be a multiple of %")            \
   T(InvalidTypedArrayIndex, "Invalid typed array index")                       \
-  T(InvalidTypedArrayLength, "Invalid typed array length")                     \
+  T(InvalidTypedArrayLength, "Invalid typed array length: %")                  \
   T(LetInLexicalBinding, "let is disallowed as a lexically bound name")        \
   T(LocaleMatcher, "Illegal value for localeMatcher:%")                        \
   T(NormalizationForm, "The normalization form should be one of %.")           \
@@ -544,7 +544,9 @@ class ErrorUtils : public AllStatic {
   T(ConstructorIsAccessor, "Class constructor may not be an accessor")         \
   T(ConstructorIsGenerator, "Class constructor may not be a generator")        \
   T(ConstructorIsAsync, "Class constructor may not be an async method")        \
-  T(DerivedConstructorReturn,                                                  \
+  T(ClassConstructorReturnedNonObject,                                         \
+    "Class constructors may only return object or undefined")                  \
+  T(DerivedConstructorReturnedNonObject,                                       \
     "Derived constructors may only return object or undefined")                \
   T(DuplicateConstructor, "A class may only have one constructor")             \
   T(DuplicateExport, "Duplicate export of '%'")                                \
@@ -588,6 +590,7 @@ class ErrorUtils : public AllStatic {
   T(MalformedRegExp, "Invalid regular expression: /%/: %")                     \
   T(MalformedRegExpFlags, "Invalid regular expression flags")                  \
   T(ModuleExportUndefined, "Export '%' is not defined in module")              \
+  T(HtmlCommentInModule, "HTML comments are not allowed in modules")           \
   T(MultipleDefaultsInSwitch,                                                  \
     "More than one default clause in switch statement")                        \
   T(NewlineAfterThrow, "Illegal newline after throw")                          \
@@ -605,6 +608,8 @@ class ErrorUtils : public AllStatic {
   T(ArgStringTerminatesParametersEarly,                                        \
     "Arg string terminates parameters early")                                  \
   T(UnexpectedEndOfArgString, "Unexpected end of arg string")                  \
+  T(RestDefaultInitializer,                                                    \
+    "Rest parameter may not have a default initializer")                       \
   T(RuntimeWrongNumArgs, "Runtime function given wrong number of arguments")   \
   T(SuperNotCalled,                                                            \
     "Must call super constructor in derived class before accessing 'this' or " \
@@ -731,7 +736,7 @@ class MessageHandler {
   static Handle<JSMessageObject> MakeMessageObject(
       Isolate* isolate, MessageTemplate::Template type,
       const MessageLocation* location, Handle<Object> argument,
-      Handle<JSArray> stack_frames);
+      Handle<FixedArray> stack_frames);
 
   // Report a formatted message (needs JS allocation).
   static void ReportMessage(Isolate* isolate, const MessageLocation* loc,

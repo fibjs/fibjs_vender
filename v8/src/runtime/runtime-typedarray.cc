@@ -25,7 +25,15 @@ RUNTIME_FUNCTION(Runtime_ArrayBufferGetByteLength) {
 RUNTIME_FUNCTION(Runtime_ArrayBufferNeuter) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSArrayBuffer, array_buffer, 0);
+  Handle<Object> argument = args.at(0);
+  // This runtime function is exposed in ClusterFuzz and as such has to
+  // support arbitrary arguments.
+  if (!argument->IsJSArrayBuffer()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kNotTypedArray));
+  }
+  Handle<JSArrayBuffer> array_buffer = Handle<JSArrayBuffer>::cast(argument);
+
   if (array_buffer->backing_store() == NULL) {
     CHECK(Smi::kZero == array_buffer->byte_length());
     return isolate->heap()->undefined_value();
@@ -42,117 +50,21 @@ RUNTIME_FUNCTION(Runtime_ArrayBufferNeuter) {
   return isolate->heap()->undefined_value();
 }
 
-namespace {
-
-Object* CopyElements(Isolate* isolate, Handle<JSTypedArray> holder,
-                     Handle<JSReceiver> source, size_t length) {
-  ElementsAccessor* holder_accessor = holder->GetElementsAccessor();
-  for (uint32_t i = 0; i < length; i++) {
-    LookupIterator get_it(isolate, source, i);
-    Handle<Object> element;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, element,
-                                       Object::GetProperty(&get_it));
-    // Convert the incoming value to a number for storing into typed arrays.
-    if (!element->IsNumber() && !element->IsUndefined(isolate)) {
-      ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, element,
-                                         Object::ToNumber(element));
-    }
-    holder_accessor->Set(holder, i, *element);
-  }
-
-  return isolate->heap()->undefined_value();
-}
-
-}  // namespace
-
 RUNTIME_FUNCTION(Runtime_TypedArrayCopyElements) {
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSTypedArray, holder, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSTypedArray, destination, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, source, 1);
   CONVERT_NUMBER_ARG_HANDLE_CHECKED(length_obj, 2);
 
   size_t length;
   CHECK(TryNumberToSize(*length_obj, &length));
 
-  return CopyElements(isolate, holder, source, length);
+  Handle<JSTypedArray> destination_ta = Handle<JSTypedArray>::cast(destination);
+
+  ElementsAccessor* accessor = destination_ta->GetElementsAccessor();
+  return accessor->CopyElements(source, destination, length);
 }
-
-// Initializes a typed array from an array-like object, and its backing store as
-// well.
-RUNTIME_FUNCTION(Runtime_TypedArrayInitializeFromArrayLike) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(3, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSTypedArray, holder, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, source, 1);
-  CONVERT_NUMBER_ARG_HANDLE_CHECKED(length_obj, 2);
-
-  ElementsKind fixed_elements_kind = holder->map()->elements_kind();
-  ExternalArrayType array_type =
-      isolate->factory()->GetArrayTypeFromElementsKind(fixed_elements_kind);
-  size_t element_size =
-      isolate->factory()->GetExternalArrayElementSize(array_type);
-
-  Handle<JSArrayBuffer> buffer = isolate->factory()->NewJSArrayBuffer();
-  size_t length = 0;
-  if (source->IsJSTypedArray() &&
-      JSTypedArray::cast(*source)->type() == array_type) {
-    length = JSTypedArray::cast(*source)->length_value();
-  } else {
-    CHECK(TryNumberToSize(*length_obj, &length));
-  }
-
-  if ((length > static_cast<unsigned>(Smi::kMaxValue)) ||
-      (length > (kMaxInt / element_size))) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewRangeError(MessageTemplate::kInvalidTypedArrayLength));
-  }
-  size_t byte_length = length * element_size;
-
-  DCHECK_EQ(v8::ArrayBufferView::kEmbedderFieldCount,
-            holder->GetEmbedderFieldCount());
-  for (int i = 0; i < v8::ArrayBufferView::kEmbedderFieldCount; i++) {
-    holder->SetEmbedderField(i, Smi::kZero);
-  }
-
-  if (!JSArrayBuffer::SetupAllocatingData(buffer, isolate, byte_length,
-                                          false)) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewRangeError(MessageTemplate::kInvalidArrayBufferLength));
-  }
-
-  holder->set_buffer(*buffer);
-  holder->set_byte_offset(Smi::kZero);
-  Handle<Object> byte_length_obj(
-      isolate->factory()->NewNumberFromSize(byte_length));
-  holder->set_byte_length(*byte_length_obj);
-  length_obj = isolate->factory()->NewNumberFromSize(length);
-  holder->set_length(*length_obj);
-
-  Handle<FixedTypedArrayBase> elements =
-      isolate->factory()->NewFixedTypedArrayWithExternalPointer(
-          static_cast<int>(length), array_type,
-          static_cast<uint8_t*>(buffer->backing_store()));
-  holder->set_elements(*elements);
-
-  // Initialize the backing store. We can use a special path for typed arrays of
-  // the same type, but we need to make sure everything is properly observable
-  // for other types.
-  if (source->IsJSTypedArray()) {
-    Handle<JSTypedArray> typed_array(JSTypedArray::cast(*source));
-
-    if (typed_array->type() == holder->type()) {
-      uint8_t* backing_store =
-          static_cast<uint8_t*>(typed_array->GetBuffer()->backing_store());
-      size_t source_byte_offset = NumberToSize(typed_array->byte_offset());
-      memcpy(buffer->backing_store(), backing_store + source_byte_offset,
-             byte_length);
-      return isolate->heap()->true_value();
-    }
-  }
-  return CopyElements(isolate, holder, source, length);
-}
-
 
 #define BUFFER_VIEW_GETTER(Type, getter, accessor)   \
   RUNTIME_FUNCTION(Runtime_##Type##Get##getter) {    \
@@ -167,6 +79,12 @@ BUFFER_VIEW_GETTER(ArrayBufferView, ByteOffset, byte_offset)
 BUFFER_VIEW_GETTER(TypedArray, Length, length)
 
 #undef BUFFER_VIEW_GETTER
+
+RUNTIME_FUNCTION(Runtime_ArrayBufferViewWasNeutered) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  return isolate->heap()->ToBoolean(JSTypedArray::cast(args[0])->WasNeutered());
+}
 
 RUNTIME_FUNCTION(Runtime_TypedArrayGetBuffer) {
   HandleScope scope(isolate);
@@ -199,8 +117,9 @@ RUNTIME_FUNCTION(Runtime_TypedArraySetFastCases) {
         isolate, NewTypeError(MessageTemplate::kNotTypedArray));
   }
 
-  if (!args[1]->IsJSTypedArray())
+  if (!args[1]->IsJSTypedArray()) {
     return Smi::FromInt(TYPED_ARRAY_SET_NON_TYPED_ARRAY);
+  }
 
   CONVERT_ARG_HANDLE_CHECKED(JSTypedArray, target_obj, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSTypedArray, source_obj, 1);
@@ -325,7 +244,6 @@ RUNTIME_FUNCTION(Runtime_IsTypedArray) {
   DCHECK_EQ(1, args.length());
   return isolate->heap()->ToBoolean(args[0]->IsJSTypedArray());
 }
-
 
 RUNTIME_FUNCTION(Runtime_IsSharedTypedArray) {
   HandleScope scope(isolate);

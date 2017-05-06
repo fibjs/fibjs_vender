@@ -245,7 +245,7 @@ void RuntimeProfiler::MaybeOptimizeFullCodegen(JSFunction* function,
 
   // Do not record non-optimizable functions.
   if (shared->optimization_disabled()) {
-    if (shared->deopt_count() >= FLAG_max_opt_count) {
+    if (shared->deopt_count() >= FLAG_max_deopt_count) {
       // If optimization was disabled due to many deoptimizations,
       // then check if the function is hot and try to reenable optimization.
       int ticks = shared_code->profiler_ticks();
@@ -322,7 +322,7 @@ void RuntimeProfiler::MaybeOptimizeIgnition(JSFunction* function,
   int ticks = shared->profiler_ticks();
 
   if (shared->optimization_disabled()) {
-    if (shared->deopt_count() >= FLAG_max_opt_count) {
+    if (shared->deopt_count() >= FLAG_max_deopt_count) {
       // If optimization was disabled due to many deoptimizations,
       // then check if the function is hot and try to reenable optimization.
       if (ticks >= kProfilerTicksBeforeReenablingOptimization) {
@@ -402,8 +402,28 @@ OptimizationReason RuntimeProfiler::ShouldOptimizeIgnition(
     int typeinfo, generic, total, type_percentage, generic_percentage;
     GetICCounts(function, &typeinfo, &generic, &total, &type_percentage,
                 &generic_percentage);
-    if (type_percentage >= FLAG_type_info_threshold) {
-      return OptimizationReason::kSmallFunction;
+    if (type_percentage < FLAG_type_info_threshold) {
+      if (FLAG_trace_opt_verbose) {
+        PrintF("[not yet optimizing ");
+        function->PrintName();
+        PrintF(
+            ", not enough type info for small function optimization: %d/%d "
+            "(%d%%)]\n",
+            typeinfo, total, type_percentage);
+      }
+      return OptimizationReason::kDoNotOptimize;
+    }
+    return OptimizationReason::kSmallFunction;
+  } else if (FLAG_trace_opt_verbose) {
+    PrintF("[not yet optimizing ");
+    function->PrintName();
+    PrintF(", not enough ticks: %d/%d and ", ticks,
+           kProfilerTicksBeforeOptimization);
+    if (any_ic_changed_) {
+      PrintF("ICs changed]\n");
+    } else {
+      PrintF(" too large for small function optimization: %d/%d]\n",
+             shared->bytecode_array()->Size(), kMaxSizeEarlyOptIgnition);
     }
   }
   return OptimizationReason::kDoNotOptimize;

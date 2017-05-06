@@ -26,7 +26,8 @@ EffectControlLinearizer::EffectControlLinearizer(
       schedule_(schedule),
       temp_zone_(temp_zone),
       source_positions_(source_positions),
-      graph_assembler_(js_graph, nullptr, nullptr, temp_zone) {}
+      graph_assembler_(js_graph, nullptr, nullptr, temp_zone),
+      frame_state_zapper_(nullptr) {}
 
 Graph* EffectControlLinearizer::graph() const { return js_graph_->graph(); }
 CommonOperatorBuilder* EffectControlLinearizer::common() const {
@@ -429,6 +430,7 @@ void EffectControlLinearizer::Run() {
         if (block_effects.For(block->PredecessorAt(i), block)
                 .current_frame_state != frame_state) {
           frame_state = nullptr;
+          frame_state_zapper_ = graph()->end();
           break;
         }
       }
@@ -502,6 +504,7 @@ void EffectControlLinearizer::ProcessNode(Node* node, Node** frame_state,
   if (region_observability_ == RegionObservability::kObservable &&
       !node->op()->HasProperty(Operator::kNoWrite)) {
     *frame_state = nullptr;
+    frame_state_zapper_ = node;
   }
 
   // Remove the end markers of 'atomic' allocation region because the
@@ -681,6 +684,11 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
       result = LowerCheckedFloat64ToInt32(node, frame_state);
       break;
     case IrOpcode::kCheckedTaggedSignedToInt32:
+      if (frame_state == nullptr) {
+        V8_Fatal(__FILE__, __LINE__, "No frame state (zapped by #%d: %s)",
+                 frame_state_zapper_->id(),
+                 frame_state_zapper_->op()->mnemonic());
+      }
       result = LowerCheckedTaggedSignedToInt32(node, frame_state);
       break;
     case IrOpcode::kCheckedTaggedToInt32:
@@ -829,8 +837,62 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
 #define __ gasm()->
 
 Node* EffectControlLinearizer::LowerChangeFloat64ToTagged(Node* node) {
+  CheckForMinusZeroMode mode = CheckMinusZeroModeOf(node->op());
   Node* value = node->InputAt(0);
-  return AllocateHeapNumberWithValue(value);
+
+  auto done = __ MakeLabel<2>(MachineRepresentation::kTagged);
+  auto if_heapnumber =
+      __ MakeLabelFor(GraphAssemblerLabelType::kNonDeferred,
+                      1 + (mode == CheckForMinusZeroMode::kCheckForMinusZero) +
+                          !machine()->Is64());
+  auto if_int32 = __ MakeLabel<1>();
+
+  Node* value32 = __ RoundFloat64ToInt32(value);
+  __ GotoIf(__ Float64Equal(value, __ ChangeInt32ToFloat64(value32)),
+            &if_int32);
+  __ Goto(&if_heapnumber);
+
+  __ Bind(&if_int32);
+  {
+    if (mode == CheckForMinusZeroMode::kCheckForMinusZero) {
+      Node* zero = __ Int32Constant(0);
+      auto if_zero = __ MakeDeferredLabel<1>();
+      auto if_smi = __ MakeLabel<2>();
+
+      __ GotoIf(__ Word32Equal(value32, zero), &if_zero);
+      __ Goto(&if_smi);
+
+      __ Bind(&if_zero);
+      {
+        // In case of 0, we need to check the high bits for the IEEE -0 pattern.
+        __ GotoIf(__ Int32LessThan(__ Float64ExtractHighWord32(value), zero),
+                  &if_heapnumber);
+        __ Goto(&if_smi);
+      }
+
+      __ Bind(&if_smi);
+    }
+
+    if (machine()->Is64()) {
+      Node* value_smi = ChangeInt32ToSmi(value32);
+      __ Goto(&done, value_smi);
+    } else {
+      Node* add = __ Int32AddWithOverflow(value32, value32);
+      Node* ovf = __ Projection(1, add);
+      __ GotoIf(ovf, &if_heapnumber);
+      Node* value_smi = __ Projection(0, add);
+      __ Goto(&done, value_smi);
+    }
+  }
+
+  __ Bind(&if_heapnumber);
+  {
+    Node* value_number = AllocateHeapNumberWithValue(value);
+    __ Goto(&done, value_number);
+  }
+
+  __ Bind(&done);
+  return done.PhiAt(0);
 }
 
 Node* EffectControlLinearizer::LowerChangeFloat64ToTaggedPointer(Node* node) {

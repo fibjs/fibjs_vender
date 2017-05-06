@@ -75,7 +75,6 @@ class CompiledReplacement {
     SUBJECT_CAPTURE,
     REPLACEMENT_SUBSTRING,
     REPLACEMENT_STRING,
-    EMPTY,
     NUMBER_OF_PART_TYPES
   };
 
@@ -100,7 +99,6 @@ class CompiledReplacement {
       DCHECK(to > from);
       return ReplacementPart(-from, to);
     }
-    static inline ReplacementPart Empty() { return ReplacementPart(EMPTY, 0); }
 
     // If tag <= 0 then it is the negation of a start index of a substring of
     // the replacement pattern, otherwise it's a value from PartType.
@@ -113,8 +111,7 @@ class CompiledReplacement {
     int tag;
     // The data value's interpretation depends on the value of tag:
     // tag == SUBJECT_PREFIX ||
-    // tag == SUBJECT_SUFFIX ||
-    // tag == EMPTY:  data is unused.
+    // tag == SUBJECT_SUFFIX:  data is unused.
     // tag == SUBJECT_CAPTURE: data is the number of the capture.
     // tag == REPLACEMENT_SUBSTRING ||
     // tag == REPLACEMENT_STRING:    data is index into array of substrings
@@ -251,30 +248,27 @@ class CompiledReplacement {
 
             // Let capture be ? Get(namedCaptures, groupName).
 
-            int capture_index = LookupNamedCapture(
+            const int capture_index = LookupNamedCapture(
                 [=](String* capture_name) {
                   return capture_name->IsEqualTo(requested_name);
                 },
                 capture_name_map);
+
+            // If ? HasProperty(_namedCaptures_, _groupName_) is *false*, throw
+            // a *SyntaxError* exception.
+            if (capture_index == -1) return Nothing<bool>();
 
             // If capture is undefined, replace the text through the following
             // '>' with the empty string.
             // Otherwise, replace the text through the following '>' with
             // ? ToString(capture).
 
-            DCHECK_IMPLIES(
-                capture_index != -1,
-                1 <= capture_index && capture_index <= capture_count);
-
-            ReplacementPart replacement =
-                (capture_index == -1)
-                    ? ReplacementPart::Empty()
-                    : ReplacementPart::SubjectCapture(capture_index);
+            DCHECK(1 <= capture_index && capture_index <= capture_count);
 
             if (i > last) {
               parts->Add(ReplacementPart::ReplacementSubString(last, i), zone);
             }
-            parts->Add(replacement, zone);
+            parts->Add(ReplacementPart::SubjectCapture(capture_index), zone);
             last = closing_bracket_index + 1;
             i = closing_bracket_index;
             break;
@@ -385,8 +379,6 @@ void CompiledReplacement::Apply(ReplacementStringBuilder* builder,
       case REPLACEMENT_SUBSTRING:
       case REPLACEMENT_STRING:
         builder->AddString(replacement_substrings_[part.data]);
-        break;
-      case EMPTY:
         break;
       default:
         UNREACHABLE();
@@ -606,7 +598,10 @@ MUST_USE_RESULT static Object* StringReplaceGlobalRegExpWithString(
   JSRegExp::Type typeTag = regexp->TypeTag();
   if (typeTag == JSRegExp::IRREGEXP) {
     // Ensure the RegExp is compiled so we can access the capture-name map.
-    RegExpImpl::IrregexpPrepare(regexp, subject);
+    if (RegExpImpl::IrregexpPrepare(regexp, subject) == -1) {
+      DCHECK(isolate->has_pending_exception());
+      return isolate->heap()->exception();
+    }
   }
 
   // CompiledReplacement uses zone allocation.
@@ -1015,19 +1010,32 @@ class MatchInfoBackedMatch : public String::Match {
   }
 
   MaybeHandle<String> GetNamedCapture(Handle<String> name,
-                                      bool* capture_exists) override {
+                                      CaptureState* state) override {
     DCHECK(has_named_captures_);
     const int capture_index = LookupNamedCapture(
         [=](String* capture_name) { return capture_name->Equals(*name); },
         *capture_name_map_);
 
     if (capture_index == -1) {
-      *capture_exists = false;
+      *state = INVALID;
       return name;  // Arbitrary string handle.
     }
 
     DCHECK(1 <= capture_index && capture_index <= CaptureCount());
-    return GetCapture(capture_index, capture_exists);
+
+    bool capture_exists;
+    Handle<String> capture_value;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, capture_value,
+                               GetCapture(capture_index, &capture_exists),
+                               String);
+
+    if (!capture_exists) {
+      *state = UNMATCHED;
+      return isolate_->factory()->empty_string();
+    } else {
+      *state = MATCHED;
+      return capture_value;
+    }
   }
 
  private:
@@ -1043,7 +1051,7 @@ class VectorBackedMatch : public String::Match {
  public:
   VectorBackedMatch(Isolate* isolate, Handle<String> subject,
                     Handle<String> match, int match_position,
-                    std::vector<Handle<Object>>* captures,
+                    ZoneVector<Handle<Object>>* captures,
                     Handle<Object> groups_obj)
       : isolate_(isolate),
         match_(match),
@@ -1083,16 +1091,26 @@ class VectorBackedMatch : public String::Match {
   }
 
   MaybeHandle<String> GetNamedCapture(Handle<String> name,
-                                      bool* capture_exists) override {
+                                      CaptureState* state) override {
     DCHECK(has_named_captures_);
+
+    Maybe<bool> maybe_capture_exists =
+        JSReceiver::HasProperty(groups_obj_, name);
+    if (maybe_capture_exists.IsNothing()) return MaybeHandle<String>();
+
+    if (!maybe_capture_exists.FromJust()) {
+      *state = INVALID;
+      return name;  // Arbitrary string handle.
+    }
+
     Handle<Object> capture_obj;
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, capture_obj,
                                Object::GetProperty(groups_obj_, name), String);
     if (capture_obj->IsUndefined(isolate_)) {
-      *capture_exists = false;
-      return name;
+      *state = UNMATCHED;
+      return isolate_->factory()->empty_string();
     } else {
-      *capture_exists = true;
+      *state = MATCHED;
       return Object::ToString(isolate_, capture_obj);
     }
   }
@@ -1102,7 +1120,7 @@ class VectorBackedMatch : public String::Match {
   Handle<String> subject_;
   Handle<String> match_;
   const int match_position_;
-  std::vector<Handle<Object>>* captures_;
+  ZoneVector<Handle<Object>>* captures_;
 
   bool has_named_captures_;
   Handle<JSReceiver> groups_obj_;
@@ -1113,6 +1131,7 @@ class VectorBackedMatch : public String::Match {
 Handle<JSObject> ConstructNamedCaptureGroupsObject(
     Isolate* isolate, Handle<FixedArray> capture_map,
     std::function<Object*(int)> f_get_capture) {
+  DCHECK(FLAG_harmony_regexp_named_captures);
   Handle<JSObject> groups = isolate->factory()->NewJSObjectWithNullProto();
 
   const int capture_count = capture_map->length() >> 1;
@@ -1225,6 +1244,7 @@ static Object* SearchRegExpMultiple(Isolate* isolate, Handle<String> subject,
 
         Handle<Object> maybe_capture_map(regexp->CaptureNameMap(), isolate);
         const bool has_named_captures = maybe_capture_map->IsFixedArray();
+        DCHECK_IMPLIES(has_named_captures, FLAG_harmony_regexp_named_captures);
 
         const int argc =
             has_named_captures ? 4 + capture_count : 3 + capture_count;
@@ -1251,7 +1271,6 @@ static Object* SearchRegExpMultiple(Isolate* isolate, Handle<String> subject,
         elements->set(cursor++, *subject);
 
         if (has_named_captures) {
-          DCHECK(FLAG_harmony_regexp_named_captures);
           Handle<FixedArray> capture_map =
               Handle<FixedArray>::cast(maybe_capture_map);
           Handle<JSObject> groups = ConstructNamedCaptureGroupsObject(
@@ -1437,9 +1456,10 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
   DCHECK_EQ(3, args.length());
   CONVERT_ARG_HANDLE_CHECKED(String, subject, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSRegExp, regexp, 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, replace_obj, 2);
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, replace_obj, 2);
 
   DCHECK(RegExpUtils::IsUnmodifiedRegExp(isolate, regexp));
+  DCHECK(replace_obj->map()->is_callable());
 
   Factory* factory = isolate->factory();
   Handle<RegExpMatchInfo> last_match_info = isolate->regexp_last_match_info();
@@ -1496,12 +1516,12 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
 
     Object* maybe_capture_map = regexp->CaptureNameMap();
     if (maybe_capture_map->IsFixedArray()) {
-      DCHECK(FLAG_harmony_regexp_named_captures);
       has_named_captures = true;
       capture_map = handle(FixedArray::cast(maybe_capture_map));
     }
   }
 
+  DCHECK_IMPLIES(has_named_captures, FLAG_harmony_regexp_named_captures);
   const int argc = has_named_captures ? m + 3 : m + 2;
   ScopedVector<Handle<Object>> argv(argc);
 
@@ -1835,8 +1855,8 @@ RUNTIME_FUNCTION(Runtime_RegExpReplace) {
     const uint32_t position =
         std::min(PositiveNumberToUint32(*position_obj), length);
 
-    std::vector<Handle<Object>> captures;
-    captures.reserve(captures_length);
+    // Do not reserve capacity since captures_length is user-controlled.
+    ZoneVector<Handle<Object>> captures(&zone);
 
     for (int n = 0; n < captures_length; n++) {
       Handle<Object> capture;
@@ -1850,12 +1870,15 @@ RUNTIME_FUNCTION(Runtime_RegExpReplace) {
       captures.push_back(capture);
     }
 
-    Handle<Object> groups_obj;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, groups_obj,
-        Object::GetProperty(result, factory->groups_string()));
+    Handle<Object> groups_obj = isolate->factory()->undefined_value();
+    if (FLAG_harmony_regexp_named_captures) {
+      ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+          isolate, groups_obj,
+          Object::GetProperty(result, factory->groups_string()));
+    }
 
     const bool has_named_captures = !groups_obj->IsUndefined(isolate);
+    DCHECK_IMPLIES(has_named_captures, FLAG_harmony_regexp_named_captures);
 
     Handle<String> replacement;
     if (functional_replace) {
@@ -1885,7 +1908,6 @@ RUNTIME_FUNCTION(Runtime_RegExpReplace) {
     } else {
       DCHECK(!functional_replace);
       if (!groups_obj->IsUndefined(isolate)) {
-        // TODO(jgruber): Behavior in this case is not yet specced.
         ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
             isolate, groups_obj, JSReceiver::ToObject(isolate, groups_obj));
       }

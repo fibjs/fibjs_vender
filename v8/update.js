@@ -36,7 +36,7 @@ var platTxts = [];
 
 function save_plat() {
     platTxts = [];
-    plats.forEach(function(f) {
+    plats.forEach(function (f) {
         console.log("save", paltFolder + '/' + f);
         platTxts.push(fs.readTextFile(paltFolder + '/' + f));
     });
@@ -61,7 +61,7 @@ function update_plat() {
 function clean_folder(path) {
     var dir = fs.readdir(path);
     console.log("clean", path);
-    dir.forEach(function(name) {
+    dir.forEach(function (name) {
         var fname = path + '/' + name;
         var f = fs.stat(fname);
         if (f.isDirectory()) {
@@ -74,6 +74,7 @@ function clean_folder(path) {
 
 var files = {
     'src/v8dll-main.cc': 1,
+    'src/setup-isolate-deserialize.cc': 1,
     'src/interpreter/mkpeephole.cc': 1,
     'src/snapshot/mksnapshot.cc': 1,
     'src/snapshot/natives-external.cc': 1,
@@ -105,7 +106,7 @@ function chk_file(fname) {
 
 function cp_folder(path, to) {
     var dir = fs.readdir(v8Folder + '/' + path);
-    dir.forEach(function(name) {
+    dir.forEach(function (name) {
         if (name.substr(0, 1) != '.') {
             var fname = path + '/' + name;
             var fnameto = to ? to + '/' + fname : fname;
@@ -131,13 +132,13 @@ var gens = [
     '/out.gn/x64.release/gen/libraries.cc',
     // '/out.gn/x64.release/gen/experimental-libraries.cc',
     '/out.gn/x64.release/gen/extras-libraries.cc',
-    '/out.gn/x64.release/gen/experimental-extras-libraries.cc',
-    '/out.gn/x64.release/gen/bytecode-peephole-table.cc'
+    '/out.gn/x64.release/gen/experimental-extras-libraries.cc'
+    // '/out.gn/x64.release/gen/bytecode-peephole-table.cc'
 ];
 
 function cp_gen() {
     fs.mkdir('src/gen');
-    gens.forEach(function(f) {
+    gens.forEach(function (f) {
         console.log("cp " + f);
         fs.writeFile('src/gen/' + path.basename(f), fs.readTextFile(v8Folder + f));
     });
@@ -145,7 +146,7 @@ function cp_gen() {
 
 function fix_src(path, val) {
     var dir = fs.readdir(path);
-    dir.forEach(function(name) {
+    dir.forEach(function (name) {
         if (name.substr(name.length - 3, 3) == '.cc') {
             var fname = path + '/' + name;
             var txt = fs.readTextFile(fname);
@@ -170,7 +171,7 @@ var archs = {
 
 function patch_src(path) {
     var dir = fs.readdir(path);
-    dir.forEach(function(name) {
+    dir.forEach(function (name) {
         var fname = path + '/' + name;
         var f = fs.stat(fname);
         if (f.isDirectory()) {
@@ -209,6 +210,8 @@ function patch_plat() {
             var idx = txt1.indexOf('}  // namespace base', txt1.lastIndexOf('Thread::'));
 
             txt1 = txt1.substr(0, idx) + '#endif\n\n' + txt1.substr(idx);
+
+            txt1 = txt1.replace('int GetProtectionFromMemoryPermission', '#endif\n#if 1\nint GetProtectionFromMemoryPermission');
         }
 
         fs.writeFile(fname, txt1);

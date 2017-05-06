@@ -26,10 +26,16 @@
 #include "src/runtime/runtime.h"
 #include "src/zone/zone.h"
 
+class TestIsolate;
+
 namespace v8 {
 
 namespace base {
 class RandomNumberGenerator;
+}
+
+namespace debug {
+class ConsoleDelegate;
 }
 
 namespace internal {
@@ -72,8 +78,10 @@ class Logger;
 class MaterializedObjectStore;
 class OptimizingCompileDispatcher;
 class RegExpStack;
+class RootVisitor;
 class RuntimeProfiler;
 class SaveContext;
+class SetupIsolateDelegate;
 class StatsTable;
 class StringTracker;
 class StubCache;
@@ -427,6 +435,7 @@ typedef List<HeapObject*> DebugObjectCache;
   V(bool, needs_side_effect_check, false)                                     \
   /* Current code coverage mode */                                            \
   V(debug::Coverage::Mode, code_coverage_mode, debug::Coverage::kBestEffort)  \
+  V(int, last_stack_frame_info_id, 0)                                         \
   ISOLATE_INIT_SIMULATOR_LIST(V)
 
 #define THREAD_LOCAL_TOP_ACCESSOR(type, name)                        \
@@ -663,7 +672,7 @@ class Isolate {
   // exceptions.  If an exception was thrown and not handled by an external
   // handler the exception is scheduled to be rethrown when we return to running
   // JavaScript code.  If an exception is scheduled true is returned.
-  bool OptionalRescheduleException(bool is_bottom_call);
+  V8_EXPORT_PRIVATE bool OptionalRescheduleException(bool is_bottom_call);
 
   // Push and pop a promise and the current try-catch handler.
   void PushPromise(Handle<JSObject> promise);
@@ -702,11 +711,20 @@ class Isolate {
                   PrintStackMode mode = kPrintStackVerbose);
   void PrintStack(FILE* out, PrintStackMode mode = kPrintStackVerbose);
   Handle<String> StackTraceString();
-  NO_INLINE(void PushStackTraceAndDie(unsigned int magic, void* ptr1,
+  // Stores a stack trace in a stack-allocated temporary buffer which will
+  // end up in the minidump for debugging purposes.
+  NO_INLINE(void PushStackTraceAndDie(unsigned int magic1, void* ptr1,
                                       void* ptr2, unsigned int magic2));
-  Handle<JSArray> CaptureCurrentStackTrace(
-      int frame_limit,
-      StackTrace::StackTraceOptions options);
+  NO_INLINE(void PushStackTraceAndDie(unsigned int magic1, void* ptr1,
+                                      void* ptr2, void* ptr3, void* ptr4,
+                                      void* ptr5, void* ptr6, void* ptr7,
+                                      void* ptr8, unsigned int magic2));
+  NO_INLINE(void PushCodeObjectsAndDie(unsigned int magic, void* ptr1,
+                                       void* ptr2, void* ptr3, void* ptr4,
+                                       void* ptr5, void* ptr6, void* ptr7,
+                                       void* ptr8, unsigned int magic2));
+  Handle<FixedArray> CaptureCurrentStackTrace(
+      int frame_limit, StackTrace::StackTraceOptions options);
   Handle<Object> CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
                                          FrameSkipMode mode,
                                          Handle<Object> caller);
@@ -715,7 +733,7 @@ class Isolate {
   MaybeHandle<JSReceiver> CaptureAndSetSimpleStackTrace(
       Handle<JSReceiver> error_object, FrameSkipMode mode,
       Handle<Object> caller);
-  Handle<JSArray> GetDetailedStackTrace(Handle<JSObject> error_object);
+  Handle<FixedArray> GetDetailedStackTrace(Handle<JSObject> error_object);
 
   // Returns if the given context may access the given global object. If
   // the result is false, the pending exception is guaranteed to be
@@ -736,6 +754,11 @@ class Isolate {
     Throw(*exception, location);
     return MaybeHandle<T>();
   }
+
+  void set_console_delegate(debug::ConsoleDelegate* delegate) {
+    console_delegate_ = delegate;
+  }
+  debug::ConsoleDelegate* console_delegate() { return console_delegate_; }
 
   // Re-throw an exception.  This involves no error reporting since error
   // reporting was handled when the exception was thrown originally.
@@ -793,9 +816,9 @@ class Isolate {
   void InvokeApiInterruptCallbacks();
 
   // Administration
-  void Iterate(ObjectVisitor* v);
-  void Iterate(ObjectVisitor* v, ThreadLocalTop* t);
-  char* Iterate(ObjectVisitor* v, char* t);
+  void Iterate(RootVisitor* v);
+  void Iterate(RootVisitor* v, ThreadLocalTop* t);
+  char* Iterate(RootVisitor* v, char* t);
   void IterateThread(ThreadVisitor* v, char* t);
 
   // Returns the current native context.
@@ -1055,7 +1078,7 @@ class Isolate {
 
   AccessCompilerData* access_compiler_data() { return access_compiler_data_; }
 
-  void IterateDeferredHandles(ObjectVisitor* visitor);
+  void IterateDeferredHandles(RootVisitor* visitor);
   void LinkDeferredHandles(DeferredHandles* deferred_handles);
   void UnlinkDeferredHandles(DeferredHandles* deferred_handles);
 
@@ -1205,6 +1228,12 @@ class Isolate {
 
   bool IsInAnyContext(Object* object, uint32_t index);
 
+  void SetHostImportModuleDynamicallyCallback(
+      HostImportModuleDynamicallyCallback callback);
+  void RunHostImportModuleDynamicallyCallback(Handle<String> referrer,
+                                              Handle<String> specifier,
+                                              Handle<JSPromise> promise);
+
   void SetRAILMode(RAILMode rail_mode);
 
   RAILMode rail_mode() { return rail_mode_.Value(); }
@@ -1221,6 +1250,9 @@ class Isolate {
 
 #ifdef USE_SIMULATOR
   base::Mutex* simulator_i_cache_mutex() { return &simulator_i_cache_mutex_; }
+  base::Mutex* simulator_redirection_mutex() {
+    return &simulator_redirection_mutex_;
+  }
 #endif
 
   void set_allow_atomics_wait(bool set) { allow_atomics_wait_ = set; }
@@ -1422,6 +1454,7 @@ class Isolate {
   ThreadManager* thread_manager_;
   RuntimeState runtime_state_;
   Builtins builtins_;
+  SetupIsolateDelegate* setup_delegate_;
   unibrow::Mapping<unibrow::Ecma262UnCanonicalize> jsregexp_uncanonicalize_;
   unibrow::Mapping<unibrow::CanonicalizationRange> jsregexp_canonrange_;
   unibrow::Mapping<unibrow::Ecma262Canonicalize>
@@ -1435,6 +1468,7 @@ class Isolate {
   base::AtomicValue<RAILMode> rail_mode_;
   bool promise_hook_or_debug_is_active_;
   PromiseHook promise_hook_;
+  HostImportModuleDynamicallyCallback host_import_module_dynamically_callback_;
   base::Mutex rail_mutex_;
   double load_start_time_ms_;
 
@@ -1532,11 +1566,14 @@ class Isolate {
 
   CancelableTaskManager* cancelable_task_manager_;
 
+  debug::ConsoleDelegate* console_delegate_ = nullptr;
+
   v8::Isolate::AbortOnUncaughtExceptionCallback
       abort_on_uncaught_exception_callback_;
 
 #ifdef USE_SIMULATOR
   base::Mutex simulator_i_cache_mutex_;
+  base::Mutex simulator_redirection_mutex_;
 #endif
 
   bool allow_atomics_wait_;
@@ -1560,6 +1597,7 @@ class Isolate {
   friend class v8::Locker;
   friend class v8::Unlocker;
   friend class v8::SnapshotCreator;
+  friend class ::TestIsolate;
   friend v8::StartupData v8::V8::CreateSnapshotDataBlob(const char*);
   friend v8::StartupData v8::V8::WarmUpSnapshotDataBlob(v8::StartupData,
                                                         const char*);

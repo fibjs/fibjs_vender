@@ -11,7 +11,7 @@
 #include "src/base/macros.h"
 #include "src/base/platform/mutex.h"
 #include "src/base/platform/semaphore.h"
-#include "gtest/gtest_prod.h"
+#include "gtest/gtest_prod.h"  // nogncheck
 
 namespace v8 {
 

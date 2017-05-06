@@ -3740,7 +3740,7 @@ void LCodeGen::DoMathLog(LMathLog* instr) {
 void LCodeGen::DoMathClz32(LMathClz32* instr) {
   Register input = ToRegister(instr->value());
   Register result = ToRegister(instr->result());
-  __ cntlzw_(result, input);
+  __ cntlzw(result, input);
 }
 
 void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
@@ -5597,7 +5597,8 @@ void LCodeGen::DoForInCacheArray(LForInCacheArray* instr) {
 
   __ bind(&load_cache);
   __ LoadInstanceDescriptors(map, result);
-  __ LoadP(result, FieldMemOperand(result, DescriptorArray::kEnumCacheOffset));
+  __ LoadP(result,
+           FieldMemOperand(result, DescriptorArray::kEnumCacheBridgeOffset));
   __ LoadP(result, FieldMemOperand(result, FixedArray::SizeFor(instr->idx())));
   __ cmpi(result, Operand::Zero());
   DeoptimizeIf(eq, instr, DeoptimizeReason::kNoCache);

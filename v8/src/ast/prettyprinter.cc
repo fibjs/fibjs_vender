@@ -370,8 +370,23 @@ void CallPrinter::VisitEmptyParentheses(EmptyParentheses* node) {
 }
 
 void CallPrinter::VisitGetIterator(GetIterator* node) {
-  Print("GetIterator(");
+  // Because CallPrinter is used by RenderCallSite() in runtime-internal.cc,
+  // and the GetIterator node results in a Call, either to a [@@iterator] or
+  // [@@asyncIterator]. It's unknown which call this error refers to, so we
+  // assume it's the first call.
+  bool was_found = !found_ && node->position() == position_;
+  if (was_found) {
+    found_ = true;
+  }
   Find(node->iterable(), true);
+  Print(node->hint() == IteratorType::kNormal ? "[Symbol.iterator]"
+                                              : "[Symbol.asyncIterator]");
+  if (was_found) done_ = true;
+}
+
+void CallPrinter::VisitImportCallExpression(ImportCallExpression* node) {
+  Print("ImportCall(");
+  Find(node->argument(), true);
   Print(")");
 }
 
@@ -621,7 +636,8 @@ void AstPrinter::PrintLiteralWithModeIndented(const char* info,
   } else {
     EmbeddedVector<char, 256> buf;
     int pos =
-        SNPrintF(buf, "%s (mode = %s", info, VariableMode2String(var->mode()));
+        SNPrintF(buf, "%s (%p) (mode = %s", info, reinterpret_cast<void*>(var),
+                 VariableMode2String(var->mode()));
     SNPrintF(buf + pos, ")");
     PrintLiteralIndented(buf.start(), value, true);
   }
@@ -1142,14 +1158,8 @@ void AstPrinter::VisitCallNew(CallNew* node) {
 
 void AstPrinter::VisitCallRuntime(CallRuntime* node) {
   EmbeddedVector<char, 128> buf;
-  if (node->is_jsruntime()) {
-    SNPrintF(
-        buf, "CALL RUNTIME %s code = %p", node->debug_name(),
-        static_cast<void*>(isolate_->context()->get(node->context_index())));
-  } else {
-    SNPrintF(buf, "CALL RUNTIME %s", node->debug_name());
-  }
-
+  SNPrintF(buf, "CALL RUNTIME %s%s", node->debug_name(),
+           node->is_jsruntime() ? " (JS function)" : "");
   IndentedScope indent(this, buf.start(), node->position());
   PrintArguments(node->arguments());
 }
@@ -1197,6 +1207,11 @@ void AstPrinter::VisitEmptyParentheses(EmptyParentheses* node) {
 void AstPrinter::VisitGetIterator(GetIterator* node) {
   IndentedScope indent(this, "GET-ITERATOR", node->position());
   Visit(node->iterable());
+}
+
+void AstPrinter::VisitImportCallExpression(ImportCallExpression* node) {
+  IndentedScope indent(this, "IMPORT-CALL", node->position());
+  Visit(node->argument());
 }
 
 void AstPrinter::VisitThisFunction(ThisFunction* node) {

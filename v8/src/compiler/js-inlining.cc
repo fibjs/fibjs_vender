@@ -66,7 +66,7 @@ class JSCallAccessor {
     return call_->op()->ValueInputCount() - 2;
   }
 
-  float frequency() const {
+  CallFrequency frequency() const {
     return (call_->opcode() == IrOpcode::kJSCall)
                ? CallParametersOf(call_->op()).frequency()
                : ConstructParametersOf(call_->op()).frequency();
@@ -218,7 +218,8 @@ Reduction JSInliner::InlineCall(Node* call, Node* new_target, Node* context,
     ReplaceWithValue(call, value_output, effect_output, control_output);
     return Changed(value_output);
   } else {
-    ReplaceWithValue(call, call, call, jsgraph()->Dead());
+    ReplaceWithValue(call, jsgraph()->Dead(), jsgraph()->Dead(),
+                     jsgraph()->Dead());
     return Changed(call);
   }
 }
@@ -312,8 +313,12 @@ bool NeedsConvertReceiver(Node* receiver, Node* effect) {
       return false;
     }
     default: {
+      // We don't really care about the exact maps here, just the instance
+      // types, which don't change across potential side-effecting operations.
       ZoneHandleSet<Map> maps;
-      if (NodeProperties::InferReceiverMaps(receiver, effect, &maps)) {
+      NodeProperties::InferReceiverMapsResult result =
+          NodeProperties::InferReceiverMaps(receiver, effect, &maps);
+      if (result != NodeProperties::kNoReceiverMaps) {
         // Check if all {maps} are actually JSReceiver maps.
         for (size_t i = 0; i < maps.size(); ++i) {
           if (!maps[i]->IsJSReceiverMap()) return true;
@@ -476,6 +481,32 @@ Reduction JSInliner::ReduceJSCall(Node* node) {
   if (node->opcode() == IrOpcode::kJSConstruct &&
       IsNonConstructible(shared_info)) {
     TRACE("Not inlining %s into %s because constructor is not constructable.\n",
+          shared_info->DebugName()->ToCString().get(),
+          info_->shared_info()->DebugName()->ToCString().get());
+    return NoChange();
+  }
+
+  // TODO(6180): Don't inline class constructors for now, as the
+  // inlining logic doesn't deal properly with class constructors
+  // that return a primitive.
+  if (FLAG_harmony_restrict_constructor_return &&
+      node->opcode() == IrOpcode::kJSConstruct &&
+      IsClassConstructor(shared_info->kind())) {
+    TRACE(
+        "Not inlining %s into %s because class constructor inlining is"
+        "not supported.\n",
+        shared_info->DebugName()->ToCString().get(),
+        info_->shared_info()->DebugName()->ToCString().get());
+    return NoChange();
+  }
+
+  // TODO(706642): Don't inline derived class constructors for now, as the
+  // inlining logic doesn't deal properly with derived class constructors
+  // that return a primitive, i.e. it's not in sync with what the Parser
+  // and the JSConstructSub does.
+  if (node->opcode() == IrOpcode::kJSConstruct &&
+      IsDerivedConstructor(shared_info->kind())) {
+    TRACE("Not inlining %s into %s because constructor is derived.\n",
           shared_info->DebugName()->ToCString().get(),
           info_->shared_info()->DebugName()->ToCString().get());
     return NoChange();

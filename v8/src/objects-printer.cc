@@ -147,6 +147,7 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case JS_SPECIAL_API_OBJECT_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
     case JS_GENERATOR_OBJECT_TYPE:
+    case JS_ASYNC_GENERATOR_OBJECT_TYPE:
     case JS_ARGUMENTS_TYPE:
     case JS_ERROR_TYPE:
     case JS_PROMISE_CAPABILITY_TYPE:
@@ -382,12 +383,40 @@ void PrintFixedArrayElements(std::ostream& os, FixedArray* array) {
   }
 }
 
+void PrintSloppyArgumentElements(std::ostream& os, ElementsKind kind,
+                                 SloppyArgumentsElements* elements) {
+  FixedArray* arguments_store = elements->arguments();
+  os << "\n    0: context= " << Brief(elements->context())
+     << "\n    1: arguments_store= " << Brief(arguments_store)
+     << "\n    parameter to context slot map:";
+  for (uint32_t i = 0; i < elements->parameter_map_length(); i++) {
+    uint32_t raw_index = i + SloppyArgumentsElements::kParameterMapStart;
+    os << "\n    " << raw_index << ": param(" << i
+       << ")= " << Brief(elements->get_mapped_entry(i));
+  }
+  if (arguments_store->length() == 0) return;
+  os << "\n }"
+     << "\n - arguments_store = " << Brief(arguments_store) << " "
+     << ElementsKindToString(arguments_store->map()->elements_kind()) << " {";
+  if (kind == FAST_SLOPPY_ARGUMENTS_ELEMENTS) {
+    PrintFixedArrayElements(os, arguments_store);
+  } else {
+    DCHECK_EQ(kind, SLOW_SLOPPY_ARGUMENTS_ELEMENTS);
+    SeededNumberDictionary::cast(arguments_store)->Print(os);
+  }
+  os << "\n }";
+}
+
 }  // namespace
 
-bool JSObject::PrintElements(std::ostream& os) {  // NOLINT
+void JSObject::PrintElements(std::ostream& os) {  // NOLINT
   // Don't call GetElementsKind, its validation code can cause the printer to
   // fail when debugging.
-  if (elements()->length() == 0) return false;
+  os << " - elements= " << Brief(elements()) << " {";
+  if (elements()->length() == 0) {
+    os << " }\n";
+    return;
+  }
   switch (map()->elements_kind()) {
     case FAST_HOLEY_SMI_ELEMENTS:
     case FAST_SMI_ELEMENTS:
@@ -416,20 +445,14 @@ bool JSObject::PrintElements(std::ostream& os) {  // NOLINT
       SeededNumberDictionary::cast(elements())->Print(os);
       break;
     case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
-    case SLOW_SLOPPY_ARGUMENTS_ELEMENTS: {
-      FixedArray* p = FixedArray::cast(elements());
-      os << "\n   parameter map:";
-      for (int i = 2; i < p->length(); i++) {
-        os << " " << (i - 2) << ":" << Brief(p->get(i));
-      }
-      os << "\n   context: " << Brief(p->get(0))
-         << "\n   arguments: " << Brief(p->get(1));
+    case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
+      PrintSloppyArgumentElements(os, map()->elements_kind(),
+                                  SloppyArgumentsElements::cast(elements()));
       break;
-    }
     case NO_ELEMENTS:
       break;
   }
-  return true;
+  os << "\n }\n";
 }
 
 
@@ -453,7 +476,7 @@ static void JSObjectPrintHeader(std::ostream& os, JSObject* obj,
   }
   os << "]";
   if (obj->GetEmbedderFieldCount() > 0) {
-    os << "\n - internal fields: " << obj->GetEmbedderFieldCount();
+    os << "\n - embedder fields: " << obj->GetEmbedderFieldCount();
   }
 }
 
@@ -464,13 +487,11 @@ static void JSObjectPrintBody(std::ostream& os, JSObject* obj,  // NOLINT
   if (obj->PrintProperties(os)) os << "\n ";
   os << "}\n";
   if (print_elements && obj->elements()->length() > 0) {
-    os << " - elements = " << Brief(obj->elements()) << " {";
-    if (obj->PrintElements(os)) os << "\n ";
-    os << "}\n";
+    obj->PrintElements(os);
   }
   int embedder_fields = obj->GetEmbedderFieldCount();
   if (embedder_fields > 0) {
-    os << " - internal fields = {";
+    os << " - embedder fields = {";
     for (int i = 0; i < embedder_fields; i++) {
       os << "\n    " << obj->GetEmbedderField(i);
     }
@@ -578,14 +599,6 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void TypeFeedbackInfo::TypeFeedbackInfoPrint(std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "TypeFeedbackInfo");
-  os << "\n - ic_total_count: " << ic_total_count()
-     << ", ic_with_type_info_count: " << ic_with_type_info_count()
-     << ", ic_generic_count: " << ic_generic_count() << "\n";
-}
-
-
 void AliasedArgumentsEntry::AliasedArgumentsEntryPrint(
     std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AliasedArgumentsEntry");
@@ -690,6 +703,8 @@ void FeedbackVector::FeedbackVectorPrint(std::ostream& os) {  // NOLINT
     os << " (empty)\n";
     return;
   }
+
+  os << "\n Optimized Code: " << Brief(optimized_code());
 
   FeedbackMetadataIterator iter(metadata());
   while (iter.HasNext()) {
@@ -1079,7 +1094,6 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
     os << "\n - no debug info";
   }
   os << "\n - length = " << length();
-  os << "\n - optimized_code_map = " << Brief(optimized_code_map());
   os << "\n - feedback_metadata = ";
   feedback_metadata()->FeedbackMetadataPrint(os);
   if (HasBytecodeArray()) {
@@ -1188,7 +1202,7 @@ void Code::CodePrint(std::ostream& os) {  // NOLINT
 
 
 void Foreign::ForeignPrint(std::ostream& os) {  // NOLINT
-  os << "foreign address : " << foreign_address();
+  os << "foreign address : " << reinterpret_cast<void*>(foreign_address());
   os << "\n";
 }
 
@@ -1225,6 +1239,27 @@ void PromiseReactionJobInfo::PromiseReactionJobInfoPrint(
   os << "\n - deferred_on_resolve: " << Brief(deferred_on_resolve());
   os << "\n - deferred_on_reject: " << Brief(deferred_on_reject());
   os << "\n - reaction context: " << Brief(context());
+  os << "\n";
+}
+
+void AsyncGeneratorRequest::AsyncGeneratorRequestPrint(
+    std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "AsyncGeneratorRequest");
+  const char* mode = "Invalid!";
+  switch (resume_mode()) {
+    case JSGeneratorObject::kNext:
+      mode = ".next()";
+      break;
+    case JSGeneratorObject::kReturn:
+      mode = ".return()";
+      break;
+    case JSGeneratorObject::kThrow:
+      mode = ".throw()";
+      break;
+  }
+  os << "\n - resume mode: " << mode;
+  os << "\n - value: " << Brief(value());
+  os << "\n - next: " << Brief(next());
   os << "\n";
 }
 
@@ -1296,14 +1331,6 @@ void ContextExtension::ContextExtensionPrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void ConstantElementsPair::ConstantElementsPairPrint(
-    std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "ConstantElementsPair");
-  os << "\n - elements_kind: " << static_cast<ElementsKind>(elements_kind());
-  os << "\n - constant_values: " << Brief(constant_values());
-  os << "\n";
-}
-
 void AccessorPair::AccessorPairPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AccessorPair");
   os << "\n - getter: " << Brief(getter());
@@ -1329,14 +1356,6 @@ void InterceptorInfo::InterceptorInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - query: " << Brief(query());
   os << "\n - deleter: " << Brief(deleter());
   os << "\n - enumerator: " << Brief(enumerator());
-  os << "\n - data: " << Brief(data());
-  os << "\n";
-}
-
-
-void CallHandlerInfo::CallHandlerInfoPrint(std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "CallHandlerInfo");
-  os << "\n - callback: " << Brief(callback());
   os << "\n - data: " << Brief(data());
   os << "\n";
 }
@@ -1443,13 +1462,19 @@ void DebugInfo::DebugInfoPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void BreakPointInfo::BreakPointInfoPrint(std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "BreakPointInfo");
-  os << "\n - source_position: " << source_position();
-  os << "\n - break_point_objects: " << Brief(break_point_objects());
+void StackFrameInfo::StackFrameInfoPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "StackFrame");
+  os << "\n - line_number: " << line_number();
+  os << "\n - column_number: " << column_number();
+  os << "\n - script_id: " << script_id();
+  os << "\n - script_name: " << Brief(script_name());
+  os << "\n - script_name_or_source_url: "
+     << Brief(script_name_or_source_url());
+  os << "\n - function_name: " << Brief(function_name());
+  os << "\n - is_eval: " << (is_eval() ? "true" : "false");
+  os << "\n - is_constructor: " << (is_constructor() ? "true" : "false");
   os << "\n";
 }
-
 
 static void PrintBitMask(std::ostream& os, uint32_t value) {  // NOLINT
   for (int i = 0; i < 32; i++) {

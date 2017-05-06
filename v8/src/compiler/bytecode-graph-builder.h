@@ -29,7 +29,7 @@ class BytecodeGraphBuilder {
   BytecodeGraphBuilder(
       Zone* local_zone, Handle<SharedFunctionInfo> shared,
       Handle<FeedbackVector> feedback_vector, BailoutId osr_ast_id,
-      JSGraph* jsgraph, float invocation_frequency,
+      JSGraph* jsgraph, CallFrequency invocation_frequency,
       SourcePositionTable* source_positions,
       int inlining_id = SourcePosition::kNotInlined,
       JSTypeHintLowering::Flags flags = JSTypeHintLowering::kNoFlags);
@@ -112,24 +112,24 @@ class BytecodeGraphBuilder {
 
   Node** EnsureInputBufferSize(int size);
 
-  Node* const* GetCallArgumentsFromRegister(Node* callee,
+  Node* const* GetCallArgumentsFromRegister(Node* callee, Node* receiver,
                                             interpreter::Register first_arg,
-                                            size_t arity);
+                                            int arg_count);
   Node* ProcessCallArguments(const Operator* call_op, Node* const* args,
-                             size_t arg_count);
+                             int arg_count);
   Node* ProcessCallArguments(const Operator* call_op, Node* callee,
-                             interpreter::Register receiver, size_t arity);
+                             interpreter::Register receiver, size_t reg_count);
   Node* ProcessConstructArguments(const Operator* call_new_op, Node* callee,
                                   Node* new_target,
-                                  interpreter::Register first_arg,
-                                  size_t arity);
+                                  interpreter::Register receiver,
+                                  size_t reg_count);
   Node* ProcessConstructWithSpreadArguments(const Operator* op, Node* callee,
                                             Node* new_target,
-                                            interpreter::Register first_arg,
-                                            size_t arity);
+                                            interpreter::Register receiver,
+                                            size_t reg_count);
   Node* ProcessCallRuntimeArguments(const Operator* call_runtime_op,
-                                    interpreter::Register first_arg,
-                                    size_t arity);
+                                    interpreter::Register receiver,
+                                    size_t reg_count);
 
   // Prepare information for eager deoptimization. This information is carried
   // by dedicated {Checkpoint} nodes that are wired into the effect chain.
@@ -159,12 +159,12 @@ class BytecodeGraphBuilder {
   void BuildLdaLookupGlobalSlot(TypeofMode typeof_mode);
   void BuildStaLookupSlot(LanguageMode language_mode);
   void BuildCallVarArgs(TailCallMode tail_call_mode,
-                        ConvertReceiverMode receiver_hint);
-  void BuildCall(TailCallMode tail_call_mode, ConvertReceiverMode receiver_hint,
+                        ConvertReceiverMode receiver_mode);
+  void BuildCall(TailCallMode tail_call_mode, ConvertReceiverMode receiver_mode,
                  Node* const* args, size_t arg_count, int slot_id);
-  void BuildCall(TailCallMode tail_call_mode, ConvertReceiverMode receiver_hint,
+  void BuildCall(TailCallMode tail_call_mode, ConvertReceiverMode receiver_mode,
                  std::initializer_list<Node*> args, int slot_id) {
-    BuildCall(tail_call_mode, receiver_hint, args.begin(), args.size(),
+    BuildCall(tail_call_mode, receiver_mode, args.begin(), args.size(),
               slot_id);
   }
   void BuildBinaryOp(const Operator* op);
@@ -180,6 +180,7 @@ class BytecodeGraphBuilder {
   // any other invocation of {NewNode} would do.
   Node* TryBuildSimplifiedBinaryOp(const Operator* op, Node* left, Node* right,
                                    FeedbackSlot slot);
+  Node* TryBuildSimplifiedToNumber(Node* input, FeedbackSlot slot);
   Node* TryBuildSimplifiedLoadNamed(const Operator* op, Node* receiver,
                                     FeedbackSlot slot);
   Node* TryBuildSimplifiedLoadKeyed(const Operator* op, Node* receiver,
@@ -205,13 +206,14 @@ class BytecodeGraphBuilder {
 
   // Helper function to compute call frequency from the recorded type
   // feedback.
-  float ComputeCallFrequency(int slot_id) const;
+  CallFrequency ComputeCallFrequency(int slot_id) const;
 
   // Control flow plumbing.
   void BuildJump();
   void BuildJumpIf(Node* condition);
   void BuildJumpIfNot(Node* condition);
   void BuildJumpIfEqual(Node* comperand);
+  void BuildJumpIfNotEqual(Node* comperand);
   void BuildJumpIfTrue();
   void BuildJumpIfFalse();
   void BuildJumpIfToBooleanTrue();
@@ -313,7 +315,7 @@ class BytecodeGraphBuilder {
 
   Zone* local_zone_;
   JSGraph* jsgraph_;
-  float const invocation_frequency_;
+  CallFrequency const invocation_frequency_;
   Handle<BytecodeArray> bytecode_array_;
   Handle<HandlerTable> exception_handler_table_;
   Handle<FeedbackVector> feedback_vector_;
@@ -323,7 +325,6 @@ class BytecodeGraphBuilder {
   const BytecodeAnalysis* bytecode_analysis_;
   Environment* environment_;
   BailoutId osr_ast_id_;
-  int osr_loop_offset_;
 
   // Merge environments are snapshots of the environment at points where the
   // control flow merges. This models a forward data flow propagation of all
@@ -360,7 +361,7 @@ class BytecodeGraphBuilder {
 
   static int const kBinaryOperationHintIndex = 1;
   static int const kCountOperationHintIndex = 0;
-  static int const kBinaryOperationSmiHintIndex = 2;
+  static int const kBinaryOperationSmiHintIndex = 1;
 
   DISALLOW_COPY_AND_ASSIGN(BytecodeGraphBuilder);
 };

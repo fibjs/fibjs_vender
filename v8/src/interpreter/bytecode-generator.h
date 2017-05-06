@@ -53,7 +53,10 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   class TestResultScope;
   class ValueResultScope;
 
+  using ToBooleanMode = BytecodeArrayBuilder::ToBooleanMode;
+
   enum class TestFallthrough { kThen, kElse, kNone };
+  enum class TypeHint { kAny, kBoolean };
 
   void GenerateBytecodeBody();
   void AllocateDeferredConstants(Isolate* isolate);
@@ -109,9 +112,10 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildVariableAssignment(Variable* variable, Token::Value op,
                                FeedbackSlot slot,
                                HoleCheckMode hole_check_mode);
-
+  void BuildLiteralCompareNil(Token::Value compare_op, NilValue nil);
   void BuildReturn();
   void BuildAsyncReturn();
+  void BuildAsyncGeneratorReturn();
   void BuildReThrow();
   void BuildAbort(BailoutReason bailout_reason);
   void BuildThrowIfHole(Variable* variable);
@@ -137,6 +141,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitClassLiteralProperties(ClassLiteral* expr, Register constructor,
                                    Register prototype);
   void BuildClassLiteralNameProperty(ClassLiteral* expr, Register constructor);
+  void BuildClassLiteral(ClassLiteral* expr);
   void VisitThisFunctionVariable(Variable* variable);
   void VisitNewTargetVariable(Variable* variable);
   void VisitBlockDeclarationsAndStatements(Block* stmt);
@@ -159,9 +164,12 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
 
   void BuildPushUndefinedIntoRegisterList(RegisterList* reg_list);
 
+  void BuildLoadPropertyKey(LiteralProperty* property, Register out_reg);
+
   // Visitors for obtaining expression result in the accumulator, in a
-  // register, or just getting the effect.
-  void VisitForAccumulatorValue(Expression* expr);
+  // register, or just getting the effect. Some visitors return a TypeHint which
+  // specifies the type of the result of the visited expression.
+  TypeHint VisitForAccumulatorValue(Expression* expr);
   void VisitForAccumulatorValueOrTheHole(Expression* expr);
   MUST_USE_RESULT Register VisitForRegisterValue(Expression* expr);
   void VisitForRegisterValue(Expression* expr, Register destination);
@@ -174,6 +182,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   // language mode.
   inline Runtime::FunctionId StoreToSuperRuntimeId();
   inline Runtime::FunctionId StoreKeyedToSuperRuntimeId();
+
+  ToBooleanMode ToBooleanModeFromTypeHint(TypeHint type_hint);
 
   inline BytecodeArrayBuilder* builder() const { return builder_; }
   inline Zone* zone() const { return zone_; }

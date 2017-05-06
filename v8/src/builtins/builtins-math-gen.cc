@@ -33,11 +33,11 @@ TF_BUILTIN(MathAbs, CodeStubAssembler) {
   Node* context = Parameter(Descriptor::kContext);
 
   // We might need to loop once for ToNumber conversion.
-  Variable var_x(this, MachineRepresentation::kTagged);
+  VARIABLE(var_x, MachineRepresentation::kTagged);
   Label loop(this, &var_x);
   var_x.Bind(Parameter(Descriptor::kX));
   Goto(&loop);
-  Bind(&loop);
+  BIND(&loop);
   {
     // Load the current {x} value.
     Node* x = var_x.value();
@@ -46,48 +46,57 @@ TF_BUILTIN(MathAbs, CodeStubAssembler) {
     Label if_xissmi(this), if_xisnotsmi(this);
     Branch(TaggedIsSmi(x), &if_xissmi, &if_xisnotsmi);
 
-    Bind(&if_xissmi);
+    BIND(&if_xissmi);
     {
-      // Check if {x} is already positive.
-      Label if_xispositive(this), if_xisnotpositive(this);
-      BranchIfSmiLessThanOrEqual(SmiConstant(Smi::FromInt(0)), x,
-                                 &if_xispositive, &if_xisnotpositive);
+      Label if_overflow(this, Label::kDeferred), if_notoverflow(this);
+      Node* pair = NULL;
 
-      Bind(&if_xispositive);
-      {
-        // Just return the input {x}.
-        Return(x);
-      }
-
-      Bind(&if_xisnotpositive);
-      {
-        // Try to negate the {x} value.
-        Node* pair =
-            IntPtrSubWithOverflow(IntPtrConstant(0), BitcastTaggedToWord(x));
+      // check if support abs function
+      if (IsIntPtrAbsWithOverflowSupported()) {
+        pair = IntPtrAbsWithOverflow(x);
         Node* overflow = Projection(1, pair);
-        Label if_overflow(this, Label::kDeferred), if_notoverflow(this);
         Branch(overflow, &if_overflow, &if_notoverflow);
+      } else {
+        // Check if {x} is already positive.
+        Label if_xispositive(this), if_xisnotpositive(this);
+        BranchIfSmiLessThanOrEqual(SmiConstant(Smi::FromInt(0)), x,
+                                   &if_xispositive, &if_xisnotpositive);
 
-        Bind(&if_notoverflow);
+        BIND(&if_xispositive);
         {
-          // There is a Smi representation for negated {x}.
-          Node* result = Projection(0, pair);
-          Return(BitcastWordToTagged(result));
+          // Just return the input {x}.
+          Return(x);
         }
 
-        Bind(&if_overflow);
-        { Return(NumberConstant(0.0 - Smi::kMinValue)); }
+        BIND(&if_xisnotpositive);
+        {
+          // Try to negate the {x} value.
+          pair =
+              IntPtrSubWithOverflow(IntPtrConstant(0), BitcastTaggedToWord(x));
+          Node* overflow = Projection(1, pair);
+          Branch(overflow, &if_overflow, &if_notoverflow);
+        }
       }
+
+      BIND(&if_notoverflow);
+      {
+        // There is a Smi representation for negated {x}.
+        Node* result = Projection(0, pair);
+        Return(BitcastWordToTagged(result));
+      }
+
+      BIND(&if_overflow);
+      { Return(NumberConstant(0.0 - Smi::kMinValue)); }
     }
 
-    Bind(&if_xisnotsmi);
+    BIND(&if_xisnotsmi);
     {
       // Check if {x} is a HeapNumber.
       Label if_xisheapnumber(this), if_xisnotheapnumber(this, Label::kDeferred);
       Branch(IsHeapNumberMap(LoadMap(x)), &if_xisheapnumber,
              &if_xisnotheapnumber);
 
-      Bind(&if_xisheapnumber);
+      BIND(&if_xisheapnumber);
       {
         Node* x_value = LoadHeapNumberValue(x);
         Node* value = Float64Abs(x_value);
@@ -95,7 +104,7 @@ TF_BUILTIN(MathAbs, CodeStubAssembler) {
         Return(result);
       }
 
-      Bind(&if_xisnotheapnumber);
+      BIND(&if_xisnotheapnumber);
       {
         // Need to convert {x} to a Number first.
         Callable callable = CodeFactory::NonNumberToNumber(isolate());
@@ -109,10 +118,10 @@ TF_BUILTIN(MathAbs, CodeStubAssembler) {
 void MathBuiltinsAssembler::MathRoundingOperation(
     Node* context, Node* x, Node* (CodeStubAssembler::*float64op)(Node*)) {
   // We might need to loop once for ToNumber conversion.
-  Variable var_x(this, MachineRepresentation::kTagged, x);
+  VARIABLE(var_x, MachineRepresentation::kTagged, x);
   Label loop(this, &var_x);
   Goto(&loop);
-  Bind(&loop);
+  BIND(&loop);
   {
     // Load the current {x} value.
     Node* x = var_x.value();
@@ -121,20 +130,20 @@ void MathBuiltinsAssembler::MathRoundingOperation(
     Label if_xissmi(this), if_xisnotsmi(this);
     Branch(TaggedIsSmi(x), &if_xissmi, &if_xisnotsmi);
 
-    Bind(&if_xissmi);
+    BIND(&if_xissmi);
     {
       // Nothing to do when {x} is a Smi.
       Return(x);
     }
 
-    Bind(&if_xisnotsmi);
+    BIND(&if_xisnotsmi);
     {
       // Check if {x} is a HeapNumber.
       Label if_xisheapnumber(this), if_xisnotheapnumber(this, Label::kDeferred);
       Branch(IsHeapNumberMap(LoadMap(x)), &if_xisheapnumber,
              &if_xisnotheapnumber);
 
-      Bind(&if_xisheapnumber);
+      BIND(&if_xisheapnumber);
       {
         Node* x_value = LoadHeapNumberValue(x);
         Node* value = (this->*float64op)(x_value);
@@ -142,7 +151,7 @@ void MathBuiltinsAssembler::MathRoundingOperation(
         Return(result);
       }
 
-      Bind(&if_xisnotheapnumber);
+      BIND(&if_xisnotheapnumber);
       {
         // Need to convert {x} to a Number first.
         Callable callable = CodeFactory::NonNumberToNumber(isolate());
@@ -167,7 +176,7 @@ void MathBuiltinsAssembler::MathMaxMin(
   CodeStubArguments arguments(this, ChangeInt32ToIntPtr(argc));
   argc = arguments.GetLength();
 
-  Variable result(this, MachineRepresentation::kFloat64);
+  VARIABLE(result, MachineRepresentation::kFloat64);
   result.Bind(Float64Constant(default_val));
 
   CodeStubAssembler::VariableList vars({&result}, zone());
@@ -253,15 +262,15 @@ TF_BUILTIN(MathClz32, CodeStubAssembler) {
   Node* context = Parameter(Descriptor::kContext);
 
   // Shared entry point for the clz32 operation.
-  Variable var_clz32_x(this, MachineRepresentation::kWord32);
+  VARIABLE(var_clz32_x, MachineRepresentation::kWord32);
   Label do_clz32(this);
 
   // We might need to loop once for ToNumber conversion.
-  Variable var_x(this, MachineRepresentation::kTagged);
+  VARIABLE(var_x, MachineRepresentation::kTagged);
   Label loop(this, &var_x);
   var_x.Bind(Parameter(Descriptor::kX));
   Goto(&loop);
-  Bind(&loop);
+  BIND(&loop);
   {
     // Load the current {x} value.
     Node* x = var_x.value();
@@ -270,26 +279,26 @@ TF_BUILTIN(MathClz32, CodeStubAssembler) {
     Label if_xissmi(this), if_xisnotsmi(this);
     Branch(TaggedIsSmi(x), &if_xissmi, &if_xisnotsmi);
 
-    Bind(&if_xissmi);
+    BIND(&if_xissmi);
     {
       var_clz32_x.Bind(SmiToWord32(x));
       Goto(&do_clz32);
     }
 
-    Bind(&if_xisnotsmi);
+    BIND(&if_xisnotsmi);
     {
       // Check if {x} is a HeapNumber.
       Label if_xisheapnumber(this), if_xisnotheapnumber(this, Label::kDeferred);
       Branch(IsHeapNumberMap(LoadMap(x)), &if_xisheapnumber,
              &if_xisnotheapnumber);
 
-      Bind(&if_xisheapnumber);
+      BIND(&if_xisheapnumber);
       {
         var_clz32_x.Bind(TruncateHeapNumberValueToWord32(x));
         Goto(&do_clz32);
       }
 
-      Bind(&if_xisnotheapnumber);
+      BIND(&if_xisnotheapnumber);
       {
         // Need to convert {x} to a Number first.
         Callable callable = CodeFactory::NonNumberToNumber(isolate());
@@ -299,7 +308,7 @@ TF_BUILTIN(MathClz32, CodeStubAssembler) {
     }
   }
 
-  Bind(&do_clz32);
+  BIND(&do_clz32);
   {
     Node* x_value = var_clz32_x.value();
     Node* value = Word32Clz(x_value);
@@ -412,7 +421,7 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
   Node* native_context = LoadNativeContext(context);
 
   // Load cache index.
-  Variable smi_index(this, MachineRepresentation::kTagged);
+  VARIABLE(smi_index, MachineRepresentation::kTagged);
   smi_index.Bind(
       LoadContextElement(native_context, Context::MATH_RANDOM_INDEX_INDEX));
 
@@ -425,7 +434,7 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
   Goto(&if_cached);
 
   // Compute next index by decrement.
-  Bind(&if_cached);
+  BIND(&if_cached);
   Node* new_smi_index = SmiSub(smi_index.value(), SmiConstant(Smi::FromInt(1)));
   StoreContextElement(native_context, Context::MATH_RANDOM_INDEX_INDEX,
                       new_smi_index);
@@ -458,10 +467,10 @@ TF_BUILTIN(MathSign, CodeStubAssembler) {
   GotoIf(Float64LessThan(Float64Constant(0.0), x_value), &if_xispositive);
   Return(ChangeFloat64ToTagged(x_value));
 
-  Bind(&if_xisnegative);
+  BIND(&if_xisnegative);
   Return(SmiConstant(Smi::FromInt(-1)));
 
-  Bind(&if_xispositive);
+  BIND(&if_xispositive);
   Return(SmiConstant(Smi::FromInt(1)));
 }
 

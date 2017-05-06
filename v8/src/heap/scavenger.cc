@@ -36,7 +36,7 @@ class ScavengingVisitor : public StaticVisitorBase {
     table_.Register(kVisitByteArray, &EvacuateByteArray);
     table_.Register(kVisitFixedArray, &EvacuateFixedArray);
     table_.Register(kVisitFixedDoubleArray, &EvacuateFixedDoubleArray);
-    table_.Register(kVisitFixedTypedArray, &EvacuateFixedTypedArray);
+    table_.Register(kVisitFixedTypedArrayBase, &EvacuateFixedTypedArray);
     table_.Register(kVisitFixedFloat64Array, &EvacuateFixedFloat64Array);
     table_.Register(kVisitJSArrayBuffer,
                     &ObjectEvacuationStrategy<POINTER_OBJECT>::Visit);
@@ -74,18 +74,19 @@ class ScavengingVisitor : public StaticVisitorBase {
 
     table_.Register(kVisitJSFunction, &EvacuateJSFunction);
 
-    table_.RegisterSpecializations<ObjectEvacuationStrategy<DATA_OBJECT>,
-                                   kVisitDataObject, kVisitDataObjectGeneric>();
+    table_.Register(kVisitDataObject,
+                    &ObjectEvacuationStrategy<DATA_OBJECT>::Visit);
 
-    table_.RegisterSpecializations<ObjectEvacuationStrategy<POINTER_OBJECT>,
-                                   kVisitJSObject, kVisitJSObjectGeneric>();
+    table_.Register(kVisitJSObjectFast,
+                    &ObjectEvacuationStrategy<POINTER_OBJECT>::Visit);
+    table_.Register(kVisitJSObject,
+                    &ObjectEvacuationStrategy<POINTER_OBJECT>::Visit);
 
-    table_
-        .RegisterSpecializations<ObjectEvacuationStrategy<POINTER_OBJECT>,
-                                 kVisitJSApiObject, kVisitJSApiObjectGeneric>();
+    table_.Register(kVisitJSApiObject,
+                    &ObjectEvacuationStrategy<POINTER_OBJECT>::Visit);
 
-    table_.RegisterSpecializations<ObjectEvacuationStrategy<POINTER_OBJECT>,
-                                   kVisitStruct, kVisitStructGeneric>();
+    table_.Register(kVisitStruct,
+                    &ObjectEvacuationStrategy<POINTER_OBJECT>::Visit);
   }
 
   static VisitorDispatchTable<ScavengingCallback>* GetTable() {
@@ -147,7 +148,7 @@ class ScavengingVisitor : public StaticVisitorBase {
     }
 
     if (marks_handling == TRANSFER_MARKS) {
-      IncrementalMarking::TransferColor(source, target);
+      heap->incremental_marking()->TransferColor(source, target);
     }
   }
 
@@ -190,6 +191,8 @@ class ScavengingVisitor : public StaticVisitorBase {
 
     HeapObject* target = NULL;  // Initialization to please compiler.
     if (allocation.To(&target)) {
+      DCHECK(ObjectMarking::IsWhite(
+          target, heap->mark_compact_collector()->marking_state(target)));
       MigrateObject(heap, object, target, object_size);
 
       // Update slot to new target using CAS. A concurrent sweeper thread my
@@ -200,10 +203,7 @@ class ScavengingVisitor : public StaticVisitorBase {
                                    reinterpret_cast<base::AtomicWord>(target));
 
       if (object_contents == POINTER_OBJECT) {
-        // TODO(mlippautz): Query collector for marking state.
-        heap->promotion_queue()->insert(
-            target, object_size,
-            ObjectMarking::IsBlack(object, MarkingState::Internal(object)));
+        heap->promotion_queue()->insert(target, object_size);
       }
       heap->IncrementPromotedObjectsSize(object_size);
       return true;
@@ -445,11 +445,10 @@ void Scavenger::SelectScavengingVisitorsTable() {
       // can't be evacuated into evacuation candidate but
       // short-circuiting violates this assumption.
       scavenging_visitors_table_.Register(
-          StaticVisitorBase::kVisitShortcutCandidate,
-          scavenging_visitors_table_.GetVisitorById(
-              StaticVisitorBase::kVisitConsString));
+          kVisitShortcutCandidate,
+          scavenging_visitors_table_.GetVisitorById(kVisitConsString));
       scavenging_visitors_table_.Register(
-          StaticVisitorBase::kVisitThinString,
+          kVisitThinString,
           &ScavengingVisitor<TRANSFER_MARKS, LOGGING_AND_PROFILING_DISABLED>::
               EvacuateThinStringNoShortcut);
     }
@@ -459,17 +458,17 @@ void Scavenger::SelectScavengingVisitorsTable() {
 
 Isolate* Scavenger::isolate() { return heap()->isolate(); }
 
+void RootScavengeVisitor::VisitRootPointer(Root root, Object** p) {
+  ScavengePointer(p);
+}
 
-void ScavengeVisitor::VisitPointer(Object** p) { ScavengePointer(p); }
-
-
-void ScavengeVisitor::VisitPointers(Object** start, Object** end) {
+void RootScavengeVisitor::VisitRootPointers(Root root, Object** start,
+                                            Object** end) {
   // Copy all HeapObject pointers in [start, end)
   for (Object** p = start; p < end; p++) ScavengePointer(p);
 }
 
-
-void ScavengeVisitor::ScavengePointer(Object** p) {
+void RootScavengeVisitor::ScavengePointer(Object** p) {
   Object* object = *p;
   if (!heap_->InNewSpace(object)) return;
 

@@ -393,6 +393,11 @@ bool ProduceWord32Result(Node* node) {
       switch (load_rep.representation()) {
         case MachineRepresentation::kWord32:
           return true;
+        case MachineRepresentation::kWord8:
+          if (load_rep.IsSigned())
+            return false;
+          else
+            return true;
         default:
           return false;
       }
@@ -519,6 +524,8 @@ void VisitBinOp(InstructionSelector* selector, Node* node,
   V(Word32, Unary, [](ArchOpcode opcode) {                             \
     return opcode == kS390_LoadWordS32 || opcode == kS390_LoadWordU32; \
   })                                                                   \
+  V(Word64, Unary,                                                     \
+    [](ArchOpcode opcode) { return opcode == kS390_LoadWord64; })      \
   V(Float32, Unary,                                                    \
     [](ArchOpcode opcode) { return opcode == kS390_LoadFloat32; })     \
   V(Float64, Unary,                                                    \
@@ -533,8 +540,6 @@ void VisitBinOp(InstructionSelector* selector, Node* node,
 #if V8_TARGET_ARCH_S390X
 #define VISIT_OP_LIST(V)                                          \
   VISIT_OP_LIST_32(V)                                             \
-  V(Word64, Unary,                                                \
-    [](ArchOpcode opcode) { return opcode == kS390_LoadWord64; }) \
   V(Word64, Bin, [](ArchOpcode opcode) { return opcode == kS390_LoadWord64; })
 #else
 #define VISIT_OP_LIST VISIT_OP_LIST_32
@@ -1246,6 +1251,14 @@ void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
 void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
 #endif
 
+void InstructionSelector::VisitInt32AbsWithOverflow(Node* node) {
+  VisitWord32UnaryOp(this, node, kS390_Abs32, OperandMode::kNone);
+}
+
+void InstructionSelector::VisitInt64AbsWithOverflow(Node* node) {
+  VisitWord64UnaryOp(this, node, kS390_Abs64, OperandMode::kNone);
+}
+
 void InstructionSelector::VisitWord64ReverseBytes(Node* node) {
   S390OperandGenerator g(this);
   Emit(kS390_LoadReverse64RR, g.DefineAsRegister(node),
@@ -1350,10 +1363,15 @@ static inline bool TryMatchInt32SubWithOverflow(InstructionSelector* selector,
 static inline bool TryMatchInt32MulWithOverflow(InstructionSelector* selector,
                                                 Node* node) {
   if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
-    FlagsContinuation cont = FlagsContinuation::ForSet(kNotEqual, ovf);
-    VisitWord32BinOp(selector, node, kS390_Mul32WithOverflow,
-                     OperandMode::kInt32Imm | OperandMode::kAllowDistinctOps,
-                     &cont);
+    if (CpuFeatures::IsSupported(MISC_INSTR_EXT2)) {
+      TryMatchInt32OpWithOverflow<kS390_Mul32>(
+          selector, node, OperandMode::kAllowRRR | OperandMode::kAllowRM);
+    } else {
+      FlagsContinuation cont = FlagsContinuation::ForSet(kNotEqual, ovf);
+      VisitWord32BinOp(selector, node, kS390_Mul32WithOverflow,
+                       OperandMode::kInt32Imm | OperandMode::kAllowDistinctOps,
+                       &cont);
+    }
     return true;
   }
   return TryMatchShiftFromMul<Int32BinopMatcher, kS390_ShiftLeft32>(selector,
@@ -2036,12 +2054,27 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
                 return VisitWord32BinOp(selector, node, kS390_Sub32,
                                         SubOperandMode, cont);
               case IrOpcode::kInt32MulWithOverflow:
-                cont->OverwriteAndNegateIfEqual(kNotEqual);
-                return VisitWord32BinOp(
-                    selector, node, kS390_Mul32WithOverflow,
-                    OperandMode::kInt32Imm | OperandMode::kAllowDistinctOps,
-                    cont);
+                if (CpuFeatures::IsSupported(MISC_INSTR_EXT2)) {
+                  cont->OverwriteAndNegateIfEqual(kOverflow);
+                  return VisitWord32BinOp(
+                      selector, node, kS390_Mul32,
+                      OperandMode::kAllowRRR | OperandMode::kAllowRM, cont);
+                } else {
+                  cont->OverwriteAndNegateIfEqual(kNotEqual);
+                  return VisitWord32BinOp(
+                      selector, node, kS390_Mul32WithOverflow,
+                      OperandMode::kInt32Imm | OperandMode::kAllowDistinctOps,
+                      cont);
+                }
+              case IrOpcode::kInt32AbsWithOverflow:
+                cont->OverwriteAndNegateIfEqual(kOverflow);
+                return VisitWord32UnaryOp(selector, node, kS390_Abs32,
+                                          OperandMode::kNone, cont);
 #if V8_TARGET_ARCH_S390X
+              case IrOpcode::kInt64AbsWithOverflow:
+                cont->OverwriteAndNegateIfEqual(kOverflow);
+                return VisitWord64UnaryOp(selector, node, kS390_Abs64,
+                                          OperandMode::kNone, cont);
               case IrOpcode::kInt64AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
                 return VisitWord64BinOp(selector, node, kS390_Add64,
@@ -2409,7 +2442,7 @@ void InstructionSelector::VisitAtomicExchange(Node* node) {
   Node* index = node->InputAt(1);
   Node* value = node->InputAt(2);
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicExchangeRepresentationOf(node->op());
+  MachineType type = AtomicOpRepresentationOf(node->op());
   if (type == MachineType::Int8()) {
     opcode = kAtomicExchangeInt8;
   } else if (type == MachineType::Uint8()) {
@@ -2441,6 +2474,16 @@ void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
   UNIMPLEMENTED();
 }
 
+void InstructionSelector::VisitAtomicAdd(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitAtomicSub(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitAtomicAnd(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitAtomicOr(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitAtomicXor(Node* node) { UNIMPLEMENTED(); }
+
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
@@ -2454,6 +2497,8 @@ InstructionSelector::SupportedMachineOperatorFlags() {
          MachineOperatorBuilder::kWord32Popcnt |
          MachineOperatorBuilder::kWord32ReverseBytes |
          MachineOperatorBuilder::kWord64ReverseBytes |
+         MachineOperatorBuilder::kInt32AbsWithOverflow |
+         MachineOperatorBuilder::kInt64AbsWithOverflow |
          MachineOperatorBuilder::kWord64Popcnt;
 }
 

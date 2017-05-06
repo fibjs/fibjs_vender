@@ -18,7 +18,7 @@ namespace v8 {
 namespace internal {
 
 class HeapStats;
-class ObjectVisitor;
+class RootVisitor;
 
 // Structure for tracking global handles.
 // A single list keeps all the allocated global handles.
@@ -125,24 +125,24 @@ class GlobalHandles {
       GarbageCollector collector, const v8::GCCallbackFlags gc_callback_flags);
 
   // Iterates over all strong handles.
-  void IterateStrongRoots(ObjectVisitor* v);
+  void IterateStrongRoots(RootVisitor* v);
 
   // Iterates over all handles.
-  void IterateAllRoots(ObjectVisitor* v);
+  void IterateAllRoots(RootVisitor* v);
 
   // Iterates over all handles that have embedder-assigned class ID.
-  void IterateAllRootsWithClassIds(ObjectVisitor* v);
+  void IterateAllRootsWithClassIds(v8::PersistentHandleVisitor* v);
 
   // Iterates over all handles in the new space that have embedder-assigned
   // class ID.
-  void IterateAllRootsInNewSpaceWithClassIds(ObjectVisitor* v);
+  void IterateAllRootsInNewSpaceWithClassIds(v8::PersistentHandleVisitor* v);
 
   // Iterate over all handles in the new space that are weak, unmodified
   // and have class IDs
-  void IterateWeakRootsInNewSpaceWithClassIds(ObjectVisitor* v);
+  void IterateWeakRootsInNewSpaceWithClassIds(v8::PersistentHandleVisitor* v);
 
   // Iterates over all weak roots in heap.
-  void IterateWeakRoots(ObjectVisitor* v);
+  void IterateWeakRoots(RootVisitor* v);
 
   // Find all weak handles satisfying the callback predicate, mark
   // them as pending.
@@ -154,7 +154,7 @@ class GlobalHandles {
   // may also include old space objects).
 
   // Iterates over strong and dependent handles. See the node above.
-  void IterateNewSpaceStrongAndDependentRoots(ObjectVisitor* v);
+  void IterateNewSpaceStrongAndDependentRoots(RootVisitor* v);
 
   // Finds weak independent or partially independent handles satisfying
   // the callback predicate and marks them as pending. See the note above.
@@ -162,7 +162,7 @@ class GlobalHandles {
 
   // Iterates over weak independent or partially independent handles.
   // See the note above.
-  void IterateNewSpaceWeakIndependentRoots(ObjectVisitor* v);
+  void IterateNewSpaceWeakIndependentRoots(RootVisitor* v);
 
   // Finds weak independent or unmodified handles satisfying
   // the callback predicate and marks them as pending. See the note above.
@@ -172,7 +172,7 @@ class GlobalHandles {
   // Iterates over weak independent or unmodified handles.
   // See the note above.
   template <IterationMode mode>
-  void IterateNewSpaceWeakUnmodifiedRoots(ObjectVisitor* v);
+  void IterateNewSpaceWeakUnmodifiedRoots(RootVisitor* v);
 
   // Identify unmodified objects that are in weak state and marks them
   // unmodified
@@ -189,9 +189,14 @@ class GlobalHandles {
 #endif  // DEBUG
 
  private:
-  explicit GlobalHandles(Isolate* isolate);
-
+  // Internal node structures.
+  class Node;
+  class NodeBlock;
+  class NodeIterator;
   class PendingPhantomCallback;
+  class PendingPhantomCallbacksSecondPassTask;
+
+  explicit GlobalHandles(Isolate* isolate);
 
   // Helpers for PostGarbageCollectionProcessing.
   static void InvokeSecondPassPhantomCallbacks(
@@ -200,12 +205,8 @@ class GlobalHandles {
   int PostMarkSweepProcessing(int initial_post_gc_processing_count);
   int DispatchPendingPhantomCallbacks(bool synchronous_second_pass);
   void UpdateListOfNewSpaceNodes();
-
-  // Internal node structures.
-  class Node;
-  class NodeBlock;
-  class NodeIterator;
-  class PendingPhantomCallbacksSecondPassTask;
+  void ApplyPersistentHandleVisitor(v8::PersistentHandleVisitor* visitor,
+                                    Node* node);
 
   Isolate* isolate_;
 
@@ -303,9 +304,9 @@ class EternalHandles {
   }
 
   // Iterates over all handles.
-  void IterateAllRoots(ObjectVisitor* visitor);
+  void IterateAllRoots(RootVisitor* visitor);
   // Iterates over all handles which might be in new space.
-  void IterateNewSpaceRoots(ObjectVisitor* visitor);
+  void IterateNewSpaceRoots(RootVisitor* visitor);
   // Rebuilds new space list.
   void PostGarbageCollectionProcessing(Heap* heap);
 

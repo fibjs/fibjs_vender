@@ -17,6 +17,11 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
+std::ostream& operator<<(std::ostream& os, CallFrequency f) {
+  if (f.IsUnknown()) return os << "unknown";
+  return os << f.value();
+}
+
 VectorSlotPair::VectorSlotPair() {}
 
 
@@ -516,6 +521,31 @@ const CreateLiteralParameters& CreateLiteralParametersOf(const Operator* op) {
   return OpParameter<CreateLiteralParameters>(op);
 }
 
+bool operator==(GeneratorStoreParameters const& lhs,
+                GeneratorStoreParameters const& rhs) {
+  return lhs.register_count() == rhs.register_count() &&
+         lhs.suspend_type() == rhs.suspend_type();
+}
+bool operator!=(GeneratorStoreParameters const& lhs,
+                GeneratorStoreParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+size_t hash_value(GeneratorStoreParameters const& p) {
+  return base::hash_combine(p.register_count(),
+                            static_cast<int>(p.suspend_type()));
+}
+
+std::ostream& operator<<(std::ostream& os, GeneratorStoreParameters const& p) {
+  const char* suspend_type = SuspendTypeFor(p.suspend_type());
+  return os << p.register_count() << " (" << suspend_type << ")";
+}
+
+const GeneratorStoreParameters& GeneratorStoreParametersOf(const Operator* op) {
+  DCHECK_EQ(op->opcode(), IrOpcode::kJSGeneratorStore);
+  return OpParameter<GeneratorStoreParameters>(op);
+}
+
 BinaryOperationHint BinaryOperationHintOf(const Operator* op) {
   DCHECK_EQ(IrOpcode::kJSAdd, op->opcode());
   return OpParameter<BinaryOperationHint>(op);
@@ -722,7 +752,7 @@ const Operator* JSOperatorBuilder::CallForwardVarargs(
       parameters);                                               // parameter
 }
 
-const Operator* JSOperatorBuilder::Call(size_t arity, float frequency,
+const Operator* JSOperatorBuilder::Call(size_t arity, CallFrequency frequency,
                                         VectorSlotPair const& feedback,
                                         ConvertReceiverMode convert_mode,
                                         TailCallMode tail_call_mode) {
@@ -768,7 +798,8 @@ const Operator* JSOperatorBuilder::CallRuntime(const Runtime::Function* f,
       parameters);                                        // parameter
 }
 
-const Operator* JSOperatorBuilder::Construct(uint32_t arity, float frequency,
+const Operator* JSOperatorBuilder::Construct(uint32_t arity,
+                                             CallFrequency frequency,
                                              VectorSlotPair const& feedback) {
   ConstructParameters parameters(arity, frequency, feedback);
   return new (zone()) Operator1<ConstructParameters>(   // --
@@ -816,12 +847,14 @@ const Operator* JSOperatorBuilder::LoadProperty(
       access);                                             // parameter
 }
 
-const Operator* JSOperatorBuilder::GeneratorStore(int register_count) {
-  return new (zone()) Operator1<int>(                   // --
-      IrOpcode::kJSGeneratorStore, Operator::kNoThrow,  // opcode
-      "JSGeneratorStore",                               // name
-      3 + register_count, 1, 1, 0, 1, 0,                // counts
-      register_count);                                  // parameter
+const Operator* JSOperatorBuilder::GeneratorStore(int register_count,
+                                                  SuspendFlags suspend_flags) {
+  GeneratorStoreParameters parameters(register_count, suspend_flags);
+  return new (zone()) Operator1<GeneratorStoreParameters>(  // --
+      IrOpcode::kJSGeneratorStore, Operator::kNoThrow,      // opcode
+      "JSGeneratorStore",                                   // name
+      3 + register_count, 1, 1, 0, 1, 0,                    // counts
+      parameters);                                          // parameter
 }
 
 const Operator* JSOperatorBuilder::GeneratorRestoreRegister(int index) {
@@ -864,12 +897,11 @@ const Operator* JSOperatorBuilder::StoreNamedOwn(
       parameters);                                          // parameter
 }
 
-const Operator* JSOperatorBuilder::DeleteProperty(LanguageMode language_mode) {
-  return new (zone()) Operator1<LanguageMode>(               // --
+const Operator* JSOperatorBuilder::DeleteProperty() {
+  return new (zone()) Operator(                              // --
       IrOpcode::kJSDeleteProperty, Operator::kNoProperties,  // opcode
       "JSDeleteProperty",                                    // name
-      2, 1, 1, 1, 1, 2,                                      // counts
-      language_mode);                                        // parameter
+      3, 1, 1, 1, 1, 2);                                     // counts
 }
 
 

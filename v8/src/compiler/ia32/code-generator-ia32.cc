@@ -779,6 +779,18 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     }                                                                 \
   } while (0)
 
+#define ASSEMBLE_ATOMIC_BINOP(bin_inst, mov_inst, cmpxchg_inst) \
+  do {                                                          \
+    Label binop;                                                \
+    __ bind(&binop);                                            \
+    __ mov_inst(eax, i.MemoryOperand(1));                       \
+    __ Move(i.TempRegister(0), eax);                            \
+    __ bin_inst(i.TempRegister(0), i.InputRegister(0));         \
+    __ lock();                                                  \
+    __ cmpxchg_inst(i.MemoryOperand(1), i.TempRegister(0));     \
+    __ j(not_equal, &binop);                                    \
+  } while (false)
+
 void CodeGenerator::AssembleDeconstructFrame() {
   __ mov(esp, ebp);
   __ pop(ebp);
@@ -1887,35 +1899,35 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       break;
     }
-    case kIA32Int32x4Splat: {
+    case kIA32I32x4Splat: {
       XMMRegister dst = i.OutputSimd128Register();
       __ movd(dst, i.InputOperand(0));
       __ pshufd(dst, dst, 0x0);
       break;
     }
-    case kIA32Int32x4ExtractLane: {
+    case kIA32I32x4ExtractLane: {
       __ Pextrd(i.OutputRegister(), i.InputSimd128Register(0), i.InputInt8(1));
       break;
     }
-    case kIA32Int32x4ReplaceLane: {
+    case kIA32I32x4ReplaceLane: {
       __ Pinsrd(i.OutputSimd128Register(), i.InputOperand(2), i.InputInt8(1));
       break;
     }
-    case kSSEInt32x4Add: {
+    case kSSEI32x4Add: {
       __ paddd(i.OutputSimd128Register(), i.InputOperand(1));
       break;
     }
-    case kSSEInt32x4Sub: {
+    case kSSEI32x4Sub: {
       __ psubd(i.OutputSimd128Register(), i.InputOperand(1));
       break;
     }
-    case kAVXInt32x4Add: {
+    case kAVXI32x4Add: {
       CpuFeatureScope avx_scope(masm(), AVX);
       __ vpaddd(i.OutputSimd128Register(), i.InputSimd128Register(0),
                 i.InputOperand(1));
       break;
     }
-    case kAVXInt32x4Sub: {
+    case kAVXI32x4Sub: {
       CpuFeatureScope avx_scope(masm(), AVX);
       __ vpsubd(i.OutputSimd128Register(), i.InputSimd128Register(0),
                 i.InputOperand(1));
@@ -2020,6 +2032,37 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ cmpxchg(i.MemoryOperand(2), i.InputRegister(1));
       break;
     }
+#define ATOMIC_BINOP_CASE(op, inst)                \
+  case kAtomic##op##Int8: {                        \
+    ASSEMBLE_ATOMIC_BINOP(inst, mov_b, cmpxchg_b); \
+    __ movsx_b(eax, eax);                          \
+    break;                                         \
+  }                                                \
+  case kAtomic##op##Uint8: {                       \
+    ASSEMBLE_ATOMIC_BINOP(inst, mov_b, cmpxchg_b); \
+    __ movzx_b(eax, eax);                          \
+    break;                                         \
+  }                                                \
+  case kAtomic##op##Int16: {                       \
+    ASSEMBLE_ATOMIC_BINOP(inst, mov_w, cmpxchg_w); \
+    __ movsx_w(eax, eax);                          \
+    break;                                         \
+  }                                                \
+  case kAtomic##op##Uint16: {                      \
+    ASSEMBLE_ATOMIC_BINOP(inst, mov_w, cmpxchg_w); \
+    __ movzx_w(eax, eax);                          \
+    break;                                         \
+  }                                                \
+  case kAtomic##op##Word32: {                      \
+    ASSEMBLE_ATOMIC_BINOP(inst, mov, cmpxchg);     \
+    break;                                         \
+  }
+      ATOMIC_BINOP_CASE(Add, add)
+      ATOMIC_BINOP_CASE(Sub, sub)
+      ATOMIC_BINOP_CASE(And, and_)
+      ATOMIC_BINOP_CASE(Or, or_)
+      ATOMIC_BINOP_CASE(Xor, xor_)
+#undef ATOMIC_BINOP_CASE
     case kAtomicLoadInt8:
     case kAtomicLoadUint8:
     case kAtomicLoadInt16:

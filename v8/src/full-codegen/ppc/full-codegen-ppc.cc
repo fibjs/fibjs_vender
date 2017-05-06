@@ -991,7 +991,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ beq(&no_descriptors);
 
   __ LoadInstanceDescriptors(r3, r5);
-  __ LoadP(r5, FieldMemOperand(r5, DescriptorArray::kEnumCacheOffset));
+  __ LoadP(r5, FieldMemOperand(r5, DescriptorArray::kEnumCacheBridgeOffset));
   __ LoadP(r5,
            FieldMemOperand(r5, DescriptorArray::kEnumCacheBridgeCacheOffset));
 
@@ -2252,9 +2252,8 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
       if (property != NULL) {
         VisitForStackValue(property->obj());
         VisitForStackValue(property->key());
-        CallRuntimeWithOperands(is_strict(language_mode())
-                                    ? Runtime::kDeleteProperty_Strict
-                                    : Runtime::kDeleteProperty_Sloppy);
+        PushOperand(Smi::FromInt(language_mode()));
+        CallRuntimeWithOperands(Runtime::kDeleteProperty);
         context()->Plug(r3);
       } else if (proxy != NULL) {
         Variable* var = proxy->var();
@@ -2266,7 +2265,8 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
           __ LoadGlobalObject(r5);
           __ mov(r4, Operand(var->name()));
           __ Push(r5, r4);
-          __ CallRuntime(Runtime::kDeleteProperty_Sloppy);
+          __ Push(Smi::FromInt(SLOPPY));
+          __ CallRuntime(Runtime::kDeleteProperty);
           context()->Plug(r3);
         } else {
           DCHECK(!var->IsLookupSlot());

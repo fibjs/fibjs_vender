@@ -180,6 +180,24 @@ BUILTIN(AsyncFunctionConstructor) {
   return *func;
 }
 
+BUILTIN(AsyncGeneratorFunctionConstructor) {
+  HandleScope scope(isolate);
+  Handle<Object> maybe_func;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, maybe_func,
+      CreateDynamicFunction(isolate, args, "async function*"));
+  if (!maybe_func->IsJSFunction()) return *maybe_func;
+
+  // Do not lazily compute eval position for AsyncFunction, as they may not be
+  // determined after the function is resumed.
+  Handle<JSFunction> func = Handle<JSFunction>::cast(maybe_func);
+  Handle<Script> script = handle(Script::cast(func->shared()->script()));
+  int position = script->GetEvalPosition();
+  USE(position);
+
+  return *func;
+}
+
 namespace {
 
 Object* DoFunctionBind(Isolate* isolate, BuiltinArguments args) {
@@ -294,7 +312,8 @@ BUILTIN(FunctionPrototypeToString) {
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate, NewTypeError(MessageTemplate::kNotGeneric,
                             isolate->factory()->NewStringFromAsciiChecked(
-                                "Function.prototype.toString")));
+                                "Function.prototype.toString"),
+                            isolate->factory()->Function_string()));
 }
 
 }  // namespace internal

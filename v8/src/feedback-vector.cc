@@ -203,6 +203,7 @@ Handle<FeedbackVector> FeedbackVector::New(Isolate* isolate,
   Handle<FixedArray> array = factory->NewFixedArray(length, TENURED);
   array->set_map_no_write_barrier(isolate->heap()->feedback_vector_map());
   array->set(kSharedFunctionInfoIndex, *shared);
+  array->set(kOptimizedCodeIndex, *factory->empty_weak_cell());
   array->set(kInvocationCountIndex, Smi::kZero);
 
   // Ensure we can skip the write barrier
@@ -294,6 +295,40 @@ void FeedbackVector::AddToCodeCoverageList(Isolate* isolate,
       Handle<ArrayList>::cast(isolate->factory()->code_coverage_list());
   list = ArrayList::Add(list, vector);
   isolate->SetCodeCoverageList(*list);
+}
+
+// static
+void FeedbackVector::SetOptimizedCode(Handle<FeedbackVector> vector,
+                                      Handle<Code> code) {
+  DCHECK_EQ(code->kind(), Code::OPTIMIZED_FUNCTION);
+  Factory* factory = vector->GetIsolate()->factory();
+  Handle<WeakCell> cell = factory->NewWeakCell(code);
+  vector->set(kOptimizedCodeIndex, *cell);
+}
+
+void FeedbackVector::ClearOptimizedCode() {
+  set(kOptimizedCodeIndex, GetIsolate()->heap()->empty_weak_cell());
+}
+
+void FeedbackVector::EvictOptimizedCodeMarkedForDeoptimization(
+    SharedFunctionInfo* shared, const char* reason) {
+  WeakCell* cell = WeakCell::cast(get(kOptimizedCodeIndex));
+  if (!cell->cleared()) {
+    Code* code = Code::cast(cell->value());
+    if (code->marked_for_deoptimization()) {
+      if (FLAG_trace_deopt) {
+        PrintF("[evicting optimizing code marked for deoptimization (%s) for ",
+               reason);
+        shared->ShortPrint();
+        PrintF("]\n");
+      }
+      if (!code->deopt_already_counted()) {
+        shared->increment_deopt_count();
+        code->set_deopt_already_counted(true);
+      }
+      ClearOptimizedCode();
+    }
+  }
 }
 
 void FeedbackVector::ClearSlots(JSFunction* host_function) {
@@ -910,47 +945,80 @@ InlineCacheState CollectTypeProfileNexus::StateFromFeedback() const {
   return MONOMORPHIC;
 }
 
-void CollectTypeProfileNexus::Collect(Handle<Name> type, int position) {
+void CollectTypeProfileNexus::Collect(Handle<String> type, int position) {
+  DCHECK_GE(position, 0);
   Isolate* isolate = GetIsolate();
 
   Object* const feedback = GetFeedback();
-  Handle<ArrayList> types;
+
+  // Map source position to collection of types
+  Handle<UnseededNumberDictionary> types;
 
   if (feedback == *FeedbackVector::UninitializedSentinel(isolate)) {
-    types = ArrayList::New(isolate, 1);
+    types = UnseededNumberDictionary::NewEmpty(isolate);
   } else {
-    types = Handle<ArrayList>(ArrayList::cast(feedback), isolate);
+    types = Handle<UnseededNumberDictionary>(
+        UnseededNumberDictionary::cast(feedback), isolate);
   }
 
-  Handle<Tuple2> entry = isolate->factory()->NewTuple2(
-      type, Handle<Smi>(Smi::FromInt(position), isolate));
+  Handle<ArrayList> position_specific_types;
 
-  // TODO(franzih): Somehow sort this list. Either avoid duplicates
-  // or use the common base type.
-  SetFeedback(*ArrayList::Add(types, entry));
+  if (types->Has(position)) {
+    int entry = types->FindEntry(position);
+    DCHECK(types->ValueAt(entry)->IsArrayList());
+    position_specific_types =
+        Handle<ArrayList>(ArrayList::cast(types->ValueAt(entry)));
+  } else {
+    position_specific_types = ArrayList::New(isolate, 1);
+  }
+
+  types = UnseededNumberDictionary::Set(
+      types, position, ArrayList::Add(position_specific_types, type));
+  SetFeedback(*types);
 }
 
-void CollectTypeProfileNexus::Print() const {
+namespace {
+
+Handle<JSObject> ConvertToJSObject(Isolate* isolate,
+                                   Handle<UnseededNumberDictionary> feedback) {
+  Handle<JSObject> type_profile =
+      isolate->factory()->NewJSObject(isolate->object_function());
+
+  for (int index = UnseededNumberDictionary::kElementsStartIndex;
+       index < feedback->length();
+       index += UnseededNumberDictionary::kEntrySize) {
+    int key_index = index + UnseededNumberDictionary::kEntryKeyIndex;
+    Object* key = feedback->get(key_index);
+    if (key->IsSmi()) {
+      int value_index = index + UnseededNumberDictionary::kEntryValueIndex;
+
+      Handle<ArrayList> position_specific_types = Handle<ArrayList>(
+          ArrayList::cast(feedback->get(value_index)), isolate);
+
+      int position = Smi::cast(key)->value();
+      JSObject::AddDataElement(type_profile, position,
+                               isolate->factory()->NewJSArrayWithElements(
+                                   position_specific_types->Elements()),
+                               PropertyAttributes::NONE)
+          .ToHandleChecked();
+    }
+  }
+  return type_profile;
+}
+}  // namespace
+
+JSObject* CollectTypeProfileNexus::GetTypeProfile() const {
   Isolate* isolate = GetIsolate();
 
   Object* const feedback = GetFeedback();
 
   if (feedback == *FeedbackVector::UninitializedSentinel(isolate)) {
-    return;
+    return *isolate->factory()->NewJSMap();
   }
 
-  Handle<ArrayList> list;
-  list = Handle<ArrayList>(ArrayList::cast(feedback), isolate);
-
-  for (int i = 0; i < list->Length(); i++) {
-    Handle<Object> maybe_entry = Handle<Object>(list->Get(i), isolate);
-    DCHECK(maybe_entry->IsTuple2());
-    Handle<Tuple2> entry = Handle<Tuple2>::cast(maybe_entry);
-    Handle<String> type =
-        Handle<String>(String::cast(entry->value1()), isolate);
-    int position = Smi::cast(entry->value2())->value();
-    PrintF("%d: %s\n", position, type->ToCString().get());
-  }
+  return *ConvertToJSObject(
+      isolate, Handle<UnseededNumberDictionary>(
+                   UnseededNumberDictionary::cast(feedback), isolate));
 }
 
 }  // namespace internal

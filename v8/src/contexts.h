@@ -5,7 +5,6 @@
 #ifndef V8_CONTEXTS_H_
 #define V8_CONTEXTS_H_
 
-#include "src/heap/heap.h"
 #include "src/objects.h"
 
 namespace v8 {
@@ -74,7 +73,6 @@ enum ContextLookupFlags {
     typed_array_construct_by_array_like)                                    \
   V(TYPED_ARRAY_CONSTRUCT_BY_LENGTH_INDEX, JSFunction,                      \
     typed_array_construct_by_length)                                        \
-  V(TYPED_ARRAY_INITIALIZE_INDEX, JSFunction, typed_array_initialize)       \
   V(MATH_FLOOR_INDEX, JSFunction, math_floor)                               \
   V(MATH_POW_INDEX, JSFunction, math_pow)                                   \
   V(NEW_PROMISE_CAPABILITY_INDEX, JSFunction, new_promise_capability)       \
@@ -87,10 +85,7 @@ enum ContextLookupFlags {
   V(PROMISE_HANDLE_INDEX, JSFunction, promise_handle)                       \
   V(PROMISE_HANDLE_REJECT_INDEX, JSFunction, promise_handle_reject)         \
   V(ASYNC_GENERATOR_AWAIT_CAUGHT, JSFunction, async_generator_await_caught) \
-  V(ASYNC_GENERATOR_AWAIT_UNCAUGHT, JSFunction,                             \
-    async_generator_await_uncaught)                                         \
-  V(ASYNC_GENERATOR_YIELD, JSFunction, async_generator_yield)               \
-  V(ASYNC_GENERATOR_RAW_YIELD, JSFunction, async_generator_raw_yield)
+  V(ASYNC_GENERATOR_AWAIT_UNCAUGHT, JSFunction, async_generator_await_uncaught)
 
 #define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                     \
   V(ARRAY_CONCAT_INDEX, JSFunction, array_concat)                             \
@@ -208,6 +203,7 @@ enum ContextLookupFlags {
   V(ALLOW_CODE_GEN_FROM_STRINGS_INDEX, Object, allow_code_gen_from_strings)    \
   V(ARRAY_BUFFER_FUN_INDEX, JSFunction, array_buffer_fun)                      \
   V(ARRAY_BUFFER_MAP_INDEX, Map, array_buffer_map)                             \
+  V(ARRAY_BUFFER_NOINIT_FUN_INDEX, JSFunction, array_buffer_noinit_fun)        \
   V(ARRAY_FUNCTION_INDEX, JSFunction, array_function)                          \
   V(ASYNC_FROM_SYNC_ITERATOR_MAP_INDEX, Map, async_from_sync_iterator_map)     \
   V(ASYNC_FUNCTION_AWAIT_REJECT_SHARED_FUN, SharedFunctionInfo,                \
@@ -215,8 +211,14 @@ enum ContextLookupFlags {
   V(ASYNC_FUNCTION_AWAIT_RESOLVE_SHARED_FUN, SharedFunctionInfo,               \
     async_function_await_resolve_shared_fun)                                   \
   V(ASYNC_FUNCTION_FUNCTION_INDEX, JSFunction, async_function_constructor)     \
+  V(ASYNC_GENERATOR_FUNCTION_FUNCTION_INDEX, JSFunction,                       \
+    async_generator_function_function)                                         \
   V(ASYNC_ITERATOR_VALUE_UNWRAP_SHARED_FUN, SharedFunctionInfo,                \
     async_iterator_value_unwrap_shared_fun)                                    \
+  V(ASYNC_GENERATOR_AWAIT_REJECT_SHARED_FUN, SharedFunctionInfo,               \
+    async_generator_await_reject_shared_fun)                                   \
+  V(ASYNC_GENERATOR_AWAIT_RESOLVE_SHARED_FUN, SharedFunctionInfo,              \
+    async_generator_await_resolve_shared_fun)                                  \
   V(BOOLEAN_FUNCTION_INDEX, JSFunction, boolean_function)                      \
   V(BOUND_FUNCTION_WITH_CONSTRUCTOR_MAP_INDEX, Map,                            \
     bound_function_with_constructor_map)                                       \
@@ -231,6 +233,7 @@ enum ContextLookupFlags {
   V(DATA_PROPERTY_DESCRIPTOR_MAP_INDEX, Map, data_property_descriptor_map)     \
   V(DATA_VIEW_FUN_INDEX, JSFunction, data_view_fun)                            \
   V(DATE_FUNCTION_INDEX, JSFunction, date_function)                            \
+  V(DEBUG_CONTEXT_ID_INDEX, Object, debug_context_id)                          \
   V(ERROR_MESSAGE_FOR_CODE_GEN_FROM_STRINGS_INDEX, Object,                     \
     error_message_for_code_gen_from_strings)                                   \
   V(ERRORS_THROWN_INDEX, Smi, errors_thrown)                                   \
@@ -245,12 +248,16 @@ enum ContextLookupFlags {
   V(GENERATOR_FUNCTION_FUNCTION_INDEX, JSFunction,                             \
     generator_function_function)                                               \
   V(GENERATOR_OBJECT_PROTOTYPE_MAP_INDEX, Map, generator_object_prototype_map) \
+  V(ASYNC_GENERATOR_OBJECT_PROTOTYPE_MAP_INDEX, Map,                           \
+    async_generator_object_prototype_map)                                      \
   V(INITIAL_ARRAY_ITERATOR_PROTOTYPE_INDEX, JSObject,                          \
     initial_array_iterator_prototype)                                          \
   V(INITIAL_ARRAY_ITERATOR_PROTOTYPE_MAP_INDEX, Map,                           \
     initial_array_iterator_prototype_map)                                      \
   V(INITIAL_ARRAY_PROTOTYPE_INDEX, JSObject, initial_array_prototype)          \
   V(INITIAL_GENERATOR_PROTOTYPE_INDEX, JSObject, initial_generator_prototype)  \
+  V(INITIAL_ASYNC_GENERATOR_PROTOTYPE_INDEX, JSObject,                         \
+    initial_async_generator_prototype)                                         \
   V(INITIAL_ITERATOR_PROTOTYPE_INDEX, JSObject, initial_iterator_prototype)    \
   V(INITIAL_OBJECT_PROTOTYPE_INDEX, JSObject, initial_object_prototype)        \
   V(INT16_ARRAY_FUN_INDEX, JSFunction, int16_array_fun)                        \
@@ -336,6 +343,8 @@ enum ContextLookupFlags {
   V(SLOW_ALIASED_ARGUMENTS_MAP_INDEX, Map, slow_aliased_arguments_map)         \
   V(SLOW_OBJECT_WITH_NULL_PROTOTYPE_MAP, Map,                                  \
     slow_object_with_null_prototype_map)                                       \
+  V(SLOW_OBJECT_WITH_OBJECT_PROTOTYPE_MAP, Map,                                \
+    slow_object_with_object_prototype_map)                                     \
   V(SLOW_TEMPLATE_INSTANTIATIONS_CACHE_INDEX, UnseededNumberDictionary,        \
     slow_template_instantiations_cache)                                        \
   V(STRICT_ARGUMENTS_MAP_INDEX, Map, strict_arguments_map)                     \
@@ -344,6 +353,7 @@ enum ContextLookupFlags {
   V(STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX, Map,                          \
     strict_function_without_prototype_map)                                     \
   V(GENERATOR_FUNCTION_MAP_INDEX, Map, generator_function_map)                 \
+  V(ASYNC_GENERATOR_FUNCTION_MAP_INDEX, Map, async_generator_function_map)     \
   V(CLASS_FUNCTION_MAP_INDEX, Map, class_function_map)                         \
   V(STRING_FUNCTION_INDEX, JSFunction, string_function)                        \
   V(STRING_FUNCTION_PROTOTYPE_MAP_INDEX, Map, string_function_prototype_map)   \
@@ -583,22 +593,22 @@ class Context: public FixedArray {
   // Removes a specific optimized code object from the optimized code map.
   // In case of non-OSR the code reference is cleared from the cache entry but
   // the entry itself is left in the map in order to proceed sharing literals.
-  void EvictFromOptimizedCodeMap(Code* optimized_code, const char* reason);
+  void EvictFromOSROptimizedCodeCache(Code* optimized_code, const char* reason);
 
   // Clear optimized code map.
-  void ClearOptimizedCodeMap();
+  void ClearOSROptimizedCodeCache();
 
   // A native context keeps track of all osrd optimized functions.
-  inline bool OptimizedCodeMapIsCleared();
-  Code* SearchOptimizedCodeMap(SharedFunctionInfo* shared,
-                               BailoutId osr_ast_id);
-  int SearchOptimizedCodeMapEntry(SharedFunctionInfo* shared,
-                                  BailoutId osr_ast_id);
-
-  static void AddToOptimizedCodeMap(Handle<Context> native_context,
-                                    Handle<SharedFunctionInfo> shared,
-                                    Handle<Code> code,
+  inline bool OSROptimizedCodeCacheIsCleared();
+  Code* SearchOSROptimizedCodeCache(SharedFunctionInfo* shared,
                                     BailoutId osr_ast_id);
+  int SearchOSROptimizedCodeCacheEntry(SharedFunctionInfo* shared,
+                                       BailoutId osr_ast_id);
+
+  static void AddToOSROptimizedCodeCache(Handle<Context> native_context,
+                                         Handle<SharedFunctionInfo> shared,
+                                         Handle<Code> code,
+                                         BailoutId osr_ast_id);
 
   // A native context holds a list of all functions with optimized code.
   void AddOptimizedFunction(JSFunction* function);
@@ -657,7 +667,8 @@ class Context: public FixedArray {
   static int FunctionMapIndex(LanguageMode language_mode, FunctionKind kind) {
     // Note: Must be kept in sync with the FastNewClosure builtin.
     if (IsGeneratorFunction(kind)) {
-      return GENERATOR_FUNCTION_MAP_INDEX;
+      return IsAsyncFunction(kind) ? ASYNC_GENERATOR_FUNCTION_MAP_INDEX
+                                   : GENERATOR_FUNCTION_MAP_INDEX;
     }
 
     if (IsAsyncFunction(kind)) {

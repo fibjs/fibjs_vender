@@ -85,7 +85,6 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
                               MapHandleList const& receiver_maps,
                               Handle<Name> name, AccessMode access_mode,
                               LanguageMode language_mode,
-                              Handle<FeedbackVector> vector, FeedbackSlot slot,
                               Node* index = nullptr);
   Reduction ReduceGlobalAccess(Node* node, Node* receiver, Node* value,
                                Handle<Name> name, AccessMode access_mode,
@@ -110,12 +109,13 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
   };
 
   // Construct the appropriate subgraph for property access.
-  ValueEffectControl BuildPropertyAccess(
-      Node* receiver, Node* value, Node* context, Node* frame_state,
-      Node* effect, Node* control, Handle<Name> name,
-      PropertyAccessInfo const& access_info, AccessMode access_mode,
-      LanguageMode language_mode, Handle<FeedbackVector> vector,
-      FeedbackSlot slot);
+  ValueEffectControl BuildPropertyAccess(Node* receiver, Node* value,
+                                         Node* context, Node* frame_state,
+                                         Node* effect, Node* control,
+                                         Handle<Name> name,
+                                         PropertyAccessInfo const& access_info,
+                                         AccessMode access_mode,
+                                         LanguageMode language_mode);
 
   // Construct the appropriate subgraph for element access.
   ValueEffectControl BuildElementAccess(Node* receiver, Node* index,
@@ -145,6 +145,17 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
   // from an object with one of the {receiver_maps}; sets up appropriate
   // code dependencies and might use the array protector cell.
   bool CanTreatHoleAsUndefined(std::vector<Handle<Map>> const& receiver_maps);
+
+  // Checks if we know at compile time that the {receiver} either definitely
+  // has the {prototype} in it's prototype chain, or the {receiver} definitely
+  // doesn't have the {prototype} in it's prototype chain.
+  enum InferHasInPrototypeChainResult {
+    kIsInPrototypeChain,
+    kIsNotInPrototypeChain,
+    kMayBeInPrototypeChain
+  };
+  InferHasInPrototypeChainResult InferHasInPrototypeChain(
+      Node* receiver, Node* effect, Handle<JSReceiver> prototype);
 
   // Extract receiver maps from {nexus} and filter based on {receiver} if
   // possible.

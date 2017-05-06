@@ -279,6 +279,9 @@
     <ClInclude Include="include\v8-util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\v8-value-serializer-version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\v8-version-string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -330,13 +333,7 @@
     <ClInclude Include="src\asmjs\asm-scanner.h">
       <Filter>Source Files\asmjs</Filter>
     </ClInclude>
-    <ClInclude Include="src\asmjs\asm-typer.h">
-      <Filter>Source Files\asmjs</Filter>
-    </ClInclude>
     <ClInclude Include="src\asmjs\asm-types.h">
-      <Filter>Source Files\asmjs</Filter>
-    </ClInclude>
-    <ClInclude Include="src\asmjs\asm-wasm-builder.h">
       <Filter>Source Files\asmjs</Filter>
     </ClInclude>
     <ClInclude Include="src\asmjs\switch-logic.h">
@@ -436,6 +433,9 @@
       <Filter>Source Files\base\debug</Filter>
     </ClInclude>
     <ClInclude Include="src\base\division-by-constant.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\export-template.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\file-utils.h">
@@ -553,6 +553,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-constructor.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-definitions.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-descriptors.h">
@@ -736,9 +739,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\graph-reducer.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\graph-replay.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\graph-trimmer.h">
@@ -977,9 +977,6 @@
     </ClInclude>
     <ClInclude Include="src\compiler\zone-stats.h">
       <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\context-measure.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\contexts-inl.h">
       <Filter>Source Files</Filter>
@@ -1308,6 +1305,9 @@
     <ClInclude Include="src\heap\code-stats.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\concurrent-marking-deque.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\concurrent-marking.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1371,6 +1371,9 @@
     <ClInclude Include="src\heap\scavenger.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\sequential-marking-deque.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\slot-set.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1382,9 +1385,6 @@
     </ClInclude>
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
-    </ClInclude>
-    <ClInclude Include="src\i18n.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ia32\assembler-ia32-inl.h">
       <Filter>Source Files\ia32</Filter>
@@ -1476,9 +1476,6 @@
     <ClInclude Include="src\interpreter\bytecode-array-writer.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
-    <ClInclude Include="src\interpreter\bytecode-dead-code-optimizer.h">
-      <Filter>Source Files\interpreter</Filter>
-    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-decoder.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1491,16 +1488,10 @@
     <ClInclude Include="src\interpreter\bytecode-label.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-node.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-operands.h">
-      <Filter>Source Files\interpreter</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h">
-      <Filter>Source Files\interpreter</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interpreter\bytecode-peephole-table.h">
-      <Filter>Source Files\interpreter</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interpreter\bytecode-pipeline.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-register-allocator.h">
@@ -1510,6 +1501,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-register.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-source-info.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-traits.h">
@@ -1541,6 +1535,12 @@
     </ClInclude>
     <ClInclude Include="src\interpreter\interpreter.h">
       <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\setup-interpreter.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\intl.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\isolate-inl.h">
       <Filter>Source Files</Filter>
@@ -1647,13 +1647,34 @@
     <ClInclude Include="src\objects.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\code-cache-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\code-cache.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\compilation-cache-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\compilation-cache.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\descriptor-array.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\dictionary.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\frame-array-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\frame-array.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\hash-table.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\intl-objects.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\literal-objects.h">
@@ -1672,6 +1693,9 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\scope-info.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\string-table.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\ostreams.h">
@@ -1908,6 +1932,9 @@
     <ClInclude Include="src\safepoint-table.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\setup-isolate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\signature.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1963,6 +1990,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\string-case.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\string-hasher-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\string-hasher.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\string-search.h">
@@ -2046,6 +2079,9 @@
     <ClInclude Include="src\version.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\visitors.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\vm-state-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -2062,6 +2098,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\leb-helper.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\local-decl-encoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\module-decoder.h">
@@ -2083,9 +2122,6 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-limits.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
-    <ClInclude Include="src\wasm\wasm-macro-gen.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-module-builder.h">
@@ -2207,13 +2243,7 @@
     <ClCompile Include="src\asmjs\asm-scanner.cc">
       <Filter>Source Files\asmjs</Filter>
     </ClCompile>
-    <ClCompile Include="src\asmjs\asm-typer.cc">
-      <Filter>Source Files\asmjs</Filter>
-    </ClCompile>
     <ClCompile Include="src\asmjs\asm-types.cc">
-      <Filter>Source Files\asmjs</Filter>
-    </ClCompile>
-    <ClCompile Include="src\asmjs\asm-wasm-builder.cc">
       <Filter>Source Files\asmjs</Filter>
     </ClCompile>
     <ClCompile Include="src\asmjs\switch-logic.cc">
@@ -2384,6 +2414,9 @@
     <ClCompile Include="src\builtins\builtins-async-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-async-generator-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-async-iterator-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2393,10 +2426,19 @@
     <ClCompile Include="src\builtins\builtins-boolean.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-call-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-call.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-callsite.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-console-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-console.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-constructor-gen.cc">
@@ -2450,7 +2492,13 @@
     <ClCompile Include="src\builtins\builtins-internal.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-interpreter-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-interpreter.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-intl-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-intl.cc">
@@ -2530,6 +2578,9 @@
     </ClCompile>
     <ClCompile Include="src\builtins\s390\builtins-s390.cc">
       <Filter>Source Files\builtins\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\setup-builtins-internal.cc">
+      <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\x64\builtins-x64.cc">
       <Filter>Source Files\builtins\x64</Filter>
@@ -2679,9 +2730,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\graph-reducer.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\graph-replay.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\graph-trimmer.cc">
@@ -2941,9 +2989,6 @@
     </ClCompile>
     <ClCompile Include="src\compiler\zone-stats.cc">
       <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\context-measure.cc">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\contexts.cc">
       <Filter>Source Files</Filter>
@@ -3218,9 +3263,6 @@
     <ClCompile Include="src\gdb-jit.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\gen\bytecode-peephole-table.cc">
-      <Filter>Source Files\gen</Filter>
-    </ClCompile>
     <ClCompile Include="src\gen\experimental-extras-libraries.cc">
       <Filter>Source Files\gen</Filter>
     </ClCompile>
@@ -3281,14 +3323,14 @@
     <ClCompile Include="src\heap\scavenger.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
+    <ClCompile Include="src\heap\sequential-marking-deque.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
     <ClCompile Include="src\heap\spaces.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\store-buffer.cc">
       <Filter>Source Files\heap</Filter>
-    </ClCompile>
-    <ClCompile Include="src\i18n.cc">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\assembler-ia32.cc">
       <Filter>Source Files\ia32</Filter>
@@ -3419,9 +3461,6 @@
     <ClCompile Include="src\interpreter\bytecode-array-writer.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
-    <ClCompile Include="src\interpreter\bytecode-dead-code-optimizer.cc">
-      <Filter>Source Files\interpreter</Filter>
-    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-decoder.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -3434,19 +3473,19 @@
     <ClCompile Include="src\interpreter\bytecode-label.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-node.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-operands.cc">
-      <Filter>Source Files\interpreter</Filter>
-    </ClCompile>
-    <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc">
-      <Filter>Source Files\interpreter</Filter>
-    </ClCompile>
-    <ClCompile Include="src\interpreter\bytecode-pipeline.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-register-optimizer.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-register.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-source-info.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecodes.cc">
@@ -3475,6 +3514,12 @@
     </ClCompile>
     <ClCompile Include="src\interpreter\interpreter.cc">
       <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\setup-interpreter-internal.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\intl.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\isolate.cc">
       <Filter>Source Files</Filter>
@@ -3547,6 +3592,9 @@
     </ClCompile>
     <ClCompile Include="src\objects.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\intl-objects.cc">
+      <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\literal-objects.cc">
       <Filter>Source Files\objects</Filter>
@@ -3755,13 +3803,13 @@
     <ClCompile Include="src\runtime\runtime-generator.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
-    <ClCompile Include="src\runtime\runtime-i18n.cc">
-      <Filter>Source Files\runtime</Filter>
-    </ClCompile>
     <ClCompile Include="src\runtime\runtime-internal.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-interpreter.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\runtime-intl.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-literals.cc">
@@ -3849,6 +3897,9 @@
       <Filter>Source Files\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\safepoint-table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\setup-isolate-full.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\code-serializer.cc">
@@ -3953,7 +4004,13 @@
     <ClCompile Include="src\version.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\visitors.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\wasm\function-body-decoder.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\local-decl-encoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\module-decoder.cc">

@@ -448,7 +448,7 @@ namespace {
 
 void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
                                     bool create_implicit_receiver,
-                                    bool check_derived_construct) {
+                                    bool disallow_non_object_return) {
   Label post_instantiation_deopt_entry;
   // ----------- S t a t e -------------
   //  -- r2     : number of arguments
@@ -537,7 +537,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
                       CheckDebugStepCallWrapper());
 
     // Store offset of return address for deoptimizer.
-    if (create_implicit_receiver && !is_api_function) {
+    if (create_implicit_receiver && !disallow_non_object_return &&
+        !is_api_function) {
       masm->isolate()->heap()->SetConstructStubInvokeDeoptPCOffset(
           masm->pc_offset());
     }
@@ -552,19 +553,33 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
       // If the result is an object (in the ECMA sense), we should get rid
       // of the receiver and use the result; see ECMA-262 section 13.2.2-7
       // on page 74.
-      Label use_receiver, exit;
+      Label use_receiver, return_value, do_throw;
 
       // If the result is a smi, it is *not* an object in the ECMA sense.
       // r2: result
       // sp[0]: receiver
       // sp[1]: new.target
       // sp[2]: number of arguments (smi-tagged)
-      __ JumpIfSmi(r2, &use_receiver);
+      // If the result is undefined, we jump out to using the implicit
+      // receiver, otherwise we do a smi check and fall through to
+      // check if the return value is a valid receiver.
+      if (disallow_non_object_return) {
+        __ CompareRoot(r2, Heap::kUndefinedValueRootIndex);
+        __ beq(&use_receiver);
+        __ JumpIfSmi(r2, &do_throw);
+      } else {
+        __ JumpIfSmi(r2, &use_receiver);
+      }
 
       // If the type of the result (stored in its map) is less than
       // FIRST_JS_RECEIVER_TYPE, it is not an object in the ECMA sense.
       __ CompareObjectType(r2, r3, r5, FIRST_JS_RECEIVER_TYPE);
-      __ bge(&exit);
+      __ bge(&return_value);
+
+      if (disallow_non_object_return) {
+        __ bind(&do_throw);
+        __ CallRuntime(Runtime::kThrowConstructorReturnedNonObject);
+      }
 
       // Throw away the result of the constructor invocation and use the
       // on-stack receiver as the result.
@@ -573,7 +588,7 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
 
       // Remove receiver from the stack, remove caller arguments, and
       // return.
-      __ bind(&exit);
+      __ bind(&return_value);
       // r2: result
       // sp[0]: receiver (newly allocated object)
       // sp[1]: number of arguments (smi-tagged)
@@ -586,14 +601,19 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
   }
 
   // ES6 9.2.2. Step 13+
-  // Check that the result is not a Smi, indicating that the constructor result
-  // from a derived class is neither undefined nor an Object.
-  if (check_derived_construct) {
-    Label dont_throw;
-    __ JumpIfNotSmi(r2, &dont_throw);
+  // For derived class constructors, throw a TypeError here if the result
+  // is not a JSReceiver. For the base constructor, we've already checked
+  // the result, so we omit the check.
+  if (disallow_non_object_return && !create_implicit_receiver) {
+    Label do_throw, dont_throw;
+    __ JumpIfSmi(r2, &do_throw);
+    STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
+    __ CompareObjectType(r2, r5, r5, FIRST_JS_RECEIVER_TYPE);
+    __ bge(&dont_throw);
+    __ bind(&do_throw);
     {
       FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-      __ CallRuntime(Runtime::kThrowDerivedConstructorReturnedNonObject);
+      __ CallRuntime(Runtime::kThrowConstructorReturnedNonObject);
     }
     __ bind(&dont_throw);
   }
@@ -609,7 +629,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
   // Store offset of trampoline address for deoptimizer. This is the bailout
   // point after the receiver instantiation but before the function invocation.
   // We need to restore some registers in order to continue the above code.
-  if (create_implicit_receiver && !is_api_function) {
+  if (create_implicit_receiver && !disallow_non_object_return &&
+      !is_api_function) {
     masm->isolate()->heap()->SetConstructStubCreateDeoptPCOffset(
         masm->pc_offset());
 
@@ -650,6 +671,10 @@ void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
   Generate_JSConstructStubHelper(masm, false, false, false);
 }
 
+void Builtins::Generate_JSBuiltinsConstructStubForBase(MacroAssembler* masm) {
+  Generate_JSConstructStubHelper(masm, false, true, true);
+}
+
 void Builtins::Generate_JSBuiltinsConstructStubForDerived(
     MacroAssembler* masm) {
   Generate_JSConstructStubHelper(masm, false, false, true);
@@ -661,15 +686,37 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   //  -- r2 : the value to pass to the generator
   //  -- r3 : the JSGeneratorObject to resume
   //  -- r4 : the resume mode (tagged)
+  //  -- r5 : the SuspendFlags of the earlier suspend call (tagged)
   //  -- lr : return address
   // -----------------------------------
-  __ AssertGeneratorObject(r3);
+  __ SmiUntag(r5);
+  __ AssertGeneratorObject(r3, r5);
 
   // Store input value into generator object.
+  Label async_await, done_store_input;
+
+  __ AndP(r5, r5,
+          Operand(static_cast<int>(SuspendFlags::kAsyncGeneratorAwait)));
+  __ CmpP(r5, Operand(static_cast<int>(SuspendFlags::kAsyncGeneratorAwait)));
+  __ beq(&async_await);
+
   __ StoreP(r2, FieldMemOperand(r3, JSGeneratorObject::kInputOrDebugPosOffset),
             r0);
   __ RecordWriteField(r3, JSGeneratorObject::kInputOrDebugPosOffset, r2, r5,
                       kLRHasNotBeenSaved, kDontSaveFPRegs);
+  __ b(&done_store_input);
+
+  __ bind(&async_await);
+  __ StoreP(
+      r2,
+      FieldMemOperand(r3, JSAsyncGeneratorObject::kAwaitInputOrDebugPosOffset),
+      r0);
+  __ RecordWriteField(r3, JSAsyncGeneratorObject::kAwaitInputOrDebugPosOffset,
+                      r2, r5, kLRHasNotBeenSaved, kDontSaveFPRegs);
+  __ b(&done_store_input);
+
+  __ bind(&done_store_input);
+  // `r5` no longer holds SuspendFlags
 
   // Store resume mode into generator object.
   __ StoreP(r4, FieldMemOperand(r3, JSGeneratorObject::kResumeModeOffset));
@@ -1080,11 +1127,7 @@ static void Generate_StackOverflowCheck(MacroAssembler* masm, Register num_args,
 
 static void Generate_InterpreterPushArgs(MacroAssembler* masm,
                                          Register num_args, Register index,
-                                         Register count, Register scratch,
-                                         Label* stack_overflow) {
-  // Add a stack check before pushing arguments.
-  Generate_StackOverflowCheck(masm, num_args, scratch, stack_overflow);
-
+                                         Register count, Register scratch) {
   Label loop;
   __ AddP(index, index, Operand(kPointerSize));  // Bias up for LoadPU
   __ LoadRR(r0, count);
@@ -1097,9 +1140,9 @@ static void Generate_InterpreterPushArgs(MacroAssembler* masm,
 }
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndCallImpl(
-    MacroAssembler* masm, TailCallMode tail_call_mode,
-    InterpreterPushArgsMode mode) {
+void Builtins::Generate_InterpreterPushArgsThenCallImpl(
+    MacroAssembler* masm, ConvertReceiverMode receiver_mode,
+    TailCallMode tail_call_mode, InterpreterPushArgsMode mode) {
   // ----------- S t a t e -------------
   //  -- r2 : the number of arguments (not including the receiver)
   //  -- r4 : the address of the first argument to be pushed. Subsequent
@@ -1111,9 +1154,16 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
 
   // Calculate number of arguments (AddP one for receiver).
   __ AddP(r5, r2, Operand(1));
+  Generate_StackOverflowCheck(masm, r5, ip, &stack_overflow);
+
+  // Push "undefined" as the receiver arg if we need to.
+  if (receiver_mode == ConvertReceiverMode::kNullOrUndefined) {
+    __ PushRoot(Heap::kUndefinedValueRootIndex);
+    __ LoadRR(r5, r2);  // Argument count is correct.
+  }
 
   // Push the arguments.
-  Generate_InterpreterPushArgs(masm, r5, r4, r5, r6, &stack_overflow);
+  Generate_InterpreterPushArgs(masm, r5, r4, r5, r6);
 
   // Call the target.
   if (mode == InterpreterPushArgsMode::kJSFunction) {
@@ -1138,7 +1188,7 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
 }
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
+void Builtins::Generate_InterpreterPushArgsThenConstructImpl(
     MacroAssembler* masm, InterpreterPushArgsMode mode) {
   // ----------- S t a t e -------------
   // -- r2 : argument count (not including receiver)
@@ -1157,7 +1207,8 @@ void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
   Label skip;
   __ CmpP(r2, Operand::Zero());
   __ beq(&skip);
-  Generate_InterpreterPushArgs(masm, r2, r6, r2, r7, &stack_overflow);
+  Generate_StackOverflowCheck(masm, r2, ip, &stack_overflow);
+  Generate_InterpreterPushArgs(masm, r2, r6, r2, r7);
   __ bind(&skip);
 
   __ AssertUndefinedOrAllocationSite(r4, r7);
@@ -1190,7 +1241,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
 }
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndConstructArray(
+void Builtins::Generate_InterpreterPushArgsThenConstructArray(
     MacroAssembler* masm) {
   // ----------- S t a t e -------------
   // -- r2 : argument count (not including receiver)
@@ -1200,10 +1251,14 @@ void Builtins::Generate_InterpreterPushArgsAndConstructArray(
   // -----------------------------------
   Label stack_overflow;
 
-  __ AddP(r6, r2, Operand(1));  // Add one for receiver.
+  // Push a slot for the receiver to be constructed.
+  __ LoadImmP(r0, Operand::Zero());
+  __ push(r0);
+
+  Generate_StackOverflowCheck(masm, r2, ip, &stack_overflow);
 
   // Push the arguments. r6, r8, r3 will be modified.
-  Generate_InterpreterPushArgs(masm, r6, r5, r6, r7, &stack_overflow);
+  Generate_InterpreterPushArgs(masm, r6, r5, r2, r7);
 
   // Array constructor expects constructor in r5. It is same as r3 here.
   __ LoadRR(r5, r3);
@@ -1294,10 +1349,8 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   // First lookup code, maybe we don't need to compile!
   Label gotta_call_runtime;
   Label try_shared;
-  Label loop_top, loop_bottom;
 
   Register closure = r3;
-  Register map = r8;
   Register index = r4;
 
   // Do we have a valid feedback vector?
@@ -1305,59 +1358,29 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ LoadP(index, FieldMemOperand(index, Cell::kValueOffset));
   __ JumpIfRoot(index, Heap::kUndefinedValueRootIndex, &gotta_call_runtime);
 
-  __ LoadP(map,
-           FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadP(map,
-           FieldMemOperand(map, SharedFunctionInfo::kOptimizedCodeMapOffset));
-  __ LoadP(index, FieldMemOperand(map, FixedArray::kLengthOffset));
-  __ CmpSmiLiteral(index, Smi::FromInt(2), r0);
-  __ blt(&try_shared);
-
-  // Find literals.
-  // r9 : native context
-  // r4  : length / index
-  // r8  : optimized code map
-  // r5  : new target
-  // r3  : closure
-  Register native_context = r9;
-  __ LoadP(native_context, NativeContextMemOperand());
-
-  __ bind(&loop_top);
-  Register temp = r1;
-  Register array_pointer = r7;
-
-  // Does the native context match?
-  __ SmiToPtrArrayOffset(array_pointer, index);
-  __ AddP(array_pointer, map, array_pointer);
-  __ LoadP(temp, FieldMemOperand(array_pointer,
-                                 SharedFunctionInfo::kOffsetToPreviousContext));
-  __ LoadP(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
-  __ CmpP(temp, native_context);
-  __ bne(&loop_bottom, Label::kNear);
-
-  // Code available?
+  // Is optimized code available in the feedback vector?
   Register entry = r6;
-  __ LoadP(entry,
-           FieldMemOperand(array_pointer,
-                           SharedFunctionInfo::kOffsetToPreviousCachedCode));
+  __ LoadP(entry, FieldMemOperand(index, FeedbackVector::kOptimizedCodeIndex *
+                                                 kPointerSize +
+                                             FeedbackVector::kHeaderSize));
   __ LoadP(entry, FieldMemOperand(entry, WeakCell::kValueOffset));
   __ JumpIfSmi(entry, &try_shared);
 
-  // Found code. Get it into the closure and return.
   // Store code entry in the closure.
   __ AddP(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ StoreP(entry, FieldMemOperand(closure, JSFunction::kCodeEntryOffset), r0);
   __ RecordWriteCodeEntryField(closure, entry, r7);
 
+  // Load native context into r8.
+  Register native_context = r8;
+  __ LoadP(native_context, NativeContextMemOperand());
+
   // Link the closure into the optimized function list.
-  // r6 : code entry
-  // r9: native context
-  // r3 : closure
   __ LoadP(
       r7, ContextMemOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST));
   __ StoreP(r7, FieldMemOperand(closure, JSFunction::kNextFunctionLinkOffset),
             r0);
-  __ RecordWriteField(closure, JSFunction::kNextFunctionLinkOffset, r7, temp,
+  __ RecordWriteField(closure, JSFunction::kNextFunctionLinkOffset, r7, r4,
                       kLRHasNotBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   const int function_list_offset =
@@ -1367,26 +1390,18 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
       ContextMemOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST), r0);
   // Save closure before the write barrier.
   __ LoadRR(r7, closure);
-  __ RecordWriteContextSlot(native_context, function_list_offset, r7, temp,
+  __ RecordWriteContextSlot(native_context, function_list_offset, r7, r4,
                             kLRHasNotBeenSaved, kDontSaveFPRegs);
   __ JumpToJSEntry(entry);
 
-  __ bind(&loop_bottom);
-  __ SubSmiLiteral(index, index, Smi::FromInt(SharedFunctionInfo::kEntryLength),
-                   r0);
-  __ CmpSmiLiteral(index, Smi::FromInt(1), r0);
-  __ bgt(&loop_top);
-
-  // We found no code.
-  __ b(&gotta_call_runtime);
-
+  // We found no optimized code.
   __ bind(&try_shared);
   __ LoadP(entry,
            FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   // Is the shared function marked for tier up?
-  __ LoadlB(temp, FieldMemOperand(
-                      entry, SharedFunctionInfo::kMarkedForTierUpByteOffset));
-  __ TestBit(temp, SharedFunctionInfo::kMarkedForTierUpBitWithinByte, r0);
+  __ LoadlB(r7, FieldMemOperand(
+                    entry, SharedFunctionInfo::kMarkedForTierUpByteOffset));
+  __ TestBit(r7, SharedFunctionInfo::kMarkedForTierUpBitWithinByte, r0);
   __ bne(&gotta_call_runtime);
 
   // If SFI points to anything other than CompileLazy, install that.
@@ -2163,11 +2178,16 @@ void Builtins::Generate_CallForwardVarargs(MacroAssembler* masm,
   {
     // Load the length from the ArgumentsAdaptorFrame.
     __ LoadP(r2, MemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
+#if V8_TARGET_ARCH_S390X
+    __ SmiUntag(r2);
+#endif
   }
   __ bind(&arguments_done);
 
   Label stack_empty, stack_done, stack_overflow;
+#if !V8_TARGET_ARCH_S390X
   __ SmiUntag(r2);
+#endif
   __ SubP(r2, r2, r4);
   __ CmpP(r2, Operand::Zero());
   __ ble(&stack_empty);

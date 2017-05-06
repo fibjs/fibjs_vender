@@ -84,6 +84,21 @@ int CodeAssemblerState::parameter_count() const {
 
 CodeAssembler::~CodeAssembler() {}
 
+#if DEBUG
+void CodeAssemblerState::PrintCurrentBlock(std::ostream& os) {
+  raw_assembler_->PrintCurrentBlock(os);
+}
+#endif
+
+void CodeAssemblerState::SetInitialDebugInformation(const char* msg,
+                                                    const char* file,
+                                                    int line) {
+#if DEBUG
+  AssemblerDebugInfo debug_info = {msg, file, line};
+  raw_assembler_->SetInitialDebugInformation(debug_info);
+#endif  // DEBUG
+}
+
 class BreakOnNodeDecorator final : public GraphDecorator {
  public:
   explicit BreakOnNodeDecorator(NodeId node_id) : node_id_(node_id) {}
@@ -163,6 +178,19 @@ bool CodeAssembler::IsFloat64RoundTiesEvenSupported() const {
 
 bool CodeAssembler::IsFloat64RoundTruncateSupported() const {
   return raw_assembler()->machine()->Float64RoundTruncate().IsSupported();
+}
+
+bool CodeAssembler::IsInt32AbsWithOverflowSupported() const {
+  return raw_assembler()->machine()->Int32AbsWithOverflow().IsSupported();
+}
+
+bool CodeAssembler::IsInt64AbsWithOverflowSupported() const {
+  return raw_assembler()->machine()->Int64AbsWithOverflow().IsSupported();
+}
+
+bool CodeAssembler::IsIntPtrAbsWithOverflowSupported() const {
+  return Is64() ? IsInt64AbsWithOverflowSupported()
+                : IsInt32AbsWithOverflowSupported();
 }
 
 Node* CodeAssembler::Int32Constant(int32_t value) {
@@ -282,6 +310,14 @@ void CodeAssembler::PopAndReturn(Node* pop, Node* value) {
   return raw_assembler()->PopAndReturn(pop, value);
 }
 
+void CodeAssembler::ReturnIf(Node* condition, Node* value) {
+  Label if_return(this), if_continue(this);
+  Branch(condition, &if_return, &if_continue);
+  Bind(&if_return);
+  Return(value);
+  Bind(&if_continue);
+}
+
 void CodeAssembler::DebugBreak() { raw_assembler()->DebugBreak(); }
 
 void CodeAssembler::Unreachable() {
@@ -310,6 +346,12 @@ void CodeAssembler::Comment(const char* format, ...) {
 }
 
 void CodeAssembler::Bind(Label* label) { return label->Bind(); }
+
+#if DEBUG
+void CodeAssembler::Bind(Label* label, AssemblerDebugInfo debug_info) {
+  return label->Bind(debug_info);
+}
+#endif  // DEBUG
 
 Node* CodeAssembler::LoadFramePointer() {
   return raw_assembler()->LoadFramePointer();
@@ -474,10 +516,18 @@ Node* CodeAssembler::AtomicStore(MachineRepresentation rep, Node* base,
   return raw_assembler()->AtomicStore(rep, base, offset, value);
 }
 
-Node* CodeAssembler::AtomicExchange(MachineType type, Node* base, Node* offset,
-                                    Node* value) {
-  return raw_assembler()->AtomicExchange(type, base, offset, value);
-}
+#define ATOMIC_FUNCTION(name)                                        \
+  Node* CodeAssembler::Atomic##name(MachineType type, Node* base,    \
+                                    Node* offset, Node* value) {     \
+    return raw_assembler()->Atomic##name(type, base, offset, value); \
+  }
+ATOMIC_FUNCTION(Exchange);
+ATOMIC_FUNCTION(Add);
+ATOMIC_FUNCTION(Sub);
+ATOMIC_FUNCTION(And);
+ATOMIC_FUNCTION(Or);
+ATOMIC_FUNCTION(Xor);
+#undef ATOMIC_FUNCTION
 
 Node* CodeAssembler::AtomicCompareExchange(MachineType type, Node* base,
                                            Node* offset, Node* old_value,
@@ -589,7 +639,7 @@ Node* CodeAssembler::CallStubR(const CallInterfaceDescriptor& descriptor,
 #define INSTANTIATE(...)                                     \
   template V8_EXPORT_PRIVATE Node* CodeAssembler::CallStubR( \
       const CallInterfaceDescriptor& descriptor, size_t, Node*, __VA_ARGS__);
-REPEAT_1_TO_8(INSTANTIATE, Node*)
+REPEAT_1_TO_11(INSTANTIATE, Node*)
 #undef INSTANTIATE
 
 Node* CodeAssembler::CallStubN(const CallInterfaceDescriptor& descriptor,
@@ -659,6 +709,13 @@ Node* CodeAssembler::CallCFunctionN(Signature<MachineType>* signature,
   return raw_assembler()->CallN(desc, input_count, inputs);
 }
 
+Node* CodeAssembler::CallCFunction1(MachineType return_type,
+                                    MachineType arg0_type, Node* function,
+                                    Node* arg0) {
+  return raw_assembler()->CallCFunction1(return_type, arg0_type, function,
+                                         arg0);
+}
+
 Node* CodeAssembler::CallCFunction2(MachineType return_type,
                                     MachineType arg0_type,
                                     MachineType arg1_type, Node* function,
@@ -674,6 +731,28 @@ Node* CodeAssembler::CallCFunction3(MachineType return_type,
                                     Node* arg0, Node* arg1, Node* arg2) {
   return raw_assembler()->CallCFunction3(return_type, arg0_type, arg1_type,
                                          arg2_type, function, arg0, arg1, arg2);
+}
+
+Node* CodeAssembler::CallCFunction6(
+    MachineType return_type, MachineType arg0_type, MachineType arg1_type,
+    MachineType arg2_type, MachineType arg3_type, MachineType arg4_type,
+    MachineType arg5_type, Node* function, Node* arg0, Node* arg1, Node* arg2,
+    Node* arg3, Node* arg4, Node* arg5) {
+  return raw_assembler()->CallCFunction6(
+      return_type, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type,
+      arg5_type, function, arg0, arg1, arg2, arg3, arg4, arg5);
+}
+
+Node* CodeAssembler::CallCFunction9(
+    MachineType return_type, MachineType arg0_type, MachineType arg1_type,
+    MachineType arg2_type, MachineType arg3_type, MachineType arg4_type,
+    MachineType arg5_type, MachineType arg6_type, MachineType arg7_type,
+    MachineType arg8_type, Node* function, Node* arg0, Node* arg1, Node* arg2,
+    Node* arg3, Node* arg4, Node* arg5, Node* arg6, Node* arg7, Node* arg8) {
+  return raw_assembler()->CallCFunction9(
+      return_type, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type,
+      arg5_type, arg6_type, arg7_type, arg8_type, function, arg0, arg1, arg2,
+      arg3, arg4, arg5, arg6, arg7, arg8);
 }
 
 void CodeAssembler::Goto(Label* label) {
@@ -716,6 +795,17 @@ void CodeAssembler::Switch(Node* index, Label* default_label,
                                  labels, case_count);
 }
 
+bool CodeAssembler::UnalignedLoadSupported(const MachineType& machineType,
+                                           uint8_t alignment) const {
+  return raw_assembler()->machine()->UnalignedLoadSupported(machineType,
+                                                            alignment);
+}
+bool CodeAssembler::UnalignedStoreSupported(const MachineType& machineType,
+                                            uint8_t alignment) const {
+  return raw_assembler()->machine()->UnalignedStoreSupported(machineType,
+                                                             alignment);
+}
+
 // RawMachineAssembler delegate helpers:
 Isolate* CodeAssembler::isolate() const { return raw_assembler()->isolate(); }
 
@@ -733,7 +823,23 @@ RawMachineAssembler* CodeAssembler::raw_assembler() const {
 // properly be verified.
 class CodeAssemblerVariable::Impl : public ZoneObject {
  public:
-  explicit Impl(MachineRepresentation rep) : value_(nullptr), rep_(rep) {}
+  explicit Impl(MachineRepresentation rep)
+      :
+#if DEBUG
+        debug_info_(AssemblerDebugInfo(nullptr, nullptr, -1)),
+#endif
+        value_(nullptr),
+        rep_(rep) {
+  }
+
+#if DEBUG
+  AssemblerDebugInfo debug_info() const { return debug_info_; }
+  void set_debug_info(AssemblerDebugInfo debug_info) {
+    debug_info_ = debug_info;
+  }
+
+  AssemblerDebugInfo debug_info_;
+#endif  // DEBUG
   Node* value_;
   MachineRepresentation rep_;
 };
@@ -751,6 +857,25 @@ CodeAssemblerVariable::CodeAssemblerVariable(CodeAssembler* assembler,
   Bind(initial_value);
 }
 
+#if DEBUG
+CodeAssemblerVariable::CodeAssemblerVariable(CodeAssembler* assembler,
+                                             AssemblerDebugInfo debug_info,
+                                             MachineRepresentation rep)
+    : impl_(new (assembler->zone()) Impl(rep)), state_(assembler->state()) {
+  impl_->set_debug_info(debug_info);
+  state_->variables_.insert(impl_);
+}
+
+CodeAssemblerVariable::CodeAssemblerVariable(CodeAssembler* assembler,
+                                             AssemblerDebugInfo debug_info,
+                                             MachineRepresentation rep,
+                                             Node* initial_value)
+    : CodeAssemblerVariable(assembler, debug_info, rep) {
+  impl_->set_debug_info(debug_info);
+  Bind(initial_value);
+}
+#endif  // DEBUG
+
 CodeAssemblerVariable::~CodeAssemblerVariable() {
   state_->variables_.erase(impl_);
 }
@@ -758,13 +883,39 @@ CodeAssemblerVariable::~CodeAssemblerVariable() {
 void CodeAssemblerVariable::Bind(Node* value) { impl_->value_ = value; }
 
 Node* CodeAssemblerVariable::value() const {
-  DCHECK_NOT_NULL(impl_->value_);
+#if DEBUG
+  if (!IsBound()) {
+    std::stringstream str;
+    str << "#Use of unbound variable:"
+        << "#\n    Variable:      " << *this;
+    if (state_) {
+      str << "#\n    Current Block: ";
+      state_->PrintCurrentBlock(str);
+    }
+    FATAL(str.str().c_str());
+  }
+#endif  // DEBUG
   return impl_->value_;
 }
 
 MachineRepresentation CodeAssemblerVariable::rep() const { return impl_->rep_; }
 
 bool CodeAssemblerVariable::IsBound() const { return impl_->value_ != nullptr; }
+
+std::ostream& operator<<(std::ostream& os,
+                         const CodeAssemblerVariable::Impl& impl) {
+#if DEBUG
+  AssemblerDebugInfo info = impl.debug_info();
+  if (info.name) os << "V" << info;
+#endif  // DEBUG
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         const CodeAssemblerVariable& variable) {
+  os << *variable.impl_;
+  return os;
+}
 
 CodeAssemblerLabel::CodeAssemblerLabel(CodeAssembler* assembler,
                                        size_t vars_count,
@@ -787,7 +938,7 @@ CodeAssemblerLabel::~CodeAssemblerLabel() { label_->~RawMachineLabel(); }
 
 void CodeAssemblerLabel::MergeVariables() {
   ++merge_count_;
-  for (auto var : state_->variables_) {
+  for (CodeAssemblerVariable::Impl* var : state_->variables_) {
     size_t count = 0;
     Node* node = var->value_;
     if (node != nullptr) {
@@ -822,19 +973,42 @@ void CodeAssemblerLabel::MergeVariables() {
           // the variable after the label bind (it's not possible to add phis to
           // the bound label after the fact, just make sure to list the variable
           // in the label's constructor's list of merged variables).
-          DCHECK(find_if(i->second.begin(), i->second.end(),
-                         [node](Node* e) -> bool { return node != e; }) ==
-                 i->second.end());
+#if DEBUG
+          if (find_if(i->second.begin(), i->second.end(),
+                      [node](Node* e) -> bool { return node != e; }) !=
+              i->second.end()) {
+            std::stringstream str;
+            str << "Unmerged variable found when jumping to block. \n"
+                << "#    Variable:      " << *var;
+            if (bound_) {
+              str << "\n#    Target block:  " << *label_->block();
+            }
+            str << "\n#    Current Block: ";
+            state_->PrintCurrentBlock(str);
+            FATAL(str.str().c_str());
+          }
+#endif  // DEBUG
         }
       }
     }
   }
 }
 
+#if DEBUG
+void CodeAssemblerLabel::Bind(AssemblerDebugInfo debug_info) {
+  DCHECK(!bound_);
+  state_->raw_assembler_->Bind(label_, debug_info);
+  UpdateVariablesAfterBind();
+}
+#endif  // DEBUG
+
 void CodeAssemblerLabel::Bind() {
   DCHECK(!bound_);
   state_->raw_assembler_->Bind(label_);
+  UpdateVariablesAfterBind();
+}
 
+void CodeAssemblerLabel::UpdateVariablesAfterBind() {
   // Make sure that all variables that have changed along any path up to this
   // point are marked as merge variables.
   for (auto var : state_->variables_) {

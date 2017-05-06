@@ -15,8 +15,8 @@ class RegExpBuiltinsAssembler : public CodeStubAssembler {
   explicit RegExpBuiltinsAssembler(compiler::CodeAssemblerState* state)
       : CodeStubAssembler(state) {}
 
-  void BranchIfFastRegExp(Node* const context, Node* const map,
-                          Label* const if_isunmodified,
+  void BranchIfFastRegExp(Node* const context, Node* const object,
+                          Node* const map, Label* const if_isunmodified,
                           Label* const if_ismodified);
 
  protected:
@@ -36,10 +36,10 @@ class RegExpBuiltinsAssembler : public CodeStubAssembler {
                          String::Encoding encoding, Variable* var_string_start,
                          Variable* var_string_end);
 
-  // Low level logic around the actual call into generated Irregexp code.
-  Node* IrregexpExec(Node* const context, Node* const regexp,
-                     Node* const string, Node* const last_index,
-                     Node* const match_info);
+  // Low level logic around the actual call into pattern matching code.
+  Node* RegExpExecInternal(Node* const context, Node* const regexp,
+                           Node* const string, Node* const last_index,
+                           Node* const match_info);
 
   Node* ConstructNewResultFromMatchInfo(Node* const context, Node* const regexp,
                                         Node* const match_info,
@@ -57,11 +57,20 @@ class RegExpBuiltinsAssembler : public CodeStubAssembler {
                              MessageTemplate::Template msg_template,
                              char const* method_name);
 
-  // Analogous to BranchIfFastRegExp, for use in asserts.
-  Node* IsFastRegExpMap(Node* const context, Node* const map);
+  void BranchIfFastRegExp(Node* const context, Node* const object,
+                          Label* const if_isunmodified,
+                          Label* const if_ismodified);
 
-  Node* IsInitialRegExpMap(Node* context, Node* map);
-  void BranchIfFastRegExpResult(Node* context, Node* map,
+  // Analogous to BranchIfFastRegExp, for use in asserts.
+  Node* IsFastRegExp(Node* const context, Node* const object);
+
+  // Performs fast path checks on the given object itself, but omits prototype
+  // checks.
+  Node* IsFastRegExpNoPrototype(Node* const context, Node* const object);
+  Node* IsFastRegExpNoPrototype(Node* const context, Node* const object,
+                                Node* const map);
+
+  void BranchIfFastRegExpResult(Node* const context, Node* const object,
                                 Label* if_isunmodified, Label* if_ismodified);
 
   Node* FlagsGetter(Node* const context, Node* const regexp, bool is_fastpath);
@@ -72,8 +81,10 @@ class RegExpBuiltinsAssembler : public CodeStubAssembler {
   Node* FlagGetter(Node* const context, Node* const regexp, JSRegExp::Flag flag,
                    bool is_fastpath);
   void FlagGetter(Node* context, Node* receiver, JSRegExp::Flag flag,
-                  v8::Isolate::UseCounterFeature counter,
-                  const char* method_name);
+                  int counter, const char* method_name);
+
+  // Utility method, remove once dotall is unstaged.
+  Node* IsDotAllEnabled(Isolate* isolate);
 
   Node* IsRegExp(Node* const context, Node* const maybe_receiver);
   Node* RegExpInitialize(Node* const context, Node* const regexp,
@@ -82,7 +93,7 @@ class RegExpBuiltinsAssembler : public CodeStubAssembler {
   Node* RegExpExec(Node* context, Node* regexp, Node* string);
 
   Node* AdvanceStringIndex(Node* const string, Node* const index,
-                           Node* const is_unicode);
+                           Node* const is_unicode, bool is_fastpath);
 
   void RegExpPrototypeMatchBody(Node* const context, Node* const regexp,
                                 Node* const string, const bool is_fastpath);

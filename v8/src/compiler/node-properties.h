@@ -129,19 +129,18 @@ class V8_EXPORT_PRIVATE NodeProperties final {
   static bool IsSame(Node* a, Node* b);
 
   // Walks up the {effect} chain to find a witness that provides map
-  // information about the {receiver}. Doesn't look through potentially
+  // information about the {receiver}. Can look through potentially
   // side effecting nodes.
-  static bool InferReceiverMaps(Node* receiver, Node* effect,
-                                ZoneHandleSet<Map>* maps_return);
+  enum InferReceiverMapsResult {
+    kNoReceiverMaps,         // No receiver maps inferred.
+    kReliableReceiverMaps,   // Receiver maps can be trusted.
+    kUnreliableReceiverMaps  // Receiver maps might have changed (side-effect).
+  };
+  static InferReceiverMapsResult InferReceiverMaps(
+      Node* receiver, Node* effect, ZoneHandleSet<Map>* maps_return);
 
   // ---------------------------------------------------------------------------
   // Context.
-
-  // Try to retrieve the specialization context from the given {node},
-  // optionally utilizing the knowledge about the (outermost) function
-  // {context}.
-  static MaybeHandle<Context> GetSpecializationContext(
-      Node* node, MaybeHandle<Context> context = MaybeHandle<Context>());
 
   // Walk up the context chain from the given {node} until we reduce the {depth}
   // to 0 or hit a node that does not extend the context chain ({depth} will be

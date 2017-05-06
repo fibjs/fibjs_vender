@@ -128,7 +128,6 @@ template<class V, class T> class PersistentValueVector;
 template<class T, class P> class WeakCallbackObject;
 class FunctionTemplate;
 class ObjectTemplate;
-class Data;
 template<typename T> class FunctionCallbackInfo;
 template<typename T> class PropertyCallbackInfo;
 class StackTrace;
@@ -151,6 +150,9 @@ class FunctionCallbackArguments;
 class GlobalHandles;
 }  // namespace internal
 
+namespace debug {
+class ConsoleCallArguments;
+}  // namespace debug
 
 // --- Handles ---
 
@@ -158,7 +160,6 @@ class GlobalHandles;
   while (false) {                                              \
     *(static_cast<T* volatile*>(0)) = static_cast<S*>(0);      \
   }
-
 
 /**
  * An object reference managed by the v8 garbage collector.
@@ -173,10 +174,16 @@ class GlobalHandles;
  * allocated on the heap.
  *
  * There are two types of handles: local and persistent handles.
+ *
  * Local handles are light-weight and transient and typically used in
- * local operations.  They are managed by HandleScopes.  Persistent
- * handles can be used when storing objects across several independent
- * operations and have to be explicitly deallocated when they're no
+ * local operations.  They are managed by HandleScopes. That means that a
+ * HandleScope must exist on the stack when they are created and that they are
+ * only valid inside of the HandleScope active during their creation.
+ * For passing a local handle to an outer HandleScope, an EscapableHandleScope
+ * and its Escape() method must be used.
+ *
+ * Persistent handles can be used when storing objects across several
+ * independent operations and have to be explicitly deallocated when they're no
  * longer used.
  *
  * It is safe to extract the object stored in the handle by
@@ -254,6 +261,11 @@ class Local {
     return !operator==(that);
   }
 
+  /**
+   * Cast a handle to a subclass, e.g. Local<Value> to Local<Object>.
+   * This is only valid if the handle actually refers to a value of the
+   * target type.
+   */
   template <class S> V8_INLINE static Local<T> Cast(Local<S> that) {
 #ifdef V8_ENABLE_CHECKS
     // If we're going to perform the type check then we have to check
@@ -263,6 +275,11 @@ class Local {
     return Local<T>(T::Cast(*that));
   }
 
+  /**
+   * Calling this is equivalent to Local<S>::Cast().
+   * In particular, this is only valid if the handle actually refers to a value
+   * of the target type.
+   */
   template <class S>
   V8_INLINE Local<S> As() const {
     return Local<S>::Cast(*this);
@@ -339,15 +356,26 @@ class MaybeLocal {
 
   V8_INLINE bool IsEmpty() const { return val_ == nullptr; }
 
+  /**
+   * Converts this MaybeLocal<> to a Local<>. If this MaybeLocal<> is empty,
+   * |false| is returned and |out| is left untouched.
+   */
   template <class S>
   V8_WARN_UNUSED_RESULT V8_INLINE bool ToLocal(Local<S>* out) const {
     out->val_ = IsEmpty() ? nullptr : this->val_;
     return !IsEmpty();
   }
 
-  // Will crash if the MaybeLocal<> is empty.
+  /**
+   * Converts this MaybeLocal<> to a Local<>. If this MaybeLocal<> is empty,
+   * V8 will crash the process.
+   */
   V8_INLINE Local<T> ToLocalChecked();
 
+  /**
+   * Converts this MaybeLocal<> to a Local<>, using a default value if this
+   * MaybeLocal<> is empty.
+   */
   template <class S>
   V8_INLINE Local<S> FromMaybe(Local<S> default_value) const {
     return IsEmpty() ? default_value : Local<S>(val_);
@@ -357,8 +385,10 @@ class MaybeLocal {
   T* val_;
 };
 
-
-// Eternal handles are set-once handles that live for the life of the isolate.
+/**
+ * Eternal handles are set-once handles that live for the lifetime of the
+ * isolate.
+ */
 template <class T> class Eternal {
  public:
   V8_INLINE Eternal() : val_(nullptr) {}
@@ -438,10 +468,10 @@ enum class WeakCallbackType { kParameter, kInternalFields, kFinalizer };
  * An object reference that is independent of any handle scope.  Where
  * a Local handle only lives as long as the HandleScope in which it was
  * allocated, a PersistentBase handle remains valid until it is explicitly
- * disposed.
+ * disposed using Reset().
  *
  * A persistent handle contains a reference to a storage cell within
- * the v8 engine which holds an object value and which is updated by
+ * the V8 engine which holds an object value and which is updated by
  * the garbage collector whenever the object is moved.  A new storage
  * cell can be created using the constructor or PersistentBase::Reset and
  * existing handles can be disposed using PersistentBase::Reset.
@@ -899,6 +929,11 @@ class V8_EXPORT EscapableHandleScope : public HandleScope {
   internal::Object** escape_slot_;
 };
 
+/**
+ * A SealHandleScope acts like a handle scope in which no handle allocations
+ * are allowed. It can be useful for debugging handle leaks.
+ * Handles can be allocated within inner normal HandleScopes.
+ */
 class V8_EXPORT SealHandleScope {
  public:
   SealHandleScope(Isolate* isolate);
@@ -1060,7 +1095,8 @@ class V8_EXPORT Module {
   /**
    * ModuleDeclarationInstantiation
    *
-   * Returns false if an exception occurred during instantiation.
+   * Returns false if an exception occurred during instantiation. (In the case
+   * where the callback throws an exception, that exception is propagated.)
    */
   V8_WARN_UNUSED_RESULT bool Instantiate(Local<Context> context,
                                          ResolveCallback callback);
@@ -1071,6 +1107,28 @@ class V8_EXPORT Module {
    * Returns the completion value.
    */
   V8_WARN_UNUSED_RESULT MaybeLocal<Value> Evaluate(Local<Context> context);
+};
+
+/**
+ * This is an unfinished experimental feature, and is only exposed
+ * here for internal testing purposes. DO NOT USE.
+ *
+ * A compiled JavaScript module.
+ */
+class V8_EXPORT DynamicImportResult {
+ public:
+  /**
+   * Resolves the promise with the namespace object of the given
+   * module.
+   */
+  V8_WARN_UNUSED_RESULT bool FinishDynamicImportSuccess(Local<Context> context,
+                                                        Local<Module> module);
+
+  /**
+   * Rejects the promise with the given exception.
+   */
+  V8_WARN_UNUSED_RESULT bool FinishDynamicImportFailure(Local<Context> context,
+                                                        Local<Value> exception);
 };
 
 /**
@@ -1363,7 +1421,7 @@ class V8_EXPORT ScriptCompiler {
    * CachedData instance is still valid; the tag has no other meaing.
    *
    * Background: The data carried by CachedData may depend on the exact
-   *   V8 version number or currently compiler flags. This means when
+   *   V8 version number or current compiler flags. This means that when
    *   persisting CachedData, the embedder must take care to not pass in
    *   data from another V8 version, or the same version with different
    *   features enabled.
@@ -1510,6 +1568,8 @@ class V8_EXPORT StackTrace {
   /**
    * Flags that determine what information is placed captured for each
    * StackFrame when grabbing the current stack trace.
+   * Note: these options are deprecated and we always collect all available
+   * information (kDetailed).
    */
   enum StackTraceOptions {
     kLineNumber = 1,
@@ -1538,7 +1598,7 @@ class V8_EXPORT StackTrace {
   /**
    * Returns StackTrace as a v8::Array that contains StackFrame objects.
    */
-  Local<Array> AsArray();
+  V8_DEPRECATED("Use native API instead", Local<Array> AsArray());
 
   /**
    * Grab a snapshot of the current JavaScript execution stack.
@@ -1548,9 +1608,7 @@ class V8_EXPORT StackTrace {
    *   StackFrame.
    */
   static Local<StackTrace> CurrentStackTrace(
-      Isolate* isolate,
-      int frame_limit,
-      StackTraceOptions options = kOverview);
+      Isolate* isolate, int frame_limit, StackTraceOptions options = kDetailed);
 };
 
 
@@ -1614,6 +1672,11 @@ class V8_EXPORT StackFrame {
    * constructor via "new".
    */
   bool IsConstructor() const;
+
+  /**
+   * Returns whether or not the associated functions is defined in wasm.
+   */
+  bool IsWasm() const;
 };
 
 
@@ -1683,21 +1746,21 @@ class V8_EXPORT ValueSerializer {
    public:
     virtual ~Delegate() {}
 
-    /*
+    /**
      * Handles the case where a DataCloneError would be thrown in the structured
      * clone spec. Other V8 embedders may throw some other appropriate exception
      * type.
      */
     virtual void ThrowDataCloneError(Local<String> message) = 0;
 
-    /*
+    /**
      * The embedder overrides this method to write some kind of host object, if
      * possible. If not, a suitable exception should be thrown and
      * Nothing<bool>() returned.
      */
     virtual Maybe<bool> WriteHostObject(Isolate* isolate, Local<Object> object);
 
-    /*
+    /**
      * Called when the ValueSerializer is going to serialize a
      * SharedArrayBuffer object. The embedder must return an ID for the
      * object, using the same ID if this SharedArrayBuffer has already been
@@ -1712,7 +1775,7 @@ class V8_EXPORT ValueSerializer {
 
     virtual Maybe<uint32_t> GetWasmModuleTransferId(
         Isolate* isolate, Local<WasmCompiledModule> module);
-    /*
+    /**
      * Allocates memory for the buffer of at least the size provided. The actual
      * size (which may be greater or equal) is written to |actual_size|. If no
      * buffer has been allocated yet, nullptr will be provided.
@@ -1724,7 +1787,7 @@ class V8_EXPORT ValueSerializer {
     virtual void* ReallocateBufferMemory(void* old_buffer, size_t size,
                                          size_t* actual_size);
 
-    /*
+    /**
      * Frees a buffer allocated with |ReallocateBufferMemory|.
      */
     virtual void FreeBufferMemory(void* buffer);
@@ -1734,24 +1797,24 @@ class V8_EXPORT ValueSerializer {
   ValueSerializer(Isolate* isolate, Delegate* delegate);
   ~ValueSerializer();
 
-  /*
+  /**
    * Writes out a header, which includes the format version.
    */
   void WriteHeader();
 
-  /*
+  /**
    * Serializes a JavaScript value into the buffer.
    */
   V8_WARN_UNUSED_RESULT Maybe<bool> WriteValue(Local<Context> context,
                                                Local<Value> value);
 
-  /*
+  /**
    * Returns the stored data. This serializer should not be used once the buffer
    * is released. The contents are undefined if a previous write has failed.
    */
   V8_DEPRECATE_SOON("Use Release()", std::vector<uint8_t> ReleaseBuffer());
 
-  /*
+  /**
    * Returns the stored data (allocated using the delegate's
    * AllocateBufferMemory) and its size. This serializer should not be used once
    * the buffer is released. The contents are undefined if a previous write has
@@ -1759,7 +1822,7 @@ class V8_EXPORT ValueSerializer {
    */
   V8_WARN_UNUSED_RESULT std::pair<uint8_t*, size_t> Release();
 
-  /*
+  /**
    * Marks an ArrayBuffer as havings its contents transferred out of band.
    * Pass the corresponding ArrayBuffer in the deserializing context to
    * ValueDeserializer::TransferArrayBuffer.
@@ -1767,7 +1830,7 @@ class V8_EXPORT ValueSerializer {
   void TransferArrayBuffer(uint32_t transfer_id,
                            Local<ArrayBuffer> array_buffer);
 
-  /*
+  /**
    * Similar to TransferArrayBuffer, but for SharedArrayBuffer.
    */
   V8_DEPRECATE_SOON("Use Delegate::GetSharedArrayBufferId",
@@ -1775,7 +1838,7 @@ class V8_EXPORT ValueSerializer {
                         uint32_t transfer_id,
                         Local<SharedArrayBuffer> shared_array_buffer));
 
-  /*
+  /**
    * Indicate whether to treat ArrayBufferView objects as host objects,
    * i.e. pass them to Delegate::WriteHostObject. This should not be
    * called when no Delegate was passed.
@@ -1784,7 +1847,7 @@ class V8_EXPORT ValueSerializer {
    */
   void SetTreatArrayBufferViewsAsHostObjects(bool mode);
 
-  /*
+  /**
    * Write raw data in various common formats to the buffer.
    * Note that integer types are written in base-128 varint format, not with a
    * binary copy. For use during an override of Delegate::WriteHostObject.
@@ -1816,14 +1879,14 @@ class V8_EXPORT ValueDeserializer {
    public:
     virtual ~Delegate() {}
 
-    /*
+    /**
      * The embedder overrides this method to read some kind of host object, if
      * possible. If not, a suitable exception should be thrown and
      * MaybeLocal<Object>() returned.
      */
     virtual MaybeLocal<Object> ReadHostObject(Isolate* isolate);
 
-    /*
+    /**
      * Get a WasmCompiledModule given a transfer_id previously provided
      * by ValueSerializer::GetWasmModuleTransferId
      */
@@ -1836,25 +1899,25 @@ class V8_EXPORT ValueDeserializer {
                     Delegate* delegate);
   ~ValueDeserializer();
 
-  /*
+  /**
    * Reads and validates a header (including the format version).
    * May, for example, reject an invalid or unsupported wire format.
    */
   V8_WARN_UNUSED_RESULT Maybe<bool> ReadHeader(Local<Context> context);
 
-  /*
+  /**
    * Deserializes a JavaScript value from the buffer.
    */
   V8_WARN_UNUSED_RESULT MaybeLocal<Value> ReadValue(Local<Context> context);
 
-  /*
+  /**
    * Accepts the array buffer corresponding to the one passed previously to
    * ValueSerializer::TransferArrayBuffer.
    */
   void TransferArrayBuffer(uint32_t transfer_id,
                            Local<ArrayBuffer> array_buffer);
 
-  /*
+  /**
    * Similar to TransferArrayBuffer, but for SharedArrayBuffer.
    * The id is not necessarily in the same namespace as unshared ArrayBuffer
    * objects.
@@ -1862,7 +1925,7 @@ class V8_EXPORT ValueDeserializer {
   void TransferSharedArrayBuffer(uint32_t id,
                                  Local<SharedArrayBuffer> shared_array_buffer);
 
-  /*
+  /**
    * Must be called before ReadHeader to enable support for reading the legacy
    * wire format (i.e., which predates this being shipped).
    *
@@ -1871,19 +1934,19 @@ class V8_EXPORT ValueDeserializer {
    */
   void SetSupportsLegacyWireFormat(bool supports_legacy_wire_format);
 
-  /*
+  /**
    * Expect inline wasm in the data stream (rather than in-memory transfer)
    */
   void SetExpectInlineWasm(bool allow_inline_wasm);
 
-  /*
+  /**
    * Reads the underlying wire format version. Likely mostly to be useful to
    * legacy code reading old wire format versions. Must be called after
    * ReadHeader.
    */
   uint32_t GetWireFormatVersion() const;
 
-  /*
+  /**
    * Reads raw data in various common formats to the buffer.
    * Note that integer types are read in base-128 varint format, not with a
    * binary copy. For use during an override of Delegate::ReadHostObject.
@@ -1910,7 +1973,7 @@ class V8_EXPORT NativeWeakMap : public Data {
  public:
   static Local<NativeWeakMap> New(Isolate* isolate);
   void Set(Local<Value> key, Local<Value> value);
-  Local<Value> Get(Local<Value> key);
+  Local<Value> Get(Local<Value> key) const;
   bool Has(Local<Value> key);
   bool Delete(Local<Value> key);
 };
@@ -2256,6 +2319,8 @@ class V8_EXPORT Value : public Data {
 
   Local<String> TypeOf(Isolate*);
 
+  Maybe<bool> InstanceOf(Local<Context> context, Local<Object> object);
+
  private:
   V8_INLINE bool QuickIsUndefined() const;
   V8_INLINE bool QuickIsNull() const;
@@ -2308,9 +2373,25 @@ class V8_EXPORT Name : public Primitive {
   static void CheckCast(Value* obj);
 };
 
+/**
+ * A flag describing different modes of string creation.
+ *
+ * Aside from performance implications there are no differences between the two
+ * creation modes.
+ */
+enum class NewStringType {
+  /**
+   * Create a new string, always allocating new storage memory.
+   */
+  kNormal,
 
-enum class NewStringType { kNormal, kInternalized };
-
+  /**
+   * Acts as a hint that the string should be created in the
+   * old generation heap space and be deduplicated if an identical string
+   * already exists.
+   */
+  kInternalized
+};
 
 /**
  * A JavaScript string value (ECMA-262, 4.3.17).
@@ -2325,7 +2406,7 @@ class V8_EXPORT String : public Name {
     ONE_BYTE_ENCODING = 0x8
   };
   /**
-   * Returns the number of characters in this string.
+   * Returns the number of characters (UTF-16 code units) in this string.
    */
   int Length() const;
 
@@ -2336,14 +2417,16 @@ class V8_EXPORT String : public Name {
   int Utf8Length() const;
 
   /**
-   * Returns whether this string is known to contain only one byte data.
+   * Returns whether this string is known to contain only one byte data,
+   * i.e. ISO-8859-1 code points.
    * Does not read the string.
    * False negatives are possible.
    */
   bool IsOneByte() const;
 
   /**
-   * Returns whether this string contain only one byte data.
+   * Returns whether this string contain only one byte data,
+   * i.e. ISO-8859-1 code points.
    * Will read the entire string in some cases.
    */
   bool ContainsOnlyOneByte() const;
@@ -2650,7 +2733,7 @@ class V8_EXPORT String : public Name {
   };
 
   /**
-   * Converts an object to a two-byte string.
+   * Converts an object to a two-byte (UTF-16-encoded) string.
    * If conversion to a string fails (eg. due to an exception in the toString()
    * method of the object) then the length() method returns 0 and the * operator
    * returns NULL.
@@ -2685,30 +2768,43 @@ class V8_EXPORT String : public Name {
  */
 class V8_EXPORT Symbol : public Name {
  public:
-  // Returns the print name string of the symbol, or undefined if none.
+  /**
+   * Returns the print name string of the symbol, or undefined if none.
+   */
   Local<Value> Name() const;
 
-  // Create a symbol. If name is not empty, it will be used as the description.
+  /**
+   * Create a symbol. If name is not empty, it will be used as the description.
+   */
   static Local<Symbol> New(Isolate* isolate,
                            Local<String> name = Local<String>());
 
-  // Access global symbol registry.
-  // Note that symbols created this way are never collected, so
-  // they should only be used for statically fixed properties.
-  // Also, there is only one global name space for the names used as keys.
-  // To minimize the potential for clashes, use qualified names as keys.
+  /**
+   * Access global symbol registry.
+   * Note that symbols created this way are never collected, so
+   * they should only be used for statically fixed properties.
+   * Also, there is only one global name space for the names used as keys.
+   * To minimize the potential for clashes, use qualified names as keys.
+   */
   static Local<Symbol> For(Isolate *isolate, Local<String> name);
 
-  // Retrieve a global symbol. Similar to |For|, but using a separate
-  // registry that is not accessible by (and cannot clash with) JavaScript code.
+  /**
+   * Retrieve a global symbol. Similar to |For|, but using a separate
+   * registry that is not accessible by (and cannot clash with) JavaScript code.
+   */
   static Local<Symbol> ForApi(Isolate *isolate, Local<String> name);
 
   // Well-known symbols
+  static Local<Symbol> GetHasInstance(Isolate* isolate);
+  static Local<Symbol> GetIsConcatSpreadable(Isolate* isolate);
   static Local<Symbol> GetIterator(Isolate* isolate);
-  static Local<Symbol> GetUnscopables(Isolate* isolate);
+  static Local<Symbol> GetMatch(Isolate* isolate);
+  static Local<Symbol> GetReplace(Isolate* isolate);
+  static Local<Symbol> GetSearch(Isolate* isolate);
+  static Local<Symbol> GetSplit(Isolate* isolate);
   static Local<Symbol> GetToPrimitive(Isolate* isolate);
   static Local<Symbol> GetToStringTag(Isolate* isolate);
-  static Local<Symbol> GetIsConcatSpreadable(Isolate* isolate);
+  static Local<Symbol> GetUnscopables(Isolate* isolate);
 
   V8_INLINE static Symbol* Cast(Value* obj);
 
@@ -2725,20 +2821,26 @@ class V8_EXPORT Symbol : public Name {
  */
 class V8_EXPORT Private : public Data {
  public:
-  // Returns the print name string of the private symbol, or undefined if none.
+  /**
+   * Returns the print name string of the private symbol, or undefined if none.
+   */
   Local<Value> Name() const;
 
-  // Create a private symbol. If name is not empty, it will be the description.
+  /**
+   * Create a private symbol. If name is not empty, it will be the description.
+   */
   static Local<Private> New(Isolate* isolate,
                             Local<String> name = Local<String>());
 
-  // Retrieve a global private symbol. If a symbol with this name has not
-  // been retrieved in the same isolate before, it is created.
-  // Note that private symbols created this way are never collected, so
-  // they should only be used for statically fixed properties.
-  // Also, there is only one global name space for the names used as keys.
-  // To minimize the potential for clashes, use qualified names as keys,
-  // e.g., "Class#property".
+  /**
+   * Retrieve a global private symbol. If a symbol with this name has not
+   * been retrieved in the same isolate before, it is created.
+   * Note that private symbols created this way are never collected, so
+   * they should only be used for statically fixed properties.
+   * Also, there is only one global name space for the names used as keys.
+   * To minimize the potential for clashes, use qualified names as keys,
+   * e.g., "Class#property".
+   */
   static Local<Private> ForApi(Isolate* isolate, Local<String> name);
 
  private:
@@ -3041,6 +3143,16 @@ class V8_EXPORT Object : public Value {
                            Local<Function> setter = Local<Function>(),
                            PropertyAttribute attribute = None,
                            AccessControl settings = DEFAULT);
+
+  /**
+   * Sets a native data property like Template::SetNativeDataProperty, but
+   * this method sets on this object directly.
+   */
+  V8_WARN_UNUSED_RESULT Maybe<bool> SetNativeDataProperty(
+      Local<Context> context, Local<Name> name,
+      AccessorNameGetterCallback getter,
+      AccessorNameSetterCallback setter = nullptr,
+      Local<Value> data = Local<Value>(), PropertyAttribute attributes = None);
 
   /**
    * Functionality for private properties.
@@ -3485,16 +3597,34 @@ class ReturnValue {
 template<typename T>
 class FunctionCallbackInfo {
  public:
+  /** The number of available arguments. */
   V8_INLINE int Length() const;
+  /** Accessor for the available arguments. */
   V8_INLINE Local<Value> operator[](int i) const;
   V8_INLINE V8_DEPRECATED("Use Data() to explicitly pass Callee instead",
                           Local<Function> Callee() const);
+  /** Returns the receiver. This corresponds to the "this" value. */
   V8_INLINE Local<Object> This() const;
+  /**
+   * If the callback was created without a Signature, this is the same
+   * value as This(). If there is a signature, and the signature didn't match
+   * This() but one of its hidden prototypes, this will be the respective
+   * hidden prototype.
+   *
+   * Note that this is not the prototype of This() on which the accessor
+   * referencing this callback was found (which in V8 internally is often
+   * referred to as holder [sic]).
+   */
   V8_INLINE Local<Object> Holder() const;
+  /** For construct calls, this returns the "new.target" value. */
   V8_INLINE Local<Value> NewTarget() const;
+  /** Indicates whether this is a regular call or a construct call. */
   V8_INLINE bool IsConstructCall() const;
+  /** The data argument specified when creating the callback. */
   V8_INLINE Local<Value> Data() const;
+  /** The current Isolate. */
   V8_INLINE Isolate* GetIsolate() const;
+  /** The ReturnValue for the call. */
   V8_INLINE ReturnValue<T> GetReturnValue() const;
   // This shouldn't be public, but the arm compiler needs it.
   static const int kArgsLength = 8;
@@ -3502,6 +3632,7 @@ class FunctionCallbackInfo {
  protected:
   friend class internal::FunctionCallbackArguments;
   friend class internal::CustomArguments<FunctionCallbackInfo>;
+  friend class debug::ConsoleCallArguments;
   static const int kHolderIndex = 0;
   static const int kIsolateIndex = 1;
   static const int kReturnValueDefaultValueIndex = 2;
@@ -3989,7 +4120,8 @@ class V8_EXPORT WasmCompiledModule : public Object {
 class V8_EXPORT WasmModuleObjectBuilder final {
  public:
   WasmModuleObjectBuilder(Isolate* isolate) : isolate_(isolate) {}
-  void OnBytesReceived(std::unique_ptr<const uint8_t[]>&& bytes, size_t size);
+  // The buffer passed into OnBytesReceived is owned by the caller.
+  void OnBytesReceived(const uint8_t*, size_t size);
   MaybeLocal<WasmCompiledModule> Finish();
 
  private:
@@ -4063,7 +4195,8 @@ class V8_EXPORT ArrayBuffer : public Object {
     /**
      * malloc/free based convenience allocator.
      *
-     * Caller takes ownership.
+     * Caller takes ownership, i.e. the returned object needs to be freed using
+     * |delete allocator| once it is no longer in use.
      */
     static Allocator* NewDefaultAllocator();
   };
@@ -4107,8 +4240,11 @@ class V8_EXPORT ArrayBuffer : public Object {
   /**
    * Create a new ArrayBuffer over an existing memory block.
    * The created array buffer is by default immediately in externalized state.
-   * The memory block will not be reclaimed when a created ArrayBuffer
-   * is garbage-collected.
+   * In externalized state, the memory block will not be reclaimed when a
+   * created ArrayBuffer is garbage-collected.
+   * In internalized state, the memory block will be released using
+   * |Allocator::Free| once all ArrayBuffers referencing it are collected by
+   * the garbage collector.
    */
   static Local<ArrayBuffer> New(
       Isolate* isolate, void* data, size_t byte_length,
@@ -4624,11 +4760,12 @@ class V8_EXPORT RegExp : public Object {
    */
   enum Flags {
     kNone = 0,
-    kGlobal = 1,
-    kIgnoreCase = 2,
-    kMultiline = 4,
-    kSticky = 8,
-    kUnicode = 16
+    kGlobal = 1 << 0,
+    kIgnoreCase = 1 << 1,
+    kMultiline = 1 << 2,
+    kSticky = 1 << 3,
+    kUnicode = 1 << 4,
+    kDotAll = 1 << 5,
   };
 
   /**
@@ -4683,7 +4820,8 @@ class V8_EXPORT External : public Value {
   F(ArrayProto_entries, array_entries_iterator)  \
   F(ArrayProto_forEach, array_for_each_iterator) \
   F(ArrayProto_keys, array_keys_iterator)        \
-  F(ArrayProto_values, array_values_iterator)
+  F(ArrayProto_values, array_values_iterator)    \
+  F(IteratorPrototype, initial_iterator_prototype)
 
 enum Intrinsic {
 #define V8_DECL_INTRINSIC(name, iname) k##name,
@@ -5635,9 +5773,13 @@ class V8_EXPORT ObjectTemplate : public Template {
   friend class FunctionTemplate;
 };
 
-
 /**
  * A Signature specifies which receiver is valid for a function.
+ *
+ * A receiver matches a given signature if the receiver (or any of its
+ * hidden prototypes) was created from the signature's FunctionTemplate, or
+ * from a FunctionTemplate that inherits directly or indirectly from the
+ * signature's FunctionTemplate.
  */
 class V8_EXPORT Signature : public Data {
  public:
@@ -5871,6 +6013,25 @@ typedef void (*CallCompletedCallback)(Isolate*);
 typedef void (*DeprecatedCallCompletedCallback)();
 
 /**
+ * HostImportDynamicallyCallback is called when we require the
+ * embedder to load a module. This is used as part of the dynamic
+ * import syntax. The behavior of this callback is not specified in
+ * EcmaScript.
+ *
+ * The referrer is the name of the file which calls the dynamic
+ * import. The referrer can be used to resolve the module location.
+ *
+ * The specifier is the name of the module that should be imported.
+ *
+ * The DynamicImportResult object is used to signal success or failure
+ * by calling it's respective methods.
+ *
+ */
+typedef void (*HostImportModuleDynamicallyCallback)(
+    Isolate* isolate, Local<String> referrer, Local<String> specifier,
+    Local<DynamicImportResult> result);
+
+/**
  * PromiseHook with type kInit is called when a new promise is
  * created. When a new promise is created as part of the chain in the
  * case of Promise.then or in the intermediate promises created by
@@ -6057,6 +6218,11 @@ class V8_EXPORT HeapStatistics {
   size_t heap_size_limit() { return heap_size_limit_; }
   size_t malloced_memory() { return malloced_memory_; }
   size_t peak_malloced_memory() { return peak_malloced_memory_; }
+
+  /**
+   * Returns a 0/1 boolean, which signifies whether the V8 overwrite heap
+   * garbage with a bit pattern.
+   */
   size_t does_zap_garbage() { return does_zap_garbage_; }
 
  private:
@@ -6411,7 +6577,8 @@ class V8_EXPORT Isolate {
           add_histogram_sample_callback(nullptr),
           array_buffer_allocator(nullptr),
           external_references(nullptr),
-          allow_atomics_wait(true) {}
+          allow_atomics_wait(true),
+          host_import_module_dynamically_callback_(nullptr) {}
 
     /**
      * The optional entry_hook allows the host application to provide the
@@ -6471,9 +6638,19 @@ class V8_EXPORT Isolate {
 
     /**
      * Whether calling Atomics.wait (a function that may block) is allowed in
-     * this isolate.
+     * this isolate. This can also be configured via SetAllowAtomicsWait.
      */
     bool allow_atomics_wait;
+
+    /**
+     * This is an unfinished experimental feature, and is only exposed
+     * here for internal testing purposes. DO NOT USE.
+     *
+     * This specifies the callback called by the upcoming dynamic
+     * import() language feature to load modules.
+     */
+    HostImportModuleDynamicallyCallback
+        host_import_module_dynamically_callback_;
   };
 
 
@@ -7321,6 +7498,13 @@ class V8_EXPORT Isolate {
    */
   bool IsInUse();
 
+  /**
+   * Set whether calling Atomics.wait (a function that may block) is allowed in
+   * this isolate. This can also be configured via
+   * CreateParams::allow_atomics_wait.
+   */
+  void SetAllowAtomicsWait(bool allow);
+
   Isolate() = delete;
   ~Isolate() = delete;
   Isolate(const Isolate&) = delete;
@@ -7847,20 +8031,33 @@ class Maybe {
   V8_INLINE bool IsNothing() const { return !has_value_; }
   V8_INLINE bool IsJust() const { return has_value_; }
 
-  // Will crash if the Maybe<> is nothing.
+  /**
+   * An alias for |FromJust|. Will crash if the Maybe<> is nothing.
+   */
   V8_INLINE T ToChecked() const { return FromJust(); }
 
+  /**
+   * Converts this Maybe<> to a value of type T. If this Maybe<> is
+   * nothing (empty), |false| is returned and |out| is left untouched.
+   */
   V8_WARN_UNUSED_RESULT V8_INLINE bool To(T* out) const {
     if (V8_LIKELY(IsJust())) *out = value_;
     return IsJust();
   }
 
-  // Will crash if the Maybe<> is nothing.
+  /**
+   * Converts this Maybe<> to a value of type T. If this Maybe<> is
+   * nothing (empty), V8 will crash the process.
+   */
   V8_INLINE T FromJust() const {
     if (V8_UNLIKELY(!IsJust())) V8::FromJustIsNothing();
     return value_;
   }
 
+  /**
+   * Converts this Maybe<> to a value of type T, using a default value if this
+   * Maybe<> is nothing (empty).
+   */
   V8_INLINE T FromMaybe(const T& default_value) const {
     return has_value_ ? value_ : default_value;
   }
@@ -8008,6 +8205,11 @@ class V8_EXPORT TryCatch {
    * handler reported as if they were not caught.
    */
   void SetVerbose(bool value);
+
+  /**
+   * Returns true if verbosity is enabled.
+   */
+  bool IsVerbose() const;
 
   /**
    * Set whether or not this TryCatch should capture a Message object
@@ -8201,16 +8403,14 @@ class V8_EXPORT Context {
   Isolate* GetIsolate();
 
   /**
-   * The field at kDebugIdIndex is reserved for V8 debugger implementation.
-   * The value is propagated to the scripts compiled in given Context and
-   * can be used for filtering scripts.
+   * The field at kDebugIdIndex used to be reserved for the inspector.
+   * It now serves no purpose.
    */
   enum EmbedderDataFields { kDebugIdIndex = 0 };
 
   /**
    * Gets the embedder data with the given index, which must have been set by a
-   * previous call to SetEmbedderData with the same index. Note that index 0
-   * currently has a special meaning for Chrome's debugger.
+   * previous call to SetEmbedderData with the same index.
    */
   V8_INLINE Local<Value> GetEmbedderData(int index);
 
@@ -8275,7 +8475,7 @@ class V8_EXPORT Context {
   /**
    * Estimate the memory in bytes retained by this context.
    */
-  size_t EstimatedSize();
+  V8_DEPRECATED("no longer supported", size_t EstimatedSize());
 
   /**
    * Stack-allocated class which sets the execution context for all
@@ -8558,8 +8758,8 @@ class Internals {
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSApiObjectType = 0xb9;
-  static const int kJSObjectType = 0xba;
+  static const int kJSApiObjectType = 0xbb;
+  static const int kJSObjectType = 0xbc;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x82;
   static const int kForeignType = 0x86;

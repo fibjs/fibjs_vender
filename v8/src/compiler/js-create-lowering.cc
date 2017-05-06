@@ -43,11 +43,8 @@ class AllocationBuilder final {
     effect_ = graph()->NewNode(
         common()->BeginRegion(RegionObservability::kNotObservable), effect_);
     allocation_ =
-        graph()->NewNode(simplified()->Allocate(pretenure),
+        graph()->NewNode(simplified()->Allocate(type, pretenure),
                          jsgraph()->Constant(size), effect_, control_);
-    // TODO(turbofan): Maybe we should put the Type* onto the Allocate operator
-    // at some point, or maybe we should have a completely differnt story.
-    NodeProperties::SetType(allocation_, type);
     effect_ = allocation_;
   }
 
@@ -198,9 +195,13 @@ bool IsFastLiteral(Handle<JSObject> boilerplate, int max_depth,
 }
 
 // Maximum depth and total number of elements and properties for literal
-// graphs to be considered for fast deep-copying.
+// graphs to be considered for fast deep-copying. The limit is chosen to
+// match the maximum number of inobject properties, to ensure that the
+// performance of using object literals is not worse than using constructor
+// functions, see crbug.com/v8/6211 for details.
 const int kMaxFastLiteralDepth = 3;
-const int kMaxFastLiteralProperties = 8;
+const int kMaxFastLiteralProperties =
+    (JSObject::kMaxInstanceSize - JSObject::kHeaderSize) >> kPointerSizeLog2;
 
 }  // namespace
 
@@ -593,10 +594,73 @@ Reduction JSCreateLowering::ReduceNewArray(Node* node, Node* length,
   return Changed(node);
 }
 
+Reduction JSCreateLowering::ReduceNewArray(Node* node,
+                                           std::vector<Node*> values,
+                                           Handle<AllocationSite> site) {
+  DCHECK_EQ(IrOpcode::kJSCreateArray, node->opcode());
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+
+  // Extract transition and tenuring feedback from the {site} and add
+  // appropriate code dependencies on the {site} if deoptimization is
+  // enabled.
+  PretenureFlag pretenure = site->GetPretenureMode();
+  ElementsKind elements_kind = site->GetElementsKind();
+  DCHECK(IsFastElementsKind(elements_kind));
+  dependencies()->AssumeTenuringDecision(site);
+  dependencies()->AssumeTransitionStable(site);
+
+  // Check {values} based on the {elements_kind}. These checks are guarded
+  // by the {elements_kind} feedback on the {site}, so it's safe to just
+  // deoptimize in this case.
+  if (IsFastSmiElementsKind(elements_kind)) {
+    for (auto& value : values) {
+      if (!NodeProperties::GetType(value)->Is(Type::SignedSmall())) {
+        value = effect =
+            graph()->NewNode(simplified()->CheckSmi(), value, effect, control);
+      }
+    }
+  } else if (IsFastDoubleElementsKind(elements_kind)) {
+    for (auto& value : values) {
+      if (!NodeProperties::GetType(value)->Is(Type::Number())) {
+        value = effect = graph()->NewNode(simplified()->CheckNumber(), value,
+                                          effect, control);
+      }
+      // Make sure we do not store signaling NaNs into double arrays.
+      value = graph()->NewNode(simplified()->NumberSilenceNaN(), value);
+    }
+  }
+
+  // Retrieve the initial map for the array.
+  int const array_map_index = Context::ArrayMapIndex(elements_kind);
+  Node* js_array_map = jsgraph()->HeapConstant(
+      handle(Map::cast(native_context()->get(array_map_index)), isolate()));
+
+  // Setup elements, properties and length.
+  Node* elements = effect =
+      AllocateElements(effect, control, elements_kind, values, pretenure);
+  Node* properties = jsgraph()->EmptyFixedArrayConstant();
+  Node* length = jsgraph()->Constant(static_cast<int>(values.size()));
+
+  // Perform the allocation of the actual JSArray object.
+  AllocationBuilder a(jsgraph(), effect, control);
+  a.Allocate(JSArray::kSize, pretenure);
+  a.Store(AccessBuilder::ForMap(), js_array_map);
+  a.Store(AccessBuilder::ForJSObjectProperties(), properties);
+  a.Store(AccessBuilder::ForJSObjectElements(), elements);
+  a.Store(AccessBuilder::ForJSArrayLength(elements_kind), length);
+  RelaxControls(node);
+  a.FinishAndChange(node);
+  return Changed(node);
+}
+
 Reduction JSCreateLowering::ReduceNewArrayToStubCall(
     Node* node, Handle<AllocationSite> site) {
   CreateArrayParameters const& p = CreateArrayParametersOf(node->op());
   int const arity = static_cast<int>(p.arity());
+  Node* target = NodeProperties::GetValueInput(node, 0);
+  Node* new_target = NodeProperties::GetValueInput(node, 1);
+  Type* new_target_type = NodeProperties::GetType(new_target);
 
   ElementsKind elements_kind = site->GetElementsKind();
   AllocationSiteOverrideMode override_mode =
@@ -604,12 +668,19 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
           ? DISABLE_ALLOCATION_SITES
           : DONT_OVERRIDE;
 
+  // The Array constructor can only trigger an observable side-effect
+  // if the new.target may be a proxy.
+  Operator::Properties const properties =
+      (new_target != target || new_target_type->Maybe(Type::Proxy()))
+          ? Operator::kNoDeopt
+          : Operator::kNoDeopt | Operator::kNoWrite;
+
   if (arity == 0) {
     ArrayNoArgumentConstructorStub stub(isolate(), elements_kind,
                                         override_mode);
     CallDescriptor* desc = Linkage::GetStubCallDescriptor(
         isolate(), graph()->zone(), stub.GetCallInterfaceDescriptor(), 1,
-        CallDescriptor::kNeedsFrameState);
+        CallDescriptor::kNeedsFrameState, properties);
     node->ReplaceInput(0, jsgraph()->HeapConstant(stub.GetCode()));
     node->InsertInput(graph()->zone(), 2, jsgraph()->HeapConstant(site));
     node->InsertInput(graph()->zone(), 3, jsgraph()->Constant(0));
@@ -627,7 +698,7 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
                                               override_mode);
       CallDescriptor* desc = Linkage::GetStubCallDescriptor(
           isolate(), graph()->zone(), stub.GetCallInterfaceDescriptor(), 2,
-          CallDescriptor::kNeedsFrameState);
+          CallDescriptor::kNeedsFrameState, properties);
       node->ReplaceInput(0, jsgraph()->HeapConstant(stub.GetCode()));
       node->InsertInput(graph()->zone(), 2, jsgraph()->HeapConstant(site));
       node->InsertInput(graph()->zone(), 3, jsgraph()->Constant(1));
@@ -654,7 +725,7 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
                                               override_mode);
       CallDescriptor* desc = Linkage::GetStubCallDescriptor(
           isolate(), graph()->zone(), stub.GetCallInterfaceDescriptor(), 2,
-          CallDescriptor::kNeedsFrameState);
+          CallDescriptor::kNeedsFrameState, properties);
 
       Node* inputs[] = {jsgraph()->HeapConstant(stub.GetCode()),
                         node->InputAt(1),
@@ -677,7 +748,7 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
           isolate(), GetHoleyElementsKind(elements_kind), override_mode);
       CallDescriptor* desc = Linkage::GetStubCallDescriptor(
           isolate(), graph()->zone(), stub.GetCallInterfaceDescriptor(), 2,
-          CallDescriptor::kNeedsFrameState);
+          CallDescriptor::kNeedsFrameState, properties);
 
       Node* inputs[] = {jsgraph()->HeapConstant(stub.GetCode()),
                         node->InputAt(1),
@@ -744,12 +815,25 @@ Reduction JSCreateLowering::ReduceJSCreateArray(Node* node) {
     } else if (p.arity() == 1) {
       Node* length = NodeProperties::GetValueInput(node, 2);
       Type* length_type = NodeProperties::GetType(length);
+      if (!length_type->Maybe(Type::Number())) {
+        // Handle the single argument case, where we know that the value
+        // cannot be a valid Array length.
+        return ReduceNewArray(node, {length}, site);
+      }
       if (length_type->Is(Type::SignedSmall()) && length_type->Min() >= 0 &&
           length_type->Max() <= kElementLoopUnrollLimit &&
           length_type->Min() == length_type->Max()) {
         int capacity = static_cast<int>(length_type->Max());
         return ReduceNewArray(node, length, capacity, site);
       }
+    } else if (p.arity() <= JSArray::kInitialMaxFastElementArray) {
+      std::vector<Node*> values;
+      values.reserve(p.arity());
+      for (size_t i = 0; i < p.arity(); ++i) {
+        values.push_back(
+            NodeProperties::GetValueInput(node, static_cast<int>(2 + i)));
+      }
+      return ReduceNewArray(node, values, site);
     }
   }
 
@@ -1102,17 +1186,7 @@ Node* JSCreateLowering::AllocateElements(Node* effect, Node* control,
   ElementAccess access = IsFastDoubleElementsKind(elements_kind)
                              ? AccessBuilder::ForFixedDoubleArrayElement()
                              : AccessBuilder::ForFixedArrayElement();
-  Node* value;
-  if (IsFastDoubleElementsKind(elements_kind)) {
-    // Load the hole NaN pattern from the canonical location.
-    value = effect = graph()->NewNode(
-        simplified()->LoadField(AccessBuilder::ForExternalDoubleValue()),
-        jsgraph()->ExternalConstant(
-            ExternalReference::address_of_the_hole_nan()),
-        effect, control);
-  } else {
-    value = jsgraph()->TheHoleConstant();
-  }
+  Node* value = jsgraph()->TheHoleConstant();
 
   // Actually allocate the backing store.
   AllocationBuilder a(jsgraph(), effect, control);
@@ -1120,6 +1194,31 @@ Node* JSCreateLowering::AllocateElements(Node* effect, Node* control,
   for (int i = 0; i < capacity; ++i) {
     Node* index = jsgraph()->Constant(i);
     a.Store(access, index, value);
+  }
+  return a.Finish();
+}
+
+Node* JSCreateLowering::AllocateElements(Node* effect, Node* control,
+                                         ElementsKind elements_kind,
+                                         std::vector<Node*> const& values,
+                                         PretenureFlag pretenure) {
+  int const capacity = static_cast<int>(values.size());
+  DCHECK_LE(1, capacity);
+  DCHECK_LE(capacity, JSArray::kInitialMaxFastElementArray);
+
+  Handle<Map> elements_map = IsFastDoubleElementsKind(elements_kind)
+                                 ? factory()->fixed_double_array_map()
+                                 : factory()->fixed_array_map();
+  ElementAccess access = IsFastDoubleElementsKind(elements_kind)
+                             ? AccessBuilder::ForFixedDoubleArrayElement()
+                             : AccessBuilder::ForFixedArrayElement();
+
+  // Actually allocate the backing store.
+  AllocationBuilder a(jsgraph(), effect, control);
+  a.AllocateArray(capacity, elements_map, pretenure);
+  for (int i = 0; i < capacity; ++i) {
+    Node* index = jsgraph()->Constant(i);
+    a.Store(access, index, values[i]);
   }
   return a.Finish();
 }
@@ -1142,11 +1241,6 @@ Node* JSCreateLowering::AllocateFastLiteral(
 
   // Setup the properties backing store.
   Node* properties = jsgraph()->EmptyFixedArrayConstant();
-
-  // Setup the elements backing store.
-  Node* elements = AllocateFastLiteralElements(effect, control, boilerplate,
-                                               pretenure, site_context);
-  if (elements->op()->EffectOutputCount() > 0) effect = elements;
 
   // Compute the in-object properties to store first (might have effects).
   Handle<Map> boilerplate_map(boilerplate->map(), isolate());
@@ -1212,10 +1306,15 @@ Node* JSCreateLowering::AllocateFastLiteral(
     inobject_fields.push_back(std::make_pair(access, value));
   }
 
+  // Setup the elements backing store.
+  Node* elements = AllocateFastLiteralElements(effect, control, boilerplate,
+                                               pretenure, site_context);
+  if (elements->op()->EffectOutputCount() > 0) effect = elements;
+
   // Actually allocate and initialize the object.
   AllocationBuilder builder(jsgraph(), effect, control);
   builder.Allocate(boilerplate_map->instance_size(), pretenure,
-                   Type::OtherObject());
+                   Type::For(boilerplate_map));
   builder.Store(AccessBuilder::ForMap(), boilerplate_map);
   builder.Store(AccessBuilder::ForJSObjectProperties(), properties);
   builder.Store(AccessBuilder::ForJSObjectElements(), elements);
@@ -1260,18 +1359,9 @@ Node* JSCreateLowering::AllocateFastLiteralElements(
   if (elements_map->instance_type() == FIXED_DOUBLE_ARRAY_TYPE) {
     Handle<FixedDoubleArray> elements =
         Handle<FixedDoubleArray>::cast(boilerplate_elements);
-    Node* the_hole_value = nullptr;
     for (int i = 0; i < elements_length; ++i) {
       if (elements->is_the_hole(i)) {
-        if (the_hole_value == nullptr) {
-          // Load the hole NaN pattern from the canonical location.
-          the_hole_value = effect = graph()->NewNode(
-              simplified()->LoadField(AccessBuilder::ForExternalDoubleValue()),
-              jsgraph()->ExternalConstant(
-                  ExternalReference::address_of_the_hole_nan()),
-              effect, control);
-        }
-        elements_values[i] = the_hole_value;
+        elements_values[i] = jsgraph()->TheHoleConstant();
       } else {
         elements_values[i] = jsgraph()->Constant(elements->get_scalar(i));
       }

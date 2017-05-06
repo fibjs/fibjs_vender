@@ -30,7 +30,8 @@ class X64OperandGenerator final : public OperandGenerator {
         return true;
       case IrOpcode::kInt64Constant: {
         const int64_t value = OpParameter<int64_t>(node);
-        return value == static_cast<int64_t>(static_cast<int32_t>(value));
+        return std::numeric_limits<int32_t>::min() < value &&
+               value <= std::numeric_limits<int32_t>::max();
       }
       case IrOpcode::kNumberConstant: {
         const double value = OpParameter<double>(node);
@@ -234,6 +235,8 @@ ArchOpcode GetLoadOpcode(LoadRepresentation load_rep) {
       opcode = kX64Movq;
       break;
     case MachineRepresentation::kSimd128:  // Fall through.
+      opcode = kX64Movdqu;
+      break;
     case MachineRepresentation::kSimd1x4:  // Fall through.
     case MachineRepresentation::kSimd1x8:  // Fall through.
     case MachineRepresentation::kSimd1x16:  // Fall through.
@@ -269,6 +272,8 @@ ArchOpcode GetStoreOpcode(StoreRepresentation store_rep) {
       return kX64Movq;
       break;
     case MachineRepresentation::kSimd128:  // Fall through.
+      return kX64Movdqu;
+      break;
     case MachineRepresentation::kSimd1x4:  // Fall through.
     case MachineRepresentation::kSimd1x8:  // Fall through.
     case MachineRepresentation::kSimd1x16:  // Fall through.
@@ -2309,7 +2314,7 @@ void InstructionSelector::VisitAtomicExchange(Node* node) {
   Node* index = node->InputAt(1);
   Node* value = node->InputAt(2);
 
-  MachineType type = AtomicExchangeRepresentationOf(node->op());
+  MachineType type = AtomicOpRepresentationOf(node->op());
   ArchOpcode opcode = kArchNop;
   if (type == MachineType::Int8()) {
     opcode = kAtomicExchangeInt8;
@@ -2327,7 +2332,7 @@ void InstructionSelector::VisitAtomicExchange(Node* node) {
   }
   InstructionOperand outputs[1];
   AddressingMode addressing_mode;
-  InstructionOperand inputs[4];
+  InstructionOperand inputs[3];
   size_t input_count = 0;
   inputs[input_count++] = g.UseUniqueRegister(value);
   inputs[input_count++] = g.UseUniqueRegister(base);
@@ -2350,7 +2355,7 @@ void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
   Node* old_value = node->InputAt(2);
   Node* new_value = node->InputAt(3);
 
-  MachineType type = AtomicCompareExchangeRepresentationOf(node->op());
+  MachineType type = AtomicOpRepresentationOf(node->op());
   ArchOpcode opcode = kArchNop;
   if (type == MachineType::Int8()) {
     opcode = kAtomicCompareExchangeInt8;
@@ -2385,29 +2390,129 @@ void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
   Emit(code, 1, outputs, input_count, inputs);
 }
 
-#define SIMD_TYPES(V) V(Int32x4)
+void InstructionSelector::VisitAtomicBinaryOperation(
+    Node* node, ArchOpcode int8_op, ArchOpcode uint8_op, ArchOpcode int16_op,
+    ArchOpcode uint16_op, ArchOpcode word32_op) {
+  X64OperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* value = node->InputAt(2);
+
+  MachineType type = AtomicOpRepresentationOf(node->op());
+  ArchOpcode opcode = kArchNop;
+  if (type == MachineType::Int8()) {
+    opcode = int8_op;
+  } else if (type == MachineType::Uint8()) {
+    opcode = uint8_op;
+  } else if (type == MachineType::Int16()) {
+    opcode = int16_op;
+  } else if (type == MachineType::Uint16()) {
+    opcode = uint16_op;
+  } else if (type == MachineType::Int32() || type == MachineType::Uint32()) {
+    opcode = word32_op;
+  } else {
+    UNREACHABLE();
+    return;
+  }
+  InstructionOperand outputs[1];
+  AddressingMode addressing_mode;
+  InstructionOperand inputs[3];
+  size_t input_count = 0;
+  inputs[input_count++] = g.UseUniqueRegister(value);
+  inputs[input_count++] = g.UseUniqueRegister(base);
+  if (g.CanBeImmediate(index)) {
+    inputs[input_count++] = g.UseImmediate(index);
+    addressing_mode = kMode_MRI;
+  } else {
+    inputs[input_count++] = g.UseUniqueRegister(index);
+    addressing_mode = kMode_MR1;
+  }
+  outputs[0] = g.DefineAsFixed(node, rax);
+  InstructionOperand temp[1];
+  temp[0] = g.TempRegister();
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  Emit(code, 1, outputs, input_count, inputs, 1, temp);
+}
+
+#define VISIT_ATOMIC_BINOP(op)                                              \
+  void InstructionSelector::VisitAtomic##op(Node* node) {                   \
+    VisitAtomicBinaryOperation(node, kAtomic##op##Int8, kAtomic##op##Uint8, \
+                               kAtomic##op##Int16, kAtomic##op##Uint16,     \
+                               kAtomic##op##Word32);                        \
+  }
+VISIT_ATOMIC_BINOP(Add)
+VISIT_ATOMIC_BINOP(Sub)
+VISIT_ATOMIC_BINOP(And)
+VISIT_ATOMIC_BINOP(Or)
+VISIT_ATOMIC_BINOP(Xor)
+#undef VISIT_ATOMIC_BINOP
+
+#define SIMD_TYPES(V) \
+  V(I32x4)            \
+  V(I16x8)            \
+  V(I8x16)
+
+#define SIMD_FORMAT_LIST(V) \
+  V(32x4)                   \
+  V(16x8)                   \
+  V(8x16)
 
 #define SIMD_ZERO_OP_LIST(V) \
-  V(Simd128Zero)             \
-  V(Simd1x4Zero)             \
-  V(Simd1x8Zero)             \
-  V(Simd1x16Zero)
+  V(S128Zero)                \
+  V(S1x4Zero)                \
+  V(S1x8Zero)                \
+  V(S1x16Zero)
 
 #define SIMD_BINOP_LIST(V) \
-  V(Int32x4Add)            \
-  V(Int32x4Sub)            \
-  V(Int32x4Mul)            \
-  V(Int32x4Min)            \
-  V(Int32x4Max)            \
-  V(Int32x4Equal)          \
-  V(Int32x4NotEqual)       \
-  V(Uint32x4Min)           \
-  V(Uint32x4Max)
+  V(I32x4Add)              \
+  V(I32x4AddHoriz)         \
+  V(I32x4Sub)              \
+  V(I32x4Mul)              \
+  V(I32x4MinS)             \
+  V(I32x4MaxS)             \
+  V(I32x4Eq)               \
+  V(I32x4Ne)               \
+  V(I32x4MinU)             \
+  V(I32x4MaxU)             \
+  V(I16x8Add)              \
+  V(I16x8AddSaturateS)     \
+  V(I16x8AddHoriz)         \
+  V(I16x8Sub)              \
+  V(I16x8SubSaturateS)     \
+  V(I16x8Mul)              \
+  V(I16x8MinS)             \
+  V(I16x8MaxS)             \
+  V(I16x8Eq)               \
+  V(I16x8Ne)               \
+  V(I16x8AddSaturateU)     \
+  V(I16x8SubSaturateU)     \
+  V(I16x8MinU)             \
+  V(I16x8MaxU)             \
+  V(I8x16Add)              \
+  V(I8x16AddSaturateS)     \
+  V(I8x16Sub)              \
+  V(I8x16SubSaturateS)     \
+  V(I8x16MinS)             \
+  V(I8x16MaxS)             \
+  V(I8x16Eq)               \
+  V(I8x16Ne)               \
+  V(I8x16AddSaturateU)     \
+  V(I8x16SubSaturateU)     \
+  V(I8x16MinU)             \
+  V(I8x16MaxU)             \
+  V(S128And)               \
+  V(S128Or)                \
+  V(S128Xor)
 
-#define SIMD_SHIFT_OPCODES(V)  \
-  V(Int32x4ShiftLeftByScalar)  \
-  V(Int32x4ShiftRightByScalar) \
-  V(Uint32x4ShiftRightByScalar)
+#define SIMD_UNOP_LIST(V) V(S128Not)
+
+#define SIMD_SHIFT_OPCODES(V) \
+  V(I32x4Shl)                 \
+  V(I32x4ShrS)                \
+  V(I32x4ShrU)                \
+  V(I16x8Shl)                 \
+  V(I16x8ShrS)                \
+  V(I16x8ShrU)
 
 #define VISIT_SIMD_SPLAT(Type)                               \
   void InstructionSelector::Visit##Type##Splat(Node* node) { \
@@ -2439,22 +2544,13 @@ SIMD_TYPES(VISIT_SIMD_EXTRACT_LANE)
 SIMD_TYPES(VISIT_SIMD_REPLACE_LANE)
 #undef VISIT_SIMD_REPLACE_LANE
 
-#define SIMD_VISIT_ZERO_OP(Name)                                               \
-  void InstructionSelector::Visit##Name(Node* node) {                          \
-    X64OperandGenerator g(this);                                               \
-    Emit(kX64Simd128Zero, g.DefineAsRegister(node), g.DefineAsRegister(node)); \
+#define SIMD_VISIT_ZERO_OP(Name)                                            \
+  void InstructionSelector::Visit##Name(Node* node) {                       \
+    X64OperandGenerator g(this);                                            \
+    Emit(kX64S128Zero, g.DefineAsRegister(node), g.DefineAsRegister(node)); \
   }
 SIMD_ZERO_OP_LIST(SIMD_VISIT_ZERO_OP)
 #undef SIMD_VISIT_ZERO_OP
-
-#define VISIT_SIMD_BINOP(Opcode)                                            \
-  void InstructionSelector::Visit##Opcode(Node* node) {                     \
-    X64OperandGenerator g(this);                                            \
-    Emit(kX64##Opcode, g.DefineSameAsFirst(node),                           \
-         g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1))); \
-  }
-SIMD_BINOP_LIST(VISIT_SIMD_BINOP)
-#undef VISIT_SIMD_BINOP
 
 #define VISIT_SIMD_SHIFT(Opcode)                                  \
   void InstructionSelector::Visit##Opcode(Node* node) {           \
@@ -2466,11 +2562,40 @@ SIMD_BINOP_LIST(VISIT_SIMD_BINOP)
 SIMD_SHIFT_OPCODES(VISIT_SIMD_SHIFT)
 #undef VISIT_SIMD_SHIFT
 
-void InstructionSelector::VisitSimd32x4Select(Node* node) {
-  X64OperandGenerator g(this);
-  Emit(kX64Simd32x4Select, g.DefineSameAsFirst(node),
-       g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1)),
-       g.UseRegister(node->InputAt(2)));
+#define VISIT_SIMD_UNOP(Opcode)                         \
+  void InstructionSelector::Visit##Opcode(Node* node) { \
+    X64OperandGenerator g(this);                        \
+    Emit(kX64##Opcode, g.DefineAsRegister(node),        \
+         g.UseRegister(node->InputAt(0)));              \
+  }
+SIMD_UNOP_LIST(VISIT_SIMD_UNOP)
+#undef VISIT_SIMD_UNOP
+
+#define VISIT_SIMD_BINOP(Opcode)                                            \
+  void InstructionSelector::Visit##Opcode(Node* node) {                     \
+    X64OperandGenerator g(this);                                            \
+    Emit(kX64##Opcode, g.DefineSameAsFirst(node),                           \
+         g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1))); \
+  }
+SIMD_BINOP_LIST(VISIT_SIMD_BINOP)
+#undef VISIT_SIMD_BINOP
+
+#define SIMD_VISIT_SELECT_OP(format)                                       \
+  void InstructionSelector::VisitS##format##Select(Node* node) {           \
+    X64OperandGenerator g(this);                                           \
+    Emit(kX64S128Select, g.DefineSameAsFirst(node),                        \
+         g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1)), \
+         g.UseRegister(node->InputAt(2)));                                 \
+  }
+SIMD_FORMAT_LIST(SIMD_VISIT_SELECT_OP)
+#undef SIMD_VISIT_SELECT_OP
+
+void InstructionSelector::VisitInt32AbsWithOverflow(Node* node) {
+  UNREACHABLE();
+}
+
+void InstructionSelector::VisitInt64AbsWithOverflow(Node* node) {
+  UNREACHABLE();
 }
 
 // static

@@ -178,6 +178,11 @@ class PreParserExpression {
                                variables);
   }
 
+  static PreParserExpression NewTargetExpression() {
+    return PreParserExpression(TypeField::encode(kExpression) |
+                               ExpressionTypeField::encode(kNewTarget));
+  }
+
   static PreParserExpression ObjectLiteral(
       ZoneList<VariableProxy*>* variables) {
     return PreParserExpression(TypeField::encode(kObjectLiteralExpression),
@@ -358,7 +363,8 @@ class PreParserExpression {
     kCallEvalExpression,
     kSuperCallReference,
     kNoTemplateTagExpression,
-    kAssignment
+    kAssignment,
+    kNewTarget
   };
 
   explicit PreParserExpression(uint32_t expression_code,
@@ -387,7 +393,7 @@ class PreParserExpression {
 
   // The rest of the bits are interpreted depending on the value
   // of the Type field, so they can share the storage.
-  typedef BitField<ExpressionType, TypeField::kNext, 3> ExpressionTypeField;
+  typedef BitField<ExpressionType, TypeField::kNext, 4> ExpressionTypeField;
   typedef BitField<bool, TypeField::kNext, 1> IsUseStrictField;
   typedef BitField<bool, IsUseStrictField::kNext, 1> IsUseAsmField;
   typedef BitField<PreParserIdentifier::Type, TypeField::kNext, 10>
@@ -637,7 +643,7 @@ class PreParserFactory {
   PreParserExpression NewSuspend(PreParserExpression generator_object,
                                  PreParserExpression expression, int pos,
                                  Suspend::OnException on_exception,
-                                 Suspend::Flags flags) {
+                                 SuspendFlags flags) {
     return PreParserExpression::Default();
   }
   PreParserExpression NewConditional(PreParserExpression condition,
@@ -775,6 +781,11 @@ class PreParserFactory {
     return PreParserExpression::Default();
   }
 
+  PreParserExpression NewImportCallExpression(PreParserExpression args,
+                                              int pos) {
+    return PreParserExpression::Default();
+  }
+
   // Return the object itself as AstVisitor and implement the needed
   // dummy method right in this class.
   PreParserFactory* visitor() { return this; }
@@ -884,12 +895,12 @@ class PreParser : public ParserBase<PreParser> {
             AstValueFactory* ast_value_factory,
             PendingCompilationErrorHandler* pending_error_handler,
             RuntimeCallStats* runtime_call_stats,
+            PreParsedScopeData* preparsed_scope_data = nullptr,
             bool parsing_on_main_thread = true)
       : ParserBase<PreParser>(zone, scanner, stack_limit, nullptr,
                               ast_value_factory, runtime_call_stats,
-                              parsing_on_main_thread),
+                              preparsed_scope_data, parsing_on_main_thread),
         use_counts_(nullptr),
-        preparse_data_(FLAG_use_parse_tasks ? new PreParseData() : nullptr),
         track_unresolved_variables_(false),
         pending_error_handler_(pending_error_handler) {}
 
@@ -901,8 +912,7 @@ class PreParser : public ParserBase<PreParser> {
   // success (even if parsing failed, the pre-parse data successfully
   // captured the syntax error), and false if a stack-overflow happened
   // during parsing.
-  PreParseResult PreParseProgram(bool is_module = false,
-                                 int* use_counts = nullptr);
+  PreParseResult PreParseProgram(bool is_module = false);
 
   // Parses a single function literal, from the opening parentheses before
   // parameters to the closing brace after the body.
@@ -917,8 +927,6 @@ class PreParser : public ParserBase<PreParser> {
                                   bool parsing_module,
                                   bool track_unresolved_variables,
                                   bool may_abort, int* use_counts);
-
-  const PreParseData* preparse_data() const { return preparse_data_.get(); }
 
  private:
   // These types form an algebra over syntactic categories that is just
@@ -936,11 +944,11 @@ class PreParser : public ParserBase<PreParser> {
   bool AllowsLazyParsingWithoutUnresolvedVariables() const { return false; }
   bool parse_lazily() const { return false; }
 
-  V8_INLINE LazyParsingResult
-  SkipFunction(FunctionKind kind, DeclarationScope* function_scope,
-               int* num_parameters, int* function_length,
-               bool* has_duplicate_parameters, int* expected_property_count,
-               bool is_inner_function, bool may_abort, bool* ok) {
+  V8_INLINE LazyParsingResult SkipFunction(FunctionKind kind,
+                                           DeclarationScope* function_scope,
+                                           int* num_parameters,
+                                           bool is_inner_function,
+                                           bool may_abort, bool* ok) {
     UNREACHABLE();
     return kLazyParsingComplete;
   }
@@ -950,8 +958,7 @@ class PreParser : public ParserBase<PreParser> {
       int function_token_pos, FunctionLiteral::FunctionType function_type,
       LanguageMode language_mode, bool* ok);
   LazyParsingResult ParseStatementListAndLogFunction(
-      PreParserFormalParameters* formals, bool has_duplicate_parameters,
-      bool maybe_abort, bool* ok);
+      PreParserFormalParameters* formals, bool maybe_abort, bool* ok);
 
   struct TemplateLiteralState {};
 
@@ -1127,7 +1134,8 @@ class PreParser : public ParserBase<PreParser> {
                                       bool is_static, bool is_constructor,
                                       ClassInfo* class_info, bool* ok) {
   }
-  V8_INLINE PreParserExpression RewriteClassLiteral(PreParserIdentifier name,
+  V8_INLINE PreParserExpression RewriteClassLiteral(Scope* scope,
+                                                    PreParserIdentifier name,
                                                     ClassInfo* class_info,
                                                     int pos, bool* ok) {
     bool has_default_constructor = !class_info->has_seen_constructor;
@@ -1514,7 +1522,7 @@ class PreParser : public ParserBase<PreParser> {
   }
 
   V8_INLINE PreParserExpression NewTargetExpression(int pos) {
-    return PreParserExpression::Default();
+    return PreParserExpression::NewTargetExpression();
   }
 
   V8_INLINE PreParserExpression FunctionSentExpression(int pos) {
@@ -1658,7 +1666,6 @@ class PreParser : public ParserBase<PreParser> {
   // Preparser's private field members.
 
   int* use_counts_;
-  std::unique_ptr<PreParseData> preparse_data_;
   bool track_unresolved_variables_;
   PreParserLogger log_;
   PendingCompilationErrorHandler* pending_error_handler_;

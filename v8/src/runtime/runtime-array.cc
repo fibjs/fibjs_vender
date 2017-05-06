@@ -52,7 +52,7 @@ RUNTIME_FUNCTION(Runtime_SpecialArrayFunctions) {
   Handle<JSObject> holder =
       isolate->factory()->NewJSObject(isolate->object_function());
 
-  InstallBuiltin(isolate, holder, "pop", Builtins::kArrayPop);
+  InstallBuiltin(isolate, holder, "pop", Builtins::kFastArrayPop);
   InstallBuiltin(isolate, holder, "push", Builtins::kFastArrayPush);
   InstallBuiltin(isolate, holder, "shift", Builtins::kArrayShift);
   InstallBuiltin(isolate, holder, "unshift", Builtins::kArrayUnshift);
@@ -142,14 +142,14 @@ RUNTIME_FUNCTION(Runtime_MoveArrayContents) {
 
 // How many elements does this object/array have?
 RUNTIME_FUNCTION(Runtime_EstimateNumberOfElements) {
+  DisallowHeapAllocation no_gc;
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSArray, array, 0);
-  Handle<FixedArrayBase> elements(array->elements(), isolate);
+  CONVERT_ARG_CHECKED(JSArray, array, 0);
+  FixedArrayBase* elements = array->elements();
   SealHandleScope shs(isolate);
   if (elements->IsDictionary()) {
-    int result =
-        Handle<SeededNumberDictionary>::cast(elements)->NumberOfElements();
+    int result = SeededNumberDictionary::cast(elements)->NumberOfElements();
     return Smi::FromInt(result);
   } else {
     DCHECK(array->length()->IsSmi());
@@ -531,16 +531,10 @@ RUNTIME_FUNCTION(Runtime_ArrayIndexOf) {
   CONVERT_ARG_HANDLE_CHECKED(Object, from_index, 2);
 
   // Let O be ? ToObject(this value).
-  Handle<Object> receiver_obj = args.at(0);
-  if (receiver_obj->IsNullOrUndefined(isolate)) {
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewTypeError(MessageTemplate::kCalledOnNullOrUndefined,
-                              isolate->factory()->NewStringFromAsciiChecked(
-                                  "Array.prototype.indexOf")));
-  }
   Handle<JSReceiver> object;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, object,
-                                     Object::ToObject(isolate, args.at(0)));
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, object,
+      Object::ToObject(isolate, args.at(0), "Array.prototype.indexOf"));
 
   // Let len be ? ToLength(? Get(O, "length")).
   int64_t len;
@@ -661,7 +655,7 @@ RUNTIME_FUNCTION(Runtime_SpreadIterableFixed) {
   Handle<FixedArray> result = isolate->factory()->NewFixedArray(spread_length);
   ElementsAccessor* accessor = spread_array->GetElementsAccessor();
   for (uint32_t i = 0; i < spread_length; i++) {
-    DCHECK(accessor->HasElement(spread_array, i));
+    DCHECK(accessor->HasElement(*spread_array, i));
     Handle<Object> element = accessor->Get(spread_array, i);
     result->set(i, *element);
   }

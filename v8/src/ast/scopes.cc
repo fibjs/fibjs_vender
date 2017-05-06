@@ -612,7 +612,7 @@ void DeclarationScope::HoistSloppyBlockFunctions(AstNodeFactory* factory) {
       Variable* var = DeclareVariableName(name, VAR);
       if (var != kDummyPreParserVariable &&
           var != kDummyPreParserLexicalVariable) {
-        DCHECK(FLAG_preparser_scope_analysis);
+        DCHECK(FLAG_experimental_preparser_scope_analysis);
         var->set_maybe_assigned();
       }
     }
@@ -662,7 +662,7 @@ void DeclarationScope::Analyze(ParseInfo* info, Isolate* isolate,
   scope->set_should_eager_compile();
 
   if (scope->must_use_preparsed_scope_data_) {
-    DCHECK(FLAG_preparser_scope_analysis);
+    DCHECK(FLAG_experimental_preparser_scope_analysis);
     DCHECK_NOT_NULL(info->preparsed_scope_data());
     DCHECK_EQ(scope->scope_type_, ScopeType::FUNCTION_SCOPE);
     info->preparsed_scope_data()->RestoreData(scope);
@@ -1008,7 +1008,7 @@ Variable* Scope::Lookup(const AstRawString* name) {
 
 Variable* DeclarationScope::DeclareParameter(
     const AstRawString* name, VariableMode mode, bool is_optional, bool is_rest,
-    bool* is_duplicate, AstValueFactory* ast_value_factory) {
+    bool* is_duplicate, AstValueFactory* ast_value_factory, int position) {
   DCHECK(!already_resolved_);
   DCHECK(is_function_scope() || is_module_scope());
   DCHECK(!has_rest_);
@@ -1025,6 +1025,7 @@ Variable* DeclarationScope::DeclareParameter(
     *is_duplicate = IsDeclaredParameter(name);
   }
   has_rest_ = is_rest;
+  var->set_initializer_position(position);
   params_.Add(var, zone());
   if (name == ast_value_factory->arguments_string()) {
     has_arguments_parameter_ = true;
@@ -1043,7 +1044,7 @@ Variable* DeclarationScope::DeclareParameterName(
   if (name == ast_value_factory->arguments_string()) {
     has_arguments_parameter_ = true;
   }
-  if (FLAG_preparser_scope_analysis) {
+  if (FLAG_experimental_preparser_scope_analysis) {
     Variable* var = Declare(zone(), name, VAR);
     params_.Add(var, zone());
     return var;
@@ -1204,7 +1205,7 @@ Variable* Scope::DeclareVariableName(const AstRawString* name,
   DCHECK(scope_info_.is_null());
 
   // Declare the variable in the declaration scope.
-  if (FLAG_preparser_scope_analysis) {
+  if (FLAG_experimental_preparser_scope_analysis) {
     Variable* var = LookupLocal(name);
     DCHECK_NE(var, kDummyPreParserLexicalVariable);
     DCHECK_NE(var, kDummyPreParserVariable);
@@ -1495,7 +1496,11 @@ void DeclarationScope::ResetAfterPreparsing(AstValueFactory* ast_value_factory,
   DCHECK(is_function_scope());
 
   // Reset all non-trivial members.
-  params_.Clear();
+  if (!aborted || !IsArrowFunction(function_kind_)) {
+    // Do not remove parameters when lazy parsing an Arrow Function has failed,
+    // as the formal parameters are not re-parsed.
+    params_.Clear();
+  }
   decls_.Clear();
   locals_.Clear();
   inner_scope_ = nullptr;
@@ -1547,7 +1552,8 @@ void DeclarationScope::AnalyzePartially(
       arguments_ = nullptr;
     }
 
-    if (FLAG_preparser_scope_analysis && preparsed_scope_data->Producing()) {
+    if (FLAG_experimental_preparser_scope_analysis &&
+        preparsed_scope_data->Producing()) {
       // Store the information needed for allocating the locals of this scope
       // and its inner scopes.
       preparsed_scope_data->SaveData(this);
@@ -1623,7 +1629,7 @@ void PrintVar(int indent, Variable* var) {
     PrintF(".%p", reinterpret_cast<void*>(var));
   else
     PrintName(var->raw_name());
-  PrintF(";  // ");
+  PrintF(";  // (%p) ", reinterpret_cast<void*>(var));
   PrintLocation(var);
   bool comma = !var->IsUnallocated();
   if (var->has_forced_context_allocation()) {
@@ -1696,7 +1702,8 @@ void Scope::Print(int n) {
     function = AsDeclarationScope()->function_var();
   }
 
-  PrintF(" { // (%d, %d)\n", start_position(), end_position());
+  PrintF(" { // (%p) (%d, %d)\n", reinterpret_cast<void*>(this),
+         start_position(), end_position());
   if (is_hidden()) {
     Indent(n1, "// is hidden\n");
   }
@@ -1792,7 +1799,9 @@ void Scope::CheckZones() {
       DCHECK_NULL(scope->inner_scope_);
       continue;
     }
-    CHECK_EQ(scope->zone(), zone());
+    if (!scope->replaced_from_parse_task()) {
+      CHECK_EQ(scope->zone(), zone());
+    }
     scope->CheckZones();
   }
 }
@@ -2251,7 +2260,8 @@ void ModuleScope::AllocateModuleVariables() {
 
 void Scope::AllocateVariablesRecursively() {
   DCHECK(!already_resolved_);
-  DCHECK_IMPLIES(!FLAG_preparser_scope_analysis, num_stack_slots_ == 0);
+  DCHECK_IMPLIES(!FLAG_experimental_preparser_scope_analysis,
+                 num_stack_slots_ == 0);
 
   // Don't allocate variables of preparsed scopes.
   if (is_declaration_scope() && AsDeclarationScope()->was_lazily_parsed()) {

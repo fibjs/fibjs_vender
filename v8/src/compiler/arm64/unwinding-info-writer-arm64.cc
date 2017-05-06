@@ -28,6 +28,7 @@ void UnwindingInfoWriter::BeginInstructionBlock(int pc_offset,
       eh_frame_writer_.AdvanceLocation(pc_offset);
       if (initial_state->saved_lr_) {
         eh_frame_writer_.RecordRegisterSavedToStack(lr, kPointerSize);
+        eh_frame_writer_.RecordRegisterSavedToStack(fp, 0);
       } else {
         eh_frame_writer_.RecordRegisterFollowsInitialRule(lr);
       }
@@ -80,6 +81,7 @@ void UnwindingInfoWriter::MarkFrameConstructed(int at_pc) {
   // the construction, since the LR itself is not modified in the process.
   eh_frame_writer_.AdvanceLocation(at_pc);
   eh_frame_writer_.RecordRegisterSavedToStack(lr, kPointerSize);
+  eh_frame_writer_.RecordRegisterSavedToStack(fp, 0);
   saved_lr_ = true;
 }
 

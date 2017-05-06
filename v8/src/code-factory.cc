@@ -232,12 +232,6 @@ Callable CodeFactory::NumberToString(Isolate* isolate) {
 }
 
 // static
-Callable CodeFactory::RegExpExec(Isolate* isolate) {
-  RegExpExecStub stub(isolate);
-  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
-}
-
-// static
 Callable CodeFactory::StringFromCharCode(Isolate* isolate) {
   Handle<Code> code(isolate->builtins()->StringFromCharCode());
   return Callable(code, BuiltinDescriptor(isolate));
@@ -305,6 +299,9 @@ TFS_BUILTIN(StringLessThan)
 TFS_BUILTIN(StringLessThanOrEqual)
 TFS_BUILTIN(StringGreaterThan)
 TFS_BUILTIN(StringGreaterThanOrEqual)
+TFS_BUILTIN(AsyncGeneratorResolve)
+TFS_BUILTIN(AsyncGeneratorReject)
+TFS_BUILTIN(AsyncGeneratorResumeNext)
 
 #undef TFS_BUILTIN
 
@@ -461,25 +458,25 @@ Callable CodeFactory::ConstructFunction(Isolate* isolate) {
 }
 
 // static
-Callable CodeFactory::InterpreterPushArgsAndCall(Isolate* isolate,
-                                                 TailCallMode tail_call_mode,
-                                                 InterpreterPushArgsMode mode) {
-  return Callable(
-      isolate->builtins()->InterpreterPushArgsAndCall(tail_call_mode, mode),
-      InterpreterPushArgsAndCallDescriptor(isolate));
+Callable CodeFactory::InterpreterPushArgsThenCall(
+    Isolate* isolate, ConvertReceiverMode receiver_mode,
+    TailCallMode tail_call_mode, InterpreterPushArgsMode mode) {
+  return Callable(isolate->builtins()->InterpreterPushArgsThenCall(
+                      receiver_mode, tail_call_mode, mode),
+                  InterpreterPushArgsThenCallDescriptor(isolate));
 }
 
 // static
-Callable CodeFactory::InterpreterPushArgsAndConstruct(
+Callable CodeFactory::InterpreterPushArgsThenConstruct(
     Isolate* isolate, InterpreterPushArgsMode mode) {
-  return Callable(isolate->builtins()->InterpreterPushArgsAndConstruct(mode),
-                  InterpreterPushArgsAndConstructDescriptor(isolate));
+  return Callable(isolate->builtins()->InterpreterPushArgsThenConstruct(mode),
+                  InterpreterPushArgsThenConstructDescriptor(isolate));
 }
 
 // static
-Callable CodeFactory::InterpreterPushArgsAndConstructArray(Isolate* isolate) {
-  return Callable(isolate->builtins()->InterpreterPushArgsAndConstructArray(),
-                  InterpreterPushArgsAndConstructArrayDescriptor(isolate));
+Callable CodeFactory::InterpreterPushArgsThenConstructArray(Isolate* isolate) {
+  return Callable(isolate->builtins()->InterpreterPushArgsThenConstructArray(),
+                  InterpreterPushArgsThenConstructArrayDescriptor(isolate));
 }
 
 // static
@@ -503,50 +500,13 @@ Callable CodeFactory::ArrayConstructor(Isolate* isolate) {
 }
 
 // static
+Callable CodeFactory::ArrayPop(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayPop(), BuiltinDescriptor(isolate));
+}
+
+// static
 Callable CodeFactory::ArrayPush(Isolate* isolate) {
   return Callable(isolate->builtins()->ArrayPush(), BuiltinDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::ArrayFilterLoopContinuation(Isolate* isolate) {
-  return Callable(isolate->builtins()->ArrayFilterLoopContinuation(),
-                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::ArrayMapLoopContinuation(Isolate* isolate) {
-  return Callable(isolate->builtins()->ArrayMapLoopContinuation(),
-                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::ArrayForEachLoopContinuation(Isolate* isolate) {
-  return Callable(isolate->builtins()->ArrayForEachLoopContinuation(),
-                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::ArraySomeLoopContinuation(Isolate* isolate) {
-  return Callable(isolate->builtins()->ArraySomeLoopContinuation(),
-                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::ArrayEveryLoopContinuation(Isolate* isolate) {
-  return Callable(isolate->builtins()->ArrayEveryLoopContinuation(),
-                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::ArrayReduceLoopContinuation(Isolate* isolate) {
-  return Callable(isolate->builtins()->ArrayReduceLoopContinuation(),
-                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::ArrayReduceRightLoopContinuation(Isolate* isolate) {
-  return Callable(isolate->builtins()->ArrayReduceRightLoopContinuation(),
-                  IteratingArrayBuiltinLoopContinuationDescriptor(isolate));
 }
 
 // static

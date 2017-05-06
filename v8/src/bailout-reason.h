@@ -58,6 +58,7 @@ namespace internal {
     "Encountered a do-expression with unmodelable control statements")         \
   V(kDoPushArgumentNotImplementedForDoubleType,                                \
     "DoPushArgument not implemented for double type")                          \
+  V(kDynamicImport, "Dynamic module import")                                   \
   V(kEliminatedBoundsCheckFailed, "Eliminated bounds check failed")            \
   V(kEmitLoadRegisterUnsupportedDoubleImmediate,                               \
     "EmitLoadRegister: Unsupported double immediate")                          \
@@ -233,7 +234,6 @@ namespace internal {
   V(kUnexpectedStringType, "Unexpected string type")                           \
   V(kUnexpectedTestTypeofLiteralFlag,                                          \
     "Unexpected literal flag for TestTypeof bytecode")                         \
-  V(kUnexpectedRegExpExecCall, "Unexpected call to the RegExpExecStub")        \
   V(kUnexpectedValue, "Unexpected value")                                      \
   V(kUnsupportedDoubleImmediate, "Unsupported double immediate")               \
   V(kUnsupportedLetCompoundAssignment, "Unsupported let compound assignment")  \

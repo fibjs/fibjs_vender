@@ -61,7 +61,8 @@ void AsyncFunctionBuiltinsAssembler::AsyncFunctionAwaitResumeClosure(
 
   // Resume the {receiver} using our trampoline.
   Callable callable = CodeFactory::ResumeGenerator(isolate());
-  CallStub(callable, context, sent_value, generator, SmiConstant(resume_mode));
+  CallStub(callable, context, sent_value, generator, SmiConstant(resume_mode),
+           SmiConstant(static_cast<int>(SuspendFlags::kGeneratorAwait)));
 
   // The resulting Promise is a throwaway, so it doesn't matter what it
   // resolves to. What is important is that we don't end up keeping the
@@ -168,7 +169,7 @@ TF_BUILTIN(AsyncFunctionPromiseCreate, AsyncFunctionBuiltinsAssembler) {
   // Early exit if debug is not active.
   Return(promise);
 
-  Bind(&if_is_debug_active);
+  BIND(&if_is_debug_active);
   {
     // Push the Promise under construction in an async function on
     // the catch prediction stack to handle exceptions thrown before
@@ -191,7 +192,7 @@ TF_BUILTIN(AsyncFunctionPromiseRelease, AsyncFunctionBuiltinsAssembler) {
   // Early exit if debug is not active.
   Return(UndefinedConstant());
 
-  Bind(&if_is_debug_active);
+  BIND(&if_is_debug_active);
   {
     // Pop the Promise under construction in an async function on
     // from catch prediction stack.

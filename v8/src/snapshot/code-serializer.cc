@@ -14,6 +14,7 @@
 #include "src/snapshot/deserializer.h"
 #include "src/snapshot/snapshot.h"
 #include "src/version.h"
+#include "src/visitors.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects.h"
 
@@ -50,7 +51,7 @@ ScriptData* CodeSerializer::Serialize(Isolate* isolate,
 ScriptData* CodeSerializer::Serialize(Handle<HeapObject> obj) {
   DisallowHeapAllocation no_gc;
 
-  VisitPointer(Handle<Object>::cast(obj).location());
+  VisitRootPointer(Root::kHandleScope, Handle<Object>::cast(obj).location());
   SerializeDeferredObjects();
   Pad();
 
@@ -485,7 +486,7 @@ Vector<const uint32_t> SerializedCodeData::CodeStubKeys() const {
 SerializedCodeData::SerializedCodeData(ScriptData* data)
     : SerializedData(const_cast<byte*>(data->data()), data->length()) {}
 
-const SerializedCodeData SerializedCodeData::FromCachedData(
+SerializedCodeData SerializedCodeData::FromCachedData(
     Isolate* isolate, ScriptData* cached_data, uint32_t expected_source_hash,
     SanityCheckResult* rejection_result) {
   DisallowHeapAllocation no_gc;

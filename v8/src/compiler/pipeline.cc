@@ -26,7 +26,6 @@
 #include "src/compiler/escape-analysis-reducer.h"
 #include "src/compiler/escape-analysis.h"
 #include "src/compiler/frame-elider.h"
-#include "src/compiler/graph-replay.h"
 #include "src/compiler/graph-trimmer.h"
 #include "src/compiler/graph-visualizer.h"
 #include "src/compiler/instruction-selector.h"
@@ -521,14 +520,14 @@ PipelineStatistics* CreatePipelineStatistics(CompilationInfo* info,
 
   if (FLAG_trace_turbo) {
     TurboJsonFile json_of(info, std::ios_base::trunc);
-    Handle<Script> script = info->script();
     std::unique_ptr<char[]> function_name = info->GetDebugName();
-    int pos = info->shared_info()->start_position();
+    int pos = info->parse_info() ? info->shared_info()->start_position() : 0;
     json_of << "{\"function\":\"" << function_name.get()
             << "\", \"sourcePosition\":" << pos << ", \"source\":\"";
     Isolate* isolate = info->isolate();
-    if (!script->IsUndefined(isolate) &&
-        !script->source()->IsUndefined(isolate)) {
+    Handle<Script> script =
+        info->parse_info() ? info->script() : Handle<Script>::null();
+    if (!script.is_null() && !script->source()->IsUndefined(isolate)) {
       DisallowHeapAllocation no_allocation;
       int start = info->shared_info()->start_position();
       int len = info->shared_info()->end_position() - start;
@@ -766,12 +765,12 @@ struct GraphBuilderPhase {
       BytecodeGraphBuilder graph_builder(
           temp_zone, data->info()->shared_info(),
           handle(data->info()->closure()->feedback_vector()),
-          data->info()->osr_ast_id(), data->jsgraph(), 1.0f,
+          data->info()->osr_ast_id(), data->jsgraph(), CallFrequency(1.0f),
           data->source_positions(), SourcePosition::kNotInlined, flags);
       succeeded = graph_builder.CreateGraph();
     } else {
       AstGraphBuilderWithPositions graph_builder(
-          temp_zone, data->info(), data->jsgraph(), 1.0f,
+          temp_zone, data->info(), data->jsgraph(), CallFrequency(1.0f),
           data->loop_assignment(), data->source_positions());
       succeeded = graph_builder.CreateGraph();
     }
@@ -782,6 +781,30 @@ struct GraphBuilderPhase {
   }
 };
 
+namespace {
+
+Maybe<OuterContext> GetModuleContext(Handle<JSFunction> closure) {
+  Context* current = closure->context();
+  size_t distance = 0;
+  while (!current->IsNativeContext()) {
+    if (current->IsModuleContext()) {
+      return Just(OuterContext(handle(current), distance));
+    }
+    current = current->previous();
+    distance++;
+  }
+  return Nothing<OuterContext>();
+}
+
+Maybe<OuterContext> ChooseSpecializationContext(CompilationInfo* info) {
+  if (info->is_function_context_specializing()) {
+    DCHECK(info->has_context());
+    return Just(OuterContext(handle(info->context()), 0));
+  }
+  return GetModuleContext(info->closure());
+}
+
+}  // anonymous namespace
 
 struct InliningPhase {
   static const char* phase_name() { return "inlining"; }
@@ -798,9 +821,10 @@ struct InliningPhase {
                                data->info()->dependencies());
     JSContextSpecialization context_specialization(
         &graph_reducer, data->jsgraph(),
+        ChooseSpecializationContext(data->info()),
         data->info()->is_function_context_specializing()
-            ? handle(data->info()->context())
-            : MaybeHandle<Context>());
+            ? data->info()->closure()
+            : MaybeHandle<JSFunction>());
     JSFrameSpecialization frame_specialization(
         &graph_reducer, data->info()->osr_frame(), data->jsgraph());
     JSNativeContextSpecialization::Flags flags =
@@ -1139,6 +1163,7 @@ struct LoadEliminationPhase {
     RedundancyElimination redundancy_elimination(&graph_reducer, temp_zone);
     LoadElimination load_elimination(&graph_reducer, data->jsgraph(),
                                      temp_zone);
+    CheckpointElimination checkpoint_elimination(&graph_reducer);
     ValueNumberingReducer value_numbering(temp_zone, data->graph()->zone());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
@@ -1146,6 +1171,7 @@ struct LoadEliminationPhase {
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &redundancy_elimination);
     AddReducer(data, &graph_reducer, &load_elimination);
+    AddReducer(data, &graph_reducer, &checkpoint_elimination);
     AddReducer(data, &graph_reducer, &common_reducer);
     AddReducer(data, &graph_reducer, &value_numbering);
     graph_reducer.ReduceGraph();
@@ -1519,11 +1545,6 @@ bool PipelineImpl::CreateGraph() {
   // Remove dead->live edges from the graph.
   Run<EarlyGraphTrimmingPhase>();
   RunPrintAndVerify("Early trimmed", true);
-
-  if (FLAG_print_turbo_replay) {
-    // Print a replay of the initial graph.
-    GraphReplayPrinter::PrintReplay(data->graph());
-  }
 
   // Run the type-sensitive lowerings and optimizations on the graph.
   {

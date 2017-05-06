@@ -333,23 +333,26 @@ bool NodeProperties::IsSame(Node* a, Node* b) {
 }
 
 // static
-bool NodeProperties::InferReceiverMaps(Node* receiver, Node* effect,
-                                       ZoneHandleSet<Map>* maps_return) {
+NodeProperties::InferReceiverMapsResult NodeProperties::InferReceiverMaps(
+    Node* receiver, Node* effect, ZoneHandleSet<Map>* maps_return) {
   HeapObjectMatcher m(receiver);
   if (m.HasValue()) {
     Handle<Map> receiver_map(m.Value()->map());
     if (receiver_map->is_stable()) {
+      // The {receiver_map} is only reliable when we install a stability
+      // code dependency.
       *maps_return = ZoneHandleSet<Map>(receiver_map);
-      return true;
+      return kUnreliableReceiverMaps;
     }
   }
+  InferReceiverMapsResult result = kReliableReceiverMaps;
   while (true) {
     switch (effect->opcode()) {
       case IrOpcode::kCheckMaps: {
         Node* const object = GetValueInput(effect, 0);
         if (IsSame(receiver, object)) {
           *maps_return = CheckMapsParametersOf(effect->op()).maps();
-          return true;
+          return result;
         }
         break;
       }
@@ -365,12 +368,12 @@ bool NodeProperties::InferReceiverMaps(Node* receiver, Node* effect,
               if (initial_map->constructor_or_backpointer() ==
                   *mtarget.Value()) {
                 *maps_return = ZoneHandleSet<Map>(initial_map);
-                return true;
+                return result;
               }
             }
           }
           // We reached the allocation of the {receiver}.
-          return false;
+          return kNoReceiverMaps;
         }
         break;
       }
@@ -385,12 +388,12 @@ bool NodeProperties::InferReceiverMaps(Node* receiver, Node* effect,
             HeapObjectMatcher m(value);
             if (m.HasValue()) {
               *maps_return = ZoneHandleSet<Map>(Handle<Map>::cast(m.Value()));
-              return true;
+              return result;
             }
           }
           // Without alias analysis we cannot tell whether this
           // StoreField[map] affects {receiver} or not.
-          return false;
+          result = kUnreliableReceiverMaps;
         }
         break;
       }
@@ -401,45 +404,37 @@ bool NodeProperties::InferReceiverMaps(Node* receiver, Node* effect,
         // These never change the map of objects.
         break;
       }
+      case IrOpcode::kFinishRegion: {
+        // FinishRegion renames the output of allocations, so we need
+        // to update the {receiver} that we are looking for, if the
+        // {receiver} matches the current {effect}.
+        if (IsSame(receiver, effect)) receiver = GetValueInput(effect, 0);
+        break;
+      }
       default: {
         DCHECK_EQ(1, effect->op()->EffectOutputCount());
-        if (effect->op()->EffectInputCount() != 1 ||
-            !effect->op()->HasProperty(Operator::kNoWrite)) {
+        if (effect->op()->EffectInputCount() != 1) {
           // Didn't find any appropriate CheckMaps node.
-          return false;
+          return kNoReceiverMaps;
+        }
+        if (!effect->op()->HasProperty(Operator::kNoWrite)) {
+          // Without alias/escape analysis we cannot tell whether this
+          // {effect} affects {receiver} or not.
+          result = kUnreliableReceiverMaps;
         }
         break;
       }
     }
+
+    // Stop walking the effect chain once we hit the definition of
+    // the {receiver} along the {effect}s.
+    if (IsSame(receiver, effect)) return kNoReceiverMaps;
+
+    // Continue with the next {effect}.
     DCHECK_EQ(1, effect->op()->EffectInputCount());
     effect = NodeProperties::GetEffectInput(effect);
   }
 }
-
-// static
-MaybeHandle<Context> NodeProperties::GetSpecializationContext(
-    Node* node, MaybeHandle<Context> context) {
-  switch (node->opcode()) {
-    case IrOpcode::kHeapConstant:
-      return Handle<Context>::cast(OpParameter<Handle<HeapObject>>(node));
-    case IrOpcode::kParameter: {
-      Node* const start = NodeProperties::GetValueInput(node, 0);
-      DCHECK_EQ(IrOpcode::kStart, start->opcode());
-      int const index = ParameterIndexOf(node->op());
-      // The context is always the last parameter to a JavaScript function, and
-      // {Parameter} indices start at -1, so value outputs of {Start} look like
-      // this: closure, receiver, param0, ..., paramN, context.
-      if (index == start->op()->ValueOutputCount() - 2) {
-        return context;
-      }
-      break;
-    }
-    default:
-      break;
-  }
-  return MaybeHandle<Context>();
-}
-
 
 // static
 Node* NodeProperties::GetOuterContext(Node* node, size_t* depth) {

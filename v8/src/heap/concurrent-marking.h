@@ -5,8 +5,6 @@
 #ifndef V8_HEAP_CONCURRENT_MARKING_
 #define V8_HEAP_CONCURRENT_MARKING_
 
-#include <vector>
-
 #include "src/allocation.h"
 #include "src/cancelable-task.h"
 #include "src/utils.h"
@@ -15,24 +13,29 @@
 namespace v8 {
 namespace internal {
 
+class ConcurrentMarkingDeque;
+class ConcurrentMarkingVisitor;
 class Heap;
 class Isolate;
 
 class ConcurrentMarking {
  public:
-  explicit ConcurrentMarking(Heap* heap);
+  ConcurrentMarking(Heap* heap, ConcurrentMarkingDeque* deque_);
   ~ConcurrentMarking();
 
-  void AddRoot(HeapObject* object);
-
-  void StartMarkingTask();
+  void StartTask();
   void WaitForTaskToComplete();
+  bool IsTaskPending() { return is_task_pending_; }
+  void EnsureTaskCompleted();
 
  private:
   class Task;
+  void Run();
   Heap* heap_;
-  base::Semaphore pending_task_;
-  std::vector<HeapObject*> root_set_;
+  base::Semaphore pending_task_semaphore_;
+  ConcurrentMarkingDeque* deque_;
+  ConcurrentMarkingVisitor* visitor_;
+  bool is_task_pending_;
 };
 
 }  // namespace internal

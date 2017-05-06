@@ -42,7 +42,7 @@ TF_BUILTIN(CopyFastSmiOrObjectElements, CodeStubAssembler) {
                               mode),
          &if_newspace, &if_oldspace);
 
-  Bind(&if_newspace);
+  BIND(&if_newspace);
   {
     Node* target = AllocateFixedArray(kind, length, mode);
     CopyFixedArrayElements(kind, source, target, length, SKIP_WRITE_BARRIER,
@@ -51,7 +51,7 @@ TF_BUILTIN(CopyFastSmiOrObjectElements, CodeStubAssembler) {
     Return(target);
   }
 
-  Bind(&if_oldspace);
+  BIND(&if_oldspace);
   {
     Node* target = AllocateFixedArray(kind, length, mode, kPretenured);
     CopyFixedArrayElements(kind, source, target, length, UPDATE_WRITE_BARRIER,
@@ -72,7 +72,7 @@ TF_BUILTIN(GrowFastDoubleElements, CodeStubAssembler) {
                                      key, &runtime);
   Return(elements);
 
-  Bind(&runtime);
+  BIND(&runtime);
   TailCallRuntime(Runtime::kGrowArrayElements, context, object, key);
 }
 
@@ -87,7 +87,7 @@ TF_BUILTIN(GrowFastSmiOrObjectElements, CodeStubAssembler) {
       TryGrowElementsCapacity(object, elements, FAST_ELEMENTS, key, &runtime);
   Return(elements);
 
-  Bind(&runtime);
+  BIND(&runtime);
   TailCallRuntime(Runtime::kGrowArrayElements, context, object, key);
 }
 
@@ -102,7 +102,7 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
   Branch(IntPtrLessThan(length, IntPtrConstant(max_elements)), &if_newspace,
          &if_oldspace);
 
-  Bind(&if_newspace);
+  BIND(&if_newspace);
   {
     // Prefer EmptyFixedArray in case of non-positive {length} (the {length}
     // can be negative here for rest parameters).
@@ -110,10 +110,10 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
     Branch(IntPtrLessThanOrEqual(length, IntPtrConstant(0)), &if_empty,
            &if_notempty);
 
-    Bind(&if_empty);
+    BIND(&if_empty);
     Return(EmptyFixedArrayConstant());
 
-    Bind(&if_notempty);
+    BIND(&if_notempty);
     {
       // Allocate a FixedArray in new space.
       Node* result = AllocateFixedArray(kind, length);
@@ -122,11 +122,11 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
       Node* offset = IntPtrAdd(length, IntPtrConstant(1));
 
       // Copy the parameters from {frame} (starting at {offset}) to {result}.
-      Variable var_index(this, MachineType::PointerRepresentation());
+      VARIABLE(var_index, MachineType::PointerRepresentation());
       Label loop(this, &var_index), done_loop(this);
       var_index.Bind(IntPtrConstant(0));
       Goto(&loop);
-      Bind(&loop);
+      BIND(&loop);
       {
         // Load the current {index}.
         Node* index = var_index.value();
@@ -147,12 +147,12 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
         Goto(&loop);
       }
 
-      Bind(&done_loop);
+      BIND(&done_loop);
       Return(result);
     }
   }
 
-  Bind(&if_oldspace);
+  BIND(&if_oldspace);
   {
     // Allocate in old space (or large object space).
     TailCallRuntime(Runtime::kNewArgumentsElements, NoContextConstant(),
@@ -162,6 +162,128 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
 
 TF_BUILTIN(ReturnReceiver, CodeStubAssembler) {
   Return(Parameter(Descriptor::kReceiver));
+}
+
+class DeletePropertyBaseAssembler : public CodeStubAssembler {
+ public:
+  explicit DeletePropertyBaseAssembler(compiler::CodeAssemblerState* state)
+      : CodeStubAssembler(state) {}
+
+  void DeleteDictionaryProperty(Node* receiver, Node* properties, Node* name,
+                                Node* context, Label* dont_delete,
+                                Label* notfound) {
+    VARIABLE(var_name_index, MachineType::PointerRepresentation());
+    Label dictionary_found(this, &var_name_index);
+    NameDictionaryLookup<NameDictionary>(properties, name, &dictionary_found,
+                                         &var_name_index, notfound);
+
+    BIND(&dictionary_found);
+    Node* key_index = var_name_index.value();
+    Node* details =
+        LoadDetailsByKeyIndex<NameDictionary>(properties, key_index);
+    GotoIf(IsSetWord32(details, PropertyDetails::kAttributesDontDeleteMask),
+           dont_delete);
+    // Overwrite the entry itself (see NameDictionary::SetEntry).
+    Node* filler = TheHoleConstant();
+    DCHECK(Heap::RootIsImmortalImmovable(Heap::kTheHoleValueRootIndex));
+    StoreFixedArrayElement(properties, key_index, filler, SKIP_WRITE_BARRIER);
+    StoreValueByKeyIndex<NameDictionary>(properties, key_index, filler,
+                                         SKIP_WRITE_BARRIER);
+    StoreDetailsByKeyIndex<NameDictionary>(properties, key_index,
+                                           SmiConstant(Smi::kZero));
+
+    // Update bookkeeping information (see NameDictionary::ElementRemoved).
+    Node* nof = GetNumberOfElements<NameDictionary>(properties);
+    Node* new_nof = SmiSub(nof, SmiConstant(1));
+    SetNumberOfElements<NameDictionary>(properties, new_nof);
+    Node* num_deleted = GetNumberOfDeletedElements<NameDictionary>(properties);
+    Node* new_deleted = SmiAdd(num_deleted, SmiConstant(1));
+    SetNumberOfDeletedElements<NameDictionary>(properties, new_deleted);
+
+    // Shrink the dictionary if necessary (see NameDictionary::Shrink).
+    Label shrinking_done(this);
+    Node* capacity = GetCapacity<NameDictionary>(properties);
+    GotoIf(SmiGreaterThan(new_nof, SmiShr(capacity, 2)), &shrinking_done);
+    GotoIf(SmiLessThan(new_nof, SmiConstant(16)), &shrinking_done);
+    CallRuntime(Runtime::kShrinkPropertyDictionary, context, receiver, name);
+    Goto(&shrinking_done);
+    BIND(&shrinking_done);
+
+    Return(TrueConstant());
+  }
+};
+
+TF_BUILTIN(DeleteProperty, DeletePropertyBaseAssembler) {
+  Node* receiver = Parameter(Descriptor::kObject);
+  Node* key = Parameter(Descriptor::kKey);
+  Node* language_mode = Parameter(Descriptor::kLanguageMode);
+  Node* context = Parameter(Descriptor::kContext);
+
+  VARIABLE(var_index, MachineType::PointerRepresentation());
+  VARIABLE(var_unique, MachineRepresentation::kTagged, key);
+  Label if_index(this), if_unique_name(this), if_notunique(this),
+      if_notfound(this), slow(this);
+
+  GotoIf(TaggedIsSmi(receiver), &slow);
+  Node* receiver_map = LoadMap(receiver);
+  Node* instance_type = LoadMapInstanceType(receiver_map);
+  GotoIf(Int32LessThanOrEqual(instance_type,
+                              Int32Constant(LAST_CUSTOM_ELEMENTS_RECEIVER)),
+         &slow);
+  TryToName(key, &if_index, &var_index, &if_unique_name, &var_unique, &slow,
+            &if_notunique);
+
+  BIND(&if_index);
+  {
+    Comment("integer index");
+    Goto(&slow);  // TODO(jkummerow): Implement more smarts here.
+  }
+
+  BIND(&if_unique_name);
+  {
+    Comment("key is unique name");
+    Node* unique = var_unique.value();
+    CheckForAssociatedProtector(unique, &slow);
+
+    Label dictionary(this), dont_delete(this);
+    Node* properties = LoadProperties(receiver);
+    Node* properties_map = LoadMap(properties);
+    GotoIf(WordEqual(properties_map, LoadRoot(Heap::kHashTableMapRootIndex)),
+           &dictionary);
+    // Fast properties need to clear recorded slots, which can only be done
+    // in C++.
+    Goto(&slow);
+
+    BIND(&dictionary);
+    {
+      DeleteDictionaryProperty(receiver, properties, unique, context,
+                               &dont_delete, &if_notfound);
+    }
+
+    BIND(&dont_delete);
+    {
+      STATIC_ASSERT(LANGUAGE_END == 2);
+      GotoIf(SmiNotEqual(language_mode, SmiConstant(SLOPPY)), &slow);
+      Return(FalseConstant());
+    }
+  }
+
+  BIND(&if_notunique);
+  {
+    // If the string was not found in the string table, then no object can
+    // have a property with that name.
+    TryInternalizeString(key, &if_index, &var_index, &if_unique_name,
+                         &var_unique, &if_notfound, &slow);
+  }
+
+  BIND(&if_notfound);
+  Return(TrueConstant());
+
+  BIND(&slow);
+  {
+    TailCallRuntime(Runtime::kDeleteProperty, context, receiver, key,
+                    language_mode);
+  }
 }
 
 }  // namespace internal

@@ -712,6 +712,7 @@ void Assembler::xchg(Register dst, const Operand& src) {
 }
 
 void Assembler::xchg_b(Register reg, const Operand& op) {
+  DCHECK(reg.is_byte_register());
   EnsureSpace ensure_space(this);
   EMIT(0x86);
   emit_operand(reg, op);
@@ -737,6 +738,7 @@ void Assembler::cmpxchg(const Operand& dst, Register src) {
 }
 
 void Assembler::cmpxchg_b(const Operand& dst, Register src) {
+  DCHECK(src.is_byte_register());
   EnsureSpace ensure_space(this);
   EMIT(0x0F);
   EMIT(0xB0);
@@ -2279,6 +2281,14 @@ void Assembler::maxps(XMMRegister dst, const Operand& src) {
   emit_sse_operand(dst, src);
 }
 
+void Assembler::cmpps(XMMRegister dst, const Operand& src, int8_t cmp) {
+  EnsureSpace ensure_space(this);
+  EMIT(0x0F);
+  EMIT(0xC2);
+  emit_sse_operand(dst, src);
+  EMIT(cmp);
+}
+
 void Assembler::sqrtsd(XMMRegister dst, const Operand& src) {
   EnsureSpace ensure_space(this);
   EMIT(0xF2);
@@ -2795,6 +2805,12 @@ void Assembler::vps(byte op, XMMRegister dst, XMMRegister src1,
 void Assembler::vpd(byte op, XMMRegister dst, XMMRegister src1,
                     const Operand& src2) {
   vinstr(op, dst, src1, src2, k66, k0F, kWIG);
+}
+
+void Assembler::vcmpps(XMMRegister dst, XMMRegister src1, const Operand& src2,
+                       int8_t cmp) {
+  vps(0xC2, dst, src1, src2);
+  EMIT(cmp);
 }
 
 void Assembler::vpsllw(XMMRegister dst, XMMRegister src, int8_t imm8) {

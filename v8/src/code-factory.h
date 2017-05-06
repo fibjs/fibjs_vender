@@ -91,8 +91,6 @@ class V8_EXPORT_PRIVATE CodeFactory final {
                                       OrdinaryToPrimitiveHint hint);
   static Callable NumberToString(Isolate* isolate);
 
-  static Callable RegExpExec(Isolate* isolate);
-
   static Callable Add(Isolate* isolate);
   static Callable Subtract(Isolate* isolate);
   static Callable Multiply(Isolate* isolate);
@@ -173,26 +171,25 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable HasProperty(Isolate* isolate);
   static Callable ForInFilter(Isolate* isolate);
 
-  static Callable InterpreterPushArgsAndCall(Isolate* isolate,
-                                             TailCallMode tail_call_mode,
-                                             InterpreterPushArgsMode mode);
-  static Callable InterpreterPushArgsAndConstruct(Isolate* isolate,
-                                                  InterpreterPushArgsMode mode);
-  static Callable InterpreterPushArgsAndConstructArray(Isolate* isolate);
+  static Callable InterpreterPushArgsThenCall(Isolate* isolate,
+                                              ConvertReceiverMode receiver_mode,
+                                              TailCallMode tail_call_mode,
+                                              InterpreterPushArgsMode mode);
+  static Callable InterpreterPushArgsThenConstruct(
+      Isolate* isolate, InterpreterPushArgsMode mode);
+  static Callable InterpreterPushArgsThenConstructArray(Isolate* isolate);
   static Callable InterpreterCEntry(Isolate* isolate, int result_size = 1);
   static Callable InterpreterOnStackReplacement(Isolate* isolate);
 
   static Callable ArrayConstructor(Isolate* isolate);
+  static Callable ArrayPop(Isolate* isolate);
   static Callable ArrayPush(Isolate* isolate);
-  static Callable ArrayFilterLoopContinuation(Isolate* isolate);
-  static Callable ArrayMapLoopContinuation(Isolate* isolate);
-  static Callable ArrayForEachLoopContinuation(Isolate* isolate);
-  static Callable ArraySomeLoopContinuation(Isolate* isolate);
-  static Callable ArrayEveryLoopContinuation(Isolate* isolate);
-  static Callable ArrayReduceLoopContinuation(Isolate* isolate);
-  static Callable ArrayReduceRightLoopContinuation(Isolate* isolate);
   static Callable FunctionPrototypeBind(Isolate* isolate);
   static Callable PromiseHandleReject(Isolate* isolate);
+
+  static Callable AsyncGeneratorResolve(Isolate* isolate);
+  static Callable AsyncGeneratorReject(Isolate* isolate);
+  static Callable AsyncGeneratorResumeNext(Isolate* isolate);
 };
 
 }  // namespace internal

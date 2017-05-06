@@ -472,6 +472,13 @@ void AstNumberingVisitor::VisitGetIterator(GetIterator* node) {
   ReserveFeedbackSlots(node);
 }
 
+void AstNumberingVisitor::VisitImportCallExpression(
+    ImportCallExpression* node) {
+  IncrementNodeCount();
+  DisableFullCodegenAndCrankshaft(kDynamicImport);
+  Visit(node->argument());
+}
+
 void AstNumberingVisitor::VisitForInStatement(ForInStatement* node) {
   IncrementNodeCount();
   DisableSelfOptimization();
@@ -556,6 +563,7 @@ void AstNumberingVisitor::VisitClassLiteral(ClassLiteral* node) {
   IncrementNodeCount();
   DisableFullCodegenAndCrankshaft(kClassLiteral);
   node->set_base_id(ReserveIdRange(ClassLiteral::num_ids()));
+  LanguageModeScope language_mode_scope(this, STRICT);
   if (node->extends()) Visit(node->extends());
   if (node->constructor()) Visit(node->constructor());
   if (node->class_variable_proxy()) {
@@ -625,6 +633,7 @@ void AstNumberingVisitor::VisitStatements(ZoneList<Statement*>* statements) {
   if (statements == NULL) return;
   for (int i = 0; i < statements->length(); i++) {
     Visit(statements->at(i));
+    if (statements->at(i)->IsJump()) break;
   }
 }
 
@@ -707,7 +716,7 @@ bool AstNumberingVisitor::Renumber(FunctionLiteral* node) {
   node->set_dont_optimize_reason(dont_optimize_reason());
   node->set_suspend_count(suspend_count_);
 
-  if (FLAG_trace_opt) {
+  if (FLAG_trace_opt && !FLAG_turbo) {
     if (disable_crankshaft_reason_ != kNoReason) {
       // TODO(leszeks): This is a quick'n'dirty fix to allow the debug name of
       // the function to be accessed in the below print. This DCHECK will fail

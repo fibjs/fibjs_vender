@@ -122,7 +122,7 @@ namespace {
 
 void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
                                     bool create_implicit_receiver,
-                                    bool check_derived_construct) {
+                                    bool disallow_non_object_return) {
   Label post_instantiation_deopt_entry;
 
   // ----------- S t a t e -------------
@@ -191,7 +191,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
                       CheckDebugStepCallWrapper());
 
     // Store offset of return address for deoptimizer.
-    if (create_implicit_receiver && !is_api_function) {
+    if (create_implicit_receiver && !disallow_non_object_return &&
+        !is_api_function) {
       masm->isolate()->heap()->SetConstructStubInvokeDeoptPCOffset(
           masm->pc_offset());
     }
@@ -203,15 +204,30 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
       // If the result is an object (in the ECMA sense), we should get rid
       // of the receiver and use the result; see ECMA-262 section 13.2.2-7
       // on page 74.
-      Label use_receiver, exit;
-      // If the result is a smi, it is *not* an object in the ECMA sense.
-      __ JumpIfSmi(rax, &use_receiver, Label::kNear);
+      Label use_receiver, return_value, do_throw;
+
+      // If the result is undefined, we jump out to using the implicit
+      // receiver, otherwise we do a smi check and fall through to
+      // check if the return value is a valid receiver.
+      if (disallow_non_object_return) {
+        __ CompareRoot(rax, Heap::kUndefinedValueRootIndex);
+        __ j(equal, &use_receiver);
+        __ JumpIfSmi(rax, &do_throw, Label::kNear);
+      } else {
+        // If the result is a smi, it is *not* an object in the ECMA sense.
+        __ JumpIfSmi(rax, &use_receiver, Label::kNear);
+      }
 
       // If the type of the result (stored in its map) is less than
       // FIRST_JS_RECEIVER_TYPE, it is not an object in the ECMA sense.
       STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
       __ CmpObjectType(rax, FIRST_JS_RECEIVER_TYPE, rcx);
-      __ j(above_equal, &exit, Label::kNear);
+      __ j(above_equal, &return_value, Label::kNear);
+
+      if (disallow_non_object_return) {
+        __ bind(&do_throw);
+        __ CallRuntime(Runtime::kThrowConstructorReturnedNonObject);
+      }
 
       // Throw away the result of the constructor invocation and use the
       // on-stack receiver as the result.
@@ -220,7 +236,7 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
 
       // Restore the arguments count and leave the construct frame. The
       // arguments count is stored below the receiver.
-      __ bind(&exit);
+      __ bind(&return_value);
       __ movp(rbx, Operand(rsp, 1 * kPointerSize));
     } else {
       __ movp(rbx, Operand(rsp, 0));
@@ -230,14 +246,19 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
   }
 
   // ES6 9.2.2. Step 13+
-  // Check that the result is not a Smi, indicating that the constructor result
-  // from a derived class is neither undefined nor an Object.
-  if (check_derived_construct) {
-    Label dont_throw;
-    __ JumpIfNotSmi(rax, &dont_throw);
+  // For derived class constructors, throw a TypeError here if the result
+  // is not a JSReceiver. For the base constructor, we've already checked
+  // the result, so we omit the check.
+  if (disallow_non_object_return && !create_implicit_receiver) {
+    Label do_throw, dont_throw;
+    __ JumpIfSmi(rax, &do_throw, Label::kNear);
+    STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
+    __ CmpObjectType(rax, FIRST_JS_RECEIVER_TYPE, rcx);
+    __ j(above_equal, &dont_throw, Label::kNear);
+    __ bind(&do_throw);
     {
       FrameScope scope(masm, StackFrame::INTERNAL);
-      __ CallRuntime(Runtime::kThrowDerivedConstructorReturnedNonObject);
+      __ CallRuntime(Runtime::kThrowConstructorReturnedNonObject);
     }
     __ bind(&dont_throw);
   }
@@ -256,7 +277,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
   // Store offset of trampoline address for deoptimizer. This is the bailout
   // point after the receiver instantiation but before the function invocation.
   // We need to restore some registers in order to continue the above code.
-  if (create_implicit_receiver && !is_api_function) {
+  if (create_implicit_receiver && !disallow_non_object_return &&
+      !is_api_function) {
     masm->isolate()->heap()->SetConstructStubCreateDeoptPCOffset(
         masm->pc_offset());
 
@@ -295,6 +317,10 @@ void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
 
 void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
   Generate_JSConstructStubHelper(masm, false, false, false);
+}
+
+void Builtins::Generate_JSBuiltinsConstructStubForBase(MacroAssembler* masm) {
+  Generate_JSConstructStubHelper(masm, false, true, true);
 }
 
 void Builtins::Generate_JSBuiltinsConstructStubForDerived(
@@ -486,14 +512,34 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   //  -- rax    : the value to pass to the generator
   //  -- rbx    : the JSGeneratorObject to resume
   //  -- rdx    : the resume mode (tagged)
+  //  -- rcx    : the SuspendFlags of the earlier suspend call (tagged)
   //  -- rsp[0] : return address
   // -----------------------------------
-  __ AssertGeneratorObject(rbx);
+  // Untag rcx
+  __ shrq(rcx, Immediate(kSmiTagSize + kSmiShiftSize));
+  __ AssertGeneratorObject(rbx, rcx);
 
   // Store input value into generator object.
+  Label async_await, done_store_input;
+
+  __ andb(rcx, Immediate(static_cast<int>(SuspendFlags::kAsyncGeneratorAwait)));
+  __ cmpb(rcx, Immediate(static_cast<int>(SuspendFlags::kAsyncGeneratorAwait)));
+  __ j(equal, &async_await);
+
   __ movp(FieldOperand(rbx, JSGeneratorObject::kInputOrDebugPosOffset), rax);
   __ RecordWriteField(rbx, JSGeneratorObject::kInputOrDebugPosOffset, rax, rcx,
                       kDontSaveFPRegs);
+  __ j(always, &done_store_input, Label::kNear);
+
+  __ bind(&async_await);
+  __ movp(
+      FieldOperand(rbx, JSAsyncGeneratorObject::kAwaitInputOrDebugPosOffset),
+      rax);
+  __ RecordWriteField(rbx, JSAsyncGeneratorObject::kAwaitInputOrDebugPosOffset,
+                      rax, rcx, kDontSaveFPRegs);
+
+  __ bind(&done_store_input);
+  // `rcx` no longer holds SuspendFlags
 
   // Store resume mode into generator object.
   __ movp(FieldOperand(rbx, JSGeneratorObject::kResumeModeOffset), rdx);
@@ -599,6 +645,37 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ jmp(&stepping_prepared);
 }
 
+static void ReplaceClosureEntryWithOptimizedCode(
+    MacroAssembler* masm, Register optimized_code_entry, Register closure,
+    Register scratch1, Register scratch2, Register scratch3) {
+  Register native_context = scratch1;
+
+  // Store the optimized code in the closure.
+  __ leap(optimized_code_entry,
+          FieldOperand(optimized_code_entry, Code::kHeaderSize));
+  __ movp(FieldOperand(closure, JSFunction::kCodeEntryOffset),
+          optimized_code_entry);
+  __ RecordWriteCodeEntryField(closure, optimized_code_entry, scratch2);
+
+  // Link the closure into the optimized function list.
+  __ movp(native_context, NativeContextOperand());
+  __ movp(scratch3,
+          ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST));
+  __ movp(FieldOperand(closure, JSFunction::kNextFunctionLinkOffset), scratch3);
+  __ RecordWriteField(closure, JSFunction::kNextFunctionLinkOffset, scratch3,
+                      scratch2, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
+                      OMIT_SMI_CHECK);
+  const int function_list_offset =
+      Context::SlotOffset(Context::OPTIMIZED_FUNCTIONS_LIST);
+  __ movp(ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST),
+          closure);
+  // Save closure before the write barrier.
+  __ movp(scratch3, closure);
+  __ RecordWriteContextSlot(native_context, function_list_offset, closure,
+                            scratch2, kDontSaveFPRegs);
+  __ movp(closure, scratch3);
+}
+
 static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch1,
                                   Register scratch2) {
   Register args_count = scratch1;
@@ -645,6 +722,18 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ Push(rsi);  // Callee's context.
   __ Push(rdi);  // Callee's JS function.
   __ Push(rdx);  // Callee's new target.
+
+  // First check if there is optimized code in the feedback vector which we
+  // could call instead.
+  Label switch_to_optimized_code;
+  Register optimized_code_entry = rcx;
+  __ movp(rbx, FieldOperand(rdi, JSFunction::kFeedbackVectorOffset));
+  __ movp(rbx, FieldOperand(rbx, Cell::kValueOffset));
+  __ movp(rbx,
+          FieldOperand(rbx, FeedbackVector::kOptimizedCodeIndex * kPointerSize +
+                                FeedbackVector::kHeaderSize));
+  __ movp(optimized_code_entry, FieldOperand(rbx, WeakCell::kValueOffset));
+  __ JumpIfNotSmi(optimized_code_entry, &switch_to_optimized_code);
 
   // Get the bytecode array from the function object (or from the DebugInfo if
   // it is present) and load it into kInterpreterBytecodeArrayRegister.
@@ -760,6 +849,15 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ movp(FieldOperand(rdi, JSFunction::kCodeEntryOffset), rcx);
   __ RecordWriteCodeEntryField(rdi, rcx, r15);
   __ jmp(rcx);
+
+  // If there is optimized code on the type feedback vector, get it into the
+  // closure and link the closure into the optimized functions list, then call
+  // the optimized code.
+  __ bind(&switch_to_optimized_code);
+  __ leave();
+  ReplaceClosureEntryWithOptimizedCode(masm, optimized_code_entry, rdi, r14,
+                                       r15, rbx);
+  __ jmp(optimized_code_entry);
 }
 
 static void Generate_StackOverflowCheck(
@@ -803,9 +901,9 @@ static void Generate_InterpreterPushArgs(MacroAssembler* masm,
 }
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndCallImpl(
-    MacroAssembler* masm, TailCallMode tail_call_mode,
-    InterpreterPushArgsMode mode) {
+void Builtins::Generate_InterpreterPushArgsThenCallImpl(
+    MacroAssembler* masm, ConvertReceiverMode receiver_mode,
+    TailCallMode tail_call_mode, InterpreterPushArgsMode mode) {
   // ----------- S t a t e -------------
   //  -- rax : the number of arguments (not including the receiver)
   //  -- rbx : the address of the first argument to be pushed. Subsequent
@@ -825,6 +923,12 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
   // Pop return address to allow tail-call after pushing arguments.
   __ PopReturnAddressTo(kScratchRegister);
 
+  // Push "undefined" as the receiver arg if we need to.
+  if (receiver_mode == ConvertReceiverMode::kNullOrUndefined) {
+    __ PushRoot(Heap::kUndefinedValueRootIndex);
+    __ subp(rcx, Immediate(1));  // Subtract one for receiver.
+  }
+
   // rbx and rdx will be modified.
   Generate_InterpreterPushArgs(masm, rcx, rbx, rdx);
 
@@ -832,15 +936,14 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
   __ PushReturnAddressFrom(kScratchRegister);  // Re-push return address.
 
   if (mode == InterpreterPushArgsMode::kJSFunction) {
-    __ Jump(masm->isolate()->builtins()->CallFunction(ConvertReceiverMode::kAny,
+    __ Jump(masm->isolate()->builtins()->CallFunction(receiver_mode,
                                                       tail_call_mode),
             RelocInfo::CODE_TARGET);
   } else if (mode == InterpreterPushArgsMode::kWithFinalSpread) {
     __ Jump(masm->isolate()->builtins()->CallWithSpread(),
             RelocInfo::CODE_TARGET);
   } else {
-    __ Jump(masm->isolate()->builtins()->Call(ConvertReceiverMode::kAny,
-                                              tail_call_mode),
+    __ Jump(masm->isolate()->builtins()->Call(receiver_mode, tail_call_mode),
             RelocInfo::CODE_TARGET);
   }
 
@@ -854,7 +957,7 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
 }
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
+void Builtins::Generate_InterpreterPushArgsThenConstructImpl(
     MacroAssembler* masm, InterpreterPushArgsMode mode) {
   // ----------- S t a t e -------------
   //  -- rax : the number of arguments (not including the receiver)
@@ -914,7 +1017,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
 }
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndConstructArray(
+void Builtins::Generate_InterpreterPushArgsThenConstructArray(
     MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- rax : the number of arguments (not including the receiver)
@@ -928,13 +1031,15 @@ void Builtins::Generate_InterpreterPushArgsAndConstructArray(
 
   // Number of values to be pushed.
   __ Move(r8, rax);
-  __ addp(r8, Immediate(1));  // Add one for receiver.
 
   // Add a stack check before pushing arguments.
   Generate_StackOverflowCheck(masm, r8, rdi, &stack_overflow);
 
   // Pop return address to allow tail-call after pushing arguments.
   __ PopReturnAddressTo(kScratchRegister);
+
+  // Push slot for the receiver to be constructed.
+  __ Push(Immediate(0));
 
   // rcx and rdi will be modified.
   Generate_InterpreterPushArgs(masm, r8, rcx, rdi);
@@ -1033,79 +1138,27 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   // First lookup code, maybe we don't need to compile!
   Label gotta_call_runtime;
   Label try_shared;
-  Label loop_top, loop_bottom;
 
   Register closure = rdi;
-  Register map = r8;
-  Register index = r9;
 
   // Do we have a valid feedback vector?
   __ movp(rbx, FieldOperand(closure, JSFunction::kFeedbackVectorOffset));
   __ movp(rbx, FieldOperand(rbx, Cell::kValueOffset));
   __ JumpIfRoot(rbx, Heap::kUndefinedValueRootIndex, &gotta_call_runtime);
 
-  __ movp(map, FieldOperand(closure, JSFunction::kSharedFunctionInfoOffset));
-  __ movp(map, FieldOperand(map, SharedFunctionInfo::kOptimizedCodeMapOffset));
-  __ SmiToInteger32(index, FieldOperand(map, FixedArray::kLengthOffset));
-  __ cmpl(index, Immediate(2));
-  __ j(less, &try_shared);
-
-  // r14 : native context
-  // r9  : length / index
-  // r8  : optimized code map
-  // rdx : new target
-  // rdi : closure
-  Register native_context = r14;
-  __ movp(native_context, NativeContextOperand());
-
-  __ bind(&loop_top);
-  // Native context match?
-  Register temp = r11;
-  __ movp(temp, FieldOperand(map, index, times_pointer_size,
-                             SharedFunctionInfo::kOffsetToPreviousContext));
-  __ movp(temp, FieldOperand(temp, WeakCell::kValueOffset));
-  __ cmpp(temp, native_context);
-  __ j(not_equal, &loop_bottom);
-
-  // Code available?
+  // Is optimized code available in the feedback vector?
   Register entry = rcx;
-  __ movp(entry, FieldOperand(map, index, times_pointer_size,
-                              SharedFunctionInfo::kOffsetToPreviousCachedCode));
+  __ movp(entry,
+          FieldOperand(rbx, FeedbackVector::kOptimizedCodeIndex * kPointerSize +
+                                FeedbackVector::kHeaderSize));
   __ movp(entry, FieldOperand(entry, WeakCell::kValueOffset));
   __ JumpIfSmi(entry, &try_shared);
 
-  // Found code. Get it into the closure and return.
-  __ leap(entry, FieldOperand(entry, Code::kHeaderSize));
-  __ movp(FieldOperand(closure, JSFunction::kCodeEntryOffset), entry);
-  __ RecordWriteCodeEntryField(closure, entry, r15);
-
-  // Link the closure into the optimized function list.
-  // rcx : code entry (entry)
-  // r14 : native context
-  // rdx : new target
-  // rdi : closure
-  __ movp(rbx,
-          ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST));
-  __ movp(FieldOperand(closure, JSFunction::kNextFunctionLinkOffset), rbx);
-  __ RecordWriteField(closure, JSFunction::kNextFunctionLinkOffset, rbx, r15,
-                      kDontSaveFPRegs, EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
-  const int function_list_offset =
-      Context::SlotOffset(Context::OPTIMIZED_FUNCTIONS_LIST);
-  __ movp(ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST),
-          closure);
-  // Save closure before the write barrier.
-  __ movp(rbx, closure);
-  __ RecordWriteContextSlot(native_context, function_list_offset, closure, r15,
-                            kDontSaveFPRegs);
-  __ movp(closure, rbx);
+  // Found code. Get it into the closure and tail call it.
+  ReplaceClosureEntryWithOptimizedCode(masm, entry, closure, r14, r15, rbx);
   __ jmp(entry);
 
-  __ bind(&loop_bottom);
-  __ subl(index, Immediate(SharedFunctionInfo::kEntryLength));
-  __ cmpl(index, Immediate(1));
-  __ j(greater, &loop_top);
-
-  // We found no code.
+  // We found no optimized code.
   __ bind(&try_shared);
   __ movp(entry, FieldOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   // Is the shared function marked for tier up?

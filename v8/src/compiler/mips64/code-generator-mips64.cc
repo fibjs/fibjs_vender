@@ -587,8 +587,8 @@ void CodeGenerator::AssembleDeconstructFrame() {
 
 void CodeGenerator::AssemblePrepareTailCall() {
   if (frame_access_state()->has_frame()) {
-    __ ld(ra, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
-    __ ld(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+    __ Ld(ra, MemOperand(fp, StandardFrameConstants::kCallerPCOffset));
+    __ Ld(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
   }
   frame_access_state()->SetFrameAccessToSP();
 }
@@ -601,14 +601,14 @@ void CodeGenerator::AssemblePopArgumentsAdaptorFrame(Register args_reg,
   Label done;
 
   // Check if current frame is an arguments adaptor frame.
-  __ ld(scratch3, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  __ Ld(scratch3, MemOperand(fp, StandardFrameConstants::kContextOffset));
   __ Branch(&done, ne, scratch3,
             Operand(StackFrame::TypeToMarker(StackFrame::ARGUMENTS_ADAPTOR)));
 
   // Load arguments count from current arguments adaptor frame (note, it
   // does not include receiver).
   Register caller_args_count_reg = scratch1;
-  __ ld(caller_args_count_reg,
+  __ Ld(caller_args_count_reg,
         MemOperand(fp, ArgumentsAdaptorFrameConstants::kLengthOffset));
   __ SmiUntag(caller_args_count_reg);
 
@@ -700,10 +700,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Register func = i.InputRegister(0);
       if (FLAG_debug_code) {
         // Check the function's context matches the context argument.
-        __ ld(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
+        __ Ld(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
         __ Assert(eq, kWrongFunctionContext, cp, Operand(kScratchReg));
       }
-      __ ld(at, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
+      __ Ld(at, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
       __ Call(at);
       RecordCallPosition(instr);
       frame_access_state()->ClearSPDelta();
@@ -713,13 +713,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Register func = i.InputRegister(0);
       if (FLAG_debug_code) {
         // Check the function's context matches the context argument.
-        __ ld(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
+        __ Ld(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
         __ Assert(eq, kWrongFunctionContext, cp, Operand(kScratchReg));
       }
       AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
                                        i.TempRegister(0), i.TempRegister(1),
                                        i.TempRegister(2));
-      __ ld(at, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
+      __ Ld(at, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
       __ Jump(at);
       frame_access_state()->ClearSPDelta();
       frame_access_state()->SetFrameAccessToDefault();
@@ -788,7 +788,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kArchParentFramePointer:
       if (frame_access_state()->has_frame()) {
-        __ ld(i.OutputRegister(), MemOperand(fp, 0));
+        __ Ld(i.OutputRegister(), MemOperand(fp, 0));
       } else {
         __ mov(i.OutputRegister(), fp);
       }
@@ -807,7 +807,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       auto ool = new (zone()) OutOfLineRecordWrite(this, object, index, value,
                                                    scratch0, scratch1, mode);
       __ Daddu(at, object, index);
-      __ sd(value, MemOperand(at));
+      __ Sd(value, MemOperand(at));
       __ CheckPageFlag(object, scratch0,
                        MemoryChunk::kPointersFromHereAreInterestingMask, ne,
                        ool->entry());
@@ -1716,64 +1716,64 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ seh(i.OutputRegister(), i.InputRegister(0));
       break;
     case kMips64Lbu:
-      __ lbu(i.OutputRegister(), i.MemoryOperand());
+      __ Lbu(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Lb:
-      __ lb(i.OutputRegister(), i.MemoryOperand());
+      __ Lb(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Sb:
-      __ sb(i.InputOrZeroRegister(2), i.MemoryOperand());
+      __ Sb(i.InputOrZeroRegister(2), i.MemoryOperand());
       break;
     case kMips64Lhu:
-      __ lhu(i.OutputRegister(), i.MemoryOperand());
+      __ Lhu(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Ulhu:
       __ Ulhu(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Lh:
-      __ lh(i.OutputRegister(), i.MemoryOperand());
+      __ Lh(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Ulh:
       __ Ulh(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Sh:
-      __ sh(i.InputOrZeroRegister(2), i.MemoryOperand());
+      __ Sh(i.InputOrZeroRegister(2), i.MemoryOperand());
       break;
     case kMips64Ush:
       __ Ush(i.InputOrZeroRegister(2), i.MemoryOperand(), kScratchReg);
       break;
     case kMips64Lw:
-      __ lw(i.OutputRegister(), i.MemoryOperand());
+      __ Lw(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Ulw:
       __ Ulw(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Lwu:
-      __ lwu(i.OutputRegister(), i.MemoryOperand());
+      __ Lwu(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Ulwu:
       __ Ulwu(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Ld:
-      __ ld(i.OutputRegister(), i.MemoryOperand());
+      __ Ld(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Uld:
       __ Uld(i.OutputRegister(), i.MemoryOperand());
       break;
     case kMips64Sw:
-      __ sw(i.InputOrZeroRegister(2), i.MemoryOperand());
+      __ Sw(i.InputOrZeroRegister(2), i.MemoryOperand());
       break;
     case kMips64Usw:
       __ Usw(i.InputOrZeroRegister(2), i.MemoryOperand());
       break;
     case kMips64Sd:
-      __ sd(i.InputOrZeroRegister(2), i.MemoryOperand());
+      __ Sd(i.InputOrZeroRegister(2), i.MemoryOperand());
       break;
     case kMips64Usd:
       __ Usd(i.InputOrZeroRegister(2), i.MemoryOperand());
       break;
     case kMips64Lwc1: {
-      __ lwc1(i.OutputSingleRegister(), i.MemoryOperand());
+      __ Lwc1(i.OutputSingleRegister(), i.MemoryOperand());
       break;
     }
     case kMips64Ulwc1: {
@@ -1787,7 +1787,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (ft.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {
         __ Move(kDoubleRegZero, 0.0);
       }
-      __ swc1(ft, operand);
+      __ Swc1(ft, operand);
       break;
     }
     case kMips64Uswc1: {
@@ -1801,7 +1801,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     }
     case kMips64Ldc1:
-      __ ldc1(i.OutputDoubleRegister(), i.MemoryOperand());
+      __ Ldc1(i.OutputDoubleRegister(), i.MemoryOperand());
       break;
     case kMips64Uldc1:
       __ Uldc1(i.OutputDoubleRegister(), i.MemoryOperand(), kScratchReg);
@@ -1811,7 +1811,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (ft.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {
         __ Move(kDoubleRegZero, 0.0);
       }
-      __ sdc1(ft, i.MemoryOperand());
+      __ Sdc1(ft, i.MemoryOperand());
       break;
     }
     case kMips64Usdc1: {
@@ -1824,7 +1824,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kMips64Push:
       if (instr->InputAt(0)->IsFPRegister()) {
-        __ sdc1(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+        __ Sdc1(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
         __ Subu(sp, sp, Operand(kDoubleSize));
         frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
       } else {
@@ -1839,9 +1839,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kMips64StoreToStackSlot: {
       if (instr->InputAt(0)->IsFPRegister()) {
-        __ sdc1(i.InputDoubleRegister(0), MemOperand(sp, i.InputInt32(1)));
+        __ Sdc1(i.InputDoubleRegister(0), MemOperand(sp, i.InputInt32(1)));
       } else {
-        __ sd(i.InputRegister(0), MemOperand(sp, i.InputInt32(1)));
+        __ Sd(i.InputRegister(0), MemOperand(sp, i.InputInt32(1)));
       }
       break;
     }
@@ -1930,12 +1930,362 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kAtomicCompareExchangeInt16:
     case kAtomicCompareExchangeUint16:
     case kAtomicCompareExchangeWord32:
+    case kAtomicAddInt8:
+    case kAtomicAddUint8:
+    case kAtomicAddInt16:
+    case kAtomicAddUint16:
+    case kAtomicAddWord32:
+    case kAtomicSubInt8:
+    case kAtomicSubUint8:
+    case kAtomicSubInt16:
+    case kAtomicSubUint16:
+    case kAtomicSubWord32:
+    case kAtomicAndInt8:
+    case kAtomicAndUint8:
+    case kAtomicAndInt16:
+    case kAtomicAndUint16:
+    case kAtomicAndWord32:
+    case kAtomicOrInt8:
+    case kAtomicOrUint8:
+    case kAtomicOrInt16:
+    case kAtomicOrUint16:
+    case kAtomicOrWord32:
+    case kAtomicXorInt8:
+    case kAtomicXorUint8:
+    case kAtomicXorInt16:
+    case kAtomicXorUint16:
+    case kAtomicXorWord32:
       UNREACHABLE();
       break;
     case kMips64AssertEqual:
       __ Assert(eq, static_cast<BailoutReason>(i.InputOperand(2).immediate()),
                 i.InputRegister(0), Operand(i.InputRegister(1)));
       break;
+    case kMips64S128Zero: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ xor_v(i.OutputSimd128Register(), i.OutputSimd128Register(),
+               i.OutputSimd128Register());
+      break;
+    }
+    case kMips64I32x4Splat: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fill_w(i.OutputSimd128Register(), i.InputRegister(0));
+      break;
+    }
+    case kMips64I32x4ExtractLane: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ copy_s_w(i.OutputRegister(), i.InputSimd128Register(0),
+                  i.InputInt8(1));
+      break;
+    }
+    case kMips64I32x4ReplaceLane: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      Simd128Register src = i.InputSimd128Register(0);
+      Simd128Register dst = i.OutputSimd128Register();
+      if (!src.is(dst)) {
+        __ move_v(dst, src);
+      }
+      __ insert_w(dst, i.InputInt8(1), i.InputRegister(2));
+      break;
+    }
+    case kMips64I32x4Add: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ addv_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4Sub: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ subv_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Splat: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ FmoveLow(kScratchReg, i.InputSingleRegister(0));
+      __ fill_w(i.OutputSimd128Register(), kScratchReg);
+      break;
+    }
+    case kMips64F32x4ExtractLane: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ copy_u_w(kScratchReg, i.InputSimd128Register(0), i.InputInt8(1));
+      __ FmoveLow(i.OutputSingleRegister(), kScratchReg);
+      break;
+    }
+    case kMips64F32x4ReplaceLane: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      Simd128Register src = i.InputSimd128Register(0);
+      Simd128Register dst = i.OutputSimd128Register();
+      if (!src.is(dst)) {
+        __ move_v(dst, src);
+      }
+      __ FmoveLow(kScratchReg, i.InputSingleRegister(2));
+      __ insert_w(dst, i.InputInt8(1), kScratchReg);
+      break;
+    }
+    case kMips64F32x4SConvertI32x4: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ ffint_s_w(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64F32x4UConvertI32x4: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ ffint_u_w(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64I32x4Mul: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ mulv_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4MaxS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ max_s_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4MinS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ min_s_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4Eq: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ ceq_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+               i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4Ne: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      Simd128Register dst = i.OutputSimd128Register();
+      __ ceq_w(dst, i.InputSimd128Register(0), i.InputSimd128Register(1));
+      __ nor_v(dst, dst, dst);
+      break;
+    }
+    case kMips64I32x4Shl: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ slli_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt5(1));
+      break;
+    }
+    case kMips64I32x4ShrS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ srai_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt5(1));
+      break;
+    }
+    case kMips64I32x4ShrU: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ srli_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt5(1));
+      break;
+    }
+    case kMips64I32x4MaxU: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ max_u_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4MinU: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ min_u_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64S32x4Select: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      DCHECK(i.OutputSimd128Register().is(i.InputSimd128Register(0)));
+      __ bsel_v(i.OutputSimd128Register(), i.InputSimd128Register(2),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Abs: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ bclri_w(i.OutputSimd128Register(), i.InputSimd128Register(0), 31);
+      break;
+    }
+    case kMips64F32x4Neg: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ bnegi_w(i.OutputSimd128Register(), i.InputSimd128Register(0), 31);
+      break;
+    }
+    case kMips64F32x4RecipApprox: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ frcp_w(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64F32x4RecipSqrtApprox: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ frsqrt_w(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64F32x4Add: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fadd_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Sub: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fsub_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Mul: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fmul_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Max: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fmax_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Min: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fmin_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Eq: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fceq_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Ne: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fcne_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Lt: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fclt_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64F32x4Le: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fcle_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4SConvertF32x4: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ ftrunc_s_w(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64I32x4UConvertF32x4: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ ftrunc_u_w(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64I32x4Neg: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ xor_v(kSimd128RegZero, kSimd128RegZero, kSimd128RegZero);
+      __ subv_w(i.OutputSimd128Register(), kSimd128RegZero,
+                i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64I32x4LtS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ clt_s_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4LeS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ cle_s_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4LtU: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ clt_u_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I32x4LeU: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ cle_u_w(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I16x8Splat: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ fill_h(i.OutputSimd128Register(), i.InputRegister(0));
+      break;
+    }
+    case kMips64I16x8ExtractLane: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ copy_s_h(i.OutputRegister(), i.InputSimd128Register(0),
+                  i.InputInt8(1));
+      break;
+    }
+    case kMips64I16x8ReplaceLane: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      Simd128Register src = i.InputSimd128Register(0);
+      Simd128Register dst = i.OutputSimd128Register();
+      if (!src.is(dst)) {
+        __ move_v(dst, src);
+      }
+      __ insert_h(dst, i.InputInt8(1), i.InputRegister(2));
+      break;
+    }
+    case kMips64I16x8Neg: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ xor_v(kSimd128RegZero, kSimd128RegZero, kSimd128RegZero);
+      __ subv_h(i.OutputSimd128Register(), kSimd128RegZero,
+                i.InputSimd128Register(0));
+      break;
+    }
+    case kMips64I16x8Shl: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ slli_h(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt4(1));
+      break;
+    }
+    case kMips64I16x8ShrS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ srai_h(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt4(1));
+      break;
+    }
+    case kMips64I16x8ShrU: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ srli_h(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt4(1));
+      break;
+    }
+    case kMips64I16x8Add: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ addv_h(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I16x8AddSaturateS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ adds_s_h(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                  i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I16x8Sub: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ subv_h(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputSimd128Register(1));
+      break;
+    }
+    case kMips64I16x8SubSaturateS: {
+      CpuFeatureScope msa_scope(masm(), MIPS_SIMD);
+      __ subs_s_h(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                  i.InputSimd128Register(1));
+      break;
+    }
   }
   return kSuccess;
 }  // NOLINT(readability/fn_size)
@@ -2496,17 +2846,17 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
     if (destination->IsRegister()) {
       __ mov(g.ToRegister(destination), src);
     } else {
-      __ sd(src, g.ToMemOperand(destination));
+      __ Sd(src, g.ToMemOperand(destination));
     }
   } else if (source->IsStackSlot()) {
     DCHECK(destination->IsRegister() || destination->IsStackSlot());
     MemOperand src = g.ToMemOperand(source);
     if (destination->IsRegister()) {
-      __ ld(g.ToRegister(destination), src);
+      __ Ld(g.ToRegister(destination), src);
     } else {
       Register temp = kScratchReg;
-      __ ld(temp, src);
-      __ sd(temp, g.ToMemOperand(destination));
+      __ Ld(temp, src);
+      __ Sd(temp, g.ToMemOperand(destination));
     }
   } else if (source->IsConstant()) {
     Constant src = g.ToConstant(source);
@@ -2552,15 +2902,15 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           UNREACHABLE();  // TODO(titzer): loading RPO numbers on mips64.
           break;
       }
-      if (destination->IsStackSlot()) __ sd(dst, g.ToMemOperand(destination));
+      if (destination->IsStackSlot()) __ Sd(dst, g.ToMemOperand(destination));
     } else if (src.type() == Constant::kFloat32) {
       if (destination->IsFPStackSlot()) {
         MemOperand dst = g.ToMemOperand(destination);
         if (bit_cast<int32_t>(src.ToFloat32()) == 0) {
-          __ sw(zero_reg, dst);
+          __ Sw(zero_reg, dst);
         } else {
           __ li(at, Operand(bit_cast<int32_t>(src.ToFloat32())));
-          __ sw(at, dst);
+          __ Sw(at, dst);
         }
       } else {
         DCHECK(destination->IsFPRegister());
@@ -2574,7 +2924,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
                                : kScratchDoubleReg;
       __ Move(dst, src.ToFloat64());
       if (destination->IsFPStackSlot()) {
-        __ sdc1(dst, g.ToMemOperand(destination));
+        __ Sdc1(dst, g.ToMemOperand(destination));
       }
     }
   } else if (source->IsFPRegister()) {
@@ -2584,17 +2934,17 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       __ Move(dst, src);
     } else {
       DCHECK(destination->IsFPStackSlot());
-      __ sdc1(src, g.ToMemOperand(destination));
+      __ Sdc1(src, g.ToMemOperand(destination));
     }
   } else if (source->IsFPStackSlot()) {
     DCHECK(destination->IsFPRegister() || destination->IsFPStackSlot());
     MemOperand src = g.ToMemOperand(source);
     if (destination->IsFPRegister()) {
-      __ ldc1(g.ToDoubleRegister(destination), src);
+      __ Ldc1(g.ToDoubleRegister(destination), src);
     } else {
       FPURegister temp = kScratchDoubleReg;
-      __ ldc1(temp, src);
-      __ sdc1(temp, g.ToMemOperand(destination));
+      __ Ldc1(temp, src);
+      __ Sdc1(temp, g.ToMemOperand(destination));
     }
   } else {
     UNREACHABLE();
@@ -2620,8 +2970,8 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
       DCHECK(destination->IsStackSlot());
       MemOperand dst = g.ToMemOperand(destination);
       __ mov(temp, src);
-      __ ld(src, dst);
-      __ sd(temp, dst);
+      __ Ld(src, dst);
+      __ Sd(temp, dst);
     }
   } else if (source->IsStackSlot()) {
     DCHECK(destination->IsStackSlot());
@@ -2629,10 +2979,10 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
     Register temp_1 = kScratchReg2;
     MemOperand src = g.ToMemOperand(source);
     MemOperand dst = g.ToMemOperand(destination);
-    __ ld(temp_0, src);
-    __ ld(temp_1, dst);
-    __ sd(temp_0, dst);
-    __ sd(temp_1, src);
+    __ Ld(temp_0, src);
+    __ Ld(temp_1, dst);
+    __ Sd(temp_0, dst);
+    __ Sd(temp_1, src);
   } else if (source->IsFPRegister()) {
     FPURegister temp = kScratchDoubleReg;
     FPURegister src = g.ToDoubleRegister(source);
@@ -2645,8 +2995,8 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
       DCHECK(destination->IsFPStackSlot());
       MemOperand dst = g.ToMemOperand(destination);
       __ Move(temp, src);
-      __ ldc1(src, dst);
-      __ sdc1(temp, dst);
+      __ Ldc1(src, dst);
+      __ Sdc1(temp, dst);
     }
   } else if (source->IsFPStackSlot()) {
     DCHECK(destination->IsFPStackSlot());
@@ -2656,12 +3006,12 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
     MemOperand src1(src0.rm(), src0.offset() + kIntSize);
     MemOperand dst0 = g.ToMemOperand(destination);
     MemOperand dst1(dst0.rm(), dst0.offset() + kIntSize);
-    __ ldc1(temp_1, dst0);  // Save destination in temp_1.
-    __ lw(temp_0, src0);    // Then use temp_0 to copy source to destination.
-    __ sw(temp_0, dst0);
-    __ lw(temp_0, src1);
-    __ sw(temp_0, dst1);
-    __ sdc1(temp_1, src0);
+    __ Ldc1(temp_1, dst0);  // Save destination in temp_1.
+    __ Lw(temp_0, src0);    // Then use temp_0 to copy source to destination.
+    __ Sw(temp_0, dst0);
+    __ Lw(temp_0, src1);
+    __ Sw(temp_0, dst1);
+    __ Sdc1(temp_1, src0);
   } else {
     // No other combinations are possible.
     UNREACHABLE();

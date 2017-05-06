@@ -128,8 +128,8 @@ Handle<ContextExtension> Factory::NewContextExtension(
 
 Handle<ConstantElementsPair> Factory::NewConstantElementsPair(
     ElementsKind elements_kind, Handle<FixedArrayBase> constant_values) {
-  Handle<ConstantElementsPair> result = Handle<ConstantElementsPair>::cast(
-      NewStruct(CONSTANT_ELEMENTS_PAIR_TYPE));
+  Handle<ConstantElementsPair> result =
+      Handle<ConstantElementsPair>::cast(NewStruct(TUPLE2_TYPE));
   result->set_elements_kind(elements_kind);
   result->set_constant_values(*constant_values);
   return result;
@@ -260,7 +260,7 @@ Handle<AccessorPair> Factory::NewAccessorPair() {
 
 Handle<TypeFeedbackInfo> Factory::NewTypeFeedbackInfo() {
   Handle<TypeFeedbackInfo> info =
-      Handle<TypeFeedbackInfo>::cast(NewStruct(TYPE_FEEDBACK_INFO_TYPE));
+      Handle<TypeFeedbackInfo>::cast(NewStruct(TUPLE3_TYPE));
   info->initialize_storage();
   return info;
 }
@@ -916,6 +916,21 @@ Handle<Symbol> Factory::NewPrivateSymbol() {
   return symbol;
 }
 
+Handle<JSPromise> Factory::NewJSPromise() {
+  Handle<JSFunction> constructor(
+      isolate()->native_context()->promise_function(), isolate());
+  DCHECK(constructor->has_initial_map());
+  Handle<Map> map(constructor->initial_map(), isolate());
+
+  DCHECK(!map->is_prototype_map());
+  Handle<JSObject> promise_obj = NewJSObjectFromMap(map);
+  Handle<JSPromise> promise = Handle<JSPromise>::cast(promise_obj);
+  promise->set_status(v8::Promise::kPending);
+  promise->set_flags(0);
+
+  isolate()->RunPromiseHook(PromiseHookType::kInit, promise, undefined_value());
+  return promise;
+}
 
 Handle<Context> Factory::NewNativeContext() {
   Handle<FixedArray> array =
@@ -1112,7 +1127,8 @@ Handle<Script> Factory::NewScript(Handle<String> source) {
   script->set_eval_from_position(0);
   script->set_shared_function_infos(*empty_fixed_array(), SKIP_WRITE_BARRIER);
   script->set_flags(0);
-  script->set_preparsed_scope_data(heap->empty_fixed_uint32_array());
+  script->set_preparsed_scope_data(
+      PodArray<uint32_t>::cast(heap->empty_byte_array()));
 
   heap->set_script_list(*WeakFixedArray::Add(script_list(), script));
   return script;
@@ -1531,7 +1547,9 @@ Handle<JSObject> Factory::NewFunctionPrototype(Handle<JSFunction> function) {
   // can be from a different context.
   Handle<Context> native_context(function->context()->native_context());
   Handle<Map> new_map;
-  if (IsResumableFunction(function->shared()->kind())) {
+  if (V8_UNLIKELY(IsAsyncGeneratorFunction(function->shared()->kind()))) {
+    new_map = handle(native_context->async_generator_object_prototype_map());
+  } else if (IsResumableFunction(function->shared()->kind())) {
     // Generator and async function prototypes can share maps since they
     // don't have "constructor" properties.
     new_map = handle(native_context->generator_object_prototype_map());
@@ -1613,6 +1631,13 @@ Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
     DCHECK_EQ(vector->map(), *many_closures_cell_map());
   }
 
+  // Check that the optimized code in the feedback vector wasn't marked for
+  // deoptimization while not pointed to by any live JSFunction.
+  if (vector->value()->IsFeedbackVector()) {
+    FeedbackVector::cast(vector->value())
+        ->EvictOptimizedCodeMarkedForDeoptimization(
+            *info, "new function from shared function info");
+  }
   result->set_feedback_vector_cell(*vector);
   if (info->ic_age() != isolate()->heap()->global_ic_age()) {
     info->ResetForNewContext(isolate()->heap()->global_ic_age());
@@ -1845,6 +1870,15 @@ Handle<JSObject> Factory::NewJSObjectFromMap(
       JSObject);
 }
 
+Handle<JSObject> Factory::NewSlowJSObjectFromMap(Handle<Map> map, int capacity,
+                                                 PretenureFlag pretenure) {
+  DCHECK(map->is_dictionary_map());
+  Handle<FixedArray> object_properties =
+      NameDictionary::New(isolate(), capacity);
+  Handle<JSObject> js_object = NewJSObjectFromMap(map, pretenure);
+  js_object->set_properties(*object_properties);
+  return js_object;
+}
 
 Handle<JSArray> Factory::NewJSArray(ElementsKind elements_kind,
                                     PretenureFlag pretenure) {
@@ -1932,7 +1966,10 @@ Handle<JSGeneratorObject> Factory::NewJSGeneratorObject(
   DCHECK(IsResumableFunction(function->shared()->kind()));
   JSFunction::EnsureHasInitialMap(function);
   Handle<Map> map(function->initial_map());
-  DCHECK_EQ(JS_GENERATOR_OBJECT_TYPE, map->instance_type());
+
+  DCHECK(map->instance_type() == JS_GENERATOR_OBJECT_TYPE ||
+         map->instance_type() == JS_ASYNC_GENERATOR_OBJECT_TYPE);
+
   CALL_HEAP_FUNCTION(
       isolate(),
       isolate()->heap()->AllocateJSObjectFromMap(*map),
@@ -2437,7 +2474,6 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
     code = isolate()->builtins()->Illegal();
   }
   share->set_code(*code);
-  share->set_optimized_code_map(*empty_fixed_array());
   share->set_scope_info(ScopeInfo::Empty(isolate()));
   share->set_outer_scope_info(*the_hole_value());
   Handle<Code> construct_stub =
@@ -2581,10 +2617,38 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
 
 Handle<BreakPointInfo> Factory::NewBreakPointInfo(int source_position) {
   Handle<BreakPointInfo> new_break_point_info =
-      Handle<BreakPointInfo>::cast(NewStruct(BREAK_POINT_INFO_TYPE));
+      Handle<BreakPointInfo>::cast(NewStruct(TUPLE2_TYPE));
   new_break_point_info->set_source_position(source_position);
   new_break_point_info->set_break_point_objects(*undefined_value());
   return new_break_point_info;
+}
+
+Handle<StackFrameInfo> Factory::NewStackFrameInfo() {
+  Handle<StackFrameInfo> stack_frame_info =
+      Handle<StackFrameInfo>::cast(NewStruct(STACK_FRAME_INFO_TYPE));
+  stack_frame_info->set_line_number(0);
+  stack_frame_info->set_column_number(0);
+  stack_frame_info->set_script_id(0);
+  stack_frame_info->set_script_name(Smi::kZero);
+  stack_frame_info->set_script_name_or_source_url(Smi::kZero);
+  stack_frame_info->set_function_name(Smi::kZero);
+  stack_frame_info->set_flag(0);
+  return stack_frame_info;
+}
+
+Handle<SourcePositionTableWithFrameCache>
+Factory::NewSourcePositionTableWithFrameCache(
+    Handle<ByteArray> source_position_table,
+    Handle<UnseededNumberDictionary> stack_frame_cache) {
+  Handle<SourcePositionTableWithFrameCache>
+      source_position_table_with_frame_cache =
+          Handle<SourcePositionTableWithFrameCache>::cast(
+              NewStruct(TUPLE2_TYPE));
+  source_position_table_with_frame_cache->set_source_position_table(
+      *source_position_table);
+  source_position_table_with_frame_cache->set_stack_frame_cache(
+      *stack_frame_cache);
+  return source_position_table_with_frame_cache;
 }
 
 Handle<JSObject> Factory::NewArgumentsObject(Handle<JSFunction> callee,
@@ -2614,32 +2678,31 @@ Handle<JSWeakMap> Factory::NewJSWeakMap() {
   return Handle<JSWeakMap>::cast(NewJSObjectFromMap(map));
 }
 
-
-Handle<Map> Factory::ObjectLiteralMapFromCache(Handle<Context> context,
-                                               int number_of_properties,
-                                               bool* is_result_from_cache) {
+Handle<Map> Factory::ObjectLiteralMapFromCache(Handle<Context> native_context,
+                                               int number_of_properties) {
+  DCHECK(native_context->IsNativeContext());
   const int kMapCacheSize = 128;
-
   // We do not cache maps for too many properties or when running builtin code.
-  if (number_of_properties > kMapCacheSize ||
-      isolate()->bootstrapper()->IsActive()) {
-    *is_result_from_cache = false;
-    Handle<Map> map = Map::Create(isolate(), number_of_properties);
-    return map;
+  if (isolate()->bootstrapper()->IsActive()) {
+    return Map::Create(isolate(), number_of_properties);
   }
-  *is_result_from_cache = true;
+  // Use initial slow object proto map for too many properties.
+  if (number_of_properties > kMapCacheSize) {
+    return handle(native_context->slow_object_with_object_prototype_map(),
+                  isolate());
+  }
   if (number_of_properties == 0) {
     // Reuse the initial map of the Object function if the literal has no
     // predeclared properties.
-    return handle(context->object_function()->initial_map(), isolate());
+    return handle(native_context->object_function()->initial_map(), isolate());
   }
 
   int cache_index = number_of_properties - 1;
-  Handle<Object> maybe_cache(context->map_cache(), isolate());
+  Handle<Object> maybe_cache(native_context->map_cache(), isolate());
   if (maybe_cache->IsUndefined(isolate())) {
     // Allocate the new map cache for the native context.
     maybe_cache = NewFixedArray(kMapCacheSize, TENURED);
-    context->set_map_cache(*maybe_cache);
+    native_context->set_map_cache(*maybe_cache);
   } else {
     // Check to see whether there is a matching element in the cache.
     Handle<FixedArray> cache = Handle<FixedArray>::cast(maybe_cache);
@@ -2647,13 +2710,16 @@ Handle<Map> Factory::ObjectLiteralMapFromCache(Handle<Context> context,
     if (result->IsWeakCell()) {
       WeakCell* cell = WeakCell::cast(result);
       if (!cell->cleared()) {
-        return handle(Map::cast(cell->value()), isolate());
+        Map* map = Map::cast(cell->value());
+        DCHECK(!map->is_dictionary_map());
+        return handle(map, isolate());
       }
     }
   }
   // Create a new map and add it to the cache.
   Handle<FixedArray> cache = Handle<FixedArray>::cast(maybe_cache);
   Handle<Map> map = Map::Create(isolate(), number_of_properties);
+  DCHECK(!map->is_dictionary_map());
   Handle<WeakCell> cell = NewWeakCell(map);
   cache->set(cache_index, *cell);
   return map;

@@ -55,6 +55,7 @@ class WasmCompilationUnit final {
   Zone* graph_zone() { return graph_zone_.get(); }
   int func_index() const { return func_index_; }
 
+  void InitializeHandles();
   void ExecuteCompilation();
   Handle<Code> FinishCompilation(wasm::ErrorThrower* thrower);
 
@@ -79,6 +80,9 @@ class WasmCompilationUnit final {
   int func_index_;
   wasm::Result<wasm::DecodeStruct*> graph_construction_result_;
   bool ok_ = true;
+#if DEBUG
+  bool handles_initialized_ = false;
+#endif  // DEBUG
   ZoneVector<trap_handler::ProtectedInstructionData>
       protected_instructions_;  // Instructions that are protected by the signal
                                 // handler.
@@ -235,10 +239,10 @@ class WasmGraphBuilder {
 
   void SetSourcePosition(Node* node, wasm::WasmCodePosition position);
 
-  Node* Simd128Zero();
-  Node* Simd1x4Zero();
-  Node* Simd1x8Zero();
-  Node* Simd1x16Zero();
+  Node* S128Zero();
+  Node* S1x4Zero();
+  Node* S1x8Zero();
+  Node* S1x16Zero();
 
   Node* SimdOp(wasm::WasmOpcode opcode, const NodeVector& inputs);
 
@@ -248,7 +252,7 @@ class WasmGraphBuilder {
   Node* SimdShiftOp(wasm::WasmOpcode opcode, uint8_t shift,
                     const NodeVector& inputs);
 
-  Node* SimdSwizzleOp(wasm::WasmOpcode opcode, uint32_t swizzle,
+  Node* SimdShuffleOp(uint8_t shuffle[16], unsigned lanes,
                       const NodeVector& inputs);
 
   bool has_simd() const { return has_simd_; }

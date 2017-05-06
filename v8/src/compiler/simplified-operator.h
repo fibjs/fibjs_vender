@@ -141,7 +141,8 @@ enum class CheckForMinusZeroMode : uint8_t {
 
 size_t hash_value(CheckForMinusZeroMode);
 
-std::ostream& operator<<(std::ostream&, CheckForMinusZeroMode);
+V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&,
+                                           CheckForMinusZeroMode);
 
 CheckForMinusZeroMode CheckMinusZeroModeOf(const Operator*) WARN_UNUSED_RESULT;
 
@@ -245,7 +246,29 @@ NumberOperationHint NumberOperationHintOf(const Operator* op)
 int FormalParameterCountOf(const Operator* op) WARN_UNUSED_RESULT;
 bool IsRestLengthOf(const Operator* op) WARN_UNUSED_RESULT;
 
+class AllocateParameters {
+ public:
+  AllocateParameters(Type* type, PretenureFlag pretenure)
+      : type_(type), pretenure_(pretenure) {}
+
+  Type* type() const { return type_; }
+  PretenureFlag pretenure() const { return pretenure_; }
+
+ private:
+  Type* type_;
+  PretenureFlag pretenure_;
+};
+
+size_t hash_value(AllocateParameters);
+
+V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, AllocateParameters);
+
+bool operator==(AllocateParameters const&, AllocateParameters const&);
+bool operator!=(AllocateParameters const&, AllocateParameters const&);
+
 PretenureFlag PretenureFlagOf(const Operator* op) WARN_UNUSED_RESULT;
+
+Type* AllocateTypeOf(const Operator* op) WARN_UNUSED_RESULT;
 
 UnicodeEncoding UnicodeEncodingOf(const Operator*) WARN_UNUSED_RESULT;
 
@@ -359,6 +382,8 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* StringFromCodePoint(UnicodeEncoding encoding);
   const Operator* StringIndexOf();
 
+  const Operator* SpeculativeToNumber(NumberOperationHint hint);
+
   const Operator* PlainPrimitiveToNumber();
   const Operator* PlainPrimitiveToWord32();
   const Operator* PlainPrimitiveToFloat64();
@@ -371,7 +396,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* ChangeInt31ToTaggedSigned();
   const Operator* ChangeInt32ToTagged();
   const Operator* ChangeUint32ToTagged();
-  const Operator* ChangeFloat64ToTagged();
+  const Operator* ChangeFloat64ToTagged(CheckForMinusZeroMode);
   const Operator* ChangeFloat64ToTaggedPointer();
   const Operator* ChangeTaggedToBit();
   const Operator* ChangeBitToTagged();
@@ -442,7 +467,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   // transition-elements-kind object, from-map, to-map
   const Operator* TransitionElementsKind(ElementsTransition transition);
 
-  const Operator* Allocate(PretenureFlag pretenure = NOT_TENURED);
+  const Operator* Allocate(Type* type, PretenureFlag pretenure = NOT_TENURED);
 
   const Operator* LoadField(FieldAccess const&);
   const Operator* StoreField(FieldAccess const&);

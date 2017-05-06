@@ -113,8 +113,10 @@ MaybeHandle<Map> GetMapWitness(Node* node) {
   ZoneHandleSet<Map> maps;
   Node* receiver = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
-  if (NodeProperties::InferReceiverMaps(receiver, effect, &maps)) {
-    if (maps.size() == 1) return MaybeHandle<Map>(maps[0]);
+  NodeProperties::InferReceiverMapsResult result =
+      NodeProperties::InferReceiverMaps(receiver, effect, &maps);
+  if (result == NodeProperties::kReliableReceiverMaps && maps.size() == 1) {
+    return maps[0];
   }
   return MaybeHandle<Map>();
 }
@@ -295,9 +297,8 @@ Reduction JSBuiltinReducer::ReduceArrayIterator(Handle<Map> receiver_map,
   effect = graph()->NewNode(
       common()->BeginRegion(RegionObservability::kNotObservable), effect);
   Node* value = effect = graph()->NewNode(
-      simplified()->Allocate(NOT_TENURED),
+      simplified()->Allocate(Type::OtherObject(), NOT_TENURED),
       jsgraph()->Constant(JSArrayIterator::kSize), effect, control);
-  NodeProperties::SetType(value, Type::OtherObject());
   effect = graph()->NewNode(simplified()->StoreField(AccessBuilder::ForMap()),
                             value, jsgraph()->Constant(map), effect, control);
   effect = graph()->NewNode(
@@ -734,10 +735,22 @@ Reduction JSBuiltinReducer::ReduceArrayIsArray(Node* node) {
     return Replace(value);
   }
   Node* value = NodeProperties::GetValueInput(node, 2);
+  Type* value_type = NodeProperties::GetType(value);
   Node* context = NodeProperties::GetContextInput(node);
   Node* frame_state = NodeProperties::GetFrameStateInput(node);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
+
+  // Constant-fold based on {value} type.
+  if (value_type->Is(Type::Array())) {
+    Node* value = jsgraph()->TrueConstant();
+    ReplaceWithValue(node, value);
+    return Replace(value);
+  } else if (!value_type->Maybe(Type::ArrayOrProxy())) {
+    Node* value = jsgraph()->FalseConstant();
+    ReplaceWithValue(node, value);
+    return Replace(value);
+  }
 
   int count = 0;
   Node* values[5];
@@ -829,11 +842,11 @@ Reduction JSBuiltinReducer::ReduceArrayPop(Node* node) {
   Node* receiver = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
-  // TODO(turbofan): Extend this to also handle fast (holey) double elements
+  // TODO(turbofan): Extend this to also handle fast holey double elements
   // once we got the hole NaN mess sorted out in TurboFan/V8.
   if (GetMapWitness(node).ToHandle(&receiver_map) &&
       CanInlineArrayResizeOperation(receiver_map) &&
-      IsFastSmiOrObjectElementsKind(receiver_map->elements_kind())) {
+      receiver_map->elements_kind() != FAST_HOLEY_DOUBLE_ELEMENTS) {
     // Install code dependencies on the {receiver} prototype maps and the
     // global array protector cell.
     dependencies()->AssumePropertyCell(factory()->array_protector());
@@ -865,9 +878,11 @@ Reduction JSBuiltinReducer::ReduceArrayPop(Node* node) {
           receiver, efalse, if_false);
 
       // Ensure that we aren't popping from a copy-on-write backing store.
-      elements = efalse =
-          graph()->NewNode(simplified()->EnsureWritableFastElements(), receiver,
-                           elements, efalse, if_false);
+      if (IsFastSmiOrObjectElementsKind(receiver_map->elements_kind())) {
+        elements = efalse =
+            graph()->NewNode(simplified()->EnsureWritableFastElements(),
+                             receiver, elements, efalse, if_false);
+      }
 
       // Compute the new {length}.
       length = graph()->NewNode(simplified()->NumberSubtract(), length,
@@ -913,19 +928,41 @@ Reduction JSBuiltinReducer::ReduceArrayPop(Node* node) {
 
 // ES6 section 22.1.3.18 Array.prototype.push ( )
 Reduction JSBuiltinReducer::ReduceArrayPush(Node* node) {
-  Handle<Map> receiver_map;
   // We need exactly target, receiver and value parameters.
   if (node->op()->ValueInputCount() != 3) return NoChange();
   Node* receiver = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
   Node* value = NodeProperties::GetValueInput(node, 2);
-  if (GetMapWitness(node).ToHandle(&receiver_map) &&
-      CanInlineArrayResizeOperation(receiver_map)) {
+  ZoneHandleSet<Map> receiver_maps;
+  NodeProperties::InferReceiverMapsResult result =
+      NodeProperties::InferReceiverMaps(receiver, effect, &receiver_maps);
+  if (receiver_maps.size() != 1) return NoChange();
+  DCHECK_NE(NodeProperties::kNoReceiverMaps, result);
+
+  // TODO(turbofan): Relax this to deal with multiple {receiver} maps.
+  Handle<Map> receiver_map = receiver_maps[0];
+  if (CanInlineArrayResizeOperation(receiver_map)) {
     // Install code dependencies on the {receiver} prototype maps and the
     // global array protector cell.
     dependencies()->AssumePropertyCell(factory()->array_protector());
     dependencies()->AssumePrototypeMapsStable(receiver_map);
+
+    // If the {receiver_maps} information is not reliable, we need
+    // to check that the {receiver} still has one of these maps.
+    if (result == NodeProperties::kUnreliableReceiverMaps) {
+      if (receiver_map->is_stable()) {
+        dependencies()->AssumeMapStable(receiver_map);
+      } else {
+        // TODO(turbofan): This is a potential - yet unlikely - deoptimization
+        // loop, since we might not learn from this deoptimization in baseline
+        // code. We need a way to learn from deoptimizations in optimized to
+        // address these problems.
+        effect = graph()->NewNode(
+            simplified()->CheckMaps(CheckMapsFlag::kNone, receiver_maps),
+            receiver, effect, control);
+      }
+    }
 
     // TODO(turbofan): Perform type checks on the {value}. We are not guaranteed
     // to learn from these checks in case they fail, as the witness (i.e. the
@@ -1582,7 +1619,7 @@ Reduction JSBuiltinReducer::ReduceObjectCreate(Node* node) {
         common()->BeginRegion(RegionObservability::kNotObservable), effect);
 
     Node* value = effect =
-        graph()->NewNode(simplified()->Allocate(NOT_TENURED),
+        graph()->NewNode(simplified()->Allocate(Type::Any(), NOT_TENURED),
                          jsgraph()->Constant(size), effect, control);
     effect =
         graph()->NewNode(simplified()->StoreField(AccessBuilder::ForMap()),
@@ -1635,7 +1672,7 @@ Reduction JSBuiltinReducer::ReduceObjectCreate(Node* node) {
   effect = graph()->NewNode(
       common()->BeginRegion(RegionObservability::kNotObservable), effect);
   Node* value = effect =
-      graph()->NewNode(simplified()->Allocate(NOT_TENURED),
+      graph()->NewNode(simplified()->Allocate(Type::Any(), NOT_TENURED),
                        jsgraph()->Constant(instance_size), effect, control);
   effect =
       graph()->NewNode(simplified()->StoreField(AccessBuilder::ForMap()), value,
@@ -1878,9 +1915,8 @@ Reduction JSBuiltinReducer::ReduceStringIterator(Node* node) {
     effect = graph()->NewNode(
         common()->BeginRegion(RegionObservability::kNotObservable), effect);
     Node* value = effect = graph()->NewNode(
-        simplified()->Allocate(NOT_TENURED),
+        simplified()->Allocate(Type::OtherObject(), NOT_TENURED),
         jsgraph()->Constant(JSStringIterator::kSize), effect, control);
-    NodeProperties::SetType(value, Type::OtherObject());
     effect = graph()->NewNode(simplified()->StoreField(AccessBuilder::ForMap()),
                               value, map, effect, control);
     effect = graph()->NewNode(

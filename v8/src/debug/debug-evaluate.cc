@@ -260,58 +260,86 @@ namespace {
 
 bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
 // Use macro to include both inlined and non-inlined version of an intrinsic.
-#define INTRINSIC_WHITELIST(V)      \
-  /* Conversions */                 \
-  V(ToInteger)                      \
-  V(ToObject)                       \
-  V(ToString)                       \
-  V(ToLength)                       \
-  V(ToNumber)                       \
-  /* Type checks */                 \
-  V(IsJSReceiver)                   \
-  V(IsSmi)                          \
-  V(IsArray)                        \
-  V(IsFunction)                     \
-  V(IsDate)                         \
-  V(IsJSProxy)                      \
-  V(IsRegExp)                       \
-  V(IsTypedArray)                   \
-  V(ClassOf)                        \
-  /* Loads */                       \
-  V(LoadLookupSlotForCall)          \
-  /* Arrays */                      \
-  V(ArraySpeciesConstructor)        \
-  V(NormalizeElements)              \
-  V(GetArrayKeys)                   \
-  V(HasComplexElements)             \
-  V(EstimateNumberOfElements)       \
-  /* Errors */                      \
-  V(ReThrow)                        \
-  V(ThrowReferenceError)            \
-  V(ThrowSymbolIteratorInvalid)     \
-  V(ThrowIteratorResultNotAnObject) \
-  V(NewTypeError)                   \
-  /* Strings */                     \
-  V(StringCharCodeAt)               \
-  V(StringIndexOf)                  \
-  V(StringReplaceOneCharWithString) \
-  V(SubString)                      \
-  V(RegExpInternalReplace)          \
-  /* Literals */                    \
-  V(CreateArrayLiteral)             \
-  V(CreateObjectLiteral)            \
-  V(CreateRegExpLiteral)            \
-  /* Collections */                 \
-  V(JSCollectionGetTable)           \
-  V(FixedArrayGet)                  \
-  V(StringGetRawHashField)          \
-  V(GenericHash)                    \
-  V(MapIteratorInitialize)          \
-  V(MapInitialize)                  \
-  /* Misc. */                       \
-  V(ForInPrepare)                   \
-  V(Call)                           \
-  V(MaxSmi)                         \
+#define INTRINSIC_WHITELIST(V)       \
+  /* Conversions */                  \
+  V(ToInteger)                       \
+  V(ToObject)                        \
+  V(ToString)                        \
+  V(ToLength)                        \
+  V(ToNumber)                        \
+  /* Type checks */                  \
+  V(IsJSReceiver)                    \
+  V(IsSmi)                           \
+  V(IsArray)                         \
+  V(IsFunction)                      \
+  V(IsDate)                          \
+  V(IsJSProxy)                       \
+  V(IsJSMap)                         \
+  V(IsJSSet)                         \
+  V(IsJSMapIterator)                 \
+  V(IsJSSetIterator)                 \
+  V(IsJSWeakMap)                     \
+  V(IsJSWeakSet)                     \
+  V(IsRegExp)                        \
+  V(IsTypedArray)                    \
+  V(ClassOf)                         \
+  /* Loads */                        \
+  V(LoadLookupSlotForCall)           \
+  /* Arrays */                       \
+  V(ArraySpeciesConstructor)         \
+  V(NormalizeElements)               \
+  V(GetArrayKeys)                    \
+  V(HasComplexElements)              \
+  V(EstimateNumberOfElements)        \
+  /* Errors */                       \
+  V(ReThrow)                         \
+  V(ThrowReferenceError)             \
+  V(ThrowSymbolIteratorInvalid)      \
+  V(ThrowIteratorResultNotAnObject)  \
+  V(NewTypeError)                    \
+  /* Strings */                      \
+  V(StringCharCodeAt)                \
+  V(StringIndexOf)                   \
+  V(StringReplaceOneCharWithString)  \
+  V(SubString)                       \
+  V(RegExpInternalReplace)           \
+  /* Literals */                     \
+  V(CreateArrayLiteral)              \
+  V(CreateObjectLiteral)             \
+  V(CreateRegExpLiteral)             \
+  /* Collections */                  \
+  V(JSCollectionGetTable)            \
+  V(FixedArrayGet)                   \
+  V(StringGetRawHashField)           \
+  V(GenericHash)                     \
+  V(MapIteratorInitialize)           \
+  V(MapInitialize)                   \
+  /* Called from builtins */         \
+  V(StringParseFloat)                \
+  V(StringParseInt)                  \
+  V(StringCharCodeAtRT)              \
+  V(StringIndexOfUnchecked)          \
+  V(SymbolDescriptiveString)         \
+  V(GenerateRandomNumbers)           \
+  V(ExternalStringGetChar)           \
+  V(GlobalPrint)                     \
+  V(AllocateInNewSpace)              \
+  V(AllocateSeqOneByteString)        \
+  V(AllocateSeqTwoByteString)        \
+  V(ObjectCreate)                    \
+  V(ObjectHasOwnProperty)            \
+  V(ArrayIndexOf)                    \
+  V(ArrayIncludes_Slow)              \
+  V(ArrayIsArray)                    \
+  V(ThrowTypeError)                  \
+  V(ThrowCalledOnNullOrUndefined)    \
+  V(ThrowIncompatibleMethodReceiver) \
+  V(ThrowInvalidHint)                \
+  V(ThrowNotDateError)               \
+  /* Misc. */                        \
+  V(ForInPrepare)                    \
+  V(Call)                            \
+  V(MaxSmi)                          \
   V(HasInPrototypeChain)
 
 #define CASE(Name)       \
@@ -338,7 +366,6 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
   typedef interpreter::Bytecodes Bytecodes;
   if (Bytecodes::IsWithoutExternalSideEffects(bytecode)) return true;
   if (Bytecodes::IsCallOrConstruct(bytecode)) return true;
-  if (Bytecodes::WritesBooleanToAccumulator(bytecode)) return true;
   if (Bytecodes::IsJumpIfToBoolean(bytecode)) return true;
   if (Bytecodes::IsPrefixScalingBytecode(bytecode)) return true;
   switch (bytecode) {
@@ -354,18 +381,23 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
     case Bytecode::kSub:
     case Bytecode::kSubSmi:
     case Bytecode::kMul:
+    case Bytecode::kMulSmi:
     case Bytecode::kDiv:
+    case Bytecode::kDivSmi:
     case Bytecode::kMod:
+    case Bytecode::kModSmi:
     case Bytecode::kBitwiseAnd:
     case Bytecode::kBitwiseAndSmi:
     case Bytecode::kBitwiseOr:
     case Bytecode::kBitwiseOrSmi:
     case Bytecode::kBitwiseXor:
+    case Bytecode::kBitwiseXorSmi:
     case Bytecode::kShiftLeft:
     case Bytecode::kShiftLeftSmi:
     case Bytecode::kShiftRight:
     case Bytecode::kShiftRightSmi:
     case Bytecode::kShiftRightLogical:
+    case Bytecode::kShiftRightLogicalSmi:
     case Bytecode::kInc:
     case Bytecode::kDec:
     case Bytecode::kLogicalNot:
@@ -385,6 +417,20 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
     case Bytecode::kCreateClosure:
     case Bytecode::kCreateUnmappedArguments:
     case Bytecode::kCreateRestParameter:
+    // Comparisons.
+    case Bytecode::kTestEqual:
+    case Bytecode::kTestEqualStrict:
+    case Bytecode::kTestLessThan:
+    case Bytecode::kTestLessThanOrEqual:
+    case Bytecode::kTestGreaterThan:
+    case Bytecode::kTestGreaterThanOrEqual:
+    case Bytecode::kTestInstanceOf:
+    case Bytecode::kTestIn:
+    case Bytecode::kTestEqualStrictNoFeedback:
+    case Bytecode::kTestUndetectable:
+    case Bytecode::kTestTypeOf:
+    case Bytecode::kTestUndefined:
+    case Bytecode::kTestNull:
     // Conversions.
     case Bytecode::kToObject:
     case Bytecode::kToNumber:
@@ -631,6 +677,22 @@ bool DebugEvaluate::FunctionHasNoSideEffect(Handle<SharedFunctionInfo> info) {
     int builtin_index = info->code()->builtin_index();
     if (builtin_index >= 0 && builtin_index < Builtins::builtin_count &&
         BuiltinHasNoSideEffect(static_cast<Builtins::Name>(builtin_index))) {
+#ifdef DEBUG
+      int mode = RelocInfo::ModeMask(RelocInfo::EXTERNAL_REFERENCE);
+      bool failed = false;
+      for (RelocIterator it(info->code(), mode); !it.done(); it.next()) {
+        RelocInfo* rinfo = it.rinfo();
+        Address address = rinfo->target_external_reference();
+        const Runtime::Function* function = Runtime::FunctionForEntry(address);
+        if (function == nullptr) continue;
+        if (!IntrinsicHasNoSideEffect(function->function_id)) {
+          PrintF("Whitelisted builtin %s calls non-whitelisted intrinsic %s\n",
+                 Builtins::name(builtin_index), function->name);
+          failed = true;
+        }
+        CHECK(!failed);
+      }
+#endif  // DEBUG
       return true;
     }
   }

@@ -923,7 +923,8 @@ void InstructionSelector::VisitWord32And(Node* node) {
     uint32_t mask = m.right().Value();
     uint32_t mask_width = base::bits::CountPopulation32(mask);
     uint32_t mask_msb = base::bits::CountLeadingZeros32(mask);
-    if ((mask_width != 0) && (mask_msb + mask_width == 32)) {
+    if ((mask_width != 0) && (mask_width != 32) &&
+        (mask_msb + mask_width == 32)) {
       // The mask must be contiguous, and occupy the least-significant bits.
       DCHECK_EQ(0u, base::bits::CountTrailingZeros32(mask));
 
@@ -1779,7 +1780,8 @@ void InstructionSelector::EmitPrepareArguments(
     // TODO(titzer): it would be better to bump the csp here only
     //                and emit paired stores with increment for non c frames.
     ArchOpcode claim = to_native_stack ? kArm64ClaimCSP : kArm64ClaimJSSP;
-    // Claim(0) isn't a nop if there is a mismatch between CSP and JSSP.
+    // ClaimJSSP(0) or ClaimCSP(0) isn't a nop if there is a mismatch between
+    // CSP and JSSP.
     Emit(claim, g.NoOutput(), g.TempImmediate(claim_count));
   }
 
@@ -2718,7 +2720,7 @@ void InstructionSelector::VisitAtomicExchange(Node* node) {
   Node* index = node->InputAt(1);
   Node* value = node->InputAt(2);
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicExchangeRepresentationOf(node->op());
+  MachineType type = AtomicOpRepresentationOf(node->op());
   if (type == MachineType::Int8()) {
     opcode = kAtomicExchangeInt8;
   } else if (type == MachineType::Uint8()) {
@@ -2754,7 +2756,7 @@ void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
   Node* old_value = node->InputAt(2);
   Node* new_value = node->InputAt(3);
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicCompareExchangeRepresentationOf(node->op());
+  MachineType type = AtomicOpRepresentationOf(node->op());
   if (type == MachineType::Int8()) {
     opcode = kAtomicCompareExchangeInt8;
   } else if (type == MachineType::Uint8()) {
@@ -2784,6 +2786,66 @@ void InstructionSelector::VisitAtomicCompareExchange(Node* node) {
   temp[1] = g.TempRegister();
   InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
   Emit(code, 1, outputs, input_count, inputs, 2, temp);
+}
+
+void InstructionSelector::VisitAtomicBinaryOperation(
+    Node* node, ArchOpcode int8_op, ArchOpcode uint8_op, ArchOpcode int16_op,
+    ArchOpcode uint16_op, ArchOpcode word32_op) {
+  Arm64OperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* value = node->InputAt(2);
+  ArchOpcode opcode = kArchNop;
+  MachineType type = AtomicOpRepresentationOf(node->op());
+  if (type == MachineType::Int8()) {
+    opcode = int8_op;
+  } else if (type == MachineType::Uint8()) {
+    opcode = uint8_op;
+  } else if (type == MachineType::Int16()) {
+    opcode = int16_op;
+  } else if (type == MachineType::Uint16()) {
+    opcode = uint16_op;
+  } else if (type == MachineType::Int32() || type == MachineType::Uint32()) {
+    opcode = word32_op;
+  } else {
+    UNREACHABLE();
+    return;
+  }
+
+  AddressingMode addressing_mode = kMode_MRR;
+  InstructionOperand inputs[3];
+  size_t input_count = 0;
+  inputs[input_count++] = g.UseUniqueRegister(base);
+  inputs[input_count++] = g.UseUniqueRegister(index);
+  inputs[input_count++] = g.UseUniqueRegister(value);
+  InstructionOperand outputs[1];
+  outputs[0] = g.UseUniqueRegister(node);
+  InstructionOperand temps[2];
+  temps[0] = g.TempRegister();
+  temps[1] = g.TempRegister();
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  Emit(code, 1, outputs, input_count, inputs, 2, temps);
+}
+
+#define VISIT_ATOMIC_BINOP(op)                                              \
+  void InstructionSelector::VisitAtomic##op(Node* node) {                   \
+    VisitAtomicBinaryOperation(node, kAtomic##op##Int8, kAtomic##op##Uint8, \
+                               kAtomic##op##Int16, kAtomic##op##Uint16,     \
+                               kAtomic##op##Word32);                        \
+  }
+VISIT_ATOMIC_BINOP(Add)
+VISIT_ATOMIC_BINOP(Sub)
+VISIT_ATOMIC_BINOP(And)
+VISIT_ATOMIC_BINOP(Or)
+VISIT_ATOMIC_BINOP(Xor)
+#undef VISIT_ATOMIC_BINOP
+
+void InstructionSelector::VisitInt32AbsWithOverflow(Node* node) {
+  UNREACHABLE();
+}
+
+void InstructionSelector::VisitInt64AbsWithOverflow(Node* node) {
+  UNREACHABLE();
 }
 
 // static

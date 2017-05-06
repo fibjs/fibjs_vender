@@ -14,19 +14,14 @@ namespace v8 {
 namespace internal {
 
 void ParserLogger::LogFunction(int start, int end, int num_parameters,
-                               int function_length,
-                               bool has_duplicate_parameters, int properties,
                                LanguageMode language_mode,
-                               bool uses_super_property, bool calls_eval,
+                               bool uses_super_property,
                                int num_inner_functions) {
   function_store_.Add(start);
   function_store_.Add(end);
   function_store_.Add(num_parameters);
-  function_store_.Add(function_length);
-  function_store_.Add(properties);
   function_store_.Add(
-      FunctionEntry::EncodeFlags(language_mode, uses_super_property, calls_eval,
-                                 has_duplicate_parameters));
+      FunctionEntry::EncodeFlags(language_mode, uses_super_property));
   function_store_.Add(num_inner_functions);
 }
 
@@ -60,23 +55,32 @@ ScriptData* ParserLogger::GetScriptData() {
   return result;
 }
 
-PreParseData::FunctionData PreParseData::GetTopLevelFunctionData(
-    int start) const {
-  auto it = top_level_functions_data_.find(start);
-  if (it != top_level_functions_data_.end()) {
+PreParseData::FunctionData PreParseData::GetFunctionData(int start) const {
+  auto it = functions_.find(start);
+  if (it != functions_.end()) {
     return it->second;
   }
   return FunctionData();
 }
 
-void PreParseData::AddTopLevelFunctionData(FunctionData&& data) {
+void PreParseData::AddFunctionData(int start, FunctionData&& data) {
   DCHECK(data.is_valid());
-  top_level_functions_data_[data.start] = std::move(data);
+  functions_[start] = std::move(data);
 }
 
-void PreParseData::AddTopLevelFunctionData(const FunctionData& data) {
+void PreParseData::AddFunctionData(int start, const FunctionData& data) {
   DCHECK(data.is_valid());
-  top_level_functions_data_[data.start] = data;
+  functions_[start] = data;
+}
+
+size_t PreParseData::size() const { return functions_.size(); }
+
+PreParseData::const_iterator PreParseData::begin() const {
+  return functions_.begin();
+}
+
+PreParseData::const_iterator PreParseData::end() const {
+  return functions_.end();
 }
 
 }  // namespace internal

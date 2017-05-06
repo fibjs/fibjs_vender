@@ -63,11 +63,9 @@ class Deserializer : public SerializerDeserializer {
   }
 
  private:
-  void VisitPointers(Object** start, Object** end) override;
+  void VisitRootPointers(Root root, Object** start, Object** end) override;
 
   void Synchronize(VisitorSynchronization::SyncTag tag) override;
-
-  void VisitRuntimeEntry(RelocInfo* rinfo) override { UNREACHABLE(); }
 
   void Initialize(Isolate* isolate);
 
@@ -116,9 +114,6 @@ class Deserializer : public SerializerDeserializer {
   // This returns the address of an object that has been described in the
   // snapshot by chunk index and offset.
   HeapObject* GetBackReferencedObject(int space);
-
-  Object** CopyInNativesSource(Vector<const char> source_vector,
-                               Object** current);
 
   // Cached current isolate.
   Isolate* isolate_;

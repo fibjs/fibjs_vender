@@ -774,59 +774,36 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
 
 void MacroAssembler::PushCommonFrame(Register marker_reg) {
   if (marker_reg.is_valid()) {
-    if (FLAG_enable_embedded_constant_pool) {
-      if (marker_reg.code() > pp.code()) {
-        stm(db_w, sp, pp.bit() | fp.bit() | lr.bit());
-        add(fp, sp, Operand(kPointerSize));
-        Push(marker_reg);
-      } else {
-        stm(db_w, sp, marker_reg.bit() | pp.bit() | fp.bit() | lr.bit());
-        add(fp, sp, Operand(2 * kPointerSize));
-      }
+    if (marker_reg.code() > fp.code()) {
+      stm(db_w, sp, fp.bit() | lr.bit());
+      mov(fp, Operand(sp));
+      Push(marker_reg);
     } else {
-      if (marker_reg.code() > fp.code()) {
-        stm(db_w, sp, fp.bit() | lr.bit());
-        mov(fp, Operand(sp));
-        Push(marker_reg);
-      } else {
-        stm(db_w, sp, marker_reg.bit() | fp.bit() | lr.bit());
-        add(fp, sp, Operand(kPointerSize));
-      }
+      stm(db_w, sp, marker_reg.bit() | fp.bit() | lr.bit());
+      add(fp, sp, Operand(kPointerSize));
     }
   } else {
-    stm(db_w, sp, (FLAG_enable_embedded_constant_pool ? pp.bit() : 0) |
-                      fp.bit() | lr.bit());
-    add(fp, sp, Operand(FLAG_enable_embedded_constant_pool ? kPointerSize : 0));
+    stm(db_w, sp, fp.bit() | lr.bit());
+    mov(fp, sp);
   }
 }
 
 void MacroAssembler::PopCommonFrame(Register marker_reg) {
   if (marker_reg.is_valid()) {
-    if (FLAG_enable_embedded_constant_pool) {
-      if (marker_reg.code() > pp.code()) {
-        pop(marker_reg);
-        ldm(ia_w, sp, pp.bit() | fp.bit() | lr.bit());
-      } else {
-        ldm(ia_w, sp, marker_reg.bit() | pp.bit() | fp.bit() | lr.bit());
-      }
+    if (marker_reg.code() > fp.code()) {
+      pop(marker_reg);
+      ldm(ia_w, sp, fp.bit() | lr.bit());
     } else {
-      if (marker_reg.code() > fp.code()) {
-        pop(marker_reg);
-        ldm(ia_w, sp, fp.bit() | lr.bit());
-      } else {
-        ldm(ia_w, sp, marker_reg.bit() | fp.bit() | lr.bit());
-      }
+      ldm(ia_w, sp, marker_reg.bit() | fp.bit() | lr.bit());
     }
   } else {
-    ldm(ia_w, sp, (FLAG_enable_embedded_constant_pool ? pp.bit() : 0) |
-                      fp.bit() | lr.bit());
+    ldm(ia_w, sp, fp.bit() | lr.bit());
   }
 }
 
 void MacroAssembler::PushStandardFrame(Register function_reg) {
   DCHECK(!function_reg.is_valid() || function_reg.code() < cp.code());
   stm(db_w, sp, (function_reg.is_valid() ? function_reg.bit() : 0) | cp.bit() |
-                    (FLAG_enable_embedded_constant_pool ? pp.bit() : 0) |
                     fp.bit() | lr.bit());
   int offset = -StandardFrameConstants::kContextOffset;
   offset += function_reg.is_valid() ? kPointerSize : 0;
@@ -837,11 +814,7 @@ void MacroAssembler::PushStandardFrame(Register function_reg) {
 // Push and pop all registers that can hold pointers.
 void MacroAssembler::PushSafepointRegisters() {
   // Safepoints expect a block of contiguous register values starting with r0.
-  // except when FLAG_enable_embedded_constant_pool, which omits pp.
-  DCHECK(kSafepointSavedRegisters ==
-         (FLAG_enable_embedded_constant_pool
-              ? ((1 << (kNumSafepointSavedRegisters + 1)) - 1) & ~pp.bit()
-              : (1 << kNumSafepointSavedRegisters) - 1));
+  DCHECK(kSafepointSavedRegisters == (1 << kNumSafepointSavedRegisters) - 1);
   // Safepoints expect a block of kNumSafepointRegisters values on the
   // stack, so adjust the stack for unsaved registers.
   const int num_unsaved = kNumSafepointRegisters - kNumSafepointSavedRegisters;
@@ -871,10 +844,6 @@ void MacroAssembler::LoadFromSafepointRegisterSlot(Register dst, Register src) {
 int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
   // The registers are pushed starting with the highest encoding,
   // which means that lowest encodings are closest to the stack pointer.
-  if (FLAG_enable_embedded_constant_pool && reg_code > pp.code()) {
-    // RegList omits pp.
-    reg_code -= 1;
-  }
   DCHECK(reg_code >= 0 && reg_code < kNumSafepointRegisters);
   return reg_code;
 }
@@ -1206,64 +1175,6 @@ void MacroAssembler::ReplaceLane(QwNeonRegister dst, QwNeonRegister src,
   VmovExtended(s_code, src_lane.code(), scratch);
 }
 
-void MacroAssembler::Swizzle(QwNeonRegister dst, QwNeonRegister src,
-                             Register scratch, NeonSize size, uint32_t lanes) {
-  // TODO(bbudge) Handle Int16x8, Int8x16 vectors.
-  DCHECK_EQ(Neon32, size);
-  DCHECK_IMPLIES(size == Neon32, lanes < 0xFFFFu);
-  if (size == Neon32) {
-    switch (lanes) {
-      // TODO(bbudge) Handle more special cases.
-      case 0x3210:  // Identity.
-        Move(dst, src);
-        return;
-      case 0x1032:  // Swap top and bottom.
-        vext(dst, src, src, 8);
-        return;
-      case 0x2103:  // Rotation.
-        vext(dst, src, src, 12);
-        return;
-      case 0x0321:  // Rotation.
-        vext(dst, src, src, 4);
-        return;
-      case 0x0000:  // Equivalent to vdup.
-      case 0x1111:
-      case 0x2222:
-      case 0x3333: {
-        int lane_code = src.code() * 4 + (lanes & 0xF);
-        if (lane_code >= SwVfpRegister::kMaxNumRegisters) {
-          // TODO(bbudge) use vdup (vdup.32 dst, D<src>[lane]) once implemented.
-          int temp_code = kScratchDoubleReg.code() * 2;
-          VmovExtended(temp_code, lane_code, scratch);
-          lane_code = temp_code;
-        }
-        vdup(dst, SwVfpRegister::from_code(lane_code));
-        return;
-      }
-      case 0x2301:  // Swap lanes 0, 1 and lanes 2, 3.
-        vrev64(Neon32, dst, src);
-        return;
-      default:  // Handle all other cases with vmovs.
-        int src_code = src.code() * 4;
-        int dst_code = dst.code() * 4;
-        bool in_place = src.is(dst);
-        if (in_place) {
-          vmov(kScratchQuadReg, src);
-          src_code = kScratchQuadReg.code() * 4;
-        }
-        for (int i = 0; i < 4; i++) {
-          int lane = (lanes >> (i * 4) & 0xF);
-          VmovExtended(dst_code + i, src_code + lane, scratch);
-        }
-        if (in_place) {
-          // Restore zero reg.
-          veor(kDoubleRegZero, kDoubleRegZero, kDoubleRegZero);
-        }
-        return;
-    }
-  }
-}
-
 void MacroAssembler::LslPair(Register dst_low, Register dst_high,
                              Register src_low, Register src_high,
                              Register scratch, Register shift) {
@@ -1403,29 +1314,9 @@ void MacroAssembler::AsrPair(Register dst_low, Register dst_high,
   }
 }
 
-void MacroAssembler::LoadConstantPoolPointerRegisterFromCodeTargetAddress(
-    Register code_target_address) {
-  DCHECK(FLAG_enable_embedded_constant_pool);
-  ldr(pp, MemOperand(code_target_address,
-                     Code::kConstantPoolOffset - Code::kHeaderSize));
-  add(pp, pp, code_target_address);
-}
-
-
-void MacroAssembler::LoadConstantPoolPointerRegister() {
-  DCHECK(FLAG_enable_embedded_constant_pool);
-  int entry_offset = pc_offset() + Instruction::kPCReadOffset;
-  sub(ip, pc, Operand(entry_offset));
-  LoadConstantPoolPointerRegisterFromCodeTargetAddress(ip);
-}
-
 void MacroAssembler::StubPrologue(StackFrame::Type type) {
   mov(ip, Operand(StackFrame::TypeToMarker(type)));
   PushCommonFrame(ip);
-  if (FLAG_enable_embedded_constant_pool) {
-    LoadConstantPoolPointerRegister();
-    set_constant_pool_available(true);
-  }
 }
 
 void MacroAssembler::Prologue(bool code_pre_aging) {
@@ -1444,10 +1335,6 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
       nop(ip.code());
     }
   }
-  if (FLAG_enable_embedded_constant_pool) {
-    LoadConstantPoolPointerRegister();
-    set_constant_pool_available(true);
-  }
 }
 
 void MacroAssembler::EmitLoadFeedbackVector(Register vector) {
@@ -1462,9 +1349,6 @@ void MacroAssembler::EnterFrame(StackFrame::Type type,
   // r0-r3: preserved
   mov(ip, Operand(StackFrame::TypeToMarker(type)));
   PushCommonFrame(ip);
-  if (FLAG_enable_embedded_constant_pool && load_constant_pool_pointer_reg) {
-    LoadConstantPoolPointerRegister();
-  }
   if (type == StackFrame::INTERNAL) {
     mov(ip, Operand(CodeObject()));
     push(ip);
@@ -1478,18 +1362,10 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type) {
   // r2: preserved
 
   // Drop the execution stack down to the frame pointer and restore
-  // the caller frame pointer, return address and constant pool pointer
-  // (if FLAG_enable_embedded_constant_pool).
-  int frame_ends;
-  if (FLAG_enable_embedded_constant_pool) {
-    add(sp, fp, Operand(StandardFrameConstants::kConstantPoolOffset));
-    frame_ends = pc_offset();
-    ldm(ia_w, sp, pp.bit() | fp.bit() | lr.bit());
-  } else {
-    mov(sp, fp);
-    frame_ends = pc_offset();
-    ldm(ia_w, sp, fp.bit() | lr.bit());
-  }
+  // the caller frame pointer and return address.
+  mov(sp, fp);
+  int frame_ends = pc_offset();
+  ldm(ia_w, sp, fp.bit() | lr.bit());
   return frame_ends;
 }
 
@@ -1523,9 +1399,6 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
     mov(ip, Operand::Zero());
     str(ip, MemOperand(fp, ExitFrameConstants::kSPOffset));
   }
-  if (FLAG_enable_embedded_constant_pool) {
-    str(pp, MemOperand(fp, ExitFrameConstants::kConstantPoolOffset));
-  }
   mov(ip, Operand(CodeObject()));
   str(ip, MemOperand(fp, ExitFrameConstants::kCodeOffset));
 
@@ -1541,8 +1414,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
     // Note that d0 will be accessible at
     //   fp - ExitFrameConstants::kFrameSize -
     //   DwVfpRegister::kMaxNumRegisters * kDoubleSize,
-    // since the sp slot, code slot and constant pool slot (if
-    // FLAG_enable_embedded_constant_pool) were pushed after the fp.
+    // since the sp slot and code slot were pushed after the fp.
   }
 
   // Reserve place for the return address and stack space and align the frame
@@ -1607,9 +1479,6 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
 #endif
 
   // Tear down the exit frame, pop the arguments, and return.
-  if (FLAG_enable_embedded_constant_pool) {
-    ldr(pp, MemOperand(fp, ExitFrameConstants::kConstantPoolOffset));
-  }
   mov(sp, Operand(fp));
   ldm(ia_w, sp, fp.bit() | lr.bit());
   if (argument_count.is_valid()) {
@@ -2914,16 +2783,33 @@ void MacroAssembler::AssertBoundFunction(Register object) {
   }
 }
 
-void MacroAssembler::AssertGeneratorObject(Register object) {
-  if (emit_debug_code()) {
-    STATIC_ASSERT(kSmiTag == 0);
-    tst(object, Operand(kSmiTagMask));
-    Check(ne, kOperandIsASmiAndNotAGeneratorObject);
-    push(object);
-    CompareObjectType(object, object, object, JS_GENERATOR_OBJECT_TYPE);
-    pop(object);
-    Check(eq, kOperandIsNotAGeneratorObject);
-  }
+void MacroAssembler::AssertGeneratorObject(Register object, Register flags) {
+  // `flags` should be an untagged integer. See `SuspendFlags` in src/globals.h
+  if (!emit_debug_code()) return;
+  tst(object, Operand(kSmiTagMask));
+  Check(ne, kOperandIsASmiAndNotAGeneratorObject);
+
+  // Load map
+  Register map = object;
+  push(object);
+  ldr(map, FieldMemOperand(object, HeapObject::kMapOffset));
+
+  Label async, do_check;
+  tst(flags, Operand(static_cast<int>(SuspendFlags::kGeneratorTypeMask)));
+  b(ne, &async);
+
+  // Check if JSGeneratorObject
+  CompareInstanceType(map, object, JS_GENERATOR_OBJECT_TYPE);
+  jmp(&do_check);
+
+  bind(&async);
+  // Check if JSAsyncGeneratorObject
+  CompareInstanceType(map, object, JS_ASYNC_GENERATOR_OBJECT_TYPE);
+
+  bind(&do_check);
+  // Restore generator object to register and perform assertion
+  pop(object);
+  Check(eq, kOperandIsNotAGeneratorObject);
 }
 
 void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
@@ -3391,6 +3277,7 @@ void MacroAssembler::CallCFunction(Register function,
 void MacroAssembler::CallCFunctionHelper(Register function,
                                          int num_reg_arguments,
                                          int num_double_arguments) {
+  DCHECK_LE(num_reg_arguments + num_double_arguments, kMaxCParameters);
   DCHECK(has_frame());
   // Make sure that the stack is aligned before calling a C function unless
   // running in the simulator. The simulator has its own alignment check which
