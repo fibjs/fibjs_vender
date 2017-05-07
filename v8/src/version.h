@@ -21,7 +21,7 @@ class Version {
   static bool IsCandidate() { return candidate_; }
   static uint32_t Hash() {
     return static_cast<uint32_t>(
-        base::hash_combine(major_, minor_, build_, patch_));
+        base::hash_combine(major_, minor_));
   }
 
   // Calculate the V8 version string.

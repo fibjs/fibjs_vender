@@ -130,10 +130,8 @@ function cp_folder(path, to) {
 
 var gens = [
     '/out.gn/x64.release/gen/libraries.cc',
-    // '/out.gn/x64.release/gen/experimental-libraries.cc',
     '/out.gn/x64.release/gen/extras-libraries.cc',
     '/out.gn/x64.release/gen/experimental-extras-libraries.cc'
-    // '/out.gn/x64.release/gen/bytecode-peephole-table.cc'
 ];
 
 function cp_gen() {
@@ -218,7 +216,6 @@ function patch_plat() {
     }
 }
 
-
 var traces = {
     'android': "V8_OS_ANDROID",
     'posix': "V8_OS_POSIX",
@@ -252,30 +249,6 @@ function patch_trace_win() {
         "\n" +
         "inline bool InitializeSymbols1()");
     fs.writeFile(fname, txt);
-}
-
-function patch_samp() {
-    var fname = "src/profiler/sampler.cc";
-
-    console.log("patch", fname);
-    var txt = fs.readTextFile(fname);
-
-    var idx = txt.lastIndexOf("#if defined(USE_SIGNALS)");
-    if (idx < 0)
-        return;
-
-    var txt1 = txt.substr(0, idx);
-    txt1 += "#if 0\n\n";
-    txt1 += txt.substr(idx);
-
-    txt = txt1;
-    idx = txt.lastIndexOf("#endif  // USE_SIGNALS");
-
-    txt1 = txt.substr(0, idx);
-    txt1 += "#endif\n\n";
-    txt1 += txt.substr(idx);
-
-    fs.writeFile(fname, txt1);
 }
 
 function patch_macro() {
@@ -313,6 +286,15 @@ function patch_serializer() {
     txt = txt.replace("if (source_hash", "if (0 && source_hash");
     txt = txt.replace("if (flags_hash", "if (0 && flags_hash");
     txt = txt.replace("if (cpu_features", "if (0 && cpu_features");
+    fs.writeFile(fname, txt);
+}
+
+function patch_version_hash() {
+    var fname = "src/version.h";
+
+    console.log("patch", fname);
+    var txt = fs.readTextFile(fname);
+    txt = txt.replace("major_, minor_, build_, patch_", "major_, minor_");
     fs.writeFile(fname, txt);
 }
 
@@ -363,17 +345,15 @@ clean_folder('src/inspector');
 fs.rmdir('src/inspector');
 
 update_plat();
-//patch_samp();
 
 patch_src('src');
 patch_trace();
 patch_trace_win();
 patch_macro();
 patch_flag();
+patch_version_hash();
 patch_serializer();
 patch_ntver();
 patch_trap();
-
-//fs.unlink('src/version_gen.cc');
 
 run('./vsmake.js');
