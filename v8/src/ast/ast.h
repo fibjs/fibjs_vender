@@ -1682,7 +1682,11 @@ class VariableProxy final : public Expression {
   }
 
   HoleCheckMode hole_check_mode() const {
-    return HoleCheckModeField::decode(bit_field_);
+    HoleCheckMode mode = HoleCheckModeField::decode(bit_field_);
+    DCHECK_IMPLIES(mode == HoleCheckMode::kRequired,
+                   var()->binding_needs_init() ||
+                       var()->local_if_not_shadowed()->binding_needs_init());
+    return mode;
   }
   void set_needs_hole_check() {
     bit_field_ =
@@ -3400,9 +3404,8 @@ class AstNodeFactory final BASE_EMBEDDED {
     return new (zone_) Literal(ast_value_factory_->NewSymbol(symbol), pos);
   }
 
-  Literal* NewNumberLiteral(double number, int pos, bool with_dot = false) {
-    return new (zone_)
-        Literal(ast_value_factory_->NewNumber(number, with_dot), pos);
+  Literal* NewNumberLiteral(double number, int pos) {
+    return new (zone_) Literal(ast_value_factory_->NewNumber(number), pos);
   }
 
   Literal* NewSmiLiteral(uint32_t number, int pos) {

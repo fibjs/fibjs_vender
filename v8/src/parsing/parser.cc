@@ -252,60 +252,56 @@ bool Parser::ShortcutNumericLiteralBinaryExpression(Expression** x,
       y->AsLiteral() && y->AsLiteral()->raw_value()->IsNumber()) {
     double x_val = (*x)->AsLiteral()->raw_value()->AsNumber();
     double y_val = y->AsLiteral()->raw_value()->AsNumber();
-    bool x_has_dot = (*x)->AsLiteral()->raw_value()->ContainsDot();
-    bool y_has_dot = y->AsLiteral()->raw_value()->ContainsDot();
-    bool has_dot = x_has_dot || y_has_dot;
     switch (op) {
       case Token::ADD:
-        *x = factory()->NewNumberLiteral(x_val + y_val, pos, has_dot);
+        *x = factory()->NewNumberLiteral(x_val + y_val, pos);
         return true;
       case Token::SUB:
-        *x = factory()->NewNumberLiteral(x_val - y_val, pos, has_dot);
+        *x = factory()->NewNumberLiteral(x_val - y_val, pos);
         return true;
       case Token::MUL:
-        *x = factory()->NewNumberLiteral(x_val * y_val, pos, has_dot);
+        *x = factory()->NewNumberLiteral(x_val * y_val, pos);
         return true;
       case Token::DIV:
-        *x = factory()->NewNumberLiteral(x_val / y_val, pos, has_dot);
+        *x = factory()->NewNumberLiteral(x_val / y_val, pos);
         return true;
       case Token::BIT_OR: {
         int value = DoubleToInt32(x_val) | DoubleToInt32(y_val);
-        *x = factory()->NewNumberLiteral(value, pos, has_dot);
+        *x = factory()->NewNumberLiteral(value, pos);
         return true;
       }
       case Token::BIT_AND: {
         int value = DoubleToInt32(x_val) & DoubleToInt32(y_val);
-        *x = factory()->NewNumberLiteral(value, pos, has_dot);
+        *x = factory()->NewNumberLiteral(value, pos);
         return true;
       }
       case Token::BIT_XOR: {
         int value = DoubleToInt32(x_val) ^ DoubleToInt32(y_val);
-        *x = factory()->NewNumberLiteral(value, pos, has_dot);
+        *x = factory()->NewNumberLiteral(value, pos);
         return true;
       }
       case Token::SHL: {
         int value = DoubleToInt32(x_val) << (DoubleToInt32(y_val) & 0x1f);
-        *x = factory()->NewNumberLiteral(value, pos, has_dot);
+        *x = factory()->NewNumberLiteral(value, pos);
         return true;
       }
       case Token::SHR: {
         uint32_t shift = DoubleToInt32(y_val) & 0x1f;
         uint32_t value = DoubleToUint32(x_val) >> shift;
-        *x = factory()->NewNumberLiteral(value, pos, has_dot);
+        *x = factory()->NewNumberLiteral(value, pos);
         return true;
       }
       case Token::SAR: {
         uint32_t shift = DoubleToInt32(y_val) & 0x1f;
         int value = ArithmeticShiftRight(DoubleToInt32(x_val), shift);
-        *x = factory()->NewNumberLiteral(value, pos, has_dot);
+        *x = factory()->NewNumberLiteral(value, pos);
         return true;
       }
       case Token::EXP: {
         double value = Pow(x_val, y_val);
         int int_value = static_cast<int>(value);
         *x = factory()->NewNumberLiteral(
-            int_value == value && value != -0.0 ? int_value : value, pos,
-            has_dot);
+            int_value == value && value != -0.0 ? int_value : value, pos);
         return true;
       }
       default:
@@ -327,15 +323,13 @@ Expression* Parser::BuildUnaryExpression(Expression* expression,
     } else if (literal->IsNumber()) {
       // Compute some expressions involving only number literals.
       double value = literal->AsNumber();
-      bool has_dot = literal->ContainsDot();
       switch (op) {
         case Token::ADD:
           return expression;
         case Token::SUB:
-          return factory()->NewNumberLiteral(-value, pos, has_dot);
+          return factory()->NewNumberLiteral(-value, pos);
         case Token::BIT_NOT:
-          return factory()->NewNumberLiteral(~DoubleToInt32(value), pos,
-                                             has_dot);
+          return factory()->NewNumberLiteral(~DoubleToInt32(value), pos);
         default:
           break;
       }
@@ -344,7 +338,7 @@ Expression* Parser::BuildUnaryExpression(Expression* expression,
   // Desugar '+foo' => 'foo*1'
   if (op == Token::ADD) {
     return factory()->NewBinaryOperation(
-        Token::MUL, expression, factory()->NewNumberLiteral(1, pos, true), pos);
+        Token::MUL, expression, factory()->NewNumberLiteral(1, pos), pos);
   }
   // The same idea for '-foo' => 'foo*(-1)'.
   if (op == Token::SUB) {
@@ -433,9 +427,8 @@ Literal* Parser::ExpressionFromLiteral(Token::Value token, int pos) {
       return factory()->NewSmiLiteral(value, pos);
     }
     case Token::NUMBER: {
-      bool has_dot = scanner()->ContainsDot();
       double value = scanner()->DoubleValue();
-      return factory()->NewNumberLiteral(value, pos, has_dot);
+      return factory()->NewNumberLiteral(value, pos);
     }
     default:
       DCHECK(false);
@@ -2677,6 +2670,33 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   bool has_duplicate_parameters = false;
   int function_literal_id = GetNextFunctionLiteralId();
 
+  Expect(Token::LPAREN, CHECK_OK);
+
+  if (should_use_parse_task) {
+    int start_pos = scanner()->location().beg_pos;
+    if (function_name_location.IsValid()) {
+      start_pos = function_name_location.beg_pos;
+    }
+    // Warning!
+    // Only sets fields in compiler_hints that are currently used.
+    int compiler_hints = SharedFunctionInfo::FunctionKindBits::encode(kind);
+    if (function_type == FunctionLiteral::kDeclaration) {
+      compiler_hints |= 1 << SharedFunctionInfo::kIsDeclaration;
+    }
+    should_use_parse_task = compiler_dispatcher_->Enqueue(
+        source_, start_pos, source_->length(), language_mode,
+        function_literal_id, allow_natives(), parsing_module_,
+        function_type == FunctionLiteral::kNamedExpression, compiler_hints,
+        main_parse_info_, nullptr);
+    if (V8_UNLIKELY(FLAG_trace_parse_tasks)) {
+      PrintF("Spining off task for function at %d: %s\n", start_pos,
+             should_use_parse_task ? "SUCCESS" : "FAILED");
+    }
+    if (!should_use_parse_task) {
+      should_preparse = false;
+    }
+  }
+
   Zone* outer_zone = zone();
   DeclarationScope* scope;
 
@@ -2702,8 +2722,6 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     scope->SetScopeName(function_name);
     if (should_preparse) scope->set_needs_migration();
 #endif
-
-    Expect(Token::LPAREN, CHECK_OK);
     scope->set_start_position(scanner()->location().beg_pos);
 
     // Eager or lazy parse? If is_lazy_top_level_function, we'll parse
@@ -2721,8 +2739,8 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
           SkipFunction(kind, scope, &num_parameters, is_lazy_inner_function,
                        is_lazy_top_level_function, CHECK_OK);
 
-      // TODO(wiktorg) revisit preparsing aborted in case of parse tasks
       if (result == kLazyParsingAborted) {
+        DCHECK(is_lazy_top_level_function);
         bookmark.Apply();
         // This is probably an initialization function. Inform the compiler it
         // should also eager-compile this function, and that we expect it to be
@@ -2734,36 +2752,6 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
         // Trigger eager (re-)parsing, just below this block.
         should_preparse = false;
         should_use_parse_task = false;
-      }
-      if (should_use_parse_task) {
-        int start_pos = scope->start_position();
-        if (function_name_location.IsValid()) {
-          start_pos = function_name_location.beg_pos;
-        }
-        // Warning!
-        // Only sets fields in compiler_hints that are currently used.
-        int compiler_hints = SharedFunctionInfo::FunctionKindBits::encode(kind);
-        if (function_type == FunctionLiteral::kDeclaration) {
-          compiler_hints |= 1 << SharedFunctionInfo::kIsDeclaration;
-        }
-        // TODO(wiktorg) enqueue parse tasks before preparsing
-        should_use_parse_task = compiler_dispatcher_->Enqueue(
-            source_, start_pos, scope->end_position(), language_mode,
-            function_literal_id, allow_natives(), parsing_module_,
-            function_type == FunctionLiteral::kNamedExpression, compiler_hints,
-            main_parse_info_, nullptr);
-        if (FLAG_trace_parse_tasks) {
-          PrintF("Spining off task for function at %d: %s\n",
-                 scope->start_position(),
-                 should_use_parse_task ? "SUCCESS" : "FAILED");
-        }
-        if (!should_use_parse_task) {
-          // Fallback to eager parsing below if we failed to enqueue parse tasks
-          bookmark.Apply();
-          scope->ResetAfterPreparsing(ast_value_factory(), true);
-          zone_scope.Reset();
-          should_preparse = false;
-        }
       }
     }
 
@@ -3144,22 +3132,6 @@ Block* Parser::BuildRejectPromiseOnException(Block* inner_block) {
   return result;
 }
 
-Assignment* Parser::BuildCreateJSGeneratorObject(int pos, FunctionKind kind) {
-  // .generator = %_CreateJSGeneratorObject(...);
-  DCHECK_NOT_NULL(function_state_->generator_object_variable());
-  ZoneList<Expression*>* args = new (zone()) ZoneList<Expression*>(2, zone());
-  args->Add(factory()->NewThisFunction(pos), zone());
-  args->Add(IsArrowFunction(kind) ? GetLiteralUndefined(pos)
-                                  : ThisExpression(kNoSourcePosition),
-            zone());
-  Expression* allocation = factory()->NewCallRuntime(
-      Runtime::kInlineCreateJSGeneratorObject, args, pos);
-  VariableProxy* proxy =
-      factory()->NewVariableProxy(function_state_->generator_object_variable());
-  return factory()->NewAssignment(Token::INIT, proxy, allocation,
-                                  kNoSourcePosition);
-}
-
 Expression* Parser::BuildResolvePromise(Expression* value, int pos) {
   // %ResolvePromise(.promise, value), .promise
   ZoneList<Expression*>* args = new (zone()) ZoneList<Expression*>(2, zone());
@@ -3209,13 +3181,17 @@ Variable* Parser::AsyncGeneratorAwaitVariable() {
 }
 
 Expression* Parser::BuildInitialYield(int pos, FunctionKind kind) {
-  Assignment* assignment = BuildCreateJSGeneratorObject(pos, kind);
-  VariableProxy* generator =
+  // We access the generator object twice: once for the {generator}
+  // member of the Suspend AST node, and once for the result of
+  // the initial yield.
+  Expression* yield_result =
+      factory()->NewVariableProxy(function_state_->generator_object_variable());
+  Expression* generator_object =
       factory()->NewVariableProxy(function_state_->generator_object_variable());
   // The position of the yield is important for reporting the exception
   // caused by calling the .throw method on a generator suspended at the
   // initial yield (i.e. right after generator instantiation).
-  return BuildSuspend(generator, assignment, scope()->start_position(),
+  return BuildSuspend(generator_object, yield_result, scope()->start_position(),
                       Suspend::kOnExceptionThrow, SuspendFlags::kYield);
 }
 
@@ -3879,9 +3855,6 @@ void Parser::PrepareAsyncFunctionBody(ZoneList<Statement*>* body,
   if (function_state_->generator_object_variable() == nullptr) {
     PrepareGeneratorVariables();
   }
-  body->Add(factory()->NewExpressionStatement(
-                BuildCreateJSGeneratorObject(pos, kind), kNoSourcePosition),
-            zone());
 }
 
 // This method completes the desugaring of the body of async_function.

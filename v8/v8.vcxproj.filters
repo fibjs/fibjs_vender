@@ -2109,6 +2109,9 @@
     <ClInclude Include="src\wasm\signature-map.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\streaming-decoder.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-specialization.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -4017,6 +4020,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\signature-map.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\streaming-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-code-specialization.cc">

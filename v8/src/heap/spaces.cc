@@ -56,10 +56,14 @@ bool HeapObjectIterator::AdvanceToNextPage() {
   DCHECK_EQ(cur_addr_, cur_end_);
   if (current_page_ == page_range_.end()) return false;
   Page* cur_page = *(current_page_++);
-  space_->heap()
-      ->mark_compact_collector()
-      ->sweeper()
-      .SweepOrWaitUntilSweepingCompleted(cur_page);
+  Heap* heap = space_->heap();
+
+  heap->mark_compact_collector()->sweeper().SweepOrWaitUntilSweepingCompleted(
+      cur_page);
+  if (cur_page->IsFlagSet(Page::SWEEP_TO_ITERATE))
+    heap->minor_mark_compact_collector()->MakeIterable(
+        cur_page, MarkingTreatmentMode::CLEAR,
+        FreeSpaceTreatmentMode::IGNORE_FREE_SPACE);
   cur_addr_ = cur_page->area_start();
   cur_end_ = cur_page->area_end();
   DCHECK(cur_page->SweepingDone());
@@ -1564,6 +1568,10 @@ void PagedSpace::Verify(ObjectVisitor* visitor) {
 
       // The object itself should look OK.
       object->ObjectVerify();
+
+      if (!FLAG_verify_heap_skip_remembered_set) {
+        heap()->VerifyRememberedSetFor(object);
+      }
 
       // All the interior pointers should be contained in the heap.
       int size = object->Size();
@@ -3316,6 +3324,10 @@ void LargeObjectSpace::Verify() {
 
     // The object itself should look OK.
     object->ObjectVerify();
+
+    if (!FLAG_verify_heap_skip_remembered_set) {
+      heap()->VerifyRememberedSetFor(object);
+    }
 
     // Byte arrays and strings don't have interior pointers.
     if (object->IsAbstractCode()) {

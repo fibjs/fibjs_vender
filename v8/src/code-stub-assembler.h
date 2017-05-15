@@ -621,9 +621,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   Node* AllocateJSArrayIterator(Node* array, Node* array_map, Node* map);
 
-  // Perform ArraySpeciesCreate (ES6 #sec-arrayspeciescreate).
-  Node* ArraySpeciesCreate(Node* context, Node* originalArray, Node* len);
-
   void FillFixedArrayWithValue(ElementsKind kind, Node* array, Node* from_index,
                                Node* to_index,
                                Heap::RootListIndex value_root_index,
@@ -805,9 +802,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                          ParameterMode parameter_mode = SMI_PARAMETERS);
   // Return the single character string with only {code}.
   Node* StringFromCharCode(Node* code);
+
+  enum class SubStringFlags { NONE, FROM_TO_ARE_BOUNDED };
+
   // Return a new string object which holds a substring containing the range
   // [from,to[ of string.  |from| and |to| are expected to be tagged.
-  Node* SubString(Node* context, Node* string, Node* from, Node* to);
+  // If flags has the value FROM_TO_ARE_BOUNDED then from and to are in
+  // the range [0, string-length)
+  Node* SubString(Node* context, Node* string, Node* from, Node* to,
+                  SubStringFlags flags = SubStringFlags::NONE);
 
   // Return a new string object produced by concatenating |first| with |second|.
   Node* StringAdd(Node* context, Node* first, Node* second,
@@ -1213,6 +1216,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Update the type feedback vector.
   void UpdateFeedback(Node* feedback, Node* feedback_vector, Node* slot_id);
 
+  // Combine the new feedback with the existing_feedback.
+  void CombineFeedback(Variable* existing_feedback, Node* feedback);
+
   // Check if a property name might require protector invalidation when it is
   // used for a property store or deletion.
   void CheckForAssociatedProtector(Node* name, Label* if_protector);
@@ -1349,9 +1355,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   void GotoUnlessNumberLessThan(Node* lhs, Node* rhs, Label* if_false);
 
-  Node* Equal(Node* lhs, Node* rhs, Node* context);
+  Node* Equal(Node* lhs, Node* rhs, Node* context,
+              Variable* var_type_feedback = nullptr);
 
-  Node* StrictEqual(Node* lhs, Node* rhs, Variable* var_type_feedback = NULL);
+  Node* StrictEqual(Node* lhs, Node* rhs,
+                    Variable* var_type_feedback = nullptr);
 
   // ECMA#sec-samevalue
   // Similar to StrictEqual except that NaNs are treated as equal and minus zero

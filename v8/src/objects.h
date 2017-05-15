@@ -4442,6 +4442,7 @@ class DependentCode: public FixedArray {
 
 class PrototypeInfo;
 
+typedef std::vector<Handle<Map>> MapHandles;
 
 // All heap objects have a Map that describes their structure.
 //  A Map contains information about:
@@ -4964,7 +4965,7 @@ class Map: public HeapObject {
   // Returns the transitioned map for this map with the most generic
   // elements_kind that's found in |candidates|, or |nullptr| if no match is
   // found at all.
-  Map* FindElementsKindTransitionedMap(MapHandleList* candidates);
+  Map* FindElementsKindTransitionedMap(MapHandles const& candidates);
 
   inline bool CanTransition();
 
@@ -6495,6 +6496,10 @@ class SharedFunctionInfo: public HeapObject {
   static const int kClassConstructorBitsWithinByte =
       FunctionKind::kClassConstructor << kCompilerHintsSmiTagSize;
   STATIC_ASSERT(kClassConstructorBitsWithinByte < (1 << kBitsPerByte));
+
+  static const int kDerivedConstructorBitsWithinByte =
+      FunctionKind::kDerivedConstructor << kCompilerHintsSmiTagSize;
+  STATIC_ASSERT(kDerivedConstructorBitsWithinByte < (1 << kBitsPerByte));
 
   static const int kMarkedForTierUpBitWithinByte =
       kMarkedForTierUpBit % kBitsPerByte;
@@ -9566,6 +9571,9 @@ class JSArray: public JSObject {
   // Layout description.
   static const int kLengthOffset = JSObject::kHeaderSize;
   static const int kSize = kLengthOffset + kPointerSize;
+
+  // Max. number of elements being copied in Array builtins.
+  static const int kMaxCopyElements = 16;
 
   static const int kInitialMaxFastElementArray =
       (kMaxRegularHeapObjectSize - FixedArray::kHeaderSize - kSize -

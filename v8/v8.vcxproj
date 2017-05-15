@@ -640,6 +640,7 @@
     <ClInclude Include="src\wasm\local-decl-encoder.h" />
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\signature-map.h" />
+    <ClInclude Include="src\wasm\streaming-decoder.h" />
     <ClInclude Include="src\wasm\wasm-code-specialization.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
@@ -1278,6 +1279,7 @@
     <ClCompile Include="src\wasm\local-decl-encoder.cc" />
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\signature-map.cc" />
+    <ClCompile Include="src\wasm\streaming-decoder.cc" />
     <ClCompile Include="src\wasm\wasm-code-specialization.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />

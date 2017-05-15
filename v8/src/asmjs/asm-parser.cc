@@ -365,8 +365,7 @@ void AsmJsParser::ValidateModule() {
   module_builder_->MarkStartFunction(start);
   for (auto& global_import : global_imports_) {
     uint32_t import_index = module_builder_->AddGlobalImport(
-        global_import.import_name.start(), global_import.import_name.length(),
-        global_import.value_type);
+        global_import.import_name, global_import.value_type);
     start->EmitWithI32V(kExprGetGlobal, import_index);
     start->EmitWithI32V(kExprSetGlobal, VarIndex(global_import.var_info));
   }
@@ -546,6 +545,7 @@ void AsmJsParser::ValidateModuleVarImport(VarInfo* info,
       info->kind = VarKind::kImportedFunction;
       info->import = new (zone()->New(sizeof(FunctionImportInfo)))
           FunctionImportInfo({name, WasmModuleBuilder::SignatureMap(zone())});
+      info->mutable_variable = false;
     }
   }
 }
@@ -613,7 +613,7 @@ void AsmJsParser::ValidateModuleVarStdlib(VarInfo* info) {
 void AsmJsParser::ValidateExport() {
   // clang-format off
   EXPECT_TOKEN(TOK(return));
-  // clang format on
+  // clang-format on
   if (Check('{')) {
     for (;;) {
       Vector<const char> name = CopyCurrentIdentifierString();
@@ -629,7 +629,7 @@ void AsmJsParser::ValidateExport() {
       if (info->kind != VarKind::kFunction) {
         FAIL("Expected function");
       }
-      info->function_builder->ExportAs(name);
+      module_builder_->AddExport(name, info->function_builder);
       if (Check(',')) {
         if (!Peek('}')) {
           continue;
@@ -646,7 +646,8 @@ void AsmJsParser::ValidateExport() {
     if (info->kind != VarKind::kFunction) {
       FAIL("Single function export must be a function");
     }
-    info->function_builder->ExportAs(CStrVector(AsmJs::kSingleFunctionName));
+    module_builder_->AddExport(CStrVector(AsmJs::kSingleFunctionName),
+                               info->function_builder);
   }
 }
 
@@ -719,6 +720,7 @@ void AsmJsParser::ValidateFunction() {
     function_info->kind = VarKind::kFunction;
     function_info->function_builder = module_builder_->AddFunction();
     function_info->index = function_info->function_builder->func_index();
+    function_info->mutable_variable = false;
   } else if (function_info->kind != VarKind::kFunction) {
     FAIL("Function name collides with variable");
   } else if (function_info->function_defined) {
@@ -744,14 +746,23 @@ void AsmJsParser::ValidateFunction() {
   function_temp_locals_used_ = 0;
   function_temp_locals_depth_ = 0;
 
+  bool last_statement_is_return = false;
   while (!failed_ && !Peek('}')) {
+    // clang-format off
+    last_statement_is_return = Peek(TOK(return));
+    // clang-format on
     RECURSE(ValidateStatement());
   }
   EXPECT_TOKEN('}');
 
-  if (return_type_ == nullptr) {
-    return_type_ = AsmType::Void();
+  if (!last_statement_is_return) {
+    if (return_type_ == nullptr) {
+      return_type_ = AsmType::Void();
+    } else if (!return_type_->IsA(AsmType::Void())) {
+      FAIL("Expected return at end of non-void function");
+    }
   }
+  DCHECK_NOT_NULL(return_type_);
 
   // TODO(bradnelson): WasmModuleBuilder can't take this in the right order.
   //                   We should fix that so we can use it instead.
@@ -1066,7 +1077,7 @@ void AsmJsParser::IfStatement() {
 // 6.5.5 ReturnStatement
 void AsmJsParser::ReturnStatement() {
   // clang-format off
-  EXPECT_TOKEN(TOK(return ));
+  EXPECT_TOKEN(TOK(return));
   // clang-format on
   if (!Peek(';') && !Peek('}')) {
     // TODO(bradnelson): See if this can be factored out.
@@ -1081,8 +1092,10 @@ void AsmJsParser::ReturnStatement() {
     } else {
       FAIL("Invalid return type");
     }
-  } else {
+  } else if (return_type_ == nullptr) {
     return_type_ = AsmType::Void();
+  } else if (!return_type_->IsA(AsmType::Void())) {
+    FAIL("Invalid void return type");
   }
   current_function_builder_->Emit(kExprReturn);
   SkipSemicolon();
@@ -1484,6 +1497,9 @@ AsmType* AsmJsParser::AssignmentExpression() {
       if (info->kind == VarKind::kUnused) {
         FAILn("Undeclared assignment target");
       }
+      if (!info->mutable_variable) {
+        FAILn("Expected mutable variable in assignment");
+      }
       DCHECK(is_local ? info->kind == VarKind::kLocal
                       : info->kind == VarKind::kGlobal);
       AsmType* value;
@@ -1494,9 +1510,6 @@ AsmType* AsmJsParser::AssignmentExpression() {
       if (info->kind == VarKind::kLocal) {
         current_function_builder_->EmitTeeLocal(info->index);
       } else if (info->kind == VarKind::kGlobal) {
-        if (!info->mutable_variable) {
-          FAILn("Expected mutable variable in assignment");
-        }
         current_function_builder_->EmitWithU32V(kExprSetGlobal, VarIndex(info));
         current_function_builder_->EmitWithU32V(kExprGetGlobal, VarIndex(info));
       } else {
@@ -2036,6 +2049,7 @@ AsmType* AsmJsParser::ValidateCall() {
       function_info->mask = static_cast<int32_t>(mask);
       function_info->index = module_builder_->AllocateIndirectFunctions(
           static_cast<uint32_t>(mask + 1));
+      function_info->mutable_variable = false;
     } else {
       if (function_info->kind != VarKind::kTable) {
         FAILn("Expected call table");
@@ -2057,6 +2071,7 @@ AsmType* AsmJsParser::ValidateCall() {
       function_info->kind = VarKind::kFunction;
       function_info->function_builder = module_builder_->AddFunction();
       function_info->index = function_info->function_builder->func_index();
+      function_info->mutable_variable = false;
     } else {
       if (function_info->kind != VarKind::kFunction &&
           function_info->kind < VarKind::kImportedFunction) {
@@ -2149,9 +2164,8 @@ AsmType* AsmJsParser::ValidateCall() {
     if (it != function_info->import->cache.end()) {
       index = it->second;
     } else {
-      index = module_builder_->AddImport(
-          function_info->import->function_name.start(),
-          function_info->import->function_name.length(), sig);
+      index =
+          module_builder_->AddImport(function_info->import->function_name, sig);
       function_info->import->cache[sig] = index;
     }
     current_function_builder_->AddAsmWasmOffset(call_pos, to_number_pos);

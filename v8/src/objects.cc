@@ -4832,16 +4832,15 @@ int AccessorInfo::AppendUnique(Handle<Object> descriptors,
                                                    valid_descriptors);
 }
 
-
-static bool ContainsMap(MapHandleList* maps, Map* map) {
+static bool ContainsMap(MapHandles const& maps, Map* map) {
   DCHECK_NOT_NULL(map);
-  for (int i = 0; i < maps->length(); ++i) {
-    if (!maps->at(i).is_null() && *maps->at(i) == map) return true;
+  for (Handle<Map> current : maps) {
+    if (!current.is_null() && *current == map) return true;
   }
   return false;
 }
 
-Map* Map::FindElementsKindTransitionedMap(MapHandleList* candidates) {
+Map* Map::FindElementsKindTransitionedMap(MapHandles const& candidates) {
   DisallowHeapAllocation no_allocation;
   DisallowDeoptimization no_deoptimization(GetIsolate());
 
@@ -14791,14 +14790,16 @@ void BytecodeArray::Disassemble(std::ostream& os) {
     iterator.Advance();
   }
 
+  os << "Constant pool (size = " << constant_pool()->length() << ")\n";
+#ifdef OBJECT_PRINT
   if (constant_pool()->length() > 0) {
-    os << "Constant pool (size = " << constant_pool()->length() << ")\n";
     constant_pool()->Print();
   }
+#endif
 
+  os << "Handler Table (size = " << handler_table()->Size() << ")\n";
 #ifdef ENABLE_DISASSEMBLER
   if (handler_table()->length() > 0) {
-    os << "Handler Table (size = " << handler_table()->Size() << ")\n";
     HandlerTable::cast(handler_table())->HandlerTableRangePrint(os);
   }
 #endif

@@ -471,9 +471,7 @@ namespace internal {
   F(PromiseRevokeReject, 1, 1)              \
   F(PromiseResult, 1, 1)                    \
   F(PromiseStatus, 1, 1)                    \
-  F(ReportPromiseReject, 2, 1)              \
-  F(IncrementWaitCount, 0, 1)               \
-  F(DecrementWaitCount, 0, 1)
+  F(ReportPromiseReject, 2, 1)
 
 #define FOR_EACH_INTRINSIC_PROXY(F)     \
   F(IsJSProxy, 1, 1)                    \
@@ -586,7 +584,6 @@ namespace internal {
   F(Abort, 1, 1)                              \
   F(AbortJS, 1, 1)                            \
   F(NativeScriptsCount, 0, 1)                 \
-  F(GetV8Version, 0, 1)                       \
   F(DisassembleFunction, 1, 1)                \
   F(TraceEnter, 0, 1)                         \
   F(TraceExit, 1, 1)                          \
