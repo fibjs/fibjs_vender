@@ -265,6 +265,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   void Assert(const NodeGenerator& condition_body, const char* string = nullptr,
               const char* file = nullptr, int line = 0);
+  void Check(const NodeGenerator& condition_body, const char* string = nullptr,
+             const char* file = nullptr, int line = 0);
 
   Node* Select(Node* condition, const NodeGenerator& true_body,
                const NodeGenerator& false_body, MachineRepresentation rep);
@@ -621,6 +623,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   Node* AllocateJSArrayIterator(Node* array, Node* array_map, Node* map);
 
+  Node* TypedArraySpeciesCreateByLength(Node* context, Node* originalArray,
+                                        Node* len);
+
   void FillFixedArrayWithValue(ElementsKind kind, Node* array, Node* from_index,
                                Node* to_index,
                                Heap::RootListIndex value_root_index,
@@ -743,6 +748,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsConsStringInstanceType(Node* instance_type);
   Node* IsIndirectStringInstanceType(Node* instance_type);
   Node* IsString(Node* object);
+  Node* IsJSObjectMap(Node* map);
   Node* IsJSObject(Node* object);
   Node* IsJSGlobalProxy(Node* object);
   Node* IsJSReceiverInstanceType(Node* instance_type);
@@ -856,6 +862,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   // Convert any object to a String.
   Node* ToString(Node* context, Node* input);
+  Node* ToString_Inline(Node* const context, Node* const input);
 
   // Convert any object to a Primitive.
   Node* JSReceiverToPrimitive(Node* context, Node* input);
@@ -870,6 +877,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   // ES6 7.1.15 ToLength, but jumps to range_error if the result is not a Smi.
   Node* ToSmiLength(Node* input, Node* const context, Label* range_error);
+
+  // ES6 7.1.15 ToLength, but with inlined fast path.
+  Node* ToLength_Inline(Node* const context, Node* const input);
 
   // Convert any object to an Integer.
   Node* ToInteger(Node* context, Node* input,
@@ -1347,7 +1357,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   };
 
   Node* RelationalComparison(RelationalComparisonMode mode, Node* lhs,
-                             Node* rhs, Node* context);
+                             Node* rhs, Node* context,
+                             Variable* var_type_feedback = nullptr);
 
   void BranchIfNumericRelationalComparison(RelationalComparisonMode mode,
                                            Node* lhs, Node* rhs, Label* if_true,
@@ -1590,6 +1601,9 @@ class ToDirectStringAssembler : public CodeStubAssembler {
   const Flags flags_;
 };
 
+#define CSA_CHECK(csa, x) \
+  (csa)->Check([&] { return (x); }, #x, __FILE__, __LINE__)
+
 #ifdef DEBUG
 #define CSA_ASSERT(csa, x) \
   (csa)->Assert([&] { return (x); }, #x, __FILE__, __LINE__)
@@ -1617,9 +1631,9 @@ class ToDirectStringAssembler : public CodeStubAssembler {
 #endif  // DEBUG
 
 #ifdef ENABLE_SLOW_DCHECKS
-#define CSA_SLOW_ASSERT(csa, x)                                 \
-  if (FLAG_enable_slow_asserts) {                               \
-    (csa)->Assert([&] { return (x); }, #x, __FILE__, __LINE__); \
+#define CSA_SLOW_ASSERT(csa, x)   \
+  if (FLAG_enable_slow_asserts) { \
+    CSA_ASSERT(csa, x);           \
   }
 #else
 #define CSA_SLOW_ASSERT(csa, x) ((void)0)

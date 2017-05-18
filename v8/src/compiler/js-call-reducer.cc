@@ -124,7 +124,14 @@ Reduction JSCallReducer::ReduceFunctionPrototypeApply(Node* node) {
     Node* arg_array = NodeProperties::GetValueInput(node, 3);
     if (arg_array->opcode() != IrOpcode::kJSCreateArguments) return NoChange();
     for (Edge edge : arg_array->use_edges()) {
-      if (edge.from()->opcode() == IrOpcode::kStateValues) continue;
+      Node* user = edge.from();
+      // Ignore uses as frame state's locals or parameters.
+      if (user->opcode() == IrOpcode::kStateValues) continue;
+      // Ignore uses as frame state's accumulator.
+      if (user->opcode() == IrOpcode::kFrameState &&
+          user->InputAt(2) == arg_array) {
+        continue;
+      }
       if (!NodeProperties::IsValueEdge(edge)) continue;
       if (edge.from() == node) continue;
       return NoChange();
@@ -499,10 +506,13 @@ Reduction JSCallReducer::ReduceSpreadCall(Node* node, int arity) {
   // through here.
   if (node->opcode() == IrOpcode::kJSCallWithSpread) {
     NodeProperties::ChangeOp(node, javascript()->Call(arity + 1));
+    Reduction const r = ReduceJSCall(node);
+    return r.Changed() ? r : Changed(node);
   } else {
     NodeProperties::ChangeOp(node, javascript()->Construct(arity + 2));
+    Reduction const r = ReduceJSConstruct(node);
+    return r.Changed() ? r : Changed(node);
   }
-  return Changed(node);
 }
 
 namespace {

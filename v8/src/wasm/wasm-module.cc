@@ -960,8 +960,8 @@ WasmInstanceObject* wasm::GetOwningWasmInstance(Code* code) {
   return WasmInstanceObject::cast(cell->value());
 }
 
-WasmModule::WasmModule(Zone* owned)
-    : owned_zone(owned), pending_tasks(new base::Semaphore(0)) {}
+WasmModule::WasmModule(std::unique_ptr<Zone> owned)
+    : signature_zone(std::move(owned)), pending_tasks(new base::Semaphore(0)) {}
 
 namespace {
 
@@ -1419,7 +1419,7 @@ class InstantiationHelper {
     WasmSharedModuleData::SetBreakpointsOnNewInstance(
         compiled_module_->shared(), instance);
 
-    if (FLAG_wasm_interpret_all) {
+    if (FLAG_wasm_interpret_all && module_->is_wasm()) {
       Handle<WasmDebugInfo> debug_info =
           WasmInstanceObject::GetOrCreateDebugInfo(instance);
       std::vector<int> func_indexes;

@@ -262,6 +262,7 @@ namespace internal {
   TFJ(FastArrayPush, SharedFunctionInfo::kDontAdaptArgumentsSentinel)          \
   /* ES6 #sec-array.prototype.shift */                                         \
   CPP(ArrayShift)                                                              \
+  TFJ(FastArrayShift, SharedFunctionInfo::kDontAdaptArgumentsSentinel)         \
   /* ES6 #sec-array.prototype.slice */                                         \
   CPP(ArraySlice)                                                              \
   /* ES6 #sec-array.prototype.splice */                                        \
@@ -682,7 +683,7 @@ namespace internal {
   CPP(ObjectIsExtensible)                                                      \
   CPP(ObjectIsFrozen)                                                          \
   CPP(ObjectIsSealed)                                                          \
-  CPP(ObjectKeys)                                                              \
+  TFJ(ObjectKeys, 1, kObject)                                                  \
   CPP(ObjectLookupGetter)                                                      \
   CPP(ObjectLookupSetter)                                                      \
   CPP(ObjectPreventExtensions)                                                 \
@@ -949,6 +950,8 @@ namespace internal {
   /* ES6 %TypedArray%.prototype.reduceRight */                                 \
   TFJ(TypedArrayPrototypeReduceRight,                                          \
       SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
+  /* ES6 %TypedArray%.prototype.map */                                         \
+  TFJ(TypedArrayPrototypeMap, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
                                                                                \
   /* Wasm */                                                                   \
   ASM(WasmCompileLazy)                                                         \

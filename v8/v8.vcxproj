@@ -127,6 +127,7 @@
     <ClInclude Include="src\builtins\builtins-forin-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
     <ClInclude Include="src\builtins\builtins-regexp-gen.h" />
+    <ClInclude Include="src\builtins\builtins-string-gen.h" />
     <ClInclude Include="src\builtins\builtins-utils-gen.h" />
     <ClInclude Include="src\builtins\builtins-utils.h" />
     <ClInclude Include="src\builtins\builtins.h" />
@@ -382,6 +383,7 @@
     <ClInclude Include="src\heap\incremental-marking-inl.h" />
     <ClInclude Include="src\heap\incremental-marking-job.h" />
     <ClInclude Include="src\heap\incremental-marking.h" />
+    <ClInclude Include="src\heap\item-parallel-job.h" />
     <ClInclude Include="src\heap\mark-compact-inl.h" />
     <ClInclude Include="src\heap\mark-compact.h" />
     <ClInclude Include="src\heap\marking.h" />
@@ -432,6 +434,7 @@
     <ClInclude Include="src\interpreter\bytecode-decoder.h" />
     <ClInclude Include="src\interpreter\bytecode-flags.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
+    <ClInclude Include="src\interpreter\bytecode-jump-table.h" />
     <ClInclude Include="src\interpreter\bytecode-label.h" />
     <ClInclude Include="src\interpreter\bytecode-node.h" />
     <ClInclude Include="src\interpreter\bytecode-operands.h" />
@@ -497,6 +500,8 @@
     <ClInclude Include="src\objects\hash-table.h" />
     <ClInclude Include="src\objects\intl-objects.h" />
     <ClInclude Include="src\objects\literal-objects.h" />
+    <ClInclude Include="src\objects\map-inl.h" />
+    <ClInclude Include="src\objects\map.h" />
     <ClInclude Include="src\objects\module-info.h" />
     <ClInclude Include="src\objects\object-macros-undef.h" />
     <ClInclude Include="src\objects\object-macros.h" />

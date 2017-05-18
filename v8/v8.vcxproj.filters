@@ -570,6 +570,9 @@
     <ClInclude Include="src\builtins\builtins-regexp-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-string-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-utils-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -1335,6 +1338,9 @@
     <ClInclude Include="src\heap\incremental-marking.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\item-parallel-job.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\mark-compact-inl.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1483,6 +1489,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-generator.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-jump-table.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-label.h">
@@ -1678,6 +1687,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\literal-objects.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\map-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\map.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\module-info.h">

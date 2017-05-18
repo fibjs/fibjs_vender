@@ -111,8 +111,7 @@ int ParseData::FunctionsSize() {
 class DiscardableZoneScope {
  public:
   DiscardableZoneScope(Parser* parser, Zone* temp_zone, bool use_temp_zone)
-      : ast_node_factory_scope_(parser->factory(), temp_zone, use_temp_zone),
-        fni_(parser->ast_value_factory_, temp_zone),
+      : fni_(parser->ast_value_factory_, temp_zone),
         parser_(parser),
         prev_fni_(parser->fni_),
         prev_zone_(parser->zone_),
@@ -124,6 +123,7 @@ class DiscardableZoneScope {
       parser_->temp_zoned_ = true;
       parser_->fni_ = &fni_;
       parser_->zone_ = temp_zone;
+      parser_->factory()->set_zone(temp_zone);
       if (parser_->reusable_preparser_ != nullptr) {
         parser_->reusable_preparser_->zone_ = temp_zone;
         parser_->reusable_preparser_->factory()->set_zone(temp_zone);
@@ -133,18 +133,17 @@ class DiscardableZoneScope {
   void Reset() {
     parser_->fni_ = prev_fni_;
     parser_->zone_ = prev_zone_;
+    parser_->factory()->set_zone(prev_zone_);
     parser_->allow_lazy_ = prev_allow_lazy_;
     parser_->temp_zoned_ = prev_temp_zoned_;
     if (parser_->reusable_preparser_ != nullptr) {
       parser_->reusable_preparser_->zone_ = prev_zone_;
       parser_->reusable_preparser_->factory()->set_zone(prev_zone_);
     }
-    ast_node_factory_scope_.Reset();
   }
   ~DiscardableZoneScope() { Reset(); }
 
  private:
-  AstNodeFactory::BodyScope ast_node_factory_scope_;
   FuncNameInferrer fni_;
   Parser* parser_;
   FuncNameInferrer* prev_fni_;
@@ -2703,8 +2702,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   {
     // Temporary zones can nest. When we migrate free variables (see below), we
     // need to recreate them in the previous Zone.
-    AstNodeFactory previous_zone_ast_node_factory(ast_value_factory());
-    previous_zone_ast_node_factory.set_zone(zone());
+    AstNodeFactory previous_zone_ast_node_factory(ast_value_factory(), zone());
 
     // Open a new zone scope, which sets our AstNodeFactory to allocate in the
     // new temporary zone if the preconditions are satisfied, and ensures that
@@ -3320,11 +3318,10 @@ void Parser::DeclareClassProperty(const AstRawString* class_name,
 Expression* Parser::RewriteClassLiteral(Scope* block_scope,
                                         const AstRawString* name,
                                         ClassInfo* class_info, int pos,
-                                        bool* ok) {
+                                        int end_pos, bool* ok) {
   DCHECK_NOT_NULL(block_scope);
   DCHECK_EQ(block_scope->scope_type(), BLOCK_SCOPE);
   DCHECK_EQ(block_scope->language_mode(), STRICT);
-  int end_pos = scanner()->location().end_pos;
 
   bool has_extends = class_info->extends != nullptr;
   bool has_default_constructor = class_info->constructor == nullptr;
@@ -3332,8 +3329,6 @@ Expression* Parser::RewriteClassLiteral(Scope* block_scope,
     class_info->constructor =
         DefaultConstructor(name, has_extends, pos, end_pos);
   }
-
-  block_scope->set_end_position(end_pos);
 
   if (name != nullptr) {
     DCHECK_NOT_NULL(class_info->proxy);
