@@ -140,7 +140,6 @@ uint64_t Instruction::ImmLogical() {
     }
   }
   UNREACHABLE();
-  return 0;
 }
 
 

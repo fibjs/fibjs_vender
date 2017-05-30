@@ -133,7 +133,7 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable FastCloneRegExp(Isolate* isolate);
   static Callable FastCloneShallowArray(Isolate* isolate,
                                         AllocationSiteMode allocation_mode);
-  static Callable FastCloneShallowObject(Isolate* isolate, int length);
+  static Callable FastCloneShallowObject(Isolate* isolate);
 
   static Callable FastNewFunctionContext(Isolate* isolate,
                                          ScopeType scope_type);
@@ -167,6 +167,8 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable Construct(Isolate* isolate);
   static Callable ConstructWithSpread(Isolate* isolate);
   static Callable ConstructFunction(Isolate* isolate);
+  static Callable ConstructForwardVarargs(Isolate* isolate);
+  static Callable ConstructFunctionForwardVarargs(Isolate* isolate);
   static Callable CreateIterResultObject(Isolate* isolate);
   static Callable HasProperty(Isolate* isolate);
   static Callable ForInFilter(Isolate* isolate);

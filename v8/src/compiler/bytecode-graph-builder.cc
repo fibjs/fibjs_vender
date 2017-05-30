@@ -522,7 +522,7 @@ VectorSlotPair BytecodeGraphBuilder::CreateVectorSlotPair(int slot_id) {
   return VectorSlotPair(feedback_vector(), slot);
 }
 
-bool BytecodeGraphBuilder::CreateGraph(bool stack_check) {
+void BytecodeGraphBuilder::CreateGraph(bool stack_check) {
   SourcePositionTable::Scope pos_scope(source_positions_, start_position_);
 
   // Set up the basic structure of the graph. Outputs for {Start} are the formal
@@ -544,8 +544,6 @@ bool BytecodeGraphBuilder::CreateGraph(bool stack_check) {
   Node** const inputs = &exit_controls_.front();
   Node* end = graph()->NewNode(common()->End(input_count), input_count, inputs);
   graph()->SetEnd(end);
-
-  return true;
 }
 
 void BytecodeGraphBuilder::PrepareEagerCheckpoint() {
@@ -2091,6 +2089,14 @@ void BytecodeGraphBuilder::VisitToNumber() {
                               Environment::kAttachFrameState);
 }
 
+void BytecodeGraphBuilder::VisitToPrimitiveToString() {
+  UNREACHABLE();  // TODO(rmcilroy): Implement this.
+}
+
+void BytecodeGraphBuilder::VisitStringConcat() {
+  UNREACHABLE();  // TODO(rmcilroy): Implement this.
+}
+
 void BytecodeGraphBuilder::VisitJump() { BuildJump(); }
 
 void BytecodeGraphBuilder::VisitJumpConstant() { BuildJump(); }
@@ -2165,24 +2171,25 @@ void BytecodeGraphBuilder::VisitJumpIfNotUndefinedConstant() {
 
 void BytecodeGraphBuilder::VisitJumpLoop() { BuildJump(); }
 
+void BytecodeGraphBuilder::BuildSwitchOnSmi(Node* condition) {
+  interpreter::JumpTableTargetOffsets offsets =
+      bytecode_iterator().GetJumpTableTargetOffsets();
+
+  NewSwitch(condition, offsets.size() + 1);
+  for (const auto& entry : offsets) {
+    SubEnvironment sub_environment(this);
+    NewIfValue(entry.case_value);
+    MergeIntoSuccessorEnvironment(entry.target_offset);
+  }
+  NewIfDefault();
+}
+
 void BytecodeGraphBuilder::VisitSwitchOnSmiNoFeedback() {
   PrepareEagerCheckpoint();
 
   Node* acc = environment()->LookupAccumulator();
-
-  for (const auto& entry : bytecode_iterator().GetJumpTableTargetOffsets()) {
-    // TODO(leszeks): This should be a switch, but under OSR we fail to type the
-    // input correctly so we have to do a JS strict equal instead.
-    NewBranch(
-        NewNode(javascript()->StrictEqual(CompareOperationHint::kSignedSmall),
-                acc, jsgraph()->SmiConstant(entry.case_value)));
-    {
-      SubEnvironment sub_environment(this);
-      NewIfTrue();
-      MergeIntoSuccessorEnvironment(entry.target_offset);
-    }
-    NewIfFalse();
-  }
+  Node* acc_smi = NewNode(simplified()->CheckSmi(), acc);
+  BuildSwitchOnSmi(acc_smi);
 }
 
 void BytecodeGraphBuilder::VisitStackCheck() {

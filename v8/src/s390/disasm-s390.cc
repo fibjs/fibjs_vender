@@ -192,7 +192,6 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
   }
 
   UNREACHABLE();
-  return -1;
 }
 
 int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
@@ -226,7 +225,6 @@ int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
     return 2;
   }
   UNREACHABLE();
-  return -1;
 }
 
 // FormatOption takes a formatting string and interprets it based on
@@ -308,7 +306,6 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
   }
 
   UNREACHABLE();
-  return -1;
 }
 
 int Decoder::FormatMask(Instruction* instr, const char* format) {
@@ -460,7 +457,6 @@ int Decoder::FormatImmediate(Instruction* instr, const char* format) {
   }
 
   UNREACHABLE();
-  return -1;
 }
 
 // Format takes a formatting string for a whole instruction and prints it into
@@ -1540,7 +1536,6 @@ const char* NameConverter::NameOfXMMRegister(int reg) const {
   // S390 does not have XMM register
   // TODO(joransiu): Consider update this for Vector Regs
   UNREACHABLE();
-  return "noxmmreg";
 }
 
 const char* NameConverter::NameInCode(byte* addr) const {

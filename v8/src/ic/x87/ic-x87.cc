@@ -31,7 +31,6 @@ Condition CompareIC::ComputeCondition(Token::Value op) {
       return greater_equal;
     default:
       UNREACHABLE();
-      return no_condition;
   }
 }
 

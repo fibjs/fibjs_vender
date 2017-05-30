@@ -644,7 +644,7 @@ class PreParserFactory {
   }
   PreParserExpression NewSuspend(PreParserExpression generator_object,
                                  PreParserExpression expression, int pos,
-                                 Suspend::OnException on_exception,
+                                 Suspend::OnAbruptResume on_abrupt_resume,
                                  SuspendFlags flags) {
     return PreParserExpression::Default();
   }
@@ -954,7 +954,6 @@ class PreParser : public ParserBase<PreParser> {
                                            bool is_inner_function,
                                            bool may_abort, bool* ok) {
     UNREACHABLE();
-    return kLazyParsingComplete;
   }
   Expression ParseFunctionLiteral(
       Identifier name, Scanner::Location function_name_location,
@@ -1308,10 +1307,9 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserStatement::Default();
   }
 
-  V8_INLINE PreParserStatement
-  InitializeForEachStatement(PreParserStatement stmt, PreParserExpression each,
-                             PreParserExpression subject,
-                             PreParserStatement body, int each_keyword_pos) {
+  V8_INLINE PreParserStatement InitializeForEachStatement(
+      PreParserStatement stmt, PreParserExpression each,
+      PreParserExpression subject, PreParserStatement body) {
     MarkExpressionAsAssigned(each);
     return stmt;
   }
@@ -1627,11 +1625,28 @@ class PreParser : public ParserBase<PreParser> {
     if (track_unresolved_variables_) {
       DCHECK(FLAG_lazy_inner_functions);
       for (auto parameter : parameters) {
+        DCHECK_IMPLIES(is_simple, parameter->variables_ != nullptr);
+        DCHECK_IMPLIES(is_simple, parameter->variables_->length() == 1);
+        // Make sure each parameter is added only once even if it's a
+        // destructuring parameter which contains multiple names.
+        bool add_parameter = true;
         if (parameter->variables_ != nullptr) {
           for (auto variable : (*parameter->variables_)) {
-            scope->DeclareParameterName(
-                variable->raw_name(), parameter->is_rest, ast_value_factory());
+            // We declare the parameter name for all names, but only create a
+            // parameter entry for the first one.
+            scope->DeclareParameterName(variable->raw_name(),
+                                        parameter->is_rest, ast_value_factory(),
+                                        true, add_parameter);
+            add_parameter = false;
           }
+        }
+        if (add_parameter) {
+          // No names were declared; declare a dummy one here to up the
+          // parameter count.
+          DCHECK(!is_simple);
+          scope->DeclareParameterName(ast_value_factory()->empty_string(),
+                                      parameter->is_rest, ast_value_factory(),
+                                      false, add_parameter);
         }
       }
     }

@@ -347,7 +347,6 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
     return 5;
   }
   UNREACHABLE();
-  return -1;
 }
 
 
@@ -690,7 +689,8 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
           return -1;
         }
       }
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%p", addr);
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%p",
+                                  static_cast<void*>(addr));
       return 1;
     }
     case 'S':
@@ -709,7 +709,6 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
     }
   }
   UNREACHABLE();
-  return -1;
 }
 
 

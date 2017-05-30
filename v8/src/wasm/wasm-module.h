@@ -430,8 +430,10 @@ WasmInstanceObject* GetOwningWasmInstance(Code* code);
 Handle<JSArrayBuffer> NewArrayBuffer(Isolate*, size_t size,
                                      bool enable_guard_regions);
 
-Handle<JSArrayBuffer> SetupArrayBuffer(Isolate*, void* backing_store,
-                                       size_t size, bool is_external,
+Handle<JSArrayBuffer> SetupArrayBuffer(Isolate*, void* allocation_base,
+                                       size_t allocation_length,
+                                       void* backing_store, size_t size,
+                                       bool is_external,
                                        bool enable_guard_regions);
 
 void DetachWebAssemblyMemoryBuffer(Isolate* isolate,
@@ -499,7 +501,8 @@ Handle<Code> CompileLazy(Isolate* isolate);
 // logic to actually orchestrate parallel execution of wasm compilation jobs.
 // TODO(clemensh): Implement concurrent lazy compilation.
 class LazyCompilationOrchestrator {
-  void CompileFunction(Isolate*, Handle<WasmInstanceObject>, int func_index);
+  void CompileFunction(Isolate*, Handle<WasmInstanceObject>, int func_index,
+                       Counters* counters);
 
  public:
   Handle<Code> CompileLazy(Isolate*, Handle<WasmInstanceObject>,

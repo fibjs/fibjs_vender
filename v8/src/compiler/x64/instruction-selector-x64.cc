@@ -279,10 +279,8 @@ ArchOpcode GetStoreOpcode(StoreRepresentation store_rep) {
     case MachineRepresentation::kSimd1x16:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
-      return kArchNop;
   }
   UNREACHABLE();
-  return kArchNop;
 }
 
 }  // namespace

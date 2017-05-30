@@ -125,6 +125,7 @@
     <ClInclude Include="src\builtins\builtins-definitions.h" />
     <ClInclude Include="src\builtins\builtins-descriptors.h" />
     <ClInclude Include="src\builtins\builtins-forin-gen.h" />
+    <ClInclude Include="src\builtins\builtins-iterator-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
     <ClInclude Include="src\builtins\builtins-regexp-gen.h" />
     <ClInclude Include="src\builtins\builtins-string-gen.h" />
@@ -401,6 +402,7 @@
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
     <ClInclude Include="src\heap\store-buffer.h" />
+    <ClInclude Include="src\heap\workstealing-marking-deque.h" />
     <ClInclude Include="src\ia32\assembler-ia32-inl.h" />
     <ClInclude Include="src\ia32\assembler-ia32.h" />
     <ClInclude Include="src\ia32\code-stubs-ia32.h" />
@@ -493,6 +495,8 @@
     <ClInclude Include="src\objects\code-cache.h" />
     <ClInclude Include="src\objects\compilation-cache-inl.h" />
     <ClInclude Include="src\objects\compilation-cache.h" />
+    <ClInclude Include="src\objects\debug-objects-inl.h" />
+    <ClInclude Include="src\objects\debug-objects.h" />
     <ClInclude Include="src\objects\descriptor-array.h" />
     <ClInclude Include="src\objects\dictionary.h" />
     <ClInclude Include="src\objects\frame-array-inl.h" />
@@ -507,6 +511,8 @@
     <ClInclude Include="src\objects\object-macros.h" />
     <ClInclude Include="src\objects\regexp-match-info.h" />
     <ClInclude Include="src\objects\scope-info.h" />
+    <ClInclude Include="src\objects\shared-function-info-inl.h" />
+    <ClInclude Include="src\objects\shared-function-info.h" />
     <ClInclude Include="src\objects\string-table.h" />
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\duplicate-finder.h" />
@@ -756,6 +762,7 @@
     <ClCompile Include="src\builtins\builtins-call-gen.cc" />
     <ClCompile Include="src\builtins\builtins-call.cc" />
     <ClCompile Include="src\builtins\builtins-callsite.cc" />
+    <ClCompile Include="src\builtins\builtins-collections-gen.cc" />
     <ClCompile Include="src\builtins\builtins-console-gen.cc" />
     <ClCompile Include="src\builtins\builtins-console.cc" />
     <ClCompile Include="src\builtins\builtins-constructor-gen.cc" />
@@ -763,7 +770,7 @@
     <ClCompile Include="src\builtins\builtins-dataview.cc" />
     <ClCompile Include="src\builtins\builtins-date-gen.cc" />
     <ClCompile Include="src\builtins\builtins-date.cc" />
-    <ClCompile Include="src\builtins\builtins-debug.cc" />
+    <ClCompile Include="src\builtins\builtins-debug-gen.cc" />
     <ClCompile Include="src\builtins\builtins-error.cc" />
     <ClCompile Include="src\builtins\builtins-forin-gen.cc" />
     <ClCompile Include="src\builtins\builtins-function-gen.cc" />
@@ -779,6 +786,7 @@
     <ClCompile Include="src\builtins\builtins-interpreter.cc" />
     <ClCompile Include="src\builtins\builtins-intl-gen.cc" />
     <ClCompile Include="src\builtins\builtins-intl.cc" />
+    <ClCompile Include="src\builtins\builtins-iterator-gen.cc" />
     <ClCompile Include="src\builtins\builtins-json.cc" />
     <ClCompile Include="src\builtins\builtins-math-gen.cc" />
     <ClCompile Include="src\builtins\builtins-math.cc" />
@@ -1142,6 +1150,7 @@
     <ClCompile Include="src\objects-debug.cc" />
     <ClCompile Include="src\objects-printer.cc" />
     <ClCompile Include="src\objects.cc" />
+    <ClCompile Include="src\objects\debug-objects.cc" />
     <ClCompile Include="src\objects\intl-objects.cc" />
     <ClCompile Include="src\objects\literal-objects.cc" />
     <ClCompile Include="src\objects\scope-info.cc" />

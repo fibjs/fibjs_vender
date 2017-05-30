@@ -330,7 +330,6 @@ Callable CodeFactory::StringCompare(Isolate* isolate, Token::Value token) {
       break;
   }
   UNREACHABLE();
-  return StringEqual(isolate);
 }
 
 // static
@@ -371,8 +370,8 @@ Callable CodeFactory::FastCloneShallowArray(
 }
 
 // static
-Callable CodeFactory::FastCloneShallowObject(Isolate* isolate, int length) {
-  return Callable(isolate->builtins()->NewCloneShallowObject(length),
+Callable CodeFactory::FastCloneShallowObject(Isolate* isolate) {
+  return Callable(isolate->builtins()->FastCloneShallowObject(),
                   FastCloneShallowObjectDescriptor(isolate));
 }
 
@@ -455,6 +454,18 @@ Callable CodeFactory::ConstructWithSpread(Isolate* isolate) {
 Callable CodeFactory::ConstructFunction(Isolate* isolate) {
   return Callable(isolate->builtins()->ConstructFunction(),
                   ConstructTrampolineDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ConstructForwardVarargs(Isolate* isolate) {
+  return Callable(isolate->builtins()->ConstructForwardVarargs(),
+                  ConstructForwardVarargsDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ConstructFunctionForwardVarargs(Isolate* isolate) {
+  return Callable(isolate->builtins()->ConstructFunctionForwardVarargs(),
+                  ConstructForwardVarargsDescriptor(isolate));
 }
 
 // static

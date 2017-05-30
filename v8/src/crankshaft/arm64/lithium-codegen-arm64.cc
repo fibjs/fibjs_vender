@@ -1082,7 +1082,6 @@ Operand LCodeGen::ToOperand(LOperand* op) {
   }
   // Stack slots not implemented, use ToMemOperand instead.
   UNREACHABLE();
-  return Operand(0);
 }
 
 
@@ -1103,7 +1102,6 @@ Operand LCodeGen::ToOperand32(LOperand* op) {
   }
   // Other cases are not implemented.
   UNREACHABLE();
-  return Operand(0);
 }
 
 
@@ -2740,7 +2738,6 @@ static Condition BranchCondition(HHasInstanceTypeAndBranch* instr) {
   if (to == LAST_TYPE) return hs;
   if (from == FIRST_TYPE) return ls;
   UNREACHABLE();
-  return eq;
 }
 
 

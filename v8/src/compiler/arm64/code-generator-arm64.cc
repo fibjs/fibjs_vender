@@ -136,7 +136,6 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
         break;
     }
     UNREACHABLE();
-    return Operand(-1);
   }
 
   Operand InputOperand2_64(size_t index) {
@@ -166,7 +165,6 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
         break;
     }
     UNREACHABLE();
-    return Operand(-1);
   }
 
   MemOperand MemoryOperand(size_t* first_index) {
@@ -194,7 +192,6 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
         return MemOperand(InputRegister(index + 0), InputRegister(index + 1));
     }
     UNREACHABLE();
-    return MemOperand(no_reg);
   }
 
   MemOperand MemoryOperand(size_t first_index = 0) {
@@ -246,7 +243,6 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
         break;
     }
     UNREACHABLE();
-    return Operand(-1);
   }
 
   MemOperand ToMemOperand(InstructionOperand* op, MacroAssembler* masm) const {
@@ -420,7 +416,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
       return mi;
   }
   UNREACHABLE();
-  return nv;
 }
 
 }  // namespace

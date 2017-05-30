@@ -191,7 +191,6 @@ int BytecodeArrayAccessor::GetJumpTargetOffset() const {
     return GetAbsoluteOffset(smi->value());
   } else {
     UNREACHABLE();
-    return kMinInt;
   }
 }
 
@@ -236,6 +235,15 @@ JumpTableTargetOffsets::iterator JumpTableTargetOffsets::begin() const {
 JumpTableTargetOffsets::iterator JumpTableTargetOffsets::end() const {
   return iterator(case_value_base_ + table_size_, table_start_ + table_size_,
                   table_start_ + table_size_, accessor_);
+}
+int JumpTableTargetOffsets::size() const {
+  int ret = 0;
+  // TODO(leszeks): Is there a more efficient way of doing this than iterating?
+  for (const auto& entry : *this) {
+    USE(entry);
+    ret++;
+  }
+  return ret;
 }
 
 JumpTableTargetOffsets::iterator::iterator(

@@ -145,11 +145,13 @@
 //       - DebugInfo
 //       - BreakPointInfo
 //       - StackFrameInfo
+//       - SourcePositionTableWithFrameCache
 //       - CodeCache
 //       - PrototypeInfo
 //       - Module
 //       - ModuleInfoEntry
 //     - WeakCell
+//     - SmallOrderedHashSet
 //
 // Formats of Object*:
 //  Smi:        [31 bit signed int] 0
@@ -369,6 +371,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(CELL_TYPE)                                                                 \
   V(WEAK_CELL_TYPE)                                                            \
   V(PROPERTY_CELL_TYPE)                                                        \
+  V(SMALL_ORDERED_HASH_SET_TYPE)                                               \
   /* TODO(yangguo): these padding types are for ABI stability. Remove after*/  \
   /* version 6.0 branch, or replace them when there is demand for new types.*/ \
   V(PADDING_TYPE_1)                                                            \
@@ -711,9 +714,10 @@ enum InstanceType {
   CELL_TYPE,
   WEAK_CELL_TYPE,
   PROPERTY_CELL_TYPE,
+  SMALL_ORDERED_HASH_SET_TYPE,
 
-  // All the following types are subtypes of JSReceiver, which corresponds to
-  // objects in the JS sense. The first and the last type in this range are
+  // TODO(yangguo): these padding types are for ABI stability. Remove after
+  // version 6.0 branch, or replace them when there is demand for new types.
   PADDING_TYPE_1,
   PADDING_TYPE_2,
   PADDING_TYPE_3,
@@ -1088,6 +1092,7 @@ template <class C> inline bool Is(Object* obj);
   V(SharedFunctionInfo)                \
   V(SlicedString)                      \
   V(SloppyArgumentsElements)           \
+  V(SmallOrderedHashSet)               \
   V(SourcePositionTableWithFrameCache) \
   V(String)                            \
   V(StringSet)                         \
@@ -1683,8 +1688,12 @@ class HeapObject: public Object {
 
   // Set the map using release store
   inline void synchronized_set_map(Map* value);
-  inline void synchronized_set_map_no_write_barrier(Map* value);
   inline void synchronized_set_map_word(MapWord map_word);
+
+  // Initialize the map immediately after the object is allocated.
+  // Do not use this outside Heap.
+  inline void set_map_after_allocation(
+      Map* value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // During garbage collection, the map word of a heap object does not
   // necessarily contain a map pointer.
@@ -2109,6 +2118,8 @@ class JSReceiver: public HeapObject {
 // caching.
 class JSObject: public JSReceiver {
  public:
+  static bool IsUnmodifiedApiObject(Object** o);
+
   static MUST_USE_RESULT MaybeHandle<JSObject> New(
       Handle<JSFunction> constructor, Handle<JSReceiver> new_target,
       Handle<AllocationSite> site = Handle<AllocationSite>::null());
@@ -2571,6 +2582,7 @@ class JSObject: public JSReceiver {
   static const int kInitialGlobalObjectUnusedPropertiesCount = 4;
 
   static const int kMaxInstanceSize = 255 * kPointerSize;
+
   // When extending the backing storage for property values, we increase
   // its size by more than the 1 entry necessary, so sequentially adding fields
   // to the same object requires fewer allocations and copies.
@@ -2581,6 +2593,8 @@ class JSObject: public JSReceiver {
   static const int kHeaderSize = kElementsOffset + kPointerSize;
 
   STATIC_ASSERT(kHeaderSize == Internals::kJSObjectHeaderSize);
+  static const int kMaxInObjectProperties =
+      (kMaxInstanceSize - kHeaderSize) >> kPointerSizeLog2;
 
   class BodyDescriptor;
   class FastBodyDescriptor;
@@ -2937,7 +2951,6 @@ class FixedDoubleArray: public FixedArrayBase {
 // JSArgumentsObject:
 // - FAST_SLOPPY_ARGUMENTS_ELEMENTS: FAST_HOLEY_ELEMENTS
 // - SLOW_SLOPPY_ARGUMENTS_ELEMENTS: DICTIONARY_ELEMENTS
-// - SLOW_SLOPPY_ARGUMENTS_ELEMENTS: DICTIONARY_ELEMENTS
 class SloppyArgumentsElements : public FixedArray {
  public:
   static const int kContextIndex = 0;
@@ -3085,10 +3098,9 @@ template <SearchMode search_mode, typename T>
 inline int Search(T* array, Name* name, int valid_entries = 0,
                   int* out_insertion_index = NULL);
 
-// HandlerTable is a fixed array containing entries for exception handlers in
-// the code object it is associated with. The tables comes in two flavors:
-// 1) Based on ranges: Used for unoptimized code. Contains one entry per
-//    exception handler and a range representing the try-block covered by that
+// The cache for maps used by normalized (dictionary mode) objects.
+// Such maps do not have property descriptors, so a typical program
+// needs very limited number of distinct normalized maps.
 //    handler. Layout looks as follows:
 //      [ range-start , range-end , handler-offset , handler-data ]
 // 2) Based on return addresses: Used for turbofanned code. Contains one entry
@@ -3308,7 +3320,7 @@ class BytecodeArray : public FixedArrayBase {
   DECL_ACCESSORS(handler_table, FixedArray)
 
   // Accessors for source position table containing mappings between byte code
-  // offset and source position.
+  // offset and source position or SourcePositionTableWithFrameCache.
   DECL_ACCESSORS(source_position_table, Object)
 
   inline ByteArray* SourcePositionTable();
@@ -3380,8 +3392,8 @@ class FreeSpace: public HeapObject {
   inline int size() const;
   inline void set_size(int value);
 
-  inline int nobarrier_size() const;
-  inline void nobarrier_set_size(int value);
+  inline int relaxed_read_size() const;
+  inline void relaxed_write_size(int value);
 
   inline int Size();
 
@@ -3723,7 +3735,7 @@ class Code: public HeapObject {
   // [deoptimization_data]: Array containing data for deopt.
   DECL_ACCESSORS(deoptimization_data, FixedArray)
 
-  // [source_position_table]: ByteArray for the source positions table.
+  // [source_position_table]: ByteArray for the source positions table or
   // SourcePositionTableWithFrameCache.
   DECL_ACCESSORS(source_position_table, Object)
 
@@ -3747,11 +3759,6 @@ class Code: public HeapObject {
   // [next_code_link]: Link for lists of optimized or deoptimized code.
   // Note that storage for this field is overlapped with typefeedback_info.
   DECL_ACCESSORS(next_code_link, Object)
-
-  // [gc_metadata]: Field used to hold GC related metadata. The contents of this
-  // field does not have to be traced during garbage collection since
-  // it is only used by the garbage collector itself.
-  DECL_ACCESSORS(gc_metadata, Object)
 
   // [ic_age]: Inline caching age: the value of the Heap::global_ic_age
   // at the moment when this object was created.
@@ -3887,19 +3894,21 @@ class Code: public HeapObject {
   inline bool marked_for_deoptimization();
   inline void set_marked_for_deoptimization(bool flag);
 
-  // [is_promise_rejection]: For kind BUILTIN tells whether the exception
-  // thrown by the code will lead to promise rejection.
+  // [deopt_already_counted]: For kind OPTIMIZED_FUNCTION tells whether
+  // the code was already deoptimized.
   inline bool deopt_already_counted();
   inline void set_deopt_already_counted(bool flag);
 
-  // [is_promise_rejection]: For kind BUILTIN tells whether the exception
-  // thrown by the code will lead to promise rejection.
-  inline bool is_promise_rejection();
+  // [is_promise_rejection]: For kind BUILTIN tells whether the
+  // exception thrown by the code will lead to promise rejection or
+  // uncaught if both this and is_exception_caught is set.
+  // Use GetBuiltinCatchPrediction to access this.
   inline void set_is_promise_rejection(bool flag);
 
-  // [is_exception_caught]: For kind BUILTIN tells whether the exception
-  // thrown by the code will be caught internally.
-  inline bool is_exception_caught();
+  // [is_exception_caught]: For kind BUILTIN tells whether the
+  // exception thrown by the code will be caught internally or
+  // uncaught if both this and is_promise_rejection is set.
+  // Use GetBuiltinCatchPrediction to access this.
   inline void set_is_exception_caught(bool flag);
 
   // [constant_pool]: The constant pool for this function.
@@ -4062,9 +4071,8 @@ class Code: public HeapObject {
 #undef DECLARE_CODE_AGE_ENUM
 
   // Code aging.  Indicates how many full GCs this code has survived without
-  // being entered through the prologue.  Used to determine when it is
-  // relatively safe to flush this code object and replace it with the lazy
-  // compilation stub.
+  // being entered through the prologue.  Used to determine when to flush code
+  // held in the compilation cache.
   static void MakeCodeAgeSequenceYoung(byte* sequence, Isolate* isolate);
   static void MarkCodeAsExecuted(byte* sequence, Isolate* isolate);
   void MakeYoung(Isolate* isolate);
@@ -4081,6 +4089,7 @@ class Code: public HeapObject {
   void PrintDeoptLocation(FILE* out, Address pc);
   bool CanDeoptAt(Address pc);
 
+  inline HandlerTable::CatchPrediction GetBuiltinCatchPrediction();
 #ifdef VERIFY_HEAP
   void VerifyEmbeddedObjectsDependency();
 #endif
@@ -4114,8 +4123,7 @@ class Code: public HeapObject {
   static const int kTypeFeedbackInfoOffset =
       kSourcePositionTableOffset + kPointerSize;
   static const int kNextCodeLinkOffset = kTypeFeedbackInfoOffset + kPointerSize;
-  static const int kGCMetadataOffset = kNextCodeLinkOffset + kPointerSize;
-  static const int kInstructionSizeOffset = kGCMetadataOffset + kPointerSize;
+  static const int kInstructionSizeOffset = kNextCodeLinkOffset + kPointerSize;
   static const int kICAgeOffset = kInstructionSizeOffset + kIntSize;
   static const int kFlagsOffset = kICAgeOffset + kIntSize;
   static const int kKindSpecificFlags1Offset = kFlagsOffset + kIntSize;
@@ -4232,6 +4240,9 @@ class Code: public HeapObject {
 
   // Code aging -- platform-specific
   static void PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Age age);
+
+  bool is_promise_rejection();
+  bool is_exception_caught();
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Code);
 };
@@ -5019,721 +5030,6 @@ enum BuiltinFunctionId {
   kStringIteratorNext,
 };
 
-// Result of searching in an optimized code map of a SharedFunctionInfo. Note
-// that both {code} and {vector} can be NULL to pass search result status.
-struct CodeAndVector {
-  Code* code;                  // Cached optimized code.
-  FeedbackVector* vector;      // Cached feedback vector.
-};
-
-// SharedFunctionInfo describes the JSFunction information that can be
-// shared by multiple instances of the function.
-class SharedFunctionInfo: public HeapObject {
- public:
-  // [name]: Function name.
-  DECL_ACCESSORS(name, Object)
-
-  // [code]: Function code.
-  DECL_ACCESSORS(code, Code)
-
-  // Get the abstract code associated with the function, which will either be
-  // a Code object or a BytecodeArray.
-  inline AbstractCode* abstract_code();
-
-  // Tells whether or not this shared function info is interpreted.
-  //
-  // Note: function->IsInterpreted() does not necessarily return the same value
-  // as function->shared()->IsInterpreted() because the closure might have been
-  // optimized.
-  inline bool IsInterpreted() const;
-
-  inline void ReplaceCode(Code* code);
-  inline bool HasBaselineCode() const;
-
-  // Set up the link between shared function info and the script. The shared
-  // function info is added to the list on the script.
-  V8_EXPORT_PRIVATE static void SetScript(Handle<SharedFunctionInfo> shared,
-                                          Handle<Object> script_object);
-
-  // Layout description of the optimized code map.
-  static const int kEntriesStart = 0;
-  static const int kContextOffset = 0;
-  static const int kCachedCodeOffset = 1;
-  static const int kEntryLength = 2;
-  static const int kInitialLength = kEntriesStart + kEntryLength;
-
-  static const int kNotFound = -1;
-  static const int kInvalidLength = -1;
-
-  // Helpers for assembly code that does a backwards walk of the optimized code
-  // map.
-  static const int kOffsetToPreviousContext =
-      FixedArray::kHeaderSize + kPointerSize * (kContextOffset - kEntryLength);
-  static const int kOffsetToPreviousCachedCode =
-      FixedArray::kHeaderSize +
-      kPointerSize * (kCachedCodeOffset - kEntryLength);
-
-  // [scope_info]: Scope info.
-  DECL_ACCESSORS(scope_info, ScopeInfo)
-
-  // The outer scope info for the purpose of parsing this function, or the hole
-  // value if it isn't yet known.
-  DECL_ACCESSORS(outer_scope_info, HeapObject)
-
-  // [construct stub]: Code stub for constructing instances of this function.
-  DECL_ACCESSORS(construct_stub, Code)
-
-  // Sets the given code as the construct stub, and marks builtin code objects
-  // as a construct stub.
-  void SetConstructStub(Code* code);
-
-  // Returns if this function has been compiled to native code yet.
-  inline bool is_compiled() const;
-
-  // [length]: The function length - usually the number of declared parameters.
-  // Use up to 2^30 parameters.
-  // been compiled.
-  inline int GetLength() const;
-  inline bool HasLength() const;
-  inline void set_length(int value);
-
-  // [internal formal parameter count]: The declared number of parameters.
-  // For subclass constructors, also includes new.target.
-  // The size of function's frame is internal_formal_parameter_count + 1.
-  inline int internal_formal_parameter_count() const;
-  inline void set_internal_formal_parameter_count(int value);
-
-  // Set the formal parameter count so the function code will be
-  // called without using argument adaptor frames.
-  inline void DontAdaptArguments();
-
-  // [expected_nof_properties]: Expected number of properties for the
-  // function. The value is only reliable when the function has been compiled.
-  inline int expected_nof_properties() const;
-  inline void set_expected_nof_properties(int value);
-
-  // [feedback_metadata] - describes ast node feedback from full-codegen and
-  // (increasingly) from crankshafted code where sufficient feedback isn't
-  // available.
-  DECL_ACCESSORS(feedback_metadata, FeedbackMetadata)
-
-  // [function_literal_id] - uniquely identifies the FunctionLiteral this
-  // SharedFunctionInfo represents within its script, or -1 if this
-  // SharedFunctionInfo object doesn't correspond to a parsed FunctionLiteral.
-  inline int function_literal_id() const;
-  inline void set_function_literal_id(int value);
-
-#if V8_SFI_HAS_UNIQUE_ID
-  // [unique_id] - For tracing purposes, an identifier that's persistent even if
-  // the GC moves this SharedFunctionInfo.
-  inline int unique_id() const;
-  inline void set_unique_id(int value);
-#endif
-
-  // [instance class name]: class name for instances.
-  DECL_ACCESSORS(instance_class_name, Object)
-
-  // [function data]: This field holds some additional data for function.
-  // Currently it has one of:
-  //  - a FunctionTemplateInfo to make benefit the API [IsApiFunction()].
-  //  - a BytecodeArray for the interpreter [HasBytecodeArray()].
-  //  - a FixedArray with Asm->Wasm conversion [HasAsmWasmData()].
-  DECL_ACCESSORS(function_data, Object)
-
-  inline bool IsApiFunction();
-  inline FunctionTemplateInfo* get_api_func_data();
-  inline void set_api_func_data(FunctionTemplateInfo* data);
-  inline bool HasBytecodeArray() const;
-  inline BytecodeArray* bytecode_array() const;
-  inline void set_bytecode_array(BytecodeArray* bytecode);
-  inline void ClearBytecodeArray();
-  inline bool HasAsmWasmData() const;
-  inline FixedArray* asm_wasm_data() const;
-  inline void set_asm_wasm_data(FixedArray* data);
-  inline void ClearAsmWasmData();
-
-  // [function identifier]: This field holds an additional identifier for the
-  // function.
-  //  - a Smi identifying a builtin function [HasBuiltinFunctionId()].
-  //  - a String identifying the function's inferred name [HasInferredName()].
-  // The inferred_name is inferred from variable or property
-  // assignment of this function. It is used to facilitate debugging and
-  // profiling of JavaScript code written in OO style, where almost
-  // all functions are anonymous but are assigned to object
-  // properties.
-  DECL_ACCESSORS(function_identifier, Object)
-
-  inline bool HasBuiltinFunctionId();
-  inline BuiltinFunctionId builtin_function_id();
-  inline void set_builtin_function_id(BuiltinFunctionId id);
-  inline bool HasInferredName();
-  inline String* inferred_name();
-  inline void set_inferred_name(String* inferred_name);
-
-  // [script]: Script from which the function originates.
-  DECL_ACCESSORS(script, Object)
-
-  // [start_position_and_type]: Field used to store both the source code
-  // position, whether or not the function is a function expression,
-  // and whether or not the function is a toplevel function. The two
-  // least significants bit indicates whether the function is an
-  // expression and the rest contains the source code position.
-  inline int start_position_and_type() const;
-  inline void set_start_position_and_type(int value);
-
-  // The function is subject to debugging if a debug info is attached.
-  inline bool HasDebugInfo() const;
-  inline DebugInfo* GetDebugInfo() const;
-
-  // A function has debug code if the compiled code has debug break slots.
-  inline bool HasDebugCode() const;
-
-  // [debug info]: Debug information.
-  DECL_ACCESSORS(debug_info, Object)
-
-  // Bit field containing various information collected for debugging.
-  // This field is either stored on the kDebugInfo slot or inside the
-  // debug info struct.
-  inline int debugger_hints() const;
-  inline void set_debugger_hints(int value);
-
-  // Indicates that the function was created by the Function function.
-  // Though it's anonymous, toString should treat it as if it had the name
-  // "anonymous".  We don't set the name itself so that the system does not
-  // see a binding for it.
-  DECL_BOOLEAN_ACCESSORS(name_should_print_as_anonymous)
-
-  // Indicates that the function is either an anonymous expression
-  // or an arrow function (the name field can be set through the API,
-  // which does not change this flag).
-  DECL_BOOLEAN_ACCESSORS(is_anonymous_expression)
-
-  // Indicates that the the shared function info is deserialized from cache.
-  DECL_BOOLEAN_ACCESSORS(deserialized)
-
-  // Indicates that the function cannot cause side-effects.
-  DECL_BOOLEAN_ACCESSORS(has_no_side_effect)
-
-  // Indicates that |has_no_side_effect| has been computed and set.
-  DECL_BOOLEAN_ACCESSORS(computed_has_no_side_effect)
-
-  // Indicates that the function should be skipped during stepping.
-  DECL_BOOLEAN_ACCESSORS(debug_is_blackboxed)
-
-  // Indicates that |debug_is_blackboxed| has been computed and set.
-  DECL_BOOLEAN_ACCESSORS(computed_debug_is_blackboxed)
-
-  // Indicates that the function has been reported for binary code coverage.
-  DECL_BOOLEAN_ACCESSORS(has_reported_binary_coverage)
-
-  // The function's name if it is non-empty, otherwise the inferred name.
-  String* DebugName();
-
-  // The function cannot cause any side effects.
-  bool HasNoSideEffect();
-
-  // Used for flags such as --hydrogen-filter.
-  bool PassesFilter(const char* raw_filter);
-
-  // Position of the 'function' token in the script source.
-  inline int function_token_position() const;
-  inline void set_function_token_position(int function_token_position);
-
-  // Position of this function in the script source.
-  inline int start_position() const;
-  inline void set_start_position(int start_position);
-
-  // End position of this function in the script source.
-  inline int end_position() const;
-  inline void set_end_position(int end_position);
-
-  // Is this function a named function expression in the source code.
-  DECL_BOOLEAN_ACCESSORS(is_named_expression)
-
-  // Is this function a top-level function (scripts, evals).
-  DECL_BOOLEAN_ACCESSORS(is_toplevel)
-
-  // Bit field containing various information collected by the compiler to
-  // drive optimization.
-  inline int compiler_hints() const;
-  inline void set_compiler_hints(int value);
-
-  inline int ast_node_count() const;
-  inline void set_ast_node_count(int count);
-
-  inline int profiler_ticks() const;
-  inline void set_profiler_ticks(int ticks);
-
-  // Inline cache age is used to infer whether the function survived a context
-  // disposal or not. In the former case we reset the opt_count.
-  inline int ic_age();
-  inline void set_ic_age(int age);
-
-  // Indicates if this function can be lazy compiled.
-  // This is used to determine if we can safely flush code from a function
-  // when doing GC if we expect that the function will no longer be used.
-  DECL_BOOLEAN_ACCESSORS(allows_lazy_compilation)
-
-  // Indicates whether optimizations have been disabled for this
-  // shared function info. If a function is repeatedly optimized or if
-  // we cannot optimize the function we disable optimization to avoid
-  // spending time attempting to optimize it again.
-  DECL_BOOLEAN_ACCESSORS(optimization_disabled)
-
-  // Indicates the language mode.
-  inline LanguageMode language_mode();
-  inline void set_language_mode(LanguageMode language_mode);
-
-  // False if the function definitely does not allocate an arguments object.
-  DECL_BOOLEAN_ACCESSORS(uses_arguments)
-
-  // Indicates that this function uses a super property (or an eval that may
-  // use a super property).
-  // This is needed to set up the [[HomeObject]] on the function instance.
-  DECL_BOOLEAN_ACCESSORS(needs_home_object)
-
-  // True if the function has any duplicated parameter names.
-  DECL_BOOLEAN_ACCESSORS(has_duplicate_parameters)
-
-  // Indicates whether the function is a native function.
-  // These needs special treatment in .call and .apply since
-  // null passed as the receiver should not be translated to the
-  // global object.
-  DECL_BOOLEAN_ACCESSORS(native)
-
-  // Indicate that this function should always be inlined in optimized code.
-  DECL_BOOLEAN_ACCESSORS(force_inline)
-
-  // Indicates that code for this function must be compiled through the
-  // Ignition / TurboFan pipeline, and is unsupported by
-  // FullCodegen / Crankshaft.
-  DECL_BOOLEAN_ACCESSORS(must_use_ignition_turbo)
-
-  // Indicates that code for this function cannot be flushed.
-  DECL_BOOLEAN_ACCESSORS(dont_flush)
-
-  // Indicates that this function is an asm function.
-  DECL_BOOLEAN_ACCESSORS(asm_function)
-
-  // Whether this function was created from a FunctionDeclaration.
-  DECL_BOOLEAN_ACCESSORS(is_declaration)
-
-  // Whether this function was marked to be tiered up.
-  DECL_BOOLEAN_ACCESSORS(marked_for_tier_up)
-
-  // Whether this function has a concurrent compilation job running.
-  DECL_BOOLEAN_ACCESSORS(has_concurrent_optimization_job)
-
-  // Indicates that asm->wasm conversion failed and should not be re-attempted.
-  DECL_BOOLEAN_ACCESSORS(is_asm_wasm_broken)
-
-  inline FunctionKind kind() const;
-  inline void set_kind(FunctionKind kind);
-
-  // Indicates whether or not the code in the shared function support
-  // deoptimization.
-  inline bool has_deoptimization_support();
-
-  // Enable deoptimization support through recompiled code.
-  void EnableDeoptimizationSupport(Code* recompiled);
-
-  // Disable (further) attempted optimization of all functions sharing this
-  // shared function info.
-  void DisableOptimization(BailoutReason reason);
-
-  inline BailoutReason disable_optimization_reason();
-
-  // Lookup the bailout ID and DCHECK that it exists in the non-optimized
-  // code, returns whether it asserted (i.e., always true if assertions are
-  // disabled).
-  bool VerifyBailoutId(BailoutId id);
-
-  // [source code]: Source code for the function.
-  bool HasSourceCode() const;
-  Handle<Object> GetSourceCode();
-  Handle<Object> GetSourceCodeHarmony();
-
-  // Number of times the function was optimized.
-  inline int opt_count();
-  inline void set_opt_count(int opt_count);
-
-  // Number of times the function was deoptimized.
-  inline void set_deopt_count(int value);
-  inline int deopt_count();
-  inline void increment_deopt_count();
-
-  // Number of time we tried to re-enable optimization after it
-  // was disabled due to high number of deoptimizations.
-  inline void set_opt_reenable_tries(int value);
-  inline int opt_reenable_tries();
-
-  inline void TryReenableOptimization();
-
-  // Stores deopt_count, opt_reenable_tries and ic_age as bit-fields.
-  inline void set_counters(int value);
-  inline int counters() const;
-
-  // Stores opt_count and bailout_reason as bit-fields.
-  inline void set_opt_count_and_bailout_reason(int value);
-  inline int opt_count_and_bailout_reason() const;
-
-  inline void set_disable_optimization_reason(BailoutReason reason);
-
-  // Tells whether this function should be subject to debugging.
-  inline bool IsSubjectToDebugging();
-
-  // Whether this function is defined in user-provided JavaScript code.
-  inline bool IsUserJavaScript();
-
-  // Check whether or not this function is inlineable.
-  bool IsInlineable();
-
-  // Source size of this function.
-  int SourceSize();
-
-  // Returns `false` if formal parameters include rest parameters, optional
-  // parameters, or destructuring parameters.
-  // TODO(caitp): make this a flag set during parsing
-  inline bool has_simple_parameters();
-
-  // Initialize a SharedFunctionInfo from a parsed function literal.
-  static void InitFromFunctionLiteral(Handle<SharedFunctionInfo> shared_info,
-                                      FunctionLiteral* lit);
-
-  // Sets the expected number of properties based on estimate from parser.
-  void SetExpectedNofPropertiesFromEstimate(FunctionLiteral* literal);
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(SharedFunctionInfo)
-  DECLARE_VERIFIER(SharedFunctionInfo)
-
-  void ResetForNewContext(int new_ic_age);
-
-  // Iterate over all shared function infos in a given script.
-  class ScriptIterator {
-   public:
-    explicit ScriptIterator(Handle<Script> script);
-    ScriptIterator(Isolate* isolate, Handle<FixedArray> shared_function_infos);
-    SharedFunctionInfo* Next();
-
-    // Reset the iterator to run on |script|.
-    void Reset(Handle<Script> script);
-
-   private:
-    Isolate* isolate_;
-    Handle<FixedArray> shared_function_infos_;
-    int index_;
-    DISALLOW_COPY_AND_ASSIGN(ScriptIterator);
-  };
-
-  // Iterate over all shared function infos on the heap.
-  class GlobalIterator {
-   public:
-    explicit GlobalIterator(Isolate* isolate);
-    SharedFunctionInfo* Next();
-
-   private:
-    Script::Iterator script_iterator_;
-    WeakFixedArray::Iterator noscript_sfi_iterator_;
-    SharedFunctionInfo::ScriptIterator sfi_iterator_;
-    DisallowHeapAllocation no_gc_;
-    DISALLOW_COPY_AND_ASSIGN(GlobalIterator);
-  };
-
-  DECLARE_CAST(SharedFunctionInfo)
-
-  // Constants.
-  static const int kDontAdaptArgumentsSentinel = -1;
-
-  // Layout description.
-  // Pointer fields.
-  static const int kCodeOffset = HeapObject::kHeaderSize;
-  static const int kNameOffset = kCodeOffset + kPointerSize;
-  static const int kScopeInfoOffset = kNameOffset + kPointerSize;
-  static const int kOuterScopeInfoOffset = kScopeInfoOffset + kPointerSize;
-  static const int kConstructStubOffset = kOuterScopeInfoOffset + kPointerSize;
-  static const int kInstanceClassNameOffset =
-      kConstructStubOffset + kPointerSize;
-  static const int kFunctionDataOffset =
-      kInstanceClassNameOffset + kPointerSize;
-  static const int kScriptOffset = kFunctionDataOffset + kPointerSize;
-  static const int kDebugInfoOffset = kScriptOffset + kPointerSize;
-  static const int kFunctionIdentifierOffset = kDebugInfoOffset + kPointerSize;
-  static const int kFeedbackMetadataOffset =
-      kFunctionIdentifierOffset + kPointerSize;
-  static const int kFunctionLiteralIdOffset =
-      kFeedbackMetadataOffset + kPointerSize;
-#if V8_SFI_HAS_UNIQUE_ID
-  static const int kUniqueIdOffset = kFunctionLiteralIdOffset + kPointerSize;
-  static const int kLastPointerFieldOffset = kUniqueIdOffset;
-#else
-  // Just to not break the postmortrem support with conditional offsets
-  static const int kUniqueIdOffset = kFunctionLiteralIdOffset;
-  static const int kLastPointerFieldOffset = kFunctionLiteralIdOffset;
-#endif
-
-#if V8_HOST_ARCH_32_BIT
-  // Smi fields.
-  static const int kLengthOffset = kLastPointerFieldOffset + kPointerSize;
-  static const int kFormalParameterCountOffset = kLengthOffset + kPointerSize;
-  static const int kExpectedNofPropertiesOffset =
-      kFormalParameterCountOffset + kPointerSize;
-  static const int kNumLiteralsOffset =
-      kExpectedNofPropertiesOffset + kPointerSize;
-  static const int kStartPositionAndTypeOffset =
-      kNumLiteralsOffset + kPointerSize;
-  static const int kEndPositionOffset =
-      kStartPositionAndTypeOffset + kPointerSize;
-  static const int kFunctionTokenPositionOffset =
-      kEndPositionOffset + kPointerSize;
-  static const int kCompilerHintsOffset =
-      kFunctionTokenPositionOffset + kPointerSize;
-  static const int kOptCountAndBailoutReasonOffset =
-      kCompilerHintsOffset + kPointerSize;
-  static const int kCountersOffset =
-      kOptCountAndBailoutReasonOffset + kPointerSize;
-  static const int kAstNodeCountOffset =
-      kCountersOffset + kPointerSize;
-  static const int kProfilerTicksOffset =
-      kAstNodeCountOffset + kPointerSize;
-
-  // Total size.
-  static const int kSize = kProfilerTicksOffset + kPointerSize;
-#else
-// The only reason to use smi fields instead of int fields is to allow
-// iteration without maps decoding during garbage collections.
-// To avoid wasting space on 64-bit architectures we use the following trick:
-// we group integer fields into pairs
-// The least significant integer in each pair is shifted left by 1.  By doing
-// this we guarantee that LSB of each kPointerSize aligned word is not set and
-// thus this word cannot be treated as pointer to HeapObject during old space
-// traversal.
-#if V8_TARGET_LITTLE_ENDIAN
-  static const int kLengthOffset = kLastPointerFieldOffset + kPointerSize;
-  static const int kFormalParameterCountOffset =
-      kLengthOffset + kIntSize;
-
-  static const int kExpectedNofPropertiesOffset =
-      kFormalParameterCountOffset + kIntSize;
-  static const int kNumLiteralsOffset =
-      kExpectedNofPropertiesOffset + kIntSize;
-
-  static const int kEndPositionOffset =
-      kNumLiteralsOffset + kIntSize;
-  static const int kStartPositionAndTypeOffset =
-      kEndPositionOffset + kIntSize;
-
-  static const int kFunctionTokenPositionOffset =
-      kStartPositionAndTypeOffset + kIntSize;
-  static const int kCompilerHintsOffset =
-      kFunctionTokenPositionOffset + kIntSize;
-
-  static const int kOptCountAndBailoutReasonOffset =
-      kCompilerHintsOffset + kIntSize;
-  static const int kCountersOffset =
-      kOptCountAndBailoutReasonOffset + kIntSize;
-
-  static const int kAstNodeCountOffset =
-      kCountersOffset + kIntSize;
-  static const int kProfilerTicksOffset =
-      kAstNodeCountOffset + kIntSize;
-
-  // Total size.
-  static const int kSize = kProfilerTicksOffset + kIntSize;
-
-#elif V8_TARGET_BIG_ENDIAN
-  static const int kFormalParameterCountOffset =
-      kLastPointerFieldOffset + kPointerSize;
-  static const int kLengthOffset = kFormalParameterCountOffset + kIntSize;
-
-  static const int kNumLiteralsOffset = kLengthOffset + kIntSize;
-  static const int kExpectedNofPropertiesOffset = kNumLiteralsOffset + kIntSize;
-
-  static const int kStartPositionAndTypeOffset =
-      kExpectedNofPropertiesOffset + kIntSize;
-  static const int kEndPositionOffset = kStartPositionAndTypeOffset + kIntSize;
-
-  static const int kCompilerHintsOffset = kEndPositionOffset + kIntSize;
-  static const int kFunctionTokenPositionOffset =
-      kCompilerHintsOffset + kIntSize;
-
-  static const int kCountersOffset = kFunctionTokenPositionOffset + kIntSize;
-  static const int kOptCountAndBailoutReasonOffset = kCountersOffset + kIntSize;
-
-  static const int kProfilerTicksOffset =
-      kOptCountAndBailoutReasonOffset + kIntSize;
-  static const int kAstNodeCountOffset = kProfilerTicksOffset + kIntSize;
-
-  // Total size.
-  static const int kSize = kAstNodeCountOffset + kIntSize;
-
-#else
-#error Unknown byte ordering
-#endif  // Big endian
-#endif  // 64-bit
-
-
-  static const int kAlignedSize = POINTER_SIZE_ALIGN(kSize);
-
-  typedef FixedBodyDescriptor<kCodeOffset,
-                              kLastPointerFieldOffset + kPointerSize, kSize>
-      BodyDescriptor;
-  typedef FixedBodyDescriptor<kNameOffset,
-                              kLastPointerFieldOffset + kPointerSize, kSize>
-      BodyDescriptorWeakCode;
-
-  // Bit positions in start_position_and_type.
-  // The source code start position is in the 30 most significant bits of
-  // the start_position_and_type field.
-  static const int kIsNamedExpressionBit = 0;
-  static const int kIsTopLevelBit = 1;
-  static const int kStartPositionShift = 2;
-  static const int kStartPositionMask = ~((1 << kStartPositionShift) - 1);
-
-  // Bit positions in compiler_hints.
-  enum CompilerHints {
-    // byte 0
-    kAllowLazyCompilation,
-    kMarkedForTierUp,
-    kOptimizationDisabled,
-    kHasDuplicateParameters,
-    kNative,
-    kStrictModeFunction,
-    kUsesArguments,
-    kNeedsHomeObject,
-    // byte 1
-    kForceInline,
-    kIsAsmFunction,
-    kMustUseIgnitionTurbo,
-    kDontFlush,
-    kIsDeclaration,
-    kIsAsmWasmBroken,
-    kHasConcurrentOptimizationJob,
-
-    kUnused1,  // Unused fields.
-
-    // byte 2
-    kFunctionKind,
-    // rest of byte 2 and first two bits of byte 3 are used by FunctionKind
-    // byte 3
-    kCompilerHintsCount = kFunctionKind + 10,  // Pseudo entry
-  };
-
-  // Bit positions in debugger_hints.
-  enum DebuggerHints {
-    kIsAnonymousExpression,
-    kNameShouldPrintAsAnonymous,
-    kDeserialized,
-    kHasNoSideEffect,
-    kComputedHasNoSideEffect,
-    kDebugIsBlackboxed,
-    kComputedDebugIsBlackboxed,
-    kHasReportedBinaryCoverage
-  };
-
-  // kFunctionKind has to be byte-aligned
-  STATIC_ASSERT((kFunctionKind % kBitsPerByte) == 0);
-
-  class FunctionKindBits : public BitField<FunctionKind, kFunctionKind, 10> {};
-
-  class DeoptCountBits : public BitField<int, 0, 4> {};
-  class OptReenableTriesBits : public BitField<int, 4, 18> {};
-  class ICAgeBits : public BitField<int, 22, 8> {};
-
-  class OptCountBits : public BitField<int, 0, 22> {};
-  class DisabledOptimizationReasonBits : public BitField<int, 22, 8> {};
-
- private:
-  FRIEND_TEST(PreParserTest, LazyFunctionLength);
-
-  inline int length() const;
-
-#if V8_HOST_ARCH_32_BIT
-  // On 32 bit platforms, compiler hints is a smi.
-  static const int kCompilerHintsSmiTagSize = kSmiTagSize;
-  static const int kCompilerHintsSize = kPointerSize;
-#else
-  // On 64 bit platforms, compiler hints is not a smi, see comment above.
-  static const int kCompilerHintsSmiTagSize = 0;
-  static const int kCompilerHintsSize = kIntSize;
-#endif
-
-  STATIC_ASSERT(SharedFunctionInfo::kCompilerHintsCount +
-                    SharedFunctionInfo::kCompilerHintsSmiTagSize <=
-                SharedFunctionInfo::kCompilerHintsSize * kBitsPerByte);
-
- public:
-  // Constants for optimizing codegen for strict mode function and
-  // native tests when using integer-width instructions.
-  static const int kStrictModeBit =
-      kStrictModeFunction + kCompilerHintsSmiTagSize;
-  static const int kNativeBit = kNative + kCompilerHintsSmiTagSize;
-  static const int kHasDuplicateParametersBit =
-      kHasDuplicateParameters + kCompilerHintsSmiTagSize;
-
-  static const int kFunctionKindShift =
-      kFunctionKind + kCompilerHintsSmiTagSize;
-  static const int kAllFunctionKindBitsMask = FunctionKindBits::kMask
-                                              << kCompilerHintsSmiTagSize;
-
-  static const int kMarkedForTierUpBit =
-      kMarkedForTierUp + kCompilerHintsSmiTagSize;
-
-  // Constants for optimizing codegen for strict mode function and
-  // native tests.
-  // Allows to use byte-width instructions.
-  static const int kStrictModeBitWithinByte = kStrictModeBit % kBitsPerByte;
-  static const int kNativeBitWithinByte = kNativeBit % kBitsPerByte;
-  static const int kHasDuplicateParametersBitWithinByte =
-      kHasDuplicateParametersBit % kBitsPerByte;
-
-  static const int kClassConstructorBitsWithinByte =
-      FunctionKind::kClassConstructor << kCompilerHintsSmiTagSize;
-  STATIC_ASSERT(kClassConstructorBitsWithinByte < (1 << kBitsPerByte));
-
-  static const int kDerivedConstructorBitsWithinByte =
-      FunctionKind::kDerivedConstructor << kCompilerHintsSmiTagSize;
-  STATIC_ASSERT(kDerivedConstructorBitsWithinByte < (1 << kBitsPerByte));
-
-  static const int kMarkedForTierUpBitWithinByte =
-      kMarkedForTierUpBit % kBitsPerByte;
-
-#if defined(V8_TARGET_LITTLE_ENDIAN)
-#define BYTE_OFFSET(compiler_hint) \
-  kCompilerHintsOffset +           \
-      (compiler_hint + kCompilerHintsSmiTagSize) / kBitsPerByte
-#elif defined(V8_TARGET_BIG_ENDIAN)
-#define BYTE_OFFSET(compiler_hint)                  \
-  kCompilerHintsOffset + (kCompilerHintsSize - 1) - \
-      ((compiler_hint + kCompilerHintsSmiTagSize) / kBitsPerByte)
-#else
-#error Unknown byte ordering
-#endif
-  static const int kStrictModeByteOffset = BYTE_OFFSET(kStrictModeFunction);
-  static const int kNativeByteOffset = BYTE_OFFSET(kNative);
-  static const int kFunctionKindByteOffset = BYTE_OFFSET(kFunctionKind);
-  static const int kHasDuplicateParametersByteOffset =
-      BYTE_OFFSET(kHasDuplicateParameters);
-  static const int kMarkedForTierUpByteOffset = BYTE_OFFSET(kMarkedForTierUp);
-#undef BYTE_OFFSET
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(SharedFunctionInfo);
-};
-
-
-// Printing support.
-struct SourceCodeOf {
-  explicit SourceCodeOf(SharedFunctionInfo* v, int max = -1)
-      : value(v), max_length(max) {}
-  const SharedFunctionInfo* value;
-  int max_length;
-};
-
-
-std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v);
-
-
 class JSGeneratorObject: public JSObject {
  public:
   // [function]: The function corresponding to this generator object.
@@ -6143,8 +5439,7 @@ class JSFunction: public JSObject {
   inline bool is_compiled();
 
   // [next_function_link]: Links functions into various lists, e.g. the list
-  // of optimized functions hanging off the native_context. The CodeFlusher
-  // uses this link to chain together flushing candidates. Treated weakly
+  // of optimized functions hanging off the native_context. Treated weakly
   // by the garbage collector.
   DECL_ACCESSORS(next_function_link, Object)
 
@@ -6567,6 +5862,8 @@ class JSPromise : public JSObject {
       kFulfillReactionsOffset + kPointerSize;
   static const int kFlagsOffset = kRejectReactionsOffset + kPointerSize;
   static const int kSize = kFlagsOffset + kPointerSize;
+  static const int kSizeWithEmbedderFields =
+      kSize + v8::Promise::kEmbedderFieldCount * kPointerSize;
 
   // Flags layout.
   static const int kHasHandlerBit = 0;
@@ -6584,9 +5881,9 @@ class JSPromise : public JSObject {
 // - a reference to a literal string to search for
 // If it is an irregexp regexp:
 // - a reference to code for Latin1 inputs (bytecode or compiled), or a smi
-// used for tracking the last usage (used for code flushing).
+// used for tracking the last usage (used for regexp code flushing).
 // - a reference to code for UC16 inputs (bytecode or compiled), or a smi
-// used for tracking the last usage (used for code flushing)..
+// used for tracking the last usage (used for regexp code flushing).
 // - max number of registers used by irregexp implementations.
 // - number of capture registers (output values) of the regexp.
 class JSRegExp: public JSObject {
@@ -8503,6 +7800,15 @@ class JSArrayBuffer: public JSObject {
   // [byte_length]: length in bytes
   DECL_ACCESSORS(byte_length, Object)
 
+  // [allocation_base]: the start of the memory allocation for this array,
+  // normally equal to backing_store
+  DECL_ACCESSORS(allocation_base, void)
+
+  // [allocation_length]: the size of the memory allocation for this array,
+  // normally equal to byte_length
+  inline size_t allocation_length() const;
+  inline void set_allocation_length(size_t value);
+
   inline uint32_t bit_field() const;
   inline void set_bit_field(uint32_t bits);
 
@@ -8521,7 +7827,7 @@ class JSArrayBuffer: public JSObject {
   inline bool is_shared();
   inline void set_is_shared(bool value);
 
-  inline bool has_guard_region();
+  inline bool has_guard_region() const;
   inline void set_has_guard_region(bool value);
 
   // TODO(gdeepti): This flag is introduced to disable asm.js optimizations in
@@ -8533,10 +7839,19 @@ class JSArrayBuffer: public JSObject {
 
   void Neuter();
 
+  inline ArrayBuffer::Allocator::AllocationMode allocation_mode() const;
+
+  void FreeBackingStore();
+
   V8_EXPORT_PRIVATE static void Setup(
       Handle<JSArrayBuffer> array_buffer, Isolate* isolate, bool is_external,
       void* data, size_t allocated_length,
       SharedFlag shared = SharedFlag::kNotShared);
+
+  V8_EXPORT_PRIVATE static void Setup(
+      Handle<JSArrayBuffer> array_buffer, Isolate* isolate, bool is_external,
+      void* allocation_base, size_t allocation_length, void* data,
+      size_t byte_length, SharedFlag shared = SharedFlag::kNotShared);
 
   // Returns false if array buffer contents could not be allocated.
   // In this case, |array_buffer| will not be set up.
@@ -8550,8 +7865,13 @@ class JSArrayBuffer: public JSObject {
   DECLARE_VERIFIER(JSArrayBuffer)
 
   static const int kByteLengthOffset = JSObject::kHeaderSize;
+  // The rest of the fields are not JSObjects, so they are not iterated over in
+  // objects-body-descriptors-inl.h.
   static const int kBackingStoreOffset = kByteLengthOffset + kPointerSize;
-  static const int kBitFieldSlot = kBackingStoreOffset + kPointerSize;
+  static const int kAllocationBaseOffset = kBackingStoreOffset + kPointerSize;
+  static const int kAllocationLengthOffset =
+      kAllocationBaseOffset + kPointerSize;
+  static const int kBitFieldSlot = kAllocationLengthOffset + kSizetSize;
 #if V8_TARGET_LITTLE_ENDIAN || !V8_HOST_ARCH_64_BIT
   static const int kBitFieldOffset = kBitFieldSlot;
 #else
@@ -8633,8 +7953,8 @@ class JSTypedArray: public JSArrayBufferView {
                                                    const char* method_name);
   // ES7 section 22.2.4.6 Create ( constructor, argumentList )
   static MaybeHandle<JSTypedArray> Create(Isolate* isolate,
-                                          Handle<JSFunction> default_ctor,
-                                          int argc, Handle<Object>* argv,
+                                          Handle<Object> default_ctor, int argc,
+                                          Handle<Object>* argv,
                                           const char* method_name);
   // ES7 section 22.2.4.7 TypedArraySpeciesCreate ( exemplar, argumentList )
   static MaybeHandle<JSTypedArray> SpeciesCreate(Isolate* isolate,
@@ -9187,102 +8507,6 @@ class ObjectTemplateInfo: public TemplateInfo {
   class IsImmutablePrototype : public BitField<bool, 0, 1> {};
   class EmbedderFieldCount
       : public BitField<int, IsImmutablePrototype::kNext, 29> {};
-};
-
-
-// The DebugInfo class holds additional information for a function being
-// debugged.
-class DebugInfo: public Struct {
- public:
-  // The shared function info for the source being debugged.
-  DECL_ACCESSORS(shared, SharedFunctionInfo)
-
-  // Bit field containing various information collected for debugging.
-  DECL_INT_ACCESSORS(debugger_hints)
-
-  DECL_ACCESSORS(debug_bytecode_array, Object)
-  // Fixed array holding status information for each active break point.
-  DECL_ACCESSORS(break_points, FixedArray)
-
-  // Check if there is a break point at a source position.
-  bool HasBreakPoint(int source_position);
-  // Attempt to clear a break point. Return true if successful.
-  static bool ClearBreakPoint(Handle<DebugInfo> debug_info,
-                              Handle<Object> break_point_object);
-  // Set a break point.
-  static void SetBreakPoint(Handle<DebugInfo> debug_info, int source_position,
-                            Handle<Object> break_point_object);
-  // Get the break point objects for a source position.
-  Handle<Object> GetBreakPointObjects(int source_position);
-  // Find the break point info holding this break point object.
-  static Handle<Object> FindBreakPointInfo(Handle<DebugInfo> debug_info,
-                                           Handle<Object> break_point_object);
-  // Get the number of break points for this function.
-  int GetBreakPointCount();
-
-  inline bool HasDebugBytecodeArray();
-  inline bool HasDebugCode();
-
-  inline BytecodeArray* OriginalBytecodeArray();
-  inline BytecodeArray* DebugBytecodeArray();
-  inline Code* DebugCode();
-
-  DECLARE_CAST(DebugInfo)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(DebugInfo)
-  DECLARE_VERIFIER(DebugInfo)
-
-  static const int kSharedFunctionInfoIndex = Struct::kHeaderSize;
-  static const int kDebuggerHintsIndex =
-      kSharedFunctionInfoIndex + kPointerSize;
-  static const int kDebugBytecodeArrayIndex =
-      kDebuggerHintsIndex + kPointerSize;
-  static const int kBreakPointsStateIndex =
-      kDebugBytecodeArrayIndex + kPointerSize;
-  static const int kSize = kBreakPointsStateIndex + kPointerSize;
-
-  static const int kEstimatedNofBreakPointsInFunction = 4;
-
- private:
-  // Get the break point info object for a source position.
-  Object* GetBreakPointInfo(int source_position);
-
-  DISALLOW_IMPLICIT_CONSTRUCTORS(DebugInfo);
-};
-
-
-// The BreakPointInfo class holds information for break points set in a
-// function. The DebugInfo object holds a BreakPointInfo object for each code
-// position with one or more break points.
-class BreakPointInfo : public Tuple2 {
- public:
-  // The position in the source for the break position.
-  DECL_INT_ACCESSORS(source_position)
-  // List of related JavaScript break points.
-  DECL_ACCESSORS(break_point_objects, Object)
-
-  // Removes a break point.
-  static void ClearBreakPoint(Handle<BreakPointInfo> info,
-                              Handle<Object> break_point_object);
-  // Set a break point.
-  static void SetBreakPoint(Handle<BreakPointInfo> info,
-                            Handle<Object> break_point_object);
-  // Check if break point info has this break point object.
-  static bool HasBreakPointObject(Handle<BreakPointInfo> info,
-                                  Handle<Object> break_point_object);
-  // Get the number of break points for this code offset.
-  int GetBreakPointCount();
-
-  int GetStatementPosition(Handle<DebugInfo> debug_info);
-
-  DECLARE_CAST(BreakPointInfo)
-
-  static const int kSourcePositionIndex = kValue1Offset;
-  static const int kBreakPointObjectsIndex = kValue2Offset;
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(BreakPointInfo);
 };
 
 class StackFrameInfo : public Struct {

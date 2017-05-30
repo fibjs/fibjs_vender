@@ -62,7 +62,7 @@ namespace internal {
 base::Atomic32 ThreadId::highest_thread_id_ = 0;
 
 int ThreadId::AllocateThreadId() {
-  int new_id = base::NoBarrier_AtomicIncrement(&highest_thread_id_, 1);
+  int new_id = base::Relaxed_AtomicIncrement(&highest_thread_id_, 1);
   return new_id;
 }
 
@@ -189,7 +189,7 @@ void Isolate::InitializeOncePerProcess() {
   CHECK(thread_data_table_ == NULL);
   isolate_key_ = base::Thread::CreateThreadLocalKey();
 #if DEBUG
-  base::NoBarrier_Store(&isolate_key_created_, 1);
+  base::Relaxed_Store(&isolate_key_created_, 1);
 #endif
   thread_id_key_ = base::Thread::CreateThreadLocalKey();
   per_isolate_thread_data_key_ = base::Thread::CreateThreadLocalKey();
@@ -428,7 +428,6 @@ class StackTraceHelper {
         return !skip_next_frame_;
     }
     UNREACHABLE();
-    return false;
   }
 
   bool IsNotHidden(JSFunction* fun) {
@@ -658,7 +657,6 @@ class CaptureStackTraceHelper {
     if (summ.IsJavaScript()) return NewStackFrameObject(summ.AsJavaScript());
     if (summ.IsWasm()) return NewStackFrameObject(summ.AsWasm());
     UNREACHABLE();
-    return factory()->NewStackFrameInfo();
   }
 
   Handle<StackFrameInfo> NewStackFrameObject(
@@ -1378,18 +1376,7 @@ HandlerTable::CatchPrediction PredictException(JavaScriptFrame* frame) {
       for (const FrameSummary& summary : summaries) {
         Handle<AbstractCode> code = summary.AsJavaScript().abstract_code();
         if (code->IsCode() && code->kind() == AbstractCode::BUILTIN) {
-          if (code->GetCode()->is_promise_rejection()) {
-            return HandlerTable::PROMISE;
-          }
-
-          // This the exception throw in PromiseHandle which doesn't
-          // cause a promise rejection.
-          if (code->GetCode()->is_exception_caught()) {
-            return HandlerTable::CAUGHT;
-          }
-
-          // The built-in must be marked with an exception prediction.
-          UNREACHABLE();
+          return code->GetCode()->GetBuiltinCatchPrediction();
         }
 
         if (code->kind() == AbstractCode::OPTIMIZED_FUNCTION) {
@@ -1412,6 +1399,23 @@ HandlerTable::CatchPrediction PredictException(JavaScriptFrame* frame) {
     return prediction;
   }
   return HandlerTable::UNCAUGHT;
+}
+
+Isolate::CatchType ToCatchType(HandlerTable::CatchPrediction prediction) {
+  switch (prediction) {
+    case HandlerTable::UNCAUGHT:
+      return Isolate::NOT_CAUGHT;
+    case HandlerTable::CAUGHT:
+      return Isolate::CAUGHT_BY_JAVASCRIPT;
+    case HandlerTable::PROMISE:
+      return Isolate::CAUGHT_BY_PROMISE;
+    case HandlerTable::DESUGARING:
+      return Isolate::CAUGHT_BY_DESUGARING;
+    case HandlerTable::ASYNC_AWAIT:
+      return Isolate::CAUGHT_BY_ASYNC_AWAIT;
+    default:
+      UNREACHABLE();
+  }
 }
 }  // anonymous namespace
 
@@ -1442,37 +1446,18 @@ Isolate::CatchType Isolate::PredictExceptionCatcher() {
       case StackFrame::INTERPRETED:
       case StackFrame::BUILTIN: {
         JavaScriptFrame* js_frame = JavaScriptFrame::cast(frame);
-        HandlerTable::CatchPrediction prediction = PredictException(js_frame);
-        switch (prediction) {
-          case HandlerTable::UNCAUGHT:
-            break;
-          case HandlerTable::CAUGHT:
-            return CAUGHT_BY_JAVASCRIPT;
-          case HandlerTable::PROMISE:
-            return CAUGHT_BY_PROMISE;
-          case HandlerTable::DESUGARING:
-            return CAUGHT_BY_DESUGARING;
-          case HandlerTable::ASYNC_AWAIT:
-            return CAUGHT_BY_ASYNC_AWAIT;
-        }
+        Isolate::CatchType prediction = ToCatchType(PredictException(js_frame));
+        if (prediction == NOT_CAUGHT) break;
+        return prediction;
       } break;
 
       case StackFrame::STUB: {
         Handle<Code> code(frame->LookupCode());
         if (code->kind() == Code::BUILTIN && code->is_turbofanned() &&
             code->handler_table()->length()) {
-          if (code->is_promise_rejection()) {
-            return CAUGHT_BY_PROMISE;
-          }
-
-          // This the exception throw in PromiseHandle which doesn't
-          // cause a promise rejection.
-          if (code->is_exception_caught()) {
-            return CAUGHT_BY_JAVASCRIPT;
-          }
-
-          // The built-in must be marked with an exception prediction.
-          UNREACHABLE();
+          CatchType prediction = ToCatchType(code->GetBuiltinCatchPrediction());
+          if (prediction == NOT_CAUGHT) break;
+          return prediction;
         }
       } break;
 
@@ -2359,7 +2344,7 @@ Isolate::Isolate(bool enable_serializer)
     base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
     CHECK(thread_data_table_);
   }
-  id_ = base::NoBarrier_AtomicIncrement(&isolate_counter_, 1);
+  id_ = base::Relaxed_AtomicIncrement(&isolate_counter_, 1);
   TRACE_ISOLATE(constructor);
 
   memset(isolate_addresses_, 0,
@@ -2405,7 +2390,7 @@ void Isolate::TearDown() {
   // direct pointer. We don't use Enter/Exit here to avoid
   // initializing the thread data.
   PerIsolateThreadData* saved_data = CurrentPerIsolateThreadData();
-  DCHECK(base::NoBarrier_Load(&isolate_key_created_) == 1);
+  DCHECK(base::Relaxed_Load(&isolate_key_created_) == 1);
   Isolate* saved_isolate =
       reinterpret_cast<Isolate*>(base::Thread::GetThreadLocal(isolate_key_));
   SetIsolateThreadLocals(this, NULL);
@@ -2555,7 +2540,6 @@ Isolate::~Isolate() {
   store_stub_cache_ = NULL;
   delete code_aging_helper_;
   code_aging_helper_ = NULL;
-  delete stats_table_;
   stats_table_ = NULL;
 
   delete materialized_object_store_;
@@ -2564,7 +2548,6 @@ Isolate::~Isolate() {
   delete logger_;
   logger_ = NULL;
 
-  delete counters_;
   counters_ = NULL;
 
   delete handle_scope_implementer_;
@@ -2650,14 +2633,22 @@ bool Isolate::PropagatePendingExceptionToExternalTryCatch() {
   return true;
 }
 
+static base::LazyMutex initialize_counters_mutex = LAZY_MUTEX_INITIALIZER;
+
+bool Isolate::InitializeCounters() {
+  if (counters_ != nullptr) return false;
+  base::LockGuard<base::Mutex> guard(initialize_counters_mutex.Pointer());
+  if (counters_ != nullptr) return false;
+  counters_shared_ = std::make_shared<Counters>(this);
+  counters_ = counters_shared_.get();
+  return true;
+}
 
 void Isolate::InitializeLoggingAndCounters() {
   if (logger_ == NULL) {
     logger_ = new Logger(this);
   }
-  if (counters_ == NULL) {
-    counters_ = new Counters(this);
-  }
+  InitializeCounters();
 }
 
 
@@ -2852,10 +2843,9 @@ bool Isolate::Init(Deserializer* des) {
 // Initialized lazily to allow early
 // v8::V8::SetAddHistogramSampleFunction calls.
 StatsTable* Isolate::stats_table() {
-  if (stats_table_ == NULL) {
-    stats_table_ = new StatsTable;
-  }
-  return stats_table_;
+  if (stats_table_ != nullptr) return stats_table_;
+  InitializeCounters();
+  return stats_table_ = counters_->stats_table();
 }
 
 
@@ -3361,9 +3351,11 @@ void Isolate::RunHostImportModuleDynamicallyCallback(
   if (host_import_module_dynamically_callback_ == nullptr) {
     Handle<Object> exception =
         factory()->NewError(error_function(), MessageTemplate::kUnsupported);
-    CHECK(result->FinishDynamicImportFailure(
-        v8::Utils::ToLocal(handle(context(), this)),
-        v8::Utils::ToLocal(exception)));
+    CHECK(result
+              ->FinishDynamicImportFailure(
+                  v8::Utils::ToLocal(handle(context(), this)),
+                  v8::Utils::ToLocal(exception))
+              .FromJust());
     return;
   }
 

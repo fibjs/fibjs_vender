@@ -12,6 +12,7 @@
 #include "src/disassembler.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/objects-inl.h"
+#include "src/objects/debug-objects-inl.h"
 #include "src/ostreams.h"
 #include "src/regexp/jsregexp.h"
 
@@ -275,6 +276,7 @@ void FixedTypedArray<Traits>::FixedTypedArrayPrint(
 bool JSObject::PrintProperties(std::ostream& os) {  // NOLINT
   if (HasFastProperties()) {
     DescriptorArray* descs = map()->instance_descriptors();
+    int nof_inobject_properties = map()->GetInObjectProperties();
     int i = 0;
     for (; i < map()->NumberOfOwnDescriptors(); i++) {
       os << "\n    ";
@@ -297,6 +299,12 @@ bool JSObject::PrintProperties(std::ostream& os) {  // NOLINT
       }
       os << " ";
       details.PrintAsFastTo(os, PropertyDetails::kForProperties);
+      if (details.location() != kField) continue;
+      int field_index = details.field_index();
+      if (nof_inobject_properties <= field_index) {
+        field_index -= nof_inobject_properties;
+        os << " properties[" << field_index << "]";
+      }
     }
     return i > 0;
   } else if (IsJSGlobalObject()) {

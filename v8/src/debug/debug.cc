@@ -28,6 +28,7 @@
 #include "src/list.h"
 #include "src/log.h"
 #include "src/messages.h"
+#include "src/objects/debug-objects-inl.h"
 #include "src/snapshot/natives.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects.h"
@@ -248,6 +249,11 @@ void CodeBreakIterator::SkipToPosition(int position,
   SkipTo(it.BreakIndexFromPosition(position, alignment));
 }
 
+int CodeBreakIterator::code_offset() {
+  return static_cast<int>(rinfo()->pc() -
+                          debug_info_->DebugCode()->instruction_start());
+}
+
 void CodeBreakIterator::SetDebugBreak() {
   DebugBreakType debug_break_type = GetDebugBreakType();
   DCHECK(debug_break_type >= DEBUG_BREAK_SLOT);
@@ -396,8 +402,8 @@ void Debug::ThreadInit() {
   thread_local_.async_task_count_ = 0;
   clear_suspended_generator();
   thread_local_.restart_fp_ = nullptr;
-  base::NoBarrier_Store(&thread_local_.current_debug_scope_,
-                        static_cast<base::AtomicWord>(0));
+  base::Relaxed_Store(&thread_local_.current_debug_scope_,
+                      static_cast<base::AtomicWord>(0));
   UpdateHookOnFunctionCall();
 }
 
@@ -1234,7 +1240,6 @@ static Address ComputeNewPcForRedirect(Code* new_code, Code* old_code,
   }
 
   UNREACHABLE();
-  return NULL;
 }
 
 
@@ -1440,7 +1445,6 @@ bool Debug::GetPossibleBreakpoints(Handle<Script> script, int start_position,
     return true;
   }
   UNREACHABLE();
-  return false;
 }
 
 void Debug::RecordGenerator(Handle<JSGeneratorObject> generator_object) {
@@ -2221,8 +2225,8 @@ DebugScope::DebugScope(Debug* debug)
       no_termination_exceptons_(debug_->isolate_,
                                 StackGuard::TERMINATE_EXECUTION) {
   // Link recursive debugger entry.
-  base::NoBarrier_Store(&debug_->thread_local_.current_debug_scope_,
-                        reinterpret_cast<base::AtomicWord>(this));
+  base::Relaxed_Store(&debug_->thread_local_.current_debug_scope_,
+                      reinterpret_cast<base::AtomicWord>(this));
 
   // Store the previous break id, frame id and return value.
   break_id_ = debug_->break_id();
@@ -2246,8 +2250,8 @@ DebugScope::DebugScope(Debug* debug)
 
 DebugScope::~DebugScope() {
   // Leaving this debugger entry.
-  base::NoBarrier_Store(&debug_->thread_local_.current_debug_scope_,
-                        reinterpret_cast<base::AtomicWord>(prev_));
+  base::Relaxed_Store(&debug_->thread_local_.current_debug_scope_,
+                      reinterpret_cast<base::AtomicWord>(prev_));
 
   // Restore to the previous break state.
   debug_->thread_local_.break_frame_id_ = break_frame_id_;

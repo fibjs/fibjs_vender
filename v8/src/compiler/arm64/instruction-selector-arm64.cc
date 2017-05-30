@@ -394,7 +394,6 @@ uint8_t GetBinopProperties(InstructionCode opcode) {
       break;
     default:
       UNREACHABLE();
-      return 0;
   }
   DCHECK_IMPLIES(MustCommuteCondField::decode(result),
                  CanCommuteField::decode(result));
@@ -1902,7 +1901,6 @@ FlagsCondition MapForFlagSettingBinop(FlagsCondition cond) {
       return kNotEqual;
     default:
       UNREACHABLE();
-      return cond;
   }
 }
 
@@ -1965,7 +1963,6 @@ FlagsCondition MapForTbz(FlagsCondition cond) {
       return kEqual;
     default:
       UNREACHABLE();
-      return cond;
   }
 }
 
@@ -1983,7 +1980,6 @@ FlagsCondition MapForCbz(FlagsCondition cond) {
       return kNotEqual;
     default:
       UNREACHABLE();
-      return cond;
   }
 }
 

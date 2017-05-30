@@ -127,7 +127,6 @@ const char* LArithmeticD::Mnemonic() const {
     case Token::MOD: return "mod-d";
     default:
       UNREACHABLE();
-      return NULL;
   }
 }
 
@@ -148,7 +147,6 @@ const char* LArithmeticT::Mnemonic() const {
     case Token::SHR: return "shr-t";
     default:
       UNREACHABLE();
-      return NULL;
   }
 }
 
@@ -635,7 +633,6 @@ LInstruction* LChunkBuilder::DoDummyUse(HDummyUse* instr) {
 
 LInstruction* LChunkBuilder::DoEnvironmentMarker(HEnvironmentMarker* instr) {
   UNREACHABLE();
-  return NULL;
 }
 
 
@@ -1090,7 +1087,6 @@ LInstruction* LChunkBuilder::DoUnaryMathOperation(HUnaryMathOperation* instr) {
       return DoMathClz32(instr);
     default:
       UNREACHABLE();
-      return NULL;
   }
 }
 
@@ -1760,7 +1756,6 @@ LInstruction* LChunkBuilder::DoForceRepresentation(HForceRepresentation* bad) {
   // All HForceRepresentation instructions should be eliminated in the
   // representation change phase of Hydrogen.
   UNREACHABLE();
-  return NULL;
 }
 
 
@@ -1858,7 +1853,6 @@ LInstruction* LChunkBuilder::DoChange(HChange* instr) {
     }
   }
   UNREACHABLE();
-  return NULL;
 }
 
 
@@ -1953,7 +1947,6 @@ LInstruction* LChunkBuilder::DoConstant(HConstant* instr) {
     return DefineAsRegister(new(zone()) LConstantT);
   } else {
     UNREACHABLE();
-    return NULL;
   }
 }
 

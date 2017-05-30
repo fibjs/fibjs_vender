@@ -52,7 +52,6 @@ class S390OperandConverter final : public InstructionOperandConverter {
         return false;
     }
     UNREACHABLE();
-    return false;
   }
 
   Operand InputImmediate(size_t index) {
@@ -76,7 +75,6 @@ class S390OperandConverter final : public InstructionOperandConverter {
         break;
     }
     UNREACHABLE();
-    return Operand::Zero();
   }
 
   MemOperand MemoryOperand(AddressingMode* mode, size_t* first_index) {
@@ -100,7 +98,6 @@ class S390OperandConverter final : public InstructionOperandConverter {
                           InputInt32(index + 2));
     }
     UNREACHABLE();
-    return MemOperand(r0);
   }
 
   MemOperand MemoryOperand(AddressingMode* mode = NULL,
@@ -339,7 +336,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
       break;
   }
   UNREACHABLE();
-  return kNoCondition;
 }
 
 #define GET_MEMOPERAND32(ret, fi)                                       \
@@ -471,7 +467,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
 
 static int nullInstr() {
   UNREACHABLE();
-  return -1;
 }
 
 template <int numOfOperand, class RType, class MType, class IType>
@@ -485,7 +480,6 @@ static inline int AssembleOp(Instruction* instr, RType r, MType m, IType i) {
     return i();
   } else {
     UNREACHABLE();
-    return -1;
   }
 }
 

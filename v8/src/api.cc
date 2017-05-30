@@ -96,7 +96,7 @@ namespace v8 {
   HandleScopeClass handle_scope(isolate);                            \
   CallDepthScope<do_callback> call_depth_scope(isolate, context);    \
   LOG_API(isolate, class_name, function_name);                       \
-  ENTER_V8_DO_NOT_USE(isolate);                                      \
+  i::VMState<v8::OTHER> __state__((isolate));                        \
   bool has_pending_exception = false
 
 #define PREPARE_FOR_DEBUG_INTERFACE_EXECUTION_WITH_ISOLATE(isolate, T)       \
@@ -105,7 +105,7 @@ namespace v8 {
   }                                                                          \
   InternalEscapableScope handle_scope(isolate);                              \
   CallDepthScope<false> call_depth_scope(isolate, v8::Local<v8::Context>()); \
-  ENTER_V8_DO_NOT_USE(isolate);                                              \
+  i::VMState<v8::OTHER> __state__((isolate));                                \
   bool has_pending_exception = false
 
 #define PREPARE_FOR_EXECUTION_WITH_CONTEXT(context, class_name, function_name, \
@@ -127,12 +127,6 @@ namespace v8 {
   PREPARE_FOR_EXECUTION_GENERIC(isolate, context, class_name, function_name, \
                                 bailout_value, HandleScopeClass, do_callback);
 
-#define PREPARE_FOR_EXECUTION_WITH_ISOLATE(isolate, class_name, function_name, \
-                                           T)                                  \
-  PREPARE_FOR_EXECUTION_GENERIC(isolate, Local<Context>(), class_name,         \
-                                function_name, MaybeLocal<T>(),                \
-                                InternalEscapableScope, false);
-
 #define PREPARE_FOR_EXECUTION(context, class_name, function_name, T)          \
   PREPARE_FOR_EXECUTION_WITH_CONTEXT(context, class_name, function_name,      \
                                      MaybeLocal<T>(), InternalEscapableScope, \
@@ -147,10 +141,6 @@ namespace v8 {
 #define PREPARE_FOR_EXECUTION_PRIMITIVE(context, class_name, function_name, T) \
   PREPARE_FOR_EXECUTION_WITH_CONTEXT(context, class_name, function_name,       \
                                      Nothing<T>(), i::HandleScope, false)
-
-#define PREPARE_FOR_EXECUTION_BOOL(context, class_name, function_name)   \
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT(context, class_name, function_name, \
-                                     false, i::HandleScope, false)
 
 #ifdef DEBUG
 #define ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate)                    \
@@ -184,9 +174,6 @@ namespace v8 {
 
 #define RETURN_ON_FAILED_EXECUTION_PRIMITIVE(T) \
   EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, Nothing<T>())
-
-#define RETURN_ON_FAILED_EXECUTION_BOOL() \
-  EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, false)
 
 #define RETURN_TO_LOCAL_UNCHECKED(maybe_local, T) \
   return maybe_local.FromMaybe(Local<T>());
@@ -441,6 +428,28 @@ void V8::SetSnapshotDataBlob(StartupData* snapshot_blob) {
   i::V8::SetSnapshotBlob(snapshot_blob);
 }
 
+void* v8::ArrayBuffer::Allocator::Reserve(size_t length) { UNIMPLEMENTED(); }
+
+void v8::ArrayBuffer::Allocator::Free(void* data, size_t length,
+                                      AllocationMode mode) {
+  switch (mode) {
+    case AllocationMode::kNormal: {
+      Free(data, length);
+      return;
+    }
+    case AllocationMode::kReservation: {
+      UNIMPLEMENTED();
+      return;
+    }
+  }
+}
+
+void v8::ArrayBuffer::Allocator::SetProtection(
+    void* data, size_t length,
+    v8::ArrayBuffer::Allocator::Protection protection) {
+  UNIMPLEMENTED();
+}
+
 namespace {
 
 class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
@@ -451,6 +460,39 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   }
   virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
   virtual void Free(void* data, size_t) { free(data); }
+
+  virtual void* Reserve(size_t length) {
+    return base::VirtualMemory::ReserveRegion(length);
+  }
+
+  virtual void Free(void* data, size_t length,
+                    v8::ArrayBuffer::Allocator::AllocationMode mode) {
+    switch (mode) {
+      case v8::ArrayBuffer::Allocator::AllocationMode::kNormal: {
+        return Free(data, length);
+      }
+      case v8::ArrayBuffer::Allocator::AllocationMode::kReservation: {
+        base::VirtualMemory::ReleaseRegion(data, length);
+        return;
+      }
+    }
+  }
+
+  virtual void SetProtection(
+      void* data, size_t length,
+      v8::ArrayBuffer::Allocator::Protection protection) {
+    switch (protection) {
+      case v8::ArrayBuffer::Allocator::Protection::kNoAccess: {
+        base::VirtualMemory::UncommitRegion(data, length);
+        return;
+      }
+      case v8::ArrayBuffer::Allocator::Protection::kReadWrite: {
+        const bool is_executable = false;
+        base::VirtualMemory::CommitRegion(data, length, is_executable);
+        return;
+      }
+    }
+  }
 };
 
 bool RunExtraCode(Isolate* isolate, Local<Context> context,
@@ -813,49 +855,17 @@ Extension::Extension(const char* name,
 ResourceConstraints::ResourceConstraints()
     : max_semi_space_size_(0),
       max_old_space_size_(0),
-      max_executable_size_(0),
       stack_limit_(NULL),
       code_range_size_(0),
       max_zone_pool_size_(0) {}
 
 void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
                                             uint64_t virtual_memory_limit) {
-#if V8_OS_ANDROID
-  // Android has higher physical memory requirements before raising the maximum
-  // heap size limits since it has no swap space.
-  const uint64_t low_limit = 512ul * i::MB;
-  const uint64_t medium_limit = 1ul * i::GB;
-  const uint64_t high_limit = 2ul * i::GB;
-#else
-  const uint64_t low_limit = 512ul * i::MB;
-  const uint64_t medium_limit = 768ul * i::MB;
-  const uint64_t high_limit = 1ul  * i::GB;
-#endif
-
-  if (physical_memory <= low_limit) {
-    set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeLowMemoryDevice);
-    set_max_old_space_size(i::Heap::kMaxOldSpaceSizeLowMemoryDevice);
-    set_max_executable_size(i::Heap::kMaxExecutableSizeLowMemoryDevice);
-    set_max_zone_pool_size(i::AccountingAllocator::kMaxPoolSizeLowMemoryDevice);
-  } else if (physical_memory <= medium_limit) {
-    set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeMediumMemoryDevice);
-    set_max_old_space_size(i::Heap::kMaxOldSpaceSizeMediumMemoryDevice);
-    set_max_executable_size(i::Heap::kMaxExecutableSizeMediumMemoryDevice);
-    set_max_zone_pool_size(
-        i::AccountingAllocator::kMaxPoolSizeMediumMemoryDevice);
-  } else if (physical_memory <= high_limit) {
-    set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeHighMemoryDevice);
-    set_max_old_space_size(i::Heap::kMaxOldSpaceSizeHighMemoryDevice);
-    set_max_executable_size(i::Heap::kMaxExecutableSizeHighMemoryDevice);
-    set_max_zone_pool_size(
-        i::AccountingAllocator::kMaxPoolSizeHighMemoryDevice);
-  } else {
-    set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeHugeMemoryDevice);
-    set_max_old_space_size(i::Heap::kMaxOldSpaceSizeHugeMemoryDevice);
-    set_max_executable_size(i::Heap::kMaxExecutableSizeHugeMemoryDevice);
-    set_max_zone_pool_size(
-        i::AccountingAllocator::kMaxPoolSizeHugeMemoryDevice);
-  }
+  set_max_semi_space_size(
+      static_cast<int>(i::Heap::ComputeMaxSemiSpaceSize(physical_memory)));
+  set_max_old_space_size(
+      static_cast<int>(i::Heap::ComputeMaxOldGenerationSize(physical_memory)));
+  set_max_zone_pool_size(i::AccountingAllocator::kMaxPoolSize);
 
   if (virtual_memory_limit > 0 && i::kRequiresCodeRange) {
     // Reserve no more than 1/8 of the memory for the code range, but at most
@@ -866,16 +876,13 @@ void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
   }
 }
 
-
 void SetResourceConstraints(i::Isolate* isolate,
                             const ResourceConstraints& constraints) {
   int semi_space_size = constraints.max_semi_space_size();
   int old_space_size = constraints.max_old_space_size();
-  int max_executable_size = constraints.max_executable_size();
   size_t code_range_size = constraints.code_range_size();
   size_t max_pool_size = constraints.max_zone_pool_size();
-  if (semi_space_size != 0 || old_space_size != 0 ||
-      max_executable_size != 0 || code_range_size != 0) {
+  if (semi_space_size != 0 || old_space_size != 0 || code_range_size != 0) {
     isolate->heap()->ConfigureHeap(semi_space_size, old_space_size,
                                    code_range_size);
   }
@@ -1011,8 +1018,9 @@ HandleScope::~HandleScope() {
 }
 
 void* HandleScope::operator new(size_t) { base::OS::Abort(); }
-
+void* HandleScope::operator new[](size_t) { base::OS::Abort(); }
 void HandleScope::operator delete(void*, size_t) { base::OS::Abort(); }
+void HandleScope::operator delete[](void*, size_t) { base::OS::Abort(); }
 
 int HandleScope::NumberOfHandles(Isolate* isolate) {
   return i::HandleScope::NumberOfHandles(
@@ -1052,8 +1060,11 @@ i::Object** EscapableHandleScope::Escape(i::Object** escape_value) {
 }
 
 void* EscapableHandleScope::operator new(size_t) { base::OS::Abort(); }
-
+void* EscapableHandleScope::operator new[](size_t) { base::OS::Abort(); }
 void EscapableHandleScope::operator delete(void*, size_t) { base::OS::Abort(); }
+void EscapableHandleScope::operator delete[](void*, size_t) {
+  base::OS::Abort();
+}
 
 SealHandleScope::SealHandleScope(Isolate* isolate)
     : isolate_(reinterpret_cast<i::Isolate*>(isolate)) {
@@ -1074,8 +1085,9 @@ SealHandleScope::~SealHandleScope() {
 }
 
 void* SealHandleScope::operator new(size_t) { base::OS::Abort(); }
-
+void* SealHandleScope::operator new[](size_t) { base::OS::Abort(); }
 void SealHandleScope::operator delete(void*, size_t) { base::OS::Abort(); }
+void SealHandleScope::operator delete[](void*, size_t) { base::OS::Abort(); }
 
 void Context::Enter() {
   i::Handle<i::Context> env = Utils::OpenHandle(this);
@@ -2039,9 +2051,10 @@ Local<UnboundScript> Script::GetUnboundScript() {
       i::Handle<i::SharedFunctionInfo>(i::JSFunction::cast(*obj)->shared()));
 }
 
-bool DynamicImportResult::FinishDynamicImportSuccess(Local<Context> context,
-                                                     Local<Module> module) {
-  PREPARE_FOR_EXECUTION_BOOL(context, Module, FinishDynamicImportSuccess);
+Maybe<bool> DynamicImportResult::FinishDynamicImportSuccess(
+    Local<Context> context, Local<Module> module) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, Module, FinishDynamicImportSuccess,
+                                  bool);
   auto promise = Utils::OpenHandle(this);
   i::Handle<i::Module> module_obj = Utils::OpenHandle(*module);
   i::Handle<i::JSModuleNamespace> module_namespace =
@@ -2052,13 +2065,14 @@ bool DynamicImportResult::FinishDynamicImportSuccess(Local<Context> context,
                          isolate->factory()->undefined_value(), arraysize(argv),
                          argv)
           .is_null();
-  RETURN_ON_FAILED_EXECUTION_BOOL();
-  return true;
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return Just(true);
 }
 
-bool DynamicImportResult::FinishDynamicImportFailure(Local<Context> context,
-                                                     Local<Value> exception) {
-  PREPARE_FOR_EXECUTION_BOOL(context, Module, FinishDynamicImportFailure);
+Maybe<bool> DynamicImportResult::FinishDynamicImportFailure(
+    Local<Context> context, Local<Value> exception) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, Module, FinishDynamicImportFailure,
+                                  bool);
   auto promise = Utils::OpenHandle(this);
   // We pass true to trigger the debugger's on exception handler.
   i::Handle<i::Object> argv[] = {promise, Utils::OpenHandle(*exception),
@@ -2068,8 +2082,8 @@ bool DynamicImportResult::FinishDynamicImportFailure(Local<Context> context,
                          isolate->factory()->undefined_value(), arraysize(argv),
                          argv)
           .is_null();
-  RETURN_ON_FAILED_EXECUTION_BOOL();
-  return true;
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return Just(true);
 }
 
 int Module::GetModuleRequestsLength() const {
@@ -2091,11 +2105,16 @@ int Module::GetIdentityHash() const { return Utils::OpenHandle(this)->hash(); }
 
 bool Module::Instantiate(Local<Context> context,
                          Module::ResolveCallback callback) {
-  PREPARE_FOR_EXECUTION_BOOL(context, Module, Instantiate);
+  return InstantiateModule(context, callback).FromMaybe(false);
+}
+
+Maybe<bool> Module::InstantiateModule(Local<Context> context,
+                                      Module::ResolveCallback callback) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, Module, InstantiateModule, bool);
   has_pending_exception =
       !i::Module::Instantiate(Utils::OpenHandle(this), context, callback);
-  RETURN_ON_FAILED_EXECUTION_BOOL();
-  return true;
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return Just(true);
 }
 
 MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
@@ -2118,10 +2137,10 @@ MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
 
 MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundInternal(
     Isolate* v8_isolate, Source* source, CompileOptions options) {
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-  PREPARE_FOR_EXECUTION_WITH_ISOLATE(isolate, ScriptCompiler, CompileUnbound,
-                                     UnboundScript);
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.ScriptCompiler");
+  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
+      "v8", "V8.ScriptCompiler", v8_isolate->GetCurrentContext(),
+      ScriptCompiler, CompileUnbound, MaybeLocal<UnboundScript>(),
+      InternalEscapableScope, false);
 
   // Don't try to produce any kind of cache when the debugger is loaded.
   if (isolate->debug()->is_loaded() &&
@@ -2608,8 +2627,9 @@ v8::TryCatch::~TryCatch() {
 }
 
 void* v8::TryCatch::operator new(size_t) { base::OS::Abort(); }
-
+void* v8::TryCatch::operator new[](size_t) { base::OS::Abort(); }
 void v8::TryCatch::operator delete(void*, size_t) { base::OS::Abort(); }
+void v8::TryCatch::operator delete[](void*, size_t) { base::OS::Abort(); }
 
 bool v8::TryCatch::HasCaught() const {
   return !reinterpret_cast<i::Object*>(exception_)->IsTheHole(isolate_);
@@ -3111,8 +3131,7 @@ bool NativeWeakMap::Delete(Local<Value> v8_key) {
 // --- J S O N ---
 
 MaybeLocal<Value> JSON::Parse(Isolate* v8_isolate, Local<String> json_string) {
-  auto isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-  PREPARE_FOR_EXECUTION_WITH_ISOLATE(isolate, JSON, Parse, Value);
+  PREPARE_FOR_EXECUTION(v8_isolate->GetCurrentContext(), JSON, Parse, Value);
   i::Handle<i::String> string = Utils::OpenHandle(*json_string);
   i::Handle<i::String> source = i::String::Flatten(string);
   i::Handle<i::Object> undefined = isolate->factory()->undefined_value();
@@ -4411,24 +4430,6 @@ Maybe<bool> v8::Object::ForceSet(v8::Local<v8::Context> context,
 }
 
 
-bool v8::Object::ForceSet(v8::Local<Value> key, v8::Local<Value> value,
-                          v8::PropertyAttribute attribs) {
-  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  PREPARE_FOR_EXECUTION_GENERIC(isolate, Local<Context>(), Object, ForceSet,
-                                false, i::HandleScope, false);
-  i::Handle<i::JSObject> self =
-      i::Handle<i::JSObject>::cast(Utils::OpenHandle(this));
-  i::Handle<i::Object> key_obj = Utils::OpenHandle(*key);
-  i::Handle<i::Object> value_obj = Utils::OpenHandle(*value);
-  has_pending_exception =
-      DefineObjectProperty(self, key_obj, value_obj,
-                           static_cast<i::PropertyAttributes>(attribs))
-          .is_null();
-  EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, false);
-  return true;
-}
-
-
 Maybe<bool> v8::Object::SetPrivate(Local<Context> context, Local<Private> key,
                                    Local<Value> value) {
   PREPARE_FOR_EXECUTION_PRIMITIVE(context, Object, SetPrivate, bool);
@@ -4525,12 +4526,11 @@ PropertyAttribute v8::Object::GetPropertyAttributes(v8::Local<Value> key) {
       .FromMaybe(static_cast<PropertyAttribute>(i::NONE));
 }
 
-
 MaybeLocal<Value> v8::Object::GetOwnPropertyDescriptor(Local<Context> context,
-                                                       Local<String> key) {
+                                                       Local<Name> key) {
   PREPARE_FOR_EXECUTION(context, Object, GetOwnPropertyDescriptor, Value);
   i::Handle<i::JSReceiver> obj = Utils::OpenHandle(this);
-  i::Handle<i::String> key_name = Utils::OpenHandle(*key);
+  i::Handle<i::Name> key_name = Utils::OpenHandle(*key);
 
   i::PropertyDescriptor desc;
   Maybe<bool> found =
@@ -4543,8 +4543,7 @@ MaybeLocal<Value> v8::Object::GetOwnPropertyDescriptor(Local<Context> context,
   RETURN_ESCAPED(Utils::ToLocal(desc.ToObject(isolate)));
 }
 
-
-Local<Value> v8::Object::GetOwnPropertyDescriptor(Local<String> key) {
+Local<Value> v8::Object::GetOwnPropertyDescriptor(Local<Name> key) {
   auto context = ContextFromHeapObject(Utils::OpenHandle(this));
   RETURN_TO_LOCAL_UNCHECKED(GetOwnPropertyDescriptor(context, key), Value);
 }
@@ -5688,7 +5687,6 @@ class Utf8LengthHelper : public i::AllStatic {
       }
     }
     UNREACHABLE();
-    return 0;
   }
 
   static inline int Calculate(i::ConsString* current) {
@@ -6231,12 +6229,16 @@ bool v8::V8::Initialize() {
   return true;
 }
 
-#if V8_OS_LINUX && V8_TARGET_ARCH_X64 && !V8_OS_ANDROID
+#if V8_OS_POSIX
 bool TryHandleSignal(int signum, void* info, void* context) {
+#if V8_OS_LINUX && V8_TARGET_ARCH_X64 && !V8_OS_ANDROID
   return v8::internal::trap_handler::TryHandleSignal(
       signum, static_cast<siginfo_t*>(info), static_cast<ucontext_t*>(context));
+#else  // V8_OS_LINUX && V8_TARGET_ARCH_X64 && !V8_OS_ANDROID
+  return false;
+#endif
 }
-#endif  // V8_OS_LINUX
+#endif
 
 bool V8::RegisterDefaultSignalHandler() {
   return v8::internal::trap_handler::RegisterDefaultSignalHandler();
@@ -8322,11 +8324,6 @@ Isolate* IsolateNewImpl(internal::Isolate* isolate,
   isolate->set_api_external_references(params.external_references);
   isolate->set_allow_atomics_wait(params.allow_atomics_wait);
 
-  if (params.host_import_module_dynamically_callback_ != nullptr) {
-    isolate->SetHostImportModuleDynamicallyCallback(
-        params.host_import_module_dynamically_callback_);
-  }
-
   SetResourceConstraints(isolate, params.constraints);
   // TODO(jochen): Once we got rid of Isolate::Current(), we can remove this.
   Isolate::Scope isolate_scope(v8_isolate);
@@ -8376,6 +8373,11 @@ void Isolate::SetAbortOnUncaughtExceptionCallback(
   isolate->SetAbortOnUncaughtExceptionCallback(callback);
 }
 
+void Isolate::SetHostImportModuleDynamicallyCallback(
+    HostImportModuleDynamicallyCallback callback) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->SetHostImportModuleDynamicallyCallback(callback);
+}
 
 Isolate::DisallowJavascriptExecutionScope::DisallowJavascriptExecutionScope(
     Isolate* isolate,
@@ -8670,8 +8672,6 @@ void Isolate::SetUseCounterCallback(UseCounterCallback callback) {
 void Isolate::SetCounterFunction(CounterLookupCallback callback) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   isolate->stats_table()->SetCounterFunction(callback);
-  isolate->InitializeLoggingAndCounters();
-  isolate->counters()->ResetCounters();
 }
 
 

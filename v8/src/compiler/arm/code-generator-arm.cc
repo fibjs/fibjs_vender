@@ -44,7 +44,6 @@ class ArmOperandConverter final : public InstructionOperandConverter {
         return LeaveCC;
     }
     UNREACHABLE();
-    return LeaveCC;
   }
 
   Operand InputImmediate(size_t index) {
@@ -65,7 +64,6 @@ class ArmOperandConverter final : public InstructionOperandConverter {
         break;
     }
     UNREACHABLE();
-    return Operand::Zero();
   }
 
   Operand InputOperand2(size_t first_index) {
@@ -97,7 +95,6 @@ class ArmOperandConverter final : public InstructionOperandConverter {
         return Operand(InputRegister(index + 0), ROR, InputRegister(index + 1));
     }
     UNREACHABLE();
-    return Operand::Zero();
   }
 
   MemOperand InputOffset(size_t* first_index) {
@@ -126,7 +123,6 @@ class ArmOperandConverter final : public InstructionOperandConverter {
         return MemOperand(InputRegister(index + 0), InputRegister(index + 1));
     }
     UNREACHABLE();
-    return MemOperand(r0);
   }
 
   MemOperand InputOffset(size_t first_index = 0) {
@@ -348,7 +344,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
       break;
   }
   UNREACHABLE();
-  return kNoCondition;
 }
 
 int GetVtblTableSize(const Simd128Register& src0, const Simd128Register& src1) {
@@ -1801,14 +1796,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vmvn(dst, dst);
       break;
     }
-    case kArmI32x4LtS: {
-      __ vcgt(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI32x4GtS: {
+      __ vcgt(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
-    case kArmI32x4LeS: {
-      __ vcge(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI32x4GeS: {
+      __ vcge(NeonS32, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
     case kArmI32x4UConvertF32x4: {
@@ -1840,14 +1835,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
               i.InputSimd128Register(1));
       break;
     }
-    case kArmI32x4LtU: {
-      __ vcgt(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI32x4GtU: {
+      __ vcgt(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
-    case kArmI32x4LeU: {
-      __ vcge(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI32x4GeU: {
+      __ vcge(NeonU32, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
     case kArmI16x8Splat: {
@@ -1941,14 +1936,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vmvn(dst, dst);
       break;
     }
-    case kArmI16x8LtS: {
-      __ vcgt(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI16x8GtS: {
+      __ vcgt(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
-    case kArmI16x8LeS: {
-      __ vcge(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI16x8GeS: {
+      __ vcge(NeonS16, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
     case kArmI16x8UConvertI8x16Low: {
@@ -1989,14 +1984,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
               i.InputSimd128Register(1));
       break;
     }
-    case kArmI16x8LtU: {
-      __ vcgt(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI16x8GtU: {
+      __ vcgt(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
-    case kArmI16x8LeU: {
-      __ vcge(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI16x8GeU: {
+      __ vcge(NeonU16, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
     case kArmI8x16Splat: {
@@ -2076,14 +2071,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ vmvn(dst, dst);
       break;
     }
-    case kArmI8x16LtS: {
-      __ vcgt(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI8x16GtS: {
+      __ vcgt(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
-    case kArmI8x16LeS: {
-      __ vcge(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI8x16GeS: {
+      __ vcge(NeonS8, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
     case kArmI8x16ShrU: {
@@ -2114,14 +2109,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
               i.InputSimd128Register(1));
       break;
     }
-    case kArmI8x16LtU: {
-      __ vcgt(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI8x16GtU: {
+      __ vcgt(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
-    case kArmI8x16LeU: {
-      __ vcge(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(1),
-              i.InputSimd128Register(0));
+    case kArmI8x16GeU: {
+      __ vcge(NeonU8, i.OutputSimd128Register(), i.InputSimd128Register(0),
+              i.InputSimd128Register(1));
       break;
     }
     case kArmS128Zero: {

@@ -224,7 +224,6 @@ Register GetAllocatableRegisterThatIsNotOneOf(Register reg1, Register reg2,
     return candidate;
   }
   UNREACHABLE();
-  return NoReg;
 }
 
 

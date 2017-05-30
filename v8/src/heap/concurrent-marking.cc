@@ -59,7 +59,7 @@ class ConcurrentMarkingVisitor final
   void VisitPointers(HeapObject* host, Object** start, Object** end) override {
     for (Object** p = start; p < end; p++) {
       Object* object = reinterpret_cast<Object*>(
-          base::NoBarrier_Load(reinterpret_cast<const base::AtomicWord*>(p)));
+          base::Relaxed_Load(reinterpret_cast<const base::AtomicWord*>(p)));
       if (!object->IsHeapObject()) continue;
       MarkObject(HeapObject::cast(object));
     }
@@ -183,7 +183,7 @@ class ConcurrentMarkingVisitor final
                        Object** end) override {
       for (Object** p = start; p < end; p++) {
         Object* object = reinterpret_cast<Object*>(
-            base::NoBarrier_Load(reinterpret_cast<const base::AtomicWord*>(p)));
+            base::Relaxed_Load(reinterpret_cast<const base::AtomicWord*>(p)));
         slot_snapshot_->add(p, object);
       }
     }
@@ -193,6 +193,8 @@ class ConcurrentMarkingVisitor final
   };
 
   const SlotSnapshot& MakeSlotSnapshot(Map* map, HeapObject* object, int size) {
+    // TODO(ulan): Iterate only the existing fields and skip slack at the end
+    // of the object.
     SlotSnapshottingVisitor visitor(&slot_snapshot_);
     visitor.VisitPointer(object,
                          reinterpret_cast<Object**>(object->map_slot()));

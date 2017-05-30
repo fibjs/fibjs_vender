@@ -90,6 +90,8 @@ namespace internal {
   /* ES6 section 7.3.13 Construct (F, [argumentsList], [newTarget]) */         \
   ASM(Construct)                                                               \
   ASM(ConstructWithSpread)                                                     \
+  ASM(ConstructForwardVarargs)                                                 \
+  ASM(ConstructFunctionForwardVarargs)                                         \
   ASM(JSConstructStubApi)                                                      \
   ASM(JSConstructStubGenericRestrictedReturn)                                  \
   ASM(JSConstructStubGenericUnrestrictedReturn)                                \
@@ -103,13 +105,7 @@ namespace internal {
   TFC(FastCloneRegExp, FastCloneRegExp, 1)                                     \
   TFC(FastCloneShallowArrayTrack, FastCloneShallowArray, 1)                    \
   TFC(FastCloneShallowArrayDontTrack, FastCloneShallowArray, 1)                \
-  TFC(FastCloneShallowObject0, FastCloneShallowObject, 1)                      \
-  TFC(FastCloneShallowObject1, FastCloneShallowObject, 1)                      \
-  TFC(FastCloneShallowObject2, FastCloneShallowObject, 1)                      \
-  TFC(FastCloneShallowObject3, FastCloneShallowObject, 1)                      \
-  TFC(FastCloneShallowObject4, FastCloneShallowObject, 1)                      \
-  TFC(FastCloneShallowObject5, FastCloneShallowObject, 1)                      \
-  TFC(FastCloneShallowObject6, FastCloneShallowObject, 1)                      \
+  TFC(FastCloneShallowObject, FastCloneShallowObject, 1)                       \
                                                                                \
   /* Apply and entries */                                                      \
   ASM(Apply)                                                                   \
@@ -542,6 +538,9 @@ namespace internal {
   TFH(LoadGlobalICInsideTypeofTrampoline, LOAD_GLOBAL_IC, kNoExtraICState,     \
       LoadGlobal)                                                              \
                                                                                \
+  /* Map */                                                                    \
+  TFJ(MapConstructor, 1, kIterable)                                            \
+                                                                               \
   /* Math */                                                                   \
   /* ES6 #sec-math.abs */                                                      \
   TFJ(MathAbs, 1, kX)                                                          \
@@ -952,6 +951,9 @@ namespace internal {
       SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* ES6 %TypedArray%.prototype.map */                                         \
   TFJ(TypedArrayPrototypeMap, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+  /* ES6 %TypedArray%.prototype.forEach */                                     \
+  TFJ(TypedArrayPrototypeForEach,                                              \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
                                                                                \
   /* Wasm */                                                                   \
   ASM(WasmCompileLazy)                                                         \
@@ -1041,6 +1043,8 @@ namespace internal {
   V(ResolvePromise)
 
 #define BUILTIN_EXCEPTION_CAUGHT_PREDICTION_LIST(V) V(PromiseHandleReject)
+
+#define BUILTIN_EXCEPTION_UNCAUGHT_PREDICTION_LIST(V) V(MapConstructor)
 
 #define IGNORE_BUILTIN(...)
 

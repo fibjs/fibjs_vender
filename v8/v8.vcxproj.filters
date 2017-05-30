@@ -564,6 +564,9 @@
     <ClInclude Include="src\builtins\builtins-forin-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-iterator-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-promise-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -1392,6 +1395,9 @@
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\workstealing-marking-deque.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\ia32\assembler-ia32-inl.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
@@ -1668,6 +1674,12 @@
     <ClInclude Include="src\objects\compilation-cache.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\debug-objects-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\debug-objects.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\descriptor-array.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1708,6 +1720,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\scope-info.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\shared-function-info-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\shared-function-info.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\string-table.h">
@@ -2453,6 +2471,9 @@
     <ClCompile Include="src\builtins\builtins-callsite.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-collections-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-console-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2474,7 +2495,7 @@
     <ClCompile Include="src\builtins\builtins-date.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-debug.cc">
+    <ClCompile Include="src\builtins\builtins-debug-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-error.cc">
@@ -2520,6 +2541,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-intl.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-iterator-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-json.cc">
@@ -3610,6 +3634,9 @@
     </ClCompile>
     <ClCompile Include="src\objects.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\debug-objects.cc">
+      <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\intl-objects.cc">
       <Filter>Source Files\objects</Filter>

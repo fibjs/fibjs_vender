@@ -105,7 +105,6 @@ bool IsStdlibMemberValid(Isolate* isolate, Handle<JSReceiver> stdlib,
 #undef STDLIB_ARRAY_TYPE
   }
   UNREACHABLE();
-  return false;
 }
 
 void Report(Handle<Script> script, int position, Vector<const char> text,
@@ -157,6 +156,15 @@ void ReportInstantiationSuccess(Handle<Script> script, int position,
          v8::Isolate::kMessageInfo);
 }
 
+// Hook to report failed execution of {AsmJs::InstantiateAsmWasm} phase.
+void ReportInstantiationFailure(Handle<Script> script, int position,
+                                const char* reason) {
+  if (FLAG_suppress_asm_messages) return;
+  Vector<const char> text = CStrVector(reason);
+  Report(script, position, text, MessageTemplate::kAsmJsLinkingFailed,
+         v8::Isolate::kMessageWarning);
+}
+
 }  // namespace
 
 MaybeHandle<FixedArray> AsmJs::CompileAsmViaWasm(CompilationInfo* info) {
@@ -206,6 +214,10 @@ MaybeHandle<FixedArray> AsmJs::CompileAsmViaWasm(CompilationInfo* info) {
     size_t compile_zone_size =
         info->zone()->allocation_size() - compile_zone_start;
     size_t translate_zone_size = translate_zone.allocation_size();
+    info->isolate()
+        ->counters()
+        ->asm_wasm_translation_peak_memory_bytes()
+        ->AddSample(static_cast<int>(translate_zone_size));
     translate_time = translate_timer.Elapsed().InMillisecondsF();
     if (FLAG_trace_asm_parser) {
       PrintF(
@@ -252,53 +264,55 @@ MaybeHandle<Object> AsmJs::InstantiateAsmWasm(Isolate* isolate,
       FixedArray::cast(wasm_data->get(kWasmDataUsesArray)));
   Handle<WasmModuleObject> module(
       WasmModuleObject::cast(wasm_data->get(kWasmDataCompiledModule)));
+  Handle<Script> script(Script::cast(shared->script()));
+  // TODO(mstarzinger): The position currently points to the module definition
+  // but should instead point to the instantiation site (more intuitive).
+  int position = shared->start_position();
 
   // Check that all used stdlib members are valid.
   bool stdlib_use_of_typed_array_present = false;
   for (int i = 0; i < stdlib_uses->length(); ++i) {
-    if (stdlib.is_null()) return MaybeHandle<Object>();
+    if (stdlib.is_null()) {
+      ReportInstantiationFailure(script, position, "Requires standard library");
+      return MaybeHandle<Object>();
+    }
     int member_id = Smi::cast(stdlib_uses->get(i))->value();
     wasm::AsmJsParser::StandardMember member =
         static_cast<wasm::AsmJsParser::StandardMember>(member_id);
     if (!IsStdlibMemberValid(isolate, stdlib, member,
                              &stdlib_use_of_typed_array_present)) {
+      ReportInstantiationFailure(script, position, "Unexpected stdlib member");
       return MaybeHandle<Object>();
     }
   }
 
-  // Create the ffi object for foreign functions {"": foreign}.
-  Handle<JSObject> ffi_object;
-  if (!foreign.is_null()) {
-    Handle<JSFunction> object_function = Handle<JSFunction>(
-        isolate->native_context()->object_function(), isolate);
-    ffi_object = isolate->factory()->NewJSObject(object_function);
-    JSObject::AddProperty(ffi_object, isolate->factory()->empty_string(),
-                          foreign, NONE);
-  }
-
   // Check that a valid heap buffer is provided if required.
   if (stdlib_use_of_typed_array_present) {
-    if (memory.is_null()) return MaybeHandle<Object>();
+    if (memory.is_null()) {
+      ReportInstantiationFailure(script, position, "Requires heap buffer");
+      return MaybeHandle<Object>();
+    }
     size_t size = NumberToSize(memory->byte_length());
     // TODO(mstarzinger): We currently only limit byte length of the buffer to
     // be a multiple of 8, we should enforce the stricter spec limits here.
     if (size % FixedTypedArrayBase::kMaxElementSize != 0) {
+      ReportInstantiationFailure(script, position, "Unexpected heap size");
       return MaybeHandle<Object>();
     }
   }
 
   wasm::ErrorThrower thrower(isolate, "AsmJs::Instantiate");
   MaybeHandle<Object> maybe_module_object =
-      wasm::SyncInstantiate(isolate, &thrower, module, ffi_object, memory);
+      wasm::SyncInstantiate(isolate, &thrower, module, foreign, memory);
   if (maybe_module_object.is_null()) {
+    DCHECK(!isolate->has_pending_exception());
     thrower.Reset();  // Ensure exceptions do not propagate.
+    ReportInstantiationFailure(script, position, "Internal wasm failure");
     return MaybeHandle<Object>();
   }
   DCHECK(!thrower.error());
   Handle<Object> module_object = maybe_module_object.ToHandleChecked();
 
-  Handle<Script> script(Script::cast(shared->script()));
-  int position = shared->start_position();
   ReportInstantiationSuccess(script, position,
                              instantiate_timer.Elapsed().InMillisecondsF());
 
