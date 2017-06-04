@@ -6,6 +6,7 @@
 #define V8_OBJECTS_SHARED_FUNCTION_INFO_H_
 
 #include "src/objects.h"
+#include "src/objects/script.h"
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
@@ -171,6 +172,10 @@ class SharedFunctionInfo : public HeapObject {
   // The function is subject to debugging if a debug info is attached.
   inline bool HasDebugInfo() const;
   DebugInfo* GetDebugInfo() const;
+
+  // Break infos are contained in DebugInfo, this is a convenience method
+  // to simplify access.
+  bool HasBreakInfo() const;
 
   // A function has debug code if the compiled code has debug break slots.
   inline bool HasDebugCode() const;

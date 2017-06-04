@@ -2945,15 +2945,32 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
         prototype, factory->to_string_tag_symbol(), factory->Map_string(),
         static_cast<PropertyAttributes>(DONT_ENUM | READ_ONLY));
 
+    Handle<JSFunction> map_get =
+        SimpleInstallFunction(prototype, "get", Builtins::kMapGet, 1, true);
+    InstallWithIntrinsicDefaultProto(isolate, map_get,
+                                     Context::MAP_GET_METHOD_INDEX);
+
+    Handle<JSFunction> map_has =
+        SimpleInstallFunction(prototype, "has", Builtins::kMapHas, 1, true);
+    InstallWithIntrinsicDefaultProto(isolate, map_has,
+                                     Context::MAP_HAS_METHOD_INDEX);
+
     InstallSpeciesGetter(js_map_fun);
   }
 
   {  // -- S e t
-    Handle<JSFunction> js_set_fun = InstallFunction(
-        global, "Set", JS_SET_TYPE, JSSet::kSize,
-        isolate->initial_object_prototype(), Builtins::kIllegal);
+    Handle<JSObject> prototype =
+        factory->NewJSObject(isolate->object_function(), TENURED);
+    Handle<JSFunction> js_set_fun =
+        InstallFunction(global, "Set", JS_SET_TYPE, JSSet::kSize, prototype,
+                        Builtins::kIllegal);
     InstallWithIntrinsicDefaultProto(isolate, js_set_fun,
                                      Context::JS_SET_FUN_INDEX);
+
+    Handle<JSFunction> set_has =
+        SimpleInstallFunction(prototype, "has", Builtins::kSetHas, 1, true);
+    InstallWithIntrinsicDefaultProto(isolate, set_has,
+                                     Context::SET_HAS_METHOD_INDEX);
     InstallSpeciesGetter(js_set_fun);
   }
 
@@ -3341,7 +3358,7 @@ bool Bootstrapper::CompileNative(Isolate* isolate, Vector<const char> name,
   // environment has been at least partially initialized. Add a stack check
   // before entering JS code to catch overflow early.
   StackLimitCheck check(isolate);
-  if (check.JsHasOverflowed(4 * KB)) {
+  if (check.JsHasOverflowed(kStackSpaceRequiredForCompilation * KB)) {
     isolate->StackOverflow();
     return false;
   }
@@ -4881,10 +4898,22 @@ bool Genesis::ConfigureGlobalObjects(
 
   native_context()->set_array_buffer_map(
       native_context()->array_buffer_fun()->initial_map());
-  native_context()->set_js_map_map(
-      native_context()->js_map_fun()->initial_map());
-  native_context()->set_js_set_map(
-      native_context()->js_set_fun()->initial_map());
+
+  Handle<JSFunction> js_map_fun(native_context()->js_map_fun());
+  Handle<JSFunction> js_set_fun(native_context()->js_set_fun());
+  // Force the Map/Set constructor to fast properties, so that we can use the
+  // fast paths for various things like
+  //
+  //   x instanceof Map
+  //   x instanceof Set
+  //
+  // etc. We should probably come up with a more principled approach once
+  // the JavaScript builtins are gone.
+  JSObject::MigrateSlowToFast(js_map_fun, 0, "Bootstrapping");
+  JSObject::MigrateSlowToFast(js_set_fun, 0, "Bootstrapping");
+
+  native_context()->set_js_map_map(js_map_fun->initial_map());
+  native_context()->set_js_set_map(js_set_fun->initial_map());
 
   return true;
 }

@@ -80,6 +80,26 @@
 
 namespace v8 {
 
+/*
+ * Most API methods should use one of the three macros:
+ *
+ * ENTER_V8, ENTER_V8_NO_SCRIPT, ENTER_V8_NO_SCRIPT_NO_EXCEPTION.
+ *
+ * The latter two assume that no script is executed, and no exceptions are
+ * scheduled in addition (respectively). Creating a pending exception and
+ * removing it before returning is ok.
+ *
+ * Exceptions should be handled either by invoking one of the
+ * RETURN_ON_FAILED_EXECUTION* macros.
+ *
+ * Don't use macros with DO_NOT_USE in their name.
+ *
+ * TODO(jochen): Document debugger specific macros.
+ * TODO(jochen): Document LOG_API and other RuntimeCallStats macros.
+ * TODO(jochen): All API methods should invoke one of the ENTER_V8* macros.
+ * TODO(jochen): Remove calls form API methods to DO_NOT_USE macros.
+ */
+
 #define LOG_API(isolate, class_name, function_name)                       \
   i::RuntimeCallTimerScope _runtime_timer(                                \
       isolate, &i::RuntimeCallStats::API_##class_name##_##function_name); \
@@ -87,16 +107,16 @@ namespace v8 {
 
 #define ENTER_V8_DO_NOT_USE(isolate) i::VMState<v8::OTHER> __state__((isolate))
 
-#define PREPARE_FOR_EXECUTION_GENERIC(isolate, context, class_name,  \
-                                      function_name, bailout_value,  \
-                                      HandleScopeClass, do_callback) \
-  if (IsExecutionTerminatingCheck(isolate)) {                        \
-    return bailout_value;                                            \
-  }                                                                  \
-  HandleScopeClass handle_scope(isolate);                            \
-  CallDepthScope<do_callback> call_depth_scope(isolate, context);    \
-  LOG_API(isolate, class_name, function_name);                       \
-  i::VMState<v8::OTHER> __state__((isolate));                        \
+#define ENTER_V8_HELPER_DO_NOT_USE(isolate, context, class_name,  \
+                                   function_name, bailout_value,  \
+                                   HandleScopeClass, do_callback) \
+  if (IsExecutionTerminatingCheck(isolate)) {                     \
+    return bailout_value;                                         \
+  }                                                               \
+  HandleScopeClass handle_scope(isolate);                         \
+  CallDepthScope<do_callback> call_depth_scope(isolate, context); \
+  LOG_API(isolate, class_name, function_name);                    \
+  i::VMState<v8::OTHER> __state__((isolate));                     \
   bool has_pending_exception = false
 
 #define PREPARE_FOR_DEBUG_INTERFACE_EXECUTION_WITH_ISOLATE(isolate, T)       \
@@ -114,18 +134,8 @@ namespace v8 {
   auto isolate = context.IsEmpty()                                             \
                      ? i::Isolate::Current()                                   \
                      : reinterpret_cast<i::Isolate*>(context->GetIsolate());   \
-  PREPARE_FOR_EXECUTION_GENERIC(isolate, context, class_name, function_name,   \
-                                bailout_value, HandleScopeClass, do_callback);
-
-#define PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(      \
-    category, name, context, class_name, function_name, bailout_value,       \
-    HandleScopeClass, do_callback)                                           \
-  auto isolate = context.IsEmpty()                                           \
-                     ? i::Isolate::Current()                                 \
-                     : reinterpret_cast<i::Isolate*>(context->GetIsolate()); \
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, category, name);                    \
-  PREPARE_FOR_EXECUTION_GENERIC(isolate, context, class_name, function_name, \
-                                bailout_value, HandleScopeClass, do_callback);
+  ENTER_V8_HELPER_DO_NOT_USE(isolate, context, class_name, function_name,      \
+                             bailout_value, HandleScopeClass, do_callback);
 
 #define PREPARE_FOR_EXECUTION(context, class_name, function_name, T)          \
   PREPARE_FOR_EXECUTION_WITH_CONTEXT(context, class_name, function_name,      \
@@ -142,7 +152,18 @@ namespace v8 {
   PREPARE_FOR_EXECUTION_WITH_CONTEXT(context, class_name, function_name,       \
                                      Nothing<T>(), i::HandleScope, false)
 
+#define ENTER_V8(isolate, context, class_name, function_name, bailout_value, \
+                 HandleScopeClass)                                           \
+  ENTER_V8_HELPER_DO_NOT_USE(isolate, context, class_name, function_name,    \
+                             bailout_value, HandleScopeClass, true)
+
 #ifdef DEBUG
+#define ENTER_V8_NO_SCRIPT(isolate, context, class_name, function_name,   \
+                           bailout_value, HandleScopeClass)               \
+  ENTER_V8_HELPER_DO_NOT_USE(isolate, context, class_name, function_name, \
+                             bailout_value, HandleScopeClass, false);     \
+  i::DisallowJavascriptExecutionDebugOnly __no_script__((isolate))
+
 #define ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate)                    \
   i::VMState<v8::OTHER> __state__((isolate));                       \
   i::DisallowJavascriptExecutionDebugOnly __no_script__((isolate)); \
@@ -152,6 +173,11 @@ namespace v8 {
   i::VMState<v8::OTHER> __state__((isolate)); \
   i::DisallowExceptions __no_exceptions__((isolate))
 #else
+#define ENTER_V8_NO_SCRIPT(isolate, context, class_name, function_name,   \
+                           bailout_value, HandleScopeClass)               \
+  ENTER_V8_HELPER_DO_NOT_USE(isolate, context, class_name, function_name, \
+                             bailout_value, HandleScopeClass, false)
+
 #define ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate) \
   i::VMState<v8::OTHER> __state__((isolate));
 
@@ -159,21 +185,19 @@ namespace v8 {
   i::VMState<v8::OTHER> __state__((isolate));
 #endif  // DEBUG
 
-#define EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, value) \
-  do {                                                 \
-    if (has_pending_exception) {                       \
-      call_depth_scope.Escape();                       \
-      return value;                                    \
-    }                                                  \
+#define EXCEPTION_BAILOUT_CHECK_SCOPED_DO_NOT_USE(isolate, value) \
+  do {                                                            \
+    if (has_pending_exception) {                                  \
+      call_depth_scope.Escape();                                  \
+      return value;                                               \
+    }                                                             \
   } while (false)
 
-
 #define RETURN_ON_FAILED_EXECUTION(T) \
-  EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, MaybeLocal<T>())
-
+  EXCEPTION_BAILOUT_CHECK_SCOPED_DO_NOT_USE(isolate, MaybeLocal<T>())
 
 #define RETURN_ON_FAILED_EXECUTION_PRIMITIVE(T) \
-  EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, Nothing<T>())
+  EXCEPTION_BAILOUT_CHECK_SCOPED_DO_NOT_USE(isolate, Nothing<T>())
 
 #define RETURN_TO_LOCAL_UNCHECKED(maybe_local, T) \
   return maybe_local.FromMaybe(Local<T>());
@@ -195,8 +219,8 @@ class InternalEscapableScope : public v8::EscapableHandleScope {
       : v8::EscapableHandleScope(reinterpret_cast<v8::Isolate*>(isolate)) {}
 };
 
-
-#ifdef DEBUG
+// TODO(jochen): This should be #ifdef DEBUG
+#ifdef V8_CHECK_MICROTASKS_SCOPES_CONSISTENCY
 void CheckMicrotasksScopesConsistency(i::Isolate* isolate) {
   auto handle_scope_implementer = isolate->handle_scope_implementer();
   if (handle_scope_implementer->microtasks_policy() ==
@@ -235,7 +259,8 @@ class CallDepthScope {
     }
     if (!escaped_) isolate_->handle_scope_implementer()->DecrementCallDepth();
     if (do_callback) isolate_->FireCallCompletedCallback();
-#ifdef DEBUG
+// TODO(jochen): This should be #ifdef DEBUG
+#ifdef V8_CHECK_MICROTASKS_SCOPES_CONSISTENCY
     if (do_callback) CheckMicrotasksScopesConsistency(isolate_);
 #endif
   }
@@ -2017,9 +2042,10 @@ Local<Value> UnboundScript::GetSourceMappingURL() {
 
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
-      "v8", "V8.Execute", context, Script, Run, MaybeLocal<Value>(),
-      InternalEscapableScope, true);
+  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
+  ENTER_V8(isolate, context, Script, Run, MaybeLocal<Value>(),
+           InternalEscapableScope);
   i::HistogramTimerScope execute_timer(isolate->counters()->execute(), true);
   i::AggregatingHistogramTimerScope timer(isolate->counters()->compile_lazy());
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
@@ -2118,9 +2144,10 @@ Maybe<bool> Module::InstantiateModule(Local<Context> context,
 }
 
 MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
-      "v8", "V8.Execute", context, Module, Evaluate, MaybeLocal<Value>(),
-      InternalEscapableScope, true);
+  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
+  ENTER_V8(isolate, context, Module, Evaluate, MaybeLocal<Value>(),
+           InternalEscapableScope);
   i::HistogramTimerScope execute_timer(isolate->counters()->execute(), true);
   i::AggregatingHistogramTimerScope timer(isolate->counters()->compile_lazy());
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
@@ -2137,10 +2164,11 @@ MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
 
 MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundInternal(
     Isolate* v8_isolate, Source* source, CompileOptions options) {
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
-      "v8", "V8.ScriptCompiler", v8_isolate->GetCurrentContext(),
-      ScriptCompiler, CompileUnbound, MaybeLocal<UnboundScript>(),
-      InternalEscapableScope, false);
+  auto isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.ScriptCompiler");
+  ENTER_V8_NO_SCRIPT(isolate, v8_isolate->GetCurrentContext(), ScriptCompiler,
+                     CompileUnbound, MaybeLocal<UnboundScript>(),
+                     InternalEscapableScope);
 
   // Don't try to produce any kind of cache when the debugger is loaded.
   if (isolate->debug()->is_loaded() &&
@@ -5107,9 +5135,10 @@ bool v8::Object::IsConstructor() {
 MaybeLocal<Value> Object::CallAsFunction(Local<Context> context,
                                          Local<Value> recv, int argc,
                                          Local<Value> argv[]) {
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
-      "v8", "V8.Execute", context, Object, CallAsFunction, MaybeLocal<Value>(),
-      InternalEscapableScope, true);
+  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
+  ENTER_V8(isolate, context, Object, CallAsFunction, MaybeLocal<Value>(),
+           InternalEscapableScope);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   auto self = Utils::OpenHandle(this);
   auto recv_obj = Utils::OpenHandle(*recv);
@@ -5134,9 +5163,10 @@ Local<v8::Value> Object::CallAsFunction(v8::Local<v8::Value> recv, int argc,
 
 MaybeLocal<Value> Object::CallAsConstructor(Local<Context> context, int argc,
                                             Local<Value> argv[]) {
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
-      "v8", "V8.Execute", context, Object, CallAsConstructor,
-      MaybeLocal<Value>(), InternalEscapableScope, true);
+  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
+  ENTER_V8(isolate, context, Object, CallAsConstructor, MaybeLocal<Value>(),
+           InternalEscapableScope);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   auto self = Utils::OpenHandle(this);
   STATIC_ASSERT(sizeof(v8::Local<v8::Value>) == sizeof(i::Object**));
@@ -5185,9 +5215,10 @@ Local<v8::Object> Function::NewInstance() const {
 
 MaybeLocal<Object> Function::NewInstance(Local<Context> context, int argc,
                                          v8::Local<v8::Value> argv[]) const {
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
-      "v8", "V8.Execute", context, Function, NewInstance, MaybeLocal<Object>(),
-      InternalEscapableScope, true);
+  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
+  ENTER_V8(isolate, context, Function, NewInstance, MaybeLocal<Object>(),
+           InternalEscapableScope);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   auto self = Utils::OpenHandle(this);
   STATIC_ASSERT(sizeof(v8::Local<v8::Value>) == sizeof(i::Object**));
@@ -5210,9 +5241,10 @@ Local<v8::Object> Function::NewInstance(int argc,
 MaybeLocal<v8::Value> Function::Call(Local<Context> context,
                                      v8::Local<v8::Value> recv, int argc,
                                      v8::Local<v8::Value> argv[]) {
-  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
-      "v8", "V8.Execute", context, Function, Call, MaybeLocal<Value>(),
-      InternalEscapableScope, true);
+  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
+  ENTER_V8(isolate, context, Function, Call, MaybeLocal<Value>(),
+           InternalEscapableScope);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   auto self = Utils::OpenHandle(this);
   i::Handle<i::Object> recv_obj = Utils::OpenHandle(*recv);
@@ -8111,6 +8143,10 @@ void Isolate::ReportExternalAllocationLimitReached() {
   heap->ReportExternalMemoryPressure();
 }
 
+void Isolate::CheckMemoryPressure() {
+  i::Heap* heap = reinterpret_cast<i::Isolate*>(this)->heap();
+  heap->CheckMemoryPressure();
+}
 
 HeapProfiler* Isolate::GetHeapProfiler() {
   i::HeapProfiler* heap_profiler =
@@ -8224,6 +8260,12 @@ void V8::AddGCEpilogueCallback(GCCallback callback, GCType gc_type) {
 void Isolate::SetEmbedderHeapTracer(EmbedderHeapTracer* tracer) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   isolate->heap()->SetEmbedderHeapTracer(tracer);
+}
+
+void Isolate::SetGetExternallyAllocatedMemoryInBytesCallback(
+    GetExternallyAllocatedMemoryInBytesCallback callback) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->heap()->SetGetExternallyAllocatedMemoryInBytesCallback(callback);
 }
 
 void Isolate::TerminateExecution() {
@@ -8834,6 +8876,9 @@ CALLBACK_SETTER(WasmCompileCallback, ExtensionCallback, wasm_compile_callback)
 CALLBACK_SETTER(WasmInstanceCallback, ExtensionCallback, wasm_instance_callback)
 CALLBACK_SETTER(WasmInstantiateCallback, ExtensionCallback,
                 wasm_instantiate_callback)
+
+CALLBACK_SETTER(WasmCompileStreamingCallback, ApiImplementationCallback,
+                wasm_compile_streaming_callback)
 
 bool Isolate::IsDead() {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);

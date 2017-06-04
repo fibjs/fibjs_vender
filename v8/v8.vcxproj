@@ -110,6 +110,7 @@
     <ClInclude Include="src\base\safe_math.h" />
     <ClInclude Include="src\base\safe_math_impl.h" />
     <ClInclude Include="src\base\sys-info.h" />
+    <ClInclude Include="src\base\template-utils.h" />
     <ClInclude Include="src\base\timezone-cache.h" />
     <ClInclude Include="src\base\utils\random-number-generator.h" />
     <ClInclude Include="src\base\win32-headers.h" />
@@ -511,6 +512,8 @@
     <ClInclude Include="src\objects\object-macros.h" />
     <ClInclude Include="src\objects\regexp-match-info.h" />
     <ClInclude Include="src\objects\scope-info.h" />
+    <ClInclude Include="src\objects\script-inl.h" />
+    <ClInclude Include="src\objects\script.h" />
     <ClInclude Include="src\objects\shared-function-info-inl.h" />
     <ClInclude Include="src\objects\shared-function-info.h" />
     <ClInclude Include="src\objects\string-table.h" />

@@ -190,6 +190,19 @@ void AssemblerBase::Print(Isolate* isolate) {
   v8::internal::Disassembler::Decode(isolate, &os, buffer_, pc_, nullptr);
 }
 
+AssemblerBase::RequestedHeapNumber::RequestedHeapNumber(double value,
+                                                        int offset)
+    : value(value), offset(offset) {
+  DCHECK(!IsSmiDouble(value));
+}
+
+void AssemblerBase::AllocateRequestedHeapNumbers(Isolate* isolate) {
+  for (auto& heap_number : heap_numbers_) {
+    Handle<HeapObject> object = isolate->factory()->NewHeapNumber(
+        heap_number.value, IMMUTABLE, TENURED);
+    Assembler::set_heap_number(object, buffer_ + heap_number.offset);
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Implementation of PredictableCodeSizeScope
@@ -1576,6 +1589,20 @@ ExternalReference ExternalReference::search_string_raw(Isolate* isolate) {
   return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f)));
 }
 
+template <typename CollectionType, int entrysize>
+ExternalReference ExternalReference::orderedhashtable_get_raw(
+    Isolate* isolate) {
+  auto f = OrderedHashTable<CollectionType, entrysize>::Get;
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f)));
+}
+
+template <typename CollectionType, int entrysize>
+ExternalReference ExternalReference::orderedhashtable_has_raw(
+    Isolate* isolate) {
+  auto f = OrderedHashTable<CollectionType, entrysize>::HasKey;
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f)));
+}
+
 ExternalReference ExternalReference::try_internalize_string_function(
     Isolate* isolate) {
   return ExternalReference(Redirect(
@@ -1605,6 +1632,16 @@ template ExternalReference
 ExternalReference::search_string_raw<const uc16, const uint8_t>(Isolate*);
 template ExternalReference
 ExternalReference::search_string_raw<const uc16, const uc16>(Isolate*);
+
+template ExternalReference
+ExternalReference::orderedhashtable_get_raw<OrderedHashMap, 2>(Isolate*);
+template ExternalReference
+ExternalReference::orderedhashtable_get_raw<OrderedHashSet, 1>(Isolate*);
+
+template ExternalReference
+ExternalReference::orderedhashtable_has_raw<OrderedHashMap, 2>(Isolate*);
+template ExternalReference
+ExternalReference::orderedhashtable_has_raw<OrderedHashSet, 1>(Isolate*);
 
 ExternalReference ExternalReference::page_flags(Page* page) {
   return ExternalReference(reinterpret_cast<Address>(page) +
@@ -1991,5 +2028,6 @@ void Assembler::DataAlign(int m) {
     db(0);
   }
 }
+
 }  // namespace internal
 }  // namespace v8

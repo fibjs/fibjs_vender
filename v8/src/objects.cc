@@ -1371,6 +1371,11 @@ MaybeHandle<Object> Object::GetPropertyWithAccessor(LookupIterator* it) {
   Isolate* isolate = it->isolate();
   Handle<Object> structure = it->GetAccessors();
   Handle<Object> receiver = it->GetReceiver();
+  // In case of global IC, the receiver is the global object. Replace by the
+  // global proxy.
+  if (receiver->IsJSGlobalObject()) {
+    receiver = handle(JSGlobalObject::cast(*receiver)->global_proxy(), isolate);
+  }
 
   // We should never get here to initialize a const with the hole value since a
   // const declaration would conflict with the getter.
@@ -1463,6 +1468,11 @@ Maybe<bool> Object::SetPropertyWithAccessor(LookupIterator* it,
   Isolate* isolate = it->isolate();
   Handle<Object> structure = it->GetAccessors();
   Handle<Object> receiver = it->GetReceiver();
+  // In case of global IC, the receiver is the global object. Replace by the
+  // global proxy.
+  if (receiver->IsJSGlobalObject()) {
+    receiver = handle(JSGlobalObject::cast(*receiver)->global_proxy(), isolate);
+  }
 
   // We should never get here to initialize a const with the hole value since a
   // const declaration would conflict with the setter.
@@ -7387,7 +7397,8 @@ bool JSObject::ReferencesObject(Object* obj) {
     }
 
     // Check the context extension (if any) if it can have references.
-    if (context->has_extension() && !context->IsCatchContext()) {
+    if (context->has_extension() && !context->IsCatchContext() &&
+        !context->IsModuleContext()) {
       // With harmony scoping, a JSFunction may have a script context.
       // TODO(mvstanton): walk into the ScopeInfo.
       if (context->IsScriptContext()) {
@@ -12128,14 +12139,15 @@ static void GetMinInobjectSlack(Map* map, void* data) {
 
 
 static void ShrinkInstanceSize(Map* map, void* data) {
+#ifdef DEBUG
+  int old_visitor_id = Heap::GetStaticVisitorIdForMap(map);
+#endif
   int slack = *reinterpret_cast<int*>(data);
   map->SetInObjectProperties(map->GetInObjectProperties() - slack);
   map->set_unused_property_fields(map->unused_property_fields() - slack);
   map->set_instance_size(map->instance_size() - slack * kPointerSize);
   map->set_construction_counter(Map::kNoSlackTracking);
-
-  // Visitor id might depend on the instance size, recalculate it.
-  map->set_visitor_id(Heap::GetStaticVisitorIdForMap(map));
+  DCHECK_EQ(old_visitor_id, Heap::GetStaticVisitorIdForMap(map));
 }
 
 static void StopSlackTracking(Map* map, void* data) {
@@ -13375,6 +13387,14 @@ void SharedFunctionInfo::SetScript(Handle<SharedFunctionInfo> shared,
 
   // Finally set new script.
   shared->set_script(*script_object);
+}
+
+bool SharedFunctionInfo::HasBreakInfo() const {
+  if (!HasDebugInfo()) return false;
+  DebugInfo* info = DebugInfo::cast(debug_info());
+  bool has_break_info = info->HasBreakInfo();
+  DCHECK_IMPLIES(has_break_info, HasDebugCode());
+  return has_break_info;
 }
 
 DebugInfo* SharedFunctionInfo::GetDebugInfo() const {
@@ -18733,21 +18753,36 @@ Handle<Derived> OrderedHashTable<Derived, entrysize>::Clear(
 }
 
 template <class Derived, int entrysize>
-bool OrderedHashTable<Derived, entrysize>::HasKey(Handle<Derived> table,
-                                                  Handle<Object> key) {
+Object* OrderedHashTable<Derived, entrysize>::HasKey(Isolate* isolate,
+                                                     Derived* table,
+                                                     Object* key) {
   DisallowHeapAllocation no_gc;
-  Isolate* isolate = table->GetIsolate();
-  Object* raw_key = *key;
-  int entry = table->KeyToFirstEntry(isolate, raw_key);
+  int entry = table->KeyToFirstEntry(isolate, key);
   // Walk the chain in the bucket to find the key.
   while (entry != kNotFound) {
     Object* candidate_key = table->KeyAt(entry);
-    if (candidate_key->SameValueZero(raw_key)) return true;
+    if (candidate_key->SameValueZero(key)) return isolate->heap()->true_value();
     entry = table->NextChainEntry(entry);
   }
-  return false;
+  return isolate->heap()->false_value();
 }
 
+template <class Derived, int entrysize>
+Object* OrderedHashTable<Derived, entrysize>::Get(Isolate* isolate,
+                                                  Derived* table, Object* key) {
+  DCHECK(table->IsOrderedHashTable());
+  DisallowHeapAllocation no_gc;
+  int entry = table->KeyToFirstEntry(isolate, key);
+  // Walk the chain in the bucket to find the key.
+  while (entry != kNotFound) {
+    Object* candidate_key = table->KeyAt(entry);
+    if (candidate_key->SameValueZero(key)) {
+      return table->ValueAt(entry);
+    }
+    entry = table->NextChainEntry(entry);
+  }
+  return isolate->heap()->undefined_value();
+}
 
 Handle<OrderedHashSet> OrderedHashSet::Add(Handle<OrderedHashSet> table,
                                            Handle<Object> key) {
@@ -18860,8 +18895,12 @@ template Handle<OrderedHashSet> OrderedHashTable<OrderedHashSet, 1>::Shrink(
 template Handle<OrderedHashSet> OrderedHashTable<OrderedHashSet, 1>::Clear(
     Handle<OrderedHashSet> table);
 
-template bool OrderedHashTable<OrderedHashSet, 1>::HasKey(
-    Handle<OrderedHashSet> table, Handle<Object> key);
+template Object* OrderedHashTable<OrderedHashSet, 1>::HasKey(
+    Isolate* isolate, OrderedHashSet* table, Object* key);
+
+template Object* OrderedHashTable<OrderedHashSet, 1>::Get(Isolate* isolate,
+                                                          OrderedHashSet* table,
+                                                          Object* key);
 
 template Handle<OrderedHashMap> OrderedHashTable<OrderedHashMap, 2>::Allocate(
     Isolate* isolate, int capacity, PretenureFlag pretenure);
@@ -18875,9 +18914,12 @@ template Handle<OrderedHashMap> OrderedHashTable<OrderedHashMap, 2>::Shrink(
 template Handle<OrderedHashMap> OrderedHashTable<OrderedHashMap, 2>::Clear(
     Handle<OrderedHashMap> table);
 
-template bool OrderedHashTable<OrderedHashMap, 2>::HasKey(
-    Handle<OrderedHashMap> table, Handle<Object> key);
+template Object* OrderedHashTable<OrderedHashMap, 2>::HasKey(
+    Isolate* isolate, OrderedHashMap* table, Object* key);
 
+template Object* OrderedHashTable<OrderedHashMap, 2>::Get(Isolate* isolate,
+                                                          OrderedHashMap* table,
+                                                          Object* key);
 template <>
 Handle<SmallOrderedHashSet>
 SmallOrderedHashTable<SmallOrderedHashSet>::Allocate(Isolate* isolate,
@@ -19625,9 +19667,10 @@ Handle<JSArrayBuffer> JSTypedArray::MaterializeArrayBuffer(
   // registration method below handles the case of registering a buffer that has
   // already been promoted.
   buffer->set_backing_store(backing_store);
-  isolate->heap()->RegisterNewArrayBuffer(*buffer);
   buffer->set_allocation_base(backing_store);
   buffer->set_allocation_length(NumberToSize(buffer->byte_length()));
+  // RegisterNewArrayBuffer expects a valid length for adjusting counters.
+  isolate->heap()->RegisterNewArrayBuffer(*buffer);
   memcpy(buffer->backing_store(),
          fixed_typed_array->DataPtr(),
          fixed_typed_array->DataSize());

@@ -540,6 +540,8 @@ namespace internal {
                                                                                \
   /* Map */                                                                    \
   TFJ(MapConstructor, 1, kIterable)                                            \
+  TFJ(MapGet, 1, kKey)                                                         \
+  TFJ(MapHas, 1, kKey)                                                         \
                                                                                \
   /* Math */                                                                   \
   /* ES6 #sec-math.abs */                                                      \
@@ -812,6 +814,9 @@ namespace internal {
   TFS(RegExpSplit, kRegExp, kString, kLimit)                                   \
   /* ES #sec-regexp.prototype-@@split */                                       \
   TFJ(RegExpPrototypeSplit, SharedFunctionInfo::kDontAdaptArgumentsSentinel)   \
+                                                                               \
+  /* Set */                                                                    \
+  TFJ(SetHas, 1, kKey)                                                         \
                                                                                \
   /* SharedArrayBuffer */                                                      \
   CPP(SharedArrayBufferPrototypeGetByteLength)                                 \

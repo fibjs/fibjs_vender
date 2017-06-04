@@ -41,6 +41,7 @@
 #include "src/heap/scavenger-inl.h"
 #include "src/heap/store-buffer.h"
 #include "src/interpreter/interpreter.h"
+#include "src/objects/object-macros.h"
 #include "src/objects/shared-function-info.h"
 #include "src/regexp/jsregexp.h"
 #include "src/runtime-profiler.h"
@@ -381,6 +382,8 @@ void Heap::PrintShortHeapStatistics() {
                this->CommittedMemory() / KB);
   PrintIsolate(isolate_, "External memory reported: %6" PRId64 " KB\n",
                external_memory_ / KB);
+  PrintIsolate(isolate_, "External memory global %zu KB\n",
+               external_memory_callback_() / KB);
   PrintIsolate(isolate_, "Total time spent in GC  : %.1f ms\n",
                total_gc_time_ms_);
 }
@@ -963,7 +966,6 @@ void Heap::ReportExternalMemoryPressure() {
         IncrementalMarking::FORCE_COMPLETION, StepOrigin::kV8);
   }
 }
-
 
 void Heap::EnsureFillerObjectAtTop() {
   // There may be an allocation memento behind objects in new space. Upon
@@ -3172,7 +3174,11 @@ void Heap::AdjustLiveBytes(HeapObject* object, int by) {
              !mark_compact_collector()->sweeping_in_progress() &&
              ObjectMarking::IsBlack(object, MarkingState::Internal(object))) {
     DCHECK(MemoryChunk::FromAddress(object->address())->SweepingDone());
+#ifdef V8_CONCURRENT_MARKING
+    MarkingState::Internal(object).IncrementLiveBytes<MarkBit::ATOMIC>(by);
+#else
     MarkingState::Internal(object).IncrementLiveBytes(by);
+#endif
   }
 }
 
@@ -3204,14 +3210,9 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
   Address old_start = object->address();
   Address new_start = old_start + bytes_to_trim;
 
-  // Transfer the mark bits to their new location if the object is not within
-  // a black area.
-  if (!incremental_marking()->black_allocation() ||
-      !Marking::IsBlack(ObjectMarking::MarkBitFrom(
-          HeapObject::FromAddress(new_start),
-          MarkingState::Internal(HeapObject::FromAddress(new_start))))) {
-    incremental_marking()->TransferMark(this, object,
-                                        HeapObject::FromAddress(new_start));
+  if (incremental_marking()->IsMarking()) {
+    incremental_marking()->NotifyLeftTrimming(
+        object, HeapObject::FromAddress(new_start));
   }
 
   // Technically in new space this write might be omitted (except for
@@ -3222,10 +3223,9 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
   // Initialize header of the trimmed array. Since left trimming is only
   // performed on pages which are not concurrently swept creating a filler
   // object does not require synchronization.
-  Object** former_start = HeapObject::RawField(object, 0);
-  int new_start_index = elements_to_trim * (element_size / kPointerSize);
-  former_start[new_start_index] = map;
-  former_start[new_start_index + 1] = Smi::FromInt(len - elements_to_trim);
+  RELAXED_WRITE_FIELD(object, bytes_to_trim, map);
+  RELAXED_WRITE_FIELD(object, bytes_to_trim + kPointerSize,
+                      Smi::FromInt(len - elements_to_trim));
 
   FixedArrayBase* new_object =
       FixedArrayBase::cast(HeapObject::FromAddress(new_start));
@@ -4516,10 +4516,12 @@ void Heap::CheckMemoryPressure() {
                               GarbageCollectionReason::kMemoryPressure);
     }
   }
-  MemoryReducer::Event event;
-  event.type = MemoryReducer::kPossibleGarbage;
-  event.time_ms = MonotonicallyIncreasingTimeInMs();
-  memory_reducer_->NotifyPossibleGarbage(event);
+  if (memory_reducer_) {
+    MemoryReducer::Event event;
+    event.type = MemoryReducer::kPossibleGarbage;
+    event.time_ms = MonotonicallyIncreasingTimeInMs();
+    memory_reducer_->NotifyPossibleGarbage(event);
+  }
 }
 
 void Heap::CollectGarbageOnMemoryPressure() {
@@ -5178,7 +5180,7 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
       // Global handles are processed manually be the minor MC.
       break;
     case VISIT_ALL_IN_MINOR_MC_UPDATE:
-      isolate_->global_handles()->IterateAllNewSpaceRoots(v);
+      // Global handles are processed manually be the minor MC.
       break;
     case VISIT_ALL_IN_SWEEP_NEWSPACE:
     case VISIT_ALL:
@@ -5738,6 +5740,9 @@ bool Heap::SetUp() {
   idle_scavenge_observer_ = new IdleScavengeObserver(
       *this, ScavengeJob::kBytesAllocatedBeforeNextIdleTask);
   new_space()->AddAllocationObserver(idle_scavenge_observer_);
+
+  SetGetExternallyAllocatedMemoryInBytesCallback(
+      DefaultGetExternallyAllocatedMemoryInBytesCallback);
 
   return true;
 }
