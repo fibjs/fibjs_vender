@@ -183,7 +183,7 @@
 
 #ifdef Linux
 /* Have eventfd extension. */
-#define ZMQ_HAVE_EVENTFD 1
+// #define ZMQ_HAVE_EVENTFD 1
 
 /* Whether SOCK_CLOEXEC is defined and functioning. */
 #define ZMQ_HAVE_SOCK_CLOEXEC 1
