@@ -139,7 +139,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
       // Allocate the new receiver object.
       __ Push(edi);
       __ Push(edx);
-      __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+      __ Call(Builtins::CallableFor(masm->isolate(), Builtins::kFastNewObject)
+                  .code(),
               RelocInfo::CODE_TARGET);
       __ mov(ebx, eax);
       __ Pop(edx);
@@ -434,7 +435,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   {
     Label done_loop, loop;
     __ bind(&loop);
-    __ sub(ecx, Immediate(Smi::FromInt(1)));
+    __ sub(ecx, Immediate(1));
     __ j(carry, &done_loop, Label::kNear);
     __ PushRoot(Heap::kTheHoleValueRootIndex);
     __ jmp(&loop);
@@ -1120,8 +1121,8 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ pop(argument_count);
   __ mov(entry, FieldOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   // Is the shared function marked for tier up?
-  __ test_b(FieldOperand(entry, SharedFunctionInfo::kMarkedForTierUpByteOffset),
-            Immediate(1 << SharedFunctionInfo::kMarkedForTierUpBitWithinByte));
+  __ test(FieldOperand(entry, SharedFunctionInfo::kCompilerHintsOffset),
+          Immediate(SharedFunctionInfo::MarkedForTierUpBit::kMask));
   __ j(not_zero, &gotta_call_runtime_no_stack);
 
   // If SFI points to anything other than CompileLazy, install that.
@@ -1799,7 +1800,7 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::MANUAL);
     __ EnterBuiltinFrame(esi, edi, ecx);
     __ Push(ebx);  // the first argument
-    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+    __ Call(masm->isolate()->builtins()->FastNewObject(),
             RelocInfo::CODE_TARGET);
     __ Pop(FieldOperand(eax, JSValue::kValueOffset));
     __ LeaveBuiltinFrame(esi, edi, ecx);
@@ -1962,7 +1963,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ SmiTag(ebx);
     __ EnterBuiltinFrame(esi, edi, ebx);
     __ Push(eax);  // the first argument
-    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+    __ Call(masm->isolate()->builtins()->FastNewObject(),
             RelocInfo::CODE_TARGET);
     __ Pop(FieldOperand(eax, JSValue::kValueOffset));
     __ LeaveBuiltinFrame(esi, edi, ebx);
@@ -2207,11 +2208,11 @@ void Builtins::Generate_CallForwardVarargs(MacroAssembler* masm,
   {
     // Just load the length from the ArgumentsAdaptorFrame.
     __ mov(eax, Operand(ebx, ArgumentsAdaptorFrameConstants::kLengthOffset));
+    __ SmiUntag(eax);
   }
   __ bind(&arguments_done);
 
   Label stack_empty, stack_done;
-  __ SmiUntag(eax);
   __ sub(eax, ecx);
   __ j(less_equal, &stack_empty);
   {
@@ -2338,7 +2339,6 @@ void PrepareForTailCall(MacroAssembler* masm, Register args_reg,
   __ mov(
       caller_args_count_reg,
       FieldOperand(scratch1, SharedFunctionInfo::kFormalParameterCountOffset));
-  __ SmiUntag(caller_args_count_reg);
 
   __ bind(&formal_parameter_count_loaded);
 
@@ -2363,21 +2363,19 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   // Check that the function is not a "classConstructor".
   Label class_constructor;
   __ mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-  __ test_b(FieldOperand(edx, SharedFunctionInfo::kFunctionKindByteOffset),
-            Immediate(SharedFunctionInfo::kClassConstructorBitsWithinByte));
+  __ test(FieldOperand(edx, SharedFunctionInfo::kCompilerHintsOffset),
+          Immediate(SharedFunctionInfo::kClassConstructorMask));
   __ j(not_zero, &class_constructor);
 
   // Enter the context of the function; ToObject has to run in the function
   // context, and we also need to take the global proxy from the function
   // context in case of conversion.
-  STATIC_ASSERT(SharedFunctionInfo::kNativeByteOffset ==
-                SharedFunctionInfo::kStrictModeByteOffset);
   __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
   // We need to convert the receiver for non-native sloppy mode functions.
   Label done_convert;
-  __ test_b(FieldOperand(edx, SharedFunctionInfo::kNativeByteOffset),
-            Immediate((1 << SharedFunctionInfo::kNativeBitWithinByte) |
-                      (1 << SharedFunctionInfo::kStrictModeBitWithinByte)));
+  __ test(FieldOperand(edx, SharedFunctionInfo::kCompilerHintsOffset),
+          Immediate(SharedFunctionInfo::IsNativeBit::kMask |
+                    SharedFunctionInfo::IsStrictBit::kMask));
   __ j(not_zero, &done_convert);
   {
     // ----------- S t a t e -------------
@@ -2451,7 +2449,6 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
 
   __ mov(ebx,
          FieldOperand(edx, SharedFunctionInfo::kFormalParameterCountOffset));
-  __ SmiUntag(ebx);
   ParameterCount actual(eax);
   ParameterCount expected(ebx);
   __ InvokeFunctionCode(edi, no_reg, expected, actual, JUMP_FUNCTION,

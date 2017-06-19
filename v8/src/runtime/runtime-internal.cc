@@ -303,7 +303,6 @@ RUNTIME_FUNCTION(Runtime_ThrowApplyNonFunction) {
       isolate, NewTypeError(MessageTemplate::kApplyNonFunction, object, type));
 }
 
-
 RUNTIME_FUNCTION(Runtime_StackGuard) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(0, args.length());
@@ -374,7 +373,6 @@ RUNTIME_FUNCTION(Runtime_AllocateSeqTwoByteString) {
 
 RUNTIME_FUNCTION(Runtime_IS_VAR) {
   UNREACHABLE();  // implemented as macro in the parser
-  return NULL;
 }
 
 
@@ -406,10 +404,10 @@ bool ComputeLocation(Isolate* isolate, MessageLocation* target) {
 Handle<String> RenderCallSite(Isolate* isolate, Handle<Object> object) {
   MessageLocation location;
   if (ComputeLocation(isolate, &location)) {
-    std::unique_ptr<ParseInfo> info(new ParseInfo(location.shared()));
-    if (parsing::ParseAny(info.get(), isolate)) {
+    ParseInfo info(location.shared());
+    if (parsing::ParseAny(&info, isolate)) {
       CallPrinter printer(isolate, location.shared()->IsUserJavaScript());
-      Handle<String> str = printer.Print(info->literal(), location.start_pos());
+      Handle<String> str = printer.Print(info.literal(), location.start_pos());
       if (str->length() > 0) return str;
     } else {
       isolate->clear_pending_exception();

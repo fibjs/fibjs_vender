@@ -52,6 +52,7 @@
 #include "src/version.h"
 #include "src/visitors.h"
 #include "src/vm-state-inl.h"
+#include "src/wasm/compilation-manager.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects.h"
 #include "src/zone/accounting-allocator.h"
@@ -496,6 +497,7 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
 
     switch (frame->type()) {
       case StackFrame::JAVA_SCRIPT:
+      case StackFrame::JAVA_SCRIPT_BUILTIN_CONTINUATION:
       case StackFrame::OPTIMIZED:
       case StackFrame::INTERPRETED:
       case StackFrame::BUILTIN: {
@@ -516,18 +518,18 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
           Handle<AbstractCode> abstract_code = summ.abstract_code();
           const int offset = frames[i].code_offset();
 
-          bool force_constructor = false;
+          bool is_constructor = frames[i].is_constructor();
           if (frame->type() == StackFrame::BUILTIN) {
             // Help CallSite::IsConstructor correctly detect hand-written
             // construct stubs.
             if (Code::cast(*abstract_code)->is_construct_stub()) {
-              force_constructor = true;
+              is_constructor = true;
             }
           }
 
           int flags = 0;
           if (helper.IsStrictFrame(*fun)) flags |= FrameArray::kIsStrict;
-          if (force_constructor) flags |= FrameArray::kForceConstructor;
+          if (is_constructor) flags |= FrameArray::kIsConstructor;
 
           elements = FrameArray::AppendJSFrame(
               elements, TheHoleToUndefined(this, recv), fun, abstract_code,
@@ -549,7 +551,7 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
 
         int flags = 0;
         if (helper.IsStrictFrame(*fun)) flags |= FrameArray::kIsStrict;
-        if (exit_frame->IsConstructor()) flags |= FrameArray::kForceConstructor;
+        if (exit_frame->IsConstructor()) flags |= FrameArray::kIsConstructor;
 
         elements = FrameArray::AppendJSFrame(elements, recv, fun,
                                              Handle<AbstractCode>::cast(code),
@@ -2288,9 +2290,7 @@ Isolate::Isolate(bool enable_serializer)
       bootstrapper_(NULL),
       runtime_profiler_(NULL),
       compilation_cache_(NULL),
-      counters_(NULL),
       logger_(NULL),
-      stats_table_(NULL),
       load_stub_cache_(NULL),
       store_stub_cache_(NULL),
       code_aging_helper_(NULL),
@@ -2342,6 +2342,7 @@ Isolate::Isolate(bool enable_serializer)
       use_counter_callback_(NULL),
       basic_block_profiler_(NULL),
       cancelable_task_manager_(new CancelableTaskManager()),
+      wasm_compilation_manager_(new wasm::CompilationManager()),
       abort_on_uncaught_exception_callback_(NULL),
       total_regexp_code_generated_(0) {
   {
@@ -2432,16 +2433,13 @@ void Isolate::Deinit() {
 
   debug()->Unload();
 
-  FreeThreadResources();
-  // Release managed objects before shutting down the heap. The finalizer might
-  // need to access heap objects.
-  ReleaseManagedObjects();
-
   if (concurrent_recompilation_enabled()) {
     optimizing_compile_dispatcher_->Stop();
     delete optimizing_compile_dispatcher_;
     optimizing_compile_dispatcher_ = NULL;
   }
+
+  wasm_compilation_manager_->TearDown();
 
   heap_.mark_compact_collector()->EnsureSweepingCompleted();
 
@@ -2458,6 +2456,11 @@ void Isolate::Deinit() {
   // We must stop the logger before we tear down other components.
   sampler::Sampler* sampler = logger_->sampler();
   if (sampler && sampler->IsActive()) sampler->Stop();
+
+  FreeThreadResources();
+  // Release managed objects before shutting down the heap. The finalizer might
+  // need to access heap objects.
+  ReleaseManagedObjects();
 
   delete deoptimizer_data_;
   deoptimizer_data_ = NULL;
@@ -2544,15 +2547,12 @@ Isolate::~Isolate() {
   store_stub_cache_ = NULL;
   delete code_aging_helper_;
   code_aging_helper_ = NULL;
-  stats_table_ = NULL;
 
   delete materialized_object_store_;
   materialized_object_store_ = NULL;
 
   delete logger_;
   logger_ = NULL;
-
-  counters_ = NULL;
 
   delete handle_scope_implementer_;
   handle_scope_implementer_ = NULL;
@@ -2637,14 +2637,9 @@ bool Isolate::PropagatePendingExceptionToExternalTryCatch() {
   return true;
 }
 
-static base::LazyMutex initialize_counters_mutex = LAZY_MUTEX_INITIALIZER;
-
 bool Isolate::InitializeCounters() {
-  if (counters_ != nullptr) return false;
-  base::LockGuard<base::Mutex> guard(initialize_counters_mutex.Pointer());
-  if (counters_ != nullptr) return false;
+  if (counters_shared_) return false;
   counters_shared_ = std::make_shared<Counters>(this);
-  counters_ = counters_shared_.get();
   return true;
 }
 
@@ -2856,15 +2851,6 @@ bool Isolate::Init(Deserializer* des) {
   if (!FLAG_inline_new) heap_.DisableInlineAllocation();
 
   return true;
-}
-
-
-// Initialized lazily to allow early
-// v8::V8::SetAddHistogramSampleFunction calls.
-StatsTable* Isolate::stats_table() {
-  if (stats_table_ != nullptr) return stats_table_;
-  InitializeCounters();
-  return stats_table_ = counters_->stats_table();
 }
 
 

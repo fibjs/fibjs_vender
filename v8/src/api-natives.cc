@@ -333,12 +333,12 @@ void UncacheTemplateInstantiation(Isolate* isolate, int serial_number,
     Handle<UnseededNumberDictionary> cache =
         isolate->slow_template_instantiations_cache();
     int entry = cache->FindEntry(serial_number);
-    DCHECK(entry != UnseededNumberDictionary::kNotFound);
+    DCHECK_NE(UnseededNumberDictionary::kNotFound, entry);
     Handle<Object> result =
         UnseededNumberDictionary::DeleteProperty(cache, entry);
     USE(result);
     DCHECK(result->IsTrue(isolate));
-    auto new_cache = UnseededNumberDictionary::Shrink(cache, entry);
+    auto new_cache = UnseededNumberDictionary::Shrink(cache);
     isolate->native_context()->set_slow_template_instantiations_cache(
         *new_cache);
   }
@@ -402,7 +402,7 @@ MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
   ASSIGN_RETURN_ON_EXCEPTION(isolate, object,
                              JSObject::New(constructor, new_target), JSObject);
 
-  if (is_prototype) JSObject::OptimizeAsPrototype(object, FAST_PROTOTYPE);
+  if (is_prototype) JSObject::OptimizeAsPrototype(object);
 
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
@@ -494,7 +494,7 @@ MaybeHandle<JSFunction> InstantiateFunction(Isolate* isolate,
   Handle<JSFunction> function = ApiNatives::CreateApiFunction(
       isolate, data, prototype, ApiNatives::JavaScriptObjectType);
   if (!name.is_null() && name->IsString()) {
-    function->shared()->set_name(*name);
+    function->shared()->set_raw_name(*name);
   }
   if (serial_number) {
     // Cache the function.

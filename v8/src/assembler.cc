@@ -330,7 +330,6 @@ void RelocInfo::update_wasm_memory_reference(
     Isolate* isolate, Address old_base, Address new_base,
     ICacheFlushMode icache_flush_mode) {
   DCHECK(IsWasmMemoryReference(rmode_));
-  DCHECK_GE(wasm_memory_reference(), old_base);
   Address updated_reference = new_base + (wasm_memory_reference() - old_base);
   // The reference is not checked here but at runtime. Validity of references
   // may change over time.
@@ -1589,10 +1588,8 @@ ExternalReference ExternalReference::search_string_raw(Isolate* isolate) {
   return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f)));
 }
 
-template <typename CollectionType, int entrysize>
-ExternalReference ExternalReference::orderedhashtable_get_raw(
-    Isolate* isolate) {
-  auto f = OrderedHashTable<CollectionType, entrysize>::Get;
+ExternalReference ExternalReference::orderedhashmap_get_raw(Isolate* isolate) {
+  auto f = OrderedHashMap::Get;
   return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f)));
 }
 
@@ -1632,11 +1629,6 @@ template ExternalReference
 ExternalReference::search_string_raw<const uc16, const uint8_t>(Isolate*);
 template ExternalReference
 ExternalReference::search_string_raw<const uc16, const uc16>(Isolate*);
-
-template ExternalReference
-ExternalReference::orderedhashtable_get_raw<OrderedHashMap, 2>(Isolate*);
-template ExternalReference
-ExternalReference::orderedhashtable_get_raw<OrderedHashSet, 1>(Isolate*);
 
 template ExternalReference
 ExternalReference::orderedhashtable_has_raw<OrderedHashMap, 2>(Isolate*);

@@ -5,6 +5,7 @@
 #ifndef V8_COMPILER_FRAME_STATES_H_
 #define V8_COMPILER_FRAME_STATES_H_
 
+#include "src/builtins/builtins.h"
 #include "src/handles.h"
 #include "src/objects/shared-function-info.h"
 #include "src/utils.h"
@@ -13,6 +14,9 @@ namespace v8 {
 namespace internal {
 
 namespace compiler {
+
+class JSGraph;
+class Node;
 
 // Flag that describes how to combine the current environment with
 // the output of a node to obtain a framestate for lazy bailout.
@@ -74,13 +78,15 @@ class OutputFrameStateCombine {
 
 // The type of stack frame that a FrameState node represents.
 enum class FrameStateType {
-  kJavaScriptFunction,   // Represents an unoptimized JavaScriptFrame.
   kInterpretedFunction,  // Represents an InterpretedFrame.
   kArgumentsAdaptor,     // Represents an ArgumentsAdaptorFrame.
   kTailCallerFunction,   // Represents a frame removed by tail call elimination.
   kConstructStub,        // Represents a ConstructStubFrame.
   kGetterStub,           // Represents a GetterStubFrame.
-  kSetterStub            // Represents a SetterStubFrame.
+  kSetterStub,           // Represents a SetterStubFrame.
+  kBuiltinContinuation,  // Represents a continuation to a stub.
+  kJavaScriptBuiltinContinuation  // Represents a continuation to a JavaScipt
+                                  // builtin.
 };
 
 class FrameStateFunctionInfo {
@@ -99,8 +105,8 @@ class FrameStateFunctionInfo {
   FrameStateType type() const { return type_; }
 
   static bool IsJSFunctionType(FrameStateType type) {
-    return type == FrameStateType::kJavaScriptFunction ||
-           type == FrameStateType::kInterpretedFunction;
+    return type == FrameStateType::kInterpretedFunction ||
+           type == FrameStateType::kJavaScriptBuiltinContinuation;
   }
 
  private:
@@ -120,7 +126,7 @@ class FrameStateInfo final {
         info_(info) {}
 
   FrameStateType type() const {
-    return info_ == nullptr ? FrameStateType::kJavaScriptFunction
+    return info_ == nullptr ? FrameStateType::kInterpretedFunction
                             : info_->type();
   }
   BailoutId bailout_id() const { return bailout_id_; }
@@ -157,6 +163,21 @@ static const int kFrameStateContextInput = 3;
 static const int kFrameStateFunctionInput = 4;
 static const int kFrameStateOuterStateInput = 5;
 static const int kFrameStateInputCount = kFrameStateOuterStateInput + 1;
+
+enum class ContinuationFrameStateMode { EAGER, LAZY };
+
+Node* CreateStubBuiltinContinuationFrameState(JSGraph* graph,
+                                              Builtins::Name name,
+                                              Node* context, Node** parameters,
+                                              int parameter_count,
+                                              Node* outer_frame_state,
+                                              ContinuationFrameStateMode mode);
+
+Node* CreateJavaScriptBuiltinContinuationFrameState(
+    JSGraph* graph, Handle<JSFunction> function, Builtins::Name name,
+    Node* target, Node* context, Node** stack_parameters,
+    int stack_parameter_count, Node* outer_frame_state,
+    ContinuationFrameStateMode mode);
 
 }  // namespace compiler
 }  // namespace internal

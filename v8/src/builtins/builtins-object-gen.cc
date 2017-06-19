@@ -54,11 +54,13 @@ TF_BUILTIN(ObjectHasOwnProperty, ObjectBuiltinsAssembler) {
   Node* key = Parameter(Descriptor::kKey);
   Node* context = Parameter(Descriptor::kContext);
 
-  Label call_runtime(this), return_true(this), return_false(this);
+  Label call_runtime(this), return_true(this), return_false(this),
+      to_primitive(this);
 
-  // Smi receivers do not have own properties.
+  // Smi receivers do not have own properties, just perform ToPrimitive on the
+  // key.
   Label if_objectisnotsmi(this);
-  Branch(TaggedIsSmi(object), &return_false, &if_objectisnotsmi);
+  Branch(TaggedIsSmi(object), &to_primitive, &if_objectisnotsmi);
   BIND(&if_objectisnotsmi);
 
   Node* map = LoadMap(object);
@@ -94,6 +96,10 @@ TF_BUILTIN(ObjectHasOwnProperty, ObjectBuiltinsAssembler) {
                            &var_unique, &return_false, &call_runtime);
     }
   }
+  BIND(&to_primitive);
+  GotoIf(IsNumber(key), &return_false);
+  Branch(IsName(key), &return_false, &call_runtime);
+
   BIND(&return_true);
   Return(BooleanConstant(true));
 
@@ -184,6 +190,52 @@ TF_BUILTIN(ObjectKeys, ObjectBuiltinsAssembler) {
                                    var_elements.value());
     Return(array);
   }
+}
+
+// ES #sec-object.prototype.isprototypeof
+TF_BUILTIN(ObjectPrototypeIsPrototypeOf, ObjectBuiltinsAssembler) {
+  Node* receiver = Parameter(Descriptor::kReceiver);
+  Node* value = Parameter(Descriptor::kValue);
+  Node* context = Parameter(Descriptor::kContext);
+  Label if_receiverisnullorundefined(this, Label::kDeferred),
+      if_valueisnotreceiver(this, Label::kDeferred);
+
+  // We only check whether {value} is a Smi here, so that the
+  // prototype chain walk below can safely access the {value}s
+  // map. We don't rule out Primitive {value}s, since all of
+  // them have null as their prototype, so the chain walk below
+  // immediately aborts and returns false anyways.
+  GotoIf(TaggedIsSmi(value), &if_valueisnotreceiver);
+
+  // Check if {receiver} is either null or undefined and in that case,
+  // invoke the ToObject builtin, which raises the appropriate error.
+  // Otherwise we don't need to invoke ToObject, since {receiver} is
+  // either already a JSReceiver, in which case ToObject is a no-op,
+  // or it's a Primitive and ToObject would allocate a fresh JSValue
+  // wrapper, which wouldn't be identical to any existing JSReceiver
+  // found in the prototype chain of {value}, hence it will return
+  // false no matter if we search for the Primitive {receiver} or
+  // a newly allocated JSValue wrapper for {receiver}.
+  GotoIf(IsNull(receiver), &if_receiverisnullorundefined);
+  GotoIf(IsUndefined(receiver), &if_receiverisnullorundefined);
+
+  // Loop through the prototype chain looking for the {receiver}.
+  Return(HasInPrototypeChain(context, value, receiver));
+
+  BIND(&if_receiverisnullorundefined);
+  {
+    // If {value} is a primitive HeapObject, we need to return
+    // false instead of throwing an exception per order of the
+    // steps in the specification, so check that first here.
+    GotoIfNot(IsJSReceiver(value), &if_valueisnotreceiver);
+
+    // Simulate the ToObject invocation on {receiver}.
+    CallBuiltin(Builtins::kToObject, context, receiver);
+    Unreachable();
+  }
+
+  BIND(&if_valueisnotreceiver);
+  Return(FalseConstant());
 }
 
 // ES6 #sec-object.prototype.tostring

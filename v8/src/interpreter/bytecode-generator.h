@@ -51,6 +51,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   class ExpressionResultScope;
   class EffectResultScope;
   class GlobalDeclarationsBuilder;
+  class BlockCoverageBuilder;
   class RegisterAllocationScope;
   class TestResultScope;
   class ValueResultScope;
@@ -120,9 +121,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildAsyncGeneratorReturn();
   void BuildReThrow();
   void BuildAbort(BailoutReason bailout_reason);
-  void BuildThrowIfHole(Variable* variable);
-  void BuildThrowReferenceError(const AstRawString* name);
   void BuildHoleCheckForVariableAssignment(Variable* variable, Token::Value op);
+  void BuildThrowIfHole(Variable* variable);
 
   // Build jump to targets[value], where
   // start_index <= value < start_index + size.
@@ -136,10 +136,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildNewLocalWithContext(Scope* scope);
 
   void BuildGeneratorPrologue();
-  void BuildGeneratorSuspend(Suspend* expr, Register generator,
-                             RegisterList registers_to_save);
-  void BuildGeneratorResume(Suspend* expr, Register generator,
-                            RegisterList registers_to_restore);
+  void BuildGeneratorSuspend(Suspend* expr, RegisterList registers_to_save);
+  void BuildGeneratorResume(Suspend* expr, RegisterList registers_to_restore);
 
   void VisitArgumentsObject(Variable* variable);
   void VisitRestArgumentsArray(Variable* rest);
@@ -179,6 +177,9 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildPushUndefinedIntoRegisterList(RegisterList* reg_list);
 
   void BuildLoadPropertyKey(LiteralProperty* property, Register out_reg);
+
+  int AllocateBlockCoverageSlotIfEnabled(SourceRange range);
+  void BuildIncrementBlockCoverageCounterIfEnabled(int coverage_array_slot);
 
   // Visitors for obtaining expression result in the accumulator, in a
   // register, or just getting the effect. Some visitors return a TypeHint which
@@ -246,6 +247,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   Scope* current_scope_;
 
   GlobalDeclarationsBuilder* globals_builder_;
+  BlockCoverageBuilder* block_coverage_builder_;
   ZoneVector<GlobalDeclarationsBuilder*> global_declarations_;
   ZoneVector<std::pair<FunctionLiteral*, size_t>> function_literals_;
   ZoneVector<std::pair<NativeFunctionLiteral*, size_t>>

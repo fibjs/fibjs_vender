@@ -554,10 +554,16 @@ Node* CodeAssembler::Projection(int index, Node* value) {
 
 void CodeAssembler::GotoIfException(Node* node, Label* if_exception,
                                     Variable* exception_var) {
+  DCHECK(!node->op()->HasProperty(Operator::kNoThrow));
+
+  if (if_exception == nullptr) {
+    // If no handler is supplied, don't add continuations
+    return;
+  }
+
   Label success(this), exception(this, Label::kDeferred);
   success.MergeVariables();
   exception.MergeVariables();
-  DCHECK(!node->op()->HasProperty(Operator::kNoThrow));
 
   raw_assembler()->Continuations(node, success.label_, exception.label_);
 
@@ -616,6 +622,22 @@ Node* CodeAssembler::TailCallRuntime(Runtime::FunctionId function,
   Node* arity = Int32Constant(argc);
 
   Node* nodes[] = {centry, args..., ref, arity, context};
+
+  return raw_assembler()->TailCallN(desc, arraysize(nodes), nodes);
+}
+
+Node* CodeAssembler::TailCallRuntimeN(Runtime::FunctionId function,
+                                      Node* context, Node* argc) {
+  CallDescriptor* desc = Linkage::GetRuntimeCallDescriptor(
+      zone(), function, 0, Operator::kNoProperties,
+      CallDescriptor::kSupportsTailCalls);
+  int return_count = static_cast<int>(desc->ReturnCount());
+
+  Node* centry =
+      HeapConstant(CodeFactory::RuntimeCEntry(isolate(), return_count));
+  Node* ref = ExternalConstant(ExternalReference(function, isolate()));
+
+  Node* nodes[] = {centry, ref, argc, context};
 
   return raw_assembler()->TailCallN(desc, arraysize(nodes), nodes);
 }

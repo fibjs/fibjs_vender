@@ -112,7 +112,7 @@ class PipelineData {
     is_asm_ = info->shared_info()->asm_function();
   }
 
-  // For WASM compile entry point.
+  // For WebAssembly compile entry point.
   PipelineData(ZoneStats* zone_stats, CompilationInfo* info, JSGraph* jsgraph,
                PipelineStatistics* pipeline_statistics,
                SourcePositionTable* source_positions,
@@ -602,8 +602,7 @@ PipelineCompilationJob::Status PipelineCompilationJob::PrepareJobImpl() {
       info()->MarkAsLoopPeelingEnabled();
     }
   }
-  if (info()->is_optimizing_from_bytecode() ||
-      !info()->shared_info()->asm_function()) {
+  if (info()->is_optimizing_from_bytecode()) {
     info()->MarkAsDeoptimizationEnabled();
     if (FLAG_inline_accessors) {
       info()->MarkAsAccessorInliningEnabled();
@@ -614,7 +613,7 @@ PipelineCompilationJob::Status PipelineCompilationJob::PrepareJobImpl() {
     }
   }
   if (!info()->is_optimizing_from_bytecode()) {
-    if (!Compiler::EnsureDeoptimizationSupport(info())) return FAILED;
+    if (!Compiler::EnsureBaselineCode(info())) return FAILED;
   } else if (FLAG_turbo_inlining) {
     info()->MarkAsInliningEnabled();
   }
@@ -706,7 +705,7 @@ PipelineWasmCompilationJob::ExecuteJobImpl() {
   pipeline_.RunPrintAndVerify("Machine", true);
   if (FLAG_wasm_opt) {
     PipelineData* data = &data_;
-    PipelineRunScope scope(data, "WASM optimization");
+    PipelineRunScope scope(data, "Wasm optimization");
     JSGraphReducer graph_reducer(data->jsgraph(), scope.zone());
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
@@ -773,7 +772,7 @@ struct GraphBuilderPhase {
 
   void Run(PipelineData* data, Zone* temp_zone) {
     if (data->info()->is_optimizing_from_bytecode()) {
-      // Bytecode graph builder assumes deoptimziation is enabled.
+      // Bytecode graph builder assumes deoptimization is enabled.
       DCHECK(data->info()->is_deoptimization_enabled());
       JSTypeHintLowering::Flags flags = JSTypeHintLowering::kNoFlags;
       if (data->info()->is_bailout_on_uninitialized()) {
@@ -786,6 +785,8 @@ struct GraphBuilderPhase {
           data->source_positions(), SourcePosition::kNotInlined, flags);
       graph_builder.CreateGraph();
     } else {
+      // AST-based graph builder assumes deoptimization is disabled.
+      DCHECK(!data->info()->is_deoptimization_enabled());
       AstGraphBuilderWithPositions graph_builder(
           temp_zone, data->info(), data->jsgraph(), CallFrequency(1.0f),
           data->loop_assignment(), data->source_positions());
@@ -2043,7 +2044,7 @@ void PipelineImpl::AllocateRegisters(const RegisterConfiguration* config,
   // we understand the cause of the bug. We keep just the
   // check at the end of the allocation.
   if (verifier != nullptr) {
-    verifier->VerifyAssignment();
+    verifier->VerifyAssignment("Immediately after CommitAssignmentPhase.");
   }
 
   Run<PopulateReferenceMapsPhase>();
@@ -2064,7 +2065,7 @@ void PipelineImpl::AllocateRegisters(const RegisterConfiguration* config,
   }
 
   if (verifier != nullptr) {
-    verifier->VerifyAssignment();
+    verifier->VerifyAssignment("End of regalloc pipeline.");
     verifier->VerifyGapMoves();
   }
 

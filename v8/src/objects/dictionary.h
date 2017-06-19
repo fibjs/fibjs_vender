@@ -21,19 +21,20 @@ class Handle;
 
 class Isolate;
 
-template <typename Derived, typename Shape, typename Key>
-class Dictionary : public HashTable<Derived, Shape, Key> {
-  typedef HashTable<Derived, Shape, Key> DerivedHashTable;
+template <typename Derived, typename Shape>
+class Dictionary : public HashTable<Derived, Shape> {
+  typedef HashTable<Derived, Shape> DerivedHashTable;
 
  public:
+  typedef typename Shape::Key Key;
   // Returns the value at entry.
   Object* ValueAt(int entry) {
-    return this->get(Derived::EntryToIndex(entry) + 1);
+    return this->get(DerivedHashTable::EntryToIndex(entry) + 1);
   }
 
   // Set the value for entry.
   void ValueAtPut(int entry, Object* value) {
-    this->set(Derived::EntryToIndex(entry) + 1, value);
+    this->set(DerivedHashTable::EntryToIndex(entry) + 1, value);
   }
 
   // Returns the property details for the property at entry.
@@ -56,32 +57,25 @@ class Dictionary : public HashTable<Derived, Shape, Key> {
 
   // Attempt to shrink the dictionary after deletion of key.
   MUST_USE_RESULT static inline Handle<Derived> Shrink(
-      Handle<Derived> dictionary, Key key) {
-    return DerivedHashTable::Shrink(dictionary, key);
+      Handle<Derived> dictionary) {
+    return DerivedHashTable::Shrink(dictionary);
   }
 
-  // Returns the number of elements in the dictionary filtering out properties
-  // with the specified attributes.
-  int NumberOfElementsFilterAttributes(PropertyFilter filter);
-
-  // Returns the number of enumerable elements in the dictionary.
-  int NumberOfEnumElements() {
-    return NumberOfElementsFilterAttributes(ENUMERABLE_STRINGS);
-  }
+  int NumberOfEnumerableProperties();
 
   enum SortMode { UNSORTED, SORTED };
 
   // Return the key indices sorted by its enumeration index.
   static Handle<FixedArray> IterationIndices(
-      Handle<Dictionary<Derived, Shape, Key>> dictionary);
+      Handle<Dictionary<Derived, Shape>> dictionary);
 
   // Collect the keys into the given KeyAccumulator, in ascending chronological
   // order of property creation.
-  static void CollectKeysTo(Handle<Dictionary<Derived, Shape, Key>> dictionary,
+  static void CollectKeysTo(Handle<Dictionary<Derived, Shape>> dictionary,
                             KeyAccumulator* keys);
 
   // Copies enumerable keys to preallocated fixed array.
-  static void CopyEnumKeysTo(Handle<Dictionary<Derived, Shape, Key>> dictionary,
+  static void CopyEnumKeysTo(Handle<Dictionary<Derived, Shape>> dictionary,
                              Handle<FixedArray> storage, KeyCollectionMode mode,
                              KeyAccumulator* accumulator);
 
@@ -109,7 +103,7 @@ class Dictionary : public HashTable<Derived, Shape, Key> {
   void SetRequiresCopyOnCapacityChange();
 
   // Ensure enough space for n additional elements.
-  static Handle<Derived> EnsureCapacity(Handle<Derived> obj, int n, Key key);
+  static Handle<Derived> EnsureCapacity(Handle<Derived> obj, int n);
 
 #ifdef OBJECT_PRINT
   // For our gdb macros, we should perhaps change these in the future.
@@ -142,16 +136,6 @@ class Dictionary : public HashTable<Derived, Shape, Key> {
   // Add entry to dictionary. Returns entry value.
   static int AddEntry(Handle<Derived> dictionary, Key key, Handle<Object> value,
                       PropertyDetails details, uint32_t hash);
-};
-
-template <typename Derived, typename Shape>
-class NameDictionaryBase : public Dictionary<Derived, Shape, Handle<Name>> {
-  typedef Dictionary<Derived, Shape, Handle<Name>> DerivedDictionary;
-
- public:
-  // Find entry for key, otherwise return kNotFound. Optimized version of
-  // HashTable::FindEntry.
-  int FindEntry(Handle<Name> key);
 };
 
 template <typename Key>
@@ -187,19 +171,18 @@ class NameDictionaryShape : public BaseDictionaryShape<Handle<Name>> {
  public:
   static inline bool IsMatch(Handle<Name> key, Object* other);
   static inline uint32_t Hash(Handle<Name> key);
-  static inline uint32_t HashForObject(Handle<Name> key, Object* object);
+  static inline uint32_t HashForObject(Object* object);
   static inline Handle<Object> AsHandle(Isolate* isolate, Handle<Name> key);
   static const int kPrefixSize = 2;
   static const int kEntrySize = 3;
   static const int kEntryValueIndex = 1;
   static const int kEntryDetailsIndex = 2;
   static const bool kIsEnumerable = true;
+  static const bool kNeedsHoleCheck = false;
 };
 
-class NameDictionary
-    : public NameDictionaryBase<NameDictionary, NameDictionaryShape> {
-  typedef NameDictionaryBase<NameDictionary, NameDictionaryShape>
-      DerivedDictionary;
+class NameDictionary : public Dictionary<NameDictionary, NameDictionaryShape> {
+  typedef Dictionary<NameDictionary, NameDictionaryShape> DerivedDictionary;
 
  public:
   DECLARE_CAST(NameDictionary)
@@ -229,7 +212,7 @@ class GlobalDictionaryShape : public NameDictionaryShape {
 };
 
 class GlobalDictionary
-    : public NameDictionaryBase<GlobalDictionary, GlobalDictionaryShape> {
+    : public Dictionary<GlobalDictionary, GlobalDictionaryShape> {
  public:
   DECLARE_CAST(GlobalDictionary)
 
@@ -250,8 +233,7 @@ class SeededNumberDictionaryShape : public NumberDictionaryShape {
   static const int kEntrySize = 3;
 
   static inline uint32_t SeededHash(uint32_t key, uint32_t seed);
-  static inline uint32_t SeededHashForObject(uint32_t key, uint32_t seed,
-                                             Object* object);
+  static inline uint32_t SeededHashForObject(uint32_t seed, Object* object);
 };
 
 class UnseededNumberDictionaryShape : public NumberDictionaryShape {
@@ -260,7 +242,7 @@ class UnseededNumberDictionaryShape : public NumberDictionaryShape {
   static const int kEntrySize = 2;
 
   static inline uint32_t Hash(uint32_t key);
-  static inline uint32_t HashForObject(uint32_t key, Object* object);
+  static inline uint32_t HashForObject(Object* object);
 
   template <typename Dictionary>
   static inline PropertyDetails DetailsAt(Dictionary* dict, int entry) {
@@ -277,14 +259,13 @@ class UnseededNumberDictionaryShape : public NumberDictionaryShape {
 };
 
 extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
-    HashTable<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>;
+    HashTable<SeededNumberDictionary, SeededNumberDictionaryShape>;
 
 extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
-    Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>;
+    Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape>;
 
 class SeededNumberDictionary
-    : public Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape,
-                        uint32_t> {
+    : public Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape> {
  public:
   DECLARE_CAST(SeededNumberDictionary)
 
@@ -340,8 +321,8 @@ class SeededNumberDictionary
 };
 
 class UnseededNumberDictionary
-    : public Dictionary<UnseededNumberDictionary, UnseededNumberDictionaryShape,
-                        uint32_t> {
+    : public Dictionary<UnseededNumberDictionary,
+                        UnseededNumberDictionaryShape> {
  public:
   DECLARE_CAST(UnseededNumberDictionary)
 

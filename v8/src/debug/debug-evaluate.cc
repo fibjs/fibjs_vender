@@ -172,7 +172,8 @@ DebugEvaluate::ContextBuilder::ContextBuilder(Isolate* isolate,
       evaluation_context_ = outer_context;
       break;
     } else if (scope_type == ScopeIterator::ScopeTypeCatch ||
-               scope_type == ScopeIterator::ScopeTypeWith) {
+               scope_type == ScopeIterator::ScopeTypeWith ||
+               scope_type == ScopeIterator::ScopeTypeModule) {
       ContextChainElement context_chain_element;
       Handle<Context> current_context = it.CurrentContext();
       if (!current_context->IsDebugEvaluateContext()) {
@@ -314,6 +315,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(GenericHash)                     \
   V(MapIteratorInitialize)           \
   V(MapInitialize)                   \
+  V(SetInitialize)                   \
   /* Called from builtins */         \
   V(StringParseFloat)                \
   V(StringParseInt)                  \
@@ -439,12 +441,16 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
     case Bytecode::kToNumber:
     case Bytecode::kToName:
     // Misc.
+    case Bytecode::kStringConcat:
     case Bytecode::kForInPrepare:
     case Bytecode::kForInContinue:
     case Bytecode::kForInNext:
     case Bytecode::kForInStep:
     case Bytecode::kThrow:
     case Bytecode::kReThrow:
+    case Bytecode::kThrowReferenceErrorIfHole:
+    case Bytecode::kThrowSuperNotCalledIfHole:
+    case Bytecode::kThrowSuperAlreadyCalledIfNotHole:
     case Bytecode::kIllegal:
     case Bytecode::kCallJSRuntime:
     case Bytecode::kStackCheck:
@@ -478,6 +484,7 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kObjectPrototypeValueOf:
     case Builtins::kObjectValues:
     case Builtins::kObjectHasOwnProperty:
+    case Builtins::kObjectPrototypeIsPrototypeOf:
     case Builtins::kObjectPrototypePropertyIsEnumerable:
     case Builtins::kObjectProtoToString:
     // Array builtins.
@@ -530,6 +537,7 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     // Map builtins.
     case Builtins::kMapConstructor:
     case Builtins::kMapGet:
+    case Builtins::kMapGetSize:
     // Math builtins.
     case Builtins::kMathAbs:
     case Builtins::kMathAcos:
@@ -579,6 +587,9 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kNumberPrototypeToPrecision:
     case Builtins::kNumberPrototypeToString:
     case Builtins::kNumberPrototypeValueOf:
+    // Set builtins.
+    case Builtins::kSetConstructor:
+    case Builtins::kSetGetSize:
     // String builtins. Strings are immutable.
     case Builtins::kStringFromCharCode:
     case Builtins::kStringFromCodePoint:

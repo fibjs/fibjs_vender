@@ -156,8 +156,6 @@ struct ParserTypes<Parser> {
   typedef ParserBase<Parser> Base;
   typedef Parser Impl;
 
-  typedef v8::internal::Variable Variable;
-
   // Return types for traversing functions.
   typedef const AstRawString* Identifier;
   typedef v8::internal::Expression* Expression;
@@ -296,7 +294,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
       SET_ALLOW(tailcalls);
       SET_ALLOW(harmony_do_expressions);
       SET_ALLOW(harmony_function_sent);
-      SET_ALLOW(harmony_trailing_commas);
       SET_ALLOW(harmony_class_fields);
       SET_ALLOW(harmony_object_rest_spread);
       SET_ALLOW(harmony_dynamic_import);
@@ -352,6 +349,9 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   void ParseAndRewriteGeneratorFunctionBody(int pos, FunctionKind kind,
                                             ZoneList<Statement*>* body,
                                             bool* ok);
+  void ParseAndRewriteAsyncGeneratorFunctionBody(int pos, FunctionKind kind,
+                                                 ZoneList<Statement*>* body,
+                                                 bool* ok);
   void CreateFunctionNameAssignment(const AstRawString* function_name, int pos,
                                     FunctionLiteral::FunctionType function_type,
                                     DeclarationScope* function_scope,
@@ -496,7 +496,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   Statement* DesugarLexicalBindingsInForStatement(
       ForStatement* loop, Statement* init, Expression* cond, Statement* next,
-      Statement* body, Scope* inner_scope, const ForInfo& for_info, bool* ok);
+      Statement* body, const SourceRange& body_range, Scope* inner_scope,
+      const ForInfo& for_info, bool* ok);
 
   Expression* RewriteDoExpression(Block* body, int pos, bool* ok);
 
@@ -544,7 +545,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   BreakableStatement* LookupBreakTarget(const AstRawString* label, bool* ok);
   IterationStatement* LookupContinueTarget(const AstRawString* label, bool* ok);
 
-  Statement* BuildAssertIsCoercible(Variable* var);
+  Statement* BuildAssertIsCoercible(Variable* var, ObjectLiteral* pattern);
 
   // Factory methods.
   FunctionLiteral* DefaultConstructor(const AstRawString* name, bool call_super,
@@ -688,8 +689,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                           Block* block,
                                           Expression* return_value, bool* ok);
 
-  Expression* RewriteYieldStar(Expression* generator, Expression* expression,
-                               int pos);
+  Expression* RewriteYieldStar(Expression* expression, int pos);
 
   void AddArrowFunctionFormalParameters(ParserFormalParameters* parameters,
                                         Expression* params, int end_pos,
@@ -874,8 +874,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   // ~ foo -> foo ^(~0)
   Expression* BuildUnaryExpression(Expression* expression, Token::Value op,
                                    int pos);
-
-  Expression* BuildIteratorResult(Expression* value, bool done);
 
   // Generate AST node that throws a ReferenceError with the given type.
   V8_INLINE Expression* NewThrowReferenceError(
@@ -1084,11 +1082,10 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   V8_INLINE void DeclareFormalParameters(
       DeclarationScope* scope,
-      const ThreadedList<ParserFormalParameters::Parameter>& parameters) {
-    bool is_simple = classifier()->is_simple_parameter_list();
+      const ThreadedList<ParserFormalParameters::Parameter>& parameters,
+      bool is_simple, bool* has_duplicate = nullptr) {
     if (!is_simple) scope->SetHasNonSimpleParameters();
     for (auto parameter : parameters) {
-      bool is_duplicate = false;
       bool is_optional = parameter->initializer != nullptr;
       // If the parameter list is simple, declare the parameters normally with
       // their names. If the parameter list is not simple, declare a temporary
@@ -1097,12 +1094,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
       scope->DeclareParameter(
           is_simple ? parameter->name : ast_value_factory()->empty_string(),
           is_simple ? VAR : TEMPORARY, is_optional, parameter->is_rest,
-          &is_duplicate, ast_value_factory(), parameter->position);
-      if (is_duplicate &&
-          classifier()->is_valid_formal_parameter_list_without_duplicates()) {
-        classifier()->RecordDuplicateFormalParameterError(
-            scanner()->location());
-      }
+          has_duplicate, ast_value_factory(), parameter->position);
     }
   }
 

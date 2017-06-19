@@ -49,12 +49,15 @@ class JSCallReducer final : public AdvancedReducer {
   Reduction ReduceObjectGetPrototype(Node* node, Node* object);
   Reduction ReduceObjectGetPrototypeOf(Node* node);
   Reduction ReduceObjectPrototypeGetProto(Node* node);
+  Reduction ReduceObjectPrototypeIsPrototypeOf(Node* node);
   Reduction ReduceReflectGetPrototypeOf(Node* node);
+  Reduction ReduceArrayForEach(Handle<JSFunction> function, Node* node);
   Reduction ReduceSpreadCall(Node* node, int arity);
   Reduction ReduceJSConstruct(Node* node);
   Reduction ReduceJSConstructWithSpread(Node* node);
   Reduction ReduceJSCall(Node* node);
   Reduction ReduceJSCallWithSpread(Node* node);
+  Reduction ReduceReturnReceiver(Node* node);
 
   Graph* graph() const;
   JSGraph* jsgraph() const { return jsgraph_; }

@@ -96,6 +96,7 @@
     <ClInclude Include="src\base\logging.h" />
     <ClInclude Include="src\base\macros.h" />
     <ClInclude Include="src\base\once.h" />
+    <ClInclude Include="src\base\optional.h" />
     <ClInclude Include="src\base\platform\condition-variable.h" />
     <ClInclude Include="src\base\platform\elapsed-timer.h" />
     <ClInclude Include="src\base\platform\mutex.h" />
@@ -121,8 +122,10 @@
     <ClInclude Include="src\bootstrapper.h" />
     <ClInclude Include="src\builtins\builtins-arguments-gen.h" />
     <ClInclude Include="src\builtins\builtins-async-gen.h" />
+    <ClInclude Include="src\builtins\builtins-call-gen.h" />
     <ClInclude Include="src\builtins\builtins-constructor-gen.h" />
     <ClInclude Include="src\builtins\builtins-constructor.h" />
+    <ClInclude Include="src\builtins\builtins-conversion-gen.h" />
     <ClInclude Include="src\builtins\builtins-definitions.h" />
     <ClInclude Include="src\builtins\builtins-descriptors.h" />
     <ClInclude Include="src\builtins\builtins-forin-gen.h" />
@@ -214,7 +217,6 @@
     <ClInclude Include="src\compiler\jump-threading.h" />
     <ClInclude Include="src\compiler\linkage.h" />
     <ClInclude Include="src\compiler\live-range-separator.h" />
-    <ClInclude Include="src\compiler\liveness-analyzer.h" />
     <ClInclude Include="src\compiler\load-elimination.h" />
     <ClInclude Include="src\compiler\loop-analysis.h" />
     <ClInclude Include="src\compiler\loop-peeling.h" />
@@ -238,6 +240,7 @@
     <ClInclude Include="src\compiler\pipeline-statistics.h" />
     <ClInclude Include="src\compiler\pipeline.h" />
     <ClInclude Include="src\compiler\ppc\instruction-codes-ppc.h" />
+    <ClInclude Include="src\compiler\property-access-builder.h" />
     <ClInclude Include="src\compiler\raw-machine-assembler.h" />
     <ClInclude Include="src\compiler\redundancy-elimination.h" />
     <ClInclude Include="src\compiler\register-allocator-verifier.h" />
@@ -288,7 +291,6 @@
     <ClInclude Include="src\crankshaft\hydrogen-instructions.h" />
     <ClInclude Include="src\crankshaft\hydrogen-load-elimination.h" />
     <ClInclude Include="src\crankshaft\hydrogen-mark-unreachable.h" />
-    <ClInclude Include="src\crankshaft\hydrogen-osr.h" />
     <ClInclude Include="src\crankshaft\hydrogen-range-analysis.h" />
     <ClInclude Include="src\crankshaft\hydrogen-redundant-phi.h" />
     <ClInclude Include="src\crankshaft\hydrogen-removable-simulates.h" />
@@ -492,6 +494,8 @@
     <ClInclude Include="src\objects-body-descriptors.h" />
     <ClInclude Include="src\objects-inl.h" />
     <ClInclude Include="src\objects.h" />
+    <ClInclude Include="src\objects\arguments-inl.h" />
+    <ClInclude Include="src\objects\arguments.h" />
     <ClInclude Include="src\objects\code-cache-inl.h" />
     <ClInclude Include="src\objects\code-cache.h" />
     <ClInclude Include="src\objects\compilation-cache-inl.h" />
@@ -508,6 +512,8 @@
     <ClInclude Include="src\objects\map-inl.h" />
     <ClInclude Include="src\objects\map.h" />
     <ClInclude Include="src\objects\module-info.h" />
+    <ClInclude Include="src\objects\name-inl.h" />
+    <ClInclude Include="src\objects\name.h" />
     <ClInclude Include="src\objects\object-macros-undef.h" />
     <ClInclude Include="src\objects\object-macros.h" />
     <ClInclude Include="src\objects\regexp-match-info.h" />
@@ -516,7 +522,9 @@
     <ClInclude Include="src\objects\script.h" />
     <ClInclude Include="src\objects\shared-function-info-inl.h" />
     <ClInclude Include="src\objects\shared-function-info.h" />
+    <ClInclude Include="src\objects\string-inl.h" />
     <ClInclude Include="src\objects\string-table.h" />
+    <ClInclude Include="src\objects\string.h" />
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\duplicate-finder.h" />
     <ClInclude Include="src\parsing\expression-classifier.h" />
@@ -647,11 +655,13 @@
     <ClInclude Include="src\visitors.h" />
     <ClInclude Include="src\vm-state-inl.h" />
     <ClInclude Include="src\vm-state.h" />
+    <ClInclude Include="src\wasm\compilation-manager.h" />
     <ClInclude Include="src\wasm\decoder.h" />
     <ClInclude Include="src\wasm\function-body-decoder-impl.h" />
     <ClInclude Include="src\wasm\function-body-decoder.h" />
     <ClInclude Include="src\wasm\leb-helper.h" />
     <ClInclude Include="src\wasm\local-decl-encoder.h" />
+    <ClInclude Include="src\wasm\module-compiler.h" />
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\signature-map.h" />
     <ClInclude Include="src\wasm\streaming-decoder.h" />
@@ -766,6 +776,7 @@
     <ClCompile Include="src\builtins\builtins-call.cc" />
     <ClCompile Include="src\builtins\builtins-callsite.cc" />
     <ClCompile Include="src\builtins\builtins-collections-gen.cc" />
+    <ClCompile Include="src\builtins\builtins-collections.cc" />
     <ClCompile Include="src\builtins\builtins-console-gen.cc" />
     <ClCompile Include="src\builtins\builtins-console.cc" />
     <ClCompile Include="src\builtins\builtins-constructor-gen.cc" />
@@ -893,7 +904,6 @@
     <ClCompile Include="src\compiler\jump-threading.cc" />
     <ClCompile Include="src\compiler\linkage.cc" />
     <ClCompile Include="src\compiler\live-range-separator.cc" />
-    <ClCompile Include="src\compiler\liveness-analyzer.cc" />
     <ClCompile Include="src\compiler\load-elimination.cc" />
     <ClCompile Include="src\compiler\loop-analysis.cc" />
     <ClCompile Include="src\compiler\loop-peeling.cc" />
@@ -918,6 +928,7 @@
     <ClCompile Include="src\compiler\ppc\code-generator-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\instruction-scheduler-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\instruction-selector-ppc.cc" />
+    <ClCompile Include="src\compiler\property-access-builder.cc" />
     <ClCompile Include="src\compiler\raw-machine-assembler.cc" />
     <ClCompile Include="src\compiler\redundancy-elimination.cc" />
     <ClCompile Include="src\compiler\register-allocator-verifier.cc" />
@@ -969,7 +980,6 @@
     <ClCompile Include="src\crankshaft\hydrogen-instructions.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-load-elimination.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-mark-unreachable.cc" />
-    <ClCompile Include="src\crankshaft\hydrogen-osr.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-range-analysis.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-redundant-phi.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-removable-simulates.cc" />
@@ -1058,6 +1068,7 @@
     <ClCompile Include="src\heap\incremental-marking-job.cc" />
     <ClCompile Include="src\heap\incremental-marking.cc" />
     <ClCompile Include="src\heap\mark-compact.cc" />
+    <ClCompile Include="src\heap\marking.cc" />
     <ClCompile Include="src\heap\memory-reducer.cc" />
     <ClCompile Include="src\heap\object-stats.cc" />
     <ClCompile Include="src\heap\objects-visiting.cc" />
@@ -1292,8 +1303,10 @@
     <ClCompile Include="src\value-serializer.cc" />
     <ClCompile Include="src\version.cc" />
     <ClCompile Include="src\visitors.cc" />
+    <ClCompile Include="src\wasm\compilation-manager.cc" />
     <ClCompile Include="src\wasm\function-body-decoder.cc" />
     <ClCompile Include="src\wasm\local-decl-encoder.cc" />
+    <ClCompile Include="src\wasm\module-compiler.cc" />
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\signature-map.cc" />
     <ClCompile Include="src\wasm\streaming-decoder.cc" />

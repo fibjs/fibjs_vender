@@ -41,7 +41,7 @@
 #define _TRUNCATE 0
 #define STRUNCATE 80
 
-inline void MemoryBarrier() {
+inline void MemoryFence() {
   int barrier = 0;
   __asm__ __volatile__("xchgl %%eax,%0 ":"=r" (barrier));
 }
@@ -1256,12 +1256,6 @@ VirtualMemory::~VirtualMemory() {
     USE(result);
   }
 }
-
-
-bool VirtualMemory::IsReserved() {
-  return address_ != NULL;
-}
-
 
 void VirtualMemory::Reset() {
   address_ = NULL;

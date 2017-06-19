@@ -333,28 +333,11 @@ MachineType AtomicOpRepresentationOf(Operator const* op) {
   V(S128Or, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)     \
   V(S128Xor, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
   V(S128Not, Operator::kNoProperties, 1, 0, 1)                            \
-  V(S32x4Select, Operator::kNoProperties, 3, 0, 1)                        \
-  V(S16x8Select, Operator::kNoProperties, 3, 0, 1)                        \
-  V(S8x16Select, Operator::kNoProperties, 3, 0, 1)                        \
-  V(S1x4Zero, Operator::kNoProperties, 0, 0, 1)                           \
-  V(S1x4And, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
-  V(S1x4Or, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)     \
-  V(S1x4Xor, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
-  V(S1x4Not, Operator::kNoProperties, 1, 0, 1)                            \
+  V(S128Select, Operator::kNoProperties, 3, 0, 1)                         \
   V(S1x4AnyTrue, Operator::kNoProperties, 1, 0, 1)                        \
   V(S1x4AllTrue, Operator::kNoProperties, 1, 0, 1)                        \
-  V(S1x8Zero, Operator::kNoProperties, 0, 0, 1)                           \
-  V(S1x8And, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
-  V(S1x8Or, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)     \
-  V(S1x8Xor, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
-  V(S1x8Not, Operator::kNoProperties, 1, 0, 1)                            \
   V(S1x8AnyTrue, Operator::kNoProperties, 1, 0, 1)                        \
   V(S1x8AllTrue, Operator::kNoProperties, 1, 0, 1)                        \
-  V(S1x16Zero, Operator::kNoProperties, 0, 0, 1)                          \
-  V(S1x16And, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)   \
-  V(S1x16Or, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
-  V(S1x16Xor, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)   \
-  V(S1x16Not, Operator::kNoProperties, 1, 0, 1)                           \
   V(S1x16AnyTrue, Operator::kNoProperties, 1, 0, 1)                       \
   V(S1x16AllTrue, Operator::kNoProperties, 1, 0, 1)
 
@@ -721,9 +704,6 @@ const Operator* MachineOperatorBuilder::UnalignedStore(
     MACHINE_REPRESENTATION_LIST(STORE)
 #undef STORE
     case MachineRepresentation::kBit:
-    case MachineRepresentation::kSimd1x4:
-    case MachineRepresentation::kSimd1x8:
-    case MachineRepresentation::kSimd1x16:
     case MachineRepresentation::kNone:
       break;
   }
@@ -806,9 +786,6 @@ const Operator* MachineOperatorBuilder::Store(StoreRepresentation store_rep) {
     MACHINE_REPRESENTATION_LIST(STORE)
 #undef STORE
     case MachineRepresentation::kBit:
-    case MachineRepresentation::kSimd1x4:
-    case MachineRepresentation::kSimd1x8:
-    case MachineRepresentation::kSimd1x16:
     case MachineRepresentation::kNone:
       break;
   }
@@ -825,9 +802,6 @@ const Operator* MachineOperatorBuilder::ProtectedStore(
     MACHINE_REPRESENTATION_LIST(STORE)
 #undef STORE
     case MachineRepresentation::kBit:
-    case MachineRepresentation::kSimd1x4:
-    case MachineRepresentation::kSimd1x8:
-    case MachineRepresentation::kSimd1x16:
     case MachineRepresentation::kNone:
       break;
   }
@@ -871,9 +845,6 @@ const Operator* MachineOperatorBuilder::CheckedStore(
     MACHINE_REPRESENTATION_LIST(STORE)
 #undef STORE
     case MachineRepresentation::kBit:
-    case MachineRepresentation::kSimd1x4:
-    case MachineRepresentation::kSimd1x8:
-    case MachineRepresentation::kSimd1x16:
     case MachineRepresentation::kNone:
       break;
   }
@@ -1009,22 +980,6 @@ SIMD_LANE_OP_LIST(SIMD_LANE_OPS)
   }
 SIMD_FORMAT_LIST(SIMD_SHIFT_OPS)
 #undef SIMD_SHIFT_OPS
-
-const Operator* MachineOperatorBuilder::S32x4Shuffle(uint8_t shuffle[16]) {
-  uint8_t* array = zone_->NewArray<uint8_t>(4);
-  memcpy(array, shuffle, 4);
-  return new (zone_)
-      Operator1<uint8_t*>(IrOpcode::kS32x4Shuffle, Operator::kPure, "Shuffle",
-                          2, 0, 0, 1, 0, 0, array);
-}
-
-const Operator* MachineOperatorBuilder::S16x8Shuffle(uint8_t shuffle[16]) {
-  uint8_t* array = zone_->NewArray<uint8_t>(8);
-  memcpy(array, shuffle, 8);
-  return new (zone_)
-      Operator1<uint8_t*>(IrOpcode::kS16x8Shuffle, Operator::kPure, "Shuffle",
-                          2, 0, 0, 1, 0, 0, array);
-}
 
 const Operator* MachineOperatorBuilder::S8x16Shuffle(uint8_t shuffle[16]) {
   uint8_t* array = zone_->NewArray<uint8_t>(16);

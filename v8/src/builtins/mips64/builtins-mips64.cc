@@ -232,7 +232,7 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
     __ Push(a0);
-    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+    __ Call(masm->isolate()->builtins()->FastNewObject(),
             RelocInfo::CODE_TARGET);
     __ Pop(a0);
     __ LeaveBuiltinFrame(cp, a1, t0);
@@ -384,7 +384,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
     __ Push(a0);
-    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+    __ Call(masm->isolate()->builtins()->FastNewObject(),
             RelocInfo::CODE_TARGET);
     __ Pop(a0);
     __ LeaveBuiltinFrame(cp, a1, t0);
@@ -545,16 +545,14 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     // -----------------------------------
 
     __ Ld(t2, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
-    __ lbu(t2,
-           FieldMemOperand(t2, SharedFunctionInfo::kFunctionKindByteOffset));
-    __ And(t2, t2,
-           Operand(SharedFunctionInfo::kDerivedConstructorBitsWithinByte));
+    __ lwu(t2, FieldMemOperand(t2, SharedFunctionInfo::kCompilerHintsOffset));
+    __ And(t2, t2, Operand(SharedFunctionInfo::kDerivedConstructorMask));
     __ Branch(&not_create_implicit_receiver, ne, t2, Operand(zero_reg));
 
     // If not derived class constructor: Allocate the new receiver object.
     __ IncrementCounter(masm->isolate()->counters()->constructed_objects(), 1,
                         t2, t3);
-    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+    __ Call(masm->isolate()->builtins()->FastNewObject(),
             RelocInfo::CODE_TARGET);
     __ Branch(&post_instantiation_deopt_entry);
 
@@ -667,10 +665,8 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
       // Throw if constructor function is a class constructor
       __ Ld(a1, MemOperand(fp, ConstructFrameConstants::kConstructorOffset));
       __ Ld(t2, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
-      __ lbu(t2,
-             FieldMemOperand(t2, SharedFunctionInfo::kFunctionKindByteOffset));
-      __ And(t2, t2,
-             Operand(SharedFunctionInfo::kClassConstructorBitsWithinByte));
+      __ lwu(t2, FieldMemOperand(t2, SharedFunctionInfo::kCompilerHintsOffset));
+      __ And(t2, t2, Operand(SharedFunctionInfo::kClassConstructorMask));
       __ Branch(&use_receiver, eq, t2, Operand(zero_reg));
     } else {
       __ Branch(&use_receiver);
@@ -1047,14 +1043,12 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
 
   // Get the bytecode array from the function object (or from the DebugInfo if
   // it is present) and load it into kInterpreterBytecodeArrayRegister.
+  Label maybe_load_debug_bytecode_array, bytecode_array_loaded;
   __ Ld(a0, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
-  Label load_debug_bytecode_array, bytecode_array_loaded;
-  Register debug_info = kInterpreterBytecodeArrayRegister;
-  DCHECK(!debug_info.is(a0));
-  __ Ld(debug_info, FieldMemOperand(a0, SharedFunctionInfo::kDebugInfoOffset));
-  __ JumpIfNotSmi(debug_info, &load_debug_bytecode_array);
   __ Ld(kInterpreterBytecodeArrayRegister,
         FieldMemOperand(a0, SharedFunctionInfo::kFunctionDataOffset));
+  __ Ld(a4, FieldMemOperand(a0, SharedFunctionInfo::kDebugInfoOffset));
+  __ JumpIfNotSmi(a4, &maybe_load_debug_bytecode_array);
   __ bind(&bytecode_array_loaded);
 
   // Check whether we should continue to use the interpreter.
@@ -1146,10 +1140,16 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   LeaveInterpreterFrame(masm, t0);
   __ Jump(ra);
 
-  // Load debug copy of the bytecode array.
-  __ bind(&load_debug_bytecode_array);
+  // Load debug copy of the bytecode array if it exists.
+  // kInterpreterBytecodeArrayRegister is already loaded with
+  // SharedFunctionInfo::kFunctionDataOffset.
+  __ bind(&maybe_load_debug_bytecode_array);
+  __ Ld(a5, FieldMemOperand(a4, DebugInfo::kFlagsOffset));
+  __ SmiUntag(a5);
+  __ And(a5, a5, Operand(DebugInfo::kHasBreakInfo));
+  __ Branch(&bytecode_array_loaded, eq, a5, Operand(zero_reg));
   __ Ld(kInterpreterBytecodeArrayRegister,
-        FieldMemOperand(debug_info, DebugInfo::kDebugBytecodeArrayOffset));
+        FieldMemOperand(a4, DebugInfo::kDebugBytecodeArrayOffset));
   __ Branch(&bytecode_array_loaded);
 
   // If the shared code is no longer this entry trampoline, then the underlying
@@ -1460,10 +1460,8 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ bind(&try_shared);
   __ Ld(entry, FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   // Is the shared function marked for tier up?
-  __ Lbu(a5, FieldMemOperand(entry,
-                             SharedFunctionInfo::kMarkedForTierUpByteOffset));
-  __ And(a5, a5,
-         Operand(1 << SharedFunctionInfo::kMarkedForTierUpBitWithinByte));
+  __ Lwu(a5, FieldMemOperand(entry, SharedFunctionInfo::kCompilerHintsOffset));
+  __ And(a5, a5, Operand(SharedFunctionInfo::MarkedForTierUpBit::kMask));
   __ Branch(&gotta_call_runtime, ne, a5, Operand(zero_reg));
 
   // If SFI points to anything other than CompileLazy, install that.
@@ -1651,6 +1649,70 @@ void Builtins::Generate_NotifyStubFailureSaveDoubles(MacroAssembler* masm) {
   Generate_NotifyStubFailureHelper(masm, kSaveFPRegs);
 }
 
+void Builtins::Generate_NotifyBuiltinContinuation(MacroAssembler* masm) {
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    // Preserve possible return result from lazy deopt.
+    __ push(v0);
+    // Pass the function and deoptimization type to the runtime system.
+    __ CallRuntime(Runtime::kNotifyStubFailure, false);
+    __ pop(v0);
+  }
+
+  __ Daddu(sp, sp, Operand(kPointerSize));  // Ignore state
+  __ Jump(ra);  // Jump to the ContinueToBuiltin stub
+}
+
+namespace {
+void Generate_ContinueToBuiltinHelper(MacroAssembler* masm,
+                                      bool java_script_builtin,
+                                      bool with_result) {
+  const RegisterConfiguration* config(RegisterConfiguration::Turbofan());
+  int allocatable_register_count = config->num_allocatable_general_registers();
+  if (with_result) {
+    // Overwrite the hole inserted by the deoptimizer with the return value from
+    // the LAZY deopt point.
+    __ Sd(v0,
+          MemOperand(
+              sp, config->num_allocatable_general_registers() * kPointerSize +
+                      BuiltinContinuationFrameConstants::kFixedFrameSize));
+  }
+  for (int i = allocatable_register_count - 1; i >= 0; --i) {
+    int code = config->GetAllocatableGeneralCode(i);
+    __ Pop(Register::from_code(code));
+    if (java_script_builtin && code == kJavaScriptCallArgCountRegister.code()) {
+      __ SmiUntag(Register::from_code(code));
+    }
+  }
+  __ Ld(fp, MemOperand(
+                sp, BuiltinContinuationFrameConstants::kFixedFrameSizeFromFp));
+  __ Pop(t0);
+  __ Daddu(sp, sp,
+           Operand(BuiltinContinuationFrameConstants::kFixedFrameSizeFromFp));
+  __ Pop(ra);
+  __ Daddu(t0, t0, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ Jump(t0);
+}
+}  // namespace
+
+void Builtins::Generate_ContinueToCodeStubBuiltin(MacroAssembler* masm) {
+  Generate_ContinueToBuiltinHelper(masm, false, false);
+}
+
+void Builtins::Generate_ContinueToCodeStubBuiltinWithResult(
+    MacroAssembler* masm) {
+  Generate_ContinueToBuiltinHelper(masm, false, true);
+}
+
+void Builtins::Generate_ContinueToJavaScriptBuiltin(MacroAssembler* masm) {
+  Generate_ContinueToBuiltinHelper(masm, true, false);
+}
+
+void Builtins::Generate_ContinueToJavaScriptBuiltinWithResult(
+    MacroAssembler* masm) {
+  Generate_ContinueToBuiltinHelper(masm, true, true);
+}
+
 static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
                                              Deoptimizer::BailoutType type) {
   {
@@ -1763,14 +1825,14 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   // -----------------------------------
 
   Register argc = a0;
-  Register arg_array = a0;
+  Register arg_array = a2;
   Register receiver = a1;
-  Register this_arg = a2;
+  Register this_arg = a5;
   Register undefined_value = a3;
   Register scratch = a4;
 
   __ LoadRoot(undefined_value, Heap::kUndefinedValueRootIndex);
-  // 1. Load receiver into a1, argArray into a0 (if present), remove all
+  // 1. Load receiver into a1, argArray into a2 (if present), remove all
   // arguments from the stack (including the receiver), and push thisArg (if
   // present) instead.
   {
@@ -1790,7 +1852,7 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   }
 
   // ----------- S t a t e -------------
-  //  -- a0    : argArray
+  //  -- a2    : argArray
   //  -- a1    : receiver
   //  -- a3    : undefined root value
   //  -- sp[0] : thisArg
@@ -1809,10 +1871,9 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   __ JumpIfRoot(arg_array, Heap::kNullValueRootIndex, &no_arguments);
   __ Branch(&no_arguments, eq, arg_array, Operand(undefined_value));
 
-  // 4a. Apply the receiver to the given argArray (passing undefined for
-  // new.target).
-  DCHECK(undefined_value.is(a3));
-  __ Jump(masm->isolate()->builtins()->Apply(), RelocInfo::CODE_TARGET);
+  // 4a. Apply the receiver to the given argArray.
+  __ Jump(masm->isolate()->builtins()->CallWithArrayLike(),
+          RelocInfo::CODE_TARGET);
 
   // 4b. The argArray is either null or undefined, so we tail call without any
   // arguments to the receiver.
@@ -1883,14 +1944,14 @@ void Builtins::Generate_ReflectApply(MacroAssembler* masm) {
   // -----------------------------------
 
   Register argc = a0;
-  Register arguments_list = a0;
+  Register arguments_list = a2;
   Register target = a1;
-  Register this_argument = a2;
+  Register this_argument = a5;
   Register undefined_value = a3;
   Register scratch = a4;
 
   __ LoadRoot(undefined_value, Heap::kUndefinedValueRootIndex);
-  // 1. Load target into a1 (if present), argumentsList into a0 (if present),
+  // 1. Load target into a1 (if present), argumentsList into a2 (if present),
   // remove all arguments from the stack (including the receiver), and push
   // thisArgument (if present) instead.
   {
@@ -1914,7 +1975,7 @@ void Builtins::Generate_ReflectApply(MacroAssembler* masm) {
   }
 
   // ----------- S t a t e -------------
-  //  -- a0    : argumentsList
+  //  -- a2    : argumentsList
   //  -- a1    : target
   //  -- a3    : undefined root value
   //  -- sp[0] : thisArgument
@@ -1928,10 +1989,9 @@ void Builtins::Generate_ReflectApply(MacroAssembler* masm) {
   __ And(a4, a4, Operand(1 << Map::kIsCallable));
   __ Branch(&target_not_callable, eq, a4, Operand(zero_reg));
 
-  // 3a. Apply the target to the given argumentsList (passing undefined for
-  // new.target).
-  DCHECK(undefined_value.is(a3));
-  __ Jump(masm->isolate()->builtins()->Apply(), RelocInfo::CODE_TARGET);
+  // 3a. Apply the target to the given argumentsList.
+  __ Jump(masm->isolate()->builtins()->CallWithArrayLike(),
+          RelocInfo::CODE_TARGET);
 
   // 3b. The target is not callable, throw an appropriate TypeError.
   __ bind(&target_not_callable);
@@ -1950,13 +2010,13 @@ void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
   //  -- sp[12] : receiver
   // -----------------------------------
   Register argc = a0;
-  Register arguments_list = a0;
+  Register arguments_list = a2;
   Register target = a1;
   Register new_target = a3;
   Register undefined_value = a4;
   Register scratch = a5;
 
-  // 1. Load target into a1 (if present), argumentsList into a0 (if present),
+  // 1. Load target into a1 (if present), argumentsList into a2 (if present),
   // new.target into a3 (if present, otherwise use target), remove all
   // arguments from the stack (including the receiver), and push thisArgument
   // (if present) instead.
@@ -1981,7 +2041,7 @@ void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
   }
 
   // ----------- S t a t e -------------
-  //  -- a0    : argumentsList
+  //  -- a2    : argumentsList
   //  -- a1    : target
   //  -- a3    : new.target
   //  -- sp[0] : receiver (undefined)
@@ -2004,7 +2064,8 @@ void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
   __ Branch(&new_target_not_constructor, eq, a4, Operand(zero_reg));
 
   // 4a. Construct the target with the given new.target and argumentsList.
-  __ Jump(masm->isolate()->builtins()->Apply(), RelocInfo::CODE_TARGET);
+  __ Jump(masm->isolate()->builtins()->ConstructWithArrayLike(),
+          RelocInfo::CODE_TARGET);
 
   // 4b. The target is not a constructor, throw an appropriate TypeError.
   __ bind(&target_not_constructor);
@@ -2047,135 +2108,45 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
 }
 
 // static
-void Builtins::Generate_Apply(MacroAssembler* masm) {
+void Builtins::Generate_CallOrConstructVarargs(MacroAssembler* masm,
+                                               Handle<Code> code) {
   // ----------- S t a t e -------------
-  //  -- a0    : argumentsList
-  //  -- a1    : target
-  //  -- a3    : new.target (checked to be constructor or undefined)
-  //  -- sp[0] : thisArgument
+  //  -- a1 : target
+  //  -- a0 : number of parameters on the stack (not including the receiver)
+  //  -- a2 : arguments list (a FixedArray)
+  //  -- a4 : len (number of elements to push from args)
+  //  -- a3 : new.target (for [[Construct]])
   // -----------------------------------
+  __ AssertFixedArray(a2);
 
-  Register arguments_list = a0;
-  Register target = a1;
-  Register new_target = a3;
-
-  Register args = a0;
-  Register len = a2;
-
-  // Create the list of arguments from the array-like argumentsList.
-  {
-    Label create_arguments, create_array, create_holey_array, create_runtime,
-        done_create;
-    __ JumpIfSmi(arguments_list, &create_runtime);
-
-    // Load the map of argumentsList into a2.
-    Register arguments_list_map = a2;
-    __ Ld(arguments_list_map,
-          FieldMemOperand(arguments_list, HeapObject::kMapOffset));
-
-    // Load native context into a4.
-    Register native_context = a4;
-    __ Ld(native_context, NativeContextMemOperand());
-
-    // Check if argumentsList is an (unmodified) arguments object.
-    __ Ld(at, ContextMemOperand(native_context,
-                                Context::SLOPPY_ARGUMENTS_MAP_INDEX));
-    __ Branch(&create_arguments, eq, arguments_list_map, Operand(at));
-    __ Ld(at, ContextMemOperand(native_context,
-                                Context::STRICT_ARGUMENTS_MAP_INDEX));
-    __ Branch(&create_arguments, eq, arguments_list_map, Operand(at));
-
-    // Check if argumentsList is a fast JSArray.
-    __ Lbu(v0, FieldMemOperand(a2, Map::kInstanceTypeOffset));
-    __ Branch(&create_array, eq, v0, Operand(JS_ARRAY_TYPE));
-
-    // Ask the runtime to create the list (actually a FixedArray).
-    __ bind(&create_runtime);
-    {
-      FrameScope scope(masm, StackFrame::INTERNAL);
-      __ Push(target, new_target, arguments_list);
-      __ CallRuntime(Runtime::kCreateListFromArrayLike);
-      __ mov(arguments_list, v0);
-      __ Pop(target, new_target);
-      __ Lw(len, UntagSmiFieldMemOperand(v0, FixedArray::kLengthOffset));
-    }
-    __ Branch(&done_create);
-
-    // Try to create the list from an arguments object.
-    __ bind(&create_arguments);
-    __ Lw(len, UntagSmiFieldMemOperand(arguments_list,
-                                       JSArgumentsObject::kLengthOffset));
-    __ Ld(a4, FieldMemOperand(arguments_list, JSObject::kElementsOffset));
-    __ Lw(at, UntagSmiFieldMemOperand(a4, FixedArray::kLengthOffset));
-    __ Branch(&create_runtime, ne, len, Operand(at));
-    __ mov(args, a4);
-
-    __ Branch(&done_create);
-
-    // For holey JSArrays we need to check that the array prototype chain
-    // protector is intact and our prototype is the Array.prototype actually.
-    __ bind(&create_holey_array);
-    __ Ld(a2, FieldMemOperand(a2, Map::kPrototypeOffset));
-    __ Ld(at, ContextMemOperand(native_context,
-                                Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
-    __ Branch(&create_runtime, ne, a2, Operand(at));
-    __ LoadRoot(at, Heap::kArrayProtectorRootIndex);
-    __ Lw(a2, FieldMemOperand(at, PropertyCell::kValueOffset));
-    __ Branch(&create_runtime, ne, a2,
-              Operand(Smi::FromInt(Isolate::kProtectorValid)));
-    __ Lw(a2, UntagSmiFieldMemOperand(a0, JSArray::kLengthOffset));
-    __ Ld(a0, FieldMemOperand(a0, JSArray::kElementsOffset));
-    __ Branch(&done_create);
-
-    // Try to create the list from a JSArray object.
-    __ bind(&create_array);
-    __ Lbu(t1, FieldMemOperand(a2, Map::kBitField2Offset));
-    __ DecodeField<Map::ElementsKindBits>(t1);
-    STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
-    STATIC_ASSERT(FAST_ELEMENTS == 2);
-    STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-    __ Branch(&create_holey_array, eq, t1, Operand(FAST_HOLEY_SMI_ELEMENTS));
-    __ Branch(&create_holey_array, eq, t1, Operand(FAST_HOLEY_ELEMENTS));
-    __ Branch(&create_runtime, hi, t1, Operand(FAST_ELEMENTS));
-    __ Lw(a2, UntagSmiFieldMemOperand(arguments_list, JSArray::kLengthOffset));
-    __ Ld(a0, FieldMemOperand(arguments_list, JSArray::kElementsOffset));
-
-    __ bind(&done_create);
-  }
+  Register args = a2;
+  Register len = a4;
 
   // Check for stack overflow.
   {
     // Check the stack for overflow. We are not trying to catch interruptions
     // (i.e. debug break and preemption) here, so check the "real stack limit".
     Label done;
-    __ LoadRoot(a4, Heap::kRealStackLimitRootIndex);
+    __ LoadRoot(a5, Heap::kRealStackLimitRootIndex);
     // Make ip the space we have left. The stack might already be overflowed
     // here which will cause ip to become negative.
-    __ Dsubu(a4, sp, a4);
+    __ Dsubu(a5, sp, a5);
     // Check if the arguments will overflow the stack.
     __ dsll(at, len, kPointerSizeLog2);
-    __ Branch(&done, gt, a4, Operand(at));  // Signed comparison.
+    __ Branch(&done, gt, a5, Operand(at));  // Signed comparison.
     __ TailCallRuntime(Runtime::kThrowStackOverflow);
     __ bind(&done);
   }
 
-  // ----------- S t a t e -------------
-  //  -- a1    : target
-  //  -- a0    : args (a FixedArray built from argumentsList)
-  //  -- a2    : len (number of elements to push from args)
-  //  -- a3    : new.target (checked to be constructor or undefined)
-  //  -- sp[0] : thisArgument
-  // -----------------------------------
-
   // Push arguments onto the stack (thisArgument is already on the stack).
   {
     Label done, push, loop;
-    Register src = a4;
+    Register src = a6;
     Register scratch = len;
 
     __ daddiu(src, args, FixedArray::kHeaderSize - kHeapObjectTag);
     __ Branch(&done, eq, len, Operand(zero_reg), i::USE_DELAY_SLOT);
-    __ mov(a0, len);  // The 'len' argument for Call() or Construct().
+    __ Daddu(a0, a0, len);  // The 'len' argument for Call() or Construct().
     __ dsll(scratch, len, kPointerSizeLog2);
     __ Dsubu(scratch, sp, Operand(scratch));
     __ LoadRoot(t1, Heap::kTheHoleValueRootIndex);
@@ -2190,31 +2161,13 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     __ bind(&done);
   }
 
-  // ----------- S t a t e -------------
-  //  -- a0             : argument count (len)
-  //  -- a1             : target
-  //  -- a3             : new.target (checked to be constructor or undefinded)
-  //  -- sp[0]          : args[len-1]
-  //  -- sp[8]          : args[len-2]
-  //     ...            : ...
-  //  -- sp[8*(len-2)]  : args[1]
-  //  -- sp[8*(len-1)]  : args[0]
-  //  ----------------------------------
-
-  // Dispatch to Call or Construct depending on whether new.target is undefined.
-  {
-    Label construct;
-    __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
-    __ Branch(&construct, ne, a3, Operand(at));
-    __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
-    __ bind(&construct);
-    __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
-  }
+  // Tail-call to the actual Call or Construct builtin.
+  __ Jump(code, RelocInfo::CODE_TARGET);
 }
 
 // static
-void Builtins::Generate_ForwardVarargs(MacroAssembler* masm,
-                                       Handle<Code> code) {
+void Builtins::Generate_CallOrConstructForwardVarargs(MacroAssembler* masm,
+                                                      Handle<Code> code) {
   // ----------- S t a t e -------------
   //  -- a0 : the number of arguments (not including the receiver)
   //  -- a3 : the new.target (for [[Construct]] calls)
@@ -2377,21 +2330,20 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   // Check that function is not a "classConstructor".
   Label class_constructor;
   __ Ld(a2, FieldMemOperand(a1, JSFunction::kSharedFunctionInfoOffset));
-  __ Lbu(a3, FieldMemOperand(a2, SharedFunctionInfo::kFunctionKindByteOffset));
-  __ And(at, a3, Operand(SharedFunctionInfo::kClassConstructorBitsWithinByte));
+  __ Lwu(a3, FieldMemOperand(a2, SharedFunctionInfo::kCompilerHintsOffset));
+  __ And(at, a3, Operand(SharedFunctionInfo::kClassConstructorMask));
   __ Branch(&class_constructor, ne, at, Operand(zero_reg));
 
   // Enter the context of the function; ToObject has to run in the function
   // context, and we also need to take the global proxy from the function
   // context in case of conversion.
-  STATIC_ASSERT(SharedFunctionInfo::kNativeByteOffset ==
-                SharedFunctionInfo::kStrictModeByteOffset);
   __ Ld(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
   // We need to convert the receiver for non-native sloppy mode functions.
   Label done_convert;
-  __ Lbu(a3, FieldMemOperand(a2, SharedFunctionInfo::kNativeByteOffset));
-  __ And(at, a3, Operand((1 << SharedFunctionInfo::kNativeBitWithinByte) |
-                         (1 << SharedFunctionInfo::kStrictModeBitWithinByte)));
+  __ Lwu(a3, FieldMemOperand(a2, SharedFunctionInfo::kCompilerHintsOffset));
+  __ And(at, a3,
+         Operand(SharedFunctionInfo::IsNativeBit::kMask |
+                 SharedFunctionInfo::IsStrictBit::kMask));
   __ Branch(&done_convert, ne, at, Operand(zero_reg));
   {
     // ----------- S t a t e -------------

@@ -1676,6 +1676,58 @@ void BytecodeGraphBuilder::VisitReThrow() {
   MergeControlToLeaveFunction(control);
 }
 
+void BytecodeGraphBuilder::BuildHoleCheckAndThrow(
+    Node* condition, Runtime::FunctionId runtime_id, Node* name) {
+  Node* accumulator = environment()->LookupAccumulator();
+  NewBranch(condition, BranchHint::kFalse);
+  {
+    SubEnvironment sub_environment(this);
+
+    NewIfTrue();
+    Node* node;
+    const Operator* op = javascript()->CallRuntime(runtime_id);
+    if (runtime_id == Runtime::kThrowReferenceError) {
+      DCHECK(name != nullptr);
+      node = NewNode(op, name);
+    } else {
+      DCHECK(runtime_id == Runtime::kThrowSuperAlreadyCalledError ||
+             runtime_id == Runtime::kThrowSuperNotCalled);
+      node = NewNode(op);
+    }
+    environment()->RecordAfterState(node, Environment::kAttachFrameState);
+    Node* control = NewNode(common()->Throw());
+    MergeControlToLeaveFunction(control);
+  }
+  NewIfFalse();
+  environment()->BindAccumulator(accumulator);
+}
+
+void BytecodeGraphBuilder::VisitThrowReferenceErrorIfHole() {
+  Node* accumulator = environment()->LookupAccumulator();
+  Node* check_for_hole = NewNode(simplified()->ReferenceEqual(), accumulator,
+                                 jsgraph()->TheHoleConstant());
+  Node* name =
+      jsgraph()->Constant(bytecode_iterator().GetConstantForIndexOperand(0));
+  BuildHoleCheckAndThrow(check_for_hole, Runtime::kThrowReferenceError, name);
+}
+
+void BytecodeGraphBuilder::VisitThrowSuperNotCalledIfHole() {
+  Node* accumulator = environment()->LookupAccumulator();
+  Node* check_for_hole = NewNode(simplified()->ReferenceEqual(), accumulator,
+                                 jsgraph()->TheHoleConstant());
+  BuildHoleCheckAndThrow(check_for_hole, Runtime::kThrowSuperNotCalled);
+}
+
+void BytecodeGraphBuilder::VisitThrowSuperAlreadyCalledIfNotHole() {
+  Node* accumulator = environment()->LookupAccumulator();
+  Node* check_for_hole = NewNode(simplified()->ReferenceEqual(), accumulator,
+                                 jsgraph()->TheHoleConstant());
+  Node* check_for_not_hole =
+      NewNode(simplified()->BooleanNot(), check_for_hole);
+  BuildHoleCheckAndThrow(check_for_not_hole,
+                         Runtime::kThrowSuperAlreadyCalledError);
+}
+
 void BytecodeGraphBuilder::BuildBinaryOp(const Operator* op) {
   PrepareEagerCheckpoint();
   Node* left =
@@ -2090,11 +2142,37 @@ void BytecodeGraphBuilder::VisitToNumber() {
 }
 
 void BytecodeGraphBuilder::VisitToPrimitiveToString() {
-  UNREACHABLE();  // TODO(rmcilroy): Implement this.
+  PrepareEagerCheckpoint();
+  Node* object = environment()->LookupAccumulator();
+
+  Node* node = nullptr;
+  FeedbackSlot slot =
+      feedback_vector()->ToSlot(bytecode_iterator().GetIndexOperand(1));
+  if (Node* simplified = TryBuildSimplifiedToPrimitiveToString(object, slot)) {
+    node = simplified;
+  } else {
+    node = NewNode(javascript()->ToPrimitiveToString(), object);
+  }
+
+  environment()->BindRegister(bytecode_iterator().GetRegisterOperand(0), node,
+                              Environment::kAttachFrameState);
 }
 
 void BytecodeGraphBuilder::VisitStringConcat() {
-  UNREACHABLE();  // TODO(rmcilroy): Implement this.
+  interpreter::Register first_reg = bytecode_iterator().GetRegisterOperand(0);
+  int operand_count =
+      static_cast<int>(bytecode_iterator().GetRegisterCountOperand(1));
+  Node** operands =
+      local_zone()->NewArray<Node*>(static_cast<size_t>(operand_count));
+  int operand_base = first_reg.index();
+  for (int i = 0; i < operand_count; ++i) {
+    operands[i] =
+        environment()->LookupRegister(interpreter::Register(operand_base + i));
+  }
+
+  Node* node = MakeNode(javascript()->StringConcat(operand_count),
+                        operand_count, operands, false);
+  environment()->BindAccumulator(node, Environment::kAttachFrameState);
 }
 
 void BytecodeGraphBuilder::VisitJump() { BuildJump(); }
@@ -2123,12 +2201,6 @@ void BytecodeGraphBuilder::VisitJumpIfToBooleanFalse() {
 
 void BytecodeGraphBuilder::VisitJumpIfToBooleanFalseConstant() {
   BuildJumpIfToBooleanFalse();
-}
-
-void BytecodeGraphBuilder::VisitJumpIfNotHole() { BuildJumpIfNotHole(); }
-
-void BytecodeGraphBuilder::VisitJumpIfNotHoleConstant() {
-  BuildJumpIfNotHole();
 }
 
 void BytecodeGraphBuilder::VisitJumpIfJSReceiver() { BuildJumpIfJSReceiver(); }
@@ -2223,6 +2295,18 @@ void BytecodeGraphBuilder::VisitDebugger() {
   void BytecodeGraphBuilder::Visit##Name() { UNREACHABLE(); }
 DEBUG_BREAK_BYTECODE_LIST(DEBUG_BREAK);
 #undef DEBUG_BREAK
+
+void BytecodeGraphBuilder::VisitIncBlockCounter() {
+  DCHECK(FLAG_block_coverage);
+
+  Node* closure = GetFunctionClosure();
+  Node* coverage_array_slot =
+      jsgraph()->Constant(bytecode_iterator().GetIndexOperand(0));
+
+  const Operator* op = javascript()->CallRuntime(Runtime::kIncBlockCounter);
+
+  NewNode(op, closure, coverage_array_slot);
+}
 
 void BytecodeGraphBuilder::VisitForInPrepare() {
   PrepareEagerCheckpoint();
@@ -2553,6 +2637,20 @@ Node* BytecodeGraphBuilder::TryBuildSimplifiedToNumber(Node* value,
   Node* control = environment()->GetControlDependency();
   Reduction early_reduction = type_hint_lowering().ReduceToNumberOperation(
       value, effect, control, slot);
+  if (early_reduction.Changed()) {
+    ApplyEarlyReduction(early_reduction);
+    return early_reduction.replacement();
+  }
+  return nullptr;
+}
+
+Node* BytecodeGraphBuilder::TryBuildSimplifiedToPrimitiveToString(
+    Node* value, FeedbackSlot slot) {
+  Node* effect = environment()->GetEffectDependency();
+  Node* control = environment()->GetControlDependency();
+  Reduction early_reduction =
+      type_hint_lowering().ReduceToPrimitiveToStringOperation(value, effect,
+                                                              control, slot);
   if (early_reduction.Changed()) {
     ApplyEarlyReduction(early_reduction);
     return early_reduction.replacement();

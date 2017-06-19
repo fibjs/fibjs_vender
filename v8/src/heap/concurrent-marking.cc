@@ -52,7 +52,7 @@ class ConcurrentMarkingVisitor final
       : deque_(deque) {}
 
   bool ShouldVisit(HeapObject* object) override {
-    return ObjectMarking::GreyToBlack<MarkBit::AccessMode::ATOMIC>(
+    return ObjectMarking::GreyToBlack<AccessMode::ATOMIC>(
         object, marking_state(object));
   }
 
@@ -98,7 +98,7 @@ class ConcurrentMarkingVisitor final
   // ===========================================================================
 
   int VisitFixedArray(Map* map, FixedArray* object) override {
-    int length = object->length();
+    int length = object->synchronized_length();
     int size = FixedArray::SizeFor(length);
     if (!ShouldVisit(object)) return 0;
     VisitMapPointer(object, object->map_slot());
@@ -168,8 +168,15 @@ class ConcurrentMarkingVisitor final
   }
 
   void MarkObject(HeapObject* object) {
-    if (ObjectMarking::WhiteToGrey<MarkBit::AccessMode::ATOMIC>(
-            object, marking_state(object))) {
+#ifdef THREAD_SANITIZER
+    // Perform a dummy acquire load to tell TSAN that there is no data race
+    // in mark-bit initialization. See MemoryChunk::Initialize for the
+    // corresponding release store.
+    MemoryChunk* chunk = MemoryChunk::FromAddress(object->address());
+    CHECK_NOT_NULL(chunk->synchronized_heap());
+#endif
+    if (ObjectMarking::WhiteToGrey<AccessMode::ATOMIC>(object,
+                                                       marking_state(object))) {
       deque_->Push(object, MarkingThread::kConcurrent, TargetDeque::kShared);
     }
   }
@@ -256,16 +263,18 @@ void ConcurrentMarking::Run() {
   base::Mutex* relocation_mutex = heap_->relocation_mutex();
   {
     TimedScope scope(&time_ms);
-    HeapObject* object;
-    while ((object = deque_->Pop(MarkingThread::kConcurrent)) != nullptr) {
+    while (true) {
       base::LockGuard<base::Mutex> guard(relocation_mutex);
+      HeapObject* object = deque_->Pop(MarkingThread::kConcurrent);
+      if (object == nullptr) break;
       Address new_space_top = heap_->new_space()->original_top();
       Address new_space_limit = heap_->new_space()->original_limit();
       Address addr = object->address();
       if (new_space_top <= addr && addr < new_space_limit) {
         deque_->Push(object, MarkingThread::kConcurrent, TargetDeque::kBailout);
       } else {
-        bytes_marked += visitor_->Visit(object);
+        Map* map = object->synchronized_map();
+        bytes_marked += visitor_->Visit(map, object);
       }
     }
   }

@@ -55,13 +55,14 @@ bool IncrementalMarking::BaseRecordWrite(HeapObject* obj, Object* value) {
   DCHECK(!ObjectMarking::IsImpossible<kAtomicity>(
       value_heap_obj, marking_state(value_heap_obj)));
   DCHECK(!ObjectMarking::IsImpossible<kAtomicity>(obj, marking_state(obj)));
-  const bool is_black =
+  const bool need_recording =
+      FLAG_concurrent_marking ||
       ObjectMarking::IsBlack<kAtomicity>(obj, marking_state(obj));
 
-  if (is_black && WhiteToGreyAndPush(value_heap_obj)) {
+  if (need_recording && WhiteToGreyAndPush(value_heap_obj)) {
     RestartIfNotMarking();
   }
-  return is_compacting_ && is_black;
+  return is_compacting_ && need_recording;
 }
 
 
@@ -595,7 +596,6 @@ void IncrementalMarking::StartMarking() {
   }
 #endif
 
-  heap_->CompletelyClearInstanceofCache();
   heap_->isolate()->compilation_cache()->MarkCompactPrologue();
 
   if (FLAG_concurrent_marking && !black_allocation_) {
@@ -905,10 +905,9 @@ void IncrementalMarking::VisitObject(Map* map, HeapObject* obj, int size) {
 intptr_t IncrementalMarking::ProcessMarkingDeque(
     intptr_t bytes_to_process, ForceCompletionAction completion) {
   intptr_t bytes_processed = 0;
-  while (!marking_deque()->IsEmpty() && (bytes_processed < bytes_to_process ||
-                                         completion == FORCE_COMPLETION)) {
+  while (bytes_processed < bytes_to_process || completion == FORCE_COMPLETION) {
     HeapObject* obj = marking_deque()->Pop();
-
+    if (obj == nullptr) break;
     // Left trimming may result in white, grey, or black filler objects on the
     // marking deque. Ignore these objects.
     if (obj->IsFiller()) {

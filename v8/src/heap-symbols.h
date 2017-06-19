@@ -8,6 +8,7 @@
 #define INTERNALIZED_STRING_LIST(V)                                \
   V(anonymous_function_string, "(anonymous function)")             \
   V(anonymous_string, "anonymous")                                 \
+  V(add_string, "add")                                             \
   V(apply_string, "apply")                                         \
   V(arguments_string, "arguments")                                 \
   V(Arguments_string, "Arguments")                                 \
@@ -200,6 +201,8 @@
   V(array_iterator_object_symbol)           \
   V(call_site_frame_array_symbol)           \
   V(call_site_frame_index_symbol)           \
+  V(console_context_id_symbol)              \
+  V(console_context_name_symbol)            \
   V(class_end_position_symbol)              \
   V(class_start_position_symbol)            \
   V(detailed_stack_trace_symbol)            \

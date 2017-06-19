@@ -12,6 +12,7 @@
 #include "src/ast/ast-numbering.h"
 #include "src/ast/prettyprinter.h"
 #include "src/ast/scopes.h"
+#include "src/base/optional.h"
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
 #include "src/compilation-cache.h"
@@ -451,6 +452,13 @@ void InstallUnoptimizedCode(CompilationInfo* info) {
 
   // Install compilation result on the shared function info
   InstallSharedCompilationResult(info, shared);
+
+  // Install coverage info on the shared function info.
+  if (info->has_coverage_info()) {
+    DCHECK(info->is_block_coverage_enabled());
+    info->isolate()->debug()->InstallCoverageInfo(info->shared_info(),
+                                                  info->coverage_info());
+  }
 }
 
 CompilationJob::Status FinalizeUnoptimizedCompilationJob(CompilationJob* job) {
@@ -616,9 +624,9 @@ bool CompileUnoptimizedCode(CompilationInfo* info,
 
   Compiler::EagerInnerFunctionLiterals inner_literals;
   {
-    std::unique_ptr<CompilationHandleScope> compilation_handle_scope;
+    base::Optional<CompilationHandleScope> compilation_handle_scope;
     if (inner_function_mode == Compiler::CONCURRENT) {
-      compilation_handle_scope.reset(new CompilationHandleScope(info));
+      compilation_handle_scope.emplace(info);
     }
     if (!Compiler::Analyze(info, &inner_literals)) {
       if (!isolate->has_pending_exception()) isolate->StackOverflow();
@@ -883,35 +891,29 @@ MaybeHandle<Code> GetOptimizedCode(Handle<JSFunction> function,
 
   // Reset profiler ticks, function is no longer considered hot.
   DCHECK(shared->is_compiled());
-  if (shared->HasBaselineCode()) {
-    shared->code()->set_profiler_ticks(0);
-  } else if (shared->HasBytecodeArray()) {
-    shared->set_profiler_ticks(0);
-  }
+  shared->set_profiler_ticks(0);
 
   VMState<COMPILER> state(isolate);
   DCHECK(!isolate->has_pending_exception());
   PostponeInterruptsScope postpone(isolate);
-  bool use_turbofan = UseTurboFan(shared) || ignition_osr;
   bool has_script = shared->script()->IsScript();
   // BUG(5946): This DCHECK is necessary to make certain that we won't tolerate
   // the lack of a script without bytecode.
   DCHECK_IMPLIES(!has_script, ShouldUseIgnition(shared, false));
   std::unique_ptr<CompilationJob> job(
-      use_turbofan ? compiler::Pipeline::NewCompilationJob(function, has_script)
-                   : new HCompilationJob(function));
+      compiler::Pipeline::NewCompilationJob(function, has_script));
   CompilationInfo* info = job->info();
   ParseInfo* parse_info = info->parse_info();
 
   info->SetOptimizingForOsr(osr_ast_id, osr_frame);
 
-  // Do not use Crankshaft/TurboFan if we need to be able to set break points.
+  // Do not use TurboFan if we need to be able to set break points.
   if (info->shared_info()->HasBreakInfo()) {
     info->AbortOptimization(kFunctionBeingDebugged);
     return MaybeHandle<Code>();
   }
 
-  // Do not use Crankshaft/TurboFan when %NeverOptimizeFunction was applied.
+  // Do not use TurboFan when %NeverOptimizeFunction was applied.
   if (shared->optimization_disabled() &&
       shared->disable_optimization_reason() == kOptimizationDisabledForTest) {
     info->AbortOptimization(kOptimizationDisabledForTest);
@@ -926,12 +928,18 @@ MaybeHandle<Code> GetOptimizedCode(Handle<JSFunction> function,
     return MaybeHandle<Code>();
   }
 
+  // Do not use TurboFan if activation criteria are not met.
+  if (!UseTurboFan(shared) && !ignition_osr) {
+    info->AbortOptimization(kOptimizationDisabled);
+    return MaybeHandle<Code>();
+  }
+
   TimerEventScope<TimerEventOptimizeCode> optimize_code_timer(isolate);
   RuntimeCallTimerScope runtimeTimer(isolate, &RuntimeCallStats::OptimizeCode);
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.OptimizeCode");
 
   // TurboFan can optimize directly from existing bytecode.
-  if (use_turbofan && ShouldUseIgnition(info)) {
+  if (ShouldUseIgnition(info)) {
     DCHECK(shared->HasBytecodeArray());
     info->MarkAsOptimizeFromBytecode();
   }
@@ -949,14 +957,13 @@ MaybeHandle<Code> GetOptimizedCode(Handle<JSFunction> function,
   // In case of concurrent recompilation, all handles below this point will be
   // allocated in a deferred handle scope that is detached and handed off to
   // the background thread when we return.
-  std::unique_ptr<CompilationHandleScope> compilation;
+  base::Optional<CompilationHandleScope> compilation;
   if (mode == Compiler::CONCURRENT) {
-    compilation.reset(new CompilationHandleScope(info));
+    compilation.emplace(info);
   }
 
-  // In case of TurboFan, all handles below will be canonicalized.
-  std::unique_ptr<CanonicalHandleScope> canonical;
-  if (use_turbofan) canonical.reset(new CanonicalHandleScope(info->isolate()));
+  // All handles below will be canonicalized.
+  CanonicalHandleScope canonical(info->isolate());
 
   // Reopen handles in the new CompilationHandleScope.
   info->ReopenHandlesInNewHandleScope();
@@ -995,11 +1002,7 @@ CompilationJob::Status FinalizeOptimizedCompilationJob(CompilationJob* job) {
   Handle<SharedFunctionInfo> shared = info->shared_info();
 
   // Reset profiler ticks, function is no longer considered hot.
-  if (shared->HasBaselineCode()) {
-    shared->code()->set_profiler_ticks(0);
-  } else if (shared->HasBytecodeArray()) {
-    shared->set_profiler_ticks(0);
-  }
+  shared->set_profiler_ticks(0);
 
   shared->set_has_concurrent_optimization_job(false);
 
@@ -1382,7 +1385,7 @@ bool Compiler::EnsureBytecode(CompilationInfo* info) {
 
 // TODO(turbofan): In the future, unoptimized code with deopt support could
 // be generated lazily once deopt is triggered.
-bool Compiler::EnsureDeoptimizationSupport(CompilationInfo* info) {
+bool Compiler::EnsureBaselineCode(CompilationInfo* info) {
   DCHECK_NOT_NULL(info->literal());
   DCHECK_NOT_NULL(info->scope());
   Handle<SharedFunctionInfo> shared = info->shared_info();
@@ -1392,7 +1395,7 @@ bool Compiler::EnsureDeoptimizationSupport(CompilationInfo* info) {
     if (!dispatcher->FinishNow(shared)) return false;
   }
 
-  if (!shared->has_deoptimization_support()) {
+  if (!shared->HasBaselineCode()) {
     // Don't generate full-codegen code for functions which should use Ignition.
     if (ShouldUseIgnition(info)) return false;
 
@@ -1402,7 +1405,6 @@ bool Compiler::EnsureDeoptimizationSupport(CompilationInfo* info) {
     Zone compile_zone(info->isolate()->allocator(), ZONE_NAME);
     CompilationInfo unoptimized(&compile_zone, info->parse_info(),
                                 info->isolate(), info->closure());
-    unoptimized.EnableDeoptimizationSupport();
 
     // When we call PrepareForSerializing below, we will change the shared
     // ParseInfo. Make sure to reset it.
@@ -1428,7 +1430,7 @@ bool Compiler::EnsureDeoptimizationSupport(CompilationInfo* info) {
     }
 
     // Install compilation result on the shared function info
-    shared->EnableDeoptimizationSupport(*unoptimized.code());
+    shared->ReplaceCode(*unoptimized.code());
 
     // The existing unoptimized code was replaced with the new one.
     RecordFunctionCompilation(CodeEventListener::LAZY_COMPILE_TAG,
@@ -1549,22 +1551,6 @@ MaybeHandle<JSFunction> Compiler::GetFunctionFromEval(
 
 namespace {
 
-bool CodeGenerationFromStringsAllowed(Isolate* isolate,
-                                      Handle<Context> context) {
-  DCHECK(context->allow_code_gen_from_strings()->IsFalse(isolate));
-  // Check with callback if set.
-  AllowCodeGenerationFromStringsCallback callback =
-      isolate->allow_code_gen_callback();
-  if (callback == NULL) {
-    // No callback set and code generation disallowed.
-    return false;
-  } else {
-    // Callback set. Let it decide if code generation is allowed.
-    VMState<EXTERNAL> state(isolate);
-    return callback(v8::Utils::ToLocal(context));
-  }
-}
-
 bool ContainsAsmModule(Handle<Script> script) {
   DisallowHeapAllocation no_gc;
   SharedFunctionInfo::ScriptIterator iter(script);
@@ -1576,6 +1562,23 @@ bool ContainsAsmModule(Handle<Script> script) {
 
 }  // namespace
 
+bool Compiler::CodeGenerationFromStringsAllowed(Isolate* isolate,
+                                                Handle<Context> context,
+                                                Handle<String> source) {
+  DCHECK(context->allow_code_gen_from_strings()->IsFalse(isolate));
+  // Check with callback if set.
+  AllowCodeGenerationFromStringsCallback callback =
+      isolate->allow_code_gen_callback();
+  if (callback == NULL) {
+    // No callback set and code generation disallowed.
+    return false;
+  } else {
+    // Callback set. Let it decide if code generation is allowed.
+    VMState<EXTERNAL> state(isolate);
+    return callback(v8::Utils::ToLocal(context), v8::Utils::ToLocal(source));
+  }
+}
+
 MaybeHandle<JSFunction> Compiler::GetFunctionFromString(
     Handle<Context> context, Handle<String> source,
     ParseRestriction restriction, int parameters_end_pos) {
@@ -1585,7 +1588,7 @@ MaybeHandle<JSFunction> Compiler::GetFunctionFromString(
   // Check if native context allows code generation from
   // strings. Throw an exception if it doesn't.
   if (native_context->allow_code_gen_from_strings()->IsFalse(isolate) &&
-      !CodeGenerationFromStringsAllowed(isolate, native_context)) {
+      !CodeGenerationFromStringsAllowed(isolate, native_context, source)) {
     Handle<Object> error_message =
         native_context->ErrorMessageForCodeGenerationFromStrings();
     THROW_NEW_ERROR(isolate, NewEvalError(MessageTemplate::kCodeGenFromStrings,

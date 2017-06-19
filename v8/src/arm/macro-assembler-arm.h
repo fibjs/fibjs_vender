@@ -182,7 +182,7 @@ class MacroAssembler: public Assembler {
   void Move(Register dst, Register src, Condition cond = al);
   void Move(Register dst, const Operand& src, SBit sbit = LeaveCC,
             Condition cond = al) {
-    if (!src.is_reg() || !src.rm().is(dst) || sbit != LeaveCC) {
+    if (!src.IsRegister() || !src.rm().is(dst) || sbit != LeaveCC) {
       mov(dst, src, sbit, cond);
     }
   }
@@ -1214,6 +1214,9 @@ class MacroAssembler: public Assembler {
   // Abort execution if argument is a smi, enabled via --debug-code.
   void AssertNotSmi(Register object);
   void AssertSmi(Register object);
+
+  // Abort execution if argument is not a FixedArray, enabled via --debug-code.
+  void AssertFixedArray(Register object);
 
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
   void AssertFunction(Register object);

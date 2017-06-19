@@ -92,7 +92,7 @@ int MacroAssembler::CallSize(
   Instr mov_instr = cond | MOV | LeaveCC;
   Operand mov_operand = Operand(reinterpret_cast<intptr_t>(target), rmode);
   return kInstrSize +
-         mov_operand.instructions_required(this, mov_instr) * kInstrSize;
+         mov_operand.InstructionsRequired(this, mov_instr) * kInstrSize;
 }
 
 
@@ -322,12 +322,11 @@ void MacroAssembler::Mls(Register dst, Register src1, Register src2,
 
 void MacroAssembler::And(Register dst, Register src1, const Operand& src2,
                          Condition cond) {
-  if (!src2.is_reg() &&
-      !src2.must_output_reloc_info(this) &&
+  if (!src2.IsRegister() && !src2.MustOutputRelocInfo(this) &&
       src2.immediate() == 0) {
     mov(dst, Operand::Zero(), LeaveCC, cond);
-  } else if (!(src2.instructions_required(this) == 1) &&
-             !src2.must_output_reloc_info(this) &&
+  } else if (!(src2.InstructionsRequired(this) == 1) &&
+             !src2.MustOutputRelocInfo(this) &&
              CpuFeatures::IsSupported(ARMv7) &&
              base::bits::IsPowerOfTwo32(src2.immediate() + 1)) {
     CpuFeatureScope scope(this, ARMv7);
@@ -1782,7 +1781,6 @@ void MacroAssembler::InvokeFunction(Register fun,
   ldr(expected_reg,
       FieldMemOperand(temp_reg,
                       SharedFunctionInfo::kFormalParameterCountOffset));
-  SmiUntag(expected_reg);
 
   ParameterCount expected(expected_reg);
   InvokeFunctionCode(fun, new_target, expected, actual, flag, call_wrapper);
@@ -1997,7 +1995,7 @@ void MacroAssembler::Allocate(int object_size,
       object_size -= bits;
       shift += 8;
       Operand bits_operand(bits);
-      DCHECK(bits_operand.instructions_required(this) == 1);
+      DCHECK(bits_operand.InstructionsRequired(this) == 1);
       add(result_end, source, bits_operand);
       source = result_end;
     }
@@ -2207,7 +2205,7 @@ void MacroAssembler::FastAllocate(int object_size, Register result,
       object_size -= bits;
       shift += 8;
       Operand bits_operand(bits);
-      DCHECK(bits_operand.instructions_required(this) == 1);
+      DCHECK(bits_operand.InstructionsRequired(this) == 1);
       add(result_end, source, bits_operand);
       source = result_end;
     }
@@ -2799,6 +2797,17 @@ void MacroAssembler::AssertSmi(Register object) {
   }
 }
 
+void MacroAssembler::AssertFixedArray(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    tst(object, Operand(kSmiTagMask));
+    Check(ne, kOperandIsASmiAndNotAFixedArray);
+    push(object);
+    CompareObjectType(object, object, object, FIXED_ARRAY_TYPE);
+    pop(object);
+    Check(eq, kOperandIsNotAFixedArray);
+  }
+}
 
 void MacroAssembler::AssertFunction(Register object) {
   if (emit_debug_code()) {

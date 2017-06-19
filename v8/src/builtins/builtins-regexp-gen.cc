@@ -257,7 +257,7 @@ Node* RegExpBuiltinsAssembler::RegExpExecInternal(Node* const context,
   ToDirectStringAssembler to_direct(state(), string);
 
   VARIABLE(var_result, MachineRepresentation::kTagged);
-  Label out(this), runtime(this, Label::kDeferred);
+  Label out(this), atom(this), runtime(this, Label::kDeferred);
 
   // External constants.
   Node* const isolate_address =
@@ -269,11 +269,20 @@ Node* RegExpBuiltinsAssembler::RegExpExecInternal(Node* const context,
   Node* const static_offsets_vector_address = ExternalConstant(
       ExternalReference::address_of_static_offsets_vector(isolate()));
 
-  // Ensure that a RegExp stack is allocated.
+  // At this point, last_index is definitely a canonicalized non-negative
+  // number, which implies that any non-Smi last_index is greater than
+  // the maximal string length. If lastIndex > string.length then the matcher
+  // must fail.
+
+  Label if_failure(this);
+  Node* const smi_string_length = LoadStringLength(string);
   {
-    Node* const stack_size =
-        Load(MachineType::IntPtr(), regexp_stack_memory_size_address);
-    GotoIf(IntPtrEqual(stack_size, int_zero), &runtime);
+    CSA_ASSERT(this, IsNumberNormalized(last_index));
+    CSA_ASSERT(this, IsNumberPositive(last_index));
+    Node* const last_index_is_not_smi = TaggedIsNotSmi(last_index);
+    Node* const last_index_is_oob =
+        SmiGreaterThan(last_index, smi_string_length);
+    GotoIf(Word32Or(last_index_is_not_smi, last_index_is_oob), &if_failure);
   }
 
   Node* const data = LoadObjectField(regexp, JSRegExp::kDataOffset);
@@ -282,10 +291,17 @@ Node* RegExpBuiltinsAssembler::RegExpExecInternal(Node* const context,
     CSA_ASSERT(this, TaggedIsNotSmi(data));
     CSA_ASSERT(this, HasInstanceType(data, FIXED_ARRAY_TYPE));
 
-    // Check the type of the RegExp. Only continue if type is
-    // JSRegExp::IRREGEXP.
-    Node* const tag = LoadFixedArrayElement(data, JSRegExp::kTagIndex);
-    GotoIfNot(SmiEqual(tag, SmiConstant(JSRegExp::IRREGEXP)), &runtime);
+    // Dispatch on the type of the RegExp. The common case (IRREGEXP) is first.
+    // NOT_COMPILED is last as it requires a slow runtime call anyway.
+    {
+      Label next(this);
+      Node* const tag = LoadFixedArrayElement(data, JSRegExp::kTagIndex);
+      GotoIf(SmiEqual(tag, SmiConstant(JSRegExp::IRREGEXP)), &next);
+      GotoIf(SmiEqual(tag, SmiConstant(JSRegExp::ATOM)), &atom);
+      CSA_ASSERT(this, SmiEqual(tag, SmiConstant(JSRegExp::NOT_COMPILED)));
+      Goto(&runtime);
+      BIND(&next);
+    }
 
     // Check (number_of_captures + 1) * 2 <= offsets vector size
     // Or              number_of_captures <= offsets vector size / 2 - 1
@@ -300,22 +316,17 @@ Node* RegExpBuiltinsAssembler::RegExpExecInternal(Node* const context,
            &runtime);
   }
 
+  // Ensure that a RegExp stack is allocated. This check is after branching off
+  // for ATOM regexps to avoid unnecessary trips to runtime.
+  {
+    Node* const stack_size =
+        Load(MachineType::IntPtr(), regexp_stack_memory_size_address);
+    GotoIf(IntPtrEqual(stack_size, int_zero), &runtime);
+  }
+
   // Unpack the string if possible.
 
   to_direct.TryToDirect(&runtime);
-
-  Node* const smi_string_length = LoadStringLength(string);
-
-  // At this point, last_index is definitely a canonicalized non-negative
-  // number, which implies that any non-Smi last_index is greater than
-  // the maximal string length. If lastIndex > string.length then the matcher
-  // must fail.
-
-  Label if_failure(this);
-  CSA_ASSERT(this, IsNumberNormalized(last_index));
-  CSA_ASSERT(this, IsNumberPositive(last_index));
-  GotoIfNot(TaggedIsSmi(last_index), &if_failure);  // Outside Smi range.
-  GotoIf(SmiGreaterThan(last_index, smi_string_length), &if_failure);
 
   // Load the irregexp code object and offsets into the subject string. Both
   // depend on whether the string is one- or two-byte.
@@ -525,6 +536,14 @@ Node* RegExpBuiltinsAssembler::RegExpExecInternal(Node* const context,
   BIND(&runtime);
   {
     Node* const result = CallRuntime(Runtime::kRegExpExec, context, regexp,
+                                     string, last_index, match_info);
+    var_result.Bind(result);
+    Goto(&out);
+  }
+
+  BIND(&atom);
+  {
+    Node* const result = CallBuiltin(Builtins::kRegExpExecAtom, context, regexp,
                                      string, last_index, match_info);
     var_result.Bind(result);
     Goto(&out);
@@ -851,6 +870,70 @@ TF_BUILTIN(RegExpPrototypeExecSlow, RegExpBuiltinsAssembler) {
   Return(RegExpPrototypeExecBody(context, regexp, string, false));
 }
 
+// Fast path stub for ATOM regexps. String matching is done by StringIndexOf,
+// and {match_info} is updated on success.
+// The slow path is implemented in RegExpImpl::AtomExec.
+TF_BUILTIN(RegExpExecAtom, RegExpBuiltinsAssembler) {
+  Node* const regexp = Parameter(Descriptor::kRegExp);
+  Node* const subject_string = Parameter(Descriptor::kString);
+  Node* const last_index = Parameter(Descriptor::kLastIndex);
+  Node* const match_info = Parameter(Descriptor::kMatchInfo);
+  Node* const context = Parameter(Descriptor::kContext);
+
+  CSA_ASSERT(this, IsJSRegExp(regexp));
+  CSA_ASSERT(this, IsString(subject_string));
+  CSA_ASSERT(this, TaggedIsPositiveSmi(last_index));
+  CSA_ASSERT(this, IsFixedArray(match_info));
+
+  Node* const data = LoadObjectField(regexp, JSRegExp::kDataOffset);
+  CSA_ASSERT(this, IsFixedArray(data));
+  CSA_ASSERT(this, SmiEqual(LoadFixedArrayElement(data, JSRegExp::kTagIndex),
+                            SmiConstant(JSRegExp::ATOM)));
+
+  // Callers ensure that last_index is in-bounds.
+  CSA_ASSERT(this,
+             SmiLessThanOrEqual(last_index, LoadStringLength(subject_string)));
+
+  Node* const needle_string =
+      LoadFixedArrayElement(data, JSRegExp::kAtomPatternIndex);
+  CSA_ASSERT(this, IsString(needle_string));
+
+  Node* const match_from =
+      CallBuiltin(Builtins::kStringIndexOf, context, subject_string,
+                  needle_string, last_index);
+  CSA_ASSERT(this, TaggedIsSmi(match_from));
+
+  Label if_failure(this), if_success(this);
+  Branch(SmiEqual(match_from, SmiConstant(-1)), &if_failure, &if_success);
+
+  BIND(&if_success);
+  {
+    CSA_ASSERT(this, TaggedIsPositiveSmi(match_from));
+    CSA_ASSERT(this, SmiLessThan(match_from, LoadStringLength(subject_string)));
+
+    const int kNumRegisters = 2;
+    STATIC_ASSERT(RegExpMatchInfo::kInitialCaptureIndices >= kNumRegisters);
+
+    Node* const match_to = SmiAdd(match_from, LoadStringLength(needle_string));
+
+    StoreFixedArrayElement(match_info, RegExpMatchInfo::kNumberOfCapturesIndex,
+                           SmiConstant(kNumRegisters), SKIP_WRITE_BARRIER);
+    StoreFixedArrayElement(match_info, RegExpMatchInfo::kLastSubjectIndex,
+                           subject_string);
+    StoreFixedArrayElement(match_info, RegExpMatchInfo::kLastInputIndex,
+                           subject_string);
+    StoreFixedArrayElement(match_info, RegExpMatchInfo::kFirstCaptureIndex,
+                           match_from, SKIP_WRITE_BARRIER);
+    StoreFixedArrayElement(match_info, RegExpMatchInfo::kFirstCaptureIndex + 1,
+                           match_to, SKIP_WRITE_BARRIER);
+
+    Return(match_info);
+  }
+
+  BIND(&if_failure);
+  Return(NullConstant());
+}
+
 // ES#sec-regexp.prototype.exec
 // RegExp.prototype.exec ( string )
 TF_BUILTIN(RegExpPrototypeExec, RegExpBuiltinsAssembler) {
@@ -864,7 +947,7 @@ TF_BUILTIN(RegExpPrototypeExec, RegExpBuiltinsAssembler) {
   Node* const receiver = maybe_receiver;
 
   // Convert {maybe_string} to a String.
-  Node* const string = ToString(context, maybe_string);
+  Node* const string = ToString_Inline(context, maybe_string);
 
   Label if_isfastpath(this), if_isslowpath(this);
   Branch(IsFastRegExpNoPrototype(context, receiver), &if_isfastpath,
@@ -1050,13 +1133,13 @@ Node* RegExpBuiltinsAssembler::RegExpInitialize(Node* const context,
   // Normalize pattern.
   Node* const pattern =
       Select(IsUndefined(maybe_pattern), [=] { return EmptyStringConstant(); },
-             [=] { return ToString(context, maybe_pattern); },
+             [=] { return ToString_Inline(context, maybe_pattern); },
              MachineRepresentation::kTagged);
 
   // Normalize flags.
   Node* const flags =
       Select(IsUndefined(maybe_flags), [=] { return EmptyStringConstant(); },
-             [=] { return ToString(context, maybe_flags); },
+             [=] { return ToString_Inline(context, maybe_flags); },
              MachineRepresentation::kTagged);
 
   // Initialize.
@@ -1578,7 +1661,7 @@ TF_BUILTIN(RegExpPrototypeTest, RegExpBuiltinsAssembler) {
   Node* const receiver = maybe_receiver;
 
   // Convert {maybe_string} to a String.
-  Node* const string = ToString(context, maybe_string);
+  Node* const string = ToString_Inline(context, maybe_string);
 
   Label fast_path(this), slow_path(this);
   BranchIfFastRegExp(context, receiver, &fast_path, &slow_path);
@@ -1910,7 +1993,7 @@ void RegExpBuiltinsAssembler::RegExpPrototypeMatchBody(Node* const context,
           {
             // TODO(ishell): Use GetElement stub once it's available.
             Node* const match = GetProperty(context, result, smi_zero);
-            var_match.Bind(ToString(context, match));
+            var_match.Bind(ToString_Inline(context, match));
             Goto(&if_didmatch);
           }
         }
@@ -1984,7 +2067,7 @@ TF_BUILTIN(RegExpPrototypeMatch, RegExpBuiltinsAssembler) {
   Node* const receiver = maybe_receiver;
 
   // Convert {maybe_string} to a String.
-  Node* const string = ToString(context, maybe_string);
+  Node* const string = ToString_Inline(context, maybe_string);
 
   Label fast_path(this), slow_path(this);
   BranchIfFastRegExp(context, receiver, &fast_path, &slow_path);
@@ -2111,7 +2194,7 @@ TF_BUILTIN(RegExpPrototypeSearch, RegExpBuiltinsAssembler) {
   Node* const receiver = maybe_receiver;
 
   // Convert {maybe_string} to a String.
-  Node* const string = ToString(context, maybe_string);
+  Node* const string = ToString_Inline(context, maybe_string);
 
   Label fast_path(this), slow_path(this);
   BranchIfFastRegExp(context, receiver, &fast_path, &slow_path);
@@ -2444,10 +2527,8 @@ TF_BUILTIN(RegExpPrototypeSplit, RegExpBuiltinsAssembler) {
   CodeStubArguments args(this, argc);
 
   Node* const maybe_receiver = args.GetReceiver();
-  Node* const maybe_string =
-      args.GetOptionalArgumentValue(kStringArg, UndefinedConstant());
-  Node* const maybe_limit =
-      args.GetOptionalArgumentValue(kLimitArg, UndefinedConstant());
+  Node* const maybe_string = args.GetOptionalArgumentValue(kStringArg);
+  Node* const maybe_limit = args.GetOptionalArgumentValue(kLimitArg);
   Node* const context = Parameter(BuiltinDescriptor::kContext);
 
   // Ensure {maybe_receiver} is a JSReceiver.
@@ -2457,7 +2538,7 @@ TF_BUILTIN(RegExpPrototypeSplit, RegExpBuiltinsAssembler) {
   Node* const receiver = maybe_receiver;
 
   // Convert {maybe_string} to a String.
-  Node* const string = ToString(context, maybe_string);
+  Node* const string = ToString_Inline(context, maybe_string);
 
   Label stub(this), runtime(this, Label::kDeferred);
   BranchIfFastRegExp(context, receiver, &stub, &runtime);
@@ -2600,14 +2681,14 @@ Node* RegExpBuiltinsAssembler::ReplaceGlobalCallableFastPath(
 
       BIND(&if_isstring);
       {
-        CSA_ASSERT(this, IsStringInstanceType(LoadInstanceType(elem)));
+        CSA_ASSERT(this, IsString(elem));
 
         Callable call_callable = CodeFactory::Call(isolate);
         Node* const replacement_obj =
             CallJS(call_callable, context, replace_callable, undefined, elem,
                    var_match_start.value(), string);
 
-        Node* const replacement_str = ToString(context, replacement_obj);
+        Node* const replacement_str = ToString_Inline(context, replacement_obj);
         StoreFixedArrayElement(res_elems, i, replacement_str);
 
         Node* const elem_length = LoadStringLength(elem);
@@ -2660,7 +2741,7 @@ Node* RegExpBuiltinsAssembler::ReplaceGlobalCallableFastPath(
                     // we got back from the callback function.
 
                     Node* const replacement_str =
-                        ToString(context, replacement_obj);
+                        ToString_Inline(context, replacement_obj);
                     StoreFixedArrayElement(res_elems, index, replacement_str);
 
                     Goto(&do_continue);
@@ -2865,10 +2946,8 @@ TF_BUILTIN(RegExpPrototypeReplace, RegExpBuiltinsAssembler) {
   CodeStubArguments args(this, argc);
 
   Node* const maybe_receiver = args.GetReceiver();
-  Node* const maybe_string =
-      args.GetOptionalArgumentValue(kStringArg, UndefinedConstant());
-  Node* const replace_value =
-      args.GetOptionalArgumentValue(kReplaceValueArg, UndefinedConstant());
+  Node* const maybe_string = args.GetOptionalArgumentValue(kStringArg);
+  Node* const replace_value = args.GetOptionalArgumentValue(kReplaceValueArg);
   Node* const context = Parameter(BuiltinDescriptor::kContext);
 
   // RegExpPrototypeReplace is a bit of a beast - a summary of dispatch logic:

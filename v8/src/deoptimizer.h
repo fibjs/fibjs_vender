@@ -151,7 +151,6 @@ class TranslatedValue {
 class TranslatedFrame {
  public:
   enum Kind {
-    kFunction,
     kInterpretedFunction,
     kGetter,
     kSetter,
@@ -159,6 +158,8 @@ class TranslatedFrame {
     kArgumentsAdaptor,
     kConstructStub,
     kCompiledStub,
+    kBuiltinContinuation,
+    kJavaScriptBuiltinContinuation,
     kInvalid
   };
 
@@ -217,8 +218,6 @@ class TranslatedFrame {
   friend class TranslatedState;
 
   // Constructor static methods.
-  static TranslatedFrame JSFrame(BailoutId node_id,
-                                 SharedFunctionInfo* shared_info, int height);
   static TranslatedFrame InterpretedFrame(BailoutId bytecode_offset,
                                           SharedFunctionInfo* shared_info,
                                           int height);
@@ -230,6 +229,10 @@ class TranslatedFrame {
   static TranslatedFrame ConstructStubFrame(BailoutId bailout_id,
                                             SharedFunctionInfo* shared_info,
                                             int height);
+  static TranslatedFrame BuiltinContinuationFrame(
+      BailoutId bailout_id, SharedFunctionInfo* shared_info, int height);
+  static TranslatedFrame JavaScriptBuiltinContinuationFrame(
+      BailoutId bailout_id, SharedFunctionInfo* shared_info, int height);
   static TranslatedFrame CompiledStubFrame(int height, Isolate* isolate) {
     return TranslatedFrame(kCompiledStub, isolate, nullptr, height);
   }
@@ -389,8 +392,6 @@ class Deoptimizer : public Malloced {
 
   static DeoptInfo GetDeoptInfo(Code* code, byte* from);
 
-  static int ComputeSourcePositionFromBaselineCode(SharedFunctionInfo* shared,
-                                                   BailoutId node_id);
   static int ComputeSourcePositionFromBytecodeArray(SharedFunctionInfo* shared,
                                                     BailoutId node_id);
 
@@ -492,9 +493,6 @@ class Deoptimizer : public Malloced {
   static int GetDeoptimizationId(Isolate* isolate,
                                  Address addr,
                                  BailoutType type);
-  static int GetOutputInfo(DeoptimizationOutputData* data,
-                           BailoutId node_id,
-                           SharedFunctionInfo* shared);
 
   // Code generation support.
   static int input_offset() { return OFFSET_OF(Deoptimizer, input_); }
@@ -554,8 +552,6 @@ class Deoptimizer : public Malloced {
   void DeleteFrameDescriptions();
 
   void DoComputeOutputFrames();
-  void DoComputeJSFrame(TranslatedFrame* translated_frame, int frame_index,
-                        bool goto_catch_handler);
   void DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
                                  int frame_index, bool goto_catch_handler);
   void DoComputeArgumentsAdaptorFrame(TranslatedFrame* translated_frame,
@@ -568,6 +564,8 @@ class Deoptimizer : public Malloced {
                                   int frame_index, bool is_setter_stub_frame);
   void DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
                                   int frame_index);
+  void DoComputeBuiltinContinuation(TranslatedFrame* translated_frame,
+                                    int frame_index, bool java_script_frame);
 
   void WriteTranslatedValueToOutput(
       TranslatedFrame::iterator* iterator, int* input_index, int frame_index,
@@ -921,33 +919,34 @@ class TranslationIterator BASE_EMBEDDED {
   int index_;
 };
 
-#define TRANSLATION_OPCODE_LIST(V) \
-  V(BEGIN)                         \
-  V(JS_FRAME)                      \
-  V(INTERPRETED_FRAME)             \
-  V(CONSTRUCT_STUB_FRAME)          \
-  V(GETTER_STUB_FRAME)             \
-  V(SETTER_STUB_FRAME)             \
-  V(ARGUMENTS_ADAPTOR_FRAME)       \
-  V(TAIL_CALLER_FRAME)             \
-  V(COMPILED_STUB_FRAME)           \
-  V(DUPLICATED_OBJECT)             \
-  V(ARGUMENTS_OBJECT)              \
-  V(ARGUMENTS_ELEMENTS)            \
-  V(ARGUMENTS_LENGTH)              \
-  V(CAPTURED_OBJECT)               \
-  V(REGISTER)                      \
-  V(INT32_REGISTER)                \
-  V(UINT32_REGISTER)               \
-  V(BOOL_REGISTER)                 \
-  V(FLOAT_REGISTER)                \
-  V(DOUBLE_REGISTER)               \
-  V(STACK_SLOT)                    \
-  V(INT32_STACK_SLOT)              \
-  V(UINT32_STACK_SLOT)             \
-  V(BOOL_STACK_SLOT)               \
-  V(FLOAT_STACK_SLOT)              \
-  V(DOUBLE_STACK_SLOT)             \
+#define TRANSLATION_OPCODE_LIST(V)          \
+  V(BEGIN)                                  \
+  V(INTERPRETED_FRAME)                      \
+  V(BUILTIN_CONTINUATION_FRAME)             \
+  V(JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME) \
+  V(CONSTRUCT_STUB_FRAME)                   \
+  V(GETTER_STUB_FRAME)                      \
+  V(SETTER_STUB_FRAME)                      \
+  V(ARGUMENTS_ADAPTOR_FRAME)                \
+  V(TAIL_CALLER_FRAME)                      \
+  V(COMPILED_STUB_FRAME)                    \
+  V(DUPLICATED_OBJECT)                      \
+  V(ARGUMENTS_OBJECT)                       \
+  V(ARGUMENTS_ELEMENTS)                     \
+  V(ARGUMENTS_LENGTH)                       \
+  V(CAPTURED_OBJECT)                        \
+  V(REGISTER)                               \
+  V(INT32_REGISTER)                         \
+  V(UINT32_REGISTER)                        \
+  V(BOOL_REGISTER)                          \
+  V(FLOAT_REGISTER)                         \
+  V(DOUBLE_REGISTER)                        \
+  V(STACK_SLOT)                             \
+  V(INT32_STACK_SLOT)                       \
+  V(UINT32_STACK_SLOT)                      \
+  V(BOOL_STACK_SLOT)                        \
+  V(FLOAT_STACK_SLOT)                       \
+  V(DOUBLE_STACK_SLOT)                      \
   V(LITERAL)
 
 class Translation BASE_EMBEDDED {
@@ -972,7 +971,6 @@ class Translation BASE_EMBEDDED {
   int index() const { return index_; }
 
   // Commands.
-  void BeginJSFrame(BailoutId node_id, int literal_id, unsigned height);
   void BeginInterpretedFrame(BailoutId bytecode_offset, int literal_id,
                              unsigned height);
   void BeginCompiledStubFrame(int height);
@@ -980,6 +978,10 @@ class Translation BASE_EMBEDDED {
   void BeginTailCallerFrame(int literal_id);
   void BeginConstructStubFrame(BailoutId bailout_id, int literal_id,
                                unsigned height);
+  void BeginBuiltinContinuationFrame(BailoutId bailout_id, int literal_id,
+                                     unsigned height);
+  void BeginJavaScriptBuiltinContinuationFrame(BailoutId bailout_id,
+                                               int literal_id, unsigned height);
   void BeginGetterStubFrame(int literal_id);
   void BeginSetterStubFrame(int literal_id);
   void BeginArgumentsObject(int args_length);

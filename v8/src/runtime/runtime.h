@@ -207,7 +207,9 @@ namespace internal {
   F(DebugIsActive, 0, 1)                        \
   F(DebugBreakInOptimizedCode, 0, 1)            \
   F(DebugCollectCoverage, 0, 1)                 \
-  F(DebugTogglePreciseCoverage, 1, 1)
+  F(DebugTogglePreciseCoverage, 1, 1)           \
+  F(DebugToggleBlockCoverage, 1, 1)             \
+  F(IncBlockCounter, 2, 1)
 
 #define FOR_EACH_INTRINSIC_ERROR(F) F(ErrorToString, 1, 1)
 
@@ -227,12 +229,11 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_INTERPRETER(F)      \
   FOR_EACH_INTRINSIC_INTERPRETER_TRACE(F)      \
   F(InterpreterNewClosure, 4, 1)               \
-  F(InterpreterStringConcat, -1 /* >= 2 */, 1) \
   F(InterpreterAdvanceBytecodeOffset, 2, 1)
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)     \
   F(FunctionGetName, 1, 1)                 \
-  F(FunctionSetName, 2, 1)                 \
+  F(FunctionSetSharedName, 2, 1)           \
   F(FunctionRemovePrototype, 1, 1)         \
   F(FunctionGetScript, 1, 1)               \
   F(FunctionGetScriptId, 1, 1)             \
@@ -404,7 +405,7 @@ namespace internal {
   F(AddElement, 3, 1)                                           \
   F(AppendElement, 2, 1)                                        \
   F(DeleteProperty, 3, 1)                                       \
-  F(ShrinkPropertyDictionary, 2, 1)                             \
+  F(ShrinkPropertyDictionary, 1, 1)                             \
   F(HasProperty, 2, 1)                                          \
   F(GetOwnPropertyKeys, 2, 1)                                   \
   F(GetInterceptorInfo, 1, 1)                                   \
@@ -539,6 +540,7 @@ namespace internal {
   F(StringLastIndexOf, 2, 1)              \
   F(SubString, 3, 1)                      \
   F(StringAdd, 2, 1)                      \
+  F(StringConcat, -1 /* >= 2 */, 1)       \
   F(InternalizeString, 1, 1)              \
   F(StringCharCodeAtRT, 2, 1)             \
   F(StringCompare, 2, 1)                  \
@@ -629,8 +631,6 @@ namespace internal {
   F(ValidateWasmOrphanedInstance, 1, 1)       \
   F(SetWasmCompileControls, 2, 1)             \
   F(SetWasmInstantiateControls, 0, 1)         \
-  F(SetWasmCompileFromPromiseOverload, 0, 1)  \
-  F(ResetWasmOverloads, 0, 1)                 \
   F(HeapObjectVerify, 1, 1)                   \
   F(WasmNumInterpretedCalls, 1, 1)            \
   F(RedirectToWasmInterpreter, 2, 1)

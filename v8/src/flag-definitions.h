@@ -19,10 +19,6 @@
 #define DEFINE_NEG_NEG_IMPLICATION(whenflag, thenflag) \
   DEFINE_NEG_VALUE_IMPLICATION(whenflag, thenflag, false)
 
-#define DEFINE_DUAL_IMPLICATION(whenflag, thenflag) \
-  DEFINE_IMPLICATION(whenflag, thenflag)            \
-  DEFINE_NEG_NEG_IMPLICATION(whenflag, thenflag)
-
 // We want to declare the names of the variables for the header file.  Normally
 // this will just be an extern declaration, but for a readonly flag we let the
 // compiler make better optimizations by giving it the value.
@@ -223,8 +219,6 @@ DEFINE_IMPLICATION(es_staging, harmony)
 #define HARMONY_SHIPPING_BASE(V)                           \
   V(harmony_restrictive_generators,                        \
     "harmony restrictions on generator declarations")      \
-  V(harmony_trailing_commas,                               \
-    "harmony trailing commas in function parameter lists") \
   V(harmony_object_rest_spread, "harmony object rest spread properties")
 
 #ifdef V8_INTL_SUPPORT
@@ -273,9 +267,6 @@ DEFINE_BOOL(future, FUTURE_BOOL,
             "not-too-far future")
 DEFINE_IMPLICATION(future, turbo)
 
-DEFINE_DUAL_IMPLICATION(turbo, ignition)
-DEFINE_DUAL_IMPLICATION(turbo, thin_strings)
-
 // Flags for experimental implementation features.
 DEFINE_BOOL(allocation_site_pretenuring, true,
             "pretenure with allocation sites")
@@ -302,6 +293,7 @@ DEFINE_BOOL(track_field_types, true, "track field types")
 DEFINE_IMPLICATION(track_field_types, track_fields)
 DEFINE_IMPLICATION(track_field_types, track_heap_object_fields)
 DEFINE_BOOL(type_profile, false, "collect type information")
+DEFINE_BOOL(block_coverage, false, "collect block coverage information")
 DEFINE_BOOL(feedback_normalization, false,
             "feed back normalization to constructors")
 // TODO(jkummerow): This currently adds too much load on the stub cache.
@@ -320,7 +312,7 @@ DEFINE_BOOL(unbox_double_arrays, true, "automatically unbox arrays of doubles")
 DEFINE_BOOL(string_slices, true, "use string slices")
 
 // Flags for Ignition.
-DEFINE_BOOL(ignition, false, "use ignition interpreter")
+DEFINE_BOOL(ignition, true, "use ignition interpreter")
 DEFINE_BOOL(ignition_osr, true, "enable support for OSR from ignition code")
 DEFINE_BOOL(ignition_elide_noneffectful_bytecodes, true,
             "elide bytecodes which won't have any external effect")
@@ -454,13 +446,7 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
             "deoptimize the optimized code if the layout of the maps changes.")
 
 // Flags for TurboFan.
-#ifdef V8_DISABLE_TURBO
-// Allow to disable turbofan with a build flag after it's turned on by default.
-#define TURBO_BOOL false
-#else
-#define TURBO_BOOL true
-#endif
-DEFINE_BOOL(turbo, TURBO_BOOL, "enable TurboFan compiler")
+DEFINE_BOOL(turbo, true, "enable TurboFan compiler")
 DEFINE_BOOL(turbo_sp_frame_access, false,
             "use stack pointer-relative access to frame wherever possible")
 DEFINE_BOOL(turbo_preprocess_ranges, true,
@@ -503,6 +489,8 @@ DEFINE_BOOL(function_context_specialization, false,
             "enable function context specialization in TurboFan")
 DEFINE_BOOL(turbo_inlining, true, "enable inlining in TurboFan")
 DEFINE_BOOL(trace_turbo_inlining, false, "trace TurboFan inlining")
+DEFINE_BOOL(turbo_inline_array_builtins, true,
+            "inline array builtins in TurboFan code")
 DEFINE_BOOL(turbo_load_elimination, true, "enable load elimination in TurboFan")
 DEFINE_BOOL(trace_turbo_load_elimination, false,
             "trace TurboFan load elimination")
@@ -535,11 +523,11 @@ DEFINE_NEG_IMPLICATION(minimal, opt)
 DEFINE_NEG_IMPLICATION(minimal, use_ic)
 
 // Flags for native WebAssembly.
-DEFINE_BOOL(expose_wasm, true, "expose WASM interface to JavaScript")
+DEFINE_BOOL(expose_wasm, true, "expose wasm interface to JavaScript")
 DEFINE_BOOL(assume_asmjs_origin, false,
             "force wasm decoder to assume input is internal asm-wasm format")
 DEFINE_BOOL(wasm_disable_structured_cloning, false,
-            "disable WASM structured cloning")
+            "disable wasm structured cloning")
 DEFINE_INT(wasm_num_compilation_tasks, 10,
            "number of parallel compilation tasks for wasm")
 DEFINE_BOOL(wasm_async_compilation, false,
@@ -555,8 +543,8 @@ DEFINE_BOOL(trace_wasm_decode_time, false, "trace decoding time of wasm code")
 DEFINE_BOOL(trace_wasm_compiler, false, "trace compiling of wasm code")
 DEFINE_BOOL(trace_wasm_interpreter, false, "trace interpretation of wasm code")
 DEFINE_INT(trace_wasm_ast_start, 0,
-           "start function for WASM AST trace (inclusive)")
-DEFINE_INT(trace_wasm_ast_end, 0, "end function for WASM AST trace (exclusive)")
+           "start function for wasm AST trace (inclusive)")
+DEFINE_INT(trace_wasm_ast_end, 0, "end function for wasm AST trace (exclusive)")
 DEFINE_UINT(skip_compiling_wasm_funcs, 0, "start compiling at function N")
 DEFINE_BOOL(wasm_break_on_decoder_error, false,
             "debug break when wasm decoder encounters an error")
@@ -570,7 +558,7 @@ DEFINE_BOOL(trace_asm_scanner, false,
 DEFINE_BOOL(trace_asm_parser, false, "verbose logging of asm.js parse failures")
 DEFINE_BOOL(stress_validate_asm, false, "try to validate everything as asm.js")
 
-DEFINE_BOOL(dump_wasm_module, false, "dump WASM module bytes")
+DEFINE_BOOL(dump_wasm_module, false, "dump wasm module bytes")
 DEFINE_STRING(dump_wasm_module_path, NULL, "directory to dump wasm modules to")
 
 DEFINE_INT(typed_array_max_size_in_heap, 64,
@@ -941,7 +929,7 @@ DEFINE_BOOL(native_code_counters, false,
             "generate extra code for manipulating stats counters")
 
 // objects.cc
-DEFINE_BOOL(thin_strings, false, "Enable ThinString support")
+DEFINE_BOOL(thin_strings, true, "Enable ThinString support")
 DEFINE_BOOL(trace_weak_arrays, false, "Trace WeakFixedArray usage")
 DEFINE_BOOL(trace_prototype_users, false,
             "Trace updates to prototype user tracking")

@@ -8,7 +8,6 @@
 #include "src/compiler/bytecode-analysis.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/js-type-hint-lowering.h"
-#include "src/compiler/liveness-analyzer.h"
 #include "src/compiler/state-values-utils.h"
 #include "src/interpreter/bytecode-array-iterator.h"
 #include "src/interpreter/bytecode-flags.h"
@@ -179,6 +178,8 @@ class BytecodeGraphBuilder {
   void BuildTestingOp(const Operator* op);
   void BuildDelete(LanguageMode language_mode);
   void BuildCastOperator(const Operator* op);
+  void BuildHoleCheckAndThrow(Node* condition, Runtime::FunctionId runtime_id,
+                              Node* name = nullptr);
 
   // Optional early lowering to the simplified operator level. Returns the node
   // representing the lowered operation or {nullptr} if no lowering available.
@@ -187,6 +188,7 @@ class BytecodeGraphBuilder {
   Node* TryBuildSimplifiedBinaryOp(const Operator* op, Node* left, Node* right,
                                    FeedbackSlot slot);
   Node* TryBuildSimplifiedToNumber(Node* input, FeedbackSlot slot);
+  Node* TryBuildSimplifiedToPrimitiveToString(Node* input, FeedbackSlot slot);
   Node* TryBuildSimplifiedLoadNamed(const Operator* op, Node* receiver,
                                     FeedbackSlot slot);
   Node* TryBuildSimplifiedLoadKeyed(const Operator* op, Node* receiver,

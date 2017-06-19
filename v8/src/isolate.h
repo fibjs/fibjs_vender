@@ -107,6 +107,10 @@ namespace interpreter {
 class Interpreter;
 }
 
+namespace wasm {
+class CompilationManager;
+}
+
 #define RETURN_FAILURE_IF_SCHEDULED_EXCEPTION(isolate)    \
   do {                                                    \
     Isolate* __isolate__ = (isolate);                     \
@@ -405,8 +409,6 @@ typedef std::vector<HeapObject*> DebugObjectCache;
   V(AllowCodeGenerationFromStringsCallback, allow_code_gen_callback, nullptr) \
   V(ExtensionCallback, wasm_module_callback, &NoExtension)                    \
   V(ExtensionCallback, wasm_instance_callback, &NoExtension)                  \
-  V(ExtensionCallback, wasm_compile_callback, &NoExtension)                   \
-  V(ExtensionCallback, wasm_instantiate_callback, &NoExtension)               \
   V(ApiImplementationCallback, wasm_compile_streaming_callback, nullptr)      \
   V(ExternalReferenceRedirectorPointer*, external_reference_redirector,       \
     nullptr)                                                                  \
@@ -437,6 +439,7 @@ typedef std::vector<HeapObject*> DebugObjectCache;
   /* Current code coverage mode */                                            \
   V(debug::Coverage::Mode, code_coverage_mode, debug::Coverage::kBestEffort)  \
   V(int, last_stack_frame_info_id, 0)                                         \
+  V(int, last_console_context_id, 0)                                          \
   ISOLATE_INIT_SIMULATOR_LIST(V)
 
 #define THREAD_LOCAL_TOP_ACCESSOR(type, name)                        \
@@ -527,7 +530,7 @@ class Isolate {
     DCHECK(base::Relaxed_Load(&isolate_key_created_) == 1);
     Isolate* isolate = reinterpret_cast<Isolate*>(
         base::Thread::GetExistingThreadLocal(isolate_key_));
-    DCHECK(isolate != NULL);
+    DCHECK_NOT_NULL(isolate);
     return isolate;
   }
 
@@ -871,8 +874,8 @@ class Isolate {
   Counters* counters() {
     // Call InitializeLoggingAndCounters() if logging is needed before
     // the isolate is fully initialized.
-    DCHECK(counters_ != NULL);
-    return counters_;
+    DCHECK_NOT_NULL(counters_shared_.get());
+    return counters_shared_.get();
   }
   std::shared_ptr<Counters> counters_shared() { return counters_shared_; }
   RuntimeProfiler* runtime_profiler() { return runtime_profiler_; }
@@ -880,12 +883,11 @@ class Isolate {
   Logger* logger() {
     // Call InitializeLoggingAndCounters() if logging is needed before
     // the isolate is fully initialized.
-    DCHECK(logger_ != NULL);
+    DCHECK_NOT_NULL(logger_);
     return logger_;
   }
   StackGuard* stack_guard() { return &stack_guard_; }
   Heap* heap() { return &heap_; }
-  StatsTable* stats_table();
   StubCache* load_stub_cache() { return load_stub_cache_; }
   StubCache* store_stub_cache() { return store_stub_cache_; }
   CodeAgingHelper* code_aging_helper() { return code_aging_helper_; }
@@ -1016,6 +1018,10 @@ class Isolate {
 
   bool is_precise_binary_code_coverage() const {
     return code_coverage_mode() == debug::Coverage::kPreciseBinary;
+  }
+
+  bool is_block_count_code_coverage() const {
+    return code_coverage_mode() == debug::Coverage::kBlockCount;
   }
 
   void SetCodeCoverageList(Object* value);
@@ -1209,6 +1215,10 @@ class Isolate {
 
   CancelableTaskManager* cancelable_task_manager() {
     return cancelable_task_manager_;
+  }
+
+  wasm::CompilationManager* wasm_compilation_manager() {
+    return wasm_compilation_manager_.get();
   }
 
   const AstStringConstants* ast_string_constants() const {
@@ -1431,11 +1441,9 @@ class Isolate {
   RuntimeProfiler* runtime_profiler_;
   CompilationCache* compilation_cache_;
   std::shared_ptr<Counters> counters_shared_;
-  Counters* counters_;
   base::RecursiveMutex break_access_;
   Logger* logger_;
   StackGuard stack_guard_;
-  StatsTable* stats_table_;
   StubCache* load_stub_cache_;
   StubCache* store_stub_cache_;
   CodeAgingHelper* code_aging_helper_;
@@ -1569,6 +1577,8 @@ class Isolate {
   FutexWaitListNode futex_wait_list_node_;
 
   CancelableTaskManager* cancelable_task_manager_;
+
+  std::unique_ptr<wasm::CompilationManager> wasm_compilation_manager_;
 
   debug::ConsoleDelegate* console_delegate_ = nullptr;
 

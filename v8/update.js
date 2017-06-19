@@ -80,7 +80,9 @@ var files = {
     'src/snapshot/natives-external.cc': 1,
     'src/snapshot/snapshot-external.cc': 1,
     'src/base/platform/platform-qnx.cc': 1,
-    'src/base/platform/platform-cygwin.cc': 1
+    'src/base/platform/platform-cygwin.cc': 1,
+    'src/base/platform/platform-fuchsia.cc': 1,
+    'src/base/debug/stack_trace_fuchsia.cc': 1
 };
 
 var re = [

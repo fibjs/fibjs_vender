@@ -520,6 +520,8 @@ const int kSpaceTagMask = (1 << kSpaceTagSize) - 1;
 
 enum AllocationAlignment { kWordAligned, kDoubleAligned, kDoubleUnaligned };
 
+enum class AccessMode { ATOMIC, NON_ATOMIC };
+
 // Possible outcomes for decisions.
 enum class Decision : uint8_t { kUnknown, kTrue, kFalse };
 
@@ -741,7 +743,11 @@ struct AccessorDescriptor {
 // Testers for test.
 
 #define HAS_SMI_TAG(value) \
-  ((reinterpret_cast<intptr_t>(value) & kSmiTagMask) == kSmiTag)
+  ((reinterpret_cast<intptr_t>(value) & ::i::kSmiTagMask) == ::i::kSmiTag)
+
+#define HAS_HEAP_OBJECT_TAG(value)                                   \
+  (((reinterpret_cast<intptr_t>(value) & ::i::kHeapObjectTagMask) == \
+    ::i::kHeapObjectTag))
 
 // OBJECT_POINTER_ALIGN returns the value aligned as a HeapObject pointer
 #define OBJECT_POINTER_ALIGN(value)                             \
@@ -1240,17 +1246,8 @@ inline uint32_t ObjectHash(Address address) {
 // Type feedback is encoded in such a way that, we can combine the feedback
 // at different points by performing an 'OR' operation. Type feedback moves
 // to a more generic type when we combine feedback.
-// kString          -> kAny
-class ToPrimitiveToStringFeedback {
- public:
-  enum { kNone = 0x0, kString = 0x1, kAny = 0x3 };
-};
-
-// Type feedback is encoded in such a way that, we can combine the feedback
-// at different points by performing an 'OR' operation. Type feedback moves
-// to a more generic type when we combine feedback.
 // kSignedSmall -> kNumber  -> kNumberOrOddball -> kAny
-//                             kString          -> kAny
+//          kNonEmptyString -> kString          -> kAny
 // TODO(mythria): Remove kNumber type when crankshaft can handle Oddballs
 // similar to Numbers. We don't need kNumber feedback for Turbofan. Extra
 // information about Number might reduce few instructions but causes more
@@ -1263,8 +1260,9 @@ class BinaryOperationFeedback {
     kSignedSmall = 0x1,
     kNumber = 0x3,
     kNumberOrOddball = 0x7,
-    kString = 0x8,
-    kAny = 0x1F
+    kNonEmptyString = 0x8,
+    kString = 0x18,
+    kAny = 0x3F
   };
 };
 
