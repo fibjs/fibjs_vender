@@ -85,7 +85,6 @@ class HBasicBlock final : public ZoneObject {
   void DetachLoopInformation();
   bool IsLoopHeader() const { return loop_information() != NULL; }
   bool IsStartBlock() const { return block_id() == 0; }
-  void PostProcessLoopHeader(IterationStatement* stmt);
 
   bool IsFinished() const { return end_ != NULL; }
   void AddPhi(HPhi* phi);
@@ -1093,9 +1092,6 @@ class HGraphBuilder {
   HValue* BuildNumberToString(HValue* object, AstType* type);
   HValue* BuildToNumber(HValue* input);
   HValue* BuildToObject(HValue* receiver);
-
-  // ES6 section 7.4.7 CreateIterResultObject ( value, done )
-  HValue* BuildCreateIterResultObject(HValue* value, HValue* done);
 
   // Allocates a new object according with the given allocation properties.
   HAllocate* BuildAllocate(HValue* object_size,

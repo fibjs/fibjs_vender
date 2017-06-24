@@ -645,7 +645,7 @@ void LCodeGen::CallCodeGeneric(Handle<Code> code, RelocInfo::Mode mode,
 
   // Signal that we don't inline smi code before these stubs in the
   // optimizing code generator.
-  if (code->kind() == Code::BINARY_OP_IC || code->kind() == Code::COMPARE_IC) {
+  if (code->kind() == Code::COMPARE_IC) {
     __ nop();
   }
 }
@@ -2028,8 +2028,7 @@ void LCodeGen::DoArithmeticT(LArithmeticT* instr) {
   DCHECK(ToRegister(instr->right()).is(r3));
   DCHECK(ToRegister(instr->result()).is(r3));
 
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), instr->op()).code();
-  CallCode(code, RelocInfo::CODE_TARGET, instr);
+  UNREACHABLE();
 }
 
 
@@ -3849,10 +3848,9 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
   __ Move(r5, instr->hydrogen()->site());
 
   ElementsKind kind = instr->hydrogen()->elements_kind();
-  AllocationSiteOverrideMode override_mode =
-      (AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE)
-          ? DISABLE_ALLOCATION_SITES
-          : DONT_OVERRIDE;
+  AllocationSiteOverrideMode override_mode = AllocationSite::ShouldTrack(kind)
+                                                 ? DISABLE_ALLOCATION_SITES
+                                                 : DONT_OVERRIDE;
 
   if (instr->arity() == 0) {
     ArrayNoArgumentConstructorStub stub(isolate(), kind, override_mode);

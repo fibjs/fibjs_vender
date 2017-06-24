@@ -1901,9 +1901,9 @@ void MacroAssembler::AssertPositiveOrZero(Register value) {
   }
 }
 
-void MacroAssembler::CallStub(CodeStub* stub, TypeFeedbackId ast_id) {
+void MacroAssembler::CallStub(CodeStub* stub) {
   DCHECK(AllowThisStubCall(stub));  // Stub calls are not allowed in some stubs.
-  Call(stub->GetCode(), RelocInfo::CODE_TARGET, ast_id);
+  Call(stub->GetCode(), RelocInfo::CODE_TARGET);
 }
 
 
@@ -2177,26 +2177,18 @@ void MacroAssembler::Call(Address target, RelocInfo::Mode rmode) {
 #endif
 }
 
-
-void MacroAssembler::Call(Handle<Code> code,
-                          RelocInfo::Mode rmode,
-                          TypeFeedbackId ast_id) {
+void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode) {
 #ifdef DEBUG
   Label start_call;
   Bind(&start_call);
 #endif
-
-  if ((rmode == RelocInfo::CODE_TARGET) && (!ast_id.IsNone())) {
-    SetRecordedAstId(ast_id);
-    rmode = RelocInfo::CODE_TARGET_WITH_ID;
-  }
 
   AllowDeferredHandleDereference embedding_raw_address;
   Call(reinterpret_cast<Address>(code.location()), rmode);
 
 #ifdef DEBUG
   // Check the size of the code generated.
-  AssertSizeOfCodeGeneratedSince(&start_call, CallSize(code, rmode, ast_id));
+  AssertSizeOfCodeGeneratedSince(&start_call, CallSize(code, rmode));
 #endif
 }
 
@@ -2226,12 +2218,8 @@ int MacroAssembler::CallSize(Address target, RelocInfo::Mode rmode) {
   }
 }
 
-
-int MacroAssembler::CallSize(Handle<Code> code,
-                             RelocInfo::Mode rmode,
-                             TypeFeedbackId ast_id) {
+int MacroAssembler::CallSize(Handle<Code> code, RelocInfo::Mode rmode) {
   USE(code);
-  USE(ast_id);
 
   // Addresses always have 64 bits, so we shouldn't encounter NONE32.
   DCHECK(rmode != RelocInfo::NONE32);
@@ -2952,11 +2940,11 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, const Register& scratch,
   STATIC_ASSERT((-3 * kPointerSize) == ExitFrameConstants::kCodeOffset);
 
   // Save the frame pointer and context pointer in the top frame.
-  Mov(scratch, Operand(ExternalReference(Isolate::kCEntryFPAddress,
+  Mov(scratch, Operand(ExternalReference(IsolateAddressId::kCEntryFPAddress,
                                          isolate())));
   Str(fp, MemOperand(scratch));
-  Mov(scratch, Operand(ExternalReference(Isolate::kContextAddress,
-                                         isolate())));
+  Mov(scratch,
+      Operand(ExternalReference(IsolateAddressId::kContextAddress, isolate())));
   Str(cp, MemOperand(scratch));
 
   STATIC_ASSERT((-3 * kPointerSize) == ExitFrameConstants::kLastExitFrameField);
@@ -3012,19 +3000,19 @@ void MacroAssembler::LeaveExitFrame(bool restore_doubles,
 
   // Restore the context pointer from the top frame.
   if (restore_context) {
-    Mov(scratch, Operand(ExternalReference(Isolate::kContextAddress,
+    Mov(scratch, Operand(ExternalReference(IsolateAddressId::kContextAddress,
                                            isolate())));
     Ldr(cp, MemOperand(scratch));
   }
 
   if (emit_debug_code()) {
     // Also emit debug code to clear the cp in the top frame.
-    Mov(scratch, Operand(ExternalReference(Isolate::kContextAddress,
+    Mov(scratch, Operand(ExternalReference(IsolateAddressId::kContextAddress,
                                            isolate())));
     Str(xzr, MemOperand(scratch));
   }
   // Clear the frame pointer from the top frame.
-  Mov(scratch, Operand(ExternalReference(Isolate::kCEntryFPAddress,
+  Mov(scratch, Operand(ExternalReference(IsolateAddressId::kCEntryFPAddress,
                                          isolate())));
   Str(xzr, MemOperand(scratch));
 
@@ -3103,7 +3091,7 @@ void MacroAssembler::PushStackHandler() {
   // (See JSEntryStub::GenerateBody().)
 
   // Link the current handler as the next handler.
-  Mov(x11, ExternalReference(Isolate::kHandlerAddress, isolate()));
+  Mov(x11, ExternalReference(IsolateAddressId::kHandlerAddress, isolate()));
   Ldr(x10, MemOperand(x11));
   Push(x10);
 
@@ -3115,7 +3103,7 @@ void MacroAssembler::PushStackHandler() {
 void MacroAssembler::PopStackHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0);
   Pop(x10);
-  Mov(x11, ExternalReference(Isolate::kHandlerAddress, isolate()));
+  Mov(x11, ExternalReference(IsolateAddressId::kHandlerAddress, isolate()));
   Drop(StackHandlerConstants::kSize - kXRegSize, kByteSizeInBytes);
   Str(x10, MemOperand(x11));
 }

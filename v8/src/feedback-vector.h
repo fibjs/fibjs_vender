@@ -37,7 +37,6 @@ enum class FeedbackSlotKind {
   kStoreKeyedStrict,
   kBinaryOp,
   kCompareOp,
-  kToBoolean,
   kStoreDataPropertyInLiteral,
   kTypeProfile,
   kCreateClosure,
@@ -325,13 +324,17 @@ class FeedbackVector : public FixedArray {
   inline int invocation_count() const;
   inline void clear_invocation_count();
 
+  inline Object* optimized_code_cell() const;
   inline Code* optimized_code() const;
+  inline OptimizationMarker optimization_marker() const;
   inline bool has_optimized_code() const;
+  inline bool has_optimization_marker() const;
   void ClearOptimizedCode();
   void EvictOptimizedCodeMarkedForDeoptimization(SharedFunctionInfo* shared,
                                                  const char* reason);
   static void SetOptimizedCode(Handle<FeedbackVector> vector,
                                Handle<Code> code);
+  void SetOptimizationMarker(OptimizationMarker marker);
 
   // Conversion from a slot to an integer index to the underlying array.
   static int GetIndex(FeedbackSlot slot) {
@@ -722,7 +725,7 @@ class CompareICNexus final : public FeedbackNexus {
   CompareOperationHint GetCompareOperationFeedback() const;
 
   int ExtractMaps(MapHandles* maps) const final {
-    // BinaryOpICs don't record map feedback.
+    // CompareICs don't record map feedback.
     return 0;
   }
   MaybeHandle<Object> FindHandlerForMap(Handle<Map> map) const final {

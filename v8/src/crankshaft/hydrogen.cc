@@ -32,7 +32,6 @@
 #include "src/crankshaft/hydrogen-store-elimination.h"
 #include "src/crankshaft/hydrogen-uint32-analysis.h"
 #include "src/crankshaft/lithium-allocator.h"
-#include "src/crankshaft/typing.h"
 #include "src/field-type.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/globals.h"
@@ -267,24 +266,6 @@ int HBasicBlock::LoopNestingDepth() const {
     result++;
   }
   return result;
-}
-
-
-void HBasicBlock::PostProcessLoopHeader(IterationStatement* stmt) {
-  DCHECK(IsLoopHeader());
-
-  SetJoinId(stmt->EntryId());
-  if (predecessors()->length() == 1) {
-    // This is a degenerated loop.
-    DetachLoopInformation();
-    return;
-  }
-
-  // Only the first entry into the loop is from outside the loop. All other
-  // entries must be back edges.
-  for (int i = 1; i < predecessors()->length(); ++i) {
-    loop_information()->RegisterBackEdge(predecessors()->at(i));
-  }
 }
 
 
@@ -1379,37 +1360,6 @@ HValue* HGraphBuilder::BuildCopyElementsOnWrite(HValue* object,
 
   return environment()->Pop();
 }
-
-HValue* HGraphBuilder::BuildCreateIterResultObject(HValue* value,
-                                                   HValue* done) {
-  NoObservableSideEffectsScope scope(this);
-
-  // Allocate the JSIteratorResult object.
-  HValue* result =
-      Add<HAllocate>(Add<HConstant>(JSIteratorResult::kSize), HType::JSObject(),
-                     NOT_TENURED, JS_OBJECT_TYPE, graph()->GetConstant0());
-
-  // Initialize the JSIteratorResult object.
-  HValue* native_context = BuildGetNativeContext();
-  HValue* map = Add<HLoadNamedField>(
-      native_context, nullptr,
-      HObjectAccess::ForContextSlot(Context::ITERATOR_RESULT_MAP_INDEX));
-  Add<HStoreNamedField>(result, HObjectAccess::ForMap(), map);
-  HValue* empty_fixed_array = Add<HLoadRoot>(Heap::kEmptyFixedArrayRootIndex);
-  Add<HStoreNamedField>(result, HObjectAccess::ForPropertiesPointer(),
-                        empty_fixed_array);
-  Add<HStoreNamedField>(result, HObjectAccess::ForElementsPointer(),
-                        empty_fixed_array);
-  Add<HStoreNamedField>(result, HObjectAccess::ForObservableJSObjectOffset(
-                                    JSIteratorResult::kValueOffset),
-                        value);
-  Add<HStoreNamedField>(result, HObjectAccess::ForObservableJSObjectOffset(
-                                    JSIteratorResult::kDoneOffset),
-                        done);
-  STATIC_ASSERT(JSIteratorResult::kSize == 5 * kPointerSize);
-  return result;
-}
-
 
 HValue* HGraphBuilder::BuildNumberToString(HValue* object, AstType* type) {
   NoObservableSideEffectsScope scope(this);

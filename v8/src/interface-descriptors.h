@@ -35,6 +35,7 @@ class PlatformInterfaceDescriptor;
   V(FastNewObject)                         \
   V(FastNewArguments)                      \
   V(TypeConversion)                        \
+  V(TypeConversionStackParameter)          \
   V(Typeof)                                \
   V(FastCloneRegExp)                       \
   V(FastCloneShallowArray)                 \
@@ -46,12 +47,14 @@ class PlatformInterfaceDescriptor;
   V(CallICTrampoline)                      \
   V(CallVarargs)                           \
   V(CallForwardVarargs)                    \
+  V(CallWithSpread)                        \
   V(CallWithArrayLike)                     \
   V(CallConstruct)                         \
   V(CallTrampoline)                        \
   V(ConstructStub)                         \
   V(ConstructVarargs)                      \
   V(ConstructForwardVarargs)               \
+  V(ConstructWithSpread)                   \
   V(ConstructWithArrayLike)                \
   V(ConstructTrampoline)                   \
   V(TransitionElementsKind)                \
@@ -511,6 +514,14 @@ class TypeConversionDescriptor final : public CallInterfaceDescriptor {
   static const Register ArgumentRegister();
 };
 
+class TypeConversionStackParameterDescriptor final
+    : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kArgument)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      TypeConversionStackParameterDescriptor, CallInterfaceDescriptor)
+};
+
 class ForInPrepareDescriptor final : public CallInterfaceDescriptor {
  public:
   DEFINE_PARAMETERS(kObject)
@@ -593,6 +604,13 @@ class CallForwardVarargsDescriptor : public CallInterfaceDescriptor {
                                                CallInterfaceDescriptor)
 };
 
+class CallWithSpreadDescriptor : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kTarget, kArgumentsCount, kSpread)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(CallWithSpreadDescriptor,
+                                               CallInterfaceDescriptor)
+};
+
 class CallWithArrayLikeDescriptor : public CallInterfaceDescriptor {
  public:
   DEFINE_PARAMETERS(kTarget, kArgumentsList)
@@ -613,6 +631,13 @@ class ConstructForwardVarargsDescriptor : public CallInterfaceDescriptor {
   DEFINE_PARAMETERS(kTarget, kNewTarget, kActualArgumentsCount, kStartIndex)
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
       ConstructForwardVarargsDescriptor, CallInterfaceDescriptor)
+};
+
+class ConstructWithSpreadDescriptor : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kTarget, kNewTarget, kArgumentsCount, kSpread)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ConstructWithSpreadDescriptor,
+                                               CallInterfaceDescriptor)
 };
 
 class ConstructWithArrayLikeDescriptor : public CallInterfaceDescriptor {

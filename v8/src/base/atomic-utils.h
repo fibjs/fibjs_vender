@@ -6,6 +6,7 @@
 #define V8_ATOMIC_UTILS_H_
 
 #include <limits.h>
+#include <type_traits>
 
 #include "src/base/atomicops.h"
 #include "src/base/macros.h"
@@ -265,19 +266,23 @@ class AsAtomic32 {
   }
 
   template <typename T>
-  static void Release_Store(T* addr, T new_value) {
+  static void Release_Store(T* addr,
+                            typename std::remove_reference<T>::type new_value) {
     STATIC_ASSERT(sizeof(T) <= sizeof(base::Atomic32));
     base::Release_Store(to_storage_addr(addr), to_storage_type(new_value));
   }
 
   template <typename T>
-  static void Relaxed_Store(T* addr, T new_value) {
+  static void Relaxed_Store(T* addr,
+                            typename std::remove_reference<T>::type new_value) {
     STATIC_ASSERT(sizeof(T) <= sizeof(base::Atomic32));
     base::Relaxed_Store(to_storage_addr(addr), to_storage_type(new_value));
   }
 
   template <typename T>
-  static T Release_CompareAndSwap(T* addr, T old_value, T new_value) {
+  static T Release_CompareAndSwap(
+      T* addr, typename std::remove_reference<T>::type old_value,
+      typename std::remove_reference<T>::type new_value) {
     STATIC_ASSERT(sizeof(T) <= sizeof(base::Atomic32));
     return to_return_type<T>(base::Release_CompareAndSwap(
         to_storage_addr(addr), to_storage_type(old_value),
@@ -313,6 +318,10 @@ class AsAtomic32 {
   static base::Atomic32* to_storage_addr(T* value) {
     return reinterpret_cast<base::Atomic32*>(value);
   }
+  template <typename T>
+  static const base::Atomic32* to_storage_addr(const T* value) {
+    return reinterpret_cast<const base::Atomic32*>(value);
+  }
 };
 
 class AsAtomicWord {
@@ -330,19 +339,23 @@ class AsAtomicWord {
   }
 
   template <typename T>
-  static void Release_Store(T* addr, T new_value) {
+  static void Release_Store(T* addr,
+                            typename std::remove_reference<T>::type new_value) {
     STATIC_ASSERT(sizeof(T) <= sizeof(base::AtomicWord));
     base::Release_Store(to_storage_addr(addr), to_storage_type(new_value));
   }
 
   template <typename T>
-  static void Relaxed_Store(T* addr, T new_value) {
+  static void Relaxed_Store(T* addr,
+                            typename std::remove_reference<T>::type new_value) {
     STATIC_ASSERT(sizeof(T) <= sizeof(base::AtomicWord));
     base::Relaxed_Store(to_storage_addr(addr), to_storage_type(new_value));
   }
 
   template <typename T>
-  static T Release_CompareAndSwap(T* addr, T old_value, T new_value) {
+  static T Release_CompareAndSwap(
+      T* addr, typename std::remove_reference<T>::type old_value,
+      typename std::remove_reference<T>::type new_value) {
     STATIC_ASSERT(sizeof(T) <= sizeof(base::AtomicWord));
     return to_return_type<T>(base::Release_CompareAndSwap(
         to_storage_addr(addr), to_storage_type(old_value),
@@ -362,6 +375,46 @@ class AsAtomicWord {
   static base::AtomicWord* to_storage_addr(T* value) {
     return reinterpret_cast<base::AtomicWord*>(value);
   }
+  template <typename T>
+  static const base::AtomicWord* to_storage_addr(const T* value) {
+    return reinterpret_cast<const base::AtomicWord*>(value);
+  }
+};
+
+// This class is intended to be used as a wrapper for elements of an array
+// that is passed in to STL functions such as std::sort. It ensures that
+// elements accesses are atomic.
+// Usage example:
+//   Object** given_array;
+//   AtomicElement<Object*>* wrapped =
+//       reinterpret_cast<AtomicElement<Object*>(given_array);
+//   std::sort(wrapped, wrapped + given_length, cmp);
+// where the cmp function uses the value() accessor to compare the elements.
+template <typename T>
+class AtomicElement {
+ public:
+  AtomicElement(const AtomicElement<T>& other) {
+    AsAtomicWord::Relaxed_Store(&value_,
+                                AsAtomicWord::Relaxed_Load(&other.value_));
+  }
+
+  void operator=(const AtomicElement<T>& other) {
+    AsAtomicWord::Relaxed_Store(&value_,
+                                AsAtomicWord::Relaxed_Load(&other.value_));
+  }
+
+  T value() const { return AsAtomicWord::Relaxed_Load(&value_); }
+
+  bool operator<(const AtomicElement<T>& other) const {
+    return value() < other.value();
+  }
+
+  bool operator==(const AtomicElement<T>& other) const {
+    return value() == other.value();
+  }
+
+ private:
+  T value_;
 };
 
 }  // namespace base

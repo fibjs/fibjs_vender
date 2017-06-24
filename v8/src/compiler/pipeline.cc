@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include "src/base/adapters.h"
+#include "src/base/optional.h"
 #include "src/base/platform/elapsed-timer.h"
 #include "src/compilation-info.h"
 #include "src/compiler.h"
@@ -73,7 +74,6 @@
 #include "src/parsing/parse-info.h"
 #include "src/register-configuration.h"
 #include "src/trap-handler/trap-handler.h"
-#include "src/type-info.h"
 #include "src/utils.h"
 
 namespace v8 {
@@ -185,6 +185,7 @@ class PipelineData {
   CompilationInfo* info() const { return info_; }
   ZoneStats* zone_stats() const { return zone_stats_; }
   PipelineStatistics* pipeline_statistics() { return pipeline_statistics_; }
+  OsrHelper* osr_helper() { return &(*osr_helper_); }
   bool compilation_failed() const { return compilation_failed_; }
   void set_compilation_failed() { compilation_failed_ = true; }
 
@@ -318,9 +319,15 @@ class PipelineData {
                                sequence(), debug_name());
   }
 
+  void InitializeOsrHelper() {
+    DCHECK(!osr_helper_.has_value());
+    osr_helper_.emplace(info());
+  }
+
   void InitializeCodeGenerator(Linkage* linkage) {
     DCHECK_NULL(code_generator_);
-    code_generator_ = new CodeGenerator(frame(), linkage, sequence(), info());
+    code_generator_ =
+        new CodeGenerator(frame(), linkage, sequence(), info(), osr_helper_);
   }
 
   void BeginPhaseKind(const char* phase_kind_name) {
@@ -347,6 +354,7 @@ class PipelineData {
   bool compilation_failed_ = false;
   bool verify_graph_ = false;
   bool is_asm_ = false;
+  base::Optional<OsrHelper> osr_helper_;
   Handle<Code> code_ = Handle<Code>::null();
   CodeGenerator* code_generator_ = nullptr;
 
@@ -576,6 +584,9 @@ class PipelineCompilationJob final : public CompilationJob {
   Status ExecuteJobImpl() final;
   Status FinalizeJobImpl() final;
 
+  // Registers weak object to optimized code dependencies.
+  void RegisterWeakObjectsInOptimizedCode(Handle<Code> code);
+
  private:
   std::unique_ptr<ParseInfo> parse_info_;
   ZoneStats zone_stats_;
@@ -626,6 +637,8 @@ PipelineCompilationJob::Status PipelineCompilationJob::PrepareJobImpl() {
     return AbortOptimization(kGraphBuildingFailed);
   }
 
+  if (info()->is_osr()) data_.InitializeOsrHelper();
+
   // Make sure that we have generated the maximal number of deopt entries.
   // This is in order to avoid triggering the generation of deopt entries later
   // during code assembly.
@@ -657,6 +670,63 @@ PipelineCompilationJob::Status PipelineCompilationJob::FinalizeJobImpl() {
   return SUCCEEDED;
 }
 
+namespace {
+
+void AddWeakObjectToCodeDependency(Isolate* isolate, Handle<HeapObject> object,
+                                   Handle<Code> code) {
+  Handle<WeakCell> cell = Code::WeakCellFor(code);
+  Heap* heap = isolate->heap();
+  if (heap->InNewSpace(*object)) {
+    heap->AddWeakNewSpaceObjectToCodeDependency(object, cell);
+  } else {
+    Handle<DependentCode> dep(heap->LookupWeakObjectToCodeDependency(object));
+    dep =
+        DependentCode::InsertWeakCode(dep, DependentCode::kWeakCodeGroup, cell);
+    heap->AddWeakObjectToCodeDependency(object, dep);
+  }
+}
+
+}  // namespace
+
+void PipelineCompilationJob::RegisterWeakObjectsInOptimizedCode(
+    Handle<Code> code) {
+  DCHECK(code->is_optimized_code());
+  std::vector<Handle<Map>> maps;
+  std::vector<Handle<HeapObject>> objects;
+  {
+    DisallowHeapAllocation no_gc;
+    int const mode_mask = RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT) |
+                          RelocInfo::ModeMask(RelocInfo::CELL);
+    for (RelocIterator it(*code, mode_mask); !it.done(); it.next()) {
+      RelocInfo::Mode mode = it.rinfo()->rmode();
+      if (mode == RelocInfo::CELL &&
+          code->IsWeakObjectInOptimizedCode(it.rinfo()->target_cell())) {
+        objects.push_back(handle(it.rinfo()->target_cell(), isolate()));
+      } else if (mode == RelocInfo::EMBEDDED_OBJECT &&
+                 code->IsWeakObjectInOptimizedCode(
+                     it.rinfo()->target_object())) {
+        Handle<HeapObject> object(HeapObject::cast(it.rinfo()->target_object()),
+                                  isolate());
+        if (object->IsMap()) {
+          maps.push_back(Handle<Map>::cast(object));
+        } else {
+          objects.push_back(object);
+        }
+      }
+    }
+  }
+  for (Handle<Map> map : maps) {
+    if (map->dependent_code()->IsEmpty(DependentCode::kWeakCodeGroup)) {
+      isolate()->heap()->AddRetainedMap(map);
+    }
+    Map::AddDependentCode(map, DependentCode::kWeakCodeGroup, code);
+  }
+  for (Handle<HeapObject> object : objects) {
+    AddWeakObjectToCodeDependency(isolate(), object, code);
+  }
+  code->set_can_have_weak_objects(true);
+}
+
 class PipelineWasmCompilationJob final : public CompilationJob {
  public:
   explicit PipelineWasmCompilationJob(
@@ -680,6 +750,8 @@ class PipelineWasmCompilationJob final : public CompilationJob {
   Status FinalizeJobImpl() final;
 
  private:
+  size_t AllocatedMemory() const override;
+
   ZoneStats zone_stats_;
   std::unique_ptr<PipelineStatistics> pipeline_statistics_;
   PipelineData data_;
@@ -724,6 +796,10 @@ PipelineWasmCompilationJob::ExecuteJobImpl() {
 
   if (!pipeline_.ScheduleAndSelectInstructions(&linkage_, true)) return FAILED;
   return SUCCEEDED;
+}
+
+size_t PipelineWasmCompilationJob::AllocatedMemory() const {
+  return pipeline_.data_->zone_stats()->GetCurrentAllocatedBytes();
 }
 
 PipelineWasmCompilationJob::Status
@@ -934,6 +1010,7 @@ struct OsrDeconstructionPhase {
     data->jsgraph()->GetCachedNodes(&roots);
     trimmer.TrimGraph(roots.begin(), roots.end());
 
+    // TODO(neis): Use data->osr_helper() here once AST graph builder is gone.
     OsrHelper osr_helper(data->info());
     osr_helper.Deconstruct(data->jsgraph(), data->common(), temp_zone);
   }
@@ -2003,11 +2080,7 @@ void PipelineImpl::AllocateRegisters(const RegisterConfiguration* config,
 #endif
 
   data->InitializeRegisterAllocationData(config, descriptor);
-  if (info()->is_osr()) {
-    AllowHandleDereference allow_deref;
-    OsrHelper osr_helper(info());
-    osr_helper.SetupFrame(data->frame());
-  }
+  if (info()->is_osr()) data->osr_helper()->SetupFrame(data->frame());
 
   Run<MeetRegisterConstraintsPhase>();
   Run<ResolvePhisPhase>();

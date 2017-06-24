@@ -808,10 +808,8 @@ void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   CommonArrayConstructorStub::GenerateStubsAheadOfTime(isolate);
   CreateAllocationSiteStub::GenerateAheadOfTime(isolate);
   CreateWeakCellStub::GenerateAheadOfTime(isolate);
-  BinaryOpICStub::GenerateAheadOfTime(isolate);
   StoreRegistersStateStub::GenerateAheadOfTime(isolate);
   RestoreRegistersStateStub::GenerateAheadOfTime(isolate);
-  BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(isolate);
   StoreFastElementStub::GenerateAheadOfTime(isolate);
 }
 
@@ -1047,15 +1045,15 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ Bind(&exception_returned);
 
   ExternalReference pending_handler_context_address(
-      Isolate::kPendingHandlerContextAddress, isolate());
+      IsolateAddressId::kPendingHandlerContextAddress, isolate());
   ExternalReference pending_handler_code_address(
-      Isolate::kPendingHandlerCodeAddress, isolate());
+      IsolateAddressId::kPendingHandlerCodeAddress, isolate());
   ExternalReference pending_handler_offset_address(
-      Isolate::kPendingHandlerOffsetAddress, isolate());
+      IsolateAddressId::kPendingHandlerOffsetAddress, isolate());
   ExternalReference pending_handler_fp_address(
-      Isolate::kPendingHandlerFPAddress, isolate());
+      IsolateAddressId::kPendingHandlerFPAddress, isolate());
   ExternalReference pending_handler_sp_address(
-      Isolate::kPendingHandlerSPAddress, isolate());
+      IsolateAddressId::kPendingHandlerSPAddress, isolate());
 
   // Ask the runtime for help to determine the handler. This will set x0 to
   // contain the current pending exception, don't clobber it.
@@ -1143,7 +1141,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   int64_t bad_frame_pointer = -1L;  // Bad frame pointer to fail if it is used.
   __ Mov(x13, bad_frame_pointer);
   __ Mov(x12, StackFrame::TypeToMarker(marker));
-  __ Mov(x11, ExternalReference(Isolate::kCEntryFPAddress, isolate()));
+  __ Mov(x11, ExternalReference(IsolateAddressId::kCEntryFPAddress, isolate()));
   __ Ldr(x10, MemOperand(x11));
 
   __ Push(x13, x12, xzr, x10);
@@ -1153,7 +1151,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // Push the JS entry frame marker. Also set js_entry_sp if this is the
   // outermost JS call.
   Label non_outermost_js, done;
-  ExternalReference js_entry_sp(Isolate::kJSEntrySPAddress, isolate());
+  ExternalReference js_entry_sp(IsolateAddressId::kJSEntrySPAddress, isolate());
   __ Mov(x10, ExternalReference(js_entry_sp));
   __ Ldr(x11, MemOperand(x10));
   __ Cbnz(x11, &non_outermost_js);
@@ -1192,8 +1190,8 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
     // field in the JSEnv and return a failure sentinel. Coming in here the
     // fp will be invalid because the PushTryHandler below sets it to 0 to
     // signal the existence of the JSEntry frame.
-    __ Mov(x10, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
-                                          isolate())));
+    __ Mov(x10, Operand(ExternalReference(
+                    IsolateAddressId::kPendingExceptionAddress, isolate())));
   }
   __ Str(code_entry, MemOperand(x10));
   __ LoadRoot(x0, Heap::kExceptionRootIndex);
@@ -1253,7 +1251,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
   // Restore the top frame descriptors from the stack.
   __ Pop(x10);
-  __ Mov(x11, ExternalReference(Isolate::kCEntryFPAddress, isolate()));
+  __ Mov(x11, ExternalReference(IsolateAddressId::kCEntryFPAddress, isolate()));
   __ Str(x10, MemOperand(x11));
 
   // Reset the stack to the callee saved registers.
@@ -2010,32 +2008,6 @@ void StringHelper::GenerateOneByteCharsCompareLoop(
 }
 
 
-void BinaryOpICWithAllocationSiteStub::Generate(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- x1    : left
-  //  -- x0    : right
-  //  -- lr    : return address
-  // -----------------------------------
-
-  // Load x2 with the allocation site.  We stick an undefined dummy value here
-  // and replace it with the real allocation site later when we instantiate this
-  // stub in BinaryOpICWithAllocationSiteStub::GetCodeCopyFromTemplate().
-  __ LoadObject(x2, handle(isolate()->heap()->undefined_value()));
-
-  // Make sure that we actually patched the allocation site.
-  if (FLAG_debug_code) {
-    __ AssertNotSmi(x2, kExpectedAllocationSite);
-    __ Ldr(x10, FieldMemOperand(x2, HeapObject::kMapOffset));
-    __ AssertRegisterIsRoot(x10, Heap::kAllocationSiteMapRootIndex,
-                            kExpectedAllocationSite);
-  }
-
-  // Tail call into the stub that handles binary operations with allocation
-  // sites.
-  BinaryOpWithAllocationSiteStub stub(isolate(), state());
-  __ TailCallStub(&stub);
-}
-
 RecordWriteStub::RegisterAllocation::RegisterAllocation(Register object,
                                                         Register address,
                                                         Register scratch)
@@ -2629,7 +2601,7 @@ static void ArrayConstructorStubAheadOfTimeHelper(Isolate* isolate) {
     ElementsKind kind = GetFastElementsKindFromSequenceIndex(i);
     T stub(isolate, kind);
     stub.GetCode();
-    if (AllocationSite::GetMode(kind) != DONT_TRACK_ALLOCATION_SITE) {
+    if (AllocationSite::ShouldTrack(kind)) {
       T stub1(isolate, kind, DISABLE_ALLOCATION_SITES);
       stub1.GetCode();
     }

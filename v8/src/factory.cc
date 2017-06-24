@@ -175,10 +175,12 @@ Handle<FixedArray> Factory::NewFixedArrayWithHoles(int size,
 }
 
 Handle<FixedArray> Factory::NewUninitializedFixedArray(int size) {
-  CALL_HEAP_FUNCTION(
-      isolate(),
-      isolate()->heap()->AllocateUninitializedFixedArray(size),
-      FixedArray);
+  // TODO(ulan): As an experiment this temporarily returns an initialized fixed
+  // array. After getting canary/performance coverage, either remove the
+  // function or revert to returning uninitilized array.
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateFixedArray(size, NOT_TENURED),
+                     FixedArray);
 }
 
 Handle<BoilerplateDescription> Factory::NewBoilerplateDescription(
@@ -247,6 +249,15 @@ Handle<SmallOrderedHashSet> Factory::NewSmallOrderedHashSet(
       isolate(),
       isolate()->heap()->AllocateSmallOrderedHashSet(size, pretenure),
       SmallOrderedHashSet);
+}
+
+Handle<SmallOrderedHashMap> Factory::NewSmallOrderedHashMap(
+    int size, PretenureFlag pretenure) {
+  DCHECK_LE(0, size);
+  CALL_HEAP_FUNCTION(
+      isolate(),
+      isolate()->heap()->AllocateSmallOrderedHashMap(size, pretenure),
+      SmallOrderedHashMap);
 }
 
 Handle<OrderedHashSet> Factory::NewOrderedHashSet() {
@@ -1836,7 +1847,7 @@ Handle<JSGlobalObject> Factory::NewJSGlobalObject(
     PropertyDetails details = descs->GetDetails(i);
     // Only accessors are expected.
     DCHECK_EQ(kAccessor, details.kind());
-    PropertyDetails d(kAccessor, details.attributes(), i + 1,
+    PropertyDetails d(kAccessor, details.attributes(),
                       PropertyCellType::kMutable);
     Handle<Name> name(descs->GetKey(i));
     Handle<PropertyCell> cell = NewPropertyCell();
@@ -2004,6 +2015,7 @@ Handle<Module> Factory::NewModule(Handle<SharedFunctionInfo> code) {
   module->set_hash(isolate()->GenerateIdentityHash(Smi::kMaxValue));
   module->set_module_namespace(isolate()->heap()->undefined_value());
   module->set_requested_modules(*requested_modules);
+  module->set_script(Script::cast(code->script()));
   module->set_status(Module::kUnprepared);
   DCHECK(!module->instantiated());
   DCHECK(!module->evaluated());

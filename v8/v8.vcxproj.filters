@@ -2,247 +2,247 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{16 80 c8- 0b -ff 1-e ea- 4d 98 17 cc 12 25 4f 2e 40}</UniqueIdentifier>
+      <UniqueIdentifier>{1680c80b-ff1e-ea4d-9817-cc12254f2e40}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\base">
-      <UniqueIdentifier>{0d 81 1c- 89 -b0 4-f 2a- 84 c1 81 e6 f9 30 0b 0b 78}</UniqueIdentifier>
+      <UniqueIdentifier>{0d811c89-b04f-2a84-c181-e6f9300b0b78}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\base\trace_event">
-      <UniqueIdentifier>{46 a1 0c- 90 -31 5-5 41- df 86 1e 8b aa d5 1d e8 91}</UniqueIdentifier>
+      <UniqueIdentifier>{46a10c90-3155-41df-861e-8baad51de891}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\base\trace_event\common">
-      <UniqueIdentifier>{f6 5f 11- a7 -0a 6-8 fb- ec 2d 29 98 eb 68 e0 a2 ef}</UniqueIdentifier>
+      <UniqueIdentifier>{f65f11a7-0a68-fbec-2d29-98eb68e0a2ef}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\libplatform">
-      <UniqueIdentifier>{c9 29 20- a3 -c6 0-4 e8- b4 22 54 95 ee 66 56 c9 c6}</UniqueIdentifier>
+      <UniqueIdentifier>{c92920a3-c604-e8b4-2254-95ee6656c9c6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{ba 03 e0- 55 -4f a-2 fc- e3 8a 1c d3 48 54 7d 37 9c}</UniqueIdentifier>
+      <UniqueIdentifier>{ba03e055-4fa2-fce3-8a1c-d348547d379c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\asmjs">
-      <UniqueIdentifier>{98 14 e2- 73 -cc 3-7 cf- 8c 83 d1 e0 b6 eb 38 ba e5}</UniqueIdentifier>
+      <UniqueIdentifier>{9814e273-cc37-cf8c-83d1-e0b6eb38bae5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ast">
-      <UniqueIdentifier>{99 08 95- 31 -84 4-4 86- 31 8c 0b ba 54 a7 21 a6 84}</UniqueIdentifier>
+      <UniqueIdentifier>{99089531-8444-8631-8c0b-ba54a721a684}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\base">
-      <UniqueIdentifier>{68 52 9c- f3 -5a 6-7 0b- b1 84 a4 c9 1e 13 c5 8f 94}</UniqueIdentifier>
+      <UniqueIdentifier>{68529cf3-5a67-0bb1-84a4-c91e13c58f94}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\base\debug">
-      <UniqueIdentifier>{f3 68 24- 20 -fa e-6 25- a2 e8 a7 7d 90 93 ff 04 e0}</UniqueIdentifier>
+      <UniqueIdentifier>{f3682420-fae6-25a2-e8a7-7d9093ff04e0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\base\platform">
-      <UniqueIdentifier>{23 91 31- b8 -80 a-7 f5- 86 d5 c6 ed 3f 8f 48 29 f6}</UniqueIdentifier>
+      <UniqueIdentifier>{239131b8-80a7-f586-d5c6-ed3f8f4829f6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\base\utils">
-      <UniqueIdentifier>{d5 6d 30- d7 -d6 6-d 38- c8 fe b2 cd e0 07 68 e9 40}</UniqueIdentifier>
+      <UniqueIdentifier>{d56d30d7-d66d-38c8-feb2-cde00768e940}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\builtins">
-      <UniqueIdentifier>{a8 0f 5c- fd -ac 4-b a5- 84 61 8c 52 63 d4 94 b6 42}</UniqueIdentifier>
+      <UniqueIdentifier>{a80f5cfd-ac4b-a584-618c-5263d494b642}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\builtins\ia32">
-      <UniqueIdentifier>{bf 01 cf- ee -34 c-2 62- 5f 4a a2 96 c7 9e 14 5c 2a}</UniqueIdentifier>
+      <UniqueIdentifier>{bf01cfee-34c2-625f-4aa2-96c79e145c2a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\builtins\ppc">
-      <UniqueIdentifier>{37 cb 38- 5d -4e 5-7 bb- c6 b8 58 57 3a 21 7e 15 ce}</UniqueIdentifier>
+      <UniqueIdentifier>{37cb385d-4e57-bbc6-b858-573a217e15ce}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\builtins\s390">
-      <UniqueIdentifier>{cb 19 e7- 61 -5e f-1 80- 0d 6a 7a 08 e2 bf 33 a2 b0}</UniqueIdentifier>
+      <UniqueIdentifier>{cb19e761-5ef1-800d-6a7a-08e2bf33a2b0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\builtins\x64">
-      <UniqueIdentifier>{b8 36 8f- 3d -c5 c-5 35- 48 da 65 f1 bb d9 80 cf ee}</UniqueIdentifier>
+      <UniqueIdentifier>{b8368f3d-c5c5-3548-da65-f1bbd980cfee}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\builtins\x87">
-      <UniqueIdentifier>{28 43 c4- 31 -7f a-f 16- 6c 66 74 73 40 3a 72 8e 4b}</UniqueIdentifier>
+      <UniqueIdentifier>{2843c431-7faf-166c-6674-73403a728e4b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler">
-      <UniqueIdentifier>{99 e5 29- 90 -fb 5-9 1e- af e9 32 48 f9 c3 48 16 33}</UniqueIdentifier>
+      <UniqueIdentifier>{99e52990-fb59-1eaf-e932-48f9c3481633}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler-dispatcher">
-      <UniqueIdentifier>{ff 94 ca- 21 -7a 4-c bf- 6e 22 f3 02 0a d3 5b 00 b7}</UniqueIdentifier>
+      <UniqueIdentifier>{ff94ca21-7a4c-bf6e-22f3-020ad35b00b7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler\ia32">
-      <UniqueIdentifier>{af d1 4b- 90 -34 a-2 98- 41 1a ad 7f cc f9 17 ed a4}</UniqueIdentifier>
+      <UniqueIdentifier>{afd14b90-34a2-9841-1aad-7fccf917eda4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler\ppc">
-      <UniqueIdentifier>{74 7a 3f- 26 -b7 6-5 b3- 76 aa af 3d 94 43 87 90 ba}</UniqueIdentifier>
+      <UniqueIdentifier>{747a3f26-b765-b376-aaaf-3d94438790ba}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler\s390">
-      <UniqueIdentifier>{88 cf ef- ec -d5 7-5 51- a1 4b ec 52 05 9e 1e 71 65}</UniqueIdentifier>
+      <UniqueIdentifier>{88cfefec-d575-51a1-4bec-52059e1e7165}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler\x64">
-      <UniqueIdentifier>{7e 4d b0- 21 -7f 1-c d5- 74 29 4e 09 b6 10 2b e2 dd}</UniqueIdentifier>
+      <UniqueIdentifier>{7e4db021-7f1c-d574-294e-09b6102be2dd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler\x87">
-      <UniqueIdentifier>{6b ee dc- 22 -e6 d-f e5- 70 a7 93 e0 52 23 c7 38 97}</UniqueIdentifier>
+      <UniqueIdentifier>{6beedc22-e6df-e570-a793-e05223c73897}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\crankshaft">
-      <UniqueIdentifier>{52 fb ce- c1 -12 1-1 8b- 04 29 7b f5 3a 46 be eb ef}</UniqueIdentifier>
+      <UniqueIdentifier>{52fbcec1-1211-8b04-297b-f53a46beebef}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\crankshaft\ia32">
-      <UniqueIdentifier>{e1 03 27- e3 -f5 e-2 af- e4 a4 cf 4b ca 60 60 95 da}</UniqueIdentifier>
+      <UniqueIdentifier>{e10327e3-f5e2-afe4-a4cf-4bca606095da}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\crankshaft\ppc">
-      <UniqueIdentifier>{18 16 90- 0e -28 5-a c8- b1 18 b6 5f 24 48 ed c0 74}</UniqueIdentifier>
+      <UniqueIdentifier>{1816900e-285a-c8b1-18b6-5f2448edc074}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\crankshaft\s390">
-      <UniqueIdentifier>{ee 02 00- e4 -e6 7-7 4e- 1a f1 15 27 6a f6 b7 ca 28}</UniqueIdentifier>
+      <UniqueIdentifier>{ee0200e4-e677-4e1a-f115-276af6b7ca28}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\crankshaft\x64">
-      <UniqueIdentifier>{ec e3 23- aa -3a a-8 aa- 37 18 ef 4d c2 1d 62 38 9a}</UniqueIdentifier>
+      <UniqueIdentifier>{ece323aa-3aa8-aa37-18ef-4dc21d62389a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\crankshaft\x87">
-      <UniqueIdentifier>{fa 81 31- 65 -02 6-b 4a- 94 2a 00 f0 b8 3c 17 7b 08}</UniqueIdentifier>
+      <UniqueIdentifier>{fa813165-026b-4a94-2a00-f0b83c177b08}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\d8.xcodeproj">
-      <UniqueIdentifier>{21 b6 a2- cb -ce a-f 37- 8e a7 6c 93 3a d5 76 2d 5c}</UniqueIdentifier>
+      <UniqueIdentifier>{21b6a2cb-ceaf-378e-a76c-933ad5762d5c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\debug">
-      <UniqueIdentifier>{fd 6a b6- b3 -d8 d-6 b8- ec f3 aa be e5 2e d7 51 51}</UniqueIdentifier>
+      <UniqueIdentifier>{fd6ab6b3-d8d6-b8ec-f3aa-bee52ed75151}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\debug\ia32">
-      <UniqueIdentifier>{54 93 1e- b0 -81 f-d 87- ae f6 1d e8 1b 1d e3 a4 68}</UniqueIdentifier>
+      <UniqueIdentifier>{54931eb0-81fd-87ae-f61d-e81b1de3a468}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\debug\ppc">
-      <UniqueIdentifier>{b6 82 03- 17 -39 3-c 97- 9d f2 3d b2 33 83 6d d8 c7}</UniqueIdentifier>
+      <UniqueIdentifier>{b6820317-393c-979d-f23d-b233836dd8c7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\debug\s390">
-      <UniqueIdentifier>{71 71 cc- 16 -05 b-e 95- 7f 32 52 5f 50 fd 83 57 d7}</UniqueIdentifier>
+      <UniqueIdentifier>{7171cc16-05be-957f-3252-5f50fd8357d7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\debug\x64">
-      <UniqueIdentifier>{64 f8 16- 58 -99 5-8 9f- 87 2e c0 01 85 27 bb 74 dc}</UniqueIdentifier>
+      <UniqueIdentifier>{64f81658-9958-9f87-2ec0-018527bb74dc}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\debug\x87">
-      <UniqueIdentifier>{b9 71 01- 0d -1f 3-4 9b- ed 4f 19 0c 1f f6 73 b7 6f}</UniqueIdentifier>
+      <UniqueIdentifier>{b971010d-1f34-9bed-4f19-0c1ff673b76f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\extensions">
-      <UniqueIdentifier>{79 95 70- e2 -a1 0-f 51- ed 08 3a 05 a7 7b 06 87 f4}</UniqueIdentifier>
+      <UniqueIdentifier>{799570e2-a10f-51ed-083a-05a77b0687f4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ffi">
-      <UniqueIdentifier>{16 2a 0a- 77 -76 9-6 01- cd 0b 5f 9c ea f9 2e b4 6d}</UniqueIdentifier>
+      <UniqueIdentifier>{162a0a77-7696-01cd-0b5f-9ceaf92eb46d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\full-codegen">
-      <UniqueIdentifier>{9b de 40- 2c -89 5-4 3b- ca 54 a2 0b 17 66 51 69 3c}</UniqueIdentifier>
+      <UniqueIdentifier>{9bde402c-8954-3bca-54a2-0b176651693c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\full-codegen\ia32">
-      <UniqueIdentifier>{ff b3 a7- 80 -8f 5-1 81- 23 a6 56 a9 51 97 4d 37 d5}</UniqueIdentifier>
+      <UniqueIdentifier>{ffb3a780-8f51-8123-a656-a951974d37d5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\full-codegen\ppc">
-      <UniqueIdentifier>{f0 0a 55- 31 -ef d-b 0e- 27 81 f4 9b 77 54 d2 a3 12}</UniqueIdentifier>
+      <UniqueIdentifier>{f00a5531-efdb-0e27-81f4-9b7754d2a312}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\full-codegen\s390">
-      <UniqueIdentifier>{9c 86 a5- 54 -7d a-0 a7- fe 58 8d 00 d4 ba 3a 5c 7d}</UniqueIdentifier>
+      <UniqueIdentifier>{9c86a554-7da0-a7fe-588d-00d4ba3a5c7d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\full-codegen\x64">
-      <UniqueIdentifier>{73 f3 d6- cd -3d d-6 85- 40 ff 08 e3 0c 63 41 9f 3a}</UniqueIdentifier>
+      <UniqueIdentifier>{73f3d6cd-3dd6-8540-ff08-e30c63419f3a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\full-codegen\x87">
-      <UniqueIdentifier>{9e 51 ea- 73 -2f 2-6 b7- 9f 62 a7 d5 b8 d8 5d e9 70}</UniqueIdentifier>
+      <UniqueIdentifier>{9e51ea73-2f26-b79f-62a7-d5b8d85de970}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\gen">
-      <UniqueIdentifier>{10 50 79- 7c -18 5-f d5- 8a 69 36 83 78 71 f7 74 9c}</UniqueIdentifier>
+      <UniqueIdentifier>{1050797c-185f-d58a-6936-837871f7749c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\heap">
-      <UniqueIdentifier>{4a da 97- 95 -97 0-e 47- 6b ea 26 c9 3a 5c d3 80 0b}</UniqueIdentifier>
+      <UniqueIdentifier>{4ada9795-970e-476b-ea26-c93a5cd3800b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ia32">
-      <UniqueIdentifier>{9b 33 c6- cd -ac c-4 f1- ac 84 da 03 a6 8e 2b e0 30}</UniqueIdentifier>
+      <UniqueIdentifier>{9b33c6cd-acc4-f1ac-84da-03a68e2be030}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ic">
-      <UniqueIdentifier>{60 19 b7- 62 -33 5-1 6d- ad b1 ec 13 84 95 9b 58 83}</UniqueIdentifier>
+      <UniqueIdentifier>{6019b762-3351-6dad-b1ec-1384959b5883}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ic\ia32">
-      <UniqueIdentifier>{66 02 bd- 0f -4c 9-a 7a- a6 4b 75 d8 43 3d ff ae 53}</UniqueIdentifier>
+      <UniqueIdentifier>{6602bd0f-4c9a-7aa6-4b75-d8433dffae53}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ic\ppc">
-      <UniqueIdentifier>{d6 e9 9f- 08 -7d 3-1 eb- 33 b8 32 c0 eb 17 4f 37 3a}</UniqueIdentifier>
+      <UniqueIdentifier>{d6e99f08-7d31-eb33-b832-c0eb174f373a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ic\s390">
-      <UniqueIdentifier>{63 70 d2- e6 -c5 7-b d6- 4a 8b 5c eb c0 12 06 aa 1c}</UniqueIdentifier>
+      <UniqueIdentifier>{6370d2e6-c57b-d64a-8b5c-ebc01206aa1c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ic\x64">
-      <UniqueIdentifier>{7e 4c 29- af -71 1-e 18- fb 35 3a 9d c1 59 58 43 21}</UniqueIdentifier>
+      <UniqueIdentifier>{7e4c29af-711e-18fb-353a-9dc159584321}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ic\x87">
-      <UniqueIdentifier>{8a ed b8- d2 -fb 2-e 3a- d0 c5 d0 dd 32 0e ee cd 95}</UniqueIdentifier>
+      <UniqueIdentifier>{8aedb8d2-fb2e-3ad0-c5d0-dd320eeecd95}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\interpreter">
-      <UniqueIdentifier>{59 81 0c- e5 -92 6-b 7a- 85 f0 8d bf 58 fe ae 40 cd}</UniqueIdentifier>
+      <UniqueIdentifier>{59810ce5-926b-7a85-f08d-bf58feae40cd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\js">
-      <UniqueIdentifier>{40 95 54- 6e -99 a-4 8e- cb 61 2c 16 51 ea a2 cb c8}</UniqueIdentifier>
+      <UniqueIdentifier>{4095546e-99a4-8ecb-612c-1651eaa2cbc8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\libplatform">
-      <UniqueIdentifier>{d5 5c 83- 9e -d9 e-9 05- 41 ed c0 1b 7c f0 1a 34 05}</UniqueIdentifier>
+      <UniqueIdentifier>{d55c839e-d9e9-0541-edc0-1b7cf01a3405}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\libplatform\tracing">
-      <UniqueIdentifier>{fd 51 2d- 84 -e1 b-c 7d- 6f b8 91 e0 06 12 bd 82 33}</UniqueIdentifier>
+      <UniqueIdentifier>{fd512d84-e1bc-7d6f-b891-e00612bd8233}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\libsampler">
-      <UniqueIdentifier>{f2 a6 d3- b6 -52 8-0 37- 43 7f e3 95 51 5b cb d0 f9}</UniqueIdentifier>
+      <UniqueIdentifier>{f2a6d3b6-5280-3743-7fe3-95515bcbd0f9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\objects">
-      <UniqueIdentifier>{be c7 66- df -88 e-c 93- 6a 74 dd 00 02 d6 c7 e7 69}</UniqueIdentifier>
+      <UniqueIdentifier>{bec766df-88ec-936a-74dd-0002d6c7e769}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\parsing">
-      <UniqueIdentifier>{9e d8 20- 3f -a3 0-2 00- ef 22 89 9b 08 54 c4 f2 cd}</UniqueIdentifier>
+      <UniqueIdentifier>{9ed8203f-a302-00ef-2289-9b0854c4f2cd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ppc">
-      <UniqueIdentifier>{b1 b3 c0- c3 -7b 0-1 ce- 70 48 fd 66 ce d6 e7 9f 09}</UniqueIdentifier>
+      <UniqueIdentifier>{b1b3c0c3-7b01-ce70-48fd-66ced6e79f09}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\profiler">
-      <UniqueIdentifier>{79 71 ce- 5c -1c d-6 dd- 16 0b dd fd b3 d0 ac a8 e3}</UniqueIdentifier>
+      <UniqueIdentifier>{7971ce5c-1cd6-dd16-0bdd-fdb3d0aca8e3}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\regexp">
-      <UniqueIdentifier>{1f ca 42- 11 -b2 3-5 8c- 94 05 41 18 98 0f d8 45 96}</UniqueIdentifier>
+      <UniqueIdentifier>{1fca4211-b235-8c94-0541-18980fd84596}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\regexp\ia32">
-      <UniqueIdentifier>{f7 d2 da- b6 -60 2-7 79- 1d 1f 54 6e 8c a3 52 eb a6}</UniqueIdentifier>
+      <UniqueIdentifier>{f7d2dab6-6027-791d-1f54-6e8ca352eba6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\regexp\ppc">
-      <UniqueIdentifier>{5f ad 0a- b9 -8d 8-4 64- b9 30 87 2a c5 36 ff 4e 34}</UniqueIdentifier>
+      <UniqueIdentifier>{5fad0ab9-8d84-64b9-3087-2ac536ff4e34}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\regexp\s390">
-      <UniqueIdentifier>{0e 71 7e- 53 -00 3-6 4b- a5 18 3a 65 45 40 f6 65 bf}</UniqueIdentifier>
+      <UniqueIdentifier>{0e717e53-0036-4ba5-183a-654540f665bf}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\regexp\x64">
-      <UniqueIdentifier>{06 31 76- f1 -b1 6-b 9f- b0 97 98 0a ed 43 71 24 d5}</UniqueIdentifier>
+      <UniqueIdentifier>{063176f1-b16b-9fb0-9798-0aed437124d5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\regexp\x87">
-      <UniqueIdentifier>{1d f9 da- 08 -88 9-1 ff- 31 90 09 92 c2 50 5e c6 7e}</UniqueIdentifier>
+      <UniqueIdentifier>{1df9da08-8891-ff31-9009-92c2505ec67e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\runtime">
-      <UniqueIdentifier>{10 3f 0e- 8f -85 8-7 21- 31 67 79 fa 0e 8e 7a 0c 4f}</UniqueIdentifier>
+      <UniqueIdentifier>{103f0e8f-8587-2131-6779-fa0e8e7a0c4f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\s390">
-      <UniqueIdentifier>{8c a7 48- 01 -26 2-3 d8- b2 2e a7 6b 87 0d d7 65 fb}</UniqueIdentifier>
+      <UniqueIdentifier>{8ca74801-2623-d8b2-2ea7-6b870dd765fb}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\snapshot">
-      <UniqueIdentifier>{b8 07 bd- a9 -b1 8-4 8f- 62 a6 40 92 e0 b3 40 2f 98}</UniqueIdentifier>
+      <UniqueIdentifier>{b807bda9-b184-8f62-a640-92e0b3402f98}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\third_party">
-      <UniqueIdentifier>{51 7d 88- ea -d2 1-1 bc- d7 bc 22 b7 16 5e ec 24 c6}</UniqueIdentifier>
+      <UniqueIdentifier>{517d88ea-d211-bcd7-bc22-b7165eec24c6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\third_party\valgrind">
-      <UniqueIdentifier>{d9 95 e5- 28 -12 f-f 11- 7d 98 c4 5a 4e 21 69 7a 61}</UniqueIdentifier>
+      <UniqueIdentifier>{d995e528-12ff-117d-98c4-5a4e21697a61}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\tracing">
-      <UniqueIdentifier>{0b 42 16- 33 -1f 8-4 f4- 85 f5 89 7a 71 eb 8c dc e2}</UniqueIdentifier>
+      <UniqueIdentifier>{0b421633-1f84-f485-f589-7a71eb8cdce2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\trap-handler">
-      <UniqueIdentifier>{3a 8b a6- bd -64 3-4 f1- 2b 6f 46 6e 35 26 4e c1 52}</UniqueIdentifier>
+      <UniqueIdentifier>{3a8ba6bd-6434-f12b-6f46-6e35264ec152}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\wasm">
-      <UniqueIdentifier>{3a 7f 7d- 48 -d6 2-1 6a- e7 ac 90 1d a7 8b ab cc 0a}</UniqueIdentifier>
+      <UniqueIdentifier>{3a7f7d48-d621-6ae7-ac90-1da78babcc0a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\x64">
-      <UniqueIdentifier>{ad 65 f0- e1 -d2 9-e 4a- 32 08 c7 a0 9f d2 f4 64 f7}</UniqueIdentifier>
+      <UniqueIdentifier>{ad65f0e1-d29e-4a32-08c7-a09fd2f464f7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\x87">
-      <UniqueIdentifier>{ac ef 08- ff -e2 6-0 98- 24 59 23 97 8c b7 7e 35 fb}</UniqueIdentifier>
+      <UniqueIdentifier>{acef08ff-e260-9824-5923-978cb77e35fb}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\zone">
-      <UniqueIdentifier>{a1 a6 69- 89 -d4 4-9 b4- 93 33 f8 40 e6 ad b3 8e 0d}</UniqueIdentifier>
+      <UniqueIdentifier>{a1a66989-d449-b493-33f8-40e6adb38e0d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1131,9 +1131,6 @@
     <ClInclude Include="src\crankshaft\s390\lithium-s390.h">
       <Filter>Source Files\crankshaft\s390</Filter>
     </ClInclude>
-    <ClInclude Include="src\crankshaft\typing.h">
-      <Filter>Source Files\crankshaft</Filter>
-    </ClInclude>
     <ClInclude Include="src\crankshaft\unique.h">
       <Filter>Source Files\crankshaft</Filter>
     </ClInclude>
@@ -1207,9 +1204,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\dtoa.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\effects.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\eh-frame.h">
@@ -1374,9 +1368,6 @@
     <ClInclude Include="src\heap\objects-visiting.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
-    <ClInclude Include="src\heap\page-parallel-job.h">
-      <Filter>Source Files\heap</Filter>
-    </ClInclude>
     <ClInclude Include="src\heap\remembered-set.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1404,7 +1395,7 @@
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
-    <ClInclude Include="src\heap\workstealing-marking-deque.h">
+    <ClInclude Include="src\heap\worklist.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\ia32\assembler-ia32-inl.h">
@@ -1482,6 +1473,9 @@
     <ClInclude Include="src\interface-descriptors.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\block-coverage-builder.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-accessor.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1492,9 +1486,6 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-random-iterator.h">
-      <Filter>Source Files\interpreter</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interpreter\bytecode-array-writer.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-decoder.h">
@@ -1510,9 +1501,6 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-label.h">
-      <Filter>Source Files\interpreter</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interpreter\bytecode-node.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-operands.h">
@@ -1705,6 +1693,9 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\frame-array.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\hash-table-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\hash-table.h">
@@ -2100,9 +2091,6 @@
     <ClInclude Include="src\type-hints.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\type-info.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\unicode-cache-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -2289,9 +2277,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\address-map.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\allocation-site-scopes.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\allocation.cc">
@@ -3188,9 +3173,6 @@
     <ClCompile Include="src\crankshaft\s390\lithium-s390.cc">
       <Filter>Source Files\crankshaft\s390</Filter>
     </ClCompile>
-    <ClCompile Include="src\crankshaft\typing.cc">
-      <Filter>Source Files\crankshaft</Filter>
-    </ClCompile>
     <ClCompile Include="src\crankshaft\x64\lithium-codegen-x64.cc">
       <Filter>Source Files\crankshaft\x64</Filter>
     </ClCompile>
@@ -3542,9 +3524,6 @@
     <ClCompile Include="src\interpreter\bytecode-array-random-iterator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
-    <ClCompile Include="src\interpreter\bytecode-array-writer.cc">
-      <Filter>Source Files\interpreter</Filter>
-    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-decoder.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -3555,9 +3534,6 @@
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-label.cc">
-      <Filter>Source Files\interpreter</Filter>
-    </ClCompile>
-    <ClCompile Include="src\interpreter\bytecode-node.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-operands.cc">
@@ -4062,9 +4038,6 @@
       <Filter>Source Files\trap-handler</Filter>
     </ClCompile>
     <ClCompile Include="src\type-hints.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\type-info.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\unicode-decoder.cc">

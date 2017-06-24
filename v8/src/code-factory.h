@@ -55,14 +55,12 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable CompareIC(Isolate* isolate, Token::Value op);
   static Callable CompareNilIC(Isolate* isolate, NilValue nil_value);
 
-  static Callable BinaryOpIC(Isolate* isolate, Token::Value op);
+  static Callable BinaryOperation(Isolate* isolate, Token::Value op);
 
   static Callable ApiGetter(Isolate* isolate);
 
   // Code stubs. Add methods here as needed to reduce dependency on
   // code-stubs.h.
-  static Callable StringFromCharCode(Isolate* isolate);
-
   static Callable GetProperty(Isolate* isolate);
 
   static Callable NonPrimitiveToPrimitive(
@@ -89,6 +87,7 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable Call(Isolate* isolate,
                        ConvertReceiverMode mode = ConvertReceiverMode::kAny,
                        TailCallMode tail_call_mode = TailCallMode::kDisallow);
+  static Callable CallWithArrayLike(Isolate* isolate);
   static Callable CallWithSpread(Isolate* isolate);
   static Callable CallFunction(
       Isolate* isolate, ConvertReceiverMode mode = ConvertReceiverMode::kAny,

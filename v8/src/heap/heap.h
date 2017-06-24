@@ -91,6 +91,7 @@ using v8::MemoryPressureLevel;
   V(Map, ordered_hash_table_map, OrderedHashTableMap)                          \
   V(Map, unseeded_number_dictionary_map, UnseededNumberDictionaryMap)          \
   V(Map, sloppy_arguments_elements_map, SloppyArgumentsElementsMap)            \
+  V(Map, small_ordered_hash_map_map, SmallOrderedHashMapMap)                   \
   V(Map, small_ordered_hash_set_map, SmallOrderedHashSetMap)                   \
   V(Map, message_object_map, JSMessageObjectMap)                               \
   V(Map, external_map, ExternalMap)                                            \
@@ -313,6 +314,7 @@ using v8::MemoryPressureLevel;
   V(OnePointerFillerMap)                \
   V(OptimizedOut)                       \
   V(OrderedHashTableMap)                \
+  V(SmallOrderedHashMapMap)             \
   V(SmallOrderedHashSetMap)             \
   V(ScopeInfoMap)                       \
   V(ScriptContextMap)                   \
@@ -340,7 +342,7 @@ using v8::MemoryPressureLevel;
 #define FIXED_ARRAY_ELEMENTS_WRITE_BARRIER(heap, array, start, length) \
   do {                                                                 \
     heap->RecordFixedArrayElements(array, start, length);              \
-    heap->incremental_marking()->IterateBlackObject(array);            \
+    heap->incremental_marking()->RecordWrites(array);                  \
   } while (false)
 
 // Forward declarations.
@@ -618,9 +620,11 @@ class Heap {
   static const int kPointerMultiplier = i::kPointerSize / 4;
 #endif
 
-  // The new space size has to be a power of 2. Sizes are in MB.
-  static const int kMinSemiSpaceSize = 1 * kPointerMultiplier;
-  static const int kMaxSemiSpaceSize = 8 * kPointerMultiplier;
+  // Semi-space size needs to be a multiple of page size.
+  static const int kMinSemiSpaceSizeInKB =
+      1 * kPointerMultiplier * ((1 << kPageSizeBits) / KB);
+  static const int kMaxSemiSpaceSizeInKB =
+      16 * kPointerMultiplier * ((1 << kPageSizeBits) / KB);
 
   // The old space size has to be a multiple of Page::kPageSize.
   // Sizes are in MB.
@@ -811,7 +815,7 @@ class Heap {
 
   // Checks whether the given object is allowed to be migrated from it's
   // current space into the given destination space. Used for debugging.
-  inline bool AllowedToBeMigrated(HeapObject* object, AllocationSpace dest);
+  bool AllowedToBeMigrated(HeapObject* object, AllocationSpace dest);
 
   void CheckHandleCount();
 
@@ -862,7 +866,7 @@ class Heap {
 
   // An object should be promoted if the object has survived a
   // scavenge operation.
-  inline bool ShouldBePromoted(Address old_address, int object_size);
+  inline bool ShouldBePromoted(Address old_address);
 
   void ClearNormalizedMapCaches();
 
@@ -974,10 +978,14 @@ class Heap {
   // Initialization. ===========================================================
   // ===========================================================================
 
-  // Configure heap size in MB before setup. Return false if the heap has been
-  // set up already.
-  bool ConfigureHeap(size_t max_semi_space_size, size_t max_old_space_size,
-                     size_t code_range_size);
+  // Configure heap sizes
+  // max_semi_space_size_in_kb: maximum semi-space size in KB
+  // max_old_generation_size_in_mb: maximum old generation size in MB
+  // code_range_size_in_mb: code range size in MB
+  // Return false if the heap has been set up already.
+  bool ConfigureHeap(size_t max_semi_space_size_in_kb,
+                     size_t max_old_generation_size_in_mb,
+                     size_t code_range_size_in_mb);
   bool ConfigureHeapDefault();
 
   // Prepares the heap, setting up memory areas that are needed in the isolate
@@ -1353,10 +1361,12 @@ class Heap {
     uint64_t capped_physical_memory =
         Max(Min(physical_memory, max_physical_memory), min_physical_memory);
     // linearly scale max semi-space size: (X-A)/(B-A)*(D-C)+C
-    return static_cast<int>(((capped_physical_memory - min_physical_memory) *
-                             (kMaxSemiSpaceSize - kMinSemiSpaceSize)) /
-                                (max_physical_memory - min_physical_memory) +
-                            kMinSemiSpaceSize);
+    int semi_space_size_in_kb =
+        static_cast<int>(((capped_physical_memory - min_physical_memory) *
+                          (kMaxSemiSpaceSizeInKB - kMinSemiSpaceSizeInKB)) /
+                             (max_physical_memory - min_physical_memory) +
+                         kMinSemiSpaceSizeInKB);
+    return RoundUp(semi_space_size_in_kb, (1 << kPageSizeBits) / KB);
   }
 
   // Returns the capacity of the heap in bytes w/o growing. Heap grows when
@@ -2001,6 +2011,8 @@ class Heap {
 
   MUST_USE_RESULT AllocationResult AllocateSmallOrderedHashSet(
       int length, PretenureFlag pretenure = NOT_TENURED);
+  MUST_USE_RESULT AllocationResult AllocateSmallOrderedHashMap(
+      int length, PretenureFlag pretenure = NOT_TENURED);
 
   // Allocate an uninitialized object.  The memory is non-executable if the
   // hardware and OS allow.  This is the single choke-point for allocations
@@ -2478,21 +2490,18 @@ class AlwaysAllocateScope {
 // objects in a heap space but above the allocation pointer.
 class VerifyPointersVisitor : public ObjectVisitor, public RootVisitor {
  public:
-  inline void VisitPointers(HeapObject* host, Object** start,
-                            Object** end) override;
-  inline void VisitRootPointers(Root root, Object** start,
-                                Object** end) override;
+  void VisitPointers(HeapObject* host, Object** start, Object** end) override;
+  void VisitRootPointers(Root root, Object** start, Object** end) override;
 
  private:
-  inline void VerifyPointers(Object** start, Object** end);
+  void VerifyPointers(Object** start, Object** end);
 };
 
 
 // Verify that all objects are Smis.
 class VerifySmisVisitor : public RootVisitor {
  public:
-  inline void VisitRootPointers(Root root, Object** start,
-                                Object** end) override;
+  void VisitRootPointers(Root root, Object** start, Object** end) override;
 };
 
 

@@ -76,7 +76,7 @@ namespace internal {
   ASM(TailCall_ReceiverIsNotNullOrUndefined)                                   \
   ASM(TailCall_ReceiverIsAny)                                                  \
   ASM(CallVarargs)                                                             \
-  ASM(CallWithSpread)                                                          \
+  TFC(CallWithSpread, CallWithSpread, 1)                                       \
   TFC(CallWithArrayLike, CallWithArrayLike, 1)                                 \
   ASM(CallForwardVarargs)                                                      \
   ASM(CallFunctionForwardVarargs)                                              \
@@ -92,7 +92,7 @@ namespace internal {
   /* ES6 section 7.3.13 Construct (F, [argumentsList], [newTarget]) */         \
   ASM(Construct)                                                               \
   ASM(ConstructVarargs)                                                        \
-  ASM(ConstructWithSpread)                                                     \
+  TFC(ConstructWithSpread, ConstructWithSpread, 1)                             \
   TFC(ConstructWithArrayLike, ConstructWithArrayLike, 1)                       \
   ASM(ConstructForwardVarargs)                                                 \
   ASM(ConstructFunctionForwardVarargs)                                         \
@@ -149,9 +149,7 @@ namespace internal {
   ASM(InterpreterOnStackReplacement)                                           \
                                                                                \
   /* Code life-cycle */                                                        \
-  ASM(CompileOptimized)                                                        \
-  ASM(CompileOptimizedConcurrent)                                              \
-  ASM(InOptimizationQueue)                                                     \
+  ASM(CheckOptimizationMarker)                                                 \
   ASM(InstantiateAsmJs)                                                        \
   ASM(MarkCodeAsToBeExecutedOnce)                                              \
   ASM(MarkCodeAsExecutedOnce)                                                  \
@@ -229,6 +227,9 @@ namespace internal {
   TFC(ClassOf, Typeof, 1)                                                      \
   TFC(Typeof, Typeof, 1)                                                       \
   TFC(GetSuperConstructor, Typeof, 1)                                          \
+                                                                               \
+  /* Type conversions continuations */                                         \
+  TFC(ToBooleanLazyDeoptContinuation, TypeConversionStackParameter, 1)         \
                                                                                \
   /* Handlers */                                                               \
   TFH(LoadICProtoArray, BUILTIN, kNoExtraICState, LoadICProtoArray)            \
@@ -530,11 +531,13 @@ namespace internal {
   TFS(CreateGeneratorObject, kClosure, kReceiver)                              \
   CPP(GeneratorFunctionConstructor)                                            \
   /* ES6 #sec-generator.prototype.next */                                      \
-  TFJ(GeneratorPrototypeNext, 1, kValue)                                       \
+  TFJ(GeneratorPrototypeNext, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
   /* ES6 #sec-generator.prototype.return */                                    \
-  TFJ(GeneratorPrototypeReturn, 1, kValue)                                     \
+  TFJ(GeneratorPrototypeReturn,                                                \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* ES6 #sec-generator.prototype.throw */                                     \
-  TFJ(GeneratorPrototypeThrow, 1, kException)                                  \
+  TFJ(GeneratorPrototypeThrow,                                                 \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   CPP(AsyncFunctionConstructor)                                                \
                                                                                \
   /* Global object */                                                          \
@@ -700,7 +703,7 @@ namespace internal {
   /* Object */                                                                 \
   CPP(ObjectAssign)                                                            \
   /* ES #sec-object.create */                                                  \
-  TFJ(ObjectCreate, 2, kPrototype, kProperties)                                \
+  TFJ(ObjectCreate, SharedFunctionInfo::kDontAdaptArgumentsSentinel)           \
   CPP(ObjectDefineGetter)                                                      \
   CPP(ObjectDefineProperties)                                                  \
   CPP(ObjectDefineProperty)                                                    \
@@ -1029,13 +1032,16 @@ namespace internal {
   CPP(AsyncGeneratorFunctionConstructor)                                       \
   /* AsyncGenerator.prototype.next ( value ) */                                \
   /* proposal-async-iteration/#sec-asyncgenerator-prototype-next */            \
-  TFJ(AsyncGeneratorPrototypeNext, 1, kValue)                                  \
+  TFJ(AsyncGeneratorPrototypeNext,                                             \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* AsyncGenerator.prototype.return ( value ) */                              \
   /* proposal-async-iteration/#sec-asyncgenerator-prototype-return */          \
-  TFJ(AsyncGeneratorPrototypeReturn, 1, kValue)                                \
+  TFJ(AsyncGeneratorPrototypeReturn,                                           \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* AsyncGenerator.prototype.throw ( exception ) */                           \
   /* proposal-async-iteration/#sec-asyncgenerator-prototype-throw */           \
-  TFJ(AsyncGeneratorPrototypeThrow, 1, kValue)                                 \
+  TFJ(AsyncGeneratorPrototypeThrow,                                            \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
                                                                                \
   /* Await (proposal-async-iteration/#await), with resume behaviour */         \
   /* specific to Async Generators. Internal / Not exposed to JS code. */       \

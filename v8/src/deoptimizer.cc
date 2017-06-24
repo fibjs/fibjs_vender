@@ -523,9 +523,8 @@ Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction* function,
   CHECK(AllowHeapAllocation::IsAllowed());
   disallow_heap_allocation_ = new DisallowHeapAllocation();
 #endif  // DEBUG
-  if (function != nullptr && function->IsOptimized() &&
-      (compiled_code_->kind() != Code::OPTIMIZED_FUNCTION ||
-       !compiled_code_->deopt_already_counted())) {
+  if (compiled_code_->kind() != Code::OPTIMIZED_FUNCTION ||
+      !compiled_code_->deopt_already_counted()) {
     // If the function is optimized, and we haven't counted that deopt yet, then
     // increment the function's deopt count so that we can avoid optimising
     // functions that deopt too often.
@@ -534,7 +533,7 @@ Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction* function,
       // Soft deopts shouldn't count against the overall deoptimization count
       // that can eventually lead to disabling optimization for a function.
       isolate->counters()->soft_deopts_executed()->Increment();
-    } else {
+    } else if (function != nullptr) {
       function->shared()->increment_deopt_count();
     }
   }
@@ -1982,8 +1981,11 @@ void Deoptimizer::DoComputeBuiltinContinuation(
 
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating BuiltinContinuation to %s, stack param count %d\n",
-           Builtins::name(builtin_name), stack_param_count);
+           "  translating BuiltinContinuation to %s,"
+           " register param count %d,"
+           " stack param count %d\n",
+           Builtins::name(builtin_name), register_parameter_count,
+           stack_param_count);
   }
 
   unsigned output_frame_offset = output_frame_size;
@@ -3204,7 +3206,6 @@ TranslatedFrame TranslatedFrame::ConstructStubFrame(
 
 TranslatedFrame TranslatedFrame::BuiltinContinuationFrame(
     BailoutId bailout_id, SharedFunctionInfo* shared_info, int height) {
-  base::OS::DebugBreak();
   TranslatedFrame frame(kBuiltinContinuation, shared_info->GetIsolate(),
                         shared_info, height);
   frame.node_id_ = bailout_id;
@@ -3338,8 +3339,11 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
         PrintF(trace_file, " => bailout_id=%d, height=%d; inputs:\n",
                bailout_id.ToInt(), height);
       }
+      // Add one to the height to account for the context which was implicitly
+      // added to the translation during code generation.
+      int height_with_context = height + 1;
       return TranslatedFrame::BuiltinContinuationFrame(bailout_id, shared_info,
-                                                       height);
+                                                       height_with_context);
     }
 
     case Translation::JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME: {
@@ -3354,8 +3358,11 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
         PrintF(trace_file, " => bailout_id=%d, height=%d; inputs:\n",
                bailout_id.ToInt(), height);
       }
+      // Add one to the height to account for the context which was implicitly
+      // added to the translation during code generation.
+      int height_with_context = height + 1;
       return TranslatedFrame::JavaScriptBuiltinContinuationFrame(
-          bailout_id, shared_info, height + 1);
+          bailout_id, shared_info, height_with_context);
     }
 
     case Translation::GETTER_STUB_FRAME: {
@@ -4274,6 +4281,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
     case STACK_FRAME_INFO_TYPE:
     case CELL_TYPE:
     case WEAK_CELL_TYPE:
+    case SMALL_ORDERED_HASH_MAP_TYPE:
     case SMALL_ORDERED_HASH_SET_TYPE:
     case PROTOTYPE_INFO_TYPE:
     case TUPLE2_TYPE:

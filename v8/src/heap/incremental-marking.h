@@ -138,7 +138,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   void FinalizeIncrementally();
 
-  void UpdateMarkingDequeAfterScavenge();
+  void UpdateMarkingWorklistAfterScavenge();
 
   void Hurry();
 
@@ -211,6 +211,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   INLINE(void RecordWriteIntoCode(Code* host, RelocInfo* rinfo, Object* value));
   INLINE(void RecordWriteOfCodeEntry(JSFunction* host, Object** slot,
                                      Code* value));
+  INLINE(void RecordWrites(HeapObject* obj));
 
   void RecordWriteSlow(HeapObject* obj, Object** slot, Object* value);
   void RecordWriteIntoCodeSlow(Code* host, RelocInfo* rinfo, Object* value);
@@ -247,7 +248,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   bool IsIdleMarkingDelayCounterLimitReached();
 
-  void IterateBlackObject(HeapObject* object);
+  void ProcessBlackAllocatedObject(HeapObject* obj);
 
   Heap* heap() const { return heap_; }
 
@@ -261,13 +262,14 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   void AbortBlackAllocation();
 
-  MarkingDeque* marking_deque() {
-    SLOW_DCHECK(marking_deque_ != nullptr);
-    return marking_deque_;
+  MarkCompactCollector::MarkingWorklist* marking_worklist() {
+    SLOW_DCHECK(marking_worklist_ != nullptr);
+    return marking_worklist_;
   }
 
-  void set_marking_deque(MarkingDeque* marking_deque) {
-    marking_deque_ = marking_deque;
+  void set_marking_worklist(
+      MarkCompactCollector::MarkingWorklist* marking_worklist) {
+    marking_worklist_ = marking_worklist;
   }
 
  private:
@@ -310,14 +312,14 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   static void SetNewSpacePageFlags(MemoryChunk* chunk, bool is_marking);
 
-  INLINE(void ProcessMarkingDeque());
-
-  INLINE(intptr_t ProcessMarkingDeque(
+  INLINE(intptr_t ProcessMarkingWorklist(
       intptr_t bytes_to_process,
       ForceCompletionAction completion = DO_NOT_FORCE_COMPLETION));
 
   INLINE(bool IsFixedArrayWithProgressBar(HeapObject* object));
   INLINE(void VisitObject(Map* map, HeapObject* obj, int size));
+
+  void RevisitObject(HeapObject* obj);
 
   void IncrementIdleMarkingDelayCounter();
 
@@ -327,7 +329,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   size_t StepSizeToMakeProgress();
 
   Heap* heap_;
-  MarkingDeque* marking_deque_;
+  MarkCompactCollector::MarkingWorklist* marking_worklist_;
 
   double start_time_ms_;
   size_t initial_old_generation_size_;

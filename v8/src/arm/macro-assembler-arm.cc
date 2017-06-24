@@ -95,10 +95,8 @@ int MacroAssembler::CallSize(
          mov_operand.InstructionsRequired(this, mov_instr) * kInstrSize;
 }
 
-
-int MacroAssembler::CallStubSize(
-    CodeStub* stub, TypeFeedbackId ast_id, Condition cond) {
-  return CallSize(stub->GetCode(), RelocInfo::CODE_TARGET, ast_id, cond);
+int MacroAssembler::CallStubSize(CodeStub* stub, Condition cond) {
+  return CallSize(stub->GetCode(), RelocInfo::CODE_TARGET, cond);
 }
 
 void MacroAssembler::Call(Address target, RelocInfo::Mode rmode, Condition cond,
@@ -145,23 +143,17 @@ void MacroAssembler::Call(Address target, RelocInfo::Mode rmode, Condition cond,
 
 int MacroAssembler::CallSize(Handle<Code> code,
                              RelocInfo::Mode rmode,
-                             TypeFeedbackId ast_id,
                              Condition cond) {
   AllowDeferredHandleDereference using_raw_address;
   return CallSize(reinterpret_cast<Address>(code.location()), rmode, cond);
 }
 
 void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
-                          TypeFeedbackId ast_id, Condition cond,
-                          TargetAddressStorageMode mode,
+                          Condition cond, TargetAddressStorageMode mode,
                           bool check_constant_pool) {
   Label start;
   bind(&start);
   DCHECK(RelocInfo::IsCodeTarget(rmode));
-  if (rmode == RelocInfo::CODE_TARGET && !ast_id.IsNone()) {
-    SetRecordedAstId(ast_id);
-    rmode = RelocInfo::CODE_TARGET_WITH_ID;
-  }
   // 'code' is always generated ARM code, never THUMB code
   AllowDeferredHandleDereference embedding_raw_address;
   Call(reinterpret_cast<Address>(code.location()), rmode, cond, mode);
@@ -1444,9 +1436,11 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
   str(ip, MemOperand(fp, ExitFrameConstants::kCodeOffset));
 
   // Save the frame pointer and the context in top.
-  mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  mov(ip, Operand(ExternalReference(IsolateAddressId::kCEntryFPAddress,
+                                    isolate())));
   str(fp, MemOperand(ip));
-  mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
+  mov(ip,
+      Operand(ExternalReference(IsolateAddressId::kContextAddress, isolate())));
   str(cp, MemOperand(ip));
 
   // Optionally save all double registers.
@@ -1506,16 +1500,19 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
 
   // Clear top frame.
   mov(r3, Operand::Zero());
-  mov(ip, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  mov(ip, Operand(ExternalReference(IsolateAddressId::kCEntryFPAddress,
+                                    isolate())));
   str(r3, MemOperand(ip));
 
   // Restore current context from top and clear it in debug mode.
   if (restore_context) {
-    mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
+    mov(ip, Operand(ExternalReference(IsolateAddressId::kContextAddress,
+                                      isolate())));
     ldr(cp, MemOperand(ip));
   }
 #ifdef DEBUG
-  mov(ip, Operand(ExternalReference(Isolate::kContextAddress, isolate())));
+  mov(ip,
+      Operand(ExternalReference(IsolateAddressId::kContextAddress, isolate())));
   str(r3, MemOperand(ip));
 #endif
 
@@ -1852,7 +1849,8 @@ void MacroAssembler::PushStackHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0 * kPointerSize);
 
   // Link the current handler as the next handler.
-  mov(r6, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
+  mov(r6,
+      Operand(ExternalReference(IsolateAddressId::kHandlerAddress, isolate())));
   ldr(r5, MemOperand(r6));
   push(r5);
 
@@ -1864,7 +1862,8 @@ void MacroAssembler::PushStackHandler() {
 void MacroAssembler::PopStackHandler() {
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0);
   pop(r1);
-  mov(ip, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
+  mov(ip,
+      Operand(ExternalReference(IsolateAddressId::kHandlerAddress, isolate())));
   add(sp, sp, Operand(StackHandlerConstants::kSize - kPointerSize));
   str(r1, MemOperand(ip));
 }
@@ -2321,11 +2320,10 @@ void MacroAssembler::GetMapConstructor(Register result, Register map,
 }
 
 void MacroAssembler::CallStub(CodeStub* stub,
-                              TypeFeedbackId ast_id,
                               Condition cond) {
   DCHECK(AllowThisStubCall(stub));  // Stub calls are not allowed in some stubs.
-  Call(stub->GetCode(), RelocInfo::CODE_TARGET, ast_id, cond,
-       CAN_INLINE_TARGET_ADDRESS, false);
+  Call(stub->GetCode(), RelocInfo::CODE_TARGET, cond, CAN_INLINE_TARGET_ADDRESS,
+       false);
 }
 
 

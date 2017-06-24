@@ -675,12 +675,14 @@ class PreParserFactory {
                                  int pos) {
     return PreParserExpression::Default();
   }
-  PreParserStatement NewReturnStatement(PreParserExpression expression,
-                                        int pos) {
+  PreParserStatement NewReturnStatement(
+      PreParserExpression expression, int pos,
+      int continuation_pos = kNoSourcePosition) {
     return PreParserStatement::Jump();
   }
-  PreParserStatement NewAsyncReturnStatement(PreParserExpression expression,
-                                             int pos) {
+  PreParserStatement NewAsyncReturnStatement(
+      PreParserExpression expression, int pos,
+      int continuation_pos = kNoSourcePosition) {
     return PreParserStatement::Jump();
   }
   PreParserExpression NewFunctionLiteral(
@@ -729,11 +731,15 @@ class PreParserFactory {
     return else_statement.IsJumpStatement() ? then_statement : else_statement;
   }
 
-  PreParserStatement NewBreakStatement(PreParserStatement target, int pos) {
+  PreParserStatement NewBreakStatement(
+      PreParserStatement target, int pos,
+      int continuation_pos = kNoSourcePosition) {
     return PreParserStatement::Jump();
   }
 
-  PreParserStatement NewContinueStatement(PreParserStatement target, int pos) {
+  PreParserStatement NewContinueStatement(
+      PreParserStatement target, int pos,
+      int continuation_pos = kNoSourcePosition) {
     return PreParserStatement::Jump();
   }
 
@@ -925,7 +931,9 @@ class PreParser : public ParserBase<PreParser> {
   // keyword and parameters, and have consumed the initial '{'.
   // At return, unless an error occurred, the scanner is positioned before the
   // the final '}'.
-  PreParseResult PreParseFunction(FunctionKind kind,
+  PreParseResult PreParseFunction(const AstRawString* function_name,
+                                  FunctionKind kind,
+                                  FunctionLiteral::FunctionType function_type,
                                   DeclarationScope* function_scope,
                                   bool parsing_module,
                                   bool track_unresolved_variables,
@@ -947,11 +955,11 @@ class PreParser : public ParserBase<PreParser> {
   bool AllowsLazyParsingWithoutUnresolvedVariables() const { return false; }
   bool parse_lazily() const { return false; }
 
-  V8_INLINE LazyParsingResult SkipFunction(FunctionKind kind,
-                                           DeclarationScope* function_scope,
-                                           int* num_parameters,
-                                           bool is_inner_function,
-                                           bool may_abort, bool* ok) {
+  V8_INLINE LazyParsingResult
+  SkipFunction(const AstRawString* name, FunctionKind kind,
+               FunctionLiteral::FunctionType function_type,
+               DeclarationScope* function_scope, int* num_parameters,
+               bool is_inner_function, bool may_abort, bool* ok) {
     UNREACHABLE();
   }
   Expression ParseFunctionLiteral(
@@ -1052,11 +1060,16 @@ class PreParser : public ParserBase<PreParser> {
 
   V8_INLINE void RewriteCatchPattern(CatchInfo* catch_info, bool* ok) {
     if (track_unresolved_variables_) {
-      if (catch_info->name.string_ != nullptr) {
-        // Unlike in the parser, we need to declare the catch variable as LET
-        // variable, so that it won't get hoisted out of the scope.
-        catch_info->scope->DeclareVariableName(catch_info->name.string_, LET);
+      const AstRawString* catch_name = catch_info->name.string_;
+      if (catch_name == nullptr) {
+        catch_name = ast_value_factory()->dot_catch_string();
       }
+      // Unlike in the parser, we need to declare the catch variable as LET
+      // variable, so that it won't get hoisted out of the scope. (Parser uses
+      // DeclareLocal instead of DeclareVariable to prevent hoisting.) Another
+      // solution would've been to add DeclareLocalName just for this purpose.
+      catch_info->scope->DeclareVariableName(catch_name, LET);
+
       if (catch_info->pattern.variables_ != nullptr) {
         for (auto variable : *catch_info->pattern.variables_) {
           scope()->DeclareVariableName(variable->raw_name(), LET);
@@ -1081,10 +1094,27 @@ class PreParser : public ParserBase<PreParser> {
     ParseStatementList(body, Token::RBRACE, ok);
   }
   V8_INLINE void CreateFunctionNameAssignment(
+      const AstRawString* function_name,
+      FunctionLiteral::FunctionType function_type,
+      DeclarationScope* function_scope) {
+    if (track_unresolved_variables_ &&
+        function_type == FunctionLiteral::kNamedExpression) {
+      if (function_scope->LookupLocal(function_name) == nullptr) {
+        DCHECK_EQ(function_scope, scope());
+        Variable* fvar = function_scope->DeclareFunctionVar(function_name);
+        fvar->set_is_used();
+      }
+    }
+  }
+
+  V8_INLINE void CreateFunctionNameAssignment(
       PreParserIdentifier function_name, int pos,
       FunctionLiteral::FunctionType function_type,
       DeclarationScope* function_scope, PreParserStatementList result,
-      int index) {}
+      int index) {
+    CreateFunctionNameAssignment(function_name.string_, function_type,
+                                 function_scope);
+  }
 
   V8_INLINE PreParserExpression RewriteDoExpression(PreParserStatement body,
                                                     int pos, bool* ok) {
@@ -1678,11 +1708,9 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserExpression::Default(args.variables_);
   }
 
-  V8_INLINE void AddAccessorPrefixToFunctionName(bool is_get,
-                                                 PreParserExpression function,
-                                                 PreParserIdentifier name) {}
-  V8_INLINE void SetFunctionNameFromPropertyName(PreParserExpression property,
-                                                 PreParserIdentifier name) {}
+  V8_INLINE void SetFunctionNameFromPropertyName(
+      PreParserExpression property, PreParserIdentifier name,
+      const AstRawString* prefix = nullptr) {}
   V8_INLINE void SetFunctionNameFromIdentifierRef(
       PreParserExpression value, PreParserExpression identifier) {}
 

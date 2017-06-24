@@ -579,8 +579,9 @@ void FullCodeGenerator::DoTest(Expression* condition,
                                Label* if_true,
                                Label* if_false,
                                Label* fall_through) {
-  Handle<Code> ic = ToBooleanICStub::GetUninitialized(isolate());
-  CallIC(ic, condition->test_id());
+  Callable callable = Builtins::CallableFor(isolate(), Builtins::kToBoolean);
+  __ Call(callable.code(), RelocInfo::CODE_TARGET);
+  RestoreContext();
   __ CompareRoot(result_register(), Heap::kTrueValueRootIndex);
   Split(equal, if_true, if_false, fall_through);
 }
@@ -827,7 +828,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
     SetExpressionPosition(clause);
     Handle<Code> ic =
         CodeFactory::CompareIC(isolate(), Token::EQ_STRICT).code();
-    CallIC(ic, clause->CompareId());
+    CallIC(ic);
     patch_site.EmitPatchInfo();
 
     Label skip;
@@ -1193,14 +1194,12 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
       case ObjectLiteral::Property::GETTER:
         if (property->emit_store()) {
           AccessorTable::Iterator it = accessor_table.lookup(key);
-          it->second->bailout_id = expr->GetIdForPropertySet(i);
           it->second->getter = property;
         }
         break;
       case ObjectLiteral::Property::SETTER:
         if (property->emit_store()) {
           AccessorTable::Iterator it = accessor_table.lookup(key);
-          it->second->bailout_id = expr->GetIdForPropertySet(i);
           it->second->setter = property;
         }
         break;
@@ -1349,14 +1348,7 @@ void FullCodeGenerator::VisitAssignment(Assignment* expr) {
     VisitForAccumulatorValue(expr->value());
 
     AccumulatorValueContext context(this);
-    if (ShouldInlineSmiCase(op)) {
-      EmitInlineSmiBinaryOp(expr->binary_operation(),
-                            op,
-                            expr->target(),
-                            expr->value());
-    } else {
-      EmitBinaryOp(expr->binary_operation(), op);
-    }
+    EmitBinaryOp(expr->binary_operation(), op);
   } else {
     VisitForAccumulatorValue(expr->value());
   }
@@ -1406,97 +1398,12 @@ void FullCodeGenerator::EmitOperandStackDepthCheck() {
   }
 }
 
-void FullCodeGenerator::EmitCreateIteratorResult(bool done) {
-  Label allocate, done_allocate;
-
-  __ Allocate(JSIteratorResult::kSize, rax, rcx, rdx, &allocate,
-              NO_ALLOCATION_FLAGS);
-  __ jmp(&done_allocate, Label::kNear);
-
-  __ bind(&allocate);
-  __ Push(Smi::FromInt(JSIteratorResult::kSize));
-  __ CallRuntime(Runtime::kAllocateInNewSpace);
-
-  __ bind(&done_allocate);
-  __ LoadNativeContextSlot(Context::ITERATOR_RESULT_MAP_INDEX, rbx);
-  __ movp(FieldOperand(rax, HeapObject::kMapOffset), rbx);
-  __ LoadRoot(rbx, Heap::kEmptyFixedArrayRootIndex);
-  __ movp(FieldOperand(rax, JSObject::kPropertiesOffset), rbx);
-  __ movp(FieldOperand(rax, JSObject::kElementsOffset), rbx);
-  __ Pop(FieldOperand(rax, JSIteratorResult::kValueOffset));
-  __ LoadRoot(FieldOperand(rax, JSIteratorResult::kDoneOffset),
-              done ? Heap::kTrueValueRootIndex : Heap::kFalseValueRootIndex);
-  STATIC_ASSERT(JSIteratorResult::kSize == 5 * kPointerSize);
-  OperandStackDepthDecrement(1);
-}
-
-
-void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
-                                              Token::Value op,
-                                              Expression* left,
-                                              Expression* right) {
-  // Do combined smi check of the operands. Left operand is on the
-  // stack (popped into rdx). Right operand is in rax but moved into
-  // rcx to make the shifts easier.
-  Label done, stub_call, smi_case;
-  PopOperand(rdx);
-  __ movp(rcx, rax);
-  __ orp(rax, rdx);
-  JumpPatchSite patch_site(masm_);
-  patch_site.EmitJumpIfSmi(rax, &smi_case, Label::kNear);
-
-  __ bind(&stub_call);
-  __ movp(rax, rcx);
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), op).code();
-  CallIC(code, expr->BinaryOperationFeedbackId());
-  patch_site.EmitPatchInfo();
-  __ jmp(&done, Label::kNear);
-
-  __ bind(&smi_case);
-  switch (op) {
-    case Token::SAR:
-      __ SmiShiftArithmeticRight(rax, rdx, rcx);
-      break;
-    case Token::SHL:
-      __ SmiShiftLeft(rax, rdx, rcx, &stub_call);
-      break;
-    case Token::SHR:
-      __ SmiShiftLogicalRight(rax, rdx, rcx, &stub_call);
-      break;
-    case Token::ADD:
-      __ SmiAdd(rax, rdx, rcx, &stub_call);
-      break;
-    case Token::SUB:
-      __ SmiSub(rax, rdx, rcx, &stub_call);
-      break;
-    case Token::MUL:
-      __ SmiMul(rax, rdx, rcx, &stub_call);
-      break;
-    case Token::BIT_OR:
-      __ SmiOr(rax, rdx, rcx);
-      break;
-    case Token::BIT_AND:
-      __ SmiAnd(rax, rdx, rcx);
-      break;
-    case Token::BIT_XOR:
-      __ SmiXor(rax, rdx, rcx);
-      break;
-    default:
-      UNREACHABLE();
-      break;
-  }
-
-  __ bind(&done);
-  context()->Plug(rax);
-}
-
 
 void FullCodeGenerator::EmitBinaryOp(BinaryOperation* expr, Token::Value op) {
   PopOperand(rdx);
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), op).code();
-  JumpPatchSite patch_site(masm_);    // unbound, signals no inlined smi code.
-  CallIC(code, expr->BinaryOperationFeedbackId());
-  patch_site.EmitPatchInfo();
+  Handle<Code> code = CodeFactory::BinaryOperation(isolate(), op).code();
+  __ Call(code, RelocInfo::CODE_TARGET);
+  RestoreContext();
   context()->Plug(rax);
 }
 
@@ -1982,34 +1889,6 @@ void FullCodeGenerator::EmitDebugIsActive(CallRuntime* expr) {
 }
 
 
-void FullCodeGenerator::EmitCreateIterResultObject(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK_EQ(2, args->length());
-  VisitForStackValue(args->at(0));
-  VisitForStackValue(args->at(1));
-
-  Label runtime, done;
-
-  __ Allocate(JSIteratorResult::kSize, rax, rcx, rdx, &runtime,
-              NO_ALLOCATION_FLAGS);
-  __ LoadNativeContextSlot(Context::ITERATOR_RESULT_MAP_INDEX, rbx);
-  __ movp(FieldOperand(rax, HeapObject::kMapOffset), rbx);
-  __ LoadRoot(rbx, Heap::kEmptyFixedArrayRootIndex);
-  __ movp(FieldOperand(rax, JSObject::kPropertiesOffset), rbx);
-  __ movp(FieldOperand(rax, JSObject::kElementsOffset), rbx);
-  __ Pop(FieldOperand(rax, JSIteratorResult::kDoneOffset));
-  __ Pop(FieldOperand(rax, JSIteratorResult::kValueOffset));
-  STATIC_ASSERT(JSIteratorResult::kSize == 5 * kPointerSize);
-  __ jmp(&done, Label::kNear);
-
-  __ bind(&runtime);
-  CallRuntimeWithOperands(Runtime::kCreateIterResultObject);
-
-  __ bind(&done);
-  context()->Plug(rax);
-}
-
-
 void FullCodeGenerator::EmitLoadJSRuntimeFunction(CallRuntime* expr) {
   // Push function.
   __ LoadNativeContextSlot(expr->context_index(), rax);
@@ -2191,51 +2070,6 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
     }
   }
 
-  // Inline smi case if we are in a loop.
-  Label done, stub_call;
-  JumpPatchSite patch_site(masm_);
-  if (ShouldInlineSmiCase(expr->op())) {
-    Label slow;
-    patch_site.EmitJumpIfNotSmi(rax, &slow, Label::kNear);
-
-    // Save result for postfix expressions.
-    if (expr->is_postfix()) {
-      if (!context()->IsEffect()) {
-        // Save the result on the stack. If we have a named or keyed property
-        // we store the result under the receiver that is currently on top
-        // of the stack.
-        switch (assign_type) {
-          case VARIABLE:
-            __ Push(rax);
-            break;
-          case NAMED_PROPERTY:
-            __ movp(Operand(rsp, kPointerSize), rax);
-            break;
-          case KEYED_PROPERTY:
-            __ movp(Operand(rsp, 2 * kPointerSize), rax);
-            break;
-          case NAMED_SUPER_PROPERTY:
-          case KEYED_SUPER_PROPERTY:
-            UNREACHABLE();
-            break;
-        }
-      }
-    }
-
-    SmiOperationConstraints constraints =
-        SmiOperationConstraint::kPreserveSourceRegister |
-        SmiOperationConstraint::kBailoutOnNoOverflow;
-    if (expr->op() == Token::INC) {
-      __ SmiAddConstant(rax, rax, Smi::FromInt(1), constraints, &done,
-                        Label::kNear);
-    } else {
-      __ SmiSubConstant(rax, rax, Smi::FromInt(1), constraints, &done,
-                        Label::kNear);
-    }
-    __ jmp(&stub_call, Label::kNear);
-    __ bind(&slow);
-  }
-
   // Convert old value into a number.
   __ Call(isolate()->builtins()->ToNumber(), RelocInfo::CODE_TARGET);
   RestoreContext();
@@ -2267,14 +2101,12 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
   SetExpressionPosition(expr);
 
   // Call stub for +1/-1.
-  __ bind(&stub_call);
   __ movp(rdx, rax);
   __ Move(rax, Smi::FromInt(1));
   Handle<Code> code =
-      CodeFactory::BinaryOpIC(isolate(), expr->binary_op()).code();
-  CallIC(code, expr->CountBinOpFeedbackId());
-  patch_site.EmitPatchInfo();
-  __ bind(&done);
+      CodeFactory::BinaryOperation(isolate(), expr->binary_op()).code();
+  __ Call(code, RelocInfo::CODE_TARGET);
+  RestoreContext();
 
   // Store the value returned in rax.
   switch (assign_type) {
@@ -2459,7 +2291,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       }
 
       Handle<Code> ic = CodeFactory::CompareIC(isolate(), op).code();
-      CallIC(ic, expr->CompareOperationFeedbackId());
+      CallIC(ic);
       patch_site.EmitPatchInfo();
 
       __ testp(rax, rax);

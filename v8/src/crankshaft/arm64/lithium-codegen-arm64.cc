@@ -378,8 +378,7 @@ void LCodeGen::CallCodeGeneric(Handle<Code> code,
   __ Call(code, mode);
   RecordSafepointWithLazyDeopt(instr, safepoint_mode);
 
-  if ((code->kind() == Code::BINARY_OP_IC) ||
-      (code->kind() == Code::COMPARE_IC)) {
+  if ((code->kind() == Code::COMPARE_IC)) {
     // Signal that we don't inline smi code before these stubs in the
     // optimizing code generator.
     InlineSmiCheckInfo::EmitNotInlined(masm());
@@ -396,10 +395,9 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
   __ Mov(x2, instr->hydrogen()->site());
 
   ElementsKind kind = instr->hydrogen()->elements_kind();
-  AllocationSiteOverrideMode override_mode =
-      (AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE)
-          ? DISABLE_ALLOCATION_SITES
-          : DONT_OVERRIDE;
+  AllocationSiteOverrideMode override_mode = AllocationSite::ShouldTrack(kind)
+                                                 ? DISABLE_ALLOCATION_SITES
+                                                 : DONT_OVERRIDE;
 
   if (instr->arity() == 0) {
     ArrayNoArgumentConstructorStub stub(isolate(), kind, override_mode);
@@ -1675,8 +1673,7 @@ void LCodeGen::DoArithmeticT(LArithmeticT* instr) {
   DCHECK(ToRegister(instr->right()).is(x0));
   DCHECK(ToRegister(instr->result()).is(x0));
 
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), instr->op()).code();
-  CallCode(code, RelocInfo::CODE_TARGET, instr);
+  UNREACHABLE();
 }
 
 
@@ -1968,7 +1965,7 @@ void LCodeGen::DoCallWithDescriptor(LCallWithDescriptor* instr) {
       // TODO(all): on ARM we use a call descriptor to specify a storage mode
       // but on ARM64 we only have one storage mode so it isn't necessary. Check
       // this understanding is correct.
-      __ Call(code, RelocInfo::CODE_TARGET, TypeFeedbackId::None());
+      __ Call(code, RelocInfo::CODE_TARGET);
     } else {
       DCHECK(instr->target()->IsRegister());
       Register target = ToRegister(instr->target());

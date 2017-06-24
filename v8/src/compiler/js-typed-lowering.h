@@ -69,6 +69,7 @@ class V8_EXPORT_PRIVATE JSTypedLowering final
   Reduction ReduceJSToStringInput(Node* input);
   Reduction ReduceJSToString(Node* node);
   Reduction ReduceJSToPrimitiveToString(Node* node);
+  Reduction ReduceJSStringConcat(Node* node);
   Reduction ReduceJSToObject(Node* node);
   Reduction ReduceJSConvertReceiver(Node* node);
   Reduction ReduceJSConstructForwardVarargs(Node* node);
@@ -94,16 +95,12 @@ class V8_EXPORT_PRIVATE JSTypedLowering final
   // Helper for ReduceJSLoadModule and ReduceJSStoreModule.
   Node* BuildGetModuleCell(Node* node);
 
-  // Checks if we know at compile time that the {receiver} either definitely
-  // has the {prototype} in it's prototype chain, or the {receiver} definitely
-  // doesn't have the {prototype} in it's prototype chain.
-  enum InferHasInPrototypeChainResult {
-    kIsInPrototypeChain,
-    kIsNotInPrototypeChain,
-    kMayBeInPrototypeChain
-  };
-  InferHasInPrototypeChainResult InferHasInPrototypeChain(
-      Node* receiver, Node* effect, Handle<HeapObject> prototype);
+  // Helpers for ReduceJSCreateConsString and ReduceJSStringConcat.
+  Node* BuildGetStringLength(Node* value, Node** effect, Node* control);
+  void BuildThrowStringRangeError(Node* node, Node* context, Node* frame_state,
+                                  Node* effect, Node* control);
+  Node* BuildCreateConsString(Node* first, Node* second, Node* length,
+                              Node* effect, Node* control);
 
   Factory* factory() const;
   Graph* graph() const;

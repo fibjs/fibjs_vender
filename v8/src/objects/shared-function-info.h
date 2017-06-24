@@ -295,21 +295,14 @@ class SharedFunctionInfo : public HeapObject {
   DECL_BOOLEAN_ACCESSORS(force_inline)
 
   // Indicates that code for this function must be compiled through the
-  // Ignition / TurboFan pipeline, and is unsupported by
-  // FullCodegen / Crankshaft.
-  DECL_BOOLEAN_ACCESSORS(must_use_ignition_turbo)
+  // Ignition / TurboFan pipeline, and is unsupported by FullCodegen.
+  DECL_BOOLEAN_ACCESSORS(must_use_ignition)
 
   // Indicates that this function is an asm function.
   DECL_BOOLEAN_ACCESSORS(asm_function)
 
   // Whether this function was created from a FunctionDeclaration.
   DECL_BOOLEAN_ACCESSORS(is_declaration)
-
-  // Whether this function was marked to be tiered up.
-  DECL_BOOLEAN_ACCESSORS(marked_for_tier_up)
-
-  // Whether this function has a concurrent compilation job running.
-  DECL_BOOLEAN_ACCESSORS(has_concurrent_optimization_job)
 
   // Indicates that asm->wasm conversion failed and should not be re-attempted.
   DECL_BOOLEAN_ACCESSORS(is_asm_wasm_broken)
@@ -481,24 +474,22 @@ class SharedFunctionInfo : public HeapObject {
 #undef START_POSITION_AND_TYPE_BIT_FIELDS
 
 // Bit positions in |compiler_hints|.
-#define COMPILER_HINTS_BIT_FIELDS(V, _)          \
-  V(IsNativeBit, bool, 1, _)                     \
-  V(IsStrictBit, bool, 1, _)                     \
-  V(FunctionKindBits, FunctionKind, 10, _)       \
-  V(MarkedForTierUpBit, bool, 1, _)              \
-  V(HasDuplicateParametersBit, bool, 1, _)       \
-  V(AllowLazyCompilationBit, bool, 1, _)         \
-  V(OptimizationDisabledBit, bool, 1, _)         \
-  V(UsesArgumentsBit, bool, 1, _)                \
-  V(NeedsHomeObjectBit, bool, 1, _)              \
-  V(ForceInlineBit, bool, 1, _)                  \
-  V(IsAsmFunctionBit, bool, 1, _)                \
-  V(MustUseIgnitionTurboBit, bool, 1, _)         \
-  V(IsDeclarationBit, bool, 1, _)                \
-  V(IsAsmWasmBrokenBit, bool, 1, _)              \
-  V(HasConcurrentOptimizationJobBit, bool, 1, _) \
-  V(FunctionMapIndexBits, int, 4, _)             \
-  /* Bits 28-31 are unused. */
+#define COMPILER_HINTS_BIT_FIELDS(V, _)    \
+  V(IsNativeBit, bool, 1, _)               \
+  V(IsStrictBit, bool, 1, _)               \
+  V(FunctionKindBits, FunctionKind, 10, _) \
+  V(HasDuplicateParametersBit, bool, 1, _) \
+  V(AllowLazyCompilationBit, bool, 1, _)   \
+  V(OptimizationDisabledBit, bool, 1, _)   \
+  V(UsesArgumentsBit, bool, 1, _)          \
+  V(NeedsHomeObjectBit, bool, 1, _)        \
+  V(ForceInlineBit, bool, 1, _)            \
+  V(IsAsmFunctionBit, bool, 1, _)          \
+  V(MustUseIgnitionBit, bool, 1, _)        \
+  V(IsDeclarationBit, bool, 1, _)          \
+  V(IsAsmWasmBrokenBit, bool, 1, _)        \
+  V(FunctionMapIndexBits, int, 4, _)       \
+  /* Bits 26-31 are unused. */
 
   DEFINE_BIT_FIELDS(COMPILER_HINTS_BIT_FIELDS)
 #undef COMPILER_HINTS_BIT_FIELDS

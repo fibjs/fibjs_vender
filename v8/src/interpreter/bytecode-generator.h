@@ -21,6 +21,7 @@ namespace interpreter {
 
 class GlobalDeclarationsBuilder;
 class LoopBuilder;
+class BlockCoverageBuilder;
 class BytecodeJumpTable;
 
 class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
@@ -51,7 +52,6 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   class ExpressionResultScope;
   class EffectResultScope;
   class GlobalDeclarationsBuilder;
-  class BlockCoverageBuilder;
   class RegisterAllocationScope;
   class TestResultScope;
   class ValueResultScope;
@@ -112,9 +112,10 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildVariableLoadForAccumulatorValue(
       Variable* variable, FeedbackSlot slot, HoleCheckMode hole_check_mode,
       TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
-  void BuildVariableAssignment(Variable* variable, Token::Value op,
-                               FeedbackSlot slot,
-                               HoleCheckMode hole_check_mode);
+  void BuildVariableAssignment(
+      Variable* variable, Token::Value op, FeedbackSlot slot,
+      HoleCheckMode hole_check_mode,
+      LookupHoistingMode lookup_hoisting_mode = LookupHoistingMode::kNormal);
   void BuildLiteralCompareNil(Token::Value compare_op, NilValue nil);
   void BuildReturn();
   void BuildAsyncReturn();
@@ -136,8 +137,14 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildNewLocalWithContext(Scope* scope);
 
   void BuildGeneratorPrologue();
-  void BuildGeneratorSuspend(Suspend* expr, RegisterList registers_to_save);
+  void BuildGeneratorSuspend(Suspend* expr, Register value,
+                             RegisterList registers_to_save);
   void BuildGeneratorResume(Suspend* expr, RegisterList registers_to_restore);
+  void BuildAbruptResume(Suspend* expr);
+  void BuildGetIterator(Expression* iterable, IteratorType hint,
+                        FeedbackSlot load_slot, FeedbackSlot call_slot,
+                        FeedbackSlot async_load_slot,
+                        FeedbackSlot async_call_slot);
 
   void VisitArgumentsObject(Variable* variable);
   void VisitRestArgumentsArray(Variable* rest);
@@ -159,6 +166,11 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitForInAssignment(Expression* expr, FeedbackSlot slot);
   void VisitModuleNamespaceImports();
 
+  // Builds a logical OR/AND within a test context by rewiring the jumps based
+  // on the expression values.
+  void BuildLogicalTest(Token::Value token, Expression* left,
+                        Expression* right);
+
   // Builds an addition expression. If the result is a known string addition,
   // then rather than emitting the add, the operands will converted to
   // primitive, then to string and stored in registers in the
@@ -168,6 +180,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
 
   // Visit the header/body of a loop iteration.
   void VisitIterationHeader(IterationStatement* stmt,
+                            LoopBuilder* loop_builder);
+  void VisitIterationHeader(int first_suspend_id, int suspend_count,
                             LoopBuilder* loop_builder);
   void VisitIterationBody(IterationStatement* stmt, LoopBuilder* loop_builder);
 
@@ -181,19 +195,24 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   int AllocateBlockCoverageSlotIfEnabled(SourceRange range);
   void BuildIncrementBlockCoverageCounterIfEnabled(int coverage_array_slot);
 
+  void BuildTest(ToBooleanMode mode, BytecodeLabels* then_labels,
+                 BytecodeLabels* else_labels, TestFallthrough fallthrough);
+
   // Visitors for obtaining expression result in the accumulator, in a
   // register, or just getting the effect. Some visitors return a TypeHint which
   // specifies the type of the result of the visited expression.
   TypeHint VisitForAccumulatorValue(Expression* expr);
   void VisitForAccumulatorValueOrTheHole(Expression* expr);
   MUST_USE_RESULT Register VisitForRegisterValue(Expression* expr);
-  void VisitForRegisterValue(Expression* expr, Register destination);
+  INLINE(void VisitForRegisterValue(Expression* expr, Register destination));
   void VisitAndPushIntoRegisterList(Expression* expr, RegisterList* reg_list);
   void VisitForEffect(Expression* expr);
   void VisitForTest(Expression* expr, BytecodeLabels* then_labels,
                     BytecodeLabels* else_labels, TestFallthrough fallthrough);
-  TypeHint VisitForAddOperand(Expression* expr, RegisterList* operand_registers,
-                              Register* out_register);
+  INLINE(TypeHint VisitForAddOperand(Expression* expr,
+                                     RegisterList* operand_registers,
+                                     Register* out_register));
+  void VisitInSameTestExecutionScope(Expression* expr);
 
   // Returns the runtime function id for a store to super for the function's
   // language mode.

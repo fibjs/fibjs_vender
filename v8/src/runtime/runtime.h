@@ -36,27 +36,26 @@ namespace internal {
 // A variable number of arguments is specified by a -1, additional restrictions
 // are specified by inline comments
 
-#define FOR_EACH_INTRINSIC_ARRAY(F)  \
-  F(SpecialArrayFunctions, 0, 1)     \
-  F(TransitionElementsKind, 2, 1)    \
-  F(RemoveArrayHoles, 2, 1)          \
-  F(MoveArrayContents, 2, 1)         \
-  F(EstimateNumberOfElements, 1, 1)  \
-  F(GetArrayKeys, 2, 1)              \
-  F(NewArray, -1 /* >= 3 */, 1)      \
-  F(FunctionBind, -1, 1)             \
-  F(NormalizeElements, 1, 1)         \
-  F(GrowArrayElements, 2, 1)         \
-  F(HasComplexElements, 1, 1)        \
-  F(IsArray, 1, 1)                   \
-  F(ArrayIsArray, 1, 1)              \
-  F(FixedArrayGet, 2, 1)             \
-  F(FixedArraySet, 3, 1)             \
-  F(ArraySpeciesConstructor, 1, 1)   \
-  F(ArrayIncludes_Slow, 3, 1)        \
-  F(ArrayIndexOf, 3, 1)              \
-  F(SpreadIterablePrepare, 1, 1)     \
-  F(SpreadIterableFixed, 1, 1)
+#define FOR_EACH_INTRINSIC_ARRAY(F) \
+  F(SpecialArrayFunctions, 0, 1)    \
+  F(TransitionElementsKind, 2, 1)   \
+  F(RemoveArrayHoles, 2, 1)         \
+  F(MoveArrayContents, 2, 1)        \
+  F(EstimateNumberOfElements, 1, 1) \
+  F(GetArrayKeys, 2, 1)             \
+  F(NewArray, -1 /* >= 3 */, 1)     \
+  F(FunctionBind, -1, 1)            \
+  F(NormalizeElements, 1, 1)        \
+  F(GrowArrayElements, 2, 1)        \
+  F(HasComplexElements, 1, 1)       \
+  F(IsArray, 1, 1)                  \
+  F(ArrayIsArray, 1, 1)             \
+  F(FixedArrayGet, 2, 1)            \
+  F(FixedArraySet, 3, 1)            \
+  F(ArraySpeciesConstructor, 1, 1)  \
+  F(ArrayIncludes_Slow, 3, 1)       \
+  F(ArrayIndexOf, 3, 1)             \
+  F(SpreadIterablePrepare, 1, 1)
 
 #define FOR_EACH_INTRINSIC_ATOMICS(F)           \
   F(ThrowNotIntegerSharedTypedArrayError, 1, 1) \
@@ -167,9 +166,9 @@ namespace internal {
   F(SetScopeVariableValue, 6, 1)                \
   F(DebugPrintScopes, 0, 1)                     \
   F(SetBreakPointsActive, 1, 1)                 \
-  F(GetBreakLocations, 2, 1)                    \
+  F(GetBreakLocations, 1, 1)                    \
   F(SetFunctionBreakPoint, 3, 1)                \
-  F(SetScriptBreakPoint, 4, 1)                  \
+  F(SetScriptBreakPoint, 3, 1)                  \
   F(ClearBreakPoint, 1, 1)                      \
   F(ChangeBreakOnException, 2, 1)               \
   F(IsBreakOnException, 1, 1)                   \
@@ -334,6 +333,7 @@ namespace internal {
   F(ThrowInvalidStringLength, 0, 1)                \
   F(ThrowInvalidTypedArrayAlignment, 2, 1)         \
   F(ThrowIteratorResultNotAnObject, 1, 1)          \
+  F(ThrowThrowMethodMissing, 0, 1)                 \
   F(ThrowSymbolIteratorInvalid, 0, 1)              \
   F(ThrowNonCallableInInstanceOfCheck, 0, 1)       \
   F(ThrowNonObjectInInstanceOfCheck, 0, 1)         \
@@ -351,8 +351,7 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_LITERALS(F) \
   F(CreateRegExpLiteral, 4, 1)         \
   F(CreateObjectLiteral, 4, 1)         \
-  F(CreateArrayLiteral, 4, 1)          \
-  F(CreateArrayLiteralStubBailout, 3, 1)
+  F(CreateArrayLiteral, 4, 1)
 
 #define FOR_EACH_INTRINSIC_LIVEEDIT(F)              \
   F(LiveEditFindSharedFunctionInfosForScript, 1, 1) \
@@ -506,30 +505,31 @@ namespace internal {
   F(StringReplaceNonGlobalRegExpWithFunction, 3, 1) \
   F(StringSplit, 3, 1)
 
-#define FOR_EACH_INTRINSIC_SCOPES(F)    \
-  F(ThrowConstAssignError, 0, 1)        \
-  F(DeclareGlobals, 3, 1)               \
-  F(DeclareGlobalsForInterpreter, 3, 1) \
-  F(InitializeVarGlobal, 3, 1)          \
-  F(DeclareEvalFunction, 2, 1)          \
-  F(DeclareEvalVar, 1, 1)               \
-  F(NewSloppyArguments_Generic, 1, 1)   \
-  F(NewStrictArguments, 1, 1)           \
-  F(NewRestParameter, 1, 1)             \
-  F(NewSloppyArguments, 3, 1)           \
-  F(NewArgumentsElements, 2, 1)         \
-  F(NewClosure, 3, 1)                   \
-  F(NewClosure_Tenured, 3, 1)           \
-  F(NewScriptContext, 2, 1)             \
-  F(NewFunctionContext, 2, 1)           \
-  F(PushModuleContext, 3, 1)            \
-  F(PushWithContext, 3, 1)              \
-  F(PushCatchContext, 4, 1)             \
-  F(PushBlockContext, 2, 1)             \
-  F(DeleteLookupSlot, 1, 1)             \
-  F(LoadLookupSlot, 1, 1)               \
-  F(LoadLookupSlotInsideTypeof, 1, 1)   \
-  F(StoreLookupSlot_Sloppy, 2, 1)       \
+#define FOR_EACH_INTRINSIC_SCOPES(F)      \
+  F(ThrowConstAssignError, 0, 1)          \
+  F(DeclareGlobals, 3, 1)                 \
+  F(DeclareGlobalsForInterpreter, 3, 1)   \
+  F(InitializeVarGlobal, 3, 1)            \
+  F(DeclareEvalFunction, 2, 1)            \
+  F(DeclareEvalVar, 1, 1)                 \
+  F(NewSloppyArguments_Generic, 1, 1)     \
+  F(NewStrictArguments, 1, 1)             \
+  F(NewRestParameter, 1, 1)               \
+  F(NewSloppyArguments, 3, 1)             \
+  F(NewArgumentsElements, 2, 1)           \
+  F(NewClosure, 3, 1)                     \
+  F(NewClosure_Tenured, 3, 1)             \
+  F(NewScriptContext, 2, 1)               \
+  F(NewFunctionContext, 2, 1)             \
+  F(PushModuleContext, 3, 1)              \
+  F(PushWithContext, 3, 1)                \
+  F(PushCatchContext, 4, 1)               \
+  F(PushBlockContext, 2, 1)               \
+  F(DeleteLookupSlot, 1, 1)               \
+  F(LoadLookupSlot, 1, 1)                 \
+  F(LoadLookupSlotInsideTypeof, 1, 1)     \
+  F(StoreLookupSlot_Sloppy, 2, 1)         \
+  F(StoreLookupSlot_SloppyHoisting, 2, 1) \
   F(StoreLookupSlot_Strict, 2, 1)
 
 #define FOR_EACH_INTRINSIC_STRINGS(F)     \
@@ -677,8 +677,6 @@ namespace internal {
 // Most intrinsics are implemented in the runtime/ directory, but ICs are
 // implemented in ic.cc for now.
 #define FOR_EACH_INTRINSIC_IC(F)             \
-  F(BinaryOpIC_Miss, 2, 1)                   \
-  F(BinaryOpIC_MissWithAllocationSite, 3, 1) \
   F(CompareIC_Miss, 3, 1)                    \
   F(ElementsTransitionAndStoreIC_Miss, 6, 1) \
   F(KeyedLoadIC_Miss, 4, 1)                  \
@@ -692,7 +690,6 @@ namespace internal {
   F(StoreCallbackProperty, 6, 1)             \
   F(StoreIC_Miss, 5, 1)                      \
   F(StorePropertyWithInterceptor, 5, 1)      \
-  F(ToBooleanIC_Miss, 1, 1)                  \
   F(Unreachable, 0, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_OBJECT(F) \

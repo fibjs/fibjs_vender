@@ -35,6 +35,12 @@ STATIC_ASSERT(kProfilerTicksBeforeOptimization < 256);
 STATIC_ASSERT(kProfilerTicksBeforeReenablingOptimization < 256);
 STATIC_ASSERT(kTicksWhenNotEnoughTypeInfo < 256);
 
+// The number of ticks required for optimizing a function increases with
+// the size of the bytecode. This is in addition to the
+// kProfilerTicksBeforeOptimization required for any function.
+static const int kCodeSizeAllowancePerTickIgnition =
+    50 * interpreter::Interpreter::kCodeSizeMultiplier;
+
 // Maximum size in bytes of generate code for a function to allow OSR.
 static const int kOSRCodeSizeAllowanceBase =
     100 * FullCodeGenerator::kCodeSizeMultiplier;
@@ -150,7 +156,7 @@ void RuntimeProfiler::Optimize(JSFunction* function,
                                OptimizationReason reason) {
   DCHECK_NE(reason, OptimizationReason::kDoNotOptimize);
   TraceRecompile(function, OptimizationReasonToString(reason), "optimized");
-  function->AttemptConcurrentOptimization();
+  function->MarkForOptimization(ConcurrencyMode::kConcurrent);
 }
 
 void RuntimeProfiler::AttemptOnStackReplacement(JavaScriptFrame* frame,
@@ -218,7 +224,7 @@ void RuntimeProfiler::MaybeOptimizeFullCodegen(JSFunction* function,
   } else if (!frame->is_optimized() &&
              (function->IsMarkedForOptimization() ||
               function->IsMarkedForConcurrentOptimization() ||
-              function->IsOptimized())) {
+              function->HasOptimizedCode())) {
     // Attempt OSR if we are still running unoptimized code even though the
     // the function has long been marked or even already been optimized.
     int ticks = shared->profiler_ticks();
@@ -343,7 +349,7 @@ bool RuntimeProfiler::MaybeOSRIgnition(JSFunction* function,
   if (!frame->is_optimized() &&
       (function->IsMarkedForOptimization() ||
        function->IsMarkedForConcurrentOptimization() ||
-       function->IsOptimized())) {
+       function->HasOptimizedCode())) {
     // Attempt OSR if we are still running interpreted code even though the
     // the function has long been marked or even already been optimized.
     int64_t allowance =
@@ -366,7 +372,10 @@ OptimizationReason RuntimeProfiler::ShouldOptimizeIgnition(
     return OptimizationReason::kDoNotOptimize;
   }
 
-  if (ticks >= kProfilerTicksBeforeOptimization) {
+  int ticks_for_optimization =
+      kProfilerTicksBeforeOptimization +
+      (shared->bytecode_array()->Size() / kCodeSizeAllowancePerTickIgnition);
+  if (ticks >= ticks_for_optimization) {
     int typeinfo, generic, total, type_percentage, generic_percentage;
     GetICCounts(function, &typeinfo, &generic, &total, &type_percentage,
                 &generic_percentage);

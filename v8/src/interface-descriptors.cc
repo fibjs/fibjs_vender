@@ -278,6 +278,16 @@ void TypeConversionDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
+void TypeConversionStackParameterDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  data->InitializePlatformSpecific(0, nullptr);
+}
+
+void TypeConversionStackParameterDescriptor::InitializePlatformIndependent(
+    CallInterfaceDescriptorData* data) {
+  data->InitializePlatformIndependent(data->register_param_count(), 1, NULL);
+}
+
 void MathPowTaggedDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {exponent()};
@@ -478,6 +488,15 @@ void CallForwardVarargsDescriptor::InitializePlatformIndependent(
                                       machine_types);
 }
 
+void CallWithSpreadDescriptor::InitializePlatformIndependent(
+    CallInterfaceDescriptorData* data) {
+  // kTarget, kArgumentsCount, kArgumentsList
+  MachineType machine_types[] = {MachineType::AnyTagged(), MachineType::Int32(),
+                                 MachineType::AnyTagged()};
+  data->InitializePlatformIndependent(arraysize(machine_types), 0,
+                                      machine_types);
+}
+
 void CallWithArrayLikeDescriptor::InitializePlatformIndependent(
     CallInterfaceDescriptorData* data) {
   // kTarget, kArgumentsList
@@ -504,6 +523,16 @@ void ConstructForwardVarargsDescriptor::InitializePlatformIndependent(
   MachineType machine_types[] = {MachineType::AnyTagged(),
                                  MachineType::AnyTagged(), MachineType::Int32(),
                                  MachineType::Int32()};
+  data->InitializePlatformIndependent(arraysize(machine_types), 0,
+                                      machine_types);
+}
+
+void ConstructWithSpreadDescriptor::InitializePlatformIndependent(
+    CallInterfaceDescriptorData* data) {
+  // kTarget, kNewTarget, kArgumentsCount, kSpread
+  MachineType machine_types[] = {MachineType::AnyTagged(),
+                                 MachineType::AnyTagged(), MachineType::Int32(),
+                                 MachineType::AnyTagged()};
   data->InitializePlatformIndependent(arraysize(machine_types), 0,
                                       machine_types);
 }

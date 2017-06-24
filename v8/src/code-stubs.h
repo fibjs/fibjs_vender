@@ -32,7 +32,6 @@ class Node;
 #define CODE_STUB_LIST_ALL_PLATFORMS(V)       \
   /* --- PlatformCodeStubs --- */             \
   V(ArrayConstructor)                         \
-  V(BinaryOpICWithAllocationSite)             \
   V(CallApiCallback)                          \
   V(CallApiGetter)                            \
   V(CallConstruct)                            \
@@ -61,9 +60,6 @@ class Node;
   /* These should never be ported to TF */    \
   /* because they are either used only by */  \
   /* FCG/Crankshaft or are deprecated */      \
-  V(BinaryOpIC)                               \
-  V(BinaryOpWithAllocationSite)               \
-  V(ToBooleanIC)                              \
   V(TransitionElementsKind)                   \
   /* --- TurboFanCodeStubs --- */             \
   V(AllocateHeapNumber)                       \
@@ -865,95 +861,6 @@ class CallApiGetterStub : public PlatformCodeStub {
 };
 
 
-class BinaryOpICStub : public HydrogenCodeStub {
- public:
-  BinaryOpICStub(Isolate* isolate, Token::Value op)
-      : HydrogenCodeStub(isolate, UNINITIALIZED) {
-    BinaryOpICState state(isolate, op);
-    set_sub_minor_key(state.GetExtraICState());
-  }
-
-  BinaryOpICStub(Isolate* isolate, const BinaryOpICState& state)
-      : HydrogenCodeStub(isolate) {
-    set_sub_minor_key(state.GetExtraICState());
-  }
-
-  static void GenerateAheadOfTime(Isolate* isolate);
-
-  Code::Kind GetCodeKind() const override { return Code::BINARY_OP_IC; }
-
-  ExtraICState GetExtraICState() const final {
-    return static_cast<ExtraICState>(sub_minor_key());
-  }
-
-  BinaryOpICState state() const {
-    return BinaryOpICState(isolate(), GetExtraICState());
-  }
-
-  void PrintState(std::ostream& os) const final;  // NOLINT
-
- private:
-  static void GenerateAheadOfTime(Isolate* isolate,
-                                  const BinaryOpICState& state);
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(BinaryOp);
-  DEFINE_HYDROGEN_CODE_STUB(BinaryOpIC, HydrogenCodeStub);
-};
-
-
-// TODO(bmeurer): Merge this into the BinaryOpICStub once we have proper tail
-// call support for stubs in Hydrogen.
-class BinaryOpICWithAllocationSiteStub final : public PlatformCodeStub {
- public:
-  BinaryOpICWithAllocationSiteStub(Isolate* isolate,
-                                   const BinaryOpICState& state)
-      : PlatformCodeStub(isolate) {
-    minor_key_ = state.GetExtraICState();
-  }
-
-  static void GenerateAheadOfTime(Isolate* isolate);
-
-  Handle<Code> GetCodeCopyFromTemplate(Handle<AllocationSite> allocation_site) {
-    FindAndReplacePattern pattern;
-    pattern.Add(isolate()->factory()->undefined_map(), allocation_site);
-    return CodeStub::GetCodeCopy(pattern);
-  }
-
-  Code::Kind GetCodeKind() const override { return Code::BINARY_OP_IC; }
-
-  ExtraICState GetExtraICState() const override {
-    return static_cast<ExtraICState>(minor_key_);
-  }
-
-  void PrintState(std::ostream& os) const override;  // NOLINT
-
- private:
-  BinaryOpICState state() const {
-    return BinaryOpICState(isolate(), GetExtraICState());
-  }
-
-  static void GenerateAheadOfTime(Isolate* isolate,
-                                  const BinaryOpICState& state);
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(BinaryOpWithAllocationSite);
-  DEFINE_PLATFORM_CODE_STUB(BinaryOpICWithAllocationSite, PlatformCodeStub);
-};
-
-
-class BinaryOpWithAllocationSiteStub final : public BinaryOpICStub {
- public:
-  BinaryOpWithAllocationSiteStub(Isolate* isolate, Token::Value op)
-      : BinaryOpICStub(isolate, op) {}
-
-  BinaryOpWithAllocationSiteStub(Isolate* isolate, const BinaryOpICState& state)
-      : BinaryOpICStub(isolate, state) {}
-
-  Code::Kind GetCodeKind() const final { return Code::STUB; }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(BinaryOpWithAllocationSite);
-  DEFINE_HYDROGEN_CODE_STUB(BinaryOpWithAllocationSite, BinaryOpICStub);
-};
-
 class StringAddStub final : public TurboFanCodeStub {
  public:
   StringAddStub(Isolate* isolate, StringAddFlags flags,
@@ -1402,7 +1309,7 @@ class CommonArrayConstructorStub : public TurboFanCodeStub {
     // if there is a difference between the global allocation site policy
     // for an ElementsKind and the desired usage of the stub.
     DCHECK(override_mode != DISABLE_ALLOCATION_SITES ||
-           AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE);
+           AllocationSite::ShouldTrack(kind));
     set_sub_minor_key(ElementsKindBits::encode(kind) |
                       AllocationSiteOverrideModeBits::encode(override_mode));
   }
@@ -1527,50 +1434,6 @@ class StoreSlowElementStub : public TurboFanCodeStub {
  private:
   DEFINE_CALL_INTERFACE_DESCRIPTOR(StoreWithVector);
   DEFINE_TURBOFAN_CODE_STUB(StoreSlowElement, TurboFanCodeStub);
-};
-
-class ToBooleanICStub : public HydrogenCodeStub {
- public:
-  ToBooleanICStub(Isolate* isolate, ExtraICState state)
-      : HydrogenCodeStub(isolate) {
-    set_sub_minor_key(HintsBits::encode(static_cast<uint16_t>(state)));
-  }
-
-  bool UpdateStatus(Handle<Object> object);
-  ToBooleanHints hints() const {
-    return ToBooleanHints(HintsBits::decode(sub_minor_key()));
-  }
-
-  Code::Kind GetCodeKind() const override { return Code::TO_BOOLEAN_IC; }
-  void PrintState(std::ostream& os) const override;  // NOLINT
-
-  bool SometimesSetsUpAFrame() override { return false; }
-
-  static Handle<Code> GetUninitialized(Isolate* isolate) {
-    return ToBooleanICStub(isolate, UNINITIALIZED).GetCode();
-  }
-
-  ExtraICState GetExtraICState() const override { return hints(); }
-
-  InlineCacheState GetICState() const {
-    if (hints() == ToBooleanHint::kNone) {
-      return ::v8::internal::UNINITIALIZED;
-    } else {
-      return MONOMORPHIC;
-    }
-  }
-
- private:
-  ToBooleanICStub(Isolate* isolate, InitializationState init_state)
-      : HydrogenCodeStub(isolate, init_state) {}
-
-  static const int kNumHints = 8;
-  STATIC_ASSERT(static_cast<int>(ToBooleanHint::kAny) ==
-                ((1 << kNumHints) - 1));
-  class HintsBits : public BitField<uint16_t, 0, kNumHints> {};
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(TypeConversion);
-  DEFINE_HYDROGEN_CODE_STUB(ToBooleanIC, HydrogenCodeStub);
 };
 
 class ElementsTransitionAndStoreStub : public TurboFanCodeStub {

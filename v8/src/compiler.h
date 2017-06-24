@@ -40,7 +40,6 @@ class ThreadedListZoneEntry;
 class V8_EXPORT_PRIVATE Compiler : public AllStatic {
  public:
   enum ClearExceptionFlag { KEEP_EXCEPTION, CLEAR_EXCEPTION };
-  enum ConcurrencyMode { NOT_CONCURRENT, CONCURRENT };
 
   // ===========================================================================
   // The following family of methods ensures a given function is compiled. The
@@ -209,16 +208,13 @@ class V8_EXPORT_PRIVATE CompilationJob {
   State state() const { return state_; }
   CompilationInfo* info() const { return info_; }
   Isolate* isolate() const;
+  virtual size_t AllocatedMemory() const { return 0; }
 
  protected:
   // Overridden by the actual implementation.
   virtual Status PrepareJobImpl() = 0;
   virtual Status ExecuteJobImpl() = 0;
   virtual Status FinalizeJobImpl() = 0;
-
-  // Registers weak object to optimized code dependencies.
-  // TODO(turbofan): Move this to pipeline.cc once Crankshaft dies.
-  void RegisterWeakObjectsInOptimizedCode(Handle<Code> code);
 
  private:
   CompilationInfo* info_;

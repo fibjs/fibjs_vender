@@ -435,9 +435,9 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
   DCHECK(block_->ignore_completion_value());
 
   auto temp = *temp_var = CreateTempVar(current_value_);
-  auto iterator = CreateTempVar(
-      factory()->NewGetIterator(factory()->NewVariableProxy(temp),
-                                IteratorType::kNormal, kNoSourcePosition));
+  auto iterator = CreateTempVar(factory()->NewGetIterator(
+      factory()->NewVariableProxy(temp), IteratorType::kNormal,
+      current_value_->position()));
   auto done =
       CreateTempVar(factory()->NewBooleanLiteral(false, kNoSourcePosition));
   auto result = CreateTempVar();
@@ -768,6 +768,7 @@ NOT_A_PATTERN(VariableDeclaration)
 NOT_A_PATTERN(WhileStatement)
 NOT_A_PATTERN(WithStatement)
 NOT_A_PATTERN(Suspend)
+NOT_A_PATTERN(YieldStar)
 
 #undef NOT_A_PATTERN
 }  // namespace internal

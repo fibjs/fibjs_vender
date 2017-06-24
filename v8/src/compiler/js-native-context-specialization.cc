@@ -76,6 +76,8 @@ Reduction JSNativeContextSpecialization::Reduce(Node* node) {
       return ReduceJSGetSuperConstructor(node);
     case IrOpcode::kJSInstanceOf:
       return ReduceJSInstanceOf(node);
+    case IrOpcode::kJSHasInPrototypeChain:
+      return ReduceJSHasInPrototypeChain(node);
     case IrOpcode::kJSOrdinaryHasInstance:
       return ReduceJSOrdinaryHasInstance(node);
     case IrOpcode::kJSLoadContext:
@@ -159,6 +161,7 @@ Reduction JSNativeContextSpecialization::ReduceJSInstanceOf(Node* node) {
   Node* constructor = NodeProperties::GetValueInput(node, 1);
   Node* context = NodeProperties::GetContextInput(node);
   Node* effect = NodeProperties::GetEffectInput(node);
+  Node* frame_state = NodeProperties::GetFrameStateInput(node);
   Node* control = NodeProperties::GetControlInput(node);
 
   // Check if the right hand side is a known {receiver}.
@@ -232,11 +235,22 @@ Reduction JSNativeContextSpecialization::ReduceJSInstanceOf(Node* node) {
     access_builder.BuildCheckMaps(constructor, &effect, control,
                                   access_info.receiver_maps());
 
+    // Create a nested frame state inside the current method's most-recent frame
+    // state that will ensure that deopts that happen after this point will not
+    // fallback to the last Checkpoint--which would completely re-execute the
+    // instanceof logic--but rather create an activation of a version of the
+    // ToBoolean stub that finishes the remaining work of instanceof and returns
+    // to the caller without duplicating side-effects upon a lazy deopt.
+    Node* continuation_frame_state = CreateStubBuiltinContinuationFrameState(
+        jsgraph(), Builtins::kToBooleanLazyDeoptContinuation, context, nullptr,
+        0, frame_state, ContinuationFrameStateMode::LAZY);
+
     // Call the @@hasInstance handler.
     Node* target = jsgraph()->Constant(constant);
     node->InsertInput(graph()->zone(), 0, target);
     node->ReplaceInput(1, constructor);
     node->ReplaceInput(2, object);
+    node->ReplaceInput(4, continuation_frame_state);
     node->ReplaceInput(5, effect);
     NodeProperties::ChangeOp(
         node, javascript()->Call(3, CallFrequency(), VectorSlotPair(),
@@ -252,6 +266,80 @@ Reduction JSNativeContextSpecialization::ReduceJSInstanceOf(Node* node) {
       }
     }
     return Changed(node);
+  }
+
+  return NoChange();
+}
+
+JSNativeContextSpecialization::InferHasInPrototypeChainResult
+JSNativeContextSpecialization::InferHasInPrototypeChain(
+    Node* receiver, Node* effect, Handle<HeapObject> prototype) {
+  ZoneHandleSet<Map> receiver_maps;
+  NodeProperties::InferReceiverMapsResult result =
+      NodeProperties::InferReceiverMaps(receiver, effect, &receiver_maps);
+  if (result == NodeProperties::kNoReceiverMaps) return kMayBeInPrototypeChain;
+
+  // Check if either all or none of the {receiver_maps} have the given
+  // {prototype} in their prototype chain.
+  bool all = true;
+  bool none = true;
+  for (size_t i = 0; i < receiver_maps.size(); ++i) {
+    Handle<Map> receiver_map = receiver_maps[i];
+    if (receiver_map->instance_type() <= LAST_SPECIAL_RECEIVER_TYPE) {
+      return kMayBeInPrototypeChain;
+    }
+    if (result == NodeProperties::kUnreliableReceiverMaps) {
+      // In case of an unreliable {result} we need to ensure that all
+      // {receiver_maps} are stable, because otherwise we cannot trust
+      // the {receiver_maps} information, since arbitrary side-effects
+      // may have happened.
+      if (!receiver_map->is_stable()) {
+        return kMayBeInPrototypeChain;
+      }
+    }
+    for (PrototypeIterator j(receiver_map);; j.Advance()) {
+      if (j.IsAtEnd()) {
+        all = false;
+        break;
+      }
+      Handle<HeapObject> const current =
+          PrototypeIterator::GetCurrent<HeapObject>(j);
+      if (current.is_identical_to(prototype)) {
+        none = false;
+        break;
+      }
+      if (!current->map()->is_stable() ||
+          current->map()->instance_type() <= LAST_SPECIAL_RECEIVER_TYPE) {
+        return kMayBeInPrototypeChain;
+      }
+    }
+  }
+  DCHECK_IMPLIES(all, !none);
+  DCHECK_IMPLIES(none, !all);
+
+  if (all) return kIsInPrototypeChain;
+  if (none) return kIsNotInPrototypeChain;
+  return kMayBeInPrototypeChain;
+}
+
+Reduction JSNativeContextSpecialization::ReduceJSHasInPrototypeChain(
+    Node* node) {
+  DCHECK_EQ(IrOpcode::kJSHasInPrototypeChain, node->opcode());
+  Node* value = NodeProperties::GetValueInput(node, 0);
+  Node* prototype = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+
+  // Check if we can constant-fold the prototype chain walk
+  // for the given {value} and the {prototype}.
+  HeapObjectMatcher m(prototype);
+  if (m.HasValue()) {
+    InferHasInPrototypeChainResult result =
+        InferHasInPrototypeChain(value, effect, m.Value());
+    if (result != kMayBeInPrototypeChain) {
+      Node* value = jsgraph()->BooleanConstant(result == kIsInPrototypeChain);
+      ReplaceWithValue(node, value);
+      return Replace(value);
+    }
   }
 
   return NoChange();
@@ -302,7 +390,8 @@ Reduction JSNativeContextSpecialization::ReduceJSOrdinaryHasInstance(
       NodeProperties::ReplaceValueInput(node, object, 0);
       NodeProperties::ReplaceValueInput(node, prototype, 1);
       NodeProperties::ChangeOp(node, javascript()->HasInPrototypeChain());
-      return Changed(node);
+      Reduction const reduction = ReduceJSHasInPrototypeChain(node);
+      return reduction.Changed() ? reduction : Changed(node);
     }
   }
 

@@ -158,8 +158,8 @@ struct Control {
 class WasmDecoder : public Decoder {
  public:
   WasmDecoder(const WasmModule* module, FunctionSig* sig, const byte* start,
-              const byte* end)
-      : Decoder(start, end),
+              const byte* end, uint32_t buffer_offset = 0)
+      : Decoder(start, end, buffer_offset),
         module_(module),
         sig_(sig),
         local_types_(nullptr) {}
@@ -495,14 +495,17 @@ class WasmDecoder : public Decoder {
 #define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
           FOREACH_SIMD_0_OPERAND_OPCODE(DECLARE_OPCODE_CASE)
 #undef DECLARE_OPCODE_CASE
-          {
-            return 2;
-          }
+          return 2;
 #define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
           FOREACH_SIMD_1_OPERAND_OPCODE(DECLARE_OPCODE_CASE)
 #undef DECLARE_OPCODE_CASE
+          return 3;
+#define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
+          FOREACH_SIMD_MEM_OPCODE(DECLARE_OPCODE_CASE)
+#undef DECLARE_OPCODE_CASE
           {
-            return 3;
+            MemoryAccessOperand<true> operand(decoder, pc + 1, UINT32_MAX);
+            return 2 + operand.length;
           }
           // Shuffles require a byte per lane, or 16 immediate bytes.
           case kExprS8x16Shuffle:
@@ -523,14 +526,19 @@ class WasmDecoder : public Decoder {
     FunctionSig* sig = WasmOpcodes::Signature(opcode);
     if (!sig) sig = WasmOpcodes::AsmjsSignature(opcode);
     if (sig) return {sig->parameter_count(), sig->return_count()};
+    if (WasmOpcodes::IsPrefixOpcode(opcode)) {
+      opcode = static_cast<WasmOpcode>(opcode << 8 | *(pc + 1));
+    }
 
 #define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
     // clang-format off
     switch (opcode) {
       case kExprSelect:
         return {3, 1};
+      case kExprS128StoreMem:
       FOREACH_STORE_MEM_OPCODE(DECLARE_OPCODE_CASE)
         return {2, 0};
+      case kExprS128LoadMem:
       FOREACH_LOAD_MEM_OPCODE(DECLARE_OPCODE_CASE)
       case kExprTeeLocal:
       case kExprGrowMemory:
@@ -617,6 +625,7 @@ class WasmFullDecoder : public WasmDecoder {
     WasmDecoder::DecodeLocals(this, sig_, local_types_);
     InitSsaEnv();
     DecodeFunctionBody();
+    FinishFunction();
 
     if (failed()) return TraceFailed();
 
@@ -647,18 +656,17 @@ class WasmFullDecoder : public WasmDecoder {
   }
 
   bool TraceFailed() {
-    TRACE("wasm-error module+%-6d func+%d: %s\n\n",
-          baserel(start_ + error_offset_), error_offset_, error_msg_.c_str());
+    TRACE("wasm-error module+%-6d func+%d: %s\n\n", error_offset_,
+          GetBufferRelativeOffset(error_offset_), error_msg_.c_str());
     return false;
   }
 
  private:
   WasmFullDecoder(Zone* zone, const wasm::WasmModule* module,
                   TFBuilder* builder, const FunctionBody& body)
-      : WasmDecoder(module, body.sig, body.start, body.end),
+      : WasmDecoder(module, body.sig, body.start, body.end, body.offset),
         zone_(zone),
         builder_(builder),
-        base_(body.base),
         local_type_vec_(zone),
         stack_(zone),
         control_(zone),
@@ -671,7 +679,6 @@ class WasmFullDecoder : public WasmDecoder {
 
   Zone* zone_;
   TFBuilder* builder_;
-  const byte* base_;
 
   SsaEnv* ssa_env_;
 
@@ -715,11 +722,6 @@ class WasmFullDecoder : public WasmDecoder {
     ssa_env->control = start;
     ssa_env->effect = start;
     SetEnv("initial", ssa_env);
-    if (builder_) {
-      // The function-prologue stack check is associated with position 0, which
-      // is never a position of any instruction in the function.
-      builder_->StackCheck(0);
-    }
   }
 
   TFNode* DefaultValue(ValueType type) {
@@ -759,9 +761,9 @@ class WasmFullDecoder : public WasmDecoder {
 
   // Decodes the body of a function.
   void DecodeFunctionBody() {
-    TRACE("wasm-decode %p...%p (module+%d, %d bytes) %s\n",
-          reinterpret_cast<const void*>(start_),
-          reinterpret_cast<const void*>(end_), baserel(pc_),
+    TRACE("wasm-decode %p...%p (module+%u, %d bytes) %s\n",
+          reinterpret_cast<const void*>(start()),
+          reinterpret_cast<const void*>(end()), pc_offset(),
           static_cast<int>(end_ - start_), builder_ ? "graph building" : "");
 
     {
@@ -1229,10 +1231,6 @@ class WasmFullDecoder : public WasmDecoder {
           case kExprF64LoadMem:
             len = DecodeLoadMem(kWasmF64, MachineType::Float64());
             break;
-          case kExprS128LoadMem:
-            CHECK_PROTOTYPE_OPCODE(simd);
-            len = DecodeLoadMem(kWasmS128, MachineType::Simd128());
-            break;
           case kExprI32StoreMem8:
             len = DecodeStoreMem(kWasmI32, MachineType::Int8());
             break;
@@ -1259,10 +1257,6 @@ class WasmFullDecoder : public WasmDecoder {
             break;
           case kExprF64StoreMem:
             len = DecodeStoreMem(kWasmF64, MachineType::Float64());
-            break;
-          case kExprS128StoreMem:
-            CHECK_PROTOTYPE_OPCODE(simd);
-            len = DecodeStoreMem(kWasmS128, MachineType::Simd128());
             break;
           case kExprGrowMemory: {
             if (!CheckHasMemory()) break;
@@ -1418,6 +1412,10 @@ class WasmFullDecoder : public WasmDecoder {
     if (pc_ > end_ && ok()) error("Beyond end of code");
   }
 
+  void FinishFunction() {
+    if (builder_) builder_->PatchInStackCheckIfNeeded();
+  }
+
   void EndControl() {
     ssa_env_->Kill(SsaEnv::kControlEnd);
     if (!control_.empty()) {
@@ -1506,6 +1504,29 @@ class WasmFullDecoder : public WasmDecoder {
     return 1 + operand.length;
   }
 
+  int DecodePrefixedLoadMem(ValueType type, MachineType mem_type) {
+    if (!CheckHasMemory()) return 0;
+    MemoryAccessOperand<true> operand(
+        this, pc_ + 1, ElementSizeLog2Of(mem_type.representation()));
+
+    Value index = Pop(0, kWasmI32);
+    TFNode* node = BUILD(LoadMem, type, mem_type, index.node, operand.offset,
+                         operand.alignment, position());
+    Push(type, node);
+    return operand.length;
+  }
+
+  int DecodePrefixedStoreMem(ValueType type, MachineType mem_type) {
+    if (!CheckHasMemory()) return 0;
+    MemoryAccessOperand<true> operand(
+        this, pc_ + 1, ElementSizeLog2Of(mem_type.representation()));
+    Value val = Pop(1, type);
+    Value index = Pop(0, kWasmI32);
+    BUILD(StoreMem, mem_type, index.node, operand.offset, operand.alignment,
+          val.node, position());
+    return operand.length;
+  }
+
   unsigned SimdExtractLane(WasmOpcode opcode, ValueType type) {
     SimdLaneOperand<true> operand(this, pc_);
     if (Validate(pc_, opcode, operand)) {
@@ -1591,6 +1612,12 @@ class WasmFullDecoder : public WasmDecoder {
         len = Simd8x16ShuffleOp();
         break;
       }
+      case kExprS128LoadMem:
+        len = DecodePrefixedLoadMem(kWasmS128, MachineType::Simd128());
+        break;
+      case kExprS128StoreMem:
+        len = DecodePrefixedStoreMem(kWasmS128, MachineType::Simd128());
+        break;
       default: {
         FunctionSig* sig = WasmOpcodes::Signature(opcode);
         if (sig != nullptr) {
@@ -1680,10 +1707,6 @@ class WasmFullDecoder : public WasmDecoder {
     Value val = stack_.back();
     stack_.pop_back();
     return val;
-  }
-
-  int baserel(const byte* ptr) {
-    return base_ ? static_cast<int>(ptr - base_) : 0;
   }
 
   int startrel(const byte* ptr) { return static_cast<int>(ptr - start_); }

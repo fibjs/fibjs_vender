@@ -128,6 +128,9 @@
 //     - Map
 //     - Oddball
 //     - Foreign
+//     - SmallOrderedHashTable
+//       - SmallOrderedHashMap
+//       - SmallOrderedHashSet
 //     - SharedFunctionInfo
 //     - Struct
 //       - AccessorInfo
@@ -150,7 +153,6 @@
 //       - Module
 //       - ModuleInfoEntry
 //     - WeakCell
-//     - SmallOrderedHashSet
 //
 // Formats of Object*:
 //  Smi:        [31 bit signed int] 0
@@ -362,6 +364,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(CELL_TYPE)                                                                 \
   V(WEAK_CELL_TYPE)                                                            \
   V(PROPERTY_CELL_TYPE)                                                        \
+  V(SMALL_ORDERED_HASH_MAP_TYPE)                                               \
   V(SMALL_ORDERED_HASH_SET_TYPE)                                               \
   /* TODO(yangguo): these padding types are for ABI stability. Remove after*/  \
   /* version 6.0 branch, or replace them when there is demand for new types.*/ \
@@ -705,6 +708,7 @@ enum InstanceType {
   CELL_TYPE,
   WEAK_CELL_TYPE,
   PROPERTY_CELL_TYPE,
+  SMALL_ORDERED_HASH_MAP_TYPE,
   SMALL_ORDERED_HASH_SET_TYPE,
 
   // TODO(yangguo): these padding types are for ABI stability. Remove after
@@ -926,8 +930,6 @@ enum class ComparisonResult {
 class AbstractCode;
 class AccessorPair;
 class AllocationSite;
-class AllocationSiteCreationContext;
-class AllocationSiteUsageContext;
 class Cell;
 class ConsString;
 class ElementsAccessor;
@@ -1083,6 +1085,7 @@ template <class C> inline bool Is(Object* obj);
   V(SharedFunctionInfo)                \
   V(SlicedString)                      \
   V(SloppyArgumentsElements)           \
+  V(SmallOrderedHashMap)               \
   V(SmallOrderedHashSet)               \
   V(SourcePositionTableWithFrameCache) \
   V(String)                            \
@@ -1180,6 +1183,7 @@ class Object {
   INLINE(bool IsSeededNumberDictionary() const);
   INLINE(bool IsOrderedHashSet() const);
   INLINE(bool IsOrderedHashMap() const);
+  INLINE(bool IsSmallOrderedHashTable() const);
 
   // Extract the number.
   inline double Number() const;
@@ -1587,6 +1591,13 @@ class Smi: public Object {
     return reinterpret_cast<Smi*>((value << smi_shift_bits) | kSmiTag);
   }
 
+  template <typename E,
+            typename = typename std::enable_if<std::is_enum<E>::value>::type>
+  static inline Smi* FromEnum(E value) {
+    STATIC_ASSERT(sizeof(E) <= sizeof(int));
+    return FromInt(static_cast<int>(value));
+  }
+
   // Returns whether value can be represented in a Smi.
   static inline bool IsValid(intptr_t value) {
     bool result = Internals::IsValidSmi(value);
@@ -1914,8 +1925,7 @@ class JSReceiver: public HeapObject {
   inline NameDictionary* property_dictionary();
 
   // Deletes an existing named property in a normalized object.
-  static void DeleteNormalizedProperty(Handle<JSReceiver> object,
-                                       Handle<Name> name, int entry);
+  static void DeleteNormalizedProperty(Handle<JSReceiver> object, int entry);
 
   DECLARE_CAST(JSReceiver)
 
@@ -2139,7 +2149,6 @@ class JSObject: public JSReceiver {
   // FixedArray parameter map for a (sloppy) arguments object.
   DECL_ACCESSORS(elements, FixedArrayBase)
   inline void initialize_elements();
-  static void ResetElements(Handle<JSObject> object);
   static inline void SetMapAndElements(Handle<JSObject> object,
                                        Handle<Map> map,
                                        Handle<FixedArrayBase> elements);
@@ -2480,21 +2489,13 @@ class JSObject: public JSReceiver {
   // Check whether this object references another object
   bool ReferencesObject(Object* obj);
 
+  MUST_USE_RESULT static Maybe<bool> TestIntegrityLevel(Handle<JSObject> object,
+                                                        IntegrityLevel lvl);
+
   MUST_USE_RESULT static Maybe<bool> PreventExtensions(
       Handle<JSObject> object, ShouldThrow should_throw);
 
   static bool IsExtensible(Handle<JSObject> object);
-
-  // Copy object.
-  enum DeepCopyHints { kNoHints = 0, kObjectIsShallow = 1 };
-
-  MUST_USE_RESULT static MaybeHandle<JSObject> DeepCopy(
-      Handle<JSObject> object,
-      AllocationSiteUsageContext* site_context,
-      DeepCopyHints hints = kNoHints);
-  MUST_USE_RESULT static MaybeHandle<JSObject> DeepWalk(
-      Handle<JSObject> object,
-      AllocationSiteCreationContext* site_context);
 
   DECLARE_CAST(JSObject)
 
@@ -3570,9 +3571,7 @@ class Code: public HeapObject {
   V(STORE_IC)           \
   V(STORE_GLOBAL_IC)    \
   V(KEYED_STORE_IC)     \
-  V(BINARY_OP_IC)       \
-  V(COMPARE_IC)         \
-  V(TO_BOOLEAN_IC)
+  V(COMPARE_IC)
 
 #define CODE_KIND_LIST(V) \
   NON_IC_KIND_LIST(V)     \
@@ -3673,9 +3672,7 @@ class Code: public HeapObject {
   inline bool is_debug_stub();
   inline bool is_handler();
   inline bool is_stub();
-  inline bool is_binary_op_stub();
   inline bool is_compare_ic_stub();
-  inline bool is_to_boolean_ic_stub();
   inline bool is_optimized_code();
   inline bool is_wasm_code();
 
@@ -3686,6 +3683,10 @@ class Code: public HeapObject {
 
   // Testers for interpreter builtins.
   inline bool is_interpreter_trampoline_builtin();
+
+  // Tells whether the code checks the optimization marker in the function's
+  // feedback vector.
+  inline bool checks_optimization_marker();
 
   // [is_crankshafted]: For kind STUB or ICs, tells whether or not a code
   // object was generated by either the hydrogen or the TurboFan optimizing
@@ -3827,6 +3828,9 @@ class Code: public HeapObject {
 
   // Convert an entry address into an object.
   static inline Object* GetObjectFromEntryAddress(Address location_of_address);
+
+  // Convert a code entry into an object.
+  static inline Object* GetObjectFromCodeEntry(Address code_entry);
 
   // Returns the address of the first instruction.
   inline byte* instruction_start();
@@ -4863,6 +4867,9 @@ class Module : public Struct {
   // ModuleInfo::module_requests.
   DECL_ACCESSORS(requested_modules, FixedArray)
 
+  // [script]: Script from which the module originates.
+  DECL_ACCESSORS(script, Script)
+
   // Get the ModuleInfo associated with the code.
   inline ModuleInfo* info() const;
 
@@ -4903,7 +4910,8 @@ class Module : public Struct {
   static const int kRequestedModulesOffset =
       kModuleNamespaceOffset + kPointerSize;
   static const int kStatusOffset = kRequestedModulesOffset + kPointerSize;
-  static const int kSize = kStatusOffset + kPointerSize;
+  static const int kScriptOffset = kStatusOffset + kPointerSize;
+  static const int kSize = kScriptOffset + kPointerSize;
 
  private:
   static void CreateExport(Handle<Module> module, int cell_index,
@@ -4947,6 +4955,7 @@ class Module : public Struct {
 class JSBoundFunction : public JSObject {
  public:
   // [bound_target_function]: The wrapped function object.
+  inline Object* raw_bound_target_function() const;
   DECL_ACCESSORS(bound_target_function, JSReceiver)
 
   // [bound_this]: The value that is always passed as the this value when
@@ -5031,13 +5040,27 @@ class JSFunction: public JSObject {
   // optimized.
   inline bool IsInterpreted();
 
-  // Tells whether or not this function has been optimized.
+  // Tells whether or not this function checks its optimization marker in its
+  // feedback vector.
+  inline bool ChecksOptimizationMarker();
+
+  // Tells whether or not this function holds optimized code.
+  //
+  // Note: Returning false does not necessarily mean that this function hasn't
+  // been optimized, as it may have optimized code on its feedback vector.
   inline bool IsOptimized();
+
+  // Tells whether or not this function has optimized code available to it,
+  // either because it is optimized or because it has optimized code in its
+  // feedback vector.
+  inline bool HasOptimizedCode();
+
+  // Tells whether or not this function has a (non-zero) optimization marker.
+  inline bool HasOptimizationMarker();
 
   // Mark this function for lazy recompilation. The function will be recompiled
   // the next time it is executed.
-  void MarkForOptimization();
-  void AttemptConcurrentOptimization();
+  void MarkForOptimization(ConcurrencyMode mode);
 
   // Tells whether or not the function is already marked for lazy recompilation.
   inline bool IsMarkedForOptimization();
@@ -5048,6 +5071,12 @@ class JSFunction: public JSObject {
 
   // Clears the optimized code slot in the function's feedback vector.
   inline void ClearOptimizedCodeSlot(const char* reason);
+
+  // Sets the optimization marker in the function's feedback vector.
+  inline void SetOptimizationMarker(OptimizationMarker marker);
+
+  // Clears the optimization marker in the function's feedback vector.
+  inline void ClearOptimizationMarker();
 
   // Completes inobject slack tracking on initial map if it is active.
   inline void CompleteInobjectSlackTrackingIfActive();
@@ -5814,9 +5843,8 @@ class AllocationSite: public Struct {
   DECLARE_VERIFIER(AllocationSite)
 
   DECLARE_CAST(AllocationSite)
-  static inline AllocationSiteMode GetMode(
-      ElementsKind boilerplate_elements_kind);
-  static AllocationSiteMode GetMode(ElementsKind from, ElementsKind to);
+  static inline bool ShouldTrack(ElementsKind boilerplate_elements_kind);
+  static bool ShouldTrack(ElementsKind from, ElementsKind to);
   static inline bool CanTrack(InstanceType type);
 
   static const int kTransitionInfoOffset = HeapObject::kHeaderSize;

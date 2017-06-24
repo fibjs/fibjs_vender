@@ -431,23 +431,6 @@ static void GenerateTailCallToReturnedCode(MacroAssembler* masm,
   __ JumpToJSEntry(ip);
 }
 
-void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
-  // Checking whether the queued function is ready for install is optional,
-  // since we come across interrupts and stack checks elsewhere.  However,
-  // not checking may delay installing ready functions, and always checking
-  // would be quite expensive.  A good compromise is to first check against
-  // stack limit as a cue for an interrupt signal.
-  Label ok;
-  __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-  __ cmpl(sp, ip);
-  __ bge(&ok);
-
-  GenerateTailCallToReturnedCode(masm, Runtime::kTryInstallOptimizedCode);
-
-  __ bind(&ok);
-  GenerateTailCallToSharedCode(masm);
-}
-
 namespace {
 
 void Generate_JSBuiltinsConstructStubHelper(MacroAssembler* masm) {
@@ -920,7 +903,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     FrameScope scope(masm, StackFrame::INTERNAL);
 
     // Setup the context (we need to use the caller context from the isolate).
-    ExternalReference context_address(Isolate::kContextAddress,
+    ExternalReference context_address(IsolateAddressId::kContextAddress,
                                       masm->isolate());
     __ mov(cp, Operand(context_address));
     __ LoadP(cp, MemOperand(cp));
@@ -1037,6 +1020,120 @@ static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch) {
   __ add(sp, sp, args_count);
 }
 
+// Tail-call |function_id| if |smi_entry| == |marker|
+static void TailCallRuntimeIfMarkerEquals(MacroAssembler* masm,
+                                          Register smi_entry,
+                                          OptimizationMarker marker,
+                                          Runtime::FunctionId function_id) {
+  Label no_match;
+  __ CmpSmiLiteral(smi_entry, Smi::FromEnum(marker), r0);
+  __ bne(&no_match);
+  GenerateTailCallToReturnedCode(masm, function_id);
+  __ bind(&no_match);
+}
+
+static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
+                                           Register feedback_vector,
+                                           Register scratch1, Register scratch2,
+                                           Register scratch3) {
+  // ----------- S t a t e -------------
+  //  -- r0 : argument count (preserved for callee if needed, and caller)
+  //  -- r3 : new target (preserved for callee if needed, and caller)
+  //  -- r1 : target function (preserved for callee if needed, and caller)
+  //  -- feedback vector (preserved for caller if needed)
+  // -----------------------------------
+  DCHECK(
+      !AreAliased(feedback_vector, r3, r4, r6, scratch1, scratch2, scratch3));
+
+  Label optimized_code_slot_is_cell, fallthrough;
+
+  Register closure = r4;
+  Register optimized_code_entry = scratch1;
+
+  const int kOptimizedCodeCellOffset =
+      FeedbackVector::kOptimizedCodeIndex * kPointerSize +
+      FeedbackVector::kHeaderSize;
+  __ LoadP(optimized_code_entry,
+           FieldMemOperand(feedback_vector, kOptimizedCodeCellOffset));
+
+  // Check if the code entry is a Smi. If yes, we interpret it as an
+  // optimisation marker. Otherwise, interpret is as a weak cell to a code
+  // object.
+  __ JumpIfNotSmi(optimized_code_entry, &optimized_code_slot_is_cell);
+
+  {
+    // Optimized code slot is a Smi optimization marker.
+
+    // Fall through if no optimization trigger.
+    __ CmpSmiLiteral(optimized_code_entry,
+                     Smi::FromEnum(OptimizationMarker::kNone), r0);
+    __ beq(&fallthrough);
+
+    TailCallRuntimeIfMarkerEquals(masm, optimized_code_entry,
+                                  OptimizationMarker::kCompileOptimized,
+                                  Runtime::kCompileOptimized_NotConcurrent);
+    TailCallRuntimeIfMarkerEquals(
+        masm, optimized_code_entry,
+        OptimizationMarker::kCompileOptimizedConcurrent,
+        Runtime::kCompileOptimized_Concurrent);
+
+    {
+      // Otherwise, the marker is InOptimizationQueue.
+      if (FLAG_debug_code) {
+        __ CmpSmiLiteral(
+            optimized_code_entry,
+            Smi::FromEnum(OptimizationMarker::kInOptimizationQueue), r0);
+        __ Assert(eq, kExpectedOptimizationSentinel);
+      }
+
+      // Checking whether the queued function is ready for install is optional,
+      // since we come across interrupts and stack checks elsewhere.  However,
+      // not checking may delay installing ready functions, and always checking
+      // would be quite expensive.  A good compromise is to first check against
+      // stack limit as a cue for an interrupt signal.
+      __ LoadRoot(ip, Heap::kStackLimitRootIndex);
+      __ cmpl(sp, ip);
+      __ bge(&fallthrough);
+      GenerateTailCallToReturnedCode(masm, Runtime::kTryInstallOptimizedCode);
+    }
+  }
+
+  {
+    // Optimized code slot is a WeakCell.
+    __ bind(&optimized_code_slot_is_cell);
+
+    __ LoadP(optimized_code_entry,
+             FieldMemOperand(optimized_code_entry, WeakCell::kValueOffset));
+    __ JumpIfSmi(optimized_code_entry, &fallthrough);
+
+    // Check if the optimized code is marked for deopt. If it is, call the
+    // runtime to clear it.
+    Label found_deoptimized_code;
+    __ LoadP(scratch2, FieldMemOperand(optimized_code_entry,
+                                       Code::kKindSpecificFlags1Offset));
+    __ TestBit(scratch2, Code::kMarkedForDeoptimizationBit, r0);
+    __ bne(&found_deoptimized_code, cr0);
+
+    // Optimized code is good, get it into the closure and link the closure into
+    // the optimized functions list, then tail call the optimized code.
+    // The feedback vector is no longer used, so re-use it as a scratch
+    // register.
+    ReplaceClosureEntryWithOptimizedCode(masm, optimized_code_entry, closure,
+                                         scratch2, scratch3, feedback_vector);
+    __ mr(ip, optimized_code_entry);
+    __ Jump(optimized_code_entry);
+
+    // Optimized code slot contains deoptimized code, evict it and re-enter the
+    // closure's code.
+    __ bind(&found_deoptimized_code);
+    GenerateTailCallToReturnedCode(masm, Runtime::kEvictOptimizedCodeSlot);
+  }
+
+  // Fall-through if the optimized code cell is clear and there is no
+  // optimization marker.
+  __ bind(&fallthrough);
+}
+
 // Generate code for entering a JS function with the interpreter.
 // On entry to the function the receiver and arguments have been pushed on the
 // stack left to right.  The actual argument count matches the formal parameter
@@ -1056,36 +1153,33 @@ static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch) {
 void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
+  Register closure = r4;
+  Register feedback_vector = r5;
+
+  // Load the feedback vector from the closure.
+  __ LoadP(feedback_vector,
+           FieldMemOperand(closure, JSFunction::kFeedbackVectorOffset));
+  __ LoadP(feedback_vector,
+           FieldMemOperand(feedback_vector, Cell::kValueOffset));
+  // Read off the optimized code slot in the feedback vector, and if there
+  // is optimized code or an optimization marker, call that instead.
+  MaybeTailCallOptimizedCodeSlot(masm, feedback_vector, r7, r9, r8);
+
   // Open a frame scope to indicate that there is a frame on the stack.  The
   // MANUAL indicates that the scope shouldn't actually generate code to set up
   // the frame (that is done below).
   FrameScope frame_scope(masm, StackFrame::MANUAL);
-  __ PushStandardFrame(r4);
-
-  // First check if there is optimized code in the feedback vector which we
-  // could call instead.
-  Label switch_to_optimized_code;
-
-  Register optimized_code_entry = r7;
-  __ LoadP(r3, FieldMemOperand(r4, JSFunction::kFeedbackVectorOffset));
-  __ LoadP(r3, FieldMemOperand(r3, Cell::kValueOffset));
-  __ LoadP(
-      optimized_code_entry,
-      FieldMemOperand(r3, FeedbackVector::kOptimizedCodeIndex * kPointerSize +
-                              FeedbackVector::kHeaderSize));
-  __ LoadP(optimized_code_entry,
-           FieldMemOperand(optimized_code_entry, WeakCell::kValueOffset));
-  __ JumpIfNotSmi(optimized_code_entry, &switch_to_optimized_code);
+  __ PushStandardFrame(closure);
 
   // Get the bytecode array from the function object (or from the DebugInfo if
   // it is present) and load it into kInterpreterBytecodeArrayRegister.
   Label maybe_load_debug_bytecode_array, bytecode_array_loaded;
-  __ LoadP(r3, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadP(r3, FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   // Load original bytecode array or the debug copy.
   __ LoadP(kInterpreterBytecodeArrayRegister,
            FieldMemOperand(r3, SharedFunctionInfo::kFunctionDataOffset));
-  __ LoadP(r5, FieldMemOperand(r3, SharedFunctionInfo::kDebugInfoOffset));
-  __ TestIfSmi(r5, r0);
+  __ LoadP(r7, FieldMemOperand(r3, SharedFunctionInfo::kDebugInfoOffset));
+  __ TestIfSmi(r7, r0);
   __ bne(&maybe_load_debug_bytecode_array, cr0);
   __ bind(&bytecode_array_loaded);
 
@@ -1099,16 +1193,17 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ bne(&switch_to_different_code_kind);
 
   // Increment invocation count for the function.
-  __ LoadP(r7, FieldMemOperand(r4, JSFunction::kFeedbackVectorOffset));
-  __ LoadP(r7, FieldMemOperand(r7, Cell::kValueOffset));
-  __ LoadP(r8, FieldMemOperand(
-                   r7, FeedbackVector::kInvocationCountIndex * kPointerSize +
-                           FeedbackVector::kHeaderSize));
+  __ LoadP(
+      r8, FieldMemOperand(feedback_vector,
+                          FeedbackVector::kInvocationCountIndex * kPointerSize +
+                              FeedbackVector::kHeaderSize));
   __ AddSmiLiteral(r8, r8, Smi::FromInt(1), r0);
-  __ StoreP(r8, FieldMemOperand(
-                    r7, FeedbackVector::kInvocationCountIndex * kPointerSize +
-                            FeedbackVector::kHeaderSize),
-            r0);
+  __ StoreP(
+      r8,
+      FieldMemOperand(feedback_vector,
+                      FeedbackVector::kInvocationCountIndex * kPointerSize +
+                          FeedbackVector::kHeaderSize),
+      r0);
 
   // Check function data field is actually a BytecodeArray object.
 
@@ -1186,12 +1281,12 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // SharedFunctionInfo::kFunctionDataOffset.
   Label done;
   __ bind(&maybe_load_debug_bytecode_array);
-  __ LoadP(ip, FieldMemOperand(r5, DebugInfo::kFlagsOffset));
+  __ LoadP(ip, FieldMemOperand(r7, DebugInfo::kFlagsOffset));
   __ SmiUntag(ip);
   __ andi(r0, ip, Operand(DebugInfo::kHasBreakInfo));
   __ beq(&done, cr0);
   __ LoadP(kInterpreterBytecodeArrayRegister,
-           FieldMemOperand(r5, DebugInfo::kDebugBytecodeArrayOffset));
+           FieldMemOperand(r7, DebugInfo::kDebugBytecodeArrayOffset));
   __ bind(&done);
   __ b(&bytecode_array_loaded);
 
@@ -1200,35 +1295,12 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // closure by switching the code entry field over to the new code as well.
   __ bind(&switch_to_different_code_kind);
   __ LeaveFrame(StackFrame::JAVA_SCRIPT);
-  __ LoadP(r7, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadP(r7, FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(r7, FieldMemOperand(r7, SharedFunctionInfo::kCodeOffset));
   __ addi(r7, r7, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ StoreP(r7, FieldMemOperand(r4, JSFunction::kCodeEntryOffset), r0);
-  __ RecordWriteCodeEntryField(r4, r7, r8);
+  __ StoreP(r7, FieldMemOperand(closure, JSFunction::kCodeEntryOffset), r0);
+  __ RecordWriteCodeEntryField(closure, r7, r8);
   __ JumpToJSEntry(r7);
-
-  // If there is optimized code on the type feedback vector, check if it is good
-  // to run, and if so, self heal the closure and call the optimized code.
-  __ bind(&switch_to_optimized_code);
-  __ LeaveFrame(StackFrame::JAVA_SCRIPT);
-  Label gotta_call_runtime;
-
-  // Check if the optimized code is marked for deopt.
-  __ lwz(r8, FieldMemOperand(optimized_code_entry,
-                             Code::kKindSpecificFlags1Offset));
-  __ TestBit(r8, Code::kMarkedForDeoptimizationBit, r0);
-  __ bne(&gotta_call_runtime, cr0);
-
-  // Optimized code is good, get it into the closure and link the closure into
-  // the optimized functions list, then tail call the optimized code.
-  ReplaceClosureEntryWithOptimizedCode(masm, optimized_code_entry, r4, r9, r8,
-                                       r5);
-  __ JumpToJSEntry(optimized_code_entry);
-
-  // Optimized code is marked for deopt, bailout to the CompileLazy runtime
-  // function which will clear the feedback vector's optimized code slot.
-  __ bind(&gotta_call_runtime);
-  GenerateTailCallToReturnedCode(masm, Runtime::kEvictOptimizedCodeSlot);
 }
 
 static void Generate_StackOverflowCheck(MacroAssembler* masm, Register num_args,
@@ -1286,6 +1358,11 @@ void Builtins::Generate_InterpreterPushArgsThenCallImpl(
   // Push the arguments. r5, r6, r7 will be modified.
   Generate_InterpreterPushArgs(masm, r6, r5, r6, r7);
 
+  if (mode == InterpreterPushArgsMode::kWithFinalSpread) {
+    __ Pop(r5);                   // Pass the spread in a register
+    __ subi(r3, r3, Operand(1));  // Subtract one for spread
+  }
+
   // Call the target.
   if (mode == InterpreterPushArgsMode::kJSFunction) {
     __ Jump(masm->isolate()->builtins()->CallFunction(ConvertReceiverMode::kAny,
@@ -1332,8 +1409,12 @@ void Builtins::Generate_InterpreterPushArgsThenConstructImpl(
   // Push the arguments. r8, r7, r9 will be modified.
   Generate_InterpreterPushArgs(masm, r3, r7, r3, r9);
   __ bind(&skip);
-
-  __ AssertUndefinedOrAllocationSite(r5, r8);
+  if (mode == InterpreterPushArgsMode::kWithFinalSpread) {
+    __ Pop(r5);                   // Pass the spread in a register
+    __ subi(r3, r3, Operand(1));  // Subtract one for spread
+  } else {
+    __ AssertUndefinedOrAllocationSite(r5, r8);
+  }
   if (mode == InterpreterPushArgsMode::kJSFunction) {
     __ AssertFunction(r4);
 
@@ -1463,6 +1544,34 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
   Generate_InterpreterEnterBytecode(masm);
 }
 
+void Builtins::Generate_CheckOptimizationMarker(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r3 : argument count (preserved for callee)
+  //  -- r6 : new target (preserved for callee)
+  //  -- r4 : target function (preserved for callee)
+  // -----------------------------------
+  Register closure = r4;
+
+  // Get the feedback vector.
+  Register feedback_vector = r5;
+  __ LoadP(feedback_vector,
+           FieldMemOperand(closure, JSFunction::kFeedbackVectorOffset));
+  __ LoadP(feedback_vector,
+           FieldMemOperand(feedback_vector, Cell::kValueOffset));
+
+  // The feedback vector must be defined.
+  if (FLAG_debug_code) {
+    __ CompareRoot(feedback_vector, Heap::kUndefinedValueRootIndex);
+    __ Assert(ne, BailoutReason::kExpectedFeedbackVector);
+  }
+
+  // Is there an optimization marker or optimized code in the feedback vector?
+  MaybeTailCallOptimizedCodeSlot(masm, feedback_vector, r7, r9, r8);
+
+  // Otherwise, tail call the SFI code.
+  GenerateTailCallToSharedCode(masm);
+}
+
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r3 : argument count (preserved for callee)
@@ -1471,42 +1580,25 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   // -----------------------------------
   // First lookup code, maybe we don't need to compile!
   Label gotta_call_runtime;
-  Label try_shared;
 
   Register closure = r4;
-  Register index = r5;
+  Register feedback_vector = r5;
 
   // Do we have a valid feedback vector?
-  __ LoadP(index, FieldMemOperand(closure, JSFunction::kFeedbackVectorOffset));
-  __ LoadP(index, FieldMemOperand(index, Cell::kValueOffset));
-  __ JumpIfRoot(index, Heap::kUndefinedValueRootIndex, &gotta_call_runtime);
+  __ LoadP(feedback_vector,
+           FieldMemOperand(closure, JSFunction::kFeedbackVectorOffset));
+  __ LoadP(feedback_vector,
+           FieldMemOperand(feedback_vector, Cell::kValueOffset));
+  __ JumpIfRoot(feedback_vector, Heap::kUndefinedValueRootIndex,
+                &gotta_call_runtime);
 
-  // Is optimized code available in the feedback vector?
-  Register entry = r7;
-  __ LoadP(entry, FieldMemOperand(index, FeedbackVector::kOptimizedCodeIndex *
-                                                 kPointerSize +
-                                             FeedbackVector::kHeaderSize));
-  __ LoadP(entry, FieldMemOperand(entry, WeakCell::kValueOffset));
-  __ JumpIfSmi(entry, &try_shared);
-
-  // Found code, check if it is marked for deopt, if so call into runtime to
-  // clear the optimized code slot.
-  __ lwz(r8, FieldMemOperand(entry, Code::kKindSpecificFlags1Offset));
-  __ TestBit(r8, Code::kMarkedForDeoptimizationBit, r0);
-  __ bne(&gotta_call_runtime, cr0);
-
-  // Code is good, get it into the closure and tail call.
-  ReplaceClosureEntryWithOptimizedCode(masm, entry, closure, r9, r8, r5);
-  __ JumpToJSEntry(entry);
+  // Is there an optimization marker or optimized code in the feedback vector?
+  MaybeTailCallOptimizedCodeSlot(masm, feedback_vector, r7, r9, r8);
 
   // We found no optimized code.
-  __ bind(&try_shared);
+  Register entry = r7;
   __ LoadP(entry,
            FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
-  // Is the shared function marked for tier up?
-  __ lwz(r8, FieldMemOperand(entry, SharedFunctionInfo::kCompilerHintsOffset));
-  __ TestBit(r8, SharedFunctionInfo::MarkedForTierUpBit::kShift, r0);
-  __ bne(&gotta_call_runtime, cr0);
 
   // If SFI points to anything other than CompileLazy, install that.
   __ LoadP(entry, FieldMemOperand(entry, SharedFunctionInfo::kCodeOffset));
@@ -1522,15 +1614,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
 
   __ bind(&gotta_call_runtime);
   GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
-}
-
-void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
-  GenerateTailCallToReturnedCode(masm,
-                                 Runtime::kCompileOptimized_NotConcurrent);
-}
-
-void Builtins::Generate_CompileOptimizedConcurrent(MacroAssembler* masm) {
-  GenerateTailCallToReturnedCode(masm, Runtime::kCompileOptimized_Concurrent);
 }
 
 void Builtins::Generate_InstantiateAsmJs(MacroAssembler* masm) {
@@ -1920,13 +2003,9 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   //  -- sp[0] : thisArg
   // -----------------------------------
 
-  // 2. Make sure the receiver is actually callable.
-  Label receiver_not_callable;
-  __ JumpIfSmi(r4, &receiver_not_callable);
-  __ LoadP(r7, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ lbz(r7, FieldMemOperand(r7, Map::kBitFieldOffset));
-  __ TestBit(r7, Map::kIsCallable, r0);
-  __ beq(&receiver_not_callable, cr0);
+  // 2. We don't need to check explicitly for callable receiver here,
+  // since that's the first thing the Call/CallWithArrayLike builtins
+  // will do.
 
   // 3. Tail call with no arguments if argArray is null or undefined.
   Label no_arguments;
@@ -1943,13 +2022,6 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   {
     __ li(r3, Operand::Zero());
     __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
-  }
-
-  // 4c. The receiver is not callable, throw an appropriate TypeError.
-  __ bind(&receiver_not_callable);
-  {
-    __ StoreP(r4, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowApplyNonFunction);
   }
 }
 
@@ -2038,24 +2110,13 @@ void Builtins::Generate_ReflectApply(MacroAssembler* masm) {
   //  -- sp[0] : thisArgument
   // -----------------------------------
 
-  // 2. Make sure the target is actually callable.
-  Label target_not_callable;
-  __ JumpIfSmi(r4, &target_not_callable);
-  __ LoadP(r7, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ lbz(r7, FieldMemOperand(r7, Map::kBitFieldOffset));
-  __ TestBit(r7, Map::kIsCallable, r0);
-  __ beq(&target_not_callable, cr0);
+  // 2. We don't need to check explicitly for callable target here,
+  // since that's the first thing the Call/CallWithArrayLike builtins
+  // will do.
 
-  // 3a. Apply the target to the given argumentsList.
+  // 3. Apply the target to the given argumentsList.
   __ Jump(masm->isolate()->builtins()->CallWithArrayLike(),
           RelocInfo::CODE_TARGET);
-
-  // 3b. The target is not callable, throw an appropriate TypeError.
-  __ bind(&target_not_callable);
-  {
-    __ StoreP(r4, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowApplyNonFunction);
-  }
 }
 
 void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
@@ -2101,39 +2162,17 @@ void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
   //  -- sp[0] : receiver (undefined)
   // -----------------------------------
 
-  // 2. Make sure the target is actually a constructor.
-  Label target_not_constructor;
-  __ JumpIfSmi(r4, &target_not_constructor);
-  __ LoadP(r7, FieldMemOperand(r4, HeapObject::kMapOffset));
-  __ lbz(r7, FieldMemOperand(r7, Map::kBitFieldOffset));
-  __ TestBit(r7, Map::kIsConstructor, r0);
-  __ beq(&target_not_constructor, cr0);
+  // 2. We don't need to check explicitly for constructor target here,
+  // since that's the first thing the Construct/ConstructWithArrayLike
+  // builtins will do.
 
-  // 3. Make sure the target is actually a constructor.
-  Label new_target_not_constructor;
-  __ JumpIfSmi(r6, &new_target_not_constructor);
-  __ LoadP(r7, FieldMemOperand(r6, HeapObject::kMapOffset));
-  __ lbz(r7, FieldMemOperand(r7, Map::kBitFieldOffset));
-  __ TestBit(r7, Map::kIsConstructor, r0);
-  __ beq(&new_target_not_constructor, cr0);
+  // 3. We don't need to check explicitly for constructor new.target here,
+  // since that's the second thing the Construct/ConstructWithArrayLike
+  // builtins will do.
 
-  // 4a. Construct the target with the given new.target and argumentsList.
+  // 4. Construct the target with the given new.target and argumentsList.
   __ Jump(masm->isolate()->builtins()->ConstructWithArrayLike(),
           RelocInfo::CODE_TARGET);
-
-  // 4b. The target is not a constructor, throw an appropriate TypeError.
-  __ bind(&target_not_constructor);
-  {
-    __ StoreP(r4, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowNotConstructor);
-  }
-
-  // 4c. The new.target is not a constructor, throw an appropriate TypeError.
-  __ bind(&new_target_not_constructor);
-  {
-    __ StoreP(r6, MemOperand(sp, 0));
-    __ TailCallRuntime(Runtime::kThrowNotConstructor);
-  }
 }
 
 static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
@@ -2662,156 +2701,6 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode,
   }
 }
 
-static void CheckSpreadAndPushToStack(MacroAssembler* masm) {
-  Register argc = r3;
-  Register constructor = r4;
-  Register new_target = r6;
-
-  Register scratch = r5;
-  Register scratch2 = r9;
-
-  Register spread = r7;
-  Register spread_map = r8;
-  Register spread_len = r8;
-  Label runtime_call, push_args;
-  __ LoadP(spread, MemOperand(sp, 0));
-  __ JumpIfSmi(spread, &runtime_call);
-  __ LoadP(spread_map, FieldMemOperand(spread, HeapObject::kMapOffset));
-
-  // Check that the spread is an array.
-  __ CompareInstanceType(spread_map, scratch, JS_ARRAY_TYPE);
-  __ bne(&runtime_call);
-
-  // Check that we have the original ArrayPrototype.
-  __ LoadP(scratch, FieldMemOperand(spread_map, Map::kPrototypeOffset));
-  __ LoadP(scratch2, NativeContextMemOperand());
-  __ LoadP(scratch2,
-           ContextMemOperand(scratch2, Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
-  __ cmp(scratch, scratch2);
-  __ bne(&runtime_call);
-
-  // Check that the ArrayPrototype hasn't been modified in a way that would
-  // affect iteration.
-  __ LoadRoot(scratch, Heap::kArrayIteratorProtectorRootIndex);
-  __ LoadP(scratch, FieldMemOperand(scratch, PropertyCell::kValueOffset));
-  __ CmpSmiLiteral(scratch, Smi::FromInt(Isolate::kProtectorValid), r0);
-  __ bne(&runtime_call);
-
-  // Check that the map of the initial array iterator hasn't changed.
-  __ LoadP(scratch2, NativeContextMemOperand());
-  __ LoadP(scratch,
-           ContextMemOperand(scratch2,
-                             Context::INITIAL_ARRAY_ITERATOR_PROTOTYPE_INDEX));
-  __ LoadP(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
-  __ LoadP(scratch2,
-           ContextMemOperand(
-               scratch2, Context::INITIAL_ARRAY_ITERATOR_PROTOTYPE_MAP_INDEX));
-  __ cmp(scratch, scratch2);
-  __ bne(&runtime_call);
-
-  // For FastPacked kinds, iteration will have the same effect as simply
-  // accessing each property in order.
-  Label no_protector_check;
-  __ lbz(scratch, FieldMemOperand(spread_map, Map::kBitField2Offset));
-  __ DecodeField<Map::ElementsKindBits>(scratch);
-  __ cmpi(scratch, Operand(FAST_HOLEY_ELEMENTS));
-  __ bgt(&runtime_call);
-  // For non-FastHoley kinds, we can skip the protector check.
-  __ cmpi(scratch, Operand(FAST_SMI_ELEMENTS));
-  __ beq(&no_protector_check);
-  __ cmpi(scratch, Operand(FAST_ELEMENTS));
-  __ beq(&no_protector_check);
-  // Check the ArrayProtector cell.
-  __ LoadRoot(scratch, Heap::kArrayProtectorRootIndex);
-  __ LoadP(scratch, FieldMemOperand(scratch, PropertyCell::kValueOffset));
-  __ CmpSmiLiteral(scratch, Smi::FromInt(Isolate::kProtectorValid), r0);
-  __ bne(&runtime_call);
-
-  __ bind(&no_protector_check);
-  // Load the FixedArray backing store, but use the length from the array.
-  __ LoadP(spread_len, FieldMemOperand(spread, JSArray::kLengthOffset));
-  __ SmiUntag(spread_len);
-  __ LoadP(spread, FieldMemOperand(spread, JSArray::kElementsOffset));
-  __ b(&push_args);
-
-  __ bind(&runtime_call);
-  {
-    // Call the builtin for the result of the spread.
-    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-    __ SmiTag(argc);
-    __ Push(constructor, new_target, argc, spread);
-    __ CallRuntime(Runtime::kSpreadIterableFixed);
-    __ mr(spread, r3);
-    __ Pop(constructor, new_target, argc);
-    __ SmiUntag(argc);
-  }
-
-  {
-    // Calculate the new nargs including the result of the spread.
-    __ LoadP(spread_len, FieldMemOperand(spread, FixedArray::kLengthOffset));
-    __ SmiUntag(spread_len);
-
-    __ bind(&push_args);
-    // argc += spread_len - 1. Subtract 1 for the spread itself.
-    __ add(argc, argc, spread_len);
-    __ subi(argc, argc, Operand(1));
-
-    // Pop the spread argument off the stack.
-    __ Pop(scratch);
-  }
-
-  // Check for stack overflow.
-  {
-    // Check the stack for overflow. We are not trying to catch interruptions
-    // (i.e. debug break and preemption) here, so check the "real stack limit".
-    Label done;
-    __ LoadRoot(scratch, Heap::kRealStackLimitRootIndex);
-    // Make scratch the space we have left. The stack might already be
-    // overflowed here which will cause scratch to become negative.
-    __ sub(scratch, sp, scratch);
-    // Check if the arguments will overflow the stack.
-    __ ShiftLeftImm(r0, spread_len, Operand(kPointerSizeLog2));
-    __ cmp(scratch, r0);
-    __ bgt(&done);  // Signed comparison.
-    __ TailCallRuntime(Runtime::kThrowStackOverflow);
-    __ bind(&done);
-  }
-
-  // Put the evaluated spread onto the stack as additional arguments.
-  {
-    __ li(scratch, Operand::Zero());
-    Label done, push, loop;
-    __ bind(&loop);
-    __ cmp(scratch, spread_len);
-    __ beq(&done);
-    __ ShiftLeftImm(r0, scratch, Operand(kPointerSizeLog2));
-    __ add(scratch2, spread, r0);
-    __ LoadP(scratch2, FieldMemOperand(scratch2, FixedArray::kHeaderSize));
-    __ JumpIfNotRoot(scratch2, Heap::kTheHoleValueRootIndex, &push);
-    __ LoadRoot(scratch2, Heap::kUndefinedValueRootIndex);
-    __ bind(&push);
-    __ Push(scratch2);
-    __ addi(scratch, scratch, Operand(1));
-    __ b(&loop);
-    __ bind(&done);
-  }
-}
-
-// static
-void Builtins::Generate_CallWithSpread(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- r3 : the number of arguments (not including the receiver)
-  //  -- r4 : the constructor to call (can be any Object)
-  // -----------------------------------
-
-  // CheckSpreadAndPushToStack will push r6 to save it.
-  __ LoadRoot(r6, Heap::kUndefinedValueRootIndex);
-  CheckSpreadAndPushToStack(masm);
-  __ Jump(masm->isolate()->builtins()->Call(ConvertReceiverMode::kAny,
-                                            TailCallMode::kDisallow),
-          RelocInfo::CODE_TARGET);
-}
-
 // static
 void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
   // ----------- S t a t e -------------
@@ -2930,18 +2819,6 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   __ bind(&non_constructor);
   __ Jump(masm->isolate()->builtins()->ConstructedNonConstructable(),
           RelocInfo::CODE_TARGET);
-}
-
-void Builtins::Generate_ConstructWithSpread(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- r3 : the number of arguments (not including the receiver)
-  //  -- r4 : the constructor to call (can be any Object)
-  //  -- r6 : the new target (either the same as the constructor or
-  //          the JSFunction on which new was invoked initially)
-  // -----------------------------------
-
-  CheckSpreadAndPushToStack(masm);
-  __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
 }
 
 // static

@@ -23,23 +23,15 @@ namespace internal {
 class EvacuationJobTraits;
 class HeapObjectVisitor;
 class ItemParallelJob;
-class LocalWorkStealingMarkingDeque;
+class WorklistView;
 class MarkCompactCollector;
 class MinorMarkCompactCollector;
 class MarkingVisitor;
 class MigrationObserver;
-template <typename JobTraits>
-class PageParallelJob;
 class RecordMigratedSlotVisitor;
 class ThreadLocalTop;
-class WorkStealingMarkingDeque;
+class Worklist;
 class YoungGenerationMarkingVisitor;
-
-#ifdef V8_CONCURRENT_MARKING
-using MarkingDeque = ConcurrentMarkingDeque;
-#else
-using MarkingDeque = SequentialMarkingDeque;
-#endif
 
 class ObjectMarking : public AllStatic {
  public:
@@ -128,7 +120,7 @@ class MarkBitCellIterator BASE_EMBEDDED {
     cells_ = state.bitmap()->cells();
   }
 
-  inline bool Done() { return cell_index_ == last_cell_index_; }
+  inline bool Done() { return cell_index_ >= last_cell_index_; }
 
   inline bool HasNext() { return cell_index_ < last_cell_index_ - 1; }
 
@@ -177,36 +169,65 @@ class MarkBitCellIterator BASE_EMBEDDED {
   Address cell_base_;
 };
 
-// Grey objects can happen on black pages when black objects transition to
-// grey e.g. when calling RecordWrites on them.
 enum LiveObjectIterationMode {
   kBlackObjects,
   kGreyObjects,
   kAllLiveObjects
 };
 
-template <LiveObjectIterationMode T>
-class LiveObjectIterator BASE_EMBEDDED {
+template <LiveObjectIterationMode mode>
+class LiveObjectRange {
  public:
-  LiveObjectIterator(MemoryChunk* chunk, MarkingState state)
-      : chunk_(chunk),
-        it_(chunk_, state),
-        cell_base_(it_.CurrentCellBase()),
-        current_cell_(*it_.CurrentCell()),
-        one_word_filler_map_(chunk->heap()->one_pointer_filler_map()),
-        two_word_filler_map_(chunk->heap()->two_pointer_filler_map()),
-        free_space_map_(chunk->heap()->free_space_map()) {}
+  class iterator {
+   public:
+    using value_type = std::pair<HeapObject*, int /* size */>;
+    using pointer = const value_type*;
+    using reference = const value_type&;
+    using iterator_category = std::forward_iterator_tag;
 
-  V8_INLINE HeapObject* Next();
+    inline iterator(MemoryChunk* chunk, MarkingState state, Address start);
+
+    inline iterator& operator++();
+    inline iterator operator++(int);
+
+    bool operator==(iterator other) const {
+      return current_object_ == other.current_object_;
+    }
+
+    bool operator!=(iterator other) const { return !(*this == other); }
+
+    value_type operator*() {
+      return std::make_pair(current_object_, current_size_);
+    }
+
+   private:
+    inline void AdvanceToNextValidObject();
+
+    MemoryChunk* const chunk_;
+    Map* const one_word_filler_map_;
+    Map* const two_word_filler_map_;
+    Map* const free_space_map_;
+    MarkBitCellIterator it_;
+    Address cell_base_;
+    MarkBit::CellType current_cell_;
+    HeapObject* current_object_;
+    int current_size_;
+  };
+
+  LiveObjectRange(MemoryChunk* chunk, MarkingState state)
+      : chunk_(chunk),
+        state_(state),
+        start_(chunk_->area_start()),
+        end_(chunk->area_end()) {}
+
+  inline iterator begin();
+  inline iterator end();
 
  private:
   MemoryChunk* const chunk_;
-  MarkBitCellIterator it_;
-  Address cell_base_;
-  MarkBit::CellType current_cell_;
-  Map* const one_word_filler_map_;
-  Map* const two_word_filler_map_;
-  Map* const free_space_map_;
+  MarkingState state_;
+  Address start_;
+  Address end_;
 };
 
 class LiveObjectVisitor BASE_EMBEDDED {
@@ -236,6 +257,7 @@ class LiveObjectVisitor BASE_EMBEDDED {
 enum PageEvacuationMode { NEW_TO_NEW, NEW_TO_OLD };
 enum FreeSpaceTreatmentMode { IGNORE_FREE_SPACE, ZAP_FREE_SPACE };
 enum MarkingTreatmentMode { KEEP, CLEAR };
+enum class RememberedSetUpdatingMode { ALL, OLD_TO_NEW_ONLY };
 
 // Base class for minor and full MC collectors.
 class MarkCompactCollectorBase {
@@ -262,8 +284,8 @@ class MarkCompactCollectorBase {
   virtual void MarkLiveObjects() = 0;
   // Mark objects reachable (transitively) from objects in the marking
   // stack.
-  virtual void EmptyMarkingDeque() = 0;
-  virtual void ProcessMarkingDeque() = 0;
+  virtual void EmptyMarkingWorklist() = 0;
+  virtual void ProcessMarkingWorklist() = 0;
   // Clear non-live references held in side data structures.
   virtual void ClearNonLiveReferences() = 0;
   virtual void EvacuatePrologue() = 0;
@@ -274,7 +296,7 @@ class MarkCompactCollectorBase {
 
   template <class Evacuator, class Collector>
   void CreateAndExecuteEvacuationTasks(
-      Collector* collector, PageParallelJob<EvacuationJobTraits>* job,
+      Collector* collector, ItemParallelJob* job,
       RecordMigratedSlotVisitor* record_visitor,
       MigrationObserver* migration_observer, const intptr_t live_bytes);
 
@@ -282,8 +304,8 @@ class MarkCompactCollectorBase {
   bool ShouldMovePage(Page* p, intptr_t live_bytes);
 
   int CollectToSpaceUpdatingItems(ItemParallelJob* job);
-  template <RememberedSetType type>
-  int CollectRememberedSetUpdatingItems(ItemParallelJob* job);
+  int CollectRememberedSetUpdatingItems(ItemParallelJob* job,
+                                        RememberedSetUpdatingMode mode);
 
   int NumberOfParallelCompactionTasks(int pages);
   int NumberOfParallelPointerUpdateTasks(int pages, int slots);
@@ -318,13 +340,14 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
   void CleanupSweepToIteratePages();
 
  private:
+  using MarkingWorklist = WorklistView;
   class RootMarkingVisitorSeedOnly;
   class RootMarkingVisitor;
 
   static const int kNumMarkers = 8;
   static const int kMainMarker = 0;
 
-  inline WorkStealingMarkingDeque* marking_deque() { return marking_deque_; }
+  inline Worklist* worklist() { return worklist_; }
 
   inline YoungGenerationMarkingVisitor* main_marking_visitor() {
     return main_marking_visitor_;
@@ -332,8 +355,8 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
 
   void MarkLiveObjects() override;
   void MarkRootSetInParallel();
-  void ProcessMarkingDeque() override;
-  void EmptyMarkingDeque() override;
+  void ProcessMarkingWorklist() override;
+  void EmptyMarkingWorklist() override;
   void ClearNonLiveReferences() override;
 
   void EvacuatePrologue() override;
@@ -344,7 +367,7 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
 
   int NumberOfParallelMarkingTasks(int pages);
 
-  WorkStealingMarkingDeque* marking_deque_;
+  Worklist* worklist_;
   YoungGenerationMarkingVisitor* main_marking_visitor_;
   base::Semaphore page_parallel_job_semaphore_;
   List<Page*> new_space_evacuation_pages_;
@@ -358,6 +381,12 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
 // Collector for young and old generation.
 class MarkCompactCollector final : public MarkCompactCollectorBase {
  public:
+#ifdef V8_CONCURRENT_MARKING
+  using MarkingWorklist = ConcurrentMarkingDeque;
+#else
+  using MarkingWorklist = SequentialMarkingDeque;
+#endif
+
   class RootMarkingVisitor;
 
   class Sweeper {
@@ -511,7 +540,7 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
 
   bool evacuation() const { return evacuation_; }
 
-  MarkingDeque* marking_deque() { return &marking_deque_; }
+  MarkingWorklist* marking_worklist() { return &marking_worklist_; }
 
   Sweeper& sweeper() { return sweeper_; }
 
@@ -552,10 +581,6 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   // Note that this assumes live bytes have not yet been counted.
   V8_INLINE void PushBlack(HeapObject* obj);
 
-  // Unshifts a black object into the marking stack and accounts for live bytes.
-  // Note that this assumes lives bytes have already been counted.
-  V8_INLINE void UnshiftBlack(HeapObject* obj);
-
   // Marks the object black and pushes it on the marking stack.
   // This is for non-incremental marking only.
   V8_INLINE void MarkObject(HeapObject* obj);
@@ -567,7 +592,7 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   // the string table are weak.
   void MarkStringTable(RootMarkingVisitor* visitor);
 
-  void ProcessMarkingDeque() override;
+  void ProcessMarkingWorklist() override;
 
   // Mark objects reachable (transitively) from objects in the marking stack
   // or overflowed in the heap.  This respects references only considered in
@@ -587,15 +612,15 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
 
   // This function empties the marking stack, but may leave overflowed objects
   // in the heap, in which case the marking stack's overflow flag will be set.
-  void EmptyMarkingDeque() override;
+  void EmptyMarkingWorklist() override;
 
   // Refill the marking stack with overflowed objects from the heap.  This
   // function either leaves the marking stack full or clears the overflow
   // flag on the marking stack.
-  void RefillMarkingDeque();
+  void RefillMarkingWorklist();
 
   // Helper methods for refilling the marking stack by discovering grey objects
-  // on various pages of the heap. Used by {RefillMarkingDeque} only.
+  // on various pages of the heap. Used by {RefillMarkingWorklist} only.
   template <class T>
   void DiscoverGreyObjectsWithIterator(T* it);
   void DiscoverGreyObjectsOnPage(MemoryChunk* p);
@@ -685,7 +710,7 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
 
   bool have_code_to_deoptimize_;
 
-  MarkingDeque marking_deque_;
+  MarkingWorklist marking_worklist_;
 
   // Candidates for pages that should be evacuated.
   List<Page*> evacuation_candidates_;

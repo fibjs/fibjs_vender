@@ -34,9 +34,9 @@ namespace internal {
 //     // Tells whether key matches other.
 //     static bool IsMatch(Key key, Object* other);
 //     // Returns the hash value for key.
-//     static uint32_t Hash(Key key);
+//     static uint32_t Hash(Isolate* isolate, Key key);
 //     // Returns the hash value for object.
-//     static uint32_t HashForObject(Object* object);
+//     static uint32_t HashForObject(Isolate* isolate, Object* object);
 //     // Convert key to an object.
 //     static inline Handle<Object> AsHandle(Isolate* isolate, Key key);
 //     // The prefix size indicates number of elements in the beginning
@@ -56,17 +56,6 @@ template <typename KeyT>
 class BaseShape {
  public:
   typedef KeyT Key;
-  static const bool UsesSeed = false;
-  static uint32_t Hash(Key key) { return 0; }
-  static uint32_t SeededHash(Key key, uint32_t seed) {
-    DCHECK(UsesSeed);
-    return Hash(key);
-  }
-  static uint32_t HashForObject(Object* object) { return 0; }
-  static uint32_t SeededHashForObject(uint32_t seed, Object* object) {
-    DCHECK(UsesSeed);
-    return HashForObject(object);
-  }
   static inline Map* GetMap(Isolate* isolate);
   static const bool kNeedsHoleCheck = true;
 };
@@ -97,7 +86,7 @@ class V8_EXPORT_PRIVATE HashTableBase : public NON_EXPORTED_BASE(FixedArray) {
 
   // Tells whether k is a real key.  The hole and undefined are not allowed
   // as keys and can be used to indicate missing or deleted elements.
-  inline bool IsKey(Isolate* isolate, Object* k);
+  static inline bool IsKey(Isolate* isolate, Object* k);
 
   // Compute the probe offset (quadratic probing).
   INLINE(static uint32_t GetProbeOffset(uint32_t n)) {
@@ -144,28 +133,11 @@ class HashTable : public HashTableBase {
   typedef Shape ShapeT;
   typedef typename Shape::Key Key;
 
-  // Wrapper methods
-  inline uint32_t Hash(Key key) {
-    if (Shape::UsesSeed) {
-      return Shape::SeededHash(key, GetHeap()->HashSeed());
-    } else {
-      return Shape::Hash(key);
-    }
-  }
-
-  inline uint32_t HashForObject(Object* object) {
-    if (Shape::UsesSeed) {
-      return Shape::SeededHashForObject(GetHeap()->HashSeed(), object);
-    } else {
-      return Shape::HashForObject(object);
-    }
-  }
-
   // Returns a new HashTable object.
   MUST_USE_RESULT static Handle<Derived> New(
       Isolate* isolate, int at_least_space_for,
-      MinimumCapacity capacity_option = USE_DEFAULT_MINIMUM_CAPACITY,
-      PretenureFlag pretenure = NOT_TENURED);
+      PretenureFlag pretenure = NOT_TENURED,
+      MinimumCapacity capacity_option = USE_DEFAULT_MINIMUM_CAPACITY);
 
   DECLARE_CAST(HashTable)
 
@@ -206,11 +178,19 @@ class HashTable : public HashTableBase {
     return (entry * kEntrySize) + kElementsStartIndex;
   }
 
+  // Ensure enough space for n additional elements.
+  MUST_USE_RESULT static Handle<Derived> EnsureCapacity(
+      Handle<Derived> table, int n, PretenureFlag pretenure = NOT_TENURED);
+
+  // Returns true if this table has sufficient capacity for adding n elements.
+  bool HasSufficientCapacityToAdd(int number_of_additional_elements);
+
  protected:
   friend class ObjectHashTable;
 
-  MUST_USE_RESULT static Handle<Derived> New(Isolate* isolate, int capacity,
-                                             PretenureFlag pretenure);
+  MUST_USE_RESULT static Handle<Derived> NewInternal(Isolate* isolate,
+                                                     int capacity,
+                                                     PretenureFlag pretenure);
 
   // Find the entry at which to insert element with the given key that
   // has the given hash value.
@@ -218,13 +198,6 @@ class HashTable : public HashTableBase {
 
   // Attempt to shrink hash table after removal of key.
   MUST_USE_RESULT static Handle<Derived> Shrink(Handle<Derived> table);
-
-  // Ensure enough space for n additional elements.
-  MUST_USE_RESULT static Handle<Derived> EnsureCapacity(
-      Handle<Derived> table, int n, PretenureFlag pretenure = NOT_TENURED);
-
-  // Returns true if this table has sufficient capacity for adding n elements.
-  bool HasSufficientCapacityToAdd(int number_of_additional_elements);
 
  private:
   // Ensure that kMaxRegularCapacity yields a non-large object dictionary.
@@ -282,8 +255,8 @@ class HashTableKey {
 class ObjectHashTableShape : public BaseShape<Handle<Object>> {
  public:
   static inline bool IsMatch(Handle<Object> key, Object* other);
-  static inline uint32_t Hash(Handle<Object> key);
-  static inline uint32_t HashForObject(Object* object);
+  static inline uint32_t Hash(Isolate* isolate, Handle<Object> key);
+  static inline uint32_t HashForObject(Isolate* isolate, Object* object);
   static inline Handle<Object> AsHandle(Isolate* isolate, Handle<Object> key);
   static const int kPrefixSize = 0;
   static const int kEntrySize = 2;
@@ -410,8 +383,12 @@ class OrderedHashTable : public FixedArray {
   // existing iterators can be updated.
   static Handle<Derived> Clear(Handle<Derived> table);
 
-  // Returns a true value if the OrderedHashTable contains the key
-  static Object* HasKey(Isolate* isolate, Derived* table, Object* key);
+  // Returns true if the OrderedHashTable contains the key
+  static bool HasKey(Isolate* isolate, Derived* table, Object* key);
+
+  // Returns a true value if the OrderedHashTable contains the key and
+  // the key has been deleted. This does not shrink the table.
+  static bool Delete(Isolate* isolate, Derived* table, Object* key);
 
   int NumberOfElements() {
     return Smi::cast(get(kNumberOfElementsIndex))->value();
@@ -455,6 +432,18 @@ class OrderedHashTable : public FixedArray {
     // If the object does not have an identity hash, it was never used as a key
     if (hash->IsUndefined(isolate)) return kNotFound;
     return HashToEntry(Smi::cast(hash)->value());
+  }
+
+  int FindEntry(Isolate* isolate, Object* key) {
+    int entry = KeyToFirstEntry(isolate, key);
+    // Walk the chain in the bucket to find the key.
+    while (entry != kNotFound) {
+      Object* candidate_key = KeyAt(entry);
+      if (candidate_key->SameValueZero(key)) break;
+      entry = NextChainEntry(entry);
+    }
+
+    return entry;
   }
 
   int NextChainEntry(int entry) {
@@ -568,8 +557,8 @@ template <int entrysize>
 class WeakHashTableShape : public BaseShape<Handle<Object>> {
  public:
   static inline bool IsMatch(Handle<Object> key, Object* other);
-  static inline uint32_t Hash(Handle<Object> key);
-  static inline uint32_t HashForObject(Object* object);
+  static inline uint32_t Hash(Isolate* isolate, Handle<Object> key);
+  static inline uint32_t HashForObject(Isolate* isolate, Object* object);
   static inline Handle<Object> AsHandle(Isolate* isolate, Handle<Object> key);
   static const int kPrefixSize = 0;
   static const int kEntrySize = entrysize;
@@ -651,16 +640,12 @@ class SmallOrderedHashTable : public HeapObject {
   static Handle<Derived> Allocate(Isolate* isolate, int capacity,
                                   PretenureFlag pretenure = NOT_TENURED);
 
-  // Adds |value| to |table|, if the capacity isn't enough, a new
-  // table is created. The original |table| is returned if there is
-  // capacity to store |value| otherwise the new table is returned.
-  static Handle<Derived> Add(Handle<Derived> table, Handle<Object> value);
-
   // Returns a true if the OrderedHashTable contains the key
   bool HasKey(Isolate* isolate, Handle<Object> key);
 
   // Iterates only fields in the DataTable.
   class BodyDescriptor;
+
   // No weak fields.
   typedef BodyDescriptor BodyDescriptorWeak;
 
@@ -670,9 +655,8 @@ class SmallOrderedHashTable : public HeapObject {
 
   static Handle<Derived> Rehash(Handle<Derived> table, int new_capacity);
 
-  void SetDataEntry(int entry, Object* value);
+  void SetDataEntry(int entry, int relative_index, Object* value);
 
-  // TODO(gsathya): There should be a better way to do this.
   static int GetDataTableStartOffset(int capacity) {
     int nof_buckets = capacity / kLoadFactor;
     int nof_chain_entries = capacity;
@@ -705,15 +689,14 @@ class SmallOrderedHashTable : public HeapObject {
 
   int GetNextEntry(int entry) { return get(GetChainTableOffset() + entry); }
 
-  Object* GetDataEntry(int entry) {
-    int offset = GetDataEntryOffset(entry);
-    return READ_FIELD(this, offset);
+  Object* GetDataEntry(int entry, int relative_index) {
+    int entry_offset = GetDataEntryOffset(entry, relative_index);
+    return READ_FIELD(this, entry_offset);
   }
 
-  // TODO(gsathya): This will be specialized once we support entrysize > 1.
   Object* KeyAt(int entry) {
-    int offset = GetDataEntryOffset(entry);
-    return READ_FIELD(this, offset);
+    int entry_offset = GetDataEntryOffset(entry, Derived::kKeyIndex);
+    return READ_FIELD(this, entry_offset);
   }
 
   int HashToBucket(int hash) { return hash & (NumberOfBuckets() - 1); }
@@ -769,6 +752,8 @@ class SmallOrderedHashTable : public HeapObject {
   // SmallOrderedHashTable::Grow.
   static const int kGrowthHack = 256;
 
+  DECLARE_VERIFIER(SmallOrderedHashTable)
+
  protected:
   // This is used for accessing the non |DataTable| part of the
   // structure.
@@ -780,10 +765,11 @@ class SmallOrderedHashTable : public HeapObject {
     WRITE_BYTE_FIELD(this, kHeaderSize + (index * kOneByteSize), value);
   }
 
-  int GetDataEntryOffset(int entry) {
+  int GetDataEntryOffset(int entry, int relative_index) {
     int datatable_start = GetDataTableStartOffset();
     int offset_in_datatable = entry * Derived::kEntrySize * kPointerSize;
-    return datatable_start + offset_in_datatable;
+    int offset_in_entry = relative_index * kPointerSize;
+    return datatable_start + offset_in_datatable + offset_in_entry;
   }
 
   // Returns the number elements that can fit into the allocated buffer.
@@ -797,12 +783,33 @@ class SmallOrderedHashSet : public SmallOrderedHashTable<SmallOrderedHashSet> {
   DECLARE_CAST(SmallOrderedHashSet)
 
   DECLARE_PRINTER(SmallOrderedHashSet)
-  DECLARE_VERIFIER(SmallOrderedHashSet)
 
+  static const int kKeyIndex = 0;
   static const int kEntrySize = 1;
 
-  // Iterates only fields in the DataTable.
-  class BodyDescriptor;
+  // Adds |value| to |table|, if the capacity isn't enough, a new
+  // table is created. The original |table| is returned if there is
+  // capacity to store |value| otherwise the new table is returned.
+  static Handle<SmallOrderedHashSet> Add(Handle<SmallOrderedHashSet> table,
+                                         Handle<Object> key);
+};
+
+class SmallOrderedHashMap : public SmallOrderedHashTable<SmallOrderedHashMap> {
+ public:
+  DECLARE_CAST(SmallOrderedHashMap)
+
+  DECLARE_PRINTER(SmallOrderedHashMap)
+
+  static const int kKeyIndex = 0;
+  static const int kValueIndex = 1;
+  static const int kEntrySize = 2;
+
+  // Adds |value| to |table|, if the capacity isn't enough, a new
+  // table is created. The original |table| is returned if there is
+  // capacity to store |value| otherwise the new table is returned.
+  static Handle<SmallOrderedHashMap> Add(Handle<SmallOrderedHashMap> table,
+                                         Handle<Object> key,
+                                         Handle<Object> value);
 };
 
 // OrderedHashTableIterator is an iterator that iterates over the keys and

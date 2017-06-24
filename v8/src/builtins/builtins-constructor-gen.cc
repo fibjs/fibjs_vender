@@ -42,6 +42,15 @@ TF_BUILTIN(ConstructWithArrayLike, CallOrConstructBuiltinsAssembler) {
   CallOrConstructWithArrayLike(target, new_target, arguments_list, context);
 }
 
+TF_BUILTIN(ConstructWithSpread, CallOrConstructBuiltinsAssembler) {
+  Node* target = Parameter(ConstructWithSpreadDescriptor::kTarget);
+  Node* new_target = Parameter(ConstructWithSpreadDescriptor::kNewTarget);
+  Node* spread = Parameter(ConstructWithSpreadDescriptor::kSpread);
+  Node* args_count = Parameter(ConstructWithSpreadDescriptor::kArgumentsCount);
+  Node* context = Parameter(ConstructWithSpreadDescriptor::kContext);
+  CallOrConstructWithSpread(target, new_target, spread, args_count, context);
+}
+
 typedef compiler::Node Node;
 
 Node* ConstructorBuiltinsAssembler::CopyFixedArrayBase(Node* fixed_array) {
@@ -137,23 +146,27 @@ Node* ConstructorBuiltinsAssembler::EmitFastNewClosure(Node* shared_info,
   }
   {
     // If the feedback vector has optimized code, check whether it is marked
-    // for deopt and, if so, clear it.
-    Label optimized_code_ok(this);
+    // for deopt and, if so, clear the slot.
+    Label optimized_code_ok(this), clear_optimized_code(this);
     Node* literals = LoadObjectField(literals_cell, Cell::kValueOffset);
     GotoIfNot(IsFeedbackVector(literals), &optimized_code_ok);
-    Node* optimized_code_cell =
+    Node* optimized_code_cell_slot =
         LoadFixedArrayElement(literals, FeedbackVector::kOptimizedCodeIndex);
+    GotoIf(TaggedIsSmi(optimized_code_cell_slot), &optimized_code_ok);
+
     Node* optimized_code =
-        LoadWeakCellValue(optimized_code_cell, &optimized_code_ok);
+        LoadWeakCellValue(optimized_code_cell_slot, &clear_optimized_code);
     Node* code_flags = LoadObjectField(
         optimized_code, Code::kKindSpecificFlags1Offset, MachineType::Uint32());
     Node* marked_for_deopt =
         DecodeWord32<Code::MarkedForDeoptimizationField>(code_flags);
-    GotoIf(Word32Equal(marked_for_deopt, Int32Constant(0)), &optimized_code_ok);
+    Branch(Word32Equal(marked_for_deopt, Int32Constant(0)), &optimized_code_ok,
+           &clear_optimized_code);
 
-    // Code is marked for deopt, clear the optimized code slot.
+    // Cell is empty or code is marked for deopt, clear the optimized code slot.
+    BIND(&clear_optimized_code);
     StoreFixedArrayElement(literals, FeedbackVector::kOptimizedCodeIndex,
-                           EmptyWeakCellConstant(), SKIP_WRITE_BARRIER);
+                           SmiConstant(Smi::kZero), SKIP_WRITE_BARRIER);
     Goto(&optimized_code_ok);
 
     BIND(&optimized_code_ok);

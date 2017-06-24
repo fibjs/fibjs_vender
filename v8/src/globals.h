@@ -317,9 +317,10 @@ inline std::ostream& operator<<(std::ostream& os, const LanguageMode& mode) {
   switch (mode) {
     case SLOPPY: return os << "sloppy";
     case STRICT: return os << "strict";
-    default: UNREACHABLE();
+    case LANGUAGE_END:
+      UNREACHABLE();
   }
-  return os;
+  UNREACHABLE();
 }
 
 inline bool is_sloppy(LanguageMode language_mode) {
@@ -357,6 +358,21 @@ inline std::ostream& operator<<(std::ostream& os, DeoptimizeKind kind) {
       return os << "Eager";
     case DeoptimizeKind::kSoft:
       return os << "Soft";
+  }
+  UNREACHABLE();
+}
+
+// Indicates whether the lookup is related to sloppy-mode block-scoped
+// function hoisting, and is a synthetic assignment for that.
+enum class LookupHoistingMode { kNormal, kLegacySloppy };
+
+inline std::ostream& operator<<(std::ostream& os,
+                                const LookupHoistingMode& mode) {
+  switch (mode) {
+    case LookupHoistingMode::kNormal:
+      return os << "normal hoisting";
+    case LookupHoistingMode::kLegacySloppy:
+      return os << "legacy sloppy hoisting";
   }
   UNREACHABLE();
 }
@@ -1415,6 +1431,52 @@ inline std::ostream& operator<<(std::ostream& os,
   os << "(" << info.name << ":" << info.file << ":" << info.line << ")";
   return os;
 }
+
+enum class OptimizationMarker {
+  kNone,
+  kCompileOptimized,
+  kCompileOptimizedConcurrent,
+  kInOptimizationQueue
+};
+
+inline std::ostream& operator<<(std::ostream& os,
+                                const OptimizationMarker& marker) {
+  switch (marker) {
+    case OptimizationMarker::kNone:
+      return os << "OptimizationMarker::kNone";
+    case OptimizationMarker::kCompileOptimized:
+      return os << "OptimizationMarker::kCompileOptimized";
+    case OptimizationMarker::kCompileOptimizedConcurrent:
+      return os << "OptimizationMarker::kCompileOptimizedConcurrent";
+    case OptimizationMarker::kInOptimizationQueue:
+      return os << "OptimizationMarker::kInOptimizationQueue";
+  }
+  UNREACHABLE();
+  return os;
+}
+
+enum class ConcurrencyMode { kNotConcurrent, kConcurrent };
+
+#define FOR_EACH_ISOLATE_ADDRESS_NAME(C)                \
+  C(Handler, handler)                                   \
+  C(CEntryFP, c_entry_fp)                               \
+  C(CFunction, c_function)                              \
+  C(Context, context)                                   \
+  C(PendingException, pending_exception)                \
+  C(PendingHandlerContext, pending_handler_context)     \
+  C(PendingHandlerCode, pending_handler_code)           \
+  C(PendingHandlerOffset, pending_handler_offset)       \
+  C(PendingHandlerFP, pending_handler_fp)               \
+  C(PendingHandlerSP, pending_handler_sp)               \
+  C(ExternalCaughtException, external_caught_exception) \
+  C(JSEntrySP, js_entry_sp)
+
+enum IsolateAddressId {
+#define DECLARE_ENUM(CamelName, hacker_name) k##CamelName##Address,
+  FOR_EACH_ISOLATE_ADDRESS_NAME(DECLARE_ENUM)
+#undef DECLARE_ENUM
+      kIsolateAddressCount
+};
 
 }  // namespace internal
 }  // namespace v8

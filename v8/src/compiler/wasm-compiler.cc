@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "src/assembler-inl.h"
+#include "src/base/optional.h"
 #include "src/base/platform/elapsed-timer.h"
 #include "src/base/platform/platform.h"
 #include "src/builtins/builtins.h"
@@ -295,6 +296,7 @@ void WasmGraphBuilder::StackCheck(wasm::WasmCodePosition position,
       jsgraph()->ExternalConstant(
           ExternalReference::address_of_stack_limit(jsgraph()->isolate())),
       jsgraph()->IntPtrConstant(0), *effect, *control);
+  *effect = limit;
   Node* pointer = graph()->NewNode(jsgraph()->machine()->LoadStackPointer());
 
   Node* check =
@@ -302,27 +304,47 @@ void WasmGraphBuilder::StackCheck(wasm::WasmCodePosition position,
 
   Diamond stack_check(graph(), jsgraph()->common(), check, BranchHint::kTrue);
   stack_check.Chain(*control);
-  Node* effect_true = *effect;
 
   Handle<Code> code = jsgraph()->isolate()->builtins()->WasmStackGuard();
   CallInterfaceDescriptor idesc =
       WasmRuntimeCallDescriptor(jsgraph()->isolate());
   CallDescriptor* desc = Linkage::GetStubCallDescriptor(
       jsgraph()->isolate(), jsgraph()->zone(), idesc, 0,
-      CallDescriptor::kNoFlags, Operator::kNoProperties);
+      CallDescriptor::kNoFlags, Operator::kNoProperties,
+      MachineType::AnyTagged(), 1, Linkage::kNoContext);
   Node* stub_code = jsgraph()->HeapConstant(code);
 
-  Node* context = jsgraph()->NoContextConstant();
   Node* call = graph()->NewNode(jsgraph()->common()->Call(desc), stub_code,
-                                context, *effect, stack_check.if_false);
+                                *effect, stack_check.if_false);
 
   SetSourcePosition(call, position);
 
-  Node* ephi = graph()->NewNode(jsgraph()->common()->EffectPhi(2), effect_true,
+  Node* ephi = graph()->NewNode(jsgraph()->common()->EffectPhi(2), *effect,
                                 call, stack_check.merge);
 
   *control = stack_check.merge;
   *effect = ephi;
+}
+
+void WasmGraphBuilder::PatchInStackCheckIfNeeded() {
+  if (!needs_stack_check_) return;
+
+  Node* start = graph()->start();
+  // Place a stack check which uses a dummy node as control and effect.
+  Node* dummy = graph()->NewNode(jsgraph()->common()->Dead());
+  Node* control = dummy;
+  Node* effect = dummy;
+  // The function-prologue stack check is associated with position 0, which
+  // is never a position of any instruction in the function.
+  StackCheck(0, &effect, &control);
+
+  // In testing, no steck checks were emitted. Nothing to rewire then.
+  if (effect == dummy) return;
+
+  // Now patch all control uses of {start} to use {control} and all effect uses
+  // to use {effect} instead. Then rewire the dummy node to use start instead.
+  NodeProperties::ReplaceUses(start, start, effect, control);
+  NodeProperties::ReplaceUses(dummy, nullptr, start, start);
 }
 
 Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left, Node* right,
@@ -1709,6 +1731,7 @@ Node* WasmGraphBuilder::BuildFloatToIntConversionInstruction(
 }
 
 Node* WasmGraphBuilder::GrowMemory(Node* input) {
+  SetNeedsStackCheck();
   Diamond check_input_range(
       graph(), jsgraph()->common(),
       graph()->NewNode(jsgraph()->machine()->Uint32LessThanOrEqual(), input,
@@ -1734,6 +1757,7 @@ Node* WasmGraphBuilder::GrowMemory(Node* input) {
 }
 
 Node* WasmGraphBuilder::Throw(Node* input) {
+  SetNeedsStackCheck();
   MachineOperatorBuilder* machine = jsgraph()->machine();
 
   // Pass the thrown value as two SMIs:
@@ -1757,6 +1781,7 @@ Node* WasmGraphBuilder::Throw(Node* input) {
 }
 
 Node* WasmGraphBuilder::Catch(Node* input, wasm::WasmCodePosition position) {
+  SetNeedsStackCheck();
   CommonOperatorBuilder* common = jsgraph()->common();
 
   Node* parameters[] = {input};  // caught value
@@ -2154,6 +2179,7 @@ Node* WasmGraphBuilder::BuildCCall(MachineSignature* sig, Node** args) {
 Node* WasmGraphBuilder::BuildWasmCall(wasm::FunctionSig* sig, Node** args,
                                       Node*** rets,
                                       wasm::WasmCodePosition position) {
+  SetNeedsStackCheck();
   const size_t params = sig->parameter_count();
   const size_t extra = 2;  // effect and control inputs.
   const size_t count = 1 + params + extra;
@@ -2907,6 +2933,7 @@ Node* WasmGraphBuilder::MemBuffer(uint32_t offset) {
 Node* WasmGraphBuilder::CurrentMemoryPages() {
   // CurrentMemoryPages can not be called from asm.js.
   DCHECK_EQ(wasm::kWasmOrigin, module_->module->get_origin());
+  SetNeedsStackCheck();
   Node* call =
       BuildCallToRuntime(Runtime::kWasmMemorySize, jsgraph(), centry_stub_node_,
                          nullptr, 0, effect_, control_);
@@ -3917,41 +3944,31 @@ Vector<const char> GetDebugName(Zone* zone, wasm::WasmName name, int index) {
 
 WasmCompilationUnit::WasmCompilationUnit(Isolate* isolate,
                                          wasm::ModuleBytesEnv* module_env,
-                                         const wasm::WasmFunction* function,
-                                         bool is_sync)
+                                         const wasm::WasmFunction* function)
     : WasmCompilationUnit(
           isolate, &module_env->module_env,
           wasm::FunctionBody{
-              function->sig, module_env->wire_bytes.start(),
+              function->sig, function->code.offset(),
               module_env->wire_bytes.start() + function->code.offset(),
               module_env->wire_bytes.start() + function->code.end_offset()},
-          module_env->wire_bytes.GetNameOrNull(function), function->func_index,
-          is_sync) {}
+          module_env->wire_bytes.GetNameOrNull(function),
+          function->func_index) {}
 
 WasmCompilationUnit::WasmCompilationUnit(Isolate* isolate,
                                          wasm::ModuleEnv* module_env,
                                          wasm::FunctionBody body,
-                                         wasm::WasmName name, int index,
-                                         bool is_sync)
+                                         wasm::WasmName name, int index)
     : isolate_(isolate),
       module_env_(module_env),
       func_body_(body),
       func_name_(name),
-      is_sync_(is_sync),
       centry_stub_(CEntryStub(isolate, 1).GetCode()),
       func_index_(index) {}
 
 void WasmCompilationUnit::ExecuteCompilation() {
-  if (is_sync_) {
-    // TODO(karlschimpf): Make this work when asynchronous.
-    // https://bugs.chromium.org/p/v8/issues/detail?id=6361
-    HistogramTimerScope wasm_compile_function_time_scope(
-        isolate_->counters()->wasm_compile_function_time());
-  }
-  ExecuteCompilationInternal();
-}
+  HistogramTimerScope wasm_compile_function_time_scope(
+      isolate_->counters()->wasm_compile_function_time());
 
-void WasmCompilationUnit::ExecuteCompilationInternal() {
   if (FLAG_trace_wasm_compiler) {
     if (func_name_.start() != nullptr) {
       PrintF("Compiling wasm function %d:'%.*s'\n\n", func_index(),
@@ -3964,63 +3981,70 @@ void WasmCompilationUnit::ExecuteCompilationInternal() {
   double decode_ms = 0;
   size_t node_count = 0;
 
-  Zone graph_zone(isolate_->allocator(), ZONE_NAME);
-  jsgraph_ = new (&graph_zone) JSGraph(
-      isolate_, new (&graph_zone) Graph(&graph_zone),
-      new (&graph_zone) CommonOperatorBuilder(&graph_zone), nullptr, nullptr,
-      new (&graph_zone) MachineOperatorBuilder(
-          &graph_zone, MachineType::PointerRepresentation(),
-          InstructionSelector::SupportedMachineOperatorFlags(),
-          InstructionSelector::AlignmentRequirements()));
-  SourcePositionTable* source_positions = BuildGraphForWasmFunction(&decode_ms);
+  // Scope for the {graph_zone}.
+  {
+    Zone graph_zone(isolate_->allocator(), ZONE_NAME);
+    jsgraph_ = new (&graph_zone) JSGraph(
+        isolate_, new (&graph_zone) Graph(&graph_zone),
+        new (&graph_zone) CommonOperatorBuilder(&graph_zone), nullptr, nullptr,
+        new (&graph_zone) MachineOperatorBuilder(
+            &graph_zone, MachineType::PointerRepresentation(),
+            InstructionSelector::SupportedMachineOperatorFlags(),
+            InstructionSelector::AlignmentRequirements()));
+    SourcePositionTable* source_positions =
+        BuildGraphForWasmFunction(&decode_ms);
 
-  if (graph_construction_result_.failed()) {
-    ok_ = false;
-    return;
-  }
+    if (graph_construction_result_.failed()) {
+      ok_ = false;
+      return;
+    }
 
-  base::ElapsedTimer pipeline_timer;
-  if (FLAG_trace_wasm_decode_time) {
-    node_count = jsgraph_->graph()->NodeCount();
-    pipeline_timer.Start();
-  }
+    base::ElapsedTimer pipeline_timer;
+    if (FLAG_trace_wasm_decode_time) {
+      node_count = jsgraph_->graph()->NodeCount();
+      pipeline_timer.Start();
+    }
 
-  compilation_zone_.reset(new Zone(isolate_->allocator(), ZONE_NAME));
+    compilation_zone_.reset(new Zone(isolate_->allocator(), ZONE_NAME));
 
-  // Run the compiler pipeline to generate machine code.
-  CallDescriptor* descriptor = wasm::ModuleEnv::GetWasmCallDescriptor(
-      compilation_zone_.get(), func_body_.sig);
-  if (jsgraph_->machine()->Is32()) {
-    descriptor = module_env_->GetI32WasmCallDescriptor(compilation_zone_.get(),
-                                                       descriptor);
-  }
-  info_.reset(new CompilationInfo(
-      GetDebugName(compilation_zone_.get(), func_name_, func_index_), isolate_,
-      compilation_zone_.get(), Code::ComputeFlags(Code::WASM_FUNCTION)));
-  ZoneVector<trap_handler::ProtectedInstructionData> protected_instructions(
-      compilation_zone_.get());
+    // Run the compiler pipeline to generate machine code.
+    CallDescriptor* descriptor = wasm::ModuleEnv::GetWasmCallDescriptor(
+        compilation_zone_.get(), func_body_.sig);
+    if (jsgraph_->machine()->Is32()) {
+      descriptor = module_env_->GetI32WasmCallDescriptor(
+          compilation_zone_.get(), descriptor);
+    }
+    info_.reset(new CompilationInfo(
+        GetDebugName(compilation_zone_.get(), func_name_, func_index_),
+        isolate_, compilation_zone_.get(),
+        Code::ComputeFlags(Code::WASM_FUNCTION)));
+    ZoneVector<trap_handler::ProtectedInstructionData> protected_instructions(
+        compilation_zone_.get());
 
-  job_.reset(Pipeline::NewWasmCompilationJob(
-      info_.get(), jsgraph_, descriptor, source_positions,
-      &protected_instructions, !module_env_->module->is_wasm()));
-  ok_ = job_->ExecuteJob() == CompilationJob::SUCCEEDED;
-  // TODO(bradnelson): Improve histogram handling of size_t.
-  if (is_sync_)
-    // TODO(karlschimpf): Make this work when asynchronous.
-    // https://bugs.chromium.org/p/v8/issues/detail?id=6361
+    job_.reset(Pipeline::NewWasmCompilationJob(
+        info_.get(), jsgraph_, descriptor, source_positions,
+        &protected_instructions, !module_env_->module->is_wasm()));
+    ok_ = job_->ExecuteJob() == CompilationJob::SUCCEEDED;
+    // TODO(bradnelson): Improve histogram handling of size_t.
     isolate_->counters()->wasm_compile_function_peak_memory_bytes()->AddSample(
         static_cast<int>(jsgraph_->graph()->zone()->allocation_size()));
 
-  if (FLAG_trace_wasm_decode_time) {
-    double pipeline_ms = pipeline_timer.Elapsed().InMillisecondsF();
-    PrintF(
-        "wasm-compilation phase 1 ok: %u bytes, %0.3f ms decode, %zu nodes, "
-        "%0.3f ms pipeline\n",
-        static_cast<unsigned>(func_body_.end - func_body_.start), decode_ms,
-        node_count, pipeline_ms);
+    if (FLAG_trace_wasm_decode_time) {
+      double pipeline_ms = pipeline_timer.Elapsed().InMillisecondsF();
+      PrintF(
+          "wasm-compilation phase 1 ok: %u bytes, %0.3f ms decode, %zu nodes, "
+          "%0.3f ms pipeline\n",
+          static_cast<unsigned>(func_body_.end - func_body_.start), decode_ms,
+          node_count, pipeline_ms);
+    }
+    // The graph zone is about to get out of scope. Avoid invalid references.
+    jsgraph_ = nullptr;
   }
-  // The graph zone is about to get out of scope. Avoid invalid references.
-  jsgraph_ = nullptr;
+
+  // Record the memory cost this unit places on the system until
+  // it is finalized.
+  size_t cost = job_->AllocatedMemory();
+  set_memory_cost(cost);
 }
 
 Handle<Code> WasmCompilationUnit::FinishCompilation(

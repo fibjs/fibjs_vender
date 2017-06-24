@@ -170,9 +170,34 @@ Callable CodeFactory::CompareIC(Isolate* isolate, Token::Value op) {
 }
 
 // static
-Callable CodeFactory::BinaryOpIC(Isolate* isolate, Token::Value op) {
-  BinaryOpICStub stub(isolate, op);
-  return make_callable(stub);
+Callable CodeFactory::BinaryOperation(Isolate* isolate, Token::Value op) {
+  switch (op) {
+    case Token::SAR:
+      return Builtins::CallableFor(isolate, Builtins::kShiftRight);
+    case Token::SHL:
+      return Builtins::CallableFor(isolate, Builtins::kShiftLeft);
+    case Token::SHR:
+      return Builtins::CallableFor(isolate, Builtins::kShiftRightLogical);
+    case Token::ADD:
+      return Builtins::CallableFor(isolate, Builtins::kAdd);
+    case Token::SUB:
+      return Builtins::CallableFor(isolate, Builtins::kSubtract);
+    case Token::MUL:
+      return Builtins::CallableFor(isolate, Builtins::kMultiply);
+    case Token::DIV:
+      return Builtins::CallableFor(isolate, Builtins::kDivide);
+    case Token::MOD:
+      return Builtins::CallableFor(isolate, Builtins::kModulus);
+    case Token::BIT_OR:
+      return Builtins::CallableFor(isolate, Builtins::kBitwiseOr);
+    case Token::BIT_AND:
+      return Builtins::CallableFor(isolate, Builtins::kBitwiseAnd);
+    case Token::BIT_XOR:
+      return Builtins::CallableFor(isolate, Builtins::kBitwiseXor);
+    default:
+      break;
+  }
+  UNREACHABLE();
 }
 
 // static
@@ -199,12 +224,6 @@ Callable CodeFactory::OrdinaryToPrimitive(Isolate* isolate,
 Callable CodeFactory::NumberToString(Isolate* isolate) {
   NumberToStringStub stub(isolate);
   return make_callable(stub);
-}
-
-// static
-Callable CodeFactory::StringFromCharCode(Isolate* isolate) {
-  Handle<Code> code(isolate->builtins()->StringFromCharCode());
-  return Callable(code, BuiltinDescriptor(isolate));
 }
 
 // static
@@ -293,9 +312,15 @@ Callable CodeFactory::Call(Isolate* isolate, ConvertReceiverMode mode,
 }
 
 // static
+Callable CodeFactory::CallWithArrayLike(Isolate* isolate) {
+  return Callable(isolate->builtins()->CallWithArrayLike(),
+                  CallWithArrayLikeDescriptor(isolate));
+}
+
+// static
 Callable CodeFactory::CallWithSpread(Isolate* isolate) {
   return Callable(isolate->builtins()->CallWithSpread(),
-                  CallTrampolineDescriptor(isolate));
+                  CallWithSpreadDescriptor(isolate));
 }
 
 // static
@@ -332,7 +357,7 @@ Callable CodeFactory::Construct(Isolate* isolate) {
 // static
 Callable CodeFactory::ConstructWithSpread(Isolate* isolate) {
   return Callable(isolate->builtins()->ConstructWithSpread(),
-                  ConstructTrampolineDescriptor(isolate));
+                  ConstructWithSpreadDescriptor(isolate));
 }
 
 // static

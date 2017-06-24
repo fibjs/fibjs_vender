@@ -1148,9 +1148,10 @@ void Parser::ParseImportDeclaration(bool* ok) {
 
   // 'import' ModuleSpecifier ';'
   if (tok == Token::STRING) {
+    Scanner::Location specifier_loc = scanner()->peek_location();
     const AstRawString* module_specifier = ParseModuleSpecifier(CHECK_OK_VOID);
     ExpectSemicolon(CHECK_OK_VOID);
-    module()->AddEmptyImport(module_specifier);
+    module()->AddEmptyImport(module_specifier, specifier_loc);
     return;
   }
 
@@ -1194,6 +1195,7 @@ void Parser::ParseImportDeclaration(bool* ok) {
   }
 
   ExpectContextualKeyword(Token::FROM, CHECK_OK_VOID);
+  Scanner::Location specifier_loc = scanner()->peek_location();
   const AstRawString* module_specifier = ParseModuleSpecifier(CHECK_OK_VOID);
   ExpectSemicolon(CHECK_OK_VOID);
 
@@ -1207,23 +1209,25 @@ void Parser::ParseImportDeclaration(bool* ok) {
 
   if (module_namespace_binding != nullptr) {
     module()->AddStarImport(module_namespace_binding, module_specifier,
-                            module_namespace_binding_loc, zone());
+                            module_namespace_binding_loc, specifier_loc,
+                            zone());
   }
 
   if (import_default_binding != nullptr) {
     module()->AddImport(ast_value_factory()->default_string(),
                         import_default_binding, module_specifier,
-                        import_default_binding_loc, zone());
+                        import_default_binding_loc, specifier_loc, zone());
   }
 
   if (named_imports != nullptr) {
     if (named_imports->length() == 0) {
-      module()->AddEmptyImport(module_specifier);
+      module()->AddEmptyImport(module_specifier, specifier_loc);
     } else {
       for (int i = 0; i < named_imports->length(); ++i) {
         const NamedImport* import = named_imports->at(i);
         module()->AddImport(import->import_name, import->local_name,
-                            module_specifier, import->location, zone());
+                            module_specifier, import->location, specifier_loc,
+                            zone());
       }
     }
   }
@@ -1317,9 +1321,10 @@ Statement* Parser::ParseExportDeclaration(bool* ok) {
       Consume(Token::MUL);
       loc = scanner()->location();
       ExpectContextualKeyword(Token::FROM, CHECK_OK);
+      Scanner::Location specifier_loc = scanner()->peek_location();
       const AstRawString* module_specifier = ParseModuleSpecifier(CHECK_OK);
       ExpectSemicolon(CHECK_OK);
-      module()->AddStarExport(module_specifier, loc, zone());
+      module()->AddStarExport(module_specifier, loc, specifier_loc, zone());
       return factory()->NewEmptyStatement(pos);
     }
 
@@ -1342,7 +1347,9 @@ Statement* Parser::ParseExportDeclaration(bool* ok) {
       ParseExportClause(&export_names, &export_locations, &original_names,
                         &reserved_loc, CHECK_OK);
       const AstRawString* module_specifier = nullptr;
+      Scanner::Location specifier_loc;
       if (CheckContextualKeyword(Token::FROM)) {
+        specifier_loc = scanner()->peek_location();
         module_specifier = ParseModuleSpecifier(CHECK_OK);
       } else if (reserved_loc.IsValid()) {
         // No FromClause, so reserved words are invalid in ExportClause.
@@ -1360,11 +1367,12 @@ Statement* Parser::ParseExportDeclaration(bool* ok) {
                               export_locations[i], zone());
         }
       } else if (length == 0) {
-        module()->AddEmptyImport(module_specifier);
+        module()->AddEmptyImport(module_specifier, specifier_loc);
       } else {
         for (int i = 0; i < length; ++i) {
           module()->AddExport(original_names[i], export_names[i],
-                              module_specifier, export_locations[i], zone());
+                              module_specifier, export_locations[i],
+                              specifier_loc, zone());
         }
       }
       return factory()->NewEmptyStatement(pos);
@@ -2551,6 +2559,12 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   // handle to decide whether to invoke function name inference.
   bool should_infer_name = function_name == NULL;
 
+  // We want a non-null handle as the function name by default. We will handle
+  // the "function does not have a shared name" case later.
+  if (should_infer_name) {
+    function_name = ast_value_factory()->empty_string();
+  }
+
   FunctionLiteral::EagerCompileHint eager_compile_hint =
       function_state_->next_function_is_likely_called()
           ? FunctionLiteral::kShouldEagerCompile
@@ -2712,9 +2726,9 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
              should_use_parse_task);
       Scanner::BookmarkScope bookmark(scanner());
       bookmark.Set();
-      LazyParsingResult result =
-          SkipFunction(kind, scope, &num_parameters, is_lazy_inner_function,
-                       is_lazy_top_level_function, CHECK_OK);
+      LazyParsingResult result = SkipFunction(
+          function_name, kind, function_type, scope, &num_parameters,
+          is_lazy_inner_function, is_lazy_top_level_function, CHECK_OK);
 
       if (result == kLazyParsingAborted) {
         DCHECK(is_lazy_top_level_function);
@@ -2804,11 +2818,11 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   return function_literal;
 }
 
-Parser::LazyParsingResult Parser::SkipFunction(FunctionKind kind,
-                                               DeclarationScope* function_scope,
-                                               int* num_parameters,
-                                               bool is_inner_function,
-                                               bool may_abort, bool* ok) {
+Parser::LazyParsingResult Parser::SkipFunction(
+    const AstRawString* function_name, FunctionKind kind,
+    FunctionLiteral::FunctionType function_type,
+    DeclarationScope* function_scope, int* num_parameters,
+    bool is_inner_function, bool may_abort, bool* ok) {
   FunctionState function_state(&function_state_, &scope_, function_scope);
 
   DCHECK_NE(kNoSourcePosition, function_scope->start_position());
@@ -2876,8 +2890,8 @@ Parser::LazyParsingResult Parser::SkipFunction(FunctionKind kind,
   DCHECK(!is_inner_function || !may_abort);
 
   PreParser::PreParseResult result = reusable_preparser()->PreParseFunction(
-      kind, function_scope, parsing_module_, is_inner_function, may_abort,
-      use_counts_);
+      function_name, kind, function_type, function_scope, parsing_module_,
+      is_inner_function, may_abort, use_counts_);
 
   // Return immediately if pre-parser decided to abort parsing.
   if (result == PreParser::kPreParseAbort) return kLazyParsingAborted;
@@ -3195,9 +3209,9 @@ ZoneList<Statement*>* Parser::ParseFunction(
   if (expected_parameters_end_pos != kNoSourcePosition) {
     // This is the first function encountered in a CreateDynamicFunction eval.
     parameters_end_pos_ = kNoSourcePosition;
-    // The function name should have been ignored, giving us the nullptr
+    // The function name should have been ignored, giving us the empty string
     // here.
-    DCHECK_NULL(function_name);
+    DCHECK_EQ(function_name, ast_value_factory()->empty_string());
   }
 
   ParserFormalParameters formals(function_scope);
@@ -4156,32 +4170,41 @@ void Parser::QueueNonPatternForRewriting(Expression* expr, bool* ok) {
   function_state_->AddNonPatternForRewriting(expr, ok);
 }
 
-void Parser::AddAccessorPrefixToFunctionName(bool is_get,
-                                             FunctionLiteral* function,
-                                             const AstRawString* name) {
-  DCHECK_NOT_NULL(name);
-  const AstRawString* prefix = is_get ? ast_value_factory()->get_space_string()
-                                      : ast_value_factory()->set_space_string();
-  function->set_raw_name(ast_value_factory()->NewConsString(prefix, name));
+void Parser::SetFunctionNameFromPropertyName(LiteralProperty* property,
+                                             const AstRawString* name,
+                                             const AstRawString* prefix) {
+  // Ensure that the function we are going to create has shared name iff
+  // we are not going to set it later.
+  if (property->NeedsSetFunctionName()) {
+    name = nullptr;
+    prefix = nullptr;
+  } else {
+    // If the property value is an anonymous function or an anonymous class or
+    // a concise method or an accessor function which doesn't require the name
+    // to be set then the shared name must be provided.
+    DCHECK_IMPLIES(property->value()->IsAnonymousFunctionDefinition() ||
+                       property->value()->IsConciseMethodDefinition() ||
+                       property->value()->IsAccessorFunctionDefinition(),
+                   name != nullptr);
+  }
+
+  Expression* value = property->value();
+  SetFunctionName(value, name, prefix);
 }
 
 void Parser::SetFunctionNameFromPropertyName(ObjectLiteralProperty* property,
-                                             const AstRawString* name) {
-  DCHECK(property->kind() != ObjectLiteralProperty::GETTER);
-  DCHECK(property->kind() != ObjectLiteralProperty::SETTER);
-
-  // Computed name setting must happen at runtime.
-  DCHECK_IMPLIES(property->is_computed_name(), name == nullptr);
-
+                                             const AstRawString* name,
+                                             const AstRawString* prefix) {
   // Ignore "__proto__" as a name when it's being used to set the [[Prototype]]
   // of an object literal.
+  // See ES #sec-__proto__-property-names-in-object-initializers.
   if (property->IsPrototype()) return;
 
-  Expression* value = property->value();
-
-  DCHECK(!value->IsAnonymousFunctionDefinition() ||
+  DCHECK(!property->value()->IsAnonymousFunctionDefinition() ||
          property->kind() == ObjectLiteralProperty::COMPUTED);
-  SetFunctionName(value, name);
+
+  SetFunctionNameFromPropertyName(static_cast<LiteralProperty*>(property), name,
+                                  prefix);
 }
 
 void Parser::SetFunctionNameFromIdentifierRef(Expression* value,
@@ -4190,15 +4213,29 @@ void Parser::SetFunctionNameFromIdentifierRef(Expression* value,
   SetFunctionName(value, identifier->AsVariableProxy()->raw_name());
 }
 
-void Parser::SetFunctionName(Expression* value, const AstRawString* name) {
-  if (!value->IsAnonymousFunctionDefinition()) return;
+void Parser::SetFunctionName(Expression* value, const AstRawString* name,
+                             const AstRawString* prefix) {
+  if (!value->IsAnonymousFunctionDefinition() &&
+      !value->IsConciseMethodDefinition() &&
+      !value->IsAccessorFunctionDefinition()) {
+    return;
+  }
   auto function = value->AsFunctionLiteral();
   if (value->IsClassLiteral()) {
     function = value->AsClassLiteral()->constructor();
   }
   if (function != nullptr) {
-    function->set_raw_name(
-        name != nullptr ? ast_value_factory()->NewConsString(name) : nullptr);
+    AstConsString* cons_name = nullptr;
+    if (name != nullptr) {
+      if (prefix != nullptr) {
+        cons_name = ast_value_factory()->NewConsString(prefix, name);
+      } else {
+        cons_name = ast_value_factory()->NewConsString(name);
+      }
+    } else {
+      DCHECK_NULL(prefix);
+    }
+    function->set_raw_name(cons_name);
   }
 }
 
@@ -4277,6 +4314,11 @@ Expression* Parser::RewriteYieldStar(Expression* iterable, int pos) {
   const int nopos = kNoSourcePosition;
   IteratorType type =
       is_async_generator() ? IteratorType::kAsync : IteratorType::kNormal;
+
+  if (type == IteratorType::kNormal) {
+    return factory()->NewYieldStar(iterable, pos,
+                                   SuspendFlags::kGeneratorYieldStar);
+  }
 
   // Forward definition for break/continue statements.
   WhileStatement* loop = factory()->NewWhileStatement(nullptr, nopos);
@@ -4469,7 +4511,7 @@ Expression* Parser::RewriteYieldStar(Expression* iterable, int pos) {
   {
     Expression* output_proxy = factory()->NewVariableProxy(var_output);
     Suspend* yield = BuildSuspend(output_proxy, nopos, Suspend::kNoControl,
-                                  SuspendFlags::kYieldStar);
+                                  SuspendFlags::kYield);
     yield_output = factory()->NewExpressionStatement(yield, nopos);
   }
 

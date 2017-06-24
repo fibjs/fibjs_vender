@@ -87,13 +87,15 @@ struct FormalParametersBase {
 class SourceRangeScope final {
  public:
   enum PositionKind {
-    POSITION,
-    PEEK_POS,
+    POSITION_BEG,
+    POSITION_END,
+    PEEK_POSITION_BEG,
+    PEEK_POSITION_END,
   };
 
   SourceRangeScope(Scanner* scanner, SourceRange* range,
-                   PositionKind pre_kind = PEEK_POS,
-                   PositionKind post_kind = POSITION)
+                   PositionKind pre_kind = PEEK_POSITION_BEG,
+                   PositionKind post_kind = POSITION_END)
       : scanner_(scanner), range_(range), post_kind_(post_kind) {
     range_->start = GetPosition(pre_kind);
     DCHECK_NE(range_->start, kNoSourcePosition);
@@ -106,11 +108,15 @@ class SourceRangeScope final {
 
  private:
   int32_t GetPosition(PositionKind kind) {
-    switch (post_kind_) {
-      case POSITION:
+    switch (kind) {
+      case POSITION_BEG:
         return scanner_->location().beg_pos;
-      case PEEK_POS:
+      case POSITION_END:
+        return scanner_->location().end_pos;
+      case PEEK_POSITION_BEG:
         return scanner_->peek_location().beg_pos;
+      case PEEK_POSITION_END:
+        return scanner_->peek_location().end_pos;
       default:
         UNREACHABLE();
     }
@@ -1417,11 +1423,12 @@ class ParserBase {
 
   // Convenience method which determines the type of return statement to emit
   // depending on the current function type.
-  inline StatementT BuildReturnStatement(ExpressionT expr, int pos) {
+  inline StatementT BuildReturnStatement(
+      ExpressionT expr, int pos, int continuation_pos = kNoSourcePosition) {
     if (is_async_function()) {
-      return factory()->NewAsyncReturnStatement(expr, pos);
+      return factory()->NewAsyncReturnStatement(expr, pos, continuation_pos);
     }
-    return factory()->NewReturnStatement(expr, pos);
+    return factory()->NewReturnStatement(expr, pos, continuation_pos);
   }
 
   inline SuspendExpressionT BuildSuspend(
@@ -2336,9 +2343,12 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
             has_initializer, CHECK_OK_CUSTOM(EmptyClassLiteralProperty));
         ExpectSemicolon(CHECK_OK_CUSTOM(EmptyClassLiteralProperty));
         *property_kind = ClassLiteralProperty::FIELD;
-        return factory()->NewClassLiteralProperty(
+        ClassLiteralPropertyT result = factory()->NewClassLiteralProperty(
             name_expression, function_literal, *property_kind, *is_static,
             *is_computed_name);
+        impl()->SetFunctionNameFromPropertyName(result, name);
+        return result;
+
       } else {
         ReportUnexpectedToken(Next());
         *ok = false;
@@ -2378,9 +2388,11 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
           CHECK_OK_CUSTOM(EmptyClassLiteralProperty));
 
       *property_kind = ClassLiteralProperty::METHOD;
-      return factory()->NewClassLiteralProperty(name_expression, value,
-                                                *property_kind, *is_static,
-                                                *is_computed_name);
+      ClassLiteralPropertyT result = factory()->NewClassLiteralProperty(
+          name_expression, value, *property_kind, *is_static,
+          *is_computed_name);
+      impl()->SetFunctionNameFromPropertyName(result, name);
+      return result;
     }
 
     case PropertyKind::kAccessorProperty: {
@@ -2407,15 +2419,16 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
           FunctionLiteral::kAccessorOrMethod, language_mode(),
           CHECK_OK_CUSTOM(EmptyClassLiteralProperty));
 
-      if (!*is_computed_name) {
-        impl()->AddAccessorPrefixToFunctionName(is_get, value, name);
-      }
-
       *property_kind =
           is_get ? ClassLiteralProperty::GETTER : ClassLiteralProperty::SETTER;
-      return factory()->NewClassLiteralProperty(name_expression, value,
-                                                *property_kind, *is_static,
-                                                *is_computed_name);
+      ClassLiteralPropertyT result = factory()->NewClassLiteralProperty(
+          name_expression, value, *property_kind, *is_static,
+          *is_computed_name);
+      const AstRawString* prefix =
+          is_get ? ast_value_factory()->get_space_string()
+                 : ast_value_factory()->set_space_string();
+      impl()->SetFunctionNameFromPropertyName(result, name, prefix);
+      return result;
     }
     case PropertyKind::kSpreadProperty:
       ReportUnexpectedTokenAt(
@@ -2509,14 +2522,7 @@ ParserBase<Impl>::ParseObjectPropertyDefinition(ObjectLiteralChecker* checker,
 
       ObjectLiteralPropertyT result = factory()->NewObjectLiteralProperty(
           name_expression, value, *is_computed_name);
-
-      if (*is_computed_name) {
-        impl()->SetFunctionNameFromPropertyName(result,
-                                                impl()->EmptyIdentifier());
-      } else {
-        impl()->SetFunctionNameFromPropertyName(result, name);
-      }
-
+      impl()->SetFunctionNameFromPropertyName(result, name);
       return result;
     }
 
@@ -2583,8 +2589,10 @@ ParserBase<Impl>::ParseObjectPropertyDefinition(ObjectLiteralChecker* checker,
         value = lhs;
       }
 
-      return factory()->NewObjectLiteralProperty(
+      ObjectLiteralPropertyT result = factory()->NewObjectLiteralProperty(
           name_expression, value, ObjectLiteralProperty::COMPUTED, false);
+      impl()->SetFunctionNameFromPropertyName(result, name);
+      return result;
     }
 
     case PropertyKind::kMethodProperty: {
@@ -2606,9 +2614,11 @@ ParserBase<Impl>::ParseObjectPropertyDefinition(ObjectLiteralChecker* checker,
           FunctionLiteral::kAccessorOrMethod, language_mode(),
           CHECK_OK_CUSTOM(EmptyObjectLiteralProperty));
 
-      return factory()->NewObjectLiteralProperty(
+      ObjectLiteralPropertyT result = factory()->NewObjectLiteralProperty(
           name_expression, value, ObjectLiteralProperty::COMPUTED,
           *is_computed_name);
+      impl()->SetFunctionNameFromPropertyName(result, name);
+      return result;
     }
 
     case PropertyKind::kAccessorProperty: {
@@ -2636,14 +2646,16 @@ ParserBase<Impl>::ParseObjectPropertyDefinition(ObjectLiteralChecker* checker,
           FunctionLiteral::kAccessorOrMethod, language_mode(),
           CHECK_OK_CUSTOM(EmptyObjectLiteralProperty));
 
-      if (!*is_computed_name) {
-        impl()->AddAccessorPrefixToFunctionName(is_get, value, name);
-      }
-
-      return factory()->NewObjectLiteralProperty(
-          name_expression, value, is_get ? ObjectLiteralProperty::GETTER
-                                         : ObjectLiteralProperty::SETTER,
+      ObjectLiteralPropertyT result = factory()->NewObjectLiteralProperty(
+          name_expression, value,
+          is_get ? ObjectLiteralProperty::GETTER
+                 : ObjectLiteralProperty::SETTER,
           *is_computed_name);
+      const AstRawString* prefix =
+          is_get ? ast_value_factory()->get_space_string()
+                 : ast_value_factory()->set_space_string();
+      impl()->SetFunctionNameFromPropertyName(result, name, prefix);
+      return result;
     }
 
     case PropertyKind::kClassField:
@@ -4315,9 +4327,10 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
         // parameters.
         int dummy_num_parameters = -1;
         DCHECK((kind & FunctionKind::kArrowFunction) != 0);
-        LazyParsingResult result =
-            impl()->SkipFunction(kind, formal_parameters.scope,
-                                 &dummy_num_parameters, false, false, CHECK_OK);
+        LazyParsingResult result = impl()->SkipFunction(
+            nullptr, kind, FunctionLiteral::kAnonymousExpression,
+            formal_parameters.scope, &dummy_num_parameters, false, false,
+            CHECK_OK);
         DCHECK_NE(result, kLazyParsingAborted);
         USE(result);
         formal_parameters.scope->ResetAfterPreparsing(ast_value_factory_,
@@ -5218,7 +5231,8 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseContinueStatement(
     return impl()->NullStatement();
   }
   ExpectSemicolon(CHECK_OK);
-  return factory()->NewContinueStatement(target, pos);
+  int continuation_pos = scanner_->location().end_pos;
+  return factory()->NewContinueStatement(target, pos, continuation_pos);
 }
 
 template <typename Impl>
@@ -5256,7 +5270,8 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseBreakStatement(
     return impl()->NullStatement();
   }
   ExpectSemicolon(CHECK_OK);
-  return factory()->NewBreakStatement(target, pos);
+  int continuation_pos = scanner_->location().end_pos;
+  return factory()->NewBreakStatement(target, pos, continuation_pos);
 }
 
 template <typename Impl>
@@ -5310,7 +5325,8 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseReturnStatement(
   }
   ExpectSemicolon(CHECK_OK);
   return_value = impl()->RewriteReturn(return_value, loc.beg_pos);
-  return BuildReturnStatement(return_value, loc.beg_pos);
+  int continuation_pos = scanner_->location().end_pos;
+  return BuildReturnStatement(return_value, loc.beg_pos, continuation_pos);
 }
 
 template <typename Impl>

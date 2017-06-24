@@ -51,7 +51,7 @@ RUNTIME_FUNCTION(Runtime_CompileOptimized_Concurrent) {
   if (check.JsHasOverflowed(kStackSpaceRequiredForCompilation * KB)) {
     return isolate->StackOverflow();
   }
-  if (!Compiler::CompileOptimized(function, Compiler::CONCURRENT)) {
+  if (!Compiler::CompileOptimized(function, ConcurrencyMode::kConcurrent)) {
     return isolate->heap()->exception();
   }
   DCHECK(function->is_compiled());
@@ -67,7 +67,7 @@ RUNTIME_FUNCTION(Runtime_CompileOptimized_NotConcurrent) {
   if (check.JsHasOverflowed(kStackSpaceRequiredForCompilation * KB)) {
     return isolate->StackOverflow();
   }
-  if (!Compiler::CompileOptimized(function, Compiler::NOT_CONCURRENT)) {
+  if (!Compiler::CompileOptimized(function, ConcurrencyMode::kNotConcurrent)) {
     return isolate->heap()->exception();
   }
   DCHECK(function->is_compiled());
@@ -79,7 +79,8 @@ RUNTIME_FUNCTION(Runtime_EvictOptimizedCodeSlot) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
 
-  DCHECK(function->is_compiled());
+  DCHECK(function->shared()->is_compiled());
+
   function->feedback_vector()->EvictOptimizedCodeMarkedForDeoptimization(
       function->shared(), "Runtime_EvictOptimizedCodeSlot");
   return function->code();
@@ -174,22 +175,13 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
   Handle<Code> optimized_code = deoptimizer->compiled_code();
 
   DCHECK(optimized_code->kind() == Code::OPTIMIZED_FUNCTION);
+  DCHECK(optimized_code->is_turbofanned());
   DCHECK(type == deoptimizer->bailout_type());
   DCHECK_NULL(isolate->context());
 
-  // TODO(turbofan): For Crankshaft we restore the context before objects are
-  // being materialized, because it never de-materializes the context but it
-  // requires a context to materialize arguments objects. This is specific to
-  // Crankshaft and can be removed once only TurboFan goes through here.
-  if (!optimized_code->is_turbofanned()) {
-    JavaScriptFrameIterator top_it(isolate);
-    JavaScriptFrame* top_frame = top_it.frame();
-    isolate->set_context(Context::cast(top_frame->context()));
-  } else {
-    // TODO(turbofan): We currently need the native context to materialize
-    // the arguments object, but only to get to its map.
-    isolate->set_context(function->native_context());
-  }
+  // TODO(turbofan): We currently need the native context to materialize
+  // the arguments object, but only to get to its map.
+  isolate->set_context(function->native_context());
 
   // Make sure to materialize objects before causing any allocation.
   JavaScriptFrameIterator it(isolate);
@@ -197,11 +189,9 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
   delete deoptimizer;
 
   // Ensure the context register is updated for materialized objects.
-  if (optimized_code->is_turbofanned()) {
-    JavaScriptFrameIterator top_it(isolate);
-    JavaScriptFrame* top_frame = top_it.frame();
-    isolate->set_context(Context::cast(top_frame->context()));
-  }
+  JavaScriptFrameIterator top_it(isolate);
+  JavaScriptFrame* top_frame = top_it.frame();
+  isolate->set_context(Context::cast(top_frame->context()));
 
   if (type == Deoptimizer::LAZY) {
     return isolate->heap()->undefined_value();
@@ -354,22 +344,17 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
                ast_id.ToInt(), data->OsrPcOffset()->value());
       }
 
-      if (result->is_turbofanned()) {
-        // When we're waiting for concurrent optimization, set to compile on
-        // the next call - otherwise we'd run unoptimized once more
-        // and potentially compile for OSR another time as well.
-        if (function->IsMarkedForConcurrentOptimization()) {
-          if (FLAG_trace_osr) {
-            PrintF("[OSR - Re-marking ");
-            function->PrintName();
-            PrintF(" for non-concurrent optimization]\n");
-          }
-          function->ReplaceCode(
-              isolate->builtins()->builtin(Builtins::kCompileOptimized));
+      DCHECK(result->is_turbofanned());
+      if (!function->HasOptimizedCode()) {
+        // If we're not already optimized, set to optimize non-concurrently on
+        // the next call, otherwise we'd run unoptimized once more and
+        // potentially compile for OSR again.
+        if (FLAG_trace_osr) {
+          PrintF("[OSR - Re-marking ");
+          function->PrintName();
+          PrintF(" for non-concurrent optimization]\n");
         }
-      } else {
-        // Crankshafted OSR code can be installed into the function.
-        function->ReplaceCode(*result);
+        function->SetOptimizationMarker(OptimizationMarker::kCompileOptimized);
       }
       return *result;
     }
@@ -401,7 +386,11 @@ RUNTIME_FUNCTION(Runtime_TryInstallOptimizedCode) {
     return isolate->StackOverflow();
   }
 
-  isolate->optimizing_compile_dispatcher()->InstallOptimizedFunctions();
+  // Only try to install optimized functions if the interrupt was InstallCode.
+  if (isolate->stack_guard()->CheckAndClearInstallCode()) {
+    isolate->optimizing_compile_dispatcher()->InstallOptimizedFunctions();
+  }
+
   return (function->IsOptimized()) ? function->code()
                                    : function->shared()->code();
 }

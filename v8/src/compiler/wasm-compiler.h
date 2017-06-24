@@ -48,14 +48,13 @@ namespace compiler {
 class WasmCompilationUnit final {
  public:
   WasmCompilationUnit(Isolate* isolate, wasm::ModuleBytesEnv* module_env,
-                      const wasm::WasmFunction* function, bool is_sync = true);
+                      const wasm::WasmFunction* function);
   WasmCompilationUnit(Isolate* isolate, wasm::ModuleEnv* module_env,
-                      wasm::FunctionBody body, wasm::WasmName name, int index,
-                      bool is_sync = true);
+                      wasm::FunctionBody body, wasm::WasmName name, int index);
 
   int func_index() const { return func_index_; }
 
-  void InitializeHandles();
+  void ReopenCentryStub() { centry_stub_ = handle(*centry_stub_, isolate_); }
   void ExecuteCompilation();
   Handle<Code> FinishCompilation(wasm::ErrorThrower* thrower);
 
@@ -64,6 +63,9 @@ class WasmCompilationUnit final {
                                           wasm::ModuleBytesEnv* module_env,
                                           const wasm::WasmFunction* function);
 
+  void set_memory_cost(size_t memory_cost) { memory_cost_ = memory_cost; }
+  size_t memory_cost() const { return memory_cost_; }
+
  private:
   SourcePositionTable* BuildGraphForWasmFunction(double* decode_ms);
 
@@ -71,7 +73,6 @@ class WasmCompilationUnit final {
   wasm::ModuleEnv* module_env_;
   wasm::FunctionBody func_body_;
   wasm::WasmName func_name_;
-  bool is_sync_;
   // The graph zone is deallocated at the end of ExecuteCompilation by virtue of
   // it being zone allocated.
   JSGraph* jsgraph_ = nullptr;
@@ -85,8 +86,7 @@ class WasmCompilationUnit final {
   int func_index_;
   wasm::Result<wasm::DecodeStruct*> graph_construction_result_;
   bool ok_ = true;
-
-  void ExecuteCompilationInternal();
+  size_t memory_cost_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(WasmCompilationUnit);
 };
@@ -163,6 +163,8 @@ class WasmGraphBuilder {
 
   void StackCheck(wasm::WasmCodePosition position, Node** effect = nullptr,
                   Node** control = nullptr);
+
+  void PatchInStackCheckIfNeeded();
 
   //-----------------------------------------------------------------------
   // Operations that read and/or write {control} and {effect}.
@@ -279,6 +281,7 @@ class WasmGraphBuilder {
   size_t cur_bufsize_;
   Node* def_buffer_[kDefaultBufferSize];
   bool has_simd_ = false;
+  bool needs_stack_check_ = false;
 
   wasm::FunctionSig* sig_;
   SetOncePointer<const Operator> allocate_heap_number_operator_;
@@ -404,7 +407,10 @@ class WasmGraphBuilder {
 
   int AddParameterNodes(Node** args, int pos, int param_count,
                         wasm::FunctionSig* sig);
+
+  void SetNeedsStackCheck() { needs_stack_check_ = true; }
 };
+
 }  // namespace compiler
 }  // namespace internal
 }  // namespace v8

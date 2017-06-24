@@ -650,8 +650,7 @@ void LCodeGen::AddToTranslation(LEnvironment* environment,
 
 int LCodeGen::CallCodeSize(Handle<Code> code, RelocInfo::Mode mode) {
   int size = masm()->CallSize(code, mode);
-  if (code->kind() == Code::BINARY_OP_IC ||
-      code->kind() == Code::COMPARE_IC) {
+  if (code->kind() == Code::COMPARE_IC) {
     size += Assembler::kInstrSize;  // extra nop() added in CallCodeGeneric.
   }
   return size;
@@ -675,13 +674,12 @@ void LCodeGen::CallCodeGeneric(Handle<Code> code,
   // Block literal pool emission to ensure nop indicating no inlined smi code
   // is in the correct position.
   Assembler::BlockConstPoolScope block_const_pool(masm());
-  __ Call(code, mode, TypeFeedbackId::None(), al, storage_mode, false);
+  __ Call(code, mode, al, storage_mode, false);
   RecordSafepointWithLazyDeopt(instr, safepoint_mode);
 
   // Signal that we don't inline smi code before these stubs in the
   // optimizing code generator.
-  if (code->kind() == Code::BINARY_OP_IC ||
-      code->kind() == Code::COMPARE_IC) {
+  if (code->kind() == Code::COMPARE_IC) {
     __ nop();
   }
 }
@@ -1958,11 +1956,7 @@ void LCodeGen::DoArithmeticT(LArithmeticT* instr) {
   DCHECK(ToRegister(instr->right()).is(r0));
   DCHECK(ToRegister(instr->result()).is(r0));
 
-  Handle<Code> code = CodeFactory::BinaryOpIC(isolate(), instr->op()).code();
-  // Block literal pool emission to ensure nop indicating no inlined smi code
-  // is in the correct position.
-  Assembler::BlockConstPoolScope block_const_pool(masm());
-  CallCode(code, RelocInfo::CODE_TARGET, instr);
+  UNREACHABLE();
 }
 
 
@@ -3562,10 +3556,10 @@ void LCodeGen::DoCallWithDescriptor(LCallWithDescriptor* instr) {
       PlatformInterfaceDescriptor* call_descriptor =
           instr->descriptor().platform_specific_descriptor();
       if (call_descriptor != NULL) {
-        __ Call(code, RelocInfo::CODE_TARGET, TypeFeedbackId::None(), al,
+        __ Call(code, RelocInfo::CODE_TARGET, al,
                 call_descriptor->storage_mode());
       } else {
-        __ Call(code, RelocInfo::CODE_TARGET, TypeFeedbackId::None(), al);
+        __ Call(code, RelocInfo::CODE_TARGET, al);
       }
     } else {
       DCHECK(instr->target()->IsRegister());
@@ -3595,10 +3589,9 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
   __ Move(r2, instr->hydrogen()->site());
 
   ElementsKind kind = instr->hydrogen()->elements_kind();
-  AllocationSiteOverrideMode override_mode =
-      (AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE)
-          ? DISABLE_ALLOCATION_SITES
-          : DONT_OVERRIDE;
+  AllocationSiteOverrideMode override_mode = AllocationSite::ShouldTrack(kind)
+                                                 ? DISABLE_ALLOCATION_SITES
+                                                 : DONT_OVERRIDE;
 
   if (instr->arity() == 0) {
     ArrayNoArgumentConstructorStub stub(isolate(), kind, override_mode);

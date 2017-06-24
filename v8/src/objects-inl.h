@@ -32,6 +32,7 @@
 #include "src/lookup.h"
 #include "src/objects.h"
 #include "src/objects/arguments-inl.h"
+#include "src/objects/hash-table-inl.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/literal-objects.h"
 #include "src/objects/module-info.h"
@@ -115,6 +116,7 @@ TYPE_CHECKER(TypeFeedbackInfo, TUPLE3_TYPE)
 TYPE_CHECKER(WeakCell, WEAK_CELL_TYPE)
 TYPE_CHECKER(WeakFixedArray, FIXED_ARRAY_TYPE)
 TYPE_CHECKER(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE)
+TYPE_CHECKER(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE)
 
 #define TYPED_ARRAY_TYPE_CHECKER(Type, type, TYPE, ctype, size) \
   TYPE_CHECKER(Fixed##Type##Array, FIXED_##TYPE##_ARRAY_TYPE)
@@ -448,6 +450,10 @@ bool Object::IsOrderedHashSet() const { return IsOrderedHashTable(); }
 
 bool Object::IsOrderedHashMap() const { return IsOrderedHashTable(); }
 
+bool Object::IsSmallOrderedHashTable() const {
+  return IsSmallOrderedHashSet() || IsSmallOrderedHashMap();
+}
+
 bool Object::IsPrimitive() const {
   return IsSmi() || HeapObject::cast(this)->map()->IsPrimitiveMap();
 }
@@ -612,6 +618,7 @@ CAST_ACCESSOR(Tuple3)
 CAST_ACCESSOR(TypeFeedbackInfo)
 CAST_ACCESSOR(UnseededNumberDictionary)
 CAST_ACCESSOR(WeakCell)
+CAST_ACCESSOR(SmallOrderedHashMap)
 CAST_ACCESSOR(SmallOrderedHashSet)
 CAST_ACCESSOR(WeakFixedArray)
 CAST_ACCESSOR(WeakHashTable)
@@ -1163,25 +1170,15 @@ bool AllocationSite::SitePointsToLiteral() {
 
 // Heuristic: We only need to create allocation site info if the boilerplate
 // elements kind is the initial elements kind.
-AllocationSiteMode AllocationSite::GetMode(
-    ElementsKind boilerplate_elements_kind) {
-  if (IsFastSmiElementsKind(boilerplate_elements_kind)) {
-    return TRACK_ALLOCATION_SITE;
-  }
-
-  return DONT_TRACK_ALLOCATION_SITE;
+bool AllocationSite::ShouldTrack(ElementsKind boilerplate_elements_kind) {
+  return IsFastSmiElementsKind(boilerplate_elements_kind);
 }
 
 inline bool AllocationSite::CanTrack(InstanceType type) {
-  if (FLAG_turbo) {
+  if (FLAG_allocation_site_pretenuring) {
     // TurboFan doesn't care at all about String pretenuring feedback,
     // so don't bother even trying to track that.
     return type == JS_ARRAY_TYPE || type == JS_OBJECT_TYPE;
-  }
-  if (FLAG_allocation_site_pretenuring) {
-    return type == JS_ARRAY_TYPE ||
-        type == JS_OBJECT_TYPE ||
-        type < FIRST_NONSTRING_TYPE;
   }
   return type == JS_ARRAY_TYPE;
 }
@@ -1517,7 +1514,8 @@ void WeakCell::initialize(HeapObject* val) {
   // mark through a weak cell and collect evacuation candidates when we process
   // all weak cells.
   WriteBarrierMode mode =
-      ObjectMarking::IsBlack(this, MarkingState::Internal(this))
+      ObjectMarking::IsBlack<IncrementalMarking::kAtomicity>(
+          this, MarkingState::Internal(this))
           ? UPDATE_WRITE_BARRIER
           : UPDATE_WEAK_WRITE_BARRIER;
   CONDITIONAL_WRITE_BARRIER(GetHeap(), this, kValueOffset, val, mode);
@@ -2404,6 +2402,8 @@ FixedArrayBase* Map::GetInitialElements() {
     result = GetHeap()->empty_sloppy_arguments_elements();
   } else if (has_fixed_typed_array_elements()) {
     result = GetHeap()->EmptyFixedTypedArrayForMap(this);
+  } else if (has_dictionary_elements()) {
+    result = GetHeap()->empty_slow_element_dictionary();
   } else {
     UNREACHABLE();
   }
@@ -2605,7 +2605,7 @@ int HashTable<Derived, Shape>::FindEntry(Key key) {
 
 template <typename Derived, typename Shape>
 int HashTable<Derived, Shape>::FindEntry(Isolate* isolate, Key key) {
-  return FindEntry(isolate, key, HashTable::Hash(key));
+  return FindEntry(isolate, key, Shape::Hash(isolate, key));
 }
 
 // Find entry for key otherwise return kNotFound.
@@ -2657,9 +2657,11 @@ bool StringSetShape::IsMatch(String* key, Object* value) {
   return key->Equals(String::cast(value));
 }
 
-uint32_t StringSetShape::Hash(String* key) { return key->Hash(); }
+uint32_t StringSetShape::Hash(Isolate* isolate, String* key) {
+  return key->Hash();
+}
 
-uint32_t StringSetShape::HashForObject(Object* object) {
+uint32_t StringSetShape::HashForObject(Isolate* isolate, Object* object) {
   return String::cast(object)->Hash();
 }
 
@@ -2676,7 +2678,7 @@ Handle<Object> StringTableShape::AsHandle(Isolate* isolate,
   return key->AsHandle(isolate);
 }
 
-uint32_t StringTableShape::HashForObject(Object* object) {
+uint32_t StringTableShape::HashForObject(Isolate* isolate, Object* object) {
   return String::cast(object)->Hash();
 }
 
@@ -3381,6 +3383,9 @@ int HeapObject::SizeFromMap(Map* map) {
   if (instance_type == SMALL_ORDERED_HASH_SET_TYPE) {
     return reinterpret_cast<SmallOrderedHashSet*>(this)->Size();
   }
+  if (instance_type == SMALL_ORDERED_HASH_MAP_TYPE) {
+    return reinterpret_cast<SmallOrderedHashMap*>(this)->Size();
+  }
   DCHECK(instance_type == CODE_TYPE);
   return reinterpret_cast<Code*>(this)->CodeSize();
 }
@@ -3838,8 +3843,7 @@ bool Code::IsCodeStubOrIC() {
 }
 
 ExtraICState Code::extra_ic_state() {
-  DCHECK(is_binary_op_stub() || is_compare_ic_stub() ||
-         is_to_boolean_ic_stub() || is_debug_stub());
+  DCHECK(is_compare_ic_stub() || is_debug_stub());
   return ExtractExtraICStateFromFlags(flags());
 }
 
@@ -3870,6 +3874,13 @@ inline bool Code::is_interpreter_trampoline_builtin() {
   return this == *builtins->InterpreterEntryTrampoline() ||
          this == *builtins->InterpreterEnterBytecodeAdvance() ||
          this == *builtins->InterpreterEnterBytecodeDispatch();
+}
+
+inline bool Code::checks_optimization_marker() {
+  Builtins* builtins = GetIsolate()->builtins();
+  return this == *builtins->CompileLazy() ||
+         this == *builtins->InterpreterEntryTrampoline() ||
+         this == *builtins->CheckOptimizationMarker();
 }
 
 inline bool Code::has_unwinding_info() const {
@@ -4151,9 +4162,7 @@ bool Code::is_debug_stub() {
 }
 bool Code::is_handler() { return kind() == HANDLER; }
 bool Code::is_stub() { return kind() == STUB; }
-bool Code::is_binary_op_stub() { return kind() == BINARY_OP_IC; }
 bool Code::is_compare_ic_stub() { return kind() == COMPARE_IC; }
-bool Code::is_to_boolean_ic_stub() { return kind() == TO_BOOLEAN_IC; }
 bool Code::is_optimized_code() { return kind() == OPTIMIZED_FUNCTION; }
 bool Code::is_wasm_code() { return kind() == WASM_FUNCTION; }
 
@@ -4200,10 +4209,12 @@ Code* Code::GetCodeFromTargetAddress(Address address) {
   return result;
 }
 
+Object* Code::GetObjectFromCodeEntry(Address code_entry) {
+  return HeapObject::FromAddress(code_entry - Code::kHeaderSize);
+}
 
 Object* Code::GetObjectFromEntryAddress(Address location_of_address) {
-  return HeapObject::
-      FromAddress(Memory::Address_at(location_of_address) - Code::kHeaderSize);
+  return GetObjectFromCodeEntry(Memory::Address_at(location_of_address));
 }
 
 
@@ -4505,6 +4516,9 @@ Handle<Map> Map::CopyInitialMap(Handle<Map> map) {
                         map->unused_property_fields());
 }
 
+Object* JSBoundFunction::raw_bound_target_function() const {
+  return READ_FIELD(this, kBoundTargetFunctionOffset);
+}
 
 ACCESSORS(JSBoundFunction, bound_target_function, JSReceiver,
           kBoundTargetFunctionOffset)
@@ -4620,6 +4634,7 @@ ACCESSORS(Module, regular_exports, FixedArray, kRegularExportsOffset)
 ACCESSORS(Module, regular_imports, FixedArray, kRegularImportsOffset)
 ACCESSORS(Module, module_namespace, HeapObject, kModuleNamespaceOffset)
 ACCESSORS(Module, requested_modules, FixedArray, kRequestedModulesOffset)
+ACCESSORS(Module, script, Script, kScriptOffset)
 SMI_ACCESSORS(Module, status, kStatusOffset)
 SMI_ACCESSORS(Module, hash, kHashOffset)
 
@@ -4789,25 +4804,45 @@ bool JSFunction::IsOptimized() {
   return code()->kind() == Code::OPTIMIZED_FUNCTION;
 }
 
+bool JSFunction::HasOptimizedCode() {
+  return IsOptimized() ||
+         (has_feedback_vector() && feedback_vector()->has_optimized_code());
+}
+
+bool JSFunction::HasOptimizationMarker() {
+  return has_feedback_vector() && feedback_vector()->has_optimization_marker();
+}
+
+void JSFunction::ClearOptimizationMarker() {
+  DCHECK(has_feedback_vector());
+  DCHECK(!feedback_vector()->has_optimized_code());
+  feedback_vector()->SetOptimizationMarker(OptimizationMarker::kNone);
+}
+
 bool JSFunction::IsInterpreted() {
   return code()->is_interpreter_trampoline_builtin();
 }
 
+bool JSFunction::ChecksOptimizationMarker() {
+  return code()->checks_optimization_marker();
+}
+
 bool JSFunction::IsMarkedForOptimization() {
-  return code() == GetIsolate()->builtins()->builtin(
-      Builtins::kCompileOptimized);
+  return has_feedback_vector() && feedback_vector()->optimization_marker() ==
+                                      OptimizationMarker::kCompileOptimized;
 }
 
 
 bool JSFunction::IsMarkedForConcurrentOptimization() {
-  return code() == GetIsolate()->builtins()->builtin(
-      Builtins::kCompileOptimizedConcurrent);
+  return has_feedback_vector() &&
+         feedback_vector()->optimization_marker() ==
+             OptimizationMarker::kCompileOptimizedConcurrent;
 }
 
 
 bool JSFunction::IsInOptimizationQueue() {
-  return code() == GetIsolate()->builtins()->builtin(
-      Builtins::kInOptimizationQueue);
+  return has_feedback_vector() && feedback_vector()->optimization_marker() ==
+                                      OptimizationMarker::kInOptimizationQueue;
 }
 
 
@@ -4849,7 +4884,8 @@ Code* JSFunction::code() {
 void JSFunction::set_code(Code* value) {
   DCHECK(!GetHeap()->InNewSpace(value));
   Address entry = value->entry();
-  WRITE_INTPTR_FIELD(this, kCodeEntryOffset, reinterpret_cast<intptr_t>(entry));
+  RELAXED_WRITE_INTPTR_FIELD(this, kCodeEntryOffset,
+                             reinterpret_cast<intptr_t>(entry));
   GetHeap()->incremental_marking()->RecordWriteOfCodeEntry(
       this,
       HeapObject::RawField(this, kCodeEntryOffset),
@@ -4860,7 +4896,8 @@ void JSFunction::set_code(Code* value) {
 void JSFunction::set_code_no_write_barrier(Code* value) {
   DCHECK(!GetHeap()->InNewSpace(value));
   Address entry = value->entry();
-  WRITE_INTPTR_FIELD(this, kCodeEntryOffset, reinterpret_cast<intptr_t>(entry));
+  RELAXED_WRITE_INTPTR_FIELD(this, kCodeEntryOffset,
+                             reinterpret_cast<intptr_t>(entry));
 }
 
 void JSFunction::ClearOptimizedCodeSlot(const char* reason) {
@@ -4868,20 +4905,24 @@ void JSFunction::ClearOptimizedCodeSlot(const char* reason) {
     if (FLAG_trace_opt) {
       PrintF("[evicting entry from optimizing code feedback slot (%s) for ",
              reason);
-      shared()->ShortPrint();
+      ShortPrint();
       PrintF("]\n");
     }
     feedback_vector()->ClearOptimizedCode();
   }
 }
 
-void JSFunction::ReplaceCode(Code* code) {
-  bool was_optimized = IsOptimized();
-  bool is_optimized = code->kind() == Code::OPTIMIZED_FUNCTION;
+void JSFunction::SetOptimizationMarker(OptimizationMarker marker) {
+  DCHECK(has_feedback_vector());
+  DCHECK(ChecksOptimizationMarker());
+  DCHECK(!HasOptimizedCode());
 
-  if (was_optimized && is_optimized) {
-    ClearOptimizedCodeSlot("Replacing with another optimized code");
-  }
+  feedback_vector()->SetOptimizationMarker(marker);
+}
+
+void JSFunction::ReplaceCode(Code* code) {
+  bool was_optimized = this->code()->kind() == Code::OPTIMIZED_FUNCTION;
+  bool is_optimized = code->kind() == Code::OPTIMIZED_FUNCTION;
 
   set_code(code);
 
@@ -4889,8 +4930,7 @@ void JSFunction::ReplaceCode(Code* code) {
   // context based on the state change.
   if (!was_optimized && is_optimized) {
     context()->native_context()->AddOptimizedFunction(this);
-  }
-  if (was_optimized && !is_optimized) {
+  } else if (was_optimized && !is_optimized) {
     // TODO(titzer): linear in the number of optimized functions; fix!
     context()->native_context()->RemoveOptimizedFunction(this);
   }
@@ -4985,9 +5025,7 @@ Object* JSFunction::prototype() {
 
 bool JSFunction::is_compiled() {
   Builtins* builtins = GetIsolate()->builtins();
-  return code() != builtins->builtin(Builtins::kCompileLazy) &&
-         code() != builtins->builtin(Builtins::kCompileOptimized) &&
-         code() != builtins->builtin(Builtins::kCompileOptimizedConcurrent);
+  return code() != builtins->builtin(Builtins::kCompileLazy);
 }
 
 ACCESSORS(JSProxy, target, JSReceiver, kTargetOffset)
@@ -5032,10 +5070,11 @@ void Foreign::set_foreign_address(Address value) {
 }
 
 template <class Derived>
-void SmallOrderedHashTable<Derived>::SetDataEntry(int entry, Object* value) {
-  int offset = GetDataEntryOffset(entry);
-  RELAXED_WRITE_FIELD(this, offset, value);
-  WRITE_BARRIER(GetHeap(), this, offset, value);
+void SmallOrderedHashTable<Derived>::SetDataEntry(int entry, int relative_index,
+                                                  Object* value) {
+  int entry_offset = GetDataEntryOffset(entry, relative_index);
+  RELAXED_WRITE_FIELD(this, entry_offset, value);
+  WRITE_BARRIER(GetHeap(), this, entry_offset, value);
 }
 
 ACCESSORS(JSGeneratorObject, function, JSFunction, kFunctionOffset)
@@ -6006,51 +6045,22 @@ bool AccessorPair::IsJSAccessor(Object* obj) {
 }
 
 template <typename Derived, typename Shape>
-void Dictionary<Derived, Shape>::SetEntry(int entry, Handle<Object> key,
-                                          Handle<Object> value) {
-  this->SetEntry(entry, key, value, PropertyDetails(Smi::kZero));
+void Dictionary<Derived, Shape>::ClearEntry(int entry) {
+  Object* the_hole = this->GetHeap()->the_hole_value();
+  SetEntry(entry, the_hole, the_hole, PropertyDetails::Empty());
 }
 
 template <typename Derived, typename Shape>
-void Dictionary<Derived, Shape>::SetEntry(int entry, Handle<Object> key,
-                                          Handle<Object> value,
+void Dictionary<Derived, Shape>::SetEntry(int entry, Object* key, Object* value,
                                           PropertyDetails details) {
-  Shape::SetEntry(static_cast<Derived*>(this), entry, key, value, details);
-}
-
-
-template <typename Key>
-template <typename Dictionary>
-void BaseDictionaryShape<Key>::SetEntry(Dictionary* dict, int entry,
-                                        Handle<Object> key,
-                                        Handle<Object> value,
-                                        PropertyDetails details) {
   STATIC_ASSERT(Dictionary::kEntrySize == 2 || Dictionary::kEntrySize == 3);
   DCHECK(!key->IsName() || details.dictionary_index() > 0);
-  int index = dict->EntryToIndex(entry);
+  int index = DerivedHashTable::EntryToIndex(entry);
   DisallowHeapAllocation no_gc;
-  WriteBarrierMode mode = dict->GetWriteBarrierMode(no_gc);
-  dict->set(index + Dictionary::kEntryKeyIndex, *key, mode);
-  dict->set(index + Dictionary::kEntryValueIndex, *value, mode);
-  if (Dictionary::kEntrySize == 3) {
-    dict->set(index + Dictionary::kEntryDetailsIndex, details.AsSmi());
-  }
-}
-
-
-template <typename Dictionary>
-void GlobalDictionaryShape::SetEntry(Dictionary* dict, int entry,
-                                     Handle<Object> key, Handle<Object> value,
-                                     PropertyDetails details) {
-  STATIC_ASSERT(Dictionary::kEntrySize == 2);
-  DCHECK(!key->IsName() || details.dictionary_index() > 0);
-  DCHECK(value->IsPropertyCell());
-  int index = dict->EntryToIndex(entry);
-  DisallowHeapAllocation no_gc;
-  WriteBarrierMode mode = dict->GetWriteBarrierMode(no_gc);
-  dict->set(index + Dictionary::kEntryKeyIndex, *key, mode);
-  dict->set(index + Dictionary::kEntryValueIndex, *value, mode);
-  PropertyCell::cast(*value)->set_property_details(details);
+  WriteBarrierMode mode = this->GetWriteBarrierMode(no_gc);
+  this->set(index + Derived::kEntryKeyIndex, key, mode);
+  this->set(index + Derived::kEntryValueIndex, value, mode);
+  if (Shape::kHasDetails) DetailsAtPut(entry, details);
 }
 
 
@@ -6059,12 +6069,12 @@ bool NumberDictionaryShape::IsMatch(uint32_t key, Object* other) {
   return key == static_cast<uint32_t>(other->Number());
 }
 
-
-uint32_t UnseededNumberDictionaryShape::Hash(uint32_t key) {
+uint32_t UnseededNumberDictionaryShape::Hash(Isolate* isolate, uint32_t key) {
   return ComputeIntegerHash(key, 0);
 }
 
-uint32_t UnseededNumberDictionaryShape::HashForObject(Object* other) {
+uint32_t UnseededNumberDictionaryShape::HashForObject(Isolate* isolate,
+                                                      Object* other) {
   DCHECK(other->IsNumber());
   return ComputeIntegerHash(static_cast<uint32_t>(other->Number()), 0);
 }
@@ -6073,14 +6083,15 @@ Map* UnseededNumberDictionaryShape::GetMap(Isolate* isolate) {
   return isolate->heap()->unseeded_number_dictionary_map();
 }
 
-uint32_t SeededNumberDictionaryShape::SeededHash(uint32_t key, uint32_t seed) {
-  return ComputeIntegerHash(key, seed);
+uint32_t SeededNumberDictionaryShape::Hash(Isolate* isolate, uint32_t key) {
+  return ComputeIntegerHash(key, isolate->heap()->HashSeed());
 }
 
-uint32_t SeededNumberDictionaryShape::SeededHashForObject(uint32_t seed,
-                                                          Object* other) {
+uint32_t SeededNumberDictionaryShape::HashForObject(Isolate* isolate,
+                                                    Object* other) {
   DCHECK(other->IsNumber());
-  return ComputeIntegerHash(static_cast<uint32_t>(other->Number()), seed);
+  return ComputeIntegerHash(static_cast<uint32_t>(other->Number()),
+                            isolate->heap()->HashSeed());
 }
 
 
@@ -6096,12 +6107,11 @@ bool NameDictionaryShape::IsMatch(Handle<Name> key, Object* other) {
   return *key == other;
 }
 
-
-uint32_t NameDictionaryShape::Hash(Handle<Name> key) {
+uint32_t NameDictionaryShape::Hash(Isolate* isolate, Handle<Name> key) {
   return key->Hash();
 }
 
-uint32_t NameDictionaryShape::HashForObject(Object* other) {
+uint32_t NameDictionaryShape::HashForObject(Isolate* isolate, Object* other) {
   return Name::cast(other)->Hash();
 }
 
@@ -6115,7 +6125,7 @@ Handle<Object> NameDictionaryShape::AsHandle(Isolate* isolate,
 
 template <typename Dictionary>
 PropertyDetails GlobalDictionaryShape::DetailsAt(Dictionary* dict, int entry) {
-  DCHECK(entry >= 0);  // Not found is -1, which is not caught by get().
+  DCHECK_LE(0, entry);  // Not found is -1, which is not caught by get().
   Object* raw_value = dict->ValueAt(entry);
   DCHECK(raw_value->IsPropertyCell());
   PropertyCell* cell = PropertyCell::cast(raw_value);
@@ -6126,17 +6136,14 @@ PropertyDetails GlobalDictionaryShape::DetailsAt(Dictionary* dict, int entry) {
 template <typename Dictionary>
 void GlobalDictionaryShape::DetailsAtPut(Dictionary* dict, int entry,
                                          PropertyDetails value) {
-  DCHECK(entry >= 0);  // Not found is -1, which is not caught by get().
-  Object* raw_value = dict->ValueAt(entry);
-  DCHECK(raw_value->IsPropertyCell());
-  PropertyCell* cell = PropertyCell::cast(raw_value);
+  DCHECK_LE(0, entry);  // Not found is -1, which is not caught by get().
+  PropertyCell* cell = PropertyCell::cast(dict->ValueAt(entry));
   if (cell->property_details().IsReadOnly() != value.IsReadOnly()) {
     cell->dependent_code()->DeoptimizeDependentCodeGroup(
         cell->GetIsolate(), DependentCode::kPropertyCellChangedGroup);
   }
   cell->set_property_details(value);
 }
-
 
 template <typename Dictionary>
 bool GlobalDictionaryShape::IsDeleted(Dictionary* dict, int entry) {
@@ -6150,12 +6157,11 @@ bool ObjectHashTableShape::IsMatch(Handle<Object> key, Object* other) {
   return key->SameValue(other);
 }
 
-
-uint32_t ObjectHashTableShape::Hash(Handle<Object> key) {
+uint32_t ObjectHashTableShape::Hash(Isolate* isolate, Handle<Object> key) {
   return Smi::cast(key->GetHash())->value();
 }
 
-uint32_t ObjectHashTableShape::HashForObject(Object* other) {
+uint32_t ObjectHashTableShape::HashForObject(Isolate* isolate, Object* other) {
   return Smi::cast(other->GetHash())->value();
 }
 
@@ -6176,9 +6182,9 @@ bool WeakHashTableShape<entrysize>::IsMatch(Handle<Object> key, Object* other) {
                            : *key == other;
 }
 
-
 template <int entrysize>
-uint32_t WeakHashTableShape<entrysize>::Hash(Handle<Object> key) {
+uint32_t WeakHashTableShape<entrysize>::Hash(Isolate* isolate,
+                                             Handle<Object> key) {
   intptr_t hash =
       key->IsWeakCell()
           ? reinterpret_cast<intptr_t>(WeakCell::cast(*key)->value())
@@ -6187,7 +6193,8 @@ uint32_t WeakHashTableShape<entrysize>::Hash(Handle<Object> key) {
 }
 
 template <int entrysize>
-uint32_t WeakHashTableShape<entrysize>::HashForObject(Object* other) {
+uint32_t WeakHashTableShape<entrysize>::HashForObject(Isolate* isolate,
+                                                      Object* other) {
   if (other->IsWeakCell()) other = WeakCell::cast(other)->value();
   intptr_t hash = reinterpret_cast<intptr_t>(other);
   return (uint32_t)(hash & 0xFFFFFFFF);

@@ -144,7 +144,8 @@ void Deoptimizer::TableEntryGenerator::Generate() {
     }
   }
 
-  __ li(a2, Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
+  __ li(a2, Operand(ExternalReference(IsolateAddressId::kCEntryFPAddress,
+                                      isolate())));
   __ sw(fp, MemOperand(a2));
 
   const int kSavedRegistersAreaSize =

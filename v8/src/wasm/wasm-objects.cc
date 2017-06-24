@@ -74,8 +74,8 @@ namespace {
 // An iterator that returns first the module itself, then all modules linked via
 // next, then all linked via prev.
 class CompiledModulesIterator
-    : public std::iterator<std::input_iterator_tag,
-                           Handle<WasmCompiledModule>> {
+    : public v8::base::iterator<std::input_iterator_tag,
+                                Handle<WasmCompiledModule>> {
  public:
   CompiledModulesIterator(Isolate* isolate,
                           Handle<WasmCompiledModule> start_module, bool at_end)
@@ -132,8 +132,8 @@ class CompiledModulesIterator
 // An iterator based on the CompiledModulesIterator, but it returns all live
 // instances, not the WasmCompiledModules itself.
 class CompiledModuleInstancesIterator
-    : public std::iterator<std::input_iterator_tag,
-                           Handle<WasmInstanceObject>> {
+    : public v8::base::iterator<std::input_iterator_tag,
+                                Handle<WasmInstanceObject>> {
  public:
   CompiledModuleInstancesIterator(Isolate* isolate,
                                   Handle<WasmCompiledModule> start_module,
@@ -540,6 +540,8 @@ DEFINE_OPTIONAL_OBJ_ACCESSORS(WasmInstanceObject, debug_info, kDebugInfo,
                               WasmDebugInfo)
 DEFINE_OPTIONAL_OBJ_ACCESSORS(WasmInstanceObject, instance_wrapper,
                               kWasmMemInstanceWrapper, WasmInstanceWrapper)
+DEFINE_OPTIONAL_OBJ_ACCESSORS(WasmInstanceObject, directly_called_instances,
+                              kDirectlyCalledInstances, FixedArray)
 
 WasmModuleObject* WasmInstanceObject::module_object() {
   return *compiled_module()->wasm_module();
@@ -802,7 +804,7 @@ void WasmSharedModuleData::ReinitializeAfterDeserialization(
     // TODO(titzer): remember the module origin in the compiled_module
     // For now, we assume serialized modules did not originate from asm.js.
     ModuleResult result =
-        DecodeWasmModule(isolate, start, end, false, kWasmOrigin);
+        SyncDecodeWasmModule(isolate, start, end, false, kWasmOrigin);
     CHECK(result.ok());
     CHECK_NOT_NULL(result.val);
     // Take ownership of the WasmModule and immediately transfer it to the

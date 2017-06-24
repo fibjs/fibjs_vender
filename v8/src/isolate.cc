@@ -197,8 +197,7 @@ void Isolate::InitializeOncePerProcess() {
   thread_data_table_ = new Isolate::ThreadDataTable();
 }
 
-
-Address Isolate::get_address_from_id(Isolate::AddressId id) {
+Address Isolate::get_address_from_id(IsolateAddressId id) {
   return isolate_addresses_[id];
 }
 
@@ -708,8 +707,7 @@ class CaptureStackTraceHelper {
     frame->set_is_constructor(summ.is_constructor());
     frame->set_is_wasm(false);
     if (!FLAG_optimize_for_size) {
-      auto new_cache =
-          UnseededNumberDictionary::AtNumberPut(cache, code_offset, frame);
+      auto new_cache = UnseededNumberDictionary::Set(cache, code_offset, frame);
       if (*new_cache != *cache || !maybe_cache->IsUnseededNumberDictionary()) {
         AbstractCode::SetStackFrameCache(summ.abstract_code(), new_cache);
       }
@@ -770,12 +768,13 @@ Handle<FixedArray> Isolate::CaptureCurrentStackTrace(
     List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
     frame->Summarize(&frames);
     for (int i = frames.length() - 1; i >= 0 && frames_seen < limit; i--) {
+      FrameSummary& frame = frames[i];
+      if (!frame.is_subject_to_debugging()) continue;
       // Filter frames from other security contexts.
       if (!(options & StackTrace::kExposeFramesAcrossSecurityOrigins) &&
-          !this->context()->HasSameSecurityTokenAs(*frames[i].native_context()))
+          !this->context()->HasSameSecurityTokenAs(*frame.native_context()))
         continue;
-      Handle<StackFrameInfo> new_frame_obj =
-          helper.NewStackFrameObject(frames[i]);
+      Handle<StackFrameInfo> new_frame_obj = helper.NewStackFrameObject(frame);
       stack_trace_elems->set(frames_seen, *new_frame_obj);
       frames_seen++;
     }
@@ -2091,42 +2090,36 @@ void Isolate::ReleaseManagedObjects() {
   while (current != nullptr) {
     Isolate::ManagedObjectFinalizer* next = current->next_;
     current->Dispose();
-    delete current;
     current = next;
   }
   // No new managed objects should pop up during finalization.
   DCHECK_NULL(managed_object_finalizers_list_.next_);
 }
 
-Isolate::ManagedObjectFinalizer* Isolate::RegisterForReleaseAtTeardown(
-    void* value, Isolate::ManagedObjectFinalizer::Deleter deleter) {
-  DCHECK_NOT_NULL(value);
-  DCHECK_NOT_NULL(deleter);
+void Isolate::RegisterForReleaseAtTeardown(
+    Isolate::ManagedObjectFinalizer* finalizer) {
+  DCHECK_NOT_NULL(finalizer->value_);
+  DCHECK_NOT_NULL(finalizer->deleter_);
+  DCHECK_NULL(finalizer->prev_);
+  DCHECK_NULL(finalizer->next_);
 
-  Isolate::ManagedObjectFinalizer* ret = new Isolate::ManagedObjectFinalizer();
-  ret->value_ = value;
-  ret->deleter_ = deleter;
   // Insert at head. We keep the head alive for the lifetime of the Isolate
   // because otherwise we can't reset the head, should we delete it before
   // the isolate expires
   Isolate::ManagedObjectFinalizer* next = managed_object_finalizers_list_.next_;
-  managed_object_finalizers_list_.next_ = ret;
-  ret->prev_ = &managed_object_finalizers_list_;
-  ret->next_ = next;
-  if (next != nullptr) next->prev_ = ret;
-  return ret;
+  managed_object_finalizers_list_.next_ = finalizer;
+  finalizer->prev_ = &managed_object_finalizers_list_;
+  finalizer->next_ = next;
+  if (next != nullptr) next->prev_ = finalizer;
 }
 
 void Isolate::UnregisterFromReleaseAtTeardown(
-    Isolate::ManagedObjectFinalizer** finalizer_ptr) {
-  DCHECK_NOT_NULL(finalizer_ptr);
-  Isolate::ManagedObjectFinalizer* finalizer = *finalizer_ptr;
+    Isolate::ManagedObjectFinalizer* finalizer) {
+  DCHECK_NOT_NULL(finalizer);
   DCHECK_NOT_NULL(finalizer->prev_);
 
   finalizer->prev_->next_ = finalizer->next_;
   if (finalizer->next_ != nullptr) finalizer->next_->prev_ = finalizer->prev_;
-  delete finalizer;
-  *finalizer_ptr = nullptr;
 }
 
 Isolate::PerIsolateThreadData::~PerIsolateThreadData() {
@@ -2638,8 +2631,8 @@ bool Isolate::PropagatePendingExceptionToExternalTryCatch() {
 }
 
 bool Isolate::InitializeCounters() {
-  if (counters_shared_) return false;
-  counters_shared_ = std::make_shared<Counters>(this);
+  if (async_counters_) return false;
+  async_counters_ = std::make_shared<Counters>(this);
   return true;
 }
 
@@ -2683,7 +2676,7 @@ bool Isolate::Init(Deserializer* des) {
   heap_.SetStackLimits();
 
 #define ASSIGN_ELEMENT(CamelName, hacker_name)                  \
-  isolate_addresses_[Isolate::k##CamelName##Address] =          \
+  isolate_addresses_[IsolateAddressId::k##CamelName##Address] = \
       reinterpret_cast<Address>(hacker_name##_address());
   FOR_EACH_ISOLATE_ADDRESS_NAME(ASSIGN_ELEMENT)
 #undef ASSIGN_ELEMENT
@@ -3008,7 +3001,8 @@ Map* Isolate::get_initial_js_array_map(ElementsKind kind) {
 
 bool Isolate::use_optimizer() {
   return FLAG_opt && !serializer_enabled_ &&
-         CpuFeatures::SupportsCrankshaft() && !is_precise_count_code_coverage();
+         CpuFeatures::SupportsCrankshaft() &&
+         !is_precise_count_code_coverage() && !is_block_count_code_coverage();
 }
 
 bool Isolate::NeedsSourcePositionsForProfiling() const {
