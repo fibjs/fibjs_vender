@@ -27,6 +27,7 @@
     <ClInclude Include="src\internal.h" />
     <ClInclude Include="src\latin1tab.h" />
     <ClInclude Include="src\nametab.h" />
+    <ClInclude Include="src\siphash.h" />
     <ClInclude Include="src\utf8tab.h" />
     <ClInclude Include="src\winconfig.h" />
     <ClInclude Include="src\xmlrole.h" />
