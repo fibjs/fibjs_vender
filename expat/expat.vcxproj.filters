@@ -39,9 +39,6 @@
     <ClInclude Include="src\nametab.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\siphash.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\utf8tab.h">
       <Filter>Source Files</Filter>
     </ClInclude>
