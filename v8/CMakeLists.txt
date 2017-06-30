@@ -10,7 +10,6 @@ include_directories(
 add_definitions(
 	-DV8_NO_FAST_TLS=1
 	-DV8_DEPRECATION_WARNINGS=1
-	-DV8_INTL_SUPPORT=1
 	-DENABLE_HANDLE_ZAPPING=1
 )
 

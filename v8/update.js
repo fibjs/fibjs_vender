@@ -11,13 +11,17 @@ console.log(v8Folder);
 
 process.chdir(v8Folder);
 
-process.run("tools/dev/v8gen.py", ["x64.release"]);
+process.run("tools/dev/v8gen.py", [
+    "x64.release",
+    "--",
+    "v8_enable_i18n_support=false"
+]);
 
 process.run("../depot_tools/ninja", [
     "-C",
     "out.gn/x64.release",
     "-j",
-    "8"
+    "4"
 ]);
 
 process.chdir(workFolder);
@@ -82,7 +86,15 @@ var files = {
     'src/base/platform/platform-qnx.cc': 1,
     'src/base/platform/platform-cygwin.cc': 1,
     'src/base/platform/platform-fuchsia.cc': 1,
-    'src/base/debug/stack_trace_fuchsia.cc': 1
+    'src/base/debug/stack_trace_fuchsia.cc': 1,
+    'src/builtins/builtins-intl.cc': 1,
+    'src/builtins/builtins-intl-gen.cc': 1,
+    'src/char-predicates.cc': 1,
+    'src/intl.cc': 1,
+    'src/intl.h': 1,
+    'src/objects/intl-objects.cc': 1,
+    'src/objects/intl-objects.h': 1,
+    'src/runtime/runtime-intl.cc': 1
 };
 
 var re = [

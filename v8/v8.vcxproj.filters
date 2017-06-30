@@ -1551,9 +1551,6 @@
     <ClInclude Include="src\interpreter\setup-interpreter.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
-    <ClInclude Include="src\intl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\isolate-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1699,9 +1696,6 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\hash-table.h">
-      <Filter>Source Files\objects</Filter>
-    </ClInclude>
-    <ClInclude Include="src\objects\intl-objects.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\literal-objects.h">
@@ -2564,12 +2558,6 @@
     <ClCompile Include="src\builtins\builtins-interpreter.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-intl-gen.cc">
-      <Filter>Source Files\builtins</Filter>
-    </ClCompile>
-    <ClCompile Include="src\builtins\builtins-intl.cc">
-      <Filter>Source Files\builtins</Filter>
-    </ClCompile>
     <ClCompile Include="src\builtins\builtins-iterator-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2661,9 +2649,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cancelable-task.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\char-predicates.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\code-factory.cc">
@@ -3578,9 +3563,6 @@
     <ClCompile Include="src\interpreter\setup-interpreter-internal.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
-    <ClCompile Include="src\intl.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\isolate.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3654,9 +3636,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\debug-objects.cc">
-      <Filter>Source Files\objects</Filter>
-    </ClCompile>
-    <ClCompile Include="src\objects\intl-objects.cc">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\literal-objects.cc">
@@ -3870,9 +3849,6 @@
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-interpreter.cc">
-      <Filter>Source Files\runtime</Filter>
-    </ClCompile>
-    <ClCompile Include="src\runtime\runtime-intl.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-literals.cc">

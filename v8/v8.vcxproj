@@ -454,7 +454,6 @@
     <ClInclude Include="src\interpreter\interpreter-intrinsics.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
     <ClInclude Include="src\interpreter\setup-interpreter.h" />
-    <ClInclude Include="src\intl.h" />
     <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
     <ClInclude Include="src\json-parser.h" />
@@ -504,7 +503,6 @@
     <ClInclude Include="src\objects\frame-array.h" />
     <ClInclude Include="src\objects\hash-table-inl.h" />
     <ClInclude Include="src\objects\hash-table.h" />
-    <ClInclude Include="src\objects\intl-objects.h" />
     <ClInclude Include="src\objects\literal-objects.h" />
     <ClInclude Include="src\objects\map-inl.h" />
     <ClInclude Include="src\objects\map.h" />
@@ -793,8 +791,6 @@
     <ClCompile Include="src\builtins\builtins-internal.cc" />
     <ClCompile Include="src\builtins\builtins-interpreter-gen.cc" />
     <ClCompile Include="src\builtins\builtins-interpreter.cc" />
-    <ClCompile Include="src\builtins\builtins-intl-gen.cc" />
-    <ClCompile Include="src\builtins\builtins-intl.cc" />
     <ClCompile Include="src\builtins\builtins-iterator-gen.cc" />
     <ClCompile Include="src\builtins\builtins-json.cc" />
     <ClCompile Include="src\builtins\builtins-math-gen.cc" />
@@ -826,7 +822,6 @@
     <ClCompile Include="src\builtins\x87\builtins-x87.cc" />
     <ClCompile Include="src\cached-powers.cc" />
     <ClCompile Include="src\cancelable-task.cc" />
-    <ClCompile Include="src\char-predicates.cc" />
     <ClCompile Include="src\code-factory.cc" />
     <ClCompile Include="src\code-stub-assembler.cc" />
     <ClCompile Include="src\code-stubs-hydrogen.cc" />
@@ -1131,7 +1126,6 @@
     <ClCompile Include="src\interpreter\interpreter-intrinsics.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
     <ClCompile Include="src\interpreter\setup-interpreter-internal.cc" />
-    <ClCompile Include="src\intl.cc" />
     <ClCompile Include="src\isolate.cc" />
     <ClCompile Include="src\json-parser.cc" />
     <ClCompile Include="src\json-stringifier.cc" />
@@ -1157,7 +1151,6 @@
     <ClCompile Include="src\objects-printer.cc" />
     <ClCompile Include="src\objects.cc" />
     <ClCompile Include="src\objects\debug-objects.cc" />
-    <ClCompile Include="src\objects\intl-objects.cc" />
     <ClCompile Include="src\objects\literal-objects.cc" />
     <ClCompile Include="src\objects\scope-info.cc" />
     <ClCompile Include="src\ostreams.cc" />
@@ -1229,7 +1222,6 @@
     <ClCompile Include="src\runtime\runtime-generator.cc" />
     <ClCompile Include="src\runtime\runtime-internal.cc" />
     <ClCompile Include="src\runtime\runtime-interpreter.cc" />
-    <ClCompile Include="src\runtime\runtime-intl.cc" />
     <ClCompile Include="src\runtime\runtime-literals.cc" />
     <ClCompile Include="src\runtime\runtime-liveedit.cc" />
     <ClCompile Include="src\runtime\runtime-maths.cc" />
@@ -1407,7 +1399,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_INTL_SUPPORT;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
@@ -1428,7 +1420,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_INTL_SUPPORT;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
@@ -1451,7 +1443,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_INTL_SUPPORT;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
@@ -1478,7 +1470,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_INTL_SUPPORT;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
