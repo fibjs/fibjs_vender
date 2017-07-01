@@ -1319,7 +1319,7 @@ void Builtins::Generate_InterpreterPushArgsThenCallImpl(
 
   if (mode == InterpreterPushArgsMode::kWithFinalSpread) {
     __ Pop(a2);                   // Pass the spread in a register
-    __ Subu(a0, a0, Operand(1));  // Subtract one for spread
+    __ Dsubu(a0, a0, Operand(1));  // Subtract one for spread
   }
 
   // Call the target.
@@ -1366,7 +1366,7 @@ void Builtins::Generate_InterpreterPushArgsThenConstructImpl(
 
   if (mode == InterpreterPushArgsMode::kWithFinalSpread) {
     __ Pop(a2);                   // Pass the spread in a register
-    __ Subu(a0, a0, Operand(1));  // Subtract one for spread
+    __ Dsubu(a0, a0, Operand(1));  // Subtract one for spread
   } else {
     __ AssertUndefinedOrAllocationSite(a2, t0);
   }
@@ -1701,32 +1701,6 @@ void Builtins::Generate_MarkCodeAsExecutedTwice(MacroAssembler* masm) {
 
 void Builtins::Generate_MarkCodeAsToBeExecutedOnce(MacroAssembler* masm) {
   Generate_MarkCodeAsExecutedOnce(masm);
-}
-
-static void Generate_NotifyStubFailureHelper(MacroAssembler* masm,
-                                             SaveFPRegsMode save_doubles) {
-  {
-    FrameScope scope(masm, StackFrame::INTERNAL);
-
-    // Preserve registers across notification, this is important for compiled
-    // stubs that tail call the runtime on deopts passing their parameters in
-    // registers.
-    __ MultiPush(kJSCallerSaved | kCalleeSaved);
-    // Pass the function and deoptimization type to the runtime system.
-    __ CallRuntime(Runtime::kNotifyStubFailure, save_doubles);
-    __ MultiPop(kJSCallerSaved | kCalleeSaved);
-  }
-
-  __ Daddu(sp, sp, Operand(kPointerSize));  // Ignore state
-  __ Jump(ra);                              // Jump to miss handler
-}
-
-void Builtins::Generate_NotifyStubFailure(MacroAssembler* masm) {
-  Generate_NotifyStubFailureHelper(masm, kDontSaveFPRegs);
-}
-
-void Builtins::Generate_NotifyStubFailureSaveDoubles(MacroAssembler* masm) {
-  Generate_NotifyStubFailureHelper(masm, kSaveFPRegs);
 }
 
 void Builtins::Generate_NotifyBuiltinContinuation(MacroAssembler* masm) {

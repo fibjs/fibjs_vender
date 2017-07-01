@@ -162,15 +162,12 @@ struct V8_EXPORT_PRIVATE WasmModule {
   static const uint32_t kMinMemPages = 1;       // Minimum memory size = 64kb
 
   std::unique_ptr<Zone> signature_zone;
-  uint32_t min_mem_pages = 0;  // minimum size of the memory in 64k pages
-  uint32_t max_mem_pages = 0;  // maximum size of the memory in 64k pages
-  bool has_max_mem = false;    // try if a maximum memory size exists
-  bool has_memory = false;     // true if the memory was defined or imported
-  bool mem_export = false;     // true if the memory is exported
-  // TODO(wasm): reconcile start function index being an int with
-  // the fact that we index on uint32_t, so we may technically not be
-  // able to represent some start_function_index -es.
-  int start_function_index = -1;      // start function, if any
+  uint32_t min_mem_pages = 0;     // minimum size of the memory in 64k pages
+  uint32_t max_mem_pages = 0;     // maximum size of the memory in 64k pages
+  bool has_max_mem = false;       // try if a maximum memory size exists
+  bool has_memory = false;        // true if the memory was defined or imported
+  bool mem_export = false;        // true if the memory is exported
+  int start_function_index = -1;  // start function, >= 0 if any
 
   std::vector<WasmGlobal> globals;             // globals in this module.
   uint32_t globals_size = 0;                   // size of globals table.
@@ -186,19 +183,11 @@ struct V8_EXPORT_PRIVATE WasmModule {
   std::vector<WasmImport> import_table;        // import table.
   std::vector<WasmExport> export_table;        // export table.
   std::vector<WasmTableInit> table_inits;      // initializations of tables
-  // We store the semaphore here to extend its lifetime. In <libc-2.21, which we
-  // use on the try bots, semaphore::Wait() can return while some compilation
-  // tasks are still executing semaphore::Signal(). If the semaphore is cleaned
-  // up right after semaphore::Wait() returns, then this can cause an
-  // invalid-semaphore error in the compilation tasks.
-  // TODO(wasm): Move this semaphore back to CompileInParallel when the try bots
-  // switch to libc-2.21 or higher.
-  std::unique_ptr<base::Semaphore> pending_tasks;
 
   WasmModule() : WasmModule(nullptr) {}
   WasmModule(std::unique_ptr<Zone> owned);
 
-  ModuleOrigin get_origin() const { return origin_; }
+  ModuleOrigin origin() const { return origin_; }
   void set_origin(ModuleOrigin new_value) { origin_ = new_value; }
   bool is_wasm() const { return origin_ == kWasmOrigin; }
   bool is_asm_js() const { return origin_ == kAsmJsOrigin; }
@@ -365,14 +354,6 @@ struct V8_EXPORT_PRIVATE ModuleEnv {
     DCHECK_NOT_NULL(instance);
     return instance->function_code[index];
   }
-
-  // TODO(titzer): move these into src/compiler/wasm-compiler.cc
-  static compiler::CallDescriptor* GetWasmCallDescriptor(Zone* zone,
-                                                         FunctionSig* sig);
-  static compiler::CallDescriptor* GetI32WasmCallDescriptor(
-      Zone* zone, compiler::CallDescriptor* descriptor);
-  static compiler::CallDescriptor* GetI32WasmCallDescriptorForSimd(
-      Zone* zone, compiler::CallDescriptor* descriptor);
 };
 
 // A ModuleEnv together with ModuleWireBytes.

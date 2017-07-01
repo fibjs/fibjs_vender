@@ -593,10 +593,6 @@ class Assembler : public AssemblerBase {
   // of that call in the instruction stream.
   inline static Address target_address_from_return_address(Address pc);
 
-  static void set_heap_number(Handle<HeapObject> number, Address pc) {
-    UNIMPLEMENTED();
-  }
-
   static void JumpLabelToJumpRegister(Address pc);
 
   static void QuietNaN(HeapObject* nan);
@@ -2006,7 +2002,7 @@ class Assembler : public AssemblerBase {
   // the generated instructions. This is so that multi-instruction sequences do
   // not have to check for overflow. The same is true for writes of large
   // relocation info entries.
-  static constexpr int kGap = 32;
+  static constexpr int kGap = 128;
 
   // Repeated checking whether the trampoline pool should be emitted is rather
   // expensive. By default we only check again once a number of instructions
@@ -2268,6 +2264,19 @@ class Assembler : public AssemblerBase {
 
   Trampoline trampoline_;
   bool internal_trampoline_exception_;
+
+  // The following functions help with avoiding allocations of embedded heap
+  // objects during the code assembly phase. {RequestHeapObject} records the
+  // need for a future heap number allocation or code stub generation. After
+  // code assembly, {AllocateAndInstallRequestedHeapObjects} will allocate these
+  // objects and place them where they are expected (determined by the pc offset
+  // associated with each request). That is, for each request, it will patch the
+  // dummy heap object handle that we emitted during code assembly with the
+  // actual heap object handle.
+  void RequestHeapObject(HeapObjectRequest request);
+  void AllocateAndInstallRequestedHeapObjects(Isolate* isolate);
+
+  std::forward_list<HeapObjectRequest> heap_object_requests_;
 
   friend class RegExpMacroAssemblerMIPS;
   friend class RelocInfo;

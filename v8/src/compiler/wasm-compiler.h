@@ -48,13 +48,14 @@ namespace compiler {
 class WasmCompilationUnit final {
  public:
   WasmCompilationUnit(Isolate* isolate, wasm::ModuleBytesEnv* module_env,
-                      const wasm::WasmFunction* function);
+                      const wasm::WasmFunction* function,
+                      Handle<Code> centry_stub, bool is_sync = true);
   WasmCompilationUnit(Isolate* isolate, wasm::ModuleEnv* module_env,
-                      wasm::FunctionBody body, wasm::WasmName name, int index);
+                      wasm::FunctionBody body, wasm::WasmName name, int index,
+                      Handle<Code> centry_stub, bool is_sync = true);
 
   int func_index() const { return func_index_; }
 
-  void ReopenCentryStub() { centry_stub_ = handle(*centry_stub_, isolate_); }
   void ExecuteCompilation();
   Handle<Code> FinishCompilation(wasm::ErrorThrower* thrower);
 
@@ -73,6 +74,7 @@ class WasmCompilationUnit final {
   wasm::ModuleEnv* module_env_;
   wasm::FunctionBody func_body_;
   wasm::WasmName func_name_;
+  bool is_sync_;
   // The graph zone is deallocated at the end of ExecuteCompilation by virtue of
   // it being zone allocated.
   JSGraph* jsgraph_ = nullptr;
@@ -111,7 +113,6 @@ Handle<Code> CompileWasmInterpreterEntry(Isolate* isolate, uint32_t func_index,
 
 // Abstracts details of building TurboFan graph nodes for wasm to separate
 // the wasm decoder from the internal details of TurboFan.
-class WasmTrapHelper;
 typedef ZoneVector<Node*> NodeVector;
 class WasmGraphBuilder {
  public:
@@ -264,7 +265,6 @@ class WasmGraphBuilder {
 
  private:
   static const int kDefaultBufferSize = 16;
-  friend class WasmTrapHelper;
 
   Zone* zone_;
   JSGraph* jsgraph_;
@@ -409,7 +409,26 @@ class WasmGraphBuilder {
                         wasm::FunctionSig* sig);
 
   void SetNeedsStackCheck() { needs_stack_check_ = true; }
+
+  //-----------------------------------------------------------------------
+  // Operations involving the CEntryStub, a dependency we want to remove
+  // to get off the GC heap.
+  //-----------------------------------------------------------------------
+  Node* BuildCallToRuntime(Runtime::FunctionId f, Node** parameters,
+                           int parameter_count);
+
+  Node* BuildCallToRuntimeWithContext(Runtime::FunctionId f, Node* context,
+                                      Node** parameters, int parameter_count);
+
+  Node* BuildModifyThreadInWasmFlag(bool new_value);
 };
+
+V8_EXPORT_PRIVATE CallDescriptor* GetWasmCallDescriptor(Zone* zone,
+                                                        wasm::FunctionSig* sig);
+V8_EXPORT_PRIVATE CallDescriptor* GetI32WasmCallDescriptor(
+    Zone* zone, CallDescriptor* descriptor);
+V8_EXPORT_PRIVATE CallDescriptor* GetI32WasmCallDescriptorForSimd(
+    Zone* zone, CallDescriptor* descriptor);
 
 }  // namespace compiler
 }  // namespace internal

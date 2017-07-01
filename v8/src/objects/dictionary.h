@@ -47,11 +47,6 @@ class Dictionary : public HashTable<Derived, Shape> {
     Shape::DetailsAtPut(static_cast<Derived*>(this), entry, value);
   }
 
-  // Returns true if property at given entry is deleted.
-  bool IsDeleted(int entry) {
-    return Shape::IsDeleted(static_cast<Derived*>(this), entry);
-  }
-
   // Delete a property from the dictionary.
   MUST_USE_RESULT static Handle<Derived> DeleteEntry(Handle<Derived> dictionary,
                                                      int entry);
@@ -108,11 +103,6 @@ class BaseDictionaryShape : public BaseShape<Key> {
     STATIC_ASSERT(Dictionary::kEntrySize == 3);
     dict->set(Dictionary::EntryToIndex(entry) + Dictionary::kEntryDetailsIndex,
               value.AsSmi());
-  }
-
-  template <typename Dictionary>
-  static bool IsDeleted(Dictionary* dict, int entry) {
-    return false;
   }
 };
 
@@ -177,15 +167,19 @@ class BaseNameDictionary : public Dictionary<Derived, Shape> {
 class NameDictionary
     : public BaseNameDictionary<NameDictionary, NameDictionaryShape> {
  public:
-  DECLARE_CAST(NameDictionary)
+  DECL_CAST(NameDictionary)
 
   static const int kEntryDetailsIndex = 2;
   static const int kInitialCapacity = 2;
+  inline Name* NameAt(int entry);
 };
 
 class GlobalDictionaryShape : public NameDictionaryShape {
  public:
-  static const int kEntrySize = 2;  // Overrides NameDictionaryShape::kEntrySize
+  static inline bool IsMatch(Handle<Name> key, Object* other);
+  static inline uint32_t HashForObject(Isolate* isolate, Object* object);
+
+  static const int kEntrySize = 1;  // Overrides NameDictionaryShape::kEntrySize
 
   template <typename Dictionary>
   static inline PropertyDetails DetailsAt(Dictionary* dict, int entry);
@@ -194,14 +188,22 @@ class GlobalDictionaryShape : public NameDictionaryShape {
   static inline void DetailsAtPut(Dictionary* dict, int entry,
                                   PropertyDetails value);
 
-  template <typename Dictionary>
-  static bool IsDeleted(Dictionary* dict, int entry);
+  static inline Object* Unwrap(Object* key);
+  static inline bool IsKey(Isolate* isolate, Object* k);
+  static inline bool IsLive(Isolate* isolate, Object* key);
 };
 
 class GlobalDictionary
     : public BaseNameDictionary<GlobalDictionary, GlobalDictionaryShape> {
  public:
-  DECLARE_CAST(GlobalDictionary)
+  DECL_CAST(GlobalDictionary)
+
+  inline Object* ValueAt(int entry);
+  inline PropertyCell* CellAt(int entry);
+  inline void SetEntry(int entry, Object* key, Object* value,
+                       PropertyDetails details);
+  inline Name* NameAt(int entry);
+  void ValueAtPut(int entry, Object* value) { set(EntryToIndex(entry), value); }
 };
 
 class NumberDictionaryShape : public BaseDictionaryShape<uint32_t> {
@@ -251,7 +253,7 @@ extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
 class SeededNumberDictionary
     : public Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape> {
  public:
-  DECLARE_CAST(SeededNumberDictionary)
+  DECL_CAST(SeededNumberDictionary)
 
   // Type specific at put (default NONE attributes is used when adding).
   MUST_USE_RESULT static Handle<SeededNumberDictionary> Set(
@@ -299,7 +301,7 @@ class UnseededNumberDictionary
     : public Dictionary<UnseededNumberDictionary,
                         UnseededNumberDictionaryShape> {
  public:
-  DECLARE_CAST(UnseededNumberDictionary)
+  DECL_CAST(UnseededNumberDictionary)
 
   // Type specific at put (default NONE attributes is used when adding).
   MUST_USE_RESULT static Handle<UnseededNumberDictionary> Set(

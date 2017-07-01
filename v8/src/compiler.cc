@@ -16,10 +16,10 @@
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
 #include "src/compilation-cache.h"
+#include "src/compilation-info.h"
 #include "src/compiler-dispatcher/compiler-dispatcher.h"
 #include "src/compiler-dispatcher/optimizing-compile-dispatcher.h"
 #include "src/compiler/pipeline.h"
-#include "src/crankshaft/hydrogen.h"
 #include "src/debug/debug.h"
 #include "src/debug/liveedit.h"
 #include "src/frames-inl.h"
@@ -31,6 +31,7 @@
 #include "src/log-inl.h"
 #include "src/messages.h"
 #include "src/objects/map.h"
+#include "src/parsing/parse-info.h"
 #include "src/parsing/parsing.h"
 #include "src/parsing/rewriter.h"
 #include "src/parsing/scanner-character-streams.h"
@@ -202,11 +203,6 @@ void CompilationJob::RecordOptimizedCompilationStats() const {
     code_size += function->shared()->SourceSize();
     PrintF("Compiled: %d functions with %d byte source size in %fms.\n",
            compiled_functions, code_size, compilation_time);
-  }
-  if (FLAG_hydrogen_stats) {
-    isolate()->GetHStatistics()->IncrementSubtotals(time_taken_to_prepare_,
-                                                    time_taken_to_execute_,
-                                                    time_taken_to_finalize_);
   }
 }
 
@@ -650,23 +646,20 @@ MUST_USE_RESULT MaybeHandle<Code> GetCodeFromOptimizedCodeCache(
       &RuntimeCallStats::CompileGetFromOptimizedCodeMap);
   Handle<SharedFunctionInfo> shared(function->shared());
   DisallowHeapAllocation no_gc;
-  Code* code = nullptr;
   if (osr_ast_id.IsNone()) {
     if (function->feedback_vector_cell()->value()->IsFeedbackVector()) {
       FeedbackVector* feedback_vector = function->feedback_vector();
       feedback_vector->EvictOptimizedCodeMarkedForDeoptimization(
           function->shared(), "GetCodeFromOptimizedCodeCache");
-      code = feedback_vector->optimized_code();
+      Code* code = feedback_vector->optimized_code();
+
+      if (code != nullptr) {
+        // Caching of optimized code enabled and optimized code found.
+        DCHECK(!code->marked_for_deoptimization());
+        DCHECK(function->shared()->is_compiled());
+        return Handle<Code>(code);
+      }
     }
-  } else {
-    code = function->context()->native_context()->SearchOSROptimizedCodeCache(
-        function->shared(), osr_ast_id);
-  }
-  if (code != nullptr) {
-    // Caching of optimized code enabled and optimized code found.
-    DCHECK(!code->marked_for_deoptimization());
-    DCHECK(function->shared()->is_compiled());
-    return Handle<Code>(code);
   }
   return MaybeHandle<Code>();
 }
@@ -703,9 +696,6 @@ void InsertCodeIntoOptimizedCodeCache(CompilationInfo* info) {
     Handle<FeedbackVector> vector =
         handle(function->feedback_vector(), function->GetIsolate());
     FeedbackVector::SetOptimizedCode(vector, code);
-  } else {
-    Context::AddToOSROptimizedCodeCache(native_context, shared, code,
-                                        info->osr_ast_id());
   }
 }
 
@@ -1018,10 +1008,13 @@ MaybeHandle<Code> GetLazyCode(Handle<JSFunction> function) {
     CompilationInfo info(&compile_zone, &parse_info, isolate, function);
     if (FLAG_experimental_preparser_scope_analysis) {
       Handle<SharedFunctionInfo> shared(function->shared());
-      Handle<Script> script(Script::cast(function->shared()->script()));
-      if (script->HasPreparsedScopeData()) {
-        parse_info.preparsed_scope_data()->Deserialize(
-            script->preparsed_scope_data());
+      if (shared->HasPreParsedScopeData()) {
+        Handle<PreParsedScopeData> data(
+            PreParsedScopeData::cast(shared->preparsed_scope_data()));
+        parse_info.consumed_preparsed_scope_data()->SetData(data);
+        // After we've compiled the function, we don't need data about its
+        // skippable functions any more.
+        shared->set_preparsed_scope_data(isolate->heap()->null_value());
       }
     }
     ConcurrencyMode inner_function_mode = FLAG_compiler_dispatcher_eager_inner
@@ -1122,11 +1115,6 @@ Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
 
     if (!script.is_null()) {
       script->set_compilation_state(Script::COMPILATION_STATE_COMPILED);
-      if (FLAG_experimental_preparser_scope_analysis) {
-        Handle<PodArray<uint32_t>> data =
-            parse_info->preparsed_scope_data()->Serialize(isolate);
-        script->set_preparsed_scope_data(*data);
-      }
     }
   }
 

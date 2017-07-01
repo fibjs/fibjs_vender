@@ -935,25 +935,6 @@ Handle<Symbol> Factory::NewPrivateSymbol() {
   return symbol;
 }
 
-Handle<JSPromise> Factory::NewJSPromise() {
-  Handle<JSFunction> constructor(
-      isolate()->native_context()->promise_function(), isolate());
-  DCHECK(constructor->has_initial_map());
-  Handle<Map> map(constructor->initial_map(), isolate());
-
-  DCHECK(!map->is_prototype_map());
-  Handle<JSObject> promise_obj = NewJSObjectFromMap(map);
-  Handle<JSPromise> promise = Handle<JSPromise>::cast(promise_obj);
-  promise->set_status(v8::Promise::kPending);
-  promise->set_flags(0);
-  for (int i = 0; i < v8::Promise::kEmbedderFieldCount; i++) {
-    promise->SetEmbedderField(i, Smi::kZero);
-  }
-
-  isolate()->RunPromiseHook(PromiseHookType::kInit, promise, undefined_value());
-  return promise;
-}
-
 Handle<Context> Factory::NewNativeContext() {
   Handle<FixedArray> array =
       NewFixedArray(Context::NATIVE_CONTEXT_SLOTS, TENURED);
@@ -1149,8 +1130,6 @@ Handle<Script> Factory::NewScript(Handle<String> source) {
   script->set_eval_from_position(0);
   script->set_shared_function_infos(*empty_fixed_array(), SKIP_WRITE_BARRIER);
   script->set_flags(0);
-  script->set_preparsed_scope_data(
-      PodArray<uint32_t>::cast(heap->empty_byte_array()));
 
   heap->set_script_list(*WeakFixedArray::Add(script_list(), script));
   return script;
@@ -1235,11 +1214,9 @@ Handle<Cell> Factory::NewManyClosuresCell(Handle<Object> value) {
   return cell;
 }
 
-Handle<PropertyCell> Factory::NewPropertyCell() {
-  CALL_HEAP_FUNCTION(
-      isolate(),
-      isolate()->heap()->AllocatePropertyCell(),
-      PropertyCell);
+Handle<PropertyCell> Factory::NewPropertyCell(Handle<Name> name) {
+  CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->AllocatePropertyCell(*name),
+                     PropertyCell);
 }
 
 
@@ -1486,6 +1463,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   Handle<Context> context(isolate()->native_context());
   Handle<SharedFunctionInfo> info =
       NewSharedFunctionInfo(name, code, map->is_constructor());
+  // Proper language mode in shared function info will be set outside.
   DCHECK(is_sloppy(info->language_mode()));
   DCHECK(!map->IsUndefined(isolate()));
   DCHECK(
@@ -1504,8 +1482,10 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
 
 
 Handle<JSFunction> Factory::NewFunction(Handle<String> name) {
-  return NewFunction(
-      isolate()->sloppy_function_map(), name, MaybeHandle<Code>());
+  Handle<JSFunction> result =
+      NewFunction(isolate()->sloppy_function_map(), name, MaybeHandle<Code>());
+  DCHECK(is_sloppy(result->shared()->language_mode()));
+  return result;
 }
 
 
@@ -1515,7 +1495,9 @@ Handle<JSFunction> Factory::NewFunctionWithoutPrototype(Handle<String> name,
   Handle<Map> map = is_strict
                         ? isolate()->strict_function_without_prototype_map()
                         : isolate()->sloppy_function_without_prototype_map();
-  return NewFunction(map, name, code);
+  Handle<JSFunction> result = NewFunction(map, name, code);
+  result->shared()->set_language_mode(is_strict ? STRICT : SLOPPY);
+  return result;
 }
 
 
@@ -1526,6 +1508,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
                               : isolate()->sloppy_function_map();
   Handle<JSFunction> result = NewFunction(map, name, code);
   result->set_prototype_or_initial_map(*prototype);
+  result->shared()->set_language_mode(is_strict ? STRICT : SLOPPY);
   return result;
 }
 
@@ -1538,7 +1521,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
   Handle<JSFunction> function = NewFunction(name, code, prototype, is_strict);
 
   ElementsKind elements_kind =
-      type == JS_ARRAY_TYPE ? FAST_SMI_ELEMENTS : FAST_HOLEY_SMI_ELEMENTS;
+      type == JS_ARRAY_TYPE ? PACKED_SMI_ELEMENTS : HOLEY_SMI_ELEMENTS;
   Handle<Map> initial_map = NewMap(type, instance_size, elements_kind);
   // TODO(littledan): Why do we have this is_generator test when
   // NewFunctionPrototype already handles finding an appropriately
@@ -1682,6 +1665,14 @@ Handle<ModuleInfo> Factory::NewModuleInfo() {
   return Handle<ModuleInfo>::cast(array);
 }
 
+Handle<PreParsedScopeData> Factory::NewPreParsedScopeData() {
+  Handle<PreParsedScopeData> result =
+      Handle<PreParsedScopeData>::cast(NewStruct(PREPARSED_SCOPE_DATA_TYPE));
+  result->set_scope_data(PodArray<uint32_t>::cast(*empty_byte_array()));
+  result->set_child_data(*empty_fixed_array());
+  return result;
+}
+
 Handle<JSObject> Factory::NewExternal(void* value) {
   Handle<Foreign> foreign = NewForeign(static_cast<Address>(value));
   Handle<JSObject> external = NewJSObjectFromMap(external_map());
@@ -1728,7 +1719,6 @@ Handle<Code> Factory::NewCode(const CodeDesc& desc,
   // The code object has not been fully initialized yet.  We rely on the
   // fact that no allocation will happen from this point on.
   DisallowHeapAllocation no_gc;
-  code->set_ic_age(isolate()->heap()->global_ic_age());
   code->set_instruction_size(desc.instr_size);
   code->set_relocation_info(*reloc_info);
   code->set_flags(flags);
@@ -1850,7 +1840,7 @@ Handle<JSGlobalObject> Factory::NewJSGlobalObject(
     PropertyDetails d(kAccessor, details.attributes(),
                       PropertyCellType::kMutable);
     Handle<Name> name(descs->GetKey(i));
-    Handle<PropertyCell> cell = NewPropertyCell();
+    Handle<PropertyCell> cell = NewPropertyCell(name);
     cell->set_value(descs->GetValue(i));
     // |dictionary| already contains enough space for all properties.
     USE(GlobalDictionary::Add(dictionary, name, cell, d));
@@ -2016,9 +2006,10 @@ Handle<Module> Factory::NewModule(Handle<SharedFunctionInfo> code) {
   module->set_module_namespace(isolate()->heap()->undefined_value());
   module->set_requested_modules(*requested_modules);
   module->set_script(Script::cast(code->script()));
-  module->set_status(Module::kUnprepared);
-  DCHECK(!module->instantiated());
-  DCHECK(!module->evaluated());
+  module->set_status(Module::kUninstantiated);
+  module->set_exception(isolate()->heap()->the_hole_value());
+  module->set_dfs_index(-1);
+  module->set_dfs_ancestor_index(-1);
   return module;
 }
 
@@ -2445,7 +2436,7 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfoForLiteral(
   Handle<SharedFunctionInfo> result =
       NewSharedFunctionInfo(literal->name(), literal->kind(), code, scope_info);
   SharedFunctionInfo::InitFromFunctionLiteral(result, literal);
-  SharedFunctionInfo::SetScript(result, script);
+  SharedFunctionInfo::SetScript(result, script, false);
   return result;
 }
 
@@ -2524,6 +2515,8 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   // All compiler hints default to false or 0.
   share->set_compiler_hints(0);
   share->set_opt_count_and_bailout_reason(0);
+
+  share->set_preparsed_scope_data(*null_value());
 
   // Link into the list.
   Handle<Object> new_noscript_list =

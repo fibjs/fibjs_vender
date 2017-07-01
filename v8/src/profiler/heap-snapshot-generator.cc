@@ -677,9 +677,9 @@ SnapshotObjectId HeapObjectsMap::GenerateId(v8::RetainedObjectInfo* info) {
                                            static_cast<int>(strlen(label)),
                                            heap_->HashSeed());
   intptr_t element_count = info->GetElementCount();
-  if (element_count != -1)
-    id ^= ComputeIntegerHash(static_cast<uint32_t>(element_count),
-                             v8::internal::kZeroHashSeed);
+  if (element_count != -1) {
+    id ^= ComputeIntegerHash(static_cast<uint32_t>(element_count));
+  }
   return id << 1;
 }
 
@@ -1575,14 +1575,13 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
     GlobalDictionary* dictionary = js_obj->global_dictionary();
     int length = dictionary->Capacity();
     for (int i = 0; i < length; ++i) {
-      Object* k = dictionary->KeyAt(i);
-      if (dictionary->IsKey(isolate, k)) {
-        DCHECK(dictionary->ValueAt(i)->IsPropertyCell());
-        PropertyCell* cell = PropertyCell::cast(dictionary->ValueAt(i));
+      if (dictionary->IsKey(isolate, dictionary->KeyAt(i))) {
+        PropertyCell* cell = dictionary->CellAt(i);
+        Name* name = cell->name();
         Object* value = cell->value();
         PropertyDetails details = cell->property_details();
-        SetDataOrAccessorPropertyReference(details.kind(), js_obj, entry,
-                                           Name::cast(k), value);
+        SetDataOrAccessorPropertyReference(details.kind(), js_obj, entry, name,
+                                           value);
       }
     }
   } else {

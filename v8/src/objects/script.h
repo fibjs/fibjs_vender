@@ -88,8 +88,6 @@ class Script : public Struct {
   // This must only be called if the type of this script is TYPE_WASM.
   DECL_ACCESSORS(wasm_compiled_module, Object)
 
-  DECL_ACCESSORS(preparsed_scope_data, PodArray<uint32_t>)
-
   // [compilation_type]: how the the script was compiled. Encoded in the
   // 'flags' field.
   inline CompilationType compilation_type();
@@ -106,7 +104,7 @@ class Script : public Struct {
   inline v8::ScriptOriginOptions origin_options();
   inline void set_origin_options(ScriptOriginOptions origin_options);
 
-  DECLARE_CAST(Script)
+  DECL_CAST(Script)
 
   // If script source is an external string, check that the underlying
   // resource is accessible. Otherwise, always return true.
@@ -176,11 +174,9 @@ class Script : public Struct {
     DISALLOW_COPY_AND_ASSIGN(Iterator);
   };
 
-  bool HasPreparsedScopeData() const;
-
   // Dispatched behavior.
-  DECLARE_PRINTER(Script)
-  DECLARE_VERIFIER(Script)
+  DECL_PRINTER(Script)
+  DECL_VERIFIER(Script)
 
   static const int kSourceOffset = HeapObject::kHeaderSize;
   static const int kNameOffset = kSourceOffset + kPointerSize;
@@ -199,9 +195,7 @@ class Script : public Struct {
   static const int kFlagsOffset = kSharedFunctionInfosOffset + kPointerSize;
   static const int kSourceUrlOffset = kFlagsOffset + kPointerSize;
   static const int kSourceMappingUrlOffset = kSourceUrlOffset + kPointerSize;
-  static const int kPreParsedScopeDataOffset =
-      kSourceMappingUrlOffset + kPointerSize;
-  static const int kSize = kPreParsedScopeDataOffset + kPointerSize;
+  static const int kSize = kSourceMappingUrlOffset + kPointerSize;
 
  private:
   // Bit positions in the flags field.

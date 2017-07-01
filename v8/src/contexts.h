@@ -271,16 +271,16 @@ enum ContextLookupFlags {
   V(INTL_COLLATOR_FUNCTION_INDEX, JSFunction, intl_collator_function)          \
   V(INTL_V8_BREAK_ITERATOR_FUNCTION_INDEX, JSFunction,                         \
     intl_v8_break_iterator_function)                                           \
-  V(JS_ARRAY_FAST_SMI_ELEMENTS_MAP_INDEX, Map,                                 \
+  V(JS_ARRAY_PACKED_SMI_ELEMENTS_MAP_INDEX, Map,                               \
     js_array_fast_smi_elements_map_index)                                      \
-  V(JS_ARRAY_FAST_HOLEY_SMI_ELEMENTS_MAP_INDEX, Map,                           \
+  V(JS_ARRAY_HOLEY_SMI_ELEMENTS_MAP_INDEX, Map,                                \
     js_array_fast_holey_smi_elements_map_index)                                \
-  V(JS_ARRAY_FAST_ELEMENTS_MAP_INDEX, Map, js_array_fast_elements_map_index)   \
-  V(JS_ARRAY_FAST_HOLEY_ELEMENTS_MAP_INDEX, Map,                               \
+  V(JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX, Map, js_array_fast_elements_map_index) \
+  V(JS_ARRAY_HOLEY_ELEMENTS_MAP_INDEX, Map,                                    \
     js_array_fast_holey_elements_map_index)                                    \
-  V(JS_ARRAY_FAST_DOUBLE_ELEMENTS_MAP_INDEX, Map,                              \
+  V(JS_ARRAY_PACKED_DOUBLE_ELEMENTS_MAP_INDEX, Map,                            \
     js_array_fast_double_elements_map_index)                                   \
-  V(JS_ARRAY_FAST_HOLEY_DOUBLE_ELEMENTS_MAP_INDEX, Map,                        \
+  V(JS_ARRAY_HOLEY_DOUBLE_ELEMENTS_MAP_INDEX, Map,                             \
     js_array_fast_holey_double_elements_map_index)                             \
   V(JS_MAP_FUN_INDEX, JSFunction, js_map_fun)                                  \
   V(JS_MAP_MAP_INDEX, Map, js_map_map)                                         \
@@ -300,7 +300,6 @@ enum ContextLookupFlags {
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
   V(OBJECT_FUNCTION_PROTOTYPE_MAP_INDEX, Map, object_function_prototype_map)   \
   V(OPAQUE_REFERENCE_FUNCTION_INDEX, JSFunction, opaque_reference_function)    \
-  V(OSR_CODE_TABLE_INDEX, FixedArray, osr_code_table)                          \
   V(PROXY_CALLABLE_MAP_INDEX, Map, proxy_callable_map)                         \
   V(PROXY_CONSTRUCTOR_MAP_INDEX, Map, proxy_constructor_map)                   \
   V(PROXY_FUNCTION_INDEX, JSFunction, proxy_function)                          \
@@ -520,7 +519,7 @@ class Context: public FixedArray {
     // Total number of slots.
     NATIVE_CONTEXT_SLOTS,
     FIRST_WEAK_SLOT = OPTIMIZED_FUNCTIONS_LIST,
-    FIRST_JS_ARRAY_MAP_SLOT = JS_ARRAY_FAST_SMI_ELEMENTS_MAP_INDEX,
+    FIRST_JS_ARRAY_MAP_SLOT = JS_ARRAY_PACKED_SMI_ELEMENTS_MAP_INDEX,
 
     MIN_CONTEXT_SLOTS = GLOBAL_PROXY_INDEX,
     // This slot holds the thrown value in catch contexts.
@@ -597,26 +596,6 @@ class Context: public FixedArray {
   inline bool IsScriptContext();
 
   inline bool HasSameSecurityTokenAs(Context* that);
-
-  // Removes a specific optimized code object from the optimized code map.
-  // In case of non-OSR the code reference is cleared from the cache entry but
-  // the entry itself is left in the map in order to proceed sharing literals.
-  void EvictFromOSROptimizedCodeCache(Code* optimized_code, const char* reason);
-
-  // Clear optimized code map.
-  void ClearOSROptimizedCodeCache();
-
-  // A native context keeps track of all osrd optimized functions.
-  inline bool OSROptimizedCodeCacheIsCleared();
-  Code* SearchOSROptimizedCodeCache(SharedFunctionInfo* shared,
-                                    BailoutId osr_ast_id);
-  int SearchOSROptimizedCodeCacheEntry(SharedFunctionInfo* shared,
-                                       BailoutId osr_ast_id);
-
-  static void AddToOSROptimizedCodeCache(Handle<Context> native_context,
-                                         Handle<SharedFunctionInfo> shared,
-                                         Handle<Code> code,
-                                         BailoutId osr_ast_id);
 
   // A native context holds a list of all functions with optimized code.
   void AddOptimizedFunction(JSFunction* function);

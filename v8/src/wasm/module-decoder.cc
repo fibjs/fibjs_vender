@@ -670,14 +670,14 @@ class ModuleDecoder : public Decoder {
           &module_->functions[i + module_->num_imported_functions];
       uint32_t size = consume_u32v("body size");
       function->code = {pc_offset(), size};
-      if (verify_functions) {
+      consume_bytes(size, "function body");
+      if (ok() && verify_functions) {
         ModuleBytesEnv module_env(module_.get(), nullptr,
                                   ModuleWireBytes(start_, end_));
         VerifyFunctionBody(module_->signature_zone->allocator(),
                            i + module_->num_imported_functions, &module_env,
                            function);
       }
-      consume_bytes(size, "function body");
     }
   }
 
@@ -1261,12 +1261,12 @@ ModuleResult SyncDecodeWasmModule(Isolate* isolate, const byte* module_start,
                           origin, isolate->counters(), true);
 }
 
-ModuleResult AsyncDecodeWasmModule(Isolate* isolate, const byte* module_start,
-                                   const byte* module_end,
-                                   bool verify_functions, ModuleOrigin origin,
-                                   Counters* async_counters) {
+ModuleResult AsyncDecodeWasmModule(
+    Isolate* isolate, const byte* module_start, const byte* module_end,
+    bool verify_functions, ModuleOrigin origin,
+    const std::shared_ptr<Counters> async_counters) {
   return DecodeWasmModule(isolate, module_start, module_end, verify_functions,
-                          origin, async_counters, false);
+                          origin, async_counters.get(), false);
 }
 
 FunctionSig* DecodeWasmSignatureForTesting(Zone* zone, const byte* start,
@@ -1315,13 +1315,12 @@ FunctionResult SyncDecodeWasmFunction(Isolate* isolate, Zone* zone,
                             function_end, isolate->counters(), true);
 }
 
-FunctionResult AsyncDecodeWasmFunction(Isolate* isolate, Zone* zone,
-                                       ModuleBytesEnv* module_env,
-                                       const byte* function_start,
-                                       const byte* function_end,
-                                       Counters* async_counters) {
+FunctionResult AsyncDecodeWasmFunction(
+    Isolate* isolate, Zone* zone, ModuleBytesEnv* module_env,
+    const byte* function_start, const byte* function_end,
+    std::shared_ptr<Counters> async_counters) {
   return DecodeWasmFunction(isolate, zone, module_env, function_start,
-                            function_end, async_counters, false);
+                            function_end, async_counters.get(), false);
 }
 
 AsmJsOffsetsResult DecodeAsmJsOffsets(const byte* tables_start,

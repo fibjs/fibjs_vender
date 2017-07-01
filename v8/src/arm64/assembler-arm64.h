@@ -13,6 +13,7 @@
 #include "src/arm64/constants-arm64.h"
 #include "src/arm64/instructions-arm64.h"
 #include "src/assembler.h"
+#include "src/base/optional.h"
 #include "src/globals.h"
 #include "src/utils.h"
 
@@ -690,19 +691,12 @@ class Operand {
                  Extend extend,
                  unsigned shift_amount = 0);
 
-  static Operand EmbeddedNumber(double value);  // Smi or HeapNumber.
+  static Operand EmbeddedNumber(double number);  // Smi or HeapNumber.
+  static Operand EmbeddedCode(CodeStub* stub);
 
-  bool is_heap_number() const {
-    DCHECK_IMPLIES(is_heap_number_, reg_.Is(NoReg));
-    DCHECK_IMPLIES(is_heap_number_,
-                   immediate_.rmode() == RelocInfo::EMBEDDED_OBJECT);
-    return is_heap_number_;
-  }
-
-  double heap_number() const {
-    DCHECK(is_heap_number());
-    return bit_cast<double>(immediate_.value());
-  }
+  inline bool IsHeapObjectRequest() const;
+  inline HeapObjectRequest heap_object_request() const;
+  inline Immediate immediate_for_heap_object_request() const;
 
   template<typename T>
   inline explicit Operand(Handle<T> handle);
@@ -739,12 +733,12 @@ class Operand {
   inline static Operand UntagSmiAndScale(Register smi, int scale);
 
  private:
+  base::Optional<HeapObjectRequest> heap_object_request_;
   Immediate immediate_;
   Register reg_;
   Shift shift_;
   Extend extend_;
   unsigned shift_amount_;
-  bool is_heap_number_ = false;
 };
 
 
@@ -806,17 +800,11 @@ class MemOperand {
 
 class ConstPool {
  public:
-  explicit ConstPool(Assembler* assm)
-      : assm_(assm),
-        first_use_(-1),
-        shared_entries_count(0) {}
-  void RecordEntry(intptr_t data, RelocInfo::Mode mode);
-  int EntryCount() const {
-    return shared_entries_count + static_cast<int>(unique_entries_.size());
-  }
-  bool IsEmpty() const {
-    return shared_entries_.empty() && unique_entries_.empty();
-  }
+  explicit ConstPool(Assembler* assm) : assm_(assm), first_use_(-1) {}
+  // Returns true when we need to write RelocInfo and false when we do not.
+  bool RecordEntry(intptr_t data, RelocInfo::Mode mode);
+  int EntryCount() const { return static_cast<int>(entries_.size()); }
+  bool IsEmpty() const { return entries_.empty(); }
   // Distance in bytes between the current pc and the first instruction
   // using the pool. If there are no pending entries return kMaxInt.
   int DistanceToFirstUse();
@@ -840,16 +828,29 @@ class ConstPool {
   void EmitGuard();
   void EmitEntries();
 
+  typedef std::map<uint64_t, int> SharedEntryMap;
+  // Adds a shared entry to entries_, using 'entry_map' to determine whether we
+  // already track this entry. Returns true if this is the first time we add
+  // this entry, false otherwise.
+  bool AddSharedEntry(SharedEntryMap& entry_map, uint64_t data, int offset);
+
   Assembler* assm_;
   // Keep track of the first instruction requiring a constant pool entry
   // since the previous constant pool was emitted.
   int first_use_;
-  // values, pc offset(s) of entries which can be shared.
-  std::multimap<uint64_t, int> shared_entries_;
-  // Number of distinct literal in shared entries.
-  int shared_entries_count;
-  // values, pc offset of entries which cannot be shared.
-  std::vector<std::pair<uint64_t, int> > unique_entries_;
+
+  // Map of data to index in entries_ for shared entries.
+  SharedEntryMap shared_entries_;
+
+  // Map of address of handle to index in entries_. We need to keep track of
+  // code targets separately from other shared entries, as they can be
+  // relocated.
+  SharedEntryMap handle_to_index_map_;
+
+  // Values, pc offset(s) of entries. Use a vector to preserve the order of
+  // insertion, as the serializer expects code target RelocInfo to point to
+  // constant pool addresses in an ascending order.
+  std::vector<std::pair<uint64_t, std::vector<int> > > entries_;
 };
 
 
@@ -1011,7 +1012,7 @@ class Assembler : public AssemblerBase {
 
   // Prevent contant pool emission until EndBlockConstPool is called.
   // Call to this function can be nested but must be followed by an equal
-  // number of call to EndBlockConstpool.
+  // number of calls to EndBlockConstpool.
   void StartBlockConstPool();
 
   // Resume constant pool emission. Need to be called as many time as
@@ -1026,7 +1027,7 @@ class Assembler : public AssemblerBase {
 
   // Prevent veneer pool emission until EndBlockVeneerPool is called.
   // Call to this function can be nested but must be followed by an equal
-  // number of call to EndBlockConstpool.
+  // number of calls to EndBlockConstpool.
   void StartBlockVeneerPool();
 
   // Resume constant pool emission. Need to be called as many time as
@@ -1078,11 +1079,6 @@ class Assembler : public AssemblerBase {
   // The parameter indicates the size of the pool (in bytes), including
   // the marker and branch over the data.
   void RecordConstPool(int size);
-
-  // Patch the dummy heap number that we emitted during code assembly in the
-  // constant pool entry referenced by {pc}. Replace it with the actual heap
-  // object (handle).
-  static void set_heap_number(Handle<HeapObject> number, Address pc);
 
   // Instruction set functions ------------------------------------------------
 
@@ -3187,6 +3183,34 @@ class Assembler : public AssemblerBase {
     DISALLOW_IMPLICIT_CONSTRUCTORS(BlockPoolsScope);
   };
 
+  // Class for blocking sharing of code targets in constant pool.
+  class BlockCodeTargetSharingScope {
+   public:
+    explicit BlockCodeTargetSharingScope(Assembler* assem) : assem_(nullptr) {
+      Open(assem);
+    }
+    // This constructor does not initialize the scope. The user needs to
+    // explicitly call Open() before using it.
+    BlockCodeTargetSharingScope() : assem_(nullptr) {}
+    ~BlockCodeTargetSharingScope() { Close(); }
+    void Open(Assembler* assem) {
+      DCHECK_NULL(assem_);
+      DCHECK_NOT_NULL(assem);
+      assem_ = assem;
+      assem_->StartBlockCodeTargetSharing();
+    }
+
+   private:
+    void Close() {
+      if (assem_ != nullptr) {
+        assem_->EndBlockCodeTargetSharing();
+      }
+    }
+    Assembler* assem_;
+
+    DISALLOW_COPY_AND_ASSIGN(BlockCodeTargetSharingScope);
+  };
+
  protected:
   inline const Register& AppropriateZeroRegFor(const CPURegister& reg) const;
 
@@ -3271,6 +3295,16 @@ class Assembler : public AssemblerBase {
   void RemoveBranchFromLabelLinkChain(Instruction* branch,
                                       Label* label,
                                       Instruction* label_veneer = NULL);
+
+  // Prevent sharing of code target constant pool entries until
+  // EndBlockCodeTargetSharing is called. Calls to this function can be nested
+  // but must be followed by an equal number of call to
+  // EndBlockCodeTargetSharing.
+  void StartBlockCodeTargetSharing() { ++code_target_sharing_blocked_nesting_; }
+
+  // Resume sharing of constant pool code target entries. Needs to be called
+  // as many times as StartBlockCodeTargetSharing to have an effect.
+  void EndBlockCodeTargetSharing() { --code_target_sharing_blocked_nesting_; }
 
  private:
   static uint32_t FPToImm8(double imm);
@@ -3453,6 +3487,12 @@ class Assembler : public AssemblerBase {
   // Emission of the veneer pools may be blocked in some code sequences.
   int veneer_pool_blocked_nesting_;  // Block emission if this is not zero.
 
+  // Sharing of code target entries may be blocked in some code sequences.
+  int code_target_sharing_blocked_nesting_;
+  bool IsCodeTargetSharingAllowed() const {
+    return code_target_sharing_blocked_nesting_ == 0;
+  }
+
   // Relocation info generation
   // Each relocation is encoded as a variable size value
   static constexpr int kMaxRelocSize = RelocInfoWriter::kMaxSize;
@@ -3557,6 +3597,19 @@ class Assembler : public AssemblerBase {
   // if pending unresolved information exists. Its complexity is proportional to
   // the length of the label chain.
   void DeleteUnresolvedBranchInfoForLabelTraverse(Label* label);
+
+  // The following functions help with avoiding allocations of embedded heap
+  // objects during the code assembly phase. {RequestHeapObject} records the
+  // need for a future heap number allocation or code stub generation. After
+  // code assembly, {AllocateAndInstallRequestedHeapObjects} will allocate these
+  // objects and place them where they are expected (determined by the pc offset
+  // associated with each request). That is, for each request, it will patch the
+  // dummy heap object handle that we emitted during code assembly with the
+  // actual heap object handle.
+  void RequestHeapObject(HeapObjectRequest request);
+  void AllocateAndInstallRequestedHeapObjects(Isolate* isolate);
+
+  std::forward_list<HeapObjectRequest> heap_object_requests_;
 
  private:
   friend class EnsureSpace;

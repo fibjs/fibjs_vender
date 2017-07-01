@@ -327,10 +327,10 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case TUPLE3_TYPE:
     case CONTEXT_EXTENSION_TYPE:
     case ASYNC_GENERATOR_REQUEST_TYPE:
+    case PREPARSED_SCOPE_DATA_TYPE:
     case PADDING_TYPE_1:
     case PADDING_TYPE_2:
     case PADDING_TYPE_3:
-    case PADDING_TYPE_4:
       UNREACHABLE();
   }
   UNREACHABLE();
@@ -341,7 +341,11 @@ Type::bitset BitsetType::Lub(i::Object* value) {
   if (value->IsNumber()) {
     return Lub(value->Number());
   }
-  return Lub(i::HeapObject::cast(value)->map());
+  i::HeapObject* heap_value = i::HeapObject::cast(value);
+  if (value == heap_value->GetHeap()->empty_string()) {
+    return kEmptyString;
+  }
+  return Lub(heap_value->map()) & ~kEmptyString;
 }
 
 Type::bitset BitsetType::Lub(double value) {

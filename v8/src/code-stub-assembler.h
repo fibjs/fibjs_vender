@@ -56,7 +56,8 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(Tuple2Map, Tuple2Map)                             \
   V(Tuple3Map, Tuple3Map)                             \
   V(UndefinedValue, Undefined)                        \
-  V(WeakCellMap, WeakCellMap)
+  V(WeakCellMap, WeakCellMap)                         \
+  V(SharedFunctionInfoMap, SharedFunctionInfoMap)
 
 // Provides JavaScript-specific "macro-assembler" functionality on top of the
 // CodeAssembler. By factoring the JavaScript-isms out of the CodeAssembler,
@@ -784,6 +785,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsFixedArrayWithKindOrEmpty(Node* object, ElementsKind kind);
   Node* IsFixedDoubleArray(Node* object);
   Node* IsFixedTypedArray(Node* object);
+  Node* IsZeroOrFixedArray(Node* object);
   Node* IsHashTable(Node* object);
   Node* IsHeapNumber(Node* object);
   Node* IsIndirectStringInstanceType(Node* instance_type);
@@ -813,6 +815,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsPrivateSymbol(Node* object);
   Node* IsPropertyCell(Node* object);
   Node* IsSequentialStringInstanceType(Node* instance_type);
+  inline Node* IsSharedFunctionInfo(Node* object) {
+    return IsSharedFunctionInfoMap(LoadMap(object));
+  }
   Node* IsShortExternalStringInstanceType(Node* instance_type);
   Node* IsSpecialReceiverInstanceType(Node* instance_type);
   Node* IsSpecialReceiverMap(Node* map);
@@ -1136,6 +1141,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // {if_not_found}.
   static const int kInlinedDictionaryProbes = 4;
   enum LookupMode { kFindExisting, kFindInsertionIndex };
+
+  template <typename Dictionary>
+  Node* LoadName(Node* key);
+
   template <typename Dictionary>
   void NameDictionaryLookup(Node* dictionary, Node* unique_name,
                             Label* if_found, Variable* var_name_index,
@@ -1143,6 +1152,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                             int inlined_probes = kInlinedDictionaryProbes,
                             LookupMode mode = kFindExisting);
 
+  Node* ComputeIntegerHash(Node* key);
   Node* ComputeIntegerHash(Node* key, Node* seed);
 
   template <typename Dictionary>

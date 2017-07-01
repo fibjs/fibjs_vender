@@ -70,8 +70,6 @@ class Factory;
 class HandleScopeImplementer;
 class HeapObjectToIndexHashMap;
 class HeapProfiler;
-class HStatistics;
-class HTracer;
 class InlineRuntimeFunctionsTable;
 class InnerPointerToCodeCache;
 class Logger;
@@ -407,9 +405,7 @@ typedef std::vector<HeapObject*> DebugObjectCache;
   V(AddressToIndexHashMap*, external_reference_map, nullptr)                  \
   V(HeapObjectToIndexHashMap*, root_index_map, nullptr)                       \
   V(int, pending_microtask_count, 0)                                          \
-  V(HStatistics*, hstatistics, nullptr)                                       \
   V(CompilationStatistics*, turbo_statistics, nullptr)                        \
-  V(HTracer*, htracer, nullptr)                                               \
   V(CodeTracer*, code_tracer, nullptr)                                        \
   V(uint32_t, per_isolate_assert_data, 0xFFFFFFFFu)                           \
   V(PromiseRejectCallback, promise_reject_callback, nullptr)                  \
@@ -812,6 +808,8 @@ class Isolate {
   // is, the native context of the top-most JavaScript frame.
   Handle<Context> GetCallingNativeContext();
 
+  Handle<Context> GetIncumbentContext();
+
   void RegisterTryCatchHandler(v8::TryCatch* that);
   void UnregisterTryCatchHandler(v8::TryCatch* that);
 
@@ -1087,9 +1085,7 @@ class Isolate {
 
   int id() const { return static_cast<int>(id_); }
 
-  HStatistics* GetHStatistics();
   CompilationStatistics* GetTurboStatistics();
-  HTracer* GetHTracer();
   CodeTracer* GetCodeTracer();
 
   void DumpAndResetStats();
@@ -1212,19 +1208,12 @@ class Isolate {
     return compiler_dispatcher_;
   }
 
-  // Clear all optimized code stored in native contexts.
-  void ClearOSROptimizedCode();
-
-  // Ensure that a particular optimized code is evicted.
-  void EvictOSROptimizedCode(Code* code, const char* reason);
-
   bool IsInAnyContext(Object* object, uint32_t index);
 
   void SetHostImportModuleDynamicallyCallback(
       HostImportModuleDynamicallyCallback callback);
-  void RunHostImportModuleDynamicallyCallback(Handle<String> referrer,
-                                              Handle<String> specifier,
-                                              Handle<JSPromise> promise);
+  MaybeHandle<JSPromise> RunHostImportModuleDynamicallyCallback(
+      Handle<String> referrer, Handle<Object> specifier);
 
   void SetRAILMode(RAILMode rail_mode);
 
@@ -1289,6 +1278,14 @@ class Isolate {
   size_t elements_deletion_counter() { return elements_deletion_counter_; }
   void set_elements_deletion_counter(size_t value) {
     elements_deletion_counter_ = value;
+  }
+
+  const v8::Context::BackupIncumbentScope* top_backup_incumbent_scope() const {
+    return top_backup_incumbent_scope_;
+  }
+  void set_top_backup_incumbent_scope(
+      const v8::Context::BackupIncumbentScope* top_backup_incumbent_scope) {
+    top_backup_incumbent_scope_ = top_backup_incumbent_scope;
   }
 
  protected:
@@ -1579,6 +1576,10 @@ class Isolate {
   size_t total_regexp_code_generated_;
 
   size_t elements_deletion_counter_ = 0;
+
+  // The top entry of the v8::Context::BackupIncumbentScope stack.
+  const v8::Context::BackupIncumbentScope* top_backup_incumbent_scope_ =
+      nullptr;
 
   friend class ExecutionAccess;
   friend class HandleScopeImplementer;

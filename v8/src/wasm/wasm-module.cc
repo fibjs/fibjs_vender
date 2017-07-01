@@ -80,7 +80,8 @@ void* TryAllocateBackingStore(Isolate* isolate, size_t size,
 
     return memory;
   } else {
-    void* memory = isolate->array_buffer_allocator()->Allocate(size);
+    void* memory =
+        size == 0 ? nullptr : isolate->array_buffer_allocator()->Allocate(size);
     allocation_base = memory;
     allocation_length = size;
     return memory;
@@ -276,7 +277,7 @@ Handle<JSArrayBuffer> wasm::NewArrayBuffer(Isolate* isolate, size_t size,
   void* memory = TryAllocateBackingStore(isolate, size, enable_guard_regions,
                                          allocation_base, allocation_length);
 
-  if (memory == nullptr) {
+  if (size > 0 && memory == nullptr) {
     return Handle<JSArrayBuffer>::null();
   }
 
@@ -288,7 +289,7 @@ Handle<JSArrayBuffer> wasm::NewArrayBuffer(Isolate* isolate, size_t size,
   }
 #endif
 
-  const bool is_external = false;
+  constexpr bool is_external = false;
   return SetupArrayBuffer(isolate, allocation_base, allocation_length, memory,
                           size, is_external, enable_guard_regions);
 }
@@ -357,7 +358,7 @@ WasmInstanceObject* wasm::GetOwningWasmInstance(Code* code) {
 }
 
 WasmModule::WasmModule(std::unique_ptr<Zone> owned)
-    : signature_zone(std::move(owned)), pending_tasks(new base::Semaphore(0)) {}
+    : signature_zone(std::move(owned)) {}
 
 WasmFunction* wasm::GetWasmFunctionForImportWrapper(Isolate* isolate,
                                                     Handle<Object> target) {
@@ -561,7 +562,7 @@ Handle<JSArray> wasm::GetImports(Isolate* isolate,
   // Create the result array.
   WasmModule* module = compiled_module->module();
   int num_imports = static_cast<int>(module->import_table.size());
-  Handle<JSArray> array_object = factory->NewJSArray(FAST_ELEMENTS, 0, 0);
+  Handle<JSArray> array_object = factory->NewJSArray(PACKED_ELEMENTS, 0, 0);
   Handle<FixedArray> storage = factory->NewFixedArray(num_imports);
   JSArray::SetContent(array_object, storage);
   array_object->set_length(Smi::FromInt(num_imports));
@@ -630,7 +631,7 @@ Handle<JSArray> wasm::GetExports(Isolate* isolate,
   // Create the result array.
   WasmModule* module = compiled_module->module();
   int num_exports = static_cast<int>(module->export_table.size());
-  Handle<JSArray> array_object = factory->NewJSArray(FAST_ELEMENTS, 0, 0);
+  Handle<JSArray> array_object = factory->NewJSArray(PACKED_ELEMENTS, 0, 0);
   Handle<FixedArray> storage = factory->NewFixedArray(num_exports);
   JSArray::SetContent(array_object, storage);
   array_object->set_length(Smi::FromInt(num_exports));
@@ -706,38 +707,30 @@ Handle<JSArray> wasm::GetCustomSections(Isolate* isolate,
     if (!name->Equals(*section_name.ToHandleChecked())) continue;
 
     // Make a copy of the payload data in the section.
-    void* allocation_base = nullptr;  // Set by TryAllocateBackingStore
-    size_t allocation_length = 0;     // Set by TryAllocateBackingStore
-    const bool enable_guard_regions = false;
-    void* memory = TryAllocateBackingStore(isolate, section.payload.length(),
-                                           enable_guard_regions,
-                                           allocation_base, allocation_length);
+    size_t size = section.payload.length();
+    void* memory =
+        size == 0 ? nullptr : isolate->array_buffer_allocator()->Allocate(size);
 
-    Handle<Object> section_data = factory->undefined_value();
-    if (memory) {
-      Handle<JSArrayBuffer> buffer = isolate->factory()->NewJSArrayBuffer();
-      const bool is_external = false;
-      JSArrayBuffer::Setup(buffer, isolate, is_external, allocation_base,
-                           allocation_length, memory,
-                           static_cast<int>(section.payload.length()));
-      DisallowHeapAllocation no_gc;  // for raw access to string bytes.
-      Handle<SeqOneByteString> module_bytes(compiled_module->module_bytes(),
-                                            isolate);
-      const byte* start =
-          reinterpret_cast<const byte*>(module_bytes->GetCharsAddress());
-      memcpy(memory, start + section.payload.offset(),
-             section.payload.length());
-      section_data = buffer;
-    } else {
+    if (size && !memory) {
       thrower->RangeError("out of memory allocating custom section data");
       return Handle<JSArray>();
     }
+    Handle<JSArrayBuffer> buffer = isolate->factory()->NewJSArrayBuffer();
+    constexpr bool is_external = false;
+    JSArrayBuffer::Setup(buffer, isolate, is_external, memory, size, memory,
+                         size);
+    DisallowHeapAllocation no_gc;  // for raw access to string bytes.
+    Handle<SeqOneByteString> module_bytes(compiled_module->module_bytes(),
+                                          isolate);
+    const byte* start =
+        reinterpret_cast<const byte*>(module_bytes->GetCharsAddress());
+    memcpy(memory, start + section.payload.offset(), section.payload.length());
 
-    matching_sections.push_back(section_data);
+    matching_sections.push_back(buffer);
   }
 
   int num_custom_sections = static_cast<int>(matching_sections.size());
-  Handle<JSArray> array_object = factory->NewJSArray(FAST_ELEMENTS, 0, 0);
+  Handle<JSArray> array_object = factory->NewJSArray(PACKED_ELEMENTS, 0, 0);
   Handle<FixedArray> storage = factory->NewFixedArray(num_custom_sections);
   JSArray::SetContent(array_object, storage);
   array_object->set_length(Smi::FromInt(num_custom_sections));
@@ -815,11 +808,9 @@ MaybeHandle<WasmInstanceObject> wasm::SyncCompileAndInstantiate(
   DCHECK_EQ(thrower->error(), module.is_null());
   if (module.is_null()) return {};
 
-  MaybeHandle<WasmInstanceObject> instance = wasm::SyncInstantiate(
-      isolate, thrower, module.ToHandleChecked(), Handle<JSReceiver>::null(),
-      Handle<JSArrayBuffer>::null());
-  DCHECK_EQ(thrower->error(), instance.is_null());
-  return instance;
+  return wasm::SyncInstantiate(isolate, thrower, module.ToHandleChecked(),
+                               Handle<JSReceiver>::null(),
+                               Handle<JSArrayBuffer>::null());
 }
 
 namespace {
@@ -999,7 +990,8 @@ void LazyCompilationOrchestrator::CompileFunction(
   }
   ErrorThrower thrower(isolate, "WasmLazyCompile");
   compiler::WasmCompilationUnit unit(isolate, &module_env, body,
-                                     CStrVector(func_name.c_str()), func_index);
+                                     CStrVector(func_name.c_str()), func_index,
+                                     CEntryStub(isolate, 1).GetCode());
   unit.ExecuteCompilation();
   Handle<Code> code = unit.FinishCompilation(&thrower);
 
@@ -1034,8 +1026,8 @@ void LazyCompilationOrchestrator::CompileFunction(
     Address mem_start =
         reinterpret_cast<Address>(instance->memory_buffer()->backing_store());
     int mem_size = instance->memory_buffer()->byte_length()->Number();
-    DCHECK_IMPLIES(mem_size == 0, mem_start == nullptr);
-    if (mem_size > 0) {
+    DCHECK_IMPLIES(mem_start == nullptr, mem_size == 0);
+    if (mem_start != nullptr) {
       code_specialization.RelocateMemoryReferences(nullptr, 0, mem_start,
                                                    mem_size);
     }

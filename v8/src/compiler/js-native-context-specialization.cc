@@ -1076,7 +1076,7 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
           // store is either holey, or we have a potentially growing store,
           // then we need to check that all prototypes have stable maps with
           // fast elements (and we need to guard against changes to that below).
-          if (IsHoleyElementsKind(receiver_map->elements_kind()) ||
+          if (IsHoleyOrDictionaryElementsKind(receiver_map->elements_kind()) ||
               IsGrowStoreMode(store_mode)) {
             // Make sure all prototypes are stable and have fast elements.
             for (Handle<Map> map = receiver_map;;) {
@@ -2126,12 +2126,12 @@ JSNativeContextSpecialization::BuildElementAccess(
     if (access_mode == AccessMode::kLoad) {
       // Compute the real element access type, which includes the hole in case
       // of holey backing stores.
-      if (IsHoleyElementsKind(elements_kind)) {
+      if (IsHoleyOrDictionaryElementsKind(elements_kind)) {
         element_access.type =
             Type::Union(element_type, Type::Hole(), graph()->zone());
       }
-      if (elements_kind == FAST_HOLEY_ELEMENTS ||
-          elements_kind == FAST_HOLEY_SMI_ELEMENTS) {
+      if (elements_kind == HOLEY_ELEMENTS ||
+          elements_kind == HOLEY_SMI_ELEMENTS) {
         element_access.machine_type = MachineType::AnyTagged();
       }
       // Perform the actual backing store access.
@@ -2140,8 +2140,8 @@ JSNativeContextSpecialization::BuildElementAccess(
                            index, effect, control);
       // Handle loading from holey backing stores correctly, by either mapping
       // the hole to undefined if possible, or deoptimizing otherwise.
-      if (elements_kind == FAST_HOLEY_ELEMENTS ||
-          elements_kind == FAST_HOLEY_SMI_ELEMENTS) {
+      if (elements_kind == HOLEY_ELEMENTS ||
+          elements_kind == HOLEY_SMI_ELEMENTS) {
         // Check if we are allowed to turn the hole into undefined.
         if (CanTreatHoleAsUndefined(receiver_maps)) {
           // Turn the hole into undefined.
@@ -2152,7 +2152,7 @@ JSNativeContextSpecialization::BuildElementAccess(
           value = effect = graph()->NewNode(simplified()->CheckNotTaggedHole(),
                                             value, effect, control);
         }
-      } else if (elements_kind == FAST_HOLEY_DOUBLE_ELEMENTS) {
+      } else if (elements_kind == HOLEY_DOUBLE_ELEMENTS) {
         // Perform the hole check on the result.
         CheckFloat64HoleMode mode = CheckFloat64HoleMode::kNeverReturnHole;
         // Check if we are allowed to return the hole directly.
@@ -2190,7 +2190,7 @@ JSNativeContextSpecialization::BuildElementAccess(
         if (receiver_is_jsarray) {
           flags |= GrowFastElementsFlag::kArrayObject;
         }
-        if (IsHoleyElementsKind(elements_kind)) {
+        if (IsHoleyOrDictionaryElementsKind(elements_kind)) {
           flags |= GrowFastElementsFlag::kHoleyElements;
         }
         if (IsFastDoubleElementsKind(elements_kind)) {
@@ -2394,10 +2394,6 @@ Isolate* JSNativeContextSpecialization::isolate() const {
 
 Factory* JSNativeContextSpecialization::factory() const {
   return isolate()->factory();
-}
-
-MachineOperatorBuilder* JSNativeContextSpecialization::machine() const {
-  return jsgraph()->machine();
 }
 
 CommonOperatorBuilder* JSNativeContextSpecialization::common() const {

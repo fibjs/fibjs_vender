@@ -211,18 +211,6 @@ RUNTIME_FUNCTION(Runtime_DeclareGlobalsForInterpreter) {
   return DeclareGlobals(isolate, declarations, flags, feedback_vector);
 }
 
-RUNTIME_FUNCTION(Runtime_InitializeVarGlobal) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(3, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(String, name, 0);
-  CONVERT_LANGUAGE_MODE_ARG_CHECKED(language_mode, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, value, 2);
-
-  Handle<JSGlobalObject> global(isolate->global_object());
-  RETURN_RESULT_OR_FAILURE(
-      isolate, Object::SetProperty(global, name, value, language_mode));
-}
-
 namespace {
 
 Object* DeclareEvalHelper(Isolate* isolate, Handle<String> name,
@@ -575,9 +563,9 @@ RUNTIME_FUNCTION(Runtime_NewRestParameter) {
   std::unique_ptr<Handle<Object>[]> arguments =
       GetCallerArguments(isolate, &argument_count);
   int num_elements = std::max(0, argument_count - start_index);
-  Handle<JSObject> result =
-      isolate->factory()->NewJSArray(FAST_ELEMENTS, num_elements, num_elements,
-                                     DONT_INITIALIZE_ARRAY_ELEMENTS);
+  Handle<JSObject> result = isolate->factory()->NewJSArray(
+      PACKED_ELEMENTS, num_elements, num_elements,
+      DONT_INITIALIZE_ARRAY_ELEMENTS);
   {
     DisallowHeapAllocation no_gc;
     FixedArray* elements = FixedArray::cast(result->elements());

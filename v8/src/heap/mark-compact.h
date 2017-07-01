@@ -6,15 +6,13 @@
 #define V8_HEAP_MARK_COMPACT_H_
 
 #include <deque>
+#include <vector>
 
 #include "src/base/bits.h"
-#include "src/base/platform/condition-variable.h"
-#include "src/cancelable-task.h"
-#include "src/heap/concurrent-marking-deque.h"
 #include "src/heap/marking.h"
 #include "src/heap/sequential-marking-deque.h"
 #include "src/heap/spaces.h"
-#include "src/heap/store-buffer.h"
+#include "src/heap/worklist.h"
 
 namespace v8 {
 namespace internal {
@@ -23,15 +21,11 @@ namespace internal {
 class EvacuationJobTraits;
 class HeapObjectVisitor;
 class ItemParallelJob;
-class WorklistView;
-class MarkCompactCollector;
-class MinorMarkCompactCollector;
-class MarkingVisitor;
 class MigrationObserver;
 class RecordMigratedSlotVisitor;
-class ThreadLocalTop;
-class Worklist;
 class YoungGenerationMarkingVisitor;
+class Worklist;
+class WorklistView;
 
 class ObjectMarking : public AllStatic {
  public:
@@ -109,14 +103,18 @@ class ObjectMarking : public AllStatic {
   DISALLOW_IMPLICIT_CONSTRUCTORS(ObjectMarking);
 };
 
-class MarkBitCellIterator BASE_EMBEDDED {
+class MarkBitCellIterator {
  public:
   MarkBitCellIterator(MemoryChunk* chunk, MarkingState state) : chunk_(chunk) {
-    last_cell_index_ = Bitmap::IndexToCell(Bitmap::CellAlignIndex(
+    DCHECK(Bitmap::IsCellAligned(
+        chunk_->AddressToMarkbitIndex(chunk_->area_start())));
+    DCHECK(Bitmap::IsCellAligned(
         chunk_->AddressToMarkbitIndex(chunk_->area_end())));
+    last_cell_index_ =
+        Bitmap::IndexToCell(chunk_->AddressToMarkbitIndex(chunk_->area_end()));
     cell_base_ = chunk_->area_start();
-    cell_index_ = Bitmap::IndexToCell(
-        Bitmap::CellAlignIndex(chunk_->AddressToMarkbitIndex(cell_base_)));
+    cell_index_ =
+        Bitmap::IndexToCell(chunk_->AddressToMarkbitIndex(cell_base_));
     cells_ = state.bitmap()->cells();
   }
 
@@ -125,14 +123,14 @@ class MarkBitCellIterator BASE_EMBEDDED {
   inline bool HasNext() { return cell_index_ < last_cell_index_ - 1; }
 
   inline MarkBit::CellType* CurrentCell() {
-    DCHECK(cell_index_ == Bitmap::IndexToCell(Bitmap::CellAlignIndex(
-                              chunk_->AddressToMarkbitIndex(cell_base_))));
+    DCHECK_EQ(cell_index_, Bitmap::IndexToCell(Bitmap::CellAlignIndex(
+                               chunk_->AddressToMarkbitIndex(cell_base_))));
     return &cells_[cell_index_];
   }
 
   inline Address CurrentCellBase() {
-    DCHECK(cell_index_ == Bitmap::IndexToCell(Bitmap::CellAlignIndex(
-                              chunk_->AddressToMarkbitIndex(cell_base_))));
+    DCHECK_EQ(cell_index_, Bitmap::IndexToCell(Bitmap::CellAlignIndex(
+                               chunk_->AddressToMarkbitIndex(cell_base_))));
     return cell_base_;
   }
 
@@ -230,28 +228,38 @@ class LiveObjectRange {
   Address end_;
 };
 
-class LiveObjectVisitor BASE_EMBEDDED {
+class LiveObjectVisitor : AllStatic {
  public:
   enum IterationMode {
     kKeepMarking,
     kClearMarkbits,
   };
 
-  // Visits black objects on a MemoryChunk until the Visitor returns for an
-  // object. If IterationMode::kClearMarkbits is passed the markbits and slots
-  // for visited objects are cleared for each successfully visited object.
+  // Visits black objects on a MemoryChunk until the Visitor returns |false| for
+  // an object. If IterationMode::kClearMarkbits is passed the markbits and
+  // slots for visited objects are cleared for each successfully visited object.
   template <class Visitor>
-  bool VisitBlackObjects(MemoryChunk* chunk, const MarkingState& state,
-                         Visitor* visitor, IterationMode iteration_mode);
+  static bool VisitBlackObjects(MemoryChunk* chunk, const MarkingState& state,
+                                Visitor* visitor, IterationMode iteration_mode,
+                                HeapObject** failed_object);
 
-  // Visits grey objects on a Memorychunk. Is not allowed to fail visitation
-  // for an object.
+  // Visits black objects on a MemoryChunk. The visitor is not allowed to fail
+  // visitation for an object.
   template <class Visitor>
-  bool VisitGreyObjectsNoFail(MemoryChunk* chunk, const MarkingState& state,
-                              Visitor* visitor, IterationMode iteration_mode);
+  static void VisitBlackObjectsNoFail(MemoryChunk* chunk,
+                                      const MarkingState& state,
+                                      Visitor* visitor,
+                                      IterationMode iteration_mode);
 
- private:
-  void RecomputeLiveBytes(MemoryChunk* chunk, const MarkingState& state);
+  // Visits black objects on a MemoryChunk. The visitor is not allowed to fail
+  // visitation for an object.
+  template <class Visitor>
+  static void VisitGreyObjectsNoFail(MemoryChunk* chunk,
+                                     const MarkingState& state,
+                                     Visitor* visitor,
+                                     IterationMode iteration_mode);
+
+  static void RecomputeLiveBytes(MemoryChunk* chunk, const MarkingState& state);
 };
 
 enum PageEvacuationMode { NEW_TO_NEW, NEW_TO_OLD };
@@ -365,15 +373,16 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
   void EvacuatePagesInParallel() override;
   void UpdatePointersAfterEvacuation() override;
 
+  void CollectNewSpaceArrayBufferTrackerItems(ItemParallelJob* job);
+
   int NumberOfParallelMarkingTasks(int pages);
 
   Worklist* worklist_;
   YoungGenerationMarkingVisitor* main_marking_visitor_;
   base::Semaphore page_parallel_job_semaphore_;
-  List<Page*> new_space_evacuation_pages_;
+  std::vector<Page*> new_space_evacuation_pages_;
   std::vector<Page*> sweep_to_iterate_pages_;
 
-  friend class MarkYoungGenerationJobTraits;
   friend class YoungGenerationMarkingTask;
   friend class YoungGenerationMarkingVisitor;
 };
@@ -382,7 +391,71 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
 class MarkCompactCollector final : public MarkCompactCollectorBase {
  public:
 #ifdef V8_CONCURRENT_MARKING
-  using MarkingWorklist = ConcurrentMarkingDeque;
+  // Wrapper for the shared and bailout worklists.
+  class MarkingWorklist {
+   public:
+    static const int kMainThread = 0;
+    // The heap parameter is not used but needed to match the sequential case.
+    explicit MarkingWorklist(Heap* heap) {}
+
+    bool Push(HeapObject* object) { return shared_.Push(kMainThread, object); }
+
+    bool PushBailout(HeapObject* object) {
+      return bailout_.Push(kMainThread, object);
+    }
+
+    HeapObject* Pop() {
+      HeapObject* result;
+      if (bailout_.Pop(kMainThread, &result)) return result;
+      if (shared_.Pop(kMainThread, &result)) return result;
+      return nullptr;
+    }
+
+    void Clear() {
+      bailout_.Clear();
+      shared_.Clear();
+    }
+
+    bool IsFull() { return false; }
+
+    bool IsEmpty() {
+      return bailout_.IsLocalEmpty(kMainThread) &&
+             shared_.IsLocalEmpty(kMainThread) &&
+             bailout_.IsGlobalPoolEmpty() && shared_.IsGlobalPoolEmpty();
+    }
+
+    int Size() {
+      return static_cast<int>(bailout_.LocalSize(kMainThread) +
+                              shared_.LocalSize(kMainThread));
+    }
+
+    // Calls the specified callback on each element of the deques and replaces
+    // the element with the result of the callback. If the callback returns
+    // nullptr then the element is removed from the deque.
+    // The callback must accept HeapObject* and return HeapObject*.
+    template <typename Callback>
+    void Update(Callback callback) {
+      bailout_.Update(callback);
+      shared_.Update(callback);
+    }
+
+    Worklist* shared() { return &shared_; }
+    Worklist* bailout() { return &bailout_; }
+
+    // These empty functions are needed to match the interface
+    // of the sequential marking deque.
+    void SetUp() {}
+    void TearDown() { Clear(); }
+    void StartUsing() {}
+    void StopUsing() {}
+    void ClearOverflowed() {}
+    void SetOverflowed() {}
+    bool overflowed() const { return false; }
+
+   private:
+    Worklist shared_;
+    Worklist bailout_;
+  };
 #else
   using MarkingWorklist = SequentialMarkingDeque;
 #endif
@@ -467,8 +540,6 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
     kKeepMarking,
     kClearMarkbits,
   };
-
-  static void Initialize();
 
   MarkingState marking_state(HeapObject* object) const override {
     return MarkingState::Internal(object);
@@ -678,9 +749,14 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   void EvacuatePagesInParallel() override;
   void UpdatePointersAfterEvacuation() override;
 
+  void CollectNewSpaceArrayBufferTrackerItems(ItemParallelJob* job);
+  void CollectOldSpaceArrayBufferTrackerItems(ItemParallelJob* job);
+
   void ReleaseEvacuationCandidates();
   void PostProcessEvacuationCandidates();
+  void ReportAbortedEvacuationCandidate(HeapObject* failed_object, Page* page);
 
+  base::Mutex mutex_;
   base::Semaphore page_parallel_job_semaphore_;
 
 #ifdef DEBUG
@@ -713,24 +789,22 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   MarkingWorklist marking_worklist_;
 
   // Candidates for pages that should be evacuated.
-  List<Page*> evacuation_candidates_;
+  std::vector<Page*> evacuation_candidates_;
   // Pages that are actually processed during evacuation.
-  List<Page*> old_space_evacuation_pages_;
-  List<Page*> new_space_evacuation_pages_;
+  std::vector<Page*> old_space_evacuation_pages_;
+  std::vector<Page*> new_space_evacuation_pages_;
+  std::vector<std::pair<HeapObject*, Page*>> aborted_evacuation_candidates_;
 
   Sweeper sweeper_;
 
-  friend class CodeMarkingVisitor;
+  friend class FullEvacuator;
   friend class Heap;
   friend class IncrementalMarkingMarkingVisitor;
   friend class MarkCompactMarkingVisitor;
-  friend class MarkingVisitor;
   friend class RecordMigratedSlotVisitor;
-  friend class SharedFunctionInfoMarkingVisitor;
-  friend class StoreBuffer;
 };
 
-class EvacuationScope BASE_EMBEDDED {
+class EvacuationScope {
  public:
   explicit EvacuationScope(MarkCompactCollector* collector)
       : collector_(collector) {

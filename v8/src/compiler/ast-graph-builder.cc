@@ -33,13 +33,6 @@ class AstGraphBuilder::AstContext BASE_EMBEDDED {
   bool IsValue() const { return kind_ == Expression::kValue; }
   bool IsTest() const { return kind_ == Expression::kTest; }
 
-  // Determines how to combine the frame state with the value
-  // that is about to be plugged into this AstContext.
-  OutputFrameStateCombine GetStateCombine() {
-    return IsEffect() ? OutputFrameStateCombine::Ignore()
-                      : OutputFrameStateCombine::Push();
-  }
-
   // Plug a node into this expression context.  Call this function in tail
   // position in the Visit functions for expressions.
   virtual void ProduceValue(Expression* expr, Node* value) = 0;
@@ -2414,11 +2407,6 @@ Node* AstGraphBuilder::BuildToBoolean(Node* input) {
   if (Node* node = TryFastToBoolean(input)) return node;
   ToBooleanHints hints = ToBooleanHint::kAny;
   return NewNode(javascript()->ToBoolean(hints), input);
-}
-
-Node* AstGraphBuilder::BuildToObject(Node* input) {
-  Node* object = NewNode(javascript()->ToObject(), input);
-  return object;
 }
 
 Node* AstGraphBuilder::BuildSetHomeObject(Node* value, Node* home_object,

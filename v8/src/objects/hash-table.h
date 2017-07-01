@@ -58,6 +58,11 @@ class BaseShape {
   typedef KeyT Key;
   static inline Map* GetMap(Isolate* isolate);
   static const bool kNeedsHoleCheck = true;
+  static Object* Unwrap(Object* key) { return key; }
+  static bool IsKey(Isolate* isolate, Object* key) {
+    return IsLive(isolate, key);
+  }
+  static inline bool IsLive(Isolate* isolate, Object* key);
 };
 
 class V8_EXPORT_PRIVATE HashTableBase : public NON_EXPORTED_BASE(FixedArray) {
@@ -83,10 +88,6 @@ class V8_EXPORT_PRIVATE HashTableBase : public NON_EXPORTED_BASE(FixedArray) {
   // Computes the required capacity for a table holding the given
   // number of elements. May be more than HashTable::kMaxCapacity.
   static inline int ComputeCapacity(int at_least_space_for);
-
-  // Tells whether k is a real key.  The hole and undefined are not allowed
-  // as keys and can be used to indicate missing or deleted elements.
-  static inline bool IsKey(Isolate* isolate, Object* k);
 
   // Compute the probe offset (quadratic probing).
   INLINE(static uint32_t GetProbeOffset(uint32_t n)) {
@@ -139,7 +140,7 @@ class HashTable : public HashTableBase {
       PretenureFlag pretenure = NOT_TENURED,
       MinimumCapacity capacity_option = USE_DEFAULT_MINIMUM_CAPACITY);
 
-  DECLARE_CAST(HashTable)
+  DECL_CAST(HashTable)
 
   // Garbage collection support.
   void IteratePrefix(ObjectVisitor* visitor);
@@ -149,11 +150,22 @@ class HashTable : public HashTableBase {
   inline int FindEntry(Key key);
   inline int FindEntry(Isolate* isolate, Key key, int32_t hash);
   int FindEntry(Isolate* isolate, Key key);
-  inline bool Has(Isolate* isolate, Key key);
-  inline bool Has(Key key);
 
   // Rehashes the table in-place.
   void Rehash();
+
+  // Tells whether k is a real key.  The hole and undefined are not allowed
+  // as keys and can be used to indicate missing or deleted elements.
+  static bool IsKey(Isolate* isolate, Object* k) {
+    return Shape::IsKey(isolate, k);
+  }
+
+  inline bool ToKey(Isolate* isolate, int entry, Object** out_k) {
+    Object* k = KeyAt(entry);
+    if (!IsKey(isolate, k)) return false;
+    *out_k = Shape::Unwrap(k);
+    return true;
+  }
 
   // Returns the key at entry.
   Object* KeyAt(int entry) { return get(EntryToIndex(entry) + kEntryKeyIndex); }
@@ -270,7 +282,7 @@ class ObjectHashTable
   typedef HashTable<ObjectHashTable, ObjectHashTableShape> DerivedHashTable;
 
  public:
-  DECLARE_CAST(ObjectHashTable)
+  DECL_CAST(ObjectHashTable)
 
   // Attempt to shrink hash table after removal of key.
   MUST_USE_RESULT static inline Handle<ObjectHashTable> Shrink(
@@ -325,7 +337,7 @@ class ObjectHashSet : public HashTable<ObjectHashSet, ObjectHashSetShape> {
   inline bool Has(Isolate* isolate, Handle<Object> key, int32_t hash);
   inline bool Has(Isolate* isolate, Handle<Object> key);
 
-  DECLARE_CAST(ObjectHashSet)
+  DECL_CAST(ObjectHashSet)
 };
 
 // OrderedHashTable is a HashTable with Object keys that preserves
@@ -423,8 +435,7 @@ class OrderedHashTable : public FixedArray {
     // This special cases for Smi, so that we avoid the HandleScope
     // creation below.
     if (key->IsSmi()) {
-      uint32_t hash =
-          ComputeIntegerHash(Smi::cast(key)->value(), kZeroHashSeed);
+      uint32_t hash = ComputeIntegerHash(Smi::cast(key)->value());
       return HashToEntry(hash & Smi::kMaxValue);
     }
     HandleScope scope(isolate);
@@ -531,7 +542,7 @@ class OrderedHashTable : public FixedArray {
 
 class OrderedHashSet : public OrderedHashTable<OrderedHashSet, 1> {
  public:
-  DECLARE_CAST(OrderedHashSet)
+  DECL_CAST(OrderedHashSet)
 
   static Handle<OrderedHashSet> Add(Handle<OrderedHashSet> table,
                                     Handle<Object> value);
@@ -541,7 +552,7 @@ class OrderedHashSet : public OrderedHashTable<OrderedHashSet, 1> {
 
 class OrderedHashMap : public OrderedHashTable<OrderedHashMap, 2> {
  public:
-  DECLARE_CAST(OrderedHashMap)
+  DECL_CAST(OrderedHashMap)
 
   // Returns a value if the OrderedHashMap contains the key, otherwise
   // returns undefined.
@@ -572,7 +583,7 @@ class WeakHashTable : public HashTable<WeakHashTable, WeakHashTableShape<2>> {
   typedef HashTable<WeakHashTable, WeakHashTableShape<2>> DerivedHashTable;
 
  public:
-  DECLARE_CAST(WeakHashTable)
+  DECL_CAST(WeakHashTable)
 
   // Looks up the value associated with the given key. The hole value is
   // returned in case the key is not present.
@@ -752,7 +763,7 @@ class SmallOrderedHashTable : public HeapObject {
   // SmallOrderedHashTable::Grow.
   static const int kGrowthHack = 256;
 
-  DECLARE_VERIFIER(SmallOrderedHashTable)
+  DECL_VERIFIER(SmallOrderedHashTable)
 
  protected:
   // This is used for accessing the non |DataTable| part of the
@@ -780,9 +791,9 @@ class SmallOrderedHashTable : public HeapObject {
 
 class SmallOrderedHashSet : public SmallOrderedHashTable<SmallOrderedHashSet> {
  public:
-  DECLARE_CAST(SmallOrderedHashSet)
+  DECL_CAST(SmallOrderedHashSet)
 
-  DECLARE_PRINTER(SmallOrderedHashSet)
+  DECL_PRINTER(SmallOrderedHashSet)
 
   static const int kKeyIndex = 0;
   static const int kEntrySize = 1;
@@ -796,9 +807,9 @@ class SmallOrderedHashSet : public SmallOrderedHashTable<SmallOrderedHashSet> {
 
 class SmallOrderedHashMap : public SmallOrderedHashTable<SmallOrderedHashMap> {
  public:
-  DECLARE_CAST(SmallOrderedHashMap)
+  DECL_CAST(SmallOrderedHashMap)
 
-  DECLARE_PRINTER(SmallOrderedHashMap)
+  DECL_PRINTER(SmallOrderedHashMap)
 
   static const int kKeyIndex = 0;
   static const int kValueIndex = 1;
@@ -875,10 +886,10 @@ class JSSetIterator
     : public OrderedHashTableIterator<JSSetIterator, OrderedHashSet> {
  public:
   // Dispatched behavior.
-  DECLARE_PRINTER(JSSetIterator)
-  DECLARE_VERIFIER(JSSetIterator)
+  DECL_PRINTER(JSSetIterator)
+  DECL_VERIFIER(JSSetIterator)
 
-  DECLARE_CAST(JSSetIterator)
+  DECL_CAST(JSSetIterator)
 
   // Called by |Next| to populate the array. This allows the subclasses to
   // populate the array differently.
@@ -892,10 +903,10 @@ class JSMapIterator
     : public OrderedHashTableIterator<JSMapIterator, OrderedHashMap> {
  public:
   // Dispatched behavior.
-  DECLARE_PRINTER(JSMapIterator)
-  DECLARE_VERIFIER(JSMapIterator)
+  DECL_PRINTER(JSMapIterator)
+  DECL_VERIFIER(JSMapIterator)
 
-  DECLARE_CAST(JSMapIterator)
+  DECL_CAST(JSMapIterator)
 
   // Called by |Next| to populate the array. This allows the subclasses to
   // populate the array differently.

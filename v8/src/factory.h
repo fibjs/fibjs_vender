@@ -25,6 +25,7 @@ class ConstantElementsPair;
 class CoverageInfo;
 class DebugInfo;
 struct SourceRange;
+class PreParsedScopeData;
 
 enum FunctionMode {
   // With prototype.
@@ -282,9 +283,6 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<Symbol> NewSymbol();
   Handle<Symbol> NewPrivateSymbol();
 
-  // Create a promise.
-  Handle<JSPromise> NewJSPromise();
-
   // Create a global (but otherwise uninitialized) context.
   Handle<Context> NewNativeContext();
 
@@ -371,7 +369,7 @@ class V8_EXPORT_PRIVATE Factory final {
 
   Handle<Cell> NewCell(Handle<Object> value);
 
-  Handle<PropertyCell> NewPropertyCell();
+  Handle<PropertyCell> NewPropertyCell(Handle<Name> name);
 
   Handle<WeakCell> NewWeakCell(Handle<HeapObject> value);
 
@@ -384,10 +382,8 @@ class V8_EXPORT_PRIVATE Factory final {
   // Allocate a tenured AllocationSite. It's payload is null.
   Handle<AllocationSite> NewAllocationSite();
 
-  Handle<Map> NewMap(
-      InstanceType type,
-      int instance_size,
-      ElementsKind elements_kind = TERMINAL_FAST_ELEMENTS_KIND);
+  Handle<Map> NewMap(InstanceType type, int instance_size,
+                     ElementsKind elements_kind = TERMINAL_FAST_ELEMENTS_KIND);
 
   Handle<HeapObject> NewFillerObject(int size,
                                      bool double_align,
@@ -643,6 +639,8 @@ class V8_EXPORT_PRIVATE Factory final {
 
   Handle<ModuleInfoEntry> NewModuleInfoEntry();
   Handle<ModuleInfo> NewModuleInfo();
+
+  Handle<PreParsedScopeData> NewPreParsedScopeData();
 
   // Create an External object for V8's external API.
   Handle<JSObject> NewExternal(void* value);

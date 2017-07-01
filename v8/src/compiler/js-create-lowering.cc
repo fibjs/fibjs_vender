@@ -423,7 +423,8 @@ Reduction JSCreateLowering::ReduceJSCreateArguments(Node* node) {
           a.Store(AccessBuilder::ForMap(), jsarray_map);
           a.Store(AccessBuilder::ForJSObjectProperties(), properties);
           a.Store(AccessBuilder::ForJSObjectElements(), elements);
-          a.Store(AccessBuilder::ForJSArrayLength(FAST_ELEMENTS), rest_length);
+          a.Store(AccessBuilder::ForJSArrayLength(PACKED_ELEMENTS),
+                  rest_length);
           RelaxControls(node);
           a.FinishAndChange(node);
         } else {
@@ -541,7 +542,7 @@ Reduction JSCreateLowering::ReduceJSCreateArguments(Node* node) {
       a.Store(AccessBuilder::ForMap(), jsarray_map);
       a.Store(AccessBuilder::ForJSObjectProperties(), properties);
       a.Store(AccessBuilder::ForJSObjectElements(), elements);
-      a.Store(AccessBuilder::ForJSArrayLength(FAST_ELEMENTS),
+      a.Store(AccessBuilder::ForJSArrayLength(PACKED_ELEMENTS),
               jsgraph()->Constant(length));
       RelaxControls(node);
       a.FinishAndChange(node);
@@ -578,8 +579,8 @@ Reduction JSCreateLowering::ReduceJSCreateGeneratorObject(Node* node) {
 
     DCHECK(js_function->shared()->HasBytecodeArray());
     int size = js_function->shared()->bytecode_array()->register_count();
-    Node* elements = effect = AllocateElements(
-        effect, control, FAST_HOLEY_ELEMENTS, size, NOT_TENURED);
+    Node* elements = effect =
+        AllocateElements(effect, control, HOLEY_ELEMENTS, size, NOT_TENURED);
 
     AllocationBuilder a(jsgraph(), effect, control);
     a.Allocate(initial_map->instance_size());
@@ -760,7 +761,7 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
         AllocationSite::ShouldTrack(elements_kind) ? DISABLE_ALLOCATION_SITES
                                                    : DONT_OVERRIDE;
 
-    if (IsHoleyElementsKind(elements_kind)) {
+    if (IsHoleyOrDictionaryElementsKind(elements_kind)) {
       ArraySingleArgumentConstructorStub stub(isolate(), elements_kind,
                                               override_mode);
       CallDescriptor* desc = Linkage::GetStubCallDescriptor(
@@ -784,6 +785,8 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
         graph()->NewNode(common()->Branch(BranchHint::kFalse), equal, control);
     Node* call_holey;
     Node* call_packed;
+    Node* success_holey;
+    Node* success_packed;
     Node* context = NodeProperties::GetContextInput(node);
     Node* frame_state = NodeProperties::GetFrameStateInput(node);
     Node* if_equal = graph()->NewNode(common()->IfTrue(), branch);
@@ -805,7 +808,7 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
                         effect,
                         if_equal};
 
-      call_holey =
+      success_holey = call_holey =
           graph()->NewNode(common()->Call(desc), arraysize(inputs), inputs);
     }
     Node* if_not_equal = graph()->NewNode(common()->IfFalse(), branch);
@@ -828,10 +831,34 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
                         effect,
                         if_not_equal};
 
-      call_packed =
+      success_packed = call_packed =
           graph()->NewNode(common()->Call(desc), arraysize(inputs), inputs);
     }
-    Node* merge = graph()->NewNode(common()->Merge(2), call_holey, call_packed);
+
+    // Update potential {IfException} uses of {node} to point to the above two
+    // stub call nodes instead, by introducing a merge of two exception cases.
+    Node* on_exception = nullptr;
+    if (NodeProperties::IsExceptionalCall(node, &on_exception)) {
+      Node* exception_holey =
+          graph()->NewNode(common()->IfException(), call_holey, call_holey);
+      Node* exception_packed =
+          graph()->NewNode(common()->IfException(), call_packed, call_packed);
+      Node* exception_merge = graph()->NewNode(
+          common()->Merge(2), exception_holey, exception_packed);
+      Node* exception_effect =
+          graph()->NewNode(common()->EffectPhi(2), exception_holey,
+                           exception_packed, exception_merge);
+      Node* exception_value =
+          graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                           exception_holey, exception_packed, exception_merge);
+      ReplaceWithValue(on_exception, exception_value, exception_effect,
+                       exception_merge);
+      success_holey = graph()->NewNode(common()->IfSuccess(), call_holey);
+      success_packed = graph()->NewNode(common()->IfSuccess(), call_packed);
+    }
+
+    Node* merge =
+        graph()->NewNode(common()->Merge(2), success_holey, success_packed);
     Node* effect_phi = graph()->NewNode(common()->EffectPhi(2), call_holey,
                                         call_packed, merge);
     Node* phi =
@@ -860,9 +887,6 @@ Reduction JSCreateLowering::ReduceJSCreateArray(Node* node) {
   CreateArrayParameters const& p = CreateArrayParametersOf(node->op());
   Node* target = NodeProperties::GetValueInput(node, 0);
   Node* new_target = NodeProperties::GetValueInput(node, 1);
-
-  // TODO(mstarzinger): Array constructor can throw. Hook up exceptional edges.
-  if (NodeProperties::IsExceptionalCall(node)) return NoChange();
 
   // TODO(bmeurer): Optimize the subclassing case.
   if (target != new_target) return NoChange();
@@ -944,9 +968,9 @@ Reduction JSCreateLowering::ReduceJSCreateKeyValueArray(Node* node) {
 
   AllocationBuilder aa(jsgraph(), effect, graph()->start());
   aa.AllocateArray(2, factory()->fixed_array_map());
-  aa.Store(AccessBuilder::ForFixedArrayElement(FAST_ELEMENTS),
+  aa.Store(AccessBuilder::ForFixedArrayElement(PACKED_ELEMENTS),
            jsgraph()->Constant(0), key);
-  aa.Store(AccessBuilder::ForFixedArrayElement(FAST_ELEMENTS),
+  aa.Store(AccessBuilder::ForFixedArrayElement(PACKED_ELEMENTS),
            jsgraph()->Constant(1), value);
   Node* elements = aa.Finish();
 
@@ -955,7 +979,7 @@ Reduction JSCreateLowering::ReduceJSCreateKeyValueArray(Node* node) {
   a.Store(AccessBuilder::ForMap(), array_map);
   a.Store(AccessBuilder::ForJSObjectProperties(), properties);
   a.Store(AccessBuilder::ForJSObjectElements(), elements);
-  a.Store(AccessBuilder::ForJSArrayLength(FAST_ELEMENTS), length);
+  a.Store(AccessBuilder::ForJSArrayLength(PACKED_ELEMENTS), length);
   STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
   a.FinishAndChange(node);
   return Changed(node);
@@ -1498,20 +1522,12 @@ Graph* JSCreateLowering::graph() const { return jsgraph()->graph(); }
 
 Isolate* JSCreateLowering::isolate() const { return jsgraph()->isolate(); }
 
-JSOperatorBuilder* JSCreateLowering::javascript() const {
-  return jsgraph()->javascript();
-}
-
 CommonOperatorBuilder* JSCreateLowering::common() const {
   return jsgraph()->common();
 }
 
 SimplifiedOperatorBuilder* JSCreateLowering::simplified() const {
   return jsgraph()->simplified();
-}
-
-MachineOperatorBuilder* JSCreateLowering::machine() const {
-  return jsgraph()->machine();
 }
 
 }  // namespace compiler

@@ -8,6 +8,7 @@
 
 #include "src/asmjs/asm-js.h"
 #include "src/assembler-inl.h"
+#include "src/code-stubs.h"
 #include "src/counters.h"
 #include "src/property-descriptor.h"
 #include "src/wasm/compilation-manager.h"
@@ -96,14 +97,8 @@ ModuleCompiler::ModuleCompiler(Isolate* isolate,
       num_background_tasks_(
           Min(static_cast<size_t>(FLAG_wasm_num_compilation_tasks),
               V8::GetCurrentPlatform()->NumberOfAvailableBackgroundThreads())),
-      stopped_compilation_tasks_(num_background_tasks_) {}
-
-bool ModuleCompiler::GetNextUncompiledFunctionId(size_t* index) {
-  DCHECK_NOT_NULL(index);
-  // - 1 because AtomicIncrement returns the value after the atomic increment.
-  *index = next_unit_.Increment(1) - 1;
-  return *index < compilation_units_.size();
-}
+      stopped_compilation_tasks_(num_background_tasks_),
+      centry_stub_(CEntryStub(isolate, 1).GetCode()) {}
 
 // The actual runnable task that performs compilations in the background.
 ModuleCompiler::CompilationTask::CompilationTask(ModuleCompiler* compiler)
@@ -111,11 +106,10 @@ ModuleCompiler::CompilationTask::CompilationTask(ModuleCompiler* compiler)
       compiler_(compiler) {}
 
 void ModuleCompiler::CompilationTask::RunInternal() {
-  size_t index = 0;
   while (compiler_->executed_units_.CanAcceptWork() &&
-         compiler_->GetNextUncompiledFunctionId(&index)) {
-    compiler_->CompileAndSchedule(index);
+         compiler_->FetchAndExecuteCompilationUnit()) {
   }
+
   compiler_->OnBackgroundTaskStopped();
 }
 
@@ -123,22 +117,6 @@ void ModuleCompiler::OnBackgroundTaskStopped() {
   base::LockGuard<base::Mutex> guard(&tasks_mutex_);
   ++stopped_compilation_tasks_;
   DCHECK_LE(stopped_compilation_tasks_, num_background_tasks_);
-}
-
-void ModuleCompiler::CompileAndSchedule(size_t index) {
-  DisallowHeapAllocation no_allocation;
-  DisallowHandleAllocation no_handles;
-  DisallowHandleDereference no_deref;
-  DisallowCodeDependencyChange no_dependency_change;
-  DCHECK_LT(index, compilation_units_.size());
-
-  std::unique_ptr<compiler::WasmCompilationUnit> unit =
-      std::move(compilation_units_.at(index));
-  unit->ExecuteCompilation();
-  {
-    base::LockGuard<base::Mutex> guard(&result_mutex_);
-    executed_units_.Schedule(std::move(unit));
-  }
 }
 
 // Run by each compilation task The no_finisher_callback is called
@@ -164,7 +142,7 @@ bool ModuleCompiler::FetchAndExecuteCompilationUnit(
   {
     base::LockGuard<base::Mutex> guard(&result_mutex_);
     executed_units_.Schedule(std::move(unit));
-    if (!finisher_is_running_) {
+    if (no_finisher_callback != nullptr && !finisher_is_running_) {
       no_finisher_callback();
       // We set the flag here so that not more than one finisher is started.
       finisher_is_running_ = true;
@@ -182,10 +160,16 @@ size_t ModuleCompiler::InitializeParallelCompilation(
   compilation_units_.reserve(funcs_to_compile);
   for (uint32_t i = start; i < num_funcs; ++i) {
     const WasmFunction* func = &functions[i];
+    constexpr bool is_sync = true;
     compilation_units_.push_back(std::unique_ptr<compiler::WasmCompilationUnit>(
-        new compiler::WasmCompilationUnit(isolate_, &module_env, func)));
+        new compiler::WasmCompilationUnit(isolate_, &module_env, func,
+                                          centry_stub_, !is_sync)));
   }
   return funcs_to_compile;
+}
+
+void ModuleCompiler::ReopenHandlesInDeferredScope() {
+  centry_stub_ = handle(*centry_stub_, isolate_);
 }
 
 void ModuleCompiler::RestartCompilationTasks() {
@@ -273,10 +257,7 @@ void ModuleCompiler::CompileInParallel(ModuleBytesEnv* module_env,
     //      result is enqueued in {executed_units}.
     //      The foreground task bypasses waiting on memory threshold, because
     //      its results will immediately be converted to code (below).
-    size_t index = 0;
-    if (GetNextUncompiledFunctionId(&index)) {
-      CompileAndSchedule(index);
-    }
+    FetchAndExecuteCompilationUnit();
 
     // 3.b) If {executed_units} contains a compilation unit, the main thread
     //      dequeues it and finishes the compilation unit. Compilation units
@@ -361,9 +342,17 @@ MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObject(
     function_tables->set(i, *temp_instance.function_tables[i]);
     signature_tables->set(i, *temp_instance.signature_tables[i]);
   }
-  TimedHistogramScope wasm_compile_module_time_scope(
-      module_->is_wasm() ? counters()->wasm_compile_wasm_module_time()
-                         : counters()->wasm_compile_asm_module_time());
+
+  if (is_sync_) {
+    // TODO(karlschimpf): Make this work when asynchronous.
+    // https://bugs.chromium.org/p/v8/issues/detail?id=6361
+    TimedHistogramScope wasm_compile_module_time_scope(
+        module_->is_wasm() ? counters()->wasm_compile_wasm_module_time()
+                           : counters()->wasm_compile_asm_module_time());
+    return CompileToModuleObjectInternal(
+        thrower, wire_bytes, asm_js_script, asm_js_offset_table_bytes, factory,
+        &temp_instance, &function_tables, &signature_tables);
+  }
   return CompileToModuleObjectInternal(
       thrower, wire_bytes, asm_js_script, asm_js_offset_table_bytes, factory,
       &temp_instance, &function_tables, &signature_tables);
@@ -959,10 +948,8 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
   //--------------------------------------------------------------------------
   for (WasmDataSegment& seg : module_->data_segments) {
     uint32_t base = EvalUint32InitExpr(seg.dest_addr);
-    uint32_t mem_size =
-        memory_.is_null()
-            ? 0
-            : static_cast<uint32_t>(memory_->byte_length()->Number());
+    uint32_t mem_size = 0;
+    if (!memory_.is_null()) CHECK(memory_->byte_length()->ToUint32(&mem_size));
     if (!in_bounds(base, seg.source.length(), mem_size)) {
       thrower_->LinkError("data segment is out of bounds");
       return {};
@@ -1134,7 +1121,6 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
 
     if (retval.is_null()) {
       DCHECK(isolate_->has_pending_exception());
-      isolate_->OptionalRescheduleException(false);
       // It's unfortunate that the new instance is already linked in the
       // chain. However, we need to set up everything before executing the
       // start function, such that stack trace information can be generated
@@ -1316,7 +1302,7 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
         Handle<Code> import_wrapper = UnwrapOrCompileImportWrapper(
             isolate_, index, module_->functions[import.index].sig,
             Handle<JSReceiver>::cast(value), module_name, import_name,
-            module_->get_origin(), &imported_wasm_instances);
+            module_->origin(), &imported_wasm_instances);
         if (import_wrapper.is_null()) {
           ReportLinkError("imported function does not match the expected type",
                           index, module_name, import_name);
@@ -1925,9 +1911,7 @@ void AsyncCompileJob::ReopenHandlesInDeferredScope() {
   signature_tables_ = handle(*signature_tables_, isolate_);
   code_table_ = handle(*code_table_, isolate_);
   temp_instance_->ReopenHandles(isolate_);
-  for (auto& unit : compiler_->compilation_units_) {
-    unit->ReopenCentryStub();
-  }
+  compiler_->ReopenHandlesInDeferredScope();
   deferred_handles_.push_back(deferred.Detach());
 }
 
@@ -2034,7 +2018,7 @@ class AsyncCompileJob::DecodeModule : public AsyncCompileJob::CompileStep {
       TRACE_COMPILE("(1) Decoding module...\n");
       result = AsyncDecodeWasmModule(job_->isolate_, job_->wire_bytes_.start(),
                                      job_->wire_bytes_.end(), false,
-                                     kWasmOrigin, job_->counters());
+                                     kWasmOrigin, job_->async_counters());
     }
     if (result.failed()) {
       // Decoding failure; reject the promise and clean up.
@@ -2131,11 +2115,13 @@ class AsyncCompileJob::PrepareAndStartCompile : public CompileStep {
         new ModuleCompiler(job_->isolate_, std::move(module_), !is_sync));
     job_->compiler_->EnableThrottling();
 
+    // Reopen all handles which should survive in the DeferredHandleScope.
+    job_->ReopenHandlesInDeferredScope();
+
     DCHECK_LE(module->num_imported_functions, module->functions.size());
     size_t num_functions =
         module->functions.size() - module->num_imported_functions;
     if (num_functions == 0) {
-      job_->ReopenHandlesInDeferredScope();
       // Degenerate case of an empty module.
       job_->DoSync<FinishCompile>();
       return;
@@ -2153,8 +2139,6 @@ class AsyncCompileJob::PrepareAndStartCompile : public CompileStep {
     job_->outstanding_units_ = job_->compiler_->InitializeParallelCompilation(
         module->functions, *job_->module_bytes_env_);
 
-    // Reopen all handles which should survive in the DeferredHandleScope.
-    job_->ReopenHandlesInDeferredScope();
     job_->DoAsync<ExecuteAndFinishCompilationUnits>(num_background_tasks);
   }
 };
@@ -2297,7 +2281,7 @@ class AsyncCompileJob::FinishCompile : public CompileStep {
     // The {module_wrapper} will take ownership of the {WasmModule} object,
     // and it will be destroyed when the GC reclaims the wrapper object.
     Handle<WasmModuleWrapper> module_wrapper = WasmModuleWrapper::New(
-        job_->isolate_, job_->compiler_->module_.release());
+        job_->isolate_, job_->compiler_->ReleaseModule().release());
 
     // Create the shared module data.
     // TODO(clemensh): For the same module (same bytes / same hash), we should

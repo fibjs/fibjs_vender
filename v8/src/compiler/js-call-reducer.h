@@ -7,6 +7,7 @@
 
 #include "src/base/flags.h"
 #include "src/compiler/graph-reducer.h"
+#include "src/deoptimize-reason.h"
 
 namespace v8 {
 namespace internal {
@@ -28,15 +29,24 @@ class SimplifiedOperatorBuilder;
 // which might allow inlining or other optimizations to be performed afterwards.
 class JSCallReducer final : public AdvancedReducer {
  public:
-  JSCallReducer(Editor* editor, JSGraph* jsgraph,
+  // Flags that control the mode of operation.
+  enum Flag { kNoFlags = 0u, kBailoutOnUninitialized = 1u << 0 };
+  typedef base::Flags<Flag> Flags;
+
+  JSCallReducer(Editor* editor, JSGraph* jsgraph, Flags flags,
                 Handle<Context> native_context,
                 CompilationDependencies* dependencies)
       : AdvancedReducer(editor),
         jsgraph_(jsgraph),
+        flags_(flags),
         native_context_(native_context),
         dependencies_(dependencies) {}
 
   Reduction Reduce(Node* node) final;
+
+  // Processes the waitlist gathered while the reducer was running,
+  // and does a final attempt to reduce the nodes in the waitlist.
+  void Finalize() final;
 
  private:
   Reduction ReduceArrayConstructor(Node* node);
@@ -65,6 +75,8 @@ class JSCallReducer final : public AdvancedReducer {
   Reduction ReduceJSCallWithSpread(Node* node);
   Reduction ReduceReturnReceiver(Node* node);
 
+  Reduction ReduceSoftDeoptimize(Node* node, DeoptimizeReason reason);
+
   Graph* graph() const;
   JSGraph* jsgraph() const { return jsgraph_; }
   Isolate* isolate() const;
@@ -74,11 +86,14 @@ class JSCallReducer final : public AdvancedReducer {
   CommonOperatorBuilder* common() const;
   JSOperatorBuilder* javascript() const;
   SimplifiedOperatorBuilder* simplified() const;
+  Flags flags() const { return flags_; }
   CompilationDependencies* dependencies() const { return dependencies_; }
 
   JSGraph* const jsgraph_;
+  Flags const flags_;
   Handle<Context> const native_context_;
   CompilationDependencies* const dependencies_;
+  std::set<Node*> waitlist_;
 };
 
 }  // namespace compiler

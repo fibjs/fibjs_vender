@@ -85,7 +85,7 @@ Heap::Heap()
       // semispace_size_ should be a power of 2 and old_generation_size_ should
       // be a multiple of Page::kPageSize.
       max_semi_space_size_(8 * (kPointerSize / 4) * MB),
-      initial_semispace_size_(Page::kPageSize),
+      initial_semispace_size_(MB),
       max_old_generation_size_(700ul * (kPointerSize / 4) * MB),
       initial_max_old_generation_size_(max_old_generation_size_),
       initial_old_generation_size_(max_old_generation_size_ /
@@ -554,6 +554,65 @@ class Heap::PretenuringScope {
   Heap* heap_;
 };
 
+namespace {
+inline bool MakePretenureDecision(
+    AllocationSite* site, AllocationSite::PretenureDecision current_decision,
+    double ratio, bool maximum_size_scavenge) {
+  // Here we just allow state transitions from undecided or maybe tenure
+  // to don't tenure, maybe tenure, or tenure.
+  if ((current_decision == AllocationSite::kUndecided ||
+       current_decision == AllocationSite::kMaybeTenure)) {
+    if (ratio >= AllocationSite::kPretenureRatio) {
+      // We just transition into tenure state when the semi-space was at
+      // maximum capacity.
+      if (maximum_size_scavenge) {
+        site->set_deopt_dependent_code(true);
+        site->set_pretenure_decision(AllocationSite::kTenure);
+        // Currently we just need to deopt when we make a state transition to
+        // tenure.
+        return true;
+      }
+      site->set_pretenure_decision(AllocationSite::kMaybeTenure);
+    } else {
+      site->set_pretenure_decision(AllocationSite::kDontTenure);
+    }
+  }
+  return false;
+}
+
+inline bool DigestPretenuringFeedback(Isolate* isolate, AllocationSite* site,
+                                      bool maximum_size_scavenge) {
+  bool deopt = false;
+  int create_count = site->memento_create_count();
+  int found_count = site->memento_found_count();
+  bool minimum_mementos_created =
+      create_count >= AllocationSite::kPretenureMinimumCreated;
+  double ratio = minimum_mementos_created || FLAG_trace_pretenuring_statistics
+                     ? static_cast<double>(found_count) / create_count
+                     : 0.0;
+  AllocationSite::PretenureDecision current_decision =
+      site->pretenure_decision();
+
+  if (minimum_mementos_created) {
+    deopt = MakePretenureDecision(site, current_decision, ratio,
+                                  maximum_size_scavenge);
+  }
+
+  if (FLAG_trace_pretenuring_statistics) {
+    PrintIsolate(isolate,
+                 "pretenuring: AllocationSite(%p): (created, found, ratio) "
+                 "(%d, %d, %f) %s => %s\n",
+                 static_cast<void*>(site), create_count, found_count, ratio,
+                 site->PretenureDecisionName(current_decision),
+                 site->PretenureDecisionName(site->pretenure_decision()));
+  }
+
+  // Clear feedback calculation fields until the next gc.
+  site->set_memento_found_count(0);
+  site->set_memento_create_count(0);
+  return deopt;
+}
+}  // namespace
 
 void Heap::ProcessPretenuringFeedback() {
   bool trigger_deoptimization = false;
@@ -580,7 +639,7 @@ void Heap::ProcessPretenuringFeedback() {
         DCHECK(site->IsAllocationSite());
         active_allocation_sites++;
         allocation_mementos_found += found_count;
-        if (site->DigestPretenuringFeedback(maximum_size_scavenge)) {
+        if (DigestPretenuringFeedback(isolate_, site, maximum_size_scavenge)) {
           trigger_deoptimization = true;
         }
         if (site->GetPretenureMode() == TENURED) {
@@ -1708,7 +1767,7 @@ void Heap::Scavenge() {
   // Used for updating survived_since_last_expansion_ at function end.
   size_t survived_watermark = PromotedSpaceSizeOfObjects();
 
-  scavenge_collector_->SelectScavengingVisitorsTable();
+  scavenge_collector_->UpdateConstraints();
 
   // Flip the semispaces.  After flipping, to space is empty, from space has
   // live objects.
@@ -2269,7 +2328,7 @@ bool Heap::CreateInitialMaps() {
   }
 
     ALLOCATE_PARTIAL_MAP(FIXED_ARRAY_TYPE, kVariableSizeSentinel, fixed_array);
-    fixed_array_map()->set_elements_kind(FAST_HOLEY_ELEMENTS);
+    fixed_array_map()->set_elements_kind(HOLEY_ELEMENTS);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, undefined);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, null);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, the_hole);
@@ -2344,7 +2403,7 @@ bool Heap::CreateInitialMaps() {
   }
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, fixed_cow_array)
-    fixed_cow_array_map()->set_elements_kind(FAST_HOLEY_ELEMENTS);
+    fixed_cow_array_map()->set_elements_kind(HOLEY_ELEMENTS);
     DCHECK_NE(fixed_array_map(), fixed_cow_array_map());
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, scope_info)
@@ -2395,7 +2454,7 @@ bool Heap::CreateInitialMaps() {
     }
 
     ALLOCATE_VARSIZE_MAP(FIXED_DOUBLE_ARRAY_TYPE, fixed_double_array)
-    fixed_double_array_map()->set_elements_kind(FAST_HOLEY_DOUBLE_ELEMENTS);
+    fixed_double_array_map()->set_elements_kind(HOLEY_DOUBLE_ELEMENTS);
     ALLOCATE_VARSIZE_MAP(BYTE_ARRAY_TYPE, byte_array)
     ALLOCATE_VARSIZE_MAP(BYTECODE_ARRAY_TYPE, bytecode_array)
     ALLOCATE_VARSIZE_MAP(FREE_SPACE_TYPE, free_space)
@@ -2535,7 +2594,8 @@ AllocationResult Heap::AllocateCell(Object* value) {
   return result;
 }
 
-AllocationResult Heap::AllocatePropertyCell() {
+AllocationResult Heap::AllocatePropertyCell(Name* name) {
+  DCHECK(name->IsUniqueName());
   int size = PropertyCell::kSize;
   STATIC_ASSERT(PropertyCell::kSize <= kMaxRegularHeapObjectSize);
 
@@ -2549,6 +2609,7 @@ AllocationResult Heap::AllocatePropertyCell() {
   cell->set_dependent_code(DependentCode::cast(empty_fixed_array()),
                            SKIP_WRITE_BARRIER);
   cell->set_property_details(PropertyDetails(Smi::kZero));
+  cell->set_name(name);
   cell->set_value(the_hole_value());
   return result;
 }
@@ -2841,15 +2902,15 @@ void Heap::CreateInitialObjects() {
   script->set_type(Script::TYPE_NATIVE);
   set_empty_script(*script);
 
-  Handle<PropertyCell> cell = factory->NewPropertyCell();
+  Handle<PropertyCell> cell = factory->NewPropertyCell(factory->empty_string());
   cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
   set_array_protector(*cell);
 
-  cell = factory->NewPropertyCell();
+  cell = factory->NewPropertyCell(factory->empty_string());
   cell->set_value(the_hole_value());
   set_empty_property_cell(*cell);
 
-  cell = factory->NewPropertyCell();
+  cell = factory->NewPropertyCell(factory->empty_string());
   cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
   set_array_iterator_protector(*cell);
 
@@ -2857,11 +2918,11 @@ void Heap::CreateInitialObjects() {
       handle(Smi::FromInt(Isolate::kProtectorValid), isolate()));
   set_is_concat_spreadable_protector(*is_concat_spreadable_cell);
 
-  Handle<Cell> species_cell = factory->NewCell(
-      handle(Smi::FromInt(Isolate::kProtectorValid), isolate()));
-  set_species_protector(*species_cell);
+  cell = factory->NewPropertyCell(factory->empty_string());
+  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
+  set_species_protector(*cell);
 
-  cell = factory->NewPropertyCell();
+  cell = factory->NewPropertyCell(factory->empty_string());
   cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
   set_string_length_protector(*cell);
 
@@ -2869,7 +2930,7 @@ void Heap::CreateInitialObjects() {
       handle(Smi::FromInt(Isolate::kProtectorValid), isolate()));
   set_fast_array_iteration_protector(*fast_array_iteration_cell);
 
-  cell = factory->NewPropertyCell();
+  cell = factory->NewPropertyCell(factory->empty_string());
   cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
   set_array_buffer_neutering_protector(*cell);
 
@@ -3443,7 +3504,6 @@ AllocationResult Heap::AllocateCode(int object_size, bool immovable) {
   DCHECK(!memory_allocator()->code_range()->valid() ||
          memory_allocator()->code_range()->contains(code->address()) ||
          object_size <= code_space()->AreaSize());
-  code->set_ic_age(global_ic_age_);
   return code;
 }
 
@@ -4025,11 +4085,6 @@ AllocationResult Heap::AllocateFixedArrayWithFiller(int length,
   array->set_length(length);
   MemsetPointer(array->data_start(), filler, length);
   return array;
-}
-
-
-AllocationResult Heap::AllocateFixedArray(int length, PretenureFlag pretenure) {
-  return AllocateFixedArrayWithFiller(length, pretenure, undefined_value());
 }
 
 
@@ -5244,18 +5299,16 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
 // TODO(1236194): Since the heap size is configurable on the command line
 // and through the API, we should gracefully handle the case that the heap
 // size is not big enough to fit all the initial objects.
-bool Heap::ConfigureHeap(size_t max_semi_space_size_in_kb,
-                         size_t max_old_generation_size_in_mb,
-                         size_t code_range_size_in_mb) {
+bool Heap::ConfigureHeap(size_t max_semi_space_size, size_t max_old_space_size,
+                         size_t code_range_size) {
   if (HasBeenSetUp()) return false;
 
   // Overwrite default configuration.
-  if (max_semi_space_size_in_kb != 0) {
-    max_semi_space_size_ =
-        ROUND_UP(max_semi_space_size_in_kb * KB, Page::kPageSize);
+  if (max_semi_space_size != 0) {
+    max_semi_space_size_ = max_semi_space_size * MB;
   }
-  if (max_old_generation_size_in_mb != 0) {
-    max_old_generation_size_ = max_old_generation_size_in_mb * MB;
+  if (max_old_space_size != 0) {
+    max_old_generation_size_ = max_old_space_size * MB;
   }
 
   // If max space size flags are specified overwrite the configuration.
@@ -5326,7 +5379,7 @@ bool Heap::ConfigureHeap(size_t max_semi_space_size_in_kb,
           FixedArray::SizeFor(JSArray::kInitialMaxFastElementArray) +
           AllocationMemento::kSize));
 
-  code_range_size_ = code_range_size_in_mb * MB;
+  code_range_size_ = code_range_size * MB;
 
   configured_ = true;
   return true;
@@ -5679,15 +5732,6 @@ void Heap::DisableInlineAllocation() {
   }
 }
 
-
-V8_DECLARE_ONCE(initialize_gc_once);
-
-static void InitializeGCOnce() {
-  Scavenger::Initialize();
-  MarkCompactCollector::Initialize();
-}
-
-
 bool Heap::SetUp() {
 #ifdef DEBUG
   allocation_timeout_ = FLAG_gc_interval;
@@ -5704,8 +5748,6 @@ bool Heap::SetUp() {
   if (!configured_) {
     if (!ConfigureHeapDefault()) return false;
   }
-
-  base::CallOnce(&initialize_gc_once, &InitializeGCOnce);
 
   // Set up memory allocator.
   memory_allocator_ = new MemoryAllocator(isolate_);
@@ -5763,10 +5805,12 @@ bool Heap::SetUp() {
   incremental_marking_->set_marking_worklist(
       mark_compact_collector_->marking_worklist());
 #ifdef V8_CONCURRENT_MARKING
-  concurrent_marking_ =
-      new ConcurrentMarking(this, mark_compact_collector_->marking_worklist());
+  MarkCompactCollector::MarkingWorklist* marking_worklist =
+      mark_compact_collector_->marking_worklist();
+  concurrent_marking_ = new ConcurrentMarking(this, marking_worklist->shared(),
+                                              marking_worklist->bailout());
 #else
-  concurrent_marking_ = new ConcurrentMarking(this, nullptr);
+  concurrent_marking_ = new ConcurrentMarking(this, nullptr, nullptr);
 #endif
   minor_mark_compact_collector_ = new MinorMarkCompactCollector(this);
   gc_idle_time_handler_ = new GCIdleTimeHandler();

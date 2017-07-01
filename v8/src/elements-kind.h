@@ -14,18 +14,18 @@ namespace internal {
 enum ElementsKind {
   // The "fast" kind for elements that only contain SMI values. Must be first
   // to make it possible to efficiently check maps for this kind.
-  FAST_SMI_ELEMENTS,
-  FAST_HOLEY_SMI_ELEMENTS,
+  PACKED_SMI_ELEMENTS,
+  HOLEY_SMI_ELEMENTS,
 
   // The "fast" kind for tagged values. Must be second to make it possible to
-  // efficiently check maps for this and the FAST_SMI_ONLY_ELEMENTS kind
+  // efficiently check maps for this and the PACKED_SMI_ELEMENTS kind
   // together at once.
-  FAST_ELEMENTS,
-  FAST_HOLEY_ELEMENTS,
+  PACKED_ELEMENTS,
+  HOLEY_ELEMENTS,
 
   // The "fast" kind for unwrapped, non-tagged double values.
-  FAST_DOUBLE_ELEMENTS,
-  FAST_HOLEY_DOUBLE_ELEMENTS,
+  PACKED_DOUBLE_ELEMENTS,
+  HOLEY_DOUBLE_ELEMENTS,
 
   // The "slow" kind.
   DICTIONARY_ELEMENTS,
@@ -54,28 +54,28 @@ enum ElementsKind {
   NO_ELEMENTS,
 
   // Derived constants from ElementsKind.
-  FIRST_ELEMENTS_KIND = FAST_SMI_ELEMENTS,
+  FIRST_ELEMENTS_KIND = PACKED_SMI_ELEMENTS,
   LAST_ELEMENTS_KIND = UINT8_CLAMPED_ELEMENTS,
-  FIRST_FAST_ELEMENTS_KIND = FAST_SMI_ELEMENTS,
-  LAST_FAST_ELEMENTS_KIND = FAST_HOLEY_DOUBLE_ELEMENTS,
+  FIRST_FAST_ELEMENTS_KIND = PACKED_SMI_ELEMENTS,
+  LAST_FAST_ELEMENTS_KIND = HOLEY_DOUBLE_ELEMENTS,
   FIRST_FIXED_TYPED_ARRAY_ELEMENTS_KIND = UINT8_ELEMENTS,
   LAST_FIXED_TYPED_ARRAY_ELEMENTS_KIND = UINT8_CLAMPED_ELEMENTS,
-  TERMINAL_FAST_ELEMENTS_KIND = FAST_HOLEY_ELEMENTS
+  TERMINAL_FAST_ELEMENTS_KIND = HOLEY_ELEMENTS
 };
 
 const int kElementsKindCount = LAST_ELEMENTS_KIND - FIRST_ELEMENTS_KIND + 1;
-const int kFastElementsKindCount = LAST_FAST_ELEMENTS_KIND -
-    FIRST_FAST_ELEMENTS_KIND + 1;
+const int kFastElementsKindCount =
+    LAST_FAST_ELEMENTS_KIND - FIRST_FAST_ELEMENTS_KIND + 1;
 
 // The number to add to a packed elements kind to reach a holey elements kind
 const int kFastElementsKindPackedToHoley =
-    FAST_HOLEY_SMI_ELEMENTS - FAST_SMI_ELEMENTS;
+    HOLEY_SMI_ELEMENTS - PACKED_SMI_ELEMENTS;
 
 int ElementsKindToShiftSize(ElementsKind elements_kind);
 int GetDefaultHeaderSizeForElementsKind(ElementsKind elements_kind);
 const char* ElementsKindToString(ElementsKind kind);
 
-inline ElementsKind GetInitialFastElementsKind() { return FAST_SMI_ELEMENTS; }
+inline ElementsKind GetInitialFastElementsKind() { return PACKED_SMI_ELEMENTS; }
 
 ElementsKind GetFastElementsKindFromSequenceIndex(int sequence_number);
 int GetSequenceIndexFromFastElementsKind(ElementsKind elements_kind);
@@ -101,18 +101,15 @@ inline bool IsFixedTypedArrayElementsKind(ElementsKind kind) {
          kind <= LAST_FIXED_TYPED_ARRAY_ELEMENTS_KIND;
 }
 
-
 inline bool IsTerminalElementsKind(ElementsKind kind) {
   return kind == TERMINAL_FAST_ELEMENTS_KIND ||
          IsFixedTypedArrayElementsKind(kind);
 }
 
-
 inline bool IsFastElementsKind(ElementsKind kind) {
   STATIC_ASSERT(FIRST_FAST_ELEMENTS_KIND == 0);
-  return kind <= FAST_HOLEY_DOUBLE_ELEMENTS;
+  return kind <= HOLEY_DOUBLE_ELEMENTS;
 }
-
 
 inline bool IsTransitionElementsKind(ElementsKind kind) {
   return IsFastElementsKind(kind) || IsFixedTypedArrayElementsKind(kind) ||
@@ -122,8 +119,7 @@ inline bool IsTransitionElementsKind(ElementsKind kind) {
 
 
 inline bool IsFastDoubleElementsKind(ElementsKind kind) {
-  return kind == FAST_DOUBLE_ELEMENTS ||
-      kind == FAST_HOLEY_DOUBLE_ELEMENTS;
+  return kind == PACKED_DOUBLE_ELEMENTS || kind == HOLEY_DOUBLE_ELEMENTS;
 }
 
 
@@ -138,16 +134,13 @@ inline bool IsDoubleOrFloatElementsKind(ElementsKind kind) {
 
 
 inline bool IsFastSmiOrObjectElementsKind(ElementsKind kind) {
-  return kind == FAST_SMI_ELEMENTS ||
-      kind == FAST_HOLEY_SMI_ELEMENTS ||
-      kind == FAST_ELEMENTS ||
-      kind == FAST_HOLEY_ELEMENTS;
+  return kind == PACKED_SMI_ELEMENTS || kind == HOLEY_SMI_ELEMENTS ||
+         kind == PACKED_ELEMENTS || kind == HOLEY_ELEMENTS;
 }
 
 
 inline bool IsFastSmiElementsKind(ElementsKind kind) {
-  return kind == FAST_SMI_ELEMENTS ||
-      kind == FAST_HOLEY_SMI_ELEMENTS;
+  return kind == PACKED_SMI_ELEMENTS || kind == HOLEY_SMI_ELEMENTS;
 }
 
 inline bool IsFastNumberElementsKind(ElementsKind kind) {
@@ -156,53 +149,50 @@ inline bool IsFastNumberElementsKind(ElementsKind kind) {
 
 
 inline bool IsFastObjectElementsKind(ElementsKind kind) {
-  return kind == FAST_ELEMENTS ||
-      kind == FAST_HOLEY_ELEMENTS;
+  return kind == PACKED_ELEMENTS || kind == HOLEY_ELEMENTS;
 }
 
 
 inline bool IsFastHoleyElementsKind(ElementsKind kind) {
-  return kind == FAST_HOLEY_SMI_ELEMENTS ||
-      kind == FAST_HOLEY_DOUBLE_ELEMENTS ||
-      kind == FAST_HOLEY_ELEMENTS;
+  return kind == HOLEY_SMI_ELEMENTS || kind == HOLEY_DOUBLE_ELEMENTS ||
+         kind == HOLEY_ELEMENTS;
 }
 
-
-inline bool IsHoleyElementsKind(ElementsKind kind) {
+inline bool IsHoleyOrDictionaryElementsKind(ElementsKind kind) {
   return IsFastHoleyElementsKind(kind) ||
       kind == DICTIONARY_ELEMENTS;
 }
 
 
 inline bool IsFastPackedElementsKind(ElementsKind kind) {
-  return kind == FAST_SMI_ELEMENTS || kind == FAST_DOUBLE_ELEMENTS ||
-         kind == FAST_ELEMENTS;
+  return kind == PACKED_SMI_ELEMENTS || kind == PACKED_DOUBLE_ELEMENTS ||
+         kind == PACKED_ELEMENTS;
 }
 
 
 inline ElementsKind GetPackedElementsKind(ElementsKind holey_kind) {
-  if (holey_kind == FAST_HOLEY_SMI_ELEMENTS) {
-    return FAST_SMI_ELEMENTS;
+  if (holey_kind == HOLEY_SMI_ELEMENTS) {
+    return PACKED_SMI_ELEMENTS;
   }
-  if (holey_kind == FAST_HOLEY_DOUBLE_ELEMENTS) {
-    return FAST_DOUBLE_ELEMENTS;
+  if (holey_kind == HOLEY_DOUBLE_ELEMENTS) {
+    return PACKED_DOUBLE_ELEMENTS;
   }
-  if (holey_kind == FAST_HOLEY_ELEMENTS) {
-    return FAST_ELEMENTS;
+  if (holey_kind == HOLEY_ELEMENTS) {
+    return PACKED_ELEMENTS;
   }
   return holey_kind;
 }
 
 
 inline ElementsKind GetHoleyElementsKind(ElementsKind packed_kind) {
-  if (packed_kind == FAST_SMI_ELEMENTS) {
-    return FAST_HOLEY_SMI_ELEMENTS;
+  if (packed_kind == PACKED_SMI_ELEMENTS) {
+    return HOLEY_SMI_ELEMENTS;
   }
-  if (packed_kind == FAST_DOUBLE_ELEMENTS) {
-    return FAST_HOLEY_DOUBLE_ELEMENTS;
+  if (packed_kind == PACKED_DOUBLE_ELEMENTS) {
+    return HOLEY_DOUBLE_ELEMENTS;
   }
-  if (packed_kind == FAST_ELEMENTS) {
-    return FAST_HOLEY_ELEMENTS;
+  if (packed_kind == PACKED_ELEMENTS) {
+    return HOLEY_ELEMENTS;
   }
   return packed_kind;
 }
@@ -210,9 +200,7 @@ inline ElementsKind GetHoleyElementsKind(ElementsKind packed_kind) {
 
 inline ElementsKind FastSmiToObjectElementsKind(ElementsKind from_kind) {
   DCHECK(IsFastSmiElementsKind(from_kind));
-  return (from_kind == FAST_SMI_ELEMENTS)
-      ? FAST_ELEMENTS
-      : FAST_HOLEY_ELEMENTS;
+  return (from_kind == PACKED_SMI_ELEMENTS) ? PACKED_ELEMENTS : HOLEY_ELEMENTS;
 }
 
 
@@ -239,7 +227,7 @@ inline ElementsKind GetMoreGeneralElementsKind(ElementsKind from_kind,
 
 inline bool IsTransitionableFastElementsKind(ElementsKind from_kind) {
   return IsFastElementsKind(from_kind) &&
-      from_kind != TERMINAL_FAST_ELEMENTS_KIND;
+         from_kind != TERMINAL_FAST_ELEMENTS_KIND;
 }
 
 

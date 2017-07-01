@@ -522,7 +522,7 @@ void SloppyArgumentsElements::SloppyArgumentsElementsVerify(
   }
   ElementsAccessor* accessor;
   if (is_fast) {
-    accessor = ElementsAccessor::ForKind(FAST_HOLEY_ELEMENTS);
+    accessor = ElementsAccessor::ForKind(HOLEY_ELEMENTS);
   } else {
     accessor = ElementsAccessor::ForKind(DICTIONARY_ELEMENTS);
   }
@@ -739,6 +739,10 @@ void SharedFunctionInfo::SharedFunctionInfoVerify() {
     CHECK(kind() == scope_info()->function_kind());
     CHECK_EQ(kind() == kModule, scope_info()->scope_type() == MODULE_SCOPE);
   }
+
+  CHECK(preparsed_scope_data()->IsNull(isolate) ||
+        preparsed_scope_data()->IsPreParsedScopeData());
+  VerifyObjectField(kPreParsedScopeDataOffset);
 }
 
 
@@ -1250,27 +1254,26 @@ void Module::ModuleVerify() {
   VerifyPointer(module_namespace());
   VerifyPointer(requested_modules());
   VerifyPointer(script());
+  VerifyPointer(exception());
   VerifySmiField(kHashOffset);
   VerifySmiField(kStatusOffset);
 
-  CHECK((!instantiated() && code()->IsSharedFunctionInfo()) ||
-        (instantiated() && !evaluated() && code()->IsJSFunction()) ||
-        (instantiated() && evaluated() && code()->IsModuleInfo()));
+  CHECK((status() < kInstantiating && code()->IsSharedFunctionInfo()) ||
+        (status() < kEvaluating && code()->IsJSFunction()) ||
+        code()->IsModuleInfo());
+
+  CHECK_EQ(status() == kErrored, !exception()->IsTheHole(GetIsolate()));
 
   CHECK(module_namespace()->IsUndefined(GetIsolate()) ||
         module_namespace()->IsJSModuleNamespace());
   if (module_namespace()->IsJSModuleNamespace()) {
-    CHECK(instantiated());
+    CHECK_LE(kInstantiating, status());
     CHECK_EQ(JSModuleNamespace::cast(module_namespace())->module(), this);
   }
 
   CHECK_EQ(requested_modules()->length(), info()->module_requests()->length());
 
   CHECK_NE(hash(), 0);
-
-  CHECK_LE(kUnprepared, status());
-  CHECK_LE(status(), kPrepared);
-  CHECK_IMPLIES(instantiated(), status() == kPrepared);
 }
 
 void PrototypeInfo::PrototypeInfoVerify() {
@@ -1424,6 +1427,13 @@ void StackFrameInfo::StackFrameInfoVerify() {
   VerifyPointer(script_name_or_source_url());
   VerifyPointer(function_name());
 }
+
+void PreParsedScopeData::PreParsedScopeDataVerify() {
+  CHECK(IsPreParsedScopeData());
+  CHECK(scope_data()->IsByteArray());
+  CHECK(child_data()->IsFixedArray());
+}
+
 #endif  // VERIFY_HEAP
 
 #ifdef DEBUG
@@ -1448,12 +1458,12 @@ void JSObject::IncrementSpillStatistics(SpillInformation* info) {
   }
   // Indexed properties
   switch (GetElementsKind()) {
-    case FAST_HOLEY_SMI_ELEMENTS:
-    case FAST_SMI_ELEMENTS:
-    case FAST_HOLEY_DOUBLE_ELEMENTS:
-    case FAST_DOUBLE_ELEMENTS:
-    case FAST_HOLEY_ELEMENTS:
-    case FAST_ELEMENTS:
+    case HOLEY_SMI_ELEMENTS:
+    case PACKED_SMI_ELEMENTS:
+    case HOLEY_DOUBLE_ELEMENTS:
+    case PACKED_DOUBLE_ELEMENTS:
+    case HOLEY_ELEMENTS:
+    case PACKED_ELEMENTS:
     case FAST_STRING_WRAPPER_ELEMENTS: {
       info->number_of_objects_with_fast_elements_++;
       int holes = 0;

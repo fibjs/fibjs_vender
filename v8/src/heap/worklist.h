@@ -82,11 +82,62 @@ class Worklist {
            private_push_segment_[task_id]->IsEmpty();
   }
 
+  bool IsGlobalPoolEmpty() {
+    base::LockGuard<base::Mutex> guard(&lock_);
+    return global_pool_.empty();
+  }
+
   bool IsGlobalEmpty() {
     for (int i = 0; i < kMaxNumTasks; i++) {
       if (!IsLocalEmpty(i)) return false;
     }
     return global_pool_.empty();
+  }
+
+  size_t LocalSize(int task_id) {
+    return private_pop_segment_[task_id]->Size() +
+           private_push_segment_[task_id]->Size();
+  }
+
+  // Clears all segments. Frees the global segment pool.
+  // This function assumes that other tasks are not running.
+  void Clear() {
+    for (int i = 0; i < kMaxNumTasks; i++) {
+      private_pop_segment_[i]->Clear();
+      private_push_segment_[i]->Clear();
+    }
+    for (Segment* segment : global_pool_) {
+      delete segment;
+    }
+    global_pool_.clear();
+  }
+
+  // Calls the specified callback on each element of the deques and replaces
+  // the element with the result of the callback. If the callback returns
+  // nullptr then the element is removed from the worklist.
+  // The callback must accept HeapObject* and return HeapObject*.
+  // This function assumes that other tasks are not running.
+  template <typename Callback>
+  void Update(Callback callback) {
+    for (int i = 0; i < kMaxNumTasks; i++) {
+      private_pop_segment_[i]->Update(callback);
+      private_push_segment_[i]->Update(callback);
+    }
+    for (size_t i = 0; i < global_pool_.size(); i++) {
+      Segment* segment = global_pool_[i];
+      segment->Update(callback);
+      if (segment->IsEmpty()) {
+        global_pool_[i] = global_pool_.back();
+        global_pool_.pop_back();
+        delete segment;
+        --i;
+      }
+    }
+  }
+
+  void FlushToGlobal(int task_id) {
+    PublishPushSegmentToGlobal(task_id);
+    PublishPopSegmentToGlobal(task_id);
   }
 
  private:
@@ -98,6 +149,8 @@ class Worklist {
   FRIEND_TEST(Worklist, SegmentClear);
   FRIEND_TEST(Worklist, SegmentFullPushFails);
   FRIEND_TEST(Worklist, SegmentEmptyPopFails);
+  FRIEND_TEST(Worklist, SegmentUpdateNull);
+  FRIEND_TEST(Worklist, SegmentUpdate);
 
   class Segment {
    public:
@@ -107,14 +160,12 @@ class Worklist {
 
     bool Push(HeapObject* object) {
       if (IsFull()) return false;
-
       objects_[index_++] = object;
       return true;
     }
 
     bool Pop(HeapObject** object) {
       if (IsEmpty()) return false;
-
       *object = objects_[--index_];
       return true;
     }
@@ -123,6 +174,18 @@ class Worklist {
     bool IsEmpty() { return index_ == 0; }
     bool IsFull() { return index_ == kCapacity; }
     void Clear() { index_ = 0; }
+
+    template <typename Callback>
+    void Update(Callback callback) {
+      size_t new_index = 0;
+      for (size_t i = 0; i < index_; i++) {
+        HeapObject* object = callback(objects_[i]);
+        if (object) {
+          objects_[new_index++] = object;
+        }
+      }
+      index_ = new_index;
+    }
 
    private:
     size_t index_;
@@ -135,8 +198,18 @@ class Worklist {
 
   V8_NOINLINE void PublishPushSegmentToGlobal(int task_id) {
     base::LockGuard<base::Mutex> guard(&lock_);
-    global_pool_.push_back(private_push_segment_[task_id]);
-    private_push_segment_[task_id] = new Segment();
+    if (!private_push_segment_[task_id]->IsEmpty()) {
+      global_pool_.push_back(private_push_segment_[task_id]);
+      private_push_segment_[task_id] = new Segment();
+    }
+  }
+
+  V8_NOINLINE void PublishPopSegmentToGlobal(int task_id) {
+    base::LockGuard<base::Mutex> guard(&lock_);
+    if (!private_pop_segment_[task_id]->IsEmpty()) {
+      global_pool_.push_back(private_pop_segment_[task_id]);
+      private_pop_segment_[task_id] = new Segment();
+    }
   }
 
   V8_NOINLINE bool StealPopSegmentFromGlobal(int task_id) {

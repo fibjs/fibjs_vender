@@ -61,6 +61,7 @@
 #include "src/objects/frame-array-inl.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/map.h"
+#include "src/parsing/preparsed-scope-data.h"
 #include "src/property-descriptor.h"
 #include "src/prototype.h"
 #include "src/regexp/jsregexp.h"
@@ -1927,7 +1928,7 @@ void JSObject::SetNormalizedProperty(Handle<JSObject> object,
     int entry = dictionary->FindEntry(isolate, name, hash);
 
     if (entry == GlobalDictionary::kNotFound) {
-      auto cell = isolate->factory()->NewPropertyCell();
+      auto cell = isolate->factory()->NewPropertyCell(name);
       cell->set_value(*value);
       auto cell_type = value->IsUndefined(isolate)
                            ? PropertyCellType::kUndefined
@@ -2180,8 +2181,7 @@ Object* GetSimpleHash(Object* object) {
   // The object is either a Smi, a HeapNumber, a name, an odd-ball, a real JS
   // object, or a Harmony proxy.
   if (object->IsSmi()) {
-    uint32_t hash =
-        ComputeIntegerHash(Smi::cast(object)->value(), kZeroHashSeed);
+    uint32_t hash = ComputeIntegerHash(Smi::cast(object)->value());
     return Smi::FromInt(hash & Smi::kMaxValue);
   }
   if (object->IsHeapNumber()) {
@@ -3085,10 +3085,12 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case PROPERTY_CELL_TYPE: {
-      os << "<PropertyCell value=";
+      PropertyCell* cell = PropertyCell::cast(this);
+      os << "<PropertyCell name=";
+      cell->name()->ShortPrint(os);
+      os << " value=";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
-      PropertyCell* cell = PropertyCell::cast(this);
       cell->value()->ShortPrint(&accumulator);
       os << accumulator.ToCString().get();
       os << '>';
@@ -5000,7 +5002,7 @@ Handle<Map> Map::TransitionElementsTo(Handle<Map> map,
 
   DCHECK(!map->IsUndefined(isolate));
   // Check if we can go back in the elements kind transition chain.
-  if (IsHoleyElementsKind(from_kind) &&
+  if (IsHoleyOrDictionaryElementsKind(from_kind) &&
       to_kind == GetPackedElementsKind(from_kind) &&
       map->GetBackPointer()->IsMap() &&
       Map::cast(map->GetBackPointer())->elements_kind() == to_kind) {
@@ -5772,12 +5774,11 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
   int current_offset = 0;
   for (int i = 0; i < instance_descriptor_length; i++) {
     int index = Smi::cast(iteration_order->get(i))->value();
-    Object* k = dictionary->KeyAt(index);
-    DCHECK(dictionary->IsKey(isolate, k));
+    Name* k = dictionary->NameAt(index);
     // Dictionary keys are internalized upon insertion.
     // TODO(jkummerow): Turn this into a DCHECK if it's not hit in the wild.
     CHECK(k->IsUniqueName());
-    Handle<Name> key(Name::cast(k), isolate);
+    Handle<Name> key(k, isolate);
 
     Object* value = dictionary->ValueAt(index);
 
@@ -7311,14 +7312,14 @@ bool JSObject::ReferencesObject(Object* obj) {
     TYPED_ARRAYS(TYPED_ARRAY_CASE)
 #undef TYPED_ARRAY_CASE
 
-    case FAST_DOUBLE_ELEMENTS:
-    case FAST_HOLEY_DOUBLE_ELEMENTS:
+    case PACKED_DOUBLE_ELEMENTS:
+    case HOLEY_DOUBLE_ELEMENTS:
       break;
-    case FAST_SMI_ELEMENTS:
-    case FAST_HOLEY_SMI_ELEMENTS:
+    case PACKED_SMI_ELEMENTS:
+    case HOLEY_SMI_ELEMENTS:
       break;
-    case FAST_ELEMENTS:
-    case FAST_HOLEY_ELEMENTS:
+    case PACKED_ELEMENTS:
+    case HOLEY_ELEMENTS:
     case DICTIONARY_ELEMENTS:
     case FAST_STRING_WRAPPER_ELEMENTS:
     case SLOW_STRING_WRAPPER_ELEMENTS: {
@@ -7337,8 +7338,7 @@ bool JSObject::ReferencesObject(Object* obj) {
       }
       // Check the arguments.
       FixedArray* arguments = elements->arguments();
-      kind = arguments->IsDictionary() ? DICTIONARY_ELEMENTS :
-          FAST_HOLEY_ELEMENTS;
+      kind = arguments->IsDictionary() ? DICTIONARY_ELEMENTS : HOLEY_ELEMENTS;
       if (ReferencesObjectFromElements(arguments, kind, obj)) return true;
       break;
     }
@@ -7467,16 +7467,15 @@ Maybe<bool> JSReceiver::SetIntegrityLevel(Handle<JSReceiver> receiver,
 namespace {
 
 template <typename Dictionary>
-bool TestDictionaryPropertiesIntegrityLevel(Dictionary dict, Isolate* isolate,
+bool TestDictionaryPropertiesIntegrityLevel(Dictionary* dict, Isolate* isolate,
                                             PropertyAttributes level) {
   DCHECK(level == SEALED || level == FROZEN);
 
   uint32_t capacity = dict->Capacity();
   for (uint32_t i = 0; i < capacity; i++) {
-    Object* key = dict->KeyAt(i);
-    if (!dict->IsKey(isolate, key) || key->FilterKey(ALL_PROPERTIES) ||
-        dict->IsDeleted(i))
-      continue;
+    Object* key;
+    if (!dict->ToKey(isolate, i, &key)) continue;
+    if (key->FilterKey(ALL_PROPERTIES)) continue;
     PropertyDetails details = dict->DetailsAt(i);
     if (details.IsConfigurable()) return false;
     if (level == FROZEN && details.kind() == kData && !details.IsReadOnly()) {
@@ -7777,21 +7776,18 @@ void ApplyAttributesToDictionary(Isolate* isolate,
                                  const PropertyAttributes attributes) {
   int capacity = dictionary->Capacity();
   for (int i = 0; i < capacity; i++) {
-    Object* k = dictionary->KeyAt(i);
-    if (dictionary->IsKey(isolate, k) &&
-        !(k->IsSymbol() && Symbol::cast(k)->is_private())) {
-      PropertyDetails details = dictionary->DetailsAt(i);
-      int attrs = attributes;
-      // READ_ONLY is an invalid attribute for JS setters/getters.
-      if ((attributes & READ_ONLY) && details.kind() == kAccessor) {
-        Object* v = dictionary->ValueAt(i);
-        if (v->IsPropertyCell()) v = PropertyCell::cast(v)->value();
-        if (v->IsAccessorPair()) attrs &= ~READ_ONLY;
-      }
-      details = details.CopyAddAttributes(
-          static_cast<PropertyAttributes>(attrs));
-      dictionary->DetailsAtPut(i, details);
+    Object* k;
+    if (!dictionary->ToKey(isolate, i, &k)) continue;
+    if (k->FilterKey(ALL_PROPERTIES)) continue;
+    PropertyDetails details = dictionary->DetailsAt(i);
+    int attrs = attributes;
+    // READ_ONLY is an invalid attribute for JS setters/getters.
+    if ((attributes & READ_ONLY) && details.kind() == kAccessor) {
+      Object* v = dictionary->ValueAt(i);
+      if (v->IsAccessorPair()) attrs &= ~READ_ONLY;
     }
+    details = details.CopyAddAttributes(static_cast<PropertyAttributes>(attrs));
+    dictionary->DetailsAtPut(i, details);
   }
 }
 
@@ -8022,16 +8018,16 @@ bool JSObject::HasEnumerableElements() {
   // TODO(cbruni): cleanup
   JSObject* object = this;
   switch (object->GetElementsKind()) {
-    case FAST_SMI_ELEMENTS:
-    case FAST_ELEMENTS:
-    case FAST_DOUBLE_ELEMENTS: {
+    case PACKED_SMI_ELEMENTS:
+    case PACKED_ELEMENTS:
+    case PACKED_DOUBLE_ELEMENTS: {
       int length = object->IsJSArray()
                        ? Smi::cast(JSArray::cast(object)->length())->value()
                        : object->elements()->length();
       return length > 0;
     }
-    case FAST_HOLEY_SMI_ELEMENTS:
-    case FAST_HOLEY_ELEMENTS: {
+    case HOLEY_SMI_ELEMENTS:
+    case HOLEY_ELEMENTS: {
       FixedArray* elements = FixedArray::cast(object->elements());
       int length = object->IsJSArray()
                        ? Smi::cast(JSArray::cast(object)->length())->value()
@@ -8042,7 +8038,7 @@ bool JSObject::HasEnumerableElements() {
       }
       return false;
     }
-    case FAST_HOLEY_DOUBLE_ELEMENTS: {
+    case HOLEY_DOUBLE_ELEMENTS: {
       int length = object->IsJSArray()
                        ? Smi::cast(JSArray::cast(object)->length())->value()
                        : object->elements()->length();
@@ -8245,7 +8241,7 @@ MaybeHandle<FixedArray> GetOwnValuesOrEntries(Isolate* isolate,
       entry_storage->set(0, *key);
       entry_storage->set(1, *value);
       value = isolate->factory()->NewJSArrayWithElements(entry_storage,
-                                                         FAST_ELEMENTS, 2);
+                                                         PACKED_ELEMENTS, 2);
     }
 
     values_or_entries->set(length, *value);
@@ -11917,6 +11913,7 @@ static void ShrinkInstanceSize(Map* map, void* data) {
   int old_visitor_id = Heap::GetStaticVisitorIdForMap(map);
 #endif
   int slack = *reinterpret_cast<int*>(data);
+  DCHECK_GE(slack, 0);
   map->SetInObjectProperties(map->GetInObjectProperties() - slack);
   map->set_unused_property_fields(map->unused_property_fields() - slack);
   map->set_instance_size(map->instance_size() - slack * kPointerSize);
@@ -12371,29 +12368,6 @@ void JSFunction::SetPrototype(Handle<JSFunction> function,
   }
 
   SetInstancePrototype(isolate, function, construct_prototype);
-}
-
-
-bool JSFunction::RemovePrototype() {
-  Context* native_context = context()->native_context();
-  Map* no_prototype_map =
-      is_strict(shared()->language_mode())
-          ? native_context->strict_function_without_prototype_map()
-          : native_context->sloppy_function_without_prototype_map();
-
-  if (map() == no_prototype_map) return true;
-
-#ifdef DEBUG
-  if (map() != (is_strict(shared()->language_mode())
-                    ? native_context->strict_function_map()
-                    : native_context->sloppy_function_map())) {
-    return false;
-  }
-#endif
-
-  set_map(no_prototype_map);
-  set_prototype_or_initial_map(no_prototype_map->GetHeap()->the_hole_value());
-  return true;
 }
 
 
@@ -13039,9 +13013,6 @@ Script::Iterator::Iterator(Isolate* isolate)
 
 Script* Script::Iterator::Next() { return iterator_.Next<Script>(); }
 
-bool Script::HasPreparsedScopeData() const {
-  return preparsed_scope_data()->length() > 0;
-}
 
 SharedFunctionInfo::ScriptIterator::ScriptIterator(Handle<Script> script)
     : ScriptIterator(script->GetIsolate(),
@@ -13084,12 +13055,16 @@ SharedFunctionInfo* SharedFunctionInfo::GlobalIterator::Next() {
   }
 }
 
-
 void SharedFunctionInfo::SetScript(Handle<SharedFunctionInfo> shared,
-                                   Handle<Object> script_object) {
+                                   Handle<Object> script_object,
+                                   bool reset_preparsed_scope_data) {
   DCHECK_NE(shared->function_literal_id(), FunctionLiteral::kIdTypeInvalid);
   if (shared->script() == *script_object) return;
   Isolate* isolate = shared->GetIsolate();
+
+  if (reset_preparsed_scope_data) {
+    shared->set_preparsed_scope_data(isolate->heap()->null_value());
+  }
 
   // Add shared function info to new script's list. If a collection occurs,
   // the shared function info may be temporarily in two lists.
@@ -13166,6 +13141,11 @@ bool SharedFunctionInfo::HasCoverageInfo() const {
   bool has_coverage_info = info->HasCoverageInfo();
   DCHECK_IMPLIES(has_coverage_info, FLAG_block_coverage);
   return has_coverage_info;
+}
+
+CoverageInfo* SharedFunctionInfo::GetCoverageInfo() const {
+  DCHECK(HasCoverageInfo());
+  return CoverageInfo::cast(GetDebugInfo()->coverage_info());
 }
 
 DebugInfo* SharedFunctionInfo::GetDebugInfo() const {
@@ -13413,11 +13393,24 @@ void SharedFunctionInfo::InitFromFunctionLiteral(
     shared_info->set_length(lit->function_length());
     shared_info->set_has_duplicate_parameters(lit->has_duplicate_parameters());
     shared_info->SetExpectedNofPropertiesFromEstimate(lit);
+    DCHECK_NULL(lit->produced_preparsed_scope_data());
   } else {
     // Set an invalid length for lazy functions. This way we can set the correct
     // value after compiling, but avoid overwriting values set manually by the
     // bootstrapper.
     shared_info->set_length(SharedFunctionInfo::kInvalidLength);
+    if (FLAG_experimental_preparser_scope_analysis) {
+      ProducedPreParsedScopeData* scope_data =
+          lit->produced_preparsed_scope_data();
+      if (scope_data != nullptr) {
+        MaybeHandle<PreParsedScopeData> maybe_data =
+            scope_data->Serialize(shared_info->GetIsolate());
+        if (!maybe_data.is_null()) {
+          Handle<PreParsedScopeData> data = maybe_data.ToHandleChecked();
+          shared_info->set_preparsed_scope_data(*data);
+        }
+      }
+    }
   }
 }
 
@@ -14112,12 +14105,6 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           break;
         }
 
-        case Translation::COMPILED_STUB_FRAME: {
-          Code::Kind stub_kind = static_cast<Code::Kind>(iterator.Next());
-          os << "{kind=" << stub_kind << "}";
-          break;
-        }
-
         case Translation::ARGUMENTS_ADAPTOR_FRAME: {
           int shared_info_id = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
@@ -14242,7 +14229,6 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           break;
         }
 
-        case Translation::ARGUMENTS_OBJECT:
         case Translation::CAPTURED_OBJECT: {
           int args_length = iterator.Next();
           os << "{length=" << args_length << "}";
@@ -15127,15 +15113,15 @@ static ElementsKind BestFittingFastElementsKind(JSObject* object) {
   }
   DCHECK(object->HasDictionaryElements());
   SeededNumberDictionary* dictionary = object->element_dictionary();
-  ElementsKind kind = FAST_HOLEY_SMI_ELEMENTS;
+  ElementsKind kind = HOLEY_SMI_ELEMENTS;
   for (int i = 0; i < dictionary->Capacity(); i++) {
     Object* key = dictionary->KeyAt(i);
     if (key->IsNumber()) {
       Object* value = dictionary->ValueAt(i);
-      if (!value->IsNumber()) return FAST_HOLEY_ELEMENTS;
+      if (!value->IsNumber()) return HOLEY_ELEMENTS;
       if (!value->IsSmi()) {
-        if (!FLAG_unbox_double_arrays) return FAST_HOLEY_ELEMENTS;
-        kind = FAST_HOLEY_DOUBLE_ELEMENTS;
+        if (!FLAG_unbox_double_arrays) return HOLEY_ELEMENTS;
+        kind = HOLEY_DOUBLE_ELEMENTS;
       }
     }
   }
@@ -15225,7 +15211,8 @@ Maybe<bool> JSObject::AddDataElement(Handle<JSObject> object, uint32_t index,
   }
 
   ElementsKind to = value->OptimalElementsKind();
-  if (IsHoleyElementsKind(kind) || !object->IsJSArray() || index > old_length) {
+  if (IsHoleyOrDictionaryElementsKind(kind) || !object->IsJSArray() ||
+      index > old_length) {
     to = GetHoleyElementsKind(to);
     kind = GetHoleyElementsKind(kind);
   }
@@ -15294,7 +15281,7 @@ bool AllocationSite::DigestTransitionFeedback(Handle<AllocationSite> site,
         handle(JSArray::cast(site->transition_info()));
     ElementsKind kind = transition_info->GetElementsKind();
     // if kind is holey ensure that to_kind is as well.
-    if (IsHoleyElementsKind(kind)) {
+    if (IsHoleyOrDictionaryElementsKind(kind)) {
       to_kind = GetHoleyElementsKind(to_kind);
     }
     if (IsMoreGeneralElementsKindTransition(kind, to_kind)) {
@@ -15324,7 +15311,7 @@ bool AllocationSite::DigestTransitionFeedback(Handle<AllocationSite> site,
   } else {
     ElementsKind kind = site->GetElementsKind();
     // if kind is holey ensure that to_kind is as well.
-    if (IsHoleyElementsKind(kind)) {
+    if (IsHoleyOrDictionaryElementsKind(kind)) {
       to_kind = GetHoleyElementsKind(to_kind);
     }
     if (IsMoreGeneralElementsKindTransition(kind, to_kind)) {
@@ -15487,19 +15474,19 @@ static int FastHoleyElementsUsage(JSObject* object, BackingStore* store) {
 int JSObject::GetFastElementsUsage() {
   FixedArrayBase* store = elements();
   switch (GetElementsKind()) {
-    case FAST_SMI_ELEMENTS:
-    case FAST_DOUBLE_ELEMENTS:
-    case FAST_ELEMENTS:
+    case PACKED_SMI_ELEMENTS:
+    case PACKED_DOUBLE_ELEMENTS:
+    case PACKED_ELEMENTS:
       return IsJSArray() ? Smi::cast(JSArray::cast(this)->length())->value()
                          : store->length();
     case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
       store = SloppyArgumentsElements::cast(store)->arguments();
     // Fall through.
-    case FAST_HOLEY_SMI_ELEMENTS:
-    case FAST_HOLEY_ELEMENTS:
+    case HOLEY_SMI_ELEMENTS:
+    case HOLEY_ELEMENTS:
     case FAST_STRING_WRAPPER_ELEMENTS:
       return FastHoleyElementsUsage(this, FixedArray::cast(store));
-    case FAST_HOLEY_DOUBLE_ELEMENTS:
+    case HOLEY_DOUBLE_ELEMENTS:
       if (elements()->length() == 0) return 0;
       return FastHoleyElementsUsage(this, FixedDoubleArray::cast(store));
 
@@ -15530,7 +15517,7 @@ void Dictionary<Derived, Shape>::Print(std::ostream& os) {  // NOLINT
   int capacity = this->Capacity();
   for (int i = 0; i < capacity; i++) {
     Object* k = this->KeyAt(i);
-    if (this->IsKey(isolate, k)) {
+    if (Shape::IsLive(isolate, k)) {
       os << "\n   ";
       if (k->IsString()) {
         String::cast(k)->StringPrint(os);
@@ -16050,7 +16037,7 @@ void HashTable<Derived, Shape>::Rehash(Derived* new_table) {
   for (int i = 0; i < capacity; i++) {
     uint32_t from_index = EntryToIndex(i);
     Object* k = this->get(from_index);
-    if (IsKey(isolate, k)) {
+    if (Shape::IsLive(isolate, k)) {
       uint32_t hash = Shape::HashForObject(isolate, k);
       uint32_t insertion_index =
           EntryToIndex(new_table->FindInsertionEntry(hash));
@@ -16106,11 +16093,11 @@ void HashTable<Derived, Shape>::Rehash() {
     done = true;
     for (uint32_t current = 0; current < capacity; current++) {
       Object* current_key = KeyAt(current);
-      if (IsKey(isolate, current_key)) {
+      if (Shape::IsLive(isolate, current_key)) {
         uint32_t target = EntryForProbe(current_key, probe, current);
         if (current == target) continue;
         Object* target_key = KeyAt(target);
-        if (!IsKey(isolate, target_key) ||
+        if (!Shape::IsLive(isolate, target_key) ||
             EntryForProbe(target_key, probe, target) != target) {
           // Put the current element into the correct position.
           Swap(current, target, mode);
@@ -16211,8 +16198,7 @@ uint32_t HashTable<Derived, Shape>::FindInsertionEntry(uint32_t hash) {
   // EnsureCapacity will guarantee the hash table is never full.
   Isolate* isolate = GetIsolate();
   while (true) {
-    Object* element = KeyAt(entry);
-    if (!IsKey(isolate, element)) break;
+    if (!Shape::IsLive(isolate, KeyAt(entry))) break;
     entry = NextProbe(entry, count++, capacity);
   }
   return entry;
@@ -16378,8 +16364,8 @@ Handle<Object> JSObject::PrepareSlowElementsForSort(
   // allocated one that is large enough for all entries.
   DisallowHeapAllocation no_gc;
   for (int i = 0; i < capacity; i++) {
-    Object* k = dict->KeyAt(i);
-    if (!dict->IsKey(isolate, k)) continue;
+    Object* k;
+    if (!dict->ToKey(isolate, i, &k)) continue;
 
     DCHECK(k->IsNumber());
     DCHECK(!k->IsSmi() || Smi::cast(k)->value() >= 0);
@@ -16474,7 +16460,7 @@ Handle<Object> JSObject::PrepareElementsForSort(Handle<JSObject> object,
     // Convert to fast elements.
 
     Handle<Map> new_map =
-        JSObject::GetElementsTransitionMap(object, FAST_HOLEY_ELEMENTS);
+        JSObject::GetElementsTransitionMap(object, HOLEY_ELEMENTS);
 
     PretenureFlag tenure = isolate->heap()->InNewSpace(*object) ?
         NOT_TENURED: TENURED;
@@ -16789,9 +16775,7 @@ Handle<PropertyCell> JSGlobalObject::EnsureEmptyPropertyCell(
   Handle<PropertyCell> cell;
   if (entry != GlobalDictionary::kNotFound) {
     if (entry_out) *entry_out = entry;
-    // This call should be idempotent.
-    DCHECK(dictionary->ValueAt(entry)->IsPropertyCell());
-    cell = handle(PropertyCell::cast(dictionary->ValueAt(entry)));
+    cell = handle(dictionary->CellAt(entry));
     PropertyCellType original_cell_type = cell->property_details().cell_type();
     DCHECK(original_cell_type == PropertyCellType::kInvalidated ||
            original_cell_type == PropertyCellType::kUninitialized);
@@ -16803,7 +16787,7 @@ Handle<PropertyCell> JSGlobalObject::EnsureEmptyPropertyCell(
     cell->set_property_details(details);
     return cell;
   }
-  cell = isolate->factory()->NewPropertyCell();
+  cell = isolate->factory()->NewPropertyCell(name);
   PropertyDetails details(kData, NONE, cell_type);
   dictionary =
       GlobalDictionary::Add(dictionary, name, cell, details, entry_out);
@@ -17613,7 +17597,7 @@ Handle<Derived> Dictionary<Derived, Shape>::Add(Handle<Derived> dictionary,
   uint32_t entry = dictionary->FindInsertionEntry(hash);
   dictionary->SetEntry(entry, *k, *value, details);
   DCHECK(dictionary->KeyAt(entry)->IsNumber() ||
-         dictionary->KeyAt(entry)->IsUniqueName());
+         Shape::Unwrap(dictionary->KeyAt(entry))->IsUniqueName());
   dictionary->ElementAdded();
   if (entry_out) *entry_out = entry;
   return dictionary;
@@ -17624,9 +17608,8 @@ bool SeededNumberDictionary::HasComplexElements() {
   Isolate* isolate = this->GetIsolate();
   int capacity = this->Capacity();
   for (int i = 0; i < capacity; i++) {
-    Object* k = this->KeyAt(i);
-    if (!this->IsKey(isolate, k)) continue;
-    DCHECK(!IsDeleted(i));
+    Object* k;
+    if (!this->ToKey(isolate, i, &k)) continue;
     PropertyDetails details = this->DetailsAt(i);
     if (details.kind() == kAccessor) return true;
     PropertyAttributes attr = details.attributes();
@@ -17673,8 +17656,8 @@ void SeededNumberDictionary::CopyValuesTo(FixedArray* elements) {
   DisallowHeapAllocation no_gc;
   WriteBarrierMode mode = elements->GetWriteBarrierMode(no_gc);
   for (int i = 0; i < capacity; i++) {
-    Object* k = this->KeyAt(i);
-    if (this->IsKey(isolate, k)) {
+    Object* k;
+    if (this->ToKey(isolate, i, &k)) {
       elements->set(pos++, this->ValueAt(i), mode);
     }
   }
@@ -17694,13 +17677,12 @@ int Dictionary<Derived, Shape>::NumberOfEnumerableProperties() {
   int capacity = this->Capacity();
   int result = 0;
   for (int i = 0; i < capacity; i++) {
-    Object* k = this->KeyAt(i);
-    if (this->IsKey(isolate, k) && !k->FilterKey(ENUMERABLE_STRINGS)) {
-      if (this->IsDeleted(i)) continue;
-      PropertyDetails details = this->DetailsAt(i);
-      PropertyAttributes attr = details.attributes();
-      if ((attr & ONLY_ENUMERABLE) == 0) result++;
-    }
+    Object* k;
+    if (!this->ToKey(isolate, i, &k)) continue;
+    if (k->FilterKey(ENUMERABLE_STRINGS)) continue;
+    PropertyDetails details = this->DetailsAt(i);
+    PropertyAttributes attr = details.attributes();
+    if ((attr & ONLY_ENUMERABLE) == 0) result++;
   }
   return result;
 }
@@ -17728,9 +17710,9 @@ void BaseNameDictionary<Derived, Shape>::CopyEnumKeysTo(
   int capacity = dictionary->Capacity();
   int properties = 0;
   for (int i = 0; i < capacity; i++) {
-    Object* key = dictionary->KeyAt(i);
+    Object* key;
+    if (!dictionary->ToKey(isolate, i, &key)) continue;
     bool is_shadowing_key = false;
-    if (!dictionary->IsKey(isolate, key)) continue;
     if (key->IsSymbol()) continue;
     PropertyDetails details = dictionary->DetailsAt(i);
     if (details.IsDontEnum()) {
@@ -17740,7 +17722,6 @@ void BaseNameDictionary<Derived, Shape>::CopyEnumKeysTo(
         continue;
       }
     }
-    if (dictionary->IsDeleted(i)) continue;
     if (is_shadowing_key) {
       accumulator->AddShadowingKey(key);
       continue;
@@ -17764,7 +17745,7 @@ void BaseNameDictionary<Derived, Shape>::CopyEnumKeysTo(
   std::sort(start, start + length, cmp);
   for (int i = 0; i < length; i++) {
     int index = Smi::cast(raw_storage->get(i))->value();
-    raw_storage->set(i, raw_dictionary->KeyAt(index));
+    raw_storage->set(i, raw_dictionary->NameAt(index));
   }
 }
 
@@ -17780,9 +17761,8 @@ Handle<FixedArray> BaseNameDictionary<Derived, Shape>::IterationIndices(
     DisallowHeapAllocation no_gc;
     Derived* raw_dictionary = *dictionary;
     for (int i = 0; i < capacity; i++) {
-      Object* k = raw_dictionary->KeyAt(i);
-      if (!raw_dictionary->IsKey(isolate, k)) continue;
-      if (raw_dictionary->IsDeleted(i)) continue;
+      Object* k;
+      if (!raw_dictionary->ToKey(isolate, i, &k)) continue;
       array->set(array_size++, Smi::FromInt(i));
     }
 
@@ -17813,9 +17793,9 @@ void BaseNameDictionary<Derived, Shape>::CollectKeysTo(
     DisallowHeapAllocation no_gc;
     Derived* raw_dictionary = *dictionary;
     for (int i = 0; i < capacity; i++) {
-      Object* k = raw_dictionary->KeyAt(i);
-      if (!raw_dictionary->IsKey(isolate, k) || k->FilterKey(filter)) continue;
-      if (raw_dictionary->IsDeleted(i)) continue;
+      Object* k;
+      if (!raw_dictionary->ToKey(isolate, i, &k)) continue;
+      if (k->FilterKey(filter)) continue;
       PropertyDetails details = raw_dictionary->DetailsAt(i);
       if ((details.attributes() & filter) != 0) {
         keys->AddShadowingKey(k);
@@ -17824,9 +17804,6 @@ void BaseNameDictionary<Derived, Shape>::CollectKeysTo(
       if (filter & ONLY_ALL_CAN_READ) {
         if (details.kind() != kAccessor) continue;
         Object* accessors = raw_dictionary->ValueAt(i);
-        if (accessors->IsPropertyCell()) {
-          accessors = PropertyCell::cast(accessors)->value();
-        }
         if (!accessors->IsAccessorInfo()) continue;
         if (!AccessorInfo::cast(accessors)->all_can_read()) continue;
       }
@@ -17845,7 +17822,7 @@ void BaseNameDictionary<Derived, Shape>::CollectKeysTo(
   bool has_seen_symbol = false;
   for (int i = 0; i < array_size; i++) {
     int index = Smi::cast(array->get(i))->value();
-    Object* key = dictionary->KeyAt(index);
+    Object* key = dictionary->NameAt(index);
     if (key->IsSymbol()) {
       has_seen_symbol = true;
       continue;
@@ -17855,27 +17832,23 @@ void BaseNameDictionary<Derived, Shape>::CollectKeysTo(
   if (has_seen_symbol) {
     for (int i = 0; i < array_size; i++) {
       int index = Smi::cast(array->get(i))->value();
-      Object* key = dictionary->KeyAt(index);
+      Object* key = dictionary->NameAt(index);
       if (!key->IsSymbol()) continue;
       keys->AddKey(key, DO_NOT_CONVERT);
     }
   }
 }
 
-
 // Backwards lookup (slow).
 template <typename Derived, typename Shape>
 Object* Dictionary<Derived, Shape>::SlowReverseLookup(Object* value) {
-  Isolate* isolate = this->GetIsolate();
-  int capacity = this->Capacity();
+  Derived* dictionary = Derived::cast(this);
+  Isolate* isolate = dictionary->GetIsolate();
+  int capacity = dictionary->Capacity();
   for (int i = 0; i < capacity; i++) {
-    Object* k = this->KeyAt(i);
-    if (!this->IsKey(isolate, k)) continue;
-    Object* e = this->ValueAt(i);
-    // TODO(dcarney): this should be templatized.
-    if (e->IsPropertyCell()) {
-      e = PropertyCell::cast(e)->value();
-    }
+    Object* k;
+    if (!dictionary->ToKey(isolate, i, &k)) continue;
+    Object* e = dictionary->ValueAt(i);
     if (e == value) return k;
   }
   return isolate->heap()->undefined_value();
@@ -18750,11 +18723,11 @@ Handle<JSArray> JSWeakCollection::GetEntries(Handle<JSWeakCollection> holder,
     int count = 0;
     for (int i = 0;
          count / values_per_entry < max_entries && i < table->Capacity(); i++) {
-      Handle<Object> key(table->KeyAt(i), isolate);
-      if (table->IsKey(isolate, *key)) {
-        entries->set(count++, *key);
+      Object* key;
+      if (table->ToKey(isolate, i, &key)) {
+        entries->set(count++, key);
         if (values_per_entry > 1) {
-          Object* value = table->Lookup(key);
+          Object* value = table->Lookup(handle(key, isolate));
           entries->set(count++, value);
         }
       }
@@ -19171,9 +19144,9 @@ Handle<PropertyCell> PropertyCell::InvalidateEntry(
     Handle<GlobalDictionary> dictionary, int entry) {
   Isolate* isolate = dictionary->GetIsolate();
   // Swap with a copy.
-  DCHECK(dictionary->ValueAt(entry)->IsPropertyCell());
-  Handle<PropertyCell> cell(PropertyCell::cast(dictionary->ValueAt(entry)));
-  Handle<PropertyCell> new_cell = isolate->factory()->NewPropertyCell();
+  Handle<PropertyCell> cell(dictionary->CellAt(entry));
+  Handle<Name> name(cell->name(), isolate);
+  Handle<PropertyCell> new_cell = isolate->factory()->NewPropertyCell(name);
   new_cell->set_value(cell->value());
   dictionary->ValueAtPut(entry, *new_cell);
   bool is_the_hole = cell->value()->IsTheHole(isolate);
@@ -19256,19 +19229,20 @@ Handle<PropertyCell> PropertyCell::PrepareForValue(
     PropertyDetails details) {
   Isolate* isolate = dictionary->GetIsolate();
   DCHECK(!value->IsTheHole(isolate));
-  DCHECK(dictionary->ValueAt(entry)->IsPropertyCell());
-  Handle<PropertyCell> cell(PropertyCell::cast(dictionary->ValueAt(entry)));
+  Handle<PropertyCell> cell(dictionary->CellAt(entry));
   const PropertyDetails original_details = cell->property_details();
   // Data accesses could be cached in ics or optimized code.
   bool invalidate =
       original_details.kind() == kData && details.kind() == kAccessor;
-  int index = original_details.dictionary_index();
+  int index;
   PropertyCellType old_type = original_details.cell_type();
   // Preserve the enumeration index unless the property was deleted or never
   // initialized.
   if (cell->value()->IsTheHole(isolate)) {
     index = dictionary->NextEnumerationIndex();
     dictionary->SetNextEnumerationIndex(index + 1);
+  } else {
+    index = original_details.dictionary_index();
   }
   DCHECK_LT(0, index);
   details = details.set_index(index);
@@ -19535,6 +19509,48 @@ void Module::StoreVariable(Handle<Module> module, int cell_index,
   module->GetCell(cell_index)->set_value(*value);
 }
 
+void Module::SetStatus(Status new_status) {
+  DisallowHeapAllocation no_alloc;
+  DCHECK_LE(status(), new_status);
+  DCHECK_NE(new_status, Module::kErrored);
+  set_status(new_status);
+}
+
+void Module::RecordError() {
+  DisallowHeapAllocation no_alloc;
+
+  Isolate* isolate = GetIsolate();
+  Object* the_exception = isolate->pending_exception();
+  DCHECK(!the_exception->IsTheHole(isolate));
+
+  switch (status()) {
+    case Module::kUninstantiated:
+    case Module::kPreInstantiating:
+    case Module::kInstantiating:
+    case Module::kEvaluating:
+      break;
+    case Module::kErrored:
+      DCHECK_EQ(exception(), the_exception);
+      return;
+    default:
+      UNREACHABLE();
+  }
+
+  set_code(info());
+
+  DCHECK(exception()->IsTheHole(isolate));
+  set_status(Module::kErrored);
+  set_exception(the_exception);
+}
+
+Object* Module::GetException() {
+  DisallowHeapAllocation no_alloc;
+  DCHECK_EQ(status(), Module::kErrored);
+  Object* the_exception = exception();
+  DCHECK(!the_exception->IsTheHole(GetIsolate()));
+  return the_exception;
+}
+
 MaybeHandle<Cell> Module::ResolveImport(Handle<Module> module,
                                         Handle<String> name, int module_request,
                                         MessageLocation loc, bool must_resolve,
@@ -19542,15 +19558,23 @@ MaybeHandle<Cell> Module::ResolveImport(Handle<Module> module,
   Isolate* isolate = module->GetIsolate();
   Handle<Module> requested_module(
       Module::cast(module->requested_modules()->get(module_request)), isolate);
-  return Module::ResolveExport(requested_module, name, loc, must_resolve,
-                               resolve_set);
+  MaybeHandle<Cell> result = Module::ResolveExport(requested_module, name, loc,
+                                                   must_resolve, resolve_set);
+  if (isolate->has_pending_exception()) {
+    DCHECK(result.is_null());
+    module->RecordError();
+  }
+  return result;
 }
 
 MaybeHandle<Cell> Module::ResolveExport(Handle<Module> module,
                                         Handle<String> name,
                                         MessageLocation loc, bool must_resolve,
                                         Module::ResolveSet* resolve_set) {
-  DCHECK_EQ(module->status(), kPrepared);
+  DCHECK_NE(module->status(), kErrored);
+  DCHECK_NE(module->status(), kEvaluating);
+  DCHECK_GE(module->status(), kPreInstantiating);
+
   Isolate* isolate = module->GetIsolate();
   Handle<Object> object(module->exports()->Lookup(name), isolate);
   if (object->IsCell()) {
@@ -19672,14 +19696,39 @@ MaybeHandle<Cell> Module::ResolveExportUsingStarExports(
 
 bool Module::Instantiate(Handle<Module> module, v8::Local<v8::Context> context,
                          v8::Module::ResolveCallback callback) {
-  return PrepareInstantiate(module, context, callback) &&
-         FinishInstantiate(module, context);
+  Isolate* isolate = module->GetIsolate();
+  if (module->status() == kErrored) {
+    isolate->Throw(module->GetException());
+    return false;
+  }
+
+  if (!PrepareInstantiate(module, context, callback)) {
+    return false;
+  }
+
+  Zone zone(isolate->allocator(), ZONE_NAME);
+  ZoneForwardList<Handle<Module>> stack(&zone);
+  unsigned dfs_index = 0;
+  if (!FinishInstantiate(module, &stack, &dfs_index, &zone)) {
+    for (auto& descendant : stack) {
+      descendant->RecordError();
+    }
+    DCHECK_EQ(module->GetException(), isolate->pending_exception());
+    return false;
+  }
+  DCHECK(module->status() == kInstantiated || module->status() == kEvaluated);
+  DCHECK(stack.empty());
+  return true;
 }
 
 bool Module::PrepareInstantiate(Handle<Module> module,
                                 v8::Local<v8::Context> context,
                                 v8::Module::ResolveCallback callback) {
-  if (module->status() == kPrepared) return true;
+  DCHECK_NE(module->status(), kErrored);
+  DCHECK_NE(module->status(), kEvaluating);
+  DCHECK_NE(module->status(), kInstantiating);
+  if (module->status() >= kPreInstantiating) return true;
+  module->SetStatus(kPreInstantiating);
 
   // Obtain requested modules.
   Isolate* isolate = module->GetIsolate();
@@ -19693,18 +19742,29 @@ bool Module::PrepareInstantiate(Handle<Module> module,
                   v8::Utils::ToLocal(module))
              .ToLocal(&api_requested_module)) {
       isolate->PromoteScheduledException();
+      module->RecordError();
       return false;
     }
     Handle<Module> requested_module = Utils::OpenHandle(*api_requested_module);
+    if (requested_module->status() == kErrored) {
+      // TODO(neis): Move this into callback?
+      isolate->Throw(requested_module->GetException());
+      module->RecordError();
+      DCHECK_EQ(module->GetException(), requested_module->GetException());
+      return false;
+    }
     requested_modules->set(i, *requested_module);
   }
 
   // Recurse.
-  module->set_status(kPrepared);
   for (int i = 0, length = requested_modules->length(); i < length; ++i) {
     Handle<Module> requested_module(Module::cast(requested_modules->get(i)),
                                     isolate);
-    if (!PrepareInstantiate(requested_module, context, callback)) return false;
+    if (!PrepareInstantiate(requested_module, context, callback)) {
+      module->RecordError();
+      DCHECK_EQ(module->GetException(), requested_module->GetException());
+      return false;
+    }
   }
 
   // Set up local exports.
@@ -19730,37 +19790,80 @@ bool Module::PrepareInstantiate(Handle<Module> module,
     CreateIndirectExport(module, Handle<String>::cast(export_name), entry);
   }
 
-  DCHECK_EQ(module->status(), kPrepared);
-  DCHECK(!module->instantiated());
+  DCHECK_EQ(module->status(), kPreInstantiating);
   return true;
 }
 
-bool Module::FinishInstantiate(Handle<Module> module,
-                               v8::Local<v8::Context> context) {
-  DCHECK_EQ(module->status(), kPrepared);
-  if (module->instantiated()) return true;
+void Module::MaybeTransitionComponent(Handle<Module> module,
+                                      ZoneForwardList<Handle<Module>>* stack,
+                                      Status new_status) {
+  DCHECK(new_status == kInstantiated || new_status == kEvaluated);
+  SLOW_DCHECK(
+      // {module} is on the {stack}.
+      std::count_if(stack->begin(), stack->end(),
+                    [&](Handle<Module> m) { return *m == *module; }) == 1);
+  DCHECK_LE(module->dfs_ancestor_index(), module->dfs_index());
+  if (module->dfs_ancestor_index() == module->dfs_index()) {
+    // This is the root of its strongly connected component.
+    Handle<Module> ancestor;
+    do {
+      ancestor = stack->front();
+      stack->pop_front();
+      DCHECK_EQ(ancestor->status(),
+                new_status == kInstantiated ? kInstantiating : kEvaluating);
+      ancestor->SetStatus(new_status);
+    } while (*ancestor != *module);
+  }
+}
 
-  // Instantiate SharedFunctionInfo and mark module as instantiated for
+bool Module::FinishInstantiate(Handle<Module> module,
+                               ZoneForwardList<Handle<Module>>* stack,
+                               unsigned* dfs_index, Zone* zone) {
+  DCHECK_NE(module->status(), kErrored);
+  DCHECK_NE(module->status(), kEvaluating);
+  if (module->status() >= kInstantiating) return true;
+  DCHECK_EQ(module->status(), kPreInstantiating);
+
+  // Instantiate SharedFunctionInfo and mark module as instantiating for
   // the recursion.
   Isolate* isolate = module->GetIsolate();
   Handle<SharedFunctionInfo> shared(SharedFunctionInfo::cast(module->code()),
                                     isolate);
   Handle<JSFunction> function =
       isolate->factory()->NewFunctionFromSharedFunctionInfo(
-          shared,
-          handle(Utils::OpenHandle(*context)->native_context(), isolate));
+          shared, isolate->native_context());
   module->set_code(*function);
-  DCHECK(module->instantiated());
+  module->SetStatus(kInstantiating);
+  module->set_dfs_index(*dfs_index);
+  module->set_dfs_ancestor_index(*dfs_index);
+  stack->push_front(module);
+  (*dfs_index)++;
 
   // Recurse.
   Handle<FixedArray> requested_modules(module->requested_modules(), isolate);
   for (int i = 0, length = requested_modules->length(); i < length; ++i) {
     Handle<Module> requested_module(Module::cast(requested_modules->get(i)),
                                     isolate);
-    if (!FinishInstantiate(requested_module, context)) return false;
-  }
+    if (!FinishInstantiate(requested_module, stack, dfs_index, zone)) {
+      return false;
+    }
 
-  Zone zone(isolate->allocator(), ZONE_NAME);
+    DCHECK_NE(requested_module->status(), kErrored);
+    DCHECK_NE(requested_module->status(), kEvaluating);
+    DCHECK_GE(requested_module->status(), kInstantiating);
+    SLOW_DCHECK(
+        // {requested_module} is instantiating iff it's on the {stack}.
+        (requested_module->status() == kInstantiating) ==
+        std::count_if(stack->begin(), stack->end(), [&](Handle<Module> m) {
+          return *m == *requested_module;
+        }));
+
+    if (requested_module->status() == kInstantiating) {
+      module->set_dfs_ancestor_index(
+          std::min(module->dfs_ancestor_index(),
+                   requested_module->dfs_ancestor_index()));
+    }
+  }
 
   // Resolve imports.
   Handle<ModuleInfo> module_info(shared->scope_info()->ModuleDescriptorInfo(),
@@ -19774,7 +19877,7 @@ bool Module::FinishInstantiate(Handle<Module> module,
         Script::cast(JSFunction::cast(module->code())->shared()->script()),
         isolate);
     MessageLocation loc(script, entry->beg_pos(), entry->end_pos());
-    ResolveSet resolve_set(&zone);
+    ResolveSet resolve_set(zone);
     Handle<Cell> cell;
     if (!ResolveImport(module, name, entry->module_request(), loc, true,
                        &resolve_set)
@@ -19795,7 +19898,7 @@ bool Module::FinishInstantiate(Handle<Module> module,
         Script::cast(JSFunction::cast(module->code())->shared()->script()),
         isolate);
     MessageLocation loc(script, entry->beg_pos(), entry->end_pos());
-    ResolveSet resolve_set(&zone);
+    ResolveSet resolve_set(zone);
     if (ResolveExport(module, Handle<String>::cast(name), loc, true,
                       &resolve_set)
             .is_null()) {
@@ -19803,17 +19906,53 @@ bool Module::FinishInstantiate(Handle<Module> module,
     }
   }
 
+  MaybeTransitionComponent(module, stack, kInstantiated);
   return true;
 }
 
 MaybeHandle<Object> Module::Evaluate(Handle<Module> module) {
-  DCHECK(module->instantiated());
-
-  // Each module can only be evaluated once.
   Isolate* isolate = module->GetIsolate();
-  if (module->evaluated()) return isolate->factory()->undefined_value();
+  if (module->status() == kErrored) {
+    isolate->Throw(module->GetException());
+    return MaybeHandle<Object>();
+  }
+  DCHECK_NE(module->status(), kEvaluating);
+  DCHECK_GE(module->status(), kInstantiated);
+  Zone zone(isolate->allocator(), ZONE_NAME);
+
+  ZoneForwardList<Handle<Module>> stack(&zone);
+  unsigned dfs_index = 0;
+  Handle<Object> result;
+  if (!Evaluate(module, &stack, &dfs_index).ToHandle(&result)) {
+    for (auto& descendant : stack) {
+      DCHECK_EQ(descendant->status(), kEvaluating);
+      descendant->RecordError();
+    }
+    DCHECK_EQ(module->GetException(), isolate->pending_exception());
+    return MaybeHandle<Object>();
+  }
+  DCHECK_EQ(module->status(), kEvaluated);
+  DCHECK(stack.empty());
+  return result;
+}
+
+MaybeHandle<Object> Module::Evaluate(Handle<Module> module,
+                                     ZoneForwardList<Handle<Module>>* stack,
+                                     unsigned* dfs_index) {
+  Isolate* isolate = module->GetIsolate();
+  DCHECK_NE(module->status(), kErrored);
+  if (module->status() >= kEvaluating) {
+    return isolate->factory()->undefined_value();
+  }
+  DCHECK_EQ(module->status(), kInstantiated);
+
   Handle<JSFunction> function(JSFunction::cast(module->code()), isolate);
-  module->set_evaluated();
+  module->set_code(function->shared()->scope_info()->ModuleDescriptorInfo());
+  module->SetStatus(kEvaluating);
+  module->set_dfs_index(*dfs_index);
+  module->set_dfs_ancestor_index(*dfs_index);
+  stack->push_front(module);
+  (*dfs_index)++;
 
   // Initialization.
   DCHECK_EQ(MODULE_SCOPE, function->shared()->scope_info()->scope_type());
@@ -19828,8 +19967,25 @@ MaybeHandle<Object> Module::Evaluate(Handle<Module> module) {
   // Recursion.
   Handle<FixedArray> requested_modules(module->requested_modules(), isolate);
   for (int i = 0, length = requested_modules->length(); i < length; ++i) {
-    Handle<Module> import(Module::cast(requested_modules->get(i)), isolate);
-    RETURN_ON_EXCEPTION(isolate, Evaluate(import), Object);
+    Handle<Module> requested_module(Module::cast(requested_modules->get(i)),
+                                    isolate);
+    RETURN_ON_EXCEPTION(isolate, Evaluate(requested_module, stack, dfs_index),
+                        Object);
+
+    DCHECK_GE(requested_module->status(), kEvaluating);
+    DCHECK_NE(requested_module->status(), kErrored);
+    SLOW_DCHECK(
+        // {requested_module} is evaluating iff it's on the {stack}.
+        (requested_module->status() == kEvaluating) ==
+        std::count_if(stack->begin(), stack->end(), [&](Handle<Module> m) {
+          return *m == *requested_module;
+        }));
+
+    if (requested_module->status() == kEvaluating) {
+      module->set_dfs_ancestor_index(
+          std::min(module->dfs_ancestor_index(),
+                   requested_module->dfs_ancestor_index()));
+    }
   }
 
   // Evaluation of module body.
@@ -19842,6 +19998,8 @@ MaybeHandle<Object> Module::Evaluate(Handle<Module> module) {
   DCHECK(static_cast<JSIteratorResult*>(JSObject::cast(*result))
              ->done()
              ->BooleanValue());
+
+  MaybeTransitionComponent(module, stack, kEvaluated);
   return handle(
       static_cast<JSIteratorResult*>(JSObject::cast(*result))->value(),
       isolate);
@@ -19851,7 +20009,8 @@ namespace {
 
 void FetchStarExports(Handle<Module> module, Zone* zone,
                       UnorderedModuleSet* visited) {
-  DCHECK(module->instantiated());
+  DCHECK_NE(module->status(), Module::kErrored);
+  DCHECK_GE(module->status(), Module::kInstantiated);
 
   bool cycle = !visited->insert(module).second;
   if (cycle) return;
@@ -19886,9 +20045,9 @@ void FetchStarExports(Handle<Module> module, Zone* zone,
     Handle<ObjectHashTable> requested_exports(requested_module->exports(),
                                               isolate);
     for (int i = 0, n = requested_exports->Capacity(); i < n; ++i) {
-      Handle<Object> key(requested_exports->KeyAt(i), isolate);
-      if (!requested_exports->IsKey(isolate, *key)) continue;
-      Handle<String> name = Handle<String>::cast(key);
+      Object* key;
+      if (!requested_exports->ToKey(isolate, i, &key)) continue;
+      Handle<String> name(String::cast(key), isolate);
 
       if (name->Equals(isolate->heap()->default_string())) continue;
       if (!exports->Lookup(name)->IsTheHole(isolate)) continue;
@@ -19952,10 +20111,9 @@ Handle<JSModuleNamespace> Module::GetModuleNamespace(Handle<Module> module) {
   ZoneVector<Handle<String>> names(&zone);
   names.reserve(exports->NumberOfElements());
   for (int i = 0, n = exports->Capacity(); i < n; ++i) {
-    Handle<Object> key(exports->KeyAt(i), isolate);
-    if (!exports->IsKey(isolate, *key)) continue;
-    DCHECK(exports->ValueAt(i)->IsCell());
-    names.push_back(Handle<String>::cast(key));
+    Object* key;
+    if (!exports->ToKey(isolate, i, &key)) continue;
+    names.push_back(handle(String::cast(key), isolate));
   }
   DCHECK_EQ(static_cast<int>(names.size()), exports->NumberOfElements());
 
@@ -19999,7 +20157,7 @@ ElementsKind JSArrayIterator::ElementsKindForInstanceType(InstanceType type) {
 
   if (type <= LAST_ARRAY_KEY_ITERATOR_TYPE) {
     // Should be ignored for key iterators.
-    return FAST_ELEMENTS;
+    return PACKED_ELEMENTS;
   } else {
     ElementsKind kind;
     if (type < FIRST_ARRAY_VALUE_ITERATOR_TYPE) {

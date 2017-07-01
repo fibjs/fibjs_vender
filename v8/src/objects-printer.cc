@@ -46,6 +46,7 @@ void HeapObject::PrintHeader(std::ostream& os, const char* id) {  // NOLINT
     os << map()->instance_type();
   }
   os << "]";
+  if (GetHeap()->InOldSpace(this)) os << " in OldSpace";
 }
 
 
@@ -404,7 +405,7 @@ void PrintSloppyArgumentElements(std::ostream& os, ElementsKind kind,
     os << "\n    " << raw_index << ": param(" << i
        << ")= " << Brief(mapped_entry);
     if (mapped_entry->IsTheHole(isolate)) {
-      os << " in the arguements_store[" << i << "]";
+      os << " in the arguments_store[" << i << "]";
     } else {
       os << " in the context";
     }
@@ -433,16 +434,16 @@ void JSObject::PrintElements(std::ostream& os) {  // NOLINT
     return;
   }
   switch (map()->elements_kind()) {
-    case FAST_HOLEY_SMI_ELEMENTS:
-    case FAST_SMI_ELEMENTS:
-    case FAST_HOLEY_ELEMENTS:
-    case FAST_ELEMENTS:
+    case HOLEY_SMI_ELEMENTS:
+    case PACKED_SMI_ELEMENTS:
+    case HOLEY_ELEMENTS:
+    case PACKED_ELEMENTS:
     case FAST_STRING_WRAPPER_ELEMENTS: {
       PrintFixedArrayElements(os, FixedArray::cast(elements()));
       break;
     }
-    case FAST_HOLEY_DOUBLE_ELEMENTS:
-    case FAST_DOUBLE_ELEMENTS: {
+    case HOLEY_DOUBLE_ELEMENTS:
+    case PACKED_DOUBLE_ELEMENTS: {
       DoPrintElements<FixedDoubleArray>(os, elements());
       break;
     }
@@ -1118,6 +1119,11 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - length = " << length();
   os << "\n - feedback_metadata = ";
   feedback_metadata()->FeedbackMetadataPrint(os);
+  if (HasPreParsedScopeData()) {
+    os << "\n - preparsed scope data = " << preparsed_scope_data();
+  } else {
+    os << "\n - no preparsed scope data";
+  }
   os << "\n";
 }
 
@@ -1151,6 +1157,8 @@ void Cell::CellPrint(std::ostream& os) {  // NOLINT
 
 void PropertyCell::PropertyCellPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PropertyCell");
+  os << "\n - name: ";
+  name()->NamePrint(os);
   os << "\n - value: " << Brief(value());
   os << "\n - details: ";
   property_details().PrintAsSlowTo(os);
@@ -1296,20 +1304,13 @@ void ModuleInfoEntry::ModuleInfoEntryPrint(std::ostream& os) {  // NOLINT
 
 void Module::ModulePrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Module");
-  // TODO(neis): Simplify once modules have a script field.
-  if (!evaluated()) {
-    SharedFunctionInfo* shared = code()->IsSharedFunctionInfo()
-                                     ? SharedFunctionInfo::cast(code())
-                                     : JSFunction::cast(code())->shared();
-    Object* origin = Script::cast(shared->script())->GetNameOrSourceURL();
-    os << "\n - origin: " << Brief(origin);
-  }
+  os << "\n - origin: " << Brief(script()->GetNameOrSourceURL());
   os << "\n - code: " << Brief(code());
   os << "\n - exports: " << Brief(exports());
   os << "\n - requested_modules: " << Brief(requested_modules());
   os << "\n - script: " << Brief(script());
-  os << "\n - instantiated, evaluated: " << instantiated() << ", "
-     << evaluated();
+  os << "\n - status: " << status();
+  os << "\n - exception: " << Brief(exception());
   os << "\n";
 }
 
@@ -1543,6 +1544,12 @@ void LayoutDescriptor::Print(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
+void PreParsedScopeData::PreParsedScopeDataPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "PreParsedScopeData");
+  os << "\n - scope_data: " << Brief(scope_data());
+  os << "\n - child_data: " << Brief(child_data());
+  os << "\n";
+}
 
 #endif  // OBJECT_PRINT
 

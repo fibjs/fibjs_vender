@@ -25,7 +25,6 @@
 #include "src/compilation-statistics.h"
 #include "src/compiler-dispatcher/compiler-dispatcher.h"
 #include "src/compiler-dispatcher/optimizing-compile-dispatcher.h"
-#include "src/crankshaft/hydrogen.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
 #include "src/elements.h"
@@ -1375,10 +1374,13 @@ HandlerTable::CatchPrediction PredictException(JavaScriptFrame* frame) {
       // tables on the unoptimized code objects.
       List<FrameSummary> summaries;
       frame->Summarize(&summaries);
-      for (const FrameSummary& summary : summaries) {
+      for (int i = summaries.length() - 1; i >= 0; i--) {
+        const FrameSummary& summary = summaries[i];
         Handle<AbstractCode> code = summary.AsJavaScript().abstract_code();
         if (code->IsCode() && code->kind() == AbstractCode::BUILTIN) {
-          return code->GetCode()->GetBuiltinCatchPrediction();
+          prediction = code->GetCode()->GetBuiltinCatchPrediction();
+          if (prediction == HandlerTable::UNCAUGHT) continue;
+          return prediction;
         }
 
         if (code->kind() == AbstractCode::OPTIMIZED_FUNCTION) {
@@ -1455,12 +1457,13 @@ Isolate::CatchType Isolate::PredictExceptionCatcher() {
 
       case StackFrame::STUB: {
         Handle<Code> code(frame->LookupCode());
-        if (code->kind() == Code::BUILTIN && code->is_turbofanned() &&
-            code->handler_table()->length()) {
-          CatchType prediction = ToCatchType(code->GetBuiltinCatchPrediction());
-          if (prediction == NOT_CAUGHT) break;
-          return prediction;
+        if (!code->IsCode() || code->kind() != Code::BUILTIN ||
+            !code->handler_table()->length() || !code->is_turbofanned()) {
+          break;
         }
+
+        CatchType prediction = ToCatchType(code->GetBuiltinCatchPrediction());
+        if (prediction != NOT_CAUGHT) return prediction;
       } break;
 
       default:
@@ -2029,23 +2032,40 @@ void Isolate::SetAbortOnUncaughtExceptionCallback(
 
 Handle<Context> Isolate::GetCallingNativeContext() {
   JavaScriptFrameIterator it(this);
-  if (debug_->in_debug_scope()) {
-    while (!it.done()) {
-      JavaScriptFrame* frame = it.frame();
-      Context* context = Context::cast(frame->context());
-      if (context->native_context() == *debug_->debug_context()) {
-        it.Advance();
-      } else {
-        break;
-      }
-    }
-  }
+  it.AdvanceWhileDebugContext(debug_);
   if (it.done()) return Handle<Context>::null();
   JavaScriptFrame* frame = it.frame();
   Context* context = Context::cast(frame->context());
   return Handle<Context>(context->native_context(), this);
 }
 
+Handle<Context> Isolate::GetIncumbentContext() {
+  JavaScriptFrameIterator it(this);
+  it.AdvanceWhileDebugContext(debug_);
+
+  // 1st candidate: most-recently-entered author function's context
+  // if it's newer than the last Context::BackupIncumbentScope entry.
+  if (!it.done() &&
+      static_cast<const void*>(it.frame()) >
+          static_cast<const void*>(top_backup_incumbent_scope())) {
+    Context* context = Context::cast(it.frame()->context());
+    return Handle<Context>(context->native_context(), this);
+  }
+
+  // 2nd candidate: the last Context::Scope's incumbent context if any.
+  if (top_backup_incumbent_scope()) {
+    return Utils::OpenHandle(
+        *top_backup_incumbent_scope()->backup_incumbent_context_);
+  }
+
+  // Last candidate: the entered context.
+  // Given that there is no other author function is running, there must be
+  // no cross-context function running, then the incumbent realm must match
+  // the entry realm.
+  v8::Local<v8::Context> entered_context =
+      reinterpret_cast<v8::Isolate*>(this)->GetEnteredContext();
+  return Utils::OpenHandle(*entered_context);
+}
 
 char* Isolate::ArchiveThread(char* to) {
   MemCopy(to, reinterpret_cast<char*>(thread_local_top()),
@@ -2836,7 +2856,6 @@ bool Isolate::Init(Deserializer* des) {
     HandleScope scope(this);
     CodeStub::GenerateFPStubs(this);
     StoreBufferOverflowStub::GenerateFixedRegStubsAheadOfTime(this);
-    StubFailureTrampolineStub::GenerateAheadOfTime(this);
   }
 
   initialized_from_snapshot_ = (des != NULL);
@@ -2949,11 +2968,8 @@ void Isolate::DumpAndResetStats() {
       os << ps << std::endl;
     }
   }
-  if (hstatistics() != nullptr) hstatistics()->Print();
   delete turbo_statistics_;
   turbo_statistics_ = nullptr;
-  delete hstatistics_;
-  hstatistics_ = nullptr;
   if (V8_UNLIKELY(FLAG_runtime_stats ==
                   v8::tracing::TracingCategoryObserver::ENABLED_BY_NATIVE)) {
     OFStream os(stdout);
@@ -2963,22 +2979,10 @@ void Isolate::DumpAndResetStats() {
 }
 
 
-HStatistics* Isolate::GetHStatistics() {
-  if (hstatistics() == NULL) set_hstatistics(new HStatistics());
-  return hstatistics();
-}
-
-
 CompilationStatistics* Isolate::GetTurboStatistics() {
   if (turbo_statistics() == NULL)
     set_turbo_statistics(new CompilationStatistics());
   return turbo_statistics();
-}
-
-
-HTracer* Isolate::GetHTracer() {
-  if (htracer() == NULL) set_htracer(new HTracer(id()));
-  return htracer();
 }
 
 
@@ -3027,26 +3031,6 @@ bool Isolate::IsArrayOrObjectPrototype(Object* object) {
     context = current_context->next_context_link();
   }
   return false;
-}
-
-void Isolate::ClearOSROptimizedCode() {
-  DisallowHeapAllocation no_gc;
-  Object* context = heap()->native_contexts_list();
-  while (!context->IsUndefined(this)) {
-    Context* current_context = Context::cast(context);
-    current_context->ClearOSROptimizedCodeCache();
-    context = current_context->next_context_link();
-  }
-}
-
-void Isolate::EvictOSROptimizedCode(Code* code, const char* reason) {
-  DisallowHeapAllocation no_gc;
-  Object* context = heap()->native_contexts_list();
-  while (!context->IsUndefined(this)) {
-    Context* current_context = Context::cast(context);
-    current_context->EvictFromOSROptimizedCodeCache(code, reason);
-    context = current_context->next_context_link();
-  }
 }
 
 bool Isolate::IsInAnyContext(Object* object, uint32_t index) {
@@ -3343,24 +3327,55 @@ void Isolate::DebugStateUpdated() {
   promise_hook_or_debug_is_active_ = promise_hook_ || debug()->is_active();
 }
 
-void Isolate::RunHostImportModuleDynamicallyCallback(
-    Handle<String> source_url, Handle<String> specifier,
-    Handle<JSPromise> promise) {
-  auto result = v8::Utils::PromiseToDynamicImportResult(promise);
+namespace {
+
+MaybeHandle<JSPromise> NewRejectedPromise(Isolate* isolate,
+                                          v8::Local<v8::Context> api_context,
+                                          Handle<Object> exception) {
+  v8::MaybeLocal<v8::Promise::Resolver> maybe_resolver =
+      v8::Promise::Resolver::New(api_context);
+  v8::Local<v8::Promise::Resolver> resolver;
+  // TODO(gsathya): Add test that checks this failure
+  if (!maybe_resolver.ToLocal(&resolver)) {
+    return MaybeHandle<JSPromise>();
+  }
+
+  if (resolver->Reject(api_context, v8::Utils::ToLocal(exception))
+          .IsNothing()) {
+    return MaybeHandle<JSPromise>();
+  }
+
+  v8::Local<v8::Promise> promise = resolver->GetPromise();
+  return v8::Utils::OpenHandle(*promise);
+}
+
+}  // namespace
+
+MaybeHandle<JSPromise> Isolate::RunHostImportModuleDynamicallyCallback(
+    Handle<String> source_url, Handle<Object> specifier) {
+  v8::Local<v8::Context> api_context =
+      v8::Utils::ToLocal(handle(context(), this));
+
   if (host_import_module_dynamically_callback_ == nullptr) {
     Handle<Object> exception =
         factory()->NewError(error_function(), MessageTemplate::kUnsupported);
-    CHECK(result
-              ->FinishDynamicImportFailure(
-                  v8::Utils::ToLocal(handle(context(), this)),
-                  v8::Utils::ToLocal(exception))
-              .FromJust());
-    return;
+    return NewRejectedPromise(this, api_context, exception);
   }
 
-  host_import_module_dynamically_callback_(
-      reinterpret_cast<v8::Isolate*>(this), v8::Utils::ToLocal(source_url),
-      v8::Utils::ToLocal(specifier), result);
+  Handle<String> specifier_str;
+  MaybeHandle<String> maybe_specifier = Object::ToString(this, specifier);
+  if (!maybe_specifier.ToHandle(&specifier_str)) {
+    Handle<Object> exception(pending_exception(), this);
+    clear_pending_exception();
+
+    return NewRejectedPromise(this, api_context, exception);
+  }
+  DCHECK(!has_pending_exception());
+
+  v8::Local<v8::Promise> promise = host_import_module_dynamically_callback_(
+      api_context, v8::Utils::ToLocal(source_url),
+      v8::Utils::ToLocal(specifier_str));
+  return v8::Utils::OpenHandle(*promise);
 }
 
 void Isolate::SetHostImportModuleDynamicallyCallback(

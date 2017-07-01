@@ -138,13 +138,24 @@ void JavaScriptFrameIterator::Advance() {
   } while (!iterator_.done() && !iterator_.frame()->is_java_script());
 }
 
-
 void JavaScriptFrameIterator::AdvanceToArgumentsFrame() {
   if (!frame()->has_adapted_arguments()) return;
   iterator_.Advance();
   DCHECK(iterator_.frame()->is_arguments_adaptor());
 }
 
+void JavaScriptFrameIterator::AdvanceWhileDebugContext(Debug* debug) {
+  if (!debug->in_debug_scope()) return;
+
+  while (!done()) {
+    Context* context = Context::cast(frame()->context());
+    if (context->native_context() == *debug->debug_context()) {
+      Advance();
+    } else {
+      break;
+    }
+  }
+}
 
 // -------------------------------------------------------------------------
 
@@ -508,7 +519,6 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
     case JAVA_SCRIPT_BUILTIN_CONTINUATION:
     case BUILTIN_EXIT:
     case STUB:
-    case STUB_FAILURE_TRAMPOLINE:
     case INTERNAL:
     case CONSTRUCT:
     case ARGUMENTS_ADAPTOR:
@@ -807,7 +817,6 @@ void StandardFrame::IterateCompiledFrame(RootVisitor* v) const {
       case BUILTIN_CONTINUATION:
       case JAVA_SCRIPT_BUILTIN_CONTINUATION:
       case BUILTIN_EXIT:
-      case STUB_FAILURE_TRAMPOLINE:
       case ARGUMENTS_ADAPTOR:
       case STUB:
       case INTERNAL:
@@ -2058,41 +2067,6 @@ void InternalFrame::Iterate(RootVisitor* v) const {
   if (code->has_tagged_params()) IterateExpressions(v);
 }
 
-void StubFailureTrampolineFrame::Iterate(RootVisitor* v) const {
-  Object** base = &Memory::Object_at(sp());
-  Object** limit = &Memory::Object_at(
-      fp() + StubFailureTrampolineFrameConstants::kFixedHeaderBottomOffset);
-  v->VisitRootPointers(Root::kTop, base, limit);
-  base = &Memory::Object_at(fp() + StandardFrameConstants::kFunctionOffset);
-  const int offset = StandardFrameConstants::kLastObjectOffset;
-  limit = &Memory::Object_at(fp() + offset) + 1;
-  v->VisitRootPointers(Root::kTop, base, limit);
-  IteratePc(v, pc_address(), constant_pool_address(), LookupCode());
-}
-
-
-Address StubFailureTrampolineFrame::GetCallerStackPointer() const {
-  return fp() + StandardFrameConstants::kCallerSPOffset;
-}
-
-
-Code* StubFailureTrampolineFrame::unchecked_code() const {
-  Code* trampoline;
-  StubFailureTrampolineStub(isolate(), NOT_JS_FUNCTION_STUB_MODE).
-      FindCodeInCache(&trampoline);
-  if (trampoline->contains(pc())) {
-    return trampoline;
-  }
-
-  StubFailureTrampolineStub(isolate(), JS_FUNCTION_STUB_MODE).
-      FindCodeInCache(&trampoline);
-  if (trampoline->contains(pc())) {
-    return trampoline;
-  }
-
-  UNREACHABLE();
-}
-
 
 // -------------------------------------------------------------------------
 
@@ -2188,8 +2162,7 @@ InnerPointerToCodeCache::InnerPointerToCodeCacheEntry*
     InnerPointerToCodeCache::GetCacheEntry(Address inner_pointer) {
   isolate_->counters()->pc_to_code()->Increment();
   DCHECK(base::bits::IsPowerOfTwo32(kInnerPointerToCodeCacheSize));
-  uint32_t hash = ComputeIntegerHash(ObjectAddressForHashing(inner_pointer),
-                                     v8::internal::kZeroHashSeed);
+  uint32_t hash = ComputeIntegerHash(ObjectAddressForHashing(inner_pointer));
   uint32_t index = hash & (kInnerPointerToCodeCacheSize - 1);
   InnerPointerToCodeCacheEntry* entry = cache(index);
   if (entry->inner_pointer == inner_pointer) {

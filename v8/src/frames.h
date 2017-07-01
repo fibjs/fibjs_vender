@@ -15,6 +15,7 @@ namespace v8 {
 namespace internal {
 
 class AbstractCode;
+class Debug;
 class ObjectVisitor;
 class StringStream;
 
@@ -110,7 +111,6 @@ class StackHandler BASE_EMBEDDED {
   V(WASM_INTERPRETER_ENTRY, WasmInterpreterEntryFrame)                    \
   V(INTERPRETED, InterpretedFrame)                                        \
   V(STUB, StubFrame)                                                      \
-  V(STUB_FAILURE_TRAMPOLINE, StubFailureTrampolineFrame)                  \
   V(BUILTIN_CONTINUATION, BuiltinContinuationFrame)                       \
   V(JAVA_SCRIPT_BUILTIN_CONTINUATION, JavaScriptBuiltinContinuationFrame) \
   V(INTERNAL, InternalFrame)                                              \
@@ -370,16 +370,6 @@ class BuiltinContinuationFrameConstants : public TypedFrameConstants {
   DEFINE_TYPED_FRAME_SIZES(2);
 };
 
-class StubFailureTrampolineFrameConstants : public InternalFrameConstants {
- public:
-  static const int kArgumentsArgumentsOffset =
-      TYPED_FRAME_PUSHED_VALUE_OFFSET(0);
-  static const int kArgumentsLengthOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
-  static const int kArgumentsPointerOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(2);
-  static const int kFixedHeaderBottomOffset = kArgumentsPointerOffset;
-  DEFINE_TYPED_FRAME_SIZES(3);
-};
-
 // Behaves like an exit frame but with target and new target args.
 class BuiltinExitFrameConstants : public CommonFrameConstants {
  public:
@@ -533,9 +523,6 @@ class StackFrame BASE_EMBEDDED {
   bool is_arguments_adaptor() const { return type() == ARGUMENTS_ADAPTOR; }
   bool is_builtin() const { return type() == BUILTIN; }
   bool is_internal() const { return type() == INTERNAL; }
-  bool is_stub_failure_trampoline() const {
-    return type() == STUB_FAILURE_TRAMPOLINE;
-  }
   bool is_builtin_continuation() const {
     return type() == BUILTIN_CONTINUATION;
   }
@@ -1434,32 +1421,6 @@ class InternalFrame: public StandardFrame {
 };
 
 
-class StubFailureTrampolineFrame: public StandardFrame {
- public:
-  Type type() const override { return STUB_FAILURE_TRAMPOLINE; }
-
-  // Get the code associated with this frame.
-  // This method could be called during marking phase of GC.
-  Code* unchecked_code() const override;
-
-  void Iterate(RootVisitor* v) const override;
-
-  // Architecture-specific register description.
-  static Register fp_register();
-  static Register context_register();
-  static Register constant_pool_pointer_register();
-
- protected:
-  inline explicit StubFailureTrampolineFrame(
-      StackFrameIteratorBase* iterator);
-
-  Address GetCallerStackPointer() const override;
-
- private:
-  friend class StackFrameIteratorBase;
-};
-
-
 // Construct frames are special trampoline frames introduced to handle
 // function invocations through 'new'.
 class ConstructFrame: public InternalFrame {
@@ -1582,6 +1543,9 @@ class JavaScriptFrameIterator BASE_EMBEDDED {
   // frame. This only affects the current frame if it has adapted
   // arguments.
   void AdvanceToArgumentsFrame();
+
+  // Skips the frames that point to the debug context.
+  void AdvanceWhileDebugContext(Debug* debug);
 
  private:
   StackFrameIterator iterator_;

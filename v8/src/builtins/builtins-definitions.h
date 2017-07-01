@@ -157,8 +157,6 @@ namespace internal {
   ASM(NotifyDeoptimized)                                                       \
   ASM(NotifySoftDeoptimized)                                                   \
   ASM(NotifyLazyDeoptimized)                                                   \
-  ASM(NotifyStubFailure)                                                       \
-  ASM(NotifyStubFailureSaveDoubles)                                            \
   ASM(NotifyBuiltinContinuation)                                               \
                                                                                \
   /* Trampolines called when returning from a deoptimization that expects   */ \
@@ -919,14 +917,6 @@ namespace internal {
   CPP(StringPrototypeStartsWith)                                               \
   /* ES6 #sec-string.prototype.tostring */                                     \
   TFJ(StringPrototypeToString, 0)                                              \
-  /* ES #sec-string.prototype.tolocalelowercase */                             \
-  CPP(StringPrototypeToLocaleLowerCase)                                        \
-  /* ES #sec-string.prototype.tolocaleuppercase */                             \
-  CPP(StringPrototypeToLocaleUpperCase)                                        \
-  /* (obsolete) Unibrow version */                                             \
-  CPP(StringPrototypeToLowerCase)                                              \
-  /* (obsolete) Unibrow version */                                             \
-  CPP(StringPrototypeToUpperCase)                                              \
   CPP(StringPrototypeTrim)                                                     \
   CPP(StringPrototypeTrimLeft)                                                 \
   CPP(StringPrototypeTrimRight)                                                \
@@ -1067,6 +1057,7 @@ namespace internal {
 #define BUILTIN_LIST(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG) \
   BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG)  \
                                                              \
+  TFS(StringToLowerCaseIntl, kString)                        \
   /* ES #sec-string.prototype.tolowercase */                 \
   TFJ(StringPrototypeToLowerCaseIntl, 0)                     \
   /* ES #sec-string.prototype.touppercase */                 \
@@ -1078,7 +1069,15 @@ namespace internal {
   BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG)  \
                                                              \
   /* no-op fallback version */                               \
-  CPP(StringPrototypeNormalize)
+  CPP(StringPrototypeNormalize)                              \
+  /* same as toLowercase; fallback version */                \
+  CPP(StringPrototypeToLocaleLowerCase)                      \
+  /* same as toUppercase; fallback version */                \
+  CPP(StringPrototypeToLocaleUpperCase)                      \
+  /* (obsolete) Unibrow version */                           \
+  CPP(StringPrototypeToLowerCase)                            \
+  /* (obsolete) Unibrow version */                           \
+  CPP(StringPrototypeToUpperCase)
 #endif  // V8_INTL_SUPPORT
 
 // The exception thrown in the following builtins are caught
@@ -1102,18 +1101,9 @@ namespace internal {
   V(ResolveNativePromise)                            \
   V(ResolvePromise)
 
-// The exception thrown in the following builtins are caught
-// internally and should not trigger the catch prediction heuristic.
+// The exception thrown in the following builtins are caught internally and will
+// not be propagated further or re-thrown
 #define BUILTIN_EXCEPTION_CAUGHT_PREDICTION_LIST(V) V(PromiseHandleReject)
-
-// The exception thrown in the following builtins are not caught
-// internally and should trigger the catch prediction heuristic.
-#define BUILTIN_EXCEPTION_UNCAUGHT_PREDICTION_LIST(V) \
-  V(MapConstructor)                                   \
-  V(SetConstructor)                                   \
-  V(GeneratorPrototypeNext)                           \
-  V(GeneratorPrototypeReturn)                         \
-  V(GeneratorPrototypeThrow)
 
 #define IGNORE_BUILTIN(...)
 

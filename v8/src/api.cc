@@ -871,7 +871,7 @@ Extension::Extension(const char* name,
 }
 
 ResourceConstraints::ResourceConstraints()
-    : max_semi_space_size_in_kb_(0),
+    : max_semi_space_size_(0),
       max_old_space_size_(0),
       stack_limit_(NULL),
       code_range_size_(0),
@@ -879,8 +879,8 @@ ResourceConstraints::ResourceConstraints()
 
 void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
                                             uint64_t virtual_memory_limit) {
-  set_max_semi_space_size_in_kb(
-      i::Heap::ComputeMaxSemiSpaceSize(physical_memory));
+  set_max_semi_space_size(
+      static_cast<int>(i::Heap::ComputeMaxSemiSpaceSize(physical_memory)));
   set_max_old_space_size(
       static_cast<int>(i::Heap::ComputeMaxOldGenerationSize(physical_memory)));
   set_max_zone_pool_size(i::AccountingAllocator::kMaxPoolSize);
@@ -896,7 +896,7 @@ void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
 
 void SetResourceConstraints(i::Isolate* isolate,
                             const ResourceConstraints& constraints) {
-  size_t semi_space_size = constraints.max_semi_space_size_in_kb();
+  int semi_space_size = constraints.max_semi_space_size();
   int old_space_size = constraints.max_old_space_size();
   size_t code_range_size = constraints.code_range_size();
   size_t max_pool_size = constraints.max_zone_pool_size();
@@ -1117,7 +1117,6 @@ void Context::Enter() {
   isolate->set_context(*env);
 }
 
-
 void Context::Exit() {
   i::Handle<i::Context> env = Utils::OpenHandle(this);
   i::Isolate* isolate = env->GetIsolate();
@@ -1132,6 +1131,22 @@ void Context::Exit() {
   isolate->set_context(impl->RestoreContext());
 }
 
+Context::BackupIncumbentScope::BackupIncumbentScope(
+    Local<Context> backup_incumbent_context)
+    : backup_incumbent_context_(backup_incumbent_context) {
+  DCHECK(!backup_incumbent_context_.IsEmpty());
+
+  i::Handle<i::Context> env = Utils::OpenHandle(*backup_incumbent_context_);
+  i::Isolate* isolate = env->GetIsolate();
+  prev_ = isolate->top_backup_incumbent_scope();
+  isolate->set_top_backup_incumbent_scope(this);
+}
+
+Context::BackupIncumbentScope::~BackupIncumbentScope() {
+  i::Handle<i::Context> env = Utils::OpenHandle(*backup_incumbent_context_);
+  i::Isolate* isolate = env->GetIsolate();
+  isolate->set_top_backup_incumbent_scope(prev_);
+}
 
 static void* DecodeSmiToAligned(i::Object* value, const char* location) {
   Utils::ApiCheck(value->IsSmi(), location, "Not a Smi");
@@ -2070,41 +2085,33 @@ Local<UnboundScript> Script::GetUnboundScript() {
       i::Handle<i::SharedFunctionInfo>(i::JSFunction::cast(*obj)->shared()));
 }
 
-Maybe<bool> DynamicImportResult::FinishDynamicImportSuccess(
-    Local<Context> context, Local<Module> module) {
-  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
-  ENTER_V8(isolate, context, Module, FinishDynamicImportSuccess,
-           Nothing<bool>(), i::HandleScope);
-  auto promise = Utils::OpenHandle(this);
-  i::Handle<i::Module> module_obj = Utils::OpenHandle(*module);
-  i::Handle<i::JSModuleNamespace> module_namespace =
-      i::Module::GetModuleNamespace(module_obj);
-  i::Handle<i::Object> argv[] = {promise, module_namespace};
-  has_pending_exception =
-      i::Execution::Call(isolate, isolate->promise_resolve(),
-                         isolate->factory()->undefined_value(), arraysize(argv),
-                         argv)
-          .is_null();
-  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
-  return Just(true);
+
+Module::Status Module::GetStatus() const {
+  i::Handle<i::Module> self = Utils::OpenHandle(this);
+  switch (self->status()) {
+    case i::Module::kUninstantiated:
+      return kUninstantiated;
+    case i::Module::kPreInstantiating:
+    case i::Module::kInstantiating:
+      return kInstantiating;
+    case i::Module::kInstantiated:
+      return kInstantiated;
+    case i::Module::kEvaluating:
+      return kEvaluating;
+    case i::Module::kEvaluated:
+      return kEvaluated;
+    case i::Module::kErrored:
+      return kErrored;
+  }
+  UNREACHABLE();
 }
 
-Maybe<bool> DynamicImportResult::FinishDynamicImportFailure(
-    Local<Context> context, Local<Value> exception) {
-  auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
-  ENTER_V8(isolate, context, Module, FinishDynamicImportFailure,
-           Nothing<bool>(), i::HandleScope);
-  auto promise = Utils::OpenHandle(this);
-  // We pass true to trigger the debugger's on exception handler.
-  i::Handle<i::Object> argv[] = {promise, Utils::OpenHandle(*exception),
-                                 isolate->factory()->ToBoolean(true)};
-  has_pending_exception =
-      i::Execution::Call(isolate, isolate->promise_internal_reject(),
-                         isolate->factory()->undefined_value(), arraysize(argv),
-                         argv)
-          .is_null();
-  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
-  return Just(true);
+Local<Value> Module::GetException() const {
+  Utils::ApiCheck(GetStatus() == kErrored, "v8::Module::GetException",
+                  "Module status must be kErrored");
+  i::Handle<i::Module> self = Utils::OpenHandle(this);
+  i::Isolate* isolate = self->GetIsolate();
+  return ToApiHandle<Value>(i::handle(self->GetException(), isolate));
 }
 
 int Module::GetModuleRequestsLength() const {
@@ -2137,6 +2144,18 @@ Location Module::GetModuleRequestLocation(int i) const {
   return v8::Location(info.line, info.column);
 }
 
+Local<Value> Module::GetModuleNamespace() {
+  Utils::ApiCheck(
+      GetStatus() != kErrored && GetStatus() >= kInstantiated,
+      "v8::Module::GetModuleNamespace",
+      "GetModuleNamespace should be used on a successfully instantiated"
+      "module. The current module has not been instantiated or has errored");
+  i::Handle<i::Module> self = Utils::OpenHandle(this);
+  i::Handle<i::JSModuleNamespace> module_namespace =
+      i::Module::GetModuleNamespace(self);
+  return ToApiHandle<Value>(module_namespace);
+}
+
 int Module::GetIdentityHash() const { return Utils::OpenHandle(this)->hash(); }
 
 bool Module::Instantiate(Local<Context> context,
@@ -2166,7 +2185,7 @@ MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
 
   i::Handle<i::Module> self = Utils::OpenHandle(this);
   // It's an API error to call Evaluate before Instantiate.
-  CHECK(self->instantiated());
+  CHECK_GE(self->status(), i::Module::kInstantiated);
 
   Local<Value> result;
   has_pending_exception = !ToLocal(i::Module::Evaluate(self), &result);
@@ -2997,7 +3016,7 @@ Local<Array> StackTrace::AsArray() {
     frames->set(i, *frame_obj);
   }
   return Utils::ToLocal(isolate->factory()->NewJSArrayWithElements(
-      frames, i::FAST_ELEMENTS, frame_count));
+      frames, i::PACKED_ELEMENTS, frame_count));
 }
 
 
@@ -7405,7 +7424,7 @@ i::Handle<i::JSArray> MapAsArray(i::Isolate* isolate, i::Object* table_obj,
   }
   DCHECK_EQ(result_index, result->length());
   DCHECK_EQ(result_index, length);
-  return factory->NewJSArrayWithElements(result, i::FAST_ELEMENTS, length);
+  return factory->NewJSArrayWithElements(result, i::PACKED_ELEMENTS, length);
 }
 }  // namespace
 
@@ -7505,7 +7524,7 @@ i::Handle<i::JSArray> SetAsArray(i::Isolate* isolate, i::Object* table_obj,
   }
   DCHECK_EQ(result_index, result->length());
   DCHECK_EQ(result_index, length);
-  return factory->NewJSArrayWithElements(result, i::FAST_ELEMENTS, length);
+  return factory->NewJSArrayWithElements(result, i::PACKED_ELEMENTS, length);
 }
 }  // namespace
 
@@ -8291,6 +8310,12 @@ v8::Local<v8::Context> Isolate::GetEnteredOrMicrotaskContext() {
   }
   if (last.is_null()) return Local<Context>();
   return Utils::ToLocal(i::Handle<i::Context>::cast(last));
+}
+
+v8::Local<v8::Context> Isolate::GetIncumbentContext() {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  i::Handle<i::Context> context = isolate->GetIncumbentContext();
+  return Utils::ToLocal(context);
 }
 
 v8::Local<Value> Isolate::ThrowException(v8::Local<v8::Value> value) {

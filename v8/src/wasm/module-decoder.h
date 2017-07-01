@@ -68,7 +68,8 @@ V8_EXPORT_PRIVATE ModuleResult SyncDecodeWasmModule(Isolate* isolate,
 
 V8_EXPORT_PRIVATE ModuleResult AsyncDecodeWasmModule(
     Isolate* isolate, const byte* module_start, const byte* module_end,
-    bool verify_functions, ModuleOrigin origin, Counters* async_counters);
+    bool verify_functions, ModuleOrigin origin,
+    const std::shared_ptr<Counters> async_counters);
 
 // Exposed for testing. Decodes a single function signature, allocating it
 // in the given zone. Returns {nullptr} upon failure.
@@ -85,7 +86,7 @@ SyncDecodeWasmFunction(Isolate* isolate, Zone* zone, ModuleBytesEnv* env,
 V8_EXPORT_PRIVATE FunctionResult
 AsyncDecodeWasmFunction(Isolate* isolate, Zone* zone, ModuleBytesEnv* env,
                         const byte* function_start, const byte* function_end,
-                        Counters* async_counters);
+                        const std::shared_ptr<Counters> async_counters);
 
 V8_EXPORT_PRIVATE WasmInitExpr DecodeWasmInitExprForTesting(const byte* start,
                                                             const byte* end);
