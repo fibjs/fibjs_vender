@@ -19,13 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\jssdk-spider.h" />
     <ClInclude Include="include\jssdk-v8.h" />
     <ClInclude Include="include\jssdk.h" />
     <ClInclude Include="src\utf8.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\jssdk-spider.cpp" />
     <ClCompile Include="src\jssdk-v8.cpp" />
     <ClCompile Include="src\jssdk-api.cpp" />
     <ClCompile Include="src\jssdk-utf8.cpp" />

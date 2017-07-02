@@ -154,7 +154,6 @@ gtest
 expat
 gumbo
 gd
-icu
 tiff
 jpeg
 png
@@ -172,7 +171,6 @@ exif
 winiconv
 mbedtls
 v8
-SpiderMonkey
 jssdk
 unzip
 zmq
