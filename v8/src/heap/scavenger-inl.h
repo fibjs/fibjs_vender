@@ -6,11 +6,15 @@
 #define V8_HEAP_SCAVENGER_INL_H_
 
 #include "src/heap/scavenger.h"
+#include "src/objects/map.h"
 
 namespace v8 {
 namespace internal {
 
-bool Scavenger::ContainsOnlyData(VisitorId visitor_id) {
+namespace {
+
+// White list for objects that for sure only contain data.
+bool ContainsOnlyData(VisitorId visitor_id) {
   switch (visitor_id) {
     case kVisitSeqOneByteString:
       return true;
@@ -28,6 +32,8 @@ bool Scavenger::ContainsOnlyData(VisitorId visitor_id) {
   return false;
 }
 
+}  // namespace
+
 // Helper function used by CopyObject to copy a source object to an
 // allocated target object and update the forwarding pointer in the source
 // object. Returns the target object.
@@ -39,12 +45,6 @@ HeapObject* Scavenger::MigrateObject(HeapObject* source, HeapObject* target,
   DCHECK(!heap()->InToSpace(target) ||
          target->address() + size == heap()->new_space()->top() ||
          target->address() + size + kPointerSize == heap()->new_space()->top());
-
-  // Make sure that we do not overwrite the promotion queue which is at
-  // the end of to-space.
-  DCHECK(!heap()->InToSpace(target) ||
-         heap()->promotion_queue()->IsBelowPromotionQueue(
-             heap()->new_space()->top()));
 
   // Copy the content of source to target.
   heap()->CopyBlock(target->address(), source->address(), size);
@@ -73,12 +73,6 @@ bool Scavenger::SemiSpaceCopyObject(Map* map, HeapObject** slot,
 
   HeapObject* target = NULL;  // Initialization to please compiler.
   if (allocation.To(&target)) {
-    // Order is important here: Set the promotion limit before storing a
-    // filler for double alignment or migrating the object. Otherwise we
-    // may end up overwriting promotion queue entries when we migrate the
-    // object.
-    heap()->promotion_queue()->SetNewLimit(heap()->new_space()->top());
-
     MigrateObject(object, target, object_size);
 
     // Update slot to new target.
@@ -110,7 +104,7 @@ bool Scavenger::PromoteObject(Map* map, HeapObject** slot, HeapObject* object,
                                  reinterpret_cast<base::AtomicWord>(target));
 
     if (!ContainsOnlyData(static_cast<VisitorId>(map->visitor_id()))) {
-      heap()->promotion_queue()->insert(target, object_size);
+      promotion_list()->Push(ObjectAndSize(target, object_size));
     }
     heap()->IncrementPromotedObjectsSize(object_size);
     return true;
@@ -203,7 +197,7 @@ void Scavenger::EvacuateShortcutCandidate(Map* map, HeapObject** slot,
       return;
     }
 
-    Scavenger::ScavengeObjectSlow(slot, first);
+    EvacuateObject(slot, first_word.ToMap(), first);
     object->set_map_word(MapWord::FromForwardingAddress(*slot));
     return;
   }
@@ -213,6 +207,8 @@ void Scavenger::EvacuateShortcutCandidate(Map* map, HeapObject** slot,
 
 void Scavenger::EvacuateObject(HeapObject** slot, Map* map,
                                HeapObject* source) {
+  SLOW_DCHECK(heap_->InFromSpace(source));
+  SLOW_DCHECK(!MapWord::FromMap(map).IsForwardingAddress());
   int size = source->SizeFromMap(map);
   switch (static_cast<VisitorId>(map->visitor_id())) {
     case kVisitThinString:
@@ -254,16 +250,7 @@ void Scavenger::ScavengeObject(HeapObject** p, HeapObject* object) {
   // AllocationMementos are unrooted and shouldn't survive a scavenge
   DCHECK(object->map() != object->GetHeap()->allocation_memento_map());
   // Call the slow part of scavenge object.
-  return ScavengeObjectSlow(p, object);
-}
-
-void Scavenger::ScavengeObjectSlow(HeapObject** p, HeapObject* object) {
-  SLOW_DCHECK(object->GetIsolate()->heap()->InFromSpace(object));
-  MapWord first_word = object->map_word();
-  SLOW_DCHECK(!first_word.IsForwardingAddress());
-  Map* map = first_word.ToMap();
-  Scavenger* scavenger = map->GetHeap()->scavenge_collector_;
-  scavenger->EvacuateObject(p, map, object);
+  EvacuateObject(p, first_word.ToMap(), object);
 }
 
 SlotCallbackResult Scavenger::CheckAndScavengeObject(Heap* heap,
@@ -295,8 +282,8 @@ void ScavengeVisitor::VisitPointers(HeapObject* host, Object** start,
   for (Object** p = start; p < end; p++) {
     Object* object = *p;
     if (!heap_->InNewSpace(object)) continue;
-    Scavenger::ScavengeObject(reinterpret_cast<HeapObject**>(p),
-                              reinterpret_cast<HeapObject*>(object));
+    scavenger_->ScavengeObject(reinterpret_cast<HeapObject**>(p),
+                               reinterpret_cast<HeapObject*>(object));
   }
 }
 

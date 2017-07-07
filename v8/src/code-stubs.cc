@@ -137,7 +137,6 @@ Handle<Code> PlatformCodeStub::GenerateCode() {
     isolate()->counters()->code_stubs()->Increment();
 
     // Generate the code for the stub.
-    masm.set_generating_stub(true);
     // TODO(yangguo): remove this once we can serialize IC stubs.
     masm.enable_serializer();
     NoCurrentFrameScope scope(&masm);
@@ -439,6 +438,23 @@ TF_STUB(StringLengthStub, CodeStubAssembler) {
   Node* string = LoadJSValueValue(value);
   Node* result = LoadStringLength(string);
   Return(result);
+}
+
+TF_STUB(TransitionElementsKindStub, CodeStubAssembler) {
+  Node* context = Parameter(Descriptor::kContext);
+  Node* object = Parameter(Descriptor::kObject);
+  Node* new_map = Parameter(Descriptor::kMap);
+
+  Label bailout(this);
+  TransitionElementsKind(object, new_map, stub->from_kind(), stub->to_kind(),
+                         stub->is_jsarray(), &bailout);
+  Return(object);
+
+  BIND(&bailout);
+  {
+    Comment("Call runtime");
+    TailCallRuntime(Runtime::kTransitionElementsKind, context, object, new_map);
+  }
 }
 
 // TODO(ishell): move to builtins.
@@ -951,7 +967,7 @@ void ArrayConstructorAssembler::GenerateConstructor(
     TailCallRuntime(Runtime::kAbort, context, reason);
   } else {
     int element_size =
-        IsFastDoubleElementsKind(elements_kind) ? kDoubleSize : kPointerSize;
+        IsDoubleElementsKind(elements_kind) ? kDoubleSize : kPointerSize;
     int max_fast_elements =
         (kMaxRegularHeapObjectSize - FixedArray::kHeaderSize - JSArray::kSize -
          AllocationMemento::kSize) /

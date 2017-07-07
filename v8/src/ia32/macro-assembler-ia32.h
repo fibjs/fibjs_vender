@@ -281,25 +281,15 @@ class MacroAssembler: public Assembler {
   // Nop, because ia32 does not have a root register.
   void InitializeRootRegister() {}
 
-  void LoadHeapObject(Register result, Handle<HeapObject> object);
   void CmpHeapObject(Register reg, Handle<HeapObject> object);
-  void PushHeapObject(Handle<HeapObject> object);
-
-  void LoadObject(Register result, Handle<Object> object) {
-    AllowDeferredHandleDereference heap_object_check;
-    if (object->IsHeapObject()) {
-      LoadHeapObject(result, Handle<HeapObject>::cast(object));
-    } else {
-      Move(result, Immediate(object));
-    }
-  }
+  void PushObject(Handle<Object> object);
 
   void CmpObject(Register reg, Handle<Object> object) {
     AllowDeferredHandleDereference heap_object_check;
     if (object->IsHeapObject()) {
       CmpHeapObject(reg, Handle<HeapObject>::cast(object));
     } else {
-      cmp(reg, Immediate(object));
+      cmp(reg, Immediate(Smi::cast(*object)));
     }
   }
 
@@ -577,14 +567,6 @@ class MacroAssembler: public Assembler {
   void Allocate(Register object_size, Register result, Register result_end,
                 Register scratch, Label* gc_required, AllocationFlags flags);
 
-  // FastAllocate is right now only used for folded allocations. It just
-  // increments the top pointer without checking against limit. This can only
-  // be done if it was proved earlier that the allocation will succeed.
-  void FastAllocate(int object_size, Register result, Register result_end,
-                    AllocationFlags flags);
-  void FastAllocate(Register object_size, Register result, Register result_end,
-                    AllocationFlags flags);
-
   // Allocate a heap number in new space with undefined value. The
   // register scratch2 can be passed as no_reg; the others must be
   // valid registers. Returns tagged pointer in result register, or
@@ -731,12 +713,24 @@ class MacroAssembler: public Assembler {
 
 #undef AVX_OP2_WITH_TYPE
 
+  void Pxor(XMMRegister dst, XMMRegister src) { Pxor(dst, Operand(src)); }
+  void Pxor(XMMRegister dst, const Operand& src);
+
+  void Pshuflw(XMMRegister dst, XMMRegister src, uint8_t shuffle) {
+    Pshuflw(dst, Operand(src), shuffle);
+  }
+  void Pshuflw(XMMRegister dst, const Operand& src, uint8_t shuffle);
   void Pshufd(XMMRegister dst, XMMRegister src, uint8_t shuffle) {
     Pshufd(dst, Operand(src), shuffle);
   }
   void Pshufd(XMMRegister dst, const Operand& src, uint8_t shuffle);
 
   // Non-SSE2 instructions.
+  void Pshufb(XMMRegister dst, XMMRegister src) { Pshufb(dst, Operand(src)); }
+  void Pshufb(XMMRegister dst, const Operand& src);
+
+  void Pextrb(Register dst, XMMRegister src, int8_t imm8);
+  void Pextrw(Register dst, XMMRegister src, int8_t imm8);
   void Pextrd(Register dst, XMMRegister src, int8_t imm8);
   void Pinsrd(XMMRegister dst, Register src, int8_t imm8,
               bool is_64_bits = false) {
@@ -767,14 +761,14 @@ class MacroAssembler: public Assembler {
   void Move(XMMRegister dst, float src) { Move(dst, bit_cast<uint32_t>(src)); }
   void Move(XMMRegister dst, double src) { Move(dst, bit_cast<uint64_t>(src)); }
 
-  void Move(Register dst, Handle<Object> handle) { LoadObject(dst, handle); }
+  void Move(Register dst, Handle<HeapObject> handle);
   void Move(Register dst, Smi* source) { Move(dst, Immediate(source)); }
 
   // Push a handle value.
-  void Push(Handle<Object> handle) { push(Immediate(handle)); }
+  void Push(Handle<HeapObject> handle) { push(Immediate(handle)); }
   void Push(Smi* smi) { Push(Immediate(smi)); }
 
-  Handle<Object> CodeObject() {
+  Handle<HeapObject> CodeObject() {
     DCHECK(!code_object_.is_null());
     return code_object_;
   }
@@ -808,9 +802,6 @@ class MacroAssembler: public Assembler {
   // Check that the stack is aligned.
   void CheckStackAlignment();
 
-  // Verify restrictions about code generated in stubs.
-  void set_generating_stub(bool value) { generating_stub_ = value; }
-  bool generating_stub() { return generating_stub_; }
   void set_has_frame(bool value) { has_frame_ = value; }
   bool has_frame() { return has_frame_; }
   inline bool AllowThisStubCall(CodeStub* stub);
@@ -866,11 +857,10 @@ class MacroAssembler: public Assembler {
                                        Label* no_memento_found);
 
  private:
-  bool generating_stub_;
   bool has_frame_;
   Isolate* isolate_;
   // This handle will be patched with the code object on installation.
-  Handle<Object> code_object_;
+  Handle<HeapObject> code_object_;
   int jit_cookie_;
 
   // Helper functions for generating invokes.

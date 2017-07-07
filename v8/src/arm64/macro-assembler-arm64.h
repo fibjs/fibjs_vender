@@ -184,7 +184,7 @@ class MacroAssembler : public Assembler {
 
   Isolate* isolate() const { return isolate_; }
 
-  Handle<Object> CodeObject() {
+  Handle<HeapObject> CodeObject() {
     DCHECK(!code_object_.is_null());
     return code_object_;
   }
@@ -1266,9 +1266,9 @@ class MacroAssembler : public Assembler {
   void PushMultipleTimes(CPURegister src, Register count);
   void PushMultipleTimes(CPURegister src, int count);
 
-  // This is a convenience method for pushing a single Handle<Object>.
-  inline void Push(Handle<Object> handle);
+  inline void Push(Handle<HeapObject> handle);
   inline void Push(Smi* smi);
+  inline void PushObject(Handle<Object> handle);
 
   // Aliases of Push and Pop, required for V8 compatibility.
   inline void push(Register src) {
@@ -1517,7 +1517,7 @@ class MacroAssembler : public Assembler {
   // This is required for compatibility with architecture independant code.
   // Remove if not needed.
   void Move(Register dst, Register src);
-  void Move(Register dst, Handle<Object> x);
+  void Move(Register dst, Handle<HeapObject> x);
   void Move(Register dst, Smi* src);
 
   void LoadInstanceDescriptors(Register map,
@@ -1838,8 +1838,6 @@ class MacroAssembler : public Assembler {
 
   // ---- Code generation helpers ----
 
-  void set_generating_stub(bool value) { generating_stub_ = value; }
-  bool generating_stub() const { return generating_stub_; }
 #if DEBUG
   void set_allow_macro_instructions(bool value) {
     allow_macro_instructions_ = value;
@@ -1896,15 +1894,6 @@ class MacroAssembler : public Assembler {
                 Register scratch2,
                 Label* gc_required,
                 AllocationFlags flags);
-
-  // FastAllocate is right now only used for folded allocations. It just
-  // increments the top pointer without checking against limit. This can only
-  // be done if it was proved earlier that the allocation will succeed.
-  void FastAllocate(Register object_size, Register result, Register result_end,
-                    Register scratch, AllocationFlags flags);
-
-  void FastAllocate(int object_size, Register result, Register scratch1,
-                    Register scratch2, AllocationFlags flags);
 
   // Allocates a heap number or jumps to the gc_required label if the young
   // space is full and a scavenge is needed.
@@ -2513,7 +2502,6 @@ class MacroAssembler : public Assembler {
                                Label* on_successful_conversion = NULL,
                                Label* on_failed_conversion = NULL);
 
-  bool generating_stub_;
 #if DEBUG
   // Tell whether any of the macro instruction can be used. When false the
   // MacroAssembler will assert if a method which can emit a variable number
@@ -2532,7 +2520,7 @@ class MacroAssembler : public Assembler {
   bool use_real_aborts_;
 
   // This handle will be patched with the code object on installation.
-  Handle<Object> code_object_;
+  Handle<HeapObject> code_object_;
 
   // The register to use as a stack pointer for stack operations.
   Register sp_;
@@ -2614,14 +2602,15 @@ class InstructionAccurateScope BASE_EMBEDDED {
 #endif
 };
 
-
 // This scope utility allows scratch registers to be managed safely. The
 // MacroAssembler's TmpList() (and FPTmpList()) is used as a pool of scratch
 // registers. These registers can be allocated on demand, and will be returned
 // at the end of the scope.
 //
 // When the scope ends, the MacroAssembler's lists will be restored to their
-// original state, even if the lists were modified by some other means.
+// original state, even if the lists were modified by some other means. Note
+// that this scope can be nested but the destructors need to run in the opposite
+// order as the constructors. We do not have assertions for this.
 class UseScratchRegisterScope {
  public:
   explicit UseScratchRegisterScope(MacroAssembler* masm)

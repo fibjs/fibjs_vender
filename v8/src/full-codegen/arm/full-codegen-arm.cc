@@ -308,8 +308,7 @@ void FullCodeGenerator::Generate() {
   {
     Comment cmnt(masm_, "[ Stack check");
     Label ok;
-    __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-    __ cmp(sp, Operand(ip));
+    __ CompareRoot(sp, Heap::kStackLimitRootIndex);
     __ b(hs, &ok);
     Handle<Code> stack_check = isolate()->builtins()->StackCheck();
     masm_->MaybeCheckConstPool();
@@ -508,13 +507,21 @@ void FullCodeGenerator::EffectContext::Plug(Handle<Object> lit) const {
 
 void FullCodeGenerator::AccumulatorValueContext::Plug(
     Handle<Object> lit) const {
-  __ mov(result_register(), Operand(lit));
+  if (lit->IsHeapObject()) {
+    __ mov(result_register(), Operand(Handle<HeapObject>::cast(lit)));
+  } else {
+    __ mov(result_register(), Operand(Smi::cast(*lit)));
+  }
 }
 
 
 void FullCodeGenerator::StackValueContext::Plug(Handle<Object> lit) const {
   // Immediates cannot be pushed directly.
-  __ mov(result_register(), Operand(lit));
+  if (lit->IsHeapObject()) {
+    __ mov(result_register(), Operand(Handle<HeapObject>::cast(lit)));
+  } else {
+    __ mov(result_register(), Operand(Smi::cast(*lit)));
+  }
   codegen()->PushOperand(result_register());
 }
 
@@ -539,7 +546,7 @@ void FullCodeGenerator::TestContext::Plug(Handle<Object> lit) const {
     }
   } else {
     // For simplicity we always test the accumulator register.
-    __ mov(result_register(), Operand(lit));
+    __ mov(result_register(), Operand(Handle<HeapObject>::cast(lit)));
     codegen()->DoTest(this);
   }
 }
@@ -576,14 +583,16 @@ void FullCodeGenerator::AccumulatorValueContext::Plug(
 void FullCodeGenerator::StackValueContext::Plug(
     Label* materialize_true,
     Label* materialize_false) const {
+  UseScratchRegisterScope temps(masm());
+  Register scratch = temps.Acquire();
   Label done;
   __ bind(materialize_true);
-  __ LoadRoot(ip, Heap::kTrueValueRootIndex);
+  __ LoadRoot(scratch, Heap::kTrueValueRootIndex);
   __ jmp(&done);
   __ bind(materialize_false);
-  __ LoadRoot(ip, Heap::kFalseValueRootIndex);
+  __ LoadRoot(scratch, Heap::kFalseValueRootIndex);
   __ bind(&done);
-  codegen()->PushOperand(ip);
+  codegen()->PushOperand(scratch);
 }
 
 
@@ -604,8 +613,10 @@ void FullCodeGenerator::AccumulatorValueContext::Plug(bool flag) const {
 void FullCodeGenerator::StackValueContext::Plug(bool flag) const {
   Heap::RootListIndex value_root_index =
       flag ? Heap::kTrueValueRootIndex : Heap::kFalseValueRootIndex;
-  __ LoadRoot(ip, value_root_index);
-  codegen()->PushOperand(ip);
+  UseScratchRegisterScope temps(masm());
+  Register scratch = temps.Acquire();
+  __ LoadRoot(scratch, value_root_index);
+  codegen()->PushOperand(scratch);
 }
 
 
@@ -880,8 +891,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
 
     Label skip;
     __ b(&skip);
-    __ LoadRoot(ip, Heap::kTrueValueRootIndex);
-    __ cmp(r0, ip);
+    __ CompareRoot(r0, Heap::kTrueValueRootIndex);
     __ b(ne, &next_test);
     __ Drop(1);
     __ jmp(clause->body_target());
@@ -969,8 +979,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // to do a slow check.
   Label fixed_array;
   __ ldr(r2, FieldMemOperand(r0, HeapObject::kMapOffset));
-  __ LoadRoot(ip, Heap::kMetaMapRootIndex);
-  __ cmp(r2, ip);
+  __ CompareRoot(r2, Heap::kMetaMapRootIndex);
   __ b(ne, &fixed_array);
 
   // We got a map in register r0. Get the enumeration cache from it.
@@ -1606,10 +1615,12 @@ void FullCodeGenerator::EmitCallWithLoadIC(Call* expr) {
     { StackValueContext context(this);
       EmitVariableLoad(callee->AsVariableProxy());
     }
+    UseScratchRegisterScope temps(masm());
+    Register scratch = temps.Acquire();
     // Push undefined as receiver. This is patched in the method prologue if it
     // is a sloppy mode method.
-    __ LoadRoot(ip, Heap::kUndefinedValueRootIndex);
-    PushOperand(ip);
+    __ LoadRoot(scratch, Heap::kUndefinedValueRootIndex);
+    PushOperand(scratch);
     convert_mode = ConvertReceiverMode::kNullOrUndefined;
   } else {
     // Load the function from the receiver.
@@ -1617,9 +1628,13 @@ void FullCodeGenerator::EmitCallWithLoadIC(Call* expr) {
     DCHECK(!callee->AsProperty()->IsSuperAccess());
     __ ldr(LoadDescriptor::ReceiverRegister(), MemOperand(sp, 0));
     EmitNamedPropertyLoad(callee->AsProperty());
-    // Push the target function under the receiver.
-    __ ldr(ip, MemOperand(sp, 0));
-    PushOperand(ip);
+    {
+      UseScratchRegisterScope temps(masm());
+      Register scratch = temps.Acquire();
+      // Push the target function under the receiver.
+      __ ldr(scratch, MemOperand(sp, 0));
+      PushOperand(scratch);
+    }
     __ str(r0, MemOperand(sp, kPointerSize));
     convert_mode = ConvertReceiverMode::kNotNullOrUndefined;
   }
@@ -1642,9 +1657,15 @@ void FullCodeGenerator::EmitKeyedCallWithLoadIC(Call* expr,
   __ Move(LoadDescriptor::NameRegister(), r0);
   EmitKeyedPropertyLoad(callee->AsProperty());
 
-  // Push the target function under the receiver.
-  __ ldr(ip, MemOperand(sp, 0));
-  PushOperand(ip);
+  {
+    UseScratchRegisterScope temps(masm());
+    Register scratch = temps.Acquire();
+
+    // Push the target function under the receiver.
+    __ ldr(scratch, MemOperand(sp, 0));
+    PushOperand(scratch);
+  }
+
   __ str(r0, MemOperand(sp, kPointerSize));
 
   EmitCall(expr, ConvertReceiverMode::kNotNullOrUndefined);
@@ -1947,8 +1968,10 @@ void FullCodeGenerator::EmitDebugIsActive(CallRuntime* expr) {
   DCHECK(expr->arguments()->length() == 0);
   ExternalReference debug_is_active =
       ExternalReference::debug_is_active_address(isolate());
-  __ mov(ip, Operand(debug_is_active));
-  __ ldrb(r0, MemOperand(ip));
+  UseScratchRegisterScope temps(masm());
+  Register scratch = temps.Acquire();
+  __ mov(scratch, Operand(debug_is_active));
+  __ ldrb(r0, MemOperand(scratch));
   __ SmiTag(r0);
   context()->Plug(r0);
 }
@@ -2100,8 +2123,10 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
   } else {
     // Reserve space for result of postfix operation.
     if (expr->is_postfix() && !context()->IsEffect()) {
-      __ mov(ip, Operand(Smi::kZero));
-      PushOperand(ip);
+      UseScratchRegisterScope temps(masm());
+      Register scratch = temps.Acquire();
+      __ mov(scratch, Operand(Smi::kZero));
+      PushOperand(scratch);
     }
     switch (assign_type) {
       case NAMED_PROPERTY: {
@@ -2241,8 +2266,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
   if (String::Equals(check, factory->number_string())) {
     __ JumpIfSmi(r0, if_true);
     __ ldr(r0, FieldMemOperand(r0, HeapObject::kMapOffset));
-    __ LoadRoot(ip, Heap::kHeapNumberMapRootIndex);
-    __ cmp(r0, ip);
+    __ CompareRoot(r0, Heap::kHeapNumberMapRootIndex);
     Split(eq, if_true, if_false, fall_through);
   } else if (String::Equals(check, factory->string_string())) {
     __ JumpIfSmi(r0, if_false);
@@ -2418,22 +2442,24 @@ void FullCodeGenerator::LoadContextField(Register dst, int context_index) {
 
 void FullCodeGenerator::PushFunctionArgumentForContextAllocation() {
   DeclarationScope* closure_scope = scope()->GetClosureScope();
+  UseScratchRegisterScope temps(masm());
+  Register scratch = temps.Acquire();
   if (closure_scope->is_script_scope() ||
       closure_scope->is_module_scope()) {
     // Contexts nested in the native context have a canonical empty function
     // as their closure, not the anonymous closure containing the global
     // code.
-    __ LoadNativeContextSlot(Context::CLOSURE_INDEX, ip);
+    __ LoadNativeContextSlot(Context::CLOSURE_INDEX, scratch);
   } else if (closure_scope->is_eval_scope()) {
     // Contexts created by a call to eval have the same closure as the
     // context calling eval, not the anonymous closure containing the eval
     // code.  Fetch it from the context.
-    __ ldr(ip, ContextMemOperand(cp, Context::CLOSURE_INDEX));
+    __ ldr(scratch, ContextMemOperand(cp, Context::CLOSURE_INDEX));
   } else {
     DCHECK(closure_scope->is_function_scope());
-    __ ldr(ip, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+    __ ldr(scratch, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   }
-  PushOperand(ip);
+  PushOperand(scratch);
 }
 
 

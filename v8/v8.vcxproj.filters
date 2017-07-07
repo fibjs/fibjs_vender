@@ -552,6 +552,9 @@
     <ClInclude Include="src\builtins\builtins-forin-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-intl.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-iterator-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>

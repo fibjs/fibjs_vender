@@ -1193,7 +1193,7 @@ class Object {
   INLINE(bool IsNaN() const);
   INLINE(bool IsMinusZero() const);
   V8_EXPORT_PRIVATE bool ToInt32(int32_t* value);
-  inline bool ToUint32(uint32_t* value);
+  inline bool ToUint32(uint32_t* value) const;
 
   inline Representation OptimalRepresentation();
 
@@ -1472,12 +1472,12 @@ class Object {
 
   // Tries to convert an object to an array length. Returns true and sets the
   // output parameter if it succeeds.
-  inline bool ToArrayLength(uint32_t* index);
+  inline bool ToArrayLength(uint32_t* index) const;
 
   // Tries to convert an object to an array index. Returns true and sets the
   // output parameter if it succeeds. Equivalent to ToArrayLength, but does not
   // allow kMaxUInt32.
-  inline bool ToArrayIndex(uint32_t* index);
+  inline bool ToArrayIndex(uint32_t* index) const;
 
   // Returns true if the result of iterating over the object is the same
   // (including observable effects) as simply accessing the properties between 0
@@ -1521,7 +1521,7 @@ class Object {
   friend class StringStream;
 
   // Return the map of the root of object's prototype chain.
-  Map* GetPrototypeChainRootMap(Isolate* isolate);
+  Map* GetPrototypeChainRootMap(Isolate* isolate) const;
 
   // Helper for SetProperty and SetSuperProperty.
   // Return value is only meaningful if [found] is set to true on return.
@@ -1636,8 +1636,7 @@ class MapWord BASE_EMBEDDED {
   static inline MapWord FromMap(const Map* map);
 
   // View this map word as a map pointer.
-  inline Map* ToMap();
-
+  inline Map* ToMap() const;
 
   // Scavenge collection: the map word of live objects in the from space
   // contains a forwarding address (a heap object pointer in the to space).
@@ -1688,7 +1687,7 @@ class HeapObject: public Object {
   inline void set_map_no_write_barrier(Map* value);
 
   // Get the map using acquire load.
-  inline Map* synchronized_map();
+  inline Map* synchronized_map() const;
   inline MapWord synchronized_map_word() const;
 
   // Set the map using release store
@@ -1733,8 +1732,9 @@ class HeapObject: public Object {
   }
 
   // Returns the address of this HeapObject.
-  inline Address address() {
-    return reinterpret_cast<Address>(this) - kHeapObjectTag;
+  inline Address address() const {
+    return reinterpret_cast<Address>(const_cast<HeapObject*>(this)) -
+           kHeapObjectTag;
   }
 
   // Iterates over pointers contained in the object (including the Map).
@@ -1767,12 +1767,12 @@ class HeapObject: public Object {
   bool IsValidSlot(int offset);
 
   // Returns the heap object's size in bytes
-  inline int Size();
+  inline int Size() const;
 
   // Given a heap object's map pointer, returns the heap size in bytes
   // Useful when the map pointer field is used for other purposes.
   // GC internal.
-  inline int SizeFromMap(Map* map);
+  inline int SizeFromMap(Map* map) const;
 
   // Returns the field at offset in obj, as a read/write Object* reference.
   // Does no checking, and is safe to use during GC, while maps are invalid.
@@ -1813,7 +1813,7 @@ class HeapObject: public Object {
   static void VerifyHeapPointer(Object* p);
 #endif
 
-  inline AllocationAlignment RequiredAlignment();
+  inline AllocationAlignment RequiredAlignment() const;
 
   // Layout description.
   // First field in a heap object is map.
@@ -2158,20 +2158,21 @@ class JSObject: public JSReceiver {
   ElementsAccessor* GetElementsAccessor();
   // Returns true if an object has elements of PACKED_SMI_ELEMENTS or
   // HOLEY_SMI_ELEMENTS ElementsKind.
-  inline bool HasFastSmiElements();
+  inline bool HasSmiElements();
   // Returns true if an object has elements of PACKED_ELEMENTS or
   // HOLEY_ELEMENTS ElementsKind.
-  inline bool HasFastObjectElements();
+  inline bool HasObjectElements();
   // Returns true if an object has elements of PACKED_SMI_ELEMENTS,
   // HOLEY_SMI_ELEMENTS, PACKED_ELEMENTS, or HOLEY_ELEMENTS.
-  inline bool HasFastSmiOrObjectElements();
+  inline bool HasSmiOrObjectElements();
   // Returns true if an object has any of the "fast" elements kinds.
   inline bool HasFastElements();
   // Returns true if an object has elements of PACKED_DOUBLE_ELEMENTS or
   // HOLEY_DOUBLE_ELEMENTS ElementsKind.
-  inline bool HasFastDoubleElements();
-  // Returns true if an object has elements of HOLEY_*_ELEMENTS ElementsKind.
-  inline bool HasFastHoleyElements();
+  inline bool HasDoubleElements();
+  // Returns true if an object has elements of HOLEY_SMI_ELEMENTS,
+  // HOLEY_DOUBLE_ELEMENTS, or HOLEY_ELEMENTS ElementsKind.
+  inline bool HasHoleyElements();
   inline bool HasSloppyArgumentsElements();
   inline bool HasStringWrapperElements();
   inline bool HasDictionaryElements();
@@ -2199,17 +2200,6 @@ class JSObject: public JSReceiver {
 
   // Requires: HasFastElements().
   static void EnsureWritableFastElements(Handle<JSObject> object);
-
-  // Collects elements starting at index 0.
-  // Undefined values are placed after non-undefined values.
-  // Returns the number of non-undefined values.
-  static Handle<Object> PrepareElementsForSort(Handle<JSObject> object,
-                                               uint32_t limit);
-  // As PrepareElementsForSort, but only on objects where elements is
-  // a dictionary, and it will stay a dictionary.  Collates undefined and
-  // unexisting elements below limit from position zero of the elements.
-  static Handle<Object> PrepareSlowElementsForSort(Handle<JSObject> object,
-                                                   uint32_t limit);
 
   MUST_USE_RESULT static Maybe<bool> SetPropertyWithInterceptor(
       LookupIterator* it, ShouldThrow should_throw, Handle<Object> value);
@@ -2343,7 +2333,7 @@ class JSObject: public JSReceiver {
   MUST_USE_RESULT static MaybeHandle<Object> GetPropertyWithInterceptor(
       LookupIterator* it, bool* done);
 
-  static void ValidateElements(Handle<JSObject> object);
+  static void ValidateElements(JSObject* object);
 
   // Makes sure that this object can contain HeapObject as elements.
   static inline void EnsureCanContainHeapObjectElements(Handle<JSObject> obj);
@@ -2402,8 +2392,8 @@ class JSObject: public JSReceiver {
   static inline int GetHeaderSize(InstanceType instance_type);
   inline int GetHeaderSize();
 
-  static inline int GetEmbedderFieldCount(Map* map);
-  inline int GetEmbedderFieldCount();
+  static inline int GetEmbedderFieldCount(const Map* map);
+  inline int GetEmbedderFieldCount() const;
   inline int GetEmbedderFieldOffset(int index);
   inline Object* GetEmbedderField(int index);
   inline void SetEmbedderField(int index, Object* value);
@@ -3380,20 +3370,20 @@ class FixedTypedArrayBase: public FixedArrayBase {
   // No weak fields.
   typedef BodyDescriptor BodyDescriptorWeak;
 
-  inline int size();
+  inline int size() const;
 
   static inline int TypedArraySize(InstanceType type, int length);
-  inline int TypedArraySize(InstanceType type);
+  inline int TypedArraySize(InstanceType type) const;
 
   // Use with care: returns raw pointer into heap.
   inline void* DataPtr();
 
-  inline int DataSize();
+  inline int DataSize() const;
 
  private:
   static inline int ElementSize(InstanceType type);
 
-  inline int DataSize(InstanceType type);
+  inline int DataSize(InstanceType type) const;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(FixedTypedArrayBase);
 };
@@ -3621,7 +3611,7 @@ class Code: public HeapObject {
   // SourcePositionTableWithFrameCache.
   DECL_ACCESSORS(source_position_table, Object)
 
-  inline ByteArray* SourcePositionTable();
+  inline ByteArray* SourcePositionTable() const;
 
   // [trap_handler_index]: An index into the trap handler's master list of code
   // objects.
@@ -3632,10 +3622,10 @@ class Code: public HeapObject {
   //   FUNCTION           => type feedback information.
   //   STUB and ICs       => major/minor key as Smi.
   DECL_ACCESSORS(raw_type_feedback_info, Object)
-  inline Object* type_feedback_info();
+  inline Object* type_feedback_info() const;
   inline void set_type_feedback_info(
       Object* value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-  inline uint32_t stub_key();
+  inline uint32_t stub_key() const;
   inline void set_stub_key(uint32_t key);
 
   // [next_code_link]: Link for lists of optimized or deoptimized code.
@@ -3653,76 +3643,76 @@ class Code: public HeapObject {
   inline void set_constant_pool_offset(int offset);
 
   // Unchecked accessors to be used during GC.
-  inline ByteArray* unchecked_relocation_info();
+  inline ByteArray* unchecked_relocation_info() const;
 
-  inline int relocation_size();
+  inline int relocation_size() const;
 
   // [flags]: Various code flags.
-  inline Flags flags();
+  inline Flags flags() const;
   inline void set_flags(Flags flags);
 
   // [flags]: Access to specific code flags.
-  inline Kind kind();
-  inline ExtraICState extra_ic_state();  // Only valid for IC stubs.
+  inline Kind kind() const;
+  inline ExtraICState extra_ic_state() const;  // Only valid for IC stubs.
 
   // Testers for IC stub kinds.
-  inline bool is_inline_cache_stub();
-  inline bool is_debug_stub();
-  inline bool is_handler();
-  inline bool is_stub();
-  inline bool is_compare_ic_stub();
-  inline bool is_optimized_code();
-  inline bool is_wasm_code();
+  inline bool is_inline_cache_stub() const;
+  inline bool is_debug_stub() const;
+  inline bool is_handler() const;
+  inline bool is_stub() const;
+  inline bool is_compare_ic_stub() const;
+  inline bool is_optimized_code() const;
+  inline bool is_wasm_code() const;
 
-  inline bool IsCodeStubOrIC();
+  inline bool IsCodeStubOrIC() const;
 
   inline void set_raw_kind_specific_flags1(int value);
   inline void set_raw_kind_specific_flags2(int value);
 
   // Testers for interpreter builtins.
-  inline bool is_interpreter_trampoline_builtin();
+  inline bool is_interpreter_trampoline_builtin() const;
 
   // Tells whether the code checks the optimization marker in the function's
   // feedback vector.
-  inline bool checks_optimization_marker();
+  inline bool checks_optimization_marker() const;
 
   // [is_crankshafted]: For kind STUB or ICs, tells whether or not a code
   // object was generated by either the hydrogen or the TurboFan optimizing
   // compiler (but it may not be an optimized function).
-  inline bool is_crankshafted();
-  inline bool is_hydrogen_stub();  // Crankshafted, but not a function.
+  inline bool is_crankshafted() const;
+  inline bool is_hydrogen_stub() const;  // Crankshafted, but not a function.
   inline void set_is_crankshafted(bool value);
 
   // [has_tagged_params]: For compiled code or builtins: Tells whether the
   // outgoing parameters of this code are tagged pointers. True for other kinds.
-  inline bool has_tagged_params();
+  inline bool has_tagged_params() const;
   inline void set_has_tagged_params(bool value);
 
   // [is_turbofanned]: For kind STUB or OPTIMIZED_FUNCTION, tells whether the
   // code object was generated by the TurboFan optimizing compiler.
-  inline bool is_turbofanned();
+  inline bool is_turbofanned() const;
   inline void set_is_turbofanned(bool value);
 
   // [can_have_weak_objects]: For kind OPTIMIZED_FUNCTION, tells whether the
   // embedded objects in code should be treated weakly.
-  inline bool can_have_weak_objects();
+  inline bool can_have_weak_objects() const;
   inline void set_can_have_weak_objects(bool value);
 
   // [is_construct_stub]: For kind BUILTIN, tells whether the code object
   // represents a hand-written construct stub
   // (e.g., NumberConstructor_ConstructStub).
-  inline bool is_construct_stub();
+  inline bool is_construct_stub() const;
   inline void set_is_construct_stub(bool value);
 
   // [has_debug_break_slots]: For FUNCTION kind, tells if it has
   // been compiled with debug break slots.
-  inline bool has_debug_break_slots();
+  inline bool has_debug_break_slots() const;
   inline void set_has_debug_break_slots(bool value);
 
   // [has_reloc_info_for_serialization]: For FUNCTION kind, tells if its
   // reloc info includes runtime and external references to support
   // serialization/deserialization.
-  inline bool has_reloc_info_for_serialization();
+  inline bool has_reloc_info_for_serialization() const;
   inline void set_has_reloc_info_for_serialization(bool value);
 
   // [allow_osr_at_loop_nesting_level]: For FUNCTION kind, tells for
@@ -3730,42 +3720,42 @@ class Code: public HeapObject {
   // level of loop nesting we are willing to do on-stack replacement
   // for.
   inline void set_allow_osr_at_loop_nesting_level(int level);
-  inline int allow_osr_at_loop_nesting_level();
+  inline int allow_osr_at_loop_nesting_level() const;
 
   // [builtin_index]: For builtins, tells which builtin index the code object
   // has. Note that builtins can have a code kind other than BUILTIN. The
   // builtin index is a non-negative integer for builtins, and -1 otherwise.
-  inline int builtin_index();
+  inline int builtin_index() const;
   inline void set_builtin_index(int id);
 
   // [stack_slots]: For kind OPTIMIZED_FUNCTION, the number of stack slots
   // reserved in the code prologue.
-  inline unsigned stack_slots();
+  inline unsigned stack_slots() const;
   inline void set_stack_slots(unsigned slots);
 
   // [safepoint_table_start]: For kind OPTIMIZED_FUNCTION, the offset in
   // the instruction stream where the safepoint table starts.
-  inline unsigned safepoint_table_offset();
+  inline unsigned safepoint_table_offset() const;
   inline void set_safepoint_table_offset(unsigned offset);
 
   // [back_edge_table_start]: For kind FUNCTION, the offset in the
   // instruction stream where the back edge table starts.
-  inline unsigned back_edge_table_offset();
+  inline unsigned back_edge_table_offset() const;
   inline void set_back_edge_table_offset(unsigned offset);
 
-  inline bool back_edges_patched_for_osr();
+  inline bool back_edges_patched_for_osr() const;
 
   // [to_boolean_foo]: For kind TO_BOOLEAN_IC tells what state the stub is in.
   inline uint16_t to_boolean_state();
 
   // [marked_for_deoptimization]: For kind OPTIMIZED_FUNCTION tells whether
   // the code is going to be deoptimized because of dead embedded maps.
-  inline bool marked_for_deoptimization();
+  inline bool marked_for_deoptimization() const;
   inline void set_marked_for_deoptimization(bool flag);
 
   // [deopt_already_counted]: For kind OPTIMIZED_FUNCTION tells whether
   // the code was already deoptimized.
-  inline bool deopt_already_counted();
+  inline bool deopt_already_counted() const;
   inline void set_deopt_already_counted(bool flag);
 
   // [is_promise_rejection]: For kind BUILTIN tells whether the
@@ -3831,21 +3821,21 @@ class Code: public HeapObject {
   static inline Object* GetObjectFromCodeEntry(Address code_entry);
 
   // Returns the address of the first instruction.
-  inline byte* instruction_start();
+  inline byte* instruction_start() const;
 
   // Returns the address right after the last instruction.
-  inline byte* instruction_end();
+  inline byte* instruction_end() const;
 
   // Returns the size of the instructions, padding, relocation and unwinding
   // information.
-  inline int body_size();
+  inline int body_size() const;
 
   // Returns the size of code and its metadata. This includes the size of code
   // relocation information, deoptimization data and handler table.
-  inline int SizeIncludingMetadata();
+  inline int SizeIncludingMetadata() const;
 
   // Returns the address of the first relocation info (read backwards!).
-  inline byte* relocation_start();
+  inline byte* relocation_start() const;
 
   // [has_unwinding_info]: Whether this code object has unwinding information.
   // If it doesn't, unwinding_information_start() will point to invalid data.
@@ -3885,13 +3875,13 @@ class Code: public HeapObject {
   inline void set_unwinding_info_size(int value);
 
   // Returns the address of the unwinding information, if any.
-  inline byte* unwinding_info_start();
+  inline byte* unwinding_info_start() const;
 
   // Returns the address right after the end of the unwinding information.
-  inline byte* unwinding_info_end();
+  inline byte* unwinding_info_end() const;
 
   // Code entry point.
-  inline byte* entry();
+  inline byte* entry() const;
 
   // Returns true if pc is inside this object's instructions.
   inline bool contains(byte* pc);
@@ -3911,12 +3901,12 @@ class Code: public HeapObject {
 
   // Calculate the size of the code object to report for log events. This takes
   // the layout of the code object into account.
-  inline int ExecutableSize();
+  inline int ExecutableSize() const;
 
   DECL_CAST(Code)
 
   // Dispatched behavior.
-  inline int CodeSize();
+  inline int CodeSize() const;
 
   DECL_PRINTER(Code)
   DECL_VERIFIER(Code)
@@ -4110,8 +4100,8 @@ class Code: public HeapObject {
   // Code aging -- platform-specific
   static void PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Age age);
 
-  bool is_promise_rejection();
-  bool is_exception_caught();
+  bool is_promise_rejection() const;
+  bool is_exception_caught() const;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Code);
 };
@@ -4672,6 +4662,8 @@ enum BuiltinFunctionId {
   kArrayKeys,
   kArrayValues,
   kArrayIteratorNext,
+  kMapIteratorNext,
+  kSetIteratorNext,
   kDataViewBuffer,
   kDataViewByteLength,
   kDataViewByteOffset,
@@ -5651,14 +5643,6 @@ class JSRegExp: public JSObject {
     }
   }
 
-  static int saved_code_index(bool is_latin1) {
-    if (is_latin1) {
-      return kIrregexpLatin1CodeSavedIndex;
-    } else {
-      return kIrregexpUC16CodeSavedIndex;
-    }
-  }
-
   DECL_CAST(JSRegExp)
 
   // Dispatched behavior.
@@ -5690,22 +5674,14 @@ class JSRegExp: public JSObject {
   // fails, this fields hold an exception object that should be
   // thrown if the regexp is used again.
   static const int kIrregexpUC16CodeIndex = kDataIndex + 1;
-
-  // Saved instance of Irregexp compiled code or bytecode for Latin1 that
-  // is a potential candidate for flushing.
-  static const int kIrregexpLatin1CodeSavedIndex = kDataIndex + 2;
-  // Saved instance of Irregexp compiled code or bytecode for UC16 that is
-  // a potential candidate for flushing.
-  static const int kIrregexpUC16CodeSavedIndex = kDataIndex + 3;
-
   // Maximal number of registers used by either Latin1 or UC16.
   // Only used to check that there is enough stack space
-  static const int kIrregexpMaxRegisterCountIndex = kDataIndex + 4;
+  static const int kIrregexpMaxRegisterCountIndex = kDataIndex + 2;
   // Number of captures in the compiled regexp.
-  static const int kIrregexpCaptureCountIndex = kDataIndex + 5;
+  static const int kIrregexpCaptureCountIndex = kDataIndex + 3;
   // Maps names of named capture groups (at indices 2i) to their corresponding
   // (1-based) capture group indices (at indices 2i + 1).
-  static const int kIrregexpCaptureNameMapIndex = kDataIndex + 6;
+  static const int kIrregexpCaptureNameMapIndex = kDataIndex + 4;
 
   static const int kIrregexpDataSize = kIrregexpCaptureNameMapIndex + 1;
 
@@ -5715,15 +5691,6 @@ class JSRegExp: public JSObject {
 
   // The uninitialized value for a regexp code object.
   static const int kUninitializedValue = -1;
-
-  // The compilation error value for the regexp code object. The real error
-  // object is in the saved code field.
-  static const int kCompilationErrorValue = -2;
-
-  // When we store the sweep generation at which we moved the code from the
-  // code index to the saved code index we mask it of to be in the [0:255]
-  // range.
-  static const int kCodeAgeMask = 0xff;
 };
 
 DEFINE_OPERATORS_FOR_FLAGS(JSRegExp::Flags)
@@ -7068,39 +7035,87 @@ class TemplateInfo: public Struct {
   DISALLOW_IMPLICIT_CONSTRUCTORS(TemplateInfo);
 };
 
-
+// See the api-exposed FunctionTemplate for more information.
 class FunctionTemplateInfo: public TemplateInfo {
  public:
+  // Handler invoked when calling an instance of this FunctionTemplateInfo.
+  // Either CallInfoHandler or Undefined.
   DECL_ACCESSORS(call_code, Object)
+
+  // ObjectTemplateInfo or Undefined, used for the prototype property of the
+  // resulting JSFunction instance of this FunctionTemplate.
   DECL_ACCESSORS(prototype_template, Object)
+
+  // In the case the prototype_template is Undefined we use the
+  // protoype_provider_template to retrieve the instance prototype. Either
+  // contains an ObjectTemplateInfo or Undefined.
   DECL_ACCESSORS(prototype_provider_template, Object)
+
+  // Used to create protoype chains. The parent_template's prototype is set as
+  // __proto__ of this FunctionTemplate's instance prototype. Is either a
+  // FunctionTemplateInfo or Undefined.
   DECL_ACCESSORS(parent_template, Object)
+
+  // Returns an InterceptorInfo or Undefined for named properties.
   DECL_ACCESSORS(named_property_handler, Object)
+  // Returns an InterceptorInfo or Undefined for indexed properties/elements.
   DECL_ACCESSORS(indexed_property_handler, Object)
+
+  // An ObjectTemplateInfo that is used when instantiating the JSFunction
+  // associated with this FunctionTemplateInfo. Contains either an
+  // ObjectTemplateInfo or Undefined. A default instance_template is assigned
+  // upon first instantiation if it's Undefined.
   DECL_ACCESSORS(instance_template, Object)
+
   DECL_ACCESSORS(class_name, Object)
+
+  // If the signature is a FunctionTemplateInfo it is used to check whether the
+  // receiver calling the associated JSFunction is a compatible receiver, i.e.
+  // it is an instance of the signare FunctionTemplateInfo or any of the
+  // receiver's prototypes are.
   DECL_ACCESSORS(signature, Object)
+
+  // Either a CallHandlerInfo or Undefined. If an instance_call_handler is
+  // provided the instances created from the associated JSFunction are marked as
+  // callable.
   DECL_ACCESSORS(instance_call_handler, Object)
+
   DECL_ACCESSORS(access_check_info, Object)
   DECL_ACCESSORS(shared_function_info, Object)
-  DECL_ACCESSORS(js_function, Object)
+
+  // Internal field to store a flag bitfield.
   DECL_INT_ACCESSORS(flag)
 
-  inline int length() const;
-  inline void set_length(int value);
+  // "length" property of the final JSFunction.
+  DECL_INT_ACCESSORS(length)
 
-  // Following properties use flag bits.
+  // Either the_hole or a private symbol. Used to cache the result on
+  // the receiver under the the cached_property_name when this
+  // FunctionTemplateInfo is used as a getter.
+  DECL_ACCESSORS(cached_property_name, Object)
+
+  // Begin flag bits ---------------------
   DECL_BOOLEAN_ACCESSORS(hidden_prototype)
   DECL_BOOLEAN_ACCESSORS(undetectable)
-  // If the bit is set, object instances created by this function
+
+  // If set, object instances created by this function
   // requires access check.
   DECL_BOOLEAN_ACCESSORS(needs_access_check)
-  DECL_BOOLEAN_ACCESSORS(read_only_prototype)
-  DECL_BOOLEAN_ACCESSORS(remove_prototype)
-  DECL_BOOLEAN_ACCESSORS(do_not_cache)
-  DECL_BOOLEAN_ACCESSORS(accept_any_receiver)
 
-  DECL_ACCESSORS(cached_property_name, Object)
+  DECL_BOOLEAN_ACCESSORS(read_only_prototype)
+
+  // If set, do not create a prototype property for the associated
+  // JSFunction. This bit implies that neither the prototype_template nor the
+  // prototype_provoider_template are instantiated.
+  DECL_BOOLEAN_ACCESSORS(remove_prototype)
+
+  // If set, do not attach a serial number to this FunctionTemplate and thus do
+  // not keep an instance boilerplate around.
+  DECL_BOOLEAN_ACCESSORS(do_not_cache)
+
+  // If not set an access may be performed on calling the associated JSFunction.
+  DECL_BOOLEAN_ACCESSORS(accept_any_receiver)
+  // End flag bits ---------------------
 
   DECL_CAST(FunctionTemplateInfo)
 

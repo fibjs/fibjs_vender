@@ -189,7 +189,7 @@ DEFINE_BOOL(harmony_shipping, true, "enable all shipped harmony features")
 DEFINE_IMPLICATION(es_staging, harmony)
 
 // Features that are still work in progress (behind individual flags).
-#define HARMONY_INPROGRESS(V)                                         \
+#define HARMONY_INPROGRESS_BASE(V)                                    \
   V(harmony_array_prototype_values, "harmony Array.prototype.values") \
   V(harmony_function_sent, "harmony function.sent")                   \
   V(harmony_tailcalls, "harmony tail calls")                          \
@@ -199,6 +199,16 @@ DEFINE_IMPLICATION(es_staging, harmony)
   V(harmony_async_iteration, "harmony async iteration")               \
   V(harmony_dynamic_import, "harmony dynamic import")                 \
   V(harmony_promise_finally, "harmony Promise.prototype.finally")
+
+#ifdef V8_INTL_SUPPORT
+#define HARMONY_INPROGRESS(V)       \
+  HARMONY_INPROGRESS_BASE(V)        \
+  V(harmony_number_format_to_parts, \
+    "Intl.NumberFormat.prototype."  \
+    "formatToParts")
+#else
+#define HARMONY_INPROGRESS(V) HARMONY_INPROGRESS_BASE(V)
+#endif
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                               \
@@ -381,8 +391,6 @@ DEFINE_BOOL(stress_pointer_maps, false, "pointer map for every instruction")
 DEFINE_BOOL(stress_environments, false, "environment for every instruction")
 DEFINE_INT(deopt_every_n_times, 0,
            "deoptimize every n times a deopt point is passed")
-DEFINE_INT(deopt_every_n_garbage_collections, 0,
-           "deoptimize every n garbage collections")
 DEFINE_BOOL(print_deopt_stress, false, "print number of possible deopt points")
 DEFINE_BOOL(trap_on_deopt, false, "put a break point before deoptimizing")
 DEFINE_BOOL(trap_on_stub_deopt, false,
@@ -638,8 +646,6 @@ DEFINE_BOOL(trace_fragmentation_verbose, false,
 DEFINE_BOOL(trace_evacuation, false, "report evacuation statistics")
 DEFINE_BOOL(trace_mutator_utilization, false,
             "print mutator utilization, allocation speed, gc speed")
-DEFINE_BOOL(flush_regexp_code, true,
-            "flush regexp code that we expect not to use again")
 DEFINE_BOOL(age_code, true, "track un-executed functions to age code")
 DEFINE_BOOL(incremental_marking, true, "use incremental marking")
 DEFINE_BOOL(incremental_marking_wrappers, true,

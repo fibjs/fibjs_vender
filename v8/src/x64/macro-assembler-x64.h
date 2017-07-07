@@ -818,20 +818,19 @@ class MacroAssembler: public Assembler {
   void Move(Register target, Register source);
 
   // Handle support
-  void Move(Register dst, Handle<Object> source);
-  void Move(const Operand& dst, Handle<Object> source);
+  void Move(Register dst, Handle<HeapObject> source,
+            RelocInfo::Mode rmode = RelocInfo::EMBEDDED_OBJECT);
+  void Move(const Operand& dst, Handle<HeapObject> source,
+            RelocInfo::Mode rmode = RelocInfo::EMBEDDED_OBJECT);
   void Cmp(Register dst, Handle<Object> source);
   void Cmp(const Operand& dst, Handle<Object> source);
   void Cmp(Register dst, Smi* src);
   void Cmp(const Operand& dst, Smi* src);
-  void Push(Handle<Object> source);
+  void Push(Handle<HeapObject> source);
+  void PushObject(Handle<Object> source);
 
   // Move a Smi or HeapNumber.
   void MoveNumber(Register dst, double value);
-
-  // Load a heap object and handle the case of new-space objects by
-  // indirecting via a global cell.
-  void MoveHeapObject(Register result, Handle<Object> object);
 
   void GetWeakValue(Register value, Handle<WeakCell> cell);
 
@@ -882,13 +881,6 @@ class MacroAssembler: public Assembler {
     // address is not GC safe. Use the handle version instead.
     DCHECK(rmode > RelocInfo::LAST_GCED_ENUM);
     movp(dst, ptr, rmode);
-  }
-
-  void Move(Register dst, Handle<Object> value, RelocInfo::Mode rmode) {
-    AllowDeferredHandleDereference using_raw_address;
-    DCHECK(!RelocInfo::IsNone(rmode));
-    DCHECK(value->IsHeapObject());
-    movp(dst, reinterpret_cast<void*>(value.location()), rmode);
   }
 
   void Move(XMMRegister dst, uint32_t src);
@@ -962,8 +954,6 @@ class MacroAssembler: public Assembler {
   void Movups(const Operand& dst, XMMRegister src);
   void Movmskps(Register dst, XMMRegister src);
   void Movapd(XMMRegister dst, XMMRegister src);
-  void Movupd(XMMRegister dst, const Operand& src);
-  void Movupd(const Operand& dst, XMMRegister src);
   void Movmskpd(Register dst, XMMRegister src);
 
   void Xorps(XMMRegister dst, XMMRegister src);
@@ -1215,15 +1205,6 @@ class MacroAssembler: public Assembler {
                 Label* gc_required,
                 AllocationFlags flags);
 
-  // FastAllocate is right now only used for folded allocations. It just
-  // increments the top pointer without checking against limit. This can only
-  // be done if it was proved earlier that the allocation will succeed.
-  void FastAllocate(int object_size, Register result, Register result_end,
-                    AllocationFlags flags);
-
-  void FastAllocate(Register object_size, Register result, Register result_end,
-                    AllocationFlags flags);
-
   // Allocate a heap number in new space with undefined value. Returns
   // tagged pointer in result register, or jumps to gc_required if new
   // space is full.
@@ -1345,7 +1326,7 @@ class MacroAssembler: public Assembler {
   // may be bigger than 2^16 - 1.  Requires a scratch register.
   void Ret(int bytes_dropped, Register scratch);
 
-  Handle<Object> CodeObject() {
+  Handle<HeapObject> CodeObject() {
     DCHECK(!code_object_.is_null());
     return code_object_;
   }
@@ -1385,9 +1366,6 @@ class MacroAssembler: public Assembler {
   // Check that the stack is aligned.
   void CheckStackAlignment();
 
-  // Verify restrictions about code generated in stubs.
-  void set_generating_stub(bool value) { generating_stub_ = value; }
-  bool generating_stub() { return generating_stub_; }
   void set_has_frame(bool value) { has_frame_ = value; }
   bool has_frame() { return has_frame_; }
   inline bool AllowThisStubCall(CodeStub* stub);
@@ -1428,7 +1406,6 @@ class MacroAssembler: public Assembler {
   static const int kNumSafepointSavedRegisters = 12;
   static const int kSmiShift = kSmiTagSize + kSmiShiftSize;
 
-  bool generating_stub_;
   bool has_frame_;
   Isolate* isolate_;
   bool root_array_available_;
@@ -1444,7 +1421,7 @@ class MacroAssembler: public Assembler {
   void LoadSmiConstant(Register dst, Smi* value);
 
   // This handle will be patched with the code object on installation.
-  Handle<Object> code_object_;
+  Handle<HeapObject> code_object_;
 
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,

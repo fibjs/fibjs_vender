@@ -32,7 +32,6 @@ MacroAssembler::MacroAssembler(Isolate* isolate, byte* buffer,
                                unsigned buffer_size,
                                CodeObjectRequired create_code_object)
     : Assembler(isolate, buffer, buffer_size),
-      generating_stub_(false),
 #if DEBUG
       allow_macro_instructions_(true),
 #endif
@@ -44,7 +43,7 @@ MacroAssembler::MacroAssembler(Isolate* isolate, byte* buffer,
       fptmp_list_(DefaultFPTmpList()) {
   if (create_code_object == CodeObjectRequired::kYes) {
     code_object_ =
-        Handle<Object>::New(isolate_->heap()->undefined_value(), isolate_);
+        Handle<HeapObject>::New(isolate_->heap()->undefined_value(), isolate_);
   }
 }
 
@@ -1623,25 +1622,17 @@ void MacroAssembler::LoadTrueFalseRoots(Register true_root,
 }
 
 
-void MacroAssembler::LoadHeapObject(Register result,
-                                    Handle<HeapObject> object) {
-  Mov(result, Operand(object));
-}
-
 void MacroAssembler::LoadObject(Register result, Handle<Object> object) {
   AllowDeferredHandleDereference heap_object_check;
   if (object->IsHeapObject()) {
-    LoadHeapObject(result, Handle<HeapObject>::cast(object));
+    Move(result, Handle<HeapObject>::cast(object));
   } else {
-    DCHECK(object->IsSmi());
-    Mov(result, Operand(object));
+    Mov(result, Operand(Smi::cast(*object)));
   }
 }
 
 void MacroAssembler::Move(Register dst, Register src) { Mov(dst, src); }
-void MacroAssembler::Move(Register dst, Handle<Object> x) {
-  LoadObject(dst, x);
-}
+void MacroAssembler::Move(Register dst, Handle<HeapObject> x) { Mov(dst, x); }
 void MacroAssembler::Move(Register dst, Smi* src) { Mov(dst, src); }
 
 void MacroAssembler::LoadInstanceDescriptors(Register map,
@@ -2135,7 +2126,7 @@ void MacroAssembler::Jump(Address target, RelocInfo::Mode rmode,
 void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
                           Condition cond) {
   DCHECK(RelocInfo::IsCodeTarget(rmode));
-  AllowDeferredHandleDereference embedding_raw_address;
+  AllowHandleDereference using_location;
   Jump(reinterpret_cast<intptr_t>(code.location()), rmode, cond);
 }
 
@@ -2208,7 +2199,7 @@ void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode) {
   Bind(&start_call);
 #endif
 
-  AllowDeferredHandleDereference embedding_raw_address;
+  AllowHandleDereference using_location;
   Call(reinterpret_cast<Address>(code.location()), rmode);
 
 #ifdef DEBUG
@@ -2785,6 +2776,8 @@ void MacroAssembler::TruncateDoubleToI(Register result,
   }
 
   Bind(&done);
+  // Keep our invariant that the upper 32 bits are zero.
+  Uxtw(result.W(), result.W());
 }
 
 
@@ -3141,7 +3134,6 @@ void MacroAssembler::Allocate(int object_size,
                               Label* gc_required,
                               AllocationFlags flags) {
   DCHECK(object_size <= kMaxRegularHeapObjectSize);
-  DCHECK((flags & ALLOCATION_FOLDED) == 0);
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
       // Trash the registers to simulate an allocation failure.
@@ -3205,10 +3197,7 @@ void MacroAssembler::Allocate(int object_size,
   Ccmp(result_end, alloc_limit, NoFlag, cc);
   B(hi, gc_required);
 
-  if ((flags & ALLOCATION_FOLDING_DOMINATOR) == 0) {
-    // The top pointer is not updated for allocation folding dominators.
-    Str(result_end, MemOperand(top_address));
-  }
+  Str(result_end, MemOperand(top_address));
 
   // Tag the object.
   ObjectTag(result, result);
@@ -3287,83 +3276,9 @@ void MacroAssembler::Allocate(Register object_size, Register result,
   Ccmp(result_end, alloc_limit, NoFlag, cc);
   B(hi, gc_required);
 
-  if ((flags & ALLOCATION_FOLDING_DOMINATOR) == 0) {
-    // The top pointer is not updated for allocation folding dominators.
-    Str(result_end, MemOperand(top_address));
-  }
+  Str(result_end, MemOperand(top_address));
 
   // Tag the object.
-  ObjectTag(result, result);
-}
-
-void MacroAssembler::FastAllocate(int object_size, Register result,
-                                  Register scratch1, Register scratch2,
-                                  AllocationFlags flags) {
-  DCHECK(object_size <= kMaxRegularHeapObjectSize);
-
-  DCHECK(!AreAliased(result, scratch1, scratch2));
-  DCHECK(result.Is64Bits() && scratch1.Is64Bits() && scratch2.Is64Bits());
-
-  // Make object size into bytes.
-  if ((flags & SIZE_IN_WORDS) != 0) {
-    object_size *= kPointerSize;
-  }
-  DCHECK(0 == (object_size & kObjectAlignmentMask));
-
-  ExternalReference heap_allocation_top =
-      AllocationUtils::GetAllocationTopReference(isolate(), flags);
-
-  // Set up allocation top address and allocation limit registers.
-  Register top_address = scratch1;
-  Register result_end = scratch2;
-  Mov(top_address, Operand(heap_allocation_top));
-  Ldr(result, MemOperand(top_address));
-
-  // We can ignore DOUBLE_ALIGNMENT flags here because doubles and pointers have
-  // the same alignment on ARM64.
-  STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
-
-  // Calculate new top and write it back.
-  Adds(result_end, result, object_size);
-  Str(result_end, MemOperand(top_address));
-
-  ObjectTag(result, result);
-}
-
-void MacroAssembler::FastAllocate(Register object_size, Register result,
-                                  Register result_end, Register scratch,
-                                  AllocationFlags flags) {
-  // |object_size| and |result_end| may overlap, other registers must not.
-  DCHECK(!AreAliased(object_size, result, scratch));
-  DCHECK(!AreAliased(result_end, result, scratch));
-  DCHECK(object_size.Is64Bits() && result.Is64Bits() && scratch.Is64Bits() &&
-         result_end.Is64Bits());
-
-  ExternalReference heap_allocation_top =
-      AllocationUtils::GetAllocationTopReference(isolate(), flags);
-
-  // Set up allocation top address and allocation limit registers.
-  Register top_address = scratch;
-  Mov(top_address, heap_allocation_top);
-  Ldr(result, MemOperand(top_address));
-
-  // We can ignore DOUBLE_ALIGNMENT flags here because doubles and pointers have
-  // the same alignment on ARM64.
-  STATIC_ASSERT(kPointerAlignment == kDoubleAlignment);
-
-  // Calculate new top and write it back.
-  if ((flags & SIZE_IN_WORDS) != 0) {
-    Adds(result_end, result, Operand(object_size, LSL, kPointerSizeLog2));
-  } else {
-    Adds(result_end, result, object_size);
-  }
-  Str(result_end, MemOperand(top_address));
-
-  if (emit_debug_code()) {
-    Tst(result_end, kObjectAlignmentMask);
-    Check(eq, kUnalignedAllocationInNewSpace);
-  }
-
   ObjectTag(result, result);
 }
 
@@ -4339,9 +4254,6 @@ void MacroAssembler::Abort(BailoutReason reason) {
   if (use_real_aborts()) {
     // Avoid infinite recursion; Push contains some assertions that use Abort.
     NoUseRealAbortsScope no_real_aborts(this);
-
-    // Check if Abort() has already been initialized.
-    DCHECK(isolate()->builtins()->Abort()->IsHeapObject());
 
     Move(x1, Smi::FromInt(static_cast<int>(reason)));
 

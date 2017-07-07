@@ -127,6 +127,7 @@
     <ClInclude Include="src\builtins\builtins-definitions.h" />
     <ClInclude Include="src\builtins\builtins-descriptors.h" />
     <ClInclude Include="src\builtins\builtins-forin-gen.h" />
+    <ClInclude Include="src\builtins\builtins-intl.h" />
     <ClInclude Include="src\builtins\builtins-iterator-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
     <ClInclude Include="src\builtins\builtins-regexp-gen.h" />

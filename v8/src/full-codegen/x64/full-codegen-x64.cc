@@ -461,7 +461,7 @@ void FullCodeGenerator::AccumulatorValueContext::Plug(
   if (lit->IsSmi()) {
     __ SafeMove(result_register(), Smi::cast(*lit));
   } else {
-    __ Move(result_register(), lit);
+    __ Move(result_register(), Handle<HeapObject>::cast(lit));
   }
 }
 
@@ -471,7 +471,7 @@ void FullCodeGenerator::StackValueContext::Plug(Handle<Object> lit) const {
   if (lit->IsSmi()) {
     __ SafePush(Smi::cast(*lit));
   } else {
-    __ Push(lit);
+    __ Push(Handle<HeapObject>::cast(lit));
   }
 }
 
@@ -496,7 +496,7 @@ void FullCodeGenerator::TestContext::Plug(Handle<Object> lit) const {
     }
   } else {
     // For simplicity we always test the accumulator register.
-    __ Move(result_register(), lit);
+    __ Move(result_register(), Handle<HeapObject>::cast(lit));
     codegen()->DoTest(this);
   }
 }

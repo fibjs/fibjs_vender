@@ -572,9 +572,10 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<JSMap> NewJSMap();
   Handle<JSSet> NewJSSet();
 
-  // TODO(aandrey): Maybe these should take table, index and kind arguments.
-  Handle<JSMapIterator> NewJSMapIterator();
-  Handle<JSSetIterator> NewJSSetIterator();
+  Handle<JSMapIterator> NewJSMapIterator(Handle<OrderedHashMap> table,
+                                         int index, JSMapIterator::Kind kind);
+  Handle<JSSetIterator> NewJSSetIterator(Handle<OrderedHashSet> table,
+                                         int index, JSSetIterator::Kind kind);
 
   // Allocates a bound function.
   MaybeHandle<JSBoundFunction> NewJSBoundFunction(
@@ -600,11 +601,11 @@ class V8_EXPORT_PRIVATE Factory final {
                                  PretenureFlag pretenure = TENURED);
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype,
-                                 bool is_strict = false);
+                                 LanguageMode language_mode = SLOPPY);
   Handle<JSFunction> NewFunction(Handle<String> name);
-  Handle<JSFunction> NewFunctionWithoutPrototype(Handle<String> name,
-                                                 Handle<Code> code,
-                                                 bool is_strict = false);
+  Handle<JSFunction> NewFunctionWithoutPrototype(
+      Handle<String> name, Handle<Code> code,
+      LanguageMode language_mode = SLOPPY);
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<Map> initial_map, Handle<SharedFunctionInfo> function_info,
@@ -626,7 +627,7 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype, InstanceType type,
                                  int instance_size,
-                                 bool is_strict = false);
+                                 LanguageMode language_mode = SLOPPY);
   Handle<JSFunction> NewFunction(Handle<String> name,
                                  Handle<Code> code,
                                  InstanceType type,

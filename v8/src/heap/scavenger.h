@@ -7,40 +7,37 @@
 
 #include "src/heap/objects-visiting.h"
 #include "src/heap/slot-set.h"
+#include "src/heap/worklist.h"
 
 namespace v8 {
 namespace internal {
 
+static const int kPromotionListSegmentSize = 64;
+
+using ObjectAndSize = std::pair<HeapObject*, int>;
+using PromotionList = Worklist<ObjectAndSize, kPromotionListSegmentSize>;
+
 class Scavenger {
  public:
-  explicit Scavenger(Heap* heap)
-      : heap_(heap), is_logging_(false), is_incremental_marking_(false) {}
-
-  V8_INLINE void EvacuateObject(HeapObject** slot, Map* map,
-                                HeapObject* source);
+  Scavenger(Heap* heap, bool is_logging, bool is_incremental_marking,
+            PromotionList* promotion_list, int task_id)
+      : heap_(heap),
+        promotion_list_(promotion_list, task_id),
+        is_logging_(is_logging),
+        is_incremental_marking_(is_incremental_marking) {}
 
   // Callback function passed to Heap::Iterate etc.  Copies an object if
   // necessary, the object might be promoted to an old space.  The caller must
   // ensure the precondition that the object is (a) a heap object and (b) in
   // the heap's from space.
-  static inline void ScavengeObject(HeapObject** p, HeapObject* object);
-  static inline SlotCallbackResult CheckAndScavengeObject(Heap* heap,
-                                                          Address slot_address);
+  inline void ScavengeObject(HeapObject** p, HeapObject* object);
 
-  // Slow part of {ScavengeObject} above.
-  static inline void ScavengeObjectSlow(HeapObject** p, HeapObject* object);
-
-  void UpdateConstraints();
-
-  Isolate* isolate();
-  Heap* heap() { return heap_; }
+  inline SlotCallbackResult CheckAndScavengeObject(Heap* heap,
+                                                   Address slot_address);
+  inline Heap* heap() { return heap_; }
+  inline PromotionList::View* promotion_list() { return &promotion_list_; }
 
  private:
-  // White list for objects that for sure only contain data.
-  V8_INLINE static bool ContainsOnlyData(VisitorId visitor_id);
-
-  void RecordCopiedObject(HeapObject* obj);
-
   V8_INLINE HeapObject* MigrateObject(HeapObject* source, HeapObject* target,
                                       int size);
 
@@ -50,48 +47,59 @@ class Scavenger {
   V8_INLINE bool PromoteObject(Map* map, HeapObject** slot, HeapObject* object,
                                int object_size);
 
+  V8_INLINE void EvacuateObject(HeapObject** slot, Map* map,
+                                HeapObject* source);
+
+  // Different cases for object evacuation.
+
   V8_INLINE void EvacuateObjectDefault(Map* map, HeapObject** slot,
                                        HeapObject* object, int object_size);
-
-  // Special cases.
 
   V8_INLINE void EvacuateJSFunction(Map* map, HeapObject** slot,
                                     JSFunction* object, int object_size);
 
-  V8_INLINE void EvacuateThinString(Map* map, HeapObject** slot,
-                                    ThinString* object, int object_size);
+  inline void EvacuateThinString(Map* map, HeapObject** slot,
+                                 ThinString* object, int object_size);
 
-  V8_INLINE void EvacuateShortcutCandidate(Map* map, HeapObject** slot,
-                                           ConsString* object, int object_size);
+  inline void EvacuateShortcutCandidate(Map* map, HeapObject** slot,
+                                        ConsString* object, int object_size);
 
-  Heap* heap_;
+  void RecordCopiedObject(HeapObject* obj);
+
+  Heap* const heap_;
+  PromotionList::View promotion_list_;
   bool is_logging_;
   bool is_incremental_marking_;
 };
 
 // Helper class for turning the scavenger into an object visitor that is also
 // filtering out non-HeapObjects and objects which do not reside in new space.
-class RootScavengeVisitor : public RootVisitor {
+class RootScavengeVisitor final : public RootVisitor {
  public:
-  explicit RootScavengeVisitor(Heap* heap) : heap_(heap) {}
+  RootScavengeVisitor(Heap* heap, Scavenger* scavenger)
+      : heap_(heap), scavenger_(scavenger) {}
 
-  void VisitRootPointer(Root root, Object** p) override;
-  void VisitRootPointers(Root root, Object** start, Object** end) override;
+  void VisitRootPointer(Root root, Object** p) final;
+  void VisitRootPointers(Root root, Object** start, Object** end) final;
 
  private:
-  inline void ScavengePointer(Object** p);
+  void ScavengePointer(Object** p);
 
-  Heap* heap_;
+  Heap* const heap_;
+  Scavenger* const scavenger_;
 };
 
 class ScavengeVisitor final : public NewSpaceVisitor<ScavengeVisitor> {
  public:
-  explicit ScavengeVisitor(Heap* heap) : heap_(heap) {}
+  ScavengeVisitor(Heap* heap, Scavenger* scavenger)
+      : heap_(heap), scavenger_(scavenger) {}
+
   V8_INLINE void VisitPointers(HeapObject* host, Object** start,
                                Object** end) final;
 
  private:
-  Heap* heap_;
+  Heap* const heap_;
+  Scavenger* const scavenger_;
 };
 
 }  // namespace internal

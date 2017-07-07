@@ -175,7 +175,7 @@ class MacroAssembler: public Assembler {
 
   // Register move. May do nothing if the registers are identical.
   void Move(Register dst, Smi* smi);
-  void Move(Register dst, Handle<Object> value);
+  void Move(Register dst, Handle<HeapObject> value);
   void Move(Register dst, Register src, Condition cond = al);
   void Move(Register dst, const Operand& src, SBit sbit = LeaveCC,
             Condition cond = al) {
@@ -330,9 +330,9 @@ class MacroAssembler: public Assembler {
       PointersToHereCheck pointers_to_here_check_for_value =
           kPointersToHereMaybeInteresting);
 
-  // Push a handle.
-  void Push(Handle<Object> handle);
+  void Push(Handle<HeapObject> handle);
   void Push(Smi* smi);
+  void PushObject(Handle<Object> handle);
 
   // Push two registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Condition cond = al) {
@@ -543,8 +543,7 @@ class MacroAssembler: public Assembler {
                               const Register fpscr_flags,
                               const Condition cond = al);
 
-  void Vmov(const DwVfpRegister dst,
-            const double imm,
+  void Vmov(const DwVfpRegister dst, Double imm,
             const Register scratch = no_reg);
 
   void VmovHigh(Register dst, DwVfpRegister src);
@@ -775,15 +774,6 @@ class MacroAssembler: public Assembler {
   void Allocate(Register object_size, Register result, Register result_end,
                 Register scratch, Label* gc_required, AllocationFlags flags);
 
-  // FastAllocate is right now only used for folded allocations. It just
-  // increments the top pointer without checking against limit. This can only
-  // be done if it was proved earlier that the allocation will succeed.
-  void FastAllocate(int object_size, Register result, Register scratch1,
-                    Register scratch2, AllocationFlags flags);
-
-  void FastAllocate(Register object_size, Register result, Register result_end,
-                    Register scratch, AllocationFlags flags);
-
   // Allocates a heap number or jumps to the gc_required label if the young
   // space is full and a scavenge is needed. All registers are clobbered also
   // when control continues at the gc_required label.
@@ -827,7 +817,7 @@ class MacroAssembler: public Assembler {
   // are the same register).  It leaves the heap object in the heap_object
   // register unless the heap_object register is the same register as one of the
   // other registers.
-  // Type_reg can be no_reg. In that case ip is used.
+  // Type_reg can be no_reg. In that case a scratch register is used.
   void CompareObjectType(Register heap_object,
                          Register map,
                          Register type_reg,
@@ -879,11 +869,13 @@ class MacroAssembler: public Assembler {
   void LoadWeakValue(Register value, Handle<WeakCell> cell, Label* miss);
 
   // Compare the object in a register to a value from the root list.
-  // Uses the ip register as scratch.
+  // Acquires a scratch register.
   void CompareRoot(Register obj, Heap::RootListIndex index);
   void PushRoot(Heap::RootListIndex index) {
-    LoadRoot(ip, index);
-    Push(ip);
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    LoadRoot(scratch, index);
+    Push(scratch);
   }
 
   // Compare the object in a register to a value and jump if they are equal.
@@ -1095,14 +1087,14 @@ class MacroAssembler: public Assembler {
   void JumpToExternalReference(const ExternalReference& builtin,
                                bool builtin_exit_frame = false);
 
-  Handle<Object> CodeObject() {
+  Handle<HeapObject> CodeObject() {
     DCHECK(!code_object_.is_null());
     return code_object_;
   }
 
-
   // Emit code for a truncating division by a constant. The dividend register is
-  // unchanged and ip gets clobbered. Dividend and result must be different.
+  // unchanged and a scratch register needs to be available. Dividend and result
+  // must be different.
   void TruncatingDiv(Register result, Register dividend, int32_t divisor);
 
   // ---------------------------------------------------------------------------
@@ -1129,9 +1121,6 @@ class MacroAssembler: public Assembler {
   // Print a message to stdout and abort execution.
   void Abort(BailoutReason msg);
 
-  // Verify restrictions about code generated in stubs.
-  void set_generating_stub(bool value) { generating_stub_ = value; }
-  bool generating_stub() { return generating_stub_; }
   void set_has_frame(bool value) { has_frame_ = value; }
   bool has_frame() { return has_frame_; }
   inline bool AllowThisStubCall(CodeStub* stub);
@@ -1181,9 +1170,11 @@ class MacroAssembler: public Assembler {
     TrySmiTag(reg, reg, not_a_smi);
   }
   void TrySmiTag(Register reg, Register src, Label* not_a_smi) {
-    SmiTag(ip, src, SetCC);
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    SmiTag(scratch, src, SetCC);
     b(vs, not_a_smi);
-    mov(reg, ip);
+    mov(reg, scratch);
   }
 
 
@@ -1376,11 +1367,10 @@ class MacroAssembler: public Assembler {
   template <typename T>
   void FloatMinOutOfLineHelper(T result, T left, T right);
 
-  bool generating_stub_;
   bool has_frame_;
   Isolate* isolate_;
   // This handle will be patched with the code object on installation.
-  Handle<Object> code_object_;
+  Handle<HeapObject> code_object_;
   int jit_cookie_;
 
   // Needs access to SafepointRegisterStackIndex for compiled frame

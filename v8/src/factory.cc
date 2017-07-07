@@ -1456,27 +1456,41 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   return function;
 }
 
-
-Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
-                                        Handle<String> name,
-                                        MaybeHandle<Code> code) {
+Handle<JSFunction> Factory::NewFunction(Handle<Map> map, Handle<String> name,
+                                        MaybeHandle<Code> maybe_code) {
   Handle<Context> context(isolate()->native_context());
   Handle<SharedFunctionInfo> info =
-      NewSharedFunctionInfo(name, code, map->is_constructor());
+      NewSharedFunctionInfo(name, maybe_code, map->is_constructor());
   // Proper language mode in shared function info will be set outside.
   DCHECK(is_sloppy(info->language_mode()));
   DCHECK(!map->IsUndefined(isolate()));
-  DCHECK(
-      map.is_identical_to(isolate()->sloppy_function_map()) ||
-      map.is_identical_to(isolate()->sloppy_function_without_prototype_map()) ||
-      map.is_identical_to(
-          isolate()->sloppy_function_with_readonly_prototype_map()) ||
-      map.is_identical_to(isolate()->strict_function_map()) ||
-      map.is_identical_to(isolate()->strict_function_without_prototype_map()) ||
-      // TODO(titzer): wasm_function_map() could be undefined here. ugly.
-      (*map == context->get(Context::WASM_FUNCTION_MAP_INDEX)) ||
-      (*map == context->get(Context::NATIVE_FUNCTION_MAP_INDEX)) ||
-      map.is_identical_to(isolate()->proxy_function_map()));
+#ifdef DEBUG
+  if (isolate()->bootstrapper()->IsActive()) {
+    Handle<Code> code;
+    bool has_code = maybe_code.ToHandle(&code);
+    DCHECK(
+        // During bootstrapping some of these maps could be not created yet.
+        (*map == context->get(Context::STRICT_FUNCTION_MAP_INDEX)) ||
+        (*map ==
+         context->get(Context::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX)) ||
+        (*map ==
+         context->get(
+             Context::STRICT_FUNCTION_WITH_READONLY_PROTOTYPE_MAP_INDEX)) ||
+        // Check if it's a creation of an empty or Proxy function during
+        // bootstrapping.
+        (has_code && (code->builtin_index() == Builtins::kEmptyFunction ||
+                      code->builtin_index() == Builtins::kProxyConstructor)));
+  } else {
+    DCHECK(
+        (*map == *isolate()->sloppy_function_map()) ||
+        (*map == *isolate()->sloppy_function_without_prototype_map()) ||
+        (*map == *isolate()->sloppy_function_with_readonly_prototype_map()) ||
+        (*map == *isolate()->strict_function_map()) ||
+        (*map == *isolate()->strict_function_without_prototype_map()) ||
+        (*map == *isolate()->wasm_function_map()) ||
+        (*map == *isolate()->native_function_map()));
+  }
+#endif
   return NewFunction(map, info, context);
 }
 
@@ -1488,37 +1502,34 @@ Handle<JSFunction> Factory::NewFunction(Handle<String> name) {
   return result;
 }
 
-
-Handle<JSFunction> Factory::NewFunctionWithoutPrototype(Handle<String> name,
-                                                        Handle<Code> code,
-                                                        bool is_strict) {
-  Handle<Map> map = is_strict
+Handle<JSFunction> Factory::NewFunctionWithoutPrototype(
+    Handle<String> name, Handle<Code> code, LanguageMode language_mode) {
+  Handle<Map> map = is_strict(language_mode)
                         ? isolate()->strict_function_without_prototype_map()
                         : isolate()->sloppy_function_without_prototype_map();
   Handle<JSFunction> result = NewFunction(map, name, code);
-  result->shared()->set_language_mode(is_strict ? STRICT : SLOPPY);
+  result->shared()->set_language_mode(language_mode);
   return result;
 }
-
 
 Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
                                         Handle<Object> prototype,
-                                        bool is_strict) {
-  Handle<Map> map = is_strict ? isolate()->strict_function_map()
-                              : isolate()->sloppy_function_map();
+                                        LanguageMode language_mode) {
+  Handle<Map> map = is_strict(language_mode) ? isolate()->strict_function_map()
+                                             : isolate()->sloppy_function_map();
   Handle<JSFunction> result = NewFunction(map, name, code);
   result->set_prototype_or_initial_map(*prototype);
-  result->shared()->set_language_mode(is_strict ? STRICT : SLOPPY);
+  result->shared()->set_language_mode(language_mode);
   return result;
 }
-
 
 Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
                                         Handle<Object> prototype,
                                         InstanceType type, int instance_size,
-                                        bool is_strict) {
+                                        LanguageMode language_mode) {
   // Allocate the function
-  Handle<JSFunction> function = NewFunction(name, code, prototype, is_strict);
+  Handle<JSFunction> function =
+      NewFunction(name, code, prototype, language_mode);
 
   ElementsKind elements_kind =
       type == JS_ARRAY_TYPE ? PACKED_SMI_ELEMENTS : HOLEY_SMI_ELEMENTS;
@@ -1531,10 +1542,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
       prototype = NewFunctionPrototype(function);
     }
   }
-
-  JSFunction::SetInitialMap(function, initial_map,
-                            Handle<JSReceiver>::cast(prototype));
-
+  JSFunction::SetInitialMap(function, initial_map, prototype);
   return function;
 }
 
@@ -1543,7 +1551,8 @@ Handle<JSFunction> Factory::NewFunction(Handle<String> name,
                                         Handle<Code> code,
                                         InstanceType type,
                                         int instance_size) {
-  return NewFunction(name, code, the_hole_value(), type, instance_size);
+  DCHECK(isolate()->bootstrapper()->IsActive());
+  return NewFunction(name, code, the_hole_value(), type, instance_size, STRICT);
 }
 
 
@@ -1916,7 +1925,7 @@ Handle<JSArray> Factory::NewJSArrayWithElements(Handle<FixedArrayBase> elements,
 
   array->set_elements(*elements);
   array->set_length(Smi::FromInt(length));
-  JSObject::ValidateElements(array);
+  JSObject::ValidateElements(*array);
   return array;
 }
 
@@ -1936,7 +1945,7 @@ void Factory::NewJSArrayStorage(Handle<JSArray> array,
   HandleScope inner_scope(isolate());
   Handle<FixedArrayBase> elms;
   ElementsKind elements_kind = array->GetElementsKind();
-  if (IsFastDoubleElementsKind(elements_kind)) {
+  if (IsDoubleElementsKind(elements_kind)) {
     if (mode == DONT_INITIALIZE_ARRAY_ELEMENTS) {
       elms = NewFixedDoubleArray(capacity);
     } else {
@@ -1944,7 +1953,7 @@ void Factory::NewJSArrayStorage(Handle<JSArray> array,
       elms = NewFixedDoubleArrayWithHoles(capacity);
     }
   } else {
-    DCHECK(IsFastSmiOrObjectElementsKind(elements_kind));
+    DCHECK(IsSmiOrObjectElementsKind(elements_kind));
     if (mode == DONT_INITIALIZE_ARRAY_ELEMENTS) {
       elms = NewUninitializedFixedArray(capacity);
     } else {
@@ -2069,20 +2078,28 @@ Handle<JSSet> Factory::NewJSSet() {
   return js_set;
 }
 
-
-Handle<JSMapIterator> Factory::NewJSMapIterator() {
-  Handle<Map> map(isolate()->native_context()->map_iterator_map());
-  CALL_HEAP_FUNCTION(isolate(),
-                     isolate()->heap()->AllocateJSObjectFromMap(*map),
-                     JSMapIterator);
+Handle<JSMapIterator> Factory::NewJSMapIterator(Handle<OrderedHashMap> table,
+                                                int index,
+                                                JSMapIterator::Kind kind) {
+  Handle<Map> map(isolate()->native_context()->map_iterator_map(), isolate());
+  Handle<JSMapIterator> result =
+      Handle<JSMapIterator>::cast(NewJSObjectFromMap(map));
+  result->set_table(*table);
+  result->set_index(Smi::FromInt(index));
+  result->set_kind(Smi::FromInt(kind));
+  return result;
 }
 
-
-Handle<JSSetIterator> Factory::NewJSSetIterator() {
-  Handle<Map> map(isolate()->native_context()->set_iterator_map());
-  CALL_HEAP_FUNCTION(isolate(),
-                     isolate()->heap()->AllocateJSObjectFromMap(*map),
-                     JSSetIterator);
+Handle<JSSetIterator> Factory::NewJSSetIterator(Handle<OrderedHashSet> table,
+                                                int index,
+                                                JSSetIterator::Kind kind) {
+  Handle<Map> map(isolate()->native_context()->set_iterator_map(), isolate());
+  Handle<JSSetIterator> result =
+      Handle<JSSetIterator>::cast(NewJSObjectFromMap(map));
+  result->set_table(*table);
+  result->set_index(Smi::FromInt(index));
+  result->set_kind(Smi::FromInt(kind));
+  return result;
 }
 
 ExternalArrayType Factory::GetArrayTypeFromElementsKind(ElementsKind kind) {
@@ -2501,7 +2518,6 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
 #if V8_SFI_HAS_UNIQUE_ID
   share->set_unique_id(isolate()->GetNextUniqueSharedFunctionInfoId());
 #endif
-  share->set_profiler_ticks(0);
   share->set_ast_node_count(0);
   share->set_counters(0);
 
@@ -2766,8 +2782,6 @@ void Factory::SetRegExpIrregexpData(Handle<JSRegExp> regexp,
   store->set(JSRegExp::kFlagsIndex, Smi::FromInt(flags));
   store->set(JSRegExp::kIrregexpLatin1CodeIndex, uninitialized);
   store->set(JSRegExp::kIrregexpUC16CodeIndex, uninitialized);
-  store->set(JSRegExp::kIrregexpLatin1CodeSavedIndex, uninitialized);
-  store->set(JSRegExp::kIrregexpUC16CodeSavedIndex, uninitialized);
   store->set(JSRegExp::kIrregexpMaxRegisterCountIndex, Smi::kZero);
   store->set(JSRegExp::kIrregexpCaptureCountIndex,
              Smi::FromInt(capture_count));
@@ -2795,8 +2809,8 @@ Handle<RegExpMatchInfo> Factory::NewRegExpMatchInfo() {
 
 Handle<Object> Factory::GlobalConstantFor(Handle<Name> name) {
   if (Name::Equals(name, undefined_string())) return undefined_value();
-  if (Name::Equals(name, nan_string())) return nan_value();
-  if (Name::Equals(name, infinity_string())) return infinity_value();
+  if (Name::Equals(name, NaN_string())) return nan_value();
+  if (Name::Equals(name, Infinity_string())) return infinity_value();
   return Handle<Object>::null();
 }
 

@@ -377,19 +377,11 @@ void RelocInfo::unchecked_update_wasm_size(Isolate* isolate, uint32_t size,
 // Implementation of Operand and MemOperand
 // See assembler-arm-inl.h for inlined constructors
 
-Operand::Operand(Handle<Object> handle) {
-  AllowDeferredHandleDereference using_raw_address;
+Operand::Operand(Handle<HeapObject> handle) {
+  AllowHandleDereference using_location;
   rm_ = no_reg;
-  // Verify all Objects referred by code are NOT in new space.
-  Object* obj = *handle;
-  if (obj->IsHeapObject()) {
-    value_.immediate = reinterpret_cast<intptr_t>(handle.location());
-    rmode_ = RelocInfo::EMBEDDED_OBJECT;
-  } else {
-    // no relocation needed
-    value_.immediate = reinterpret_cast<intptr_t>(obj);
-    rmode_ = RelocInfo::NONE32;
-  }
+  value_.immediate = reinterpret_cast<intptr_t>(handle.location());
+  rmode_ = RelocInfo::EMBEDDED_OBJECT;
 }
 
 
@@ -582,7 +574,8 @@ const Instr kLdrStrInstrTypeMask = 0xffff0000;
 Assembler::Assembler(IsolateData isolate_data, void* buffer, int buffer_size)
     : AssemblerBase(isolate_data, buffer, buffer_size),
       pending_32_bit_constants_(),
-      pending_64_bit_constants_() {
+      pending_64_bit_constants_(),
+      scratch_register_list_(ip.bit()) {
   pending_32_bit_constants_.reserve(kMinNumPendingConstants);
   pending_64_bit_constants_.reserve(kMinNumPendingConstants);
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
@@ -1204,7 +1197,9 @@ void Assembler::Move32BitImmediate(Register rd, const Operand& x,
     // relocation info, since we prefer the constant pool for values that
     // can be patched.
     DCHECK(!x.MustOutputRelocInfo(this));
-    Register target = rd.code() == pc.code() ? ip : rd;
+    UseScratchRegisterScope temps(this);
+    // Re-use the destination register as a scratch if possible.
+    Register target = !rd.is(pc) ? rd : temps.Acquire();
     if (CpuFeatures::IsSupported(ARMv7)) {
       uint32_t imm32 = static_cast<uint32_t>(x.immediate());
       CpuFeatureScope scope(this, ARMv7);
@@ -1257,10 +1252,14 @@ void Assembler::AddrMode1(Instr instr, Register rd, Register rn,
       Move32BitImmediate(rd, x, cond);
     } else {
       // The immediate operand cannot be encoded as a shifter operand, so load
-      // it first to register ip and change the original instruction to use ip.
-      CHECK(!rn.is(ip));  // rn should never be ip, or it will be trashed.
-      mov(ip, x, LeaveCC, cond);
-      AddrMode1(instr, rd, rn, Operand(ip));
+      // it first to a scratch register and change the original instruction to
+      // use it.
+      UseScratchRegisterScope temps(this);
+      // Re-use the destination register if possible.
+      Register scratch =
+          (rd.is_valid() && !rd.is(rn) && !rd.is(pc)) ? rd : temps.Acquire();
+      mov(scratch, x, LeaveCC, cond);
+      AddrMode1(instr, rd, rn, Operand(scratch));
     }
     return;
   }
@@ -1315,11 +1314,16 @@ void Assembler::AddrMode2(Instr instr, Register rd, const MemOperand& x) {
       am ^= U;
     }
     if (!is_uint12(offset_12)) {
-      // Immediate offset cannot be encoded, load it first to register ip
-      // rn (and rd in a load) should never be ip, or will be trashed.
-      DCHECK(!x.rn_.is(ip) && ((instr & L) == L || !rd.is(ip)));
-      mov(ip, Operand(x.offset_), LeaveCC, Instruction::ConditionField(instr));
-      AddrMode2(instr, rd, MemOperand(x.rn_, ip, x.am_));
+      // Immediate offset cannot be encoded, load it first to a scratch
+      // register.
+      UseScratchRegisterScope temps(this);
+      // Allow re-using rd for load instructions if possible.
+      bool is_load = (instr & L) == L;
+      Register scratch =
+          (is_load && !rd.is(x.rn_) && !rd.is(pc)) ? rd : temps.Acquire();
+      mov(scratch, Operand(x.offset_), LeaveCC,
+          Instruction::ConditionField(instr));
+      AddrMode2(instr, rd, MemOperand(x.rn_, scratch, x.am_));
       return;
     }
     DCHECK(offset_12 >= 0);  // no masking needed
@@ -1339,6 +1343,7 @@ void Assembler::AddrMode3(Instr instr, Register rd, const MemOperand& x) {
   DCHECK((instr & ~(kCondMask | L | S6 | H)) == (B4 | B7));
   DCHECK(x.rn_.is_valid());
   int am = x.am_;
+  bool is_load = (instr & L) == L;
   if (!x.rm_.is_valid()) {
     // Immediate offset.
     int offset_8 = x.offset_;
@@ -1347,22 +1352,29 @@ void Assembler::AddrMode3(Instr instr, Register rd, const MemOperand& x) {
       am ^= U;
     }
     if (!is_uint8(offset_8)) {
-      // Immediate offset cannot be encoded, load it first to register ip
-      // rn (and rd in a load) should never be ip, or will be trashed.
-      DCHECK(!x.rn_.is(ip) && ((instr & L) == L || !rd.is(ip)));
-      mov(ip, Operand(x.offset_), LeaveCC, Instruction::ConditionField(instr));
-      AddrMode3(instr, rd, MemOperand(x.rn_, ip, x.am_));
+      // Immediate offset cannot be encoded, load it first to a scratch
+      // register.
+      UseScratchRegisterScope temps(this);
+      // Allow re-using rd for load instructions if possible.
+      Register scratch =
+          (is_load && !rd.is(x.rn_) && !rd.is(pc)) ? rd : temps.Acquire();
+      mov(scratch, Operand(x.offset_), LeaveCC,
+          Instruction::ConditionField(instr));
+      AddrMode3(instr, rd, MemOperand(x.rn_, scratch, x.am_));
       return;
     }
     DCHECK(offset_8 >= 0);  // no masking needed
     instr |= B | (offset_8 >> 4)*B8 | (offset_8 & 0xf);
   } else if (x.shift_imm_ != 0) {
-    // Scaled register offset not supported, load index first
-    // rn (and rd in a load) should never be ip, or will be trashed.
-    DCHECK(!x.rn_.is(ip) && ((instr & L) == L || !rd.is(ip)));
-    mov(ip, Operand(x.rm_, x.shift_op_, x.shift_imm_), LeaveCC,
+    // Scaled register offsets are not supported, compute the offset seperately
+    // to a scratch register.
+    UseScratchRegisterScope temps(this);
+    // Allow re-using rd for load instructions if possible.
+    Register scratch =
+        (is_load && !rd.is(x.rn_) && !rd.is(pc)) ? rd : temps.Acquire();
+    mov(scratch, Operand(x.rm_, x.shift_op_, x.shift_imm_), LeaveCC,
         Instruction::ConditionField(instr));
-    AddrMode3(instr, rd, MemOperand(x.rn_, ip, x.am_));
+    AddrMode3(instr, rd, MemOperand(x.rn_, scratch, x.am_));
     return;
   } else {
     // Register offset.
@@ -2082,9 +2094,12 @@ void Assembler::msr(SRegisterFieldMask fields, const Operand& src,
     uint32_t immed_8;
     if (src.MustOutputRelocInfo(this) ||
         !FitsShifter(src.immediate(), &rotate_imm, &immed_8, NULL)) {
-      // Immediate operand cannot be encoded, load it first to register ip.
-      Move32BitImmediate(ip, src);
-      msr(fields, Operand(ip), cond);
+      UseScratchRegisterScope temps(this);
+      Register scratch = temps.Acquire();
+      // Immediate operand cannot be encoded, load it first to a scratch
+      // register.
+      Move32BitImmediate(scratch, src);
+      msr(fields, Operand(scratch), cond);
       return;
     }
     instr = I | rotate_imm*B8 | immed_8;
@@ -2439,15 +2454,18 @@ void Assembler::vldr(const DwVfpRegister dst,
     emit(cond | 0xD*B24 | u*B23 | d*B22 | B20 | base.code()*B16 | vd*B12 |
          0xB*B8 | ((offset / 4) & 255));
   } else {
-    // Larger offsets must be handled by computing the correct address
-    // in the ip register.
-    DCHECK(!base.is(ip));
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    // Larger offsets must be handled by computing the correct address in a
+    // scratch register.
+    DCHECK(!base.is(scratch));
     if (u == 1) {
-      add(ip, base, Operand(offset));
+      add(scratch, base, Operand(offset));
     } else {
-      sub(ip, base, Operand(offset));
+      sub(scratch, base, Operand(offset));
     }
-    emit(cond | 0xD*B24 | d*B22 | B20 | ip.code()*B16 | vd*B12 | 0xB*B8);
+    emit(cond | 0xD * B24 | d * B22 | B20 | scratch.code() * B16 | vd * B12 |
+         0xB * B8);
   }
 }
 
@@ -2458,9 +2476,11 @@ void Assembler::vldr(const DwVfpRegister dst,
   DCHECK(VfpRegisterIsAvailable(dst));
   DCHECK(operand.am_ == Offset);
   if (operand.rm().is_valid()) {
-    add(ip, operand.rn(),
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    add(scratch, operand.rn(),
         Operand(operand.rm(), operand.shift_op_, operand.shift_imm_));
-    vldr(dst, ip, 0, cond);
+    vldr(dst, scratch, 0, cond);
   } else {
     vldr(dst, operand.rn(), operand.offset(), cond);
   }
@@ -2488,15 +2508,18 @@ void Assembler::vldr(const SwVfpRegister dst,
   emit(cond | u*B23 | d*B22 | 0xD1*B20 | base.code()*B16 | sd*B12 |
        0xA*B8 | ((offset / 4) & 255));
   } else {
-    // Larger offsets must be handled by computing the correct address
-    // in the ip register.
-    DCHECK(!base.is(ip));
+    // Larger offsets must be handled by computing the correct address in a
+    // scratch register.
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    DCHECK(!base.is(scratch));
     if (u == 1) {
-      add(ip, base, Operand(offset));
+      add(scratch, base, Operand(offset));
     } else {
-      sub(ip, base, Operand(offset));
+      sub(scratch, base, Operand(offset));
     }
-    emit(cond | d*B22 | 0xD1*B20 | ip.code()*B16 | sd*B12 | 0xA*B8);
+    emit(cond | d * B22 | 0xD1 * B20 | scratch.code() * B16 | sd * B12 |
+         0xA * B8);
   }
 }
 
@@ -2506,9 +2529,11 @@ void Assembler::vldr(const SwVfpRegister dst,
                      const Condition cond) {
   DCHECK(operand.am_ == Offset);
   if (operand.rm().is_valid()) {
-    add(ip, operand.rn(),
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    add(scratch, operand.rn(),
         Operand(operand.rm(), operand.shift_op_, operand.shift_imm_));
-    vldr(dst, ip, 0, cond);
+    vldr(dst, scratch, 0, cond);
   } else {
     vldr(dst, operand.rn(), operand.offset(), cond);
   }
@@ -2538,15 +2563,18 @@ void Assembler::vstr(const DwVfpRegister src,
     emit(cond | 0xD*B24 | u*B23 | d*B22 | base.code()*B16 | vd*B12 | 0xB*B8 |
          ((offset / 4) & 255));
   } else {
-    // Larger offsets must be handled by computing the correct address
-    // in the ip register.
-    DCHECK(!base.is(ip));
+    // Larger offsets must be handled by computing the correct address in the a
+    // scratch register.
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    DCHECK(!base.is(scratch));
     if (u == 1) {
-      add(ip, base, Operand(offset));
+      add(scratch, base, Operand(offset));
     } else {
-      sub(ip, base, Operand(offset));
+      sub(scratch, base, Operand(offset));
     }
-    emit(cond | 0xD*B24 | d*B22 | ip.code()*B16 | vd*B12 | 0xB*B8);
+    emit(cond | 0xD * B24 | d * B22 | scratch.code() * B16 | vd * B12 |
+         0xB * B8);
   }
 }
 
@@ -2557,9 +2585,11 @@ void Assembler::vstr(const DwVfpRegister src,
   DCHECK(VfpRegisterIsAvailable(src));
   DCHECK(operand.am_ == Offset);
   if (operand.rm().is_valid()) {
-    add(ip, operand.rn(),
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    add(scratch, operand.rn(),
         Operand(operand.rm(), operand.shift_op_, operand.shift_imm_));
-    vstr(src, ip, 0, cond);
+    vstr(src, scratch, 0, cond);
   } else {
     vstr(src, operand.rn(), operand.offset(), cond);
   }
@@ -2587,15 +2617,18 @@ void Assembler::vstr(const SwVfpRegister src,
     emit(cond | u*B23 | d*B22 | 0xD0*B20 | base.code()*B16 | sd*B12 |
          0xA*B8 | ((offset / 4) & 255));
   } else {
-    // Larger offsets must be handled by computing the correct address
-    // in the ip register.
-    DCHECK(!base.is(ip));
+    // Larger offsets must be handled by computing the correct address in a
+    // scratch register.
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    DCHECK(!base.is(scratch));
     if (u == 1) {
-      add(ip, base, Operand(offset));
+      add(scratch, base, Operand(offset));
     } else {
-      sub(ip, base, Operand(offset));
+      sub(scratch, base, Operand(offset));
     }
-    emit(cond | d*B22 | 0xD0*B20 | ip.code()*B16 | sd*B12 | 0xA*B8);
+    emit(cond | d * B22 | 0xD0 * B20 | scratch.code() * B16 | sd * B12 |
+         0xA * B8);
   }
 }
 
@@ -2605,9 +2638,11 @@ void Assembler::vstr(const SwVfpRegister src,
                      const Condition cond) {
   DCHECK(operand.am_ == Offset);
   if (operand.rm().is_valid()) {
-    add(ip, operand.rn(),
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    add(scratch, operand.rn(),
         Operand(operand.rm(), operand.shift_op_, operand.shift_imm_));
-    vstr(src, ip, 0, cond);
+    vstr(src, scratch, 0, cond);
   } else {
     vstr(src, operand.rn(), operand.offset(), cond);
   }
@@ -2681,19 +2716,16 @@ void Assembler::vstm(BlockAddrMode am, Register base, SwVfpRegister first,
        0xA*B8 | count);
 }
 
-
-static void DoubleAsTwoUInt32(double d, uint32_t* lo, uint32_t* hi) {
-  uint64_t i;
-  memcpy(&i, &d, 8);
+static void DoubleAsTwoUInt32(Double d, uint32_t* lo, uint32_t* hi) {
+  uint64_t i = d.AsUint64();
 
   *lo = i & 0xffffffff;
   *hi = i >> 32;
 }
 
-
 // Only works for little endian floating point formats.
 // We don't support VFP on the mixed endian floating point platform.
-static bool FitsVmovFPImmediate(double d, uint32_t* encoding) {
+static bool FitsVmovFPImmediate(Double d, uint32_t* encoding) {
   // VMOV can accept an immediate of the form:
   //
   //  +/- m * 2^(-n) where 16 <= m <= 31 and 0 <= n <= 7
@@ -2739,10 +2771,10 @@ static bool FitsVmovFPImmediate(double d, uint32_t* encoding) {
   return true;
 }
 
-
 void Assembler::vmov(const SwVfpRegister dst, float imm) {
   uint32_t enc;
-  if (CpuFeatures::IsSupported(VFPv3) && FitsVmovFPImmediate(imm, &enc)) {
+  if (CpuFeatures::IsSupported(VFPv3) &&
+      FitsVmovFPImmediate(Double(imm), &enc)) {
     CpuFeatureScope scope(this, VFPv3);
     // The float can be encoded in the instruction.
     //
@@ -2754,17 +2786,16 @@ void Assembler::vmov(const SwVfpRegister dst, float imm) {
     dst.split_code(&vd, &d);
     emit(al | 0x1D * B23 | d * B22 | 0x3 * B20 | vd * B12 | 0x5 * B9 | enc);
   } else {
-    mov(ip, Operand(bit_cast<int32_t>(imm)));
-    vmov(dst, ip);
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    mov(scratch, Operand(bit_cast<int32_t>(imm)));
+    vmov(dst, scratch);
   }
 }
 
-
-void Assembler::vmov(const DwVfpRegister dst,
-                     double imm,
-                     const Register scratch) {
+void Assembler::vmov(const DwVfpRegister dst, Double imm,
+                     const Register extra_scratch) {
   DCHECK(VfpRegisterIsAvailable(dst));
-  DCHECK(!scratch.is(ip));
   uint32_t enc;
   if (CpuFeatures::IsSupported(VFPv3) && FitsVmovFPImmediate(imm, &enc)) {
     CpuFeatureScope scope(this, VFPv3);
@@ -2800,33 +2831,35 @@ void Assembler::vmov(const DwVfpRegister dst,
     // Synthesise the double from ARM immediates.
     uint32_t lo, hi;
     DoubleAsTwoUInt32(imm, &lo, &hi);
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
 
     if (lo == hi) {
       // Move the low and high parts of the double to a D register in one
       // instruction.
-      mov(ip, Operand(lo));
-      vmov(dst, ip, ip);
-    } else if (scratch.is(no_reg)) {
-      mov(ip, Operand(lo));
-      vmov(dst, VmovIndexLo, ip);
+      mov(scratch, Operand(lo));
+      vmov(dst, scratch, scratch);
+    } else if (extra_scratch.is(no_reg)) {
+      // We only have one spare scratch register.
+      mov(scratch, Operand(lo));
+      vmov(dst, VmovIndexLo, scratch);
       if (((lo & 0xffff) == (hi & 0xffff)) &&
           CpuFeatures::IsSupported(ARMv7)) {
         CpuFeatureScope scope(this, ARMv7);
-        movt(ip, hi >> 16);
+        movt(scratch, hi >> 16);
       } else {
-        mov(ip, Operand(hi));
+        mov(scratch, Operand(hi));
       }
-      vmov(dst, VmovIndexHi, ip);
+      vmov(dst, VmovIndexHi, scratch);
     } else {
       // Move the low and high parts of the double to a D register in one
       // instruction.
-      mov(ip, Operand(lo));
-      mov(scratch, Operand(hi));
-      vmov(dst, ip, scratch);
+      mov(scratch, Operand(lo));
+      mov(extra_scratch, Operand(hi));
+      vmov(dst, scratch, extra_scratch);
     }
   }
 }
-
 
 void Assembler::vmov(const SwVfpRegister dst,
                      const SwVfpRegister src,
@@ -5154,7 +5187,7 @@ void Assembler::ConstantPoolAddEntry(int position, RelocInfo::Mode rmode,
   }
 }
 
-void Assembler::ConstantPoolAddEntry(int position, double value) {
+void Assembler::ConstantPoolAddEntry(int position, Double value) {
   DCHECK(pending_64_bit_constants_.size() < kMaxNumPending64Constants);
   if (pending_64_bit_constants_.empty()) {
     first_const_pool_64_use_ = position;
@@ -5420,6 +5453,22 @@ void PatchingAssembler::Emit(Address addr) {
 
 void PatchingAssembler::FlushICache(Isolate* isolate) {
   Assembler::FlushICache(isolate, buffer_, buffer_size_ - kGap);
+}
+
+UseScratchRegisterScope::UseScratchRegisterScope(Assembler* assembler)
+    : available_(assembler->GetScratchRegisterList()),
+      old_available_(*available_) {}
+
+UseScratchRegisterScope::~UseScratchRegisterScope() {
+  *available_ = old_available_;
+}
+
+Register UseScratchRegisterScope::Acquire() {
+  DCHECK(available_ != nullptr);
+  DCHECK(*available_ != 0);
+  int index = static_cast<int>(base::bits::CountTrailingZeros32(*available_));
+  *available_ &= ~(1UL << index);
+  return Register::from_code(index);
 }
 
 }  // namespace internal

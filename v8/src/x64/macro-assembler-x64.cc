@@ -28,7 +28,6 @@ namespace internal {
 MacroAssembler::MacroAssembler(Isolate* isolate, void* buffer, int size,
                                CodeObjectRequired create_code_object)
     : Assembler(isolate, buffer, size),
-      generating_stub_(false),
       has_frame_(false),
       isolate_(isolate),
       root_array_available_(true),
@@ -38,7 +37,7 @@ MacroAssembler::MacroAssembler(Isolate* isolate, void* buffer, int size,
   }
   if (create_code_object == CodeObjectRequired::kYes) {
     code_object_ =
-        Handle<Object>::New(isolate_->heap()->undefined_value(), isolate_);
+        Handle<HeapObject>::New(isolate_->heap()->undefined_value(), isolate_);
   }
 }
 
@@ -583,9 +582,6 @@ void MacroAssembler::Abort(BailoutReason reason) {
     return;
   }
 #endif
-
-  // Check if Abort() has already been initialized.
-  DCHECK(isolate()->builtins()->Abort()->IsHeapObject());
 
   Move(rdx, Smi::FromInt(static_cast<int>(reason)));
 
@@ -2530,27 +2526,6 @@ void MacroAssembler::MoveNumber(Register dst, double value) {
   }
 }
 
-void MacroAssembler::Move(Register dst, Handle<Object> source) {
-  AllowDeferredHandleDereference smi_check;
-  if (source->IsSmi()) {
-    Move(dst, Smi::cast(*source));
-  } else {
-    MoveHeapObject(dst, source);
-  }
-}
-
-
-void MacroAssembler::Move(const Operand& dst, Handle<Object> source) {
-  AllowDeferredHandleDereference smi_check;
-  if (source->IsSmi()) {
-    Move(dst, Smi::cast(*source));
-  } else {
-    MoveHeapObject(kScratchRegister, source);
-    movp(dst, kScratchRegister);
-  }
-}
-
-
 void MacroAssembler::Move(XMMRegister dst, uint32_t src) {
   if (src == 0) {
     Xorpd(dst, dst);
@@ -2639,24 +2614,6 @@ void MacroAssembler::Movapd(XMMRegister dst, XMMRegister src) {
     vmovapd(dst, src);
   } else {
     movapd(dst, src);
-  }
-}
-
-void MacroAssembler::Movupd(XMMRegister dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vmovupd(dst, src);
-  } else {
-    movupd(dst, src);
-  }
-}
-
-void MacroAssembler::Movupd(const Operand& dst, XMMRegister src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vmovupd(dst, src);
-  } else {
-    movupd(dst, src);
   }
 }
 
@@ -2913,7 +2870,7 @@ void MacroAssembler::Cmp(Register dst, Handle<Object> source) {
   if (source->IsSmi()) {
     Cmp(dst, Smi::cast(*source));
   } else {
-    MoveHeapObject(kScratchRegister, source);
+    Move(kScratchRegister, Handle<HeapObject>::cast(source));
     cmpp(dst, kScratchRegister);
   }
 }
@@ -2924,27 +2881,35 @@ void MacroAssembler::Cmp(const Operand& dst, Handle<Object> source) {
   if (source->IsSmi()) {
     Cmp(dst, Smi::cast(*source));
   } else {
-    MoveHeapObject(kScratchRegister, source);
+    Move(kScratchRegister, Handle<HeapObject>::cast(source));
     cmpp(dst, kScratchRegister);
   }
 }
 
-
-void MacroAssembler::Push(Handle<Object> source) {
+void MacroAssembler::PushObject(Handle<Object> source) {
   AllowDeferredHandleDereference smi_check;
   if (source->IsSmi()) {
     Push(Smi::cast(*source));
   } else {
-    MoveHeapObject(kScratchRegister, source);
-    Push(kScratchRegister);
+    Push(Handle<HeapObject>::cast(source));
   }
 }
 
+void MacroAssembler::Push(Handle<HeapObject> source) {
+  Move(kScratchRegister, source);
+  Push(kScratchRegister);
+}
 
-void MacroAssembler::MoveHeapObject(Register result,
-                                    Handle<Object> object) {
-  DCHECK(object->IsHeapObject());
-  Move(result, object, RelocInfo::EMBEDDED_OBJECT);
+void MacroAssembler::Move(Register result, Handle<HeapObject> object,
+                          RelocInfo::Mode rmode) {
+  AllowHandleDereference using_location;
+  movp(result, reinterpret_cast<void*>(object.location()), rmode);
+}
+
+void MacroAssembler::Move(const Operand& dst, Handle<HeapObject> object,
+                          RelocInfo::Mode rmode) {
+  Move(kScratchRegister, object, rmode);
+  movp(dst, kScratchRegister);
 }
 
 
@@ -4433,7 +4398,7 @@ void MacroAssembler::MakeSureDoubleAlignedHelper(Register result,
     Label aligned;
     testl(result, Immediate(kDoubleAlignmentMask));
     j(zero, &aligned, Label::kNear);
-    if (((flags & ALLOCATION_FOLDED) == 0) && ((flags & PRETENURE) != 0)) {
+    if ((flags & PRETENURE) != 0) {
       ExternalReference allocation_limit =
           AllocationUtils::GetAllocationLimitReference(isolate(), flags);
       cmpp(result, ExternalOperand(allocation_limit));
@@ -4476,7 +4441,6 @@ void MacroAssembler::Allocate(int object_size,
                               AllocationFlags flags) {
   DCHECK((flags & (RESULT_CONTAINS_TOP | SIZE_IN_WORDS)) == 0);
   DCHECK(object_size <= kMaxRegularHeapObjectSize);
-  DCHECK((flags & ALLOCATION_FOLDED) == 0);
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
       // Trash the registers to simulate an allocation failure.
@@ -4514,10 +4478,7 @@ void MacroAssembler::Allocate(int object_size,
   cmpp(top_reg, limit_operand);
   j(above, gc_required);
 
-  if ((flags & ALLOCATION_FOLDING_DOMINATOR) == 0) {
-    // The top pointer is not updated for allocation folding dominators.
-    UpdateAllocationTopHelper(top_reg, scratch, flags);
-  }
+  UpdateAllocationTopHelper(top_reg, scratch, flags);
 
   if (top_reg.is(result)) {
     subp(result, Immediate(object_size - kHeapObjectTag));
@@ -4538,8 +4499,6 @@ void MacroAssembler::Allocate(int header_size,
                               Label* gc_required,
                               AllocationFlags flags) {
   DCHECK((flags & SIZE_IN_WORDS) == 0);
-  DCHECK((flags & ALLOCATION_FOLDING_DOMINATOR) == 0);
-  DCHECK((flags & ALLOCATION_FOLDED) == 0);
   leap(result_end, Operand(element_count, element_size, header_size));
   Allocate(result_end, result, result_end, scratch, gc_required, flags);
 }
@@ -4552,7 +4511,6 @@ void MacroAssembler::Allocate(Register object_size,
                               Label* gc_required,
                               AllocationFlags flags) {
   DCHECK((flags & SIZE_IN_WORDS) == 0);
-  DCHECK((flags & ALLOCATION_FOLDED) == 0);
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
       // Trash the registers to simulate an allocation failure.
@@ -4585,46 +4543,9 @@ void MacroAssembler::Allocate(Register object_size,
   cmpp(result_end, limit_operand);
   j(above, gc_required);
 
-  if ((flags & ALLOCATION_FOLDING_DOMINATOR) == 0) {
-    // The top pointer is not updated for allocation folding dominators.
-    UpdateAllocationTopHelper(result_end, scratch, flags);
-  }
+  UpdateAllocationTopHelper(result_end, scratch, flags);
 
   // Tag the result.
-  addp(result, Immediate(kHeapObjectTag));
-}
-
-void MacroAssembler::FastAllocate(int object_size, Register result,
-                                  Register result_end, AllocationFlags flags) {
-  DCHECK(!result.is(result_end));
-  // Load address of new object into result.
-  LoadAllocationTopHelper(result, no_reg, flags);
-
-  if ((flags & DOUBLE_ALIGNMENT) != 0) {
-    MakeSureDoubleAlignedHelper(result, no_reg, NULL, flags);
-  }
-
-  leap(result_end, Operand(result, object_size));
-
-  UpdateAllocationTopHelper(result_end, no_reg, flags);
-
-  addp(result, Immediate(kHeapObjectTag));
-}
-
-void MacroAssembler::FastAllocate(Register object_size, Register result,
-                                  Register result_end, AllocationFlags flags) {
-  DCHECK(!result.is(result_end));
-  // Load address of new object into result.
-  LoadAllocationTopHelper(result, no_reg, flags);
-
-  if ((flags & DOUBLE_ALIGNMENT) != 0) {
-    MakeSureDoubleAlignedHelper(result, no_reg, NULL, flags);
-  }
-
-  leap(result_end, Operand(result, object_size, times_1, 0));
-
-  UpdateAllocationTopHelper(result_end, no_reg, flags);
-
   addp(result, Immediate(kHeapObjectTag));
 }
 
