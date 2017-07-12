@@ -49,6 +49,10 @@ if(${BUILD_TYPE} STREQUAL "release")
 	set(flags "${flags} -O3 ${BUILD_OPTION} -w -fomit-frame-pointer -fvisibility=hidden")
 	set(link_flags "${link_flags} ${BUILD_OPTION}")
 	add_definitions(-DNDEBUG=1)
+
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+		set(link_flags "${link_flags} -static-libgcc -static-libstdc++ -Wl,--no-as-needed")
+	endif()
 endif()
 
 if(${BUILD_TYPE} STREQUAL "debug")

@@ -254,6 +254,7 @@ enum ContextLookupFlags {
   V(INITIAL_ARRAY_ITERATOR_PROTOTYPE_MAP_INDEX, Map,                           \
     initial_array_iterator_prototype_map)                                      \
   V(INITIAL_ARRAY_PROTOTYPE_INDEX, JSObject, initial_array_prototype)          \
+  V(INITIAL_ERROR_PROTOTYPE_INDEX, JSObject, initial_error_prototype)          \
   V(INITIAL_GENERATOR_PROTOTYPE_INDEX, JSObject, initial_generator_prototype)  \
   V(INITIAL_ASYNC_GENERATOR_PROTOTYPE_INDEX, JSObject,                         \
     initial_async_generator_prototype)                                         \
@@ -290,7 +291,9 @@ enum ContextLookupFlags {
   V(JS_WEAK_MAP_FUN_INDEX, JSFunction, js_weak_map_fun)                        \
   V(JS_WEAK_SET_FUN_INDEX, JSFunction, js_weak_set_fun)                        \
   V(MAP_CACHE_INDEX, Object, map_cache)                                        \
-  V(MAP_ITERATOR_MAP_INDEX, Map, map_iterator_map)                             \
+  V(MAP_KEY_ITERATOR_MAP_INDEX, Map, map_key_iterator_map)                     \
+  V(MAP_KEY_VALUE_ITERATOR_MAP_INDEX, Map, map_key_value_iterator_map)         \
+  V(MAP_VALUE_ITERATOR_MAP_INDEX, Map, map_value_iterator_map)                 \
   V(MATH_RANDOM_INDEX_INDEX, Smi, math_random_index)                           \
   V(MATH_RANDOM_CACHE_INDEX, Object, math_random_cache)                        \
   V(MESSAGE_LISTENERS_INDEX, TemplateList, message_listeners)                  \
@@ -331,7 +334,8 @@ enum ContextLookupFlags {
   V(SCRIPT_FUNCTION_INDEX, JSFunction, script_function)                        \
   V(SECURITY_TOKEN_INDEX, Object, security_token)                              \
   V(SELF_WEAK_CELL_INDEX, WeakCell, self_weak_cell)                            \
-  V(SET_ITERATOR_MAP_INDEX, Map, set_iterator_map)                             \
+  V(SET_VALUE_ITERATOR_MAP_INDEX, Map, set_value_iterator_map)                 \
+  V(SET_KEY_VALUE_ITERATOR_MAP_INDEX, Map, set_key_value_iterator_map)         \
   V(SHARED_ARRAY_BUFFER_FUN_INDEX, JSFunction, shared_array_buffer_fun)        \
   V(SLOPPY_ARGUMENTS_MAP_INDEX, Map, sloppy_arguments_map)                     \
   V(SLOW_ALIASED_ARGUMENTS_MAP_INDEX, Map, slow_aliased_arguments_map)         \
@@ -365,13 +369,9 @@ enum ContextLookupFlags {
   V(NATIVE_FUNCTION_MAP_INDEX, Map, native_function_map)                       \
   V(WASM_FUNCTION_MAP_INDEX, Map, wasm_function_map)                           \
   V(WASM_INSTANCE_CONSTRUCTOR_INDEX, JSFunction, wasm_instance_constructor)    \
-  V(WASM_INSTANCE_SYM_INDEX, Symbol, wasm_instance_sym)                        \
   V(WASM_MEMORY_CONSTRUCTOR_INDEX, JSFunction, wasm_memory_constructor)        \
-  V(WASM_MEMORY_SYM_INDEX, Symbol, wasm_memory_sym)                            \
   V(WASM_MODULE_CONSTRUCTOR_INDEX, JSFunction, wasm_module_constructor)        \
-  V(WASM_MODULE_SYM_INDEX, Symbol, wasm_module_sym)                            \
   V(WASM_TABLE_CONSTRUCTOR_INDEX, JSFunction, wasm_table_constructor)          \
-  V(WASM_TABLE_SYM_INDEX, Symbol, wasm_table_sym)                              \
   V(TYPED_ARRAY_FUN_INDEX, JSFunction, typed_array_function)                   \
   V(TYPED_ARRAY_PROTOTYPE_INDEX, JSObject, typed_array_prototype)              \
   V(UINT16_ARRAY_FUN_INDEX, JSFunction, uint16_array_fun)                      \

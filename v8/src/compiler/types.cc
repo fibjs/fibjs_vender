@@ -222,8 +222,11 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case JS_DATA_VIEW_TYPE:
     case JS_SET_TYPE:
     case JS_MAP_TYPE:
-    case JS_SET_ITERATOR_TYPE:
-    case JS_MAP_ITERATOR_TYPE:
+    case JS_SET_KEY_VALUE_ITERATOR_TYPE:
+    case JS_SET_VALUE_ITERATOR_TYPE:
+    case JS_MAP_KEY_ITERATOR_TYPE:
+    case JS_MAP_KEY_VALUE_ITERATOR_TYPE:
+    case JS_MAP_VALUE_ITERATOR_TYPE:
     case JS_STRING_ITERATOR_TYPE:
     case JS_ASYNC_FROM_SYNC_ITERATOR_TYPE:
 
@@ -267,6 +270,10 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case JS_WEAK_SET_TYPE:
     case JS_PROMISE_CAPABILITY_TYPE:
     case JS_PROMISE_TYPE:
+    case WASM_MODULE_TYPE:
+    case WASM_INSTANCE_TYPE:
+    case WASM_MEMORY_TYPE:
+    case WASM_TABLE_TYPE:
       DCHECK(!map->is_callable());
       DCHECK(!map->is_undetectable());
       return kOtherObject;
@@ -291,6 +298,7 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case BYTE_ARRAY_TYPE:
     case BYTECODE_ARRAY_TYPE:
     case TRANSITION_ARRAY_TYPE:
+    case PROPERTY_ARRAY_TYPE:
     case FOREIGN_TYPE:
     case SCRIPT_TYPE:
     case CODE_TYPE:
@@ -330,7 +338,6 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case PREPARSED_SCOPE_DATA_TYPE:
     case PADDING_TYPE_1:
     case PADDING_TYPE_2:
-    case PADDING_TYPE_3:
       UNREACHABLE();
   }
   UNREACHABLE();

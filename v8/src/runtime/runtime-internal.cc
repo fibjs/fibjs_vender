@@ -49,7 +49,7 @@ RUNTIME_FUNCTION(Runtime_InstallToContext) {
   CHECK(isolate->bootstrapper()->IsActive());
   Handle<Context> native_context = isolate->native_context();
   Handle<FixedArray> fixed_array(FixedArray::cast(array->elements()));
-  int length = Smi::cast(array->length())->value();
+  int length = Smi::ToInt(array->length());
   for (int i = 0; i < length; i += 2) {
     CHECK(fixed_array->get(i)->IsString());
     Handle<String> name(String::cast(fixed_array->get(i)));
@@ -392,13 +392,20 @@ bool ComputeLocation(Isolate* isolate, MessageLocation* target) {
   return false;
 }
 
-Handle<String> RenderCallSite(Isolate* isolate, Handle<Object> object) {
+Handle<String> RenderCallSite(Isolate* isolate, Handle<Object> object,
+                              MessageTemplate::Template* id) {
   MessageLocation location;
   if (ComputeLocation(isolate, &location)) {
     ParseInfo info(location.shared());
     if (parsing::ParseAny(&info, isolate)) {
       CallPrinter printer(isolate, location.shared()->IsUserJavaScript());
       Handle<String> str = printer.Print(info.literal(), location.start_pos());
+      CallPrinter::IteratorHint type = printer.GetIteratorHint();
+      if (type == CallPrinter::IteratorHint::kNormal) {
+        *id = MessageTemplate::kNotIterable;
+      } else if (type == CallPrinter::IteratorHint::kAsync) {
+        *id = MessageTemplate::kNotAsyncIterable;
+      }
       if (str->length() > 0) return str;
     } else {
       isolate->clear_pending_exception();
@@ -413,9 +420,9 @@ RUNTIME_FUNCTION(Runtime_ThrowCalledNonCallable) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
-  Handle<String> callsite = RenderCallSite(isolate, object);
-  THROW_NEW_ERROR_RETURN_FAILURE(
-      isolate, NewTypeError(MessageTemplate::kCalledNonCallable, callsite));
+  MessageTemplate::Template id = MessageTemplate::kCalledNonCallable;
+  Handle<String> callsite = RenderCallSite(isolate, object, &id);
+  THROW_NEW_ERROR_RETURN_FAILURE(isolate, NewTypeError(id, callsite));
 }
 
 RUNTIME_FUNCTION(Runtime_ThrowCalledOnNullOrUndefined) {
@@ -430,9 +437,9 @@ RUNTIME_FUNCTION(Runtime_ThrowConstructedNonConstructable) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
-  Handle<String> callsite = RenderCallSite(isolate, object);
-  THROW_NEW_ERROR_RETURN_FAILURE(
-      isolate, NewTypeError(MessageTemplate::kNotConstructor, callsite));
+  MessageTemplate::Template id = MessageTemplate::kNotConstructor;
+  Handle<String> callsite = RenderCallSite(isolate, object, &id);
+  THROW_NEW_ERROR_RETURN_FAILURE(isolate, NewTypeError(id, callsite));
 }
 
 RUNTIME_FUNCTION(Runtime_ThrowConstructorReturnedNonObject) {

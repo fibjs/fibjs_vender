@@ -188,9 +188,12 @@ struct SourceRange {
   SourceRange() : SourceRange(kNoSourcePosition, kNoSourcePosition) {}
   SourceRange(int start, int end) : start(start), end(end) {}
   bool IsEmpty() const { return start == kNoSourcePosition; }
+  static SourceRange Empty() { return SourceRange(); }
+  static SourceRange OpenEnded(int32_t start) {
+    return SourceRange(start, kNoSourcePosition);
+  }
   static SourceRange ContinuationOf(const SourceRange& that) {
-    return that.IsEmpty() ? SourceRange()
-                          : SourceRange(that.end, kNoSourcePosition);
+    return that.IsEmpty() ? Empty() : OpenEnded(that.end);
   }
   int32_t start, end;
 };
@@ -500,6 +503,8 @@ class IterationStatement : public BreakableStatement {
   void set_body(Statement* s) { body_ = s; }
 
   SourceRange body_range() const { return body_range_; }
+
+  // The range starting after the iteration body, used for block coverage.
   SourceRange continuation_range() const {
     return SourceRange::ContinuationOf(body_range_);
   }
@@ -771,7 +776,10 @@ class JumpStatement : public Statement {
  public:
   bool IsJump() const { return true; }
 
-  int32_t continuation_pos() const { return continuation_pos_; }
+  // The range starting after the jump statement, used for block coverage.
+  SourceRange continuation_range() const {
+    return SourceRange::OpenEnded(continuation_pos_);
+  }
 
  protected:
   JumpStatement(int pos, NodeType type, int32_t continuation_pos)
@@ -872,6 +880,8 @@ class CaseClause final : public Expression {
   Label* body_target() { return &body_target_; }
   ZoneList<Statement*>* statements() const { return statements_; }
 
+  SourceRange clause_range() const { return clause_range_; }
+
   void AssignFeedbackSlots(FeedbackVectorSpec* spec, LanguageMode language_mode,
                            FeedbackSlotCache* cache);
 
@@ -880,20 +890,24 @@ class CaseClause final : public Expression {
  private:
   friend class AstNodeFactory;
 
-  CaseClause(Expression* label, ZoneList<Statement*>* statements, int pos);
+  CaseClause(Expression* label, ZoneList<Statement*>* statements, int pos,
+             const SourceRange& clause_range);
 
   FeedbackSlot feedback_slot_;
   Expression* label_;
   Label body_target_;
   ZoneList<Statement*>* statements_;
+  SourceRange clause_range_;
 };
 
 
 class SwitchStatement final : public BreakableStatement {
  public:
-  void Initialize(Expression* tag, ZoneList<CaseClause*>* cases) {
+  void Initialize(Expression* tag, ZoneList<CaseClause*>* cases,
+                  int32_t continuation_pos) {
     tag_ = tag;
     cases_ = cases;
+    continuation_pos_ = continuation_pos;
   }
 
   Expression* tag() const { return tag_; }
@@ -901,16 +915,23 @@ class SwitchStatement final : public BreakableStatement {
 
   void set_tag(Expression* t) { tag_ = t; }
 
+  // The range starting after the switch body, used for block coverage.
+  SourceRange continuation_range() const {
+    return SourceRange::OpenEnded(continuation_pos_);
+  }
+
  private:
   friend class AstNodeFactory;
 
   SwitchStatement(ZoneList<const AstRawString*>* labels, int pos)
       : BreakableStatement(labels, TARGET_FOR_ANONYMOUS, pos, kSwitchStatement),
         tag_(NULL),
-        cases_(NULL) {}
+        cases_(NULL),
+        continuation_pos_(kNoSourcePosition) {}
 
   Expression* tag_;
   ZoneList<CaseClause*>* cases_;
+  int32_t continuation_pos_;
 };
 
 
@@ -930,6 +951,8 @@ class IfStatement final : public Statement {
 
   SourceRange then_range() const { return then_range_; }
   SourceRange else_range() const { return else_range_; }
+
+  // The range starting after the if body, used for block coverage.
   SourceRange continuation_range() const {
     SourceRange trailing_range =
         HasElseStatement() ? else_range() : then_range();
@@ -986,6 +1009,8 @@ class TryCatchStatement final : public TryStatement {
   Block* catch_block() const { return catch_block_; }
   void set_catch_block(Block* b) { catch_block_ = b; }
 
+  SourceRange catch_range() const { return catch_range_; }
+
   // Prediction of whether exceptions thrown into the handler for this try block
   // will be caught.
   //
@@ -1038,15 +1063,18 @@ class TryCatchStatement final : public TryStatement {
   friend class AstNodeFactory;
 
   TryCatchStatement(Block* try_block, Scope* scope, Block* catch_block,
-                    HandlerTable::CatchPrediction catch_prediction, int pos)
+                    HandlerTable::CatchPrediction catch_prediction, int pos,
+                    const SourceRange& catch_range)
       : TryStatement(try_block, pos, kTryCatchStatement),
         scope_(scope),
         catch_block_(catch_block),
-        catch_prediction_(catch_prediction) {}
+        catch_prediction_(catch_prediction),
+        catch_range_(catch_range) {}
 
   Scope* scope_;
   Block* catch_block_;
   HandlerTable::CatchPrediction catch_prediction_;
+  SourceRange catch_range_;
 };
 
 
@@ -1055,14 +1083,19 @@ class TryFinallyStatement final : public TryStatement {
   Block* finally_block() const { return finally_block_; }
   void set_finally_block(Block* b) { finally_block_ = b; }
 
+  SourceRange finally_range() const { return finally_range_; }
+
  private:
   friend class AstNodeFactory;
 
-  TryFinallyStatement(Block* try_block, Block* finally_block, int pos)
+  TryFinallyStatement(Block* try_block, Block* finally_block, int pos,
+                      const SourceRange& finally_range)
       : TryStatement(try_block, pos, kTryFinallyStatement),
-        finally_block_(finally_block) {}
+        finally_block_(finally_block),
+        finally_range_(finally_range) {}
 
   Block* finally_block_;
+  SourceRange finally_range_;
 };
 
 
@@ -2422,13 +2455,21 @@ class Throw final : public Expression {
   Expression* exception() const { return exception_; }
   void set_exception(Expression* e) { exception_ = e; }
 
+  // The range starting after the throw statement, used for block coverage.
+  SourceRange continuation_range() const {
+    return SourceRange::OpenEnded(continuation_pos_);
+  }
+
  private:
   friend class AstNodeFactory;
 
-  Throw(Expression* exception, int pos)
-      : Expression(pos, kThrow), exception_(exception) {}
+  Throw(Expression* exception, int pos, int32_t continuation_pos)
+      : Expression(pos, kThrow),
+        exception_(exception),
+        continuation_pos_(continuation_pos) {}
 
   Expression* exception_;
+  int32_t continuation_pos_;
 };
 
 
@@ -2914,14 +2955,35 @@ class GetIterator final : public Expression {
     return async_iterator_call_feedback_slot_;
   }
 
+  Expression* iterable_for_call_printer() const {
+    return destructured_iterable_ != nullptr ? destructured_iterable_
+                                             : iterable_;
+  }
+
  private:
   friend class AstNodeFactory;
 
-  explicit GetIterator(Expression* iterable, IteratorType hint, int pos)
-      : Expression(pos, kGetIterator), hint_(hint), iterable_(iterable) {}
+  GetIterator(Expression* iterable, Expression* destructured_iterable,
+              IteratorType hint, int pos)
+      : Expression(pos, kGetIterator),
+        hint_(hint),
+        iterable_(iterable),
+        destructured_iterable_(destructured_iterable) {}
+
+  GetIterator(Expression* iterable, IteratorType hint, int pos)
+      : Expression(pos, kGetIterator),
+        hint_(hint),
+        iterable_(iterable),
+        destructured_iterable_(nullptr) {}
 
   IteratorType hint_;
   Expression* iterable_;
+
+  // iterable_ is the variable proxy, while destructured_iterable_ points to
+  // the raw value stored in the variable proxy. This is only used for
+  // pretty printing error messages.
+  Expression* destructured_iterable_;
+
   FeedbackSlot iterator_property_feedback_slot_;
   FeedbackSlot iterator_call_feedback_slot_;
   FeedbackSlot async_iterator_property_feedback_slot_;
@@ -3185,9 +3247,10 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   TryCatchStatement* NewTryCatchStatement(Block* try_block, Scope* scope,
-                                          Block* catch_block, int pos) {
-    return new (zone_) TryCatchStatement(try_block, scope, catch_block,
-                                         HandlerTable::CAUGHT, pos);
+                                          Block* catch_block, int pos,
+                                          const SourceRange catch_range = {}) {
+    return new (zone_) TryCatchStatement(
+        try_block, scope, catch_block, HandlerTable::CAUGHT, pos, catch_range);
   }
 
   TryCatchStatement* NewTryCatchStatementForReThrow(Block* try_block,
@@ -3195,7 +3258,7 @@ class AstNodeFactory final BASE_EMBEDDED {
                                                     Block* catch_block,
                                                     int pos) {
     return new (zone_) TryCatchStatement(try_block, scope, catch_block,
-                                         HandlerTable::UNCAUGHT, pos);
+                                         HandlerTable::UNCAUGHT, pos, {});
   }
 
   TryCatchStatement* NewTryCatchStatementForDesugaring(Block* try_block,
@@ -3203,7 +3266,7 @@ class AstNodeFactory final BASE_EMBEDDED {
                                                        Block* catch_block,
                                                        int pos) {
     return new (zone_) TryCatchStatement(try_block, scope, catch_block,
-                                         HandlerTable::DESUGARING, pos);
+                                         HandlerTable::DESUGARING, pos, {});
   }
 
   TryCatchStatement* NewTryCatchStatementForAsyncAwait(Block* try_block,
@@ -3211,12 +3274,14 @@ class AstNodeFactory final BASE_EMBEDDED {
                                                        Block* catch_block,
                                                        int pos) {
     return new (zone_) TryCatchStatement(try_block, scope, catch_block,
-                                         HandlerTable::ASYNC_AWAIT, pos);
+                                         HandlerTable::ASYNC_AWAIT, pos, {});
   }
 
-  TryFinallyStatement* NewTryFinallyStatement(Block* try_block,
-                                              Block* finally_block, int pos) {
-    return new (zone_) TryFinallyStatement(try_block, finally_block, pos);
+  TryFinallyStatement* NewTryFinallyStatement(
+      Block* try_block, Block* finally_block, int pos,
+      const SourceRange& finally_range = {}) {
+    return new (zone_)
+        TryFinallyStatement(try_block, finally_block, pos, finally_range);
   }
 
   DebuggerStatement* NewDebuggerStatement(int pos) {
@@ -3232,9 +3297,9 @@ class AstNodeFactory final BASE_EMBEDDED {
         SloppyBlockFunctionStatement(NewEmptyStatement(kNoSourcePosition));
   }
 
-  CaseClause* NewCaseClause(
-      Expression* label, ZoneList<Statement*>* statements, int pos) {
-    return new (zone_) CaseClause(label, statements, pos);
+  CaseClause* NewCaseClause(Expression* label, ZoneList<Statement*>* statements,
+                            int pos, const SourceRange& clause_range = {}) {
+    return new (zone_) CaseClause(label, statements, pos, clause_range);
   }
 
   Literal* NewStringLiteral(const AstRawString* string, int pos) {
@@ -3428,12 +3493,13 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   YieldStar* NewYieldStar(Expression* expression, int pos, SuspendFlags flags) {
-    if (!expression) expression = NewUndefinedLiteral(pos);
+    DCHECK_NOT_NULL(expression);
     return new (zone_) YieldStar(expression, pos, flags);
   }
 
-  Throw* NewThrow(Expression* exception, int pos) {
-    return new (zone_) Throw(exception, pos);
+  Throw* NewThrow(Expression* exception, int pos,
+                  int32_t continuation_pos = kNoSourcePosition) {
+    return new (zone_) Throw(exception, pos, continuation_pos);
   }
 
   FunctionLiteral* NewFunctionLiteral(
@@ -3520,6 +3586,12 @@ class AstNodeFactory final BASE_EMBEDDED {
 
   EmptyParentheses* NewEmptyParentheses(int pos) {
     return new (zone_) EmptyParentheses(pos);
+  }
+
+  GetIterator* NewGetIterator(Expression* iterable,
+                              Expression* destructured_iterable,
+                              IteratorType hint, int pos) {
+    return new (zone_) GetIterator(iterable, destructured_iterable, hint, pos);
   }
 
   GetIterator* NewGetIterator(Expression* iterable, IteratorType hint,

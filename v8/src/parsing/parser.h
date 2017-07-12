@@ -340,13 +340,15 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   Expression* RewriteReturn(Expression* return_value, int pos);
   Statement* RewriteSwitchStatement(Expression* tag,
                                     SwitchStatement* switch_statement,
-                                    ZoneList<CaseClause*>* cases, Scope* scope);
+                                    ZoneList<CaseClause*>* cases, Scope* scope,
+                                    int32_t continuation_pos);
   void RewriteCatchPattern(CatchInfo* catch_info, bool* ok);
   void ValidateCatchBlock(const CatchInfo& catch_info, bool* ok);
   Statement* RewriteTryStatement(Block* try_block, Block* catch_block,
+                                 const SourceRange& catch_range,
                                  Block* finally_block,
+                                 const SourceRange& finally_range,
                                  const CatchInfo& catch_info, int pos);
-
   void ParseAndRewriteGeneratorFunctionBody(int pos, FunctionKind kind,
                                             ZoneList<Statement*>* body,
                                             bool* ok);
@@ -1049,9 +1051,10 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                        ZoneList<Expression*>* args, int pos,
                                        bool* ok);
 
-  V8_INLINE Statement* NewThrowStatement(Expression* exception, int pos) {
+  V8_INLINE Statement* NewThrowStatement(Expression* exception, int pos,
+                                         int32_t continuation_pos) {
     return factory()->NewExpressionStatement(
-        factory()->NewThrow(exception, pos), pos);
+        factory()->NewThrow(exception, pos, continuation_pos), pos);
   }
 
   V8_INLINE void AddParameterInitializationBlock(

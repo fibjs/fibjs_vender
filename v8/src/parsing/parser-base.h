@@ -99,7 +99,11 @@ class SourceRangeScope final {
     DCHECK_NE(range_->start, kNoSourcePosition);
   }
 
-  ~SourceRangeScope() {
+  ~SourceRangeScope() { Finalize(); }
+
+  void Finalize() {
+    if (is_finalized_) return;
+    is_finalized_ = true;
     range_->end = GetPosition(post_kind_);
     DCHECK_NE(range_->end, kNoSourcePosition);
   }
@@ -123,6 +127,7 @@ class SourceRangeScope final {
   Scanner* scanner_;
   SourceRange* range_;
   PositionKind post_kind_;
+  bool is_finalized_ = false;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(SourceRangeScope);
 };
@@ -2234,7 +2239,8 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParsePropertyName(
     }
 
     case Token::ELLIPSIS:
-      if (allow_harmony_object_rest_spread()) {
+      if (allow_harmony_object_rest_spread() && !*is_generator && !*is_async &&
+          !*is_get && !*is_set) {
         *name = impl()->EmptyIdentifier();
         Consume(Token::ELLIPSIS);
         expression = ParseAssignmentExpression(true, CHECK_OK);
@@ -2255,6 +2261,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParsePropertyName(
         }
         return expression;
       }
+    // Fall-through.
 
     default:
       *name = ParseIdentifierName(CHECK_OK);
@@ -3639,7 +3646,7 @@ ParserBase<Impl>::ParseMemberExpressionContinuation(ExpressionT expression,
         ArrowFormalParametersUnexpectedToken();
 
         Consume(Token::PERIOD);
-        int pos = position();
+        int pos = peek_position();
         IdentifierT name = ParseIdentifierName(CHECK_OK);
         expression = factory()->NewProperty(
             expression, factory()->NewStringLiteral(name, pos), pos);
@@ -5429,8 +5436,9 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseThrowStatement(
   }
   ExpressionT exception = ParseExpression(true, CHECK_OK);
   ExpectSemicolon(CHECK_OK);
+  int continuation_pos = scanner_->location().end_pos;
 
-  return impl()->NewThrowStatement(exception, pos);
+  return impl()->NewThrowStatement(exception, pos, continuation_pos);
 }
 
 template <typename Impl>
@@ -5463,6 +5471,8 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseSwitchStatement(
     while (peek() != Token::RBRACE) {
       // An empty label indicates the default case.
       ExpressionT label = impl()->EmptyExpression();
+      SourceRange clause_range;
+      SourceRangeScope range_scope(scanner(), &clause_range);
       if (Check(Token::CASE)) {
         label = ParseExpression(true, CHECK_OK);
       } else {
@@ -5482,14 +5492,19 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseSwitchStatement(
         StatementT stat = ParseStatementListItem(CHECK_OK);
         statements->Add(stat, zone());
       }
-      auto clause = factory()->NewCaseClause(label, statements, clause_pos);
+      range_scope.Finalize();
+      auto clause =
+          factory()->NewCaseClause(label, statements, clause_pos, clause_range);
       cases->Add(clause, zone());
     }
     Expect(Token::RBRACE, CHECK_OK);
 
-    scope()->set_end_position(scanner()->location().end_pos);
+    int end_position = scanner()->location().end_pos;
+    scope()->set_end_position(end_position);
+    int continuation_pos = end_position;
     return impl()->RewriteSwitchStatement(tag, switch_statement, cases,
-                                          scope()->FinalizeBlockScope());
+                                          scope()->FinalizeBlockScope(),
+                                          continuation_pos);
   }
 }
 
@@ -5524,6 +5539,8 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement(
     *ok = false;
     return impl()->NullStatement();
   }
+
+  SourceRange catch_range, finally_range;
 
   BlockT catch_block = impl()->NullBlock();
   if (Check(Token::CATCH)) {
@@ -5565,6 +5582,7 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement(
           catch_block->statements()->Add(catch_info.init_block, zone());
         }
 
+        SourceRangeScope range_scope(scanner(), &catch_range);
         catch_info.inner_block = ParseBlock(nullptr, CHECK_OK);
         catch_block->statements()->Add(catch_info.inner_block, zone());
         impl()->ValidateCatchBlock(catch_info, CHECK_OK);
@@ -5579,11 +5597,13 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement(
   BlockT finally_block = impl()->NullBlock();
   DCHECK(peek() == Token::FINALLY || !impl()->IsNullStatement(catch_block));
   if (Check(Token::FINALLY)) {
+    SourceRangeScope range_scope(scanner(), &finally_range);
     finally_block = ParseBlock(nullptr, CHECK_OK);
   }
 
-  return impl()->RewriteTryStatement(try_block, catch_block, finally_block,
-                                     catch_info, pos);
+  return impl()->RewriteTryStatement(try_block, catch_block, catch_range,
+                                     finally_block, finally_range, catch_info,
+                                     pos);
 }
 
 template <typename Impl>
@@ -5824,7 +5844,7 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseStandardForLoop(
   scope()->set_end_position(scanner()->location().end_pos);
   inner_scope->set_end_position(scanner()->location().end_pos);
   if (bound_names_are_lexical && for_info->bound_names.length() > 0 &&
-      (is_resumable() || function_state_->contains_function_or_eval())) {
+      function_state_->contains_function_or_eval()) {
     scope()->set_is_hidden();
     return impl()->DesugarLexicalBindingsInForStatement(
         loop, init, cond, next, body, body_range, inner_scope, *for_info,

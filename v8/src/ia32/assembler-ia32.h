@@ -313,6 +313,8 @@ class Immediate BASE_EMBEDDED {
     return RelocInfo::IsNone(rmode_) && i::is_uint16(immediate());
   }
 
+  RelocInfo::Mode rmode() const { return rmode_; }
+
  private:
   inline explicit Immediate(Label* value);
 
@@ -394,9 +396,7 @@ class Operand BASE_EMBEDDED {
   }
 
   static Operand ForCell(Handle<Cell> cell) {
-    AllowDeferredHandleDereference embedding_raw_address;
-    return Operand(reinterpret_cast<int32_t>(cell.location()),
-                   RelocInfo::CELL);
+    return Operand(reinterpret_cast<int32_t>(cell.address()), RelocInfo::CELL);
   }
 
   static Operand ForRegisterPlusImmediate(Register base, Immediate imm) {
@@ -429,7 +429,6 @@ class Operand BASE_EMBEDDED {
   RelocInfo::Mode rmode_;
 
   friend class Assembler;
-  friend class MacroAssembler;
 };
 
 

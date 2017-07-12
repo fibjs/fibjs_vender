@@ -1,3 +1,7 @@
+#include "src/v8.h"
+
+#if V8_TARGET_ARCH_PPC64
+
 // Copyright 2006-2008 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -25,3 +29,6 @@ void DisposeNatives() {}
 const v8::StartupData* Snapshot::DefaultSnapshotBlob() { return NULL; }
 }  // namespace internal
 }  // namespace v8
+
+
+#endif  // V8_TARGET_ARCH_PPC64

@@ -88,48 +88,6 @@ void* TryAllocateBackingStore(Isolate* isolate, size_t size,
   }
 }
 
-static void MemoryInstanceFinalizer(Isolate* isolate,
-                                    WasmInstanceObject* instance) {
-  DisallowHeapAllocation no_gc;
-  // If the memory object is destroyed, nothing needs to be done here.
-  if (!instance->has_memory_object()) return;
-  Handle<WasmInstanceWrapper> instance_wrapper =
-      handle(instance->instance_wrapper());
-  DCHECK(WasmInstanceWrapper::IsWasmInstanceWrapper(*instance_wrapper));
-  DCHECK(instance_wrapper->has_instance());
-  bool has_prev = instance_wrapper->has_previous();
-  bool has_next = instance_wrapper->has_next();
-  Handle<WasmMemoryObject> memory_object(instance->memory_object());
-
-  if (!has_prev && !has_next) {
-    memory_object->ResetInstancesLink(isolate);
-    return;
-  } else {
-    Handle<WasmInstanceWrapper> next_wrapper, prev_wrapper;
-    if (!has_prev) {
-      Handle<WasmInstanceWrapper> next_wrapper =
-          instance_wrapper->next_wrapper();
-      next_wrapper->reset_previous_wrapper();
-      // As this is the first link in the memory object, destroying
-      // without updating memory object would corrupt the instance chain in
-      // the memory object.
-      memory_object->set_instances_link(*next_wrapper);
-    } else if (!has_next) {
-      instance_wrapper->previous_wrapper()->reset_next_wrapper();
-    } else {
-      DCHECK(has_next && has_prev);
-      Handle<WasmInstanceWrapper> prev_wrapper =
-          instance_wrapper->previous_wrapper();
-      Handle<WasmInstanceWrapper> next_wrapper =
-          instance_wrapper->next_wrapper();
-      prev_wrapper->set_next_wrapper(*next_wrapper);
-      next_wrapper->set_previous_wrapper(*prev_wrapper);
-    }
-    // Reset to avoid dangling pointers
-    instance_wrapper->reset();
-  }
-}
-
 static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
   DisallowHeapAllocation no_gc;
   JSObject** p = reinterpret_cast<JSObject**>(data.GetParameter());
@@ -137,7 +95,6 @@ static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
   Isolate* isolate = reinterpret_cast<Isolate*>(data.GetIsolate());
   // If a link to shared memory instances exists, update the list of memory
   // instances before the instance is destroyed.
-  if (owner->has_instance_wrapper()) MemoryInstanceFinalizer(isolate, owner);
   WasmCompiledModule* compiled_module = owner->compiled_module();
   TRACE("Finalizing %d {\n", compiled_module->instance_id());
   DCHECK(compiled_module->has_weak_wasm_module());
@@ -155,13 +112,25 @@ static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
     }
   }
 
+  // Since the order of finalizers is not guaranteed, it can be the case
+  // that {instance->compiled_module()->module()}, which is a
+  // {Managed<WasmModule>} has been collected earlier in this GC cycle.
+  // Weak references to this instance won't be cleared until
+  // the next GC cycle, so we need to manually break some links (such as
+  // the weak references from {WasmMemoryObject::instances}.
+  if (owner->has_memory_object()) {
+    Handle<WasmMemoryObject> memory(owner->memory_object(), isolate);
+    Handle<WasmInstanceObject> instance(owner, isolate);
+    WasmMemoryObject::RemoveInstance(isolate, memory, instance);
+  }
+
   // weak_wasm_module may have been cleared, meaning the module object
   // was GC-ed. In that case, there won't be any new instances created,
   // and we don't need to maintain the links between instances.
   if (!weak_wasm_module->cleared()) {
-    JSObject* wasm_module = JSObject::cast(weak_wasm_module->value());
-    WasmCompiledModule* current_template =
-        WasmCompiledModule::cast(wasm_module->GetEmbedderField(0));
+    WasmModuleObject* wasm_module =
+        WasmModuleObject::cast(weak_wasm_module->value());
+    WasmCompiledModule* current_template = wasm_module->compiled_module();
 
     TRACE("chain before {\n");
     TRACE_CHAIN(current_template);
@@ -175,10 +144,12 @@ static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
       if (next == nullptr) {
         WasmCompiledModule::Reset(isolate, compiled_module);
       } else {
-        DCHECK(next->value()->IsFixedArray());
-        wasm_module->SetEmbedderField(0, next->value());
+        WasmCompiledModule* next_compiled_module =
+            WasmCompiledModule::cast(next->value());
+        WasmModuleObject::cast(wasm_module)
+            ->set_compiled_module(next_compiled_module);
         DCHECK_NULL(prev);
-        WasmCompiledModule::cast(next->value())->reset_weak_prev_instance();
+        next_compiled_module->reset_weak_prev_instance();
       }
     } else {
       DCHECK(!(prev == nullptr && next == nullptr));
@@ -205,7 +176,7 @@ static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
       }
     }
     TRACE("chain after {\n");
-    TRACE_CHAIN(WasmCompiledModule::cast(wasm_module->GetEmbedderField(0)));
+    TRACE_CHAIN(wasm_module->compiled_module());
     TRACE("}\n");
   }
   compiled_module->reset_weak_owning_instance();
@@ -242,17 +213,19 @@ void RecordLazyCodeStats(Code* code, Counters* counters) {
 
 }  // namespace
 
-Handle<JSArrayBuffer> wasm::SetupArrayBuffer(Isolate* isolate,
-                                             void* allocation_base,
-                                             size_t allocation_length,
-                                             void* backing_store, size_t size,
-                                             bool is_external,
-                                             bool enable_guard_regions) {
-  Handle<JSArrayBuffer> buffer = isolate->factory()->NewJSArrayBuffer();
+// static
+const WasmExceptionSig wasm::WasmException::empty_sig_(0, 0, nullptr);
+
+Handle<JSArrayBuffer> wasm::SetupArrayBuffer(
+    Isolate* isolate, void* allocation_base, size_t allocation_length,
+    void* backing_store, size_t size, bool is_external,
+    bool enable_guard_regions, SharedFlag shared) {
+  Handle<JSArrayBuffer> buffer = isolate->factory()->NewJSArrayBuffer(shared);
   DCHECK_GE(kMaxInt, size);
+  if (shared == SharedFlag::kShared) DCHECK(FLAG_experimental_wasm_threads);
   JSArrayBuffer::Setup(buffer, isolate, is_external, allocation_base,
-                       allocation_length, backing_store,
-                       static_cast<int>(size));
+                       allocation_length, backing_store, static_cast<int>(size),
+                       shared);
   buffer->set_is_neuterable(false);
   buffer->set_is_wasm_buffer(true);
   buffer->set_has_guard_region(enable_guard_regions);
@@ -260,7 +233,8 @@ Handle<JSArrayBuffer> wasm::SetupArrayBuffer(Isolate* isolate,
 }
 
 Handle<JSArrayBuffer> wasm::NewArrayBuffer(Isolate* isolate, size_t size,
-                                           bool enable_guard_regions) {
+                                           bool enable_guard_regions,
+                                           SharedFlag shared) {
   // Check against kMaxInt, since the byte length is stored as int in the
   // JSArrayBuffer. Note that wasm_max_mem_pages can be raised from the command
   // line, and we don't want to fail a CHECK then.
@@ -291,7 +265,7 @@ Handle<JSArrayBuffer> wasm::NewArrayBuffer(Isolate* isolate, size_t size,
 
   constexpr bool is_external = false;
   return SetupArrayBuffer(isolate, allocation_base, allocation_length, memory,
-                          size, is_external, enable_guard_regions);
+                          size, is_external, enable_guard_regions, shared);
 }
 
 void wasm::UnpackAndRegisterProtectedInstructions(
@@ -404,7 +378,7 @@ void wasm::UpdateDispatchTables(Isolate* isolate,
                                 WasmFunction* function, Handle<Code> code) {
   DCHECK_EQ(0, dispatch_tables->length() % 4);
   for (int i = 0; i < dispatch_tables->length(); i += 4) {
-    int table_index = Smi::cast(dispatch_tables->get(i + 1))->value();
+    int table_index = Smi::ToInt(dispatch_tables->get(i + 1));
     Handle<FixedArray> function_table(
         FixedArray::cast(dispatch_tables->get(i + 2)), isolate);
     Handle<FixedArray> signature_table(
@@ -450,10 +424,6 @@ void wasm::TableSet(ErrorThrower* thrower, Isolate* isolate,
 
   UpdateDispatchTables(isolate, dispatch_tables, index, wasm_function, code);
   array->set(index, *value);
-}
-
-bool wasm::IsWasmInstance(Object* object) {
-  return WasmInstanceObject::IsWasmInstanceObject(object);
 }
 
 Handle<Script> wasm::GetScript(Handle<JSObject> instance) {
@@ -514,8 +484,9 @@ void testing::ValidateInstancesChain(Isolate* isolate,
     CHECK((prev == nullptr && !current_instance->has_weak_prev_instance()) ||
           current_instance->ptr_to_weak_prev_instance()->value() == prev);
     CHECK_EQ(current_instance->ptr_to_weak_wasm_module()->value(), *module_obj);
-    CHECK(IsWasmInstance(
-        current_instance->ptr_to_weak_owning_instance()->value()));
+    CHECK(current_instance->ptr_to_weak_owning_instance()
+              ->value()
+              ->IsWasmInstanceObject());
     prev = current_instance;
     current_instance = WasmCompiledModule::cast(
         current_instance->ptr_to_weak_next_instance()->value());
@@ -789,8 +760,7 @@ MaybeHandle<WasmModuleObject> wasm::SyncCompileTranslatedAsmJs(
 
   // Transfer ownership to the {WasmModuleWrapper} generated in
   // {CompileToModuleObject}.
-  constexpr bool is_sync = true;
-  ModuleCompiler helper(isolate, std::move(result.val), is_sync);
+  ModuleCompiler helper(isolate, std::move(result.val));
   return helper.CompileToModuleObject(thrower, bytes, asm_js_script,
                                       asm_js_offset_table_bytes);
 }
@@ -812,8 +782,7 @@ MaybeHandle<WasmModuleObject> wasm::SyncCompile(Isolate* isolate,
 
   // Transfer ownership to the {WasmModuleWrapper} generated in
   // {CompileToModuleObject}.
-  constexpr bool is_sync = true;
-  ModuleCompiler helper(isolate, std::move(result.val), is_sync);
+  ModuleCompiler helper(isolate, std::move(result.val));
   return helper.CompileToModuleObject(thrower, bytes, Handle<Script>(),
                                       Vector<const byte>());
 }
@@ -925,7 +894,7 @@ Handle<Code> wasm::CompileLazy(Isolate* isolate) {
     exp_deopt_data = handle(lazy_compile_code->deoptimization_data(), isolate);
     auto* weak_cell = WeakCell::cast(exp_deopt_data->get(0));
     instance = handle(WasmInstanceObject::cast(weak_cell->value()), isolate);
-    func_index = Smi::cast(exp_deopt_data->get(1))->value();
+    func_index = Smi::ToInt(exp_deopt_data->get(1));
   }
   it.Advance();
   // Third frame: The calling wasm code or js-to-wasm wrapper.
@@ -960,7 +929,7 @@ Handle<Code> wasm::CompileLazy(Isolate* isolate) {
     for (int idx = 2, end = exp_deopt_data->length(); idx < end; idx += 2) {
       if (exp_deopt_data->get(idx)->IsUndefined(isolate)) break;
       FixedArray* exp_table = FixedArray::cast(exp_deopt_data->get(idx));
-      int exp_index = Smi::cast(exp_deopt_data->get(idx + 1))->value();
+      int exp_index = Smi::ToInt(exp_deopt_data->get(idx + 1));
       DCHECK(exp_table->get(exp_index) == *lazy_compile_code);
       exp_table->set(exp_index, *compiled_code);
     }
@@ -1088,8 +1057,7 @@ Handle<Code> LazyCompilationOrchestrator::CompileLazy(
     SourcePositionTableIterator source_pos_iterator(
         caller->SourcePositionTable());
     DCHECK_EQ(2, caller->deoptimization_data()->length());
-    int caller_func_index =
-        Smi::cast(caller->deoptimization_data()->get(1))->value();
+    int caller_func_index = Smi::ToInt(caller->deoptimization_data()->get(1));
     const byte* func_bytes =
         module_bytes->GetChars() +
         compiled_module->module()->functions[caller_func_index].code.offset();
@@ -1130,10 +1098,9 @@ Handle<Code> LazyCompilationOrchestrator::CompileLazy(
       DCHECK_GT(non_compiled_functions.size(), idx);
       int called_func_index = non_compiled_functions[idx].func_index;
       // Check that the callee agrees with our assumed called_func_index.
-      DCHECK_IMPLIES(
-          callee->deoptimization_data()->length() > 0,
-          Smi::cast(callee->deoptimization_data()->get(1))->value() ==
-              called_func_index);
+      DCHECK_IMPLIES(callee->deoptimization_data()->length() > 0,
+                     Smi::ToInt(callee->deoptimization_data()->get(1)) ==
+                         called_func_index);
       if (is_js_to_wasm) {
         DCHECK_EQ(func_to_return_idx, called_func_index);
       } else {
@@ -1158,4 +1125,18 @@ Handle<Code> LazyCompilationOrchestrator::CompileLazy(
       Code::cast(compiled_module->code_table()->get(func_to_return_idx));
   DCHECK_EQ(Code::WASM_FUNCTION, ret->kind());
   return handle(ret, isolate);
+}
+
+const char* wasm::ExternalKindName(WasmExternalKind kind) {
+  switch (kind) {
+    case kExternalFunction:
+      return "function";
+    case kExternalTable:
+      return "table";
+    case kExternalMemory:
+      return "memory";
+    case kExternalGlobal:
+      return "global";
+  }
+  return "unknown";
 }

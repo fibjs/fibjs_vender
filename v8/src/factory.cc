@@ -153,6 +153,14 @@ Handle<FixedArray> Factory::NewFixedArray(int size, PretenureFlag pretenure) {
       FixedArray);
 }
 
+Handle<PropertyArray> Factory::NewPropertyArray(int size,
+                                                PretenureFlag pretenure) {
+  DCHECK_LE(0, size);
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocatePropertyArray(size, pretenure),
+                     PropertyArray);
+}
+
 MaybeHandle<FixedArray> Factory::TryNewFixedArray(int size,
                                                   PretenureFlag pretenure) {
   DCHECK(0 <= size);
@@ -1275,7 +1283,6 @@ Handle<JSObject> Factory::CopyJSObjectWithAllocationSite(
                      JSObject);
 }
 
-
 Handle<FixedArray> Factory::CopyFixedArrayWithMap(Handle<FixedArray> array,
                                                   Handle<Map> map) {
   CALL_HEAP_FUNCTION(isolate(),
@@ -1283,13 +1290,21 @@ Handle<FixedArray> Factory::CopyFixedArrayWithMap(Handle<FixedArray> array,
                      FixedArray);
 }
 
-
 Handle<FixedArray> Factory::CopyFixedArrayAndGrow(Handle<FixedArray> array,
                                                   int grow_by,
                                                   PretenureFlag pretenure) {
-  CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->CopyFixedArrayAndGrow(
-                                    *array, grow_by, pretenure),
-                     FixedArray);
+  CALL_HEAP_FUNCTION(
+      isolate(),
+      isolate()->heap()->CopyArrayAndGrow(*array, grow_by, pretenure),
+      FixedArray);
+}
+
+Handle<PropertyArray> Factory::CopyPropertyArrayAndGrow(
+    Handle<PropertyArray> array, int grow_by, PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(
+      isolate(),
+      isolate()->heap()->CopyArrayAndGrow(*array, grow_by, pretenure),
+      PropertyArray);
 }
 
 Handle<FixedArray> Factory::CopyFixedArrayUpTo(Handle<FixedArray> array,
@@ -1514,9 +1529,17 @@ Handle<JSFunction> Factory::NewFunctionWithoutPrototype(
 
 Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
                                         Handle<Object> prototype,
-                                        LanguageMode language_mode) {
-  Handle<Map> map = is_strict(language_mode) ? isolate()->strict_function_map()
-                                             : isolate()->sloppy_function_map();
+                                        LanguageMode language_mode,
+                                        MutableMode prototype_mutability) {
+  Handle<Map> map;
+  if (prototype_mutability == MUTABLE) {
+    map = is_strict(language_mode) ? isolate()->strict_function_map()
+                                   : isolate()->sloppy_function_map();
+  } else {
+    map = is_strict(language_mode)
+              ? isolate()->strict_function_with_readonly_prototype_map()
+              : isolate()->sloppy_function_with_readonly_prototype_map();
+  }
   Handle<JSFunction> result = NewFunction(map, name, code);
   result->set_prototype_or_initial_map(*prototype);
   result->shared()->set_language_mode(language_mode);
@@ -1526,10 +1549,11 @@ Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
 Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
                                         Handle<Object> prototype,
                                         InstanceType type, int instance_size,
-                                        LanguageMode language_mode) {
+                                        LanguageMode language_mode,
+                                        MutableMode prototype_mutability) {
   // Allocate the function
   Handle<JSFunction> function =
-      NewFunction(name, code, prototype, language_mode);
+      NewFunction(name, code, prototype, language_mode, prototype_mutability);
 
   ElementsKind elements_kind =
       type == JS_ARRAY_TYPE ? PACKED_SMI_ELEMENTS : HOLEY_SMI_ELEMENTS;
@@ -1864,7 +1888,7 @@ Handle<JSGlobalObject> Factory::NewJSGlobalObject(
   new_map->set_dictionary_map(true);
 
   // Set up the global object as a normalized object.
-  global->set_properties(*dictionary);
+  global->set_global_dictionary(*dictionary);
   global->synchronized_set_map(*new_map);
 
   // Make sure result is a global object with properties in dictionary.
@@ -1889,7 +1913,7 @@ Handle<JSObject> Factory::NewJSObjectFromMap(
 Handle<JSObject> Factory::NewSlowJSObjectFromMap(Handle<Map> map, int capacity,
                                                  PretenureFlag pretenure) {
   DCHECK(map->is_dictionary_map());
-  Handle<FixedArray> object_properties =
+  Handle<NameDictionary> object_properties =
       NameDictionary::New(isolate(), capacity);
   Handle<JSObject> js_object = NewJSObjectFromMap(map, pretenure);
   js_object->set_properties(*object_properties);
@@ -2078,27 +2102,23 @@ Handle<JSSet> Factory::NewJSSet() {
   return js_set;
 }
 
-Handle<JSMapIterator> Factory::NewJSMapIterator(Handle<OrderedHashMap> table,
-                                                int index,
-                                                JSMapIterator::Kind kind) {
-  Handle<Map> map(isolate()->native_context()->map_iterator_map(), isolate());
+Handle<JSMapIterator> Factory::NewJSMapIterator(Handle<Map> map,
+                                                Handle<OrderedHashMap> table,
+                                                int index) {
   Handle<JSMapIterator> result =
       Handle<JSMapIterator>::cast(NewJSObjectFromMap(map));
   result->set_table(*table);
   result->set_index(Smi::FromInt(index));
-  result->set_kind(Smi::FromInt(kind));
   return result;
 }
 
-Handle<JSSetIterator> Factory::NewJSSetIterator(Handle<OrderedHashSet> table,
-                                                int index,
-                                                JSSetIterator::Kind kind) {
-  Handle<Map> map(isolate()->native_context()->set_iterator_map(), isolate());
+Handle<JSSetIterator> Factory::NewJSSetIterator(Handle<Map> map,
+                                                Handle<OrderedHashSet> table,
+                                                int index) {
   Handle<JSSetIterator> result =
       Handle<JSSetIterator>::cast(NewJSObjectFromMap(map));
   result->set_table(*table);
   result->set_index(Smi::FromInt(index));
-  result->set_kind(Smi::FromInt(kind));
   return result;
 }
 
@@ -2831,11 +2851,16 @@ Handle<String> Factory::ToPrimitiveHintString(ToPrimitiveHint hint) {
   UNREACHABLE();
 }
 
-Handle<Map> Factory::CreateSloppyFunctionMap(FunctionMode function_mode) {
+Handle<Map> Factory::CreateSloppyFunctionMap(
+    FunctionMode function_mode, MaybeHandle<JSFunction> maybe_empty_function) {
   Handle<Map> map = NewMap(JS_FUNCTION_TYPE, JSFunction::kSize);
   SetFunctionInstanceDescriptor(map, function_mode);
   map->set_is_constructor(IsFunctionModeWithPrototype(function_mode));
   map->set_is_callable();
+  Handle<JSFunction> empty_function;
+  if (maybe_empty_function.ToHandle(&empty_function)) {
+    Map::SetPrototype(map, empty_function);
+  }
   return map;
 }
 

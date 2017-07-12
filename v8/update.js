@@ -83,6 +83,7 @@ var files = {
     'src/snapshot/mksnapshot.cc': 1,
     'src/snapshot/natives-external.cc': 1,
     'src/snapshot/snapshot-external.cc': 1,
+    'src/snapshot/snapshot-empty.cc': 1,
     'src/base/platform/platform-qnx.cc': 1,
     'src/base/platform/platform-cygwin.cc': 1,
     'src/base/platform/platform-fuchsia.cc': 1,
@@ -337,6 +338,30 @@ function patch_trap() {
     fs.writeFile(fname, txt);
 }
 
+function patch_snapshot() {
+    fs.mkdir("src/snapshot/snapshots")
+    var archs = {
+        arm: 'V8_TARGET_ARCH_ARM',
+        arm64: 'V8_TARGET_ARCH_ARM64',
+        mips: 'V8_TARGET_ARCH_MIPS',
+        mips64: 'V8_TARGET_ARCH_MIPS64',
+        ppc: "V8_TARGET_ARCH_PPC",
+        ppc64: "V8_TARGET_ARCH_PPC64",
+        ia32: 'V8_TARGET_ARCH_IA32',
+        s390: 'V8_TARGET_ARCH_S390',
+        x64: 'V8_TARGET_ARCH_X64'
+    };
+
+    fs.copy(v8Folder + "/src/snapshot/mksnapshot.cc", "test/src/mksnapshot.inl");
+
+    var txt = fs.readTextFile(v8Folder + "/src/snapshot/snapshot-empty.cc");
+
+    for (var arch in archs) {
+        fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + ".cc",
+            '#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch]);
+    }
+}
+
 save_plat();
 
 clean_folder('include');
@@ -369,5 +394,7 @@ patch_version_hash();
 patch_serializer();
 patch_ntver();
 patch_trap();
+
+patch_snapshot();
 
 run('./vsmake.js');

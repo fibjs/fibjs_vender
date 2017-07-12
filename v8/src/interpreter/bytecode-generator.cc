@@ -104,7 +104,6 @@ class BytecodeGenerator::ControlScope BASE_EMBEDDED {
   void Continue(Statement* stmt) { PerformCommand(CMD_CONTINUE, stmt); }
   void ReturnAccumulator() { PerformCommand(CMD_RETURN, nullptr); }
   void AsyncReturnAccumulator() { PerformCommand(CMD_ASYNC_RETURN, nullptr); }
-  void ReThrowAccumulator() { PerformCommand(CMD_RETHROW, nullptr); }
 
   class DeferredCommands;
 
@@ -1233,8 +1232,6 @@ void BytecodeGenerator::VisitIfStatement(IfStatement* stmt) {
 
   int then_slot = AllocateBlockCoverageSlotIfEnabled(stmt->then_range());
   int else_slot = AllocateBlockCoverageSlotIfEnabled(stmt->else_range());
-  int continuation_slot =
-      AllocateBlockCoverageSlotIfEnabled(stmt->continuation_range());
 
   if (stmt->condition()->ToBooleanIsTrue()) {
     // Generate then block unconditionally as always true.
@@ -1269,7 +1266,7 @@ void BytecodeGenerator::VisitIfStatement(IfStatement* stmt) {
     }
     builder()->Bind(&end_label);
   }
-  BuildIncrementBlockCoverageCounterIfEnabled(continuation_slot);
+  BuildIncrementBlockCoverageCounterIfEnabled(stmt->continuation_range());
 }
 
 void BytecodeGenerator::VisitSloppyBlockFunctionStatement(
@@ -1278,22 +1275,19 @@ void BytecodeGenerator::VisitSloppyBlockFunctionStatement(
 }
 
 void BytecodeGenerator::VisitContinueStatement(ContinueStatement* stmt) {
-  AllocateBlockCoverageSlotIfEnabled(
-      {stmt->continuation_pos(), kNoSourcePosition});
+  AllocateBlockCoverageSlotIfEnabled(stmt->continuation_range());
   builder()->SetStatementPosition(stmt);
   execution_control()->Continue(stmt->target());
 }
 
 void BytecodeGenerator::VisitBreakStatement(BreakStatement* stmt) {
-  AllocateBlockCoverageSlotIfEnabled(
-      {stmt->continuation_pos(), kNoSourcePosition});
+  AllocateBlockCoverageSlotIfEnabled(stmt->continuation_range());
   builder()->SetStatementPosition(stmt);
   execution_control()->Break(stmt->target());
 }
 
 void BytecodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
-  AllocateBlockCoverageSlotIfEnabled(
-      {stmt->continuation_pos(), kNoSourcePosition});
+  AllocateBlockCoverageSlotIfEnabled(stmt->continuation_range());
   builder()->SetStatementPosition(stmt);
   VisitForAccumulatorValue(stmt->expression());
   if (stmt->is_async_return()) {
@@ -1354,9 +1348,11 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
   for (int i = 0; i < clauses->length(); i++) {
     CaseClause* clause = clauses->at(i);
     switch_builder.SetCaseTarget(i);
+    BuildIncrementBlockCoverageCounterIfEnabled(clause->clause_range());
     VisitStatements(clause->statements());
   }
   switch_builder.BindBreakTarget();
+  BuildIncrementBlockCoverageCounterIfEnabled(stmt->continuation_range());
 }
 
 void BytecodeGenerator::VisitCaseClause(CaseClause* clause) {
@@ -1614,6 +1610,7 @@ void BytecodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
   builder()->LoadAccumulatorWithRegister(context);
 
   // Evaluate the catch-block.
+  BuildIncrementBlockCoverageCounterIfEnabled(stmt->catch_range());
   VisitInScope(stmt->catch_block(), stmt->scope());
   try_control_builder.EndCatch();
 }
@@ -1672,6 +1669,7 @@ void BytecodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
       message);
 
   // Evaluate the finally-block.
+  BuildIncrementBlockCoverageCounterIfEnabled(stmt->finally_range());
   Visit(stmt->finally_block());
   try_control_builder.EndFinally();
 
@@ -2953,6 +2951,7 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
 }
 
 void BytecodeGenerator::VisitThrow(Throw* expr) {
+  AllocateBlockCoverageSlotIfEnabled(expr->continuation_range());
   VisitForAccumulatorValue(expr->exception());
   builder()->SetExpressionPosition(expr);
   builder()->Throw();
@@ -4154,7 +4153,8 @@ void BytecodeGenerator::BuildLoadPropertyKey(LiteralProperty* property,
   }
 }
 
-int BytecodeGenerator::AllocateBlockCoverageSlotIfEnabled(SourceRange range) {
+int BytecodeGenerator::AllocateBlockCoverageSlotIfEnabled(
+    const SourceRange& range) {
   return (block_coverage_builder_ == nullptr)
              ? BlockCoverageBuilder::kNoCoverageArraySlot
              : block_coverage_builder_->AllocateBlockCoverageSlot(range);
@@ -4164,6 +4164,14 @@ void BytecodeGenerator::BuildIncrementBlockCoverageCounterIfEnabled(
     int coverage_array_slot) {
   if (block_coverage_builder_ != nullptr) {
     block_coverage_builder_->IncrementBlockCounter(coverage_array_slot);
+  }
+}
+
+void BytecodeGenerator::BuildIncrementBlockCoverageCounterIfEnabled(
+    const SourceRange& range) {
+  if (block_coverage_builder_ != nullptr) {
+    int slot = block_coverage_builder_->AllocateBlockCoverageSlot(range);
+    block_coverage_builder_->IncrementBlockCounter(slot);
   }
 }
 

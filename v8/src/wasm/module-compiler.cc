@@ -83,11 +83,10 @@ size_t ModuleCompiler::CodeGenerationSchedule::GetRandomIndexInSchedule() {
 }
 
 ModuleCompiler::ModuleCompiler(Isolate* isolate,
-                               std::unique_ptr<WasmModule> module, bool is_sync)
+                               std::unique_ptr<WasmModule> module)
     : isolate_(isolate),
       module_(std::move(module)),
       async_counters_(isolate->async_counters()),
-      is_sync_(is_sync),
       executed_units_(
           isolate->random_number_generator(),
           (isolate->heap()->memory_allocator()->code_range()->valid()
@@ -347,16 +346,9 @@ MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObject(
     signature_tables->set(i, *temp_instance.signature_tables[i]);
   }
 
-  if (is_sync_) {
-    // TODO(karlschimpf): Make this work when asynchronous.
-    // https://bugs.chromium.org/p/v8/issues/detail?id=6361
-    TimedHistogramScope wasm_compile_module_time_scope(
-        module_->is_wasm() ? counters()->wasm_compile_wasm_module_time()
-                           : counters()->wasm_compile_asm_module_time());
-    return CompileToModuleObjectInternal(
-        thrower, wire_bytes, asm_js_script, asm_js_offset_table_bytes, factory,
-        &temp_instance, &function_tables, &signature_tables);
-  }
+  TimedHistogramScope wasm_compile_module_time_scope(
+      module_->is_wasm() ? counters()->wasm_compile_wasm_module_time()
+                         : counters()->wasm_compile_asm_module_time());
   return CompileToModuleObjectInternal(
       thrower, wire_bytes, asm_js_script, asm_js_offset_table_bytes, factory,
       &temp_instance, &function_tables, &signature_tables);
@@ -461,8 +453,7 @@ Handle<Code> EnsureExportedLazyDeoptData(Isolate* isolate,
   DCHECK_IMPLIES(!instance.is_null(),
                  WeakCell::cast(code->deoptimization_data()->get(0))->value() ==
                      *instance);
-  DCHECK_EQ(func_index,
-            Smi::cast(code->deoptimization_data()->get(1))->value());
+  DCHECK_EQ(func_index, Smi::ToInt(code->deoptimization_data()->get(1)));
   return code;
 }
 
@@ -592,12 +583,9 @@ MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObjectInternal(
     temp_instance->function_code[i] = init_builtin;
   }
 
-  if (is_sync_)
-    // TODO(karlschimpf): Make this work when asynchronous.
-    // https://bugs.chromium.org/p/v8/issues/detail?id=6361
-    (module_->is_wasm() ? counters()->wasm_functions_per_wasm_module()
-                        : counters()->wasm_functions_per_asm_module())
-        ->AddSample(static_cast<int>(module_->functions.size()));
+  (module_->is_wasm() ? counters()->wasm_functions_per_wasm_module()
+                      : counters()->wasm_functions_per_asm_module())
+      ->AddSample(static_cast<int>(module_->functions.size()));
 
   if (!lazy_compile) {
     size_t funcs_to_compile =
@@ -761,7 +749,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
   }
 
   // Record build time into correct bucket, then build instance.
-  HistogramTimerScope wasm_instantiate_module_time_scope(
+  TimedHistogramScope wasm_instantiate_module_time_scope(
       module_->is_wasm() ? counters()->wasm_instantiate_wasm_module_time()
                          : counters()->wasm_instantiate_asm_module_time());
   Factory* factory = isolate_->factory();
@@ -1004,7 +992,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
     int deopt_len = code->deoptimization_data()->length();
     if (deopt_len == 0) continue;
     DCHECK_LE(2, deopt_len);
-    DCHECK_EQ(i, Smi::cast(code->deoptimization_data()->get(1))->value());
+    DCHECK_EQ(i, Smi::ToInt(code->deoptimization_data()->get(1)));
     code->deoptimization_data()->set(0, *weak_link);
     // Entries [2, deopt_len) encode information about table exports of this
     // function. This is rebuilt in {LoadTableSegments}, so reset it here.
@@ -1022,9 +1010,9 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
   //--------------------------------------------------------------------------
   // Add instance to Memory object
   //--------------------------------------------------------------------------
-  DCHECK(wasm::IsWasmInstance(*instance));
   if (instance->has_memory_object()) {
-    instance->memory_object()->AddInstance(isolate_, instance);
+    Handle<WasmMemoryObject> memory(instance->memory_object(), isolate_);
+    WasmMemoryObject::AddInstance(isolate_, memory, instance);
   }
 
   //--------------------------------------------------------------------------
@@ -1074,7 +1062,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
         compiled_module_->set_weak_wasm_module(
             original.ToHandleChecked()->weak_wasm_module());
       }
-      module_object_->SetEmbedderField(0, *compiled_module_);
+      module_object_->set_compiled_module(*compiled_module_);
       compiled_module_->set_weak_owning_instance(link_to_owning_instance);
       GlobalHandles::MakeWeak(
           global_handle.location(), global_handle.location(),
@@ -1318,7 +1306,7 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
         break;
       }
       case kExternalTable: {
-        if (!WasmJs::IsWasmTableObject(isolate_, value)) {
+        if (!value->IsWasmTableObject()) {
           ReportLinkError("table import requires a WebAssembly.Table", index,
                           module_name, import_name);
           return -1;
@@ -1340,7 +1328,7 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
 
         if (table.has_max) {
           int64_t imported_max_size =
-              table_instance.table_object->maximum_length();
+              table_instance.table_object->maximum_length()->Number();
           if (imported_max_size < 0) {
             thrower_->LinkError(
                 "table import %d has no maximum length, expected %d", index,
@@ -1390,15 +1378,14 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
         // Validation should have failed if more than one memory object was
         // provided.
         DCHECK(!instance->has_memory_object());
-        if (!WasmJs::IsWasmMemoryObject(isolate_, value)) {
+        if (!value->IsWasmMemoryObject()) {
           ReportLinkError("memory import must be a WebAssembly.Memory object",
                           index, module_name, import_name);
           return -1;
         }
         auto memory = Handle<WasmMemoryObject>::cast(value);
-        DCHECK(WasmJs::IsWasmMemoryObject(isolate_, memory));
         instance->set_memory_object(*memory);
-        memory_ = Handle<JSArrayBuffer>(memory->buffer(), isolate_);
+        memory_ = Handle<JSArrayBuffer>(memory->array_buffer(), isolate_);
         uint32_t imported_cur_pages = static_cast<uint32_t>(
             memory_->byte_length()->Number() / WasmModule::kPageSize);
         if (imported_cur_pages < module_->min_mem_pages) {
@@ -1668,8 +1655,6 @@ void InstanceBuilder::ProcessExports(
         } else {
           memory_object =
               Handle<WasmMemoryObject>(instance->memory_object(), isolate_);
-          DCHECK(WasmJs::IsWasmMemoryObject(isolate_, memory_object));
-          memory_object->ResetInstancesLink(isolate_);
         }
 
         desc.set_value(memory_object);
@@ -2114,9 +2099,8 @@ class AsyncCompileJob::PrepareAndStartCompile : public CompileStep {
     // Transfer ownership of the {WasmModule} to the {ModuleCompiler}, but
     // keep a pointer.
     WasmModule* module = module_.get();
-    constexpr bool is_sync = true;
     job_->compiler_.reset(
-        new ModuleCompiler(job_->isolate_, std::move(module_), !is_sync));
+        new ModuleCompiler(job_->isolate_, std::move(module_)));
     job_->compiler_->EnableThrottling();
 
     // Reopen all handles which should survive in the DeferredHandleScope.

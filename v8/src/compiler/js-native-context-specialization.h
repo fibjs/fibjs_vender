@@ -50,10 +50,15 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
                                 CompilationDependencies* dependencies,
                                 Zone* zone);
 
+  const char* reducer_name() const override {
+    return "JSNativeContextSpecialization";
+  }
+
   Reduction Reduce(Node* node) final;
 
  private:
   Reduction ReduceJSAdd(Node* node);
+  Reduction ReduceJSStringConcat(Node* node);
   Reduction ReduceJSGetSuperConstructor(Node* node);
   Reduction ReduceJSInstanceOf(Node* node);
   Reduction ReduceJSHasInPrototypeChain(Node* node);

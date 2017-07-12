@@ -202,6 +202,9 @@
     <Filter Include="Source Files\snapshot">
       <UniqueIdentifier>{b807bda9-b184-8f62-a640-92e0b3402f98}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\snapshot\snapshots">
+      <UniqueIdentifier>{889d8957-96c4-a1de-8979-3411a4591a10}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\third_party">
       <UniqueIdentifier>{517d88ea-d211-bcd7-bc22-b7165eec24c6}</UniqueIdentifier>
     </Filter>
@@ -672,6 +675,9 @@
     <ClInclude Include="src\compiler\bytecode-liveness-map.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\check-elimination.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\checkpoint-elimination.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -1114,6 +1120,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\flags.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\float.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\frames-inl.h">
@@ -2426,7 +2435,7 @@
     <ClCompile Include="src\builtins\builtins-promise-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-proxy.cc">
+    <ClCompile Include="src\builtins\builtins-proxy-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-reflect.cc">
@@ -2562,6 +2571,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\c-linkage.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\check-elimination.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\checkpoint-elimination.cc">
@@ -3683,11 +3695,35 @@
     <ClCompile Include="src\snapshot\snapshot-common.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshot-empty.cc">
-      <Filter>Source Files\snapshot</Filter>
-    </ClCompile>
     <ClCompile Include="src\snapshot\snapshot-source-sink.cc">
       <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-arm.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-arm64.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-mips.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-mips64.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc64.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-s390.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\startup-serializer.cc">
       <Filter>Source Files\snapshot</Filter>

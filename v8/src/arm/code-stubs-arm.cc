@@ -653,7 +653,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   const int fp_argument_count = 0;
 
   AllowExternalCallThatCantCauseGC scope(masm);
-  __ PrepareCallCFunction(argument_count, fp_argument_count, scratch);
+  __ PrepareCallCFunction(argument_count, fp_argument_count);
   __ mov(r0, Operand(ExternalReference::isolate_address(isolate())));
   __ CallCFunction(
       ExternalReference::store_buffer_overflow_function(isolate()),
@@ -692,7 +692,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ push(lr);
     {
       AllowExternalCallThatCantCauseGC scope(masm);
-      __ PrepareCallCFunction(0, 2, scratch);
+      __ PrepareCallCFunction(0, 2);
       __ MovToFloatParameters(double_base, double_exponent);
       __ CallCFunction(
           ExternalReference::power_double_double_function(isolate()), 0, 2);
@@ -743,7 +743,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ push(lr);
   {
     AllowExternalCallThatCantCauseGC scope(masm);
-    __ PrepareCallCFunction(0, 2, scratch);
+    __ PrepareCallCFunction(0, 2);
     __ MovToFloatParameters(double_base, double_exponent);
     __ CallCFunction(ExternalReference::power_double_double_function(isolate()),
                      0, 2);
@@ -935,7 +935,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
                                  isolate());
   {
     FrameScope scope(masm, StackFrame::MANUAL);
-    __ PrepareCallCFunction(3, 0, r0);
+    __ PrepareCallCFunction(3, 0);
     __ mov(r0, Operand(0));
     __ mov(r1, Operand(0));
     __ mov(r2, Operand(ExternalReference::isolate_address(isolate())));
@@ -2104,7 +2104,7 @@ void RecordWriteStub::GenerateIncremental(MacroAssembler* masm, Mode mode) {
 void RecordWriteStub::InformIncrementalMarker(MacroAssembler* masm) {
   regs_.SaveCallerSaveRegisters(masm, save_fp_regs_mode());
   int argument_count = 3;
-  __ PrepareCallCFunction(argument_count, regs_.scratch0());
+  __ PrepareCallCFunction(argument_count);
   Register address =
       r0.is(regs_.address()) ? regs_.scratch0() : regs_.address();
   DCHECK(!address.is(regs_.object()));
@@ -2196,15 +2196,15 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   // Fall through when we need to inform the incremental marker.
 }
 
-void ProfileEntryHookStub::MaybeCallEntryHookDelayed(MacroAssembler* masm,
+void ProfileEntryHookStub::MaybeCallEntryHookDelayed(TurboAssembler* tasm,
                                                      Zone* zone) {
-  if (masm->isolate()->function_entry_hook() != NULL) {
-    masm->MaybeCheckConstPool();
-    PredictableCodeSizeScope predictable(masm);
-    predictable.ExpectSize(masm->CallStubSize() + 2 * Assembler::kInstrSize);
-    __ push(lr);
-    __ CallStubDelayed(new (zone) ProfileEntryHookStub(nullptr));
-    __ pop(lr);
+  if (tasm->isolate()->function_entry_hook() != NULL) {
+    tasm->MaybeCheckConstPool();
+    PredictableCodeSizeScope predictable(tasm);
+    predictable.ExpectSize(tasm->CallStubSize() + 2 * Assembler::kInstrSize);
+    tasm->push(lr);
+    tasm->CallStubDelayed(new (zone) ProfileEntryHookStub(nullptr));
+    tasm->pop(lr);
   }
 }
 
@@ -2320,24 +2320,12 @@ static void CreateArrayDispatchOneArgument(MacroAssembler* masm,
   // r0 - number of arguments
   // r1 - constructor?
   // sp[0] - last argument
-  Label normal_sequence;
-  if (mode == DONT_OVERRIDE) {
-    STATIC_ASSERT(PACKED_SMI_ELEMENTS == 0);
-    STATIC_ASSERT(HOLEY_SMI_ELEMENTS == 1);
-    STATIC_ASSERT(PACKED_ELEMENTS == 2);
-    STATIC_ASSERT(HOLEY_ELEMENTS == 3);
-    STATIC_ASSERT(PACKED_DOUBLE_ELEMENTS == 4);
-    STATIC_ASSERT(HOLEY_DOUBLE_ELEMENTS == 5);
-
-    // is the low bit set? If so, we are holey and that is good.
-    __ tst(r3, Operand(1));
-    __ b(ne, &normal_sequence);
-  }
-
-  // look at the first argument
-  __ ldr(r5, MemOperand(sp, 0));
-  __ cmp(r5, Operand::Zero());
-  __ b(eq, &normal_sequence);
+  STATIC_ASSERT(PACKED_SMI_ELEMENTS == 0);
+  STATIC_ASSERT(HOLEY_SMI_ELEMENTS == 1);
+  STATIC_ASSERT(PACKED_ELEMENTS == 2);
+  STATIC_ASSERT(HOLEY_ELEMENTS == 3);
+  STATIC_ASSERT(PACKED_DOUBLE_ELEMENTS == 4);
+  STATIC_ASSERT(HOLEY_DOUBLE_ELEMENTS == 5);
 
   if (mode == DISABLE_ALLOCATION_SITES) {
     ElementsKind initial = GetInitialFastElementsKind();
@@ -2347,13 +2335,12 @@ static void CreateArrayDispatchOneArgument(MacroAssembler* masm,
                                                   holey_initial,
                                                   DISABLE_ALLOCATION_SITES);
     __ TailCallStub(&stub_holey);
-
-    __ bind(&normal_sequence);
-    ArraySingleArgumentConstructorStub stub(masm->isolate(),
-                                            initial,
-                                            DISABLE_ALLOCATION_SITES);
-    __ TailCallStub(&stub);
   } else if (mode == DONT_OVERRIDE) {
+    // is the low bit set? If so, we are holey and that is good.
+    Label normal_sequence;
+    __ tst(r3, Operand(1));
+    __ b(ne, &normal_sequence);
+
     // We are going to create a holey array, but our kind is non-holey.
     // Fix kind and retry (only if we have an allocation site in the slot).
     __ add(r3, r3, Operand(1));
@@ -2368,9 +2355,11 @@ static void CreateArrayDispatchOneArgument(MacroAssembler* masm,
     // in the AllocationSite::transition_info field because elements kind is
     // restricted to a portion of the field...upper bits need to be left alone.
     STATIC_ASSERT(AllocationSite::ElementsKindBits::kShift == 0);
-    __ ldr(r4, FieldMemOperand(r2, AllocationSite::kTransitionInfoOffset));
+    __ ldr(r4, FieldMemOperand(
+                   r2, AllocationSite::kTransitionInfoOrBoilerplateOffset));
     __ add(r4, r4, Operand(Smi::FromInt(kFastElementsKindPackedToHoley)));
-    __ str(r4, FieldMemOperand(r2, AllocationSite::kTransitionInfoOffset));
+    __ str(r4, FieldMemOperand(
+                   r2, AllocationSite::kTransitionInfoOrBoilerplateOffset));
 
     __ bind(&normal_sequence);
     int last_index =
@@ -2480,7 +2469,8 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
   __ CompareRoot(r2, Heap::kUndefinedValueRootIndex);
   __ b(eq, &no_info);
 
-  __ ldr(r3, FieldMemOperand(r2, AllocationSite::kTransitionInfoOffset));
+  __ ldr(r3, FieldMemOperand(
+                 r2, AllocationSite::kTransitionInfoOrBoilerplateOffset));
   __ SmiUntag(r3);
   STATIC_ASSERT(AllocationSite::ElementsKindBits::kShift == 0);
   __ and_(r3, r3, Operand(AllocationSite::ElementsKindBits::kMask));
@@ -2624,7 +2614,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   if (FLAG_log_timer_events) {
     FrameScope frame(masm, StackFrame::MANUAL);
     __ PushSafepointRegisters();
-    __ PrepareCallCFunction(1, r0);
+    __ PrepareCallCFunction(1);
     __ mov(r0, Operand(ExternalReference::isolate_address(isolate)));
     __ CallCFunction(ExternalReference::log_enter_external_function(isolate),
                      1);
@@ -2640,7 +2630,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   if (FLAG_log_timer_events) {
     FrameScope frame(masm, StackFrame::MANUAL);
     __ PushSafepointRegisters();
-    __ PrepareCallCFunction(1, r0);
+    __ PrepareCallCFunction(1);
     __ mov(r0, Operand(ExternalReference::isolate_address(isolate)));
     __ CallCFunction(ExternalReference::log_leave_external_function(isolate),
                      1);
@@ -2700,7 +2690,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ bind(&delete_allocated_handles);
   __ str(r5, MemOperand(r9, kLimitOffset));
   __ mov(r4, r0);
-  __ PrepareCallCFunction(1, r5);
+  __ PrepareCallCFunction(1);
   __ mov(r0, Operand(ExternalReference::isolate_address(isolate)));
   __ CallCFunction(ExternalReference::delete_handle_scope_extensions(isolate),
                    1);

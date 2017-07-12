@@ -45,6 +45,8 @@ class V8_EXPORT_PRIVATE Factory final {
   // Allocates a fixed array initialized with undefined values.
   Handle<FixedArray> NewFixedArray(int size,
                                    PretenureFlag pretenure = NOT_TENURED);
+  Handle<PropertyArray> NewPropertyArray(int size,
+                                         PretenureFlag pretenure = NOT_TENURED);
   // Tries allocating a fixed array initialized with undefined values.
   // In case of an allocation failure (OOM) an empty handle is returned.
   // The caller has to manually signal an
@@ -403,6 +405,10 @@ class V8_EXPORT_PRIVATE Factory final {
       Handle<FixedArray> array, int grow_by,
       PretenureFlag pretenure = NOT_TENURED);
 
+  Handle<PropertyArray> CopyPropertyArrayAndGrow(
+      Handle<PropertyArray> array, int grow_by,
+      PretenureFlag pretenure = NOT_TENURED);
+
   Handle<FixedArray> CopyFixedArrayUpTo(Handle<FixedArray> array, int new_len,
                                         PretenureFlag pretenure = NOT_TENURED);
 
@@ -572,10 +578,12 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<JSMap> NewJSMap();
   Handle<JSSet> NewJSSet();
 
-  Handle<JSMapIterator> NewJSMapIterator(Handle<OrderedHashMap> table,
-                                         int index, JSMapIterator::Kind kind);
-  Handle<JSSetIterator> NewJSSetIterator(Handle<OrderedHashSet> table,
-                                         int index, JSSetIterator::Kind kind);
+  Handle<JSMapIterator> NewJSMapIterator(Handle<Map> map,
+                                         Handle<OrderedHashMap> table,
+                                         int index);
+  Handle<JSSetIterator> NewJSSetIterator(Handle<Map> map,
+                                         Handle<OrderedHashSet> table,
+                                         int index);
 
   // Allocates a bound function.
   MaybeHandle<JSBoundFunction> NewJSBoundFunction(
@@ -601,7 +609,8 @@ class V8_EXPORT_PRIVATE Factory final {
                                  PretenureFlag pretenure = TENURED);
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype,
-                                 LanguageMode language_mode = SLOPPY);
+                                 LanguageMode language_mode = SLOPPY,
+                                 MutableMode prototype_mutability = MUTABLE);
   Handle<JSFunction> NewFunction(Handle<String> name);
   Handle<JSFunction> NewFunctionWithoutPrototype(
       Handle<String> name, Handle<Code> code,
@@ -627,7 +636,8 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype, InstanceType type,
                                  int instance_size,
-                                 LanguageMode language_mode = SLOPPY);
+                                 LanguageMode language_mode = SLOPPY,
+                                 MutableMode prototype_mutability = MUTABLE);
   Handle<JSFunction> NewFunction(Handle<String> name,
                                  Handle<Code> code,
                                  InstanceType type,
@@ -767,7 +777,8 @@ class V8_EXPORT_PRIVATE Factory final {
             function_mode == FUNCTION_WITH_READONLY_PROTOTYPE);
   }
 
-  Handle<Map> CreateSloppyFunctionMap(FunctionMode function_mode);
+  Handle<Map> CreateSloppyFunctionMap(
+      FunctionMode function_mode, MaybeHandle<JSFunction> maybe_empty_function);
 
   Handle<Map> CreateStrictFunctionMap(FunctionMode function_mode,
                                       Handle<JSFunction> empty_function);

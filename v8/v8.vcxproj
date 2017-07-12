@@ -167,6 +167,7 @@
     <ClInclude Include="src\compiler\bytecode-analysis.h" />
     <ClInclude Include="src\compiler\bytecode-graph-builder.h" />
     <ClInclude Include="src\compiler\bytecode-liveness-map.h" />
+    <ClInclude Include="src\compiler\check-elimination.h" />
     <ClInclude Include="src\compiler\checkpoint-elimination.h" />
     <ClInclude Include="src\compiler\code-assembler.h" />
     <ClInclude Include="src\compiler\code-generator-impl.h" />
@@ -315,6 +316,7 @@
     <ClInclude Include="src\fixed-dtoa.h" />
     <ClInclude Include="src\flag-definitions.h" />
     <ClInclude Include="src\flags.h" />
+    <ClInclude Include="src\float.h" />
     <ClInclude Include="src\frames-inl.h" />
     <ClInclude Include="src\frames.h" />
     <ClInclude Include="src\full-codegen\full-codegen.h" />
@@ -753,7 +755,7 @@
     <ClCompile Include="src\builtins\builtins-object-gen.cc" />
     <ClCompile Include="src\builtins\builtins-object.cc" />
     <ClCompile Include="src\builtins\builtins-promise-gen.cc" />
-    <ClCompile Include="src\builtins\builtins-proxy.cc" />
+    <ClCompile Include="src\builtins\builtins-proxy-gen.cc" />
     <ClCompile Include="src\builtins\builtins-reflect.cc" />
     <ClCompile Include="src\builtins\builtins-regexp-gen.cc" />
     <ClCompile Include="src\builtins\builtins-regexp.cc" />
@@ -799,6 +801,7 @@
     <ClCompile Include="src\compiler\bytecode-graph-builder.cc" />
     <ClCompile Include="src\compiler\bytecode-liveness-map.cc" />
     <ClCompile Include="src\compiler\c-linkage.cc" />
+    <ClCompile Include="src\compiler\check-elimination.cc" />
     <ClCompile Include="src\compiler\checkpoint-elimination.cc" />
     <ClCompile Include="src\compiler\code-assembler.cc" />
     <ClCompile Include="src\compiler\code-generator.cc" />
@@ -1172,8 +1175,16 @@
     <ClCompile Include="src\snapshot\serializer-common.cc" />
     <ClCompile Include="src\snapshot\serializer.cc" />
     <ClCompile Include="src\snapshot\snapshot-common.cc" />
-    <ClCompile Include="src\snapshot\snapshot-empty.cc" />
     <ClCompile Include="src\snapshot\snapshot-source-sink.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-arm.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-arm64.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-mips.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-mips64.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc64.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-s390.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64.cc" />
     <ClCompile Include="src\snapshot\startup-serializer.cc" />
     <ClCompile Include="src\source-position-table.cc" />
     <ClCompile Include="src\source-position.cc" />
