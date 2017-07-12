@@ -316,7 +316,7 @@
     <ClInclude Include="src\fixed-dtoa.h" />
     <ClInclude Include="src\flag-definitions.h" />
     <ClInclude Include="src\flags.h" />
-    <ClInclude Include="src\float.h" />
+    <ClInclude Include="src\float1.h" />
     <ClInclude Include="src\frames-inl.h" />
     <ClInclude Include="src\frames.h" />
     <ClInclude Include="src\full-codegen\full-codegen.h" />

@@ -1122,7 +1122,7 @@
     <ClInclude Include="src\flags.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\float.h">
+    <ClInclude Include="src\float1.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\frames-inl.h">

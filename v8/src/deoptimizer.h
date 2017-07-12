@@ -7,7 +7,7 @@
 
 #include "src/allocation.h"
 #include "src/deoptimize-reason.h"
-#include "src/float.h"
+#include "src/float1.h"
 #include "src/macro-assembler.h"
 #include "src/source-position.h"
 #include "src/zone/zone-chunk-list.h"

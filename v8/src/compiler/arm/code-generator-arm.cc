@@ -16,7 +16,7 @@
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
 #include "src/double.h"
-#include "src/float.h"
+#include "src/float1.h"
 #include "src/heap/heap-inl.h"
 
 namespace v8 {

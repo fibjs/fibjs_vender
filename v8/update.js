@@ -11,18 +11,18 @@ console.log(v8Folder);
 
 process.chdir(v8Folder);
 
-process.run("tools/dev/v8gen.py", [
-    "x64.release",
-    "--",
-    "v8_enable_i18n_support=false"
-]);
+// process.run("tools/dev/v8gen.py", [
+//     "x64.release",
+//     "--",
+//     "v8_enable_i18n_support=false"
+// ]);
 
-process.run("../depot_tools/ninja", [
-    "-C",
-    "out.gn/x64.release",
-    "-j",
-    "4"
-]);
+// process.run("../depot_tools/ninja", [
+//     "-C",
+//     "out.gn/x64.release",
+//     "-j",
+//     "4"
+// ]);
 
 process.chdir(workFolder);
 
@@ -119,6 +119,15 @@ function chk_file(fname) {
     return true;
 }
 
+var replaces = {
+    '#include "testing/gtest/include/gtest': '#include "gtest',
+    'src/float.h': 'src/float1.h'
+};
+
+var reanmes = {
+    'src/float.h': 'src/float1.h'
+};
+
 function cp_folder(path, to) {
     var dir = fs.readdir(v8Folder + '/' + path);
     dir.forEach(function (name) {
@@ -135,7 +144,12 @@ function cp_folder(path, to) {
                 if (chk_file(fnameto)) {
                     console.log("copy", fnameto);
                     var txt = fs.readTextFile(v8Folder + '/' + fname);
-                    txt = txt.replace('#include "testing/gtest/include/gtest', '#include "gtest');
+                    for (var t1 in replaces)
+                        txt = txt.replace(t1, replaces[t1]);
+
+                    if (reanmes[fnameto])
+                        fnameto = reanmes[fnameto];
+
                     fs.writeFile(fnameto, txt);
                 }
             }
