@@ -2,10 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 include(../tools/basic.cmake)
 
-include_directories(
-	"/usr/local/include/"
-	"${PROJECT_SOURCE_DIR}/../icu/include"
-)
+include_directories("/usr/local/include/")
 
 add_definitions(
 	-DV8_NO_FAST_TLS=1
