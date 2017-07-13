@@ -1178,12 +1178,14 @@
     <ClCompile Include="src\snapshot\snapshot-source-sink.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-arm.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-arm64.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-win.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-ia32.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-mips.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-mips64.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-ppc.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-ppc64.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-s390.cc" />
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64-win.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-x64.cc" />
     <ClCompile Include="src\snapshot\startup-serializer.cc" />
     <ClCompile Include="src\source-position-table.cc" />

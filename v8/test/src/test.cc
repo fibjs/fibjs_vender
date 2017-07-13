@@ -1,11 +1,10 @@
-#include "exlib/include/service.h"
-#include "exlib/include/qstring.h"
-
-#include "src/v8.h"
-
 #define main _main
 #include "mksnapshot.inl"
 #undef main
+
+#include "exlib/include/service.h"
+#include "exlib/include/qstring.h"
+#include "src/v8.h"
 
 int main(int argc, char** argv)
 {
@@ -49,6 +48,10 @@ int main(int argc, char** argv)
     defname = "V8_TARGET_ARCH_S390";
 #endif
 
+#ifdef _WIN32
+    fname += "-win";
+#endif
+
     fname = "snapshot-" + fname + ".cc";
 
     char* buffer;
@@ -67,9 +70,15 @@ int main(int argc, char** argv)
 
     exlib::string src;
 
-    src = "#include \"src/v8.h\"\n\n#if " + defname + "\n\n";
+#ifdef _WIN32
+    src = "#ifdef _WIN32\n\n";
+#else
+    src = "#ifndef _WIN32\n\n";
+#endif
+
+    src += "#include \"src/v8.h\"\n\n#if " + defname + "\n\n";
     src.append(buffer, lSize);
-    src += "\n\n#endif  // " + defname;
+    src += "\n\n#endif  // " + defname + "\n\n#endif // _WIN32";
 
     free(buffer);
 

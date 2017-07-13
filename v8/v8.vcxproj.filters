@@ -3704,6 +3704,9 @@
     <ClCompile Include="src\snapshot\snapshots\snapshot-arm64.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-win.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
     <ClCompile Include="src\snapshot\snapshots\snapshot-ia32.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
@@ -3720,6 +3723,9 @@
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\snapshots\snapshot-s390.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64-win.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\snapshots\snapshot-x64.cc">
