@@ -1,5 +1,3 @@
-#ifndef _WIN32
-
 #include "src/v8.h"
 
 #if V8_TARGET_ARCH_S390
@@ -34,5 +32,3 @@ const v8::StartupData* Snapshot::DefaultSnapshotBlob() { return NULL; }
 
 
 #endif  // V8_TARGET_ARCH_S390
-
-#endif _WIN32

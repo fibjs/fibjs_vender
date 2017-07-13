@@ -99,7 +99,6 @@ function build_win() {
     }
 
     build_one("amd64");
-    build_one("i386");
 }
 
 if (platform == 'win32')

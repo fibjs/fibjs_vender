@@ -70,15 +70,21 @@ int main(int argc, char** argv)
 
     exlib::string src;
 
+#if V8_TARGET_ARCH_X64
 #ifdef _WIN32
     src = "#ifdef _WIN32\n\n";
 #else
     src = "#ifndef _WIN32\n\n";
 #endif
+#endif
 
     src += "#include \"src/v8.h\"\n\n#if " + defname + "\n\n";
     src.append(buffer, lSize);
-    src += "\n\n#endif  // " + defname + "\n\n#endif // _WIN32";
+    src += "\n\n#endif  // " + defname;
+
+#if V8_TARGET_ARCH_X64
+    src += "\n\n#endif // _WIN32";
+#endif
 
     free(buffer);
 

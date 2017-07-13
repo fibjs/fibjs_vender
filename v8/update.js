@@ -366,23 +366,20 @@ function patch_snapshot() {
         x64: 'V8_TARGET_ARCH_X64'
     };
 
-    var archs_win = {
-        ia32: 'V8_TARGET_ARCH_IA32',
-        x64: 'V8_TARGET_ARCH_X64'
-    };
-
     fs.copy(v8Folder + "/src/snapshot/mksnapshot.cc", "test/src/mksnapshot.inl");
 
     var txt = fs.readTextFile(v8Folder + "/src/snapshot/snapshot-empty.cc");
 
     for (var arch in archs) {
-        fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + ".cc",
-            '#ifndef _WIN32\n\n#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch] + '\n\n#endif _WIN32');
-    }
+        if (arch === 'x64') {
+            fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + ".cc",
+                '#ifndef _WIN32\n\n#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch] + '\n\n#endif _WIN32');
 
-    for (var arch in archs_win) {
-        fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + "-win.cc",
-            '#ifdef _WIN32\n\n#include "src/v8.h"\n\n#if ' + archs_win[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs_win[arch] + '\n\n#endif _WIN32');
+            fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + "-win.cc",
+                '#ifdef _WIN32\n\n#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch] + '\n\n#endif _WIN32');
+        } else
+            fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + ".cc",
+                '#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch]);
     }
 }
 
