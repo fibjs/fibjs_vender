@@ -5,6 +5,7 @@
 #ifndef V8_PARSING_PARSER_BASE_H
 #define V8_PARSING_PARSER_BASE_H
 
+#include "src/ast/ast-source-ranges.h"
 #include "src/ast/ast.h"
 #include "src/ast/scopes.h"
 #include "src/bailout-reason.h"
@@ -101,11 +102,12 @@ class SourceRangeScope final {
 
   ~SourceRangeScope() { Finalize(); }
 
-  void Finalize() {
-    if (is_finalized_) return;
+  const SourceRange& Finalize() {
+    if (is_finalized_) return *range_;
     is_finalized_ = true;
     range_->end = GetPosition(post_kind_);
     DCHECK_NE(range_->end, kNoSourcePosition);
+    return *range_;
   }
 
  private:
@@ -268,7 +270,6 @@ class ParserBase {
         default_eager_compile_hint_(FunctionLiteral::kShouldLazyCompile),
         function_literal_id_(0),
         allow_natives_(false),
-        allow_tailcalls_(false),
         allow_harmony_do_expressions_(false),
         allow_harmony_function_sent_(false),
         allow_harmony_restrictive_generators_(false),
@@ -283,7 +284,6 @@ class ParserBase {
   void set_allow_##name(bool allow) { allow_##name##_ = allow; }
 
   ALLOW_ACCESSORS(natives);
-  ALLOW_ACCESSORS(tailcalls);
   ALLOW_ACCESSORS(harmony_do_expressions);
   ALLOW_ACCESSORS(harmony_function_sent);
   ALLOW_ACCESSORS(harmony_restrictive_generators);
@@ -374,56 +374,6 @@ class ParserBase {
     Scope* scope;
   };
 
-  class TailCallExpressionList {
-   public:
-    explicit TailCallExpressionList(Zone* zone)
-        : zone_(zone), expressions_(0, zone), has_explicit_tail_calls_(false) {}
-
-    const ZoneList<ExpressionT>& expressions() const { return expressions_; }
-    const Scanner::Location& location() const { return loc_; }
-
-    bool has_explicit_tail_calls() const { return has_explicit_tail_calls_; }
-
-    void Swap(TailCallExpressionList& other) {
-      expressions_.Swap(&other.expressions_);
-      std::swap(loc_, other.loc_);
-      std::swap(has_explicit_tail_calls_, other.has_explicit_tail_calls_);
-    }
-
-    void AddImplicitTailCall(ExpressionT expr) {
-      expressions_.Add(expr, zone_);
-    }
-
-    void Append(const TailCallExpressionList& other) {
-      if (!has_explicit_tail_calls()) {
-        loc_ = other.loc_;
-        has_explicit_tail_calls_ = other.has_explicit_tail_calls_;
-      }
-      expressions_.AddAll(other.expressions_, zone_);
-    }
-
-   private:
-    Zone* zone_;
-    ZoneList<ExpressionT> expressions_;
-    Scanner::Location loc_;
-    bool has_explicit_tail_calls_;
-  };
-
-  // Defines whether tail call expressions are allowed or not.
-  enum class ReturnExprContext {
-    // We are inside return statement which is allowed to contain tail call
-    // expressions. Tail call expressions are allowed.
-    kInsideValidReturnStatement,
-
-    // We are inside a block in which tail call expressions are allowed but
-    // not yet inside a return statement.
-    kInsideValidBlock,
-
-    // Tail call expressions are not allowed in the following blocks.
-    kInsideTryBlock,
-    kInsideForInOfBody,
-  };
-
   class FunctionState final : public BlockState {
    public:
     FunctionState(FunctionState** function_state_stack, Scope** scope_stack,
@@ -454,25 +404,8 @@ class ParserBase {
       return destructuring_assignments_to_rewrite_;
     }
 
-    TailCallExpressionList& tail_call_expressions() {
-      return tail_call_expressions_;
-    }
-    void AddImplicitTailCallExpression(ExpressionT expression) {
-      if (return_expr_context() ==
-          ReturnExprContext::kInsideValidReturnStatement) {
-        tail_call_expressions_.AddImplicitTailCall(expression);
-      }
-    }
-
     ZoneList<typename ExpressionClassifier::Error>* GetReportedErrorList() {
       return &reported_errors_;
-    }
-
-    ReturnExprContext return_expr_context() const {
-      return return_expr_context_;
-    }
-    void set_return_expr_context(ReturnExprContext context) {
-      return_expr_context_ = context;
     }
 
     ZoneList<ExpressionT>* non_patterns_to_rewrite() {
@@ -535,8 +468,6 @@ class ParserBase {
     DeclarationScope* scope_;
 
     ZoneList<DestructuringAssignment> destructuring_assignments_to_rewrite_;
-    TailCallExpressionList tail_call_expressions_;
-    ReturnExprContext return_expr_context_;
     ZoneList<ExpressionT> non_patterns_to_rewrite_;
 
     ZoneList<typename ExpressionClassifier::Error> reported_errors_;
@@ -553,48 +484,6 @@ class ParserBase {
     bool contains_function_or_eval_;
 
     friend Impl;
-  };
-
-  // This scope sets current ReturnExprContext to given value.
-  class ReturnExprScope {
-   public:
-    explicit ReturnExprScope(FunctionState* function_state,
-                             ReturnExprContext return_expr_context)
-        : function_state_(function_state),
-          sav_return_expr_context_(function_state->return_expr_context()) {
-      // Don't update context if we are requested to enable tail call
-      // expressions but current block does not allow them.
-      if (return_expr_context !=
-              ReturnExprContext::kInsideValidReturnStatement ||
-          sav_return_expr_context_ == ReturnExprContext::kInsideValidBlock) {
-        function_state->set_return_expr_context(return_expr_context);
-      }
-    }
-    ~ReturnExprScope() {
-      function_state_->set_return_expr_context(sav_return_expr_context_);
-    }
-
-   private:
-    FunctionState* function_state_;
-    ReturnExprContext sav_return_expr_context_;
-  };
-
-  // Collects all return expressions at tail call position in this scope
-  // to a separate list.
-  class CollectExpressionsInTailPositionToListScope {
-   public:
-    CollectExpressionsInTailPositionToListScope(FunctionState* function_state,
-                                                TailCallExpressionList* list)
-        : function_state_(function_state), list_(list) {
-      function_state->tail_call_expressions().Swap(*list_);
-    }
-    ~CollectExpressionsInTailPositionToListScope() {
-      function_state_->tail_call_expressions().Swap(*list_);
-    }
-
-   private:
-    FunctionState* function_state_;
-    TailCallExpressionList* list_;
   };
 
   struct DeclarationDescriptor {
@@ -639,15 +528,13 @@ class ParserBase {
           scope(nullptr),
           init_block(parser->impl()->NullBlock()),
           inner_block(parser->impl()->NullBlock()),
-          bound_names(1, parser->zone()),
-          tail_call_expressions(parser->zone()) {}
+          bound_names(1, parser->zone()) {}
     IdentifierT name;
     ExpressionT pattern;
     Scope* scope;
     BlockT init_block;
     BlockT inner_block;
     ZoneList<const AstRawString*> bound_names;
-    TailCallExpressionList tail_call_expressions;
   };
 
   struct ForInfo {
@@ -1428,24 +1315,11 @@ class ParserBase {
 
   // Convenience method which determines the type of return statement to emit
   // depending on the current function type.
-  inline StatementT BuildReturnStatement(
-      ExpressionT expr, int pos, int continuation_pos = kNoSourcePosition) {
-    if (is_async_function()) {
-      return factory()->NewAsyncReturnStatement(expr, pos, continuation_pos);
-    }
-    return factory()->NewReturnStatement(expr, pos, continuation_pos);
-  }
-
-  inline SuspendExpressionT BuildSuspend(
-      ExpressionT expr, int pos, Suspend::OnAbruptResume on_abrupt_resume,
-      SuspendFlags suspend_type) {
-    DCHECK_EQ(0,
-              static_cast<int>(suspend_type & ~SuspendFlags::kSuspendTypeMask));
-    if (V8_UNLIKELY(is_async_generator())) {
-      suspend_type = static_cast<SuspendFlags>(suspend_type |
-                                               SuspendFlags::kAsyncGenerator);
-    }
-    return factory()->NewSuspend(expr, pos, on_abrupt_resume, suspend_type);
+  inline StatementT BuildReturnStatement(ExpressionT expr, int pos,
+                                         int end_pos = kNoSourcePosition) {
+    return is_async_function()
+               ? factory()->NewAsyncReturnStatement(expr, pos, end_pos)
+               : factory()->NewReturnStatement(expr, pos, end_pos);
   }
 
   // Validation per ES6 object literals.
@@ -1575,7 +1449,6 @@ class ParserBase {
   int function_literal_id_;
 
   bool allow_natives_;
-  bool allow_tailcalls_;
   bool allow_harmony_do_expressions_;
   bool allow_harmony_function_sent_;
   bool allow_harmony_restrictive_generators_;
@@ -1598,8 +1471,6 @@ ParserBase<Impl>::FunctionState::FunctionState(
       outer_function_state_(*function_state_stack),
       scope_(scope),
       destructuring_assignments_to_rewrite_(16, scope->zone()),
-      tail_call_expressions_(scope->zone()),
-      return_expr_context_(ReturnExprContext::kInsideValidBlock),
       non_patterns_to_rewrite_(0, scope->zone()),
       reported_errors_(16, scope->zone()),
       next_function_is_likely_called_(false),
@@ -1865,6 +1736,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParsePrimaryExpression(
     case Token::ASYNC:
       if (!scanner()->HasAnyLineTerminatorAfterNext() &&
           PeekAhead() == Token::FUNCTION) {
+        BindingPatternUnexpectedToken();
         Consume(Token::ASYNC);
         return ParseAsyncFunctionLiteral(CHECK_OK);
       }
@@ -2246,13 +2118,16 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParsePropertyName(
         expression = ParseAssignmentExpression(true, CHECK_OK);
         *kind = PropertyKind::kSpreadProperty;
 
-        if (expression->IsAssignment()) {
-          classifier()->RecordPatternError(
+        if (!impl()->IsIdentifier(expression)) {
+          classifier()->RecordBindingPatternError(
               scanner()->location(),
-              MessageTemplate::kInvalidDestructuringTarget);
-        } else {
-          CheckDestructuringElement(expression, pos,
-                                    scanner()->location().end_pos);
+              MessageTemplate::kInvalidRestBindingPattern);
+        }
+
+        if (!expression->IsValidReferenceExpression()) {
+          classifier()->RecordAssignmentPatternError(
+              scanner()->location(),
+              MessageTemplate::kInvalidRestAssignmentPattern);
         }
 
         if (peek() != Token::RBRACE) {
@@ -3046,8 +2921,8 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseYieldExpression(
 
   // Hackily disambiguate o from o.next and o [Symbol.iterator]().
   // TODO(verwaest): Come up with a better solution.
-  ExpressionT yield = BuildSuspend(expression, pos, Suspend::kOnExceptionThrow,
-                                   SuspendFlags::kYield);
+  ExpressionT yield =
+      factory()->NewYield(expression, pos, Suspend::kOnExceptionThrow);
   return yield;
 }
 
@@ -3060,6 +2935,7 @@ ParserBase<Impl>::ParseConditionalExpression(bool accept_IN,
   //   LogicalOrExpression
   //   LogicalOrExpression '?' AssignmentExpression ':' AssignmentExpression
 
+  SourceRange then_range, else_range;
   int pos = peek_position();
   // We start using the binary expression parser for prec >= 4 only!
   ExpressionT expression = ParseBinaryExpression(4, accept_IN, CHECK_OK);
@@ -3071,6 +2947,7 @@ ParserBase<Impl>::ParseConditionalExpression(bool accept_IN,
 
   ExpressionT left;
   {
+    SourceRangeScope range_scope(scanner(), &then_range);
     ExpressionClassifier classifier(this);
     // In parsing the first assignment expression in conditional
     // expressions we always accept the 'in' keyword; see ECMA-262,
@@ -3082,12 +2959,15 @@ ParserBase<Impl>::ParseConditionalExpression(bool accept_IN,
   Expect(Token::COLON, CHECK_OK);
   ExpressionT right;
   {
+    SourceRangeScope range_scope(scanner(), &else_range);
     ExpressionClassifier classifier(this);
     right = ParseAssignmentExpression(accept_IN, CHECK_OK);
     AccumulateNonBindingPatternErrors();
   }
   impl()->RewriteNonPattern(CHECK_OK);
-  return factory()->NewConditional(expression, left, right, pos);
+  ExpressionT expr = factory()->NewConditional(expression, left, right, pos);
+  impl()->RecordConditionalSourceRange(expr, then_range, else_range);
+  return expr;
 }
 
 
@@ -3218,7 +3098,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseUnaryExpression(
 
     ExpressionT value = ParseUnaryExpression(CHECK_OK);
 
-    return impl()->RewriteAwaitExpression(value, await_pos);
+    return factory()->NewAwait(value, await_pos);
   } else {
     return ParsePostfixExpression(ok);
   }
@@ -4198,7 +4078,6 @@ void ParserBase<Impl>::ParseFunctionBody(
   impl()->CreateFunctionNameAssignment(function_name, pos, function_type,
                                        function_scope, result,
                                        kFunctionNameAssignmentIndex);
-  impl()->MarkCollectedTailCallExpressions();
 }
 
 template <typename Impl>
@@ -4353,10 +4232,6 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
       // Single-expression body
       has_braces = false;
       int pos = position();
-      DCHECK(ReturnExprContext::kInsideValidBlock ==
-             function_state_->return_expr_context());
-      ReturnExprScope allow_tail_calls(
-          function_state_, ReturnExprContext::kInsideValidReturnStatement);
       body = impl()->NewStatementList(1);
       impl()->AddParameterInitializationBlock(
           formal_parameters, body, kind == kAsyncArrowFunction, CHECK_OK);
@@ -4371,13 +4246,8 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
         impl()->RewriteNonPattern(CHECK_OK);
         body->Add(BuildReturnStatement(expression, expression->position()),
                   zone());
-        if (allow_tailcalls() && !is_sloppy(language_mode())) {
-          // ES6 14.6.1 Static Semantics: IsInTailPosition
-          impl()->MarkTailPosition(expression);
-        }
       }
       expected_property_count = function_state.expected_property_count();
-      impl()->MarkCollectedTailCallExpressions();
     }
 
     formal_parameters.scope->set_end_position(scanner()->location().end_pos);
@@ -4555,7 +4425,7 @@ ParserBase<Impl>::ParseAsyncFunctionLiteral(bool* ok) {
 
   bool is_generator = allow_harmony_async_iteration() && Check(Token::MUL);
   const bool kIsAsync = true;
-  static const FunctionKind kind = FunctionKindFor(is_generator, kIsAsync);
+  const FunctionKind kind = FunctionKindFor(is_generator, kIsAsync);
 
   if (impl()->ParsingDynamicFunctionDeclaration()) {
     // We don't want dynamic functions to actually declare their name
@@ -5035,7 +4905,9 @@ typename ParserBase<Impl>::BlockT ParserBase<Impl>::ParseBlock(
     }
 
     Expect(Token::RBRACE, CHECK_OK_CUSTOM(NullBlock));
-    scope()->set_end_position(scanner()->location().end_pos);
+    int end_pos = scanner()->location().end_pos;
+    scope()->set_end_position(end_pos);
+    impl()->RecordBlockSourceRange(body, end_pos);
     body->set_scope(scope()->FinalizeBlockScope());
   }
   return body;
@@ -5199,8 +5071,10 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseIfStatement(
   } else {
     else_statement = factory()->NewEmptyStatement(kNoSourcePosition);
   }
-  return factory()->NewIfStatement(condition, then_statement, else_statement,
-                                   pos, then_range, else_range);
+  StatementT stmt =
+      factory()->NewIfStatement(condition, then_statement, else_statement, pos);
+  impl()->RecordIfStatementSourceRange(stmt, then_range, else_range);
+  return stmt;
 }
 
 template <typename Impl>
@@ -5235,8 +5109,9 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseContinueStatement(
     return impl()->NullStatement();
   }
   ExpectSemicolon(CHECK_OK);
-  int continuation_pos = scanner_->location().end_pos;
-  return factory()->NewContinueStatement(target, pos, continuation_pos);
+  StatementT stmt = factory()->NewContinueStatement(target, pos);
+  impl()->RecordJumpStatementSourceRange(stmt, scanner_->location().end_pos);
+  return stmt;
 }
 
 template <typename Impl>
@@ -5274,8 +5149,9 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseBreakStatement(
     return impl()->NullStatement();
   }
   ExpectSemicolon(CHECK_OK);
-  int continuation_pos = scanner_->location().end_pos;
-  return factory()->NewBreakStatement(target, pos, continuation_pos);
+  StatementT stmt = factory()->NewBreakStatement(target, pos);
+  impl()->RecordJumpStatementSourceRange(stmt, scanner_->location().end_pos);
+  return stmt;
 }
 
 template <typename Impl>
@@ -5311,26 +5187,15 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseReturnStatement(
       return_value = impl()->GetLiteralUndefined(position());
     }
   } else {
-    if (IsDerivedConstructor(function_state_->kind())) {
-      // Because of the return code rewriting that happens in case of a subclass
-      // constructor we don't want to accept tail calls, therefore we don't set
-      // ReturnExprScope to kInsideValidReturnStatement here.
-      return_value = ParseExpression(true, CHECK_OK);
-    } else {
-      ReturnExprScope maybe_allow_tail_calls(
-          function_state_, ReturnExprContext::kInsideValidReturnStatement);
-      return_value = ParseExpression(true, CHECK_OK);
-
-      if (allow_tailcalls() && !is_sloppy(language_mode()) && !is_resumable()) {
-        // ES6 14.6.1 Static Semantics: IsInTailPosition
-        function_state_->AddImplicitTailCallExpression(return_value);
-      }
-    }
+    return_value = ParseExpression(true, CHECK_OK);
   }
   ExpectSemicolon(CHECK_OK);
   return_value = impl()->RewriteReturn(return_value, loc.beg_pos);
   int continuation_pos = scanner_->location().end_pos;
-  return BuildReturnStatement(return_value, loc.beg_pos, continuation_pos);
+  StatementT stmt =
+      BuildReturnStatement(return_value, loc.beg_pos, continuation_pos);
+  impl()->RecordJumpStatementSourceRange(stmt, scanner_->location().end_pos);
+  return stmt;
 }
 
 template <typename Impl>
@@ -5392,7 +5257,9 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseDoWhileStatement(
   // ExpectSemicolon() functionality here.
   Check(Token::SEMICOLON);
 
-  loop->Initialize(cond, body, body_range);
+  loop->Initialize(cond, body);
+  impl()->RecordIterationStatementSourceRange(loop, body_range);
+
   return loop;
 }
 
@@ -5417,7 +5284,9 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseWhileStatement(
     body = ParseStatement(nullptr, CHECK_OK);
   }
 
-  loop->Initialize(cond, body, body_range);
+  loop->Initialize(cond, body);
+  impl()->RecordIterationStatementSourceRange(loop, body_range);
+
   return loop;
 }
 
@@ -5436,9 +5305,11 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseThrowStatement(
   }
   ExpressionT exception = ParseExpression(true, CHECK_OK);
   ExpectSemicolon(CHECK_OK);
-  int continuation_pos = scanner_->location().end_pos;
 
-  return impl()->NewThrowStatement(exception, pos, continuation_pos);
+  StatementT stmt = impl()->NewThrowStatement(exception, pos);
+  impl()->RecordThrowSourceRange(stmt, scanner_->location().end_pos);
+
+  return stmt;
 }
 
 template <typename Impl>
@@ -5492,19 +5363,17 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseSwitchStatement(
         StatementT stat = ParseStatementListItem(CHECK_OK);
         statements->Add(stat, zone());
       }
-      range_scope.Finalize();
-      auto clause =
-          factory()->NewCaseClause(label, statements, clause_pos, clause_range);
+      auto clause = factory()->NewCaseClause(label, statements, clause_pos);
+      impl()->RecordCaseClauseSourceRange(clause, range_scope.Finalize());
       cases->Add(clause, zone());
     }
     Expect(Token::RBRACE, CHECK_OK);
 
     int end_position = scanner()->location().end_pos;
     scope()->set_end_position(end_position);
-    int continuation_pos = end_position;
+    impl()->RecordSwitchStatementSourceRange(switch_statement, end_position);
     return impl()->RewriteSwitchStatement(tag, switch_statement, cases,
-                                          scope()->FinalizeBlockScope(),
-                                          continuation_pos);
+                                          scope()->FinalizeBlockScope());
   }
 }
 
@@ -5525,12 +5394,7 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement(
   Expect(Token::TRY, CHECK_OK);
   int pos = position();
 
-  BlockT try_block = impl()->NullBlock();
-  {
-    ReturnExprScope no_tail_calls(function_state_,
-                                  ReturnExprContext::kInsideTryBlock);
-    try_block = ParseBlock(nullptr, CHECK_OK);
-  }
+  BlockT try_block = ParseBlock(nullptr, CHECK_OK);
 
   CatchInfo catch_info(this);
 
@@ -5549,9 +5413,6 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement(
     catch_info.scope->set_start_position(scanner()->location().beg_pos);
 
     {
-      CollectExpressionsInTailPositionToListScope
-          collect_tail_call_expressions_scope(
-              function_state_, &catch_info.tail_call_expressions);
       BlockState catch_block_state(&scope_, catch_info.scope);
 
       catch_block = factory()->NewBlock(nullptr, 16, false, kNoSourcePosition);
@@ -5717,12 +5578,14 @@ ParserBase<Impl>::ParseForEachStatementWithDeclarations(
 
   StatementT final_loop = impl()->NullStatement();
   {
-    ReturnExprScope no_tail_calls(function_state_,
-                                  ReturnExprContext::kInsideForInOfBody);
     BlockState block_state(zone(), &scope_);
     scope()->set_start_position(scanner()->location().beg_pos);
 
+    SourceRange body_range;
+    SourceRangeScope range_scope(scanner(), &body_range);
+
     StatementT body = ParseStatement(nullptr, CHECK_OK);
+    impl()->RecordIterationStatementSourceRange(loop, range_scope.Finalize());
 
     BlockT body_block = impl()->NullBlock();
     ExpressionT each_variable = impl()->EmptyExpression();
@@ -5780,15 +5643,17 @@ ParserBase<Impl>::ParseForEachStatementWithoutDeclarations(
   Scope* for_scope = scope();
 
   {
-    ReturnExprScope no_tail_calls(function_state_,
-                                  ReturnExprContext::kInsideForInOfBody);
     BlockState block_state(zone(), &scope_);
     scope()->set_start_position(scanner()->location().beg_pos);
+
+    SourceRange body_range;
+    SourceRangeScope range_scope(scanner(), &body_range);
 
     StatementT body = ParseStatement(nullptr, CHECK_OK);
     scope()->set_end_position(scanner()->location().end_pos);
     StatementT final_loop =
         impl()->InitializeForEachStatement(loop, expression, enumerable, body);
+    impl()->RecordIterationStatementSourceRange(loop, range_scope.Finalize());
 
     for_scope = for_scope->FinalizeBlockScope();
     USE(for_scope);
@@ -5878,11 +5743,13 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseStandardForLoop(
     }
     block->statements()->Add(loop, zone());
     block->set_scope(for_scope);
-    loop->Initialize(init, cond, next, body, body_range);
+    loop->Initialize(init, cond, next, body);
+    impl()->RecordIterationStatementSourceRange(loop, body_range);
     return block;
   }
 
-  loop->Initialize(init, cond, next, body, body_range);
+  loop->Initialize(init, cond, next, body);
+  impl()->RecordIterationStatementSourceRange(loop, body_range);
   return loop;
 }
 
@@ -5985,13 +5852,15 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseForAwaitStatement(
   StatementT final_loop = impl()->NullStatement();
   Scope* for_scope = scope();
   {
-    ReturnExprScope no_tail_calls(function_state_,
-                                  ReturnExprContext::kInsideForInOfBody);
     BlockState block_state(zone(), &scope_);
     scope()->set_start_position(scanner()->location().beg_pos);
 
+    SourceRange body_range;
+    SourceRangeScope range_scope(scanner(), &body_range);
+
     StatementT body = ParseStatement(nullptr, CHECK_OK);
     scope()->set_end_position(scanner()->location().end_pos);
+    impl()->RecordIterationStatementSourceRange(loop, range_scope.Finalize());
 
     if (has_declarations) {
       BlockT body_block = impl()->NullBlock();

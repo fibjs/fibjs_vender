@@ -647,7 +647,7 @@ void Assembler::GetCode(Isolate* isolate, CodeDesc* desc) {
 
 
 void Assembler::Align(int m) {
-  DCHECK(m >= 4 && base::bits::IsPowerOfTwo32(m));
+  DCHECK(m >= 4 && base::bits::IsPowerOfTwo(m));
   while ((pc_offset() & (m - 1)) != 0) {
     nop();
   }
@@ -4570,7 +4570,7 @@ bool Assembler::IsImmLogical(uint64_t value,
   }
 
   // If the repeat period d is not a power of two, it can't be encoded.
-  if (!IS_POWER_OF_TWO(d)) {
+  if (!base::bits::IsPowerOfTwo(d)) {
     return false;
   }
 
@@ -4719,9 +4719,7 @@ void Assembler::GrowBuffer() {
 
   // Some internal data structures overflow for very large buffers,
   // they must ensure that kMaximalBufferSize is not too large.
-  if (desc.buffer_size > kMaximalBufferSize ||
-      static_cast<size_t>(desc.buffer_size) >
-          isolate_data().max_old_generation_size_) {
+  if (desc.buffer_size > kMaximalBufferSize) {
     V8::FatalProcessOutOfMemory("Assembler::GrowBuffer");
   }
 

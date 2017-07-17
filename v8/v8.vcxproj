@@ -56,6 +56,7 @@
     <ClInclude Include="src\ast\ast-expression-rewriter.h" />
     <ClInclude Include="src\ast\ast-function-literal-id-reindexer.h" />
     <ClInclude Include="src\ast\ast-numbering.h" />
+    <ClInclude Include="src\ast\ast-source-ranges.h" />
     <ClInclude Include="src\ast\ast-traversal-visitor.h" />
     <ClInclude Include="src\ast\ast-value-factory.h" />
     <ClInclude Include="src\ast\ast.h" />
@@ -98,6 +99,7 @@
     <ClInclude Include="src\base\platform\condition-variable.h" />
     <ClInclude Include="src\base\platform\elapsed-timer.h" />
     <ClInclude Include="src\base\platform\mutex.h" />
+    <ClInclude Include="src\base\platform\platform-posix-time.h" />
     <ClInclude Include="src\base\platform\platform-posix.h" />
     <ClInclude Include="src\base\platform\platform.h" />
     <ClInclude Include="src\base\platform\semaphore.h" />
@@ -256,7 +258,6 @@
     <ClInclude Include="src\compiler\simplified-operator.h" />
     <ClInclude Include="src\compiler\state-values-utils.h" />
     <ClInclude Include="src\compiler\store-store-elimination.h" />
-    <ClInclude Include="src\compiler\tail-call-optimization.h" />
     <ClInclude Include="src\compiler\type-cache.h" />
     <ClInclude Include="src\compiler\typed-optimization.h" />
     <ClInclude Include="src\compiler\typer.h" />
@@ -697,6 +698,7 @@
     <ClCompile Include="src\base\platform\platform-linux.cc" />
     <ClCompile Include="src\base\platform\platform-macos.cc" />
     <ClCompile Include="src\base\platform\platform-openbsd.cc" />
+    <ClCompile Include="src\base\platform\platform-posix-time.cc" />
     <ClCompile Include="src\base\platform\platform-posix.cc" />
     <ClCompile Include="src\base\platform\platform-solaris.cc" />
     <ClCompile Include="src\base\platform\platform-win32.cc" />
@@ -891,7 +893,6 @@
     <ClCompile Include="src\compiler\simplified-operator.cc" />
     <ClCompile Include="src\compiler\state-values-utils.cc" />
     <ClCompile Include="src\compiler\store-store-elimination.cc" />
-    <ClCompile Include="src\compiler\tail-call-optimization.cc" />
     <ClCompile Include="src\compiler\type-cache.cc" />
     <ClCompile Include="src\compiler\typed-optimization.cc" />
     <ClCompile Include="src\compiler\typer.cc" />

@@ -172,14 +172,18 @@ namespace {  // Avoid littering the global namespace.
 template <size_t ptr_size> struct SnapshotSizeConstants;
 
 template <> struct SnapshotSizeConstants<4> {
-  static const int kExpectedHeapGraphEdgeSize = 12;
-  static const int kExpectedHeapEntrySize = 28;
+  static constexpr int kExpectedHeapGraphEdgeSize = 12;
+  static constexpr int kExpectedHeapEntrySize = 28;
 };
+constexpr int SnapshotSizeConstants<4>::kExpectedHeapGraphEdgeSize;
+constexpr int SnapshotSizeConstants<4>::kExpectedHeapEntrySize;
 
 template <> struct SnapshotSizeConstants<8> {
-  static const int kExpectedHeapGraphEdgeSize = 24;
-  static const int kExpectedHeapEntrySize = 40;
+  static constexpr int kExpectedHeapGraphEdgeSize = 24;
+  static constexpr int kExpectedHeapEntrySize = 40;
 };
+constexpr int SnapshotSizeConstants<8>::kExpectedHeapGraphEdgeSize;
+constexpr int SnapshotSizeConstants<8>::kExpectedHeapEntrySize;
 
 }  // namespace
 
@@ -1140,9 +1144,8 @@ void V8HeapExplorer::ExtractJSObjectReferences(
   }
 
   TagObject(js_obj->properties(), "(object properties)");
-  SetInternalReference(obj, entry,
-                       "properties", js_obj->properties(),
-                       JSObject::kPropertiesOffset);
+  SetInternalReference(obj, entry, "properties", js_obj->properties(),
+                       JSObject::kPropertiesOrHashOffset);
 
   TagObject(js_obj->elements(), "(object elements)");
   SetInternalReference(obj, entry,

@@ -5,6 +5,7 @@
 #ifndef V8_PARSING_PARSER_H_
 #define V8_PARSING_PARSER_H_
 
+#include "src/ast/ast-source-ranges.h"
 #include "src/ast/ast.h"
 #include "src/ast/scopes.h"
 #include "src/base/compiler-specific.h"
@@ -292,7 +293,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                         parsing_on_main_thread_);
 #define SET_ALLOW(name) reusable_preparser_->set_allow_##name(allow_##name());
       SET_ALLOW(natives);
-      SET_ALLOW(tailcalls);
       SET_ALLOW(harmony_do_expressions);
       SET_ALLOW(harmony_function_sent);
       SET_ALLOW(harmony_class_fields);
@@ -340,8 +340,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   Expression* RewriteReturn(Expression* return_value, int pos);
   Statement* RewriteSwitchStatement(Expression* tag,
                                     SwitchStatement* switch_statement,
-                                    ZoneList<CaseClause*>* cases, Scope* scope,
-                                    int32_t continuation_pos);
+                                    ZoneList<CaseClause*>* cases, Scope* scope);
   void RewriteCatchPattern(CatchInfo* catch_info, bool* ok);
   void ValidateCatchBlock(const CatchInfo& catch_info, bool* ok);
   Statement* RewriteTryStatement(Block* try_block, Block* catch_block,
@@ -635,9 +634,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   void SetLanguageMode(Scope* scope, LanguageMode mode);
   void SetAsmModule();
 
-  V8_INLINE void MarkCollectedTailCallExpressions();
-  V8_INLINE void MarkTailPosition(Expression* expression);
-
   // Rewrite all DestructuringAssignments in the current FunctionState.
   V8_INLINE void RewriteDestructuringAssignments();
 
@@ -687,7 +683,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                        IteratorType type);
   Statement* CheckCallable(Variable* var, Expression* error, int pos);
 
-  V8_INLINE Expression* RewriteAwaitExpression(Expression* value, int pos);
   V8_INLINE void PrepareAsyncFunctionBody(ZoneList<Statement*>* body,
                                           FunctionKind kind, int pos);
   V8_INLINE void RewriteAsyncFunctionBody(ZoneList<Statement*>* body,
@@ -1051,10 +1046,9 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                        ZoneList<Expression*>* args, int pos,
                                        bool* ok);
 
-  V8_INLINE Statement* NewThrowStatement(Expression* exception, int pos,
-                                         int32_t continuation_pos) {
+  V8_INLINE Statement* NewThrowStatement(Expression* exception, int pos) {
     return factory()->NewExpressionStatement(
-        factory()->NewThrow(exception, pos, continuation_pos), pos);
+        factory()->NewThrow(exception, pos), pos);
   }
 
   V8_INLINE void AddParameterInitializationBlock(
@@ -1147,6 +1141,84 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     return parameters_end_pos_ != kNoSourcePosition;
   }
 
+  V8_INLINE void RecordBlockSourceRange(Block* node,
+                                        int32_t continuation_position) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        node, new (zone()) BlockSourceRanges(continuation_position));
+  }
+
+  V8_INLINE void RecordCaseClauseSourceRange(CaseClause* node,
+                                             const SourceRange& body_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(node,
+                              new (zone()) CaseClauseSourceRanges(body_range));
+  }
+
+  V8_INLINE void RecordConditionalSourceRange(Expression* node,
+                                              const SourceRange& then_range,
+                                              const SourceRange& else_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        node->AsConditional(),
+        new (zone()) ConditionalSourceRanges(then_range, else_range));
+  }
+
+  V8_INLINE void RecordJumpStatementSourceRange(Statement* node,
+                                                int32_t continuation_position) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        static_cast<JumpStatement*>(node),
+        new (zone()) JumpStatementSourceRanges(continuation_position));
+  }
+
+  V8_INLINE void RecordIfStatementSourceRange(Statement* node,
+                                              const SourceRange& then_range,
+                                              const SourceRange& else_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        node->AsIfStatement(),
+        new (zone()) IfStatementSourceRanges(then_range, else_range));
+  }
+
+  V8_INLINE void RecordIterationStatementSourceRange(
+      IterationStatement* node, const SourceRange& body_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        node, new (zone()) IterationStatementSourceRanges(body_range));
+  }
+
+  V8_INLINE void RecordSwitchStatementSourceRange(
+      Statement* node, int32_t continuation_position) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        node->AsSwitchStatement(),
+        new (zone()) SwitchStatementSourceRanges(continuation_position));
+  }
+
+  V8_INLINE void RecordThrowSourceRange(Statement* node,
+                                        int32_t continuation_position) {
+    if (source_range_map_ == nullptr) return;
+    ExpressionStatement* expr_stmt = static_cast<ExpressionStatement*>(node);
+    Throw* throw_expr = expr_stmt->expression()->AsThrow();
+    source_range_map_->Insert(
+        throw_expr, new (zone()) ThrowSourceRanges(continuation_position));
+  }
+
+  V8_INLINE void RecordTryCatchStatementSourceRange(
+      TryCatchStatement* node, const SourceRange& body_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        node, new (zone()) TryCatchStatementSourceRanges(body_range));
+  }
+
+  V8_INLINE void RecordTryFinallyStatementSourceRange(
+      TryFinallyStatement* node, const SourceRange& body_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(
+        node, new (zone()) TryFinallyStatementSourceRanges(body_range));
+  }
+
   // Parser's private field members.
   friend class DiscardableZoneScope;  // Uses reusable_preparser_.
   // FIXME(marja): Make reusable_preparser_ always use its own temp Zone (call
@@ -1160,6 +1232,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   Handle<String> source_;
   CompilerDispatcher* compiler_dispatcher_ = nullptr;
   ParseInfo* main_parse_info_ = nullptr;
+
+  SourceRangeMap* source_range_map_ = nullptr;
 
   friend class ParserTarget;
   friend class ParserTargetScope;

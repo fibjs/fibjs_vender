@@ -3370,9 +3370,12 @@ MaybeHandle<JSPromise> Isolate::RunHostImportModuleDynamicallyCallback(
   }
   DCHECK(!has_pending_exception());
 
-  v8::Local<v8::Promise> promise = host_import_module_dynamically_callback_(
-      api_context, v8::Utils::ToLocal(source_url),
-      v8::Utils::ToLocal(specifier_str));
+  v8::MaybeLocal<v8::Promise> maybe_promise =
+      host_import_module_dynamically_callback_(
+          api_context, v8::Utils::ToLocal(source_url),
+          v8::Utils::ToLocal(specifier_str));
+  RETURN_VALUE_IF_SCHEDULED_EXCEPTION(this, MaybeHandle<JSPromise>());
+  v8::Local<v8::Promise> promise = maybe_promise.ToLocalChecked();
   return v8::Utils::OpenHandle(*promise);
 }
 
@@ -3641,15 +3644,6 @@ std::string Isolate::GetTurboCfgFileName() {
   } else {
     return FLAG_trace_turbo_cfg_file;
   }
-}
-
-void Isolate::SetTailCallEliminationEnabled(bool enabled) {
-  if (is_tail_call_elimination_enabled_ == enabled) return;
-  is_tail_call_elimination_enabled_ = enabled;
-  // TODO(ishell): Introduce DependencyGroup::kTailCallChangedGroup to
-  // deoptimize only those functions that are affected by the change of this
-  // flag.
-  internal::Deoptimizer::DeoptimizeAll(this);
 }
 
 // Heap::detached_contexts tracks detached contexts as pairs

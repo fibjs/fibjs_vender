@@ -86,7 +86,7 @@ class MipsOperandConverter final : public InstructionOperandConverter {
       case Constant::kFloat32:
         return Operand::EmbeddedNumber(constant.ToFloat32());
       case Constant::kFloat64:
-        return Operand::EmbeddedNumber(constant.ToFloat64());
+        return Operand::EmbeddedNumber(constant.ToFloat64().value());
       case Constant::kExternalReference:
       case Constant::kHeapObject:
         // TODO(plind): Maybe we should handle ExtRef & HeapObj here?
@@ -383,26 +383,26 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
 }
 
 }  // namespace
-#define ASSEMBLE_BOUNDS_CHECK_REGISTER(offset, length, out_of_bounds)         \
-  do {                                                                        \
-    if (!length.is_reg() && base::bits::IsPowerOfTwo64(length.immediate())) { \
-      __ And(kScratchReg, offset, Operand(~(length.immediate() - 1)));        \
-      __ Branch(USE_DELAY_SLOT, out_of_bounds, ne, kScratchReg,               \
-                Operand(zero_reg));                                           \
-    } else {                                                                  \
-      __ Branch(USE_DELAY_SLOT, out_of_bounds, hs, offset, length);           \
-    }                                                                         \
+#define ASSEMBLE_BOUNDS_CHECK_REGISTER(offset, length, out_of_bounds)       \
+  do {                                                                      \
+    if (!length.is_reg() && base::bits::IsPowerOfTwo(length.immediate())) { \
+      __ And(kScratchReg, offset, Operand(~(length.immediate() - 1)));      \
+      __ Branch(USE_DELAY_SLOT, out_of_bounds, ne, kScratchReg,             \
+                Operand(zero_reg));                                         \
+    } else {                                                                \
+      __ Branch(USE_DELAY_SLOT, out_of_bounds, hs, offset, length);         \
+    }                                                                       \
   } while (0)
 
-#define ASSEMBLE_BOUNDS_CHECK_IMMEDIATE(offset, length, out_of_bounds)        \
-  do {                                                                        \
-    if (!length.is_reg() && base::bits::IsPowerOfTwo64(length.immediate())) { \
-      __ Or(kScratchReg, zero_reg, Operand(offset));                          \
-      __ And(kScratchReg, kScratchReg, Operand(~(length.immediate() - 1)));   \
-      __ Branch(out_of_bounds, ne, kScratchReg, Operand(zero_reg));           \
-    } else {                                                                  \
-      __ Branch(out_of_bounds, ls, length.rm(), Operand(offset));             \
-    }                                                                         \
+#define ASSEMBLE_BOUNDS_CHECK_IMMEDIATE(offset, length, out_of_bounds)      \
+  do {                                                                      \
+    if (!length.is_reg() && base::bits::IsPowerOfTwo(length.immediate())) { \
+      __ Or(kScratchReg, zero_reg, Operand(offset));                        \
+      __ And(kScratchReg, kScratchReg, Operand(~(length.immediate() - 1))); \
+      __ Branch(out_of_bounds, ne, kScratchReg, Operand(zero_reg));         \
+    } else {                                                                \
+      __ Branch(out_of_bounds, ls, length.rm(), Operand(offset));           \
+    }                                                                       \
   } while (0)
 
 #define ASSEMBLE_CHECKED_LOAD_FLOAT(width, asm_instr)                          \
@@ -655,8 +655,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchCallCodeObject: {
       EnsureSpaceForLazyDeopt();
       if (instr->InputAt(0)->IsImmediate()) {
-        __ Call(Handle<Code>::cast(i.InputHeapObject(0)),
-                RelocInfo::CODE_TARGET);
+        __ Call(i.InputCode(0), RelocInfo::CODE_TARGET);
       } else {
         __ daddiu(at, i.InputRegister(0), Code::kHeaderSize - kHeapObjectTag);
         __ Call(at);
@@ -673,8 +672,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                                          i.TempRegister(2));
       }
       if (instr->InputAt(0)->IsImmediate()) {
-        __ Jump(Handle<Code>::cast(i.InputHeapObject(0)),
-                RelocInfo::CODE_TARGET);
+        __ Jump(i.InputCode(0), RelocInfo::CODE_TARGET);
       } else {
         __ daddiu(at, i.InputRegister(0), Code::kHeaderSize - kHeapObjectTag);
         __ Jump(at);
@@ -3228,7 +3226,7 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   if (instr->arch_opcode() == kMips64Tst) {
     cc = FlagsConditionToConditionTst(condition);
     if (instr->InputAt(1)->IsImmediate() &&
-        base::bits::IsPowerOfTwo64(i.InputOperand(1).immediate())) {
+        base::bits::IsPowerOfTwo(i.InputOperand(1).immediate())) {
       uint16_t pos =
           base::bits::CountTrailingZeros64(i.InputOperand(1).immediate());
       __ Dext(result, i.InputRegister(0), pos, 1);
@@ -3594,7 +3592,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           }
           break;
         case Constant::kFloat64:
-          __ li(dst, Operand::EmbeddedNumber(src.ToFloat64()));
+          __ li(dst, Operand::EmbeddedNumber(src.ToFloat64().value()));
           break;
         case Constant::kExternalReference:
           __ li(dst, Operand(src.ToExternalReference()));
@@ -3633,7 +3631,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       DoubleRegister dst = destination->IsFPRegister()
                                ? g.ToDoubleRegister(destination)
                                : kScratchDoubleReg;
-      __ Move(dst, src.ToFloat64());
+      __ Move(dst, src.ToFloat64().value());
       if (destination->IsFPStackSlot()) {
         __ Sdc1(dst, g.ToMemOperand(destination));
       }

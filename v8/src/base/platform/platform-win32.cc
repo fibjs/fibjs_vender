@@ -741,8 +741,8 @@ void* OS::GetRandomMmapAddr() {
   return reinterpret_cast<void *>(address);
 }
 
-
-static void* RandomizedVirtualAlloc(size_t size, int action, int protection) {
+static void* RandomizedVirtualAlloc(size_t size, int action, int protection,
+                                    void* hint) {
   LPVOID base = NULL;
   static BOOL use_aslr = -1;
 #ifdef V8_HOST_ARCH_32_BIT
@@ -757,7 +757,7 @@ static void* RandomizedVirtualAlloc(size_t size, int action, int protection) {
   if (use_aslr &&
       (protection == PAGE_EXECUTE_READWRITE || protection == PAGE_NOACCESS)) {
     // For executable pages try and randomize the allocation address
-    base = VirtualAlloc(OS::GetRandomMmapAddr(), size, action, protection);
+    base = VirtualAlloc(hint, size, action, protection);
   }
 
   // After three attempts give up and let the OS find an address to use.
@@ -767,14 +767,15 @@ static void* RandomizedVirtualAlloc(size_t size, int action, int protection) {
 }
 
 void* OS::Allocate(const size_t requested, size_t* allocated,
-                   bool is_executable) {
+                   bool is_executable, void* hint) {
   return OS::Allocate(requested, allocated,
                       is_executable ? OS::MemoryPermission::kReadWriteExecute
-                                    : OS::MemoryPermission::kReadWrite);
+                                    : OS::MemoryPermission::kReadWrite,
+                      hint);
 }
 
 void* OS::Allocate(const size_t requested, size_t* allocated,
-                   OS::MemoryPermission access) {
+                   OS::MemoryPermission access, void* hint) {
   // VirtualAlloc rounds allocated size to page size automatically.
   size_t msize = RoundUp(requested, static_cast<int>(GetPageSize()));
 
@@ -795,9 +796,8 @@ void* OS::Allocate(const size_t requested, size_t* allocated,
     }
   }
 
-  LPVOID mbase = RandomizedVirtualAlloc(msize,
-                                        MEM_COMMIT | MEM_RESERVE,
-                                        prot);
+  LPVOID mbase =
+      RandomizedVirtualAlloc(msize, MEM_COMMIT | MEM_RESERVE, prot, hint);
 
   if (mbase == NULL) return NULL;
 
@@ -805,10 +805,6 @@ void* OS::Allocate(const size_t requested, size_t* allocated,
 
   *allocated = msize;
   return mbase;
-}
-
-void* OS::AllocateGuarded(const size_t requested) {
-  return VirtualAlloc(nullptr, requested, MEM_RESERVE, PAGE_NOACCESS);
 }
 
 void OS::Free(void* address, const size_t size) {
@@ -1216,17 +1212,15 @@ int OS::ActivationFrameAlignment() {
 
 VirtualMemory::VirtualMemory() : address_(NULL), size_(0) { }
 
+VirtualMemory::VirtualMemory(size_t size, void* hint)
+    : address_(ReserveRegion(size, hint)), size_(size) {}
 
-VirtualMemory::VirtualMemory(size_t size)
-    : address_(ReserveRegion(size)), size_(size) { }
-
-
-VirtualMemory::VirtualMemory(size_t size, size_t alignment)
+VirtualMemory::VirtualMemory(size_t size, size_t alignment, void* hint)
     : address_(NULL), size_(0) {
   DCHECK((alignment % OS::AllocateAlignment()) == 0);
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
-  void* address = ReserveRegion(request_size);
+  void* address = ReserveRegion(request_size, hint);
   if (address == NULL) return;
   uint8_t* base = RoundUp(static_cast<uint8_t*>(address), alignment);
   // Try reducing the size by freeing and then reallocating a specific area.
@@ -1239,7 +1233,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
     DCHECK(base == static_cast<uint8_t*>(address));
   } else {
     // Resizing failed, just go with a bigger area.
-    address = ReserveRegion(request_size);
+    address = ReserveRegion(request_size, hint);
     if (address == NULL) return;
   }
   address_ = address;
@@ -1282,9 +1276,8 @@ bool VirtualMemory::Guard(void* address) {
   return true;
 }
 
-
-void* VirtualMemory::ReserveRegion(size_t size) {
-  return RandomizedVirtualAlloc(size, MEM_RESERVE, PAGE_NOACCESS);
+void* VirtualMemory::ReserveRegion(size_t size, void* hint) {
+  return RandomizedVirtualAlloc(size, MEM_RESERVE, PAGE_NOACCESS, hint);
 }
 
 

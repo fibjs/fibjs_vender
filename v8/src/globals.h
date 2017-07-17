@@ -855,21 +855,6 @@ inline std::ostream& operator<<(std::ostream& os, ConvertReceiverMode mode) {
   UNREACHABLE();
 }
 
-// Defines whether tail call optimization is allowed.
-enum class TailCallMode : unsigned { kAllow, kDisallow };
-
-inline size_t hash_value(TailCallMode mode) { return bit_cast<unsigned>(mode); }
-
-inline std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
-  switch (mode) {
-    case TailCallMode::kAllow:
-      return os << "ALLOW_TAIL_CALLS";
-    case TailCallMode::kDisallow:
-      return os << "DISALLOW_TAIL_CALLS";
-  }
-  UNREACHABLE();
-}
-
 // Valid hints for the abstract operation OrdinaryToPrimitive,
 // implemented according to ES6, section 7.1.1.
 enum class OrdinaryToPrimitiveHint { kNumber, kString };
@@ -955,11 +940,11 @@ const double kMaxSafeInteger = 9007199254740991.0;  // 2^53-1
 // The order of this enum has to be kept in sync with the predicates below.
 enum VariableMode : uint8_t {
   // User declared variables:
-  VAR,  // declared via 'var', and 'function' declarations
-
   LET,  // declared via 'let' declarations (first lexical)
 
   CONST,  // declared via 'const' declarations (last lexical)
+
+  VAR,  // declared via 'var', and 'function' declarations
 
   // Variables introduced by the compiler:
   TEMPORARY,  // temporary variables (not user-visible), stack-allocated
@@ -972,12 +957,10 @@ enum VariableMode : uint8_t {
                    // variable is global unless it has been shadowed
                    // by an eval-introduced variable
 
-  DYNAMIC_LOCAL,  // requires dynamic lookup, but we know that the
-                  // variable is local and where it is unless it
-                  // has been shadowed by an eval-introduced
-                  // variable
-
-  kLastVariableMode = DYNAMIC_LOCAL
+  DYNAMIC_LOCAL  // requires dynamic lookup, but we know that the
+                 // variable is local and where it is unless it
+                 // has been shadowed by an eval-introduced
+                 // variable
 };
 
 // Printing support
@@ -1007,8 +990,7 @@ enum VariableKind : uint8_t {
   NORMAL_VARIABLE,
   FUNCTION_VARIABLE,
   THIS_VARIABLE,
-  SLOPPY_FUNCTION_NAME_VARIABLE,
-  kLastKind = SLOPPY_FUNCTION_NAME_VARIABLE
+  SLOPPY_FUNCTION_NAME_VARIABLE
 };
 
 inline bool IsDynamicVariableMode(VariableMode mode) {
@@ -1017,13 +999,14 @@ inline bool IsDynamicVariableMode(VariableMode mode) {
 
 
 inline bool IsDeclaredVariableMode(VariableMode mode) {
-  STATIC_ASSERT(VAR == 0);  // Implies that mode >= VAR.
-  return mode <= CONST;
+  STATIC_ASSERT(LET == 0);  // Implies that mode >= LET.
+  return mode <= VAR;
 }
 
 
 inline bool IsLexicalVariableMode(VariableMode mode) {
-  return mode >= LET && mode <= CONST;
+  STATIC_ASSERT(LET == 0);  // Implies that mode >= LET.
+  return mode <= CONST;
 }
 
 enum VariableLocation : uint8_t {
@@ -1361,62 +1344,6 @@ enum ExternalArrayType {
   kExternalFloat64Array,
   kExternalUint8ClampedArray,
 };
-
-// Static information used by SuspendGenerator bytecode & GeneratorStore, in
-// order to determine where to store bytecode offset in generator.
-enum class SuspendFlags {
-  kYield = 0,
-  kYieldStar = 1,
-  kAwait = 2,
-  kSuspendTypeMask = 3,
-
-  kGenerator = 0 << 2,
-  kAsyncGenerator = 1 << 2,
-  kGeneratorTypeMask = 1 << 2,
-
-  kBitWidth = 3,
-
-  // Aliases
-  kGeneratorYield = kGenerator | kYield,
-  kGeneratorYieldStar = kGenerator | kYieldStar,
-  kGeneratorAwait = kGenerator | kAwait,
-  kAsyncGeneratorYield = kAsyncGenerator | kYield,
-  kAsyncGeneratorYieldStar = kAsyncGenerator | kYieldStar,
-  kAsyncGeneratorAwait = kAsyncGenerator | kAwait
-};
-
-inline constexpr SuspendFlags operator&(SuspendFlags lhs, SuspendFlags rhs) {
-  return static_cast<SuspendFlags>(static_cast<uint8_t>(lhs) &
-                                   static_cast<uint8_t>(rhs));
-}
-
-inline constexpr SuspendFlags operator|(SuspendFlags lhs, SuspendFlags rhs) {
-  return static_cast<SuspendFlags>(static_cast<uint8_t>(lhs) |
-                                   static_cast<uint8_t>(rhs));
-}
-
-inline SuspendFlags& operator|=(SuspendFlags& lhs, SuspendFlags rhs) {
-  lhs = lhs | rhs;
-  return lhs;
-}
-
-inline SuspendFlags operator~(SuspendFlags lhs) {
-  return static_cast<SuspendFlags>(~static_cast<uint8_t>(lhs));
-}
-
-inline const char* SuspendTypeFor(SuspendFlags flags) {
-  switch (flags & SuspendFlags::kSuspendTypeMask) {
-    case SuspendFlags::kYield:
-      return "yield";
-    case SuspendFlags::kYieldStar:
-      return "yield*";
-    case SuspendFlags::kAwait:
-      return "await";
-    default:
-      break;
-  }
-  UNREACHABLE();
-}
 
 struct AssemblerDebugInfo {
   AssemblerDebugInfo(const char* name, const char* file, int line)

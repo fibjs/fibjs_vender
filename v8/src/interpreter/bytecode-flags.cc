@@ -18,7 +18,7 @@ namespace interpreter {
 uint8_t CreateArrayLiteralFlags::Encode(bool use_fast_shallow_clone,
                                         int runtime_flags) {
   uint8_t result = FlagsBits::encode(runtime_flags);
-  result |= FastShallowCloneBit::encode(use_fast_shallow_clone);
+  result |= FastCloneSupportedBit::encode(use_fast_shallow_clone);
   return result;
 }
 
@@ -72,16 +72,6 @@ uint8_t TestTypeOfFlags::Encode(LiteralFlag literal_flag) {
 TestTypeOfFlags::LiteralFlag TestTypeOfFlags::Decode(uint8_t raw_flag) {
   DCHECK_LE(raw_flag, static_cast<uint8_t>(LiteralFlag::kOther));
   return static_cast<LiteralFlag>(raw_flag);
-}
-
-// static
-uint8_t SuspendGeneratorBytecodeFlags::Encode(SuspendFlags flags) {
-  return FlagsBits::encode(flags);
-}
-
-// static
-SuspendFlags SuspendGeneratorBytecodeFlags::Decode(uint8_t flags) {
-  return FlagsBits::decode(flags);
 }
 
 // static

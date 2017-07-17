@@ -1577,7 +1577,6 @@ Type* Typer::Visitor::JSCallTyper(Type* fun, Typer* t) {
         // Set functions.
         case kSetAdd:
         case kSetEntries:
-        case kSetKeys:
         case kSetValues:
           return Type::OtherObject();
         case kSetClear:
@@ -1960,6 +1959,10 @@ Type* Typer::Visitor::TypeStoreBuffer(Node* node) {
 
 
 Type* Typer::Visitor::TypeStoreElement(Node* node) {
+  UNREACHABLE();
+}
+
+Type* Typer::Visitor::TypeTransitionAndStoreElement(Node* node) {
   UNREACHABLE();
 }
 

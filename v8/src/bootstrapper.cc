@@ -248,6 +248,10 @@ class Genesis BASE_EMBEDDED {
   Handle<Context> native_context_;
   Handle<JSGlobalProxy> global_proxy_;
 
+  // Temporary function maps needed only during bootstrapping.
+  Handle<Map> strict_function_with_home_object_map_;
+  Handle<Map> strict_function_with_name_and_home_object_map_;
+
   // %ThrowTypeError%. See ES#sec-%throwtypeerror% for details.
   Handle<JSFunction> restricted_properties_thrower_;
 
@@ -533,16 +537,29 @@ void Genesis::CreateSloppyModeFunctionMaps(Handle<JSFunction> empty) {
   Factory* factory = isolate_->factory();
   Handle<Map> map;
 
+  //
+  // Allocate maps for sloppy functions without prototype.
+  //
   map = factory->CreateSloppyFunctionMap(FUNCTION_WITHOUT_PROTOTYPE, empty);
   native_context()->set_sloppy_function_without_prototype_map(*map);
 
+  //
+  // Allocate maps for sloppy functions with readonly prototype.
+  //
   map =
       factory->CreateSloppyFunctionMap(FUNCTION_WITH_READONLY_PROTOTYPE, empty);
   native_context()->set_sloppy_function_with_readonly_prototype_map(*map);
 
+  //
+  // Allocate maps for sloppy functions with writable prototype.
+  //
   map = factory->CreateSloppyFunctionMap(FUNCTION_WITH_WRITEABLE_PROTOTYPE,
                                          empty);
   native_context()->set_sloppy_function_map(*map);
+
+  map = factory->CreateSloppyFunctionMap(
+      FUNCTION_WITH_NAME_AND_WRITEABLE_PROTOTYPE, empty);
+  native_context()->set_sloppy_function_with_name_map(*map);
 }
 
 Handle<JSFunction> Genesis::GetThrowTypeErrorIntrinsic() {
@@ -582,17 +599,49 @@ void Genesis::CreateStrictModeFunctionMaps(Handle<JSFunction> empty) {
   Factory* factory = isolate_->factory();
   Handle<Map> map;
 
+  //
+  // Allocate maps for strict functions without prototype.
+  //
   map = factory->CreateStrictFunctionMap(FUNCTION_WITHOUT_PROTOTYPE, empty);
   native_context()->set_strict_function_without_prototype_map(*map);
 
+  map = factory->CreateStrictFunctionMap(METHOD_WITH_NAME, empty);
+  native_context()->set_method_with_name_map(*map);
+
+  map = factory->CreateStrictFunctionMap(METHOD_WITH_HOME_OBJECT, empty);
+  native_context()->set_method_with_home_object_map(*map);
+
+  map =
+      factory->CreateStrictFunctionMap(METHOD_WITH_NAME_AND_HOME_OBJECT, empty);
+  native_context()->set_method_with_name_and_home_object_map(*map);
+
+  //
+  // Allocate maps for strict functions with writable prototype.
+  //
   map = factory->CreateStrictFunctionMap(FUNCTION_WITH_WRITEABLE_PROTOTYPE,
                                          empty);
   native_context()->set_strict_function_map(*map);
 
+  map = factory->CreateStrictFunctionMap(
+      FUNCTION_WITH_NAME_AND_WRITEABLE_PROTOTYPE, empty);
+  native_context()->set_strict_function_with_name_map(*map);
+
+  strict_function_with_home_object_map_ = factory->CreateStrictFunctionMap(
+      FUNCTION_WITH_HOME_OBJECT_AND_WRITEABLE_PROTOTYPE, empty);
+  strict_function_with_name_and_home_object_map_ =
+      factory->CreateStrictFunctionMap(
+          FUNCTION_WITH_NAME_AND_HOME_OBJECT_AND_WRITEABLE_PROTOTYPE, empty);
+
+  //
+  // Allocate maps for strict functions with readonly prototype.
+  //
   map =
       factory->CreateStrictFunctionMap(FUNCTION_WITH_READONLY_PROTOTYPE, empty);
   native_context()->set_strict_function_with_readonly_prototype_map(*map);
 
+  //
+  // Allocate map for class functions.
+  //
   map = factory->CreateClassFunctionMap(empty);
   native_context()->set_class_function_map(*map);
 
@@ -656,6 +705,19 @@ void Genesis::CreateObjectFunction(Handle<JSFunction> empty_function) {
   }
 }
 
+namespace {
+
+Handle<Map> CreateNonConstructorMap(Handle<Map> source_map,
+                                    Handle<JSObject> prototype,
+                                    const char* reason) {
+  Handle<Map> map = Map::Copy(source_map, reason);
+  map->set_is_constructor(false);
+  Map::SetPrototype(map, prototype);
+  return map;
+}
+
+}  // namespace
+
 void Genesis::CreateIteratorMaps(Handle<JSFunction> empty) {
   // Create iterator-related meta-objects.
   Handle<JSObject> iterator_prototype =
@@ -712,11 +774,26 @@ void Genesis::CreateIteratorMaps(Handle<JSFunction> empty) {
   // writable, non-enumerable, and non-configurable (as per ES6 draft
   // 04-14-15, section 25.2.4.3).
   // Generator functions do not have "caller" or "arguments" accessors.
-  Handle<Map> generator_function_map =
-      Map::Copy(isolate()->strict_function_map(), "GeneratorFunction");
-  generator_function_map->set_is_constructor(false);
-  Map::SetPrototype(generator_function_map, generator_function_prototype);
-  native_context()->set_generator_function_map(*generator_function_map);
+  Handle<Map> map;
+  map = CreateNonConstructorMap(isolate()->strict_function_map(),
+                                generator_function_prototype,
+                                "GeneratorFunction");
+  native_context()->set_generator_function_map(*map);
+
+  map = CreateNonConstructorMap(isolate()->strict_function_with_name_map(),
+                                generator_function_prototype,
+                                "GeneratorFunction with name");
+  native_context()->set_generator_function_with_name_map(*map);
+
+  map = CreateNonConstructorMap(strict_function_with_home_object_map_,
+                                generator_function_prototype,
+                                "GeneratorFunction with home object");
+  native_context()->set_generator_function_with_home_object_map(*map);
+
+  map = CreateNonConstructorMap(strict_function_with_name_and_home_object_map_,
+                                generator_function_prototype,
+                                "GeneratorFunction with name and home object");
+  native_context()->set_generator_function_with_name_and_home_object_map(*map);
 
   Handle<JSFunction> object_function(native_context()->object_function());
   Handle<Map> generator_object_prototype_map = Map::Create(isolate(), 0);
@@ -809,13 +886,28 @@ void Genesis::CreateAsyncIteratorMaps(Handle<JSFunction> empty) {
   // writable, non-enumerable, and non-configurable (as per ES6 draft
   // 04-14-15, section 25.2.4.3).
   // Async Generator functions do not have "caller" or "arguments" accessors.
-  Handle<Map> async_generator_function_map =
-      Map::Copy(isolate()->strict_function_map(), "AsyncGeneratorFunction");
-  async_generator_function_map->set_is_constructor(false);
-  Map::SetPrototype(async_generator_function_map,
-                    async_generator_function_prototype);
-  native_context()->set_async_generator_function_map(
-      *async_generator_function_map);
+  Handle<Map> map;
+  map = CreateNonConstructorMap(isolate()->strict_function_map(),
+                                async_generator_function_prototype,
+                                "AsyncGeneratorFunction");
+  native_context()->set_async_generator_function_map(*map);
+
+  map = CreateNonConstructorMap(isolate()->strict_function_with_name_map(),
+                                async_generator_function_prototype,
+                                "AsyncGeneratorFunction with name");
+  native_context()->set_async_generator_function_with_name_map(*map);
+
+  map = CreateNonConstructorMap(strict_function_with_home_object_map_,
+                                async_generator_function_prototype,
+                                "AsyncGeneratorFunction with home object");
+  native_context()->set_async_generator_function_with_home_object_map(*map);
+
+  map = CreateNonConstructorMap(
+      strict_function_with_name_and_home_object_map_,
+      async_generator_function_prototype,
+      "AsyncGeneratorFunction with name and home object");
+  native_context()->set_async_generator_function_with_name_and_home_object_map(
+      *map);
 
   Handle<JSFunction> object_function(native_context()->object_function());
   Handle<Map> async_generator_object_prototype_map = Map::Create(isolate(), 0);
@@ -836,13 +928,26 @@ void Genesis::CreateAsyncFunctionMaps(Handle<JSFunction> empty) {
                         factory()->NewStringFromAsciiChecked("AsyncFunction"),
                         static_cast<PropertyAttributes>(DONT_ENUM | READ_ONLY));
 
-  Handle<Map> strict_function_map(
-      native_context()->strict_function_without_prototype_map());
-  Handle<Map> async_function_map =
-      Map::Copy(strict_function_map, "AsyncFunction");
-  async_function_map->set_is_constructor(false);
-  Map::SetPrototype(async_function_map, async_function_prototype);
-  native_context()->set_async_function_map(*async_function_map);
+  Handle<Map> map;
+  map = CreateNonConstructorMap(
+      isolate()->strict_function_without_prototype_map(),
+      async_function_prototype, "AsyncFunction");
+  native_context()->set_async_function_map(*map);
+
+  map = CreateNonConstructorMap(isolate()->method_with_name_map(),
+                                async_function_prototype,
+                                "AsyncFunction with name");
+  native_context()->set_async_function_with_name_map(*map);
+
+  map = CreateNonConstructorMap(isolate()->method_with_home_object_map(),
+                                async_function_prototype,
+                                "AsyncFunction with home object");
+  native_context()->set_async_function_with_home_object_map(*map);
+
+  map = CreateNonConstructorMap(
+      isolate()->method_with_name_and_home_object_map(),
+      async_function_prototype, "AsyncFunction with name and home object");
+  native_context()->set_async_function_with_name_and_home_object_map(*map);
 }
 
 void Genesis::CreateJSProxyMaps() {
@@ -1328,10 +1433,15 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     // Complete setting up function maps.
     {
       isolate->sloppy_function_map()->SetConstructor(*function_fun);
+      isolate->sloppy_function_with_name_map()->SetConstructor(*function_fun);
       isolate->sloppy_function_with_readonly_prototype_map()->SetConstructor(
           *function_fun);
 
       isolate->strict_function_map()->SetConstructor(*function_fun);
+      isolate->strict_function_with_name_map()->SetConstructor(*function_fun);
+      strict_function_with_home_object_map_->SetConstructor(*function_fun);
+      strict_function_with_name_and_home_object_map_->SetConstructor(
+          *function_fun);
       isolate->strict_function_with_readonly_prototype_map()->SetConstructor(
           *function_fun);
 
@@ -1351,12 +1461,12 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
   {  // --- A s y n c G e n e r a t o r ---
     Handle<JSFunction> await_caught =
         SimpleCreateFunction(isolate, factory->empty_string(),
-                             Builtins::kAsyncGeneratorAwaitCaught, 2, false);
+                             Builtins::kAsyncGeneratorAwaitCaught, 1, false);
     native_context()->set_async_generator_await_caught(*await_caught);
 
     Handle<JSFunction> await_uncaught =
         SimpleCreateFunction(isolate, factory->empty_string(),
-                             Builtins::kAsyncGeneratorAwaitUncaught, 2, false);
+                             Builtins::kAsyncGeneratorAwaitUncaught, 1, false);
     native_context()->set_async_generator_await_uncaught(*await_uncaught);
 
     Handle<Code> code(builtins->AsyncGeneratorAwaitResolveClosure());
@@ -2920,7 +3030,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     SimpleInstallFunction(prototype, "keys", Builtins::kMapPrototypeKeys, 0,
                           true);
     SimpleInstallGetter(prototype, factory->InternalizeUtf8String("size"),
-                        Builtins::kMapPrototypeGetSize, true);
+                        Builtins::kMapPrototypeGetSize, true,
+                        BuiltinFunctionId::kMapSize);
     SimpleInstallFunction(prototype, "values", Builtins::kMapPrototypeValues, 0,
                           true);
     InstallSpeciesGetter(js_map_fun);
@@ -2957,7 +3068,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     SimpleInstallFunction(prototype, "forEach", Builtins::kSetPrototypeForEach,
                           1, false);
     SimpleInstallGetter(prototype, factory->InternalizeUtf8String("size"),
-                        Builtins::kSetPrototypeGetSize, true);
+                        Builtins::kSetPrototypeGetSize, true,
+                        BuiltinFunctionId::kSetSize);
     Handle<JSFunction> values = SimpleInstallFunction(
         prototype, "values", Builtins::kSetPrototypeValues, 0, true);
     JSObject::AddProperty(prototype, factory->keys_string(), values, DONT_ENUM);
@@ -3019,6 +3131,9 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
                                      Context::JS_WEAK_MAP_FUN_INDEX);
     // Setup %WeakMapPrototype%.
     Handle<JSObject> prototype(JSObject::cast(cons->instance_prototype()));
+
+    SimpleInstallFunction(prototype, "get", Builtins::kWeakMapGet, 1, true);
+    SimpleInstallFunction(prototype, "has", Builtins::kWeakMapHas, 1, true);
 
     JSObject::AddProperty(
         prototype, factory->to_string_tag_symbol(),
@@ -3838,14 +3953,14 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
     {
       Handle<JSFunction> function =
           SimpleCreateFunction(isolate, factory->empty_string(),
-                               Builtins::kAsyncFunctionAwaitCaught, 3, false);
+                               Builtins::kAsyncFunctionAwaitCaught, 2, false);
       native_context->set_async_function_await_caught(*function);
     }
 
     {
       Handle<JSFunction> function =
           SimpleCreateFunction(isolate, factory->empty_string(),
-                               Builtins::kAsyncFunctionAwaitUncaught, 3, false);
+                               Builtins::kAsyncFunctionAwaitUncaught, 2, false);
       native_context->set_async_function_await_uncaught(*function);
     }
 
@@ -3945,7 +4060,6 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_lookbehind)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_named_captures)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_property)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_sent)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tailcalls)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_restrictive_generators)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_tostring)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_class_fields)
@@ -4959,28 +5073,6 @@ void Genesis::TransferObject(Handle<JSObject> from, Handle<JSObject> to) {
   JSObject::ForceSetPrototype(to, proto);
 }
 
-class NoTrackDoubleFieldsForSerializerScope {
- public:
-  explicit NoTrackDoubleFieldsForSerializerScope(Isolate* isolate)
-      : flag_(FLAG_track_double_fields), enabled_(false) {
-    if (isolate->serializer_enabled()) {
-      // Disable tracking double fields because heap numbers treated as
-      // immutable by the serializer.
-      FLAG_track_double_fields = false;
-      enabled_ = true;
-    }
-  }
-
-  ~NoTrackDoubleFieldsForSerializerScope() {
-    if (enabled_) {
-      FLAG_track_double_fields = flag_;
-    }
-  }
-
- private:
-  bool flag_;
-  bool enabled_;
-};
 
 Genesis::Genesis(
     Isolate* isolate, MaybeHandle<JSGlobalProxy> maybe_global_proxy,
@@ -4989,7 +5081,6 @@ Genesis::Genesis(
     v8::DeserializeEmbedderFieldsCallback embedder_fields_deserializer,
     GlobalContextType context_type)
     : isolate_(isolate), active_(isolate->bootstrapper()) {
-  NoTrackDoubleFieldsForSerializerScope disable_scope(isolate);
   result_ = Handle<Context>::null();
   global_proxy_ = Handle<JSGlobalProxy>::null();
 
@@ -5066,6 +5157,8 @@ Genesis::Genesis(
     }
     DCHECK(!global_proxy->IsDetachedFrom(native_context()->global_object()));
   } else {
+    base::ElapsedTimer timer;
+    if (FLAG_profile_deserialization) timer.Start();
     DCHECK_EQ(0u, context_snapshot_index);
     // We get here if there was no context snapshot.
     CreateRoots();
@@ -5086,6 +5179,11 @@ Genesis::Genesis(
     if (!ConfigureGlobalObjects(global_proxy_template)) return;
 
     isolate->counters()->contexts_created_from_scratch()->Increment();
+
+    if (FLAG_profile_deserialization) {
+      double ms = timer.Elapsed().InMillisecondsF();
+      i::PrintF("[Initializing context from scratch took %0.3f ms]\n", ms);
+    }
   }
 
   // Install experimental natives. Do not include them into the
@@ -5128,7 +5226,6 @@ Genesis::Genesis(Isolate* isolate,
                  MaybeHandle<JSGlobalProxy> maybe_global_proxy,
                  v8::Local<v8::ObjectTemplate> global_proxy_template)
     : isolate_(isolate), active_(isolate->bootstrapper()) {
-  NoTrackDoubleFieldsForSerializerScope disable_scope(isolate);
   result_ = Handle<Context>::null();
   global_proxy_ = Handle<JSGlobalProxy>::null();
 

@@ -11,18 +11,18 @@ console.log(v8Folder);
 
 process.chdir(v8Folder);
 
-// process.run("tools/dev/v8gen.py", [
-//     "x64.release",
-//     "--",
-//     "v8_enable_i18n_support=false"
-// ]);
+process.run("tools/dev/v8gen.py", [
+    "x64.release",
+    "--",
+    "v8_enable_i18n_support=false"
+]);
 
-// process.run("../depot_tools/ninja", [
-//     "-C",
-//     "out.gn/x64.release",
-//     "-j",
-//     "4"
-// ]);
+process.run("../depot_tools/ninja", [
+    "-C",
+    "out.gn/x64.release",
+    "-j",
+    "4"
+]);
 
 process.chdir(workFolder);
 
@@ -218,7 +218,8 @@ var plats1 = {
     'openbsd': "#ifdef OpenBSD",
     'solaris': "#ifdef Solaris",
     'win32': "#ifdef Windows",
-    'posix': "#ifndef Windows"
+    'posix': "#ifndef Windows",
+    'posix-time': "#ifndef Windows"
 };
 
 function patch_plat() {

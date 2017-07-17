@@ -479,7 +479,7 @@ void JSGenericLowering::LowerJSCreateLiteralArray(Node* node) {
 
   // Use the FastCloneShallowArray builtin only for shallow boilerplates without
   // properties up to the number of elements that the stubs can handle.
-  if ((p.flags() & ArrayLiteral::kShallowElements) != 0 &&
+  if ((p.flags() & AggregateLiteral::kIsShallow) != 0 &&
       p.length() < ConstructorBuiltins::kMaximumClonedShallowArrayElements) {
     Callable callable = CodeFactory::FastCloneShallowArray(
         isolate(), DONT_TRACK_ALLOCATION_SITE);
@@ -500,7 +500,7 @@ void JSGenericLowering::LowerJSCreateLiteralObject(Node* node) {
 
   // Use the FastCloneShallowObject builtin only for shallow boilerplates
   // without elements up to the number of properties that the stubs can handle.
-  if ((p.flags() & ObjectLiteral::kShallowProperties) != 0 &&
+  if ((p.flags() & AggregateLiteral::kIsShallow) != 0 &&
       p.length() <=
           ConstructorBuiltins::kMaximumClonedShallowObjectProperties) {
     Callable callable =
@@ -637,9 +637,6 @@ void JSGenericLowering::LowerJSCallForwardVarargs(Node* node) {
   int const arg_count = static_cast<int>(p.arity() - 2);
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   Callable callable = CodeFactory::CallForwardVarargs(isolate());
-  if (p.tail_call_mode() == TailCallMode::kAllow) {
-    flags |= CallDescriptor::kSupportsTailCalls;
-  }
   CallDescriptor* desc = Linkage::GetStubCallDescriptor(
       isolate(), zone(), callable.descriptor(), arg_count + 1, flags);
   Node* stub_code = jsgraph()->HeapConstant(callable.code());
@@ -657,9 +654,6 @@ void JSGenericLowering::LowerJSCall(Node* node) {
   ConvertReceiverMode const mode = p.convert_mode();
   Callable callable = CodeFactory::Call(isolate(), mode);
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
-  if (p.tail_call_mode() == TailCallMode::kAllow) {
-    flags |= CallDescriptor::kSupportsTailCalls;
-  }
   CallDescriptor* desc = Linkage::GetStubCallDescriptor(
       isolate(), zone(), callable.descriptor(), arg_count + 1, flags);
   Node* stub_code = jsgraph()->HeapConstant(callable.code());

@@ -14,8 +14,10 @@
 namespace v8 {
 namespace internal {
 
+class AstNodeSourceRanges;
 class AstStringConstants;
 class CompilationInfo;
+enum class SourceRangeKind;
 
 namespace interpreter {
 
@@ -117,8 +119,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
       HoleCheckMode hole_check_mode,
       LookupHoistingMode lookup_hoisting_mode = LookupHoistingMode::kNormal);
   void BuildLiteralCompareNil(Token::Value compare_op, NilValue nil);
-  void BuildReturn();
-  void BuildAsyncReturn();
+  void BuildReturn(int source_position = kNoSourcePosition);
+  void BuildAsyncReturn(int source_position = kNoSourcePosition);
   void BuildAsyncGeneratorReturn();
   void BuildReThrow();
   void BuildAbort(BailoutReason bailout_reason);
@@ -192,9 +194,10 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
 
   void BuildLoadPropertyKey(LiteralProperty* property, Register out_reg);
 
-  int AllocateBlockCoverageSlotIfEnabled(const SourceRange& range);
+  int AllocateBlockCoverageSlotIfEnabled(AstNode* node, SourceRangeKind kind);
+  void BuildIncrementBlockCoverageCounterIfEnabled(AstNode* node,
+                                                   SourceRangeKind kind);
   void BuildIncrementBlockCoverageCounterIfEnabled(int coverage_array_slot);
-  void BuildIncrementBlockCoverageCounterIfEnabled(const SourceRange& range);
 
   void BuildTest(ToBooleanMode mode, BytecodeLabels* then_labels,
                  BytecodeLabels* else_labels, TestFallthrough fallthrough);
@@ -214,8 +217,6 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
                                      RegisterList* operand_registers,
                                      Register* out_register));
   void VisitInSameTestExecutionScope(Expression* expr);
-
-  int UpdateRuntimeFunctionForAsyncAwait(int context_index);
 
   // Returns the runtime function id for a store to super for the function's
   // language mode.
@@ -259,6 +260,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
     return globals_builder_;
   }
   inline LanguageMode language_mode() const;
+  inline FunctionKind function_kind() const;
   int feedback_index(FeedbackSlot slot) const;
 
   inline HandlerTable::CatchPrediction catch_prediction() const {

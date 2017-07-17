@@ -342,6 +342,9 @@
     <ClInclude Include="src\ast\ast-numbering.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
+    <ClInclude Include="src\ast\ast-source-ranges.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
     <ClInclude Include="src\ast\ast-traversal-visitor.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
@@ -466,6 +469,9 @@
       <Filter>Source Files\base\platform</Filter>
     </ClInclude>
     <ClInclude Include="src\base\platform\mutex.h">
+      <Filter>Source Files\base\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\platform\platform-posix-time.h">
       <Filter>Source Files\base\platform</Filter>
     </ClInclude>
     <ClInclude Include="src\base\platform\platform-posix.h">
@@ -940,9 +946,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\store-store-elimination.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\tail-call-optimization.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\type-cache.h">
@@ -2261,6 +2264,9 @@
     <ClCompile Include="src\base\platform\platform-openbsd.cc">
       <Filter>Source Files\base\platform</Filter>
     </ClCompile>
+    <ClCompile Include="src\base\platform\platform-posix-time.cc">
+      <Filter>Source Files\base\platform</Filter>
+    </ClCompile>
     <ClCompile Include="src\base\platform\platform-posix.cc">
       <Filter>Source Files\base\platform</Filter>
     </ClCompile>
@@ -2841,9 +2847,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\store-store-elimination.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\tail-call-optimization.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\type-cache.cc">

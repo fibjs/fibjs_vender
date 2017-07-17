@@ -35,11 +35,12 @@ class CodeGenerator::JumpTable final : public ZoneObject {
   size_t const target_count_;
 };
 
-CodeGenerator::CodeGenerator(Frame* frame, Linkage* linkage,
+CodeGenerator::CodeGenerator(Zone* codegen_zone, Frame* frame, Linkage* linkage,
                              InstructionSequence* code, CompilationInfo* info,
                              base::Optional<OsrHelper> osr_helper,
                              int start_source_position)
-    : frame_access_state_(nullptr),
+    : zone_(codegen_zone),
+      frame_access_state_(nullptr),
       linkage_(linkage),
       code_(code),
       unwinding_info_writer_(zone()),
@@ -50,20 +51,20 @@ CodeGenerator::CodeGenerator(Frame* frame, Linkage* linkage,
       current_source_position_(SourcePosition::Unknown()),
       tasm_(info->isolate(), nullptr, 0, CodeObjectRequired::kNo),
       resolver_(this),
-      safepoints_(code->zone()),
-      handlers_(code->zone()),
-      deoptimization_exits_(code->zone()),
-      deoptimization_states_(code->zone()),
-      deoptimization_literals_(code->zone()),
+      safepoints_(zone()),
+      handlers_(zone()),
+      deoptimization_exits_(zone()),
+      deoptimization_states_(zone()),
+      deoptimization_literals_(zone()),
       inlined_function_count_(0),
-      translations_(code->zone()),
+      translations_(zone()),
       last_lazy_deopt_pc_(0),
       jump_tables_(nullptr),
       ools_(nullptr),
       osr_helper_(osr_helper),
       osr_pc_offset_(-1),
       optimized_out_literal_id_(-1),
-      source_position_table_builder_(code->zone(),
+      source_position_table_builder_(zone(),
                                      info->SourcePositionRecordingMode()),
       result_(kSuccess) {
   for (int i = 0; i < code->InstructionBlockCount(); ++i) {
@@ -77,7 +78,7 @@ Isolate* CodeGenerator::isolate() const { return info_->isolate(); }
 
 void CodeGenerator::CreateFrameAccessState(Frame* frame) {
   FinishFrame(frame);
-  frame_access_state_ = new (code()->zone()) FrameAccessState(frame);
+  frame_access_state_ = new (zone()) FrameAccessState(frame);
 }
 
 void CodeGenerator::AssembleCode() {
@@ -505,9 +506,13 @@ void CodeGenerator::AssembleSourcePosition(SourcePosition source_position) {
     if (!info->parse_info()) return;
     std::ostringstream buffer;
     buffer << "-- ";
-    if (FLAG_trace_turbo) {
+    if (FLAG_trace_turbo ||
+        tasm()->isolate()->concurrent_recompilation_enabled()) {
       buffer << source_position;
     } else {
+      AllowHeapAllocation allocation;
+      AllowHandleAllocation handles;
+      AllowHandleDereference deref;
       buffer << source_position.InliningStack(info);
     }
     buffer << " --";
@@ -651,16 +656,6 @@ void CodeGenerator::RecordCallPosition(Instruction* instr) {
         DeoptimizationExit(deopt_state_id, current_source_position_);
     deoptimization_exits_.push_back(exit);
 
-    // If the pre-call frame state differs from the post-call one, produce the
-    // pre-call frame state, too.
-    // TODO(jarin) We might want to avoid building the pre-call frame state
-    // because it is only used to get locals and arguments (by the debugger and
-    // f.arguments), and those are the same in the pre-call and post-call
-    // states.
-    if (!descriptor->state_combine().IsOutputIgnored()) {
-      deopt_state_id = BuildTranslation(instr, -1, frame_state_offset,
-                                        OutputFrameStateCombine::Ignore());
-    }
     safepoints()->RecordLazyDeoptimizationIndex(deopt_state_id);
   }
 }
@@ -800,9 +795,6 @@ void CodeGenerator::BuildTranslationForFrameStateDescriptor(
       translation->BeginArgumentsAdaptorFrame(
           shared_info_id,
           static_cast<unsigned int>(descriptor->parameters_count()));
-      break;
-    case FrameStateType::kTailCallerFunction:
-      translation->BeginTailCallerFrame(shared_info_id);
       break;
     case FrameStateType::kConstructStub:
       DCHECK(descriptor->bailout_id().IsValidForConstructStub());
@@ -970,7 +962,7 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
       case Constant::kFloat64:
         DCHECK(type.representation() == MachineRepresentation::kFloat64 ||
                type.representation() == MachineRepresentation::kTagged);
-        literal = DeoptimizationLiteral(constant.ToFloat64());
+        literal = DeoptimizationLiteral(constant.ToFloat64().value());
         break;
       case Constant::kHeapObject:
         DCHECK_EQ(MachineRepresentation::kTagged, type.representation());
