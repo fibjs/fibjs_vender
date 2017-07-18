@@ -70,7 +70,7 @@ int main(int argc, char** argv)
 
     exlib::string src;
 
-#if V8_TARGET_ARCH_X64
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_IA32
 #ifdef _WIN32
     src = "#ifdef _WIN32\n\n";
 #else
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
     src.append(buffer, lSize);
     src += "\n\n#endif  // " + defname;
 
-#if V8_TARGET_ARCH_X64
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_IA32
     src += "\n\n#endif // _WIN32";
 #endif
 

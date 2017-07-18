@@ -1,3 +1,5 @@
+#ifndef _WIN32
+
 #include "src/v8.h"
 
 #if V8_TARGET_ARCH_IA32
@@ -36029,3 +36031,5 @@ const v8::StartupData* Snapshot::DefaultSnapshotBlob() {
 
 
 #endif  // V8_TARGET_ARCH_IA32
+
+#endif // _WIN32

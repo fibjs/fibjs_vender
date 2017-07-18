@@ -3707,6 +3707,9 @@
     <ClCompile Include="src\snapshot\snapshots\snapshot-arm64.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-win.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
     <ClCompile Include="src\snapshot\snapshots\snapshot-ia32.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>

@@ -367,12 +367,17 @@ function patch_snapshot() {
         x64: 'V8_TARGET_ARCH_X64'
     };
 
+    var warch_win = {
+        x64: true,
+        ia32: true
+    }
+
     fs.copy(v8Folder + "/src/snapshot/mksnapshot.cc", "test/src/mksnapshot.inl");
 
     var txt = fs.readTextFile(v8Folder + "/src/snapshot/snapshot-empty.cc");
 
     for (var arch in archs) {
-        if (arch === 'x64') {
+        if (warch_win[arch]) {
             fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + ".cc",
                 '#ifndef _WIN32\n\n#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch] + '\n\n#endif _WIN32');
 
