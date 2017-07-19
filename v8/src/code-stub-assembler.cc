@@ -3380,6 +3380,10 @@ Node* CodeStubAssembler::IsJSReceiver(Node* object) {
   return IsJSReceiverMap(LoadMap(object));
 }
 
+Node* CodeStubAssembler::IsNullOrJSReceiver(Node* object) {
+  return Word32Or(IsJSReceiver(object), IsNull(object));
+}
+
 Node* CodeStubAssembler::IsJSObjectMap(Node* map) {
   STATIC_ASSERT(LAST_JS_OBJECT_TYPE == LAST_TYPE);
   CSA_ASSERT(this, IsMap(map));
@@ -5600,6 +5604,17 @@ void CodeStubAssembler::TryHasOwnProperty(Node* object, Node* map,
   }
 }
 
+Node* CodeStubAssembler::GetMethod(Node* context, Node* object,
+                                   Handle<Name> name,
+                                   Label* if_null_or_undefined) {
+  Node* method = GetProperty(context, object, name);
+
+  GotoIf(IsUndefined(method), if_null_or_undefined);
+  GotoIf(IsNull(method), if_null_or_undefined);
+
+  return method;
+}
+
 void CodeStubAssembler::LoadPropertyFromFastObject(Node* object, Node* map,
                                                    Node* descriptors,
                                                    Node* name_index,
@@ -6322,8 +6337,11 @@ void CodeStubAssembler::UpdateFeedback(Node* feedback, Node* feedback_vector,
     StoreFixedArrayElement(feedback_vector, slot_id, combined_feedback,
                            SKIP_WRITE_BARRIER);
     // Reset profiler ticks.
-    StoreFixedArrayElement(feedback_vector, FeedbackVector::kProfilerTicksIndex,
-                           SmiConstant(0), SKIP_WRITE_BARRIER);
+    Node* shared_info =
+        LoadObjectField(function, JSFunction::kSharedFunctionInfoOffset);
+    StoreObjectFieldNoWriteBarrier(
+        shared_info, SharedFunctionInfo::kProfilerTicksOffset, Int32Constant(0),
+        MachineRepresentation::kWord32);
     Goto(&end);
   }
 

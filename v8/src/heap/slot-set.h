@@ -62,8 +62,15 @@ class SlotSet : public Malloced {
     Bucket bucket = LoadBucket<access_mode>(&buckets_[bucket_index]);
     if (bucket == nullptr) {
       bucket = AllocateBucket();
-      StoreBucket<access_mode>(&buckets_[bucket_index], bucket);
+      if (!SwapInNewBucket<access_mode>(&buckets_[bucket_index], bucket)) {
+        DeleteArray<uint32_t>(bucket);
+        bucket = LoadBucket<access_mode>(&buckets_[bucket_index]);
+      }
     }
+    // Check that monotonicity is preserved, i.e., once a bucket is set we do
+    // not free it concurrently.
+    DCHECK_NOT_NULL(bucket);
+    DCHECK_EQ(bucket, LoadBucket<access_mode>(&buckets_[bucket_index]));
     uint32_t mask = 1u << bit_index;
     if ((LoadCell<access_mode>(&bucket[cell_index]) & mask) == 0) {
       SetCellBits<access_mode>(&bucket[cell_index], mask);
@@ -218,6 +225,25 @@ class SlotSet : public Malloced {
     return new_count;
   }
 
+  void PreFreeEmptyBuckets() {
+    for (int bucket_index = 0; bucket_index < kBuckets; bucket_index++) {
+      Bucket bucket = LoadBucket(&buckets_[bucket_index]);
+      if (bucket != nullptr) {
+        bool found_non_empty_cell = false;
+        int cell_offset = bucket_index * kBitsPerBucket;
+        for (int i = 0; i < kCellsPerBucket; i++, cell_offset += kBitsPerCell) {
+          if (LoadCell(&bucket[i])) {
+            found_non_empty_cell = true;
+            break;
+          }
+        }
+        if (!found_non_empty_cell) {
+          PreFreeEmptyBucket(bucket_index);
+        }
+      }
+    }
+  }
+
   void FreeToBeFreedBuckets() {
     base::LockGuard<base::Mutex> guard(&to_be_freed_buckets_mutex_);
     while (!to_be_freed_buckets_.empty()) {
@@ -284,6 +310,18 @@ class SlotSet : public Malloced {
       base::AsAtomicWord::Release_Store(bucket, value);
     } else {
       *bucket = value;
+    }
+  }
+
+  template <AccessMode access_mode = AccessMode::ATOMIC>
+  bool SwapInNewBucket(Bucket* bucket, Bucket value) {
+    if (access_mode == AccessMode::ATOMIC) {
+      return base::AsAtomicWord::Release_CompareAndSwap(bucket, nullptr,
+                                                        value) == nullptr;
+    } else {
+      DCHECK_NULL(*bucket);
+      *bucket = value;
+      return true;
     }
   }
 

@@ -3350,8 +3350,7 @@ Node* WasmGraphBuilder::S128Zero() {
   return graph()->NewNode(jsgraph()->machine()->S128Zero());
 }
 
-Node* WasmGraphBuilder::SimdOp(wasm::WasmOpcode opcode,
-                               const NodeVector& inputs) {
+Node* WasmGraphBuilder::SimdOp(wasm::WasmOpcode opcode, Node* const* inputs) {
   has_simd_ = true;
   switch (opcode) {
     case wasm::kExprF32x4Splat:
@@ -3677,7 +3676,7 @@ Node* WasmGraphBuilder::SimdOp(wasm::WasmOpcode opcode,
 }
 
 Node* WasmGraphBuilder::SimdLaneOp(wasm::WasmOpcode opcode, uint8_t lane,
-                                   const NodeVector& inputs) {
+                                   Node* const* inputs) {
   has_simd_ = true;
   switch (opcode) {
     case wasm::kExprF32x4ExtractLane:
@@ -3710,7 +3709,7 @@ Node* WasmGraphBuilder::SimdLaneOp(wasm::WasmOpcode opcode, uint8_t lane,
 }
 
 Node* WasmGraphBuilder::SimdShiftOp(wasm::WasmOpcode opcode, uint8_t shift,
-                                    const NodeVector& inputs) {
+                                    Node* const* inputs) {
   has_simd_ = true;
   switch (opcode) {
     case wasm::kExprI32x4Shl:
@@ -3742,8 +3741,8 @@ Node* WasmGraphBuilder::SimdShiftOp(wasm::WasmOpcode opcode, uint8_t shift,
   }
 }
 
-Node* WasmGraphBuilder::Simd8x16ShuffleOp(uint8_t shuffle[16],
-                                          const NodeVector& inputs) {
+Node* WasmGraphBuilder::Simd8x16ShuffleOp(const uint8_t shuffle[16],
+                                          Node* const* inputs) {
   has_simd_ = true;
   return graph()->NewNode(jsgraph()->machine()->S8x16Shuffle(shuffle),
                           inputs[0], inputs[1]);
@@ -4203,7 +4202,7 @@ void WasmCompilationUnit::ExecuteCompilation() {
   set_memory_cost(cost);
 }
 
-Handle<Code> WasmCompilationUnit::FinishCompilation(
+MaybeHandle<Code> WasmCompilationUnit::FinishCompilation(
     wasm::ErrorThrower* thrower) {
   if (!ok_) {
     if (graph_construction_result_.failed()) {
@@ -4218,7 +4217,7 @@ Handle<Code> WasmCompilationUnit::FinishCompilation(
       thrower->CompileFailed(buffer.start(), graph_construction_result_);
     }
 
-    return Handle<Code>::null();
+    return {};
   }
   base::ElapsedTimer codegen_timer;
   if (FLAG_trace_wasm_decode_time) {
@@ -4248,7 +4247,7 @@ Handle<Code> WasmCompilationUnit::FinishCompilation(
 }
 
 // static
-Handle<Code> WasmCompilationUnit::CompileWasmFunction(
+MaybeHandle<Code> WasmCompilationUnit::CompileWasmFunction(
     wasm::ErrorThrower* thrower, Isolate* isolate,
     wasm::ModuleBytesEnv* module_env, const wasm::WasmFunction* function) {
   WasmCompilationUnit unit(isolate, module_env, function,

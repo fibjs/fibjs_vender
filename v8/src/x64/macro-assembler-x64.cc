@@ -15,6 +15,7 @@
 #include "src/codegen.h"
 #include "src/counters.h"
 #include "src/debug/debug.h"
+#include "src/external-reference-table.h"
 #include "src/heap/heap-inl.h"
 #include "src/objects-inl.h"
 #include "src/register-configuration.h"
@@ -598,6 +599,13 @@ void MacroAssembler::CallStub(CodeStub* stub) {
 
 void MacroAssembler::TailCallStub(CodeStub* stub) {
   Jump(stub->GetCode(), RelocInfo::CODE_TARGET);
+}
+
+void MacroAssembler::TailCallBuiltin(Builtins::Name name) {
+  DCHECK(ExternalReferenceTable::HasBuiltin(name));
+  Load(rcx, ExternalReference(name, isolate()));
+  leap(rcx, FieldOperand(rcx, Code::kHeaderSize));
+  jmp(rcx);
 }
 
 bool TurboAssembler::AllowThisStubCall(CodeStub* stub) {

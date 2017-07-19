@@ -268,7 +268,6 @@
     <ClInclude Include="src\compiler\wasm-compiler.h" />
     <ClInclude Include="src\compiler\x64\instruction-codes-x64.h" />
     <ClInclude Include="src\compiler\x64\unwinding-info-writer-x64.h" />
-    <ClInclude Include="src\compiler\x87\instruction-codes-x87.h" />
     <ClInclude Include="src\compiler\zone-stats.h" />
     <ClInclude Include="src\contexts-inl.h" />
     <ClInclude Include="src\contexts.h" />
@@ -341,6 +340,7 @@
     <ClInclude Include="src\heap\incremental-marking-job.h" />
     <ClInclude Include="src\heap\incremental-marking.h" />
     <ClInclude Include="src\heap\item-parallel-job.h" />
+    <ClInclude Include="src\heap\local-allocator.h" />
     <ClInclude Include="src\heap\mark-compact-inl.h" />
     <ClInclude Include="src\heap\mark-compact.h" />
     <ClInclude Include="src\heap\marking.h" />
@@ -541,7 +541,6 @@
     <ClInclude Include="src\regexp\regexp-utils.h" />
     <ClInclude Include="src\regexp\s390\regexp-macro-assembler-s390.h" />
     <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h" />
-    <ClInclude Include="src\regexp\x87\regexp-macro-assembler-x87.h" />
     <ClInclude Include="src\register-configuration.h" />
     <ClInclude Include="src\runtime-profiler.h" />
     <ClInclude Include="src\runtime\runtime-utils.h" />
@@ -627,6 +626,7 @@
     <ClInclude Include="src\wasm\wasm-opcodes.h" />
     <ClInclude Include="src\wasm\wasm-result.h" />
     <ClInclude Include="src\wasm\wasm-text.h" />
+    <ClInclude Include="src\wasm\wasm-value.h" />
     <ClInclude Include="src\x64\assembler-x64-inl.h" />
     <ClInclude Include="src\x64\assembler-x64.h" />
     <ClInclude Include="src\x64\code-stubs-x64.h" />
@@ -635,13 +635,6 @@
     <ClInclude Include="src\x64\macro-assembler-x64.h" />
     <ClInclude Include="src\x64\simulator-x64.h" />
     <ClInclude Include="src\x64\sse-instr.h" />
-    <ClInclude Include="src\x87\assembler-x87-inl.h" />
-    <ClInclude Include="src\x87\assembler-x87.h" />
-    <ClInclude Include="src\x87\code-stubs-x87.h" />
-    <ClInclude Include="src\x87\codegen-x87.h" />
-    <ClInclude Include="src\x87\frames-x87.h" />
-    <ClInclude Include="src\x87\macro-assembler-x87.h" />
-    <ClInclude Include="src\x87\simulator-x87.h" />
     <ClInclude Include="src\zone\accounting-allocator.h" />
     <ClInclude Include="src\zone\zone-allocator.h" />
     <ClInclude Include="src\zone\zone-chunk-list.h" />
@@ -757,6 +750,7 @@
     <ClCompile Include="src\builtins\builtins-object-gen.cc" />
     <ClCompile Include="src\builtins\builtins-object.cc" />
     <ClCompile Include="src\builtins\builtins-promise-gen.cc" />
+    <ClCompile Include="src\builtins\builtins-promise.cc" />
     <ClCompile Include="src\builtins\builtins-proxy-gen.cc" />
     <ClCompile Include="src\builtins\builtins-reflect.cc" />
     <ClCompile Include="src\builtins\builtins-regexp-gen.cc" />
@@ -776,7 +770,6 @@
     <ClCompile Include="src\builtins\s390\builtins-s390.cc" />
     <ClCompile Include="src\builtins\setup-builtins-internal.cc" />
     <ClCompile Include="src\builtins\x64\builtins-x64.cc" />
-    <ClCompile Include="src\builtins\x87\builtins-x87.cc" />
     <ClCompile Include="src\cached-powers.cc" />
     <ClCompile Include="src\cancelable-task.cc" />
     <ClCompile Include="src\code-factory.cc" />
@@ -905,9 +898,6 @@
     <ClCompile Include="src\compiler\x64\instruction-scheduler-x64.cc" />
     <ClCompile Include="src\compiler\x64\instruction-selector-x64.cc" />
     <ClCompile Include="src\compiler\x64\unwinding-info-writer-x64.cc" />
-    <ClCompile Include="src\compiler\x87\code-generator-x87.cc" />
-    <ClCompile Include="src\compiler\x87\instruction-scheduler-x87.cc" />
-    <ClCompile Include="src\compiler\x87\instruction-selector-x87.cc" />
     <ClCompile Include="src\compiler\zone-stats.cc" />
     <ClCompile Include="src\contexts.cc" />
     <ClCompile Include="src\conversions.cc" />
@@ -924,7 +914,6 @@
     <ClCompile Include="src\debug\ppc\debug-ppc.cc" />
     <ClCompile Include="src\debug\s390\debug-s390.cc" />
     <ClCompile Include="src\debug\x64\debug-x64.cc" />
-    <ClCompile Include="src\debug\x87\debug-x87.cc" />
     <ClCompile Include="src\deoptimize-reason.cc" />
     <ClCompile Include="src\deoptimizer.cc" />
     <ClCompile Include="src\disassembler.cc" />
@@ -954,7 +943,6 @@
     <ClCompile Include="src\full-codegen\ppc\full-codegen-ppc.cc" />
     <ClCompile Include="src\full-codegen\s390\full-codegen-s390.cc" />
     <ClCompile Include="src\full-codegen\x64\full-codegen-x64.cc" />
-    <ClCompile Include="src\full-codegen\x87\full-codegen-x87.cc" />
     <ClCompile Include="src\futex-emulation.cc" />
     <ClCompile Include="src\gdb-jit.cc" />
     <ClCompile Include="src\gen\experimental-extras-libraries.cc" />
@@ -1013,9 +1001,6 @@
     <ClCompile Include="src\ic\x64\access-compiler-x64.cc" />
     <ClCompile Include="src\ic\x64\handler-compiler-x64.cc" />
     <ClCompile Include="src\ic\x64\ic-x64.cc" />
-    <ClCompile Include="src\ic\x87\access-compiler-x87.cc" />
-    <ClCompile Include="src\ic\x87\handler-compiler-x87.cc" />
-    <ClCompile Include="src\ic\x87\ic-x87.cc" />
     <ClCompile Include="src\icu_util.cc" />
     <ClCompile Include="src\identity-map.cc" />
     <ClCompile Include="src\interface-descriptors.cc" />
@@ -1122,7 +1107,6 @@
     <ClCompile Include="src\regexp\regexp-utils.cc" />
     <ClCompile Include="src\regexp\s390\regexp-macro-assembler-s390.cc" />
     <ClCompile Include="src\regexp\x64\regexp-macro-assembler-x64.cc" />
-    <ClCompile Include="src\regexp\x87\regexp-macro-assembler-x87.cc" />
     <ClCompile Include="src\register-configuration.cc" />
     <ClCompile Include="src\runtime-profiler.cc" />
     <ClCompile Include="src\runtime\runtime-array.cc" />
@@ -1242,16 +1226,6 @@
     <ClCompile Include="src\x64\interface-descriptors-x64.cc" />
     <ClCompile Include="src\x64\macro-assembler-x64.cc" />
     <ClCompile Include="src\x64\simulator-x64.cc" />
-    <ClCompile Include="src\x87\assembler-x87.cc" />
-    <ClCompile Include="src\x87\code-stubs-x87.cc" />
-    <ClCompile Include="src\x87\codegen-x87.cc" />
-    <ClCompile Include="src\x87\cpu-x87.cc" />
-    <ClCompile Include="src\x87\deoptimizer-x87.cc" />
-    <ClCompile Include="src\x87\disasm-x87.cc" />
-    <ClCompile Include="src\x87\frames-x87.cc" />
-    <ClCompile Include="src\x87\interface-descriptors-x87.cc" />
-    <ClCompile Include="src\x87\macro-assembler-x87.cc" />
-    <ClCompile Include="src\x87\simulator-x87.cc" />
     <ClCompile Include="src\zone\accounting-allocator.cc" />
     <ClCompile Include="src\zone\zone-segment.cc" />
     <ClCompile Include="src\zone\zone.cc" />

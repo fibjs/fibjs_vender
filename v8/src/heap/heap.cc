@@ -30,6 +30,7 @@
 #include "src/heap/gc-idle-time-handler.h"
 #include "src/heap/gc-tracer.h"
 #include "src/heap/incremental-marking.h"
+#include "src/heap/item-parallel-job.h"
 #include "src/heap/mark-compact-inl.h"
 #include "src/heap/mark-compact.h"
 #include "src/heap/memory-reducer.h"
@@ -49,6 +50,7 @@
 #include "src/snapshot/serializer-common.h"
 #include "src/snapshot/snapshot.h"
 #include "src/tracing/trace-event.h"
+#include "src/utils-inl.h"
 #include "src/utils.h"
 #include "src/v8.h"
 #include "src/v8threads.h"
@@ -146,6 +148,7 @@ Heap::Heap()
       live_object_stats_(nullptr),
       dead_object_stats_(nullptr),
       scavenge_job_(nullptr),
+      parallel_scavenge_semaphore_(0),
       idle_scavenge_observer_(nullptr),
       new_space_allocation_counter_(0),
       old_generation_allocation_counter_at_last_gc_(0),
@@ -1177,7 +1180,7 @@ void Heap::MoveElements(FixedArray* array, int dst_index, int src_index,
   DCHECK(array->map() != fixed_cow_array_map());
   Object** dst = array->data_start() + dst_index;
   Object** src = array->data_start() + src_index;
-  if (FLAG_concurrent_marking && concurrent_marking()->IsRunning()) {
+  if (FLAG_concurrent_marking && incremental_marking()->IsMarking()) {
     if (dst < src) {
       for (int i = 0; i < len; i++) {
         base::AsAtomicWord::Relaxed_Store(
@@ -1695,6 +1698,82 @@ static bool IsLogging(Isolate* isolate) {
           isolate->heap_profiler()->is_tracking_object_moves());
 }
 
+class ScavengingItem : public ItemParallelJob::Item {
+ public:
+  virtual ~ScavengingItem() {}
+  virtual void Process(Scavenger* scavenger) = 0;
+};
+
+class ScavengingTask final : public ItemParallelJob::Task {
+ public:
+  ScavengingTask(Heap* heap, Scavenger* scavenger)
+      : ItemParallelJob::Task(heap->isolate()),
+        heap_(heap),
+        scavenger_(scavenger) {}
+
+  void RunInParallel() final {
+    double scavenging_time = 0.0;
+    {
+      TimedScope scope(&scavenging_time);
+      ScavengingItem* item = nullptr;
+      while ((item = GetItem<ScavengingItem>()) != nullptr) {
+        item->Process(scavenger_);
+        item->MarkFinished();
+      }
+      scavenger_->Process();
+    }
+    if (FLAG_trace_parallel_scavenge) {
+      PrintIsolate(heap_->isolate(),
+                   "scavenge[%p]: time=%.2f copied=%zu promoted=%zu\n",
+                   static_cast<void*>(this), scavenging_time,
+                   scavenger_->bytes_copied(), scavenger_->bytes_promoted());
+    }
+  };
+
+ private:
+  Heap* const heap_;
+  Scavenger* const scavenger_;
+};
+
+class PageScavengingItem final : public ScavengingItem {
+ public:
+  explicit PageScavengingItem(Heap* heap, MemoryChunk* chunk)
+      : heap_(heap), chunk_(chunk) {}
+  virtual ~PageScavengingItem() {}
+
+  void Process(Scavenger* scavenger) final {
+    base::LockGuard<base::RecursiveMutex> guard(chunk_->mutex());
+    RememberedSet<OLD_TO_NEW>::Iterate(
+        chunk_,
+        [this, scavenger](Address addr) {
+          return scavenger->CheckAndScavengeObject(heap_, addr);
+        },
+        SlotSet::KEEP_EMPTY_BUCKETS);
+    RememberedSet<OLD_TO_NEW>::IterateTyped(
+        chunk_,
+        [this, scavenger](SlotType type, Address host_addr, Address addr) {
+          return UpdateTypedSlotHelper::UpdateTypedSlot(
+              heap_->isolate(), type, addr, [this, scavenger](Object** addr) {
+                // We expect that objects referenced by code are long
+                // living. If we do not force promotion, then we need to
+                // clear old_to_new slots in dead code objects after
+                // mark-compact.
+                return scavenger->CheckAndScavengeObject(
+                    heap_, reinterpret_cast<Address>(addr));
+              });
+        });
+  }
+
+ private:
+  Heap* const heap_;
+  MemoryChunk* const chunk_;
+};
+
+int Heap::NumberOfScavengeTasks() {
+  CHECK(!FLAG_parallel_scavenge);
+  return 1;
+}
+
 void Heap::Scavenge() {
   TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_SCAVENGE);
   base::LockGuard<base::Mutex> guard(relocation_mutex());
@@ -1726,17 +1805,34 @@ void Heap::Scavenge() {
   new_space_->Flip();
   new_space_->ResetAllocationInfo();
 
-  const int kScavengerTasks = 1;
+  ItemParallelJob job(isolate()->cancelable_task_manager(),
+                      &parallel_scavenge_semaphore_);
   const int kMainThreadId = 0;
-  CopiedList copied_list(kScavengerTasks);
-  PromotionList promotion_list(kScavengerTasks);
-  Scavenger scavenger(this, IsLogging(isolate()),
-                      incremental_marking()->IsMarking(), &copied_list,
-                      &promotion_list, kMainThreadId);
-  RootScavengeVisitor root_scavenge_visitor(this, &scavenger);
+  Scavenger* scavengers[kMaxScavengerTasks];
+  const bool is_logging = IsLogging(isolate());
+  const bool is_incremental_marking = incremental_marking()->IsMarking();
+  const int num_scavenge_tasks = NumberOfScavengeTasks();
+  CopiedList copied_list(num_scavenge_tasks);
+  PromotionList promotion_list(num_scavenge_tasks);
+  for (int i = 0; i < num_scavenge_tasks; i++) {
+    scavengers[i] = new Scavenger(this, is_logging, is_incremental_marking,
+                                  &copied_list, &promotion_list, i);
+    job.AddTask(new ScavengingTask(this, scavengers[i]));
+  }
+
+  RememberedSet<OLD_TO_NEW>::IterateMemoryChunks(
+      this, [this, &job](MemoryChunk* chunk) {
+        job.AddItem(new PageScavengingItem(this, chunk));
+      });
+
+  RootScavengeVisitor root_scavenge_visitor(this, scavengers[kMainThreadId]);
 
   isolate()->global_handles()->IdentifyWeakUnmodifiedObjects(
       &JSObject::IsUnmodifiedApiObject);
+
+  std::vector<MemoryChunk*> pages;
+  RememberedSet<OLD_TO_NEW>::IterateMemoryChunks(
+      this, [&pages](MemoryChunk* chunk) { pages.push_back(chunk); });
 
   {
     // Copy roots.
@@ -1745,25 +1841,8 @@ void Heap::Scavenge() {
   }
 
   {
-    // Copy objects reachable from the old generation.
     TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_OLD_TO_NEW_POINTERS);
-    RememberedSet<OLD_TO_NEW>::Iterate(
-        this, SYNCHRONIZED, [this, &scavenger](Address addr) {
-          return scavenger.CheckAndScavengeObject(this, addr);
-        });
-
-    RememberedSet<OLD_TO_NEW>::IterateTyped(
-        this, SYNCHRONIZED,
-        [this, &scavenger](SlotType type, Address host_addr, Address addr) {
-          return UpdateTypedSlotHelper::UpdateTypedSlot(
-              isolate(), type, addr, [this, &scavenger](Object** addr) {
-                // We expect that objects referenced by code are long living.
-                // If we do not force promotion, then we need to clear
-                // old_to_new slots in dead code objects after mark-compact.
-                return scavenger.CheckAndScavengeObject(
-                    this, reinterpret_cast<Address>(addr));
-              });
-        });
+    job.Run();
   }
 
   {
@@ -1773,7 +1852,7 @@ void Heap::Scavenge() {
 
   {
     TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_SEMISPACE);
-    scavenger.Process();
+    scavengers[kMainThreadId]->Process();
   }
 
   isolate()->global_handles()->MarkNewSpaceWeakUnmodifiedObjectsPending(
@@ -1781,9 +1860,12 @@ void Heap::Scavenge() {
 
   isolate()->global_handles()->IterateNewSpaceWeakUnmodifiedRoots(
       &root_scavenge_visitor);
-  scavenger.Process();
+  scavengers[kMainThreadId]->Process();
 
-  scavenger.Finalize();
+  for (int i = 0; i < num_scavenge_tasks; i++) {
+    scavengers[i]->Finalize();
+    delete scavengers[i];
+  }
 
   UpdateNewSpaceReferencesInExternalStringTable(
       &UpdateNewSpaceReferenceInExternalStringTableEntry);
@@ -1797,6 +1879,10 @@ void Heap::Scavenge() {
   new_space_->set_age_mark(new_space_->top());
 
   ArrayBufferTracker::FreeDeadInNewSpace(this);
+
+  RememberedSet<OLD_TO_NEW>::IterateMemoryChunks(this, [](MemoryChunk* chunk) {
+    RememberedSet<OLD_TO_NEW>::PreFreeEmptyBuckets(chunk);
+  });
 
   // Update how much has survived scavenge.
   DCHECK_GE(PromotedSpaceSizeOfObjects(), survived_watermark);
@@ -3509,7 +3595,7 @@ AllocationResult Heap::Allocate(Map* map, AllocationSpace space,
 
 void Heap::InitializeJSObjectFromMap(JSObject* obj, Object* properties,
                                      Map* map) {
-  obj->set_properties(properties);
+  obj->set_raw_properties_or_hash(properties);
   obj->initialize_elements();
   // TODO(1240798): Initialize the object's body using valid initial values
   // according to the object's initial map.  For example, if the map's
@@ -3662,7 +3748,8 @@ AllocationResult Heap::CopyJSObject(JSObject* source, AllocationSite* site) {
         AllocationResult allocation = CopyPropertyArray(properties);
         if (!allocation.To(&prop)) return allocation;
       }
-      JSObject::cast(clone)->set_properties(prop, SKIP_WRITE_BARRIER);
+      JSObject::cast(clone)->set_raw_properties_or_hash(prop,
+                                                        SKIP_WRITE_BARRIER);
     }
   } else {
     FixedArray* properties = FixedArray::cast(source->property_dictionary());
@@ -3671,7 +3758,7 @@ AllocationResult Heap::CopyJSObject(JSObject* source, AllocationSite* site) {
       AllocationResult allocation = CopyFixedArray(properties);
       if (!allocation.To(&prop)) return allocation;
     }
-    JSObject::cast(clone)->set_properties(prop, SKIP_WRITE_BARRIER);
+    JSObject::cast(clone)->set_raw_properties_or_hash(prop, SKIP_WRITE_BARRIER);
   }
   // Return the new clone.
   return clone;
@@ -4950,6 +5037,8 @@ class OldToNewSlotVerifyingVisitor : public SlotVerifyingVisitor {
       : SlotVerifyingVisitor(untyped, typed), heap_(heap) {}
 
   bool ShouldHaveBeenRecorded(HeapObject* host, Object* target) override {
+    DCHECK_IMPLIES(target->IsHeapObject() && heap_->InNewSpace(target),
+                   heap_->InToSpace(target));
     return target->IsHeapObject() && heap_->InNewSpace(target) &&
            !heap_->InNewSpace(host);
   }
@@ -4962,12 +5051,14 @@ template <RememberedSetType direction>
 void CollectSlots(MemoryChunk* chunk, Address start, Address end,
                   std::set<Address>* untyped,
                   std::set<std::pair<SlotType, Address> >* typed) {
-  RememberedSet<direction>::Iterate(chunk, [start, end, untyped](Address slot) {
-    if (start <= slot && slot < end) {
-      untyped->insert(slot);
-    }
-    return KEEP_SLOT;
-  });
+  RememberedSet<direction>::Iterate(chunk,
+                                    [start, end, untyped](Address slot) {
+                                      if (start <= slot && slot < end) {
+                                        untyped->insert(slot);
+                                      }
+                                      return KEEP_SLOT;
+                                    },
+                                    SlotSet::PREFREE_EMPTY_BUCKETS);
   RememberedSet<direction>::IterateTyped(
       chunk, [start, end, typed](SlotType type, Address host, Address slot) {
         if (start <= slot && slot < end) {
@@ -5672,14 +5763,7 @@ bool Heap::SetUp() {
 
   // Set up the seed that is used to randomize the string hash function.
   DCHECK(hash_seed() == 0);
-  if (FLAG_randomize_hashes) {
-    if (FLAG_hash_seed == 0) {
-      int rnd = isolate()->random_number_generator()->NextInt();
-      set_hash_seed(Smi::FromInt(rnd & Name::kHashBitMask));
-    } else {
-      set_hash_seed(Smi::FromInt(FLAG_hash_seed));
-    }
-  }
+  if (FLAG_randomize_hashes) InitializeHashSeed();
 
   for (int i = 0; i < static_cast<int>(v8::Isolate::kUseCounterFeatureCount);
        i++) {
@@ -5728,6 +5812,14 @@ bool Heap::SetUp() {
   return true;
 }
 
+void Heap::InitializeHashSeed() {
+  if (FLAG_hash_seed == 0) {
+    int rnd = isolate()->random_number_generator()->NextInt();
+    set_hash_seed(Smi::FromInt(rnd & Name::kHashBitMask));
+  } else {
+    set_hash_seed(Smi::FromInt(FLAG_hash_seed));
+  }
+}
 
 bool Heap::CreateHeapObjects() {
   // Create initial maps.

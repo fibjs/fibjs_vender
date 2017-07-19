@@ -83,8 +83,6 @@ namespace internal {
   /* ES6 section 9.4.1.2 [[Construct]] (argumentsList, newTarget) */           \
   ASM(ConstructBoundFunction)                                                  \
   ASM(ConstructedNonConstructable)                                             \
-  /* ES6 section 9.5.14 [[Construct]] ( argumentsList, newTarget) */           \
-  ASM(ConstructProxy)                                                          \
   /* ES6 section 7.3.13 Construct (F, [argumentsList], [newTarget]) */         \
   ASM(Construct)                                                               \
   ASM(ConstructVarargs)                                                        \
@@ -106,6 +104,8 @@ namespace internal {
   TFC(FastCloneShallowArrayTrack, FastCloneShallowArray, 1)                    \
   TFC(FastCloneShallowArrayDontTrack, FastCloneShallowArray, 1)                \
   TFC(FastCloneShallowObject, FastCloneShallowObject, 1)                       \
+  /* ES6 section 9.5.14 [[Construct]] ( argumentsList, newTarget) */           \
+  TFC(ConstructProxy, ConstructTrampoline, 1)                                  \
                                                                                \
   /* Apply and entries */                                                      \
   ASM(JSEntryTrampoline)                                                       \
@@ -763,7 +763,7 @@ namespace internal {
   /* ES6 #sec-promise-executor */                                              \
   TFJ(PromiseConstructor, 1, kExecutor)                                        \
   TFJ(PromiseInternalConstructor, 1, kParent)                                  \
-  TFJ(IsPromise, 1, kObject)                                                   \
+  CPP(IsPromise)                                                               \
   /* ES #sec-promise-resolve-functions */                                      \
   TFJ(PromiseResolveClosure, 1, kValue)                                        \
   /* ES #sec-promise-reject-functions */                                       \
@@ -1037,6 +1037,9 @@ namespace internal {
   TFS(WeakMapLookupHashIndex, kTable, kKey)                                    \
   TFJ(WeakMapGet, 1, kKey)                                                     \
   TFJ(WeakMapHas, 1, kKey)                                                     \
+                                                                               \
+  /* WeakSet */                                                                \
+  TFJ(WeakSetHas, 1, kKey)                                                     \
                                                                                \
   /* AsyncGenerator */                                                         \
                                                                                \

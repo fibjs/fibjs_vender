@@ -52,9 +52,6 @@
     <Filter Include="Source Files\builtins\x64">
       <UniqueIdentifier>{b8368f3d-c5c5-3548-da65-f1bbd980cfee}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\builtins\x87">
-      <UniqueIdentifier>{2843c431-7faf-166c-6674-73403a728e4b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\compiler">
       <UniqueIdentifier>{99e52990-fb59-1eaf-e932-48f9c3481633}</UniqueIdentifier>
     </Filter>
@@ -73,9 +70,6 @@
     <Filter Include="Source Files\compiler\x64">
       <UniqueIdentifier>{7e4db021-7f1c-d574-294e-09b6102be2dd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\compiler\x87">
-      <UniqueIdentifier>{6beedc22-e6df-e570-a793-e05223c73897}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\d8.xcodeproj">
       <UniqueIdentifier>{21b6a2cb-ceaf-378e-a76c-933ad5762d5c}</UniqueIdentifier>
     </Filter>
@@ -93,9 +87,6 @@
     </Filter>
     <Filter Include="Source Files\debug\x64">
       <UniqueIdentifier>{64f81658-9958-9f87-2ec0-018527bb74dc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\debug\x87">
-      <UniqueIdentifier>{b971010d-1f34-9bed-4f19-0c1ff673b76f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\extensions">
       <UniqueIdentifier>{799570e2-a10f-51ed-083a-05a77b0687f4}</UniqueIdentifier>
@@ -117,9 +108,6 @@
     </Filter>
     <Filter Include="Source Files\full-codegen\x64">
       <UniqueIdentifier>{73f3d6cd-3dd6-8540-ff08-e30c63419f3a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\full-codegen\x87">
-      <UniqueIdentifier>{9e51ea73-2f26-b79f-62a7-d5b8d85de970}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\gen">
       <UniqueIdentifier>{1050797c-185f-d58a-6936-837871f7749c}</UniqueIdentifier>
@@ -144,9 +132,6 @@
     </Filter>
     <Filter Include="Source Files\ic\x64">
       <UniqueIdentifier>{7e4c29af-711e-18fb-353a-9dc159584321}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\ic\x87">
-      <UniqueIdentifier>{8aedb8d2-fb2e-3ad0-c5d0-dd320eeecd95}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\interpreter">
       <UniqueIdentifier>{59810ce5-926b-7a85-f08d-bf58feae40cd}</UniqueIdentifier>
@@ -190,9 +175,6 @@
     <Filter Include="Source Files\regexp\x64">
       <UniqueIdentifier>{063176f1-b16b-9fb0-9798-0aed437124d5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\regexp\x87">
-      <UniqueIdentifier>{1df9da08-8891-ff31-9009-92c2505ec67e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\runtime">
       <UniqueIdentifier>{103f0e8f-8587-2131-6779-fa0e8e7a0c4f}</UniqueIdentifier>
     </Filter>
@@ -222,9 +204,6 @@
     </Filter>
     <Filter Include="Source Files\x64">
       <UniqueIdentifier>{ad65f0e1-d29e-4a32-08c7-a09fd2f464f7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\x87">
-      <UniqueIdentifier>{acef08ff-e260-9824-5923-978cb77e35fb}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\zone">
       <UniqueIdentifier>{a1a66989-d449-b493-33f8-40e6adb38e0d}</UniqueIdentifier>
@@ -978,9 +957,6 @@
     <ClInclude Include="src\compiler\x64\unwinding-info-writer-x64.h">
       <Filter>Source Files\compiler\x64</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\x87\instruction-codes-x87.h">
-      <Filter>Source Files\compiler\x87</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\zone-stats.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -1195,6 +1171,9 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\item-parallel-job.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\local-allocator.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\mark-compact-inl.h">
@@ -1797,9 +1776,6 @@
     <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h">
       <Filter>Source Files\regexp\x64</Filter>
     </ClInclude>
-    <ClInclude Include="src\regexp\x87\regexp-macro-assembler-x87.h">
-      <Filter>Source Files\regexp\x87</Filter>
-    </ClInclude>
     <ClInclude Include="src\register-configuration.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -2055,6 +2031,9 @@
     <ClInclude Include="src\wasm\wasm-text.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\wasm-value.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\x64\assembler-x64-inl.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
@@ -2078,27 +2057,6 @@
     </ClInclude>
     <ClInclude Include="src\x64\sse-instr.h">
       <Filter>Source Files\x64</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\assembler-x87-inl.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\assembler-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\code-stubs-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\codegen-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\frames-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\macro-assembler-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\simulator-x87.h">
-      <Filter>Source Files\x87</Filter>
     </ClInclude>
     <ClInclude Include="src\zone\accounting-allocator.h">
       <Filter>Source Files\zone</Filter>
@@ -2441,6 +2399,9 @@
     <ClCompile Include="src\builtins\builtins-promise-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-promise.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-proxy-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2497,9 +2458,6 @@
     </ClCompile>
     <ClCompile Include="src\builtins\x64\builtins-x64.cc">
       <Filter>Source Files\builtins\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\builtins\x87\builtins-x87.cc">
-      <Filter>Source Files\builtins\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\cached-powers.cc">
       <Filter>Source Files</Filter>
@@ -2885,15 +2843,6 @@
     <ClCompile Include="src\compiler\x64\unwinding-info-writer-x64.cc">
       <Filter>Source Files\compiler\x64</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\x87\code-generator-x87.cc">
-      <Filter>Source Files\compiler\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\x87\instruction-scheduler-x87.cc">
-      <Filter>Source Files\compiler\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\x87\instruction-selector-x87.cc">
-      <Filter>Source Files\compiler\x87</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\zone-stats.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2941,9 +2890,6 @@
     </ClCompile>
     <ClCompile Include="src\debug\x64\debug-x64.cc">
       <Filter>Source Files\debug\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\debug\x87\debug-x87.cc">
-      <Filter>Source Files\debug\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\deoptimize-reason.cc">
       <Filter>Source Files</Filter>
@@ -3031,9 +2977,6 @@
     </ClCompile>
     <ClCompile Include="src\full-codegen\x64\full-codegen-x64.cc">
       <Filter>Source Files\full-codegen\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\full-codegen\x87\full-codegen-x87.cc">
-      <Filter>Source Files\full-codegen\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\futex-emulation.cc">
       <Filter>Source Files</Filter>
@@ -3208,15 +3151,6 @@
     </ClCompile>
     <ClCompile Include="src\ic\x64\ic-x64.cc">
       <Filter>Source Files\ic\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x87\access-compiler-x87.cc">
-      <Filter>Source Files\ic\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x87\handler-compiler-x87.cc">
-      <Filter>Source Files\ic\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x87\ic-x87.cc">
-      <Filter>Source Files\ic\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\icu_util.cc">
       <Filter>Source Files</Filter>
@@ -3535,9 +3469,6 @@
     </ClCompile>
     <ClCompile Include="src\regexp\x64\regexp-macro-assembler-x64.cc">
       <Filter>Source Files\regexp\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\regexp\x87\regexp-macro-assembler-x87.cc">
-      <Filter>Source Files\regexp\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\register-configuration.cc">
       <Filter>Source Files</Filter>
@@ -3895,36 +3826,6 @@
     </ClCompile>
     <ClCompile Include="src\x64\simulator-x64.cc">
       <Filter>Source Files\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\assembler-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\code-stubs-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\codegen-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\cpu-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\deoptimizer-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\disasm-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\frames-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\interface-descriptors-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\macro-assembler-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\simulator-x87.cc">
-      <Filter>Source Files\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\zone\accounting-allocator.cc">
       <Filter>Source Files\zone</Filter>

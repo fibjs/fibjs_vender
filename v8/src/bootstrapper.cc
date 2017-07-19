@@ -591,6 +591,8 @@ Handle<JSFunction> Genesis::GetThrowTypeErrorIntrinsic() {
     DCHECK(false);
   }
 
+  JSObject::MigrateSlowToFast(function, 0, "Bootstrapping");
+
   restricted_properties_thrower_ = function;
   return function;
 }
@@ -3150,6 +3152,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     // Setup %WeakSetPrototype%.
     Handle<JSObject> prototype(JSObject::cast(cons->instance_prototype()));
 
+    SimpleInstallFunction(prototype, "has", Builtins::kWeakSetHas, 1, true);
+
     JSObject::AddProperty(
         prototype, factory->to_string_tag_symbol(),
         factory->NewStringFromAsciiChecked("WeakSet"),
@@ -3626,7 +3630,6 @@ void Genesis::ConfigureUtilsObject(GlobalContextType context_type) {
   // The utils object can be removed for cases that reach this point.
   native_context()->set_natives_utils_object(heap()->undefined_value());
   native_context()->set_extras_utils_object(heap()->undefined_value());
-  native_context()->set_exports_container(heap()->undefined_value());
 }
 
 
@@ -4048,7 +4051,6 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
       }
     }
   }
-  isolate->native_context()->set_exports_container(*container);
 }
 
 

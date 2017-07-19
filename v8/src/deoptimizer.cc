@@ -290,16 +290,17 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
       int deopt_index = safepoint.deoptimization_index();
 
       // Turbofan deopt is checked when we are patching addresses on stack.
-      bool turbofanned =
-          code->is_turbofanned() && function->shared()->asm_function();
-      bool safe_to_deopt =
-          deopt_index != Safepoint::kNoDeoptimizationIndex || turbofanned;
-      bool builtin = code->kind() == Code::BUILTIN;
-      CHECK(topmost_optimized_code == NULL || safe_to_deopt || turbofanned ||
-            builtin);
+      bool is_non_deoptimizing_asm_code =
+          code->is_turbofanned() && !function->shared()->HasBytecodeArray();
+      bool safe_if_deopt_triggered =
+          deopt_index != Safepoint::kNoDeoptimizationIndex ||
+          is_non_deoptimizing_asm_code;
+      bool is_builtin_code = code->kind() == Code::BUILTIN;
+      CHECK(topmost_optimized_code == NULL || safe_if_deopt_triggered ||
+            is_non_deoptimizing_asm_code || is_builtin_code);
       if (topmost_optimized_code == NULL) {
         topmost_optimized_code = code;
-        safe_to_deopt_topmost_optimized_code = safe_to_deopt;
+        safe_to_deopt_topmost_optimized_code = safe_if_deopt_triggered;
       }
     }
   }
@@ -3569,7 +3570,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       slot->value_ = object;
       Handle<Object> properties = materializer.FieldAt(value_index);
       Handle<Object> elements = materializer.FieldAt(value_index);
-      object->set_properties(*properties);
+      object->set_raw_properties_or_hash(*properties);
       object->set_elements(FixedArrayBase::cast(*elements));
       int in_object_properties = map->GetInObjectProperties();
       for (int i = 0; i < in_object_properties; ++i) {
@@ -3587,7 +3588,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> elements = materializer.FieldAt(value_index);
       Handle<Object> table = materializer.FieldAt(value_index);
       Handle<Object> index = materializer.FieldAt(value_index);
-      object->set_properties(FixedArray::cast(*properties));
+      object->set_raw_properties_or_hash(FixedArray::cast(*properties));
       object->set_elements(FixedArrayBase::cast(*elements));
       object->set_table(*table);
       object->set_index(*index);
@@ -3602,7 +3603,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> elements = materializer.FieldAt(value_index);
       Handle<Object> table = materializer.FieldAt(value_index);
       Handle<Object> index = materializer.FieldAt(value_index);
-      object->set_properties(FixedArray::cast(*properties));
+      object->set_raw_properties_or_hash(FixedArray::cast(*properties));
       object->set_elements(FixedArrayBase::cast(*elements));
       object->set_table(*table);
       object->set_index(*index);
@@ -3653,7 +3654,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> iterated_object = materializer.FieldAt(value_index);
       Handle<Object> next_index = materializer.FieldAt(value_index);
       Handle<Object> iterated_object_map = materializer.FieldAt(value_index);
-      object->set_properties(*properties);
+      object->set_raw_properties_or_hash(*properties);
       object->set_elements(FixedArrayBase::cast(*elements));
       object->set_object(*iterated_object);
       object->set_index(*next_index);
@@ -3670,7 +3671,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> elements = materializer.FieldAt(value_index);
       Handle<Object> iterated_string = materializer.FieldAt(value_index);
       Handle<Object> next_index = materializer.FieldAt(value_index);
-      object->set_properties(*properties);
+      object->set_raw_properties_or_hash(*properties);
       object->set_elements(FixedArrayBase::cast(*elements));
       CHECK(iterated_string->IsString());
       object->set_string(String::cast(*iterated_string));
@@ -3686,7 +3687,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> properties = materializer.FieldAt(value_index);
       Handle<Object> elements = materializer.FieldAt(value_index);
       Handle<Object> sync_iterator = materializer.FieldAt(value_index);
-      object->set_properties(*properties);
+      object->set_raw_properties_or_hash(*properties);
       object->set_elements(FixedArrayBase::cast(*elements));
       object->set_sync_iterator(JSReceiver::cast(*sync_iterator));
       return object;
@@ -3698,7 +3699,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> properties = materializer.FieldAt(value_index);
       Handle<Object> elements = materializer.FieldAt(value_index);
       Handle<Object> array_length = materializer.FieldAt(value_index);
-      object->set_properties(*properties);
+      object->set_raw_properties_or_hash(*properties);
       object->set_elements(FixedArrayBase::cast(*elements));
       object->set_length(*array_length);
       return object;
@@ -3712,7 +3713,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> bound_target_function = materializer.FieldAt(value_index);
       Handle<Object> bound_this = materializer.FieldAt(value_index);
       Handle<Object> bound_arguments = materializer.FieldAt(value_index);
-      object->set_properties(*properties);
+      object->set_raw_properties_or_hash(*properties);
       object->set_elements(FixedArrayBase::cast(*elements));
       object->set_bound_target_function(
           JSReceiver::cast(*bound_target_function));
@@ -3733,7 +3734,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       Handle<Object> resume_mode = materializer.FieldAt(value_index);
       Handle<Object> continuation_offset = materializer.FieldAt(value_index);
       Handle<Object> register_file = materializer.FieldAt(value_index);
-      object->set_properties(*properties);
+      object->set_raw_properties_or_hash(*properties);
       object->set_elements(FixedArrayBase::cast(*elements));
       object->set_function(JSFunction::cast(*function));
       object->set_context(Context::cast(*context));

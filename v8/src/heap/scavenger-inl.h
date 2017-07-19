@@ -36,13 +36,6 @@ bool ContainsOnlyData(VisitorId visitor_id) {
 
 void Scavenger::MigrateObject(Map* map, HeapObject* source, HeapObject* target,
                               int size) {
-  // If we migrate into to-space, then the to-space top pointer should be
-  // right after the target object. Incorporate double alignment
-  // over-allocation.
-  DCHECK(!heap()->InToSpace(target) ||
-         target->address() + size == heap()->new_space()->top() ||
-         target->address() + size + kPointerSize == heap()->new_space()->top());
-
   // Copy the content of source to target.
   heap()->CopyBlock(target->address(), source->address(), size);
 
@@ -67,7 +60,7 @@ bool Scavenger::SemiSpaceCopyObject(Map* map, HeapObject** slot,
   DCHECK(heap()->AllowedToBeMigrated(object, NEW_SPACE));
   AllocationAlignment alignment = object->RequiredAlignment();
   AllocationResult allocation =
-      heap()->new_space()->AllocateRaw(object_size, alignment);
+      allocator_.Allocate<NEW_SPACE>(object_size, alignment);
 
   HeapObject* target = nullptr;
   if (allocation.To(&target)) {
@@ -87,7 +80,7 @@ bool Scavenger::PromoteObject(Map* map, HeapObject** slot, HeapObject* object,
                               int object_size) {
   AllocationAlignment alignment = object->RequiredAlignment();
   AllocationResult allocation =
-      heap()->old_space()->AllocateRaw(object_size, alignment);
+      allocator_.Allocate<OLD_SPACE>(object_size, alignment);
 
   HeapObject* target = nullptr;
   if (allocation.To(&target)) {
@@ -126,30 +119,6 @@ void Scavenger::EvacuateObjectDefault(Map* map, HeapObject** slot,
   if (SemiSpaceCopyObject(map, slot, object, object_size)) return;
 
   FatalProcessOutOfMemory("Scavenger: semi-space copy\n");
-}
-
-void Scavenger::EvacuateJSFunction(Map* map, HeapObject** slot,
-                                   JSFunction* object, int object_size) {
-  EvacuateObjectDefault(map, slot, object, object_size);
-
-  if (!is_incremental_marking_) return;
-
-  MapWord map_word = object->map_word();
-  DCHECK(map_word.IsForwardingAddress());
-  HeapObject* target = map_word.ToForwardingAddress();
-
-  // TODO(mlippautz): Notify collector of this object so we don't have to
-  // retrieve the state our of thin air.
-  if (ObjectMarking::IsBlack(target, MarkingState::Internal(target))) {
-    // This object is black and it might not be rescanned by marker.
-    // We should explicitly record code entry slot for compaction because
-    // promotion queue processing (IteratePromotedObjectPointers) will
-    // miss it as it is not HeapObject-tagged.
-    Address code_entry_slot = target->address() + JSFunction::kCodeEntryOffset;
-    Code* code = Code::cast(Code::GetObjectFromEntryAddress(code_entry_slot));
-    heap()->mark_compact_collector()->RecordCodeEntrySlot(
-        target, code_entry_slot, code);
-  }
 }
 
 void Scavenger::EvacuateThinString(Map* map, HeapObject** slot,
@@ -209,9 +178,6 @@ void Scavenger::EvacuateObject(HeapObject** slot, Map* map,
       break;
     case kVisitShortcutCandidate:
       EvacuateShortcutCandidate(map, slot, ConsString::cast(source), size);
-      break;
-    case kVisitJSFunction:
-      EvacuateJSFunction(map, slot, JSFunction::cast(source), size);
       break;
     default:
       EvacuateObjectDefault(map, slot, source, size);

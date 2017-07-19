@@ -104,7 +104,6 @@ namespace internal {
   F(MapIteratorClone, 1, 1)               \
   F(GetWeakMapEntries, 2, 1)              \
   F(WeakCollectionInitialize, 1, 1)       \
-  F(WeakCollectionHas, 3, 1)              \
   F(WeakCollectionDelete, 3, 1)           \
   F(WeakCollectionSet, 4, 1)              \
   F(GetWeakSetValues, 2, 1)               \
@@ -469,7 +468,6 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_PROXY(F)     \
   F(IsJSProxy, 1, 1)                    \
-  F(JSProxyConstruct, -1 /* >= 3 */, 1) \
   F(JSProxyGetTarget, 1, 1)             \
   F(JSProxyGetHandler, 1, 1)            \
   F(JSProxyRevoke, 1, 1)
@@ -782,6 +780,9 @@ class Runtime : public AllStatic {
 
   MUST_USE_RESULT static MaybeHandle<JSArray> GetInternalProperties(
       Isolate* isolate, Handle<Object>);
+
+  MUST_USE_RESULT static MaybeHandle<Object> ThrowIteratorError(
+      Isolate* isolate, Handle<Object> object);
 };
 
 
