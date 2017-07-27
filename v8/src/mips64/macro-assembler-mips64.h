@@ -875,6 +875,10 @@ class TurboAssembler : public Assembler {
   void CallCFunctionHelper(Register function, int num_reg_arguments,
                            int num_double_arguments);
 
+  bool CalculateOffset(Label* L, int32_t& offset, OffsetSize bits);
+  bool CalculateOffset(Label* L, int32_t& offset, OffsetSize bits,
+                       Register& scratch, const Operand& rt);
+
   // Common implementation of BranchF functions for the different formats.
   void BranchFCommon(SecondaryField sizeField, Label* target, Label* nan,
                      Condition cc, FPURegister cmp1, FPURegister cmp2,
@@ -957,13 +961,6 @@ class MacroAssembler : public TurboAssembler {
     LoadRoot(at, index);
     Branch(if_not_equal, ne, with, Operand(at));
   }
-
-  // Store an object to the root table.
-  void StoreRoot(Register source,
-                 Heap::RootListIndex index);
-  void StoreRoot(Register source,
-                 Heap::RootListIndex index,
-                 Condition cond, Register src1, const Operand& src2);
 
   // ---------------------------------------------------------------------------
   // GC Support
@@ -1061,11 +1058,6 @@ class MacroAssembler : public TurboAssembler {
                      smi_check,
                      pointers_to_here_check_for_value);
   }
-
-  // Notify the garbage collector that we wrote a code entry into a
-  // JSFunction. Only scratch is clobbered by the operation.
-  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
-                                 Register scratch);
 
   void RecordWriteForMap(
       Register object,
@@ -1226,21 +1218,6 @@ class MacroAssembler : public TurboAssembler {
       DoubleRegister double_scratch, Register except_flag,
       CheckForInexactConversion check_inexact = kDontCheckForInexactConversion);
 
-  // Performs a truncating conversion of a heap number as used by
-  // the JS bitwise operations. See ECMA-262 9.5: ToInt32. 'result' and 'input'
-  // must be different registers. Exits with 'result' holding the answer.
-  void TruncateHeapNumberToI(Register result, Register object);
-
-  // Converts the smi or heap number in object to an int32 using the rules
-  // for ToInt32 as described in ECMAScript 9.5.: the value is truncated
-  // and brought into the range -2^31 .. +2^31 - 1. 'result' and 'input' must be
-  // different registers.
-  void TruncateNumberToI(Register object,
-                         Register result,
-                         Register heap_number_map,
-                         Register scratch,
-                         Label* not_int32);
-
   // Loads the number from object into dst register.
   // If |object| is neither smi nor heap number, |not_number| is jumped to
   // with |object| still intact.
@@ -1318,8 +1295,7 @@ class MacroAssembler : public TurboAssembler {
   // Invoke the JavaScript function code by either calling or jumping.
   void InvokeFunctionCode(Register function, Register new_target,
                           const ParameterCount& expected,
-                          const ParameterCount& actual, InvokeFlag flag,
-                          const CallWrapper& call_wrapper);
+                          const ParameterCount& actual, InvokeFlag flag);
 
   // On function call, call into the debugger if necessary.
   void CheckDebugHook(Register fun, Register new_target,
@@ -1328,28 +1304,15 @@ class MacroAssembler : public TurboAssembler {
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
-  void InvokeFunction(Register function,
-                      Register new_target,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+  void InvokeFunction(Register function, Register new_target,
+                      const ParameterCount& actual, InvokeFlag flag);
 
-  void InvokeFunction(Register function,
-                      const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+  void InvokeFunction(Register function, const ParameterCount& expected,
+                      const ParameterCount& actual, InvokeFlag flag);
 
   void InvokeFunction(Handle<JSFunction> function,
                       const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
-
-
-  void IsObjectJSStringType(Register object,
-                            Register scratch,
-                            Label* fail);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   // Frame restart support.
   void MaybeDropFrames();
@@ -1831,11 +1794,8 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
  private:
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      Label* done,
-                      bool* definitely_mismatches,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, Label* done,
+                      bool* definitely_mismatches, InvokeFlag flag);
 
   // Helper for implementing JumpIfNotInNewSpace and JumpIfInNewSpace.
   void InNewSpace(Register object, Register scratch,

@@ -165,11 +165,11 @@ FieldAccess AccessBuilder::ForJSFunctionFeedbackVector() {
 }
 
 // static
-FieldAccess AccessBuilder::ForJSFunctionCodeEntry() {
-  FieldAccess access = {kTaggedBase,           JSFunction::kCodeEntryOffset,
+FieldAccess AccessBuilder::ForJSFunctionCode() {
+  FieldAccess access = {kTaggedBase,           JSFunction::kCodeOffset,
                         Handle<Name>(),        MaybeHandle<Map>(),
-                        Type::OtherInternal(), MachineType::Pointer(),
-                        kNoWriteBarrier};
+                        Type::OtherInternal(), MachineType::TaggedPointer(),
+                        kPointerWriteBarrier};
   return access;
 }
 
@@ -427,6 +427,14 @@ FieldAccess AccessBuilder::ForJSIteratorResultValue() {
   return access;
 }
 
+// static
+FieldAccess AccessBuilder::ForJSRegExpData() {
+  FieldAccess access = {kTaggedBase,         JSRegExp::kDataOffset,
+                        MaybeHandle<Name>(), MaybeHandle<Map>(),
+                        Type::NonInternal(), MachineType::AnyTagged(),
+                        kFullWriteBarrier};
+  return access;
+}
 
 // static
 FieldAccess AccessBuilder::ForJSRegExpFlags() {
@@ -437,6 +445,14 @@ FieldAccess AccessBuilder::ForJSRegExpFlags() {
   return access;
 }
 
+// static
+FieldAccess AccessBuilder::ForJSRegExpLastIndex() {
+  FieldAccess access = {kTaggedBase,         JSRegExp::kLastIndexOffset,
+                        MaybeHandle<Name>(), MaybeHandle<Map>(),
+                        Type::NonInternal(), MachineType::AnyTagged(),
+                        kFullWriteBarrier};
+  return access;
+}
 
 // static
 FieldAccess AccessBuilder::ForJSRegExpSource() {
@@ -455,6 +471,19 @@ FieldAccess AccessBuilder::ForFixedArrayLength() {
                         MaybeHandle<Name>(),
                         MaybeHandle<Map>(),
                         TypeCache::Get().kFixedArrayLengthType,
+                        MachineType::TaggedSigned(),
+                        kNoWriteBarrier};
+  return access;
+}
+
+// static
+FieldAccess AccessBuilder::ForPropertyArrayLength() {
+  // TODO(gsathya): Update the value range once we add the hash code.
+  FieldAccess access = {kTaggedBase,
+                        PropertyArray::kLengthOffset,
+                        MaybeHandle<Name>(),
+                        MaybeHandle<Map>(),
+                        TypeCache::Get().kPropertyArrayLengthType,
                         MachineType::TaggedSigned(),
                         kNoWriteBarrier};
   return access;

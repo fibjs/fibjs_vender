@@ -79,6 +79,7 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case FIXED_DOUBLE_ARRAY_TYPE:
       FixedDoubleArray::cast(this)->FixedDoubleArrayPrint(os);
       break;
+    case HASH_TABLE_TYPE:
     case FIXED_ARRAY_TYPE:
       FixedArray::cast(this)->FixedArrayPrint(os);
       break;
@@ -269,6 +270,7 @@ void ByteArray::ByteArrayPrint(std::ostream& os) {  // NOLINT
 
 
 void BytecodeArray::BytecodeArrayPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "BytecodeArray");
   Disassemble(os);
 }
 
@@ -642,7 +644,7 @@ void AliasedArgumentsEntry::AliasedArgumentsEntryPrint(
 
 
 void FixedArray::FixedArrayPrint(std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "FixedArray");
+  HeapObject::PrintHeader(os, IsHashTable() ? "HashTable" : "FixedArray");
   os << "\n - map = " << Brief(map());
   os << "\n - length: " << length();
   PrintFixedArrayElements(os, this);
@@ -1090,7 +1092,20 @@ void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
       os << "\n - bytecode = " << shared()->bytecode_array();
     }
   }
+  shared()->PrintSourceCode(os);
   JSObjectPrintBody(os, this);
+}
+
+void SharedFunctionInfo::PrintSourceCode(std::ostream& os) {
+  if (HasSourceCode()) {
+    os << "\n - source code = ";
+    String* source = String::cast(Script::cast(script())->source());
+    int start = start_position();
+    int length = end_position() - start;
+    std::unique_ptr<char[]> source_string = source->ToCString(
+        DISALLOW_NULLS, FAST_STRING_TRAVERSAL, start, length, NULL);
+    os << source_string.get();
+  }
 }
 
 void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
@@ -1106,22 +1121,13 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - formal_parameter_count = " << internal_formal_parameter_count();
   os << "\n - expected_nof_properties = " << expected_nof_properties();
   os << "\n - language_mode = " << language_mode();
-  os << "\n - ast_node_count = " << ast_node_count();
   os << "\n - instance class name = ";
   instance_class_name()->Print(os);
   os << " - code = " << Brief(code());
   if (HasBytecodeArray()) {
     os << "\n - bytecode_array = " << bytecode_array();
   }
-  if (HasSourceCode()) {
-    os << "\n - source code = ";
-    String* source = String::cast(Script::cast(script())->source());
-    int start = start_position();
-    int length = end_position() - start;
-    std::unique_ptr<char[]> source_string = source->ToCString(
-        DISALLOW_NULLS, FAST_STRING_TRAVERSAL, start, length, NULL);
-    os << source_string.get();
-  }
+  PrintSourceCode(os);
   // Script files are often large, hard to read.
   // os << "\n - script =";
   // script()->Print(os);

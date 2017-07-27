@@ -9,9 +9,7 @@
 
 #include "src/builtins/builtins-arguments-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
-#include "src/builtins/builtins-conversion-gen.h"
 #include "src/builtins/builtins-forin-gen.h"
-#include "src/builtins/builtins-string-gen.h"
 #include "src/code-events.h"
 #include "src/code-factory.h"
 #include "src/factory.h"
@@ -1334,53 +1332,6 @@ IGNITION_HANDLER(ToObject, InterpreterAssembler) {
   Dispatch();
 }
 
-// ToPrimitiveToString <dst>
-//
-// Convert the object referenced by the accumulator to a primitive, and then
-// convert the operand to a string, in preparation to be used by StringConcat.
-IGNITION_HANDLER(ToPrimitiveToString, InterpreterAssembler) {
-  VARIABLE(feedback, MachineRepresentation::kTagged);
-  ConversionBuiltinsAssembler conversions_assembler(state());
-  Node* result = conversions_assembler.ToPrimitiveToString(
-      GetContext(), GetAccumulator(), &feedback);
-
-  Node* function = LoadRegister(Register::function_closure());
-  UpdateFeedback(feedback.value(), LoadFeedbackVector(), BytecodeOperandIdx(1),
-                 function);
-  StoreRegister(result, BytecodeOperandReg(0));
-  Dispatch();
-}
-
-// StringConcat <first_reg> <reg_count>
-//
-// Concatenates the string values in registers <first_reg> to
-// <first_reg> + <reg_count - 1> and saves the result in the accumulator.
-IGNITION_HANDLER(StringConcat, InterpreterAssembler) {
-  Label call_runtime(this, Label::kDeferred), done(this);
-
-  Node* first_reg_ptr = RegisterLocation(BytecodeOperandReg(0));
-  Node* reg_count = BytecodeOperandCount(1);
-  Node* context = GetContext();
-
-  VARIABLE(result, MachineRepresentation::kTagged);
-  StringBuiltinsAssembler string_assembler(state());
-  result.Bind(string_assembler.ConcatenateStrings(context, first_reg_ptr,
-                                                  reg_count, &call_runtime));
-  Goto(&done);
-
-  BIND(&call_runtime);
-  {
-    Comment("Call runtime.");
-    Node* runtime_id = Int32Constant(Runtime::kStringConcat);
-    result.Bind(CallRuntimeN(runtime_id, context, first_reg_ptr, reg_count));
-    Goto(&done);
-  }
-
-  BIND(&done);
-  SetAccumulator(result.value());
-  Dispatch();
-}
-
 // Inc
 //
 // Increments value in the accumulator by one.
@@ -1961,10 +1912,13 @@ IGNITION_HANDLER(CallWithSpread, InterpreterAssembler) {
   Node* receiver_args_count = BytecodeOperandCount(2);
   Node* receiver_count = Int32Constant(1);
   Node* args_count = Int32Sub(receiver_args_count, receiver_count);
+  Node* slot_id = BytecodeOperandIdx(3);
+  Node* feedback_vector = LoadFeedbackVector();
   Node* context = GetContext();
 
   // Call into Runtime function CallWithSpread which does everything.
-  Node* result = CallJSWithSpread(callable, context, receiver_arg, args_count);
+  Node* result = CallJSWithSpread(callable, context, receiver_arg, args_count,
+                                  slot_id, feedback_vector);
   SetAccumulator(result);
   Dispatch();
 }
@@ -1982,9 +1936,12 @@ IGNITION_HANDLER(ConstructWithSpread, InterpreterAssembler) {
   Node* first_arg_reg = BytecodeOperandReg(1);
   Node* first_arg = RegisterLocation(first_arg_reg);
   Node* args_count = BytecodeOperandCount(2);
+  Node* slot_id = BytecodeOperandIdx(3);
+  Node* feedback_vector = LoadFeedbackVector();
   Node* context = GetContext();
-  Node* result = ConstructWithSpread(constructor, context, new_target,
-                                     first_arg, args_count);
+  Node* result =
+      ConstructWithSpread(constructor, context, new_target, first_arg,
+                          args_count, slot_id, feedback_vector);
   SetAccumulator(result);
   Dispatch();
 }
@@ -2697,6 +2654,20 @@ IGNITION_HANDLER(CreateArrayLiteral, InterpreterAssembler) {
   }
 }
 
+// CreateEmptyArrayLiteral <literal_idx>
+//
+// Creates an empty JSArray literal for literal index <literal_idx>.
+IGNITION_HANDLER(CreateEmptyArrayLiteral, InterpreterAssembler) {
+  Node* literal_index = BytecodeOperandIdxSmi(0);
+  Node* closure = LoadRegister(Register::function_closure());
+  Node* context = GetContext();
+  ConstructorBuiltinsAssembler constructor_assembler(state());
+  Node* result = constructor_assembler.EmitCreateEmptyArrayLiteral(
+      closure, literal_index, context);
+  SetAccumulator(result);
+  Dispatch();
+}
+
 // CreateObjectLiteral <element_idx> <literal_idx> <flags>
 //
 // Creates an object literal for literal index <literal_idx> with
@@ -3252,10 +3223,11 @@ IGNITION_HANDLER(ExtraWide, InterpreterAssembler) {
 IGNITION_HANDLER(Illegal, InterpreterAssembler) { Abort(kInvalidBytecode); }
 
 // SuspendGenerator <generator> <first input register> <register count>
+// <suspend_id>
 //
 // Exports the register file and stores it into the generator.  Also stores the
-// current context, the state given in the accumulator, and the current bytecode
-// offset (for debugging purposes) into the generator.
+// current context, |suspend_id|, and the current bytecode offset (for debugging
+// purposes) into the generator.
 IGNITION_HANDLER(SuspendGenerator, InterpreterAssembler) {
   Node* generator_reg = BytecodeOperandReg(0);
 
@@ -3274,7 +3246,7 @@ IGNITION_HANDLER(SuspendGenerator, InterpreterAssembler) {
   Node* array =
       LoadObjectField(generator, JSGeneratorObject::kRegisterFileOffset);
   Node* context = GetContext();
-  Node* state = GetAccumulator();
+  Node* suspend_id = BytecodeOperandUImmSmi(3);
 
   // Bytecode operand 1 should be always 0 (we are always store registers
   // from the beginning).
@@ -3284,7 +3256,8 @@ IGNITION_HANDLER(SuspendGenerator, InterpreterAssembler) {
   Node* register_count = ChangeUint32ToWord(BytecodeOperandCount(2));
   ExportRegisterFile(array, register_count);
   StoreObjectField(generator, JSGeneratorObject::kContextOffset, context);
-  StoreObjectField(generator, JSGeneratorObject::kContinuationOffset, state);
+  StoreObjectField(generator, JSGeneratorObject::kContinuationOffset,
+                   suspend_id);
 
   // Store the bytecode offset in the [input_or_debug_pos] field, to be used by
   // the inspector.

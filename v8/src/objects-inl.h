@@ -80,9 +80,11 @@ TYPE_CHECKER(CoverageInfo, FIXED_ARRAY_TYPE)
 TYPE_CHECKER(FixedDoubleArray, FIXED_DOUBLE_ARRAY_TYPE)
 TYPE_CHECKER(Foreign, FOREIGN_TYPE)
 TYPE_CHECKER(FreeSpace, FREE_SPACE_TYPE)
+TYPE_CHECKER(HashTable, HASH_TABLE_TYPE)
 TYPE_CHECKER(HeapNumber, HEAP_NUMBER_TYPE)
-TYPE_CHECKER(JSArray, JS_ARRAY_TYPE)
 TYPE_CHECKER(JSArrayBuffer, JS_ARRAY_BUFFER_TYPE)
+TYPE_CHECKER(JSArray, JS_ARRAY_TYPE)
+TYPE_CHECKER(JSAsyncFromSyncIterator, JS_ASYNC_FROM_SYNC_ITERATOR_TYPE)
 TYPE_CHECKER(JSAsyncGeneratorObject, JS_ASYNC_GENERATOR_OBJECT_TYPE)
 TYPE_CHECKER(JSBoundFunction, JS_BOUND_FUNCTION_TYPE)
 TYPE_CHECKER(JSContextExtensionObject, JS_CONTEXT_EXTENSION_OBJECT_TYPE)
@@ -98,28 +100,28 @@ TYPE_CHECKER(JSPromiseCapability, JS_PROMISE_CAPABILITY_TYPE)
 TYPE_CHECKER(JSPromise, JS_PROMISE_TYPE)
 TYPE_CHECKER(JSRegExp, JS_REGEXP_TYPE)
 TYPE_CHECKER(JSSet, JS_SET_TYPE)
-TYPE_CHECKER(JSAsyncFromSyncIterator, JS_ASYNC_FROM_SYNC_ITERATOR_TYPE)
 TYPE_CHECKER(JSStringIterator, JS_STRING_ITERATOR_TYPE)
 TYPE_CHECKER(JSTypedArray, JS_TYPED_ARRAY_TYPE)
 TYPE_CHECKER(JSValue, JS_VALUE_TYPE)
 TYPE_CHECKER(JSWeakMap, JS_WEAK_MAP_TYPE)
 TYPE_CHECKER(JSWeakSet, JS_WEAK_SET_TYPE)
+TYPE_CHECKER(Map, MAP_TYPE)
+TYPE_CHECKER(MutableHeapNumber, MUTABLE_HEAP_NUMBER_TYPE)
+TYPE_CHECKER(Oddball, ODDBALL_TYPE)
+TYPE_CHECKER(PreParsedScopeData, TUPLE2_TYPE)
+TYPE_CHECKER(PropertyArray, PROPERTY_ARRAY_TYPE)
+TYPE_CHECKER(PropertyCell, PROPERTY_CELL_TYPE)
+TYPE_CHECKER(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE)
+TYPE_CHECKER(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE)
+TYPE_CHECKER(SourcePositionTableWithFrameCache, TUPLE2_TYPE)
+TYPE_CHECKER(TransitionArray, TRANSITION_ARRAY_TYPE)
+TYPE_CHECKER(TypeFeedbackInfo, TUPLE3_TYPE)
 TYPE_CHECKER(WasmInstanceObject, WASM_INSTANCE_TYPE)
 TYPE_CHECKER(WasmMemoryObject, WASM_MEMORY_TYPE)
 TYPE_CHECKER(WasmModuleObject, WASM_MODULE_TYPE)
 TYPE_CHECKER(WasmTableObject, WASM_TABLE_TYPE)
-TYPE_CHECKER(Map, MAP_TYPE)
-TYPE_CHECKER(MutableHeapNumber, MUTABLE_HEAP_NUMBER_TYPE)
-TYPE_CHECKER(Oddball, ODDBALL_TYPE)
-TYPE_CHECKER(PropertyCell, PROPERTY_CELL_TYPE)
-TYPE_CHECKER(SourcePositionTableWithFrameCache, TUPLE2_TYPE)
-TYPE_CHECKER(TransitionArray, TRANSITION_ARRAY_TYPE)
-TYPE_CHECKER(TypeFeedbackInfo, TUPLE3_TYPE)
 TYPE_CHECKER(WeakCell, WEAK_CELL_TYPE)
 TYPE_CHECKER(WeakFixedArray, FIXED_ARRAY_TYPE)
-TYPE_CHECKER(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE)
-TYPE_CHECKER(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE)
-TYPE_CHECKER(PropertyArray, PROPERTY_ARRAY_TYPE)
 
 #define TYPED_ARRAY_TYPE_CHECKER(Type, type, TYPE, ctype, size) \
   TYPE_CHECKER(Fixed##Type##Array, FIXED_##TYPE##_ARRAY_TYPE)
@@ -134,6 +136,7 @@ bool HeapObject::IsFixedArrayBase() const {
 bool HeapObject::IsFixedArray() const {
   InstanceType instance_type = map()->instance_type();
   return instance_type == FIXED_ARRAY_TYPE ||
+         instance_type == HASH_TABLE_TYPE ||
          instance_type == TRANSITION_ARRAY_TYPE;
 }
 
@@ -418,10 +421,6 @@ inline bool Is<JSArray>(Object* obj) {
   return obj->IsJSArray();
 }
 
-bool HeapObject::IsHashTable() const {
-  return map() == GetHeap()->hash_table_map();
-}
-
 bool HeapObject::IsWeakHashTable() const { return IsHashTable(); }
 
 bool HeapObject::IsDictionary() const {
@@ -562,7 +561,6 @@ CAST_ACCESSOR(FixedArray)
 CAST_ACCESSOR(FixedArrayBase)
 CAST_ACCESSOR(FixedDoubleArray)
 CAST_ACCESSOR(FixedTypedArrayBase)
-CAST_ACCESSOR(PropertyArray)
 CAST_ACCESSOR(Foreign)
 CAST_ACCESSOR(FunctionTemplateInfo)
 CAST_ACCESSOR(GlobalDictionary)
@@ -615,11 +613,14 @@ CAST_ACCESSOR(OrderedHashMap)
 CAST_ACCESSOR(OrderedHashSet)
 CAST_ACCESSOR(PromiseReactionJobInfo)
 CAST_ACCESSOR(PromiseResolveThenableJobInfo)
+CAST_ACCESSOR(PropertyArray)
 CAST_ACCESSOR(PropertyCell)
 CAST_ACCESSOR(PrototypeInfo)
 CAST_ACCESSOR(RegExpMatchInfo)
 CAST_ACCESSOR(ScopeInfo)
 CAST_ACCESSOR(SeededNumberDictionary)
+CAST_ACCESSOR(SmallOrderedHashMap)
+CAST_ACCESSOR(SmallOrderedHashSet)
 CAST_ACCESSOR(Smi)
 CAST_ACCESSOR(SourcePositionTableWithFrameCache)
 CAST_ACCESSOR(StackFrameInfo)
@@ -633,8 +634,6 @@ CAST_ACCESSOR(Tuple3)
 CAST_ACCESSOR(TypeFeedbackInfo)
 CAST_ACCESSOR(UnseededNumberDictionary)
 CAST_ACCESSOR(WeakCell)
-CAST_ACCESSOR(SmallOrderedHashMap)
-CAST_ACCESSOR(SmallOrderedHashSet)
 CAST_ACCESSOR(WeakFixedArray)
 CAST_ACCESSOR(WeakHashTable)
 
@@ -2700,8 +2699,23 @@ const HashTable<Derived, Shape>* HashTable<Derived, Shape>::cast(
 SMI_ACCESSORS(FixedArrayBase, length, kLengthOffset)
 SYNCHRONIZED_SMI_ACCESSORS(FixedArrayBase, length, kLengthOffset)
 
-SMI_ACCESSORS(PropertyArray, length, kLengthOffset)
-SYNCHRONIZED_SMI_ACCESSORS(PropertyArray, length, kLengthOffset)
+int PropertyArray::length() const {
+  Object* value = READ_FIELD(this, kLengthOffset);
+  int len = Smi::ToInt(value);
+  return len & kLengthMask;
+}
+
+void PropertyArray::initialize_length(int len) {
+  SLOW_DCHECK(len >= 0);
+  SLOW_DCHECK(len < kMaxLength);
+  WRITE_FIELD(this, kLengthOffset, Smi::FromInt(len));
+}
+
+int PropertyArray::synchronized_length() const {
+  Object* value = ACQUIRE_READ_FIELD(this, kLengthOffset);
+  int len = Smi::ToInt(value);
+  return len & kLengthMask;
+}
 
 SMI_ACCESSORS(FreeSpace, size, kSizeOffset)
 RELAXED_SMI_ACCESSORS(FreeSpace, size, kSizeOffset)
@@ -3188,7 +3202,7 @@ int HeapObject::SizeFromMap(Map* map) const {
   if (instance_size != kVariableSizeSentinel) return instance_size;
   // Only inline the most frequent cases.
   InstanceType instance_type = map->instance_type();
-  if (instance_type == FIXED_ARRAY_TYPE ||
+  if (instance_type == FIXED_ARRAY_TYPE || instance_type == HASH_TABLE_TYPE ||
       instance_type == TRANSITION_ARRAY_TYPE) {
     return FixedArray::SizeFor(
         reinterpret_cast<const FixedArray*>(this)->synchronized_length());
@@ -4421,6 +4435,9 @@ ACCESSORS(ContextExtension, extension, Object, kExtensionOffset)
 SMI_ACCESSORS(ConstantElementsPair, elements_kind, kElementsKindOffset)
 ACCESSORS(ConstantElementsPair, constant_values, FixedArrayBase,
           kConstantValuesOffset)
+bool ConstantElementsPair::is_empty() const {
+  return constant_values()->length() == 0;
+}
 
 ACCESSORS(JSModuleNamespace, module, Module, kModuleOffset)
 
@@ -4685,29 +4702,19 @@ AbstractCode* JSFunction::abstract_code() {
   }
 }
 
-Code* JSFunction::code() {
-  return Code::cast(
-      Code::GetObjectFromEntryAddress(FIELD_ADDR(this, kCodeEntryOffset)));
-}
-
+Code* JSFunction::code() { return Code::cast(READ_FIELD(this, kCodeOffset)); }
 
 void JSFunction::set_code(Code* value) {
   DCHECK(!GetHeap()->InNewSpace(value));
-  Address entry = value->entry();
-  RELAXED_WRITE_INTPTR_FIELD(this, kCodeEntryOffset,
-                             reinterpret_cast<intptr_t>(entry));
-  GetHeap()->incremental_marking()->RecordWriteOfCodeEntry(
-      this,
-      HeapObject::RawField(this, kCodeEntryOffset),
-      value);
+  WRITE_FIELD(this, kCodeOffset, value);
+  GetHeap()->incremental_marking()->RecordWrite(
+      this, HeapObject::RawField(this, kCodeOffset), value);
 }
 
 
 void JSFunction::set_code_no_write_barrier(Code* value) {
   DCHECK(!GetHeap()->InNewSpace(value));
-  Address entry = value->entry();
-  RELAXED_WRITE_INTPTR_FIELD(this, kCodeEntryOffset,
-                             reinterpret_cast<intptr_t>(entry));
+  WRITE_FIELD(this, kCodeOffset, value);
 }
 
 void JSFunction::ClearOptimizedCodeSlot(const char* reason) {
@@ -5280,7 +5287,7 @@ BOOL_ACCESSORS(JSPromise, flags, handled_hint, kHandledHintBit)
 ACCESSORS(JSRegExp, data, Object, kDataOffset)
 ACCESSORS(JSRegExp, flags, Object, kFlagsOffset)
 ACCESSORS(JSRegExp, source, Object, kSourceOffset)
-
+ACCESSORS(JSRegExp, last_index, Object, kLastIndexOffset)
 
 JSRegExp::Type JSRegExp::TypeTag() {
   Object* data = this->data();
@@ -5335,19 +5342,6 @@ void JSRegExp::SetDataAt(int index, Object* value) {
   DCHECK(TypeTag() != NOT_COMPILED);
   DCHECK(index >= kDataIndex);  // Only implementation data can be set this way.
   FixedArray::cast(data())->set(index, value);
-}
-
-void JSRegExp::SetLastIndex(int index) {
-  static const int offset =
-      kSize + JSRegExp::kLastIndexFieldIndex * kPointerSize;
-  Smi* value = Smi::FromInt(index);
-  WRITE_FIELD(this, offset, value);
-}
-
-Object* JSRegExp::LastIndex() {
-  static const int offset =
-      kSize + JSRegExp::kLastIndexFieldIndex * kPointerSize;
-  return READ_FIELD(this, offset);
 }
 
 ElementsKind JSObject::GetElementsKind() {
@@ -5622,22 +5616,10 @@ Maybe<bool> JSReceiver::HasProperty(Handle<JSReceiver> object,
 
 
 Maybe<bool> JSReceiver::HasOwnProperty(Handle<JSReceiver> object,
-                                       Handle<Name> name) {
-  if (object->IsJSObject()) {  // Shortcut
-    LookupIterator it = LookupIterator::PropertyOrElement(
-        object->GetIsolate(), object, name, object, LookupIterator::OWN);
-    return HasProperty(&it);
-  }
-
-  Maybe<PropertyAttributes> attributes =
-      JSReceiver::GetOwnPropertyAttributes(object, name);
-  MAYBE_RETURN(attributes, Nothing<bool>());
-  return Just(attributes.FromJust() != ABSENT);
-}
-
-Maybe<bool> JSReceiver::HasOwnProperty(Handle<JSReceiver> object,
                                        uint32_t index) {
-  if (object->IsJSObject()) {  // Shortcut
+  if (object->IsJSModuleNamespace()) return Just(false);
+
+  if (object->IsJSObject()) {  // Shortcut.
     LookupIterator it(object->GetIsolate(), object, index, object,
                       LookupIterator::OWN);
     return HasProperty(&it);

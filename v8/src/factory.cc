@@ -1504,7 +1504,6 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map, Handle<String> name,
         (*map == *isolate()->sloppy_function_with_readonly_prototype_map()) ||
         (*map == *isolate()->strict_function_map()) ||
         (*map == *isolate()->strict_function_without_prototype_map()) ||
-        (*map == *isolate()->wasm_function_map()) ||
         (*map == *isolate()->native_function_map()));
   }
 #endif
@@ -1702,7 +1701,7 @@ Handle<ModuleInfo> Factory::NewModuleInfo() {
 
 Handle<PreParsedScopeData> Factory::NewPreParsedScopeData() {
   Handle<PreParsedScopeData> result =
-      Handle<PreParsedScopeData>::cast(NewStruct(PREPARSED_SCOPE_DATA_TYPE));
+      Handle<PreParsedScopeData>::cast(NewStruct(TUPLE2_TYPE));
   result->set_scope_data(PodArray<uint32_t>::cast(*empty_byte_array()));
   result->set_child_data(*empty_fixed_array());
   return result;
@@ -1924,9 +1923,9 @@ Handle<JSObject> Factory::NewSlowJSObjectFromMap(Handle<Map> map, int capacity,
 
 Handle<JSArray> Factory::NewJSArray(ElementsKind elements_kind,
                                     PretenureFlag pretenure) {
-  Map* map = isolate()->get_initial_js_array_map(elements_kind);
+  Context* native_context = isolate()->raw_native_context();
+  Map* map = native_context->GetInitialJSArrayMap(elements_kind);
   if (map == nullptr) {
-    Context* native_context = isolate()->context()->native_context();
     JSFunction* array_function = native_context->array_function();
     map = array_function->initial_map();
   }
@@ -2540,8 +2539,6 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
 #if V8_SFI_HAS_UNIQUE_ID
   share->set_unique_id(isolate()->GetNextUniqueSharedFunctionInfoId());
 #endif
-  share->set_profiler_ticks(0);
-  share->set_ast_node_count(0);
   share->set_counters(0);
 
   // Set integer fields (smi or int, depending on the architecture).

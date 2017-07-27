@@ -75,22 +75,6 @@ void TurboAssembler::LoadRoot(Register destination, Heap::RootListIndex index,
 }
 
 
-void MacroAssembler::StoreRoot(Register source,
-                               Heap::RootListIndex index) {
-  DCHECK(Heap::RootCanBeWrittenAfterInitialization(index));
-  sw(source, MemOperand(s6, index << kPointerSizeLog2));
-}
-
-
-void MacroAssembler::StoreRoot(Register source,
-                               Heap::RootListIndex index,
-                               Condition cond,
-                               Register src1, const Operand& src2) {
-  DCHECK(Heap::RootCanBeWrittenAfterInitialization(index));
-  Branch(2, NegateCondition(cond), src1, src2);
-  sw(source, MemOperand(s6, index << kPointerSizeLog2));
-}
-
 void TurboAssembler::PushCommonFrame(Register marker_reg) {
   if (marker_reg.is_valid()) {
     Push(ra, fp, marker_reg);
@@ -384,68 +368,6 @@ void MacroAssembler::RecordWrite(
     li(address, Operand(bit_cast<int32_t>(kZapValue + 12)));
     li(value, Operand(bit_cast<int32_t>(kZapValue + 16)));
   }
-}
-
-void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
-                                               Register code_entry,
-                                               Register scratch) {
-  const int offset = JSFunction::kCodeEntryOffset;
-
-  // Since a code entry (value) is always in old space, we don't need to update
-  // remembered set. If incremental marking is off, there is nothing for us to
-  // do.
-  if (!FLAG_incremental_marking) return;
-
-  DCHECK(js_function.is(a1));
-  DCHECK(code_entry.is(t0));
-  DCHECK(scratch.is(t1));
-  AssertNotSmi(js_function);
-
-  if (emit_debug_code()) {
-    Addu(scratch, js_function, Operand(offset - kHeapObjectTag));
-    lw(at, MemOperand(scratch));
-    Assert(eq, kWrongAddressOrValuePassedToRecordWrite, at,
-           Operand(code_entry));
-  }
-
-  // First, check if a write barrier is even needed. The tests below
-  // catch stores of Smis and stores into young gen.
-  Label done;
-
-  CheckPageFlag(code_entry, scratch,
-                MemoryChunk::kPointersToHereAreInterestingMask, eq, &done);
-  CheckPageFlag(js_function, scratch,
-                MemoryChunk::kPointersFromHereAreInterestingMask, eq, &done);
-
-  const Register dst = scratch;
-  Addu(dst, js_function, Operand(offset - kHeapObjectTag));
-
-  // Save caller-saved registers. js_function and code_entry are in the
-  // caller-saved register list.
-  DCHECK(kJSCallerSaved & js_function.bit());
-  DCHECK(kJSCallerSaved & code_entry.bit());
-  MultiPush(kJSCallerSaved | ra.bit());
-
-  int argument_count = 3;
-
-  PrepareCallCFunction(argument_count, 0, code_entry);
-
-  mov(a0, js_function);
-  mov(a1, dst);
-  li(a2, Operand(ExternalReference::isolate_address(isolate())));
-
-  {
-    AllowExternalCallThatCantCauseGC scope(this);
-    CallCFunction(
-        ExternalReference::incremental_marking_record_write_code_entry_function(
-            isolate()),
-        argument_count);
-  }
-
-  // Restore caller-saved registers.
-  MultiPop(kJSCallerSaved | ra.bit());
-
-  bind(&done);
 }
 
 void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
@@ -2514,47 +2436,6 @@ void TurboAssembler::TruncateDoubleToIDelayed(Zone* zone, Register result,
   bind(&done);
 }
 
-
-void MacroAssembler::TruncateHeapNumberToI(Register result, Register object) {
-  Label done;
-  DoubleRegister double_scratch = f12;
-  DCHECK(!result.is(object));
-
-  Ldc1(double_scratch,
-       MemOperand(object, HeapNumber::kValueOffset - kHeapObjectTag));
-  TryInlineTruncateDoubleToI(result, double_scratch, &done);
-
-  // If we fell through then inline version didn't succeed - call stub instead.
-  push(ra);
-  DoubleToIStub stub(isolate(),
-                     object,
-                     result,
-                     HeapNumber::kValueOffset - kHeapObjectTag,
-                     true,
-                     true);
-  CallStub(&stub);
-  pop(ra);
-
-  bind(&done);
-}
-
-
-void MacroAssembler::TruncateNumberToI(Register object,
-                                       Register result,
-                                       Register heap_number_map,
-                                       Register scratch,
-                                       Label* not_number) {
-  Label done;
-  DCHECK(!result.is(object));
-
-  UntagAndJumpIfSmi(result, object, &done);
-  JumpIfNotHeapNumber(object, heap_number_map, scratch, not_number);
-  TruncateHeapNumberToI(result, object);
-
-  bind(&done);
-}
-
-
 void MacroAssembler::GetLeastBitsFromSmi(Register dst,
                                          Register src,
                                          int num_least_bits) {
@@ -2707,12 +2588,26 @@ Register TurboAssembler::GetRtAsRegisterHelper(const Operand& rt,
   return r2;
 }
 
+bool TurboAssembler::CalculateOffset(Label* L, int32_t& offset,
+                                     OffsetSize bits) {
+  if (!is_near(L, bits)) return false;
+  offset = GetOffset(offset, L, bits);
+  return true;
+}
+
+bool TurboAssembler::CalculateOffset(Label* L, int32_t& offset, OffsetSize bits,
+                                     Register& scratch, const Operand& rt) {
+  if (!is_near(L, bits)) return false;
+  scratch = GetRtAsRegisterHelper(rt, scratch);
+  offset = GetOffset(offset, L, bits);
+  return true;
+}
+
 bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
                                          Condition cond, Register rs,
                                          const Operand& rt) {
   DCHECK(L == nullptr || offset == 0);
   Register scratch = rs.is(at) ? t8 : at;
-  OffsetSize bits = OffsetSize::kOffset16;
 
   // Be careful to always use shifted_branch_offset only just before the
   // branch instruction, as the location will be remember for patching the
@@ -2721,32 +2616,24 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
     BlockTrampolinePoolScope block_trampoline_pool(this);
     switch (cond) {
       case cc_always:
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
         bc(offset);
         break;
       case eq:
         if (rs.code() == rt.rm().reg_code) {
           // Pre R6 beq is used here to make the code patchable. Otherwise bc
           // should be used which has no condition field so is not patchable.
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           beq(rs, scratch, offset);
           nop();
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset21;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset21)) return false;
           beqzc(rs, offset);
         } else {
           // We don't want any other register but scratch clobbered.
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           beqc(rs, scratch, offset);
         }
         break;
@@ -2754,23 +2641,17 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         if (rs.code() == rt.rm().reg_code) {
           // Pre R6 bne is used here to make the code patchable. Otherwise we
           // should not generate any instruction.
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           bne(rs, scratch, offset);
           nop();
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset21;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset21)) return false;
           bnezc(rs, offset);
         } else {
           // We don't want any other register but scratch clobbered.
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           bnec(rs, scratch, offset);
         }
         break;
@@ -2781,49 +2662,35 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         if (rs.code() == rt.rm().reg_code) {
           break;  // No code needs to be emitted.
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           bltzc(scratch, offset);
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
           bgtzc(rs, offset);
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bltc(scratch, rs, offset);
         }
         break;
       case greater_equal:
         // rs >= rt
         if (rs.code() == rt.rm().reg_code) {
-          bits = OffsetSize::kOffset26;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           blezc(scratch, offset);
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
           bgezc(rs, offset);
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bgec(rs, scratch, offset);
         }
         break;
@@ -2832,49 +2699,35 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         if (rs.code() == rt.rm().reg_code) {
           break;  // No code needs to be emitted.
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           bgtzc(scratch, offset);
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
           bltzc(rs, offset);
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bltc(rs, scratch, offset);
         }
         break;
       case less_equal:
         // rs <= rt
         if (rs.code() == rt.rm().reg_code) {
-          bits = OffsetSize::kOffset26;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           bgezc(scratch, offset);
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
           blezc(rs, offset);
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bgec(scratch, rs, offset);
         }
         break;
@@ -2885,49 +2738,35 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         if (rs.code() == rt.rm().reg_code) {
           break;  // No code needs to be emitted.
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset21;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset21, scratch, rt))
+            return false;
           bnezc(scratch, offset);
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset21;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset21)) return false;
           bnezc(rs, offset);
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bltuc(scratch, rs, offset);
         }
         break;
       case Ugreater_equal:
         // rs >= rt
         if (rs.code() == rt.rm().reg_code) {
-          bits = OffsetSize::kOffset26;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset21;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset21, scratch, rt))
+            return false;
           beqzc(scratch, offset);
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset26;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bgeuc(rs, scratch, offset);
         }
         break;
@@ -2936,46 +2775,34 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         if (rs.code() == rt.rm().reg_code) {
           break;  // No code needs to be emitted.
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset21;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset21, scratch, rt))
+            return false;
           bnezc(scratch, offset);
         } else if (IsZero(rt)) {
           break;  // No code needs to be emitted.
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bltuc(rs, scratch, offset);
         }
         break;
       case Uless_equal:
         // rs <= rt
         if (rs.code() == rt.rm().reg_code) {
-          bits = OffsetSize::kOffset26;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs.is(zero_reg)) {
-          bits = OffsetSize::kOffset26;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset26, scratch, rt))
+            return false;
           bc(offset);
         } else if (IsZero(rt)) {
-          bits = OffsetSize::kOffset21;
-          if (!is_near(L, bits)) return false;
-          offset = GetOffset(offset, L, bits);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset21)) return false;
           beqzc(rs, offset);
         } else {
-          bits = OffsetSize::kOffset16;
-          if (!is_near(L, bits)) return false;
-          scratch = GetRtAsRegisterHelper(rt, scratch);
+          if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+            return false;
           DCHECK(!rs.is(scratch));
-          offset = GetOffset(offset, L, bits);
           bgeuc(scratch, rs, offset);
         }
         break;
@@ -3252,9 +3079,7 @@ bool TurboAssembler::BranchAndLinkShortHelperR6(int32_t offset, Label* L,
   DCHECK((cond == cc_always && is_int26(offset)) || is_int16(offset));
   switch (cond) {
     case cc_always:
-      bits = OffsetSize::kOffset26;
-      if (!is_near(L, bits)) return false;
-      offset = GetOffset(offset, L, bits);
+      if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
       balc(offset);
       break;
     case eq:
@@ -3276,13 +3101,11 @@ bool TurboAssembler::BranchAndLinkShortHelperR6(int32_t offset, Label* L,
       if (rs.code() == rt.rm().reg_code) {
         break;  // No code needs to be emitted.
       } else if (rs.is(zero_reg)) {
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+          return false;
         bltzalc(scratch, offset);
       } else if (IsZero(rt)) {
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
         bgtzalc(rs, offset);
       } else {
         if (!is_near(L, bits)) return false;
@@ -3294,18 +3117,14 @@ bool TurboAssembler::BranchAndLinkShortHelperR6(int32_t offset, Label* L,
     case greater_equal:
       // rs >= rt
       if (rs.code() == rt.rm().reg_code) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
         balc(offset);
       } else if (rs.is(zero_reg)) {
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+          return false;
         blezalc(scratch, offset);
       } else if (IsZero(rt)) {
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
         bgezalc(rs, offset);
       } else {
         if (!is_near(L, bits)) return false;
@@ -3319,13 +3138,11 @@ bool TurboAssembler::BranchAndLinkShortHelperR6(int32_t offset, Label* L,
       if (rs.code() == rt.rm().reg_code) {
         break;  // No code needs to be emitted.
       } else if (rs.is(zero_reg)) {
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+          return false;
         bgtzalc(scratch, offset);
       } else if (IsZero(rt)) {
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
         bltzalc(rs, offset);
       } else {
         if (!is_near(L, bits)) return false;
@@ -3337,18 +3154,14 @@ bool TurboAssembler::BranchAndLinkShortHelperR6(int32_t offset, Label* L,
     case less_equal:
       // rs <= r2
       if (rs.code() == rt.rm().reg_code) {
-        bits = OffsetSize::kOffset26;
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
         balc(offset);
       } else if (rs.is(zero_reg)) {
-        if (!is_near(L, bits)) return false;
-        scratch = GetRtAsRegisterHelper(rt, scratch);
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
+          return false;
         bgezalc(scratch, offset);
       } else if (IsZero(rt)) {
-        if (!is_near(L, bits)) return false;
-        offset = GetOffset(offset, L, bits);
+        if (!CalculateOffset(L, offset, OffsetSize::kOffset16)) return false;
         blezalc(rs, offset);
       } else {
         if (!is_near(L, bits)) return false;
@@ -3393,7 +3206,6 @@ bool TurboAssembler::BranchAndLinkShortHelperR6(int32_t offset, Label* L,
   }
   return true;
 }
-
 
 // Pre r6 we need to use a bgezal or bltzal, but they can't be used directly
 // with the slt instructions. We could use sub or add instead but we would miss
@@ -4455,11 +4267,9 @@ void TurboAssembler::PrepareForTailCall(const ParameterCount& callee_args_count,
 }
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    Label* done,
+                                    const ParameterCount& actual, Label* done,
                                     bool* definitely_mismatches,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   bool definitely_matches = false;
   *definitely_mismatches = false;
   Label regular_invoke;
@@ -4505,9 +4315,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
     Handle<Code> adaptor =
         isolate()->builtins()->ArgumentsAdaptorTrampoline();
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(adaptor));
       Call(adaptor);
-      call_wrapper.AfterCall();
       if (!*definitely_mismatches) {
         Branch(done);
       }
@@ -4560,20 +4368,17 @@ void MacroAssembler::CheckDebugHook(Register fun, Register new_target,
   bind(&skip_hook);
 }
 
-
 void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
                                         const ParameterCount& expected,
                                         const ParameterCount& actual,
-                                        InvokeFlag flag,
-                                        const CallWrapper& call_wrapper) {
+                                        InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
   DCHECK(function.is(a1));
   DCHECK_IMPLIES(new_target.is_valid(), new_target.is(a3));
 
-  if (call_wrapper.NeedsDebugHookCheck()) {
-    CheckDebugHook(function, new_target, expected, actual);
-  }
+  // On function call, call into the debugger if necessary.
+  CheckDebugHook(function, new_target, expected, actual);
 
   // Clear the new.target register if not given.
   if (!new_target.is_valid()) {
@@ -4582,21 +4387,18 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
 
   Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag,
-                 call_wrapper);
+  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag);
   if (!definitely_mismatches) {
     // We call indirectly through the code field in the function to
     // allow recompilation to take effect without changing any of the
     // call sites.
     Register code = t0;
-    lw(code, FieldMemOperand(function, JSFunction::kCodeEntryOffset));
+    lw(code, FieldMemOperand(function, JSFunction::kCodeOffset));
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(code));
-      Call(code);
-      call_wrapper.AfterCall();
+      Call(code, Code::kHeaderSize - kHeapObjectTag);
     } else {
       DCHECK(flag == JUMP_FUNCTION);
-      Jump(code);
+      Jump(code, Code::kHeaderSize - kHeapObjectTag);
     }
     // Continue here if InvokePrologue does handle the invocation due to
     // mismatched parameter counts.
@@ -4604,12 +4406,9 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
   }
 }
 
-
-void MacroAssembler::InvokeFunction(Register function,
-                                    Register new_target,
+void MacroAssembler::InvokeFunction(Register function, Register new_target,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
@@ -4625,16 +4424,13 @@ void MacroAssembler::InvokeFunction(Register function,
                      SharedFunctionInfo::kFormalParameterCountOffset));
 
   ParameterCount expected(expected_reg);
-  InvokeFunctionCode(function, new_target, expected, actual, flag,
-                     call_wrapper);
+  InvokeFunctionCode(function, new_target, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunction(Register function,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
@@ -4644,29 +4440,15 @@ void MacroAssembler::InvokeFunction(Register function,
   // Get the function and setup the context.
   lw(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
 
-  InvokeFunctionCode(a1, no_reg, expected, actual, flag, call_wrapper);
+  InvokeFunctionCode(a1, no_reg, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   li(a1, function);
-  InvokeFunction(a1, expected, actual, flag, call_wrapper);
-}
-
-
-void MacroAssembler::IsObjectJSStringType(Register object,
-                                          Register scratch,
-                                          Label* fail) {
-  DCHECK(kNotStringTag != 0);
-
-  lw(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
-  lbu(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
-  And(scratch, scratch, Operand(kIsNotStringMask));
-  Branch(fail, ne, scratch, Operand(zero_reg));
+  InvokeFunction(a1, expected, actual, flag);
 }
 
 

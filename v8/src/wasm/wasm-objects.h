@@ -155,6 +155,7 @@ class WasmInstanceObject : public JSObject {
   DECL_OPTIONAL_ACCESSORS(debug_info, WasmDebugInfo)
   // FixedArray of all instances whose code was imported
   DECL_OPTIONAL_ACCESSORS(directly_called_instances, FixedArray)
+  DECL_ACCESSORS(js_imports_table, Foreign)
 
   enum {  // --
     kCompiledModuleIndex,
@@ -163,6 +164,7 @@ class WasmInstanceObject : public JSObject {
     kGlobalsBufferIndex,
     kDebugInfoIndex,
     kDirectlyCalledInstancesIndex,
+    kJsImportsTableIndex,
     kFieldCount
   };
 
@@ -173,6 +175,7 @@ class WasmInstanceObject : public JSObject {
   DEF_OFFSET(GlobalsBuffer)
   DEF_OFFSET(DebugInfo)
   DEF_OFFSET(DirectlyCalledInstances)
+  DEF_OFFSET(JsImportsTable)
 
   WasmModuleObject* module_object();
   V8_EXPORT_PRIVATE wasm::WasmModule* module();
@@ -194,21 +197,11 @@ class WasmInstanceObject : public JSObject {
 // A WASM function that is wrapped and exported to JavaScript.
 class WasmExportedFunction : public JSFunction {
  public:
-  DECL_OOL_QUERY(WasmExportedFunction)
-  DECL_OOL_CAST(WasmExportedFunction)
+  WasmInstanceObject* instance();
+  int function_index();
 
-  DECL_ACCESSORS(instance, WasmInstanceObject)
-  DECL_INT_ACCESSORS(function_index)
-
-  enum {  // --
-    kInstanceIndex,
-    kFunctionIndexIndex,
-    kFieldCount
-  };
-
-  static const int kSize = JSFunction::kSize + kFieldCount * kPointerSize;
-  DEF_OFFSET(Instance)
-  DEF_OFFSET(FunctionIndex)
+  static WasmExportedFunction* cast(Object* object);
+  static bool IsWasmExportedFunction(Object* object);
 
   static Handle<WasmExportedFunction> New(Isolate* isolate,
                                           Handle<WasmInstanceObject> instance,
@@ -698,10 +691,7 @@ ACCESSORS(WasmInstanceObject, globals_buffer, JSArrayBuffer,
 ACCESSORS(WasmInstanceObject, debug_info, WasmDebugInfo, kDebugInfoOffset)
 ACCESSORS(WasmInstanceObject, directly_called_instances, FixedArray,
           kDirectlyCalledInstancesOffset)
-
-// WasmExportedFunction
-ACCESSORS(WasmExportedFunction, instance, WasmInstanceObject, kInstanceOffset)
-SMI_ACCESSORS(WasmExportedFunction, function_index, kFunctionIndexOffset)
+ACCESSORS(WasmInstanceObject, js_imports_table, Foreign, kJsImportsTableOffset)
 
 // WasmSharedModuleData
 ACCESSORS(WasmSharedModuleData, module_bytes, SeqOneByteString,

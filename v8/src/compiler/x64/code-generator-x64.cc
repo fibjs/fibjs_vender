@@ -886,24 +886,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ cmpp(rsi, FieldOperand(func, JSFunction::kContextOffset));
         __ Assert(equal, kWrongFunctionContext);
       }
-      __ Call(FieldOperand(func, JSFunction::kCodeEntryOffset));
+      __ movp(rcx, FieldOperand(func, JSFunction::kCodeOffset));
+      __ addp(rcx, Immediate(Code::kHeaderSize - kHeapObjectTag));
+      __ call(rcx);
       frame_access_state()->ClearSPDelta();
       RecordCallPosition(instr);
-      break;
-    }
-    case kArchTailCallJSFunctionFromJSFunction: {
-      Register func = i.InputRegister(0);
-      if (FLAG_debug_code) {
-        // Check the function's context matches the context argument.
-        __ cmpp(rsi, FieldOperand(func, JSFunction::kContextOffset));
-        __ Assert(equal, kWrongFunctionContext);
-      }
-      AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
-                                       i.TempRegister(0), i.TempRegister(1),
-                                       i.TempRegister(2));
-      __ jmp(FieldOperand(func, JSFunction::kCodeEntryOffset));
-      frame_access_state()->ClearSPDelta();
-      frame_access_state()->SetFrameAccessToDefault();
       break;
     }
     case kArchPrepareCallCFunction: {

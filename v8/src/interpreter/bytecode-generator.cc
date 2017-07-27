@@ -504,18 +504,6 @@ class BytecodeGenerator::RegisterAllocationScope final {
         outer_next_register_index_);
   }
 
-  // Enable the registers in |register_list| to escape into the parent register
-  // allocation scope.
-  void EscapeRegisterListToParent(RegisterList* register_list) {
-    DCHECK_LT(register_list->last_register().index(),
-              generator_->register_allocator()->next_register_index());
-    DCHECK_LE(register_list->first_register().index(),
-              outer_next_register_index_);
-    DCHECK_GE(register_list->last_register().index(),
-              outer_next_register_index_);
-    outer_next_register_index_ = register_list->last_register().index() + 1;
-  }
-
  private:
   BytecodeGenerator* generator_;
   int outer_next_register_index_;
@@ -527,9 +515,7 @@ class BytecodeGenerator::RegisterAllocationScope final {
 // used.
 class BytecodeGenerator::ExpressionResultScope {
  public:
-  enum class Kind { kEffect, kValue, kTest, kAddition };
-
-  ExpressionResultScope(BytecodeGenerator* generator, Kind kind)
+  ExpressionResultScope(BytecodeGenerator* generator, Expression::Context kind)
       : generator_(generator),
         outer_(generator->execution_result()),
         allocator_(generator),
@@ -542,37 +528,28 @@ class BytecodeGenerator::ExpressionResultScope {
     generator_->set_execution_result(outer_);
   }
 
-  bool IsEffect() const { return kind_ == Kind::kEffect; }
-  bool IsValue() const { return kind_ == Kind::kValue; }
-  bool IsTest() const { return kind_ == Kind::kTest; }
-  bool IsAddition() const { return kind_ == Kind::kAddition; }
+  bool IsEffect() const { return kind_ == Expression::kEffect; }
+  bool IsValue() const { return kind_ == Expression::kValue; }
+  bool IsTest() const { return kind_ == Expression::kTest; }
 
   TestResultScope* AsTest() {
     DCHECK(IsTest());
     return reinterpret_cast<TestResultScope*>(this);
   }
 
-  AdditionResultScope* AsAddition() {
-    DCHECK(IsAddition());
-    return reinterpret_cast<AdditionResultScope*>(this);
-  }
-
-  // Specify expression always returns a result value of type |hint|.
-  void set_type_hint(TypeHint hint) {
+  // Specify expression always returns a Boolean result value.
+  void SetResultIsBoolean() {
     DCHECK(type_hint_ == TypeHint::kAny);
-    type_hint_ = hint;
+    type_hint_ = TypeHint::kBoolean;
   }
 
   TypeHint type_hint() const { return type_hint_; }
-
- protected:
-  RegisterAllocationScope* allocation_scope() { return &allocator_; }
 
  private:
   BytecodeGenerator* generator_;
   ExpressionResultScope* outer_;
   RegisterAllocationScope allocator_;
-  Kind kind_;
+  Expression::Context kind_;
   TypeHint type_hint_;
 
   DISALLOW_COPY_AND_ASSIGN(ExpressionResultScope);
@@ -584,7 +561,7 @@ class BytecodeGenerator::EffectResultScope final
     : public ExpressionResultScope {
  public:
   explicit EffectResultScope(BytecodeGenerator* generator)
-      : ExpressionResultScope(generator, Kind::kEffect) {}
+      : ExpressionResultScope(generator, Expression::kEffect) {}
 };
 
 // Scoped class used when the result of the current expression to be
@@ -592,7 +569,7 @@ class BytecodeGenerator::EffectResultScope final
 class BytecodeGenerator::ValueResultScope final : public ExpressionResultScope {
  public:
   explicit ValueResultScope(BytecodeGenerator* generator)
-      : ExpressionResultScope(generator, Kind::kValue) {}
+      : ExpressionResultScope(generator, Expression::kValue) {}
 };
 
 // Scoped class used when the result of the current expression to be
@@ -601,7 +578,7 @@ class BytecodeGenerator::TestResultScope final : public ExpressionResultScope {
  public:
   TestResultScope(BytecodeGenerator* generator, BytecodeLabels* then_labels,
                   BytecodeLabels* else_labels, TestFallthrough fallthrough)
-      : ExpressionResultScope(generator, Kind::kTest),
+      : ExpressionResultScope(generator, Expression::kTest),
         result_consumed_by_test_(false),
         fallthrough_(fallthrough),
         then_labels_(then_labels),
@@ -656,37 +633,6 @@ class BytecodeGenerator::TestResultScope final : public ExpressionResultScope {
   BytecodeLabels* else_labels_;
 
   DISALLOW_COPY_AND_ASSIGN(TestResultScope);
-};
-
-// Scoped class used when the result of the current expression to be evaluated
-// will be used for an addition operation.
-class BytecodeGenerator::AdditionResultScope final
-    : public ExpressionResultScope {
- public:
-  explicit AdditionResultScope(BytecodeGenerator* generator,
-                               RegisterList* operand_registers)
-      : ExpressionResultScope(generator, Kind::kAddition),
-        result_deferred_until_concat_(false),
-        operand_registers_(operand_registers) {}
-
-  RegisterList* operand_registers() { return operand_registers_; }
-
-  // Used when code special cases string concatenation and the values have
-  // been consumed as operand registers and the result won't be computed until
-  // the concat operation is performed.
-  void SetResultDeferredUntilConcat() {
-    // Ensure registers allocated on the growable operand register list are
-    // kept live when we return from this result scope.
-    allocation_scope()->EscapeRegisterListToParent(operand_registers_);
-    result_deferred_until_concat_ = true;
-  }
-  bool result_deferred_until_concat() { return result_deferred_until_concat_; }
-
- private:
-  bool result_deferred_until_concat_;
-  RegisterList* operand_registers_;
-
-  DISALLOW_COPY_AND_ASSIGN(AdditionResultScope);
 };
 
 // Used to build a list of global declaration initial value pairs.
@@ -840,6 +786,9 @@ Handle<BytecodeArray> BytecodeGenerator::FinalizeBytecode(Isolate* isolate) {
   if (info()->is_block_coverage_enabled()) {
     info()->set_coverage_info(
         isolate->factory()->NewCoverageInfo(block_coverage_builder_->slots()));
+    if (FLAG_trace_block_coverage) {
+      info()->coverage_info()->Print(info()->shared_info()->name());
+    }
   }
 
   if (HasStackOverflow()) return Handle<BytecodeArray>();
@@ -1088,7 +1037,6 @@ void BytecodeGenerator::VisitBlockDeclarationsAndStatements(Block* stmt) {
     VisitDeclarations(stmt->scope()->declarations());
   }
   VisitStatements(stmt->statements());
-  block_builder.EndBlock();
 }
 
 void BytecodeGenerator::VisitVariableDeclaration(VariableDeclaration* decl) {
@@ -1253,48 +1201,36 @@ void BytecodeGenerator::VisitEmptyStatement(EmptyStatement* stmt) {
 }
 
 void BytecodeGenerator::VisitIfStatement(IfStatement* stmt) {
+  ConditionalControlFlowBuilder conditional_builder(
+      builder(), block_coverage_builder_, stmt);
   builder()->SetStatementPosition(stmt);
-
-  int then_slot =
-      AllocateBlockCoverageSlotIfEnabled(stmt, SourceRangeKind::kThen);
-  int else_slot =
-      AllocateBlockCoverageSlotIfEnabled(stmt, SourceRangeKind::kElse);
 
   if (stmt->condition()->ToBooleanIsTrue()) {
     // Generate then block unconditionally as always true.
-    BuildIncrementBlockCoverageCounterIfEnabled(then_slot);
+    conditional_builder.Then();
     Visit(stmt->then_statement());
   } else if (stmt->condition()->ToBooleanIsFalse()) {
     // Generate else block unconditionally if it exists.
     if (stmt->HasElseStatement()) {
-      BuildIncrementBlockCoverageCounterIfEnabled(else_slot);
+      conditional_builder.Else();
       Visit(stmt->else_statement());
     }
   } else {
     // TODO(oth): If then statement is BreakStatement or
     // ContinueStatement we can reduce number of generated
     // jump/jump_ifs here. See BasicLoops test.
-    BytecodeLabel end_label;
-    BytecodeLabels then_labels(zone()), else_labels(zone());
-    VisitForTest(stmt->condition(), &then_labels, &else_labels,
-                 TestFallthrough::kThen);
+    VisitForTest(stmt->condition(), conditional_builder.then_labels(),
+                 conditional_builder.else_labels(), TestFallthrough::kThen);
 
-    then_labels.Bind(builder());
-    BuildIncrementBlockCoverageCounterIfEnabled(then_slot);
+    conditional_builder.Then();
     Visit(stmt->then_statement());
 
     if (stmt->HasElseStatement()) {
-      builder()->Jump(&end_label);
-      else_labels.Bind(builder());
-      BuildIncrementBlockCoverageCounterIfEnabled(else_slot);
+      conditional_builder.JumpToEnd();
+      conditional_builder.Else();
       Visit(stmt->else_statement());
-    } else {
-      else_labels.Bind(builder());
     }
-    builder()->Bind(&end_label);
   }
-  BuildIncrementBlockCoverageCounterIfEnabled(stmt,
-                                              SourceRangeKind::kContinuation);
 }
 
 void BytecodeGenerator::VisitSloppyBlockFunctionStatement(
@@ -1336,7 +1272,8 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
   // We need this scope because we visit for register values. We have to
   // maintain a execution result scope where registers can be allocated.
   ZoneList<CaseClause*>* clauses = stmt->cases();
-  SwitchBuilder switch_builder(builder(), clauses->length());
+  SwitchBuilder switch_builder(builder(), block_coverage_builder_, stmt,
+                               clauses->length());
   ControlScopeForBreakable scope(this, stmt, &switch_builder);
   int default_index = -1;
 
@@ -1375,13 +1312,9 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
   // Iterate over all cases and create the case bodies.
   for (int i = 0; i < clauses->length(); i++) {
     CaseClause* clause = clauses->at(i);
-    switch_builder.SetCaseTarget(i);
-    BuildIncrementBlockCoverageCounterIfEnabled(clause, SourceRangeKind::kBody);
+    switch_builder.SetCaseTarget(i, clause);
     VisitStatements(clause->statements());
   }
-  switch_builder.BindBreakTarget();
-  BuildIncrementBlockCoverageCounterIfEnabled(stmt,
-                                              SourceRangeKind::kContinuation);
 }
 
 void BytecodeGenerator::VisitCaseClause(CaseClause* clause) {
@@ -1712,6 +1645,7 @@ void BytecodeGenerator::VisitDebuggerStatement(DebuggerStatement* stmt) {
 }
 
 void BytecodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
+  DCHECK_EQ(expr->scope()->outer_scope(), current_scope());
   uint8_t flags = CreateClosureFlags::Encode(
       expr->pretenure(), closure_scope()->is_function_scope());
   size_t entry = builder()->AllocateDeferredConstantPoolEntry();
@@ -1874,35 +1808,27 @@ void BytecodeGenerator::VisitDoExpression(DoExpression* expr) {
 }
 
 void BytecodeGenerator::VisitConditional(Conditional* expr) {
-  int then_slot =
-      AllocateBlockCoverageSlotIfEnabled(expr, SourceRangeKind::kThen);
-  int else_slot =
-      AllocateBlockCoverageSlotIfEnabled(expr, SourceRangeKind::kElse);
+  ConditionalControlFlowBuilder conditional_builder(
+      builder(), block_coverage_builder_, expr);
 
   if (expr->condition()->ToBooleanIsTrue()) {
     // Generate then block unconditionally as always true.
+    conditional_builder.Then();
     VisitForAccumulatorValue(expr->then_expression());
-    BuildIncrementBlockCoverageCounterIfEnabled(then_slot);
   } else if (expr->condition()->ToBooleanIsFalse()) {
     // Generate else block unconditionally if it exists.
+    conditional_builder.Else();
     VisitForAccumulatorValue(expr->else_expression());
-    BuildIncrementBlockCoverageCounterIfEnabled(else_slot);
   } else {
-    BytecodeLabel end_label;
-    BytecodeLabels then_labels(zone()), else_labels(zone());
+    VisitForTest(expr->condition(), conditional_builder.then_labels(),
+                 conditional_builder.else_labels(), TestFallthrough::kThen);
 
-    VisitForTest(expr->condition(), &then_labels, &else_labels,
-                 TestFallthrough::kThen);
-
-    then_labels.Bind(builder());
-    BuildIncrementBlockCoverageCounterIfEnabled(then_slot);
+    conditional_builder.Then();
     VisitForAccumulatorValue(expr->then_expression());
-    builder()->Jump(&end_label);
+    conditional_builder.JumpToEnd();
 
-    else_labels.Bind(builder());
-    BuildIncrementBlockCoverageCounterIfEnabled(else_slot);
+    conditional_builder.Else();
     VisitForAccumulatorValue(expr->else_expression());
-    builder()->Bind(&end_label);
   }
 }
 
@@ -1910,10 +1836,8 @@ void BytecodeGenerator::VisitLiteral(Literal* expr) {
   if (!execution_result()->IsEffect()) {
     const AstValue* raw_value = expr->raw_value();
     builder()->LoadLiteral(raw_value);
-    if (raw_value->IsString()) {
-      execution_result()->set_type_hint(TypeHint::kString);
-    } else if (raw_value->IsTrue() || raw_value->IsFalse()) {
-      execution_result()->set_type_hint(TypeHint::kBoolean);
+    if (raw_value->IsTrue() || raw_value->IsFalse()) {
+      execution_result()->SetResultIsBoolean();
     }
   }
 }
@@ -2126,12 +2050,18 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 
 void BytecodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   // Deep-copy the literal boilerplate.
+  int literal_index = feedback_index(expr->literal_slot());
+  if (expr->is_empty()) {
+    // Empty array literal fast-path.
+    DCHECK(expr->IsFastCloningSupported());
+    builder()->CreateEmptyArrayLiteral(literal_index);
+    return;
+  }
+
   uint8_t flags = CreateArrayLiteralFlags::Encode(
       expr->IsFastCloningSupported(), expr->ComputeFlags());
-
   size_t entry = builder()->AllocateDeferredConstantPoolEntry();
-  builder()->CreateArrayLiteral(entry, feedback_index(expr->literal_slot()),
-                                flags);
+  builder()->CreateArrayLiteral(entry, literal_index, flags);
   array_literals_.push_back(std::make_pair(expr, entry));
 
   Register index, literal;
@@ -2630,48 +2560,23 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
   }
 }
 
-void BytecodeGenerator::BuildGeneratorSuspend(Suspend* expr, Register value,
-                                              RegisterList registers_to_save) {
-  RegisterAllocationScope register_scope(this);
+// Suspends the generator to resume at |suspend_id|, with output stored in the
+// accumulator. When the generator is resumed, the sent value is loaded in the
+// accumulator.
+void BytecodeGenerator::BuildSuspendPoint(int suspend_id) {
+  RegisterList registers(0, register_allocator()->next_register_index());
 
   // Save context, registers, and state. Then return.
-  builder()
-      ->LoadLiteral(Smi::FromInt(expr->suspend_id()))
-      .SuspendGenerator(generator_object_, registers_to_save);
+  builder()->SuspendGenerator(generator_object_, registers, suspend_id);
 
-  if (expr->IsInitialYield() || !expr->IsYield()) {
-    builder()->LoadAccumulatorWithRegister(value);
-  } else if (IsAsyncGeneratorFunction(function_kind())) {
-    // AsyncGenerator yields (with the exception of the initial yield)
-    // delegate to AsyncGeneratorResolve(), implemented via the runtime call
-    // below.
-    RegisterList args = register_allocator()->NewRegisterList(3);
-    builder()
-        ->MoveRegister(generator_object_, args[0])
-        .MoveRegister(value, args[1])
-        .LoadFalse()
-        .StoreAccumulatorInRegister(args[2])
-        .CallRuntime(Runtime::kInlineAsyncGeneratorResolve, args);
-  } else {
-    // Generator yields (with the exception of the initial yield) wrap the
-    // value into IteratorResult.
-    RegisterList args = register_allocator()->NewRegisterList(2);
-    builder()
-        ->MoveRegister(value, args[0])
-        .LoadFalse()
-        .StoreAccumulatorInRegister(args[1])
-        .CallRuntime(Runtime::kInlineCreateIterResultObject, args);
-  }
   builder()->SetReturnPosition(kNoSourcePosition, info()->literal());
   builder()->Return();  // Hard return (ignore any finally blocks).
-}
 
-void BytecodeGenerator::BuildGeneratorResume(
-    Suspend* expr, RegisterList registers_to_restore) {
-  RegisterAllocationScope register_scope(this);
+  // Upon resume, we continue here.
+  builder()->Bind(generator_jump_table_, suspend_id);
 
   // Clobbers all registers.
-  builder()->RestoreGeneratorRegisters(generator_object_, registers_to_restore);
+  builder()->RestoreGeneratorRegisters(generator_object_, registers);
 
   // Update state to indicate that we have finished resuming. Loop headers
   // rely on this.
@@ -2685,14 +2590,50 @@ void BytecodeGenerator::BuildGeneratorResume(
                          generator_object_);
 }
 
-void BytecodeGenerator::BuildAbruptResume(Suspend* expr) {
-  RegisterAllocationScope register_scope(this);
+void BytecodeGenerator::VisitYield(Yield* expr) {
+  builder()->SetExpressionPosition(expr);
+  VisitForAccumulatorValue(expr->expression());
+
+  if (!expr->IsInitialYield()) {
+    if (IsAsyncGeneratorFunction(function_kind())) {
+      // AsyncGenerator yields (with the exception of the initial yield)
+      // delegate to AsyncGeneratorResolve(), implemented via the runtime call
+      // below.
+      RegisterAllocationScope register_scope(this);
+      RegisterList args = register_allocator()->NewRegisterList(3);
+      builder()
+          ->MoveRegister(generator_object_, args[0])
+          .StoreAccumulatorInRegister(args[1])
+          .LoadFalse()
+          .StoreAccumulatorInRegister(args[2])
+          .CallRuntime(Runtime::kInlineAsyncGeneratorResolve, args);
+    } else {
+      // Generator yields (with the exception of the initial yield) wrap the
+      // value into IteratorResult.
+      RegisterAllocationScope register_scope(this);
+      RegisterList args = register_allocator()->NewRegisterList(2);
+      builder()
+          ->StoreAccumulatorInRegister(args[0])
+          .LoadFalse()
+          .StoreAccumulatorInRegister(args[1])
+          .CallRuntime(Runtime::kInlineCreateIterResultObject, args);
+    }
+  }
+
+  BuildSuspendPoint(expr->suspend_id());
+  // At this point, the generator has been resumed, with the received value in
+  // the accumulator.
+
+  // TODO(caitp): remove once yield* desugaring for async generators is handled
+  // in BytecodeGenerator.
+  if (expr->on_abrupt_resume() == Yield::kNoControl) {
+    DCHECK(IsAsyncGeneratorFunction(function_kind()));
+    return;
+  }
 
   Register input = register_allocator()->NewRegister();
-  builder()->StoreAccumulatorInRegister(input);
-
-  builder()->CallRuntime(Runtime::kInlineGeneratorGetResumeMode,
-                         generator_object_);
+  builder()->StoreAccumulatorInRegister(input).CallRuntime(
+      Runtime::kInlineGeneratorGetResumeMode, generator_object_);
 
   // Now dispatch on resume mode.
   STATIC_ASSERT(JSGeneratorObject::kNext + 1 == JSGeneratorObject::kReturn);
@@ -2707,11 +2648,7 @@ void BytecodeGenerator::BuildAbruptResume(Suspend* expr) {
     // JSGeneratorObject::kThrow.
     builder()->SetExpressionPosition(expr);
     builder()->LoadAccumulatorWithRegister(input);
-    if (expr->rethrow_on_exception()) {
-      builder()->ReThrow();
-    } else {
-      builder()->Throw();
-    }
+    builder()->Throw();
   }
 
   {
@@ -2729,24 +2666,10 @@ void BytecodeGenerator::BuildAbruptResume(Suspend* expr) {
   {
     // Resume with next.
     builder()->Bind(jump_table, JSGeneratorObject::kNext);
+    BuildIncrementBlockCoverageCounterIfEnabled(expr,
+                                                SourceRangeKind::kContinuation);
     builder()->LoadAccumulatorWithRegister(input);
   }
-}
-
-void BytecodeGenerator::VisitYield(Yield* expr) {
-  RegisterList registers(0, register_allocator()->next_register_index());
-
-  {
-    RegisterAllocationScope scope(this);
-    builder()->SetExpressionPosition(expr);
-    Register value = VisitForRegisterValue(expr->expression());
-
-    BuildGeneratorSuspend(expr, value, registers);
-  }
-  builder()->Bind(generator_jump_table_, static_cast<int>(expr->suspend_id()));
-  // Upon resume, we continue here.
-  BuildGeneratorResume(expr, registers);
-  if (expr->on_abrupt_resume() != Suspend::kNoControl) BuildAbruptResume(expr);
 }
 
 // Desugaring of (yield* iterable)
@@ -2826,7 +2749,10 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
         .StoreAccumulatorInRegister(resume_mode);
 
     {
-      LoopBuilder loop(builder(), block_coverage_builder_, expr);
+      // This loop builder does not construct counters as the loop is not
+      // visible to the user, and we therefore neither pass the block coverage
+      // builder nor the expression.
+      LoopBuilder loop(builder(), nullptr, nullptr);
       VisitIterationHeader(expr->suspend_id(), 1, &loop);
 
       {
@@ -2948,12 +2874,8 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
       loop.BreakIfTrue(ToBooleanMode::kConvertToBoolean);
 
       // Suspend the current generator.
-      RegisterList registers(0, register_allocator()->next_register_index());
-      BuildGeneratorSuspend(expr, output, registers);
-      builder()->Bind(generator_jump_table_,
-                      static_cast<int>(expr->suspend_id()));
-      // Upon resume, we continue here.
-      BuildGeneratorResume(expr, registers);
+      builder()->LoadAccumulatorWithRegister(output);
+      BuildSuspendPoint(expr->suspend_id());
       builder()->StoreAccumulatorInRegister(input);
       builder()
           ->CallRuntime(Runtime::kInlineGeneratorGetResumeMode,
@@ -2980,6 +2902,8 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
   execution_control()->ReturnAccumulator();
 
   builder()->Bind(&completion_is_output_value);
+  BuildIncrementBlockCoverageCounterIfEnabled(expr,
+                                              SourceRangeKind::kContinuation);
   builder()->LoadAccumulatorWithRegister(output_value);
 }
 
@@ -2987,15 +2911,13 @@ void BytecodeGenerator::VisitAwait(Await* expr) {
   // Rather than HandlerTable::UNCAUGHT, async functions use
   // HandlerTable::ASYNC_AWAIT to communicate that top-level exceptions are
   // transformed into promise rejections. This is necessary to prevent emitting
-  // multiple debbug events for the same uncaught exception. There is no point
+  // multiple debug events for the same uncaught exception. There is no point
   // in the body of an async function where catch prediction is
   // HandlerTable::UNCAUGHT.
   DCHECK(catch_prediction() != HandlerTable::UNCAUGHT);
 
   builder()->SetExpressionPosition(expr);
-  Register operand = VisitForRegisterValue(expr->expression());
-  RegisterList registers(0, operand.index());
-
+  VisitForAccumulatorValue(expr->expression());
   {
     // Await(operand) and suspend.
     RegisterAllocationScope register_scope(this);
@@ -3010,7 +2932,7 @@ void BytecodeGenerator::VisitAwait(Await* expr) {
       args = register_allocator()->NewRegisterList(2);
       builder()
           ->MoveRegister(generator_object_, args[0])
-          .MoveRegister(operand, args[1]);
+          .StoreAccumulatorInRegister(args[1]);
     } else {
       await_builtin_context_index =
           catch_prediction() == HandlerTable::ASYNC_AWAIT
@@ -3019,7 +2941,7 @@ void BytecodeGenerator::VisitAwait(Await* expr) {
       args = register_allocator()->NewRegisterList(3);
       builder()
           ->MoveRegister(generator_object_, args[0])
-          .MoveRegister(operand, args[1]);
+          .StoreAccumulatorInRegister(args[1]);
 
       // AsyncFunction Await builtins require a 3rd parameter to hold the outer
       // promise.
@@ -3029,17 +2951,10 @@ void BytecodeGenerator::VisitAwait(Await* expr) {
       builder()->StoreAccumulatorInRegister(args[2]);
     }
 
-    builder()
-        ->CallJSRuntime(await_builtin_context_index, args)
-        .StoreAccumulatorInRegister(operand);
-
-    BuildGeneratorSuspend(expr, operand, registers);
+    builder()->CallJSRuntime(await_builtin_context_index, args);
   }
 
-  builder()->Bind(generator_jump_table_, static_cast<int>(expr->suspend_id()));
-
-  // Upon resume, we continue here, with received value in accumulator.
-  BuildGeneratorResume(expr, registers);
+  BuildSuspendPoint(expr->suspend_id());
 
   Register input = register_allocator()->NewRegister();
   Register resume_mode = register_allocator()->NewRegister();
@@ -3062,6 +2977,8 @@ void BytecodeGenerator::VisitAwait(Await* expr) {
 
   // Resume with next.
   builder()->Bind(&resume_next);
+  BuildIncrementBlockCoverageCounterIfEnabled(expr,
+                                              SourceRangeKind::kContinuation);
   builder()->LoadAccumulatorWithRegister(input);
 }
 
@@ -3307,7 +3224,7 @@ void BytecodeGenerator::VisitCall(Call* expr) {
 
   if (is_spread_call) {
     DCHECK(!implicit_undefined_receiver);
-    builder()->CallWithSpread(callee, args);
+    builder()->CallWithSpread(callee, args, feedback_slot_index);
   } else if (call_type == Call::NAMED_PROPERTY_CALL ||
              call_type == Call::KEYED_PROPERTY_CALL) {
     DCHECK(!implicit_undefined_receiver);
@@ -3338,9 +3255,9 @@ void BytecodeGenerator::VisitCallSuper(Call* expr) {
 
   // When a super call contains a spread, a CallSuper AST node is only created
   // if there is exactly one spread, and it is the last argument.
+  int const feedback_slot_index = feedback_index(expr->CallFeedbackICSlot());
   if (expr->only_last_arg_is_spread()) {
-    // TODO(petermarshall): Collect type on the feedback slot.
-    builder()->ConstructWithSpread(constructor, args_regs);
+    builder()->ConstructWithSpread(constructor, args_regs, feedback_slot_index);
   } else {
     // Call construct.
     // TODO(turbofan): For now we do gather feedback on super constructor
@@ -3349,7 +3266,6 @@ void BytecodeGenerator::VisitCallSuper(Call* expr) {
     // is not an ideal solution for super constructor calls, but it gets
     // the job done for now. In the long run we might want to revisit this
     // and come up with a better way.
-    int const feedback_slot_index = feedback_index(expr->CallFeedbackICSlot());
     builder()->Construct(constructor, args_regs, feedback_slot_index);
   }
 }
@@ -3364,12 +3280,11 @@ void BytecodeGenerator::VisitCallNew(CallNew* expr) {
   builder()->SetExpressionPosition(expr);
   builder()->LoadAccumulatorWithRegister(constructor);
 
+  int const feedback_slot_index = feedback_index(expr->CallNewFeedbackSlot());
   if (expr->only_last_arg_is_spread()) {
-    // TODO(petermarshall): Collect type on the feedback slot.
-    builder()->ConstructWithSpread(constructor, args);
+    builder()->ConstructWithSpread(constructor, args, feedback_slot_index);
   } else {
-    builder()->Construct(constructor, args,
-                         feedback_index(expr->CallNewFeedbackSlot()));
+    builder()->Construct(constructor, args, feedback_slot_index);
   }
 }
 
@@ -3428,7 +3343,7 @@ void BytecodeGenerator::VisitNot(UnaryOperation* expr) {
     TypeHint type_hint = VisitForAccumulatorValue(expr->expression());
     builder()->LogicalNot(ToBooleanModeFromTypeHint(type_hint));
     // Always returns a boolean value.
-    execution_result()->set_type_hint(TypeHint::kBoolean);
+    execution_result()->SetResultIsBoolean();
   }
 }
 
@@ -3711,92 +3626,25 @@ void BytecodeGenerator::VisitCompareOperation(CompareOperation* expr) {
     }
   }
   // Always returns a boolean value.
-  execution_result()->set_type_hint(TypeHint::kBoolean);
-}
-
-void BytecodeGenerator::BuildAddExpression(BinaryOperation* expr,
-                                           RegisterList* operand_registers) {
-  int initial_operand_length = operand_registers->register_count();
-  USE(initial_operand_length);
-  Register lhs, rhs;
-  TypeHint lhs_hint = VisitForAddOperand(expr->left(), operand_registers, &lhs);
-  TypeHint rhs_hint =
-      VisitForAddOperand(expr->right(), operand_registers, &rhs);
-  DCHECK_GE(operand_registers->register_count(), initial_operand_length + 2);
-  builder()->SetExpressionPosition(expr);
-
-  bool is_chained_addition = execution_result()->IsAddition() ||
-                             operand_registers->register_count() > 2;
-  // Use string concatenation if one of the sides is a string, and we have more
-  // than two additions chained together.
-  if (FLAG_ignition_string_concat && is_chained_addition &&
-      (lhs_hint == TypeHint::kString || rhs_hint == TypeHint::kString)) {
-    // One of the sides is a string, perform to primitive, then to string on the
-    // other operand and perform a single StringConcat operation once the
-    // addition chain is complete.
-    if (lhs_hint != TypeHint::kString) {
-      builder()->LoadAccumulatorWithRegister(lhs).ToPrimitiveToString(
-          lhs, feedback_index(expr->BinaryOperationFeedbackSlot()));
-    } else if (rhs_hint != TypeHint::kString) {
-      builder()->LoadAccumulatorWithRegister(rhs).ToPrimitiveToString(
-          rhs, feedback_index(expr->BinaryOperationFeedbackSlot()));
-    }
-    if (execution_result()->IsAddition()) {
-      execution_result()->AsAddition()->SetResultDeferredUntilConcat();
-    }
-    execution_result()->set_type_hint(TypeHint::kString);
-  } else {
-    // Otherwise just remove the operands from the operand register list and
-    // perform a normal addition.
-    builder()->LoadAccumulatorWithRegister(rhs);
-    Register popped_rhs =
-        register_allocator()->ShrinkRegisterList(operand_registers);
-    CHECK_EQ(rhs.index(), popped_rhs.index());
-
-    builder()->BinaryOperation(
-        expr->op(), lhs, feedback_index(expr->BinaryOperationFeedbackSlot()));
-    Register popped_lhs =
-        register_allocator()->ShrinkRegisterList(operand_registers);
-    CHECK_EQ(lhs.index(), popped_lhs.index());
-    DCHECK_EQ(initial_operand_length, operand_registers->register_count());
-  }
+  execution_result()->SetResultIsBoolean();
 }
 
 void BytecodeGenerator::VisitArithmeticExpression(BinaryOperation* expr) {
   // TODO(rmcilroy): Special case "x * 1.0" and "x * -1" which are generated for
   // +x and -x by the parser.
+  FeedbackSlot slot = expr->BinaryOperationFeedbackSlot();
   Expression* subexpr;
   Smi* literal;
   if (expr->IsSmiLiteralOperation(&subexpr, &literal)) {
     VisitForAccumulatorValue(subexpr);
     builder()->SetExpressionPosition(expr);
-    builder()->BinaryOperationSmiLiteral(
-        expr->op(), literal,
-        feedback_index(expr->BinaryOperationFeedbackSlot()));
-  } else if (expr->op() == Token::ADD) {
-    // Special case addition to enable folding of string concatenations.
-    if (execution_result()->IsAddition()) {
-      BuildAddExpression(expr,
-                         execution_result()->AsAddition()->operand_registers());
-    } else {
-      RegisterList operand_registers =
-          register_allocator()->NewGrowableRegisterList();
-      BuildAddExpression(expr, &operand_registers);
-      // If there are any registers in operand_registers then we need to
-      // StringConcat them together.
-      if (operand_registers.register_count() != 0) {
-        DCHECK(FLAG_ignition_string_concat);
-        // There must be more than 2 operands to the concatenation.
-        DCHECK_GT(operand_registers.register_count(), 2);
-        builder()->StringConcat(operand_registers);
-      }
-    }
+    builder()->BinaryOperationSmiLiteral(expr->op(), literal,
+                                         feedback_index(slot));
   } else {
     Register lhs = VisitForRegisterValue(expr->left());
     VisitForAccumulatorValue(expr->right());
     builder()->SetExpressionPosition(expr);
-    builder()->BinaryOperation(
-        expr->op(), lhs, feedback_index(expr->BinaryOperationFeedbackSlot()));
+    builder()->BinaryOperation(expr->op(), lhs, feedback_index(slot));
   }
 }
 
@@ -4294,25 +4142,6 @@ void BytecodeGenerator::VisitForRegisterValue(Expression* expr,
   builder()->StoreAccumulatorInRegister(destination);
 }
 
-// Visits the expression |expr| as an addition operand value and places the
-// result in the accumulator.
-BytecodeGenerator::TypeHint BytecodeGenerator::VisitForAddOperand(
-    Expression* expr, RegisterList* operand_registers, Register* out_register) {
-  TypeHint type_hint;
-  bool result_deferred_until_concat;
-  {
-    AdditionResultScope add_scope(this, operand_registers);
-    Visit(expr);
-    type_hint = add_scope.type_hint();
-    result_deferred_until_concat = add_scope.result_deferred_until_concat();
-  }
-  if (!result_deferred_until_concat) {
-    *out_register = register_allocator()->GrowRegisterList(operand_registers);
-    builder()->StoreAccumulatorInRegister(*out_register);
-  }
-  return type_hint;
-}
-
 // Visits the expression |expr| and pushes the result into a new register
 // added to the end of |reg_list|.
 void BytecodeGenerator::VisitAndPushIntoRegisterList(Expression* expr,
@@ -4343,6 +4172,7 @@ void BytecodeGenerator::BuildTest(ToBooleanMode mode,
     case TestFallthrough::kNone:
       builder()->JumpIfTrue(mode, then_labels->New());
       builder()->Jump(else_labels->New());
+      break;
   }
 }
 

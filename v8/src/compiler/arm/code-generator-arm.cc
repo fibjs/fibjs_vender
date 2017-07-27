@@ -10,13 +10,13 @@
 
 #include "src/arm/macro-assembler-arm.h"
 #include "src/assembler-inl.h"
+#include "src/boxed-float.h"
 #include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
 #include "src/double.h"
-#include "src/float1.h"
 #include "src/heap/heap-inl.h"
 
 namespace v8 {
@@ -597,16 +597,6 @@ void FlushPendingPushRegisters(TurboAssembler* tasm,
   pending_pushes->resize(0);
 }
 
-void AddPendingPushRegister(TurboAssembler* tasm,
-                            FrameAccessState* frame_access_state,
-                            ZoneVector<Register>* pending_pushes,
-                            Register reg) {
-  pending_pushes->push_back(reg);
-  if (pending_pushes->size() == 3 || reg.is(ip)) {
-    FlushPendingPushRegisters(tasm, frame_access_state, pending_pushes);
-  }
-}
-
 void AdjustStackPointerForTailCall(
     TurboAssembler* tasm, FrameAccessState* state, int new_slot_above_sp,
     ZoneVector<Register>* pending_pushes = nullptr,
@@ -633,9 +623,8 @@ void AdjustStackPointerForTailCall(
 
 void CodeGenerator::AssembleTailCallBeforeGap(Instruction* instr,
                                               int first_unused_stack_slot) {
-  CodeGenerator::PushTypeFlags flags(kImmediatePush | kScalarPush);
   ZoneVector<MoveOperands*> pushes(zone());
-  GetPushCompatibleMoves(instr, flags, &pushes);
+  GetPushCompatibleMoves(instr, kRegisterPush, &pushes);
 
   if (!pushes.empty() &&
       (LocationOperand::cast(pushes.back()->destination()).index() + 1 ==
@@ -650,21 +639,15 @@ void CodeGenerator::AssembleTailCallBeforeGap(Instruction* instr,
           tasm(), frame_access_state(),
           destination_location.index() - pending_pushes.size(),
           &pending_pushes);
-      if (source.IsStackSlot()) {
-        LocationOperand source_location(LocationOperand::cast(source));
-        __ ldr(ip, g.SlotToMemOperand(source_location.index()));
-        AddPendingPushRegister(tasm(), frame_access_state(), &pending_pushes,
-                               ip);
-      } else if (source.IsRegister()) {
-        LocationOperand source_location(LocationOperand::cast(source));
-        AddPendingPushRegister(tasm(), frame_access_state(), &pending_pushes,
-                               source_location.GetRegister());
-      } else if (source.IsImmediate()) {
-        AddPendingPushRegister(tasm(), frame_access_state(), &pending_pushes,
-                               ip);
-      } else {
-        // Pushes of non-scalar data types is not supported.
-        UNIMPLEMENTED();
+      // Pushes of non-register data types are not supported.
+      DCHECK(source.IsRegister());
+      LocationOperand source_location(LocationOperand::cast(source));
+      pending_pushes.push_back(source_location.GetRegister());
+      // TODO(arm): We can push more than 3 registers at once. Add support in
+      // the macro-assembler for pushing a list of registers.
+      if (pending_pushes.size() == 3) {
+        FlushPendingPushRegisters(tasm(), frame_access_state(),
+                                  &pending_pushes);
       }
       move->Eliminate();
     }
@@ -750,29 +733,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ cmp(cp, kScratchReg);
         __ Assert(eq, kWrongFunctionContext);
       }
-      __ ldr(ip, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
+      __ ldr(ip, FieldMemOperand(func, JSFunction::kCodeOffset));
+      __ add(ip, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
       __ Call(ip);
       RecordCallPosition(instr);
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       frame_access_state()->ClearSPDelta();
-      break;
-    }
-    case kArchTailCallJSFunctionFromJSFunction: {
-      Register func = i.InputRegister(0);
-      if (FLAG_debug_code) {
-        // Check the function's context matches the context argument.
-        __ ldr(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
-        __ cmp(cp, kScratchReg);
-        __ Assert(eq, kWrongFunctionContext);
-      }
-      AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
-                                       i.TempRegister(0), i.TempRegister(1),
-                                       i.TempRegister(2));
-      __ ldr(ip, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
-      __ Jump(ip);
-      DCHECK_EQ(LeaveCC, i.OutputSBit());
-      frame_access_state()->ClearSPDelta();
-      frame_access_state()->SetFrameAccessToDefault();
       break;
     }
     case kArchPrepareCallCFunction: {
@@ -1616,7 +1582,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArmF32x4Splat: {
       int src_code = i.InputFloatRegister(0).code();
       __ vdup(Neon32, i.OutputSimd128Register(),
-              DwVfpRegister::from_code(src_code / 2), src_code & 0x1);
+              DwVfpRegister::from_code(src_code / 2), src_code % 2);
       break;
     }
     case kArmF32x4ExtractLane: {
@@ -2125,6 +2091,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArmS128Zero: {
       __ veor(i.OutputSimd128Register(), i.OutputSimd128Register(),
               i.OutputSimd128Register());
+      break;
+    }
+    case kArmS128Dup: {
+      NeonSize size = static_cast<NeonSize>(i.InputInt32(1));
+      int lanes = kSimd128Size >> size;
+      int index = i.InputInt32(2);
+      DCHECK(index < lanes);
+      int d_lanes = lanes / 2;
+      int src_d_index = index & (d_lanes - 1);
+      int src_d_code = i.InputSimd128Register(0).low().code() + index / d_lanes;
+      __ vdup(size, i.OutputSimd128Register(),
+              DwVfpRegister::from_code(src_d_code), src_d_index);
       break;
     }
     case kArmS128And: {

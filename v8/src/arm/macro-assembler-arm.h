@@ -589,10 +589,6 @@ class MacroAssembler : public TurboAssembler {
   void Load(Register dst, const MemOperand& src, Representation r);
   void Store(Register src, const MemOperand& dst, Representation r);
 
-  // Store an object to the root table.
-  void StoreRoot(Register source, Heap::RootListIndex index,
-                 Condition cond = al);
-
   // ---------------------------------------------------------------------------
   // GC Support
 
@@ -659,11 +655,6 @@ class MacroAssembler : public TurboAssembler {
                      lr_status, save_fp, remembered_set_action, smi_check,
                      pointers_to_here_check_for_value);
   }
-
-  // Notify the garbage collector that we wrote a code entry into a
-  // JSFunction. Only scratch is clobbered by the operation.
-  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
-                                 Register scratch);
 
   void RecordWriteForMap(Register object, Register map, Register dst,
                          LinkRegisterStatus lr_status, SaveFPRegsMode save_fp);
@@ -779,8 +770,7 @@ class MacroAssembler : public TurboAssembler {
   // Invoke the JavaScript function code by either calling or jumping.
   void InvokeFunctionCode(Register function, Register new_target,
                           const ParameterCount& expected,
-                          const ParameterCount& actual, InvokeFlag flag,
-                          const CallWrapper& call_wrapper);
+                          const ParameterCount& actual, InvokeFlag flag);
 
   // On function call, call into the debugger if necessary.
   void CheckDebugHook(Register fun, Register new_target,
@@ -789,27 +779,15 @@ class MacroAssembler : public TurboAssembler {
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
-  void InvokeFunction(Register function,
-                      Register new_target,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+  void InvokeFunction(Register function, Register new_target,
+                      const ParameterCount& actual, InvokeFlag flag);
 
-  void InvokeFunction(Register function,
-                      const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+  void InvokeFunction(Register function, const ParameterCount& expected,
+                      const ParameterCount& actual, InvokeFlag flag);
 
   void InvokeFunction(Handle<JSFunction> function,
                       const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
-
-  void IsObjectJSStringType(Register object,
-                            Register scratch,
-                            Label* fail);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   // Frame restart support
   void MaybeDropFrames();
@@ -1009,11 +987,6 @@ class MacroAssembler : public TurboAssembler {
   // Load the value of a smi object into a double register.
   // The register value must be between d0 and d15.
   void SmiToDouble(LowDwVfpRegister value, Register smi);
-
-  // Check if a double can be exactly represented as a signed 32-bit integer.
-  // Z flag set to one if true.
-  void TestDoubleIsInt32(DwVfpRegister double_input,
-                         LowDwVfpRegister double_scratch);
 
   // Try to convert a double to a signed 32-bit integer.
   // Z flag set to one and result assigned if the conversion is exact.
@@ -1253,11 +1226,8 @@ class MacroAssembler : public TurboAssembler {
  private:
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      Label* done,
-                      bool* definitely_mismatches,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, Label* done,
+                      bool* definitely_mismatches, InvokeFlag flag);
 
   // Helper for implementing JumpIfNotInNewSpace and JumpIfInNewSpace.
   void InNewSpace(Register object,

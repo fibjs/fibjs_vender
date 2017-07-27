@@ -1002,6 +1002,26 @@ Maybe<bool> JSReceiver::HasProperty(LookupIterator* it) {
   return Just(false);
 }
 
+// static
+Maybe<bool> JSReceiver::HasOwnProperty(Handle<JSReceiver> object,
+                                       Handle<Name> name) {
+  if (object->IsJSModuleNamespace()) {
+    PropertyDescriptor desc;
+    return JSReceiver::GetOwnPropertyDescriptor(object->GetIsolate(), object,
+                                                name, &desc);
+  }
+
+  if (object->IsJSObject()) {  // Shortcut.
+    LookupIterator it = LookupIterator::PropertyOrElement(
+        object->GetIsolate(), object, name, object, LookupIterator::OWN);
+    return HasProperty(&it);
+  }
+
+  Maybe<PropertyAttributes> attributes =
+      JSReceiver::GetOwnPropertyAttributes(object, name);
+  MAYBE_RETURN(attributes, Nothing<bool>());
+  return Just(attributes.FromJust() != ABSENT);
+}
 
 // static
 MaybeHandle<Object> Object::GetProperty(LookupIterator* it) {
@@ -2984,6 +3004,7 @@ VisitorId Map::GetVisitorId(Map* map) {
     case FREE_SPACE_TYPE:
       return kVisitFreeSpace;
 
+    case HASH_TABLE_TYPE:
     case FIXED_ARRAY_TYPE:
       return kVisitFixedArray;
 
@@ -3273,6 +3294,9 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
     case MAP_TYPE:
       os << "<Map(" << ElementsKindToString(Map::cast(this)->elements_kind())
          << ")>";
+      break;
+    case HASH_TABLE_TYPE:
+      os << "<HashTable[" << FixedArray::cast(this)->length() << "]>";
       break;
     case FIXED_ARRAY_TYPE:
       os << "<FixedArray[" << FixedArray::cast(this)->length() << "]>";
@@ -3594,6 +3618,16 @@ MaybeHandle<Map> Map::CopyWithField(Handle<Map> map, Handle<Name> name,
 
   if (map->instance_type() == JS_CONTEXT_EXTENSION_OBJECT_TYPE) {
     representation = Representation::Tagged();
+    type = FieldType::Any(isolate);
+  } else if (IsTransitionableFastElementsKind(map->elements_kind()) &&
+             IsInplaceGeneralizableField(constness, representation, *type)) {
+    // We don't support propagation of field generalization through elements
+    // kind transitions because they are inserted into the transition tree
+    // before field transitions. In order to avoid complexity of handling
+    // such a case we ensure that all maps with transitionable elements kinds
+    // do not have fields that can be generalized in-place (without creation
+    // of a new map).
+    DCHECK(representation.IsHeapObject());
     type = FieldType::Any(isolate);
   }
 
@@ -4131,6 +4165,11 @@ void JSObject::MigrateToMap(Handle<JSObject> object, Handle<Map> new_map,
   } else if (!new_map->is_dictionary_map()) {
     MigrateFastToFast(object, new_map);
     if (old_map->is_prototype_map()) {
+      DisallowHeapAllocation no_allocation;
+      // Ensure that the object is marked because its old map is going
+      // to drop the descriptor array and the layout descriptor, which
+      // is unsafe for the concurrent marker.
+      object->GetHeap()->NotifyObjectLayoutChange(*object, no_allocation);
       DCHECK(!old_map->is_stable());
       DCHECK(new_map->is_stable());
       // Clear out the old descriptor array to avoid problems to sharing
@@ -4142,6 +4181,11 @@ void JSObject::MigrateToMap(Handle<JSObject> object, Handle<Map> new_map,
       DCHECK_EQ(
           0, TransitionArray::NumberOfTransitions(old_map->raw_transitions()));
       DCHECK(new_map->GetBackPointer()->IsUndefined(new_map->GetIsolate()));
+#ifdef VERIFY_HEAP
+      // When verify heap is on, NotifyObjectLayoutChange checks that
+      // it is followed by VerifyObjectLayoutChange after the map change.
+      object->GetHeap()->VerifyObjectLayoutChange(*object, *new_map);
+#endif
     }
   } else {
     MigrateFastToSlow(object, new_map, expected_additional_properties);
@@ -4245,7 +4289,6 @@ Handle<Map> Map::CopyGeneralizeAllFields(Handle<Map> map,
   new_map->set_elements_kind(elements_kind);
   return new_map;
 }
-
 
 void Map::DeprecateTransitionTree() {
   if (is_deprecated()) return;
@@ -4390,7 +4433,6 @@ Handle<FieldType> Map::GeneralizeFieldType(Representation rep1,
   return FieldType::Any(isolate);
 }
 
-
 // static
 void Map::GeneralizeField(Handle<Map> map, int modify_index,
                           PropertyConstness new_constness,
@@ -4424,8 +4466,8 @@ void Map::GeneralizeField(Handle<Map> map, int modify_index,
 
   // Determine the field owner.
   Handle<Map> field_owner(map->FindFieldOwner(modify_index), isolate);
-  Handle<DescriptorArray> descriptors(
-      field_owner->instance_descriptors(), isolate);
+  Handle<DescriptorArray> descriptors(field_owner->instance_descriptors(),
+                                      isolate);
   DCHECK_EQ(*old_field_type, descriptors->GetFieldType(modify_index));
 
   new_field_type =
@@ -4451,6 +4493,20 @@ void Map::GeneralizeField(Handle<Map> map, int modify_index,
         details.representation(), details.representation(), old_field_type,
         MaybeHandle<Object>(), new_field_type, MaybeHandle<Object>());
   }
+}
+
+bool Map::IsInplaceGeneralizableField(PropertyConstness constness,
+                                      Representation representation,
+                                      FieldType* field_type) {
+  if (FLAG_track_constant_fields && FLAG_modify_map_inplace &&
+      (constness == kConst)) {
+    // kConst -> kMutable field generalization may happen in-place.
+    return true;
+  }
+  if (representation.IsHeapObject() && !field_type->IsAny()) {
+    return true;
+  }
+  return false;
 }
 
 // TODO(ishell): remove.
@@ -5174,7 +5230,7 @@ Map* Map::FindElementsKindTransitionedMap(MapHandles const& candidates) {
   if (IsTransitionableFastElementsKind(kind)) {
     // Check the state of the root map.
     Map* root_map = FindRootMap();
-    if (!EquivalentToForTransition(root_map)) return nullptr;
+    if (!EquivalentToForElementsKindTransition(root_map)) return nullptr;
     root_map = root_map->LookupElementsTransitionMap(kind);
     DCHECK_NOT_NULL(root_map);
     // Starting from the next existing elements kind transition try to
@@ -5299,7 +5355,7 @@ Handle<Map> Map::TransitionElementsTo(Handle<Map> map,
   } else if (IsFastElementsKind(from_kind) && IsFastElementsKind(to_kind)) {
     // Reuse map transitions for JSArrays.
     DisallowHeapAllocation no_gc;
-    if (native_context->get(Context::ArrayMapIndex(from_kind)) == *map) {
+    if (native_context->GetInitialJSArrayMap(from_kind) == *map) {
       Object* maybe_transitioned_map =
           native_context->get(Context::ArrayMapIndex(to_kind));
       if (maybe_transitioned_map->IsMap()) {
@@ -12120,11 +12176,31 @@ bool Map::EquivalentToForTransition(const Map* other) const {
   if (!CheckEquivalent(this, other)) return false;
   if (instance_type() == JS_FUNCTION_TYPE) {
     // JSFunctions require more checks to ensure that sloppy function is
-    // not equvalent to strict function.
+    // not equivalent to strict function.
     int nof = Min(NumberOfOwnDescriptors(), other->NumberOfOwnDescriptors());
     return instance_descriptors()->IsEqualUpTo(other->instance_descriptors(),
                                                nof);
   }
+  return true;
+}
+
+bool Map::EquivalentToForElementsKindTransition(const Map* other) const {
+  if (!EquivalentToForTransition(other)) return false;
+#ifdef DEBUG
+  // Ensure that we don't try to generate elements kind transitions from maps
+  // with fields that may be generalized in-place. This must already be handled
+  // during addition of a new field.
+  DescriptorArray* descriptors = instance_descriptors();
+  int nof = NumberOfOwnDescriptors();
+  for (int i = 0; i < nof; i++) {
+    PropertyDetails details = descriptors->GetDetails(i);
+    if (details.location() == kField) {
+      DCHECK(!IsInplaceGeneralizableField(details.constness(),
+                                          details.representation(),
+                                          descriptors->GetFieldType(i)));
+    }
+  }
+#endif
   return true;
 }
 
@@ -12748,6 +12824,7 @@ bool CanSubclassHaveInobjectProperties(InstanceType instance_type) {
     case FIXED_DOUBLE_ARRAY_TYPE:
     case FOREIGN_TYPE:
     case FREE_SPACE_TYPE:
+    case HASH_TABLE_TYPE:
     case HEAP_NUMBER_TYPE:
     case JS_BOUND_FUNCTION_TYPE:
     case JS_GLOBAL_OBJECT_TYPE:
@@ -13773,7 +13850,6 @@ void Map::StartInobjectSlackTracking() {
 void SharedFunctionInfo::ResetForNewContext(int new_ic_age) {
   code()->ClearInlineCaches();
   set_ic_age(new_ic_age);
-  set_profiler_ticks(0);
   if (optimization_disabled() && deopt_count() >= FLAG_max_deopt_count) {
     // Re-enable optimizations if they were disabled due to deopt_count limit.
     set_optimization_disabled(false);
@@ -13798,13 +13874,6 @@ void ObjectVisitor::VisitCodeAgeSequence(Code* host, RelocInfo* rinfo) {
     VisitPointer(host, &new_pointer);
     DCHECK_EQ(old_pointer, new_pointer);
   }
-}
-
-void ObjectVisitor::VisitCodeEntry(JSFunction* host, Address entry_address) {
-  Object* old_pointer = Code::GetObjectFromEntryAddress(entry_address);
-  Object* new_pointer = old_pointer;
-  VisitPointer(host, &new_pointer);
-  DCHECK_EQ(old_pointer, new_pointer);
 }
 
 void ObjectVisitor::VisitCellPointer(Code* host, RelocInfo* rinfo) {
@@ -19323,7 +19392,8 @@ Handle<PropertyCell> PropertyCell::PrepareForValue(
   const PropertyDetails original_details = cell->property_details();
   // Data accesses could be cached in ics or optimized code.
   bool invalidate =
-      original_details.kind() == kData && details.kind() == kAccessor;
+      (original_details.kind() == kData && details.kind() == kAccessor) ||
+      (!original_details.IsReadOnly() && details.IsReadOnly());
   int index;
   PropertyCellType old_type = original_details.cell_type();
   // Preserve the enumeration index unless the property was deleted or never

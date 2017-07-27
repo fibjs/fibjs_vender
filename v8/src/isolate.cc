@@ -2667,9 +2667,10 @@ namespace {
 void PrintBuiltinSizes(Isolate* isolate) {
   Builtins* builtins = isolate->builtins();
   for (int i = 0; i < Builtins::builtin_count; i++) {
+    if (Builtins::IsCpp(i) || Builtins::IsApi(i)) continue;
     const char* name = builtins->name(i);
     Code* code = builtins->builtin(static_cast<Builtins::Name>(i));
-    PrintF(stdout, "%s: %d\n", name, code->instruction_size());
+    PrintF(stdout, "Builtin, %s, %d\n", name, code->instruction_size());
   }
 }
 }  // namespace
@@ -2991,18 +2992,6 @@ CodeTracer* Isolate::GetCodeTracer() {
   return code_tracer();
 }
 
-Map* Isolate::get_initial_js_array_map(ElementsKind kind) {
-  if (IsFastElementsKind(kind)) {
-    DisallowHeapAllocation no_gc;
-    Object* const initial_js_array_map =
-        context()->native_context()->get(Context::ArrayMapIndex(kind));
-    if (!initial_js_array_map->IsUndefined(this)) {
-      return Map::cast(initial_js_array_map);
-    }
-  }
-  return nullptr;
-}
-
 bool Isolate::use_optimizer() {
   return FLAG_opt && !serializer_enabled_ &&
          CpuFeatures::SupportsCrankshaft() &&
@@ -3054,7 +3043,7 @@ bool Isolate::IsFastArrayConstructorPrototypeChainIntact() {
 
 #ifdef DEBUG
   Map* root_array_map =
-      get_initial_js_array_map(GetInitialFastElementsKind());
+      raw_native_context()->GetInitialJSArrayMap(GetInitialFastElementsKind());
   Context* native_context = context()->native_context();
   JSObject* initial_array_proto = JSObject::cast(
       native_context->get(Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
@@ -3110,7 +3099,8 @@ bool Isolate::IsIsConcatSpreadableLookupChainIntact() {
   bool is_is_concat_spreadable_set =
       Smi::ToInt(is_concat_spreadable_cell->value()) == kProtectorInvalid;
 #ifdef DEBUG
-  Map* root_array_map = get_initial_js_array_map(GetInitialFastElementsKind());
+  Map* root_array_map =
+      raw_native_context()->GetInitialJSArrayMap(GetInitialFastElementsKind());
   if (root_array_map == NULL) {
     // Ignore the value of is_concat_spreadable during bootstrap.
     return !is_is_concat_spreadable_set;

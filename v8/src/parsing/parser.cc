@@ -478,7 +478,7 @@ Expression* Parser::NewV8Intrinsic(const AstRawString* name,
 
 Parser::Parser(ParseInfo* info)
     : ParserBase<Parser>(info->zone(), &scanner_, info->stack_limit(),
-                         info->extension(), info->ast_value_factory(),
+                         info->extension(), info->GetOrCreateAstValueFactory(),
                          info->runtime_call_stats(), true),
       scanner_(info->unicode_cache()),
       reusable_preparser_(nullptr),
@@ -528,14 +528,6 @@ Parser::Parser(ParseInfo* info)
   for (int feature = 0; feature < v8::Isolate::kUseCounterFeatureCount;
        ++feature) {
     use_counts_[feature] = 0;
-  }
-  if (info->ast_value_factory() == NULL) {
-    // info takes ownership of AstValueFactory.
-    info->set_ast_value_factory(new AstValueFactory(
-        zone(), info->ast_string_constants(), info->hash_seed()));
-    info->set_ast_value_factory_owned();
-    ast_value_factory_ = info->ast_value_factory();
-    ast_node_factory_.set_ast_value_factory(ast_value_factory_);
   }
 }
 
@@ -749,7 +741,8 @@ FunctionLiteral* Parser::DoParseProgram(ParseInfo* info) {
   return result;
 }
 
-FunctionLiteral* Parser::ParseFunction(Isolate* isolate, ParseInfo* info) {
+FunctionLiteral* Parser::ParseFunction(Isolate* isolate, ParseInfo* info,
+                                       Handle<SharedFunctionInfo> shared_info) {
   // It's OK to use the Isolate & counters here, since this function is only
   // called in the main thread.
   DCHECK(parsing_on_main_thread_);
@@ -762,7 +755,6 @@ FunctionLiteral* Parser::ParseFunction(Isolate* isolate, ParseInfo* info) {
   if (FLAG_trace_parse) {
     timer.Start();
   }
-  Handle<SharedFunctionInfo> shared_info = info->shared_info();
   DeserializeScopeChain(info, info->maybe_outer_scope_info());
   if (info->asm_function_scope()) {
     original_scope_ = info->asm_function_scope();
@@ -1999,10 +1991,9 @@ Block* Parser::RewriteForVarInLegacy(const ForInfo& for_info) {
 // into
 //
 //   {
-//     <let x' be a temporary variable>
-//     for (x' in/of e) {
-//       let/const/var x;
-//       x = x';
+//     var temp;
+//     for (temp in/of e) {
+//       let/const/var x = temp;
 //       b;
 //     }
 //     let x;  // for TDZ
@@ -2021,6 +2012,8 @@ void Parser::DesugarBindingInForEachStatement(ForInfo* for_info,
     auto descriptor = for_info->parsing_result.descriptor;
     descriptor.declaration_pos = kNoSourcePosition;
     descriptor.initialization_pos = kNoSourcePosition;
+    descriptor.scope = scope();
+    descriptor.declaration_kind = DeclarationDescriptor::LEXICAL_FOR_EACH;
     decl.initializer = factory()->NewVariableProxy(temp);
 
     bool is_for_var_of =
@@ -3051,8 +3044,7 @@ Block* Parser::BuildParameterInitializationBlock(
       // rewrite inner initializers of the pattern to param_scope
       descriptor.scope = param_scope;
       // Rewrite the outer initializer to point to param_scope
-      ReparentParameterExpressionScope(stack_limit(), initial_value,
-                                       param_scope);
+      ReparentExpressionScope(stack_limit(), initial_value, param_scope);
     }
 
     BlockState block_state(&scope_, param_scope);
@@ -4228,7 +4220,9 @@ Expression* Parser::RewriteYieldStar(Expression* iterable, int pos) {
       is_async_generator() ? IteratorType::kAsync : IteratorType::kNormal;
 
   if (type == IteratorType::kNormal) {
-    return factory()->NewYieldStar(iterable, pos);
+    Expression* expr = factory()->NewYieldStar(iterable, pos);
+    RecordSuspendSourceRange(expr, PositionAfterSemicolon());
+    return expr;
   }
 
   // Forward definition for break/continue statements.
@@ -4565,6 +4559,10 @@ Expression* Parser::RewriteYieldStar(Expression* iterable, int pos) {
     Block* do_block = factory()->NewBlock(nullptr, 2, false, nopos);
     do_block->statements()->Add(do_block_, zone());
     do_block->statements()->Add(get_value, zone());
+
+    // TODO(jgruber): Collect source ranges for YieldStar within async
+    // generators. The main issue is that we don't have a good dedicated node
+    // to attach to - the DoExpression seems a bit too generic.
 
     Variable* dot_result =
         NewTemporary(ast_value_factory()->dot_result_string());

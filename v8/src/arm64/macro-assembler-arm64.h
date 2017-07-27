@@ -1726,10 +1726,6 @@ class MacroAssembler : public TurboAssembler {
 
   // Helpers ------------------------------------------------------------------
 
-  // Store an object to the root table.
-  void StoreRoot(Register source,
-                 Heap::RootListIndex index);
-
   static int SafepointRegisterStackIndex(int reg_code);
 
   void LoadInstanceDescriptors(Register map,
@@ -1882,11 +1878,8 @@ class MacroAssembler : public TurboAssembler {
   // 'expected' must use an immediate or x2.
   // 'call_kind' must be x5.
   void InvokePrologue(const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      Label* done,
-                      InvokeFlag flag,
-                      bool* definitely_mismatches,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, Label* done,
+                      InvokeFlag flag, bool* definitely_mismatches);
 
   // On function call, call into the debugger if necessary.
   void CheckDebugHook(Register fun, Register new_target,
@@ -1894,25 +1887,16 @@ class MacroAssembler : public TurboAssembler {
                       const ParameterCount& actual);
   void InvokeFunctionCode(Register function, Register new_target,
                           const ParameterCount& expected,
-                          const ParameterCount& actual, InvokeFlag flag,
-                          const CallWrapper& call_wrapper);
+                          const ParameterCount& actual, InvokeFlag flag);
   // Invoke the JavaScript function in the given register.
   // Changes the current context to the context in the function before invoking.
-  void InvokeFunction(Register function,
-                      Register new_target,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
-  void InvokeFunction(Register function,
-                      const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+  void InvokeFunction(Register function, Register new_target,
+                      const ParameterCount& actual, InvokeFlag flag);
+  void InvokeFunction(Register function, const ParameterCount& expected,
+                      const ParameterCount& actual, InvokeFlag flag);
   void InvokeFunction(Handle<JSFunction> function,
                       const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   // ---- Code generation helpers ----
 
@@ -2075,15 +2059,6 @@ class MacroAssembler : public TurboAssembler {
   void JumpIfNotRoot(const Register& obj,
                      Heap::RootListIndex index,
                      Label* if_not_equal);
-
-  // Load and check the instance type of an object for being a string.
-  // Loads the type into the second argument register.
-  // The object and type arguments can be the same register; in that case it
-  // will be overwritten with the type.
-  // Jumps to not_string or string appropriate. If the appropriate label is
-  // NULL, fall through.
-  inline void IsObjectJSStringType(Register object, Register type,
-                                   Label* not_string, Label* string = NULL);
 
   // Compare the contents of a register with an operand, and branch to true,
   // false or fall through, depending on condition.
@@ -2275,11 +2250,6 @@ class MacroAssembler : public TurboAssembler {
                      smi_check,
                      pointers_to_here_check_for_value);
   }
-
-  // Notify the garbage collector that we wrote a code entry into a
-  // JSFunction. Only scratch is clobbered by the operation.
-  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
-                                 Register scratch);
 
   void RecordWriteForMap(
       Register object,
@@ -2508,17 +2478,11 @@ class UseScratchRegisterScope {
     return VRegister::Create(AcquireNextAvailable(availablefp_).code(), format);
   }
 
-  Register UnsafeAcquire(const Register& reg) {
-    return Register(UnsafeAcquire(available_, reg));
-  }
-
   Register AcquireSameSizeAs(const Register& reg);
   VRegister AcquireSameSizeAs(const VRegister& reg);
 
  private:
   static CPURegister AcquireNextAvailable(CPURegList* available);
-  static CPURegister UnsafeAcquire(CPURegList* available,
-                                   const CPURegister& reg);
 
   // Available scratch registers.
   CPURegList* available_;     // kRegister

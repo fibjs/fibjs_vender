@@ -33,7 +33,6 @@ bool BinaryOperationHintToNumberOperationHint(
       return true;
     case BinaryOperationHint::kAny:
     case BinaryOperationHint::kNone:
-    case BinaryOperationHint::kNonEmptyString:
     case BinaryOperationHint::kString:
       break;
   }
@@ -257,29 +256,13 @@ Reduction JSTypeHintLowering::ReduceToNumberOperation(Node* input, Node* effect,
   return Reduction();
 }
 
-Reduction JSTypeHintLowering::ReduceToPrimitiveToStringOperation(
-    Node* input, Node* effect, Node* control, FeedbackSlot slot) const {
-  DCHECK(!slot.IsInvalid());
-  BinaryOpICNexus nexus(feedback_vector(), slot);
-  BinaryOperationHint hint = nexus.GetBinaryOperationFeedback();
-  if (hint == BinaryOperationHint::kNonEmptyString) {
-    Node* node = jsgraph()->graph()->NewNode(
-        jsgraph()->simplified()->CheckNonEmptyString(), input, effect, control);
-    return Reduction(node);
-  } else if (hint == BinaryOperationHint::kString) {
-    Node* node = jsgraph()->graph()->NewNode(
-        jsgraph()->simplified()->CheckString(), input, effect, control);
-    return Reduction(node);
-  }
-  return Reduction();
-}
-
 Reduction JSTypeHintLowering::ReduceCallOperation(const Operator* op,
                                                   Node* const* args,
                                                   int arg_count, Node* effect,
                                                   Node* control,
                                                   FeedbackSlot slot) const {
-  DCHECK_EQ(IrOpcode::kJSCall, op->opcode());
+  DCHECK(op->opcode() == IrOpcode::kJSCall ||
+         op->opcode() == IrOpcode::kJSCallWithSpread);
   DCHECK(!slot.IsInvalid());
   CallICNexus nexus(feedback_vector(), slot);
   if (Node* node = TryBuildSoftDeopt(
@@ -293,7 +276,8 @@ Reduction JSTypeHintLowering::ReduceCallOperation(const Operator* op,
 Reduction JSTypeHintLowering::ReduceConstructOperation(
     const Operator* op, Node* const* args, int arg_count, Node* effect,
     Node* control, FeedbackSlot slot) const {
-  DCHECK_EQ(IrOpcode::kJSConstruct, op->opcode());
+  DCHECK(op->opcode() == IrOpcode::kJSConstruct ||
+         op->opcode() == IrOpcode::kJSConstructWithSpread);
   DCHECK(!slot.IsInvalid());
   CallICNexus nexus(feedback_vector(), slot);
   if (Node* node = TryBuildSoftDeopt(

@@ -878,7 +878,7 @@ Extension::Extension(const char* name,
 }
 
 ResourceConstraints::ResourceConstraints()
-    : max_semi_space_size_(0),
+    : max_semi_space_size_in_kb_(0),
       max_old_space_size_(0),
       stack_limit_(NULL),
       code_range_size_(0),
@@ -886,8 +886,8 @@ ResourceConstraints::ResourceConstraints()
 
 void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
                                             uint64_t virtual_memory_limit) {
-  set_max_semi_space_size(
-      static_cast<int>(i::Heap::ComputeMaxSemiSpaceSize(physical_memory)));
+  set_max_semi_space_size_in_kb(
+      i::Heap::ComputeMaxSemiSpaceSize(physical_memory));
   set_max_old_space_size(
       static_cast<int>(i::Heap::ComputeMaxOldGenerationSize(physical_memory)));
   set_max_zone_pool_size(i::AccountingAllocator::kMaxPoolSize);
@@ -903,7 +903,7 @@ void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
 
 void SetResourceConstraints(i::Isolate* isolate,
                             const ResourceConstraints& constraints) {
-  int semi_space_size = constraints.max_semi_space_size();
+  size_t semi_space_size = constraints.max_semi_space_size_in_kb();
   int old_space_size = constraints.max_old_space_size();
   size_t code_range_size = constraints.code_range_size();
   size_t max_pool_size = constraints.max_zone_pool_size();
@@ -7813,6 +7813,49 @@ MaybeLocal<WasmCompiledModule> WasmCompiledModule::Compile(Isolate* isolate,
       Utils::ToLocal(maybe_compiled.ToHandleChecked()));
 }
 
+WasmModuleObjectBuilderStreaming::WasmModuleObjectBuilderStreaming(
+    Isolate* isolate, Local<Promise> promise)
+    : isolate_(isolate) {
+  promise_.Reset(isolate, promise);
+}
+
+void WasmModuleObjectBuilderStreaming::OnBytesReceived(const uint8_t* bytes,
+                                                       size_t size) {
+  std::unique_ptr<uint8_t[]> cloned_bytes(new uint8_t[size]);
+  memcpy(cloned_bytes.get(), bytes, size);
+  received_buffers_.push_back(
+      Buffer(std::unique_ptr<const uint8_t[]>(
+                 const_cast<const uint8_t*>(cloned_bytes.release())),
+             size));
+  total_size_ += size;
+}
+
+void WasmModuleObjectBuilderStreaming::Finish() {
+  std::unique_ptr<uint8_t[]> wire_bytes(new uint8_t[total_size_]);
+  uint8_t* insert_at = wire_bytes.get();
+
+  for (size_t i = 0; i < received_buffers_.size(); ++i) {
+    const Buffer& buff = received_buffers_[i];
+    memcpy(insert_at, buff.first.get(), buff.second);
+    insert_at += buff.second;
+  }
+  // AsyncCompile makes its own copy of the wire bytes. This inefficiency
+  // will be resolved when we move to true streaming compilation.
+  i::wasm::AsyncCompile(reinterpret_cast<i::Isolate*>(isolate_),
+                        Utils::OpenHandle(*promise_.Get(isolate_)),
+                        {wire_bytes.get(), wire_bytes.get() + total_size_});
+}
+
+void WasmModuleObjectBuilderStreaming::Abort(Local<Value> exception) {
+  Local<Promise::Resolver> resolver =
+      promise_.Get(isolate_).As<Promise::Resolver>();
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
+  i::HandleScope scope(i_isolate);
+  Local<Context> context = Utils::ToLocal(handle(i_isolate->context()));
+  auto maybe = resolver->Reject(context, exception);
+  CHECK_IMPLIES(!maybe.FromMaybe(false), i_isolate->has_scheduled_exception());
+}
+
 void WasmModuleObjectBuilder::OnBytesReceived(const uint8_t* bytes,
                                               size_t size) {
   std::unique_ptr<uint8_t[]> cloned_bytes(new uint8_t[size]);
@@ -10437,9 +10480,8 @@ static void SetFlagsFromString(const char* flags) {
 void Testing::PrepareStressRun(int run) {
   static const char* kLazyOptimizations =
       "--prepare-always-opt "
-      "--max-inlined-source-size=999999 "
-      "--max-inlined-nodes=999999 "
-      "--max-inlined-nodes-cumulative=999999 "
+      "--max-inlined-bytecode-size=999999 "
+      "--max-inlined-bytecode-size-cumulative=999999 "
       "--noalways-opt";
   static const char* kForcedOptimizations = "--always-opt";
 

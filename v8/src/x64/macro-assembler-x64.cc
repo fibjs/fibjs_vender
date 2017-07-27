@@ -175,14 +175,6 @@ void MacroAssembler::LoadRootIndexed(Register destination,
 }
 
 
-void MacroAssembler::StoreRoot(Register source, Heap::RootListIndex index) {
-  DCHECK(Heap::RootCanBeWrittenAfterInitialization(index));
-  DCHECK(root_array_available_);
-  movp(Operand(kRootRegister, (index << kPointerSizeLog2) - kRootRegisterBias),
-       source);
-}
-
-
 void MacroAssembler::PushRoot(Heap::RootListIndex index) {
   DCHECK(root_array_available_);
   Push(Operand(kRootRegister, (index << kPointerSizeLog2) - kRootRegisterBias));
@@ -441,91 +433,6 @@ void MacroAssembler::RecordWrite(
     Move(address, kZapValue, Assembler::RelocInfoNone());
     Move(value, kZapValue, Assembler::RelocInfoNone());
   }
-}
-
-void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
-                                               Register code_entry,
-                                               Register scratch) {
-  const int offset = JSFunction::kCodeEntryOffset;
-
-  // The input registers are fixed to make calling the C write barrier function
-  // easier.
-  DCHECK(js_function.is(rdi));
-  DCHECK(code_entry.is(rcx));
-  DCHECK(scratch.is(r15));
-
-  // Since a code entry (value) is always in old space, we don't need to update
-  // remembered set. If incremental marking is off, there is nothing for us to
-  // do.
-  if (!FLAG_incremental_marking) return;
-
-  AssertNotSmi(js_function);
-
-  if (emit_debug_code()) {
-    Label ok;
-    leap(scratch, FieldOperand(js_function, offset));
-    cmpp(code_entry, Operand(scratch, 0));
-    j(equal, &ok, Label::kNear);
-    int3();
-    bind(&ok);
-  }
-
-  // First, check if a write barrier is even needed. The tests below
-  // catch stores of Smis and stores into young gen.
-  Label done;
-
-  CheckPageFlag(code_entry, scratch,
-                MemoryChunk::kPointersToHereAreInterestingMask, zero, &done,
-                Label::kNear);
-  CheckPageFlag(js_function, scratch,
-                MemoryChunk::kPointersFromHereAreInterestingMask, zero, &done,
-                Label::kNear);
-
-  // Save input registers.
-  Push(js_function);
-  Push(code_entry);
-
-  const Register dst = scratch;
-  leap(dst, FieldOperand(js_function, offset));
-
-  // Save caller-saved registers.
-  PushCallerSaved(kDontSaveFPRegs, js_function, code_entry);
-
-  int argument_count = 3;
-  PrepareCallCFunction(argument_count);
-
-  // Load the argument registers.
-  if (arg_reg_1.is(rcx)) {
-    // Windows calling convention.
-    DCHECK(arg_reg_2.is(rdx) && arg_reg_3.is(r8));
-
-    movp(arg_reg_1, js_function);  // rcx gets rdi.
-    movp(arg_reg_2, dst);          // rdx gets r15.
-  } else {
-    // AMD64 calling convention.
-    DCHECK(arg_reg_1.is(rdi) && arg_reg_2.is(rsi) && arg_reg_3.is(rdx));
-
-    // rdi is already loaded with js_function.
-    movp(arg_reg_2, dst);  // rsi gets r15.
-  }
-  Move(arg_reg_3, ExternalReference::isolate_address(isolate()));
-
-  {
-    AllowExternalCallThatCantCauseGC scope(this);
-    CallCFunction(
-        ExternalReference::incremental_marking_record_write_code_entry_function(
-            isolate()),
-        argument_count);
-  }
-
-  // Restore caller-saved registers.
-  PopCallerSaved(kDontSaveFPRegs, js_function, code_entry);
-
-  // Restore input registers.
-  Pop(code_entry);
-  Pop(js_function);
-
-  bind(&done);
 }
 
 void TurboAssembler::Assert(Condition cc, BailoutReason reason) {
@@ -3456,56 +3363,6 @@ void TurboAssembler::SlowTruncateToIDelayed(Zone* zone, Register result_reg,
       new (zone) DoubleToIStub(nullptr, input_reg, result_reg, offset, true));
 }
 
-void MacroAssembler::SlowTruncateToI(Register result_reg,
-                                     Register input_reg,
-                                     int offset) {
-  DoubleToIStub stub(isolate(), input_reg, result_reg, offset, true);
-  call(stub.GetCode(), RelocInfo::CODE_TARGET);
-}
-
-
-void MacroAssembler::TruncateHeapNumberToI(Register result_reg,
-                                           Register input_reg) {
-  Label done;
-  Movsd(kScratchDoubleReg, FieldOperand(input_reg, HeapNumber::kValueOffset));
-  Cvttsd2siq(result_reg, kScratchDoubleReg);
-  cmpq(result_reg, Immediate(1));
-  j(no_overflow, &done, Label::kNear);
-
-  // Slow case.
-  if (input_reg.is(result_reg)) {
-    subp(rsp, Immediate(kDoubleSize));
-    Movsd(MemOperand(rsp, 0), kScratchDoubleReg);
-    SlowTruncateToI(result_reg, rsp, 0);
-    addp(rsp, Immediate(kDoubleSize));
-  } else {
-    SlowTruncateToI(result_reg, input_reg);
-  }
-
-  bind(&done);
-  // Keep our invariant that the upper 32 bits are zero.
-  movl(result_reg, result_reg);
-}
-
-
-void MacroAssembler::TruncateDoubleToI(Register result_reg,
-                                       XMMRegister input_reg) {
-  Label done;
-  Cvttsd2siq(result_reg, input_reg);
-  cmpq(result_reg, Immediate(1));
-  j(no_overflow, &done, Label::kNear);
-
-  subp(rsp, Immediate(kDoubleSize));
-  Movsd(MemOperand(rsp, 0), input_reg);
-  SlowTruncateToI(result_reg, rsp, 0);
-  addp(rsp, Immediate(kDoubleSize));
-
-  bind(&done);
-  // Keep our invariant that the upper 32 bits are zero.
-  movl(result_reg, result_reg);
-}
-
-
 void MacroAssembler::DoubleToI(Register result_reg, XMMRegister input_reg,
                                XMMRegister scratch,
                                MinusZeroMode minus_zero_mode,
@@ -3807,55 +3664,45 @@ void TurboAssembler::PrepareForTailCall(const ParameterCount& callee_args_count,
   movp(rsp, new_sp_reg);
 }
 
-void MacroAssembler::InvokeFunction(Register function,
-                                    Register new_target,
+void MacroAssembler::InvokeFunction(Register function, Register new_target,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   movp(rbx, FieldOperand(function, JSFunction::kSharedFunctionInfoOffset));
   movsxlq(rbx,
           FieldOperand(rbx, SharedFunctionInfo::kFormalParameterCountOffset));
 
   ParameterCount expected(rbx);
-  InvokeFunction(function, new_target, expected, actual, flag, call_wrapper);
+  InvokeFunction(function, new_target, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   Move(rdi, function);
-  InvokeFunction(rdi, no_reg, expected, actual, flag, call_wrapper);
+  InvokeFunction(rdi, no_reg, expected, actual, flag);
 }
 
-
-void MacroAssembler::InvokeFunction(Register function,
-                                    Register new_target,
+void MacroAssembler::InvokeFunction(Register function, Register new_target,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   DCHECK(function.is(rdi));
   movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
-  InvokeFunctionCode(rdi, new_target, expected, actual, flag, call_wrapper);
+  InvokeFunctionCode(rdi, new_target, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
                                         const ParameterCount& expected,
                                         const ParameterCount& actual,
-                                        InvokeFlag flag,
-                                        const CallWrapper& call_wrapper) {
+                                        InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
   DCHECK(function.is(rdi));
   DCHECK_IMPLIES(new_target.is_valid(), new_target.is(rdx));
 
-  if (call_wrapper.NeedsDebugHookCheck()) {
-    CheckDebugHook(function, new_target, expected, actual);
-  }
+  // On function call, call into the debugger if necessary.
+  CheckDebugHook(function, new_target, expected, actual);
 
   // Clear the new.target register if not given.
   if (!new_target.is_valid()) {
@@ -3864,38 +3711,29 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
 
   Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected,
-                 actual,
-                 &done,
-                 &definitely_mismatches,
-                 flag,
-                 Label::kNear,
-                 call_wrapper);
+  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag,
+                 Label::kNear);
   if (!definitely_mismatches) {
     // We call indirectly through the code field in the function to
     // allow recompilation to take effect without changing any of the
     // call sites.
-    Operand code = FieldOperand(function, JSFunction::kCodeEntryOffset);
+    movp(rcx, FieldOperand(function, JSFunction::kCodeOffset));
+    addp(rcx, Immediate(Code::kHeaderSize - kHeapObjectTag));
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(code));
-      call(code);
-      call_wrapper.AfterCall();
+      call(rcx);
     } else {
       DCHECK(flag == JUMP_FUNCTION);
-      jmp(code);
+      jmp(rcx);
     }
     bind(&done);
   }
 }
 
-
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    Label* done,
+                                    const ParameterCount& actual, Label* done,
                                     bool* definitely_mismatches,
                                     InvokeFlag flag,
-                                    Label::Distance near_jump,
-                                    const CallWrapper& call_wrapper) {
+                                    Label::Distance near_jump) {
   bool definitely_matches = false;
   *definitely_mismatches = false;
   Label invoke;
@@ -3942,9 +3780,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   if (!definitely_matches) {
     Handle<Code> adaptor = isolate()->builtins()->ArgumentsAdaptorTrampoline();
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(adaptor));
       Call(adaptor, RelocInfo::CODE_TARGET);
-      call_wrapper.AfterCall();
       if (!*definitely_mismatches) {
         jmp(done, near_jump);
       }

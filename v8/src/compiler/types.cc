@@ -294,6 +294,7 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case FUNCTION_TEMPLATE_INFO_TYPE:
     case ACCESSOR_PAIR_TYPE:
     case FIXED_ARRAY_TYPE:
+    case HASH_TABLE_TYPE:
     case FIXED_DOUBLE_ARRAY_TYPE:
     case BYTE_ARRAY_TYPE:
     case BYTECODE_ARRAY_TYPE:
@@ -335,7 +336,6 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case TUPLE3_TYPE:
     case CONTEXT_EXTENSION_TYPE:
     case ASYNC_GENERATOR_REQUEST_TYPE:
-    case PREPARSED_SCOPE_DATA_TYPE:
       UNREACHABLE();
   }
   UNREACHABLE();
@@ -346,11 +346,7 @@ Type::bitset BitsetType::Lub(i::Object* value) {
   if (value->IsNumber()) {
     return Lub(value->Number());
   }
-  i::HeapObject* heap_value = i::HeapObject::cast(value);
-  if (value == heap_value->GetHeap()->empty_string()) {
-    return kEmptyString;
-  }
-  return Lub(heap_value->map()) & ~kEmptyString;
+  return Lub(i::HeapObject::cast(value)->map());
 }
 
 Type::bitset BitsetType::Lub(double value) {
@@ -474,8 +470,6 @@ HeapConstantType::HeapConstantType(BitsetType::bitset bitset,
     : TypeBase(kHeapConstant), bitset_(bitset), object_(object) {
   DCHECK(!object->IsHeapNumber());
   DCHECK_IMPLIES(object->IsString(), object->IsInternalizedString());
-  DCHECK_IMPLIES(object->IsString(),
-                 i::Handle<i::String>::cast(object)->length() != 0);
 }
 
 // -----------------------------------------------------------------------------
@@ -850,13 +844,8 @@ Type* Type::NewConstant(i::Handle<i::Object> value, Zone* zone) {
     return Range(v, v, zone);
   } else if (value->IsHeapNumber()) {
     return NewConstant(value->Number(), zone);
-  } else if (value->IsString()) {
-    i::Isolate* isolate = i::Handle<i::HeapObject>::cast(value)->GetIsolate();
-    if (!value->IsInternalizedString()) {
-      return Type::OtherString();
-    } else if (*value == isolate->heap()->empty_string()) {
-      return Type::EmptyString();
-    }
+  } else if (value->IsString() && !value->IsInternalizedString()) {
+    return Type::OtherString();
   }
   return HeapConstant(i::Handle<i::HeapObject>::cast(value), zone);
 }

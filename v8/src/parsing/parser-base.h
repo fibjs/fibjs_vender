@@ -487,7 +487,7 @@ class ParserBase {
   };
 
   struct DeclarationDescriptor {
-    enum Kind { NORMAL, PARAMETER };
+    enum Kind { NORMAL, PARAMETER, LEXICAL_FOR_EACH };
     Scope* scope;
     VariableMode mode;
     int declaration_pos;
@@ -643,6 +643,13 @@ class ParserBase {
     return scanner()->peek();
   }
 
+  // Returns the position past the following semicolon (if it exists), and the
+  // position past the end of the current token otherwise.
+  int PositionAfterSemicolon() {
+    return (peek() == Token::SEMICOLON) ? scanner_->peek_location().end_pos
+                                        : scanner_->location().end_pos;
+  }
+
   INLINE(Token::Value PeekAhead()) {
     if (stack_overflow_) return Token::ILLEGAL;
     return scanner()->PeekAhead();
@@ -698,7 +705,24 @@ class ParserBase {
         tok == Token::EOS) {
       return;
     }
-    Expect(Token::SEMICOLON, ok);
+
+    Token::Value current = scanner()->current_token();
+    Scanner::Location current_location = scanner()->location();
+    Token::Value next = Next();
+
+    if (next == Token::SEMICOLON) {
+      return;
+    }
+
+    *ok = false;
+    if (current == Token::AWAIT) {
+      DCHECK(!is_async_function());
+      ReportMessageAt(current_location,
+                      MessageTemplate::kAwaitNotInAsyncFunction, kSyntaxError);
+      return;
+    }
+
+    ReportUnexpectedToken(next);
   }
 
   // Dummy functions, just useful as arguments to CHECK_OK_CUSTOM.
@@ -2923,6 +2947,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseYieldExpression(
   // TODO(verwaest): Come up with a better solution.
   ExpressionT yield =
       factory()->NewYield(expression, pos, Suspend::kOnExceptionThrow);
+  impl()->RecordSuspendSourceRange(yield, PositionAfterSemicolon());
   return yield;
 }
 
@@ -3098,7 +3123,9 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseUnaryExpression(
 
     ExpressionT value = ParseUnaryExpression(CHECK_OK);
 
-    return factory()->NewAwait(value, await_pos);
+    ExpressionT expr = factory()->NewAwait(value, await_pos);
+    impl()->RecordSuspendSourceRange(expr, PositionAfterSemicolon());
+    return expr;
   } else {
     return ParsePostfixExpression(ok);
   }
@@ -3804,8 +3831,9 @@ ParserBase<Impl>::ParseFunctionDeclaration(bool* ok) {
   int pos = position();
   ParseFunctionFlags flags = ParseFunctionFlags::kIsNormal;
   if (Check(Token::MUL)) {
-    impl()->ReportMessageAt(scanner()->location(),
-                            MessageTemplate::kGeneratorInLegacyContext);
+    impl()->ReportMessageAt(
+        scanner()->location(),
+        MessageTemplate::kGeneratorInSingleStatementContext);
     *ok = false;
     return impl()->NullStatement();
   }
@@ -4853,6 +4881,16 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseStatement(
       return ParseDebuggerStatement(ok);
     case Token::VAR:
       return ParseVariableStatement(kStatement, nullptr, ok);
+    case Token::ASYNC:
+      if (!scanner()->HasAnyLineTerminatorAfterNext() &&
+          PeekAhead() == Token::FUNCTION) {
+        impl()->ReportMessageAt(
+            scanner()->peek_location(),
+            MessageTemplate::kAsyncFunctionInSingleStatementContext);
+        *ok = false;
+        return impl()->NullStatement();
+      }
+    // Falls through
     default:
       return ParseExpressionOrLabelledStatement(labels, allow_function, ok);
   }

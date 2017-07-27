@@ -438,19 +438,16 @@ bool VirtualObject::MergeFields(size_t i, Node* at, MergeCache* cache,
   int value_input_count = static_cast<int>(cache->fields().size());
   Node* rep = GetField(i);
   if (!rep || !IsCreatedPhi(i)) {
-    Type* phi_type = Type::None();
     for (Node* input : cache->fields()) {
       CHECK_NOT_NULL(input);
       CHECK(!input->IsDead());
-      Type* input_type = NodeProperties::GetType(input);
-      phi_type = Type::Union(phi_type, input_type, graph->zone());
     }
     Node* control = NodeProperties::GetControlInput(at);
     cache->fields().push_back(control);
     Node* phi = graph->NewNode(
         common->Phi(MachineRepresentation::kTagged, value_input_count),
         value_input_count + 1, &cache->fields().front());
-    NodeProperties::SetType(phi, phi_type);
+    NodeProperties::SetType(phi, Type::Any());
     SetField(i, phi, true);
 
 #ifdef DEBUG
@@ -1614,8 +1611,7 @@ void EscapeAnalysis::ProcessStoreField(Node* node) {
     // fields which are hard-coded in {TranslatedState::MaterializeAt} as well.
     if (val->opcode() == IrOpcode::kInt32Constant ||
         val->opcode() == IrOpcode::kInt64Constant) {
-      DCHECK(FieldAccessOf(node->op()).offset == JSFunction::kCodeEntryOffset ||
-             FieldAccessOf(node->op()).offset == Name::kHashFieldOffset);
+      DCHECK(FieldAccessOf(node->op()).offset == Name::kHashFieldOffset);
       val = slot_not_analyzed_;
     }
     object = CopyForModificationAt(object, state, node);

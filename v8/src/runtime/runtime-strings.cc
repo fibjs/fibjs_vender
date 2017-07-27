@@ -206,22 +206,6 @@ RUNTIME_FUNCTION(Runtime_StringAdd) {
                            isolate->factory()->NewConsString(str1, str2));
 }
 
-RUNTIME_FUNCTION(Runtime_StringConcat) {
-  HandleScope scope(isolate);
-  DCHECK_LE(2, args.length());
-  int const argc = args.length();
-  ScopedVector<Handle<Object>> argv(argc);
-
-  isolate->counters()->string_add_runtime()->Increment();
-  IncrementalStringBuilder builder(isolate);
-  for (int i = 0; i < argc; ++i) {
-    Handle<String> str = Handle<String>::cast(args.at(i));
-    if (str->length() != 0) {
-      builder.AppendString(str);
-    }
-  }
-  RETURN_RESULT_OR_FAILURE(isolate, builder.Finish());
-}
 
 RUNTIME_FUNCTION(Runtime_InternalizeString) {
   HandleScope handles(isolate);
@@ -743,14 +727,6 @@ RUNTIME_FUNCTION(Runtime_StringCharFromCode) {
   return isolate->heap()->empty_string();
 }
 
-RUNTIME_FUNCTION(Runtime_ExternalStringGetChar) {
-  SealHandleScope shs(isolate);
-  DCHECK_EQ(2, args.length());
-  CONVERT_ARG_CHECKED(ExternalString, string, 0);
-  CONVERT_INT32_ARG_CHECKED(index, 1);
-  return Smi::FromInt(string->Get(index));
-}
-
 RUNTIME_FUNCTION(Runtime_StringCharCodeAt) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(2, args.length());
@@ -758,6 +734,11 @@ RUNTIME_FUNCTION(Runtime_StringCharCodeAt) {
   if (!args[1]->IsNumber()) return isolate->heap()->undefined_value();
   if (std::isinf(args.number_at(1))) return isolate->heap()->nan_value();
   return __RT_impl_Runtime_StringCharCodeAtRT(args, isolate);
+}
+
+RUNTIME_FUNCTION(Runtime_StringMaxLength) {
+  SealHandleScope shs(isolate);
+  return Smi::FromInt(String::kMaxLength);
 }
 
 }  // namespace internal

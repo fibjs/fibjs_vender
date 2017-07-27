@@ -185,24 +185,11 @@ Node* ConstructorBuiltinsAssembler::EmitFastNewClosure(Node* shared_info,
   Handle<Code> lazy_builtin_handle(
       isolate->builtins()->builtin(Builtins::kCompileLazy));
   Node* lazy_builtin = HeapConstant(lazy_builtin_handle);
-  Node* lazy_builtin_entry =
-      IntPtrAdd(BitcastTaggedToWord(lazy_builtin),
-                IntPtrConstant(Code::kHeaderSize - kHeapObjectTag));
-  StoreObjectFieldNoWriteBarrier(result, JSFunction::kCodeEntryOffset,
-                                 lazy_builtin_entry,
-                                 MachineType::PointerRepresentation());
+  StoreObjectFieldNoWriteBarrier(result, JSFunction::kCodeOffset, lazy_builtin);
   StoreObjectFieldNoWriteBarrier(result, JSFunction::kNextFunctionLinkOffset,
                                  UndefinedConstant());
 
   return result;
-}
-
-Node* ConstructorBuiltinsAssembler::LoadFeedbackVectorSlot(
-    Node* closure, Node* literal_index) {
-  Node* cell = LoadObjectField(closure, JSFunction::kFeedbackVectorOffset);
-  Node* feedback_vector = LoadObjectField(cell, Cell::kValueOffset);
-  return LoadFixedArrayElement(feedback_vector, literal_index, 0,
-                               CodeStubAssembler::SMI_PARAMETERS);
 }
 
 Node* ConstructorBuiltinsAssembler::NotHasBoilerplate(Node* literal_site) {
@@ -563,6 +550,56 @@ TF_BUILTIN(FastCloneShallowArrayTrack, ConstructorBuiltinsAssembler) {
 
 TF_BUILTIN(FastCloneShallowArrayDontTrack, ConstructorBuiltinsAssembler) {
   CreateFastCloneShallowArrayBuiltin(DONT_TRACK_ALLOCATION_SITE);
+}
+
+Node* ConstructorBuiltinsAssembler::EmitCreateEmptyArrayLiteral(
+    Node* closure, Node* literal_index, Node* context) {
+  // Array literals always have a valid AllocationSite to properly track
+  // elements transitions.
+  VARIABLE(allocation_site, MachineRepresentation::kTagged,
+           LoadFeedbackVectorSlot(closure, literal_index));
+
+  Label create_empty_array(this),
+      initialize_allocation_site(this, Label::kDeferred), done(this);
+  Branch(TaggedIsSmi(allocation_site.value()), &initialize_allocation_site,
+         &create_empty_array);
+
+  // TODO(cbruni): create the AllocationSite in CSA.
+  BIND(&initialize_allocation_site);
+  {
+    Node* feedback_vector = LoadFeedbackVector(closure);
+    allocation_site.Bind(
+        CreateAllocationSiteInFeedbackVector(feedback_vector, literal_index));
+    Goto(&create_empty_array);
+  }
+
+  BIND(&create_empty_array);
+  CSA_ASSERT(this, IsAllocationSite(allocation_site.value()));
+  Node* kind = SmiToWord32(
+      LoadObjectField(allocation_site.value(),
+                      AllocationSite::kTransitionInfoOrBoilerplateOffset));
+  CSA_ASSERT(this, IsFastElementsKind(kind));
+  Node* native_context = LoadNativeContext(context);
+  Comment("LoadJSArrayElementsMap");
+  Node* array_map = LoadJSArrayElementsMap(kind, native_context);
+  Node* zero = SmiConstant(0);
+  Comment("Allocate JSArray");
+  Node* result =
+      AllocateJSArray(GetInitialFastElementsKind(), array_map, zero, zero,
+                      allocation_site.value(), ParameterMode::SMI_PARAMETERS);
+
+  Goto(&done);
+  BIND(&done);
+
+  return result;
+}
+
+TF_BUILTIN(CreateEmptyArrayLiteral, ConstructorBuiltinsAssembler) {
+  Node* closure = Parameter(Descriptor::kClosure);
+  Node* literal_index = Parameter(Descriptor::kLiteralIndex);
+  Node* context = Parameter(Descriptor::kContext);
+  Node* result = EmitCreateEmptyArrayLiteral(closure, literal_index, context);
+  Return(result);
 }
 
 Node* ConstructorBuiltinsAssembler::EmitFastCloneShallowObject(

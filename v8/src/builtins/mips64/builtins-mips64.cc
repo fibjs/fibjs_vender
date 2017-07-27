@@ -483,8 +483,7 @@ void Generate_JSBuiltinsConstructStubHelper(MacroAssembler* masm) {
     // a1: constructor function
     // a3: new target
     ParameterCount actual(a0);
-    __ InvokeFunction(a1, a3, actual, CALL_FUNCTION,
-                      CheckDebugStepCallWrapper());
+    __ InvokeFunction(a1, a3, actual, CALL_FUNCTION);
 
     // Restore context from the frame.
     __ Ld(cp, MemOperand(fp, ConstructFrameConstants::kContextOffset));
@@ -605,8 +604,7 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
 
     // Call the function.
     ParameterCount actual(a0);
-    __ InvokeFunction(a1, a3, actual, CALL_FUNCTION,
-                      CheckDebugStepCallWrapper());
+    __ InvokeFunction(a1, a3, actual, CALL_FUNCTION);
 
     // ----------- S t a t e -------------
     //  --                 v0: constructor result
@@ -785,7 +783,8 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     // undefined because generator functions are non-constructable.
     __ Move(a3, a1);
     __ Move(a1, a4);
-    __ Ld(a2, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
+    __ Ld(a2, FieldMemOperand(a1, JSFunction::kCodeOffset));
+    __ Daddu(a2, a2, Operand(Code::kHeaderSize - kHeapObjectTag));
     __ Jump(a2);
   }
 
@@ -927,17 +926,17 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
   Generate_JSEntryTrampolineHelper(masm, true);
 }
 
-static void ReplaceClosureEntryWithOptimizedCode(
-    MacroAssembler* masm, Register optimized_code_entry, Register closure,
+static void ReplaceClosureCodeWithOptimizedCode(
+    MacroAssembler* masm, Register optimized_code, Register closure,
     Register scratch1, Register scratch2, Register scratch3) {
   Register native_context = scratch1;
 
   // Store code entry in the closure.
-  __ Daddu(optimized_code_entry, optimized_code_entry,
-           Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ Sd(optimized_code_entry,
-        FieldMemOperand(closure, JSFunction::kCodeEntryOffset));
-  __ RecordWriteCodeEntryField(closure, optimized_code_entry, scratch2);
+  __ Sd(optimized_code, FieldMemOperand(closure, JSFunction::kCodeOffset));
+  __ mov(scratch1, optimized_code);  // Write barrier clobbers scratch1 below.
+  __ RecordWriteField(closure, JSFunction::kCodeOffset, scratch1, scratch2,
+                      kRAHasNotBeenSaved, kDontSaveFPRegs, OMIT_REMEMBERED_SET,
+                      OMIT_SMI_CHECK);
 
   // Link the closure into the optimized function list.
   __ Ld(native_context, NativeContextMemOperand());
@@ -1068,8 +1067,10 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
     // the optimized functions list, then tail call the optimized code.
     // The feedback vector is no longer used, so re-use it as a scratch
     // register.
-    ReplaceClosureEntryWithOptimizedCode(masm, optimized_code_entry, closure,
-                                         scratch2, scratch3, feedback_vector);
+    ReplaceClosureCodeWithOptimizedCode(masm, optimized_code_entry, closure,
+                                        scratch2, scratch3, feedback_vector);
+    __ Daddu(optimized_code_entry, optimized_code_entry,
+             Operand(Code::kHeaderSize - kHeapObjectTag));
     __ Jump(optimized_code_entry);
 
     // Optimized code slot contains deoptimized code, evict it and re-enter the
@@ -1236,9 +1237,12 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ LeaveFrame(StackFrame::JAVA_SCRIPT);
   __ Ld(a4, FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   __ Ld(a4, FieldMemOperand(a4, SharedFunctionInfo::kCodeOffset));
+  __ Sd(a4, FieldMemOperand(closure, JSFunction::kCodeOffset));
+  __ mov(t3, a4);  // Write barrier clobbers t3 below.
+  __ RecordWriteField(closure, JSFunction::kCodeOffset, t3, a5,
+                      kRAHasNotBeenSaved, kDontSaveFPRegs, OMIT_REMEMBERED_SET,
+                      OMIT_SMI_CHECK);
   __ Daddu(a4, a4, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ Sd(a4, FieldMemOperand(closure, JSFunction::kCodeEntryOffset));
-  __ RecordWriteCodeEntryField(closure, a4, a5);
   __ Jump(a4);
 }
 
@@ -1544,9 +1548,12 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ Branch(&gotta_call_runtime, eq, entry, Operand(t1));
 
   // Install the SFI's code entry.
+  __ Sd(entry, FieldMemOperand(closure, JSFunction::kCodeOffset));
+  __ mov(t3, entry);  // Write barrier clobbers t3 below.
+  __ RecordWriteField(closure, JSFunction::kCodeOffset, t3, a5,
+                      kRAHasNotBeenSaved, kDontSaveFPRegs, OMIT_REMEMBERED_SET,
+                      OMIT_SMI_CHECK);
   __ Daddu(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ Sd(entry, FieldMemOperand(closure, JSFunction::kCodeEntryOffset));
-  __ RecordWriteCodeEntryField(closure, entry, a5);
   __ Jump(entry);
 
   __ bind(&gotta_call_runtime);
@@ -2317,8 +2324,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
         FieldMemOperand(a2, SharedFunctionInfo::kFormalParameterCountOffset));
   ParameterCount actual(a0);
   ParameterCount expected(a2);
-  __ InvokeFunctionCode(a1, no_reg, expected, actual, JUMP_FUNCTION,
-                        CheckDebugStepCallWrapper());
+  __ InvokeFunctionCode(a1, no_reg, expected, actual, JUMP_FUNCTION);
 
   // The function is a "classConstructor", need to raise an exception.
   __ bind(&class_constructor);
@@ -2769,7 +2775,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // a0 : expected number of arguments
   // a1 : function (passed through to callee)
   // a3: new target (passed through to callee)
-  __ Ld(a4, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
+  __ Ld(a4, FieldMemOperand(a1, JSFunction::kCodeOffset));
+  __ Daddu(a4, a4, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ Call(a4);
 
   // Store offset of return address for deoptimizer.
@@ -2783,7 +2790,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // Don't adapt arguments.
   // -------------------------------------------
   __ bind(&dont_adapt_arguments);
-  __ Ld(a4, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
+  __ Ld(a4, FieldMemOperand(a1, JSFunction::kCodeOffset));
+  __ Daddu(a4, a4, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ Jump(a4);
 
   __ bind(&stack_overflow);

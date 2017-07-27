@@ -139,6 +139,14 @@ bool FeedbackVector::has_optimization_marker() const {
   return optimization_marker() != OptimizationMarker::kNone;
 }
 
+int FeedbackVector::profiler_ticks() const {
+  return Smi::ToInt(get(kProfilerTicksIndex));
+}
+
+void FeedbackVector::set_profiler_ticks(int ticks) {
+  set(kProfilerTicksIndex, Smi::FromInt(ticks));
+}
+
 // Conversion from an integer index to either a slot or an ic slot.
 // static
 FeedbackSlot FeedbackVector::ToSlot(int index) {
@@ -166,8 +174,6 @@ BinaryOperationHint BinaryOperationHintFromFeedback(int type_feedback) {
       return BinaryOperationHint::kNumber;
     case BinaryOperationFeedback::kNumberOrOddball:
       return BinaryOperationHint::kNumberOrOddball;
-    case BinaryOperationFeedback::kNonEmptyString:
-      return BinaryOperationHint::kNonEmptyString;
     case BinaryOperationFeedback::kString:
       return BinaryOperationHint::kString;
     case BinaryOperationFeedback::kAny:

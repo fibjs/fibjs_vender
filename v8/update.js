@@ -120,12 +120,11 @@ function chk_file(fname) {
 }
 
 var replaces = {
-    '#include "testing/gtest/include/gtest': '#include "gtest',
-    'src/float.h': 'src/float1.h'
+    '#include "testing/gtest/include/gtest': '#include "gtest'
 };
 
 var reanmes = {
-    'src/float.h': 'src/float1.h'
+    // 'src/float.h': 'src/float1.h'
 };
 
 function cp_folder(path, to) {

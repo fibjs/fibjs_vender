@@ -1546,12 +1546,6 @@ void TurboAssembler::LoadRoot(CPURegister destination,
 }
 
 
-void MacroAssembler::StoreRoot(Register source,
-                               Heap::RootListIndex index) {
-  DCHECK(Heap::RootCanBeWrittenAfterInitialization(index));
-  Str(source, MemOperand(root, index << kPointerSizeLog2));
-}
-
 void MacroAssembler::LoadObject(Register result, Handle<Object> object) {
   AllowDeferredHandleDereference heap_object_check;
   if (object->IsHeapObject()) {
@@ -2253,11 +2247,9 @@ void TurboAssembler::PrepareForTailCall(const ParameterCount& callee_args_count,
 }
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    Label* done,
+                                    const ParameterCount& actual, Label* done,
                                     InvokeFlag flag,
-                                    bool* definitely_mismatches,
-                                    const CallWrapper& call_wrapper) {
+                                    bool* definitely_mismatches) {
   bool definitely_matches = false;
   *definitely_mismatches = false;
   Label regular_invoke;
@@ -2310,9 +2302,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
     Handle<Code> adaptor =
         isolate()->builtins()->ArgumentsAdaptorTrampoline();
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(adaptor));
       Call(adaptor);
-      call_wrapper.AfterCall();
       if (!*definitely_mismatches) {
         // If the arg counts don't match, no extra code is emitted by
         // MAsm::InvokeFunctionCode and we can just fall through.
@@ -2367,20 +2357,17 @@ void MacroAssembler::CheckDebugHook(Register fun, Register new_target,
   bind(&skip_hook);
 }
 
-
 void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
                                         const ParameterCount& expected,
                                         const ParameterCount& actual,
-                                        InvokeFlag flag,
-                                        const CallWrapper& call_wrapper) {
+                                        InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
   DCHECK(function.is(x1));
   DCHECK_IMPLIES(new_target.is_valid(), new_target.is(x3));
 
-  if (call_wrapper.NeedsDebugHookCheck()) {
-    CheckDebugHook(function, new_target, expected, actual);
-  }
+  // On function call, call into the debugger if necessary.
+  CheckDebugHook(function, new_target, expected, actual);
 
   // Clear the new.target register if not given.
   if (!new_target.is_valid()) {
@@ -2389,8 +2376,7 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
 
   Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected, actual, &done, flag, &definitely_mismatches,
-                 call_wrapper);
+  InvokePrologue(expected, actual, &done, flag, &definitely_mismatches);
 
   // If we are certain that actual != expected, then we know InvokePrologue will
   // have handled the call through the argument adaptor mechanism.
@@ -2400,11 +2386,10 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
     // allow recompilation to take effect without changing any of the
     // call sites.
     Register code = x4;
-    Ldr(code, FieldMemOperand(function, JSFunction::kCodeEntryOffset));
+    Ldr(code, FieldMemOperand(function, JSFunction::kCodeOffset));
+    Add(code, code, Operand(Code::kHeaderSize - kHeapObjectTag));
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(code));
       Call(code);
-      call_wrapper.AfterCall();
     } else {
       DCHECK(flag == JUMP_FUNCTION);
       Jump(code);
@@ -2416,12 +2401,9 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
   Bind(&done);
 }
 
-
-void MacroAssembler::InvokeFunction(Register function,
-                                    Register new_target,
+void MacroAssembler::InvokeFunction(Register function, Register new_target,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
@@ -2442,16 +2424,13 @@ void MacroAssembler::InvokeFunction(Register function,
                         SharedFunctionInfo::kFormalParameterCountOffset));
 
   ParameterCount expected(expected_reg);
-  InvokeFunctionCode(function, new_target, expected, actual, flag,
-                     call_wrapper);
+  InvokeFunctionCode(function, new_target, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunction(Register function,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
@@ -2462,19 +2441,17 @@ void MacroAssembler::InvokeFunction(Register function,
   // Set up the context.
   Ldr(cp, FieldMemOperand(function, JSFunction::kContextOffset));
 
-  InvokeFunctionCode(function, no_reg, expected, actual, flag, call_wrapper);
+  InvokeFunctionCode(function, no_reg, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   // Contract with called JS functions requires that function is passed in x1.
   // (See FullCodeGenerator::Generate().)
   __ LoadObject(x1, function);
-  InvokeFunction(x1, expected, actual, flag, call_wrapper);
+  InvokeFunction(x1, expected, actual, flag);
 }
 
 void TurboAssembler::TryConvertDoubleToInt64(Register result,
@@ -3313,66 +3290,6 @@ void MacroAssembler::GetNumberHash(Register key, Register scratch) {
   // hash = hash ^ (hash >> 16);
   Eor(key, key, Operand(key, LSR, 16));
   Bic(key, key, Operand(0xc0000000u));
-}
-
-void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
-                                               Register code_entry,
-                                               Register scratch) {
-  const int offset = JSFunction::kCodeEntryOffset;
-
-  // Since a code entry (value) is always in old space, we don't need to update
-  // remembered set. If incremental marking is off, there is nothing for us to
-  // do.
-  if (!FLAG_incremental_marking) return;
-
-  DCHECK(js_function.is(x1));
-  DCHECK(code_entry.is(x7));
-  DCHECK(scratch.is(x5));
-  AssertNotSmi(js_function);
-
-  if (emit_debug_code()) {
-    UseScratchRegisterScope temps(this);
-    Register temp = temps.AcquireX();
-    Add(scratch, js_function, offset - kHeapObjectTag);
-    Ldr(temp, MemOperand(scratch));
-    Cmp(temp, code_entry);
-    Check(eq, kWrongAddressOrValuePassedToRecordWrite);
-  }
-
-  // First, check if a write barrier is even needed. The tests below
-  // catch stores of Smis and stores into young gen.
-  Label done;
-
-  CheckPageFlagClear(code_entry, scratch,
-                     MemoryChunk::kPointersToHereAreInterestingMask, &done);
-  CheckPageFlagClear(js_function, scratch,
-                     MemoryChunk::kPointersFromHereAreInterestingMask, &done);
-
-  const Register dst = scratch;
-  Add(dst, js_function, offset - kHeapObjectTag);
-
-  // Save caller-saved registers.Both input registers (x1 and x7) are caller
-  // saved, so there is no need to push them.
-  PushCPURegList(kCallerSaved);
-
-  int argument_count = 3;
-
-  Mov(x0, js_function);
-  Mov(x1, dst);
-  Mov(x2, ExternalReference::isolate_address(isolate()));
-
-  {
-    AllowExternalCallThatCantCauseGC scope(this);
-    CallCFunction(
-        ExternalReference::incremental_marking_record_write_code_entry_function(
-            isolate()),
-        argument_count);
-  }
-
-  // Restore caller-saved registers.
-  PopCPURegList(kCallerSaved);
-
-  Bind(&done);
 }
 
 void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
@@ -4254,13 +4171,6 @@ CPURegister UseScratchRegisterScope::AcquireNextAvailable(
   return result;
 }
 
-
-CPURegister UseScratchRegisterScope::UnsafeAcquire(CPURegList* available,
-                                                   const CPURegister& reg) {
-  DCHECK(available->IncludesAliasOf(reg));
-  available->Remove(reg);
-  return reg;
-}
 
 MemOperand ContextMemOperand(Register context, int index) {
   return MemOperand(context, Context::SlotOffset(index));

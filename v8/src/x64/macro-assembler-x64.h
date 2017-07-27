@@ -480,7 +480,6 @@ class MacroAssembler : public TurboAssembler {
   void PushAddress(ExternalReference source);
 
   // Operations on roots in the root-array.
-  void StoreRoot(Register source, Heap::RootListIndex index);
   // Load a root value where the index (or part of it) is variable.
   // The variable_offset register is added to the fixed_offset value
   // to get the index into the root-array.
@@ -612,11 +611,6 @@ class MacroAssembler : public TurboAssembler {
                      pointers_to_here_check_for_value);
   }
 
-  // Notify the garbage collector that we wrote a code entry into a
-  // JSFunction. Only scratch is clobbered by the operation.
-  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
-                                 Register scratch);
-
   void RecordWriteForMap(
       Register object,
       Register map,
@@ -679,8 +673,7 @@ class MacroAssembler : public TurboAssembler {
   // Invoke the JavaScript function code by either calling or jumping.
   void InvokeFunctionCode(Register function, Register new_target,
                           const ParameterCount& expected,
-                          const ParameterCount& actual, InvokeFlag flag,
-                          const CallWrapper& call_wrapper);
+                          const ParameterCount& actual, InvokeFlag flag);
 
   // On function call, call into the debugger if necessary.
   void CheckDebugHook(Register fun, Register new_target,
@@ -689,24 +682,16 @@ class MacroAssembler : public TurboAssembler {
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
-  void InvokeFunction(Register function,
-                      Register new_target,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+  void InvokeFunction(Register function, Register new_target,
+                      const ParameterCount& actual, InvokeFlag flag);
 
-  void InvokeFunction(Register function,
-                      Register new_target,
+  void InvokeFunction(Register function, Register new_target,
                       const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   void InvokeFunction(Handle<JSFunction> function,
                       const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   // ---------------------------------------------------------------------------
   // Smi tagging, untagging and operations on tagged smis.
@@ -1203,12 +1188,6 @@ class MacroAssembler : public TurboAssembler {
                           XMMRegister temp_xmm_reg,
                           Register result_reg);
 
-  void SlowTruncateToI(Register result_reg, Register input_reg,
-      int offset = HeapNumber::kValueOffset - kHeapObjectTag);
-
-  void TruncateHeapNumberToI(Register result_reg, Register input_reg);
-  void TruncateDoubleToI(Register result_reg, XMMRegister input_reg);
-
   void DoubleToI(Register result_reg, XMMRegister input_reg,
                  XMMRegister scratch, MinusZeroMode minus_zero_mode,
                  Label* lost_precision, Label* is_nan, Label* minus_zero,
@@ -1475,12 +1454,9 @@ class MacroAssembler : public TurboAssembler {
 
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
-                      const ParameterCount& actual,
-                      Label* done,
-                      bool* definitely_mismatches,
-                      InvokeFlag flag,
-                      Label::Distance near_jump,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, Label* done,
+                      bool* definitely_mismatches, InvokeFlag flag,
+                      Label::Distance near_jump);
 
   void EnterExitFramePrologue(bool save_rax, StackFrame::Type frame_type);
 

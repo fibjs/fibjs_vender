@@ -120,12 +120,12 @@
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\bit-vector.h" />
     <ClInclude Include="src\bootstrapper.h" />
+    <ClInclude Include="src\boxed-float.h" />
     <ClInclude Include="src\builtins\builtins-arguments-gen.h" />
     <ClInclude Include="src\builtins\builtins-async-gen.h" />
     <ClInclude Include="src\builtins\builtins-call-gen.h" />
     <ClInclude Include="src\builtins\builtins-constructor-gen.h" />
     <ClInclude Include="src\builtins\builtins-constructor.h" />
-    <ClInclude Include="src\builtins\builtins-conversion-gen.h" />
     <ClInclude Include="src\builtins\builtins-definitions.h" />
     <ClInclude Include="src\builtins\builtins-descriptors.h" />
     <ClInclude Include="src\builtins\builtins-forin-gen.h" />
@@ -169,7 +169,6 @@
     <ClInclude Include="src\compiler\bytecode-analysis.h" />
     <ClInclude Include="src\compiler\bytecode-graph-builder.h" />
     <ClInclude Include="src\compiler\bytecode-liveness-map.h" />
-    <ClInclude Include="src\compiler\check-elimination.h" />
     <ClInclude Include="src\compiler\checkpoint-elimination.h" />
     <ClInclude Include="src\compiler\code-assembler.h" />
     <ClInclude Include="src\compiler\code-generator-impl.h" />
@@ -316,7 +315,6 @@
     <ClInclude Include="src\fixed-dtoa.h" />
     <ClInclude Include="src\flag-definitions.h" />
     <ClInclude Include="src\flags.h" />
-    <ClInclude Include="src\float1.h" />
     <ClInclude Include="src\frames-inl.h" />
     <ClInclude Include="src\frames.h" />
     <ClInclude Include="src\full-codegen\full-codegen.h" />
@@ -796,7 +794,6 @@
     <ClCompile Include="src\compiler\bytecode-graph-builder.cc" />
     <ClCompile Include="src\compiler\bytecode-liveness-map.cc" />
     <ClCompile Include="src\compiler\c-linkage.cc" />
-    <ClCompile Include="src\compiler\check-elimination.cc" />
     <ClCompile Include="src\compiler\checkpoint-elimination.cc" />
     <ClCompile Include="src\compiler\code-assembler.cc" />
     <ClCompile Include="src\compiler\code-generator.cc" />

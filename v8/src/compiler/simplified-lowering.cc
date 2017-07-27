@@ -127,12 +127,12 @@ UseInfo TruncatingUseInfoFromRepresentation(MachineRepresentation rep) {
       return UseInfo::TruncatingFloat64();
     case MachineRepresentation::kFloat32:
       return UseInfo::Float32();
-    case MachineRepresentation::kWord64:
-      return UseInfo::TruncatingWord64();
     case MachineRepresentation::kWord8:
     case MachineRepresentation::kWord16:
     case MachineRepresentation::kWord32:
       return UseInfo::TruncatingWord32();
+    case MachineRepresentation::kWord64:
+      return UseInfo::TruncatingWord64();
     case MachineRepresentation::kBit:
       return UseInfo::Bool();
     case MachineRepresentation::kSimd128:
@@ -2447,18 +2447,22 @@ class RepresentationSelector {
         VisitCheck(node, Type::String(), lowering);
         return;
       }
-      case IrOpcode::kCheckSeqString: {
-        VisitCheck(node, Type::SeqString(), lowering);
-        return;
-      }
-      case IrOpcode::kCheckNonEmptyString: {
-        VisitCheck(node, Type::NonEmptyString(), lowering);
-        return;
-      }
       case IrOpcode::kCheckSymbol: {
         VisitCheck(node, Type::Symbol(), lowering);
         return;
       }
+      case IrOpcode::kCheckSeqString: {
+        if (InputIs(node, Type::SeqString())) {
+          VisitUnop(node, UseInfo::AnyTagged(),
+                    MachineRepresentation::kTaggedPointer);
+          if (lower()) DeferReplacement(node, node->InputAt(0));
+        } else {
+          VisitUnop(node, UseInfo::CheckedHeapObjectAsTaggedPointer(),
+                    MachineRepresentation::kTaggedPointer);
+        }
+        return;
+      }
+
       case IrOpcode::kAllocate: {
         ProcessInput(node, 0, UseInfo::TruncatingWord32());
         ProcessRemainingInputs(node, 1);
@@ -2513,8 +2517,8 @@ class RepresentationSelector {
         ProcessRemainingInputs(node, 3);
 
         MachineRepresentation output;
-        if (truncation.IdentifiesUndefinedAndNaNAndZero()) {
-          if (truncation.IdentifiesNaNAndZero()) {
+        if (truncation.IdentifiesUndefinedAndNaN()) {
+          if (truncation.IdentifiesUndefinedAndZero()) {
             // If undefined is truncated to a non-NaN number, we can use
             // the load's representation.
             output = access.machine_type().representation();
@@ -2919,7 +2923,6 @@ class RepresentationSelector {
       case IrOpcode::kJSToName:
       case IrOpcode::kJSToObject:
       case IrOpcode::kJSToString:
-      case IrOpcode::kJSToPrimitiveToString:
         VisitInputs(node);
         // Assume the output is tagged.
         return SetOutput(node, MachineRepresentation::kTagged);

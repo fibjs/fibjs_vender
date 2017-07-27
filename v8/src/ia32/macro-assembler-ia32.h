@@ -302,7 +302,6 @@ class MacroAssembler : public TurboAssembler {
 
   // Operations on roots in the root-array.
   void LoadRoot(Register destination, Heap::RootListIndex index);
-  void StoreRoot(Register source, Register scratch, Heap::RootListIndex index);
   void CompareRoot(Register with, Register scratch, Heap::RootListIndex index);
   // These methods can only be used with constant roots (i.e. non-writable
   // and not in new space).
@@ -443,11 +442,6 @@ class MacroAssembler : public TurboAssembler {
       PointersToHereCheck pointers_to_here_check_for_value =
           kPointersToHereMaybeInteresting);
 
-  // Notify the garbage collector that we wrote a code entry into a
-  // JSFunction. Only scratch is clobbered by the operation.
-  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
-                                 Register scratch);
-
   // For page containing |object| mark the region covering the object's map
   // dirty. |object| is the object being stored into, |map| is the Map object
   // that was stored.
@@ -522,8 +516,7 @@ class MacroAssembler : public TurboAssembler {
 
   void InvokeFunctionCode(Register function, Register new_target,
                           const ParameterCount& expected,
-                          const ParameterCount& actual, InvokeFlag flag,
-                          const CallWrapper& call_wrapper);
+                          const ParameterCount& actual, InvokeFlag flag);
 
   // On function call, call into the debugger if necessary.
   void CheckDebugHook(Register fun, Register new_target,
@@ -533,17 +526,14 @@ class MacroAssembler : public TurboAssembler {
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
   void InvokeFunction(Register function, Register new_target,
-                      const ParameterCount& actual, InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   void InvokeFunction(Register function, const ParameterCount& expected,
-                      const ParameterCount& actual, InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   void InvokeFunction(Handle<JSFunction> function,
                       const ParameterCount& expected,
-                      const ParameterCount& actual, InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+                      const ParameterCount& actual, InvokeFlag flag);
 
   // Support for constant splitting.
   bool IsUnsafeImmediate(const Immediate& x);
@@ -583,12 +573,6 @@ class MacroAssembler : public TurboAssembler {
 
   void ClampDoubleToUint8(XMMRegister input_reg, XMMRegister scratch_reg,
                           Register result_reg);
-
-  void SlowTruncateToI(Register result_reg, Register input_reg,
-      int offset = HeapNumber::kValueOffset - kHeapObjectTag);
-
-  void TruncateHeapNumberToI(Register result_reg, Register input_reg);
-  void TruncateDoubleToI(Register result_reg, XMMRegister input_reg);
 
   void DoubleToI(Register result_reg, XMMRegister input_reg,
                  XMMRegister scratch, MinusZeroMode minus_zero_mode,
@@ -900,8 +884,7 @@ class MacroAssembler : public TurboAssembler {
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual, Label* done,
                       bool* definitely_mismatches, InvokeFlag flag,
-                      Label::Distance done_distance,
-                      const CallWrapper& call_wrapper);
+                      Label::Distance done_distance);
 
   void EnterExitFramePrologue(StackFrame::Type frame_type);
   void EnterExitFrameEpilogue(int argc, bool save_doubles);

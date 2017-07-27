@@ -741,7 +741,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ cmp(cp, temp);
         __ Assert(eq, kWrongFunctionContext);
       }
-      __ Ldr(x10, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
+      __ Ldr(x10, FieldMemOperand(func, JSFunction::kCodeOffset));
+      __ Add(x10, x10, Operand(Code::kHeaderSize - kHeapObjectTag));
       __ Call(x10);
       RecordCallPosition(instr);
       // TODO(titzer): this is ugly. JSSP should be a caller-save register
@@ -757,25 +758,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ AssertCspAligned();
       }
       frame_access_state()->ClearSPDelta();
-      break;
-    }
-    case kArchTailCallJSFunctionFromJSFunction: {
-      Register func = i.InputRegister(0);
-      if (FLAG_debug_code) {
-        // Check the function's context matches the context argument.
-        UseScratchRegisterScope scope(tasm());
-        Register temp = scope.AcquireX();
-        __ Ldr(temp, FieldMemOperand(func, JSFunction::kContextOffset));
-        __ cmp(cp, temp);
-        __ Assert(eq, kWrongFunctionContext);
-      }
-      AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
-                                       i.TempRegister(0), i.TempRegister(1),
-                                       i.TempRegister(2));
-      __ Ldr(x10, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
-      __ Jump(x10);
-      frame_access_state()->ClearSPDelta();
-      frame_access_state()->SetFrameAccessToDefault();
       break;
     }
     case kArchPrepareCallCFunction:
@@ -2076,6 +2058,27 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       SIMD_BINOP_CASE(kArm64S128Or, Orr, 16B);
       SIMD_BINOP_CASE(kArm64S128Xor, Eor, 16B);
       SIMD_UNOP_CASE(kArm64S128Not, Mvn, 16B);
+    case kArm64S128Dup: {
+      VRegister dst = i.OutputSimd128Register(),
+                src = i.InputSimd128Register(0);
+      int lanes = i.InputInt32(1);
+      int index = i.InputInt32(2);
+      switch (lanes) {
+        case 4:
+          __ Dup(dst.V4S(), src.V4S(), index);
+          break;
+        case 8:
+          __ Dup(dst.V8H(), src.V8H(), index);
+          break;
+        case 16:
+          __ Dup(dst.V16B(), src.V16B(), index);
+          break;
+        default:
+          UNREACHABLE();
+          break;
+      }
+      break;
+    }
     case kArm64S128Select: {
       VRegister dst = i.OutputSimd128Register().V16B();
       DCHECK(dst.is(i.InputSimd128Register(0).V16B()));

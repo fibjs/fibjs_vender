@@ -28,7 +28,7 @@ function build_posix() {
         process.run('bin/' + folders[platform] + '_' + arch + '_release/v8_test');
 
         fs.unlink('vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '.cc');
-        fs.copy('snapshot-' + fname[arch] + '.cc', 'vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '.cc');
+        fs.rename('snapshot-' + fname[arch] + '.cc', 'vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '.cc');
     }
 
     function build_remote(arch) {
@@ -95,7 +95,7 @@ function build_win() {
         process.run('bin/' + folders[platform] + '_' + arch + '_release/v8_test.exe');
 
         fs.unlink('vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '-win.cc');
-        fs.copy('snapshot-' + fname[arch] + '-win.cc', 'vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '-win.cc');
+        fs.rename('snapshot-' + fname[arch] + '-win.cc', 'vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '-win.cc');
     }
 
     build_one("amd64");

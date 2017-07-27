@@ -3781,6 +3781,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       object->set_extension(*extension);
       return object;
     }
+    case HASH_TABLE_TYPE:
     case FIXED_ARRAY_TYPE: {
       Handle<Object> lengthObject = materializer.FieldAt(value_index);
       int32_t array_length = 0;
@@ -3835,6 +3836,24 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
       }
       return object;
     }
+    case JS_REGEXP_TYPE: {
+      Handle<JSRegExp> object = Handle<JSRegExp>::cast(
+          isolate_->factory()->NewJSObjectFromMap(map, NOT_TENURED));
+      slot->value_ = object;
+      Handle<Object> properties = materializer.FieldAt(value_index);
+      Handle<Object> elements = materializer.FieldAt(value_index);
+      Handle<Object> data = materializer.FieldAt(value_index);
+      Handle<Object> source = materializer.FieldAt(value_index);
+      Handle<Object> flags = materializer.FieldAt(value_index);
+      Handle<Object> last_index = materializer.FieldAt(value_index);
+      object->set_raw_properties_or_hash(*properties);
+      object->set_elements(FixedArrayBase::cast(*elements));
+      object->set_data(*data);
+      object->set_source(*source);
+      object->set_flags(*flags);
+      object->set_last_index(*last_index);
+      return object;
+    }
     case STRING_TYPE:
     case ONE_BYTE_STRING_TYPE:
     case CONS_ONE_BYTE_STRING_TYPE:
@@ -3870,7 +3889,6 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
     case JS_ASYNC_GENERATOR_OBJECT_TYPE:
     case JS_MODULE_NAMESPACE_TYPE:
     case JS_ARRAY_BUFFER_TYPE:
-    case JS_REGEXP_TYPE:
     case JS_TYPED_ARRAY_TYPE:
     case JS_DATA_VIEW_TYPE:
     case JS_SET_TYPE:
@@ -3918,7 +3936,6 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
     case TUPLE2_TYPE:
     case TUPLE3_TYPE:
     case ASYNC_GENERATOR_REQUEST_TYPE:
-    case PREPARSED_SCOPE_DATA_TYPE:
     case WASM_MODULE_TYPE:
     case WASM_INSTANCE_TYPE:
     case WASM_MEMORY_TYPE:

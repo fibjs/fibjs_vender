@@ -87,7 +87,7 @@ Heap::Heap()
       // semispace_size_ should be a power of 2 and old_generation_size_ should
       // be a multiple of Page::kPageSize.
       max_semi_space_size_(8 * (kPointerSize / 4) * MB),
-      initial_semispace_size_(MB),
+      initial_semispace_size_(Page::kPageSize),
       max_old_generation_size_(700ul * (kPointerSize / 4) * MB),
       initial_max_old_generation_size_(max_old_generation_size_),
       initial_old_generation_size_(max_old_generation_size_ /
@@ -407,6 +407,99 @@ void Heap::ReportStatisticsAfterGC() {
   }
 }
 
+void Heap::AddRetainingPathTarget(Handle<HeapObject> object) {
+  if (!FLAG_track_retaining_path) {
+    PrintF("Retaining path tracking requires --trace-retaining-path\n");
+  } else {
+    Handle<WeakFixedArray> array = WeakFixedArray::Add(
+        handle(retaining_path_targets(), isolate()), object);
+    set_retaining_path_targets(*array);
+  }
+}
+
+bool Heap::IsRetainingPathTarget(HeapObject* object) {
+  WeakFixedArray::Iterator it(retaining_path_targets());
+  HeapObject* target;
+  while ((target = it.Next<HeapObject>()) != nullptr) {
+    if (target == object) return true;
+  }
+  return false;
+}
+
+namespace {
+const char* RootToString(Root root) {
+  switch (root) {
+#define ROOT_CASE(root_id, ignore, description) \
+  case Root::root_id:                           \
+    return description;
+    ROOT_ID_LIST(ROOT_CASE)
+#undef ROOT_CASE
+    case Root::kCodeFlusher:
+      return "(Code flusher)";
+    case Root::kPartialSnapshotCache:
+      return "(Partial snapshot cache)";
+    case Root::kWeakCollections:
+      return "(Weak collections)";
+    case Root::kWrapperTracing:
+      return "(Wrapper tracing)";
+    case Root::kUnknown:
+      return "(Unknown)";
+  }
+  UNREACHABLE();
+  return nullptr;
+}
+}  // namespace
+
+void Heap::PrintRetainingPath(HeapObject* target) {
+  PrintF("\n\n\n");
+  PrintF("#################################################\n");
+  PrintF("Retaining path for %p:\n", static_cast<void*>(target));
+  HeapObject* object = target;
+  std::vector<HeapObject*> retaining_path;
+  Root root = Root::kUnknown;
+  while (true) {
+    retaining_path.push_back(object);
+    if (retainer_.count(object)) {
+      object = retainer_[object];
+    } else {
+      if (retaining_root_.count(object)) {
+        root = retaining_root_[object];
+      }
+      break;
+    }
+  }
+  int distance = static_cast<int>(retaining_path.size());
+  for (auto object : retaining_path) {
+    PrintF("\n");
+    PrintF("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+    PrintF("Distance from root %d: ", distance);
+    object->ShortPrint();
+    PrintF("\n");
+#ifdef OBJECT_PRINT
+    object->Print();
+    PrintF("\n");
+#endif
+    --distance;
+  }
+  PrintF("\n");
+  PrintF("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+  PrintF("Root: %s\n", RootToString(root));
+  PrintF("-------------------------------------------------\n");
+}
+
+void Heap::AddRetainer(HeapObject* retainer, HeapObject* object) {
+  retainer_[object] = retainer;
+  if (IsRetainingPathTarget(object)) {
+    PrintRetainingPath(object);
+  }
+}
+
+void Heap::AddRetainingRoot(Root root, HeapObject* object) {
+  retaining_root_[object] = root;
+  if (IsRetainingPathTarget(object)) {
+    PrintRetainingPath(object);
+  }
+}
 
 void Heap::IncrementDeferredCount(v8::Isolate::UseCounterFeature feature) {
   deferred_counters_[feature]++;
@@ -452,6 +545,10 @@ void Heap::GarbageCollectionPrologue() {
   }
   CheckNewSpaceExpansionCriteria();
   UpdateNewSpaceAllocationCounter();
+  if (FLAG_track_retaining_path) {
+    retainer_.clear();
+    retaining_root_.clear();
+  }
 }
 
 size_t Heap::SizeOfObjects() {
@@ -966,6 +1063,7 @@ void Heap::CollectAllAvailableGarbage(GarbageCollectionReason gc_reason) {
       break;
     }
   }
+
   set_current_gc_flags(kNoGCFlags);
   new_space_->Shrink();
   UncommitFromSpace();
@@ -1706,19 +1804,25 @@ class ScavengingItem : public ItemParallelJob::Item {
 
 class ScavengingTask final : public ItemParallelJob::Task {
  public:
-  ScavengingTask(Heap* heap, Scavenger* scavenger)
+  ScavengingTask(Heap* heap, Scavenger* scavenger, Scavenger::Barrier* barrier)
       : ItemParallelJob::Task(heap->isolate()),
         heap_(heap),
-        scavenger_(scavenger) {}
+        scavenger_(scavenger),
+        barrier_(barrier) {}
 
   void RunInParallel() final {
     double scavenging_time = 0.0;
     {
+      barrier_->Start();
       TimedScope scope(&scavenging_time);
       ScavengingItem* item = nullptr;
       while ((item = GetItem<ScavengingItem>()) != nullptr) {
         item->Process(scavenger_);
         item->MarkFinished();
+      }
+      while (!barrier_->Done()) {
+        scavenger_->Process(barrier_);
+        barrier_->Wait();
       }
       scavenger_->Process();
     }
@@ -1733,6 +1837,7 @@ class ScavengingTask final : public ItemParallelJob::Task {
  private:
   Heap* const heap_;
   Scavenger* const scavenger_;
+  Scavenger::Barrier* const barrier_;
 };
 
 class PageScavengingItem final : public ScavengingItem {
@@ -1770,8 +1875,14 @@ class PageScavengingItem final : public ScavengingItem {
 };
 
 int Heap::NumberOfScavengeTasks() {
-  CHECK(!FLAG_parallel_scavenge);
-  return 1;
+  if (!FLAG_parallel_scavenge) return 1;
+  const int num_scavenge_tasks =
+      static_cast<int>(new_space()->TotalCapacity()) / MB;
+  return Max(
+      1,
+      Min(Min(num_scavenge_tasks, kMaxScavengerTasks),
+          static_cast<int>(
+              V8::GetCurrentPlatform()->NumberOfAvailableBackgroundThreads())));
 }
 
 void Heap::Scavenge() {
@@ -1812,12 +1923,13 @@ void Heap::Scavenge() {
   const bool is_logging = IsLogging(isolate());
   const bool is_incremental_marking = incremental_marking()->IsMarking();
   const int num_scavenge_tasks = NumberOfScavengeTasks();
+  Scavenger::Barrier barrier;
   CopiedList copied_list(num_scavenge_tasks);
   PromotionList promotion_list(num_scavenge_tasks);
   for (int i = 0; i < num_scavenge_tasks; i++) {
     scavengers[i] = new Scavenger(this, is_logging, is_incremental_marking,
                                   &copied_list, &promotion_list, i);
-    job.AddTask(new ScavengingTask(this, scavengers[i]));
+    job.AddTask(new ScavengingTask(this, scavengers[i], &barrier));
   }
 
   RememberedSet<OLD_TO_NEW>::IterateMemoryChunks(
@@ -2469,9 +2581,9 @@ bool Heap::CreateInitialMaps() {
       roots_[entry.index] = map;
     }
 
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, hash_table)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, ordered_hash_table)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, unseeded_number_dictionary)
+    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, hash_table)
+    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, ordered_hash_table)
+    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, unseeded_number_dictionary)
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, function_context)
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, catch_context)
@@ -2859,6 +2971,7 @@ void Heap::CreateInitialObjects() {
 
   set_detached_contexts(empty_fixed_array());
   set_retained_maps(ArrayList::cast(empty_fixed_array()));
+  set_retaining_path_targets(undefined_value());
 
   set_weak_object_to_code_table(*WeakHashTable::New(isolate(), 16, TENURED));
 
@@ -2994,6 +3107,7 @@ bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
     case kWeakObjectToCodeTableRootIndex:
     case kWeakNewSpaceObjectToCodeListRootIndex:
     case kRetainedMapsRootIndex:
+    case kRetainingPathTargetsRootIndex:
     case kCodeCoverageListRootIndex:
     case kNoScriptSharedFunctionInfosRootIndex:
     case kWeakStackTraceListRootIndex:
@@ -3971,6 +4085,19 @@ AllocationResult Heap::AllocateEmptyFixedTypedArray(
   return AllocateFixedTypedArray(0, array_type, false, TENURED);
 }
 
+namespace {
+template <typename T>
+void initialize_length(T* array, int length) {
+  array->set_length(length);
+}
+
+template <>
+void initialize_length<PropertyArray>(PropertyArray* array, int length) {
+  array->initialize_length(length);
+}
+
+}  // namespace
+
 template <typename T>
 AllocationResult Heap::CopyArrayAndGrow(T* src, int grow_by,
                                         PretenureFlag pretenure) {
@@ -3985,7 +4112,7 @@ AllocationResult Heap::CopyArrayAndGrow(T* src, int grow_by,
 
   obj->set_map_after_allocation(src->map(), SKIP_WRITE_BARRIER);
   T* result = T::cast(obj);
-  result->set_length(new_len);
+  initialize_length(result, new_len);
 
   // Copy the content.
   DisallowHeapAllocation no_gc;
@@ -4046,7 +4173,7 @@ AllocationResult Heap::CopyArrayWithMap(T* src, Map* map) {
   }
 
   // Slow case: Just copy the content one-by-one.
-  result->set_length(len);
+  initialize_length(result, len);
   for (int i = 0; i < len; i++) result->set(i, src->get(i), mode);
   return result;
 }
@@ -4130,7 +4257,7 @@ AllocationResult Heap::AllocatePropertyArray(int length,
 
   result->set_map_after_allocation(property_array_map(), SKIP_WRITE_BARRIER);
   PropertyArray* array = PropertyArray::cast(result);
-  array->set_length(length);
+  array->initialize_length(length);
   MemsetPointer(array->data_start(), undefined_value(), length);
   return result;
 }
@@ -4368,10 +4495,10 @@ void Heap::FinalizeIncrementalMarkingIfComplete(
 }
 
 void Heap::RegisterDeserializedObjectsForBlackAllocation(
-    Reservation* reservations, List<HeapObject*>* large_objects) {
-  // TODO(hpayer): We do not have to iterate reservations on black objects
-  // for marking. We just have to execute the special visiting side effect
-  // code that adds objects to global data structures, e.g. for array buffers.
+    Reservation* reservations, List<HeapObject*>* large_objects,
+    List<Address>* maps) {
+  // TODO(ulan): pause black allocation during deserialization to avoid
+  // iterating all these objects in one go.
 
   if (!incremental_marking()->black_allocation()) return;
 
@@ -4400,6 +4527,12 @@ void Heap::RegisterDeserializedObjectsForBlackAllocation(
   // Large object space doesn't use reservations, so it needs custom handling.
   for (HeapObject* object : *large_objects) {
     incremental_marking()->ProcessBlackAllocatedObject(object);
+  }
+
+  // Map space doesn't use reservations, so it needs custom handling.
+  for (Address addr : *maps) {
+    incremental_marking()->ProcessBlackAllocatedObject(
+        HeapObject::FromAddress(addr));
   }
 }
 
@@ -4507,7 +4640,6 @@ bool Heap::PerformIdleTimeAction(GCIdleTimeAction action,
 
   return result;
 }
-
 
 void Heap::IdleNotificationEpilogue(GCIdleTimeAction action,
                                     GCIdleTimeHeapState heap_state,
@@ -4986,13 +5118,6 @@ class SlotVerifyingVisitor : public ObjectVisitor {
     }
   }
 
-  void VisitCodeEntry(JSFunction* host, Address entry_address) override {
-    Object* target = Code::GetObjectFromEntryAddress(entry_address);
-    if (ShouldHaveBeenRecorded(host, target)) {
-      CHECK(InTypedSet(CODE_ENTRY_SLOT, entry_address));
-    }
-  }
-
   void VisitCellPointer(Code* host, RelocInfo* rinfo) override {
     Object* target = rinfo->target_cell();
     if (ShouldHaveBeenRecorded(host, target)) {
@@ -5273,16 +5398,18 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
 // TODO(1236194): Since the heap size is configurable on the command line
 // and through the API, we should gracefully handle the case that the heap
 // size is not big enough to fit all the initial objects.
-bool Heap::ConfigureHeap(size_t max_semi_space_size, size_t max_old_space_size,
-                         size_t code_range_size) {
+bool Heap::ConfigureHeap(size_t max_semi_space_size_in_kb,
+                         size_t max_old_generation_size_in_mb,
+                         size_t code_range_size_in_mb) {
   if (HasBeenSetUp()) return false;
 
   // Overwrite default configuration.
-  if (max_semi_space_size != 0) {
-    max_semi_space_size_ = max_semi_space_size * MB;
+  if (max_semi_space_size_in_kb != 0) {
+    max_semi_space_size_ =
+        ROUND_UP(max_semi_space_size_in_kb * KB, Page::kPageSize);
   }
-  if (max_old_space_size != 0) {
-    max_old_generation_size_ = max_old_space_size * MB;
+  if (max_old_generation_size_in_mb != 0) {
+    max_old_generation_size_ = max_old_generation_size_in_mb * MB;
   }
 
   // If max space size flags are specified overwrite the configuration.
@@ -5353,7 +5480,7 @@ bool Heap::ConfigureHeap(size_t max_semi_space_size, size_t max_old_space_size,
           FixedArray::SizeFor(JSArray::kInitialMaxFastElementArray) +
           AllocationMemento::kSize));
 
-  code_range_size_ = code_range_size * MB;
+  code_range_size_ = code_range_size_in_mb * MB;
 
   configured_ = true;
   return true;
@@ -5906,7 +6033,7 @@ void Heap::RegisterExternallyReferencedObject(Object** object) {
     incremental_marking()->WhiteToGreyAndPush(heap_object);
   } else {
     DCHECK(mark_compact_collector()->in_use());
-    mark_compact_collector()->MarkObject(heap_object);
+    mark_compact_collector()->MarkExternallyReferencedObject(heap_object);
   }
 }
 

@@ -1295,6 +1295,13 @@ void BytecodeGraphBuilder::VisitCreateArrayLiteral() {
   environment()->BindAccumulator(literal, Environment::kAttachFrameState);
 }
 
+void BytecodeGraphBuilder::VisitCreateEmptyArrayLiteral() {
+  int literal_index = bytecode_iterator().GetIndexOperand(0);
+  Node* literal = NewNode(javascript()->CreateEmptyLiteralArray(literal_index),
+                          GetFunctionClosure());
+  environment()->BindAccumulator(literal);
+}
+
 void BytecodeGraphBuilder::VisitCreateObjectLiteral() {
   Handle<BoilerplateDescription> constant_properties =
       Handle<BoilerplateDescription>::cast(
@@ -1504,12 +1511,30 @@ void BytecodeGraphBuilder::VisitCallWithSpread() {
   Node* callee =
       environment()->LookupRegister(bytecode_iterator().GetRegisterOperand(0));
   interpreter::Register receiver = bytecode_iterator().GetRegisterOperand(1);
+  Node* receiver_node = environment()->LookupRegister(receiver);
   size_t reg_count = bytecode_iterator().GetRegisterCountOperand(2);
-  const Operator* call =
-      javascript()->CallWithSpread(static_cast<int>(reg_count + 1));
+  interpreter::Register first_arg = interpreter::Register(receiver.index() + 1);
+  int arg_count = static_cast<int>(reg_count) - 1;
+  Node* const* args =
+      GetCallArgumentsFromRegister(callee, receiver_node, first_arg, arg_count);
+  // Slot index of 0 is used indicate no feedback slot is available. Assert
+  // the assumption that slot index 0 is never a valid feedback slot.
+  int const slot_id = bytecode_iterator().GetIndexOperand(3);
+  STATIC_ASSERT(FeedbackVector::kReservedIndexCount > 0);
+  VectorSlotPair feedback = CreateVectorSlotPair(slot_id);
 
-  Node* value = ProcessCallArguments(call, callee, receiver, reg_count);
-  environment()->BindAccumulator(value, Environment::kAttachFrameState);
+  CallFrequency frequency = ComputeCallFrequency(slot_id);
+  const Operator* op = javascript()->CallWithSpread(
+      static_cast<int>(reg_count + 1), frequency, feedback);
+  Node* node = nullptr;
+  if (Node* simplified = TryBuildSimplifiedCall(
+          op, args, static_cast<int>(arg_count), feedback.slot())) {
+    if (environment() == nullptr) return;
+    node = simplified;
+  } else {
+    node = ProcessCallArguments(op, args, 2 + arg_count);
+  }
+  environment()->BindAccumulator(node, Environment::kAttachFrameState);
 }
 
 void BytecodeGraphBuilder::VisitCallJSRuntime() {
@@ -1626,17 +1651,30 @@ void BytecodeGraphBuilder::VisitConstructWithSpread() {
   interpreter::Register callee_reg = bytecode_iterator().GetRegisterOperand(0);
   interpreter::Register first_reg = bytecode_iterator().GetRegisterOperand(1);
   size_t reg_count = bytecode_iterator().GetRegisterCountOperand(2);
+  // Slot index of 0 is used indicate no feedback slot is available. Assert
+  // the assumption that slot index 0 is never a valid feedback slot.
+  STATIC_ASSERT(FeedbackVector::kReservedIndexCount > 0);
+  int const slot_id = bytecode_iterator().GetIndexOperand(3);
+  VectorSlotPair feedback = CreateVectorSlotPair(slot_id);
 
   Node* new_target = environment()->LookupAccumulator();
   Node* callee = environment()->LookupRegister(callee_reg);
 
-  const Operator* op =
-      javascript()->ConstructWithSpread(static_cast<uint32_t>(reg_count + 2));
+  CallFrequency frequency = ComputeCallFrequency(slot_id);
+  const Operator* op = javascript()->ConstructWithSpread(
+      static_cast<uint32_t>(reg_count + 2), frequency, feedback);
   int arg_count = static_cast<int>(reg_count);
   Node* const* args = GetConstructArgumentsFromRegister(callee, new_target,
                                                         first_reg, arg_count);
-  Node* value = ProcessConstructArguments(op, args, 2 + arg_count);
-  environment()->BindAccumulator(value, Environment::kAttachFrameState);
+  Node* node = nullptr;
+  if (Node* simplified = TryBuildSimplifiedConstruct(
+          op, args, static_cast<int>(arg_count), feedback.slot())) {
+    if (environment() == nullptr) return;
+    node = simplified;
+  } else {
+    node = ProcessConstructArguments(op, args, 2 + arg_count);
+  }
+  environment()->BindAccumulator(node, Environment::kAttachFrameState);
 }
 
 void BytecodeGraphBuilder::VisitInvokeIntrinsic() {
@@ -2134,45 +2172,6 @@ void BytecodeGraphBuilder::VisitToNumber() {
                               Environment::kAttachFrameState);
 }
 
-void BytecodeGraphBuilder::VisitToPrimitiveToString() {
-  PrepareEagerCheckpoint();
-  Node* object = environment()->LookupAccumulator();
-
-  Node* node = nullptr;
-  FeedbackSlot slot =
-      feedback_vector()->ToSlot(bytecode_iterator().GetIndexOperand(1));
-  if (Node* simplified = TryBuildSimplifiedToPrimitiveToString(object, slot)) {
-    node = simplified;
-  } else {
-    node = NewNode(javascript()->ToPrimitiveToString(), object);
-  }
-
-  environment()->BindRegister(bytecode_iterator().GetRegisterOperand(0), node,
-                              Environment::kAttachFrameState);
-}
-
-void BytecodeGraphBuilder::VisitStringConcat() {
-  PrepareEagerCheckpoint();
-  interpreter::Register first_reg = bytecode_iterator().GetRegisterOperand(0);
-  int operand_count =
-      static_cast<int>(bytecode_iterator().GetRegisterCountOperand(1));
-  Node** operands =
-      local_zone()->NewArray<Node*>(static_cast<size_t>(operand_count));
-  int operand_base = first_reg.index();
-  for (int i = 0; i < operand_count; ++i) {
-    Node* reg =
-        environment()->LookupRegister(interpreter::Register(operand_base + i));
-    // Explicitly insert a string check here. All operands are already strings,
-    // however in the case of generator yields in the middle of string
-    // concatenations we might lose the knowledge that the operand is a string.
-    operands[i] = NewNode(simplified()->CheckString(), reg);
-  }
-
-  Node* node = MakeNode(javascript()->StringConcat(operand_count),
-                        operand_count, operands, false);
-  environment()->BindAccumulator(node, Environment::kAttachFrameState);
-}
-
 void BytecodeGraphBuilder::VisitJump() { BuildJump(); }
 
 void BytecodeGraphBuilder::VisitJumpConstant() { BuildJump(); }
@@ -2356,7 +2355,6 @@ void BytecodeGraphBuilder::VisitForInStep() {
 }
 
 void BytecodeGraphBuilder::VisitSuspendGenerator() {
-  Node* state = environment()->LookupAccumulator();
   Node* generator = environment()->LookupRegister(
       bytecode_iterator().GetRegisterOperand(0));
   interpreter::Register first_reg = bytecode_iterator().GetRegisterOperand(1);
@@ -2364,6 +2362,8 @@ void BytecodeGraphBuilder::VisitSuspendGenerator() {
   CHECK_EQ(0, first_reg.index());
   int register_count =
       static_cast<int>(bytecode_iterator().GetRegisterCountOperand(2));
+  Node* suspend_id = jsgraph()->SmiConstant(
+      bytecode_iterator().GetUnsignedImmediateOperand(3));
 
   // The offsets used by the bytecode iterator are relative to a different base
   // than what is used in the interpreter, hence the addition.
@@ -2375,7 +2375,7 @@ void BytecodeGraphBuilder::VisitSuspendGenerator() {
 
   Node** value_inputs = local_zone()->NewArray<Node*>(value_input_count);
   value_inputs[0] = generator;
-  value_inputs[1] = state;
+  value_inputs[1] = suspend_id;
   value_inputs[2] = offset;
   for (int i = 0; i < register_count; ++i) {
     value_inputs[3 + i] =
@@ -2631,20 +2631,6 @@ Node* BytecodeGraphBuilder::TryBuildSimplifiedToNumber(Node* value,
   Node* control = environment()->GetControlDependency();
   Reduction early_reduction = type_hint_lowering().ReduceToNumberOperation(
       value, effect, control, slot);
-  if (early_reduction.Changed()) {
-    ApplyEarlyReduction(early_reduction);
-    return early_reduction.replacement();
-  }
-  return nullptr;
-}
-
-Node* BytecodeGraphBuilder::TryBuildSimplifiedToPrimitiveToString(
-    Node* value, FeedbackSlot slot) {
-  Node* effect = environment()->GetEffectDependency();
-  Node* control = environment()->GetControlDependency();
-  Reduction early_reduction =
-      type_hint_lowering().ReduceToPrimitiveToStringOperation(value, effect,
-                                                              control, slot);
   if (early_reduction.Changed()) {
     ApplyEarlyReduction(early_reduction);
     return early_reduction.replacement();

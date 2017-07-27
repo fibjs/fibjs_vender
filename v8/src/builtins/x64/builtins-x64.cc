@@ -152,8 +152,7 @@ void Generate_JSBuiltinsConstructStubHelper(MacroAssembler* masm) {
     // rdi: constructor function
     // rdx: new target
     ParameterCount actual(rax);
-    __ InvokeFunction(rdi, rdx, actual, CALL_FUNCTION,
-                      CheckDebugStepCallWrapper());
+    __ InvokeFunction(rdi, rdx, actual, CALL_FUNCTION);
 
     // Restore context from the frame.
     __ movp(rsi, Operand(rbp, ConstructFrameConstants::kContextOffset));
@@ -277,8 +276,7 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
 
     // Call the function.
     ParameterCount actual(rax);
-    __ InvokeFunction(rdi, rdx, actual, CALL_FUNCTION,
-                      CheckDebugStepCallWrapper());
+    __ InvokeFunction(rdi, rdx, actual, CALL_FUNCTION);
 
     // ----------- S t a t e -------------
     //  -- rax                 constructor result
@@ -639,7 +637,9 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     // pass in the generator object.  In ordinary calls, new.target is always
     // undefined because generator functions are non-constructable.
     __ movp(rdx, rbx);
-    __ jmp(FieldOperand(rdi, JSFunction::kCodeEntryOffset));
+    __ movp(rcx, FieldOperand(rdi, JSFunction::kCodeOffset));
+    __ addp(rcx, Immediate(Code::kHeaderSize - kHeapObjectTag));
+    __ jmp(rcx);
   }
 
   __ bind(&prepare_step_in_if_stepping);
@@ -668,17 +668,16 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ jmp(&stepping_prepared);
 }
 
-static void ReplaceClosureEntryWithOptimizedCode(
-    MacroAssembler* masm, Register optimized_code_entry, Register closure,
+static void ReplaceClosureCodeWithOptimizedCode(
+    MacroAssembler* masm, Register optimized_code, Register closure,
     Register scratch1, Register scratch2, Register scratch3) {
   Register native_context = scratch1;
 
   // Store the optimized code in the closure.
-  __ leap(optimized_code_entry,
-          FieldOperand(optimized_code_entry, Code::kHeaderSize));
-  __ movp(FieldOperand(closure, JSFunction::kCodeEntryOffset),
-          optimized_code_entry);
-  __ RecordWriteCodeEntryField(closure, optimized_code_entry, scratch2);
+  __ movp(FieldOperand(closure, JSFunction::kCodeOffset), optimized_code);
+  __ movp(scratch1, optimized_code);  // Write barrier clobbers scratch1 below.
+  __ RecordWriteField(closure, JSFunction::kCodeOffset, scratch1, scratch2,
+                      kDontSaveFPRegs, OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
 
   // Link the closure into the optimized function list.
   __ movp(native_context, NativeContextOperand());
@@ -815,8 +814,10 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
     // the optimized functions list, then tail call the optimized code.
     // The feedback vector is no longer used, so re-use it as a scratch
     // register.
-    ReplaceClosureEntryWithOptimizedCode(masm, optimized_code_entry, closure,
-                                         scratch2, scratch3, feedback_vector);
+    ReplaceClosureCodeWithOptimizedCode(masm, optimized_code_entry, closure,
+                                        scratch2, scratch3, feedback_vector);
+    __ addp(optimized_code_entry,
+            Immediate(Code::kHeaderSize - kHeapObjectTag));
     __ jmp(optimized_code_entry);
 
     // Optimized code slot contains deoptimized code, evict it and re-enter the
@@ -982,9 +983,11 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ leave();  // Leave the frame so we can tail call.
   __ movp(rcx, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
   __ movp(rcx, FieldOperand(rcx, SharedFunctionInfo::kCodeOffset));
+  __ movp(FieldOperand(rdi, JSFunction::kCodeOffset), rcx);
+  __ movp(r14, rcx);  // Write barrier clobbers r14 below.
+  __ RecordWriteField(rdi, JSFunction::kCodeOffset, r14, r15, kDontSaveFPRegs,
+                      OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
   __ leap(rcx, FieldOperand(rcx, Code::kHeaderSize));
-  __ movp(FieldOperand(rdi, JSFunction::kCodeEntryOffset), rcx);
-  __ RecordWriteCodeEntryField(rdi, rcx, r15);
   __ jmp(rcx);
 }
 
@@ -1328,9 +1331,11 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ j(equal, &gotta_call_runtime);
 
   // Install the SFI's code entry.
+  __ movp(FieldOperand(closure, JSFunction::kCodeOffset), entry);
+  __ movp(r14, entry);  // Write barrier clobbers r14 below.
+  __ RecordWriteField(closure, JSFunction::kCodeOffset, r14, r15,
+                      kDontSaveFPRegs, OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
   __ leap(entry, FieldOperand(entry, Code::kHeaderSize));
-  __ movp(FieldOperand(closure, JSFunction::kCodeEntryOffset), entry);
-  __ RecordWriteCodeEntryField(closure, entry, r15);
   __ jmp(entry);
 
   __ bind(&gotta_call_runtime);
@@ -2305,7 +2310,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // rax : expected number of arguments
   // rdx : new target (passed through to callee)
   // rdi : function (passed through to callee)
-  __ movp(rcx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
+  __ movp(rcx, FieldOperand(rdi, JSFunction::kCodeOffset));
+  __ addp(rcx, Immediate(Code::kHeaderSize - kHeapObjectTag));
   __ call(rcx);
 
   // Store offset of return address for deoptimizer.
@@ -2319,7 +2325,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // Dont adapt arguments.
   // -------------------------------------------
   __ bind(&dont_adapt_arguments);
-  __ movp(rcx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
+  __ movp(rcx, FieldOperand(rdi, JSFunction::kCodeOffset));
+  __ addp(rcx, Immediate(Code::kHeaderSize - kHeapObjectTag));
   __ jmp(rcx);
 
   __ bind(&stack_overflow);
@@ -2553,8 +2560,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   ParameterCount actual(rax);
   ParameterCount expected(rbx);
 
-  __ InvokeFunctionCode(rdi, no_reg, expected, actual, JUMP_FUNCTION,
-                        CheckDebugStepCallWrapper());
+  __ InvokeFunctionCode(rdi, no_reg, expected, actual, JUMP_FUNCTION);
 
   // The function is a "classConstructor", need to raise an exception.
   __ bind(&class_constructor);

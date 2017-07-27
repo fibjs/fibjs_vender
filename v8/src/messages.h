@@ -270,6 +270,7 @@ class ErrorUtils : public AllStatic {
     "ArrayBuffer subclass returned this from species constructor")             \
   T(ArrayFunctionsOnFrozen, "Cannot modify frozen array elements")             \
   T(ArrayFunctionsOnSealed, "Cannot add/remove sealed array elements")         \
+  T(AwaitNotInAsyncFunction, "await is only valid in async function")          \
   T(AtomicsWaitNotAllowed, "Atomics.wait cannot be called in this context")    \
   T(CalledNonCallable, "% is not a function")                                  \
   T(CalledOnNonObject, "% called on non-object")                               \
@@ -527,10 +528,11 @@ class ErrorUtils : public AllStatic {
   T(LetInLexicalBinding, "let is disallowed as a lexically bound name")        \
   T(LocaleMatcher, "Illegal value for localeMatcher:%")                        \
   T(NormalizationForm, "The normalization form should be one of %.")           \
-  T(NumberFormatRange, "% argument must be between 0 and 20")                  \
+  T(NumberFormatRange, "% argument must be between 0 and 100")                 \
   T(PropertyValueOutOfRange, "% value is out of range.")                       \
   T(StackOverflow, "Maximum call stack size exceeded")                         \
-  T(ToPrecisionFormatRange, "toPrecision() argument must be between 1 and 21") \
+  T(ToPrecisionFormatRange,                                                    \
+    "toPrecision() argument must be between 1 and 100")                        \
   T(ToRadixFormatRange, "toString() radix argument must be between 2 and 36")  \
   T(TypedArraySetNegativeOffset, "Start offset is negative")                   \
   T(TypedArraySetSourceTooLarge, "Source is too large")                        \
@@ -556,8 +558,11 @@ class ErrorUtils : public AllStatic {
     "% loop variable declaration may not have an initializer.")                \
   T(ForInOfLoopMultiBindings,                                                  \
     "Invalid left-hand side in % loop: Must have a single binding.")           \
-  T(GeneratorInLegacyContext,                                                  \
-    "Generator declarations are not allowed in legacy contexts.")              \
+  T(GeneratorInSingleStatementContext,                                         \
+    "Generators can only be declared at the top level or inside a block.")     \
+  T(AsyncFunctionInSingleStatementContext,                                     \
+    "Async functions can only be declared at the top level or inside a "       \
+    "block.")                                                                  \
   T(IllegalBreak, "Illegal break statement")                                   \
   T(NoIterationStatement,                                                      \
     "Illegal continue statement: no surrounding iteration statement")          \

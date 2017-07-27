@@ -220,6 +220,7 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
                                             int literal_index, int flags);
   BytecodeArrayBuilder& CreateArrayLiteral(size_t constant_elements_entry,
                                            int literal_index, int flags);
+  BytecodeArrayBuilder& CreateEmptyArrayLiteral(int literal_index);
   BytecodeArrayBuilder& CreateObjectLiteral(size_t constant_properties_entry,
                                             int literal_index, int flags,
                                             Register output);
@@ -264,7 +265,8 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   // Call a JS function. The JSFunction or Callable to be called should be in
   // |callable|, the receiver in |args[0]| and the arguments in |args[1]|
   // onwards. The final argument must be a spread.
-  BytecodeArrayBuilder& CallWithSpread(Register callable, RegisterList args);
+  BytecodeArrayBuilder& CallWithSpread(Register callable, RegisterList args,
+                                       int feedback_slot);
 
   // Call the Construct operator. The accumulator holds the |new_target|.
   // The |constructor| is in a register and arguments are in |args|.
@@ -275,7 +277,8 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   // the |new_target|. The |constructor| is in a register and arguments are in
   // |args|. The final argument must be a spread.
   BytecodeArrayBuilder& ConstructWithSpread(Register constructor,
-                                            RegisterList args);
+                                            RegisterList args,
+                                            int feedback_slot);
 
   // Call the runtime function with |function_id| and arguments |args|.
   BytecodeArrayBuilder& CallRuntime(Runtime::FunctionId function_id,
@@ -348,13 +351,6 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   BytecodeArrayBuilder& ToName(Register out);
   BytecodeArrayBuilder& ToNumber(Register out, int feedback_slot);
 
-  // Converts accumulator to a primitive and then to a string, and stores result
-  // in register |out|.
-  BytecodeArrayBuilder& ToPrimitiveToString(Register out, int feedback_slot);
-  // Concatenate all the string values in |operand_registers| into a string
-  // and store result in the accumulator.
-  BytecodeArrayBuilder& StringConcat(RegisterList operand_registers);
-
   // Flow Control.
   BytecodeArrayBuilder& Bind(BytecodeLabel* label);
   BytecodeArrayBuilder& Bind(const BytecodeLabel& target, BytecodeLabel* label);
@@ -408,7 +404,8 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
 
   // Generators.
   BytecodeArrayBuilder& SuspendGenerator(Register generator,
-                                         RegisterList registers);
+                                         RegisterList registers,
+                                         int suspend_id);
   BytecodeArrayBuilder& RestoreGeneratorState(Register generator);
   BytecodeArrayBuilder& RestoreGeneratorRegisters(Register generator,
                                                   RegisterList registers);

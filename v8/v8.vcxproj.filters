@@ -513,6 +513,9 @@
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\boxed-float.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-arguments-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -526,9 +529,6 @@
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-constructor.h">
-      <Filter>Source Files\builtins</Filter>
-    </ClInclude>
-    <ClInclude Include="src\builtins\builtins-conversion-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-definitions.h">
@@ -658,9 +658,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\bytecode-liveness-map.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\check-elimination.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\checkpoint-elimination.h">
@@ -1099,9 +1096,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\flags.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\float1.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\frames-inl.h">
@@ -2535,9 +2529,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\c-linkage.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\check-elimination.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\checkpoint-elimination.cc">

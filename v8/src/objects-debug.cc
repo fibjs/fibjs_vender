@@ -72,6 +72,7 @@ void HeapObject::HeapObjectVerify() {
     case MUTABLE_HEAP_NUMBER_TYPE:
       HeapNumber::cast(this)->HeapNumberVerify();
       break;
+    case HASH_TABLE_TYPE:
     case FIXED_ARRAY_TYPE:
       FixedArray::cast(this)->FixedArrayVerify();
       break;
@@ -366,11 +367,14 @@ void JSObject::JSObjectVerify() {
     }
     DescriptorArray* descriptors = map()->instance_descriptors();
     Isolate* isolate = GetIsolate();
+    bool is_transitionable_fast_elements_kind =
+        IsTransitionableFastElementsKind(map()->elements_kind());
+
     for (int i = 0; i < map()->NumberOfOwnDescriptors(); i++) {
       PropertyDetails details = descriptors->GetDetails(i);
       if (details.location() == kField) {
         DCHECK_EQ(kData, details.kind());
-        Representation r = descriptors->GetDetails(i).representation();
+        Representation r = details.representation();
         FieldIndex index = FieldIndex::ForDescriptor(map(), i);
         if (IsUnboxedDoubleField(index)) {
           DCHECK(r.IsDouble());
@@ -393,6 +397,9 @@ void JSObject::JSObjectVerify() {
           CHECK(!field_type->NowStable() || field_type->NowContains(value) ||
                 (!FLAG_use_allocation_folding && value->IsUndefined(isolate)));
         }
+        CHECK_IMPLIES(is_transitionable_fast_elements_kind,
+                      !Map::IsInplaceGeneralizableField(details.constness(), r,
+                                                        field_type));
       }
     }
   }
@@ -675,7 +682,9 @@ void String::StringVerify() {
 
 
 void ConsString::ConsStringVerify() {
-  CHECK(this->first()->IsString() && this->second()->IsString());
+  CHECK(this->first()->IsString());
+  CHECK(this->second() == GetHeap()->empty_string() ||
+        this->second()->IsString());
   CHECK(this->length() >= ConsString::kMinLength);
   CHECK(this->length() == this->first()->length() + this->second()->length());
   if (this->IsFlat()) {

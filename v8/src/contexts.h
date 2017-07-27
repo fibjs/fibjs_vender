@@ -390,7 +390,6 @@ enum ContextLookupFlags {
   V(STRING_ITERATOR_MAP_INDEX, Map, string_iterator_map)                       \
   V(SYMBOL_FUNCTION_INDEX, JSFunction, symbol_function)                        \
   V(NATIVE_FUNCTION_MAP_INDEX, Map, native_function_map)                       \
-  V(WASM_FUNCTION_MAP_INDEX, Map, wasm_function_map)                           \
   V(WASM_INSTANCE_CONSTRUCTOR_INDEX, JSFunction, wasm_instance_constructor)    \
   V(WASM_MEMORY_CONSTRUCTOR_INDEX, JSFunction, wasm_memory_constructor)        \
   V(WASM_MODULE_CONSTRUCTOR_INDEX, JSFunction, wasm_module_constructor)        \
@@ -602,23 +601,23 @@ class Context: public FixedArray {
   Context* script_context();
 
   // Compute the native context.
-  inline Context* native_context();
+  inline Context* native_context() const;
   inline void set_native_context(Context* context);
 
   // Predicates for context types.  IsNativeContext is also defined on Object
   // because we frequently have to know if arbitrary objects are natives
   // contexts.
-  inline bool IsNativeContext();
-  inline bool IsFunctionContext();
-  inline bool IsCatchContext();
-  inline bool IsWithContext();
-  inline bool IsDebugEvaluateContext();
-  inline bool IsBlockContext();
-  inline bool IsModuleContext();
-  inline bool IsEvalContext();
-  inline bool IsScriptContext();
+  inline bool IsNativeContext() const;
+  inline bool IsFunctionContext() const;
+  inline bool IsCatchContext() const;
+  inline bool IsWithContext() const;
+  inline bool IsDebugEvaluateContext() const;
+  inline bool IsBlockContext() const;
+  inline bool IsModuleContext() const;
+  inline bool IsEvalContext() const;
+  inline bool IsScriptContext() const;
 
-  inline bool HasSameSecurityTokenAs(Context* that);
+  inline bool HasSameSecurityTokenAs(Context* that) const;
 
   // A native context holds a list of all functions with optimized code.
   void AddOptimizedFunction(JSFunction* function);
@@ -642,8 +641,8 @@ class Context: public FixedArray {
 
 #define NATIVE_CONTEXT_FIELD_ACCESSORS(index, type, name) \
   inline void set_##name(type* value);                    \
-  inline bool is_##name(type* value);                     \
-  inline type* name();
+  inline bool is_##name(type* value) const;               \
+  inline type* name() const;
   NATIVE_CONTEXT_FIELDS(NATIVE_CONTEXT_FIELD_ACCESSORS)
 #undef NATIVE_CONTEXT_FIELD_ACCESSORS
 
@@ -686,6 +685,8 @@ class Context: public FixedArray {
     DCHECK(IsFastElementsKind(elements_kind));
     return elements_kind + FIRST_JS_ARRAY_MAP_SLOT;
   }
+
+  inline Map* GetInitialJSArrayMap(ElementsKind kind) const;
 
   static const int kSize = kHeaderSize + NATIVE_CONTEXT_SLOTS * kPointerSize;
   static const int kNotFound = -1;

@@ -440,14 +440,6 @@ void TurboAssembler::LoadRoot(Register destination, Heap::RootListIndex index,
 }
 
 
-void MacroAssembler::StoreRoot(Register source,
-                               Heap::RootListIndex index,
-                               Condition cond) {
-  DCHECK(Heap::RootCanBeWrittenAfterInitialization(index));
-  str(source, MemOperand(kRootRegister, index << kPointerSizeLog2), cond);
-}
-
-
 void MacroAssembler::InNewSpace(Register object,
                                 Register scratch,
                                 Condition cond,
@@ -657,70 +649,6 @@ void MacroAssembler::RecordWrite(
     mov(address, Operand(bit_cast<int32_t>(kZapValue + 12)));
     mov(value, Operand(bit_cast<int32_t>(kZapValue + 16)));
   }
-}
-
-void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
-                                               Register code_entry,
-                                               Register scratch) {
-  const int offset = JSFunction::kCodeEntryOffset;
-
-  // Since a code entry (value) is always in old space, we don't need to update
-  // remembered set. If incremental marking is off, there is nothing for us to
-  // do.
-  if (!FLAG_incremental_marking) return;
-
-  DCHECK(js_function.is(r1));
-  DCHECK(code_entry.is(r4));
-  DCHECK(scratch.is(r5));
-  AssertNotSmi(js_function);
-
-  if (emit_debug_code()) {
-    add(scratch, js_function, Operand(offset - kHeapObjectTag));
-    ldr(scratch, MemOperand(scratch));
-    cmp(scratch, code_entry);
-    Check(eq, kWrongAddressOrValuePassedToRecordWrite);
-  }
-
-  // First, check if a write barrier is even needed. The tests below
-  // catch stores of Smis and stores into young gen.
-  Label done;
-
-  CheckPageFlag(code_entry, scratch,
-                MemoryChunk::kPointersToHereAreInterestingMask, eq, &done);
-  CheckPageFlag(js_function, scratch,
-                MemoryChunk::kPointersFromHereAreInterestingMask, eq, &done);
-
-  const Register dst = scratch;
-  add(dst, js_function, Operand(offset - kHeapObjectTag));
-
-  push(code_entry);
-
-  // Save caller-saved registers, which includes js_function.
-  DCHECK((kCallerSaved & js_function.bit()) != 0);
-  DCHECK_EQ(kCallerSaved & code_entry.bit(), 0u);
-  stm(db_w, sp, (kCallerSaved | lr.bit()));
-
-  int argument_count = 3;
-  PrepareCallCFunction(argument_count);
-
-  mov(r0, js_function);
-  mov(r1, dst);
-  mov(r2, Operand(ExternalReference::isolate_address(isolate())));
-
-  {
-    AllowExternalCallThatCantCauseGC scope(this);
-    CallCFunction(
-        ExternalReference::incremental_marking_record_write_code_entry_function(
-            isolate()),
-        argument_count);
-  }
-
-  // Restore caller-saved registers (including js_function and code_entry).
-  ldm(ia_w, sp, (kCallerSaved | lr.bit()));
-
-  pop(code_entry);
-
-  bind(&done);
 }
 
 void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
@@ -1600,11 +1528,9 @@ void TurboAssembler::PrepareForTailCall(const ParameterCount& callee_args_count,
 }
 
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    Label* done,
+                                    const ParameterCount& actual, Label* done,
                                     bool* definitely_mismatches,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   bool definitely_matches = false;
   *definitely_mismatches = false;
   Label regular_invoke;
@@ -1654,9 +1580,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
     Handle<Code> adaptor =
         isolate()->builtins()->ArgumentsAdaptorTrampoline();
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(adaptor));
       Call(adaptor);
-      call_wrapper.AfterCall();
       if (!*definitely_mismatches) {
         b(done);
       }
@@ -1710,20 +1634,17 @@ void MacroAssembler::CheckDebugHook(Register fun, Register new_target,
   bind(&skip_hook);
 }
 
-
 void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
                                         const ParameterCount& expected,
                                         const ParameterCount& actual,
-                                        InvokeFlag flag,
-                                        const CallWrapper& call_wrapper) {
+                                        InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
   DCHECK(function.is(r1));
   DCHECK_IMPLIES(new_target.is_valid(), new_target.is(r3));
 
-  if (call_wrapper.NeedsDebugHookCheck()) {
-    CheckDebugHook(function, new_target, expected, actual);
-  }
+  // On function call, call into the debugger if necessary.
+  CheckDebugHook(function, new_target, expected, actual);
 
   // Clear the new.target register if not given.
   if (!new_target.is_valid()) {
@@ -1732,18 +1653,16 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
 
   Label done;
   bool definitely_mismatches = false;
-  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag,
-                 call_wrapper);
+  InvokePrologue(expected, actual, &done, &definitely_mismatches, flag);
   if (!definitely_mismatches) {
     // We call indirectly through the code field in the function to
     // allow recompilation to take effect without changing any of the
     // call sites.
     Register code = r4;
-    ldr(code, FieldMemOperand(function, JSFunction::kCodeEntryOffset));
+    ldr(code, FieldMemOperand(function, JSFunction::kCodeOffset));
+    add(code, code, Operand(Code::kHeaderSize - kHeapObjectTag));
     if (flag == CALL_FUNCTION) {
-      call_wrapper.BeforeCall(CallSize(code));
       Call(code);
-      call_wrapper.AfterCall();
     } else {
       DCHECK(flag == JUMP_FUNCTION);
       Jump(code);
@@ -1755,12 +1674,9 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
   }
 }
 
-
-void MacroAssembler::InvokeFunction(Register fun,
-                                    Register new_target,
+void MacroAssembler::InvokeFunction(Register fun, Register new_target,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
@@ -1777,15 +1693,13 @@ void MacroAssembler::InvokeFunction(Register fun,
                       SharedFunctionInfo::kFormalParameterCountOffset));
 
   ParameterCount expected(expected_reg);
-  InvokeFunctionCode(fun, new_target, expected, actual, flag, call_wrapper);
+  InvokeFunctionCode(fun, new_target, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunction(Register function,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
 
@@ -1795,30 +1709,17 @@ void MacroAssembler::InvokeFunction(Register function,
   // Get the function and setup the context.
   ldr(cp, FieldMemOperand(r1, JSFunction::kContextOffset));
 
-  InvokeFunctionCode(r1, no_reg, expected, actual, flag, call_wrapper);
+  InvokeFunctionCode(r1, no_reg, expected, actual, flag);
 }
-
 
 void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
+                                    InvokeFlag flag) {
   Move(r1, function);
-  InvokeFunction(r1, expected, actual, flag, call_wrapper);
+  InvokeFunction(r1, expected, actual, flag);
 }
 
-
-void MacroAssembler::IsObjectJSStringType(Register object,
-                                          Register scratch,
-                                          Label* fail) {
-  DCHECK(kNotStringTag != 0);
-
-  ldr(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
-  ldrb(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
-  tst(scratch, Operand(kIsNotStringMask));
-  b(ne, fail);
-}
 
 Condition MacroAssembler::IsObjectStringType(Register obj, Register type,
                                              Condition cond) {
@@ -2265,16 +2166,6 @@ void MacroAssembler::SmiToDouble(LowDwVfpRegister value, Register smi) {
   }
 }
 
-
-void MacroAssembler::TestDoubleIsInt32(DwVfpRegister double_input,
-                                       LowDwVfpRegister double_scratch) {
-  DCHECK(!double_input.is(double_scratch));
-  vcvt_s32_f64(double_scratch.low(), double_input);
-  vcvt_f64_s32(double_scratch, double_scratch.low());
-  VFPCompareAndSetFlags(double_input, double_scratch);
-}
-
-
 void MacroAssembler::TryDoubleToInt32Exact(Register result,
                                            DwVfpRegister double_input,
                                            LowDwVfpRegister double_scratch) {
@@ -2283,53 +2174,6 @@ void MacroAssembler::TryDoubleToInt32Exact(Register result,
   vmov(result, double_scratch.low());
   vcvt_f64_s32(double_scratch, double_scratch.low());
   VFPCompareAndSetFlags(double_input, double_scratch);
-}
-
-
-void MacroAssembler::TryInt32Floor(Register result,
-                                   DwVfpRegister double_input,
-                                   Register input_high,
-                                   LowDwVfpRegister double_scratch,
-                                   Label* done,
-                                   Label* exact) {
-  DCHECK(!result.is(input_high));
-  DCHECK(!double_input.is(double_scratch));
-  Label negative, exception;
-
-  VmovHigh(input_high, double_input);
-
-  // Test for NaN and infinities.
-  Sbfx(result, input_high,
-       HeapNumber::kExponentShift, HeapNumber::kExponentBits);
-  cmp(result, Operand(-1));
-  b(eq, &exception);
-  // Test for values that can be exactly represented as a
-  // signed 32-bit integer.
-  TryDoubleToInt32Exact(result, double_input, double_scratch);
-  // If exact, return (result already fetched).
-  b(eq, exact);
-  cmp(input_high, Operand::Zero());
-  b(mi, &negative);
-
-  // Input is in ]+0, +inf[.
-  // If result equals 0x7fffffff input was out of range or
-  // in ]0x7fffffff, 0x80000000[. We ignore this last case which
-  // could fits into an int32, that means we always think input was
-  // out of range and always go to exception.
-  // If result < 0x7fffffff, go to done, result fetched.
-  cmn(result, Operand(1));
-  b(mi, &exception);
-  b(done);
-
-  // Input is in ]-inf, -0[.
-  // If x is a non integer negative number,
-  // floor(x) <=> round_to_zero(x) - 1.
-  bind(&negative);
-  sub(result, result, Operand(1), SetCC);
-  // If result is still negative, go to done, result fetched.
-  // Else, we had an overflow and we fall through exception.
-  b(mi, done);
-  bind(&exception);
 }
 
 void TurboAssembler::TryInlineTruncateDoubleToI(Register result,

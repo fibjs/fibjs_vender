@@ -604,6 +604,24 @@ RUNTIME_FUNCTION(Runtime_DebugPrint) {
   return args[0];  // return TOS
 }
 
+RUNTIME_FUNCTION(Runtime_PrintWithNameForAssert) {
+  SealHandleScope shs(isolate);
+  DCHECK_EQ(2, args.length());
+
+  CONVERT_ARG_CHECKED(String, name, 0);
+
+  PrintF(" * ");
+  StringCharacterStream stream(name);
+  while (stream.HasMore()) {
+    uint16_t character = stream.GetNext();
+    PrintF("%c", character);
+  }
+  PrintF(": ");
+  args[1]->ShortPrint();
+  PrintF("\n");
+
+  return isolate->heap()->undefined_value();
+}
 
 RUNTIME_FUNCTION(Runtime_DebugTrace) {
   SealHandleScope shs(isolate);
@@ -612,6 +630,17 @@ RUNTIME_FUNCTION(Runtime_DebugTrace) {
   return isolate->heap()->undefined_value();
 }
 
+RUNTIME_FUNCTION(Runtime_DebugTrackRetainingPath) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  if (!FLAG_track_retaining_path) {
+    PrintF("DebugTrackRetainingPath requires --track-retaining-path flag.\n");
+  } else {
+    CONVERT_ARG_HANDLE_CHECKED(HeapObject, object, 0);
+    isolate->heap()->AddRetainingPathTarget(object);
+  }
+  return isolate->heap()->undefined_value();
+}
 
 // This will not allocate (flatten the string), but it may run
 // very slowly for very deeply nested ConsStrings.  For debugging use only.

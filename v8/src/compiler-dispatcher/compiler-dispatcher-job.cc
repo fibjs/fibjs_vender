@@ -146,7 +146,8 @@ CompilerDispatcherJob::CompilerDispatcherJob(
       parse_info_(new ParseInfo(shared_)),
       parse_zone_(parse_zone),
       compile_info_(new CompilationInfo(parse_info_->zone(), parse_info_.get(),
-                                        isolate_, Handle<JSFunction>::null())),
+                                        isolate_, shared_,
+                                        Handle<JSFunction>::null())),
       trace_compiler_dispatcher_jobs_(FLAG_trace_compiler_dispatcher_jobs) {
   parse_info_->set_literal(literal);
   parse_info_->set_script(script);
@@ -398,7 +399,6 @@ void CompilerDispatcherJob::FinalizeParsingOnMainThread() {
           handle(ScopeInfo::cast(shared_->outer_scope_info())));
       parse_info_->set_outer_scope_info(outer_scope_info);
     }
-    parse_info_->set_shared_info(shared_);
 
     // Internalize ast values on the main thread.
     parse_info_->ast_value_factory()->Internalize(isolate_);
@@ -421,9 +421,9 @@ void CompilerDispatcherJob::AnalyzeOnMainThread() {
     PrintF("CompilerDispatcherJob[%p]: Analyzing\n", static_cast<void*>(this));
   }
 
-  compile_info_.reset(new CompilationInfo(parse_info_->zone(),
-                                          parse_info_.get(), isolate_,
-                                          Handle<JSFunction>::null()));
+  compile_info_.reset(new CompilationInfo(
+      parse_info_->zone(), parse_info_.get(), isolate_,
+      Handle<SharedFunctionInfo>::null(), Handle<JSFunction>::null()));
 
   DeferredHandleScope scope(isolate_);
   {
@@ -456,8 +456,7 @@ void CompilerDispatcherJob::PrepareToCompileOnMainThread() {
 
 void CompilerDispatcherJob::Compile() {
   DCHECK(status() == CompileJobStatus::kReadyToCompile);
-  COMPILER_DISPATCHER_TRACE_SCOPE_WITH_NUM(
-      tracer_, kCompile, parse_info_->literal()->ast_node_count());
+  COMPILER_DISPATCHER_TRACE_SCOPE(tracer_, kCompile);
   if (trace_compiler_dispatcher_jobs_) {
     PrintF("CompilerDispatcherJob[%p]: Compiling\n", static_cast<void*>(this));
   }
@@ -487,6 +486,8 @@ void CompilerDispatcherJob::FinalizeCompilingOnMainThread() {
 
   {
     HandleScope scope(isolate_);
+
+    compile_info_->set_shared_info(shared_);
     if (compile_job_->state() == CompilationJob::State::kFailed ||
         !Compiler::FinalizeCompilationJob(compile_job_.release())) {
       if (!isolate_->has_pending_exception()) isolate_->StackOverflow();
@@ -550,8 +551,7 @@ double CompilerDispatcherJob::EstimateRuntimeOfNextStepInMs() const {
       return tracer_->EstimatePrepareToCompileInMs();
 
     case CompileJobStatus::kReadyToCompile:
-      return tracer_->EstimateCompileInMs(
-          parse_info_->literal()->ast_node_count());
+      return tracer_->EstimateCompileInMs();
 
     case CompileJobStatus::kCompiled:
       return tracer_->EstimateFinalizeCompilingInMs();

@@ -81,17 +81,6 @@ void IncrementalMarking::RecordWriteFromCode(HeapObject* obj, Object** slot,
   isolate->heap()->incremental_marking()->RecordWrite(obj, slot, *slot);
 }
 
-// static
-void IncrementalMarking::RecordWriteOfCodeEntryFromCode(JSFunction* host,
-                                                        Object** slot,
-                                                        Isolate* isolate) {
-  DCHECK(host->IsJSFunction());
-  IncrementalMarking* marking = isolate->heap()->incremental_marking();
-  Code* value = Code::cast(
-      Code::GetObjectFromEntryAddress(reinterpret_cast<Address>(slot)));
-  marking->RecordWriteOfCodeEntry(host, slot, value);
-}
-
 void IncrementalMarking::RecordCodeTargetPatch(Code* host, Address pc,
                                                HeapObject* value) {
   if (IsMarking()) {
@@ -111,16 +100,6 @@ void IncrementalMarking::RecordCodeTargetPatch(Address pc, HeapObject* value) {
   }
 }
 
-
-void IncrementalMarking::RecordWriteOfCodeEntrySlow(JSFunction* host,
-                                                    Object** slot,
-                                                    Code* value) {
-  if (BaseRecordWrite(host, value)) {
-    DCHECK(slot != NULL);
-    heap_->mark_compact_collector()->RecordCodeEntrySlot(
-        host, reinterpret_cast<Address>(slot), value);
-  }
-}
 
 void IncrementalMarking::RecordWriteIntoCodeSlow(Code* host, RelocInfo* rinfo,
                                                  Object* value) {
@@ -294,7 +273,7 @@ class IncrementalMarkingMarkingVisitor final
     Object* target = *p;
     if (target->IsHeapObject()) {
       collector_->RecordSlot(host, p, target);
-      MarkObject(target);
+      MarkObject(host, target);
     }
   }
 
@@ -304,19 +283,19 @@ class IncrementalMarkingMarkingVisitor final
       Object* target = *p;
       if (target->IsHeapObject()) {
         collector_->RecordSlot(host, p, target);
-        MarkObject(target);
+        MarkObject(host, target);
       }
     }
   }
 
   // Marks the object grey and pushes it on the marking stack.
-  V8_INLINE void MarkObject(Object* obj) {
+  V8_INLINE void MarkObject(HeapObject* host, Object* obj) {
     incremental_marking_->WhiteToGreyAndPush(HeapObject::cast(obj));
   }
 
   // Marks the object black without pushing it on the marking stack.
   // Returns true if object needed marking and false otherwise.
-  V8_INLINE bool MarkObjectWithoutPush(Object* obj) {
+  V8_INLINE bool MarkObjectWithoutPush(HeapObject* host, Object* obj) {
     HeapObject* heap_object = HeapObject::cast(obj);
     return ObjectMarking::WhiteToBlack<IncrementalMarking::kAtomicity>(
         heap_object, incremental_marking_->marking_state(heap_object));

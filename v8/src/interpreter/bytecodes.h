@@ -178,7 +178,7 @@ namespace interpreter {
   V(CallUndefinedReceiver2, AccumulatorUse::kWrite, OperandType::kReg,         \
     OperandType::kReg, OperandType::kReg, OperandType::kIdx)                   \
   V(CallWithSpread, AccumulatorUse::kWrite, OperandType::kReg,                 \
-    OperandType::kRegList, OperandType::kRegCount)                             \
+    OperandType::kRegList, OperandType::kRegCount, OperandType::kIdx)          \
   V(CallRuntime, AccumulatorUse::kWrite, OperandType::kRuntimeId,              \
     OperandType::kRegList, OperandType::kRegCount)                             \
   V(CallRuntimeForPair, AccumulatorUse::kNone, OperandType::kRuntimeId,        \
@@ -194,7 +194,7 @@ namespace interpreter {
   V(Construct, AccumulatorUse::kReadWrite, OperandType::kReg,                  \
     OperandType::kRegList, OperandType::kRegCount, OperandType::kIdx)          \
   V(ConstructWithSpread, AccumulatorUse::kReadWrite, OperandType::kReg,        \
-    OperandType::kRegList, OperandType::kRegCount)                             \
+    OperandType::kRegList, OperandType::kRegCount, OperandType::kIdx)          \
                                                                                \
   /* Test Operators */                                                         \
   V(TestEqual, AccumulatorUse::kReadWrite, OperandType::kReg,                  \
@@ -222,17 +222,12 @@ namespace interpreter {
   V(ToNumber, AccumulatorUse::kRead, OperandType::kRegOut, OperandType::kIdx)  \
   V(ToObject, AccumulatorUse::kRead, OperandType::kRegOut)                     \
                                                                                \
-  /* String concatenation */                                                   \
-  V(ToPrimitiveToString, AccumulatorUse::kRead, OperandType::kRegOut,          \
-    OperandType::kIdx)                                                         \
-  V(StringConcat, AccumulatorUse::kWrite, OperandType::kRegList,               \
-    OperandType::kRegCount)                                                    \
-                                                                               \
   /* Literals */                                                               \
   V(CreateRegExpLiteral, AccumulatorUse::kWrite, OperandType::kIdx,            \
     OperandType::kIdx, OperandType::kFlag8)                                    \
   V(CreateArrayLiteral, AccumulatorUse::kWrite, OperandType::kIdx,             \
     OperandType::kIdx, OperandType::kFlag8)                                    \
+  V(CreateEmptyArrayLiteral, AccumulatorUse::kWrite, OperandType::kIdx)        \
   V(CreateObjectLiteral, AccumulatorUse::kNone, OperandType::kIdx,             \
     OperandType::kIdx, OperandType::kFlag8, OperandType::kRegOut)              \
                                                                                \
@@ -315,8 +310,8 @@ namespace interpreter {
                                                                                \
   /* Generators */                                                             \
   V(RestoreGeneratorState, AccumulatorUse::kWrite, OperandType::kReg)          \
-  V(SuspendGenerator, AccumulatorUse::kRead, OperandType::kReg,                \
-    OperandType::kRegList, OperandType::kRegCount)                             \
+  V(SuspendGenerator, AccumulatorUse::kNone, OperandType::kReg,                \
+    OperandType::kRegList, OperandType::kRegCount, OperandType::kUImm)         \
   V(RestoreGeneratorRegisters, AccumulatorUse::kNone, OperandType::kReg,       \
     OperandType::kRegOutList, OperandType::kRegCount)                          \
                                                                                \
@@ -343,7 +338,7 @@ namespace interpreter {
   V(IncBlockCounter, AccumulatorUse::kNone, OperandType::kIdx)                 \
                                                                                \
   /* Illegal bytecode (terminates execution) */                                \
-  V(Illegal, AccumulatorUse::kNone)                                            \
+  V(Illegal, AccumulatorUse::kNone)
 
 // List of debug break bytecodes.
 #define DEBUG_BREAK_PLAIN_BYTECODE_LIST(V) \

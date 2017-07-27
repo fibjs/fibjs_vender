@@ -139,6 +139,7 @@ template<typename T> class ReturnValue;
 
 namespace internal {
 class Arguments;
+class DeferredHandles;
 class Heap;
 class HeapObject;
 class Isolate;
@@ -2437,7 +2438,8 @@ enum class NewStringType {
  */
 class V8_EXPORT String : public Name {
  public:
-  static const int kMaxLength = (1 << 28) - 16;
+  static constexpr int kMaxLength =
+      sizeof(void*) == 4 ? (1 << 28) - 16 : (1 << 30) - 1 - 24;
 
   enum Encoding {
     UNKNOWN_ENCODING = 0x1,
@@ -4157,6 +4159,43 @@ class V8_EXPORT WasmCompiledModule : public Object {
 
   WasmCompiledModule();
   static void CheckCast(Value* obj);
+};
+
+// TODO(mtrofin): when streaming compilation is done, we can rename this
+// to simply WasmModuleObjectBuilder
+class V8_EXPORT WasmModuleObjectBuilderStreaming final {
+ public:
+  WasmModuleObjectBuilderStreaming(Isolate* isolate, Local<Promise> promise);
+  // The buffer passed into OnBytesReceived is owned by the caller.
+  void OnBytesReceived(const uint8_t*, size_t size);
+  void Finish();
+  void Abort(Local<Value> exception);
+
+ private:
+  typedef std::pair<std::unique_ptr<const uint8_t[]>, size_t> Buffer;
+
+  WasmModuleObjectBuilderStreaming(const WasmModuleObjectBuilderStreaming&) =
+      delete;
+  WasmModuleObjectBuilderStreaming(WasmModuleObjectBuilderStreaming&&) =
+      default;
+  WasmModuleObjectBuilderStreaming& operator=(
+      const WasmModuleObjectBuilderStreaming&) = delete;
+  WasmModuleObjectBuilderStreaming& operator=(
+      WasmModuleObjectBuilderStreaming&&) = default;
+  Isolate* isolate_ = nullptr;
+
+#if V8_CC_MSVC
+  // We don't need the static Copy API, so the default
+  // NonCopyablePersistentTraits would be sufficient, however,
+  // MSVC eagerly instantiates the Copy.
+  // We ensure we don't use Copy, however, by compiling with the
+  // defaults everywhere else.
+  Persistent<Promise, CopyablePersistentTraits<Promise>> promise_;
+#else
+  Persistent<Promise> promise_;
+#endif
+  std::vector<Buffer> received_buffers_;
+  size_t total_size_ = 0;
 };
 
 class V8_EXPORT WasmModuleObjectBuilder final {
@@ -5986,6 +6025,8 @@ V8_INLINE Local<Boolean> False(Isolate* isolate);
  *
  * The arguments for set_max_semi_space_size, set_max_old_space_size,
  * set_max_executable_size, set_code_range_size specify limits in MB.
+ *
+ * The argument for set_max_semi_space_size_in_kb is in KB.
  */
 class V8_EXPORT ResourceConstraints {
  public:
@@ -6003,10 +6044,28 @@ class V8_EXPORT ResourceConstraints {
   void ConfigureDefaults(uint64_t physical_memory,
                          uint64_t virtual_memory_limit);
 
-  int max_semi_space_size() const { return max_semi_space_size_; }
-  void set_max_semi_space_size(int limit_in_mb) {
-    max_semi_space_size_ = limit_in_mb;
+  // Returns the max semi-space size in MB.
+  V8_DEPRECATE_SOON("Use max_semi_space_size_in_kb()",
+                    int max_semi_space_size()) {
+    return static_cast<int>(max_semi_space_size_in_kb_ / 1024);
   }
+
+  // Sets the max semi-space size in MB.
+  V8_DEPRECATE_SOON("Use set_max_semi_space_size_in_kb(size_t limit_in_kb)",
+                    void set_max_semi_space_size(int limit_in_mb)) {
+    max_semi_space_size_in_kb_ = limit_in_mb * 1024;
+  }
+
+  // Returns the max semi-space size in KB.
+  size_t max_semi_space_size_in_kb() const {
+    return max_semi_space_size_in_kb_;
+  }
+
+  // Sets the max semi-space size in KB.
+  void set_max_semi_space_size_in_kb(size_t limit_in_kb) {
+    max_semi_space_size_in_kb_ = limit_in_kb;
+  }
+
   int max_old_space_size() const { return max_old_space_size_; }
   void set_max_old_space_size(int limit_in_mb) {
     max_old_space_size_ = limit_in_mb;
@@ -6032,7 +6091,10 @@ class V8_EXPORT ResourceConstraints {
   }
 
  private:
-  int max_semi_space_size_;
+  // max_semi_space_size_ is in KB
+  size_t max_semi_space_size_in_kb_;
+
+  // The remaining limits are in MB
   int max_old_space_size_;
   int max_executable_size_;
   uint32_t* stack_limit_;
@@ -8930,8 +8992,8 @@ class Internals {
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSApiObjectType = 0xbb;
-  static const int kJSObjectType = 0xbc;
+  static const int kJSApiObjectType = 0xbc;
+  static const int kJSObjectType = 0xbd;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x82;
   static const int kForeignType = 0x86;

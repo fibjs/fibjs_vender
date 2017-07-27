@@ -44,17 +44,41 @@ void CodeStubAssembler::HandleBreakOnNode() {
 }
 
 void CodeStubAssembler::Assert(const NodeGenerator& condition_body,
-                               const char* message, const char* file,
-                               int line) {
+                               const char* message, const char* file, int line,
+                               Node* extra_node1, const char* extra_node1_name,
+                               Node* extra_node2, const char* extra_node2_name,
+                               Node* extra_node3, const char* extra_node3_name,
+                               Node* extra_node4, const char* extra_node4_name,
+                               Node* extra_node5,
+                               const char* extra_node5_name) {
 #if defined(DEBUG)
   if (FLAG_debug_code) {
-    Check(condition_body, message, file, line);
+    Check(condition_body, message, file, line, extra_node1, extra_node1_name,
+          extra_node2, extra_node2_name, extra_node3, extra_node3_name,
+          extra_node4, extra_node4_name, extra_node5, extra_node5_name);
   }
 #endif
 }
 
+#ifdef DEBUG
+namespace {
+void MaybePrintNodeWithName(CodeStubAssembler* csa, Node* node,
+                            const char* node_name) {
+  if (node != nullptr) {
+    csa->CallRuntime(Runtime::kPrintWithNameForAssert, csa->SmiConstant(0),
+                     csa->StringConstant(node_name), node);
+  }
+}
+}  // namespace
+#endif
+
 void CodeStubAssembler::Check(const NodeGenerator& condition_body,
-                              const char* message, const char* file, int line) {
+                              const char* message, const char* file, int line,
+                              Node* extra_node1, const char* extra_node1_name,
+                              Node* extra_node2, const char* extra_node2_name,
+                              Node* extra_node3, const char* extra_node3_name,
+                              Node* extra_node4, const char* extra_node4_name,
+                              Node* extra_node5, const char* extra_node5_name) {
   Label ok(this);
   Label not_ok(this, Label::kDeferred);
   if (message != nullptr && FLAG_code_comments) {
@@ -75,8 +99,18 @@ void CodeStubAssembler::Check(const NodeGenerator& condition_body,
       SNPrintF(buffer, "CSA_ASSERT failed: %s\n", message);
     }
     CallRuntime(Runtime::kGlobalPrint, SmiConstant(0),
-                HeapConstant(factory()->InternalizeUtf8String(&(buffer[0]))));
+                StringConstant(&(buffer[0])));
   }
+
+#ifdef DEBUG
+  // Only print the extra nodes in debug builds.
+  MaybePrintNodeWithName(this, extra_node1, extra_node1_name);
+  MaybePrintNodeWithName(this, extra_node2, extra_node2_name);
+  MaybePrintNodeWithName(this, extra_node3, extra_node3_name);
+  MaybePrintNodeWithName(this, extra_node4, extra_node4_name);
+  MaybePrintNodeWithName(this, extra_node5, extra_node5_name);
+#endif
+
   DebugBreak();
   Goto(&ok);
   BIND(&ok);
@@ -1336,7 +1370,7 @@ Node* CodeStubAssembler::LoadFixedTypedArrayElementAsTagged(
 Node* CodeStubAssembler::LoadAndUntagToWord32FixedArrayElement(
     Node* object, Node* index_node, int additional_offset,
     ParameterMode parameter_mode) {
-  CSA_SLOW_ASSERT(this, IsFixedArray(object));
+  CSA_SLOW_ASSERT(this, Word32Or(IsFixedArray(object), IsHashTable(object)));
   CSA_SLOW_ASSERT(this, MatchesParameterMode(index_node, parameter_mode));
   int32_t header_size =
       FixedArray::kHeaderSize + additional_offset - kHeapObjectTag;
@@ -1428,6 +1462,15 @@ Node* CodeStubAssembler::StoreContextElementNoWriteBarrier(Node* context,
 
 Node* CodeStubAssembler::LoadNativeContext(Node* context) {
   return LoadContextElement(context, Context::NATIVE_CONTEXT_INDEX);
+}
+
+Node* CodeStubAssembler::LoadJSArrayElementsMap(Node* kind,
+                                                Node* native_context) {
+  CSA_ASSERT(this, IsFastElementsKind(kind));
+  CSA_ASSERT(this, IsNativeContext(native_context));
+  Node* offset = IntPtrAdd(IntPtrConstant(Context::FIRST_JS_ARRAY_MAP_SLOT),
+                           ChangeInt32ToIntPtr(kind));
+  return LoadContextElement(native_context, offset);
 }
 
 Node* CodeStubAssembler::LoadJSArrayElementsMap(ElementsKind kind,
@@ -1526,8 +1569,9 @@ Node* CodeStubAssembler::StoreFixedArrayElement(Node* object, Node* index_node,
                                                 WriteBarrierMode barrier_mode,
                                                 int additional_offset,
                                                 ParameterMode parameter_mode) {
-  CSA_SLOW_ASSERT(this,
-                  Word32Or(IsFixedArray(object), IsPropertyArray(object)));
+  CSA_SLOW_ASSERT(
+      this, Word32Or(IsHashTable(object),
+                     Word32Or(IsFixedArray(object), IsPropertyArray(object))));
   CSA_SLOW_ASSERT(this, MatchesParameterMode(index_node, parameter_mode));
   DCHECK(barrier_mode == SKIP_WRITE_BARRIER ||
          barrier_mode == UPDATE_WRITE_BARRIER);
@@ -2349,6 +2393,33 @@ Node* CodeStubAssembler::AllocateFixedArray(ElementsKind kind,
   return array;
 }
 
+void CodeStubAssembler::InitializePropertyArrayLength(Node* property_array,
+                                                      Node* length,
+                                                      ParameterMode mode) {
+  CSA_SLOW_ASSERT(this, IsPropertyArray(property_array));
+  CSA_ASSERT(
+      this, IntPtrOrSmiGreaterThan(length, IntPtrOrSmiConstant(0, mode), mode));
+  CSA_ASSERT(
+      this,
+      IntPtrOrSmiLessThanOrEqual(
+          length, IntPtrOrSmiConstant(PropertyArray::kMaxLength, mode), mode));
+  StoreObjectFieldNoWriteBarrier(property_array, PropertyArray::kLengthOffset,
+                                 ParameterToTagged(length, mode),
+                                 MachineRepresentation::kTaggedSigned);
+}
+
+Node* CodeStubAssembler::LoadPropertyArrayLength(Node* property_array) {
+  // TODO(gsathya): Remove the IsEmptyFixedArray check once we have
+  // proper handling for the Smi case.
+  CSA_SLOW_ASSERT(this, Word32Or(IsEmptyFixedArray(property_array),
+                                 IsPropertyArray(property_array)));
+  Node* const value =
+      LoadObjectField(property_array, PropertyArray::kLengthOffset,
+                      MachineType::TaggedSigned());
+  Node* const length = SmiAnd(value, SmiConstant(PropertyArray::kLengthMask));
+  return length;
+}
+
 Node* CodeStubAssembler::AllocatePropertyArray(Node* capacity_node,
                                                ParameterMode mode,
                                                AllocationFlags flags) {
@@ -2361,8 +2432,7 @@ Node* CodeStubAssembler::AllocatePropertyArray(Node* capacity_node,
   Heap::RootListIndex map_index = Heap::kPropertyArrayMapRootIndex;
   DCHECK(Heap::RootIsImmortalImmovable(map_index));
   StoreMapNoWriteBarrier(array, map_index);
-  StoreObjectFieldNoWriteBarrier(array, FixedArray::kLengthOffset,
-                                 ParameterToTagged(capacity_node, mode));
+  InitializePropertyArrayLength(array, capacity_node, mode);
   return array;
 }
 
@@ -3472,7 +3542,7 @@ Node* CodeStubAssembler::IsFixedArrayWithKind(Node* object, ElementsKind kind) {
     return IsFixedDoubleArray(object);
   } else {
     DCHECK(IsSmiOrObjectElementsKind(kind));
-    return IsFixedArray(object);
+    return Word32Or(IsFixedArray(object), IsHashTable(object));
   }
 }
 
@@ -3555,7 +3625,7 @@ Node* CodeStubAssembler::IsFixedDoubleArray(Node* object) {
 }
 
 Node* CodeStubAssembler::IsHashTable(Node* object) {
-  return WordEqual(LoadMap(object), LoadRoot(Heap::kHashTableMapRootIndex));
+  return HasInstanceType(object, HASH_TABLE_TYPE);
 }
 
 Node* CodeStubAssembler::IsDictionary(Node* object) {
@@ -3647,57 +3717,48 @@ Node* CodeStubAssembler::StringCharCodeAt(Node* string, Node* index,
   CSA_ASSERT(this, IsString(string));
 
   // Translate the {index} into a Word.
-  Node* const int_index = ParameterToWord(index, parameter_mode);
-  CSA_ASSERT(this, IntPtrGreaterThanOrEqual(int_index, IntPtrConstant(0)));
+  index = ParameterToWord(index, parameter_mode);
+  CSA_ASSERT(this, IntPtrGreaterThanOrEqual(index, IntPtrConstant(0)));
+  CSA_ASSERT(this, IntPtrLessThan(index, SmiUntag(LoadStringLength(string))));
 
   VARIABLE(var_result, MachineRepresentation::kWord32);
 
-  Label out(this, &var_result), runtime_generic(this), runtime_external(this);
+  Label return_result(this), if_runtime(this, Label::kDeferred),
+      if_stringistwobyte(this), if_stringisonebyte(this);
 
   ToDirectStringAssembler to_direct(state(), string);
-  Node* const direct_string = to_direct.TryToDirect(&runtime_generic);
-  Node* const offset = IntPtrAdd(int_index, to_direct.offset());
+  to_direct.TryToDirect(&if_runtime);
+  Node* const offset = IntPtrAdd(index, to_direct.offset());
   Node* const instance_type = to_direct.instance_type();
 
-  Node* const string_data = to_direct.PointerToData(&runtime_external);
+  Node* const string_data = to_direct.PointerToData(&if_runtime);
 
   // Check if the {string} is a TwoByteSeqString or a OneByteSeqString.
-  Label if_stringistwobyte(this), if_stringisonebyte(this);
   Branch(IsOneByteStringInstanceType(instance_type), &if_stringisonebyte,
          &if_stringistwobyte);
 
   BIND(&if_stringisonebyte);
   {
     var_result.Bind(Load(MachineType::Uint8(), string_data, offset));
-    Goto(&out);
+    Goto(&return_result);
   }
 
   BIND(&if_stringistwobyte);
   {
     var_result.Bind(Load(MachineType::Uint16(), string_data,
                          WordShl(offset, IntPtrConstant(1))));
-    Goto(&out);
+    Goto(&return_result);
   }
 
-  BIND(&runtime_generic);
+  BIND(&if_runtime);
   {
-    Node* const smi_index = ParameterToTagged(index, parameter_mode);
-    Node* const result = CallRuntime(Runtime::kStringCharCodeAtRT,
-                                     NoContextConstant(), string, smi_index);
+    Node* result = CallRuntime(Runtime::kStringCharCodeAtRT,
+                               NoContextConstant(), string, SmiTag(index));
     var_result.Bind(SmiToWord32(result));
-    Goto(&out);
+    Goto(&return_result);
   }
 
-  BIND(&runtime_external);
-  {
-    Node* const result =
-        CallRuntime(Runtime::kExternalStringGetChar, NoContextConstant(),
-                    direct_string, SmiTag(offset));
-    var_result.Bind(SmiToWord32(result));
-    Goto(&out);
-  }
-
-  BIND(&out);
+  BIND(&return_result);
   return var_result.value();
 }
 
@@ -4924,6 +4985,16 @@ Node* CodeStubAssembler::DecodeWord32(Node* word32, uint32_t shift,
 
 Node* CodeStubAssembler::DecodeWord(Node* word, uint32_t shift, uint32_t mask) {
   return WordShr(WordAnd(word, IntPtrConstant(mask)), static_cast<int>(shift));
+}
+
+Node* CodeStubAssembler::UpdateWord(Node* word, Node* value, uint32_t shift,
+                                    uint32_t mask) {
+  Node* encoded_value = WordShl(value, static_cast<int>(shift));
+  Node* inverted_mask = IntPtrConstant(~static_cast<intptr_t>(mask));
+  // Ensure the {value} fits fully in the mask.
+  CSA_ASSERT(this, WordEqual(WordAnd(encoded_value, inverted_mask),
+                             IntPtrConstant(0)));
+  return WordOr(WordAnd(word, inverted_mask), encoded_value);
 }
 
 void CodeStubAssembler::SetCounter(StatsCounter* counter, int value) {
@@ -6316,11 +6387,30 @@ Node* CodeStubAssembler::ElementOffsetFromIndex(Node* index_node,
   return IntPtrAdd(IntPtrConstant(base_size), shifted_index);
 }
 
+Node* CodeStubAssembler::LoadFeedbackVector(Node* closure) {
+  Node* cell = LoadObjectField(closure, JSFunction::kFeedbackVectorOffset);
+  return LoadObjectField(cell, Cell::kValueOffset);
+}
+
 Node* CodeStubAssembler::LoadFeedbackVectorForStub() {
   Node* function =
       LoadFromParentFrame(JavaScriptFrameConstants::kFunctionOffset);
-  Node* cell = LoadObjectField(function, JSFunction::kFeedbackVectorOffset);
-  return LoadObjectField(cell, Cell::kValueOffset);
+  return LoadFeedbackVector(function);
+}
+
+Node* CodeStubAssembler::LoadFeedbackVectorSlot(Node* closure,
+                                                Node* smi_index) {
+  Node* feedback_vector = LoadFeedbackVector(closure);
+  return LoadFixedArrayElement(feedback_vector, smi_index, 0,
+                               CodeStubAssembler::SMI_PARAMETERS);
+}
+
+void CodeStubAssembler::StoreFeedbackVectorSlot(Node* closure, Node* smi_index,
+                                                Node* value) {
+  Node* feedback_vector = LoadFeedbackVector(closure);
+  StoreFixedArrayElement(feedback_vector, smi_index, value,
+                         UPDATE_WRITE_BARRIER, 0,
+                         CodeStubAssembler::SMI_PARAMETERS);
 }
 
 void CodeStubAssembler::UpdateFeedback(Node* feedback, Node* feedback_vector,
@@ -6337,11 +6427,8 @@ void CodeStubAssembler::UpdateFeedback(Node* feedback, Node* feedback_vector,
     StoreFixedArrayElement(feedback_vector, slot_id, combined_feedback,
                            SKIP_WRITE_BARRIER);
     // Reset profiler ticks.
-    Node* shared_info =
-        LoadObjectField(function, JSFunction::kSharedFunctionInfoOffset);
-    StoreObjectFieldNoWriteBarrier(
-        shared_info, SharedFunctionInfo::kProfilerTicksOffset, Int32Constant(0),
-        MachineRepresentation::kWord32);
+    StoreFixedArrayElement(feedback_vector, FeedbackVector::kProfilerTicksIndex,
+                           SmiConstant(0), SKIP_WRITE_BARRIER);
     Goto(&end);
   }
 
@@ -6927,11 +7014,12 @@ Node* CodeStubAssembler::CreateAllocationSiteInFeedbackVector(
     Node* feedback_vector, Node* slot) {
   Node* size = IntPtrConstant(AllocationSite::kSize);
   Node* site = Allocate(size, CodeStubAssembler::kPretenured);
-
-  StoreMap(site, AllocationSiteMapConstant());
-  Node* kind = SmiConstant(GetInitialFastElementsKind());
+  StoreMapNoWriteBarrier(site, Heap::kAllocationSiteMapRootIndex);
+  // Should match AllocationSite::Initialize.
+  Node* field = UpdateWord<AllocationSite::ElementsKindBits>(
+      IntPtrConstant(0), IntPtrConstant(GetInitialFastElementsKind()));
   StoreObjectFieldNoWriteBarrier(
-      site, AllocationSite::kTransitionInfoOrBoilerplateOffset, kind);
+      site, AllocationSite::kTransitionInfoOrBoilerplateOffset, SmiTag(field));
 
   // Unlike literals, constructed arrays don't have nested sites
   Node* zero = SmiConstant(0);
@@ -9490,10 +9578,8 @@ Node* CodeStubAssembler::AllocateFunctionWithMapAndContext(Node* map,
                                                            Node* context) {
   CSA_SLOW_ASSERT(this, IsMap(map));
 
-  Node* const code = BitcastTaggedToWord(
-      LoadObjectField(shared_info, SharedFunctionInfo::kCodeOffset));
-  Node* const code_entry =
-      IntPtrAdd(code, IntPtrConstant(Code::kHeaderSize - kHeapObjectTag));
+  Node* const code =
+      LoadObjectField(shared_info, SharedFunctionInfo::kCodeOffset);
 
   Node* const fun = Allocate(JSFunction::kSize);
   StoreMapNoWriteBarrier(fun, map);
@@ -9508,8 +9594,7 @@ Node* CodeStubAssembler::AllocateFunctionWithMapAndContext(Node* map,
   StoreObjectFieldNoWriteBarrier(fun, JSFunction::kSharedFunctionInfoOffset,
                                  shared_info);
   StoreObjectFieldNoWriteBarrier(fun, JSFunction::kContextOffset, context);
-  StoreObjectFieldNoWriteBarrier(fun, JSFunction::kCodeEntryOffset, code_entry,
-                                 MachineType::PointerRepresentation());
+  StoreObjectFieldNoWriteBarrier(fun, JSFunction::kCodeOffset, code);
   StoreObjectFieldRoot(fun, JSFunction::kNextFunctionLinkOffset,
                        Heap::kUndefinedValueRootIndex);
 
@@ -9551,16 +9636,13 @@ Node* CodeStubAssembler::MarkerIsNotFrameType(Node* marker_or_function,
 }
 
 void CodeStubAssembler::Print(const char* s) {
-#ifdef DEBUG
   std::string formatted(s);
   formatted += "\n";
   CallRuntime(Runtime::kGlobalPrint, NoContextConstant(),
               StringConstant(formatted.c_str()));
-#endif
 }
 
 void CodeStubAssembler::Print(const char* prefix, Node* tagged_value) {
-#ifdef DEBUG
   if (prefix != nullptr) {
     std::string formatted(prefix);
     formatted += ": ";
@@ -9570,7 +9652,6 @@ void CodeStubAssembler::Print(const char* prefix, Node* tagged_value) {
                 HeapConstant(string));
   }
   CallRuntime(Runtime::kDebugPrint, NoContextConstant(), tagged_value);
-#endif
 }
 
 }  // namespace internal
