@@ -46,7 +46,7 @@ if(${OS} STREQUAL "FreeBSD")
 endif()
 
 if(${BUILD_TYPE} STREQUAL "release")
-	set(flags "${flags} -O3 ${BUILD_OPTION} -w -fomit-frame-pointer -fvisibility=hidden")
+	set(flags "${flags} -O3 -s ${BUILD_OPTION} -w -fomit-frame-pointer -fvisibility=hidden")
 	set(link_flags "${link_flags} ${BUILD_OPTION}")
 	add_definitions(-DNDEBUG=1)
 
