@@ -67,11 +67,8 @@ void Fiber::destroy()
 {
     Thread_base::destroy();
 
-#ifdef WIN32
-    VirtualFree(this, 0, MEM_RELEASE);
-#else
-    free(this);
-#endif
+    delete_fiber(m_ctx);
+    delete this;
 }
 
 void Fiber::join()

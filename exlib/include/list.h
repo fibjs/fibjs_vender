@@ -9,7 +9,6 @@
 #ifndef _ex_link_h__
 #define _ex_link_h__
 
-#include "stack.h"
 #include "utils.h"
 #include <assert.h>
 

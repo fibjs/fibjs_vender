@@ -2,274 +2,272 @@
 
 TEST(ENG(api), version)
 {
-	EXPECT_EQ(js::Api::version, js::_api->getVersion());
+    EXPECT_EQ(js::Api::version, js::_api->getVersion());
 }
 
 TEST(ENG(api), init)
 {
-	js::_api->init();
+    js::_api->init();
 }
 
 static js::Runtime* rt;
 
 TEST(ENG(api), Runtime)
 {
-	rt = js::_api->createRuntime();
+    rt = js::_api->createRuntime();
 
-	EXPECT_NE((void*)NULL, rt);
+    EXPECT_NE((void*)NULL, rt);
 }
 
 TEST(ENG(api), Value_Undefined)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	ASSERT_TRUE(rt->NewUndefined().isUndefined());
+    ASSERT_TRUE(rt->NewUndefined().isUndefined());
 }
 
 TEST(ENG(api), Value_Boolean)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	ASSERT_TRUE(rt->NewBoolean(true).isBoolean());
-	ASSERT_TRUE(rt->NewBoolean(true).toBoolean());
-	EXPECT_FALSE(rt->NewBoolean(false).toBoolean());
-	ASSERT_TRUE(rt->NewString("true").toBoolean());
+    ASSERT_TRUE(rt->NewBoolean(true).isBoolean());
+    ASSERT_TRUE(rt->NewBoolean(true).toBoolean());
+    EXPECT_FALSE(rt->NewBoolean(false).toBoolean());
+    ASSERT_TRUE(rt->NewString("true").toBoolean());
 }
 
 TEST(ENG(api), Value_Number)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	ASSERT_TRUE(rt->NewNumber(100.5).isNumber());
-	EXPECT_FALSE(rt->NewBoolean(true).isNumber());
-	ASSERT_DOUBLE_EQ(100.5, rt->NewNumber(100.5).toNumber());
-	ASSERT_DOUBLE_EQ(100.5, rt->NewString("100.5").toNumber());
+    ASSERT_TRUE(rt->NewNumber(100.5).isNumber());
+    EXPECT_FALSE(rt->NewBoolean(true).isNumber());
+    ASSERT_DOUBLE_EQ(100.5, rt->NewNumber(100.5).toNumber());
+    ASSERT_DOUBLE_EQ(100.5, rt->NewString("100.5").toNumber());
 }
 
 TEST(ENG(api), Value_String)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	ASSERT_TRUE(rt->NewString("abcd").isString());
-	EXPECT_EQ("abcd", rt->NewString("abcd").toString());
-	EXPECT_EQ("10.5", rt->NewNumber(10.5).toString());
+    ASSERT_TRUE(rt->NewString("abcd").isString());
+    EXPECT_EQ("abcd", rt->NewString("abcd").toString());
+    EXPECT_EQ("10.5", rt->NewNumber(10.5).toString());
 }
 
 TEST(ENG(api), Value_Array)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	js::Array v = rt->NewArray(10);
+    js::Array v = rt->NewArray(10);
 
-	ASSERT_TRUE(v.isObject());
-	ASSERT_TRUE(v.isArray());
-	EXPECT_EQ(10, v.length());
+    ASSERT_TRUE(v.isObject());
+    ASSERT_TRUE(v.isArray());
+    EXPECT_EQ(10, v.length());
 
-	ASSERT_TRUE(v.get(0).isUndefined());
+    ASSERT_TRUE(v.get(0).isUndefined());
 
-	v.set(1, rt->NewNumber(100.5));
-	EXPECT_EQ(10, v.length());
-	ASSERT_DOUBLE_EQ(100.5, v.get(1).toNumber());
+    v.set(1, rt->NewNumber(100.5));
+    EXPECT_EQ(10, v.length());
+    ASSERT_DOUBLE_EQ(100.5, v.get(1).toNumber());
 
-	v.remove(1);
-	EXPECT_EQ(10, v.length());
-	ASSERT_TRUE(v.get(1).isUndefined());
+    v.remove(1);
+    EXPECT_EQ(10, v.length());
+    ASSERT_TRUE(v.get(1).isUndefined());
 
-	v.set(10, rt->NewNumber(1011));
-	EXPECT_EQ(11, v.length());
-	EXPECT_EQ(1011, v.get(10).toNumber());
+    v.set(10, rt->NewNumber(1011));
+    EXPECT_EQ(11, v.length());
+    EXPECT_EQ(1011, v.get(10).toNumber());
 }
 
 TEST(ENG(api), Value_Object)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	js::Object v = rt->NewObject();
+    js::Object v = rt->NewObject();
 
-	ASSERT_TRUE(v.isObject());
-	EXPECT_FALSE(v.isArray());
+    ASSERT_TRUE(v.isObject());
+    EXPECT_FALSE(v.isArray());
 
-	ASSERT_FALSE(v.has("key1"));
-	ASSERT_TRUE(v.get("key1").isUndefined());
-	EXPECT_EQ(0, v.keys().length());
+    ASSERT_FALSE(v.has("key1"));
+    ASSERT_TRUE(v.get("key1").isUndefined());
+    EXPECT_EQ(0, v.keys().length());
 
-	v.set("key1", rt->NewNumber(100.5));
-	ASSERT_TRUE(v.has("key1"));
-	ASSERT_DOUBLE_EQ(100.5, v.get("key1").toNumber());
-	EXPECT_EQ(1, v.keys().length());
-	EXPECT_EQ("key1", v.keys().get(0).toString());
+    v.set("key1", rt->NewNumber(100.5));
+    ASSERT_TRUE(v.has("key1"));
+    ASSERT_DOUBLE_EQ(100.5, v.get("key1").toNumber());
+    EXPECT_EQ(1, v.keys().length());
+    EXPECT_EQ("key1", v.keys().get(0).toString());
 
-	v.remove("key1");
-	ASSERT_FALSE(v.has("key1"));
-	ASSERT_TRUE(v.get("key1").isUndefined());
-	EXPECT_EQ(0, v.keys().length());
+    v.remove("key1");
+    ASSERT_FALSE(v.has("key1"));
+    ASSERT_TRUE(v.get("key1").isUndefined());
+    EXPECT_EQ(0, v.keys().length());
 }
 
 TEST(ENG(api), Value_Object_Private)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	js::Object v = rt->NewObject();
+    js::Object v = rt->NewObject();
 
-	ASSERT_TRUE(v.isObject());
-	EXPECT_FALSE(v.isArray());
+    ASSERT_TRUE(v.isObject());
+    EXPECT_FALSE(v.isArray());
 
-	ASSERT_FALSE(v.has("key1"));
-	v.set("key1", rt->NewNumber(100.5));
-	ASSERT_TRUE(v.has("key1"));
-	ASSERT_FALSE(v.hasPrivate("key1"));
+    ASSERT_FALSE(v.has("key1"));
+    v.set("key1", rt->NewNumber(100.5));
+    ASSERT_TRUE(v.has("key1"));
+    ASSERT_FALSE(v.hasPrivate("key1"));
 
-	v.setPrivate("key1", rt->NewNumber(200.25));
-	ASSERT_TRUE(v.hasPrivate("key1"));
+    v.setPrivate("key1", rt->NewNumber(200.25));
+    ASSERT_TRUE(v.hasPrivate("key1"));
 
-	ASSERT_DOUBLE_EQ(100.5, v.get("key1").toNumber());
-	ASSERT_DOUBLE_EQ(200.25, v.getPrivate("key1").toNumber());
+    ASSERT_DOUBLE_EQ(100.5, v.get("key1").toNumber());
+    ASSERT_DOUBLE_EQ(200.25, v.getPrivate("key1").toNumber());
 
-	v.removePrivate("key1");
-	ASSERT_FALSE(v.hasPrivate("key1"));
-	ASSERT_TRUE(v.has("key1"));
+    v.removePrivate("key1");
+    ASSERT_FALSE(v.hasPrivate("key1"));
+    ASSERT_TRUE(v.has("key1"));
 }
 
 TEST(ENG(api), execute)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
+    EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 }
 
 TEST(ENG(api), Global)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	js::Object g = rt->GetGlobal();
+    js::Object g = rt->GetGlobal();
 
-	ASSERT_TRUE(rt->execute("global_test_1", "test.js").isEmpty());
-	g.set("global_test_1", rt->NewNumber(205));
-	EXPECT_EQ(205, rt->execute("global_test_1", "test.js").toNumber());
+    ASSERT_TRUE(rt->execute("global_test_1", "test.js").isEmpty());
+    g.set("global_test_1", rt->NewNumber(205));
+    EXPECT_EQ(205, rt->execute("global_test_1", "test.js").toNumber());
 }
 
 static bool s_func_test = false;
 
 static void my_func1(const js::FunctionCallbackInfo& info)
 {
-	s_func_test = true;
+    s_func_test = true;
 }
 
 TEST(ENG(api), Value_Function)
 {
-	s_func_test = false;
+    s_func_test = false;
 
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	js::Value r = rt->execute("(function(a,b){return a+b;});", "test.js");
-	ASSERT_TRUE(r.isFunction());
+    js::Value r = rt->execute("(function(a,b){return a+b;});", "test.js");
+    ASSERT_TRUE(r.isFunction());
 
-	js::Function f(r);
+    js::Function f(r);
 
-	js::Value args[2];
-	args[0] = rt->NewNumber(100);
-	args[1] = rt->NewNumber(200);
+    js::Value args[2];
+    args[0] = rt->NewNumber(100);
+    args[1] = rt->NewNumber(200);
 
-	r = f.call(args, 2);
-	EXPECT_EQ(300, r.toNumber());
+    r = f.call(args, 2);
+    EXPECT_EQ(300, r.toNumber());
 
-	f = rt->execute("(function(){var c=300;return function(a,b){return a+b+c;};});", "test.js");
-	ASSERT_TRUE(f.isFunction());
+    f = rt->execute("(function(){var c=300;return function(a,b){return a+b+c;};});", "test.js");
+    ASSERT_TRUE(f.isFunction());
 
-	f = f.call();
-	ASSERT_TRUE(f.isFunction());
+    f = f.call();
+    ASSERT_TRUE(f.isFunction());
 
-	r = f.call(args, 2);
-	EXPECT_EQ(600, r.toNumber());
+    r = f.call(args, 2);
+    EXPECT_EQ(600, r.toNumber());
 
-	f = rt->NewFunction(my_func1);
+    f = rt->NewFunction(my_func1);
 
-	ASSERT_FALSE(s_func_test);
-	f.call();
-	ASSERT_TRUE(s_func_test);
+    ASSERT_FALSE(s_func_test);
+    f.call();
+    ASSERT_TRUE(s_func_test);
 }
 
 static bool s_fiber_test = false;
 
 static void my_func_fiber(const js::FunctionCallbackInfo& info)
 {
-	s_fiber_test = true;
+    s_fiber_test = true;
 }
 
-static void *fiber_proc(void *p)
+static void fiber_proc(void* p)
 {
-	js::Runtime::Scope scope(rt);
-
-	rt->execute("my_func_fiber();", "test.js");
-	return NULL;
+    js::Runtime::Scope scope(rt);
+    rt->execute("my_func_fiber();", "test.js");
 }
 
 TEST(ENG(api), fiber)
 {
-	s_fiber_test = false;
+    s_fiber_test = false;
 
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	js::Object g = rt->GetGlobal();
+    js::Object g = rt->GetGlobal();
 
-	g.set("my_func_fiber", rt->NewFunction(my_func_fiber));
+    g.set("my_func_fiber", rt->NewFunction(my_func_fiber));
 
-	exlib::Service::Create(fiber_proc, 0, 128 * 1024);
-	{
-		ASSERT_FALSE(s_fiber_test);
-		exlib::Fiber::sleep(100);
-		ASSERT_FALSE(s_fiber_test);
+    exlib::Service::Create(fiber_proc, 0, 128 * 1024);
+    {
+        ASSERT_FALSE(s_fiber_test);
+        exlib::Fiber::sleep(100);
+        ASSERT_FALSE(s_fiber_test);
 
-		js::Runtime::Unlocker un(rt);
-		while (!s_fiber_test)
-			exlib::Fiber::sleep(1);
-		ASSERT_TRUE(s_fiber_test);
-	}
+        js::Runtime::Unlocker un(rt);
+        while (!s_fiber_test)
+            exlib::Fiber::sleep(1);
+        ASSERT_TRUE(s_fiber_test);
+    }
 
-	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
+    EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 
-	{
-		js::Runtime::Locker l(rt);
-		EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
-	}
+    {
+        js::Runtime::Locker l(rt);
+        EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
+    }
 
-	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
+    EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 }
 
 TEST(ENG(api), scope)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	{
-		js::HandleScope handle_scope(rt);
-		rt->NewObject();
-	}
+    {
+        js::HandleScope handle_scope(rt);
+        rt->NewObject();
+    }
 
-	rt->gc();
+    rt->gc();
 
-	js::Object v1;
+    js::Object v1;
 
-	{
-		js::EscapableHandleScope handle_scope1(rt);
-		js::Object v = rt->NewObject();
-		v.set("key1", rt->NewNumber(100.5));
-		v1 = handle_scope1.escape(v);
-	}
+    {
+        js::EscapableHandleScope handle_scope1(rt);
+        js::Object v = rt->NewObject();
+        v.set("key1", rt->NewNumber(100.5));
+        v1 = handle_scope1.escape(v);
+    }
 
-	rt->gc();
+    rt->gc();
 
-	ASSERT_DOUBLE_EQ(100.5, v1.get("key1").toNumber());
-	ASSERT_TRUE(v1.isObject());
+    ASSERT_DOUBLE_EQ(100.5, v1.get("key1").toNumber());
+    ASSERT_TRUE(v1.isObject());
 }
 
 TEST(ENG(api), json)
 {
-	js::Runtime::Scope scope(rt);
+    js::Runtime::Scope scope(rt);
 
-	EXPECT_EQ(100, rt->execute("JSON.parse(\'{\"a\":100}\').a", "test.js").toNumber());
+    EXPECT_EQ(100, rt->execute("JSON.parse(\'{\"a\":100}\').a", "test.js").toNumber());
 }
 
 TEST(ENG(api), DestroyRuntime)
 {
-	rt->destroy();
+    rt->destroy();
 }

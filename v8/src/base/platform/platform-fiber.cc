@@ -20,95 +20,94 @@
 
 inline int64_t getTime();
 
-namespace v8
-{
+namespace v8 {
 
-namespace base
-{
+namespace base {
 
 #define V8_STACK_SIZE 64
 
-class Thread::PlatformData
-{
-public:
-    PlatformData(Thread* pThis) : thread(pThis), fb(NULL)
-    {}
+    class Thread::PlatformData {
+    public:
+        PlatformData(Thread* pThis)
+            : thread(pThis)
+            , fb(NULL)
+        {
+        }
 
-public:
-    static void* fiber_proc(void* p)
+    public:
+        static void fiber_proc(void* p)
+        {
+            ((PlatformData*)p)->_run();
+        }
+
+    private:
+        void _run()
+        {
+            thread->NotifyStartedAndRun();
+        }
+
+    public:
+        Thread* thread;
+        exlib::Fiber* fb;
+    };
+
+    Thread::Thread(const Options& options)
+        : data_(new PlatformData(this))
+        , stack_size_(options.stack_size())
+        , start_semaphore_(NULL)
     {
-        ((PlatformData*)p)->_run();
-        return NULL;
+        set_name(options.name());
     }
 
-private:
-    void _run()
+    Thread::~Thread()
     {
-        thread->NotifyStartedAndRun();
+        if (((PlatformData*)data_)->fb)
+            ((PlatformData*)data_)->fb->Unref();
     }
 
-public:
-    Thread *thread;
-    exlib::Fiber* fb;
-};
+    void Thread::set_name(const char* name)
+    {
+        strncpy(name_, name, sizeof(name_));
+        name_[sizeof(name_) - 1] = '\0';
+    }
 
-Thread::Thread(const Options &options) :
-    data_(new PlatformData(this)), stack_size_(options.stack_size()), start_semaphore_(NULL)
-{
-    set_name(options.name());
+    void Thread::Start()
+    {
+        exlib::Service::Create(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024,
+            name_, &((PlatformData*)data_)->fb);
+    }
+
+    void Thread::Join()
+    {
+        if (((PlatformData*)data_)->fb)
+            ((PlatformData*)data_)->fb->join();
+    }
+
+    Thread::LocalStorageKey Thread::CreateThreadLocalKey()
+    {
+        return static_cast<LocalStorageKey>(exlib::Thread_base::tlsAlloc());
+    }
+
+    void Thread::DeleteThreadLocalKey(LocalStorageKey key)
+    {
+        exlib::Thread_base::tlsFree(static_cast<int>(key));
+    }
+
+    void* Thread::GetThreadLocal(LocalStorageKey key)
+    {
+        return exlib::Thread_base::tlsGet(static_cast<int>(key));
+    }
+
+    void Thread::SetThreadLocal(LocalStorageKey key, void* value)
+    {
+        exlib::Thread_base::tlsPut(static_cast<int>(key), value);
+    }
+
+    void OS::Sleep(TimeDelta interval)
+    {
+        exlib::Fiber::sleep(interval.InMicroseconds());
+    }
 }
-
-Thread::~Thread()
-{
-    if (((PlatformData*)data_)->fb)
-        ((PlatformData*)data_)->fb->Unref();
-}
-
-void Thread::set_name(const char *name)
-{
-    strncpy(name_, name, sizeof(name_));
-    name_[sizeof(name_) - 1] = '\0';
-}
-
-void Thread::Start()
-{
-    exlib::Service::Create(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024,
-                           name_, &((PlatformData*)data_)->fb);
-}
-
-void Thread::Join()
-{
-    if (((PlatformData*)data_)->fb)
-        ((PlatformData*)data_)->fb->join();
-}
-
-Thread::LocalStorageKey Thread::CreateThreadLocalKey()
-{
-    return static_cast<LocalStorageKey>(exlib::Thread_base::tlsAlloc());
-}
-
-void Thread::DeleteThreadLocalKey(LocalStorageKey key)
-{
-    exlib::Thread_base::tlsFree(static_cast<int>(key));
-}
-
-void *Thread::GetThreadLocal(LocalStorageKey key)
-{
-    return exlib::Thread_base::tlsGet(static_cast<int>(key));
-}
-
-void Thread::SetThreadLocal(LocalStorageKey key, void *value)
-{
-    exlib::Thread_base::tlsPut(static_cast<int>(key), value);
-}
-
-void OS::Sleep(TimeDelta interval)
-{
-    exlib::Fiber::sleep(interval.InMicroseconds());
-}
-
-}
-
 }
 
 #endif

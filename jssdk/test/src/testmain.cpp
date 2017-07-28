@@ -2,10 +2,9 @@
 #include "exlib/include/service.h"
 #include "jssdk.h"
 
-void* fiber_proc(void* p)
+void fiber_proc(void* p)
 {
     _exit(RUN_ALL_TESTS());
-    return 0;
 }
 
 int main(int argc, char* argv[])

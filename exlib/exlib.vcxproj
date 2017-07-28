@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\fb_api.h" />
     <ClInclude Include="include\fiber.h" />
     <ClInclude Include="include\osconfig.h" />
     <ClInclude Include="include\pratom.h" />
@@ -28,7 +29,6 @@
     <ClInclude Include="include\prthread.h" />
     <ClInclude Include="include\prtypes.h" />
     <ClInclude Include="include\service.h" />
-    <ClInclude Include="include\stack.h" />
     <ClInclude Include="include\thread.h" />
     <ClInclude Include="include\utils.h" />
     <ClInclude Include="include\utils_arm.h" />
@@ -49,6 +49,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\fb_api.cpp" />
     <ClCompile Include="src\fbCondVar.cpp" />
     <ClCompile Include="src\fbEvent.cpp" />
     <ClCompile Include="src\fbFiber.cpp" />

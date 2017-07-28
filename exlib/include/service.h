@@ -11,6 +11,7 @@
 
 #include "fiber.h"
 #include "thread.h"
+#include "fb_api.h"
 
 namespace exlib {
 
@@ -38,9 +39,6 @@ public:
 
 private:
     void dispatch_loop();
-
-public:
-    typedef void* (*fiber_func)(void*);
 
 public:
     static void init(int32_t workers);
@@ -107,7 +105,7 @@ public:
         assert(m_running != &m_main);
         assert(current() == this);
 
-        m_running->m_cntxt.switchto(&m_main.m_cntxt);
+        switch_fiber(m_running->m_ctx, m_main.m_ctx);
     }
 
     void switchConext(switchConextCallback* cb)
@@ -122,7 +120,7 @@ public:
 #endif
 
 private:
-    static void fiber_proc(void* (*func)(void*), Fiber* fb);
+    static void fiber_proc(fiber_func func, Fiber* fb);
 
 private:
     Service* m_master;

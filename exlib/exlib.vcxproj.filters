@@ -15,6 +15,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\fb_api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\fiber.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -34,9 +37,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\prtypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\stack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\thread.h">
@@ -74,6 +74,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\fb_api.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\fbCondVar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -264,16 +264,18 @@ public:
 };
 
 #define FIBER_STACK_SIZE (65536 * 2)
+typedef void (*fiber_func)(void*);
 
 class Service;
 
 class Fiber : public Thread_base {
 public:
-    Fiber(Service* pService, void* data)
+    Fiber(Service* pService, fiber_func func, void* data)
         : m_pService(pService)
+        , m_func(func)
         , m_data(data)
     {
-        memset(&m_cntxt, 0, sizeof(m_cntxt));
+        m_ctx = NULL;
         memset(&name_, 0, sizeof(name_));
     }
 
@@ -313,9 +315,10 @@ public:
     static Fiber* current();
 
 public:
-    context m_cntxt;
+    void* m_ctx;
     Event m_joins;
     Service* m_pService;
+    fiber_func m_func;
     void* m_data;
     char name_[16];
 
