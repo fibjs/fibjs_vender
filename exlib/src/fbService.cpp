@@ -90,7 +90,6 @@ Service::Service()
     , m_cb(NULL)
 {
     m_main.set_name("main");
-    m_main.m_ctx = convert_Fiber(NULL);
     m_main.Ref();
 }
 

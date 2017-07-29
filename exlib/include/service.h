@@ -31,6 +31,9 @@ public:
 
     virtual void Run()
     {
+        if (!m_main.m_ctx)
+            m_main.m_ctx = convert_Fiber(NULL);
+
         m_main.saveStackGuard();
 
         m_master->m_idleWorkers.dec();

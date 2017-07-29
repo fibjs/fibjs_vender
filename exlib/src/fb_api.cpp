@@ -13,6 +13,30 @@
 
 namespace exlib {
 
+#ifdef _WIN32
+
+void* convert_Fiber(void* param)
+{
+    return ConvertThreadToFiber(param);
+}
+
+void* create_fiber(size_t stacksize, fiber_func proc, void* param)
+{
+    return CreateFiber(stacksize, (LPFIBER_START_ROUTINE)proc, param);
+}
+
+void switch_fiber(void* from, void* to)
+{
+    SwitchToFiber(to);
+}
+
+void delete_fiber(void* fiber)
+{
+    DeleteFiber(fiber);
+}
+
+#else
+
 #define FB_STK_ALIGN 256
 
 #ifdef _WIN32
@@ -92,4 +116,6 @@ void delete_fiber(void* fiber)
     free(fiber);
 #endif
 }
+
+#endif
 }
