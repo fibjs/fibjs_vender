@@ -172,7 +172,7 @@
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4005;4267;4996;4018;4244;4101;4700;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -192,7 +192,7 @@
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4005;4267;4996;4018;4244;4101;4700;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -214,7 +214,7 @@
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <DisableSpecificWarnings>4005;4267;4996;4018;4244;4101;4700;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -240,7 +240,7 @@
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <DisableSpecificWarnings>4005;4267;4996;4018;4244;4101;4700;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
