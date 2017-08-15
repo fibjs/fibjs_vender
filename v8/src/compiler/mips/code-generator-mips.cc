@@ -1085,7 +1085,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
              i.InputInt8(2));
       break;
     case kMipsCmpS:
-      // Psuedo-instruction used for FP cmp/branch. No opcode emitted here.
+      // Pseudo-instruction used for FP cmp/branch. No opcode emitted here.
       break;
     case kMipsAddS:
       // TODO(plind): add special case: combine mult & add.
@@ -1135,7 +1135,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                i.InputDoubleRegister(1));
       break;
     case kMipsCmpD:
-      // Psuedo-instruction used for FP cmp/branch. No opcode emitted here.
+      // Pseudo-instruction used for FP cmp/branch. No opcode emitted here.
       break;
     case kMipsAddPair:
       __ AddPair(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
@@ -2919,7 +2919,7 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   Condition cc = kNoCondition;
   // MIPS does not have condition code flags, so compare and branch are
   // implemented differently than on the other arch's. The compare operations
-  // emit mips psuedo-instructions, which are checked and handled here.
+  // emit mips pseudo-instructions, which are checked and handled here.
 
   if (instr->arch_opcode() == kMipsTst) {
     cc = FlagsConditionToConditionTst(condition);
@@ -3123,12 +3123,10 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
 
 CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
     int deoptimization_id, SourcePosition pos) {
-  DeoptimizeKind deoptimization_kind = GetDeoptimizationKind(deoptimization_id);
   DeoptimizeReason deoptimization_reason =
       GetDeoptimizationReason(deoptimization_id);
   Deoptimizer::BailoutType bailout_type =
-      deoptimization_kind == DeoptimizeKind::kSoft ? Deoptimizer::SOFT
-                                                   : Deoptimizer::EAGER;
+      DeoptimizerCallBailout(deoptimization_id, pos);
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;

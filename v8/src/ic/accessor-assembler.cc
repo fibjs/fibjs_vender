@@ -30,7 +30,8 @@ Node* AccessorAssembler::TryMonomorphicCase(Node* slot, Node* vector,
 
   // TODO(ishell): add helper class that hides offset computations for a series
   // of loads.
-  int32_t header_size = FixedArray::kHeaderSize - kHeapObjectTag;
+  CSA_ASSERT(this, IsFeedbackVector(vector), vector);
+  int32_t header_size = FeedbackVector::kFeedbackSlotsOffset - kHeapObjectTag;
   // Adding |header_size| with a separate IntPtrAdd rather than passing it
   // into ElementOffsetFromIndex() allows it to be folded into a single
   // [base, index, offset] indirect memory access on x64.
@@ -260,7 +261,8 @@ void AccessorAssembler::HandleLoadICSmiHandlerCase(
 
   Label constant(this), field(this), normal(this, Label::kDeferred),
       interceptor(this, Label::kDeferred), nonexistent(this),
-      accessor(this, Label::kDeferred), global(this, Label::kDeferred);
+      accessor(this, Label::kDeferred), proxy(this, Label::kDeferred),
+      global(this, Label::kDeferred);
   GotoIf(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kField)), &field);
 
   GotoIf(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kConstant)),
@@ -274,6 +276,8 @@ void AccessorAssembler::HandleLoadICSmiHandlerCase(
 
   GotoIf(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kAccessor)),
          &accessor);
+
+  GotoIf(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kProxy)), &proxy);
 
   Branch(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kGlobal)), &global,
          &interceptor);
@@ -359,6 +363,13 @@ void AccessorAssembler::HandleLoadICSmiHandlerCase(
 
     Callable callable = CodeFactory::Call(isolate());
     exit_point->Return(CallJS(callable, p->context, getter, p->receiver));
+  }
+
+  BIND(&proxy);
+  {
+    exit_point->ReturnCallStub(
+        Builtins::CallableFor(isolate(), Builtins::kProxyGetProperty),
+        p->context, holder, p->name, p->receiver);
   }
 
   BIND(&global);
@@ -1166,7 +1177,7 @@ void AccessorAssembler::EmitFastElementsBoundsCheck(Node* object,
   }
   BIND(&if_array);
   {
-    var_length.Bind(SmiUntag(LoadJSArrayLength(object)));
+    var_length.Bind(SmiUntag(LoadFastJSArrayLength(object)));
     Goto(&length_loaded);
   }
   BIND(&length_loaded);
@@ -1280,7 +1291,7 @@ void AccessorAssembler::EmitElementLoad(
 
     // Bounds check.
     Node* length =
-        SmiUntag(LoadObjectField(object, JSTypedArray::kLengthOffset));
+        SmiUntag(CAST(LoadObjectField(object, JSTypedArray::kLengthOffset)));
     GotoIfNot(UintPtrLessThan(intptr_index, length), out_of_bounds);
 
     // Backing store = external_pointer + base_pointer.
@@ -1470,15 +1481,15 @@ void AccessorAssembler::GenericPropertyLoad(Node* receiver, Node* receiver_map,
 
   Comment("key is unique name");
   Label if_found_on_receiver(this), if_property_dictionary(this),
-      lookup_prototype_chain(this);
+      lookup_prototype_chain(this), special_receiver(this);
   VARIABLE(var_details, MachineRepresentation::kWord32);
   VARIABLE(var_value, MachineRepresentation::kTagged);
 
   // Receivers requiring non-standard accesses (interceptors, access
-  // checks, strings and string wrappers, proxies) are handled in the runtime.
+  // checks, strings and string wrappers) are handled in the runtime.
   GotoIf(Int32LessThanOrEqual(instance_type,
                               Int32Constant(LAST_SPECIAL_RECEIVER_TYPE)),
-         slow);
+         &special_receiver);
 
   // Check if the receiver has fast or slow properties.
   Node* bitfield3 = LoadMapBitField3(receiver_map);
@@ -1598,6 +1609,16 @@ void AccessorAssembler::GenericPropertyLoad(Node* receiver, Node* receiver_map,
 
     BIND(&return_undefined);
     Return(UndefinedConstant());
+  }
+
+  BIND(&special_receiver);
+  {
+    GotoIfNot(Word32Equal(instance_type, Int32Constant(JS_PROXY_TYPE)), slow);
+
+    direct_exit.ReturnCallStub(
+        Builtins::CallableFor(isolate(), Builtins::kProxyGetProperty),
+        p->context, receiver /*holder is the same as receiver*/, p->name,
+        receiver);
   }
 }
 
@@ -1865,9 +1886,9 @@ void AccessorAssembler::LoadIC_Uninitialized(const LoadICParameters* p) {
   Node* instance_type = LoadMapInstanceType(receiver_map);
 
   // Optimistically write the state transition to the vector.
-  StoreFixedArrayElement(p->vector, p->slot,
-                         LoadRoot(Heap::kpremonomorphic_symbolRootIndex),
-                         SKIP_WRITE_BARRIER, 0, SMI_PARAMETERS);
+  StoreFeedbackVectorSlot(p->vector, p->slot,
+                          LoadRoot(Heap::kpremonomorphic_symbolRootIndex),
+                          SKIP_WRITE_BARRIER, 0, SMI_PARAMETERS);
 
   {
     // Special case for Function.prototype load, because it's very common
@@ -1889,9 +1910,9 @@ void AccessorAssembler::LoadIC_Uninitialized(const LoadICParameters* p) {
   BIND(&miss);
   {
     // Undo the optimistic state transition.
-    StoreFixedArrayElement(p->vector, p->slot,
-                           LoadRoot(Heap::kuninitialized_symbolRootIndex),
-                           SKIP_WRITE_BARRIER, 0, SMI_PARAMETERS);
+    StoreFeedbackVectorSlot(p->vector, p->slot,
+                            LoadRoot(Heap::kuninitialized_symbolRootIndex),
+                            SKIP_WRITE_BARRIER, 0, SMI_PARAMETERS);
 
     TailCallRuntime(Runtime::kLoadIC_Miss, p->context, p->receiver, p->name,
                     p->slot, p->vector);
@@ -1931,7 +1952,7 @@ void AccessorAssembler::LoadGlobalIC_TryPropertyCellCase(
     Label* miss, ParameterMode slot_mode) {
   Comment("LoadGlobalIC_TryPropertyCellCase");
 
-  Node* weak_cell = LoadFixedArrayElement(vector, slot, 0, slot_mode);
+  Node* weak_cell = LoadFeedbackVectorSlot(vector, slot, 0, slot_mode);
   CSA_ASSERT(this, HasInstanceType(weak_cell, WEAK_CELL_TYPE));
 
   // Load value or try handler case if the {weak_cell} is cleared.
@@ -1951,8 +1972,8 @@ void AccessorAssembler::LoadGlobalIC_TryHandlerCase(const LoadICParameters* pp,
 
   Label call_handler(this), non_smi(this);
 
-  Node* handler =
-      LoadFixedArrayElement(pp->vector, pp->slot, kPointerSize, SMI_PARAMETERS);
+  Node* handler = LoadFeedbackVectorSlot(pp->vector, pp->slot, kPointerSize,
+                                         SMI_PARAMETERS);
   GotoIf(WordEqual(handler, LoadRoot(Heap::kuninitialized_symbolRootIndex)),
          miss);
 
@@ -2064,8 +2085,8 @@ void AccessorAssembler::KeyedLoadIC(const LoadICParameters* p) {
     GotoIfNot(WordEqual(feedback, p->name), &miss);
     // If the name comparison succeeded, we know we have a fixed array with
     // at least one map/handler pair.
-    Node* array =
-        LoadFixedArrayElement(p->vector, p->slot, kPointerSize, SMI_PARAMETERS);
+    Node* array = LoadFeedbackVectorSlot(p->vector, p->slot, kPointerSize,
+                                         SMI_PARAMETERS);
     HandlePolymorphicCase(receiver_map, array, &if_handler, &var_handler, &miss,
                           1);
   }
@@ -2239,10 +2260,10 @@ void AccessorAssembler::KeyedStoreIC(const StoreICParameters* p,
       // We might have a name in feedback, and a fixed array in the next slot.
       Comment("KeyedStoreIC_try_polymorphic_name");
       GotoIfNot(WordEqual(feedback, p->name), &miss);
-      // If the name comparison succeeded, we know we have a FixedArray with
-      // at least one map/handler pair.
-      Node* array = LoadFixedArrayElement(p->vector, p->slot, kPointerSize,
-                                          SMI_PARAMETERS);
+      // If the name comparison succeeded, we know we have a feedback vector
+      // with at least one map/handler pair.
+      Node* array = LoadFeedbackVectorSlot(p->vector, p->slot, kPointerSize,
+                                           SMI_PARAMETERS);
       HandlePolymorphicCase(receiver_map, array, &if_handler, &var_handler,
                             &miss, 1);
     }
@@ -2284,7 +2305,7 @@ void AccessorAssembler::GenerateLoadIC_Noninlined() {
   Label if_handler(this, &var_handler), miss(this, Label::kDeferred);
 
   Node* receiver_map = LoadReceiverMap(receiver);
-  Node* feedback = LoadFixedArrayElement(vector, slot, 0, SMI_PARAMETERS);
+  Node* feedback = LoadFeedbackVectorSlot(vector, slot, 0, SMI_PARAMETERS);
 
   LoadICParameters p(context, receiver, name, slot, vector);
   LoadIC_Noninlined(&p, receiver_map, feedback, &var_handler, &if_handler,

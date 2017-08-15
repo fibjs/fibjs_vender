@@ -9,6 +9,7 @@
 #include "src/heap/heap.h"
 #include "src/heap/slot-set.h"
 #include "src/heap/spaces.h"
+#include "src/v8memory.h"
 
 namespace v8 {
 namespace internal {
@@ -120,7 +121,8 @@ class RememberedSet : public AllStatic {
     while ((chunk = it.next()) != nullptr) {
       SlotSet* slots = chunk->slot_set<type>();
       TypedSlotSet* typed_slots = chunk->typed_slot_set<type>();
-      if (slots != nullptr || typed_slots != nullptr) {
+      if (slots != nullptr || typed_slots != nullptr ||
+          chunk->invalidated_slots() != nullptr) {
         callback(chunk);
       }
     }
@@ -230,6 +232,7 @@ class RememberedSet : public AllStatic {
     while ((chunk = it.next()) != nullptr) {
       chunk->ReleaseSlotSet<OLD_TO_OLD>();
       chunk->ReleaseTypedSlotSet<OLD_TO_OLD>();
+      chunk->ReleaseInvalidatedSlots();
     }
   }
 
@@ -245,20 +248,6 @@ class RememberedSet : public AllStatic {
 
 class UpdateTypedSlotHelper {
  public:
-  // Updates a cell slot using an untyped slot callback.
-  // The callback accepts Object** and returns SlotCallbackResult.
-  template <typename Callback>
-  static SlotCallbackResult UpdateCell(RelocInfo* rinfo, Callback callback) {
-    DCHECK(rinfo->rmode() == RelocInfo::CELL);
-    Object* cell = rinfo->target_cell();
-    Object* old_cell = cell;
-    SlotCallbackResult result = callback(&cell);
-    if (cell != old_cell) {
-      rinfo->set_target_cell(reinterpret_cast<Cell*>(cell));
-    }
-    return result;
-  }
-
   // Updates a code entry slot using an untyped slot callback.
   // The callback accepts Object** and returns SlotCallbackResult.
   template <typename Callback>
@@ -332,10 +321,6 @@ class UpdateTypedSlotHelper {
         RelocInfo rinfo(addr, RelocInfo::CODE_TARGET, 0, NULL);
         return UpdateCodeTarget(&rinfo, callback);
       }
-      case CELL_TARGET_SLOT: {
-        RelocInfo rinfo(addr, RelocInfo::CELL, 0, NULL);
-        return UpdateCell(&rinfo, callback);
-      }
       case CODE_ENTRY_SLOT: {
         return UpdateCodeEntry(addr, callback);
       }
@@ -363,8 +348,6 @@ class UpdateTypedSlotHelper {
 inline SlotType SlotTypeForRelocInfoMode(RelocInfo::Mode rmode) {
   if (RelocInfo::IsCodeTarget(rmode)) {
     return CODE_TARGET_SLOT;
-  } else if (RelocInfo::IsCell(rmode)) {
-    return CELL_TARGET_SLOT;
   } else if (RelocInfo::IsEmbeddedObject(rmode)) {
     return EMBEDDED_OBJECT_SLOT;
   } else if (RelocInfo::IsDebugBreakSlot(rmode)) {

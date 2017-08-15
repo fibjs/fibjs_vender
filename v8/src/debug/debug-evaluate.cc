@@ -296,6 +296,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(ThrowSymbolIteratorInvalid)      \
   V(ThrowIteratorResultNotAnObject)  \
   V(NewTypeError)                    \
+  V(ThrowInvalidStringLength)        \
   /* Strings */                      \
   V(StringCharCodeAt)                \
   V(StringIndexOf)                   \
@@ -336,7 +337,8 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(MaxSmi)                          \
   V(NewObject)                       \
   V(FinalizeInstanceSize)            \
-  V(HasInPrototypeChain)
+  V(HasInPrototypeChain)             \
+  V(StringMaxLength)
 
 #define CASE(Name)       \
   case Runtime::k##Name: \
@@ -476,9 +478,9 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kObjectHasOwnProperty:
     case Builtins::kObjectPrototypeIsPrototypeOf:
     case Builtins::kObjectPrototypePropertyIsEnumerable:
-    case Builtins::kObjectProtoToString:
+    case Builtins::kObjectPrototypeToString:
     // Array builtins.
-    case Builtins::kArrayCode:
+    case Builtins::kArrayConstructor:
     case Builtins::kArrayIndexOf:
     case Builtins::kArrayPrototypeValues:
     case Builtins::kArrayIncludes:

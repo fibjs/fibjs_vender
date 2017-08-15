@@ -7,7 +7,9 @@
 
 #include "src/interpreter/bytecodes.h"
 
-#include "src/frames.h"
+#include "src/base/macros.h"
+#include "src/base/platform/platform.h"
+#include "src/frame-constants.h"
 #include "src/globals.h"
 
 namespace v8 {
@@ -37,10 +39,6 @@ class V8_EXPORT_PRIVATE Register final {
   // Returns the register which holds the current context object.
   static Register current_context();
   bool is_current_context() const;
-
-  // Returns the register for the incoming new target value.
-  static Register new_target();
-  bool is_new_target() const;
 
   // Returns the register for the bytecode array.
   static Register bytecode_array();

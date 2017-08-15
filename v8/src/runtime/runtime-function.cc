@@ -7,7 +7,6 @@
 #include "src/accessors.h"
 #include "src/arguments.h"
 #include "src/compiler.h"
-#include "src/frames-inl.h"
 #include "src/isolate-inl.h"
 #include "src/messages.h"
 #include "src/wasm/wasm-module.h"
@@ -151,8 +150,6 @@ RUNTIME_FUNCTION(Runtime_SetCode) {
   target_shared->set_end_position(source_shared->end_position());
   bool was_native = target_shared->native();
   target_shared->set_compiler_hints(source_shared->compiler_hints());
-  target_shared->set_opt_count_and_bailout_reason(
-      source_shared->opt_count_and_bailout_reason());
   target_shared->set_native(was_native);
   target_shared->set_function_literal_id(source_shared->function_literal_id());
 

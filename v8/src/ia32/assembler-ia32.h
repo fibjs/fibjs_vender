@@ -87,6 +87,22 @@ namespace internal {
   V(xmm6)                               \
   V(xmm7)
 
+// Note that the bit values must match those used in actual instruction encoding
+const int kNumRegs = 8;
+
+// Caller-saved registers
+const RegList kJSCallerSaved =
+    1 << 0 |  // eax
+    1 << 1 |  // ecx
+    1 << 2 |  // edx
+    1 << 3 |  // ebx - used as a caller-saved register in JavaScript code
+    1 << 7;   // edi - callee function
+
+const int kNumJSCallerSaved = 5;
+
+// Number of registers for which space is reserved in safepoints.
+const int kNumSafepointRegisters = 8;
+
 // CPU Registers.
 //
 // 1) We would prefer to use an enum, but enum values are assignment-
@@ -393,10 +409,6 @@ class Operand BASE_EMBEDDED {
                              const ExternalReference& arr) {
     return Operand(index, scale, reinterpret_cast<int32_t>(arr.address()),
                    RelocInfo::EXTERNAL_REFERENCE);
-  }
-
-  static Operand ForCell(Handle<Cell> cell) {
-    return Operand(reinterpret_cast<int32_t>(cell.address()), RelocInfo::CELL);
   }
 
   static Operand ForRegisterPlusImmediate(Register base, Immediate imm) {
@@ -1129,9 +1141,6 @@ class Assembler : public AssemblerBase {
   void psrlq(XMMRegister reg, int8_t shift);
   void psrlq(XMMRegister dst, XMMRegister src);
 
-  // pshufb is SSSE3 instruction
-  void pshufb(XMMRegister dst, XMMRegister src) { pshufb(dst, Operand(src)); }
-  void pshufb(XMMRegister dst, const Operand& src);
   void pshuflw(XMMRegister dst, XMMRegister src, uint8_t shuffle) {
     pshuflw(dst, Operand(src), shuffle);
   }
@@ -1411,12 +1420,6 @@ class Assembler : public AssemblerBase {
   void vpsraw(XMMRegister dst, XMMRegister src, int8_t imm8);
   void vpsrad(XMMRegister dst, XMMRegister src, int8_t imm8);
 
-  void vpshufb(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vpshufb(dst, src1, Operand(src2));
-  }
-  void vpshufb(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vinstr(0x00, dst, src1, src2, k66, k0F38, kW0);
-  }
   void vpshuflw(XMMRegister dst, XMMRegister src, uint8_t shuffle) {
     vpshuflw(dst, Operand(src), shuffle);
   }
@@ -1635,6 +1638,18 @@ class Assembler : public AssemblerBase {
   SSE2_INSTRUCTION_LIST(DECLARE_SSE2_AVX_INSTRUCTION)
 #undef DECLARE_SSE2_AVX_INSTRUCTION
 
+#define DECLARE_SSSE3_INSTRUCTION(instruction, prefix, escape1, escape2,     \
+                                  opcode)                                    \
+  void instruction(XMMRegister dst, XMMRegister src) {                       \
+    instruction(dst, Operand(src));                                          \
+  }                                                                          \
+  void instruction(XMMRegister dst, const Operand& src) {                    \
+    ssse3_instr(dst, src, 0x##prefix, 0x##escape1, 0x##escape2, 0x##opcode); \
+  }
+
+  SSSE3_INSTRUCTION_LIST(DECLARE_SSSE3_INSTRUCTION)
+#undef DECLARE_SSSE3_INSTRUCTION
+
 #define DECLARE_SSE4_INSTRUCTION(instruction, prefix, escape1, escape2,     \
                                  opcode)                                    \
   void instruction(XMMRegister dst, XMMRegister src) {                      \
@@ -1647,8 +1662,8 @@ class Assembler : public AssemblerBase {
   SSE4_INSTRUCTION_LIST(DECLARE_SSE4_INSTRUCTION)
 #undef DECLARE_SSE4_INSTRUCTION
 
-#define DECLARE_SSE4_AVX_INSTRUCTION(instruction, prefix, escape1, escape2,   \
-                                     opcode)                                  \
+#define DECLARE_SSE34_AVX_INSTRUCTION(instruction, prefix, escape1, escape2,  \
+                                      opcode)                                 \
   void v##instruction(XMMRegister dst, XMMRegister src1, XMMRegister src2) {  \
     v##instruction(dst, src1, Operand(src2));                                 \
   }                                                                           \
@@ -1657,8 +1672,9 @@ class Assembler : public AssemblerBase {
     vinstr(0x##opcode, dst, src1, src2, k##prefix, k##escape1##escape2, kW0); \
   }
 
-  SSE4_INSTRUCTION_LIST(DECLARE_SSE4_AVX_INSTRUCTION)
-#undef DECLARE_SSE4_AVX_INSTRUCTION
+  SSSE3_INSTRUCTION_LIST(DECLARE_SSE34_AVX_INSTRUCTION)
+  SSE4_INSTRUCTION_LIST(DECLARE_SSE34_AVX_INSTRUCTION)
+#undef DECLARE_SSE34_AVX_INSTRUCTION
 
   // Prefetch src position into cache level.
   // Level 1, 2 or 3 specifies CPU cache level. Level 0 specifies a
@@ -1788,11 +1804,13 @@ class Assembler : public AssemblerBase {
 
   void sse2_instr(XMMRegister dst, const Operand& src, byte prefix, byte escape,
                   byte opcode);
+  void ssse3_instr(XMMRegister dst, const Operand& src, byte prefix,
+                   byte escape1, byte escape2, byte opcode);
   void sse4_instr(XMMRegister dst, const Operand& src, byte prefix,
                   byte escape1, byte escape2, byte opcode);
   void vinstr(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2,
               SIMDPrefix pp, LeadingOpcode m, VexW w);
-  // Most BMI instructions are similiar.
+  // Most BMI instructions are similar.
   void bmi1(byte op, Register reg, Register vreg, const Operand& rm);
   void bmi2(SIMDPrefix pp, byte op, Register reg, Register vreg,
             const Operand& rm);

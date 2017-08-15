@@ -53,7 +53,7 @@ bool Scavenger::MigrateObject(Map* map, HeapObject* source, HeapObject* target,
   heap()->CopyBlock(target->address() + kPointerSize,
                     source->address() + kPointerSize, size - kPointerSize);
 
-  HeapObject* old = base::AsAtomicWord::Release_CompareAndSwap(
+  HeapObject* old = base::AsAtomicPointer::Release_CompareAndSwap(
       reinterpret_cast<HeapObject**>(source->address()), map,
       MapWord::FromForwardingAddress(target).ToMap());
   if (old != map) {
@@ -68,8 +68,7 @@ bool Scavenger::MigrateObject(Map* map, HeapObject* source, HeapObject* target,
   }
 
   if (is_incremental_marking_) {
-    heap()->incremental_marking()->TransferColor<AccessMode::ATOMIC>(source,
-                                                                     target);
+    heap()->incremental_marking()->TransferColor(source, target);
   }
   heap()->UpdateAllocationSite<Heap::kCached>(map, source,
                                               &local_pretenuring_feedback_);
@@ -85,8 +84,9 @@ bool Scavenger::SemiSpaceCopyObject(Map* map, HeapObject** slot,
 
   HeapObject* target = nullptr;
   if (allocation.To(&target)) {
-    DCHECK(ObjectMarking::IsWhite(
-        target, heap()->mark_compact_collector()->marking_state(target)));
+    DCHECK(
+        heap()->mark_compact_collector()->non_atomic_marking_state()->IsWhite(
+            target));
     const bool self_success = MigrateObject(map, object, target, object_size);
     if (!self_success) {
       allocator_.FreeLast(NEW_SPACE, target, object_size);
@@ -111,8 +111,9 @@ bool Scavenger::PromoteObject(Map* map, HeapObject** slot, HeapObject* object,
 
   HeapObject* target = nullptr;
   if (allocation.To(&target)) {
-    DCHECK(ObjectMarking::IsWhite(
-        target, heap()->mark_compact_collector()->marking_state(target)));
+    DCHECK(
+        heap()->mark_compact_collector()->non_atomic_marking_state()->IsWhite(
+            target));
     const bool self_success = MigrateObject(map, object, target, object_size);
     if (!self_success) {
       allocator_.FreeLast(OLD_SPACE, target, object_size);
@@ -159,7 +160,7 @@ void Scavenger::EvacuateThinString(Map* map, HeapObject** slot,
     // ThinStrings always refer to internalized strings, which are
     // always in old space.
     DCHECK(!heap()->InNewSpace(actual));
-    base::AsAtomicWord::Relaxed_Store(
+    base::AsAtomicPointer::Relaxed_Store(
         reinterpret_cast<Map**>(object->address()),
         MapWord::FromForwardingAddress(actual).ToMap());
     return;
@@ -178,7 +179,7 @@ void Scavenger::EvacuateShortcutCandidate(Map* map, HeapObject** slot,
     *slot = first;
 
     if (!heap()->InNewSpace(first)) {
-      base::AsAtomicWord::Relaxed_Store(
+      base::AsAtomicPointer::Relaxed_Store(
           reinterpret_cast<Map**>(object->address()),
           MapWord::FromForwardingAddress(first).ToMap());
       return;
@@ -189,14 +190,14 @@ void Scavenger::EvacuateShortcutCandidate(Map* map, HeapObject** slot,
       HeapObject* target = first_word.ToForwardingAddress();
 
       *slot = target;
-      base::AsAtomicWord::Relaxed_Store(
+      base::AsAtomicPointer::Relaxed_Store(
           reinterpret_cast<Map**>(object->address()),
           MapWord::FromForwardingAddress(target).ToMap());
       return;
     }
     Map* map = first_word.ToMap();
     EvacuateObjectDefault(map, slot, first, first->SizeFromMap(map));
-    base::AsAtomicWord::Relaxed_Store(
+    base::AsAtomicPointer::Relaxed_Store(
         reinterpret_cast<Map**>(object->address()),
         MapWord::FromForwardingAddress(*slot).ToMap());
     return;
@@ -230,15 +231,15 @@ void Scavenger::EvacuateObject(HeapObject** slot, Map* map,
 void Scavenger::ScavengeObject(HeapObject** p, HeapObject* object) {
   DCHECK(heap()->InFromSpace(object));
 
-  // Relaxed load here. We either load a forwarding pointer or the map.
-  MapWord first_word = object->map_word();
+  // Synchronized load that consumes the publishing CAS of MigrateObject.
+  MapWord first_word = object->synchronized_map_word();
 
   // If the first word is a forwarding address, the object has already been
   // copied.
   if (first_word.IsForwardingAddress()) {
     HeapObject* dest = first_word.ToForwardingAddress();
     DCHECK(object->GetIsolate()->heap()->InFromSpace(*p));
-    *p = dest;
+    base::AsAtomicPointer::Relaxed_Store(p, dest);
     return;
   }
 

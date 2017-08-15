@@ -1057,7 +1057,7 @@ void Assembler::next(Label* L) {
   DCHECK(L->is_linked());
   int link = target_at(L->pos());
   if (link == L->pos()) {
-    // Branch target points to the same instuction. This is the end of the link
+    // Branch target points to the same instruction. This is the end of the link
     // chain.
     L->Unuse();
   } else {
@@ -1365,7 +1365,7 @@ void Assembler::AddrMode3(Instr instr, Register rd, const MemOperand& x) {
     DCHECK(offset_8 >= 0);  // no masking needed
     instr |= B | (offset_8 >> 4)*B8 | (offset_8 & 0xf);
   } else if (x.shift_imm_ != 0) {
-    // Scaled register offsets are not supported, compute the offset seperately
+    // Scaled register offsets are not supported, compute the offset separately
     // to a scratch register.
     UseScratchRegisterScope temps(this);
     // Allow re-using rd for load instructions if possible.
@@ -1600,8 +1600,7 @@ void Assembler::orr(Register dst, Register src1, Register src2, SBit s,
 
 void Assembler::mov(Register dst, const Operand& src, SBit s, Condition cond) {
   // Don't allow nop instructions in the form mov rn, rn to be generated using
-  // the mov instruction. They must be generated using nop(int/NopMarkerTypes)
-  // or MarkCode(int/NopMarkerTypes) pseudo instructions.
+  // the mov instruction. They must be generated using nop(int/NopMarkerTypes).
   DCHECK(!(src.IsRegister() && src.rm().is(dst) && s == LeaveCC && cond == al));
   AddrMode1(cond | MOV | s, dst, no_reg, src);
 }

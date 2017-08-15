@@ -26,8 +26,19 @@
     instance->PrintInstancesChain(); \
   } while (false)
 
+#if __clang__
+// TODO(mostynb@opera.com): remove the using statements and these pragmas.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wheader-hygiene"
+#endif
+
 using namespace v8::internal;
 using namespace v8::internal::wasm;
+
+#if __clang__
+// TODO(mostynb@opera.com): remove the using statements and these pragmas.
+#pragma clang diagnostic pop
+#endif
 
 namespace {
 
@@ -252,7 +263,7 @@ namespace {
 
 Handle<JSArrayBuffer> GrowMemoryBuffer(Isolate* isolate,
                                        Handle<JSArrayBuffer> old_buffer,
-                                       uint32_t pages, uint32_t max_pages) {
+                                       uint32_t pages, uint32_t maximum_pages) {
   Address old_mem_start = nullptr;
   uint32_t old_size = 0;
   if (!old_buffer.is_null()) {
@@ -263,7 +274,7 @@ Handle<JSArrayBuffer> GrowMemoryBuffer(Isolate* isolate,
   uint32_t old_pages = old_size / WasmModule::kPageSize;
   DCHECK_GE(std::numeric_limits<uint32_t>::max(),
             old_size + pages * WasmModule::kPageSize);
-  if (old_pages > max_pages || pages > max_pages - old_pages) {
+  if (old_pages > maximum_pages || pages > maximum_pages - old_pages) {
     return Handle<JSArrayBuffer>::null();
   }
 
@@ -274,8 +285,8 @@ Handle<JSArrayBuffer> GrowMemoryBuffer(Isolate* isolate,
                                         : old_buffer->has_guard_region();
   size_t new_size =
       static_cast<size_t>(old_pages + pages) * WasmModule::kPageSize;
-  Handle<JSArrayBuffer> new_buffer = NewArrayBuffer(
-      isolate, new_size, enable_guard_regions, IsShared(old_buffer));
+  Handle<JSArrayBuffer> new_buffer =
+      NewArrayBuffer(isolate, new_size, enable_guard_regions);
   if (new_buffer.is_null()) return new_buffer;
   Address new_mem_start = static_cast<Address>(new_buffer->backing_store());
   memcpy(new_mem_start, old_mem_start, old_size);
@@ -365,26 +376,23 @@ int32_t WasmMemoryObject::Grow(Isolate* isolate,
   if (pages == 0) {
     // Even for pages == 0, we need to attach a new JSArrayBuffer with the same
     // backing store and neuter the old one to be spec compliant.
-    if (old_size != 0) {
       new_buffer = SetupArrayBuffer(
           isolate, old_buffer->allocation_base(),
           old_buffer->allocation_length(), old_buffer->backing_store(),
-          old_size, old_buffer->is_external(), old_buffer->has_guard_region(),
-          IsShared(old_buffer));
+          old_size, old_buffer->is_external(), old_buffer->has_guard_region());
       memory_object->set_array_buffer(*new_buffer);
-    }
     DCHECK_EQ(0, old_size % WasmModule::kPageSize);
     return old_size / WasmModule::kPageSize;
   }
 
-  uint32_t max_pages;
+  uint32_t maximum_pages;
   if (memory_object->has_maximum_pages()) {
-    max_pages = static_cast<uint32_t>(memory_object->maximum_pages());
-    if (FLAG_wasm_max_mem_pages < max_pages) return -1;
+    maximum_pages = static_cast<uint32_t>(memory_object->maximum_pages());
+    if (FLAG_wasm_max_mem_pages < maximum_pages) return -1;
   } else {
-    max_pages = FLAG_wasm_max_mem_pages;
+    maximum_pages = FLAG_wasm_max_mem_pages;
   }
-  new_buffer = GrowMemoryBuffer(isolate, old_buffer, pages, max_pages);
+  new_buffer = GrowMemoryBuffer(isolate, old_buffer, pages, maximum_pages);
   if (new_buffer.is_null()) return -1;
 
   if (memory_object->has_instances()) {
@@ -458,9 +466,9 @@ int32_t WasmInstanceObject::GrowMemory(Isolate* isolate,
     old_size = old_buffer->byte_length()->Number();
     old_mem_start = static_cast<Address>(old_buffer->backing_store());
   }
-  uint32_t max_pages = instance->GetMaxMemoryPages();
+  uint32_t maximum_pages = instance->GetMaxMemoryPages();
   Handle<JSArrayBuffer> buffer =
-      GrowMemoryBuffer(isolate, old_buffer, pages, max_pages);
+      GrowMemoryBuffer(isolate, old_buffer, pages, maximum_pages);
   if (buffer.is_null()) return -1;
   SetInstanceMemory(isolate, instance, buffer);
   UncheckedUpdateInstanceMemory(isolate, instance, old_mem_start, old_size);
@@ -476,12 +484,12 @@ uint32_t WasmInstanceObject::GetMaxMemoryPages() {
       if (maximum < FLAG_wasm_max_mem_pages) return maximum;
     }
   }
-  uint32_t compiled_max_pages = compiled_module()->module()->max_mem_pages;
+  uint32_t compiled_maximum_pages = compiled_module()->module()->maximum_pages;
   Isolate* isolate = GetIsolate();
   assert(compiled_module()->module()->is_wasm());
   isolate->counters()->wasm_wasm_max_mem_pages_count()->AddSample(
-      compiled_max_pages);
-  if (compiled_max_pages != 0) return compiled_max_pages;
+      compiled_maximum_pages);
+  if (compiled_maximum_pages != 0) return compiled_maximum_pages;
   return FLAG_wasm_max_mem_pages;
 }
 
@@ -606,10 +614,6 @@ Handle<WasmSharedModuleData> WasmSharedModuleData::New(
 
   DCHECK(WasmSharedModuleData::IsWasmSharedModuleData(*arr));
   return Handle<WasmSharedModuleData>::cast(arr);
-}
-
-Foreign* WasmSharedModuleData::lazy_compilation_orchestrator() {
-  return Foreign::cast(get(kLazyCompilationOrchestratorIndex));
 }
 
 bool WasmSharedModuleData::is_asm_js() {
@@ -787,14 +791,12 @@ void WasmSharedModuleData::PrepareForLazyCompilation(
   LazyCompilationOrchestrator* orch = new LazyCompilationOrchestrator();
   Handle<Managed<LazyCompilationOrchestrator>> orch_handle =
       Managed<LazyCompilationOrchestrator>::New(isolate, orch);
-  shared->set(kLazyCompilationOrchestratorIndex, *orch_handle);
+  shared->set_lazy_compilation_orchestrator(*orch_handle);
 }
 
 Handle<WasmCompiledModule> WasmCompiledModule::New(
     Isolate* isolate, Handle<WasmSharedModuleData> shared,
-    Handle<FixedArray> code_table,
-    MaybeHandle<FixedArray> maybe_empty_function_tables,
-    MaybeHandle<FixedArray> maybe_signature_tables) {
+    Handle<FixedArray> code_table, const ModuleEnv& module_env) {
   Handle<FixedArray> ret =
       isolate->factory()->NewFixedArray(PropertyIndices::Count, TENURED);
   // WasmCompiledModule::cast would fail since fields are not set yet.
@@ -804,23 +806,34 @@ Handle<WasmCompiledModule> WasmCompiledModule::New(
   compiled_module->set_shared(shared);
   compiled_module->set_native_context(isolate->native_context());
   compiled_module->set_code_table(code_table);
-  int function_table_count =
-      static_cast<int>(shared->module()->function_tables.size());
+  size_t function_table_count = shared->module()->function_tables.size();
   if (function_table_count > 0) {
-    compiled_module->set_signature_tables(
-        maybe_signature_tables.ToHandleChecked());
-    compiled_module->set_empty_function_tables(
-        maybe_empty_function_tables.ToHandleChecked());
-    compiled_module->set_function_tables(
-        maybe_empty_function_tables.ToHandleChecked());
+    DCHECK_EQ(module_env.function_tables().size(),
+              module_env.signature_tables().size());
+    DCHECK_EQ(module_env.function_tables().size(), function_table_count);
+    int count_as_int = static_cast<int>(function_table_count);
+    Handle<FixedArray> sig_tables =
+        isolate->factory()->NewFixedArray(count_as_int, TENURED);
+    Handle<FixedArray> func_tables =
+        isolate->factory()->NewFixedArray(count_as_int, TENURED);
+    for (int i = 0; i < count_as_int; ++i) {
+      size_t index = static_cast<size_t>(i);
+      sig_tables->set(i, *(module_env.signature_tables()[index]));
+      func_tables->set(i, *(module_env.function_tables()[index]));
+    }
+    compiled_module->set_signature_tables(sig_tables);
+    compiled_module->set_empty_function_tables(func_tables);
+    compiled_module->set_function_tables(func_tables);
   }
   // TODO(mtrofin): we copy these because the order of finalization isn't
   // reliable, and we need these at Reset (which is called at
   // finalization). If the order were reliable, and top-down, we could instead
   // just get them from shared().
-  compiled_module->set_min_mem_pages(shared->module()->min_mem_pages);
+  compiled_module->set_initial_pages(shared->module()->initial_pages);
   compiled_module->set_num_imported_functions(
       shared->module()->num_imported_functions);
+  // TODO(mtrofin): copy the rest of the specialization parameters over.
+  // We're currently OK because we're only using defaults.
   return compiled_module;
 }
 
@@ -1062,7 +1075,7 @@ uint32_t WasmCompiledModule::mem_size() const {
 }
 
 uint32_t WasmCompiledModule::default_mem_size() const {
-  return min_mem_pages() * WasmModule::kPageSize;
+  return initial_pages() * WasmModule::kPageSize;
 }
 
 MaybeHandle<String> WasmCompiledModule::GetModuleNameOrNull(

@@ -23,6 +23,7 @@ namespace internal {
   V(Code)                  \
   V(ConsString)            \
   V(DataObject)            \
+  V(FeedbackVector)        \
   V(FixedArray)            \
   V(FixedDoubleArray)      \
   V(FixedFloat64Array)     \
@@ -142,7 +143,7 @@ class Map : public HeapObject {
   class IsMigrationTarget : public BitField<bool, 25, 1> {};
   class ImmutablePrototype : public BitField<bool, 26, 1> {};
   class NewTargetIsBase : public BitField<bool, 27, 1> {};
-  // Bit 28 is free.
+  class MayHaveInterestingSymbols : public BitField<bool, 28, 1> {};
 
   // Keep this bit field at the very end for better code in
   // Builtins::kJSConstructStubGeneric stub.
@@ -218,6 +219,13 @@ class Map : public HeapObject {
   inline void set_is_constructor(bool value);
   inline bool is_constructor() const;
 
+  // Tells whether the instance with this map may have properties for
+  // interesting symbols on it.
+  // An "interesting symbol" is one for which Name::IsInterestingSymbol()
+  // returns true, i.e. a well-known symbol like @@toStringTag.
+  inline void set_may_have_interesting_symbols(bool value);
+  inline bool may_have_interesting_symbols() const;
+
   // Tells whether the instance with this map has a hidden prototype.
   inline void set_has_hidden_prototype(bool value);
   inline bool has_hidden_prototype() const;
@@ -250,6 +258,7 @@ class Map : public HeapObject {
   inline bool is_extensible() const;
   inline void set_is_prototype_map(bool value);
   inline bool is_prototype_map() const;
+  inline bool is_abandoned_prototype_map() const;
 
   inline void set_elements_kind(ElementsKind elements_kind);
   inline ElementsKind elements_kind() const;
@@ -275,7 +284,7 @@ class Map : public HeapObject {
   // map with DICTIONARY_ELEMENTS was found in the prototype chain.
   bool DictionaryElementsInPrototypeChainOnly();
 
-  inline Map* ElementsTransitionMap() const;
+  inline Map* ElementsTransitionMap();
 
   inline FixedArrayBase* GetInitialElements() const;
 
@@ -311,7 +320,7 @@ class Map : public HeapObject {
   // Returns a WeakCell object containing given prototype. The cell is cached
   // in PrototypeInfo which is created lazily.
   static Handle<WeakCell> GetOrCreatePrototypeWeakCell(
-      Handle<JSObject> prototype, Isolate* isolate);
+      Handle<JSReceiver> prototype, Isolate* isolate);
 
   Map* FindRootMap() const;
   Map* FindFieldOwner(int descriptor) const;
@@ -346,9 +355,9 @@ class Map : public HeapObject {
                               Handle<FieldType> new_field_type);
   // Returns true if |descriptor|'th property is a field that may be generalized
   // by just updating current map.
-  static bool IsInplaceGeneralizableField(PropertyConstness constness,
-                                          Representation representation,
-                                          FieldType* field_type);
+  static inline bool IsInplaceGeneralizableField(PropertyConstness constness,
+                                                 Representation representation,
+                                                 FieldType* field_type);
 
   static Handle<Map> ReconfigureProperty(Handle<Map> map, int modify_index,
                                          PropertyKind new_kind,

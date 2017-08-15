@@ -14,6 +14,7 @@
 
 #include "src/codegen.h"
 #include "src/debug/liveedit.h"
+#include "src/frames-inl.h"
 
 namespace v8 {
 namespace internal {

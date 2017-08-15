@@ -33,25 +33,9 @@ void Deserializer::DecodeReservation(
   for (int i = 0; i < kNumberOfPreallocatedSpaces; i++) current_chunk_[i] = 0;
 }
 
-void Deserializer::FlushICacheForNewIsolate() {
-  DCHECK(!deserializing_user_code_);
-  // The entire isolate is newly deserialized. Simply flush all code pages.
-  for (Page* p : *isolate_->heap()->code_space()) {
-    Assembler::FlushICache(isolate_, p->area_start(),
-                           p->area_end() - p->area_start());
-  }
-}
-
-void Deserializer::FlushICacheForNewCodeObjectsAndRecordEmbeddedObjects() {
-  DCHECK(deserializing_user_code_);
-  for (Code* code : new_code_objects_) {
-    // Record all references to embedded objects in the new code object.
-    isolate_->heap()->RecordWritesIntoCode(code);
-
-    if (FLAG_serialize_age_code) code->PreAge(isolate_);
-    Assembler::FlushICache(isolate_, code->instruction_start(),
-                           code->instruction_size());
-  }
+void Deserializer::RegisterDeserializedObjectsForBlackAllocation() {
+  isolate_->heap()->RegisterDeserializedObjectsForBlackAllocation(
+      reservations_, &deserialized_large_objects_, &allocated_maps_);
 }
 
 bool Deserializer::ReserveSpace() {
@@ -81,126 +65,6 @@ void Deserializer::Initialize(Isolate* isolate) {
   // references as the to-be-deserialized snapshot expects and refers to.
   CHECK_LE(num_extra_references_,
            SerializedData::GetExtraReferences(external_reference_table_));
-}
-
-void Deserializer::Deserialize(Isolate* isolate) {
-  Initialize(isolate);
-  if (!ReserveSpace()) V8::FatalProcessOutOfMemory("deserializing context");
-  // No active threads.
-  DCHECK_NULL(isolate_->thread_manager()->FirstThreadStateInUse());
-  // No active handles.
-  DCHECK(isolate_->handle_scope_implementer()->blocks()->is_empty());
-  // Partial snapshot cache is not yet populated.
-  DCHECK(isolate_->partial_snapshot_cache()->is_empty());
-  // Builtins are not yet created.
-  DCHECK(!isolate_->builtins()->is_initialized());
-
-  {
-    DisallowHeapAllocation no_gc;
-    isolate_->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG_ROOT_LIST);
-    isolate_->heap()->IterateSmiRoots(this);
-    isolate_->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG);
-    isolate_->heap()->RepairFreeListsAfterDeserialization();
-    isolate_->heap()->IterateWeakRoots(this, VISIT_ALL);
-    DeserializeDeferredObjects();
-    FlushICacheForNewIsolate();
-    RestoreExternalReferenceRedirectors(&accessor_infos_);
-  }
-
-  isolate_->heap()->set_native_contexts_list(
-      isolate_->heap()->undefined_value());
-  // The allocation site list is build during root iteration, but if no sites
-  // were encountered then it needs to be initialized to undefined.
-  if (isolate_->heap()->allocation_sites_list() == Smi::kZero) {
-    isolate_->heap()->set_allocation_sites_list(
-        isolate_->heap()->undefined_value());
-  }
-
-  // Issue code events for newly deserialized code objects.
-  LOG_CODE_EVENT(isolate_, LogCodeObjects());
-  LOG_CODE_EVENT(isolate_, LogBytecodeHandlers());
-  LOG_CODE_EVENT(isolate_, LogCompiledFunctions());
-
-  isolate_->builtins()->MarkInitialized();
-
-  // If needed, print the dissassembly of deserialized code objects.
-  // Needs to be called after the builtins are marked as initialized, in order
-  // to display the builtin names.
-  PrintDisassembledCodeObjects();
-
-  if (FLAG_rehash_snapshot && can_rehash_) Rehash();
-}
-
-MaybeHandle<Object> Deserializer::DeserializePartial(
-    Isolate* isolate, Handle<JSGlobalProxy> global_proxy,
-    v8::DeserializeEmbedderFieldsCallback embedder_fields_deserializer) {
-  Initialize(isolate);
-  if (!ReserveSpace()) {
-    V8::FatalProcessOutOfMemory("deserialize context");
-    return MaybeHandle<Object>();
-  }
-
-  AddAttachedObject(global_proxy);
-
-  DisallowHeapAllocation no_gc;
-  // Keep track of the code space start and end pointers in case new
-  // code objects were unserialized
-  OldSpace* code_space = isolate_->heap()->code_space();
-  Address start_address = code_space->top();
-  Object* root;
-  VisitRootPointer(Root::kPartialSnapshotCache, &root);
-  DeserializeDeferredObjects();
-  DeserializeEmbedderFields(embedder_fields_deserializer);
-
-  isolate->heap()->RegisterDeserializedObjectsForBlackAllocation(
-      reservations_, &deserialized_large_objects_, &allocated_maps_);
-
-  // There's no code deserialized here. If this assert fires then that's
-  // changed and logging should be added to notify the profiler et al of the
-  // new code, which also has to be flushed from instruction cache.
-  CHECK_EQ(start_address, code_space->top());
-
-  if (FLAG_rehash_snapshot && can_rehash_) RehashContext(Context::cast(root));
-
-  return Handle<Object>(root, isolate);
-}
-
-MaybeHandle<HeapObject> Deserializer::DeserializeObject(Isolate* isolate) {
-  Initialize(isolate);
-  if (!ReserveSpace()) {
-    return MaybeHandle<HeapObject>();
-  } else {
-    deserializing_user_code_ = true;
-    HandleScope scope(isolate);
-    Handle<HeapObject> result;
-    {
-      DisallowHeapAllocation no_gc;
-      Object* root;
-      VisitRootPointer(Root::kPartialSnapshotCache, &root);
-      DeserializeDeferredObjects();
-      FlushICacheForNewCodeObjectsAndRecordEmbeddedObjects();
-      result = Handle<HeapObject>(HeapObject::cast(root));
-      isolate->heap()->RegisterDeserializedObjectsForBlackAllocation(
-          reservations_, &deserialized_large_objects_, &allocated_maps_);
-    }
-    CommitPostProcessedObjects(isolate);
-    return scope.CloseAndEscape(result);
-  }
-}
-
-void Deserializer::Rehash() {
-  DCHECK(can_rehash_);
-  isolate_->heap()->InitializeHashSeed();
-  isolate_->heap()->string_table()->Rehash();
-  isolate_->heap()->weak_object_to_code_table()->Rehash();
-  SortMapDescriptors();
-}
-
-void Deserializer::RehashContext(Context* context) {
-  DCHECK(can_rehash_);
-  for (const auto& array : transition_arrays_) array->Sort();
-  context->global_object()->global_dictionary()->Rehash();
-  SortMapDescriptors();
 }
 
 void Deserializer::SortMapDescriptors() {
@@ -266,81 +130,28 @@ void Deserializer::DeserializeDeferredObjects() {
   }
 }
 
-void Deserializer::DeserializeEmbedderFields(
-    v8::DeserializeEmbedderFieldsCallback embedder_fields_deserializer) {
-  if (!source_.HasMore() || source_.Get() != kEmbedderFieldsData) return;
-  DisallowHeapAllocation no_gc;
-  DisallowJavascriptExecution no_js(isolate_);
-  DisallowCompilation no_compile(isolate_);
-  DCHECK_NOT_NULL(embedder_fields_deserializer.callback);
-  for (int code = source_.Get(); code != kSynchronize; code = source_.Get()) {
-    HandleScope scope(isolate_);
-    int space = code & kSpaceMask;
-    DCHECK(space <= kNumberOfSpaces);
-    DCHECK(code - space == kNewObject);
-    Handle<JSObject> obj(JSObject::cast(GetBackReferencedObject(space)),
-                         isolate_);
-    int index = source_.GetInt();
-    int size = source_.GetInt();
-    byte* data = new byte[size];
-    source_.CopyRaw(data, size);
-    embedder_fields_deserializer.callback(v8::Utils::ToLocal(obj), index,
-                                          {reinterpret_cast<char*>(data), size},
-                                          embedder_fields_deserializer.data);
-    delete[] data;
-  }
+StringTableInsertionKey::StringTableInsertionKey(String* string)
+    : StringTableKey(ComputeHashField(string)), string_(string) {
+  DCHECK(string->IsInternalizedString());
 }
 
-void Deserializer::PrintDisassembledCodeObjects() {
-#ifdef ENABLE_DISASSEMBLER
-  if (FLAG_print_builtin_code) {
-    Heap* heap = isolate_->heap();
-    HeapIterator iterator(heap);
-    DisallowHeapAllocation no_gc;
-
-    CodeTracer::Scope tracing_scope(isolate_->GetCodeTracer());
-    OFStream os(tracing_scope.file());
-
-    for (HeapObject* obj = iterator.next(); obj != NULL;
-         obj = iterator.next()) {
-      if (obj->IsCode()) {
-        Code::cast(obj)->Disassemble(nullptr, os);
-      }
-    }
-  }
-#endif
+bool StringTableInsertionKey::IsMatch(Object* string) {
+  // We know that all entries in a hash table had their hash keys created.
+  // Use that knowledge to have fast failure.
+  if (Hash() != String::cast(string)->Hash()) return false;
+  // We want to compare the content of two internalized strings here.
+  return string_->SlowEquals(String::cast(string));
 }
 
-// Used to insert a deserialized internalized string into the string table.
-class StringTableInsertionKey : public StringTableKey {
- public:
-  explicit StringTableInsertionKey(String* string)
-      : StringTableKey(ComputeHashField(string)), string_(string) {
-    DCHECK(string->IsInternalizedString());
-  }
+Handle<String> StringTableInsertionKey::AsHandle(Isolate* isolate) {
+  return handle(string_, isolate);
+}
 
-  bool IsMatch(Object* string) override {
-    // We know that all entries in a hash table had their hash keys created.
-    // Use that knowledge to have fast failure.
-    if (Hash() != String::cast(string)->Hash()) return false;
-    // We want to compare the content of two internalized strings here.
-    return string_->SlowEquals(String::cast(string));
-  }
-
-  MUST_USE_RESULT Handle<String> AsHandle(Isolate* isolate) override {
-    return handle(string_, isolate);
-  }
-
- private:
-  uint32_t ComputeHashField(String* string) {
-    // Make sure hash_field() is computed.
-    string->Hash();
-    return string->hash_field();
-  }
-
-  String* string_;
-  DisallowHeapAllocation no_gc;
-};
+uint32_t StringTableInsertionKey::ComputeHashField(String* string) {
+  // Make sure hash_field() is computed.
+  string->Hash();
+  return string->hash_field();
+}
 
 HeapObject* Deserializer::PostProcessNewObject(HeapObject* obj, int space) {
   if (deserializing_user_code()) {
@@ -399,6 +210,26 @@ HeapObject* Deserializer::PostProcessNewObject(HeapObject* obj, int space) {
         NativesExternalStringResource::DecodeForDeserialization(
             string->resource()));
     isolate_->heap()->RegisterExternalString(string);
+  } else if (obj->IsJSArrayBuffer()) {
+    JSArrayBuffer* buffer = JSArrayBuffer::cast(obj);
+    // Only fixup for the off-heap case.
+    if (buffer->backing_store() != nullptr) {
+      Smi* store_index = reinterpret_cast<Smi*>(buffer->backing_store());
+      void* backing_store = off_heap_backing_stores_[store_index->value()];
+
+      buffer->set_backing_store(backing_store);
+      buffer->set_allocation_base(backing_store);
+      isolate_->heap()->RegisterNewArrayBuffer(buffer);
+    }
+  } else if (obj->IsFixedTypedArrayBase()) {
+    FixedTypedArrayBase* fta = FixedTypedArrayBase::cast(obj);
+    // Only fixup for the off-heap case.
+    if (fta->base_pointer() == nullptr) {
+      Smi* store_index = reinterpret_cast<Smi*>(fta->external_pointer());
+      void* backing_store = off_heap_backing_stores_[store_index->value()];
+
+      fta->set_external_pointer(backing_store);
+    }
   }
   if (FLAG_rehash_snapshot && can_rehash_ && !deserializing_user_code()) {
     if (obj->IsString()) {
@@ -413,26 +244,6 @@ HeapObject* Deserializer::PostProcessNewObject(HeapObject* obj, int space) {
   // Check alignment.
   DCHECK_EQ(0, Heap::GetFillToAlign(obj->address(), obj->RequiredAlignment()));
   return obj;
-}
-
-void Deserializer::CommitPostProcessedObjects(Isolate* isolate) {
-  StringTable::EnsureCapacityForDeserialization(
-      isolate, new_internalized_strings_.length());
-  for (Handle<String> string : new_internalized_strings_) {
-    StringTableInsertionKey key(*string);
-    DCHECK_NULL(StringTable::LookupKeyIfExists(isolate, &key));
-    StringTable::LookupKey(isolate, &key);
-  }
-
-  Heap* heap = isolate->heap();
-  Factory* factory = isolate->factory();
-  for (Handle<Script> script : new_scripts_) {
-    // Assign a new script id to avoid collision.
-    script->set_id(isolate_->heap()->NextScriptId());
-    // Add script to list.
-    Handle<Object> list = WeakFixedArray::Add(factory->script_list(), script);
-    heap->SetRootScriptList(*list);
-  }
 }
 
 HeapObject* Deserializer::GetBackReferencedObject(int space) {
@@ -629,6 +440,7 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
         emit_write_barrier = false;                                            \
       }                                                                        \
       if (within == kInnerPointer) {                                           \
+        DCHECK(how == kFromCode);                                              \
         if (new_object->IsCode()) {                                            \
           Code* new_code_object = Code::cast(new_object);                      \
           new_object =                                                         \
@@ -656,7 +468,7 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
       SLOW_DCHECK(isolate->heap()->ContainsSlow(current_object_address));      \
       isolate->heap()->RecordWrite(                                            \
           HeapObject::FromAddress(current_object_address),                     \
-          static_cast<int>(current_address - current_object_address),          \
+          reinterpret_cast<Object**>(current_address),                         \
           *reinterpret_cast<Object**>(current_address));                       \
     }                                                                          \
     if (!current_was_incremented) {                                            \
@@ -696,13 +508,6 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
       // Deserialize a new object and write a pointer to it to the current
       // object.
       ALL_SPACES(kNewObject, kPlain, kStartOfObject)
-      // Support for direct instruction pointers in functions.  It's an inner
-      // pointer because it points at the entry point, not at the start of the
-      // code object.
-      SINGLE_CASE(kNewObject, kPlain, kInnerPointer, CODE_SPACE)
-      // Support for pointers into a cell. It's an inner pointer because it
-      // points directly at the value field, not the start of the cell object.
-      SINGLE_CASE(kNewObject, kPlain, kInnerPointer, OLD_SPACE)
       // Deserialize a new code object and write a pointer to its first
       // instruction to the current code object.
       ALL_SPACES(kNewObject, kFromCode, kInnerPointer)
@@ -729,12 +534,6 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
       // object.
       ALL_SPACES(kBackref, kFromCode, kInnerPointer)
       ALL_SPACES(kBackrefWithSkip, kFromCode, kInnerPointer)
-      // Support for direct instruction pointers in functions.
-      SINGLE_CASE(kBackref, kPlain, kInnerPointer, CODE_SPACE)
-      SINGLE_CASE(kBackrefWithSkip, kPlain, kInnerPointer, CODE_SPACE)
-      // Support for pointers into a cell.
-      SINGLE_CASE(kBackref, kPlain, kInnerPointer, OLD_SPACE)
-      SINGLE_CASE(kBackrefWithSkip, kPlain, kInnerPointer, OLD_SPACE)
       // Find an object in the roots array and write a pointer to it to the
       // current object.
       SINGLE_CASE(kRootArray, kPlain, kStartOfObject, 0)
@@ -745,9 +544,6 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
       // Find an object in the partial snapshots cache and write a pointer to it
       // to the current object.
       SINGLE_CASE(kPartialSnapshotCache, kPlain, kStartOfObject, 0)
-      // Find an code entry in the partial snapshots cache and
-      // write a pointer to it to the current object.
-      SINGLE_CASE(kPartialSnapshotCache, kPlain, kInnerPointer, 0)
       // Find an external reference and write a pointer to it to the current
       // object.
       SINGLE_CASE(kExternalReference, kPlain, kStartOfObject, 0)
@@ -757,12 +553,10 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
       // Find an object in the attached references and write a pointer to it to
       // the current object.
       SINGLE_CASE(kAttachedReference, kPlain, kStartOfObject, 0)
-      SINGLE_CASE(kAttachedReference, kPlain, kInnerPointer, 0)
       SINGLE_CASE(kAttachedReference, kFromCode, kStartOfObject, 0)
       SINGLE_CASE(kAttachedReference, kFromCode, kInnerPointer, 0)
       // Find a builtin and write a pointer to it to the current object.
       SINGLE_CASE(kBuiltin, kPlain, kStartOfObject, 0)
-      SINGLE_CASE(kBuiltin, kPlain, kInnerPointer, 0)
       SINGLE_CASE(kBuiltin, kFromCode, kInnerPointer, 0)
 
 #undef CASE_STATEMENT
@@ -873,6 +667,17 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
         break;
       }
 
+      case kOffHeapBackingStore: {
+        int byte_length = source_.GetInt();
+        byte* backing_store = static_cast<byte*>(
+            isolate->array_buffer_allocator()->AllocateUninitialized(
+                byte_length));
+        CHECK_NOT_NULL(backing_store);
+        source_.CopyRaw(backing_store, byte_length);
+        off_heap_backing_stores_.push_back(backing_store);
+        break;
+      }
+
       case kAlignmentPrefix:
       case kAlignmentPrefix + 1:
       case kAlignmentPrefix + 2:
@@ -917,8 +722,7 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
           Address current_address = reinterpret_cast<Address>(current);
           isolate->heap()->RecordWrite(
               HeapObject::FromAddress(current_object_address),
-              static_cast<int>(current_address - current_object_address),
-              hot_object);
+              reinterpret_cast<Object**>(current_address), hot_object);
         }
         current++;
         break;

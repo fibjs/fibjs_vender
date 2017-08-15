@@ -230,18 +230,20 @@ namespace internal {
   F(IsFunction, 1, 1)                      \
   F(FunctionToString, 1, 1)
 
-#define FOR_EACH_INTRINSIC_GENERATOR(F)          \
-  F(CreateJSGeneratorObject, 2, 1)               \
-  F(GeneratorClose, 1, 1)                        \
-  F(GeneratorGetFunction, 1, 1)                  \
-  F(GeneratorGetReceiver, 1, 1)                  \
-  F(GeneratorGetContext, 1, 1)                   \
-  F(GeneratorGetInputOrDebugPos, 1, 1)           \
-  F(AsyncGeneratorResolve, 3, 1)                 \
-  F(AsyncGeneratorReject, 2, 1)                  \
-  F(GeneratorGetContinuation, 1, 1)              \
-  F(GeneratorGetSourcePosition, 1, 1)            \
-  F(GeneratorGetResumeMode, 1, 1)
+#define FOR_EACH_INTRINSIC_GENERATOR(F) \
+  F(CreateJSGeneratorObject, 2, 1)      \
+  F(GeneratorClose, 1, 1)               \
+  F(GeneratorGetFunction, 1, 1)         \
+  F(GeneratorGetReceiver, 1, 1)         \
+  F(GeneratorGetContext, 1, 1)          \
+  F(GeneratorGetInputOrDebugPos, 1, 1)  \
+  F(AsyncGeneratorResolve, 3, 1)        \
+  F(AsyncGeneratorReject, 2, 1)         \
+  F(AsyncGeneratorYield, 3, 1)          \
+  F(GeneratorGetContinuation, 1, 1)     \
+  F(GeneratorGetSourcePosition, 1, 1)   \
+  F(GeneratorGetResumeMode, 1, 1)       \
+  F(AsyncGeneratorHasCatchHandlerForPC, 1, 1)
 
 #ifdef V8_INTL_SUPPORT
 #define FOR_EACH_INTRINSIC_INTL(F)           \
@@ -305,7 +307,6 @@ namespace internal {
   F(ThrowConstructedNonConstructable, 1, 1)                          \
   F(ThrowConstructorReturnedNonObject, 0, 1)                         \
   F(ThrowGeneratorRunning, 0, 1)                                     \
-  F(ThrowIllegalInvocation, 0, 1)                                    \
   F(ThrowIncompatibleMethodReceiver, 2, 1)                           \
   F(ThrowInvalidHint, 1, 1)                                          \
   F(ThrowInvalidStringLength, 0, 1)                                  \
@@ -460,11 +461,13 @@ namespace internal {
   F(PromiseStatus, 1, 1)                    \
   F(ReportPromiseReject, 2, 1)
 
-#define FOR_EACH_INTRINSIC_PROXY(F)     \
-  F(IsJSProxy, 1, 1)                    \
-  F(JSProxyGetTarget, 1, 1)             \
-  F(JSProxyGetHandler, 1, 1)            \
-  F(JSProxyRevoke, 1, 1)
+#define FOR_EACH_INTRINSIC_PROXY(F) \
+  F(IsJSProxy, 1, 1)                \
+  F(JSProxyGetTarget, 1, 1)         \
+  F(JSProxyGetHandler, 1, 1)        \
+  F(JSProxyRevoke, 1, 1)            \
+  F(GetPropertyWithReceiver, 2, 1)  \
+  F(CheckProxyGetTrapResult, 2, 1)
 
 #define FOR_EACH_INTRINSIC_REGEXP(F)                \
   F(IsRegExp, 1, 1)                                 \
@@ -552,7 +555,6 @@ namespace internal {
   F(NeverOptimizeFunction, 1, 1)              \
   F(GetOptimizationStatus, -1, 1)             \
   F(UnblockConcurrentRecompilation, 0, 1)     \
-  F(GetOptimizationCount, 1, 1)               \
   F(GetDeoptCount, 1, 1)                      \
   F(GetUndetectable, 0, 1)                    \
   F(GetCallable, 0, 1)                        \
@@ -635,7 +637,8 @@ namespace internal {
   F(ThrowWasmStackOverflow, 0, 1)      \
   F(WasmThrowTypeError, 0, 1)          \
   F(WasmThrow, 2, 1)                   \
-  F(WasmGetCaughtExceptionValue, 1, 1) \
+  F(WasmRethrow, 0, 1)                 \
+  F(WasmSetCaughtExceptionValue, 1, 1) \
   F(WasmRunInterpreter, 3, 1)          \
   F(WasmStackGuard, 0, 1)              \
   F(SetThreadInWasm, 0, 1)             \
@@ -826,8 +829,6 @@ class AllocateTargetSpace : public BitField<AllocationSpace, 1, 3> {};
 
 class DeclareGlobalsEvalFlag : public BitField<bool, 0, 1> {};
 class DeclareGlobalsNativeFlag : public BitField<bool, 1, 1> {};
-STATIC_ASSERT(LANGUAGE_END == 2);
-class DeclareGlobalsLanguageMode : public BitField<LanguageMode, 2, 1> {};
 
 // A set of bits returned by Runtime_GetOptimizationStatus.
 // These bits must be in sync with bits defined in test/mjsunit/mjsunit.js
@@ -839,6 +840,11 @@ enum class OptimizationStatus {
   kOptimized = 1 << 4,
   kTurboFanned = 1 << 5,
   kInterpreted = 1 << 6,
+  kMarkedForOptimization = 1 << 7,
+  kMarkedForConcurrentOptimization = 1 << 8,
+  kOptimizingConcurrently = 1 << 9,
+  kIsExecuting = 1 << 10,
+  kTopmostFrameIsTurboFanned = 1 << 11,
 };
 
 }  // namespace internal

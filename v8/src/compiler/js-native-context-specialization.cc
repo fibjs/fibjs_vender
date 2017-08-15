@@ -39,13 +39,6 @@ bool HasOnlyJSArrayMaps(MapHandles const& maps) {
   return true;
 }
 
-bool HasOnlyStringMaps(MapHandles const& maps) {
-  for (auto map : maps) {
-    if (!map->IsStringMap()) return false;
-  }
-  return true;
-}
-
 }  // namespace
 
 struct JSNativeContextSpecialization::ScriptContextTableLookupResult {
@@ -573,7 +566,7 @@ Reduction JSNativeContextSpecialization::ReduceGlobalAccess(
           value = effect = graph()->NewNode(simplified()->CheckHeapObject(),
                                             value, effect, control);
 
-          // Check {value} map agains the {property_cell} map.
+          // Check {value} map against the {property_cell} map.
           effect =
               graph()->NewNode(simplified()->CheckMaps(
                                    CheckMapsFlag::kNone,
@@ -1451,8 +1444,13 @@ Node* JSNativeContextSpecialization::InlinePropertyGetterCall(
     Handle<FunctionTemplateInfo> function_template_info(
         Handle<FunctionTemplateInfo>::cast(access_info.constant()));
     DCHECK(!function_template_info->call_code()->IsUndefined(isolate()));
-    value = InlineApiCall(receiver, context, target, frame_state0, nullptr,
-                          effect, control, shared_info, function_template_info);
+    Node* holder =
+        access_info.holder().is_null()
+            ? receiver
+            : jsgraph()->Constant(access_info.holder().ToHandleChecked());
+    value =
+        InlineApiCall(receiver, holder, context, target, frame_state0, nullptr,
+                      effect, control, shared_info, function_template_info);
   }
   // Remember to rewire the IfException edge if this is inside a try-block.
   if (if_exceptions != nullptr) {
@@ -1498,8 +1496,13 @@ Node* JSNativeContextSpecialization::InlinePropertySetterCall(
     Handle<FunctionTemplateInfo> function_template_info(
         Handle<FunctionTemplateInfo>::cast(access_info.constant()));
     DCHECK(!function_template_info->call_code()->IsUndefined(isolate()));
-    value = InlineApiCall(receiver, context, target, frame_state0, value,
-                          effect, control, shared_info, function_template_info);
+    Node* holder =
+        access_info.holder().is_null()
+            ? receiver
+            : jsgraph()->Constant(access_info.holder().ToHandleChecked());
+    value =
+        InlineApiCall(receiver, holder, context, target, frame_state0, value,
+                      effect, control, shared_info, function_template_info);
   }
   // Remember to rewire the IfException edge if this is inside a try-block.
   if (if_exceptions != nullptr) {
@@ -1514,8 +1517,9 @@ Node* JSNativeContextSpecialization::InlinePropertySetterCall(
 }
 
 Node* JSNativeContextSpecialization::InlineApiCall(
-    Node* receiver, Node* context, Node* target, Node* frame_state, Node* value,
-    Node** effect, Node** control, Handle<SharedFunctionInfo> shared_info,
+    Node* receiver, Node* holder, Node* context, Node* target,
+    Node* frame_state, Node* value, Node** effect, Node** control,
+    Handle<SharedFunctionInfo> shared_info,
     Handle<FunctionTemplateInfo> function_template_info) {
   Handle<CallHandlerInfo> call_handler_info = handle(
       CallHandlerInfo::cast(function_template_info->call_code()), isolate());
@@ -1544,8 +1548,7 @@ Node* JSNativeContextSpecialization::InlineApiCall(
   Node* code = jsgraph()->HeapConstant(stub.GetCode());
 
   // Add CallApiCallbackStub's register argument as well.
-  Node* inputs[11] = {
-      code, target, data, receiver /* holder */, function_reference, receiver};
+  Node* inputs[11] = {code, target, data, holder, function_reference, receiver};
   int index = 6 + argc;
   inputs[index++] = context;
   inputs[index++] = frame_state;
@@ -2289,12 +2292,12 @@ bool JSNativeContextSpecialization::ExtractReceiverMaps(
   DCHECK_EQ(0, receiver_maps->size());
   // See if we can infer a concrete type for the {receiver}.
   if (InferReceiverMaps(receiver, effect, receiver_maps)) {
-    // We can assume that the {receiver} still has the infered {receiver_maps}.
+    // We can assume that the {receiver} still has the inferred {receiver_maps}.
     return true;
   }
   // Try to extract some maps from the {nexus}.
   if (nexus.ExtractMaps(receiver_maps) != 0) {
-    // Try to filter impossible candidates based on infered root map.
+    // Try to filter impossible candidates based on inferred root map.
     Handle<Map> receiver_map;
     if (InferReceiverRootMap(receiver).ToHandle(&receiver_map)) {
       receiver_maps->erase(

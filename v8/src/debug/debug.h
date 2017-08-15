@@ -256,7 +256,7 @@ class DebugFeatureTracker {
 class Debug {
  public:
   // Debug event triggers.
-  void OnDebugBreak(Handle<Object> break_points_hit);
+  void OnDebugBreak(Handle<FixedArray> break_points_hit);
 
   void OnThrow(Handle<Object> exception);
   void OnPromiseReject(Handle<Object> promise, Handle<Object> value);
@@ -287,6 +287,10 @@ class Debug {
   void ClearBreakPoint(Handle<Object> break_point_object);
   void ChangeBreakOnException(ExceptionBreakType type, bool enable);
   bool IsBreakOnException(ExceptionBreakType type);
+
+  bool SetBreakpoint(Handle<Script> script, Handle<String> condition,
+                     int* offset, int* id);
+  void RemoveBreakpoint(int id);
 
   // The parameter is either a BreakPointInfo object, or a FixedArray of
   // BreakPointInfo objects.
@@ -348,6 +352,13 @@ class Debug {
   void ScheduleFrameRestart(StackFrame* frame);
 
   bool AllFramesOnStackAreBlackboxed();
+
+  // Set new script source, throw an exception if error occurred. When preview
+  // is true: try to set source, throw exception if any without actual script
+  // change. stack_changed is true if after editing script on pause stack is
+  // changed and client should request stack trace again.
+  bool SetScriptSource(Handle<Script> script, Handle<String> source,
+                       bool preview, bool* stack_changed);
 
   // Threading support.
   char* ArchiveDebug(char* to);
@@ -492,7 +503,8 @@ class Debug {
   bool IsMutedAtCurrentLocation(JavaScriptFrame* frame);
   bool CheckBreakPoint(Handle<Object> break_point_object);
   MaybeHandle<Object> CallFunction(const char* name, int argc,
-                                   Handle<Object> args[]);
+                                   Handle<Object> args[],
+                                   bool catch_exceptions = true);
 
   inline void AssertDebugContext() {
     DCHECK(isolate_->context() == *debug_context());
@@ -588,6 +600,9 @@ class Debug {
     Address restart_fp_;
 
     int async_task_count_;
+
+    // Last used inspector breakpoint id.
+    int last_breakpoint_id_;
   };
 
   // Storage location for registers when handling debug break calls
@@ -614,11 +629,12 @@ class LegacyDebugDelegate : public v8::debug::DebugDelegate {
   explicit LegacyDebugDelegate(Isolate* isolate) : isolate_(isolate) {}
   void PromiseEventOccurred(v8::debug::PromiseDebugActionType type, int id,
                             int parent_id, bool created_by_user) override;
-  void ScriptCompiled(v8::Local<v8::debug::Script> script,
+  void ScriptCompiled(v8::Local<v8::debug::Script> script, bool is_live_edited,
                       bool has_compile_error) override;
   void BreakProgramRequested(v8::Local<v8::Context> paused_context,
                              v8::Local<v8::Object> exec_state,
-                             v8::Local<v8::Value> break_points_hit) override;
+                             v8::Local<v8::Value> break_points_hit,
+                             const std::vector<debug::BreakpointId>&) override;
   void ExceptionThrown(v8::Local<v8::Context> paused_context,
                        v8::Local<v8::Object> exec_state,
                        v8::Local<v8::Value> exception,

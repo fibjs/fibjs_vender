@@ -264,7 +264,7 @@ class LoadIC : public IC {
 
  protected:
   virtual Handle<Code> slow_stub() const {
-    return isolate()->builtins()->LoadIC_Slow();
+    return BUILTIN_CODE(isolate(), LoadIC_Slow);
   }
 
   // Update the inline cache and the global stub cache based on the
@@ -283,7 +283,7 @@ class LoadIC : public IC {
   // by given Smi-handler that encoded a load from the holder.
   // Can be used only if GetPrototypeCheckCount() returns non negative value.
   Handle<Object> LoadFromPrototype(Handle<Map> receiver_map,
-                                   Handle<JSObject> holder, Handle<Name> name,
+                                   Handle<JSReceiver> holder, Handle<Name> name,
                                    Handle<Smi> smi_handler);
 
   // Creates a data handler that represents a load of a non-existent property.
@@ -305,7 +305,7 @@ class LoadGlobalIC : public LoadIC {
 
  protected:
   Handle<Code> slow_stub() const override {
-    return isolate()->builtins()->LoadGlobalIC_Slow();
+    return BUILTIN_CODE(isolate(), LoadGlobalIC_Slow);
   }
 };
 
@@ -356,13 +356,14 @@ class StoreIC : public IC {
   // Stub accessors.
   Handle<Code> slow_stub() const {
     // All StoreICs share the same slow stub.
-    return isolate()->builtins()->KeyedStoreIC_Slow();
+    return BUILTIN_CODE(isolate(), KeyedStoreIC_Slow);
   }
 
   // Update the inline cache and the global stub cache based on the
   // lookup result.
   void UpdateCaches(LookupIterator* lookup, Handle<Object> value,
-                    JSReceiver::StoreFromKeyed store_mode);
+                    JSReceiver::StoreFromKeyed store_mode,
+                    MaybeHandle<Object> cached_handler);
   Handle<Object> GetMapIndependentHandler(LookupIterator* lookup) override;
   Handle<Code> CompileHandler(LookupIterator* lookup) override;
 

@@ -6,13 +6,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/compiler/code-generator.h"
 #include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
+#include "src/compiler/code-generator.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
-#include "src/mips/macro-assembler-mips.h"
+#include "src/mips64/macro-assembler-mips64.h"
 
 namespace v8 {
 namespace internal {
@@ -1287,7 +1287,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
 
     case kMips64CmpS:
-      // Psuedo-instruction used for FP cmp/branch. No opcode emitted here.
+      // Pseudo-instruction used for FP cmp/branch. No opcode emitted here.
       break;
     case kMips64AddS:
       // TODO(plind): add special case: combine mult & add.
@@ -1341,7 +1341,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                i.InputDoubleRegister(1));
       break;
     case kMips64CmpD:
-      // Psuedo-instruction used for FP cmp/branch. No opcode emitted here.
+      // Pseudo-instruction used for FP cmp/branch. No opcode emitted here.
       break;
     case kMips64AddD:
       // TODO(plind): add special case: combine mult & add.
@@ -1818,70 +1818,70 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     }
     case kCheckedLoadInt8:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(lb);
+      ASSEMBLE_CHECKED_LOAD_INTEGER(Lb);
       break;
     case kCheckedLoadUint8:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(lbu);
+      ASSEMBLE_CHECKED_LOAD_INTEGER(Lbu);
       break;
     case kCheckedLoadInt16:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(lh);
+      ASSEMBLE_CHECKED_LOAD_INTEGER(Lh);
       break;
     case kCheckedLoadUint16:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(lhu);
+      ASSEMBLE_CHECKED_LOAD_INTEGER(Lhu);
       break;
     case kCheckedLoadWord32:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(lw);
+      ASSEMBLE_CHECKED_LOAD_INTEGER(Lw);
       break;
     case kCheckedLoadWord64:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(ld);
+      ASSEMBLE_CHECKED_LOAD_INTEGER(Ld);
       break;
     case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(Single, lwc1);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(Single, Lwc1);
       break;
     case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(Double, ldc1);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(Double, Ldc1);
       break;
     case kCheckedStoreWord8:
-      ASSEMBLE_CHECKED_STORE_INTEGER(sb);
+      ASSEMBLE_CHECKED_STORE_INTEGER(Sb);
       break;
     case kCheckedStoreWord16:
-      ASSEMBLE_CHECKED_STORE_INTEGER(sh);
+      ASSEMBLE_CHECKED_STORE_INTEGER(Sh);
       break;
     case kCheckedStoreWord32:
-      ASSEMBLE_CHECKED_STORE_INTEGER(sw);
+      ASSEMBLE_CHECKED_STORE_INTEGER(Sw);
       break;
     case kCheckedStoreWord64:
-      ASSEMBLE_CHECKED_STORE_INTEGER(sd);
+      ASSEMBLE_CHECKED_STORE_INTEGER(Sd);
       break;
     case kCheckedStoreFloat32:
-      ASSEMBLE_CHECKED_STORE_FLOAT(Single, swc1);
+      ASSEMBLE_CHECKED_STORE_FLOAT(Single, Swc1);
       break;
     case kCheckedStoreFloat64:
-      ASSEMBLE_CHECKED_STORE_FLOAT(Double, sdc1);
+      ASSEMBLE_CHECKED_STORE_FLOAT(Double, Sdc1);
       break;
     case kAtomicLoadInt8:
-      ASSEMBLE_ATOMIC_LOAD_INTEGER(lb);
+      ASSEMBLE_ATOMIC_LOAD_INTEGER(Lb);
       break;
     case kAtomicLoadUint8:
-      ASSEMBLE_ATOMIC_LOAD_INTEGER(lbu);
+      ASSEMBLE_ATOMIC_LOAD_INTEGER(Lbu);
       break;
     case kAtomicLoadInt16:
-      ASSEMBLE_ATOMIC_LOAD_INTEGER(lh);
+      ASSEMBLE_ATOMIC_LOAD_INTEGER(Lh);
       break;
     case kAtomicLoadUint16:
-      ASSEMBLE_ATOMIC_LOAD_INTEGER(lhu);
+      ASSEMBLE_ATOMIC_LOAD_INTEGER(Lhu);
       break;
     case kAtomicLoadWord32:
-      ASSEMBLE_ATOMIC_LOAD_INTEGER(lw);
+      ASSEMBLE_ATOMIC_LOAD_INTEGER(Lw);
       break;
     case kAtomicStoreWord8:
-      ASSEMBLE_ATOMIC_STORE_INTEGER(sb);
+      ASSEMBLE_ATOMIC_STORE_INTEGER(Sb);
       break;
     case kAtomicStoreWord16:
-      ASSEMBLE_ATOMIC_STORE_INTEGER(sh);
+      ASSEMBLE_ATOMIC_STORE_INTEGER(Sh);
       break;
     case kAtomicStoreWord32:
-      ASSEMBLE_ATOMIC_STORE_INTEGER(sw);
+      ASSEMBLE_ATOMIC_STORE_INTEGER(Sw);
       break;
     case kAtomicExchangeInt8:
     case kAtomicExchangeUint8:
@@ -3026,7 +3026,7 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
   Condition cc = kNoCondition;
   // MIPS does not have condition code flags, so compare and branch are
   // implemented differently than on the other arch's. The compare operations
-  // emit mips psuedo-instructions, which are handled here by branch
+  // emit mips pseudo-instructions, which are handled here by branch
   // instructions that do the actual comparison. Essential that the input
   // registers to compare pseudo-op are not modified before this branch op, as
   // they are tested here.
@@ -3421,12 +3421,10 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
 
 CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
     int deoptimization_id, SourcePosition pos) {
-  DeoptimizeKind deoptimization_kind = GetDeoptimizationKind(deoptimization_id);
   DeoptimizeReason deoptimization_reason =
       GetDeoptimizationReason(deoptimization_id);
   Deoptimizer::BailoutType bailout_type =
-      deoptimization_kind == DeoptimizeKind::kSoft ? Deoptimizer::SOFT
-                                                   : Deoptimizer::EAGER;
+      DeoptimizerCallBailout(deoptimization_id, pos);
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       tasm()->isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
@@ -3458,6 +3456,7 @@ void CodeGenerator::FinishFrame(Frame* frame) {
 
 void CodeGenerator::AssembleConstructFrame() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
+
   if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
       __ Push(ra, fp);

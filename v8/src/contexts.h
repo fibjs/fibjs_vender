@@ -217,6 +217,14 @@ enum ContextLookupFlags {
     async_generator_await_reject_shared_fun)                                   \
   V(ASYNC_GENERATOR_AWAIT_RESOLVE_SHARED_FUN, SharedFunctionInfo,              \
     async_generator_await_resolve_shared_fun)                                  \
+  V(ASYNC_GENERATOR_YIELD_RESOLVE_SHARED_FUN, SharedFunctionInfo,              \
+    async_generator_yield_resolve_shared_fun)                                  \
+  V(ASYNC_GENERATOR_RETURN_RESOLVE_SHARED_FUN, SharedFunctionInfo,             \
+    async_generator_return_resolve_shared_fun)                                 \
+  V(ASYNC_GENERATOR_RETURN_CLOSED_RESOLVE_SHARED_FUN, SharedFunctionInfo,      \
+    async_generator_return_closed_resolve_shared_fun)                          \
+  V(ASYNC_GENERATOR_RETURN_CLOSED_REJECT_SHARED_FUN, SharedFunctionInfo,       \
+    async_generator_return_closed_reject_shared_fun)                           \
   V(ATOMICS_OBJECT, JSObject, atomics_object)                                  \
   V(BOOLEAN_FUNCTION_INDEX, JSFunction, boolean_function)                      \
   V(BOUND_FUNCTION_WITH_CONSTRUCTOR_MAP_INDEX, Map,                            \
@@ -228,7 +236,6 @@ enum ContextLookupFlags {
   V(CALL_AS_FUNCTION_DELEGATE_INDEX, JSFunction, call_as_function_delegate)    \
   V(CALLSITE_FUNCTION_INDEX, JSFunction, callsite_function)                    \
   V(CONTEXT_EXTENSION_FUNCTION_INDEX, JSFunction, context_extension_function)  \
-  V(CURRENT_MODULE_INDEX, Module, current_module)                              \
   V(DATA_PROPERTY_DESCRIPTOR_MAP_INDEX, Map, data_property_descriptor_map)     \
   V(DATA_VIEW_FUN_INDEX, JSFunction, data_view_fun)                            \
   V(DATE_FUNCTION_INDEX, JSFunction, date_function)                            \
@@ -670,7 +677,8 @@ class Context: public FixedArray {
   Handle<Object> Lookup(Handle<String> name, ContextLookupFlags flags,
                         int* index, PropertyAttributes* attributes,
                         InitializationFlag* init_flag,
-                        VariableMode* variable_mode);
+                        VariableMode* variable_mode,
+                        bool* is_sloppy_function_name = nullptr);
 
   // Code generation support.
   static int SlotOffset(int index) {

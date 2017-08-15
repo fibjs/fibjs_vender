@@ -70,9 +70,6 @@
     <Filter Include="Source Files\compiler\x64">
       <UniqueIdentifier>{7e4db021-7f1c-d574-294e-09b6102be2dd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\d8.xcodeproj">
-      <UniqueIdentifier>{21b6a2cb-ceaf-378e-a76c-933ad5762d5c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\debug">
       <UniqueIdentifier>{fd6ab6b3-d8d6-b8ec-f3aa-bee52ed75151}</UniqueIdentifier>
     </Filter>
@@ -93,21 +90,6 @@
     </Filter>
     <Filter Include="Source Files\ffi">
       <UniqueIdentifier>{162a0a77-7696-01cd-0b5f-9ceaf92eb46d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\full-codegen">
-      <UniqueIdentifier>{9bde402c-8954-3bca-54a2-0b176651693c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\full-codegen\ia32">
-      <UniqueIdentifier>{ffb3a780-8f51-8123-a656-a951974d37d5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\full-codegen\ppc">
-      <UniqueIdentifier>{f00a5531-efdb-0e27-81f4-9b7754d2a312}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\full-codegen\s390">
-      <UniqueIdentifier>{9c86a554-7da0-a7fe-588d-00d4ba3a5c7d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\full-codegen\x64">
-      <UniqueIdentifier>{73f3d6cd-3dd6-8540-ff08-e30c63419f3a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\gen">
       <UniqueIdentifier>{1050797c-185f-d58a-6936-837871f7749c}</UniqueIdentifier>
@@ -549,6 +531,9 @@
     <ClInclude Include="src\builtins\builtins-promise-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-proxy-helpers-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-regexp-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -627,6 +612,9 @@
     <ClInclude Include="src\compiler-dispatcher\optimizing-compile-dispatcher.h">
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler-dispatcher\unoptimized-compile-job.h">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -637,12 +625,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\all-nodes.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\ast-graph-builder.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\ast-loop-assignment-analyzer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\basic-block-instrumentor.h">
@@ -682,9 +664,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\compiler-source-position-table.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\control-builders.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\control-equivalence.h">
@@ -768,9 +747,6 @@
     <ClInclude Include="src\compiler\js-create-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\js-frame-specialization.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\js-generic-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -834,6 +810,12 @@
     <ClInclude Include="src\compiler\move-optimizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\new-escape-analysis-reducer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\new-escape-analysis.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\node-aux-data.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -865,6 +847,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\osr.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\persistent-map.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\pipeline-statistics.h">
@@ -996,7 +981,13 @@
     <ClInclude Include="src\debug\debug-interface.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
+    <ClInclude Include="src\debug\debug-scope-iterator.h">
+      <Filter>Source Files\debug</Filter>
+    </ClInclude>
     <ClInclude Include="src\debug\debug-scopes.h">
+      <Filter>Source Files\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\debug\debug-stack-trace-iterator.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
     <ClInclude Include="src\debug\debug.h">
@@ -1098,14 +1089,14 @@
     <ClInclude Include="src\flags.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\frame-constants.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\frames-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\frames.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\full-codegen\full-codegen.h">
-      <Filter>Source Files\full-codegen</Filter>
     </ClInclude>
     <ClInclude Include="src\futex-emulation.h">
       <Filter>Source Files</Filter>
@@ -1162,6 +1153,12 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\incremental-marking.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\invalidated-slots-inl.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\invalidated-slots.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\item-parallel-job.h">
@@ -1233,7 +1230,7 @@
     <ClInclude Include="src\ia32\codegen-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="src\ia32\frames-ia32.h">
+    <ClInclude Include="src\ia32\frame-constants-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
     <ClInclude Include="src\ia32\macro-assembler-ia32.h">
@@ -1587,10 +1584,10 @@
     <ClInclude Include="src\parsing\expression-classifier.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
-    <ClInclude Include="src\parsing\func-name-inferrer.h">
+    <ClInclude Include="src\parsing\expression-scope-reparenter.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
-    <ClInclude Include="src\parsing\parameter-initializer-rewriter.h">
+    <ClInclude Include="src\parsing\func-name-inferrer.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\parse-info.h">
@@ -1650,7 +1647,7 @@
     <ClInclude Include="src\ppc\constants-ppc.h">
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
-    <ClInclude Include="src\ppc\frames-ppc.h">
+    <ClInclude Include="src\ppc\frame-constants-ppc.h">
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
     <ClInclude Include="src\ppc\macro-assembler-ppc.h">
@@ -1773,6 +1770,9 @@
     <ClInclude Include="src\register-configuration.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\reglist.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\runtime-profiler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1797,7 +1797,7 @@
     <ClInclude Include="src\s390\constants-s390.h">
       <Filter>Source Files\s390</Filter>
     </ClInclude>
-    <ClInclude Include="src\s390\frames-s390.h">
+    <ClInclude Include="src\s390\frame-constants-s390.h">
       <Filter>Source Files\s390</Filter>
     </ClInclude>
     <ClInclude Include="src\s390\macro-assembler-s390.h">
@@ -1830,6 +1830,12 @@
     <ClInclude Include="src\snapshot\natives.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
+    <ClInclude Include="src\snapshot\object-deserializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\partial-deserializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
     <ClInclude Include="src\snapshot\partial-serializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
@@ -1843,6 +1849,9 @@
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\snapshot.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\startup-deserializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\startup-serializer.h">
@@ -1992,6 +2001,9 @@
     <ClInclude Include="src\wasm\streaming-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\wasm-api.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-specialization.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -2040,7 +2052,7 @@
     <ClInclude Include="src\x64\codegen-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
-    <ClInclude Include="src\x64\frames-x64.h">
+    <ClInclude Include="src\x64\frame-constants-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\x64\macro-assembler-x64.h">
@@ -2399,6 +2411,9 @@
     <ClCompile Include="src\builtins\builtins-proxy-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-proxy-helpers-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-reflect.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2495,6 +2510,9 @@
     <ClCompile Include="src\compiler-dispatcher\optimizing-compile-dispatcher.cc">
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler-dispatcher\unoptimized-compile-job.cc">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2505,12 +2523,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\all-nodes.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\ast-graph-builder.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\ast-loop-assignment-analyzer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\basic-block-instrumentor.cc">
@@ -2550,9 +2562,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\compiler-source-position-table.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\control-builders.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\control-equivalence.cc">
@@ -2633,9 +2642,6 @@
     <ClCompile Include="src\compiler\js-create-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\js-frame-specialization.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\js-generic-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2697,6 +2703,12 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\move-optimizer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\new-escape-analysis-reducer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\new-escape-analysis.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\node-cache.cc">
@@ -2861,7 +2873,13 @@
     <ClCompile Include="src\debug\debug-frames.cc">
       <Filter>Source Files\debug</Filter>
     </ClCompile>
+    <ClCompile Include="src\debug\debug-scope-iterator.cc">
+      <Filter>Source Files\debug</Filter>
+    </ClCompile>
     <ClCompile Include="src\debug\debug-scopes.cc">
+      <Filter>Source Files\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\debug\debug-stack-trace-iterator.cc">
       <Filter>Source Files\debug</Filter>
     </ClCompile>
     <ClCompile Include="src\debug\debug.cc">
@@ -2954,21 +2972,6 @@
     <ClCompile Include="src\frames.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\full-codegen\full-codegen.cc">
-      <Filter>Source Files\full-codegen</Filter>
-    </ClCompile>
-    <ClCompile Include="src\full-codegen\ia32\full-codegen-ia32.cc">
-      <Filter>Source Files\full-codegen\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\full-codegen\ppc\full-codegen-ppc.cc">
-      <Filter>Source Files\full-codegen\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\full-codegen\s390\full-codegen-s390.cc">
-      <Filter>Source Files\full-codegen\s390</Filter>
-    </ClCompile>
-    <ClCompile Include="src\full-codegen\x64\full-codegen-x64.cc">
-      <Filter>Source Files\full-codegen\x64</Filter>
-    </ClCompile>
     <ClCompile Include="src\futex-emulation.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3015,6 +3018,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\incremental-marking.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\invalidated-slots.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\mark-compact.cc">
@@ -3065,7 +3071,7 @@
     <ClCompile Include="src\ia32\disasm-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
-    <ClCompile Include="src\ia32\frames-ia32.cc">
+    <ClCompile Include="src\ia32\frame-constants-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\interface-descriptors-ia32.cc">
@@ -3090,6 +3096,9 @@
       <Filter>Source Files\ic</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\handler-compiler.cc">
+      <Filter>Source Files\ic</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ic\handler-configuration.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\ia32\access-compiler-ia32.cc">
@@ -3308,10 +3317,10 @@
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\func-name-inferrer.cc">
+    <ClCompile Include="src\parsing\expression-scope-reparenter.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\parameter-initializer-rewriter.cc">
+    <ClCompile Include="src\parsing\func-name-inferrer.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\parse-info.cc">
@@ -3374,7 +3383,7 @@
     <ClCompile Include="src\ppc\disasm-ppc.cc">
       <Filter>Source Files\ppc</Filter>
     </ClCompile>
-    <ClCompile Include="src\ppc\frames-ppc.cc">
+    <ClCompile Include="src\ppc\frame-constants-ppc.cc">
       <Filter>Source Files\ppc</Filter>
     </ClCompile>
     <ClCompile Include="src\ppc\interface-descriptors-ppc.cc">
@@ -3581,7 +3590,7 @@
     <ClCompile Include="src\s390\disasm-s390.cc">
       <Filter>Source Files\s390</Filter>
     </ClCompile>
-    <ClCompile Include="src\s390\frames-s390.cc">
+    <ClCompile Include="src\s390\frame-constants-s390.cc">
       <Filter>Source Files\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\s390\interface-descriptors-s390.cc">
@@ -3606,6 +3615,12 @@
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\natives-common.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\object-deserializer.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\partial-deserializer.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\partial-serializer.cc">
@@ -3655,6 +3670,9 @@
     </ClCompile>
     <ClCompile Include="src\snapshot\snapshots\snapshot-x64.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\startup-deserializer.cc">
+      <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\startup-serializer.cc">
       <Filter>Source Files\snapshot</Filter>
@@ -3752,6 +3770,9 @@
     <ClCompile Include="src\wasm\streaming-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
+    <ClCompile Include="src\wasm\wasm-api.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
     <ClCompile Include="src\wasm\wasm-code-specialization.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
@@ -3806,7 +3827,7 @@
     <ClCompile Include="src\x64\eh-frame-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
-    <ClCompile Include="src\x64\frames-x64.cc">
+    <ClCompile Include="src\x64\frame-constants-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\x64\interface-descriptors-x64.cc">

@@ -140,12 +140,14 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildGeneratorPrologue();
   void BuildSuspendPoint(int suspend_id);
 
-  void BuildAbruptResume(Suspend* expr);
+  void BuildAwait(int suspend_id);
+
   void BuildGetIterator(Expression* iterable, IteratorType hint,
                         FeedbackSlot load_slot, FeedbackSlot call_slot,
                         FeedbackSlot async_load_slot,
                         FeedbackSlot async_call_slot);
 
+  void AllocateTopLevelRegisters();
   void VisitArgumentsObject(Variable* variable);
   void VisitRestArgumentsArray(Variable* rest);
   void VisitCallSuper(Call* call);
@@ -153,8 +155,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
                                    Register prototype);
   void BuildClassLiteralNameProperty(ClassLiteral* expr, Register constructor);
   void BuildClassLiteral(ClassLiteral* expr);
-  void VisitThisFunctionVariable(Variable* variable);
   void VisitNewTargetVariable(Variable* variable);
+  void VisitThisFunctionVariable(Variable* variable);
   void BuildGeneratorObjectVariableInitialization();
   void VisitBlockDeclarationsAndStatements(Block* stmt);
   void VisitFunctionClosureForContext();
@@ -207,6 +209,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
 
   void VisitInSameTestExecutionScope(Expression* expr);
 
+  Register GetRegisterForLocalVariable(Variable* variable);
+
   // Returns the runtime function id for a store to super for the function's
   // language mode.
   inline Runtime::FunctionId StoreToSuperRuntimeId();
@@ -216,6 +220,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
     return type_hint == TypeHint::kBoolean ? ToBooleanMode::kAlreadyBoolean
                                            : ToBooleanMode::kConvertToBoolean;
   }
+
+  inline Register generator_object() const;
 
   inline BytecodeArrayBuilder* builder() const { return builder_; }
   inline Zone* zone() const { return zone_; }
@@ -279,8 +285,9 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   ContextScope* execution_context_;
   ExpressionResultScope* execution_result_;
 
+  Register incoming_new_target_or_generator_;
+
   BytecodeJumpTable* generator_jump_table_;
-  Register generator_object_;
   Register generator_state_;
   int loop_depth_;
 

@@ -62,6 +62,7 @@
   V(ArgumentsElementsState) \
   V(ArgumentsLengthState)   \
   V(ObjectState)            \
+  V(ObjectId)               \
   V(TypedObjectState)       \
   V(Call)                   \
   V(Parameter)              \
@@ -337,14 +338,13 @@
   V(ConvertTaggedHoleToUndefined)   \
   V(Allocate)                       \
   V(LoadField)                      \
-  V(LoadBuffer)                     \
   V(LoadElement)                    \
   V(LoadTypedElement)               \
   V(StoreField)                     \
-  V(StoreBuffer)                    \
   V(StoreElement)                   \
   V(StoreTypedElement)              \
   V(TransitionAndStoreElement)      \
+  V(ObjectIsCallable)               \
   V(ObjectIsDetectableCallable)     \
   V(ObjectIsNaN)                    \
   V(ObjectIsNonCallable)            \

@@ -599,6 +599,8 @@ struct JSOperatorGlobalCache final {
   Name##Operator<BinaryOperationHint::kNone> k##Name##NoneOperator;           \
   Name##Operator<BinaryOperationHint::kSignedSmall>                           \
       k##Name##SignedSmallOperator;                                           \
+  Name##Operator<BinaryOperationHint::kSignedSmallInputs>                     \
+      k##Name##SignedSmallInputsOperator;                                     \
   Name##Operator<BinaryOperationHint::kSigned32> k##Name##Signed32Operator;   \
   Name##Operator<BinaryOperationHint::kNumber> k##Name##NumberOperator;       \
   Name##Operator<BinaryOperationHint::kNumberOrOddball>                       \
@@ -632,11 +634,11 @@ struct JSOperatorGlobalCache final {
 #undef COMPARE_OP
 };
 
-static base::LazyInstance<JSOperatorGlobalCache>::type kCache =
+static base::LazyInstance<JSOperatorGlobalCache>::type kJSOperatorGlobalCache =
     LAZY_INSTANCE_INITIALIZER;
 
 JSOperatorBuilder::JSOperatorBuilder(Zone* zone)
-    : cache_(kCache.Get()), zone_(zone) {}
+    : cache_(kJSOperatorGlobalCache.Get()), zone_(zone) {}
 
 #define CACHED_OP(Name, properties, value_input_count, value_output_count) \
   const Operator* JSOperatorBuilder::Name() {                              \
@@ -652,6 +654,8 @@ CACHED_OP_LIST(CACHED_OP)
         return &cache_.k##Name##NoneOperator;                         \
       case BinaryOperationHint::kSignedSmall:                         \
         return &cache_.k##Name##SignedSmallOperator;                  \
+      case BinaryOperationHint::kSignedSmallInputs:                   \
+        return &cache_.k##Name##SignedSmallInputsOperator;            \
       case BinaryOperationHint::kSigned32:                            \
         return &cache_.k##Name##Signed32Operator;                     \
       case BinaryOperationHint::kNumber:                              \

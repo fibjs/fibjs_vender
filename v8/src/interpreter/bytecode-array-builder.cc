@@ -461,7 +461,6 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::GetSuperConstructor(Register out) {
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(
     Token::Value op, Register reg, int feedback_slot) {
-  DCHECK(feedback_slot != kNoFeedbackSlot);
   switch (op) {
     case Token::Value::EQ:
       OutputTestEqual(reg, feedback_slot);
@@ -630,6 +629,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadTrue() {
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadFalse() {
   OutputLdaFalse();
   return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::LoadBoolean(bool value) {
+  return value ? LoadTrue() : LoadFalse();
 }
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadAccumulatorWithRegister(
@@ -1452,8 +1455,7 @@ bool BytecodeArrayBuilder::RegisterIsValid(Register reg) const {
     return false;
   }
 
-  if (reg.is_current_context() || reg.is_function_closure() ||
-      reg.is_new_target()) {
+  if (reg.is_current_context() || reg.is_function_closure()) {
     return true;
   } else if (reg.is_parameter()) {
     int parameter_index = reg.ToParameterIndex(parameter_count());

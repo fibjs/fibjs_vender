@@ -1721,7 +1721,16 @@ class V8_EXPORT StackFrame {
 
 
 // A StateTag represents a possible state of the VM.
-enum StateTag { JS, GC, COMPILER, OTHER, EXTERNAL, IDLE };
+enum StateTag {
+  JS,
+  GC,
+  PARSER,
+  BYTECODE_COMPILER,
+  COMPILER,
+  OTHER,
+  EXTERNAL,
+  IDLE
+};
 
 // A RegisterState represents the current state of registers used
 // by the sampling profiler API.
@@ -4165,11 +4174,14 @@ class V8_EXPORT WasmCompiledModule : public Object {
 // to simply WasmModuleObjectBuilder
 class V8_EXPORT WasmModuleObjectBuilderStreaming final {
  public:
-  WasmModuleObjectBuilderStreaming(Isolate* isolate, Local<Promise> promise);
+  WasmModuleObjectBuilderStreaming(Isolate* isolate);
   // The buffer passed into OnBytesReceived is owned by the caller.
   void OnBytesReceived(const uint8_t*, size_t size);
   void Finish();
   void Abort(Local<Value> exception);
+  Local<Promise> GetPromise();
+
+  ~WasmModuleObjectBuilderStreaming();
 
  private:
   typedef std::pair<std::unique_ptr<const uint8_t[]>, size_t> Buffer;
@@ -4489,6 +4501,12 @@ class V8_EXPORT ArrayBufferView : public Object {
  */
 class V8_EXPORT TypedArray : public ArrayBufferView {
  public:
+  /*
+   * The largest typed array size that can be constructed using New.
+   */
+  static constexpr size_t kMaxLength =
+      sizeof(void*) == 4 ? (1u << 30) - 1 : (1u << 31) - 1;
+
   /**
    * Number of elements in this typed array
    * (e.g. for Int16Array, |ByteLength|/2).
@@ -6195,7 +6213,9 @@ typedef void (*DeprecatedCallCompletedCallback)();
  * The Promise returned from this function is forwarded to userland
  * JavaScript. The embedder must resolve this promise with the module
  * namespace object. In case of an exception, the embedder must reject
- * this promise with the exception.
+ * this promise with the exception. If the promise creation itself
+ * fails (e.g. due to stack overflow), the embedder must propagate
+ * that exception by returning an empty MaybeLocal.
  */
 typedef MaybeLocal<Promise> (*HostImportModuleDynamicallyCallback)(
     Local<Context> context, Local<String> referrer, Local<String> specifier);
@@ -6533,7 +6553,7 @@ struct JitCodeEvent {
   struct line_info_t {
     // PC offset
     size_t offset;
-    // Code postion
+    // Code position
     size_t pos;
     // The position type.
     PositionType position_type;
@@ -6958,6 +6978,7 @@ class V8_EXPORT Isolate {
     kAssigmentExpressionLHSIsCallInStrict = 37,
     kPromiseConstructorReturnedUndefined = 38,
     kConstructorNonUndefinedPrimitiveReturn = 39,
+    kLabeledExpressionStatement = 40,
 
     // If you add new values here, you'll also need to update Chromium's:
     // UseCounter.h, V8PerIsolateData.cpp, histograms.xml
@@ -7383,8 +7404,8 @@ class V8_EXPORT Isolate {
           DeprecatedCallCompletedCallback callback));
 
   /**
-   * Experimental: Set the PromiseHook callback for various promise
-   * lifecycle events.
+   * Set the PromiseHook callback for various promise lifecycle
+   * events.
    */
   void SetPromiseHook(PromiseHook hook);
 
@@ -7741,7 +7762,7 @@ typedef bool (*EntropySource)(unsigned char* buffer, size_t length);
  * ReturnAddressLocationResolver is used as a callback function when v8 is
  * resolving the location of a return address on the stack. Profilers that
  * change the return address on the stack can use this to resolve the stack
- * location to whereever the profiler stashed the original return address.
+ * location to wherever the profiler stashed the original return address.
  *
  * \param return_addr_location A location on stack where a machine
  *    return address resides.
@@ -8182,8 +8203,12 @@ class V8_EXPORT SnapshotCreator {
    * Set the default context to be included in the snapshot blob.
    * The snapshot will not contain the global proxy, and we expect one or a
    * global object template to create one, to be provided upon deserialization.
+   *
+   * \param callback optional callback to serialize internal fields.
    */
-  void SetDefaultContext(Local<Context> context);
+  void SetDefaultContext(Local<Context> context,
+                         SerializeInternalFieldsCallback callback =
+                             SerializeInternalFieldsCallback());
 
   /**
    * Add additional context to be included in the snapshot blob.
@@ -8535,7 +8560,9 @@ class V8_EXPORT Context {
   static Local<Context> New(
       Isolate* isolate, ExtensionConfiguration* extensions = NULL,
       MaybeLocal<ObjectTemplate> global_template = MaybeLocal<ObjectTemplate>(),
-      MaybeLocal<Value> global_object = MaybeLocal<Value>());
+      MaybeLocal<Value> global_object = MaybeLocal<Value>(),
+      DeserializeInternalFieldsCallback internal_fields_deserializer =
+          DeserializeInternalFieldsCallback());
 
   /**
    * Create a new context from a (non-default) context snapshot. There
@@ -8992,8 +9019,8 @@ class Internals {
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSApiObjectType = 0xbc;
-  static const int kJSObjectType = 0xbd;
+  static const int kJSApiObjectType = 0xbd;
+  static const int kJSObjectType = 0xbe;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x82;
   static const int kForeignType = 0x86;

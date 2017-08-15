@@ -8,6 +8,7 @@
 #include "src/allocation.h"
 #include "src/boxed-float.h"
 #include "src/deoptimize-reason.h"
+#include "src/frame-constants.h"
 #include "src/macro-assembler.h"
 #include "src/source-position.h"
 #include "src/zone/zone-chunk-list.h"
@@ -244,9 +245,9 @@ class TranslatedFrame {
 class TranslatedState {
  public:
   TranslatedState();
-  explicit TranslatedState(JavaScriptFrame* frame);
+  explicit TranslatedState(const JavaScriptFrame* frame);
 
-  void Prepare(bool has_adapted_arguments, Address stack_frame_pointer);
+  void Prepare(Address stack_frame_pointer);
 
   // Store newly materialized values into the isolate.
   void StoreMaterializedValuesAndDeopt(JavaScriptFrame* frame);
@@ -373,7 +374,6 @@ class Deoptimizer : public Malloced {
     bool needs_frame;
   };
 
-  static bool TraceEnabledFor(StackFrame::Type frame_type);
   static const char* MessageFor(BailoutType type);
 
   int output_count() const { return output_count_; }
@@ -504,7 +504,7 @@ class Deoptimizer : public Malloced {
 
   Deoptimizer(Isolate* isolate, JSFunction* function, BailoutType type,
               unsigned bailout_id, Address from, int fp_to_sp_delta);
-  Code* FindOptimizedCode(JSFunction* function);
+  Code* FindOptimizedCode();
   void PrintFunctionName();
   void DeleteFrameDescriptions();
 
@@ -744,9 +744,6 @@ class FrameDescription {
 
   void SetContinuation(intptr_t pc) { continuation_ = pc; }
 
-  StackFrame::Type GetFrameType() const { return type_; }
-  void SetFrameType(StackFrame::Type type) { type_ = type; }
-
   // Argument count, including receiver.
   int parameter_count() { return parameter_count_; }
 
@@ -792,7 +789,6 @@ class FrameDescription {
   intptr_t fp_;
   intptr_t context_;
   intptr_t constant_pool_;
-  StackFrame::Type type_;
   Smi* state_;
 
   // Continuation is the PC where the execution continues after

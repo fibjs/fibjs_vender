@@ -10,6 +10,7 @@
 
 #include <limits>
 
+#include "src/callable.h"
 #include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
@@ -258,9 +259,37 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     SaveFPRegsMode const save_fp_mode =
         frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
     __ leap(scratch1_, operand_);
+
+#ifdef V8_CSA_WRITE_BARRIER
+    (void)remembered_set_action;
+    // TODO(albertnetymk): Come up with a better way instead of blindly saving
+    // all registers.
+    __ PushCallerSaved(save_fp_mode);
+    Callable const callable =
+        Builtins::CallableFor(__ isolate(), Builtins::kRecordWrite);
+    Register object_parameter(callable.descriptor().GetRegisterParameter(
+        RecordWriteDescriptor::kObject));
+    Register slot_parameter(callable.descriptor().GetRegisterParameter(
+        RecordWriteDescriptor::kSlot));
+    Register isolate_parameter(callable.descriptor().GetRegisterParameter(
+        RecordWriteDescriptor::kIsolate));
+
+    __ pushq(object_);
+    __ pushq(scratch1_);
+
+    __ popq(slot_parameter);
+    __ popq(object_parameter);
+
+    __ LoadAddress(isolate_parameter,
+                   ExternalReference::isolate_address(__ isolate()));
+    __ Call(callable.code(), RelocInfo::CODE_TARGET);
+
+    __ PopCallerSaved(save_fp_mode);
+#else
     __ CallStubDelayed(
         new (zone_) RecordWriteStub(nullptr, object_, scratch0_, scratch1_,
                                     remembered_set_action, save_fp_mode));
+#endif
   }
 
  private:
@@ -2908,12 +2937,10 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
 
 CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
     int deoptimization_id, SourcePosition pos) {
-  DeoptimizeKind deoptimization_kind = GetDeoptimizationKind(deoptimization_id);
   DeoptimizeReason deoptimization_reason =
       GetDeoptimizationReason(deoptimization_id);
   Deoptimizer::BailoutType bailout_type =
-      deoptimization_kind == DeoptimizeKind::kSoft ? Deoptimizer::SOFT
-                                                   : Deoptimizer::EAGER;
+      DeoptimizerCallBailout(deoptimization_id, pos);
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       __ isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
@@ -3159,14 +3186,12 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           } else {
             // TODO(dcarney): don't need scratch in this case.
             int32_t value = src.ToInt32();
-            if (value == 0) {
+            if (RelocInfo::IsWasmSizeReference(src.rmode())) {
+              __ movl(dst, Immediate(value, src.rmode()));
+            } else if (value == 0) {
               __ xorl(dst, dst);
             } else {
-              if (RelocInfo::IsWasmSizeReference(src.rmode())) {
-                __ movl(dst, Immediate(value, src.rmode()));
-              } else {
-                __ movl(dst, Immediate(value));
-              }
+              __ movl(dst, Immediate(value));
             }
           }
           break;
@@ -3315,7 +3340,9 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
       unwinding_info_writer_.MaybeIncreaseBaseOffsetAt(__ pc_offset(),
                                                        -kPointerSize);
     } else {
-      // Use the XOR trick to swap without a temporary.
+      // Use the XOR trick to swap without a temporary. The xorps may read
+      // from or write to an unaligned address, causing a slowdown, but swaps
+      // between slots should be rare.
       __ Movups(kScratchDoubleReg, src);
       __ Xorps(kScratchDoubleReg, dst);  // scratch contains src ^ dst.
       __ Movups(src, kScratchDoubleReg);

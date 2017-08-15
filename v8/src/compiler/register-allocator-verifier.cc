@@ -311,7 +311,7 @@ void BlockAssessments::Print() const {
     // Use operator<< so we can write the assessment on the same
     // line. Since we need a register configuration, just pick
     // Turbofan for now.
-    PrintableInstructionOperand wrapper = {RegisterConfiguration::Turbofan(),
+    PrintableInstructionOperand wrapper = {RegisterConfiguration::Default(),
                                            op};
     os << wrapper << " : ";
     if (assessment->kind() == AssessmentKind::Final) {
@@ -455,9 +455,14 @@ void RegisterAllocatorVerifier::ValidatePendingAssessment(
       }
     }
   }
-  // If everything checks out, we may make the assessment.
-  current_assessments->map()[op] =
-      new (zone()) FinalAssessment(virtual_register, assessment);
+  // If everything checks out, we may make the assessment, unless the operand
+  // was redefined in this block: it was initially used for the phi, but then
+  // also used as an output operand.
+  if (current_assessments->map()[op] == nullptr ||
+      current_assessments->map()[op]->kind() == Pending) {
+    current_assessments->map()[op] =
+        new (zone()) FinalAssessment(virtual_register, assessment);
+  }
 }
 
 void RegisterAllocatorVerifier::ValidateFinalAssessment(

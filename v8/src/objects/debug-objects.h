@@ -20,7 +20,8 @@ class DebugInfo : public Struct {
   enum Flag {
     kNone = 0,
     kHasBreakInfo = 1 << 0,
-    kHasCoverageInfo = 1 << 1,
+    kPreparedForBreakpoints = 1 << 1,
+    kHasCoverageInfo = 2 << 1,
   };
   typedef base::Flags<Flag> Flags;
 
@@ -40,6 +41,8 @@ class DebugInfo : public Struct {
   // --------------------
 
   bool HasBreakInfo() const;
+
+  bool IsPreparedForBreakpoints() const;
 
   // Clears all fields related to break points. Returns true iff the
   // DebugInfo is now empty.
@@ -180,6 +183,21 @@ class CoverageInfo : public FixedArray {
   static const int kSlotIndexCount = 3;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(CoverageInfo);
+};
+
+// Holds breakpoint related information. This object is used by inspector.
+class BreakPoint : public Tuple2 {
+ public:
+  DECL_INT_ACCESSORS(id)
+  DECL_ACCESSORS(condition, String)
+
+  DECL_CAST(BreakPoint)
+
+  static const int kIdOffset = kValue1Offset;
+  static const int kConditionOffset = kValue2Offset;
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(BreakPoint);
 };
 
 }  // namespace internal

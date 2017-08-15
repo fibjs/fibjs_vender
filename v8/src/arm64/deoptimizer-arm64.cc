@@ -8,11 +8,10 @@
 
 #include "src/api.h"
 #include "src/arm64/assembler-arm64-inl.h"
-#include "src/arm64/frames-arm64.h"
 #include "src/arm64/macro-assembler-arm64-inl.h"
 #include "src/codegen.h"
 #include "src/deoptimizer.h"
-#include "src/full-codegen/full-codegen.h"
+#include "src/frame-constants.h"
 #include "src/register-configuration.h"
 #include "src/safepoint-table.h"
 
@@ -103,13 +102,13 @@ void Deoptimizer::TableEntryGenerator::Generate() {
   // Save all allocatable double registers.
   CPURegList saved_double_registers(
       CPURegister::kVRegister, kDRegSizeInBits,
-      RegisterConfiguration::Crankshaft()->allocatable_double_codes_mask());
+      RegisterConfiguration::Default()->allocatable_double_codes_mask());
   __ PushCPURegList(saved_double_registers);
 
   // Save all allocatable float registers.
   CPURegList saved_float_registers(
       CPURegister::kVRegister, kSRegSizeInBits,
-      RegisterConfiguration::Crankshaft()->allocatable_float_codes_mask());
+      RegisterConfiguration::Default()->allocatable_float_codes_mask());
   __ PushCPURegList(saved_float_registers);
 
   // We save all the registers expcept jssp, sp and lr.

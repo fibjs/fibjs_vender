@@ -79,6 +79,7 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   BytecodeArrayBuilder& LoadTheHole();
   BytecodeArrayBuilder& LoadTrue();
   BytecodeArrayBuilder& LoadFalse();
+  BytecodeArrayBuilder& LoadBoolean(bool value);
 
   // Global loads to the accumulator and stores from the accumulator.
   BytecodeArrayBuilder& LoadGlobal(const AstRawString* name, int feedback_slot,
@@ -530,7 +531,7 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   void WriteSwitch(BytecodeNode* node, BytecodeJumpTable* label);
 
   // Not implemented as the illegal bytecode is used inside internally
-  // to indicate a bytecode field is not valid or an error has occured
+  // to indicate a bytecode field is not valid or an error has occurred
   // during bytecode generation.
   BytecodeArrayBuilder& Illegal();
 
@@ -565,8 +566,6 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   BytecodeRegisterOptimizer* register_optimizer_;
   BytecodeSourceInfo latest_source_info_;
   BytecodeSourceInfo deferred_source_info_;
-
-  static int const kNoFeedbackSlot = 0;
 
   DISALLOW_COPY_AND_ASSIGN(BytecodeArrayBuilder);
 };

@@ -45,7 +45,7 @@
 #include "src/runtime-profiler.h"
 #include "src/setup-isolate.h"
 #include "src/simulator.h"
-#include "src/snapshot/deserializer.h"
+#include "src/snapshot/startup-deserializer.h"
 #include "src/tracing/tracing-category-observer.h"
 #include "src/v8.h"
 #include "src/version.h"
@@ -103,6 +103,7 @@ void ThreadLocalTop::InitializeInternal() {
   // These members are re-initialized later after deserialization
   // is complete.
   pending_exception_ = NULL;
+  wasm_caught_exception_ = NULL;
   rethrowing_message_ = false;
   pending_message_obj_ = NULL;
   scheduled_exception_ = NULL;
@@ -215,6 +216,7 @@ void Isolate::IterateThread(ThreadVisitor* v, char* t) {
 void Isolate::Iterate(RootVisitor* v, ThreadLocalTop* thread) {
   // Visit the roots from the top for a given thread.
   v->VisitRootPointer(Root::kTop, &thread->pending_exception_);
+  v->VisitRootPointer(Root::kTop, &thread->wasm_caught_exception_);
   v->VisitRootPointer(Root::kTop, &thread->pending_message_obj_);
   v->VisitRootPointer(Root::kTop, bit_cast<Object**>(&(thread->context_)));
   v->VisitRootPointer(Root::kTop, &thread->scheduled_exception_);
@@ -924,7 +926,7 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
 
 
 Object* Isolate::StackOverflow() {
-  if (FLAG_abort_on_stack_overflow) {
+  if (FLAG_abort_on_stack_or_string_length_overflow) {
     FATAL("Aborting on stack overflow");
   }
 
@@ -1008,7 +1010,7 @@ void ReportBootstrappingException(Handle<Object> exception,
   // We are bootstrapping and caught an error where the location is set
   // and we have a script for the location.
   // In this case we could have an extension (or an internal error
-  // somewhere) and we print out the line number at which the error occured
+  // somewhere) and we print out the line number at which the error occurred
   // to the console for easier debugging.
   int line_number =
       location->script()->GetLineNumber(location->start_pos()) + 1;
@@ -1203,7 +1205,7 @@ Object* Isolate::UnwindAndFindHandler() {
 
     switch (frame->type()) {
       case StackFrame::ENTRY:
-      case StackFrame::ENTRY_CONSTRUCT: {
+      case StackFrame::CONSTRUCT_ENTRY: {
         // For JSEntryStub frames we always have a handler.
         StackHandler* handler = frame->top_handler();
 
@@ -1222,8 +1224,10 @@ Object* Isolate::UnwindAndFindHandler() {
           trap_handler::ClearThreadInWasm();
         }
 
-        if (!FLAG_experimental_wasm_eh || !is_catchable_by_wasm(exception))
+        if (!FLAG_experimental_wasm_eh || !is_catchable_by_wasm(exception)) {
+          counters()->wasm_execution_time()->Stop();
           break;
+        }
         int stack_slots = 0;  // Will contain stack slot count of frame.
         WasmCompiledFrame* wasm_frame = static_cast<WasmCompiledFrame*>(frame);
         int offset = wasm_frame->LookupExceptionHandlerInTable(&stack_slots);
@@ -1322,7 +1326,8 @@ Object* Isolate::UnwindAndFindHandler() {
             Context::cast(js_frame->ReadInterpreterRegister(context_reg));
         js_frame->PatchBytecodeOffset(static_cast<int>(offset));
 
-        Code* code = *builtins()->InterpreterEnterBytecodeDispatch();
+        Code* code =
+            builtins()->builtin(Builtins::kInterpreterEnterBytecodeDispatch);
         return FoundHandler(context, code, 0, return_sp, frame->fp());
       }
 
@@ -1433,7 +1438,7 @@ Isolate::CatchType Isolate::PredictExceptionCatcher() {
 
     switch (frame->type()) {
       case StackFrame::ENTRY:
-      case StackFrame::ENTRY_CONSTRUCT: {
+      case StackFrame::CONSTRUCT_ENTRY: {
         Address entry_handler = frame->top_handler()->next()->address();
         // The exception has been externally caught if and only if there is an
         // external handler which is on top of the top-most JS_ENTRY handler.
@@ -2455,6 +2460,7 @@ void Isolate::Deinit() {
   wasm_compilation_manager_->TearDown();
 
   heap_.mark_compact_collector()->EnsureSweepingCompleted();
+  heap_.memory_allocator()->unmapper()->WaitUntilCompleted();
 
   DumpAndResetStats();
 
@@ -2667,15 +2673,16 @@ namespace {
 void PrintBuiltinSizes(Isolate* isolate) {
   Builtins* builtins = isolate->builtins();
   for (int i = 0; i < Builtins::builtin_count; i++) {
-    if (Builtins::IsCpp(i) || Builtins::IsApi(i)) continue;
     const char* name = builtins->name(i);
+    const char* kind = Builtins::KindNameOf(i);
     Code* code = builtins->builtin(static_cast<Builtins::Name>(i));
-    PrintF(stdout, "Builtin, %s, %d\n", name, code->instruction_size());
+    PrintF(stdout, "%s Builtin, %s, %d\n", kind, name,
+           code->instruction_size());
   }
 }
 }  // namespace
 
-bool Isolate::Init(Deserializer* des) {
+bool Isolate::Init(StartupDeserializer* des) {
   TRACE_ISOLATE(init);
 
   stress_deopt_count_ = FLAG_deopt_every_n_times;
@@ -2786,8 +2793,7 @@ bool Isolate::Init(Deserializer* des) {
     set_event_logger(Logger::DefaultEventLoggerSentinel);
   }
 
-  if (FLAG_trace_hydrogen || FLAG_trace_hydrogen_stubs || FLAG_trace_turbo ||
-      FLAG_trace_turbo_graph) {
+  if (FLAG_trace_turbo || FLAG_trace_turbo_graph) {
     PrintF("Concurrent recompilation has been disabled for tracing.\n");
   } else if (OptimizingCompileDispatcher::Enabled()) {
     optimizing_compile_dispatcher_ = new OptimizingCompileDispatcher(this);
@@ -2801,9 +2807,7 @@ bool Isolate::Init(Deserializer* des) {
   {
     AlwaysAllocateScope always_allocate(this);
 
-    if (!create_heap_objects) {
-      des->Deserialize(this);
-    }
+    if (!create_heap_objects) des->DeserializeInto(this);
     load_stub_cache_->Initialize();
     store_stub_cache_->Initialize();
     setup_delegate_->SetupInterpreter(interpreter_, create_heap_objects);
@@ -3747,6 +3751,10 @@ SaveContext::SaveContext(Isolate* isolate)
 SaveContext::~SaveContext() {
   isolate_->set_context(context_.is_null() ? NULL : *context_);
   isolate_->set_save_context(prev_);
+}
+
+bool SaveContext::IsBelowFrame(StandardFrame* frame) {
+  return (c_entry_fp_ == 0) || (c_entry_fp_ > frame->sp());
 }
 
 #ifdef DEBUG

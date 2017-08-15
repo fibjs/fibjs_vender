@@ -17,7 +17,6 @@
 #include "src/date.h"
 #include "src/debug/debug-interface.h"
 #include "src/execution.h"
-#include "src/frames.h"
 #include "src/futex-emulation.h"
 #include "src/global-handles.h"
 #include "src/handles.h"
@@ -41,13 +40,17 @@ class ConsoleDelegate;
 
 namespace internal {
 
+namespace heap {
+class HeapTester;
+}  // namespace heap
+
 class AccessCompilerData;
 class AddressToIndexHashMap;
 class AstStringConstants;
 class BasicBlockProfiler;
 class Bootstrapper;
-class CancelableTaskManager;
 class CallInterfaceDescriptorData;
+class CancelableTaskManager;
 class CodeAgingHelper;
 class CodeEventDispatcher;
 class CodeGenerator;
@@ -55,15 +58,15 @@ class CodeRange;
 class CodeStubDescriptor;
 class CodeTracer;
 class CompilationCache;
-class CompilerDispatcher;
 class CompilationStatistics;
+class CompilerDispatcher;
 class ContextSlotCache;
 class Counters;
 class CpuFeatures;
 class CpuProfiler;
+class Debug;
 class DeoptimizerData;
 class DescriptorLookupCache;
-class Deserializer;
 class EmptyStatement;
 class ExternalCallbackScope;
 class ExternalReferenceTable;
@@ -76,11 +79,16 @@ class InnerPointerToCodeCache;
 class Logger;
 class MaterializedObjectStore;
 class OptimizingCompileDispatcher;
+class PromiseOnStack;
+class Redirection;
 class RegExpStack;
 class RootVisitor;
 class RuntimeProfiler;
 class SaveContext;
 class SetupIsolateDelegate;
+class Simulator;
+class StartupDeserializer;
+class StandardFrame;
 class StatsTable;
 class StringTracker;
 class StubCache;
@@ -89,18 +97,13 @@ class ThreadManager;
 class ThreadState;
 class ThreadVisitor;  // Defined in v8threads.h
 class UnicodeCache;
+
 template <StateTag Tag> class VMState;
 
 // 'void function pointer', used to roundtrip the
 // ExternalReference::ExternalReferenceRedirector since we can not include
 // assembler.h, where it is defined, here.
 typedef void* ExternalReferenceRedirectorPointer();
-
-
-class Debug;
-class PromiseOnStack;
-class Redirection;
-class Simulator;
 
 namespace interpreter {
 class Interpreter;
@@ -110,12 +113,13 @@ namespace wasm {
 class CompilationManager;
 }
 
-#define RETURN_FAILURE_IF_SCHEDULED_EXCEPTION(isolate)    \
-  do {                                                    \
-    Isolate* __isolate__ = (isolate);                     \
-    if (__isolate__->has_scheduled_exception()) {         \
-      return __isolate__->PromoteScheduledException();    \
-    }                                                     \
+#define RETURN_FAILURE_IF_SCHEDULED_EXCEPTION(isolate) \
+  do {                                                 \
+    Isolate* __isolate__ = (isolate);                  \
+    DCHECK(!__isolate__->has_pending_exception());     \
+    if (__isolate__->has_scheduled_exception()) {      \
+      return __isolate__->PromoteScheduledException(); \
+    }                                                  \
   } while (false)
 
 // Macros for MaybeHandle.
@@ -123,6 +127,7 @@ class CompilationManager;
 #define RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, value) \
   do {                                                      \
     Isolate* __isolate__ = (isolate);                       \
+    DCHECK(!__isolate__->has_pending_exception());          \
     if (__isolate__->has_scheduled_exception()) {           \
       __isolate__->PromoteScheduledException();             \
       return value;                                         \
@@ -160,6 +165,7 @@ class CompilationManager;
       DCHECK(__isolate__->has_pending_exception()); \
       return __isolate__->heap()->exception();      \
     }                                               \
+    DCHECK(!__isolate__->has_pending_exception());  \
     return *__result__;                             \
   } while (false)
 
@@ -323,6 +329,9 @@ class ThreadLocalTop BASE_EMBEDDED {
   Context* context_;
   ThreadId thread_id_;
   Object* pending_exception_;
+  // TODO(kschimpf): Change this to a stack of caught exceptions (rather than
+  // just innermost catching try block).
+  Object* wasm_caught_exception_;
 
   // Communication channel between Isolate::FindHandler and the CEntryStub.
   Context* pending_handler_context_;
@@ -537,7 +546,7 @@ class Isolate {
   void InitializeLoggingAndCounters();
   bool InitializeCounters();  // Returns false if already initialized.
 
-  bool Init(Deserializer* des);
+  bool Init(StartupDeserializer* des);
 
   // True if at least one thread Enter'ed this isolate.
   bool IsInUse() { return entry_stack_ != NULL; }
@@ -598,6 +607,11 @@ class Isolate {
   inline Object* pending_exception();
   inline void set_pending_exception(Object* exception_obj);
   inline void clear_pending_exception();
+
+  // Interface to wasm caught exception.
+  inline Object* get_wasm_caught_exception() const;
+  inline void set_wasm_caught_exception(Object* exception_obj);
+  inline void clear_wasm_caught_exception();
 
   THREAD_LOCAL_TOP_ADDRESS(Object*, pending_exception)
 
@@ -1601,7 +1615,7 @@ class Isolate {
 
   friend class ExecutionAccess;
   friend class HandleScopeImplementer;
-  friend class HeapTester;
+  friend class heap::HeapTester;
   friend class OptimizingCompileDispatcher;
   friend class SweeperThread;
   friend class ThreadManager;
@@ -1650,9 +1664,7 @@ class SaveContext BASE_EMBEDDED {
   SaveContext* prev() { return prev_; }
 
   // Returns true if this save context is below a given JavaScript frame.
-  bool IsBelowFrame(StandardFrame* frame) {
-    return (c_entry_fp_ == 0) || (c_entry_fp_ > frame->sp());
-  }
+  bool IsBelowFrame(StandardFrame* frame);
 
  private:
   Isolate* const isolate_;

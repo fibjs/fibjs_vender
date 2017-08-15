@@ -507,6 +507,8 @@ void Verifier::Visitor::Check(Node* node) {
       // still be kStateValues.
       break;
     }
+    case IrOpcode::kObjectId:
+      CheckTypeIs(node, Type::Object());
     case IrOpcode::kStateValues:
     case IrOpcode::kTypedStateValues:
     case IrOpcode::kArgumentsElementsState:
@@ -994,6 +996,7 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::Boolean());
       break;
 
+    case IrOpcode::kObjectIsCallable:
     case IrOpcode::kObjectIsDetectableCallable:
     case IrOpcode::kObjectIsNaN:
     case IrOpcode::kObjectIsNonCallable:
@@ -1249,8 +1252,6 @@ void Verifier::Visitor::Check(Node* node) {
       // CheckValueInputIs(node, 0, Type::Object());
       // CheckTypeIs(node, FieldAccessOf(node->op()).type));
       break;
-    case IrOpcode::kLoadBuffer:
-      break;
     case IrOpcode::kLoadElement:
       // Object -> elementtype
       // TODO(rossberg): activate once machine ops are typed.
@@ -1265,8 +1266,6 @@ void Verifier::Visitor::Check(Node* node) {
       // CheckValueInputIs(node, 0, Type::Object());
       // CheckValueInputIs(node, 1, FieldAccessOf(node->op()).type));
       CheckNotTyped(node);
-      break;
-    case IrOpcode::kStoreBuffer:
       break;
     case IrOpcode::kStoreElement:
       // (Object, elementtype) -> _|_

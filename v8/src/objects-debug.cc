@@ -94,6 +94,9 @@ void HeapObject::HeapObjectVerify() {
     case FREE_SPACE_TYPE:
       FreeSpace::cast(this)->FreeSpaceVerify();
       break;
+    case FEEDBACK_VECTOR_TYPE:
+      FeedbackVector::cast(this)->FeedbackVectorVerify();
+      break;
 
 #define VERIFY_TYPED_ARRAY(Type, type, TYPE, ctype, size)                      \
     case FIXED_##TYPE##_ARRAY_TYPE:                                            \
@@ -321,6 +324,7 @@ void FreeSpace::FreeSpaceVerify() {
   CHECK(IsFreeSpace());
 }
 
+void FeedbackVector::FeedbackVectorVerify() { CHECK(IsFeedbackVector()); }
 
 template <class Traits>
 void FixedTypedArray<Traits>::FixedTypedArrayVerify() {
@@ -429,11 +433,23 @@ void Map::MapVerify() {
   VerifyHeapPointer(prototype());
   VerifyHeapPointer(instance_descriptors());
   SLOW_DCHECK(instance_descriptors()->IsSortedNoDuplicates());
-  SLOW_DCHECK(TransitionArray::IsSortedNoDuplicates(this));
-  SLOW_DCHECK(TransitionArray::IsConsistentWithBackPointers(this));
-  // TODO(ishell): turn it back to SLOW_DCHECK.
-  CHECK(!FLAG_unbox_double_fields ||
-        layout_descriptor()->IsConsistentWithMap(this));
+  DisallowHeapAllocation no_gc;
+  SLOW_DCHECK(TransitionsAccessor(this, &no_gc).IsSortedNoDuplicates());
+  SLOW_DCHECK(TransitionsAccessor(this, &no_gc).IsConsistentWithBackPointers());
+  SLOW_DCHECK(!FLAG_unbox_double_fields ||
+              layout_descriptor()->IsConsistentWithMap(this));
+  if (!may_have_interesting_symbols()) {
+    CHECK(!has_named_interceptor());
+    CHECK(!is_dictionary_map());
+    CHECK(!is_access_check_needed());
+    DescriptorArray* const descriptors = instance_descriptors();
+    for (int i = 0; i < NumberOfOwnDescriptors(); ++i) {
+      CHECK(!descriptors->GetKey(i)->IsInterestingSymbol());
+    }
+  }
+  CHECK_IMPLIES(has_named_interceptor(), may_have_interesting_symbols());
+  CHECK_IMPLIES(is_dictionary_map(), may_have_interesting_symbols());
+  CHECK_IMPLIES(is_access_check_needed(), may_have_interesting_symbols());
 }
 
 
@@ -497,8 +513,6 @@ void TransitionArray::TransitionArrayVerify() {
     VerifyPointer(e);
   }
   CHECK_LE(LengthFor(number_of_transitions()), length());
-  CHECK(next_link()->IsUndefined(GetIsolate()) || next_link()->IsSmi() ||
-        next_link()->IsTransitionArray());
 }
 
 void JSArgumentsObject::JSArgumentsObjectVerify() {
@@ -851,7 +865,6 @@ void PropertyCell::PropertyCellVerify() {
 void WeakCell::WeakCellVerify() {
   CHECK(IsWeakCell());
   VerifyObjectField(kValueOffset);
-  VerifyObjectField(kNextOffset);
 }
 
 
@@ -1590,9 +1603,10 @@ bool TransitionArray::IsSortedNoDuplicates(int valid_entries) {
     uint32_t hash = key->Hash();
     PropertyKind kind = kData;
     PropertyAttributes attributes = NONE;
-    if (!IsSpecialTransition(key)) {
+    if (!TransitionsAccessor::IsSpecialTransition(key)) {
       Map* target = GetTarget(i);
-      PropertyDetails details = GetTargetDetails(key, target);
+      PropertyDetails details =
+          TransitionsAccessor::GetTargetDetails(key, target);
       kind = details.kind();
       attributes = details.attributes();
     } else {
@@ -1614,15 +1628,10 @@ bool TransitionArray::IsSortedNoDuplicates(int valid_entries) {
   return true;
 }
 
-
-// static
-bool TransitionArray::IsSortedNoDuplicates(Map* map) {
-  Object* raw_transitions = map->raw_transitions();
-  if (IsFullTransitionArray(raw_transitions)) {
-    return TransitionArray::cast(raw_transitions)->IsSortedNoDuplicates();
-  }
+bool TransitionsAccessor::IsSortedNoDuplicates() {
   // Simple and non-existent transitions are always sorted.
-  return true;
+  if (encoding() != kFullTransitionArray) return true;
+  return transitions()->IsSortedNoDuplicates();
 }
 
 
@@ -1630,17 +1639,14 @@ static bool CheckOneBackPointer(Map* current_map, Object* target) {
   return !target->IsMap() || Map::cast(target)->GetBackPointer() == current_map;
 }
 
-
-// static
-bool TransitionArray::IsConsistentWithBackPointers(Map* map) {
-  Object* transitions = map->raw_transitions();
-  for (int i = 0; i < TransitionArray::NumberOfTransitions(transitions); ++i) {
-    Map* target = TransitionArray::GetTarget(transitions, i);
-    if (!CheckOneBackPointer(map, target)) return false;
+bool TransitionsAccessor::IsConsistentWithBackPointers() {
+  int num_transitions = NumberOfTransitions();
+  for (int i = 0; i < num_transitions; i++) {
+    Map* target = GetTarget(i);
+    if (!CheckOneBackPointer(map_, target)) return false;
   }
   return true;
 }
-
 
 // Estimates if there is a path from the object to a context.
 // This function is not precise, and can return false even if
@@ -1673,13 +1679,10 @@ bool CanLeak(Object* obj, Heap* heap, bool skip_weak_cell) {
 void Code::VerifyEmbeddedObjects(VerifyMode mode) {
   if (kind() == OPTIMIZED_FUNCTION) return;
   Heap* heap = GetIsolate()->heap();
-  int mask = RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT) |
-             RelocInfo::ModeMask(RelocInfo::CELL);
+  int mask = RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT);
   bool skip_weak_cell = (mode == kNoContextSpecificPointers) ? false : true;
   for (RelocIterator it(this, mask); !it.done(); it.next()) {
-    Object* target = it.rinfo()->rmode() == RelocInfo::CELL
-                         ? it.rinfo()->target_cell()
-                         : it.rinfo()->target_object();
+    Object* target = it.rinfo()->target_object();
     CHECK(!CanLeak(target, heap, skip_weak_cell));
   }
 }

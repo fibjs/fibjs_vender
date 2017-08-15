@@ -20,9 +20,8 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-JSIntrinsicLowering::JSIntrinsicLowering(Editor* editor, JSGraph* jsgraph,
-                                         DeoptimizationMode mode)
-    : AdvancedReducer(editor), jsgraph_(jsgraph), mode_(mode) {}
+JSIntrinsicLowering::JSIntrinsicLowering(Editor* editor, JSGraph* jsgraph)
+    : AdvancedReducer(editor), jsgraph_(jsgraph) {}
 
 Reduction JSIntrinsicLowering::Reduce(Node* node) {
   if (node->opcode() != IrOpcode::kJSCallRuntime) return NoChange();
@@ -46,6 +45,8 @@ Reduction JSIntrinsicLowering::Reduce(Node* node) {
       return ReduceAsyncGeneratorReject(node);
     case Runtime::kInlineAsyncGeneratorResolve:
       return ReduceAsyncGeneratorResolve(node);
+    case Runtime::kInlineAsyncGeneratorYield:
+      return ReduceAsyncGeneratorYield(node);
     case Runtime::kInlineGeneratorGetResumeMode:
       return ReduceGeneratorGetResumeMode(node);
     case Runtime::kInlineGeneratorGetContext:
@@ -103,6 +104,8 @@ Reduction JSIntrinsicLowering::Reduce(Node* node) {
       return ReduceTheHole(node);
     case Runtime::kInlineClassOf:
       return ReduceClassOf(node);
+    case Runtime::kInlineStringMaxLength:
+      return ReduceStringMaxLength(node);
     default:
       break;
   }
@@ -130,7 +133,6 @@ Reduction JSIntrinsicLowering::ReduceDebugIsActive(Node* node) {
 }
 
 Reduction JSIntrinsicLowering::ReduceDeoptimizeNow(Node* node) {
-  if (mode() != kDeoptimizationEnabled) return NoChange();
   Node* const frame_state = NodeProperties::GetFrameStateInput(node);
   Node* const effect = NodeProperties::GetEffectInput(node);
   Node* const control = NodeProperties::GetControlInput(node);
@@ -193,6 +195,12 @@ Reduction JSIntrinsicLowering::ReduceAsyncGeneratorReject(Node* node) {
 Reduction JSIntrinsicLowering::ReduceAsyncGeneratorResolve(Node* node) {
   return Change(
       node, Builtins::CallableFor(isolate(), Builtins::kAsyncGeneratorResolve),
+      0);
+}
+
+Reduction JSIntrinsicLowering::ReduceAsyncGeneratorYield(Node* node) {
+  return Change(
+      node, Builtins::CallableFor(isolate(), Builtins::kAsyncGeneratorYield),
       0);
 }
 
@@ -392,6 +400,12 @@ Reduction JSIntrinsicLowering::ReduceClassOf(Node* node) {
   node->TrimInputCount(2);
   NodeProperties::ChangeOp(node, javascript()->ClassOf());
   return Changed(node);
+}
+
+Reduction JSIntrinsicLowering::ReduceStringMaxLength(Node* node) {
+  Node* value = jsgraph()->Constant(String::kMaxLength);
+  ReplaceWithValue(node, value);
+  return Replace(value);
 }
 
 Reduction JSIntrinsicLowering::Change(Node* node, const Operator* op, Node* a,

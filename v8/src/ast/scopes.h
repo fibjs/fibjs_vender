@@ -264,7 +264,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   // eval call.
   void RecordEvalCall() {
     scope_calls_eval_ = true;
-    RecordInnerScopeEvalCall();
   }
 
   void RecordInnerScopeEvalCall() {
@@ -363,11 +362,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   bool is_with_scope() const { return scope_type_ == WITH_SCOPE; }
   bool is_declaration_scope() const { return is_declaration_scope_; }
 
-  // Information about which scopes calls eval.
-  bool calls_eval() const { return scope_calls_eval_; }
-  bool calls_sloppy_eval() const {
-    return scope_calls_eval_ && is_sloppy(language_mode());
-  }
   bool inner_scope_calls_eval() const { return inner_scope_calls_eval_; }
   bool IsAsmModule() const;
   bool IsAsmFunction() const;
@@ -693,6 +687,10 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
                                         IsClassConstructor(function_kind())));
   }
 
+  bool calls_sloppy_eval() const {
+    return scope_calls_eval_ && is_sloppy(language_mode());
+  }
+
   bool was_lazily_parsed() const { return was_lazily_parsed_; }
 
 #ifdef DEBUG
@@ -858,10 +856,14 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
     return sloppy_block_function_map_;
   }
 
+  // Replaces the outer scope with the outer_scope_info in |info| if there is
+  // one.
+  void AttachOuterScopeInfo(ParseInfo* info, Isolate* isolate);
+
   // Compute top scope and allocate variables. For lazy compilation the top
   // scope only contains the single lazily compiled function, so this
   // doesn't re-allocate variables repeatedly.
-  static void Analyze(ParseInfo* info, Isolate* isolate);
+  static void Analyze(ParseInfo* info);
 
   // To be called during parsing. Do just enough scope analysis that we can
   // discard the Scope contents for lazily compiled functions. In particular,

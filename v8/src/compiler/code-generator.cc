@@ -11,7 +11,7 @@
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/pipeline.h"
-#include "src/frames-inl.h"
+#include "src/frames.h"
 #include "src/macro-assembler-inl.h"
 
 namespace v8 {
@@ -79,6 +79,23 @@ Isolate* CodeGenerator::isolate() const { return info_->isolate(); }
 void CodeGenerator::CreateFrameAccessState(Frame* frame) {
   FinishFrame(frame);
   frame_access_state_ = new (zone()) FrameAccessState(frame);
+}
+
+Deoptimizer::BailoutType CodeGenerator::DeoptimizerCallBailout(
+    int deoptimization_id, SourcePosition pos) {
+  DeoptimizeKind deopt_kind = GetDeoptimizationKind(deoptimization_id);
+  switch (deopt_kind) {
+    case DeoptimizeKind::kSoft: {
+      return Deoptimizer::SOFT;
+    }
+    case DeoptimizeKind::kEager: {
+      return Deoptimizer::EAGER;
+    }
+    case DeoptimizeKind::kLazy: {
+      return Deoptimizer::LAZY;
+    }
+  }
+  UNREACHABLE();
 }
 
 void CodeGenerator::AssembleCode() {
@@ -191,16 +208,27 @@ void CodeGenerator::AssembleCode() {
     }
   }
 
-  // Assemble all eager deoptimization exits.
+  // This nop operation is needed to ensure that the trampoline is not
+  // confused with the pc of the call before deoptimization.
+  // The test regress/regress-259 is an example of where we need it.
+  tasm()->nop();
+
+  // Assemble deoptimization exits.
   for (DeoptimizationExit* exit : deoptimization_exits_) {
     tasm()->bind(exit->label());
     int trampoline_pc = tasm()->pc_offset();
     int deoptimization_id = exit->deoptimization_id();
     DeoptimizationState* ds = deoptimization_states_[deoptimization_id];
+
+    // TODO(juliana) maybe we can optimize this if we store the last index
+    if (ds->kind() == DeoptimizeKind::kLazy) {
+      safepoints()->UpdateDeoptimizationInfo(ds->pc_offset(), trampoline_pc);
+    }
     ds->set_trampoline_pc(trampoline_pc);
     AssembleDeoptimizerCall(deoptimization_id, exit->pos());
   }
 
+  // TODO(juliana): check if we still need this.
   // Ensure there is space for lazy deoptimization in the code.
   if (info->ShouldEnsureSpaceForLazyDeopt()) {
     int target_offset = tasm()->pc_offset() + Deoptimizer::patch_size();
@@ -499,7 +527,7 @@ void CodeGenerator::AssembleSourcePosition(SourcePosition source_position) {
                                              source_position, false);
   if (FLAG_code_comments) {
     CompilationInfo* info = this->info();
-    if (!info->parse_info()) return;
+    if (info->IsStub()) return;
     std::ostringstream buffer;
     buffer << "-- ";
     if (FLAG_trace_turbo ||

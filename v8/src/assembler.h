@@ -45,6 +45,7 @@
 #include "src/label.h"
 #include "src/log.h"
 #include "src/register-configuration.h"
+#include "src/reglist.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -58,6 +59,11 @@ namespace internal {
 class Isolate;
 class SourcePosition;
 class StatsCounter;
+
+void SetUpJSCallerSavedCodeData();
+
+// Return the code of the n-th saved register available to JavaScript.
+int JSCallerSavedCode(int n);
 
 // -----------------------------------------------------------------------------
 // Platform independent assembler base class.
@@ -333,7 +339,6 @@ class RelocInfo {
     WASM_MEMORY_SIZE_REFERENCE,
     WASM_FUNCTION_TABLE_SIZE_REFERENCE,
     WASM_PROTECTED_INSTRUCTION_LANDING,
-    CELL,
 
     RUNTIME_ENTRY,
     COMMENT,
@@ -368,14 +373,14 @@ class RelocInfo {
     NUMBER_OF_MODES,
     NONE32,             // never recorded 32-bit value
     NONE64,             // never recorded 64-bit value
-    CODE_AGE_SEQUENCE,  // Not stored in RelocInfo array, used explictly by
+    CODE_AGE_SEQUENCE,  // Not stored in RelocInfo array, used explicitly by
                         // code aging.
 
     FIRST_REAL_RELOC_MODE = CODE_TARGET,
     LAST_REAL_RELOC_MODE = VENEER_POOL,
     LAST_CODE_ENUM = CODE_TARGET,
     LAST_GCED_ENUM = EMBEDDED_OBJECT,
-    FIRST_SHAREABLE_RELOC_MODE = CELL,
+    FIRST_SHAREABLE_RELOC_MODE = RUNTIME_ENTRY,
   };
 
   STATIC_ASSERT(NUMBER_OF_MODES <= kBitsPerInt);
@@ -394,7 +399,6 @@ class RelocInfo {
   static inline bool IsEmbeddedObject(Mode mode) {
     return mode == EMBEDDED_OBJECT;
   }
-  static inline bool IsCell(Mode mode) { return mode == CELL; }
   static inline bool IsRuntimeEntry(Mode mode) {
     return mode == RUNTIME_ENTRY;
   }
@@ -819,8 +823,6 @@ class ExternalReference BASE_EMBEDDED {
 
   ExternalReference(ApiFunction* ptr, Type type, Isolate* isolate);
 
-  ExternalReference(Builtins::Name name, Isolate* isolate);
-
   ExternalReference(Runtime::FunctionId id, Isolate* isolate);
 
   ExternalReference(const Runtime::Function* f, Isolate* isolate);
@@ -923,6 +925,7 @@ class ExternalReference BASE_EMBEDDED {
 
   // Write barrier.
   static ExternalReference store_buffer_top(Isolate* isolate);
+  static ExternalReference heap_is_marking_flag_address(Isolate* isolate);
 
   // Used for fast allocation in generated code.
   static ExternalReference new_space_allocation_top_address(Isolate* isolate);
@@ -982,6 +985,8 @@ class ExternalReference BASE_EMBEDDED {
   static ExternalReference libc_memset_function(Isolate* isolate);
 
   static ExternalReference try_internalize_string_function(Isolate* isolate);
+
+  static ExternalReference check_object_type(Isolate* isolate);
 
 #ifdef V8_INTL_SUPPORT
   static ExternalReference intl_convert_one_byte_to_lower(Isolate* isolate);
@@ -1082,14 +1087,6 @@ V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, ExternalReference);
 
 // -----------------------------------------------------------------------------
 // Utility functions
-
-inline int NumberOfBitsSet(uint32_t x) {
-  unsigned int num_bits_set;
-  for (num_bits_set = 0; x; x >>= 1) {
-    num_bits_set += x & 1;
-  }
-  return num_bits_set;
-}
 
 // Computes pow(x, y) with the special cases in the spec for Math.pow.
 double power_helper(Isolate* isolate, double x, double y);

@@ -496,6 +496,10 @@ class SeqOneByteString : public SeqString {
 
   inline uint8_t* GetChars();
 
+  // Clear uninitialized padding space. This ensures that the snapshot content
+  // is deterministic.
+  void clear_padding();
+
   DECL_CAST(SeqOneByteString)
 
   // Garbage collection support.  This method is called by the
@@ -509,7 +513,7 @@ class SeqOneByteString : public SeqString {
   }
 
   // Maximal memory usage for a single sequential one-byte string.
-  static const int kMaxSize = kMaxLength + kHeaderSize;
+  static const int kMaxSize = OBJECT_POINTER_ALIGN(kMaxLength + kHeaderSize);
   STATIC_ASSERT((kMaxSize - kHeaderSize) >= String::kMaxLength);
 
   class BodyDescriptor;
@@ -535,6 +539,10 @@ class SeqTwoByteString : public SeqString {
 
   inline uc16* GetChars();
 
+  // Clear uninitialized padding space. This ensures that the snapshot content
+  // is deterministic.
+  void clear_padding();
+
   // For regexp code.
   const uint16_t* SeqTwoByteStringGetData(unsigned start);
 
@@ -551,7 +559,8 @@ class SeqTwoByteString : public SeqString {
   }
 
   // Maximal memory usage for a single sequential two-byte string.
-  static const int kMaxSize = kMaxLength * 2 + kHeaderSize;
+  static const int kMaxSize =
+      OBJECT_POINTER_ALIGN(kMaxLength * 2 + kHeaderSize);
   STATIC_ASSERT(static_cast<int>((kMaxSize - kHeaderSize) / sizeof(uint16_t)) >=
                 String::kMaxLength);
 

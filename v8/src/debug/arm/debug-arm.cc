@@ -13,6 +13,7 @@
 #include "src/assembler-inl.h"
 #include "src/codegen.h"
 #include "src/debug/liveedit.h"
+#include "src/frames-inl.h"
 #include "src/objects-inl.h"
 
 namespace v8 {

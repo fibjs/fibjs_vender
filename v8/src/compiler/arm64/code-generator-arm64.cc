@@ -9,13 +9,13 @@
 #include "src/compiler/code-generator.h"
 
 #include "src/arm64/assembler-arm64-inl.h"
-#include "src/arm64/frames-arm64.h"
 #include "src/arm64/macro-assembler-arm64-inl.h"
 #include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
+#include "src/frame-constants.h"
 #include "src/heap/heap-inl.h"
 
 namespace v8 {
@@ -2369,12 +2369,10 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
 
 CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
     int deoptimization_id, SourcePosition pos) {
-  DeoptimizeKind deoptimization_kind = GetDeoptimizationKind(deoptimization_id);
   DeoptimizeReason deoptimization_reason =
       GetDeoptimizationReason(deoptimization_id);
   Deoptimizer::BailoutType bailout_type =
-      deoptimization_kind == DeoptimizeKind::kSoft ? Deoptimizer::SOFT
-                                                   : Deoptimizer::EAGER;
+      DeoptimizerCallBailout(deoptimization_id, pos);
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       __ isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;

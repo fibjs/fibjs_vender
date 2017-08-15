@@ -19,7 +19,7 @@
 #include "src/messages.h"
 #include "src/objects-inl.h"
 #include "src/parsing/duplicate-finder.h"
-#include "src/parsing/parameter-initializer-rewriter.h"
+#include "src/parsing/expression-scope-reparenter.h"
 #include "src/parsing/parse-info.h"
 #include "src/parsing/rewriter.h"
 #include "src/parsing/scanner-character-streams.h"
@@ -1471,20 +1471,10 @@ Block* Parser::BuildInitializationBlock(
   Block* result = factory()->NewBlock(
       NULL, 1, true, parsing_result->descriptor.declaration_pos);
   for (auto declaration : parsing_result->declarations) {
-    PatternRewriter::DeclareAndInitializeVariables(
-        this, result, &(parsing_result->descriptor), &declaration, names,
-        CHECK_OK);
+    DeclareAndInitializeVariables(result, &(parsing_result->descriptor),
+                                  &declaration, names, CHECK_OK);
   }
   return result;
-}
-
-void Parser::DeclareAndInitializeVariables(
-    Block* block, const DeclarationDescriptor* declaration_descriptor,
-    const DeclarationParsingResult::Declaration* declaration,
-    ZoneList<const AstRawString*>* names, bool* ok) {
-  DCHECK_NOT_NULL(block);
-  PatternRewriter::DeclareAndInitializeVariables(
-      this, block, declaration_descriptor, declaration, names, ok);
 }
 
 Statement* Parser::DeclareFunction(const AstRawString* variable_name,
@@ -1695,9 +1685,8 @@ void Parser::RewriteCatchPattern(CatchInfo* catch_info, bool* ok) {
 
     catch_info->init_block =
         factory()->NewBlock(nullptr, 8, true, kNoSourcePosition);
-    PatternRewriter::DeclareAndInitializeVariables(
-        this, catch_info->init_block, &descriptor, &decl,
-        &catch_info->bound_names, ok);
+    DeclareAndInitializeVariables(catch_info->init_block, &descriptor, &decl,
+                                  &catch_info->bound_names, ok);
   } else {
     catch_info->bound_names.Add(catch_info->name, zone());
   }
@@ -1929,10 +1918,9 @@ Statement* Parser::InitializeForEachStatement(ForEachStatement* stmt,
     if (each->IsArrayLiteral() || each->IsObjectLiteral()) {
       Variable* temp = NewTemporary(ast_value_factory()->empty_string());
       VariableProxy* temp_proxy = factory()->NewVariableProxy(temp);
-      Expression* assign_each = PatternRewriter::RewriteDestructuringAssignment(
-          this, factory()->NewAssignment(Token::ASSIGN, each, temp_proxy,
-                                         kNoSourcePosition),
-          scope());
+      Expression* assign_each =
+          RewriteDestructuringAssignment(factory()->NewAssignment(
+              Token::ASSIGN, each, temp_proxy, kNoSourcePosition));
       auto block = factory()->NewBlock(nullptr, 2, false, kNoSourcePosition);
       block->statements()->Add(
           factory()->NewExpressionStatement(assign_each, kNoSourcePosition),
@@ -2013,7 +2001,6 @@ void Parser::DesugarBindingInForEachStatement(ForInfo* for_info,
     descriptor.declaration_pos = kNoSourcePosition;
     descriptor.initialization_pos = kNoSourcePosition;
     descriptor.scope = scope();
-    descriptor.declaration_kind = DeclarationDescriptor::LEXICAL_FOR_EACH;
     decl.initializer = factory()->NewVariableProxy(temp);
 
     bool is_for_var_of =
@@ -2023,8 +2010,8 @@ void Parser::DesugarBindingInForEachStatement(ForInfo* for_info,
         IsLexicalVariableMode(for_info->parsing_result.descriptor.mode) ||
         is_for_var_of;
 
-    PatternRewriter::DeclareAndInitializeVariables(
-        this, each_initialization_block, &descriptor, &decl,
+    DeclareAndInitializeVariables(
+        each_initialization_block, &descriptor, &decl,
         collect_names ? &for_info->bound_names : nullptr, CHECK_OK_VOID);
 
     // Annex B.3.5 prohibits the form
@@ -2169,8 +2156,7 @@ Statement* Parser::InitializeForOfStatement(
     assign_each =
         factory()->NewAssignment(Token::ASSIGN, each, result_value, nopos);
     if (each->IsArrayLiteral() || each->IsObjectLiteral()) {
-      assign_each = PatternRewriter::RewriteDestructuringAssignment(
-          this, assign_each->AsAssignment(), scope());
+      assign_each = RewriteDestructuringAssignment(assign_each->AsAssignment());
     }
   }
 
@@ -2961,11 +2947,8 @@ Statement* Parser::BuildAssertIsCoercible(Variable* var,
 class InitializerRewriter final
     : public AstTraversalVisitor<InitializerRewriter> {
  public:
-  InitializerRewriter(uintptr_t stack_limit, Expression* root, Parser* parser,
-                      Scope* scope)
-      : AstTraversalVisitor(stack_limit, root),
-        parser_(parser),
-        scope_(scope) {}
+  InitializerRewriter(uintptr_t stack_limit, Expression* root, Parser* parser)
+      : AstTraversalVisitor(stack_limit, root), parser_(parser) {}
 
  private:
   // This is required so that the overriden Visit* methods can be
@@ -2975,8 +2958,7 @@ class InitializerRewriter final
   // Just rewrite destructuring assignments wrapped in RewritableExpressions.
   void VisitRewritableExpression(RewritableExpression* to_rewrite) {
     if (to_rewrite->is_rewritten()) return;
-    Parser::PatternRewriter::RewriteDestructuringAssignment(parser_, to_rewrite,
-                                                            scope_);
+    parser_->RewriteDestructuringAssignment(to_rewrite, parser_->scope());
     AstTraversalVisitor::VisitRewritableExpression(to_rewrite);
   }
 
@@ -2985,12 +2967,10 @@ class InitializerRewriter final
   void VisitFunctionLiteral(FunctionLiteral* expr) {}
 
   Parser* parser_;
-  Scope* scope_;
 };
 
-
-void Parser::RewriteParameterInitializer(Expression* expr, Scope* scope) {
-  InitializerRewriter rewriter(stack_limit_, expr, this, scope);
+void Parser::RewriteParameterInitializer(Expression* expr) {
+  InitializerRewriter rewriter(stack_limit_, expr, this);
   rewriter.Run();
 }
 
@@ -3020,7 +3000,7 @@ Block* Parser::BuildParameterInitializationBlock(
       // IS_UNDEFINED($param) ? initializer : $param
 
       // Ensure initializer is rewritten
-      RewriteParameterInitializer(parameter->initializer, scope());
+      RewriteParameterInitializer(parameter->initializer);
 
       auto condition = factory()->NewCompareOperation(
           Token::EQ_STRICT,
@@ -3033,7 +3013,8 @@ Block* Parser::BuildParameterInitializationBlock(
 
     Scope* param_scope = scope();
     Block* param_block = init_block;
-    if (!parameter->is_simple() && scope()->calls_sloppy_eval()) {
+    if (!parameter->is_simple() &&
+        scope()->AsDeclarationScope()->calls_sloppy_eval()) {
       param_scope = NewVarblockScope();
       param_scope->set_start_position(descriptor.initialization_pos);
       param_scope->set_end_position(parameter->initializer_end_position);
@@ -3050,8 +3031,8 @@ Block* Parser::BuildParameterInitializationBlock(
     BlockState block_state(&scope_, param_scope);
     DeclarationParsingResult::Declaration decl(
         parameter->pattern, parameter->initializer_end_position, initial_value);
-    PatternRewriter::DeclareAndInitializeVariables(
-        this, param_block, &descriptor, &decl, nullptr, CHECK_OK);
+    DeclareAndInitializeVariables(param_block, &descriptor, &decl, nullptr,
+                                  CHECK_OK);
 
     if (param_block != init_block) {
       param_scope = param_scope->FinalizeBlockScope();
@@ -3193,8 +3174,6 @@ ZoneList<Statement*>* Parser::ParseFunction(
 
   DuplicateFinder duplicate_finder;
   ExpressionClassifier formals_classifier(this, &duplicate_finder);
-
-  if (IsResumableFunction(kind)) PrepareGeneratorVariables();
 
   int expected_parameters_end_pos = parameters_end_pos_;
   if (expected_parameters_end_pos != kNoSourcePosition) {
@@ -3820,17 +3799,6 @@ Expression* Parser::ExpressionListToExpression(ZoneList<Expression*>* args) {
   return expr;
 }
 
-// This method intoduces the line initializing the generator object
-// when desugaring the body of async_function.
-void Parser::PrepareAsyncFunctionBody(ZoneList<Statement*>* body,
-                                      FunctionKind kind, int pos) {
-  // When parsing an async arrow function, we get here without having called
-  // PrepareGeneratorVariables yet, so do it now.
-  if (function_state_->scope()->generator_object_var() == nullptr) {
-    PrepareGeneratorVariables();
-  }
-}
-
 // This method completes the desugaring of the body of async_function.
 void Parser::RewriteAsyncFunctionBody(ZoneList<Statement*>* body, Block* block,
                                       Expression* return_value, bool* ok) {
@@ -3918,7 +3886,7 @@ void Parser::RewriteDestructuringAssignments() {
       // pair.scope may already have been removed by FinalizeBlockScope in the
       // meantime.
       Scope* scope = pair.scope->GetUnremovedScope();
-      PatternRewriter::RewriteDestructuringAssignment(this, to_rewrite, scope);
+      RewriteDestructuringAssignment(to_rewrite, scope);
     }
   }
 }
@@ -4526,11 +4494,14 @@ Expression* Parser::RewriteYieldStar(Expression* iterable, int pos) {
       VariableProxy* output_proxy = factory()->NewVariableProxy(var_output);
       Expression* literal = factory()->NewStringLiteral(
           ast_value_factory()->value_string(), nopos);
-      Assignment* assign = factory()->NewAssignment(
-          Token::ASSIGN, output_proxy,
+
+      Expression* value = factory()->NewAwait(
           factory()->NewProperty(factory()->NewVariableProxy(var_output),
                                  literal, nopos),
           nopos);
+
+      Assignment* assign =
+          factory()->NewAssignment(Token::ASSIGN, output_proxy, value, nopos);
       loop_body->statements()->Add(
           factory()->NewExpressionStatement(assign, nopos), zone());
     }

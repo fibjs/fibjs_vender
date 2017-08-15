@@ -1718,8 +1718,12 @@ class InterpreterJSCallAssembler : public InterpreterAssembler {
     Node* slot_id = BytecodeOperandIdx(3);
     Node* feedback_vector = LoadFeedbackVector();
     Node* context = GetContext();
-    Node* result = CallJSWithFeedback(function, context, first_arg, args_count,
-                                      slot_id, feedback_vector, receiver_mode);
+
+    // Collect the {function} feedback.
+    CollectCallFeedback(function, context, feedback_vector, slot_id);
+
+    Node* result =
+        CallJS(function, context, first_arg, args_count, receiver_mode);
     SetAccumulator(result);
     Dispatch();
   }
@@ -1734,22 +1738,27 @@ class InterpreterJSCallAssembler : public InterpreterAssembler {
     const int kSlotOperandIndex =
         kFirstArgumentOperandIndex + kReceiverOperandCount + arg_count;
     // Indices and counts of parameters to the call stub.
-    const int kBoilerplateParameterCount = 7;
-    const int kReceiverParameterIndex = 5;
+    const int kBoilerplateParameterCount = 5;
+    const int kReceiverParameterIndex = 3;
     const int kReceiverParameterCount = 1;
     // Only used in a DCHECK.
     USE(kReceiverParameterCount);
 
     Node* function_reg = BytecodeOperandReg(0);
     Node* function = LoadRegister(function_reg);
+    Node* slot_id = BytecodeOperandIdx(kSlotOperandIndex);
+    Node* feedback_vector = LoadFeedbackVector();
+    Node* context = GetContext();
+
+    // Collect the {function} feedback.
+    CollectCallFeedback(function, context, feedback_vector, slot_id);
+
     std::array<Node*, Bytecodes::kMaxOperands + kBoilerplateParameterCount>
         temp;
-    Callable call_ic = CodeFactory::CallIC(isolate());
-    temp[0] = HeapConstant(call_ic.code());
+    Callable callable = CodeFactory::Call(isolate());
+    temp[0] = HeapConstant(callable.code());
     temp[1] = function;
     temp[2] = Int32Constant(arg_count);
-    temp[3] = BytecodeOperandIdxInt32(kSlotOperandIndex);
-    temp[4] = LoadFeedbackVector();
 
     int parameter_index = kReceiverParameterIndex;
     if (receiver_mode == ConvertReceiverMode::kNullOrUndefined) {
@@ -1767,9 +1776,9 @@ class InterpreterJSCallAssembler : public InterpreterAssembler {
 
     DCHECK_EQ(parameter_index,
               kReceiverParameterIndex + kReceiverParameterCount + arg_count);
-    temp[parameter_index] = GetContext();
+    temp[parameter_index] = context;
 
-    Node* result = CallStubN(call_ic.descriptor(), 1,
+    Node* result = CallStubN(callable.descriptor(), 1,
                              arg_count + kBoilerplateParameterCount, &temp[0]);
     SetAccumulator(result);
     Dispatch();
@@ -2170,16 +2179,15 @@ IGNITION_HANDLER(TestTypeOf, InterpreterAssembler) {
   int32_t cases[] = {TYPEOF_LITERAL_LIST(CASE)};
 #undef CASE
 
-  Label if_true(this), if_false(this), end(this), abort(this, Label::kDeferred);
+  Label if_true(this), if_false(this), end(this);
 
-  Switch(literal_flag, &abort, cases, labels, arraysize(cases));
+  // We juse use the final label as the default and properly CSA_ASSERT
+  // that the {literal_flag} is valid here; this significantly improves
+  // the generated code (compared to having a default label that aborts).
+  unsigned const num_cases = arraysize(cases);
+  CSA_ASSERT(this, Uint32LessThan(literal_flag, Int32Constant(num_cases)));
+  Switch(literal_flag, labels[num_cases - 1], cases, labels, num_cases - 1);
 
-  BIND(&abort);
-  {
-    Comment("Abort");
-    Abort(BailoutReason::kUnexpectedTestTypeofLiteralFlag);
-    Goto(&if_false);
-  }
   BIND(&if_number);
   {
     Comment("IfNumber");
@@ -3153,8 +3161,8 @@ IGNITION_HANDLER(ForInNext, InterpreterAssembler) {
     Node* feedback_vector = LoadFeedbackVector();
     Node* megamorphic_sentinel =
         HeapConstant(FeedbackVector::MegamorphicSentinel(isolate()));
-    StoreFixedArrayElement(feedback_vector, vector_index, megamorphic_sentinel,
-                           SKIP_WRITE_BARRIER);
+    StoreFeedbackVectorSlot(feedback_vector, vector_index, megamorphic_sentinel,
+                            SKIP_WRITE_BARRIER);
 
     // Need to filter the {key} for the {receiver}.
     Node* context = GetContext();

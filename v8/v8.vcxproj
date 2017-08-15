@@ -132,6 +132,7 @@
     <ClInclude Include="src\builtins\builtins-intl.h" />
     <ClInclude Include="src\builtins\builtins-iterator-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
+    <ClInclude Include="src\builtins\builtins-proxy-helpers-gen.h" />
     <ClInclude Include="src\builtins\builtins-regexp-gen.h" />
     <ClInclude Include="src\builtins\builtins-string-gen.h" />
     <ClInclude Include="src\builtins\builtins-utils-gen.h" />
@@ -158,12 +159,11 @@
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-tracer.h" />
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher.h" />
     <ClInclude Include="src\compiler-dispatcher\optimizing-compile-dispatcher.h" />
+    <ClInclude Include="src\compiler-dispatcher\unoptimized-compile-job.h" />
     <ClInclude Include="src\compiler.h" />
     <ClInclude Include="src\compiler\access-builder.h" />
     <ClInclude Include="src\compiler\access-info.h" />
     <ClInclude Include="src\compiler\all-nodes.h" />
-    <ClInclude Include="src\compiler\ast-graph-builder.h" />
-    <ClInclude Include="src\compiler\ast-loop-assignment-analyzer.h" />
     <ClInclude Include="src\compiler\basic-block-instrumentor.h" />
     <ClInclude Include="src\compiler\branch-elimination.h" />
     <ClInclude Include="src\compiler\bytecode-analysis.h" />
@@ -177,7 +177,6 @@
     <ClInclude Include="src\compiler\common-operator-reducer.h" />
     <ClInclude Include="src\compiler\common-operator.h" />
     <ClInclude Include="src\compiler\compiler-source-position-table.h" />
-    <ClInclude Include="src\compiler\control-builders.h" />
     <ClInclude Include="src\compiler\control-equivalence.h" />
     <ClInclude Include="src\compiler\control-flow-optimizer.h" />
     <ClInclude Include="src\compiler\dead-code-elimination.h" />
@@ -205,7 +204,6 @@
     <ClInclude Include="src\compiler\js-call-reducer.h" />
     <ClInclude Include="src\compiler\js-context-specialization.h" />
     <ClInclude Include="src\compiler\js-create-lowering.h" />
-    <ClInclude Include="src\compiler\js-frame-specialization.h" />
     <ClInclude Include="src\compiler\js-generic-lowering.h" />
     <ClInclude Include="src\compiler\js-graph.h" />
     <ClInclude Include="src\compiler\js-inlining-heuristic.h" />
@@ -227,6 +225,8 @@
     <ClInclude Include="src\compiler\machine-operator.h" />
     <ClInclude Include="src\compiler\memory-optimizer.h" />
     <ClInclude Include="src\compiler\move-optimizer.h" />
+    <ClInclude Include="src\compiler\new-escape-analysis-reducer.h" />
+    <ClInclude Include="src\compiler\new-escape-analysis.h" />
     <ClInclude Include="src\compiler\node-aux-data.h" />
     <ClInclude Include="src\compiler\node-cache.h" />
     <ClInclude Include="src\compiler\node-marker.h" />
@@ -238,6 +238,7 @@
     <ClInclude Include="src\compiler\operator-properties.h" />
     <ClInclude Include="src\compiler\operator.h" />
     <ClInclude Include="src\compiler\osr.h" />
+    <ClInclude Include="src\compiler\persistent-map.h" />
     <ClInclude Include="src\compiler\pipeline-statistics.h" />
     <ClInclude Include="src\compiler\pipeline.h" />
     <ClInclude Include="src\compiler\ppc\instruction-codes-ppc.h" />
@@ -281,7 +282,9 @@
     <ClInclude Include="src\debug\debug-evaluate.h" />
     <ClInclude Include="src\debug\debug-frames.h" />
     <ClInclude Include="src\debug\debug-interface.h" />
+    <ClInclude Include="src\debug\debug-scope-iterator.h" />
     <ClInclude Include="src\debug\debug-scopes.h" />
+    <ClInclude Include="src\debug\debug-stack-trace-iterator.h" />
     <ClInclude Include="src\debug\debug.h" />
     <ClInclude Include="src\debug\interface-types.h" />
     <ClInclude Include="src\debug\liveedit.h" />
@@ -315,9 +318,9 @@
     <ClInclude Include="src\fixed-dtoa.h" />
     <ClInclude Include="src\flag-definitions.h" />
     <ClInclude Include="src\flags.h" />
+    <ClInclude Include="src\frame-constants.h" />
     <ClInclude Include="src\frames-inl.h" />
     <ClInclude Include="src\frames.h" />
-    <ClInclude Include="src\full-codegen\full-codegen.h" />
     <ClInclude Include="src\futex-emulation.h" />
     <ClInclude Include="src\gdb-jit.h" />
     <ClInclude Include="src\global-handles.h" />
@@ -337,6 +340,8 @@
     <ClInclude Include="src\heap\incremental-marking-inl.h" />
     <ClInclude Include="src\heap\incremental-marking-job.h" />
     <ClInclude Include="src\heap\incremental-marking.h" />
+    <ClInclude Include="src\heap\invalidated-slots-inl.h" />
+    <ClInclude Include="src\heap\invalidated-slots.h" />
     <ClInclude Include="src\heap\item-parallel-job.h" />
     <ClInclude Include="src\heap\local-allocator.h" />
     <ClInclude Include="src\heap\mark-compact-inl.h" />
@@ -360,7 +365,7 @@
     <ClInclude Include="src\ia32\assembler-ia32.h" />
     <ClInclude Include="src\ia32\code-stubs-ia32.h" />
     <ClInclude Include="src\ia32\codegen-ia32.h" />
-    <ClInclude Include="src\ia32\frames-ia32.h" />
+    <ClInclude Include="src\ia32\frame-constants-ia32.h" />
     <ClInclude Include="src\ia32\macro-assembler-ia32.h" />
     <ClInclude Include="src\ia32\simulator-ia32.h" />
     <ClInclude Include="src\ia32\sse-instr.h" />
@@ -478,8 +483,8 @@
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\duplicate-finder.h" />
     <ClInclude Include="src\parsing\expression-classifier.h" />
+    <ClInclude Include="src\parsing\expression-scope-reparenter.h" />
     <ClInclude Include="src\parsing\func-name-inferrer.h" />
-    <ClInclude Include="src\parsing\parameter-initializer-rewriter.h" />
     <ClInclude Include="src\parsing\parse-info.h" />
     <ClInclude Include="src\parsing\parser-base.h" />
     <ClInclude Include="src\parsing\parser.h" />
@@ -499,7 +504,7 @@
     <ClInclude Include="src\ppc\code-stubs-ppc.h" />
     <ClInclude Include="src\ppc\codegen-ppc.h" />
     <ClInclude Include="src\ppc\constants-ppc.h" />
-    <ClInclude Include="src\ppc\frames-ppc.h" />
+    <ClInclude Include="src\ppc\frame-constants-ppc.h" />
     <ClInclude Include="src\ppc\macro-assembler-ppc.h" />
     <ClInclude Include="src\ppc\simulator-ppc.h" />
     <ClInclude Include="src\profiler\allocation-tracker.h" />
@@ -540,6 +545,7 @@
     <ClInclude Include="src\regexp\s390\regexp-macro-assembler-s390.h" />
     <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h" />
     <ClInclude Include="src\register-configuration.h" />
+    <ClInclude Include="src\reglist.h" />
     <ClInclude Include="src\runtime-profiler.h" />
     <ClInclude Include="src\runtime\runtime-utils.h" />
     <ClInclude Include="src\runtime\runtime.h" />
@@ -548,7 +554,7 @@
     <ClInclude Include="src\s390\code-stubs-s390.h" />
     <ClInclude Include="src\s390\codegen-s390.h" />
     <ClInclude Include="src\s390\constants-s390.h" />
-    <ClInclude Include="src\s390\frames-s390.h" />
+    <ClInclude Include="src\s390\frame-constants-s390.h" />
     <ClInclude Include="src\s390\macro-assembler-s390.h" />
     <ClInclude Include="src\s390\simulator-s390.h" />
     <ClInclude Include="src\safepoint-table.h" />
@@ -559,11 +565,14 @@
     <ClInclude Include="src\snapshot\code-serializer.h" />
     <ClInclude Include="src\snapshot\deserializer.h" />
     <ClInclude Include="src\snapshot\natives.h" />
+    <ClInclude Include="src\snapshot\object-deserializer.h" />
+    <ClInclude Include="src\snapshot\partial-deserializer.h" />
     <ClInclude Include="src\snapshot\partial-serializer.h" />
     <ClInclude Include="src\snapshot\serializer-common.h" />
     <ClInclude Include="src\snapshot\serializer.h" />
     <ClInclude Include="src\snapshot\snapshot-source-sink.h" />
     <ClInclude Include="src\snapshot\snapshot.h" />
+    <ClInclude Include="src\snapshot\startup-deserializer.h" />
     <ClInclude Include="src\snapshot\startup-serializer.h" />
     <ClInclude Include="src\source-position-table.h" />
     <ClInclude Include="src\source-position.h" />
@@ -613,6 +622,7 @@
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\signature-map.h" />
     <ClInclude Include="src\wasm\streaming-decoder.h" />
+    <ClInclude Include="src\wasm\wasm-api.h" />
     <ClInclude Include="src\wasm\wasm-code-specialization.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
@@ -629,7 +639,7 @@
     <ClInclude Include="src\x64\assembler-x64.h" />
     <ClInclude Include="src\x64\code-stubs-x64.h" />
     <ClInclude Include="src\x64\codegen-x64.h" />
-    <ClInclude Include="src\x64\frames-x64.h" />
+    <ClInclude Include="src\x64\frame-constants-x64.h" />
     <ClInclude Include="src\x64\macro-assembler-x64.h" />
     <ClInclude Include="src\x64\simulator-x64.h" />
     <ClInclude Include="src\x64\sse-instr.h" />
@@ -750,6 +760,7 @@
     <ClCompile Include="src\builtins\builtins-promise-gen.cc" />
     <ClCompile Include="src\builtins\builtins-promise.cc" />
     <ClCompile Include="src\builtins\builtins-proxy-gen.cc" />
+    <ClCompile Include="src\builtins\builtins-proxy-helpers-gen.cc" />
     <ClCompile Include="src\builtins\builtins-reflect.cc" />
     <ClCompile Include="src\builtins\builtins-regexp-gen.cc" />
     <ClCompile Include="src\builtins\builtins-regexp.cc" />
@@ -782,12 +793,11 @@
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-tracer.cc" />
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher.cc" />
     <ClCompile Include="src\compiler-dispatcher\optimizing-compile-dispatcher.cc" />
+    <ClCompile Include="src\compiler-dispatcher\unoptimized-compile-job.cc" />
     <ClCompile Include="src\compiler.cc" />
     <ClCompile Include="src\compiler\access-builder.cc" />
     <ClCompile Include="src\compiler\access-info.cc" />
     <ClCompile Include="src\compiler\all-nodes.cc" />
-    <ClCompile Include="src\compiler\ast-graph-builder.cc" />
-    <ClCompile Include="src\compiler\ast-loop-assignment-analyzer.cc" />
     <ClCompile Include="src\compiler\basic-block-instrumentor.cc" />
     <ClCompile Include="src\compiler\branch-elimination.cc" />
     <ClCompile Include="src\compiler\bytecode-analysis.cc" />
@@ -801,7 +811,6 @@
     <ClCompile Include="src\compiler\common-operator-reducer.cc" />
     <ClCompile Include="src\compiler\common-operator.cc" />
     <ClCompile Include="src\compiler\compiler-source-position-table.cc" />
-    <ClCompile Include="src\compiler\control-builders.cc" />
     <ClCompile Include="src\compiler\control-equivalence.cc" />
     <ClCompile Include="src\compiler\control-flow-optimizer.cc" />
     <ClCompile Include="src\compiler\dead-code-elimination.cc" />
@@ -828,7 +837,6 @@
     <ClCompile Include="src\compiler\js-call-reducer.cc" />
     <ClCompile Include="src\compiler\js-context-specialization.cc" />
     <ClCompile Include="src\compiler\js-create-lowering.cc" />
-    <ClCompile Include="src\compiler\js-frame-specialization.cc" />
     <ClCompile Include="src\compiler\js-generic-lowering.cc" />
     <ClCompile Include="src\compiler\js-graph.cc" />
     <ClCompile Include="src\compiler\js-inlining-heuristic.cc" />
@@ -850,6 +858,8 @@
     <ClCompile Include="src\compiler\machine-operator.cc" />
     <ClCompile Include="src\compiler\memory-optimizer.cc" />
     <ClCompile Include="src\compiler\move-optimizer.cc" />
+    <ClCompile Include="src\compiler\new-escape-analysis-reducer.cc" />
+    <ClCompile Include="src\compiler\new-escape-analysis.cc" />
     <ClCompile Include="src\compiler\node-cache.cc" />
     <ClCompile Include="src\compiler\node-marker.cc" />
     <ClCompile Include="src\compiler\node-matchers.cc" />
@@ -904,7 +914,9 @@
     <ClCompile Include="src\debug\debug-coverage.cc" />
     <ClCompile Include="src\debug\debug-evaluate.cc" />
     <ClCompile Include="src\debug\debug-frames.cc" />
+    <ClCompile Include="src\debug\debug-scope-iterator.cc" />
     <ClCompile Include="src\debug\debug-scopes.cc" />
+    <ClCompile Include="src\debug\debug-stack-trace-iterator.cc" />
     <ClCompile Include="src\debug\debug.cc" />
     <ClCompile Include="src\debug\ia32\debug-ia32.cc" />
     <ClCompile Include="src\debug\liveedit.cc" />
@@ -935,11 +947,6 @@
     <ClCompile Include="src\fixed-dtoa.cc" />
     <ClCompile Include="src\flags.cc" />
     <ClCompile Include="src\frames.cc" />
-    <ClCompile Include="src\full-codegen\full-codegen.cc" />
-    <ClCompile Include="src\full-codegen\ia32\full-codegen-ia32.cc" />
-    <ClCompile Include="src\full-codegen\ppc\full-codegen-ppc.cc" />
-    <ClCompile Include="src\full-codegen\s390\full-codegen-s390.cc" />
-    <ClCompile Include="src\full-codegen\x64\full-codegen-x64.cc" />
     <ClCompile Include="src\futex-emulation.cc" />
     <ClCompile Include="src\gdb-jit.cc" />
     <ClCompile Include="src\gen\experimental-extras-libraries.cc" />
@@ -956,6 +963,7 @@
     <ClCompile Include="src\heap\heap.cc" />
     <ClCompile Include="src\heap\incremental-marking-job.cc" />
     <ClCompile Include="src\heap\incremental-marking.cc" />
+    <ClCompile Include="src\heap\invalidated-slots.cc" />
     <ClCompile Include="src\heap\mark-compact.cc" />
     <ClCompile Include="src\heap\marking.cc" />
     <ClCompile Include="src\heap\memory-reducer.cc" />
@@ -972,7 +980,7 @@
     <ClCompile Include="src\ia32\cpu-ia32.cc" />
     <ClCompile Include="src\ia32\deoptimizer-ia32.cc" />
     <ClCompile Include="src\ia32\disasm-ia32.cc" />
-    <ClCompile Include="src\ia32\frames-ia32.cc" />
+    <ClCompile Include="src\ia32\frame-constants-ia32.cc" />
     <ClCompile Include="src\ia32\interface-descriptors-ia32.cc" />
     <ClCompile Include="src\ia32\macro-assembler-ia32.cc" />
     <ClCompile Include="src\ia32\simulator-ia32.cc" />
@@ -981,6 +989,7 @@
     <ClCompile Include="src\ic\binary-op-assembler.cc" />
     <ClCompile Include="src\ic\call-optimization.cc" />
     <ClCompile Include="src\ic\handler-compiler.cc" />
+    <ClCompile Include="src\ic\handler-configuration.cc" />
     <ClCompile Include="src\ic\ia32\access-compiler-ia32.cc" />
     <ClCompile Include="src\ic\ia32\handler-compiler-ia32.cc" />
     <ClCompile Include="src\ic\ia32\ic-ia32.cc" />
@@ -1053,8 +1062,8 @@
     <ClCompile Include="src\objects\literal-objects.cc" />
     <ClCompile Include="src\objects\scope-info.cc" />
     <ClCompile Include="src\ostreams.cc" />
+    <ClCompile Include="src\parsing\expression-scope-reparenter.cc" />
     <ClCompile Include="src\parsing\func-name-inferrer.cc" />
-    <ClCompile Include="src\parsing\parameter-initializer-rewriter.cc" />
     <ClCompile Include="src\parsing\parse-info.cc" />
     <ClCompile Include="src\parsing\parser.cc" />
     <ClCompile Include="src\parsing\parsing.cc" />
@@ -1075,7 +1084,7 @@
     <ClCompile Include="src\ppc\cpu-ppc.cc" />
     <ClCompile Include="src\ppc\deoptimizer-ppc.cc" />
     <ClCompile Include="src\ppc\disasm-ppc.cc" />
-    <ClCompile Include="src\ppc\frames-ppc.cc" />
+    <ClCompile Include="src\ppc\frame-constants-ppc.cc" />
     <ClCompile Include="src\ppc\interface-descriptors-ppc.cc" />
     <ClCompile Include="src\ppc\macro-assembler-ppc.cc" />
     <ClCompile Include="src\ppc\simulator-ppc.cc" />
@@ -1144,7 +1153,7 @@
     <ClCompile Include="src\s390\cpu-s390.cc" />
     <ClCompile Include="src\s390\deoptimizer-s390.cc" />
     <ClCompile Include="src\s390\disasm-s390.cc" />
-    <ClCompile Include="src\s390\frames-s390.cc" />
+    <ClCompile Include="src\s390\frame-constants-s390.cc" />
     <ClCompile Include="src\s390\interface-descriptors-s390.cc" />
     <ClCompile Include="src\s390\macro-assembler-s390.cc" />
     <ClCompile Include="src\s390\simulator-s390.cc" />
@@ -1153,6 +1162,8 @@
     <ClCompile Include="src\snapshot\code-serializer.cc" />
     <ClCompile Include="src\snapshot\deserializer.cc" />
     <ClCompile Include="src\snapshot\natives-common.cc" />
+    <ClCompile Include="src\snapshot\object-deserializer.cc" />
+    <ClCompile Include="src\snapshot\partial-deserializer.cc" />
     <ClCompile Include="src\snapshot\partial-serializer.cc" />
     <ClCompile Include="src\snapshot\serializer-common.cc" />
     <ClCompile Include="src\snapshot\serializer.cc" />
@@ -1169,6 +1180,7 @@
     <ClCompile Include="src\snapshot\snapshots\snapshot-s390.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-x64-win.cc" />
     <ClCompile Include="src\snapshot\snapshots\snapshot-x64.cc" />
+    <ClCompile Include="src\snapshot\startup-deserializer.cc" />
     <ClCompile Include="src\snapshot\startup-serializer.cc" />
     <ClCompile Include="src\source-position-table.cc" />
     <ClCompile Include="src\source-position.cc" />
@@ -1201,6 +1213,7 @@
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\signature-map.cc" />
     <ClCompile Include="src\wasm\streaming-decoder.cc" />
+    <ClCompile Include="src\wasm\wasm-api.cc" />
     <ClCompile Include="src\wasm\wasm-code-specialization.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
@@ -1219,7 +1232,7 @@
     <ClCompile Include="src\x64\deoptimizer-x64.cc" />
     <ClCompile Include="src\x64\disasm-x64.cc" />
     <ClCompile Include="src\x64\eh-frame-x64.cc" />
-    <ClCompile Include="src\x64\frames-x64.cc" />
+    <ClCompile Include="src\x64\frame-constants-x64.cc" />
     <ClCompile Include="src\x64\interface-descriptors-x64.cc" />
     <ClCompile Include="src\x64\macro-assembler-x64.cc" />
     <ClCompile Include="src\x64\simulator-x64.cc" />

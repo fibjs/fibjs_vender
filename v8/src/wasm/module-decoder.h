@@ -34,16 +34,17 @@ enum SectionCode : int8_t {
   kCodeSectionCode = 10,       // Function code
   kDataSectionCode = 11,       // Data segments
   kNameSectionCode = 12,       // Name section (encoded as a string)
-  kExceptionSectionCode = 13,  // Exception section (encoded as a string)
+  kExceptionSectionCode = 13,  // Exception section
 
   // Helper values
   kFirstSectionInModule = kTypeSectionCode,
+  kLastKnownModuleSection = kExceptionSectionCode,
 };
 
 enum NameSectionType : uint8_t { kModule = 0, kFunction = 1, kLocal = 2 };
 
 inline bool IsValidSectionCode(uint8_t byte) {
-  return kTypeSectionCode <= byte && byte <= kDataSectionCode;
+  return kTypeSectionCode <= byte && byte <= kLastKnownModuleSection;
 }
 
 const char* SectionName(SectionCode code);
@@ -99,12 +100,13 @@ V8_EXPORT_PRIVATE FunctionSig* DecodeWasmSignatureForTesting(Zone* zone,
 
 // Decodes the bytes of a wasm function between
 // {function_start} and {function_end}.
-V8_EXPORT_PRIVATE FunctionResult
-SyncDecodeWasmFunction(Isolate* isolate, Zone* zone, ModuleBytesEnv* env,
-                       const byte* function_start, const byte* function_end);
+V8_EXPORT_PRIVATE FunctionResult SyncDecodeWasmFunction(
+    Isolate* isolate, Zone* zone, const ModuleWireBytes& wire_bytes,
+    const WasmModule* module, const byte* function_start,
+    const byte* function_end);
 
 V8_EXPORT_PRIVATE FunctionResult
-AsyncDecodeWasmFunction(Isolate* isolate, Zone* zone, ModuleBytesEnv* env,
+AsyncDecodeWasmFunction(Isolate* isolate, Zone* zone, const ModuleEnv* env,
                         const byte* function_start, const byte* function_end,
                         const std::shared_ptr<Counters> async_counters);
 

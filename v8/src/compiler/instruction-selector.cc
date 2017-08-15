@@ -467,7 +467,7 @@ InstructionOperand OperandForDeopt(Isolate* isolate, OperandGenerator* g,
           return g->UseUniqueSlot(input);
         case FrameStateInputKind::kAny:
           // Currently deopts "wrap" other operations, so the deopt's inputs
-          // are potentially needed untill the end of the deoptimising code.
+          // are potentially needed until the end of the deoptimising code.
           return g->UseAnyAtEnd(input);
       }
   }
@@ -482,21 +482,39 @@ class StateObjectDeduplicator {
   static const size_t kNotDuplicated = SIZE_MAX;
 
   size_t GetObjectId(Node* node) {
+    DCHECK(node->opcode() == IrOpcode::kTypedObjectState ||
+           node->opcode() == IrOpcode::kObjectId ||
+           node->opcode() == IrOpcode::kArgumentsElementsState);
     for (size_t i = 0; i < objects_.size(); ++i) {
-      if (objects_[i] == node) {
+      if (objects_[i] == node) return i;
+      // ObjectId nodes are the Turbofan way to express objects with the same
+      // identity in the deopt info. So they should always be mapped to
+      // previously appearing TypedObjectState nodes.
+      if (HasObjectId(objects_[i]) && HasObjectId(node) &&
+          ObjectIdOf(objects_[i]->op()) == ObjectIdOf(node->op())) {
         return i;
       }
     }
+    DCHECK(node->opcode() == IrOpcode::kTypedObjectState ||
+           node->opcode() == IrOpcode::kArgumentsElementsState);
     return kNotDuplicated;
   }
 
   size_t InsertObject(Node* node) {
+    DCHECK(node->opcode() == IrOpcode::kTypedObjectState ||
+           node->opcode() == IrOpcode::kObjectId ||
+           node->opcode() == IrOpcode::kArgumentsElementsState);
     size_t id = objects_.size();
     objects_.push_back(node);
     return id;
   }
 
  private:
+  static bool HasObjectId(Node* node) {
+    return node->opcode() == IrOpcode::kTypedObjectState ||
+           node->opcode() == IrOpcode::kObjectId;
+  }
+
   ZoneVector<Node*> objects_;
 };
 
@@ -527,9 +545,11 @@ size_t InstructionSelector::AddOperandToStateValueDescriptor(
     case IrOpcode::kObjectState: {
       UNREACHABLE();
     }
-    case IrOpcode::kTypedObjectState: {
+    case IrOpcode::kTypedObjectState:
+    case IrOpcode::kObjectId: {
       size_t id = deduplicator->GetObjectId(input);
       if (id == StateObjectDeduplicator::kNotDuplicated) {
+        DCHECK(input->opcode() == IrOpcode::kTypedObjectState);
         size_t entries = 0;
         id = deduplicator->InsertObject(input);
         StateValueList* nested = values->PushRecursiveField(zone, id);
@@ -774,7 +794,7 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
     }
 
     int const state_id = sequence()->AddDeoptimizationEntry(
-        buffer->frame_state_descriptor, DeoptimizeKind::kEager,
+        buffer->frame_state_descriptor, DeoptimizeKind::kLazy,
         DeoptimizeReason::kNoReason);
     buffer->instruction_args.push_back(g.TempImmediate(state_id));
 
@@ -2102,12 +2122,7 @@ void InstructionSelector::VisitI32x4ReplaceLane(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitI32x4Add(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitI32x4Sub(Node* node) { UNIMPLEMENTED(); }
-#endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64
-        // && !V8_TARGET_ARCH_IA32 && !V8_TARGET_ARCH_MIPS
-        // && !V8_TARGET_ARCH_MIPS64
 
-#if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64 && \
-    !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
 void InstructionSelector::VisitI32x4Shl(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitI32x4ShrS(Node* node) { UNIMPLEMENTED(); }
@@ -2117,18 +2132,28 @@ void InstructionSelector::VisitI32x4Mul(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitI32x4MaxS(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitI32x4MinS(Node* node) { UNIMPLEMENTED(); }
+#endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64
+        // && !V8_TARGET_ARCH_IA32 && !V8_TARGET_ARCH_MIPS
+        // && !V8_TARGET_ARCH_MIPS64
 
+#if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64 && \
+    !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
 void InstructionSelector::VisitI32x4Eq(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitI32x4Ne(Node* node) { UNIMPLEMENTED(); }
+#endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64
+        // && !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
 
+#if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64 && \
+    !V8_TARGET_ARCH_IA32 && !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
 void InstructionSelector::VisitI32x4MinU(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitI32x4MaxU(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitI32x4ShrU(Node* node) { UNIMPLEMENTED(); }
 #endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64
-        // && !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
+        // && !V8_TARGET_ARCH_IA32 && !V8_TARGET_ARCH_MIPS
+        // && !V8_TARGET_ARCH_MIPS64
 
 #if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64 && \
     !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
@@ -2698,6 +2723,7 @@ Instruction* InstructionSelector::EmitDeoptimize(
     args.push_back(inputs[i]);
   }
   opcode |= MiscField::encode(static_cast<int>(input_count));
+  DCHECK_NE(DeoptimizeKind::kLazy, kind);
   int const state_id =
       sequence()->AddDeoptimizationEntry(descriptor, kind, reason);
   args.push_back(g.TempImmediate(state_id));

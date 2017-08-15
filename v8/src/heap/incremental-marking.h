@@ -55,34 +55,37 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   explicit IncrementalMarking(Heap* heap);
 
-  MarkingState marking_state(HeapObject* object) const {
-    return MarkingState::Internal(object);
+  MarkCompactCollector::MarkingState* marking_state() const {
+    DCHECK_NOT_NULL(marking_state_);
+    return marking_state_;
   }
 
-  MarkingState marking_state(MemoryChunk* chunk) const {
-    return MarkingState::Internal(chunk);
+  MarkCompactCollector::AtomicMarkingState* atomic_marking_state() const {
+    DCHECK_NOT_NULL(atomic_marking_state_);
+    return atomic_marking_state_;
+  }
+
+  MarkCompactCollector::NonAtomicMarkingState* non_atomic_marking_state()
+      const {
+    DCHECK_NOT_NULL(non_atomic_marking_state_);
+    return non_atomic_marking_state_;
   }
 
   void NotifyLeftTrimming(HeapObject* from, HeapObject* to);
 
-  // Transfers color including live byte count, requiring properly set up
-  // objects.
-  template <AccessMode access_mode = AccessMode::NON_ATOMIC>
   V8_INLINE void TransferColor(HeapObject* from, HeapObject* to) {
-    if (ObjectMarking::IsBlack<access_mode>(to, marking_state(to))) {
+    if (atomic_marking_state()->IsBlack(to)) {
       DCHECK(black_allocation());
       return;
     }
 
-    DCHECK(ObjectMarking::IsWhite<access_mode>(to, marking_state(to)));
-    if (ObjectMarking::IsGrey<access_mode>(from, marking_state(from))) {
-      bool success =
-          ObjectMarking::WhiteToGrey<access_mode>(to, marking_state(to));
+    DCHECK(atomic_marking_state()->IsWhite(to));
+    if (atomic_marking_state()->IsGrey(from)) {
+      bool success = atomic_marking_state()->WhiteToGrey(to);
       DCHECK(success);
       USE(success);
-    } else if (ObjectMarking::IsBlack<access_mode>(from, marking_state(from))) {
-      bool success =
-          ObjectMarking::WhiteToBlack<access_mode>(to, marking_state(to));
+    } else if (atomic_marking_state()->IsBlack(from)) {
+      bool success = atomic_marking_state()->WhiteToBlack(to);
       DCHECK(success);
       USE(success);
     }
@@ -192,8 +195,8 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   inline void RestartIfNotMarking();
 
-  static void RecordWriteFromCode(HeapObject* obj, Object** slot,
-                                  Isolate* isolate);
+  static int RecordWriteFromCode(HeapObject* obj, Object** slot,
+                                 Isolate* isolate);
 
   // Record a slot for compaction.  Returns false for objects that are
   // guaranteed to be rescanned or not guaranteed to survive.
@@ -286,7 +289,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   void FinishBlackAllocation();
 
   void MarkRoots();
-  void ProcessWeakCells();
   // Retain dying maps for <FLAG_retain_maps_for_n_gc> garbage collections to
   // increase chances of reusing of map transition tree in future.
   void RetainMaps();
@@ -309,7 +311,8 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
       ForceCompletionAction completion = DO_NOT_FORCE_COMPLETION));
 
   INLINE(bool IsFixedArrayWithProgressBar(HeapObject* object));
-  INLINE(void VisitObject(Map* map, HeapObject* obj, int size));
+  // Visits the object and returns its size.
+  INLINE(int VisitObject(Map* map, HeapObject* obj));
 
   void RevisitObject(HeapObject* obj);
 
@@ -330,6 +333,12 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   size_t bytes_marked_ahead_of_schedule_;
   size_t unscanned_bytes_of_large_object_;
 
+  void SetState(State s) {
+    state_ = s;
+    heap_->SetIsMarkingFlag(s >= MARKING);
+  }
+
+  // Must use SetState() above to update state_
   State state_;
 
   int idle_marking_delay_counter_;
@@ -347,6 +356,10 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   Observer new_generation_observer_;
   Observer old_generation_observer_;
+
+  MarkCompactCollector::MarkingState* marking_state_;
+  MarkCompactCollector::AtomicMarkingState* atomic_marking_state_;
+  MarkCompactCollector::NonAtomicMarkingState* non_atomic_marking_state_;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(IncrementalMarking);
 };

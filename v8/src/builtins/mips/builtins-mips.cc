@@ -11,7 +11,8 @@
 #include "src/codegen.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
-#include "src/full-codegen/full-codegen.h"
+#include "src/frame-constants.h"
+#include "src/frames.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -65,7 +66,7 @@ static void GenerateLoadArrayFunction(MacroAssembler* masm, Register result) {
   __ LoadNativeContextSlot(Context::ARRAY_FUNCTION_INDEX, result);
 }
 
-void Builtins::Generate_InternalArrayCode(MacroAssembler* masm) {
+void Builtins::Generate_InternalArrayConstructor(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- a0     : number of arguments
   //  -- ra     : return address
@@ -94,7 +95,7 @@ void Builtins::Generate_InternalArrayCode(MacroAssembler* masm) {
   __ TailCallStub(&stub);
 }
 
-void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
+void Builtins::Generate_ArrayConstructor(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- a0     : number of arguments
   //  -- ra     : return address
@@ -150,7 +151,7 @@ void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::MANUAL);
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
-    __ Call(masm->isolate()->builtins()->ToNumber(), RelocInfo::CODE_TARGET);
+    __ Call(BUILTIN_CODE(masm->isolate(), ToNumber), RelocInfo::CODE_TARGET);
     __ LeaveBuiltinFrame(cp, a1, t0);
     __ SmiUntag(t0);
   }
@@ -207,7 +208,7 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
       __ SmiTag(t0);
       __ EnterBuiltinFrame(cp, a1, t0);
       __ Push(a3);
-      __ Call(masm->isolate()->builtins()->ToNumber(), RelocInfo::CODE_TARGET);
+      __ Call(BUILTIN_CODE(masm->isolate(), ToNumber), RelocInfo::CODE_TARGET);
       __ Move(a0, v0);
       __ Pop(a3);
       __ LeaveBuiltinFrame(cp, a1, t0);
@@ -231,7 +232,7 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
     __ Push(a0);  // first argument
-    __ Call(masm->isolate()->builtins()->FastNewObject(),
+    __ Call(BUILTIN_CODE(masm->isolate(), FastNewObject),
             RelocInfo::CODE_TARGET);
     __ Pop(a0);
     __ LeaveBuiltinFrame(cp, a1, t0);
@@ -294,7 +295,7 @@ void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::MANUAL);
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
-    __ Call(masm->isolate()->builtins()->ToString(), RelocInfo::CODE_TARGET);
+    __ Call(BUILTIN_CODE(masm->isolate(), ToString), RelocInfo::CODE_TARGET);
     __ LeaveBuiltinFrame(cp, a1, t0);
     __ SmiUntag(t0);
   }
@@ -358,7 +359,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
       __ SmiTag(t0);
       __ EnterBuiltinFrame(cp, a1, t0);
       __ Push(a3);
-      __ Call(masm->isolate()->builtins()->ToString(), RelocInfo::CODE_TARGET);
+      __ Call(BUILTIN_CODE(masm->isolate(), ToString), RelocInfo::CODE_TARGET);
       __ Move(a0, v0);
       __ Pop(a3);
       __ LeaveBuiltinFrame(cp, a1, t0);
@@ -382,7 +383,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
     __ Push(a0);  // first argument
-    __ Call(masm->isolate()->builtins()->FastNewObject(),
+    __ Call(BUILTIN_CODE(masm->isolate(), FastNewObject),
             RelocInfo::CODE_TARGET);
     __ Pop(a0);
     __ LeaveBuiltinFrame(cp, a1, t0);
@@ -531,7 +532,7 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     // If not derived class constructor: Allocate the new receiver object.
     __ IncrementCounter(masm->isolate()->counters()->constructed_objects(), 1,
                         t2, t3);
-    __ Call(masm->isolate()->builtins()->FastNewObject(),
+    __ Call(BUILTIN_CODE(masm->isolate(), FastNewObject),
             RelocInfo::CODE_TARGET);
     __ Branch(&post_instantiation_deopt_entry);
 
@@ -792,7 +793,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
 
     // Invoke the code.
     Handle<Code> builtin = is_construct
-                               ? masm->isolate()->builtins()->Construct()
+                               ? BUILTIN_CODE(masm->isolate(), Construct)
                                : masm->isolate()->builtins()->Call();
     __ Call(builtin, RelocInfo::CODE_TARGET);
 
@@ -1000,11 +1001,8 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
   Register closure = a1;
   Register optimized_code_entry = scratch1;
 
-  const int kOptimizedCodeCellOffset =
-      FeedbackVector::kOptimizedCodeIndex * kPointerSize +
-      FeedbackVector::kHeaderSize;
   __ lw(optimized_code_entry,
-        FieldMemOperand(feedback_vector, kOptimizedCodeCellOffset));
+        FieldMemOperand(feedback_vector, FeedbackVector::kOptimizedCodeOffset));
 
   // Check if the code entry is a Smi. If yes, we interpret it as an
   // optimisation marker. Otherwise, interpret is as a weak cell to a code
@@ -1087,7 +1085,7 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
 //
 // The live registers are:
 //   o a1: the JS function object being called.
-//   o a3: the new target
+//   o a3: the incoming new target or generator object
 //   o cp: our context
 //   o fp: the caller's frame pointer
 //   o sp: stack pointer
@@ -1134,15 +1132,11 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
             Operand(masm->CodeObject()));  // Self-reference to this code.
 
   // Increment invocation count for the function.
-  __ lw(t0,
-        FieldMemOperand(feedback_vector,
-                        FeedbackVector::kInvocationCountIndex * kPointerSize +
-                            FeedbackVector::kHeaderSize));
-  __ Addu(t0, t0, Operand(Smi::FromInt(1)));
-  __ sw(t0,
-        FieldMemOperand(feedback_vector,
-                        FeedbackVector::kInvocationCountIndex * kPointerSize +
-                            FeedbackVector::kHeaderSize));
+  __ lw(t0, FieldMemOperand(feedback_vector,
+                            FeedbackVector::kInvocationCountOffset));
+  __ Addu(t0, t0, Operand(1));
+  __ sw(t0, FieldMemOperand(feedback_vector,
+                            FeedbackVector::kInvocationCountOffset));
 
   // Check function data field is actually a BytecodeArray object.
   if (FLAG_debug_code) {
@@ -1163,9 +1157,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ li(kInterpreterBytecodeOffsetRegister,
         Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
 
-  // Push new.target, bytecode array and Smi tagged bytecode array offset.
+  // Push bytecode array and Smi tagged bytecode array offset.
   __ SmiTag(t0, kInterpreterBytecodeOffsetRegister);
-  __ Push(a3, kInterpreterBytecodeArrayRegister, t0);
+  __ Push(kInterpreterBytecodeArrayRegister, t0);
 
   // Allocate the local and temporary register file on the stack.
   {
@@ -1194,6 +1188,18 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ Subu(t0, t0, Operand(kPointerSize));
     __ Branch(&loop_header, ge, t0, Operand(zero_reg));
   }
+
+  // If the bytecode array has a valid incoming new target or generator object
+  // register, initialize it with incoming value which was passed in r3.
+  Label no_incoming_new_target_or_generator_register;
+  __ lw(t1, FieldMemOperand(
+                kInterpreterBytecodeArrayRegister,
+                BytecodeArray::kIncomingNewTargetOrGeneratorRegisterOffset));
+  __ Branch(&no_incoming_new_target_or_generator_register, eq, t1,
+            Operand(zero_reg));
+  __ Lsa(t1, fp, t1, kPointerSizeLog2);
+  __ sw(a3, MemOperand(t1));
+  __ bind(&no_incoming_new_target_or_generator_register);
 
   // Load accumulator and dispatch table into registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
@@ -1313,7 +1319,7 @@ void Builtins::Generate_InterpreterPushArgsThenCallImpl(
         masm->isolate()->builtins()->CallFunction(ConvertReceiverMode::kAny),
         RelocInfo::CODE_TARGET);
   } else if (mode == InterpreterPushArgsMode::kWithFinalSpread) {
-    __ Jump(masm->isolate()->builtins()->CallWithSpread(),
+    __ Jump(BUILTIN_CODE(masm->isolate(), CallWithSpread),
             RelocInfo::CODE_TARGET);
   } else {
     __ Jump(masm->isolate()->builtins()->Call(ConvertReceiverMode::kAny),
@@ -1365,48 +1371,13 @@ void Builtins::Generate_InterpreterPushArgsThenConstructImpl(
     __ Jump(at, t0, Code::kHeaderSize - kHeapObjectTag);
   } else if (mode == InterpreterPushArgsMode::kWithFinalSpread) {
     // Call the constructor with a0, a1, and a3 unmodified.
-    __ Jump(masm->isolate()->builtins()->ConstructWithSpread(),
+    __ Jump(BUILTIN_CODE(masm->isolate(), ConstructWithSpread),
             RelocInfo::CODE_TARGET);
   } else {
     DCHECK_EQ(InterpreterPushArgsMode::kOther, mode);
     // Call the constructor with a0, a1, and a3 unmodified.
-    __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
+    __ Jump(BUILTIN_CODE(masm->isolate(), Construct), RelocInfo::CODE_TARGET);
   }
-
-  __ bind(&stack_overflow);
-  {
-    __ TailCallRuntime(Runtime::kThrowStackOverflow);
-    // Unreachable code.
-    __ break_(0xCC);
-  }
-}
-
-// static
-void Builtins::Generate_InterpreterPushArgsThenConstructArray(
-    MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- a0 : the number of arguments (not including the receiver)
-  //  -- a1 : the target to call checked to be Array function.
-  //  -- a2 : allocation site feedback.
-  //  -- a3 : the address of the first argument to be pushed. Subsequent
-  //          arguments should be consecutive above this, in the same order as
-  //          they are to be pushed onto the stack.
-  // -----------------------------------
-  Label stack_overflow;
-
-  // Push a slot for the receiver.
-  __ push(zero_reg);
-
-  Generate_StackOverflowCheck(masm, a0, t1, t4, &stack_overflow);
-
-  // This function modifies a3, t1, and t4.
-  Generate_InterpreterPushArgs(masm, a0, a3, t1, t4);
-
-  // ArrayConstructor stub expects constructor in a3. Set it here.
-  __ mov(a3, a1);
-
-  ArrayConstructorStub stub(masm->isolate());
-  __ TailCallStub(&stub);
 
   __ bind(&stack_overflow);
   {
@@ -1422,7 +1393,7 @@ static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   Smi* interpreter_entry_return_pc_offset(
       masm->isolate()->heap()->interpreter_entry_return_pc_offset());
   DCHECK_NE(interpreter_entry_return_pc_offset, Smi::kZero);
-  __ li(t0, Operand(masm->isolate()->builtins()->InterpreterEntryTrampoline()));
+  __ li(t0, Operand(BUILTIN_CODE(masm->isolate(), InterpreterEntryTrampoline)));
   __ Addu(ra, t0, Operand(interpreter_entry_return_pc_offset->value() +
                           Code::kHeaderSize - kHeapObjectTag));
 
@@ -1706,7 +1677,7 @@ namespace {
 void Generate_ContinueToBuiltinHelper(MacroAssembler* masm,
                                       bool java_script_builtin,
                                       bool with_result) {
-  const RegisterConfiguration* config(RegisterConfiguration::Turbofan());
+  const RegisterConfiguration* config(RegisterConfiguration::Default());
   int allocatable_register_count = config->num_allocatable_general_registers();
   if (with_result) {
     // Overwrite the hole inserted by the deoptimizer with the return value from
@@ -1902,7 +1873,7 @@ void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   __ JumpIfRoot(a2, Heap::kUndefinedValueRootIndex, &no_arguments);
 
   // 4a. Apply the receiver to the given argArray.
-  __ Jump(masm->isolate()->builtins()->CallWithArrayLike(),
+  __ Jump(BUILTIN_CODE(masm->isolate(), CallWithArrayLike),
           RelocInfo::CODE_TARGET);
 
   // 4b. The argArray is either null or undefined, so we tail call without any
@@ -2003,7 +1974,7 @@ void Builtins::Generate_ReflectApply(MacroAssembler* masm) {
   // will do.
 
   // 3. Apply the target to the given argumentsList.
-  __ Jump(masm->isolate()->builtins()->CallWithArrayLike(),
+  __ Jump(BUILTIN_CODE(masm->isolate(), CallWithArrayLike),
           RelocInfo::CODE_TARGET);
 }
 
@@ -2059,7 +2030,7 @@ void Builtins::Generate_ReflectConstruct(MacroAssembler* masm) {
   // builtins will do.
 
   // 4. Construct the target with the given new.target and argumentsList.
-  __ Jump(masm->isolate()->builtins()->ConstructWithArrayLike(),
+  __ Jump(BUILTIN_CODE(masm->isolate(), ConstructWithArrayLike),
           RelocInfo::CODE_TARGET);
 }
 
@@ -2139,6 +2110,7 @@ void Builtins::Generate_CallOrConstructVarargs(MacroAssembler* masm,
 
 // static
 void Builtins::Generate_CallOrConstructForwardVarargs(MacroAssembler* masm,
+                                                      CallOrConstructMode mode,
                                                       Handle<Code> code) {
   // ----------- S t a t e -------------
   //  -- a0 : the number of arguments (not including the receiver)
@@ -2146,6 +2118,24 @@ void Builtins::Generate_CallOrConstructForwardVarargs(MacroAssembler* masm,
   //  -- a1 : the target to call (can be any Object)
   //  -- a2 : start index (to support rest parameters)
   // -----------------------------------
+
+  // Check if new.target has a [[Construct]] internal method.
+  if (mode == CallOrConstructMode::kConstruct) {
+    Label new_target_constructor, new_target_not_constructor;
+    __ JumpIfSmi(a3, &new_target_not_constructor);
+    __ lw(t1, FieldMemOperand(a3, HeapObject::kMapOffset));
+    __ lbu(t1, FieldMemOperand(t1, Map::kBitFieldOffset));
+    __ And(t1, t1, Operand(1 << Map::kIsConstructor));
+    __ Branch(&new_target_constructor, ne, t1, Operand(zero_reg));
+    __ bind(&new_target_not_constructor);
+    {
+      FrameScope scope(masm, StackFrame::MANUAL);
+      __ EnterFrame(StackFrame::INTERNAL);
+      __ Push(a3);
+      __ CallRuntime(Runtime::kThrowNotConstructor);
+    }
+    __ bind(&new_target_constructor);
+  }
 
   // Check if we have an arguments adaptor frame below the function frame.
   Label arguments_adaptor, arguments_done;
@@ -2268,7 +2258,7 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
         __ Push(a0, a1);
         __ mov(a0, a3);
         __ Push(cp);
-        __ Call(masm->isolate()->builtins()->ToObject(),
+        __ Call(BUILTIN_CODE(masm->isolate(), ToObject),
                 RelocInfo::CODE_TARGET);
         __ Pop(cp);
         __ mov(a3, v0);
@@ -2387,10 +2377,8 @@ void Builtins::Generate_CallBoundFunctionImpl(MacroAssembler* masm) {
 
   // Call the [[BoundTargetFunction]] via the Call builtin.
   __ lw(a1, FieldMemOperand(a1, JSBoundFunction::kBoundTargetFunctionOffset));
-  __ li(at, Operand(ExternalReference(Builtins::kCall_ReceiverIsAny,
-                                      masm->isolate())));
-  __ lw(at, MemOperand(at));
-  __ Jump(at, Code::kHeaderSize - kHeapObjectTag);
+  __ Jump(BUILTIN_CODE(masm->isolate(), Call_ReceiverIsAny),
+          RelocInfo::CODE_TARGET);
 }
 
 // static
@@ -2406,7 +2394,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ GetObjectType(a1, t1, t2);
   __ Jump(masm->isolate()->builtins()->CallFunction(mode),
           RelocInfo::CODE_TARGET, eq, t2, Operand(JS_FUNCTION_TYPE));
-  __ Jump(masm->isolate()->builtins()->CallBoundFunction(),
+  __ Jump(BUILTIN_CODE(masm->isolate(), CallBoundFunction),
           RelocInfo::CODE_TARGET, eq, t2, Operand(JS_BOUND_FUNCTION_TYPE));
 
   // Check if target has a [[Call]] internal method.
@@ -2416,9 +2404,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
 
   // Check if target is a proxy and call CallProxy external builtin
   __ Branch(&non_function, ne, t2, Operand(JS_PROXY_TYPE));
-  __ li(t2, Operand(ExternalReference(Builtins::kCallProxy, masm->isolate())));
-  __ lw(t2, MemOperand(t2));
-  __ Jump(t2, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ Jump(BUILTIN_CODE(masm->isolate(), CallProxy), RelocInfo::CODE_TARGET);
 
   // 2. Call to something else, which might have a [[Call]] internal method (if
   // not we raise an exception).
@@ -2546,9 +2532,7 @@ void Builtins::Generate_ConstructBoundFunction(MacroAssembler* masm) {
 
   // Construct the [[BoundTargetFunction]] via the Construct builtin.
   __ lw(a1, FieldMemOperand(a1, JSBoundFunction::kBoundTargetFunctionOffset));
-  __ li(at, Operand(ExternalReference(Builtins::kConstruct, masm->isolate())));
-  __ lw(at, MemOperand(at));
-  __ Jump(at, Code::kHeaderSize - kHeapObjectTag);
+  __ Jump(BUILTIN_CODE(masm->isolate(), Construct), RelocInfo::CODE_TARGET);
 }
 
 // static
@@ -2567,7 +2551,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   // Dispatch based on instance type.
   __ lw(t1, FieldMemOperand(a1, HeapObject::kMapOffset));
   __ lbu(t2, FieldMemOperand(t1, Map::kInstanceTypeOffset));
-  __ Jump(masm->isolate()->builtins()->ConstructFunction(),
+  __ Jump(BUILTIN_CODE(masm->isolate(), ConstructFunction),
           RelocInfo::CODE_TARGET, eq, t2, Operand(JS_FUNCTION_TYPE));
 
   // Check if target has a [[Construct]] internal method.
@@ -2577,13 +2561,13 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
 
   // Only dispatch to bound functions after checking whether they are
   // constructors.
-  __ Jump(masm->isolate()->builtins()->ConstructBoundFunction(),
+  __ Jump(BUILTIN_CODE(masm->isolate(), ConstructBoundFunction),
           RelocInfo::CODE_TARGET, eq, t2, Operand(JS_BOUND_FUNCTION_TYPE));
 
   // Only dispatch to proxies after checking whether they are constructors.
   __ Branch(&non_proxy, ne, t2, Operand(JS_PROXY_TYPE));
-
-  __ TailCallBuiltin(Builtins::kConstructProxy);
+  __ Jump(BUILTIN_CODE(masm->isolate(), ConstructProxy),
+          RelocInfo::CODE_TARGET);
 
   // Called Construct on an exotic Object with a [[Construct]] internal method.
   __ bind(&non_proxy);
@@ -2600,7 +2584,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   // Called Construct on an Object that doesn't have a [[Construct]] internal
   // method.
   __ bind(&non_constructor);
-  __ Jump(masm->isolate()->builtins()->ConstructedNonConstructable(),
+  __ Jump(BUILTIN_CODE(masm->isolate(), ConstructedNonConstructable),
           RelocInfo::CODE_TARGET);
 }
 

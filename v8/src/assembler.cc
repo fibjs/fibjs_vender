@@ -47,6 +47,7 @@
 #include "src/base/platform/platform.h"
 #include "src/base/utils/random-number-generator.h"
 #include "src/codegen.h"
+#include "src/compiler/code-assembler.h"
 #include "src/counters.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
@@ -340,11 +341,7 @@ void RelocInfo::update_wasm_function_table_size_reference(
     Isolate* isolate, uint32_t old_size, uint32_t new_size,
     ICacheFlushMode icache_flush_mode) {
   DCHECK(IsWasmFunctionTableSizeReference(rmode_));
-  uint32_t current_size_reference = wasm_function_table_size_reference();
-  uint32_t updated_size_reference =
-      new_size + (current_size_reference - old_size);
-  unchecked_update_wasm_size(isolate, updated_size_reference,
-                             icache_flush_mode);
+  unchecked_update_wasm_size(isolate, new_size, icache_flush_mode);
 }
 
 void RelocInfo::set_target_address(Isolate* isolate, Address target,
@@ -636,7 +633,6 @@ bool RelocInfo::RequiresRelocation(Isolate* isolate, const CodeDesc& desc) {
   // generation.
   int mode_mask = RelocInfo::kCodeTargetMask |
                   RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT) |
-                  RelocInfo::ModeMask(RelocInfo::CELL) |
                   RelocInfo::kApplyMask;
   RelocIterator it(desc, mode_mask);
   return !it.done();
@@ -655,8 +651,6 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "embedded object";
     case CODE_TARGET:
       return "code target";
-    case CELL:
-      return "property cell";
     case RUNTIME_ENTRY:
       return "runtime entry";
     case COMMENT:
@@ -751,9 +745,6 @@ void RelocInfo::Verify(Isolate* isolate) {
     case EMBEDDED_OBJECT:
       Object::VerifyPointer(target_object());
       break;
-    case CELL:
-      Object::VerifyPointer(target_cell());
-      break;
     case CODE_TARGET: {
       // convert inline target address to code object
       Address addr = target_address();
@@ -841,10 +832,6 @@ ExternalReference::ExternalReference(
     Type type = ExternalReference::BUILTIN_CALL,
     Isolate* isolate = NULL)
   : address_(Redirect(isolate, fun->address(), type)) {}
-
-
-ExternalReference::ExternalReference(Builtins::Name name, Isolate* isolate)
-  : address_(isolate->builtins()->builtin_address(name)) {}
 
 
 ExternalReference::ExternalReference(Runtime::FunctionId id, Isolate* isolate)
@@ -1160,6 +1147,10 @@ ExternalReference ExternalReference::store_buffer_top(Isolate* isolate) {
   return ExternalReference(isolate->heap()->store_buffer_top_address());
 }
 
+ExternalReference ExternalReference::heap_is_marking_flag_address(
+    Isolate* isolate) {
+  return ExternalReference(isolate->heap()->IsMarkingFlagAddress());
+}
 
 ExternalReference ExternalReference::new_space_allocation_top_address(
     Isolate* isolate) {
@@ -1514,6 +1505,10 @@ ExternalReference ExternalReference::try_internalize_string_function(
     Isolate* isolate) {
   return ExternalReference(Redirect(
       isolate, FUNCTION_ADDR(StringTable::LookupStringIfExists_NoAllocate)));
+}
+
+ExternalReference ExternalReference::check_object_type(Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(CheckObjectType)));
 }
 
 #ifdef V8_INTL_SUPPORT
@@ -1940,6 +1935,23 @@ void Assembler::DataAlign(int m) {
 void Assembler::RequestHeapObject(HeapObjectRequest request) {
   request.set_offset(pc_offset());
   heap_object_requests_.push_front(request);
+}
+
+namespace {
+int caller_saved_codes[kNumJSCallerSaved];
+}
+
+void SetUpJSCallerSavedCodeData() {
+  int i = 0;
+  for (int r = 0; r < kNumRegs; r++)
+    if ((kJSCallerSaved & (1 << r)) != 0) caller_saved_codes[i++] = r;
+
+  DCHECK(i == kNumJSCallerSaved);
+}
+
+int JSCallerSavedCode(int n) {
+  DCHECK(0 <= n && n < kNumJSCallerSaved);
+  return caller_saved_codes[n];
 }
 
 }  // namespace internal

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "src/base/macros.h"
 #include "src/counters.h"
 #include "src/heap/incremental-marking.h"
 #include "src/isolate.h"
@@ -31,11 +32,14 @@ void StoreBuffer::SetUp() {
   // Allocate 3x the buffer size, so that we can start the new store buffer
   // aligned to 2x the size.  This lets us use a bit test to detect the end of
   // the area.
-  base::VirtualMemory reservation(kStoreBufferSize * 3,
-                                  heap_->GetRandomMmapAddr());
+  base::VirtualMemory reservation;
+  if (!AllocVirtualMemory(kStoreBufferSize * 3, heap_->GetRandomMmapAddr(),
+                          &reservation)) {
+    V8::FatalProcessOutOfMemory("StoreBuffer::SetUp");
+  }
   uintptr_t start_as_int = reinterpret_cast<uintptr_t>(reservation.address());
   start_[0] =
-      reinterpret_cast<Address*>(RoundUp(start_as_int, kStoreBufferSize));
+      reinterpret_cast<Address*>(::RoundUp(start_as_int, kStoreBufferSize));
   limit_[0] = start_[0] + (kStoreBufferSize / kPointerSize);
   start_[1] = limit_[0];
   limit_[1] = start_[1] + (kStoreBufferSize / kPointerSize);
@@ -73,10 +77,11 @@ void StoreBuffer::TearDown() {
   }
 }
 
-
-void StoreBuffer::StoreBufferOverflow(Isolate* isolate) {
+int StoreBuffer::StoreBufferOverflow(Isolate* isolate) {
   isolate->heap()->store_buffer()->FlipStoreBuffers();
   isolate->counters()->store_buffer_overflows()->Increment();
+  // Called by RecordWriteCodeStubAssembler, which doesnt accept void type
+  return 0;
 }
 
 void StoreBuffer::FlipStoreBuffers() {
@@ -99,11 +104,13 @@ void StoreBuffer::MoveEntriesToRememberedSet(int index) {
   if (!lazy_top_[index]) return;
   DCHECK_GE(index, 0);
   DCHECK_LT(index, kStoreBuffers);
+  Address last_inserted_addr = nullptr;
   for (Address* current = start_[index]; current < lazy_top_[index];
        current++) {
     Address addr = *current;
     Page* page = Page::FromAnyPointerAddress(heap_, addr);
     if (IsDeletionAddress(addr)) {
+      last_inserted_addr = nullptr;
       current++;
       Address end = *current;
       DCHECK(!IsDeletionAddress(end));
@@ -116,7 +123,10 @@ void StoreBuffer::MoveEntriesToRememberedSet(int index) {
       }
     } else {
       DCHECK(!IsDeletionAddress(addr));
-      RememberedSet<OLD_TO_NEW>::Insert(page, addr);
+      if (addr != last_inserted_addr) {
+        RememberedSet<OLD_TO_NEW>::Insert(page, addr);
+        last_inserted_addr = addr;
+      }
     }
   }
   lazy_top_[index] = nullptr;

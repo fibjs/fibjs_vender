@@ -26,6 +26,11 @@
 namespace v8 {
 namespace internal {
 
+namespace heap {
+class HeapTester;
+class TestMemoryAllocatorScope;
+}  // namespace heap
+
 using v8::MemoryPressureLevel;
 
 // Defines all the roots in Heap.
@@ -748,18 +753,6 @@ class Heap {
   }
   void IterateEncounteredWeakCollections(RootVisitor* visitor);
 
-  void set_encountered_weak_cells(Object* weak_cell) {
-    encountered_weak_cells_ = weak_cell;
-  }
-  Object* encountered_weak_cells() const { return encountered_weak_cells_; }
-
-  void set_encountered_transition_arrays(Object* transition_array) {
-    encountered_transition_arrays_ = transition_array;
-  }
-  Object* encountered_transition_arrays() const {
-    return encountered_transition_arrays_;
-  }
-
   // Number of mark-sweeps.
   int ms_count() const { return ms_count_; }
 
@@ -839,12 +832,6 @@ class Heap {
 
   // For post mortem debugging.
   void RememberUnmappedPage(Address page, bool compacted);
-
-  // Global inline caching age: it is incremented on some GCs after context
-  // disposal. We use it to flush inline caches.
-  int global_ic_age() { return global_ic_age_; }
-
-  void AgeInlineCaches();
 
   int64_t external_memory_hard_limit() { return MaxOldGenerationSize() / 2; }
 
@@ -957,6 +944,8 @@ class Heap {
 
   // Returns whether SetUp has been called.
   bool HasBeenSetUp();
+
+  bool use_tasks() const { return use_tasks_; }
 
   // ===========================================================================
   // Getters for spaces. =======================================================
@@ -1147,12 +1136,19 @@ class Heap {
   // ===========================================================================
 
   // Write barrier support for object[offset] = o;
-  inline void RecordWrite(Object* object, int offset, Object* o);
+  inline void RecordWrite(Object* object, Object** slot, Object* value);
   inline void RecordWriteIntoCode(Code* host, RelocInfo* rinfo, Object* target);
   void RecordWriteIntoCodeSlow(Code* host, RelocInfo* rinfo, Object* target);
   void RecordWritesIntoCode(Code* code);
   inline void RecordFixedArrayElements(FixedArray* array, int offset,
                                        int length);
+
+  // Used for query incremental marking status in generated code.
+  Address* IsMarkingFlagAddress() {
+    return reinterpret_cast<Address*>(&is_marking_flag_);
+  }
+
+  void SetIsMarkingFlag(uint8_t flag) { is_marking_flag_ = flag; }
 
   inline Address* store_buffer_top_address();
 
@@ -1197,7 +1193,8 @@ class Heap {
 
   // The runtime uses this function to notify potentially unsafe object layout
   // changes that require special synchronization with the concurrent marker.
-  void NotifyObjectLayoutChange(HeapObject* object,
+  // The old size is the size of the object before layout change.
+  void NotifyObjectLayoutChange(HeapObject* object, int old_size,
                                 const DisallowHeapAllocation&);
 
 #ifdef VERIFY_HEAP
@@ -1305,7 +1302,7 @@ class Heap {
 
   static size_t ComputeMaxSemiSpaceSize(uint64_t physical_memory) {
     const uint64_t min_physical_memory = 512 * MB;
-    const uint64_t max_physical_memory = 2 * static_cast<uint64_t>(GB);
+    const uint64_t max_physical_memory = 3 * static_cast<uint64_t>(GB);
 
     uint64_t capped_physical_memory =
         Max(Min(physical_memory, max_physical_memory), min_physical_memory);
@@ -1994,6 +1991,15 @@ class Heap {
   MUST_USE_RESULT AllocationResult
   AllocatePropertyArray(int length, PretenureFlag pretenure = NOT_TENURED);
 
+  // Allocate a feedback vector for the given shared function info. The slots
+  // are pre-filled with undefined.
+  MUST_USE_RESULT AllocationResult
+  AllocateFeedbackVector(SharedFunctionInfo* shared, PretenureFlag pretenure);
+
+  // Allocate an uninitialized feedback vector.
+  MUST_USE_RESULT AllocationResult
+  AllocateRawFeedbackVector(int length, PretenureFlag pretenure);
+
   MUST_USE_RESULT AllocationResult AllocateSmallOrderedHashSet(
       int length, PretenureFlag pretenure = NOT_TENURED);
   MUST_USE_RESULT AllocationResult AllocateSmallOrderedHashMap(
@@ -2096,6 +2102,9 @@ class Heap {
   // Make a copy of src and return it.
   MUST_USE_RESULT inline AllocationResult CopyFixedDoubleArray(
       FixedDoubleArray* src);
+
+  // Make a copy of src and return it.
+  MUST_USE_RESULT AllocationResult CopyFeedbackVector(FeedbackVector* src);
 
   // Computes a single character string where the character has code.
   // A cache is used for one-byte (Latin1) codes.
@@ -2220,8 +2229,6 @@ class Heap {
   // and after context disposal.
   int number_of_disposed_maps_;
 
-  int global_ic_age_;
-
   NewSpace* new_space_;
   OldSpace* old_space_;
   OldSpace* code_space_;
@@ -2281,10 +2288,6 @@ class Heap {
   // marking. It is initialized during marking, destroyed after marking and
   // contains Smi(0) while marking is not active.
   Object* encountered_weak_collections_;
-
-  Object* encountered_weak_cells_;
-
-  Object* encountered_transition_arrays_;
 
   List<GCCallbackPair> gc_epilogue_callbacks_;
   List<GCCallbackPair> gc_prologue_callbacks_;
@@ -2363,6 +2366,10 @@ class Heap {
   base::HashMap* global_pretenuring_feedback_;
 
   char trace_ring_buffer_[kTraceRingBufferSize];
+
+  // Used as boolean.
+  uint8_t is_marking_flag_;
+
   // If it's not full then the data is from 0 to ring_buffer_end_.  If it's
   // full then the data is from ring_buffer_end_ to the end of the buffer and
   // from 0 to ring_buffer_end_.
@@ -2397,6 +2404,8 @@ class Heap {
 
   bool fast_promotion_mode_;
 
+  bool use_tasks_;
+
   // Used for testing purposes.
   bool force_oom_;
   bool delay_sweeper_tasks_for_testing_;
@@ -2428,7 +2437,7 @@ class Heap {
   friend class PagedSpace;
   friend class Scavenger;
   friend class StoreBuffer;
-  friend class TestMemoryAllocatorScope;
+  friend class heap::TestMemoryAllocatorScope;
 
   // The allocator interface.
   friend class Factory;
@@ -2437,7 +2446,7 @@ class Heap {
   friend class Isolate;
 
   // Used in cctest.
-  friend class HeapTester;
+  friend class heap::HeapTester;
 
   DISALLOW_COPY_AND_ASSIGN(Heap);
 };

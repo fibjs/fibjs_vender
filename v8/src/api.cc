@@ -554,6 +554,7 @@ struct SnapshotCreatorData {
   ArrayBufferAllocator allocator_;
   Isolate* isolate_;
   Persistent<Context> default_context_;
+  SerializeInternalFieldsCallback default_embedder_fields_serializer_;
   PersistentValueVector<Context> contexts_;
   PersistentValueVector<Template> templates_;
   std::vector<SerializeInternalFieldsCallback> embedder_fields_serializers_;
@@ -596,7 +597,8 @@ Isolate* SnapshotCreator::GetIsolate() {
   return SnapshotCreatorData::cast(data_)->isolate_;
 }
 
-void SnapshotCreator::SetDefaultContext(Local<Context> context) {
+void SnapshotCreator::SetDefaultContext(
+    Local<Context> context, SerializeInternalFieldsCallback callback) {
   DCHECK(!context.IsEmpty());
   SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
   DCHECK(!data->created_);
@@ -604,6 +606,7 @@ void SnapshotCreator::SetDefaultContext(Local<Context> context) {
   Isolate* isolate = data->isolate_;
   CHECK_EQ(isolate, context->GetIsolate());
   data->default_context_.Reset(isolate, context);
+  data->default_embedder_fields_serializer_ = callback;
 }
 
 size_t SnapshotCreator::AddContext(Local<Context> context,
@@ -711,9 +714,11 @@ StartupData SnapshotCreator::CreateBlob(
   bool can_be_rehashed = true;
 
   {
-    // The default snapshot does not support embedder fields.
+    // The default context is created with a handler for embedder fields which
+    // determines how they are handled if encountered during serialization.
     i::PartialSerializer partial_serializer(
-        isolate, &startup_serializer, v8::SerializeInternalFieldsCallback());
+        isolate, &startup_serializer,
+        data->default_embedder_fields_serializer_);
     partial_serializer.Serialize(&default_context, false);
     can_be_rehashed = can_be_rehashed && partial_serializer.can_be_rehashed();
     context_snapshots.Add(new i::SnapshotData(&partial_serializer));
@@ -2098,8 +2103,8 @@ Module::Status Module::GetStatus() const {
   i::Handle<i::Module> self = Utils::OpenHandle(this);
   switch (self->status()) {
     case i::Module::kUninstantiated:
-      return kUninstantiated;
     case i::Module::kPreInstantiating:
+      return kUninstantiated;
     case i::Module::kInstantiating:
       return kInstantiating;
     case i::Module::kInstantiated:
@@ -2533,15 +2538,7 @@ MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
   }
   source->parser->UpdateStatistics(isolate, script);
   source->info->UpdateStatisticsAfterBackgroundParse(isolate);
-
-  i::DeferredHandleScope deferred_handle_scope(isolate);
-  {
-    // Internalize AST values on the main thread.
-    source->info->ReopenHandlesInNewHandleScope();
-    source->info->ast_value_factory()->Internalize(isolate);
-    source->parser->HandleSourceURLComments(isolate, script);
-  }
-  source->info->set_deferred_handles(deferred_handle_scope.Detach());
+  source->parser->HandleSourceURLComments(isolate, script);
 
   i::Handle<i::SharedFunctionInfo> result;
   if (source->info->literal() != nullptr) {
@@ -6552,7 +6549,7 @@ Local<Context> NewContext(
   // TODO(jkummerow): This is for crbug.com/713699. Remove it if it doesn't
   // fail.
   // Sanity-check that the isolate is initialized and usable.
-  CHECK(isolate->builtins()->Illegal()->IsCode());
+  CHECK(isolate->builtins()->builtin(i::Builtins::kIllegal)->IsCode());
 
   TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.NewContext");
   LOG_API(isolate, Context, New);
@@ -6569,12 +6566,13 @@ Local<Context> NewContext(
   return Utils::ToLocal(scope.CloseAndEscape(env));
 }
 
-Local<Context> v8::Context::New(v8::Isolate* external_isolate,
-                                v8::ExtensionConfiguration* extensions,
-                                v8::MaybeLocal<ObjectTemplate> global_template,
-                                v8::MaybeLocal<Value> global_object) {
+Local<Context> v8::Context::New(
+    v8::Isolate* external_isolate, v8::ExtensionConfiguration* extensions,
+    v8::MaybeLocal<ObjectTemplate> global_template,
+    v8::MaybeLocal<Value> global_object,
+    DeserializeInternalFieldsCallback internal_fields_deserializer) {
   return NewContext(external_isolate, extensions, global_template,
-                    global_object, 0, DeserializeInternalFieldsCallback());
+                    global_object, 0, internal_fields_deserializer);
 }
 
 MaybeLocal<Context> v8::Context::FromSnapshot(
@@ -7814,9 +7812,20 @@ MaybeLocal<WasmCompiledModule> WasmCompiledModule::Compile(Isolate* isolate,
 }
 
 WasmModuleObjectBuilderStreaming::WasmModuleObjectBuilderStreaming(
-    Isolate* isolate, Local<Promise> promise)
+    Isolate* isolate)
     : isolate_(isolate) {
-  promise_.Reset(isolate, promise);
+  MaybeLocal<Promise::Resolver> maybe_promise =
+      Promise::Resolver::New(isolate->GetCurrentContext());
+  Local<Promise::Resolver> promise;
+  if (maybe_promise.ToLocal(&promise)) {
+    promise_.Reset(isolate, promise->GetPromise());
+  } else {
+    UNREACHABLE();
+  }
+}
+
+Local<Promise> WasmModuleObjectBuilderStreaming::GetPromise() {
+  return promise_.Get(isolate_);
 }
 
 void WasmModuleObjectBuilderStreaming::OnBytesReceived(const uint8_t* bytes,
@@ -7854,6 +7863,10 @@ void WasmModuleObjectBuilderStreaming::Abort(Local<Value> exception) {
   Local<Context> context = Utils::ToLocal(handle(i_isolate->context()));
   auto maybe = resolver->Reject(context, exception);
   CHECK_IMPLIES(!maybe.FromMaybe(false), i_isolate->has_scheduled_exception());
+}
+
+WasmModuleObjectBuilderStreaming::~WasmModuleObjectBuilderStreaming() {
+  promise_.Reset();
 }
 
 void WasmModuleObjectBuilder::OnBytesReceived(const uint8_t* bytes,
@@ -8034,13 +8047,16 @@ size_t v8::TypedArray::Length() {
   return static_cast<size_t>(obj->length_value());
 }
 
+static_assert(v8::TypedArray::kMaxLength == i::Smi::kMaxValue,
+              "v8::TypedArray::kMaxLength must match i::Smi::kMaxValue");
+
 #define TYPED_ARRAY_NEW(Type, type, TYPE, ctype, size)                     \
   Local<Type##Array> Type##Array::New(Local<ArrayBuffer> array_buffer,     \
                                       size_t byte_offset, size_t length) { \
     i::Isolate* isolate = Utils::OpenHandle(*array_buffer)->GetIsolate();  \
     LOG_API(isolate, Type##Array, New);                                    \
     ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate);                              \
-    if (!Utils::ApiCheck(length <= static_cast<size_t>(i::Smi::kMaxValue), \
+    if (!Utils::ApiCheck(length <= kMaxLength,                             \
                          "v8::" #Type                                      \
                          "Array::New(Local<ArrayBuffer>, size_t, size_t)", \
                          "length exceeds max allowed value")) {            \
@@ -8060,7 +8076,7 @@ size_t v8::TypedArray::Length() {
     LOG_API(isolate, Type##Array, New);                                    \
     ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate);                              \
     if (!Utils::ApiCheck(                                                  \
-            length <= static_cast<size_t>(i::Smi::kMaxValue),              \
+            length <= kMaxLength,                                          \
             "v8::" #Type                                                   \
             "Array::New(Local<SharedArrayBuffer>, size_t, size_t)",        \
             "length exceeds max allowed value")) {                         \
@@ -9629,8 +9645,9 @@ bool debug::Script::GetPossibleBreakpoints(
 int debug::Script::GetSourceOffset(const debug::Location& location) const {
   i::Handle<i::Script> script = Utils::OpenHandle(this);
   if (script->type() == i::Script::TYPE_WASM) {
-    // TODO(clemensh): Return the proper thing for wasm.
-    return 0;
+    return i::WasmCompiledModule::cast(script->wasm_compiled_module())
+               ->GetFunctionOffset(location.GetLineNumber()) +
+           location.GetColumnNumber();
   }
 
   int line = std::max(location.GetLineNumber() - script->line_offset(), 0);
@@ -9654,13 +9671,37 @@ int debug::Script::GetSourceOffset(const debug::Location& location) const {
 
 v8::debug::Location debug::Script::GetSourceLocation(int offset) const {
   i::Handle<i::Script> script = Utils::OpenHandle(this);
-  if (script->type() == i::Script::TYPE_WASM) {
-    // TODO(clemensh): Return the proper thing for wasm.
-    return v8::debug::Location();
-  }
   i::Script::PositionInfo info;
   i::Script::GetPositionInfo(script, offset, &info, i::Script::WITH_OFFSET);
   return debug::Location(info.line, info.column);
+}
+
+bool debug::Script::SetScriptSource(v8::Local<v8::String> newSource,
+                                    bool preview, bool* stack_changed) const {
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  i::Isolate* isolate = script->GetIsolate();
+  return isolate->debug()->SetScriptSource(
+      script, Utils::OpenHandle(*newSource), preview, stack_changed);
+}
+
+bool debug::Script::SetBreakpoint(v8::Local<v8::String> condition,
+                                  debug::Location* location,
+                                  debug::BreakpointId* id) const {
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  i::Isolate* isolate = script->GetIsolate();
+  int offset = GetSourceOffset(*location);
+  if (!isolate->debug()->SetBreakpoint(script, Utils::OpenHandle(*condition),
+                                       &offset, id)) {
+    return false;
+  }
+  *location = GetSourceLocation(offset);
+  return true;
+}
+
+void debug::RemoveBreakpoint(Isolate* v8_isolate, BreakpointId id) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  i::HandleScope handle_scope(isolate);
+  isolate->debug()->RemoveBreakpoint(id);
 }
 
 debug::WasmScript* debug::WasmScript::Cast(debug::Script* script) {
@@ -9716,28 +9757,26 @@ debug::WasmDisassembly debug::WasmScript::DisassembleFunction(
 }
 
 debug::Location::Location(int line_number, int column_number)
-    : line_number_(line_number), column_number_(column_number) {
-  CHECK(line_number >= 0);
-  CHECK(column_number >= 0);
-}
+    : line_number_(line_number),
+      column_number_(column_number),
+      is_empty_(false) {}
 
 debug::Location::Location()
     : line_number_(v8::Function::kLineOffsetNotFound),
-      column_number_(v8::Function::kLineOffsetNotFound) {}
+      column_number_(v8::Function::kLineOffsetNotFound),
+      is_empty_(true) {}
 
 int debug::Location::GetLineNumber() const {
-  CHECK(line_number_ >= 0);
+  DCHECK(!IsEmpty());
   return line_number_;
 }
 
 int debug::Location::GetColumnNumber() const {
-  CHECK(column_number_ >= 0);
+  DCHECK(!IsEmpty());
   return column_number_;
 }
 
-bool debug::Location::IsEmpty() const {
-  return line_number_ == -1 && column_number_ == -1;
-}
+bool debug::Location::IsEmpty() const { return is_empty_; }
 
 void debug::GetLoadedScripts(v8::Isolate* v8_isolate,
                              PersistentValueVector<debug::Script>& scripts) {
@@ -10444,11 +10483,6 @@ void HeapProfiler::SetGetRetainerInfosCallback(
     GetRetainerInfosCallback callback) {
   reinterpret_cast<i::HeapProfiler*>(this)->SetGetRetainerInfosCallback(
       callback);
-}
-
-size_t HeapProfiler::GetProfilerMemorySize() {
-  return reinterpret_cast<i::HeapProfiler*>(this)->
-      GetMemorySizeUsedByProfiler();
 }
 
 v8::Testing::StressType internal::Testing::stress_type_ =

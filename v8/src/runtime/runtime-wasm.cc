@@ -10,7 +10,7 @@
 #include "src/conversions.h"
 #include "src/debug/debug.h"
 #include "src/factory.h"
-#include "src/frames-inl.h"
+#include "src/frame-constants.h"
 #include "src/objects-inl.h"
 #include "src/objects/frame-array-inl.h"
 #include "src/trap-handler/trap-handler.h"
@@ -142,6 +142,8 @@ RUNTIME_FUNCTION(Runtime_WasmThrowTypeError) {
 }
 
 RUNTIME_FUNCTION(Runtime_WasmThrow) {
+  // TODO(kschimpf): Change this to build a runtime exception with
+  // wasm properties, instead of just an integer.
   HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
   CONVERT_SMI_ARG_CHECKED(lower, 0);
@@ -156,7 +158,15 @@ RUNTIME_FUNCTION(Runtime_WasmThrow) {
   return isolate->Throw(*isolate->factory()->NewNumberFromInt(thrown_value));
 }
 
-RUNTIME_FUNCTION(Runtime_WasmGetCaughtExceptionValue) {
+RUNTIME_FUNCTION(Runtime_WasmRethrow) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(0, args.length());
+  Object* exception = isolate->get_wasm_caught_exception();
+  isolate->clear_wasm_caught_exception();
+  return isolate->Throw(exception);
+}
+
+RUNTIME_FUNCTION(Runtime_WasmSetCaughtExceptionValue) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
   Object* exception = args[0];
@@ -164,16 +174,23 @@ RUNTIME_FUNCTION(Runtime_WasmGetCaughtExceptionValue) {
   // Number or a Smi (which we have just converted to a Number.) This logic
   // lives in Isolate::is_catchable_by_wasm(Object*).
   CHECK(exception->IsNumber());
+  isolate->set_wasm_caught_exception(exception);
   return exception;
 }
 
 RUNTIME_FUNCTION(Runtime_SetThreadInWasm) {
   trap_handler::SetThreadInWasm();
+  if (!isolate->counters()->wasm_execution_time()->Running()) {
+    isolate->counters()->wasm_execution_time()->Start();
+  }
   return isolate->heap()->undefined_value();
 }
 
 RUNTIME_FUNCTION(Runtime_ClearThreadInWasm) {
   trap_handler::ClearThreadInWasm();
+  if (isolate->counters()->wasm_execution_time()->Running()) {
+    isolate->counters()->wasm_execution_time()->Stop();
+  }
   return isolate->heap()->undefined_value();
 }
 
