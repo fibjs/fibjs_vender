@@ -736,8 +736,11 @@ typedef wchar_t wchar;
 typedef uint16_t wchar;
 #endif
 
+typedef uint32_t wchar32;
+
 typedef basic_string<char> string;
 typedef basic_string<wchar> wstring;
+typedef basic_string<wchar32> wstring32;
 }
 
 #endif
