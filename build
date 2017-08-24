@@ -150,6 +150,7 @@ OUT_PATH="${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
 cd ${OUT_PATH}
 
 libs="exlib
+cares
 gtest
 expat
 gumbo
