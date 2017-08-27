@@ -161,14 +161,15 @@ void PagedSpace::UnlinkFreeListCategories(Page* page) {
   });
 }
 
-intptr_t PagedSpace::RelinkFreeListCategories(Page* page) {
+size_t PagedSpace::RelinkFreeListCategories(Page* page) {
   DCHECK_EQ(this, page->owner());
-  intptr_t added = 0;
+  size_t added = 0;
   page->ForAllFreeListCategories([&added](FreeListCategory* category) {
     added += category->available();
     category->Relink();
   });
-  DCHECK_EQ(page->AvailableInFreeList(), page->available_in_free_list());
+  DCHECK_EQ(page->AvailableInFreeList(),
+            page->AvailableInFreeListFromAllocatedBytes());
   return added;
 }
 
@@ -355,13 +356,6 @@ AllocationResult PagedSpace::AllocateRawUnaligned(
   }
 
   return AllocationResult::Retry(identity());
-}
-
-
-AllocationResult PagedSpace::AllocateRawUnalignedSynchronized(
-    int size_in_bytes) {
-  base::LockGuard<base::Mutex> lock_guard(&space_mutex_);
-  return AllocateRawUnaligned(size_in_bytes);
 }
 
 

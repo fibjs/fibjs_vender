@@ -290,6 +290,8 @@ int InstructionScheduler::GetInstructionFlags(const Instruction* instr) const {
       return kIsLoadOperation;
 
     case kArchPrepareCallCFunction:
+    case kArchSaveCallerRegisters:
+    case kArchRestoreCallerRegisters:
     case kArchPrepareTailCall:
     case kArchCallCFunction:
     case kArchCallCodeObject:
@@ -306,6 +308,7 @@ int InstructionScheduler::GetInstructionFlags(const Instruction* instr) const {
     case kArchLookupSwitch:
     case kArchTableSwitch:
     case kArchRet:
+    case kArchDebugAbort:
     case kArchDebugBreak:
     case kArchThrowTerminator:
       return kIsBlockTerminator;

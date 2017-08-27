@@ -47,10 +47,7 @@ IncrementalMarking::IncrementalMarking(Heap* heap)
       trace_wrappers_toggle_(false),
       request_type_(NONE),
       new_generation_observer_(*this, kAllocatedThreshold),
-      old_generation_observer_(*this, kAllocatedThreshold),
-      marking_state_(nullptr),
-      atomic_marking_state_(nullptr),
-      non_atomic_marking_state_(nullptr) {
+      old_generation_observer_(*this, kAllocatedThreshold) {
   SetState(STOPPED);
 }
 
@@ -58,8 +55,13 @@ bool IncrementalMarking::BaseRecordWrite(HeapObject* obj, Object* value) {
   HeapObject* value_heap_obj = HeapObject::cast(value);
   DCHECK(!marking_state()->IsImpossible(value_heap_obj));
   DCHECK(!marking_state()->IsImpossible(obj));
-  const bool need_recording =
-      FLAG_concurrent_marking || marking_state()->IsBlack(obj);
+#ifdef V8_CONCURRENT_MARKING
+  // The write barrier stub generated with V8_CONCURRENT_MARKING does not
+  // check the color of the source object.
+  const bool need_recording = true;
+#else
+  const bool need_recording = marking_state()->IsBlack(obj);
+#endif
 
   if (need_recording && WhiteToGreyAndPush(value_heap_obj)) {
     RestartIfNotMarking();
@@ -83,26 +85,6 @@ int IncrementalMarking::RecordWriteFromCode(HeapObject* obj, Object** slot,
   // Called by RecordWriteCodeStubAssembler, which doesnt accept void type
   return 0;
 }
-
-void IncrementalMarking::RecordCodeTargetPatch(Code* host, Address pc,
-                                               HeapObject* value) {
-  if (IsMarking()) {
-    RelocInfo rinfo(pc, RelocInfo::CODE_TARGET, 0, host);
-    RecordWriteIntoCode(host, &rinfo, value);
-  }
-}
-
-
-void IncrementalMarking::RecordCodeTargetPatch(Address pc, HeapObject* value) {
-  if (IsMarking()) {
-    Code* host = heap_->isolate()
-                     ->inner_pointer_to_code_cache()
-                     ->GcSafeFindCodeForInnerPointer(pc);
-    RelocInfo rinfo(pc, RelocInfo::CODE_TARGET, 0, host);
-    RecordWriteIntoCode(host, &rinfo, value);
-  }
-}
-
 
 void IncrementalMarking::RecordWriteIntoCodeSlow(Code* host, RelocInfo* rinfo,
                                                  Object* value) {
@@ -471,11 +453,6 @@ void IncrementalMarking::Start(GarbageCollectionReason gc_reason) {
   DCHECK(state_ == STOPPED);
   DCHECK(heap_->gc_state() == Heap::NOT_IN_GC);
   DCHECK(!heap_->isolate()->serializer_enabled());
-  marking_state_ = heap_->mark_compact_collector()->marking_state();
-  atomic_marking_state_ =
-      heap_->mark_compact_collector()->atomic_marking_state();
-  non_atomic_marking_state_ =
-      heap_->mark_compact_collector()->non_atomic_marking_state();
 
   Counters* counters = heap_->isolate()->counters();
 
@@ -484,6 +461,7 @@ void IncrementalMarking::Start(GarbageCollectionReason gc_reason) {
   HistogramTimerScope incremental_marking_scope(
       counters->gc_incremental_marking_start());
   TRACE_EVENT0("v8", "V8.GCIncrementalMarkingStart");
+  TRACE_GC(heap()->tracer(), GCTracer::Scope::MC_INCREMENTAL_START);
   heap_->tracer()->NotifyIncrementalMarkingStart();
 
   start_time_ms_ = heap()->MonotonicallyIncreasingTimeInMs();
@@ -564,9 +542,13 @@ void IncrementalMarking::StartMarking() {
 
   heap_->isolate()->compilation_cache()->MarkCompactPrologue();
 
-  if (FLAG_concurrent_marking && !black_allocation_) {
+#ifdef V8_CONCURRENT_MARKING
+  // The write-barrier does not check the color of the source object.
+  // Start black allocation earlier to ensure faster marking progress.
+  if (!black_allocation_) {
     StartBlackAllocation();
   }
+#endif
 
   // Mark strong roots grey.
   IncrementalMarkingRootMarkingVisitor visitor(this);
@@ -584,6 +566,7 @@ void IncrementalMarking::StartMarking() {
 
 void IncrementalMarking::StartBlackAllocation() {
   DCHECK(FLAG_black_allocation);
+  DCHECK(!black_allocation_);
   DCHECK(IsMarking());
   black_allocation_ = true;
   heap()->old_space()->MarkAllocationInfoBlack();
@@ -1051,6 +1034,9 @@ void IncrementalMarking::FinalizeSweeping() {
     heap_->mark_compact_collector()->EnsureSweepingCompleted();
   }
   if (!heap_->mark_compact_collector()->sweeping_in_progress()) {
+#ifdef DEBUG
+    heap_->VerifyCountersAfterSweeping();
+#endif
     StartMarking();
   }
 }

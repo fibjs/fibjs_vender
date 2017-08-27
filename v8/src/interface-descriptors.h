@@ -16,82 +16,82 @@ namespace internal {
 
 class PlatformInterfaceDescriptor;
 
-#define INTERFACE_DESCRIPTOR_LIST(V)       \
-  V(Void)                                  \
-  V(ContextOnly)                           \
-  V(Load)                                  \
-  V(LoadWithVector)                        \
-  V(LoadField)                             \
-  V(LoadICProtoArray)                      \
-  V(LoadGlobal)                            \
-  V(LoadGlobalWithVector)                  \
-  V(Store)                                 \
-  V(StoreWithVector)                       \
-  V(StoreNamedTransition)                  \
-  V(StoreTransition)                       \
-  V(VarArgFunction)                        \
-  V(FastNewClosure)                        \
-  V(FastNewFunctionContext)                \
-  V(FastNewObject)                         \
-  V(FastNewArguments)                      \
-  V(RecordWrite)                           \
-  V(TypeConversion)                        \
-  V(TypeConversionStackParameter)          \
-  V(Typeof)                                \
-  V(FastCloneRegExp)                       \
-  V(FastCloneShallowArray)                 \
-  V(FastCloneShallowObject)                \
-  V(CallFunction)                          \
-  V(CallVarargs)                           \
-  V(CallForwardVarargs)                    \
-  V(CallWithSpread)                        \
-  V(CallWithArrayLike)                     \
-  V(CallTrampoline)                        \
-  V(ConstructStub)                         \
-  V(ConstructVarargs)                      \
-  V(ConstructForwardVarargs)               \
-  V(ConstructWithSpread)                   \
-  V(ConstructWithArrayLike)                \
-  V(ConstructTrampoline)                   \
-  V(TransitionElementsKind)                \
-  V(AllocateHeapNumber)                    \
-  V(Builtin)                               \
-  V(ArrayConstructor)                      \
-  V(IteratingArrayBuiltin)                 \
-  V(ArrayNoArgumentConstructor)            \
-  V(ArraySingleArgumentConstructor)        \
-  V(ArrayNArgumentsConstructor)            \
-  V(Compare)                               \
-  V(BinaryOp)                              \
-  V(BinaryOpWithAllocationSite)            \
-  V(BinaryOpWithVector)                    \
-  V(CountOp)                               \
-  V(StringAdd)                             \
-  V(StringCharAt)                          \
-  V(StringCharCodeAt)                      \
-  V(StringCompare)                         \
-  V(SubString)                             \
-  V(ForInPrepare)                          \
-  V(GetProperty)                           \
-  V(ArgumentAdaptor)                       \
-  V(ApiCallback)                           \
-  V(ApiGetter)                             \
-  V(MathPowTagged)                         \
-  V(MathPowInteger)                        \
-  V(GrowArrayElements)                     \
-  V(NewArgumentsElements)                  \
-  V(InterpreterDispatch)                   \
-  V(InterpreterPushArgsThenCall)           \
-  V(InterpreterPushArgsThenConstruct)      \
-  V(InterpreterCEntry)                     \
-  V(ResumeGenerator)                       \
-  V(FrameDropperTrampoline)                \
-  V(WasmRuntimeCall)                       \
+#define INTERFACE_DESCRIPTOR_LIST(V)  \
+  V(Void)                             \
+  V(ContextOnly)                      \
+  V(Load)                             \
+  V(LoadWithVector)                   \
+  V(LoadField)                        \
+  V(LoadICProtoArray)                 \
+  V(LoadGlobal)                       \
+  V(LoadGlobalWithVector)             \
+  V(Store)                            \
+  V(StoreWithVector)                  \
+  V(StoreNamedTransition)             \
+  V(StoreTransition)                  \
+  V(FastNewClosure)                   \
+  V(FastNewFunctionContext)           \
+  V(FastNewObject)                    \
+  V(FastNewArguments)                 \
+  V(RecordWrite)                      \
+  V(TypeConversion)                   \
+  V(TypeConversionStackParameter)     \
+  V(Typeof)                           \
+  V(FastCloneRegExp)                  \
+  V(FastCloneShallowArray)            \
+  V(FastCloneShallowObject)           \
+  V(CallFunction)                     \
+  V(CallVarargs)                      \
+  V(CallForwardVarargs)               \
+  V(CallWithSpread)                   \
+  V(CallWithArrayLike)                \
+  V(CallTrampoline)                   \
+  V(ConstructStub)                    \
+  V(ConstructVarargs)                 \
+  V(ConstructForwardVarargs)          \
+  V(ConstructWithSpread)              \
+  V(ConstructWithArrayLike)           \
+  V(ConstructTrampoline)              \
+  V(TransitionElementsKind)           \
+  V(AllocateHeapNumber)               \
+  V(Builtin)                          \
+  V(ArrayConstructor)                 \
+  V(IteratingArrayBuiltin)            \
+  V(ArrayNoArgumentConstructor)       \
+  V(ArraySingleArgumentConstructor)   \
+  V(ArrayNArgumentsConstructor)       \
+  V(Compare)                          \
+  V(BinaryOp)                         \
+  V(StringAdd)                        \
+  V(StringCharAt)                     \
+  V(StringCharCodeAt)                 \
+  V(StringCompare)                    \
+  V(SubString)                        \
+  V(ForInPrepare)                     \
+  V(GetProperty)                      \
+  V(ArgumentAdaptor)                  \
+  V(ApiCallback)                      \
+  V(ApiGetter)                        \
+  V(MathPowTagged)                    \
+  V(MathPowInteger)                   \
+  V(GrowArrayElements)                \
+  V(NewArgumentsElements)             \
+  V(InterpreterExitTrampoline)        \
+  V(InterpreterDispatch)              \
+  V(InterpreterPushArgsThenCall)      \
+  V(InterpreterPushArgsThenConstruct) \
+  V(InterpreterCEntry)                \
+  V(ResumeGenerator)                  \
+  V(FrameDropperTrampoline)           \
+  V(WasmRuntimeCall)                  \
   BUILTIN_LIST_TFS(V)
 
 class V8_EXPORT_PRIVATE CallInterfaceDescriptorData {
  public:
-  CallInterfaceDescriptorData() : register_param_count_(-1), param_count_(-1) {}
+  CallInterfaceDescriptorData()
+      : register_param_count_(-1),
+        param_count_(-1),
+        allocatable_registers_(0) {}
 
   // A copy of the passed in registers and param_representations is made
   // and owned by the CallInterfaceDescriptorData.
@@ -124,9 +124,23 @@ class V8_EXPORT_PRIVATE CallInterfaceDescriptorData {
     return platform_specific_descriptor_;
   }
 
+  void RestrictAllocatableRegisters(const Register* registers, int num) {
+    DCHECK(allocatable_registers_ == 0);
+    for (int i = 0; i < num; ++i) {
+      allocatable_registers_ |= registers[i].bit();
+    }
+    DCHECK(NumRegs(allocatable_registers_) > 0);
+  }
+
+  RegList allocatable_registers() const { return allocatable_registers_; }
+
  private:
   int register_param_count_;
   int param_count_;
+
+  // Specifying the set of registers that could be used by the register
+  // allocator. Currently, it's only used by RecordWrite code stub.
+  RegList allocatable_registers_;
 
   // The Register params are allocated dynamically by the
   // InterfaceDescriptor, and freed on destruction. This is because static
@@ -181,6 +195,10 @@ class V8_EXPORT_PRIVATE CallInterfaceDescriptor {
   // Some platforms have extra information to associate with the descriptor.
   PlatformInterfaceDescriptor* platform_specific_descriptor() const {
     return data()->platform_specific_descriptor();
+  }
+
+  RegList allocatable_registers() const {
+    return data()->allocatable_registers();
   }
 
   static const Register ContextRegister();
@@ -728,25 +746,6 @@ class BinaryOpDescriptor : public CallInterfaceDescriptor {
 };
 
 
-class BinaryOpWithAllocationSiteDescriptor : public CallInterfaceDescriptor {
- public:
-  DEFINE_PARAMETERS(kAllocationSite, kLeft, kRight)
-  DECLARE_DESCRIPTOR(BinaryOpWithAllocationSiteDescriptor,
-                     CallInterfaceDescriptor)
-};
-
-class BinaryOpWithVectorDescriptor : public CallInterfaceDescriptor {
- public:
-  DEFINE_PARAMETERS(kLeft, kRight, kSlot, kVector, kFunction)
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(BinaryOpWithVectorDescriptor,
-                                               CallInterfaceDescriptor)
-};
-
-class CountOpDescriptor final : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR(CountOpDescriptor, CallInterfaceDescriptor)
-};
-
 class StringAddDescriptor : public CallInterfaceDescriptor {
  public:
   DEFINE_PARAMETERS(kLeft, kRight)
@@ -824,13 +823,6 @@ class MathPowIntegerDescriptor : public CallInterfaceDescriptor {
   static const Register exponent();
 };
 
-class VarArgFunctionDescriptor : public CallInterfaceDescriptor {
- public:
-  DEFINE_PARAMETERS(kActualArgumentsCount)
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(VarArgFunctionDescriptor,
-                                               CallInterfaceDescriptor)
-};
-
 // TODO(turbofan): We should probably rename this to GrowFastElementsDescriptor.
 class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
  public:
@@ -846,6 +838,14 @@ class NewArgumentsElementsDescriptor final : public CallInterfaceDescriptor {
   DEFINE_PARAMETERS(kFrame, kLength)
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(NewArgumentsElementsDescriptor,
                                                CallInterfaceDescriptor)
+};
+
+class V8_EXPORT_PRIVATE InterpreterExitTrampolineDescriptor
+    : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kAccumulator)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      InterpreterExitTrampolineDescriptor, CallInterfaceDescriptor)
 };
 
 class V8_EXPORT_PRIVATE InterpreterDispatchDescriptor

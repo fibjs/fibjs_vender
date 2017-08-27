@@ -10,7 +10,6 @@
 #include "src/heap/array-buffer-tracker.h"
 #include "src/heap/embedder-tracing.h"
 #include "src/heap/mark-compact.h"
-#include "src/ic/ic-state.h"
 #include "src/macro-assembler.h"
 #include "src/objects-body-descriptors-inl.h"
 
@@ -222,7 +221,7 @@ int MarkingVisitor<ConcreteVisitor>::VisitWeakCell(Map* map,
   // contain smi zero.
   if (!weak_cell->cleared()) {
     HeapObject* value = HeapObject::cast(weak_cell->value());
-    if (collector_->marking_state()->IsBlackOrGrey(value)) {
+    if (heap_->incremental_marking()->marking_state()->IsBlackOrGrey(value)) {
       // Weak cells with live values are directly processed here to reduce
       // the processing time of weak cells during the main GC pause.
       Object** slot = HeapObject::RawField(weak_cell, WeakCell::kValueOffset);
@@ -287,9 +286,6 @@ int MarkingVisitor<ConcreteVisitor>::VisitBytecodeArray(Map* map,
 
 template <typename ConcreteVisitor>
 int MarkingVisitor<ConcreteVisitor>::VisitCode(Map* map, Code* code) {
-  if (FLAG_age_code && !heap_->isolate()->serializer_enabled()) {
-    code->MakeOlder();
-  }
   ConcreteVisitor* visitor = static_cast<ConcreteVisitor*>(this);
   int size = Code::BodyDescriptor::SizeOf(map, code);
   Code::BodyDescriptor::IterateBody(code, size, visitor);
@@ -385,33 +381,11 @@ void MarkingVisitor<ConcreteVisitor>::VisitEmbeddedPointer(Code* host,
 }
 
 template <typename ConcreteVisitor>
-void MarkingVisitor<ConcreteVisitor>::VisitDebugTarget(Code* host,
-                                                       RelocInfo* rinfo) {
-  ConcreteVisitor* visitor = static_cast<ConcreteVisitor*>(this);
-  DCHECK(RelocInfo::IsDebugBreakSlot(rinfo->rmode()) &&
-         rinfo->IsPatchedDebugBreakSlotSequence());
-  Code* target = Code::GetCodeFromTargetAddress(rinfo->debug_call_address());
-  collector_->RecordRelocSlot(host, rinfo, target);
-  visitor->MarkObject(host, target);
-}
-
-template <typename ConcreteVisitor>
 void MarkingVisitor<ConcreteVisitor>::VisitCodeTarget(Code* host,
                                                       RelocInfo* rinfo) {
   ConcreteVisitor* visitor = static_cast<ConcreteVisitor*>(this);
   DCHECK(RelocInfo::IsCodeTarget(rinfo->rmode()));
   Code* target = Code::GetCodeFromTargetAddress(rinfo->target_address());
-  collector_->RecordRelocSlot(host, rinfo, target);
-  visitor->MarkObject(host, target);
-}
-
-template <typename ConcreteVisitor>
-void MarkingVisitor<ConcreteVisitor>::VisitCodeAgeSequence(Code* host,
-                                                           RelocInfo* rinfo) {
-  ConcreteVisitor* visitor = static_cast<ConcreteVisitor*>(this);
-  DCHECK(RelocInfo::IsCodeAgeSequence(rinfo->rmode()));
-  Code* target = rinfo->code_age_stub();
-  DCHECK_NOT_NULL(target);
   collector_->RecordRelocSlot(host, rinfo, target);
   visitor->MarkObject(host, target);
 }

@@ -364,7 +364,9 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
 
   bool inner_scope_calls_eval() const { return inner_scope_calls_eval_; }
   bool IsAsmModule() const;
-  bool IsAsmFunction() const;
+  // Returns true if this scope or any inner scopes that might be eagerly
+  // compiled are asm modules.
+  bool ContainsAsmModule() const;
   // Does this scope have the potential to execute declarations non-linearly?
   bool is_nonlinear() const { return scope_nonlinear_; }
 
@@ -461,11 +463,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
 
   // Check that all Scopes in the scope tree use the same Zone.
   void CheckZones();
-
-  bool replaced_from_parse_task() const { return replaced_from_parse_task_; }
-  void set_replaced_from_parse_task(bool replaced_from_parse_task) {
-    replaced_from_parse_task_ = replaced_from_parse_task;
-  }
 #endif
 
   // Retrieve `IsSimpleParameterList` of current or outer function.
@@ -550,10 +547,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   // True if this scope may contain objects from a temp zone that needs to be
   // fixed up.
   bool needs_migration_;
-
-  // True if scope comes from other zone - as a result of being created in a
-  // parse tasks.
-  bool replaced_from_parse_task_ = false;
 #endif
 
   // Source positions.
@@ -711,8 +704,6 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
 
   bool asm_module() const { return asm_module_; }
   void set_asm_module();
-  bool asm_function() const { return asm_function_; }
-  void set_asm_function() { asm_function_ = true; }
 
   void DeclareThis(AstValueFactory* ast_value_factory);
   void DeclareArguments(AstValueFactory* ast_value_factory);
@@ -944,8 +935,6 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
   bool has_simple_parameters_ : 1;
   // This scope contains an "use asm" annotation.
   bool asm_module_ : 1;
-  // This scope's outer context is an asm module.
-  bool asm_function_ : 1;
   bool force_eager_compilation_ : 1;
   // This function scope has a rest parameter.
   bool has_rest_ : 1;

@@ -89,8 +89,6 @@ BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, uses_arguments,
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints,
                     has_duplicate_parameters,
                     SharedFunctionInfo::HasDuplicateParametersBit)
-BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, asm_function,
-                    SharedFunctionInfo::IsAsmFunctionBit)
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, is_declaration,
                     SharedFunctionInfo::IsDeclarationBit)
 
@@ -273,11 +271,6 @@ bool SharedFunctionInfo::HasDebugInfo() const {
   bool has_debug_info = !debug_info()->IsSmi();
   DCHECK_EQ(debug_info()->IsStruct(), has_debug_info);
   return has_debug_info;
-}
-
-bool SharedFunctionInfo::HasDebugCode() const {
-  if (HasBaselineCode()) return code()->has_debug_break_slots();
-  return HasBytecodeArray();
 }
 
 bool SharedFunctionInfo::IsApiFunction() {

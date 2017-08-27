@@ -391,6 +391,16 @@ class StackTraceIterator {
   DISALLOW_COPY_AND_ASSIGN(StackTraceIterator);
 };
 
+class QueryObjectPredicate {
+ public:
+  virtual ~QueryObjectPredicate() = default;
+  virtual bool Filter(v8::Local<v8::Object> object) = 0;
+};
+
+void QueryObjects(v8::Local<v8::Context> context,
+                  QueryObjectPredicate* predicate,
+                  v8::PersistentValueVector<v8::Object>* objects);
+
 }  // namespace debug
 }  // namespace v8
 

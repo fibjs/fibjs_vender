@@ -354,7 +354,7 @@
     <ClInclude Include="src\base\atomicops_internals_portable.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_x86_msvc.h">
+    <ClInclude Include="src\base\atomicops_internals_std.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\base-export.h">
@@ -529,6 +529,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-promise-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-proxy-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-proxy-helpers-gen.h">
@@ -1269,9 +1272,6 @@
     <ClInclude Include="src\ic\ic-inl.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
-    <ClInclude Include="src\ic\ic-state.h">
-      <Filter>Source Files\ic</Filter>
-    </ClInclude>
     <ClInclude Include="src\ic\ic-stats.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1533,7 +1533,10 @@
     <ClInclude Include="src\objects\map.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
-    <ClInclude Include="src\objects\module-info.h">
+    <ClInclude Include="src\objects\module-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\module.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\name-inl.h">
@@ -1820,6 +1823,12 @@
     </ClInclude>
     <ClInclude Include="src\small-pointer-list.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\builtin-deserializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\builtin-serializer.h">
+      <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\code-serializer.h">
       <Filter>Source Files\snapshot</Filter>
@@ -3107,12 +3116,6 @@
     <ClCompile Include="src\ic\ia32\handler-compiler-ia32.cc">
       <Filter>Source Files\ic\ia32</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\ia32\ic-ia32.cc">
-      <Filter>Source Files\ic\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\ic-state.cc">
-      <Filter>Source Files\ic</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\ic-stats.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
@@ -3128,16 +3131,10 @@
     <ClCompile Include="src\ic\ppc\handler-compiler-ppc.cc">
       <Filter>Source Files\ic\ppc</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\ppc\ic-ppc.cc">
-      <Filter>Source Files\ic\ppc</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\s390\access-compiler-s390.cc">
       <Filter>Source Files\ic\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\s390\handler-compiler-s390.cc">
-      <Filter>Source Files\ic\s390</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\s390\ic-s390.cc">
       <Filter>Source Files\ic\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\stub-cache.cc">
@@ -3147,9 +3144,6 @@
       <Filter>Source Files\ic\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\x64\handler-compiler-x64.cc">
-      <Filter>Source Files\ic\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x64\ic-x64.cc">
       <Filter>Source Files\ic\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\icu_util.cc">
@@ -3309,6 +3303,9 @@
       <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\literal-objects.cc">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\module.cc">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\scope-info.cc">
@@ -3607,6 +3604,12 @@
     </ClCompile>
     <ClCompile Include="src\setup-isolate-full.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\builtin-deserializer.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\builtin-serializer.cc">
+      <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\code-serializer.cc">
       <Filter>Source Files\snapshot</Filter>

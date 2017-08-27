@@ -73,7 +73,7 @@
     <ClInclude Include="src\base\atomicops.h" />
     <ClInclude Include="src\base\atomicops_internals_atomicword_compat.h" />
     <ClInclude Include="src\base\atomicops_internals_portable.h" />
-    <ClInclude Include="src\base\atomicops_internals_x86_msvc.h" />
+    <ClInclude Include="src\base\atomicops_internals_std.h" />
     <ClInclude Include="src\base\base-export.h" />
     <ClInclude Include="src\base\bits.h" />
     <ClInclude Include="src\base\build_config.h" />
@@ -132,6 +132,7 @@
     <ClInclude Include="src\builtins\builtins-intl.h" />
     <ClInclude Include="src\builtins\builtins-iterator-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
+    <ClInclude Include="src\builtins\builtins-proxy-gen.h" />
     <ClInclude Include="src\builtins\builtins-proxy-helpers-gen.h" />
     <ClInclude Include="src\builtins\builtins-regexp-gen.h" />
     <ClInclude Include="src\builtins\builtins-string-gen.h" />
@@ -378,7 +379,6 @@
     <ClInclude Include="src\ic\handler-configuration-inl.h" />
     <ClInclude Include="src\ic\handler-configuration.h" />
     <ClInclude Include="src\ic\ic-inl.h" />
-    <ClInclude Include="src\ic\ic-state.h" />
     <ClInclude Include="src\ic\ic-stats.h" />
     <ClInclude Include="src\ic\ic.h" />
     <ClInclude Include="src\ic\keyed-store-generic.h" />
@@ -466,7 +466,8 @@
     <ClInclude Include="src\objects\literal-objects.h" />
     <ClInclude Include="src\objects\map-inl.h" />
     <ClInclude Include="src\objects\map.h" />
-    <ClInclude Include="src\objects\module-info.h" />
+    <ClInclude Include="src\objects\module-inl.h" />
+    <ClInclude Include="src\objects\module.h" />
     <ClInclude Include="src\objects\name-inl.h" />
     <ClInclude Include="src\objects\name.h" />
     <ClInclude Include="src\objects\object-macros-undef.h" />
@@ -562,6 +563,8 @@
     <ClInclude Include="src\signature.h" />
     <ClInclude Include="src\simulator.h" />
     <ClInclude Include="src\small-pointer-list.h" />
+    <ClInclude Include="src\snapshot\builtin-deserializer.h" />
+    <ClInclude Include="src\snapshot\builtin-serializer.h" />
     <ClInclude Include="src\snapshot\code-serializer.h" />
     <ClInclude Include="src\snapshot\deserializer.h" />
     <ClInclude Include="src\snapshot\natives.h" />
@@ -992,21 +995,16 @@
     <ClCompile Include="src\ic\handler-configuration.cc" />
     <ClCompile Include="src\ic\ia32\access-compiler-ia32.cc" />
     <ClCompile Include="src\ic\ia32\handler-compiler-ia32.cc" />
-    <ClCompile Include="src\ic\ia32\ic-ia32.cc" />
-    <ClCompile Include="src\ic\ic-state.cc" />
     <ClCompile Include="src\ic\ic-stats.cc" />
     <ClCompile Include="src\ic\ic.cc" />
     <ClCompile Include="src\ic\keyed-store-generic.cc" />
     <ClCompile Include="src\ic\ppc\access-compiler-ppc.cc" />
     <ClCompile Include="src\ic\ppc\handler-compiler-ppc.cc" />
-    <ClCompile Include="src\ic\ppc\ic-ppc.cc" />
     <ClCompile Include="src\ic\s390\access-compiler-s390.cc" />
     <ClCompile Include="src\ic\s390\handler-compiler-s390.cc" />
-    <ClCompile Include="src\ic\s390\ic-s390.cc" />
     <ClCompile Include="src\ic\stub-cache.cc" />
     <ClCompile Include="src\ic\x64\access-compiler-x64.cc" />
     <ClCompile Include="src\ic\x64\handler-compiler-x64.cc" />
-    <ClCompile Include="src\ic\x64\ic-x64.cc" />
     <ClCompile Include="src\icu_util.cc" />
     <ClCompile Include="src\identity-map.cc" />
     <ClCompile Include="src\interface-descriptors.cc" />
@@ -1060,6 +1058,7 @@
     <ClCompile Include="src\objects.cc" />
     <ClCompile Include="src\objects\debug-objects.cc" />
     <ClCompile Include="src\objects\literal-objects.cc" />
+    <ClCompile Include="src\objects\module.cc" />
     <ClCompile Include="src\objects\scope-info.cc" />
     <ClCompile Include="src\ostreams.cc" />
     <ClCompile Include="src\parsing\expression-scope-reparenter.cc" />
@@ -1159,6 +1158,8 @@
     <ClCompile Include="src\s390\simulator-s390.cc" />
     <ClCompile Include="src\safepoint-table.cc" />
     <ClCompile Include="src\setup-isolate-full.cc" />
+    <ClCompile Include="src\snapshot\builtin-deserializer.cc" />
+    <ClCompile Include="src\snapshot\builtin-serializer.cc" />
     <ClCompile Include="src\snapshot\code-serializer.cc" />
     <ClCompile Include="src\snapshot\deserializer.cc" />
     <ClCompile Include="src\snapshot\natives-common.cc" />

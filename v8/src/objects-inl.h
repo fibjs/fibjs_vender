@@ -35,7 +35,7 @@
 #include "src/objects/hash-table-inl.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/literal-objects.h"
-#include "src/objects/module-info.h"
+#include "src/objects/module-inl.h"
 #include "src/objects/regexp-match-info.h"
 #include "src/objects/scope-info.h"
 #include "src/property.h"
@@ -96,7 +96,6 @@ TYPE_CHECKER(JSFunction, JS_FUNCTION_TYPE)
 TYPE_CHECKER(JSGlobalObject, JS_GLOBAL_OBJECT_TYPE)
 TYPE_CHECKER(JSMap, JS_MAP_TYPE)
 TYPE_CHECKER(JSMessageObject, JS_MESSAGE_OBJECT_TYPE)
-TYPE_CHECKER(JSModuleNamespace, JS_MODULE_NAMESPACE_TYPE)
 TYPE_CHECKER(JSPromiseCapability, JS_PROMISE_CAPABILITY_TYPE)
 TYPE_CHECKER(JSPromise, JS_PROMISE_TYPE)
 TYPE_CHECKER(JSRegExp, JS_REGEXP_TYPE)
@@ -389,10 +388,6 @@ bool HeapObject::IsScopeInfo() const {
   return map() == GetHeap()->scope_info_map();
 }
 
-bool HeapObject::IsModuleInfo() const {
-  return map() == GetHeap()->module_info_map();
-}
-
 template <>
 inline bool Is<JSFunction>(Object* obj) {
   return obj->IsJSFunction();
@@ -582,7 +577,6 @@ CAST_ACCESSOR(JSGlobalProxy)
 CAST_ACCESSOR(JSMap)
 CAST_ACCESSOR(JSMapIterator)
 CAST_ACCESSOR(JSMessageObject)
-CAST_ACCESSOR(JSModuleNamespace)
 CAST_ACCESSOR(JSObject)
 CAST_ACCESSOR(JSPromise)
 CAST_ACCESSOR(JSPromiseCapability)
@@ -598,9 +592,6 @@ CAST_ACCESSOR(JSWeakCollection)
 CAST_ACCESSOR(JSWeakMap)
 CAST_ACCESSOR(JSWeakSet)
 CAST_ACCESSOR(LayoutDescriptor)
-CAST_ACCESSOR(Module)
-CAST_ACCESSOR(ModuleInfo)
-CAST_ACCESSOR(ModuleInfoEntry)
 CAST_ACCESSOR(NameDictionary)
 CAST_ACCESSOR(NormalizedMapCache)
 CAST_ACCESSOR(Object)
@@ -1442,7 +1433,7 @@ void WeakCell::initialize(HeapObject* val) {
   // all weak cells.
   Heap* heap = val->GetHeap();
   WriteBarrierMode mode =
-      heap->mark_compact_collector()->marking_state()->IsBlack(this)
+      heap->incremental_marking()->marking_state()->IsBlack(this)
           ? UPDATE_WRITE_BARRIER
           : UPDATE_WEAK_WRITE_BARRIER;
   CONDITIONAL_WRITE_BARRIER(heap, this, kValueOffset, val, mode);
@@ -2600,7 +2591,6 @@ DEFINE_DEOPT_ELEMENT_ACCESSORS(InliningPositions, PodArray<InliningPosition>)
 
 DEFINE_DEOPT_ENTRY_ACCESSORS(BytecodeOffsetRaw, Smi)
 DEFINE_DEOPT_ENTRY_ACCESSORS(TranslationIndex, Smi)
-DEFINE_DEOPT_ENTRY_ACCESSORS(TrampolinePc, Smi)
 DEFINE_DEOPT_ENTRY_ACCESSORS(Pc, Smi)
 
 BailoutId DeoptimizationInputData::BytecodeOffset(int i) {
@@ -2687,21 +2677,36 @@ SMI_ACCESSORS(FixedArrayBase, length, kLengthOffset)
 SYNCHRONIZED_SMI_ACCESSORS(FixedArrayBase, length, kLengthOffset)
 
 int PropertyArray::length() const {
-  Object* value = READ_FIELD(this, kLengthOffset);
-  int len = Smi::ToInt(value);
-  return len & kLengthMask;
+  Object* value_obj = READ_FIELD(this, kLengthAndHashOffset);
+  int value = Smi::ToInt(value_obj);
+  return value & kLengthMask;
 }
 
 void PropertyArray::initialize_length(int len) {
   SLOW_DCHECK(len >= 0);
   SLOW_DCHECK(len < kMaxLength);
-  WRITE_FIELD(this, kLengthOffset, Smi::FromInt(len));
+  WRITE_FIELD(this, kLengthAndHashOffset, Smi::FromInt(len));
 }
 
 int PropertyArray::synchronized_length() const {
-  Object* value = ACQUIRE_READ_FIELD(this, kLengthOffset);
-  int len = Smi::ToInt(value);
-  return len & kLengthMask;
+  Object* value_obj = ACQUIRE_READ_FIELD(this, kLengthAndHashOffset);
+  int value = Smi::ToInt(value_obj);
+  return value & kLengthMask;
+}
+
+int PropertyArray::Hash() const {
+  Object* value_obj = READ_FIELD(this, kLengthAndHashOffset);
+  int value = Smi::ToInt(value_obj);
+  int hash = value & kHashMask;
+  return hash;
+}
+
+void PropertyArray::SetHash(int masked_hash) {
+  DCHECK_EQ(masked_hash & JSReceiver::kHashMask, masked_hash);
+  Object* value_obj = READ_FIELD(this, kLengthAndHashOffset);
+  int value = Smi::ToInt(value_obj);
+  value = (value & kLengthMask) | masked_hash;
+  WRITE_FIELD(this, kLengthAndHashOffset, Smi::FromInt(value));
 }
 
 SMI_ACCESSORS(FreeSpace, size, kSizeOffset)
@@ -2875,14 +2880,16 @@ void BytecodeArray::set_osr_loop_nesting_level(int depth) {
 }
 
 BytecodeArray::Age BytecodeArray::bytecode_age() const {
-  return static_cast<Age>(READ_INT8_FIELD(this, kBytecodeAgeOffset));
+  // Bytecode is aged by the concurrent marker.
+  return static_cast<Age>(RELAXED_READ_INT8_FIELD(this, kBytecodeAgeOffset));
 }
 
 void BytecodeArray::set_bytecode_age(BytecodeArray::Age age) {
   DCHECK_GE(age, kFirstBytecodeAge);
   DCHECK_LE(age, kLastBytecodeAge);
   STATIC_ASSERT(kLastBytecodeAge <= kMaxInt8);
-  WRITE_INT8_FIELD(this, kBytecodeAgeOffset, static_cast<int8_t>(age));
+  // Bytecode is aged by the concurrent marker.
+  RELAXED_WRITE_INT8_FIELD(this, kBytecodeAgeOffset, static_cast<int8_t>(age));
 }
 
 int BytecodeArray::parameter_count() const {
@@ -3636,11 +3643,6 @@ bool Map::IsSpecialReceiverMap() const {
   return result;
 }
 
-bool Map::CanOmitMapChecks() const {
-  return is_stable() && FLAG_omit_map_checks_for_leaf_maps;
-}
-
-
 DependentCode* DependentCode::next_link() {
   return DependentCode::cast(get(kNextLinkIndex));
 }
@@ -3712,11 +3714,6 @@ bool Code::IsCodeStubOrIC() const {
     default:
       return false;
   }
-}
-
-ExtraICState Code::extra_ic_state() const {
-  DCHECK(is_compare_ic_stub() || is_debug_stub());
-  return ExtractExtraICStateFromFlags(flags());
 }
 
 
@@ -3837,20 +3834,6 @@ inline HandlerTable::CatchPrediction Code::GetBuiltinCatchPrediction() {
   return HandlerTable::UNCAUGHT;
 }
 
-bool Code::has_debug_break_slots() const {
-  DCHECK_EQ(FUNCTION, kind());
-  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
-  return FullCodeFlagsHasDebugBreakSlotsField::decode(flags);
-}
-
-
-void Code::set_has_debug_break_slots(bool value) {
-  DCHECK_EQ(FUNCTION, kind());
-  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
-  flags = FullCodeFlagsHasDebugBreakSlotsField::update(flags, value);
-  WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
-}
-
 bool Code::has_reloc_info_for_serialization() const {
   DCHECK_EQ(FUNCTION, kind());
   unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
@@ -3941,8 +3924,6 @@ bool Code::back_edges_patched_for_osr() const {
 }
 
 
-uint16_t Code::to_boolean_state() { return extra_ic_state(); }
-
 bool Code::marked_for_deoptimization() const {
   DCHECK(kind() == OPTIMIZED_FUNCTION);
   return MarkedForDeoptimizationField::decode(
@@ -3982,21 +3963,8 @@ bool Code::is_inline_cache_stub() const {
   }
 }
 
-bool Code::is_debug_stub() const {
-  if (kind() != BUILTIN) return false;
-  switch (builtin_index()) {
-#define CASE_DEBUG_BUILTIN(name) case Builtins::k##name:
-    BUILTIN_LIST_DBG(CASE_DEBUG_BUILTIN)
-#undef CASE_DEBUG_BUILTIN
-      return true;
-    default:
-      return false;
-  }
-  return false;
-}
 bool Code::is_handler() const { return kind() == HANDLER; }
 bool Code::is_stub() const { return kind() == STUB; }
-bool Code::is_compare_ic_stub() const { return kind() == COMPARE_IC; }
 bool Code::is_optimized_code() const { return kind() == OPTIMIZED_FUNCTION; }
 bool Code::is_wasm_code() const { return kind() == WASM_FUNCTION; }
 
@@ -4464,31 +4432,6 @@ ACCESSORS(ConstantElementsPair, constant_values, FixedArrayBase,
           kConstantValuesOffset)
 bool ConstantElementsPair::is_empty() const {
   return constant_values()->length() == 0;
-}
-
-ACCESSORS(JSModuleNamespace, module, Module, kModuleOffset)
-
-ACCESSORS(Module, code, Object, kCodeOffset)
-ACCESSORS(Module, exports, ObjectHashTable, kExportsOffset)
-ACCESSORS(Module, regular_exports, FixedArray, kRegularExportsOffset)
-ACCESSORS(Module, regular_imports, FixedArray, kRegularImportsOffset)
-ACCESSORS(Module, module_namespace, HeapObject, kModuleNamespaceOffset)
-ACCESSORS(Module, requested_modules, FixedArray, kRequestedModulesOffset)
-ACCESSORS(Module, script, Script, kScriptOffset)
-ACCESSORS(Module, exception, Object, kExceptionOffset)
-SMI_ACCESSORS(Module, status, kStatusOffset)
-SMI_ACCESSORS(Module, dfs_index, kDfsIndexOffset)
-SMI_ACCESSORS(Module, dfs_ancestor_index, kDfsAncestorIndexOffset)
-SMI_ACCESSORS(Module, hash, kHashOffset)
-
-ModuleInfo* Module::info() const {
-  if (status() >= kEvaluating) {
-    return ModuleInfo::cast(code());
-  }
-  ScopeInfo* scope_info = status() >= kInstantiating
-                              ? JSFunction::cast(code())->shared()->scope_info()
-                              : SharedFunctionInfo::cast(code())->scope_info();
-  return scope_info->ModuleDescriptorInfo();
 }
 
 ACCESSORS(AccessorPair, getter, Object, kGetterOffset)
@@ -5491,7 +5434,7 @@ bool JSObject::HasIndexedInterceptor() {
 
 void JSGlobalObject::set_global_dictionary(GlobalDictionary* dictionary) {
   DCHECK(IsJSGlobalObject());
-  return SetProperties(dictionary);
+  set_raw_properties_or_hash(dictionary);
 }
 
 GlobalDictionary* JSGlobalObject::global_dictionary() {
@@ -5620,7 +5563,13 @@ bool JSReceiver::HasFastProperties() const {
 NameDictionary* JSReceiver::property_dictionary() const {
   DCHECK(!IsJSGlobalObject());
   DCHECK(!HasFastProperties());
-  return NameDictionary::cast(raw_properties_or_hash());
+
+  Object* prop = raw_properties_or_hash();
+  if (prop->IsSmi()) {
+    return GetHeap()->empty_property_dictionary();
+  }
+
+  return NameDictionary::cast(prop);
 }
 
 // TODO(gsathya): Pass isolate directly to this function and access
@@ -5634,11 +5583,6 @@ PropertyArray* JSReceiver::property_array() const {
   }
 
   return PropertyArray::cast(prop);
-}
-
-void JSReceiver::SetProperties(HeapObject* properties) {
-  // TODO(gsathya): Update the hash code here.
-  set_raw_properties_or_hash(properties);
 }
 
 Maybe<bool> JSReceiver::HasProperty(Handle<JSReceiver> object,
@@ -5725,20 +5669,14 @@ inline int JSGlobalProxy::SizeWithEmbedderFields(int embedder_field_count) {
   return kSize + embedder_field_count * kPointerSize;
 }
 
-Smi* JSReceiver::GetOrCreateIdentityHash(Isolate* isolate,
-                                         Handle<JSReceiver> object) {
-  return object->IsJSProxy() ? JSProxy::GetOrCreateIdentityHash(
-                                   isolate, Handle<JSProxy>::cast(object))
-                             : JSObject::GetOrCreateIdentityHash(
-                                   isolate, Handle<JSObject>::cast(object));
+Smi* JSReceiver::GetOrCreateIdentityHash(Isolate* isolate) {
+  return IsJSProxy() ? JSProxy::cast(this)->GetOrCreateIdentityHash(isolate)
+                     : JSObject::cast(this)->GetOrCreateIdentityHash(isolate);
 }
 
-Object* JSReceiver::GetIdentityHash(Isolate* isolate,
-                                    Handle<JSReceiver> receiver) {
-  return receiver->IsJSProxy()
-             ? JSProxy::GetIdentityHash(Handle<JSProxy>::cast(receiver))
-             : JSObject::GetIdentityHash(isolate,
-                                         Handle<JSObject>::cast(receiver));
+Object* JSReceiver::GetIdentityHash(Isolate* isolate) {
+  return IsJSProxy() ? JSProxy::cast(this)->GetIdentityHash()
+                     : JSObject::cast(this)->GetIdentityHash(isolate);
 }
 
 
@@ -6043,14 +5981,6 @@ Handle<Object> WeakHashTableShape<entrysize>::AsHandle(Isolate* isolate,
   return key;
 }
 
-
-ACCESSORS(ModuleInfoEntry, export_name, Object, kExportNameOffset)
-ACCESSORS(ModuleInfoEntry, local_name, Object, kLocalNameOffset)
-ACCESSORS(ModuleInfoEntry, import_name, Object, kImportNameOffset)
-SMI_ACCESSORS(ModuleInfoEntry, module_request, kModuleRequestOffset)
-SMI_ACCESSORS(ModuleInfoEntry, cell_index, kCellIndexOffset)
-SMI_ACCESSORS(ModuleInfoEntry, beg_pos, kBegPosOffset)
-SMI_ACCESSORS(ModuleInfoEntry, end_pos, kEndPosOffset)
 
 void Map::ClearCodeCache(Heap* heap) {
   // No write barrier is needed since empty_fixed_array is not in new space.

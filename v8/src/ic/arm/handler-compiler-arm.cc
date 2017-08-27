@@ -182,6 +182,7 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
     int accessor_index) {
   DCHECK(!accessor_holder.is(scratch_in));
   DCHECK(!receiver.is(scratch_in));
+  __ push(accessor_holder);
   __ push(receiver);
   // Write the arguments to stack frame.
   if (is_store) {

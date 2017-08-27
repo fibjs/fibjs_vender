@@ -767,7 +767,6 @@ class RuntimeCallTimer final {
   V(CompileBackgroundIgnition)                      \
   V(CompileFunction)                                \
   V(CompileGetFromOptimizedCodeMap)                 \
-  V(CompileUnoptimizedFunction)                     \
   V(CompileIgnition)                                \
   V(CompileIgnitionFinalization)                    \
   V(CompileInnerFunction)                           \
@@ -782,7 +781,6 @@ class RuntimeCallTimer final {
   V(FunctionPrototypeGetter)                        \
   V(FunctionPrototypeSetter)                        \
   V(GC_Custom_AllAvailableGarbage)                  \
-  V(GC_Custom_IncrementalMarkingJob)                \
   V(GC_Custom_IncrementalMarkingObserver)           \
   V(GC_Custom_SlowAllocateRaw)                      \
   V(GCEpilogueCallback)                             \
@@ -973,31 +971,21 @@ class RuntimeCallTimerScope {
                                RuntimeCallStats::CounterId counter_id);
   inline RuntimeCallTimerScope(RuntimeCallStats* stats,
                                RuntimeCallStats::CounterId counter_id);
-
-  inline ~RuntimeCallTimerScope() {
-    if (V8_UNLIKELY(stats_ != nullptr)) {
-      RuntimeCallStats::Leave(stats_, &timer_);
-    }
-  }
+  inline ~RuntimeCallTimerScope();
 
  private:
-  V8_INLINE void Initialize(RuntimeCallStats* stats,
-                            RuntimeCallStats::CounterId counter_id) {
-    stats_ = stats;
-    RuntimeCallStats::Enter(stats_, &timer_, counter_id);
-  }
-
   RuntimeCallStats* stats_ = nullptr;
   RuntimeCallTimer timer_;
 };
 
 #define HISTOGRAM_RANGE_LIST(HR)                                              \
-  /* Generic range histograms */                                              \
+  /* Generic range histograms: HR(name, caption, min, max, num_buckets) */    \
   HR(detached_context_age_in_gc, V8.DetachedContextAgeInGC, 0, 20, 21)        \
   HR(code_cache_reject_reason, V8.CodeCacheRejectReason, 1, 6, 6)             \
   HR(errors_thrown_per_context, V8.ErrorsThrownPerContext, 0, 200, 20)        \
   HR(debug_feature_usage, V8.DebugFeatureUsage, 1, 7, 7)                      \
   HR(incremental_marking_reason, V8.GCIncrementalMarkingReason, 0, 21, 22)    \
+  HR(incremental_marking_sum, V8.GCIncrementalMarkingSum, 0, 10000, 101)      \
   HR(mark_compact_reason, V8.GCMarkCompactReason, 0, 21, 22)                  \
   HR(scavenge_reason, V8.GCScavengeReason, 0, 21, 22)                         \
   HR(young_generation_handling, V8.GCYoungGenerationHandling, 0, 2, 3)        \
@@ -1346,14 +1334,6 @@ class Counters : public std::enable_shared_from_this<Counters> {
   FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(SC)
 #undef SC
 
-#define SC(name) \
-  StatsCounter* count_of_CODE_AGE_##name() \
-    { return &count_of_CODE_AGE_##name##_; } \
-  StatsCounter* size_of_CODE_AGE_##name() \
-    { return &size_of_CODE_AGE_##name##_; }
-  CODE_AGE_LIST_COMPLETE(SC)
-#undef SC
-
   // clang-format off
   enum Id {
 #define RATE_ID(name, caption, max, res) k_##name,
@@ -1385,10 +1365,6 @@ class Counters : public std::enable_shared_from_this<Counters> {
 #define COUNTER_ID(name) kCountOfFIXED_ARRAY__##name, \
     kSizeOfFIXED_ARRAY__##name,
     FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(COUNTER_ID)
-#undef COUNTER_ID
-#define COUNTER_ID(name) kCountOfCODE_AGE__##name, \
-    kSizeOfCODE_AGE__##name,
-    CODE_AGE_LIST_COMPLETE(COUNTER_ID)
 #undef COUNTER_ID
     stats_counter_count
   };
@@ -1478,12 +1454,6 @@ class Counters : public std::enable_shared_from_this<Counters> {
   StatsCounter size_of_FIXED_ARRAY_##name##_; \
   StatsCounter count_of_FIXED_ARRAY_##name##_;
   FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(SC)
-#undef SC
-
-#define SC(name) \
-  StatsCounter size_of_CODE_AGE_##name##_; \
-  StatsCounter count_of_CODE_AGE_##name##_;
-  CODE_AGE_LIST_COMPLETE(SC)
 #undef SC
 
   RuntimeCallStats runtime_call_stats_;

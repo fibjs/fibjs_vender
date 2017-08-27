@@ -30,32 +30,34 @@ InterpreterAssembler::InterpreterAssembler(CodeAssemblerState* state,
     : CodeStubAssembler(state),
       bytecode_(bytecode),
       operand_scale_(operand_scale),
-      bytecode_offset_(this, MachineType::PointerRepresentation()),
-      interpreted_frame_pointer_(this, MachineType::PointerRepresentation()),
-      bytecode_array_(this, MachineRepresentation::kTagged),
-      bytecode_array_valid_(true),
-      dispatch_table_(this, MachineType::PointerRepresentation()),
-      accumulator_(this, MachineRepresentation::kTagged),
+      VARIABLE_CONSTRUCTOR(interpreted_frame_pointer_,
+                           MachineType::PointerRepresentation()),
+      VARIABLE_CONSTRUCTOR(
+          bytecode_array_, MachineRepresentation::kTagged,
+          Parameter(InterpreterDispatchDescriptor::kBytecodeArray)),
+      VARIABLE_CONSTRUCTOR(
+          bytecode_offset_, MachineType::PointerRepresentation(),
+          Parameter(InterpreterDispatchDescriptor::kBytecodeOffset)),
+      VARIABLE_CONSTRUCTOR(
+          dispatch_table_, MachineType::PointerRepresentation(),
+          Parameter(InterpreterDispatchDescriptor::kDispatchTable)),
+      VARIABLE_CONSTRUCTOR(
+          accumulator_, MachineRepresentation::kTagged,
+          Parameter(InterpreterDispatchDescriptor::kAccumulator)),
       accumulator_use_(AccumulatorUse::kNone),
       made_call_(false),
       reloaded_frame_ptr_(false),
-      saved_bytecode_offset_(false),
+      bytecode_array_valid_(true),
       disable_stack_check_across_call_(false),
       stack_pointer_before_call_(nullptr) {
-  accumulator_.Bind(Parameter(InterpreterDispatchDescriptor::kAccumulator));
-  bytecode_offset_.Bind(
-      Parameter(InterpreterDispatchDescriptor::kBytecodeOffset));
-  bytecode_array_.Bind(
-      Parameter(InterpreterDispatchDescriptor::kBytecodeArray));
-  dispatch_table_.Bind(
-      Parameter(InterpreterDispatchDescriptor::kDispatchTable));
-
 #ifdef V8_TRACE_IGNITION
   TraceBytecode(Runtime::kInterpreterTraceBytecodeEntry);
 #endif
   RegisterCallGenerationCallbacks([this] { CallPrologue(); },
                                   [this] { CallEpilogue(); });
 
+  // Save the bytecode offset immediately if bytecode will make a call along the
+  // critical path.
   if (Bytecodes::MakesCallAlongCriticalPath(bytecode)) {
     SaveBytecodeOffset();
   }
@@ -78,6 +80,55 @@ Node* InterpreterAssembler::GetInterpretedFramePointer() {
     reloaded_frame_ptr_ = true;
   }
   return interpreted_frame_pointer_.value();
+}
+
+Node* InterpreterAssembler::BytecodeOffset() {
+  if (Bytecodes::MakesCallAlongCriticalPath(bytecode_) && made_call_ &&
+      (bytecode_offset_.value() ==
+       Parameter(InterpreterDispatchDescriptor::kBytecodeOffset))) {
+    bytecode_offset_.Bind(ReloadBytecodeOffset());
+  }
+  return bytecode_offset_.value();
+}
+
+Node* InterpreterAssembler::ReloadBytecodeOffset() {
+  Node* offset = LoadAndUntagRegister(Register::bytecode_offset());
+  if (operand_scale() != OperandScale::kSingle) {
+    // Add one to the offset such that it points to the actual bytecode rather
+    // than the Wide / ExtraWide prefix bytecode.
+    offset = IntPtrAdd(offset, IntPtrConstant(1));
+  }
+  return offset;
+}
+
+void InterpreterAssembler::SaveBytecodeOffset() {
+  Node* offset = BytecodeOffset();
+  if (operand_scale() != OperandScale::kSingle) {
+    // Subtract one from the offset such that it points to the Wide / ExtraWide
+    // prefix bytecode.
+    offset = IntPtrSub(BytecodeOffset(), IntPtrConstant(1));
+  }
+  StoreAndTagRegister(offset, Register::bytecode_offset());
+}
+
+Node* InterpreterAssembler::BytecodeArrayTaggedPointer() {
+  // Force a re-load of the bytecode array after every call in case the debugger
+  // has been activated.
+  if (!bytecode_array_valid_) {
+    bytecode_array_.Bind(LoadRegister(Register::bytecode_array()));
+    bytecode_array_valid_ = true;
+  }
+  return bytecode_array_.value();
+}
+
+Node* InterpreterAssembler::DispatchTableRawPointer() {
+  if (Bytecodes::MakesCallAlongCriticalPath(bytecode_) && made_call_ &&
+      (dispatch_table_.value() ==
+       Parameter(InterpreterDispatchDescriptor::kDispatchTable))) {
+    dispatch_table_.Bind(ExternalConstant(
+        ExternalReference::interpreter_dispatch_table_address(isolate())));
+  }
+  return dispatch_table_.value();
 }
 
 Node* InterpreterAssembler::GetAccumulatorUnchecked() {
@@ -167,35 +218,6 @@ void InterpreterAssembler::GotoIfHasContextExtensionUpToDepth(Node* context,
     GotoIf(Word32NotEqual(cur_depth.value(), Int32Constant(0)),
            &context_search);
   }
-}
-
-Node* InterpreterAssembler::BytecodeOffset() {
-  if (Bytecodes::MakesCallAlongCriticalPath(bytecode_) && made_call_ &&
-      (bytecode_offset_.value() ==
-       Parameter(InterpreterDispatchDescriptor::kBytecodeOffset))) {
-    bytecode_offset_.Bind(LoadAndUntagRegister(Register::bytecode_offset()));
-  }
-  return bytecode_offset_.value();
-}
-
-Node* InterpreterAssembler::BytecodeArrayTaggedPointer() {
-  // Force a re-load of the bytecode array after every call in case the debugger
-  // has been activated.
-  if (!bytecode_array_valid_) {
-    bytecode_array_.Bind(LoadRegister(Register::bytecode_array()));
-    bytecode_array_valid_ = true;
-  }
-  return bytecode_array_.value();
-}
-
-Node* InterpreterAssembler::DispatchTableRawPointer() {
-  if (Bytecodes::MakesCallAlongCriticalPath(bytecode_) && made_call_ &&
-      (dispatch_table_.value() ==
-       Parameter(InterpreterDispatchDescriptor::kDispatchTable))) {
-    dispatch_table_.Bind(ExternalConstant(
-        ExternalReference::interpreter_dispatch_table_address(isolate())));
-  }
-  return dispatch_table_.value();
 }
 
 Node* InterpreterAssembler::RegisterLocation(Node* reg_index) {
@@ -520,19 +542,14 @@ Node* InterpreterAssembler::LoadFeedbackVector() {
   return vector;
 }
 
-void InterpreterAssembler::SaveBytecodeOffset() {
-  DCHECK(Bytecodes::MakesCallAlongCriticalPath(bytecode_));
-  StoreAndTagRegister(BytecodeOffset(), Register::bytecode_offset());
-  saved_bytecode_offset_ = true;
-}
-
 void InterpreterAssembler::CallPrologue() {
-  if (!saved_bytecode_offset_) {
-    // If there are multiple calls in the bytecode handler, you need to spill
+  if (!Bytecodes::MakesCallAlongCriticalPath(bytecode_)) {
+    // Bytecodes that make a call along the critical path save the bytecode
+    // offset in the bytecode handler's prologue. For other bytecodes, if
+    // there are multiple calls in the bytecode handler, you need to spill
     // before each of them, unless SaveBytecodeOffset has explicitly been called
-    // in a path that dominates _all_ of those calls. Therefore don't set
-    // saved_bytecode_offset_ to true or call SaveBytecodeOffset.
-    StoreAndTagRegister(BytecodeOffset(), Register::bytecode_offset());
+    // in a path that dominates _all_ of those calls (which we don't track).
+    SaveBytecodeOffset();
   }
 
   if (FLAG_debug_code && !disable_stack_check_across_call_) {
@@ -643,9 +660,9 @@ void InterpreterAssembler::CollectCallFeedback(Node* target, Node* context,
   BIND(&done);
 }
 
-Node* InterpreterAssembler::CallJS(Node* function, Node* context,
-                                   Node* first_arg, Node* arg_count,
-                                   ConvertReceiverMode receiver_mode) {
+void InterpreterAssembler::CallJSAndDispatch(
+    Node* function, Node* context, Node* first_arg, Node* arg_count,
+    ConvertReceiverMode receiver_mode) {
   DCHECK(Bytecodes::MakesCallAlongCriticalPath(bytecode_));
   DCHECK(Bytecodes::IsCallOrConstruct(bytecode_) ||
          bytecode_ == Bytecode::kInvokeIntrinsic);
@@ -654,14 +671,55 @@ Node* InterpreterAssembler::CallJS(Node* function, Node* context,
       isolate(), receiver_mode, InterpreterPushArgsMode::kOther);
   Node* code_target = HeapConstant(callable.code());
 
-  return CallStub(callable.descriptor(), code_target, context, arg_count,
-                  first_arg, function);
+  TailCallStubThenBytecodeDispatch(callable.descriptor(), code_target, context,
+                                   arg_count, first_arg, function);
+  // TailCallStubThenDispatch updates accumulator with result.
+  accumulator_use_ = accumulator_use_ | AccumulatorUse::kWrite;
 }
 
-Node* InterpreterAssembler::CallJSWithSpread(Node* function, Node* context,
-                                             Node* first_arg, Node* arg_count,
-                                             Node* slot_id,
-                                             Node* feedback_vector) {
+template <class... TArgs>
+void InterpreterAssembler::CallJSAndDispatch(Node* function, Node* context,
+                                             Node* arg_count,
+                                             ConvertReceiverMode receiver_mode,
+                                             TArgs... args) {
+  DCHECK(Bytecodes::MakesCallAlongCriticalPath(bytecode_));
+  DCHECK(Bytecodes::IsCallOrConstruct(bytecode_) ||
+         bytecode_ == Bytecode::kInvokeIntrinsic);
+  DCHECK_EQ(Bytecodes::GetReceiverMode(bytecode_), receiver_mode);
+  Callable callable = CodeFactory::Call(isolate());
+  Node* code_target = HeapConstant(callable.code());
+
+  if (receiver_mode == ConvertReceiverMode::kNullOrUndefined) {
+    // The first argument parameter (the receiver) is implied to be undefined.
+    TailCallStubThenBytecodeDispatch(
+        callable.descriptor(), code_target, context, function, arg_count,
+        static_cast<Node*>(UndefinedConstant()), args...);
+  } else {
+    TailCallStubThenBytecodeDispatch(callable.descriptor(), code_target,
+                                     context, function, arg_count, args...);
+  }
+  // TailCallStubThenDispatch updates accumulator with result.
+  accumulator_use_ = accumulator_use_ | AccumulatorUse::kWrite;
+}
+
+// Instantiate CallJSAndDispatch() for argument counts used by interpreter
+// generator.
+template V8_EXPORT_PRIVATE void InterpreterAssembler::CallJSAndDispatch(
+    Node* function, Node* context, Node* arg_count,
+    ConvertReceiverMode receiver_mode);
+template V8_EXPORT_PRIVATE void InterpreterAssembler::CallJSAndDispatch(
+    Node* function, Node* context, Node* arg_count,
+    ConvertReceiverMode receiver_mode, Node*);
+template V8_EXPORT_PRIVATE void InterpreterAssembler::CallJSAndDispatch(
+    Node* function, Node* context, Node* arg_count,
+    ConvertReceiverMode receiver_mode, Node*, Node*);
+template V8_EXPORT_PRIVATE void InterpreterAssembler::CallJSAndDispatch(
+    Node* function, Node* context, Node* arg_count,
+    ConvertReceiverMode receiver_mode, Node*, Node*, Node*);
+
+void InterpreterAssembler::CallJSWithSpreadAndDispatch(
+    Node* function, Node* context, Node* first_arg, Node* arg_count,
+    Node* slot_id, Node* feedback_vector) {
   DCHECK(Bytecodes::MakesCallAlongCriticalPath(bytecode_));
   DCHECK_EQ(Bytecodes::GetReceiverMode(bytecode_), ConvertReceiverMode::kAny);
   CollectCallFeedback(function, context, feedback_vector, slot_id);
@@ -671,8 +729,10 @@ Node* InterpreterAssembler::CallJSWithSpread(Node* function, Node* context,
       InterpreterPushArgsMode::kWithFinalSpread);
   Node* code_target = HeapConstant(callable.code());
 
-  return CallStub(callable.descriptor(), code_target, context, arg_count,
-                  first_arg, function);
+  TailCallStubThenBytecodeDispatch(callable.descriptor(), code_target, context,
+                                   arg_count, first_arg, function);
+  // TailCallStubThenDispatch updates accumulator with result.
+  accumulator_use_ = accumulator_use_ | AccumulatorUse::kWrite;
 }
 
 Node* InterpreterAssembler::Construct(Node* target, Node* context,
@@ -1194,7 +1254,7 @@ Node* InterpreterAssembler::TruncateTaggedToWord32WithFeedback(
         var_result.Bind(TruncateHeapNumberValueToWord32(value));
         var_type_feedback->Bind(
             SmiOr(var_type_feedback->value(),
-                  SmiConstant(BinaryOperationFeedback::kNumber)));
+                  SmiConstant(BinaryOperationFeedback::kNumberOrOddball)));
         Goto(&done_loop);
       }
 

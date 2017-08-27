@@ -84,8 +84,7 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
       case Code::BYTECODE_HANDLER:    // No direct references to handlers.
         CHECK(false);
       case Code::BUILTIN:
-        SerializeBuiltin(code_object->builtin_index(), how_to_code,
-                         where_to_point);
+        SerializeBuiltinReference(code_object, how_to_code, where_to_point, 0);
         return;
       case Code::STUB:
 #define IC_KIND_CASE(KIND) case Code::KIND:
@@ -94,8 +93,8 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
         if (code_object->builtin_index() == -1) {
           SerializeCodeStub(code_object, how_to_code, where_to_point);
         } else {
-          SerializeBuiltin(code_object->builtin_index(), how_to_code,
-                           where_to_point);
+          SerializeBuiltinReference(code_object, how_to_code, where_to_point,
+                                    0);
         }
         return;
       case Code::FUNCTION:
@@ -139,22 +138,6 @@ void CodeSerializer::SerializeGeneric(HeapObject* heap_object,
   serializer.Serialize();
 }
 
-void CodeSerializer::SerializeBuiltin(int builtin_index, HowToCode how_to_code,
-                                      WhereToPoint where_to_point) {
-  DCHECK((how_to_code == kPlain && where_to_point == kStartOfObject) ||
-         (how_to_code == kFromCode && where_to_point == kInnerPointer));
-  DCHECK_LT(builtin_index, Builtins::builtin_count);
-  DCHECK_LE(0, builtin_index);
-
-  if (FLAG_trace_serializer) {
-    PrintF(" Encoding builtin: %s\n",
-           isolate()->builtins()->name(builtin_index));
-  }
-
-  sink_.Put(kBuiltin + how_to_code + where_to_point, "Builtin");
-  sink_.PutInt(builtin_index, "builtin_index");
-}
-
 void CodeSerializer::SerializeCodeStub(Code* code_stub, HowToCode how_to_code,
                                        WhereToPoint where_to_point) {
   // We only arrive here if we have not encountered this code stub before.
@@ -162,7 +145,7 @@ void CodeSerializer::SerializeCodeStub(Code* code_stub, HowToCode how_to_code,
   uint32_t stub_key = code_stub->stub_key();
   DCHECK(CodeStub::MajorKeyFromKey(stub_key) != CodeStub::NoCache);
   DCHECK(!CodeStub::GetCode(isolate(), stub_key).is_null());
-  stub_keys_.Add(stub_key);
+  stub_keys_.push_back(stub_key);
 
   SerializerReference reference =
       reference_map()->AddAttachedReference(code_stub);
@@ -283,7 +266,8 @@ void WasmCompiledModuleSerializer::SerializeCodeObject(
     case Code::WASM_TO_JS_FUNCTION:
       // Serialize the illegal builtin instead. On instantiation of a
       // deserialized module, these will be replaced again.
-      SerializeBuiltin(Builtins::kIllegal, how_to_code, where_to_point);
+      SerializeBuiltinReference(*BUILTIN_CODE(isolate(), Illegal), how_to_code,
+                                where_to_point, 0);
       break;
     default:
       UNREACHABLE();
@@ -333,21 +317,23 @@ class Checksum {
   DISALLOW_COPY_AND_ASSIGN(Checksum);
 };
 
-SerializedCodeData::SerializedCodeData(const List<byte>* payload,
+SerializedCodeData::SerializedCodeData(const std::vector<byte>* payload,
                                        const CodeSerializer* cs) {
   DisallowHeapAllocation no_gc;
-  const List<uint32_t>* stub_keys = cs->stub_keys();
+  const std::vector<uint32_t>* stub_keys = cs->stub_keys();
 
-  List<Reservation> reservations;
+  std::vector<Reservation> reservations;
   cs->EncodeReservations(&reservations);
 
   // Calculate sizes.
-  int reservation_size = reservations.length() * kInt32Size;
-  int num_stub_keys = stub_keys->length();
-  int stub_keys_size = stub_keys->length() * kInt32Size;
-  int payload_offset = kHeaderSize + reservation_size + stub_keys_size;
-  int padded_payload_offset = POINTER_SIZE_ALIGN(payload_offset);
-  int size = padded_payload_offset + payload->length();
+  uint32_t reservation_size =
+      static_cast<uint32_t>(reservations.size()) * kUInt32Size;
+  uint32_t num_stub_keys = static_cast<uint32_t>(stub_keys->size());
+  uint32_t stub_keys_size = num_stub_keys * kUInt32Size;
+  uint32_t payload_offset = kHeaderSize + reservation_size + stub_keys_size;
+  uint32_t padded_payload_offset = POINTER_SIZE_ALIGN(payload_offset);
+  uint32_t size =
+      padded_payload_offset + static_cast<uint32_t>(payload->size());
 
   // Allocate backing store and create result data.
   AllocateData(size);
@@ -359,27 +345,29 @@ SerializedCodeData::SerializedCodeData(const List<byte>* payload,
   SetHeaderValue(kCpuFeaturesOffset,
                  static_cast<uint32_t>(CpuFeatures::SupportedFeatures()));
   SetHeaderValue(kFlagHashOffset, FlagList::Hash());
-  SetHeaderValue(kNumReservationsOffset, reservations.length());
+  SetHeaderValue(kNumReservationsOffset,
+                 static_cast<uint32_t>(reservations.size()));
   SetHeaderValue(kNumCodeStubKeysOffset, num_stub_keys);
-  SetHeaderValue(kPayloadLengthOffset, payload->length());
+  SetHeaderValue(kPayloadLengthOffset, static_cast<uint32_t>(payload->size()));
 
   // Zero out any padding in the header.
   memset(data_ + kUnalignedHeaderSize, 0, kHeaderSize - kUnalignedHeaderSize);
 
   // Copy reservation chunk sizes.
-  CopyBytes(data_ + kHeaderSize, reinterpret_cast<byte*>(reservations.begin()),
+  CopyBytes(data_ + kHeaderSize,
+            reinterpret_cast<const byte*>(reservations.data()),
             reservation_size);
 
   // Copy code stub keys.
   CopyBytes(data_ + kHeaderSize + reservation_size,
-            reinterpret_cast<byte*>(stub_keys->begin()), stub_keys_size);
+            reinterpret_cast<const byte*>(stub_keys->data()), stub_keys_size);
 
   // Zero out any padding before the payload.
   memset(data_ + payload_offset, 0, padded_payload_offset - payload_offset);
 
   // Copy serialized data.
-  CopyBytes(data_ + padded_payload_offset, payload->begin(),
-            static_cast<size_t>(payload->length()));
+  CopyBytes(data_ + padded_payload_offset, payload->data(),
+            static_cast<size_t>(payload->size()));
 
   Checksum checksum(DataWithoutHeader());
   SetHeaderValue(kChecksum1Offset, checksum.a());

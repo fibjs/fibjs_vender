@@ -124,6 +124,10 @@ class BytecodeGenerator::ControlScope BASE_EMBEDDED {
     CMD_ASYNC_RETURN,
     CMD_RETHROW
   };
+  static constexpr bool CommandUsesAccumulator(Command command) {
+    return command != CMD_BREAK && command != CMD_CONTINUE;
+  }
+
   void PerformCommand(Command command, Statement* statement,
                       int source_position);
   virtual bool Execute(Command command, Statement* statement,
@@ -180,9 +184,18 @@ class BytecodeGenerator::ControlScope::DeferredCommands final {
     DCHECK_EQ(deferred_[token].statement, statement);
     DCHECK_EQ(deferred_[token].token, token);
 
-    builder()->StoreAccumulatorInRegister(result_register_);
+    if (CommandUsesAccumulator(command)) {
+      builder()->StoreAccumulatorInRegister(result_register_);
+    }
     builder()->LoadLiteral(Smi::FromInt(token));
     builder()->StoreAccumulatorInRegister(token_register_);
+    if (!CommandUsesAccumulator(command)) {
+      // If we're not saving the accumulator in the result register, shove a
+      // harmless value there instead so that it is still considered "killed" in
+      // the liveness analysis. Normally we would LdaUndefined first, but the
+      // Smi token value is just as good, and by reusing it we save a bytecode.
+      builder()->StoreAccumulatorInRegister(result_register_);
+    }
   }
 
   // Records the dispatch token to be used to identify the re-throw path when
@@ -198,6 +211,11 @@ class BytecodeGenerator::ControlScope::DeferredCommands final {
   void RecordFallThroughPath() {
     builder()->LoadLiteral(Smi::FromInt(-1));
     builder()->StoreAccumulatorInRegister(token_register_);
+    // Since we're not saving the accumulator in the result register, shove a
+    // harmless value there instead so that it is still considered "killed" in
+    // the liveness analysis. Normally we would LdaUndefined first, but the Smi
+    // token value is just as good, and by reusing it we save a bytecode.
+    builder()->StoreAccumulatorInRegister(result_register_);
   }
 
   // Applies all recorded control-flow commands after the finally-block again.
@@ -217,7 +235,9 @@ class BytecodeGenerator::ControlScope::DeferredCommands final {
           .CompareOperation(Token::EQ_STRICT, token_register_)
           .JumpIfFalse(ToBooleanMode::kAlreadyBoolean, &fall_through);
 
-      builder()->LoadAccumulatorWithRegister(result_register_);
+      if (CommandUsesAccumulator(entry.command)) {
+        builder()->LoadAccumulatorWithRegister(result_register_);
+      }
       execution_control()->PerformCommand(entry.command, entry.statement,
                                           kNoSourcePosition);
     } else {
@@ -231,9 +251,11 @@ class BytecodeGenerator::ControlScope::DeferredCommands final {
           .SwitchOnSmiNoFeedback(jump_table)
           .Jump(&fall_through);
       for (const Entry& entry : deferred_) {
-        builder()
-            ->Bind(jump_table, entry.token)
-            .LoadAccumulatorWithRegister(result_register_);
+        builder()->Bind(jump_table, entry.token);
+
+        if (CommandUsesAccumulator(entry.command)) {
+          builder()->LoadAccumulatorWithRegister(result_register_);
+        }
         execution_control()->PerformCommand(entry.command, entry.statement,
                                             kNoSourcePosition);
       }
@@ -772,7 +794,7 @@ BytecodeGenerator::BytecodeGenerator(CompilationInfo* info)
       loop_depth_(0),
       catch_prediction_(HandlerTable::UNCAUGHT) {
   DCHECK_EQ(closure_scope(), closure_scope()->GetClosureScope());
-  if (info->is_block_coverage_enabled()) {
+  if (info->has_source_range_map()) {
     DCHECK(FLAG_block_coverage);
     block_coverage_builder_ = new (zone())
         BlockCoverageBuilder(zone(), builder(), info->source_range_map());
@@ -784,7 +806,7 @@ Handle<BytecodeArray> BytecodeGenerator::FinalizeBytecode(Isolate* isolate) {
 
   AllocateDeferredConstants(isolate);
 
-  if (info()->is_block_coverage_enabled()) {
+  if (block_coverage_builder_) {
     info()->set_coverage_info(
         isolate->factory()->NewCoverageInfo(block_coverage_builder_->slots()));
     if (FLAG_trace_block_coverage) {
@@ -1882,6 +1904,16 @@ void BytecodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
 }
 
 void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
+  int literal_index = feedback_index(expr->literal_slot());
+
+  // Fast path for the empty object literal which doesn't need an
+  // AllocationSite.
+  if (expr->IsEmptyObjectLiteral()) {
+    DCHECK(expr->IsFastCloningSupported());
+    builder()->CreateEmptyObjectLiteral(literal_index);
+    return;
+  }
+
   // Deep-copy the literal boilerplate.
   uint8_t flags = CreateObjectLiteralFlags::Encode(
       expr->ComputeFlags(), expr->IsFastCloningSupported());
@@ -1899,8 +1931,7 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
   // TODO(cbruni): Directly generate runtime call for literals we cannot
   // optimize once the FastCloneShallowObject stub is in sync with the TF
   // optimizations.
-  builder()->CreateObjectLiteral(entry, feedback_index(expr->literal_slot()),
-                                 flags, literal);
+  builder()->CreateObjectLiteral(entry, literal_index, flags, literal);
 
   // Store computed values into the literal.
   int property_index = 0;
@@ -2488,7 +2519,7 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
 
   // Evaluate the value and potentially handle compound assignments by loading
   // the left-hand side value and performing a binary operation.
-  if (expr->is_compound()) {
+  if (expr->IsCompoundAssignment()) {
     switch (assign_type) {
       case VARIABLE: {
         VariableProxy* proxy = expr->target()->AsVariableProxy();
@@ -2519,17 +2550,17 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
         break;
       }
     }
-    FeedbackSlot slot = expr->binary_operation()->BinaryOperationFeedbackSlot();
+    BinaryOperation* binop = expr->AsCompoundAssignment()->binary_operation();
+    FeedbackSlot slot = binop->BinaryOperationFeedbackSlot();
     if (expr->value()->IsSmiLiteral()) {
       builder()->BinaryOperationSmiLiteral(
-          expr->binary_op(), expr->value()->AsLiteral()->AsSmiLiteral(),
+          binop->op(), expr->value()->AsLiteral()->AsSmiLiteral(),
           feedback_index(slot));
     } else {
       Register old_value = register_allocator()->NewRegister();
       builder()->StoreAccumulatorInRegister(old_value);
       VisitForAccumulatorValue(expr->value());
-      builder()->BinaryOperation(expr->binary_op(), old_value,
-                                 feedback_index(slot));
+      builder()->BinaryOperation(binop->op(), old_value, feedback_index(slot));
     }
   } else {
     VisitForAccumulatorValue(expr->value());
@@ -2569,6 +2600,10 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
       break;
     }
   }
+}
+
+void BytecodeGenerator::VisitCompoundAssignment(CompoundAssignment* expr) {
+  VisitAssignment(expr);
 }
 
 // Suspends the generator to resume at |suspend_id|, with output stored in the
@@ -2713,6 +2748,7 @@ void BytecodeGenerator::VisitYield(Yield* expr) {
 //             let iteratorReturn = iterator.return;
 //             if (!IS_NULL_OR_UNDEFINED(iteratorReturn)) {
 //               output = %_Call(iteratorReturn, iterator);
+//               if (IS_ASYNC_GENERATOR) output = await output;
 //               if (!IS_RECEIVER(output)) %ThrowIterResultNotAnObject(output);
 //             }
 //             throw MakeTypeError(kThrowMethodMissing);
@@ -2720,11 +2756,18 @@ void BytecodeGenerator::VisitYield(Yield* expr) {
 //           output = %_Call(iteratorThrow, iterator, input);
 //           break;
 //       }
+//
+//       if (IS_ASYNC_GENERATOR) output = await output;
 //       if (!IS_RECEIVER(output)) %ThrowIterResultNotAnObject(output);
 //       if (output.done) break;
 //
 //       // From the generator to its user:
 //       // Forward output, receive new input, and determine resume mode.
+//       if (IS_ASYNC_GENERATOR) {
+//         // AsyncGeneratorYield abstract operation awaits the operand before
+//         // resolving the promise for the current AsyncGeneratorRequest.
+//         %_AsyncGeneratorYield(output.value)
+//       }
 //       input = Suspend(output);
 //       resumeMode = %GeneratorGetResumeMode();
 //     }
@@ -2735,11 +2778,11 @@ void BytecodeGenerator::VisitYield(Yield* expr) {
 //     output.value
 //   }
 void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
-  // TODO(tebbi): Also desugar async generator yield* in the BytecodeGenerator.
-  DCHECK(!IsAsyncGeneratorFunction(function_kind()));
-
   Register output = register_allocator()->NewRegister();
   Register resume_mode = register_allocator()->NewRegister();
+  IteratorType iterator_type = IsAsyncGeneratorFunction(function_kind())
+                                   ? IteratorType::kAsync
+                                   : IteratorType::kNormal;
 
   {
     RegisterAllocationScope register_scope(this);
@@ -2747,10 +2790,12 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
     RegisterList iterator_and_input = register_allocator()->NewRegisterList(2);
 
     Register iterator = iterator_and_input[0];
-    BuildGetIterator(expr->expression(), IteratorType::kNormal,
+
+    BuildGetIterator(expr->expression(), iterator_type,
                      expr->load_iterable_iterator_slot(),
                      expr->call_iterable_iterator_slot(),
-                     FeedbackSlot::Invalid(), FeedbackSlot::Invalid());
+                     expr->load_iterable_async_iterator_slot(),
+                     expr->call_iterable_async_iterator_slot());
     builder()->StoreAccumulatorInRegister(iterator);
     Register input = iterator_and_input[1];
     builder()->LoadUndefined().StoreAccumulatorInRegister(input);
@@ -2762,8 +2807,11 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
       // This loop builder does not construct counters as the loop is not
       // visible to the user, and we therefore neither pass the block coverage
       // builder nor the expression.
+      //
+      // YieldStar in AsyncGenerator functions includes 3 suspend points, rather
+      // than 1. These are documented in the YieldStar AST node.
       LoopBuilder loop(builder(), nullptr, nullptr);
-      VisitIterationHeader(expr->suspend_id(), 1, &loop);
+      VisitIterationHeader(expr->suspend_id(), expr->suspend_count(), &loop);
 
       {
         BytecodeLabels after_switch(zone());
@@ -2813,7 +2861,11 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
           return_input.Bind(builder());
           {
             builder()->LoadAccumulatorWithRegister(input);
-            execution_control()->ReturnAccumulator();
+            if (iterator_type == IteratorType::kAsync) {
+              execution_control()->AsyncReturnAccumulator();
+            } else {
+              execution_control()->ReturnAccumulator();
+            }
           }
         }
 
@@ -2856,8 +2908,16 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
                 .JumpIfNull(throw_throw_method_missing.New())
                 .CallProperty(
                     iterator_return, RegisterList(iterator),
-                    feedback_index(expr->call_iterator_return_slot2()))
-                .JumpIfJSReceiver(throw_throw_method_missing.New())
+                    feedback_index(expr->call_iterator_return_slot2()));
+
+            if (iterator_type == IteratorType::kAsync) {
+              // For async generators, await the result of the .return() call.
+              BuildAwait(expr->await_iterator_close_suspend_id());
+              builder()->StoreAccumulatorInRegister(output);
+            }
+
+            builder()
+                ->JumpIfJSReceiver(throw_throw_method_missing.New())
                 .CallRuntime(Runtime::kThrowIteratorResultNotAnObject, output);
 
             throw_throw_method_missing.Bind(builder());
@@ -2866,6 +2926,11 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
         }
 
         after_switch.Bind(builder());
+      }
+
+      if (iterator_type == IteratorType::kAsync) {
+        // Await the result of the method invocation.
+        BuildAwait(expr->await_delegated_iterator_output_suspend_id());
       }
 
       // Check that output is an object.
@@ -2884,7 +2949,27 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
       loop.BreakIfTrue(ToBooleanMode::kConvertToBoolean);
 
       // Suspend the current generator.
-      builder()->LoadAccumulatorWithRegister(output);
+      if (iterator_type == IteratorType::kNormal) {
+        builder()->LoadAccumulatorWithRegister(output);
+      } else {
+        RegisterAllocationScope register_scope(this);
+        DCHECK(iterator_type == IteratorType::kAsync);
+        // If generatorKind is async, perform AsyncGeneratorYield(output.value),
+        // which will await `output.value` before resolving the current
+        // AsyncGeneratorRequest's promise.
+        builder()->LoadNamedProperty(
+            output, ast_string_constants()->value_string(),
+            feedback_index(expr->load_output_value_slot()));
+
+        RegisterList args = register_allocator()->NewRegisterList(3);
+        builder()
+            ->MoveRegister(generator_object(), args[0])  // generator
+            .StoreAccumulatorInRegister(args[1])         // value
+            .LoadBoolean(catch_prediction() != HandlerTable::ASYNC_AWAIT)
+            .StoreAccumulatorInRegister(args[2])  // is_caught
+            .CallRuntime(Runtime::kInlineAsyncGeneratorYield, args);
+      }
+
       BuildSuspendPoint(expr->suspend_id());
       builder()->StoreAccumulatorInRegister(input);
       builder()
@@ -2909,7 +2994,11 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
       .CompareOperation(Token::EQ_STRICT, resume_mode)
       .JumpIfFalse(ToBooleanMode::kAlreadyBoolean, &completion_is_output_value)
       .LoadAccumulatorWithRegister(output_value);
-  execution_control()->ReturnAccumulator();
+  if (iterator_type == IteratorType::kAsync) {
+    execution_control()->AsyncReturnAccumulator();
+  } else {
+    execution_control()->ReturnAccumulator();
+  }
 
   builder()->Bind(&completion_is_output_value);
   BuildIncrementBlockCoverageCounterIfEnabled(expr,
@@ -3399,45 +3488,36 @@ void BytecodeGenerator::VisitDelete(UnaryOperation* expr) {
     VariableProxy* proxy = expr->expression()->AsVariableProxy();
     Variable* variable = proxy->var();
     DCHECK(is_sloppy(language_mode()) || variable->is_this());
-    switch (variable->location()) {
-      case VariableLocation::UNALLOCATED: {
-        // Global var, let, const or variables not explicitly declared.
-        Register native_context = register_allocator()->NewRegister();
-        Register global_object = register_allocator()->NewRegister();
-        builder()
-            ->LoadContextSlot(execution_context()->reg(),
-                              Context::NATIVE_CONTEXT_INDEX, 0,
-                              BytecodeArrayBuilder::kImmutableSlot)
-            .StoreAccumulatorInRegister(native_context)
-            .LoadContextSlot(native_context, Context::EXTENSION_INDEX, 0,
-                             BytecodeArrayBuilder::kImmutableSlot)
-            .StoreAccumulatorInRegister(global_object)
-            .LoadLiteral(variable->raw_name())
-            .Delete(global_object, language_mode());
-        break;
-      }
-      case VariableLocation::PARAMETER:
-      case VariableLocation::LOCAL:
-      case VariableLocation::CONTEXT: {
-        // Deleting local var/let/const, context variables, and arguments
-        // does not have any effect.
-        if (variable->is_this()) {
-          builder()->LoadTrue();
-        } else {
+    if (variable->is_this()) {
+      builder()->LoadTrue();
+    } else {
+      switch (variable->location()) {
+        case VariableLocation::PARAMETER:
+        case VariableLocation::LOCAL:
+        case VariableLocation::CONTEXT: {
+          // Deleting local var/let/const, context variables, and arguments
+          // does not have any effect.
           builder()->LoadFalse();
+          break;
         }
-        break;
+        case VariableLocation::UNALLOCATED:
+        // TODO(adamk): Falling through to the runtime results in correct
+        // behavior, but does unnecessary context-walking (since scope
+        // analysis has already proven that the variable doesn't exist in
+        // any non-global scope). Consider adding a DeleteGlobal bytecode
+        // that knows how to deal with ScriptContexts as well as global
+        // object properties.
+        case VariableLocation::LOOKUP: {
+          Register name_reg = register_allocator()->NewRegister();
+          builder()
+              ->LoadLiteral(variable->raw_name())
+              .StoreAccumulatorInRegister(name_reg)
+              .CallRuntime(Runtime::kDeleteLookupSlot, name_reg);
+          break;
+        }
+        default:
+          UNREACHABLE();
       }
-      case VariableLocation::LOOKUP: {
-        Register name_reg = register_allocator()->NewRegister();
-        builder()
-            ->LoadLiteral(variable->raw_name())
-            .StoreAccumulatorInRegister(name_reg)
-            .CallRuntime(Runtime::kDeleteLookupSlot, name_reg);
-        break;
-      }
-      default:
-        UNREACHABLE();
     }
   } else {
     // Delete of an unresolvable reference returns true.

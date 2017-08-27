@@ -48,30 +48,32 @@
   V(RelocatableInt32Constant) \
   V(RelocatableInt64Constant)
 
-#define INNER_OP_LIST(V)    \
-  V(Select)                 \
-  V(Phi)                    \
-  V(EffectPhi)              \
-  V(InductionVariablePhi)   \
-  V(Checkpoint)             \
-  V(BeginRegion)            \
-  V(FinishRegion)           \
-  V(FrameState)             \
-  V(StateValues)            \
-  V(TypedStateValues)       \
-  V(ArgumentsElementsState) \
-  V(ArgumentsLengthState)   \
-  V(ObjectState)            \
-  V(ObjectId)               \
-  V(TypedObjectState)       \
-  V(Call)                   \
-  V(Parameter)              \
-  V(OsrValue)               \
-  V(LoopExit)               \
-  V(LoopExitValue)          \
-  V(LoopExitEffect)         \
-  V(Projection)             \
-  V(Retain)                 \
+#define INNER_OP_LIST(V)          \
+  V(Select)                       \
+  V(Phi)                          \
+  V(EffectPhi)                    \
+  V(InductionVariablePhi)         \
+  V(Checkpoint)                   \
+  V(BeginRegion)                  \
+  V(FinishRegion)                 \
+  V(FrameState)                   \
+  V(StateValues)                  \
+  V(TypedStateValues)             \
+  V(ArgumentsElementsState)       \
+  V(ArgumentsLengthState)         \
+  V(ObjectState)                  \
+  V(ObjectId)                     \
+  V(TypedObjectState)             \
+  V(Call)                         \
+  V(CallWithCallerSavedRegisters) \
+  V(Parameter)                    \
+  V(OsrValue)                     \
+  V(LoopExit)                     \
+  V(LoopExitValue)                \
+  V(LoopExitEffect)               \
+  V(Projection)                   \
+  V(Retain)                       \
+  V(MapGuard)                     \
   V(TypeGuard)
 
 #define COMMON_OP_LIST(V) \
@@ -138,6 +140,7 @@
   V(JSCreateLiteralArray)         \
   V(JSCreateEmptyLiteralArray)    \
   V(JSCreateLiteralObject)        \
+  V(JSCreateEmptyLiteralObject)   \
   V(JSCreateLiteralRegExp)        \
   V(JSLoadProperty)               \
   V(JSLoadNamed)                  \
@@ -505,6 +508,7 @@
   MACHINE_FLOAT32_UNOP_LIST(V)  \
   MACHINE_FLOAT64_BINOP_LIST(V) \
   MACHINE_FLOAT64_UNOP_LIST(V)  \
+  V(DebugAbort)                 \
   V(DebugBreak)                 \
   V(Comment)                    \
   V(Load)                       \

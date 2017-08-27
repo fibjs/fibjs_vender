@@ -5,6 +5,8 @@
 #ifndef V8_PARSING_PARSER_H_
 #define V8_PARSING_PARSER_H_
 
+#include <cstddef>
+
 #include "src/ast/ast-source-ranges.h"
 #include "src/ast/ast.h"
 #include "src/ast/scopes.h"
@@ -173,6 +175,7 @@ struct ParserTypes<Parser> {
   typedef ZoneList<v8::internal::Statement*>* StatementList;
   typedef v8::internal::Block* Block;
   typedef v8::internal::BreakableStatement* BreakableStatement;
+  typedef v8::internal::ForStatement* ForStatement;
   typedef v8::internal::IterationStatement* IterationStatement;
 
   // For constructing objects returned by the traversing functions.
@@ -259,7 +262,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   FunctionLiteral* ParseFunction(Isolate* isolate, ParseInfo* info,
                                  Handle<SharedFunctionInfo> shared_info);
-  FunctionLiteral* DoParseFunction(ParseInfo* info);
+  FunctionLiteral* DoParseFunction(ParseInfo* info,
+                                   const AstRawString* raw_name);
 
   // Called by ParseProgram after setting up the scanner.
   FunctionLiteral* DoParseProgram(ParseInfo* info);
@@ -411,8 +415,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   Statement* DesugarLexicalBindingsInForStatement(
       ForStatement* loop, Statement* init, Expression* cond, Statement* next,
-      Statement* body, const SourceRange& body_range, Scope* inner_scope,
-      const ForInfo& for_info, bool* ok);
+      Statement* body, Scope* inner_scope, const ForInfo& for_info, bool* ok);
 
   Expression* RewriteDoExpression(Block* body, int pos, bool* ok);
 
@@ -600,8 +603,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                           Block* block,
                                           Expression* return_value, bool* ok);
 
-  Expression* RewriteYieldStar(Expression* expression, int pos);
-
   void AddArrowFunctionFormalParameters(ParserFormalParameters* parameters,
                                         Expression* params, int end_pos,
                                         bool* ok);
@@ -619,10 +620,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   V8_INLINE bool IsEvalOrArguments(const AstRawString* identifier) const {
     return IsEval(identifier) || IsArguments(identifier);
-  }
-
-  V8_INLINE bool IsUndefined(const AstRawString* identifier) const {
-    return identifier == ast_value_factory()->undefined_string();
   }
 
   // Returns true if the expression is of type "this.foo".
@@ -650,10 +647,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   V8_INLINE VariableProxy* AsIdentifierExpression(Expression* expression) {
     return expression->AsVariableProxy();
-  }
-
-  V8_INLINE bool IsPrototype(const AstRawString* identifier) const {
-    return identifier == ast_value_factory()->prototype_string();
   }
 
   V8_INLINE bool IsConstructor(const AstRawString* identifier) const {
@@ -843,41 +836,18 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   }
 
   // "null" return type creators.
-  V8_INLINE static const AstRawString* EmptyIdentifier() { return nullptr; }
-  V8_INLINE static bool IsEmptyIdentifier(const AstRawString* name) {
-    return name == nullptr;
-  }
-  V8_INLINE static Expression* EmptyExpression() { return nullptr; }
-  V8_INLINE static Literal* EmptyLiteral() { return nullptr; }
-  V8_INLINE static ObjectLiteralProperty* EmptyObjectLiteralProperty() {
-    return nullptr;
-  }
-  V8_INLINE static ClassLiteralProperty* EmptyClassLiteralProperty() {
-    return nullptr;
-  }
-  V8_INLINE static FunctionLiteral* EmptyFunctionLiteral() { return nullptr; }
-  V8_INLINE static Block* NullBlock() { return nullptr; }
-
-  V8_INLINE static bool IsEmptyExpression(Expression* expr) {
-    return expr == nullptr;
-  }
-
-  // Used in error return values.
+  V8_INLINE static std::nullptr_t NullIdentifier() { return nullptr; }
+  V8_INLINE static std::nullptr_t NullExpression() { return nullptr; }
+  V8_INLINE static std::nullptr_t NullLiteralProperty() { return nullptr; }
   V8_INLINE static ZoneList<Expression*>* NullExpressionList() {
     return nullptr;
   }
-  V8_INLINE static bool IsNullExpressionList(ZoneList<Expression*>* exprs) {
-    return exprs == nullptr;
-  }
   V8_INLINE static ZoneList<Statement*>* NullStatementList() { return nullptr; }
-  V8_INLINE static bool IsNullStatementList(ZoneList<Statement*>* stmts) {
-    return stmts == nullptr;
-  }
-  V8_INLINE static Statement* NullStatement() { return nullptr; }
-  V8_INLINE bool IsNullStatement(Statement* stmt) { return stmt == nullptr; }
-  V8_INLINE bool IsEmptyStatement(Statement* stmt) {
-    DCHECK_NOT_NULL(stmt);
-    return stmt->IsEmpty();
+  V8_INLINE static std::nullptr_t NullStatement() { return nullptr; }
+
+  template <typename T>
+  V8_INLINE static bool IsNull(T subject) {
+    return subject == nullptr;
   }
 
   // Non-NULL empty string.
@@ -1146,11 +1116,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   Scanner scanner_;
   PreParser* reusable_preparser_;
   Mode mode_;
-
-  std::vector<FunctionLiteral*> literals_to_stitch_;
-  Handle<String> source_;
-  CompilerDispatcher* compiler_dispatcher_ = nullptr;
-  ParseInfo* main_parse_info_ = nullptr;
 
   SourceRangeMap* source_range_map_ = nullptr;
 

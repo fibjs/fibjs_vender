@@ -36,19 +36,17 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
   // Various configuration flags for a compilation, as well as some properties
   // of the compiled code produced by a compilation.
   enum Flag {
-    kIsDebug = 1 << 0,
-    kIsEval = 1 << 1,
-    kIsNative = 1 << 2,
-    kSerializing = 1 << 3,
-    kBlockCoverageEnabled = 1 << 4,
-    kAccessorInliningEnabled = 1 << 5,
-    kFunctionContextSpecializing = 1 << 6,
-    kInliningEnabled = 1 << 7,
-    kDisableFutureOptimization = 1 << 8,
-    kSplittingEnabled = 1 << 9,
-    kSourcePositionsEnabled = 1 << 10,
-    kBailoutOnUninitialized = 1 << 11,
-    kLoopPeelingEnabled = 1 << 12,
+    kIsEval = 1 << 0,
+    kIsNative = 1 << 1,
+    kSerializing = 1 << 2,
+    kAccessorInliningEnabled = 1 << 3,
+    kFunctionContextSpecializing = 1 << 4,
+    kInliningEnabled = 1 << 5,
+    kDisableFutureOptimization = 1 << 6,
+    kSplittingEnabled = 1 << 7,
+    kSourcePositionsEnabled = 1 << 8,
+    kBailoutOnUninitialized = 1 << 9,
+    kLoopPeelingEnabled = 1 << 10,
   };
 
   // Construct a compilation info for unoptimized compilation.
@@ -71,6 +69,7 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
     literal_ = literal;
   }
 
+  bool has_source_range_map() const { return source_range_map_ != nullptr; }
   SourceRangeMap* source_range_map() const { return source_range_map_; }
   void set_source_range_map(SourceRangeMap* source_range_map) {
     source_range_map_ = source_range_map;
@@ -80,7 +79,7 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
 
   Isolate* isolate() const { return isolate_; }
   Zone* zone() { return zone_; }
-  bool is_osr() const { return !osr_ast_id_.IsNone(); }
+  bool is_osr() const { return !osr_offset_.IsNone(); }
   Handle<SharedFunctionInfo> shared_info() const { return shared_info_; }
   void set_shared_info(Handle<SharedFunctionInfo> shared_info) {
     shared_info_ = shared_info;
@@ -89,7 +88,7 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
   Handle<JSFunction> closure() const { return closure_; }
   Handle<Code> code() const { return code_; }
   Code::Flags code_flags() const { return code_flags_; }
-  BailoutId osr_ast_id() const { return osr_ast_id_; }
+  BailoutId osr_offset() const { return osr_offset_; }
   JavaScriptFrame* osr_frame() const { return osr_frame_; }
   int num_parameters() const;
   int num_parameters_including_this() const;
@@ -108,11 +107,6 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
 
   // Flags used by unoptimized compilation.
 
-  // Compiles marked as debug produce unoptimized code with debug break slots.
-  // Inner functions that cannot be compiled w/o context are compiled eagerly.
-  void MarkAsDebug() { SetFlag(kIsDebug); }
-  bool is_debug() const { return GetFlag(kIsDebug); }
-
   void MarkAsSerializing() { SetFlag(kSerializing); }
   bool will_serialize() const { return GetFlag(kSerializing); }
 
@@ -121,11 +115,6 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
 
   void MarkAsNative() { SetFlag(kIsNative); }
   bool is_native() const { return GetFlag(kIsNative); }
-
-  void MarkAsBlockCoverageEnabled() { SetFlag(kBlockCoverageEnabled); }
-  bool is_block_coverage_enabled() const {
-    return GetFlag(kBlockCoverageEnabled);
-  }
 
   // Flags used by optimized compilation.
 
@@ -162,14 +151,6 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
 
   // Code getters and setters.
 
-  bool GeneratePreagedPrologue() const {
-    // Generate a pre-aged prologue if we are optimizing for size, which
-    // will make code old more aggressive. Only apply to Code::FUNCTION,
-    // since only functions are aged in the compilation cache.
-    return FLAG_optimize_for_size && FLAG_age_code && !is_debug() &&
-           output_code_kind() == Code::FUNCTION;
-  }
-
   void SetCode(Handle<Code> code) { code_ = code; }
 
   void SetBytecodeArray(Handle<BytecodeArray> bytecode_array) {
@@ -178,11 +159,6 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
 
   void SetAsmWasmData(Handle<FixedArray> asm_wasm_data) {
     asm_wasm_data_ = asm_wasm_data;
-  }
-
-  bool ShouldTrapOnDeopt() const {
-    return (FLAG_trap_on_deopt && IsOptimizing()) ||
-           (FLAG_trap_on_stub_deopt && IsStub());
   }
 
   bool has_context() const;
@@ -198,9 +174,9 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
   bool IsOptimizing() const { return mode_ == OPTIMIZE; }
   bool IsStub() const { return mode_ == STUB; }
   bool IsWasm() const { return output_code_kind() == Code::WASM_FUNCTION; }
-  void SetOptimizingForOsr(BailoutId osr_ast_id, JavaScriptFrame* osr_frame) {
+  void SetOptimizingForOsr(BailoutId osr_offset, JavaScriptFrame* osr_frame) {
     DCHECK(IsOptimizing());
-    osr_ast_id_ = osr_ast_id;
+    osr_offset_ = osr_offset;
     osr_frame_ = osr_frame;
   }
 
@@ -340,7 +316,7 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
 
   // Compilation mode flag and whether deoptimization is allowed.
   Mode mode_;
-  BailoutId osr_ast_id_;
+  BailoutId osr_offset_;
 
   // Holds the bytecode array generated by the interpreter.
   // TODO(rmcilroy/mstarzinger): Temporary work-around until compiler.cc is

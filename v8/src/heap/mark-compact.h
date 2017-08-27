@@ -432,8 +432,8 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
   friend class YoungGenerationMarkingVisitor;
 };
 
-class MajorMarkingState final
-    : public MarkingStateBase<MajorMarkingState, AccessMode::ATOMIC> {
+class MajorAtomicMarkingState final
+    : public MarkingStateBase<MajorAtomicMarkingState, AccessMode::ATOMIC> {
  public:
   Bitmap* bitmap(const MemoryChunk* chunk) const {
     return Bitmap::FromAddress(chunk->address() + MemoryChunk::kHeaderSize);
@@ -486,13 +486,7 @@ struct WeakObjects {
 // Collector for young and old generation.
 class MarkCompactCollector final : public MarkCompactCollectorBase {
  public:
-#ifdef V8_CONCURRENT_MARKING
-  using MarkingState = MajorMarkingState;
-#else
-  using MarkingState = MajorNonAtomicMarkingState;
-#endif
   using NonAtomicMarkingState = MajorNonAtomicMarkingState;
-  using AtomicMarkingState = MajorMarkingState;
 
   static const int kMainThread = 0;
   // Wrapper for the shared and bailout worklists.
@@ -677,10 +671,6 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
     kClearMarkbits,
   };
 
-  MarkingState* marking_state() { return &marking_state_; }
-
-  AtomicMarkingState* atomic_marking_state() { return &atomic_marking_state_; }
-
   NonAtomicMarkingState* non_atomic_marking_state() {
     return &non_atomic_marking_state_;
   }
@@ -708,15 +698,12 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   }
 
   void RecordRelocSlot(Code* host, RelocInfo* rinfo, Object* target);
-  void RecordCodeTargetPatch(Address pc, Code* target);
   V8_INLINE static void RecordSlot(HeapObject* object, Object** slot,
                                    Object* target);
   void RecordLiveSlotsOnPage(Page* page);
 
   void UpdateSlots(SlotsBuffer* buffer);
   void UpdateSlotsRecordedIn(SlotsBuffer* buffer);
-
-  void InvalidateCode(Code* code);
 
   void ClearMarkbits();
 
@@ -766,7 +753,6 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   void VerifyMarkbitsAreClean(PagedSpace* space);
   void VerifyMarkbitsAreClean(NewSpace* space);
   void VerifyWeakEmbeddedObjectsInCode();
-  void VerifyOmittedMapChecks();
 #endif
 
  private:
@@ -956,8 +942,6 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
 
   Sweeper sweeper_;
 
-  MarkingState marking_state_;
-  AtomicMarkingState atomic_marking_state_;
   NonAtomicMarkingState non_atomic_marking_state_;
 
   friend class FullEvacuator;

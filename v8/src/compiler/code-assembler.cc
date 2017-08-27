@@ -154,9 +154,23 @@ Handle<Code> CodeAssembler::GenerateCode(CodeAssemblerState* state) {
 
   RawMachineAssembler* rasm = state->raw_assembler_.get();
   Schedule* schedule = rasm->Export();
+
+  JumpOptimizationInfo jump_opt;
+  bool should_optimize_jumps =
+      rasm->isolate()->serializer_enabled() && FLAG_turbo_rewrite_far_jumps;
+
   Handle<Code> code = Pipeline::GenerateCodeForCodeStub(
       rasm->isolate(), rasm->call_descriptor(), rasm->graph(), schedule,
-      state->flags_, state->name_);
+      state->flags_, state->name_, should_optimize_jumps ? &jump_opt : nullptr);
+
+  if (jump_opt.is_optimizable()) {
+    jump_opt.set_optimizing();
+
+    // Regenerate machine code
+    code = Pipeline::GenerateCodeForCodeStub(
+        rasm->isolate(), rasm->call_descriptor(), rasm->graph(), schedule,
+        state->flags_, state->name_, &jump_opt);
+  }
 
   state->code_generated_ = true;
   return code;
@@ -324,6 +338,10 @@ void CodeAssembler::ReturnIf(Node* condition, Node* value) {
   Bind(&if_return);
   Return(value);
   Bind(&if_continue);
+}
+
+void CodeAssembler::DebugAbort(Node* message) {
+  raw_assembler()->DebugAbort(message);
 }
 
 void CodeAssembler::DebugBreak() { raw_assembler()->DebugBreak(); }
@@ -707,6 +725,33 @@ REPEAT_1_TO_12(INSTANTIATE, Node*)
 #undef INSTANTIATE
 
 template <class... TArgs>
+Node* CodeAssembler::TailCallStubThenBytecodeDispatch(
+    const CallInterfaceDescriptor& descriptor, Node* target, Node* context,
+    TArgs... args) {
+  DCHECK_LE(descriptor.GetParameterCount(), sizeof...(args));
+  // Extra arguments not mentioned in the descriptor are passed on the stack.
+  int stack_parameter_count =
+      sizeof...(args) - descriptor.GetRegisterParameterCount();
+  DCHECK_LE(descriptor.GetStackParameterCount(), stack_parameter_count);
+  CallDescriptor* desc = Linkage::GetStubCallDescriptor(
+      isolate(), zone(), descriptor, stack_parameter_count,
+      CallDescriptor::kSupportsTailCalls, Operator::kNoProperties,
+      MachineType::AnyTagged(), 0);
+
+  Node* nodes[] = {target, args..., context};
+  return raw_assembler()->TailCallN(desc, arraysize(nodes), nodes);
+}
+
+// Instantiate TailCallJSAndBytecodeDispatch() for argument counts used by
+// CSA-generated code
+#define INSTANTIATE(...)                           \
+  template V8_EXPORT_PRIVATE Node*                 \
+  CodeAssembler::TailCallStubThenBytecodeDispatch( \
+      const CallInterfaceDescriptor&, Node*, Node*, Node*, __VA_ARGS__);
+REPEAT_1_TO_7(INSTANTIATE, Node*)
+#undef INSTANTIATE
+
+template <class... TArgs>
 Node* CodeAssembler::TailCallBytecodeDispatch(
     const CallInterfaceDescriptor& descriptor, Node* target, TArgs... args) {
   DCHECK_EQ(descriptor.GetParameterCount(), sizeof...(args));
@@ -737,6 +782,14 @@ Node* CodeAssembler::CallCFunction1(MachineType return_type,
                                          arg0);
 }
 
+Node* CodeAssembler::CallCFunction1WithCallerSavedRegisters(
+    MachineType return_type, MachineType arg0_type, Node* function,
+    Node* arg0) {
+  DCHECK(return_type.LessThanOrEqualPointerSize());
+  return raw_assembler()->CallCFunction1WithCallerSavedRegisters(
+      return_type, arg0_type, function, arg0);
+}
+
 Node* CodeAssembler::CallCFunction2(MachineType return_type,
                                     MachineType arg0_type,
                                     MachineType arg1_type, Node* function,
@@ -752,6 +805,14 @@ Node* CodeAssembler::CallCFunction3(MachineType return_type,
                                     Node* arg0, Node* arg1, Node* arg2) {
   return raw_assembler()->CallCFunction3(return_type, arg0_type, arg1_type,
                                          arg2_type, function, arg0, arg1, arg2);
+}
+
+Node* CodeAssembler::CallCFunction3WithCallerSavedRegisters(
+    MachineType return_type, MachineType arg0_type, MachineType arg1_type,
+    MachineType arg2_type, Node* function, Node* arg0, Node* arg1, Node* arg2) {
+  DCHECK(return_type.LessThanOrEqualPointerSize());
+  return raw_assembler()->CallCFunction3WithCallerSavedRegisters(
+      return_type, arg0_type, arg1_type, arg2_type, function, arg0, arg1, arg2);
 }
 
 Node* CodeAssembler::CallCFunction6(

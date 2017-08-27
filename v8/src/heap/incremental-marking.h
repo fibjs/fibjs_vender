@@ -22,6 +22,28 @@ class PagedSpace;
 
 enum class StepOrigin { kV8, kTask };
 
+// This marking state is used when concurrent marking is running.
+class IncrementalMarkingState final
+    : public MarkingStateBase<IncrementalMarkingState, AccessMode::ATOMIC> {
+ public:
+  Bitmap* bitmap(const MemoryChunk* chunk) const {
+    return Bitmap::FromAddress(chunk->address() + MemoryChunk::kHeaderSize);
+  }
+
+  // Concurrent marking uses local live bytes.
+  void IncrementLiveBytes(MemoryChunk* chunk, intptr_t by) {
+    chunk->live_byte_count_ += by;
+  }
+
+  intptr_t live_bytes(MemoryChunk* chunk) const {
+    return chunk->live_byte_count_;
+  }
+
+  void SetLiveBytes(MemoryChunk* chunk, intptr_t value) {
+    chunk->live_byte_count_ = value;
+  }
+};
+
 class V8_EXPORT_PRIVATE IncrementalMarking {
  public:
   enum State { STOPPED, SWEEPING, MARKING, COMPLETE };
@@ -31,6 +53,14 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   enum ForceCompletionAction { FORCE_COMPLETION, DO_NOT_FORCE_COMPLETION };
 
   enum GCRequestType { NONE, COMPLETE_MARKING, FINALIZATION };
+
+#ifdef V8_CONCURRENT_MARKING
+  using MarkingState = IncrementalMarkingState;
+#else
+  using MarkingState = MajorNonAtomicMarkingState;
+#endif
+  using AtomicMarkingState = MajorAtomicMarkingState;
+  using NonAtomicMarkingState = MajorNonAtomicMarkingState;
 
   class PauseBlackAllocationScope {
    public:
@@ -55,20 +85,12 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   explicit IncrementalMarking(Heap* heap);
 
-  MarkCompactCollector::MarkingState* marking_state() const {
-    DCHECK_NOT_NULL(marking_state_);
-    return marking_state_;
-  }
+  MarkingState* marking_state() { return &marking_state_; }
 
-  MarkCompactCollector::AtomicMarkingState* atomic_marking_state() const {
-    DCHECK_NOT_NULL(atomic_marking_state_);
-    return atomic_marking_state_;
-  }
+  AtomicMarkingState* atomic_marking_state() { return &atomic_marking_state_; }
 
-  MarkCompactCollector::NonAtomicMarkingState* non_atomic_marking_state()
-      const {
-    DCHECK_NOT_NULL(non_atomic_marking_state_);
-    return non_atomic_marking_state_;
+  NonAtomicMarkingState* non_atomic_marking_state() {
+    return &non_atomic_marking_state_;
   }
 
   void NotifyLeftTrimming(HeapObject* from, HeapObject* to);
@@ -211,8 +233,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   void RecordWriteSlow(HeapObject* obj, Object** slot, Object* value);
   void RecordWriteIntoCodeSlow(Code* host, RelocInfo* rinfo, Object* value);
-  void RecordCodeTargetPatch(Code* host, Address pc, HeapObject* value);
-  void RecordCodeTargetPatch(Address pc, HeapObject* value);
 
   // Returns true if the function succeeds in transitioning the object
   // from white to grey.
@@ -253,7 +273,11 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   bool black_allocation() { return black_allocation_; }
 
-  void StartBlackAllocationForTesting() { StartBlackAllocation(); }
+  void StartBlackAllocationForTesting() {
+    if (!black_allocation_) {
+      StartBlackAllocation();
+    }
+  }
 
   void AbortBlackAllocation();
 
@@ -357,9 +381,9 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   Observer new_generation_observer_;
   Observer old_generation_observer_;
 
-  MarkCompactCollector::MarkingState* marking_state_;
-  MarkCompactCollector::AtomicMarkingState* atomic_marking_state_;
-  MarkCompactCollector::NonAtomicMarkingState* non_atomic_marking_state_;
+  MarkingState marking_state_;
+  AtomicMarkingState atomic_marking_state_;
+  NonAtomicMarkingState non_atomic_marking_state_;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(IncrementalMarking);
 };

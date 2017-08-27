@@ -26,12 +26,10 @@ class V8_EXPORT_PRIVATE BytecodeLoopAssignments {
 
   void Add(interpreter::Register r);
   void AddList(interpreter::Register r, uint32_t count);
-  void AddAll();
   void Union(const BytecodeLoopAssignments& other);
 
   bool ContainsParameter(int index) const;
   bool ContainsLocal(int index) const;
-  bool ContainsAccumulator() const;
 
   int parameter_count() const { return parameter_count_; }
   int local_count() const { return bit_vector_->length() - parameter_count_; }

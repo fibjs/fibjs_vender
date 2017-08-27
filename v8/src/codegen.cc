@@ -69,21 +69,6 @@ UNARY_MATH_FUNCTION(sqrt, CreateSqrtFunction)
 
 #undef UNARY_MATH_FUNCTION
 
-
-#ifdef DEBUG
-
-Comment::Comment(Assembler* assembler, const char* msg)
-    : assembler_(assembler), msg_(msg) {
-  assembler_->RecordComment(msg);
-}
-
-
-Comment::~Comment() {
-  if (msg_[0] == '[') assembler_->RecordComment("]");
-}
-
-#endif  // DEBUG
-
 void CodeGenerator::MakeCodePrologue(ParseInfo* parse_info,
                                      CompilationInfo* info, const char* kind) {
   bool print_ast = false;
@@ -99,9 +84,13 @@ void CodeGenerator::MakeCodePrologue(ParseInfo* parse_info,
 
   if (!FLAG_trace_codegen && !print_ast) return;
 
-  // Requires internalizing the AST, so make sure we are on the main thread.
+  // Requires internalizing the AST, so make sure we are on the main thread and
+  // allow handle dereference and allocations.
+  // TODO(rmcilroy): Make ast-printer print ast raw strings instead of
+  // internalized strings to avoid internalizing here.
   DCHECK(ThreadId::Current().Equals(info->isolate()->thread_id()));
-  AllowDeferredHandleDereference allow_deref;
+  AllowHandleDereference allow_deref;
+  AllowHandleAllocation allow_handles;
   AllowHeapAllocation allow_gc;
   parse_info->ast_value_factory()->Internalize(info->isolate());
 
@@ -128,15 +117,11 @@ Handle<Code> CodeGenerator::MakeCodeEpilogue(TurboAssembler* tasm,
   // Allocate and install the code.
   CodeDesc desc;
   Code::Flags flags = info->code_flags();
-  bool is_turbofanned =
-      Code::ExtractKindFromFlags(flags) == Code::OPTIMIZED_FUNCTION ||
-      info->IsStub();
   tasm->GetCode(isolate, &desc);
   if (eh_frame_writer) eh_frame_writer->GetEhFrame(&desc);
 
   Handle<Code> code = isolate->factory()->NewCode(
-      desc, flags, self_reference, false, info->prologue_offset(),
-      info->is_debug() && !is_turbofanned);
+      desc, flags, self_reference, false, info->prologue_offset());
   isolate->counters()->total_compiled_code_size()->Increment(
       code->instruction_size());
   return code;
@@ -273,10 +258,6 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
       }
     }
     if (info->IsOptimizing()) {
-      if (FLAG_print_unopt_code) {
-        os << "--- Unoptimized code ---\n";
-        info->closure()->shared()->code()->Disassemble(debug_name.get(), os);
-      }
       os << "--- Optimized code ---\n"
          << "optimization_id = " << info->optimization_id() << "\n";
     } else {

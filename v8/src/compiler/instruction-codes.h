@@ -47,12 +47,15 @@ enum class RecordWriteMode { kValueIsMap, kValueIsPointer, kValueIsAny };
   V(ArchCallJSFunction)                   \
   V(ArchTailCallAddress)                  \
   V(ArchPrepareCallCFunction)             \
+  V(ArchSaveCallerRegisters)              \
+  V(ArchRestoreCallerRegisters)           \
   V(ArchCallCFunction)                    \
   V(ArchPrepareTailCall)                  \
   V(ArchJmp)                              \
   V(ArchLookupSwitch)                     \
   V(ArchTableSwitch)                      \
   V(ArchNop)                              \
+  V(ArchDebugAbort)                       \
   V(ArchDebugBreak)                       \
   V(ArchComment)                          \
   V(ArchThrowTerminator)                  \

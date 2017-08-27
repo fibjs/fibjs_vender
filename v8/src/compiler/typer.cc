@@ -850,6 +850,9 @@ Type* Typer::Visitor::TypeTypedObjectState(Node* node) {
 
 Type* Typer::Visitor::TypeCall(Node* node) { return Type::Any(); }
 
+Type* Typer::Visitor::TypeCallWithCallerSavedRegisters(Node* node) {
+  UNREACHABLE();
+}
 
 Type* Typer::Visitor::TypeProjection(Node* node) {
   Type* const type = Operand(node, 0);
@@ -860,6 +863,8 @@ Type* Typer::Visitor::TypeProjection(Node* node) {
   }
   return Type::Any();
 }
+
+Type* Typer::Visitor::TypeMapGuard(Node* node) { UNREACHABLE(); }
 
 Type* Typer::Visitor::TypeTypeGuard(Node* node) {
   Type* const type = Operand(node, 0);
@@ -1141,6 +1146,9 @@ Type* Typer::Visitor::TypeJSCreateLiteralObject(Node* node) {
   return Type::OtherObject();
 }
 
+Type* Typer::Visitor::TypeJSCreateEmptyLiteralObject(Node* node) {
+  return Type::OtherObject();
+}
 
 Type* Typer::Visitor::TypeJSCreateLiteralRegExp(Node* node) {
   return Type::OtherObject();

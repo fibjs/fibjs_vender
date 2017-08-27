@@ -222,22 +222,10 @@ IC::IC(FrameDepth depth, Isolate* isolate, FeedbackNexus* nexus)
     constant_pool_address_ = constant_pool;
   }
   pc_address_ = StackFrame::ResolveReturnAddressLocation(pc_address);
-  if (nexus) {
-    kind_ = nexus->kind();
-    state_ = nexus->StateFromFeedback();
-    extra_ic_state_ = kNoExtraICState;
-  } else {
-    Code* target = this->target();
-    Code::Kind kind = target->kind();
-    if (kind == Code::COMPARE_IC) {
-      kind_ = FeedbackSlotKind::kCompareOp;
-    } else {
-      UNREACHABLE();
-      kind_ = FeedbackSlotKind::kInvalid;
-    }
-    state_ = StateFromCode(target);
-    extra_ic_state_ = target->extra_ic_state();
-  }
+  DCHECK_NOT_NULL(nexus);
+  kind_ = nexus->kind();
+  state_ = nexus->StateFromFeedback();
+  extra_ic_state_ = kNoExtraICState;
   old_state_ = state_;
 }
 
@@ -252,19 +240,6 @@ bool IC::ShouldPushPopSlotAndVector(Code::Kind kind) {
     return !StoreWithVectorDescriptor::kPassLastArgsOnStack;
   }
   return false;
-}
-
-InlineCacheState IC::StateFromCode(Code* code) {
-  Isolate* isolate = code->GetIsolate();
-  switch (code->kind()) {
-    case Code::COMPARE_IC: {
-      CompareICStub stub(isolate, code->extra_ic_state());
-      return stub.GetICState();
-    }
-    default:
-      if (code->is_debug_stub()) return UNINITIALIZED;
-      UNREACHABLE();
-  }
 }
 
 JSFunction* IC::GetHostFunction() const {
@@ -378,40 +353,6 @@ MaybeHandle<Object> IC::ReferenceError(Handle<Name> name) {
 }
 
 
-static void ComputeTypeInfoCountDelta(IC::State old_state, IC::State new_state,
-                                      int* polymorphic_delta,
-                                      int* generic_delta) {
-  switch (old_state) {
-    case UNINITIALIZED:
-    case PREMONOMORPHIC:
-      if (new_state == UNINITIALIZED || new_state == PREMONOMORPHIC) break;
-      if (new_state == MONOMORPHIC || new_state == POLYMORPHIC) {
-        *polymorphic_delta = 1;
-      } else if (new_state == MEGAMORPHIC || new_state == GENERIC) {
-        *generic_delta = 1;
-      }
-      break;
-    case MONOMORPHIC:
-    case POLYMORPHIC:
-      if (new_state == MONOMORPHIC || new_state == POLYMORPHIC) break;
-      *polymorphic_delta = -1;
-      if (new_state == MEGAMORPHIC || new_state == GENERIC) {
-        *generic_delta = 1;
-      }
-      break;
-    case MEGAMORPHIC:
-    case GENERIC:
-      if (new_state == MEGAMORPHIC || new_state == GENERIC) break;
-      *generic_delta = -1;
-      if (new_state == MONOMORPHIC || new_state == POLYMORPHIC) {
-        *polymorphic_delta = 1;
-      }
-      break;
-    case RECOMPUTE_HANDLER:
-      UNREACHABLE();
-  }
-}
-
 // static
 void IC::OnFeedbackChanged(Isolate* isolate, FeedbackVector* vector,
                            JSFunction* host_function) {
@@ -430,69 +371,6 @@ void IC::OnFeedbackChanged(Isolate* isolate, FeedbackVector* vector,
   // TODO(2029): When an optimized function is patched, it would
   // be nice to propagate the corresponding type information to its
   // unoptimized version for the benefit of later inlining.
-}
-
-void IC::PostPatching(Address address, Code* target, Code* old_target) {
-  // Type vector based ICs update these statistics at a different time because
-  // they don't always patch on state change.
-  DCHECK(target->kind() == Code::COMPARE_IC);
-
-  DCHECK(old_target->is_inline_cache_stub());
-  DCHECK(target->is_inline_cache_stub());
-  State old_state = StateFromCode(old_target);
-  State new_state = StateFromCode(target);
-
-  Isolate* isolate = target->GetIsolate();
-  Code* host =
-      isolate->inner_pointer_to_code_cache()->GetCacheEntry(address)->code;
-  if (host->kind() != Code::FUNCTION) return;
-
-  // Not all Code objects have TypeFeedbackInfo.
-  if (host->type_feedback_info()->IsTypeFeedbackInfo()) {
-    if (FLAG_type_info_threshold > 0) {
-      int polymorphic_delta = 0;  // "Polymorphic" here includes monomorphic.
-      int generic_delta = 0;      // "Generic" here includes megamorphic.
-      ComputeTypeInfoCountDelta(old_state, new_state, &polymorphic_delta,
-                                &generic_delta);
-      TypeFeedbackInfo* info =
-          TypeFeedbackInfo::cast(host->type_feedback_info());
-      info->change_ic_with_type_info_count(polymorphic_delta);
-      info->change_ic_generic_count(generic_delta);
-    }
-  }
-
-  // TODO(leszeks): Normally we would reset profiler ticks here -- but, we don't
-  // currently have access the the feedback vector from the IC. In practice,
-  // this is not an issue, as these ICs are only used by asm.js, which shouldn't
-  // have too many IC changes. This inconsistency should go away once these
-  // Crankshaft/hydrogen code stubs go away.
-
-  isolate->runtime_profiler()->NotifyICChanged();
-  // TODO(2029): When an optimized function is patched, it would
-  // be nice to propagate the corresponding type information to its
-  // unoptimized version for the benefit of later inlining.
-}
-
-void IC::Clear(Isolate* isolate, Address address, Address constant_pool) {
-  Code* target = GetTargetAtAddress(address, constant_pool);
-
-  // Don't clear debug break inline cache as it will remove the break point.
-  if (target->is_debug_stub()) return;
-
-  if (target->kind() == Code::COMPARE_IC) {
-    CompareIC::Clear(isolate, address, target, constant_pool);
-  }
-}
-
-void CompareIC::Clear(Isolate* isolate, Address address, Code* target,
-                      Address constant_pool) {
-  DCHECK(CodeStub::GetMajorKey(target) == CodeStub::CompareIC);
-  CompareICStub stub(target->stub_key(), isolate);
-  // Only clear CompareICs that can retain objects.
-  if (stub.state() != CompareICState::KNOWN_RECEIVER) return;
-  SetTargetAtAddress(address, GetRawUninitialized(isolate, stub.op()),
-                     constant_pool);
-  PatchInlinedSmiCode(isolate, address, DISABLE_INLINED_SMI_CHECK);
 }
 
 static bool MigrateDeprecated(Handle<Object> object) {
@@ -1142,6 +1020,17 @@ Handle<Object> LoadIC::GetMapIndependentHandler(LookupIterator* lookup) {
         FieldIndex index = FieldIndex::ForInObjectOffset(object_offset, *map);
         return SimpleFieldLoad(isolate(), index);
       }
+      if (holder->IsJSModuleNamespace()) {
+        Handle<ObjectHashTable> exports(
+            Handle<JSModuleNamespace>::cast(holder)->module()->exports(),
+            isolate());
+        int entry = exports->FindEntry(isolate(), lookup->name(),
+                                       Smi::ToInt(lookup->name()->GetHash()));
+        // We found the accessor, so the entry must exist.
+        DCHECK(entry != ObjectHashTable::kNotFound);
+        int index = ObjectHashTable::EntryToValueIndex(entry);
+        return LoadHandler::LoadModuleExport(isolate(), index);
+      }
 
       Handle<Object> accessors = lookup->GetAccessors();
       if (accessors->IsAccessorPair()) {
@@ -1566,7 +1455,8 @@ bool StoreIC::LookupForWrite(LookupIterator* it, Handle<Object> value,
         if (it->HolderIsReceiverOrHiddenPrototype()) return false;
 
         if (it->ExtendingNonExtensible(receiver)) return false;
-        it->PrepareTransitionToDataProperty(receiver, value, NONE, store_mode);
+        created_new_transition_ = it->PrepareTransitionToDataProperty(
+            receiver, value, NONE, store_mode);
         return it->IsCacheableTransition();
       }
     }
@@ -1574,7 +1464,8 @@ bool StoreIC::LookupForWrite(LookupIterator* it, Handle<Object> value,
 
   receiver = it->GetStoreTarget();
   if (it->ExtendingNonExtensible(receiver)) return false;
-  it->PrepareTransitionToDataProperty(receiver, value, NONE, store_mode);
+  created_new_transition_ =
+      it->PrepareTransitionToDataProperty(receiver, value, NONE, store_mode);
   return it->IsCacheableTransition();
 }
 
@@ -1685,6 +1576,12 @@ void StoreIC::UpdateCaches(LookupIterator* lookup, Handle<Object> value,
   if (!cached_handler.is_null()) {
     handler = cached_handler.ToHandleChecked();
   } else if (LookupForWrite(lookup, value, store_mode)) {
+    if (created_new_transition_) {
+      // The first time a transition is performed, there's a good chance that
+      // it won't be taken again, so don't bother creating a handler.
+      TRACE_IC("StoreIC", lookup->name());
+      return;
+    }
     handler = ComputeHandler(lookup);
   } else {
     TRACE_GENERIC_IC("LookupForWrite said 'false'");
@@ -2583,87 +2480,6 @@ RUNTIME_FUNCTION(Runtime_ElementsTransitionAndStoreIC_Miss) {
   RETURN_RESULT_OR_FAILURE(
       isolate,
       Runtime::SetObjectProperty(isolate, object, key, value, language_mode));
-}
-
-
-Code* CompareIC::GetRawUninitialized(Isolate* isolate, Token::Value op) {
-  CompareICStub stub(isolate, op, CompareICState::UNINITIALIZED,
-                     CompareICState::UNINITIALIZED,
-                     CompareICState::UNINITIALIZED);
-  Code* code = NULL;
-  CHECK(stub.FindCodeInCache(&code));
-  return code;
-}
-
-Code* CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
-  HandleScope scope(isolate());
-  CompareICStub old_stub(target()->stub_key(), isolate());
-  CompareICState::State new_left =
-      CompareICState::NewInputState(old_stub.left(), x);
-  CompareICState::State new_right =
-      CompareICState::NewInputState(old_stub.right(), y);
-  CompareICState::State state = CompareICState::TargetState(
-      isolate(), old_stub.state(), old_stub.left(), old_stub.right(), op_,
-      HasInlinedSmiCode(address()), x, y);
-  CompareICStub stub(isolate(), op_, new_left, new_right, state);
-  if (state == CompareICState::KNOWN_RECEIVER) {
-    stub.set_known_map(
-        Handle<Map>(Handle<JSReceiver>::cast(x)->map(), isolate()));
-  }
-  Handle<Code> new_target = stub.GetCode();
-  set_target(*new_target);
-
-  if (FLAG_ic_stats &
-      v8::tracing::TracingCategoryObserver::ENABLED_BY_TRACING) {
-    auto ic_stats = ICStats::instance();
-    ic_stats->Begin();
-    ICInfo& ic_info = ic_stats->Current();
-    ic_info.type = "CompareIC";
-    JavaScriptFrame::CollectTopFrameForICStats(isolate());
-    ic_info.state = "((";
-    ic_info.state += CompareICState::GetStateName(old_stub.left());
-    ic_info.state += "+";
-    ic_info.state += CompareICState::GetStateName(old_stub.right());
-    ic_info.state += "=";
-    ic_info.state += CompareICState::GetStateName(old_stub.state());
-    ic_info.state += ")->(";
-    ic_info.state += CompareICState::GetStateName(new_left);
-    ic_info.state += "+";
-    ic_info.state += CompareICState::GetStateName(new_right);
-    ic_info.state += "=";
-    ic_info.state += CompareICState::GetStateName(state);
-    ic_info.state += "))#";
-    ic_info.state += Token::Name(op_);
-    ic_stats->End();
-  } else if (FLAG_ic_stats) {
-    int line;
-    int column;
-    Address pc = GetAbstractPC(&line, &column);
-    LOG(isolate(),
-        CompareIC(pc, line, column, *stub.GetCode(), Token::Name(op_),
-                  CompareICState::GetStateName(old_stub.left()),
-                  CompareICState::GetStateName(old_stub.right()),
-                  CompareICState::GetStateName(old_stub.state()),
-                  CompareICState::GetStateName(new_left),
-                  CompareICState::GetStateName(new_right),
-                  CompareICState::GetStateName(state)));
-  }
-
-  // Activate inlined smi code.
-  if (old_stub.state() == CompareICState::UNINITIALIZED) {
-    PatchInlinedSmiCode(isolate(), address(), ENABLE_INLINED_SMI_CHECK);
-  }
-
-  return *new_target;
-}
-
-
-// Used from CompareICStub::GenerateMiss in code-stubs-<arch>.cc.
-RUNTIME_FUNCTION(Runtime_CompareIC_Miss) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 3);
-  CompareIC ic(isolate, static_cast<Token::Value>(args.smi_at(2)));
-  return ic.UpdateCaches(args.at(0), args.at(1));
 }
 
 

@@ -199,10 +199,10 @@ bool CompilerDispatcher::CanEnqueue() {
 bool CompilerDispatcher::CanEnqueue(Handle<SharedFunctionInfo> function) {
   if (!CanEnqueue()) return false;
 
-  // We only handle functions (no eval / top-level code / wasm) that are
+  // We only handle functions (no eval / top-level code / native) that are
   // attached to a script.
   if (!function->script()->IsScript() || function->is_toplevel() ||
-      function->asm_function() || function->native()) {
+      function->native()) {
     return false;
   }
 
@@ -250,33 +250,6 @@ bool CompilerDispatcher::Enqueue(Handle<SharedFunctionInfo> function) {
   std::unique_ptr<CompilerDispatcherJob> job(new UnoptimizedCompileJob(
       isolate_, tracer_.get(), function, max_stack_size_));
   Enqueue(std::move(job));
-  return true;
-}
-
-bool CompilerDispatcher::Enqueue(
-    Handle<String> source, int start_position, int end_position,
-    LanguageMode language_mode, int function_literal_id, bool native,
-    bool module, bool is_named_expression, int compiler_hints,
-    UnoptimizedCompileJobFinishCallback* finish_callback, JobId* job_id) {
-  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
-               "V8.CompilerDispatcherEnqueue");
-  if (!CanEnqueue()) return false;
-
-  if (trace_compiler_dispatcher_) {
-    PrintF("CompilerDispatcher: enqueuing function at %d for initial parse\n",
-           start_position);
-  }
-
-  std::unique_ptr<CompilerDispatcherJob> job(new UnoptimizedCompileJob(
-      isolate_->thread_id().ToInteger(), tracer_.get(), max_stack_size_, source,
-      start_position, end_position, language_mode, function_literal_id, native,
-      module, is_named_expression, isolate_->heap()->HashSeed(),
-      isolate_->allocator(), compiler_hints, isolate_->ast_string_constants(),
-      finish_callback));
-  JobId id = Enqueue(std::move(job));
-  if (job_id != nullptr) {
-    *job_id = id;
-  }
   return true;
 }
 

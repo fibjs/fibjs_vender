@@ -6,6 +6,7 @@
 
 #include "src/assembler-inl.h"
 #include "src/heap/heap-inl.h"
+#include "src/snapshot/builtin-deserializer.h"
 #include "src/snapshot/snapshot.h"
 
 namespace v8 {
@@ -13,19 +14,26 @@ namespace internal {
 
 void StartupDeserializer::DeserializeInto(Isolate* isolate) {
   Initialize(isolate);
-  if (!ReserveSpace()) V8::FatalProcessOutOfMemory("StartupDeserializer");
+
+  BuiltinDeserializer builtin_deserializer(builtin_data_);
+  builtin_deserializer.Initialize(isolate);
+
+  if (!Deserializer::ReserveSpace(this, &builtin_deserializer)) {
+    V8::FatalProcessOutOfMemory("StartupDeserializer");
+  }
 
   // No active threads.
   DCHECK_NULL(isolate->thread_manager()->FirstThreadStateInUse());
   // No active handles.
   DCHECK(isolate->handle_scope_implementer()->blocks()->is_empty());
   // Partial snapshot cache is not yet populated.
-  DCHECK(isolate->partial_snapshot_cache()->is_empty());
+  DCHECK(isolate->partial_snapshot_cache()->empty());
   // Builtins are not yet created.
   DCHECK(!isolate->builtins()->is_initialized());
 
   {
     DisallowHeapAllocation no_gc;
+
     isolate->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG_ROOT_LIST);
     isolate->heap()->IterateSmiRoots(this);
     isolate->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG);
@@ -34,6 +42,11 @@ void StartupDeserializer::DeserializeInto(Isolate* isolate) {
     DeserializeDeferredObjects();
     FlushICacheForNewIsolate();
     RestoreExternalReferenceRedirectors(accessor_infos());
+
+    // Eagerly deserialize all builtins from the builtin snapshot.
+    // TODO(6624): Deserialize lazily.
+    builtin_deserializer.DeserializeAllBuiltins();
+    PostProcessDeferredBuiltinReferences();
   }
 
   isolate->heap()->set_native_contexts_list(isolate->heap()->undefined_value());

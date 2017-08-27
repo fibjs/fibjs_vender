@@ -25,8 +25,7 @@ Node* ForInBuiltinsAssembler::ForInFilter(Node* key, Node* object,
 
   VARIABLE(var_result, MachineRepresentation::kTagged, key);
 
-  Node* has_property =
-      HasProperty(object, key, context, Runtime::kForInHasProperty);
+  Node* has_property = HasProperty(object, key, context, kForInHasProperty);
 
   Label end(this);
   GotoIf(WordEqual(has_property, BooleanConstant(true)), &end);
@@ -148,7 +147,7 @@ void ForInBuiltinsAssembler::CheckEnumCache(Node* receiver, Label* use_cache,
   {
     // Avoid runtime-call for empty dictionary receivers.
     GotoIfNot(IsDictionaryMap(map), use_runtime);
-    Node* properties = LoadProperties(receiver);
+    Node* properties = LoadSlowProperties(receiver);
     Node* length = LoadFixedArrayElement(
         properties, NameDictionary::kNumberOfElementsIndex);
     GotoIfNot(WordEqual(length, SmiConstant(0)), use_runtime);

@@ -207,6 +207,25 @@ void HeapProfiler::ClearHeapObjectMap() {
 
 Heap* HeapProfiler::heap() const { return ids_->heap(); }
 
+void HeapProfiler::QueryObjects(Handle<Context> context,
+                                debug::QueryObjectPredicate* predicate,
+                                PersistentValueVector<v8::Object>* objects) {
+  // We should return accurate information about live objects, so we need to
+  // collect all garbage first.
+  heap()->CollectAllAvailableGarbage(
+      GarbageCollectionReason::kLowMemoryNotification);
+  heap()->CollectAllGarbage(Heap::kMakeHeapIterableMask,
+                            GarbageCollectionReason::kHeapProfiler);
+  HeapIterator heap_iterator(heap());
+  HeapObject* heap_obj;
+  while ((heap_obj = heap_iterator.next()) != nullptr) {
+    if (!heap_obj->IsJSObject() || heap_obj->IsExternal()) continue;
+    v8::Local<v8::Object> v8_obj(
+        Utils::ToLocal(handle(JSObject::cast(heap_obj))));
+    if (!predicate->Filter(v8_obj)) continue;
+    objects->Append(v8_obj);
+  }
+}
 
 }  // namespace internal
 }  // namespace v8

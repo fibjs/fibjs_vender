@@ -27,7 +27,8 @@ class ModuleCompiler {
   // In {CompileToModuleObject}, it will transfer ownership to the generated
   // {WasmModuleWrapper}. If this method is not called, ownership may be
   // reclaimed by explicitely releasing the {module_} field.
-  ModuleCompiler(Isolate* isolate, std::unique_ptr<WasmModule> module);
+  ModuleCompiler(Isolate* isolate, std::unique_ptr<WasmModule> module,
+                 Handle<Code> centry_stub);
 
   // The actual runnable task that performs compilations in the background.
   class CompilationTask : public CancelableTask {
@@ -48,7 +49,7 @@ class ModuleCompiler {
 
     ~CompilationUnitBuilder() { DCHECK(units_.empty()); }
 
-    void AddUnit(const ModuleEnv* module_env, const WasmFunction* function,
+    void AddUnit(compiler::ModuleEnv* module_env, const WasmFunction* function,
                  uint32_t buffer_offset, Vector<const uint8_t> bytes,
                  WasmName name) {
       units_.emplace_back(new compiler::WasmCompilationUnit(
@@ -128,9 +129,7 @@ class ModuleCompiler {
 
   size_t InitializeCompilationUnits(const std::vector<WasmFunction>& functions,
                                     const ModuleWireBytes& wire_bytes,
-                                    const ModuleEnv* module_env);
-
-  void ReopenHandlesInDeferredScope();
+                                    compiler::ModuleEnv* module_env);
 
   void RestartCompilationTasks();
 
@@ -143,17 +142,18 @@ class ModuleCompiler {
                                           int* func_index);
 
   void CompileInParallel(const ModuleWireBytes& wire_bytes,
-                         const ModuleEnv* module_env,
+                         compiler::ModuleEnv* module_env,
                          std::vector<Handle<Code>>& results,
                          ErrorThrower* thrower);
 
   void CompileSequentially(const ModuleWireBytes& wire_bytes,
-                           const ModuleEnv* module_env,
+                           compiler::ModuleEnv* module_env,
                            std::vector<Handle<Code>>& results,
                            ErrorThrower* thrower);
 
   void ValidateSequentially(const ModuleWireBytes& wire_bytes,
-                            const ModuleEnv* module_env, ErrorThrower* thrower);
+                            compiler::ModuleEnv* module_env,
+                            ErrorThrower* thrower);
 
   MaybeHandle<WasmModuleObject> CompileToModuleObject(
       ErrorThrower* thrower, const ModuleWireBytes& wire_bytes,
@@ -164,9 +164,9 @@ class ModuleCompiler {
 
  private:
   MaybeHandle<WasmModuleObject> CompileToModuleObjectInternal(
-      ErrorThrower* thrower, const ModuleWireBytes& wire_bytes,
-      Handle<Script> asm_js_script,
-      Vector<const byte> asm_js_offset_table_bytes, Factory* factory);
+      Isolate* isolate, ErrorThrower* thrower,
+      const ModuleWireBytes& wire_bytes, Handle<Script> asm_js_script,
+      Vector<const byte> asm_js_offset_table_bytes);
 
   Isolate* isolate_;
   std::unique_ptr<WasmModule> module_;
@@ -234,6 +234,7 @@ class InstanceBuilder {
   std::vector<Handle<JSFunction>> js_wrappers_;
   JSToWasmWrapperCache js_to_wasm_cache_;
   WeakCallbackInfo<void>::Callback instance_finalizer_callback_;
+  GlobalHandleLifetimeManager globals_manager_;
 
   const std::shared_ptr<Counters>& async_counters() const {
     return async_counters_;
@@ -296,8 +297,7 @@ class InstanceBuilder {
 
   // Process the exports, creating wrappers for functions, tables, memories,
   // and globals.
-  void ProcessExports(Handle<FixedArray> code_table,
-                      Handle<WasmInstanceObject> instance,
+  void ProcessExports(Handle<WasmInstanceObject> instance,
                       Handle<WasmCompiledModule> compiled_module);
 
   void InitializeTables(Handle<WasmInstanceObject> instance,
@@ -346,12 +346,14 @@ class AsyncCompileJob {
   Handle<Context> context_;
   Handle<JSPromise> module_promise_;
   std::unique_ptr<ModuleCompiler> compiler_;
-  std::unique_ptr<ModuleEnv> module_env_;
+  std::unique_ptr<compiler::ModuleEnv> module_env_;
+  GlobalHandleLifetimeManager globals_manager_;
 
   std::vector<DeferredHandles*> deferred_handles_;
   Handle<WasmModuleObject> module_object_;
   Handle<WasmCompiledModule> compiled_module_;
   Handle<FixedArray> code_table_;
+  Handle<FixedArray> export_wrappers_;
   size_t outstanding_units_ = 0;
   std::unique_ptr<CompileStep> step_;
   CancelableTaskManager background_task_manager_;
@@ -364,8 +366,6 @@ class AsyncCompileJob {
     return async_counters_;
   }
   Counters* counters() const { return async_counters().get(); }
-
-  void ReopenHandlesInDeferredScope();
 
   void AsyncCompileFailed(ErrorThrower& thrower);
 

@@ -300,6 +300,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   /* Strings */                      \
   V(StringCharCodeAt)                \
   V(StringIndexOf)                   \
+  V(StringIncludes)                  \
   V(StringReplaceOneCharWithString)  \
   V(SubString)                       \
   V(RegExpInternalReplace)           \
@@ -319,8 +320,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(GenerateRandomNumbers)           \
   V(GlobalPrint)                     \
   V(AllocateInNewSpace)              \
-  V(AllocateSeqOneByteString)        \
-  V(AllocateSeqTwoByteString)        \
+  V(AllocateInTargetSpace)           \
   V(ObjectCreate)                    \
   V(ObjectHasOwnProperty)            \
   V(ArrayIndexOf)                    \
@@ -409,7 +409,9 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
     case Bytecode::kCreateWithContext:
     // Literals.
     case Bytecode::kCreateArrayLiteral:
+    case Bytecode::kCreateEmptyArrayLiteral:
     case Bytecode::kCreateObjectLiteral:
+    case Bytecode::kCreateEmptyObjectLiteral:
     case Bytecode::kCreateRegExpLiteral:
     // Allocations.
     case Bytecode::kCreateClosure:

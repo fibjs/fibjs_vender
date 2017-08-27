@@ -225,6 +225,11 @@ void InstructionSelector::VisitStackSlot(Node* node) {
        sequence()->AddImmediate(Constant(slot)), 0, nullptr);
 }
 
+void InstructionSelector::VisitDebugAbort(Node* node) {
+  IA32OperandGenerator g(this);
+  Emit(kArchDebugAbort, g.NoOutput(), g.UseFixed(node->InputAt(0), edx));
+}
+
 void InstructionSelector::VisitLoad(Node* node) {
   LoadRepresentation load_rep = LoadRepresentationOf(node->op());
 
@@ -1908,8 +1913,16 @@ VISIT_ATOMIC_BINOP(Xor)
   V(I32x4Mul)              \
   V(I32x4MinS)             \
   V(I32x4MaxS)             \
+  V(I32x4Eq)               \
+  V(I32x4Ne)               \
+  V(I32x4GtS)              \
+  V(I32x4GeS)              \
   V(I32x4MinU)             \
-  V(I32x4MaxU)
+  V(I32x4MaxU)             \
+  V(I32x4GtU)              \
+  V(I32x4GeU)
+
+#define SIMD_UNOP_LIST(V) V(I32x4Neg)
 
 #define SIMD_SHIFT_OPCODES(V) \
   V(I32x4Shl)                 \
@@ -1963,6 +1976,14 @@ SIMD_TYPES(VISIT_SIMD_REPLACE_LANE)
   }
 SIMD_SHIFT_OPCODES(VISIT_SIMD_SHIFT)
 #undef VISIT_SIMD_SHIFT
+
+#define VISIT_SIMD_UNOP(Opcode)                                             \
+  void InstructionSelector::Visit##Opcode(Node* node) {                     \
+    IA32OperandGenerator g(this);                                           \
+    Emit(kIA32##Opcode, g.DefineAsRegister(node), g.Use(node->InputAt(0))); \
+  }
+SIMD_UNOP_LIST(VISIT_SIMD_UNOP)
+#undef VISIT_SIMD_UNOP
 
 #define VISIT_SIMD_BINOP(Opcode)                           \
   void InstructionSelector::Visit##Opcode(Node* node) {    \

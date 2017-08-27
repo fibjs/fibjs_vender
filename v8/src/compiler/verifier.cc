@@ -518,6 +518,7 @@ void Verifier::Visitor::Check(Node* node) {
       // TODO(jarin): what are the constraints on these?
       break;
     case IrOpcode::kCall:
+    case IrOpcode::kCallWithCallerSavedRegisters:
       // TODO(rossberg): what are the constraints on these?
       break;
     case IrOpcode::kTailCall:
@@ -618,6 +619,7 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::Array());
       break;
     case IrOpcode::kJSCreateLiteralObject:
+    case IrOpcode::kJSCreateEmptyLiteralObject:
     case IrOpcode::kJSCreateLiteralRegExp:
       // Type is OtherObject.
       CheckTypeIs(node, Type::OtherObject());
@@ -768,6 +770,7 @@ void Verifier::Visitor::Check(Node* node) {
       break;
 
     case IrOpcode::kComment:
+    case IrOpcode::kDebugAbort:
     case IrOpcode::kDebugBreak:
     case IrOpcode::kRetain:
     case IrOpcode::kUnsafePointerAdd:
@@ -1283,6 +1286,9 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kNumberSilenceNaN:
       CheckValueInputIs(node, 0, Type::Number());
       CheckTypeIs(node, Type::Number());
+      break;
+    case IrOpcode::kMapGuard:
+      CheckNotTyped(node);
       break;
     case IrOpcode::kTypeGuard:
       CheckTypeIs(node, TypeGuardTypeOf(node->op()));

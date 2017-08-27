@@ -1956,15 +1956,6 @@ void MacroAssembler::Cmp(const Operand& dst, Handle<Object> source) {
   }
 }
 
-void MacroAssembler::PushObject(Handle<Object> source) {
-  AllowDeferredHandleDereference smi_check;
-  if (source->IsSmi()) {
-    Push(Smi::cast(*source));
-  } else {
-    Push(Handle<HeapObject>::cast(source));
-  }
-}
-
 void TurboAssembler::Push(Handle<HeapObject> source) {
   Move(kScratchRegister, source);
   Push(kScratchRegister);
@@ -2172,8 +2163,7 @@ void TurboAssembler::Call(Handle<Code> code_object, RelocInfo::Mode rmode) {
 #ifdef DEBUG
   int end_position = pc_offset() + CallSize(code_object);
 #endif
-  DCHECK(RelocInfo::IsCodeTarget(rmode) ||
-         rmode == RelocInfo::CODE_AGE_SEQUENCE);
+  DCHECK(RelocInfo::IsCodeTarget(rmode));
   call(code_object, rmode);
 #ifdef DEBUG
   CHECK_EQ(end_position, pc_offset());
@@ -2658,6 +2648,19 @@ void MacroAssembler::AssertUndefinedOrAllocationSite(Register object) {
   }
 }
 
+void MacroAssembler::GetMapConstructor(Register result, Register map,
+                                       Register temp) {
+  Label done, loop;
+  movp(result, FieldOperand(map, Map::kConstructorOrBackPointerOffset));
+  bind(&loop);
+  JumpIfSmi(result, &done, Label::kNear);
+  CmpObjectType(result, MAP_TYPE, temp);
+  j(not_equal, &done, Label::kNear);
+  movp(result, FieldOperand(result, Map::kConstructorOrBackPointerOffset));
+  jmp(&loop);
+  bind(&done);
+}
+
 void MacroAssembler::SetCounter(StatsCounter* counter, int value) {
   if (FLAG_native_code_counters && counter->Enabled()) {
     Operand counter_operand = ExternalOperand(ExternalReference(counter));
@@ -2940,20 +2943,11 @@ void TurboAssembler::StubPrologue(StackFrame::Type type) {
   Push(Immediate(StackFrame::TypeToMarker(type)));
 }
 
-void TurboAssembler::Prologue(bool code_pre_aging) {
-  PredictableCodeSizeScope predictible_code_size_scope(this,
-      kNoCodeAgeSequenceLength);
-  if (code_pre_aging) {
-    // Pre-age the code.
-    Call(BUILTIN_CODE(isolate(), MarkCodeAsExecutedOnce),
-         RelocInfo::CODE_AGE_SEQUENCE);
-    Nop(kNoCodeAgeSequenceLength - Assembler::kShortCallInstructionLength);
-  } else {
-    pushq(rbp);  // Caller's frame pointer.
-    movp(rbp, rsp);
-    Push(rsi);  // Callee's context.
-    Push(rdi);  // Callee's JS function.
-  }
+void TurboAssembler::Prologue() {
+  pushq(rbp);  // Caller's frame pointer.
+  movp(rbp, rsp);
+  Push(rsi);  // Callee's context.
+  Push(rdi);  // Callee's JS function.
 }
 
 void TurboAssembler::EnterFrame(StackFrame::Type type) {

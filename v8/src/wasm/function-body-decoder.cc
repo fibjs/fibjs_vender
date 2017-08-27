@@ -619,11 +619,7 @@ class WasmFullDecoder : public WasmDecoder {
       : WasmFullDecoder(zone, module, nullptr, body) {}
 
   WasmFullDecoder(Zone* zone, TFBuilder* builder, const FunctionBody& body)
-      : WasmFullDecoder(zone,
-                        builder->module_env() == nullptr
-                            ? nullptr
-                            : builder->module_env()->module(),
-                        builder, body) {}
+      : WasmFullDecoder(zone, builder->module(), builder, body) {}
 
   bool Decode() {
     if (FLAG_wasm_code_fuzzer_gen_test) {
@@ -1399,23 +1395,17 @@ class WasmFullDecoder : public WasmDecoder {
         PrintF(" ");
         for (size_t i = 0; i < control_.size(); ++i) {
           Control* c = &control_[i];
-          enum ControlKind {
-            kControlIf,
-            kControlBlock,
-            kControlLoop,
-            kControlTry
-          };
           switch (c->kind) {
-            case kControlIf:
+            case v8::internal::wasm::kControlIf:
               PrintF("I");
               break;
-            case kControlBlock:
+            case v8::internal::wasm::kControlBlock:
               PrintF("B");
               break;
-            case kControlLoop:
+            case v8::internal::wasm::kControlLoop:
               PrintF("L");
               break;
-            case kControlTry:
+            case v8::internal::wasm::kControlTry:
               PrintF("T");
               break;
             default:
@@ -1575,7 +1565,7 @@ class WasmFullDecoder : public WasmDecoder {
     Value val = Pop(1, type);
     Value index = Pop(0, kWasmI32);
     BUILD(StoreMem, mem_type, index.node, operand.offset, operand.alignment,
-          val.node, position());
+          val.node, position(), type);
     return operand.length;
   }
 

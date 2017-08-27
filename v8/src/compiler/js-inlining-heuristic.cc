@@ -56,7 +56,7 @@ bool CanInlineFunction(Handle<SharedFunctionInfo> shared) {
   if (!shared->IsUserJavaScript()) return false;
 
   // If there is no bytecode array, it is either not compiled or it is compiled
-  // with full-codegen for asm.js pipeline. In either case we don't want to
+  // with WebAssembly for the asm.js pipeline. In either case we don't want to
   // inline.
   if (!shared->HasBytecodeArray()) return false;
 
@@ -65,8 +65,6 @@ bool CanInlineFunction(Handle<SharedFunctionInfo> shared) {
     return false;
   }
 
-  // Avoid inlining across the boundary of asm.js code.
-  if (shared->asm_function()) return false;
   return true;
 }
 
@@ -108,6 +106,9 @@ Reduction JSInliningHeuristic::Reduce(Node* node) {
   // Functions marked with %SetForceInlineFlag are immediately inlined.
   bool can_inline = false, force_inline = true, small_inline = true;
   candidate.total_size = 0;
+  Node* frame_state = NodeProperties::GetFrameStateInput(node);
+  FrameStateInfo const& frame_info = OpParameter<FrameStateInfo>(frame_state);
+  Handle<SharedFunctionInfo> frame_shared_info;
   for (int i = 0; i < candidate.num_functions; ++i) {
     Handle<SharedFunctionInfo> shared =
         candidate.functions[i].is_null()
@@ -117,6 +118,21 @@ Reduction JSInliningHeuristic::Reduce(Node* node) {
       force_inline = false;
     }
     candidate.can_inline_function[i] = CanInlineFunction(shared);
+    // Do not allow direct recursion i.e. f() -> f(). We still allow indirect
+    // recurion like f() -> g() -> f(). The indirect recursion is helpful in
+    // cases where f() is a small dispatch function that calls the appropriate
+    // function. In the case of direct recursion, we only have some static
+    // information for the first level of inlining and it may not be that useful
+    // to just inline one level in recursive calls. In some cases like tail
+    // recursion we may benefit from recursive inlining, if we have additional
+    // analysis that converts them to iterative implementations. Though it is
+    // not obvious if such an anlysis is needed.
+    if (frame_info.shared_info().ToHandle(&frame_shared_info) &&
+        *frame_shared_info == *shared) {
+      TRACE("Not considering call site #%d:%s, because of recursive inlining\n",
+            node->id(), node->op()->mnemonic());
+      candidate.can_inline_function[i] = false;
+    }
     if (candidate.can_inline_function[i]) {
       can_inline = true;
       candidate.total_size += shared->bytecode_array()->length();

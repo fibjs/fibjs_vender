@@ -316,6 +316,10 @@ class TurboAssembler : public Assembler {
   void Call(ExternalReference ext);
   void Call(Label* target) { call(target); }
 
+  void CallForDeoptimization(Address target, RelocInfo::Mode rmode) {
+    call(target, rmode);
+  }
+
   // The size of the code generated for different call instructions.
   int CallSize(ExternalReference ext);
   int CallSize(Address destination) { return kCallSequenceLength; }
@@ -346,7 +350,7 @@ class TurboAssembler : public Assembler {
 
   // Generates function and stub prologue code.
   void StubPrologue(StackFrame::Type type);
-  void Prologue(bool code_pre_aging);
+  void Prologue();
 
   // Calls Abort(msg) if the condition cc is not satisfied.
   // Use --debug_code to enable.
@@ -866,7 +870,6 @@ class MacroAssembler : public TurboAssembler {
   void Cmp(const Operand& dst, Handle<Object> source);
   void Cmp(Register dst, Smi* src);
   void Cmp(const Operand& dst, Smi* src);
-  void PushObject(Handle<Object> source);
 
   void GetWeakValue(Register value, Handle<WeakCell> cell);
 
@@ -1064,6 +1067,10 @@ class MacroAssembler : public TurboAssembler {
   // ---------------------------------------------------------------------------
   // Support functions.
 
+  // Machine code version of Map::GetConstructor().
+  // |temp| holds |result|'s map when done.
+  void GetMapConstructor(Register result, Register map, Register temp);
+
   // Load the global proxy from the current context.
   void LoadGlobalProxy(Register dst) {
     LoadNativeContextSlot(Context::GLOBAL_PROXY_INDEX, dst);
@@ -1185,7 +1192,6 @@ class MacroAssembler : public TurboAssembler {
                           Register mask_reg);
 
   // Compute memory operands for safepoint stack slots.
-  Operand SafepointRegisterSlot(Register reg);
   static int SafepointRegisterStackIndex(int reg_code) {
     return kNumSafepointRegisters - kSafepointPushRegisterIndices[reg_code] - 1;
   }

@@ -6,6 +6,7 @@
 #define V8_HEAP_HEAP_H_
 
 #include <cmath>
+#include <unordered_map>
 #include <vector>
 
 // Clients of this interface shouldn't depend on lots of heap internals.
@@ -17,7 +18,6 @@
 #include "src/debug/debug-interface.h"
 #include "src/globals.h"
 #include "src/heap-symbols.h"
-#include "src/list.h"
 #include "src/objects.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/string-table.h"
@@ -199,7 +199,7 @@ using v8::MemoryPressureLevel;
   V(FixedArray, string_split_cache, StringSplitCache)                          \
   V(FixedArray, regexp_multiple_cache, RegExpMultipleCache)                    \
   /* Lists and dictionaries */                                                 \
-  V(NameDictionary, empty_property_dictionary, EmptyPropertiesDictionary)      \
+  V(NameDictionary, empty_property_dictionary, EmptyPropertyDictionary)        \
   V(NameDictionary, public_symbol_table, PublicSymbolTable)                    \
   V(NameDictionary, api_symbol_table, ApiSymbolTable)                          \
   V(NameDictionary, api_private_symbol_table, ApiPrivateSymbolTable)           \
@@ -554,7 +554,7 @@ class Heap {
 
   enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT, MINOR_MARK_COMPACT };
 
-  enum UpdateAllocationSiteMode { kGlobal, kCached };
+  using PretenuringFeedbackMap = std::unordered_map<AllocationSite*, size_t>;
 
   // Taking this mutex prevents the GC from entering a phase that relocates
   // object references.
@@ -716,9 +716,6 @@ class Heap {
 
   static bool IsImmovable(HeapObject* object);
 
-  // Maintain consistency of live bytes during incremental marking.
-  void AdjustLiveBytes(HeapObject* object, int by);
-
   // Trim the given array from the left. Note that this relocates the object
   // start and hence is only valid if there is only a single reference to it.
   FixedArrayBase* LeftTrimFixedArray(FixedArrayBase* obj, int elements_to_trim);
@@ -779,7 +776,7 @@ class Heap {
   inline AllocationMemento* FindAllocationMemento(Map* map, HeapObject* object);
 
   // Returns false if not able to reserve.
-  bool ReserveSpace(Reservation* reservations, List<Address>* maps);
+  bool ReserveSpace(Reservation* reservations, std::vector<Address>* maps);
 
   //
   // Support for the API.
@@ -866,7 +863,7 @@ class Heap {
   // This event is triggered after successful allocation of a new object made
   // by runtime. Allocations of target space for object evacuation do not
   // trigger the event. In order to track ALL allocations one must turn off
-  // FLAG_inline_new and FLAG_use_allocation_folding.
+  // FLAG_inline_new.
   inline void OnAllocationEvent(HeapObject* object, int size_in_bytes);
 
   // This event is triggered after object is moved to a new place.
@@ -1180,8 +1177,8 @@ class Heap {
   void FinalizeIncrementalMarkingIfComplete(GarbageCollectionReason gc_reason);
 
   void RegisterDeserializedObjectsForBlackAllocation(
-      Reservation* reservations, List<HeapObject*>* large_objects,
-      List<Address>* maps);
+      Reservation* reservations, const std::vector<HeapObject*>& large_objects,
+      const std::vector<Address>& maps);
 
   IncrementalMarking* incremental_marking() { return incremental_marking_; }
 
@@ -1394,6 +1391,7 @@ class Heap {
   void UpdateOldGenerationAllocationCounter() {
     old_generation_allocation_counter_at_last_gc_ =
         OldGenerationAllocationCounter();
+    old_generation_size_at_last_gc_ = 0;
   }
 
   size_t OldGenerationAllocationCounter() {
@@ -1407,7 +1405,21 @@ class Heap {
   }
 
   size_t PromotedSinceLastGC() {
-    return PromotedSpaceSizeOfObjects() - old_generation_size_at_last_gc_;
+    size_t old_generation_size = PromotedSpaceSizeOfObjects();
+    DCHECK_GE(old_generation_size, old_generation_size_at_last_gc_);
+    return old_generation_size - old_generation_size_at_last_gc_;
+  }
+
+  // This is called by the sweeper when it discovers more free space
+  // as expected at the end of the last GC.
+  void NotifyRefinedOldGenerationSize(size_t decreased_bytes) {
+    if (old_generation_size_at_last_gc_ != 0) {
+      // PromotedSpaceSizeOfObjects() is now smaller by |decreased_bytes|.
+      // Adjust old_generation_size_at_last_gc_ too so that PromotedSinceLastGC
+      // stay monotonically non-decreasing function.
+      DCHECK_GE(old_generation_size_at_last_gc_, decreased_bytes);
+      old_generation_size_at_last_gc_ -= decreased_bytes;
+    }
   }
 
   int gc_count() const { return gc_count_; }
@@ -1461,14 +1473,11 @@ class Heap {
   // Allocation site tracking. =================================================
   // ===========================================================================
 
-  // Updates the AllocationSite of a given {object}. If the global prenuring
-  // storage is passed as {pretenuring_feedback} the memento found count on
-  // the corresponding allocation site is immediately updated and an entry
-  // in the hash map is created. Otherwise the entry (including a the count
-  // value) is cached on the local pretenuring feedback.
-  template <UpdateAllocationSiteMode mode>
-  inline void UpdateAllocationSite(Map* map, HeapObject* object,
-                                   base::HashMap* pretenuring_feedback);
+  // Updates the AllocationSite of a given {object}. The entry (including the
+  // count) is cached on the local pretenuring feedback.
+  inline void UpdateAllocationSite(
+      Map* map, HeapObject* object,
+      PretenuringFeedbackMap* pretenuring_feedback);
 
   // Removes an entry from the global pretenuring storage.
   inline void RemoveAllocationSitePretenuringFeedback(AllocationSite* site);
@@ -1477,7 +1486,7 @@ class Heap {
   // method needs to be called after evacuation, as allocation sites may be
   // evacuated and this method resolves forward pointers accordingly.
   void MergeAllocationSitePretenuringFeedback(
-      const base::HashMap& local_pretenuring_feedback);
+      const PretenuringFeedbackMap& local_pretenuring_feedback);
 
   // ===========================================================================
   // Retaining path tracking. ==================================================
@@ -1496,6 +1505,9 @@ class Heap {
 #endif
 
 #ifdef DEBUG
+  void VerifyCountersAfterSweeping();
+  void VerifyCountersBeforeConcurrentSweeping();
+
   void set_allocation_timeout(int timeout) { allocation_timeout_ = timeout; }
 
   void Print();
@@ -1532,11 +1544,16 @@ class Heap {
   class SkipStoreBufferScope;
   class PretenuringScope;
 
+  typedef String* (*ExternalStringTableUpdaterCallback)(Heap* heap,
+                                                        Object** pointer);
+
   // External strings table is a place where all external strings are
   // registered.  We need to keep track of such strings to properly
   // finalize them.
   class ExternalStringTable {
    public:
+    explicit ExternalStringTable(Heap* heap) : heap_(heap) {}
+
     // Registers an external string.
     inline void AddString(String* string);
 
@@ -1552,24 +1569,22 @@ class Heap {
     // Destroys all allocated memory.
     void TearDown();
 
-   private:
-    explicit ExternalStringTable(Heap* heap) : heap_(heap) {}
+    void UpdateNewSpaceReferences(
+        Heap::ExternalStringTableUpdaterCallback updater_func);
+    void UpdateReferences(
+        Heap::ExternalStringTableUpdaterCallback updater_func);
 
+   private:
     inline void Verify();
 
     inline void AddOldString(String* string);
 
-    // Notifies the table that only a prefix of the new list is valid.
-    inline void ShrinkNewStrings(int position);
+    Heap* const heap_;
 
     // To speed up scavenge collections new space string are kept
     // separate from old space strings.
-    List<Object*> new_space_strings_;
-    List<Object*> old_space_strings_;
-
-    Heap* heap_;
-
-    friend class Heap;
+    std::vector<Object*> new_space_strings_;
+    std::vector<Object*> old_space_strings_;
 
     DISALLOW_COPY_AND_ASSIGN(ExternalStringTable);
   };
@@ -1598,17 +1613,13 @@ class Heap {
                    bool pass_isolate)
         : callback(callback), gc_type(gc_type), pass_isolate(pass_isolate) {}
 
-    bool operator==(const GCCallbackPair& other) const {
-      return other.callback == callback;
-    }
+    bool operator==(const GCCallbackPair& other) const;
+    GCCallbackPair& operator=(const GCCallbackPair& other);
 
     v8::Isolate::GCCallback callback;
     GCType gc_type;
     bool pass_isolate;
   };
-
-  typedef String* (*ExternalStringTableUpdaterCallback)(Heap* heap,
-                                                        Object** pointer);
 
   static const int kInitialStringTableSize = 2048;
   static const int kInitialEvalCacheSize = 64;
@@ -1718,8 +1729,6 @@ class Heap {
   NO_INLINE(void CreateJSConstructEntryStub());
 
   void CreateFixedStubs();
-
-  HeapObject* DoubleAlignForDeserialization(HeapObject* object, int size);
 
   // Commits from space if it is uncommitted.
   void EnsureFromSpaceIsCommitted();
@@ -2289,8 +2298,8 @@ class Heap {
   // contains Smi(0) while marking is not active.
   Object* encountered_weak_collections_;
 
-  List<GCCallbackPair> gc_epilogue_callbacks_;
-  List<GCCallbackPair> gc_prologue_callbacks_;
+  std::vector<GCCallbackPair> gc_epilogue_callbacks_;
+  std::vector<GCCallbackPair> gc_prologue_callbacks_;
 
   GetExternallyAllocatedMemoryInBytesCallback external_memory_callback_;
 
@@ -2363,7 +2372,7 @@ class Heap {
   // storage is only alive temporary during a GC. The invariant is that all
   // pointers in this map are already fixed, i.e., they do not point to
   // forwarding pointers.
-  base::HashMap* global_pretenuring_feedback_;
+  PretenuringFeedbackMap global_pretenuring_feedback_;
 
   char trace_ring_buffer_[kTraceRingBufferSize];
 
@@ -2666,9 +2675,7 @@ class AllocationObserver {
   intptr_t bytes_to_next_step_;
 
  private:
-  friend class LargeObjectSpace;
-  friend class NewSpace;
-  friend class PagedSpace;
+  friend class Space;
   DISALLOW_COPY_AND_ASSIGN(AllocationObserver);
 };
 

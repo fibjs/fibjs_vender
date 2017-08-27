@@ -25,6 +25,7 @@ class BoilerplateDescription;
 class ConstantElementsPair;
 class CoverageInfo;
 class DebugInfo;
+class JSModuleNamespace;
 struct SourceRange;
 class PreParsedScopeData;
 
@@ -688,12 +689,9 @@ class V8_EXPORT_PRIVATE Factory final {
   // The reference to the Code object is stored in self_reference.
   // This allows generated code to reference its own Code object
   // by containing this handle.
-  Handle<Code> NewCode(const CodeDesc& desc,
-                       Code::Flags flags,
-                       Handle<Object> self_reference,
-                       bool immovable = false,
-                       int prologue_offset = Code::kPrologueOffsetNotSet,
-                       bool is_debug = false);
+  Handle<Code> NewCode(const CodeDesc& desc, Code::Flags flags,
+                       Handle<Object> self_reference, bool immovable = false,
+                       int prologue_offset = Code::kPrologueOffsetNotSet);
 
   Handle<Code> CopyCode(Handle<Code> code);
 

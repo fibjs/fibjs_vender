@@ -72,6 +72,8 @@ class GenericStringUtf16CharacterStream : public BufferedUtf16CharacterStream {
   GenericStringUtf16CharacterStream(Handle<String> data, size_t start_position,
                                     size_t end_position);
 
+  bool can_access_heap() override { return true; }
+
  protected:
   size_t FillBuffer(size_t position) override;
 
@@ -108,6 +110,8 @@ class ExternalTwoByteStringUtf16CharacterStream : public Utf16CharacterStream {
   ExternalTwoByteStringUtf16CharacterStream(Handle<ExternalTwoByteString> data,
                                             size_t start_position,
                                             size_t end_position);
+
+  bool can_access_heap() override { return false; }
 
  private:
   bool ReadBlock() override;
@@ -159,6 +163,8 @@ class ExternalOneByteStringUtf16CharacterStream
 
   // For testing:
   ExternalOneByteStringUtf16CharacterStream(const char* data, size_t length);
+
+  bool can_access_heap() override { return false; }
 
  protected:
   size_t FillBuffer(size_t position) override;
@@ -501,6 +507,9 @@ class Utf8ChunkSource : public ChunkSource {
     // surrogate pair, hence addition of 1.
     uc16* decoded_data = new uc16[byte_length + 1];
     i::CopyCharsUnsigned(decoded_data, data, ascii_prefix_len);
+    if (ascii_prefix_len > 0) {
+      is_at_first_char_ = false;
+    }
     size_t decoded_len = ascii_prefix_len;
     for (size_t i = ascii_prefix_len; i < byte_length; ++i) {
       unibrow::uchar t =
@@ -602,6 +611,8 @@ class ExternalStreamingStream : public BufferedUtf16CharacterStream {
   explicit ExternalStreamingStream(std::unique_ptr<ChunkSource> source,
                                    RuntimeCallStats* stats)
       : chunks_(new Chunks(std::move(source), stats)) {}
+
+  bool can_access_heap() override { return false; }
 
  protected:
   bool ReadBlock() override;

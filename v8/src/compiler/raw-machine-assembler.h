@@ -764,6 +764,11 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   // Call to a C function with one parameter.
   Node* CallCFunction1(MachineType return_type, MachineType arg0_type,
                        Node* function, Node* arg0);
+  // Call to a C function with one argument, while saving/restoring caller
+  // registers.
+  Node* CallCFunction1WithCallerSavedRegisters(MachineType return_type,
+                                               MachineType arg0_type,
+                                               Node* function, Node* arg0);
   // Call to a C function with two arguments.
   Node* CallCFunction2(MachineType return_type, MachineType arg0_type,
                        MachineType arg1_type, Node* function, Node* arg0,
@@ -772,6 +777,14 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   Node* CallCFunction3(MachineType return_type, MachineType arg0_type,
                        MachineType arg1_type, MachineType arg2_type,
                        Node* function, Node* arg0, Node* arg1, Node* arg2);
+  // Call to a C function with three arguments, while saving/restoring caller
+  // registers.
+  Node* CallCFunction3WithCallerSavedRegisters(MachineType return_type,
+                                               MachineType arg0_type,
+                                               MachineType arg1_type,
+                                               MachineType arg2_type,
+                                               Node* function, Node* arg0,
+                                               Node* arg1, Node* arg2);
   // Call to a C function with six arguments.
   Node* CallCFunction6(MachineType return_type, MachineType arg0_type,
                        MachineType arg1_type, MachineType arg2_type,
@@ -816,6 +829,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   void PopAndReturn(Node* pop, Node* v1, Node* v2, Node* v3);
   void Bind(RawMachineLabel* label);
   void Deoptimize(Node* state);
+  void DebugAbort(Node* message);
   void DebugBreak();
   void Unreachable();
   void Comment(const char* msg);

@@ -41,7 +41,6 @@
   V(char_at_string, "CharAt")                                      \
   V(closure_string, "(closure)")                                   \
   V(column_string, "column")                                       \
-  V(compare_ic_string, "==")                                       \
   V(configurable_string, "configurable")                           \
   V(constructor_string, "constructor")                             \
   V(construct_string, "construct")                                 \
@@ -167,7 +166,6 @@
   V(stackTraceLimit_string, "stackTraceLimit")                     \
   V(star_default_star_string, "*default*")                         \
   V(sticky_string, "sticky")                                       \
-  V(strict_compare_ic_string, "===")                               \
   V(string_string, "string")                                       \
   V(String_string, "String")                                       \
   V(symbol_string, "symbol")                                       \
@@ -203,7 +201,8 @@
   V(will_handle_string, "willHandle")                              \
   V(writable_string, "writable")                                   \
   V(year_string, "year")                                           \
-  V(zero_string, "0")
+  V(zero_string, "0")                                              \
+  V(WasmExceptionTag_string, "WasmExceptionTag")
 
 #define PRIVATE_SYMBOL_LIST(V)              \
   V(array_iteration_kind_symbol)            \
@@ -221,7 +220,6 @@
   V(error_script_symbol)                    \
   V(error_start_pos_symbol)                 \
   V(frozen_symbol)                          \
-  V(hash_code_symbol)                       \
   V(home_object_symbol)                     \
   V(intl_initialized_marker_symbol)         \
   V(intl_pattern_symbol)                    \
@@ -269,6 +267,7 @@
 #define INCREMENTAL_SCOPES(F)                                      \
   /* MC_INCREMENTAL is the top-level incremental marking scope. */ \
   F(MC_INCREMENTAL)                                                \
+  F(MC_INCREMENTAL_START)                                          \
   F(MC_INCREMENTAL_SWEEPING)                                       \
   F(MC_INCREMENTAL_WRAPPER_PROLOGUE)                               \
   F(MC_INCREMENTAL_WRAPPER_TRACING)                                \

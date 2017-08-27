@@ -28,9 +28,9 @@ class CollectionsBuiltinsAssembler : public CodeStubAssembler {
   Node* AllocateJSCollectionIterator(Node* context, int map_index,
                                      Node* collection);
 
+  Node* GetHash(Node* const key);
   Node* CallGetHashRaw(Node* const key);
-  template <typename CollectionType, int entrysize>
-  Node* CallHasRaw(Node* const table, Node* const key);
+  Node* CallGetOrCreateHashRaw(Node* const key);
 
   // Transitions the iterator to the non obsolete backing store.
   // This is a NOP if the [table] is not obsolete.
@@ -430,6 +430,21 @@ TF_BUILTIN(SetConstructor, CollectionsBuiltinsAssembler) {
   args.PopAndReturn(var_result.value());
 }
 
+Node* CollectionsBuiltinsAssembler::CallGetOrCreateHashRaw(Node* const key) {
+  Node* const function_addr =
+      ExternalConstant(ExternalReference::get_or_create_hash_raw(isolate()));
+  Node* const isolate_ptr =
+      ExternalConstant(ExternalReference::isolate_address(isolate()));
+
+  MachineType type_ptr = MachineType::Pointer();
+  MachineType type_tagged = MachineType::AnyTagged();
+
+  Node* const result = CallCFunction2(type_tagged, type_ptr, type_tagged,
+                                      function_addr, isolate_ptr, key);
+
+  return result;
+}
+
 Node* CollectionsBuiltinsAssembler::CallGetHashRaw(Node* const key) {
   Node* const function_addr = ExternalConstant(
       ExternalReference::orderedhashmap_gethash_raw(isolate()));
@@ -441,8 +456,34 @@ Node* CollectionsBuiltinsAssembler::CallGetHashRaw(Node* const key) {
 
   Node* const result = CallCFunction2(type_tagged, type_ptr, type_tagged,
                                       function_addr, isolate_ptr, key);
+  return SmiUntag(result);
+}
 
-  return result;
+Node* CollectionsBuiltinsAssembler::GetHash(Node* const key) {
+  VARIABLE(var_result, MachineType::PointerRepresentation());
+  Label if_jsobject(this), other(this), done(this);
+  Node* instance_type = LoadMapInstanceType(LoadMap(key));
+  Branch(IsJSObjectInstanceType(instance_type), &if_jsobject, &other);
+
+  BIND(&if_jsobject);
+  {
+    Node* hash = LoadHashForJSObject(key, instance_type);
+    // TODO(gsathya): Change all uses of -1 to PropertyArray::kNoHashSentinel.
+    var_result.Bind(SelectConstant(
+        Word32Equal(hash, Int32Constant(PropertyArray::kNoHashSentinel)),
+        IntPtrConstant(-1), ChangeInt32ToIntPtr(hash),
+        MachineType::PointerRepresentation()));
+    Goto(&done);
+  }
+
+  BIND(&other);
+  {
+    var_result.Bind(CallGetHashRaw(key));
+    Goto(&done);
+  }
+
+  BIND(&done);
+  return var_result.value();
 }
 
 void CollectionsBuiltinsAssembler::SameValueZeroSmi(Node* key_smi,
@@ -505,9 +546,7 @@ template <typename CollectionType>
 void CollectionsBuiltinsAssembler::FindOrderedHashTableEntryForHeapNumberKey(
     Node* context, Node* table, Node* key_heap_number, Variable* result,
     Label* entry_found, Label* not_found) {
-  Node* tagged_hash = CallGetHashRaw(key_heap_number);
-  CSA_ASSERT(this, TaggedIsSmi(tagged_hash));
-  Node* hash = SmiUntag(tagged_hash);
+  Node* hash = CallGetHashRaw(key_heap_number);
   CSA_ASSERT(this, IntPtrGreaterThanOrEqual(hash, IntPtrConstant(0)));
   result->Bind(hash);
   Node* const key_float = LoadHeapNumberValue(key_heap_number);
@@ -523,12 +562,10 @@ template <typename CollectionType>
 void CollectionsBuiltinsAssembler::FindOrderedHashTableEntryForOtherKey(
     Node* context, Node* table, Node* key, Variable* result, Label* entry_found,
     Label* not_found) {
-  Node* tagged_hash = CallGetHashRaw(key);
-  CSA_ASSERT(this, TaggedIsSmi(tagged_hash));
-  Node* hash = SmiUntag(tagged_hash);
+  Node* hash = GetHash(key);
   result->Bind(hash);
   FindOrderedHashTableEntry<CollectionType>(
-      table, SmiUntag(tagged_hash),
+      table, hash,
       [&](Node* other_key, Label* if_same, Label* if_not_same) {
         Branch(WordEqual(key, other_key), if_same, if_not_same);
       },
@@ -546,9 +583,7 @@ Node* CollectionsBuiltinsAssembler::ComputeIntegerHashForString(
   Goto(&done);
 
   BIND(&hash_not_computed);
-  Node* tagged_hash = CallGetHashRaw(string_key);
-  CSA_ASSERT(this, TaggedIsSmi(tagged_hash));
-  var_result.Bind(SmiUntag(tagged_hash));
+  var_result.Bind(CallGetHashRaw(string_key));
   Goto(&done);
 
   BIND(&done);
@@ -897,8 +932,7 @@ TF_BUILTIN(MapSet, CollectionsBuiltinsAssembler) {
            &add_entry);
 
     // Otherwise, go to runtime to compute the hash code.
-    entry_start_position_or_hash.Bind(
-        SmiUntag(CAST(CallRuntime(Runtime::kGenericHash, context, key))));
+    entry_start_position_or_hash.Bind(SmiUntag(CallGetOrCreateHashRaw(key)));
     Goto(&add_entry);
   }
 
@@ -1064,8 +1098,7 @@ TF_BUILTIN(SetAdd, CollectionsBuiltinsAssembler) {
            &add_entry);
 
     // Otherwise, go to runtime to compute the hash code.
-    entry_start_position_or_hash.Bind(
-        SmiUntag(CAST(CallRuntime(Runtime::kGenericHash, context, key))));
+    entry_start_position_or_hash.Bind(SmiUntag((CallGetOrCreateHashRaw(key))));
     Goto(&add_entry);
   }
 
@@ -1624,7 +1657,7 @@ TF_BUILTIN(WeakMapLookupHashIndex, CollectionsBuiltinsAssembler) {
       SmiUntag(LoadFixedArrayElement(table, WeakHashTable::kCapacityIndex));
   Node* const mask = IntPtrSub(capacity, IntPtrConstant(1));
 
-  Node* const hash = SmiUntag(CallGetHashRaw(key));
+  Node* const hash = GetHash(key);
 
   GotoIf(IntPtrLessThan(hash, IntPtrConstant(0)), &if_not_found);
 

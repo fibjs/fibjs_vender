@@ -8,6 +8,7 @@
 #include "src/base/macros.h"
 #include "src/globals.h"
 #include "src/machine-type.h"
+#include "src/reglist.h"
 
 namespace v8 {
 namespace internal {
@@ -29,6 +30,9 @@ class V8_EXPORT_PRIVATE RegisterConfiguration {
 
   // Default RegisterConfigurations for the target architecture.
   static const RegisterConfiguration* Default();
+
+  static const RegisterConfiguration* RestrictGeneralRegisters(
+      RegList registers);
 
   RegisterConfiguration(int num_general_registers, int num_double_registers,
                         int num_allocatable_general_registers,
@@ -68,24 +72,28 @@ class V8_EXPORT_PRIVATE RegisterConfiguration {
     return allocatable_float_codes_mask_;
   }
   int GetAllocatableGeneralCode(int index) const {
+    DCHECK(index >= 0 && index < num_allocatable_general_registers());
     return allocatable_general_codes_[index];
   }
   bool IsAllocatableGeneralCode(int index) const {
     return ((1 << index) & allocatable_general_codes_mask_) != 0;
   }
   int GetAllocatableFloatCode(int index) const {
+    DCHECK(index >= 0 && index < num_allocatable_float_registers());
     return allocatable_float_codes_[index];
   }
   bool IsAllocatableFloatCode(int index) const {
     return ((1 << index) & allocatable_float_codes_mask_) != 0;
   }
   int GetAllocatableDoubleCode(int index) const {
+    DCHECK(index >= 0 && index < num_allocatable_double_registers());
     return allocatable_double_codes_[index];
   }
   bool IsAllocatableDoubleCode(int index) const {
     return ((1 << index) & allocatable_double_codes_mask_) != 0;
   }
   int GetAllocatableSimd128Code(int index) const {
+    DCHECK(index >= 0 && index < num_allocatable_simd128_registers());
     return allocatable_simd128_codes_[index];
   }
   bool IsAllocatableSimd128Code(int index) const {
@@ -127,6 +135,8 @@ class V8_EXPORT_PRIVATE RegisterConfiguration {
   // kFloat64, or kSimd128 reps.
   bool AreAliases(MachineRepresentation rep, int index,
                   MachineRepresentation other_rep, int other_index) const;
+
+  virtual ~RegisterConfiguration() {}
 
  private:
   const int num_general_registers_;

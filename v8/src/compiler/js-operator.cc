@@ -602,7 +602,6 @@ struct JSOperatorGlobalCache final {
   Name##Operator<BinaryOperationHint::kSignedSmallInputs>                     \
       k##Name##SignedSmallInputsOperator;                                     \
   Name##Operator<BinaryOperationHint::kSigned32> k##Name##Signed32Operator;   \
-  Name##Operator<BinaryOperationHint::kNumber> k##Name##NumberOperator;       \
   Name##Operator<BinaryOperationHint::kNumberOrOddball>                       \
       k##Name##NumberOrOddballOperator;                                       \
   Name##Operator<BinaryOperationHint::kString> k##Name##StringOperator;       \
@@ -658,8 +657,6 @@ CACHED_OP_LIST(CACHED_OP)
         return &cache_.k##Name##SignedSmallInputsOperator;            \
       case BinaryOperationHint::kSigned32:                            \
         return &cache_.k##Name##Signed32Operator;                     \
-      case BinaryOperationHint::kNumber:                              \
-        return &cache_.k##Name##NumberOperator;                       \
       case BinaryOperationHint::kNumberOrOddball:                     \
         return &cache_.k##Name##NumberOrOddballOperator;              \
       case BinaryOperationHint::kString:                              \
@@ -1045,6 +1042,14 @@ const Operator* JSOperatorBuilder::CreateLiteralObject(
       parameters);                                                // parameter
 }
 
+const Operator* JSOperatorBuilder::CreateEmptyLiteralObject(int literal_index) {
+  return new (zone()) Operator1<int>(         // --
+      IrOpcode::kJSCreateEmptyLiteralObject,  // opcode
+      Operator::kNoProperties,                // properties
+      "JSCreateEmptyLiteralObject",           // name
+      1, 1, 1, 1, 1, 2,                       // counts
+      literal_index);                         // parameter
+}
 
 const Operator* JSOperatorBuilder::CreateLiteralRegExp(
     Handle<String> constant_pattern, int literal_flags, int literal_index) {

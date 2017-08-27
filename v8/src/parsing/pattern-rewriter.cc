@@ -36,11 +36,19 @@ class PatternRewriter final : public AstVisitor<PatternRewriter> {
                                              Scope* scope);
 
  private:
-  enum PatternContext {
-    BINDING,
-    INITIALIZER,
-    ASSIGNMENT,
-    ASSIGNMENT_INITIALIZER
+  enum PatternContext { BINDING, ASSIGNMENT, ASSIGNMENT_ELEMENT };
+
+  class AssignmentElementScope {
+   public:
+    explicit AssignmentElementScope(PatternRewriter* rewriter)
+        : rewriter_(rewriter), context_(rewriter->context()) {
+      if (context_ == ASSIGNMENT) rewriter->context_ = ASSIGNMENT_ELEMENT;
+    }
+    ~AssignmentElementScope() { rewriter_->context_ = context_; }
+
+   private:
+    PatternRewriter* const rewriter_;
+    const PatternContext context_;
   };
 
   PatternRewriter(Scope* scope, Parser* parser, PatternContext context)
@@ -62,7 +70,6 @@ class PatternRewriter final : public AstVisitor<PatternRewriter> {
 #undef DECLARE_VISIT
 
   PatternContext context() const { return context_; }
-  void set_context(PatternContext context) { context_ = context; }
 
   void RecurseIntoSubpattern(AstNode* pattern, Expression* value) {
     Expression* old_value = current_value_;
@@ -76,16 +83,11 @@ class PatternRewriter final : public AstVisitor<PatternRewriter> {
   void VisitObjectLiteral(ObjectLiteral* node, Variable** temp_var);
   void VisitArrayLiteral(ArrayLiteral* node, Variable** temp_var);
 
-  bool IsBindingContext() const {
-    return context_ == BINDING || context_ == INITIALIZER;
-  }
-  bool IsInitializerContext() const { return context_ != ASSIGNMENT; }
+  bool IsBindingContext() const { return context_ == BINDING; }
   bool IsAssignmentContext() const {
-    return context_ == ASSIGNMENT || context_ == ASSIGNMENT_INITIALIZER;
+    return context_ == ASSIGNMENT || context_ == ASSIGNMENT_ELEMENT;
   }
   bool IsSubPattern() const { return recursion_level_ > 1; }
-  PatternContext SetAssignmentContextIfNeeded(Expression* node);
-  PatternContext SetInitializerContextIfNeeded(Expression* node);
 
   bool DeclaresParameterContainingSloppyEval() const;
   void RewriteParameterScopes(Expression* expr);
@@ -163,44 +165,6 @@ void PatternRewriter::RewriteDestructuringAssignment(
   rewriter.RecurseIntoSubpattern(to_rewrite, nullptr);
 }
 
-PatternRewriter::PatternContext PatternRewriter::SetAssignmentContextIfNeeded(
-    Expression* node) {
-  PatternContext old_context = context();
-  // AssignmentExpressions may occur in the Initializer position of a
-  // SingleNameBinding. Such expressions should not prompt a change in the
-  // pattern's context.
-  if (node->IsAssignment() && node->AsAssignment()->op() == Token::ASSIGN &&
-      !IsInitializerContext()) {
-    set_context(ASSIGNMENT);
-  }
-  return old_context;
-}
-
-PatternRewriter::PatternContext PatternRewriter::SetInitializerContextIfNeeded(
-    Expression* node) {
-  // Set appropriate initializer context for BindingElement and
-  // AssignmentElement nodes
-  PatternContext old_context = context();
-  bool is_destructuring_assignment =
-      node->IsRewritableExpression() &&
-      !node->AsRewritableExpression()->is_rewritten();
-  bool is_assignment =
-      node->IsAssignment() && node->AsAssignment()->op() == Token::ASSIGN;
-  if (is_destructuring_assignment || is_assignment) {
-    switch (old_context) {
-      case BINDING:
-        set_context(INITIALIZER);
-        break;
-      case ASSIGNMENT:
-        set_context(ASSIGNMENT_INITIALIZER);
-        break;
-      default:
-        break;
-    }
-  }
-  return old_context;
-}
-
 void PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
   Expression* value = current_value_;
 
@@ -231,8 +195,16 @@ void PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
   const AstRawString* name = pattern->raw_name();
   VariableProxy* proxy =
       factory()->NewVariableProxy(name, NORMAL_VARIABLE, pattern->position());
-  Declaration* declaration = factory()->NewVariableDeclaration(
-      proxy, descriptor_->scope, descriptor_->declaration_pos);
+  Declaration* declaration;
+  if (descriptor_->mode == VAR && !descriptor_->scope->is_declaration_scope()) {
+    DCHECK(descriptor_->scope->is_block_scope() ||
+           descriptor_->scope->is_with_scope());
+    declaration = factory()->NewNestedVariableDeclaration(
+        proxy, descriptor_->scope, descriptor_->declaration_pos);
+  } else {
+    declaration =
+        factory()->NewVariableDeclaration(proxy, descriptor_->declaration_pos);
+  }
 
   // When an extra declaration scope needs to be inserted to account for
   // a sloppy eval in a default parameter or function body, the parameter
@@ -321,48 +293,32 @@ Variable* PatternRewriter::CreateTempVar(Expression* value) {
 }
 
 void PatternRewriter::VisitRewritableExpression(RewritableExpression* node) {
-  // If this is not a destructuring assignment...
-  if (!IsAssignmentContext()) {
-    // Mark the node as rewritten to prevent redundant rewriting, and
-    // perform BindingPattern rewriting
-    DCHECK(!node->is_rewritten());
-    node->Rewrite(node->expression());
+  if (!node->expression()->IsAssignment()) {
+    // RewritableExpressions are also used for desugaring Spread, which is
+    // orthogonal to PatternRewriter; just visit the underlying expression.
+    DCHECK_EQ(AstNode::kArrayLiteral, node->expression()->node_type());
     return Visit(node->expression());
-  } else if (!node->expression()->IsAssignment()) {
+  } else if (context() != ASSIGNMENT) {
+    // This is not a destructuring assignment. Mark the node as rewritten to
+    // prevent redundant rewriting and visit the underlying expression.
+    DCHECK(!node->is_rewritten());
+    node->set_rewritten();
     return Visit(node->expression());
   }
 
-  if (node->is_rewritten()) return;
-  DCHECK(IsAssignmentContext());
+  DCHECK(!node->is_rewritten());
+  DCHECK_EQ(ASSIGNMENT, context());
   Assignment* assign = node->expression()->AsAssignment();
   DCHECK_NOT_NULL(assign);
   DCHECK_EQ(Token::ASSIGN, assign->op());
 
-  auto initializer = assign->value();
-  auto value = initializer;
-
-  if (IsInitializerContext()) {
-    // let {<pattern> = <init>} = <value>
-    //   becomes
-    // temp = <value>;
-    // <pattern> = temp === undefined ? <init> : temp;
-    auto temp_var = CreateTempVar(current_value_);
-    Expression* is_undefined = factory()->NewCompareOperation(
-        Token::EQ_STRICT, factory()->NewVariableProxy(temp_var),
-        factory()->NewUndefinedLiteral(kNoSourcePosition), kNoSourcePosition);
-    value = factory()->NewConditional(is_undefined, initializer,
-                                      factory()->NewVariableProxy(temp_var),
-                                      kNoSourcePosition);
-  }
-
-  PatternContext old_context = SetAssignmentContextIfNeeded(initializer);
   int pos = assign->position();
   Block* old_block = block_;
   block_ = factory()->NewBlock(nullptr, 8, true, pos);
   Variable* temp = nullptr;
   Expression* pattern = assign->target();
   Expression* old_value = current_value_;
-  current_value_ = value;
+  current_value_ = assign->value();
   if (pattern->IsObjectLiteral()) {
     VisitObjectLiteral(pattern->AsObjectLiteral(), &temp);
   } else {
@@ -378,7 +334,6 @@ void PatternRewriter::VisitRewritableExpression(RewritableExpression* node) {
     block_->statements()->Add(factory()->NewExpressionStatement(expr, pos),
                               zone());
   }
-  set_context(old_context);
 }
 
 bool PatternRewriter::DeclaresParameterContainingSloppyEval() const {
@@ -427,7 +382,6 @@ void PatternRewriter::VisitObjectLiteral(ObjectLiteral* pattern,
                             zone());
 
   for (ObjectLiteralProperty* property : *pattern->properties()) {
-    PatternContext context = SetInitializerContextIfNeeded(property->value());
     Expression* value;
 
     if (property->kind() == ObjectLiteralProperty::Kind::SPREAD) {
@@ -473,8 +427,8 @@ void PatternRewriter::VisitObjectLiteral(ObjectLiteral* pattern,
                                      kNoSourcePosition);
     }
 
+    AssignmentElementScope element_scope(this);
     RecurseIntoSubpattern(property->value(), value);
-    set_context(context);
   }
 }
 
@@ -512,8 +466,6 @@ void PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
       spread = value->AsSpread();
       break;
     }
-
-    PatternContext context = SetInitializerContextIfNeeded(value);
 
     // if (!done) {
     //   done = true;  // If .next, .done or .value throws, don't close.
@@ -600,7 +552,10 @@ void PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
             factory()->NewExpressionStatement(assignment, nopos), zone());
       }
 
-      RecurseIntoSubpattern(value, factory()->NewVariableProxy(v));
+      {
+        AssignmentElementScope element_scope(this);
+        RecurseIntoSubpattern(value, factory()->NewVariableProxy(v));
+      }
 
       {
         // completion = kNormalCompletion;
@@ -612,7 +567,6 @@ void PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
             factory()->NewExpressionStatement(assignment, nopos), zone());
       }
     }
-    set_context(context);
   }
 
   if (spread != nullptr) {
@@ -732,25 +686,25 @@ void PatternRewriter::VisitAssignment(Assignment* node) {
   // <pattern> = temp === undefined ? <init> : temp;
   DCHECK_EQ(Token::ASSIGN, node->op());
 
+  // Rewriting of Assignment nodes for destructuring assignment
+  // is handled in VisitRewritableExpression().
+  DCHECK_NE(ASSIGNMENT, context());
+
   auto initializer = node->value();
   auto value = initializer;
   auto temp = CreateTempVar(current_value_);
 
-  if (IsInitializerContext()) {
-    Expression* is_undefined = factory()->NewCompareOperation(
-        Token::EQ_STRICT, factory()->NewVariableProxy(temp),
-        factory()->NewUndefinedLiteral(kNoSourcePosition), kNoSourcePosition);
-    value = factory()->NewConditional(is_undefined, initializer,
-                                      factory()->NewVariableProxy(temp),
-                                      kNoSourcePosition);
-  }
+  Expression* is_undefined = factory()->NewCompareOperation(
+      Token::EQ_STRICT, factory()->NewVariableProxy(temp),
+      factory()->NewUndefinedLiteral(kNoSourcePosition), kNoSourcePosition);
+  value = factory()->NewConditional(is_undefined, initializer,
+                                    factory()->NewVariableProxy(temp),
+                                    kNoSourcePosition);
 
   // Initializer may have been parsed in the wrong scope.
   RewriteParameterScopes(initializer);
 
-  PatternContext old_context = SetAssignmentContextIfNeeded(initializer);
   RecurseIntoSubpattern(node->target(), value);
-  set_context(old_context);
 }
 
 
@@ -782,6 +736,7 @@ NOT_A_PATTERN(CallRuntime)
 NOT_A_PATTERN(CaseClause)
 NOT_A_PATTERN(ClassLiteral)
 NOT_A_PATTERN(CompareOperation)
+NOT_A_PATTERN(CompoundAssignment)
 NOT_A_PATTERN(Conditional)
 NOT_A_PATTERN(ContinueStatement)
 NOT_A_PATTERN(CountOperation)

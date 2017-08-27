@@ -8,26 +8,6 @@
 namespace v8 {
 namespace internal {
 
-#define CODE_AGE_LIST_WITH_ARG(V, A) \
-  V(Quadragenarian, A)               \
-  V(Quinquagenarian, A)              \
-  V(Sexagenarian, A)                 \
-  V(Septuagenarian, A)               \
-  V(Octogenarian, A)
-
-#define CODE_AGE_LIST_IGNORE_ARG(X, V) V(X)
-
-#define CODE_AGE_LIST(V) CODE_AGE_LIST_WITH_ARG(CODE_AGE_LIST_IGNORE_ARG, V)
-
-#define CODE_AGE_LIST_COMPLETE(V) \
-  V(ToBeExecutedOnce)             \
-  V(NotExecuted)                  \
-  V(ExecutedOnce)                 \
-  V(NoAge)                        \
-  CODE_AGE_LIST_WITH_ARG(CODE_AGE_LIST_IGNORE_ARG, V)
-
-#define DECLARE_CODE_AGE_BUILTIN(C, V) V(Make##C##CodeYoungAgain)
-
 // CPP: Builtin in C++. Entered via BUILTIN_EXIT frame.
 //      Args: name
 // API: Builtin in C++ for API callbacks. Entered via EXIT frame.
@@ -42,15 +22,14 @@ namespace internal {
 //      Args: name, code kind, extra IC state, interface descriptor
 // ASM: Builtin in platform-dependent assembly.
 //      Args: name
-// DBG: Builtin in platform-dependent assembly, used by the debugger.
-//      Args: name
 
-#define BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG)              \
-  /* Code aging */                                                             \
-  CODE_AGE_LIST_WITH_ARG(DECLARE_CODE_AGE_BUILTIN, ASM)                        \
-                                                                               \
+#define BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM)                   \
   /* GC write barrirer */                                                      \
   TFC(RecordWrite, RecordWrite, 1)                                             \
+                                                                               \
+  /* Adaptors for CPP/API builtin */                                           \
+  ASM(AdaptorWithExitFrame)                                                    \
+  ASM(AdaptorWithBuiltinExitFrame)                                             \
                                                                                \
   /* Calls */                                                                  \
   ASM(ArgumentsAdaptorTrampoline)                                              \
@@ -101,6 +80,7 @@ namespace internal {
   TFC(FastCloneShallowArrayTrack, FastCloneShallowArray, 1)                    \
   TFC(FastCloneShallowArrayDontTrack, FastCloneShallowArray, 1)                \
   TFS(CreateEmptyArrayLiteral, kClosure, kLiteralIndex)                        \
+  TFS(CreateEmptyObjectLiteral, kClosure, kLiteralIndex)                       \
   TFC(FastCloneShallowObject, FastCloneShallowObject, 1)                       \
   /* ES6 section 9.5.14 [[Construct]] ( argumentsList, newTarget) */           \
   TFC(ConstructProxy, ConstructTrampoline, 1)                                  \
@@ -129,6 +109,7 @@ namespace internal {
                                                                                \
   /* Interpreter */                                                            \
   ASM(InterpreterEntryTrampoline)                                              \
+  ASM(InterpreterExitTrampoline)                                               \
   ASM(InterpreterPushArgsThenCall)                                             \
   ASM(InterpreterPushUndefinedAndArgsThenCall)                                 \
   ASM(InterpreterPushArgsThenCallFunction)                                     \
@@ -145,9 +126,6 @@ namespace internal {
   ASM(CompileLazy)                                                             \
   ASM(CheckOptimizationMarker)                                                 \
   ASM(InstantiateAsmJs)                                                        \
-  ASM(MarkCodeAsToBeExecutedOnce)                                              \
-  ASM(MarkCodeAsExecutedOnce)                                                  \
-  ASM(MarkCodeAsExecutedTwice)                                                 \
   ASM(NotifyDeoptimized)                                                       \
   ASM(NotifySoftDeoptimized)                                                   \
   ASM(NotifyLazyDeoptimized)                                                   \
@@ -196,10 +174,8 @@ namespace internal {
   TFC(NewUnmappedArgumentsElements, NewArgumentsElements, 1)                   \
                                                                                \
   /* Debugger */                                                               \
-  DBG(FrameDropperTrampoline)                                                  \
-  DBG(HandleDebuggerStatement)                                                 \
-  DBG(Return_DebugBreak)                                                       \
-  DBG(Slot_DebugBreak)                                                         \
+  ASM(FrameDropperTrampoline)                                                  \
+  ASM(HandleDebuggerStatement)                                                 \
                                                                                \
   /* Type conversions */                                                       \
   TFC(ToObject, TypeConversion, 1)                                             \
@@ -261,6 +237,7 @@ namespace internal {
                                                                                \
   /* Abort */                                                                  \
   ASM(Abort)                                                                   \
+  ASM(AbortJS)                                                                 \
                                                                                \
   /* Built-in functions for Javascript */                                      \
   /* Special internal builtins */                                              \
@@ -803,6 +780,7 @@ namespace internal {
   TFJ(ProxyConstructor_ConstructStub,                                          \
       SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   TFS(ProxyGetProperty, kProxy, kName, kReceiverValue)                         \
+  TFS(ProxyHasProperty, kProxy, kName)                                         \
                                                                                \
   /* Reflect */                                                                \
   ASM(ReflectApply)                                                            \
@@ -926,7 +904,8 @@ namespace internal {
   /* ES6 #sec-string.prototype.endswith */                                     \
   CPP(StringPrototypeEndsWith)                                                 \
   /* ES6 #sec-string.prototype.includes */                                     \
-  CPP(StringPrototypeIncludes)                                                 \
+  TFJ(StringPrototypeIncludes,                                                 \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* ES6 #sec-string.prototype.indexof */                                      \
   TFJ(StringPrototypeIndexOf, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
   /* ES6 #sec-string.prototype.lastindexof */                                  \
@@ -1099,8 +1078,8 @@ namespace internal {
   TFJ(AsyncIteratorValueUnwrap, 1, kValue)
 
 #ifdef V8_INTL_SUPPORT
-#define BUILTIN_LIST(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG)   \
-  BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG)    \
+#define BUILTIN_LIST(CPP, API, TFJ, TFC, TFS, TFH, ASM)        \
+  BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM)         \
                                                                \
   TFS(StringToLowerCaseIntl, kString)                          \
   /* ES #sec-string.prototype.tolowercase */                   \
@@ -1112,18 +1091,18 @@ namespace internal {
   /* ecma402 #sec-intl.numberformat.prototype.formattoparts */ \
   CPP(NumberFormatPrototypeFormatToParts)
 #else
-#define BUILTIN_LIST(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG) \
-  BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM, DBG)  \
-                                                             \
-  /* no-op fallback version */                               \
-  CPP(StringPrototypeNormalize)                              \
-  /* same as toLowercase; fallback version */                \
-  CPP(StringPrototypeToLocaleLowerCase)                      \
-  /* same as toUppercase; fallback version */                \
-  CPP(StringPrototypeToLocaleUpperCase)                      \
-  /* (obsolete) Unibrow version */                           \
-  CPP(StringPrototypeToLowerCase)                            \
-  /* (obsolete) Unibrow version */                           \
+#define BUILTIN_LIST(CPP, API, TFJ, TFC, TFS, TFH, ASM) \
+  BUILTIN_LIST_BASE(CPP, API, TFJ, TFC, TFS, TFH, ASM)  \
+                                                        \
+  /* no-op fallback version */                          \
+  CPP(StringPrototypeNormalize)                         \
+  /* same as toLowercase; fallback version */           \
+  CPP(StringPrototypeToLocaleLowerCase)                 \
+  /* same as toUppercase; fallback version */           \
+  CPP(StringPrototypeToLocaleUpperCase)                 \
+  /* (obsolete) Unibrow version */                      \
+  CPP(StringPrototypeToLowerCase)                       \
+  /* (obsolete) Unibrow version */                      \
   CPP(StringPrototypeToUpperCase)
 #endif  // V8_INTL_SUPPORT
 
@@ -1155,31 +1134,27 @@ namespace internal {
 
 #define IGNORE_BUILTIN(...)
 
-#define BUILTIN_LIST_ALL(V) BUILTIN_LIST(V, V, V, V, V, V, V, V)
+#define BUILTIN_LIST_ALL(V) BUILTIN_LIST(V, V, V, V, V, V, V)
 
 #define BUILTIN_LIST_C(V)                                            \
   BUILTIN_LIST(V, V, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, \
-               IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
+               IGNORE_BUILTIN, IGNORE_BUILTIN)
 
 #define BUILTIN_LIST_A(V)                                                      \
   BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, \
-               IGNORE_BUILTIN, IGNORE_BUILTIN, V, V)
-
-#define BUILTIN_LIST_DBG(V)                                                    \
-  BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, \
-               IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, V)
+               IGNORE_BUILTIN, IGNORE_BUILTIN, V)
 
 #define BUILTIN_LIST_TFS(V)                                                    \
   BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, \
-               V, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
+               V, IGNORE_BUILTIN, IGNORE_BUILTIN)
 
 #define BUILTIN_LIST_TFJ(V)                                       \
   BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, V, IGNORE_BUILTIN, \
-               IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
+               IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
 
 #define BUILTIN_LIST_TFC(V)                                       \
   BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, V, \
-               IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
+               IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
 
 #define BUILTINS_WITH_UNTAGGED_PARAMS(V) V(WasmCompileLazy)
 

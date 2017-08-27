@@ -9,6 +9,7 @@
 #include "src/base/bits.h"
 #include "src/external-reference-table.h"
 #include "src/globals.h"
+#include "src/utils.h"
 #include "src/visitors.h"
 
 namespace v8 {
@@ -88,7 +89,8 @@ class SerializerDeserializer : public RootVisitor {
  protected:
   static bool CanBeDeferred(HeapObject* o);
 
-  void RestoreExternalReferenceRedirectors(List<AccessorInfo*>* accessor_infos);
+  void RestoreExternalReferenceRedirectors(
+      const std::vector<AccessorInfo*>& accessor_infos);
 
   // ---------- byte code range 0x00..0x7f ----------
   // Byte codes in this range represent Where, HowToCode and WhereToPoint.
@@ -267,24 +269,22 @@ class SerializedData {
     return table->num_api_references();
   }
 
-  static const int kMagicNumberOffset = 0;
-  static const int kExtraExternalReferencesOffset =
-      kMagicNumberOffset + kInt32Size;
-  static const int kVersionHashOffset =
-      kExtraExternalReferencesOffset + kInt32Size;
+  static const uint32_t kMagicNumberOffset = 0;
+  static const uint32_t kExtraExternalReferencesOffset =
+      kMagicNumberOffset + kUInt32Size;
+  static const uint32_t kVersionHashOffset =
+      kExtraExternalReferencesOffset + kUInt32Size;
 
  protected:
-  void SetHeaderValue(int offset, uint32_t value) {
-    memcpy(data_ + offset, &value, sizeof(value));
+  void SetHeaderValue(uint32_t offset, uint32_t value) {
+    WriteLittleEndianValue(data_ + offset, value);
   }
 
-  uint32_t GetHeaderValue(int offset) const {
-    uint32_t value;
-    memcpy(&value, data_ + offset, sizeof(value));
-    return value;
+  uint32_t GetHeaderValue(uint32_t offset) const {
+    return ReadLittleEndianValue<uint32_t>(data_ + offset);
   }
 
-  void AllocateData(int size);
+  void AllocateData(uint32_t size);
 
   static uint32_t ComputeMagicNumber(Isolate* isolate) {
     return ComputeMagicNumber(ExternalReferenceTable::instance(isolate));
@@ -299,7 +299,7 @@ class SerializedData {
   }
 
   byte* data_;
-  int size_;
+  uint32_t size_;
   bool owns_data_;
 
  private:

@@ -34,6 +34,47 @@ MacroAssembler::MacroAssembler(Isolate* isolate, void* buffer, int size,
                                CodeObjectRequired create_code_object)
     : TurboAssembler(isolate, buffer, size, create_code_object) {}
 
+void TurboAssembler::PushCallerSaved(SaveFPRegsMode fp_mode,
+                                     Register exclusion1, Register exclusion2,
+                                     Register exclusion3) {
+  RegList exclusions = 0;
+  if (!exclusion1.is(no_reg)) {
+    exclusions |= exclusion1.bit();
+    if (!exclusion2.is(no_reg)) {
+      exclusions |= exclusion2.bit();
+      if (!exclusion3.is(no_reg)) {
+        exclusions |= exclusion3.bit();
+      }
+    }
+  }
+
+  stm(db_w, sp, (kCallerSaved | lr.bit()) & ~exclusions);
+
+  if (fp_mode == kSaveFPRegs) {
+    SaveFPRegs(sp, lr);
+  }
+}
+
+void TurboAssembler::PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
+                                    Register exclusion2, Register exclusion3) {
+  if (fp_mode == kSaveFPRegs) {
+    RestoreFPRegs(sp, lr);
+  }
+
+  RegList exclusions = 0;
+  if (!exclusion1.is(no_reg)) {
+    exclusions |= exclusion1.bit();
+    if (!exclusion2.is(no_reg)) {
+      exclusions |= exclusion2.bit();
+      if (!exclusion3.is(no_reg)) {
+        exclusions |= exclusion3.bit();
+      }
+    }
+  }
+
+  ldm(ia_w, sp, (kCallerSaved | lr.bit()) & ~exclusions);
+}
+
 void TurboAssembler::Jump(Register target, Condition cond) { bx(target, cond); }
 
 void TurboAssembler::Jump(intptr_t target, RelocInfo::Mode rmode,
@@ -224,14 +265,6 @@ void TurboAssembler::Push(Smi* smi) {
   push(scratch);
 }
 
-void MacroAssembler::PushObject(Handle<Object> handle) {
-  if (handle->IsHeapObject()) {
-    Push(Handle<HeapObject>::cast(handle));
-  } else {
-    Push(Smi::cast(*handle));
-  }
-}
-
 void TurboAssembler::Move(Register dst, Smi* smi) { mov(dst, Operand(smi)); }
 
 void TurboAssembler::Move(Register dst, Handle<HeapObject> value) {
@@ -356,29 +389,6 @@ void MacroAssembler::Sbfx(Register dst, Register src1, int lsb, int width,
   }
 }
 
-
-void MacroAssembler::Bfi(Register dst,
-                         Register src,
-                         Register scratch,
-                         int lsb,
-                         int width,
-                         Condition cond) {
-  DCHECK(0 <= lsb && lsb < 32);
-  DCHECK(0 <= width && width < 32);
-  DCHECK(lsb + width < 32);
-  DCHECK(!scratch.is(dst));
-  if (width == 0) return;
-  if (!CpuFeatures::IsSupported(ARMv7) || predictable_code_size()) {
-    int mask = (1 << (width + lsb)) - 1 - ((1 << lsb) - 1);
-    bic(dst, dst, Operand(mask));
-    and_(scratch, src, Operand((1 << width) - 1));
-    mov(scratch, Operand(scratch, LSL, lsb));
-    orr(dst, dst, scratch);
-  } else {
-    CpuFeatureScope scope(this, ARMv7);
-    bfi(dst, src, lsb, width, cond);
-  }
-}
 
 void TurboAssembler::Bfc(Register dst, Register src, int lsb, int width,
                          Condition cond) {
@@ -736,20 +746,6 @@ int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
   // which means that lowest encodings are closest to the stack pointer.
   DCHECK(reg_code >= 0 && reg_code < kNumSafepointRegisters);
   return reg_code;
-}
-
-MemOperand MacroAssembler::SafepointRegisterSlot(Register reg) {
-  return MemOperand(sp, SafepointRegisterStackIndex(reg.code()) * kPointerSize);
-}
-
-MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
-  // Number of d-regs not known at snapshot time.
-  DCHECK(!serializer_enabled());
-  // General purpose registers are pushed last on the stack.
-  const RegisterConfiguration* config = RegisterConfiguration::Default();
-  int doubles_size = config->num_allocatable_double_registers() * kDoubleSize;
-  int register_offset = SafepointRegisterStackIndex(reg.code()) * kPointerSize;
-  return MemOperand(sp, doubles_size + register_offset);
 }
 
 void TurboAssembler::VFPCanonicalizeNaN(const DwVfpRegister dst,
@@ -1161,23 +1157,7 @@ void TurboAssembler::StubPrologue(StackFrame::Type type) {
   PushCommonFrame(scratch);
 }
 
-void TurboAssembler::Prologue(bool code_pre_aging) {
-  { PredictableCodeSizeScope predictible_code_size_scope(
-        this, kNoCodeAgeSequenceLength);
-    // The following three instructions must remain together and unmodified
-    // for code aging to work properly.
-    if (code_pre_aging) {
-      // Pre-age the code.
-      Code* stub = Code::GetPreAgedCodeAgeStub(isolate());
-      add(r0, pc, Operand(-8));
-      ldr(pc, MemOperand(pc, -4));
-      emit_code_stub_address(stub);
-    } else {
-      PushStandardFrame(r1);
-      nop(ip.code());
-    }
-  }
-}
+void TurboAssembler::Prologue() { PushStandardFrame(r1); }
 
 void TurboAssembler::EnterFrame(StackFrame::Type type,
                                 bool load_constant_pool_pointer_reg) {
@@ -1832,6 +1812,19 @@ void MacroAssembler::LoadWeakValue(Register value, Handle<WeakCell> cell,
   JumpIfSmi(value, miss);
 }
 
+void MacroAssembler::GetMapConstructor(Register result, Register map,
+                                       Register temp, Register temp2) {
+  Label done, loop;
+  ldr(result, FieldMemOperand(map, Map::kConstructorOrBackPointerOffset));
+  bind(&loop);
+  JumpIfSmi(result, &done);
+  CompareObjectType(result, temp, temp2, MAP_TYPE);
+  b(ne, &done);
+  ldr(result, FieldMemOperand(result, Map::kConstructorOrBackPointerOffset));
+  b(&loop);
+  bind(&done);
+}
+
 void MacroAssembler::CallStub(CodeStub* stub,
                               Condition cond) {
   DCHECK(AllowThisStubCall(stub));  // Stub calls are not allowed in some stubs.
@@ -2106,16 +2099,6 @@ void MacroAssembler::SmiTag(Register dst, Register src, SBit s) {
   add(dst, src, Operand(src), s);
 }
 
-void MacroAssembler::JumpIfNotBothSmi(Register reg1,
-                                      Register reg2,
-                                      Label* on_not_both_smi) {
-  STATIC_ASSERT(kSmiTag == 0);
-  tst(reg1, Operand(kSmiTagMask));
-  tst(reg2, Operand(kSmiTagMask), eq);
-  b(ne, on_not_both_smi);
-}
-
-
 void MacroAssembler::UntagAndJumpIfSmi(
     Register dst, Register src, Label* smi_case) {
   STATIC_ASSERT(kSmiTag == 0);
@@ -2240,13 +2223,6 @@ void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
 }
 
 
-void MacroAssembler::AssertIsRoot(Register reg, Heap::RootListIndex index) {
-  if (emit_debug_code()) {
-    CompareRoot(reg, index);
-    Check(eq, kHeapNumberMapRegisterClobbered);
-  }
-}
-
 void MacroAssembler::JumpIfNonSmisNotBothSequentialOneByteStrings(
     Register first, Register second, Register scratch1, Register scratch2,
     Label* failure) {
@@ -2260,19 +2236,6 @@ void MacroAssembler::JumpIfNonSmisNotBothSequentialOneByteStrings(
   JumpIfBothInstanceTypesAreNotSequentialOneByte(scratch1, scratch2, scratch1,
                                                  scratch2, failure);
 }
-
-void MacroAssembler::JumpIfNotBothSequentialOneByteStrings(Register first,
-                                                           Register second,
-                                                           Register scratch1,
-                                                           Register scratch2,
-                                                           Label* failure) {
-  // Check that neither is a smi.
-  and_(scratch1, first, Operand(second));
-  JumpIfSmi(scratch1, failure);
-  JumpIfNonSmisNotBothSequentialOneByteStrings(first, second, scratch1,
-                                               scratch2, failure);
-}
-
 
 void MacroAssembler::JumpIfNotUniqueNameInstanceType(Register reg,
                                                      Label* not_unique_name) {
@@ -2308,14 +2271,13 @@ void MacroAssembler::AllocateJSValue(Register result, Register constructor,
   STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
 }
 
-void MacroAssembler::CheckFor32DRegs(Register scratch) {
+void TurboAssembler::CheckFor32DRegs(Register scratch) {
   mov(scratch, Operand(ExternalReference::cpu_features()));
   ldr(scratch, MemOperand(scratch));
   tst(scratch, Operand(1u << VFP32DREGS));
 }
 
-
-void MacroAssembler::SaveFPRegs(Register location, Register scratch) {
+void TurboAssembler::SaveFPRegs(Register location, Register scratch) {
   CpuFeatureScope scope(this, VFP32DREGS, CpuFeatureScope::kDontCheckSupported);
   CheckFor32DRegs(scratch);
   vstm(db_w, location, d16, d31, ne);
@@ -2323,8 +2285,7 @@ void MacroAssembler::SaveFPRegs(Register location, Register scratch) {
   vstm(db_w, location, d0, d15);
 }
 
-
-void MacroAssembler::RestoreFPRegs(Register location, Register scratch) {
+void TurboAssembler::RestoreFPRegs(Register location, Register scratch) {
   CpuFeatureScope scope(this, VFP32DREGS, CpuFeatureScope::kDontCheckSupported);
   CheckFor32DRegs(scratch);
   vldm(ia_w, location, d0, d15);

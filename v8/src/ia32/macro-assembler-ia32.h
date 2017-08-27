@@ -124,6 +124,10 @@ class TurboAssembler : public Assembler {
   void Call(Handle<Code> target, RelocInfo::Mode rmode) { call(target, rmode); }
   void Call(Label* target) { call(target); }
 
+  void CallForDeoptimization(Address target, RelocInfo::Mode rmode) {
+    call(target, rmode);
+  }
+
   inline bool AllowThisStubCall(CodeStub* stub);
   void CallStubDelayed(CodeStub* stub);
 
@@ -185,7 +189,7 @@ class TurboAssembler : public Assembler {
 
   // Generates function and stub prologue code.
   void StubPrologue(StackFrame::Type type);
-  void Prologue(bool code_pre_aging);
+  void Prologue();
 
   void Lzcnt(Register dst, Register src) { Lzcnt(dst, Operand(src)); }
   void Lzcnt(Register dst, const Operand& src);
@@ -201,9 +205,6 @@ class TurboAssembler : public Assembler {
   // Return and drop arguments from stack, where the number of arguments
   // may be bigger than 2^16 - 1.  Requires a scratch register.
   void Ret(int bytes_dropped, Register scratch);
-
-  void Pxor(XMMRegister dst, XMMRegister src) { Pxor(dst, Operand(src)); }
-  void Pxor(XMMRegister dst, const Operand& src);
 
   void Pshuflw(XMMRegister dst, XMMRegister src, uint8_t shuffle) {
     Pshuflw(dst, Operand(src), shuffle);
@@ -232,9 +233,33 @@ class TurboAssembler : public Assembler {
 
 #undef AVX_OP2_WITH_TYPE
 
+// Only use these macros when non-destructive source of AVX version is not
+// needed.
+#define AVX_OP3_WITH_TYPE(macro_name, name, dst_type, src_type) \
+  void macro_name(dst_type dst, src_type src) {                 \
+    if (CpuFeatures::IsSupported(AVX)) {                        \
+      CpuFeatureScope scope(this, AVX);                         \
+      v##name(dst, dst, src);                                   \
+    } else {                                                    \
+      name(dst, src);                                           \
+    }                                                           \
+  }
+#define AVX_OP3_XO(macro_name, name)                            \
+  AVX_OP3_WITH_TYPE(macro_name, name, XMMRegister, XMMRegister) \
+  AVX_OP3_WITH_TYPE(macro_name, name, XMMRegister, const Operand&)
+
+  AVX_OP3_XO(Pcmpeqd, pcmpeqd)
+  AVX_OP3_XO(Psubd, psubd)
+  AVX_OP3_XO(Pxor, pxor)
+
+#undef AVX_OP3_XO
+#undef AVX_OP3_WITH_TYPE
+
   // Non-SSE2 instructions.
   void Pshufb(XMMRegister dst, XMMRegister src) { Pshufb(dst, Operand(src)); }
   void Pshufb(XMMRegister dst, const Operand& src);
+  void Psignd(XMMRegister dst, XMMRegister src) { Psignd(dst, Operand(src)); }
+  void Psignd(XMMRegister dst, const Operand& src);
 
   void Pextrb(Register dst, XMMRegister src, int8_t imm8);
   void Pextrw(Register dst, XMMRegister src, int8_t imm8);
@@ -270,6 +295,16 @@ class TurboAssembler : public Assembler {
   void Push(Immediate value) { push(value); }
   void Push(Handle<HeapObject> handle) { push(Immediate(handle)); }
   void Push(Smi* smi) { Push(Immediate(smi)); }
+
+  // These functions do not arrange the registers in any particular order so
+  // they are not useful for calls that can cause a GC.  The caller can
+  // exclude up to 3 registers that do not need to be saved and restored.
+  void PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                       Register exclusion2 = no_reg,
+                       Register exclusion3 = no_reg);
+  void PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                      Register exclusion2 = no_reg,
+                      Register exclusion3 = no_reg);
 
  private:
   bool has_frame_ = false;
@@ -329,16 +364,6 @@ class MacroAssembler : public TurboAssembler {
     CompareRoot(with, index);
     j(not_equal, if_not_equal, if_not_equal_distance);
   }
-
-  // These functions do not arrange the registers in any particular order so
-  // they are not useful for calls that can cause a GC.  The caller can
-  // exclude up to 3 registers that do not need to be saved and restored.
-  void PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
-                       Register exclusion2 = no_reg,
-                       Register exclusion3 = no_reg);
-  void PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
-                      Register exclusion2 = no_reg,
-                      Register exclusion3 = no_reg);
 
   // ---------------------------------------------------------------------------
   // GC Support
@@ -476,13 +501,10 @@ class MacroAssembler : public TurboAssembler {
   void PushSafepointRegisters() { pushad(); }
   void PopSafepointRegisters() { popad(); }
 
-  void CmpHeapObject(Register reg, Handle<HeapObject> object);
-  void PushObject(Handle<Object> object);
-
   void CmpObject(Register reg, Handle<Object> object) {
     AllowDeferredHandleDereference heap_object_check;
     if (object->IsHeapObject()) {
-      CmpHeapObject(reg, Handle<HeapObject>::cast(object));
+      cmp(reg, Handle<HeapObject>::cast(object));
     } else {
       cmp(reg, Immediate(Smi::cast(*object)));
     }
@@ -585,8 +607,6 @@ class MacroAssembler : public TurboAssembler {
     and_(reg, Immediate(mask));
   }
 
-  void LoadPowerOf2(XMMRegister dst, Register scratch, int power);
-
   // Abort execution if argument is not a smi, enabled via --debug-code.
   void AssertSmi(Register object);
 
@@ -640,6 +660,13 @@ class MacroAssembler : public TurboAssembler {
   // and {value}.
   void AllocateJSValue(Register result, Register constructor, Register value,
                        Register scratch, Label* gc_required);
+
+  // ---------------------------------------------------------------------------
+  // Support functions.
+
+  // Machine code version of Map::GetConstructor().
+  // |temp| holds |result|'s map when done.
+  void GetMapConstructor(Register result, Register map, Register temp);
 
   // ---------------------------------------------------------------------------
   // Runtime calls
@@ -732,7 +759,6 @@ class MacroAssembler : public TurboAssembler {
   void JumpIfNotUniqueNameInstanceType(Operand operand, Label* not_unique_name,
                                        Label::Distance distance = Label::kFar);
 
-
   static int SafepointRegisterStackIndex(Register reg) {
     return SafepointRegisterStackIndex(reg.code());
   }
@@ -772,7 +798,6 @@ class MacroAssembler : public TurboAssembler {
                           Register mask_reg);
 
   // Compute memory operands for safepoint stack slots.
-  Operand SafepointRegisterSlot(Register reg);
   static int SafepointRegisterStackIndex(int reg_code);
 
   // Needs access to SafepointRegisterStackIndex for compiled frame

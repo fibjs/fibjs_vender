@@ -187,7 +187,7 @@ class TurboAssembler : public Assembler {
 
   // Generates function and stub prologue code.
   void StubPrologue(StackFrame::Type type);
-  void Prologue(bool code_pre_aging);
+  void Prologue();
 
   void InitializeRootRegister() {
     ExternalReference roots_array_start =
@@ -318,6 +318,11 @@ class TurboAssembler : public Assembler {
             RelocInfo::Mode rmode = RelocInfo::CODE_TARGET,
             COND_ARGS);
   void Call(Label* target);
+
+  void CallForDeoptimization(Address target, RelocInfo::Mode rmode) {
+    Call(target, rmode);
+  }
+
   void Ret(COND_ARGS);
   inline void Ret(BranchDelaySlot bd, Condition cond = al,
     Register rs = zero_reg, const Operand& rt = Operand(zero_reg)) {
@@ -398,6 +403,13 @@ class TurboAssembler : public Assembler {
   // saved in higher memory addresses.
   void MultiPush(RegList regs);
   void MultiPushFPU(RegList regs);
+
+  void PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                       Register exclusion2 = no_reg,
+                       Register exclusion3 = no_reg);
+  void PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                      Register exclusion2 = no_reg,
+                      Register exclusion3 = no_reg);
 
   void pop(Register dst) {
     Ld(dst, MemOperand(sp, 0));
@@ -589,6 +601,9 @@ class TurboAssembler : public Assembler {
   void Dext(Register rt, Register rs, uint16_t pos, uint16_t size);
   void Ins(Register rt, Register rs, uint16_t pos, uint16_t size);
   void Dins(Register rt, Register rs, uint16_t pos, uint16_t size);
+  void ExtractBits(Register dest, Register source, Register pos, int size,
+                   bool sign_extend = false);
+  void InsertBits(Register dest, Register source, Register pos, int size);
   void Neg_s(FPURegister fd, FPURegister fs);
   void Neg_d(FPURegister fd, FPURegister fs);
 
@@ -638,6 +653,12 @@ class TurboAssembler : public Assembler {
 
   void Ldc1(FPURegister fd, const MemOperand& src);
   void Sdc1(FPURegister fs, const MemOperand& dst);
+
+  void Ll(Register rd, const MemOperand& rs);
+  void Sc(Register rd, const MemOperand& rs);
+
+  void Lld(Register rd, const MemOperand& rs);
+  void Scd(Register rd, const MemOperand& rs);
 
   // Perform a floating-point min or max operation with the
   // (IEEE-754-compatible) semantics of MIPS32's Release 6 MIN.fmt/MAX.fmt.
@@ -1097,17 +1118,6 @@ class MacroAssembler : public TurboAssembler {
   void LoadWordPair(Register rd, const MemOperand& rs, Register scratch = at);
   void StoreWordPair(Register rd, const MemOperand& rs, Register scratch = at);
 
-  void MultiPushReversed(RegList regs);
-  void MultiPushReversedFPU(RegList regs);
-
-  void PushObject(Handle<Object> handle);
-
-  void PushRegisterAsTwoSmis(Register src, Register scratch = at);
-  void PopRegisterAsTwoSmis(Register dst, Register scratch = at);
-
-  void MultiPopReversed(RegList regs);
-  void MultiPopReversedFPU(RegList regs);
-
   // Push and pop the registers that can hold pointers, as defined by the
   // RegList constant kSafepointSavedRegisters.
   void PushSafepointRegisters();
@@ -1222,6 +1232,11 @@ class MacroAssembler : public TurboAssembler {
   // -------------------------------------------------------------------------
   // Support functions.
 
+  // Machine code version of Map::GetConstructor().
+  // |temp| holds |result|'s map when done, and |temp2| its instance type.
+  void GetMapConstructor(Register result, Register map, Register temp,
+                         Register temp2);
+
   void GetObjectType(Register function,
                      Register map,
                      Register type_reg);
@@ -1288,8 +1303,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
 
 #undef COND_ARGS
 
-  void CallJSExitStub(CodeStub* stub);
-
   // Call a runtime routine.
   void CallRuntime(const Runtime::Function* f, int num_arguments,
                    SaveFPRegsMode save_doubles = kDontSaveFPRegs,
@@ -1317,12 +1330,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   void JumpToExternalReference(const ExternalReference& builtin,
                                BranchDelaySlot bd = PROTECT,
                                bool builtin_exit_frame = false);
-
-  struct Unresolved {
-    int pc;
-    uint32_t flags;  // See Bootstrapper::FixupFlags decoders/encoders.
-    const char* name;
-  };
 
   // -------------------------------------------------------------------------
   // StatsCounter support.
@@ -1377,8 +1384,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
                     Register scratch = at,
                     BranchDelaySlot bd = PROTECT);
 
-  // Jump if either of the registers contain a non-smi.
-  void JumpIfNotBothSmi(Register reg1, Register reg2, Label* on_not_both_smi);
   // Jump if either of the registers contain a smi.
   void JumpIfEitherSmi(Register reg1, Register reg2, Label* on_either_smi);
 
@@ -1404,18 +1409,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
 
-  // Abort execution if reg is not the root value with the given index,
-  // enabled via --debug-code.
-  void AssertIsRoot(Register reg, Heap::RootListIndex index);
-
-  // ---------------------------------------------------------------------------
-  // HeapNumber utilities.
-
-  void JumpIfNotHeapNumber(Register object,
-                           Register heap_number_map,
-                           Register scratch,
-                           Label* on_not_heap_number);
-
   // -------------------------------------------------------------------------
   // String utilities.
 
@@ -1434,13 +1427,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
                                                     Register scratch1,
                                                     Register scratch2,
                                                     Label* failure);
-
-  // Checks if both objects are sequential one-byte strings and jumps to label
-  // if either is not.
-  void JumpIfNotBothSequentialOneByteStrings(Register first, Register second,
-                                             Register scratch1,
-                                             Register scratch2,
-                                             Label* not_flat_one_byte_strings);
 
   void LoadInstanceDescriptors(Register map, Register descriptors);
   void LoadAccessor(Register dst, Register holder, int accessor_index,
@@ -1479,8 +1465,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
 
   // Compute memory operands for safepoint stack slots.
   static int SafepointRegisterStackIndex(int reg_code);
-  MemOperand SafepointRegisterSlot(Register reg);
-  MemOperand SafepointRegistersAndDoublesSlot(Register reg);
 
   // Needs access to SafepointRegisterStackIndex for compiled frame
   // traversal.

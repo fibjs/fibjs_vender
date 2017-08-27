@@ -62,6 +62,7 @@
 #include "src/runtime-profiler.h"
 #include "src/runtime/runtime.h"
 #include "src/simulator.h"
+#include "src/snapshot/builtin-serializer.h"
 #include "src/snapshot/code-serializer.h"
 #include "src/snapshot/natives.h"
 #include "src/snapshot/snapshot.h"
@@ -708,7 +709,8 @@ StartupData SnapshotCreator::CreateBlob(
   startup_serializer.SerializeStrongReferences();
 
   // Serialize each context with a new partial serializer.
-  i::List<i::SnapshotData*> context_snapshots(num_additional_contexts + 1);
+  std::vector<i::SnapshotData*> context_snapshots;
+  context_snapshots.reserve(num_additional_contexts + 1);
 
   // TODO(6593): generalize rehashing, and remove this flag.
   bool can_be_rehashed = true;
@@ -721,7 +723,7 @@ StartupData SnapshotCreator::CreateBlob(
         data->default_embedder_fields_serializer_);
     partial_serializer.Serialize(&default_context, false);
     can_be_rehashed = can_be_rehashed && partial_serializer.can_be_rehashed();
-    context_snapshots.Add(new i::SnapshotData(&partial_serializer));
+    context_snapshots.push_back(new i::SnapshotData(&partial_serializer));
   }
 
   for (int i = 0; i < num_additional_contexts; i++) {
@@ -729,8 +731,14 @@ StartupData SnapshotCreator::CreateBlob(
         isolate, &startup_serializer, data->embedder_fields_serializers_[i]);
     partial_serializer.Serialize(&contexts[i], true);
     can_be_rehashed = can_be_rehashed && partial_serializer.can_be_rehashed();
-    context_snapshots.Add(new i::SnapshotData(&partial_serializer));
+    context_snapshots.push_back(new i::SnapshotData(&partial_serializer));
   }
+
+  // Builtin serialization places additional objects into the partial snapshot
+  // cache and thus needs to happen before SerializeWeakReferencesAndDeferred
+  // is called below.
+  i::BuiltinSerializer builtin_serializer(isolate, &startup_serializer);
+  builtin_serializer.SerializeBuiltins();
 
   startup_serializer.SerializeWeakReferencesAndDeferred();
   can_be_rehashed = can_be_rehashed && startup_serializer.can_be_rehashed();
@@ -742,11 +750,12 @@ StartupData SnapshotCreator::CreateBlob(
 #endif  // DEBUG
 
   i::SnapshotData startup_snapshot(&startup_serializer);
+  i::SnapshotData builtin_snapshot(&builtin_serializer);
   StartupData result = i::Snapshot::CreateSnapshotBlob(
-      &startup_snapshot, &context_snapshots, can_be_rehashed);
+      &startup_snapshot, &builtin_snapshot, context_snapshots, can_be_rehashed);
 
   // Delete heap-allocated context snapshot instances.
-  for (const auto& context_snapshot : context_snapshots) {
+  for (const auto context_snapshot : context_snapshots) {
     delete context_snapshot;
   }
   data->created_ = true;
@@ -2159,10 +2168,9 @@ Location Module::GetModuleRequestLocation(int i) const {
 
 Local<Value> Module::GetModuleNamespace() {
   Utils::ApiCheck(
-      GetStatus() != kErrored && GetStatus() >= kInstantiated,
-      "v8::Module::GetModuleNamespace",
-      "GetModuleNamespace should be used on a successfully instantiated"
-      "module. The current module has not been instantiated or has errored");
+      GetStatus() == kEvaluated, "v8::Module::GetModuleNamespace",
+      "v8::Module::GetModuleNamespace can only be used on a module with "
+      "status kEvaluated");
   i::Handle<i::Module> self = Utils::OpenHandle(this);
   i::Handle<i::JSModuleNamespace> module_namespace =
       i::Module::GetModuleNamespace(self);
@@ -2179,8 +2187,8 @@ bool Module::Instantiate(Local<Context> context,
 Maybe<bool> Module::InstantiateModule(Local<Context> context,
                                       Module::ResolveCallback callback) {
   auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
-  ENTER_V8_NO_SCRIPT(isolate, context, Module, InstantiateModule,
-                     Nothing<bool>(), i::HandleScope);
+  ENTER_V8(isolate, context, Module, InstantiateModule, Nothing<bool>(),
+           i::HandleScope);
   has_pending_exception =
       !i::Module::Instantiate(Utils::OpenHandle(this), context, callback);
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
@@ -3106,7 +3114,7 @@ void NativeWeakMap::Set(Local<Value> v8_key, Local<Value> v8_value) {
     DCHECK(false);
     return;
   }
-  int32_t hash = i::Object::GetOrCreateHash(isolate, key)->value();
+  int32_t hash = key->GetOrCreateHash(isolate)->value();
   i::JSWeakCollection::Set(weak_collection, key, value, hash);
 }
 
@@ -3169,7 +3177,7 @@ bool NativeWeakMap::Delete(Local<Value> v8_key) {
     DCHECK(false);
     return false;
   }
-  int32_t hash = i::Object::GetOrCreateHash(isolate, key)->value();
+  int32_t hash = key->GetOrCreateHash(isolate)->value();
   return i::JSWeakCollection::Delete(weak_collection, key, hash);
 }
 
@@ -5185,7 +5193,7 @@ int v8::Object::GetIdentityHash() {
   auto isolate = Utils::OpenHandle(this)->GetIsolate();
   i::HandleScope scope(isolate);
   auto self = Utils::OpenHandle(this);
-  return i::JSReceiver::GetOrCreateIdentityHash(isolate, self)->value();
+  return self->GetOrCreateIdentityHash(isolate)->value();
 }
 
 
@@ -9033,13 +9041,6 @@ void Isolate::SetAllowCodeGenerationFromStringsCallback(
   isolate->set_allow_code_gen_callback(callback);
 }
 
-void Isolate::SetAllowCodeGenerationFromStringsCallback(
-    DeprecatedAllowCodeGenerationFromStringsCallback callback) {
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
-  isolate->set_allow_code_gen_callback(
-      reinterpret_cast<AllowCodeGenerationFromStringsCallback>(callback));
-}
-
 #define CALLBACK_SETTER(ExternalName, Type, InternalName)      \
   void Isolate::Set##ExternalName(Type callback) {             \
     i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this); \
@@ -9986,6 +9987,15 @@ v8::Local<debug::GeneratorObject> debug::GeneratorObject::Cast(
     v8::Local<v8::Value> value) {
   CHECK(value->IsGeneratorObject());
   return ToApiHandle<debug::GeneratorObject>(Utils::OpenHandle(*value));
+}
+
+void debug::QueryObjects(v8::Local<v8::Context> v8_context,
+                         QueryObjectPredicate* predicate,
+                         PersistentValueVector<v8::Object>* objects) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_context->GetIsolate());
+  ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate);
+  isolate->heap_profiler()->QueryObjects(Utils::OpenHandle(*v8_context),
+                                         predicate, objects);
 }
 
 Local<String> CpuProfileNode::GetFunctionName() const {

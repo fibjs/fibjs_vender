@@ -127,15 +127,25 @@ class V8_EXPORT_PRIVATE InterpreterAssembler : public CodeStubAssembler {
 
   // Call JSFunction or Callable |function| with |arg_count| arguments (not
   // including receiver) and the first argument located at |first_arg|, possibly
-  // including the receiver depending on |receiver_mode|.
-  compiler::Node* CallJS(compiler::Node* function, compiler::Node* context,
+  // including the receiver depending on |receiver_mode|. After the call returns
+  // directly dispatches to the next bytecode.
+  void CallJSAndDispatch(compiler::Node* function, compiler::Node* context,
                          compiler::Node* first_arg, compiler::Node* arg_count,
                          ConvertReceiverMode receiver_mode);
 
+  // Call JSFunction or Callable |function| with |arg_count| arguments (not
+  // including receiver) passed as |args|, possibly including the receiver
+  // depending on |receiver_mode|. After the call returns directly dispatches to
+  // the next bytecode.
+  template <class... TArgs>
+  void CallJSAndDispatch(Node* function, Node* context, Node* arg_count,
+                         ConvertReceiverMode receiver_mode, TArgs... args);
+
   // Call JSFunction or Callable |function| with |arg_count|
   // arguments (not including receiver) and the first argument
-  // located at |first_arg|.
-  compiler::Node* CallJSWithSpread(compiler::Node* function,
+  // located at |first_arg|, and the final argument being spread. After the call
+  // returns directly dispatches to the next bytecode.
+  void CallJSWithSpreadAndDispatch(compiler::Node* function,
                                    compiler::Node* context,
                                    compiler::Node* first_arg,
                                    compiler::Node* arg_count,
@@ -305,6 +315,8 @@ class V8_EXPORT_PRIVATE InterpreterAssembler : public CodeStubAssembler {
 
   // Save the bytecode offset to the interpreter frame.
   void SaveBytecodeOffset();
+  // Reload the bytecode offset from the interpreter frame.
+  Node* ReloadBytecodeOffset();
 
   // Updates and returns BytecodeOffset() advanced by the current bytecode's
   // size. Traces the exit of the current bytecode.
@@ -345,16 +357,15 @@ class V8_EXPORT_PRIVATE InterpreterAssembler : public CodeStubAssembler {
 
   Bytecode bytecode_;
   OperandScale operand_scale_;
-  CodeStubAssembler::Variable bytecode_offset_;
   CodeStubAssembler::Variable interpreted_frame_pointer_;
   CodeStubAssembler::Variable bytecode_array_;
-  bool bytecode_array_valid_;
+  CodeStubAssembler::Variable bytecode_offset_;
   CodeStubAssembler::Variable dispatch_table_;
   CodeStubAssembler::Variable accumulator_;
   AccumulatorUse accumulator_use_;
   bool made_call_;
   bool reloaded_frame_ptr_;
-  bool saved_bytecode_offset_;
+  bool bytecode_array_valid_;
 
   bool disable_stack_check_across_call_;
   compiler::Node* stack_pointer_before_call_;

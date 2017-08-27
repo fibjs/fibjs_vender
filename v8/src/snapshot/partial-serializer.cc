@@ -35,15 +35,13 @@ void PartialSerializer::Serialize(Object** o, bool include_global_proxy) {
   // and it's next context pointer may point to the code-stub context.  Clear
   // it before serializing, it will get re-added to the context list
   // explicitly when it's loaded.
-  context->set(Context::NEXT_CONTEXT_LINK,
-               isolate_->heap()->undefined_value());
+  context->set(Context::NEXT_CONTEXT_LINK, isolate_->heap()->undefined_value());
   DCHECK(!context->global_object()->IsUndefined(context->GetIsolate()));
   // Reset math random cache to get fresh random numbers.
   context->set_math_random_index(Smi::kZero);
   context->set_math_random_cache(isolate_->heap()->undefined_value());
   DCHECK_NULL(rehashable_global_dictionary_);
-  rehashable_global_dictionary_ =
-      context->global_object()->global_dictionary();
+  rehashable_global_dictionary_ = context->global_object()->global_dictionary();
 
   VisitRootPointer(Root::kPartialSnapshotCache, o);
   SerializeDeferredObjects();
@@ -59,6 +57,12 @@ void PartialSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     DCHECK(Map::cast(obj)->code_cache() == obj->GetHeap()->empty_fixed_array());
   }
 
+  BuiltinReferenceSerializationMode mode =
+      startup_serializer_->clear_function_code() ? kCanonicalizeCompileLazy
+                                                 : kDefault;
+  if (SerializeBuiltinReference(obj, how_to_code, where_to_point, skip, mode)) {
+    return;
+  }
   if (SerializeHotObject(obj, how_to_code, where_to_point, skip)) return;
 
   int root_index = root_index_map_.Lookup(obj);
@@ -101,7 +105,7 @@ void PartialSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     JSObject* jsobj = JSObject::cast(obj);
     if (jsobj->GetEmbedderFieldCount() > 0) {
       DCHECK_NOT_NULL(serialize_embedder_fields_.callback);
-      embedder_field_holders_.Add(jsobj);
+      embedder_field_holders_.push_back(jsobj);
     }
   }
 
@@ -126,23 +130,21 @@ bool PartialSerializer::ShouldBeInThePartialSnapshotCache(HeapObject* o) {
 }
 
 void PartialSerializer::SerializeEmbedderFields() {
-  int count = embedder_field_holders_.length();
-  if (count == 0) return;
+  if (embedder_field_holders_.empty()) return;
   DisallowHeapAllocation no_gc;
   DisallowJavascriptExecution no_js(isolate());
   DisallowCompilation no_compile(isolate());
   DCHECK_NOT_NULL(serialize_embedder_fields_.callback);
   sink_.Put(kEmbedderFieldsData, "embedder fields data");
-  while (embedder_field_holders_.length() > 0) {
+  while (!embedder_field_holders_.empty()) {
     HandleScope scope(isolate());
-    Handle<JSObject> obj(embedder_field_holders_.RemoveLast(), isolate());
+    Handle<JSObject> obj(embedder_field_holders_.back(), isolate());
+    embedder_field_holders_.pop_back();
     SerializerReference reference = reference_map_.Lookup(*obj);
     DCHECK(reference.is_back_reference());
     int embedder_fields_count = obj->GetEmbedderFieldCount();
     for (int i = 0; i < embedder_fields_count; i++) {
       if (obj->GetEmbedderField(i)->IsHeapObject()) continue;
-      // Do not attempt to serialize nullptr embedder fields.
-      if (obj->GetEmbedderField(i) == 0) continue;
 
       StartupData data = serialize_embedder_fields_.callback(
           v8::Utils::ToLocal(obj), i, serialize_embedder_fields_.data);

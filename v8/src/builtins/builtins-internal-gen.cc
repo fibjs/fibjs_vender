@@ -37,10 +37,10 @@ TF_BUILTIN(CopyFastSmiOrObjectElements, CodeStubAssembler) {
   // Check if we can allocate in new space.
   ElementsKind kind = PACKED_ELEMENTS;
   int max_elements = FixedArrayBase::GetMaxLengthForNewSpaceAllocation(kind);
-  Label if_newspace(this), if_oldspace(this);
+  Label if_newspace(this), if_lospace(this, Label::kDeferred);
   Branch(UintPtrOrSmiLessThan(length, IntPtrOrSmiConstant(max_elements, mode),
                               mode),
-         &if_newspace, &if_oldspace);
+         &if_newspace, &if_lospace);
 
   BIND(&if_newspace);
   {
@@ -51,9 +51,10 @@ TF_BUILTIN(CopyFastSmiOrObjectElements, CodeStubAssembler) {
     Return(target);
   }
 
-  BIND(&if_oldspace);
+  BIND(&if_lospace);
   {
-    Node* target = AllocateFixedArray(kind, length, mode, kPretenured);
+    Node* target =
+        AllocateFixedArray(kind, length, mode, kAllowLargeObjectAllocation);
     CopyFixedArrayElements(kind, source, target, length, UPDATE_WRITE_BARRIER,
                            mode);
     StoreObjectField(object, JSObject::kElementsOffset, target);
@@ -283,8 +284,8 @@ class RecordWriteCodeStubAssembler : public CodeStubAssembler {
     {
       Node* function = ExternalConstant(
           ExternalReference::store_buffer_overflow_function(this->isolate()));
-      CallCFunction1(MachineType::Int32(), MachineType::Pointer(), function,
-                     isolate);
+      CallCFunction1WithCallerSavedRegisters(
+          MachineType::Int32(), MachineType::Pointer(), function, isolate);
       Goto(next);
     }
   }
@@ -295,7 +296,6 @@ TF_BUILTIN(RecordWrite, RecordWriteCodeStubAssembler) {
   Node* slot = Parameter(Descriptor::kSlot);
   Node* isolate = Parameter(Descriptor::kIsolate);
   Node* value;
-  Node* function;
 
   Label test_old_to_new_flags(this);
   Label store_buffer_exit(this), store_buffer_incremental_wb(this);
@@ -356,12 +356,12 @@ TF_BUILTIN(RecordWrite, RecordWriteCodeStubAssembler) {
 
     BIND(&call_incremental_wb);
     {
-      function = ExternalConstant(
+      Node* function = ExternalConstant(
           ExternalReference::incremental_marking_record_write_function(
               this->isolate()));
-      CallCFunction3(MachineType::Int32(), MachineType::Pointer(),
-                     MachineType::Pointer(), MachineType::Pointer(), function,
-                     object, slot, isolate);
+      CallCFunction3WithCallerSavedRegisters(
+          MachineType::Int32(), MachineType::Pointer(), MachineType::Pointer(),
+          MachineType::Pointer(), function, object, slot, isolate);
       Goto(&exit);
     }
   }
@@ -460,7 +460,7 @@ TF_BUILTIN(DeleteProperty, DeletePropertyBaseAssembler) {
 
     BIND(&dictionary);
     {
-      Node* properties = LoadProperties(receiver);
+      Node* properties = LoadSlowProperties(receiver);
       DeleteDictionaryProperty(receiver, properties, unique, context,
                                &dont_delete, &if_notfound);
     }

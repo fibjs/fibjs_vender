@@ -86,7 +86,12 @@ void MacroAssembler::CompareRoot(const Operand& with,
 
 void MacroAssembler::PushRoot(Heap::RootListIndex index) {
   DCHECK(isolate()->heap()->RootCanBeTreatedAsConstant(index));
-  PushObject(isolate()->heap()->root_handle(index));
+  Handle<Object> object = isolate()->heap()->root_handle(index);
+  if (object->IsHeapObject()) {
+    Push(Handle<HeapObject>::cast(object));
+  } else {
+    Push(Smi::cast(*object));
+  }
 }
 
 #define REG(Name) \
@@ -98,7 +103,7 @@ static const Register saved_regs[] = {REG(eax), REG(ecx), REG(edx)};
 
 static const int kNumberOfSavedRegs = sizeof(saved_regs) / sizeof(Register);
 
-void MacroAssembler::PushCallerSaved(SaveFPRegsMode fp_mode,
+void TurboAssembler::PushCallerSaved(SaveFPRegsMode fp_mode,
                                      Register exclusion1, Register exclusion2,
                                      Register exclusion3) {
   // We don't allow a GC during a store buffer overflow so there is no need to
@@ -120,7 +125,7 @@ void MacroAssembler::PushCallerSaved(SaveFPRegsMode fp_mode,
   }
 }
 
-void MacroAssembler::PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
+void TurboAssembler::PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
                                     Register exclusion2, Register exclusion3) {
   if (fp_mode == kSaveFPRegs) {
     // Restore all XMM registers except XMM0.
@@ -635,20 +640,11 @@ void TurboAssembler::StubPrologue(StackFrame::Type type) {
   push(Immediate(StackFrame::TypeToMarker(type)));
 }
 
-void TurboAssembler::Prologue(bool code_pre_aging) {
-  PredictableCodeSizeScope predictible_code_size_scope(this,
-      kNoCodeAgeSequenceLength);
-  if (code_pre_aging) {
-    // Pre-age the code.
-    call(BUILTIN_CODE(isolate(), MarkCodeAsExecutedOnce),
-         RelocInfo::CODE_AGE_SEQUENCE);
-    Nop(kNoCodeAgeSequenceLength - Assembler::kCallInstructionLength);
-  } else {
-    push(ebp);  // Caller's frame pointer.
-    mov(ebp, esp);
-    push(esi);  // Callee's context.
-    push(edi);  // Callee's JS function.
-  }
+void TurboAssembler::Prologue() {
+  push(ebp);  // Caller's frame pointer.
+  mov(ebp, esp);
+  push(esi);  // Callee's context.
+  push(edi);  // Callee's JS function.
 }
 
 void TurboAssembler::EnterFrame(StackFrame::Type type) {
@@ -981,6 +977,19 @@ void MacroAssembler::AllocateJSValue(Register result, Register constructor,
   mov(FieldOperand(result, JSObject::kElementsOffset), scratch);
   mov(FieldOperand(result, JSValue::kValueOffset), value);
   STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
+}
+
+void MacroAssembler::GetMapConstructor(Register result, Register map,
+                                       Register temp) {
+  Label done, loop;
+  mov(result, FieldOperand(map, Map::kConstructorOrBackPointerOffset));
+  bind(&loop);
+  JumpIfSmi(result, &done, Label::kNear);
+  CmpObjectType(result, MAP_TYPE, temp);
+  j(not_equal, &done, Label::kNear);
+  mov(result, FieldOperand(result, Map::kConstructorOrBackPointerOffset));
+  jmp(&loop);
+  bind(&done);
 }
 
 void MacroAssembler::CallStub(CodeStub* stub) {
@@ -1347,28 +1356,12 @@ void MacroAssembler::LoadGlobalFunctionInitialMap(Register function,
   }
 }
 
-Operand MacroAssembler::SafepointRegisterSlot(Register reg) {
-  return Operand(esp, SafepointRegisterStackIndex(reg.code()) * kPointerSize);
-}
-
 int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
   // The registers are pushed starting with the lowest encoding,
   // which means that lowest encodings are furthest away from
   // the stack pointer.
   DCHECK(reg_code >= 0 && reg_code < kNumSafepointRegisters);
   return kNumSafepointRegisters - reg_code - 1;
-}
-
-void MacroAssembler::CmpHeapObject(Register reg, Handle<HeapObject> object) {
-  cmp(reg, object);
-}
-
-void MacroAssembler::PushObject(Handle<Object> object) {
-  if (object->IsHeapObject()) {
-    Push(Handle<HeapObject>::cast(object));
-  } else {
-    Push(Smi::cast(*object));
-  }
 }
 
 void MacroAssembler::GetWeakValue(Register value, Handle<WeakCell> cell) {
@@ -1487,15 +1480,6 @@ void TurboAssembler::Move(XMMRegister dst, uint64_t src) {
   }
 }
 
-void TurboAssembler::Pxor(XMMRegister dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vpxor(dst, dst, src);
-  } else {
-    pxor(dst, src);
-  }
-}
-
 void TurboAssembler::Pshuflw(XMMRegister dst, const Operand& src,
                              uint8_t shuffle) {
   if (CpuFeatures::IsSupported(AVX)) {
@@ -1514,6 +1498,20 @@ void TurboAssembler::Pshufd(XMMRegister dst, const Operand& src,
   } else {
     pshufd(dst, src, shuffle);
   }
+}
+
+void TurboAssembler::Psignd(XMMRegister dst, const Operand& src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vpsignd(dst, dst, src);
+    return;
+  }
+  if (CpuFeatures::IsSupported(SSSE3)) {
+    CpuFeatureScope sse_scope(this, SSSE3);
+    psignd(dst, src);
+    return;
+  }
+  UNREACHABLE();
 }
 
 void TurboAssembler::Pshufb(XMMRegister dst, const Operand& src) {
@@ -1781,17 +1779,6 @@ void MacroAssembler::LoadAccessor(Register dst, Register holder,
   mov(dst, FieldOperand(dst, offset));
 }
 
-
-void MacroAssembler::LoadPowerOf2(XMMRegister dst,
-                                  Register scratch,
-                                  int power) {
-  DCHECK(is_uintn(power + HeapNumber::kExponentBias,
-                  HeapNumber::kExponentBits));
-  mov(scratch, Immediate(power + HeapNumber::kExponentBias));
-  movd(dst, scratch);
-  psllq(dst, HeapNumber::kMantissaBits);
-}
-
 void MacroAssembler::JumpIfNotBothSequentialOneByteStrings(Register object1,
                                                            Register object2,
                                                            Register scratch1,
@@ -1824,7 +1811,6 @@ void MacroAssembler::JumpIfNotBothSequentialOneByteStrings(Register object1,
   cmp(scratch1, kFlatOneByteStringTag | (kFlatOneByteStringTag << kShift));
   j(not_equal, failure);
 }
-
 
 void MacroAssembler::JumpIfNotUniqueNameInstanceType(Operand operand,
                                                      Label* not_unique_name,

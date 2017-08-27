@@ -24,7 +24,34 @@ namespace internal {
 namespace wasm {
 class InterpretedFrame;
 class WasmInterpreter;
-}
+
+// When we compile or instantiate, we need to create global handles
+// for function tables. Normally, these handles get destroyed when the
+// respective objects get GCed. If we fail to construct those objects,
+// we can leak global hanles. The exit path in these cases isn't unique,
+// and may grow.
+//
+// This type addresses that.
+
+typedef Address GlobalHandleAddress;
+
+class GlobalHandleLifetimeManager final {
+ public:
+  void Add(GlobalHandleAddress addr) { handles_.push_back(addr); }
+  // Call this when compilation or instantiation has succeeded, and we've
+  // passed the control to a JS object with a finalizer that'll destroy
+  // the handles.
+  void ReleaseWithoutDestroying() { handles_.clear(); }
+  ~GlobalHandleLifetimeManager() {
+    for (auto& addr : handles_) {
+      GlobalHandles::Destroy(reinterpret_cast<Object**>(addr));
+    }
+  }
+
+ private:
+  std::vector<Address> handles_;
+};
+}  // namespace wasm
 
 class WasmCompiledModule;
 class WasmDebugInfo;
@@ -65,6 +92,9 @@ class WasmModuleObject : public JSObject {
 
   static Handle<WasmModuleObject> New(
       Isolate* isolate, Handle<WasmCompiledModule> compiled_module);
+
+ private:
+  static void Finalizer(const v8::WeakCallbackInfo<void>& data);
 };
 
 // Representation of a WebAssembly.Table JavaScript-level object.
@@ -383,10 +413,12 @@ class WasmCompiledModule : public FixedArray {
   MACRO(OBJECT, Context, native_context)                      \
   MACRO(SMALL_CONST_NUMBER, uint32_t, num_imported_functions) \
   MACRO(CONST_OBJECT, FixedArray, code_table)                 \
+  MACRO(CONST_OBJECT, FixedArray, export_wrappers)            \
   MACRO(OBJECT, FixedArray, weak_exported_functions)          \
   MACRO(OBJECT, FixedArray, function_tables)                  \
   MACRO(OBJECT, FixedArray, signature_tables)                 \
   MACRO(CONST_OBJECT, FixedArray, empty_function_tables)      \
+  MACRO(CONST_OBJECT, FixedArray, empty_signature_tables)     \
   MACRO(LARGE_NUMBER, size_t, embedded_mem_start)             \
   MACRO(LARGE_NUMBER, size_t, globals_start)                  \
   MACRO(LARGE_NUMBER, uint32_t, embedded_mem_size)            \
@@ -417,32 +449,32 @@ class WasmCompiledModule : public FixedArray {
   };
 
  public:
-  static Handle<WasmCompiledModule> New(Isolate* isolate,
-                                        Handle<WasmSharedModuleData> shared,
-                                        Handle<FixedArray> code_table,
-                                        const wasm::ModuleEnv& module_env);
+  static Handle<WasmCompiledModule> New(
+      Isolate* isolate, Handle<WasmSharedModuleData> shared,
+      Handle<FixedArray> code_table, Handle<FixedArray> export_wrappers,
+      const std::vector<wasm::GlobalHandleAddress>& function_tables,
+      const std::vector<wasm::GlobalHandleAddress>& signature_tables);
 
   static Handle<WasmCompiledModule> Clone(Isolate* isolate,
                                           Handle<WasmCompiledModule> module);
-  static void Reset(Isolate* isolate, WasmCompiledModule* module);
+  static void Reset(Isolate* isolate, WasmCompiledModule* module,
+                    bool clear_global_handles = true);
 
   Address GetEmbeddedMemStartOrNull() const {
-    DisallowHeapAllocation no_gc;
-    if (has_embedded_mem_start()) {
-      return reinterpret_cast<Address>(embedded_mem_start());
-    }
-    return nullptr;
+    return has_embedded_mem_start()
+               ? reinterpret_cast<Address>(embedded_mem_start())
+               : nullptr;
   }
 
   Address GetGlobalsStartOrNull() const {
-    DisallowHeapAllocation no_gc;
-    if (has_globals_start()) {
-      return reinterpret_cast<Address>(globals_start());
-    }
-    return nullptr;
+    return has_globals_start() ? reinterpret_cast<Address>(globals_start())
+                               : nullptr;
   }
 
-  uint32_t mem_size() const;
+  uint32_t GetEmbeddedMemSizeOrZero() const {
+    return has_embedded_mem_size() ? embedded_mem_size() : 0;
+  }
+
   uint32_t default_mem_size() const;
 
   void ResetSpecializationMemInfoIfNeeded();
@@ -565,6 +597,11 @@ class WasmCompiledModule : public FixedArray {
   void ReplaceCodeTableForTesting(Handle<FixedArray> testing_table) {
     set_code_table(testing_table);
   }
+
+  static void SetTableValue(Isolate* isolate, Handle<FixedArray> table,
+                            int index, Address value);
+  static void UpdateTableValue(FixedArray* table, int index, Address value);
+  static Address GetTableValue(FixedArray* table, int index);
 
  private:
   void InitId();

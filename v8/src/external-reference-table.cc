@@ -49,14 +49,6 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
   AddApiReferences(isolate);
 }
 
-ExternalReferenceTable::~ExternalReferenceTable() {
-#ifdef SYMBOLIZE_FUNCTION
-  for (char** table : symbol_tables_) {
-    free(table);
-  }
-#endif
-}
-
 #ifdef DEBUG
 void ExternalReferenceTable::ResetCount() {
   for (ExternalReferenceEntry& entry : refs_) entry.count = 0;
@@ -70,12 +62,14 @@ void ExternalReferenceTable::PrintCount() {
 }
 #endif  // DEBUG
 
-const char* ExternalReferenceTable::ResolveSymbol(void* address,
-                                                  std::vector<char**>* tables) {
+const char* ExternalReferenceTable::ResolveSymbol(void* address) {
 #ifdef SYMBOLIZE_FUNCTION
-  char** table = backtrace_symbols(&address, 1);
-  if (tables) tables->push_back(table);
-  return table[0];
+  char** names = backtrace_symbols(&address, 1);
+  const char* name = names[0];
+  // The array of names is malloc'ed. However, each name string is static
+  // and do not need to be freed.
+  free(names);
+  return name;
 #else
   return "<unresolved>";
 #endif  // SYMBOLIZE_FUNCTION
@@ -112,6 +106,8 @@ void ExternalReferenceTable::AddReferences(Isolate* isolate) {
   Add(ExternalReference::isolate_address(isolate).address(), "isolate");
   Add(ExternalReference::interpreter_dispatch_table_address(isolate).address(),
       "Interpreter::dispatch_table_address");
+  Add(ExternalReference::bytecode_size_table_address(isolate).address(),
+      "Bytecodes::bytecode_size_table_address");
   Add(ExternalReference::address_of_negative_infinity().address(),
       "LDoubleConstant::negative_infinity");
   Add(ExternalReference::power_double_double_function(isolate).address(),
@@ -167,8 +163,6 @@ void ExternalReferenceTable::AddReferences(Isolate* isolate) {
       "date_cache_stamp");
   Add(ExternalReference::address_of_pending_message_obj(isolate).address(),
       "address_of_pending_message_obj");
-  Add(ExternalReference::get_make_code_young_function(isolate).address(),
-      "Code::MakeCodeYoung");
   Add(ExternalReference::cpu_features().address(), "cpu_features");
   Add(ExternalReference::old_space_allocation_top_address(isolate).address(),
       "Heap::OldSpaceAllocationTopAddress");
@@ -177,8 +171,6 @@ void ExternalReferenceTable::AddReferences(Isolate* isolate) {
   Add(ExternalReference::allocation_sites_list_address(isolate).address(),
       "Heap::allocation_sites_list_address()");
   Add(ExternalReference::address_of_uint32_bias().address(), "uint32_bias");
-  Add(ExternalReference::get_mark_code_as_executed_function(isolate).address(),
-      "Code::MarkCodeAsExecuted");
   Add(ExternalReference::is_profiling_address(isolate).address(),
       "Isolate::is_profiling");
   Add(ExternalReference::scheduled_exception_address(isolate).address(),
@@ -276,12 +268,8 @@ void ExternalReferenceTable::AddReferences(Isolate* isolate) {
       "search_string_raw<1-byte, 2-byte>");
   Add(ExternalReference::orderedhashmap_gethash_raw(isolate).address(),
       "orderedhashmap_gethash_raw");
-  Add(ExternalReference::orderedhashtable_has_raw<OrderedHashMap, 2>(isolate)
-          .address(),
-      "orderedhashtable_has_raw<OrderedHashMap, 2>");
-  Add(ExternalReference::orderedhashtable_has_raw<OrderedHashSet, 1>(isolate)
-          .address(),
-      "orderedhashtable_has_raw<OrderedHashSet, 1>");
+  Add(ExternalReference::get_or_create_hash_raw(isolate).address(),
+      "get_or_create_hash_raw");
   Add(ExternalReference::log_enter_external_function(isolate).address(),
       "Logger::EnterExternal");
   Add(ExternalReference::log_leave_external_function(isolate).address(),
@@ -468,11 +456,7 @@ void ExternalReferenceTable::AddApiReferences(Isolate* isolate) {
   if (api_external_references != nullptr) {
     while (*api_external_references != 0) {
       Address address = reinterpret_cast<Address>(*api_external_references);
-#ifdef SYMBOLIZE_FUNCTION
-      Add(address, ResolveSymbol(address, &symbol_tables_));
-#else
       Add(address, ResolveSymbol(address));
-#endif
       api_external_references++;
     }
   }

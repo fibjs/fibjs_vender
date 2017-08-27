@@ -203,6 +203,9 @@ class TurboAssembler : public Assembler {
   void Ret() { b(r14); }
   void Ret(Condition cond) { b(cond, r14); }
 
+  void CallForDeoptimization(Address target, RelocInfo::Mode rmode) {
+    Call(target, rmode);
+  }
 
   // Emit code to discard a non-negative number of pointer-sized elements
   // from the stack, clobbering only the sp register.
@@ -227,6 +230,13 @@ class TurboAssembler : public Assembler {
 
   void MultiPushDoubles(RegList dregs, Register location = sp);
   void MultiPopDoubles(RegList dregs, Register location = sp);
+
+  void PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                       Register exclusion2 = no_reg,
+                       Register exclusion3 = no_reg);
+  void PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                      Register exclusion2 = no_reg,
+                      Register exclusion3 = no_reg);
 
   // Load an object from the root table.
   void LoadRoot(Register destination, Heap::RootListIndex index,
@@ -709,7 +719,7 @@ class TurboAssembler : public Assembler {
   // Generates function and stub prologue code.
   void StubPrologue(StackFrame::Type type, Register base = no_reg,
                     int prologue_offset = 0);
-  void Prologue(bool code_pre_aging, Register base, int prologue_offset = 0);
+  void Prologue(Register base, int prologue_offset = 0);
 
   // Get the actual activation frame alignment for target environment.
   static int ActivationFrameAlignment();
@@ -1026,6 +1036,11 @@ class MacroAssembler : public TurboAssembler {
   // ---------------------------------------------------------------------------
   // Support functions.
 
+  // Machine code version of Map::GetConstructor().
+  // |temp| holds |result|'s map when done, and |temp2| its instance type.
+  void GetMapConstructor(Register result, Register map, Register temp,
+                         Register temp2);
+
   // Compare object type for heap object.  heap_object contains a non-Smi
   // whose object type should be compared with the given type.  This both
   // sets the flags and leaves the object type in the type_reg register.
@@ -1241,8 +1256,6 @@ class MacroAssembler : public TurboAssembler {
     TestIfSmi(value);
     bne(not_smi_label /*, cr0*/);
   }
-  // Jump if either of the registers contain a non-smi.
-  void JumpIfNotBothSmi(Register reg1, Register reg2, Label* on_not_both_smi);
   // Jump if either of the registers contain a smi.
   void JumpIfEitherSmi(Register reg1, Register reg2, Label* on_either_smi);
 
@@ -1279,16 +1292,6 @@ class MacroAssembler : public TurboAssembler {
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
 
-  // Abort execution if reg is not the root value with the given index,
-  // enabled via --debug-code.
-  void AssertIsRoot(Register reg, Heap::RootListIndex index);
-
-  // ---------------------------------------------------------------------------
-  // HeapNumber utilities
-
-  void JumpIfNotHeapNumber(Register object, Register heap_number_map,
-                           Register scratch, Label* on_not_heap_number);
-
   // ---------------------------------------------------------------------------
   // String utilities
 
@@ -1299,13 +1302,6 @@ class MacroAssembler : public TurboAssembler {
                                                     Register scratch1,
                                                     Register scratch2,
                                                     Label* failure);
-
-  // Checks if both objects are sequential one-byte strings and jumps to label
-  // if either is not.
-  void JumpIfNotBothSequentialOneByteStrings(Register first, Register second,
-                                             Register scratch1,
-                                             Register scratch2,
-                                             Label* not_flat_one_byte_strings);
 
   // Checks if both instance types are sequential one-byte strings and jumps to
   // label if either is not.
@@ -1332,17 +1328,6 @@ class MacroAssembler : public TurboAssembler {
   // ---------------------------------------------------------------------------
   // GC Support
 
-  // AllocationMemento support. Arrays may have an associated
-  // AllocationMemento object that can be checked for in order to pretransition
-  // to another type.
-  // On entry, receiver_reg should point to the array object.
-  // scratch_reg gets clobbered.
-  // If allocation info is present, condition flags are set to eq.
-  void TestJSArrayForAllocationMemento(Register receiver_reg,
-                                       Register scratch_reg,
-                                       Register scratch2_reg,
-                                       Label* no_memento_found);
-
   void IncrementalMarkingRecordWriteHelper(Register object, Register value,
                                            Register address);
 
@@ -1360,7 +1345,6 @@ class MacroAssembler : public TurboAssembler {
   static int CallSizeNotPredictableCodeSize(Address target,
                                             RelocInfo::Mode rmode,
                                             Condition cond = al);
-  void PushObject(Handle<Object> handle);
   void JumpToJSEntry(Register target);
 
   // Check if object is in new space.  Jumps if the object is not in new space.
@@ -1461,8 +1445,6 @@ class MacroAssembler : public TurboAssembler {
 
   // Compute memory operands for safepoint stack slots.
   static int SafepointRegisterStackIndex(int reg_code);
-  MemOperand SafepointRegisterSlot(Register reg);
-  MemOperand SafepointRegistersAndDoublesSlot(Register reg);
 
   // Needs access to SafepointRegisterStackIndex for compiled frame
   // traversal.

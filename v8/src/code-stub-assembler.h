@@ -28,6 +28,8 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(AllocationSiteMap, allocation_site_map, AllocationSiteMap)           \
   V(BooleanMap, boolean_map, BooleanMap)                                 \
   V(CodeMap, code_map, CodeMap)                                          \
+  V(EmptyPropertyDictionary, empty_property_dictionary,                  \
+    EmptyPropertyDictionary)                                             \
   V(EmptyFixedArray, empty_fixed_array, EmptyFixedArray)                 \
   V(empty_string, empty_string, EmptyString)                             \
   V(EmptyWeakCell, empty_weak_cell, EmptyWeakCell)                       \
@@ -442,7 +444,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* DoesntHaveInstanceType(Node* object, InstanceType type);
   Node* TaggedDoesntHaveInstanceType(Node* any_tagged, InstanceType type);
   // Load the properties backing store of a JSObject.
-  TNode<HeapObject> LoadProperties(SloppyTNode<JSObject> object);
+  TNode<HeapObject> LoadSlowProperties(SloppyTNode<JSObject> object);
+  TNode<HeapObject> LoadFastProperties(SloppyTNode<JSObject> object);
+  // Load the hash from the backing store of a JSObject.
+  TNode<Int32T> LoadHashForJSObject(SloppyTNode<JSObject> jsobject,
+                                    SloppyTNode<Int32T> instance_type);
   // Load the elements backing store of a JSObject.
   TNode<FixedArrayBase> LoadElements(SloppyTNode<JSObject> object);
   // Load the length of a JSArray instance.
@@ -485,7 +491,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // doesn't have an existing hash.
   void InitializePropertyArrayLength(Node* property_array, Node* length,
                                      ParameterMode mode);
-  Node* LoadPropertyArrayLength(Node* property_array);
 
   // Check if the map is set for slow properties.
   TNode<BoolT> IsDictionaryMap(SloppyTNode<Map> map);
@@ -674,13 +679,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* NewConsString(Node* context, Node* length, Node* left, Node* right,
                       AllocationFlags flags = kNone);
 
-  // Allocate a RegExpResult with the given length (the number of captures,
-  // including the match itself), index (the index where the match starts),
-  // and input string. |length| and |index| are expected to be tagged, and
-  // |input| must be a string.
-  Node* AllocateRegExpResult(Node* context, Node* length, Node* index,
-                             Node* input);
-
   Node* AllocateNameDictionary(int at_least_space_for);
   Node* AllocateNameDictionary(Node* at_least_space_for);
   Node* AllocateNameDictionaryWithCapacity(Node* capacity);
@@ -868,8 +866,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsAllocationSite(Node* object);
   Node* IsAnyHeapNumber(Node* object);
   Node* IsBoolean(Node* object);
+  Node* IsExtensibleMap(Node* map);
   Node* IsCallableMap(Node* map);
   Node* IsCallable(Node* object);
+  Node* IsCell(Node* object);
   Node* IsConsStringInstanceType(Node* instance_type);
   Node* IsConstructorMap(Node* map);
   Node* IsConstructor(Node* object);
@@ -894,8 +894,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsJSFunctionMap(Node* object);
   Node* IsJSFunction(Node* object);
   Node* IsJSGlobalProxy(Node* object);
+  Node* IsJSObjectInstanceType(Node* instance_type);
   Node* IsJSObjectMap(Node* map);
   Node* IsJSObject(Node* object);
+  Node* IsJSGlobalProxyInstanceType(Node* instance_type);
   Node* IsJSProxy(Node* object);
   Node* IsJSReceiverInstanceType(Node* instance_type);
   Node* IsJSReceiverMap(Node* map);
@@ -1383,10 +1385,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Upon reaching the end of prototype chain the control goes to {if_end}.
   // If it can't handle the case {receiver}/{key} case then the control goes
   // to {if_bailout}.
+  // If {if_proxy} is nullptr, proxies go to if_bailout.
   void TryPrototypeChainLookup(Node* receiver, Node* key,
                                const LookupInHolder& lookup_property_in_holder,
                                const LookupInHolder& lookup_element_in_holder,
-                               Label* if_end, Label* if_bailout);
+                               Label* if_end, Label* if_bailout,
+                               Label* if_proxy = nullptr);
 
   // Instanceof helpers.
   // Returns true if {object} has {prototype} somewhere in it's prototype
@@ -1565,9 +1569,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // instructions, e.g. Branch(SameValue(...), &label).
   Node* SameValue(Node* lhs, Node* rhs);
 
-  Node* HasProperty(
-      Node* object, Node* key, Node* context,
-      Runtime::FunctionId fallback_runtime_function_id = Runtime::kHasProperty);
+  enum HasPropertyLookupMode { kHasProperty, kForInHasProperty };
+
+  Node* HasProperty(Node* object, Node* key, Node* context,
+                    HasPropertyLookupMode mode);
 
   Node* ClassOf(Node* object);
 
@@ -1877,16 +1882,18 @@ class ToDirectStringAssembler : public CodeStubAssembler {
   { #name, __FILE__, __LINE__ }
 #define BIND(label) Bind(label, CSA_DEBUG_INFO(label))
 #define VARIABLE(name, ...) \
-  Variable name(this, CSA_DEBUG_INFO(name), __VA_ARGS__);
+  Variable name(this, CSA_DEBUG_INFO(name), __VA_ARGS__)
+#define VARIABLE_CONSTRUCTOR(name, ...) \
+  name(this, CSA_DEBUG_INFO(name), __VA_ARGS__)
 #define TYPED_VARIABLE_DEF(type, name, ...) \
-  TVariable<type> name(CSA_DEBUG_INFO(name), __VA_ARGS__);
-
+  TVariable<type> name(CSA_DEBUG_INFO(name), __VA_ARGS__)
 #else  // DEBUG
 #define CSA_ASSERT(csa, ...) ((void)0)
 #define CSA_ASSERT_JS_ARGC_EQ(csa, expected) ((void)0)
-#define BIND(label) Bind(label);
-#define VARIABLE(name, ...) Variable name(this, __VA_ARGS__);
-#define TYPED_VARIABLE_DEF(type, name, ...) TVariable<type> name(__VA_ARGS__);
+#define BIND(label) Bind(label)
+#define VARIABLE(name, ...) Variable name(this, __VA_ARGS__)
+#define VARIABLE_CONSTRUCTOR(name, ...) name(this, __VA_ARGS__)
+#define TYPED_VARIABLE_DEF(type, name, ...) TVariable<type> name(__VA_ARGS__)
 #endif  // DEBUG
 
 #define TVARIABLE(...) EXPAND(TYPED_VARIABLE_DEF(__VA_ARGS__, this))

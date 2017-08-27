@@ -19,9 +19,6 @@ namespace internal {
 ParseInfo::ParseInfo(AccountingAllocator* zone_allocator)
     : zone_(std::make_shared<Zone>(zone_allocator, ZONE_NAME)),
       flags_(0),
-      source_stream_(nullptr),
-      source_stream_encoding_(ScriptCompiler::StreamedSource::ONE_BYTE),
-      character_stream_(nullptr),
       extension_(nullptr),
       compile_options_(ScriptCompiler::kNoCompileOptions),
       script_scope_(nullptr),
@@ -35,6 +32,7 @@ ParseInfo::ParseInfo(AccountingAllocator* zone_allocator)
       parameters_end_pos_(kNoSourcePosition),
       function_literal_id_(FunctionLiteral::kIdTypeInvalid),
       max_function_literal_id_(FunctionLiteral::kIdTypeInvalid),
+      character_stream_(nullptr),
       cached_data_(nullptr),
       ast_value_factory_(nullptr),
       ast_string_constants_(nullptr),
@@ -57,6 +55,7 @@ ParseInfo::ParseInfo(Handle<SharedFunctionInfo> shared)
   function_literal_id_ = shared->function_literal_id();
   set_language_mode(shared->language_mode());
   set_module(shared->kind() == FunctionKind::kModule);
+  set_asm_wasm_broken(shared->is_asm_wasm_broken());
 
   Handle<Script> script(Script::cast(shared->script()));
   set_script(script);
@@ -76,6 +75,9 @@ ParseInfo::ParseInfo(Handle<SharedFunctionInfo> shared)
       shared->feedback_metadata()->length() == 0
           ? FLAG_type_profile && script->IsUserJavaScript()
           : shared->feedback_metadata()->HasTypeProfileSlot());
+  if (block_coverage_enabled() && script->IsUserJavaScript()) {
+    AllocateSourceRangeMap();
+  }
 }
 
 ParseInfo::ParseInfo(Handle<Script> script)
@@ -90,7 +92,12 @@ ParseInfo::ParseInfo(Handle<Script> script)
   set_eval(script->compilation_type() == Script::COMPILATION_TYPE_EVAL);
 
   set_collect_type_profile(FLAG_type_profile && script->IsUserJavaScript());
+  if (block_coverage_enabled() && script->IsUserJavaScript()) {
+    AllocateSourceRangeMap();
+  }
 }
+
+ParseInfo::~ParseInfo() {}
 
 // static
 ParseInfo* ParseInfo::AllocateWithoutScript(Handle<SharedFunctionInfo> shared) {
@@ -145,7 +152,7 @@ void ParseInfo::InitFromIsolate(Isolate* isolate) {
   set_runtime_call_stats(isolate->counters()->runtime_call_stats());
   set_ast_string_constants(isolate->ast_string_constants());
   if (FLAG_block_coverage && isolate->is_block_code_coverage()) {
-    set_source_range_map(new (zone()) SourceRangeMap(zone()));
+    set_block_coverage_enabled();
   }
 }
 
@@ -161,24 +168,6 @@ void ParseInfo::UpdateStatisticsAfterBackgroundParse(Isolate* isolate) {
     main_call_stats->Add(runtime_call_stats());
   }
   set_runtime_call_stats(main_call_stats);
-}
-
-void ParseInfo::ParseFinished(std::unique_ptr<ParseInfo> info) {
-  if (info->literal()) {
-    base::LockGuard<base::Mutex> access_child_infos(&child_infos_mutex_);
-    child_infos_.emplace_back(std::move(info));
-  }
-}
-
-std::map<int, ParseInfo*> ParseInfo::child_infos() const {
-  base::LockGuard<base::Mutex> access_child_infos(&child_infos_mutex_);
-  std::map<int, ParseInfo*> rv;
-  for (const auto& child_info : child_infos_) {
-    DCHECK_NOT_NULL(child_info->literal());
-    int start_position = child_info->literal()->start_position();
-    rv.insert(std::make_pair(start_position, child_info.get()));
-  }
-  return rv;
 }
 
 void ParseInfo::ShareZone(ParseInfo* other) {
@@ -199,11 +188,18 @@ void ParseInfo::ShareAstValueFactory(ParseInfo* other) {
   ast_value_factory_ = other->ast_value_factory_;
 }
 
-#ifdef DEBUG
-bool ParseInfo::script_is_native() const {
-  return script_->type() == Script::TYPE_NATIVE;
+void ParseInfo::AllocateSourceRangeMap() {
+  DCHECK(block_coverage_enabled());
+  set_source_range_map(new (zone()) SourceRangeMap(zone()));
 }
-#endif  // DEBUG
+
+void ParseInfo::ResetCharacterStream() { character_stream_.reset(); }
+
+void ParseInfo::set_character_stream(
+    std::unique_ptr<Utf16CharacterStream> character_stream) {
+  DCHECK(character_stream_.get() == nullptr);
+  character_stream_.swap(character_stream);
+}
 
 }  // namespace internal
 }  // namespace v8

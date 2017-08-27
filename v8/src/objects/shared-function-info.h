@@ -201,9 +201,6 @@ class SharedFunctionInfo : public HeapObject {
   bool HasCoverageInfo() const;
   CoverageInfo* GetCoverageInfo() const;
 
-  // A function has debug code if the compiled code has debug break slots.
-  inline bool HasDebugCode() const;
-
   // [debug info]: Debug information.
   DECL_ACCESSORS(debug_info, Object)
 
@@ -299,9 +296,6 @@ class SharedFunctionInfo : public HeapObject {
 
   // Indicate that this function should always be inlined in optimized code.
   DECL_BOOLEAN_ACCESSORS(force_inline)
-
-  // Indicates that this function is an asm function.
-  DECL_BOOLEAN_ACCESSORS(asm_function)
 
   // Whether this function was created from a FunctionDeclaration.
   DECL_BOOLEAN_ACCESSORS(is_declaration)
@@ -471,7 +465,6 @@ class SharedFunctionInfo : public HeapObject {
   V(UsesArgumentsBit, bool, 1, _)          \
   V(NeedsHomeObjectBit, bool, 1, _)        \
   V(ForceInlineBit, bool, 1, _)            \
-  V(IsAsmFunctionBit, bool, 1, _)          \
   V(IsDeclarationBit, bool, 1, _)          \
   V(IsAsmWasmBrokenBit, bool, 1, _)        \
   V(FunctionMapIndexBits, int, 5, _)       \

@@ -30,6 +30,47 @@ MacroAssembler::MacroAssembler(Isolate* isolate, void* buffer, int size,
                                CodeObjectRequired create_code_object)
     : TurboAssembler(isolate, buffer, size, create_code_object) {}
 
+void TurboAssembler::PushCallerSaved(SaveFPRegsMode fp_mode,
+                                     Register exclusion1, Register exclusion2,
+                                     Register exclusion3) {
+  RegList exclusions = 0;
+  if (!exclusion1.is(no_reg)) {
+    exclusions |= exclusion1.bit();
+    if (!exclusion2.is(no_reg)) {
+      exclusions |= exclusion2.bit();
+      if (!exclusion3.is(no_reg)) {
+        exclusions |= exclusion3.bit();
+      }
+    }
+  }
+
+  MultiPush(kJSCallerSaved & ~exclusions);
+
+  if (fp_mode == kSaveFPRegs) {
+    MultiPushDoubles(kCallerSavedDoubles);
+  }
+}
+
+void TurboAssembler::PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
+                                    Register exclusion2, Register exclusion3) {
+  if (fp_mode == kSaveFPRegs) {
+    MultiPopDoubles(kCallerSavedDoubles);
+  }
+
+  RegList exclusions = 0;
+  if (!exclusion1.is(no_reg)) {
+    exclusions |= exclusion1.bit();
+    if (!exclusion2.is(no_reg)) {
+      exclusions |= exclusion2.bit();
+      if (!exclusion3.is(no_reg)) {
+        exclusions |= exclusion3.bit();
+      }
+    }
+  }
+
+  MultiPop(kJSCallerSaved & ~exclusions);
+}
+
 void TurboAssembler::Jump(Register target) { b(target); }
 
 void MacroAssembler::JumpToJSEntry(Register target) {
@@ -171,14 +212,6 @@ void TurboAssembler::Push(Handle<HeapObject> handle) {
 void TurboAssembler::Push(Smi* smi) {
   mov(r0, Operand(smi));
   push(r0);
-}
-
-void MacroAssembler::PushObject(Handle<Object> handle) {
-  if (handle->IsHeapObject()) {
-    Push(Handle<HeapObject>::cast(handle));
-  } else {
-    Push(Smi::cast(*handle));
-  }
 }
 
 void TurboAssembler::Move(Register dst, Handle<HeapObject> value) {
@@ -553,18 +586,6 @@ int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
   return index;
 }
 
-MemOperand MacroAssembler::SafepointRegisterSlot(Register reg) {
-  return MemOperand(sp, SafepointRegisterStackIndex(reg.code()) * kPointerSize);
-}
-
-MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
-  // General purpose registers are pushed last on the stack.
-  const RegisterConfiguration* config = RegisterConfiguration::Default();
-  int doubles_size = config->num_allocatable_double_registers() * kDoubleSize;
-  int register_offset = SafepointRegisterStackIndex(reg.code()) * kPointerSize;
-  return MemOperand(sp, doubles_size + register_offset);
-}
-
 void TurboAssembler::CanonicalizeNaN(const DoubleRegister dst,
                                      const DoubleRegister src) {
   // Turn potential sNaN into qNaN
@@ -889,35 +910,9 @@ void TurboAssembler::StubPrologue(StackFrame::Type type, Register base,
   }
 }
 
-void TurboAssembler::Prologue(bool code_pre_aging, Register base,
-                              int prologue_offset) {
+void TurboAssembler::Prologue(Register base, int prologue_offset) {
   DCHECK(!base.is(no_reg));
-  {
-    PredictableCodeSizeScope predictible_code_size_scope(
-        this, kNoCodeAgeSequenceLength);
-    // The following instructions must remain together and unmodified
-    // for code aging to work properly.
-    if (code_pre_aging) {
-      // Pre-age the code.
-      // This matches the code found in PatchPlatformCodeAge()
-      Code* stub = Code::GetPreAgedCodeAgeStub(isolate());
-      intptr_t target = reinterpret_cast<intptr_t>(stub->instruction_start());
-      nop();
-      CleanseP(r14);
-      Push(r14);
-      mov(r2, Operand(target));
-      Call(r2);
-      for (int i = 0; i < kNoCodeAgeSequenceLength - kCodeAgingSequenceLength;
-           i += 2) {
-        // TODO(joransiu): Create nop function to pad
-        //         (kNoCodeAgeSequenceLength - kCodeAgingSequenceLength) bytes.
-        nop();  // 2-byte nops().
-      }
-    } else {
-      // This matches the code found in GetNoCodeAgeSequence()
-      PushStandardFrame(r3);
-    }
-  }
+  PushStandardFrame(r3);
 }
 
 void TurboAssembler::EnterFrame(StackFrame::Type type,
@@ -1577,6 +1572,19 @@ void MacroAssembler::LoadWeakValue(Register value, Handle<WeakCell> cell,
   JumpIfSmi(value, miss);
 }
 
+void MacroAssembler::GetMapConstructor(Register result, Register map,
+                                       Register temp, Register temp2) {
+  Label done, loop;
+  LoadP(result, FieldMemOperand(map, Map::kConstructorOrBackPointerOffset));
+  bind(&loop);
+  JumpIfSmi(result, &done);
+  CompareObjectType(result, temp, temp2, MAP_TYPE);
+  bne(&done);
+  LoadP(result, FieldMemOperand(result, Map::kConstructorOrBackPointerOffset));
+  b(&loop);
+  bind(&done);
+}
+
 void MacroAssembler::CallStub(CodeStub* stub, Condition cond) {
   DCHECK(AllowThisStubCall(stub));  // Stub calls are not allowed in some stubs.
   Call(stub->GetCode(), RelocInfo::CODE_TARGET, cond);
@@ -1796,13 +1804,6 @@ void MacroAssembler::LoadGlobalFunctionInitialMap(Register function,
   }
 }
 
-void MacroAssembler::JumpIfNotBothSmi(Register reg1, Register reg2,
-                                      Label* on_not_both_smi) {
-  STATIC_ASSERT(kSmiTag == 0);
-  OrP(r0, reg1, reg2 /*, LeaveRC*/);  // should be okay to remove LeaveRC
-  JumpIfNotSmi(r0, on_not_both_smi);
-}
-
 void MacroAssembler::UntagAndJumpIfSmi(Register dst, Register src,
                                        Label* smi_case) {
   STATIC_ASSERT(kSmiTag == 0);
@@ -1912,23 +1913,6 @@ void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
   }
 }
 
-void MacroAssembler::AssertIsRoot(Register reg, Heap::RootListIndex index) {
-  if (emit_debug_code()) {
-    CompareRoot(reg, index);
-    Check(eq, kHeapNumberMapRegisterClobbered);
-  }
-}
-
-void MacroAssembler::JumpIfNotHeapNumber(Register object,
-                                         Register heap_number_map,
-                                         Register scratch,
-                                         Label* on_not_heap_number) {
-  LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
-  AssertIsRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
-  CmpP(scratch, heap_number_map);
-  bne(on_not_heap_number);
-}
-
 void MacroAssembler::JumpIfNonSmisNotBothSequentialOneByteStrings(
     Register first, Register second, Register scratch1, Register scratch2,
     Label* failure) {
@@ -1941,18 +1925,6 @@ void MacroAssembler::JumpIfNonSmisNotBothSequentialOneByteStrings(
 
   JumpIfBothInstanceTypesAreNotSequentialOneByte(scratch1, scratch2, scratch1,
                                                  scratch2, failure);
-}
-
-void MacroAssembler::JumpIfNotBothSequentialOneByteStrings(Register first,
-                                                           Register second,
-                                                           Register scratch1,
-                                                           Register scratch2,
-                                                           Label* failure) {
-  // Check that neither is a smi.
-  AndP(scratch1, first, second);
-  JumpIfSmi(scratch1, failure);
-  JumpIfNonSmisNotBothSequentialOneByteStrings(first, second, scratch1,
-                                               scratch2, failure);
 }
 
 void MacroAssembler::JumpIfNotUniqueNameInstanceType(Register reg,
@@ -2298,52 +2270,6 @@ void MacroAssembler::StoreRepresentation(Register src, const MemOperand& mem,
     }
     StoreP(src, mem, scratch);
   }
-}
-
-void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver_reg,
-                                                     Register scratch_reg,
-                                                     Register scratch2_reg,
-                                                     Label* no_memento_found) {
-  Label map_check;
-  Label top_check;
-  ExternalReference new_space_allocation_top_adr =
-      ExternalReference::new_space_allocation_top_address(isolate());
-  const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
-  const int kMementoLastWordOffset =
-      kMementoMapOffset + AllocationMemento::kSize - kPointerSize;
-
-  DCHECK(!AreAliased(receiver_reg, scratch_reg));
-
-  // Bail out if the object is not in new space.
-  JumpIfNotInNewSpace(receiver_reg, scratch_reg, no_memento_found);
-
-  DCHECK((~Page::kPageAlignmentMask & 0xffff) == 0);
-
-  // If the object is in new space, we need to check whether it is on the same
-  // page as the current top.
-  AddP(scratch_reg, receiver_reg, Operand(kMementoLastWordOffset));
-  mov(ip, Operand(new_space_allocation_top_adr));
-  LoadP(ip, MemOperand(ip));
-  XorP(r0, scratch_reg, ip);
-  AndP(r0, r0, Operand(~Page::kPageAlignmentMask));
-  beq(&top_check, Label::kNear);
-  // The object is on a different page than allocation top. Bail out if the
-  // object sits on the page boundary as no memento can follow and we cannot
-  // touch the memory following it.
-  XorP(r0, scratch_reg, receiver_reg);
-  AndP(r0, r0, Operand(~Page::kPageAlignmentMask));
-  bne(no_memento_found);
-  // Continue with the actual map check.
-  b(&map_check, Label::kNear);
-  // If top is on the same page as the current object, we need to check whether
-  // we are below top.
-  bind(&top_check);
-  CmpP(scratch_reg, ip);
-  bge(no_memento_found);
-  // Memento map check.
-  bind(&map_check);
-  LoadP(scratch_reg, MemOperand(receiver_reg, kMementoMapOffset));
-  CmpP(scratch_reg, Operand(isolate()->factory()->allocation_memento_map()));
 }
 
 Register GetRegisterThatIsNotOneOf(Register reg1, Register reg2, Register reg3,

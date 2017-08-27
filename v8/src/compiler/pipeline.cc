@@ -111,7 +111,6 @@ class PipelineData {
     javascript_ = new (graph_zone_) JSOperatorBuilder(graph_zone_);
     jsgraph_ = new (graph_zone_)
         JSGraph(isolate_, graph_, common_, javascript_, simplified_, machine_);
-    is_asm_ = info->shared_info()->asm_function();
   }
 
   // For WebAssembly compile entry point.
@@ -139,13 +138,12 @@ class PipelineData {
         register_allocation_zone_scope_(zone_stats_, ZONE_NAME),
         register_allocation_zone_(register_allocation_zone_scope_.zone()),
         protected_instructions_(protected_instructions) {
-    is_asm_ =
-        info->has_shared_info() ? info->shared_info()->asm_function() : false;
   }
 
   // For machine graph testing entry point.
   PipelineData(ZoneStats* zone_stats, CompilationInfo* info, Graph* graph,
-               Schedule* schedule, SourcePositionTable* source_positions)
+               Schedule* schedule, SourcePositionTable* source_positions,
+               JumpOptimizationInfo* jump_opt)
       : isolate_(info->isolate()),
         info_(info),
         debug_name_(info_->GetDebugName()),
@@ -159,9 +157,8 @@ class PipelineData {
         codegen_zone_scope_(zone_stats_, ZONE_NAME),
         codegen_zone_(codegen_zone_scope_.zone()),
         register_allocation_zone_scope_(zone_stats_, ZONE_NAME),
-        register_allocation_zone_(register_allocation_zone_scope_.zone()) {
-    is_asm_ = false;
-  }
+        register_allocation_zone_(register_allocation_zone_scope_.zone()),
+        jump_optimization_info_(jump_opt) {}
   // For register allocation testing entry point.
   PipelineData(ZoneStats* zone_stats, CompilationInfo* info,
                InstructionSequence* sequence)
@@ -177,8 +174,6 @@ class PipelineData {
         codegen_zone_(codegen_zone_scope_.zone()),
         register_allocation_zone_scope_(zone_stats_, ZONE_NAME),
         register_allocation_zone_(register_allocation_zone_scope_.zone()) {
-    is_asm_ =
-        info->has_shared_info() ? info->shared_info()->asm_function() : false;
   }
 
   ~PipelineData() {
@@ -198,7 +193,6 @@ class PipelineData {
   bool compilation_failed() const { return compilation_failed_; }
   void set_compilation_failed() { compilation_failed_ = true; }
 
-  bool is_asm() const { return is_asm_; }
   bool verify_graph() const { return verify_graph_; }
   void set_verify_graph(bool value) { verify_graph_ = value; }
 
@@ -259,6 +253,10 @@ class PipelineData {
   ZoneVector<trap_handler::ProtectedInstructionData>* protected_instructions()
       const {
     return protected_instructions_;
+  }
+
+  JumpOptimizationInfo* jump_optimization_info() const {
+    return jump_optimization_info_;
   }
 
   void DeleteGraphZone() {
@@ -340,9 +338,9 @@ class PipelineData {
 
   void InitializeCodeGenerator(Linkage* linkage) {
     DCHECK_NULL(code_generator_);
-    code_generator_ =
-        new CodeGenerator(codegen_zone(), frame(), linkage, sequence(), info(),
-                          osr_helper_, start_source_position_);
+    code_generator_ = new CodeGenerator(
+        codegen_zone(), frame(), linkage, sequence(), info(), osr_helper_,
+        start_source_position_, jump_optimization_info_);
   }
 
   void BeginPhaseKind(const char* phase_kind_name) {
@@ -368,7 +366,6 @@ class PipelineData {
   PipelineStatistics* pipeline_statistics_ = nullptr;
   bool compilation_failed_ = false;
   bool verify_graph_ = false;
-  bool is_asm_ = false;
   int start_source_position_ = kNoSourcePosition;
   base::Optional<OsrHelper> osr_helper_;
   Handle<Code> code_ = Handle<Code>::null();
@@ -416,6 +413,8 @@ class PipelineData {
 
   ZoneVector<trap_handler::ProtectedInstructionData>* protected_instructions_ =
       nullptr;
+
+  JumpOptimizationInfo* jump_optimization_info_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(PipelineData);
 };
@@ -626,15 +625,11 @@ class PipelineCompilationJob final : public CompilationJob {
 };
 
 PipelineCompilationJob::Status PipelineCompilationJob::PrepareJobImpl() {
-  if (compilation_info()->shared_info()->asm_function()) {
-    compilation_info()->MarkAsFunctionContextSpecializing();
-  } else {
-    if (!FLAG_always_opt) {
-      compilation_info()->MarkAsBailoutOnUninitialized();
-    }
-    if (FLAG_turbo_loop_peeling) {
-      compilation_info()->MarkAsLoopPeelingEnabled();
-    }
+  if (!FLAG_always_opt) {
+    compilation_info()->MarkAsBailoutOnUninitialized();
+  }
+  if (FLAG_turbo_loop_peeling) {
+    compilation_info()->MarkAsLoopPeelingEnabled();
   }
   if (FLAG_turbo_inlining) {
     compilation_info()->MarkAsInliningEnabled();
@@ -849,6 +844,8 @@ void PipelineWasmCompilationJob::ValidateImmovableEmbeddedObjects() const {
     Object* target = nullptr;
     switch (mode) {
       case RelocInfo::CODE_TARGET:
+        // this would be either one of the stubs or builtins, because
+        // we didn't link yet.
         target = reinterpret_cast<Object*>(it.rinfo()->target_address());
         break;
       case RelocInfo::EMBEDDED_OBJECT:
@@ -860,9 +857,7 @@ void PipelineWasmCompilationJob::ValidateImmovableEmbeddedObjects() const {
     CHECK_NOT_NULL(target);
     bool is_immovable =
         target->IsSmi() || Heap::IsImmovable(HeapObject::cast(target));
-    // TODO(mtrofin): remove the fixed array part when WebAssembly.Table
-    // is backed by native object, rather than a FixedArray
-    CHECK(is_immovable || target->IsFixedArray());
+    CHECK(is_immovable);
   }
 }
 
@@ -898,7 +893,7 @@ struct GraphBuilderPhase {
     BytecodeGraphBuilder graph_builder(
         temp_zone, data->info()->shared_info(),
         handle(data->info()->closure()->feedback_vector()),
-        data->info()->osr_ast_id(), data->jsgraph(), CallFrequency(1.0f),
+        data->info()->osr_offset(), data->jsgraph(), CallFrequency(1.0f),
         data->source_positions(), SourcePosition::kNotInlined, flags);
     graph_builder.CreateGraph();
   }
@@ -1685,21 +1680,19 @@ bool PipelineImpl::OptimizeGraph(Linkage* linkage) {
     RunPrintAndVerify("Loop exits eliminated", true);
   }
 
-  if (!data->is_asm()) {
-    if (FLAG_turbo_load_elimination) {
-      Run<LoadEliminationPhase>();
-      RunPrintAndVerify("Load eliminated");
-    }
+  if (FLAG_turbo_load_elimination) {
+    Run<LoadEliminationPhase>();
+    RunPrintAndVerify("Load eliminated");
+  }
 
-    if (FLAG_turbo_escape) {
-      Run<EscapeAnalysisPhase>();
-      if (data->compilation_failed()) {
-        info()->AbortOptimization(kCyclicObjectStateDetectedInEscapeAnalysis);
-        data->EndPhaseKind();
-        return false;
-      }
-      RunPrintAndVerify("Escape Analysed");
+  if (FLAG_turbo_escape) {
+    Run<EscapeAnalysisPhase>();
+    if (data->compilation_failed()) {
+      info()->AbortOptimization(kCyclicObjectStateDetectedInEscapeAnalysis);
+      data->EndPhaseKind();
+      return false;
     }
+    RunPrintAndVerify("Escape Analysed");
   }
 
   // Perform simplified lowering. This has to run w/o the Typer decorator,
@@ -1766,14 +1759,16 @@ Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
                                                CallDescriptor* call_descriptor,
                                                Graph* graph, Schedule* schedule,
                                                Code::Flags flags,
-                                               const char* debug_name) {
+                                               const char* debug_name,
+                                               JumpOptimizationInfo* jump_opt) {
   CompilationInfo info(CStrVector(debug_name), isolate, graph->zone(), flags);
   if (isolate->serializer_enabled()) info.MarkAsSerializing();
 
   // Construct a pipeline for scheduling and code generation.
   ZoneStats zone_stats(isolate->allocator());
   SourcePositionTable source_positions(graph);
-  PipelineData data(&zone_stats, &info, graph, schedule, &source_positions);
+  PipelineData data(&zone_stats, &info, graph, schedule, &source_positions,
+                    jump_opt);
   data.set_verify_graph(FLAG_verify_csa);
   std::unique_ptr<PipelineStatistics> pipeline_statistics;
   if (FLAG_turbo_stats || FLAG_turbo_stats_nvp) {
@@ -1838,7 +1833,8 @@ Handle<Code> Pipeline::GenerateCodeForTesting(
   // table, then remove this conditional allocation.
   if (!source_positions)
     source_positions = new (info->zone()) SourcePositionTable(graph);
-  PipelineData data(&zone_stats, info, graph, schedule, source_positions);
+  PipelineData data(&zone_stats, info, graph, schedule, source_positions,
+                    nullptr);
   std::unique_ptr<PipelineStatistics> pipeline_statistics;
   if (FLAG_turbo_stats || FLAG_turbo_stats_nvp) {
     pipeline_statistics.reset(new PipelineStatistics(info, &zone_stats));
@@ -1915,6 +1911,14 @@ bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage,
   }
 
   bool verify_stub_graph = data->verify_graph();
+  // Jump optimization runs instruction selection twice, but the instruction
+  // selector mutates nodes like swapping the inputs of a load, which can
+  // violate the machine graph verification rules. So we skip the second
+  // verification on a graph that already verified before.
+  auto jump_opt = data->jump_optimization_info();
+  if (jump_opt && jump_opt->is_optimizing()) {
+    verify_stub_graph = false;
+  }
   if (verify_stub_graph ||
       (FLAG_turbo_verify_machine_graph != nullptr &&
        (!strcmp(FLAG_turbo_verify_machine_graph, "*") ||
@@ -1970,8 +1974,17 @@ bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage,
   bool run_verifier = FLAG_turbo_verify_allocation;
 
   // Allocate registers.
-  AllocateRegisters(RegisterConfiguration::Default(), call_descriptor,
-                    run_verifier);
+  if (call_descriptor->HasRestrictedAllocatableRegisters()) {
+    auto registers = call_descriptor->AllocatableRegisters();
+    DCHECK(NumRegs(registers) > 0);
+    std::unique_ptr<const RegisterConfiguration> config;
+    config.reset(RegisterConfiguration::RestrictGeneralRegisters(registers));
+    AllocateRegisters(config.get(), call_descriptor, run_verifier);
+  } else {
+    AllocateRegisters(RegisterConfiguration::Default(), call_descriptor,
+                      run_verifier);
+  }
+
   Run<FrameElisionPhase>();
   if (data->compilation_failed()) {
     info()->AbortOptimization(kNotEnoughVirtualRegistersRegalloc);

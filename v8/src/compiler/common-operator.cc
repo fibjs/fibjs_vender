@@ -95,6 +95,7 @@ SelectParameters const& SelectParametersOf(const Operator* const op) {
 
 CallDescriptor const* CallDescriptorOf(const Operator* const op) {
   DCHECK(op->opcode() == IrOpcode::kCall ||
+         op->opcode() == IrOpcode::kCallWithCallerSavedRegisters ||
          op->opcode() == IrOpcode::kTailCall);
   return OpParameter<CallDescriptor const*>(op);
 }
@@ -295,6 +296,11 @@ std::ostream& operator<<(std::ostream& os, RegionObservability observability) {
 RegionObservability RegionObservabilityOf(Operator const* op) {
   DCHECK_EQ(IrOpcode::kBeginRegion, op->opcode());
   return OpParameter<RegionObservability>(op);
+}
+
+ZoneHandleSet<Map> MapGuardMapsOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kMapGuard, op->opcode());
+  return OpParameter<ZoneHandleSet<Map>>(op);
 }
 
 Type* TypeGuardTypeOf(Operator const* op) {
@@ -1125,6 +1131,14 @@ const Operator* CommonOperatorBuilder::Phi(MachineRepresentation rep,
       rep);                                              // parameter
 }
 
+const Operator* CommonOperatorBuilder::MapGuard(ZoneHandleSet<Map> maps) {
+  return new (zone()) Operator1<ZoneHandleSet<Map>>(  // --
+      IrOpcode::kMapGuard, Operator::kEliminatable,   // opcode
+      "MapGuard",                                     // name
+      1, 1, 1, 0, 1, 0,                               // counts
+      maps);                                          // parameter
+}
+
 const Operator* CommonOperatorBuilder::TypeGuard(Type* type) {
   return new (zone()) Operator1<Type*>(       // --
       IrOpcode::kTypeGuard, Operator::kPure,  // opcode
@@ -1304,6 +1318,27 @@ const Operator* CommonOperatorBuilder::Call(const CallDescriptor* descriptor) {
   return new (zone()) CallOperator(descriptor);
 }
 
+const Operator* CommonOperatorBuilder::CallWithCallerSavedRegisters(
+    const CallDescriptor* descriptor) {
+  class CallOperator final : public Operator1<const CallDescriptor*> {
+   public:
+    explicit CallOperator(const CallDescriptor* descriptor)
+        : Operator1<const CallDescriptor*>(
+              IrOpcode::kCallWithCallerSavedRegisters, descriptor->properties(),
+              "CallWithCallerSavedRegisters",
+              descriptor->InputCount() + descriptor->FrameStateCount(),
+              Operator::ZeroIfPure(descriptor->properties()),
+              Operator::ZeroIfEliminatable(descriptor->properties()),
+              descriptor->ReturnCount(),
+              Operator::ZeroIfPure(descriptor->properties()),
+              Operator::ZeroIfNoThrow(descriptor->properties()), descriptor) {}
+
+    void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
+      os << "[" << *parameter() << "]";
+    }
+  };
+  return new (zone()) CallOperator(descriptor);
+}
 
 const Operator* CommonOperatorBuilder::TailCall(
     const CallDescriptor* descriptor) {

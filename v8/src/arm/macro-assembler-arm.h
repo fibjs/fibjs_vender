@@ -117,7 +117,7 @@ class TurboAssembler : public Assembler {
 
   // Generates function and stub prologue code.
   void StubPrologue(StackFrame::Type type);
-  void Prologue(bool code_pre_aging);
+  void Prologue();
 
   // Push a standard frame, consisting of lr, fp, context and JS function
   void PushStandardFrame(Register function_reg);
@@ -352,6 +352,13 @@ class TurboAssembler : public Assembler {
             bool check_constant_pool = true);
   void Call(Label* target);
 
+  // This should only be used when assembling a deoptimizer call because of
+  // the CheckConstPool invocation, which is only needed for deoptimization.
+  void CallForDeoptimization(Address target, RelocInfo::Mode rmode) {
+    Call(target, rmode);
+    CheckConstPool(false, false);
+  }
+
   // Emit code to discard a non-negative number of pointer-sized elements
   // from the stack, clobbering only the sp register.
   void Drop(int count, Condition cond = al);
@@ -388,6 +395,24 @@ class TurboAssembler : public Assembler {
   void CheckPageFlag(Register object, Register scratch, int mask, Condition cc,
                      Label* condition_met);
 
+  // Check whether d16-d31 are available on the CPU. The result is given by the
+  // Z condition flag: Z==0 if d16-d31 available, Z==1 otherwise.
+  void CheckFor32DRegs(Register scratch);
+
+  // Does a runtime check for 16/32 FP registers. Either way, pushes 32 double
+  // values to location, saving [d0..(d15|d31)].
+  void SaveFPRegs(Register location, Register scratch);
+
+  // Does a runtime check for 16/32 FP registers. Either way, pops 32 double
+  // values to location, restoring [d0..(d15|d31)].
+  void RestoreFPRegs(Register location, Register scratch);
+
+  void PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                       Register exclusion2 = no_reg,
+                       Register exclusion3 = no_reg);
+  void PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                      Register exclusion2 = no_reg,
+                      Register exclusion3 = no_reg);
   void Jump(Register target, Condition cond = al);
   void Jump(Address target, RelocInfo::Mode rmode, Condition cond = al);
   void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al);
@@ -575,22 +600,12 @@ class MacroAssembler : public TurboAssembler {
             Condition cond = al);
   void Sbfx(Register dst, Register src, int lsb, int width,
             Condition cond = al);
-  // The scratch register is not used for ARMv7.
-  // scratch can be the same register as src (in which case it is trashed), but
-  // not the same as dst.
-  void Bfi(Register dst, Register src, Register scratch, int lsb, int width,
-           Condition cond = al);
-
-  void PushObject(Handle<Object> object);
 
   void Load(Register dst, const MemOperand& src, Representation r);
   void Store(Register src, const MemOperand& dst, Representation r);
 
   // ---------------------------------------------------------------------------
   // GC Support
-
-  void IncrementalMarkingRecordWriteHelper(Register object, Register value,
-                                           Register address);
 
   enum RememberedSetFinalAction { kReturnAtEnd, kFallThroughAtEnd };
 
@@ -765,6 +780,11 @@ class MacroAssembler : public TurboAssembler {
   // ---------------------------------------------------------------------------
   // Support functions.
 
+  // Machine code version of Map::GetConstructor().
+  // |temp| holds |result|'s map when done, and |temp2| its instance type.
+  void GetMapConstructor(Register result, Register map, Register temp,
+                         Register temp2);
+
   // Compare object type for heap object.  heap_object contains a non-Smi
   // whose object type should be compared with the given type.  This both
   // sets the flags and leaves the object type in the type_reg register.
@@ -856,18 +876,6 @@ class MacroAssembler : public TurboAssembler {
                              DwVfpRegister double_input,
                              LowDwVfpRegister double_scratch);
 
-  // Check whether d16-d31 are available on the CPU. The result is given by the
-  // Z condition flag: Z==0 if d16-d31 available, Z==1 otherwise.
-  void CheckFor32DRegs(Register scratch);
-
-  // Does a runtime check for 16/32 FP registers. Either way, pushes 32 double
-  // values to location, saving [d0..(d15|d31)].
-  void SaveFPRegs(Register location, Register scratch);
-
-  // Does a runtime check for 16/32 FP registers. Either way, pops 32 double
-  // values to location, restoring [d0..(d15|d31)].
-  void RestoreFPRegs(Register location, Register scratch);
-
   // ---------------------------------------------------------------------------
   // Runtime calls
 
@@ -925,8 +933,6 @@ class MacroAssembler : public TurboAssembler {
   void SmiTst(Register value);
   // Jump if either of the registers contain a non-smi.
   void JumpIfNotSmi(Register value, Label* not_smi_label);
-  // Jump if either of the registers contain a non-smi.
-  void JumpIfNotBothSmi(Register reg1, Register reg2, Label* on_not_both_smi);
   // Jump if either of the registers contain a smi.
   void JumpIfEitherSmi(Register reg1, Register reg2, Label* on_either_smi);
 
@@ -952,10 +958,6 @@ class MacroAssembler : public TurboAssembler {
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
 
-  // Abort execution if reg is not the root value with the given index,
-  // enabled via --debug-code.
-  void AssertIsRoot(Register reg, Heap::RootListIndex index);
-
   // ---------------------------------------------------------------------------
   // String utilities
 
@@ -966,13 +968,6 @@ class MacroAssembler : public TurboAssembler {
                                                     Register scratch1,
                                                     Register scratch2,
                                                     Label* failure);
-
-  // Checks if both objects are sequential one-byte strings and jumps to label
-  // if either is not.
-  void JumpIfNotBothSequentialOneByteStrings(Register first, Register second,
-                                             Register scratch1,
-                                             Register scratch2,
-                                             Label* not_flat_one_byte_strings);
 
   // Checks if both instance types are sequential one-byte strings and jumps to
   // label if either is not.
@@ -1020,8 +1015,6 @@ class MacroAssembler : public TurboAssembler {
 
   // Compute memory operands for safepoint stack slots.
   static int SafepointRegisterStackIndex(int reg_code);
-  MemOperand SafepointRegisterSlot(Register reg);
-  MemOperand SafepointRegistersAndDoublesSlot(Register reg);
 
   // Needs access to SafepointRegisterStackIndex for compiled frame
   // traversal.

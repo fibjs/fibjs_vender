@@ -90,6 +90,7 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_COLLECTIONS(F) \
   F(TheHole, 0, 1)                        \
   F(GenericHash, 1, 1)                    \
+  F(GetExistingHash, 1, 1)                \
   F(SetGrow, 1, 1)                        \
   F(SetShrink, 1, 1)                      \
   F(SetIteratorClone, 1, 1)               \
@@ -125,7 +126,6 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_DEBUG(F)             \
   F(HandleDebuggerStatement, 0, 1)              \
-  F(DebugBreak, 1, 1)                           \
   F(DebugBreakOnBytecode, 1, 1)                 \
   F(SetDebugEventListener, 2, 1)                \
   F(ScheduleBreak, 0, 1)                        \
@@ -208,8 +208,7 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_INTERPRETER(F) \
   FOR_EACH_INTRINSIC_INTERPRETER_TRACE(F) \
-  F(InterpreterNewClosure, 4, 1)          \
-  F(InterpreterAdvanceBytecodeOffset, 2, 1)
+  F(InterpreterNewClosure, 4, 1)
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)     \
   F(FunctionGetName, 1, 1)                 \
@@ -262,6 +261,8 @@ namespace internal {
   F(CurrencyDigits, 1, 1)                    \
   F(CreateCollator, 3, 1)                    \
   F(InternalCompare, 3, 1)                   \
+  F(CreatePluralRules, 3, 1)                 \
+  F(PluralRulesSelect, 2, 1)                 \
   F(CreateBreakIterator, 3, 1)               \
   F(BreakIteratorAdoptText, 2, 1)            \
   F(BreakIteratorFirst, 1, 1)                \
@@ -279,8 +280,6 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_INTERNAL(F)                               \
   F(AllocateInNewSpace, 1, 1)                                        \
   F(AllocateInTargetSpace, 2, 1)                                     \
-  F(AllocateSeqOneByteString, 1, 1)                                  \
-  F(AllocateSeqTwoByteString, 1, 1)                                  \
   F(CheckIsBootstrapping, 0, 1)                                      \
   F(CreateAsyncFromSyncIterator, 1, 1)                               \
   F(CreateListFromArrayLike, 1, 1)                                   \
@@ -467,7 +466,8 @@ namespace internal {
   F(JSProxyGetHandler, 1, 1)        \
   F(JSProxyRevoke, 1, 1)            \
   F(GetPropertyWithReceiver, 2, 1)  \
-  F(CheckProxyGetTrapResult, 2, 1)
+  F(CheckProxyGetTrapResult, 2, 1)  \
+  F(CheckProxyHasTrap, 2, 1)
 
 #define FOR_EACH_INTRINSIC_REGEXP(F)                \
   F(IsRegExp, 1, 1)                                 \
@@ -512,6 +512,7 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_STRINGS(F)     \
   F(GetSubstitution, 5, 1)                \
   F(StringReplaceOneCharWithString, 3, 1) \
+  F(StringIncludes, 3, 1)                 \
   F(StringIndexOf, 3, 1)                  \
   F(StringIndexOfUnchecked, 3, 1)         \
   F(StringLastIndexOf, 2, 1)              \
@@ -620,6 +621,8 @@ namespace internal {
   F(ArrayBufferViewWasNeutered, 1, 1)    \
   F(TypedArrayGetLength, 1, 1)           \
   F(TypedArrayGetBuffer, 1, 1)           \
+  F(TypedArraySetFromArrayLike, 4, 1)    \
+  F(TypedArraySetFromOverlapping, 3, 1)  \
   F(TypedArraySetFastCases, 3, 1)        \
   F(TypedArraySortFast, 1, 1)            \
   F(TypedArrayMaxSizeInHeap, 0, 1)       \
@@ -636,8 +639,9 @@ namespace internal {
   F(ThrowWasmErrorFromTrapIf, 1, 1)    \
   F(ThrowWasmStackOverflow, 0, 1)      \
   F(WasmThrowTypeError, 0, 1)          \
-  F(WasmThrow, 2, 1)                   \
+  F(WasmThrow, 1, 1)                   \
   F(WasmRethrow, 0, 1)                 \
+  F(WasmGetExceptionTag, 1, 1)         \
   F(WasmSetCaughtExceptionValue, 1, 1) \
   F(WasmRunInterpreter, 3, 1)          \
   F(WasmStackGuard, 0, 1)              \
@@ -654,7 +658,6 @@ namespace internal {
 // Most intrinsics are implemented in the runtime/ directory, but ICs are
 // implemented in ic.cc for now.
 #define FOR_EACH_INTRINSIC_IC(F)             \
-  F(CompareIC_Miss, 3, 1)                    \
   F(ElementsTransitionAndStoreIC_Miss, 6, 1) \
   F(KeyedLoadIC_Miss, 4, 1)                  \
   F(KeyedStoreIC_Miss, 5, 1)                 \

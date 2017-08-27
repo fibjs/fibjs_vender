@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "include/v8.h"
-#include "src/compiler-dispatcher/unoptimized-compile-job.h"
 #include "src/globals.h"
 #include "src/handles.h"
 #include "src/parsing/preparsed-scope-data.h"
@@ -35,13 +34,13 @@ class Utf16CharacterStream;
 class Zone;
 
 // A container for the inputs, configuration options, and outputs of parsing.
-class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
+class V8_EXPORT_PRIVATE ParseInfo {
  public:
   explicit ParseInfo(AccountingAllocator* zone_allocator);
   ParseInfo(Handle<Script> script);
   ParseInfo(Handle<SharedFunctionInfo> shared);
 
-  ~ParseInfo() {}
+  ~ParseInfo();
 
   void InitFromIsolate(Isolate* isolate);
 
@@ -78,6 +77,9 @@ class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
   FLAG_ACCESSOR(kLazyCompile, lazy_compile, set_lazy_compile)
   FLAG_ACCESSOR(kCollectTypeProfile, collect_type_profile,
                 set_collect_type_profile)
+  FLAG_ACCESSOR(kIsAsmWasmBroken, is_asm_wasm_broken, set_asm_wasm_broken)
+  FLAG_ACCESSOR(kBlockCoverageEnabled, block_coverage_enabled,
+                set_block_coverage_enabled)
 #undef FLAG_ACCESSOR
 
   void set_parse_restriction(ParseRestriction restriction) {
@@ -89,25 +91,12 @@ class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
                                       : NO_PARSE_RESTRICTION;
   }
 
-  ScriptCompiler::ExternalSourceStream* source_stream() const {
-    return source_stream_;
+  Utf16CharacterStream* character_stream() const {
+    return character_stream_.get();
   }
-  void set_source_stream(ScriptCompiler::ExternalSourceStream* source_stream) {
-    source_stream_ = source_stream;
-  }
-
-  ScriptCompiler::StreamedSource::Encoding source_stream_encoding() const {
-    return source_stream_encoding_;
-  }
-  void set_source_stream_encoding(
-      ScriptCompiler::StreamedSource::Encoding source_stream_encoding) {
-    source_stream_encoding_ = source_stream_encoding;
-  }
-
-  Utf16CharacterStream* character_stream() const { return character_stream_; }
-  void set_character_stream(Utf16CharacterStream* character_stream) {
-    character_stream_ = character_stream;
-  }
+  void set_character_stream(
+      std::unique_ptr<Utf16CharacterStream> character_stream);
+  void ResetCharacterStream();
 
   v8::Extension* extension() const { return extension_; }
   void set_extension(v8::Extension* extension) { extension_ = extension; }
@@ -203,6 +192,7 @@ class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
     runtime_call_stats_ = runtime_call_stats;
   }
 
+  void AllocateSourceRangeMap();
   SourceRangeMap* source_range_map() const { return source_range_map_; }
   void set_source_range_map(SourceRangeMap* source_range_map) {
     source_range_map_ = source_range_map;
@@ -246,15 +236,6 @@ class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
 
   void UpdateStatisticsAfterBackgroundParse(Isolate* isolate);
 
-  // The key of the map is the FunctionLiteral's start_position
-  std::map<int, ParseInfo*> child_infos() const;
-
-  void ParseFinished(std::unique_ptr<ParseInfo> info) override;
-
-#ifdef DEBUG
-  bool script_is_native() const;
-#endif  // DEBUG
-
  private:
   // Various configuration flags for parsing.
   enum Flag {
@@ -272,14 +253,13 @@ class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
     kSerializing = 1 << 10,
     kLazyCompile = 1 << 11,
     kCollectTypeProfile = 1 << 12,
+    kBlockCoverageEnabled = 1 << 13,
+    kIsAsmWasmBroken = 1 << 14,
   };
 
   //------------- Inputs to parsing and scope analysis -----------------------
   std::shared_ptr<Zone> zone_;
   unsigned flags_;
-  ScriptCompiler::ExternalSourceStream* source_stream_;
-  ScriptCompiler::StreamedSource::Encoding source_stream_encoding_;
-  Utf16CharacterStream* character_stream_;
   v8::Extension* extension_;
   ScriptCompiler::CompileOptions compile_options_;
   DeclarationScope* script_scope_;
@@ -299,6 +279,7 @@ class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
   MaybeHandle<ScopeInfo> maybe_outer_scope_info_;
 
   //----------- Inputs+Outputs of parsing and scope analysis -----------------
+  std::unique_ptr<Utf16CharacterStream> character_stream_;
   ScriptData** cached_data_;  // used if available, populated if requested.
   ConsumedPreParsedScopeData consumed_preparsed_scope_data_;
   std::shared_ptr<AstValueFactory> ast_value_factory_;
@@ -310,9 +291,6 @@ class V8_EXPORT_PRIVATE ParseInfo : public UnoptimizedCompileJobFinishCallback {
   //----------- Output of parsing and scope analysis ------------------------
   FunctionLiteral* literal_;
   std::shared_ptr<DeferredHandles> deferred_handles_;
-
-  std::vector<std::unique_ptr<ParseInfo>> child_infos_;
-  mutable base::Mutex child_infos_mutex_;
 
   void SetFlag(Flag f) { flags_ |= f; }
   void SetFlag(Flag f, bool v) { flags_ = v ? flags_ | f : flags_ & ~f; }
