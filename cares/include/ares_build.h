@@ -185,8 +185,6 @@ Error Compilation_aborted_Unknown_non_configure_build_target
 #  include <sys/socket.h>
 #endif
 
-#include "config.h"
-
 /* Data type definition of ares_socklen_t. */
 
 #ifdef CARES_TYPEOF_ARES_SOCKLEN_T

@@ -28,15 +28,7 @@
  * configuration file for platforms which lack config tool.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "ares_config.h"
-#else
-
-#ifdef WIN32
-#include "config-win32.h"
-#endif
-
-#endif /* HAVE_CONFIG_H */
+#include "../include/config.h"
 
 /* ================================================================ */
 /* Definition of preprocessor macros/symbols which modify compiler  */

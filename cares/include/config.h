@@ -4,10 +4,6 @@
 
 #if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)
 #include "../src/config-win32.h"
-#include "../src/windows_port.c"
-#include "../src/ares_getenv.c"
-#include "../src/ares_iphlpapi.h"
-#include "../src/ares_platform.c"
 #endif
 
 #if defined(linux) || defined(__linux) || defined(__linux__)
