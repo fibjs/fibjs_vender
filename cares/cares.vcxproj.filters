@@ -176,6 +176,27 @@
     <ClInclude Include="ares.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="config\darwin\ares_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config\freebsd\ares_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config\linux\ares_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config\netbsd\ares_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config\openbsd\ares_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config\solaris\ares_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ares_build.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\ares_rules.h">
       <Filter>Header Files</Filter>
     </ClInclude>
