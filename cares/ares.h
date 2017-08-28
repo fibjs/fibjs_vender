@@ -76,6 +76,7 @@ extern "C" {
 ** c-ares external API function linkage decorations.
 */
 
+#define CARES_STATICLIB
 #ifdef CARES_STATICLIB
 #  define CARES_EXTERN
 #elif defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__)

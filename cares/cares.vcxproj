@@ -18,7 +18,7 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
- <PropertyGroup Label="Globals">
+  <PropertyGroup Label="Globals">
     <ProjectGuid>{4D1FE62D-6901-4947-BBF1-ADDA4401A399}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>cares</RootNamespace>
@@ -177,9 +177,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\acountry.c" />
-    <ClCompile Include="src\adig.c" />
-    <ClCompile Include="src\ahost.c" />
     <ClCompile Include="src\ares_cancel.c" />
     <ClCompile Include="src\ares_create_query.c" />
     <ClCompile Include="src\ares_data.c" />
@@ -228,7 +225,6 @@
     <ClCompile Include="src\bitncmp.c" />
     <ClCompile Include="src\inet_net_pton.c" />
     <ClCompile Include="src\inet_ntop.c" />
-    <ClCompile Include="src\windows_port.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ares.h" />

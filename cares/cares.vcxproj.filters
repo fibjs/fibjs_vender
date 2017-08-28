@@ -15,15 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\acountry.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\adig.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ahost.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ares_cancel.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -166,9 +157,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\inet_ntop.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\windows_port.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
