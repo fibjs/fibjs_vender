@@ -297,6 +297,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
       SET_ALLOW(harmony_dynamic_import);
       SET_ALLOW(harmony_async_iteration);
       SET_ALLOW(harmony_template_escapes);
+      SET_ALLOW(harmony_restrictive_generators);
 #undef SET_ALLOW
     }
     return reusable_preparser_;
@@ -331,9 +332,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   bool ContainsLabel(ZoneList<const AstRawString*>* labels,
                      const AstRawString* label);
   Expression* RewriteReturn(Expression* return_value, int pos);
-  Statement* RewriteSwitchStatement(Expression* tag,
-                                    SwitchStatement* switch_statement,
-                                    ZoneList<CaseClause*>* cases, Scope* scope);
+  Statement* RewriteSwitchStatement(SwitchStatement* switch_statement,
+                                    Scope* scope);
   void RewriteCatchPattern(CatchInfo* catch_info, bool* ok);
   void ValidateCatchBlock(const CatchInfo& catch_info, bool* ok);
   Statement* RewriteTryStatement(Block* try_block, Block* catch_block,
@@ -377,7 +377,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   V8_INLINE Block* IgnoreCompletion(Statement* statement);
 
-  V8_INLINE Scope* NewHiddenCatchScopeWithParent(Scope* parent);
+  V8_INLINE Scope* NewHiddenCatchScope();
 
   // PatternRewriter and associated methods defined in pattern-rewriter.cc.
   friend class PatternRewriter;
@@ -385,7 +385,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
       Block* block, const DeclarationDescriptor* declaration_descriptor,
       const DeclarationParsingResult::Declaration* declaration,
       ZoneList<const AstRawString*>* names, bool* ok);
-  void RewriteDestructuringAssignment(RewritableExpression* expr, Scope* Scope);
+  void RewriteDestructuringAssignment(RewritableExpression* expr);
   Expression* RewriteDestructuringAssignment(Assignment* assignment);
 
   // [if (IteratorType == kAsync)]
@@ -583,17 +583,15 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                             MessageTemplate::Template message,
                             const AstRawString* arg, int pos);
 
-  void FinalizeIteratorUse(Scope* use_scope, Variable* completion,
-                           Expression* condition, Variable* iter,
-                           Block* iterator_use, Block* result,
+  void FinalizeIteratorUse(Variable* completion, Expression* condition,
+                           Variable* iter, Block* iterator_use, Block* result,
                            IteratorType type);
 
   Statement* FinalizeForOfStatement(ForOfStatement* loop, Variable* completion,
                                     IteratorType type, int pos);
   void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
                           Variable* input, Variable* output, IteratorType type);
-  void BuildIteratorCloseForCompletion(Scope* scope,
-                                       ZoneList<Statement*>* statements,
+  void BuildIteratorCloseForCompletion(ZoneList<Statement*>* statements,
                                        Variable* iterator,
                                        Expression* completion,
                                        IteratorType type);
@@ -692,10 +690,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     Literal* literal = e_stat->expression()->AsLiteral();
     if (literal == nullptr || !literal->raw_value()->IsString()) return false;
     return arg == nullptr || literal->raw_value()->AsString() == arg;
-  }
-
-  V8_INLINE static Expression* GetPropertyValue(LiteralProperty* property) {
-    return property->value();
   }
 
   V8_INLINE void GetDefaultStrings(
@@ -919,9 +913,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   V8_INLINE ZoneList<Statement*>* NewStatementList(int size) const {
     return new (zone()) ZoneList<Statement*>(size, zone());
   }
-  V8_INLINE ZoneList<CaseClause*>* NewCaseClauseList(int size) const {
-    return new (zone()) ZoneList<CaseClause*>(size, zone());
-  }
 
   V8_INLINE Expression* NewV8Intrinsic(const AstRawString* name,
                                        ZoneList<Expression*>* args, int pos,
@@ -985,11 +976,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                             const Scanner::Location& params_loc,
                                             Scanner::Location* duplicate_loc,
                                             bool* ok);
-
-  V8_INLINE Expression* NoTemplateTag() { return NULL; }
-  V8_INLINE static bool IsTaggedTemplate(const Expression* tag) {
-    return tag != NULL;
-  }
 
   Expression* ExpressionListToExpression(ZoneList<Expression*>* args);
 

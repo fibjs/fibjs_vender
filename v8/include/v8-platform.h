@@ -209,10 +209,7 @@ class Platform {
    * Current wall-clock time in milliseconds since epoch.
    * This function is expected to return at least millisecond-precision values.
    */
-  virtual double CurrentClockTimeMillis() {
-    // TODO(dats): Make pure virtual after V8 roll in Chromium.
-    return 0.0;
-  }
+  virtual double CurrentClockTimeMillis() = 0;
 
   typedef void (*StackTracePrinter)();
 
@@ -226,6 +223,14 @@ class Platform {
    * Returns an instance of a v8::TracingController. This must be non-nullptr.
    */
   virtual TracingController* GetTracingController() = 0;
+
+ protected:
+  /**
+   * Default implementation of current wall-clock time in milliseconds
+   * since epoch. Useful for implementing |CurrentClockTimeMillis| if
+   * nothing special needed.
+   */
+  static double SystemClockTimeMillis();
 };
 
 }  // namespace v8

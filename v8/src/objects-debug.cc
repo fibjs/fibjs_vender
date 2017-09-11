@@ -199,9 +199,6 @@ void HeapObject::HeapObjectVerify() {
     case JS_WEAK_SET_TYPE:
       JSWeakSet::cast(this)->JSWeakSetVerify();
       break;
-    case JS_PROMISE_CAPABILITY_TYPE:
-      JSPromiseCapability::cast(this)->JSPromiseCapabilityVerify();
-      break;
     case JS_PROMISE_TYPE:
       JSPromise::cast(this)->JSPromiseVerify();
       break;
@@ -370,6 +367,15 @@ void JSObject::JSObjectVerify() {
                                                         field_type));
       }
     }
+
+    if (map()->EnumLength() != kInvalidEnumCacheSentinel) {
+      EnumCache* enum_cache = descriptors->GetEnumCache();
+      FixedArray* keys = enum_cache->keys();
+      FixedArray* indices = enum_cache->indices();
+      CHECK_LE(map()->EnumLength(), keys->length());
+      CHECK_IMPLIES(indices != isolate->heap()->empty_fixed_array(),
+                    keys->length() == indices->length());
+    }
   }
 
   // If a GC was caused while constructing this object, the elements
@@ -420,7 +426,8 @@ void Map::MapVerify() {
 void Map::DictionaryMapVerify() {
   MapVerify();
   CHECK(is_dictionary_map());
-  CHECK(instance_descriptors()->IsEmpty());
+  CHECK_EQ(kInvalidEnumCacheSentinel, EnumLength());
+  CHECK_EQ(GetHeap()->empty_descriptor_array(), instance_descriptors());
   CHECK_EQ(0, unused_property_fields());
   CHECK_EQ(Map::GetVisitorId(this), visitor_id());
 }
@@ -434,6 +441,13 @@ void FixedArray::FixedArrayVerify() {
   for (int i = 0; i < length(); i++) {
     Object* e = get(i);
     VerifyPointer(e);
+  }
+  Heap* heap = GetHeap();
+  if (this == heap->empty_descriptor_array()) {
+    DescriptorArray* descriptors = DescriptorArray::cast(this);
+    CHECK_EQ(2, length());
+    CHECK_EQ(0, descriptors->number_of_descriptors());
+    CHECK_EQ(heap->empty_enum_cache(), descriptors->GetEnumCache());
   }
 }
 
@@ -470,29 +484,25 @@ void TransitionArray::TransitionArrayVerify() {
 
 void JSArgumentsObject::JSArgumentsObjectVerify() {
   if (IsSloppyArgumentsElementsKind(GetElementsKind())) {
-    JSSloppyArgumentsObject::cast(this)->JSSloppyArgumentsObjectVerify();
+    SloppyArgumentsElements::cast(elements())
+        ->SloppyArgumentsElementsVerify(this);
   }
-  JSObjectVerify();
-}
-
-void JSSloppyArgumentsObject::JSSloppyArgumentsObjectVerify() {
   Isolate* isolate = GetIsolate();
   if (isolate->IsInAnyContext(map(), Context::SLOPPY_ARGUMENTS_MAP_INDEX) ||
       isolate->IsInAnyContext(map(),
                               Context::SLOW_ALIASED_ARGUMENTS_MAP_INDEX) ||
       isolate->IsInAnyContext(map(),
                               Context::FAST_ALIASED_ARGUMENTS_MAP_INDEX)) {
-    VerifyObjectField(kLengthOffset);
-    VerifyObjectField(kCalleeOffset);
+    VerifyObjectField(JSSloppyArgumentsObject::kLengthOffset);
+    VerifyObjectField(JSSloppyArgumentsObject::kCalleeOffset);
+  } else if (isolate->IsInAnyContext(map(),
+                                     Context::STRICT_ARGUMENTS_MAP_INDEX)) {
+    VerifyObjectField(JSStrictArgumentsObject::kLengthOffset);
   }
-  ElementsKind kind = GetElementsKind();
-  CHECK(IsSloppyArgumentsElementsKind(kind));
-  SloppyArgumentsElements::cast(elements())
-      ->SloppyArgumentsElementsVerify(this);
+  JSObjectVerify();
 }
 
-void SloppyArgumentsElements::SloppyArgumentsElementsVerify(
-    JSSloppyArgumentsObject* holder) {
+void SloppyArgumentsElements::SloppyArgumentsElementsVerify(JSObject* holder) {
   Isolate* isolate = GetIsolate();
   FixedArrayVerify();
   // Abort verification if only partially initialized (can't use arguments()
@@ -692,11 +702,7 @@ void JSBoundFunction::JSBoundFunctionVerify() {
 void JSFunction::JSFunctionVerify() {
   CHECK(IsJSFunction());
   VerifyObjectField(kPrototypeOrInitialMapOffset);
-  VerifyObjectField(kNextFunctionLinkOffset);
   CHECK(code()->IsCode());
-  CHECK(next_function_link() == NULL ||
-        next_function_link()->IsUndefined(GetIsolate()) ||
-        next_function_link()->IsJSFunction());
   CHECK(map()->is_callable());
 }
 
@@ -719,7 +725,8 @@ void SharedFunctionInfo::SharedFunctionInfoVerify() {
 
   Isolate* isolate = GetIsolate();
   CHECK(function_data()->IsUndefined(isolate) || IsApiFunction() ||
-        HasBytecodeArray() || HasAsmWasmData());
+        HasBytecodeArray() || HasAsmWasmData() ||
+        HasLazyDeserializationBuiltinId());
 
   CHECK(function_identifier()->IsUndefined(isolate) || HasBuiltinFunctionId() ||
         HasInferredName());
@@ -992,9 +999,8 @@ void JSWeakSet::JSWeakSetVerify() {
   CHECK(table()->IsHashTable() || table()->IsUndefined(GetIsolate()));
 }
 
-void JSPromiseCapability::JSPromiseCapabilityVerify() {
-  CHECK(IsJSPromiseCapability());
-  JSObjectVerify();
+void PromiseCapability::PromiseCapabilityVerify() {
+  CHECK(IsPromiseCapability());
   VerifyPointer(promise());
   VerifyPointer(resolve());
   VerifyPointer(reject());
@@ -1004,7 +1010,6 @@ void JSPromise::JSPromiseVerify() {
   CHECK(IsJSPromise());
   JSObjectVerify();
   Isolate* isolate = GetIsolate();
-  VerifySmiField(kStatusOffset);
   CHECK(result()->IsUndefined(isolate) || result()->IsObject());
   CHECK(deferred_promise()->IsUndefined(isolate) ||
         deferred_promise()->IsJSReceiver() ||
@@ -1271,8 +1276,14 @@ void PrototypeInfo::PrototypeInfoVerify() {
 
 void Tuple2::Tuple2Verify() {
   CHECK(IsTuple2());
-  VerifyObjectField(kValue1Offset);
-  VerifyObjectField(kValue2Offset);
+  Heap* heap = GetHeap();
+  if (this == heap->empty_enum_cache()) {
+    CHECK_EQ(heap->empty_fixed_array(), EnumCache::cast(this)->keys());
+    CHECK_EQ(heap->empty_fixed_array(), EnumCache::cast(this)->indices());
+  } else {
+    VerifyObjectField(kValue1Offset);
+    VerifyObjectField(kValue2Offset);
+  }
 }
 
 void Tuple3::Tuple3Verify() {

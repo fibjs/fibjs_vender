@@ -8,6 +8,8 @@
 #include "src/compiler/opcodes.h"
 #include "src/compiler/operator.h"
 #include "src/compiler/types.h"
+#include "src/handles-inl.h"
+#include "src/objects-inl.h"
 #include "src/objects/map.h"
 #include "src/objects/name.h"
 
@@ -213,6 +215,11 @@ CheckMapsParameters const& CheckMapsParametersOf(Operator const* op) {
   return OpParameter<CheckMapsParameters>(op);
 }
 
+ZoneHandleSet<Map> const& CompareMapsParametersOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kCompareMaps, op->opcode());
+  return OpParameter<ZoneHandleSet<Map>>(op);
+}
+
 size_t hash_value(CheckTaggedInputMode mode) {
   return static_cast<size_t>(mode);
 }
@@ -375,7 +382,9 @@ NumberOperationHint NumberOperationHintOf(const Operator* op) {
          op->opcode() == IrOpcode::kSpeculativeNumberBitwiseXor ||
          op->opcode() == IrOpcode::kSpeculativeNumberEqual ||
          op->opcode() == IrOpcode::kSpeculativeNumberLessThan ||
-         op->opcode() == IrOpcode::kSpeculativeNumberLessThanOrEqual);
+         op->opcode() == IrOpcode::kSpeculativeNumberLessThanOrEqual ||
+         op->opcode() == IrOpcode::kSpeculativeSafeIntegerAdd ||
+         op->opcode() == IrOpcode::kSpeculativeSafeIntegerSubtract);
   return OpParameter<NumberOperationHint>(op);
 }
 
@@ -410,6 +419,11 @@ Type* AllocateTypeOf(const Operator* op) {
 UnicodeEncoding UnicodeEncodingOf(const Operator* op) {
   DCHECK(op->opcode() == IrOpcode::kStringFromCodePoint);
   return OpParameter<UnicodeEncoding>(op);
+}
+
+BailoutReason BailoutReasonOf(const Operator* op) {
+  DCHECK(op->opcode() == IrOpcode::kRuntimeAbort);
+  return OpParameter<BailoutReason>(op);
 }
 
 #define PURE_OP_LIST(V)                                          \
@@ -600,14 +614,6 @@ struct SimplifiedOperatorGlobalCache final {
   };
   ArgumentsFrameOperator kArgumentsFrame;
 
-  struct NewUnmappedArgumentsElementsOperator final : public Operator {
-    NewUnmappedArgumentsElementsOperator()
-        : Operator(IrOpcode::kNewUnmappedArgumentsElements,
-                   Operator::kEliminatable, "NewUnmappedArgumentsElements", 2,
-                   1, 0, 1, 1, 0) {}
-  };
-  NewUnmappedArgumentsElementsOperator kNewUnmappedArgumentsElements;
-
   template <CheckForMinusZeroMode kMode>
   struct ChangeFloat64ToTaggedOperator final
       : public Operator1<CheckForMinusZeroMode> {
@@ -715,6 +721,16 @@ struct SimplifiedOperatorGlobalCache final {
   };
   EnsureWritableFastElementsOperator kEnsureWritableFastElements;
 
+  struct LoadFieldByIndexOperator final : public Operator {
+    LoadFieldByIndexOperator()
+        : Operator(                         // --
+              IrOpcode::kLoadFieldByIndex,  // opcode
+              Operator::kEliminatable,      // flags,
+              "LoadFieldByIndex",           // name
+              2, 1, 1, 1, 1, 0) {}          // counts;
+  };
+  LoadFieldByIndexOperator kLoadFieldByIndex;
+
 #define SPECULATIVE_NUMBER_BINOP(Name)                                      \
   template <NumberOperationHint kHint>                                      \
   struct Name##Operator final : public Operator1<NumberOperationHint> {     \
@@ -769,8 +785,17 @@ GET_FROM_CACHE(ArrayBufferWasNeutered)
 GET_FROM_CACHE(ArgumentsFrame)
 GET_FROM_CACHE(LookupHashStorageIndex)
 GET_FROM_CACHE(LoadHashMapValue)
-GET_FROM_CACHE(NewUnmappedArgumentsElements)
+GET_FROM_CACHE(LoadFieldByIndex)
 #undef GET_FROM_CACHE
+
+const Operator* SimplifiedOperatorBuilder::RuntimeAbort(BailoutReason reason) {
+  return new (zone()) Operator1<BailoutReason>(  // --
+      IrOpcode::kRuntimeAbort,                   // opcode
+      Operator::kNoThrow | Operator::kNoDeopt,   // flags
+      "RuntimeAbort",                            // name
+      0, 1, 1, 0, 1, 0,                          // counts
+      reason);                                   // parameter
+}
 
 const Operator* SimplifiedOperatorBuilder::ChangeFloat64ToTagged(
     CheckForMinusZeroMode mode) {
@@ -847,6 +872,16 @@ const Operator* SimplifiedOperatorBuilder::CheckMaps(CheckMapsFlags flags,
       "CheckMaps",                                     // name
       1, 1, 1, 0, 1, 0,                                // counts
       parameters);                                     // parameter
+}
+
+const Operator* SimplifiedOperatorBuilder::CompareMaps(
+    ZoneHandleSet<Map> maps) {
+  return new (zone()) Operator1<ZoneHandleSet<Map>>(  // --
+      IrOpcode::kCompareMaps,                         // opcode
+      Operator::kEliminatable,                        // flags
+      "CompareMaps",                                  // name
+      1, 1, 1, 1, 1, 0,                               // counts
+      maps);                                          // parameter
 }
 
 const Operator* SimplifiedOperatorBuilder::CheckFloat64Hole(
@@ -944,6 +979,16 @@ int FormalParameterCountOf(const Operator* op) {
 bool IsRestLengthOf(const Operator* op) {
   DCHECK(op->opcode() == IrOpcode::kArgumentsLength);
   return OpParameter<ArgumentsLengthParameters>(op).is_rest_length;
+}
+
+const Operator* SimplifiedOperatorBuilder::NewArgumentsElements(
+    int mapped_count) {
+  return new (zone()) Operator1<int>(   // --
+      IrOpcode::kNewArgumentsElements,  // opcode
+      Operator::kEliminatable,          // flags
+      "NewArgumentsElements",           // name
+      2, 1, 0, 1, 1, 0,                 // counts
+      mapped_count);                    // parameter
 }
 
 const Operator* SimplifiedOperatorBuilder::Allocate(Type* type,

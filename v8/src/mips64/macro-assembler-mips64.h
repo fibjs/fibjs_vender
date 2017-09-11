@@ -13,20 +13,20 @@ namespace v8 {
 namespace internal {
 
 // Give alias names to registers for calling conventions.
-const Register kReturnRegister0 = {Register::kCode_v0};
-const Register kReturnRegister1 = {Register::kCode_v1};
-const Register kReturnRegister2 = {Register::kCode_a0};
-const Register kJSFunctionRegister = {Register::kCode_a1};
-const Register kContextRegister = {Register::kCpRegister};
-const Register kAllocateSizeRegister = {Register::kCode_a0};
-const Register kInterpreterAccumulatorRegister = {Register::kCode_v0};
-const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_t0};
-const Register kInterpreterBytecodeArrayRegister = {Register::kCode_t1};
-const Register kInterpreterDispatchTableRegister = {Register::kCode_t2};
-const Register kJavaScriptCallArgCountRegister = {Register::kCode_a0};
-const Register kJavaScriptCallNewTargetRegister = {Register::kCode_a3};
-const Register kRuntimeCallFunctionRegister = {Register::kCode_a1};
-const Register kRuntimeCallArgCountRegister = {Register::kCode_a0};
+constexpr Register kReturnRegister0 = v0;
+constexpr Register kReturnRegister1 = v1;
+constexpr Register kReturnRegister2 = a0;
+constexpr Register kJSFunctionRegister = a1;
+constexpr Register kContextRegister = s7;
+constexpr Register kAllocateSizeRegister = a0;
+constexpr Register kInterpreterAccumulatorRegister = v0;
+constexpr Register kInterpreterBytecodeOffsetRegister = t0;
+constexpr Register kInterpreterBytecodeArrayRegister = t1;
+constexpr Register kInterpreterDispatchTableRegister = t2;
+constexpr Register kJavaScriptCallArgCountRegister = a0;
+constexpr Register kJavaScriptCallNewTargetRegister = a3;
+constexpr Register kRuntimeCallFunctionRegister = a1;
+constexpr Register kRuntimeCallArgCountRegister = a0;
 
 // Forward declaration.
 class JumpTarget;
@@ -404,12 +404,23 @@ class TurboAssembler : public Assembler {
   void MultiPush(RegList regs);
   void MultiPushFPU(RegList regs);
 
-  void PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
-                       Register exclusion2 = no_reg,
-                       Register exclusion3 = no_reg);
-  void PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+  // Calculate how much stack space (in bytes) are required to store caller
+  // registers excluding those specified in the arguments.
+  int RequiredStackSizeForCallerSaved(SaveFPRegsMode fp_mode,
+                                      Register exclusion1 = no_reg,
+                                      Register exclusion2 = no_reg,
+                                      Register exclusion3 = no_reg) const;
+
+  // Push caller saved registers on the stack, and return the number of bytes
+  // stack pointer is adjusted.
+  int PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
                       Register exclusion2 = no_reg,
                       Register exclusion3 = no_reg);
+  // Restore caller saved registers from the stack, and return the number of
+  // bytes stack pointer is adjusted.
+  int PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                     Register exclusion2 = no_reg,
+                     Register exclusion3 = no_reg);
 
   void pop(Register dst) {
     Ld(dst, MemOperand(sp, 0));
@@ -419,7 +430,7 @@ class TurboAssembler : public Assembler {
 
   // Pop two registers. Pops rightmost register first (from lower address).
   void Pop(Register src1, Register src2) {
-    DCHECK(!src1.is(src2));
+    DCHECK(src1 != src2);
     Ld(src2, MemOperand(sp, 0 * kPointerSize));
     Ld(src1, MemOperand(sp, 1 * kPointerSize));
     Daddu(sp, sp, 2 * kPointerSize);
@@ -666,7 +677,7 @@ class TurboAssembler : public Assembler {
   // handled in out-of-line code. The specific behaviour depends on supported
   // instructions.
   //
-  // These functions assume (and assert) that !src1.is(src2). It is permitted
+  // These functions assume (and assert) that src1!=src2. It is permitted
   // for the result to alias either input register.
   void Float32Max(FPURegister dst, FPURegister src1, FPURegister src2,
                   Label* out_of_line);
@@ -691,7 +702,7 @@ class TurboAssembler : public Assembler {
   inline void Move(Register dst, Smi* smi) { li(dst, Operand(smi)); }
 
   inline void Move(Register dst, Register src) {
-    if (!dst.is(src)) {
+    if (dst != src) {
       mov(dst, src);
     }
   }
@@ -727,13 +738,13 @@ class TurboAssembler : public Assembler {
   }
 
   inline void Move_d(FPURegister dst, FPURegister src) {
-    if (!dst.is(src)) {
+    if (dst != src) {
       mov_d(dst, src);
     }
   }
 
   inline void Move_s(FPURegister dst, FPURegister src) {
-    if (!dst.is(src)) {
+    if (dst != src) {
       mov_s(dst, src);
     }
   }

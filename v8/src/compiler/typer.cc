@@ -1672,6 +1672,9 @@ Type* Typer::Visitor::TypeJSConvertReceiver(Node* node) {
   return Type::Receiver();
 }
 
+Type* Typer::Visitor::TypeJSForInEnumerate(Node* node) {
+  return Type::OtherInternal();
+}
 
 Type* Typer::Visitor::TypeJSForInNext(Node* node) {
   return Type::Union(Type::String(), Type::Undefined(), zone());
@@ -1862,6 +1865,8 @@ Type* Typer::Visitor::TypeCheckMaps(Node* node) {
   UNREACHABLE();
 }
 
+Type* Typer::Visitor::TypeCompareMaps(Node* node) { return Type::Boolean(); }
+
 Type* Typer::Visitor::TypeCheckNumber(Node* node) {
   return typer_->operation_typer_.CheckNumber(Operand(node, 0));
 }
@@ -1903,16 +1908,15 @@ Type* Typer::Visitor::TypeCheckNotTaggedHole(Node* node) {
 
 Type* Typer::Visitor::TypeConvertTaggedHoleToUndefined(Node* node) {
   Type* type = Operand(node, 0);
-  if (type->Maybe(Type::Hole())) {
-    // Turn "the hole" into undefined.
-    type = Type::Intersect(type, Type::NonInternal(), zone());
-    type = Type::Union(type, Type::Undefined(), zone());
-  }
-  return type;
+  return typer_->operation_typer()->ConvertTaggedHoleToUndefined(type);
 }
 
 Type* Typer::Visitor::TypeAllocate(Node* node) {
   return AllocateTypeOf(node->op());
+}
+
+Type* Typer::Visitor::TypeLoadFieldByIndex(Node* node) {
+  return Type::NonInternal();
 }
 
 Type* Typer::Visitor::TypeLoadField(Node* node) {
@@ -2000,7 +2004,7 @@ Type* Typer::Visitor::TypeArgumentsFrame(Node* node) {
   return Type::ExternalPointer();
 }
 
-Type* Typer::Visitor::TypeNewUnmappedArgumentsElements(Node* node) {
+Type* Typer::Visitor::TypeNewArgumentsElements(Node* node) {
   return Type::OtherInternal();
 }
 
@@ -2015,6 +2019,8 @@ Type* Typer::Visitor::TypeLookupHashStorageIndex(Node* node) {
 Type* Typer::Visitor::TypeLoadHashMapValue(Node* node) {
   return Type::NonInternal();
 }
+
+Type* Typer::Visitor::TypeRuntimeAbort(Node* node) { UNREACHABLE(); }
 
 // Heap constants.
 

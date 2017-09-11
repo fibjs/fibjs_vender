@@ -24,13 +24,12 @@
 #include "src/globals.h"
 #include "src/interpreter/interpreter.h"
 #include "src/isolate-inl.h"
-#include "src/list.h"
 #include "src/log.h"
 #include "src/messages.h"
 #include "src/objects/debug-objects-inl.h"
 #include "src/snapshot/natives.h"
 #include "src/wasm/wasm-module.h"
-#include "src/wasm/wasm-objects.h"
+#include "src/wasm/wasm-objects-inl.h"
 
 #include "include/v8-debug.h"
 
@@ -64,9 +63,9 @@ BreakLocation BreakLocation::FromFrame(Handle<DebugInfo> debug_info,
   return it.GetBreakLocation();
 }
 
-void BreakLocation::AllAtCurrentStatement(Handle<DebugInfo> debug_info,
-                                          JavaScriptFrame* frame,
-                                          List<BreakLocation>* result_out) {
+void BreakLocation::AllAtCurrentStatement(
+    Handle<DebugInfo> debug_info, JavaScriptFrame* frame,
+    std::vector<BreakLocation>* result_out) {
   auto summary = FrameSummary::GetTop(frame).AsJavaScript();
   int offset = summary.code_offset();
   Handle<AbstractCode> abstract_code = summary.abstract_code();
@@ -79,7 +78,7 @@ void BreakLocation::AllAtCurrentStatement(Handle<DebugInfo> debug_info,
   }
   for (BreakIterator it(debug_info); !it.Done(); it.Next()) {
     if (it.statement_position() == statement_position) {
-      result_out->Add(it.GetBreakLocation());
+      result_out->push_back(it.GetBreakLocation());
     }
   }
 }
@@ -470,10 +469,10 @@ bool Debug::IsMutedAtCurrentLocation(JavaScriptFrame* frame) {
   // Enter the debugger.
   DebugScope debug_scope(this);
   if (debug_scope.failed()) return false;
-  List<BreakLocation> break_locations;
+  std::vector<BreakLocation> break_locations;
   BreakLocation::AllAtCurrentStatement(debug_info, frame, &break_locations);
   bool has_break_points_at_all = false;
-  for (int i = 0; i < break_locations.length(); i++) {
+  for (size_t i = 0; i < break_locations.size(); i++) {
     bool has_break_points;
     MaybeHandle<FixedArray> check_result =
         CheckBreakPoints(debug_info, &break_locations[i], &has_break_points);
@@ -809,20 +808,20 @@ void Debug::PrepareStepOnThrow() {
       // Deoptimize frame to ensure calls are checked for step-in.
       Deoptimizer::DeoptimizeFunction(frame->function());
     }
-    List<FrameSummary> summaries;
+    std::vector<FrameSummary> summaries;
     frame->Summarize(&summaries);
-    for (int i = summaries.length() - 1; i >= 0; i--, current_frame_count--) {
+    for (size_t i = summaries.size(); i != 0; i--, current_frame_count--) {
+      const FrameSummary& summary = summaries[i - 1];
       if (!found_handler) {
         // We have yet to find the handler. If the frame inlines multiple
         // functions, we have to check each one for the handler.
         // If it only contains one function, we already found the handler.
-        if (summaries.length() > 1) {
-          Handle<AbstractCode> code =
-              summaries[i].AsJavaScript().abstract_code();
+        if (summaries.size() > 1) {
+          Handle<AbstractCode> code = summary.AsJavaScript().abstract_code();
           CHECK_EQ(AbstractCode::INTERPRETED_FUNCTION, code->kind());
           BytecodeArray* bytecode = code->GetBytecodeArray();
           HandlerTable* table = HandlerTable::cast(bytecode->handler_table());
-          int code_offset = summaries[i].code_offset();
+          int code_offset = summary.code_offset();
           HandlerTable::CatchPrediction prediction;
           int index = table->LookupRange(code_offset, nullptr, &prediction);
           if (index > 0) found_handler = true;
@@ -839,7 +838,7 @@ void Debug::PrepareStepOnThrow() {
           continue;
         }
         Handle<SharedFunctionInfo> info(
-            summaries[i].AsJavaScript().function()->shared());
+            summary.AsJavaScript().function()->shared());
         if (IsBlackboxed(info)) continue;
         FloodWithOneShot(info);
         return;

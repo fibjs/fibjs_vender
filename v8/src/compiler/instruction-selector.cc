@@ -15,7 +15,6 @@
 #include "src/compiler/schedule.h"
 #include "src/compiler/state-values-utils.h"
 #include "src/deoptimizer.h"
-#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -530,7 +529,7 @@ size_t InstructionSelector::AddOperandToStateValueDescriptor(
 
   switch (input->opcode()) {
     case IrOpcode::kArgumentsElementsState: {
-      values->PushArgumentsElements(IsRestOf(input->op()));
+      values->PushArgumentsElements(ArgumentsStateTypeOf(input->op()));
       // The elements backing store of an arguments object participates in the
       // duplicate object counting, but can itself never appear duplicated.
       DCHECK_EQ(StateObjectDeduplicator::kNotDuplicated,
@@ -539,7 +538,7 @@ size_t InstructionSelector::AddOperandToStateValueDescriptor(
       return 0;
     }
     case IrOpcode::kArgumentsLengthState: {
-      values->PushArgumentsLength(IsRestOf(input->op()));
+      values->PushArgumentsLength(ArgumentsStateTypeOf(input->op()));
       return 0;
     }
     case IrOpcode::kObjectState: {

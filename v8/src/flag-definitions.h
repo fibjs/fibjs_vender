@@ -193,8 +193,7 @@ DEFINE_IMPLICATION(es_staging, harmony)
   V(harmony_array_prototype_values, "harmony Array.prototype.values") \
   V(harmony_function_sent, "harmony function.sent")                   \
   V(harmony_do_expressions, "harmony do-expressions")                 \
-  V(harmony_class_fields, "harmony public fields in class literals")  \
-  V(harmony_promise_finally, "harmony Promise.prototype.finally")
+  V(harmony_class_fields, "harmony public fields in class literals")
 
 #ifdef V8_INTL_SUPPORT
 #define HARMONY_INPROGRESS(V)                    \
@@ -216,6 +215,7 @@ DEFINE_IMPLICATION(es_staging, harmony)
     "constructor")                                                      \
   V(harmony_dynamic_import, "harmony dynamic import")                   \
   V(harmony_async_iteration, "harmony async iteration")                 \
+  V(harmony_promise_finally, "harmony Promise.prototype.finally")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                              \
@@ -267,6 +267,8 @@ DEFINE_BOOL(future, FUTURE_BOOL,
             "Implies all staged features that we want to ship in the "
             "not-too-far future")
 
+DEFINE_IMPLICATION(future, preparser_scope_analysis)
+
 // Flags for experimental implementation features.
 DEFINE_BOOL(allocation_site_pretenuring, true,
             "pretenure with allocation sites")
@@ -287,7 +289,6 @@ DEFINE_IMPLICATION(track_computed_fields, track_fields)
 DEFINE_BOOL(track_field_types, true, "track field types")
 DEFINE_IMPLICATION(track_field_types, track_fields)
 DEFINE_IMPLICATION(track_field_types, track_heap_object_fields)
-DEFINE_BOOL(type_profile, false, "collect type information")
 DEFINE_BOOL(block_coverage, true, "enable block code coverage")
 DEFINE_BOOL(trace_block_coverage, false,
             "trace collected block coverage information")
@@ -364,7 +365,8 @@ DEFINE_BOOL(turbo_preprocess_ranges, true,
 DEFINE_STRING(turbo_filter, "*", "optimization filter for TurboFan compiler")
 DEFINE_BOOL(trace_turbo, false, "trace generated TurboFan IR")
 DEFINE_BOOL(trace_turbo_graph, false, "trace generated TurboFan graphs")
-DEFINE_IMPLICATION(trace_turbo_graph, trace_turbo)
+DEFINE_BOOL(trace_turbo_scheduled, false, "trace TurboFan IR with schedule")
+DEFINE_IMPLICATION(trace_turbo_scheduled, trace_turbo_graph)
 DEFINE_STRING(trace_turbo_cfg_file, NULL,
               "trace turbo cfg graph (for C1 visualizer) to a given file name")
 DEFINE_BOOL(trace_turbo_types, true, "trace TurboFan's types")
@@ -438,8 +440,6 @@ DEFINE_BOOL(turbo_loop_variable, true, "Turbofan loop variable optimization")
 DEFINE_BOOL(turbo_cf_optimization, true, "optimize control flow in TurboFan")
 DEFINE_BOOL(turbo_frame_elision, true, "elide frames in TurboFan")
 DEFINE_BOOL(turbo_escape, true, "enable escape analysis")
-DEFINE_BOOL(turbo_new_escape, true,
-            "enable new implementation of escape analysis")
 DEFINE_BOOL(turbo_instruction_scheduling, false,
             "enable instruction scheduling in TurboFan")
 DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
@@ -539,17 +539,11 @@ DEFINE_NEG_IMPLICATION(wasm_interpret_all, wasm_lazy_compilation)
 
 // Profiler flags.
 DEFINE_INT(frame_count, 1, "number of stack frames inspected by the profiler")
-// 0x1800 fits in the immediate field of an ARM instruction.
-DEFINE_INT(interrupt_budget, 0x1800,
-           "execution budget before interrupt is triggered")
 DEFINE_INT(type_info_threshold, 25,
            "percentage of ICs that must have type info to allow optimization")
 DEFINE_INT(generic_ic_threshold, 30,
            "max percentage of megamorphic/generic ICs to allow optimization")
 DEFINE_INT(self_opt_count, 130, "call count before self-optimization")
-
-DEFINE_BOOL(trace_opt_verbose, false, "extra verbose compilation tracing")
-DEFINE_IMPLICATION(trace_opt_verbose, trace_opt)
 
 // Garbage collections flags.
 DEFINE_INT(min_semi_space_size, 0,
@@ -747,14 +741,17 @@ DEFINE_BOOL(trace, false, "trace function calls")
 // codegen.cc
 DEFINE_BOOL(lazy, true, "use lazy compilation")
 DEFINE_BOOL(trace_opt, false, "trace lazy optimization")
+DEFINE_BOOL(trace_opt_verbose, false, "extra verbose compilation tracing")
+DEFINE_IMPLICATION(trace_opt_verbose, trace_opt)
 DEFINE_BOOL(trace_opt_stats, false, "trace lazy optimization statistics")
+DEFINE_BOOL(trace_deopt, false, "trace optimize function deoptimization")
 DEFINE_BOOL(trace_file_names, false,
             "include file names in trace-opt/trace-deopt output")
+DEFINE_BOOL(trace_interrupts, false, "trace interrupts when they are handled")
 DEFINE_BOOL(opt, true, "use adaptive optimizations")
 DEFINE_BOOL(always_opt, false, "always try to optimize functions")
 DEFINE_BOOL(always_osr, false, "always try to OSR functions")
 DEFINE_BOOL(prepare_always_opt, false, "prepare for turning on always opt")
-DEFINE_BOOL(trace_deopt, false, "trace optimize function deoptimization")
 
 DEFINE_BOOL(serialize_toplevel, true, "enable caching of toplevel scripts")
 DEFINE_BOOL(serialize_eager, false, "compile eagerly when caching scripts")
@@ -867,7 +864,7 @@ DEFINE_BOOL(lazy_inner_functions, true, "enable lazy parsing inner functions")
 DEFINE_BOOL(aggressive_lazy_inner_functions, false,
             "even lazier inner function parsing")
 DEFINE_IMPLICATION(aggressive_lazy_inner_functions, lazy_inner_functions)
-DEFINE_BOOL(preparser_scope_analysis, false,
+DEFINE_BOOL(preparser_scope_analysis, true,
             "perform scope analysis for preparsed inner functions")
 DEFINE_IMPLICATION(preparser_scope_analysis, aggressive_lazy_inner_functions)
 
@@ -930,6 +927,9 @@ DEFINE_INT(runtime_stats, 0,
 DEFINE_VALUE_IMPLICATION(runtime_call_stats, runtime_stats, 1)
 
 // snapshot-common.cc
+DEFINE_BOOL(lazy_deserialization, false,
+            "Deserialize code lazily from the snapshot.")
+DEFINE_BOOL(trace_lazy_deserialization, false, "Trace lazy deserialization.")
 DEFINE_BOOL(profile_deserialization, false,
             "Print the time it takes to deserialize the snapshot.")
 DEFINE_BOOL(serialization_statistics, false,

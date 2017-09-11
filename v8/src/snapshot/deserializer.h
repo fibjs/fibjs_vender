@@ -49,7 +49,6 @@ class Deserializer : public SerializerDeserializer {
       : isolate_(NULL),
         source_(data->Payload()),
         magic_number_(data->GetMagicNumber()),
-        num_extra_references_(data->GetExtraReferences()),
         next_map_index_(0),
         external_reference_table_(NULL),
         deserialized_large_objects_(0),
@@ -66,12 +65,18 @@ class Deserializer : public SerializerDeserializer {
 
   // Atomically reserves space for the two given deserializers. Guarantees
   // reservation for both without garbage collection in-between.
-  // TODO(jgruber): Replace this with advance builtin handle allocation.
-  static bool ReserveSpace(StartupDeserializer* lhs, BuiltinDeserializer* rhs);
+  static bool ReserveSpace(StartupDeserializer* startup_deserializer,
+                           BuiltinDeserializer* builtin_deserializer);
+  bool ReservesOnlyCodeSpace() const;
 
   void Initialize(Isolate* isolate);
   void DeserializeDeferredObjects();
   void RegisterDeserializedObjectsForBlackAllocation();
+
+  virtual Address Allocate(int space_index, int size);
+
+  // Deserializes into a single pointer and returns the resulting object.
+  Object* ReadDataSingle();
 
   // This returns the address of an object that has been described in the
   // snapshot by chunk index and offset.
@@ -79,10 +84,6 @@ class Deserializer : public SerializerDeserializer {
 
   // Sort descriptors of deserialized maps using new string hashes.
   void SortMapDescriptors();
-
-  // Fix up all recorded pointers to builtins once builtins have been
-  // deserialized.
-  void PostProcessDeferredBuiltinReferences();
 
   Isolate* isolate() const { return isolate_; }
   SnapshotByteSource* source() { return &source_; }
@@ -104,6 +105,8 @@ class Deserializer : public SerializerDeserializer {
   bool deserializing_user_code() const { return deserializing_user_code_; }
   bool can_rehash() const { return can_rehash_; }
 
+  bool IsLazyDeserializationEnabled() const;
+
  private:
   void VisitRootPointers(Root root, Object** start, Object** end) override;
 
@@ -123,23 +126,6 @@ class Deserializer : public SerializerDeserializer {
     next_alignment_ = static_cast<AllocationAlignment>(alignment);
   }
 
-  // Builtin references are collected during initial deserialization and later
-  // iterated and filled in with the correct addresses after builtins have
-  // themselves been deserialized.
-  struct DeferredBuiltinReference {
-    byte bytecode;
-    Builtins::Name builtin_name;
-    Object** target_addr;
-    Address current_object;
-
-    DeferredBuiltinReference(byte bytecode, Builtins::Name builtin_name,
-                             Object** target_addr, Address current_object)
-        : bytecode(bytecode),
-          builtin_name(builtin_name),
-          target_addr(target_addr),
-          current_object(current_object) {}
-  };
-
   // Fills in some heap data in an area from start to end (non-inclusive).  The
   // space id is used for the write barrier.  The object_address is the address
   // of the object we are writing into, or NULL if we are not writing into an
@@ -156,10 +142,13 @@ class Deserializer : public SerializerDeserializer {
                                bool write_barrier_needed);
 
   void ReadObject(int space_number, Object** write_back);
-  Address Allocate(int space_index, int size);
 
   // Special handling for serialized code like hooking up internalized strings.
   HeapObject* PostProcessNewObject(HeapObject* obj, int space);
+
+  // May replace the given builtin_id with the DeserializeLazy builtin for lazy
+  // deserialization.
+  int MaybeReplaceWithDeserializeLazy(int builtin_id);
 
   // Cached current isolate.
   Isolate* isolate_;
@@ -169,7 +158,6 @@ class Deserializer : public SerializerDeserializer {
 
   SnapshotByteSource source_;
   uint32_t magic_number_;
-  uint32_t num_extra_references_;
 
   // The address of the next object that will be allocated in each space.
   // Each space has a number of chunks reserved by the GC, with each chunk
@@ -190,14 +178,21 @@ class Deserializer : public SerializerDeserializer {
   std::vector<Handle<Script>> new_scripts_;
   std::vector<TransitionArray*> transition_arrays_;
   std::vector<byte*> off_heap_backing_stores_;
-  std::vector<DeferredBuiltinReference> builtin_references_;
 
   const bool deserializing_user_code_;
+
+  // TODO(jgruber): This workaround will no longer be necessary once builtin
+  // reference patching has been removed (through advance allocation).
+  bool deserializing_builtins_ = false;
 
   AllocationAlignment next_alignment_;
 
   // TODO(6593): generalize rehashing, and remove this flag.
   bool can_rehash_;
+
+#ifdef DEBUG
+  uint32_t num_api_references_;
+#endif  // DEBUG
 
   DISALLOW_COPY_AND_ASSIGN(Deserializer);
 };

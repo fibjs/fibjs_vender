@@ -11,7 +11,6 @@
 #include "src/factory.h"
 #include "src/frames-inl.h"
 #include "src/isolate-inl.h"
-#include "src/list-inl.h"
 #include "src/messages.h"
 #include "src/property-details.h"
 #include "src/prototype.h"
@@ -822,10 +821,12 @@ static Handle<Object> ArgumentsForInlinedFunction(
 
 static int FindFunctionInFrame(JavaScriptFrame* frame,
                                Handle<JSFunction> function) {
-  List<FrameSummary> frames(2);
+  std::vector<FrameSummary> frames;
   frame->Summarize(&frames);
-  for (int i = frames.length() - 1; i >= 0; i--) {
-    if (*frames[i].AsJavaScript().function() == *function) return i;
+  for (size_t i = frames.size(); i != 0; i--) {
+    if (*frames[i - 1].AsJavaScript().function() == *function) {
+      return static_cast<int>(i) - 1;
+    }
   }
   return -1;
 }
@@ -850,7 +851,10 @@ Handle<Object> GetFunctionArguments(Isolate* isolate,
     }
 
     // Find the frame that holds the actual arguments passed to the function.
-    it.AdvanceToArgumentsFrame();
+    if (it.frame()->has_adapted_arguments()) {
+      it.AdvanceOneFrame();
+      DCHECK(it.frame()->is_arguments_adaptor());
+    }
     frame = it.frame();
 
     // Get the number of arguments and construct an arguments object
@@ -929,16 +933,16 @@ static inline bool AllowAccessToFunction(Context* current_context,
 class FrameFunctionIterator {
  public:
   explicit FrameFunctionIterator(Isolate* isolate)
-      : isolate_(isolate), frame_iterator_(isolate), frames_(2), index_(0) {
+      : isolate_(isolate), frame_iterator_(isolate) {
     GetFrames();
   }
   MaybeHandle<JSFunction> next() {
     while (true) {
-      if (frames_.length() == 0) return MaybeHandle<JSFunction>();
+      if (frames_.empty()) return MaybeHandle<JSFunction>();
       Handle<JSFunction> next_function =
-          frames_[index_].AsJavaScript().function();
-      index_--;
-      if (index_ < 0) {
+          frames_.back().AsJavaScript().function();
+      frames_.pop_back();
+      if (frames_.empty()) {
         GetFrames();
       }
       // Skip functions from other origins.
@@ -960,18 +964,16 @@ class FrameFunctionIterator {
 
  private:
   void GetFrames() {
-    frames_.Rewind(0);
+    DCHECK(frames_.empty());
     if (frame_iterator_.done()) return;
     JavaScriptFrame* frame = frame_iterator_.frame();
     frame->Summarize(&frames_);
-    DCHECK(frames_.length() > 0);
+    DCHECK(!frames_.empty());
     frame_iterator_.Advance();
-    index_ = frames_.length() - 1;
   }
   Isolate* isolate_;
   JavaScriptFrameIterator frame_iterator_;
-  List<FrameSummary> frames_;
-  int index_;
+  std::vector<FrameSummary> frames_;
 };
 
 

@@ -514,6 +514,26 @@ const CreateLiteralParameters& CreateLiteralParametersOf(const Operator* op) {
   return OpParameter<CreateLiteralParameters>(op);
 }
 
+size_t hash_value(ForInMode mode) { return static_cast<uint8_t>(mode); }
+
+std::ostream& operator<<(std::ostream& os, ForInMode mode) {
+  switch (mode) {
+    case ForInMode::kUseEnumCacheKeysAndIndices:
+      return os << "UseEnumCacheKeysAndIndices";
+    case ForInMode::kUseEnumCacheKeys:
+      return os << "UseEnumCacheKeys";
+    case ForInMode::kGeneric:
+      return os << "Generic";
+  }
+  UNREACHABLE();
+}
+
+ForInMode ForInModeOf(Operator const* op) {
+  DCHECK(op->opcode() == IrOpcode::kJSForInNext ||
+         op->opcode() == IrOpcode::kJSForInPrepare);
+  return OpParameter<ForInMode>(op);
+}
+
 BinaryOperationHint BinaryOperationHintOf(const Operator* op) {
   DCHECK_EQ(IrOpcode::kJSAdd, op->opcode());
   return OpParameter<BinaryOperationHint>(op);
@@ -555,8 +575,7 @@ CompareOperationHint CompareOperationHintOf(const Operator* op) {
   V(HasInPrototypeChain, Operator::kNoProperties, 2, 1)         \
   V(InstanceOf, Operator::kNoProperties, 2, 1)                  \
   V(OrdinaryHasInstance, Operator::kNoProperties, 2, 1)         \
-  V(ForInNext, Operator::kNoProperties, 4, 1)                   \
-  V(ForInPrepare, Operator::kNoProperties, 1, 3)                \
+  V(ForInEnumerate, Operator::kNoProperties, 1, 1)              \
   V(LoadMessage, Operator::kNoThrow | Operator::kNoWrite, 0, 1) \
   V(StoreMessage, Operator::kNoRead | Operator::kNoThrow, 1, 0) \
   V(GeneratorRestoreContinuation, Operator::kNoThrow, 1, 1)     \
@@ -602,6 +621,7 @@ struct JSOperatorGlobalCache final {
   Name##Operator<BinaryOperationHint::kSignedSmallInputs>                     \
       k##Name##SignedSmallInputsOperator;                                     \
   Name##Operator<BinaryOperationHint::kSigned32> k##Name##Signed32Operator;   \
+  Name##Operator<BinaryOperationHint::kNumber> k##Name##NumberOperator;       \
   Name##Operator<BinaryOperationHint::kNumberOrOddball>                       \
       k##Name##NumberOrOddballOperator;                                       \
   Name##Operator<BinaryOperationHint::kString> k##Name##StringOperator;       \
@@ -657,6 +677,8 @@ CACHED_OP_LIST(CACHED_OP)
         return &cache_.k##Name##SignedSmallInputsOperator;            \
       case BinaryOperationHint::kSigned32:                            \
         return &cache_.k##Name##Signed32Operator;                     \
+      case BinaryOperationHint::kNumber:                              \
+        return &cache_.k##Name##NumberOperator;                       \
       case BinaryOperationHint::kNumberOrOddball:                     \
         return &cache_.k##Name##NumberOrOddballOperator;              \
       case BinaryOperationHint::kString:                              \
@@ -852,6 +874,23 @@ const Operator* JSOperatorBuilder::LoadProperty(
       access);                                             // parameter
 }
 
+const Operator* JSOperatorBuilder::ForInNext(ForInMode mode) {
+  return new (zone()) Operator1<ForInMode>(             // --
+      IrOpcode::kJSForInNext, Operator::kNoProperties,  // opcode
+      "JSForInNext",                                    // name
+      4, 1, 1, 1, 1, 2,                                 // counts
+      mode);                                            // parameter
+}
+
+const Operator* JSOperatorBuilder::ForInPrepare(ForInMode mode) {
+  return new (zone()) Operator1<ForInMode>(     // --
+      IrOpcode::kJSForInPrepare,                // opcode
+      Operator::kNoWrite | Operator::kNoThrow,  // flags
+      "JSForInPrepare",                         // name
+      1, 1, 1, 3, 1, 1,                         // counts
+      mode);                                    // parameter
+}
+
 const Operator* JSOperatorBuilder::GeneratorStore(int register_count) {
   return new (zone()) Operator1<int>(                   // --
       IrOpcode::kJSGeneratorStore, Operator::kNoThrow,  // opcode
@@ -1042,13 +1081,12 @@ const Operator* JSOperatorBuilder::CreateLiteralObject(
       parameters);                                                // parameter
 }
 
-const Operator* JSOperatorBuilder::CreateEmptyLiteralObject(int literal_index) {
-  return new (zone()) Operator1<int>(         // --
+const Operator* JSOperatorBuilder::CreateEmptyLiteralObject() {
+  return new (zone()) Operator(               // --
       IrOpcode::kJSCreateEmptyLiteralObject,  // opcode
       Operator::kNoProperties,                // properties
       "JSCreateEmptyLiteralObject",           // name
-      1, 1, 1, 1, 1, 2,                       // counts
-      literal_index);                         // parameter
+      1, 1, 1, 1, 1, 2);                      // counts
 }
 
 const Operator* JSOperatorBuilder::CreateLiteralRegExp(

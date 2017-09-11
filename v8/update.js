@@ -343,13 +343,6 @@ function patch_trap() {
     var txt = fs.readTextFile(fname);
     txt = "#ifndef _WIN32\n\n" + txt + "\n\n#endif\n";
     fs.writeFile(fname, txt);
-
-    fname = 'src/api.cc';
-    console.log("patch", fname);
-
-    var txt = fs.readTextFile(fname);
-    txt = txt.replace("V8::TryHandleSignal", "TryHandleSignal");
-    fs.writeFile(fname, txt);
 }
 
 function patch_snapshot() {

@@ -15,6 +15,7 @@ namespace internal {
 
 // Forward declarations.
 class Isolate;
+class BuiltinSerializer;
 class PartialSerializer;
 class StartupSerializer;
 
@@ -31,13 +32,13 @@ class SnapshotData : public SerializedData {
   }
 
   Vector<const Reservation> Reservations() const;
-  Vector<const byte> Payload() const;
+  virtual Vector<const byte> Payload() const;
 
   Vector<const byte> RawData() const {
     return Vector<const byte>(data_, size_);
   }
 
- private:
+ protected:
   bool IsSane();
 
   // The data header consists of uint32_t-sized entries:
@@ -55,27 +56,66 @@ class SnapshotData : public SerializedData {
   static const uint32_t kHeaderSize = kPayloadLengthOffset + kUInt32Size;
 };
 
+class BuiltinSnapshotData final : public SnapshotData {
+ public:
+  // Used when producing.
+  // This simply forwards to the SnapshotData constructor.
+  // The BuiltinSerializer appends the builtin offset table to the payload.
+  explicit BuiltinSnapshotData(const BuiltinSerializer* serializer);
+
+  // Used when consuming.
+  explicit BuiltinSnapshotData(const Vector<const byte> snapshot)
+      : SnapshotData(snapshot) {
+    CHECK(IsSane());
+  }
+
+  // Returns the serialized payload without the builtin offsets table.
+  Vector<const byte> Payload() const override;
+
+  // Returns only the builtin offsets table.
+  Vector<const uint32_t> BuiltinOffsets() const;
+
+ private:
+  // In addition to the format specified in SnapshotData, BuiltinsSnapshotData
+  // includes a list of builtin at the end of the serialized payload:
+  //
+  // ...
+  // ... serialized payload
+  // ... list of builtins offsets
+};
+
 class Snapshot : public AllStatic {
  public:
+  // ---------------- Deserialization ----------------
+
   // Initialize the Isolate from the internal snapshot. Returns false if no
   // snapshot could be found.
   static bool Initialize(Isolate* isolate);
+
   // Create a new context using the internal partial snapshot.
   static MaybeHandle<Context> NewContextFromSnapshot(
       Isolate* isolate, Handle<JSGlobalProxy> global_proxy,
       size_t context_index,
       v8::DeserializeEmbedderFieldsCallback embedder_fields_deserializer);
 
-  static bool HasContextSnapshot(Isolate* isolate, size_t index);
+  // Deserializes a single given builtin code object. Intended to be called at
+  // runtime after the isolate (and the builtins table) has been fully
+  // initialized.
+  static Code* DeserializeBuiltin(Isolate* isolate, int builtin_id);
 
+  // ---------------- Helper methods ----------------
+
+  static bool HasContextSnapshot(Isolate* isolate, size_t index);
   static bool EmbedsScript(Isolate* isolate);
 
   // To be implemented by the snapshot source.
   static const v8::StartupData* DefaultSnapshotBlob();
 
+  // ---------------- Serialization ----------------
+
   static v8::StartupData CreateSnapshotBlob(
       const SnapshotData* startup_snapshot,
-      const SnapshotData* builtin_snapshot,
+      const BuiltinSnapshotData* builtin_snapshot,
       const std::vector<SnapshotData*>& context_snapshots,
       bool can_be_rehashed);
 

@@ -180,12 +180,6 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
     osr_frame_ = osr_frame;
   }
 
-  // Deoptimization support.
-  bool ShouldEnsureSpaceForLazyDeopt() { return !IsStub(); }
-
-  // Determines whether or not to insert a self-optimization header.
-  bool ShouldSelfOptimize();
-
   void set_deferred_handles(std::shared_ptr<DeferredHandles> deferred_handles);
   void set_deferred_handles(DeferredHandles* deferred_handles);
   std::shared_ptr<DeferredHandles> deferred_handles() {
@@ -207,16 +201,6 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
   }
 
   BailoutReason bailout_reason() const { return bailout_reason_; }
-
-  int prologue_offset() const {
-    DCHECK_NE(Code::kPrologueOffsetNotSet, prologue_offset_);
-    return prologue_offset_;
-  }
-
-  void set_prologue_offset(int prologue_offset) {
-    DCHECK_EQ(Code::kPrologueOffsetNotSet, prologue_offset_);
-    prologue_offset_ = prologue_offset;
-  }
 
   CompilationDependencies* dependencies() { return &dependencies_; }
 
@@ -336,8 +320,6 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
   CompilationDependencies dependencies_;
 
   BailoutReason bailout_reason_;
-
-  int prologue_offset_;
 
   InlinedFunctionList inlined_functions_;
 

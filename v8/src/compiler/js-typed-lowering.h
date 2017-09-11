@@ -14,7 +14,6 @@ namespace v8 {
 namespace internal {
 
 // Forward declarations.
-class CompilationDependencies;
 class Factory;
 
 namespace compiler {
@@ -30,8 +29,7 @@ class TypeCache;
 class V8_EXPORT_PRIVATE JSTypedLowering final
     : public NON_EXPORTED_BASE(AdvancedReducer) {
  public:
-  JSTypedLowering(Editor* editor, CompilationDependencies* dependencies,
-                  JSGraph* jsgraph, Zone* zone);
+  JSTypedLowering(Editor* editor, JSGraph* jsgraph, Zone* zone);
   ~JSTypedLowering() final {}
 
   const char* reducer_name() const override { return "JSTypedLowering"; }
@@ -67,6 +65,7 @@ class V8_EXPORT_PRIVATE JSTypedLowering final
   Reduction ReduceJSCallForwardVarargs(Node* node);
   Reduction ReduceJSCall(Node* node);
   Reduction ReduceJSForInNext(Node* node);
+  Reduction ReduceJSForInPrepare(Node* node);
   Reduction ReduceJSLoadMessage(Node* node);
   Reduction ReduceJSStoreMessage(Node* node);
   Reduction ReduceJSGeneratorStore(Node* node);
@@ -95,9 +94,7 @@ class V8_EXPORT_PRIVATE JSTypedLowering final
   JSOperatorBuilder* javascript() const;
   CommonOperatorBuilder* common() const;
   SimplifiedOperatorBuilder* simplified() const;
-  CompilationDependencies* dependencies() const;
 
-  CompilationDependencies* dependencies_;
   JSGraph* jsgraph_;
   Type* empty_string_type_;
   Type* pointer_comparable_type_;

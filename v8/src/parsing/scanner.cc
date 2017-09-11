@@ -13,7 +13,6 @@
 #include "src/ast/ast-value-factory.h"
 #include "src/char-predicates-inl.h"
 #include "src/conversions-inl.h"
-#include "src/list-inl.h"
 #include "src/parsing/duplicate-finder.h"  // For Scanner::FindSymbol
 
 namespace v8 {
@@ -439,7 +438,7 @@ Token::Value Scanner::SkipWhiteSpace() {
 
       // Advance as long as character is a WhiteSpace or LineTerminator.
       // Remember if the latter is the case.
-      if (unicode_cache_->IsLineTerminator(c0_)) {
+      if (unibrow::IsLineTerminator(c0_)) {
         has_line_terminator_before_next_ = true;
       } else if (!unicode_cache_->IsWhiteSpace(c0_)) {
         break;
@@ -496,7 +495,7 @@ Token::Value Scanner::SkipSingleLineComment() {
   // separately by the lexical grammar and becomes part of the
   // stream of input elements for the syntactic grammar (see
   // ECMA-262, section 7.4).
-  while (c0_ != kEndOfInput && !unicode_cache_->IsLineTerminator(c0_)) {
+  while (c0_ != kEndOfInput && !unibrow::IsLineTerminator(c0_)) {
     Advance();
   }
 
@@ -506,7 +505,7 @@ Token::Value Scanner::SkipSingleLineComment() {
 
 Token::Value Scanner::SkipSourceURLComment() {
   TryToParseSourceURLComment();
-  while (c0_ != kEndOfInput && !unicode_cache_->IsLineTerminator(c0_)) {
+  while (c0_ != kEndOfInput && !unibrow::IsLineTerminator(c0_)) {
     Advance();
   }
 
@@ -542,7 +541,7 @@ void Scanner::TryToParseSourceURLComment() {
   while (c0_ != kEndOfInput && unicode_cache_->IsWhiteSpace(c0_)) {
     Advance();
   }
-  while (c0_ != kEndOfInput && !unicode_cache_->IsLineTerminator(c0_)) {
+  while (c0_ != kEndOfInput && !unibrow::IsLineTerminator(c0_)) {
     // Disallowed characters.
     if (c0_ == '"' || c0_ == '\'') {
       value->Reset();
@@ -555,7 +554,7 @@ void Scanner::TryToParseSourceURLComment() {
     Advance();
   }
   // Allow whitespace at the end.
-  while (c0_ != kEndOfInput && !unicode_cache_->IsLineTerminator(c0_)) {
+  while (c0_ != kEndOfInput && !unibrow::IsLineTerminator(c0_)) {
     if (!unicode_cache_->IsWhiteSpace(c0_)) {
       value->Reset();
       break;
@@ -572,7 +571,7 @@ Token::Value Scanner::SkipMultiLineComment() {
   while (c0_ != kEndOfInput) {
     uc32 ch = c0_;
     Advance();
-    if (c0_ != kEndOfInput && unicode_cache_->IsLineTerminator(ch)) {
+    if (c0_ != kEndOfInput && unibrow::IsLineTerminator(ch)) {
       // Following ECMA-262, section 7.4, a comment containing
       // a newline will make the comment count as a line-terminator.
       has_multiline_comment_before_next_ = true;
@@ -969,7 +968,7 @@ bool Scanner::ScanEscape() {
 
   // Skip escaped newlines.
   if (!in_template_literal && c0_ != kEndOfInput &&
-      unicode_cache_->IsLineTerminator(c)) {
+      unibrow::IsLineTerminator(c)) {
     // Allow escaped CR+LF newlines in multiline string literals.
     if (IsCarriageReturn(c) && IsLineFeed(c0_)) Advance<capture_raw>();
     return true;
@@ -1063,7 +1062,7 @@ Token::Value Scanner::ScanString() {
   }
 
   while (c0_ != quote && c0_ != kEndOfInput &&
-         !unicode_cache_->IsLineTerminator(c0_)) {
+         !unibrow::IsLineTerminator(c0_)) {
     uc32 c = c0_;
     Advance();
     if (c == '\\') {
@@ -1119,7 +1118,7 @@ Token::Value Scanner::ScanTemplateSpan() {
       ReduceRawLiteralLength(2);
       break;
     } else if (c == '\\') {
-      if (c0_ != kEndOfInput && unicode_cache_->IsLineTerminator(c0_)) {
+      if (c0_ != kEndOfInput && unibrow::IsLineTerminator(c0_)) {
         // The TV of LineContinuation :: \ LineTerminatorSequence is the empty
         // code unit sequence.
         uc32 lastChar = c0_;
@@ -1660,12 +1659,14 @@ bool Scanner::ScanRegExpPattern() {
   }
 
   while (c0_ != '/' || in_character_class) {
-    if (c0_ == kEndOfInput || unicode_cache_->IsLineTerminator(c0_))
+    if (c0_ == kEndOfInput || unibrow::IsLineTerminator(c0_)) {
       return false;
+    }
     if (c0_ == '\\') {  // Escape sequence.
       AddLiteralCharAdvance();
-      if (c0_ == kEndOfInput || unicode_cache_->IsLineTerminator(c0_))
+      if (c0_ == kEndOfInput || unibrow::IsLineTerminator(c0_)) {
         return false;
+      }
       AddLiteralCharAdvance();
       // If the escape allows more characters, i.e., \x??, \u????, or \c?,
       // only "safe" characters are allowed (letters, digits, underscore),

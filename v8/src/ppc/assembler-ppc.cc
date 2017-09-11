@@ -212,18 +212,11 @@ Operand Operand::EmbeddedCode(CodeStub* stub) {
   return result;
 }
 
-MemOperand::MemOperand(Register rn, int32_t offset) {
-  ra_ = rn;
-  rb_ = no_reg;
-  offset_ = offset;
-}
+MemOperand::MemOperand(Register rn, int32_t offset)
+    : ra_(rn), offset_(offset), rb_(no_reg) {}
 
-
-MemOperand::MemOperand(Register ra, Register rb) {
-  ra_ = ra;
-  rb_ = rb;
-  offset_ = 0;
-}
+MemOperand::MemOperand(Register ra, Register rb)
+    : ra_(ra), offset_(0), rb_(rb) {}
 
 void Assembler::AllocateAndInstallRequestedHeapObjects(Isolate* isolate) {
   for (auto& request : heap_object_requests_) {
@@ -312,12 +305,12 @@ Condition Assembler::GetCondition(Instr instr) {
 
 
 bool Assembler::IsLis(Instr instr) {
-  return ((instr & kOpcodeMask) == ADDIS) && GetRA(instr).is(r0);
+  return ((instr & kOpcodeMask) == ADDIS) && GetRA(instr) == r0;
 }
 
 
 bool Assembler::IsLi(Instr instr) {
-  return ((instr & kOpcodeMask) == ADDI) && GetRA(instr).is(r0);
+  return ((instr & kOpcodeMask) == ADDI) && GetRA(instr) == r0;
 }
 
 
@@ -331,16 +324,12 @@ bool Assembler::IsBranch(Instr instr) { return ((instr & kOpcodeMask) == BCX); }
 
 
 Register Assembler::GetRA(Instr instr) {
-  Register reg;
-  reg.reg_code = Instruction::RAValue(instr);
-  return reg;
+  return Register::from_code(Instruction::RAValue(instr));
 }
 
 
 Register Assembler::GetRB(Instr instr) {
-  Register reg;
-  reg.reg_code = Instruction::RBValue(instr);
-  return reg;
+  return Register::from_code(Instruction::RBValue(instr));
 }
 
 
@@ -918,13 +907,13 @@ void Assembler::divwu(Register dst, Register src1, Register src2, OEBit o,
 
 
 void Assembler::addi(Register dst, Register src, const Operand& imm) {
-  DCHECK(!src.is(r0));  // use li instead to show intent
+  DCHECK(src != r0);  // use li instead to show intent
   d_form(ADDI, dst, src, imm.immediate(), true);
 }
 
 
 void Assembler::addis(Register dst, Register src, const Operand& imm) {
-  DCHECK(!src.is(r0));  // use lis instead to show intent
+  DCHECK(src != r0);  // use lis instead to show intent
   d_form(ADDIS, dst, src, imm.immediate(), true);
 }
 
@@ -1035,31 +1024,31 @@ void Assembler::mr(Register dst, Register src) {
 
 
 void Assembler::lbz(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(LBZ, dst, src.ra(), src.offset(), true);
 }
 
 
 void Assembler::lhz(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(LHZ, dst, src.ra(), src.offset(), true);
 }
 
 
 void Assembler::lwz(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(LWZ, dst, src.ra(), src.offset(), true);
 }
 
 
 void Assembler::lwzu(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(LWZU, dst, src.ra(), src.offset(), true);
 }
 
 
 void Assembler::lha(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(LHA, dst, src.ra(), src.offset(), true);
 }
 
@@ -1067,7 +1056,7 @@ void Assembler::lha(Register dst, const MemOperand& src) {
 void Assembler::lwa(Register dst, const MemOperand& src) {
 #if V8_TARGET_ARCH_PPC64
   int offset = src.offset();
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   CHECK(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
   emit(LD | dst.code() * B21 | src.ra().code() * B16 | offset | 2);
@@ -1077,25 +1066,25 @@ void Assembler::lwa(Register dst, const MemOperand& src) {
 }
 
 void Assembler::stb(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(STB, dst, src.ra(), src.offset(), true);
 }
 
 
 void Assembler::sth(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(STH, dst, src.ra(), src.offset(), true);
 }
 
 
 void Assembler::stw(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(STW, dst, src.ra(), src.offset(), true);
 }
 
 
 void Assembler::stwu(Register dst, const MemOperand& src) {
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   d_form(STWU, dst, src.ra(), src.offset(), true);
 }
 
@@ -1109,7 +1098,7 @@ void Assembler::neg(Register rt, Register ra, OEBit o, RCBit r) {
 // 64bit specific instructions
 void Assembler::ld(Register rd, const MemOperand& src) {
   int offset = src.offset();
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   CHECK(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
   emit(LD | rd.code() * B21 | src.ra().code() * B16 | offset);
@@ -1118,7 +1107,7 @@ void Assembler::ld(Register rd, const MemOperand& src) {
 
 void Assembler::ldu(Register rd, const MemOperand& src) {
   int offset = src.offset();
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   CHECK(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
   emit(LD | rd.code() * B21 | src.ra().code() * B16 | offset | 1);
@@ -1127,7 +1116,7 @@ void Assembler::ldu(Register rd, const MemOperand& src) {
 
 void Assembler::std(Register rs, const MemOperand& src) {
   int offset = src.offset();
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   CHECK(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
   emit(STD | rs.code() * B21 | src.ra().code() * B16 | offset);
@@ -1136,7 +1125,7 @@ void Assembler::std(Register rs, const MemOperand& src) {
 
 void Assembler::stdu(Register rs, const MemOperand& src) {
   int offset = src.offset();
-  DCHECK(!src.ra_.is(r0));
+  DCHECK(src.ra_ != r0);
   CHECK(!(offset & 3) && is_int16(offset));
   offset = kImm16Mask & offset;
   emit(STD | rs.code() * B21 | src.ra().code() * B16 | offset | 1);
@@ -1276,9 +1265,9 @@ bool Assembler::use_constant_pool_for_mov(Register dst, const Operand& src,
   }
   intptr_t value = src.immediate();
 #if V8_TARGET_ARCH_PPC64
-  bool allowOverflow = !((canOptimize && is_int32(value)) || dst.is(r0));
+  bool allowOverflow = !((canOptimize && is_int32(value)) || dst == r0);
 #else
-  bool allowOverflow = !(canOptimize || dst.is(r0));
+  bool allowOverflow = !(canOptimize || dst == r0);
 #endif
   if (canOptimize && is_int16(value)) {
     // Prefer a single-instruction load-immediate.
@@ -1668,7 +1657,7 @@ void Assembler::isync() { emit(EXT1 | ISYNC); }
 void Assembler::lfd(const DoubleRegister frt, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   CHECK(is_int16(offset));
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
@@ -1679,7 +1668,7 @@ void Assembler::lfd(const DoubleRegister frt, const MemOperand& src) {
 void Assembler::lfdu(const DoubleRegister frt, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   CHECK(is_int16(offset));
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
@@ -1691,7 +1680,7 @@ void Assembler::lfs(const DoubleRegister frt, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
   CHECK(is_int16(offset));
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
   emit(LFS | frt.code() * B21 | ra.code() * B16 | imm16);
@@ -1702,7 +1691,7 @@ void Assembler::lfsu(const DoubleRegister frt, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
   CHECK(is_int16(offset));
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
   emit(LFSU | frt.code() * B21 | ra.code() * B16 | imm16);
@@ -1713,7 +1702,7 @@ void Assembler::stfd(const DoubleRegister frs, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
   CHECK(is_int16(offset));
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
   emit(STFD | frs.code() * B21 | ra.code() * B16 | imm16);
@@ -1724,7 +1713,7 @@ void Assembler::stfdu(const DoubleRegister frs, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
   CHECK(is_int16(offset));
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
   emit(STFDU | frs.code() * B21 | ra.code() * B16 | imm16);
@@ -1735,7 +1724,7 @@ void Assembler::stfs(const DoubleRegister frs, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
   CHECK(is_int16(offset));
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
   emit(STFS | frs.code() * B21 | ra.code() * B16 | imm16);
@@ -1746,7 +1735,7 @@ void Assembler::stfsu(const DoubleRegister frs, const MemOperand& src) {
   int offset = src.offset();
   Register ra = src.ra();
   CHECK(is_int16(offset));
-  DCHECK(!ra.is(r0));
+  DCHECK(ra != r0);
   int imm16 = offset & kImm16Mask;
   // could be x_form instruction with some casting magic
   emit(STFSU | frs.code() * B21 | ra.code() * B16 | imm16);

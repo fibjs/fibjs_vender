@@ -20,6 +20,62 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
+namespace {
+
+bool CanBePrimitive(Node* node) {
+  switch (node->opcode()) {
+    case IrOpcode::kJSCreate:
+    case IrOpcode::kJSCreateArguments:
+    case IrOpcode::kJSCreateArray:
+    case IrOpcode::kJSCreateClosure:
+    case IrOpcode::kJSCreateEmptyLiteralArray:
+    case IrOpcode::kJSCreateEmptyLiteralObject:
+    case IrOpcode::kJSCreateIterResultObject:
+    case IrOpcode::kJSCreateKeyValueArray:
+    case IrOpcode::kJSCreateLiteralArray:
+    case IrOpcode::kJSCreateLiteralObject:
+    case IrOpcode::kJSCreateLiteralRegExp:
+    case IrOpcode::kJSConstructForwardVarargs:
+    case IrOpcode::kJSConstruct:
+    case IrOpcode::kJSConstructWithArrayLike:
+    case IrOpcode::kJSConstructWithSpread:
+    case IrOpcode::kJSConvertReceiver:
+    case IrOpcode::kJSGetSuperConstructor:
+    case IrOpcode::kJSToObject:
+      return false;
+    case IrOpcode::kHeapConstant: {
+      Handle<HeapObject> value = HeapObjectMatcher(node).Value();
+      return value->IsPrimitive();
+    }
+    default:
+      return true;
+  }
+}
+
+bool CanBeNullOrUndefined(Node* node) {
+  if (CanBePrimitive(node)) {
+    switch (node->opcode()) {
+      case IrOpcode::kJSToBoolean:
+      case IrOpcode::kJSToInteger:
+      case IrOpcode::kJSToLength:
+      case IrOpcode::kJSToName:
+      case IrOpcode::kJSToNumber:
+      case IrOpcode::kJSToString:
+        return false;
+      case IrOpcode::kHeapConstant: {
+        Handle<HeapObject> value = HeapObjectMatcher(node).Value();
+        Isolate* const isolate = value->GetIsolate();
+        return value->IsNullOrUndefined(isolate);
+      }
+      default:
+        return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace
+
 Reduction JSCallReducer::Reduce(Node* node) {
   switch (node->opcode()) {
     case IrOpcode::kJSConstruct:
@@ -104,42 +160,29 @@ Reduction JSCallReducer::ReduceNumberConstructor(Node* node) {
   return Changed(node);
 }
 
-namespace {
+// ES section #sec-object-constructor
+Reduction JSCallReducer::ReduceObjectConstructor(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSCall, node->opcode());
+  CallParameters const& p = CallParametersOf(node->op());
+  if (p.arity() < 3) return NoChange();
+  Node* value = (p.arity() >= 3) ? NodeProperties::GetValueInput(node, 2)
+                                 : jsgraph()->UndefinedConstant();
 
-bool CanBeNullOrUndefined(Node* node) {
-  switch (node->opcode()) {
-    case IrOpcode::kJSCreate:
-    case IrOpcode::kJSCreateArguments:
-    case IrOpcode::kJSCreateArray:
-    case IrOpcode::kJSCreateClosure:
-    case IrOpcode::kJSCreateIterResultObject:
-    case IrOpcode::kJSCreateKeyValueArray:
-    case IrOpcode::kJSCreateLiteralArray:
-    case IrOpcode::kJSCreateLiteralObject:
-    case IrOpcode::kJSCreateLiteralRegExp:
-    case IrOpcode::kJSConstruct:
-    case IrOpcode::kJSConstructForwardVarargs:
-    case IrOpcode::kJSConstructWithSpread:
-    case IrOpcode::kJSConvertReceiver:
-    case IrOpcode::kJSToBoolean:
-    case IrOpcode::kJSToInteger:
-    case IrOpcode::kJSToLength:
-    case IrOpcode::kJSToName:
-    case IrOpcode::kJSToNumber:
-    case IrOpcode::kJSToObject:
-    case IrOpcode::kJSToString:
-      return false;
-    case IrOpcode::kHeapConstant: {
-      Handle<HeapObject> value = HeapObjectMatcher(node).Value();
-      Isolate* const isolate = value->GetIsolate();
-      return value->IsNull(isolate) || value->IsUndefined(isolate);
+  // We can fold away the Object(x) call if |x| is definitely not a primitive.
+  if (CanBePrimitive(value)) {
+    if (!CanBeNullOrUndefined(value)) {
+      // Turn the {node} into a {JSToObject} call if we know that
+      // the {value} cannot be null or undefined.
+      NodeProperties::ReplaceValueInputs(node, value);
+      NodeProperties::ChangeOp(node, javascript()->ToObject());
+      return Changed(node);
     }
-    default:
-      return true;
+  } else {
+    ReplaceWithValue(node, value);
+    return Replace(node);
   }
+  return NoChange();
 }
-
-}  // namespace
 
 // ES6 section 19.2.3.1 Function.prototype.apply ( thisArg, argArray )
 Reduction JSCallReducer::ReduceFunctionPrototypeApply(Node* node) {
@@ -379,6 +422,84 @@ Reduction JSCallReducer::ReduceObjectPrototypeGetProto(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCall, node->opcode());
   Node* receiver = NodeProperties::GetValueInput(node, 1);
   return ReduceObjectGetPrototype(node, receiver);
+}
+
+// ES #sec-object.prototype.hasownproperty
+Reduction JSCallReducer::ReduceObjectPrototypeHasOwnProperty(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSCall, node->opcode());
+  CallParameters const& params = CallParametersOf(node->op());
+  int const argc = static_cast<int>(params.arity() - 2);
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* name = (argc >= 1) ? NodeProperties::GetValueInput(node, 2)
+                           : jsgraph()->UndefinedConstant();
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+
+  // We can optimize a call to Object.prototype.hasOwnProperty if it's being
+  // used inside a fast-mode for..in, so for code like this:
+  //
+  //   for (name in receiver) {
+  //     if (receiver.hasOwnProperty(name)) {
+  //        ...
+  //     }
+  //   }
+  //
+  // If the for..in is in fast-mode, we know that the {receiver} has {name}
+  // as own property, otherwise the enumeration wouldn't include it. The graph
+  // constructed by the BytecodeGraphBuilder in this case looks like this:
+
+  // receiver
+  //  ^    ^
+  //  |    |
+  //  |    +-+
+  //  |      |
+  //  |   JSToObject
+  //  |      ^
+  //  |      |
+  //  |   JSForInNext
+  //  |      ^
+  //  +----+ |
+  //       | |
+  //  JSCall[hasOwnProperty]
+
+  // We can constant-fold the {node} to True in this case, and insert
+  // a (potentially redundant) map check to guard the fact that the
+  // {receiver} map didn't change since the dominating JSForInNext. This
+  // map check is only necessary when TurboFan cannot prove that there
+  // is no observable side effect between the {JSForInNext} and the
+  // {JSCall} to Object.prototype.hasOwnProperty.
+  //
+  // Also note that it's safe to look through the {JSToObject}, since the
+  // Object.prototype.hasOwnProperty does an implicit ToObject anyway, and
+  // these operations are not observable.
+  if (name->opcode() == IrOpcode::kJSForInNext) {
+    ForInMode const mode = ForInModeOf(name->op());
+    if (mode != ForInMode::kGeneric) {
+      Node* object = NodeProperties::GetValueInput(name, 0);
+      Node* cache_type = NodeProperties::GetValueInput(name, 2);
+      if (object->opcode() == IrOpcode::kJSToObject) {
+        object = NodeProperties::GetValueInput(object, 0);
+      }
+      if (object == receiver) {
+        // No need to repeat the map check if we can prove that there's no
+        // observable side effect between {effect} and {name].
+        if (!NodeProperties::NoObservableSideEffectBetween(effect, name)) {
+          Node* receiver_map = effect =
+              graph()->NewNode(simplified()->LoadField(AccessBuilder::ForMap()),
+                               receiver, effect, control);
+          Node* check = graph()->NewNode(simplified()->ReferenceEqual(),
+                                         receiver_map, cache_type);
+          effect =
+              graph()->NewNode(simplified()->CheckIf(), check, effect, control);
+        }
+        Node* value = jsgraph()->TrueConstant();
+        ReplaceWithValue(node, value, effect, control);
+        return Replace(value);
+      }
+    }
+  }
+
+  return NoChange();
 }
 
 // ES #sec-object.prototype.isprototypeof
@@ -1098,12 +1219,9 @@ Reduction JSCallReducer::ReduceCallOrConstructWithArrayLikeOrSpread(
     // TODO(turbofan): Further relax this constraint.
     if (formal_parameter_count != 0) {
       Node* effect = NodeProperties::GetEffectInput(node);
-      while (effect != arguments_list) {
-        if (effect->op()->EffectInputCount() != 1 ||
-            !(effect->op()->properties() & Operator::kNoWrite)) {
-          return NoChange();
-        }
-        effect = NodeProperties::GetEffectInput(effect);
+      if (!NodeProperties::NoObservableSideEffectBetween(effect,
+                                                         arguments_list)) {
+        return NoChange();
       }
     }
   } else if (type == CreateArgumentsType::kRestParameter) {
@@ -1237,10 +1355,14 @@ Reduction JSCallReducer::ReduceJSCall(Node* node) {
           return ReduceFunctionPrototypeHasInstance(node);
         case Builtins::kNumberConstructor:
           return ReduceNumberConstructor(node);
+        case Builtins::kObjectConstructor:
+          return ReduceObjectConstructor(node);
         case Builtins::kObjectGetPrototypeOf:
           return ReduceObjectGetPrototypeOf(node);
         case Builtins::kObjectPrototypeGetProto:
           return ReduceObjectPrototypeGetProto(node);
+        case Builtins::kObjectPrototypeHasOwnProperty:
+          return ReduceObjectPrototypeHasOwnProperty(node);
         case Builtins::kObjectPrototypeIsPrototypeOf:
           return ReduceObjectPrototypeIsPrototypeOf(node);
         case Builtins::kReflectApply:
@@ -1470,6 +1592,27 @@ Reduction JSCallReducer::ReduceJSConstruct(Node* node) {
         NodeProperties::ReplaceValueInput(node, new_target, 1);
         NodeProperties::ChangeOp(node, javascript()->CreateArray(arity, site));
         return Changed(node);
+      }
+
+      // Check for the ObjectConstructor.
+      if (*function == function->native_context()->object_function()) {
+        // If no value is passed, we can immediately lower to a simple
+        // JSCreate and don't need to do any massaging of the {node}.
+        if (arity == 0) {
+          NodeProperties::ChangeOp(node, javascript()->Create());
+          return Changed(node);
+        }
+
+        // Otherwise we can only lower to JSCreate if we know that
+        // the value parameter is ignored, which is only the case if
+        // the {new_target} and {target} are definitely not identical.
+        HeapObjectMatcher mnew_target(new_target);
+        if (mnew_target.HasValue() && *mnew_target.Value() != *function) {
+          // Drop the value inputs.
+          for (int i = arity; i > 0; --i) node->RemoveInput(i);
+          NodeProperties::ChangeOp(node, javascript()->Create());
+          return Changed(node);
+        }
       }
     }
 

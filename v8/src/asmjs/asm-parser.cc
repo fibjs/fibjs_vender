@@ -12,7 +12,6 @@
 #include "src/asmjs/asm-js.h"
 #include "src/asmjs/asm-types.h"
 #include "src/base/optional.h"
-#include "src/objects-inl.h"  // TODO(mstarzinger): Temporary cycle breaker.
 #include "src/parsing/scanner.h"
 #include "src/wasm/wasm-opcodes.h"
 
@@ -88,6 +87,7 @@ AsmJsParser::AsmJsParser(Zone* zone, uintptr_t stack_limit,
       call_coercion_deferred_(nullptr),
       pending_label_(0),
       global_imports_(zone) {
+  module_builder_->SetMinMemorySize(0);
   InitializeStdlibTypes();
 }
 

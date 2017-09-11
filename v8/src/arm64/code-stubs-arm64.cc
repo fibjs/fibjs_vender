@@ -863,8 +863,8 @@ RecordWriteStub::RegisterAllocation::RegisterAllocation(Register object,
   CPURegList pool_available = GetValidRegistersForAllocation();
   CPURegList used_regs(object, address, scratch);
   pool_available.Remove(used_regs);
-  scratch1_ = Register(pool_available.PopLowestIndex());
-  scratch2_ = Register(pool_available.PopLowestIndex());
+  scratch1_ = pool_available.PopLowestIndex().Reg();
+  scratch2_ = pool_available.PopLowestIndex().Reg();
 
   // The scratch registers will be restored by other means so we don't need
   // to save them with the other caller saved registers.
@@ -1852,7 +1852,7 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
     // Look for the constructor if |accessor_holder| is not a function.
     Label skip_looking_for_constructor;
     __ Ldr(scratch, FieldMemOperand(accessor_holder, HeapObject::kMapOffset));
-    __ Ldr(scratch2, FieldMemOperand(scratch, Map::kBitFieldOffset));
+    __ Ldrb(scratch2, FieldMemOperand(scratch, Map::kBitFieldOffset));
     __ Tst(scratch2, Operand(1 << Map::kIsConstructor));
     __ B(ne, &skip_looking_for_constructor);
     __ GetMapConstructor(context, scratch, scratch, scratch2);

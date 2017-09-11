@@ -57,8 +57,9 @@ InterpreterAssembler::InterpreterAssembler(CodeAssemblerState* state,
                                   [this] { CallEpilogue(); });
 
   // Save the bytecode offset immediately if bytecode will make a call along the
-  // critical path.
-  if (Bytecodes::MakesCallAlongCriticalPath(bytecode)) {
+  // critical path, or it is a return bytecode.
+  if (Bytecodes::MakesCallAlongCriticalPath(bytecode) ||
+      bytecode_ == Bytecode::kReturn) {
     SaveBytecodeOffset();
   }
 }
@@ -516,6 +517,16 @@ Node* InterpreterAssembler::BytecodeOperandRuntimeId(int operand_index) {
   return BytecodeUnsignedOperand(operand_index, operand_size);
 }
 
+Node* InterpreterAssembler::BytecodeOperandNativeContextIndex(
+    int operand_index) {
+  DCHECK(OperandType::kNativeContextIndex ==
+         Bytecodes::GetOperandType(bytecode_, operand_index));
+  OperandSize operand_size =
+      Bytecodes::GetOperandSize(bytecode_, operand_index, operand_scale());
+  return ChangeUint32ToWord(
+      BytecodeUnsignedOperand(operand_index, operand_size));
+}
+
 Node* InterpreterAssembler::BytecodeOperandIntrinsicId(int operand_index) {
   DCHECK(OperandType::kIntrinsicId ==
          Bytecodes::GetOperandType(bytecode_, operand_index));
@@ -640,6 +651,10 @@ void InterpreterAssembler::CollectCallFeedback(Node* target, Node* context,
                 &mark_megamorphic);
 
       CreateWeakCellInFeedbackVector(feedback_vector, SmiTag(slot_id), target);
+      // Reset profiler ticks.
+      StoreObjectFieldNoWriteBarrier(feedback_vector,
+                                     FeedbackVector::kProfilerTicksOffset,
+                                     SmiConstant(0));
       Goto(&done);
     }
 
@@ -653,6 +668,10 @@ void InterpreterAssembler::CollectCallFeedback(Node* target, Node* context,
           feedback_vector, slot_id,
           HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())),
           SKIP_WRITE_BARRIER);
+      // Reset profiler ticks.
+      StoreObjectFieldNoWriteBarrier(feedback_vector,
+                                     FeedbackVector::kProfilerTicksOffset,
+                                     SmiConstant(0));
       Goto(&done);
     }
   }
@@ -826,6 +845,10 @@ Node* InterpreterAssembler::Construct(Node* target, Node* context,
       {
         var_site.Bind(CreateAllocationSiteInFeedbackVector(feedback_vector,
                                                            SmiTag(slot_id)));
+        // Reset profiler ticks.
+        StoreObjectFieldNoWriteBarrier(feedback_vector,
+                                       FeedbackVector::kProfilerTicksOffset,
+                                       SmiConstant(0));
         Goto(&construct_array);
       }
 
@@ -833,6 +856,10 @@ Node* InterpreterAssembler::Construct(Node* target, Node* context,
       {
         CreateWeakCellInFeedbackVector(feedback_vector, SmiTag(slot_id),
                                        new_target);
+        // Reset profiler ticks.
+        StoreObjectFieldNoWriteBarrier(feedback_vector,
+                                       FeedbackVector::kProfilerTicksOffset,
+                                       SmiConstant(0));
         Goto(&construct);
       }
     }
@@ -847,6 +874,10 @@ Node* InterpreterAssembler::Construct(Node* target, Node* context,
           feedback_vector, slot_id,
           HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())),
           SKIP_WRITE_BARRIER);
+      // Reset profiler ticks.
+      StoreObjectFieldNoWriteBarrier(feedback_vector,
+                                     FeedbackVector::kProfilerTicksOffset,
+                                     SmiConstant(0));
       Goto(&construct);
     }
   }
@@ -948,6 +979,10 @@ Node* InterpreterAssembler::ConstructWithSpread(Node* target, Node* context,
 
       CreateWeakCellInFeedbackVector(feedback_vector, SmiTag(slot_id),
                                      new_target);
+      // Reset profiler ticks.
+      StoreObjectFieldNoWriteBarrier(feedback_vector,
+                                     FeedbackVector::kProfilerTicksOffset,
+                                     SmiConstant(0));
       Goto(&construct);
     }
 
@@ -961,6 +996,10 @@ Node* InterpreterAssembler::ConstructWithSpread(Node* target, Node* context,
           feedback_vector, slot_id,
           HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())),
           SKIP_WRITE_BARRIER);
+      // Reset profiler ticks.
+      StoreObjectFieldNoWriteBarrier(feedback_vector,
+                                     FeedbackVector::kProfilerTicksOffset,
+                                     SmiConstant(0));
       Goto(&construct);
     }
   }
@@ -998,7 +1037,8 @@ Node* InterpreterAssembler::CallRuntimeN(Node* function_id, Node* context,
 }
 
 void InterpreterAssembler::UpdateInterruptBudget(Node* weight, bool backward) {
-  Label ok(this), interrupt_check(this, Label::kDeferred), end(this);
+  Comment("[ UpdateInterruptBudget");
+
   Node* budget_offset =
       IntPtrConstant(BytecodeArray::kInterruptBudgetOffset - kHeapObjectTag);
 
@@ -1013,28 +1053,35 @@ void InterpreterAssembler::UpdateInterruptBudget(Node* weight, bool backward) {
   // Make sure we include the current bytecode in the budget calculation.
   Node* budget_after_bytecode =
       Int32Sub(old_budget, Int32Constant(CurrentBytecodeSize()));
+
   if (backward) {
     new_budget.Bind(Int32Sub(budget_after_bytecode, weight));
-  } else {
-    new_budget.Bind(Int32Add(budget_after_bytecode, weight));
-  }
-  Node* condition =
-      Int32GreaterThanOrEqual(new_budget.value(), Int32Constant(0));
-  Branch(condition, &ok, &interrupt_check);
 
-  // Perform interrupt and reset budget.
-  BIND(&interrupt_check);
-  {
-    CallRuntime(Runtime::kInterrupt, GetContext());
-    new_budget.Bind(Int32Constant(Interpreter::InterruptBudget()));
-    Goto(&ok);
+    Node* condition =
+        Int32GreaterThanOrEqual(new_budget.value(), Int32Constant(0));
+    Label ok(this), interrupt_check(this, Label::kDeferred);
+    Branch(condition, &ok, &interrupt_check);
+
+    // Perform interrupt and reset budget.
+    BIND(&interrupt_check);
+    {
+      CallRuntime(Runtime::kInterrupt, GetContext());
+      new_budget.Bind(Int32Constant(Interpreter::kInterruptBudget));
+      Goto(&ok);
+    }
+
+    BIND(&ok);
+  } else {
+    // For a forward jump, we know we only increase the interrupt budget, so
+    // no need to check if it's below zero.
+    new_budget.Bind(Int32Add(budget_after_bytecode, weight));
   }
 
   // Update budget.
-  BIND(&ok);
   StoreNoWriteBarrier(MachineRepresentation::kWord32,
                       BytecodeArrayTaggedPointer(), budget_offset,
                       new_budget.value());
+  Comment("] UpdateInterruptBudget");
 }
 
 Node* InterpreterAssembler::Advance() { return Advance(CurrentBytecodeSize()); }
@@ -1254,7 +1301,7 @@ Node* InterpreterAssembler::TruncateTaggedToWord32WithFeedback(
         var_result.Bind(TruncateHeapNumberValueToWord32(value));
         var_type_feedback->Bind(
             SmiOr(var_type_feedback->value(),
-                  SmiConstant(BinaryOperationFeedback::kNumberOrOddball)));
+                  SmiConstant(BinaryOperationFeedback::kNumber)));
         Goto(&done_loop);
       }
 

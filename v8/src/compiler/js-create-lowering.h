@@ -67,13 +67,16 @@ class V8_EXPORT_PRIVATE JSCreateLowering final
                            Handle<AllocationSite> site);
   Reduction ReduceNewArray(Node* node, std::vector<Node*> values,
                            Handle<AllocationSite> site);
-  Reduction ReduceNewObject(Node* node);
 
   Node* AllocateArguments(Node* effect, Node* control, Node* frame_state);
   Node* AllocateRestArguments(Node* effect, Node* control, Node* frame_state,
                               int start_index);
   Node* AllocateAliasedArguments(Node* effect, Node* control, Node* frame_state,
                                  Node* context, Handle<SharedFunctionInfo>,
+                                 bool* has_aliased_arguments);
+  Node* AllocateAliasedArguments(Node* effect, Node* control, Node* context,
+                                 Node* arguments_frame, Node* arguments_length,
+                                 Handle<SharedFunctionInfo>,
                                  bool* has_aliased_arguments);
   Node* AllocateElements(Node* effect, Node* control,
                          ElementsKind elements_kind, int capacity,

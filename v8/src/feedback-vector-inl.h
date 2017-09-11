@@ -5,7 +5,7 @@
 #ifndef V8_FEEDBACK_VECTOR_INL_H_
 #define V8_FEEDBACK_VECTOR_INL_H_
 
-#include "src/factory.h"
+#include "src/factory-inl.h"
 #include "src/feedback-vector.h"
 #include "src/globals.h"
 #include "src/heap/heap-inl.h"
@@ -31,7 +31,6 @@ FeedbackSlot FeedbackVectorSpecBase<Derived>::AddSlot(FeedbackSlotKind kind) {
 
 template <typename Derived>
 FeedbackSlot FeedbackVectorSpecBase<Derived>::AddTypeProfileSlot() {
-  DCHECK(FLAG_type_profile);
   FeedbackSlot slot = AddSlot(FeedbackSlotKind::kTypeProfile);
   CHECK_EQ(FeedbackVectorSpec::kTypeProfileSlotIndex,
            FeedbackVector::GetIndex(slot));
@@ -63,7 +62,7 @@ FeedbackVector* FeedbackVector::cast(Object* obj) {
 
 int FeedbackMetadata::GetSlotSize(FeedbackSlotKind kind) {
   switch (kind) {
-    case FeedbackSlotKind::kGeneral:
+    case FeedbackSlotKind::kForIn:
     case FeedbackSlotKind::kCompareOp:
     case FeedbackSlotKind::kBinaryOp:
     case FeedbackSlotKind::kLiteral:
@@ -183,6 +182,8 @@ BinaryOperationHint BinaryOperationHintFromFeedback(int type_feedback) {
       return BinaryOperationHint::kSignedSmall;
     case BinaryOperationFeedback::kSignedSmallInputs:
       return BinaryOperationHint::kSignedSmallInputs;
+    case BinaryOperationFeedback::kNumber:
+      return BinaryOperationHint::kNumber;
     case BinaryOperationFeedback::kNumberOrOddball:
       return BinaryOperationHint::kNumberOrOddball;
     case BinaryOperationFeedback::kString:
@@ -219,9 +220,23 @@ CompareOperationHint CompareOperationHintFromFeedback(int type_feedback) {
   UNREACHABLE();
 }
 
+// Helper function to transform the feedback to ForInHint.
+ForInHint ForInHintFromFeedback(int type_feedback) {
+  switch (type_feedback) {
+    case ForInFeedback::kNone:
+      return ForInHint::kNone;
+    case ForInFeedback::kEnumCacheKeys:
+      return ForInHint::kEnumCacheKeys;
+    case ForInFeedback::kEnumCacheKeysAndIndices:
+      return ForInHint::kEnumCacheKeysAndIndices;
+    default:
+      return ForInHint::kAny;
+  }
+  UNREACHABLE();
+}
+
 void FeedbackVector::ComputeCounts(int* with_type_info, int* generic,
-                                   int* vector_ic_count,
-                                   bool code_is_interpreted) {
+                                   int* vector_ic_count) {
   Object* megamorphic_sentinel =
       *FeedbackVector::MegamorphicSentinel(GetIsolate());
   int with = 0;
@@ -235,11 +250,6 @@ void FeedbackVector::ComputeCounts(int* with_type_info, int* generic,
     Object* const obj = Get(slot);
     switch (kind) {
       case FeedbackSlotKind::kCall:
-        // If we are not running interpreted code, we need to ignore the special
-        // IC slots for call/construct used by the interpreter.
-        // TODO(mvstanton): Remove code_is_interpreted when full code is retired
-        // from service.
-        if (!code_is_interpreted) break;
       case FeedbackSlotKind::kLoadProperty:
       case FeedbackSlotKind::kLoadGlobalInsideTypeof:
       case FeedbackSlotKind::kLoadGlobalNotInsideTypeof:
@@ -257,34 +267,24 @@ void FeedbackVector::ComputeCounts(int* with_type_info, int* generic,
           with++;
         } else if (obj == megamorphic_sentinel) {
           gen++;
-          if (code_is_interpreted) with++;
+          with++;
         }
         total++;
         break;
       }
-      case FeedbackSlotKind::kBinaryOp:
-        // If we are not running interpreted code, we need to ignore the special
-        // IC slots for binaryop/compare used by the interpreter.
-        // TODO(mvstanton): Remove code_is_interpreted when full code is retired
-        // from service.
-        if (code_is_interpreted) {
-          int const feedback = Smi::ToInt(obj);
-          BinaryOperationHint hint = BinaryOperationHintFromFeedback(feedback);
-          if (hint == BinaryOperationHint::kAny) {
-            gen++;
-          }
-          if (hint != BinaryOperationHint::kNone) {
-            with++;
-          }
-          total++;
+      case FeedbackSlotKind::kBinaryOp: {
+        int const feedback = Smi::ToInt(obj);
+        BinaryOperationHint hint = BinaryOperationHintFromFeedback(feedback);
+        if (hint == BinaryOperationHint::kAny) {
+          gen++;
         }
+        if (hint != BinaryOperationHint::kNone) {
+          with++;
+        }
+        total++;
         break;
+      }
       case FeedbackSlotKind::kCompareOp: {
-        // If we are not running interpreted code, we need to ignore the special
-        // IC slots for binaryop/compare used by the interpreter.
-        // TODO(mvstanton): Remove code_is_interpreted when full code is retired
-        // from service.
-        if (code_is_interpreted) {
           int const feedback = Smi::ToInt(obj);
           CompareOperationHint hint =
               CompareOperationHintFromFeedback(feedback);
@@ -295,11 +295,21 @@ void FeedbackVector::ComputeCounts(int* with_type_info, int* generic,
             with++;
           }
           total++;
+        break;
+      }
+      case FeedbackSlotKind::kForIn: {
+        int const feedback = Smi::ToInt(obj);
+        ForInHint hint = ForInHintFromFeedback(feedback);
+        if (hint == ForInHint::kAny) {
+          gen++;
         }
+        if (hint != ForInHint::kNone) {
+          with++;
+        }
+        total++;
         break;
       }
       case FeedbackSlotKind::kCreateClosure:
-      case FeedbackSlotKind::kGeneral:
       case FeedbackSlotKind::kLiteral:
         break;
       case FeedbackSlotKind::kInvalid:
@@ -316,6 +326,10 @@ void FeedbackVector::ComputeCounts(int* with_type_info, int* generic,
 
 Handle<Symbol> FeedbackVector::UninitializedSentinel(Isolate* isolate) {
   return isolate->factory()->uninitialized_symbol();
+}
+
+Handle<Symbol> FeedbackVector::GenericSentinel(Isolate* isolate) {
+  return isolate->factory()->generic_symbol();
 }
 
 Handle<Symbol> FeedbackVector::MegamorphicSentinel(Isolate* isolate) {

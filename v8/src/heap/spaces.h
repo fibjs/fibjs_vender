@@ -8,13 +8,12 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "src/allocation.h"
 #include "src/base/atomic-utils.h"
-#include "src/base/atomicops.h"
-#include "src/base/bits.h"
-#include "src/base/hashmap.h"
 #include "src/base/iterator.h"
 #include "src/base/platform/mutex.h"
 #include "src/cancelable-task.h"
@@ -23,7 +22,6 @@
 #include "src/heap/heap.h"
 #include "src/heap/invalidated-slots.h"
 #include "src/heap/marking.h"
-#include "src/list.h"
 #include "src/objects.h"
 #include "src/objects/map.h"
 #include "src/utils.h"
@@ -603,7 +601,7 @@ class MemoryChunk {
   void set_prev_chunk(MemoryChunk* prev) { prev_chunk_.SetValue(prev); }
 
   Space* owner() const {
-    uintptr_t owner_value = base::AsAtomicWord::Relaxed_Load(
+    uintptr_t owner_value = base::AsAtomicWord::Acquire_Load(
         reinterpret_cast<const uintptr_t*>(&owner_));
     return ((owner_value & kPageHeaderTagMask) == kPageHeaderTag)
                ? reinterpret_cast<Space*>(owner_value - kPageHeaderTag)
@@ -611,10 +609,13 @@ class MemoryChunk {
   }
 
   void set_owner(Space* space) {
-    DCHECK_EQ(0, reinterpret_cast<intptr_t>(space) & kPageHeaderTagMask);
-    owner_ = reinterpret_cast<Address>(space) + kPageHeaderTag;
-    DCHECK_EQ(kPageHeaderTag,
-              reinterpret_cast<intptr_t>(owner_) & kPageHeaderTagMask);
+    DCHECK_EQ(0, reinterpret_cast<uintptr_t>(space) & kPageHeaderTagMask);
+    base::AsAtomicWord::Release_Store(
+        reinterpret_cast<uintptr_t*>(&owner_),
+        reinterpret_cast<uintptr_t>(space) + kPageHeaderTag);
+    DCHECK_EQ(kPageHeaderTag, base::AsAtomicWord::Relaxed_Load(
+                                  reinterpret_cast<const uintptr_t*>(&owner_)) &
+                                  kPageHeaderTagMask);
   }
 
   bool HasPageHeader() { return owner() != nullptr; }
@@ -885,8 +886,7 @@ class LargePage : public MemoryChunk {
 class Space : public Malloced {
  public:
   Space(Heap* heap, AllocationSpace id, Executability executable)
-      : allocation_observers_(new List<AllocationObserver*>()),
-        allocation_observers_paused_(false),
+      : allocation_observers_paused_(false),
         heap_(heap),
         id_(id),
         executable_(executable),
@@ -966,7 +966,7 @@ class Space : public Malloced {
  protected:
   intptr_t GetNextInlineAllocationStepSize();
 
-  std::unique_ptr<List<AllocationObserver*>> allocation_observers_;
+  std::vector<AllocationObserver*> allocation_observers_;
   bool allocation_observers_paused_;
 
  private:
@@ -1003,7 +1003,9 @@ class MemoryChunkValidator {
 class CodeRange {
  public:
   explicit CodeRange(Isolate* isolate);
-  ~CodeRange() { TearDown(); }
+  ~CodeRange() {
+    if (virtual_memory_.IsReserved()) virtual_memory_.Release();
+  }
 
   // Reserves a range of virtual memory, but does not commit any of it.
   // Can only be called once, at heap initialization time.
@@ -1054,18 +1056,14 @@ class CodeRange {
     size_t size;
   };
 
-  // Frees the range of virtual memory, and frees the data structures used to
-  // manage it.
-  void TearDown();
-
   // Finds a block on the allocation list that contains at least the
   // requested amount of memory.  If none is found, sorts and merges
   // the existing free memory blocks, and searches again.
   // If none can be found, returns false.
   bool GetNextAllocationBlock(size_t requested);
   // Compares the start addresses of two free blocks.
-  static int CompareFreeBlockAddress(const FreeBlock* left,
-                                     const FreeBlock* right);
+  static bool CompareFreeBlockAddress(const FreeBlock& left,
+                                      const FreeBlock& right);
   bool ReserveBlock(const size_t requested_size, FreeBlock* block);
   void ReleaseBlock(const FreeBlock* block);
 
@@ -1081,12 +1079,12 @@ class CodeRange {
   // Freed blocks of memory are added to the free list.  When the allocation
   // list is exhausted, the free list is sorted and merged to make the new
   // allocation list.
-  List<FreeBlock> free_list_;
+  std::vector<FreeBlock> free_list_;
 
   // Memory is allocated from the free blocks on the allocation list.
   // The block at current_allocation_block_index_ is the current block.
-  List<FreeBlock> allocation_list_;
-  int current_allocation_block_index_;
+  std::vector<FreeBlock> allocation_list_;
+  size_t current_allocation_block_index_;
 
   DISALLOW_COPY_AND_ASSIGN(CodeRange);
 };
@@ -2181,6 +2179,11 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
 
   std::unique_ptr<ObjectIterator> GetObjectIterator() override;
 
+  // Sets the page that is currently locked by the task using the space. This
+  // page will be preferred for sweeping to avoid a potential deadlock where
+  // multiple tasks hold locks on pages while trying to sweep each others pages.
+  void AnnounceLockedPage(Page* page) { locked_page_ = page; }
+
  protected:
   // PagedSpaces that should be included in snapshots have different, i.e.,
   // smaller, initial pages.
@@ -2234,6 +2237,8 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
 
   // Mutex guarding any concurrent access to the space.
   base::Mutex space_mutex_;
+
+  Page* locked_page_;
 
   friend class IncrementalMarking;
   friend class MarkCompactCollector;
@@ -2954,8 +2959,8 @@ class LargeObjectSpace : public Space {
   // The chunk_map_mutex_ has to be used when the chunk map is accessed
   // concurrently.
   base::Mutex chunk_map_mutex_;
-  // Map MemoryChunk::kAlignment-aligned chunks to large pages covering them
-  base::HashMap chunk_map_;
+  // Page-aligned addresses to their corresponding LargePage.
+  std::unordered_map<Address, LargePage*> chunk_map_;
 
   friend class LargeObjectIterator;
 };

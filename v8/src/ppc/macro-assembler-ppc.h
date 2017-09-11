@@ -9,25 +9,26 @@
 #include "src/bailout-reason.h"
 #include "src/double.h"
 #include "src/globals.h"
+#include "src/ppc/assembler-ppc.h"
 
 namespace v8 {
 namespace internal {
 
 // Give alias names to registers for calling conventions.
-const Register kReturnRegister0 = {Register::kCode_r3};
-const Register kReturnRegister1 = {Register::kCode_r4};
-const Register kReturnRegister2 = {Register::kCode_r5};
-const Register kJSFunctionRegister = {Register::kCode_r4};
-const Register kContextRegister = {Register::kCode_r30};
-const Register kAllocateSizeRegister = {Register::kCode_r4};
-const Register kInterpreterAccumulatorRegister = {Register::kCode_r3};
-const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r15};
-const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r16};
-const Register kInterpreterDispatchTableRegister = {Register::kCode_r17};
-const Register kJavaScriptCallArgCountRegister = {Register::kCode_r3};
-const Register kJavaScriptCallNewTargetRegister = {Register::kCode_r6};
-const Register kRuntimeCallFunctionRegister = {Register::kCode_r4};
-const Register kRuntimeCallArgCountRegister = {Register::kCode_r3};
+const Register kReturnRegister0 = r3;
+const Register kReturnRegister1 = r4;
+const Register kReturnRegister2 = r5;
+const Register kJSFunctionRegister = r4;
+const Register kContextRegister = r30;
+const Register kAllocateSizeRegister = r4;
+const Register kInterpreterAccumulatorRegister = r3;
+const Register kInterpreterBytecodeOffsetRegister = r15;
+const Register kInterpreterBytecodeArrayRegister = r16;
+const Register kInterpreterDispatchTableRegister = r17;
+const Register kJavaScriptCallArgCountRegister = r3;
+const Register kJavaScriptCallNewTargetRegister = r6;
+const Register kRuntimeCallFunctionRegister = r4;
+const Register kRuntimeCallArgCountRegister = r3;
 
 // ----------------------------------------------------------------------------
 // Static helper functions
@@ -199,6 +200,8 @@ class TurboAssembler : public Assembler {
   // These exist to provide portability between 32 and 64bit
   void LoadP(Register dst, const MemOperand& mem, Register scratch = no_reg);
   void LoadPU(Register dst, const MemOperand& mem, Register scratch = no_reg);
+  void LoadWordArith(Register dst, const MemOperand& mem,
+                     Register scratch = no_reg);
   void StoreP(Register src, const MemOperand& mem, Register scratch = no_reg);
   void StorePU(Register src, const MemOperand& mem, Register scratch = no_reg);
 
@@ -315,12 +318,23 @@ class TurboAssembler : public Assembler {
   void MultiPushDoubles(RegList dregs, Register location = sp);
   void MultiPopDoubles(RegList dregs, Register location = sp);
 
-  void PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
-                       Register exclusion2 = no_reg,
-                       Register exclusion3 = no_reg);
-  void PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+  // Calculate how much stack space (in bytes) are required to store caller
+  // registers excluding those specified in the arguments.
+  int RequiredStackSizeForCallerSaved(SaveFPRegsMode fp_mode,
+                                      Register exclusion1 = no_reg,
+                                      Register exclusion2 = no_reg,
+                                      Register exclusion3 = no_reg) const;
+
+  // Push caller saved registers on the stack, and return the number of bytes
+  // stack pointer is adjusted.
+  int PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
                       Register exclusion2 = no_reg,
                       Register exclusion3 = no_reg);
+  // Restore caller saved registers from the stack, and return the number of
+  // bytes stack pointer is adjusted.
+  int PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1 = no_reg,
+                     Register exclusion2 = no_reg,
+                     Register exclusion3 = no_reg);
 
   // Load an object from the root table.
   void LoadRoot(Register destination, Heap::RootListIndex index,
@@ -404,7 +418,8 @@ class TurboAssembler : public Assembler {
   void Jump(Register target);
   void Jump(Address target, RelocInfo::Mode rmode, Condition cond = al,
             CRegister cr = cr7);
-  void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al);
+  void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al,
+            CRegister cr = cr7);
   void Call(Register target);
   void Call(Address target, RelocInfo::Mode rmode, Condition cond = al);
   int CallSize(Handle<Code> code,
@@ -778,8 +793,6 @@ class MacroAssembler : public TurboAssembler {
 
   // load a literal double value <value> to FPR <result>
   void LoadWord(Register dst, const MemOperand& mem, Register scratch);
-  void LoadWordArith(Register dst, const MemOperand& mem,
-                     Register scratch = no_reg);
   void StoreWord(Register src, const MemOperand& mem, Register scratch);
 
   void LoadHalfWord(Register dst, const MemOperand& mem, Register scratch);
@@ -1136,9 +1149,6 @@ class MacroAssembler : public TurboAssembler {
   // the position of the first bit.  Leaves addr_reg unchanged.
   inline void GetMarkBits(Register addr_reg, Register bitmap_reg,
                           Register mask_reg);
-
-  static const RegList kSafepointSavedRegisters;
-  static const int kNumSafepointSavedRegisters;
 
   // Compute memory operands for safepoint stack slots.
   static int SafepointRegisterStackIndex(int reg_code);

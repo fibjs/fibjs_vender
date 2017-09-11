@@ -157,6 +157,10 @@ std::ostream& operator<<(std::ostream&, CheckMapsParameters const&);
 CheckMapsParameters const& CheckMapsParametersOf(Operator const*)
     WARN_UNUSED_RESULT;
 
+// Parameters for CompareMaps operator.
+ZoneHandleSet<Map> const& CompareMapsParametersOf(Operator const*)
+    WARN_UNUSED_RESULT;
+
 // A descriptor for growing elements backing stores.
 enum class GrowFastElementsFlag : uint8_t {
   kNone = 0u,
@@ -253,6 +257,8 @@ Type* AllocateTypeOf(const Operator* op) WARN_UNUSED_RESULT;
 
 UnicodeEncoding UnicodeEncodingOf(const Operator*) WARN_UNUSED_RESULT;
 
+BailoutReason BailoutReasonOf(const Operator* op) WARN_UNUSED_RESULT;
+
 // Interface for building simplified operators, which represent the
 // medium-level operations of V8, including adding numbers, allocating objects,
 // indexing into objects and arrays, etc.
@@ -336,6 +342,9 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
 
   const Operator* NumberSilenceNaN();
 
+  const Operator* SpeculativeSafeIntegerAdd(NumberOperationHint hint);
+  const Operator* SpeculativeSafeIntegerSubtract(NumberOperationHint hint);
+
   const Operator* SpeculativeNumberAdd(NumberOperationHint hint);
   const Operator* SpeculativeNumberSubtract(NumberOperationHint hint);
   const Operator* SpeculativeNumberMultiply(NumberOperationHint hint);
@@ -395,6 +404,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* CheckIf();
   const Operator* CheckBounds();
   const Operator* CheckMaps(CheckMapsFlags, ZoneHandleSet<Map>);
+  const Operator* CompareMaps(ZoneHandleSet<Map>);
 
   const Operator* CheckHeapObject();
   const Operator* CheckInternalizedString();
@@ -442,8 +452,8 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* ArgumentsLength(int formal_parameter_count,
                                   bool is_rest_length);
 
-  // new-unmapped-arguments-elements
-  const Operator* NewUnmappedArgumentsElements();
+  // new-arguments-elements arguments-frame, arguments-length
+  const Operator* NewArgumentsElements(int mapped_count);
 
   // array-buffer-was-neutered buffer
   const Operator* ArrayBufferWasNeutered();
@@ -459,6 +469,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
 
   const Operator* Allocate(Type* type, PretenureFlag pretenure = NOT_TENURED);
 
+  const Operator* LoadFieldByIndex();
   const Operator* LoadField(FieldAccess const&);
   const Operator* StoreField(FieldAccess const&);
 
@@ -477,6 +488,9 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
 
   // store-typed-element buffer, [base + external + index], value
   const Operator* StoreTypedElement(ExternalArrayType const&);
+
+  // Abort (for terminating execution on internal error).
+  const Operator* RuntimeAbort(BailoutReason reason);
 
  private:
   Zone* zone() const { return zone_; }

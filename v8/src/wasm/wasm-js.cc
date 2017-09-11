@@ -19,7 +19,7 @@
 #include "src/wasm/wasm-js.h"
 #include "src/wasm/wasm-limits.h"
 #include "src/wasm/wasm-module.h"
-#include "src/wasm/wasm-objects.h"
+#include "src/wasm/wasm-objects-inl.h"
 #include "src/wasm/wasm-result.h"
 
 using v8::internal::wasm::ErrorThrower;
@@ -590,17 +590,16 @@ void WebAssemblyMemory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(Utils::ToLocal(memory_obj));
 }
 
-#define NAME_OF_WasmMemoryObject "WebAssembly.Memory"
-#define NAME_OF_WasmModuleObject "WebAssembly.Module"
-#define NAME_OF_WasmInstanceObject "WebAssembly.Instance"
-#define NAME_OF_WasmTableObject "WebAssembly.Table"
+constexpr const char* kName_WasmMemoryObject = "WebAssembly.Memory";
+constexpr const char* kName_WasmInstanceObject = "WebAssembly.Instance";
+constexpr const char* kName_WasmTableObject = "WebAssembly.Table";
 
 #define EXTRACT_THIS(var, WasmType)                                  \
   i::Handle<i::WasmType> var;                                        \
   {                                                                  \
     i::Handle<i::Object> this_arg = Utils::OpenHandle(*args.This()); \
     if (!this_arg->Is##WasmType()) {                                 \
-      thrower.TypeError("Receiver is not a " NAME_OF_##WasmType);    \
+      thrower.TypeError("Receiver is not a %s", kName_##WasmType);   \
       return;                                                        \
     }                                                                \
     var = i::Handle<i::WasmType>::cast(this_arg);                    \
@@ -639,12 +638,12 @@ void WebAssemblyTableGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
   EXTRACT_THIS(receiver, WasmTableObject);
 
-  i::Handle<i::FixedArray> old_array(receiver->functions(), i_isolate);
-  int old_size = old_array->length();
   int64_t new_size64 = 0;
   if (args.Length() > 0 && !args[0]->IntegerValue(context).To(&new_size64)) {
     return;
   }
+  i::Handle<i::FixedArray> old_array(receiver->functions(), i_isolate);
+  int old_size = old_array->length();
   new_size64 += old_size;
 
   int64_t max_size64 = receiver->maximum_length()->Number();
@@ -843,7 +842,7 @@ void InstallGetter(Isolate* isolate, Handle<JSObject> object,
                                               Local<Function>(), attributes);
 }
 
-void WasmJs::Install(Isolate* isolate) {
+void WasmJs::Install(Isolate* isolate, bool exposed_on_global_object) {
   Handle<JSGlobalObject> global = isolate->global_object();
   Handle<Context> context(global->native_context(), isolate);
   // Install the JS API once only.
@@ -863,11 +862,11 @@ void WasmJs::Install(Isolate* isolate) {
   cons->shared()->set_instance_class_name(*name);
   Handle<JSObject> webassembly = factory->NewJSObject(cons, TENURED);
   PropertyAttributes attributes = static_cast<PropertyAttributes>(DONT_ENUM);
-  JSObject::AddProperty(global, name, webassembly, attributes);
+
   PropertyAttributes ro_attributes =
       static_cast<PropertyAttributes>(DONT_ENUM | READ_ONLY);
-  JSObject::AddProperty(webassembly, factory->to_string_tag_symbol(),
-                        v8_str(isolate, "WebAssembly"), ro_attributes);
+  JSObject::AddProperty(webassembly, factory->to_string_tag_symbol(), name,
+                        ro_attributes);
   InstallFunc(isolate, webassembly, "compile", WebAssemblyCompile, 1);
   InstallFunc(isolate, webassembly, "validate", WebAssemblyValidate, 1);
   InstallFunc(isolate, webassembly, "instantiate", WebAssemblyInstantiate, 1);
@@ -877,6 +876,11 @@ void WasmJs::Install(Isolate* isolate) {
                 WebAssemblyCompileStreaming, 1);
     InstallFunc(isolate, webassembly, "instantiateStreaming",
                 WebAssemblyInstantiateStreaming, 1);
+  }
+
+  // Expose the API on the global object if configured to do so.
+  if (exposed_on_global_object) {
+    JSObject::AddProperty(global, name, webassembly, attributes);
   }
 
   // Setup Module
@@ -961,5 +965,9 @@ void WasmJs::Install(Isolate* isolate) {
   JSObject::AddProperty(webassembly, isolate->factory()->RuntimeError_string(),
                         runtime_error, attributes);
 }
+
+#undef ASSIGN
+#undef EXTRACT_THIS
+
 }  // namespace internal
 }  // namespace v8

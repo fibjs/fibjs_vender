@@ -821,7 +821,6 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreDataPropertyInLiteral(
 }
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CollectTypeProfile(int position) {
-  DCHECK(FLAG_type_profile);
   OutputCollectTypeProfile(position);
   return *this;
 }
@@ -829,20 +828,16 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CollectTypeProfile(int position) {
 BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedProperty(
     Register object, size_t name_index, int feedback_slot,
     LanguageMode language_mode) {
+#if DEBUG
   // Ensure that language mode is in sync with the IC slot kind if the function
   // literal is available (not a unit test case).
-  // TODO(ishell): check only in debug mode.
   if (literal_) {
     FeedbackSlot slot = FeedbackVector::ToSlot(feedback_slot);
     CHECK_EQ(GetLanguageModeFromSlotKind(feedback_vector_spec()->GetKind(slot)),
              language_mode);
   }
-  if (language_mode == SLOPPY) {
-    OutputStaNamedPropertySloppy(object, name_index, feedback_slot);
-  } else {
-    DCHECK_EQ(language_mode, STRICT);
-    OutputStaNamedPropertyStrict(object, name_index, feedback_slot);
-  }
+#endif
+  OutputStaNamedProperty(object, name_index, feedback_slot);
   return *this;
 }
 
@@ -856,14 +851,15 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedProperty(
 BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedOwnProperty(
     Register object, const AstRawString* name, int feedback_slot) {
   size_t name_index = GetConstantPoolEntry(name);
+#if DEBUG
   // Ensure that the store operation is in sync with the IC slot kind if
   // the function literal is available (not a unit test case).
-  // TODO(ishell): check only in debug mode.
   if (literal_) {
     FeedbackSlot slot = FeedbackVector::ToSlot(feedback_slot);
     CHECK_EQ(FeedbackSlotKind::kStoreOwnNamed,
              feedback_vector_spec()->GetKind(slot));
   }
+#endif
   OutputStaNamedOwnProperty(object, name_index, feedback_slot);
   return *this;
 }
@@ -871,20 +867,16 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedOwnProperty(
 BytecodeArrayBuilder& BytecodeArrayBuilder::StoreKeyedProperty(
     Register object, Register key, int feedback_slot,
     LanguageMode language_mode) {
+#if DEBUG
   // Ensure that language mode is in sync with the IC slot kind if the function
   // literal is available (not a unit test case).
-  // TODO(ishell): check only in debug mode.
   if (literal_) {
     FeedbackSlot slot = FeedbackVector::ToSlot(feedback_slot);
     CHECK_EQ(GetLanguageModeFromSlotKind(feedback_vector_spec()->GetKind(slot)),
              language_mode);
   }
-  if (language_mode == SLOPPY) {
-    OutputStaKeyedPropertySloppy(object, key, feedback_slot);
-  } else {
-    DCHECK_EQ(language_mode, STRICT);
-    OutputStaKeyedPropertyStrict(object, key, feedback_slot);
-  }
+#endif
+  OutputStaKeyedProperty(object, key, feedback_slot);
   return *this;
 }
 
@@ -977,9 +969,8 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateObjectLiteral(
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CreateEmptyObjectLiteral(
-    int literal_index) {
-  OutputCreateEmptyObjectLiteral(literal_index);
+BytecodeArrayBuilder& BytecodeArrayBuilder::CreateEmptyObjectLiteral() {
+  OutputCreateEmptyObjectLiteral();
   return *this;
 }
 
@@ -1181,6 +1172,11 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::ReThrow() {
   return *this;
 }
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::Abort(BailoutReason reason) {
+  OutputAbort(reason);
+  return *this;
+}
+
 BytecodeArrayBuilder& BytecodeArrayBuilder::Return() {
   OutputReturn();
   return_seen_in_block_ = true;
@@ -1215,10 +1211,15 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::IncBlockCounter(
   return *this;
 }
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::ForInEnumerate(Register receiver) {
+  OutputForInEnumerate(receiver);
+  return *this;
+}
+
 BytecodeArrayBuilder& BytecodeArrayBuilder::ForInPrepare(
-    Register receiver, RegisterList cache_info_triple) {
+    RegisterList cache_info_triple, int feedback_slot) {
   DCHECK_EQ(3, cache_info_triple.register_count());
-  OutputForInPrepare(receiver, cache_info_triple);
+  OutputForInPrepare(cache_info_triple, feedback_slot);
   return *this;
 }
 

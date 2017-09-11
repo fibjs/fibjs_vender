@@ -151,33 +151,6 @@ Node* ConstructorBuiltinsAssembler::EmitFastNewClosure(Node* shared_info,
 
     BIND(&cell_done);
   }
-  {
-    // If the feedback vector has optimized code, check whether it is marked
-    // for deopt and, if so, clear the slot.
-    Label optimized_code_ok(this), clear_optimized_code(this);
-    Node* literals = LoadObjectField(literals_cell, Cell::kValueOffset);
-    GotoIfNot(IsFeedbackVector(literals), &optimized_code_ok);
-    Node* optimized_code_cell_slot =
-        LoadObjectField(literals, FeedbackVector::kOptimizedCodeOffset);
-    GotoIf(TaggedIsSmi(optimized_code_cell_slot), &optimized_code_ok);
-
-    Node* optimized_code =
-        LoadWeakCellValue(optimized_code_cell_slot, &clear_optimized_code);
-    Node* code_flags = LoadObjectField(
-        optimized_code, Code::kKindSpecificFlags1Offset, MachineType::Uint32());
-    Node* marked_for_deopt =
-        DecodeWord32<Code::MarkedForDeoptimizationField>(code_flags);
-    Branch(Word32Equal(marked_for_deopt, Int32Constant(0)), &optimized_code_ok,
-           &clear_optimized_code);
-
-    // Cell is empty or code is marked for deopt, clear the optimized code slot.
-    BIND(&clear_optimized_code);
-    StoreObjectFieldNoWriteBarrier(
-        literals, FeedbackVector::kOptimizedCodeOffset, SmiConstant(0));
-    Goto(&optimized_code_ok);
-
-    BIND(&optimized_code_ok);
-  }
   StoreObjectFieldNoWriteBarrier(result, JSFunction::kFeedbackVectorOffset,
                                  literals_cell);
   StoreObjectFieldNoWriteBarrier(
@@ -189,9 +162,6 @@ Node* ConstructorBuiltinsAssembler::EmitFastNewClosure(Node* shared_info,
       isolate->builtins()->builtin(Builtins::kCompileLazy));
   Node* lazy_builtin = HeapConstant(lazy_builtin_handle);
   StoreObjectFieldNoWriteBarrier(result, JSFunction::kCodeOffset, lazy_builtin);
-  StoreObjectFieldNoWriteBarrier(result, JSFunction::kNextFunctionLinkOffset,
-                                 UndefinedConstant());
-
   return result;
 }
 
@@ -780,8 +750,6 @@ TF_BUILTIN(FastCloneShallowObject, ConstructorBuiltinsAssembler) {
 // Used by the CreateEmptyObjectLiteral stub and bytecode.
 Node* ConstructorBuiltinsAssembler::EmitCreateEmptyObjectLiteral(
     Node* context) {
-  // TODO(cbruni): check whether we have to enable pretenuring support again for
-  // the empty object literal.
   Node* native_context = LoadNativeContext(context);
   Node* object_function =
       LoadContextElement(native_context, Context::OBJECT_FUNCTION_INDEX);
@@ -796,12 +764,55 @@ Node* ConstructorBuiltinsAssembler::EmitCreateEmptyObjectLiteral(
 }
 
 TF_BUILTIN(CreateEmptyObjectLiteral, ConstructorBuiltinsAssembler) {
-  // TODO(cbruni): remove closure and literal_index paramters once it's clear
-  // whether we can live without pretenuring support for the empty object
-  // literal.
   Node* context = Parameter(Descriptor::kContext);
   Node* result = EmitCreateEmptyObjectLiteral(context);
   Return(result);
 }
+
+TF_BUILTIN(ObjectConstructor, ConstructorBuiltinsAssembler) {
+  int const kValueArg = 0;
+  Node* argc =
+      ChangeInt32ToIntPtr(Parameter(BuiltinDescriptor::kArgumentsCount));
+  CodeStubArguments args(this, argc);
+  Node* value = args.GetOptionalArgumentValue(kValueArg);
+  Node* context = Parameter(BuiltinDescriptor::kContext);
+
+  CSA_ASSERT(this, IsUndefined(Parameter(BuiltinDescriptor::kNewTarget)));
+
+  Label return_to_object(this);
+
+  GotoIf(Word32And(IsNotUndefined(value), IsNotNull(value)), &return_to_object);
+
+  args.PopAndReturn(EmitCreateEmptyObjectLiteral(context));
+
+  BIND(&return_to_object);
+  args.PopAndReturn(CallBuiltin(Builtins::kToObject, context, value));
+}
+
+TF_BUILTIN(ObjectConstructor_ConstructStub, ConstructorBuiltinsAssembler) {
+  int const kValueArg = 0;
+  Node* argc =
+      ChangeInt32ToIntPtr(Parameter(BuiltinDescriptor::kArgumentsCount));
+  CodeStubArguments args(this, argc);
+  Node* value = args.GetOptionalArgumentValue(kValueArg);
+
+  Node* target = LoadFromFrame(StandardFrameConstants::kFunctionOffset,
+                               MachineType::TaggedPointer());
+  Node* new_target = Parameter(BuiltinDescriptor::kNewTarget);
+  Node* context = Parameter(BuiltinDescriptor::kContext);
+
+  CSA_ASSERT(this, IsNotUndefined(new_target));
+
+  Label return_to_object(this);
+
+  GotoIf(Word32And(WordEqual(target, new_target),
+                   Word32And(IsNotUndefined(value), IsNotNull(value))),
+         &return_to_object);
+  args.PopAndReturn(EmitFastNewObject(context, target, new_target));
+
+  BIND(&return_to_object);
+  args.PopAndReturn(CallBuiltin(Builtins::kToObject, context, value));
+}
+
 }  // namespace internal
 }  // namespace v8

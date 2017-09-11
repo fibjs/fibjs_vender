@@ -24,6 +24,7 @@
 #include "src/feedback-vector.h"
 #include "src/global-handles.h"
 #include "src/heap/array-buffer-tracker-inl.h"
+#include "src/heap/barrier.h"
 #include "src/heap/code-stats.h"
 #include "src/heap/concurrent-marking.h"
 #include "src/heap/embedder-tracing.h"
@@ -53,21 +54,69 @@
 #include "src/utils-inl.h"
 #include "src/utils.h"
 #include "src/v8.h"
-#include "src/v8threads.h"
 #include "src/vm-state-inl.h"
 
 namespace v8 {
 namespace internal {
 
-bool Heap::GCCallbackPair::operator==(const Heap::GCCallbackPair& other) const {
-  return other.callback == callback;
+void Heap::SetArgumentsAdaptorDeoptPCOffset(int pc_offset) {
+  DCHECK(arguments_adaptor_deopt_pc_offset() == Smi::kZero);
+  set_arguments_adaptor_deopt_pc_offset(Smi::FromInt(pc_offset));
 }
 
-Heap::GCCallbackPair& Heap::GCCallbackPair::operator=(
-    const Heap::GCCallbackPair& other) {
+void Heap::SetConstructStubCreateDeoptPCOffset(int pc_offset) {
+  // TODO(tebbi): Remove second half of DCHECK once
+  // FLAG_harmony_restrict_constructor_return is gone.
+  DCHECK(construct_stub_create_deopt_pc_offset() == Smi::kZero ||
+         construct_stub_create_deopt_pc_offset() == Smi::FromInt(pc_offset));
+  set_construct_stub_create_deopt_pc_offset(Smi::FromInt(pc_offset));
+}
+
+void Heap::SetConstructStubInvokeDeoptPCOffset(int pc_offset) {
+  // TODO(tebbi): Remove second half of DCHECK once
+  // FLAG_harmony_restrict_constructor_return is gone.
+  DCHECK(construct_stub_invoke_deopt_pc_offset() == Smi::kZero ||
+         construct_stub_invoke_deopt_pc_offset() == Smi::FromInt(pc_offset));
+  set_construct_stub_invoke_deopt_pc_offset(Smi::FromInt(pc_offset));
+}
+
+void Heap::SetGetterStubDeoptPCOffset(int pc_offset) {
+  DCHECK(getter_stub_deopt_pc_offset() == Smi::kZero);
+  set_getter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
+}
+
+void Heap::SetSetterStubDeoptPCOffset(int pc_offset) {
+  DCHECK(setter_stub_deopt_pc_offset() == Smi::kZero);
+  set_setter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
+}
+
+void Heap::SetInterpreterEntryReturnPCOffset(int pc_offset) {
+  DCHECK(interpreter_entry_return_pc_offset() == Smi::kZero);
+  set_interpreter_entry_return_pc_offset(Smi::FromInt(pc_offset));
+}
+
+void Heap::SetSerializedTemplates(FixedArray* templates) {
+  DCHECK_EQ(empty_fixed_array(), serialized_templates());
+  DCHECK(isolate()->serializer_enabled());
+  set_serialized_templates(templates);
+}
+
+void Heap::SetSerializedGlobalProxySizes(FixedArray* sizes) {
+  DCHECK_EQ(empty_fixed_array(), serialized_global_proxy_sizes());
+  DCHECK(isolate()->serializer_enabled());
+  set_serialized_global_proxy_sizes(sizes);
+}
+
+bool Heap::GCCallbackTuple::operator==(
+    const Heap::GCCallbackTuple& other) const {
+  return other.callback == callback && other.data == data;
+}
+
+Heap::GCCallbackTuple& Heap::GCCallbackTuple::operator=(
+    const Heap::GCCallbackTuple& other) {
   callback = other.callback;
   gc_type = other.gc_type;
-  pass_isolate = other.pass_isolate;
+  data = other.data;
   return *this;
 }
 
@@ -702,6 +751,14 @@ inline bool DigestPretenuringFeedback(Isolate* isolate, AllocationSite* site,
   return deopt;
 }
 }  // namespace
+
+void Heap::RemoveAllocationSitePretenuringFeedback(AllocationSite* site) {
+  global_pretenuring_feedback_.erase(site);
+}
+
+bool Heap::DeoptMaybeTenuredAllocationSites() {
+  return new_space_->IsAtMaximumCapacity() && maximum_size_scavenges_ == 0;
+}
 
 void Heap::ProcessPretenuringFeedback() {
   bool trigger_deoptimization = false;
@@ -1598,35 +1655,21 @@ bool Heap::PerformGarbageCollection(
 void Heap::CallGCPrologueCallbacks(GCType gc_type, GCCallbackFlags flags) {
   RuntimeCallTimerScope runtime_timer(isolate(),
                                       &RuntimeCallStats::GCPrologueCallback);
-  for (const GCCallbackPair& info : gc_prologue_callbacks_) {
+  for (const GCCallbackTuple& info : gc_prologue_callbacks_) {
     if (gc_type & info.gc_type) {
-      if (!info.pass_isolate) {
-        v8::GCCallback callback =
-            reinterpret_cast<v8::GCCallback>(info.callback);
-        callback(gc_type, flags);
-      } else {
-        v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
-        info.callback(isolate, gc_type, flags);
-      }
+      v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
+      info.callback(isolate, gc_type, flags, info.data);
     }
   }
 }
 
-
-void Heap::CallGCEpilogueCallbacks(GCType gc_type,
-                                   GCCallbackFlags gc_callback_flags) {
+void Heap::CallGCEpilogueCallbacks(GCType gc_type, GCCallbackFlags flags) {
   RuntimeCallTimerScope runtime_timer(isolate(),
                                       &RuntimeCallStats::GCEpilogueCallback);
-  for (const GCCallbackPair& info : gc_epilogue_callbacks_) {
+  for (const GCCallbackTuple& info : gc_epilogue_callbacks_) {
     if (gc_type & info.gc_type) {
-      if (!info.pass_isolate) {
-        v8::GCCallback callback =
-            reinterpret_cast<v8::GCCallback>(info.callback);
-        callback(gc_type, gc_callback_flags);
-      } else {
-        v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
-        info.callback(isolate, gc_type, gc_callback_flags);
-      }
+      v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
+      info.callback(isolate, gc_type, flags, info.data);
     }
   }
 }
@@ -1806,7 +1849,7 @@ class ScavengingItem : public ItemParallelJob::Item {
 
 class ScavengingTask final : public ItemParallelJob::Task {
  public:
-  ScavengingTask(Heap* heap, Scavenger* scavenger, Scavenger::Barrier* barrier)
+  ScavengingTask(Heap* heap, Scavenger* scavenger, OneshotBarrier* barrier)
       : ItemParallelJob::Task(heap->isolate()),
         heap_(heap),
         scavenger_(scavenger),
@@ -1822,10 +1865,9 @@ class ScavengingTask final : public ItemParallelJob::Task {
         item->Process(scavenger_);
         item->MarkFinished();
       }
-      while (!barrier_->Done()) {
+      do {
         scavenger_->Process(barrier_);
-        barrier_->Wait();
-      }
+      } while (!barrier_->Wait());
       scavenger_->Process();
     }
     if (FLAG_trace_parallel_scavenge) {
@@ -1839,7 +1881,7 @@ class ScavengingTask final : public ItemParallelJob::Task {
  private:
   Heap* const heap_;
   Scavenger* const scavenger_;
-  Scavenger::Barrier* const barrier_;
+  OneshotBarrier* const barrier_;
 };
 
 class PageScavengingItem final : public ScavengingItem {
@@ -1850,6 +1892,7 @@ class PageScavengingItem final : public ScavengingItem {
 
   void Process(Scavenger* scavenger) final {
     base::LockGuard<base::RecursiveMutex> guard(chunk_->mutex());
+    scavenger->AnnounceLockedPage(chunk_);
     RememberedSet<OLD_TO_NEW>::Iterate(
         chunk_,
         [this, scavenger](Address addr) {
@@ -1921,7 +1964,7 @@ void Heap::Scavenge() {
   Scavenger* scavengers[kMaxScavengerTasks];
   const bool is_logging = IsLogging(isolate());
   const int num_scavenge_tasks = NumberOfScavengeTasks();
-  Scavenger::Barrier barrier;
+  OneshotBarrier barrier;
   CopiedList copied_list(num_scavenge_tasks);
   PromotionList promotion_list(num_scavenge_tasks);
   for (int i = 0; i < num_scavenge_tasks; i++) {
@@ -2052,6 +2095,21 @@ String* Heap::UpdateNewSpaceReferenceInExternalStringTableEntry(Heap* heap,
   return string->IsExternalString() ? string : nullptr;
 }
 
+void Heap::ExternalStringTable::Verify() {
+#ifdef DEBUG
+  for (size_t i = 0; i < new_space_strings_.size(); ++i) {
+    Object* obj = Object::cast(new_space_strings_[i]);
+    DCHECK(heap_->InNewSpace(obj));
+    DCHECK(!obj->IsTheHole(heap_->isolate()));
+  }
+  for (size_t i = 0; i < old_space_strings_.size(); ++i) {
+    Object* obj = Object::cast(old_space_strings_[i]);
+    DCHECK(!heap_->InNewSpace(obj));
+    DCHECK(!obj->IsTheHole(heap_->isolate()));
+  }
+#endif
+}
+
 void Heap::ExternalStringTable::UpdateNewSpaceReferences(
     Heap::ExternalStringTableUpdaterCallback updater_func) {
   if (new_space_strings_.empty()) return;
@@ -2068,12 +2126,12 @@ void Heap::ExternalStringTable::UpdateNewSpaceReferences(
     DCHECK(target->IsExternalString());
 
     if (heap_->InNewSpace(target)) {
-      // String is still in new space.  Update the table entry.
+      // String is still in new space. Update the table entry.
       *last = target;
       ++last;
     } else {
-      // String got promoted.  Move it to the old string list.
-      AddOldString(target);
+      // String got promoted. Move it to the old string list.
+      old_space_strings_.push_back(target);
     }
   }
 
@@ -2084,6 +2142,29 @@ void Heap::ExternalStringTable::UpdateNewSpaceReferences(
     Verify();
   }
 #endif
+}
+
+void Heap::ExternalStringTable::PromoteAllNewSpaceStrings() {
+  old_space_strings_.reserve(old_space_strings_.size() +
+                             new_space_strings_.size());
+  std::move(std::begin(new_space_strings_), std::end(new_space_strings_),
+            std::back_inserter(old_space_strings_));
+  new_space_strings_.clear();
+}
+
+void Heap::ExternalStringTable::IterateNewSpaceStrings(RootVisitor* v) {
+  if (!new_space_strings_.empty()) {
+    v->VisitRootPointers(Root::kExternalStringsTable, new_space_strings_.data(),
+                         new_space_strings_.data() + new_space_strings_.size());
+  }
+}
+
+void Heap::ExternalStringTable::IterateAll(RootVisitor* v) {
+  IterateNewSpaceStrings(v);
+  if (!old_space_strings_.empty()) {
+    v->VisitRootPointers(Root::kExternalStringsTable, old_space_strings_.data(),
+                         old_space_strings_.data() + old_space_strings_.size());
+  }
 }
 
 void Heap::UpdateNewSpaceReferencesInExternalStringTable(
@@ -2367,307 +2448,6 @@ AllocationResult Heap::AllocateFillerObject(int size, bool double_align,
 }
 
 
-const Heap::StringTypeTable Heap::string_type_table[] = {
-#define STRING_TYPE_ELEMENT(type, size, name, camel_name) \
-  { type, size, k##camel_name##MapRootIndex }             \
-  ,
-    STRING_TYPE_LIST(STRING_TYPE_ELEMENT)
-#undef STRING_TYPE_ELEMENT
-};
-
-
-const Heap::ConstantStringTable Heap::constant_string_table[] = {
-    {"", kempty_stringRootIndex},
-#define CONSTANT_STRING_ELEMENT(name, contents) \
-  { contents, k##name##RootIndex }              \
-  ,
-    INTERNALIZED_STRING_LIST(CONSTANT_STRING_ELEMENT)
-#undef CONSTANT_STRING_ELEMENT
-};
-
-
-const Heap::StructTable Heap::struct_table[] = {
-#define STRUCT_TABLE_ELEMENT(NAME, Name, name)        \
-  { NAME##_TYPE, Name::kSize, k##Name##MapRootIndex } \
-  ,
-    STRUCT_LIST(STRUCT_TABLE_ELEMENT)
-#undef STRUCT_TABLE_ELEMENT
-};
-
-namespace {
-
-void FinalizePartialMap(Heap* heap, Map* map) {
-  map->set_code_cache(heap->empty_fixed_array());
-  map->set_dependent_code(DependentCode::cast(heap->empty_fixed_array()));
-  map->set_raw_transitions(Smi::kZero);
-  map->set_instance_descriptors(heap->empty_descriptor_array());
-  if (FLAG_unbox_double_fields) {
-    map->set_layout_descriptor(LayoutDescriptor::FastPointerLayout());
-  }
-  map->set_prototype(heap->null_value());
-  map->set_constructor_or_backpointer(heap->null_value());
-}
-
-}  // namespace
-
-bool Heap::CreateInitialMaps() {
-  HeapObject* obj = nullptr;
-  {
-    AllocationResult allocation = AllocatePartialMap(MAP_TYPE, Map::kSize);
-    if (!allocation.To(&obj)) return false;
-  }
-  // Map::cast cannot be used due to uninitialized map field.
-  Map* new_meta_map = reinterpret_cast<Map*>(obj);
-  set_meta_map(new_meta_map);
-  new_meta_map->set_map_after_allocation(new_meta_map);
-
-  {  // Partial map allocation
-#define ALLOCATE_PARTIAL_MAP(instance_type, size, field_name)                \
-  {                                                                          \
-    Map* map;                                                                \
-    if (!AllocatePartialMap((instance_type), (size)).To(&map)) return false; \
-    set_##field_name##_map(map);                                             \
-  }
-
-    ALLOCATE_PARTIAL_MAP(FIXED_ARRAY_TYPE, kVariableSizeSentinel, fixed_array);
-    fixed_array_map()->set_elements_kind(HOLEY_ELEMENTS);
-    ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, undefined);
-    ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, null);
-    ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, the_hole);
-
-#undef ALLOCATE_PARTIAL_MAP
-  }
-
-  // Allocate the empty array.
-  {
-    AllocationResult allocation = AllocateEmptyFixedArray();
-    if (!allocation.To(&obj)) return false;
-  }
-  set_empty_fixed_array(FixedArray::cast(obj));
-
-  {
-    AllocationResult allocation = Allocate(null_map(), OLD_SPACE);
-    if (!allocation.To(&obj)) return false;
-  }
-  set_null_value(Oddball::cast(obj));
-  Oddball::cast(obj)->set_kind(Oddball::kNull);
-
-  {
-    AllocationResult allocation = Allocate(undefined_map(), OLD_SPACE);
-    if (!allocation.To(&obj)) return false;
-  }
-  set_undefined_value(Oddball::cast(obj));
-  Oddball::cast(obj)->set_kind(Oddball::kUndefined);
-  DCHECK(!InNewSpace(undefined_value()));
-  {
-    AllocationResult allocation = Allocate(the_hole_map(), OLD_SPACE);
-    if (!allocation.To(&obj)) return false;
-  }
-  set_the_hole_value(Oddball::cast(obj));
-  Oddball::cast(obj)->set_kind(Oddball::kTheHole);
-
-  // Set preliminary exception sentinel value before actually initializing it.
-  set_exception(null_value());
-
-  // Allocate the empty descriptor array.
-  {
-    AllocationResult allocation = AllocateEmptyFixedArray();
-    if (!allocation.To(&obj)) return false;
-  }
-  set_empty_descriptor_array(DescriptorArray::cast(obj));
-
-  // Fix the instance_descriptors for the existing maps.
-  FinalizePartialMap(this, meta_map());
-  FinalizePartialMap(this, fixed_array_map());
-  FinalizePartialMap(this, undefined_map());
-  undefined_map()->set_is_undetectable();
-  FinalizePartialMap(this, null_map());
-  null_map()->set_is_undetectable();
-  FinalizePartialMap(this, the_hole_map());
-
-  {  // Map allocation
-#define ALLOCATE_MAP(instance_type, size, field_name)               \
-  {                                                                 \
-    Map* map;                                                       \
-    if (!AllocateMap((instance_type), size).To(&map)) return false; \
-    set_##field_name##_map(map);                                    \
-  }
-
-#define ALLOCATE_VARSIZE_MAP(instance_type, field_name) \
-  ALLOCATE_MAP(instance_type, kVariableSizeSentinel, field_name)
-
-#define ALLOCATE_PRIMITIVE_MAP(instance_type, size, field_name, \
-                               constructor_function_index)      \
-  {                                                             \
-    ALLOCATE_MAP((instance_type), (size), field_name);          \
-    field_name##_map()->SetConstructorFunctionIndex(            \
-        (constructor_function_index));                          \
-  }
-
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, fixed_cow_array)
-    fixed_cow_array_map()->set_elements_kind(HOLEY_ELEMENTS);
-    DCHECK_NE(fixed_array_map(), fixed_cow_array_map());
-
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, scope_info)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, module_info)
-    ALLOCATE_VARSIZE_MAP(FEEDBACK_VECTOR_TYPE, feedback_vector)
-    ALLOCATE_PRIMITIVE_MAP(HEAP_NUMBER_TYPE, HeapNumber::kSize, heap_number,
-                           Context::NUMBER_FUNCTION_INDEX)
-    ALLOCATE_MAP(MUTABLE_HEAP_NUMBER_TYPE, HeapNumber::kSize,
-                 mutable_heap_number)
-    ALLOCATE_PRIMITIVE_MAP(SYMBOL_TYPE, Symbol::kSize, symbol,
-                           Context::SYMBOL_FUNCTION_INDEX)
-    ALLOCATE_MAP(FOREIGN_TYPE, Foreign::kSize, foreign)
-
-    ALLOCATE_PRIMITIVE_MAP(ODDBALL_TYPE, Oddball::kSize, boolean,
-                           Context::BOOLEAN_FUNCTION_INDEX);
-    ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, uninitialized);
-    ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, arguments_marker);
-    ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, exception);
-    ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, termination_exception);
-    ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, optimized_out);
-    ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, stale_register);
-
-    ALLOCATE_MAP(JS_PROMISE_CAPABILITY_TYPE, JSPromiseCapability::kSize,
-                 js_promise_capability);
-
-    for (unsigned i = 0; i < arraysize(string_type_table); i++) {
-      const StringTypeTable& entry = string_type_table[i];
-      {
-        AllocationResult allocation = AllocateMap(entry.type, entry.size);
-        if (!allocation.To(&obj)) return false;
-      }
-      Map* map = Map::cast(obj);
-      map->SetConstructorFunctionIndex(Context::STRING_FUNCTION_INDEX);
-      // Mark cons string maps as unstable, because their objects can change
-      // maps during GC.
-      if (StringShape(entry.type).IsCons()) map->mark_unstable();
-      roots_[entry.index] = map;
-    }
-
-    {  // Create a separate external one byte string map for native sources.
-      AllocationResult allocation =
-          AllocateMap(SHORT_EXTERNAL_ONE_BYTE_STRING_TYPE,
-                      ExternalOneByteString::kShortSize);
-      if (!allocation.To(&obj)) return false;
-      Map* map = Map::cast(obj);
-      map->SetConstructorFunctionIndex(Context::STRING_FUNCTION_INDEX);
-      set_native_source_string_map(map);
-    }
-
-    ALLOCATE_VARSIZE_MAP(FIXED_DOUBLE_ARRAY_TYPE, fixed_double_array)
-    fixed_double_array_map()->set_elements_kind(HOLEY_DOUBLE_ELEMENTS);
-    ALLOCATE_VARSIZE_MAP(BYTE_ARRAY_TYPE, byte_array)
-    ALLOCATE_VARSIZE_MAP(BYTECODE_ARRAY_TYPE, bytecode_array)
-    ALLOCATE_VARSIZE_MAP(FREE_SPACE_TYPE, free_space)
-    ALLOCATE_VARSIZE_MAP(PROPERTY_ARRAY_TYPE, property_array)
-    ALLOCATE_VARSIZE_MAP(SMALL_ORDERED_HASH_MAP_TYPE, small_ordered_hash_map)
-    ALLOCATE_VARSIZE_MAP(SMALL_ORDERED_HASH_SET_TYPE, small_ordered_hash_set)
-
-#define ALLOCATE_FIXED_TYPED_ARRAY_MAP(Type, type, TYPE, ctype, size) \
-  ALLOCATE_VARSIZE_MAP(FIXED_##TYPE##_ARRAY_TYPE, fixed_##type##_array)
-
-    TYPED_ARRAYS(ALLOCATE_FIXED_TYPED_ARRAY_MAP)
-#undef ALLOCATE_FIXED_TYPED_ARRAY_MAP
-
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, sloppy_arguments_elements)
-
-    ALLOCATE_VARSIZE_MAP(CODE_TYPE, code)
-
-    ALLOCATE_MAP(CELL_TYPE, Cell::kSize, cell)
-    ALLOCATE_MAP(PROPERTY_CELL_TYPE, PropertyCell::kSize, global_property_cell)
-    ALLOCATE_MAP(WEAK_CELL_TYPE, WeakCell::kSize, weak_cell)
-    ALLOCATE_MAP(CELL_TYPE, Cell::kSize, no_closures_cell)
-    ALLOCATE_MAP(CELL_TYPE, Cell::kSize, one_closure_cell)
-    ALLOCATE_MAP(CELL_TYPE, Cell::kSize, many_closures_cell)
-    ALLOCATE_MAP(FILLER_TYPE, kPointerSize, one_pointer_filler)
-    ALLOCATE_MAP(FILLER_TYPE, 2 * kPointerSize, two_pointer_filler)
-
-    ALLOCATE_VARSIZE_MAP(TRANSITION_ARRAY_TYPE, transition_array)
-
-    for (unsigned i = 0; i < arraysize(struct_table); i++) {
-      const StructTable& entry = struct_table[i];
-      Map* map;
-      if (!AllocateMap(entry.type, entry.size).To(&map)) return false;
-      roots_[entry.index] = map;
-    }
-
-    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, hash_table)
-    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, ordered_hash_table)
-    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, unseeded_number_dictionary)
-
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, function_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, catch_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, with_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, debug_evaluate_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, block_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, module_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, eval_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, script_context)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, script_context_table)
-
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, native_context)
-    native_context_map()->set_visitor_id(kVisitNativeContext);
-
-    ALLOCATE_MAP(SHARED_FUNCTION_INFO_TYPE, SharedFunctionInfo::kAlignedSize,
-                 shared_function_info)
-
-    ALLOCATE_MAP(JS_MESSAGE_OBJECT_TYPE, JSMessageObject::kSize, message_object)
-    ALLOCATE_MAP(JS_OBJECT_TYPE, JSObject::kHeaderSize + kPointerSize, external)
-    external_map()->set_is_extensible(false);
-#undef ALLOCATE_PRIMITIVE_MAP
-#undef ALLOCATE_VARSIZE_MAP
-#undef ALLOCATE_MAP
-  }
-
-  {
-    AllocationResult allocation = AllocateEmptyScopeInfo();
-    if (!allocation.To(&obj)) return false;
-  }
-
-  set_empty_scope_info(ScopeInfo::cast(obj));
-  {
-    AllocationResult allocation = Allocate(boolean_map(), OLD_SPACE);
-    if (!allocation.To(&obj)) return false;
-  }
-  set_true_value(Oddball::cast(obj));
-  Oddball::cast(obj)->set_kind(Oddball::kTrue);
-
-  {
-    AllocationResult allocation = Allocate(boolean_map(), OLD_SPACE);
-    if (!allocation.To(&obj)) return false;
-  }
-  set_false_value(Oddball::cast(obj));
-  Oddball::cast(obj)->set_kind(Oddball::kFalse);
-
-  {  // Empty arrays
-    {
-      ByteArray* byte_array;
-      if (!AllocateByteArray(0, TENURED).To(&byte_array)) return false;
-      set_empty_byte_array(byte_array);
-    }
-
-    {
-      PropertyArray* property_array;
-      if (!AllocatePropertyArray(0, TENURED).To(&property_array)) return false;
-      set_empty_property_array(property_array);
-    }
-
-#define ALLOCATE_EMPTY_FIXED_TYPED_ARRAY(Type, type, TYPE, ctype, size) \
-  {                                                                     \
-    FixedTypedArrayBase* obj;                                           \
-    if (!AllocateEmptyFixedTypedArray(kExternal##Type##Array).To(&obj)) \
-      return false;                                                     \
-    set_empty_fixed_##type##_array(obj);                                \
-  }
-
-    TYPED_ARRAYS(ALLOCATE_EMPTY_FIXED_TYPED_ARRAY)
-#undef ALLOCATE_EMPTY_FIXED_TYPED_ARRAY
-  }
-  DCHECK(!InNewSpace(empty_fixed_array()));
-  return true;
-}
-
 AllocationResult Heap::AllocateHeapNumber(MutableMode mode,
                                           PretenureFlag pretenure) {
   // Statically ensure that it is safe to allocate heap numbers in paged
@@ -2757,21 +2537,6 @@ AllocationResult Heap::AllocateTransitionArray(int capacity) {
   return array;
 }
 
-bool Heap::CreateApiObjects() {
-  HandleScope scope(isolate());
-  set_message_listeners(*TemplateList::New(isolate(), 2));
-  HeapObject* obj = nullptr;
-  {
-    AllocationResult allocation = AllocateStruct(INTERCEPTOR_INFO_TYPE);
-    if (!allocation.To(&obj)) return false;
-  }
-  InterceptorInfo* info = InterceptorInfo::cast(obj);
-  info->set_flags(0);
-  set_noop_interceptor_info(info);
-  return true;
-}
-
-
 void Heap::CreateJSEntryStub() {
   JSEntryStub stub(isolate(), StackFrame::ENTRY);
   set_js_entry_code(*stub.GetCode());
@@ -2814,294 +2579,6 @@ void Heap::CreateFixedStubs() {
   // To workaround the problem, make separate functions without inlining.
   Heap::CreateJSEntryStub();
   Heap::CreateJSConstructEntryStub();
-}
-
-
-void Heap::CreateInitialObjects() {
-  HandleScope scope(isolate());
-  Factory* factory = isolate()->factory();
-
-  // The -0 value must be set before NewNumber works.
-  set_minus_zero_value(*factory->NewHeapNumber(-0.0, IMMUTABLE, TENURED));
-  DCHECK(std::signbit(minus_zero_value()->Number()) != 0);
-
-  set_nan_value(*factory->NewHeapNumber(
-      std::numeric_limits<double>::quiet_NaN(), IMMUTABLE, TENURED));
-  set_hole_nan_value(
-      *factory->NewHeapNumberFromBits(kHoleNanInt64, IMMUTABLE, TENURED));
-  set_infinity_value(*factory->NewHeapNumber(V8_INFINITY, IMMUTABLE, TENURED));
-  set_minus_infinity_value(
-      *factory->NewHeapNumber(-V8_INFINITY, IMMUTABLE, TENURED));
-
-  // Allocate initial string table.
-  set_string_table(*StringTable::New(isolate(), kInitialStringTableSize));
-
-  // Allocate
-
-  // Finish initializing oddballs after creating the string table.
-  Oddball::Initialize(isolate(), factory->undefined_value(), "undefined",
-                      factory->nan_value(), "undefined", Oddball::kUndefined);
-
-  // Initialize the null_value.
-  Oddball::Initialize(isolate(), factory->null_value(), "null",
-                      handle(Smi::kZero, isolate()), "object", Oddball::kNull);
-
-  // Initialize the_hole_value.
-  Oddball::Initialize(isolate(), factory->the_hole_value(), "hole",
-                      factory->hole_nan_value(), "undefined",
-                      Oddball::kTheHole);
-
-  // Initialize the true_value.
-  Oddball::Initialize(isolate(), factory->true_value(), "true",
-                      handle(Smi::FromInt(1), isolate()), "boolean",
-                      Oddball::kTrue);
-
-  // Initialize the false_value.
-  Oddball::Initialize(isolate(), factory->false_value(), "false",
-                      handle(Smi::kZero, isolate()), "boolean",
-                      Oddball::kFalse);
-
-  set_uninitialized_value(
-      *factory->NewOddball(factory->uninitialized_map(), "uninitialized",
-                           handle(Smi::FromInt(-1), isolate()), "undefined",
-                           Oddball::kUninitialized));
-
-  set_arguments_marker(
-      *factory->NewOddball(factory->arguments_marker_map(), "arguments_marker",
-                           handle(Smi::FromInt(-4), isolate()), "undefined",
-                           Oddball::kArgumentsMarker));
-
-  set_termination_exception(*factory->NewOddball(
-      factory->termination_exception_map(), "termination_exception",
-      handle(Smi::FromInt(-3), isolate()), "undefined", Oddball::kOther));
-
-  set_exception(*factory->NewOddball(factory->exception_map(), "exception",
-                                     handle(Smi::FromInt(-5), isolate()),
-                                     "undefined", Oddball::kException));
-
-  set_optimized_out(*factory->NewOddball(factory->optimized_out_map(),
-                                         "optimized_out",
-                                         handle(Smi::FromInt(-6), isolate()),
-                                         "undefined", Oddball::kOptimizedOut));
-
-  set_stale_register(
-      *factory->NewOddball(factory->stale_register_map(), "stale_register",
-                           handle(Smi::FromInt(-7), isolate()), "undefined",
-                           Oddball::kStaleRegister));
-
-  for (unsigned i = 0; i < arraysize(constant_string_table); i++) {
-    Handle<String> str =
-        factory->InternalizeUtf8String(constant_string_table[i].contents);
-    roots_[constant_string_table[i].index] = *str;
-  }
-
-  // Create the code_stubs dictionary. The initial size is set to avoid
-  // expanding the dictionary during bootstrapping.
-  set_code_stubs(*UnseededNumberDictionary::New(isolate(), 128));
-
-  {
-    HandleScope scope(isolate());
-#define SYMBOL_INIT(name)                                              \
-  {                                                                    \
-    Handle<String> name##d = factory->NewStringFromStaticChars(#name); \
-    Handle<Symbol> symbol(isolate()->factory()->NewPrivateSymbol());   \
-    symbol->set_name(*name##d);                                        \
-    roots_[k##name##RootIndex] = *symbol;                              \
-  }
-    PRIVATE_SYMBOL_LIST(SYMBOL_INIT)
-#undef SYMBOL_INIT
-  }
-
-  {
-    HandleScope scope(isolate());
-#define SYMBOL_INIT(name, description)                                      \
-  Handle<Symbol> name = factory->NewSymbol();                               \
-  Handle<String> name##d = factory->NewStringFromStaticChars(#description); \
-  name->set_name(*name##d);                                                 \
-  roots_[k##name##RootIndex] = *name;
-    PUBLIC_SYMBOL_LIST(SYMBOL_INIT)
-#undef SYMBOL_INIT
-
-#define SYMBOL_INIT(name, description)                                      \
-  Handle<Symbol> name = factory->NewSymbol();                               \
-  Handle<String> name##d = factory->NewStringFromStaticChars(#description); \
-  name->set_is_well_known_symbol(true);                                     \
-  name->set_name(*name##d);                                                 \
-  roots_[k##name##RootIndex] = *name;
-    WELL_KNOWN_SYMBOL_LIST(SYMBOL_INIT)
-#undef SYMBOL_INIT
-
-    // Mark "Interesting Symbols" appropriately.
-    to_string_tag_symbol->set_is_interesting_symbol(true);
-  }
-
-  Handle<NameDictionary> empty_property_dictionary =
-      NameDictionary::New(isolate(), 1, TENURED, USE_CUSTOM_MINIMUM_CAPACITY);
-  DCHECK(!empty_property_dictionary->HasSufficientCapacityToAdd(1));
-  set_empty_property_dictionary(*empty_property_dictionary);
-
-  set_public_symbol_table(*empty_property_dictionary);
-  set_api_symbol_table(*empty_property_dictionary);
-  set_api_private_symbol_table(*empty_property_dictionary);
-
-  set_number_string_cache(
-      *factory->NewFixedArray(kInitialNumberStringCacheSize * 2, TENURED));
-
-  // Allocate cache for single character one byte strings.
-  set_single_character_string_cache(
-      *factory->NewFixedArray(String::kMaxOneByteCharCode + 1, TENURED));
-
-  // Allocate cache for string split and regexp-multiple.
-  set_string_split_cache(*factory->NewFixedArray(
-      RegExpResultsCache::kRegExpResultsCacheSize, TENURED));
-  set_regexp_multiple_cache(*factory->NewFixedArray(
-      RegExpResultsCache::kRegExpResultsCacheSize, TENURED));
-
-  set_undefined_cell(*factory->NewCell(factory->undefined_value()));
-
-  // Microtask queue uses the empty fixed array as a sentinel for "empty".
-  // Number of queued microtasks stored in Isolate::pending_microtask_count().
-  set_microtask_queue(empty_fixed_array());
-
-  {
-    Handle<FixedArray> empty_sloppy_arguments_elements =
-        factory->NewFixedArray(2, TENURED);
-    empty_sloppy_arguments_elements->set_map_after_allocation(
-        sloppy_arguments_elements_map(), SKIP_WRITE_BARRIER);
-    set_empty_sloppy_arguments_elements(*empty_sloppy_arguments_elements);
-  }
-
-  {
-    Handle<WeakCell> cell = factory->NewWeakCell(factory->undefined_value());
-    set_empty_weak_cell(*cell);
-    cell->clear();
-  }
-
-  set_detached_contexts(empty_fixed_array());
-  set_retained_maps(ArrayList::cast(empty_fixed_array()));
-  set_retaining_path_targets(undefined_value());
-
-  set_weak_object_to_code_table(*WeakHashTable::New(isolate(), 16, TENURED));
-
-  set_weak_new_space_object_to_code_list(
-      ArrayList::cast(*(factory->NewFixedArray(16, TENURED))));
-  weak_new_space_object_to_code_list()->SetLength(0);
-
-  set_code_coverage_list(undefined_value());
-
-  set_script_list(Smi::kZero);
-
-  Handle<SeededNumberDictionary> slow_element_dictionary =
-      SeededNumberDictionary::New(isolate(), 1, TENURED,
-                                  USE_CUSTOM_MINIMUM_CAPACITY);
-  DCHECK(!slow_element_dictionary->HasSufficientCapacityToAdd(1));
-  slow_element_dictionary->set_requires_slow_elements();
-  set_empty_slow_element_dictionary(*slow_element_dictionary);
-
-  set_materialized_objects(*factory->NewFixedArray(0, TENURED));
-
-  // Handling of script id generation is in Heap::NextScriptId().
-  set_last_script_id(Smi::FromInt(v8::UnboundScript::kNoScriptId));
-  set_next_template_serial_number(Smi::kZero);
-
-  // Allocate the empty OrderedHashTable.
-  Handle<FixedArray> empty_ordered_hash_table =
-      factory->NewFixedArray(OrderedHashMap::kHashTableStartIndex, TENURED);
-  empty_ordered_hash_table->set_map_no_write_barrier(
-      *factory->ordered_hash_table_map());
-  for (int i = 0; i < empty_ordered_hash_table->length(); ++i) {
-    empty_ordered_hash_table->set(i, Smi::kZero);
-  }
-  set_empty_ordered_hash_table(*empty_ordered_hash_table);
-
-  // Allocate the empty script.
-  Handle<Script> script = factory->NewScript(factory->empty_string());
-  script->set_type(Script::TYPE_NATIVE);
-  set_empty_script(*script);
-
-  Handle<PropertyCell> cell = factory->NewPropertyCell(factory->empty_string());
-  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
-  set_array_protector(*cell);
-
-  cell = factory->NewPropertyCell(factory->empty_string());
-  cell->set_value(the_hole_value());
-  set_empty_property_cell(*cell);
-
-  cell = factory->NewPropertyCell(factory->empty_string());
-  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
-  set_array_iterator_protector(*cell);
-
-  Handle<Cell> is_concat_spreadable_cell = factory->NewCell(
-      handle(Smi::FromInt(Isolate::kProtectorValid), isolate()));
-  set_is_concat_spreadable_protector(*is_concat_spreadable_cell);
-
-  cell = factory->NewPropertyCell(factory->empty_string());
-  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
-  set_species_protector(*cell);
-
-  cell = factory->NewPropertyCell(factory->empty_string());
-  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
-  set_string_length_protector(*cell);
-
-  Handle<Cell> fast_array_iteration_cell = factory->NewCell(
-      handle(Smi::FromInt(Isolate::kProtectorValid), isolate()));
-  set_fast_array_iteration_protector(*fast_array_iteration_cell);
-
-  cell = factory->NewPropertyCell(factory->empty_string());
-  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
-  set_array_buffer_neutering_protector(*cell);
-
-  set_serialized_templates(empty_fixed_array());
-  set_serialized_global_proxy_sizes(empty_fixed_array());
-
-  set_weak_stack_trace_list(Smi::kZero);
-
-  set_noscript_shared_function_infos(Smi::kZero);
-
-  // Initialize context slot cache.
-  isolate_->context_slot_cache()->Clear();
-
-  // Initialize descriptor cache.
-  isolate_->descriptor_lookup_cache()->Clear();
-
-  // Initialize compilation cache.
-  isolate_->compilation_cache()->Clear();
-
-  // Finish creating JSPromiseCapabilityMap
-  {
-    // TODO(caitp): This initialization can be removed once PromiseCapability
-    // object is no longer used by builtins implemented in javascript.
-    Handle<Map> map = factory->js_promise_capability_map();
-    map->set_inobject_properties_or_constructor_function_index(3);
-
-    Map::EnsureDescriptorSlack(map, 3);
-
-    PropertyAttributes attrs =
-        static_cast<PropertyAttributes>(READ_ONLY | DONT_DELETE);
-    {  // promise
-      Descriptor d = Descriptor::DataField(factory->promise_string(),
-                                           JSPromiseCapability::kPromiseIndex,
-                                           attrs, Representation::Tagged());
-      map->AppendDescriptor(&d);
-    }
-
-    {  // resolve
-      Descriptor d = Descriptor::DataField(factory->resolve_string(),
-                                           JSPromiseCapability::kResolveIndex,
-                                           attrs, Representation::Tagged());
-      map->AppendDescriptor(&d);
-    }
-
-    {  // reject
-      Descriptor d = Descriptor::DataField(factory->reject_string(),
-                                           JSPromiseCapability::kRejectIndex,
-                                           attrs, Representation::Tagged());
-      map->AppendDescriptor(&d);
-    }
-
-    map->set_is_extensible(false);
-    set_js_promise_capability_map(*map);
-  }
 }
 
 bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
@@ -3305,7 +2782,7 @@ AllocationResult Heap::AllocateBytecodeArray(int length,
   instance->set_parameter_count(parameter_count);
   instance->set_incoming_new_target_or_generator_register(
       interpreter::Register::invalid_value());
-  instance->set_interrupt_budget(interpreter::Interpreter::InterruptBudget());
+  instance->set_interrupt_budget(interpreter::Interpreter::kInterruptBudget);
   instance->set_osr_loop_nesting_level(0);
   instance->set_bytecode_age(BytecodeArray::kNoAgeBytecodeAge);
   instance->set_constant_pool(constant_pool);
@@ -4280,12 +3757,13 @@ AllocationResult Heap::AllocatePropertyArray(int length,
   return result;
 }
 
-AllocationResult Heap::AllocateUninitializedFixedArray(int length) {
+AllocationResult Heap::AllocateUninitializedFixedArray(
+    int length, PretenureFlag pretenure) {
   if (length == 0) return empty_fixed_array();
 
   HeapObject* obj = nullptr;
   {
-    AllocationResult allocation = AllocateRawFixedArray(length, NOT_TENURED);
+    AllocationResult allocation = AllocateRawFixedArray(length, pretenure);
     if (!allocation.To(&obj)) return allocation;
   }
 
@@ -4389,8 +3867,8 @@ AllocationResult Heap::AllocateSymbol() {
   return result;
 }
 
-
-AllocationResult Heap::AllocateStruct(InstanceType type) {
+AllocationResult Heap::AllocateStruct(InstanceType type,
+                                      PretenureFlag pretenure) {
   Map* map;
   switch (type) {
 #define MAKE_CASE(NAME, Name, name) \
@@ -4405,7 +3883,8 @@ AllocationResult Heap::AllocateStruct(InstanceType type) {
   int size = map->instance_size();
   Struct* result = nullptr;
   {
-    AllocationResult allocation = Allocate(map, OLD_SPACE);
+    AllocationSpace space = SelectSpace(pretenure);
+    AllocationResult allocation = Allocate(map, space);
     if (!allocation.To(&result)) return allocation;
   }
   result->InitializeBody(size);
@@ -5994,22 +5473,6 @@ void Heap::InitializeHashSeed() {
   }
 }
 
-bool Heap::CreateHeapObjects() {
-  // Create initial maps.
-  if (!CreateInitialMaps()) return false;
-  if (!CreateApiObjects()) return false;
-
-  // Create initial objects
-  CreateInitialObjects();
-  CHECK_EQ(0u, gc_count_);
-
-  set_native_contexts_list(undefined_value());
-  set_allocation_sites_list(undefined_value());
-
-  return true;
-}
-
-
 void Heap::SetStackLimits() {
   DCHECK(isolate_ != NULL);
   DCHECK(isolate_ == isolate());
@@ -6193,21 +5656,21 @@ void Heap::TearDown() {
   memory_allocator_ = nullptr;
 }
 
-
-void Heap::AddGCPrologueCallback(v8::Isolate::GCCallback callback,
-                                 GCType gc_type, bool pass_isolate) {
+void Heap::AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
+                                 GCType gc_type, void* data) {
   DCHECK_NOT_NULL(callback);
   DCHECK(gc_prologue_callbacks_.end() ==
          std::find(gc_prologue_callbacks_.begin(), gc_prologue_callbacks_.end(),
-                   GCCallbackPair(callback, gc_type, pass_isolate)));
-  gc_prologue_callbacks_.emplace_back(callback, gc_type, pass_isolate);
+                   GCCallbackTuple(callback, gc_type, data)));
+  gc_prologue_callbacks_.emplace_back(callback, gc_type, data);
 }
 
-
-void Heap::RemoveGCPrologueCallback(v8::Isolate::GCCallback callback) {
+void Heap::RemoveGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
+                                    void* data) {
   DCHECK_NOT_NULL(callback);
   for (size_t i = 0; i < gc_prologue_callbacks_.size(); i++) {
-    if (gc_prologue_callbacks_[i].callback == callback) {
+    if (gc_prologue_callbacks_[i].callback == callback &&
+        gc_prologue_callbacks_[i].data == data) {
       gc_prologue_callbacks_[i] = gc_prologue_callbacks_.back();
       gc_prologue_callbacks_.pop_back();
       return;
@@ -6216,21 +5679,21 @@ void Heap::RemoveGCPrologueCallback(v8::Isolate::GCCallback callback) {
   UNREACHABLE();
 }
 
-
-void Heap::AddGCEpilogueCallback(v8::Isolate::GCCallback callback,
-                                 GCType gc_type, bool pass_isolate) {
+void Heap::AddGCEpilogueCallback(v8::Isolate::GCCallbackWithData callback,
+                                 GCType gc_type, void* data) {
   DCHECK_NOT_NULL(callback);
   DCHECK(gc_epilogue_callbacks_.end() ==
          std::find(gc_epilogue_callbacks_.begin(), gc_epilogue_callbacks_.end(),
-                   GCCallbackPair(callback, gc_type, pass_isolate)));
-  gc_epilogue_callbacks_.emplace_back(callback, gc_type, pass_isolate);
+                   GCCallbackTuple(callback, gc_type, data)));
+  gc_epilogue_callbacks_.emplace_back(callback, gc_type, data);
 }
 
-
-void Heap::RemoveGCEpilogueCallback(v8::Isolate::GCCallback callback) {
+void Heap::RemoveGCEpilogueCallback(v8::Isolate::GCCallbackWithData callback,
+                                    void* data) {
   DCHECK_NOT_NULL(callback);
   for (size_t i = 0; i < gc_epilogue_callbacks_.size(); i++) {
-    if (gc_epilogue_callbacks_[i].callback == callback) {
+    if (gc_epilogue_callbacks_[i].callback == callback &&
+        gc_epilogue_callbacks_[i].data == data) {
       gc_epilogue_callbacks_[i] = gc_epilogue_callbacks_.back();
       gc_epilogue_callbacks_.pop_back();
       return;
@@ -6540,7 +6003,7 @@ class UnreachableObjectsFilter : public HeapObjectsFilter {
   class MarkingVisitor : public ObjectVisitor, public RootVisitor {
    public:
     explicit MarkingVisitor(UnreachableObjectsFilter* filter)
-        : filter_(filter), marking_stack_(10) {}
+        : filter_(filter) {}
 
     void VisitPointers(HeapObject* host, Object** start,
                        Object** end) override {
@@ -6552,8 +6015,9 @@ class UnreachableObjectsFilter : public HeapObjectsFilter {
     }
 
     void TransitiveClosure() {
-      while (!marking_stack_.is_empty()) {
-        HeapObject* obj = marking_stack_.RemoveLast();
+      while (!marking_stack_.empty()) {
+        HeapObject* obj = marking_stack_.back();
+        marking_stack_.pop_back();
         obj->Iterate(this);
       }
     }
@@ -6564,12 +6028,12 @@ class UnreachableObjectsFilter : public HeapObjectsFilter {
         if (!(*p)->IsHeapObject()) continue;
         HeapObject* obj = HeapObject::cast(*p);
         if (filter_->MarkAsReachable(obj)) {
-          marking_stack_.Add(obj);
+          marking_stack_.push_back(obj);
         }
       }
     }
     UnreachableObjectsFilter* filter_;
-    List<HeapObject*> marking_stack_;
+    std::vector<HeapObject*> marking_stack_;
   };
 
   friend class MarkingVisitor;
@@ -6897,6 +6361,16 @@ bool Heap::AllowedToBeMigrated(HeapObject* obj, AllocationSpace dst) {
       return false;
   }
   UNREACHABLE();
+}
+
+void Heap::CreateObjectStats() {
+  if (V8_LIKELY(FLAG_gc_stats == 0)) return;
+  if (!live_object_stats_) {
+    live_object_stats_ = new ObjectStats(this);
+  }
+  if (!dead_object_stats_) {
+    dead_object_stats_ = new ObjectStats(this);
+  }
 }
 
 }  // namespace internal

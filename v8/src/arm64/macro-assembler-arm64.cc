@@ -38,27 +38,50 @@ CPURegList TurboAssembler::DefaultFPTmpList() {
   return CPURegList(fp_scratch1, fp_scratch2);
 }
 
-void TurboAssembler::PushCallerSaved(SaveFPRegsMode fp_mode,
-                                     Register exclusion1, Register exclusion2,
-                                     Register exclusion3) {
+int TurboAssembler::RequiredStackSizeForCallerSaved(SaveFPRegsMode fp_mode,
+                                                    Register exclusion1,
+                                                    Register exclusion2,
+                                                    Register exclusion3) const {
+  int bytes = 0;
+  auto list = kCallerSaved;
+  list.Remove(exclusion1, exclusion2, exclusion3);
+  bytes += list.Count() * kXRegSizeInBits / 8;
+
+  if (fp_mode == kSaveFPRegs) {
+    bytes += kCallerSavedV.Count() * kDRegSizeInBits / 8;
+  }
+  return bytes;
+}
+
+int TurboAssembler::PushCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
+                                    Register exclusion2, Register exclusion3) {
+  int bytes = 0;
   auto list = kCallerSaved;
   list.Remove(exclusion1, exclusion2, exclusion3);
   PushCPURegList(list);
+  bytes += list.Count() * kXRegSizeInBits / 8;
 
   if (fp_mode == kSaveFPRegs) {
     PushCPURegList(kCallerSavedV);
+    bytes += kCallerSavedV.Count() * kDRegSizeInBits / 8;
   }
+  return bytes;
 }
 
-void TurboAssembler::PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
-                                    Register exclusion2, Register exclusion3) {
+int TurboAssembler::PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
+                                   Register exclusion2, Register exclusion3) {
+  int bytes = 0;
   if (fp_mode == kSaveFPRegs) {
     PopCPURegList(kCallerSavedV);
+    bytes += kCallerSavedV.Count() * kDRegSizeInBits / 8;
   }
 
   auto list = kCallerSaved;
   list.Remove(exclusion1, exclusion2, exclusion3);
   PopCPURegList(list);
+  bytes += list.Count() * kXRegSizeInBits / 8;
+
+  return bytes;
 }
 
 void TurboAssembler::LogicalMacro(const Register& rd, const Register& rn,
@@ -3591,12 +3614,12 @@ void MacroAssembler::PrintfNoPreserve(const char * format,
     if (kPCSVarargs.IncludesAliasOf(args[i]) ||
         kPCSVarargsFP.IncludesAliasOf(args[i])) {
       if (args[i].IsRegister()) {
-        Register old_arg = Register(args[i]);
+        Register old_arg = args[i].Reg();
         Register new_arg = temps.AcquireSameSizeAs(old_arg);
         Mov(new_arg, old_arg);
         args[i] = new_arg;
       } else {
-        VRegister old_arg = VRegister(args[i]);
+        VRegister old_arg = args[i].VReg();
         VRegister new_arg = temps.AcquireSameSizeAs(old_arg);
         Fmov(new_arg, old_arg);
         args[i] = new_arg;
@@ -3609,13 +3632,13 @@ void MacroAssembler::PrintfNoPreserve(const char * format,
   for (int i = 0; i < arg_count; i++) {
     DCHECK(pcs[i].type() == args[i].type());
     if (pcs[i].IsRegister()) {
-      Mov(Register(pcs[i]), Register(args[i]), kDiscardForSameWReg);
+      Mov(pcs[i].Reg(), args[i].Reg(), kDiscardForSameWReg);
     } else {
       DCHECK(pcs[i].IsVRegister());
       if (pcs[i].SizeInBytes() == args[i].SizeInBytes()) {
-        Fmov(VRegister(pcs[i]), VRegister(args[i]));
+        Fmov(pcs[i].VReg(), args[i].VReg());
       } else {
-        Fcvt(VRegister(pcs[i]), VRegister(args[i]));
+        Fcvt(pcs[i].VReg(), args[i].VReg());
       }
     }
   }

@@ -1254,17 +1254,23 @@ inline uint32_t ObjectHash(Address address) {
 // Type feedback is encoded in such a way that, we can combine the feedback
 // at different points by performing an 'OR' operation. Type feedback moves
 // to a more generic type when we combine feedback.
-// kSignedSmall -> kSignedSmallInputs -> kNumberOrOddball -> kAny
-//                                       kString          -> kAny
+// kSignedSmall -> kSignedSmallInputs -> kNumber  -> kNumberOrOddball -> kAny
+//                                                   kString          -> kAny
+// TODO(mythria): Remove kNumber type when crankshaft can handle Oddballs
+// similar to Numbers. We don't need kNumber feedback for Turbofan. Extra
+// information about Number might reduce few instructions but causes more
+// deopts. We collect Number only because crankshaft does not handle all
+// cases of oddballs.
 class BinaryOperationFeedback {
  public:
   enum {
     kNone = 0x0,
     kSignedSmall = 0x1,
     kSignedSmallInputs = 0x3,
-    kNumberOrOddball = 0x5,
-    kString = 0x8,
-    kAny = 0x1F
+    kNumber = 0x7,
+    kNumberOrOddball = 0xF,
+    kString = 0x10,
+    kAny = 0x3F
   };
 };
 
@@ -1275,6 +1281,7 @@ class BinaryOperationFeedback {
 // kInternalizedString -> kString   -> kAny
 //                        kSymbol   -> kAny
 //                        kReceiver -> kAny
+// TODO(epertoso): consider unifying this with BinaryOperationFeedback.
 class CompareOperationFeedback {
  public:
   enum {
@@ -1289,6 +1296,27 @@ class CompareOperationFeedback {
     kAny = 0xff
   };
 };
+
+// Type feedback is encoded in such a way that, we can combine the feedback
+// at different points by performing an 'OR' operation. Type feedback moves
+// to a more generic type when we combine feedback.
+// kNone -> kEnumCacheKeysAndIndices -> kEnumCacheKeys -> kAny
+class ForInFeedback {
+ public:
+  enum {
+    kNone = 0x0,
+    kEnumCacheKeysAndIndices = 0x1,
+    kEnumCacheKeys = 0x3,
+    kAny = 0x7
+  };
+};
+STATIC_ASSERT((ForInFeedback::kNone |
+               ForInFeedback::kEnumCacheKeysAndIndices) ==
+              ForInFeedback::kEnumCacheKeysAndIndices);
+STATIC_ASSERT((ForInFeedback::kEnumCacheKeysAndIndices |
+               ForInFeedback::kEnumCacheKeys) == ForInFeedback::kEnumCacheKeys);
+STATIC_ASSERT((ForInFeedback::kEnumCacheKeys | ForInFeedback::kAny) ==
+              ForInFeedback::kAny);
 
 enum class UnicodeEncoding : uint8_t {
   // Different unicode encodings in a |word32|:
@@ -1409,10 +1437,6 @@ enum IsolateAddressId {
 
 }  // namespace internal
 }  // namespace v8
-
-// Used by js-builtin-reducer to identify whether ReduceArrayIterator() is
-// reducing a JSArray method, or a JSTypedArray method.
-enum class ArrayIteratorKind { kArray, kTypedArray };
 
 namespace i = v8::internal;
 

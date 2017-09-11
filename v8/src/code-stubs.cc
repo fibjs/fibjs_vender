@@ -109,14 +109,6 @@ Code::Flags CodeStub::GetCodeFlags() const {
   return Code::ComputeFlags(GetCodeKind(), GetExtraICState());
 }
 
-Handle<Code> CodeStub::GetCodeCopy(const FindAndReplacePattern& pattern) {
-  Handle<Code> ic = GetCode();
-  ic = isolate()->factory()->CopyCode(ic);
-  ic->FindAndReplace(pattern);
-  RecordCodeGeneration(ic);
-  return ic;
-}
-
 void CodeStub::DeleteStubFromCacheForTesting() {
   Heap* heap = isolate_->heap();
   Handle<UnseededNumberDictionary> dict(heap->code_stubs());
@@ -306,10 +298,9 @@ TF_STUB(StringAddStub, CodeStubAssembler) {
   }
 
   if ((flags & STRING_ADD_CHECK_BOTH) == 0) {
-    CodeStubAssembler::AllocationFlags allocation_flags =
+    CodeStubAssembler::AllocationFlag allocation_flags =
         (pretenure_flag == TENURED) ? CodeStubAssembler::kPretenured
                                     : CodeStubAssembler::kNone;
-    allocation_flags |= CodeStubAssembler::kAllowLargeObjectAllocation;
     Return(StringAdd(context, left, right, allocation_flags));
   } else {
     Callable callable = CodeFactory::StringAdd(isolate(), STRING_ADD_CHECK_NONE,

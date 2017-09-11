@@ -1704,7 +1704,7 @@ Node* RegExpBuiltinsAssembler::RegExpExec(Node* context, Node* regexp,
     GotoIf(WordEqual(result, NullConstant()), &out);
 
     ThrowIfNotJSReceiver(context, result,
-                         MessageTemplate::kInvalidRegExpExecResult, "unused");
+                         MessageTemplate::kInvalidRegExpExecResult, "");
 
     Goto(&out);
   }
@@ -2924,8 +2924,7 @@ Node* RegExpBuiltinsAssembler::ReplaceSimpleStringFastPath(
         Node* const second_part =
             SubString(context, string, match_end, subject_end);
 
-        Node* const result = StringAdd(context, first_part, second_part,
-                                       kAllowLargeObjectAllocation);
+        Node* const result = StringAdd(context, first_part, second_part);
         var_result.Bind(result);
         Goto(&out);
       }
@@ -2938,10 +2937,8 @@ Node* RegExpBuiltinsAssembler::ReplaceSimpleStringFastPath(
         Node* const third_part =
             SubString(context, string, match_end, subject_end);
 
-        Node* result = StringAdd(context, first_part, second_part,
-                                 kAllowLargeObjectAllocation);
-        result =
-            StringAdd(context, result, third_part, kAllowLargeObjectAllocation);
+        Node* result = StringAdd(context, first_part, second_part);
+        result = StringAdd(context, result, third_part);
 
         var_result.Bind(result);
         Goto(&out);

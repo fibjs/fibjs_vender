@@ -1025,7 +1025,7 @@ void BytecodeGenerator::VisitIterationHeader(int first_suspend_id,
         .JumpIfTrue(ToBooleanMode::kAlreadyBoolean, &not_resuming);
 
     // Otherwise this is an error.
-    BuildAbort(BailoutReason::kInvalidJumpTableIndex);
+    builder()->Abort(BailoutReason::kInvalidJumpTableIndex);
 
     builder()->Bind(&not_resuming);
   }
@@ -1057,7 +1057,7 @@ void BytecodeGenerator::BuildGeneratorPrologue() {
   }
   // We fall through when the generator state is not in the jump table.
   // TODO(leszeks): Only generate this for debug builds.
-  BuildAbort(BailoutReason::kInvalidJumpTableIndex);
+  builder()->Abort(BailoutReason::kInvalidJumpTableIndex);
 
   // This is a regular call.
   builder()
@@ -1368,11 +1368,6 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
   }
 }
 
-void BytecodeGenerator::VisitCaseClause(CaseClause* clause) {
-  // Handled entirely in VisitSwitchStatement.
-  UNREACHABLE();
-}
-
 void BytecodeGenerator::VisitIterationBody(IterationStatement* stmt,
                                            LoopBuilder* loop_builder) {
   loop_builder->LoopBody();
@@ -1525,6 +1520,7 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   }
 
   BytecodeLabel subject_null_label, subject_undefined_label;
+  FeedbackSlot slot = stmt->ForInFeedbackSlot();
 
   // Prepare the state for executing ForIn.
   builder()->SetExpressionAsStatementPosition(stmt->subject());
@@ -1537,7 +1533,8 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // Used as kRegTriple and kRegPair in ForInPrepare and ForInNext.
   RegisterList triple = register_allocator()->NewRegisterList(3);
   Register cache_length = triple[2];
-  builder()->ForInPrepare(receiver, triple);
+  builder()->ForInEnumerate(receiver);
+  builder()->ForInPrepare(triple, feedback_index(slot));
 
   // Set up loop counter
   Register index = register_allocator()->NewRegister();
@@ -1551,7 +1548,6 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
     builder()->SetExpressionAsStatementPosition(stmt->each());
     builder()->ForInContinue(index, cache_length);
     loop_builder.BreakIfFalse(ToBooleanMode::kAlreadyBoolean);
-    FeedbackSlot slot = stmt->ForInFeedbackSlot();
     builder()->ForInNext(receiver, index, triple.Truncate(2),
                          feedback_index(slot));
     loop_builder.ContinueIfUndefined();
@@ -1904,16 +1900,15 @@ void BytecodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
 }
 
 void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
-  int literal_index = feedback_index(expr->literal_slot());
-
   // Fast path for the empty object literal which doesn't need an
   // AllocationSite.
   if (expr->IsEmptyObjectLiteral()) {
     DCHECK(expr->IsFastCloningSupported());
-    builder()->CreateEmptyObjectLiteral(literal_index);
+    builder()->CreateEmptyObjectLiteral();
     return;
   }
 
+  int literal_index = feedback_index(expr->literal_slot());
   // Deep-copy the literal boilerplate.
   uint8_t flags = CreateObjectLiteralFlags::Encode(
       expr->ComputeFlags(), expr->IsFastCloningSupported());
@@ -2304,10 +2299,9 @@ void BytecodeGenerator::BuildAsyncReturn(int source_position) {
         .CallRuntime(Runtime::kInlineAsyncGeneratorResolve, args);
   } else {
     DCHECK(IsAsyncFunction(info()->literal()->kind()));
-    RegisterList args = register_allocator()->NewRegisterList(3);
-    Register receiver = args[0];
-    Register promise = args[1];
-    Register return_value = args[2];
+    RegisterList args = register_allocator()->NewRegisterList(2);
+    Register promise = args[0];
+    Register return_value = args[1];
     builder()->StoreAccumulatorInRegister(return_value);
 
     Variable* var_promise = closure_scope()->promise_var();
@@ -2316,8 +2310,6 @@ void BytecodeGenerator::BuildAsyncReturn(int source_position) {
                       HoleCheckMode::kElided);
     builder()
         ->StoreAccumulatorInRegister(promise)
-        .LoadUndefined()
-        .StoreAccumulatorInRegister(receiver)
         .CallJSRuntime(Context::PROMISE_RESOLVE_INDEX, args)
         .LoadAccumulatorWithRegister(promise);
   }
@@ -2326,16 +2318,6 @@ void BytecodeGenerator::BuildAsyncReturn(int source_position) {
 }
 
 void BytecodeGenerator::BuildReThrow() { builder()->ReThrow(); }
-
-void BytecodeGenerator::BuildAbort(BailoutReason bailout_reason) {
-  RegisterAllocationScope register_scope(this);
-  Register reason = register_allocator()->NewRegister();
-  builder()
-      ->LoadLiteral(Smi::FromInt(static_cast<int>(bailout_reason)))
-      .StoreAccumulatorInRegister(reason)
-      .CallRuntime(Runtime::kAbort, reason);
-}
-
 
 void BytecodeGenerator::BuildThrowIfHole(Variable* variable) {
   if (variable->is_this()) {
@@ -2469,7 +2451,9 @@ void BytecodeGenerator::BuildVariableAssignment(
 }
 
 void BytecodeGenerator::VisitAssignment(Assignment* expr) {
-  DCHECK(expr->target()->IsValidReferenceExpressionOrThis());
+  DCHECK(expr->target()->IsValidReferenceExpression() ||
+         (expr->op() == Token::INIT && expr->target()->IsVariableProxy() &&
+          expr->target()->AsVariableProxy()->is_this()));
   Register object, key;
   RegisterList super_property_args;
   const AstRawString* name;
@@ -3393,10 +3377,6 @@ void BytecodeGenerator::VisitCallNew(CallNew* expr) {
 void BytecodeGenerator::VisitCallRuntime(CallRuntime* expr) {
   if (expr->is_jsruntime()) {
     RegisterList args = register_allocator()->NewGrowableRegisterList();
-    // Allocate a register for the receiver and load it with undefined.
-    // TODO(leszeks): If CallJSRuntime always has an undefined receiver, use the
-    // same mechanism as CallUndefinedReceiver.
-    BuildPushUndefinedIntoRegisterList(&args);
     VisitArguments(expr->arguments(), &args);
     builder()->CallJSRuntime(expr->context_index(), args);
   } else {
@@ -3449,6 +3429,15 @@ void BytecodeGenerator::VisitNot(UnaryOperation* expr) {
   }
 }
 
+void BytecodeGenerator::BuildBinaryOperationForUnaryOperation(
+    UnaryOperation* expr, Token::Value binop, int rhs) {
+  VisitForAccumulatorValue(expr->expression());
+  builder()->SetExpressionPosition(expr);
+  builder()->BinaryOperationSmiLiteral(
+      binop, Smi::FromInt(rhs),
+      feedback_index(expr->UnaryOperationFeedbackSlot()));
+}
+
 void BytecodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
   switch (expr->op()) {
     case Token::Value::NOT:
@@ -3463,12 +3452,17 @@ void BytecodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
     case Token::Value::DELETE:
       VisitDelete(expr);
       break;
-    case Token::Value::BIT_NOT:
+    // TODO(adamk): Output specific bytecodes for ADD, SUB, and BIT_NOT
+    // instead of transforming them to binary operations.
     case Token::Value::ADD:
+      BuildBinaryOperationForUnaryOperation(expr, Token::Value::MUL, 1);
+      break;
     case Token::Value::SUB:
-      // These operators are converted to an equivalent binary operators in
-      // the parser. These operators are not expected to be visited here.
-      UNREACHABLE();
+      BuildBinaryOperationForUnaryOperation(expr, Token::Value::MUL, -1);
+      break;
+    case Token::Value::BIT_NOT:
+      BuildBinaryOperationForUnaryOperation(expr, Token::Value::BIT_XOR, -1);
+      break;
     default:
       UNREACHABLE();
   }
@@ -3527,7 +3521,7 @@ void BytecodeGenerator::VisitDelete(UnaryOperation* expr) {
 }
 
 void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
-  DCHECK(expr->expression()->IsValidReferenceExpressionOrThis());
+  DCHECK(expr->expression()->IsValidReferenceExpression());
 
   // Left-hand side can only be a property, a global or a variable slot.
   Property* property = expr->expression()->AsProperty();
@@ -3723,8 +3717,6 @@ void BytecodeGenerator::VisitCompareOperation(CompareOperation* expr) {
 }
 
 void BytecodeGenerator::VisitArithmeticExpression(BinaryOperation* expr) {
-  // TODO(rmcilroy): Special case "x * 1.0" and "x * -1" which are generated for
-  // +x and -x by the parser.
   FeedbackSlot slot = expr->BinaryOperationFeedbackSlot();
   Expression* subexpr;
   Smi* literal;

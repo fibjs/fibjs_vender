@@ -564,8 +564,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // invocation.
   }
 
-  // TODO(X64): Is argument correct? Is there a receiver to remove?
-  __ ret(1 * kPointerSize);  // Remove receiver.
+  __ ret(0);
 }
 
 void Builtins::Generate_JSEntryTrampoline(MacroAssembler* masm) {
@@ -697,34 +696,17 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ jmp(&stepping_prepared);
 }
 
+// TODO(juliana): if we remove the code below then we don't need all
+// the parameters.
 static void ReplaceClosureCodeWithOptimizedCode(
     MacroAssembler* masm, Register optimized_code, Register closure,
     Register scratch1, Register scratch2, Register scratch3) {
-  Register native_context = scratch1;
 
   // Store the optimized code in the closure.
   __ movp(FieldOperand(closure, JSFunction::kCodeOffset), optimized_code);
   __ movp(scratch1, optimized_code);  // Write barrier clobbers scratch1 below.
   __ RecordWriteField(closure, JSFunction::kCodeOffset, scratch1, scratch2,
                       kDontSaveFPRegs, OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
-
-  // Link the closure into the optimized function list.
-  __ movp(native_context, NativeContextOperand());
-  __ movp(scratch3,
-          ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST));
-  __ movp(FieldOperand(closure, JSFunction::kNextFunctionLinkOffset), scratch3);
-  __ RecordWriteField(closure, JSFunction::kNextFunctionLinkOffset, scratch3,
-                      scratch2, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
-                      OMIT_SMI_CHECK);
-  const int function_list_offset =
-      Context::SlotOffset(Context::OPTIMIZED_FUNCTIONS_LIST);
-  __ movp(ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST),
-          closure);
-  // Save closure before the write barrier.
-  __ movp(scratch3, closure);
-  __ RecordWriteContextSlot(native_context, function_list_offset, closure,
-                            scratch2, kDontSaveFPRegs);
-  __ movp(closure, scratch3);
 }
 
 static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch1,
@@ -860,18 +842,14 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
 // Advance the current bytecode offset. This simulates what all bytecode
 // handlers do upon completion of the underlying operation.
 static void AdvanceBytecodeOffset(MacroAssembler* masm, Register bytecode_array,
-                                  Register bytecode_offset, Register scratch1,
-                                  Register scratch2) {
+                                  Register bytecode_offset, Register bytecode,
+                                  Register scratch1) {
   Register bytecode_size_table = scratch1;
-  Register bytecode = scratch2;
   DCHECK(!AreAliased(bytecode_array, bytecode_offset, bytecode_size_table,
                      bytecode));
 
   __ Move(bytecode_size_table,
           ExternalReference::bytecode_size_table_address(masm->isolate()));
-
-  // Load the current bytecode.
-  __ movzxbp(bytecode, Operand(bytecode_array, bytecode_offset, times_1, 0));
 
   // Check if the bytecode is a Wide or ExtraWide prefix bytecode.
   Label load_size, extra_wide;
@@ -1032,9 +1010,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ call(rbx);
   masm->isolate()->heap()->SetInterpreterEntryReturnPCOffset(masm->pc_offset());
 
-  // Any returns to the entry trampoline are due to the interpreter tail calling
-  // a builtin and then a dispatch, so advance the bytecode offset here and
-  // dispatch to the next handler.
+  // Any returns to the entry trampoline are either due to the return bytecode
+  // or the interpreter tail calling a builtin and then a dispatch.
 
   // Get bytecode array and bytecode offset from the stack frame.
   __ movp(kInterpreterBytecodeArrayRegister,
@@ -1044,10 +1021,22 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ SmiToInteger32(kInterpreterBytecodeOffsetRegister,
                     kInterpreterBytecodeOffsetRegister);
 
+  // Check if we should return.
+  Label do_return;
+  __ movzxbp(rbx, Operand(kInterpreterBytecodeArrayRegister,
+                          kInterpreterBytecodeOffsetRegister, times_1, 0));
+  __ cmpb(rbx, Immediate(static_cast<int>(interpreter::Bytecode::kReturn)));
+  __ j(equal, &do_return, Label::kNear);
+
   // Advance to the next bytecode and dispatch.
   AdvanceBytecodeOffset(masm, kInterpreterBytecodeArrayRegister,
                         kInterpreterBytecodeOffsetRegister, rbx, rcx);
   __ jmp(&do_dispatch);
+
+  __ bind(&do_return);
+  // The return value is in rax.
+  LeaveInterpreterFrame(masm, rbx, rcx);
+  __ ret(0);
 
   // Load debug copy of the bytecode array if it exists.
   // kInterpreterBytecodeArrayRegister is already loaded with
@@ -1061,12 +1050,6 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ movp(kInterpreterBytecodeArrayRegister,
           FieldOperand(rcx, DebugInfo::kDebugBytecodeArrayOffset));
   __ jmp(&bytecode_array_loaded);
-}
-
-void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
-  // The return value is in rax.
-  LeaveInterpreterFrame(masm, rbx, rcx);
-  __ ret(0);
 }
 
 static void Generate_StackOverflowCheck(
@@ -1287,6 +1270,10 @@ void Builtins::Generate_InterpreterEnterBytecodeAdvance(MacroAssembler* masm) {
   __ SmiToInteger32(kInterpreterBytecodeOffsetRegister,
                     kInterpreterBytecodeOffsetRegister);
 
+  // Load the current bytecode.
+  __ movzxbp(rbx, Operand(kInterpreterBytecodeArrayRegister,
+                          kInterpreterBytecodeOffsetRegister, times_1, 0));
+
   // Advance to the next bytecode.
   AdvanceBytecodeOffset(masm, kInterpreterBytecodeArrayRegister,
                         kInterpreterBytecodeOffsetRegister, rbx, rcx);
@@ -1327,6 +1314,21 @@ void Builtins::Generate_CheckOptimizationMarker(MacroAssembler* masm) {
 
   // Otherwise, tail call the SFI code.
   GenerateTailCallToSharedCode(masm);
+}
+
+// TODO(jupvfranco): investigate whether there is any case where the CompileLazy
+// builtin does not set the code field in the JS function. If there isn't then
+// we do not need this builtin and can jump directly to CompileLazy.
+void Builtins::Generate_CompileLazyDeoptimizedCode(MacroAssembler* masm) {
+  // Set the code slot inside the JSFunction to the trampoline to the
+  // interpreter entry.
+  __ movq(rcx, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
+  __ movq(rcx, FieldOperand(rcx, SharedFunctionInfo::kCodeOffset));
+  __ movq(FieldOperand(rdi, JSFunction::kCodeOffset), rcx);
+  __ RecordWriteField(rdi, JSFunction::kCodeOffset, rcx, r15, kDontSaveFPRegs,
+                      OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+  // Jump to compile lazy.
+  Generate_CompileLazy(masm);
 }
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
@@ -1371,6 +1373,91 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
 
   __ bind(&gotta_call_runtime);
   GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
+}
+
+// Lazy deserialization design doc: http://goo.gl/dxkYDZ.
+void Builtins::Generate_DeserializeLazy(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- rax : argument count (preserved for callee)
+  //  -- rdx : new target (preserved for callee)
+  //  -- rdi : target function (preserved for callee)
+  // -----------------------------------
+
+  Label deserialize_in_runtime;
+
+  Register target = rdi;  // Must be preserved
+  Register scratch0 = rbx;
+  Register scratch1 = kScratchRegister;
+
+  CHECK(scratch0 != rax && scratch0 != rdx && scratch0 != rdi);
+  CHECK(scratch1 != rax && scratch1 != rdx && scratch1 != rdi);
+  CHECK(scratch0 != scratch1);
+
+  // Load the builtin id for lazy deserialization from SharedFunctionInfo.
+
+  __ AssertFunction(target);
+  __ movp(scratch0,
+          FieldOperand(target, JSFunction::kSharedFunctionInfoOffset));
+
+  __ movp(scratch1,
+          FieldOperand(scratch0, SharedFunctionInfo::kFunctionDataOffset));
+  __ AssertSmi(scratch1);
+
+  // The builtin may already have been deserialized. If that is the case, it is
+  // stored in the builtins table, and we can copy to correct code object to
+  // both the shared function info and function without calling into runtime.
+  //
+  // Otherwise, we need to call into runtime to deserialize.
+
+  {
+    // Load the code object at builtins_table[builtin_id] into scratch1.
+
+    __ SmiToInteger32(scratch1, scratch1);
+    __ Move(scratch0, ExternalReference::builtins_address(masm->isolate()));
+    __ movp(scratch1, Operand(scratch0, scratch1, times_pointer_size, 0));
+
+    // Check if the loaded code object has already been deserialized. This is
+    // the case iff it does not equal DeserializeLazy.
+
+    __ Move(scratch0, masm->CodeObject());
+    __ cmpp(scratch1, scratch0);
+    __ j(equal, &deserialize_in_runtime);
+  }
+
+  {
+    // If we've reached this spot, the target builtin has been deserialized and
+    // we simply need to copy it over. First to the shared function info.
+
+    Register target_builtin = scratch1;
+    Register shared = scratch0;
+
+    __ movp(shared,
+            FieldOperand(target, JSFunction::kSharedFunctionInfoOffset));
+
+    CHECK(r14 != target && r14 != scratch0 && r14 != scratch1);
+    CHECK(r15 != target && r15 != scratch0 && r15 != scratch1);
+
+    __ movp(FieldOperand(shared, SharedFunctionInfo::kCodeOffset),
+            target_builtin);
+    __ movp(r14, target_builtin);  // Write barrier clobbers r14 below.
+    __ RecordWriteField(shared, SharedFunctionInfo::kCodeOffset, r14, r15,
+                        kDontSaveFPRegs, OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+
+    // And second to the target function.
+
+    __ movp(FieldOperand(target, JSFunction::kCodeOffset), target_builtin);
+    __ movp(r14, target_builtin);  // Write barrier clobbers r14 below.
+    __ RecordWriteField(target, JSFunction::kCodeOffset, r14, r15,
+                        kDontSaveFPRegs, OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+
+    // All copying is done. Jump to the deserialized code object.
+
+    __ leap(target_builtin, FieldOperand(target_builtin, Code::kHeaderSize));
+    __ jmp(target_builtin);
+  }
+
+  __ bind(&deserialize_in_runtime);
+  GenerateTailCallToReturnedCode(masm, Runtime::kDeserializeLazy);
 }
 
 void Builtins::Generate_InstantiateAsmJs(MacroAssembler* masm) {

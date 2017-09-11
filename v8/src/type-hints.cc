@@ -17,6 +17,8 @@ std::ostream& operator<<(std::ostream& os, BinaryOperationHint hint) {
       return os << "SignedSmallInputs";
     case BinaryOperationHint::kSigned32:
       return os << "Signed32";
+    case BinaryOperationHint::kNumber:
+      return os << "Number";
     case BinaryOperationHint::kNumberOrOddball:
       return os << "NumberOrOddball";
     case BinaryOperationHint::kString:
@@ -46,6 +48,20 @@ std::ostream& operator<<(std::ostream& os, CompareOperationHint hint) {
     case CompareOperationHint::kReceiver:
       return os << "Receiver";
     case CompareOperationHint::kAny:
+      return os << "Any";
+  }
+  UNREACHABLE();
+}
+
+std::ostream& operator<<(std::ostream& os, ForInHint hint) {
+  switch (hint) {
+    case ForInHint::kNone:
+      return os << "None";
+    case ForInHint::kEnumCacheKeys:
+      return os << "EnumCacheKeys";
+    case ForInHint::kEnumCacheKeysAndIndices:
+      return os << "EnumCacheKeysAndIndices";
+    case ForInHint::kAny:
       return os << "Any";
   }
   UNREACHABLE();

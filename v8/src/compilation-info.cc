@@ -77,7 +77,6 @@ CompilationInfo::CompilationInfo(Handle<Script> script,
       deferred_handles_(nullptr),
       dependencies_(isolate, zone),
       bailout_reason_(kNoReason),
-      prologue_offset_(Code::kPrologueOffsetNotSet),
       parameter_count_(0),
       optimization_id_(-1),
       osr_expr_stack_height_(-1),
@@ -104,12 +103,6 @@ int CompilationInfo::num_parameters_including_this() const {
 }
 
 bool CompilationInfo::is_this_defined() const { return !IsStub(); }
-
-// Primitive functions are unlikely to be picked up by the stack-walking
-// profiler, so they trigger their own optimization when they're called
-// for the SharedFunctionInfo::kCallsUntilPrimitiveOptimization-th time.
-// TODO(6409) Remove when Full-Codegen dies.
-bool CompilationInfo::ShouldSelfOptimize() { return false; }
 
 void CompilationInfo::set_deferred_handles(
     std::shared_ptr<DeferredHandles> deferred_handles) {

@@ -92,9 +92,10 @@ TF_BUILTIN(GrowFastSmiOrObjectElements, CodeStubAssembler) {
   TailCallRuntime(Runtime::kGrowArrayElements, context, object, key);
 }
 
-TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
+TF_BUILTIN(NewArgumentsElements, CodeStubAssembler) {
   Node* frame = Parameter(Descriptor::kFrame);
   Node* length = SmiToWord(Parameter(Descriptor::kLength));
+  Node* mapped_count = SmiToWord(Parameter(Descriptor::kMappedCount));
 
   // Check if we can allocate in new space.
   ElementsKind kind = PACKED_ELEMENTS;
@@ -119,21 +120,49 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
       // Allocate a FixedArray in new space.
       Node* result = AllocateFixedArray(kind, length);
 
-      // Compute the effective {offset} into the {frame}.
-      Node* offset = IntPtrAdd(length, IntPtrConstant(1));
+      // The elements might be used to back mapped arguments. In that case fill
+      // the mapped elements (i.e. the first {mapped_count}) with the hole, but
+      // make sure not to overshoot the {length} if some arguments are missing.
+      Node* number_of_holes =
+          SelectConstant(IntPtrLessThan(mapped_count, length), mapped_count,
+                         length, MachineType::PointerRepresentation());
+      Node* the_hole = TheHoleConstant();
 
-      // Copy the parameters from {frame} (starting at {offset}) to {result}.
+      // Fill the first elements up to {number_of_holes} with the hole.
       VARIABLE(var_index, MachineType::PointerRepresentation());
-      Label loop(this, &var_index), done_loop(this);
+      Label loop1(this, &var_index), done_loop1(this);
       var_index.Bind(IntPtrConstant(0));
-      Goto(&loop);
-      BIND(&loop);
+      Goto(&loop1);
+      BIND(&loop1);
       {
         // Load the current {index}.
         Node* index = var_index.value();
 
         // Check if we are done.
-        GotoIf(WordEqual(index, length), &done_loop);
+        GotoIf(WordEqual(index, number_of_holes), &done_loop1);
+
+        // Store the hole into the {result}.
+        StoreFixedArrayElement(result, index, the_hole, SKIP_WRITE_BARRIER);
+
+        // Continue with next {index}.
+        var_index.Bind(IntPtrAdd(index, IntPtrConstant(1)));
+        Goto(&loop1);
+      }
+      BIND(&done_loop1);
+
+      // Compute the effective {offset} into the {frame}.
+      Node* offset = IntPtrAdd(length, IntPtrConstant(1));
+
+      // Copy the parameters from {frame} (starting at {offset}) to {result}.
+      Label loop2(this, &var_index), done_loop2(this);
+      Goto(&loop2);
+      BIND(&loop2);
+      {
+        // Load the current {index}.
+        Node* index = var_index.value();
+
+        // Check if we are done.
+        GotoIf(WordEqual(index, length), &done_loop2);
 
         // Load the parameter at the given {index}.
         Node* value = Load(MachineType::AnyTagged(), frame,
@@ -144,10 +173,10 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
 
         // Continue with next {index}.
         var_index.Bind(IntPtrAdd(index, IntPtrConstant(1)));
-        Goto(&loop);
+        Goto(&loop2);
       }
+      BIND(&done_loop2);
 
-      BIND(&done_loop);
       Return(result);
     }
   }
@@ -156,7 +185,8 @@ TF_BUILTIN(NewUnmappedArgumentsElements, CodeStubAssembler) {
   {
     // Allocate in old space (or large object space).
     TailCallRuntime(Runtime::kNewArgumentsElements, NoContextConstant(),
-                    BitcastWordToTagged(frame), SmiFromWord(length));
+                    BitcastWordToTagged(frame), SmiFromWord(length),
+                    SmiFromWord(mapped_count));
   }
 }
 
@@ -489,6 +519,39 @@ TF_BUILTIN(DeleteProperty, DeletePropertyBaseAssembler) {
     TailCallRuntime(Runtime::kDeleteProperty, context, receiver, key,
                     language_mode);
   }
+}
+
+TF_BUILTIN(ForInEnumerate, CodeStubAssembler) {
+  Node* receiver = Parameter(Descriptor::kReceiver);
+  Node* context = Parameter(Descriptor::kContext);
+
+  Label if_empty(this), if_runtime(this, Label::kDeferred);
+  Node* receiver_map = CheckEnumCache(receiver, &if_empty, &if_runtime);
+  Return(receiver_map);
+
+  BIND(&if_empty);
+  Return(EmptyFixedArrayConstant());
+
+  BIND(&if_runtime);
+  TailCallRuntime(Runtime::kForInEnumerate, context, receiver);
+}
+
+TF_BUILTIN(ForInFilter, CodeStubAssembler) {
+  Node* key = Parameter(Descriptor::kKey);
+  Node* object = Parameter(Descriptor::kObject);
+  Node* context = Parameter(Descriptor::kContext);
+
+  CSA_ASSERT(this, IsString(key));
+
+  Label if_true(this), if_false(this);
+  Node* result = HasProperty(object, key, context, kForInHasProperty);
+  Branch(IsTrue(result), &if_true, &if_false);
+
+  BIND(&if_true);
+  Return(key);
+
+  BIND(&if_false);
+  Return(UndefinedConstant());
 }
 
 }  // namespace internal

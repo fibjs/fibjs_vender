@@ -265,13 +265,9 @@ class ModuleDecoder : public Decoder {
     }
     // File are named `HASH.{ok,failed}.wasm`.
     size_t hash = base::hash_range(start_, end_);
-    char buf[32] = {'\0'};
-#if V8_OS_WIN && _MSC_VER < 1900
-#define snprintf sprintf_s
-#endif
-    snprintf(buf, sizeof(buf) - 1, "%016zx.%s.wasm", hash,
-             result.ok() ? "ok" : "failed");
-    std::string name(buf);
+    EmbeddedVector<char, 32> buf;
+    SNPrintF(buf, "%016zx.%s.wasm", hash, result.ok() ? "ok" : "failed");
+    std::string name(buf.start());
     if (FILE* wasm_file = base::OS::FOpen((path + name).c_str(), "wb")) {
       if (fwrite(start_, end_ - start_, 1, wasm_file) != 1) {
         OFStream os(stderr);
@@ -316,6 +312,7 @@ class ModuleDecoder : public Decoder {
                BYTES(kWasmVersion), BYTES(magic_version));
       }
     }
+#undef BYTES
   }
 
   void DecodeSection(SectionCode section_code, Vector<const uint8_t> bytes,
@@ -666,6 +663,10 @@ class ModuleDecoder : public Decoder {
   void DecodeElementSection() {
     uint32_t element_count =
         consume_count("element count", FLAG_wasm_max_table_size);
+
+    if (element_count > 0 && module_->function_tables.size() == 0) {
+      error(pc_, "The element section requires a table");
+    }
     for (uint32_t i = 0; ok() && i < element_count; ++i) {
       const byte* pos = pc();
       uint32_t table_index = consume_u32v("table index");

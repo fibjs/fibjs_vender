@@ -113,6 +113,7 @@
     <ClInclude Include="src\base\sys-info.h" />
     <ClInclude Include="src\base\template-utils.h" />
     <ClInclude Include="src\base\timezone-cache.h" />
+    <ClInclude Include="src\base\tsan.h" />
     <ClInclude Include="src\base\utils\random-number-generator.h" />
     <ClInclude Include="src\base\win32-headers.h" />
     <ClInclude Include="src\basic-block-profiler.h" />
@@ -128,12 +129,10 @@
     <ClInclude Include="src\builtins\builtins-constructor.h" />
     <ClInclude Include="src\builtins\builtins-definitions.h" />
     <ClInclude Include="src\builtins\builtins-descriptors.h" />
-    <ClInclude Include="src\builtins\builtins-forin-gen.h" />
     <ClInclude Include="src\builtins\builtins-intl.h" />
     <ClInclude Include="src\builtins\builtins-iterator-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
     <ClInclude Include="src\builtins\builtins-proxy-gen.h" />
-    <ClInclude Include="src\builtins\builtins-proxy-helpers-gen.h" />
     <ClInclude Include="src\builtins\builtins-regexp-gen.h" />
     <ClInclude Include="src\builtins\builtins-string-gen.h" />
     <ClInclude Include="src\builtins\builtins-utils-gen.h" />
@@ -226,8 +225,6 @@
     <ClInclude Include="src\compiler\machine-operator.h" />
     <ClInclude Include="src\compiler\memory-optimizer.h" />
     <ClInclude Include="src\compiler\move-optimizer.h" />
-    <ClInclude Include="src\compiler\new-escape-analysis-reducer.h" />
-    <ClInclude Include="src\compiler\new-escape-analysis.h" />
     <ClInclude Include="src\compiler\node-aux-data.h" />
     <ClInclude Include="src\compiler\node-cache.h" />
     <ClInclude Include="src\compiler\node-marker.h" />
@@ -307,6 +304,7 @@
     <ClInclude Include="src\extensions\statistics-extension.h" />
     <ClInclude Include="src\extensions\trigger-failure-extension.h" />
     <ClInclude Include="src\external-reference-table.h" />
+    <ClInclude Include="src\factory-inl.h" />
     <ClInclude Include="src\factory.h" />
     <ClInclude Include="src\fast-dtoa.h" />
     <ClInclude Include="src\feedback-vector-inl.h" />
@@ -315,7 +313,6 @@
     <ClInclude Include="src\field-index-inl.h" />
     <ClInclude Include="src\field-index.h" />
     <ClInclude Include="src\field-type.h" />
-    <ClInclude Include="src\find-and-replace-pattern.h" />
     <ClInclude Include="src\fixed-dtoa.h" />
     <ClInclude Include="src\flag-definitions.h" />
     <ClInclude Include="src\flags.h" />
@@ -331,6 +328,7 @@
     <ClInclude Include="src\heap-symbols.h" />
     <ClInclude Include="src\heap\array-buffer-tracker-inl.h" />
     <ClInclude Include="src\heap\array-buffer-tracker.h" />
+    <ClInclude Include="src\heap\barrier.h" />
     <ClInclude Include="src\heap\code-stats.h" />
     <ClInclude Include="src\heap\concurrent-marking.h" />
     <ClInclude Include="src\heap\embedder-tracing.h" />
@@ -562,7 +560,6 @@
     <ClInclude Include="src\setup-isolate.h" />
     <ClInclude Include="src\signature.h" />
     <ClInclude Include="src\simulator.h" />
-    <ClInclude Include="src\small-pointer-list.h" />
     <ClInclude Include="src\snapshot\builtin-deserializer.h" />
     <ClInclude Include="src\snapshot\builtin-serializer.h" />
     <ClInclude Include="src\snapshot\code-serializer.h" />
@@ -633,6 +630,7 @@
     <ClInclude Include="src\wasm\wasm-limits.h" />
     <ClInclude Include="src\wasm\wasm-module-builder.h" />
     <ClInclude Include="src\wasm\wasm-module.h" />
+    <ClInclude Include="src\wasm\wasm-objects-inl.h" />
     <ClInclude Include="src\wasm\wasm-objects.h" />
     <ClInclude Include="src\wasm\wasm-opcodes.h" />
     <ClInclude Include="src\wasm\wasm-result.h" />
@@ -740,7 +738,6 @@
     <ClCompile Include="src\builtins\builtins-date.cc" />
     <ClCompile Include="src\builtins\builtins-debug-gen.cc" />
     <ClCompile Include="src\builtins\builtins-error.cc" />
-    <ClCompile Include="src\builtins\builtins-forin-gen.cc" />
     <ClCompile Include="src\builtins\builtins-function-gen.cc" />
     <ClCompile Include="src\builtins\builtins-function.cc" />
     <ClCompile Include="src\builtins\builtins-generator-gen.cc" />
@@ -763,7 +760,6 @@
     <ClCompile Include="src\builtins\builtins-promise-gen.cc" />
     <ClCompile Include="src\builtins\builtins-promise.cc" />
     <ClCompile Include="src\builtins\builtins-proxy-gen.cc" />
-    <ClCompile Include="src\builtins\builtins-proxy-helpers-gen.cc" />
     <ClCompile Include="src\builtins\builtins-reflect.cc" />
     <ClCompile Include="src\builtins\builtins-regexp-gen.cc" />
     <ClCompile Include="src\builtins\builtins-regexp.cc" />
@@ -861,8 +857,6 @@
     <ClCompile Include="src\compiler\machine-operator.cc" />
     <ClCompile Include="src\compiler\memory-optimizer.cc" />
     <ClCompile Include="src\compiler\move-optimizer.cc" />
-    <ClCompile Include="src\compiler\new-escape-analysis-reducer.cc" />
-    <ClCompile Include="src\compiler\new-escape-analysis.cc" />
     <ClCompile Include="src\compiler\node-cache.cc" />
     <ClCompile Include="src\compiler\node-marker.cc" />
     <ClCompile Include="src\compiler\node-matchers.cc" />
@@ -975,6 +969,7 @@
     <ClCompile Include="src\heap\scavenge-job.cc" />
     <ClCompile Include="src\heap\scavenger.cc" />
     <ClCompile Include="src\heap\sequential-marking-deque.cc" />
+    <ClCompile Include="src\heap\setup-heap-internal.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
     <ClCompile Include="src\ia32\assembler-ia32.cc" />

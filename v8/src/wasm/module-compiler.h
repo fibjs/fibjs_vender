@@ -155,8 +155,9 @@ class ModuleCompiler {
                             compiler::ModuleEnv* module_env,
                             ErrorThrower* thrower);
 
-  MaybeHandle<WasmModuleObject> CompileToModuleObject(
-      ErrorThrower* thrower, const ModuleWireBytes& wire_bytes,
+  static MaybeHandle<WasmModuleObject> CompileToModuleObject(
+      Isolate* isolate, ErrorThrower* thrower,
+      std::unique_ptr<WasmModule> module, const ModuleWireBytes& wire_bytes,
       Handle<Script> asm_js_script,
       Vector<const byte> asm_js_offset_table_bytes);
 
@@ -164,8 +165,8 @@ class ModuleCompiler {
 
  private:
   MaybeHandle<WasmModuleObject> CompileToModuleObjectInternal(
-      Isolate* isolate, ErrorThrower* thrower,
-      const ModuleWireBytes& wire_bytes, Handle<Script> asm_js_script,
+      ErrorThrower* thrower, const ModuleWireBytes& wire_bytes,
+      Handle<Script> asm_js_script,
       Vector<const byte> asm_js_offset_table_bytes);
 
   Isolate* isolate_;
@@ -234,7 +235,6 @@ class InstanceBuilder {
   std::vector<Handle<JSFunction>> js_wrappers_;
   JSToWasmWrapperCache js_to_wasm_cache_;
   WeakCallbackInfo<void>::Callback instance_finalizer_callback_;
-  GlobalHandleLifetimeManager globals_manager_;
 
   const std::shared_ptr<Counters>& async_counters() const {
     return async_counters_;
@@ -347,7 +347,6 @@ class AsyncCompileJob {
   Handle<JSPromise> module_promise_;
   std::unique_ptr<ModuleCompiler> compiler_;
   std::unique_ptr<compiler::ModuleEnv> module_env_;
-  GlobalHandleLifetimeManager globals_manager_;
 
   std::vector<DeferredHandles*> deferred_handles_;
   Handle<WasmModuleObject> module_object_;

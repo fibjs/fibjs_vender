@@ -17,7 +17,7 @@
 #include "src/visitors.h"
 #include "src/vm-state-inl.h"
 #include "src/wasm/wasm-module.h"
-#include "src/wasm/wasm-objects.h"
+#include "src/wasm/wasm-objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -137,25 +137,6 @@ void JavaScriptFrameIterator::Advance() {
   } while (!iterator_.done() && !iterator_.frame()->is_java_script());
 }
 
-void JavaScriptFrameIterator::AdvanceToArgumentsFrame() {
-  if (!frame()->has_adapted_arguments()) return;
-  iterator_.Advance();
-  DCHECK(iterator_.frame()->is_arguments_adaptor());
-}
-
-void JavaScriptFrameIterator::AdvanceWhileDebugContext(Debug* debug) {
-  if (!debug->in_debug_scope()) return;
-
-  while (!done()) {
-    Context* context = Context::cast(frame()->context());
-    if (context->native_context() == *debug->debug_context()) {
-      Advance();
-    } else {
-      break;
-    }
-  }
-}
-
 // -------------------------------------------------------------------------
 
 StackTraceFrameIterator::StackTraceFrameIterator(Isolate* isolate)
@@ -183,12 +164,6 @@ bool StackTraceFrameIterator::IsValidFrame(StackFrame* frame) const {
   }
   // apart from javascript, only wasm is valid
   return frame->is_wasm();
-}
-
-void StackTraceFrameIterator::AdvanceToArgumentsFrame() {
-  if (!is_javascript() || !javascript_frame()->has_adapted_arguments()) return;
-  iterator_.Advance();
-  DCHECK(iterator_.frame()->is_arguments_adaptor());
 }
 
 // -------------------------------------------------------------------------
@@ -768,8 +743,7 @@ void StandardFrame::ComputeCallerState(State* state) const {
 
 bool StandardFrame::IsConstructor() const { return false; }
 
-void StandardFrame::Summarize(List<FrameSummary>* functions,
-                              FrameSummary::Mode mode) const {
+void StandardFrame::Summarize(std::vector<FrameSummary>* functions) const {
   // This should only be called on frames which override this method.
   UNREACHABLE();
 }
@@ -993,16 +967,15 @@ void JavaScriptFrame::GetFunctions(
   }
 }
 
-void JavaScriptFrame::Summarize(List<FrameSummary>* functions,
-                                FrameSummary::Mode mode) const {
-  DCHECK(functions->length() == 0);
+void JavaScriptFrame::Summarize(std::vector<FrameSummary>* functions) const {
+  DCHECK(functions->empty());
   Code* code = LookupCode();
   int offset = static_cast<int>(pc() - code->instruction_start());
   AbstractCode* abstract_code = AbstractCode::cast(code);
   FrameSummary::JavaScriptFrameSummary summary(isolate(), receiver(),
                                                function(), abstract_code,
-                                               offset, IsConstructor(), mode);
-  functions->Add(summary);
+                                               offset, IsConstructor());
+  functions->push_back(summary);
 }
 
 JSFunction* JavaScriptFrame::function() const {
@@ -1166,8 +1139,7 @@ bool IsNonDeoptimizingAsmCode(Code* code, JSFunction* function) {
 
 FrameSummary::JavaScriptFrameSummary::JavaScriptFrameSummary(
     Isolate* isolate, Object* receiver, JSFunction* function,
-    AbstractCode* abstract_code, int code_offset, bool is_constructor,
-    Mode mode)
+    AbstractCode* abstract_code, int code_offset, bool is_constructor)
     : FrameSummaryBase(isolate, JAVA_SCRIPT),
       receiver_(receiver, isolate),
       function_(function, isolate),
@@ -1176,8 +1148,7 @@ FrameSummary::JavaScriptFrameSummary::JavaScriptFrameSummary(
       is_constructor_(is_constructor) {
   DCHECK(abstract_code->IsBytecodeArray() ||
          Code::cast(abstract_code)->kind() != Code::OPTIMIZED_FUNCTION ||
-         IsNonDeoptimizingAsmCode(Code::cast(abstract_code), function) ||
-         mode == kApproximateSummary);
+         IsNonDeoptimizingAsmCode(Code::cast(abstract_code), function));
 }
 
 bool FrameSummary::JavaScriptFrameSummary::is_subject_to_debugging() const {
@@ -1230,16 +1201,11 @@ WASM_SUMMARY_DISPATCH(int, byte_offset)
 #undef WASM_SUMMARY_DISPATCH
 
 int FrameSummary::WasmFrameSummary::SourcePosition() const {
-  int offset = byte_offset();
   Handle<WasmCompiledModule> compiled_module(wasm_instance()->compiled_module(),
                                              isolate());
-  if (compiled_module->is_asm_js()) {
-    offset = WasmCompiledModule::GetAsmJsSourcePosition(
-        compiled_module, function_index(), offset, at_to_number_conversion());
-  } else {
-    offset += compiled_module->GetFunctionOffset(function_index());
-  }
-  return offset;
+  return WasmCompiledModule::GetSourcePosition(compiled_module,
+                                               function_index(), byte_offset(),
+                                               at_to_number_conversion());
 }
 
 Handle<Script> FrameSummary::WasmFrameSummary::script() const {
@@ -1299,10 +1265,11 @@ FrameSummary::~FrameSummary() {
 }
 
 FrameSummary FrameSummary::GetTop(const StandardFrame* frame) {
-  List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
+  std::vector<FrameSummary> frames;
+  frames.reserve(FLAG_max_inlining_levels + 1);
   frame->Summarize(&frames);
-  DCHECK_LT(0, frames.length());
-  return frames.last();
+  DCHECK_LT(0, frames.size());
+  return frames.back();
 }
 
 FrameSummary FrameSummary::GetBottom(const StandardFrame* frame) {
@@ -1310,17 +1277,18 @@ FrameSummary FrameSummary::GetBottom(const StandardFrame* frame) {
 }
 
 FrameSummary FrameSummary::GetSingle(const StandardFrame* frame) {
-  List<FrameSummary> frames(1);
+  std::vector<FrameSummary> frames;
   frame->Summarize(&frames);
-  DCHECK_EQ(1, frames.length());
-  return frames.first();
+  DCHECK_EQ(1, frames.size());
+  return frames.front();
 }
 
 FrameSummary FrameSummary::Get(const StandardFrame* frame, int index) {
   DCHECK_LE(0, index);
-  List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
+  std::vector<FrameSummary> frames;
+  frames.reserve(FLAG_max_inlining_levels + 1);
   frame->Summarize(&frames);
-  DCHECK_GT(frames.length(), index);
+  DCHECK_GT(frames.size(), index);
   return frames[index];
 }
 
@@ -1351,9 +1319,8 @@ FRAME_SUMMARY_DISPATCH(Handle<Context>, native_context)
 
 #undef FRAME_SUMMARY_DISPATCH
 
-void OptimizedFrame::Summarize(List<FrameSummary>* frames,
-                               FrameSummary::Mode mode) const {
-  DCHECK(frames->length() == 0);
+void OptimizedFrame::Summarize(std::vector<FrameSummary>* frames) const {
+  DCHECK(frames->empty());
   DCHECK(is_optimized());
 
   // Delegate to JS frame in absence of turbofan deoptimization.
@@ -1368,9 +1335,6 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames,
   DeoptimizationInputData* const data = GetDeoptimizationData(&deopt_index);
   if (deopt_index == Safepoint::kNoDeoptimizationIndex) {
     CHECK_NULL(data);
-    if (mode == FrameSummary::kApproximateSummary) {
-      return JavaScriptFrame::Summarize(frames, mode);
-    }
     FATAL("Missing deoptimization information for OptimizedFrame::Summarize.");
   }
 
@@ -1421,7 +1385,7 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames,
       FrameSummary::JavaScriptFrameSummary summary(isolate(), *receiver,
                                                    *function, *abstract_code,
                                                    code_offset, is_constructor);
-      frames->Add(summary);
+      frames->push_back(summary);
       is_constructor = false;
     } else if (it->kind() == TranslatedFrame::kConstructStub) {
       // The next encountered JS frame will be marked as a constructor call.
@@ -1629,15 +1593,14 @@ void InterpretedFrame::WriteInterpreterRegister(int register_index,
   return SetExpression(index + register_index, value);
 }
 
-void InterpretedFrame::Summarize(List<FrameSummary>* functions,
-                                 FrameSummary::Mode mode) const {
-  DCHECK(functions->length() == 0);
+void InterpretedFrame::Summarize(std::vector<FrameSummary>* functions) const {
+  DCHECK(functions->empty());
   AbstractCode* abstract_code =
       AbstractCode::cast(function()->shared()->bytecode_array());
   FrameSummary::JavaScriptFrameSummary summary(
       isolate(), receiver(), function(), abstract_code, GetBytecodeOffset(),
       IsConstructor());
-  functions->Add(summary);
+  functions->push_back(summary);
 }
 
 int ArgumentsAdaptorFrame::GetNumberOfIncomingArguments() const {
@@ -1728,15 +1691,14 @@ int WasmCompiledFrame::position() const {
   return FrameSummary::GetSingle(this).SourcePosition();
 }
 
-void WasmCompiledFrame::Summarize(List<FrameSummary>* functions,
-                                  FrameSummary::Mode mode) const {
-  DCHECK_EQ(0, functions->length());
+void WasmCompiledFrame::Summarize(std::vector<FrameSummary>* functions) const {
+  DCHECK(functions->empty());
   Handle<Code> code(LookupCode(), isolate());
   int offset = static_cast<int>(pc() - code->instruction_start());
   Handle<WasmInstanceObject> instance(wasm_instance(), isolate());
   FrameSummary::WasmCompiledFrameSummary summary(
       isolate(), instance, code, offset, at_to_number_conversion());
-  functions->Add(summary);
+  functions->push_back(summary);
 }
 
 bool WasmCompiledFrame::at_to_number_conversion() const {
@@ -1775,8 +1737,8 @@ void WasmInterpreterEntryFrame::Print(StringStream* accumulator, PrintMode mode,
   if (mode != OVERVIEW) accumulator->Add("\n");
 }
 
-void WasmInterpreterEntryFrame::Summarize(List<FrameSummary>* functions,
-                                          FrameSummary::Mode mode) const {
+void WasmInterpreterEntryFrame::Summarize(
+    std::vector<FrameSummary>* functions) const {
   Handle<WasmInstanceObject> instance(wasm_instance(), isolate());
   std::vector<std::pair<uint32_t, int>> interpreted_stack =
       instance->debug_info()->GetInterpretedStack(fp());
@@ -1784,7 +1746,7 @@ void WasmInterpreterEntryFrame::Summarize(List<FrameSummary>* functions,
   for (auto& e : interpreted_stack) {
     FrameSummary::WasmInterpretedFrameSummary summary(isolate(), instance,
                                                       e.first, e.second);
-    functions->Add(summary);
+    functions->push_back(summary);
   }
 }
 
@@ -2035,23 +1997,7 @@ void InternalFrame::Iterate(RootVisitor* v) const {
   if (code->has_tagged_params()) IterateExpressions(v);
 }
 
-
 // -------------------------------------------------------------------------
-
-
-JavaScriptFrame* StackFrameLocator::FindJavaScriptFrame(int n) {
-  DCHECK(n >= 0);
-  for (int i = 0; i <= n; i++) {
-    while (!iterator_.frame()->is_java_script()) iterator_.Advance();
-    if (i == n) return JavaScriptFrame::cast(iterator_.frame());
-    iterator_.Advance();
-  }
-  UNREACHABLE();
-}
-
-
-// -------------------------------------------------------------------------
-
 
 static Map* GcSafeMapOfCodeSpaceObject(HeapObject* object) {
   MapWord map_word = object->map_word();

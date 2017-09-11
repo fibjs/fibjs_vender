@@ -175,6 +175,7 @@
   V(JSCallWithSpread)               \
   V(JSCallRuntime)                  \
   V(JSConvertReceiver)              \
+  V(JSForInEnumerate)               \
   V(JSForInNext)                    \
   V(JSForInPrepare)                 \
   V(JSLoadMessage)                  \
@@ -273,7 +274,9 @@
   V(SpeculativeNumberBitwiseXor)                    \
   V(SpeculativeNumberShiftLeft)                     \
   V(SpeculativeNumberShiftRight)                    \
-  V(SpeculativeNumberShiftRightLogical)
+  V(SpeculativeNumberShiftRightLogical)             \
+  V(SpeculativeSafeIntegerAdd)                      \
+  V(SpeculativeSafeIntegerSubtract)
 
 #define SIMPLIFIED_NUMBER_UNOP_LIST(V) \
   V(NumberAbs)                         \
@@ -338,8 +341,10 @@
   V(CheckHeapObject)                \
   V(CheckFloat64Hole)               \
   V(CheckNotTaggedHole)             \
+  V(CompareMaps)                    \
   V(ConvertTaggedHoleToUndefined)   \
   V(Allocate)                       \
+  V(LoadFieldByIndex)               \
   V(LoadField)                      \
   V(LoadElement)                    \
   V(LoadTypedElement)               \
@@ -359,13 +364,14 @@
   V(ObjectIsUndetectable)           \
   V(ArgumentsFrame)                 \
   V(ArgumentsLength)                \
-  V(NewUnmappedArgumentsElements)   \
+  V(NewArgumentsElements)           \
   V(ArrayBufferWasNeutered)         \
   V(EnsureWritableFastElements)     \
   V(MaybeGrowFastElements)          \
   V(TransitionElementsKind)         \
   V(LookupHashStorageIndex)         \
-  V(LoadHashMapValue)
+  V(LoadHashMapValue)               \
+  V(RuntimeAbort)
 
 #define SIMPLIFIED_OP_LIST(V)                 \
   SIMPLIFIED_CHANGE_OP_LIST(V)                \

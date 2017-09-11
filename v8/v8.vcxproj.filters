@@ -474,6 +474,9 @@
     <ClInclude Include="src\base\timezone-cache.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\tsan.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
     <ClInclude Include="src\base\utils\random-number-generator.h">
       <Filter>Source Files\base\utils</Filter>
     </ClInclude>
@@ -519,9 +522,6 @@
     <ClInclude Include="src\builtins\builtins-descriptors.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins\builtins-forin-gen.h">
-      <Filter>Source Files\builtins</Filter>
-    </ClInclude>
     <ClInclude Include="src\builtins\builtins-intl.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -532,9 +532,6 @@
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-proxy-gen.h">
-      <Filter>Source Files\builtins</Filter>
-    </ClInclude>
-    <ClInclude Include="src\builtins\builtins-proxy-helpers-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-regexp-gen.h">
@@ -813,12 +810,6 @@
     <ClInclude Include="src\compiler\move-optimizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\new-escape-analysis-reducer.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\new-escape-analysis.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\node-aux-data.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -1056,6 +1047,9 @@
     <ClInclude Include="src\external-reference-table.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\factory-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\factory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1078,9 +1072,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\field-type.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\find-and-replace-pattern.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\fixed-dtoa.h">
@@ -1126,6 +1117,9 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\array-buffer-tracker.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\barrier.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\code-stats.h">
@@ -1821,9 +1815,6 @@
     <ClInclude Include="src\simulator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\small-pointer-list.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\snapshot\builtin-deserializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
@@ -2032,6 +2023,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-module.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-objects-inl.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-objects.h">
@@ -2351,9 +2345,6 @@
     <ClCompile Include="src\builtins\builtins-error.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-forin-gen.cc">
-      <Filter>Source Files\builtins</Filter>
-    </ClCompile>
     <ClCompile Include="src\builtins\builtins-function-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2418,9 +2409,6 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-proxy-gen.cc">
-      <Filter>Source Files\builtins</Filter>
-    </ClCompile>
-    <ClCompile Include="src\builtins\builtins-proxy-helpers-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-reflect.cc">
@@ -2712,12 +2700,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\move-optimizer.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\new-escape-analysis-reducer.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\new-escape-analysis.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\node-cache.cc">
@@ -3054,6 +3036,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\sequential-marking-deque.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\setup-heap-internal.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\spaces.cc">

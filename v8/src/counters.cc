@@ -420,7 +420,8 @@ void RuntimeCallTimer::Snapshot() {
   Resume(now);
 }
 
-RuntimeCallStats::RuntimeCallStats() : in_use_(false) {
+RuntimeCallStats::RuntimeCallStats()
+    : in_use_(false), thread_id_(ThreadId::Current()) {
   static const char* const kNames[] = {
 #define CALL_BUILTIN_COUNTER(name) "GC_" #name,
       FOR_EACH_GC_COUNTER(CALL_BUILTIN_COUNTER)  //
@@ -476,6 +477,7 @@ const int RuntimeCallStats::counters_count =
 // static
 void RuntimeCallStats::Enter(RuntimeCallStats* stats, RuntimeCallTimer* timer,
                              CounterId counter_id) {
+  DCHECK(ThreadId::Current().Equals(stats->thread_id()));
   RuntimeCallCounter* counter = &(stats->*counter_id);
   DCHECK(counter->name() != nullptr);
   timer->Start(counter, stats->current_timer_.Value());
@@ -485,6 +487,7 @@ void RuntimeCallStats::Enter(RuntimeCallStats* stats, RuntimeCallTimer* timer,
 
 // static
 void RuntimeCallStats::Leave(RuntimeCallStats* stats, RuntimeCallTimer* timer) {
+  DCHECK(ThreadId::Current().Equals(stats->thread_id()));
   CHECK(stats->current_timer_.Value() == timer);
   stats->current_timer_.SetValue(timer->Stop());
   RuntimeCallTimer* cur_timer = stats->current_timer_.Value();

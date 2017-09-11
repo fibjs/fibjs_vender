@@ -6,6 +6,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/callable.h"
 #include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/code-generator.h"
@@ -235,6 +236,28 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
         must_save_lr_(!gen->frame_access_state()->has_frame()),
         zone_(gen->zone()) {}
 
+  void SaveRegisters(RegList registers) {
+    DCHECK(NumRegs(registers) > 0);
+    RegList regs = 0;
+    for (int i = 0; i < Register::kNumRegisters; ++i) {
+      if ((registers >> i) & 1u) {
+        regs |= Register::from_code(i).bit();
+      }
+    }
+    __ MultiPush(regs | ra.bit());
+  }
+
+  void RestoreRegisters(RegList registers) {
+    DCHECK(NumRegs(registers) > 0);
+    RegList regs = 0;
+    for (int i = 0; i < Register::kNumRegisters; ++i) {
+      if ((registers >> i) & 1u) {
+        regs |= Register::from_code(i).bit();
+      }
+    }
+    __ MultiPop(regs | ra.bit());
+  }
+
   void Generate() final {
     if (mode_ > RecordWriteMode::kValueIsPointer) {
       __ JumpIfSmi(value_, exit());
@@ -242,6 +265,32 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     __ CheckPageFlag(value_, scratch0_,
                      MemoryChunk::kPointersToHereAreInterestingMask, eq,
                      exit());
+    __ Daddu(scratch1_, object_, index_);
+#ifdef V8_CSA_WRITE_BARRIER
+    Callable const callable =
+        Builtins::CallableFor(__ isolate(), Builtins::kRecordWrite);
+    RegList registers = callable.descriptor().allocatable_registers();
+
+    SaveRegisters(registers);
+    Register object_parameter(callable.descriptor().GetRegisterParameter(
+        RecordWriteDescriptor::kObject));
+    Register slot_parameter(callable.descriptor().GetRegisterParameter(
+        RecordWriteDescriptor::kSlot));
+    Register isolate_parameter(callable.descriptor().GetRegisterParameter(
+        RecordWriteDescriptor::kIsolate));
+
+    __ Push(object_);
+    __ Push(scratch1_);
+
+    __ Pop(slot_parameter);
+    __ Pop(object_parameter);
+
+    __ li(isolate_parameter,
+          Operand(ExternalReference::isolate_address(__ isolate())));
+    __ Call(callable.code(), RelocInfo::CODE_TARGET);
+
+    RestoreRegisters(registers);
+#else
     RememberedSetAction const remembered_set_action =
         mode_ > RecordWriteMode::kValueIsMap ? EMIT_REMEMBERED_SET
                                              : OMIT_REMEMBERED_SET;
@@ -251,13 +300,13 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
       // We need to save and restore ra if the frame was elided.
       __ Push(ra);
     }
-    __ Daddu(scratch1_, object_, index_);
     __ CallStubDelayed(
         new (zone_) RecordWriteStub(nullptr, object_, scratch0_, scratch1_,
                                     remembered_set_action, save_fp_mode));
     if (must_save_lr_) {
       __ Pop(ra);
     }
+#endif
   }
 
  private:
@@ -449,7 +498,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     if (instr->InputAt(0)->IsRegister()) {                               \
       auto offset = i.InputRegister(0);                                  \
       auto value = i.InputOrZero##width##Register(2);                    \
-      if (value.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {        \
+      if (value == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {         \
         __ Move(kDoubleRegZero, 0.0);                                    \
       }                                                                  \
       ASSEMBLE_BOUNDS_CHECK_REGISTER(offset, i.InputOperand(1), &done);  \
@@ -459,7 +508,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     } else {                                                             \
       int offset = static_cast<int>(i.InputOperand(0).immediate());      \
       auto value = i.InputOrZero##width##Register(2);                    \
-      if (value.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {        \
+      if (value == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {         \
         __ Move(kDoubleRegZero, 0.0);                                    \
       }                                                                  \
       ASSEMBLE_BOUNDS_CHECK_IMMEDIATE(offset, i.InputOperand(1), &done); \
@@ -586,6 +635,80 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     __ sync();                                                                \
   } while (0)
 
+#define ASSEMBLE_ATOMIC_EXCHANGE_INTEGER()                                \
+  do {                                                                    \
+    Label exchange;                                                       \
+    __ sync();                                                            \
+    __ bind(&exchange);                                                   \
+    __ daddu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));  \
+    __ Ll(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));         \
+    __ Sc(i.InputRegister(2), MemOperand(i.TempRegister(0), 0));          \
+    __ BranchShort(&exchange, eq, i.InputRegister(2), Operand(zero_reg)); \
+    __ sync();                                                            \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(sign_extend, size)               \
+  do {                                                                        \
+    Label exchange;                                                           \
+    __ daddu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));      \
+    __ andi(i.TempRegister(1), i.TempRegister(0), 0x3);                       \
+    __ Dsubu(i.TempRegister(0), i.TempRegister(0),                            \
+             Operand(i.TempRegister(1)));                                     \
+    __ sll(i.TempRegister(1), i.TempRegister(1), 3);                          \
+    __ sync();                                                                \
+    __ bind(&exchange);                                                       \
+    __ Ll(i.TempRegister(2), MemOperand(i.TempRegister(0), 0));               \
+    __ ExtractBits(i.OutputRegister(0), i.TempRegister(2), i.TempRegister(1), \
+                   size, sign_extend);                                        \
+    __ InsertBits(i.TempRegister(2), i.InputRegister(2), i.TempRegister(1),   \
+                  size);                                                      \
+    __ Sc(i.TempRegister(2), MemOperand(i.TempRegister(0), 0));               \
+    __ BranchShort(&exchange, eq, i.TempRegister(2), Operand(zero_reg));      \
+    __ sync();                                                                \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER()                       \
+  do {                                                                   \
+    Label compareExchange;                                               \
+    Label exit;                                                          \
+    __ daddu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1)); \
+    __ sync();                                                           \
+    __ bind(&compareExchange);                                           \
+    __ Ll(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));        \
+    __ BranchShort(&exit, ne, i.InputRegister(2),                        \
+                   Operand(i.OutputRegister(0)));                        \
+    __ Sc(i.InputRegister(3), MemOperand(i.TempRegister(0), 0));         \
+    __ BranchShort(&compareExchange, eq, i.InputRegister(3),             \
+                   Operand(zero_reg));                                   \
+    __ bind(&exit);                                                      \
+    __ sync();                                                           \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER_EXT(sign_extend, size)       \
+  do {                                                                        \
+    Label compareExchange;                                                    \
+    Label exit;                                                               \
+    __ daddu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));      \
+    __ andi(i.TempRegister(1), i.TempRegister(0), 0x3);                       \
+    __ Dsubu(i.TempRegister(0), i.TempRegister(0),                            \
+             Operand(i.TempRegister(1)));                                     \
+    __ sll(i.TempRegister(1), i.TempRegister(1), 3);                          \
+    __ sync();                                                                \
+    __ bind(&compareExchange);                                                \
+    __ Ll(i.TempRegister(2), MemOperand(i.TempRegister(0), 0));               \
+    __ ExtractBits(i.OutputRegister(0), i.TempRegister(2), i.TempRegister(1), \
+                   size, sign_extend);                                        \
+    __ BranchShort(&exit, ne, i.InputRegister(2),                             \
+                   Operand(i.OutputRegister(0)));                             \
+    __ InsertBits(i.TempRegister(2), i.InputRegister(3), i.TempRegister(1),   \
+                  size);                                                      \
+    __ Sc(i.TempRegister(2), MemOperand(i.TempRegister(0), 0));               \
+    __ BranchShort(&compareExchange, eq, i.TempRegister(2),                   \
+                   Operand(zero_reg));                                        \
+    __ bind(&exit);                                                           \
+    __ sync();                                                                \
+  } while (0)
+
 #define ASSEMBLE_IEEE754_BINOP(name)                                        \
   do {                                                                      \
     FrameScope scope(tasm(), StackFrame::MANUAL);                           \
@@ -681,6 +804,34 @@ void CodeGenerator::AssembleTailCallAfterGap(Instruction* instr,
                                 first_unused_stack_slot);
 }
 
+// Check if the code object is marked for deoptimization. If it is, then it
+// jumps to the CompileLazyDeoptimizedCode builtin. In order to do this we need
+// to:
+//    1. load the address of the current instruction;
+//    2. read from memory the word that contains that bit, which can be found in
+//       the first set of flags ({kKindSpecificFlags1Offset});
+//    3. test kMarkedForDeoptimizationBit in those flags; and
+//    4. if it is not zero then it jumps to the builtin.
+void CodeGenerator::BailoutIfDeoptimized() {
+  Label current;
+  // This push on ra and the pop below together ensure that we restore the
+  // register ra, which is needed while computing frames for deoptimization.
+  __ push(ra);
+  // The bal instruction puts the address of the current instruction into
+  // the return address (ra) register, which we can use later on.
+  __ bal(&current);
+  __ nop();
+  int pc = __ pc_offset();
+  __ bind(&current);
+  int offset = Code::kKindSpecificFlags1Offset - (Code::kHeaderSize + pc);
+  __ Ld(a2, MemOperand(ra, offset));
+  __ pop(ra);
+  __ And(a2, a2, Operand(1 << Code::kMarkedForDeoptimizationBit));
+  Handle<Code> code = isolate()->builtins()->builtin_handle(
+      Builtins::kCompileLazyDeoptimizedCode);
+  __ Jump(code, RelocInfo::CODE_TARGET, ne, a2, Operand(zero_reg));
+}
+
 // Assembles an instruction after register allocation, producing machine code.
 CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     Instruction* instr) {
@@ -746,12 +897,21 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kArchSaveCallerRegisters: {
       // kReturnRegister0 should have been saved before entering the stub.
-      __ PushCallerSaved(kSaveFPRegs, kReturnRegister0);
+      int bytes = __ PushCallerSaved(kSaveFPRegs, kReturnRegister0);
+      DCHECK(bytes % kPointerSize == 0);
+      DCHECK(frame_access_state()->sp_delta() == 0);
+      frame_access_state()->IncreaseSPDelta(bytes / kPointerSize);
+      DCHECK(!caller_registers_saved_);
+      caller_registers_saved_ = true;
       break;
     }
     case kArchRestoreCallerRegisters: {
       // Don't overwrite the returned value.
-      __ PopCallerSaved(kSaveFPRegs, kReturnRegister0);
+      int bytes = __ PopCallerSaved(kSaveFPRegs, kReturnRegister0);
+      frame_access_state()->IncreaseSPDelta(-(bytes / kPointerSize));
+      DCHECK(frame_access_state()->sp_delta() == 0);
+      DCHECK(caller_registers_saved_);
+      caller_registers_saved_ = false;
       break;
     }
     case kArchPrepareTailCall:
@@ -767,7 +927,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ CallCFunction(func, num_parameters);
       }
       frame_access_state()->SetFrameAccessToDefault();
+      // Ideally, we should decrement SP delta to match the change of stack
+      // pointer in CallCFunction. However, for certain architectures (e.g.
+      // ARM), there may be more strict alignment requirement, causing old SP
+      // to be saved on the stack. In those cases, we can not calculate the SP
+      // delta statically.
       frame_access_state()->ClearSPDelta();
+      if (caller_registers_saved_) {
+        // Need to re-sync SP delta introduced in kArchSaveCallerRegisters.
+        int bytes =
+            __ RequiredStackSizeForCallerSaved(kSaveFPRegs, kReturnRegister0);
+        frame_access_state()->IncreaseSPDelta(bytes / kPointerSize);
+      }
       break;
     }
     case kArchJmp:
@@ -780,7 +951,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       AssembleArchTableSwitch(instr);
       break;
     case kArchDebugAbort:
-      DCHECK(i.InputRegister(0).is(a0));
+      DCHECK(i.InputRegister(0) == a0);
       if (!frame_access_state()->has_frame()) {
         // We don't actually want to generate a pile of code for this, so just
         // claim there is a stack frame, without generating one.
@@ -1805,7 +1976,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       size_t index = 0;
       MemOperand operand = i.MemoryOperand(&index);
       FPURegister ft = i.InputOrZeroSingleRegister(index);
-      if (ft.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {
+      if (ft == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {
         __ Move(kDoubleRegZero, 0.0);
       }
       __ Swc1(ft, operand);
@@ -1815,7 +1986,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       size_t index = 0;
       MemOperand operand = i.MemoryOperand(&index);
       FPURegister ft = i.InputOrZeroSingleRegister(index);
-      if (ft.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {
+      if (ft == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {
         __ Move(kDoubleRegZero, 0.0);
       }
       __ Uswc1(ft, operand, kScratchReg);
@@ -1829,7 +2000,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kMips64Sdc1: {
       FPURegister ft = i.InputOrZeroDoubleRegister(2);
-      if (ft.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {
+      if (ft == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {
         __ Move(kDoubleRegZero, 0.0);
       }
       __ Sdc1(ft, i.MemoryOperand());
@@ -1837,7 +2008,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kMips64Usdc1: {
       FPURegister ft = i.InputOrZeroDoubleRegister(2);
-      if (ft.is(kDoubleRegZero) && !__ IsDoubleZeroRegSet()) {
+      if (ft == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {
         __ Move(kDoubleRegZero, 0.0);
       }
       __ Usdc1(ft, i.MemoryOperand(), kScratchReg);
@@ -1942,16 +2113,35 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_ATOMIC_STORE_INTEGER(Sw);
       break;
     case kAtomicExchangeInt8:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(true, 8);
+      break;
     case kAtomicExchangeUint8:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(false, 8);
+      break;
     case kAtomicExchangeInt16:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(true, 16);
+      break;
     case kAtomicExchangeUint16:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(false, 16);
+      break;
     case kAtomicExchangeWord32:
+      ASSEMBLE_ATOMIC_EXCHANGE_INTEGER();
+      break;
     case kAtomicCompareExchangeInt8:
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER_EXT(true, 8);
+      break;
     case kAtomicCompareExchangeUint8:
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER_EXT(false, 8);
+      break;
     case kAtomicCompareExchangeInt16:
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER_EXT(true, 16);
+      break;
     case kAtomicCompareExchangeUint16:
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER_EXT(false, 16);
+      break;
     case kAtomicCompareExchangeWord32:
-      UNREACHABLE();
+      __ sll(i.InputRegister(2), i.InputRegister(2), 0);
+      ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER();
       break;
 #define ATOMIC_BINOP_CASE(op, inst)             \
   case kAtomic##op##Int8:                       \
@@ -2000,7 +2190,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       CpuFeatureScope msa_scope(tasm(), MIPS_SIMD);
       Simd128Register src = i.InputSimd128Register(0);
       Simd128Register dst = i.OutputSimd128Register();
-      if (!src.is(dst)) {
+      if (src != dst) {
         __ move_v(dst, src);
       }
       __ insert_w(dst, i.InputInt8(1), i.InputRegister(2));
@@ -2034,7 +2224,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       CpuFeatureScope msa_scope(tasm(), MIPS_SIMD);
       Simd128Register src = i.InputSimd128Register(0);
       Simd128Register dst = i.OutputSimd128Register();
-      if (!src.is(dst)) {
+      if (src != dst) {
         __ move_v(dst, src);
       }
       __ FmoveLow(kScratchReg, i.InputSingleRegister(2));
@@ -2114,7 +2304,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kMips64S128Select: {
       CpuFeatureScope msa_scope(tasm(), MIPS_SIMD);
-      DCHECK(i.OutputSimd128Register().is(i.InputSimd128Register(0)));
+      DCHECK(i.OutputSimd128Register() == i.InputSimd128Register(0));
       __ bsel_v(i.OutputSimd128Register(), i.InputSimd128Register(2),
                 i.InputSimd128Register(1));
       break;
@@ -2249,7 +2439,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       CpuFeatureScope msa_scope(tasm(), MIPS_SIMD);
       Simd128Register src = i.InputSimd128Register(0);
       Simd128Register dst = i.OutputSimd128Register();
-      if (!src.is(dst)) {
+      if (src != dst) {
         __ move_v(dst, src);
       }
       __ insert_h(dst, i.InputInt8(1), i.InputRegister(2));
@@ -2398,7 +2588,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       CpuFeatureScope msa_scope(tasm(), MIPS_SIMD);
       Simd128Register src = i.InputSimd128Register(0);
       Simd128Register dst = i.OutputSimd128Register();
-      if (!src.is(dst)) {
+      if (src != dst) {
         __ move_v(dst, src);
       }
       __ insert_b(dst, i.InputInt8(1), i.InputRegister(2));
@@ -2680,7 +2870,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 
       int32_t shuffle = i.InputInt32(2);
 
-      if (src0.is(src1)) {
+      if (src0 == src1) {
         // Unary S32x4 shuffles are handled with shf.w instruction
         uint32_t i8 = 0;
         for (int i = 0; i < 4; i++) {
@@ -2692,10 +2882,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ shf_w(dst, src0, i8);
       } else {
         // For binary shuffles use vshf.w instruction
-        if (dst.is(src0)) {
+        if (dst == src0) {
           __ move_v(kSimd128ScratchReg, src0);
           src0 = kSimd128ScratchReg;
-        } else if (dst.is(src1)) {
+        } else if (dst == src1) {
           __ move_v(kSimd128ScratchReg, src1);
           src1 = kSimd128ScratchReg;
         }
@@ -2846,7 +3036,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kMips64S8x16Concat: {
       CpuFeatureScope msa_scope(tasm(), MIPS_SIMD);
       Simd128Register dst = i.OutputSimd128Register();
-      DCHECK(dst.is(i.InputSimd128Register(0)));
+      DCHECK(dst == i.InputSimd128Register(0));
       __ sldi_b(dst, i.InputSimd128Register(1), i.InputInt4(2));
       break;
     }
@@ -2856,10 +3046,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                       src0 = i.InputSimd128Register(0),
                       src1 = i.InputSimd128Register(1);
 
-      if (dst.is(src0)) {
+      if (dst == src0) {
         __ move_v(kSimd128ScratchReg, src0);
         src0 = kSimd128ScratchReg;
-      } else if (dst.is(src1)) {
+      } else if (dst == src1) {
         __ move_v(kSimd128ScratchReg, src1);
         src1 = kSimd128ScratchReg;
       }
@@ -3147,7 +3337,7 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
     }
     FPURegister left = i.InputOrZeroSingleRegister(0);
     FPURegister right = i.InputOrZeroSingleRegister(1);
-    if ((left.is(kDoubleRegZero) || right.is(kDoubleRegZero)) &&
+    if ((left == kDoubleRegZero || right == kDoubleRegZero) &&
         !__ IsDoubleZeroRegSet()) {
       __ Move(kDoubleRegZero, 0.0);
     }
@@ -3158,7 +3348,7 @@ void AssembleBranchToLabels(CodeGenerator* gen, TurboAssembler* tasm,
     }
     FPURegister left = i.InputOrZeroDoubleRegister(0);
     FPURegister right = i.InputOrZeroDoubleRegister(1);
-    if ((left.is(kDoubleRegZero) || right.is(kDoubleRegZero)) &&
+    if ((left == kDoubleRegZero || right == kDoubleRegZero) &&
         !__ IsDoubleZeroRegSet()) {
       __ Move(kDoubleRegZero, 0.0);
     }
@@ -3408,7 +3598,7 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
              instr->arch_opcode() == kMips64CmpS) {
     FPURegister left = i.InputOrZeroDoubleRegister(0);
     FPURegister right = i.InputOrZeroDoubleRegister(1);
-    if ((left.is(kDoubleRegZero) || right.is(kDoubleRegZero)) &&
+    if ((left == kDoubleRegZero || right == kDoubleRegZero) &&
         !__ IsDoubleZeroRegSet()) {
       __ Move(kDoubleRegZero, 0.0);
     }

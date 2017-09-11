@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <src/wasm/module-compiler.h>
+#include "src/wasm/module-compiler.h"
 
 #include <atomic>
 
@@ -15,7 +15,7 @@
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-js.h"
 #include "src/wasm/wasm-module.h"
-#include "src/wasm/wasm-objects.h"
+#include "src/wasm/wasm-objects-inl.h"
 #include "src/wasm/wasm-result.h"
 
 #define TRACE(...)                                      \
@@ -323,16 +323,15 @@ void ModuleCompiler::ValidateSequentially(const ModuleWireBytes& wire_bytes,
   }
 }
 
+// static
 MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObject(
-    ErrorThrower* thrower, const ModuleWireBytes& wire_bytes,
-    Handle<Script> asm_js_script,
+    Isolate* isolate, ErrorThrower* thrower, std::unique_ptr<WasmModule> module,
+    const ModuleWireBytes& wire_bytes, Handle<Script> asm_js_script,
     Vector<const byte> asm_js_offset_table_bytes) {
-
-  TimedHistogramScope wasm_compile_module_time_scope(
-      module_->is_wasm() ? counters()->wasm_compile_wasm_module_time()
-                         : counters()->wasm_compile_asm_module_time());
-  return CompileToModuleObjectInternal(
-      isolate_, thrower, wire_bytes, asm_js_script, asm_js_offset_table_bytes);
+  Handle<Code> centry_stub = CEntryStub(isolate, 1).GetCode();
+  ModuleCompiler compiler(isolate, std::move(module), centry_stub);
+  return compiler.CompileToModuleObjectInternal(
+      thrower, wire_bytes, asm_js_script, asm_js_offset_table_bytes);
 }
 
 namespace {
@@ -491,11 +490,12 @@ bool in_bounds(uint32_t offset, uint32_t size, uint32_t upper) {
 using WasmInstanceMap =
     IdentityMap<Handle<WasmInstanceObject>, FreeStoreAllocationPolicy>;
 
-Handle<Code> UnwrapOrCompileImportWrapper(
+Handle<Code> UnwrapExportOrCompileImportWrapper(
     Isolate* isolate, int index, FunctionSig* sig, Handle<JSReceiver> target,
     Handle<String> module_name, MaybeHandle<String> import_name,
-    ModuleOrigin origin, WasmInstanceMap* imported_instances) {
-  WasmFunction* other_func = GetWasmFunctionForImportWrapper(isolate, target);
+    ModuleOrigin origin, WasmInstanceMap* imported_instances,
+    Handle<FixedArray> js_imports_table) {
+  WasmFunction* other_func = GetWasmFunctionForExport(isolate, target);
   if (other_func) {
     if (!sig->Equals(other_func->sig)) return Handle<Code>::null();
     // Signature matched. Unwrap the import wrapper and return the raw wasm
@@ -504,12 +504,13 @@ Handle<Code> UnwrapOrCompileImportWrapper(
     Handle<WasmInstanceObject> imported_instance(
         Handle<WasmExportedFunction>::cast(target)->instance(), isolate);
     imported_instances->Set(imported_instance, imported_instance);
-    return UnwrapImportWrapper(target);
+    return UnwrapExportWrapper(Handle<JSFunction>::cast(target));
   }
   // No wasm function or being debugged. Compile a new wrapper for the new
   // signature.
   return compiler::CompileWasmToJSWrapper(isolate, target, sig, index,
-                                          module_name, import_name, origin);
+                                          module_name, import_name, origin,
+                                          js_imports_table);
 }
 
 double MonotonicallyIncreasingTimeInMs() {
@@ -517,23 +518,28 @@ double MonotonicallyIncreasingTimeInMs() {
          base::Time::kMillisecondsPerSecond;
 }
 
+void FunctionTableFinalizer(const v8::WeakCallbackInfo<void>& data) {
+  GlobalHandles::Destroy(reinterpret_cast<Object**>(
+      reinterpret_cast<JSObject**>(data.GetParameter())));
+}
+
 std::unique_ptr<compiler::ModuleEnv> CreateDefaultModuleEnv(
-    Isolate* isolate, WasmModule* module, Handle<Code> illegal_builtin,
-    GlobalHandleLifetimeManager* lifetime_manager) {
+    Isolate* isolate, WasmModule* module, Handle<Code> illegal_builtin) {
   std::vector<GlobalHandleAddress> function_tables;
   std::vector<GlobalHandleAddress> signature_tables;
   std::vector<SignatureMap*> signature_maps;
 
   for (size_t i = 0; i < module->function_tables.size(); i++) {
-    // We need *some* value for each table. We'll reuse this value when
-    // we want to reset a {WasmCompiledModule}. We could just insert
-    // bogus values (e.g. 0, 1, etc), but to keep things consistent, we'll
-    // create a valid global handle for the undefined value.
-    // These global handles are deleted when finalizing the module object.
     Handle<Object> func_table =
         isolate->global_handles()->Create(isolate->heap()->undefined_value());
     Handle<Object> sig_table =
         isolate->global_handles()->Create(isolate->heap()->undefined_value());
+    GlobalHandles::MakeWeak(func_table.location(), func_table.location(),
+                            &FunctionTableFinalizer,
+                            v8::WeakCallbackType::kFinalizer);
+    GlobalHandles::MakeWeak(sig_table.location(), sig_table.location(),
+                            &FunctionTableFinalizer,
+                            v8::WeakCallbackType::kFinalizer);
     function_tables.push_back(func_table.address());
     signature_tables.push_back(sig_table.address());
     signature_maps.push_back(&module->function_tables[i].map);
@@ -576,10 +582,14 @@ void ReopenHandles(Isolate* isolate, const std::vector<Handle<T>>& vec) {
 }  // namespace
 
 MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObjectInternal(
-    Isolate* isolate, ErrorThrower* thrower, const ModuleWireBytes& wire_bytes,
+    ErrorThrower* thrower, const ModuleWireBytes& wire_bytes,
     Handle<Script> asm_js_script,
     Vector<const byte> asm_js_offset_table_bytes) {
-  Factory* factory = isolate->factory();
+  TimedHistogramScope wasm_compile_module_time_scope(
+      module_->is_wasm() ? counters()->wasm_compile_wasm_module_time()
+                         : counters()->wasm_compile_asm_module_time());
+
+  Factory* factory = isolate_->factory();
   // Check whether lazy compilation is enabled for this module.
   bool lazy_compile = compile_lazy(module_.get());
 
@@ -590,9 +600,7 @@ MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObjectInternal(
                                   ? BUILTIN_CODE(isolate_, WasmCompileLazy)
                                   : BUILTIN_CODE(isolate_, Illegal);
 
-  GlobalHandleLifetimeManager globals_manager;
-  auto env = CreateDefaultModuleEnv(isolate, module_.get(), init_builtin,
-                                    &globals_manager);
+  auto env = CreateDefaultModuleEnv(isolate_, module_.get(), init_builtin);
 
   // The {code_table} array contains import wrappers and functions (which
   // are both included in {functions.size()}, and export wrappers).
@@ -672,7 +680,7 @@ MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObjectInternal(
   // The {module_wrapper} will take ownership of the {WasmModule} object,
   // and it will be destroyed when the GC reclaims the wrapper object.
   Handle<WasmModuleWrapper> module_wrapper =
-      WasmModuleWrapper::New(isolate_, module_.release());
+      WasmModuleWrapper::From(isolate_, module_.release());
   WasmModule* module = module_wrapper->get();
 
   // Create the shared module data.
@@ -712,11 +720,6 @@ MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObjectInternal(
     RecordStats(*wrapper_code, counters());
     ++wrapper_index;
   }
-
-  // Now we can relinquish control to the global handles, because the
-  // {WasmModuleObject} will take care of them in its finalizer, which it'll
-  // setup in {New}.
-  globals_manager.ReleaseWithoutDestroying();
   return WasmModuleObject::New(isolate_, compiled_module);
 }
 
@@ -1166,7 +1169,6 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
   DCHECK(!isolate_->has_pending_exception());
   TRACE("Finishing instance %d\n", compiled_module_->instance_id());
   TRACE_CHAIN(module_object_->compiled_module());
-  globals_manager_.ReleaseWithoutDestroying();
   return instance;
 }
 
@@ -1303,6 +1305,15 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
                                     Handle<WasmInstanceObject> instance) {
   int num_imported_functions = 0;
   int num_imported_tables = 0;
+  Handle<FixedArray> func_table = isolate_->factory()->NewFixedArray(
+      static_cast<int>(module_->import_table.size()), TENURED);
+  Handle<FixedArray> js_imports_table =
+      isolate_->global_handles()->Create(*func_table);
+  GlobalHandles::MakeWeak(
+      reinterpret_cast<Object**>(js_imports_table.location()),
+      js_imports_table.location(), &FunctionTableFinalizer,
+      v8::WeakCallbackType::kFinalizer);
+  instance->set_js_imports_table(*func_table);
   WasmInstanceMap imported_wasm_instances(isolate_->heap());
   for (int index = 0; index < static_cast<int>(module_->import_table.size());
        ++index) {
@@ -1335,17 +1346,17 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
           return -1;
         }
 
-        Handle<Code> import_wrapper = UnwrapOrCompileImportWrapper(
+        Handle<Code> import_code = UnwrapExportOrCompileImportWrapper(
             isolate_, index, module_->functions[import.index].sig,
             Handle<JSReceiver>::cast(value), module_name, import_name,
-            module_->origin(), &imported_wasm_instances);
-        if (import_wrapper.is_null()) {
+            module_->origin(), &imported_wasm_instances, js_imports_table);
+        if (import_code.is_null()) {
           ReportLinkError("imported function does not match the expected type",
                           index, module_name, import_name);
           return -1;
         }
-        code_table->set(num_imported_functions, *import_wrapper);
-        RecordStats(*import_wrapper, counters());
+        code_table->set(num_imported_functions, *import_code);
+        RecordStats(*import_code, counters());
         num_imported_functions++;
         break;
       }
@@ -1403,8 +1414,7 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
         for (int i = 0; i < table_size; ++i) {
           Handle<Object> val(table_instance.js_wrappers->get(i), isolate_);
           if (!val->IsJSFunction()) continue;
-          WasmFunction* function =
-              GetWasmFunctionForImportWrapper(isolate_, val);
+          WasmFunction* function = GetWasmFunctionForExport(isolate_, val);
           if (function == nullptr) {
             thrower_->LinkError("table import %d[%d] is not a wasm function",
                                 index, i);
@@ -1412,7 +1422,8 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
           }
           int sig_index = table.map.FindOrInsert(function->sig);
           table_instance.signature_table->set(i, Smi::FromInt(sig_index));
-          table_instance.function_table->set(i, *UnwrapImportWrapper(val));
+          table_instance.function_table->set(
+              i, *UnwrapExportWrapper(Handle<JSFunction>::cast(val)));
         }
 
         num_imported_tables++;
@@ -1764,6 +1775,15 @@ void InstanceBuilder::InitializeTables(
   Handle<FixedArray> old_signature_tables =
       compiled_module_->signature_tables();
 
+  // These go on the instance.
+  Handle<FixedArray> rooted_function_tables =
+      isolate_->factory()->NewFixedArray(function_table_count, TENURED);
+  Handle<FixedArray> rooted_signature_tables =
+      isolate_->factory()->NewFixedArray(function_table_count, TENURED);
+
+  instance->set_function_tables(*rooted_function_tables);
+  instance->set_signature_tables(*rooted_signature_tables);
+
   DCHECK_EQ(old_function_tables->length(), new_function_tables->length());
   DCHECK_EQ(old_signature_tables->length(), new_signature_tables->length());
 
@@ -1783,23 +1803,40 @@ void InstanceBuilder::InitializeTables(
         // uninitialized entries will always fail the signature check.
         table_instance.signature_table->set(i, Smi::FromInt(kInvalidSigIndex));
       }
+    } else {
+      // Table is imported, patch table bounds check
+      DCHECK_LE(table_size, table_instance.function_table->length());
+      code_specialization->PatchTableSize(
+          table_size, table_instance.function_table->length());
     }
     int int_index = static_cast<int>(index);
 
-    // We create a global handle here and delete it when finalizing the
-    // instance. Even if the same table is shared accross many instances, each
-    // will have its own private global handle to it. Meanwhile, we the global
-    // handles root the respective objects (the tables).
     Handle<FixedArray> global_func_table =
         isolate_->global_handles()->Create(*table_instance.function_table);
     Handle<FixedArray> global_sig_table =
         isolate_->global_handles()->Create(*table_instance.signature_table);
+    // Make the handles weak. The table objects are rooted on the instance, as
+    // they belong to it. We need the global handles in order to have stable
+    // pointers to embed in the instance's specialization (wasm compiled code).
+    // The order of finalization doesn't matter, in that the instance finalizer
+    // may be called before each table's finalizer, or vice-versa.
+    // This is because values used for embedding are only interesting should we
+    // {Reset} a specialization, in which case they are interesting as values,
+    // they are not dereferenced.
+    GlobalHandles::MakeWeak(
+        reinterpret_cast<Object**>(global_func_table.location()),
+        global_func_table.location(), &FunctionTableFinalizer,
+        v8::WeakCallbackType::kFinalizer);
+    GlobalHandles::MakeWeak(
+        reinterpret_cast<Object**>(global_sig_table.location()),
+        global_sig_table.location(), &FunctionTableFinalizer,
+        v8::WeakCallbackType::kFinalizer);
+
+    rooted_function_tables->set(int_index, *global_func_table);
+    rooted_signature_tables->set(int_index, *global_sig_table);
 
     GlobalHandleAddress new_func_table_addr = global_func_table.address();
     GlobalHandleAddress new_sig_table_addr = global_sig_table.address();
-    globals_manager_.Add(new_func_table_addr);
-    globals_manager_.Add(new_sig_table_addr);
-
     WasmCompiledModule::SetTableValue(isolate_, new_function_tables, int_index,
                                       new_func_table_addr);
     WasmCompiledModule::SetTableValue(isolate_, new_signature_tables, int_index,
@@ -2099,8 +2136,8 @@ class AsyncCompileJob::PrepareAndStartCompile : public CompileStep {
 
     Factory* factory = isolate->factory();
     Handle<Code> illegal_builtin = BUILTIN_CODE(isolate, Illegal);
-    job_->module_env_ = CreateDefaultModuleEnv(
-        isolate, module_.get(), illegal_builtin, &job_->globals_manager_);
+    job_->module_env_ =
+        CreateDefaultModuleEnv(isolate, module_.get(), illegal_builtin);
 
     // The {code_table} array contains import wrappers and functions (which
     // are both included in {functions.size()}.
@@ -2304,7 +2341,7 @@ class AsyncCompileJob::FinishCompile : public CompileStep {
 
     // The {module_wrapper} will take ownership of the {WasmModule} object,
     // and it will be destroyed when the GC reclaims the wrapper object.
-    Handle<WasmModuleWrapper> module_wrapper = WasmModuleWrapper::New(
+    Handle<WasmModuleWrapper> module_wrapper = WasmModuleWrapper::From(
         job_->isolate_, job_->compiler_->ReleaseModule().release());
 
     // Create the shared module data.
@@ -2373,12 +2410,13 @@ class AsyncCompileJob::FinishModule : public CompileStep {
     Handle<WasmModuleObject> result =
         WasmModuleObject::New(job_->isolate_, job_->compiled_module_);
     // {job_} is deleted in AsyncCompileSucceeded, therefore the {return}.
-    job_->globals_manager_.ReleaseWithoutDestroying();
     return job_->AsyncCompileSucceeded(result);
   }
 };
 
 #undef TRACE
+#undef TRACE_CHAIN
+#undef TRACE_COMPILE
 
 }  // namespace wasm
 }  // namespace internal

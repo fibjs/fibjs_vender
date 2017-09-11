@@ -139,11 +139,6 @@ bool Expression::IsValidReferenceExpression() const {
          (IsVariableProxy() && AsVariableProxy()->IsValidReferenceExpression());
 }
 
-bool Expression::IsValidReferenceExpressionOrThis() const {
-  return IsValidReferenceExpression() ||
-         (IsVariableProxy() && AsVariableProxy()->is_this());
-}
-
 bool Expression::IsAnonymousFunctionDefinition() const {
   return (IsFunctionLiteral() &&
           AsFunctionLiteral()->IsAnonymousFunctionDefinition()) ||
@@ -249,15 +244,13 @@ void ForInStatement::AssignFeedbackSlots(FeedbackVectorSpec* spec,
                                          FunctionKind kind,
                                          FeedbackSlotCache* cache) {
   AssignVectorSlots(each(), spec, language_mode, &each_slot_);
-  for_in_feedback_slot_ = spec->AddGeneralSlot();
+  for_in_feedback_slot_ = spec->AddForInSlot();
 }
 
 Assignment::Assignment(NodeType node_type, Token::Value op, Expression* target,
                        Expression* value, int pos)
     : Expression(pos, node_type), target_(target), value_(value) {
-  bit_field_ |= IsUninitializedField::encode(false) |
-                KeyTypeField::encode(ELEMENT) |
-                StoreModeField::encode(STANDARD_STORE) | TokenField::encode(op);
+  bit_field_ |= TokenField::encode(op);
 }
 
 void Assignment::AssignFeedbackSlots(FeedbackVectorSpec* spec,
@@ -822,6 +815,24 @@ void MaterializedLiteral::BuildConstants(Isolate* isolate) {
   DCHECK(IsRegExpLiteral());
 }
 
+void UnaryOperation::AssignFeedbackSlots(FeedbackVectorSpec* spec,
+                                         LanguageMode language_mode,
+                                         FunctionKind kind,
+                                         FeedbackSlotCache* cache) {
+  switch (op()) {
+    // Only unary plus, minus, and bitwise-not currently collect feedback.
+    case Token::ADD:
+    case Token::SUB:
+    case Token::BIT_NOT:
+      // Note that the slot kind remains "BinaryOp", as the operation
+      // is transformed into a binary operation in the BytecodeGenerator.
+      feedback_slot_ = spec->AddInterpreterBinaryOpICSlot();
+      return;
+    default:
+      return;
+  }
+}
+
 void BinaryOperation::AssignFeedbackSlots(FeedbackVectorSpec* spec,
                                           LanguageMode language_mode,
                                           FunctionKind kind,
@@ -957,61 +968,6 @@ bool CompareOperation::IsLiteralCompareNull(Expression** expr) {
 // ----------------------------------------------------------------------------
 // Recording of type feedback
 
-Handle<Map> SmallMapList::at(int i) const { return Handle<Map>(list_.at(i)); }
-
-SmallMapList* Expression::GetReceiverTypes() {
-  switch (node_type()) {
-#define NODE_LIST(V)    \
-  PROPERTY_NODE_LIST(V) \
-  V(Call)
-#define GENERATE_CASE(Node) \
-  case k##Node:             \
-    return static_cast<Node*>(this)->GetReceiverTypes();
-    NODE_LIST(GENERATE_CASE)
-#undef NODE_LIST
-#undef GENERATE_CASE
-    default:
-      UNREACHABLE();
-  }
-}
-
-KeyedAccessStoreMode Expression::GetStoreMode() const {
-  switch (node_type()) {
-#define GENERATE_CASE(Node) \
-  case k##Node:             \
-    return static_cast<const Node*>(this)->GetStoreMode();
-    PROPERTY_NODE_LIST(GENERATE_CASE)
-#undef GENERATE_CASE
-    default:
-      UNREACHABLE();
-  }
-}
-
-IcCheckType Expression::GetKeyType() const {
-  switch (node_type()) {
-#define GENERATE_CASE(Node) \
-  case k##Node:             \
-    return static_cast<const Node*>(this)->GetKeyType();
-    PROPERTY_NODE_LIST(GENERATE_CASE)
-#undef GENERATE_CASE
-    default:
-      UNREACHABLE();
-  }
-}
-
-bool Expression::IsMonomorphic() const {
-  switch (node_type()) {
-#define GENERATE_CASE(Node) \
-  case k##Node:             \
-    return static_cast<const Node*>(this)->IsMonomorphic();
-    PROPERTY_NODE_LIST(GENERATE_CASE)
-    CALL_NODE_LIST(GENERATE_CASE)
-#undef GENERATE_CASE
-    default:
-      UNREACHABLE();
-  }
-}
-
 void Call::AssignFeedbackSlots(FeedbackVectorSpec* spec,
                                LanguageMode language_mode, FunctionKind kind,
                                FeedbackSlotCache* cache) {
@@ -1045,9 +1001,8 @@ Call::CallType Call::GetCallType() const {
   return OTHER_CALL;
 }
 
-CaseClause::CaseClause(Expression* label, ZoneList<Statement*>* statements,
-                       int pos)
-    : Expression(pos, kCaseClause), label_(label), statements_(statements) {}
+CaseClause::CaseClause(Expression* label, ZoneList<Statement*>* statements)
+    : label_(label), statements_(statements) {}
 
 void CaseClause::AssignFeedbackSlots(FeedbackVectorSpec* spec,
                                      LanguageMode language_mode,
@@ -1079,6 +1034,21 @@ const char* CallRuntime::debug_name() {
   return is_jsruntime() ? "(context function)" : function_->name;
 #endif  // DEBUG
 }
+
+#define RETURN_LABELS(NodeType) \
+  case k##NodeType:             \
+    return static_cast<const NodeType*>(this)->labels();
+
+ZoneList<const AstRawString*>* BreakableStatement::labels() const {
+  switch (node_type()) {
+    BREAKABLE_NODE_LIST(RETURN_LABELS)
+    ITERATION_NODE_LIST(RETURN_LABELS)
+    default:
+      UNREACHABLE();
+  }
+}
+
+#undef RETURN_LABELS
 
 }  // namespace internal
 }  // namespace v8

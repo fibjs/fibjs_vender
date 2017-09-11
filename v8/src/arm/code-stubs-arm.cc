@@ -53,7 +53,7 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
 
   int double_offset = offset();
   // Account for saved regs if input is sp.
-  if (input_reg.is(sp)) double_offset += 3 * kPointerSize;
+  if (input_reg == sp) double_offset += 3 * kPointerSize;
 
   Register scratch = GetRegisterThatIsNotOneOf(input_reg, result_reg);
   Register scratch_low =
@@ -178,7 +178,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
 
 void MathPowStub::Generate(MacroAssembler* masm) {
   const Register exponent = MathPowTaggedDescriptor::exponent();
-  DCHECK(exponent.is(r2));
+  DCHECK(exponent == r2);
   const LowDwVfpRegister double_base = d0;
   const LowDwVfpRegister double_exponent = d1;
   const LowDwVfpRegister double_result = d2;
@@ -414,14 +414,11 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // r0:r1: result
   // sp: stack pointer
   // fp: frame pointer
-  Register argc;
-  if (argv_in_register()) {
-    // We don't want to pop arguments so set argc to no_reg.
-    argc = no_reg;
-  } else {
-    // Callee-saved register r4 still holds argc.
-    argc = r4;
-  }
+  Register argc = argv_in_register()
+                      // We don't want to pop arguments so set argc to no_reg.
+                      ? no_reg
+                      // Callee-saved register r4 still holds argc.
+                      : r4;
   __ LeaveExitFrame(save_doubles(), argc, true);
   __ mov(pc, lr);
 
@@ -782,7 +779,7 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     __ add(tmp, properties, Operand(index, LSL, 1));
     __ ldr(entity_name, FieldMemOperand(tmp, kElementsStartOffset));
 
-    DCHECK(!tmp.is(entity_name));
+    DCHECK(tmp != entity_name);
     __ LoadRoot(tmp, Heap::kUndefinedValueRootIndex);
     __ cmp(entity_name, tmp);
     __ b(eq, done);
@@ -1007,10 +1004,9 @@ void RecordWriteStub::InformIncrementalMarker(MacroAssembler* masm) {
   regs_.SaveCallerSaveRegisters(masm, save_fp_regs_mode());
   int argument_count = 3;
   __ PrepareCallCFunction(argument_count);
-  Register address =
-      r0.is(regs_.address()) ? regs_.scratch0() : regs_.address();
-  DCHECK(!address.is(regs_.object()));
-  DCHECK(!address.is(r0));
+  Register address = r0 == regs_.address() ? regs_.scratch0() : regs_.address();
+  DCHECK(address != regs_.object());
+  DCHECK(address != r0);
   __ Move(address, regs_.address());
   __ Move(r0, regs_.object());
   __ Move(r1, address);
@@ -1488,7 +1484,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   const int kLevelOffset = AddressOffset(
       ExternalReference::handle_scope_level_address(isolate), next_address);
 
-  DCHECK(function_address.is(r1) || function_address.is(r2));
+  DCHECK(function_address == r1 || function_address == r2);
 
   Label profiler_disabled;
   Label end_profiler_check;
@@ -1679,7 +1675,7 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
     // Look for the constructor if |accessor_holder| is not a function.
     Label skip_looking_for_constructor;
     __ ldr(scratch0, FieldMemOperand(accessor_holder, HeapObject::kMapOffset));
-    __ ldr(scratch1, FieldMemOperand(scratch0, Map::kBitFieldOffset));
+    __ ldrb(scratch1, FieldMemOperand(scratch0, Map::kBitFieldOffset));
     __ tst(scratch1, Operand(1 << Map::kIsConstructor));
     __ b(ne, &skip_looking_for_constructor);
     __ GetMapConstructor(context, scratch0, scratch0, scratch1);
@@ -1700,7 +1696,7 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
   FrameScope frame_scope(masm, StackFrame::MANUAL);
   __ EnterExitFrame(false, kApiStackSpace);
 
-  DCHECK(!api_function_address.is(r0) && !scratch0.is(r0));
+  DCHECK(api_function_address != r0 && scratch0 != r0);
   // r0 = FunctionCallbackInfo&
   // Arguments is after the return address.
   __ add(r0, sp, Operand(1 * kPointerSize));

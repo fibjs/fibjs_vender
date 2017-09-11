@@ -142,10 +142,12 @@
 //       - AccessorInfo
 //       - PromiseResolveThenableJobInfo
 //       - PromiseReactionJobInfo
+//       - PromiseCapability
 //       - AccessorPair
 //       - AccessCheckInfo
 //       - InterceptorInfo
 //       - CallHandlerInfo
+//       - EnumCache
 //       - TemplateInfo
 //         - FunctionTemplateInfo
 //         - ObjectTemplateInfo
@@ -357,6 +359,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(ALIASED_ARGUMENTS_ENTRY_TYPE)                               \
   V(PROMISE_RESOLVE_THENABLE_JOB_INFO_TYPE)                     \
   V(PROMISE_REACTION_JOB_INFO_TYPE)                             \
+  V(PROMISE_CAPABILITY_TYPE)                                    \
   V(DEBUG_INFO_TYPE)                                            \
   V(STACK_FRAME_INFO_TYPE)                                      \
   V(PROTOTYPE_INFO_TYPE)                                        \
@@ -405,7 +408,6 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(JS_MAP_VALUE_ITERATOR_TYPE)                                 \
   V(JS_WEAK_MAP_TYPE)                                           \
   V(JS_WEAK_SET_TYPE)                                           \
-  V(JS_PROMISE_CAPABILITY_TYPE)                                 \
   V(JS_PROMISE_TYPE)                                            \
   V(JS_REGEXP_TYPE)                                             \
   V(JS_ERROR_TYPE)                                              \
@@ -540,6 +542,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
     promise_resolve_thenable_job_info)                                       \
   V(PROMISE_REACTION_JOB_INFO, PromiseReactionJobInfo,                       \
     promise_reaction_job_info)                                               \
+  V(PROMISE_CAPABILITY, PromiseCapability, promise_capability)               \
   V(DEBUG_INFO, DebugInfo, debug_info)                                       \
   V(STACK_FRAME_INFO, StackFrameInfo, stack_frame_info)                      \
   V(PROTOTYPE_INFO, PrototypeInfo, prototype_info)                           \
@@ -708,6 +711,7 @@ enum InstanceType : uint8_t {
   ALIASED_ARGUMENTS_ENTRY_TYPE,
   PROMISE_RESOLVE_THENABLE_JOB_INFO_TYPE,
   PROMISE_REACTION_JOB_INFO_TYPE,
+  PROMISE_CAPABILITY_TYPE,
   DEBUG_INFO_TYPE,
   STACK_FRAME_INFO_TYPE,
   PROTOTYPE_INFO_TYPE,
@@ -763,7 +767,6 @@ enum InstanceType : uint8_t {
   JS_MAP_VALUE_ITERATOR_TYPE,
   JS_WEAK_MAP_TYPE,
   JS_WEAK_SET_TYPE,
-  JS_PROMISE_CAPABILITY_TYPE,
   JS_PROMISE_TYPE,
   JS_REGEXP_TYPE,
   JS_ERROR_TYPE,
@@ -920,7 +923,7 @@ class AllocationSite;
 class Cell;
 class ConsString;
 class ElementsAccessor;
-class FindAndReplacePattern;
+class EnumCache;
 class FixedArrayBase;
 class PropertyArray;
 class FunctionLiteral;
@@ -988,6 +991,7 @@ template <class C> inline bool Is(Object* obj);
   V(DeoptimizationInputData)              \
   V(DependentCode)                        \
   V(DescriptorArray)                      \
+  V(EnumCache)                            \
   V(External)                             \
   V(ExternalOneByteString)                \
   V(ExternalString)                       \
@@ -1038,7 +1042,6 @@ template <class C> inline bool Is(Object* obj);
   V(JSModuleNamespace)                    \
   V(JSObject)                             \
   V(JSPromise)                            \
-  V(JSPromiseCapability)                  \
   V(JSProxy)                              \
   V(JSReceiver)                           \
   V(JSRegExp)                             \
@@ -3354,27 +3357,28 @@ class BytecodeArray : public FixedArrayBase {
   inline void clear_padding();
 
   // Layout description.
-  static const int kConstantPoolOffset = FixedArrayBase::kHeaderSize;
-  static const int kHandlerTableOffset = kConstantPoolOffset + kPointerSize;
-  static const int kSourcePositionTableOffset =
-      kHandlerTableOffset + kPointerSize;
-  static const int kFrameSizeOffset = kSourcePositionTableOffset + kPointerSize;
-  static const int kParameterSizeOffset = kFrameSizeOffset + kIntSize;
-  static const int kIncomingNewTargetOrGeneratorRegisterOffset =
-      kParameterSizeOffset + kIntSize;
-  static const int kInterruptBudgetOffset =
-      kIncomingNewTargetOrGeneratorRegisterOffset + kIntSize;
-  static const int kOSRNestingLevelOffset = kInterruptBudgetOffset + kIntSize;
-  static const int kBytecodeAgeOffset = kOSRNestingLevelOffset + kCharSize;
-  static const int kHeaderSize = kBytecodeAgeOffset + kCharSize;
+#define BYTECODE_ARRAY_FIELDS(V)                           \
+  /* Pointer fields. */                                    \
+  V(kConstantPoolOffset, kPointerSize)                     \
+  V(kHandlerTableOffset, kPointerSize)                     \
+  V(kSourcePositionTableOffset, kPointerSize)              \
+  V(kFrameSizeOffset, kIntSize)                            \
+  V(kParameterSizeOffset, kIntSize)                        \
+  V(kIncomingNewTargetOrGeneratorRegisterOffset, kIntSize) \
+  V(kInterruptBudgetOffset, kIntSize)                      \
+  V(kOSRNestingLevelOffset, kCharSize)                     \
+  V(kBytecodeAgeOffset, kCharSize)                         \
+  /* Total size. */                                        \
+  V(kHeaderSize, 0)
+
+  DEFINE_FIELD_OFFSET_CONSTANTS(FixedArrayBase::kHeaderSize,
+                                BYTECODE_ARRAY_FIELDS)
+#undef BYTECODE_ARRAY_FIELDS
 
   // Maximal memory consumption for a single BytecodeArray.
   static const int kMaxSize = 512 * MB;
   // Maximal length of a single BytecodeArray.
   static const int kMaxLength = kMaxSize - kHeaderSize;
-
-  static const int kPointerFieldsBeginOffset = kConstantPoolOffset;
-  static const int kPointerFieldsEndOffset = kFrameSizeOffset;
 
   class BodyDescriptor;
   // No weak fields.
@@ -3679,8 +3683,6 @@ class Code: public HeapObject {
 
   static const char* Kind2String(Kind kind);
 
-  static const int kPrologueOffsetNotSet = -1;
-
 #if defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
   // Printing
   static const char* ICState2String(InlineCacheState state);
@@ -3731,11 +3733,6 @@ class Code: public HeapObject {
   // [next_code_link]: Link for lists of optimized or deoptimized code.
   // Note that storage for this field is overlapped with typefeedback_info.
   DECL_ACCESSORS(next_code_link, Object)
-
-  // [prologue_offset]: Offset of the function prologue, used for aging
-  // FUNCTIONs and OPTIMIZED_FUNCTIONs.
-  inline int prologue_offset() const;
-  inline void set_prologue_offset(int offset);
 
   // [constant_pool offset]: Offset of the constant pool.
   // Valid for FLAG_enable_embedded_constant_pool only
@@ -3800,18 +3797,12 @@ class Code: public HeapObject {
   inline bool has_reloc_info_for_serialization() const;
   inline void set_has_reloc_info_for_serialization(bool value);
 
-  // [allow_osr_at_loop_nesting_level]: For FUNCTION kind, tells for
-  // how long the function has been marked for OSR and therefore which
-  // level of loop nesting we are willing to do on-stack replacement
-  // for.
-  inline void set_allow_osr_at_loop_nesting_level(int level);
-  inline int allow_osr_at_loop_nesting_level() const;
-
   // [builtin_index]: For builtins, tells which builtin index the code object
   // has. Note that builtins can have a code kind other than BUILTIN. The
   // builtin index is a non-negative integer for builtins, and -1 otherwise.
   inline int builtin_index() const;
   inline void set_builtin_index(int id);
+  inline bool is_builtin() const;
 
   // [stack_slots]: For kind OPTIMIZED_FUNCTION, the number of stack slots
   // reserved in the code prologue.
@@ -3822,13 +3813,6 @@ class Code: public HeapObject {
   // the instruction stream where the safepoint table starts.
   inline unsigned safepoint_table_offset() const;
   inline void set_safepoint_table_offset(unsigned offset);
-
-  // [back_edge_table_start]: For kind FUNCTION, the offset in the
-  // instruction stream where the back edge table starts.
-  inline unsigned back_edge_table_offset() const;
-  inline void set_back_edge_table_offset(unsigned offset);
-
-  inline bool back_edges_patched_for_osr() const;
 
   // [marked_for_deoptimization]: For kind OPTIMIZED_FUNCTION tells whether
   // the code is going to be deoptimized because of dead embedded maps.
@@ -3857,23 +3841,6 @@ class Code: public HeapObject {
 
   // Get the safepoint entry for the given pc.
   SafepointEntry GetSafepointEntry(Address pc);
-
-  // Find an object in a stub with a specified map
-  Object* FindNthObject(int n, Map* match_map);
-
-  // Find the first allocation site in an IC stub.
-  AllocationSite* FindFirstAllocationSite();
-
-  // Find the first map in an IC stub.
-  Map* FindFirstMap();
-
-  // For each (map-to-find, object-to-replace) pair in the pattern, this
-  // function replaces the corresponding placeholder in the code with the
-  // object-to-replace. The function assumes that pairs in the pattern come in
-  // the same order as the placeholders in the code.
-  // If the placeholder is a weak cell, then the value of weak cell is matched
-  // against the map-to-find.
-  void FindAndReplace(const FindAndReplacePattern& pattern);
 
   // The entire code object including its header is copied verbatim to the
   // snapshot so that it can be written in one, fast, memcpy during
@@ -4039,16 +4006,11 @@ class Code: public HeapObject {
   static const int kKindSpecificFlags1Offset = kFlagsOffset + kIntSize;
   static const int kKindSpecificFlags2Offset =
       kKindSpecificFlags1Offset + kIntSize;
-  // Note: We might be able to squeeze this into the flags above.
-  static const int kPrologueOffset = kKindSpecificFlags2Offset + kIntSize;
-  static const int kConstantPoolOffset = kPrologueOffset + kIntSize;
+  static const int kConstantPoolOffset = kKindSpecificFlags2Offset + kIntSize;
   static const int kBuiltinIndexOffset =
       kConstantPoolOffset + kConstantPoolSize;
   static const int kTrapHandlerIndex = kBuiltinIndexOffset + kIntSize;
   static const int kHeaderPaddingStart = kTrapHandlerIndex + kPointerSize;
-
-  enum TrapFields { kTrapCodeOffset, kTrapLandingOffset, kTrapDataSize };
-
 
   // Add padding to align the instruction start following right after
   // the Code object header.
@@ -4123,12 +4085,6 @@ class Code: public HeapObject {
       kSafepointTableOffsetFirstBit,
       kSafepointTableOffsetBitCount> {};  // NOLINT
 
-  // KindSpecificFlags2 layout (FUNCTION)
-  class BackEdgeTableOffsetField
-      : public BitField<int, kHasTaggedStackBit + 1, 27> {};  // NOLINT
-  class AllowOSRAtLoopNestingLevelField
-      : public BitField<int, kHasTaggedStackBit + 1 + 27, 4> {};  // NOLINT
-
   static const int kArgumentsBits = 16;
   static const int kMaxArguments = (1 << kArgumentsBits) - 1;
 
@@ -4197,8 +4153,6 @@ class AbstractCode : public HeapObject {
   // Max loop nesting marker used to postpose OSR. We don't take loop
   // nesting that is deeper than 5 levels into account.
   static const int kMaxLoopNestingMarker = 6;
-  STATIC_ASSERT(Code::AllowOSRAtLoopNestingLevelField::kMax >=
-                kMaxLoopNestingMarker);
 };
 
 // Dependent code is a singly linked list of fixed arrays. Each array contains
@@ -4327,6 +4281,25 @@ class Struct: public HeapObject {
   inline void InitializeBody(int object_size);
   DECL_CAST(Struct)
   void BriefPrintDetails(std::ostream& os);
+};
+
+class PromiseCapability : public Struct {
+ public:
+  DECL_CAST(PromiseCapability)
+  DECL_PRINTER(PromiseCapability)
+  DECL_VERIFIER(PromiseCapability)
+
+  DECL_ACCESSORS(promise, Object)
+  DECL_ACCESSORS(resolve, Object)
+  DECL_ACCESSORS(reject, Object)
+
+  static const int kPromiseOffset = Struct::kHeaderSize;
+  static const int kResolveOffset = kPromiseOffset + kPointerSize;
+  static const int kRejectOffset = kResolveOffset + kPointerSize;
+  static const int kSize = kRejectOffset + kPointerSize;
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(PromiseCapability);
 };
 
 // A container struct to hold state required for PromiseResolveThenableJob.
@@ -4994,11 +4967,6 @@ class JSFunction: public JSObject {
   // Returns if this function has been compiled to native code yet.
   inline bool is_compiled();
 
-  // [next_function_link]: Links functions into various lists, e.g. the list
-  // of optimized functions hanging off the native_context. Treated weakly
-  // by the garbage collector.
-  DECL_ACCESSORS(next_function_link, Object)
-
   // Prints the name of the function using PrintF.
   void PrintName(FILE* out = stdout);
 
@@ -5014,13 +4982,8 @@ class JSFunction: public JSObject {
                                           int requested_in_object_properties,
                                           int* instance_size,
                                           int* in_object_properties);
-  enum BodyVisitingPolicy { kIgnoreWeakness, kRespectWeakness };
-  // Iterates the function object according to the visiting policy.
-  template <BodyVisitingPolicy>
-  class BodyDescriptorImpl;
 
-  typedef BodyDescriptorImpl<kIgnoreWeakness> BodyDescriptor;
-  typedef BodyDescriptorImpl<kRespectWeakness> BodyDescriptorWeak;
+  class BodyDescriptor;
 
   // Dispatched behavior.
   DECL_PRINTER(JSFunction)
@@ -5054,9 +5017,7 @@ class JSFunction: public JSObject {
   static const int kContextOffset = kSharedFunctionInfoOffset + kPointerSize;
   static const int kFeedbackVectorOffset = kContextOffset + kPointerSize;
   static const int kCodeOffset = kFeedbackVectorOffset + kPointerSize;
-  static const int kNonWeakFieldsEndOffset = kCodeOffset + kPointerSize;
-  static const int kNextFunctionLinkOffset = kNonWeakFieldsEndOffset;
-  static const int kSize = kNextFunctionLinkOffset + kPointerSize;
+  static const int kSize = kCodeOffset + kPointerSize;
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSFunction);
@@ -5290,6 +5251,8 @@ class JSMessageObject: public JSObject {
   inline int end_position() const;
   inline void set_end_position(int value);
 
+  // Returns the line number for the error message (1-based), or
+  // Message::kNoLineNumberInfo if the line cannot be determined.
   int GetLineNumber() const;
 
   // Returns the offset of the given position within the containing line.
@@ -5325,39 +5288,8 @@ class JSMessageObject: public JSObject {
   typedef BodyDescriptor BodyDescriptorWeak;
 };
 
-class JSPromise;
-
-// TODO(caitp): Make this a Struct once properties are no longer accessed from
-// JS
-class JSPromiseCapability : public JSObject {
- public:
-  DECL_CAST(JSPromiseCapability)
-
-  DECL_VERIFIER(JSPromiseCapability)
-
-  DECL_ACCESSORS(promise, Object)
-  DECL_ACCESSORS(resolve, Object)
-  DECL_ACCESSORS(reject, Object)
-
-  static const int kPromiseOffset = JSObject::kHeaderSize;
-  static const int kResolveOffset = kPromiseOffset + kPointerSize;
-  static const int kRejectOffset = kResolveOffset + kPointerSize;
-  static const int kSize = kRejectOffset + kPointerSize;
-
-  enum InObjectPropertyIndex {
-    kPromiseIndex,
-    kResolveIndex,
-    kRejectIndex,
-    kInObjectPropertyCount  // Dummy.
-  };
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSPromiseCapability);
-};
-
 class JSPromise : public JSObject {
  public:
-  DECL_INT_ACCESSORS(status)
   DECL_ACCESSORS(result, Object)
 
   // There are 3 possible states for these fields --
@@ -5388,7 +5320,8 @@ class JSPromise : public JSObject {
   // block in an async function.
   DECL_BOOLEAN_ACCESSORS(handled_hint)
 
-  static const char* Status(int status);
+  static const char* Status(v8::Promise::PromiseState status);
+  v8::Promise::PromiseState status() const;
 
   DECL_CAST(JSPromise)
 
@@ -5397,8 +5330,7 @@ class JSPromise : public JSObject {
   DECL_VERIFIER(JSPromise)
 
   // Layout description.
-  static const int kStatusOffset = JSObject::kHeaderSize;
-  static const int kResultOffset = kStatusOffset + kPointerSize;
+  static const int kResultOffset = JSObject::kHeaderSize;
   static const int kDeferredPromiseOffset = kResultOffset + kPointerSize;
   static const int kDeferredOnResolveOffset =
       kDeferredPromiseOffset + kPointerSize;
@@ -5414,8 +5346,16 @@ class JSPromise : public JSObject {
       kSize + v8::Promise::kEmbedderFieldCount * kPointerSize;
 
   // Flags layout.
-  static const int kHasHandlerBit = 0;
-  static const int kHandledHintBit = 1;
+  // The first two bits store the v8::Promise::PromiseState.
+  static const int kStatusBits = 2;
+  static const int kHasHandlerBit = 2;
+  static const int kHandledHintBit = 3;
+
+  static const int kStatusShift = 0;
+  static const int kStatusMask = 0x3;
+  STATIC_ASSERT(v8::Promise::kPending == 0);
+  STATIC_ASSERT(v8::Promise::kFulfilled == 1);
+  STATIC_ASSERT(v8::Promise::kRejected == 2);
 };
 
 // Regular expressions
@@ -6042,10 +5982,13 @@ class JSProxy: public JSReceiver {
       Isolate* isolate, Handle<JSProxy> proxy, Handle<Name> name,
       Handle<Object> receiver, bool* was_found);
 
-  static MaybeHandle<Object> CheckGetTrapResult(Isolate* isolate,
-                                                Handle<Name> name,
-                                                Handle<JSReceiver> target,
-                                                Handle<Object> trap_result);
+  enum AccessKind { kGet, kSet };
+
+  static MaybeHandle<Object> CheckGetSetTrapResult(Isolate* isolate,
+                                                   Handle<Name> name,
+                                                   Handle<JSReceiver> target,
+                                                   Handle<Object> trap_result,
+                                                   AccessKind access_kind);
 
   // ES6 9.5.9
   MUST_USE_RESULT static Maybe<bool> SetProperty(Handle<JSProxy> proxy,

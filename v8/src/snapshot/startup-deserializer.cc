@@ -15,8 +15,7 @@ namespace internal {
 void StartupDeserializer::DeserializeInto(Isolate* isolate) {
   Initialize(isolate);
 
-  BuiltinDeserializer builtin_deserializer(builtin_data_);
-  builtin_deserializer.Initialize(isolate);
+  BuiltinDeserializer builtin_deserializer(isolate, builtin_data_);
 
   if (!Deserializer::ReserveSpace(this, &builtin_deserializer)) {
     V8::FatalProcessOutOfMemory("StartupDeserializer");
@@ -43,10 +42,8 @@ void StartupDeserializer::DeserializeInto(Isolate* isolate) {
     FlushICacheForNewIsolate();
     RestoreExternalReferenceRedirectors(accessor_infos());
 
-    // Eagerly deserialize all builtins from the builtin snapshot.
-    // TODO(6624): Deserialize lazily.
-    builtin_deserializer.DeserializeAllBuiltins();
-    PostProcessDeferredBuiltinReferences();
+    // Deserialize eager builtins from the builtin snapshot.
+    builtin_deserializer.DeserializeEagerBuiltins();
   }
 
   isolate->heap()->set_native_contexts_list(isolate->heap()->undefined_value());

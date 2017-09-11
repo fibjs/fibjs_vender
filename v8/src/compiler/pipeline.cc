@@ -49,8 +49,6 @@
 #include "src/compiler/machine-operator-reducer.h"
 #include "src/compiler/memory-optimizer.h"
 #include "src/compiler/move-optimizer.h"
-#include "src/compiler/new-escape-analysis-reducer.h"
-#include "src/compiler/new-escape-analysis.h"
 #include "src/compiler/osr.h"
 #include "src/compiler/pipeline-statistics.h"
 #include "src/compiler/redundancy-elimination.h"
@@ -1033,8 +1031,7 @@ struct TypedLoweringPhase {
     JSCreateLowering create_lowering(
         &graph_reducer, data->info()->dependencies(), data->jsgraph(),
         feedback_vector, data->native_context(), temp_zone);
-    JSTypedLowering typed_lowering(&graph_reducer, data->info()->dependencies(),
-                                   data->jsgraph(), temp_zone);
+    JSTypedLowering typed_lowering(&graph_reducer, data->jsgraph(), temp_zone);
     TypedOptimization typed_optimization(
         &graph_reducer, data->info()->dependencies(), data->jsgraph());
     SimplifiedOperatorReducer simple_reducer(&graph_reducer, data->jsgraph());
@@ -1058,32 +1055,16 @@ struct EscapeAnalysisPhase {
   static const char* phase_name() { return "escape analysis"; }
 
   void Run(PipelineData* data, Zone* temp_zone) {
-    if (FLAG_turbo_new_escape) {
-      NewEscapeAnalysis escape_analysis(data->jsgraph(), temp_zone);
-      escape_analysis.ReduceGraph();
-      JSGraphReducer reducer(data->jsgraph(), temp_zone);
-      NewEscapeAnalysisReducer escape_reducer(&reducer, data->jsgraph(),
-                                              escape_analysis.analysis_result(),
-                                              temp_zone);
-      AddReducer(data, &reducer, &escape_reducer);
-      reducer.ReduceGraph();
-      // TODO(tebbi): Turn this into a debug mode check once we have confidence.
-      escape_reducer.VerifyReplacement();
-    } else {
-      EscapeAnalysis escape_analysis(data->graph(), data->jsgraph()->common(),
-                                     temp_zone);
-      if (!escape_analysis.Run()) return;
-      JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
-      EscapeAnalysisReducer escape_reducer(&graph_reducer, data->jsgraph(),
-                                           &escape_analysis, temp_zone);
-      AddReducer(data, &graph_reducer, &escape_reducer);
-      graph_reducer.ReduceGraph();
-      if (escape_reducer.compilation_failed()) {
-        data->set_compilation_failed();
-        return;
-      }
-      escape_reducer.VerifyReplacement();
-    }
+    EscapeAnalysis escape_analysis(data->jsgraph(), temp_zone);
+    escape_analysis.ReduceGraph();
+    JSGraphReducer reducer(data->jsgraph(), temp_zone);
+    EscapeAnalysisReducer escape_reducer(&reducer, data->jsgraph(),
+                                         escape_analysis.analysis_result(),
+                                         temp_zone);
+    AddReducer(data, &reducer, &escape_reducer);
+    reducer.ReduceGraph();
+    // TODO(tebbi): Turn this into a debug mode check once we have confidence.
+    escape_reducer.VerifyReplacement();
   }
 };
 
@@ -1567,14 +1548,27 @@ struct PrintGraphPhase {
     CompilationInfo* info = data->info();
     Graph* graph = data->graph();
 
-    {  // Print JSON.
+    if (FLAG_trace_turbo) {  // Print JSON.
       AllowHandleDereference allow_deref;
       TurboJsonFile json_of(info, std::ios_base::app);
       json_of << "{\"name\":\"" << phase << "\",\"type\":\"graph\",\"data\":"
               << AsJSON(*graph, data->source_positions()) << "},\n";
     }
 
-    if (FLAG_trace_turbo_graph) {  // Simple textual RPO.
+    if (FLAG_trace_turbo_scheduled) {  // Scheduled textual output.
+      AccountingAllocator allocator;
+      Schedule* schedule = data->schedule();
+      if (schedule == nullptr) {
+        schedule = Scheduler::ComputeSchedule(temp_zone, data->graph(),
+                                              Scheduler::kNoFlags);
+      }
+
+      AllowHandleDereference allow_deref;
+      CodeTracer::Scope tracing_scope(info->isolate()->GetCodeTracer());
+      OFStream os(tracing_scope.file());
+      os << "-- Graph after " << phase << " -- " << std::endl;
+      os << AsScheduledGraph(schedule);
+    } else if (FLAG_trace_turbo_graph) {  // Simple textual RPO.
       AllowHandleDereference allow_deref;
       CodeTracer::Scope tracing_scope(info->isolate()->GetCodeTracer());
       OFStream os(tracing_scope.file());
@@ -1596,7 +1590,7 @@ struct VerifyGraphPhase {
 };
 
 void PipelineImpl::RunPrintAndVerify(const char* phase, bool untyped) {
-  if (FLAG_trace_turbo) {
+  if (FLAG_trace_turbo || FLAG_trace_turbo_graph) {
     Run<PrintGraphPhase>(phase);
   }
   if (FLAG_turbo_verify) {
@@ -1609,12 +1603,14 @@ bool PipelineImpl::CreateGraph() {
 
   data->BeginPhaseKind("graph creation");
 
-  if (FLAG_trace_turbo) {
+  if (FLAG_trace_turbo || FLAG_trace_turbo_graph) {
     CodeTracer::Scope tracing_scope(isolate()->GetCodeTracer());
     OFStream os(tracing_scope.file());
     os << "---------------------------------------------------\n"
        << "Begin compiling method " << info()->GetDebugName().get()
        << " using Turbofan" << std::endl;
+  }
+  if (FLAG_trace_turbo) {
     TurboCfgFile tcf(isolate());
     tcf << AsC1VCompilation(info());
   }
@@ -1779,14 +1775,12 @@ Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
   PipelineImpl pipeline(&data);
   DCHECK_NOT_NULL(data.schedule());
 
-  if (FLAG_trace_turbo) {
-    {
-      CodeTracer::Scope tracing_scope(isolate->GetCodeTracer());
-      OFStream os(tracing_scope.file());
-      os << "---------------------------------------------------\n"
-         << "Begin compiling " << debug_name << " using Turbofan" << std::endl;
-    }
-    {
+  if (FLAG_trace_turbo || FLAG_trace_turbo_graph) {
+    CodeTracer::Scope tracing_scope(isolate->GetCodeTracer());
+    OFStream os(tracing_scope.file());
+    os << "---------------------------------------------------\n"
+       << "Begin compiling " << debug_name << " using Turbofan" << std::endl;
+    if (FLAG_trace_turbo) {
       TurboJsonFile json_of(&info, std::ios_base::trunc);
       json_of << "{\"function\":\"" << info.GetDebugName().get()
               << "\", \"source\":\"\",\n\"phases\":[";
@@ -2044,14 +2038,14 @@ Handle<Code> PipelineImpl::FinalizeCode() {
     json_of << "\"nodePositions\":";
     json_of << data->source_position_output();
     json_of << "}";
-
+  }
+  if (FLAG_trace_turbo || FLAG_trace_turbo_graph) {
     CodeTracer::Scope tracing_scope(isolate()->GetCodeTracer());
     OFStream os(tracing_scope.file());
     os << "---------------------------------------------------\n"
        << "Finished compiling method " << info()->GetDebugName().get()
        << " using Turbofan" << std::endl;
   }
-
   return code;
 }
 

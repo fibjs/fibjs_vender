@@ -135,8 +135,7 @@ class PreParserExpression {
   }
 
   static PreParserExpression NewTargetExpression() {
-    return PreParserExpression(TypeField::encode(kExpression) |
-                               ExpressionTypeField::encode(kNewTarget));
+    return PreParserExpression::Default();
   }
 
   static PreParserExpression ObjectLiteral(
@@ -197,12 +196,6 @@ class PreParserExpression {
     return PreParserExpression(
         TypeField::encode(kExpression) |
         ExpressionTypeField::encode(kSuperCallReference));
-  }
-
-  static PreParserExpression NoTemplateTag() {
-    return PreParserExpression(
-        TypeField::encode(kExpression) |
-        ExpressionTypeField::encode(kNoTemplateTagExpression));
   }
 
   bool IsNull() const { return TypeField::decode(code_) == kNull; }
@@ -278,11 +271,6 @@ class PreParserExpression {
   bool IsFunctionLiteral() const { return false; }
   bool IsCallNew() const { return false; }
 
-  bool IsNoTemplateTag() const {
-    return TypeField::decode(code_) == kExpression &&
-           ExpressionTypeField::decode(code_) == kNoTemplateTagExpression;
-  }
-
   bool IsSpread() const {
     return TypeField::decode(code_) == kSpreadExpression;
   }
@@ -317,9 +305,7 @@ class PreParserExpression {
     kCallExpression,
     kCallEvalExpression,
     kSuperCallReference,
-    kNoTemplateTagExpression,
-    kAssignment,
-    kNewTarget
+    kAssignment
   };
 
   explicit PreParserExpression(uint32_t expression_code,
@@ -478,7 +464,11 @@ class PreParserStatement {
   // and PreParser.
   PreParserStatement* operator->() { return this; }
 
+  // TODO(adamk): These should return something even lighter-weight than
+  // PreParserStatementList.
   PreParserStatementList statements() { return PreParserStatementList(); }
+  PreParserStatementList cases() { return PreParserStatementList(); }
+
   void set_scope(Scope* scope) {}
   void Initialize(const PreParserExpression& cond, PreParserStatement body,
                   const SourceRange& body_range = {}) {}
@@ -675,9 +665,8 @@ class PreParserFactory {
     return PreParserStatement::Default();
   }
 
-  PreParserStatement NewBlock(ZoneList<const AstRawString*>* labels,
-                              int capacity, bool ignore_completion_value,
-                              int pos) {
+  PreParserStatement NewBlock(int capacity, bool ignore_completion_value,
+                              ZoneList<const AstRawString*>* labels = nullptr) {
     return PreParserStatement::Default();
   }
 
@@ -728,12 +717,13 @@ class PreParserFactory {
   }
 
   PreParserStatement NewSwitchStatement(ZoneList<const AstRawString*>* labels,
+                                        const PreParserExpression& tag,
                                         int pos) {
     return PreParserStatement::Default();
   }
 
   PreParserStatement NewCaseClause(const PreParserExpression& label,
-                                   PreParserStatementList statements, int pos) {
+                                   PreParserStatementList statements) {
     return PreParserStatement::Default();
   }
 
@@ -762,14 +752,6 @@ class PreParserFactory {
   PreParserExpression NewImportCallExpression(const PreParserExpression& args,
                                               int pos) {
     return PreParserExpression::Default();
-  }
-
-  // Return the object itself as AstVisitor and implement the needed
-  // dummy method right in this class.
-  PreParserFactory* visitor() { return this; }
-  int* ast_properties() {
-    static int dummy = 42;
-    return &dummy;
   }
 
  private:
@@ -968,9 +950,6 @@ class PreParser : public ParserBase<PreParser> {
   }
   V8_INLINE void SetAsmModule() {}
 
-  V8_INLINE void MarkCollectedTailCallExpressions() {}
-  V8_INLINE void MarkTailPosition(const PreParserExpression& expression) {}
-
   V8_INLINE PreParserExpression SpreadCall(const PreParserExpression& function,
                                            const PreParserExpressionList& args,
                                            int pos,
@@ -1022,9 +1001,8 @@ class PreParser : public ParserBase<PreParser> {
   RewriteReturn(const PreParserExpression& return_value, int pos) {
     return return_value;
   }
-  V8_INLINE PreParserStatement RewriteSwitchStatement(
-      const PreParserExpression& tag, PreParserStatement switch_statement,
-      PreParserStatementList cases, Scope* scope) {
+  V8_INLINE PreParserStatement
+  RewriteSwitchStatement(PreParserStatement switch_statement, Scope* scope) {
     return PreParserStatement::Default();
   }
 
@@ -1240,11 +1218,6 @@ class PreParser : public ParserBase<PreParser> {
     return statement.IsStringLiteral();
   }
 
-  V8_INLINE static PreParserExpression GetPropertyValue(
-      const PreParserExpression& property) {
-    return PreParserExpression::Default();
-  }
-
   V8_INLINE static void GetDefaultStrings(
       PreParserIdentifier* default_string,
       PreParserIdentifier* star_default_star_string) {}
@@ -1321,7 +1294,7 @@ class PreParser : public ParserBase<PreParser> {
       ForInfo* for_info, PreParserStatement* body_block,
       PreParserExpression* each_variable, bool* ok) {
     if (track_unresolved_variables_) {
-      DCHECK(for_info->parsing_result.declarations.length() == 1);
+      DCHECK_EQ(1, for_info->parsing_result.declarations.size());
       bool is_for_var_of =
           for_info->mode == ForEachStatement::ITERATE &&
           for_info->parsing_result.descriptor.mode == VariableMode::VAR;
@@ -1543,10 +1516,6 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserStatementList();
   }
 
-  PreParserStatementList NewCaseClauseList(int size) {
-    return PreParserStatementList();
-  }
-
   V8_INLINE PreParserExpression
   NewV8Intrinsic(const PreParserIdentifier& name,
                  const PreParserExpressionList& arguments, int pos, bool* ok) {
@@ -1628,14 +1597,6 @@ class PreParser : public ParserBase<PreParser> {
         }
       }
     }
-  }
-
-  V8_INLINE PreParserExpression NoTemplateTag() {
-    return PreParserExpression::NoTemplateTag();
-  }
-
-  V8_INLINE static bool IsTaggedTemplate(const PreParserExpression& tag) {
-    return !tag.IsNoTemplateTag();
   }
 
   V8_INLINE PreParserExpression

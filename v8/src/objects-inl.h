@@ -14,6 +14,7 @@
 
 #include "src/base/atomicops.h"
 #include "src/base/bits.h"
+#include "src/base/tsan.h"
 #include "src/builtins/builtins.h"
 #include "src/contexts-inl.h"
 #include "src/conversions-inl.h"
@@ -96,7 +97,6 @@ TYPE_CHECKER(JSFunction, JS_FUNCTION_TYPE)
 TYPE_CHECKER(JSGlobalObject, JS_GLOBAL_OBJECT_TYPE)
 TYPE_CHECKER(JSMap, JS_MAP_TYPE)
 TYPE_CHECKER(JSMessageObject, JS_MESSAGE_OBJECT_TYPE)
-TYPE_CHECKER(JSPromiseCapability, JS_PROMISE_CAPABILITY_TYPE)
 TYPE_CHECKER(JSPromise, JS_PROMISE_TYPE)
 TYPE_CHECKER(JSRegExp, JS_REGEXP_TYPE)
 TYPE_CHECKER(JSSet, JS_SET_TYPE)
@@ -313,6 +313,8 @@ bool HeapObject::IsJSWeakCollection() const {
 bool HeapObject::IsJSCollection() const { return IsJSMap() || IsJSSet(); }
 
 bool HeapObject::IsDescriptorArray() const { return IsFixedArray(); }
+
+bool HeapObject::IsEnumCache() const { return IsTuple2(); }
 
 bool HeapObject::IsFrameArray() const { return IsFixedArray(); }
 
@@ -551,6 +553,7 @@ CAST_ACCESSOR(ContextExtension)
 CAST_ACCESSOR(DeoptimizationInputData)
 CAST_ACCESSOR(DependentCode)
 CAST_ACCESSOR(DescriptorArray)
+CAST_ACCESSOR(EnumCache)
 CAST_ACCESSOR(FixedArray)
 CAST_ACCESSOR(FixedArrayBase)
 CAST_ACCESSOR(FixedDoubleArray)
@@ -579,7 +582,6 @@ CAST_ACCESSOR(JSMapIterator)
 CAST_ACCESSOR(JSMessageObject)
 CAST_ACCESSOR(JSObject)
 CAST_ACCESSOR(JSPromise)
-CAST_ACCESSOR(JSPromiseCapability)
 CAST_ACCESSOR(JSProxy)
 CAST_ACCESSOR(JSReceiver)
 CAST_ACCESSOR(JSRegExp)
@@ -601,6 +603,7 @@ CAST_ACCESSOR(ObjectTemplateInfo)
 CAST_ACCESSOR(Oddball)
 CAST_ACCESSOR(OrderedHashMap)
 CAST_ACCESSOR(OrderedHashSet)
+CAST_ACCESSOR(PromiseCapability)
 CAST_ACCESSOR(PromiseReactionJobInfo)
 CAST_ACCESSOR(PromiseResolveThenableJobInfo)
 CAST_ACCESSOR(PropertyArray)
@@ -2024,23 +2027,16 @@ Object** FixedArray::RawFieldOfElementAt(int index) {
   return HeapObject::RawField(this, OffsetOfElementAt(index));
 }
 
-bool DescriptorArray::IsEmpty() {
-  DCHECK(length() >= kFirstIndex ||
-         this == GetHeap()->empty_descriptor_array());
-  return length() < kFirstIndex;
-}
-
+ACCESSORS(EnumCache, keys, FixedArray, kKeysOffset)
+ACCESSORS(EnumCache, indices, FixedArray, kIndicesOffset)
 
 int DescriptorArray::number_of_descriptors() {
-  DCHECK(length() >= kFirstIndex || IsEmpty());
-  int len = length();
-  return len == 0 ? 0 : Smi::ToInt(get(kDescriptorLengthIndex));
+  return Smi::ToInt(get(kDescriptorLengthIndex));
 }
 
 
 int DescriptorArray::number_of_descriptors_storage() {
-  int len = length();
-  return len == 0 ? 0 : (len - kFirstIndex) / kEntrySize;
+  return (length() - kFirstIndex) / kEntrySize;
 }
 
 
@@ -2050,8 +2046,7 @@ int DescriptorArray::NumberOfSlackDescriptors() {
 
 
 void DescriptorArray::SetNumberOfDescriptors(int number_of_descriptors) {
-  WRITE_FIELD(
-      this, kDescriptorLengthOffset, Smi::FromInt(number_of_descriptors));
+  set(kDescriptorLengthIndex, Smi::FromInt(number_of_descriptors));
 }
 
 
@@ -2059,39 +2054,13 @@ inline int DescriptorArray::number_of_entries() {
   return number_of_descriptors();
 }
 
-
-bool DescriptorArray::HasEnumCache() {
-  return !IsEmpty() && !get(kEnumCacheBridgeIndex)->IsSmi();
-}
-
-
 void DescriptorArray::CopyEnumCacheFrom(DescriptorArray* array) {
-  set(kEnumCacheBridgeIndex, array->get(kEnumCacheBridgeIndex));
+  set(kEnumCacheIndex, array->get(kEnumCacheIndex));
 }
 
-
-FixedArray* DescriptorArray::GetEnumCache() {
-  DCHECK(HasEnumCache());
-  FixedArray* bridge = FixedArray::cast(get(kEnumCacheBridgeIndex));
-  return FixedArray::cast(bridge->get(kEnumCacheBridgeCacheIndex));
+EnumCache* DescriptorArray::GetEnumCache() {
+  return EnumCache::cast(get(kEnumCacheIndex));
 }
-
-
-bool DescriptorArray::HasEnumIndicesCache() {
-  if (IsEmpty()) return false;
-  Object* object = get(kEnumCacheBridgeIndex);
-  if (object->IsSmi()) return false;
-  FixedArray* bridge = FixedArray::cast(object);
-  return !bridge->get(kEnumCacheBridgeIndicesCacheIndex)->IsSmi();
-}
-
-
-FixedArray* DescriptorArray::GetEnumIndicesCache() {
-  DCHECK(HasEnumIndicesCache());
-  FixedArray* bridge = FixedArray::cast(get(kEnumCacheBridgeIndex));
-  return FixedArray::cast(bridge->get(kEnumCacheBridgeIndicesCacheIndex));
-}
-
 
 // Perform a binary search in a fixed array.
 template <SearchMode search_mode, typename T>
@@ -2243,7 +2212,6 @@ int Map::EnumLength() const { return EnumLengthBits::decode(bit_field3()); }
 void Map::SetEnumLength(int length) {
   if (length != kInvalidEnumCacheSentinel) {
     DCHECK(length >= 0);
-    DCHECK(length == 0 || instance_descriptors()->HasEnumCache());
     DCHECK(length <= NumberOfOwnDescriptors());
   }
   set_bit_field3(EnumLengthBits::update(bit_field3(), length));
@@ -3027,20 +2995,34 @@ double Float64ArrayTraits::defaultValue() {
   return std::numeric_limits<double>::quiet_NaN();
 }
 
-
 template <class Traits>
 typename Traits::ElementType FixedTypedArray<Traits>::get_scalar(int index) {
   DCHECK((index >= 0) && (index < this->length()));
-  ElementType* ptr = reinterpret_cast<ElementType*>(DataPtr());
-  return ptr[index];
+  // The JavaScript memory model allows for racy reads and writes to a
+  // SharedArrayBuffer's backing store, which will always be a FixedTypedArray.
+  // ThreadSanitizer will catch these racy accesses and warn about them, so we
+  // disable TSAN for these reads and writes using annotations.
+  //
+  // The access is marked as volatile so the reads/writes will not be elided or
+  // duplicated. We don't use relaxed atomics here, as it is not a requirement
+  // of the JavaScript memory model to have tear-free reads of overlapping
+  // accesses, and using relaxed atomics may introduce overhead.
+  auto* ptr = reinterpret_cast<volatile ElementType*>(DataPtr());
+  TSAN_ANNOTATE_IGNORE_READS_BEGIN;
+  auto result = ptr[index];
+  TSAN_ANNOTATE_IGNORE_READS_END;
+  return result;
 }
 
 
 template <class Traits>
 void FixedTypedArray<Traits>::set(int index, ElementType value) {
   CHECK((index >= 0) && (index < this->length()));
-  ElementType* ptr = reinterpret_cast<ElementType*>(DataPtr());
+  // See the comment in FixedTypedArray<Traits>::get_scalar.
+  auto* ptr = reinterpret_cast<volatile ElementType*>(DataPtr());
+  TSAN_ANNOTATE_IGNORE_WRITES_BEGIN;
   ptr[index] = value;
+  TSAN_ANNOTATE_IGNORE_WRITES_END;
 }
 
 template <class Traits>
@@ -3729,17 +3711,23 @@ void Code::set_raw_kind_specific_flags2(int value) {
 
 inline bool Code::is_interpreter_trampoline_builtin() const {
   Builtins* builtins = GetIsolate()->builtins();
-  return this == builtins->builtin(Builtins::kInterpreterEntryTrampoline) ||
-         this ==
-             builtins->builtin(Builtins::kInterpreterEnterBytecodeAdvance) ||
-         this == builtins->builtin(Builtins::kInterpreterEnterBytecodeDispatch);
+  bool is_interpreter_trampoline =
+      (this == builtins->builtin(Builtins::kInterpreterEntryTrampoline) ||
+       this == builtins->builtin(Builtins::kInterpreterEnterBytecodeAdvance) ||
+       this == builtins->builtin(Builtins::kInterpreterEnterBytecodeDispatch));
+  DCHECK_IMPLIES(is_interpreter_trampoline, !Builtins::IsLazy(builtin_index()));
+  return is_interpreter_trampoline;
 }
 
 inline bool Code::checks_optimization_marker() const {
   Builtins* builtins = GetIsolate()->builtins();
-  return this == builtins->builtin(Builtins::kCompileLazy) ||
-         this == builtins->builtin(Builtins::kInterpreterEntryTrampoline) ||
-         this == builtins->builtin(Builtins::kCheckOptimizationMarker);
+  bool checks_marker =
+      (this == builtins->builtin(Builtins::kCompileLazy) ||
+       this == builtins->builtin(Builtins::kInterpreterEntryTrampoline) ||
+       this == builtins->builtin(Builtins::kCheckOptimizationMarker));
+  DCHECK_IMPLIES(checks_marker, !Builtins::IsLazy(builtin_index()));
+  return checks_marker ||
+         (kind() == OPTIMIZED_FUNCTION && marked_for_deoptimization());
 }
 
 inline bool Code::has_unwinding_info() const {
@@ -3848,28 +3836,19 @@ void Code::set_has_reloc_info_for_serialization(bool value) {
   WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
 }
 
-int Code::allow_osr_at_loop_nesting_level() const {
-  DCHECK_EQ(FUNCTION, kind());
-  int fields = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
-  return AllowOSRAtLoopNestingLevelField::decode(fields);
-}
-
-
-void Code::set_allow_osr_at_loop_nesting_level(int level) {
-  DCHECK_EQ(FUNCTION, kind());
-  DCHECK(level >= 0 && level <= AbstractCode::kMaxLoopNestingMarker);
-  int previous = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
-  int updated = AllowOSRAtLoopNestingLevelField::update(previous, level);
-  WRITE_UINT32_FIELD(this, kKindSpecificFlags2Offset, updated);
-}
 
 int Code::builtin_index() const {
-  return READ_INT_FIELD(this, kBuiltinIndexOffset);
+  int index = READ_INT_FIELD(this, kBuiltinIndexOffset);
+  DCHECK(index == -1 || Builtins::IsBuiltinId(index));
+  return index;
 }
 
 void Code::set_builtin_index(int index) {
+  DCHECK(index == -1 || Builtins::IsBuiltinId(index));
   WRITE_INT_FIELD(this, kBuiltinIndexOffset, index);
 }
+
+bool Code::is_builtin() const { return builtin_index() != -1; }
 
 unsigned Code::stack_slots() const {
   DCHECK(is_turbofanned());
@@ -3900,27 +3879,6 @@ void Code::set_safepoint_table_offset(unsigned offset) {
   int previous = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
   int updated = SafepointTableOffsetField::update(previous, offset);
   WRITE_UINT32_FIELD(this, kKindSpecificFlags2Offset, updated);
-}
-
-unsigned Code::back_edge_table_offset() const {
-  DCHECK_EQ(FUNCTION, kind());
-  return BackEdgeTableOffsetField::decode(
-      READ_UINT32_FIELD(this, kKindSpecificFlags2Offset)) << kPointerSizeLog2;
-}
-
-
-void Code::set_back_edge_table_offset(unsigned offset) {
-  DCHECK_EQ(FUNCTION, kind());
-  DCHECK(IsAligned(offset, static_cast<unsigned>(kPointerSize)));
-  offset = offset >> kPointerSizeLog2;
-  int previous = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
-  int updated = BackEdgeTableOffsetField::update(previous, offset);
-  WRITE_UINT32_FIELD(this, kKindSpecificFlags2Offset, updated);
-}
-
-bool Code::back_edges_patched_for_osr() const {
-  DCHECK_EQ(FUNCTION, kind());
-  return allow_osr_at_loop_nesting_level() > 0;
 }
 
 
@@ -4332,7 +4290,6 @@ ACCESSORS(JSBoundFunction, bound_arguments, FixedArray, kBoundArgumentsOffset)
 
 ACCESSORS(JSFunction, shared, SharedFunctionInfo, kSharedFunctionInfoOffset)
 ACCESSORS(JSFunction, feedback_vector_cell, Cell, kFeedbackVectorOffset)
-ACCESSORS(JSFunction, next_function_link, Object, kNextFunctionLinkOffset)
 
 ACCESSORS(JSGlobalObject, native_context, Context, kNativeContextOffset)
 ACCESSORS(JSGlobalObject, global_proxy, JSObject, kGlobalProxyOffset)
@@ -4598,13 +4555,21 @@ FeedbackVector* JSFunction::feedback_vector() const {
   return FeedbackVector::cast(feedback_vector_cell()->value());
 }
 
+// Code objects that are marked for deoptimization are not considered to be
+// optimized. This is because the JSFunction might have been already
+// deoptimized but its code() still needs to be unlinked, which will happen on
+// its next activation.
+// TODO(jupvfranco): rename this function. Maybe RunOptimizedCode,
+// or IsValidOptimizedCode.
 bool JSFunction::IsOptimized() {
-  return code()->kind() == Code::OPTIMIZED_FUNCTION;
+  return code()->kind() == Code::OPTIMIZED_FUNCTION &&
+         !code()->marked_for_deoptimization();
 }
 
 bool JSFunction::HasOptimizedCode() {
   return IsOptimized() ||
-         (has_feedback_vector() && feedback_vector()->has_optimized_code());
+         (has_feedback_vector() && feedback_vector()->has_optimized_code() &&
+          !feedback_vector()->optimized_code()->marked_for_deoptimization());
 }
 
 bool JSFunction::HasOptimizationMarker() {
@@ -4707,20 +4672,9 @@ void JSFunction::SetOptimizationMarker(OptimizationMarker marker) {
   feedback_vector()->SetOptimizationMarker(marker);
 }
 
+// TODO(jupvfranco): Get rid of this function and use set_code instead.
 void JSFunction::ReplaceCode(Code* code) {
-  bool was_optimized = this->code()->kind() == Code::OPTIMIZED_FUNCTION;
-  bool is_optimized = code->kind() == Code::OPTIMIZED_FUNCTION;
-
   set_code(code);
-
-  // Add/remove the function from the list of optimized functions for this
-  // context based on the state change.
-  if (!was_optimized && is_optimized) {
-    context()->native_context()->AddOptimizedFunction(this);
-  } else if (was_optimized && !is_optimized) {
-    // TODO(titzer): linear in the number of optimized functions; fix!
-    context()->native_context()->RemoveOptimizedFunction(this);
-  }
 }
 
 bool JSFunction::has_feedback_vector() const {
@@ -4907,7 +4861,6 @@ SMI_ACCESSORS(JSMessageObject, end_position, kEndPositionOffset)
 SMI_ACCESSORS(JSMessageObject, error_level, kErrorLevelOffset)
 
 INT_ACCESSORS(Code, instruction_size, kInstructionSizeOffset)
-INT_ACCESSORS(Code, prologue_offset, kPrologueOffset)
 INT_ACCESSORS(Code, constant_pool_offset, kConstantPoolOffset)
 #define CODE_ACCESSORS(name, type, offset)           \
   ACCESSORS_CHECKED2(Code, name, type, offset, true, \
@@ -5246,11 +5199,10 @@ MaybeHandle<JSTypedArray> JSTypedArray::Validate(Isolate* isolate,
 ACCESSORS(JSTypedArray, raw_length, Object, kLengthOffset)
 #endif
 
-ACCESSORS(JSPromiseCapability, promise, Object, kPromiseOffset)
-ACCESSORS(JSPromiseCapability, resolve, Object, kResolveOffset)
-ACCESSORS(JSPromiseCapability, reject, Object, kRejectOffset)
+ACCESSORS(PromiseCapability, promise, Object, kPromiseOffset)
+ACCESSORS(PromiseCapability, resolve, Object, kResolveOffset)
+ACCESSORS(PromiseCapability, reject, Object, kRejectOffset)
 
-SMI_ACCESSORS(JSPromise, status, kStatusOffset)
 ACCESSORS(JSPromise, result, Object, kResultOffset)
 ACCESSORS(JSPromise, deferred_promise, Object, kDeferredPromiseOffset)
 ACCESSORS(JSPromise, deferred_on_resolve, Object, kDeferredOnResolveOffset)
@@ -5841,6 +5793,10 @@ void GlobalDictionary::SetEntry(int entry, Object* key, Object* value,
   DetailsAtPut(entry, details);
 }
 
+void GlobalDictionary::ValueAtPut(int entry, Object* value) {
+  set(EntryToIndex(entry), value);
+}
+
 bool NumberDictionaryShape::IsMatch(uint32_t key, Object* other) {
   DCHECK(other->IsNumber());
   return key == static_cast<uint32_t>(other->Number());
@@ -6210,6 +6166,24 @@ ACCESSORS(JSAsyncFromSyncIterator, sync_iterator, JSReceiver,
 
 ACCESSORS(JSStringIterator, string, String, kStringOffset)
 SMI_ACCESSORS(JSStringIterator, index, kNextIndexOffset)
+
+bool ScopeInfo::IsAsmModule() { return AsmModuleField::decode(Flags()); }
+
+bool ScopeInfo::HasSimpleParameters() {
+  return HasSimpleParametersField::decode(Flags());
+}
+
+#define FIELD_ACCESSORS(name)                                                 \
+  void ScopeInfo::Set##name(int value) { set(k##name, Smi::FromInt(value)); } \
+  int ScopeInfo::name() {                                                     \
+    if (length() > 0) {                                                       \
+      return Smi::ToInt(get(k##name));                                        \
+    } else {                                                                  \
+      return 0;                                                               \
+    }                                                                         \
+  }
+FOR_EACH_SCOPE_INFO_NUMERIC_FIELD(FIELD_ACCESSORS)
+#undef FIELD_ACCESSORS
 
 }  // namespace internal
 }  // namespace v8
