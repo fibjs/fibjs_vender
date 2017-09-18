@@ -14,7 +14,9 @@ process.chdir(v8Folder);
 process.run("tools/dev/v8gen.py", [
     "x64.release",
     "--",
-    "v8_enable_i18n_support=false"
+    "v8_enable_i18n_support=false",
+    "is_component_build=false",
+    "v8_static_library=true"
 ]);
 
 process.run("../depot_tools/ninja", [

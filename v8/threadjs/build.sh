@@ -1,0 +1,1 @@
+g++ threadjs.cpp -g -O0 -o threadjs -I "../../../../source/js/v8/v8/include" -L"../../../../source/js/v8/v8/out.gn/x64.release/obj" -lv8_base -lv8_libbase -lv8_libsampler -lv8_libplatform -lv8_nosnapshot -lv8_init -lv8_initializers -std=c++11
