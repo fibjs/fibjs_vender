@@ -20,6 +20,7 @@
 #include "src/assert-scope.h"
 #include "src/background-parsing-task.h"
 #include "src/base/functional.h"
+#include "src/base/logging.h"
 #include "src/base/platform/platform.h"
 #include "src/base/platform/time.h"
 #include "src/base/safe_conversions.h"
@@ -34,6 +35,7 @@
 #include "src/conversions-inl.h"
 #include "src/counters.h"
 #include "src/debug/debug-coverage.h"
+#include "src/debug/debug-type-profile.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
 #include "src/execution.h"
@@ -75,6 +77,8 @@
 #include "src/value-serializer.h"
 #include "src/version.h"
 #include "src/vm-state-inl.h"
+#include "src/wasm/compilation-manager.h"
+#include "src/wasm/streaming-decoder.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects-inl.h"
 #include "src/wasm/wasm-result.h"
@@ -503,12 +507,11 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
       v8::ArrayBuffer::Allocator::Protection protection) {
     switch (protection) {
       case v8::ArrayBuffer::Allocator::Protection::kNoAccess: {
-        base::VirtualMemory::UncommitRegion(data, length);
+        base::OS::Guard(data, length);
         return;
       }
       case v8::ArrayBuffer::Allocator::Protection::kReadWrite: {
-        const bool is_executable = false;
-        base::VirtualMemory::CommitRegion(data, length, is_executable);
+        base::OS::Unprotect(data, length);
         return;
       }
     }
@@ -826,6 +829,9 @@ StartupData V8::WarmUpSnapshotDataBlob(StartupData cold_snapshot_blob,
   return result;
 }
 
+void V8::SetDcheckErrorHandler(DcheckErrorCallback that) {
+  v8::base::SetDcheckFunction(that);
+}
 
 void V8::SetFlagsFromString(const char* str, int length) {
   i::FlagList::SetFlagsFromString(str, length);
@@ -3275,7 +3281,7 @@ Local<Value> JSON::Parse(Local<String> json_string) {
 }
 
 MaybeLocal<String> JSON::Stringify(Local<Context> context,
-                                   Local<Object> json_object,
+                                   Local<Value> json_object,
                                    Local<String> gap) {
   PREPARE_FOR_EXECUTION(context, JSON, Stringify, String);
   i::Handle<i::Object> object = Utils::OpenHandle(*json_object);
@@ -7912,13 +7918,17 @@ MaybeLocal<WasmCompiledModule> WasmCompiledModule::Compile(Isolate* isolate,
 WasmModuleObjectBuilderStreaming::WasmModuleObjectBuilderStreaming(
     Isolate* isolate)
     : isolate_(isolate) {
-  MaybeLocal<Promise::Resolver> maybe_promise =
+  MaybeLocal<Promise::Resolver> maybe_resolver =
       Promise::Resolver::New(isolate->GetCurrentContext());
-  Local<Promise::Resolver> promise;
-  if (maybe_promise.ToLocal(&promise)) {
-    promise_.Reset(isolate, promise->GetPromise());
-  } else {
-    UNREACHABLE();
+  Local<Promise::Resolver> resolver = maybe_resolver.ToLocalChecked();
+  promise_.Reset(isolate, resolver->GetPromise());
+
+  if (i::FLAG_wasm_stream_compilation) {
+    i::Handle<i::JSPromise> promise = Utils::OpenHandle(*GetPromise());
+    i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+    streaming_decoder_ =
+        i_isolate->wasm_compilation_manager()->StartStreamingCompilation(
+            i_isolate, handle(i_isolate->context()), promise);
   }
 }
 
@@ -7928,6 +7938,10 @@ Local<Promise> WasmModuleObjectBuilderStreaming::GetPromise() {
 
 void WasmModuleObjectBuilderStreaming::OnBytesReceived(const uint8_t* bytes,
                                                        size_t size) {
+  if (i::FLAG_wasm_stream_compilation) {
+    streaming_decoder_->OnBytesReceived(i::Vector<const uint8_t>(bytes, size));
+    return;
+  }
   std::unique_ptr<uint8_t[]> cloned_bytes(new uint8_t[size]);
   memcpy(cloned_bytes.get(), bytes, size);
   received_buffers_.push_back(
@@ -7938,6 +7952,10 @@ void WasmModuleObjectBuilderStreaming::OnBytesReceived(const uint8_t* bytes,
 }
 
 void WasmModuleObjectBuilderStreaming::Finish() {
+  if (i::FLAG_wasm_stream_compilation) {
+    streaming_decoder_->Finish();
+    return;
+  }
   std::unique_ptr<uint8_t[]> wire_bytes(new uint8_t[total_size_]);
   uint8_t* insert_at = wire_bytes.get();
 
@@ -7954,8 +7972,13 @@ void WasmModuleObjectBuilderStreaming::Finish() {
 }
 
 void WasmModuleObjectBuilderStreaming::Abort(Local<Value> exception) {
-  Local<Promise::Resolver> resolver =
-      promise_.Get(isolate_).As<Promise::Resolver>();
+  Local<Promise> promise = GetPromise();
+  // The promise has already been resolved, e.g. because of a compilation
+  // error.
+  if (promise->State() != v8::Promise::kPending) return;
+  if (i::FLAG_wasm_stream_compilation) streaming_decoder_->Abort();
+
+  Local<Promise::Resolver> resolver = promise.As<Promise::Resolver>();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
   i::HandleScope scope(i_isolate);
   Local<Context> context = Utils::ToLocal(handle(i_isolate->context()));
@@ -10166,7 +10189,7 @@ bool debug::Coverage::FunctionData::HasBlockCoverage() const {
 
 debug::Coverage::BlockData debug::Coverage::FunctionData::GetBlockData(
     size_t i) const {
-  return BlockData(&function_->blocks.at(i));
+  return BlockData(&function_->blocks.at(i), coverage_);
 }
 
 Local<debug::Script> debug::Coverage::ScriptData::GetScript() const {
@@ -10179,15 +10202,17 @@ size_t debug::Coverage::ScriptData::FunctionCount() const {
 
 debug::Coverage::FunctionData debug::Coverage::ScriptData::GetFunctionData(
     size_t i) const {
-  return FunctionData(&script_->functions.at(i));
+  return FunctionData(&script_->functions.at(i), coverage_);
 }
 
-debug::Coverage::~Coverage() { delete coverage_; }
+debug::Coverage::ScriptData::ScriptData(size_t index,
+                                        std::shared_ptr<i::Coverage> coverage)
+    : script_(&coverage->at(index)), coverage_(std::move(coverage)) {}
 
 size_t debug::Coverage::ScriptCount() const { return coverage_->size(); }
 
 debug::Coverage::ScriptData debug::Coverage::GetScriptData(size_t i) const {
-  return ScriptData(&coverage_->at(i));
+  return ScriptData(i, coverage_);
 }
 
 debug::Coverage debug::Coverage::CollectPrecise(Isolate* isolate) {
@@ -10211,10 +10236,15 @@ int debug::TypeProfile::Entry::SourcePosition() const {
 std::vector<MaybeLocal<String>> debug::TypeProfile::Entry::Types() const {
   std::vector<MaybeLocal<String>> result;
   for (const internal::Handle<internal::String>& type : entry_->types) {
-    result.push_back(ToApiHandle<String>(type));
+    result.emplace_back(ToApiHandle<String>(type));
   }
   return result;
 }
+
+debug::TypeProfile::ScriptData::ScriptData(
+    size_t index, std::shared_ptr<i::TypeProfile> type_profile)
+    : script_(&type_profile->at(index)),
+      type_profile_(std::move(type_profile)) {}
 
 Local<debug::Script> debug::TypeProfile::ScriptData::GetScript() const {
   return ToApiHandle<debug::Script>(script_->script);
@@ -10224,7 +10254,7 @@ std::vector<debug::TypeProfile::Entry> debug::TypeProfile::ScriptData::Entries()
     const {
   std::vector<debug::TypeProfile::Entry> result;
   for (const internal::TypeProfileEntry& entry : script_->entries) {
-    result.push_back(debug::TypeProfile::Entry(&entry));
+    result.push_back(debug::TypeProfile::Entry(&entry, type_profile_));
   }
   return result;
 }
@@ -10243,11 +10273,8 @@ size_t debug::TypeProfile::ScriptCount() const { return type_profile_->size(); }
 
 debug::TypeProfile::ScriptData debug::TypeProfile::GetScriptData(
     size_t i) const {
-  // TODO(franzih): ScriptData is invalid after ~TypeProfile. Same in Coverage.
-  return ScriptData(&type_profile_->at(i));
+  return ScriptData(i, type_profile_);
 }
-
-debug::TypeProfile::~TypeProfile() { delete type_profile_; }
 
 const char* CpuProfileNode::GetFunctionNameStr() const {
   const i::ProfileNode* node = reinterpret_cast<const i::ProfileNode*>(this);

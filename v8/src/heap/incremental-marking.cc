@@ -23,12 +23,26 @@
 namespace v8 {
 namespace internal {
 
-void IncrementalMarking::Observer::Step(int bytes_allocated, Address, size_t) {
-  VMState<GC> state(incremental_marking_.heap()->isolate());
+void IncrementalMarking::Observer::Step(int bytes_allocated, Address addr,
+                                        size_t size) {
+  Heap* heap = incremental_marking_.heap();
+  VMState<GC> state(heap->isolate());
   RuntimeCallTimerScope runtime_timer(
-      incremental_marking_.heap()->isolate(),
-      &RuntimeCallStats::GC_Custom_IncrementalMarkingObserver);
+      heap->isolate(), &RuntimeCallStats::GC_Custom_IncrementalMarkingObserver);
   incremental_marking_.AdvanceIncrementalMarkingOnAllocation();
+  if (incremental_marking_.black_allocation() && addr != nullptr) {
+    // AdvanceIncrementalMarkingOnAllocation can start black allocation.
+    // Ensure that the new object is marked black.
+    HeapObject* object = HeapObject::FromAddress(addr);
+    if (incremental_marking_.marking_state()->IsWhite(object) &&
+        !heap->InNewSpace(object)) {
+      if (heap->lo_space()->Contains(object)) {
+        incremental_marking_.marking_state()->WhiteToBlack(object);
+      } else {
+        Page::FromAddress(addr)->CreateBlackArea(addr, addr + size);
+      }
+    }
+  }
 }
 
 IncrementalMarking::IncrementalMarking(Heap* heap)
@@ -108,8 +122,8 @@ void IncrementalMarking::MarkBlackAndPush(HeapObject* obj) {
   if (marking_state()->GreyToBlack(obj)) {
     if (FLAG_concurrent_marking) {
       marking_worklist()->PushBailout(obj);
-    } else if (!marking_worklist()->Push(obj)) {
-      non_atomic_marking_state()->BlackToGrey(obj);
+    } else {
+      marking_worklist()->Push(obj);
     }
   }
 }
@@ -203,24 +217,15 @@ class IncrementalMarkingMarkingVisitor final
         if (FLAG_concurrent_marking) {
           incremental_marking_->marking_worklist()->PushBailout(object);
         } else {
-          if (incremental_marking_->marking_state()->IsGrey(object)) {
-            incremental_marking_->marking_worklist()->Push(object);
-          } else {
-            DCHECK(incremental_marking_->marking_state()->IsBlack(object));
-            collector_->PushBlack(object);
-          }
+          incremental_marking_->marking_worklist()->Push(object);
         }
         int end_offset =
             Min(object_size, start_offset + kProgressBarScanningChunk);
         int already_scanned_offset = start_offset;
-        bool scan_until_end = false;
-        do {
-          VisitPointers(object, HeapObject::RawField(object, start_offset),
-                        HeapObject::RawField(object, end_offset));
-          start_offset = end_offset;
-          end_offset = Min(object_size, end_offset + kProgressBarScanningChunk);
-          scan_until_end = incremental_marking_->marking_worklist()->IsFull();
-        } while (scan_until_end && start_offset < object_size);
+        VisitPointers(object, HeapObject::RawField(object, start_offset),
+                      HeapObject::RawField(object, end_offset));
+        start_offset = end_offset;
+        end_offset = Min(object_size, end_offset + kProgressBarScanningChunk);
         chunk->set_progress_bar(start_offset);
         if (start_offset < object_size) {
           incremental_marking_->NotifyIncompleteScanOfObject(
@@ -528,8 +533,6 @@ void IncrementalMarking::StartMarking() {
                                    : RecordWriteStub::INCREMENTAL;
 
   PatchIncrementalMarkingRecordWriteStubs(heap_, mode);
-
-  marking_worklist()->StartUsing();
 
   ActivateIncrementalWriteBarrier();
 

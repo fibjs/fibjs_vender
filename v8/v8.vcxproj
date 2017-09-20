@@ -283,6 +283,7 @@
     <ClInclude Include="src\debug\debug-scope-iterator.h" />
     <ClInclude Include="src\debug\debug-scopes.h" />
     <ClInclude Include="src\debug\debug-stack-trace-iterator.h" />
+    <ClInclude Include="src\debug\debug-type-profile.h" />
     <ClInclude Include="src\debug\debug.h" />
     <ClInclude Include="src\debug\interface-types.h" />
     <ClInclude Include="src\debug\liveedit.h" />
@@ -354,7 +355,6 @@
     <ClInclude Include="src\heap\scavenge-job.h" />
     <ClInclude Include="src\heap\scavenger-inl.h" />
     <ClInclude Include="src\heap\scavenger.h" />
-    <ClInclude Include="src\heap\sequential-marking-deque.h" />
     <ClInclude Include="src\heap\slot-set.h" />
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
@@ -449,6 +449,8 @@
     <ClInclude Include="src\objects.h" />
     <ClInclude Include="src\objects\arguments-inl.h" />
     <ClInclude Include="src\objects\arguments.h" />
+    <ClInclude Include="src\objects\bigint-inl.h" />
+    <ClInclude Include="src\objects\bigint.h" />
     <ClInclude Include="src\objects\code-cache-inl.h" />
     <ClInclude Include="src\objects\code-cache.h" />
     <ClInclude Include="src\objects\compilation-cache-inl.h" />
@@ -563,6 +565,7 @@
     <ClInclude Include="src\snapshot\builtin-deserializer.h" />
     <ClInclude Include="src\snapshot\builtin-serializer.h" />
     <ClInclude Include="src\snapshot\code-serializer.h" />
+    <ClInclude Include="src\snapshot\default-serializer-allocator.h" />
     <ClInclude Include="src\snapshot\deserializer.h" />
     <ClInclude Include="src\snapshot\natives.h" />
     <ClInclude Include="src\snapshot\object-deserializer.h" />
@@ -625,6 +628,7 @@
     <ClInclude Include="src\wasm\wasm-api.h" />
     <ClInclude Include="src\wasm\wasm-code-specialization.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
+    <ClInclude Include="src\wasm\wasm-heap.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
     <ClInclude Include="src\wasm\wasm-js.h" />
     <ClInclude Include="src\wasm\wasm-limits.h" />
@@ -914,6 +918,7 @@
     <ClCompile Include="src\debug\debug-scope-iterator.cc" />
     <ClCompile Include="src\debug\debug-scopes.cc" />
     <ClCompile Include="src\debug\debug-stack-trace-iterator.cc" />
+    <ClCompile Include="src\debug\debug-type-profile.cc" />
     <ClCompile Include="src\debug\debug.cc" />
     <ClCompile Include="src\debug\ia32\debug-ia32.cc" />
     <ClCompile Include="src\debug\liveedit.cc" />
@@ -968,7 +973,6 @@
     <ClCompile Include="src\heap\objects-visiting.cc" />
     <ClCompile Include="src\heap\scavenge-job.cc" />
     <ClCompile Include="src\heap\scavenger.cc" />
-    <ClCompile Include="src\heap\sequential-marking-deque.cc" />
     <ClCompile Include="src\heap\setup-heap-internal.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
@@ -1051,6 +1055,7 @@
     <ClCompile Include="src\objects-debug.cc" />
     <ClCompile Include="src\objects-printer.cc" />
     <ClCompile Include="src\objects.cc" />
+    <ClCompile Include="src\objects\bigint.cc" />
     <ClCompile Include="src\objects\debug-objects.cc" />
     <ClCompile Include="src\objects\literal-objects.cc" />
     <ClCompile Include="src\objects\module.cc" />
@@ -1111,6 +1116,7 @@
     <ClCompile Include="src\runtime-profiler.cc" />
     <ClCompile Include="src\runtime\runtime-array.cc" />
     <ClCompile Include="src\runtime\runtime-atomics.cc" />
+    <ClCompile Include="src\runtime\runtime-bigint.cc" />
     <ClCompile Include="src\runtime\runtime-classes.cc" />
     <ClCompile Include="src\runtime\runtime-collections.cc" />
     <ClCompile Include="src\runtime\runtime-compiler.cc" />
@@ -1156,6 +1162,7 @@
     <ClCompile Include="src\snapshot\builtin-deserializer.cc" />
     <ClCompile Include="src\snapshot\builtin-serializer.cc" />
     <ClCompile Include="src\snapshot\code-serializer.cc" />
+    <ClCompile Include="src\snapshot\default-serializer-allocator.cc" />
     <ClCompile Include="src\snapshot\deserializer.cc" />
     <ClCompile Include="src\snapshot\natives-common.cc" />
     <ClCompile Include="src\snapshot\object-deserializer.cc" />
@@ -1213,6 +1220,7 @@
     <ClCompile Include="src\wasm\wasm-code-specialization.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
+    <ClCompile Include="src\wasm\wasm-heap.cc" />
     <ClCompile Include="src\wasm\wasm-interpreter.cc" />
     <ClCompile Include="src\wasm\wasm-js.cc" />
     <ClCompile Include="src\wasm\wasm-module-builder.cc" />

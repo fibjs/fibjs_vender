@@ -1729,8 +1729,6 @@ void Heap::MarkCompactEpilogue() {
 
   PreprocessStackTraces();
   DCHECK(incremental_marking()->IsStopped());
-
-  mark_compact_collector()->marking_worklist()->StopUsing();
 }
 
 
@@ -2043,7 +2041,11 @@ void Heap::Scavenge() {
   ArrayBufferTracker::FreeDeadInNewSpace(this);
 
   RememberedSet<OLD_TO_NEW>::IterateMemoryChunks(this, [](MemoryChunk* chunk) {
-    RememberedSet<OLD_TO_NEW>::PreFreeEmptyBuckets(chunk);
+    if (chunk->SweepingDone()) {
+      RememberedSet<OLD_TO_NEW>::FreeEmptyBuckets(chunk);
+    } else {
+      RememberedSet<OLD_TO_NEW>::PreFreeEmptyBuckets(chunk);
+    }
   });
 
   // Update how much has survived scavenge.
@@ -2465,6 +2467,23 @@ AllocationResult Heap::AllocateHeapNumber(MutableMode mode,
 
   Map* map = mode == MUTABLE ? mutable_heap_number_map() : heap_number_map();
   HeapObject::cast(result)->set_map_after_allocation(map, SKIP_WRITE_BARRIER);
+  return result;
+}
+
+AllocationResult Heap::AllocateBigInt(int length, bool zero_initialize,
+                                      PretenureFlag pretenure) {
+  if (length < 0 || length > BigInt::kMaxLength) {
+    v8::internal::Heap::FatalProcessOutOfMemory("invalid BigInt length", true);
+  }
+  int size = BigInt::SizeFor(length);
+  AllocationSpace space = SelectSpace(pretenure);
+  HeapObject* result = nullptr;
+  {
+    AllocationResult allocation = AllocateRaw(size, space);
+    if (!allocation.To(&result)) return allocation;
+  }
+  result->set_map_after_allocation(bigint_map(), SKIP_WRITE_BARRIER);
+  BigInt::cast(result)->Initialize(length, zero_initialize);
   return result;
 }
 
@@ -4042,7 +4061,7 @@ void Heap::RegisterDeserializedObjectsForBlackAllocation(
   // object space for side effects.
   IncrementalMarking::MarkingState* marking_state =
       incremental_marking()->marking_state();
-  for (int i = OLD_SPACE; i < Serializer::kNumberOfSpaces; i++) {
+  for (int i = OLD_SPACE; i < Serializer<>::kNumberOfSpaces; i++) {
     const Heap::Reservation& res = reservations[i];
     for (auto& chunk : res) {
       Address addr = chunk.start;
@@ -5505,7 +5524,7 @@ void Heap::NotifyDeserializationComplete() {
 #ifdef DEBUG
     // All pages right after bootstrapping must be marked as never-evacuate.
     for (Page* p : *s) {
-      CHECK(p->NeverEvacuate());
+      DCHECK(p->NeverEvacuate());
     }
 #endif  // DEBUG
   }

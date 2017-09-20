@@ -10,9 +10,11 @@
 
 #include "src/regexp/mips64/regexp-macro-assembler-mips64.h"
 
+#include "src/assembler-inl.h"
 #include "src/code-stubs.h"
 #include "src/log.h"
 #include "src/macro-assembler.h"
+#include "src/objects-inl.h"
 #include "src/regexp/regexp-macro-assembler.h"
 #include "src/regexp/regexp-stack.h"
 #include "src/unicode.h"
@@ -1273,7 +1275,7 @@ void RegExpMacroAssemblerMIPS::SafeCallTarget(Label* name) {
 
 
 void RegExpMacroAssemblerMIPS::Push(Register source) {
-  DCHECK(!source.is(backtrack_stackpointer()));
+  DCHECK(source != backtrack_stackpointer());
   __ Daddu(backtrack_stackpointer(),
           backtrack_stackpointer(),
           Operand(-kIntSize));
@@ -1282,7 +1284,7 @@ void RegExpMacroAssemblerMIPS::Push(Register source) {
 
 
 void RegExpMacroAssemblerMIPS::Pop(Register target) {
-  DCHECK(!target.is(backtrack_stackpointer()));
+  DCHECK(target != backtrack_stackpointer());
   __ Lw(target, MemOperand(backtrack_stackpointer()));
   __ Daddu(backtrack_stackpointer(), backtrack_stackpointer(), kIntSize);
 }

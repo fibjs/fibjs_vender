@@ -984,6 +984,9 @@
     <ClInclude Include="src\debug\debug-stack-trace-iterator.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
+    <ClInclude Include="src\debug\debug-type-profile.h">
+      <Filter>Source Files\debug</Filter>
+    </ClInclude>
     <ClInclude Include="src\debug\debug.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
@@ -1195,9 +1198,6 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\scavenger.h">
-      <Filter>Source Files\heap</Filter>
-    </ClInclude>
-    <ClInclude Include="src\heap\sequential-marking-deque.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\slot-set.h">
@@ -1480,6 +1480,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\arguments.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\bigint-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\bigint.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\code-cache-inl.h">
@@ -1824,6 +1830,9 @@
     <ClInclude Include="src\snapshot\code-serializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
+    <ClInclude Include="src\snapshot\default-serializer-allocator.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
     <ClInclude Include="src\snapshot\deserializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
@@ -2008,6 +2017,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-external-refs.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-heap.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-interpreter.h">
@@ -2873,6 +2885,9 @@
     <ClCompile Include="src\debug\debug-stack-trace-iterator.cc">
       <Filter>Source Files\debug</Filter>
     </ClCompile>
+    <ClCompile Include="src\debug\debug-type-profile.cc">
+      <Filter>Source Files\debug</Filter>
+    </ClCompile>
     <ClCompile Include="src\debug\debug.cc">
       <Filter>Source Files\debug</Filter>
     </ClCompile>
@@ -3033,9 +3048,6 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\scavenger.cc">
-      <Filter>Source Files\heap</Filter>
-    </ClCompile>
-    <ClCompile Include="src\heap\sequential-marking-deque.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\setup-heap-internal.cc">
@@ -3284,6 +3296,9 @@
     <ClCompile Include="src\objects.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\objects\bigint.cc">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
     <ClCompile Include="src\objects\debug-objects.cc">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
@@ -3464,6 +3479,9 @@
     <ClCompile Include="src\runtime\runtime-atomics.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\runtime-bigint.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
     <ClCompile Include="src\runtime\runtime-classes.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
@@ -3597,6 +3615,9 @@
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\code-serializer.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\default-serializer-allocator.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\deserializer.cc">
@@ -3768,6 +3789,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-external-refs.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-heap.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-interpreter.cc">

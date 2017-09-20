@@ -137,6 +137,8 @@ class WasmMemoryObject : public JSObject {
                                       int32_t maximum);
 
   static int32_t Grow(Isolate*, Handle<WasmMemoryObject>, uint32_t pages);
+  static void SetupNewBufferWithSameBackingStore(
+      Isolate* isolate, Handle<WasmMemoryObject> memory_object, uint32_t size);
 };
 
 // A WebAssembly.Instance JavaScript-level object.
@@ -495,6 +497,9 @@ class WasmCompiledModule : public FixedArray {
   // string.
   static MaybeHandle<String> ExtractUtf8StringFromModuleBytes(
       Isolate* isolate, Handle<WasmCompiledModule> compiled_module,
+      wasm::WireBytesRef ref);
+  static MaybeHandle<String> ExtractUtf8StringFromModuleBytes(
+      Isolate* isolate, Handle<SeqOneByteString> module_bytes,
       wasm::WireBytesRef ref);
 
   // Get a list of all possible breakpoints within a given range of this module.

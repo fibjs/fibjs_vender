@@ -283,6 +283,9 @@ bool FunctionLiteral::AllowsLazyCompilation() {
   return scope()->AllowsLazyCompilation();
 }
 
+Handle<String> FunctionLiteral::name(Isolate* isolate) const {
+  return raw_name_ ? raw_name_->string() : isolate->factory()->empty_string();
+}
 
 int FunctionLiteral::start_position() const {
   return scope()->start_position();
@@ -360,10 +363,6 @@ void ClassLiteral::AssignFeedbackSlots(FeedbackVectorSpec* spec,
   // ICs must mirror BytecodeGenerator::VisitClassLiteral.
   if (FunctionLiteral::NeedsHomeObject(constructor())) {
     home_object_slot_ = spec->AddStoreICSlot(language_mode);
-  }
-
-  if (NeedsProxySlot()) {
-    proxy_slot_ = spec->AddStoreICSlot(language_mode);
   }
 
   for (int i = 0; i < properties()->length(); i++) {
@@ -641,6 +640,12 @@ bool ObjectLiteral::IsFastCloningSupported() const {
   return fast_elements() && is_shallow() &&
          properties_count() <=
              ConstructorBuiltins::kMaximumClonedShallowObjectProperties;
+}
+
+bool ArrayLiteral::is_empty() const {
+  DCHECK(is_initialized());
+  return values()->is_empty() &&
+         (constant_elements().is_null() || constant_elements()->is_empty());
 }
 
 int ArrayLiteral::InitDepthAndFlags() {

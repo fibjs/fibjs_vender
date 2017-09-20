@@ -5,6 +5,7 @@
 #include "src/debug/debug-evaluate.h"
 
 #include "src/accessors.h"
+#include "src/assembler-inl.h"
 #include "src/compiler.h"
 #include "src/contexts.h"
 #include "src/debug/debug-frames.h"
@@ -251,6 +252,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(ToString)                        \
   V(ToLength)                        \
   V(ToNumber)                        \
+  V(NumberToString)                  \
   /* Type checks */                  \
   V(IsJSReceiver)                    \
   V(IsSmi)                           \
@@ -284,9 +286,13 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(StringIndexOf)                   \
   V(StringIncludes)                  \
   V(StringReplaceOneCharWithString)  \
+  V(StringToNumber)                  \
   V(StringTrim)                      \
   V(SubString)                       \
   V(RegExpInternalReplace)           \
+  /* BigInts */                      \
+  V(BigIntEqual)                     \
+  V(BigIntToBoolean)                 \
   /* Literals */                     \
   V(CreateArrayLiteral)              \
   V(CreateObjectLiteral)             \
@@ -294,11 +300,13 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   /* Collections */                  \
   V(GenericHash)                     \
   /* Called from builtins */         \
+  V(StringAdd)                       \
   V(StringParseFloat)                \
   V(StringParseInt)                  \
   V(StringCharCodeAt)                \
   V(StringIndexOfUnchecked)          \
   V(StringEqual)                     \
+  V(RegExpInitializeAndCompile)      \
   V(SymbolDescriptiveString)         \
   V(GenerateRandomNumbers)           \
   V(GlobalPrint)                     \
@@ -315,6 +323,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(ThrowIncompatibleMethodReceiver) \
   V(ThrowInvalidHint)                \
   V(ThrowNotDateError)               \
+  V(ThrowRangeError)                 \
   /* Misc. */                        \
   V(Call)                            \
   V(MaxSmi)                          \
@@ -367,8 +376,10 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
     case Bytecode::kDivSmi:
     case Bytecode::kMod:
     case Bytecode::kModSmi:
+    case Bytecode::kNegate:
     case Bytecode::kBitwiseAnd:
     case Bytecode::kBitwiseAndSmi:
+    case Bytecode::kBitwiseNot:
     case Bytecode::kBitwiseOr:
     case Bytecode::kBitwiseOrSmi:
     case Bytecode::kBitwiseXor:
@@ -578,18 +589,32 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kStringFromCharCode:
     case Builtins::kStringFromCodePoint:
     case Builtins::kStringConstructor:
+    case Builtins::kStringPrototypeAnchor:
+    case Builtins::kStringPrototypeBig:
+    case Builtins::kStringPrototypeBlink:
+    case Builtins::kStringPrototypeBold:
     case Builtins::kStringPrototypeCharAt:
     case Builtins::kStringPrototypeCharCodeAt:
     case Builtins::kStringPrototypeCodePointAt:
     case Builtins::kStringPrototypeConcat:
     case Builtins::kStringPrototypeEndsWith:
+    case Builtins::kStringPrototypeFixed:
+    case Builtins::kStringPrototypeFontcolor:
+    case Builtins::kStringPrototypeFontsize:
     case Builtins::kStringPrototypeIncludes:
     case Builtins::kStringPrototypeIndexOf:
+    case Builtins::kStringPrototypeItalics:
     case Builtins::kStringPrototypeLastIndexOf:
+    case Builtins::kStringPrototypeLink:
+    case Builtins::kStringPrototypeRepeat:
     case Builtins::kStringPrototypeSlice:
+    case Builtins::kStringPrototypeSmall:
     case Builtins::kStringPrototypeStartsWith:
+    case Builtins::kStringPrototypeStrike:
+    case Builtins::kStringPrototypeSub:
     case Builtins::kStringPrototypeSubstr:
     case Builtins::kStringPrototypeSubstring:
+    case Builtins::kStringPrototypeSup:
     case Builtins::kStringPrototypeToString:
 #ifndef V8_INTL_SUPPORT
     case Builtins::kStringPrototypeToLowerCase:
@@ -599,6 +624,7 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kStringPrototypeTrimLeft:
     case Builtins::kStringPrototypeTrimRight:
     case Builtins::kStringPrototypeValueOf:
+    case Builtins::kStringToNumber:
     // Symbol builtins.
     case Builtins::kSymbolConstructor:
     case Builtins::kSymbolKeyFor:
@@ -702,7 +728,7 @@ bool DebugEvaluate::FunctionHasNoSideEffect(Handle<SharedFunctionInfo> info) {
                  Builtins::name(builtin_index), function->name);
           failed = true;
         }
-        CHECK(!failed);
+        DCHECK(!failed);
       }
 #endif  // DEBUG
       return true;

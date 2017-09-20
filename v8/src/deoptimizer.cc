@@ -144,15 +144,59 @@ void Deoptimizer::GenerateDeoptimizationEntries(MacroAssembler* masm,
   generator.Generate();
 }
 
+namespace {
+class ActivationsFinder : public ThreadVisitor {
+ public:
+  explicit ActivationsFinder(std::set<Code*>* codes,
+                             Code* topmost_optimized_code,
+                             bool safe_to_deopt_topmost_optimized_code)
+      : codes_(codes) {
+#ifdef DEBUG
+    topmost_ = topmost_optimized_code;
+    safe_to_deopt_ = safe_to_deopt_topmost_optimized_code;
+#endif
+  }
+
+  // Find the frames with activations of codes marked for deoptimization, search
+  // for the trampoline to the deoptimizer call respective to each code, and use
+  // it to replace the current pc on the stack.
+  void VisitThread(Isolate* isolate, ThreadLocalTop* top) {
+    for (StackFrameIterator it(isolate, top); !it.done(); it.Advance()) {
+      if (it.frame()->type() == StackFrame::OPTIMIZED) {
+        Code* code = it.frame()->LookupCode();
+        if (code->kind() == Code::OPTIMIZED_FUNCTION &&
+            code->marked_for_deoptimization()) {
+          codes_->erase(code);
+          // Obtain the trampoline to the deoptimizer call.
+          SafepointEntry safepoint = code->GetSafepointEntry(it.frame()->pc());
+          int trampoline_pc = safepoint.trampoline_pc();
+          DCHECK_IMPLIES(code == topmost_, safe_to_deopt_);
+          // Replace the current pc on the stack with the trampoline.
+          it.frame()->set_pc(code->instruction_start() + trampoline_pc);
+        }
+      }
+    }
+  }
+
+ private:
+  std::set<Code*>* codes_;
+
+#ifdef DEBUG
+  Code* topmost_;
+  bool safe_to_deopt_;
+#endif
+};
+}  // namespace
+
 // Move marked code from the optimized code list to the deoptimized code list,
 // and replace pc on the stack for codes marked for deoptimization.
 void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
   DisallowHeapAllocation no_allocation;
 
   Isolate* isolate = context->GetHeap()->isolate();
-#ifdef DEBUG
   Code* topmost_optimized_code = NULL;
   bool safe_to_deopt_topmost_optimized_code = false;
+#ifdef DEBUG
   // Make sure all activations of optimized code can deopt at their current PC.
   // The topmost optimized code has special handling because it cannot be
   // deoptimized due to weak object dependency.
@@ -180,8 +224,8 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
           deopt_index != Safepoint::kNoDeoptimizationIndex ||
           is_non_deoptimizing_asm_code;
       bool is_builtin_code = code->kind() == Code::BUILTIN;
-      CHECK(topmost_optimized_code == NULL || safe_if_deopt_triggered ||
-            is_non_deoptimizing_asm_code || is_builtin_code);
+      DCHECK(topmost_optimized_code == NULL || safe_if_deopt_triggered ||
+             is_non_deoptimizing_asm_code || is_builtin_code);
       if (topmost_optimized_code == NULL) {
         topmost_optimized_code = code;
         safe_to_deopt_topmost_optimized_code = safe_if_deopt_triggered;
@@ -227,28 +271,16 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
     element = next;
   }
 
-  // Find the frames with activations of codes marked for deoptimization, search
-  // for the trampoline to the deoptimizer call respective to each code, and use
-  // it to replace the current pc on the stack.
-  for (StackFrameIterator it(isolate, isolate->thread_local_top()); !it.done();
-       it.Advance()) {
-    if (it.frame()->type() == StackFrame::OPTIMIZED) {
-      Code* code = it.frame()->LookupCode();
-      if (code->kind() == Code::OPTIMIZED_FUNCTION &&
-          code->marked_for_deoptimization()) {
-        codes.erase(code);
-        // Obtain the trampoline to the deoptimizer call.
-        SafepointEntry safepoint = code->GetSafepointEntry(it.frame()->pc());
-        int trampoline_pc = safepoint.trampoline_pc();
-        DCHECK_IMPLIES(code == topmost_optimized_code,
-                       safe_to_deopt_topmost_optimized_code);
-        // Replace the current pc on the stack with the trampoline.
-        it.frame()->set_pc(code->instruction_start() + trampoline_pc);
-      }
-    }
-  }
+  ActivationsFinder visitor(&codes, topmost_optimized_code,
+                            safe_to_deopt_topmost_optimized_code);
+  // Iterate over the stack of this thread.
+  visitor.VisitThread(isolate, isolate->thread_local_top());
+  // In addition to iterate over the stack of this thread, we also
+  // need to consider all the other threads as they may also use
+  // the code currently beings deoptimized.
+  isolate->thread_manager()->IterateArchivedThreads(&visitor);
 
-  // If there's no activation of a code in the stack then we can remove its
+  // If there's no activation of a code in any stack then we can remove its
   // deoptimization data. We do this to ensure that Code objects that will be
   // unlinked won't be kept alive.
   std::set<Code*>::iterator it;
@@ -398,18 +430,13 @@ Deoptimizer::Deoptimizer(Isolate* isolate, JSFunction* function,
 
   DCHECK(from != nullptr);
   compiled_code_ = FindOptimizedCode();
-#if DEBUG
   DCHECK(compiled_code_ != NULL);
-  if (type == EAGER || type == SOFT || type == LAZY) {
-    DCHECK(compiled_code_->kind() != Code::FUNCTION);
-  }
-#endif
 
   DCHECK(function->IsJSFunction());
   trace_scope_ =
       FLAG_trace_deopt ? new CodeTracer::Scope(isolate->GetCodeTracer()) : NULL;
 #ifdef DEBUG
-  CHECK(AllowHeapAllocation::IsAllowed());
+  DCHECK(AllowHeapAllocation::IsAllowed());
   disallow_heap_allocation_ = new DisallowHeapAllocation();
 #endif  // DEBUG
   if (compiled_code_->kind() != Code::OPTIMIZED_FUNCTION ||
@@ -455,6 +482,12 @@ void Deoptimizer::PrintFunctionName() {
   }
 }
 
+Handle<JSFunction> Deoptimizer::function() const {
+  return Handle<JSFunction>(function_);
+}
+Handle<Code> Deoptimizer::compiled_code() const {
+  return Handle<Code>(compiled_code_);
+}
 
 Deoptimizer::~Deoptimizer() {
   DCHECK(input_ == NULL && output_ == NULL);
@@ -472,8 +505,8 @@ void Deoptimizer::DeleteFrameDescriptions() {
   input_ = NULL;
   output_ = NULL;
 #ifdef DEBUG
-  CHECK(!AllowHeapAllocation::IsAllowed());
-  CHECK(disallow_heap_allocation_ != NULL);
+  DCHECK(!AllowHeapAllocation::IsAllowed());
+  DCHECK(disallow_heap_allocation_ != NULL);
   delete disallow_heap_allocation_;
   disallow_heap_allocation_ = NULL;
 #endif  // DEBUG
@@ -1950,6 +1983,10 @@ void TranslationBuffer::Add(int32_t value) {
   } while (bits != 0);
 }
 
+TranslationIterator::TranslationIterator(ByteArray* buffer, int index)
+    : buffer_(buffer), index_(index) {
+  DCHECK(index >= 0 && index < buffer->length());
+}
 
 int32_t TranslationIterator::Next() {
   // Run through the bytes until we reach one with a least significant
@@ -1967,6 +2004,7 @@ int32_t TranslationIterator::Next() {
   return is_negative ? -result : result;
 }
 
+bool TranslationIterator::HasNext() const { return index_ < buffer_->length(); }
 
 Handle<ByteArray> TranslationBuffer::CreateByteArray(Factory* factory) {
   Handle<ByteArray> result = factory->NewByteArray(CurrentIndex(), TENURED);
@@ -3757,6 +3795,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
     case SCRIPT_TYPE:
     case CODE_TYPE:
     case PROPERTY_CELL_TYPE:
+    case BIGINT_TYPE:
     case MODULE_TYPE:
     case MODULE_INFO_ENTRY_TYPE:
     case FREE_SPACE_TYPE:

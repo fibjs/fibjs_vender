@@ -210,6 +210,16 @@ Callable Builtins::CallableFor(Isolate* isolate, Name name) {
           BUILTIN_CODE(isolate, ArrayMapLoopLazyDeoptContinuation);
       return Callable(code, BuiltinDescriptor(isolate));
     }
+    case kArrayFilterLoopEagerDeoptContinuation: {
+      Handle<Code> code =
+          BUILTIN_CODE(isolate, ArrayFilterLoopEagerDeoptContinuation);
+      return Callable(code, BuiltinDescriptor(isolate));
+    }
+    case kArrayFilterLoopLazyDeoptContinuation: {
+      Handle<Code> code =
+          BUILTIN_CODE(isolate, ArrayFilterLoopLazyDeoptContinuation);
+      return Callable(code, BuiltinDescriptor(isolate));
+    }
     default:
       UNREACHABLE();
   }
@@ -259,7 +269,10 @@ bool Builtins::IsLazy(int index) {
     case kInterpreterEntryTrampoline:
     case kObjectConstructor_ConstructStub:    // https://crbug.com/v8/6787.
     case kProxyConstructor_ConstructStub:     // https://crbug.com/v8/6787.
+    case kNumberConstructor_ConstructStub:    // https://crbug.com/v8/6787.
+    case kStringConstructor_ConstructStub:    // https://crbug.com/v8/6787.
     case kProxyConstructor:                   // https://crbug.com/v8/6787.
+    case kRecordWrite:  // https://crbug.com/chromium/765301.
     case kThrowWasmTrapDivByZero:             // Required by wasm.
     case kThrowWasmTrapDivUnrepresentable:    // Required by wasm.
     case kThrowWasmTrapFloatUnrepresentable:  // Required by wasm.

@@ -40,9 +40,7 @@ struct WasmException;
   }())
 
 #define CHECK_PROTOTYPE_OPCODE(flag)                                           \
-  if (this->module_ != nullptr && this->module_->is_asm_js()) {                \
-    this->error("Opcode not supported for asmjs modules");                     \
-  }                                                                            \
+  DCHECK(!this->module_ || !this->module_->is_asm_js());                       \
   if (!FLAG_experimental_wasm_##flag) {                                        \
     this->error("Invalid opcode (enable with --experimental-wasm-" #flag ")"); \
     break;                                                                     \
@@ -606,8 +604,11 @@ class WasmDecoder : public Decoder {
           type = kWasmF64;
           break;
         case kLocalS128:
-          type = kWasmS128;
-          break;
+          if (FLAG_experimental_wasm_simd) {
+            type = kWasmS128;
+            break;
+          }
+        // else fall through to default.
         default:
           decoder->error(decoder->pc() - 1, "invalid local type");
           return false;
@@ -1151,6 +1152,14 @@ class WasmFullDecoder : public WasmDecoder<validate> {
     return true;
   }
 
+  bool CheckHasSharedMemory() {
+    if (!VALIDATE(this->module_->has_shared_memory)) {
+      this->error(this->pc_ - 1, "Atomic opcodes used without shared memory");
+      return false;
+    }
+    return true;
+  }
+
   // Decodes the body of a function.
   void DecodeFunctionBody() {
     TRACE("wasm-decode %p...%p (module+%u, %d bytes)\n",
@@ -1654,6 +1663,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           }
           case kAtomicPrefix: {
             CHECK_PROTOTYPE_OPCODE(threads);
+            if (!CheckHasSharedMemory()) break;
             len++;
             byte atomic_index =
                 this->template read_u8<validate>(this->pc_ + 1, "atomic index");

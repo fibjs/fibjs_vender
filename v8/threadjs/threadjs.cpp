@@ -465,7 +465,7 @@ void Sleep(const v8::FunctionCallbackInfo<v8::Value>& args)
     std::this_thread::sleep_for(std::chrono::milliseconds(time));
 }
 
-void do_work(v8::Global<v8::Function> func)
+void do_work(v8::Global<v8::Function>* func)
 {
     v8::Locker locker(isolate);
     v8::Isolate::Scope isolate_scope(isolate);
@@ -475,15 +475,17 @@ void do_work(v8::Global<v8::Function> func)
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate, context));
 
-    v8::Local<v8::Function> fn = v8::Local<v8::Function>::New(isolate, func);
+    v8::Local<v8::Function> fn = v8::Local<v8::Function>::New(isolate, *func);
+    delete func;
+
     v8::Local<v8::Value> v = fn->Call(v8::Undefined(isolate), 0, NULL);
 }
 
 void Start(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Global<v8::Function> fn;
+    v8::Global<v8::Function>* fn = new v8::Global<v8::Function>();
     v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(args[0]);
-    fn.Reset(isolate, f);
+    fn->Reset(isolate, f);
 
     std::thread new_thread(do_work, std::move(fn));
     new_thread.detach();

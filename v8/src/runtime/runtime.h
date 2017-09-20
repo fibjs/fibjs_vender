@@ -68,6 +68,11 @@ namespace internal {
   F(AtomicsNumWaitersForTesting, 2, 1)          \
   F(SetAllowAtomicsWait, 1, 1)
 
+#define FOR_EACH_INTRINSIC_BIGINT(F) \
+  F(BigInt, 1, 1)                    \
+  F(BigIntEqual, 2, 1)               \
+  F(BigIntToBoolean, 1, 1)
+
 #define FOR_EACH_INTRINSIC_CLASSES(F)        \
   F(ThrowUnsupportedSuperError, 0, 1)        \
   F(ThrowConstructorNonCallableError, 1, 1)  \
@@ -222,7 +227,6 @@ namespace internal {
   F(SetCode, 2, 1)                         \
   F(SetNativeFlag, 1, 1)                   \
   F(IsConstructor, 1, 1)                   \
-  F(SetForceInlineFlag, 1, 1)              \
   F(Call, -1 /* >= 2 */, 1)                \
   F(ConvertReceiver, 1, 1)                 \
   F(IsFunction, 1, 1)                      \
@@ -605,6 +609,8 @@ namespace internal {
   F(DeserializeWasmModule, 2, 1)              \
   F(IsAsmWasmCode, 1, 1)                      \
   F(IsWasmCode, 1, 1)                         \
+  F(IsWasmTrapHandlerEnabled, 0, 1)           \
+  F(GetWasmRecoveredTrapCount, 0, 1)          \
   F(DisallowCodegenFromStrings, 0, 1)         \
   F(ValidateWasmInstancesChain, 2, 1)         \
   F(ValidateWasmModuleState, 1, 1)            \
@@ -625,7 +631,6 @@ namespace internal {
   F(TypedArrayGetLength, 1, 1)           \
   F(TypedArrayGetBuffer, 1, 1)           \
   F(TypedArraySortFast, 1, 1)            \
-  F(TypedArrayMaxSizeInHeap, 0, 1)       \
   F(IsTypedArray, 1, 1)                  \
   F(IsSharedTypedArray, 1, 1)            \
   F(IsSharedIntegerTypedArray, 1, 1)     \
@@ -673,6 +678,7 @@ namespace internal {
   FOR_EACH_INTRINSIC_IC(F)                  \
   FOR_EACH_INTRINSIC_ARRAY(F)               \
   FOR_EACH_INTRINSIC_ATOMICS(F)             \
+  FOR_EACH_INTRINSIC_BIGINT(F)              \
   FOR_EACH_INTRINSIC_CLASSES(F)             \
   FOR_EACH_INTRINSIC_COLLECTIONS(F)         \
   FOR_EACH_INTRINSIC_COMPILER(F)            \

@@ -6,6 +6,7 @@
 #include "src/builtins/builtins-utils-gen.h"
 #include "src/builtins/builtins.h"
 #include "src/code-stub-assembler.h"
+#include "src/factory-inl.h"
 #include "src/frame-constants.h"
 
 namespace v8 {
@@ -534,30 +535,23 @@ class ArrayBuiltinCodeStubAssembler : public CodeStubAssembler {
     {
       if (direction == ForEachDirection::kForward) {
         // 8. Repeat, while k < len
-        GotoUnlessNumberLessThan(k(), len_, &after_loop);
+        GotoIfNumberGreaterThanOrEqual(k(), len_, &after_loop);
       } else {
         // OR
         // 10. Repeat, while k >= 0
-        GotoUnlessNumberLessThan(SmiConstant(-1), k(), &after_loop);
+        GotoIfNumberGreaterThanOrEqual(SmiConstant(-1), k(), &after_loop);
       }
 
       Label done_element(this, &to_);
       // a. Let Pk be ToString(k).
-      // We never have to perform a ToString conversion for Smi keys because
-      // they are guaranteed to be stored as elements. We easily hit this case
-      // when using any iteration builtin on a dictionary elements Array.
-      VARIABLE(p_k, MachineRepresentation::kTagged, k());
-      {
-        Label continue_with_key(this);
-        GotoIf(TaggedIsSmi(p_k.value()), &continue_with_key);
-        p_k.Bind(ToString(context(), p_k.value()));
-        Goto(&continue_with_key);
-        BIND(&continue_with_key);
-      }
+      // We never have to perform a ToString conversion as the above guards
+      // guarantee that we have a positive {k} which also is a valid array
+      // index in the range [0, 2^32-1).
+      CSA_ASSERT(this, IsNumberArrayIndex(k()));
 
       // b. Let kPresent be HasProperty(O, Pk).
       // c. ReturnIfAbrupt(kPresent).
-      Node* k_present = HasProperty(o(), p_k.value(), context(), kHasProperty);
+      Node* k_present = HasProperty(o(), k(), context(), kHasProperty);
 
       // d. If kPresent is true, then
       GotoIf(WordNotEqual(k_present, TrueConstant()), &done_element);
@@ -1571,6 +1565,66 @@ TF_BUILTIN(ArrayFilterLoopContinuation, ArrayBuiltinCodeStubAssembler) {
       &ArrayBuiltinCodeStubAssembler::NullPostLoopAction);
 }
 
+TF_BUILTIN(ArrayFilterLoopEagerDeoptContinuation,
+           ArrayBuiltinCodeStubAssembler) {
+  Node* context = Parameter(Descriptor::kContext);
+  Node* receiver = Parameter(Descriptor::kReceiver);
+  Node* callbackfn = Parameter(Descriptor::kCallbackFn);
+  Node* this_arg = Parameter(Descriptor::kThisArg);
+  Node* array = Parameter(Descriptor::kArray);
+  Node* initial_k = Parameter(Descriptor::kInitialK);
+  Node* len = Parameter(Descriptor::kLength);
+  Node* to = Parameter(Descriptor::kTo);
+
+  Callable stub(
+      Builtins::CallableFor(isolate(), Builtins::kArrayFilterLoopContinuation));
+  Return(CallStub(stub, context, receiver, callbackfn, this_arg, array,
+                  receiver, initial_k, len, to));
+}
+
+TF_BUILTIN(ArrayFilterLoopLazyDeoptContinuation,
+           ArrayBuiltinCodeStubAssembler) {
+  Node* context = Parameter(Descriptor::kContext);
+  Node* receiver = Parameter(Descriptor::kReceiver);
+  Node* callbackfn = Parameter(Descriptor::kCallbackFn);
+  Node* this_arg = Parameter(Descriptor::kThisArg);
+  Node* array = Parameter(Descriptor::kArray);
+  Node* initial_k = Parameter(Descriptor::kInitialK);
+  Node* len = Parameter(Descriptor::kLength);
+  Node* value_k = Parameter(Descriptor::kValueK);
+  Node* result = Parameter(Descriptor::kResult);
+
+  VARIABLE(to, MachineRepresentation::kTagged, Parameter(Descriptor::kTo));
+
+  // This custom lazy deopt point is right after the callback. filter() needs
+  // to pick up at the next step, which is setting the callback result in
+  // the output array. After incrementing k and to, we can glide into the loop
+  // continuation builtin.
+
+  Label true_continue(this, &to), false_continue(this);
+
+  // iii. If selected is true, then...
+  BranchIfToBooleanIsTrue(result, &true_continue, &false_continue);
+  BIND(&true_continue);
+  {
+    // 1. Perform ? CreateDataPropertyOrThrow(A, ToString(to), kValue).
+    CallRuntime(Runtime::kCreateDataProperty, context, array, to.value(),
+                value_k);
+    // 2. Increase to by 1.
+    to.Bind(NumberInc(to.value()));
+    Goto(&false_continue);
+  }
+  BIND(&false_continue);
+
+  // Increment k.
+  initial_k = NumberInc(initial_k);
+
+  Callable stub(
+      Builtins::CallableFor(isolate(), Builtins::kArrayFilterLoopContinuation));
+  Return(CallStub(stub, context, receiver, callbackfn, this_arg, array,
+                  receiver, initial_k, len, to.value()));
+}
+
 TF_BUILTIN(ArrayFilter, ArrayBuiltinCodeStubAssembler) {
   Node* argc =
       ChangeInt32ToIntPtr(Parameter(BuiltinDescriptor::kArgumentsCount));
@@ -1819,8 +1873,8 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant) {
   {
     VARIABLE(search_num, MachineRepresentation::kFloat64);
     Label ident_loop(this, &index_var), heap_num_loop(this, &search_num),
-        string_loop(this), undef_loop(this, &index_var), not_smi(this),
-        not_heap_num(this);
+        string_loop(this), bigint_loop(this, &index_var),
+        undef_loop(this, &index_var), not_smi(this), not_heap_num(this);
 
     GotoIfNot(TaggedIsSmi(search_element), &not_smi);
     search_num.Bind(SmiToFloat64(CAST(search_element)));
@@ -1838,6 +1892,7 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant) {
     BIND(&not_heap_num);
     Node* search_type = LoadMapInstanceType(map);
     GotoIf(IsStringInstanceType(search_type), &string_loop);
+    GotoIf(IsBigIntInstanceType(search_type), &bigint_loop);
     Goto(&ident_loop);
 
     BIND(&ident_loop);
@@ -1941,6 +1996,18 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant) {
       BIND(&continue_loop);
       Increment(&index_var);
       Goto(&next_iteration);
+    }
+
+    BIND(&bigint_loop);
+    {
+      GotoIfNot(UintPtrLessThan(index_var.value(), array_length),
+                &return_not_found);
+      Node* element_k = LoadFixedArrayElement(elements, index_var.value());
+      TNode<Object> result = CallRuntime(Runtime::kBigIntEqual, context,
+                                         search_element, element_k);
+      GotoIf(WordEqual(result, TrueConstant()), &return_found);
+      Increment(&index_var);
+      Goto(&bigint_loop);
     }
   }
 
@@ -2350,7 +2417,7 @@ TF_BUILTIN(ArrayIteratorPrototypeNext, CodeStubAssembler) {
         length = var_length.value();
       }
 
-      GotoUnlessNumberLessThan(index, length, &set_done);
+      GotoIfNumberGreaterThanOrEqual(index, length, &set_done);
 
       StoreObjectField(iterator, JSArrayIterator::kNextIndexOffset,
                        NumberInc(index));

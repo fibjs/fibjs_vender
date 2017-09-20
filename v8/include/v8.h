@@ -150,6 +150,10 @@ template<typename T> class CustomArguments;
 class PropertyCallbackArguments;
 class FunctionCallbackArguments;
 class GlobalHandles;
+
+namespace wasm {
+class StreamingDecoder;
+}  // namespace wasm
 }  // namespace internal
 
 namespace debug {
@@ -1829,7 +1833,7 @@ class V8_EXPORT JSON {
    * \return The corresponding string if successfully stringified.
    */
   static V8_WARN_UNUSED_RESULT MaybeLocal<String> Stringify(
-      Local<Context> context, Local<Object> json_object,
+      Local<Context> context, Local<Value> json_object,
       Local<String> gap = Local<String>());
 };
 
@@ -4264,6 +4268,7 @@ class V8_EXPORT WasmModuleObjectBuilderStreaming final {
 #endif
   std::vector<Buffer> received_buffers_;
   size_t total_size_ = 0;
+  std::shared_ptr<internal::wasm::StreamingDecoder> streaming_decoder_;
 };
 
 class V8_EXPORT WasmModuleObjectBuilder final {
@@ -6189,6 +6194,9 @@ typedef void (*FatalErrorCallback)(const char* location, const char* message);
 
 typedef void (*OOMErrorCallback)(const char* location, bool is_heap_oom);
 
+typedef void (*DcheckErrorCallback)(const char* file, int line,
+                                    const char* message);
+
 typedef void (*MessageCallback)(Local<Message> message, Local<Value> data);
 
 // --- Tracing ---
@@ -7894,6 +7902,9 @@ class V8_EXPORT V8 {
   static StartupData WarmUpSnapshotDataBlob(StartupData cold_startup_blob,
                                             const char* warmup_source);
 
+  /** Set the callback to invoke in case of Dcheck failures. */
+  static void SetDcheckErrorHandler(DcheckErrorCallback that);
+
   /**
    * Adds a message listener.
    *
@@ -9076,11 +9087,11 @@ class Internals {
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSApiObjectType = 0xbe;
-  static const int kJSObjectType = 0xbf;
   static const int kFirstNonstringType = 0x80;
-  static const int kOddballType = 0x82;
-  static const int kForeignType = 0x86;
+  static const int kOddballType = 0x83;
+  static const int kForeignType = 0x87;
+  static const int kJSApiObjectType = 0xbf;
+  static const int kJSObjectType = 0xc0;
 
   static const int kUndefinedOddballKind = 5;
   static const int kNullOddballKind = 3;

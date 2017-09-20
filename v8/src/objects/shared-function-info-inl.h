@@ -94,8 +94,6 @@ BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, is_declaration,
 
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, native,
                     SharedFunctionInfo::IsNativeBit)
-BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, force_inline,
-                    SharedFunctionInfo::ForceInlineBit)
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, is_asm_wasm_broken,
                     SharedFunctionInfo::IsAsmWasmBrokenBit)
 
@@ -217,19 +215,13 @@ void SharedFunctionInfo::set_code(Code* value, WriteBarrierMode mode) {
 }
 
 void SharedFunctionInfo::ReplaceCode(Code* value) {
-#ifdef DEBUG
-  Code::VerifyRecompiledCode(code(), value);
-#endif  // DEBUG
-
+  // TODO(mvstanton): just use set_code() directly everywhere, since ReplaceCode
+  // offers nothing extra.
   set_code(value);
 }
 
 bool SharedFunctionInfo::IsInterpreted() const {
   return code()->is_interpreter_trampoline_builtin();
-}
-
-bool SharedFunctionInfo::HasBaselineCode() const {
-  return code()->kind() == Code::FUNCTION;
 }
 
 ScopeInfo* SharedFunctionInfo::scope_info() const {

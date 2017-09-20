@@ -241,9 +241,9 @@ SafeStackFrameIterator::SafeStackFrameIterator(
         advance_frame = true;
       }
     } else {
-      // Mark the frame as JAVA_SCRIPT if we cannot determine its type.
+      // Mark the frame as OPTIMIZED if we cannot determine its type.
       // The frame anyways will be skipped.
-      type = StackFrame::JAVA_SCRIPT;
+      type = StackFrame::OPTIMIZED;
       // Top frame is incomplete so we cannot reliably determine its type.
       top_frame_type_ = StackFrame::NONE;
     }
@@ -430,7 +430,7 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
                                       *(state->pc_address))) {
         return INTERPRETED;
       } else {
-        return JAVA_SCRIPT;
+        return OPTIMIZED;
       }
     }
   } else {
@@ -452,8 +452,6 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
             return OPTIMIZED;
           }
           return BUILTIN;
-        case Code::FUNCTION:
-          return JAVA_SCRIPT;
         case Code::OPTIMIZED_FUNCTION:
           return OPTIMIZED;
         case Code::WASM_FUNCTION:
@@ -492,7 +490,6 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
     case WASM_COMPILED:
       return candidate;
     case JS_TO_WASM:
-    case JAVA_SCRIPT:
     case OPTIMIZED:
     case INTERPRETED:
     default:
@@ -794,7 +791,6 @@ void StandardFrame::IterateCompiledFrame(RootVisitor* v) const {
       case C_WASM_ENTRY:
         frame_header_size = TypedFrameConstants::kFixedFrameSizeFromFp;
         break;
-      case JAVA_SCRIPT:
       case OPTIMIZED:
       case INTERPRETED:
       case BUILTIN:
@@ -1140,7 +1136,7 @@ bool IsNonDeoptimizingAsmCode(Code* code, JSFunction* function) {
 FrameSummary::JavaScriptFrameSummary::JavaScriptFrameSummary(
     Isolate* isolate, Object* receiver, JSFunction* function,
     AbstractCode* abstract_code, int code_offset, bool is_constructor)
-    : FrameSummaryBase(isolate, JAVA_SCRIPT),
+    : FrameSummaryBase(isolate, FrameSummary::JAVA_SCRIPT),
       receiver_(receiver, isolate),
       function_(function, isolate),
       abstract_code_(abstract_code, isolate),
@@ -1822,13 +1818,7 @@ void JavaScriptFrame::Print(StringStream* accumulator,
     accumulator->PrintName(script->name());
 
     Address pc = this->pc();
-    if (code != NULL && code->kind() == Code::FUNCTION &&
-        pc >= code->instruction_start() && pc < code->instruction_end()) {
-      int offset = static_cast<int>(pc - code->instruction_start());
-      int source_pos = AbstractCode::cast(code)->SourcePosition(offset);
-      int line = script->GetLineNumber(source_pos) + 1;
-      accumulator->Add(":%d] [pc=%p]", line, pc);
-    } else if (is_interpreted()) {
+    if (is_interpreted()) {
       const InterpretedFrame* iframe =
           reinterpret_cast<const InterpretedFrame*>(this);
       BytecodeArray* bytecodes = iframe->GetBytecodeArray();
