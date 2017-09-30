@@ -289,6 +289,7 @@
     <ClInclude Include="src\debug\liveedit.h" />
     <ClInclude Include="src\deoptimize-reason.h" />
     <ClInclude Include="src\deoptimizer.h" />
+    <ClInclude Include="src\detachable-vector.h" />
     <ClInclude Include="src\disasm.h" />
     <ClInclude Include="src\disassembler.h" />
     <ClInclude Include="src\diy-fp.h" />
@@ -426,8 +427,6 @@
     <ClInclude Include="src\libplatform\tracing\trace-writer.h" />
     <ClInclude Include="src\libplatform\worker-thread.h" />
     <ClInclude Include="src\libsampler\sampler.h" />
-    <ClInclude Include="src\list-inl.h" />
-    <ClInclude Include="src\list.h" />
     <ClInclude Include="src\locked-queue-inl.h" />
     <ClInclude Include="src\locked-queue.h" />
     <ClInclude Include="src\log-inl.h" />
@@ -451,8 +450,6 @@
     <ClInclude Include="src\objects\arguments.h" />
     <ClInclude Include="src\objects\bigint-inl.h" />
     <ClInclude Include="src\objects\bigint.h" />
-    <ClInclude Include="src\objects\code-cache-inl.h" />
-    <ClInclude Include="src\objects\code-cache.h" />
     <ClInclude Include="src\objects\compilation-cache-inl.h" />
     <ClInclude Include="src\objects\compilation-cache.h" />
     <ClInclude Include="src\objects\debug-objects-inl.h" />
@@ -472,6 +469,8 @@
     <ClInclude Include="src\objects\name.h" />
     <ClInclude Include="src\objects\object-macros-undef.h" />
     <ClInclude Include="src\objects\object-macros.h" />
+    <ClInclude Include="src\objects\property-descriptor-object-inl.h" />
+    <ClInclude Include="src\objects\property-descriptor-object.h" />
     <ClInclude Include="src\objects\regexp-match-info.h" />
     <ClInclude Include="src\objects\scope-info.h" />
     <ClInclude Include="src\objects\script-inl.h" />
@@ -481,6 +480,7 @@
     <ClInclude Include="src\objects\string-inl.h" />
     <ClInclude Include="src\objects\string-table.h" />
     <ClInclude Include="src\objects\string.h" />
+    <ClInclude Include="src\objects\template-objects.h" />
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\duplicate-finder.h" />
     <ClInclude Include="src\parsing\expression-classifier.h" />
@@ -653,6 +653,7 @@
     <ClInclude Include="src\zone\zone-chunk-list.h" />
     <ClInclude Include="src\zone\zone-containers.h" />
     <ClInclude Include="src\zone\zone-handle-set.h" />
+    <ClInclude Include="src\zone\zone-list-inl.h" />
     <ClInclude Include="src\zone\zone-segment.h" />
     <ClInclude Include="src\zone\zone.h" />
   </ItemGroup>
@@ -726,6 +727,7 @@
     <ClCompile Include="src\builtins\builtins-async-gen.cc" />
     <ClCompile Include="src\builtins\builtins-async-generator-gen.cc" />
     <ClCompile Include="src\builtins\builtins-async-iterator-gen.cc" />
+    <ClCompile Include="src\builtins\builtins-bigint.cc" />
     <ClCompile Include="src\builtins\builtins-boolean-gen.cc" />
     <ClCompile Include="src\builtins\builtins-boolean.cc" />
     <ClCompile Include="src\builtins\builtins-call-gen.cc" />
@@ -1060,6 +1062,7 @@
     <ClCompile Include="src\objects\literal-objects.cc" />
     <ClCompile Include="src\objects\module.cc" />
     <ClCompile Include="src\objects\scope-info.cc" />
+    <ClCompile Include="src\objects\template-objects.cc" />
     <ClCompile Include="src\ostreams.cc" />
     <ClCompile Include="src\parsing\expression-scope-reparenter.cc" />
     <ClCompile Include="src\parsing\func-name-inferrer.cc" />

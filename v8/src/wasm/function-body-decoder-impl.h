@@ -50,6 +50,29 @@ struct WasmException;
   (this->errorf(this->pc_, "%s: %s", WasmOpcodes::OpcodeName(opcode), \
                 (message)))
 
+#define ATOMIC_OP_LIST(V)              \
+  V(I32AtomicAdd, Uint32)              \
+  V(I32AtomicSub, Uint32)              \
+  V(I32AtomicAnd, Uint32)              \
+  V(I32AtomicOr, Uint32)               \
+  V(I32AtomicXor, Uint32)              \
+  V(I32AtomicExchange, Uint32)         \
+  V(I32AtomicAdd8U, Uint8)             \
+  V(I32AtomicSub8U, Uint8)             \
+  V(I32AtomicAnd8U, Uint8)             \
+  V(I32AtomicOr8U, Uint8)              \
+  V(I32AtomicXor8U, Uint8)             \
+  V(I32AtomicExchange8U, Uint8)        \
+  V(I32AtomicAdd16U, Uint16)           \
+  V(I32AtomicSub16U, Uint16)           \
+  V(I32AtomicAnd16U, Uint16)           \
+  V(I32AtomicOr16U, Uint16)            \
+  V(I32AtomicXor16U, Uint16)           \
+  V(I32AtomicExchange16U, Uint16)      \
+  V(I32AtomicCompareExchange, Uint32)  \
+  V(I32AtomicCompareExchange8U, Uint8) \
+  V(I32AtomicCompareExchange16U, Uint16)
+
 template <typename T>
 Vector<T> vec2vec(std::vector<T>& vec) {
   return Vector<T>(vec.data(), vec.size());
@@ -515,8 +538,8 @@ struct ControlWithNamedConstructors : public ControlBase<Value> {
   F(Unreachable)                                                               \
   F(Select, const Value& cond, const Value& fval, const Value& tval,           \
     Value* result)                                                             \
-  F(BreakTo, Control* block)                                                   \
-  F(BrIf, const Value& cond, Control* block)                                   \
+  F(BreakTo, uint32_t depth)                                                   \
+  F(BrIf, const Value& cond, uint32_t depth)                                   \
   F(BrTable, const BranchTableOperand<validate>& operand, const Value& key)    \
   F(Else, Control* if_block)                                                   \
   F(LoadMem, ValueType type, MachineType mem_type,                             \
@@ -539,9 +562,13 @@ struct ControlWithNamedConstructors : public ControlBase<Value> {
     const Value& input, Value* result)                                         \
   F(Simd8x16ShuffleOp, const Simd8x16ShuffleOperand<validate>& operand,        \
     const Value& input0, const Value& input1, Value* result)                   \
-  F(Throw, const ExceptionIndexOperand<validate>&)                             \
-  F(Catch, const ExceptionIndexOperand<validate>& operand, Control* block)     \
-  F(AtomicOp, WasmOpcode opcode, Vector<Value> args, Value* result)
+  F(Throw, const ExceptionIndexOperand<validate>&, Control* block,             \
+    const Vector<Value>& args)                                                 \
+  F(CatchException, const ExceptionIndexOperand<validate>& operand,            \
+    Control* block, void** caught_values)                                      \
+  F(SetCaughtValue, void* caught_values, Value* value, size_t index)           \
+  F(AtomicOp, WasmOpcode opcode, Vector<Value> args,                           \
+    const MemoryAccessOperand<validate>& operand, Value* result)
 
 // Generic Wasm bytecode decoder with utilities for decoding operands,
 // lengths, etc.
@@ -624,6 +651,8 @@ class WasmDecoder : public Decoder {
     if (pc >= decoder->end()) return nullptr;
     if (*pc != kExprLoop) return nullptr;
 
+    // The number of locals_count is augmented by 2 so that 'locals_count - 2'
+    // can be used to track mem_size, and 'locals_count - 1' to track mem_start.
     BitVector* assigned = new (zone) BitVector(locals_count, zone);
     int depth = 0;
     // Iteratively process all AST nodes nested inside the loop.
@@ -649,6 +678,14 @@ class WasmDecoder : public Decoder {
           length = 1 + operand.length;
           break;
         }
+        case kExprGrowMemory:
+        case kExprCallFunction:
+        case kExprCallIndirect:
+          // Add mem_size and mem_start to the assigned set.
+          assigned->Add(locals_count - 2);  // mem_size
+          assigned->Add(locals_count - 1);  // mem_start
+          length = OpcodeLength(decoder, pc);
+          break;
         case kExprEnd:
           depth--;
           break;
@@ -1221,16 +1258,9 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             ExceptionIndexOperand<true> operand(this, this->pc_);
             len = 1 + operand.length;
             if (!this->Validate(this->pc_, operand)) break;
-            if (operand.exception->sig->parameter_count() > 0) {
-              // TODO(kschimpf): Fix to pull values off stack and build throw.
-              OPCODE_ERROR(opcode, "can't handle exceptions with values yet");
-              break;
-            }
-            interface_.Throw(this, operand);
-            // TODO(titzer): Throw should end control, but currently we build a
-            // (reachable) runtime call instead of connecting it directly to
-            // end.
-            //            EndControl();
+            std::vector<Value> args;
+            PopArgs(operand.exception->ToFunctionSig(), &args);
+            interface_.Throw(this, operand, &control_.back(), vec2vec(args));
             break;
           }
           case kExprTry: {
@@ -1268,8 +1298,13 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             c->kind = kControlTryCatch;
             FallThruTo(c);
             stack_.resize(c->stack_depth);
-
-            interface_.Catch(this, operand, c);
+            void* caught_values = nullptr;
+            interface_.CatchException(this, operand, c, &caught_values);
+            const WasmExceptionSig* sig = operand.exception->sig;
+            for (size_t i = 0, e = sig->parameter_count(); i < e; ++i) {
+              auto* value = Push(sig->GetParam(i));
+              interface_.SetCaughtValue(this, caught_values, value, i);
+            }
             break;
           }
           case kExprCatchAll: {
@@ -1375,7 +1410,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             BreakDepthOperand<validate> operand(this, this->pc_);
             if (this->Validate(this->pc_, operand, control_.size()) &&
                 TypeCheckBreak(operand.depth)) {
-              interface_.BreakTo(this, control_at(operand.depth));
+              interface_.BreakTo(this, operand.depth);
             }
             len = 1 + operand.length;
             EndControl();
@@ -1386,7 +1421,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             auto cond = Pop(0, kWasmI32);
             if (this->Validate(this->pc_, operand, control_.size()) &&
                 TypeCheckBreak(operand.depth)) {
-              interface_.BrIf(this, cond, control_at(operand.depth));
+              interface_.BrIf(this, cond, operand.depth);
             }
             len = 1 + operand.length;
             break;
@@ -1396,7 +1431,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             BranchTableIterator<validate> iterator(this, operand);
             if (!this->Validate(this->pc_, operand, control_.size())) break;
             auto key = Pop(0, kWasmI32);
-            MergeValues* merge = nullptr;
+            uint32_t br_arity = 0;
             while (iterator.has_next()) {
               const uint32_t i = iterator.cur_index();
               const byte* pos = iterator.pc();
@@ -1406,27 +1441,15 @@ class WasmFullDecoder : public WasmDecoder<validate> {
                 break;
               }
               // Check that label types match up.
-              static MergeValues loop_dummy = {0, {nullptr}};
               Control* c = control_at(target);
-              MergeValues* current = c->is_loop() ? &loop_dummy : &c->merge;
+              uint32_t arity = c->is_loop() ? 0 : c->merge.arity;
               if (i == 0) {
-                merge = current;
-              } else if (!VALIDATE(merge->arity == current->arity)) {
+                br_arity = arity;
+              } else if (!VALIDATE(br_arity == arity)) {
                 this->errorf(pos,
                              "inconsistent arity in br_table target %d"
                              " (previous was %u, this one %u)",
-                             i, merge->arity, current->arity);
-              } else if (control_at(0)->unreachable) {
-                for (uint32_t j = 0; j < merge->arity; ++j) {
-                  if (!VALIDATE((*merge)[j].type == (*current)[j].type)) {
-                    this->errorf(pos,
-                                 "type error in br_table target %d operand %d"
-                                 " (previous expected %s, this one %s)",
-                                 i, j, WasmOpcodes::TypeName((*merge)[j].type),
-                                 WasmOpcodes::TypeName((*current)[j].type));
-                    break;
-                  }
-                }
+                             i, br_arity, arity);
               }
               if (!VALIDATE(TypeCheckBreak(target))) break;
             }
@@ -1443,7 +1466,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
                 this->error(pos, "improper branch in br_table");
                 break;
               }
-              interface_.BreakTo(this, control_at(target));
+              interface_.BreakTo(this, target);
             }
             len = 1 + iterator.length();
             EndControl();
@@ -1670,7 +1693,17 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             opcode = static_cast<WasmOpcode>(opcode << 8 | atomic_index);
             TRACE("  @%-4d #%-20s|", startrel(this->pc_),
                   WasmOpcodes::OpcodeName(opcode));
-            len += DecodeAtomicOpcode(opcode);
+            switch (opcode) {
+#define DECODE_ATOMIC_BINOP(Name, Type)                     \
+  case kExpr##Name: {                                       \
+    len += DecodeAtomicOpcode(opcode, MachineType::Type()); \
+    break;                                                  \
+  }
+              ATOMIC_OP_LIST(DECODE_ATOMIC_BINOP)
+#undef DECODE_ATOMIC_BINOP
+              default:
+                this->error("Invalid opcode");
+            }
             break;
           }
           default: {
@@ -1728,14 +1761,16 @@ class WasmFullDecoder : public WasmDecoder<validate> {
               PrintF("[%d]", operand.value);
               break;
             }
-            case kExprGetLocal: {
+            case kExprGetLocal:
+            case kExprSetLocal:
+            case kExprTeeLocal: {
               LocalIndexOperand<validate> operand(this, val.pc);
               PrintF("[%u]", operand.index);
               break;
             }
-            case kExprSetLocal:  // fallthru
-            case kExprTeeLocal: {
-              LocalIndexOperand<validate> operand(this, val.pc);
+            case kExprGetGlobal:
+            case kExprSetGlobal: {
+              GlobalIndexOperand<validate> operand(this, val.pc);
               PrintF("[%u]", operand.index);
               break;
             }
@@ -1959,17 +1994,20 @@ class WasmFullDecoder : public WasmDecoder<validate> {
     return len;
   }
 
-  unsigned DecodeAtomicOpcode(WasmOpcode opcode) {
+  unsigned DecodeAtomicOpcode(WasmOpcode opcode, MachineType mem_type) {
     unsigned len = 0;
     FunctionSig* sig = WasmOpcodes::AtomicSignature(opcode);
     if (sig != nullptr) {
       // TODO(clemensh): Better memory management here.
       std::vector<Value> args(sig->parameter_count());
+      MemoryAccessOperand<validate> operand(
+          this, this->pc_ + 1, ElementSizeLog2Of(mem_type.representation()));
+      len += operand.length;
       for (int i = static_cast<int>(sig->parameter_count() - 1); i >= 0; --i) {
         args[i] = Pop(i, sig->GetParam(i));
       }
       auto* result = Push(GetReturnType(sig));
-      interface_.AtomicOp(this, opcode, vec2vec(args), result);
+      interface_.AtomicOp(this, opcode, vec2vec(args), operand, result);
     } else {
       this->error("invalid atomic opcode");
     }
@@ -1992,7 +2030,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
   }
 
   inline Value* Push(ValueType type) {
-    DCHECK(type != kWasmStmt);
+    DCHECK_NE(kWasmStmt, type);
     stack_.push_back(Value::New(this->pc_, type));
     return &stack_.back();
   }

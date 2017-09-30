@@ -267,7 +267,6 @@ class MarkCompactCollectorBase {
   // Mark objects reachable (transitively) from objects in the marking
   // stack.
   virtual void EmptyMarkingWorklist() = 0;
-  virtual void ProcessMarkingWorklist() = 0;
   // Clear non-live references held in side data structures.
   virtual void ClearNonLiveReferences() = 0;
   virtual void EvacuatePrologue() = 0;
@@ -389,7 +388,6 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
 
   void MarkLiveObjects() override;
   void MarkRootSetInParallel();
-  void ProcessMarkingWorklist() override;
   void EmptyMarkingWorklist() override;
   void ClearNonLiveReferences() override;
 
@@ -513,6 +511,8 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
       shared_.Clear();
     }
 
+    bool IsBailoutEmpty() { return bailout_.IsLocalEmpty(kMainThread); }
+
     bool IsEmpty() {
       return bailout_.IsLocalEmpty(kMainThread) &&
              shared_.IsLocalEmpty(kMainThread) &&
@@ -536,8 +536,6 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
 
     ConcurrentMarkingWorklist* shared() { return &shared_; }
     ConcurrentMarkingWorklist* bailout() { return &bailout_; }
-
-    void TearDown() { Clear(); }
 
     void Print() {
       PrintWorklist("shared", &shared_);
@@ -777,8 +775,6 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   // Mark the string table specially.  References to internalized strings from
   // the string table are weak.
   void MarkStringTable(ObjectVisitor* visitor);
-
-  void ProcessMarkingWorklist() override;
 
   // Mark objects reachable (transitively) from objects in the marking stack
   // or overflowed in the heap.  This respects references only considered in

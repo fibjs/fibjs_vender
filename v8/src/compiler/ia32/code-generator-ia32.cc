@@ -48,10 +48,10 @@ class IA32OperandConverter : public InstructionOperandConverter {
 
   Operand ToOperand(InstructionOperand* op, int extra = 0) {
     if (op->IsRegister()) {
-      DCHECK(extra == 0);
+      DCHECK_EQ(0, extra);
       return Operand(ToRegister(op));
     } else if (op->IsFPRegister()) {
-      DCHECK(extra == 0);
+      DCHECK_EQ(0, extra);
       return Operand(ToDoubleRegister(op));
     }
     DCHECK(op->IsStackSlot() || op->IsFPStackSlot());
@@ -62,11 +62,6 @@ class IA32OperandConverter : public InstructionOperandConverter {
     FrameOffset offset = frame_access_state()->GetFrameOffset(slot);
     return Operand(offset.from_stack_pointer() ? esp : ebp,
                    offset.offset() + extra);
-  }
-
-  Operand OffsetOperand(InstructionOperand* op, int offset) {
-    DCHECK(op->IsFPStackSlot());
-    return ToOperand(op, offset);
   }
 
   Immediate ToImmediate(InstructionOperand* operand) {
@@ -261,7 +256,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
         zone_(gen->zone()) {}
 
   void SaveRegisters(RegList registers) {
-    DCHECK(NumRegs(registers) > 0);
+    DCHECK_LT(0, NumRegs(registers));
     for (int i = 0; i < Register::kNumRegisters; ++i) {
       if ((registers >> i) & 1u) {
         __ push(Register::from_code(i));
@@ -270,7 +265,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
   }
 
   void RestoreRegisters(RegList registers) {
-    DCHECK(NumRegs(registers) > 0);
+    DCHECK_LT(0, NumRegs(registers));
     for (int i = Register::kNumRegisters - 1; i >= 0; --i) {
       if ((registers >> i) & 1u) {
         __ pop(Register::from_code(i));
@@ -1022,20 +1017,26 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     }
     case kArchSaveCallerRegisters: {
+      fp_mode_ =
+          static_cast<SaveFPRegsMode>(MiscField::decode(instr->opcode()));
+      DCHECK(fp_mode_ == kDontSaveFPRegs || fp_mode_ == kSaveFPRegs);
       // kReturnRegister0 should have been saved before entering the stub.
-      int bytes = __ PushCallerSaved(kSaveFPRegs, kReturnRegister0);
-      DCHECK(bytes % kPointerSize == 0);
-      DCHECK(frame_access_state()->sp_delta() == 0);
+      int bytes = __ PushCallerSaved(fp_mode_, kReturnRegister0);
+      DCHECK_EQ(0, bytes % kPointerSize);
+      DCHECK_EQ(0, frame_access_state()->sp_delta());
       frame_access_state()->IncreaseSPDelta(bytes / kPointerSize);
       DCHECK(!caller_registers_saved_);
       caller_registers_saved_ = true;
       break;
     }
     case kArchRestoreCallerRegisters: {
+      DCHECK(fp_mode_ ==
+             static_cast<SaveFPRegsMode>(MiscField::decode(instr->opcode())));
+      DCHECK(fp_mode_ == kDontSaveFPRegs || fp_mode_ == kSaveFPRegs);
       // Don't overwrite the returned value.
-      int bytes = __ PopCallerSaved(kSaveFPRegs, kReturnRegister0);
+      int bytes = __ PopCallerSaved(fp_mode_, kReturnRegister0);
       frame_access_state()->IncreaseSPDelta(-(bytes / kPointerSize));
-      DCHECK(frame_access_state()->sp_delta() == 0);
+      DCHECK_EQ(0, frame_access_state()->sp_delta());
       DCHECK(caller_registers_saved_);
       caller_registers_saved_ = false;
       break;
@@ -1061,8 +1062,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       frame_access_state()->ClearSPDelta();
       if (caller_registers_saved_) {
         // Need to re-sync SP delta introduced in kArchSaveCallerRegisters.
+        // Here, we assume the sequence to be:
+        //   kArchSaveCallerRegisters;
+        //   kArchCallCFunction;
+        //   kArchRestoreCallerRegisters;
         int bytes =
-            __ RequiredStackSizeForCallerSaved(kSaveFPRegs, kReturnRegister0);
+            __ RequiredStackSizeForCallerSaved(fp_mode_, kReturnRegister0);
         frame_access_state()->IncreaseSPDelta(bytes / kPointerSize);
       }
       break;
@@ -1920,15 +1925,15 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ movss(Operand(esp, 0), i.InputDoubleRegister(0));
         frame_access_state()->IncreaseSPDelta(kFloatSize / kPointerSize);
       } else if (HasImmediateInput(instr, 0)) {
-        __ Move(kScratchDoubleReg, i.InputDouble(0));
-        __ sub(esp, Immediate(kDoubleSize));
+        __ Move(kScratchDoubleReg, i.InputFloat32(0));
+        __ sub(esp, Immediate(kFloatSize));
         __ movss(Operand(esp, 0), kScratchDoubleReg);
-        frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
+        frame_access_state()->IncreaseSPDelta(kFloatSize / kPointerSize);
       } else {
-        __ movsd(kScratchDoubleReg, i.InputOperand(0));
-        __ sub(esp, Immediate(kDoubleSize));
+        __ movss(kScratchDoubleReg, i.InputOperand(0));
+        __ sub(esp, Immediate(kFloatSize));
         __ movss(Operand(esp, 0), kScratchDoubleReg);
-        frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
+        frame_access_state()->IncreaseSPDelta(kFloatSize / kPointerSize);
       }
       break;
     case kIA32PushFloat64:
@@ -2497,7 +2502,10 @@ void CodeGenerator::AssembleArchTrap(Instruction* instr,
                              __ isolate()),
                          0);
         __ LeaveFrame(StackFrame::WASM_COMPILED);
-        __ Ret();
+        CallDescriptor* descriptor = gen_->linkage()->GetIncomingDescriptor();
+        size_t pop_size = descriptor->StackParameterCount() * kPointerSize;
+        // Use ecx as a scratch register, we return anyways immediately.
+        __ Ret(static_cast<int>(pop_size), ecx);
       } else {
         gen_->AssembleSourcePosition(instr_);
         __ Call(__ isolate()->builtins()->builtin_handle(trap_id),
@@ -2928,7 +2936,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       } else {
         DCHECK(destination->IsFPStackSlot());
         Operand dst0 = g.ToOperand(destination);
-        Operand dst1 = g.OffsetOperand(destination, kPointerSize);
+        Operand dst1 = g.ToOperand(destination, kPointerSize);
         __ Move(dst0, Immediate(lower));
         __ Move(dst1, Immediate(upper));
       }
@@ -3055,8 +3063,8 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
       __ movsd(kScratchDoubleReg, dst0);  // Save dst in scratch register.
       __ push(src0);  // Then use stack to copy src to destination.
       __ pop(dst0);
-      __ push(g.OffsetOperand(source, kPointerSize));
-      __ pop(g.OffsetOperand(destination, kPointerSize));
+      __ push(g.ToOperand(source, kPointerSize));
+      __ pop(g.ToOperand(destination, kPointerSize));
       __ movsd(src0, kScratchDoubleReg);
     } else if (rep == MachineRepresentation::kFloat32) {
       __ movss(kScratchDoubleReg, dst0);  // Save dst in scratch register.
@@ -3068,12 +3076,12 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
       __ movups(kScratchDoubleReg, dst0);  // Save dst in scratch register.
       __ push(src0);  // Then use stack to copy src to destination.
       __ pop(dst0);
-      __ push(g.OffsetOperand(source, kPointerSize));
-      __ pop(g.OffsetOperand(destination, kPointerSize));
-      __ push(g.OffsetOperand(source, 2 * kPointerSize));
-      __ pop(g.OffsetOperand(destination, 2 * kPointerSize));
-      __ push(g.OffsetOperand(source, 3 * kPointerSize));
-      __ pop(g.OffsetOperand(destination, 3 * kPointerSize));
+      __ push(g.ToOperand(source, kPointerSize));
+      __ pop(g.ToOperand(destination, kPointerSize));
+      __ push(g.ToOperand(source, 2 * kPointerSize));
+      __ pop(g.ToOperand(destination, 2 * kPointerSize));
+      __ push(g.ToOperand(source, 3 * kPointerSize));
+      __ pop(g.ToOperand(destination, 3 * kPointerSize));
       __ movups(src0, kScratchDoubleReg);
     }
   } else {

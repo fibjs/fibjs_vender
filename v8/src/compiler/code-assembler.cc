@@ -1116,11 +1116,11 @@ Node* CodeAssembler::CallCFunction1(MachineType return_type,
 }
 
 Node* CodeAssembler::CallCFunction1WithCallerSavedRegisters(
-    MachineType return_type, MachineType arg0_type, Node* function,
-    Node* arg0) {
+    MachineType return_type, MachineType arg0_type, Node* function, Node* arg0,
+    SaveFPRegsMode mode) {
   DCHECK(return_type.LessThanOrEqualPointerSize());
   return raw_assembler()->CallCFunction1WithCallerSavedRegisters(
-      return_type, arg0_type, function, arg0);
+      return_type, arg0_type, function, arg0, mode);
 }
 
 Node* CodeAssembler::CallCFunction2(MachineType return_type,
@@ -1142,10 +1142,12 @@ Node* CodeAssembler::CallCFunction3(MachineType return_type,
 
 Node* CodeAssembler::CallCFunction3WithCallerSavedRegisters(
     MachineType return_type, MachineType arg0_type, MachineType arg1_type,
-    MachineType arg2_type, Node* function, Node* arg0, Node* arg1, Node* arg2) {
+    MachineType arg2_type, Node* function, Node* arg0, Node* arg1, Node* arg2,
+    SaveFPRegsMode mode) {
   DCHECK(return_type.LessThanOrEqualPointerSize());
   return raw_assembler()->CallCFunction3WithCallerSavedRegisters(
-      return_type, arg0_type, arg1_type, arg2_type, function, arg0, arg1, arg2);
+      return_type, arg0_type, arg1_type, arg2_type, function, arg0, arg1, arg2,
+      mode);
 }
 
 Node* CodeAssembler::CallCFunction6(
@@ -1206,8 +1208,8 @@ void CodeAssembler::Switch(Node* index, Label* default_label,
   for (size_t i = 0; i < case_count; ++i) {
     labels[i] = case_labels[i]->label_;
     case_labels[i]->MergeVariables();
-    default_label->MergeVariables();
   }
+  default_label->MergeVariables();
   return raw_assembler()->Switch(index, default_label->label_, case_values,
                                  labels, case_count);
 }
@@ -1435,7 +1437,7 @@ void CodeAssemblerLabel::UpdateVariablesAfterBind() {
     auto i = variable_merges_.find(var);
     if (i != variable_merges_.end()) {
       for (auto value : i->second) {
-        DCHECK(value != nullptr);
+        DCHECK_NOT_NULL(value);
         if (value != shared_value) {
           if (shared_value == nullptr) {
             shared_value = value;

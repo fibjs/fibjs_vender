@@ -476,8 +476,8 @@ BytecodeGraphBuilder::BytecodeGraphBuilder(
     Zone* local_zone, Handle<SharedFunctionInfo> shared_info,
     Handle<FeedbackVector> feedback_vector, BailoutId osr_offset,
     JSGraph* jsgraph, CallFrequency invocation_frequency,
-    SourcePositionTable* source_positions, int inlining_id,
-    JSTypeHintLowering::Flags flags, bool stack_check)
+    SourcePositionTable* source_positions, Handle<Context> native_context,
+    int inlining_id, JSTypeHintLowering::Flags flags, bool stack_check)
     : local_zone_(local_zone),
       jsgraph_(jsgraph),
       invocation_frequency_(invocation_frequency),
@@ -505,7 +505,8 @@ BytecodeGraphBuilder::BytecodeGraphBuilder(
       exit_controls_(local_zone),
       state_values_cache_(jsgraph),
       source_positions_(source_positions),
-      start_position_(shared_info->start_position(), inlining_id) {}
+      start_position_(shared_info->start_position(), inlining_id),
+      native_context_(native_context) {}
 
 Node* BytecodeGraphBuilder::GetFunctionClosure() {
   if (!function_closure_.is_set()) {
@@ -1307,7 +1308,7 @@ void BytecodeGraphBuilder::BuildNamedStore(StoreMode store_mode) {
               feedback.vector()->GetKind(feedback.slot()));
     op = javascript()->StoreNamedOwn(name, feedback);
   } else {
-    DCHECK(store_mode == StoreMode::kNormal);
+    DCHECK_EQ(StoreMode::kNormal, store_mode);
     LanguageMode language_mode =
         feedback.vector()->GetLanguageMode(feedback.slot());
     op = javascript()->StoreNamed(language_mode, name, feedback);
@@ -1479,11 +1480,11 @@ void BytecodeGraphBuilder::VisitCreateRestParameter() {
 void BytecodeGraphBuilder::VisitCreateRegExpLiteral() {
   Handle<String> constant_pattern =
       Handle<String>::cast(bytecode_iterator().GetConstantForIndexOperand(0));
-  int literal_index = bytecode_iterator().GetIndexOperand(1);
+  int const slot_id = bytecode_iterator().GetIndexOperand(1);
+  VectorSlotPair pair = CreateVectorSlotPair(slot_id);
   int literal_flags = bytecode_iterator().GetFlagOperand(2);
-  Node* literal = NewNode(javascript()->CreateLiteralRegExp(
-                              constant_pattern, literal_flags, literal_index),
-                          GetFunctionClosure());
+  Node* literal = NewNode(
+      javascript()->CreateLiteralRegExp(constant_pattern, pair, literal_flags));
   environment()->BindAccumulator(literal, Environment::kAttachFrameState);
 }
 
@@ -1491,7 +1492,8 @@ void BytecodeGraphBuilder::VisitCreateArrayLiteral() {
   Handle<ConstantElementsPair> constant_elements =
       Handle<ConstantElementsPair>::cast(
           bytecode_iterator().GetConstantForIndexOperand(0));
-  int literal_index = bytecode_iterator().GetIndexOperand(1);
+  int const slot_id = bytecode_iterator().GetIndexOperand(1);
+  VectorSlotPair pair = CreateVectorSlotPair(slot_id);
   int bytecode_flags = bytecode_iterator().GetFlagOperand(2);
   int literal_flags =
       interpreter::CreateArrayLiteralFlags::FlagsBits::decode(bytecode_flags);
@@ -1503,17 +1505,15 @@ void BytecodeGraphBuilder::VisitCreateArrayLiteral() {
   // TODO(mstarzinger): Thread through number of elements. The below number is
   // only an estimate and does not match {ArrayLiteral::values::length}.
   int number_of_elements = constant_elements->constant_values()->length();
-  Node* literal = NewNode(
-      javascript()->CreateLiteralArray(constant_elements, literal_flags,
-                                       literal_index, number_of_elements),
-      GetFunctionClosure());
+  Node* literal = NewNode(javascript()->CreateLiteralArray(
+      constant_elements, pair, literal_flags, number_of_elements));
   environment()->BindAccumulator(literal, Environment::kAttachFrameState);
 }
 
 void BytecodeGraphBuilder::VisitCreateEmptyArrayLiteral() {
-  int literal_index = bytecode_iterator().GetIndexOperand(0);
-  Node* literal = NewNode(javascript()->CreateEmptyLiteralArray(literal_index),
-                          GetFunctionClosure());
+  int const slot_id = bytecode_iterator().GetIndexOperand(0);
+  VectorSlotPair pair = CreateVectorSlotPair(slot_id);
+  Node* literal = NewNode(javascript()->CreateEmptyLiteralArray(pair));
   environment()->BindAccumulator(literal);
 }
 
@@ -1521,17 +1521,16 @@ void BytecodeGraphBuilder::VisitCreateObjectLiteral() {
   Handle<BoilerplateDescription> constant_properties =
       Handle<BoilerplateDescription>::cast(
           bytecode_iterator().GetConstantForIndexOperand(0));
-  int literal_index = bytecode_iterator().GetIndexOperand(1);
+  int const slot_id = bytecode_iterator().GetIndexOperand(1);
+  VectorSlotPair pair = CreateVectorSlotPair(slot_id);
   int bytecode_flags = bytecode_iterator().GetFlagOperand(2);
   int literal_flags =
       interpreter::CreateObjectLiteralFlags::FlagsBits::decode(bytecode_flags);
   // TODO(mstarzinger): Thread through number of properties. The below number is
   // only an estimate and does not match {ObjectLiteral::properties_count}.
   int number_of_properties = constant_properties->size();
-  Node* literal = NewNode(
-      javascript()->CreateLiteralObject(constant_properties, literal_flags,
-                                        literal_index, number_of_properties),
-      GetFunctionClosure());
+  Node* literal = NewNode(javascript()->CreateLiteralObject(
+      constant_properties, pair, literal_flags, number_of_properties));
   environment()->BindRegister(bytecode_iterator().GetRegisterOperand(3),
                               literal, Environment::kAttachFrameState);
 }
@@ -1540,6 +1539,19 @@ void BytecodeGraphBuilder::VisitCreateEmptyObjectLiteral() {
   Node* literal =
       NewNode(javascript()->CreateEmptyLiteralObject(), GetFunctionClosure());
   environment()->BindAccumulator(literal);
+}
+
+void BytecodeGraphBuilder::VisitGetTemplateObject() {
+  Handle<TemplateObjectDescription> description =
+      Handle<TemplateObjectDescription>::cast(
+          bytecode_iterator().GetConstantForIndexOperand(0));
+  // It's not observable when the template object is created, so we
+  // can just create it eagerly during graph building and bake in
+  // the JSArray constant here.
+  Node* template_object =
+      jsgraph()->HeapConstant(TemplateObjectDescription::GetTemplateObject(
+          description, native_context()));
+  environment()->BindAccumulator(template_object);
 }
 
 Node* const* BytecodeGraphBuilder::GetCallArgumentsFromRegisters(
@@ -1962,7 +1974,7 @@ void BytecodeGraphBuilder::BuildHoleCheckAndThrow(
     Node* node;
     const Operator* op = javascript()->CallRuntime(runtime_id);
     if (runtime_id == Runtime::kThrowReferenceError) {
-      DCHECK(name != nullptr);
+      DCHECK_NOT_NULL(name);
       node = NewNode(op, name);
     } else {
       DCHECK(runtime_id == Runtime::kThrowSuperAlreadyCalledError ||
@@ -2465,7 +2477,6 @@ void BytecodeGraphBuilder::VisitTestTypeOf() {
       break;
     case interpreter::TestTypeOfFlags::LiteralFlag::kOther:
       UNREACHABLE();  // Should never be emitted.
-      result = nullptr;
       break;
   }
   environment()->BindAccumulator(result);

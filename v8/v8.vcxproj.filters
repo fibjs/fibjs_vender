@@ -1002,6 +1002,9 @@
     <ClInclude Include="src\deoptimizer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\detachable-vector.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\disasm.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1413,12 +1416,6 @@
     <ClInclude Include="src\libsampler\sampler.h">
       <Filter>Source Files\libsampler</Filter>
     </ClInclude>
-    <ClInclude Include="src\list-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\list.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\locked-queue-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1488,12 +1485,6 @@
     <ClInclude Include="src\objects\bigint.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
-    <ClInclude Include="src\objects\code-cache-inl.h">
-      <Filter>Source Files\objects</Filter>
-    </ClInclude>
-    <ClInclude Include="src\objects\code-cache.h">
-      <Filter>Source Files\objects</Filter>
-    </ClInclude>
     <ClInclude Include="src\objects\compilation-cache-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1551,6 +1542,12 @@
     <ClInclude Include="src\objects\object-macros.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\property-descriptor-object-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\property-descriptor-object.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\regexp-match-info.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1576,6 +1573,9 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\string.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\template-objects.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\ostreams.h">
@@ -2094,6 +2094,9 @@
     <ClInclude Include="src\zone\zone-handle-set.h">
       <Filter>Source Files\zone</Filter>
     </ClInclude>
+    <ClInclude Include="src\zone\zone-list-inl.h">
+      <Filter>Source Files\zone</Filter>
+    </ClInclude>
     <ClInclude Include="src\zone\zone-segment.h">
       <Filter>Source Files\zone</Filter>
     </ClInclude>
@@ -2307,6 +2310,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-async-iterator-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-bigint.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-boolean-gen.cc">
@@ -3309,6 +3315,9 @@
       <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\scope-info.cc">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\template-objects.cc">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\ostreams.cc">

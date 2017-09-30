@@ -214,6 +214,8 @@ Reduction JSCreateLowering::Reduce(Node* node) {
       return ReduceJSCreateArguments(node);
     case IrOpcode::kJSCreateArray:
       return ReduceJSCreateArray(node);
+    case IrOpcode::kJSCreateClosure:
+      return ReduceJSCreateClosure(node);
     case IrOpcode::kJSCreateIterResultObject:
       return ReduceJSCreateIterResultObject(node);
     case IrOpcode::kJSCreateKeyValueArray:
@@ -793,6 +795,54 @@ Reduction JSCreateLowering::ReduceJSCreateArray(Node* node) {
   return ReduceNewArrayToStubCall(node, site);
 }
 
+Reduction JSCreateLowering::ReduceJSCreateClosure(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSCreateClosure, node->opcode());
+  CreateClosureParameters const& p = CreateClosureParametersOf(node->op());
+  Handle<SharedFunctionInfo> shared = p.shared_info();
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  Node* context = NodeProperties::GetContextInput(node);
+
+  // Use inline allocation of closures only for instantiation sites that have
+  // seen more than one instantiation, this simplifies the generated code and
+  // also serves as a heuristic of which allocation sites benefit from it.
+  FeedbackSlot slot(FeedbackVector::ToSlot(p.feedback().index()));
+  Handle<Cell> vector_cell(Cell::cast(p.feedback().vector()->Get(slot)));
+  if (vector_cell->map() == isolate()->heap()->many_closures_cell_map()) {
+    Handle<Map> function_map(
+        Map::cast(native_context()->get(shared->function_map_index())));
+    Node* lazy_compile_builtin = jsgraph()->HeapConstant(
+        handle(isolate()->builtins()->builtin(Builtins::kCompileLazy)));
+    DCHECK(!function_map->IsInobjectSlackTrackingInProgress());
+    DCHECK(!function_map->is_dictionary_map());
+
+    // Emit code to allocate the JSFunction instance.
+    AllocationBuilder a(jsgraph(), effect, control);
+    a.Allocate(function_map->instance_size());
+    a.Store(AccessBuilder::ForMap(), function_map);
+    a.Store(AccessBuilder::ForJSObjectPropertiesOrHash(),
+            jsgraph()->EmptyFixedArrayConstant());
+    a.Store(AccessBuilder::ForJSObjectElements(),
+            jsgraph()->EmptyFixedArrayConstant());
+    a.Store(AccessBuilder::ForJSFunctionPrototypeOrInitialMap(),
+            jsgraph()->TheHoleConstant());
+    a.Store(AccessBuilder::ForJSFunctionSharedFunctionInfo(), shared);
+    a.Store(AccessBuilder::ForJSFunctionContext(), context);
+    a.Store(AccessBuilder::ForJSFunctionFeedbackVector(), vector_cell);
+    a.Store(AccessBuilder::ForJSFunctionCode(), lazy_compile_builtin);
+    STATIC_ASSERT(JSFunction::kSize == 8 * kPointerSize);
+    for (int i = 0; i < function_map->GetInObjectProperties(); i++) {
+      a.Store(AccessBuilder::ForJSObjectInObjectProperty(function_map, i),
+              jsgraph()->UndefinedConstant());
+    }
+    RelaxControls(node);
+    a.FinishAndChange(node);
+    return Changed(node);
+  }
+
+  return NoChange();
+}
+
 Reduction JSCreateLowering::ReduceJSCreateIterResultObject(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateIterResultObject, node->opcode());
   Node* value = NodeProperties::GetValueInput(node, 0);
@@ -854,41 +904,35 @@ Reduction JSCreateLowering::ReduceJSCreateLiteralArrayOrObject(Node* node) {
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
 
-  Handle<FeedbackVector> feedback_vector;
-  if (GetSpecializationFeedbackVector(node).ToHandle(&feedback_vector)) {
-    FeedbackSlot slot(FeedbackVector::ToSlot(p.index()));
-    Handle<Object> literal(feedback_vector->Get(slot), isolate());
-    if (literal->IsAllocationSite()) {
-      Handle<AllocationSite> site = Handle<AllocationSite>::cast(literal);
-      Handle<JSObject> boilerplate(site->boilerplate(), isolate());
-      int max_properties = kMaxFastLiteralProperties;
-      if (IsFastLiteral(boilerplate, kMaxFastLiteralDepth, &max_properties)) {
-        AllocationSiteUsageContext site_context(isolate(), site, false);
-        site_context.EnterNewScope();
-        Node* value = effect =
-            AllocateFastLiteral(effect, control, boilerplate, &site_context);
-        site_context.ExitScope(site, boilerplate);
-        ReplaceWithValue(node, value, effect, control);
-        return Replace(value);
-      }
+  Handle<Object> feedback(p.feedback().vector()->Get(p.feedback().slot()),
+                          isolate());
+  if (feedback->IsAllocationSite()) {
+    Handle<AllocationSite> site = Handle<AllocationSite>::cast(feedback);
+    Handle<JSObject> boilerplate(site->boilerplate(), isolate());
+    int max_properties = kMaxFastLiteralProperties;
+    if (IsFastLiteral(boilerplate, kMaxFastLiteralDepth, &max_properties)) {
+      AllocationSiteUsageContext site_context(isolate(), site, false);
+      site_context.EnterNewScope();
+      Node* value = effect =
+          AllocateFastLiteral(effect, control, boilerplate, &site_context);
+      site_context.ExitScope(site, boilerplate);
+      ReplaceWithValue(node, value, effect, control);
+      return Replace(value);
     }
   }
   return NoChange();
 }
 
 Reduction JSCreateLowering::ReduceJSCreateEmptyLiteralArray(Node* node) {
-  DCHECK_EQ(node->opcode(), IrOpcode::kJSCreateEmptyLiteralArray);
-  int literal_index = OpParameter<int>(node);
-  Handle<FeedbackVector> feedback_vector;
-  if (GetSpecializationFeedbackVector(node).ToHandle(&feedback_vector)) {
-    FeedbackSlot slot(FeedbackVector::ToSlot(literal_index));
-    Handle<Object> raw_site(feedback_vector->Get(slot), isolate());
-    if (raw_site->IsAllocationSite()) {
-      Handle<AllocationSite> site = Handle<AllocationSite>::cast(raw_site);
-      DCHECK(!site->PointsToLiteral());
-      Node* length = jsgraph()->ZeroConstant();
-      return ReduceNewArray(node, length, 0, site);
-    }
+  DCHECK_EQ(IrOpcode::kJSCreateEmptyLiteralArray, node->opcode());
+  FeedbackParameter const& p = FeedbackParameterOf(node->op());
+  Handle<Object> feedback(p.feedback().vector()->Get(p.feedback().slot()),
+                          isolate());
+  if (feedback->IsAllocationSite()) {
+    Handle<AllocationSite> site = Handle<AllocationSite>::cast(feedback);
+    DCHECK(!site->PointsToLiteral());
+    Node* length = jsgraph()->ZeroConstant();
+    return ReduceNewArray(node, length, 0, site);
   }
   return NoChange();
 }
@@ -925,21 +969,18 @@ Reduction JSCreateLowering::ReduceJSCreateEmptyLiteralObject(Node* node) {
 }
 
 Reduction JSCreateLowering::ReduceJSCreateLiteralRegExp(Node* node) {
-  DCHECK(node->opcode() == IrOpcode::kJSCreateLiteralRegExp);
+  DCHECK_EQ(IrOpcode::kJSCreateLiteralRegExp, node->opcode());
   CreateLiteralParameters const& p = CreateLiteralParametersOf(node->op());
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
 
-  Handle<FeedbackVector> feedback_vector;
-  if (GetSpecializationFeedbackVector(node).ToHandle(&feedback_vector)) {
-    FeedbackSlot slot(FeedbackVector::ToSlot(p.index()));
-    Handle<Object> maybe_boilerplate(feedback_vector->Get(slot), isolate());
-    if (maybe_boilerplate->IsJSRegExp()) {
-      Node* value = effect = AllocateLiteralRegExp(
-          effect, control, Handle<JSRegExp>::cast(maybe_boilerplate));
-      ReplaceWithValue(node, value, effect, control);
-      return Replace(value);
-    }
+  Handle<Object> feedback(p.feedback().vector()->Get(p.feedback().slot()),
+                          isolate());
+  if (feedback->IsJSRegExp()) {
+    Handle<JSRegExp> boilerplate = Handle<JSRegExp>::cast(feedback);
+    Node* value = effect = AllocateLiteralRegExp(effect, control, boilerplate);
+    ReplaceWithValue(node, value, effect, control);
+    return Replace(value);
   }
   return NoChange();
 }
@@ -1503,30 +1544,6 @@ Node* JSCreateLowering::AllocateLiteralRegExp(Node* effect, Node* control,
                 handle(boilerplate->last_index(), isolate()));
 
   return builder.Finish();
-}
-
-MaybeHandle<FeedbackVector> JSCreateLowering::GetSpecializationFeedbackVector(
-    Node* node) {
-  Node* const closure = NodeProperties::GetValueInput(node, 0);
-  switch (closure->opcode()) {
-    case IrOpcode::kHeapConstant: {
-      Handle<HeapObject> object = OpParameter<Handle<HeapObject>>(closure);
-      return handle(Handle<JSFunction>::cast(object)->feedback_vector());
-    }
-    case IrOpcode::kParameter: {
-      int const index = ParameterIndexOf(closure->op());
-      // The closure is always the last parameter to a JavaScript function, and
-      // {Parameter} indices start at -1, so value outputs of {Start} look like
-      // this: closure, receiver, param0, ..., paramN, context.
-      if (index == -1) {
-        return feedback_vector_;
-      }
-      break;
-    }
-    default:
-      break;
-  }
-  return MaybeHandle<FeedbackVector>();
 }
 
 Factory* JSCreateLowering::factory() const { return isolate()->factory(); }

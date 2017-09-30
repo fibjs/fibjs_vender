@@ -133,6 +133,8 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
   // We don't care if MacroAssembler scratch registers are corrupted.
   saved_regs.Remove(*(masm->TmpList()));
   saved_fp_regs.Remove(*(masm->FPTmpList()));
+  DCHECK_EQ(saved_regs.Count() % 2, 0);
+  DCHECK_EQ(saved_fp_regs.Count() % 2, 0);
 
   __ PushCPURegList(saved_regs);
   if (save_doubles()) {
@@ -1132,11 +1134,11 @@ void ProfileEntryHookStub::MaybeCallEntryHookDelayed(TurboAssembler* tasm,
     DontEmitDebugCodeScope no_debug_code(tasm);
     Label entry_hook_call_start;
     tasm->Bind(&entry_hook_call_start);
-    tasm->Push(lr);
+    tasm->Push(padreg, lr);
     tasm->CallStubDelayed(new (zone) ProfileEntryHookStub(nullptr));
     DCHECK(tasm->SizeOfCodeGeneratedSince(&entry_hook_call_start) ==
            kProfileEntryHookCallSize);
-    tasm->Pop(lr);
+    tasm->Pop(lr, padreg);
   }
 }
 
@@ -1147,11 +1149,11 @@ void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
     DontEmitDebugCodeScope no_debug_code(masm);
     Label entry_hook_call_start;
     __ Bind(&entry_hook_call_start);
-    __ Push(lr);
+    __ Push(padreg, lr);
     __ CallStub(&stub);
     DCHECK(masm->SizeOfCodeGeneratedSince(&entry_hook_call_start) ==
            kProfileEntryHookCallSize);
-    __ Pop(lr);
+    __ Pop(lr, padreg);
   }
 }
 
@@ -1165,6 +1167,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   __ PushCPURegList(kCallerSaved);
   DCHECK(kCallerSaved.IncludesAliasOf(lr));
   const int kNumSavedRegs = kCallerSaved.Count();
+  DCHECK_EQ(kNumSavedRegs % 2, 0);
 
   // Compute the function's address as the first argument.
   __ Sub(x0, lr, kProfileEntryHookCallSize);
@@ -1716,18 +1719,18 @@ static int AddressOffset(ExternalReference ref0, ExternalReference ref1) {
   return static_cast<int>(ref0.address() - ref1.address());
 }
 
-
 // Calls an API function. Allocates HandleScope, extracts returned value
 // from handle and propagates exceptions.
 // 'stack_space' is the space to be unwound on exit (includes the call JS
 // arguments space and the additional space allocated for the fast call).
 // 'spill_offset' is the offset from the stack pointer where
 // CallApiFunctionAndReturn can spill registers.
-static void CallApiFunctionAndReturn(
-    MacroAssembler* masm, Register function_address,
-    ExternalReference thunk_ref, int stack_space,
-    MemOperand* stack_space_operand, int spill_offset,
-    MemOperand return_value_operand, MemOperand* context_restore_operand) {
+static void CallApiFunctionAndReturn(MacroAssembler* masm,
+                                     Register function_address,
+                                     ExternalReference thunk_ref,
+                                     int stack_space, int spill_offset,
+                                     MemOperand return_value_operand,
+                                     MemOperand* context_restore_operand) {
   ASM_LOCATION("CallApiFunctionAndReturn");
   Isolate* isolate = masm->isolate();
   ExternalReference next_address =
@@ -1834,10 +1837,6 @@ static void CallApiFunctionAndReturn(
     __ Ldr(cp, *context_restore_operand);
   }
 
-  if (stack_space_operand != NULL) {
-    __ Ldr(w2, *stack_space_operand);
-  }
-
   __ LeaveExitFrame(false, x1, !restore_context);
 
   // Check if the function scheduled an exception.
@@ -1846,11 +1845,7 @@ static void CallApiFunctionAndReturn(
   __ JumpIfNotRoot(x5, Heap::kTheHoleValueRootIndex,
                    &promote_scheduled_exception);
 
-  if (stack_space_operand != NULL) {
-    __ Drop(x2, 1);
-  } else {
-    __ Drop(stack_space);
-  }
+  __ DropSlots(stack_space);
   __ Ret();
 
   // Re-throw by promoting a scheduled exception.
@@ -1958,8 +1953,8 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
   // not controlled by GC.
   const int kApiStackSpace = 3;
 
-  // Allocate space for CallApiFunctionAndReturn can store some scratch
-  // registeres on the stack.
+  // Allocate space so that CallApiFunctionAndReturn can store some scratch
+  // registers on the stack.
   const int kCallApiFunctionSpillSpace = 4;
 
   FrameScope frame_scope(masm, StackFrame::MANUAL);
@@ -1990,19 +1985,19 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
     return_value_offset = 2 + FCA::kReturnValueOffset;
   }
   MemOperand return_value_operand(fp, return_value_offset * kPointerSize);
+  // The number of arguments might be odd, but will be padded when calling the
+  // stub. We do not round up stack_space here, this will be done in
+  // CallApiFunctionAndReturn.
   const int stack_space = argc() + FCA::kArgsLength + 2;
-  MemOperand* stack_space_operand = nullptr;
-
+  DCHECK_EQ((stack_space - argc()) % 2, 0);
   const int spill_offset = 1 + kApiStackSpace;
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref, stack_space,
-                           stack_space_operand, spill_offset,
-                           return_value_operand, &context_restore_operand);
+                           spill_offset, return_value_operand,
+                           &context_restore_operand);
 }
 
 
 void CallApiGetterStub::Generate(MacroAssembler* masm) {
-  // Build v8::PropertyCallbackInfo::args_ array on the stack and push property
-  // name below the exit frame to make GC aware of them.
   STATIC_ASSERT(PropertyCallbackArguments::kShouldThrowOnErrorIndex == 0);
   STATIC_ASSERT(PropertyCallbackArguments::kHolderIndex == 1);
   STATIC_ASSERT(PropertyCallbackArguments::kIsolateIndex == 2);
@@ -2015,23 +2010,31 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   Register receiver = ApiGetterDescriptor::ReceiverRegister();
   Register holder = ApiGetterDescriptor::HolderRegister();
   Register callback = ApiGetterDescriptor::CallbackRegister();
-  Register scratch = x4;
-  Register scratch2 = x5;
-  Register scratch3 = x6;
-  DCHECK(!AreAliased(receiver, holder, callback, scratch));
+  Register data = x4;
+  Register undef = x5;
+  Register isolate_address = x6;
+  Register name = x7;
+  DCHECK(!AreAliased(receiver, holder, callback, data, undef, isolate_address,
+                     name));
 
-  __ Push(receiver);
+  __ Ldr(data, FieldMemOperand(callback, AccessorInfo::kDataOffset));
+  __ LoadRoot(undef, Heap::kUndefinedValueRootIndex);
+  __ Mov(isolate_address,
+         Operand(ExternalReference::isolate_address(isolate())));
+  __ Ldr(name, FieldMemOperand(callback, AccessorInfo::kNameOffset));
 
-  __ LoadRoot(scratch, Heap::kUndefinedValueRootIndex);
-  __ Mov(scratch2, Operand(ExternalReference::isolate_address(isolate())));
-  __ Ldr(scratch3, FieldMemOperand(callback, AccessorInfo::kDataOffset));
-  __ Push(scratch3, scratch, scratch, scratch2, holder);
-  __ Push(Smi::kZero);  // should_throw_on_error -> false
-  __ Ldr(scratch, FieldMemOperand(callback, AccessorInfo::kNameOffset));
-  __ Push(scratch);
+  // PropertyCallbackArguments:
+  //   receiver, data, return value, return value default, isolate, holder,
+  //   should_throw_on_error
+  // These are followed by the property name, which is also pushed below the
+  // exit frame to make the GC aware of it.
+  __ Push(receiver, data, undef, undef, isolate_address, holder, xzr, name);
 
   // v8::PropertyCallbackInfo::args_ array and name handle.
-  const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
+  static const int kStackUnwindSpace =
+      PropertyCallbackArguments::kArgsLength + 1;
+  static_assert(kStackUnwindSpace % 2 == 0,
+                "slots must be a multiple of 2 for stack pointer alignment");
 
   // Load address of v8::PropertyAccessorInfo::args_ array and name handle.
   __ Mov(x0, masm->StackPointer());  // x0 = Handle<Name>
@@ -2039,8 +2042,8 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
 
   const int kApiStackSpace = 1;
 
-  // Allocate space for CallApiFunctionAndReturn can store some scratch
-  // registeres on the stack.
+  // Allocate space so that CallApiFunctionAndReturn can store some scratch
+  // registers on the stack.
   const int kCallApiFunctionSpillSpace = 4;
 
   FrameScope frame_scope(masm, StackFrame::MANUAL);
@@ -2056,16 +2059,17 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
       ExternalReference::invoke_accessor_getter_callback(isolate());
 
   Register api_function_address = x2;
-  __ Ldr(scratch, FieldMemOperand(callback, AccessorInfo::kJsGetterOffset));
+  Register js_getter = x4;
+  __ Ldr(js_getter, FieldMemOperand(callback, AccessorInfo::kJsGetterOffset));
   __ Ldr(api_function_address,
-         FieldMemOperand(scratch, Foreign::kForeignAddressOffset));
+         FieldMemOperand(js_getter, Foreign::kForeignAddressOffset));
 
   const int spill_offset = 1 + kApiStackSpace;
   // +3 is to skip prolog, return address and name handle.
   MemOperand return_value_operand(
       fp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
-                           kStackUnwindSpace, NULL, spill_offset,
+                           kStackUnwindSpace, spill_offset,
                            return_value_operand, NULL);
 }
 

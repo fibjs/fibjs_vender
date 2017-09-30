@@ -48,12 +48,12 @@
 #include "src/simulator.h"
 #include "src/snapshot/startup-deserializer.h"
 #include "src/tracing/tracing-category-observer.h"
+#include "src/unicode-cache.h"
 #include "src/v8.h"
 #include "src/version.h"
 #include "src/visitors.h"
 #include "src/vm-state-inl.h"
 #include "src/wasm/compilation-manager.h"
-#include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects.h"
 #include "src/zone/accounting-allocator.h"
 
@@ -121,6 +121,7 @@ void ThreadLocalTop::Initialize() {
 
 
 void ThreadLocalTop::Free() {
+  wasm_caught_exception_ = nullptr;
   // Match unmatched PopPromise calls.
   while (promise_on_stack_) isolate_->PopPromise();
 }
@@ -260,8 +261,8 @@ bool Isolate::IsDeferredHandle(Object** handle) {
   for (DeferredHandles* deferred = deferred_handles_head_;
        deferred != NULL;
        deferred = deferred->next_) {
-    List<Object**>* blocks = &deferred->blocks_;
-    for (int i = 0; i < blocks->length(); i++) {
+    std::vector<Object**>* blocks = &deferred->blocks_;
+    for (size_t i = 0; i < blocks->size(); i++) {
       Object** block_limit = (i == 0) ? deferred->first_block_limit_
                                       : blocks->at(i) + kHandleBlockSize;
       if (blocks->at(i) <= handle && handle < block_limit) return true;
@@ -1064,6 +1065,16 @@ void ReportBootstrappingException(Handle<Object> exception,
 #endif
 }
 
+bool Isolate::is_catchable_by_wasm(Object* exception) {
+  if (!is_catchable_by_javascript(exception) || !exception->IsJSError())
+    return false;
+  HandleScope scope(this);
+  Handle<Object> exception_handle(exception, this);
+  return JSReceiver::HasProperty(Handle<JSReceiver>::cast(exception_handle),
+                                 factory()->InternalizeUtf8String(
+                                     wasm::WasmException::kRuntimeIdStr))
+      .IsJust();
+}
 
 Object* Isolate::Throw(Object* exception, MessageLocation* location) {
   DCHECK(!has_pending_exception());
@@ -1248,6 +1259,7 @@ Object* Isolate::UnwindAndFindHandler() {
         // again.
         trap_handler::SetThreadInWasm();
 
+        set_wasm_caught_exception(exception);
         return FoundHandler(nullptr, frame->LookupCode(), offset, return_sp,
                             frame->fp());
       }
@@ -1310,7 +1322,8 @@ Object* Isolate::UnwindAndFindHandler() {
         // For interpreted frame we perform a range lookup in the handler table.
         if (!catchable_by_js) break;
         InterpretedFrame* js_frame = static_cast<InterpretedFrame*>(frame);
-        int register_slots = js_frame->GetBytecodeArray()->register_count();
+        int register_slots = InterpreterFrameConstants::RegisterStackSlotCount(
+            js_frame->GetBytecodeArray()->register_count());
         int context_reg = 0;  // Will contain register index holding context.
         int offset =
             js_frame->LookupExceptionHandlerInTable(&context_reg, nullptr);
@@ -2722,8 +2735,8 @@ bool Isolate::Init(StartupDeserializer* des) {
   eternal_handles_ = new EternalHandles();
   bootstrapper_ = new Bootstrapper(this);
   handle_scope_implementer_ = new HandleScopeImplementer(this);
-  load_stub_cache_ = new StubCache(this, Code::LOAD_IC);
-  store_stub_cache_ = new StubCache(this, Code::STORE_IC);
+  load_stub_cache_ = new StubCache(this);
+  store_stub_cache_ = new StubCache(this);
   materialized_object_store_ = new MaterializedObjectStore(this);
   regexp_stack_ = new RegExpStack();
   regexp_stack_->isolate_ = this;

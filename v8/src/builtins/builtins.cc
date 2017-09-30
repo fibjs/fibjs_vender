@@ -113,19 +113,6 @@ Handle<Code> Builtins::NewFunctionContext(ScopeType scope_type) {
   return Handle<Code>::null();
 }
 
-Handle<Code> Builtins::NewCloneShallowArray(
-    AllocationSiteMode allocation_mode) {
-  switch (allocation_mode) {
-    case TRACK_ALLOCATION_SITE:
-      return builtin_handle(kFastCloneShallowArrayTrack);
-    case DONT_TRACK_ALLOCATION_SITE:
-      return builtin_handle(kFastCloneShallowArrayDontTrack);
-    default:
-      UNREACHABLE();
-  }
-  return Handle<Code>::null();
-}
-
 Handle<Code> Builtins::NonPrimitiveToPrimitive(ToPrimitiveHint hint) {
   switch (hint) {
     case ToPrimitiveHint::kDefault:
@@ -208,16 +195,6 @@ Callable Builtins::CallableFor(Isolate* isolate, Name name) {
     case kArrayMapLoopLazyDeoptContinuation: {
       Handle<Code> code =
           BUILTIN_CODE(isolate, ArrayMapLoopLazyDeoptContinuation);
-      return Callable(code, BuiltinDescriptor(isolate));
-    }
-    case kArrayFilterLoopEagerDeoptContinuation: {
-      Handle<Code> code =
-          BUILTIN_CODE(isolate, ArrayFilterLoopEagerDeoptContinuation);
-      return Callable(code, BuiltinDescriptor(isolate));
-    }
-    case kArrayFilterLoopLazyDeoptContinuation: {
-      Handle<Code> code =
-          BUILTIN_CODE(isolate, ArrayFilterLoopLazyDeoptContinuation);
       return Callable(code, BuiltinDescriptor(isolate));
     }
     default:

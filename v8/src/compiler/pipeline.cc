@@ -294,7 +294,7 @@ class PipelineData {
   }
 
   void InitializeInstructionSequence(const CallDescriptor* descriptor) {
-    DCHECK(sequence_ == nullptr);
+    DCHECK_NULL(sequence_);
     InstructionBlocks* instruction_blocks =
         InstructionSequence::InstructionBlocksFor(instruction_zone(),
                                                   schedule());
@@ -309,7 +309,7 @@ class PipelineData {
   }
 
   void InitializeFrameData(CallDescriptor* descriptor) {
-    DCHECK(frame_ == nullptr);
+    DCHECK_NULL(frame_);
     int fixed_frame_size = 0;
     if (descriptor != nullptr) {
       fixed_frame_size = descriptor->CalculateFixedFrameSize();
@@ -319,7 +319,7 @@ class PipelineData {
 
   void InitializeRegisterAllocationData(const RegisterConfiguration* config,
                                         CallDescriptor* descriptor) {
-    DCHECK(register_allocation_data_ == nullptr);
+    DCHECK_NULL(register_allocation_data_);
     register_allocation_data_ = new (register_allocation_zone())
         RegisterAllocationData(config, register_allocation_zone(), frame(),
                                sequence(), debug_name());
@@ -893,7 +893,8 @@ struct GraphBuilderPhase {
         temp_zone, data->info()->shared_info(),
         handle(data->info()->closure()->feedback_vector()),
         data->info()->osr_offset(), data->jsgraph(), CallFrequency(1.0f),
-        data->source_positions(), SourcePosition::kNotInlined, flags);
+        data->source_positions(), data->native_context(),
+        SourcePosition::kNotInlined, flags);
     graph_builder.CreateGraph();
   }
 };
@@ -1027,11 +1028,9 @@ struct TypedLoweringPhase {
     JSBuiltinReducer builtin_reducer(
         &graph_reducer, data->jsgraph(),
         data->info()->dependencies(), data->native_context());
-    Handle<FeedbackVector> feedback_vector(
-        data->info()->closure()->feedback_vector());
     JSCreateLowering create_lowering(
         &graph_reducer, data->info()->dependencies(), data->jsgraph(),
-        feedback_vector, data->native_context(), temp_zone);
+        data->native_context(), temp_zone);
     JSTypedLowering typed_lowering(&graph_reducer, data->jsgraph(), temp_zone);
     TypedOptimization typed_optimization(
         &graph_reducer, data->info()->dependencies(), data->jsgraph());
@@ -1971,7 +1970,7 @@ bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage,
   // Allocate registers.
   if (call_descriptor->HasRestrictedAllocatableRegisters()) {
     auto registers = call_descriptor->AllocatableRegisters();
-    DCHECK(NumRegs(registers) > 0);
+    DCHECK_LT(0, NumRegs(registers));
     std::unique_ptr<const RegisterConfiguration> config;
     config.reset(RegisterConfiguration::RestrictGeneralRegisters(registers));
     AllocateRegisters(config.get(), call_descriptor, run_verifier);

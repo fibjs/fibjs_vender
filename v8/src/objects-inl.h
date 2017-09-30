@@ -40,6 +40,7 @@
 #include "src/objects/module-inl.h"
 #include "src/objects/regexp-match-info.h"
 #include "src/objects/scope-info.h"
+#include "src/objects/template-objects.h"
 #include "src/property.h"
 #include "src/prototype.h"
 #include "src/transitions-inl.h"
@@ -115,6 +116,8 @@ TYPE_CHECKER(PropertyCell, PROPERTY_CELL_TYPE)
 TYPE_CHECKER(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE)
 TYPE_CHECKER(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE)
 TYPE_CHECKER(SourcePositionTableWithFrameCache, TUPLE2_TYPE)
+TYPE_CHECKER(TemplateMap, HASH_TABLE_TYPE)
+TYPE_CHECKER(TemplateObjectDescription, TUPLE3_TYPE)
 TYPE_CHECKER(TransitionArray, TRANSITION_ARRAY_TYPE)
 TYPE_CHECKER(TypeFeedbackInfo, TUPLE3_TYPE)
 TYPE_CHECKER(WasmInstanceObject, WASM_INSTANCE_TYPE)
@@ -315,6 +318,8 @@ bool HeapObject::IsJSCollection() const { return IsJSMap() || IsJSSet(); }
 
 bool HeapObject::IsDescriptorArray() const { return IsFixedArray(); }
 
+bool HeapObject::IsPropertyDescriptorObject() const { return IsFixedArray(); }
+
 bool HeapObject::IsEnumCache() const { return IsTuple2(); }
 
 bool HeapObject::IsFrameArray() const { return IsFixedArray(); }
@@ -445,8 +450,6 @@ bool HeapObject::IsNormalizedMapCache() const {
 }
 
 bool HeapObject::IsCompilationCacheTable() const { return IsHashTable(); }
-
-bool HeapObject::IsCodeCacheHashTable() const { return IsHashTable(); }
 
 bool HeapObject::IsMapCache() const { return IsHashTable(); }
 
@@ -624,6 +627,8 @@ CAST_ACCESSOR(StringTable)
 CAST_ACCESSOR(Struct)
 CAST_ACCESSOR(TemplateInfo)
 CAST_ACCESSOR(TemplateList)
+CAST_ACCESSOR(TemplateMap)
+CAST_ACCESSOR(TemplateObjectDescription)
 CAST_ACCESSOR(Tuple2)
 CAST_ACCESSOR(Tuple3)
 CAST_ACCESSOR(TypeFeedbackInfo)
@@ -3693,9 +3698,6 @@ bool Code::IsCodeStubOrIC() const {
   switch (kind()) {
     case STUB:
     case HANDLER:
-#define CASE_KIND(kind) case kind:
-      IC_KIND_LIST(CASE_KIND)
-#undef CASE_KIND
       return true;
     default:
       return false;
@@ -3900,16 +3902,6 @@ void Code::set_deopt_already_counted(bool flag) {
   WRITE_UINT32_FIELD(this, kKindSpecificFlags1Offset, updated);
 }
 
-bool Code::is_inline_cache_stub() const {
-  Kind kind = this->kind();
-  switch (kind) {
-#define CASE(name) case name: return true;
-    IC_KIND_LIST(CASE)
-#undef CASE
-    default: return false;
-  }
-}
-
 bool Code::is_handler() const { return kind() == HANDLER; }
 bool Code::is_stub() const { return kind() == STUB; }
 bool Code::is_optimized_code() const { return kind() == OPTIMIZED_FUNCTION; }
@@ -3926,25 +3918,14 @@ Address Code::constant_pool() {
   return constant_pool;
 }
 
-Code::Flags Code::ComputeFlags(Kind kind, ExtraICState extra_ic_state) {
+Code::Flags Code::ComputeFlags(Kind kind) {
   // Compute the bit mask.
-  unsigned int bits =
-      KindField::encode(kind) | ExtraICStateField::encode(extra_ic_state);
+  unsigned int bits = KindField::encode(kind);
   return static_cast<Flags>(bits);
 }
 
-Code::Flags Code::ComputeHandlerFlags(Kind handler_kind) {
-  return ComputeFlags(Code::HANDLER, handler_kind);
-}
-
-
 Code::Kind Code::ExtractKindFromFlags(Flags flags) {
   return KindField::decode(flags);
-}
-
-
-ExtraICState Code::ExtractExtraICStateFromFlags(Flags flags) {
-  return ExtraICStateField::decode(flags);
 }
 
 
@@ -4228,7 +4209,6 @@ void Map::SetBackPointer(Object* value, WriteBarrierMode mode) {
   set_constructor_or_backpointer(value, mode);
 }
 
-ACCESSORS(Map, code_cache, FixedArray, kCodeCacheOffset)
 ACCESSORS(Map, dependent_code, DependentCode, kDependentCodeOffset)
 ACCESSORS(Map, weak_cell_cache, Object, kWeakCellCacheOffset)
 ACCESSORS(Map, constructor_or_backpointer, Object,
@@ -4377,6 +4357,11 @@ ACCESSORS(ConstantElementsPair, constant_values, FixedArrayBase,
 bool ConstantElementsPair::is_empty() const {
   return constant_values()->length() == 0;
 }
+
+SMI_ACCESSORS(TemplateObjectDescription, hash, kHashOffset)
+ACCESSORS(TemplateObjectDescription, raw_strings, FixedArray, kRawStringsOffset)
+ACCESSORS(TemplateObjectDescription, cooked_strings, FixedArray,
+          kCookedStringsOffset)
 
 ACCESSORS(AccessorPair, getter, Object, kGetterOffset)
 ACCESSORS(AccessorPair, setter, Object, kSetterOffset)
@@ -4657,11 +4642,6 @@ void JSFunction::SetOptimizationMarker(OptimizationMarker marker) {
   DCHECK(!HasOptimizedCode());
 
   feedback_vector()->SetOptimizationMarker(marker);
-}
-
-// TODO(jupvfranco): Get rid of this function and use set_code instead.
-void JSFunction::ReplaceCode(Code* code) {
-  set_code(code);
 }
 
 bool JSFunction::has_feedback_vector() const {
@@ -5906,15 +5886,6 @@ template <int entrysize>
 Handle<Object> WeakHashTableShape<entrysize>::AsHandle(Isolate* isolate,
                                                        Handle<Object> key) {
   return key;
-}
-
-
-void Map::ClearCodeCache(Heap* heap) {
-  // No write barrier is needed since empty_fixed_array is not in new space.
-  // Please note this function is used during marking:
-  //  - MarkCompactCollector::MarkUnmarkedObject
-  //  - IncrementalMarking::Step
-  WRITE_FIELD(this, kCodeCacheOffset, heap->empty_fixed_array());
 }
 
 

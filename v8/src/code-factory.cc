@@ -203,23 +203,10 @@ Callable CodeFactory::HandleDebuggerStatement(Isolate* isolate) {
 }
 
 // static
-Callable CodeFactory::FastCloneShallowArray(
-    Isolate* isolate, AllocationSiteMode allocation_mode) {
-  return Callable(isolate->builtins()->NewCloneShallowArray(allocation_mode),
-                  FastCloneShallowArrayDescriptor(isolate));
-}
-
-// static
 Callable CodeFactory::FastNewFunctionContext(Isolate* isolate,
                                              ScopeType scope_type) {
   return Callable(isolate->builtins()->NewFunctionContext(scope_type),
                   FastNewFunctionContextDescriptor(isolate));
-}
-
-// static
-Callable CodeFactory::AllocateHeapNumber(Isolate* isolate) {
-  AllocateHeapNumberStub stub(isolate);
-  return make_callable(stub);
 }
 
 // static

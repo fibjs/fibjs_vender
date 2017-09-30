@@ -71,7 +71,6 @@ const Heap::StructTable Heap::struct_table[] = {
 namespace {
 
 void FinalizePartialMap(Heap* heap, Map* map) {
-  map->set_code_cache(heap->empty_fixed_array());
   map->set_dependent_code(DependentCode::cast(heap->empty_fixed_array()));
   map->set_raw_transitions(Smi::kZero);
   map->set_instance_descriptors(heap->empty_descriptor_array());
@@ -381,7 +380,7 @@ void Heap::CreateInitialObjects() {
 
   // The -0 value must be set before NewNumber works.
   set_minus_zero_value(*factory->NewHeapNumber(-0.0, IMMUTABLE, TENURED));
-  DCHECK(std::signbit(minus_zero_value()->Number()) != 0);
+  DCHECK(std::signbit(minus_zero_value()->Number()));
 
   set_nan_value(*factory->NewHeapNumber(
       std::numeric_limits<double>::quiet_NaN(), IMMUTABLE, TENURED));

@@ -148,6 +148,7 @@
   V(Proxy_string, "Proxy")                                         \
   V(query_colon_string, "(?:)")                                    \
   V(RangeError_string, "RangeError")                               \
+  V(raw_string, "raw")                                             \
   V(ReferenceError_string, "ReferenceError")                       \
   V(RegExp_string, "RegExp")                                       \
   V(reject_string, "reject")                                       \
@@ -202,8 +203,7 @@
   V(will_handle_string, "willHandle")                              \
   V(writable_string, "writable")                                   \
   V(year_string, "year")                                           \
-  V(zero_string, "0")                                              \
-  V(WasmExceptionTag_string, "WasmExceptionTag")
+  V(zero_string, "0")
 
 #define PRIVATE_SYMBOL_LIST(V)              \
   V(array_iteration_kind_symbol)            \

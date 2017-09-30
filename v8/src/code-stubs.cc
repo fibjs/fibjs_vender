@@ -28,11 +28,6 @@ namespace internal {
 
 using compiler::CodeAssemblerState;
 
-RUNTIME_FUNCTION(UnexpectedStubMiss) {
-  FATAL("Unexpected deopt of a stub");
-  return Smi::kZero;
-}
-
 CodeStubDescriptor::CodeStubDescriptor(CodeStub* stub)
     : isolate_(stub->isolate()),
       call_descriptor_(stub->GetCallInterfaceDescriptor()),
@@ -106,7 +101,7 @@ Code::Kind CodeStub::GetCodeKind() const {
 
 
 Code::Flags CodeStub::GetCodeFlags() const {
-  return Code::ComputeFlags(GetCodeKind(), GetExtraICState());
+  return Code::ComputeFlags(GetCodeKind());
 }
 
 void CodeStub::DeleteStubFromCacheForTesting() {
@@ -139,7 +134,7 @@ Handle<Code> PlatformCodeStub::GenerateCode() {
   CodeDesc desc;
   masm.GetCode(isolate(), &desc);
   // Copy the generated code into a heap object.
-  Code::Flags flags = Code::ComputeFlags(GetCodeKind(), GetExtraICState());
+  Code::Flags flags = Code::ComputeFlags(GetCodeKind());
   Handle<Code> new_object = factory->NewCode(
       desc, flags, masm.CodeObject(), NeedsImmovableCode());
   return new_object;
@@ -359,12 +354,6 @@ TF_STUB(ElementsTransitionAndStoreStub, CodeStubAssembler) {
   }
 }
 
-// TODO(ishell): move to builtins.
-TF_STUB(AllocateHeapNumberStub, CodeStubAssembler) {
-  Node* result = AllocateHeapNumber();
-  Return(result);
-}
-
 // TODO(ishell): move to builtins-handler-gen.
 TF_STUB(StringLengthStub, CodeStubAssembler) {
   Node* value = Parameter(Descriptor::kReceiver);
@@ -509,13 +498,6 @@ void JSEntryStub::FinishCode(Handle<Code> code) {
       code->GetIsolate()->factory()->NewFixedArray(1, TENURED);
   handler_table->set(0, Smi::FromInt(handler_offset_));
   code->set_handler_table(*handler_table);
-}
-
-
-void AllocateHeapNumberStub::InitializeDescriptor(
-    CodeStubDescriptor* descriptor) {
-  descriptor->Initialize(
-      Runtime::FunctionForId(Runtime::kAllocateHeapNumber)->entry);
 }
 
 

@@ -1124,19 +1124,17 @@ void TurboAssembler::SmiUntag(Register dst, Register src) {
 
 void TurboAssembler::SmiUntag(Register smi) { SmiUntag(smi, smi); }
 
-void MacroAssembler::SmiUntagToDouble(VRegister dst, Register src,
-                                      UntagMode mode) {
+void MacroAssembler::SmiUntagToDouble(VRegister dst, Register src) {
   DCHECK(dst.Is64Bits() && src.Is64Bits());
-  if (FLAG_enable_slow_asserts && (mode == kNotSpeculativeUntag)) {
+  if (FLAG_enable_slow_asserts) {
     AssertSmi(src);
   }
   Scvtf(dst, src, kSmiShift);
 }
 
-void MacroAssembler::SmiUntagToFloat(VRegister dst, Register src,
-                                     UntagMode mode) {
+void MacroAssembler::SmiUntagToFloat(VRegister dst, Register src) {
   DCHECK(dst.Is32Bits() && src.Is64Bits());
-  if (FLAG_enable_slow_asserts && (mode == kNotSpeculativeUntag)) {
+  if (FLAG_enable_slow_asserts) {
     AssertSmi(src);
   }
   Scvtf(dst, src, kSmiShift);
@@ -1356,6 +1354,10 @@ void TurboAssembler::Drop(const Register& count, uint64_t unit_size) {
 }
 
 void TurboAssembler::DropArguments(const Register& count, uint64_t unit_size) {
+  Drop(count, unit_size);
+}
+
+void TurboAssembler::DropSlots(int64_t count, uint64_t unit_size) {
   Drop(count, unit_size);
 }
 

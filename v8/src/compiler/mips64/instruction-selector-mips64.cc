@@ -55,7 +55,7 @@ class Mips64OperandGenerator final : public OperandGenerator {
     if (node->opcode() == IrOpcode::kInt32Constant) {
       return OpParameter<int32_t>(node);
     }
-    DCHECK(node->opcode() == IrOpcode::kInt64Constant);
+    DCHECK_EQ(IrOpcode::kInt64Constant, node->opcode());
     return OpParameter<int64_t>(node);
   }
 
@@ -223,7 +223,7 @@ struct ExtendingLoadMatcher {
         selector_->CanCover(m.node(), m.left().node())) {
       MachineRepresentation rep =
           LoadRepresentationOf(m.left().node()->op()).representation();
-      DCHECK(ElementSizeLog2Of(rep) == 3);
+      DCHECK_EQ(3, ElementSizeLog2Of(rep));
       if (rep != MachineRepresentation::kTaggedSigned &&
           rep != MachineRepresentation::kTaggedPointer &&
           rep != MachineRepresentation::kTagged &&
@@ -3063,7 +3063,7 @@ InstructionSelector::AlignmentRequirements() {
     return MachineOperatorBuilder::AlignmentRequirements::
         FullUnalignedAccessSupport();
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kMips64r2, kArchVariant);
     return MachineOperatorBuilder::AlignmentRequirements::
         NoUnalignedAccessSupport();
   }

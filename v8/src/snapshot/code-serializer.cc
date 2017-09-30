@@ -87,9 +87,6 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
         SerializeBuiltinReference(code_object, how_to_code, where_to_point, 0);
         return;
       case Code::STUB:
-#define IC_KIND_CASE(KIND) case Code::KIND:
-        IC_KIND_LIST(IC_KIND_CASE)
-#undef IC_KIND_CASE
         if (code_object->builtin_index() == -1) {
           SerializeCodeStub(code_object, how_to_code, where_to_point);
         } else {
@@ -111,6 +108,16 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
   if (obj->IsScript()) {
     // Wrapper object is a context-dependent JSValue. Reset it here.
     Script::cast(obj)->set_wrapper(isolate()->heap()->undefined_value());
+  }
+
+  if (obj->IsSharedFunctionInfo()) {
+    SharedFunctionInfo* sfi = SharedFunctionInfo::cast(obj);
+    // Mark SFI to indicate whether the code is cached.
+    bool was_deserialized = sfi->deserialized();
+    sfi->set_deserialized(sfi->is_compiled());
+    SerializeGeneric(obj, how_to_code, where_to_point);
+    sfi->set_deserialized(was_deserialized);
+    return;
   }
 
   // Past this point we should not see any (context-specific) maps anymore.
@@ -189,7 +196,6 @@ MaybeHandle<SharedFunctionInfo> CodeSerializer::Deserialize(
     int length = cached_data->length();
     PrintF("[Deserializing from %d bytes took %0.3f ms]\n", length, ms);
   }
-  result->set_deserialized(true);
 
   if (isolate->logger()->is_logging_code_events() || isolate->is_profiling()) {
     String* name = isolate->heap()->empty_string();
@@ -254,10 +260,21 @@ void WasmCompiledModuleSerializer::SerializeCodeObject(
   Code::Kind kind = code_object->kind();
   switch (kind) {
     case Code::WASM_FUNCTION:
-    case Code::JS_TO_WASM_FUNCTION:
+    case Code::JS_TO_WASM_FUNCTION: {
+      // Because the trap handler index is not meaningful across copies and
+      // serializations, we need to serialize it as kInvalidIndex. We do this by
+      // saving the old value, setting the index to kInvalidIndex and then
+      // restoring the old value.
+      const int old_trap_handler_index =
+          code_object->trap_handler_index()->value();
+      code_object->set_trap_handler_index(
+          Smi::FromInt(trap_handler::kInvalidIndex));
+
       // Just serialize the code_object.
       SerializeGeneric(code_object, how_to_code, where_to_point);
+      code_object->set_trap_handler_index(Smi::FromInt(old_trap_handler_index));
       break;
+    }
     case Code::WASM_INTERPRETER_ENTRY:
     case Code::WASM_TO_JS_FUNCTION:
       // Serialize the illegal builtin instead. On instantiation of a

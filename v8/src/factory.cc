@@ -19,6 +19,8 @@
 #include "src/objects/frame-array-inl.h"
 #include "src/objects/module.h"
 #include "src/objects/scope-info.h"
+#include "src/unicode-cache.h"
+#include "src/unicode-decoder.h"
 
 namespace v8 {
 namespace internal {
@@ -143,6 +145,19 @@ Handle<ConstantElementsPair> Factory::NewConstantElementsPair(
       Handle<ConstantElementsPair>::cast(NewStruct(TUPLE2_TYPE, TENURED));
   result->set_elements_kind(elements_kind);
   result->set_constant_values(*constant_values);
+  return result;
+}
+
+Handle<TemplateObjectDescription> Factory::NewTemplateObjectDescription(
+    int hash, Handle<FixedArray> raw_strings,
+    Handle<FixedArray> cooked_strings) {
+  DCHECK_EQ(raw_strings->length(), cooked_strings->length());
+  DCHECK_LT(0, raw_strings->length());
+  Handle<TemplateObjectDescription> result =
+      Handle<TemplateObjectDescription>::cast(NewStruct(TUPLE3_TYPE, TENURED));
+  result->set_hash(hash);
+  result->set_raw_strings(*raw_strings);
+  result->set_cooked_strings(*cooked_strings);
   return result;
 }
 
@@ -820,7 +835,7 @@ Handle<String> Factory::NewProperSubString(Handle<String> str,
     return MakeOrFindTwoCharacterString(isolate(), c1, c2);
   }
 
-  if (!FLAG_string_slices || length < SlicedString::kMinLength) {
+  if (length < SlicedString::kMinLength) {
     if (str->IsOneByteRepresentation()) {
       Handle<SeqOneByteString> result =
           NewRawOneByteString(length).ToHandleChecked();

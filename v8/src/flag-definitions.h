@@ -317,7 +317,6 @@ DEFINE_VALUE_IMPLICATION(optimize_for_size, max_semi_space_size, 1)
 
 // Flags for data representation optimizations
 DEFINE_BOOL(unbox_double_arrays, true, "automatically unbox arrays of doubles")
-DEFINE_BOOL(string_slices, true, "use string slices")
 
 // Flags for Ignition.
 DEFINE_BOOL(ignition_elide_noneffectful_bytecodes, true,
@@ -481,7 +480,7 @@ DEFINE_BOOL(wasm_disable_structured_cloning, false,
             "disable wasm structured cloning")
 DEFINE_INT(wasm_num_compilation_tasks, 10,
            "number of parallel compilation tasks for wasm")
-DEFINE_BOOL(wasm_async_compilation, true,
+DEFINE_BOOL(wasm_async_compilation, false,
             "enable actual asynchronous compilation for WebAssembly.compile")
 DEFINE_BOOL(wasm_stream_compilation, false,
             "enable streaming compilation for WebAssembly")
@@ -666,8 +665,6 @@ DEFINE_BOOL(always_compact, false, "Perform compaction on every full GC")
 DEFINE_BOOL(never_compact, false,
             "Never perform compaction on full GC - testing only")
 DEFINE_BOOL(compact_code_space, true, "Compact code space on full collections")
-DEFINE_BOOL(cleanup_code_caches_at_gc, true,
-            "Flush code caches in maps during mark compact cycle.")
 DEFINE_BOOL(use_marking_progress_bar, true,
             "Use a progress bar to scan large objects in increments when "
             "incremental marking is active.")
@@ -772,8 +769,6 @@ DEFINE_BOOL(always_opt, false, "always try to optimize functions")
 DEFINE_BOOL(always_osr, false, "always try to OSR functions")
 DEFINE_BOOL(prepare_always_opt, false, "prepare for turning on always opt")
 
-DEFINE_BOOL(serialize_toplevel, true, "enable caching of toplevel scripts")
-DEFINE_BOOL(serialize_eager, false, "compile eagerly when caching scripts")
 DEFINE_BOOL(trace_serializer, false, "print code serializer trace")
 #ifdef DEBUG
 DEFINE_BOOL(external_reference_stats, false,
@@ -883,7 +878,7 @@ DEFINE_BOOL(lazy_inner_functions, true, "enable lazy parsing inner functions")
 DEFINE_BOOL(aggressive_lazy_inner_functions, false,
             "even lazier inner function parsing")
 DEFINE_IMPLICATION(aggressive_lazy_inner_functions, lazy_inner_functions)
-DEFINE_BOOL(preparser_scope_analysis, true,
+DEFINE_BOOL(preparser_scope_analysis, false,
             "perform scope analysis for preparsed inner functions")
 DEFINE_IMPLICATION(preparser_scope_analysis, aggressive_lazy_inner_functions)
 

@@ -160,11 +160,7 @@ enum TargetAddressStorageMode {
   CAN_INLINE_TARGET_ADDRESS,
   NEVER_INLINE_TARGET_ADDRESS
 };
-enum UntagMode { kNotSpeculativeUntag, kSpeculativeUntag };
-enum ArrayHasHoles { kArrayCantHaveHoles, kArrayCanHaveHoles };
-enum CopyHint { kCopyUnknown, kCopyShort, kCopyLong };
 enum DiscardMoveMode { kDontDiscardForSameWReg, kDiscardForSameWReg };
-enum SeqStringSetCharCheckIndexType { kIndexIsSmi, kIndexIsInteger32 };
 
 // The macro assembler supports moving automatically pre-shifted immediates for
 // arithmetic and logical instructions, and then applying a post shift in the
@@ -667,6 +663,20 @@ class TurboAssembler : public Assembler {
   // Emits a runtime assert that the CSP is aligned.
   void AssertCspAligned();
 
+  // Copy slot_count stack slots from the stack offset specified by src to
+  // the stack offset specified by dst. The offsets and count are expressed in
+  // slot-sized units. Offset dst must be less than src, or the gap between
+  // them must be greater than or equal to slot_count, otherwise the result is
+  // unpredictable. The function may corrupt its register arguments.
+  void CopySlots(int dst, Register src, Register slot_count);
+  void CopySlots(Register dst, Register src, Register slot_count);
+
+  // Copy count double words from the address in register src to the address
+  // in register dst. Address dst must be less than src, or the gap between
+  // them must be greater than or equal to count double words, otherwise the
+  // result is unpredictable. The function may corrupt its register arguments.
+  void CopyDoubleWords(Register dst, Register src, Register count);
+
   // Load a literal from the inline constant pool.
   inline void Ldr(const CPURegister& rt, const Operand& imm);
   // Helper function for double immediate.
@@ -695,6 +705,12 @@ class TurboAssembler : public Assembler {
   // a multiple of 16, so that we can remove jssp.
   inline void DropArguments(const Register& count,
                             uint64_t unit_size = kXRegSize);
+
+  // Drop slots from stack without actually accessing memory.
+  // This will currently drop 'count' slots of the given size from the stack.
+  // TODO(arm64): Update this to round up the number of bytes dropped to
+  // a multiple of 16, so that we can remove jssp.
+  inline void DropSlots(int64_t count, uint64_t unit_size = kXRegSize);
 
   // Re-synchronizes the system stack pointer (csp) with the current stack
   // pointer (according to StackPointer()).
@@ -1588,7 +1604,6 @@ class MacroAssembler : public TurboAssembler {
 
   // Push the specified register 'count' times.
   void PushMultipleTimes(CPURegister src, Register count);
-  void PushMultipleTimes(CPURegister src, int count);
 
   // Sometimes callers need to push or pop multiple registers in a way that is
   // difficult to structure efficiently for fixed Push or Pop calls. This scope
@@ -1736,10 +1751,8 @@ class MacroAssembler : public TurboAssembler {
 
   inline void SmiTag(Register dst, Register src);
   inline void SmiTag(Register smi);
-  inline void SmiUntagToDouble(VRegister dst, Register src,
-                               UntagMode mode = kNotSpeculativeUntag);
-  inline void SmiUntagToFloat(VRegister dst, Register src,
-                              UntagMode mode = kNotSpeculativeUntag);
+  inline void SmiUntagToDouble(VRegister dst, Register src);
+  inline void SmiUntagToFloat(VRegister dst, Register src);
 
   // Tag and push in one step.
   inline void SmiTagAndPush(Register src);
@@ -2024,9 +2037,6 @@ class MacroAssembler : public TurboAssembler {
 
   // ---------------------------------------------------------------------------
   // Frames.
-
-  void EnterBuiltinFrame(Register context, Register target, Register argc);
-  void LeaveBuiltinFrame(Register context, Register target, Register argc);
 
   // The stack pointer has to switch between csp and jssp when setting up and
   // destroying the exit frame. Hence preserving/restoring the registers is

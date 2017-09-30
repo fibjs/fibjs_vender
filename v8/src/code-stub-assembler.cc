@@ -4180,38 +4180,36 @@ Node* CodeStubAssembler::SubString(Node* context, Node* string, Node* from,
   // encoding at this point.
   Label external_string(this);
   {
-    if (FLAG_string_slices) {
-      Label next(this);
+    Label next(this);
 
-      // Short slice.  Copy instead of slicing.
-      GotoIf(SmiLessThan(substr_length, SmiConstant(SlicedString::kMinLength)),
-             &next);
+    // Short slice.  Copy instead of slicing.
+    GotoIf(SmiLessThan(substr_length, SmiConstant(SlicedString::kMinLength)),
+           &next);
 
-      // Allocate new sliced string.
+    // Allocate new sliced string.
 
-      Counters* counters = isolate()->counters();
-      IncrementCounter(counters->sub_string_native(), 1);
+    Counters* counters = isolate()->counters();
+    IncrementCounter(counters->sub_string_native(), 1);
 
-      Label one_byte_slice(this), two_byte_slice(this);
-      Branch(IsOneByteStringInstanceType(to_direct.instance_type()),
-             &one_byte_slice, &two_byte_slice);
+    Label one_byte_slice(this), two_byte_slice(this);
+    Branch(IsOneByteStringInstanceType(to_direct.instance_type()),
+           &one_byte_slice, &two_byte_slice);
 
-      BIND(&one_byte_slice);
-      {
-        var_result.Bind(
-            AllocateSlicedOneByteString(substr_length, direct_string, offset));
-        Goto(&end);
-      }
-
-      BIND(&two_byte_slice);
-      {
-        var_result.Bind(
-            AllocateSlicedTwoByteString(substr_length, direct_string, offset));
-        Goto(&end);
-      }
-
-      BIND(&next);
+    BIND(&one_byte_slice);
+    {
+      var_result.Bind(
+          AllocateSlicedOneByteString(substr_length, direct_string, offset));
+      Goto(&end);
     }
+
+    BIND(&two_byte_slice);
+    {
+      var_result.Bind(
+          AllocateSlicedTwoByteString(substr_length, direct_string, offset));
+      Goto(&end);
+    }
+
+    BIND(&next);
 
     // The subject string can only be external or sequential string of either
     // encoding at this point.
@@ -4220,7 +4218,6 @@ Node* CodeStubAssembler::SubString(Node* context, Node* string, Node* from,
     var_result.Bind(AllocAndCopyStringCharacters(
         context, direct_string, instance_type, offset, substr_length));
 
-    Counters* counters = isolate()->counters();
     IncrementCounter(counters->sub_string_native(), 1);
 
     Goto(&end);
@@ -8824,9 +8821,6 @@ Node* CodeStubAssembler::StrictEqual(Node* lhs, Node* rhs,
           // Load the instance type of {lhs}.
           Node* lhs_instance_type = LoadMapInstanceType(lhs_map);
 
-          // Load the instance type of {rhs}.
-          Node* rhs_instance_type = LoadInstanceType(rhs);
-
           // Check if {lhs} is a String.
           Label if_lhsisstring(this), if_lhsisnotstring(this);
           Branch(IsStringInstanceType(lhs_instance_type), &if_lhsisstring,
@@ -8834,6 +8828,9 @@ Node* CodeStubAssembler::StrictEqual(Node* lhs, Node* rhs,
 
           BIND(&if_lhsisstring);
           {
+            // Load the instance type of {rhs}.
+            Node* rhs_instance_type = LoadInstanceType(rhs);
+
             // Check if {rhs} is also a String.
             Label if_rhsisstring(this, Label::kDeferred),
                 if_rhsisnotstring(this);
@@ -8867,6 +8864,9 @@ Node* CodeStubAssembler::StrictEqual(Node* lhs, Node* rhs,
 
           BIND(&if_lhsisbigint);
           {
+            // Load the instance type of {rhs}.
+            Node* rhs_instance_type = LoadInstanceType(rhs);
+
             // Check if {rhs} is also a BigInt.
             Label if_rhsisbigint(this, Label::kDeferred),
                 if_rhsisnotbigint(this);
@@ -8892,6 +8892,9 @@ Node* CodeStubAssembler::StrictEqual(Node* lhs, Node* rhs,
 
           BIND(&if_lhsisnotbigint);
           if (var_type_feedback != nullptr) {
+            // Load the instance type of {rhs}.
+            Node* rhs_instance_type = LoadInstanceType(rhs);
+
             Label if_lhsissymbol(this), if_lhsisreceiver(this);
             GotoIf(IsJSReceiverInstanceType(lhs_instance_type),
                    &if_lhsisreceiver);

@@ -19,7 +19,7 @@ namespace internal {
 // TFC: Builtin in Turbofan, with CodeStub linkage and custom descriptor.
 //      Args: name, interface descriptor, return_size
 // TFH: Handlers in Turbofan, with CodeStub linkage.
-//      Args: name, code kind, extra IC state, interface descriptor
+//      Args: name, code kind, interface descriptor
 // ASM: Builtin in platform-dependent assembly.
 //      Args: name
 
@@ -73,12 +73,11 @@ namespace internal {
   TFC(FastNewClosure, FastNewClosure, 1)                                       \
   TFC(FastNewFunctionContextEval, FastNewFunctionContext, 1)                   \
   TFC(FastNewFunctionContextFunction, FastNewFunctionContext, 1)               \
-  TFC(FastCloneRegExp, FastCloneRegExp, 1)                                     \
-  TFC(FastCloneShallowArrayTrack, FastCloneShallowArray, 1)                    \
-  TFC(FastCloneShallowArrayDontTrack, FastCloneShallowArray, 1)                \
-  TFS(CreateEmptyArrayLiteral, kClosure, kLiteralIndex)                        \
-  TFS(CreateEmptyObjectLiteral, kClosure)                                      \
-  TFC(FastCloneShallowObject, FastCloneShallowObject, 1)                       \
+  TFS(CreateRegExpLiteral, kFeedbackVector, kSlot, kPattern, kFlags)           \
+  TFS(CreateEmptyArrayLiteral, kFeedbackVector, kSlot)                         \
+  TFS(CreateShallowArrayLiteral, kFeedbackVector, kSlot, kConstantElements)    \
+  TFS(CreateShallowObjectLiteral, kFeedbackVector, kSlot,                      \
+      kBoilerplateDescription, kFlags)                                         \
   /* ES6 section 9.5.14 [[Construct]] ( argumentsList, newTarget) */           \
   TFC(ConstructProxy, ConstructTrampoline, 1)                                  \
                                                                                \
@@ -198,27 +197,26 @@ namespace internal {
   TFC(ToBooleanLazyDeoptContinuation, TypeConversionStackParameter, 1)         \
                                                                                \
   /* Handlers */                                                               \
-  TFH(LoadICProtoArray, BUILTIN, kNoExtraICState, LoadICProtoArray)            \
-  TFH(LoadICProtoArrayThrowIfNonexistent, BUILTIN, kNoExtraICState,            \
-      LoadICProtoArray)                                                        \
-  TFH(KeyedLoadIC_Megamorphic, BUILTIN, kNoExtraICState, LoadWithVector)       \
-  TFH(KeyedLoadIC_Miss, BUILTIN, kNoExtraICState, LoadWithVector)              \
-  TFH(KeyedLoadIC_Slow, HANDLER, Code::LOAD_IC, LoadWithVector)                \
-  TFH(KeyedLoadIC_IndexedString, HANDLER, Code::LOAD_IC, LoadWithVector)       \
-  TFH(KeyedStoreIC_Megamorphic, BUILTIN, kNoExtraICState, StoreWithVector)     \
-  TFH(KeyedStoreIC_Miss, BUILTIN, kNoExtraICState, StoreWithVector)            \
-  TFH(KeyedStoreIC_Slow, HANDLER, Code::STORE_IC, StoreWithVector)             \
-  TFH(LoadGlobalIC_Miss, BUILTIN, kNoExtraICState, LoadGlobalWithVector)       \
-  TFH(LoadGlobalIC_Slow, HANDLER, Code::LOAD_GLOBAL_IC, LoadGlobalWithVector)  \
-  TFH(LoadField, BUILTIN, kNoExtraICState, LoadField)                          \
-  TFH(LoadIC_FunctionPrototype, HANDLER, Code::LOAD_IC, LoadWithVector)        \
+  TFH(LoadICProtoArray, BUILTIN, LoadICProtoArray)                             \
+  TFH(LoadICProtoArrayThrowIfNonexistent, BUILTIN, LoadICProtoArray)           \
+  TFH(KeyedLoadIC_Megamorphic, BUILTIN, LoadWithVector)                        \
+  TFH(KeyedLoadIC_Miss, BUILTIN, LoadWithVector)                               \
+  TFH(KeyedLoadIC_Slow, HANDLER, LoadWithVector)                               \
+  TFH(KeyedLoadIC_IndexedString, HANDLER, LoadWithVector)                      \
+  TFH(KeyedStoreIC_Megamorphic, BUILTIN, StoreWithVector)                      \
+  TFH(KeyedStoreIC_Miss, BUILTIN, StoreWithVector)                             \
+  TFH(KeyedStoreIC_Slow, HANDLER, StoreWithVector)                             \
+  TFH(LoadGlobalIC_Miss, BUILTIN, LoadGlobalWithVector)                        \
+  TFH(LoadGlobalIC_Slow, HANDLER, LoadGlobalWithVector)                        \
+  TFH(LoadField, BUILTIN, LoadField)                                           \
+  TFH(LoadIC_FunctionPrototype, HANDLER, LoadWithVector)                       \
   ASM(LoadIC_Getter_ForDeopt)                                                  \
-  TFH(LoadIC_Miss, BUILTIN, kNoExtraICState, LoadWithVector)                   \
-  TFH(LoadIC_Slow, HANDLER, Code::LOAD_IC, LoadWithVector)                     \
-  TFH(LoadIC_Uninitialized, BUILTIN, kNoExtraICState, LoadWithVector)          \
-  TFH(StoreIC_Miss, BUILTIN, kNoExtraICState, StoreWithVector)                 \
+  TFH(LoadIC_Miss, BUILTIN, LoadWithVector)                                    \
+  TFH(LoadIC_Slow, HANDLER, LoadWithVector)                                    \
+  TFH(LoadIC_Uninitialized, BUILTIN, LoadWithVector)                           \
+  TFH(StoreIC_Miss, BUILTIN, StoreWithVector)                                  \
   ASM(StoreIC_Setter_ForDeopt)                                                 \
-  TFH(StoreIC_Uninitialized, BUILTIN, kNoExtraICState, StoreWithVector)        \
+  TFH(StoreIC_Uninitialized, BUILTIN, StoreWithVector)                         \
                                                                                \
   /* Promise helpers */                                                        \
   TFS(ResolveNativePromise, kPromise, kValue)                                  \
@@ -287,10 +285,6 @@ namespace internal {
   TFS(ArrayFilterLoopContinuation, kReceiver, kCallbackFn, kThisArg, kArray,   \
       kObject, kInitialK, kLength, kTo)                                        \
   TFJ(ArrayFilter, SharedFunctionInfo::kDontAdaptArgumentsSentinel)            \
-  TFJ(ArrayFilterLoopEagerDeoptContinuation, 6, kCallbackFn, kThisArg, kArray, \
-      kInitialK, kLength, kTo)                                                 \
-  TFJ(ArrayFilterLoopLazyDeoptContinuation, 8, kCallbackFn, kThisArg, kArray,  \
-      kInitialK, kLength, kValueK, kTo, kResult)                               \
   /* ES6 #sec-array.prototype.foreach */                                       \
   TFS(ArrayMapLoopContinuation, kReceiver, kCallbackFn, kThisArg, kArray,      \
       kObject, kInitialK, kLength, kTo)                                        \
@@ -331,6 +325,16 @@ namespace internal {
   TFJ(AsyncFunctionAwaitResolveClosure, 1, kSentValue)                         \
   TFJ(AsyncFunctionPromiseCreate, 0)                                           \
   TFJ(AsyncFunctionPromiseRelease, 1, kPromise)                                \
+                                                                               \
+  /* BigInt */                                                                 \
+  CPP(BigIntConstructor)                                                       \
+  CPP(BigIntConstructor_ConstructStub)                                         \
+  CPP(BigIntParseInt)                                                          \
+  CPP(BigIntAsUintN)                                                           \
+  CPP(BigIntAsIntN)                                                            \
+  CPP(BigIntPrototypeToLocaleString)                                           \
+  CPP(BigIntPrototypeToString)                                                 \
+  CPP(BigIntPrototypeValueOf)                                                  \
                                                                                \
   /* Boolean */                                                                \
   CPP(BooleanConstructor)                                                      \
@@ -535,21 +539,19 @@ namespace internal {
   CPP(JsonStringify)                                                           \
                                                                                \
   /* ICs */                                                                    \
-  TFH(LoadIC, LOAD_IC, kNoExtraICState, LoadWithVector)                        \
-  TFH(LoadIC_Noninlined, BUILTIN, kNoExtraICState, LoadWithVector)             \
-  TFH(LoadICTrampoline, LOAD_IC, kNoExtraICState, Load)                        \
-  TFH(KeyedLoadIC, KEYED_LOAD_IC, kNoExtraICState, LoadWithVector)             \
-  TFH(KeyedLoadICTrampoline, KEYED_LOAD_IC, kNoExtraICState, Load)             \
-  TFH(StoreIC, STORE_IC, kNoExtraICState, StoreWithVector)                     \
-  TFH(StoreICTrampoline, STORE_IC, kNoExtraICState, Store)                     \
-  TFH(KeyedStoreIC, KEYED_STORE_IC, kNoExtraICState, StoreWithVector)          \
-  TFH(KeyedStoreICTrampoline, KEYED_STORE_IC, kNoExtraICState, Store)          \
-  TFH(LoadGlobalIC, LOAD_GLOBAL_IC, kNoExtraICState, LoadGlobalWithVector)     \
-  TFH(LoadGlobalICInsideTypeof, LOAD_GLOBAL_IC, kNoExtraICState,               \
-      LoadGlobalWithVector)                                                    \
-  TFH(LoadGlobalICTrampoline, LOAD_GLOBAL_IC, kNoExtraICState, LoadGlobal)     \
-  TFH(LoadGlobalICInsideTypeofTrampoline, LOAD_GLOBAL_IC, kNoExtraICState,     \
-      LoadGlobal)                                                              \
+  TFH(LoadIC, STUB, LoadWithVector)                                            \
+  TFH(LoadIC_Noninlined, BUILTIN, LoadWithVector)                              \
+  TFH(LoadICTrampoline, STUB, Load)                                            \
+  TFH(KeyedLoadIC, STUB, LoadWithVector)                                       \
+  TFH(KeyedLoadICTrampoline, STUB, Load)                                       \
+  TFH(StoreIC, STUB, StoreWithVector)                                          \
+  TFH(StoreICTrampoline, STUB, Store)                                          \
+  TFH(KeyedStoreIC, STUB, StoreWithVector)                                     \
+  TFH(KeyedStoreICTrampoline, STUB, Store)                                     \
+  TFH(LoadGlobalIC, STUB, LoadGlobalWithVector)                                \
+  TFH(LoadGlobalICInsideTypeof, STUB, LoadGlobalWithVector)                    \
+  TFH(LoadGlobalICTrampoline, STUB, LoadGlobal)                                \
+  TFH(LoadGlobalICInsideTypeofTrampoline, STUB, LoadGlobal)                    \
                                                                                \
   /* Map */                                                                    \
   TFS(MapLookupHashIndex, kTable, kKey)                                        \
@@ -645,6 +647,7 @@ namespace internal {
   TFJ(MathTrunc, 1, kX)                                                        \
                                                                                \
   /* Number */                                                                 \
+  TFC(AllocateHeapNumber, AllocateHeapNumber, 1)                               \
   /* ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Call]] case */        \
   TFJ(NumberConstructor, SharedFunctionInfo::kDontAdaptArgumentsSentinel)      \
   /* ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Construct]] case */   \
@@ -700,7 +703,8 @@ namespace internal {
   CPP(ObjectDefineSetter)                                                      \
   CPP(ObjectEntries)                                                           \
   CPP(ObjectFreeze)                                                            \
-  CPP(ObjectGetOwnPropertyDescriptor)                                          \
+  TFJ(ObjectGetOwnPropertyDescriptor,                                          \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   CPP(ObjectGetOwnPropertyDescriptors)                                         \
   CPP(ObjectGetOwnPropertyNames)                                               \
   CPP(ObjectGetOwnPropertySymbols)                                             \

@@ -13,6 +13,7 @@
 #include "src/managed.h"
 #include "src/parsing/preparse-data.h"
 
+#include "src/wasm/decoder.h"
 #include "src/wasm/signature-map.h"
 #include "src/wasm/wasm-opcodes.h"
 
@@ -38,27 +39,6 @@ enum WasmExternalKind {
   kExternalTable = 1,
   kExternalMemory = 2,
   kExternalGlobal = 3
-};
-
-// Reference to a string in the wire bytes.
-class WireBytesRef {
- public:
-  WireBytesRef() : WireBytesRef(0, 0) {}
-  WireBytesRef(uint32_t offset, uint32_t length)
-      : offset_(offset), length_(length) {
-    DCHECK_IMPLIES(offset_ == 0, length_ == 0);
-    DCHECK_LE(offset_, offset_ + length_);  // no uint32_t overflow.
-  }
-
-  uint32_t offset() const { return offset_; }
-  uint32_t length() const { return length_; }
-  uint32_t end_offset() const { return offset_ + length_; }
-  bool is_empty() const { return length_ == 0; }
-  bool is_set() const { return offset_ != 0; }
-
- private:
-  uint32_t offset_;
-  uint32_t length_;
 };
 
 // Static representation of a wasm function.
@@ -89,8 +69,13 @@ typedef FunctionSig WasmExceptionSig;
 struct WasmException {
   explicit WasmException(const WasmExceptionSig* sig = &empty_sig_)
       : sig(sig) {}
+  FunctionSig* ToFunctionSig() const { return const_cast<FunctionSig*>(sig); }
 
   const WasmExceptionSig* sig;  // type signature of the exception.
+
+  // Used to hold data on runtime exceptions.
+  static constexpr const char* kRuntimeIdStr = "WasmExceptionRuntimeId";
+  static constexpr const char* kRuntimeValuesStr = "WasmExceptionValues";
 
  private:
   static const WasmExceptionSig empty_sig_;
@@ -153,6 +138,8 @@ struct V8_EXPORT_PRIVATE WasmModule {
 
   static const uint32_t kPageSize = 0x10000;    // Page size, 64kb.
   static const uint32_t kMinMemPages = 1;       // Minimum memory size = 64kb
+
+  static constexpr int kInvalidExceptionTag = -1;
 
   std::unique_ptr<Zone> signature_zone;
   uint32_t initial_pages = 0;      // initial size of the memory in 64k pages
@@ -267,11 +254,6 @@ std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name);
 // If no debug info exists yet, it is created automatically.
 Handle<WasmDebugInfo> GetDebugInfo(Handle<JSObject> wasm);
 
-// Get the script of the wasm module. If the origin of the module is asm.js, the
-// returned Script will be a JavaScript Script of Script::TYPE_NORMAL, otherwise
-// it's of type TYPE_WASM.
-Handle<Script> GetScript(Handle<JSObject> instance);
-
 V8_EXPORT_PRIVATE MaybeHandle<WasmModuleObject> CreateModuleObjectFromBytes(
     Isolate* isolate, const byte* start, const byte* end, ErrorThrower* thrower,
     ModuleOrigin origin, Handle<Script> asm_js_script,
@@ -292,11 +274,6 @@ V8_EXPORT_PRIVATE Handle<JSArray> GetCustomSections(
 // FixedArray of <undefined|String>. The outer fixed array is indexed by the
 // function index, the inner one by the local index.
 Handle<FixedArray> DecodeLocalNames(Isolate*, Handle<WasmCompiledModule>);
-
-// Assumed to be called with a code object associated to a wasm module instance.
-// Intended to be called from runtime functions.
-// Returns nullptr on failing to get owning instance.
-WasmInstanceObject* GetOwningWasmInstance(Code* code);
 
 Handle<JSArrayBuffer> NewArrayBuffer(
     Isolate*, size_t size, bool enable_guard_regions,
@@ -320,42 +297,8 @@ WasmFunction* GetWasmFunctionForExport(Isolate* isolate, Handle<Object> target);
 // {export_wrapper} is known to be an export.
 Handle<Code> UnwrapExportWrapper(Handle<JSFunction> export_wrapper);
 
-void TableSet(ErrorThrower* thrower, Isolate* isolate,
-              Handle<WasmTableObject> table, int64_t index,
-              Handle<JSFunction> function);
-
 void UpdateDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
                           int index, WasmFunction* function, Handle<Code> code);
-
-//============================================================================
-//== Compilation and instantiation ===========================================
-//============================================================================
-V8_EXPORT_PRIVATE bool SyncValidate(Isolate* isolate,
-                                    const ModuleWireBytes& bytes);
-
-V8_EXPORT_PRIVATE MaybeHandle<WasmModuleObject> SyncCompileTranslatedAsmJs(
-    Isolate* isolate, ErrorThrower* thrower, const ModuleWireBytes& bytes,
-    Handle<Script> asm_js_script, Vector<const byte> asm_js_offset_table_bytes);
-
-V8_EXPORT_PRIVATE MaybeHandle<WasmModuleObject> SyncCompile(
-    Isolate* isolate, ErrorThrower* thrower, const ModuleWireBytes& bytes);
-
-V8_EXPORT_PRIVATE MaybeHandle<WasmInstanceObject> SyncInstantiate(
-    Isolate* isolate, ErrorThrower* thrower,
-    Handle<WasmModuleObject> module_object, MaybeHandle<JSReceiver> imports,
-    MaybeHandle<JSArrayBuffer> memory);
-
-V8_EXPORT_PRIVATE MaybeHandle<WasmInstanceObject> SyncCompileAndInstantiate(
-    Isolate* isolate, ErrorThrower* thrower, const ModuleWireBytes& bytes,
-    MaybeHandle<JSReceiver> imports, MaybeHandle<JSArrayBuffer> memory);
-
-V8_EXPORT_PRIVATE void AsyncCompile(Isolate* isolate, Handle<JSPromise> promise,
-                                    const ModuleWireBytes& bytes);
-
-V8_EXPORT_PRIVATE void AsyncInstantiate(Isolate* isolate,
-                                        Handle<JSPromise> promise,
-                                        Handle<WasmModuleObject> module_object,
-                                        MaybeHandle<JSReceiver> imports);
 
 #if V8_TARGET_ARCH_64_BIT
 const bool kGuardRegionsSupported = true;
@@ -370,33 +313,6 @@ inline bool EnableGuardRegions() {
 
 void UnpackAndRegisterProtectedInstructions(Isolate* isolate,
                                             Handle<FixedArray> code_table);
-
-// Triggered by the WasmCompileLazy builtin.
-// Walks the stack (top three frames) to determine the wasm instance involved
-// and which function to compile.
-// Then triggers WasmCompiledModule::CompileLazy, taking care of correctly
-// patching the call site or indirect function tables.
-// Returns either the Code object that has been lazily compiled, or Illegal if
-// an error occurred. In the latter case, a pending exception has been set,
-// which will be triggered when returning from the runtime function, i.e. the
-// Illegal builtin will never be called.
-Handle<Code> CompileLazy(Isolate* isolate);
-
-// This class orchestrates the lazy compilation of wasm functions. It is
-// triggered by the WasmCompileLazy builtin.
-// It contains the logic for compiling and specializing wasm functions, and
-// patching the calling wasm code.
-// Once we support concurrent lazy compilation, this class will contain the
-// logic to actually orchestrate parallel execution of wasm compilation jobs.
-// TODO(clemensh): Implement concurrent lazy compilation.
-class LazyCompilationOrchestrator {
-  void CompileFunction(Isolate*, Handle<WasmInstanceObject>, int func_index);
-
- public:
-  Handle<Code> CompileLazy(Isolate*, Handle<WasmInstanceObject>,
-                           Handle<Code> caller, int call_offset,
-                           int exported_func_index, bool patch_caller);
-};
 
 const char* ExternalKindName(WasmExternalKind);
 
@@ -444,12 +360,6 @@ void ValidateModuleState(Isolate* isolate, Handle<WasmModuleObject> module_obj);
 void ValidateOrphanedInstance(Isolate* isolate,
                               Handle<WasmInstanceObject> instance);
 }  // namespace testing
-
-void ResolvePromise(Isolate* isolate, Handle<Context> context,
-                    Handle<JSPromise> promise, Handle<Object> result);
-
-void RejectPromise(Isolate* isolate, Handle<Context> context,
-                   ErrorThrower& thrower, Handle<JSPromise> promise);
 
 }  // namespace wasm
 }  // namespace internal

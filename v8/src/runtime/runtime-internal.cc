@@ -18,7 +18,6 @@
 #include "src/parsing/parse-info.h"
 #include "src/parsing/parsing.h"
 #include "src/snapshot/snapshot.h"
-#include "src/wasm/wasm-module.h"
 
 namespace v8 {
 namespace internal {
@@ -641,6 +640,15 @@ RUNTIME_FUNCTION(Runtime_CreateAsyncFromSyncIterator) {
 
   return *isolate->factory()->NewJSAsyncFromSyncIterator(
       Handle<JSReceiver>::cast(sync_iterator));
+}
+
+RUNTIME_FUNCTION(Runtime_GetTemplateObject) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(TemplateObjectDescription, description, 0);
+
+  return *TemplateObjectDescription::GetTemplateObject(
+      description, isolate->native_context());
 }
 
 }  // namespace internal

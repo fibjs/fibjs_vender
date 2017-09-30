@@ -195,7 +195,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
         zone_(gen->zone()) {}
 
   void SaveRegisters(RegList registers) {
-    DCHECK(NumRegs(registers) > 0);
+    DCHECK_LT(0, NumRegs(registers));
     RegList regs = 0;
     for (int i = 0; i < Register::kNumRegisters; ++i) {
       if ((registers >> i) & 1u) {
@@ -207,7 +207,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
   }
 
   void RestoreRegisters(RegList registers) {
-    DCHECK(NumRegs(registers) > 0);
+    DCHECK_LT(0, NumRegs(registers));
     RegList regs = 0;
     for (int i = 0; i < Register::kNumRegisters; ++i) {
       if ((registers >> i) & 1u) {
@@ -1065,20 +1065,26 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     }
     case kArchSaveCallerRegisters: {
+      fp_mode_ =
+          static_cast<SaveFPRegsMode>(MiscField::decode(instr->opcode()));
+      DCHECK(fp_mode_ == kDontSaveFPRegs || fp_mode_ == kSaveFPRegs);
       // kReturnRegister0 should have been saved before entering the stub.
-      int bytes = __ PushCallerSaved(kSaveFPRegs, kReturnRegister0);
-      DCHECK(bytes % kPointerSize == 0);
-      DCHECK(frame_access_state()->sp_delta() == 0);
+      int bytes = __ PushCallerSaved(fp_mode_, kReturnRegister0);
+      DCHECK_EQ(0, bytes % kPointerSize);
+      DCHECK_EQ(0, frame_access_state()->sp_delta());
       frame_access_state()->IncreaseSPDelta(bytes / kPointerSize);
       DCHECK(!caller_registers_saved_);
       caller_registers_saved_ = true;
       break;
     }
     case kArchRestoreCallerRegisters: {
+      DCHECK(fp_mode_ ==
+             static_cast<SaveFPRegsMode>(MiscField::decode(instr->opcode())));
+      DCHECK(fp_mode_ == kDontSaveFPRegs || fp_mode_ == kSaveFPRegs);
       // Don't overwrite the returned value.
-      int bytes = __ PopCallerSaved(kSaveFPRegs, kReturnRegister0);
+      int bytes = __ PopCallerSaved(fp_mode_, kReturnRegister0);
       frame_access_state()->IncreaseSPDelta(-(bytes / kPointerSize));
-      DCHECK(frame_access_state()->sp_delta() == 0);
+      DCHECK_EQ(0, frame_access_state()->sp_delta());
       DCHECK(caller_registers_saved_);
       caller_registers_saved_ = false;
       break;
@@ -1109,8 +1115,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       frame_access_state()->ClearSPDelta();
       if (caller_registers_saved_) {
         // Need to re-sync SP delta introduced in kArchSaveCallerRegisters.
+        // Here, we assume the sequence to be:
+        //   kArchSaveCallerRegisters;
+        //   kArchCallCFunction;
+        //   kArchRestoreCallerRegisters;
         int bytes =
-            __ RequiredStackSizeForCallerSaved(kSaveFPRegs, kReturnRegister0);
+            __ RequiredStackSizeForCallerSaved(fp_mode_, kReturnRegister0);
         frame_access_state()->IncreaseSPDelta(bytes / kPointerSize);
       }
       break;
@@ -1731,7 +1741,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
           __ StoreDoubleU(i.InputDoubleRegister(0),
                         MemOperand(sp, -num_slots * kPointerSize), r0);
         } else {
-          DCHECK(op->representation() == MachineRepresentation::kFloat32);
+          DCHECK_EQ(MachineRepresentation::kFloat32, op->representation());
           __ StoreSingleU(i.InputDoubleRegister(0),
                         MemOperand(sp, -num_slots * kPointerSize), r0);
         }
@@ -1749,7 +1759,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
           __ StoreDouble(i.InputDoubleRegister(0),
                         MemOperand(sp, slot * kPointerSize), r0);
         } else {
-          DCHECK(op->representation() == MachineRepresentation::kFloat32);
+          DCHECK_EQ(MachineRepresentation::kFloat32, op->representation());
           __ StoreSingle(i.InputDoubleRegister(0),
                         MemOperand(sp, slot * kPointerSize), r0);
         }
@@ -2281,8 +2291,8 @@ void CodeGenerator::FinishFrame(Frame* frame) {
   // Save callee-saved Double registers.
   if (double_saves != 0) {
     frame->AlignSavedCalleeRegisterSlots();
-    DCHECK(kNumCalleeSavedDoubles ==
-           base::bits::CountPopulation32(double_saves));
+    DCHECK_EQ(kNumCalleeSavedDoubles,
+              base::bits::CountPopulation32(double_saves));
     frame->AllocateSavedCalleeRegisterSlots(kNumCalleeSavedDoubles *
                                              (kDoubleSize / kPointerSize));
   }
@@ -2350,8 +2360,8 @@ void CodeGenerator::AssembleConstructFrame() {
   // Save callee-saved Double registers.
   if (double_saves != 0) {
     __ MultiPushDoubles(double_saves);
-    DCHECK(kNumCalleeSavedDoubles ==
-           base::bits::CountPopulation32(double_saves));
+    DCHECK_EQ(kNumCalleeSavedDoubles,
+              base::bits::CountPopulation32(double_saves));
   }
 
   // Save callee-saved registers.

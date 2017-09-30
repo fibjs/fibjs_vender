@@ -752,86 +752,84 @@ class RuntimeCallTimer final {
   V(ValueDeserializer_ReadValue)                           \
   V(ValueSerializer_WriteValue)
 
-#define FOR_EACH_MANUAL_COUNTER(V)                  \
-  V(AccessorGetterCallback)                         \
-  V(AccessorNameGetterCallback)                     \
-  V(AccessorNameSetterCallback)                     \
-  V(ArrayLengthGetter)                              \
-  V(ArrayLengthSetter)                              \
-  V(BoundFunctionNameGetter)                        \
-  V(BoundFunctionLengthGetter)                      \
-  V(CompileCodeLazy)                                \
-  V(CompileDeserialize)                             \
-  V(CompileEval)                                    \
-  V(CompileFullCode)                                \
-  V(CompileAnalyse)                                 \
-  V(CompileBackgroundIgnition)                      \
-  V(CompileFunction)                                \
-  V(CompileGetFromOptimizedCodeMap)                 \
-  V(CompileIgnition)                                \
-  V(CompileIgnitionFinalization)                    \
-  V(CompileInnerFunction)                           \
-  V(CompileRenumber)                                \
-  V(CompileRewriteReturnResult)                     \
-  V(CompileScopeAnalysis)                           \
-  V(CompileScript)                                  \
-  V(CompileSerialize)                               \
-  V(CompileWaitForDispatcher)                       \
-  V(DeoptimizeCode)                                 \
-  V(FunctionCallback)                               \
-  V(FunctionPrototypeGetter)                        \
-  V(FunctionPrototypeSetter)                        \
-  V(GC_Custom_AllAvailableGarbage)                  \
-  V(GC_Custom_IncrementalMarkingObserver)           \
-  V(GC_Custom_SlowAllocateRaw)                      \
-  V(GCEpilogueCallback)                             \
-  V(GCPrologueCallback)                             \
-  V(GenericNamedPropertyDefinerCallback)            \
-  V(GenericNamedPropertyDeleterCallback)            \
-  V(GenericNamedPropertyDescriptorCallback)         \
-  V(GenericNamedPropertyQueryCallback)              \
-  V(GenericNamedPropertySetterCallback)             \
-  V(GetMoreDataCallback)                            \
-  V(IndexedPropertyDefinerCallback)                 \
-  V(IndexedPropertyDeleterCallback)                 \
-  V(IndexedPropertyDescriptorCallback)              \
-  V(IndexedPropertyGetterCallback)                  \
-  V(IndexedPropertyQueryCallback)                   \
-  V(IndexedPropertySetterCallback)                  \
-  V(InvokeApiInterruptCallbacks)                    \
-  V(InvokeFunctionCallback)                         \
-  V(JS_Execution)                                   \
-  V(Map_SetPrototype)                               \
-  V(Map_TransitionToAccessorProperty)               \
-  V(Map_TransitionToDataProperty)                   \
-  V(Object_DeleteProperty)                          \
-  V(OptimizeCode)                                   \
-  V(ParseArrowFunctionLiteral)                      \
-  V(ParseBackgroundArrowFunctionLiteral)            \
-  V(ParseBackgroundFunctionLiteral)                 \
-  V(ParseEval)                                      \
-  V(ParseFunction)                                  \
-  V(ParseFunctionLiteral)                           \
-  V(ParseProgram)                                   \
-  V(PreParseArrowFunctionLiteral)                   \
-  V(PreParseBackgroundArrowFunctionLiteral)         \
-  V(PreParseBackgroundNoVariableResolution)         \
-  V(PreParseBackgroundWithVariableResolution)       \
-  V(PreParseNoVariableResolution)                   \
-  V(PreParseWithVariableResolution)                 \
-  V(PropertyCallback)                               \
-  V(PrototypeMap_TransitionToAccessorProperty)      \
-  V(PrototypeMap_TransitionToDataProperty)          \
-  V(PrototypeObject_DeleteProperty)                 \
-  V(RecompileConcurrent)                            \
-  V(RecompileSynchronous)                           \
-  V(ReconfigureToDataProperty)                      \
-  V(StringLengthGetter)                             \
-  V(TestCounter1)                                   \
-  V(TestCounter2)                                   \
-  V(TestCounter3)                                   \
-  /* Dummy counter for the unexpected stub miss. */ \
-  V(UnexpectedStubMiss)
+#define FOR_EACH_MANUAL_COUNTER(V)             \
+  V(AccessorGetterCallback)                    \
+  V(AccessorNameGetterCallback)                \
+  V(AccessorNameSetterCallback)                \
+  V(ArrayLengthGetter)                         \
+  V(ArrayLengthSetter)                         \
+  V(BoundFunctionNameGetter)                   \
+  V(BoundFunctionLengthGetter)                 \
+  V(CompileCodeLazy)                           \
+  V(CompileDeserialize)                        \
+  V(CompileEval)                               \
+  V(CompileFullCode)                           \
+  V(CompileAnalyse)                            \
+  V(CompileBackgroundIgnition)                 \
+  V(CompileFunction)                           \
+  V(CompileGetFromOptimizedCodeMap)            \
+  V(CompileIgnition)                           \
+  V(CompileIgnitionFinalization)               \
+  V(CompileInnerFunction)                      \
+  V(CompileRenumber)                           \
+  V(CompileRewriteReturnResult)                \
+  V(CompileScopeAnalysis)                      \
+  V(CompileScript)                             \
+  V(CompileSerialize)                          \
+  V(CompileWaitForDispatcher)                  \
+  V(DeoptimizeCode)                            \
+  V(FunctionCallback)                          \
+  V(FunctionPrototypeGetter)                   \
+  V(FunctionPrototypeSetter)                   \
+  V(GC_Custom_AllAvailableGarbage)             \
+  V(GC_Custom_IncrementalMarkingObserver)      \
+  V(GC_Custom_SlowAllocateRaw)                 \
+  V(GCEpilogueCallback)                        \
+  V(GCPrologueCallback)                        \
+  V(GenericNamedPropertyDefinerCallback)       \
+  V(GenericNamedPropertyDeleterCallback)       \
+  V(GenericNamedPropertyDescriptorCallback)    \
+  V(GenericNamedPropertyQueryCallback)         \
+  V(GenericNamedPropertySetterCallback)        \
+  V(GetMoreDataCallback)                       \
+  V(IndexedPropertyDefinerCallback)            \
+  V(IndexedPropertyDeleterCallback)            \
+  V(IndexedPropertyDescriptorCallback)         \
+  V(IndexedPropertyGetterCallback)             \
+  V(IndexedPropertyQueryCallback)              \
+  V(IndexedPropertySetterCallback)             \
+  V(InvokeApiInterruptCallbacks)               \
+  V(InvokeFunctionCallback)                    \
+  V(JS_Execution)                              \
+  V(Map_SetPrototype)                          \
+  V(Map_TransitionToAccessorProperty)          \
+  V(Map_TransitionToDataProperty)              \
+  V(Object_DeleteProperty)                     \
+  V(OptimizeCode)                              \
+  V(ParseArrowFunctionLiteral)                 \
+  V(ParseBackgroundArrowFunctionLiteral)       \
+  V(ParseBackgroundFunctionLiteral)            \
+  V(ParseEval)                                 \
+  V(ParseFunction)                             \
+  V(ParseFunctionLiteral)                      \
+  V(ParseProgram)                              \
+  V(PreParseArrowFunctionLiteral)              \
+  V(PreParseBackgroundArrowFunctionLiteral)    \
+  V(PreParseBackgroundNoVariableResolution)    \
+  V(PreParseBackgroundWithVariableResolution)  \
+  V(PreParseNoVariableResolution)              \
+  V(PreParseWithVariableResolution)            \
+  V(PropertyCallback)                          \
+  V(PrototypeMap_TransitionToAccessorProperty) \
+  V(PrototypeMap_TransitionToDataProperty)     \
+  V(PrototypeObject_DeleteProperty)            \
+  V(RecompileConcurrent)                       \
+  V(RecompileSynchronous)                      \
+  V(ReconfigureToDataProperty)                 \
+  V(StringLengthGetter)                        \
+  V(TestCounter1)                              \
+  V(TestCounter2)                              \
+  V(TestCounter3)
 
 #define FOR_EACH_HANDLER_COUNTER(V)              \
   V(KeyedLoadIC_LoadIndexedStringStub)           \
@@ -1100,13 +1098,7 @@ class RuntimeCallTimerScope {
   HP(external_fragmentation_code_space,                                        \
      V8.MemoryExternalFragmentationCodeSpace)                                  \
   HP(external_fragmentation_map_space, V8.MemoryExternalFragmentationMapSpace) \
-  HP(external_fragmentation_lo_space, V8.MemoryExternalFragmentationLoSpace)   \
-  /* Percentages of heap committed to each space. */                           \
-  HP(heap_fraction_new_space, V8.MemoryHeapFractionNewSpace)                   \
-  HP(heap_fraction_old_space, V8.MemoryHeapFractionOldSpace)                   \
-  HP(heap_fraction_code_space, V8.MemoryHeapFractionCodeSpace)                 \
-  HP(heap_fraction_map_space, V8.MemoryHeapFractionMapSpace)                   \
-  HP(heap_fraction_lo_space, V8.MemoryHeapFractionLoSpace)
+  HP(external_fragmentation_lo_space, V8.MemoryExternalFragmentationLoSpace)
 
 // Note: These use Histogram with options (min=1000, max=500000, buckets=50).
 #define HISTOGRAM_LEGACY_MEMORY_LIST(HM)                                      \

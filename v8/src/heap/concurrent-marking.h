@@ -36,7 +36,7 @@ class ConcurrentMarking {
     ConcurrentMarking* concurrent_marking_;
   };
 
-  static const int kTasks = 4;
+  static const int kMaxTasks = 4;
   using MarkingWorklist = Worklist<HeapObject*, 64 /* segment size */>;
 
   ConcurrentMarking(Heap* heap, MarkingWorklist* shared,
@@ -50,6 +50,8 @@ class ConcurrentMarking {
   // This function is called for a new space page that was cleared after
   // scavenge and is going to be re-used.
   void ClearLiveness(MemoryChunk* chunk);
+
+  int TaskCount() { return task_count_; }
 
  private:
   struct TaskState {
@@ -71,11 +73,12 @@ class ConcurrentMarking {
   MarkingWorklist* shared_;
   MarkingWorklist* bailout_;
   WeakObjects* weak_objects_;
-  TaskState task_state_[kTasks + 1];
+  TaskState task_state_[kMaxTasks + 1];
   base::Mutex pending_lock_;
   base::ConditionVariable pending_condition_;
   int pending_task_count_;
-  bool is_pending_[kTasks + 1];
+  bool is_pending_[kMaxTasks + 1];
+  int task_count_;
 };
 
 }  // namespace internal

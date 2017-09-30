@@ -14,6 +14,7 @@
 #include "src/objects.h"
 #include "src/parsing/parse-info.h"
 
+#include "src/wasm/module-compiler.h"
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-api.h"
 #include "src/wasm/wasm-js.h"
@@ -658,7 +659,7 @@ void WebAssemblyTableGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   int new_size = static_cast<int>(new_size64);
-  receiver->grow(i_isolate, static_cast<uint32_t>(new_size - old_size));
+  receiver->Grow(i_isolate, static_cast<uint32_t>(new_size - old_size));
 
   if (new_size != old_size) {
     i::Handle<i::FixedArray> new_array =
@@ -723,10 +724,15 @@ void WebAssemblyTableSet(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return;
   }
 
-  i::wasm::TableSet(&thrower, i_isolate, receiver, index,
-                    value->IsNull(i_isolate)
-                        ? i::Handle<i::JSFunction>::null()
-                        : i::Handle<i::JSFunction>::cast(value));
+  if (index < 0 || index >= receiver->functions()->length()) {
+    thrower.RangeError("index out of bounds");
+    return;
+  }
+
+  i::WasmTableObject::Set(i_isolate, receiver, static_cast<int32_t>(index),
+                          value->IsNull(i_isolate)
+                              ? i::Handle<i::JSFunction>::null()
+                              : i::Handle<i::JSFunction>::cast(value));
 }
 
 // WebAssembly.Memory.grow(num) -> num

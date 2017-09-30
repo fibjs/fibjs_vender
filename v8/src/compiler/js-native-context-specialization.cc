@@ -967,7 +967,7 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadNamed(Node* node) {
     }
   }
 
-  // Extract receiver maps from the LOAD_IC using the LoadICNexus.
+  // Extract receiver maps from the load IC using the LoadICNexus.
   if (!p.feedback().IsValid()) return NoChange();
   LoadICNexus nexus(p.feedback().vector(), p.feedback().slot());
 
@@ -982,7 +982,7 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreNamed(Node* node) {
   NamedAccess const& p = NamedAccessOf(node->op());
   Node* const value = NodeProperties::GetValueInput(node, 1);
 
-  // Extract receiver maps from the STORE_IC using the StoreICNexus.
+  // Extract receiver maps from the store IC using the StoreICNexus.
   if (!p.feedback().IsValid()) return NoChange();
   StoreICNexus nexus(p.feedback().vector(), p.feedback().slot());
 
@@ -1255,39 +1255,52 @@ Reduction JSNativeContextSpecialization::ReduceKeyedAccess(
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
 
-  // Optimize access for constant {receiver}.
-  HeapObjectMatcher mreceiver(receiver);
-  if (mreceiver.HasValue() && mreceiver.Value()->IsString()) {
-    Handle<String> string = Handle<String>::cast(mreceiver.Value());
+  // Optimize the case where we load from a constant {receiver}.
+  if (access_mode == AccessMode::kLoad) {
+    HeapObjectMatcher mreceiver(receiver);
+    if (mreceiver.HasValue() &&
+        !mreceiver.Value()->IsNullOrUndefined(isolate())) {
+      // Check whether we're accessing a known element on the {receiver}
+      // that is non-configurable, non-writable (i.e. the {receiver} was
+      // frozen using Object.freeze).
+      NumberMatcher mindex(index);
+      if (mindex.IsInteger() && mindex.IsInRange(0.0, kMaxUInt32 - 1.0)) {
+        LookupIterator it(isolate(), mreceiver.Value(),
+                          static_cast<uint32_t>(mindex.Value()),
+                          LookupIterator::OWN);
+        if (it.state() == LookupIterator::DATA && it.IsReadOnly() &&
+            !it.IsConfigurable()) {
+          // We can safely constant-fold the {index} access to {receiver},
+          // since the element is non-configurable, non-writable and thus
+          // cannot change anymore.
+          value = jsgraph()->Constant(it.GetDataValue());
+          ReplaceWithValue(node, value, effect, control);
+          return Replace(value);
+        }
+      }
 
-    // Strings are immutable in JavaScript.
-    if (access_mode == AccessMode::kStore) return NoChange();
+      // For constant Strings we can eagerly strength-reduce the keyed
+      // accesses using the known length, which doesn't change.
+      if (mreceiver.Value()->IsString()) {
+        Handle<String> string = Handle<String>::cast(mreceiver.Value());
 
-    // Properly deal with constant {index}.
-    NumberMatcher mindex(index);
-    if (mindex.IsInteger() && mindex.IsInRange(0.0, string->length() - 1)) {
-      // Constant-fold the {index} access to {string}.
-      Node* value = jsgraph()->HeapConstant(
-          factory()->LookupSingleCharacterStringFromCode(
-              string->Get(static_cast<int>(mindex.Value()))));
-      ReplaceWithValue(node, value, effect, control);
-      return Replace(value);
-    }
+        // We can only assume that the {index} is a valid array index if the IC
+        // is in element access mode and not MEGAMORPHIC, otherwise there's no
+        // guard for the bounds check below.
+        if (nexus.ic_state() != MEGAMORPHIC && nexus.GetKeyType() == ELEMENT) {
+          // Ensure that {index} is less than {receiver} length.
+          Node* length = jsgraph()->Constant(string->length());
+          index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
+                                            length, effect, control);
 
-    // We can only assume that the {index} is a valid array index if the IC
-    // is in element access mode and not MEGAMORPHIC, otherwise there's no
-    // guard for the bounds check below.
-    if (nexus.ic_state() != MEGAMORPHIC && nexus.GetKeyType() == ELEMENT) {
-      // Ensure that {index} is less than {receiver} length.
-      Node* length = jsgraph()->Constant(string->length());
-      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                        length, effect, control);
-
-      // Return the character from the {receiver} as single character string.
-      value = graph()->NewNode(simplified()->StringCharAt(), receiver, index,
-                               control);
-      ReplaceWithValue(node, value, effect, control);
-      return Replace(value);
+          // Return the character from the {receiver} as single character
+          // string.
+          value = graph()->NewNode(simplified()->StringCharAt(), receiver,
+                                   index, control);
+          ReplaceWithValue(node, value, effect, control);
+          return Replace(value);
+        }
+      }
     }
   }
 
@@ -1478,7 +1491,7 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadProperty(Node* node) {
     }
   }
 
-  // Extract receiver maps from the KEYED_LOAD_IC using the KeyedLoadICNexus.
+  // Extract receiver maps from the keyed load IC using the KeyedLoadICNexus.
   if (!p.feedback().IsValid()) return NoChange();
   KeyedLoadICNexus nexus(p.feedback().vector(), p.feedback().slot());
 
@@ -1493,11 +1506,11 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreProperty(Node* node) {
   Node* const index = NodeProperties::GetValueInput(node, 1);
   Node* const value = NodeProperties::GetValueInput(node, 2);
 
-  // Extract receiver maps from the KEYED_STORE_IC using the KeyedStoreICNexus.
+  // Extract receiver maps from the keyed store IC using the KeyedStoreICNexus.
   if (!p.feedback().IsValid()) return NoChange();
   KeyedStoreICNexus nexus(p.feedback().vector(), p.feedback().slot());
 
-  // Extract the keyed access store mode from the KEYED_STORE_IC.
+  // Extract the keyed access store mode from the keyed store IC.
   KeyedAccessStoreMode store_mode = nexus.GetKeyedAccessStoreMode();
 
   // Try to lower the keyed access based on the {nexus}.

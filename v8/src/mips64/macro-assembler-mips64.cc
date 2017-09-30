@@ -285,6 +285,10 @@ void TurboAssembler::CallRecordWriteStub(
       callable.descriptor().GetRegisterParameter(RecordWriteDescriptor::kSlot));
   Register isolate_parameter(callable.descriptor().GetRegisterParameter(
       RecordWriteDescriptor::kIsolate));
+  Register remembered_set_parameter(callable.descriptor().GetRegisterParameter(
+      RecordWriteDescriptor::kRememberedSet));
+  Register fp_mode_parameter(callable.descriptor().GetRegisterParameter(
+      RecordWriteDescriptor::kFPMode));
 
   Push(object);
   Push(address);
@@ -293,6 +297,8 @@ void TurboAssembler::CallRecordWriteStub(
   Pop(object_parameter);
 
   li(isolate_parameter, Operand(ExternalReference::isolate_address(isolate())));
+  Move(remembered_set_parameter, Smi::FromEnum(remembered_set_action));
+  Move(fp_mode_parameter, Smi::FromEnum(fp_mode));
   Call(callable.code(), RelocInfo::CODE_TARGET);
 
   RestoreRegisters(registers);
@@ -3210,7 +3216,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         bc(offset);
         break;
       case eq:
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           // Pre R6 beq is used here to make the code patchable. Otherwise bc
           // should be used which has no condition field so is not patchable.
           if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
@@ -3228,7 +3234,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         }
         break;
       case ne:
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           // Pre R6 bne is used here to make the code patchable. Otherwise we
           // should not generate any instruction.
           if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
@@ -3249,7 +3255,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
       // Signed comparison.
       case greater:
         // rs > rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           break;  // No code needs to be emitted.
         } else if (rs == zero_reg) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
@@ -3267,7 +3273,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         break;
       case greater_equal:
         // rs >= rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs == zero_reg) {
@@ -3286,7 +3292,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         break;
       case less:
         // rs < rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           break;  // No code needs to be emitted.
         } else if (rs == zero_reg) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset16, scratch, rt))
@@ -3304,7 +3310,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         break;
       case less_equal:
         // rs <= rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs == zero_reg) {
@@ -3325,7 +3331,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
       // Unsigned comparison.
       case Ugreater:
         // rs > rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           break;  // No code needs to be emitted.
         } else if (rs == zero_reg) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset21, scratch, rt))
@@ -3343,7 +3349,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         break;
       case Ugreater_equal:
         // rs >= rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs == zero_reg) {
@@ -3362,7 +3368,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         break;
       case Uless:
         // rs < rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           break;  // No code needs to be emitted.
         } else if (rs == zero_reg) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset21, scratch, rt))
@@ -3379,7 +3385,7 @@ bool TurboAssembler::BranchShortHelperR6(int32_t offset, Label* L,
         break;
       case Uless_equal:
         // rs <= rt
-        if (rs.code() == rt.rm().code()) {
+        if (rt.is_reg() && rs.code() == rt.rm().code()) {
           if (!CalculateOffset(L, offset, OffsetSize::kOffset26)) return false;
           bc(offset);
         } else if (rs == zero_reg) {

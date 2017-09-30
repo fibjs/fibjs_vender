@@ -1188,45 +1188,6 @@ void TurboAssembler::PopCPURegList(CPURegList registers) {
   PopPostamble(registers.Count(), size);
 }
 
-
-void MacroAssembler::PushMultipleTimes(CPURegister src, int count) {
-  int size = src.SizeInBytes();
-
-  PushPreamble(count, size);
-
-  if (FLAG_optimize_for_size && count > 8) {
-    UseScratchRegisterScope temps(this);
-    Register temp = temps.AcquireX();
-
-    Label loop;
-    Mov(temp, count / 2);
-    Bind(&loop);
-    PushHelper(2, size, src, src, NoReg, NoReg);
-    Subs(temp, temp, 1);
-    B(ne, &loop);
-
-    count %= 2;
-  }
-
-  // Push up to four registers at a time if possible because if the current
-  // stack pointer is csp and the register size is 32, registers must be pushed
-  // in blocks of four in order to maintain the 16-byte alignment for csp.
-  while (count >= 4) {
-    PushHelper(4, size, src, src, src, src);
-    count -= 4;
-  }
-  if (count >= 2) {
-    PushHelper(2, size, src, src, NoReg, NoReg);
-    count -= 2;
-  }
-  if (count == 1) {
-    PushHelper(1, size, src, NoReg, NoReg, NoReg);
-    count -= 1;
-  }
-  DCHECK(count == 0);
-}
-
-
 void MacroAssembler::PushMultipleTimes(CPURegister src, Register count) {
   PushPreamble(Operand(count, UXTW, WhichPowerOf2(src.SizeInBytes())));
 
@@ -1349,6 +1310,8 @@ void TurboAssembler::PopHelper(int count, int size, const CPURegister& dst0,
 }
 
 void TurboAssembler::PushPreamble(Operand total_size) {
+  if (total_size.IsZero()) return;
+
   if (csp.Is(StackPointer())) {
     // If the current stack pointer is csp, then it must be aligned to 16 bytes
     // on entry and the total size of the specified registers must also be a
@@ -1368,6 +1331,8 @@ void TurboAssembler::PushPreamble(Operand total_size) {
 }
 
 void TurboAssembler::PopPostamble(Operand total_size) {
+  if (total_size.IsZero()) return;
+
   if (csp.Is(StackPointer())) {
     // If the current stack pointer is csp, then it must be aligned to 16 bytes
     // on entry and the total size of the specified registers must also be a
@@ -1519,6 +1484,62 @@ void TurboAssembler::AssertCspAligned() {
     Register temp = scope.AcquireX();
     ldr(temp, MemOperand(csp));
   }
+}
+
+void TurboAssembler::CopySlots(int dst, Register src, Register slot_count) {
+  DCHECK(!src.IsZero());
+  UseScratchRegisterScope scope(this);
+  Register dst_reg = scope.AcquireX();
+  Add(dst_reg, StackPointer(), dst << kPointerSizeLog2);
+  Add(src, StackPointer(), Operand(src, LSL, kPointerSizeLog2));
+  CopyDoubleWords(dst_reg, src, slot_count);
+}
+
+void TurboAssembler::CopySlots(Register dst, Register src,
+                               Register slot_count) {
+  DCHECK(!dst.IsZero() && !src.IsZero());
+  Add(dst, StackPointer(), Operand(dst, LSL, kPointerSizeLog2));
+  Add(src, StackPointer(), Operand(src, LSL, kPointerSizeLog2));
+  CopyDoubleWords(dst, src, slot_count);
+}
+
+void TurboAssembler::CopyDoubleWords(Register dst, Register src,
+                                     Register count) {
+  if (emit_debug_code()) {
+    // Copy requires dst < src || (dst - src) >= count.
+    Label dst_below_src;
+    Subs(dst, dst, src);
+    B(lt, &dst_below_src);
+    Cmp(dst, count);
+    Check(ge, kOffsetOutOfRange);
+    Bind(&dst_below_src);
+    Add(dst, dst, src);
+  }
+
+  static_assert(kPointerSize == kDRegSize,
+                "pointers must be the same size as doubles");
+  UseScratchRegisterScope scope(this);
+  VRegister temp0 = scope.AcquireD();
+  VRegister temp1 = scope.AcquireD();
+
+  Label pairs, done;
+
+  Tbz(count, 0, &pairs);
+  Ldr(temp0, MemOperand(src, kPointerSize, PostIndex));
+  Sub(count, count, 1);
+  Str(temp0, MemOperand(dst, kPointerSize, PostIndex));
+
+  Bind(&pairs);
+  Cbz(count, &done);
+  Ldp(temp0, temp1, MemOperand(src, 2 * kPointerSize, PostIndex));
+  Sub(count, count, 2);
+  Stp(temp0, temp1, MemOperand(dst, 2 * kPointerSize, PostIndex));
+  B(&pairs);
+
+  // TODO(all): large copies may benefit from using temporary Q registers
+  // to copy four double words per iteration.
+
+  Bind(&done);
 }
 
 void TurboAssembler::AssertFPCRState(Register fpcr) {
@@ -2527,19 +2548,6 @@ void MacroAssembler::ExitFrameRestoreFPRegs() {
   }
 }
 
-void MacroAssembler::EnterBuiltinFrame(Register context, Register target,
-                                       Register argc) {
-  Push(lr, fp, context, target);
-  add(fp, jssp, Operand(2 * kPointerSize));
-  Push(argc);
-}
-
-void MacroAssembler::LeaveBuiltinFrame(Register context, Register target,
-                                       Register argc) {
-  Pop(argc);
-  Pop(target, context, fp, lr);
-}
-
 void MacroAssembler::EnterExitFrame(bool save_doubles, const Register& scratch,
                                     int extra_space,
                                     StackFrame::Type frame_type) {
@@ -3204,6 +3212,10 @@ void TurboAssembler::CallRecordWriteStub(
       callable.descriptor().GetRegisterParameter(RecordWriteDescriptor::kSlot));
   Register isolate_parameter(callable.descriptor().GetRegisterParameter(
       RecordWriteDescriptor::kIsolate));
+  Register remembered_set_parameter(callable.descriptor().GetRegisterParameter(
+      RecordWriteDescriptor::kRememberedSet));
+  Register fp_mode_parameter(callable.descriptor().GetRegisterParameter(
+      RecordWriteDescriptor::kFPMode));
 
   Push(object);
   Push(address);
@@ -3212,6 +3224,8 @@ void TurboAssembler::CallRecordWriteStub(
   Pop(object_parameter);
 
   Mov(isolate_parameter, ExternalReference::isolate_address(isolate()));
+  Move(remembered_set_parameter, Smi::FromEnum(remembered_set_action));
+  Move(fp_mode_parameter, Smi::FromEnum(fp_mode));
   Call(callable.code(), RelocInfo::CODE_TARGET);
 
   RestoreRegisters(registers);

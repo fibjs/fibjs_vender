@@ -597,6 +597,10 @@ void TurboAssembler::CallRecordWriteStub(
       callable.descriptor().GetRegisterParameter(RecordWriteDescriptor::kSlot));
   Register isolate_parameter(callable.descriptor().GetRegisterParameter(
       RecordWriteDescriptor::kIsolate));
+  Register remembered_set_parameter(callable.descriptor().GetRegisterParameter(
+      RecordWriteDescriptor::kRememberedSet));
+  Register fp_mode_parameter(callable.descriptor().GetRegisterParameter(
+      RecordWriteDescriptor::kFPMode));
 
   Push(object);
   Push(address);
@@ -606,6 +610,8 @@ void TurboAssembler::CallRecordWriteStub(
 
   Move(isolate_parameter,
        Operand(ExternalReference::isolate_address(isolate())));
+  Move(remembered_set_parameter, Smi::FromEnum(remembered_set_action));
+  Move(fp_mode_parameter, Smi::FromEnum(fp_mode));
   Call(callable.code(), RelocInfo::CODE_TARGET);
 
   RestoreRegisters(registers);
@@ -1294,19 +1300,6 @@ int TurboAssembler::LeaveFrame(StackFrame::Type type) {
   int frame_ends = pc_offset();
   ldm(ia_w, sp, fp.bit() | lr.bit());
   return frame_ends;
-}
-
-void MacroAssembler::EnterBuiltinFrame(Register context, Register target,
-                                       Register argc) {
-  Push(lr, fp, context, target);
-  add(fp, sp, Operand(2 * kPointerSize));
-  Push(argc);
-}
-
-void MacroAssembler::LeaveBuiltinFrame(Register context, Register target,
-                                       Register argc) {
-  Pop(argc);
-  Pop(lr, fp, context, target);
 }
 
 void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,

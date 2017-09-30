@@ -27,6 +27,11 @@ namespace wasm {
 
 namespace {
 
+template <typename T>
+Vector<T> vec2vec(ZoneVector<T>& vec) {
+  return Vector<T>(vec.data(), vec.size());
+}
+
 // An SsaEnv environment carries the current local variable renaming
 // as well as the current effect and control dependency in the TF graph.
 // It maintains a control state that tracks whether the environment
@@ -37,6 +42,8 @@ struct SsaEnv {
   State state;
   TFNode* control;
   TFNode* effect;
+  TFNode* mem_size;
+  TFNode* mem_start;
   TFNode** locals;
 
   bool go() { return state >= kReached; }
@@ -45,6 +52,8 @@ struct SsaEnv {
     locals = nullptr;
     control = nullptr;
     effect = nullptr;
+    mem_size = nullptr;
+    mem_start = nullptr;
   }
   void SetNotMerged() {
     if (state == kMerged) state = kReached;
@@ -87,31 +96,55 @@ class WasmGraphBuildingInterface {
   void StartFunction(Decoder* decoder) {
     SsaEnv* ssa_env =
         reinterpret_cast<SsaEnv*>(decoder->zone()->New(sizeof(SsaEnv)));
-    uint32_t env_count = decoder->NumLocals();
+    uint32_t num_locals = decoder->NumLocals();
+    // The '+ 2' here is to accommodate for mem_size and mem_start nodes.
+    uint32_t env_count = num_locals + 2;
     size_t size = sizeof(TFNode*) * env_count;
     ssa_env->state = SsaEnv::kReached;
     ssa_env->locals =
         size > 0 ? reinterpret_cast<TFNode**>(decoder->zone()->New(size))
                  : nullptr;
 
-    TFNode* start =
-        builder_->Start(static_cast<int>(decoder->sig_->parameter_count() + 1));
-    // Initialize local variables.
+    // The first '+ 1' is needed by TF Start node, the second '+ 1' is for the
+    // wasm_context parameter.
+    TFNode* start = builder_->Start(
+        static_cast<int>(decoder->sig_->parameter_count() + 1 + 1));
+    // Initialize the wasm_context (the paramater at index 0).
+    builder_->set_wasm_context(
+        builder_->Param(compiler::kWasmContextParameterIndex));
+    // Initialize local variables. Parameters are shifted by 1 because of the
+    // the wasm_context.
     uint32_t index = 0;
     for (; index < decoder->sig_->parameter_count(); ++index) {
-      ssa_env->locals[index] = builder_->Param(index);
+      ssa_env->locals[index] = builder_->Param(index + 1);
     }
-    while (index < env_count) {
+    while (index < num_locals) {
       ValueType type = decoder->GetLocalType(index);
       TFNode* node = DefaultValue(type);
-      while (index < env_count && decoder->GetLocalType(index) == type) {
+      while (index < num_locals && decoder->GetLocalType(index) == type) {
         // Do a whole run of like-typed locals at a time.
         ssa_env->locals[index++] = node;
       }
     }
-    ssa_env->control = start;
     ssa_env->effect = start;
+    ssa_env->control = start;
+    // Initialize effect and control before loading the context.
+    builder_->set_effect_ptr(&ssa_env->effect);
+    builder_->set_control_ptr(&ssa_env->control);
+    // Always load mem_size and mem_start from the WasmContext into the ssa.
+    LoadContextIntoSsa(ssa_env);
     SetEnv(ssa_env);
+  }
+
+  // Reload the wasm context variables from the WasmContext structure attached
+  // to the memory object into the Ssa Environment. This does not automatically
+  // set the mem_size_ and mem_start_ pointers in WasmGraphBuilder.
+  void LoadContextIntoSsa(SsaEnv* ssa_env) {
+    if (!ssa_env || !ssa_env->go()) return;
+    DCHECK_NOT_NULL(builder_->Effect());
+    DCHECK_NOT_NULL(builder_->Control());
+    ssa_env->mem_size = builder_->LoadMemSize();
+    ssa_env->mem_start = builder_->LoadMemStart();
   }
 
   void StartFunctionBody(Decoder* decoder, Control* block) {
@@ -140,8 +173,11 @@ class WasmGraphBuildingInterface {
 
   void Try(Decoder* decoder, Control* block) {
     SsaEnv* outer_env = ssa_env_;
+    SsaEnv* catch_env = Split(decoder, outer_env);
+    // Mark catch environment as unreachable, since only accessable
+    // through catch unwinding (i.e. landing pads).
+    catch_env->state = SsaEnv::kUnreachable;
     SsaEnv* try_env = Steal(decoder->zone(), outer_env);
-    SsaEnv* catch_env = UnreachableEnv(decoder->zone());
     SetEnv(try_env);
     TryInfo* try_info = new (decoder->zone()) TryInfo(catch_env);
     block->end_env = outer_env;
@@ -257,21 +293,22 @@ class WasmGraphBuildingInterface {
     ssa_env_->control = merge;
   }
 
-  void BreakTo(Decoder* decoder, Control* block) {
-    if (block->is_loop()) {
-      Goto(decoder, ssa_env_, block->end_env);
+  void BreakTo(Decoder* decoder, uint32_t depth) {
+    Control* target = decoder->control_at(depth);
+    if (target->is_loop()) {
+      Goto(decoder, ssa_env_, target->end_env);
     } else {
-      MergeValuesInto(decoder, block);
+      MergeValuesInto(decoder, target);
     }
   }
 
-  void BrIf(Decoder* decoder, const Value& cond, Control* block) {
+  void BrIf(Decoder* decoder, const Value& cond, uint32_t depth) {
     SsaEnv* fenv = ssa_env_;
     SsaEnv* tenv = Split(decoder, fenv);
     fenv->SetNotMerged();
     BUILD(BranchNoHint, cond.node, &tenv->control, &fenv->control);
     ssa_env_ = tenv;
-    BreakTo(decoder, block);
+    BreakTo(decoder, depth);
     ssa_env_ = fenv;
   }
 
@@ -290,7 +327,7 @@ class WasmGraphBuildingInterface {
       ssa_env_ = Split(decoder, copy);
       ssa_env_->control = (i == operand.table_count) ? BUILD(IfDefault, sw)
                                                      : BUILD(IfValue, i, sw);
-      BreakTo(decoder, decoder->control_at(target));
+      BreakTo(decoder, target);
     }
     DCHECK(decoder->ok());
     ssa_env_ = break_env;
@@ -320,6 +357,8 @@ class WasmGraphBuildingInterface {
 
   void GrowMemory(Decoder* decoder, const Value& value, Value* result) {
     result->node = BUILD(GrowMemory, value.node);
+    // Reload mem_size and mem_start after growing memory.
+    LoadContextIntoSsa(ssa_env_);
   }
 
   void CallDirect(Decoder* decoder, const CallFunctionOperand<true>& operand,
@@ -369,46 +408,88 @@ class WasmGraphBuildingInterface {
     return BUILD(Int32Constant, operand.index);
   }
 
-  void Throw(Decoder* decoder, const ExceptionIndexOperand<true>& operand) {
-    BUILD(Throw, GetExceptionTag(decoder, operand));
+  void Throw(Decoder* decoder, const ExceptionIndexOperand<true>& operand,
+             Control* block, const Vector<Value>& value_args) {
+    int count = value_args.length();
+    ZoneVector<TFNode*> args(count, decoder->zone());
+    for (int i = 0; i < count; ++i) {
+      args[i] = value_args[i].node;
+    }
+    BUILD(Throw, operand.index, operand.exception, vec2vec(args));
+    Unreachable(decoder);
+    EndControl(decoder, block);
   }
 
-  void Catch(Decoder* decoder, const ExceptionIndexOperand<true>& operand,
-             Control* block) {
+  void CatchException(Decoder* decoder,
+                      const ExceptionIndexOperand<true>& operand,
+                      Control* block, void** caught_values_ptr) {
     DCHECK(block->is_try_catch());
     current_catch_ = block->previous_catch;
     SsaEnv* catch_env = block->try_info->catch_env;
     SetEnv(catch_env);
 
-    // Get the exception and see if wanted exception.
-    TFNode* exception_as_i32 =
-        BUILD(Catch, block->try_info->exception, decoder->position());
-    TFNode* exception_tag = GetExceptionTag(decoder, operand);
-    TFNode* compare_i32 = BUILD(Binop, kExprI32Eq, exception_as_i32,
-                                exception_tag, decoder->position());
-    TFNode* if_true = nullptr;
-    TFNode* if_false = nullptr;
-    BUILD(BranchNoHint, compare_i32, &if_true, &if_false);
-    SsaEnv* false_env = Split(decoder, catch_env);
-    false_env->control = if_false;
-    SsaEnv* true_env = Steal(decoder->zone(), catch_env);
-    true_env->control = if_true;
-    block->try_info->catch_env = false_env;
+    TFNode*** caught_values = reinterpret_cast<TFNode***>(caught_values_ptr);
+    TFNode* compare_i32 = nullptr;
+    if (block->try_info->exception == nullptr) {
+      // Catch not applicable, no possible throws in the try
+      // block. Create dummy code so that body of catch still
+      // compiles. Note: This only happens because the current
+      // implementation only builds a landing pad if some node in the
+      // try block can (possibly) throw.
+      //
+      // TODO(kschimpf): Always generate a landing pad for a try block.
+      compare_i32 = BUILD(Int32Constant, 0);
+    } else {
+      // Get the exception and see if wanted exception.
+      TFNode* caught_tag = BUILD(GetExceptionRuntimeId);
+      TFNode* exception_tag =
+          BUILD(ConvertExceptionTagToRuntimeId, operand.index);
+      compare_i32 = BUILD(Binop, kExprI32Eq, caught_tag, exception_tag);
+    }
 
-    // Generate code to re-throw the exception.
-    DCHECK_NOT_NULL(block->try_info->catch_env);
-    SetEnv(false_env);
+    TFNode* if_catch = nullptr;
+    TFNode* if_no_catch = nullptr;
+    BUILD(BranchNoHint, compare_i32, &if_catch, &if_no_catch);
+
+    SsaEnv* if_no_catch_env = Split(decoder, ssa_env_);
+    if_no_catch_env->control = if_no_catch;
+    SsaEnv* if_catch_env = Steal(decoder->zone(), ssa_env_);
+    if_catch_env->control = if_catch;
+
+    // TODO(kschimpf): Generalize to allow more catches. Will force
+    // moving no_catch code to END opcode.
+    SetEnv(if_no_catch_env);
     BUILD(Rethrow);
-    FallThruTo(decoder, block);
+    Unreachable(decoder);
+    EndControl(decoder, block);
 
-    SetEnv(true_env);
-    // TODO(kschimpf): Add code to pop caught exception from isolate.
+    SetEnv(if_catch_env);
+
+    if (block->try_info->exception == nullptr) {
+      *caught_values = nullptr;
+    } else {
+      // TODO(kschimpf): Can't use BUILD() here, GetExceptionValues() returns
+      // TFNode** rather than TFNode*. Fix to add landing pads.
+      *caught_values = builder_->GetExceptionValues(operand.exception);
+    }
+  }
+
+  void SetCaughtValue(Decoder* decoder, void* caught_values_ptr, Value* value,
+                      size_t index) {
+    if (caught_values_ptr) {
+      TFNode** caught_values = reinterpret_cast<TFNode**>(caught_values_ptr);
+      value->node = caught_values[index];
+      return;
+    }
+    // No caught value, make up filler node so that catch block still compiles.
+    value->node = DefaultValue(value->type);
   }
 
   void AtomicOp(Decoder* decoder, WasmOpcode opcode, Vector<Value> args,
-                Value* result) {
+                const MemoryAccessOperand<true>& operand, Value* result) {
     TFNode** inputs = GetNodes(args);
-    TFNode* node = BUILD(AtomicOp, opcode, inputs, decoder->position());
+    TFNode* node = BUILD(AtomicOp, opcode, inputs, operand.alignment,
+                         operand.offset, decoder->position());
     if (result) result->node = node;
   }
 
@@ -465,8 +546,13 @@ class WasmGraphBuildingInterface {
     }
 #endif
     ssa_env_ = env;
+    // TODO(wasm): Create a WasmEnv class with control, effect, mem_size and
+    // mem_start. SsaEnv can inherit from it. This way WasmEnv can be passed
+    // directly to WasmGraphBuilder instead of always copying four pointers.
     builder_->set_control_ptr(&env->control);
     builder_->set_effect_ptr(&env->effect);
+    builder_->set_mem_size(&env->mem_size);
+    builder_->set_mem_start(&env->mem_start);
   }
 
   TFNode* CheckForException(Decoder* decoder, TFNode* node) {
@@ -551,6 +637,8 @@ class WasmGraphBuildingInterface {
         to->locals = from->locals;
         to->control = from->control;
         to->effect = from->effect;
+        to->mem_size = from->mem_size;
+        to->mem_start = from->mem_start;
         break;
       }
       case SsaEnv::kReached: {  // Create a new merge.
@@ -574,6 +662,17 @@ class WasmGraphBuildingInterface {
                 builder_->Phi(decoder->GetLocalType(i), 2, vals, merge);
           }
         }
+        // Merge mem_size and mem_start.
+        if (to->mem_size != from->mem_size) {
+          TFNode* vals[] = {to->mem_size, from->mem_size};
+          to->mem_size =
+              builder_->Phi(MachineRepresentation::kWord32, 2, vals, merge);
+        }
+        if (to->mem_start != from->mem_start) {
+          TFNode* vals[] = {to->mem_start, from->mem_start};
+          to->mem_start = builder_->Phi(MachineType::PointerRepresentation(), 2,
+                                        vals, merge);
+        }
         break;
       }
       case SsaEnv::kMerged: {
@@ -594,21 +693,16 @@ class WasmGraphBuildingInterface {
         }
         // Merge locals.
         for (int i = decoder->NumLocals() - 1; i >= 0; i--) {
-          TFNode* tnode = to->locals[i];
-          TFNode* fnode = from->locals[i];
-          if (builder_->IsPhiWithMerge(tnode, merge)) {
-            builder_->AppendToPhi(tnode, fnode);
-          } else if (tnode != fnode) {
-            uint32_t count = builder_->InputCount(merge);
-            TFNode** vals = builder_->Buffer(count);
-            for (uint32_t j = 0; j < count - 1; j++) {
-              vals[j] = tnode;
-            }
-            vals[count - 1] = fnode;
-            to->locals[i] =
-                builder_->Phi(decoder->GetLocalType(i), count, vals, merge);
-          }
+          to->locals[i] = CreateOrMergeIntoPhi(decoder->GetLocalType(i), merge,
+                                               to->locals[i], from->locals[i]);
         }
+        // Merge mem_size and mem_start.
+        to->mem_size =
+            CreateOrMergeIntoPhi(MachineRepresentation::kWord32, merge,
+                                 to->mem_size, from->mem_size);
+        to->mem_start =
+            CreateOrMergeIntoPhi(MachineType::PointerRepresentation(), merge,
+                                 to->mem_start, from->mem_start);
         break;
       }
       default:
@@ -638,16 +732,29 @@ class WasmGraphBuildingInterface {
     env->control = builder_->Loop(env->control);
     env->effect = builder_->EffectPhi(1, &env->effect, env->control);
     builder_->Terminate(env->effect, env->control);
+    // The '+ 2' here is to be able to set mem_size and mem_start as assigned.
     BitVector* assigned = WasmDecoder<true>::AnalyzeLoopAssignment(
-        decoder, decoder->pc(), decoder->total_locals(), decoder->zone());
+        decoder, decoder->pc(), decoder->total_locals() + 2, decoder->zone());
     if (decoder->failed()) return env;
     if (assigned != nullptr) {
       // Only introduce phis for variables assigned in this loop.
+      int mem_size_index = decoder->total_locals();
+      int mem_start_index = decoder->total_locals() + 1;
       for (int i = decoder->NumLocals() - 1; i >= 0; i--) {
         if (!assigned->Contains(i)) continue;
         env->locals[i] = builder_->Phi(decoder->GetLocalType(i), 1,
                                        &env->locals[i], env->control);
       }
+      // Introduce phis for mem_size and mem_start if necessary.
+      if (assigned->Contains(mem_size_index)) {
+        env->mem_size = builder_->Phi(MachineRepresentation::kWord32, 1,
+                                      &env->mem_size, env->control);
+      }
+      if (assigned->Contains(mem_start_index)) {
+        env->mem_start = builder_->Phi(MachineType::PointerRepresentation(), 1,
+                                       &env->mem_start, env->control);
+      }
+
       SsaEnv* loop_body_env = Split(decoder, env);
       builder_->StackCheck(decoder->position(), &(loop_body_env->effect),
                            &(loop_body_env->control));
@@ -660,6 +767,12 @@ class WasmGraphBuildingInterface {
                                      &env->locals[i], env->control);
     }
 
+    // Conservatively introduce phis for mem_size and mem_start.
+    env->mem_size = builder_->Phi(MachineRepresentation::kWord32, 1,
+                                  &env->mem_size, env->control);
+    env->mem_start = builder_->Phi(MachineType::PointerRepresentation(), 1,
+                                   &env->mem_start, env->control);
+
     SsaEnv* loop_body_env = Split(decoder, env);
     builder_->StackCheck(decoder->position(), &loop_body_env->effect,
                          &loop_body_env->control);
@@ -671,7 +784,8 @@ class WasmGraphBuildingInterface {
     DCHECK_NOT_NULL(from);
     SsaEnv* result =
         reinterpret_cast<SsaEnv*>(decoder->zone()->New(sizeof(SsaEnv)));
-    size_t size = sizeof(TFNode*) * decoder->NumLocals();
+    // The '+ 2' here is to accommodate for mem_size and mem_start nodes.
+    size_t size = sizeof(TFNode*) * (decoder->NumLocals() + 2);
     result->control = from->control;
     result->effect = from->effect;
 
@@ -681,9 +795,13 @@ class WasmGraphBuildingInterface {
           size > 0 ? reinterpret_cast<TFNode**>(decoder->zone()->New(size))
                    : nullptr;
       memcpy(result->locals, from->locals, size);
+      result->mem_size = from->mem_size;
+      result->mem_start = from->mem_start;
     } else {
       result->state = SsaEnv::kUnreachable;
       result->locals = nullptr;
+      result->mem_size = nullptr;
+      result->mem_start = nullptr;
     }
 
     return result;
@@ -699,6 +817,8 @@ class WasmGraphBuildingInterface {
     result->locals = from->locals;
     result->control = from->control;
     result->effect = from->effect;
+    result->mem_size = from->mem_size;
+    result->mem_start = from->mem_start;
     from->Kill(SsaEnv::kUnreachable);
     return result;
   }
@@ -710,6 +830,8 @@ class WasmGraphBuildingInterface {
     result->control = nullptr;
     result->effect = nullptr;
     result->locals = nullptr;
+    result->mem_size = nullptr;
+    result->mem_start = nullptr;
     return result;
   }
 
@@ -736,6 +858,9 @@ class WasmGraphBuildingInterface {
     for (int i = 0; i < return_count; ++i) {
       returns[i].node = return_nodes[i];
     }
+    // The invoked function could have used grow_memory, so we need to
+    // reload mem_size and mem_start
+    LoadContextIntoSsa(ssa_env_);
   }
 };
 
@@ -776,11 +901,7 @@ DecodeResult VerifyWasmCodeWithStats(AccountingAllocator* allocator,
                                      const wasm::WasmModule* module,
                                      FunctionBody& body, bool is_wasm,
                                      Counters* counters) {
-  auto size_histogram = is_wasm ? counters->wasm_wasm_function_size_bytes()
-                                : counters->wasm_asm_function_size_bytes();
-  // TODO(bradnelson): Improve histogram handling of ptrdiff_t.
-  CHECK((body.end - body.start) >= 0);
-  size_histogram->AddSample(static_cast<int>(body.end - body.start));
+  CHECK_LE(0, body.end - body.start);
   auto time_counter = is_wasm ? counters->wasm_decode_wasm_function_time()
                               : counters->wasm_decode_asm_function_time();
   TimedHistogramScope wasm_decode_function_time_scope(time_counter);

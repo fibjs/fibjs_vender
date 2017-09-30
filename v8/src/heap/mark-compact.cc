@@ -459,10 +459,10 @@ MarkCompactCollector::MarkCompactCollector(Heap* heap)
 }
 
 void MarkCompactCollector::SetUp() {
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK_EQ(0, strcmp(Marking::kWhiteBitPattern, "00"));
+  DCHECK_EQ(0, strcmp(Marking::kBlackBitPattern, "11"));
+  DCHECK_EQ(0, strcmp(Marking::kGreyBitPattern, "10"));
+  DCHECK_EQ(0, strcmp(Marking::kImpossibleBitPattern, "01"));
 }
 
 void MinorMarkCompactCollector::SetUp() {}
@@ -470,7 +470,9 @@ void MinorMarkCompactCollector::SetUp() {}
 void MarkCompactCollector::TearDown() {
   AbortCompaction();
   AbortWeakObjects();
-  marking_worklist()->TearDown();
+  if (heap()->incremental_marking()->IsMarking()) {
+    marking_worklist()->Clear();
+  }
 }
 
 void MinorMarkCompactCollector::TearDown() {}
@@ -1796,7 +1798,7 @@ void MarkCompactCollector::MarkStringTable(
   if (non_atomic_marking_state()->WhiteToBlack(string_table)) {
     // Explicitly mark the prefix.
     string_table->IteratePrefix(custom_root_body_visitor);
-    ProcessMarkingWorklist();
+    EmptyMarkingWorklist();
   }
 }
 
@@ -1811,10 +1813,10 @@ void MarkCompactCollector::MarkRoots(RootVisitor* root_visitor,
   ProcessTopOptimizedFrame(custom_root_body_visitor);
 }
 
-// Mark all objects reachable from the objects on the marking stack.
-// Before: the marking stack contains zero or more heap object pointers.
-// After: the marking stack is empty, and all objects reachable from the
-// marking stack have been marked, or are overflowed in the heap.
+// Mark all objects reachable from the objects on the marking work list.
+// Before: the marking work list contains zero or more heap object pointers.
+// After: the marking work list is empty, and all objects reachable from the
+// marking work list have been marked.
 void MarkCompactCollector::EmptyMarkingWorklist() {
   HeapObject* object;
   MarkCompactMarkingVisitor visitor(this);
@@ -1828,15 +1830,6 @@ void MarkCompactCollector::EmptyMarkingWorklist() {
     MarkObject(object, map);
     visitor.Visit(map, object);
   }
-  DCHECK(marking_worklist()->IsEmpty());
-}
-
-// Mark all objects reachable (transitively) from objects on the marking
-// stack.  Before: the marking stack contains zero or more heap object
-// pointers.  After: the marking stack is empty and there are no overflowed
-// objects in the heap.
-void MarkCompactCollector::ProcessMarkingWorklist() {
-  EmptyMarkingWorklist();
   DCHECK(marking_worklist()->IsEmpty());
 }
 
@@ -1865,7 +1858,7 @@ void MarkCompactCollector::ProcessEphemeralMarking(
     }
     ProcessWeakCollections();
     work_to_do = !marking_worklist()->IsEmpty();
-    ProcessMarkingWorklist();
+    EmptyMarkingWorklist();
   }
   CHECK(marking_worklist()->IsEmpty());
   CHECK_EQ(0, heap()->local_embedder_heap_tracer()->NumberOfWrappersToTrace());
@@ -1882,7 +1875,7 @@ void MarkCompactCollector::ProcessTopOptimizedFrame(ObjectVisitor* visitor) {
       if (!code->CanDeoptAt(it.frame()->pc())) {
         Code::BodyDescriptor::IterateBody(code, visitor);
       }
-      ProcessMarkingWorklist();
+      EmptyMarkingWorklist();
       return;
     }
   }
@@ -2208,12 +2201,12 @@ class GlobalHandlesMarkingItem : public MarkingItem {
         : task_(task) {}
 
     void VisitRootPointer(Root root, Object** p) override {
-      DCHECK(Root::kGlobalHandles == root);
+      DCHECK_EQ(Root::kGlobalHandles, root);
       task_->MarkObject(*p);
     }
 
     void VisitRootPointers(Root root, Object** start, Object** end) override {
-      DCHECK(Root::kGlobalHandles == root);
+      DCHECK_EQ(Root::kGlobalHandles, root);
       for (Object** p = start; p < end; p++) {
         task_->MarkObject(*p);
       }
@@ -2320,7 +2313,7 @@ void MinorMarkCompactCollector::MarkLiveObjects() {
   {
     TRACE_GC(heap()->tracer(), GCTracer::Scope::MINOR_MC_MARK_WEAK);
     heap()->IterateEncounteredWeakCollections(&root_visitor);
-    ProcessMarkingWorklist();
+    EmptyMarkingWorklist();
   }
 
   {
@@ -2329,12 +2322,8 @@ void MinorMarkCompactCollector::MarkLiveObjects() {
         &IsUnmarkedObjectForYoungGeneration);
     isolate()->global_handles()->IterateNewSpaceWeakUnmodifiedRoots(
         &root_visitor);
-    ProcessMarkingWorklist();
+    EmptyMarkingWorklist();
   }
-}
-
-void MinorMarkCompactCollector::ProcessMarkingWorklist() {
-  EmptyMarkingWorklist();
 }
 
 void MinorMarkCompactCollector::EmptyMarkingWorklist() {
@@ -2403,7 +2392,7 @@ void MinorMarkCompactCollector::MakeIterable(
   // remove here.
   MarkCompactCollector* full_collector = heap()->mark_compact_collector();
   Address free_start = p->area_start();
-  DCHECK(reinterpret_cast<intptr_t>(free_start) % (32 * kPointerSize) == 0);
+  DCHECK_EQ(0, reinterpret_cast<intptr_t>(free_start) % (32 * kPointerSize));
 
   for (auto object_and_size :
        LiveObjectRange<kGreyObjects>(p, marking_state()->bitmap(p))) {
@@ -2581,7 +2570,7 @@ void MarkCompactCollector::MarkLiveObjects() {
                GCTracer::Scope::MC_MARK_WEAK_CLOSURE_WEAK_HANDLES);
       heap()->isolate()->global_handles()->IdentifyWeakHandles(
           &IsUnmarkedHeapObject);
-      ProcessMarkingWorklist();
+      EmptyMarkingWorklist();
     }
     // Then we mark the objects.
 
@@ -2589,7 +2578,7 @@ void MarkCompactCollector::MarkLiveObjects() {
       TRACE_GC(heap()->tracer(),
                GCTracer::Scope::MC_MARK_WEAK_CLOSURE_WEAK_ROOTS);
       heap()->isolate()->global_handles()->IterateWeakRoots(&root_visitor);
-      ProcessMarkingWorklist();
+      EmptyMarkingWorklist();
     }
 
     // Repeat Harmony weak maps marking to mark unmarked objects reachable from
@@ -3558,7 +3547,7 @@ int MarkCompactCollector::Sweeper::RawSweep(
   ArrayBufferTracker::FreeDead(p, marking_state_);
 
   Address free_start = p->area_start();
-  DCHECK(reinterpret_cast<intptr_t>(free_start) % (32 * kPointerSize) == 0);
+  DCHECK_EQ(0, reinterpret_cast<intptr_t>(free_start) % (32 * kPointerSize));
 
   // If we use the skip list for code space pages, we have to lock the skip
   // list because it could be accessed concurrently by the runtime or the
