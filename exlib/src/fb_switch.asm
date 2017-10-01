@@ -1,9 +1,9 @@
 
-PUBLIC win_switch
+PUBLIC fb_switch
 
 _TEXT   SEGMENT
 
-win_switch:
+fb_switch:
 	mov	[rcx], rbp
 	mov	[rcx + 008h], rbx
 

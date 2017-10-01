@@ -56,7 +56,13 @@
     <ClCompile Include="src\fbLocker.cpp" />
     <ClCompile Include="src\fbSemaphore.cpp" />
     <ClCompile Include="src\fbService.cpp" />
-    <ClCompile Include="src\fbSwitch.cpp" />
+    <ClCompile Include="src\fbSwitch_amd64.cpp" />
+    <ClCompile Include="src\fbSwitch_arm64.cpp" />
+    <ClCompile Include="src\fbSwitch_mips.cpp" />
+    <ClCompile Include="src\fbSwitch_win32.cpp" />
+    <ClCompile Include="src\fbSwitch_arm.cpp" />
+    <ClCompile Include="src\fbSwitch_i386.cpp" />
+    <ClCompile Include="src\fbSwitch_mips64.cpp" />
     <ClCompile Include="src\fbTls.cpp" />
     <ClCompile Include="src\pratom.cpp" />
     <ClCompile Include="src\prcvar.cpp" />

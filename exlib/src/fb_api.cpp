@@ -39,17 +39,7 @@ void delete_fiber(void* fiber)
 
 #define FB_STK_ALIGN 256
 
-#ifdef _WIN32
-
-extern "C" void win_switch(void* from, void* to);
-#define fb_switch win_switch
-
-#else
-
-extern "C" void nix_switch(void* from, void* to);
-#define fb_switch nix_switch
-
-#endif
+extern "C" void fb_switch(void* from, void* to);
 
 void* convert_Fiber(void* param)
 {

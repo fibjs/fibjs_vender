@@ -95,9 +95,27 @@
     <ClCompile Include="src\fbService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\fbSwitch.cpp">
+    <ClCompile Include="fbSwitch_amd64.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fbSwitch_arm64.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fbSwitch_mips.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fbSwitch_win32.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fbSwitch_arm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fbSwitch_i386.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fbSwitch_mips64.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>    
     <ClCompile Include="src\fbTls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
