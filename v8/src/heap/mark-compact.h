@@ -265,8 +265,8 @@ class MarkCompactCollectorBase {
   // Marking operations for objects reachable from roots.
   virtual void MarkLiveObjects() = 0;
   // Mark objects reachable (transitively) from objects in the marking
-  // stack.
-  virtual void EmptyMarkingWorklist() = 0;
+  // work list.
+  virtual void ProcessMarkingWorklist() = 0;
   // Clear non-live references held in side data structures.
   virtual void ClearNonLiveReferences() = 0;
   virtual void EvacuatePrologue() = 0;
@@ -290,7 +290,9 @@ class MarkCompactCollectorBase {
   bool ShouldMovePage(Page* p, intptr_t live_bytes);
 
   int CollectToSpaceUpdatingItems(ItemParallelJob* job);
+  template <typename IterateableSpace>
   int CollectRememberedSetUpdatingItems(ItemParallelJob* job,
+                                        IterateableSpace* space,
                                         RememberedSetUpdatingMode mode);
 
   int NumberOfParallelCompactionTasks(int pages);
@@ -388,7 +390,7 @@ class MinorMarkCompactCollector final : public MarkCompactCollectorBase {
 
   void MarkLiveObjects() override;
   void MarkRootSetInParallel();
-  void EmptyMarkingWorklist() override;
+  void ProcessMarkingWorklist() override;
   void ClearNonLiveReferences() override;
 
   void EvacuatePrologue() override;
@@ -474,6 +476,7 @@ struct WeakObjects {
 // Collector for young and old generation.
 class MarkCompactCollector final : public MarkCompactCollectorBase {
  public:
+  using AtomicMarkingState = MajorAtomicMarkingState;
   using NonAtomicMarkingState = MajorNonAtomicMarkingState;
 
   static const int kMainThread = 0;
@@ -503,12 +506,18 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
       if (bailout_.Pop(kMainThread, &result)) return result;
 #endif
       if (shared_.Pop(kMainThread, &result)) return result;
+#ifdef V8_CONCURRENT_MARKING
+      // The expectation is that this work list is empty almost all the time
+      // and we can thus avoid the emptiness checks by putting it last.
+      if (on_hold_.Pop(kMainThread, &result)) return result;
+#endif
       return nullptr;
     }
 
     void Clear() {
       bailout_.Clear();
       shared_.Clear();
+      on_hold_.Clear();
     }
 
     bool IsBailoutEmpty() { return bailout_.IsLocalEmpty(kMainThread); }
@@ -516,12 +525,15 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
     bool IsEmpty() {
       return bailout_.IsLocalEmpty(kMainThread) &&
              shared_.IsLocalEmpty(kMainThread) &&
-             bailout_.IsGlobalPoolEmpty() && shared_.IsGlobalPoolEmpty();
+             on_hold_.IsLocalEmpty(kMainThread) &&
+             bailout_.IsGlobalPoolEmpty() && shared_.IsGlobalPoolEmpty() &&
+             on_hold_.IsGlobalPoolEmpty();
     }
 
     int Size() {
       return static_cast<int>(bailout_.LocalSize(kMainThread) +
-                              shared_.LocalSize(kMainThread));
+                              shared_.LocalSize(kMainThread) +
+                              on_hold_.LocalSize(kMainThread));
     }
 
     // Calls the specified callback on each element of the deques and replaces
@@ -532,14 +544,17 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
     void Update(Callback callback) {
       bailout_.Update(callback);
       shared_.Update(callback);
+      on_hold_.Update(callback);
     }
 
     ConcurrentMarkingWorklist* shared() { return &shared_; }
     ConcurrentMarkingWorklist* bailout() { return &bailout_; }
+    ConcurrentMarkingWorklist* on_hold() { return &on_hold_; }
 
     void Print() {
       PrintWorklist("shared", &shared_);
       PrintWorklist("bailout", &bailout_);
+      PrintWorklist("on_hold", &on_hold_);
     }
 
    private:
@@ -569,6 +584,7 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
     }
     ConcurrentMarkingWorklist shared_;
     ConcurrentMarkingWorklist bailout_;
+    ConcurrentMarkingWorklist on_hold_;
   };
 
   class RootMarkingVisitor;
@@ -655,6 +671,8 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
     kClearMarkbits,
   };
 
+  AtomicMarkingState* atomic_marking_state() { return &atomic_marking_state_; }
+
   NonAtomicMarkingState* non_atomic_marking_state() {
     return &non_atomic_marking_state_;
   }
@@ -671,6 +689,8 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   // Prepares for GC by resetting relocation info in old and map spaces and
   // choosing spaces to compact.
   void Prepare();
+
+  void FinishConcurrentMarking();
 
   bool StartCompaction();
 
@@ -731,6 +751,7 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   bool are_map_pointers_encoded() { return state_ == UPDATE_POINTERS; }
 #endif
 
+  void VerifyMarking();
 #ifdef VERIFY_HEAP
   void VerifyValidStoreAndSlotsBufferEntries();
   void VerifyMarkbitsAreClean();
@@ -792,9 +813,9 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
   // Collects a list of dependent code from maps embedded in optimize code.
   DependentCode* DependentCodeListFromNonLiveMaps();
 
-  // This function empties the marking stack, but may leave overflowed objects
-  // in the heap, in which case the marking stack's overflow flag will be set.
-  void EmptyMarkingWorklist() override;
+  // Drains the main thread marking work list. Will mark all pending objects
+  // if no concurrent threads are running.
+  void ProcessMarkingWorklist() override;
 
   // Callback function for telling whether the object *p is an unmarked
   // heap object.
@@ -908,6 +929,7 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
 
   Sweeper sweeper_;
 
+  AtomicMarkingState atomic_marking_state_;
   NonAtomicMarkingState non_atomic_marking_state_;
 
   friend class FullEvacuator;

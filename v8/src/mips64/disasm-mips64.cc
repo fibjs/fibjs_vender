@@ -1890,6 +1890,9 @@ int Decoder::DecodeTypeRegister(Instruction* instr) {
         case kMsaMinor2RF:
           DecodeTypeMsa2RF(instr);
           break;
+        case kMsaMinorELM:
+          DecodeTypeMsaELM(instr);
+          break;
         default:
           UNREACHABLE();
       }

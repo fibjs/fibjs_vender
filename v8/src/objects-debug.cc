@@ -847,7 +847,7 @@ void Code::CodeVerify() {
     }
   }
   CHECK(raw_type_feedback_info() == Smi::kZero ||
-        raw_type_feedback_info()->IsSmi() == IsCodeStubOrIC());
+        raw_type_feedback_info()->IsSmi() == is_stub());
 }
 
 
@@ -1246,6 +1246,7 @@ void Module::ModuleVerify() {
   VerifyPointer(module_namespace());
   VerifyPointer(requested_modules());
   VerifyPointer(script());
+  VerifyPointer(import_meta());
   VerifyPointer(exception());
   VerifySmiField(kHashOffset);
   VerifySmiField(kStatusOffset);
@@ -1265,6 +1266,8 @@ void Module::ModuleVerify() {
   }
 
   CHECK_EQ(requested_modules()->length(), info()->module_requests()->length());
+
+  CHECK(import_meta()->IsTheHole(GetIsolate()) || import_meta()->IsJSObject());
 
   CHECK_NE(hash(), 0);
 }
@@ -1402,8 +1405,10 @@ void NormalizedMapCache::NormalizedMapCacheVerify() {
     Isolate* isolate = GetIsolate();
     for (int i = 0; i < length(); i++) {
       Object* e = FixedArray::get(i);
-      if (e->IsMap()) {
-        Map::cast(e)->DictionaryMapVerify();
+      if (e->IsWeakCell()) {
+        if (!WeakCell::cast(e)->cleared()) {
+          Map::cast(WeakCell::cast(e)->value())->DictionaryMapVerify();
+        }
       } else {
         CHECK(e->IsUndefined(isolate));
       }

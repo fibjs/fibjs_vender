@@ -980,6 +980,10 @@ class Isolate {
   HeapProfiler* heap_profiler() const { return heap_profiler_; }
 
 #ifdef DEBUG
+  static size_t non_disposed_isolates() {
+    return non_disposed_isolates_.Value();
+  }
+
   HistogramInfo* heap_histograms() { return heap_histograms_; }
 
   JSObject::SpillInformation* js_spill_information() {
@@ -1005,6 +1009,9 @@ class Isolate {
   }
 
   bool serializer_enabled() const { return serializer_enabled_; }
+  void set_serializer_enabled_for_test(bool serializer_enabled) {
+    serializer_enabled_ = serializer_enabled;
+  }
   bool snapshot_available() const {
     return snapshot_blob_ != NULL && snapshot_blob_->raw_size != 0;
   }
@@ -1066,6 +1073,7 @@ class Isolate {
   static const int kProtectorValid = 1;
   static const int kProtectorInvalid = 0;
 
+  inline bool IsArrayConstructorIntact();
   bool IsFastArrayConstructorPrototypeChainIntact();
   inline bool IsArraySpeciesLookupChainIntact();
   bool IsIsConcatSpreadableLookupChainIntact();
@@ -1093,6 +1101,7 @@ class Isolate {
   void UpdateArrayProtectorOnNormalizeElements(Handle<JSObject> object) {
     UpdateArrayProtectorOnSetElement(object);
   }
+  void InvalidateArrayConstructorProtector();
   void InvalidateArraySpeciesProtector();
   void InvalidateIsConcatSpreadableProtector();
   void InvalidateStringLengthOverflowProtector();
@@ -1170,7 +1179,7 @@ class Isolate {
   inline void FireMicrotasksCompletedCallback();
 
   void SetPromiseRejectCallback(PromiseRejectCallback callback);
-  void ReportPromiseReject(Handle<JSObject> promise, Handle<Object> value,
+  void ReportPromiseReject(Handle<JSPromise> promise, Handle<Object> value,
                            v8::PromiseRejectEvent event);
 
   void PromiseReactionJob(Handle<PromiseReactionJobInfo> info,
@@ -1250,6 +1259,11 @@ class Isolate {
       HostImportModuleDynamicallyCallback callback);
   MaybeHandle<JSPromise> RunHostImportModuleDynamicallyCallback(
       Handle<Script> referrer, Handle<Object> specifier);
+
+  void SetHostInitializeImportMetaObjectCallback(
+      HostInitializeImportMetaObjectCallback callback);
+  Handle<JSObject> RunHostInitializeImportMetaObjectCallback(
+      Handle<Module> module);
 
   void SetRAILMode(RAILMode rail_mode);
 
@@ -1495,6 +1509,8 @@ class Isolate {
   bool promise_hook_or_debug_is_active_;
   PromiseHook promise_hook_;
   HostImportModuleDynamicallyCallback host_import_module_dynamically_callback_;
+  HostInitializeImportMetaObjectCallback
+      host_initialize_import_meta_object_callback_;
   base::Mutex rail_mutex_;
   double load_start_time_ms_;
 
@@ -1518,6 +1534,8 @@ class Isolate {
   double time_millis_at_init_;
 
 #ifdef DEBUG
+  static base::AtomicNumber<size_t> non_disposed_isolates_;
+
   // A static array of histogram info for each type.
   HistogramInfo heap_histograms_[LAST_TYPE + 1];
   JSObject::SpillInformation js_spill_information_;

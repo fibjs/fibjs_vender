@@ -1496,7 +1496,6 @@ void Builtins::Generate_NotifyBuiltinContinuation(MacroAssembler* masm) {
     __ pop(v0);
   }
 
-  __ Daddu(sp, sp, Operand(kPointerSize));  // Ignore state
   __ Jump(ra);  // Jump to the ContinueToBuiltin stub
 }
 
@@ -1550,52 +1549,17 @@ void Builtins::Generate_ContinueToJavaScriptBuiltinWithResult(
   Generate_ContinueToBuiltinHelper(masm, true, true);
 }
 
-static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
-                                             Deoptimizer::BailoutType type) {
+void Builtins::Generate_NotifyDeoptimized(MacroAssembler* masm) {
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
-    // Pass the function and deoptimization type to the runtime system.
-    __ li(a0, Operand(Smi::FromInt(static_cast<int>(type))));
-    __ push(a0);
     __ CallRuntime(Runtime::kNotifyDeoptimized);
   }
 
-  // Get the full codegen state from the stack and untag it -> a6.
-  __ Lw(a6, UntagSmiMemOperand(sp, 0 * kPointerSize));
-  // Switch on the state.
-  Label with_tos_register, unknown_state;
-  __ Branch(
-      &with_tos_register, ne, a6,
-      Operand(static_cast<int64_t>(Deoptimizer::BailoutState::NO_REGISTERS)));
+  DCHECK_EQ(kInterpreterAccumulatorRegister.code(), v0.code());
+  __ Ld(v0, MemOperand(sp, 0 * kPointerSize));
   __ Ret(USE_DELAY_SLOT);
   // Safe to fill delay slot Addu will emit one instruction.
   __ Daddu(sp, sp, Operand(1 * kPointerSize));  // Remove state.
-
-  __ bind(&with_tos_register);
-  DCHECK_EQ(kInterpreterAccumulatorRegister.code(), v0.code());
-  __ Ld(v0, MemOperand(sp, 1 * kPointerSize));
-  __ Branch(
-      &unknown_state, ne, a6,
-      Operand(static_cast<int64_t>(Deoptimizer::BailoutState::TOS_REGISTER)));
-
-  __ Ret(USE_DELAY_SLOT);
-  // Safe to fill delay slot Addu will emit one instruction.
-  __ Daddu(sp, sp, Operand(2 * kPointerSize));  // Remove state.
-
-  __ bind(&unknown_state);
-  __ stop("no cases left");
-}
-
-void Builtins::Generate_NotifyDeoptimized(MacroAssembler* masm) {
-  Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::EAGER);
-}
-
-void Builtins::Generate_NotifySoftDeoptimized(MacroAssembler* masm) {
-  Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::SOFT);
-}
-
-void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
-  Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::LAZY);
 }
 
 static void Generate_OnStackReplacementHelper(MacroAssembler* masm,

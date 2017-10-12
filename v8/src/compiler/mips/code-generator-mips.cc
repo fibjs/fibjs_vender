@@ -401,7 +401,6 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
 
 }  // namespace
 
-
 #define ASSEMBLE_CHECKED_LOAD_FLOAT(width, asm_instr)                         \
   do {                                                                        \
     auto result = i.Output##width##Register();                                \
@@ -409,7 +408,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     if (instr->InputAt(0)->IsRegister()) {                                    \
       auto offset = i.InputRegister(0);                                       \
       __ Branch(USE_DELAY_SLOT, ool->entry(), hs, offset, i.InputOperand(1)); \
-      __ addu(kScratchReg, i.InputRegister(2), offset);                       \
+      __ Addu(kScratchReg, i.InputRegister(2), offset);                       \
       __ asm_instr(result, MemOperand(kScratchReg, 0));                       \
     } else {                                                                  \
       auto offset = i.InputOperand(0).immediate();                            \
@@ -419,7 +418,6 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     __ bind(ool->exit());                                                     \
   } while (0)
 
-
 #define ASSEMBLE_CHECKED_LOAD_INTEGER(asm_instr)                              \
   do {                                                                        \
     auto result = i.OutputRegister();                                         \
@@ -427,7 +425,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     if (instr->InputAt(0)->IsRegister()) {                                    \
       auto offset = i.InputRegister(0);                                       \
       __ Branch(USE_DELAY_SLOT, ool->entry(), hs, offset, i.InputOperand(1)); \
-      __ addu(kScratchReg, i.InputRegister(2), offset);                       \
+      __ Addu(kScratchReg, i.InputRegister(2), offset);                       \
       __ asm_instr(result, MemOperand(kScratchReg, 0));                       \
     } else {                                                                  \
       auto offset = i.InputOperand(0).immediate();                            \
@@ -447,7 +445,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
         __ Move(kDoubleRegZero, 0.0);                                  \
       }                                                                \
       __ Branch(USE_DELAY_SLOT, &done, hs, offset, i.InputOperand(1)); \
-      __ addu(kScratchReg, i.InputRegister(3), offset);                \
+      __ Addu(kScratchReg, i.InputRegister(3), offset);                \
       __ asm_instr(value, MemOperand(kScratchReg, 0));                 \
     } else {                                                           \
       auto offset = i.InputOperand(0).immediate();                     \
@@ -468,7 +466,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
       auto offset = i.InputRegister(0);                                \
       auto value = i.InputOrZeroRegister(2);                           \
       __ Branch(USE_DELAY_SLOT, &done, hs, offset, i.InputOperand(1)); \
-      __ addu(kScratchReg, i.InputRegister(3), offset);                \
+      __ Addu(kScratchReg, i.InputRegister(3), offset);                \
       __ asm_instr(value, MemOperand(kScratchReg, 0));                 \
     } else {                                                           \
       auto offset = i.InputOperand(0).immediate();                     \
@@ -547,7 +545,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
 #define ASSEMBLE_ATOMIC_BINOP(bin_instr)                                \
   do {                                                                  \
     Label binop;                                                        \
-    __ addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1)); \
+    __ Addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1)); \
     __ sync();                                                          \
     __ bind(&binop);                                                    \
     __ Ll(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));       \
@@ -561,7 +559,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
 #define ASSEMBLE_ATOMIC_BINOP_EXT(sign_extend, size, bin_instr)                \
   do {                                                                         \
     Label binop;                                                               \
-    __ addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
+    __ Addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
     __ andi(i.TempRegister(3), i.TempRegister(0), 0x3);                        \
     __ Subu(i.TempRegister(0), i.TempRegister(0), Operand(i.TempRegister(3))); \
     __ sll(i.TempRegister(3), i.TempRegister(3), 3);                           \
@@ -584,7 +582,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     Label exchange;                                                      \
     __ sync();                                                           \
     __ bind(&exchange);                                                  \
-    __ addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));  \
+    __ Addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));  \
     __ Ll(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));        \
     __ mov(i.TempRegister(1), i.InputRegister(2));                       \
     __ Sc(i.TempRegister(1), MemOperand(i.TempRegister(0), 0));          \
@@ -595,7 +593,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
 #define ASSEMBLE_ATOMIC_EXCHANGE_INTEGER_EXT(sign_extend, size)                \
   do {                                                                         \
     Label exchange;                                                            \
-    __ addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
+    __ Addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
     __ andi(i.TempRegister(1), i.TempRegister(0), 0x3);                        \
     __ Subu(i.TempRegister(0), i.TempRegister(0), Operand(i.TempRegister(1))); \
     __ sll(i.TempRegister(1), i.TempRegister(1), 3);                           \
@@ -615,7 +613,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
   do {                                                                  \
     Label compareExchange;                                              \
     Label exit;                                                         \
-    __ addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1)); \
+    __ Addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1)); \
     __ sync();                                                          \
     __ bind(&compareExchange);                                          \
     __ Ll(i.OutputRegister(0), MemOperand(i.TempRegister(0), 0));       \
@@ -633,7 +631,7 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
   do {                                                                         \
     Label compareExchange;                                                     \
     Label exit;                                                                \
-    __ addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
+    __ Addu(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));        \
     __ andi(i.TempRegister(1), i.TempRegister(0), 0x3);                        \
     __ Subu(i.TempRegister(0), i.TempRegister(0), Operand(i.TempRegister(1))); \
     __ sll(i.TempRegister(1), i.TempRegister(1), 3);                           \
@@ -1144,7 +1142,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         // We don't have an instruction to count the number of trailing zeroes.
         // Start by flipping the bits end-for-end so we can count the number of
         // leading zeroes instead.
-        __ rotr(dst, src, 16);
+        __ Ror(dst, src, 16);
         __ wsbh(dst, dst);
         __ bitswap(dst, dst);
         __ Clz(dst, dst);
@@ -1367,8 +1365,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kMipsMulPair: {
       __ Mulu(i.OutputRegister(1), i.OutputRegister(0), i.InputRegister(0),
               i.InputRegister(2));
-      __ mul(kScratchReg, i.InputRegister(0), i.InputRegister(3));
-      __ mul(kScratchReg2, i.InputRegister(1), i.InputRegister(2));
+      __ Mul(kScratchReg, i.InputRegister(0), i.InputRegister(3));
+      __ Mul(kScratchReg2, i.InputRegister(1), i.InputRegister(2));
       __ Addu(i.OutputRegister(1), i.OutputRegister(1), kScratchReg);
       __ Addu(i.OutputRegister(1), i.OutputRegister(1), kScratchReg2);
     } break;
@@ -1545,26 +1543,26 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kMipsFloorWD: {
       FPURegister scratch = kScratchDoubleReg;
-      __ floor_w_d(scratch, i.InputDoubleRegister(0));
+      __ Floor_w_d(scratch, i.InputDoubleRegister(0));
       __ mfc1(i.OutputRegister(), scratch);
       break;
     }
     case kMipsCeilWD: {
       FPURegister scratch = kScratchDoubleReg;
-      __ ceil_w_d(scratch, i.InputDoubleRegister(0));
+      __ Ceil_w_d(scratch, i.InputDoubleRegister(0));
       __ mfc1(i.OutputRegister(), scratch);
       break;
     }
     case kMipsRoundWD: {
       FPURegister scratch = kScratchDoubleReg;
-      __ round_w_d(scratch, i.InputDoubleRegister(0));
+      __ Round_w_d(scratch, i.InputDoubleRegister(0));
       __ mfc1(i.OutputRegister(), scratch);
       break;
     }
     case kMipsTruncWD: {
       FPURegister scratch = kScratchDoubleReg;
       // Other arches use round to zero here, so we follow.
-      __ trunc_w_d(scratch, i.InputDoubleRegister(0));
+      __ Trunc_w_d(scratch, i.InputDoubleRegister(0));
       __ mfc1(i.OutputRegister(), scratch);
       break;
     }
@@ -1592,8 +1590,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ mfc1(i.OutputRegister(), scratch);
       // Avoid INT32_MAX as an overflow indicator and use INT32_MIN instead,
       // because INT32_MIN allows easier out-of-bounds detection.
-      __ addiu(kScratchReg, i.OutputRegister(), 1);
-      __ slt(kScratchReg2, kScratchReg, i.OutputRegister());
+      __ Addu(kScratchReg, i.OutputRegister(), 1);
+      __ Slt(kScratchReg2, kScratchReg, i.OutputRegister());
       __ Movn(i.OutputRegister(), kScratchReg, kScratchReg2);
       break;
     }
@@ -1609,7 +1607,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Trunc_uw_s(i.InputDoubleRegister(0), i.OutputRegister(), scratch);
       // Avoid UINT32_MAX as an overflow indicator and use 0 instead,
       // because 0 allows easier out-of-bounds detection.
-      __ addiu(kScratchReg, i.OutputRegister(), 1);
+      __ Addu(kScratchReg, i.OutputRegister(), 1);
       __ Movz(i.OutputRegister(), zero_reg, kScratchReg);
       break;
     }
@@ -3071,6 +3069,10 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
                          branch->fallthru);
 }
 
+void CodeGenerator::AssembleArchDeoptBranch(Instruction* instr,
+                                            BranchInfo* branch) {
+  AssembleArchBranch(instr, branch);
+}
 
 void CodeGenerator::AssembleArchJump(RpoNumber target) {
   if (!IsNextInAssemblyOrder(target)) __ Branch(GetLabel(target));
@@ -3114,6 +3116,9 @@ void CodeGenerator::AssembleArchTrap(Instruction* instr,
                              tasm()->isolate()),
                          0);
         __ LeaveFrame(StackFrame::WASM_COMPILED);
+        CallDescriptor* descriptor = gen_->linkage()->GetIncomingDescriptor();
+        int pop_count = static_cast<int>(descriptor->StackParameterCount());
+        __ Drop(pop_count);
         __ Ret();
       } else {
         gen_->AssembleSourcePosition(instr_);

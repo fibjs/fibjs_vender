@@ -187,9 +187,12 @@ DEFINE_BOOL(es_staging, false,
 DEFINE_BOOL(harmony, false, "enable all completed harmony features")
 DEFINE_BOOL(harmony_shipping, true, "enable all shipped harmony features")
 DEFINE_IMPLICATION(es_staging, harmony)
+// Enabling import.meta requires to also enable import()
+DEFINE_IMPLICATION(harmony_import_meta, harmony_dynamic_import)
 
 // Features that are still work in progress (behind individual flags).
 #define HARMONY_INPROGRESS(V)                                         \
+  V(harmony_import_meta, "harmony import.meta property")              \
   V(harmony_array_prototype_values, "harmony Array.prototype.values") \
   V(harmony_function_sent, "harmony function.sent")                   \
   V(harmony_do_expressions, "harmony do-expressions")                 \
@@ -263,7 +266,8 @@ HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 #undef FLAG_SHIPPING_FEATURES
 
 #ifdef V8_INTL_SUPPORT
-DEFINE_BOOL(icu_timezone_data, true, "get information about timezones from ICU")
+DEFINE_BOOL(icu_timezone_data, false,
+            "get information about timezones from ICU")
 #endif
 
 #ifdef V8_ENABLE_FUTURE
@@ -298,10 +302,8 @@ DEFINE_IMPLICATION(track_computed_fields, track_fields)
 DEFINE_BOOL(track_field_types, true, "track field types")
 DEFINE_IMPLICATION(track_field_types, track_fields)
 DEFINE_IMPLICATION(track_field_types, track_heap_object_fields)
-DEFINE_BOOL(block_coverage, true, "enable block code coverage")
 DEFINE_BOOL(trace_block_coverage, false,
             "trace collected block coverage information")
-DEFINE_IMPLICATION(trace_block_coverage, block_coverage)
 DEFINE_BOOL(feedback_normalization, false,
             "feed back normalization to constructors")
 // TODO(jkummerow): This currently adds too much load on the stub cache.
@@ -506,6 +508,8 @@ DEFINE_INT(trace_wasm_ast_end, 0, "end function for wasm AST trace (exclusive)")
 DEFINE_UINT(skip_compiling_wasm_funcs, 0, "start compiling at function N")
 DEFINE_BOOL(wasm_break_on_decoder_error, false,
             "debug break when wasm decoder encounters an error")
+DEFINE_BOOL(wasm_trace_memory, false,
+            "print all memory updates performed in wasm code")
 
 DEFINE_BOOL(validate_asm, true, "validate asm.js modules before compiling")
 DEFINE_BOOL(suppress_asm_messages, false,
@@ -537,10 +541,6 @@ DEFINE_BOOL(wasm_no_stack_checks, false,
 DEFINE_BOOL(wasm_trap_handler, false,
             "use signal handlers to catch out of bounds memory access in wasm"
             " (experimental, currently Linux x86_64 only)")
-DEFINE_BOOL(wasm_guard_pages, false,
-            "add guard pages to the end of WebWassembly memory"
-            " (experimental, no effect on 32-bit)")
-DEFINE_IMPLICATION(wasm_trap_handler, wasm_guard_pages)
 DEFINE_BOOL(wasm_code_fuzzer_gen_test, false,
             "Generate a test case when running the wasm-code fuzzer")
 DEFINE_BOOL(print_wasm_code, false, "Print WebAssembly code")
@@ -578,7 +578,7 @@ DEFINE_INT(max_old_space_size, 0, "max size of the old space (in Mbytes)")
 DEFINE_INT(initial_old_space_size, 0, "initial old space size (in Mbytes)")
 DEFINE_BOOL(gc_global, false, "always perform global GCs")
 DEFINE_INT(gc_interval, -1, "garbage collect after <n> allocations")
-DEFINE_INT(retain_maps_for_n_gc, 2,
+DEFINE_INT(retain_maps_for_n_gc, 0,
            "keeps maps alive for <n> old space garbage collections")
 DEFINE_BOOL(trace_gc, false,
             "print one trace line following each garbage collection")
@@ -878,7 +878,7 @@ DEFINE_BOOL(lazy_inner_functions, true, "enable lazy parsing inner functions")
 DEFINE_BOOL(aggressive_lazy_inner_functions, false,
             "even lazier inner function parsing")
 DEFINE_IMPLICATION(aggressive_lazy_inner_functions, lazy_inner_functions)
-DEFINE_BOOL(preparser_scope_analysis, false,
+DEFINE_BOOL(preparser_scope_analysis, true,
             "perform scope analysis for preparsed inner functions")
 DEFINE_IMPLICATION(preparser_scope_analysis, aggressive_lazy_inner_functions)
 

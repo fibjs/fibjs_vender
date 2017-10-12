@@ -39,10 +39,6 @@
 #include <asm/sigcontext.h>  // NOLINT
 #endif
 
-#if defined(LEAK_SANITIZER)
-#include <sanitizer/lsan_interface.h>
-#endif
-
 #include <cmath>
 
 #undef MAP_TYPE
@@ -111,7 +107,7 @@ void* OS::Allocate(const size_t requested, size_t* allocated,
   int prot = GetProtectionFromMemoryPermission(access);
   void* mbase = mmap(hint, msize, prot, MAP_PRIVATE | MAP_ANONYMOUS, kMmapFd,
                      kMmapFdOffset);
-  if (mbase == MAP_FAILED) return NULL;
+  if (mbase == MAP_FAILED) return nullptr;
   *allocated = msize;
   return mbase;
 }
@@ -122,11 +118,7 @@ void* OS::ReserveRegion(size_t size, void* hint) {
       mmap(hint, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
            kMmapFd, kMmapFdOffset);
 
-  if (result == MAP_FAILED) return NULL;
-
-#if defined(LEAK_SANITIZER)
-  __lsan_register_root_region(result, size);
-#endif
+  if (result == MAP_FAILED) return nullptr;
   return result;
 }
 
@@ -137,15 +129,13 @@ void* OS::ReserveAlignedRegion(size_t size, size_t alignment, void* hint,
   hint = AlignedAddress(hint, alignment);
   size_t request_size =
       RoundUp(size + alignment, static_cast<intptr_t>(OS::AllocateAlignment()));
-  void* reservation =
-      mmap(hint, request_size, PROT_NONE,
-           MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, kMmapFd, kMmapFdOffset);
-  if (reservation == MAP_FAILED) {
+  void* result = ReserveRegion(request_size, hint);
+  if (result == nullptr) {
     *allocated = 0;
     return nullptr;
   }
 
-  uint8_t* base = static_cast<uint8_t*>(reservation);
+  uint8_t* base = static_cast<uint8_t*>(result);
   uint8_t* aligned_base = RoundUp(base, alignment);
   DCHECK_LE(base, aligned_base);
 
@@ -166,10 +156,6 @@ void* OS::ReserveAlignedRegion(size_t size, size_t alignment, void* hint,
   }
 
   DCHECK(aligned_size == request_size);
-
-#if defined(LEAK_SANITIZER)
-  __lsan_register_root_region(static_cast<void*>(aligned_base), aligned_size);
-#endif
 
   *allocated = aligned_size;
   return static_cast<void*>(aligned_base);
@@ -195,20 +181,12 @@ bool OS::UncommitRegion(void* address, size_t size) {
 }
 
 // static
-bool OS::ReleasePartialRegion(void* address, size_t size, void* free_start,
-                              size_t free_size) {
-#if defined(LEAK_SANITIZER)
-  __lsan_unregister_root_region(address, size);
-  __lsan_register_root_region(address, size - free_size);
-#endif
-  return munmap(free_start, free_size) == 0;
+bool OS::ReleaseRegion(void* address, size_t size) {
+  return munmap(address, size) == 0;
 }
 
 // static
-bool OS::ReleaseRegion(void* address, size_t size) {
-#if defined(LEAK_SANITIZER)
-  __lsan_unregister_root_region(address, size);
-#endif
+bool OS::ReleasePartialRegion(void* address, size_t size) {
   return munmap(address, size) == 0;
 }
 

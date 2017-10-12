@@ -88,7 +88,8 @@ class WasmCompilationUnit final {
   // only allowed to happen on the foreground thread.
   WasmCompilationUnit(Isolate*, ModuleEnv*, wasm::FunctionBody, wasm::WasmName,
                       int index, Handle<Code> centry_stub, Counters* = nullptr,
-                      RuntimeExceptionSupport = kRuntimeExceptionSupport);
+                      RuntimeExceptionSupport = kRuntimeExceptionSupport,
+                      bool lower_simd = false);
 
   int func_index() const { return func_index_; }
 
@@ -105,6 +106,7 @@ class WasmCompilationUnit final {
 
  private:
   SourcePositionTable* BuildGraphForWasmFunction(double* decode_ms);
+  Counters* counters() { return counters_; }
 
   Isolate* isolate_;
   ModuleEnv* env_;
@@ -127,8 +129,7 @@ class WasmCompilationUnit final {
   RuntimeExceptionSupport runtime_exception_support_;
   bool ok_ = true;
   size_t memory_cost_ = 0;
-
-  Counters* counters() { return counters_; }
+  bool lower_simd_;
 
   DISALLOW_COPY_AND_ASSIGN(WasmCompilationUnit);
 };
@@ -139,8 +140,6 @@ class WasmCompilationUnit final {
 // GCable) in the generated code so that it can reside outside of GCed heap.
 Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, Handle<JSReceiver> target,
                                     wasm::FunctionSig* sig, uint32_t index,
-                                    Handle<String> module_name,
-                                    MaybeHandle<String> import_name,
                                     wasm::ModuleOrigin origin,
                                     Handle<FixedArray> global_js_imports_table);
 
@@ -153,8 +152,6 @@ Handle<Code> CompileJSToWasmWrapper(Isolate* isolate, wasm::WasmModule* module,
 // wasm instances (the WasmContext address must be changed).
 Handle<Code> CompileWasmToWasmWrapper(Isolate* isolate, Handle<Code> target,
                                       wasm::FunctionSig* sig, uint32_t index,
-                                      Handle<String> module_name,
-                                      MaybeHandle<String> import_name,
                                       Address new_wasm_context_address);
 
 // Compiles a stub that redirects a call to a wasm function to the wasm
@@ -303,6 +300,8 @@ class WasmGraphBuilder {
   Node* CurrentMemoryPages();
   Node* GetGlobal(uint32_t index);
   Node* SetGlobal(uint32_t index, Node* val);
+  Node* TraceMemoryOperation(bool is_store, MachineRepresentation, Node* index,
+                             uint32_t offset, wasm::WasmCodePosition);
   Node* LoadMem(wasm::ValueType type, MachineType memtype, Node* index,
                 uint32_t offset, uint32_t alignment,
                 wasm::WasmCodePosition position);
@@ -407,7 +406,8 @@ class WasmGraphBuilder {
   Node* MaskShiftCount32(Node* node);
   Node* MaskShiftCount64(Node* node);
 
-  Node* BuildCCall(MachineSignature* sig, Node** args);
+  template <typename... Args>
+  Node* BuildCCall(MachineSignature* sig, Node* function, Args... args);
   Node* BuildWasmCall(wasm::FunctionSig* sig, Node** args, Node*** rets,
                       wasm::WasmCodePosition position);
 
@@ -506,7 +506,7 @@ class WasmGraphBuilder {
   void BuildEncodeException32BitValue(uint32_t* index, Node* value);
   Node* BuildDecodeException32BitValue(Node* const* values, uint32_t* index);
 
-  Node** Realloc(Node** buffer, size_t old_count, size_t new_count) {
+  Node** Realloc(Node* const* buffer, size_t old_count, size_t new_count) {
     Node** buf = Buffer(new_count);
     if (buf != buffer) memcpy(buf, buffer, old_count * sizeof(Node*));
     return buf;
@@ -526,7 +526,10 @@ class WasmGraphBuilder {
 
   Node* BuildCallToRuntimeWithContext(Runtime::FunctionId f, Node* js_context,
                                       Node** parameters, int parameter_count);
-
+  Node* BuildCallToRuntimeWithContextFromJS(Runtime::FunctionId f,
+                                            Node* js_context,
+                                            Node* const* parameters,
+                                            int parameter_count);
   Node* BuildModifyThreadInWasmFlag(bool new_value);
   Builtins::Name GetBuiltinIdForTrap(wasm::TrapReason reason);
 };

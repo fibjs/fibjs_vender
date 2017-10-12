@@ -2577,9 +2577,19 @@ class RepresentationSelector {
         return;
       }
       case IrOpcode::kTransitionAndStoreElement: {
+        Type* value_type = TypeOf(node->InputAt(2));
+
         ProcessInput(node, 0, UseInfo::AnyTagged());         // array
         ProcessInput(node, 1, UseInfo::TruncatingWord32());  // index
         ProcessInput(node, 2, UseInfo::AnyTagged());         // value
+
+        if (value_type->Is(Type::SignedSmall())) {
+          if (lower()) {
+            NodeProperties::ChangeOp(node,
+                                     simplified()->StoreSignedSmallElement());
+          }
+        }
+
         ProcessRemainingInputs(node, 3);
         SetOutput(node, MachineRepresentation::kNone);
         return;
@@ -2664,12 +2674,50 @@ class RepresentationSelector {
         if (lower()) DeferReplacement(node, node->InputAt(0));
         return;
       }
+      case IrOpcode::kObjectIsArrayBufferView: {
+        // TODO(turbofan): Introduce a Type::ArrayBufferView?
+        VisitUnop(node, UseInfo::AnyTagged(), MachineRepresentation::kBit);
+        return;
+      }
       case IrOpcode::kObjectIsCallable: {
         VisitObjectIs(node, Type::Callable(), lowering);
         return;
       }
       case IrOpcode::kObjectIsDetectableCallable: {
         VisitObjectIs(node, Type::DetectableCallable(), lowering);
+        return;
+      }
+      case IrOpcode::kObjectIsMinusZero: {
+        Type* const input_type = GetUpperBound(node->InputAt(0));
+        if (input_type->Is(Type::MinusZero())) {
+          VisitUnop(node, UseInfo::None(), MachineRepresentation::kBit);
+          if (lower()) {
+            DeferReplacement(node, lowering->jsgraph()->Int32Constant(1));
+          }
+        } else if (!input_type->Maybe(Type::MinusZero())) {
+          VisitUnop(node, UseInfo::Any(), MachineRepresentation::kBit);
+          if (lower()) {
+            DeferReplacement(node, lowering->jsgraph()->Int32Constant(0));
+          }
+        } else if (input_type->Is(Type::Number())) {
+          VisitUnop(node, UseInfo::TruncatingFloat64(),
+                    MachineRepresentation::kBit);
+          if (lower()) {
+            // ObjectIsMinusZero(x:kRepFloat64)
+            //   => Float64Equal(Float64Div(1.0,x),-Infinity)
+            Node* const input = node->InputAt(0);
+            node->ReplaceInput(
+                0, jsgraph_->graph()->NewNode(
+                       lowering->machine()->Float64Div(),
+                       lowering->jsgraph()->Float64Constant(1.0), input));
+            node->AppendInput(jsgraph_->zone(),
+                              jsgraph_->Float64Constant(
+                                  -std::numeric_limits<double>::infinity()));
+            NodeProperties::ChangeOp(node, lowering->machine()->Float64Equal());
+          }
+        } else {
+          VisitUnop(node, UseInfo::AnyTagged(), MachineRepresentation::kBit);
+        }
         return;
       }
       case IrOpcode::kObjectIsNaN: {
@@ -2737,6 +2785,12 @@ class RepresentationSelector {
       case IrOpcode::kArgumentsLength: {
         VisitUnop(node, UseInfo::PointerInt(),
                   MachineRepresentation::kTaggedSigned);
+        return;
+      }
+      case IrOpcode::kNewDoubleElements:
+      case IrOpcode::kNewSmiOrObjectElements: {
+        VisitUnop(node, UseInfo::TruncatingWord32(),
+                  MachineRepresentation::kTaggedPointer);
         return;
       }
       case IrOpcode::kNewArgumentsElements: {
@@ -2873,15 +2927,22 @@ class RepresentationSelector {
         // Assume the output is tagged.
         return SetOutput(node, MachineRepresentation::kTagged);
 
-      case IrOpcode::kLookupHashStorageIndex:
-        VisitInputs(node);
-        return SetOutput(node, MachineRepresentation::kTaggedSigned);
-
-      case IrOpcode::kLoadHashMapValue:
-        ProcessInput(node, 0, UseInfo::AnyTagged());         // table
-        ProcessInput(node, 1, UseInfo::TruncatingWord32());  // index
-        ProcessRemainingInputs(node, 2);
-        return SetOutput(node, MachineRepresentation::kTagged);
+      case IrOpcode::kFindOrderedHashMapEntry: {
+        Type* const key_type = TypeOf(node->InputAt(1));
+        if (key_type->Is(Type::Signed32())) {
+          VisitBinop(node, UseInfo::AnyTagged(), UseInfo::TruncatingWord32(),
+                     MachineRepresentation::kWord32);
+          if (lower()) {
+            NodeProperties::ChangeOp(
+                node,
+                lowering->simplified()->FindOrderedHashMapEntryForInt32Key());
+          }
+        } else {
+          VisitBinop(node, UseInfo::AnyTagged(),
+                     MachineRepresentation::kTaggedSigned);
+        }
+        return;
+      }
 
       // Operators with all inputs tagged and no or tagged output have uniform
       // handling.
@@ -2904,6 +2965,7 @@ class RepresentationSelector {
       case IrOpcode::kOsrValue:
       case IrOpcode::kArgumentsElementsState:
       case IrOpcode::kArgumentsLengthState:
+      case IrOpcode::kUnreachable:
       case IrOpcode::kRuntimeAbort:
 // All JavaScript operators except JSToNumber have uniform handling.
 #define OPCODE_CASE(name) case IrOpcode::k##name:
@@ -2921,7 +2983,8 @@ class RepresentationSelector {
         VisitInputs(node);
         // Assume the output is tagged.
         return SetOutput(node, MachineRepresentation::kTagged);
-
+      case IrOpcode::kDeadValue:
+        return SetOutput(node, MachineRepresentation::kNone);
       default:
         V8_Fatal(
             __FILE__, __LINE__,

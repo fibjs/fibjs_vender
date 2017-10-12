@@ -22,7 +22,6 @@
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-code-specialization.h"
 #include "src/wasm/wasm-js.h"
-#include "src/wasm/wasm-limits.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects-inl.h"
 #include "src/wasm/wasm-result.h"
@@ -46,54 +45,6 @@ namespace wasm {
     if (FLAG_trace_wasm_compiler) PrintF(__VA_ARGS__); \
   } while (false)
 
-namespace {
-
-
-void* TryAllocateBackingStore(Isolate* isolate, size_t size,
-                              bool enable_guard_regions, void*& allocation_base,
-                              size_t& allocation_length) {
-  // TODO(eholk): Right now enable_guard_regions has no effect on 32-bit
-  // systems. It may be safer to fail instead, given that other code might do
-  // things that would be unsafe if they expected guard pages where there
-  // weren't any.
-  if (enable_guard_regions && kGuardRegionsSupported) {
-    // TODO(eholk): On Windows we want to make sure we don't commit the guard
-    // pages yet.
-
-    // We always allocate the largest possible offset into the heap, so the
-    // addressable memory after the guard page can be made inaccessible.
-    allocation_length = RoundUp(kWasmMaxHeapOffset, base::OS::CommitPageSize());
-    DCHECK_EQ(0, size % base::OS::CommitPageSize());
-
-    // AllocateGuarded makes the whole region inaccessible by default.
-    allocation_base =
-        isolate->array_buffer_allocator()->Reserve(allocation_length);
-    if (allocation_base == nullptr) {
-      return nullptr;
-    }
-
-    void* memory = allocation_base;
-
-    // Make the part we care about accessible.
-    isolate->array_buffer_allocator()->SetProtection(
-        memory, size, v8::ArrayBuffer::Allocator::Protection::kReadWrite);
-
-    reinterpret_cast<v8::Isolate*>(isolate)
-        ->AdjustAmountOfExternalAllocatedMemory(size);
-
-    return memory;
-  } else {
-    void* memory =
-        size == 0 ? nullptr : isolate->array_buffer_allocator()->Allocate(size);
-    allocation_base = memory;
-    allocation_length = size;
-    return memory;
-  }
-}
-
-
-}  // namespace
-
 // static
 const WasmExceptionSig WasmException::empty_sig_(0, 0, nullptr);
 
@@ -102,64 +53,6 @@ constexpr const char* WasmException::kRuntimeIdStr;
 
 // static
 constexpr const char* WasmException::kRuntimeValuesStr;
-
-Handle<JSArrayBuffer> SetupArrayBuffer(Isolate* isolate, void* allocation_base,
-                                       size_t allocation_length,
-                                       void* backing_store, size_t size,
-                                       bool is_external,
-                                       bool enable_guard_regions,
-                                       SharedFlag shared) {
-  Handle<JSArrayBuffer> buffer =
-      isolate->factory()->NewJSArrayBuffer(shared, TENURED);
-  DCHECK_GE(kMaxInt, size);
-  if (shared == SharedFlag::kShared) DCHECK(FLAG_experimental_wasm_threads);
-  JSArrayBuffer::Setup(buffer, isolate, is_external, allocation_base,
-                       allocation_length, backing_store, static_cast<int>(size),
-                       shared);
-  buffer->set_is_neuterable(false);
-  buffer->set_is_wasm_buffer(true);
-  buffer->set_has_guard_region(enable_guard_regions);
-  return buffer;
-}
-
-Handle<JSArrayBuffer> NewArrayBuffer(Isolate* isolate, size_t size,
-                                     bool enable_guard_regions,
-                                     SharedFlag shared) {
-  // Check against kMaxInt, since the byte length is stored as int in the
-  // JSArrayBuffer. Note that wasm_max_mem_pages can be raised from the command
-  // line, and we don't want to fail a CHECK then.
-  if (size > FLAG_wasm_max_mem_pages * WasmModule::kPageSize ||
-      size > kMaxInt) {
-    // TODO(titzer): lift restriction on maximum memory allocated here.
-    return Handle<JSArrayBuffer>::null();
-  }
-
-  enable_guard_regions = enable_guard_regions && kGuardRegionsSupported;
-
-  void* allocation_base = nullptr;  // Set by TryAllocateBackingStore
-  size_t allocation_length = 0;     // Set by TryAllocateBackingStore
-  // Do not reserve memory till non zero memory is encountered.
-  void* memory =
-      (size == 0) ? nullptr
-                  : TryAllocateBackingStore(isolate, size, enable_guard_regions,
-                                            allocation_base, allocation_length);
-
-  if (size > 0 && memory == nullptr) {
-    return Handle<JSArrayBuffer>::null();
-  }
-
-#if DEBUG
-  // Double check the API allocator actually zero-initialized the memory.
-  const byte* bytes = reinterpret_cast<const byte*>(memory);
-  for (size_t i = 0; i < size; ++i) {
-    DCHECK_EQ(0, bytes[i]);
-  }
-#endif
-
-  constexpr bool is_external = false;
-  return SetupArrayBuffer(isolate, allocation_base, allocation_length, memory,
-                          size, is_external, enable_guard_regions, shared);
-}
 
 void UnpackAndRegisterProtectedInstructions(Isolate* isolate,
                                             Handle<FixedArray> code_table) {
@@ -196,8 +89,7 @@ void UnpackAndRegisterProtectedInstructions(Isolate* isolate,
     }
     if (unpacked.empty()) continue;
 
-    int size = code->CodeSize();
-    const int index = RegisterHandlerData(reinterpret_cast<void*>(base), size,
+    const int index = RegisterHandlerData(base, code->instruction_size(),
                                           unpacked.size(), &unpacked[0]);
     unpacked.clear();
     // TODO(eholk): if index is negative, fail.
@@ -297,76 +189,6 @@ bool IsWasmCodegenAllowed(Isolate* isolate, Handle<Context> context) {
              v8::Utils::ToLocal(context),
              v8::Utils::ToLocal(isolate->factory()->empty_string()));
 }
-
-void DetachWebAssemblyMemoryBuffer(Isolate* isolate,
-                                   Handle<JSArrayBuffer> buffer,
-                                   bool free_memory) {
-  const bool is_external = buffer->is_external();
-  DCHECK(!buffer->is_neuterable());
-  if (!is_external) {
-    buffer->set_is_external(true);
-    isolate->heap()->UnregisterArrayBuffer(*buffer);
-    if (free_memory) {
-      // We need to free the memory before neutering the buffer because
-      // FreeBackingStore reads buffer->allocation_base(), which is nulled out
-      // by Neuter. This means there is a dangling pointer until we neuter the
-      // buffer. Since there is no way for the user to directly call
-      // FreeBackingStore, we can ensure this is safe.
-      buffer->FreeBackingStore();
-    }
-  }
-  buffer->set_is_neuterable(true);
-  buffer->Neuter();
-}
-
-namespace testing {
-void ValidateInstancesChain(Isolate* isolate,
-                            Handle<WasmModuleObject> module_obj,
-                            int instance_count) {
-  CHECK_GE(instance_count, 0);
-  DisallowHeapAllocation no_gc;
-  WasmCompiledModule* compiled_module = module_obj->compiled_module();
-  CHECK_EQ(JSObject::cast(compiled_module->ptr_to_weak_wasm_module()->value()),
-           *module_obj);
-  Object* prev = nullptr;
-  int found_instances = compiled_module->has_weak_owning_instance() ? 1 : 0;
-  WasmCompiledModule* current_instance = compiled_module;
-  while (current_instance->has_weak_next_instance()) {
-    CHECK((prev == nullptr && !current_instance->has_weak_prev_instance()) ||
-          current_instance->ptr_to_weak_prev_instance()->value() == prev);
-    CHECK_EQ(current_instance->ptr_to_weak_wasm_module()->value(), *module_obj);
-    CHECK(current_instance->ptr_to_weak_owning_instance()
-              ->value()
-              ->IsWasmInstanceObject());
-    prev = current_instance;
-    current_instance = WasmCompiledModule::cast(
-        current_instance->ptr_to_weak_next_instance()->value());
-    ++found_instances;
-    CHECK_LE(found_instances, instance_count);
-  }
-  CHECK_EQ(found_instances, instance_count);
-}
-
-void ValidateModuleState(Isolate* isolate,
-                         Handle<WasmModuleObject> module_obj) {
-  DisallowHeapAllocation no_gc;
-  WasmCompiledModule* compiled_module = module_obj->compiled_module();
-  CHECK(compiled_module->has_weak_wasm_module());
-  CHECK_EQ(compiled_module->ptr_to_weak_wasm_module()->value(), *module_obj);
-  CHECK(!compiled_module->has_weak_prev_instance());
-  CHECK(!compiled_module->has_weak_next_instance());
-  CHECK(!compiled_module->has_weak_owning_instance());
-}
-
-void ValidateOrphanedInstance(Isolate* isolate,
-                              Handle<WasmInstanceObject> instance) {
-  DisallowHeapAllocation no_gc;
-  WasmCompiledModule* compiled_module = instance->compiled_module();
-  CHECK(compiled_module->has_weak_wasm_module());
-  CHECK(compiled_module->ptr_to_weak_wasm_module()->cleared());
-}
-
-}  // namespace testing
 
 Handle<JSArray> GetImports(Isolate* isolate,
                            Handle<WasmModuleObject> module_object) {

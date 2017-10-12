@@ -2320,6 +2320,10 @@ class VerboseAccountingAllocator : public AccountingAllocator {
   size_t allocation_sample_bytes_, pool_sample_bytes_;
 };
 
+#ifdef DEBUG
+base::AtomicNumber<size_t> Isolate::non_disposed_isolates_;
+#endif  // DEBUG
+
 Isolate::Isolate(bool enable_serializer)
     : embedder_data_(),
       entry_stack_(NULL),
@@ -2403,7 +2407,9 @@ Isolate::Isolate(bool enable_serializer)
 #ifdef DEBUG
   // heap_histograms_ initializes itself.
   memset(&js_spill_information_, 0, sizeof(js_spill_information_));
-#endif
+
+  non_disposed_isolates_.Increment(1);
+#endif  // DEBUG
 
   handle_scope_data_.Initialize();
 
@@ -2443,6 +2449,10 @@ void Isolate::TearDown() {
     base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
     thread_data_table_->RemoveAllThreads(this);
   }
+
+#ifdef DEBUG
+  non_disposed_isolates_.Decrement(1);
+#endif  // DEBUG
 
   delete this;
 
@@ -3164,6 +3174,14 @@ void Isolate::InvalidateIsConcatSpreadableProtector() {
   DCHECK(!IsIsConcatSpreadableLookupChainIntact());
 }
 
+void Isolate::InvalidateArrayConstructorProtector() {
+  DCHECK(factory()->array_constructor_protector()->value()->IsSmi());
+  DCHECK(IsArrayConstructorIntact());
+  factory()->array_constructor_protector()->set_value(
+      Smi::FromInt(kProtectorInvalid));
+  DCHECK(!IsArrayConstructorIntact());
+}
+
 void Isolate::InvalidateArraySpeciesProtector() {
   DCHECK(factory()->species_protector()->value()->IsSmi());
   DCHECK(IsArraySpeciesLookupChainIntact());
@@ -3400,6 +3418,27 @@ void Isolate::SetHostImportModuleDynamicallyCallback(
   host_import_module_dynamically_callback_ = callback;
 }
 
+Handle<JSObject> Isolate::RunHostInitializeImportMetaObjectCallback(
+    Handle<Module> module) {
+  Handle<Object> host_meta(module->import_meta(), this);
+  if (host_meta->IsTheHole(this)) {
+    host_meta = factory()->NewJSObjectWithNullProto();
+    if (host_initialize_import_meta_object_callback_ != nullptr) {
+      v8::Local<v8::Context> api_context = v8::Utils::ToLocal(native_context());
+      host_initialize_import_meta_object_callback_(
+          api_context, Utils::ToLocal(module),
+          v8::Local<v8::Object>::Cast(v8::Utils::ToLocal(host_meta)));
+    }
+    module->set_import_meta(*host_meta);
+  }
+  return Handle<JSObject>::cast(host_meta);
+}
+
+void Isolate::SetHostInitializeImportMetaObjectCallback(
+    HostInitializeImportMetaObjectCallback callback) {
+  host_initialize_import_meta_object_callback_ = callback;
+}
+
 void Isolate::SetPromiseHook(PromiseHook hook) {
   promise_hook_ = hook;
   DebugStateUpdated();
@@ -3417,10 +3456,10 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
   promise_reject_callback_ = callback;
 }
 
-
-void Isolate::ReportPromiseReject(Handle<JSObject> promise,
+void Isolate::ReportPromiseReject(Handle<JSPromise> promise,
                                   Handle<Object> value,
                                   v8::PromiseRejectEvent event) {
+  DCHECK_EQ(v8::Promise::kRejected, promise->status());
   if (promise_reject_callback_ == NULL) return;
   Handle<FixedArray> stack_trace;
   if (event == v8::kPromiseRejectWithNoHandler && value->IsJSObject()) {

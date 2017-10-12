@@ -19,6 +19,7 @@
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-code-specialization.h"
 #include "src/wasm/wasm-js.h"
+#include "src/wasm/wasm-memory.h"
 #include "src/wasm/wasm-objects-inl.h"
 #include "src/wasm/wasm-result.h"
 
@@ -511,11 +512,6 @@ MaybeHandle<WasmModuleObject> SyncCompileTranslatedAsmJs(
 MaybeHandle<WasmModuleObject> SyncCompile(Isolate* isolate,
                                           ErrorThrower* thrower,
                                           const ModuleWireBytes& bytes) {
-  if (!IsWasmCodegenAllowed(isolate, isolate->native_context())) {
-    thrower->CompileError("Wasm code generation disallowed in this context");
-    return {};
-  }
-
   // TODO(titzer): only make a copy of the bytes if SharedArrayBuffer
   std::unique_ptr<byte[]> copy(new byte[bytes.length()]);
   memcpy(copy.get(), bytes.start(), bytes.length());
@@ -733,6 +729,8 @@ compiler::ModuleEnv CreateModuleEnvFromCompiledModule(
 
 void LazyCompilationOrchestrator::CompileFunction(
     Isolate* isolate, Handle<WasmInstanceObject> instance, int func_index) {
+  base::ElapsedTimer compilation_timer;
+  compilation_timer.Start();
   Handle<WasmCompiledModule> compiled_module(instance->compiled_module(),
                                              isolate);
   if (Code::cast(compiled_module->code_table()->get(func_index))->kind() ==
@@ -793,10 +791,16 @@ void LazyCompilationOrchestrator::CompileFunction(
   code_specialization.ApplyToWasmCode(*code, SKIP_ICACHE_FLUSH);
   Assembler::FlushICache(isolate, code->instruction_start(),
                          code->instruction_size());
+  int64_t func_size =
+      static_cast<int64_t>(func->code.end_offset() - func->code.offset());
+  int64_t compilation_time = compilation_timer.Elapsed().InMicroseconds();
   auto counters = isolate->counters();
   counters->wasm_lazily_compiled_functions()->Increment();
   counters->wasm_generated_code_size()->Increment(code->body_size());
   counters->wasm_reloc_size()->Increment(code->relocation_info()->length());
+  counters->wasm_lazy_compilation_throughput()->AddSample(
+      compilation_time != 0 ? static_cast<int>(func_size / compilation_time)
+                            : 0);
 }
 
 int AdvanceSourcePositionTableIterator(SourcePositionTableIterator& iterator,
@@ -1343,7 +1347,6 @@ using WasmInstanceMap =
 
 Handle<Code> UnwrapExportOrCompileImportWrapper(
     Isolate* isolate, int index, FunctionSig* sig, Handle<JSReceiver> target,
-    Handle<String> module_name, MaybeHandle<String> import_name,
     ModuleOrigin origin, WasmInstanceMap* imported_instances,
     Handle<FixedArray> js_imports_table, Handle<WasmInstanceObject> instance) {
   WasmFunction* other_func = GetWasmFunctionForExport(isolate, target);
@@ -1367,8 +1370,7 @@ Handle<Code> UnwrapExportOrCompileImportWrapper(
     Address new_wasm_context =
         reinterpret_cast<Address>(imported_instance->wasm_context());
     Handle<Code> wrapper_code = compiler::CompileWasmToWasmWrapper(
-        isolate, wasm_code, sig, index, module_name, import_name,
-        new_wasm_context);
+        isolate, wasm_code, sig, index, new_wasm_context);
     // Set the deoptimization data for the WasmToWasm wrapper.
     // TODO(wasm): Remove the deoptimization data when we will use tail calls
     // for WasmToWasm wrappers.
@@ -1382,8 +1384,7 @@ Handle<Code> UnwrapExportOrCompileImportWrapper(
   }
   // No wasm function or being debugged. Compile a new wrapper for the new
   // signature.
-  return compiler::CompileWasmToJSWrapper(isolate, target, sig, index,
-                                          module_name, import_name, origin,
+  return compiler::CompileWasmToJSWrapper(isolate, target, sig, index, origin,
                                           js_imports_table);
 }
 
@@ -1807,7 +1808,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
     memory->set_is_neuterable(false);
     memory->set_is_wasm_buffer(true);
 
-    DCHECK_IMPLIES(EnableGuardRegions(),
+    DCHECK_IMPLIES(trap_handler::UseTrapHandler(),
                    module_->is_asm_js() || memory->has_guard_region());
   } else if (initial_pages > 0) {
     memory_ = AllocateMemory(initial_pages);
@@ -1933,6 +1934,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
   code_specialization.ApplyToWholeInstance(*instance, SKIP_ICACHE_FLUSH);
 
   FlushICache(isolate_, code_table);
+  FlushICache(isolate_, wrapper_table);
 
   //--------------------------------------------------------------------------
   // Unpack and notify signal handler of protected instructions.
@@ -2255,9 +2257,8 @@ int InstanceBuilder::ProcessImports(Handle<FixedArray> code_table,
 
         Handle<Code> import_code = UnwrapExportOrCompileImportWrapper(
             isolate_, index, module_->functions[import.index].sig,
-            Handle<JSReceiver>::cast(value), module_name, import_name,
-            module_->origin(), &imported_wasm_instances, js_imports_table,
-            instance);
+            Handle<JSReceiver>::cast(value), module_->origin(),
+            &imported_wasm_instances, js_imports_table, instance);
         if (import_code.is_null()) {
           ReportLinkError("imported function does not match the expected type",
                           index, module_name, import_name);
@@ -2487,7 +2488,7 @@ Handle<JSArrayBuffer> InstanceBuilder::AllocateMemory(uint32_t num_pages) {
     thrower_->RangeError("Out of memory: wasm memory too large");
     return Handle<JSArrayBuffer>::null();
   }
-  const bool enable_guard_regions = EnableGuardRegions();
+  const bool enable_guard_regions = trap_handler::UseTrapHandler();
   Handle<JSArrayBuffer> mem_buffer = NewArrayBuffer(
       isolate_, num_pages * WasmModule::kPageSize, enable_guard_regions);
 

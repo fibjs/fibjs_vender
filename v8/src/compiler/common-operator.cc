@@ -348,6 +348,8 @@ ZoneVector<MachineType> const* MachineTypesOf(Operator const* op) {
 
 #define COMMON_CACHED_OP_LIST(V)                                              \
   V(Dead, Operator::kFoldable, 0, 0, 0, 1, 1, 1)                              \
+  V(DeadValue, Operator::kFoldable, 0, 0, 0, 1, 0, 0)                         \
+  V(Unreachable, Operator::kFoldable, 0, 1, 1, 0, 1, 0)                       \
   V(IfTrue, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                             \
   V(IfFalse, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                            \
   V(IfSuccess, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                          \
@@ -1258,7 +1260,7 @@ ArgumentsStateType ArgumentsStateTypeOf(Operator const* op) {
   return OpParameter<ArgumentsStateType>(op);
 }
 
-const Operator* CommonOperatorBuilder::ObjectState(int object_id,
+const Operator* CommonOperatorBuilder::ObjectState(uint32_t object_id,
                                                    int pointer_slots) {
   return new (zone()) Operator1<ObjectStateInfo>(  // --
       IrOpcode::kObjectState, Operator::kPure,     // opcode
@@ -1268,7 +1270,7 @@ const Operator* CommonOperatorBuilder::ObjectState(int object_id,
 }
 
 const Operator* CommonOperatorBuilder::TypedObjectState(
-    int object_id, const ZoneVector<MachineType>* types) {
+    uint32_t object_id, const ZoneVector<MachineType>* types) {
   return new (zone()) Operator1<TypedObjectStateInfo>(  // --
       IrOpcode::kTypedObjectState, Operator::kPure,     // opcode
       "TypedObjectState",                               // name

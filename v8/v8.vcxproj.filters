@@ -88,9 +88,6 @@
     <Filter Include="Source Files\extensions">
       <UniqueIdentifier>{799570e2-a10f-51ed-083a-05a77b0687f4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\ffi">
-      <UniqueIdentifier>{162a0a77-7696-01cd-0b5f-9ceaf92eb46d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\gen">
       <UniqueIdentifier>{1050797c-185f-d58a-6936-837871f7749c}</UniqueIdentifier>
     </Filter>
@@ -1068,9 +1065,6 @@
     <ClInclude Include="src\feedback-vector.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ffi\ffi-compiler.h">
-      <Filter>Source Files\ffi</Filter>
-    </ClInclude>
     <ClInclude Include="src\field-index-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1998,6 +1992,9 @@
     <ClInclude Include="src\wasm\local-decl-encoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\memory-tracing.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\module-compiler.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -2029,6 +2026,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-limits.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-memory.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-module-builder.h">
@@ -2969,9 +2969,6 @@
     <ClCompile Include="src\feedback-vector.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ffi\ffi-compiler.cc">
-      <Filter>Source Files\ffi</Filter>
-    </ClCompile>
     <ClCompile Include="src\field-type.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3656,37 +3653,49 @@
     <ClCompile Include="src\snapshot\snapshot-source-sink.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-arm.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-arm-Linux.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-arm64.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-arm64-Linux.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-win.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-Darwin.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-FreeBSD.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-mips.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-Linux.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-mips64.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ia32-Windows.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-mips-Linux.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc64.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-mips64-Linux.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-s390.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc-Linux.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-x64-win.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-ppc64-Linux.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\snapshots\snapshot-x64.cc">
+    <ClCompile Include="src\snapshot\snapshots\snapshot-s390-Linux.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64-Darwin.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64-FreeBSD.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64-Linux.cc">
+      <Filter>Source Files\snapshot\snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\snapshots\snapshot-x64-Windows.cc">
       <Filter>Source Files\snapshot\snapshots</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\startup-deserializer.cc">
@@ -3776,6 +3785,9 @@
     <ClCompile Include="src\wasm\local-decl-encoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
+    <ClCompile Include="src\wasm\memory-tracing.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
     <ClCompile Include="src\wasm\module-compiler.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
@@ -3807,6 +3819,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-js.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-memory.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-module-builder.cc">

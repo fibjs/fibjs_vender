@@ -69,9 +69,10 @@ namespace internal {
   F(SetAllowAtomicsWait, 1, 1)
 
 #define FOR_EACH_INTRINSIC_BIGINT(F) \
+  F(BigIntBinaryOp, 3, 1)            \
   F(BigIntEqual, 2, 1)               \
   F(BigIntToBoolean, 1, 1)           \
-  F(BigIntBinaryOp, 3, 1)
+  F(BigIntUnaryOp, 2, 1)
 
 #define FOR_EACH_INTRINSIC_CLASSES(F)        \
   F(ThrowUnsupportedSuperError, 0, 1)        \
@@ -118,7 +119,7 @@ namespace internal {
   F(CompileOptimized_NotConcurrent, 1, 1) \
   F(EvictOptimizedCodeSlot, 1, 1)         \
   F(NotifyStubFailure, 0, 1)              \
-  F(NotifyDeoptimized, 1, 1)              \
+  F(NotifyDeoptimized, 0, 1)              \
   F(CompileForOnStackReplacement, 1, 1)   \
   F(TryInstallOptimizedCode, 1, 1)        \
   F(ResolvePossiblyDirectEval, 6, 1)      \
@@ -356,6 +357,7 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_MODULE(F) \
   F(DynamicImportCall, 2, 1)         \
+  F(GetImportMetaObject, 0, 1)       \
   F(GetModuleNamespace, 1, 1)        \
   F(LoadModuleVariable, 1, 1)        \
   F(StoreModuleVariable, 2, 1)
@@ -418,6 +420,7 @@ namespace internal {
   F(ToPrimitive, 1, 1)                                          \
   F(ToPrimitive_Number, 1, 1)                                   \
   F(ToNumber, 1, 1)                                             \
+  F(ToNumeric, 1, 1)                                            \
   F(ToInteger, 1, 1)                                            \
   F(ToLength, 1, 1)                                             \
   F(ToString, 1, 1)                                             \
@@ -480,7 +483,6 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_REGEXP(F)                \
   F(IsRegExp, 1, 1)                                 \
-  F(RegExpCreate, 1, 1)                             \
   F(RegExpExec, 4, 1)                               \
   F(RegExpExecMultiple, 4, 1)                       \
   F(RegExpExecReThrow, 0, 1)                        \
@@ -613,7 +615,7 @@ namespace internal {
   F(IsWasmCode, 1, 1)                         \
   F(IsWasmTrapHandlerEnabled, 0, 1)           \
   F(GetWasmRecoveredTrapCount, 0, 1)          \
-  F(DisallowCodegenFromStrings, 0, 1)         \
+  F(DisallowCodegenFromStrings, 1, 1)         \
   F(ValidateWasmInstancesChain, 2, 1)         \
   F(ValidateWasmModuleState, 1, 1)            \
   F(ValidateWasmOrphanedInstance, 1, 1)       \
@@ -621,7 +623,8 @@ namespace internal {
   F(SetWasmInstantiateControls, 0, 1)         \
   F(HeapObjectVerify, 1, 1)                   \
   F(WasmNumInterpretedCalls, 1, 1)            \
-  F(RedirectToWasmInterpreter, 2, 1)
+  F(RedirectToWasmInterpreter, 2, 1)          \
+  F(WasmTraceMemory, 4, 1)
 
 #define FOR_EACH_INTRINSIC_TYPEDARRAY(F) \
   F(ArrayBufferGetByteLength, 1, 1)      \
@@ -652,8 +655,6 @@ namespace internal {
   F(WasmExceptionGetElement, 1, 1)   \
   F(WasmRunInterpreter, 3, 1)        \
   F(WasmStackGuard, 0, 1)            \
-  F(SetThreadInWasm, 0, 1)           \
-  F(ClearThreadInWasm, 0, 1)         \
   F(WasmCompileLazy, 0, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_PAIR(F) \

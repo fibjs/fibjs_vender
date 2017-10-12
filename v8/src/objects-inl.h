@@ -778,8 +778,16 @@ MaybeHandle<Object> Object::ToPrimitive(Handle<Object> input,
 
 // static
 MaybeHandle<Object> Object::ToNumber(Handle<Object> input) {
-  if (input->IsNumber()) return input;
-  return ConvertToNumber(HeapObject::cast(*input)->GetIsolate(), input);
+  if (input->IsNumber()) return input;  // Shortcut.
+  return ConvertToNumberOrNumeric(HeapObject::cast(*input)->GetIsolate(), input,
+                                  Conversion::kToNumber);
+}
+
+// static
+MaybeHandle<Object> Object::ToNumeric(Handle<Object> input) {
+  if (input->IsNumber() || input->IsBigInt()) return input;  // Shortcut.
+  return ConvertToNumberOrNumeric(HeapObject::cast(*input)->GetIsolate(), input,
+                                  Conversion::kToNumeric);
 }
 
 // static
@@ -2654,33 +2662,31 @@ SYNCHRONIZED_SMI_ACCESSORS(FixedArrayBase, length, kLengthOffset)
 int PropertyArray::length() const {
   Object* value_obj = READ_FIELD(this, kLengthAndHashOffset);
   int value = Smi::ToInt(value_obj);
-  return value & kLengthMask;
+  return LengthField::decode(value);
 }
 
 void PropertyArray::initialize_length(int len) {
   SLOW_DCHECK(len >= 0);
-  SLOW_DCHECK(len < kMaxLength);
+  SLOW_DCHECK(len < LengthField::kMax);
   WRITE_FIELD(this, kLengthAndHashOffset, Smi::FromInt(len));
 }
 
 int PropertyArray::synchronized_length() const {
   Object* value_obj = ACQUIRE_READ_FIELD(this, kLengthAndHashOffset);
   int value = Smi::ToInt(value_obj);
-  return value & kLengthMask;
+  return LengthField::decode(value);
 }
 
 int PropertyArray::Hash() const {
   Object* value_obj = READ_FIELD(this, kLengthAndHashOffset);
   int value = Smi::ToInt(value_obj);
-  int hash = value & kHashMask;
-  return hash;
+  return HashField::decode(value);
 }
 
-void PropertyArray::SetHash(int masked_hash) {
-  DCHECK_EQ(masked_hash & JSReceiver::kHashMask, masked_hash);
+void PropertyArray::SetHash(int hash) {
   Object* value_obj = READ_FIELD(this, kLengthAndHashOffset);
   int value = Smi::ToInt(value_obj);
-  value = (value & kLengthMask) | masked_hash;
+  value = HashField::update(value, hash);
   WRITE_FIELD(this, kLengthAndHashOffset, Smi::FromInt(value));
 }
 
@@ -3489,11 +3495,6 @@ bool Map::is_dictionary_map() const {
   return DictionaryMap::decode(bit_field3());
 }
 
-Code::Flags Code::flags() const {
-  return static_cast<Flags>(READ_INT_FIELD(this, kFlagsOffset));
-}
-
-
 void Map::set_owns_descriptors(bool owns_descriptors) {
   set_bit_field3(OwnsDescriptors::update(bit_field3(), owns_descriptors));
 }
@@ -3686,24 +3687,20 @@ void DependentCode::copy(int from, int to) {
   set(kCodesStartIndex + to, get(kCodesStartIndex + from));
 }
 
+Code::Kind Code::kind() const {
+  return KindField::decode(READ_UINT32_FIELD(this, kFlagsOffset));
+}
 
-void Code::set_flags(Code::Flags flags) {
+void Code::initialize_flags(Kind kind) {
+  WRITE_UINT32_FIELD(this, kFlagsOffset, KindField::encode(kind));
+}
+
+void Code::set_kind(Kind kind) {
   STATIC_ASSERT(Code::NUMBER_OF_KINDS <= KindField::kMax + 1);
-  WRITE_INT_FIELD(this, kFlagsOffset, flags);
+  uint32_t previous = READ_UINT32_FIELD(this, kFlagsOffset);
+  uint32_t updated_value = KindField::update(previous, kind);
+  WRITE_UINT32_FIELD(this, kFlagsOffset, updated_value);
 }
-
-Code::Kind Code::kind() const { return ExtractKindFromFlags(flags()); }
-
-bool Code::IsCodeStubOrIC() const {
-  switch (kind()) {
-    case STUB:
-    case HANDLER:
-      return true;
-    default:
-      return false;
-  }
-}
-
 
 // For initialization.
 void Code::set_raw_kind_specific_flags1(int value) {
@@ -3902,7 +3899,6 @@ void Code::set_deopt_already_counted(bool flag) {
   WRITE_UINT32_FIELD(this, kKindSpecificFlags1Offset, updated);
 }
 
-bool Code::is_handler() const { return kind() == HANDLER; }
 bool Code::is_stub() const { return kind() == STUB; }
 bool Code::is_optimized_code() const { return kind() == OPTIMIZED_FUNCTION; }
 bool Code::is_wasm_code() const { return kind() == WASM_FUNCTION; }
@@ -3917,17 +3913,6 @@ Address Code::constant_pool() {
   }
   return constant_pool;
 }
-
-Code::Flags Code::ComputeFlags(Kind kind) {
-  // Compute the bit mask.
-  unsigned int bits = KindField::encode(kind);
-  return static_cast<Flags>(bits);
-}
-
-Code::Kind Code::ExtractKindFromFlags(Flags flags) {
-  return KindField::decode(flags);
-}
-
 
 Code* Code::GetCodeFromTargetAddress(Address address) {
   HeapObject* code = HeapObject::FromAddress(address - Code::kHeaderSize);
@@ -4869,14 +4854,14 @@ ByteArray* Code::SourcePositionTable() const {
 }
 
 uint32_t Code::stub_key() const {
-  DCHECK(IsCodeStubOrIC());
+  DCHECK(is_stub());
   Smi* smi_key = Smi::cast(raw_type_feedback_info());
   return static_cast<uint32_t>(smi_key->value());
 }
 
 
 void Code::set_stub_key(uint32_t key) {
-  DCHECK(IsCodeStubOrIC());
+  DCHECK(is_stub());
   set_raw_type_feedback_info(Smi::FromInt(key));
 }
 

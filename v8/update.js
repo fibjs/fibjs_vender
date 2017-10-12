@@ -361,25 +361,26 @@ function patch_snapshot() {
         x64: 'V8_TARGET_ARCH_X64'
     };
 
-    var warch_win = {
+    var arch_x86 = {
         x64: true,
         ia32: true
     }
+
+    var oss = ["Windows", "Linux", "FreeBSD", "Darwin"];
 
     fs.copy(v8Folder + "/src/snapshot/mksnapshot.cc", "test/src/mksnapshot.inl");
 
     var txt = fs.readTextFile(v8Folder + "/src/snapshot/snapshot-empty.cc");
 
     for (var arch in archs) {
-        if (warch_win[arch]) {
-            fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + ".cc",
-                '#ifndef _WIN32\n\n#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch] + '\n\n#endif _WIN32');
-
-            fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + "-win.cc",
-                '#ifdef _WIN32\n\n#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch] + '\n\n#endif _WIN32');
-        } else
-            fs.writeFile("src/snapshot/snapshots/snapshot-" + arch + ".cc",
-                '#include "src/v8.h"\n\n#if ' + archs[arch] + '\n\n' + txt + '\n\n#endif  // ' + archs[arch]);
+        if (arch_x86[arch])
+            oss.forEach(os => {
+                fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-${os}.cc`,
+                    `#include <exlib/include/osconfig.h>\n#ifdef ${os}\n\n#include "src/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}\n\n#endif ${os}`);
+            });
+        else
+            fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-Linux.cc`,
+                `#include "src/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}`);
     }
 }
 

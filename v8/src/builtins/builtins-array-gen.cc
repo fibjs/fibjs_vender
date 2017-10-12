@@ -112,8 +112,7 @@ class ArrayBuiltinCodeStubAssembler : public CodeStubAssembler {
       Label fast(this);
       Label runtime(this);
       Label object_push_pre(this), object_push(this), double_push(this);
-      BranchIfFastJSArray(a(), context(), FastJSArrayAccessMode::ANY_ACCESS,
-                          &fast, &runtime);
+      BranchIfFastJSArray(a(), context(), &fast, &runtime);
 
       BIND(&fast);
       {
@@ -705,7 +704,6 @@ class ArrayBuiltinCodeStubAssembler : public CodeStubAssembler {
     GotoIf(TaggedIsNotSmi(len()), slow);
 
     BranchIfFastJSArray(o(), context(),
-                        CodeStubAssembler::FastJSArrayAccessMode::INBOUNDS_READ,
                         &switch_on_elements_kind, slow);
 
     BIND(&switch_on_elements_kind);
@@ -753,11 +751,8 @@ class ArrayBuiltinCodeStubAssembler : public CodeStubAssembler {
                           Int32Constant(JS_ARRAY_TYPE)),
            &runtime);
 
-    Node* const native_context = LoadNativeContext(context());
-    Node* const initial_array_prototype = LoadContextElement(
-        native_context, Context::INITIAL_ARRAY_PROTOTYPE_INDEX);
-    Node* proto = LoadMapPrototype(original_map);
-    GotoIf(WordNotEqual(proto, initial_array_prototype), &runtime);
+    GotoIfNot(IsPrototypeInitialArrayPrototype(context(), original_map),
+              &runtime);
 
     Node* species_protector = SpeciesProtectorConstant();
     Node* value =
@@ -774,6 +769,7 @@ class ArrayBuiltinCodeStubAssembler : public CodeStubAssembler {
     // element in the input array (maybe the callback deletes an element).
     const ElementsKind elements_kind =
         GetHoleyElementsKind(GetInitialFastElementsKind());
+    Node* const native_context = LoadNativeContext(context());
     Node* array_map = LoadJSArrayElementsMap(elements_kind, native_context);
     a_.Bind(AllocateJSArray(PACKED_SMI_ELEMENTS, array_map, len, len, nullptr,
                             CodeStubAssembler::SMI_PARAMETERS));
@@ -829,8 +825,7 @@ TF_BUILTIN(FastArrayPop, CodeStubAssembler) {
   // 4) we aren't supposed to shrink the backing store.
 
   // 1) Check that the array has fast elements.
-  BranchIfFastJSArray(receiver, context, FastJSArrayAccessMode::INBOUNDS_READ,
-                      &fast, &runtime);
+  BranchIfFastJSArray(receiver, context, &fast, &runtime);
 
   BIND(&fast);
   {
@@ -933,8 +928,7 @@ TF_BUILTIN(FastArrayPush, CodeStubAssembler) {
   Node* kind = nullptr;
 
   Label fast(this);
-  BranchIfFastJSArray(receiver, context, FastJSArrayAccessMode::ANY_ACCESS,
-                      &fast, &runtime);
+  BranchIfFastJSArray(receiver, context, &fast, &runtime);
 
   BIND(&fast);
   {
@@ -1062,8 +1056,7 @@ TF_BUILTIN(FastArrayShift, CodeStubAssembler) {
   // 5) we aren't supposed to left-trim the backing store.
 
   // 1) Check that the array has fast elements.
-  BranchIfFastJSArray(receiver, context, FastJSArrayAccessMode::INBOUNDS_READ,
-                      &fast, &runtime);
+  BranchIfFastJSArray(receiver, context, &fast, &runtime);
 
   BIND(&fast);
   {
@@ -1174,17 +1167,16 @@ TF_BUILTIN(FastArrayShift, CodeStubAssembler) {
     BIND(&fast_elements_smi);
     {
       Node* value = LoadFixedArrayElement(elements, 0);
-      int32_t header_size = FixedDoubleArray::kHeaderSize - kHeapObjectTag;
-      Node* memmove =
-          ExternalConstant(ExternalReference::libc_memmove_function(isolate()));
-      Node* start = IntPtrAdd(
-          BitcastTaggedToWord(elements),
-          ElementOffsetFromIndex(IntPtrConstant(0), HOLEY_SMI_ELEMENTS,
-                                 INTPTR_PARAMETERS, header_size));
-      CallCFunction3(MachineType::AnyTagged(), MachineType::Pointer(),
-                     MachineType::Pointer(), MachineType::UintPtr(), memmove,
-                     start, IntPtrAdd(start, IntPtrConstant(kPointerSize)),
-                     IntPtrMul(new_length, IntPtrConstant(kPointerSize)));
+      BuildFastLoop(IntPtrConstant(0), new_length,
+                    [&](Node* index) {
+                      StoreFixedArrayElement(
+                          elements, index,
+                          LoadFixedArrayElement(
+                              elements, IntPtrAdd(index, IntPtrConstant(1))),
+                          SKIP_WRITE_BARRIER);
+                    },
+                    1, ParameterMode::INTPTR_PARAMETERS,
+                    IndexAdvanceMode::kPost);
       StoreFixedArrayElement(elements, new_length, TheHoleConstant());
       GotoIf(WordEqual(value, TheHoleConstant()), &return_undefined);
       args.PopAndReturn(value);
@@ -1743,8 +1735,7 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant) {
 
   // Take slow path if not a JSArray, if retrieving elements requires
   // traversing prototype, or if access checks are required.
-  BranchIfFastJSArray(receiver, context, FastJSArrayAccessMode::INBOUNDS_READ,
-                      &init_index, &call_runtime);
+  BranchIfFastJSArray(receiver, context, &init_index, &call_runtime);
 
   BIND(&init_index);
   VARIABLE(index_var, MachineType::PointerRepresentation(), intptr_zero);

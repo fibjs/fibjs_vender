@@ -1517,7 +1517,6 @@ void Builtins::Generate_NotifyBuiltinContinuation(MacroAssembler* masm) {
     __ pop(r0);
   }
 
-  __ add(sp, sp, Operand(kPointerSize));  // Ignore state
   __ mov(pc, lr);                         // Jump to ContinueToBuiltin stub
 }
 
@@ -1573,50 +1572,15 @@ void Builtins::Generate_ContinueToJavaScriptBuiltinWithResult(
   Generate_ContinueToBuiltinHelper(masm, true, true);
 }
 
-static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
-                                             Deoptimizer::BailoutType type) {
+void Builtins::Generate_NotifyDeoptimized(MacroAssembler* masm) {
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-    // Pass the function and deoptimization type to the runtime system.
-    __ mov(r0, Operand(Smi::FromInt(static_cast<int>(type))));
-    __ push(r0);
     __ CallRuntime(Runtime::kNotifyDeoptimized);
   }
 
-  // Get the full codegen state from the stack and untag it -> r6.
-  __ ldr(r6, MemOperand(sp, 0 * kPointerSize));
-  __ SmiUntag(r6);
-  // Switch on the state.
-  Label with_tos_register, unknown_state;
-  __ cmp(r6,
-         Operand(static_cast<int>(Deoptimizer::BailoutState::NO_REGISTERS)));
-  __ b(ne, &with_tos_register);
-  __ add(sp, sp, Operand(1 * kPointerSize));  // Remove state.
-  __ Ret();
-
-  __ bind(&with_tos_register);
   DCHECK_EQ(kInterpreterAccumulatorRegister.code(), r0.code());
-  __ ldr(r0, MemOperand(sp, 1 * kPointerSize));
-  __ cmp(r6,
-         Operand(static_cast<int>(Deoptimizer::BailoutState::TOS_REGISTER)));
-  __ b(ne, &unknown_state);
-  __ add(sp, sp, Operand(2 * kPointerSize));  // Remove state.
+  __ pop(r0);
   __ Ret();
-
-  __ bind(&unknown_state);
-  __ stop("no cases left");
-}
-
-void Builtins::Generate_NotifyDeoptimized(MacroAssembler* masm) {
-  Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::EAGER);
-}
-
-void Builtins::Generate_NotifySoftDeoptimized(MacroAssembler* masm) {
-  Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::SOFT);
-}
-
-void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
-  Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::LAZY);
 }
 
 static void Generate_OnStackReplacementHelper(MacroAssembler* masm,

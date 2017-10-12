@@ -913,7 +913,6 @@ enum class ComparisonResult {
   kUndefined     // at least one of x or y was undefined or NaN
 };
 
-
 class AbstractCode;
 class AccessorPair;
 class AllocationSite;
@@ -1158,6 +1157,8 @@ class Object {
 
   enum ShouldThrow { THROW_ON_ERROR, DONT_THROW };
 
+  enum class Conversion { kToNumber, kToNumeric };
+
 #define RETURN_FAILURE(isolate, should_throw, call) \
   do {                                              \
     if ((should_throw) == DONT_THROW) {             \
@@ -1266,6 +1267,9 @@ class Object {
 
   // ES6 section 7.1.3 ToNumber
   MUST_USE_RESULT static inline MaybeHandle<Object> ToNumber(
+      Handle<Object> input);
+
+  MUST_USE_RESULT static inline MaybeHandle<Object> ToNumeric(
       Handle<Object> input);
 
   // ES6 section 7.1.4 ToInteger
@@ -1537,8 +1541,8 @@ class Object {
       Isolate* isolate, Handle<Object> value);
   MUST_USE_RESULT static MaybeHandle<String> ConvertToString(
       Isolate* isolate, Handle<Object> input);
-  MUST_USE_RESULT static MaybeHandle<Object> ConvertToNumber(
-      Isolate* isolate, Handle<Object> input);
+  MUST_USE_RESULT static MaybeHandle<Object> ConvertToNumberOrNumeric(
+      Isolate* isolate, Handle<Object> input, Conversion mode);
   MUST_USE_RESULT static MaybeHandle<Object> ConvertToInteger(
       Isolate* isolate, Handle<Object> input);
   MUST_USE_RESULT static MaybeHandle<Object> ConvertToInt32(
@@ -1950,12 +1954,10 @@ class PropertyArray : public HeapObject {
   // No weak fields.
   typedef BodyDescriptor BodyDescriptorWeak;
 
-  static const int kLengthMask = 0x3ff;
-  static const int kHashMask = 0x7ffffc00;
-  STATIC_ASSERT(kLengthMask + kHashMask == 0x7fffffff);
-
-  static const int kMaxLength = kLengthMask;
-  STATIC_ASSERT(kMaxLength > kMaxNumberOfDescriptors);
+  static const int kLengthFieldSize = 10;
+  class LengthField : public BitField<int, 0, kLengthFieldSize> {};
+  class HashField : public BitField<int, kLengthFieldSize,
+                                    kSmiValueSize - kLengthFieldSize - 1> {};
 
   static const int kNoHashSentinel = 0;
 
@@ -2182,13 +2184,15 @@ class JSReceiver: public HeapObject {
   MUST_USE_RESULT static MaybeHandle<FixedArray> GetOwnEntries(
       Handle<JSReceiver> object, PropertyFilter filter);
 
-  static const int kHashMask = PropertyArray::kHashMask;
+  static const int kHashMask = PropertyArray::HashField::kMask;
 
   // Layout description.
   static const int kPropertiesOrHashOffset = HeapObject::kHeaderSize;
   static const int kHeaderSize = HeapObject::kHeaderSize + kPointerSize;
 
   bool HasProxyInPrototype(Isolate* isolate);
+
+  bool HasComplexElements();
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSReceiver);
@@ -3646,7 +3650,6 @@ class Code: public HeapObject {
   V(OPTIMIZED_FUNCTION)     \
   V(BYTECODE_HANDLER)       \
   V(STUB)                   \
-  V(HANDLER)                \
   V(BUILTIN)                \
   V(REGEXP)                 \
   V(WASM_FUNCTION)          \
@@ -3721,20 +3724,13 @@ class Code: public HeapObject {
 
   inline int relocation_size() const;
 
-  // [flags]: Various code flags.
-  inline Flags flags() const;
-  inline void set_flags(Flags flags);
-
-  // [flags]: Access to specific code flags.
+  // [kind]: Access to specific code kind.
   inline Kind kind() const;
+  inline void set_kind(Kind kind);
 
-  // Testers for IC stub kinds.
-  inline bool is_handler() const;
   inline bool is_stub() const;
   inline bool is_optimized_code() const;
   inline bool is_wasm_code() const;
-
-  inline bool IsCodeStubOrIC() const;
 
   inline void set_raw_kind_specific_flags1(int value);
   inline void set_raw_kind_specific_flags2(int value);
@@ -3768,8 +3764,8 @@ class Code: public HeapObject {
   inline void set_is_construct_stub(bool value);
 
   // [builtin_index]: For builtins, tells which builtin index the code object
-  // has. Note that builtins can have a code kind other than BUILTIN. The
-  // builtin index is a non-negative integer for builtins, and -1 otherwise.
+  // has. The builtin index is a non-negative integer for builtins, and -1
+  // otherwise.
   inline int builtin_index() const;
   inline void set_builtin_index(int id);
   inline bool is_builtin() const;
@@ -3824,11 +3820,9 @@ class Code: public HeapObject {
   // Clear uninitialized padding space. This ensures that the snapshot content
   // is deterministic.
   inline void clear_padding();
-
-  // Flags operations.
-  static inline Flags ComputeFlags(Kind kind);
-
-  static inline Kind ExtractKindFromFlags(Flags flags);
+  // Initialize the flags field. Similar to clear_padding above this ensure that
+  // the snapshot content is deterministic.
+  inline void initialize_flags(Kind kind);
 
   // Convert a target address into a code object.
   static inline Code* GetCodeFromTargetAddress(Address address);
@@ -3951,6 +3945,23 @@ class Code: public HeapObject {
 
   static Handle<WeakCell> WeakCellFor(Handle<Code> code);
   WeakCell* CachedWeakCell();
+
+  // Return true if the function is inlined in the code.
+  bool Inlines(SharedFunctionInfo* sfi);
+
+  class OptimizedCodeIterator {
+   public:
+    explicit OptimizedCodeIterator(Isolate* isolate);
+    Code* Next();
+
+   private:
+    Context* next_context_;
+    Code* current_code_;
+    Isolate* isolate_;
+
+    DisallowHeapAllocation no_gc;
+    DISALLOW_COPY_AND_ASSIGN(OptimizedCodeIterator)
+  };
 
   static const int kConstantPoolSize =
       FLAG_enable_embedded_constant_pool ? kIntSize : 0;
@@ -4512,6 +4523,7 @@ class ContextExtension : public Struct {
   V(Function.prototype, call, FunctionCall)                 \
   V(Object, assign, ObjectAssign)                           \
   V(Object, create, ObjectCreate)                           \
+  V(Object, is, ObjectIs)                                   \
   V(Object.prototype, hasOwnProperty, ObjectHasOwnProperty) \
   V(Object.prototype, isPrototypeOf, ObjectIsPrototypeOf)   \
   V(Object.prototype, toString, ObjectToString)             \
@@ -4629,6 +4641,7 @@ enum BuiltinFunctionId {
   kMathPowHalf,
   // These are manually assigned to special getters during bootstrapping.
   kArrayBufferByteLength,
+  kArrayBufferIsView,
   kArrayEntries,
   kArrayKeys,
   kArrayValues,
@@ -4654,6 +4667,7 @@ enum BuiltinFunctionId {
   kTypedArrayEntries,
   kTypedArrayKeys,
   kTypedArrayLength,
+  kTypedArrayToStringTag,
   kTypedArrayValues,
   kSharedArrayBufferByteLength,
   kStringIterator,
@@ -4767,6 +4781,8 @@ class JSBoundFunction : public JSObject {
 
   static MaybeHandle<String> GetName(Isolate* isolate,
                                      Handle<JSBoundFunction> function);
+  static Maybe<int> GetLength(Isolate* isolate,
+                              Handle<JSBoundFunction> function);
   static MaybeHandle<Context> GetFunctionRealm(
       Handle<JSBoundFunction> function);
 
@@ -4812,8 +4828,7 @@ class JSFunction: public JSObject {
   inline Context* native_context();
 
   static Handle<Object> GetName(Isolate* isolate, Handle<JSFunction> function);
-  static MaybeHandle<Smi> GetLength(Isolate* isolate,
-                                    Handle<JSFunction> function);
+  static Maybe<int> GetLength(Isolate* isolate, Handle<JSFunction> function);
   static Handle<Context> GetFunctionRealm(Handle<JSFunction> function);
 
   // [code]: The generated code object for this function.  Executed
@@ -4827,9 +4842,6 @@ class JSFunction: public JSObject {
   // Get the abstract code associated with the function, which will either be
   // a Code object or a BytecodeArray.
   inline AbstractCode* abstract_code();
-
-  // Tells whether this function inlines the given shared function info.
-  bool Inlines(SharedFunctionInfo* candidate);
 
   // Tells whether or not this function is interpreted.
   //
@@ -5674,18 +5686,6 @@ class Relocatable BASE_EMBEDDED {
   Relocatable* prev_;
 };
 
-template <typename T>
-class VectorIterator {
- public:
-  VectorIterator(T* d, int l) : data_(Vector<const T>(d, l)), index_(0) { }
-  explicit VectorIterator(Vector<const T> data) : data_(data), index_(0) { }
-  T GetNext() { return data_[index_++]; }
-  bool has_more() { return index_ < data_.length(); }
- private:
-  Vector<const T> data_;
-  int index_;
-};
-
 
 // The Oddball describes objects null, undefined, true, and false.
 class Oddball: public HeapObject {
@@ -6524,8 +6524,8 @@ class JSArray: public JSObject {
 
   static const int kInitialMaxFastElementArray =
       (kMaxRegularHeapObjectSize - FixedArray::kHeaderSize - kSize -
-       AllocationMemento::kSize) /
-      kPointerSize;
+       AllocationMemento::kSize) >>
+      kDoubleSizeLog2;
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSArray);

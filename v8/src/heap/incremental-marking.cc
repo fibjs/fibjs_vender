@@ -214,11 +214,17 @@ class IncrementalMarkingMarkingVisitor final
       int start_offset =
           Max(FixedArray::BodyDescriptor::kStartOffset, chunk->progress_bar());
       if (start_offset < object_size) {
+        // Ensure that the object is either grey or black before pushing it
+        // into marking worklist.
+        incremental_marking_->marking_state()->WhiteToGrey(object);
         if (FLAG_concurrent_marking) {
           incremental_marking_->marking_worklist()->PushBailout(object);
         } else {
           incremental_marking_->marking_worklist()->Push(object);
         }
+        DCHECK(incremental_marking_->marking_state()->IsGrey(object) ||
+               incremental_marking_->marking_state()->IsBlack(object));
+
         int end_offset =
             Min(object_size, start_offset + kProgressBarScanningChunk);
         int already_scanned_offset = start_offset;
@@ -236,22 +242,6 @@ class IncrementalMarkingMarkingVisitor final
       FixedArray::BodyDescriptor::IterateBody(object, object_size, this);
     }
     return object_size;
-  }
-
-  V8_INLINE int VisitNativeContext(Map* map, Context* context) {
-    // We will mark cache black with a separate pass when we finish marking.
-    // Note that GC can happen when the context is not fully initialized,
-    // so the cache can be undefined.
-    Object* cache = context->get(Context::NORMALIZED_MAP_CACHE_INDEX);
-    if (!cache->IsUndefined(map->GetIsolate())) {
-      if (cache->IsHeapObject()) {
-        HeapObject* heap_obj = HeapObject::cast(cache);
-        // Mark the object grey if it is white, do not enque it into the marking
-        // deque.
-        incremental_marking_->marking_state()->WhiteToGrey(heap_obj);
-      }
-    }
-    return Parent::VisitNativeContext(map, context);
   }
 
   V8_INLINE void VisitPointer(HeapObject* host, Object** p) final {
@@ -419,7 +409,6 @@ void IncrementalMarking::ActivateGeneratedStub(Code* stub) {
   }
 }
 
-
 static void PatchIncrementalMarkingRecordWriteStubs(
     Heap* heap, RecordWriteStub::Mode mode) {
   UnseededNumberDictionary* stubs = heap->code_stubs();
@@ -439,6 +428,12 @@ static void PatchIncrementalMarkingRecordWriteStubs(
       }
     }
   }
+}
+
+void IncrementalMarking::Deactivate() {
+  DeactivateIncrementalWriteBarrier();
+  PatchIncrementalMarkingRecordWriteStubs(heap_,
+                                          RecordWriteStub::STORE_BUFFER_ONLY);
 }
 
 void IncrementalMarking::Start(GarbageCollectionReason gc_reason) {
@@ -887,18 +882,6 @@ void IncrementalMarking::Hurry() {
       }
     }
   }
-
-  Object* context = heap_->native_contexts_list();
-  while (!context->IsUndefined(heap_->isolate())) {
-    // GC can happen when the context is not fully initialized,
-    // so the cache can be undefined.
-    HeapObject* cache = HeapObject::cast(
-        Context::cast(context)->get(Context::NORMALIZED_MAP_CACHE_INDEX));
-    if (!cache->IsUndefined(heap_->isolate())) {
-      marking_state()->GreyToBlack(cache);
-    }
-    context = Context::cast(context)->next_context_link();
-  }
 }
 
 
@@ -927,11 +910,6 @@ void IncrementalMarking::Stop() {
   }
 
   IncrementalMarking::set_should_hurry(false);
-  if (IsMarking()) {
-    PatchIncrementalMarkingRecordWriteStubs(heap_,
-                                            RecordWriteStub::STORE_BUFFER_ONLY);
-    DeactivateIncrementalWriteBarrier();
-  }
   heap_->isolate()->stack_guard()->ClearGC();
   SetState(STOPPED);
   is_compacting_ = false;
@@ -1131,6 +1109,14 @@ size_t IncrementalMarking::Step(size_t bytes_to_process,
 
   size_t bytes_processed = 0;
   if (state_ == MARKING) {
+    if (FLAG_concurrent_marking) {
+      heap_->new_space()->ResetOriginalTop();
+      // It is safe to merge back all objects that were on hold to the shared
+      // work list at Step because we are at a safepoint where all objects
+      // are properly initialized.
+      marking_worklist()->shared()->MergeGlobalPool(
+          marking_worklist()->on_hold());
+    }
     if (FLAG_trace_incremental_marking && FLAG_trace_concurrent_marking &&
         FLAG_trace_gc_verbose) {
       marking_worklist()->Print();
@@ -1170,9 +1156,14 @@ size_t IncrementalMarking::Step(size_t bytes_to_process,
   heap_->tracer()->AddIncrementalMarkingStep(duration, bytes_processed);
   if (FLAG_trace_incremental_marking) {
     heap_->isolate()->PrintWithTimestamp(
-        "[IncrementalMarking] Step %s %zu bytes (%zu) in %.1f\n",
-        step_origin == StepOrigin::kV8 ? "in v8" : "in task", bytes_processed,
-        bytes_to_process, duration);
+        "[IncrementalMarking] Step %s %" PRIuS "KB (%" PRIuS "KB) in %.1f\n",
+        step_origin == StepOrigin::kV8 ? "in v8" : "in task",
+        bytes_processed / KB, bytes_to_process / KB, duration);
+  }
+  if (FLAG_trace_concurrent_marking) {
+    heap_->isolate()->PrintWithTimestamp(
+        "Concurrently marked %" PRIuS "KB\n",
+        heap_->concurrent_marking()->TotalMarkedBytes() / KB);
   }
   return bytes_processed;
 }

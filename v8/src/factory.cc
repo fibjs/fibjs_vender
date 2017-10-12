@@ -1423,6 +1423,22 @@ Handle<BigInt> Factory::NewBigIntRaw(int length, PretenureFlag pretenure) {
       BigInt);
 }
 
+Handle<BigInt> Factory::NewBigIntFromInt(int value, PretenureFlag pretenure) {
+  if (value == 0) return NewBigInt(0);
+  Handle<BigInt> result = NewBigIntRaw(1);
+  if (value > 0) {
+    result->set_digit(0, value);
+  } else if (value == kMinInt) {
+    STATIC_ASSERT(kMinInt == -kMaxInt - 1);
+    result->set_digit(0, static_cast<BigInt::digit_t>(kMaxInt) + 1);
+    result->set_sign(true);
+  } else {
+    result->set_digit(0, -value);
+    result->set_sign(true);
+  }
+  return result;
+}
+
 Handle<Object> Factory::NewError(Handle<JSFunction> constructor,
                                  MessageTemplate::Template template_index,
                                  Handle<Object> arg0, Handle<Object> arg1,
@@ -1743,7 +1759,7 @@ Handle<ModuleInfo> Factory::NewModuleInfo() {
 Handle<PreParsedScopeData> Factory::NewPreParsedScopeData() {
   Handle<PreParsedScopeData> result =
       Handle<PreParsedScopeData>::cast(NewStruct(TUPLE2_TYPE, TENURED));
-  result->set_scope_data(PodArray<uint32_t>::cast(*empty_byte_array()));
+  result->set_scope_data(PodArray<uint8_t>::cast(*empty_byte_array()));
   result->set_child_data(*empty_fixed_array());
   return result;
 }
@@ -1762,7 +1778,7 @@ Handle<Code> Factory::NewCodeRaw(int object_size, bool immovable) {
                      Code);
 }
 
-Handle<Code> Factory::NewCode(const CodeDesc& desc, Code::Flags flags,
+Handle<Code> Factory::NewCode(const CodeDesc& desc, Code::Kind kind,
                               Handle<Object> self_ref, bool immovable) {
   Handle<ByteArray> reloc_info = NewByteArray(desc.reloc_size, TENURED);
 
@@ -1790,7 +1806,7 @@ Handle<Code> Factory::NewCode(const CodeDesc& desc, Code::Flags flags,
   DisallowHeapAllocation no_gc;
   code->set_instruction_size(desc.instr_size);
   code->set_relocation_info(*reloc_info);
-  code->set_flags(flags);
+  code->initialize_flags(kind);
   code->set_has_unwinding_info(has_unwinding_info);
   code->set_raw_kind_specific_flags1(0);
   code->set_raw_kind_specific_flags2(0);
@@ -2077,6 +2093,7 @@ Handle<Module> Factory::NewModule(Handle<SharedFunctionInfo> code) {
   module->set_script(Script::cast(code->script()));
   module->set_status(Module::kUninstantiated);
   module->set_exception(isolate()->heap()->the_hole_value());
+  module->set_import_meta(isolate()->heap()->the_hole_value());
   module->set_dfs_index(-1);
   module->set_dfs_ancestor_index(-1);
   return module;

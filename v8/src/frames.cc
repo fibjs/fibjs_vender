@@ -16,7 +16,6 @@
 #include "src/string-stream.h"
 #include "src/visitors.h"
 #include "src/vm-state-inl.h"
-#include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects-inl.h"
 
 namespace v8 {
@@ -1120,6 +1119,10 @@ int JavaScriptFrame::ComputeParametersCount() const {
 }
 
 int JavaScriptBuiltinContinuationFrame::ComputeParametersCount() const {
+  // Assert that the first allocatable register is also the argument count
+  // register.
+  DCHECK_EQ(RegisterConfiguration::Default()->GetAllocatableGeneralCode(0),
+            kJavaScriptCallArgCountRegister.code());
   Object* argc_object =
       Memory::Object_at(fp() + BuiltinContinuationFrameConstants::kArgCOffset);
   return Smi::ToInt(argc_object);

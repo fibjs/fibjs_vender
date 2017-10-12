@@ -186,6 +186,7 @@ using v8::MemoryPressureLevel;
   V(WeakCell, empty_weak_cell, EmptyWeakCell)                                  \
   V(InterceptorInfo, noop_interceptor_info, NoOpInterceptorInfo)               \
   /* Protectors */                                                             \
+  V(Cell, array_constructor_protector, ArrayConstructorProtector)              \
   V(PropertyCell, array_protector, ArrayProtector)                             \
   V(Cell, is_concat_spreadable_protector, IsConcatSpreadableProtector)         \
   V(PropertyCell, species_protector, SpeciesProtector)                         \
@@ -811,8 +812,6 @@ class Heap {
   // An object should be promoted if the object has survived a
   // scavenge operation.
   inline bool ShouldBePromoted(Address old_address);
-
-  void ClearNormalizedMapCaches();
 
   void IncrementDeferredCount(v8::Isolate::UseCounterFeature feature);
 
@@ -2257,7 +2256,6 @@ class Heap {
   Space* space_[LAST_SPACE + 1];
   HeapState gc_state_;
   int gc_post_processing_depth_;
-  Address new_space_top_after_last_gc_;
 
   // Returns the amount of external memory registered since last global gc.
   uint64_t PromotedExternalMemorySize();

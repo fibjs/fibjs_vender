@@ -935,9 +935,6 @@ void Heap::GarbageCollectionEpilogue() {
   ReportStatisticsAfterGC();
 #endif  // DEBUG
 
-  // Remember the last top pointer so that we can later find out
-  // whether we allocated in new space since the last GC.
-  new_space_top_after_last_gc_ = new_space()->top();
   last_gc_time_ = MonotonicallyIncreasingTimeInMs();
 
   {
@@ -1473,26 +1470,6 @@ void Heap::EnsureFromSpaceIsCommitted() {
 }
 
 
-void Heap::ClearNormalizedMapCaches() {
-  if (isolate_->bootstrapper()->IsActive() &&
-      !incremental_marking()->IsMarking()) {
-    return;
-  }
-
-  Object* context = native_contexts_list();
-  while (!context->IsUndefined(isolate())) {
-    // GC can happen when the context is not fully initialized,
-    // so the cache can be undefined.
-    Object* cache =
-        Context::cast(context)->get(Context::NORMALIZED_MAP_CACHE_INDEX);
-    if (!cache->IsUndefined(isolate())) {
-      NormalizedMapCache::cast(cache)->Clear();
-    }
-    context = Context::cast(context)->next_context_link();
-  }
-}
-
-
 void Heap::UpdateSurvivalStatistics(int start_new_space_size) {
   if (start_new_space_size == 0) return;
 
@@ -1733,7 +1710,6 @@ void Heap::MarkCompactPrologue() {
   isolate_->compilation_cache()->MarkCompactPrologue();
 
   FlushNumberStringCache();
-  ClearNormalizedMapCaches();
 }
 
 
@@ -1935,6 +1911,12 @@ void Heap::Scavenge() {
   IncrementalMarking::PauseBlackAllocationScope pause_black_allocation(
       incremental_marking());
 
+  if (mark_compact_collector()->sweeper().sweeping_in_progress() &&
+      memory_allocator_->unmapper()->NumberOfDelayedChunks() >
+          static_cast<int>(new_space_->MaximumCapacity() / Page::kPageSize)) {
+    mark_compact_collector()->EnsureSweepingCompleted();
+  }
+
   mark_compact_collector()->sweeper().EnsureNewSpaceCompleted();
 
   SetGCState(SCAVENGE);
@@ -1954,8 +1936,8 @@ void Heap::Scavenge() {
   const bool is_logging = IsLogging(isolate());
   const int num_scavenge_tasks = NumberOfScavengeTasks();
   OneshotBarrier barrier;
-  CopiedList copied_list(num_scavenge_tasks);
-  PromotionList promotion_list(num_scavenge_tasks);
+  Scavenger::CopiedList copied_list(num_scavenge_tasks);
+  Scavenger::PromotionList promotion_list(num_scavenge_tasks);
   for (int i = 0; i < num_scavenge_tasks; i++) {
     scavengers[i] =
         new Scavenger(this, is_logging, &copied_list, &promotion_list, i);
@@ -4102,8 +4084,10 @@ void Heap::NotifyObjectLayoutChange(HeapObject* object, int size,
     }
   }
 #ifdef VERIFY_HEAP
-  DCHECK_NULL(pending_layout_change_object_);
-  pending_layout_change_object_ = object;
+  if (FLAG_verify_heap) {
+    DCHECK_NULL(pending_layout_change_object_);
+    pending_layout_change_object_ = object;
+  }
 #endif
 }
 
@@ -4126,6 +4110,8 @@ class SlotCollectingVisitor final : public ObjectVisitor {
 };
 
 void Heap::VerifyObjectLayoutChange(HeapObject* object, Map* new_map) {
+  if (!FLAG_verify_heap) return;
+
   // Check that Heap::NotifyObjectLayout was called for object transitions
   // that are not safe for concurrent marking.
   // If you see this check triggering for a freshly allocated object,
@@ -5407,10 +5393,10 @@ bool Heap::SetUp() {
         mark_compact_collector_->marking_worklist();
     concurrent_marking_ = new ConcurrentMarking(
         this, marking_worklist->shared(), marking_worklist->bailout(),
-        mark_compact_collector_->weak_objects());
+        marking_worklist->on_hold(), mark_compact_collector_->weak_objects());
   } else {
     concurrent_marking_ =
-        new ConcurrentMarking(this, nullptr, nullptr, nullptr);
+        new ConcurrentMarking(this, nullptr, nullptr, nullptr, nullptr);
   }
 
   for (int i = 0; i <= LAST_SPACE; i++) {
@@ -5421,7 +5407,6 @@ bool Heap::SetUp() {
   if (!new_space_->SetUp(initial_semispace_size_, max_semi_space_size_)) {
     return false;
   }
-  new_space_top_after_last_gc_ = new_space()->top();
 
   space_[OLD_SPACE] = old_space_ =
       new OldSpace(this, OLD_SPACE, NOT_EXECUTABLE);

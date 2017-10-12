@@ -145,7 +145,8 @@ void MaybePrintAst(ParseInfo* parse_info, CompilationInfo* compilation_info) {
      << compilation_info->GetDebugName().get() << "]" << std::endl;
 #ifdef DEBUG
   os << "--- AST ---" << std::endl
-     << AstPrinter(isolate).PrintProgram(parse_info->literal()) << std::endl;
+     << AstPrinter(isolate).PrintProgram(compilation_info->literal())
+     << std::endl;
 #endif  // DEBUG
 }
 
@@ -207,7 +208,8 @@ InterpreterCompilationJob::Status InterpreterCompilationJob::FinalizeJobImpl() {
       !executed_on_background_thread() ? runtime_call_stats_ : nullptr,
       &RuntimeCallStats::CompileIgnitionFinalization);
 
-  Handle<BytecodeArray> bytecodes = generator()->FinalizeBytecode(isolate());
+  Handle<BytecodeArray> bytecodes =
+      generator()->FinalizeBytecode(isolate(), parse_info()->script());
   if (generator()->HasStackOverflow()) {
     return FAILED;
   }

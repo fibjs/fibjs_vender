@@ -195,6 +195,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   TNode<Float64T> Float64Round(SloppyTNode<Float64T> x);
   TNode<Float64T> Float64RoundToEven(SloppyTNode<Float64T> x);
   TNode<Float64T> Float64Trunc(SloppyTNode<Float64T> x);
+  // Select the minimum of the two provided Number values.
+  TNode<Object> NumberMax(SloppyTNode<Object> left, SloppyTNode<Object> right);
+  // Select the minimum of the two provided Number values.
+  TNode<Object> NumberMin(SloppyTNode<Object> left, SloppyTNode<Object> right);
 
   // Tag a Word as a Smi value.
   TNode<Smi> SmiTag(SloppyTNode<IntPtrT> value);
@@ -275,6 +279,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Smi | HeapNumber operations.
   Node* NumberInc(Node* value);
   Node* NumberDec(Node* value);
+  Node* NumberAdd(Node* a, Node* b);
+  Node* NumberSub(Node* a, Node* b);
   void GotoIfNotNumber(Node* value, Label* is_not_number);
   void GotoIfNumber(Node* value, Label* is_number);
 
@@ -397,10 +403,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   void BranchIfJSReceiver(Node* object, Label* if_true, Label* if_false);
   void BranchIfJSObject(Node* object, Label* if_true, Label* if_false);
 
-  enum class FastJSArrayAccessMode { INBOUNDS_READ, ANY_ACCESS };
-  void BranchIfFastJSArray(Node* object, Node* context,
-                           FastJSArrayAccessMode mode, Label* if_true,
+  void BranchIfFastJSArray(Node* object, Node* context, Label* if_true,
                            Label* if_false);
+  void BranchIfFastJSArrayForCopy(Node* object, Node* context, Label* if_true,
+                                  Label* if_false);
 
   // Load value from current frame by given offset in bytes.
   Node* LoadFromFrame(int offset, MachineType rep = MachineType::AnyTagged());
@@ -706,8 +712,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                               int start_offset = JSObject::kHeaderSize);
 
   // Allocate a JSArray without elements and initialize the header fields.
-  Node* AllocateUninitializedJSArrayWithoutElements(ElementsKind kind,
-                                                    Node* array_map,
+  Node* AllocateUninitializedJSArrayWithoutElements(Node* array_map,
                                                     Node* length,
                                                     Node* allocation_site);
   // Allocate and return a JSArray with initialized header fields and its
@@ -944,9 +949,13 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsWeakCell(Node* object);
   Node* IsUndetectableMap(Node* map);
   Node* IsArrayProtectorCellInvalid();
+  Node* IsSpeciesProtectorCellInvalid();
+  Node* IsPrototypeInitialArrayPrototype(Node* context, Node* map);
 
   // True iff |object| is a Smi or a HeapNumber.
   Node* IsNumber(Node* object);
+  // True iff |object| is a Smi or a HeapNumber or a BigInt.
+  Node* IsNumeric(Node* object);
 
   // True iff |number| is either a Smi, or a HeapNumber whose value is not
   // within Smi range.
@@ -1009,6 +1018,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* ToName(Node* context, Node* input);
   // Convert a Non-Number object to a Number.
   Node* NonNumberToNumber(Node* context, Node* input);
+  // Convert a Non-Number object to a Numeric.
+  Node* NonNumberToNumeric(Node* context, Node* input);
   // Convert any object to a Number.
   Node* ToNumber(Node* context, Node* input);
 
@@ -1579,9 +1590,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // ECMA#sec-samevalue
   // Similar to StrictEqual except that NaNs are treated as equal and minus zero
   // differs from positive zero.
-  // Unlike Equal and StrictEqual, returns a value suitable for use in Branch
-  // instructions, e.g. Branch(SameValue(...), &label).
-  Node* SameValue(Node* lhs, Node* rhs);
+  void BranchIfSameValue(Node* lhs, Node* rhs, Label* if_true, Label* if_false);
 
   enum HasPropertyLookupMode { kHasProperty, kForInHasProperty };
 
@@ -1685,8 +1694,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                     Node* top_address, Node* limit_address);
   // Allocate and return a JSArray of given total size in bytes with header
   // fields initialized.
-  Node* AllocateUninitializedJSArray(ElementsKind kind, Node* array_map,
-                                     Node* length, Node* allocation_site,
+  Node* AllocateUninitializedJSArray(Node* array_map, Node* length,
+                                     Node* allocation_site,
                                      Node* size_in_bytes);
 
   Node* SmiShiftBitsConstant();
@@ -1718,6 +1727,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                      Node* character_count);
 
   static const int kElementLoopUnrollThreshold = 8;
+
+  Node* NonNumberToNumberOrNumeric(Node* context, Node* input,
+                                   Object::Conversion mode);
 };
 
 class CodeStubArguments {

@@ -1,9 +1,10 @@
 var fs = require('fs');
 var platform = process.platform;
 
-var folders = {
+var oss = {
     'linux': 'Linux',
     'darwin': 'Darwin',
+    'freebsd': 'FreeBSD',
     'win32': 'Windows'
 }
 
@@ -24,11 +25,11 @@ function build_posix() {
             '-j'
         ]);
 
-        process.run('bin/' + folders[platform] + '_' + arch + '_release/fibjs', ['test/vm_test/build_jsc.js']);
-        process.run('bin/' + folders[platform] + '_' + arch + '_release/v8_test');
+        process.run(`bin/${oss[platform]}_${arch}_release/fibjs`, ['test/vm_test/build_jsc.js']);
+        process.run(`bin/${oss[platform]}_${arch}_release/v8_test`);
 
-        fs.unlink('vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '.cc');
-        fs.rename('snapshot-' + fname[arch] + '.cc', 'vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '.cc');
+        fs.unlink(`vender/v8/src/snapshot/snapshots/snapshot-${fname[arch]}-${oss[platform]}.cc`);
+        fs.rename(`snapshot-${fname[arch]}-${oss[platform]}.cc`, `vender/v8/src/snapshot/snapshots/snapshot-${fname[arch]}-${oss[platform]}.cc`);
     }
 
     function build_remote(arch) {
@@ -39,7 +40,7 @@ function build_posix() {
         ]);
 
         process.run('scp', [
-            'bin/' + folders[platform] + '_' + arch + '_release/fibjs',
+            `bin/${oss[platform]}_${arch}_release/fibjs`,
             arch + ':~/fibjs'
         ]);
 
@@ -55,7 +56,7 @@ function build_posix() {
         ]);
 
         process.run('scp', [
-            'bin/' + folders[platform] + '_' + arch + '_release/v8_test',
+            `bin/${oss[platform]}_${arch}_release/v8_test`,
             arch + ':~/v8_test'
         ]);
 
@@ -65,13 +66,13 @@ function build_posix() {
         ]);
 
         process.run('scp', [
-            arch + ':~/jsc_test_' + fname[arch] + '.jsc',
-            'test/vm_test/jsc_test_' + fname[arch] + '.jsc'
+            arch + `:~/jsc_test_${fname[arch]}.jsc`,
+            `test/vm_test/jsc_test_${fname[arch]}.jsc`
         ]);
 
         process.run('scp', [
-            arch + ':~/snapshot-' + fname[arch] + '.cc',
-            'vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '.cc'
+            arch + `:~/snapshot-${fname[arch]}-${oss[platform]}.cc`,
+            `vender/v8/src/snapshot/snapshots/snapshot-${fname[arch]}-${oss[platform]}.cc`
         ]);
     }
 
@@ -92,10 +93,10 @@ function build_win() {
             arch
         ]);
 
-        process.run('bin/' + folders[platform] + '_' + arch + '_release/v8_test.exe');
+        process.run(`bin/${oss[platform]}_${arch}_release/v8_test.exe`);
 
-        fs.unlink('vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '-win.cc');
-        fs.rename('snapshot-' + fname[arch] + '-win.cc', 'vender/v8/src/snapshot/snapshots/snapshot-' + fname[arch] + '-win.cc');
+        fs.unlink(`vender/v8/src/snapshot/snapshots/snapshot-${fname[arch]}-Windows.cc`);
+        fs.rename(`snapshot-${fname[arch]}-Windows.cc`, `vender/v8/src/snapshot/snapshots/snapshot-${fname[arch]}-Windows.cc`);
     }
 
     build_one("amd64");

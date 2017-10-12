@@ -807,7 +807,7 @@ void CodeGenerator::BailoutIfDeoptimized() {
   int pc = __ pc_offset();
   __ bind(&current);
   int offset = Code::kKindSpecificFlags1Offset - (Code::kHeaderSize + pc);
-  __ Ld(a2, MemOperand(ra, offset));
+  __ Lw(a2, MemOperand(ra, offset));
   __ pop(ra);
   __ And(a2, a2, Operand(1 << Code::kMarkedForDeoptimizationBit));
   Handle<Code> code = isolate()->builtins()->builtin_handle(
@@ -3365,6 +3365,10 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
                          branch->fallthru);
 }
 
+void CodeGenerator::AssembleArchDeoptBranch(Instruction* instr,
+                                            BranchInfo* branch) {
+  AssembleArchBranch(instr, branch);
+}
 
 void CodeGenerator::AssembleArchJump(RpoNumber target) {
   if (!IsNextInAssemblyOrder(target)) __ Branch(GetLabel(target));
@@ -3406,6 +3410,10 @@ void CodeGenerator::AssembleArchTrap(Instruction* instr,
                              tasm()->isolate()),
                          0);
         __ LeaveFrame(StackFrame::WASM_COMPILED);
+        CallDescriptor* descriptor = gen_->linkage()->GetIncomingDescriptor();
+        int pop_count = static_cast<int>(descriptor->StackParameterCount());
+        pop_count += (pop_count & 1);  // align
+        __ Drop(pop_count);
         __ Ret();
       } else {
         gen_->AssembleSourcePosition(instr_);

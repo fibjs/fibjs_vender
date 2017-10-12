@@ -48,8 +48,14 @@ int main(int argc, char** argv)
     defname = "V8_TARGET_ARCH_S390";
 #endif
 
-#ifdef _WIN32
-    fname += "-win";
+#ifdef Windows
+    fname += "-Windows";
+#elif defined(Linux)
+    fname += "-Linux";
+#elif defined(FreeBSD)
+    fname += "-FreeBSD";
+#elif defined(Darwin)
+    fname += "-Darwin";
 #endif
 
     fname = "snapshot-" + fname + ".cc";

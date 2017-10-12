@@ -2516,6 +2516,12 @@ void BytecodeGraphBuilder::VisitToNumber() {
   environment()->BindAccumulator(node, Environment::kAttachFrameState);
 }
 
+void BytecodeGraphBuilder::VisitToNumeric() {
+  // TODO(neis): This is currently only correct in the absence of bigints.
+  DCHECK(!FLAG_harmony_bigint);
+  VisitToNumber();
+}
+
 void BytecodeGraphBuilder::VisitJump() { BuildJump(); }
 
 void BytecodeGraphBuilder::VisitJumpConstant() { BuildJump(); }
@@ -2639,8 +2645,6 @@ DEBUG_BREAK_BYTECODE_LIST(DEBUG_BREAK);
 #undef DEBUG_BREAK
 
 void BytecodeGraphBuilder::VisitIncBlockCounter() {
-  DCHECK(FLAG_block_coverage);
-
   Node* closure = GetFunctionClosure();
   Node* coverage_array_slot =
       jsgraph()->Constant(bytecode_iterator().GetIndexOperand(0));

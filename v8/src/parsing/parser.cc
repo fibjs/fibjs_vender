@@ -383,6 +383,12 @@ Expression* Parser::FunctionSentExpression(int pos) {
                                    args, pos);
 }
 
+Expression* Parser::ImportMetaExpression(int pos) {
+  return factory()->NewCallRuntime(
+      Runtime::kGetImportMetaObject,
+      new (zone()) ZoneList<Expression*>(0, zone()), pos);
+}
+
 Literal* Parser::ExpressionFromLiteral(Token::Value token, int pos) {
   switch (token) {
     case Token::NULL_LITERAL:
@@ -464,7 +470,7 @@ Parser::Parser(ParseInfo* info)
     : ParserBase<Parser>(info->zone(), &scanner_, info->stack_limit(),
                          info->extension(), info->GetOrCreateAstValueFactory(),
                          info->runtime_call_stats(), true),
-      scanner_(info->unicode_cache()),
+      scanner_(info->unicode_cache(), use_counts_),
       reusable_preparser_(nullptr),
       mode_(PARSE_EAGERLY),  // Lazy mode must be set explicitly.
       source_range_map_(info->source_range_map()),
@@ -504,6 +510,7 @@ Parser::Parser(ParseInfo* info)
   set_allow_harmony_class_fields(FLAG_harmony_class_fields);
   set_allow_harmony_object_rest_spread(FLAG_harmony_object_rest_spread);
   set_allow_harmony_dynamic_import(FLAG_harmony_dynamic_import);
+  set_allow_harmony_import_meta(FLAG_harmony_import_meta);
   set_allow_harmony_async_iteration(FLAG_harmony_async_iteration);
   set_allow_harmony_template_escapes(FLAG_harmony_template_escapes);
   for (int feature = 0; feature < v8::Isolate::kUseCounterFeatureCount;
@@ -911,12 +918,15 @@ Statement* Parser::ParseModuleItem(bool* ok) {
     return ParseExportDeclaration(ok);
   }
 
-  // We must be careful not to parse a dynamic import expression as an import
-  // declaration.
-  if (next == Token::IMPORT &&
-      (!allow_harmony_dynamic_import() || PeekAhead() != Token::LPAREN)) {
-    ParseImportDeclaration(CHECK_OK);
-    return factory()->NewEmptyStatement(kNoSourcePosition);
+  if (next == Token::IMPORT) {
+    // We must be careful not to parse a dynamic import expression as an import
+    // declaration. Same for import.meta expressions.
+    Token::Value peek_ahead = PeekAhead();
+    if ((!allow_harmony_dynamic_import() || peek_ahead != Token::LPAREN) &&
+        (!allow_harmony_import_meta() || peek_ahead != Token::PERIOD)) {
+      ParseImportDeclaration(CHECK_OK);
+      return factory()->NewEmptyStatement(kNoSourcePosition);
+    }
   }
 
   return ParseStatementListItem(ok);
@@ -1399,11 +1409,11 @@ Variable* Parser::Declare(Declaration* declaration,
                           var_end_pos != kNoSourcePosition
                               ? var_end_pos
                               : declaration->proxy()->position() + 1);
-    if (declaration_kind == DeclarationDescriptor::NORMAL) {
+    if (declaration_kind == DeclarationDescriptor::PARAMETER) {
+      ReportMessageAt(loc, MessageTemplate::kParamDupe);
+    } else {
       ReportMessageAt(loc, MessageTemplate::kVarRedeclaration,
                       declaration->proxy()->raw_name());
-    } else {
-      ReportMessageAt(loc, MessageTemplate::kParamDupe);
     }
     return nullptr;
   }

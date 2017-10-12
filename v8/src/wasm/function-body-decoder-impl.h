@@ -51,18 +51,21 @@ struct WasmException;
                 (message)))
 
 #define ATOMIC_OP_LIST(V)              \
+  V(I32AtomicLoad, Uint32)             \
   V(I32AtomicAdd, Uint32)              \
   V(I32AtomicSub, Uint32)              \
   V(I32AtomicAnd, Uint32)              \
   V(I32AtomicOr, Uint32)               \
   V(I32AtomicXor, Uint32)              \
   V(I32AtomicExchange, Uint32)         \
+  V(I32AtomicLoad8U, Uint8)            \
   V(I32AtomicAdd8U, Uint8)             \
   V(I32AtomicSub8U, Uint8)             \
   V(I32AtomicAnd8U, Uint8)             \
   V(I32AtomicOr8U, Uint8)              \
   V(I32AtomicXor8U, Uint8)             \
   V(I32AtomicExchange8U, Uint8)        \
+  V(I32AtomicLoad16U, Uint16)          \
   V(I32AtomicAdd16U, Uint16)           \
   V(I32AtomicSub16U, Uint16)           \
   V(I32AtomicAnd16U, Uint16)           \
@@ -72,6 +75,11 @@ struct WasmException;
   V(I32AtomicCompareExchange, Uint32)  \
   V(I32AtomicCompareExchange8U, Uint8) \
   V(I32AtomicCompareExchange16U, Uint16)
+
+#define ATOMIC_STORE_OP_LIST(V) \
+  V(I32AtomicStore, Uint32)     \
+  V(I32AtomicStore8U, Uint8)    \
+  V(I32AtomicStore16U, Uint16)
 
 template <typename T>
 Vector<T> vec2vec(std::vector<T>& vec) {
@@ -155,51 +163,31 @@ struct GlobalIndexOperand {
 
 template <bool validate>
 struct BlockTypeOperand {
-  uint32_t arity = 0;
-  const byte* types = nullptr;  // pointer to encoded types for the block.
   unsigned length = 1;
+  ValueType type = kWasmStmt;
+  uint32_t sig_index = 0;
+  FunctionSig* sig = nullptr;
 
   inline BlockTypeOperand(Decoder* decoder, const byte* pc) {
     uint8_t val = decoder->read_u8<validate>(pc + 1, "block type");
-    ValueType type = kWasmStmt;
-    if (decode_local_type(val, &type)) {
-      arity = type == kWasmStmt ? 0 : 1;
-      types = pc + 1;
-    } else {
+    if (!decode_local_type(val, &type)) {
       // Handle multi-value blocks.
       if (!VALIDATE(FLAG_experimental_wasm_mv)) {
-        decoder->error(pc + 1, "invalid block arity > 1");
-        return;
-      }
-      if (!VALIDATE(val == kMultivalBlock)) {
         decoder->error(pc + 1, "invalid block type");
         return;
       }
-      // Decode and check the types vector of the block.
-      unsigned len = 0;
-      uint32_t count =
-          decoder->read_u32v<validate>(pc + 2, &len, "block arity");
-      // {count} is encoded as {arity-2}, so that a {0} count here corresponds
-      // to a block with 2 values. This makes invalid/redundant encodings
-      // impossible.
-      arity = count + 2;
-      length = 1 + len + arity;
-      types = pc + 1 + 1 + len;
-
-      for (uint32_t i = 0; i < arity; i++) {
-        uint32_t offset = 1 + 1 + len + i;
-        val = decoder->read_u8<validate>(pc + offset, "block type");
-        decode_local_type(val, &type);
-        if (!VALIDATE(type != kWasmStmt)) {
-          decoder->error(pc + offset, "invalid block type");
-          return;
-        }
+      int32_t index =
+          decoder->read_i32v<validate>(pc + 1, &length, "block arity");
+      if (!VALIDATE(length > 0 && index >= 0)) {
+        decoder->error(pc + 1, "invalid block type index");
+        return;
       }
+      sig_index = static_cast<uint32_t>(index);
     }
   }
 
   // Decode a byte representing a local type. Return {false} if the encoded
-  // byte was invalid or {kMultivalBlock}.
+  // byte was invalid or the start of a type index.
   inline bool decode_local_type(uint8_t val, ValueType* result) {
     switch (static_cast<ValueTypeCode>(val)) {
       case kLocalVoid:
@@ -221,18 +209,29 @@ struct BlockTypeOperand {
         *result = kWasmS128;
         return true;
       default:
-        *result = kWasmStmt;
+        *result = kWasmVar;
         return false;
     }
   }
 
-  ValueType read_entry(unsigned index) {
-    DCHECK_LT(index, arity);
-    ValueType result;
-    bool success = decode_local_type(types[index], &result);
-    DCHECK(success);
-    USE(success);
-    return result;
+  uint32_t in_arity() const {
+    if (type != kWasmVar) return 0;
+    return static_cast<uint32_t>(sig->parameter_count());
+  }
+  uint32_t out_arity() const {
+    if (type == kWasmStmt) return 0;
+    if (type != kWasmVar) return 1;
+    return static_cast<uint32_t>(sig->return_count());
+  }
+  ValueType in_type(uint32_t index) {
+    DCHECK_EQ(kWasmVar, type);
+    return sig->GetParam(index);
+  }
+  ValueType out_type(uint32_t index) {
+    if (type == kWasmVar) return sig->GetReturn(index);
+    DCHECK_NE(kWasmStmt, type);
+    DCHECK_EQ(0, index);
+    return type;
   }
 };
 
@@ -565,8 +564,7 @@ struct ControlWithNamedConstructors : public ControlBase<Value> {
   F(Throw, const ExceptionIndexOperand<validate>&, Control* block,             \
     const Vector<Value>& args)                                                 \
   F(CatchException, const ExceptionIndexOperand<validate>& operand,            \
-    Control* block, void** caught_values)                                      \
-  F(SetCaughtValue, void* caught_values, Value* value, size_t index)           \
+    Control* block, Vector<Value> caught_values)                               \
   F(AtomicOp, WasmOpcode opcode, Vector<Value> args,                           \
     const MemoryAccessOperand<validate>& operand, Value* result)
 
@@ -962,6 +960,23 @@ class WasmDecoder : public Decoder {
             return 2;
         }
       }
+      case kAtomicPrefix: {
+        byte atomic_index = decoder->read_u8<validate>(pc + 1, "atomic_index");
+        WasmOpcode opcode =
+            static_cast<WasmOpcode>(kAtomicPrefix << 8 | atomic_index);
+        switch (opcode) {
+#define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
+          FOREACH_ATOMIC_OPCODE(DECLARE_OPCODE_CASE)
+#undef DECLARE_OPCODE_CASE
+          {
+            MemoryAccessOperand<validate> operand(decoder, pc + 1, UINT32_MAX);
+            return 2 + operand.length;
+          }
+          default:
+            decoder->error(pc, "invalid Atomics opcode");
+            return 2;
+        }
+      }
       default:
         return 1;
     }
@@ -1241,6 +1256,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             break;
           case kExprBlock: {
             BlockTypeOperand<validate> operand(this, this->pc_);
+            if (!LookupBlockType(&operand)) break;
             auto* block = PushBlock();
             SetBlockType(block, operand);
             len = 1 + operand.length;
@@ -1266,6 +1282,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           case kExprTry: {
             CHECK_PROTOTYPE_OPCODE(eh);
             BlockTypeOperand<validate> operand(this, this->pc_);
+            if (!LookupBlockType(&operand)) break;
             auto* try_block = PushTry();
             SetBlockType(try_block, operand);
             len = 1 + operand.length;
@@ -1298,13 +1315,13 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             c->kind = kControlTryCatch;
             FallThruTo(c);
             stack_.resize(c->stack_depth);
-            void* caught_values = nullptr;
-            interface_.CatchException(this, operand, c, &caught_values);
             const WasmExceptionSig* sig = operand.exception->sig;
             for (size_t i = 0, e = sig->parameter_count(); i < e; ++i) {
-              auto* value = Push(sig->GetParam(i));
-              interface_.SetCaughtValue(this, caught_values, value, i);
+              Push(sig->GetParam(i));
             }
+            Vector<Value> values(stack_.data() + c->stack_depth,
+                                 sig->parameter_count());
+            interface_.CatchException(this, operand, c, values);
             break;
           }
           case kExprCatchAll: {
@@ -1315,6 +1332,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           }
           case kExprLoop: {
             BlockTypeOperand<validate> operand(this, this->pc_);
+            if (!LookupBlockType(&operand)) break;
             // The continue environment is the inner environment.
             auto* block = PushLoop();
             SetBlockType(&control_.back(), operand);
@@ -1325,6 +1343,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           case kExprIf: {
             // Condition on top of stack. Split environments for branches.
             BlockTypeOperand<validate> operand(this, this->pc_);
+            if (!LookupBlockType(&operand)) break;
             auto cond = Pop(0, kWasmI32);
             auto* if_block = PushIf();
             SetBlockType(if_block, operand);
@@ -1693,17 +1712,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             opcode = static_cast<WasmOpcode>(opcode << 8 | atomic_index);
             TRACE("  @%-4d #%-20s|", startrel(this->pc_),
                   WasmOpcodes::OpcodeName(opcode));
-            switch (opcode) {
-#define DECODE_ATOMIC_BINOP(Name, Type)                     \
-  case kExpr##Name: {                                       \
-    len += DecodeAtomicOpcode(opcode, MachineType::Type()); \
-    break;                                                  \
-  }
-              ATOMIC_OP_LIST(DECODE_ATOMIC_BINOP)
-#undef DECODE_ATOMIC_BINOP
-              default:
-                this->error("Invalid opcode");
-            }
+            len += DecodeAtomicOpcode(opcode);
             break;
           }
           default: {
@@ -1794,14 +1803,30 @@ class WasmFullDecoder : public WasmDecoder<validate> {
     interface_.EndControl(this, current);
   }
 
+  bool LookupBlockType(BlockTypeOperand<validate>* operand) {
+    if (operand->type == kWasmVar) {
+      if (!VALIDATE(this->module_ &&
+                    operand->sig_index < this->module_->signatures.size())) {
+        this->errorf(
+            this->pc_, "block type index %u out of bounds (%d signatures)",
+            operand->sig_index,
+            static_cast<int>(this->module_
+                                 ? this->module_->signatures.size() : 0));
+        return false;
+      }
+      operand->sig = this->module_->signatures[operand->sig_index];
+    }
+    return true;
+  }
+
   void SetBlockType(Control* c, BlockTypeOperand<validate>& operand) {
-    c->merge.arity = operand.arity;
+    c->merge.arity = operand.out_arity();
     if (c->merge.arity == 1) {
-      c->merge.vals.first = Value::New(this->pc_, operand.read_entry(0));
+      c->merge.vals.first = Value::New(this->pc_, operand.out_type(0));
     } else if (c->merge.arity > 1) {
       c->merge.vals.array = zone_->NewArray<Value>(c->merge.arity);
       for (unsigned i = 0; i < c->merge.arity; i++) {
-        c->merge.vals.array[i] = Value::New(this->pc_, operand.read_entry(i));
+        c->merge.vals.array[i] = Value::New(this->pc_, operand.out_type(i));
       }
     }
   }
@@ -1994,19 +2019,44 @@ class WasmFullDecoder : public WasmDecoder<validate> {
     return len;
   }
 
-  unsigned DecodeAtomicOpcode(WasmOpcode opcode, MachineType mem_type) {
+  unsigned DecodeAtomicOpcode(WasmOpcode opcode) {
     unsigned len = 0;
+    ValueType ret_type;
     FunctionSig* sig = WasmOpcodes::AtomicSignature(opcode);
     if (sig != nullptr) {
+      MachineType memtype;
+      switch (opcode) {
+#define CASE_ATOMIC_STORE_OP(Name, Type)     \
+  case kExpr##Name: {                        \
+    memtype = MachineType::Type();           \
+    ret_type = MachineRepresentation::kNone; \
+    break;                                   \
+  }
+        ATOMIC_STORE_OP_LIST(CASE_ATOMIC_STORE_OP)
+#undef CASE_ATOMIC_OP
+#define CASE_ATOMIC_OP(Name, Type) \
+  case kExpr##Name: {              \
+    memtype = MachineType::Type(); \
+    ret_type = GetReturnType(sig); \
+    break;                         \
+  }
+        ATOMIC_OP_LIST(CASE_ATOMIC_OP)
+#undef CASE_ATOMIC_OP
+        default:
+          this->error("invalid atomic opcode");
+          break;
+      }
       // TODO(clemensh): Better memory management here.
       std::vector<Value> args(sig->parameter_count());
       MemoryAccessOperand<validate> operand(
-          this, this->pc_ + 1, ElementSizeLog2Of(mem_type.representation()));
+          this, this->pc_ + 1, ElementSizeLog2Of(memtype.representation()));
       len += operand.length;
       for (int i = static_cast<int>(sig->parameter_count() - 1); i >= 0; --i) {
         args[i] = Pop(i, sig->GetParam(i));
       }
-      auto* result = Push(GetReturnType(sig));
+      auto result = ret_type == MachineRepresentation::kNone
+                        ? nullptr
+                        : Push(GetReturnType(sig));
       interface_.AtomicOp(this, opcode, vec2vec(args), operand, result);
     } else {
       this->error("invalid atomic opcode");

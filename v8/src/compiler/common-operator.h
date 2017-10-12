@@ -125,7 +125,8 @@ V8_EXPORT_PRIVATE int ParameterIndexOf(const Operator* const);
 const ParameterInfo& ParameterInfoOf(const Operator* const);
 
 struct ObjectStateInfo final : std::pair<uint32_t, int> {
-  using std::pair<uint32_t, int>::pair;
+  ObjectStateInfo(uint32_t object_id, int size)
+      : std::pair<uint32_t, int>(object_id, size) {}
   uint32_t object_id() const { return first; }
   int size() const { return second; }
 };
@@ -134,7 +135,10 @@ size_t hash_value(ObjectStateInfo const& p);
 
 struct TypedObjectStateInfo final
     : std::pair<uint32_t, const ZoneVector<MachineType>*> {
-  using std::pair<uint32_t, const ZoneVector<MachineType>*>::pair;
+  TypedObjectStateInfo(uint32_t object_id,
+                       const ZoneVector<MachineType>* machine_types)
+      : std::pair<uint32_t, const ZoneVector<MachineType>*>(object_id,
+                                                            machine_types) {}
   uint32_t object_id() const { return first; }
   const ZoneVector<MachineType>* machine_types() const { return second; }
 };
@@ -344,6 +348,8 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
   explicit CommonOperatorBuilder(Zone* zone);
 
   const Operator* Dead();
+  const Operator* DeadValue();
+  const Operator* Unreachable();
   const Operator* End(size_t control_input_count);
   const Operator* Branch(BranchHint = BranchHint::kNone);
   const Operator* IfTrue();
@@ -403,8 +409,8 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
                                    SparseInputMask bitmask);
   const Operator* ArgumentsElementsState(ArgumentsStateType type);
   const Operator* ArgumentsLengthState(ArgumentsStateType type);
-  const Operator* ObjectState(int object_id, int pointer_slots);
-  const Operator* TypedObjectState(int object_id,
+  const Operator* ObjectState(uint32_t object_id, int pointer_slots);
+  const Operator* TypedObjectState(uint32_t object_id,
                                    const ZoneVector<MachineType>* types);
   const Operator* FrameState(BailoutId bailout_id,
                              OutputFrameStateCombine state_combine,
