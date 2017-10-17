@@ -17,7 +17,7 @@ namespace base {
 
     void ConditionVariable::NotifyOne()
     {
-        native_handle_->notify_one();
+        native_handle_->notify_all();
     }
 
     void ConditionVariable::NotifyAll()
