@@ -376,7 +376,7 @@ function patch_snapshot() {
         if (arch_x86[arch])
             oss.forEach(os => {
                 fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-${os}.cc`,
-                    `#include <exlib/include/osconfig.h>\n#ifdef ${os}\n\n#include "src/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}\n\n#endif ${os}`);
+                    `#include <exlib/include/osconfig.h>\n#ifdef ${os}\n\n#include "src/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}\n\n#endif // ${os}`);
             });
         else
             fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-Linux.cc`,
