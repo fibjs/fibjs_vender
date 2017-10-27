@@ -23,6 +23,7 @@
 #include "src/handles.h"
 #include "src/heap/heap.h"
 #include "src/messages.h"
+#include "src/objects/code.h"
 #include "src/regexp/regexp-stack.h"
 #include "src/runtime/runtime.h"
 #include "src/zone/zone.h"
@@ -297,14 +298,14 @@ class ThreadLocalTop BASE_EMBEDDED {
   // Initialize the thread data.
   void Initialize();
 
-  // Get the top C++ try catch handler or NULL if none are registered.
+  // Get the top C++ try catch handler or nullptr if none are registered.
   //
   // This method is not guaranteed to return an address that can be
   // used for comparison with addresses into the JS stack.  If such an
   // address is needed, use try_catch_handler_address.
   FIELD_ACCESSOR(v8::TryCatch*, try_catch_handler)
 
-  // Get the address of the top C++ try catch handler or NULL if
+  // Get the address of the top C++ try catch handler or nullptr if
   // none are registered.
   //
   // This method always returns an address that can be compared to
@@ -380,10 +381,10 @@ class ThreadLocalTop BASE_EMBEDDED {
 
 #if USE_SIMULATOR
 
-#define ISOLATE_INIT_SIMULATOR_LIST(V)                    \
-  V(bool, simulator_initialized, false)                   \
-  V(base::CustomMatcherHashMap*, simulator_i_cache, NULL) \
-  V(Redirection*, simulator_redirection, NULL)
+#define ISOLATE_INIT_SIMULATOR_LIST(V)                       \
+  V(bool, simulator_initialized, false)                      \
+  V(base::CustomMatcherHashMap*, simulator_i_cache, nullptr) \
+  V(Redirection*, simulator_redirection, nullptr)
 #else
 
 #define ISOLATE_INIT_SIMULATOR_LIST(V)
@@ -478,12 +479,13 @@ class Isolate {
         : isolate_(isolate),
           thread_id_(thread_id),
           stack_limit_(0),
-          thread_state_(NULL),
+          thread_state_(nullptr),
 #if USE_SIMULATOR
-          simulator_(NULL),
+          simulator_(nullptr),
 #endif
-          next_(NULL),
-          prev_(NULL) { }
+          next_(nullptr),
+          prev_(nullptr) {
+    }
     ~PerIsolateThreadData();
     Isolate* isolate() const { return isolate_; }
     ThreadId thread_id() const { return thread_id_; }
@@ -521,8 +523,8 @@ class Isolate {
 
   static void InitializeOncePerProcess();
 
-  // Returns the PerIsolateThreadData for the current thread (or NULL if one is
-  // not currently set).
+  // Returns the PerIsolateThreadData for the current thread (or nullptr if one
+  // is not currently set).
   static PerIsolateThreadData* CurrentPerIsolateThreadData() {
     return reinterpret_cast<PerIsolateThreadData*>(
         base::Thread::GetThreadLocal(per_isolate_thread_data_key_));
@@ -530,7 +532,7 @@ class Isolate {
 
   // Returns the isolate inside which the current thread is running.
   INLINE(static Isolate* Current()) {
-    DCHECK(base::Relaxed_Load(&isolate_key_created_) == 1);
+    DCHECK_EQ(base::Relaxed_Load(&isolate_key_created_), 1);
     Isolate* isolate = reinterpret_cast<Isolate*>(
         base::Thread::GetExistingThreadLocal(isolate_key_));
     DCHECK_NOT_NULL(isolate);
@@ -548,7 +550,7 @@ class Isolate {
   bool Init(StartupDeserializer* des);
 
   // True if at least one thread Enter'ed this isolate.
-  bool IsInUse() { return entry_stack_ != NULL; }
+  bool IsInUse() { return entry_stack_ != nullptr; }
 
   // Destroys the non-default isolates.
   // Sets default isolate into "has_been_disposed" state rather then destroying,
@@ -722,7 +724,8 @@ class Isolate {
   void PrintCurrentStackTrace(FILE* out);
   void PrintStack(StringStream* accumulator,
                   PrintStackMode mode = kPrintStackVerbose);
-  void PrintStack(FILE* out, PrintStackMode mode = kPrintStackVerbose);
+  V8_EXPORT_PRIVATE void PrintStack(FILE* out,
+                                    PrintStackMode mode = kPrintStackVerbose);
   Handle<String> StackTraceString();
   // Stores a stack trace in a stack-allocated temporary buffer which will
   // end up in the minidump for debugging purposes.
@@ -748,6 +751,8 @@ class Isolate {
       Handle<Object> caller);
   Handle<FixedArray> GetDetailedStackTrace(Handle<JSObject> error_object);
 
+  Address GetAbstractPC(int* line, int* column);
+
   // Returns if the given context may access the given global object. If
   // the result is false, the pending exception is guaranteed to be
   // set.
@@ -758,12 +763,12 @@ class Isolate {
 
   // Exception throwing support. The caller should use the result
   // of Throw() as its return value.
-  Object* Throw(Object* exception, MessageLocation* location = NULL);
+  Object* Throw(Object* exception, MessageLocation* location = nullptr);
   Object* ThrowIllegalOperation();
 
   template <typename T>
   MUST_USE_RESULT MaybeHandle<T> Throw(Handle<Object> exception,
-                                       MessageLocation* location = NULL) {
+                                       MessageLocation* location = nullptr) {
     Throw(*exception, location);
     return MaybeHandle<T>();
   }
@@ -1000,11 +1005,11 @@ class Isolate {
   THREAD_LOCAL_TOP_ACCESSOR(StateTag, current_vm_state)
 
   void SetData(uint32_t slot, void* data) {
-    DCHECK(slot < Internals::kNumIsolateDataSlots);
+    DCHECK_LT(slot, Internals::kNumIsolateDataSlots);
     embedder_data_[slot] = data;
   }
   void* GetData(uint32_t slot) {
-    DCHECK(slot < Internals::kNumIsolateDataSlots);
+    DCHECK_LT(slot, Internals::kNumIsolateDataSlots);
     return embedder_data_[slot];
   }
 
@@ -1013,7 +1018,7 @@ class Isolate {
     serializer_enabled_ = serializer_enabled;
   }
   bool snapshot_available() const {
-    return snapshot_blob_ != NULL && snapshot_blob_->raw_size != 0;
+    return snapshot_blob_ != nullptr && snapshot_blob_->raw_size != 0;
   }
 
   bool IsDead() { return has_fatal_error_; }
@@ -1053,7 +1058,14 @@ class Isolate {
     return type_profile_mode() == debug::TypeProfile::kCollect;
   }
 
-  void SetCodeCoverageList(Object* value);
+  // Collect feedback vectors with data for code coverage or type profile.
+  // Reset the list, when both code coverage and type profile are not
+  // needed anymore. This keeps many feedback vectors alive, but code
+  // coverage or type profile are used for debugging only and increase in
+  // memory usage is expected.
+  void SetFeedbackVectorsForProfilingTools(Object* value);
+
+  void InitializeVectorListFromHeap();
 
   double time_millis_since_init() {
     return heap_.MonotonicallyIncreasingTimeInMs() - time_millis_at_init_;
@@ -1126,9 +1138,9 @@ class Isolate {
 
   bool concurrent_recompilation_enabled() {
     // Thread is only available with flag enabled.
-    DCHECK(optimizing_compile_dispatcher_ == NULL ||
+    DCHECK(optimizing_compile_dispatcher_ == nullptr ||
            FLAG_concurrent_recompilation);
-    return optimizing_compile_dispatcher_ != NULL;
+    return optimizing_compile_dispatcher_ != nullptr;
   }
 
   OptimizingCompileDispatcher* optimizing_compile_dispatcher() {
@@ -1799,15 +1811,13 @@ class PostponeInterruptsScope BASE_EMBEDDED {
 
 class CodeTracer final : public Malloced {
  public:
-  explicit CodeTracer(int isolate_id)
-      : file_(NULL),
-        scope_depth_(0) {
+  explicit CodeTracer(int isolate_id) : file_(nullptr), scope_depth_(0) {
     if (!ShouldRedirect()) {
       file_ = stdout;
       return;
     }
 
-    if (FLAG_redirect_code_traces_to == NULL) {
+    if (FLAG_redirect_code_traces_to == nullptr) {
       SNPrintF(filename_,
                "code-%d-%d.asm",
                base::OS::GetCurrentProcessId(),
@@ -1835,7 +1845,7 @@ class CodeTracer final : public Malloced {
       return;
     }
 
-    if (file_ == NULL) {
+    if (file_ == nullptr) {
       file_ = base::OS::FOpen(filename_.start(), "ab");
     }
 
@@ -1849,7 +1859,7 @@ class CodeTracer final : public Malloced {
 
     if (--scope_depth_ == 0) {
       fclose(file_);
-      file_ = NULL;
+      file_ = nullptr;
     }
   }
 

@@ -16,9 +16,9 @@ namespace v8 {
 namespace internal {
 
 StatsTable::StatsTable(Counters* counters)
-    : lookup_function_(NULL),
-      create_histogram_function_(NULL),
-      add_histogram_sample_function_(NULL) {}
+    : lookup_function_(nullptr),
+      create_histogram_function_(nullptr),
+      add_histogram_sample_function_(nullptr) {}
 
 void StatsTable::SetCounterFunction(CounterLookupCallback f) {
   lookup_function_ = f;
@@ -476,28 +476,29 @@ const int RuntimeCallStats::counters_count =
 // static
 void RuntimeCallStats::Enter(RuntimeCallStats* stats, RuntimeCallTimer* timer,
                              CounterId counter_id) {
-  DCHECK(stats->IsCalledOnTheSameThread());
+  CHECK(stats->IsCalledOnTheSameThread());
   RuntimeCallCounter* counter = &(stats->*counter_id);
-  DCHECK(counter->name() != nullptr);
-  timer->Start(counter, stats->current_timer_.Value());
+  DCHECK_NOT_NULL(counter->name());
+  timer->Start(counter, stats->current_timer());
   stats->current_timer_.SetValue(timer);
   stats->current_counter_.SetValue(counter);
 }
 
 // static
 void RuntimeCallStats::Leave(RuntimeCallStats* stats, RuntimeCallTimer* timer) {
-  DCHECK(stats->IsCalledOnTheSameThread());
-  if (stats->current_timer_.Value() != timer) {
+  CHECK(stats->IsCalledOnTheSameThread());
+  RuntimeCallTimer* stack_top = stats->current_timer();
+  if (stack_top == nullptr) return;  // Missing timer is a result of Reset().
+  if (stack_top != timer) {
     // The branch is added to catch a crash crbug.com/760649
-    RuntimeCallTimer* stack_top = stats->current_timer_.Value();
     EmbeddedVector<char, 200> text;
     SNPrintF(text, "ERROR: Leaving counter '%s', stack top '%s'.\n",
-             timer->name(), stack_top ? stack_top->name() : "(null)");
+             timer->name(), stack_top->name());
     USE(text);
     CHECK(false);
   }
   stats->current_timer_.SetValue(timer->Stop());
-  RuntimeCallTimer* cur_timer = stats->current_timer_.Value();
+  RuntimeCallTimer* cur_timer = stats->current_timer();
   stats->current_counter_.SetValue(cur_timer ? cur_timer->counter() : nullptr);
 }
 

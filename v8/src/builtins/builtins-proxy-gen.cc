@@ -67,8 +67,6 @@ Node* ProxiesCodeStubAssembler::AllocateProxy(Node* target, Node* handler,
                        Heap::kEmptyPropertyDictionaryRootIndex);
   StoreObjectFieldNoWriteBarrier(proxy, JSProxy::kTargetOffset, target);
   StoreObjectFieldNoWriteBarrier(proxy, JSProxy::kHandlerOffset, handler);
-  StoreObjectFieldNoWriteBarrier(proxy, JSProxy::kHashOffset,
-                                 UndefinedConstant());
 
   return proxy;
 }
@@ -441,7 +439,8 @@ TF_BUILTIN(ProxySetProperty, ProxiesCodeStubAssembler) {
   BIND(&failure);
   {
     Label if_throw(this, Label::kDeferred);
-    Branch(SmiEqual(language_mode, SmiConstant(STRICT)), &if_throw, &success);
+    Branch(SmiEqual(language_mode, SmiConstant(LanguageMode::kStrict)),
+           &if_throw, &success);
 
     BIND(&if_throw);
     ThrowTypeError(context, MessageTemplate::kProxyTrapReturnedFalsishFor,
@@ -456,8 +455,8 @@ TF_BUILTIN(ProxySetProperty, ProxiesCodeStubAssembler) {
   {
     Label failure(this), throw_error(this, Label::kDeferred);
 
-    Branch(SmiEqual(language_mode, SmiConstant(STRICT)), &throw_error,
-           &failure);
+    Branch(SmiEqual(language_mode, SmiConstant(LanguageMode::kStrict)),
+           &throw_error, &failure);
 
     BIND(&failure);
     Return(UndefinedConstant());
@@ -491,7 +490,7 @@ void ProxiesCodeStubAssembler::CheckGetSetTrapResult(
   Node* instance_type = LoadInstanceType(target);
   TryGetOwnProperty(context, target, target, map, instance_type, name,
                     &if_found_value, &var_value, &var_details, &var_raw_value,
-                    check_passed, &check_in_runtime);
+                    check_passed, &check_in_runtime, kReturnAccessorPair);
 
   BIND(&if_found_value);
   {
@@ -589,7 +588,7 @@ void ProxiesCodeStubAssembler::CheckHasTrapResult(Node* context, Node* target,
   Node* instance_type = LoadInstanceType(target);
   TryGetOwnProperty(context, target, target, target_map, instance_type, name,
                     &if_found_value, &var_value, &var_details, &var_raw_value,
-                    check_passed, if_bailout);
+                    check_passed, if_bailout, kReturnAccessorPair);
 
   // 9.b. If targetDesc is not undefined, then (see 9.b.i. below).
   BIND(&if_found_value);

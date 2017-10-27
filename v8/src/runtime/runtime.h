@@ -36,22 +36,23 @@ namespace internal {
 // A variable number of arguments is specified by a -1, additional restrictions
 // are specified by inline comments
 
-#define FOR_EACH_INTRINSIC_ARRAY(F) \
-  F(TransitionElementsKind, 2, 1)   \
-  F(RemoveArrayHoles, 2, 1)         \
-  F(MoveArrayContents, 2, 1)        \
-  F(EstimateNumberOfElements, 1, 1) \
-  F(GetArrayKeys, 2, 1)             \
-  F(NewArray, -1 /* >= 3 */, 1)     \
-  F(FunctionBind, -1, 1)            \
-  F(NormalizeElements, 1, 1)        \
-  F(GrowArrayElements, 2, 1)        \
-  F(HasComplexElements, 1, 1)       \
-  F(IsArray, 1, 1)                  \
-  F(ArrayIsArray, 1, 1)             \
-  F(ArraySpeciesConstructor, 1, 1)  \
-  F(ArrayIncludes_Slow, 3, 1)       \
-  F(ArrayIndexOf, 3, 1)             \
+#define FOR_EACH_INTRINSIC_ARRAY(F)      \
+  F(TransitionElementsKind, 2, 1)        \
+  F(RemoveArrayHoles, 2, 1)              \
+  F(MoveArrayContents, 2, 1)             \
+  F(EstimateNumberOfElements, 1, 1)      \
+  F(GetArrayKeys, 2, 1)                  \
+  F(TrySliceSimpleNonFastElements, 3, 1) \
+  F(NewArray, -1 /* >= 3 */, 1)          \
+  F(FunctionBind, -1, 1)                 \
+  F(NormalizeElements, 1, 1)             \
+  F(GrowArrayElements, 2, 1)             \
+  F(HasComplexElements, 1, 1)            \
+  F(IsArray, 1, 1)                       \
+  F(ArrayIsArray, 1, 1)                  \
+  F(ArraySpeciesConstructor, 1, 1)       \
+  F(ArrayIncludes_Slow, 3, 1)            \
+  F(ArrayIndexOf, 3, 1)                  \
   F(SpreadIterablePrepare, 1, 1)
 
 #define FOR_EACH_INTRINSIC_ATOMICS(F)           \
@@ -70,7 +71,11 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_BIGINT(F) \
   F(BigIntBinaryOp, 3, 1)            \
-  F(BigIntEqual, 2, 1)               \
+  F(BigIntCompareToBigInt, 3, 1)     \
+  F(BigIntCompareToNumber, 3, 1)     \
+  F(BigIntEqualToBigInt, 2, 1)       \
+  F(BigIntEqualToNumber, 2, 1)       \
+  F(BigIntEqualToString, 2, 1)       \
   F(BigIntToBoolean, 1, 1)           \
   F(BigIntUnaryOp, 2, 1)
 
@@ -118,10 +123,8 @@ namespace internal {
   F(CompileOptimized_Concurrent, 1, 1)    \
   F(CompileOptimized_NotConcurrent, 1, 1) \
   F(EvictOptimizedCodeSlot, 1, 1)         \
-  F(NotifyStubFailure, 0, 1)              \
   F(NotifyDeoptimized, 0, 1)              \
   F(CompileForOnStackReplacement, 1, 1)   \
-  F(TryInstallOptimizedCode, 1, 1)        \
   F(ResolvePossiblyDirectEval, 6, 1)      \
   F(InstantiateAsmJs, 4, 1)
 
@@ -211,8 +214,16 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_INTERPRETER_TRACE(F)
 #endif
 
-#define FOR_EACH_INTRINSIC_INTERPRETER(F) \
-  FOR_EACH_INTRINSIC_INTERPRETER_TRACE(F) \
+#ifdef V8_TRACE_FEEDBACK_UPDATES
+#define FOR_EACH_INTRINSIC_INTERPRETER_TRACE_FEEDBACK(F) \
+  F(InterpreterTraceUpdateFeedback, 3, 1)
+#else
+#define FOR_EACH_INTRINSIC_INTERPRETER_TRACE_FEEDBACK(F)
+#endif
+
+#define FOR_EACH_INTRINSIC_INTERPRETER(F)          \
+  FOR_EACH_INTRINSIC_INTERPRETER_TRACE(F)          \
+  FOR_EACH_INTRINSIC_INTERPRETER_TRACE_FEEDBACK(F) \
   F(InterpreterNewClosure, 4, 1)
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)     \
@@ -253,7 +264,6 @@ namespace internal {
   F(CanonicalizeLanguageTag, 1, 1)           \
   F(AvailableLocalesOf, 1, 1)                \
   F(GetDefaultICULocale, 0, 1)               \
-  F(GetLanguageTagVariants, 1, 1)            \
   F(IsInitializedIntlObject, 1, 1)           \
   F(IsInitializedIntlObjectOfType, 2, 1)     \
   F(MarkAsInitializedIntlObjectOfType, 2, 1) \
@@ -427,7 +437,6 @@ namespace internal {
   F(ToName, 1, 1)                                               \
   F(SameValue, 2, 1)                                            \
   F(SameValueZero, 2, 1)                                        \
-  F(Compare, 3, 1)                                              \
   F(HasInPrototypeChain, 2, 1)                                  \
   F(CreateIterResultObject, 2, 1)                               \
   F(CreateDataProperty, 3, 1)                                   \
@@ -532,7 +541,6 @@ namespace internal {
   F(StringAdd, 2, 1)                      \
   F(InternalizeString, 1, 1)              \
   F(StringCharCodeAt, 2, 1)               \
-  F(StringCompare, 2, 1)                  \
   F(StringBuilderConcat, 3, 1)            \
   F(StringBuilderJoin, 3, 1)              \
   F(SparseJoinWithSeparator, 3, 1)        \
@@ -644,8 +652,7 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_WASM(F)   \
   F(WasmGrowMemory, 1, 1)            \
-  F(ThrowWasmError, 2, 1)            \
-  F(ThrowWasmErrorFromTrapIf, 1, 1)  \
+  F(ThrowWasmError, 1, 1)            \
   F(ThrowWasmStackOverflow, 0, 1)    \
   F(WasmThrowTypeError, 0, 1)        \
   F(WasmThrowCreate, 2, 1)           \
@@ -673,6 +680,7 @@ namespace internal {
   F(LoadIC_Miss, 4, 1)                       \
   F(LoadPropertyWithInterceptor, 5, 1)       \
   F(StoreCallbackProperty, 6, 1)             \
+  F(StoreGlobalIC_Slow, 5, 1)                \
   F(StoreIC_Miss, 5, 1)                      \
   F(StorePropertyWithInterceptor, 5, 1)      \
   F(Unreachable, 0, 1)

@@ -34,7 +34,7 @@ CodeStubDescriptor::CodeStubDescriptor(CodeStub* stub)
       stack_parameter_count_(no_reg),
       hint_stack_parameter_count_(-1),
       function_mode_(NOT_JS_FUNCTION_STUB_MODE),
-      deoptimization_handler_(NULL),
+      deoptimization_handler_(nullptr),
       miss_handler_(),
       has_miss_handler_(false) {
   stub->InitializeDescriptor(this);
@@ -45,7 +45,7 @@ CodeStubDescriptor::CodeStubDescriptor(Isolate* isolate, uint32_t stub_key)
       stack_parameter_count_(no_reg),
       hint_stack_parameter_count_(-1),
       function_mode_(NOT_JS_FUNCTION_STUB_MODE),
-      deoptimization_handler_(NULL),
+      deoptimization_handler_(nullptr),
       miss_handler_(),
       has_miss_handler_(false) {
   CodeStub::InitializeDescriptor(isolate, stub_key, this);
@@ -108,7 +108,7 @@ Handle<Code> PlatformCodeStub::GenerateCode() {
   Factory* factory = isolate()->factory();
 
   // Generate the new code.
-  MacroAssembler masm(isolate(), NULL, 256, CodeObjectRequired::kYes);
+  MacroAssembler masm(isolate(), nullptr, 256, CodeObjectRequired::kYes);
 
   {
     // Update the static counter each time a new code stub is generated.
@@ -121,12 +121,16 @@ Handle<Code> PlatformCodeStub::GenerateCode() {
     Generate(&masm);
   }
 
+  // Allocate the handler table.
+  Handle<HandlerTable> table = GenerateHandlerTable();
+
   // Create the code object.
   CodeDesc desc;
   masm.GetCode(isolate(), &desc);
   // Copy the generated code into a heap object.
   Handle<Code> new_object = factory->NewCode(
-      desc, Code::STUB, masm.CodeObject(), NeedsImmovableCode());
+      desc, Code::STUB, masm.CodeObject(), table, MaybeHandle<ByteArray>(),
+      DeoptimizationData::Empty(isolate()), NeedsImmovableCode(), GetKey());
   return new_object;
 }
 
@@ -146,8 +150,7 @@ Handle<Code> CodeStub::GetCode() {
     CanonicalHandleScope canonical(isolate());
 
     Handle<Code> new_object = GenerateCode();
-    new_object->set_stub_key(GetKey());
-    FinishCode(new_object);
+    DCHECK_EQ(GetKey(), new_object->stub_key());
     RecordCodeGeneration(new_object);
 
 #ifdef ENABLE_DISASSEMBLER
@@ -188,7 +191,7 @@ const char* CodeStub::MajorName(CodeStub::Major major_key) {
     case NUMBER_OF_IDS:
       UNREACHABLE();
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -222,6 +225,9 @@ void CodeStub::Dispatch(Isolate* isolate, uint32_t key, void** value_out,
   }
 }
 
+Handle<HandlerTable> PlatformCodeStub::GenerateHandlerTable() {
+  return HandlerTable::Empty(isolate());
+}
 
 static void InitializeDescriptorDispatchedCall(CodeStub* stub,
                                                void** value_out) {
@@ -267,13 +273,13 @@ TF_STUB(StringAddStub, CodeStubAssembler) {
   Node* context = Parameter(Descriptor::kContext);
 
   if ((flags & STRING_ADD_CHECK_LEFT) != 0) {
-    DCHECK((flags & STRING_ADD_CONVERT) != 0);
+    DCHECK_NE(flags & STRING_ADD_CONVERT, 0);
     // TODO(danno): The ToString and JSReceiverToPrimitive below could be
     // combined to avoid duplicate smi and instance type checks.
     left = ToString(context, JSReceiverToPrimitive(context, left));
   }
   if ((flags & STRING_ADD_CHECK_RIGHT) != 0) {
-    DCHECK((flags & STRING_ADD_CONVERT) != 0);
+    DCHECK_NE(flags & STRING_ADD_CONVERT, 0);
     // TODO(danno): The ToString and JSReceiverToPrimitive below could be
     // combined to avoid duplicate smi and instance type checks.
     right = ToString(context, JSReceiverToPrimitive(context, right));
@@ -296,7 +302,7 @@ Handle<Code> TurboFanCodeStub::GenerateCode() {
   Zone zone(isolate()->allocator(), ZONE_NAME);
   CallInterfaceDescriptor descriptor(GetCallInterfaceDescriptor());
   compiler::CodeAssemblerState state(isolate(), &zone, descriptor, Code::STUB,
-                                     name);
+                                     name, 1, GetKey());
   GenerateAssembly(&state);
   return compiler::CodeAssembler::GenerateCode(&state);
 }
@@ -360,16 +366,6 @@ TF_STUB(NumberToStringStub, CodeStubAssembler) {
   Node* context = Parameter(Descriptor::kContext);
   Node* argument = Parameter(Descriptor::kArgument);
   Return(NumberToString(context, argument));
-}
-
-// TODO(ishell): move to builtins.
-TF_STUB(SubStringStub, CodeStubAssembler) {
-  Node* context = Parameter(Descriptor::kContext);
-  Node* string = Parameter(Descriptor::kString);
-  Node* from = Parameter(Descriptor::kFrom);
-  Node* to = Parameter(Descriptor::kTo);
-
-  Return(SubString(context, string, from, to));
 }
 
 // TODO(ishell): move to builtins-handler-gen.
@@ -469,11 +465,11 @@ TF_STUB(LoadIndexedInterceptorStub, CodeStubAssembler) {
                   vector);
 }
 
-void JSEntryStub::FinishCode(Handle<Code> code) {
+Handle<HandlerTable> JSEntryStub::GenerateHandlerTable() {
   Handle<FixedArray> handler_table =
-      code->GetIsolate()->factory()->NewFixedArray(1, TENURED);
+      isolate()->factory()->NewFixedArray(1, TENURED);
   handler_table->set(0, Smi::FromInt(handler_offset_));
-  code->set_handler_table(*handler_table);
+  return Handle<HandlerTable>::cast(handler_table);
 }
 
 
@@ -591,7 +587,7 @@ void ProfileEntryHookStub::EntryHookTrampoline(intptr_t function,
                                                intptr_t stack_pointer,
                                                Isolate* isolate) {
   FunctionEntryHook entry_hook = isolate->function_entry_hook();
-  DCHECK(entry_hook != NULL);
+  DCHECK_NOT_NULL(entry_hook);
   entry_hook(function, stack_pointer);
 }
 

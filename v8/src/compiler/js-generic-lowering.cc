@@ -126,34 +126,6 @@ void JSGenericLowering::LowerJSStrictEqual(Node* node) {
                       Operator::kEliminatable);
 }
 
-void JSGenericLowering::LowerJSToBoolean(Node* node) {
-  // The ToBoolean conversion doesn't need the current context.
-  NodeProperties::ReplaceContextInput(node, jsgraph()->NoContextConstant());
-  Callable callable = Builtins::CallableFor(isolate(), Builtins::kToBoolean);
-  node->AppendInput(zone(), graph()->start());
-  ReplaceWithStubCall(node, callable, CallDescriptor::kNoAllocate,
-                      Operator::kEliminatable);
-}
-
-void JSGenericLowering::LowerJSClassOf(Node* node) {
-  // The %_ClassOf intrinsic doesn't need the current context.
-  NodeProperties::ReplaceContextInput(node, jsgraph()->NoContextConstant());
-  Callable callable = Builtins::CallableFor(isolate(), Builtins::kClassOf);
-  node->AppendInput(zone(), graph()->start());
-  ReplaceWithStubCall(node, callable, CallDescriptor::kNoAllocate,
-                      Operator::kEliminatable);
-}
-
-void JSGenericLowering::LowerJSTypeOf(Node* node) {
-  // The typeof operator doesn't need the current context.
-  NodeProperties::ReplaceContextInput(node, jsgraph()->NoContextConstant());
-  Callable callable = Builtins::CallableFor(isolate(), Builtins::kTypeof);
-  node->AppendInput(zone(), graph()->start());
-  ReplaceWithStubCall(node, callable, CallDescriptor::kNoAllocate,
-                      Operator::kEliminatable);
-}
-
-
 void JSGenericLowering::LowerJSLoadProperty(Node* node) {
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   const PropertyAccess& p = PropertyAccessOf(node->op());
@@ -397,6 +369,9 @@ void JSGenericLowering::LowerJSCreateArray(Node* node) {
   NodeProperties::ChangeOp(node, common()->Call(desc));
 }
 
+void JSGenericLowering::LowerJSCreateBoundFunction(Node* node) {
+  UNREACHABLE();  // Eliminated in typed lowering.
+}
 
 void JSGenericLowering::LowerJSCreateClosure(Node* node) {
   CreateClosureParameters const& p = CreateClosureParametersOf(node->op());
@@ -745,7 +720,7 @@ void JSGenericLowering::LowerJSStackCheck(Node* node) {
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
 
-  Node* limit = graph()->NewNode(
+  Node* limit = effect = graph()->NewNode(
       machine()->Load(MachineType::Pointer()),
       jsgraph()->ExternalConstant(
           ExternalReference::address_of_stack_limit(isolate())),
@@ -761,6 +736,7 @@ void JSGenericLowering::LowerJSStackCheck(Node* node) {
 
   Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
   NodeProperties::ReplaceControlInput(node, if_false);
+  NodeProperties::ReplaceEffectInput(node, effect);
   Node* efalse = if_false = node;
 
   Node* merge = graph()->NewNode(common()->Merge(2), if_true, if_false);

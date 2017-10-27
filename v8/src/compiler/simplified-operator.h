@@ -10,10 +10,12 @@
 #include "src/base/compiler-specific.h"
 #include "src/compiler/operator.h"
 #include "src/compiler/types.h"
+#include "src/deoptimize-reason.h"
 #include "src/globals.h"
 #include "src/handles.h"
 #include "src/machine-type.h"
 #include "src/objects.h"
+#include "src/type-hints.h"
 #include "src/zone/zone-handle-set.h"
 
 namespace v8 {
@@ -50,7 +52,6 @@ struct FieldAccess {
 };
 
 V8_EXPORT_PRIVATE bool operator==(FieldAccess const&, FieldAccess const&);
-bool operator!=(FieldAccess const&, FieldAccess const&);
 
 size_t hash_value(FieldAccess const&);
 
@@ -77,7 +78,6 @@ struct ElementAccess {
 };
 
 V8_EXPORT_PRIVATE bool operator==(ElementAccess const&, ElementAccess const&);
-bool operator!=(ElementAccess const&, ElementAccess const&);
 
 size_t hash_value(ElementAccess const&);
 
@@ -133,22 +133,41 @@ DEFINE_OPERATORS_FOR_FLAGS(CheckMapsFlags)
 
 std::ostream& operator<<(std::ostream&, CheckMapsFlags);
 
+class MapsParameterInfo {
+ public:
+  explicit MapsParameterInfo(ZoneHandleSet<Map> const& maps);
+
+  Maybe<InstanceType> instance_type() const { return instance_type_; }
+  ZoneHandleSet<Map> const& maps() const { return maps_; }
+
+ private:
+  ZoneHandleSet<Map> const maps_;
+  Maybe<InstanceType> instance_type_;
+};
+
+std::ostream& operator<<(std::ostream&, MapsParameterInfo const&);
+
+bool operator==(MapsParameterInfo const&, MapsParameterInfo const&);
+bool operator!=(MapsParameterInfo const&, MapsParameterInfo const&);
+
+size_t hash_value(MapsParameterInfo const&);
+
 // A descriptor for map checks.
 class CheckMapsParameters final {
  public:
   CheckMapsParameters(CheckMapsFlags flags, ZoneHandleSet<Map> const& maps)
-      : flags_(flags), maps_(maps) {}
+      : flags_(flags), maps_info_(maps) {}
 
   CheckMapsFlags flags() const { return flags_; }
-  ZoneHandleSet<Map> const& maps() const { return maps_; }
+  ZoneHandleSet<Map> const& maps() const { return maps_info_.maps(); }
+  MapsParameterInfo const& maps_info() const { return maps_info_; }
 
  private:
   CheckMapsFlags const flags_;
-  ZoneHandleSet<Map> const maps_;
+  MapsParameterInfo const maps_info_;
 };
 
 bool operator==(CheckMapsParameters const&, CheckMapsParameters const&);
-bool operator!=(CheckMapsParameters const&, CheckMapsParameters const&);
 
 size_t hash_value(CheckMapsParameters const&);
 
@@ -157,8 +176,10 @@ std::ostream& operator<<(std::ostream&, CheckMapsParameters const&);
 CheckMapsParameters const& CheckMapsParametersOf(Operator const*)
     WARN_UNUSED_RESULT;
 
+MapsParameterInfo const& MapGuardMapsOf(Operator const*) WARN_UNUSED_RESULT;
+
 // Parameters for CompareMaps operator.
-ZoneHandleSet<Map> const& CompareMapsParametersOf(Operator const*)
+MapsParameterInfo const& CompareMapsParametersOf(Operator const*)
     WARN_UNUSED_RESULT;
 
 // A descriptor for growing elements backing stores.
@@ -174,6 +195,9 @@ inline size_t hash_value(GrowFastElementsMode mode) {
 std::ostream& operator<<(std::ostream&, GrowFastElementsMode);
 
 GrowFastElementsMode GrowFastElementsModeOf(const Operator*) WARN_UNUSED_RESULT;
+
+// The ToBooleanHints are used as parameter by ToBoolean operators.
+ToBooleanHints ToBooleanHintsOf(Operator const* op);
 
 // A descriptor for elements kind transitions.
 class ElementsTransition final {
@@ -197,7 +221,6 @@ class ElementsTransition final {
 };
 
 bool operator==(ElementsTransition const&, ElementsTransition const&);
-bool operator!=(ElementsTransition const&, ElementsTransition const&);
 
 size_t hash_value(ElementsTransition);
 
@@ -206,9 +229,14 @@ std::ostream& operator<<(std::ostream&, ElementsTransition);
 ElementsTransition const& ElementsTransitionOf(const Operator* op)
     WARN_UNUSED_RESULT;
 
-// Parameters for TransitionAndStoreElement.
+// Parameters for TransitionAndStoreElement, or
+// TransitionAndStoreNonNumberElement, or
+// TransitionAndStoreNumberElement.
 Handle<Map> DoubleMapParameterOf(const Operator* op);
 Handle<Map> FastMapParameterOf(const Operator* op);
+
+// Parameters for TransitionAndStoreNonNumberElement.
+Type* ValueTypeParameterOf(const Operator* op);
 
 // A hint for speculative number operations.
 enum class NumberOperationHint : uint8_t {
@@ -247,7 +275,6 @@ size_t hash_value(AllocateParameters);
 V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, AllocateParameters);
 
 bool operator==(AllocateParameters const&, AllocateParameters const&);
-bool operator!=(AllocateParameters const&, AllocateParameters const&);
 
 PretenureFlag PretenureFlagOf(const Operator* op) WARN_UNUSED_RESULT;
 
@@ -256,6 +283,8 @@ Type* AllocateTypeOf(const Operator* op) WARN_UNUSED_RESULT;
 UnicodeEncoding UnicodeEncodingOf(const Operator*) WARN_UNUSED_RESULT;
 
 BailoutReason BailoutReasonOf(const Operator* op) WARN_UNUSED_RESULT;
+
+DeoptimizeReason DeoptimizeReasonOf(const Operator* op) WARN_UNUSED_RESULT;
 
 // Interface for building simplified operators, which represent the
 // medium-level operations of V8, including adding numbers, allocating objects,
@@ -361,6 +390,11 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
 
   const Operator* ReferenceEqual();
 
+  const Operator* TypeOf();
+  const Operator* ClassOf();
+
+  const Operator* ToBoolean(ToBooleanHints hints);
+
   const Operator* StringEqual();
   const Operator* StringLessThan();
   const Operator* StringLessThanOrEqual();
@@ -378,6 +412,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
 
   const Operator* SpeculativeToNumber(NumberOperationHint hint);
 
+  const Operator* StringToNumber();
   const Operator* PlainPrimitiveToNumber();
   const Operator* PlainPrimitiveToWord32();
   const Operator* PlainPrimitiveToFloat64();
@@ -399,10 +434,11 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* TruncateTaggedToBit();
   const Operator* TruncateTaggedPointerToBit();
 
-  const Operator* CheckIf();
+  const Operator* CheckIf(DeoptimizeReason deoptimize_reason);
   const Operator* CheckBounds();
   const Operator* CheckMaps(CheckMapsFlags, ZoneHandleSet<Map>);
   const Operator* CompareMaps(ZoneHandleSet<Map>);
+  const Operator* MapGuard(ZoneHandleSet<Map> maps);
 
   const Operator* CheckHeapObject();
   const Operator* CheckInternalizedString();
@@ -435,8 +471,12 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* CheckNotTaggedHole();
   const Operator* ConvertTaggedHoleToUndefined();
 
+  const Operator* CheckEqualsInternalizedString();
+  const Operator* CheckEqualsSymbol();
+
   const Operator* ObjectIsArrayBufferView();
   const Operator* ObjectIsCallable();
+  const Operator* ObjectIsConstructor();
   const Operator* ObjectIsDetectableCallable();
   const Operator* ObjectIsMinusZero();
   const Operator* ObjectIsNaN();
@@ -487,6 +527,13 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
                                             Handle<Map> fast_map);
   // store-element [base + index], smi value, only with fast arrays.
   const Operator* StoreSignedSmallElement();
+
+  // store-element [base + index], double value, only with fast arrays.
+  const Operator* TransitionAndStoreNumberElement(Handle<Map> double_map);
+
+  // store-element [base + index], object value, only with fast arrays.
+  const Operator* TransitionAndStoreNonNumberElement(Handle<Map> fast_map,
+                                                     Type* value_type);
 
   // load-typed-element buffer, [base + external + index]
   const Operator* LoadTypedElement(ExternalArrayType const&);

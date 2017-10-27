@@ -1,12 +1,19 @@
 #ifndef V8_PLATFORM_SEMAPHORE_H_
 #define V8_PLATFORM_SEMAPHORE_H_
 
-#include "mutex.h"
+#include "src/base/base-export.h"
 #include "src/base/lazy-instance.h"
-
 #if V8_OS_WIN
 #include "src/base/win32-headers.h"
 #endif
+
+#if V8_OS_MACOSX
+#include <mach/semaphore.h> // NOLINT
+#elif V8_OS_POSIX
+#include <semaphore.h> // NOLINT
+#endif
+
+#include "mutex.h"
 
 namespace v8 {
 namespace base {

@@ -5,6 +5,9 @@
 #ifndef V8_UTILS_H_
 #define V8_UTILS_H_
 
+#if defined(V8_OS_AIX)
+#include <fenv.h>  // NOLINT(build/c++11)
+#endif
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,10 +49,9 @@ inline char HexCharOfValue(int value) {
 
 inline int BoolToInt(bool b) { return b ? 1 : 0; }
 
-
 // Same as strcmp, but can handle NULL arguments.
 inline bool CStringEquals(const char* s1, const char* s2) {
-  return (s1 == s2) || (s1 != NULL && s2 != NULL && strcmp(s1, s2) == 0);
+  return (s1 == s2) || (s1 != nullptr && s2 != nullptr && strcmp(s1, s2) == 0);
 }
 
 // X must be a power of 2.  Returns the number of trailing zeros.
@@ -211,6 +213,27 @@ inline double Floor(double x) {
   return std::floor(x);
 }
 
+inline double Modulo(double x, double y) {
+#if defined(V8_OS_WIN)
+  // Workaround MS fmod bugs. ECMA-262 says:
+  // dividend is finite and divisor is an infinity => result equals dividend
+  // dividend is a zero and divisor is nonzero finite => result equals dividend
+  if (!(std::isfinite(x) && (!std::isfinite(y) && !std::isnan(y))) &&
+      !(x == 0 && (y != 0 && std::isfinite(y)))) {
+    x = fmod(x, y);
+  }
+  return x;
+#elif defined(V8_OS_AIX)
+  // AIX raises an underflow exception for (Number.MIN_VALUE % Number.MAX_VALUE)
+  feclearexcept(FE_ALL_EXCEPT);
+  double result = std::fmod(x, y);
+  int exception = fetestexcept(FE_UNDERFLOW);
+  return (exception ? x : result);
+#else
+  return std::fmod(x, y);
+#endif
+}
+
 inline double Pow(double x, double y) {
   if (y == 0.0) return 1.0;
   if (std::isnan(y) || ((x == 1 || x == -1) && std::isinf(y))) {
@@ -299,9 +322,10 @@ class BitFieldBase {
   static const U kShift = shift;
   static const U kSize = size;
   static const U kNext = kShift + kSize;
+  static const U kNumValues = kOne << size;
 
   // Value for the field with all bits set.
-  static const T kMax = static_cast<T>((kOne << size) - 1);
+  static const T kMax = static_cast<T>(kNumValues - 1);
 
   // Tells whether the provided value fits into the bit field.
   static constexpr bool is_valid(T value) {
@@ -600,8 +624,8 @@ class Access {
 
   ~Access() {
     resource_->is_reserved_ = false;
-    resource_ = NULL;
-    instance_ = NULL;
+    resource_ = nullptr;
+    instance_ = nullptr;
   }
 
   T* value()  { return instance_; }
@@ -612,22 +636,21 @@ class Access {
   T* instance_;
 };
 
-
 // A pointer that can only be set once and doesn't allow NULL values.
 template<typename T>
 class SetOncePointer {
  public:
-  SetOncePointer() : pointer_(NULL) { }
+  SetOncePointer() : pointer_(nullptr) {}
 
-  bool is_set() const { return pointer_ != NULL; }
+  bool is_set() const { return pointer_ != nullptr; }
 
   T* get() const {
-    DCHECK(pointer_ != NULL);
+    DCHECK_NOT_NULL(pointer_);
     return pointer_;
   }
 
   void set(T* value) {
-    DCHECK(pointer_ == NULL && value != NULL);
+    DCHECK(pointer_ == nullptr && value != nullptr);
     pointer_ = value;
   }
 
@@ -687,8 +710,8 @@ inline int CompareCharsUnsigned(const lchar* lhs, const rchar* rhs,
 
 template <typename lchar, typename rchar>
 inline int CompareChars(const lchar* lhs, const rchar* rhs, size_t chars) {
-  DCHECK(sizeof(lchar) <= 2);
-  DCHECK(sizeof(rchar) <= 2);
+  DCHECK_LE(sizeof(lchar), 2);
+  DCHECK_LE(sizeof(rchar), 2);
   if (sizeof(lchar) == 1) {
     if (sizeof(rchar) == 1) {
       return CompareCharsUnsigned(reinterpret_cast<const uint8_t*>(lhs),
@@ -715,8 +738,8 @@ inline int CompareChars(const lchar* lhs, const rchar* rhs, size_t chars) {
 
 // Calculate 10^exponent.
 inline int TenToThe(int exponent) {
-  DCHECK(exponent <= 9);
-  DCHECK(exponent >= 1);
+  DCHECK_LE(exponent, 9);
+  DCHECK_GE(exponent, 1);
   int answer = 10;
   for (int i = 1; i < exponent; i++) answer *= 10;
   return answer;
@@ -791,7 +814,7 @@ class SimpleStringBuilder {
   // 0-characters; use the Finalize() method to terminate the string
   // instead.
   void AddCharacter(char c) {
-    DCHECK(c != '\0');
+    DCHECK_NE(c, '\0');
     DCHECK(!is_finalized() && position_ < buffer_.length());
     buffer_[position_++] = c;
   }
@@ -1085,7 +1108,7 @@ inline void CopyWords(T* dst, const T* src, size_t num_words) {
   STATIC_ASSERT(sizeof(T) == kPointerSize);
   DCHECK(Min(dst, const_cast<T*>(src)) + num_words <=
          Max(dst, const_cast<T*>(src)));
-  DCHECK(num_words > 0);
+  DCHECK_GT(num_words, 0);
 
   // Use block copying MemCopy if the segment we're copying is
   // enough to justify the extra call/setup overhead.
@@ -1106,7 +1129,7 @@ inline void CopyWords(T* dst, const T* src, size_t num_words) {
 template <typename T>
 inline void MoveWords(T* dst, const T* src, size_t num_words) {
   STATIC_ASSERT(sizeof(T) == kPointerSize);
-  DCHECK(num_words > 0);
+  DCHECK_GT(num_words, 0);
 
   // Use block copying MemCopy if the segment we're copying is
   // enough to justify the extra call/setup overhead.
@@ -1151,8 +1174,8 @@ inline void CopyBytes(T* dst, const T* src, size_t num_bytes) {
 template <typename T, typename U>
 inline void MemsetPointer(T** dest, U* value, int counter) {
 #ifdef DEBUG
-  T* a = NULL;
-  U* b = NULL;
+  T* a = nullptr;
+  U* b = nullptr;
   a = b;  // Fake assignment to check assignability.
   USE(a);
 #endif  // DEBUG
@@ -1224,8 +1247,8 @@ INLINE(void CopyChars(sinkchar* dest, const sourcechar* src, size_t chars));
 
 template <typename sourcechar, typename sinkchar>
 void CopyChars(sinkchar* dest, const sourcechar* src, size_t chars) {
-  DCHECK(sizeof(sourcechar) <= 2);
-  DCHECK(sizeof(sinkchar) <= 2);
+  DCHECK_LE(sizeof(sourcechar), 2);
+  DCHECK_LE(sizeof(sinkchar), 2);
   if (sizeof(sinkchar) == 1) {
     if (sizeof(sourcechar) == 1) {
       CopyCharsUnsigned(reinterpret_cast<uint8_t*>(dest),

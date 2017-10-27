@@ -96,9 +96,8 @@ RUNTIME_FUNCTION(Runtime_ScheduleBreak) {
   return isolate->heap()->undefined_value();
 }
 
-
 static Handle<Object> DebugGetProperty(LookupIterator* it,
-                                       bool* has_caught = NULL) {
+                                       bool* has_caught = nullptr) {
   for (; it->IsFound(); it->Next()) {
     switch (it->state()) {
       case LookupIterator::NOT_FOUND:
@@ -122,7 +121,7 @@ static Handle<Object> DebugGetProperty(LookupIterator* it,
         if (!maybe_result.ToHandle(&result)) {
           result = handle(it->isolate()->pending_exception(), it->isolate());
           it->isolate()->clear_pending_exception();
-          if (has_caught != NULL) *has_caught = true;
+          if (has_caught != nullptr) *has_caught = true;
         }
         return result;
       }
@@ -140,7 +139,7 @@ static MaybeHandle<JSArray> GetIteratorInternalProperties(
     Isolate* isolate, Handle<IteratorType> object) {
   Factory* factory = isolate->factory();
   Handle<IteratorType> iterator = Handle<IteratorType>::cast(object);
-  const char* kind = NULL;
+  const char* kind = nullptr;
   switch (iterator->map()->instance_type()) {
     case JS_MAP_KEY_ITERATOR_TYPE:
       kind = "keys";
@@ -1106,7 +1105,7 @@ RUNTIME_FUNCTION(Runtime_SetScriptBreakPoint) {
   CHECK(isolate->debug()->is_active());
   CONVERT_ARG_HANDLE_CHECKED(JSValue, wrapper, 0);
   CONVERT_NUMBER_CHECKED(int32_t, source_position, Int32, args[1]);
-  CHECK(source_position >= 0);
+  CHECK_GE(source_position, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, break_point_object_arg, 2);
 
   // Get the script from the script wrapper.
@@ -1300,7 +1299,7 @@ RUNTIME_FUNCTION(Runtime_DebugReferencedBy) {
   CONVERT_ARG_HANDLE_CHECKED(Object, filter, 1);
   CHECK(filter->IsUndefined(isolate) || filter->IsJSObject());
   CONVERT_NUMBER_CHECKED(int32_t, max_references, Int32, args[2]);
-  CHECK(max_references >= 0);
+  CHECK_GE(max_references, 0);
 
   std::vector<Handle<JSObject>> instances;
   Heap* heap = isolate->heap();
@@ -1356,7 +1355,7 @@ RUNTIME_FUNCTION(Runtime_DebugConstructedBy) {
   DCHECK_EQ(2, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, 0);
   CONVERT_NUMBER_CHECKED(int32_t, max_references, Int32, args[1]);
-  CHECK(max_references >= 0);
+  CHECK_GE(max_references, 0);
 
   std::vector<Handle<JSObject>> instances;
   Heap* heap = isolate->heap();
@@ -1501,8 +1500,8 @@ RUNTIME_FUNCTION(Runtime_GetScript) {
   Handle<Script> found;
   {
     Script::Iterator iterator(isolate);
-    Script* script = NULL;
-    while ((script = iterator.Next()) != NULL) {
+    Script* script = nullptr;
+    while ((script = iterator.Next()) != nullptr) {
       if (!script->name()->IsString()) continue;
       String* name = String::cast(script->name());
       if (name->Equals(*script_name)) {
@@ -1678,8 +1677,8 @@ Handle<Object> ScriptLocationFromLine(Isolate* isolate, Handle<Script> script,
 // Slow traversal over all scripts on the heap.
 bool GetScriptById(Isolate* isolate, int needle, Handle<Script>* result) {
   Script::Iterator iterator(isolate);
-  Script* script = NULL;
-  while ((script = iterator.Next()) != NULL) {
+  Script* script = nullptr;
+  while ((script = iterator.Next()) != nullptr) {
     if (script->id() == needle) {
       *result = handle(script);
       return true;
@@ -1858,7 +1857,8 @@ RUNTIME_FUNCTION(Runtime_DebugAsyncFunctionPromiseCreated) {
   Handle<Symbol> async_stack_id_symbol =
       isolate->factory()->promise_async_stack_id_symbol();
   JSObject::SetProperty(promise, async_stack_id_symbol,
-                        handle(Smi::FromInt(id), isolate), STRICT)
+                        handle(Smi::FromInt(id), isolate),
+                        LanguageMode::kStrict)
       .Assert();
   isolate->debug()->OnAsyncTaskEvent(debug::kDebugEnqueueAsyncFunction, id, 0);
   return isolate->heap()->undefined_value();
@@ -1895,7 +1895,7 @@ RUNTIME_FUNCTION(Runtime_DebugIsActive) {
 
 RUNTIME_FUNCTION(Runtime_DebugBreakInOptimizedCode) {
   UNIMPLEMENTED();
-  return NULL;
+  return nullptr;
 }
 
 namespace {

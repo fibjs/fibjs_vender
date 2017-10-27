@@ -54,14 +54,14 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerChangeTaggedToTaggedSigned(Node* node);
   Node* LowerCheckBounds(Node* node, Node* frame_state);
   Node* LowerCheckInternalizedString(Node* node, Node* frame_state);
-  Node* LowerCheckMaps(Node* node, Node* frame_state);
+  void LowerCheckMaps(Node* node, Node* frame_state);
   Node* LowerCompareMaps(Node* node);
   Node* LowerCheckNumber(Node* node, Node* frame_state);
   Node* LowerCheckReceiver(Node* node, Node* frame_state);
   Node* LowerCheckString(Node* node, Node* frame_state);
   Node* LowerCheckSeqString(Node* node, Node* frame_state);
   Node* LowerCheckSymbol(Node* node, Node* frame_state);
-  Node* LowerCheckIf(Node* node, Node* frame_state);
+  void LowerCheckIf(Node* node, Node* frame_state);
   Node* LowerCheckedInt32Add(Node* node, Node* frame_state);
   Node* LowerCheckedInt32Sub(Node* node, Node* frame_state);
   Node* LowerCheckedInt32Div(Node* node, Node* frame_state);
@@ -86,6 +86,7 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerCheckedTruncateTaggedToWord32(Node* node, Node* frame_state);
   Node* LowerObjectIsArrayBufferView(Node* node);
   Node* LowerObjectIsCallable(Node* node);
+  Node* LowerObjectIsConstructor(Node* node);
   Node* LowerObjectIsDetectableCallable(Node* node);
   Node* LowerObjectIsMinusZero(Node* node);
   Node* LowerObjectIsNaN(Node* node);
@@ -102,6 +103,7 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerNewSmiOrObjectElements(Node* node);
   Node* LowerNewArgumentsElements(Node* node);
   Node* LowerArrayBufferWasNeutered(Node* node);
+  Node* LowerStringToNumber(Node* node);
   Node* LowerStringCharAt(Node* node);
   Node* LowerStringCharCodeAt(Node* node);
   Node* LowerSeqStringCharCodeAt(Node* node);
@@ -116,6 +118,11 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerCheckFloat64Hole(Node* node, Node* frame_state);
   Node* LowerCheckNotTaggedHole(Node* node, Node* frame_state);
   Node* LowerConvertTaggedHoleToUndefined(Node* node);
+  void LowerCheckEqualsInternalizedString(Node* node, Node* frame_state);
+  void LowerCheckEqualsSymbol(Node* node, Node* frame_state);
+  Node* LowerTypeOf(Node* node);
+  Node* LowerClassOf(Node* node);
+  Node* LowerToBoolean(Node* node);
   Node* LowerPlainPrimitiveToNumber(Node* node);
   Node* LowerPlainPrimitiveToWord32(Node* node);
   Node* LowerPlainPrimitiveToFloat64(Node* node);
@@ -129,6 +136,8 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerFindOrderedHashMapEntry(Node* node);
   Node* LowerFindOrderedHashMapEntryForInt32Key(Node* node);
   void LowerTransitionAndStoreElement(Node* node);
+  void LowerTransitionAndStoreNumberElement(Node* node);
+  void LowerTransitionAndStoreNonNumberElement(Node* node);
   void LowerRuntimeAbort(Node* node);
 
   // Lowering of optional operators.

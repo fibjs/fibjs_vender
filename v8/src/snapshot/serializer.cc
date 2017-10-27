@@ -5,7 +5,9 @@
 #include "src/snapshot/serializer.h"
 
 #include "src/assembler-inl.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/map.h"
+#include "src/snapshot/builtin-serializer-allocator.h"
 #include "src/snapshot/natives.h"
 
 namespace v8 {
@@ -26,17 +28,17 @@ Serializer<AllocatorT>::Serializer(Isolate* isolate)
       instance_type_size_[i] = 0;
     }
   } else {
-    instance_type_count_ = NULL;
-    instance_type_size_ = NULL;
+    instance_type_count_ = nullptr;
+    instance_type_size_ = nullptr;
   }
 #endif  // OBJECT_PRINT
 }
 
 template <class AllocatorT>
 Serializer<AllocatorT>::~Serializer() {
-  if (code_address_map_ != NULL) delete code_address_map_;
+  if (code_address_map_ != nullptr) delete code_address_map_;
 #ifdef OBJECT_PRINT
-  if (instance_type_count_ != NULL) {
+  if (instance_type_count_ != nullptr) {
     DeleteArray(instance_type_count_);
     DeleteArray(instance_type_size_);
   }
@@ -91,6 +93,10 @@ bool Serializer<AllocatorT>::MustBeDeferred(HeapObject* object) {
 template <class AllocatorT>
 void Serializer<AllocatorT>::VisitRootPointers(Root root, Object** start,
                                                Object** end) {
+  // Builtins and bytecode handlers are serialized in a separate pass by the
+  // BuiltinSerializer.
+  if (root == Root::kBuiltins || root == Root::kDispatchTable) return;
+
   for (Object** current = start; current < end; current++) {
     if ((*current)->IsSmi()) {
       PutSmi(Smi::cast(*current));
@@ -204,6 +210,13 @@ bool Serializer<AllocatorT>::SerializeBuiltinReference(
   sink_.PutInt(builtin_index, "builtin_index");
 
   return true;
+}
+
+// static
+template <class AllocatorT>
+bool Serializer<AllocatorT>::ObjectIsBytecodeHandler(HeapObject* obj) {
+  if (!obj->IsCode()) return false;
+  return (Code::cast(obj)->kind() == Code::BYTECODE_HANDLER);
 }
 
 template <class AllocatorT>
@@ -389,7 +402,7 @@ void Serializer<AllocatorT>::ObjectSerializer::FixupIfNeutered() {
   if (!array->WasNeutered()) return;
 
   FixedTypedArrayBase* fta = FixedTypedArrayBase::cast(array->elements());
-  DCHECK(fta->base_pointer() == nullptr);
+  DCHECK_NULL(fta->base_pointer());
   fta->set_external_pointer(Smi::kZero);
   fta->set_length(0);
 }
@@ -416,7 +429,7 @@ void Serializer<AllocatorT>::ObjectSerializer::SerializeFixedTypedArray() {
   FixedTypedArrayBase* fta = FixedTypedArrayBase::cast(object_);
   void* backing_store = fta->DataPtr();
   // We cannot store byte_length larger than Smi range in the snapshot.
-  CHECK(fta->ByteLength() < Smi::kMaxValue);
+  CHECK_LT(fta->ByteLength(), Smi::kMaxValue);
   int32_t byte_length = static_cast<int32_t>(fta->ByteLength());
 
   // The heap contains empty FixedTypedArrays for each type, with a byte_length
@@ -795,7 +808,7 @@ void Serializer<AllocatorT>::ObjectSerializer::OutputRawData(Address up_to) {
   int to_skip = up_to_offset - bytes_processed_so_far_;
   int bytes_to_output = to_skip;
   bytes_processed_so_far_ += to_skip;
-  DCHECK(to_skip >= 0);
+  DCHECK_GE(to_skip, 0);
   if (bytes_to_output != 0) {
     DCHECK(to_skip == bytes_to_output);
     if (IsAligned(bytes_to_output, kPointerAlignment) &&
@@ -822,7 +835,7 @@ int Serializer<AllocatorT>::ObjectSerializer::SkipTo(Address to) {
   bytes_processed_so_far_ += to_skip;
   // This assert will fail if the reloc info gives us the target_address_address
   // locations in a non-ascending order.  Luckily that doesn't happen.
-  DCHECK(to_skip >= 0);
+  DCHECK_GE(to_skip, 0);
   return to_skip;
 }
 
@@ -863,6 +876,7 @@ void Serializer<AllocatorT>::ObjectSerializer::OutputCode(int size) {
 }
 
 // Explicit instantiation.
+template class Serializer<BuiltinSerializerAllocator>;
 template class Serializer<DefaultSerializerAllocator>;
 
 }  // namespace internal

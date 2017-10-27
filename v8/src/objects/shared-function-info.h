@@ -14,6 +14,7 @@
 namespace v8 {
 namespace internal {
 
+class BytecodeArray;
 class CoverageInfo;
 class DebugInfo;
 
@@ -288,9 +289,6 @@ class SharedFunctionInfo : public HeapObject {
   inline LanguageMode language_mode();
   inline void set_language_mode(LanguageMode language_mode);
 
-  // False if the function definitely does not allocate an arguments object.
-  DECL_BOOLEAN_ACCESSORS(uses_arguments)
-
   // True if the function has any duplicated parameter names.
   DECL_BOOLEAN_ACCESSORS(has_duplicate_parameters)
 
@@ -466,7 +464,6 @@ class SharedFunctionInfo : public HeapObject {
   V(FunctionKindBits, FunctionKind, 10, _) \
   V(HasDuplicateParametersBit, bool, 1, _) \
   V(AllowLazyCompilationBit, bool, 1, _)   \
-  V(UsesArgumentsBit, bool, 1, _)          \
   V(NeedsHomeObjectBit, bool, 1, _)        \
   V(IsDeclarationBit, bool, 1, _)          \
   V(IsAsmWasmBrokenBit, bool, 1, _)        \

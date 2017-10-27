@@ -289,6 +289,7 @@ class Typer::Visitor : public Reducer {
 
   static Type* ObjectIsArrayBufferView(Type*, Typer*);
   static Type* ObjectIsCallable(Type*, Typer*);
+  static Type* ObjectIsConstructor(Type*, Typer*);
   static Type* ObjectIsDetectableCallable(Type*, Typer*);
   static Type* ObjectIsMinusZero(Type*, Typer*);
   static Type* ObjectIsNaN(Type*, Typer*);
@@ -519,6 +520,12 @@ Type* Typer::Visitor::ObjectIsArrayBufferView(Type* type, Typer* t) {
 
 Type* Typer::Visitor::ObjectIsCallable(Type* type, Typer* t) {
   if (type->Is(Type::Callable())) return t->singleton_true_;
+  if (!type->Maybe(Type::Callable())) return t->singleton_false_;
+  return Type::Boolean();
+}
+
+Type* Typer::Visitor::ObjectIsConstructor(Type* type, Typer* t) {
+  // TODO(turbofan): Introduce a Type::Constructor?
   if (!type->Maybe(Type::Callable())) return t->singleton_false_;
   return Type::Boolean();
 }
@@ -887,10 +894,6 @@ Type* Typer::Visitor::TypeTypeGuard(Node* node) {
 
 Type* Typer::Visitor::TypeDead(Node* node) { return Type::None(); }
 
-Type* Typer::Visitor::TypeDeadValue(Node* node) { return Type::None(); }
-
-Type* Typer::Visitor::TypeUnreachable(Node* node) { UNREACHABLE(); }
-
 // JS comparison operators.
 
 
@@ -1076,19 +1079,18 @@ Type* Typer::Visitor::JSModulusTyper(Type* lhs, Type* rhs, Typer* t) {
 
 // JS unary operators.
 
-Type* Typer::Visitor::TypeJSClassOf(Node* node) {
+Type* Typer::Visitor::TypeClassOf(Node* node) {
   return Type::InternalizedStringOrNull();
 }
 
-Type* Typer::Visitor::TypeJSTypeOf(Node* node) {
+Type* Typer::Visitor::TypeTypeOf(Node* node) {
   return Type::InternalizedString();
 }
 
 
 // JS conversion operators.
 
-
-Type* Typer::Visitor::TypeJSToBoolean(Node* node) {
+Type* Typer::Visitor::TypeToBoolean(Node* node) {
   return TypeUnaryOp(node, ToBoolean);
 }
 
@@ -1134,6 +1136,10 @@ Type* Typer::Visitor::TypeJSCreateArguments(Node* node) {
 }
 
 Type* Typer::Visitor::TypeJSCreateArray(Node* node) { return Type::Array(); }
+
+Type* Typer::Visitor::TypeJSCreateBoundFunction(Node* node) {
+  return Type::BoundFunction();
+}
 
 Type* Typer::Visitor::TypeJSCreateGeneratorObject(Node* node) {
   return Type::OtherObject();
@@ -1667,7 +1673,6 @@ Type* Typer::Visitor::TypeJSCallRuntime(Node* node) {
       return Type::Boolean();
     case Runtime::kInlineCreateIterResultObject:
       return Type::OtherObject();
-    case Runtime::kInlineSubString:
     case Runtime::kInlineStringCharFromCode:
       return Type::String();
     case Runtime::kInlineToInteger:
@@ -1792,6 +1797,10 @@ Type* Typer::Visitor::TypeSpeculativeNumberLessThanOrEqual(Node* node) {
   return TypeBinaryOp(node, NumberLessThanOrEqualTyper);
 }
 
+Type* Typer::Visitor::TypeStringToNumber(Node* node) {
+  return TypeUnaryOp(node, ToNumber);
+}
+
 Type* Typer::Visitor::TypePlainPrimitiveToNumber(Node* node) {
   return TypeUnaryOp(node, ToNumber);
 }
@@ -1855,9 +1864,7 @@ Type* Typer::Visitor::TypeStringFromCodePoint(Node* node) {
   return TypeUnaryOp(node, StringFromCodePointTyper);
 }
 
-Type* Typer::Visitor::TypeStringIndexOf(Node* node) {
-  return Type::Range(-1.0, String::kMaxLength - 1.0, zone());
-}
+Type* Typer::Visitor::TypeStringIndexOf(Node* node) { UNREACHABLE(); }
 
 Type* Typer::Visitor::TypeCheckBounds(Node* node) {
   Type* index = Operand(node, 0);
@@ -1937,6 +1944,12 @@ Type* Typer::Visitor::TypeConvertTaggedHoleToUndefined(Node* node) {
   return typer_->operation_typer()->ConvertTaggedHoleToUndefined(type);
 }
 
+Type* Typer::Visitor::TypeCheckEqualsInternalizedString(Node* node) {
+  UNREACHABLE();
+}
+
+Type* Typer::Visitor::TypeCheckEqualsSymbol(Node* node) { UNREACHABLE(); }
+
 Type* Typer::Visitor::TypeAllocate(Node* node) {
   return AllocateTypeOf(node->op());
 }
@@ -1976,6 +1989,14 @@ Type* Typer::Visitor::TypeTransitionAndStoreElement(Node* node) {
   UNREACHABLE();
 }
 
+Type* Typer::Visitor::TypeTransitionAndStoreNumberElement(Node* node) {
+  UNREACHABLE();
+}
+
+Type* Typer::Visitor::TypeTransitionAndStoreNonNumberElement(Node* node) {
+  UNREACHABLE();
+}
+
 Type* Typer::Visitor::TypeStoreSignedSmallElement(Node* node) { UNREACHABLE(); }
 
 Type* Typer::Visitor::TypeStoreTypedElement(Node* node) {
@@ -1988,6 +2009,10 @@ Type* Typer::Visitor::TypeObjectIsArrayBufferView(Node* node) {
 
 Type* Typer::Visitor::TypeObjectIsCallable(Node* node) {
   return TypeUnaryOp(node, ObjectIsCallable);
+}
+
+Type* Typer::Visitor::TypeObjectIsConstructor(Node* node) {
+  return TypeUnaryOp(node, ObjectIsConstructor);
 }
 
 Type* Typer::Visitor::TypeObjectIsDetectableCallable(Node* node) {

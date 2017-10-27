@@ -2,7 +2,9 @@
 #ifndef V8_PLATFORM_CONDITION_VARIABLE_H_
 #define V8_PLATFORM_CONDITION_VARIABLE_H_
 
-#include "mutex.h"
+#include "src/base/base-export.h"
+#include "src/base/lazy-instance.h"
+#include "src/base/platform/mutex.h"
 
 namespace v8 {
 namespace base {

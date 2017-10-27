@@ -39,18 +39,31 @@
 
 namespace v8 {
 namespace internal {
+
+constexpr MachineType MachineTypeOf<Smi>::value;
+constexpr MachineType MachineTypeOf<Object>::value;
+
 namespace compiler {
+
+static_assert(std::is_convertible<TNode<Number>, TNode<Object>>::value,
+              "test subtyping");
+static_assert(std::is_convertible<TNode<UnionT<Smi, HeapNumber>>,
+                                  TNode<UnionT<Smi, HeapObject>>>::value,
+              "test subtyping");
+static_assert(
+    !std::is_convertible<TNode<UnionT<Smi, HeapObject>>, TNode<Number>>::value,
+    "test subtyping");
 
 CodeAssemblerState::CodeAssemblerState(
     Isolate* isolate, Zone* zone, const CallInterfaceDescriptor& descriptor,
-    Code::Kind kind, const char* name, size_t result_size)
+    Code::Kind kind, const char* name, size_t result_size, uint32_t stub_key)
     : CodeAssemblerState(
           isolate, zone,
           Linkage::GetStubCallDescriptor(
               isolate, zone, descriptor, descriptor.GetStackParameterCount(),
               CallDescriptor::kNoFlags, Operator::kNoProperties,
               MachineType::AnyTagged(), result_size),
-          kind, name) {}
+          kind, name, stub_key) {}
 
 CodeAssemblerState::CodeAssemblerState(Isolate* isolate, Zone* zone,
                                        int parameter_count, Code::Kind kind,
@@ -61,11 +74,12 @@ CodeAssemblerState::CodeAssemblerState(Isolate* isolate, Zone* zone,
                                        kind == Code::BUILTIN
                                            ? CallDescriptor::kPushArgumentCount
                                            : CallDescriptor::kNoFlags),
-          kind, name) {}
+          kind, name, 0) {}
 
 CodeAssemblerState::CodeAssemblerState(Isolate* isolate, Zone* zone,
                                        CallDescriptor* call_descriptor,
-                                       Code::Kind kind, const char* name)
+                                       Code::Kind kind, const char* name,
+                                       uint32_t stub_key)
     : raw_assembler_(new RawMachineAssembler(
           isolate, new (zone) Graph(zone), call_descriptor,
           MachineType::PointerRepresentation(),
@@ -73,6 +87,7 @@ CodeAssemblerState::CodeAssemblerState(Isolate* isolate, Zone* zone,
           InstructionSelector::AlignmentRequirements())),
       kind_(kind),
       name_(name),
+      stub_key_(stub_key),
       code_generated_(false),
       variables_(zone) {}
 
@@ -161,7 +176,8 @@ Handle<Code> CodeAssembler::GenerateCode(CodeAssemblerState* state) {
 
   Handle<Code> code = Pipeline::GenerateCodeForCodeStub(
       rasm->isolate(), rasm->call_descriptor(), rasm->graph(), schedule,
-      state->kind_, state->name_, should_optimize_jumps ? &jump_opt : nullptr);
+      state->kind_, state->name_, state->stub_key_,
+      should_optimize_jumps ? &jump_opt : nullptr);
 
   if (jump_opt.is_optimizable()) {
     jump_opt.set_optimizing();
@@ -169,7 +185,7 @@ Handle<Code> CodeAssembler::GenerateCode(CodeAssemblerState* state) {
     // Regenerate machine code
     code = Pipeline::GenerateCodeForCodeStub(
         rasm->isolate(), rasm->call_descriptor(), rasm->graph(), schedule,
-        state->kind_, state->name_, &jump_opt);
+        state->kind_, state->name_, state->stub_key_, &jump_opt);
   }
 
   state->code_generated_ = true;
@@ -219,8 +235,8 @@ TNode<IntPtrT> CodeAssembler::IntPtrConstant(intptr_t value) {
   return UncheckedCast<IntPtrT>(raw_assembler()->IntPtrConstant(value));
 }
 
-TNode<Object> CodeAssembler::NumberConstant(double value) {
-  return UncheckedCast<Object>(raw_assembler()->NumberConstant(value));
+TNode<Number> CodeAssembler::NumberConstant(double value) {
+  return UncheckedCast<Number>(raw_assembler()->NumberConstant(value));
 }
 
 TNode<Smi> CodeAssembler::SmiConstant(Smi* value) {
@@ -281,12 +297,13 @@ bool CodeAssembler::ToInt64Constant(Node* node, int64_t& out_value) {
 bool CodeAssembler::ToSmiConstant(Node* node, Smi*& out_value) {
   if (node->opcode() == IrOpcode::kBitcastWordToTaggedSigned) {
     node = node->InputAt(0);
-  } else {
-    return false;
   }
   IntPtrMatcher m(node);
   if (m.HasValue()) {
-    out_value = Smi::cast(bit_cast<Object*>(m.Value()));
+    intptr_t value = m.Value();
+    // Make sure that the value is actually a smi
+    CHECK_EQ(0, value & ((static_cast<intptr_t>(1) << kSmiShiftSize) - 1));
+    out_value = Smi::cast(bit_cast<Object*>(value));
     return true;
   }
   return false;
@@ -788,21 +805,24 @@ TNode<UintPtrT> CodeAssembler::ChangeUint32ToWord(SloppyTNode<Word32T> value) {
     return UncheckedCast<UintPtrT>(
         raw_assembler()->ChangeUint32ToUint64(value));
   }
-  return UncheckedCast<UintPtrT>(value);
+  return ReinterpretCast<UintPtrT>(value);
 }
 
 TNode<IntPtrT> CodeAssembler::ChangeInt32ToIntPtr(SloppyTNode<Word32T> value) {
   if (raw_assembler()->machine()->Is64()) {
-    return UncheckedCast<IntPtrT>(raw_assembler()->ChangeInt32ToInt64(value));
+    return ReinterpretCast<IntPtrT>(raw_assembler()->ChangeInt32ToInt64(value));
   }
-  return UncheckedCast<IntPtrT>(value);
+  return ReinterpretCast<IntPtrT>(value);
 }
 
-Node* CodeAssembler::ChangeFloat64ToUintPtr(Node* value) {
+TNode<UintPtrT> CodeAssembler::ChangeFloat64ToUintPtr(
+    SloppyTNode<Float64T> value) {
   if (raw_assembler()->machine()->Is64()) {
-    return raw_assembler()->ChangeFloat64ToUint64(value);
+    return ReinterpretCast<UintPtrT>(
+        raw_assembler()->ChangeFloat64ToUint64(value));
   }
-  return raw_assembler()->ChangeFloat64ToUint32(value);
+  return ReinterpretCast<UintPtrT>(
+      raw_assembler()->ChangeFloat64ToUint32(value));
 }
 
 Node* CodeAssembler::RoundIntPtrToFloat64(Node* value) {

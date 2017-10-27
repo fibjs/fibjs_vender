@@ -13,7 +13,7 @@
 #include "src/base/utils/random-number-generator.h"
 #include "src/bootstrapper.h"
 #include "src/callable.h"
-#include "src/codegen.h"
+#include "src/code-stubs.h"
 #include "src/debug/debug.h"
 #include "src/external-reference-table.h"
 #include "src/frame-constants.h"
@@ -221,10 +221,8 @@ void MacroAssembler::RememberedSetHelper(
   ret(0);
 }
 
-void TurboAssembler::SlowTruncateToIDelayed(Zone* zone, Register result_reg,
-                                            Register input_reg, int offset) {
-  CallStubDelayed(
-      new (zone) DoubleToIStub(nullptr, input_reg, result_reg, offset, true));
+void TurboAssembler::SlowTruncateToIDelayed(Zone* zone, Register result_reg) {
+  CallStubDelayed(new (zone) DoubleToIStub(nullptr, result_reg));
 }
 
 void MacroAssembler::DoubleToI(Register result_reg, XMMRegister input_reg,
@@ -305,7 +303,7 @@ void MacroAssembler::RecordWriteField(Register object, int offset,
 }
 
 void TurboAssembler::SaveRegisters(RegList registers) {
-  DCHECK(NumRegs(registers) > 0);
+  DCHECK_GT(NumRegs(registers), 0);
   for (int i = 0; i < Register::kNumRegisters; ++i) {
     if ((registers >> i) & 1u) {
       push(Register::from_code(i));
@@ -314,7 +312,7 @@ void TurboAssembler::SaveRegisters(RegList registers) {
 }
 
 void TurboAssembler::RestoreRegisters(RegList registers) {
-  DCHECK(NumRegs(registers) > 0);
+  DCHECK_GT(NumRegs(registers), 0);
   for (int i = Register::kNumRegisters - 1; i >= 0; --i) {
     if ((registers >> i) & 1u) {
       pop(Register::from_code(i));
@@ -929,7 +927,7 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& ext,
 
 void TurboAssembler::PrepareForTailCall(
     const ParameterCount& callee_args_count, Register caller_args_count_reg,
-    Register scratch0, Register scratch1, ReturnAddressState ra_state,
+    Register scratch0, Register scratch1,
     int number_of_temp_values_after_return_address) {
 #if DEBUG
   if (callee_args_count.is_reg()) {
@@ -938,8 +936,6 @@ void TurboAssembler::PrepareForTailCall(
   } else {
     DCHECK(!AreAliased(caller_args_count_reg, scratch0, scratch1));
   }
-  DCHECK(ra_state != ReturnAddressState::kNotOnStack ||
-         number_of_temp_values_after_return_address == 0);
 #endif
 
   // Calculate the destination address where we will put the return address
@@ -968,15 +964,9 @@ void TurboAssembler::PrepareForTailCall(
   // to avoid its trashing and let the following loop copy it to the right
   // place.
   Register tmp_reg = scratch1;
-  if (ra_state == ReturnAddressState::kOnStack) {
-    mov(tmp_reg, Operand(ebp, StandardFrameConstants::kCallerPCOffset));
-    mov(Operand(esp, number_of_temp_values_after_return_address * kPointerSize),
-        tmp_reg);
-  } else {
-    DCHECK(ReturnAddressState::kNotOnStack == ra_state);
-    DCHECK_EQ(0, number_of_temp_values_after_return_address);
-    Push(Operand(ebp, StandardFrameConstants::kCallerPCOffset));
-  }
+  mov(tmp_reg, Operand(ebp, StandardFrameConstants::kCallerPCOffset));
+  mov(Operand(esp, number_of_temp_values_after_return_address * kPointerSize),
+      tmp_reg);
 
   // Restore caller's frame pointer now as it could be overwritten by
   // the copying loop.
@@ -1264,7 +1254,7 @@ void TurboAssembler::Move(XMMRegister dst, uint32_t src) {
   if (src == 0) {
     pxor(dst, dst);
   } else {
-    unsigned cnt = base::bits::CountPopulation32(src);
+    unsigned cnt = base::bits::CountPopulation(src);
     unsigned nlz = base::bits::CountLeadingZeros32(src);
     unsigned ntz = base::bits::CountTrailingZeros32(src);
     if (nlz + cnt + ntz == 32) {
@@ -1290,7 +1280,7 @@ void TurboAssembler::Move(XMMRegister dst, uint64_t src) {
   } else {
     uint32_t lower = static_cast<uint32_t>(src);
     uint32_t upper = static_cast<uint32_t>(src >> 32);
-    unsigned cnt = base::bits::CountPopulation64(src);
+    unsigned cnt = base::bits::CountPopulation(src);
     unsigned nlz = base::bits::CountLeadingZeros64(src);
     unsigned ntz = base::bits::CountTrailingZeros64(src);
     if (nlz + cnt + ntz == 64) {
@@ -1483,7 +1473,7 @@ void TurboAssembler::Popcnt(Register dst, const Operand& src) {
 
 
 void MacroAssembler::IncrementCounter(StatsCounter* counter, int value) {
-  DCHECK(value > 0);
+  DCHECK_GT(value, 0);
   if (FLAG_native_code_counters && counter->Enabled()) {
     Operand operand = Operand::StaticVariable(ExternalReference(counter));
     if (value == 1) {
@@ -1496,7 +1486,7 @@ void MacroAssembler::IncrementCounter(StatsCounter* counter, int value) {
 
 
 void MacroAssembler::DecrementCounter(StatsCounter* counter, int value) {
-  DCHECK(value > 0);
+  DCHECK_GT(value, 0);
   if (FLAG_native_code_counters && counter->Enabled()) {
     Operand operand = Operand::StaticVariable(ExternalReference(counter));
     if (value == 1) {
@@ -1541,7 +1531,7 @@ void TurboAssembler::CheckStackAlignment() {
 void TurboAssembler::Abort(BailoutReason reason) {
 #ifdef DEBUG
   const char* msg = GetBailoutReason(reason);
-  if (msg != NULL) {
+  if (msg != nullptr) {
     RecordComment("Abort message: ");
     RecordComment(msg);
   }
@@ -1582,19 +1572,6 @@ void MacroAssembler::LoadAccessor(Register dst, Register holder,
   int offset = accessor == ACCESSOR_GETTER ? AccessorPair::kGetterOffset
                                            : AccessorPair::kSetterOffset;
   mov(dst, FieldOperand(dst, offset));
-}
-
-void MacroAssembler::JumpIfNotUniqueNameInstanceType(Operand operand,
-                                                     Label* not_unique_name,
-                                                     Label::Distance distance) {
-  STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
-  Label succeed;
-  test(operand, Immediate(kIsNotStringMask | kIsNotInternalizedMask));
-  j(zero, &succeed);
-  cmpb(operand, Immediate(SYMBOL_TYPE));
-  j(not_equal, not_unique_name, distance);
-
-  bind(&succeed);
 }
 
 void TurboAssembler::PrepareCallCFunction(int num_arguments, Register scratch) {
@@ -1665,26 +1642,6 @@ bool AreAliased(Register reg1,
 #endif
 
 
-CodePatcher::CodePatcher(Isolate* isolate, byte* address, int size)
-    : address_(address),
-      size_(size),
-      masm_(isolate, address, size + Assembler::kGap, CodeObjectRequired::kNo) {
-  // Create a new macro assembler pointing to the address of the code to patch.
-  // The size is adjusted with kGap on order for the assembler to generate size
-  // bytes of instructions without failing with buffer size constraints.
-  DCHECK(masm_.reloc_info_writer.pos() == address_ + size_ + Assembler::kGap);
-}
-
-
-CodePatcher::~CodePatcher() {
-  // Indicate that code has changed.
-  Assembler::FlushICache(masm_.isolate(), address_, size_);
-
-  // Check that the code was patched as expected.
-  DCHECK(masm_.pc_ == address_ + size_);
-  DCHECK(masm_.reloc_info_writer.pos() == address_ + size_ + Assembler::kGap);
-}
-
 void TurboAssembler::CheckPageFlag(Register object, Register scratch, int mask,
                                    Condition cc, Label* condition_met,
                                    Label::Distance condition_met_distance) {
@@ -1710,7 +1667,7 @@ void MacroAssembler::JumpIfBlack(Register object,
                                  Label::Distance on_black_near) {
   HasColor(object, scratch0, scratch1, on_black, on_black_near, 1,
            1);  // kBlackBitPattern.
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
+  DCHECK_EQ(strcmp(Marking::kBlackBitPattern, "11"), 0);
 }
 
 
@@ -1772,10 +1729,10 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
   GetMarkBits(value, bitmap_scratch, mask_scratch);
 
   // If the value is black or grey we don't need to do anything.
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK_EQ(strcmp(Marking::kWhiteBitPattern, "00"), 0);
+  DCHECK_EQ(strcmp(Marking::kBlackBitPattern, "11"), 0);
+  DCHECK_EQ(strcmp(Marking::kGreyBitPattern, "10"), 0);
+  DCHECK_EQ(strcmp(Marking::kImpossibleBitPattern, "01"), 0);
 
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.

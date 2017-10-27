@@ -663,7 +663,8 @@ class TurboAssembler : public Assembler {
   // the stack offset specified by dst. The offsets and count are expressed in
   // slot-sized units. Offset dst must be less than src, or the gap between
   // them must be greater than or equal to slot_count, otherwise the result is
-  // unpredictable. The function may corrupt its register arguments.
+  // unpredictable. The function may corrupt its register arguments. The
+  // registers must not alias each other.
   void CopySlots(int dst, Register src, Register slot_count);
   void CopySlots(Register dst, Register src, Register slot_count);
 
@@ -671,7 +672,14 @@ class TurboAssembler : public Assembler {
   // in register dst. Address dst must be less than src, or the gap between
   // them must be greater than or equal to count double words, otherwise the
   // result is unpredictable. The function may corrupt its register arguments.
+  // The registers must not alias each other.
   void CopyDoubleWords(Register dst, Register src, Register count);
+
+  // Calculate the address of a double word-sized slot at slot_offset from the
+  // stack pointer, and write it to dst. Positive slot_offsets are at addresses
+  // greater than sp, with slot zero at sp.
+  void SlotAddress(Register dst, int slot_offset);
+  void SlotAddress(Register dst, Register slot_offset);
 
   // Load a literal from the inline constant pool.
   inline void Ldr(const CPURegister& rt, const Operand& imm);
@@ -695,18 +703,25 @@ class TurboAssembler : public Assembler {
   inline void Drop(const Register& count, uint64_t unit_size = kXRegSize);
 
   // Drop arguments from stack without actually accessing memory.
-  // This will currently drop 'count' arguments of the given size from the
-  // stack.
+  // This will currently drop 'count' arguments from the stack.
+  // We assume the size of the arguments is the pointer size.
+  // An optional mode argument is passed, which can indicate we need to
+  // explicitly add the receiver to the count.
   // TODO(arm64): Update this to round up the number of bytes dropped to
   // a multiple of 16, so that we can remove jssp.
+  enum ArgumentsCountMode { kCountIncludesReceiver, kCountExcludesReceiver };
   inline void DropArguments(const Register& count,
-                            uint64_t unit_size = kXRegSize);
+                            ArgumentsCountMode mode = kCountIncludesReceiver);
 
   // Drop slots from stack without actually accessing memory.
   // This will currently drop 'count' slots of the given size from the stack.
   // TODO(arm64): Update this to round up the number of bytes dropped to
   // a multiple of 16, so that we can remove jssp.
   inline void DropSlots(int64_t count, uint64_t unit_size = kXRegSize);
+
+  // Push a single argument to the stack.
+  // TODO(arm64): Update this to push a padding slot above the argument.
+  inline void PushArgument(const Register& arg);
 
   // Re-synchronizes the system stack pointer (csp) with the current stack
   // pointer (according to StackPointer()).
@@ -867,7 +882,7 @@ class TurboAssembler : public Assembler {
   inline void Brk(int code);
 
   inline void JumpIfSmi(Register value, Label* smi_label,
-                        Label* not_smi_label = NULL);
+                        Label* not_smi_label = nullptr);
 
   inline void Fmov(VRegister fd, VRegister fn);
   inline void Fmov(VRegister fd, Register rn);
@@ -898,6 +913,7 @@ class TurboAssembler : public Assembler {
   void Call(Label* target);
   void Call(Address target, RelocInfo::Mode rmode);
   void Call(Handle<Code> code, RelocInfo::Mode rmode = RelocInfo::CODE_TARGET);
+  void Call(ExternalReference target);
 
   void CallForDeoptimization(Address target, RelocInfo::Mode rmode) {
     Call(target, rmode);
@@ -1211,7 +1227,8 @@ class TurboAssembler : public Assembler {
   // If rm is the minimum representable value, the result is not representable.
   // Handlers for each case can be specified using the relevant labels.
   void Abs(const Register& rd, const Register& rm,
-           Label* is_not_representable = NULL, Label* is_representable = NULL);
+           Label* is_not_representable = nullptr,
+           Label* is_representable = nullptr);
 
   inline void Cls(const Register& rd, const Register& rn);
   inline void Cneg(const Register& rd, const Register& rn, Condition cond);
@@ -1254,7 +1271,7 @@ class TurboAssembler : public Assembler {
   // The 'args' argument should point to an array of variable arguments in their
   // proper PCS registers (and in calling order). The argument registers can
   // have mixed types. The format string (x0) should not be included.
-  void CallPrintf(int arg_count = 0, const CPURegister* args = NULL);
+  void CallPrintf(int arg_count = 0, const CPURegister* args = nullptr);
 
  private:
   bool has_frame_ = false;
@@ -1755,14 +1772,12 @@ class MacroAssembler : public TurboAssembler {
   inline void SmiTagAndPush(Register src1, Register src2);
 
   inline void JumpIfNotSmi(Register value, Label* not_smi_label);
-  inline void JumpIfBothSmi(Register value1,
-                            Register value2,
+  inline void JumpIfBothSmi(Register value1, Register value2,
                             Label* both_smi_label,
-                            Label* not_smi_label = NULL);
-  inline void JumpIfEitherSmi(Register value1,
-                              Register value2,
+                            Label* not_smi_label = nullptr);
+  inline void JumpIfEitherSmi(Register value1, Register value2,
                               Label* either_smi_label,
-                              Label* not_smi_label = NULL);
+                              Label* not_smi_label = nullptr);
   inline void JumpIfEitherNotSmi(Register value1,
                                  Register value2,
                                  Label* not_smi_label);
@@ -1806,16 +1821,12 @@ class MacroAssembler : public TurboAssembler {
   // On output the Z flag is set if the operation was successful.
   void TryRepresentDoubleAsInt64(Register as_int, VRegister value,
                                  VRegister scratch_d,
-                                 Label* on_successful_conversion = NULL,
-                                 Label* on_failed_conversion = NULL) {
+                                 Label* on_successful_conversion = nullptr,
+                                 Label* on_failed_conversion = nullptr) {
     DCHECK(as_int.Is64Bits());
     TryRepresentDoubleAsInt(as_int, value, scratch_d, on_successful_conversion,
                             on_failed_conversion);
   }
-
-  // ---- String Utilities ----
-
-  void JumpIfNotUniqueNameInstanceType(Register type, Label* not_unique_name);
 
   // ---- Calling / Jumping helpers ----
 
@@ -2172,8 +2183,8 @@ class MacroAssembler : public TurboAssembler {
   // On output the Z flag is set if the operation was successful.
   void TryRepresentDoubleAsInt(Register as_int, VRegister value,
                                VRegister scratch_d,
-                               Label* on_successful_conversion = NULL,
-                               Label* on_failed_conversion = NULL);
+                               Label* on_successful_conversion = nullptr,
+                               Label* on_failed_conversion = nullptr);
 
  public:
   // Far branches resolving.
@@ -2292,9 +2303,7 @@ class InlineSmiCheckInfo {
  public:
   explicit InlineSmiCheckInfo(Address info);
 
-  bool HasSmiCheck() const {
-    return smi_check_ != NULL;
-  }
+  bool HasSmiCheck() const { return smi_check_ != nullptr; }
 
   const Register& SmiRegister() const {
     return reg_;

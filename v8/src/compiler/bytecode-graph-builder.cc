@@ -963,11 +963,11 @@ void BytecodeGraphBuilder::BuildStoreGlobal(LanguageMode language_mode) {
 }
 
 void BytecodeGraphBuilder::VisitStaGlobalSloppy() {
-  BuildStoreGlobal(LanguageMode::SLOPPY);
+  BuildStoreGlobal(LanguageMode::kSloppy);
 }
 
 void BytecodeGraphBuilder::VisitStaGlobalStrict() {
-  BuildStoreGlobal(LanguageMode::STRICT);
+  BuildStoreGlobal(LanguageMode::kStrict);
 }
 
 void BytecodeGraphBuilder::VisitStaDataPropertyInLiteral() {
@@ -2297,7 +2297,7 @@ void BytecodeGraphBuilder::VisitLogicalNot() {
 }
 
 void BytecodeGraphBuilder::VisitToBooleanLogicalNot() {
-  Node* value = NewNode(javascript()->ToBoolean(ToBooleanHint::kAny),
+  Node* value = NewNode(simplified()->ToBoolean(ToBooleanHint::kAny),
                         environment()->LookupAccumulator());
   Node* node = NewNode(simplified()->BooleanNot(), value);
   environment()->BindAccumulator(node);
@@ -2305,7 +2305,7 @@ void BytecodeGraphBuilder::VisitToBooleanLogicalNot() {
 
 void BytecodeGraphBuilder::VisitTypeOf() {
   Node* node =
-      NewNode(javascript()->TypeOf(), environment()->LookupAccumulator());
+      NewNode(simplified()->TypeOf(), environment()->LookupAccumulator());
   environment()->BindAccumulator(node);
 }
 
@@ -2320,11 +2320,11 @@ void BytecodeGraphBuilder::BuildDelete(LanguageMode language_mode) {
 }
 
 void BytecodeGraphBuilder::VisitDeletePropertyStrict() {
-  BuildDelete(LanguageMode::STRICT);
+  BuildDelete(LanguageMode::kStrict);
 }
 
 void BytecodeGraphBuilder::VisitDeletePropertySloppy() {
-  BuildDelete(LanguageMode::SLOPPY);
+  BuildDelete(LanguageMode::kSloppy);
 }
 
 void BytecodeGraphBuilder::VisitGetSuperConstructor() {
@@ -2409,7 +2409,8 @@ void BytecodeGraphBuilder::VisitTestIn() {
 }
 
 void BytecodeGraphBuilder::VisitTestInstanceOf() {
-  BuildTestingOp(javascript()->InstanceOf());
+  int const slot_index = bytecode_iterator().GetIndexOperand(1);
+  BuildCompareOp(javascript()->InstanceOf(CreateVectorSlotPair(slot_index)));
 }
 
 void BytecodeGraphBuilder::VisitTestUndetectable() {
@@ -2952,14 +2953,14 @@ void BytecodeGraphBuilder::BuildJumpIfTrue() {
 void BytecodeGraphBuilder::BuildJumpIfToBooleanTrue() {
   Node* accumulator = environment()->LookupAccumulator();
   Node* condition =
-      NewNode(javascript()->ToBoolean(ToBooleanHint::kAny), accumulator);
+      NewNode(simplified()->ToBoolean(ToBooleanHint::kAny), accumulator);
   BuildJumpIf(condition);
 }
 
 void BytecodeGraphBuilder::BuildJumpIfToBooleanFalse() {
   Node* accumulator = environment()->LookupAccumulator();
   Node* condition =
-      NewNode(javascript()->ToBoolean(ToBooleanHint::kAny), accumulator);
+      NewNode(simplified()->ToBoolean(ToBooleanHint::kAny), accumulator);
   BuildJumpIfNot(condition);
 }
 

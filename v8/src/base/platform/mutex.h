@@ -2,8 +2,8 @@
 #ifndef V8_PLATFORM_MUTEX_H_
 #define V8_PLATFORM_MUTEX_H_
 
+#include "src/base/base-export.h"
 #include "src/base/lazy-instance.h"
-#include "src/checks.h"
 
 #if V8_OS_WIN
 #include "src/base/win32-headers.h"
@@ -126,6 +126,12 @@ inline BOOL QueryThreadCycleTime(HANDLE thread_handle, PULONG64 cycle_time)
 }
 #endif
 
+#endif
+
+#include "src/base/logging.h"
+
+#if V8_OS_POSIX
+#include <pthread.h> // NOLINT
 #endif
 
 namespace exlib {

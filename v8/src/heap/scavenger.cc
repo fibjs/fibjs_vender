@@ -86,6 +86,35 @@ void Scavenger::IterateAndScavengePromotedObject(HeapObject* target, int size) {
   target->IterateBody(target->map()->instance_type(), size, &visitor);
 }
 
+void Scavenger::AddPageToSweeperIfNecessary(MemoryChunk* page) {
+  AllocationSpace space = page->owner()->identity();
+  if ((space == OLD_SPACE) && !page->SweepingDone()) {
+    heap()->mark_compact_collector()->sweeper().AddPage(
+        space, reinterpret_cast<Page*>(page),
+        MarkCompactCollector::Sweeper::READD_TEMPORARY_REMOVED_PAGE);
+  }
+}
+
+void Scavenger::ScavengePage(MemoryChunk* page) {
+  PreferredSweepingPage(page);
+
+  CodePageMemoryModificationScope memory_modification_scope(page);
+  RememberedSet<OLD_TO_NEW>::Iterate(
+      page,
+      [this](Address addr) { return CheckAndScavengeObject(heap_, addr); },
+      SlotSet::KEEP_EMPTY_BUCKETS);
+  RememberedSet<OLD_TO_NEW>::IterateTyped(
+      page, [this](SlotType type, Address host_addr, Address addr) {
+        return UpdateTypedSlotHelper::UpdateTypedSlot(
+            heap_->isolate(), type, addr, [this](Object** addr) {
+              return CheckAndScavengeObject(heap(),
+                                            reinterpret_cast<Address>(addr));
+            });
+      });
+
+  AddPageToSweeperIfNecessary(page);
+}
+
 void Scavenger::Process(OneshotBarrier* barrier) {
   // Threshold when to switch processing the promotion list to avoid
   // allocating too much backing store in the worklist.

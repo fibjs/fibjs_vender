@@ -114,7 +114,10 @@ class ConcurrentMarkingVisitor final
 
   int VisitJSObject(Map* map, JSObject* object) {
     int size = JSObject::BodyDescriptor::SizeOf(map, object);
-    const SlotSnapshot& snapshot = MakeSlotSnapshot(map, object, size);
+    int used_size = map->UsedInstanceSize();
+    DCHECK_LE(used_size, size);
+    DCHECK_GE(used_size, JSObject::kHeaderSize);
+    const SlotSnapshot& snapshot = MakeSlotSnapshot(map, object, used_size);
     if (!ShouldVisit(object)) return 0;
     VisitPointersInSnapshot(object, snapshot);
     return size;
@@ -126,12 +129,6 @@ class ConcurrentMarkingVisitor final
 
   int VisitJSApiObject(Map* map, JSObject* object) {
     if (marking_state_.IsGrey(object)) {
-      int size = JSObject::BodyDescriptor::SizeOf(map, object);
-      VisitMapPointer(object, object->map_slot());
-      // It is OK to iterate body of JS API object here because they do not have
-      // unboxed double fields.
-      DCHECK_IMPLIES(FLAG_unbox_double_fields, map->HasFastPointerLayout());
-      JSObject::BodyDescriptor::IterateBody(object, size, this);
       // The main thread will do wrapper tracing in Blink.
       bailout_.Push(object);
     }
@@ -224,6 +221,14 @@ class ConcurrentMarkingVisitor final
     int size = AllocationSite::BodyDescriptorWeak::SizeOf(map, object);
     VisitMapPointer(object, object->map_slot());
     AllocationSite::BodyDescriptorWeak::IterateBody(object, size, this);
+    return size;
+  }
+
+  int VisitCodeDataContainer(Map* map, CodeDataContainer* object) {
+    if (!ShouldVisit(object)) return 0;
+    int size = CodeDataContainer::BodyDescriptorWeak::SizeOf(map, object);
+    VisitMapPointer(object, object->map_slot());
+    CodeDataContainer::BodyDescriptorWeak::IterateBody(object, size, this);
     return size;
   }
 

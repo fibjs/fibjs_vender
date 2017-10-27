@@ -32,14 +32,18 @@ namespace compiler {
 
 class Verifier::Visitor {
  public:
-  Visitor(Zone* z, Typing typed, CheckInputs check_inputs)
-      : zone(z), typing(typed), check_inputs(check_inputs) {}
+  Visitor(Zone* z, Typing typed, CheckInputs check_inputs, CodeType code_type)
+      : zone(z),
+        typing(typed),
+        check_inputs(check_inputs),
+        code_type(code_type) {}
 
   void Check(Node* node);
 
   Zone* zone;
   Typing typing;
   CheckInputs check_inputs;
+  CodeType code_type;
 
  private:
   void CheckNotTyped(Node* node) {
@@ -111,6 +115,20 @@ void Verifier::Visitor::Check(Node* node) {
     input_count += effect_count + control_count;
   }
   CHECK_EQ(input_count, node->InputCount());
+
+  // If this node has any effect outputs, make sure that it is
+  // consumed as an effect input somewhere else.
+  // TODO(mvstanton): support this kind of verification for WASM
+  // compiles, too.
+  if (code_type != kWasm && node->op()->EffectOutputCount() > 0) {
+    int effect_edges = 0;
+    for (Edge edge : node->use_edges()) {
+      if (NodeProperties::IsEffectEdge(edge)) {
+        effect_edges++;
+      }
+    }
+    DCHECK_GT(effect_edges, 0);
+  }
 
   // Verify that frame state has been inserted for the nodes that need it.
   for (int i = 0; i < frame_state_count; i++) {
@@ -218,11 +236,6 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kDead:
       // Dead is never connected to the graph.
       UNREACHABLE();
-    case IrOpcode::kDeadValue:
-      CheckTypeIs(node, Type::None());
-      break;
-    case IrOpcode::kUnreachable:
-      CheckNotTyped(node);
       break;
     case IrOpcode::kBranch: {
       // Branch uses are IfTrue and IfFalse.
@@ -563,7 +576,7 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::Number());
       break;
 
-    case IrOpcode::kJSToBoolean:
+    case IrOpcode::kToBoolean:
       // Type is Boolean.
       CheckTypeIs(node, Type::Boolean());
       break;
@@ -602,6 +615,10 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kJSCreateArray:
       // Type is Array.
       CheckTypeIs(node, Type::Array());
+      break;
+    case IrOpcode::kJSCreateBoundFunction:
+      // Type is BoundFunction.
+      CheckTypeIs(node, Type::BoundFunction());
       break;
     case IrOpcode::kJSCreateClosure:
       // Type is Function.
@@ -676,11 +693,11 @@ void Verifier::Visitor::Check(Node* node) {
       // Type is Boolean.
       CheckTypeIs(node, Type::Boolean());
       break;
-    case IrOpcode::kJSClassOf:
+    case IrOpcode::kClassOf:
       // Type is InternaliedString \/ Null.
       CheckTypeIs(node, Type::InternalizedStringOrNull());
       break;
-    case IrOpcode::kJSTypeOf:
+    case IrOpcode::kTypeOf:
       // Type is InternalizedString.
       CheckTypeIs(node, Type::InternalizedString());
       break;
@@ -963,6 +980,11 @@ void Verifier::Visitor::Check(Node* node) {
       CheckValueInputIs(node, 1, Type::String());
       CheckTypeIs(node, Type::Boolean());
       break;
+    case IrOpcode::kStringToNumber:
+      // String -> Number
+      CheckValueInputIs(node, 0, Type::String());
+      CheckTypeIs(node, Type::Number());
+      break;
     case IrOpcode::kStringCharAt:
       // (String, Unsigned32) -> String
       CheckValueInputIs(node, 0, Type::String());
@@ -1012,6 +1034,7 @@ void Verifier::Visitor::Check(Node* node) {
 
     case IrOpcode::kObjectIsArrayBufferView:
     case IrOpcode::kObjectIsCallable:
+    case IrOpcode::kObjectIsConstructor:
     case IrOpcode::kObjectIsDetectableCallable:
     case IrOpcode::kObjectIsMinusZero:
     case IrOpcode::kObjectIsNaN:
@@ -1237,6 +1260,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kCheckSymbol:
       CheckValueInputIs(node, 0, Type::Any());
       CheckTypeIs(node, Type::Symbol());
+      break;
 
     case IrOpcode::kCheckedInt32Add:
     case IrOpcode::kCheckedInt32Sub:
@@ -1268,6 +1292,17 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kConvertTaggedHoleToUndefined:
       CheckValueInputIs(node, 0, Type::Any());
       CheckTypeIs(node, Type::NonInternal());
+      break;
+
+    case IrOpcode::kCheckEqualsInternalizedString:
+      CheckValueInputIs(node, 0, Type::InternalizedString());
+      CheckValueInputIs(node, 1, Type::Any());
+      CheckNotTyped(node);
+      break;
+    case IrOpcode::kCheckEqualsSymbol:
+      CheckValueInputIs(node, 0, Type::Symbol());
+      CheckValueInputIs(node, 1, Type::Any());
+      CheckNotTyped(node);
       break;
 
     case IrOpcode::kLoadFieldByIndex:
@@ -1306,8 +1341,13 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kTransitionAndStoreElement:
       CheckNotTyped(node);
       break;
+    case IrOpcode::kTransitionAndStoreNumberElement:
+      CheckNotTyped(node);
+      break;
+    case IrOpcode::kTransitionAndStoreNonNumberElement:
+      CheckNotTyped(node);
+      break;
     case IrOpcode::kStoreSignedSmallElement:
-      CheckValueInputIs(node, 1, Type::SignedSmall());
       CheckNotTyped(node);
       break;
     case IrOpcode::kStoreTypedElement:
@@ -1512,11 +1552,12 @@ void Verifier::Visitor::Check(Node* node) {
   }
 }  // NOLINT(readability/fn_size)
 
-void Verifier::Run(Graph* graph, Typing typing, CheckInputs check_inputs) {
+void Verifier::Run(Graph* graph, Typing typing, CheckInputs check_inputs,
+                   CodeType code_type) {
   CHECK_NOT_NULL(graph->start());
   CHECK_NOT_NULL(graph->end());
   Zone zone(graph->zone()->allocator(), ZONE_NAME);
-  Visitor visitor(&zone, typing, check_inputs);
+  Visitor visitor(&zone, typing, check_inputs, code_type);
   AllNodes all(&zone, graph);
   for (Node* node : all.reachable) visitor.Check(node);
 
@@ -1800,13 +1841,13 @@ void Verifier::VerifyNode(Node* node) {
       }
     }
   }
+
   // Frame state input should be a frame state (or sentinel).
   if (OperatorProperties::GetFrameStateInputCount(node->op()) > 0) {
     Node* input = NodeProperties::GetFrameStateInput(node);
     DCHECK(input->opcode() == IrOpcode::kFrameState ||
            input->opcode() == IrOpcode::kStart ||
-           input->opcode() == IrOpcode::kDead ||
-           input->opcode() == IrOpcode::kDeadValue);
+           input->opcode() == IrOpcode::kDead);
   }
   // Effect inputs should be effect-producing nodes (or sentinels).
   for (int i = 0; i < node->op()->EffectInputCount(); i++) {
@@ -1831,9 +1872,7 @@ void Verifier::VerifyEdgeInputReplacement(const Edge& edge,
   DCHECK(!NodeProperties::IsEffectEdge(edge) ||
          replacement->op()->EffectOutputCount() > 0);
   DCHECK(!NodeProperties::IsFrameStateEdge(edge) ||
-         replacement->opcode() == IrOpcode::kFrameState ||
-         replacement->opcode() == IrOpcode::kDead ||
-         replacement->opcode() == IrOpcode::kDeadValue);
+         replacement->opcode() == IrOpcode::kFrameState);
 }
 
 #endif  // DEBUG

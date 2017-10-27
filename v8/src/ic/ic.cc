@@ -9,7 +9,6 @@
 #include "src/api.h"
 #include "src/arguments.h"
 #include "src/base/bits.h"
-#include "src/codegen.h"
 #include "src/conversions.h"
 #include "src/execution.h"
 #include "src/field-type.h"
@@ -72,36 +71,6 @@ void IC::TraceIC(const char* type, Handle<Object> name) {
   }
 }
 
-Address IC::GetAbstractPC(int* line, int* column) const {
-  JavaScriptFrameIterator it(isolate());
-
-  JavaScriptFrame* frame = it.frame();
-  DCHECK(!frame->is_builtin());
-  int position = frame->position();
-
-  Object* maybe_script = frame->function()->shared()->script();
-  if (maybe_script->IsScript()) {
-    Handle<Script> script(Script::cast(maybe_script), isolate());
-    Script::PositionInfo info;
-    Script::GetPositionInfo(script, position, &info, Script::WITH_OFFSET);
-    *line = info.line + 1;
-    *column = info.column + 1;
-  } else {
-    *line = position;
-    *column = -1;
-  }
-
-  if (frame->is_interpreted()) {
-    InterpretedFrame* iframe = static_cast<InterpretedFrame*>(frame);
-    Address bytecode_start =
-        reinterpret_cast<Address>(iframe->GetBytecodeArray()) - kHeapObjectTag +
-        BytecodeArray::kHeaderSize;
-    return bytecode_start + iframe->GetBytecodeOffset();
-  }
-
-  return frame->pc();
-}
-
 void IC::TraceIC(const char* type, Handle<Object> name, State old_state,
                  State new_state) {
   if (V8_LIKELY(!FLAG_ic_stats)) return;
@@ -120,10 +89,7 @@ void IC::TraceIC(const char* type, Handle<Object> name, State old_state,
 
   if (!(FLAG_ic_stats &
         v8::tracing::TracingCategoryObserver::ENABLED_BY_TRACING)) {
-    int line;
-    int column;
-    Address pc = GetAbstractPC(&line, &column);
-    LOG(isolate(), ICEvent(type, is_keyed(), pc, line, column, map, *name,
+    LOG(isolate(), ICEvent(type, is_keyed(), map, *name,
                            TransitionMarkFromState(old_state),
                            TransitionMarkFromState(new_state), modifier,
                            slow_stub_reason_));
@@ -181,7 +147,7 @@ IC::IC(FrameDepth depth, Isolate* isolate, FeedbackNexus* nexus)
   // levels of the stack frame iteration code. This yields a ~35% speedup when
   // running DeltaBlue and a ~25% speedup of gbemu with the '--nouse-ic' flag.
   const Address entry = Isolate::c_entry_fp(isolate->thread_local_top());
-  Address* constant_pool = NULL;
+  Address* constant_pool = nullptr;
   if (FLAG_enable_embedded_constant_pool) {
     constant_pool = reinterpret_cast<Address*>(
         entry + ExitFrameConstants::kConstantPoolOffset);
@@ -288,7 +254,7 @@ bool IC::ShouldRecomputeHandler(Handle<String> name) {
   if (maybe_handler_.is_null()) {
     if (!receiver_map()->IsJSObjectMap()) return false;
     Map* first_map = FirstTargetMap();
-    if (first_map == NULL) return false;
+    if (first_map == nullptr) return false;
     Handle<Map> old_map(first_map);
     if (old_map->is_deprecated()) return true;
     return IsMoreGeneralElementsKindTransition(old_map->elements_kind(),
@@ -341,18 +307,43 @@ MaybeHandle<Object> IC::ReferenceError(Handle<Name> name) {
 
 // static
 void IC::OnFeedbackChanged(Isolate* isolate, FeedbackVector* vector,
-                           JSFunction* host_function) {
+                           FeedbackSlot slot, JSFunction* host_function,
+                           const char* reason) {
   if (FLAG_trace_opt_verbose) {
     // TODO(leszeks): The host function is only needed for this print, we could
     // remove it as a parameter if we're of with removing this trace (or only
     // tracing the feedback vector, not the function name).
     if (vector->profiler_ticks() != 0) {
       PrintF("[resetting ticks for ");
-      host_function->PrintName();
-      PrintF(" due from %d due to IC change]\n", vector->profiler_ticks());
+      host_function->ShortPrint();
+      PrintF(" due from %d due to IC change: %s]\n", vector->profiler_ticks(),
+             reason);
     }
   }
   vector->set_profiler_ticks(0);
+
+#ifdef V8_TRACE_FEEDBACK_UPDATES
+  if (FLAG_trace_feedback_updates) {
+    int slot_count = vector->metadata()->slot_count();
+
+    OFStream os(stdout);
+    if (slot.IsInvalid()) {
+      os << "[Feedback slots in ";
+    } else {
+      os << "[Feedback slot " << slot.ToInt() << "/" << slot_count << " in ";
+    }
+    vector->shared_function_info()->ShortPrint(os);
+    if (slot.IsInvalid()) {
+      os << " updated - ";
+    } else {
+      os << " updated to ";
+      vector->FeedbackSlotPrint(os, slot);
+      os << " - ";
+    }
+    os << reason << "]" << std::endl;
+  }
+#endif
+
   isolate->runtime_profiler()->NotifyICChanged();
   // TODO(2029): When an optimized function is patched, it would
   // be nice to propagate the corresponding type information to its
@@ -378,7 +369,9 @@ void IC::ConfigureVectorState(IC::State new_state, Handle<Object> key) {
   }
 
   vector_set_ = true;
-  OnFeedbackChanged(isolate(), *vector(), GetHostFunction());
+  OnFeedbackChanged(
+      isolate(), *vector(), slot(), GetHostFunction(),
+      new_state == PREMONOMORPHIC ? "Premonomorphic" : "Megamorphic");
 }
 
 void IC::ConfigureVectorState(Handle<Name> name, Handle<Map> map,
@@ -393,7 +386,8 @@ void IC::ConfigureVectorState(Handle<Name> name, Handle<Map> map,
   }
 
   vector_set_ = true;
-  OnFeedbackChanged(isolate(), *vector(), GetHostFunction());
+  OnFeedbackChanged(isolate(), *vector(), slot(), GetHostFunction(),
+                    IsLoadGlobalIC() ? "LoadGlobal" : "Monomorphic");
 }
 
 void IC::ConfigureVectorState(Handle<Name> name, MapHandles const& maps,
@@ -404,14 +398,15 @@ void IC::ConfigureVectorState(Handle<Name> name, MapHandles const& maps,
   nexus()->ConfigurePolymorphic(name, maps, handlers);
 
   vector_set_ = true;
-  OnFeedbackChanged(isolate(), *vector(), GetHostFunction());
+  OnFeedbackChanged(isolate(), *vector(), slot(), GetHostFunction(),
+                    "Polymorphic");
 }
 
 MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
   // If the object is undefined or null it's illegal to try to get any
   // of its properties; throw a TypeError in that case.
   if (object->IsNullOrUndefined(isolate())) {
-    if (FLAG_use_ic && state() != UNINITIALIZED && state() != PREMONOMORPHIC) {
+    if (FLAG_use_ic && state() != PREMONOMORPHIC) {
       // Ensure the IC state progresses.
       TRACE_HANDLER_STATS(isolate(), LoadIC_NonReceiver);
       update_receiver_map(object);
@@ -733,10 +728,8 @@ Handle<Object> LoadIC::GetMapIndependentHandler(LookupIterator* lookup) {
   // Use specialized code for getting prototype of functions.
   if (receiver->IsJSFunction() &&
       *lookup->name() == isolate()->heap()->prototype_string() &&
-      receiver->IsConstructor() &&
-      !Handle<JSFunction>::cast(receiver)
-           ->map()
-           ->has_non_instance_prototype()) {
+      JSFunction::cast(*receiver)->has_prototype_slot() &&
+      !JSFunction::cast(*receiver)->map()->has_non_instance_prototype()) {
     Handle<Code> stub;
     TRACE_HANDLER_STATS(isolate(), LoadIC_FunctionPrototypeStub);
     return BUILTIN_CODE(isolate(), LoadIC_FunctionPrototype);
@@ -792,7 +785,7 @@ Handle<Object> LoadIC::GetMapIndependentHandler(LookupIterator* lookup) {
         int entry = exports->FindEntry(isolate(), lookup->name(),
                                        Smi::ToInt(lookup->name()->GetHash()));
         // We found the accessor, so the entry must exist.
-        DCHECK(entry != ObjectHashTable::kNotFound);
+        DCHECK_NE(entry, ObjectHashTable::kNotFound);
         int index = ObjectHashTable::EntryToValueIndex(entry);
         return LoadHandler::LoadModuleExport(isolate(), index);
       }
@@ -1301,7 +1294,7 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
   // If the object is undefined or null it's illegal to try to set any
   // properties on it; throw a TypeError in that case.
   if (object->IsNullOrUndefined(isolate())) {
-    if (FLAG_use_ic && state() != UNINITIALIZED && state() != PREMONOMORPHIC) {
+    if (FLAG_use_ic && state() != PREMONOMORPHIC) {
       // Ensure the IC state progresses.
       TRACE_HANDLER_STATS(isolate(), StoreIC_NonReceiver);
       update_receiver_map(object);
@@ -1366,23 +1359,19 @@ void StoreIC::UpdateCaches(LookupIterator* lookup, Handle<Object> value,
   TRACE_IC("StoreIC", lookup->name());
 }
 
-namespace {
-
-Handle<Object> StoreGlobal(Isolate* isolate, Handle<PropertyCell> cell) {
-  return isolate->factory()->NewWeakCell(cell);
-}
-
-}  // namespace
-
 Handle<Object> StoreIC::GetMapIndependentHandler(LookupIterator* lookup) {
   switch (lookup->state()) {
     case LookupIterator::TRANSITION: {
       Handle<JSObject> holder = lookup->GetHolder<JSObject>();
 
-      auto store_target = lookup->GetStoreTarget();
+      Handle<JSObject> store_target = lookup->GetStoreTarget();
       if (store_target->IsJSGlobalObject()) {
         TRACE_HANDLER_STATS(isolate(), StoreIC_StoreGlobalTransitionDH);
-        return StoreGlobal(isolate(), lookup->transition_cell());
+
+        Handle<Object> handler = StoreHandler::StoreTransition(
+            isolate(), receiver_map(), store_target, lookup->transition_cell(),
+            lookup->name());
+        return handler;
       }
       // Currently not handled by CompileStoreTransition.
       if (!holder->HasFastProperties()) {
@@ -1477,7 +1466,8 @@ Handle<Object> StoreIC::GetMapIndependentHandler(LookupIterator* lookup) {
       if (lookup->is_dictionary_holder()) {
         if (holder->IsJSGlobalObject()) {
           TRACE_HANDLER_STATS(isolate(), StoreIC_StoreGlobalDH);
-          return StoreGlobal(isolate(), lookup->GetPropertyCell());
+          return StoreHandler::StoreGlobal(isolate(),
+                                           lookup->GetPropertyCell());
         }
         TRACE_HANDLER_STATS(isolate(), StoreIC_StoreNormalDH);
         DCHECK(holder.is_identical_to(receiver));
@@ -1534,7 +1524,7 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup) {
 
   if (accessors->IsAccessorInfo()) {
     Handle<AccessorInfo> info = Handle<AccessorInfo>::cast(accessors);
-    DCHECK(v8::ToCData<Address>(info->setter()) != 0);
+    DCHECK_NOT_NULL(v8::ToCData<Address>(info->setter()));
     DCHECK(!AccessorInfo::cast(*accessors)->is_special_data_property() ||
            lookup->HolderIsReceiverOrHiddenPrototype());
     DCHECK(
@@ -1747,6 +1737,7 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
     stub =
         StoreFastElementStub(isolate(), is_jsarray, elements_kind, store_mode)
             .GetCode();
+    if (receiver_map->has_fixed_typed_array_elements()) return stub;
   } else {
     TRACE_HANDLER_STATS(isolate(), KeyedStoreIC_StoreElementStub);
     DCHECK_EQ(DICTIONARY_ELEMENTS, elements_kind);
@@ -1912,9 +1903,7 @@ MaybeHandle<Object> KeyedStoreIC::Store(Handle<Object> object,
     return store_handle;
   }
 
-  if (state() != UNINITIALIZED) {
-    JSObject::MakePrototypesFast(object, kStartAtPrototype, isolate());
-  }
+  JSObject::MakePrototypesFast(object, kStartAtPrototype, isolate());
 
   bool use_ic = FLAG_use_ic && !object->IsStringWrapper() &&
                 !object->IsAccessCheckNeeded() && !object->IsJSGlobalProxy();
@@ -2142,6 +2131,48 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
   }
 }
 
+RUNTIME_FUNCTION(Runtime_StoreGlobalIC_Slow) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(5, args.length());
+  // Runtime functions don't follow the IC's calling convention.
+  Handle<Object> value = args.at(0);
+  Handle<Smi> slot = args.at<Smi>(1);
+  Handle<FeedbackVector> vector = args.at<FeedbackVector>(2);
+  Handle<Object> object = args.at(3);
+  CONVERT_ARG_HANDLE_CHECKED(String, name, 4);
+
+  Handle<Context> native_context = isolate->native_context();
+  Handle<ScriptContextTable> script_contexts(
+      native_context->script_context_table());
+
+  ScriptContextTable::LookupResult lookup_result;
+  if (ScriptContextTable::Lookup(script_contexts, name, &lookup_result)) {
+    Handle<Context> script_context = ScriptContextTable::GetContext(
+        script_contexts, lookup_result.context_index);
+    if (lookup_result.mode == CONST) {
+      THROW_NEW_ERROR_RETURN_FAILURE(
+          isolate, NewTypeError(MessageTemplate::kConstAssign, object, name));
+    }
+
+    Handle<Object> previous_value =
+        FixedArray::get(*script_context, lookup_result.slot_index, isolate);
+
+    if (previous_value->IsTheHole(isolate)) {
+      THROW_NEW_ERROR_RETURN_FAILURE(
+          isolate, NewReferenceError(MessageTemplate::kNotDefined, name));
+    }
+
+    script_context->set(lookup_result.slot_index, *value);
+    return *value;
+  }
+
+  FeedbackSlot vector_slot = vector->ToSlot(slot->value());
+  LanguageMode language_mode = vector->GetLanguageMode(vector_slot);
+  RETURN_RESULT_OR_FAILURE(
+      isolate,
+      Runtime::SetObjectProperty(isolate, object, name, value, language_mode));
+}
+
 // Used from ic-<arch>.cc.
 RUNTIME_FUNCTION(Runtime_KeyedStoreIC_Miss) {
   HandleScope scope(isolate);
@@ -2231,10 +2262,10 @@ RUNTIME_FUNCTION(Runtime_StoreCallbackProperty) {
   Address setter_address = v8::ToCData<Address>(callback->setter());
   v8::AccessorNameSetterCallback fun =
       FUNCTION_CAST<v8::AccessorNameSetterCallback>(setter_address);
-  DCHECK(fun != NULL);
+  DCHECK_NOT_NULL(fun);
 
-  Object::ShouldThrow should_throw =
-      is_sloppy(language_mode) ? Object::DONT_THROW : Object::THROW_ON_ERROR;
+  ShouldThrow should_throw =
+      is_sloppy(language_mode) ? kDontThrow : kThrowOnError;
   PropertyCallbackArguments custom_args(isolate, callback->data(), *receiver,
                                         *holder, should_throw);
   custom_args.Call(fun, name, value);
@@ -2261,7 +2292,7 @@ RUNTIME_FUNCTION(Runtime_LoadPropertyWithInterceptor) {
 
   InterceptorInfo* interceptor = holder->GetNamedInterceptor();
   PropertyCallbackArguments arguments(isolate, interceptor->data(), *receiver,
-                                      *holder, Object::DONT_THROW);
+                                      *holder, kDontThrow);
 
   v8::GenericNamedPropertyGetterCallback getter =
       v8::ToCData<v8::GenericNamedPropertyGetterCallback>(
@@ -2317,7 +2348,7 @@ RUNTIME_FUNCTION(Runtime_StorePropertyWithInterceptor) {
   InterceptorInfo* interceptor = receiver->GetNamedInterceptor();
   DCHECK(!interceptor->non_masking());
   PropertyCallbackArguments arguments(isolate, interceptor->data(), *receiver,
-                                      *receiver, Object::DONT_THROW);
+                                      *receiver, kDontThrow);
 
   v8::GenericNamedPropertySetterCallback setter =
       v8::ToCData<v8::GenericNamedPropertySetterCallback>(
@@ -2347,12 +2378,12 @@ RUNTIME_FUNCTION(Runtime_LoadElementWithInterceptor) {
   // TODO(verwaest): This should probably get the holder and receiver as input.
   HandleScope scope(isolate);
   Handle<JSObject> receiver = args.at<JSObject>(0);
-  DCHECK(args.smi_at(1) >= 0);
+  DCHECK_GE(args.smi_at(1), 0);
   uint32_t index = args.smi_at(1);
 
   InterceptorInfo* interceptor = receiver->GetIndexedInterceptor();
   PropertyCallbackArguments arguments(isolate, interceptor->data(), *receiver,
-                                      *receiver, Object::DONT_THROW);
+                                      *receiver, kDontThrow);
 
   v8::IndexedPropertyGetterCallback getter =
       v8::ToCData<v8::IndexedPropertyGetterCallback>(interceptor->getter());

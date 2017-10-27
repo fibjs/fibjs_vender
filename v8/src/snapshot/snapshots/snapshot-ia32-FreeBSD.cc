@@ -28,12 +28,11 @@ void ReadNatives() {}
 void DisposeNatives() {}
 #endif  // V8_USE_EXTERNAL_STARTUP_DATA
 
-
-const v8::StartupData* Snapshot::DefaultSnapshotBlob() { return NULL; }
+const v8::StartupData* Snapshot::DefaultSnapshotBlob() { return nullptr; }
 }  // namespace internal
 }  // namespace v8
 
 
 #endif  // V8_TARGET_ARCH_IA32
 
-#endif FreeBSD
+#endif // FreeBSD

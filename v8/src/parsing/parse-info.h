@@ -13,6 +13,7 @@
 #include "src/globals.h"
 #include "src/handles.h"
 #include "src/parsing/preparsed-scope-data.h"
+#include "src/pending-compilation-error-handler.h"
 
 namespace v8 {
 
@@ -193,6 +194,10 @@ class V8_EXPORT_PRIVATE ParseInfo {
     source_range_map_ = source_range_map;
   }
 
+  PendingCompilationErrorHandler* pending_error_handler() {
+    return &pending_error_handler_;
+  }
+
   // Getters for individual compiler hints.
   bool is_declaration() const;
   FunctionKind function_kind() const;
@@ -215,7 +220,7 @@ class V8_EXPORT_PRIVATE ParseInfo {
     return construct_language_mode(is_strict_mode());
   }
   void set_language_mode(LanguageMode language_mode) {
-    STATIC_ASSERT(LANGUAGE_END == 2);
+    STATIC_ASSERT(LanguageModeSize == 2);
     set_strict_mode(is_strict(language_mode));
   }
 
@@ -284,6 +289,7 @@ class V8_EXPORT_PRIVATE ParseInfo {
   //----------- Output of parsing and scope analysis ------------------------
   FunctionLiteral* literal_;
   std::shared_ptr<DeferredHandles> deferred_handles_;
+  PendingCompilationErrorHandler pending_error_handler_;
 
   void SetFlag(Flag f) { flags_ |= f; }
   void SetFlag(Flag f, bool v) { flags_ = v ? flags_ | f : flags_ & ~f; }

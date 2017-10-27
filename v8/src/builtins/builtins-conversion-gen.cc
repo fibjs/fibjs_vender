@@ -33,9 +33,7 @@ void ConversionBuiltinsAssembler::Generate_NonPrimitiveToPrimitive(
 
   // Check if {exotic_to_prim} is neither null nor undefined.
   Label ordinary_to_primitive(this);
-  GotoIf(WordEqual(exotic_to_prim, NullConstant()), &ordinary_to_primitive);
-  GotoIf(WordEqual(exotic_to_prim, UndefinedConstant()),
-         &ordinary_to_primitive);
+  GotoIf(IsNullOrUndefined(exotic_to_prim), &ordinary_to_primitive);
   {
     // Invoke the {exotic_to_prim} method on the {input} with a string
     // representation of the {hint}.
@@ -126,6 +124,15 @@ TF_BUILTIN(NonNumberToNumeric, CodeStubAssembler) {
   Node* input = Parameter(Descriptor::kArgument);
 
   Return(NonNumberToNumeric(context, input));
+}
+
+TF_BUILTIN(ToNumeric, CodeStubAssembler) {
+  Node* context = Parameter(Descriptor::kContext);
+  Node* input = Parameter(Descriptor::kArgument);
+
+  Return(Select(IsNumber(input), [=] { return input; },
+                [=] { return NonNumberToNumeric(context, input); },
+                MachineRepresentation::kTagged));
 }
 
 // ES6 section 7.1.3 ToNumber ( argument )
@@ -222,10 +229,10 @@ TF_BUILTIN(ToBoolean, CodeStubAssembler) {
   BranchIfToBooleanIsTrue(value, &return_true, &return_false);
 
   BIND(&return_true);
-  Return(BooleanConstant(true));
+  Return(TrueConstant());
 
   BIND(&return_false);
-  Return(BooleanConstant(false));
+  Return(FalseConstant());
 }
 
 // ES6 section 7.1.2 ToBoolean ( argument )
@@ -238,10 +245,10 @@ TF_BUILTIN(ToBooleanLazyDeoptContinuation, CodeStubAssembler) {
   BranchIfToBooleanIsTrue(value, &return_true, &return_false);
 
   BIND(&return_true);
-  Return(BooleanConstant(true));
+  Return(TrueConstant());
 
   BIND(&return_false);
-  Return(BooleanConstant(false));
+  Return(FalseConstant());
 }
 
 TF_BUILTIN(ToLength, CodeStubAssembler) {

@@ -144,7 +144,7 @@ inline MemOperand UntagSmiFieldMemOperand(Register rm, int offset) {
 //              n64, and used in RegExp code, and other places
 //              with more than 8 arguments.
 inline MemOperand CFunctionArgumentOperand(int index) {
-  DCHECK(index > kCArgSlotCount);
+  DCHECK_GT(index, kCArgSlotCount);
   // Argument 5 takes the slot just past the four Arg-slots.
   int offset = (index - 5) * kPointerSize + kCArgsSlotsSize;
   return MemOperand(sp, offset);
@@ -1256,7 +1256,7 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
       // The int portion is upper 32-bits of 64-bit word.
       dsra(dst, src, kSmiShift - scale);
     } else {
-      DCHECK(scale >= kSmiTagSize);
+      DCHECK_GE(scale, kSmiTagSize);
       sll(dst, src, scale - kSmiTagSize);
     }
   }
@@ -1303,11 +1303,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
 
-  // -------------------------------------------------------------------------
-  // String utilities.
-
-  void JumpIfNotUniqueNameInstanceType(Register reg, Label* not_unique_name);
-
   void LoadInstanceDescriptors(Register map, Register descriptors);
   void LoadAccessor(Register dst, Register holder, int accessor_index,
                     AccessorComponent accessor);
@@ -1349,43 +1344,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   // Needs access to SafepointRegisterStackIndex for compiled frame
   // traversal.
   friend class StandardFrame;
-};
-
-
-// The code patcher is used to patch (typically) small parts of code e.g. for
-// debugging and other types of instrumentation. When using the code patcher
-// the exact number of bytes specified must be emitted. It is not legal to emit
-// relocation information. If any of these constraints are violated it causes
-// an assertion to fail.
-class CodePatcher {
- public:
-  enum FlushICache {
-    FLUSH,
-    DONT_FLUSH
-  };
-
-  CodePatcher(Isolate* isolate, byte* address, int instructions,
-              FlushICache flush_cache = FLUSH);
-  ~CodePatcher();
-
-  // Macro assembler to emit code.
-  MacroAssembler* masm() { return &masm_; }
-
-  // Emit an instruction directly.
-  void Emit(Instr instr);
-
-  // Emit an address directly.
-  void Emit(Address addr);
-
-  // Change the condition part of an instruction leaving the rest of the current
-  // instruction unchanged.
-  void ChangeBranchCondition(Instr current_instr, uint32_t new_opcode);
-
- private:
-  byte* address_;  // The address of the code being patched.
-  int size_;  // Number of bytes of the expected patch size.
-  MacroAssembler masm_;  // Macro assembler used to generate the code.
-  FlushICache flush_cache_;  // Whether to flush the I cache after patching.
 };
 
 template <typename Func>

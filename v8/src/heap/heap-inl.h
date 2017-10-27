@@ -373,9 +373,9 @@ void Heap::FinalizeExternalString(String* string) {
           kHeapObjectTag);
 
   // Dispose of the C++ object if it has not already been disposed.
-  if (*resource_addr != NULL) {
+  if (*resource_addr != nullptr) {
     (*resource_addr)->Dispose();
-    *resource_addr = NULL;
+    *resource_addr = nullptr;
   }
 }
 
@@ -588,6 +588,41 @@ AlwaysAllocateScope::AlwaysAllocateScope(Isolate* isolate)
 
 AlwaysAllocateScope::~AlwaysAllocateScope() {
   heap_->always_allocate_scope_count_.Decrement(1);
+}
+
+CodeSpaceMemoryModificationScope::CodeSpaceMemoryModificationScope(Heap* heap)
+    : heap_(heap) {
+  if (FLAG_write_protect_code_memory) {
+    heap_->code_space()->SetReadAndWritable();
+  }
+}
+
+CodeSpaceMemoryModificationScope::~CodeSpaceMemoryModificationScope() {
+  if (FLAG_write_protect_code_memory) {
+    heap_->code_space()->SetReadAndExecutable();
+  }
+}
+
+CodePageMemoryModificationScope::CodePageMemoryModificationScope(
+    MemoryChunk* chunk)
+    : chunk_(chunk),
+      scope_active_(FLAG_write_protect_code_memory &&
+                    chunk_->IsFlagSet(MemoryChunk::IS_EXECUTABLE)) {
+  if (scope_active_) {
+    // TODO(hpayer): owner() can only be null if we use the MemoryChunk outside
+    // of spaces. We actually should not do that and we should untangle this.
+    DCHECK(chunk_->owner() == nullptr ||
+           chunk_->owner()->identity() == CODE_SPACE ||
+           (chunk_->owner()->identity() == LO_SPACE &&
+            chunk_->IsFlagSet(MemoryChunk::IS_EXECUTABLE)));
+    chunk_->SetReadAndWritable();
+  }
+}
+
+CodePageMemoryModificationScope::~CodePageMemoryModificationScope() {
+  if (scope_active_) {
+    chunk_->SetReadAndExecutable();
+  }
 }
 
 }  // namespace internal

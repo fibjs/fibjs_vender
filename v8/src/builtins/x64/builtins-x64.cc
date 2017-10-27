@@ -9,7 +9,6 @@
 #if V8_TARGET_ARCH_X64
 
 #include "src/code-factory.h"
-#include "src/codegen.h"
 #include "src/counters.h"
 #include "src/deoptimizer.h"
 #include "src/frame-constants.h"
@@ -63,13 +62,13 @@ void AdaptorWithExitFrameType(MacroAssembler* masm,
 
   // CEntryStub expects rax to contain the number of arguments including the
   // receiver and the extra arguments.
-  const int num_extra_args = 3;
-  __ addp(rax, Immediate(num_extra_args + 1));
+  __ addp(rax, Immediate(BuiltinExitFrameConstants::kNumExtraArgsWithReceiver));
 
   // Unconditionally insert argc, target and new target as extra arguments. They
   // will be used by stack frame iterators when constructing the stack trace.
   __ PopReturnAddressTo(kScratchRegister);
   __ Integer32ToSmi(rax, rax);
+  __ PushRoot(Heap::kTheHoleValueRootIndex);  // Padding.
   __ Push(rax);
   __ SmiToInteger32(rax, rax);
   __ Push(rdi);
@@ -405,11 +404,8 @@ void Builtins::Generate_ConstructedNonConstructable(MacroAssembler* masm) {
   __ CallRuntime(Runtime::kThrowConstructedNonConstructable);
 }
 
-enum IsTagged { kRaxIsSmiTagged, kRaxIsUntaggedInt };
-
 // Clobbers rcx, r11, kScratchRegister; preserves all other registers.
-static void Generate_CheckStackOverflow(MacroAssembler* masm,
-                                        IsTagged rax_is_tagged) {
+static void Generate_CheckStackOverflow(MacroAssembler* masm) {
   // rax   : the number of items to be pushed to the stack
   //
   // Check the stack for overflow. We are not trying to catch
@@ -423,13 +419,8 @@ static void Generate_CheckStackOverflow(MacroAssembler* masm,
   __ subp(rcx, kScratchRegister);
   // Make r11 the space we need for the array when it is unrolled onto the
   // stack.
-  if (rax_is_tagged == kRaxIsSmiTagged) {
-    __ PositiveSmiTimesPowerOfTwoToInteger64(r11, rax, kPointerSizeLog2);
-  } else {
-    DCHECK(rax_is_tagged == kRaxIsUntaggedInt);
-    __ movp(r11, rax);
-    __ shlq(r11, Immediate(kPointerSizeLog2));
-  }
+  __ movp(r11, rax);
+  __ shlq(r11, Immediate(kPointerSizeLog2));
   // Check if the arguments will overflow the stack.
   __ cmpp(rcx, r11);
   __ j(greater, &okay);  // Signed comparison.
@@ -538,7 +529,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
 
     // Check if we have enough stack space to push all arguments.
     // Expects argument count in rax. Clobbers rcx, r11.
-    Generate_CheckStackOverflow(masm, kRaxIsUntaggedInt);
+    Generate_CheckStackOverflow(masm);
 
     // Copy arguments to the stack in a loop.
     // Register rbx points to array of pointers to handle locations.
@@ -785,21 +776,14 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
         Runtime::kCompileOptimized_Concurrent);
 
     {
-      // Otherwise, the marker is InOptimizationQueue.
+      // Otherwise, the marker is InOptimizationQueue, so fall through hoping
+      // that an interrupt will eventually update the slot with optimized code.
       if (FLAG_debug_code) {
         __ SmiCompare(optimized_code_entry,
                       Smi::FromEnum(OptimizationMarker::kInOptimizationQueue));
         __ Assert(equal, kExpectedOptimizationSentinel);
       }
-
-      // Checking whether the queued function is ready for install is optional,
-      // since we come across interrupts and stack checks elsewhere.  However,
-      // not checking may delay installing ready functions, and always checking
-      // would be quite expensive.  A good compromise is to first check against
-      // stack limit as a cue for an interrupt signal.
-      __ CompareRoot(rsp, Heap::kStackLimitRootIndex);
-      __ j(above_equal, &fallthrough);
-      GenerateTailCallToReturnedCode(masm, Runtime::kTryInstallOptimizedCode);
+      __ jmp(&fallthrough);
     }
   }
 
@@ -814,8 +798,10 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
     // Check if the optimized code is marked for deopt. If it is, call the
     // runtime to clear it.
     Label found_deoptimized_code;
+    __ movp(scratch2,
+            FieldOperand(optimized_code_entry, Code::kCodeDataContainerOffset));
     __ testl(
-        FieldOperand(optimized_code_entry, Code::kKindSpecificFlags1Offset),
+        FieldOperand(scratch2, CodeDataContainer::kKindSpecificFlagsOffset),
         Immediate(1 << Code::kMarkedForDeoptimizationBit));
     __ j(not_zero, &found_deoptimized_code);
 
@@ -1533,20 +1519,6 @@ void Builtins::Generate_InstantiateAsmJs(MacroAssembler* masm) {
   __ jmp(rcx);
 }
 
-void Builtins::Generate_NotifyBuiltinContinuation(MacroAssembler* masm) {
-  // Enter an internal frame.
-  {
-    FrameScope scope(masm, StackFrame::INTERNAL);
-    // Preserve possible return result from lazy deopt.
-    __ pushq(rax);
-    __ CallRuntime(Runtime::kNotifyStubFailure, false);
-    __ popq(rax);
-    // Tear down internal frame.
-  }
-
-  __ ret(0);  // Return to ContinueToBuiltin stub still on stack.
-}
-
 namespace {
 void Generate_ContinueToBuiltinHelper(MacroAssembler* masm,
                                       bool java_script_builtin,
@@ -1850,7 +1822,7 @@ void Builtins::Generate_InternalArrayConstructor(MacroAssembler* masm) {
   if (FLAG_debug_code) {
     // Initial map for the builtin InternalArray functions should be maps.
     __ movp(rbx, FieldOperand(rdi, JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     STATIC_ASSERT(kSmiTag == 0);
     Condition not_smi = NegateCondition(masm->CheckSmi(rbx));
     __ Check(not_smi, kUnexpectedInitialMapForInternalArrayFunction);
@@ -1879,7 +1851,7 @@ void Builtins::Generate_ArrayConstructor(MacroAssembler* masm) {
   if (FLAG_debug_code) {
     // Initial map for the builtin Array functions should be maps.
     __ movp(rbx, FieldOperand(rdi, JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     STATIC_ASSERT(kSmiTag == 0);
     Condition not_smi = NegateCondition(masm->CheckSmi(rbx));
     __ Check(not_smi, kUnexpectedInitialMapForArrayFunction);
@@ -2631,10 +2603,10 @@ static void Generate_OnStackReplacementHelper(MacroAssembler* masm,
   __ movp(rbx, Operand(rax, Code::kDeoptimizationDataOffset - kHeapObjectTag));
 
   // Load the OSR entrypoint offset from the deoptimization data.
-  __ SmiToInteger32(
-      rbx, Operand(rbx, FixedArray::OffsetOfElementAt(
-                            DeoptimizationInputData::kOsrPcOffsetIndex) -
-                            kHeapObjectTag));
+  __ SmiToInteger32(rbx,
+                    Operand(rbx, FixedArray::OffsetOfElementAt(
+                                     DeoptimizationData::kOsrPcOffsetIndex) -
+                                     kHeapObjectTag));
 
   // Compute the target address = code_obj + header_size + osr_offset
   __ leap(rax, Operand(rax, rbx, times_1, Code::kHeaderSize - kHeapObjectTag));

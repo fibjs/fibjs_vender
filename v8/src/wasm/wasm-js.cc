@@ -586,7 +586,7 @@ void WebAssemblyMemory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   if (buffer->is_shared()) {
     Maybe<bool> result =
-        buffer->SetIntegrityLevel(buffer, i::FROZEN, i::Object::DONT_THROW);
+        buffer->SetIntegrityLevel(buffer, i::FROZEN, i::kDontThrow);
     if (!result.FromJust()) {
       thrower.TypeError(
           "Status of setting SetIntegrityLevel of buffer is false.");
@@ -714,6 +714,7 @@ void WebAssemblyTableSet(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   // Parameter 1.
   i::Handle<i::Object> value = Utils::OpenHandle(*args[1]);
+  // TODO(titzer): use WasmExportedFunction::IsWasmExportedFunction() here.
   if (!value->IsNull(i_isolate) &&
       (!value->IsJSFunction() ||
        i::Handle<i::JSFunction>::cast(value)->code()->kind() !=
@@ -752,6 +753,10 @@ void WebAssemblyMemoryGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
     max_size64 = i::FLAG_wasm_max_mem_pages;
   }
   i::Handle<i::JSArrayBuffer> old_buffer(receiver->array_buffer());
+  if (!old_buffer->is_growable()) {
+    thrower.RangeError("This memory cannot be grown");
+    return;
+  }
   uint32_t old_size =
       old_buffer->byte_length()->Number() / i::wasm::kSpecMaxWasmMemoryPages;
   int64_t new_size64 = old_size + delta_size;
@@ -800,7 +805,7 @@ void WebAssemblyMemoryGetBuffer(
     // buffer are out of sync, handle that here when bounds checks, and Grow
     // are handled correctly.
     Maybe<bool> result =
-        buffer->SetIntegrityLevel(buffer, i::FROZEN, i::Object::DONT_THROW);
+        buffer->SetIntegrityLevel(buffer, i::FROZEN, i::kDontThrow);
     if (!result.FromJust()) {
       thrower.TypeError(
           "Status of setting SetIntegrityLevel of buffer is false.");

@@ -423,7 +423,10 @@ class ModuleDecoderImpl : public Decoder {
             static_cast<int>(pc_ - start_));
       FunctionSig* s = consume_sig(module_->signature_zone.get());
       module_->signatures.push_back(s);
+      uint32_t id = s ? module_->signature_map.FindOrInsert(s) : 0;
+      module_->signature_ids.push_back(id);
     }
+    module_->signature_map.Freeze();
   }
 
   void DecodeImportSection() {
@@ -684,12 +687,10 @@ class ModuleDecoderImpl : public Decoder {
       if (table_index != 0) {
         errorf(pos, "illegal table index %u != 0", table_index);
       }
-      WasmIndirectFunctionTable* table = nullptr;
       if (table_index >= module_->function_tables.size()) {
         errorf(pos, "out of bounds table index %u", table_index);
         break;
       }
-      table = &module_->function_tables[table_index];
       WasmInitExpr offset = consume_init_expr(module_.get(), kWasmI32);
       uint32_t num_elem =
           consume_count("number of elements", kV8MaxWasmTableEntries);
@@ -702,8 +703,6 @@ class ModuleDecoderImpl : public Decoder {
         if (!ok()) break;
         DCHECK_EQ(index, func->func_index);
         init->entries.push_back(index);
-        // Canonicalize signature indices during decoding.
-        table->map.FindOrInsert(func->sig);
       }
     }
   }
@@ -713,7 +712,13 @@ class ModuleDecoderImpl : public Decoder {
     uint32_t functions_count = consume_u32v("functions count");
     CheckFunctionsCount(functions_count, pos);
     for (uint32_t i = 0; ok() && i < functions_count; ++i) {
+      const byte* pos = pc();
       uint32_t size = consume_u32v("body size");
+      if (size > kV8MaxWasmFunctionSize) {
+        errorf(pos, "size %u > maximum function size %zu", size,
+               kV8MaxWasmFunctionSize);
+        return;
+      }
       uint32_t offset = pc_offset();
       consume_bytes(size, "function body");
       if (failed()) break;
@@ -1179,7 +1184,7 @@ class ModuleDecoderImpl : public Decoder {
     unsigned len = 0;
     switch (opcode) {
       case kExprGetGlobal: {
-        GlobalIndexOperand<true> operand(this, pc() - 1);
+        GlobalIndexOperand<Decoder::kValidate> operand(this, pc() - 1);
         if (module->globals.size() <= operand.index) {
           error("global index is out of bounds");
           expr.kind = WasmInitExpr::kNone;
@@ -1201,28 +1206,28 @@ class ModuleDecoderImpl : public Decoder {
         break;
       }
       case kExprI32Const: {
-        ImmI32Operand<true> operand(this, pc() - 1);
+        ImmI32Operand<Decoder::kValidate> operand(this, pc() - 1);
         expr.kind = WasmInitExpr::kI32Const;
         expr.val.i32_const = operand.value;
         len = operand.length;
         break;
       }
       case kExprF32Const: {
-        ImmF32Operand<true> operand(this, pc() - 1);
+        ImmF32Operand<Decoder::kValidate> operand(this, pc() - 1);
         expr.kind = WasmInitExpr::kF32Const;
         expr.val.f32_const = operand.value;
         len = operand.length;
         break;
       }
       case kExprI64Const: {
-        ImmI64Operand<true> operand(this, pc() - 1);
+        ImmI64Operand<Decoder::kValidate> operand(this, pc() - 1);
         expr.kind = WasmInitExpr::kI64Const;
         expr.val.i64_const = operand.value;
         len = operand.length;
         break;
       }
       case kExprF64Const: {
-        ImmF64Operand<true> operand(this, pc() - 1);
+        ImmF64Operand<Decoder::kValidate> operand(this, pc() - 1);
         expr.kind = WasmInitExpr::kF64Const;
         expr.val.f64_const = operand.value;
         len = operand.length;

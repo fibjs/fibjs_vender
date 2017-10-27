@@ -34,7 +34,7 @@ void MessageHandler::DefaultMessageReport(Isolate* isolate,
                                           const MessageLocation* loc,
                                           Handle<Object> message_obj) {
   std::unique_ptr<char[]> str = GetLocalizedMessage(isolate, message_obj);
-  if (loc == NULL) {
+  if (loc == nullptr) {
     PrintF("%s\n", str.get());
   } else {
     HandleScope scope(isolate);
@@ -56,7 +56,7 @@ Handle<JSMessageObject> MessageHandler::MakeMessageObject(
   int start = -1;
   int end = -1;
   Handle<Object> script_handle = factory->undefined_value();
-  if (location != NULL) {
+  if (location != nullptr) {
     start = location->start_pos();
     end = location->end_pos();
     script_handle = Script::GetWrapper(location->script());
@@ -709,9 +709,7 @@ MaybeHandle<String> WasmStackFrame::ToString() {
 }
 
 int WasmStackFrame::GetPosition() const {
-  if (IsInterpreted()) return offset_;
-  // TODO(wasm): Clean this up (bug 5007).
-  return (offset_ < 0) ? (-1 - offset_) : code_->SourcePosition(offset_);
+  return IsInterpreted() ? offset_ : code_->SourcePosition(offset_);
 }
 
 Handle<Object> WasmStackFrame::Null() const {
@@ -1046,7 +1044,7 @@ const char* MessageTemplate::TemplateString(int template_index) {
 #undef CASE
     case kLastMessage:
     default:
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -1057,7 +1055,7 @@ MaybeHandle<String> MessageTemplate::FormatMessage(int template_index,
                                                    Handle<String> arg2) {
   Isolate* isolate = arg0->GetIsolate();
   const char* template_string = TemplateString(template_index);
-  if (template_string == NULL) {
+  if (template_string == nullptr) {
     isolate->ThrowIllegalOperation();
     return MaybeHandle<String>();
   }

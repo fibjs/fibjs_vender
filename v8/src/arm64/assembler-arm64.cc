@@ -96,7 +96,7 @@ void CPURegList::RemoveCalleeSaved() {
   } else if (type() == CPURegister::kVRegister) {
     Remove(GetCalleeSavedV(RegisterSizeInBits()));
   } else {
-    DCHECK(type() == CPURegister::kNoRegister);
+    DCHECK_EQ(type(), CPURegister::kNoRegister);
     DCHECK(IsEmpty());
     // The list must already be empty, so do nothing.
   }
@@ -198,20 +198,6 @@ void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
   Memory::uint32_at(Assembler::target_pointer_address_at(pc_)) = size;
   // No icache flushing needed, see comment in set_target_address_at.
 }
-
-Register GetAllocatableRegisterThatIsNotOneOf(Register reg1, Register reg2,
-                                              Register reg3, Register reg4) {
-  CPURegList regs(reg1, reg2, reg3, reg4);
-  const RegisterConfiguration* config = RegisterConfiguration::Default();
-  for (int i = 0; i < config->num_allocatable_double_registers(); ++i) {
-    int code = config->GetAllocatableDoubleCode(i);
-    Register candidate = Register::from_code(code);
-    if (regs.IncludesAliasOf(candidate)) continue;
-    return candidate;
-  }
-  UNREACHABLE();
-}
-
 
 bool AreAliased(const CPURegister& reg1, const CPURegister& reg2,
                 const CPURegister& reg3, const CPURegister& reg4,
@@ -365,7 +351,7 @@ bool ConstPool::RecordEntry(intptr_t data, RelocInfo::Mode mode) {
 
 
 int ConstPool::DistanceToFirstUse() {
-  DCHECK(first_use_ >= 0);
+  DCHECK_GE(first_use_, 0);
   return assm_->pc_offset() - first_use_;
 }
 
@@ -501,8 +487,8 @@ MemOperand::PairResult MemOperand::AreConsistentForPair(
     const MemOperand& operandA,
     const MemOperand& operandB,
     int access_size_log2) {
-  DCHECK(access_size_log2 >= 0);
-  DCHECK(access_size_log2 <= 3);
+  DCHECK_GE(access_size_log2, 0);
+  DCHECK_LE(access_size_log2, 3);
   // Step one: check that they share the same base, that the mode is Offset
   // and that the offset is a multiple of access size.
   if (!operandA.base().Is(operandB.base()) ||
@@ -703,7 +689,7 @@ void Assembler::RemoveBranchFromLabelLinkChain(Instruction* branch,
     // The branch is in the middle of the chain.
     if (prev_link->IsTargetInImmPCOffsetRange(next_link)) {
       prev_link->SetImmPCOffsetTarget(isolate_data(), next_link);
-    } else if (label_veneer != NULL) {
+    } else if (label_veneer != nullptr) {
       // Use the veneer for all previous links in the chain.
       prev_link->SetImmPCOffsetTarget(isolate_data(), prev_link);
 
@@ -772,11 +758,11 @@ void Assembler::bind(Label* label) {
 
     CheckLabelLinkChain(label);
 
-    DCHECK(linkoffset >= 0);
+    DCHECK_GE(linkoffset, 0);
     DCHECK(linkoffset < pc_offset());
     DCHECK((linkoffset > prevlinkoffset) ||
            (linkoffset - prevlinkoffset == kStartOfLabelLinkChain));
-    DCHECK(prevlinkoffset >= 0);
+    DCHECK_GE(prevlinkoffset, 0);
 
     // Update the link to point to the label.
     if (link->IsUnresolvedInternalReference()) {
@@ -808,7 +794,7 @@ void Assembler::bind(Label* label) {
 
 
 int Assembler::LinkAndGetByteOffsetTo(Label* label) {
-  DCHECK(sizeof(*pc_) == 1);
+  DCHECK_EQ(sizeof(*pc_), 1);
   CheckLabelLinkChain(label);
 
   int offset;
@@ -823,7 +809,7 @@ int Assembler::LinkAndGetByteOffsetTo(Label* label) {
     // Note that offset can be zero for self-referential instructions. (This
     // could be useful for ADR, for example.)
     offset = label->pos() - pc_offset();
-    DCHECK(offset <= 0);
+    DCHECK_LE(offset, 0);
   } else {
     if (label->is_linked()) {
       // The label is linked, so the referring instruction should be added onto
@@ -832,7 +818,7 @@ int Assembler::LinkAndGetByteOffsetTo(Label* label) {
       // In this case, label->pos() returns the offset of the last linked
       // instruction from the start of the buffer.
       offset = label->pos() - pc_offset();
-      DCHECK(offset != kStartOfLabelLinkChain);
+      DCHECK_NE(offset, kStartOfLabelLinkChain);
       // Note that the offset here needs to be PC-relative only so that the
       // first instruction in a buffer can link to an unbound label. Otherwise,
       // the offset would be 0 for this case, and 0 is reserved for
@@ -887,7 +873,7 @@ void Assembler::DeleteUnresolvedBranchInfoForLabelTraverse(Label* label) {
 
 void Assembler::DeleteUnresolvedBranchInfoForLabel(Label* label) {
   if (unresolved_branches_.empty()) {
-    DCHECK(next_veneer_pool_check_ == kMaxInt);
+    DCHECK_EQ(next_veneer_pool_check_, kMaxInt);
     return;
   }
 
@@ -1639,7 +1625,7 @@ void Assembler::LoadStorePair(const CPURegister& rt,
     // Pre-index and post-index modes.
     DCHECK(!rt.Is(addr.base()));
     DCHECK(!rt2.Is(addr.base()));
-    DCHECK(addr.offset() != 0);
+    DCHECK_NE(addr.offset(), 0);
     if (addr.IsPreIndex()) {
       addrmodeop = LoadStorePairPreIndexFixed;
     } else {
@@ -3921,7 +3907,7 @@ void Assembler::dcptr(Label* label) {
       // In this case, label->pos() returns the offset of the last linked
       // instruction from the start of the buffer.
       offset = label->pos() - pc_offset();
-      DCHECK(offset != kStartOfLabelLinkChain);
+      DCHECK_NE(offset, kStartOfLabelLinkChain);
     } else {
       // The label is unused, so it now becomes linked and the internal
       // reference is at the start of the new link chain.
@@ -4068,7 +4054,7 @@ void Assembler::EmitStringData(const char* string) {
   size_t len = strlen(string) + 1;
   DCHECK_LE(RoundUp(len, kInstructionSize), static_cast<size_t>(kGap));
   EmitData(string, static_cast<int>(len));
-  // Pad with NULL characters until pc_ is aligned.
+  // Pad with nullptr characters until pc_ is aligned.
   const char pad[] = {'\0', '\0', '\0', '\0'};
   static_assert(sizeof(pad) == kInstructionSize,
                 "Size of padding must match instruction size.");
@@ -4091,11 +4077,11 @@ void Assembler::debug(const char* message, uint32_t code, Instr params) {
     // Refer to instructions-arm64.h for a description of the marker and its
     // arguments.
     hlt(kImmExceptionIsDebug);
-    DCHECK(SizeOfCodeGeneratedSince(&start) == kDebugCodeOffset);
+    DCHECK_EQ(SizeOfCodeGeneratedSince(&start), kDebugCodeOffset);
     dc32(code);
-    DCHECK(SizeOfCodeGeneratedSince(&start) == kDebugParamsOffset);
+    DCHECK_EQ(SizeOfCodeGeneratedSince(&start), kDebugParamsOffset);
     dc32(params);
-    DCHECK(SizeOfCodeGeneratedSince(&start) == kDebugMessageOffset);
+    DCHECK_EQ(SizeOfCodeGeneratedSince(&start), kDebugMessageOffset);
     EmitStringData(message);
     hlt(kImmExceptionIsUnreachable);
 
@@ -4120,8 +4106,8 @@ void Assembler::Logical(const Register& rd,
     int64_t immediate = operand.ImmediateValue();
     unsigned reg_size = rd.SizeInBits();
 
-    DCHECK(immediate != 0);
-    DCHECK(immediate != -1);
+    DCHECK_NE(immediate, 0);
+    DCHECK_NE(immediate, -1);
     DCHECK(rd.Is64Bits() || is_uint32(immediate));
 
     // If the operation is NOT, invert the operation and immediate.
@@ -4304,7 +4290,7 @@ void Assembler::EmitExtendShift(const Register& rd,
       case SXTW: sbfm(rd, rn_, non_shift_bits, high_bit); break;
       case UXTX:
       case SXTX: {
-        DCHECK(rn.SizeInBits() == kXRegSizeInBits);
+        DCHECK_EQ(rn.SizeInBits(), kXRegSizeInBits);
         // Nothing to extend. Just shift.
         lsl(rd, rn_, left_shift);
         break;
@@ -4442,7 +4428,7 @@ bool Assembler::IsImmLogical(uint64_t value,
                              unsigned* n,
                              unsigned* imm_s,
                              unsigned* imm_r) {
-  DCHECK((n != NULL) && (imm_s != NULL) && (imm_r != NULL));
+  DCHECK((n != nullptr) && (imm_s != nullptr) && (imm_r != nullptr));
   DCHECK((width == kWRegSizeInBits) || (width == kXRegSizeInBits));
 
   bool negate = false;
@@ -4752,7 +4738,7 @@ void Assembler::GrowBuffer() {
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   // We do not try to reuse pool constants.
-  RelocInfo rinfo(reinterpret_cast<byte*>(pc_), rmode, data, NULL);
+  RelocInfo rinfo(reinterpret_cast<byte*>(pc_), rmode, data, nullptr);
   bool write_reloc_info = true;
 
   if ((rmode == RelocInfo::COMMENT) ||
@@ -4780,7 +4766,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
         !serializer_enabled() && !emit_debug_code()) {
       return;
     }
-    DCHECK(buffer_space() >= kMaxRelocSize);  // too late to grow buffer here
+    DCHECK_GE(buffer_space(), kMaxRelocSize);  // too late to grow buffer here
     reloc_info_writer.Write(&rinfo);
   }
 }
@@ -4866,7 +4852,7 @@ bool Assembler::ShouldEmitVeneer(int max_reachable_pc, int margin) {
 
 void Assembler::RecordVeneerPool(int location_offset, int size) {
   RelocInfo rinfo(buffer_ + location_offset, RelocInfo::VENEER_POOL,
-                  static_cast<intptr_t>(size), NULL);
+                  static_cast<intptr_t>(size), nullptr);
   reloc_info_writer.Write(&rinfo);
 }
 
@@ -4944,7 +4930,7 @@ void Assembler::CheckVeneerPool(bool force_emit, bool require_jump,
                                 int margin) {
   // There is nothing to do if there are no pending veneer pool entries.
   if (unresolved_branches_.empty())  {
-    DCHECK(next_veneer_pool_check_ == kMaxInt);
+    DCHECK_EQ(next_veneer_pool_check_, kMaxInt);
     return;
   }
 
@@ -5012,7 +4998,7 @@ void PatchingAssembler::PatchAdrFar(int64_t target_offset) {
   adr(rd, target_offset & 0xFFFF);
   movz(scratch, (target_offset >> 16) & 0xFFFF, 16);
   movk(scratch, (target_offset >> 32) & 0xFFFF, 32);
-  DCHECK((target_offset >> 48) == 0);
+  DCHECK_EQ(target_offset >> 48, 0);
   add(rd, rd, scratch);
 }
 

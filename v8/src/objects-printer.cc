@@ -16,6 +16,7 @@
 #include "src/ostreams.h"
 #include "src/regexp/jsregexp.h"
 #include "src/transitions-inl.h"
+#include "src/wasm/wasm-objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -170,6 +171,9 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
       break;
     case CODE_TYPE:
       Code::cast(this)->CodePrint(os);
+      break;
+    case CODE_DATA_CONTAINER_TYPE:
+      CodeDataContainer::cast(this)->CodeDataContainerPrint(os);
       break;
     case JS_PROXY_TYPE:
       JSProxy::cast(this)->JSProxyPrint(os);
@@ -564,7 +568,7 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
     os << "\n - inobject properties: " << GetInObjectProperties();
   }
   os << "\n - elements kind: " << ElementsKindToString(elements_kind());
-  os << "\n - unused property fields: " << unused_property_fields();
+  os << "\n - unused property fields: " << UnusedPropertyFields();
   os << "\n - enum length: ";
   if (EnumLength() == kInvalidEnumCacheSentinel) {
     os << "invalid";
@@ -582,6 +586,10 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
   if (is_undetectable()) os << "\n - undetectable";
   if (is_callable()) os << "\n - callable";
   if (is_constructor()) os << "\n - constructor";
+  if (has_prototype_slot()) {
+    os << "\n - has_prototype_slot";
+    if (has_non_instance_prototype()) os << " (non-instance prototype)";
+  }
   if (is_access_check_needed()) os << "\n - access_check_needed";
   if (!is_extensible()) os << "\n - non-extensible";
   if (is_prototype_map()) {
@@ -737,74 +745,8 @@ void FeedbackVector::FeedbackVectorPrint(std::ostream& os) {  // NOLINT
     FeedbackSlot slot = iter.Next();
     FeedbackSlotKind kind = iter.kind();
 
-    os << "\n Slot " << slot << " " << kind;
-    os << " ";
-    switch (kind) {
-      case FeedbackSlotKind::kLoadProperty: {
-        LoadICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kLoadGlobalInsideTypeof:
-      case FeedbackSlotKind::kLoadGlobalNotInsideTypeof: {
-        LoadGlobalICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kLoadKeyed: {
-        KeyedLoadICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kCall: {
-        CallICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kStoreNamedSloppy:
-      case FeedbackSlotKind::kStoreNamedStrict:
-      case FeedbackSlotKind::kStoreOwnNamed:
-      case FeedbackSlotKind::kStoreGlobalSloppy:
-      case FeedbackSlotKind::kStoreGlobalStrict: {
-        StoreICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kStoreKeyedSloppy:
-      case FeedbackSlotKind::kStoreKeyedStrict: {
-        KeyedStoreICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kBinaryOp: {
-        BinaryOpICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kCompareOp: {
-        CompareICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kForIn: {
-        ForInICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kStoreDataPropertyInLiteral: {
-        StoreDataPropertyInLiteralICNexus nexus(this, slot);
-        os << Code::ICState2String(nexus.StateFromFeedback());
-        break;
-      }
-      case FeedbackSlotKind::kCreateClosure:
-      case FeedbackSlotKind::kLiteral:
-      case FeedbackSlotKind::kTypeProfile:
-        break;
-      case FeedbackSlotKind::kInvalid:
-      case FeedbackSlotKind::kKindsNumber:
-        UNREACHABLE();
-        break;
-    }
+    os << "\n Slot " << slot << " " << kind << " ";
+    FeedbackSlotPrint(os, slot, kind);
 
     int entry_size = iter.entry_size();
     for (int i = 0; i < entry_size; i++) {
@@ -815,6 +757,85 @@ void FeedbackVector::FeedbackVectorPrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
+void FeedbackVector::FeedbackSlotPrint(std::ostream& os,
+                                       FeedbackSlot slot) {  // NOLINT
+  FeedbackSlotPrint(os, slot, GetKind(slot));
+}
+
+void FeedbackVector::FeedbackSlotPrint(std::ostream& os, FeedbackSlot slot,
+                                       FeedbackSlotKind kind) {  // NOLINT
+  switch (kind) {
+    case FeedbackSlotKind::kLoadProperty: {
+      LoadICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kLoadGlobalInsideTypeof:
+    case FeedbackSlotKind::kLoadGlobalNotInsideTypeof: {
+      LoadGlobalICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kLoadKeyed: {
+      KeyedLoadICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kCall: {
+      CallICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kStoreNamedSloppy:
+    case FeedbackSlotKind::kStoreNamedStrict:
+    case FeedbackSlotKind::kStoreOwnNamed:
+    case FeedbackSlotKind::kStoreGlobalSloppy:
+    case FeedbackSlotKind::kStoreGlobalStrict: {
+      StoreICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kStoreKeyedSloppy:
+    case FeedbackSlotKind::kStoreKeyedStrict: {
+      KeyedStoreICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kBinaryOp: {
+      BinaryOpICNexus nexus(this, slot);
+      os << "BinaryOp:" << nexus.GetBinaryOperationFeedback();
+      break;
+    }
+    case FeedbackSlotKind::kCompareOp: {
+      CompareICNexus nexus(this, slot);
+      os << "CompareOp:" << nexus.GetCompareOperationFeedback();
+      break;
+    }
+    case FeedbackSlotKind::kForIn: {
+      ForInICNexus nexus(this, slot);
+      os << "ForIn:" << nexus.GetForInFeedback();
+      break;
+    }
+    case FeedbackSlotKind::kInstanceOf: {
+      InstanceOfICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kStoreDataPropertyInLiteral: {
+      StoreDataPropertyInLiteralICNexus nexus(this, slot);
+      os << Code::ICState2String(nexus.StateFromFeedback());
+      break;
+    }
+    case FeedbackSlotKind::kCreateClosure:
+    case FeedbackSlotKind::kLiteral:
+    case FeedbackSlotKind::kTypeProfile:
+      break;
+    case FeedbackSlotKind::kInvalid:
+    case FeedbackSlotKind::kKindsNumber:
+      UNREACHABLE();
+      break;
+  }
+}
 
 void JSValue::JSValuePrint(std::ostream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSValue");
@@ -910,8 +931,6 @@ void JSProxy::JSProxyPrint(std::ostream& os) {  // NOLINT
   target()->ShortPrint(os);
   os << "\n - handler = ";
   handler()->ShortPrint(os);
-  os << "\n - hash = ";
-  hash()->ShortPrint(os);
   os << "\n";
 }
 
@@ -972,7 +991,7 @@ void JSArrayBuffer::JSArrayBufferPrint(std::ostream& os) {  // NOLINT
   if (was_neutered()) os << "\n - neutered";
   if (is_shared()) os << "\n - shared";
   if (has_guard_region()) os << "\n - has_guard_region";
-  if (is_wasm_buffer()) os << "\n - wasm_buffer";
+  if (is_growable()) os << "\n - growable";
   JSObjectPrintBody(os, this, !was_neutered());
 }
 
@@ -1057,8 +1076,19 @@ std::ostream& operator<<(std::ostream& os, FunctionKind kind) {
 
 void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "Function");
-  os << "\n - initial_map = ";
-  if (has_initial_map()) os << Brief(initial_map());
+  os << "\n - function prototype = ";
+  if (has_prototype_slot()) {
+    if (has_prototype()) {
+      os << Brief(prototype());
+      if (map()->has_non_instance_prototype()) {
+        os << " (non-instance prototype)";
+      }
+    }
+    os << "\n - initial_map = ";
+    if (has_initial_map()) os << Brief(initial_map());
+  } else {
+    os << "<no-prototype-slot>";
+  }
   os << "\n - shared_info = " << Brief(shared());
   os << "\n - name = " << Brief(shared()->name());
   os << "\n - formal_parameter_count = "
@@ -1071,6 +1101,14 @@ void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
     if (shared()->HasBytecodeArray()) {
       os << "\n - bytecode = " << shared()->bytecode_array();
     }
+  }
+  if (WasmExportedFunction::IsWasmExportedFunction(this)) {
+    WasmExportedFunction* function = WasmExportedFunction::cast(this);
+    os << "\n - WASM instance "
+       << reinterpret_cast<void*>(function->instance());
+    os << "\n   context "
+       << reinterpret_cast<void*>(function->instance()->wasm_context()->get());
+    os << "\n - WASM function index " << function->function_index();
   }
   shared()->PrintSourceCode(os);
   JSObjectPrintBody(os, this);
@@ -1089,7 +1127,7 @@ void SharedFunctionInfo::PrintSourceCode(std::ostream& os) {
     int start = start_position();
     int length = end_position() - start;
     std::unique_ptr<char[]> source_string = source->ToCString(
-        DISALLOW_NULLS, FAST_STRING_TRAVERSAL, start, length, NULL);
+        DISALLOW_NULLS, FAST_STRING_TRAVERSAL, start, length, nullptr);
     os << source_string.get();
   }
 }
@@ -1152,7 +1190,6 @@ void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {  // NOLINT
   if (!GetIsolate()->bootstrapper()->IsActive()) {
     os << "\n - native context = " << Brief(native_context());
   }
-  os << "\n - hash = " << Brief(hash());
   JSObjectPrintBody(os, this);
 }
 
@@ -1241,11 +1278,16 @@ void Code::CodePrint(std::ostream& os) {  // NOLINT
   os << "\n";
 #ifdef ENABLE_DISASSEMBLER
   if (FLAG_use_verbose_printer) {
-    Disassemble(NULL, os);
+    Disassemble(nullptr, os);
   }
 #endif
 }
 
+void CodeDataContainer::CodeDataContainerPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "CodeDataContainer");
+  os << "\n - kind_specific_flags: " << kind_specific_flags();
+  os << "\n";
+}
 
 void Foreign::ForeignPrint(std::ostream& os) {  // NOLINT
   os << "foreign address : " << reinterpret_cast<void*>(foreign_address());
@@ -1256,7 +1298,7 @@ void Foreign::ForeignPrint(std::ostream& os) {  // NOLINT
 void AccessorInfo::AccessorInfoPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AccessorInfo");
   os << "\n - name: " << Brief(name());
-  os << "\n - flag: " << flag();
+  os << "\n - flags: " << flags();
   os << "\n - getter: " << Brief(getter());
   os << "\n - setter: " << Brief(setter());
   os << "\n - js_getter: " << Brief(js_getter());
@@ -1580,8 +1622,7 @@ void PreParsedScopeData::PreParsedScopeDataPrint(std::ostream& os) {  // NOLINT
 
 #endif  // OBJECT_PRINT
 
-#if V8_TRACE_MAPS
-
+// TODO(cbruni): remove once the new maptracer is in place.
 void Name::NameShortPrint() {
   if (this->IsString()) {
     PrintF("%s", String::cast(this)->ToCString().get());
@@ -1596,7 +1637,7 @@ void Name::NameShortPrint() {
   }
 }
 
-
+// TODO(cbruni): remove once the new maptracer is in place.
 int Name::NameShortPrint(Vector<char> str) {
   if (this->IsString()) {
     return SNPrintF(str, "%s", String::cast(this)->ToCString().get());
@@ -1611,8 +1652,6 @@ int Name::NameShortPrint(Vector<char> str) {
   }
 }
 
-#endif  // V8_TRACE_MAPS
-
 #if defined(DEBUG) || defined(OBJECT_PRINT)
 // This method is only meant to be called from gdb for debugging purposes.
 // Since the string can also be in two-byte encoding, non-Latin1 characters
@@ -1620,8 +1659,8 @@ int Name::NameShortPrint(Vector<char> str) {
 char* String::ToAsciiArray() {
   // Static so that subsequent calls frees previously allocated space.
   // This also means that previous results will be overwritten.
-  static char* buffer = NULL;
-  if (buffer != NULL) delete[] buffer;
+  static char* buffer = nullptr;
+  if (buffer != nullptr) delete[] buffer;
   buffer = new char[length() + 1];
   WriteToFlat(this, reinterpret_cast<uint8_t*>(buffer), 0, length());
   buffer[length()] = 0;

@@ -39,10 +39,10 @@ void AstExpressionRewriter::VisitStatements(ZoneList<Statement*>* statements) {
 void AstExpressionRewriter::VisitExpressions(
     ZoneList<Expression*>* expressions) {
   for (int i = 0; i < expressions->length(); i++) {
-    // The variable statement visiting code may pass NULL expressions
+    // The variable statement visiting code may pass null expressions
     // to this code. Maybe this should be handled by introducing an
-    // undefined expression or literal?  Revisit this code if this
-    // changes
+    // undefined expression or literal? Revisit this code if this
+    // changes.
     if (expressions->at(i) != nullptr) {
       AST_REWRITE_LIST_ELEMENT(Expression, expressions, i);
     }
@@ -207,6 +207,14 @@ void AstExpressionRewriter::VisitClassLiteral(ClassLiteral* node) {
   }
 }
 
+void AstExpressionRewriter::VisitInitializeClassFieldsStatement(
+    InitializeClassFieldsStatement* node) {
+  ZoneList<typename ClassLiteral::Property*>* properties = node->fields();
+  for (int i = 0; i < properties->length(); i++) {
+    VisitLiteralProperty(properties->at(i));
+  }
+}
+
 void AstExpressionRewriter::VisitNativeFunctionLiteral(
     NativeFunctionLiteral* node) {
   REWRITE_THIS(node);
@@ -338,6 +346,14 @@ void AstExpressionRewriter::VisitBinaryOperation(BinaryOperation* node) {
   AST_REWRITE_PROPERTY(Expression, node, right);
 }
 
+void AstExpressionRewriter::VisitNaryOperation(NaryOperation* node) {
+  REWRITE_THIS(node);
+  AST_REWRITE_PROPERTY(Expression, node, first);
+  for (size_t i = 0; i < node->subsequent_length(); ++i) {
+    AST_REWRITE(Expression, node->subsequent(i),
+                node->set_subsequent(i, replacement));
+  }
+}
 
 void AstExpressionRewriter::VisitCompareOperation(CompareOperation* node) {
   REWRITE_THIS(node);

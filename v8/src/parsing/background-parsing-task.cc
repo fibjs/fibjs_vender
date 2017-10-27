@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/background-parsing-task.h"
+#include "src/parsing/background-parsing-task.h"
 
 #include "src/objects-inl.h"
 #include "src/parsing/parser.h"
@@ -37,6 +37,8 @@ BackgroundParsingTask::BackgroundParsingTask(
   info->InitFromIsolate(isolate);
   if (V8_UNLIKELY(FLAG_runtime_stats)) {
     info->set_runtime_call_stats(new (info->zone()) RuntimeCallStats());
+  } else {
+    info->set_runtime_call_stats(nullptr);
   }
   info->set_toplevel();
   std::unique_ptr<Utf16CharacterStream> stream(

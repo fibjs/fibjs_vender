@@ -99,6 +99,8 @@ namespace internal {
   TFS(StringIndexOf, kReceiver, kSearchString, kPosition)                      \
   TFC(StringLessThan, Compare, 1)                                              \
   TFC(StringLessThanOrEqual, Compare, 1)                                       \
+  TFS(StringRepeat, kString, kCount)                                           \
+  TFS(SubString, kString, kFrom, kTo)                                          \
                                                                                \
   /* OrderedHashTable helpers */                                               \
   TFS(OrderedHashTableHealIndex, kTable, kIndex)                               \
@@ -124,7 +126,6 @@ namespace internal {
   ASM(DeserializeLazy)                                                         \
   ASM(InstantiateAsmJs)                                                        \
   ASM(NotifyDeoptimized)                                                       \
-  ASM(NotifyBuiltinContinuation)                                               \
                                                                                \
   /* Trampolines called when returning from a deoptimization that expects   */ \
   /* to continue in a JavaScript builtin to finish the functionality of a   */ \
@@ -185,6 +186,7 @@ namespace internal {
   TFC(NonNumberToNumber, TypeConversion, 1)                                    \
   TFC(NonNumberToNumeric, TypeConversion, 1)                                   \
   TFC(ToNumber, TypeConversion, 1)                                             \
+  TFC(ToNumeric, TypeConversion, 1)                                            \
   TFC(ToString, TypeConversion, 1)                                             \
   TFC(ToInteger, TypeConversion, 1)                                            \
   TFC(ToLength, TypeConversion, 1)                                             \
@@ -200,6 +202,7 @@ namespace internal {
   TFH(LoadICProtoArrayThrowIfNonexistent, LoadICProtoArray)                    \
   TFH(KeyedLoadIC_Megamorphic, LoadWithVector)                                 \
   TFH(KeyedLoadIC_Miss, LoadWithVector)                                        \
+  TFH(KeyedLoadIC_PolymorphicName, LoadWithVector)                             \
   TFH(KeyedLoadIC_Slow, LoadWithVector)                                        \
   TFH(KeyedLoadIC_IndexedString, LoadWithVector)                               \
   TFH(KeyedStoreIC_Megamorphic, StoreWithVector)                               \
@@ -214,6 +217,7 @@ namespace internal {
   TFH(LoadIC_Slow, LoadWithVector)                                             \
   TFH(LoadIC_StringLength, LoadWithVector)                                     \
   TFH(LoadIC_Uninitialized, LoadWithVector)                                    \
+  TFH(StoreGlobalIC_Slow, StoreWithVector)                                     \
   TFH(StoreIC_Miss, StoreWithVector)                                           \
   ASM(StoreIC_Setter_ForDeopt)                                                 \
   TFH(StoreIC_Uninitialized, StoreWithVector)                                  \
@@ -261,10 +265,14 @@ namespace internal {
   TFJ(FastArrayShift, SharedFunctionInfo::kDontAdaptArgumentsSentinel)         \
   /* ES6 #sec-array.prototype.slice */                                         \
   CPP(ArraySlice)                                                              \
+  TFJ(FastArraySlice, SharedFunctionInfo::kDontAdaptArgumentsSentinel)         \
   /* ES6 #sec-array.prototype.splice */                                        \
   CPP(ArraySplice)                                                             \
   /* ES6 #sec-array.prototype.unshift */                                       \
   CPP(ArrayUnshift)                                                            \
+  /* Support for Array.from and other array-copying idioms */                  \
+  TFS(CloneFastJSArray, kSource)                                               \
+  TFS(ExtractFastJSArray, kSource, kBegin, kCount)                             \
   /* ES6 #sec-array.prototype.foreach */                                       \
   TFS(ArrayForEachLoopContinuation, kReceiver, kCallbackFn, kThisArg, kArray,  \
       kObject, kInitialK, kLength, kTo)                                        \
@@ -285,6 +293,10 @@ namespace internal {
   TFS(ArrayFilterLoopContinuation, kReceiver, kCallbackFn, kThisArg, kArray,   \
       kObject, kInitialK, kLength, kTo)                                        \
   TFJ(ArrayFilter, SharedFunctionInfo::kDontAdaptArgumentsSentinel)            \
+  TFJ(ArrayFilterLoopEagerDeoptContinuation, 6, kCallbackFn, kThisArg, kArray, \
+      kInitialK, kLength, kTo)                                                 \
+  TFJ(ArrayFilterLoopLazyDeoptContinuation, 8, kCallbackFn, kThisArg, kArray,  \
+      kInitialK, kLength, kValueK, kTo, kResult)                               \
   /* ES6 #sec-array.prototype.foreach */                                       \
   TFS(ArrayMapLoopContinuation, kReceiver, kCallbackFn, kThisArg, kArray,      \
       kObject, kInitialK, kLength, kTo)                                        \
@@ -794,7 +806,7 @@ namespace internal {
   CPP(ReflectGet)                                                              \
   CPP(ReflectGetOwnPropertyDescriptor)                                         \
   CPP(ReflectGetPrototypeOf)                                                   \
-  CPP(ReflectHas)                                                              \
+  TFJ(ReflectHas, 2, kTarget, kKey)                                            \
   CPP(ReflectIsExtensible)                                                     \
   CPP(ReflectOwnKeys)                                                          \
   CPP(ReflectPreventExtensions)                                                \
@@ -939,6 +951,11 @@ namespace internal {
   TFJ(StringPrototypeMatch, 1, kRegexp)                                        \
   /* ES6 #sec-string.prototype.localecompare */                                \
   CPP(StringPrototypeLocaleCompare)                                            \
+  /* ES6 #sec-string.prototype.padEnd */                                       \
+  TFJ(StringPrototypePadEnd, SharedFunctionInfo::kDontAdaptArgumentsSentinel)  \
+  /* ES6 #sec-string.prototype.padStart */                                     \
+  TFJ(StringPrototypePadStart,                                                 \
+      SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* ES6 #sec-string.prototype.repeat */                                       \
   TFJ(StringPrototypeRepeat, 1, kCount)                                        \
   /* ES6 #sec-string.prototype.replace */                                      \
@@ -973,6 +990,8 @@ namespace internal {
       SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* ES6 #sec-string.prototype.valueof */                                      \
   TFJ(StringPrototypeValueOf, 0)                                               \
+  /* ES6 #sec-string.raw */                                                    \
+  CPP(StringRaw)                                                               \
   /* ES6 #sec-string.prototype-@@iterator */                                   \
   TFJ(StringPrototypeIterator, 0)                                              \
                                                                                \

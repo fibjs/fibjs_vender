@@ -32,10 +32,10 @@ MaybeHandle<Object> DebugEvaluate::Global(Isolate* isolate,
   // Enter the top context from before the debugger was invoked.
   SaveContext save(isolate);
   SaveContext* top = &save;
-  while (top != NULL && IsDebugContext(isolate, *top->context())) {
+  while (top != nullptr && IsDebugContext(isolate, *top->context())) {
     top = top->prev();
   }
-  if (top != NULL) isolate->set_context(*top->context());
+  if (top != nullptr) isolate->set_context(*top->context());
 
   // Get the native context now set to the top context from before the
   // debugger was invoked.
@@ -92,17 +92,18 @@ MaybeHandle<Object> DebugEvaluate::Evaluate(
   Handle<JSFunction> eval_fun;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, eval_fun,
-      Compiler::GetFunctionFromEval(source, outer_info, context, SLOPPY,
-                                    NO_PARSE_RESTRICTION, kNoSourcePosition,
-                                    kNoSourcePosition, kNoSourcePosition),
+      Compiler::GetFunctionFromEval(source, outer_info, context,
+                                    LanguageMode::kSloppy, NO_PARSE_RESTRICTION,
+                                    kNoSourcePosition, kNoSourcePosition,
+                                    kNoSourcePosition),
       Object);
 
   Handle<Object> result;
   {
     NoSideEffectScope no_side_effect(isolate, throw_on_side_effect);
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, result, Execution::Call(isolate, eval_fun, receiver, 0, NULL),
-        Object);
+        isolate, result,
+        Execution::Call(isolate, eval_fun, receiver, 0, nullptr), Object);
   }
 
   // Skip the global proxy as it has no properties and always delegates to the
@@ -273,6 +274,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(ArraySpeciesConstructor)         \
   V(NormalizeElements)               \
   V(GetArrayKeys)                    \
+  V(TrySliceSimpleNonFastElements)   \
   V(HasComplexElements)              \
   V(EstimateNumberOfElements)        \
   /* Errors */                       \
@@ -291,7 +293,7 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   V(SubString)                       \
   V(RegExpInternalReplace)           \
   /* BigInts */                      \
-  V(BigIntEqual)                     \
+  V(BigIntEqualToBigInt)             \
   V(BigIntToBoolean)                 \
   /* Literals */                     \
   V(CreateArrayLiteral)              \
@@ -608,6 +610,8 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kStringPrototypeItalics:
     case Builtins::kStringPrototypeLastIndexOf:
     case Builtins::kStringPrototypeLink:
+    case Builtins::kStringPrototypePadEnd:
+    case Builtins::kStringPrototypePadStart:
     case Builtins::kStringPrototypeRepeat:
     case Builtins::kStringPrototypeSlice:
     case Builtins::kStringPrototypeSmall:
@@ -627,6 +631,7 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     case Builtins::kStringPrototypeTrimRight:
     case Builtins::kStringPrototypeValueOf:
     case Builtins::kStringToNumber:
+    case Builtins::kSubString:
     // Symbol builtins.
     case Builtins::kSymbolConstructor:
     case Builtins::kSymbolKeyFor:

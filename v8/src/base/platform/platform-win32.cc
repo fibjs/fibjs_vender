@@ -24,10 +24,12 @@
 #include "src/base/win32-headers.h"
 
 #include "src/base/bits.h"
+#include "src/base/lazy-instance.h"
 #include "src/base/macros.h"
 #include "src/base/platform/platform.h"
 #include "src/base/platform/time.h"
 #include "src/base/timezone-cache.h"
+#include "src/base/utils/random-number-generator.h"
 
 // Extra functions for MinGW. Most of these are the _s functions which are in
 // the Microsoft Visual Studio C++ CRT.
@@ -703,8 +705,37 @@ size_t OS::AllocateAlignment() {
   return allocate_alignment;
 }
 
-void OS::Initialize(bool hard_abort, const char* const gc_fake_mmap) {
+static LazyInstance<RandomNumberGenerator>::type
+    platform_random_number_generator = LAZY_INSTANCE_INITIALIZER;
+
+void OS::Initialize(int64_t random_seed, bool hard_abort,
+                    const char* const gc_fake_mmap) {
+  if (random_seed) {
+    platform_random_number_generator.Pointer()->SetSeed(random_seed);
+  }
   g_hard_abort = hard_abort;
+}
+
+void* OS::GetRandomMmapAddr() {
+// The address range used to randomize RWX allocations in OS::Allocate
+// Try not to map pages into the default range that windows loads DLLs
+// Use a multiple of 64k to prevent committing unused memory.
+// Note: This does not guarantee RWX regions will be within the
+// range kAllocationRandomAddressMin to kAllocationRandomAddressMax
+#ifdef V8_HOST_ARCH_64_BIT
+  static const uintptr_t kAllocationRandomAddressMin = 0x0000000080000000;
+  static const uintptr_t kAllocationRandomAddressMax = 0x000003FFFFFF0000;
+#else
+  static const uintptr_t kAllocationRandomAddressMin = 0x04000000;
+  static const uintptr_t kAllocationRandomAddressMax = 0x3FFF0000;
+#endif
+  uintptr_t address;
+  platform_random_number_generator.Pointer()->NextBytes(&address,
+                                                        sizeof(address));
+  address <<= kPageSizeBits;
+  address += kAllocationRandomAddressMin;
+  address &= kAllocationRandomAddressMax;
+  return reinterpret_cast<void*>(address);
 }
 
 namespace {
@@ -771,7 +802,7 @@ void* OS::Allocate(const size_t requested, size_t* allocated,
 
   if (mbase == NULL) return NULL;
 
-  DCHECK((reinterpret_cast<uintptr_t>(mbase) % OS::AllocateAlignment()) == 0);
+  DCHECK_EQ(reinterpret_cast<uintptr_t>(mbase) % OS::AllocateAlignment(), 0);
 
   *allocated = msize;
   return mbase;
@@ -787,9 +818,10 @@ intptr_t OS::CommitPageSize() {
   return 4096;
 }
 
-void OS::ProtectCode(void* address, const size_t size) {
+void OS::SetReadAndExecutable(void* address, const size_t size) {
   DWORD old_protect;
-  VirtualProtect(address, size, PAGE_EXECUTE_READ, &old_protect);
+  CHECK_NE(NULL,
+           VirtualProtect(address, size, PAGE_EXECUTE_READ, &old_protect));
 }
 
 void OS::Guard(void* address, const size_t size) {
@@ -797,9 +829,13 @@ void OS::Guard(void* address, const size_t size) {
   VirtualProtect(address, size, PAGE_NOACCESS, &oldprotect);
 }
 
-void OS::Unprotect(void* address, const size_t size) {
-  LPVOID result = VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE);
-  USE(result);
+void OS::SetReadAndWritable(void* address, const size_t size, bool commit) {
+  if (commit) {
+    CHECK(VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE));
+  } else {
+    DWORD oldprotect;
+    CHECK_NE(NULL, VirtualProtect(address, size, PAGE_READWRITE, &oldprotect));
+  }
 }
 
 // static
@@ -809,7 +845,7 @@ void* OS::ReserveRegion(size_t size, void* hint) {
 
 void* OS::ReserveAlignedRegion(size_t size, size_t alignment, void* hint,
                                size_t* allocated) {
-  DCHECK((alignment % OS::AllocateAlignment()) == 0);
+  DCHECK_EQ(alignment % OS::AllocateAlignment(), 0);
   hint = AlignedAddress(hint, alignment);
   size_t request_size =
       RoundUp(size + alignment, static_cast<intptr_t>(OS::AllocateAlignment()));
@@ -920,7 +956,7 @@ class Win32MemoryMappedFile final : public OS::MemoryMappedFile {
 
 
 // static
-OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name, void* hint) {
+OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
   // Open a physical file
   HANDLE file = CreateFileA(name, GENERIC_READ | GENERIC_WRITE,
       FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -928,7 +964,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name, void* hint) {
 
   DWORD size = GetFileSize(file, NULL);
 
-  // Create a file mapping for the physical file. Ignore hint on Windows.
+  // Create a file mapping for the physical file
   HANDLE file_mapping =
       CreateFileMapping(file, NULL, PAGE_READWRITE, 0, size, NULL);
   if (file_mapping == NULL) return NULL;
@@ -940,14 +976,14 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name, void* hint) {
 
 
 // static
-OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name, void* hint,
+OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
                                                    size_t size, void* initial) {
   // Open a physical file
   HANDLE file = CreateFileA(name, GENERIC_READ | GENERIC_WRITE,
                             FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                             OPEN_ALWAYS, 0, NULL);
   if (file == NULL) return NULL;
-  // Create a file mapping for the physical file. Ignore hint on Windows.
+  // Create a file mapping for the physical file
   HANDLE file_mapping = CreateFileMapping(file, NULL, PAGE_READWRITE, 0,
                                           static_cast<DWORD>(size), NULL);
   if (file_mapping == NULL) return NULL;
@@ -1216,13 +1252,16 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
   return LoadSymbols(process_handle);
 }
 
+void OS::SignalCodeMovingGC() {}
+
 #else  // __MINGW32__
 std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
   return std::vector<OS::SharedLibraryAddress>();
 }
+
+void OS::SignalCodeMovingGC() {}
 #endif  // __MINGW32__
 
-void OS::SignalCodeMovingGC(void* hint) {}
 
 int OS::ActivationFrameAlignment() {
 #ifdef _WIN64

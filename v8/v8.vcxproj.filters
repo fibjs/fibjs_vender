@@ -181,6 +181,21 @@
     <Filter Include="Source Files\wasm">
       <UniqueIdentifier>{3a7f7d48-d621-6ae7-ac90-1da78babcc0a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\wasm\baseline">
+      <UniqueIdentifier>{951cdbb1-b4a2-1791-4a9f-a0ca6b91246e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\wasm\baseline\ia32">
+      <UniqueIdentifier>{18e38132-f2a2-0061-ea80-6febe26acda3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\wasm\baseline\ppc">
+      <UniqueIdentifier>{89bbc2c3-4534-575e-eb85-78845ee75a9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\wasm\baseline\s390">
+      <UniqueIdentifier>{7ed6d86c-0b54-c842-c421-ef1490157b5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\wasm\baseline\x64">
+      <UniqueIdentifier>{e647b559-15af-3e1d-8105-751a60595ab9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\x64">
       <UniqueIdentifier>{ad65f0e1-d29e-4a32-08c7-a09fd2f464f7}</UniqueIdentifier>
     </Filter>
@@ -329,9 +344,6 @@
     </ClInclude>
     <ClInclude Include="src\ast\variables.h">
       <Filter>Source Files\ast</Filter>
-    </ClInclude>
-    <ClInclude Include="src\background-parsing-task.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bailout-reason.h">
       <Filter>Source Files</Filter>
@@ -622,6 +634,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\all-nodes.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\allocation-builder.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\basic-block-instrumentor.h">
@@ -1221,9 +1236,6 @@
     <ClInclude Include="src\ia32\code-stubs-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="src\ia32\codegen-ia32.h">
-      <Filter>Source Files\ia32</Filter>
-    </ClInclude>
     <ClInclude Include="src\ia32\frame-constants-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
@@ -1479,6 +1491,12 @@
     <ClInclude Include="src\objects\bigint.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\code-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\code.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\compilation-cache-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1507,6 +1525,18 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\hash-table.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-array-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-array.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-regexp-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-regexp.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\literal-objects.h">
@@ -1575,6 +1605,9 @@
     <ClInclude Include="src\ostreams.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\parsing\background-parsing-task.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
     <ClInclude Include="src\parsing\duplicate-finder.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
@@ -1636,9 +1669,6 @@
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
     <ClInclude Include="src\ppc\code-stubs-ppc.h">
-      <Filter>Source Files\ppc</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ppc\codegen-ppc.h">
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
     <ClInclude Include="src\ppc\constants-ppc.h">
@@ -1788,9 +1818,6 @@
     <ClInclude Include="src\s390\code-stubs-s390.h">
       <Filter>Source Files\s390</Filter>
     </ClInclude>
-    <ClInclude Include="src\s390\codegen-s390.h">
-      <Filter>Source Files\s390</Filter>
-    </ClInclude>
     <ClInclude Include="src\s390\constants-s390.h">
       <Filter>Source Files\s390</Filter>
     </ClInclude>
@@ -1815,13 +1842,25 @@
     <ClInclude Include="src\simulator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\snapshot\builtin-deserializer-allocator.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
     <ClInclude Include="src\snapshot\builtin-deserializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\builtin-serializer-allocator.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\builtin-serializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
+    <ClInclude Include="src\snapshot\builtin-snapshot-utils.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
     <ClInclude Include="src\snapshot\code-serializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\default-deserializer-allocator.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\default-serializer-allocator.h">
@@ -1974,6 +2013,33 @@
     <ClInclude Include="src\vm-state.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\baseline\ia32\liftoff-assembler-ia32-defs.h">
+      <Filter>Source Files\wasm\baseline\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\ia32\liftoff-assembler-ia32.h">
+      <Filter>Source Files\wasm\baseline\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\liftoff-assembler.h">
+      <Filter>Source Files\wasm\baseline</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\ppc\liftoff-assembler-ppc-defs.h">
+      <Filter>Source Files\wasm\baseline\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\ppc\liftoff-assembler-ppc.h">
+      <Filter>Source Files\wasm\baseline\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\s390\liftoff-assembler-s390-defs.h">
+      <Filter>Source Files\wasm\baseline\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\s390\liftoff-assembler-s390.h">
+      <Filter>Source Files\wasm\baseline\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\x64\liftoff-assembler-x64-defs.h">
+      <Filter>Source Files\wasm\baseline\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\x64\liftoff-assembler-x64.h">
+      <Filter>Source Files\wasm\baseline\x64</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\compilation-manager.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -2062,9 +2128,6 @@
       <Filter>Source Files\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\x64\code-stubs-x64.h">
-      <Filter>Source Files\x64</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x64\codegen-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\x64\frame-constants-x64.h">
@@ -2179,9 +2242,6 @@
     </ClCompile>
     <ClCompile Include="src\ast\variables.cc">
       <Filter>Source Files\ast</Filter>
-    </ClCompile>
-    <ClCompile Include="src\background-parsing-task.cc">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\bailout-reason.cc">
       <Filter>Source Files</Filter>
@@ -2427,6 +2487,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-proxy-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-reflect-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-reflect.cc">
@@ -3320,6 +3383,9 @@
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\parsing\background-parsing-task.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
     <ClCompile Include="src\parsing\expression-scope-reparenter.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
@@ -3614,13 +3680,25 @@
     <ClCompile Include="src\setup-isolate-full.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\snapshot\builtin-deserializer-allocator.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
     <ClCompile Include="src\snapshot\builtin-deserializer.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\builtin-serializer-allocator.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\builtin-serializer.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
+    <ClCompile Include="src\snapshot\builtin-snapshot-utils.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
     <ClCompile Include="src\snapshot\code-serializer.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\default-deserializer-allocator.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\default-serializer-allocator.cc">
@@ -3775,6 +3853,12 @@
     </ClCompile>
     <ClCompile Include="src\visitors.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\baseline\liftoff-assembler.cc">
+      <Filter>Source Files\wasm\baseline</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\baseline\liftoff-compiler.cc">
+      <Filter>Source Files\wasm\baseline</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\compilation-manager.cc">
       <Filter>Source Files\wasm</Filter>

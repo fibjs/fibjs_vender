@@ -48,28 +48,6 @@ inline bool ClampedToInteger(Isolate* isolate, Object* object, int* out) {
   return false;
 }
 
-inline bool GetSloppyArgumentsLength(Isolate* isolate, Handle<JSObject> object,
-                                     int* out) {
-  Context* context = *isolate->native_context();
-  Map* map = object->map();
-  if (map != context->sloppy_arguments_map() &&
-      map != context->strict_arguments_map() &&
-      map != context->fast_aliased_arguments_map()) {
-    return false;
-  }
-  DCHECK(object->HasFastElements() || object->HasFastArgumentsElements());
-  Object* len_obj = object->InObjectPropertyAt(JSArgumentsObject::kLengthIndex);
-  if (!len_obj->IsSmi()) return false;
-  *out = Max(0, Smi::ToInt(len_obj));
-
-  FixedArray* parameters = FixedArray::cast(object->elements());
-  if (object->HasSloppyArgumentsElements()) {
-    FixedArray* arguments = FixedArray::cast(parameters->get(1));
-    return *out <= arguments->length();
-  }
-  return *out <= parameters->length();
-}
-
 inline bool IsJSArrayFastElementMovingAllowed(Isolate* isolate,
                                               JSArray* receiver) {
   return JSObject::PrototypeHasNoElements(isolate, receiver);
@@ -281,8 +259,8 @@ BUILTIN(ArraySlice) {
     }
     len = Smi::ToInt(array->length());
   } else if (receiver->IsJSObject() &&
-             GetSloppyArgumentsLength(isolate, Handle<JSObject>::cast(receiver),
-                                      &len)) {
+             JSSloppyArgumentsObject::GetSloppyArgumentsLength(
+                 isolate, Handle<JSObject>::cast(receiver), &len)) {
     // Array.prototype.slice.call(arguments, ...) is quite a common idiom
     // (notably more than 50% of invocations in Web apps).
     // Treat it in C++ as well.
@@ -363,7 +341,7 @@ BUILTIN(ArraySplice) {
     // given as a request to delete all the elements from the start.
     // And it differs from the case of undefined delete count.
     // This does not follow ECMA-262, but we do the same for compatibility.
-    DCHECK(len - actual_start >= 0);
+    DCHECK_GE(len - actual_start, 0);
     actual_delete_count = len - actual_start;
   } else {
     int delete_count = 0;
@@ -437,9 +415,8 @@ class ArrayConcatVisitor {
 
     if (!is_fixed_array()) {
       LookupIterator it(isolate_, storage_, index, LookupIterator::OWN);
-      MAYBE_RETURN(
-          JSReceiver::CreateDataProperty(&it, elm, Object::THROW_ON_ERROR),
-          false);
+      MAYBE_RETURN(JSReceiver::CreateDataProperty(&it, elm, kThrowOnError),
+                   false);
       return true;
     }
 
@@ -512,7 +489,7 @@ class ArrayConcatVisitor {
     RETURN_ON_EXCEPTION(
         isolate_,
         JSReceiver::SetProperty(result, isolate_->factory()->length_string(),
-                                length, STRICT),
+                                length, LanguageMode::kStrict),
         JSReceiver);
     return result;
   }
@@ -594,7 +571,7 @@ uint32_t EstimateElementCount(Handle<JSArray> array) {
     case HOLEY_ELEMENTS: {
       // Fast elements can't have lengths that are not representable by
       // a 32-bit signed integer.
-      DCHECK(static_cast<int32_t>(FixedArray::kMaxLength) >= 0);
+      DCHECK_GE(static_cast<int32_t>(FixedArray::kMaxLength), 0);
       int fast_length = static_cast<int>(length);
       Isolate* isolate = array->GetIsolate();
       FixedArray* elements = FixedArray::cast(array->elements());
@@ -607,10 +584,10 @@ uint32_t EstimateElementCount(Handle<JSArray> array) {
     case HOLEY_DOUBLE_ELEMENTS: {
       // Fast elements can't have lengths that are not representable by
       // a 32-bit signed integer.
-      DCHECK(static_cast<int32_t>(FixedDoubleArray::kMaxLength) >= 0);
+      DCHECK_GE(static_cast<int32_t>(FixedDoubleArray::kMaxLength), 0);
       int fast_length = static_cast<int>(length);
       if (array->elements()->IsFixedArray()) {
-        DCHECK(FixedArray::cast(array->elements())->length() == 0);
+        DCHECK_EQ(FixedArray::cast(array->elements())->length(), 0);
         break;
       }
       FixedDoubleArray* elements = FixedDoubleArray::cast(array->elements());
@@ -674,7 +651,7 @@ void CollectElementIndices(Handle<JSObject> object, uint32_t range,
     case HOLEY_DOUBLE_ELEMENTS:
     case PACKED_DOUBLE_ELEMENTS: {
       if (object->elements()->IsFixedArray()) {
-        DCHECK(object->elements()->length() == 0);
+        DCHECK_EQ(object->elements()->length(), 0);
         break;
       }
       Handle<FixedDoubleArray> elements(
@@ -773,7 +750,7 @@ bool IterateElementsSlow(Isolate* isolate, Handle<JSReceiver> receiver,
                          uint32_t length, ArrayConcatVisitor* visitor) {
   FOR_WITH_HANDLE_SCOPE(isolate, uint32_t, i = 0, i, i < length, ++i, {
     Maybe<bool> maybe = JSReceiver::HasElement(receiver, i);
-    if (!maybe.IsJust()) return false;
+    if (maybe.IsNothing()) return false;
     if (maybe.FromJust()) {
       Handle<Object> element_value;
       ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -836,7 +813,7 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
           if (!visitor->visit(j, element_value)) return false;
         } else {
           Maybe<bool> maybe = JSReceiver::HasElement(array, j);
-          if (!maybe.IsJust()) return false;
+          if (maybe.IsNothing()) return false;
           if (maybe.FromJust()) {
             // Call GetElement on array, not its prototype, or getters won't
             // have the correct receiver.
@@ -856,7 +833,7 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
       // Run through the elements FixedArray and use HasElement and GetElement
       // to check the prototype for missing elements.
       if (array->elements()->IsFixedArray()) {
-        DCHECK(array->elements()->length() == 0);
+        DCHECK_EQ(array->elements()->length(), 0);
         break;
       }
       Handle<FixedDoubleArray> elements(
@@ -871,7 +848,7 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
           if (!visitor->visit(j, element_value)) return false;
         } else {
           Maybe<bool> maybe = JSReceiver::HasElement(array, j);
-          if (!maybe.IsJust()) return false;
+          if (maybe.IsNothing()) return false;
           if (maybe.FromJust()) {
             // Call GetElement on array, not its prototype, or getters won't
             // have the correct receiver.
@@ -1182,7 +1159,7 @@ MaybeHandle<JSArray> Fast_ArrayConcat(Isolate* isolate,
       // The Array length is guaranted to be <= kHalfOfMaxInt thus we won't
       // overflow.
       result_len += Smi::ToInt(array->length());
-      DCHECK(result_len >= 0);
+      DCHECK_GE(result_len, 0);
       // Throw an Error if we overflow the FixedArray limits
       if (FixedDoubleArray::kMaxLength < result_len ||
           FixedArray::kMaxLength < result_len) {

@@ -35,6 +35,7 @@ CompilationInfo::CompilationInfo(Zone* zone, Isolate* isolate,
   if (parse_info->is_eval()) MarkAsEval();
   if (parse_info->is_native()) MarkAsNative();
   if (parse_info->will_serialize()) MarkAsSerializing();
+  if (parse_info->collect_type_profile()) MarkAsCollectTypeProfile();
 }
 
 CompilationInfo::CompilationInfo(Zone* zone, Isolate* isolate,
@@ -66,17 +67,19 @@ CompilationInfo::CompilationInfo(Vector<const char> debug_name,
                                  Isolate* isolate, Zone* zone)
     : isolate_(isolate),
       literal_(nullptr),
+      source_range_map_(nullptr),
       flags_(0),
       code_kind_(code_kind),
+      stub_key_(0),
       mode_(mode),
       osr_offset_(BailoutId::None()),
+      feedback_vector_spec_(zone),
       zone_(zone),
       deferred_handles_(nullptr),
       dependencies_(isolate, zone),
       bailout_reason_(kNoReason),
       parameter_count_(0),
       optimization_id_(-1),
-      osr_expr_stack_height_(-1),
       debug_name_(debug_name) {}
 
 CompilationInfo::~CompilationInfo() {
@@ -103,12 +106,12 @@ bool CompilationInfo::is_this_defined() const { return !IsStub(); }
 
 void CompilationInfo::set_deferred_handles(
     std::shared_ptr<DeferredHandles> deferred_handles) {
-  DCHECK(deferred_handles_.get() == nullptr);
+  DCHECK_NULL(deferred_handles_);
   deferred_handles_.swap(deferred_handles);
 }
 
 void CompilationInfo::set_deferred_handles(DeferredHandles* deferred_handles) {
-  DCHECK(deferred_handles_.get() == nullptr);
+  DCHECK_NULL(deferred_handles_);
   deferred_handles_.reset(deferred_handles);
 }
 

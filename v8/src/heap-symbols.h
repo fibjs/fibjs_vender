@@ -28,6 +28,7 @@
   V(regexp_to_string, "[object RegExp]")                           \
   V(string_to_string, "[object String]")                           \
   V(bigint_string, "bigint")                                       \
+  V(BigInt_string, "BigInt")                                       \
   V(bind_string, "bind")                                           \
   V(boolean_string, "boolean")                                     \
   V(Boolean_string, "Boolean")                                     \
@@ -160,10 +161,8 @@
   V(set_space_string, "set ")                                      \
   V(set_string, "set")                                             \
   V(Set_string, "Set")                                             \
-  V(source_mapping_url_string, "source_mapping_url")               \
   V(source_string, "source")                                       \
   V(sourceText_string, "sourceText")                               \
-  V(source_url_string, "source_url")                               \
   V(stack_string, "stack")                                         \
   V(stackTraceLimit_string, "stackTraceLimit")                     \
   V(star_default_star_string, "*default*")                         \
@@ -213,8 +212,7 @@
   V(call_site_frame_index_symbol)           \
   V(console_context_id_symbol)              \
   V(console_context_name_symbol)            \
-  V(class_end_position_symbol)              \
-  V(class_start_position_symbol)            \
+  V(class_positions_symbol)                 \
   V(detailed_stack_trace_symbol)            \
   V(elements_transition_symbol)             \
   V(error_end_pos_symbol)                   \
@@ -350,6 +348,7 @@
   F(MINOR_MC_SWEEPING)                               \
   F(SCAVENGER_FAST_PROMOTE)                          \
   F(SCAVENGER_SCAVENGE)                              \
+  F(SCAVENGER_PROCESS_ARRAY_BUFFERS)                 \
   F(SCAVENGER_SCAVENGE_WEAK_GLOBAL_HANDLES_IDENTIFY) \
   F(SCAVENGER_SCAVENGE_WEAK_GLOBAL_HANDLES_PROCESS)  \
   F(SCAVENGER_SCAVENGE_PARALLEL)                     \

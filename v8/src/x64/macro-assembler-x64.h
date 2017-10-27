@@ -45,18 +45,6 @@ typedef Operand MemOperand;
 enum RememberedSetAction { EMIT_REMEMBERED_SET, OMIT_REMEMBERED_SET };
 enum SmiCheck { INLINE_SMI_CHECK, OMIT_SMI_CHECK };
 
-enum class SmiOperationConstraint {
-  kPreserveSourceRegister = 1 << 0,
-  kBailoutOnNoOverflow = 1 << 1,
-  kBailoutOnOverflow = 1 << 2
-};
-
-enum class ReturnAddressState { kOnStack, kNotOnStack };
-
-typedef base::Flags<SmiOperationConstraint> SmiOperationConstraints;
-
-DEFINE_OPERATORS_FOR_FLAGS(SmiOperationConstraints)
-
 #ifdef DEBUG
 bool AreAliased(Register reg1,
                 Register reg2,
@@ -77,6 +65,57 @@ struct SmiIndex {
         scale(scale) {}
   Register reg;
   ScaleFactor scale;
+};
+
+enum StackArgumentsAccessorReceiverMode {
+  ARGUMENTS_CONTAIN_RECEIVER,
+  ARGUMENTS_DONT_CONTAIN_RECEIVER
+};
+
+class StackArgumentsAccessor BASE_EMBEDDED {
+ public:
+  StackArgumentsAccessor(Register base_reg, int argument_count_immediate,
+                         StackArgumentsAccessorReceiverMode receiver_mode =
+                             ARGUMENTS_CONTAIN_RECEIVER,
+                         int extra_displacement_to_last_argument = 0)
+      : base_reg_(base_reg),
+        argument_count_reg_(no_reg),
+        argument_count_immediate_(argument_count_immediate),
+        receiver_mode_(receiver_mode),
+        extra_displacement_to_last_argument_(
+            extra_displacement_to_last_argument) {}
+
+  StackArgumentsAccessor(Register base_reg, Register argument_count_reg,
+                         StackArgumentsAccessorReceiverMode receiver_mode =
+                             ARGUMENTS_CONTAIN_RECEIVER,
+                         int extra_displacement_to_last_argument = 0)
+      : base_reg_(base_reg),
+        argument_count_reg_(argument_count_reg),
+        argument_count_immediate_(0),
+        receiver_mode_(receiver_mode),
+        extra_displacement_to_last_argument_(
+            extra_displacement_to_last_argument) {}
+
+  StackArgumentsAccessor(Register base_reg,
+                         const ParameterCount& parameter_count,
+                         StackArgumentsAccessorReceiverMode receiver_mode =
+                             ARGUMENTS_CONTAIN_RECEIVER,
+                         int extra_displacement_to_last_argument = 0);
+
+  Operand GetArgumentOperand(int index);
+  Operand GetReceiverOperand() {
+    DCHECK(receiver_mode_ == ARGUMENTS_CONTAIN_RECEIVER);
+    return GetArgumentOperand(0);
+  }
+
+ private:
+  const Register base_reg_;
+  const Register argument_count_reg_;
+  const int argument_count_immediate_;
+  const StackArgumentsAccessorReceiverMode receiver_mode_;
+  const int extra_displacement_to_last_argument_;
+
+  DISALLOW_IMPLICIT_CONSTRUCTORS(StackArgumentsAccessor);
 };
 
 class TurboAssembler : public Assembler {
@@ -371,15 +410,13 @@ class TurboAssembler : public Assembler {
   }
   void LeaveFrame(StackFrame::Type type);
 
-  // Removes current frame and its arguments from the stack preserving
-  // the arguments and a return address pushed to the stack for the next call.
-  // |ra_state| defines whether return address is already pushed to stack or
-  // not. Both |callee_args_count| and |caller_args_count_reg| do not include
-  // receiver. |callee_args_count| is not modified, |caller_args_count_reg|
-  // is trashed.
+  // Removes current frame and its arguments from the stack preserving the
+  // arguments and a return address pushed to the stack for the next call.  Both
+  // |callee_args_count| and |caller_args_count_reg| do not include receiver.
+  // |callee_args_count| is not modified, |caller_args_count_reg| is trashed.
   void PrepareForTailCall(const ParameterCount& callee_args_count,
                           Register caller_args_count_reg, Register scratch0,
-                          Register scratch1, ReturnAddressState ra_state);
+                          Register scratch1);
 
   inline bool AllowThisStubCall(CodeStub* stub);
 
@@ -388,10 +425,7 @@ class TurboAssembler : public Assembler {
   // HeapObjectRequest that will be fulfilled after code assembly.
   void CallStubDelayed(CodeStub* stub);
 
-  void SlowTruncateToIDelayed(Zone* zone, Register result_reg,
-                              Register input_reg,
-                              int offset = HeapNumber::kValueOffset -
-                                           kHeapObjectTag);
+  void SlowTruncateToIDelayed(Zone* zone, Register result_reg);
 
   // Call a runtime routine.
   void CallRuntimeDelayed(Zone* zone, Runtime::FunctionId fid,
@@ -660,19 +694,6 @@ class MacroAssembler : public TurboAssembler {
 
   // Convert smi to 64-bit integer (sign extended if necessary).
   void SmiToInteger64(Register dst, Register src);
-  void SmiToInteger64(Register dst, const Operand& src);
-
-  // Convert smi to double.
-  void SmiToDouble(XMMRegister dst, Register src) {
-    SmiToInteger32(kScratchRegister, src);
-    Cvtlsi2sd(dst, kScratchRegister);
-  }
-
-  // Multiply a positive smi's integer value by a power of two.
-  // Provides result as 64-bit integer value.
-  void PositiveSmiTimesPowerOfTwoToInteger64(Register dst,
-                                             Register src,
-                                             int power);
 
   // Simple comparison of smis.  Both sides must be known smis to use these,
   // otherwise use Cmp.
@@ -681,8 +702,6 @@ class MacroAssembler : public TurboAssembler {
   void SmiCompare(Register dst, const Operand& src);
   void SmiCompare(const Operand& dst, Register src);
   void SmiCompare(const Operand& dst, Smi* src);
-  // Compare the int32 in src register to the value of the smi stored at dst.
-  void SmiTest(Register src);
 
   // Functions performing a check on a known or potential smi. Returns
   // a condition that is satisfied if the check is successful.
@@ -706,68 +725,7 @@ class MacroAssembler : public TurboAssembler {
 
   // Add an integer constant to a tagged smi, giving a tagged smi as result.
   // No overflow testing on the result is done.
-  void SmiAddConstant(Register dst, Register src, Smi* constant);
-
-  // Add an integer constant to a tagged smi, giving a tagged smi as result.
-  // No overflow testing on the result is done.
   void SmiAddConstant(const Operand& dst, Smi* constant);
-
-  // Add an integer constant to a tagged smi, giving a tagged smi as result,
-  // or jumping to a label if the result cannot be represented by a smi.
-  void SmiAddConstant(Register dst, Register src, Smi* constant,
-                      SmiOperationConstraints constraints, Label* bailout_label,
-                      Label::Distance near_jump = Label::kFar);
-
-  // Subtract an integer constant from a tagged smi, giving a tagged smi as
-  // result. No testing on the result is done. Sets the N and Z flags
-  // based on the value of the resulting integer.
-  void SmiSubConstant(Register dst, Register src, Smi* constant);
-
-  // Subtract an integer constant from a tagged smi, giving a tagged smi as
-  // result, or jumping to a label if the result cannot be represented by a smi.
-  void SmiSubConstant(Register dst, Register src, Smi* constant,
-                      SmiOperationConstraints constraints, Label* bailout_label,
-                      Label::Distance near_jump = Label::kFar);
-
-  // Adds smi values and return the result as a smi.
-  // If dst is src1, then src1 will be destroyed if the operation is
-  // successful, otherwise kept intact.
-  void SmiAdd(Register dst,
-              Register src1,
-              Register src2,
-              Label* on_not_smi_result,
-              Label::Distance near_jump = Label::kFar);
-  void SmiAdd(Register dst,
-              Register src1,
-              const Operand& src2,
-              Label* on_not_smi_result,
-              Label::Distance near_jump = Label::kFar);
-
-  void SmiAdd(Register dst,
-              Register src1,
-              Register src2);
-
-  // Subtracts smi values and return the result as a smi.
-  // If dst is src1, then src1 will be destroyed if the operation is
-  // successful, otherwise kept intact.
-  void SmiSub(Register dst,
-              Register src1,
-              Register src2,
-              Label* on_not_smi_result,
-              Label::Distance near_jump = Label::kFar);
-  void SmiSub(Register dst,
-              Register src1,
-              const Operand& src2,
-              Label* on_not_smi_result,
-              Label::Distance near_jump = Label::kFar);
-
-  void SmiSub(Register dst,
-              Register src1,
-              Register src2);
-
-  void SmiSub(Register dst,
-              Register src1,
-              const Operand& src2);
 
   // Specialized operations
 
@@ -780,15 +738,6 @@ class MacroAssembler : public TurboAssembler {
   // on what is most efficient. If src and dst are different registers,
   // src is always unchanged.
   SmiIndex SmiToIndex(Register dst, Register src, int shift);
-
-  // ---------------------------------------------------------------------------
-  // String macros.
-
-  // Checks if the given register or operand is a unique name
-  void JumpIfNotUniqueNameInstanceType(Register reg, Label* not_unique_name,
-                                       Label::Distance distance = Label::kFar);
-  void JumpIfNotUniqueNameInstanceType(Operand operand, Label* not_unique_name,
-                                       Label::Distance distance = Label::kFar);
 
   // ---------------------------------------------------------------------------
   // Macro instructions.
@@ -1069,27 +1018,6 @@ class MacroAssembler : public TurboAssembler {
   // traversal.
   friend class StandardFrame;
 };
-
-
-// The code patcher is used to patch (typically) small parts of code e.g. for
-// debugging and other types of instrumentation. When using the code patcher
-// the exact number of bytes specified must be emitted. Is not legal to emit
-// relocation information. If any of these constraints are violated it causes
-// an assertion.
-class CodePatcher {
- public:
-  CodePatcher(Isolate* isolate, byte* address, int size);
-  ~CodePatcher();
-
-  // Macro assembler to emit code.
-  MacroAssembler* masm() { return &masm_; }
-
- private:
-  byte* address_;  // The address of the code being patched.
-  int size_;  // Number of bytes of the expected patch size.
-  MacroAssembler masm_;  // Macro assembler used to generate the code.
-};
-
 
 // -----------------------------------------------------------------------------
 // Static helper functions.

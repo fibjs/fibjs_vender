@@ -179,7 +179,7 @@ void Displacement::init(Label* L, Type type) {
   int next = 0;
   if (L->is_linked()) {
     next = L->pos();
-    DCHECK(next > 0);  // Displacements must be at positions > 0
+    DCHECK_GT(next, 0);  // Displacements must be at positions > 0
   }
   // Ensure that we _never_ overflow the next field.
   DCHECK(NextField::is_valid(Assembler::kMaximalBufferSize));
@@ -332,7 +332,7 @@ Assembler::Assembler(IsolateData isolate_data, void* buffer, int buffer_size)
     : AssemblerBase(isolate_data, buffer, buffer_size) {
 // Clear the buffer in debug mode unless it was provided by the
 // caller in which case we can't be sure it's okay to overwrite
-// existing code in it; see CodePatcher::CodePatcher(...).
+// existing code in it.
 #ifdef DEBUG
   if (own_buffer_) {
     memset(buffer_, 0xCC, buffer_size_);  // int3
@@ -535,7 +535,7 @@ void Assembler::push(const Operand& src) {
 
 
 void Assembler::pop(Register dst) {
-  DCHECK(reloc_info_writer.last_pc() != NULL);
+  DCHECK_NOT_NULL(reloc_info_writer.last_pc());
   EnsureSpace ensure_space(this);
   EMIT(0x58 | dst.code());
 }
@@ -822,7 +822,7 @@ void Assembler::add(const Operand& dst, Register src) {
 
 
 void Assembler::add(const Operand& dst, const Immediate& x) {
-  DCHECK(reloc_info_writer.last_pc() != NULL);
+  DCHECK_NOT_NULL(reloc_info_writer.last_pc());
   EnsureSpace ensure_space(this);
   emit_arith(0, dst, x);
 }
@@ -1543,7 +1543,7 @@ void Assembler::bind_to(Label* L, int pos) {
       long_at_put(fixup_pos, pos + Code::kHeaderSize - kHeapObjectTag);
     } else {
       if (disp.type() == Displacement::UNCONDITIONAL_JUMP) {
-        DCHECK(byte_at(fixup_pos - 1) == 0xE9);  // jmp expected
+        DCHECK_EQ(byte_at(fixup_pos - 1), 0xE9);  // jmp expected
       }
       // Relative address, relative to point after address.
       int imm32 = pos - (fixup_pos + sizeof(int32_t));
@@ -1555,7 +1555,7 @@ void Assembler::bind_to(Label* L, int pos) {
     int fixup_pos = L->near_link_pos();
     int offset_to_next =
         static_cast<int>(*reinterpret_cast<int8_t*>(addr_at(fixup_pos)));
-    DCHECK(offset_to_next <= 0);
+    DCHECK_LE(offset_to_next, 0);
     // Relative address, relative to point after address.
     int disp = pos - fixup_pos - sizeof(int8_t);
     CHECK(0 <= disp && disp <= 127);
@@ -1612,7 +1612,7 @@ void Assembler::call(Label* L) {
   if (L->is_bound()) {
     const int long_size = 5;
     int offs = L->pos() - pc_offset();
-    DCHECK(offs <= 0);
+    DCHECK_LE(offs, 0);
     // 1110 1000 #32-bit disp.
     EMIT(0xE8);
     emit(offs - long_size);
@@ -1672,7 +1672,7 @@ void Assembler::jmp(Label* L, Label::Distance distance) {
     const int short_size = 2;
     const int long_size  = 5;
     int offs = L->pos() - pc_offset();
-    DCHECK(offs <= 0);
+    DCHECK_LE(offs, 0);
     if (is_int8(offs - short_size)) {
       // 1110 1011 #8-bit disp.
       EMIT(0xEB);
@@ -1739,7 +1739,7 @@ void Assembler::j(Condition cc, Label* L, Label::Distance distance) {
     const int short_size = 2;
     const int long_size  = 6;
     int offs = L->pos() - pc_offset();
-    DCHECK(offs <= 0);
+    DCHECK_LE(offs, 0);
     if (is_int8(offs - short_size)) {
       // 0111 tttn #8-bit disp
       EMIT(0x70 | cc);
@@ -3252,7 +3252,7 @@ void Assembler::GrowBuffer() {
 void Assembler::emit_arith_b(int op1, int op2, Register dst, int imm8) {
   DCHECK(is_uint8(op1) && is_uint8(op2));  // wrong opcode
   DCHECK(is_uint8(imm8));
-  DCHECK((op1 & 0x01) == 0);  // should be 8bit operation
+  DCHECK_EQ(op1 & 0x01, 0);  // should be 8bit operation
   EMIT(op1);
   EMIT(op2 | dst.code());
   EMIT(imm8);
@@ -3279,7 +3279,7 @@ void Assembler::emit_arith(int sel, Operand dst, const Immediate& x) {
 
 void Assembler::emit_operand(Register reg, const Operand& adr) {
   const unsigned length = adr.len_;
-  DCHECK(length > 0);
+  DCHECK_GT(length, 0);
 
   // Emit updated ModRM byte containing the given register.
   pc_[0] = (adr.buf_[0] & ~0x38) | (reg.code() << 3);
@@ -3351,7 +3351,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
       !serializer_enabled() && !emit_debug_code()) {
     return;
   }
-  RelocInfo rinfo(pc_, rmode, data, NULL);
+  RelocInfo rinfo(pc_, rmode, data, nullptr);
   reloc_info_writer.Write(&rinfo);
 }
 

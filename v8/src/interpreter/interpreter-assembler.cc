@@ -323,7 +323,7 @@ compiler::Node* InterpreterAssembler::BytecodeOperandReadUnaligned(
 
   // Read the most signicant bytecode into bytes[0] and then in order
   // down to least significant in bytes[count - 1].
-  DCHECK(count <= kMaxCount);
+  DCHECK_LE(count, kMaxCount);
   compiler::Node* bytes[kMaxCount];
   for (int i = 0; i < count; i++) {
     MachineType machine_type = (i == 0) ? msb_type : MachineType::Uint8();
@@ -484,8 +484,8 @@ Node* InterpreterAssembler::BytecodeOperandImmSmi(int operand_index) {
 }
 
 Node* InterpreterAssembler::BytecodeOperandIdxInt32(int operand_index) {
-  DCHECK(OperandType::kIdx ==
-         Bytecodes::GetOperandType(bytecode_, operand_index));
+  DCHECK_EQ(OperandType::kIdx,
+            Bytecodes::GetOperandType(bytecode_, operand_index));
   OperandSize operand_size =
       Bytecodes::GetOperandSize(bytecode_, operand_index, operand_scale());
   return BytecodeUnsignedOperand(operand_index, operand_size);
@@ -509,8 +509,8 @@ Node* InterpreterAssembler::BytecodeOperandReg(int operand_index) {
 }
 
 Node* InterpreterAssembler::BytecodeOperandRuntimeId(int operand_index) {
-  DCHECK(OperandType::kRuntimeId ==
-         Bytecodes::GetOperandType(bytecode_, operand_index));
+  DCHECK_EQ(OperandType::kRuntimeId,
+            Bytecodes::GetOperandType(bytecode_, operand_index));
   OperandSize operand_size =
       Bytecodes::GetOperandSize(bytecode_, operand_index, operand_scale());
   DCHECK_EQ(operand_size, OperandSize::kShort);
@@ -519,8 +519,8 @@ Node* InterpreterAssembler::BytecodeOperandRuntimeId(int operand_index) {
 
 Node* InterpreterAssembler::BytecodeOperandNativeContextIndex(
     int operand_index) {
-  DCHECK(OperandType::kNativeContextIndex ==
-         Bytecodes::GetOperandType(bytecode_, operand_index));
+  DCHECK_EQ(OperandType::kNativeContextIndex,
+            Bytecodes::GetOperandType(bytecode_, operand_index));
   OperandSize operand_size =
       Bytecodes::GetOperandSize(bytecode_, operand_index, operand_scale());
   return ChangeUint32ToWord(
@@ -528,8 +528,8 @@ Node* InterpreterAssembler::BytecodeOperandNativeContextIndex(
 }
 
 Node* InterpreterAssembler::BytecodeOperandIntrinsicId(int operand_index) {
-  DCHECK(OperandType::kIntrinsicId ==
-         Bytecodes::GetOperandType(bytecode_, operand_index));
+  DCHECK_EQ(OperandType::kIntrinsicId,
+            Bytecodes::GetOperandType(bytecode_, operand_index));
   OperandSize operand_size =
       Bytecodes::GetOperandSize(bytecode_, operand_index, operand_scale());
   DCHECK_EQ(operand_size, OperandSize::kByte);
@@ -564,7 +564,7 @@ void InterpreterAssembler::CallPrologue() {
   }
 
   if (FLAG_debug_code && !disable_stack_check_across_call_) {
-    DCHECK(stack_pointer_before_call_ == nullptr);
+    DCHECK_NULL(stack_pointer_before_call_);
     stack_pointer_before_call_ = LoadStackPointer();
   }
   bytecode_array_valid_ = false;
@@ -581,80 +581,95 @@ void InterpreterAssembler::CallEpilogue() {
   }
 }
 
-Node* InterpreterAssembler::IncrementCallCount(Node* feedback_vector,
-                                               Node* slot_id) {
+void InterpreterAssembler::IncrementCallCount(Node* feedback_vector,
+                                              Node* slot_id) {
   Comment("increment call count");
   Node* call_count =
       LoadFeedbackVectorSlot(feedback_vector, slot_id, kPointerSize);
   Node* new_count = SmiAdd(call_count, SmiConstant(1));
   // Count is Smi, so we don't need a write barrier.
-  return StoreFeedbackVectorSlot(feedback_vector, slot_id, new_count,
-                                 SKIP_WRITE_BARRIER, kPointerSize);
+  StoreFeedbackVectorSlot(feedback_vector, slot_id, new_count,
+                          SKIP_WRITE_BARRIER, kPointerSize);
 }
 
-void InterpreterAssembler::CollectCallFeedback(Node* target, Node* context,
-                                               Node* feedback_vector,
-                                               Node* slot_id) {
+void InterpreterAssembler::CollectCallableFeedback(Node* target, Node* context,
+                                                   Node* feedback_vector,
+                                                   Node* slot_id) {
   Label extra_checks(this, Label::kDeferred), done(this);
-
-  // Increment the call count.
-  IncrementCallCount(feedback_vector, slot_id);
 
   // Check if we have monomorphic {target} feedback already.
   Node* feedback_element = LoadFeedbackVectorSlot(feedback_vector, slot_id);
   Node* feedback_value = LoadWeakCellValueUnchecked(feedback_element);
-  Branch(WordEqual(target, feedback_value), &done, &extra_checks);
+  Comment("check if monomorphic");
+  Node* is_monomorphic = WordEqual(target, feedback_value);
+  GotoIf(is_monomorphic, &done);
+
+  // Check if it is a megamorphic {target}.
+  Comment("check if megamorphic");
+  Node* is_megamorphic =
+      WordEqual(feedback_element,
+                HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())));
+  Branch(is_megamorphic, &done, &extra_checks);
 
   BIND(&extra_checks);
   {
-    Label check_initialized(this), initialize(this), mark_megamorphic(this);
-
-    // Check if it is a megamorphic {target}.
-    Comment("check if megamorphic");
-    Node* is_megamorphic =
-        WordEqual(feedback_element,
-                  HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())));
-    GotoIf(is_megamorphic, &done);
+    Label initialize(this), mark_megamorphic(this);
 
     Comment("check if weak cell");
-    Node* is_weak_cell = WordEqual(LoadMap(feedback_element),
-                                   LoadRoot(Heap::kWeakCellMapRootIndex));
-    GotoIfNot(is_weak_cell, &check_initialized);
+    Node* is_uninitialized = WordEqual(
+        feedback_element,
+        HeapConstant(FeedbackVector::UninitializedSentinel(isolate())));
+    GotoIf(is_uninitialized, &initialize);
+    CSA_ASSERT(this, IsWeakCell(feedback_element));
 
     // If the weak cell is cleared, we have a new chance to become monomorphic.
     Comment("check if weak cell is cleared");
     Node* is_smi = TaggedIsSmi(feedback_value);
     Branch(is_smi, &initialize, &mark_megamorphic);
 
-    BIND(&check_initialized);
-    {
-      // Check if it is uninitialized.
-      Comment("check if uninitialized");
-      Node* is_uninitialized = WordEqual(
-          feedback_element, LoadRoot(Heap::kuninitialized_symbolRootIndex));
-      Branch(is_uninitialized, &initialize, &mark_megamorphic);
-    }
-
     BIND(&initialize);
     {
-      // Check if {target} is a JSFunction in the current native
-      // context.
+      // Check if {target} is a JSFunction in the current native context.
       Comment("check if function in same native context");
       GotoIf(TaggedIsSmi(target), &mark_megamorphic);
-      // TODO(bmeurer): Add support for arbitrary callables here, and
-      // check via GetFunctionRealm (see src/objects.cc).
-      GotoIfNot(IsJSFunction(target), &mark_megamorphic);
-      Node* target_context =
-          LoadObjectField(target, JSFunction::kContextOffset);
-      Node* target_native_context = LoadNativeContext(target_context);
-      GotoIfNot(WordEqual(LoadNativeContext(context), target_native_context),
-                &mark_megamorphic);
+      // Check if the {target} is a JSFunction or JSBoundFunction
+      // in the current native context.
+      VARIABLE(var_target, MachineRepresentation::kTagged, target);
+      Label loop(this, &var_target), done_loop(this);
+      Goto(&loop);
+      BIND(&loop);
+      {
+        Label if_boundfunction(this), if_function(this);
+        Node* target = var_target.value();
+        CSA_ASSERT(this, TaggedIsNotSmi(target));
+        Node* target_instance_type = LoadInstanceType(target);
+        GotoIf(InstanceTypeEqual(target_instance_type, JS_BOUND_FUNCTION_TYPE),
+               &if_boundfunction);
+        Branch(InstanceTypeEqual(target_instance_type, JS_FUNCTION_TYPE),
+               &if_function, &mark_megamorphic);
 
+        BIND(&if_function);
+        {
+          // Check that the JSFunction {target} is in the current native
+          // context.
+          Node* target_context =
+              LoadObjectField(target, JSFunction::kContextOffset);
+          Node* target_native_context = LoadNativeContext(target_context);
+          Branch(WordEqual(LoadNativeContext(context), target_native_context),
+                 &done_loop, &mark_megamorphic);
+        }
+
+        BIND(&if_boundfunction);
+        {
+          // Continue with the [[BoundTargetFunction]] of {target}.
+          var_target.Bind(LoadObjectField(
+              target, JSBoundFunction::kBoundTargetFunctionOffset));
+          Goto(&loop);
+        }
+      }
+      BIND(&done_loop);
       CreateWeakCellInFeedbackVector(feedback_vector, SmiTag(slot_id), target);
-      // Reset profiler ticks.
-      StoreObjectFieldNoWriteBarrier(feedback_vector,
-                                     FeedbackVector::kProfilerTicksOffset,
-                                     SmiConstant(0));
+      ReportFeedbackUpdate(feedback_vector, slot_id, "Call:Initialize");
       Goto(&done);
     }
 
@@ -668,15 +683,23 @@ void InterpreterAssembler::CollectCallFeedback(Node* target, Node* context,
           feedback_vector, slot_id,
           HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())),
           SKIP_WRITE_BARRIER);
-      // Reset profiler ticks.
-      StoreObjectFieldNoWriteBarrier(feedback_vector,
-                                     FeedbackVector::kProfilerTicksOffset,
-                                     SmiConstant(0));
+      ReportFeedbackUpdate(feedback_vector, slot_id,
+                           "Call:TransitionMegamorphic");
       Goto(&done);
     }
   }
 
   BIND(&done);
+}
+
+void InterpreterAssembler::CollectCallFeedback(Node* target, Node* context,
+                                               Node* feedback_vector,
+                                               Node* slot_id) {
+  // Increment the call count.
+  IncrementCallCount(feedback_vector, slot_id);
+
+  // Collect the callable {target} feedback.
+  CollectCallableFeedback(target, context, feedback_vector, slot_id);
 }
 
 void InterpreterAssembler::CallJSAndDispatch(
@@ -845,10 +868,8 @@ Node* InterpreterAssembler::Construct(Node* target, Node* context,
       {
         var_site.Bind(CreateAllocationSiteInFeedbackVector(feedback_vector,
                                                            SmiTag(slot_id)));
-        // Reset profiler ticks.
-        StoreObjectFieldNoWriteBarrier(feedback_vector,
-                                       FeedbackVector::kProfilerTicksOffset,
-                                       SmiConstant(0));
+        ReportFeedbackUpdate(feedback_vector, slot_id,
+                             "Construct:CreateAllocationSite");
         Goto(&construct_array);
       }
 
@@ -856,10 +877,8 @@ Node* InterpreterAssembler::Construct(Node* target, Node* context,
       {
         CreateWeakCellInFeedbackVector(feedback_vector, SmiTag(slot_id),
                                        new_target);
-        // Reset profiler ticks.
-        StoreObjectFieldNoWriteBarrier(feedback_vector,
-                                       FeedbackVector::kProfilerTicksOffset,
-                                       SmiConstant(0));
+        ReportFeedbackUpdate(feedback_vector, slot_id,
+                             "Construct:CreateWeakCell");
         Goto(&construct);
       }
     }
@@ -874,10 +893,8 @@ Node* InterpreterAssembler::Construct(Node* target, Node* context,
           feedback_vector, slot_id,
           HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())),
           SKIP_WRITE_BARRIER);
-      // Reset profiler ticks.
-      StoreObjectFieldNoWriteBarrier(feedback_vector,
-                                     FeedbackVector::kProfilerTicksOffset,
-                                     SmiConstant(0));
+      ReportFeedbackUpdate(feedback_vector, slot_id,
+                           "Construct:TransitionMegamorphic");
       Goto(&construct);
     }
   }
@@ -979,10 +996,8 @@ Node* InterpreterAssembler::ConstructWithSpread(Node* target, Node* context,
 
       CreateWeakCellInFeedbackVector(feedback_vector, SmiTag(slot_id),
                                      new_target);
-      // Reset profiler ticks.
-      StoreObjectFieldNoWriteBarrier(feedback_vector,
-                                     FeedbackVector::kProfilerTicksOffset,
-                                     SmiConstant(0));
+      ReportFeedbackUpdate(feedback_vector, slot_id,
+                           "ConstructWithSpread:Initialize");
       Goto(&construct);
     }
 
@@ -996,10 +1011,8 @@ Node* InterpreterAssembler::ConstructWithSpread(Node* target, Node* context,
           feedback_vector, slot_id,
           HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())),
           SKIP_WRITE_BARRIER);
-      // Reset profiler ticks.
-      StoreObjectFieldNoWriteBarrier(feedback_vector,
-                                     FeedbackVector::kProfilerTicksOffset,
-                                     SmiConstant(0));
+      ReportFeedbackUpdate(feedback_vector, slot_id,
+                           "ConstructWithSpread:TransitionMegamorphic");
       Goto(&construct);
     }
   }
@@ -1255,77 +1268,6 @@ void InterpreterAssembler::DispatchWide(OperandScale operand_scale) {
            TimesPointerSize(target_index));
 
   DispatchToBytecodeHandlerEntry(target_code_entry, next_bytecode_offset);
-}
-
-// Like NumberBuiltinsAssembler::TaggedToWord32OrBigInt, but with feedback.
-Node* InterpreterAssembler::TaggedToWord32OrBigIntWithFeedback(
-    Node* context, Node* value, Variable* var_type_feedback, Label* bigint,
-    Variable* var_bigint_result) {
-  // We might need to loop once due to ToNumeric conversion.
-  VARIABLE(var_value, MachineRepresentation::kTagged, value);
-  VARIABLE(var_result, MachineRepresentation::kWord32);
-  Variable* loop_vars[] = {&var_value, var_type_feedback};
-  Label loop(this, arraysize(loop_vars), loop_vars), done(this, &var_result);
-  var_type_feedback->Bind(SmiConstant(BinaryOperationFeedback::kNone));
-  Goto(&loop);
-  BIND(&loop);
-  {
-    value = var_value.value();
-    Label not_smi(this), is_heap_number(this), is_oddball(this),
-        is_bigint(this);
-    GotoIf(TaggedIsNotSmi(value), &not_smi);
-    // {value} is a Smi.
-    var_result.Bind(SmiToWord32(value));
-    var_type_feedback->Bind(
-        SmiOr(var_type_feedback->value(),
-              SmiConstant(BinaryOperationFeedback::kSignedSmall)));
-    Goto(&done);
-
-    BIND(&not_smi);
-    Node* map = LoadMap(value);
-    GotoIf(IsHeapNumberMap(map), &is_heap_number);
-    Node* instance_type = LoadMapInstanceType(map);
-    GotoIf(IsBigIntInstanceType(instance_type), &is_bigint);
-
-    // Not HeapNumber or BigInt.
-    {
-      // We do not require an Or with earlier feedback here because once we
-      // convert the value to a Numeric, we cannot reach this path. We can
-      // only reach this path on the first pass when the feedback is kNone.
-      CSA_ASSERT(this, SmiEqual(var_type_feedback->value(),
-                                SmiConstant(BinaryOperationFeedback::kNone)));
-      GotoIf(Word32Equal(instance_type, Int32Constant(ODDBALL_TYPE)),
-             &is_oddball);
-
-      // Not an oddball either -> convert to Numeric.
-      // TODO(jkummerow): This should use "NonNumericToNumeric".
-      var_value.Bind(CallBuiltin(Builtins::kNonNumberToNumber, context, value));
-      var_type_feedback->Bind(SmiConstant(BinaryOperationFeedback::kAny));
-      Goto(&loop);
-
-      BIND(&is_oddball);
-      var_value.Bind(LoadObjectField(value, Oddball::kToNumberOffset));
-      var_type_feedback->Bind(
-          SmiConstant(BinaryOperationFeedback::kNumberOrOddball));
-      Goto(&loop);
-    }
-
-    BIND(&is_heap_number);
-    var_result.Bind(TruncateHeapNumberValueToWord32(value));
-    var_type_feedback->Bind(
-        SmiOr(var_type_feedback->value(),
-              SmiConstant(BinaryOperationFeedback::kNumber)));
-    Goto(&done);
-
-    BIND(&is_bigint);
-    var_bigint_result->Bind(value);
-    var_type_feedback->Bind(
-        SmiOr(var_type_feedback->value(),
-              SmiConstant(BinaryOperationFeedback::kBigInt)));
-    Goto(bigint);
-  }
-  BIND(&done);
-  return var_result.value();
 }
 
 void InterpreterAssembler::UpdateInterruptBudgetOnReturn() {

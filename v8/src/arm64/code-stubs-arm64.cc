@@ -13,7 +13,6 @@
 #include "src/arm64/macro-assembler-arm64-inl.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
-#include "src/codegen.h"
 #include "src/counters.h"
 #include "src/frame-constants.h"
 #include "src/frames.h"
@@ -45,35 +44,21 @@ void ArrayNArgumentsConstructorStub::Generate(MacroAssembler* masm) {
 
 void DoubleToIStub::Generate(MacroAssembler* masm) {
   Label done;
-  Register input = source();
   Register result = destination();
-  DCHECK(is_truncating());
 
   DCHECK(result.Is64Bits());
   DCHECK(jssp.Is(masm->StackPointer()));
 
-  int double_offset = offset();
+  UseScratchRegisterScope temps(masm);
+  Register scratch1 = temps.AcquireX();
+  Register scratch2 = temps.AcquireX();
+  DoubleRegister double_scratch = temps.AcquireD();
 
-  DoubleRegister double_scratch = d0;  // only used if !skip_fastpath()
-  Register scratch1 = GetAllocatableRegisterThatIsNotOneOf(input, result);
-  Register scratch2 =
-      GetAllocatableRegisterThatIsNotOneOf(input, result, scratch1);
-
-  __ Push(scratch1, scratch2);
-  // Account for saved regs if input is jssp.
-  if (input.is(jssp)) double_offset += 2 * kPointerSize;
-
-  if (!skip_fastpath()) {
-    __ Push(double_scratch);
-    if (input.is(jssp)) double_offset += 1 * kDoubleSize;
-    __ Ldr(double_scratch, MemOperand(input, double_offset));
-    // Try to convert with a FPU convert instruction.  This handles all
-    // non-saturating cases.
-    __ TryConvertDoubleToInt64(result, double_scratch, &done);
-    __ Fmov(result, double_scratch);
-  } else {
-    __ Ldr(result, MemOperand(input, double_offset));
-  }
+  __ Peek(double_scratch, 0);
+  // Try to convert with a FPU convert instruction.  This handles all
+  // non-saturating cases.
+  __ TryConvertDoubleToInt64(result, double_scratch, &done);
+  __ Fmov(result, double_scratch);
 
   // If we reach here we need to manually convert the input to an int32.
 
@@ -114,10 +99,6 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
   __ Lsl(result, mantissa, exponent);
 
   __ Bind(&done);
-  if (!skip_fastpath()) {
-    __ Pop(double_scratch);
-  }
-  __ Pop(scratch2, scratch1);
   __ Ret();
 }
 
@@ -373,7 +354,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   //  - Adjust for the arg[] array.
   Register temp_argv = x11;
   if (!argv_in_register()) {
-    __ Add(temp_argv, jssp, Operand(x0, LSL, kPointerSizeLog2));
+    __ SlotAddress(temp_argv, x0);
     //  - Adjust for the receiver.
     __ Sub(temp_argv, temp_argv, 1 * kPointerSize);
   }
@@ -488,7 +469,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   DCHECK(jssp.Is(__ StackPointer()));
   if (!argv_in_register()) {
     // Drop the remaining stack slots and return from the stub.
-    __ Drop(x11);
+    __ DropArguments(x11);
   }
   __ AssertFPCRState();
   __ Ret();
@@ -614,7 +595,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // Select between the inner and outermost frame marker, based on the JS entry
   // sp. We assert that the inner marker is zero, so we can use xzr to save a
   // move instruction.
-  DCHECK(StackFrame::INNER_JSENTRY_FRAME == 0);
+  DCHECK_EQ(StackFrame::INNER_JSENTRY_FRAME, 0);
   __ Cmp(x11, 0);  // If x11 is zero, this is the outermost frame.
   __ Csel(x12, xzr, StackFrame::OUTERMOST_JSENTRY_FRAME, ne);
   __ B(ne, &done);
@@ -740,113 +721,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // After this point, we must not modify jssp because it is a callee-saved
   // register which we have just restored.
   __ Ret();
-}
-
-
-void StringHelper::GenerateFlatOneByteStringEquals(
-    MacroAssembler* masm, Register left, Register right, Register scratch1,
-    Register scratch2, Register scratch3) {
-  DCHECK(!AreAliased(left, right, scratch1, scratch2, scratch3));
-  Register result = x0;
-  Register left_length = scratch1;
-  Register right_length = scratch2;
-
-  // Compare lengths. If lengths differ, strings can't be equal. Lengths are
-  // smis, and don't need to be untagged.
-  Label strings_not_equal, check_zero_length;
-  __ Ldr(left_length, FieldMemOperand(left, String::kLengthOffset));
-  __ Ldr(right_length, FieldMemOperand(right, String::kLengthOffset));
-  __ Cmp(left_length, right_length);
-  __ B(eq, &check_zero_length);
-
-  __ Bind(&strings_not_equal);
-  __ Mov(result, Smi::FromInt(NOT_EQUAL));
-  __ Ret();
-
-  // Check if the length is zero. If so, the strings must be equal (and empty.)
-  Label compare_chars;
-  __ Bind(&check_zero_length);
-  STATIC_ASSERT(kSmiTag == 0);
-  __ Cbnz(left_length, &compare_chars);
-  __ Mov(result, Smi::FromInt(EQUAL));
-  __ Ret();
-
-  // Compare characters. Falls through if all characters are equal.
-  __ Bind(&compare_chars);
-  GenerateOneByteCharsCompareLoop(masm, left, right, left_length, scratch2,
-                                  scratch3, &strings_not_equal);
-
-  // Characters in strings are equal.
-  __ Mov(result, Smi::FromInt(EQUAL));
-  __ Ret();
-}
-
-
-void StringHelper::GenerateCompareFlatOneByteStrings(
-    MacroAssembler* masm, Register left, Register right, Register scratch1,
-    Register scratch2, Register scratch3, Register scratch4) {
-  DCHECK(!AreAliased(left, right, scratch1, scratch2, scratch3, scratch4));
-  Label result_not_equal, compare_lengths;
-
-  // Find minimum length and length difference.
-  Register length_delta = scratch3;
-  __ Ldr(scratch1, FieldMemOperand(left, String::kLengthOffset));
-  __ Ldr(scratch2, FieldMemOperand(right, String::kLengthOffset));
-  __ Subs(length_delta, scratch1, scratch2);
-
-  Register min_length = scratch1;
-  __ Csel(min_length, scratch2, scratch1, gt);
-  __ Cbz(min_length, &compare_lengths);
-
-  // Compare loop.
-  GenerateOneByteCharsCompareLoop(masm, left, right, min_length, scratch2,
-                                  scratch4, &result_not_equal);
-
-  // Compare lengths - strings up to min-length are equal.
-  __ Bind(&compare_lengths);
-
-  DCHECK(Smi::FromInt(EQUAL) == static_cast<Smi*>(0));
-
-  // Use length_delta as result if it's zero.
-  Register result = x0;
-  __ Subs(result, length_delta, 0);
-
-  __ Bind(&result_not_equal);
-  Register greater = x10;
-  Register less = x11;
-  __ Mov(greater, Smi::FromInt(GREATER));
-  __ Mov(less, Smi::FromInt(LESS));
-  __ CmovX(result, greater, gt);
-  __ CmovX(result, less, lt);
-  __ Ret();
-}
-
-
-void StringHelper::GenerateOneByteCharsCompareLoop(
-    MacroAssembler* masm, Register left, Register right, Register length,
-    Register scratch1, Register scratch2, Label* chars_not_equal) {
-  DCHECK(!AreAliased(left, right, length, scratch1, scratch2));
-
-  // Change index to run from -length to -1 by adding length to string
-  // start. This means that loop ends when index reaches zero, which
-  // doesn't need an additional compare.
-  __ SmiUntag(length);
-  __ Add(scratch1, length, SeqOneByteString::kHeaderSize - kHeapObjectTag);
-  __ Add(left, left, scratch1);
-  __ Add(right, right, scratch1);
-
-  Register index = length;
-  __ Neg(index, length);  // index = -length;
-
-  // Compare loop
-  Label loop;
-  __ Bind(&loop);
-  __ Ldrb(scratch1, MemOperand(left, index));
-  __ Ldrb(scratch2, MemOperand(right, index));
-  __ Cmp(scratch1, scratch2);
-  __ B(ne, chars_not_equal);
-  __ Add(index, index, 1);
-  __ Cbnz(index, &loop);
 }
 
 
@@ -1114,21 +988,21 @@ static const unsigned int kProfileEntryHookCallSize =
 
 void ProfileEntryHookStub::MaybeCallEntryHookDelayed(TurboAssembler* tasm,
                                                      Zone* zone) {
-  if (tasm->isolate()->function_entry_hook() != NULL) {
+  if (tasm->isolate()->function_entry_hook() != nullptr) {
     Assembler::BlockConstPoolScope no_const_pools(tasm);
     DontEmitDebugCodeScope no_debug_code(tasm);
     Label entry_hook_call_start;
     tasm->Bind(&entry_hook_call_start);
     tasm->Push(padreg, lr);
     tasm->CallStubDelayed(new (zone) ProfileEntryHookStub(nullptr));
-    DCHECK(tasm->SizeOfCodeGeneratedSince(&entry_hook_call_start) ==
-           kProfileEntryHookCallSize);
+    DCHECK_EQ(tasm->SizeOfCodeGeneratedSince(&entry_hook_call_start),
+              kProfileEntryHookCallSize);
     tasm->Pop(lr, padreg);
   }
 }
 
 void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
-  if (masm->isolate()->function_entry_hook() != NULL) {
+  if (masm->isolate()->function_entry_hook() != nullptr) {
     ProfileEntryHookStub stub(masm->isolate());
     Assembler::BlockConstPoolScope no_const_pools(masm);
     DontEmitDebugCodeScope no_debug_code(masm);
@@ -1136,8 +1010,8 @@ void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
     __ Bind(&entry_hook_call_start);
     __ Push(padreg, lr);
     __ CallStub(&stub);
-    DCHECK(masm->SizeOfCodeGeneratedSince(&entry_hook_call_start) ==
-           kProfileEntryHookCallSize);
+    DCHECK_EQ(masm->SizeOfCodeGeneratedSince(&entry_hook_call_start),
+              kProfileEntryHookCallSize);
     __ Pop(lr, padreg);
   }
 }
@@ -1174,7 +1048,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
   // The caller's return address is above the saved temporaries.
   // Grab its location for the second argument to the hook.
-  __ Add(x1, __ StackPointer(), kNumSavedRegs * kPointerSize);
+  __ SlotAddress(x1, kNumSavedRegs);
 
   {
     // Create a dummy frame, as CallCFunction requires this.
@@ -1260,16 +1134,6 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     // Stop if found the property.
     __ Cmp(entity_name, Operand(name));
     __ B(eq, miss);
-
-    Label good;
-    __ JumpIfRoot(entity_name, Heap::kTheHoleValueRootIndex, &good);
-
-    // Check if the entry name is not a unique name.
-    __ Ldr(entity_name, FieldMemOperand(entity_name, HeapObject::kMapOffset));
-    __ Ldrb(entity_name,
-            FieldMemOperand(entity_name, Map::kInstanceTypeOffset));
-    __ JumpIfNotUniqueNameInstanceType(entity_name, miss);
-    __ Bind(&good);
   }
 
   CPURegList spill_list(CPURegister::kRegister, kXRegSizeInBits, 0, 6);
@@ -1282,7 +1146,7 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
 
   __ Ldr(x0, FieldMemOperand(receiver, JSObject::kPropertiesOrHashOffset));
   __ Mov(x1, Operand(name));
-  NameDictionaryLookupStub stub(masm->isolate(), NEGATIVE_LOOKUP);
+  NameDictionaryLookupStub stub(masm->isolate());
   __ CallStub(&stub);
   // Move stub return value to scratch0. Note that scratch0 is not included in
   // spill_list and won't be clobbered by PopCPURegList.
@@ -1314,7 +1178,7 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
   Register undefined = x5;
   Register entry_key = x6;
 
-  Label in_dictionary, maybe_in_dictionary, not_in_dictionary;
+  Label in_dictionary, not_in_dictionary;
 
   __ Ldrsw(mask, UntagSmiFieldMemOperand(dictionary, kCapacityOffset));
   __ Sub(mask, mask, 1);
@@ -1329,8 +1193,8 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
       // Add the probe offset (i + i * i) left shifted to avoid right shifting
       // the hash in a separate instruction. The value hash + i + i * i is right
       // shifted in the following and instruction.
-      DCHECK(NameDictionary::GetProbeOffset(i) <
-             1 << (32 - Name::kHashFieldOffset));
+      DCHECK_LT(NameDictionary::GetProbeOffset(i),
+                1 << (32 - Name::kHashFieldOffset));
       __ Add(index, hash,
              NameDictionary::GetProbeOffset(i) << Name::kHashShift);
     } else {
@@ -1352,22 +1216,6 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
     // Stop if found the property.
     __ Cmp(entry_key, key);
     __ B(eq, &in_dictionary);
-
-    if (i != kTotalProbes - 1 && mode() == NEGATIVE_LOOKUP) {
-      // Check if the entry name is not a unique name.
-      __ Ldr(entry_key, FieldMemOperand(entry_key, HeapObject::kMapOffset));
-      __ Ldrb(entry_key, FieldMemOperand(entry_key, Map::kInstanceTypeOffset));
-      __ JumpIfNotUniqueNameInstanceType(entry_key, &maybe_in_dictionary);
-    }
-  }
-
-  __ Bind(&maybe_in_dictionary);
-  // If we are doing negative lookup then probing failure should be
-  // treated as a lookup success. For positive lookup, probing failure
-  // should be treated as lookup failure.
-  if (mode() == POSITIVE_LOOKUP) {
-    __ Mov(result, 0);
-    __ Ret();
   }
 
   __ Bind(&in_dictionary);
@@ -1566,7 +1414,7 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
     // Initial map for the builtin Array function should be a map.
     __ Ldr(x10, FieldMemOperand(constructor,
                                 JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     __ JumpIfSmi(x10, &unexpected_map);
     __ JumpIfObjectType(x10, x10, x11, MAP_TYPE, &map_ok);
     __ Bind(&unexpected_map);
@@ -1663,7 +1511,7 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
     // Initial map for the builtin Array function should be a map.
     __ Ldr(x10, FieldMemOperand(constructor,
                                 JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     __ JumpIfSmi(x10, &unexpected_map);
     __ JumpIfObjectType(x10, x10, x11, MAP_TYPE, &map_ok);
     __ Bind(&unexpected_map);
@@ -1817,7 +1665,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ Peek(x21, (spill_offset + 2) * kXRegSize);
   __ Peek(x22, (spill_offset + 3) * kXRegSize);
 
-  bool restore_context = context_restore_operand != NULL;
+  bool restore_context = context_restore_operand != nullptr;
   if (restore_context) {
     __ Ldr(cp, *context_restore_operand);
   }
@@ -1948,7 +1796,7 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
   DCHECK(!AreAliased(x0, api_function_address));
   // x0 = FunctionCallbackInfo&
   // Arguments is after the return address.
-  __ Add(x0, masm->StackPointer(), 1 * kPointerSize);
+  __ SlotAddress(x0, 1);
   // FunctionCallbackInfo::implicit_args_ and FunctionCallbackInfo::values_
   __ Add(x10, args, Operand((FCA::kArgsLength - 1 + argc()) * kPointerSize));
   __ Stp(args, x10, MemOperand(x0, 0 * kPointerSize));
@@ -2037,7 +1885,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   // Create v8::PropertyCallbackInfo object on the stack and initialize
   // it's args_ field.
   __ Poke(x1, 1 * kPointerSize);
-  __ Add(x1, masm->StackPointer(), 1 * kPointerSize);
+  __ SlotAddress(x1, 1);
   // x1 = v8::PropertyCallbackInfo&
 
   ExternalReference thunk_ref =
@@ -2055,7 +1903,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
       fp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
                            kStackUnwindSpace, spill_offset,
-                           return_value_operand, NULL);
+                           return_value_operand, nullptr);
 }
 
 #undef __

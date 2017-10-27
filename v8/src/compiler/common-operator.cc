@@ -297,11 +297,6 @@ RegionObservability RegionObservabilityOf(Operator const* op) {
   return OpParameter<RegionObservability>(op);
 }
 
-ZoneHandleSet<Map> MapGuardMapsOf(Operator const* op) {
-  DCHECK_EQ(IrOpcode::kMapGuard, op->opcode());
-  return OpParameter<ZoneHandleSet<Map>>(op);
-}
-
 Type* TypeGuardTypeOf(Operator const* op) {
   DCHECK_EQ(IrOpcode::kTypeGuard, op->opcode());
   return OpParameter<Type*>(op);
@@ -348,8 +343,6 @@ ZoneVector<MachineType> const* MachineTypesOf(Operator const* op) {
 
 #define COMMON_CACHED_OP_LIST(V)                                              \
   V(Dead, Operator::kFoldable, 0, 0, 0, 1, 1, 1)                              \
-  V(DeadValue, Operator::kFoldable, 0, 0, 0, 1, 0, 0)                         \
-  V(Unreachable, Operator::kFoldable, 0, 1, 1, 0, 1, 0)                       \
   V(IfTrue, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                             \
   V(IfFalse, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                            \
   V(IfSuccess, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                          \
@@ -1130,14 +1123,6 @@ const Operator* CommonOperatorBuilder::Phi(MachineRepresentation rep,
       "Phi",                                             // name
       value_input_count, 0, 1, 1, 0, 0,                  // counts
       rep);                                              // parameter
-}
-
-const Operator* CommonOperatorBuilder::MapGuard(ZoneHandleSet<Map> maps) {
-  return new (zone()) Operator1<ZoneHandleSet<Map>>(  // --
-      IrOpcode::kMapGuard, Operator::kEliminatable,   // opcode
-      "MapGuard",                                     // name
-      1, 1, 1, 0, 1, 0,                               // counts
-      maps);                                          // parameter
 }
 
 const Operator* CommonOperatorBuilder::TypeGuard(Type* type) {

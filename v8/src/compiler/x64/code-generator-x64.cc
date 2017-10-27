@@ -216,7 +216,7 @@ class OutOfLineTruncateDoubleToI final : public OutOfLineCode {
     unwinding_info_writer_->MaybeIncreaseBaseOffsetAt(__ pc_offset(),
                                                       kDoubleSize);
     __ Movsd(MemOperand(rsp, 0), input_);
-    __ SlowTruncateToIDelayed(zone_, result_, rsp, 0);
+    __ SlowTruncateToIDelayed(zone_, result_);
     __ addp(rsp, Immediate(kDoubleSize));
     unwinding_info_writer_->MaybeIncreaseBaseOffsetAt(__ pc_offset(),
                                                       -kDoubleSize);
@@ -292,7 +292,7 @@ class WasmOutOfLineTrap final : public OutOfLineCode {
   // TODO(eholk): Refactor this method to take the code generator as a
   // parameter.
   void Generate() final {
-    __ RecordProtectedInstructionLanding(pc_);
+    gen_->AddProtectedInstructionLanding(pc_, __ pc_offset());
 
     if (frame_elided_) {
       __ EnterFrame(StackFrame::WASM_COMPILED);
@@ -761,7 +761,7 @@ void CodeGenerator::AssemblePopArgumentsAdaptorFrame(Register args_reg,
 
   ParameterCount callee_args_count(args_reg);
   __ PrepareForTailCall(callee_args_count, caller_args_count_reg, scratch2,
-                        scratch3, ReturnAddressState::kOnStack);
+                        scratch3);
   __ bind(&done);
 }
 
@@ -831,7 +831,7 @@ void CodeGenerator::AssembleTailCallAfterGap(Instruction* instr,
 // jumps to CompileLazyDeoptimizedCode builtin. In order to do this we need to:
 //    1. load the address of the current instruction;
 //    2. read from memory the word that contains that bit, which can be found in
-//       the first set of flags ({kKindSpecificFlags1Offset});
+//       the flags in the referenced {CodeDataContainer} object;
 //    3. test kMarkedForDeoptimizationBit in those flags; and
 //    4. if it is not zero then it jumps to the builtin.
 void CodeGenerator::BailoutIfDeoptimized() {
@@ -841,8 +841,9 @@ void CodeGenerator::BailoutIfDeoptimized() {
   __ leaq(rcx, Operand(&current));
   __ bind(&current);
   int pc = __ pc_offset();
-  int offset = Code::kKindSpecificFlags1Offset - (Code::kHeaderSize + pc);
-  __ testl(Operand(rcx, offset),
+  int offset = Code::kCodeDataContainerOffset - (Code::kHeaderSize + pc);
+  __ movp(rcx, Operand(rcx, offset));
+  __ testl(FieldOperand(rcx, CodeDataContainer::kKindSpecificFlagsOffset),
            Immediate(1 << Code::kMarkedForDeoptimizationBit));
   Handle<Code> code = isolate()->builtins()->builtin_handle(
       Builtins::kCompileLazyDeoptimizedCode);
@@ -3014,7 +3015,7 @@ void CodeGenerator::FinishFrame(Frame* frame) {
   if (saves_fp != 0) {
     frame->AlignSavedCalleeRegisterSlots();
     if (saves_fp != 0) {  // Save callee-saved XMM registers.
-      const uint32_t saves_fp_count = base::bits::CountPopulation32(saves_fp);
+      const uint32_t saves_fp_count = base::bits::CountPopulation(saves_fp);
       frame->AllocateSavedCalleeRegisterSlots(saves_fp_count *
                                               (kQuadWordSize / kPointerSize));
     }
@@ -3048,9 +3049,7 @@ void CodeGenerator::AssembleConstructFrame() {
       __ StubPrologue(info()->GetOutputStackFrameType());
     }
 
-    if (!descriptor->IsJSFunctionCall()) {
-      unwinding_info_writer_.MarkFrameConstructed(pc_base);
-    }
+    unwinding_info_writer_.MarkFrameConstructed(pc_base);
   }
   int shrink_slots =
       frame()->GetTotalFrameSlotCount() - descriptor->CalculateFixedFrameSize();
@@ -3104,7 +3103,7 @@ void CodeGenerator::AssembleConstructFrame() {
   }
 
   if (saves_fp != 0) {  // Save callee-saved XMM registers.
-    const uint32_t saves_fp_count = base::bits::CountPopulation32(saves_fp);
+    const uint32_t saves_fp_count = base::bits::CountPopulation(saves_fp);
     const int stack_size = saves_fp_count * kQuadWordSize;
     // Adjust the stack pointer.
     __ subp(rsp, Immediate(stack_size));
@@ -3140,7 +3139,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   }
   const RegList saves_fp = descriptor->CalleeSavedFPRegisters();
   if (saves_fp != 0) {
-    const uint32_t saves_fp_count = base::bits::CountPopulation32(saves_fp);
+    const uint32_t saves_fp_count = base::bits::CountPopulation(saves_fp);
     const int stack_size = saves_fp_count * kQuadWordSize;
     // Load the registers from the stack.
     int slot_idx = 0;

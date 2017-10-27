@@ -76,22 +76,29 @@ void UnpackAndRegisterProtectedInstructions(Isolate* isolate,
 
     byte* base = code->entry();
 
-    const int mode_mask =
-        RelocInfo::ModeMask(RelocInfo::WASM_PROTECTED_INSTRUCTION_LANDING);
-    for (RelocIterator it(code, mode_mask); !it.done(); it.next()) {
+    FixedArray* protected_instructions = code->protected_instructions();
+    DCHECK(protected_instructions != nullptr);
+    for (int i = 0; i < protected_instructions->length();
+         i += Code::kTrapDataSize) {
       trap_handler::ProtectedInstructionData data;
-      data.instr_offset = static_cast<uint32_t>(it.rinfo()->data());
-      data.landing_offset = static_cast<uint32_t>(it.rinfo()->pc() - base);
-      // Check that now over-/underflow happened.
-      DCHECK_EQ(it.rinfo()->data(), data.instr_offset);
-      DCHECK_EQ(it.rinfo()->pc() - base, data.landing_offset);
+      data.instr_offset =
+          protected_instructions
+              ->GetValueChecked<Smi>(isolate, i + Code::kTrapCodeOffset)
+              ->value();
+      data.landing_offset =
+          protected_instructions
+              ->GetValueChecked<Smi>(isolate, i + Code::kTrapLandingOffset)
+              ->value();
       unpacked.emplace_back(data);
     }
+
     if (unpacked.empty()) continue;
 
     const int index = RegisterHandlerData(base, code->instruction_size(),
                                           unpacked.size(), &unpacked[0]);
+
     unpacked.clear();
+
     // TODO(eholk): if index is negative, fail.
     DCHECK_LE(0, index);
     code->set_trap_handler_index(Smi::FromInt(index));
@@ -128,49 +135,22 @@ WasmFunction* GetWasmFunctionForExport(Isolate* isolate,
   return nullptr;
 }
 
-Handle<Code> UnwrapExportWrapper(Handle<JSFunction> export_wrapper) {
-  Handle<Code> export_wrapper_code = handle(export_wrapper->code());
-  DCHECK_EQ(export_wrapper_code->kind(), Code::JS_TO_WASM_FUNCTION);
-  int mask = RelocInfo::ModeMask(RelocInfo::CODE_TARGET);
-  for (RelocIterator it(*export_wrapper_code, mask);; it.next()) {
-    DCHECK(!it.done());
-    Code* target = Code::GetCodeFromTargetAddress(it.rinfo()->target_address());
-    if (target->kind() != Code::WASM_FUNCTION &&
-        target->kind() != Code::WASM_TO_JS_FUNCTION &&
-        target->kind() != Code::WASM_INTERPRETER_ENTRY)
-      continue;
-// There should only be this one call to wasm code.
-#ifdef DEBUG
-    for (it.next(); !it.done(); it.next()) {
-      Code* code = Code::GetCodeFromTargetAddress(it.rinfo()->target_address());
-      DCHECK(code->kind() != Code::WASM_FUNCTION &&
-             code->kind() != Code::WASM_TO_JS_FUNCTION &&
-             code->kind() != Code::WASM_INTERPRETER_ENTRY);
-    }
-#endif
-    return handle(target);
-  }
-  UNREACHABLE();
-}
-
 void UpdateDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
                           int index, WasmFunction* function,
                           Handle<Code> code) {
   DCHECK_EQ(0, dispatch_tables->length() % 4);
   for (int i = 0; i < dispatch_tables->length(); i += 4) {
-    int table_index = Smi::ToInt(dispatch_tables->get(i + 1));
     Handle<FixedArray> function_table(
         FixedArray::cast(dispatch_tables->get(i + 2)), isolate);
     Handle<FixedArray> signature_table(
         FixedArray::cast(dispatch_tables->get(i + 3)), isolate);
     if (function) {
-      // TODO(titzer): the signature might need to be copied to avoid
-      // a dangling pointer in the signature map.
       Handle<WasmInstanceObject> instance(
           WasmInstanceObject::cast(dispatch_tables->get(i)), isolate);
-      auto& func_table = instance->module()->function_tables[table_index];
-      uint32_t sig_index = func_table.map.FindOrInsert(function->sig);
-      signature_table->set(index, Smi::FromInt(static_cast<int>(sig_index)));
+      // Note that {SignatureMap::Find} may return {-1} if the signature is
+      // not found; it will simply never match any check.
+      auto sig_index = instance->module()->signature_map.Find(function->sig);
+      signature_table->set(index, Smi::FromInt(sig_index));
       function_table->set(index, *code);
     } else {
       signature_table->set(index, Smi::FromInt(-1));

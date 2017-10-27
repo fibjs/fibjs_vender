@@ -792,7 +792,7 @@ void CodeGenerator::AssembleTailCallAfterGap(Instruction* instr,
 // to:
 //    1. load the address of the current instruction;
 //    2. read from memory the word that contains that bit, which can be found in
-//       the first set of flags ({kKindSpecificFlags1Offset});
+//       the flags in the referenced {CodeDataContainer} object;
 //    3. test kMarkedForDeoptimizationBit in those flags; and
 //    4. if it is not zero then it jumps to the builtin.
 void CodeGenerator::BailoutIfDeoptimized() {
@@ -806,9 +806,10 @@ void CodeGenerator::BailoutIfDeoptimized() {
   __ nop();
   int pc = __ pc_offset();
   __ bind(&current);
-  int offset = Code::kKindSpecificFlags1Offset - (Code::kHeaderSize + pc);
-  __ Lw(a2, MemOperand(ra, offset));
+  int offset = Code::kCodeDataContainerOffset - (Code::kHeaderSize + pc);
+  __ Ld(a2, MemOperand(ra, offset));
   __ pop(ra);
+  __ Lw(a2, FieldMemOperand(a2, CodeDataContainer::kKindSpecificFlagsOffset));
   __ And(a2, a2, Operand(1 << Code::kMarkedForDeoptimizationBit));
   Handle<Code> code = isolate()->builtins()->builtin_handle(
       Builtins::kCompileLazyDeoptimizedCode);
@@ -3670,7 +3671,7 @@ void CodeGenerator::FinishFrame(Frame* frame) {
 
   const RegList saves_fpu = descriptor->CalleeSavedFPRegisters();
   if (saves_fpu != 0) {
-    int count = base::bits::CountPopulation32(saves_fpu);
+    int count = base::bits::CountPopulation(saves_fpu);
     DCHECK_EQ(kNumCalleeSavedFPU, count);
     frame->AllocateSavedCalleeRegisterSlots(count *
                                             (kDoubleSize / kPointerSize));
@@ -3678,7 +3679,7 @@ void CodeGenerator::FinishFrame(Frame* frame) {
 
   const RegList saves = descriptor->CalleeSavedRegisters();
   if (saves != 0) {
-    int count = base::bits::CountPopulation32(saves);
+    int count = base::bits::CountPopulation(saves);
     DCHECK_EQ(kNumCalleeSaved, count + 1);
     frame->AllocateSavedCalleeRegisterSlots(count);
   }
@@ -3725,14 +3726,14 @@ void CodeGenerator::AssembleConstructFrame() {
   if (saves_fpu != 0) {
     // Save callee-saved FPU registers.
     __ MultiPushFPU(saves_fpu);
-    DCHECK_EQ(kNumCalleeSavedFPU, base::bits::CountPopulation32(saves_fpu));
+    DCHECK_EQ(kNumCalleeSavedFPU, base::bits::CountPopulation(saves_fpu));
   }
 
   const RegList saves = descriptor->CalleeSavedRegisters();
   if (saves != 0) {
     // Save callee-saved registers.
     __ MultiPush(saves);
-    DCHECK_EQ(kNumCalleeSaved, base::bits::CountPopulation32(saves) + 1);
+    DCHECK_EQ(kNumCalleeSaved, base::bits::CountPopulation(saves) + 1);
   }
 }
 

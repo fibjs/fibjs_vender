@@ -16,7 +16,7 @@
 #include "src/base/utils/random-number-generator.h"
 #include "src/bootstrapper.h"
 #include "src/callable.h"
-#include "src/codegen.h"
+#include "src/code-stubs.h"
 #include "src/counters.h"
 #include "src/debug/debug.h"
 #include "src/double.h"
@@ -356,8 +356,8 @@ void TurboAssembler::Swap(DwVfpRegister srcdst0, DwVfpRegister srcdst1) {
   if (CpuFeatures::IsSupported(NEON)) {
     vswp(srcdst0, srcdst1);
   } else {
-    DCHECK(srcdst0 != kScratchDoubleReg);
-    DCHECK(srcdst1 != kScratchDoubleReg);
+    DCHECK_NE(srcdst0, kScratchDoubleReg);
+    DCHECK_NE(srcdst1, kScratchDoubleReg);
     vmov(kScratchDoubleReg, srcdst0);
     vmov(srcdst0, srcdst1);
     vmov(srcdst1, kScratchDoubleReg);
@@ -405,7 +405,7 @@ void MacroAssembler::And(Register dst, Register src1, const Operand& src2,
 
 void MacroAssembler::Ubfx(Register dst, Register src1, int lsb, int width,
                           Condition cond) {
-  DCHECK(lsb < 32);
+  DCHECK_LT(lsb, 32);
   if (!CpuFeatures::IsSupported(ARMv7) || predictable_code_size()) {
     int mask = (1 << (width + lsb)) - 1 - ((1 << lsb) - 1);
     and_(dst, src1, Operand(mask), LeaveCC, cond);
@@ -421,7 +421,7 @@ void MacroAssembler::Ubfx(Register dst, Register src1, int lsb, int width,
 
 void MacroAssembler::Sbfx(Register dst, Register src1, int lsb, int width,
                           Condition cond) {
-  DCHECK(lsb < 32);
+  DCHECK_LT(lsb, 32);
   if (!CpuFeatures::IsSupported(ARMv7) || predictable_code_size()) {
     int mask = (1 << (width + lsb)) - 1 - ((1 << lsb) - 1);
     and_(dst, src1, Operand(mask), LeaveCC, cond);
@@ -442,7 +442,7 @@ void MacroAssembler::Sbfx(Register dst, Register src1, int lsb, int width,
 
 void TurboAssembler::Bfc(Register dst, Register src, int lsb, int width,
                          Condition cond) {
-  DCHECK(lsb < 32);
+  DCHECK_LT(lsb, 32);
   if (!CpuFeatures::IsSupported(ARMv7) || predictable_code_size()) {
     int mask = (1 << (width + lsb)) - 1 - ((1 << lsb) - 1);
     bic(dst, src, Operand(mask));
@@ -544,7 +544,7 @@ void MacroAssembler::RecordWriteField(Register object, int offset,
 }
 
 void TurboAssembler::SaveRegisters(RegList registers) {
-  DCHECK(NumRegs(registers) > 0);
+  DCHECK_GT(NumRegs(registers), 0);
   RegList regs = 0;
   for (int i = 0; i < Register::kNumRegisters; ++i) {
     if ((registers >> i) & 1u) {
@@ -556,7 +556,7 @@ void TurboAssembler::SaveRegisters(RegList registers) {
 }
 
 void TurboAssembler::RestoreRegisters(RegList registers) {
-  DCHECK(NumRegs(registers) > 0);
+  DCHECK_GT(NumRegs(registers), 0);
   RegList regs = 0;
   for (int i = 0; i < Register::kNumRegisters; ++i) {
     if ((registers >> i) & 1u) {
@@ -740,11 +740,11 @@ void TurboAssembler::PushStandardFrame(Register function_reg) {
 // Push and pop all registers that can hold pointers.
 void MacroAssembler::PushSafepointRegisters() {
   // Safepoints expect a block of contiguous register values starting with r0.
-  DCHECK(kSafepointSavedRegisters == (1 << kNumSafepointSavedRegisters) - 1);
+  DCHECK_EQ(kSafepointSavedRegisters, (1 << kNumSafepointSavedRegisters) - 1);
   // Safepoints expect a block of kNumSafepointRegisters values on the
   // stack, so adjust the stack for unsaved registers.
   const int num_unsaved = kNumSafepointRegisters - kNumSafepointSavedRegisters;
-  DCHECK(num_unsaved >= 0);
+  DCHECK_GE(num_unsaved, 0);
   sub(sp, sp, Operand(num_unsaved * kPointerSize));
   stm(db_w, sp, kSafepointSavedRegisters);
 }
@@ -1719,20 +1719,6 @@ bool TurboAssembler::AllowThisStubCall(CodeStub* stub) {
   return has_frame() || !stub->SometimesSetsUpAFrame();
 }
 
-void MacroAssembler::SmiToDouble(LowDwVfpRegister value, Register smi) {
-  if (CpuFeatures::IsSupported(VFPv3)) {
-    CpuFeatureScope scope(this, VFPv3);
-    vmov(value.low(), smi);
-    vcvt_f64_s32(value, 1);
-  } else {
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    SmiUntag(scratch, smi);
-    vmov(value.low(), scratch);
-    vcvt_f64_s32(value, value.low());
-  }
-}
-
 void MacroAssembler::TryDoubleToInt32Exact(Register result,
                                            DwVfpRegister double_input,
                                            LowDwVfpRegister double_scratch) {
@@ -1770,7 +1756,7 @@ void TurboAssembler::TruncateDoubleToIDelayed(Zone* zone, Register result,
   sub(sp, sp, Operand(kDoubleSize));  // Put input on stack.
   vstr(double_input, MemOperand(sp, 0));
 
-  CallStubDelayed(new (zone) DoubleToIStub(nullptr, sp, result, 0, true, true));
+  CallStubDelayed(new (zone) DoubleToIStub(nullptr, result));
 
   add(sp, sp, Operand(kDoubleSize));
   pop(lr);
@@ -1827,7 +1813,7 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
                                              bool builtin_exit_frame) {
 #if defined(__thumb__)
   // Thumb mode builtin.
-  DCHECK((reinterpret_cast<intptr_t>(builtin.address()) & 1) == 1);
+  DCHECK_EQ(reinterpret_cast<intptr_t>(builtin.address()) & 1, 1);
 #endif
   mov(r1, Operand(builtin));
   CEntryStub stub(isolate(), 1, kDontSaveFPRegs, kArgvOnStack,
@@ -1837,7 +1823,7 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
 
 void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
                                       Register scratch1, Register scratch2) {
-  DCHECK(value > 0);
+  DCHECK_GT(value, 0);
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch2, Operand(ExternalReference(counter)));
     ldr(scratch1, MemOperand(scratch2));
@@ -1849,7 +1835,7 @@ void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
 
 void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
                                       Register scratch1, Register scratch2) {
-  DCHECK(value > 0);
+  DCHECK_GT(value, 0);
   if (FLAG_native_code_counters && counter->Enabled()) {
     mov(scratch2, Operand(ExternalReference(counter)));
     ldr(scratch1, MemOperand(scratch2));
@@ -1876,7 +1862,7 @@ void TurboAssembler::Abort(BailoutReason reason) {
   bind(&abort_start);
 #ifdef DEBUG
   const char* msg = GetBailoutReason(reason);
-  if (msg != NULL) {
+  if (msg != nullptr) {
     RecordComment("Abort message: ");
     RecordComment(msg);
   }
@@ -1905,7 +1891,7 @@ void TurboAssembler::Abort(BailoutReason reason) {
     // of the Abort macro constant.
     static const int kExpectedAbortInstructions = 7;
     int abort_instructions = InstructionsGeneratedSince(&abort_start);
-    DCHECK(abort_instructions <= kExpectedAbortInstructions);
+    DCHECK_LE(abort_instructions, kExpectedAbortInstructions);
     while (abort_instructions++ < kExpectedAbortInstructions) {
       nop();
     }
@@ -2055,18 +2041,6 @@ void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
   }
 }
 
-
-void MacroAssembler::JumpIfNotUniqueNameInstanceType(Register reg,
-                                                     Label* not_unique_name) {
-  STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
-  Label succeed;
-  tst(reg, Operand(kIsNotStringMask | kIsNotInternalizedMask));
-  b(eq, &succeed);
-  cmp(reg, Operand(SYMBOL_TYPE));
-  b(ne, not_unique_name);
-
-  bind(&succeed);
-}
 
 void TurboAssembler::CheckFor32DRegs(Register scratch) {
   mov(scratch, Operand(ExternalReference::cpu_features()));
@@ -2372,7 +2346,7 @@ void MacroAssembler::JumpIfBlack(Register object,
                                  Register scratch1,
                                  Label* on_black) {
   HasColor(object, scratch0, scratch1, on_black, 1, 1);  // kBlackBitPattern.
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
+  DCHECK_EQ(strcmp(Marking::kBlackBitPattern, "11"), 0);
 }
 
 
@@ -2431,10 +2405,10 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
   GetMarkBits(value, bitmap_scratch, mask_scratch);
 
   // If the value is black or grey we don't need to do anything.
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK_EQ(strcmp(Marking::kWhiteBitPattern, "00"), 0);
+  DCHECK_EQ(strcmp(Marking::kBlackBitPattern, "11"), 0);
+  DCHECK_EQ(strcmp(Marking::kGreyBitPattern, "10"), 0);
+  DCHECK_EQ(strcmp(Marking::kImpossibleBitPattern, "01"), 0);
 
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.
@@ -2511,51 +2485,6 @@ bool AreAliased(Register reg1,
   return n_of_valid_regs != n_of_non_aliasing_regs;
 }
 #endif
-
-CodePatcher::CodePatcher(Isolate* isolate, byte* address, int instructions,
-                         FlushICache flush_cache)
-    : address_(address),
-      size_(instructions * Assembler::kInstrSize),
-      masm_(isolate, address, size_ + Assembler::kGap, CodeObjectRequired::kNo),
-      flush_cache_(flush_cache) {
-  // Create a new macro assembler pointing to the address of the code to patch.
-  // The size is adjusted with kGap on order for the assembler to generate size
-  // bytes of instructions without failing with buffer size constraints.
-  DCHECK(masm_.reloc_info_writer.pos() == address_ + size_ + Assembler::kGap);
-}
-
-
-CodePatcher::~CodePatcher() {
-  // Indicate that code has changed.
-  if (flush_cache_ == FLUSH) {
-    Assembler::FlushICache(masm_.isolate(), address_, size_);
-  }
-
-  // Check that we don't have any pending constant pools.
-  DCHECK(masm_.pending_32_bit_constants_.empty());
-  DCHECK(masm_.pending_64_bit_constants_.empty());
-
-  // Check that the code was patched as expected.
-  DCHECK(masm_.pc_ == address_ + size_);
-  DCHECK(masm_.reloc_info_writer.pos() == address_ + size_ + Assembler::kGap);
-}
-
-
-void CodePatcher::Emit(Instr instr) {
-  masm()->emit(instr);
-}
-
-
-void CodePatcher::Emit(Address addr) {
-  masm()->emit(reinterpret_cast<Instr>(addr));
-}
-
-
-void CodePatcher::EmitCondition(Condition cond) {
-  Instr instr = Assembler::instr_at(masm_.pc_);
-  instr = (instr & ~kCondMask) | cond;
-  masm_.emit(instr);
-}
 
 }  // namespace internal
 }  // namespace v8

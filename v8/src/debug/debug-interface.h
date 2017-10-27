@@ -456,7 +456,7 @@ class StackTraceIterator {
   virtual void Advance() = 0;
 
   virtual int GetContextId() const = 0;
-  virtual v8::Local<v8::Value> GetReceiver() const = 0;
+  virtual v8::MaybeLocal<v8::Value> GetReceiver() const = 0;
   virtual v8::Local<v8::Value> GetReturnValue() const = 0;
   virtual v8::Local<v8::String> GetFunctionName() const = 0;
   virtual v8::Local<v8::debug::Script> GetScript() const = 0;
@@ -481,6 +481,9 @@ class QueryObjectPredicate {
 void QueryObjects(v8::Local<v8::Context> context,
                   QueryObjectPredicate* predicate,
                   v8::PersistentValueVector<v8::Object>* objects);
+
+void GlobalLexicalScopeNames(v8::Local<v8::Context> context,
+                             v8::PersistentValueVector<v8::String>* names);
 
 }  // namespace debug
 }  // namespace v8

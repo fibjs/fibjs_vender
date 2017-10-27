@@ -62,7 +62,7 @@ inline intptr_t InternalGetExistingThreadLocal(intptr_t index) {
                                                kPointerSize * index));
   }
   intptr_t extra = static_cast<intptr_t>(__readfsdword(kTibExtraTlsOffset));
-  DCHECK(extra != 0);
+  DCHECK_NE(extra, 0);
   return *reinterpret_cast<intptr_t*>(extra +
                                       kPointerSize * (index - kMaxInlineSlots));
 }
@@ -107,9 +107,11 @@ class TimezoneCache;
 class V8_BASE_EXPORT OS {
  public:
   // Initialize the OS class.
+  // - random_seed: Used for the GetRandomMmapAddress() if non-zero.
   // - hard_abort: If true, OS::Abort() will crash instead of aborting.
   // - gc_fake_mmap: Name of the file for fake gc mmap used in ll_prof.
-  static void Initialize(bool hard_abort, const char* const gc_fake_mmap);
+  static void Initialize(int64_t random_seed, bool hard_abort,
+                         const char* const gc_fake_mmap);
 
   // Returns the accumulated user time for thread. This routine
   // can be used for profiling. The implementation should
@@ -160,12 +162,12 @@ class V8_BASE_EXPORT OS {
   enum class MemoryPermission { kNoAccess, kReadWrite, kReadWriteExecute };
 
   // Allocate/Free memory used by JS heap. Permissions are set according to the
-  // is_* flags. Returns the address of allocated memory, or NULL if failed.
+  // is_* flags. Returns the address of allocated memory, or nullptr if failed.
   static void* Allocate(const size_t requested, size_t* allocated,
                         MemoryPermission access, void* hint = nullptr);
   // Allocate/Free memory used by JS heap. Pages are readable/writable, but
   // they are not guaranteed to be executable unless 'executable' is true.
-  // Returns the address of allocated memory, or NULL if failed.
+  // Returns the address of allocated memory, or nullptr if failed.
   static void* Allocate(const size_t requested, size_t* allocated,
                         bool is_executable, void* hint = nullptr);
   static void Free(void* address, const size_t size);
@@ -175,18 +177,21 @@ class V8_BASE_EXPORT OS {
   // PROT_NONE, which also prevents it from being committed.
   static void* AllocateGuarded(const size_t requested);
 
-  // This is the granularity at which the ProtectCode(...) call can set page
-  // permissions.
+  // This is the granularity at which the SetReadAndExecutable(...) call can
+  // set page permissions.
   static intptr_t CommitPageSize();
 
-  // Mark code segments non-writable.
-  static void ProtectCode(void* address, const size_t size);
+  // Mark a region of memory executable and readable but not writable.
+  static void SetReadAndExecutable(void* address, const size_t size);
 
   // Assign memory as a guard page so that access will cause an exception.
   static void Guard(void* address, const size_t size);
 
-  // Make a region of memory readable and writable.
-  static void Unprotect(void* address, const size_t size);
+  // Make a region of memory non-executable but readable and writable.
+  static void SetReadAndWritable(void* address, const size_t size, bool commit);
+
+  // Generate a random address to be used for hinting mmap().
+  static void* GetRandomMmapAddr();
 
   // Get the Alignment guaranteed by Allocate().
   static size_t AllocateAlignment();
@@ -231,8 +236,8 @@ class V8_BASE_EXPORT OS {
     virtual void* memory() const = 0;
     virtual size_t size() const = 0;
 
-    static MemoryMappedFile* open(const char* name, void* hint);
-    static MemoryMappedFile* create(const char* name, void* hint, size_t size,
+    static MemoryMappedFile* open(const char* name);
+    static MemoryMappedFile* create(const char* name, size_t size,
                                     void* initial);
   };
 
@@ -271,7 +276,7 @@ class V8_BASE_EXPORT OS {
   // process that a code moving garbage collection starts.  Can do
   // nothing, in which case the code objects must not move (e.g., by
   // using --never-compact) if accurate profiling is desired.
-  static void SignalCodeMovingGC(void* hint);
+  static void SignalCodeMovingGC();
 
   // Support runtime detection of whether the hard float option of the
   // EABI is used.
@@ -335,7 +340,7 @@ class V8_BASE_EXPORT Thread {
     Start();
     start_semaphore_->Wait();
     delete start_semaphore_;
-    start_semaphore_ = NULL;
+    start_semaphore_ = nullptr;
   }
 
   // Wait until thread terminates.
@@ -360,7 +365,7 @@ class V8_BASE_EXPORT Thread {
     SetThreadLocal(key, reinterpret_cast<void*>(static_cast<intptr_t>(value)));
   }
   static bool HasThreadLocal(LocalStorageKey key) {
-    return GetThreadLocal(key) != NULL;
+    return GetThreadLocal(key) != nullptr;
   }
 
 #ifdef V8_FAST_TLS_SUPPORTED

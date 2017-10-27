@@ -84,8 +84,6 @@ AbstractCode* SharedFunctionInfo::abstract_code() {
 
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, allows_lazy_compilation,
                     SharedFunctionInfo::AllowLazyCompilationBit)
-BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints, uses_arguments,
-                    SharedFunctionInfo::UsesArgumentsBit)
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, compiler_hints,
                     has_duplicate_parameters,
                     SharedFunctionInfo::HasDuplicateParametersBit)
@@ -106,12 +104,12 @@ BailoutReason SharedFunctionInfo::disable_optimization_reason() const {
 }
 
 LanguageMode SharedFunctionInfo::language_mode() {
-  STATIC_ASSERT(LANGUAGE_END == 2);
+  STATIC_ASSERT(LanguageModeSize == 2);
   return construct_language_mode(IsStrictBit::decode(compiler_hints()));
 }
 
 void SharedFunctionInfo::set_language_mode(LanguageMode language_mode) {
-  STATIC_ASSERT(LANGUAGE_END == 2);
+  STATIC_ASSERT(LanguageModeSize == 2);
   // We only allow language mode transitions that set the same language mode
   // again or go up in the chain:
   DCHECK(is_sloppy(this->language_mode()) || is_strict(language_mode));
@@ -167,7 +165,7 @@ void SharedFunctionInfo::clear_padding() {
 
 void SharedFunctionInfo::UpdateFunctionMapIndex() {
   int map_index = Context::FunctionMapIndex(
-      language_mode(), kind(), has_shared_name(), needs_home_object());
+      language_mode(), kind(), true, has_shared_name(), needs_home_object());
   set_function_map_index(map_index);
 }
 

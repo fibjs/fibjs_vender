@@ -31,6 +31,7 @@ class AccessorAssembler : public CodeStubAssembler {
   void GenerateKeyedLoadIC();
   void GenerateKeyedLoadICTrampoline();
   void GenerateKeyedLoadIC_Megamorphic();
+  void GenerateKeyedLoadIC_PolymorphicName();
   void GenerateStoreIC();
   void GenerateStoreICTrampoline();
 
@@ -114,7 +115,10 @@ class AccessorAssembler : public CodeStubAssembler {
   void LoadGlobalIC(const LoadICParameters* p, TypeofMode typeof_mode);
   void KeyedLoadIC(const LoadICParameters* p);
   void KeyedLoadICGeneric(const LoadICParameters* p);
+  void KeyedLoadICPolymorphicName(const LoadICParameters* p);
   void StoreIC(const StoreICParameters* p);
+  void StoreGlobalIC_PropertyCellCase(Node* property_cell, Node* value,
+                                      ExitPoint* exit_point, Label* miss);
   void KeyedStoreIC(const StoreICParameters* p);
 
   // IC dispatcher behavior.
@@ -149,6 +153,9 @@ class AccessorAssembler : public CodeStubAssembler {
   void HandleLoadField(Node* holder, Node* handler_word,
                        Variable* var_double_value, Label* rebox_double,
                        ExitPoint* exit_point);
+
+  void EmitAccessCheck(Node* expected_native_context, Node* context,
+                       Node* receiver, Label* can_access, Label* miss);
 
   Node* EmitLoadICProtoArrayCheck(const LoadICParameters* p, Node* handler,
                                   Node* handler_length, Node* handler_flags,

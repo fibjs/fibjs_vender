@@ -46,8 +46,7 @@ class StringBuiltinsAssembler : public CodeStubAssembler {
 
   void GenerateStringEqual(Node* context, Node* left, Node* right);
   void GenerateStringRelationalComparison(Node* context, Node* left,
-                                          Node* right,
-                                          RelationalComparisonMode mode);
+                                          Node* right, Operation op);
 
   TNode<Smi> ToSmiBetweenZeroAnd(SloppyTNode<Context> context,
                                  SloppyTNode<Object> value,
@@ -63,7 +62,6 @@ class StringBuiltinsAssembler : public CodeStubAssembler {
 
   Node* IndexOfDollarChar(Node* const context, Node* const string);
 
-  Node* IsNullOrUndefined(Node* const value);
   void RequireObjectCoercible(Node* const context, Node* const value,
                               const char* method_name);
 

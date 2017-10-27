@@ -13,7 +13,6 @@
 #include "src/base/bits.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
-#include "src/codegen.h"
 #include "src/counters.h"
 #include "src/double.h"
 #include "src/frame-constants.h"
@@ -46,50 +45,30 @@ void ArrayNArgumentsConstructorStub::Generate(MacroAssembler* masm) {
 
 
 void DoubleToIStub::Generate(MacroAssembler* masm) {
-  Label out_of_range, only_low, negate, done;
-  Register input_reg = source();
+  Label negate, done;
   Register result_reg = destination();
-  DCHECK(is_truncating());
 
-  int double_offset = offset();
-  // Account for saved regs if input is sp.
-  if (input_reg == sp) double_offset += 3 * kPointerSize;
-
-  Register scratch = GetRegisterThatIsNotOneOf(input_reg, result_reg);
-  Register scratch_low =
-      GetRegisterThatIsNotOneOf(input_reg, result_reg, scratch);
-  Register scratch_high =
-      GetRegisterThatIsNotOneOf(input_reg, result_reg, scratch, scratch_low);
+  UseScratchRegisterScope temps(masm);
+  Register double_low = GetRegisterThatIsNotOneOf(result_reg);
+  Register double_high = GetRegisterThatIsNotOneOf(result_reg, double_low);
   LowDwVfpRegister double_scratch = kScratchDoubleReg;
 
-  __ Push(scratch_high, scratch_low, scratch);
+  // Save the old values from these temporary registers on the stack.
+  __ Push(double_high, double_low);
 
-  if (!skip_fastpath()) {
-    // Load double input.
-    __ vldr(double_scratch, MemOperand(input_reg, double_offset));
-    __ vmov(scratch_low, scratch_high, double_scratch);
+  // Account for saved regs.
+  const int kArgumentOffset = 2 * kPointerSize;
 
-    // Do fast-path convert from double to int.
-    __ vcvt_s32_f64(double_scratch.low(), double_scratch);
-    __ vmov(result_reg, double_scratch.low());
+  // Load double input.
+  __ vldr(double_scratch, MemOperand(sp, kArgumentOffset));
+  __ vmov(double_low, double_high, double_scratch);
+  // Try to convert with a FPU convert instruction. This handles all
+  // non-saturating cases.
+  __ TryInlineTruncateDoubleToI(result_reg, double_scratch, &done);
 
-    // If result is not saturated (0x7fffffff or 0x80000000), we are done.
-    __ sub(scratch, result_reg, Operand(1));
-    __ cmp(scratch, Operand(0x7ffffffe));
-    __ b(lt, &done);
-  } else {
-    // We've already done MacroAssembler::TryFastTruncatedDoubleToILoad, so we
-    // know exponent > 31, so we can skip the vcvt_s32_f64 which will saturate.
-    if (double_offset == 0) {
-      __ ldm(ia, input_reg, scratch_low.bit() | scratch_high.bit());
-    } else {
-      __ ldr(scratch_low, MemOperand(input_reg, double_offset));
-      __ ldr(scratch_high, MemOperand(input_reg, double_offset + kIntSize));
-    }
-  }
-
-  __ Ubfx(scratch, scratch_high,
-         HeapNumber::kExponentShift, HeapNumber::kExponentBits);
+  Register scratch = temps.Acquire();
+  __ Ubfx(scratch, double_high, HeapNumber::kExponentShift,
+          HeapNumber::kExponentBits);
   // Load scratch with exponent - 1. This is faster than loading
   // with exponent because Bias + 1 = 1024 which is an *ARM* immediate value.
   STATIC_ASSERT(HeapNumber::kExponentBias + 1 == 1024);
@@ -97,55 +76,60 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
   // If exponent is greater than or equal to 84, the 32 less significant
   // bits are 0s (2^84 = 1, 52 significant bits, 32 uncoded bits),
   // the result is 0.
-  // Compare exponent with 84 (compare exponent - 1 with 83).
+  // Compare exponent with 84 (compare exponent - 1 with 83). If the exponent is
+  // greater than this, the conversion is out of range, so return zero.
   __ cmp(scratch, Operand(83));
-  __ b(ge, &out_of_range);
+  __ mov(result_reg, Operand::Zero(), LeaveCC, ge);
+  __ b(ge, &done);
 
-  // If we reach this code, 31 <= exponent <= 83.
-  // So, we don't have to handle cases where 0 <= exponent <= 20 for
-  // which we would need to shift right the high part of the mantissa.
+  // If we reach this code, 30 <= exponent <= 83.
+  // `TryInlineTruncateDoubleToI` above will have truncated any double with an
+  // exponent lower than 30.
+  if (masm->emit_debug_code()) {
+    // Scratch is exponent - 1.
+    __ cmp(scratch, Operand(30 - 1));
+    __ Check(ge, kUnexpectedValue);
+  }
+
+  // We don't have to handle cases where 0 <= exponent <= 20 for which we would
+  // need to shift right the high part of the mantissa.
   // Scratch contains exponent - 1.
   // Load scratch with 52 - exponent (load with 51 - (exponent - 1)).
   __ rsb(scratch, scratch, Operand(51), SetCC);
-  __ b(ls, &only_low);
-  // 21 <= exponent <= 51, shift scratch_low and scratch_high
+
+  // 52 <= exponent <= 83, shift only double_low.
+  // On entry, scratch contains: 52 - exponent.
+  __ rsb(scratch, scratch, Operand::Zero(), LeaveCC, ls);
+  __ mov(result_reg, Operand(double_low, LSL, scratch), LeaveCC, ls);
+  __ b(ls, &negate);
+
+  // 21 <= exponent <= 51, shift double_low and double_high
   // to generate the result.
-  __ mov(scratch_low, Operand(scratch_low, LSR, scratch));
+  __ mov(double_low, Operand(double_low, LSR, scratch));
   // Scratch contains: 52 - exponent.
   // We needs: exponent - 20.
   // So we use: 32 - scratch = 32 - 52 + exponent = exponent - 20.
   __ rsb(scratch, scratch, Operand(32));
-  __ Ubfx(result_reg, scratch_high,
-          0, HeapNumber::kMantissaBitsInTopWord);
-  // Set the implicit 1 before the mantissa part in scratch_high.
+  __ Ubfx(result_reg, double_high, 0, HeapNumber::kMantissaBitsInTopWord);
+  // Set the implicit 1 before the mantissa part in double_high.
   __ orr(result_reg, result_reg,
          Operand(1 << HeapNumber::kMantissaBitsInTopWord));
-  __ orr(result_reg, scratch_low, Operand(result_reg, LSL, scratch));
-  __ b(&negate);
-
-  __ bind(&out_of_range);
-  __ mov(result_reg, Operand::Zero());
-  __ b(&done);
-
-  __ bind(&only_low);
-  // 52 <= exponent <= 83, shift only scratch_low.
-  // On entry, scratch contains: 52 - exponent.
-  __ rsb(scratch, scratch, Operand::Zero());
-  __ mov(result_reg, Operand(scratch_low, LSL, scratch));
+  __ orr(result_reg, double_low, Operand(result_reg, LSL, scratch));
 
   __ bind(&negate);
-  // If input was positive, scratch_high ASR 31 equals 0 and
-  // scratch_high LSR 31 equals zero.
+  // If input was positive, double_high ASR 31 equals 0 and
+  // double_high LSR 31 equals zero.
   // New result = (result eor 0) + 0 = result.
   // If the input was negative, we have to negate the result.
-  // Input_high ASR 31 equals 0xffffffff and scratch_high LSR 31 equals 1.
+  // Input_high ASR 31 equals 0xffffffff and double_high LSR 31 equals 1.
   // New result = (result eor 0xffffffff) + 1 = 0 - result.
-  __ eor(result_reg, result_reg, Operand(scratch_high, ASR, 31));
-  __ add(result_reg, result_reg, Operand(scratch_high, LSR, 31));
+  __ eor(result_reg, result_reg, Operand(double_high, ASR, 31));
+  __ add(result_reg, result_reg, Operand(double_high, LSR, 31));
 
   __ bind(&done);
 
-  __ Pop(scratch_high, scratch_low, scratch);
+  // Restore registers corrupted in this routine and return.
+  __ Pop(double_high, double_low);
   __ Ret();
 }
 
@@ -609,100 +593,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ ldm(ia_w, sp, kCalleeSaved | pc.bit());
 }
 
-void StringHelper::GenerateFlatOneByteStringEquals(
-    MacroAssembler* masm, Register left, Register right, Register scratch1,
-    Register scratch2, Register scratch3) {
-  Register length = scratch1;
-
-  // Compare lengths.
-  Label strings_not_equal, check_zero_length;
-  __ ldr(length, FieldMemOperand(left, String::kLengthOffset));
-  __ ldr(scratch2, FieldMemOperand(right, String::kLengthOffset));
-  __ cmp(length, scratch2);
-  __ b(eq, &check_zero_length);
-  __ bind(&strings_not_equal);
-  __ mov(r0, Operand(Smi::FromInt(NOT_EQUAL)));
-  __ Ret();
-
-  // Check if the length is zero.
-  Label compare_chars;
-  __ bind(&check_zero_length);
-  STATIC_ASSERT(kSmiTag == 0);
-  __ cmp(length, Operand::Zero());
-  __ b(ne, &compare_chars);
-  __ mov(r0, Operand(Smi::FromInt(EQUAL)));
-  __ Ret();
-
-  // Compare characters.
-  __ bind(&compare_chars);
-  GenerateOneByteCharsCompareLoop(masm, left, right, length, scratch2, scratch3,
-                                  &strings_not_equal);
-
-  // Characters are equal.
-  __ mov(r0, Operand(Smi::FromInt(EQUAL)));
-  __ Ret();
-}
-
-
-void StringHelper::GenerateCompareFlatOneByteStrings(
-    MacroAssembler* masm, Register left, Register right, Register scratch1,
-    Register scratch2, Register scratch3, Register scratch4) {
-  Label result_not_equal, compare_lengths;
-  // Find minimum length and length difference.
-  __ ldr(scratch1, FieldMemOperand(left, String::kLengthOffset));
-  __ ldr(scratch2, FieldMemOperand(right, String::kLengthOffset));
-  __ sub(scratch3, scratch1, Operand(scratch2), SetCC);
-  Register length_delta = scratch3;
-  __ mov(scratch1, scratch2, LeaveCC, gt);
-  Register min_length = scratch1;
-  STATIC_ASSERT(kSmiTag == 0);
-  __ cmp(min_length, Operand::Zero());
-  __ b(eq, &compare_lengths);
-
-  // Compare loop.
-  GenerateOneByteCharsCompareLoop(masm, left, right, min_length, scratch2,
-                                  scratch4, &result_not_equal);
-
-  // Compare lengths - strings up to min-length are equal.
-  __ bind(&compare_lengths);
-  DCHECK(Smi::FromInt(EQUAL) == static_cast<Smi*>(0));
-  // Use length_delta as result if it's zero.
-  __ mov(r0, Operand(length_delta), SetCC);
-  __ bind(&result_not_equal);
-  // Conditionally update the result based either on length_delta or
-  // the last comparion performed in the loop above.
-  __ mov(r0, Operand(Smi::FromInt(GREATER)), LeaveCC, gt);
-  __ mov(r0, Operand(Smi::FromInt(LESS)), LeaveCC, lt);
-  __ Ret();
-}
-
-
-void StringHelper::GenerateOneByteCharsCompareLoop(
-    MacroAssembler* masm, Register left, Register right, Register length,
-    Register scratch1, Register scratch2, Label* chars_not_equal) {
-  // Change index to run from -length to -1 by adding length to string
-  // start. This means that loop ends when index reaches zero, which
-  // doesn't need an additional compare.
-  __ SmiUntag(length);
-  __ add(scratch1, length,
-         Operand(SeqOneByteString::kHeaderSize - kHeapObjectTag));
-  __ add(left, left, Operand(scratch1));
-  __ add(right, right, Operand(scratch1));
-  __ rsb(length, length, Operand::Zero());
-  Register index = length;  // index = -length;
-
-  // Compare loop.
-  Label loop;
-  __ bind(&loop);
-  __ ldrb(scratch1, MemOperand(left, index));
-  __ ldrb(scratch2, MemOperand(right, index));
-  __ cmp(scratch1, scratch2);
-  __ b(ne, chars_not_equal);
-  __ add(index, index, Operand(1), SetCC);
-  __ b(ne, &loop);
-}
-
-
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
   // Place the return address on the stack, making the call
   // GC safe. The RegExp backend also relies on this.
@@ -768,17 +658,6 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     __ cmp(entity_name, Operand(Handle<Name>(name)));
     __ b(eq, miss);
 
-    Label good;
-    __ cmp(entity_name, tmp);
-    __ b(eq, &good);
-
-    // Check if the entry name is not a unique name.
-    __ ldr(entity_name, FieldMemOperand(entity_name, HeapObject::kMapOffset));
-    __ ldrb(entity_name,
-            FieldMemOperand(entity_name, Map::kInstanceTypeOffset));
-    __ JumpIfNotUniqueNameInstanceType(entity_name, miss);
-    __ bind(&good);
-
     // Restore the properties.
     __ ldr(properties,
            FieldMemOperand(receiver, JSObject::kPropertiesOrHashOffset));
@@ -791,7 +670,7 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
   __ stm(db_w, sp, spill_mask);
   __ ldr(r0, FieldMemOperand(receiver, JSObject::kPropertiesOrHashOffset));
   __ mov(r1, Operand(Handle<Name>(name)));
-  NameDictionaryLookupStub stub(masm->isolate(), NEGATIVE_LOOKUP);
+  NameDictionaryLookupStub stub(masm->isolate());
   __ CallStub(&stub);
   __ cmp(r0, Operand::Zero());
   __ ldm(ia_w, sp, spill_mask);
@@ -821,7 +700,7 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
   Register undefined = r5;
   Register entry_key = r6;
 
-  Label in_dictionary, maybe_in_dictionary, not_in_dictionary;
+  Label in_dictionary, not_in_dictionary;
 
   __ ldr(mask, FieldMemOperand(dictionary, kCapacityOffset));
   __ SmiUntag(mask);
@@ -838,8 +717,8 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
       // Add the probe offset (i + i * i) left shifted to avoid right shifting
       // the hash in a separate instruction. The value hash + i + i * i is right
       // shifted in the following and instruction.
-      DCHECK(NameDictionary::GetProbeOffset(i) <
-             1 << (32 - Name::kHashFieldOffset));
+      DCHECK_LT(NameDictionary::GetProbeOffset(i),
+                1 << (32 - Name::kHashFieldOffset));
       __ add(index, hash, Operand(
           NameDictionary::GetProbeOffset(i) << Name::kHashShift));
     } else {
@@ -862,23 +741,6 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
     // Stop if found the property.
     __ cmp(entry_key, Operand(key));
     __ b(eq, &in_dictionary);
-
-    if (i != kTotalProbes - 1 && mode() == NEGATIVE_LOOKUP) {
-      // Check if the entry name is not a unique name.
-      __ ldr(entry_key, FieldMemOperand(entry_key, HeapObject::kMapOffset));
-      __ ldrb(entry_key,
-              FieldMemOperand(entry_key, Map::kInstanceTypeOffset));
-      __ JumpIfNotUniqueNameInstanceType(entry_key, &maybe_in_dictionary);
-    }
-  }
-
-  __ bind(&maybe_in_dictionary);
-  // If we are doing negative lookup then probing failure should be
-  // treated as a lookup success. For positive lookup probing failure
-  // should be treated as lookup failure.
-  if (mode() == POSITIVE_LOOKUP) {
-    __ mov(result, Operand::Zero());
-    __ Ret();
   }
 
   __ bind(&in_dictionary);
@@ -1112,7 +974,7 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
 
 void ProfileEntryHookStub::MaybeCallEntryHookDelayed(TurboAssembler* tasm,
                                                      Zone* zone) {
-  if (tasm->isolate()->function_entry_hook() != NULL) {
+  if (tasm->isolate()->function_entry_hook() != nullptr) {
     tasm->MaybeCheckConstPool();
     PredictableCodeSizeScope predictable(tasm);
     predictable.ExpectSize(tasm->CallStubSize() + 2 * Assembler::kInstrSize);
@@ -1123,7 +985,7 @@ void ProfileEntryHookStub::MaybeCallEntryHookDelayed(TurboAssembler* tasm,
 }
 
 void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
-  if (masm->isolate()->function_entry_hook() != NULL) {
+  if (masm->isolate()->function_entry_hook() != nullptr) {
     ProfileEntryHookStub stub(masm->isolate());
     masm->MaybeCheckConstPool();
     PredictableCodeSizeScope predictable(masm);
@@ -1151,7 +1013,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
   // We also save lr, so the count here is one higher than the mask indicates.
   const int32_t kNumSavedRegs = 7;
 
-  DCHECK((kCallerSaved & kSavedRegs) == kCallerSaved);
+  DCHECK_EQ(kCallerSaved & kSavedRegs, kCallerSaved);
 
   // Save all caller-save registers as this may be called from anywhere.
   __ stm(db_w, sp, kSavedRegs | lr.bit());
@@ -1361,7 +1223,7 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
 
     // Initial map for the builtin Array function should be a map.
     __ ldr(r4, FieldMemOperand(r1, JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     __ tst(r4, Operand(kSmiTagMask));
     __ Assert(ne, kUnexpectedInitialMapForArrayFunction);
     __ CompareObjectType(r4, r4, r5, MAP_TYPE);
@@ -1441,7 +1303,7 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
 
     // Initial map for the builtin Array function should be a map.
     __ ldr(r3, FieldMemOperand(r1, JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     __ tst(r3, Operand(kSmiTagMask));
     __ Assert(ne, kUnexpectedInitialMapForArrayFunction);
     __ CompareObjectType(r3, r3, r4, MAP_TYPE);
@@ -1575,17 +1437,18 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
 
   // Leave the API exit frame.
   __ bind(&leave_exit_frame);
-  bool restore_context = context_restore_operand != NULL;
+  bool restore_context = context_restore_operand != nullptr;
   if (restore_context) {
     __ ldr(cp, *context_restore_operand);
   }
   // LeaveExitFrame expects unwind space to be in a register.
-  if (stack_space_operand != NULL) {
+  if (stack_space_operand != nullptr) {
     __ ldr(r4, *stack_space_operand);
   } else {
     __ mov(r4, Operand(stack_space));
   }
-  __ LeaveExitFrame(false, r4, !restore_context, stack_space_operand != NULL);
+  __ LeaveExitFrame(false, r4, !restore_context,
+                    stack_space_operand != nullptr);
 
   // Check if the function scheduled an exception.
   __ LoadRoot(r4, Heap::kTheHoleValueRootIndex);
@@ -1807,7 +1670,8 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   MemOperand return_value_operand(
       fp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
-                           kStackUnwindSpace, NULL, return_value_operand, NULL);
+                           kStackUnwindSpace, nullptr, return_value_operand,
+                           nullptr);
 }
 
 #undef __

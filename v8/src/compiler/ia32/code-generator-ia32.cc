@@ -230,7 +230,7 @@ class OutOfLineTruncateDoubleToI final : public OutOfLineCode {
   void Generate() final {
     __ sub(esp, Immediate(kDoubleSize));
     __ movsd(MemOperand(esp, 0), input_);
-    __ SlowTruncateToIDelayed(zone_, result_, esp, 0);
+    __ SlowTruncateToIDelayed(zone_, result_);
     __ add(esp, Immediate(kDoubleSize));
   }
 
@@ -854,7 +854,7 @@ void CodeGenerator::AssemblePopArgumentsAdaptorFrame(Register args_reg,
 
   ParameterCount callee_args_count(args_reg);
   __ PrepareForTailCall(callee_args_count, caller_args_count_reg, scratch2,
-                        scratch3, ReturnAddressState::kOnStack, scratch_count);
+                        scratch3, scratch_count);
   __ pop(scratch3);
   __ pop(scratch2);
   __ pop(scratch1);
@@ -929,7 +929,7 @@ void CodeGenerator::AssembleTailCallAfterGap(Instruction* instr,
 // to:
 //    1. load the address of the current instruction;
 //    2. read from memory the word that contains that bit, which can be found in
-//       the first set of flags ({kKindSpecificFlags1Offset});
+//       the flags in the referenced {CodeDataContainer} object;
 //    3. test kMarkedForDeoptimizationBit in those flags; and
 //    4. if it is not zero then it jumps to the builtin.
 void CodeGenerator::BailoutIfDeoptimized() {
@@ -941,8 +941,9 @@ void CodeGenerator::BailoutIfDeoptimized() {
   // to use a call and then use a pop, thus pushing the return address to
   // the stack and then popping it into the register.
   __ pop(ecx);
-  int offset = Code::kKindSpecificFlags1Offset - (Code::kHeaderSize + pc);
-  __ test(Operand(ecx, offset),
+  int offset = Code::kCodeDataContainerOffset - (Code::kHeaderSize + pc);
+  __ mov(ecx, Operand(ecx, offset));
+  __ test(FieldOperand(ecx, CodeDataContainer::kKindSpecificFlagsOffset),
           Immediate(1 << Code::kMarkedForDeoptimizationBit));
   Handle<Code> code = isolate()->builtins()->builtin_handle(
       Builtins::kCompileLazyDeoptimizedCode);

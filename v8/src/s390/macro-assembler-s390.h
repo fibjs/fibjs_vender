@@ -71,6 +71,11 @@ bool AreAliased(Register reg1, Register reg2, Register reg3 = no_reg,
                 Register reg6 = no_reg, Register reg7 = no_reg,
                 Register reg8 = no_reg, Register reg9 = no_reg,
                 Register reg10 = no_reg);
+bool AreAliased(DoubleRegister reg1, DoubleRegister reg2,
+                DoubleRegister reg3 = no_dreg, DoubleRegister reg4 = no_dreg,
+                DoubleRegister reg5 = no_dreg, DoubleRegister reg6 = no_dreg,
+                DoubleRegister reg7 = no_dreg, DoubleRegister reg8 = no_dreg,
+                DoubleRegister reg9 = no_dreg, DoubleRegister reg10 = no_dreg);
 #endif
 
 // These exist to provide portability between 32 and 64bit
@@ -782,6 +787,21 @@ class TurboAssembler : public Assembler {
   void LoadMultipleW(Register dst1, Register dst2, const MemOperand& mem);
   void StoreMultipleW(Register dst1, Register dst2, const MemOperand& mem);
 
+  void SwapP(Register src, Register dst, Register scratch);
+  void SwapP(Register src, MemOperand dst, Register scratch);
+  void SwapP(MemOperand src, MemOperand dst, Register scratch_0,
+             Register scratch_1);
+  void SwapFloat32(DoubleRegister src, DoubleRegister dst,
+                   DoubleRegister scratch);
+  void SwapFloat32(DoubleRegister src, MemOperand dst, DoubleRegister scratch);
+  void SwapFloat32(MemOperand src, MemOperand dst, DoubleRegister scratch_0,
+                   DoubleRegister scratch_1);
+  void SwapDouble(DoubleRegister src, DoubleRegister dst,
+                  DoubleRegister scratch);
+  void SwapDouble(DoubleRegister src, MemOperand dst, DoubleRegister scratch);
+  void SwapDouble(MemOperand src, MemOperand dst, DoubleRegister scratch_0,
+                  DoubleRegister scratch_1);
+
   // Cleanse pointer address on 31bit by zero out top  bit.
   // This is a NOP on 64-bit.
   void CleanseP(Register src) {
@@ -1097,11 +1117,6 @@ class MacroAssembler : public TurboAssembler {
     bne(if_not_equal);
   }
 
-  // Load the value of a smi object into a FP double register. The register
-  // scratch1 can be the same register as smi in which case smi will hold the
-  // untagged value afterwards.
-  void SmiToDouble(DoubleRegister value, Register smi);
-
   // Try to convert a double to a signed 32-bit integer.
   // CR_EQ in cr7 is set and result assigned if the conversion is exact.
   void TryDoubleToInt32Exact(Register result, DoubleRegister double_input,
@@ -1246,11 +1261,6 @@ class MacroAssembler : public TurboAssembler {
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
 
-  // ---------------------------------------------------------------------------
-  // String utilities
-
-  void JumpIfNotUniqueNameInstanceType(Register reg, Label* not_unique_name);
-
   void LoadInstanceDescriptors(Register map, Register descriptors);
   void LoadAccessor(Register dst, Register holder, int accessor_index,
                     AccessorComponent accessor);
@@ -1362,29 +1372,6 @@ class MacroAssembler : public TurboAssembler {
   // Needs access to SafepointRegisterStackIndex for compiled frame
   // traversal.
   friend class StandardFrame;
-};
-
-// The code patcher is used to patch (typically) small parts of code e.g. for
-// debugging and other types of instrumentation. When using the code patcher
-// the exact number of bytes specified must be emitted. It is not legal to emit
-// relocation information. If any of these constraints are violated it causes
-// an assertion to fail.
-class CodePatcher {
- public:
-  enum FlushICache { FLUSH, DONT_FLUSH };
-
-  CodePatcher(Isolate* isolate, byte* address, int instructions,
-              FlushICache flush_cache = FLUSH);
-  ~CodePatcher();
-
-  // Macro assembler to emit code.
-  MacroAssembler* masm() { return &masm_; }
-
- private:
-  byte* address_;            // The address of the code being patched.
-  int size_;                 // Number of bytes of the expected patch size.
-  MacroAssembler masm_;      // Macro assembler used to generate the code.
-  FlushICache flush_cache_;  // Whether to flush the I cache after patching.
 };
 
 // -----------------------------------------------------------------------------

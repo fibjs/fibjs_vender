@@ -58,11 +58,6 @@ ConvertReceiverMode ConvertReceiverModeOf(Operator const* op) {
 }
 
 
-ToBooleanHints ToBooleanHintsOf(Operator const* op) {
-  DCHECK_EQ(IrOpcode::kJSToBoolean, op->opcode());
-  return OpParameter<ToBooleanHints>(op);
-}
-
 std::ostream& operator<<(std::ostream& os,
                          ConstructForwardVarargsParameters const& p) {
   return os << p.arity() << ", " << p.start_index();
@@ -291,6 +286,7 @@ std::ostream& operator<<(std::ostream& os, FeedbackParameter const& p) {
 
 FeedbackParameter const& FeedbackParameterOf(const Operator* op) {
   DCHECK(op->opcode() == IrOpcode::kJSCreateEmptyLiteralArray ||
+         op->opcode() == IrOpcode::kJSInstanceOf ||
          op->opcode() == IrOpcode::kJSStoreDataPropertyInLiteral);
   return OpParameter<FeedbackParameter>(op);
 }
@@ -450,6 +446,33 @@ const CreateArrayParameters& CreateArrayParametersOf(const Operator* op) {
   return OpParameter<CreateArrayParameters>(op);
 }
 
+bool operator==(CreateBoundFunctionParameters const& lhs,
+                CreateBoundFunctionParameters const& rhs) {
+  return lhs.arity() == rhs.arity() &&
+         lhs.map().location() == rhs.map().location();
+}
+
+bool operator!=(CreateBoundFunctionParameters const& lhs,
+                CreateBoundFunctionParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+size_t hash_value(CreateBoundFunctionParameters const& p) {
+  return base::hash_combine(p.arity(), p.map().location());
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         CreateBoundFunctionParameters const& p) {
+  os << p.arity();
+  if (!p.map().is_null()) os << ", " << Brief(*p.map());
+  return os;
+}
+
+const CreateBoundFunctionParameters& CreateBoundFunctionParametersOf(
+    const Operator* op) {
+  DCHECK_EQ(IrOpcode::kJSCreateBoundFunction, op->opcode());
+  return OpParameter<CreateBoundFunctionParameters>(op);
+}
 
 bool operator==(CreateClosureParameters const& lhs,
                 CreateClosureParameters const& rhs) {
@@ -570,10 +593,7 @@ CompareOperationHint CompareOperationHintOf(const Operator* op) {
   V(CreateIterResultObject, Operator::kEliminatable, 2, 1)      \
   V(CreateKeyValueArray, Operator::kEliminatable, 2, 1)         \
   V(HasProperty, Operator::kNoProperties, 2, 1)                 \
-  V(ClassOf, Operator::kPure, 1, 1)                             \
-  V(TypeOf, Operator::kPure, 1, 1)                              \
   V(HasInPrototypeChain, Operator::kNoProperties, 2, 1)         \
-  V(InstanceOf, Operator::kNoProperties, 2, 1)                  \
   V(OrdinaryHasInstance, Operator::kNoProperties, 2, 1)         \
   V(ForInEnumerate, Operator::kNoProperties, 1, 1)              \
   V(LoadMessage, Operator::kNoThrow | Operator::kNoWrite, 0, 1) \
@@ -731,15 +751,6 @@ const Operator* JSOperatorBuilder::StoreDataPropertyInLiteral(
       parameters);                     // parameter
 }
 
-const Operator* JSOperatorBuilder::ToBoolean(ToBooleanHints hints) {
-  // TODO(turbofan): Cache most important versions of this operator.
-  return new (zone()) Operator1<ToBooleanHints>(  //--
-      IrOpcode::kJSToBoolean, Operator::kPure,    // opcode
-      "JSToBoolean",                              // name
-      1, 0, 0, 1, 0, 0,                           // inputs/outputs
-      hints);                                     // parameter
-}
-
 const Operator* JSOperatorBuilder::CallForwardVarargs(size_t arity,
                                                       uint32_t start_index) {
   CallForwardVarargsParameters parameters(arity, start_index);
@@ -856,7 +867,7 @@ const Operator* JSOperatorBuilder::ConvertReceiver(
 
 const Operator* JSOperatorBuilder::LoadNamed(Handle<Name> name,
                                              const VectorSlotPair& feedback) {
-  NamedAccess access(SLOPPY, name, feedback);
+  NamedAccess access(LanguageMode::kSloppy, name, feedback);
   return new (zone()) Operator1<NamedAccess>(           // --
       IrOpcode::kJSLoadNamed, Operator::kNoProperties,  // opcode
       "JSLoadNamed",                                    // name
@@ -866,12 +877,21 @@ const Operator* JSOperatorBuilder::LoadNamed(Handle<Name> name,
 
 const Operator* JSOperatorBuilder::LoadProperty(
     VectorSlotPair const& feedback) {
-  PropertyAccess access(SLOPPY, feedback);
+  PropertyAccess access(LanguageMode::kSloppy, feedback);
   return new (zone()) Operator1<PropertyAccess>(           // --
       IrOpcode::kJSLoadProperty, Operator::kNoProperties,  // opcode
       "JSLoadProperty",                                    // name
       2, 1, 1, 1, 1, 2,                                    // counts
       access);                                             // parameter
+}
+
+const Operator* JSOperatorBuilder::InstanceOf(VectorSlotPair const& feedback) {
+  FeedbackParameter parameter(feedback);
+  return new (zone()) Operator1<FeedbackParameter>(      // --
+      IrOpcode::kJSInstanceOf, Operator::kNoProperties,  // opcode
+      "JSInstanceOf",                                    // name
+      2, 1, 1, 1, 1, 2,                                  // counts
+      parameter);                                        // parameter
 }
 
 const Operator* JSOperatorBuilder::ForInNext(ForInMode mode) {
@@ -1035,6 +1055,18 @@ const Operator* JSOperatorBuilder::CreateArray(size_t arity,
       "JSCreateArray",                                    // name
       value_input_count, 1, 1, 1, 1, 2,                   // counts
       parameters);                                        // parameter
+}
+
+const Operator* JSOperatorBuilder::CreateBoundFunction(size_t arity,
+                                                       Handle<Map> map) {
+  // bound_target_function, bound_this, arg1, ..., argN
+  int const value_input_count = static_cast<int>(arity) + 2;
+  CreateBoundFunctionParameters parameters(arity, map);
+  return new (zone()) Operator1<CreateBoundFunctionParameters>(   // --
+      IrOpcode::kJSCreateBoundFunction, Operator::kEliminatable,  // opcode
+      "JSCreateBoundFunction",                                    // name
+      value_input_count, 1, 1, 1, 1, 0,                           // counts
+      parameters);                                                // parameter
 }
 
 const Operator* JSOperatorBuilder::CreateClosure(

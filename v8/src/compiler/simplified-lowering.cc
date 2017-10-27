@@ -1541,10 +1541,9 @@ class RepresentationSelector {
       //------------------------------------------------------------------
       // JavaScript operators.
       //------------------------------------------------------------------
-      case IrOpcode::kJSToBoolean: {
+      case IrOpcode::kToBoolean: {
         if (truncation.IsUsedAsBool()) {
           ProcessInput(node, 0, UseInfo::Bool());
-          ProcessInput(node, 1, UseInfo::None());
           SetOutput(node, MachineRepresentation::kBit);
           if (lower()) DeferReplacement(node, node->InputAt(0));
         } else {
@@ -2346,6 +2345,11 @@ class RepresentationSelector {
         }
         return;
       }
+      case IrOpcode::kClassOf:
+      case IrOpcode::kTypeOf: {
+        return VisitUnop(node, UseInfo::AnyTagged(),
+                         MachineRepresentation::kTaggedPointer);
+      }
       case IrOpcode::kStringEqual:
       case IrOpcode::kStringLessThan:
       case IrOpcode::kStringLessThanOrEqual: {
@@ -2581,13 +2585,31 @@ class RepresentationSelector {
 
         ProcessInput(node, 0, UseInfo::AnyTagged());         // array
         ProcessInput(node, 1, UseInfo::TruncatingWord32());  // index
-        ProcessInput(node, 2, UseInfo::AnyTagged());         // value
 
         if (value_type->Is(Type::SignedSmall())) {
+          ProcessInput(node, 2, UseInfo::TruncatingWord32());  // value
           if (lower()) {
             NodeProperties::ChangeOp(node,
                                      simplified()->StoreSignedSmallElement());
           }
+        } else if (value_type->Is(Type::Number())) {
+          ProcessInput(node, 2, UseInfo::TruncatingFloat64());  // value
+          if (lower()) {
+            Handle<Map> double_map = DoubleMapParameterOf(node->op());
+            NodeProperties::ChangeOp(
+                node,
+                simplified()->TransitionAndStoreNumberElement(double_map));
+          }
+        } else if (value_type->Is(Type::NonNumber())) {
+          ProcessInput(node, 2, UseInfo::AnyTagged());  // value
+          if (lower()) {
+            Handle<Map> fast_map = FastMapParameterOf(node->op());
+            NodeProperties::ChangeOp(
+                node, simplified()->TransitionAndStoreNonNumberElement(
+                          fast_map, value_type));
+          }
+        } else {
+          ProcessInput(node, 2, UseInfo::AnyTagged());  // value
         }
 
         ProcessRemainingInputs(node, 3);
@@ -2624,7 +2646,9 @@ class RepresentationSelector {
           if (lower()) DeferReplacement(node, node->InputAt(0));
         } else if (InputIs(node, Type::String())) {
           VisitUnop(node, UseInfo::AnyTagged(), MachineRepresentation::kTagged);
-          if (lower()) lowering->DoStringToNumber(node);
+          if (lower()) {
+            NodeProperties::ChangeOp(node, simplified()->StringToNumber());
+          }
         } else if (truncation.IsUsedAsWord32()) {
           if (InputIs(node, Type::NumberOrOddball())) {
             VisitUnop(node, UseInfo::TruncatingWord32(),
@@ -2681,6 +2705,11 @@ class RepresentationSelector {
       }
       case IrOpcode::kObjectIsCallable: {
         VisitObjectIs(node, Type::Callable(), lowering);
+        return;
+      }
+      case IrOpcode::kObjectIsConstructor: {
+        // TODO(turbofan): Introduce a Type::Constructor?
+        VisitUnop(node, UseInfo::AnyTagged(), MachineRepresentation::kBit);
         return;
       }
       case IrOpcode::kObjectIsDetectableCallable: {
@@ -2859,6 +2888,10 @@ class RepresentationSelector {
         }
         return;
       }
+      case IrOpcode::kCheckEqualsSymbol:
+      case IrOpcode::kCheckEqualsInternalizedString:
+        return VisitBinop(node, UseInfo::AnyTagged(),
+                          MachineRepresentation::kNone);
       case IrOpcode::kMapGuard:
         // Eliminate MapGuard nodes here.
         return VisitUnused(node);
@@ -2929,7 +2962,7 @@ class RepresentationSelector {
 
       case IrOpcode::kFindOrderedHashMapEntry: {
         Type* const key_type = TypeOf(node->InputAt(1));
-        if (key_type->Is(Type::Signed32())) {
+        if (key_type->Is(Type::Signed32OrMinusZero())) {
           VisitBinop(node, UseInfo::AnyTagged(), UseInfo::TruncatingWord32(),
                      MachineRepresentation::kWord32);
           if (lower()) {
@@ -2965,12 +2998,10 @@ class RepresentationSelector {
       case IrOpcode::kOsrValue:
       case IrOpcode::kArgumentsElementsState:
       case IrOpcode::kArgumentsLengthState:
-      case IrOpcode::kUnreachable:
       case IrOpcode::kRuntimeAbort:
 // All JavaScript operators except JSToNumber have uniform handling.
 #define OPCODE_CASE(name) case IrOpcode::k##name:
         JS_SIMPLE_BINOP_LIST(OPCODE_CASE)
-        JS_OTHER_UNOP_LIST(OPCODE_CASE)
         JS_OBJECT_OP_LIST(OPCODE_CASE)
         JS_CONTEXT_OP_LIST(OPCODE_CASE)
         JS_OTHER_OP_LIST(OPCODE_CASE)
@@ -2983,8 +3014,7 @@ class RepresentationSelector {
         VisitInputs(node);
         // Assume the output is tagged.
         return SetOutput(node, MachineRepresentation::kTagged);
-      case IrOpcode::kDeadValue:
-        return SetOutput(node, MachineRepresentation::kNone);
+
       default:
         V8_Fatal(
             __FILE__, __LINE__,
@@ -3628,20 +3658,6 @@ void SimplifiedLowering::DoShift(Node* node, Operator const* op,
                                            jsgraph()->Int32Constant(0x1f)));
   }
   ChangeToPureOp(node, op);
-}
-
-void SimplifiedLowering::DoStringToNumber(Node* node) {
-  Operator::Properties properties = Operator::kEliminatable;
-  Callable callable =
-      Builtins::CallableFor(isolate(), Builtins::kStringToNumber);
-  CallDescriptor::Flags flags = CallDescriptor::kNoFlags;
-  CallDescriptor* desc = Linkage::GetStubCallDescriptor(
-      isolate(), graph()->zone(), callable.descriptor(), 0, flags, properties);
-  node->InsertInput(graph()->zone(), 0,
-                    jsgraph()->HeapConstant(callable.code()));
-  node->AppendInput(graph()->zone(), jsgraph()->NoContextConstant());
-  node->AppendInput(graph()->zone(), graph()->start());
-  NodeProperties::ChangeOp(node, common()->Call(desc));
 }
 
 void SimplifiedLowering::DoIntegral32ToBit(Node* node) {

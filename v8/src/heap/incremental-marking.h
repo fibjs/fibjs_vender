@@ -21,28 +21,6 @@ class PagedSpace;
 
 enum class StepOrigin { kV8, kTask };
 
-// This marking state is used when concurrent marking is running.
-class IncrementalMarkingState final
-    : public MarkingStateBase<IncrementalMarkingState, AccessMode::ATOMIC> {
- public:
-  Bitmap* bitmap(const MemoryChunk* chunk) const {
-    return Bitmap::FromAddress(chunk->address() + MemoryChunk::kHeaderSize);
-  }
-
-  // Concurrent marking uses local live bytes.
-  void IncrementLiveBytes(MemoryChunk* chunk, intptr_t by) {
-    chunk->live_byte_count_ += by;
-  }
-
-  intptr_t live_bytes(MemoryChunk* chunk) const {
-    return chunk->live_byte_count_;
-  }
-
-  void SetLiveBytes(MemoryChunk* chunk, intptr_t value) {
-    chunk->live_byte_count_ = value;
-  }
-};
-
 class V8_EXPORT_PRIVATE IncrementalMarking {
  public:
   enum State { STOPPED, SWEEPING, MARKING, COMPLETE };
@@ -57,7 +35,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   using MarkingState = IncrementalMarkingState;
 #else
   using MarkingState = MajorNonAtomicMarkingState;
-#endif
+#endif  // V8_CONCURRENT_MARKING
   using AtomicMarkingState = MajorAtomicMarkingState;
   using NonAtomicMarkingState = MajorNonAtomicMarkingState;
 
@@ -95,10 +73,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   static const int kStepSizeInMs = 1;
   static const int kMaxStepSizeInMs = 5;
 
-  // This is the upper bound for how many times we allow finalization of
-  // incremental marking to be postponed.
-  static const int kMaxIdleMarkingDelayCounter = 3;
-
 #ifndef DEBUG
   static const intptr_t kActivationThreshold = 8 * MB;
 #else
@@ -111,7 +85,8 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   static const AccessMode kAtomicity = AccessMode::NON_ATOMIC;
 #endif
 
-  explicit IncrementalMarking(Heap* heap);
+  IncrementalMarking(Heap* heap,
+                     MarkCompactCollector::MarkingWorklist* marking_worklist);
 
   MarkingState* marking_state() { return &marking_state_; }
 
@@ -207,13 +182,12 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   // anymore because a single step would exceed the deadline.
   double AdvanceIncrementalMarking(double deadline_in_ms,
                                    CompletionAction completion_action,
-                                   ForceCompletionAction force_completion,
                                    StepOrigin step_origin);
 
   void FinalizeSweeping();
 
   size_t Step(size_t bytes_to_process, CompletionAction action,
-              ForceCompletionAction completion, StepOrigin step_origin);
+              StepOrigin step_origin);
 
   inline void RestartIfNotMarking();
 
@@ -260,10 +234,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
     unscanned_bytes_of_large_object_ = unscanned_bytes;
   }
 
-  void ClearIdleMarkingDelayCounter();
-
-  bool IsIdleMarkingDelayCounterLimitReached();
-
   void ProcessBlackAllocatedObject(HeapObject* obj);
 
   Heap* heap() const { return heap_; }
@@ -282,14 +252,8 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   void AbortBlackAllocation();
 
-  MarkCompactCollector::MarkingWorklist* marking_worklist() {
-    SLOW_DCHECK(marking_worklist_ != nullptr);
+  MarkCompactCollector::MarkingWorklist* marking_worklist() const {
     return marking_worklist_;
-  }
-
-  void set_marking_worklist(
-      MarkCompactCollector::MarkingWorklist* marking_worklist) {
-    marking_worklist_ = marking_worklist;
   }
 
   void Deactivate();
@@ -354,8 +318,8 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
     heap_->SetIsMarkingFlag(s >= MARKING);
   }
 
-  Heap* heap_;
-  MarkCompactCollector::MarkingWorklist* marking_worklist_;
+  Heap* const heap_;
+  MarkCompactCollector::MarkingWorklist* const marking_worklist_;
 
   double start_time_ms_;
   size_t initial_old_generation_size_;
@@ -366,9 +330,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
 
   // Must use SetState() above to update state_
   State state_;
-
-  int idle_marking_delay_counter_;
-  int incremental_marking_finalization_rounds_;
 
   bool is_compacting_;
   bool should_hurry_;

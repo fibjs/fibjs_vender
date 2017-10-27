@@ -9,7 +9,6 @@
 
 #include "src/ast/prettyprinter.h"
 #include "src/bootstrapper.h"
-#include "src/codegen.h"
 #include "src/compilation-info.h"
 #include "src/compiler.h"
 #include "src/counters-inl.h"
@@ -59,6 +58,12 @@ class InterpreterCompilationJob final : public CompilationJob {
     DISALLOW_COPY_AND_ASSIGN(TimerScope);
   };
 
+  bool executed_on_background_thread() {
+    // TODO(rmcilroy): Fix once we create InterpreterCompilationJob on
+    // background thread.
+    return false;
+  }
+
   BytecodeGenerator* generator() { return &generator_; }
 
   Zone zone_;
@@ -89,6 +94,14 @@ Code* Interpreter::GetBytecodeHandler(Bytecode bytecode,
   size_t index = GetDispatchTableIndex(bytecode, operand_scale);
   Address code_entry = dispatch_table_[index];
   return Code::GetCodeFromTargetAddress(code_entry);
+}
+
+void Interpreter::SetBytecodeHandler(Bytecode bytecode,
+                                     OperandScale operand_scale,
+                                     Code* handler) {
+  DCHECK(handler->kind() == Code::BYTECODE_HANDLER);
+  size_t index = GetDispatchTableIndex(bytecode, operand_scale);
+  dispatch_table_[index] = handler->entry();
 }
 
 // static
@@ -167,7 +180,8 @@ bool ShouldPrintBytecode(Handle<SharedFunctionInfo> shared) {
 InterpreterCompilationJob::InterpreterCompilationJob(ParseInfo* parse_info,
                                                      FunctionLiteral* literal,
                                                      Isolate* isolate)
-    : CompilationJob(isolate, parse_info, &compilation_info_, "Ignition"),
+    : CompilationJob(parse_info->stack_limit(), parse_info, &compilation_info_,
+                     "Ignition"),
       zone_(isolate->allocator(), ZONE_NAME),
       compilation_info_(&zone_, isolate, parse_info, literal),
       generator_(&compilation_info_),
@@ -208,8 +222,8 @@ InterpreterCompilationJob::Status InterpreterCompilationJob::FinalizeJobImpl() {
       !executed_on_background_thread() ? runtime_call_stats_ : nullptr,
       &RuntimeCallStats::CompileIgnitionFinalization);
 
-  Handle<BytecodeArray> bytecodes =
-      generator()->FinalizeBytecode(isolate(), parse_info()->script());
+  Handle<BytecodeArray> bytecodes = generator()->FinalizeBytecode(
+      compilation_info()->isolate(), parse_info()->script());
   if (generator()->HasStackOverflow()) {
     return FAILED;
   }
@@ -235,7 +249,7 @@ CompilationJob* Interpreter::NewCompilationJob(ParseInfo* parse_info,
   return new InterpreterCompilationJob(parse_info, literal, isolate);
 }
 
-bool Interpreter::IsDispatchTableInitialized() {
+bool Interpreter::IsDispatchTableInitialized() const {
   return dispatch_table_[0] != nullptr;
 }
 

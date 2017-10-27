@@ -98,7 +98,8 @@ compiler::Node* TypedArrayBuiltinsAssembler::LoadMapForType(Node* array) {
 // need to convert the float heap number to an intptr.
 compiler::Node* TypedArrayBuiltinsAssembler::CalculateExternalPointer(
     Node* backing_store, Node* byte_offset) {
-  return IntPtrAdd(backing_store, ChangeNumberToIntPtr(byte_offset));
+  return IntPtrAdd(backing_store,
+                   ChangeNonnegativeNumberToUintPtr(byte_offset));
 }
 
 // Setup the TypedArray which is under construction.
@@ -356,7 +357,7 @@ TF_BUILTIN(TypedArrayConstructByLength, TypedArrayBuiltinsAssembler) {
   CSA_ASSERT(this, IsJSTypedArray(holder));
   CSA_ASSERT(this, TaggedIsPositiveSmi(element_size));
 
-  Node* initialize = BooleanConstant(true);
+  Node* initialize = TrueConstant();
 
   Label invalid_length(this);
 
@@ -559,7 +560,7 @@ TF_BUILTIN(TypedArrayConstructByArrayLike, TypedArrayBuiltinsAssembler) {
   CSA_ASSERT(this, TaggedIsSmi(element_size));
   Node* context = Parameter(Descriptor::kContext);
 
-  Node* initialize = BooleanConstant(false);
+  Node* initialize = FalseConstant();
 
   Label invalid_length(this), fill(this), fast_copy(this);
 
@@ -595,7 +596,7 @@ TF_BUILTIN(TypedArrayConstructByArrayLike, TypedArrayBuiltinsAssembler) {
 
     Node* byte_length = SmiMul(length, element_size);
     CSA_ASSERT(this, ByteLengthIsValid(byte_length));
-    Node* byte_length_intptr = ChangeNumberToIntPtr(byte_length);
+    Node* byte_length_intptr = ChangeNonnegativeNumberToUintPtr(byte_length);
     CSA_ASSERT(this, UintPtrLessThanOrEqual(
                          byte_length_intptr,
                          IntPtrConstant(FixedTypedArrayBase::kMaxByteLength)));
@@ -727,8 +728,8 @@ void TypedArrayBuiltinsAssembler::GenerateTypedArrayPrototypeIterationMethod(
 
   Node* map = LoadMap(receiver);
   Node* instance_type = LoadMapInstanceType(map);
-  GotoIf(Word32NotEqual(instance_type, Int32Constant(JS_TYPED_ARRAY_TYPE)),
-         &throw_bad_receiver);
+  GotoIfNot(InstanceTypeEqual(instance_type, JS_TYPED_ARRAY_TYPE),
+            &throw_bad_receiver);
 
   // Check if the {receiver}'s JSArrayBuffer was neutered.
   Node* receiver_buffer =

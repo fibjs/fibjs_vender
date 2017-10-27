@@ -79,8 +79,6 @@
 #define COMMON_OP_LIST(V) \
   CONSTANT_OP_LIST(V)     \
   INNER_OP_LIST(V)        \
-  V(Unreachable)          \
-  V(DeadValue)            \
   V(Dead)
 
 // Opcodes for JavaScript operators.
@@ -116,7 +114,6 @@
   V(JSOrdinaryHasInstance)
 
 #define JS_CONVERSION_UNOP_LIST(V) \
-  V(JSToBoolean)                   \
   V(JSToInteger)                   \
   V(JSToLength)                    \
   V(JSToName)                      \
@@ -124,18 +121,13 @@
   V(JSToObject)                    \
   V(JSToString)
 
-#define JS_OTHER_UNOP_LIST(V) \
-  V(JSClassOf)                \
-  V(JSTypeOf)
-
-#define JS_SIMPLE_UNOP_LIST(V) \
-  JS_CONVERSION_UNOP_LIST(V)   \
-  JS_OTHER_UNOP_LIST(V)
+#define JS_SIMPLE_UNOP_LIST(V) JS_CONVERSION_UNOP_LIST(V)
 
 #define JS_OBJECT_OP_LIST(V)      \
   V(JSCreate)                     \
   V(JSCreateArguments)            \
   V(JSCreateArray)                \
+  V(JSCreateBoundFunction)        \
   V(JSCreateClosure)              \
   V(JSCreateIterResultObject)     \
   V(JSCreateKeyValueArray)        \
@@ -322,6 +314,7 @@
   V(PlainPrimitiveToWord32)             \
   V(PlainPrimitiveToFloat64)            \
   V(BooleanNot)                         \
+  V(StringToNumber)                     \
   V(StringCharAt)                       \
   V(StringCharCodeAt)                   \
   V(SeqStringCharCodeAt)                \
@@ -343,8 +336,12 @@
   V(CheckHeapObject)                    \
   V(CheckFloat64Hole)                   \
   V(CheckNotTaggedHole)                 \
+  V(CheckEqualsInternalizedString)      \
+  V(CheckEqualsSymbol)                  \
   V(CompareMaps)                        \
   V(ConvertTaggedHoleToUndefined)       \
+  V(TypeOf)                             \
+  V(ClassOf)                            \
   V(Allocate)                           \
   V(LoadFieldByIndex)                   \
   V(LoadField)                          \
@@ -355,8 +352,12 @@
   V(StoreTypedElement)                  \
   V(StoreSignedSmallElement)            \
   V(TransitionAndStoreElement)          \
+  V(TransitionAndStoreNumberElement)    \
+  V(TransitionAndStoreNonNumberElement) \
+  V(ToBoolean)                          \
   V(ObjectIsArrayBufferView)            \
   V(ObjectIsCallable)                   \
+  V(ObjectIsConstructor)                \
   V(ObjectIsDetectableCallable)         \
   V(ObjectIsMinusZero)                  \
   V(ObjectIsNaN)                        \

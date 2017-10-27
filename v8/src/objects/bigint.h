@@ -17,7 +17,7 @@ namespace internal {
 
 // UNDER CONSTRUCTION!
 // Arbitrary precision integers in JavaScript.
-class BigInt : public HeapObject {
+class V8_EXPORT_PRIVATE BigInt : public HeapObject {
  public:
   // Implementation of the Spec methods, see:
   // https://tc39.github.io/proposal-bigint/#sec-numeric-types
@@ -36,21 +36,28 @@ class BigInt : public HeapObject {
                                               Handle<BigInt> y);
   static MaybeHandle<BigInt> UnsignedRightShift(Handle<BigInt> x,
                                                 Handle<BigInt> y);
-  static bool LessThan(Handle<BigInt> x, Handle<BigInt> y);
-  static bool Equal(BigInt* x, BigInt* y);
+  // More convenient version of "bool LessThan(x, y)".
+  static ComparisonResult CompareToBigInt(Handle<BigInt> x, Handle<BigInt> y);
+  static bool EqualToBigInt(BigInt* x, BigInt* y);
   static Handle<BigInt> BitwiseAnd(Handle<BigInt> x, Handle<BigInt> y);
   static Handle<BigInt> BitwiseXor(Handle<BigInt> x, Handle<BigInt> y);
   static Handle<BigInt> BitwiseOr(Handle<BigInt> x, Handle<BigInt> y);
 
+  // Other parts of the public interface.
   static MaybeHandle<BigInt> Increment(Handle<BigInt> x);
   static MaybeHandle<BigInt> Decrement(Handle<BigInt> x);
 
-  // Other parts of the public interface.
   bool ToBoolean() { return !is_zero(); }
   uint32_t Hash() {
     // TODO(jkummerow): Improve this. At least use length and sign.
     return is_zero() ? 0 : ComputeIntegerHash(static_cast<uint32_t>(digit(0)));
   }
+
+  static bool EqualToString(Handle<BigInt> x, Handle<String> y);
+  static bool EqualToNumber(Handle<BigInt> x, Handle<Object> y);
+  static ComparisonResult CompareToNumber(Handle<BigInt> x, Handle<Object> y);
+  // Exposed for tests, do not call directly. Use CompareToNumber() instead.
+  static ComparisonResult CompareToDouble(Handle<BigInt> x, double y);
 
   DECL_CAST(BigInt)
   DECL_VERIFIER(BigInt)
@@ -70,8 +77,8 @@ class BigInt : public HeapObject {
   // The maximum length that the current implementation supports would be
   // kMaxInt / kDigitBits. However, we use a lower limit for now, because
   // raising it later is easier than lowering it.
-  static const int kMaxLengthBits = 20;
-  static const int kMaxLength = (1 << kMaxLengthBits) - 1;
+  // Support up to 1 million bits.
+  static const int kMaxLength = 1024 * 1024 / (kPointerSize * kBitsPerByte);
 
   class BodyDescriptor;
 
@@ -84,11 +91,14 @@ class BigInt : public HeapObject {
   static const int kDigitBits = kDigitSize * kBitsPerByte;
   static const int kHalfDigitBits = kDigitBits / 2;
   static const digit_t kHalfDigitMask = (1ull << kHalfDigitBits) - 1;
+  // kMaxLength definition assumes this:
+  STATIC_ASSERT(kDigitSize == kPointerSize);
 
   // Private helpers for public methods.
   static Handle<BigInt> Copy(Handle<BigInt> source);
   static MaybeHandle<BigInt> AllocateFor(Isolate* isolate, int radix,
-                                         int charcount);
+                                         int charcount,
+                                         ShouldThrow should_throw);
   void RightTrim();
 
   static Handle<BigInt> AbsoluteAdd(Handle<BigInt> x, Handle<BigInt> y,
@@ -100,9 +110,10 @@ class BigInt : public HeapObject {
   static Handle<BigInt> AbsoluteSubOne(Handle<BigInt> x, int result_length);
 
   enum ExtraDigitsHandling { kCopy, kSkip };
+  enum SymmetricOp { kSymmetric, kNotSymmetric };
   static inline Handle<BigInt> AbsoluteBitwiseOp(
       Handle<BigInt> x, Handle<BigInt> y, BigInt* result_storage,
-      ExtraDigitsHandling extra_digits,
+      ExtraDigitsHandling extra_digits, SymmetricOp symmetric,
       std::function<digit_t(digit_t, digit_t)> op);
   static Handle<BigInt> AbsoluteAnd(Handle<BigInt> x, Handle<BigInt> y,
                                     BigInt* result_storage = nullptr);
@@ -163,6 +174,8 @@ class BigInt : public HeapObject {
     return static_cast<digit_t>(~x) == 0;
   }
 
+  static const int kMaxLengthBits = 20;
+  STATIC_ASSERT(kMaxLength <= ((1 << kMaxLengthBits) - 1));
   class LengthBits : public BitField<int, 0, kMaxLengthBits> {};
   class SignBits : public BitField<bool, LengthBits::kNext, 1> {};
 
@@ -172,10 +185,8 @@ class BigInt : public HeapObject {
   inline digit_t digit(int n) const;
   inline void set_digit(int n, digit_t value);
 
-  bool is_zero() {
-    DCHECK(length() > 0 || !sign());  // There is no -0n.
-    return length() == 0;
-  }
+  bool is_zero() const { return length() == 0; }
+
   static const int kBitfieldOffset = HeapObject::kHeaderSize;
   static const int kDigitsOffset = kBitfieldOffset + kPointerSize;
   static const int kHeaderSize = kDigitsOffset;

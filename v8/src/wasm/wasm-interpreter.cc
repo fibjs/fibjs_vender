@@ -7,6 +7,7 @@
 #include "src/wasm/wasm-interpreter.h"
 
 #include "src/assembler-inl.h"
+#include "src/boxed-float.h"
 #include "src/compiler/wasm-compiler.h"
 #include "src/conversions.h"
 #include "src/identity-map.h"
@@ -122,7 +123,9 @@ namespace wasm {
   V(I32AsmjsDivS, int32_t)     \
   V(I32AsmjsDivU, uint32_t)    \
   V(I32AsmjsRemS, int32_t)     \
-  V(I32AsmjsRemU, uint32_t)
+  V(I32AsmjsRemU, uint32_t)    \
+  V(F32CopySign, Float32)      \
+  V(F64CopySign, Float64)
 
 #define FOREACH_OTHER_UNOP(V)    \
   V(I32Clz, uint32_t)            \
@@ -133,14 +136,14 @@ namespace wasm {
   V(I64Ctz, uint64_t)            \
   V(I64Popcnt, uint64_t)         \
   V(I64Eqz, uint64_t)            \
-  V(F32Abs, float)               \
-  V(F32Neg, float)               \
+  V(F32Abs, Float32)             \
+  V(F32Neg, Float32)             \
   V(F32Ceil, float)              \
   V(F32Floor, float)             \
   V(F32Trunc, float)             \
   V(F32NearestInt, float)        \
-  V(F64Abs, double)              \
-  V(F64Neg, double)              \
+  V(F64Abs, Float64)             \
+  V(F64Neg, Float64)             \
   V(F64Ceil, double)             \
   V(F64Floor, double)            \
   V(F64Trunc, double)            \
@@ -177,26 +180,8 @@ namespace wasm {
 
 namespace {
 
-// CachedInstanceInfo encapsulates globals and memory buffer runtime information
-// for a wasm instance. The interpreter caches that information when
-// constructed, copying it from the {WasmInstanceObject}. It expects it be
-// notified on changes to it, e.g. {GrowMemory}. We cache it because interpreter
-// perf is sensitive to accesses to this information.
-//
-// TODO(wasm): other runtime information, such as indirect function table, or
-// code table (incl. imports) is currently handled separately. Consider
-// unifying, if possible, with {ModuleEnv}.
-
-struct CachedInstanceInfo {
-  CachedInstanceInfo(byte* globals, byte* mem, uint32_t size)
-      : globals_start(globals), mem_start(mem), mem_size(size) {}
-  // We do not expect the location of the globals buffer to
-  // change for an instance.
-  byte* const globals_start = nullptr;
-  // The memory buffer may change because of GrowMemory
-  byte* mem_start = nullptr;
-  uint32_t mem_size = 0;
-};
+constexpr uint32_t kFloat32SignBitMask = uint32_t{1} << 31;
+constexpr uint64_t kFloat64SignBitMask = uint64_t{1} << 63;
 
 inline int32_t ExecuteI32DivS(int32_t a, int32_t b, TrapReason* trap) {
   if (b == 0) {
@@ -324,8 +309,9 @@ inline float ExecuteF32Max(float a, float b, TrapReason* trap) {
   return JSMax(a, b);
 }
 
-inline float ExecuteF32CopySign(float a, float b, TrapReason* trap) {
-  return copysignf(a, b);
+inline Float32 ExecuteF32CopySign(Float32 a, Float32 b, TrapReason* trap) {
+  return Float32::FromBits((a.get_bits() & ~kFloat32SignBitMask) |
+                           (b.get_bits() & kFloat32SignBitMask));
 }
 
 inline double ExecuteF64Min(double a, double b, TrapReason* trap) {
@@ -336,8 +322,9 @@ inline double ExecuteF64Max(double a, double b, TrapReason* trap) {
   return JSMax(a, b);
 }
 
-inline double ExecuteF64CopySign(double a, double b, TrapReason* trap) {
-  return copysign(a, b);
+inline Float64 ExecuteF64CopySign(Float64 a, Float64 b, TrapReason* trap) {
+  return Float64::FromBits((a.get_bits() & ~kFloat64SignBitMask) |
+                           (b.get_bits() & kFloat64SignBitMask));
 }
 
 inline int32_t ExecuteI32AsmjsDivS(int32_t a, int32_t b, TrapReason* trap) {
@@ -412,12 +399,12 @@ inline int32_t ExecuteI64Eqz(uint64_t val, TrapReason* trap) {
   return val == 0 ? 1 : 0;
 }
 
-inline float ExecuteF32Abs(float a, TrapReason* trap) {
-  return bit_cast<float>(bit_cast<uint32_t>(a) & 0x7fffffff);
+inline Float32 ExecuteF32Abs(Float32 a, TrapReason* trap) {
+  return Float32::FromBits(a.get_bits() & ~kFloat32SignBitMask);
 }
 
-inline float ExecuteF32Neg(float a, TrapReason* trap) {
-  return bit_cast<float>(bit_cast<uint32_t>(a) ^ 0x80000000);
+inline Float32 ExecuteF32Neg(Float32 a, TrapReason* trap) {
+  return Float32::FromBits(a.get_bits() ^ kFloat32SignBitMask);
 }
 
 inline float ExecuteF32Ceil(float a, TrapReason* trap) { return ceilf(a); }
@@ -435,12 +422,12 @@ inline float ExecuteF32Sqrt(float a, TrapReason* trap) {
   return result;
 }
 
-inline double ExecuteF64Abs(double a, TrapReason* trap) {
-  return bit_cast<double>(bit_cast<uint64_t>(a) & 0x7fffffffffffffff);
+inline Float64 ExecuteF64Abs(Float64 a, TrapReason* trap) {
+  return Float64::FromBits(a.get_bits() & ~kFloat64SignBitMask);
 }
 
-inline double ExecuteF64Neg(double a, TrapReason* trap) {
-  return bit_cast<double>(bit_cast<uint64_t>(a) ^ 0x8000000000000000);
+inline Float64 ExecuteF64Neg(Float64 a, TrapReason* trap) {
+  return Float64::FromBits(a.get_bits() ^ kFloat64SignBitMask);
 }
 
 inline double ExecuteF64Ceil(double a, TrapReason* trap) { return ceil(a); }
@@ -578,8 +565,8 @@ inline float ExecuteF32ConvertF64(double a, TrapReason* trap) {
   return static_cast<float>(a);
 }
 
-inline float ExecuteF32ReinterpretI32(int32_t a, TrapReason* trap) {
-  return bit_cast<float>(a);
+inline Float32 ExecuteF32ReinterpretI32(int32_t a, TrapReason* trap) {
+  return Float32::FromBits(a);
 }
 
 inline double ExecuteF64SConvertI32(int32_t a, TrapReason* trap) {
@@ -606,31 +593,16 @@ inline double ExecuteF64ConvertF32(float a, TrapReason* trap) {
   return static_cast<double>(a);
 }
 
-inline double ExecuteF64ReinterpretI64(int64_t a, TrapReason* trap) {
-  return bit_cast<double>(a);
+inline Float64 ExecuteF64ReinterpretI64(int64_t a, TrapReason* trap) {
+  return Float64::FromBits(a);
 }
 
 inline int32_t ExecuteI32ReinterpretF32(WasmValue a) {
-  return a.to_unchecked<int32_t>();
+  return a.to_f32_boxed().get_bits();
 }
 
 inline int64_t ExecuteI64ReinterpretF64(WasmValue a) {
-  return a.to_unchecked<int64_t>();
-}
-
-inline int32_t ExecuteGrowMemory(uint32_t delta_pages,
-                                 MaybeHandle<WasmInstanceObject> instance_obj,
-                                 CachedInstanceInfo* mem_info) {
-  Handle<WasmInstanceObject> instance = instance_obj.ToHandleChecked();
-  Isolate* isolate = instance->GetIsolate();
-  int32_t ret = WasmInstanceObject::GrowMemory(isolate, instance, delta_pages);
-
-  // Ensure the effects of GrowMemory have been observed by the interpreter.
-  // See {UpdateMemory}. In all cases, we are in agreement with the runtime
-  // object's view.
-  DCHECK_EQ(mem_info->mem_size, instance->wasm_context()->mem_size);
-  DCHECK_EQ(mem_info->mem_start, instance->wasm_context()->mem_start);
-  return ret;
+  return a.to_f64_boxed().get_bits();
 }
 
 enum InternalOpcode {
@@ -826,7 +798,7 @@ class SideTable : public ZoneObject {
         case kExprBlock:
         case kExprLoop: {
           bool is_loop = opcode == kExprLoop;
-          BlockTypeOperand<false> operand(&i, i.pc());
+          BlockTypeOperand<Decoder::kNoValidate> operand(&i, i.pc());
           if (operand.type == kWasmVar) {
             operand.sig = module->signatures[operand.sig_index];
           }
@@ -842,7 +814,7 @@ class SideTable : public ZoneObject {
           break;
         }
         case kExprIf: {
-          BlockTypeOperand<false> operand(&i, i.pc());
+          BlockTypeOperand<Decoder::kNoValidate> operand(&i, i.pc());
           if (operand.type == kWasmVar) {
             operand.sig = module->signatures[operand.sig_index];
           }
@@ -890,22 +862,22 @@ class SideTable : public ZoneObject {
           break;
         }
         case kExprBr: {
-          BreakDepthOperand<false> operand(&i, i.pc());
+          BreakDepthOperand<Decoder::kNoValidate> operand(&i, i.pc());
           TRACE("control @%u: Br[depth=%u]\n", i.pc_offset(), operand.depth);
           Control* c = &control_stack[control_stack.size() - operand.depth - 1];
           if (!unreachable) c->end_label->Ref(i.pc(), stack_height);
           break;
         }
         case kExprBrIf: {
-          BreakDepthOperand<false> operand(&i, i.pc());
+          BreakDepthOperand<Decoder::kNoValidate> operand(&i, i.pc());
           TRACE("control @%u: BrIf[depth=%u]\n", i.pc_offset(), operand.depth);
           Control* c = &control_stack[control_stack.size() - operand.depth - 1];
           if (!unreachable) c->end_label->Ref(i.pc(), stack_height);
           break;
         }
         case kExprBrTable: {
-          BranchTableOperand<false> operand(&i, i.pc());
-          BranchTableIterator<false> iterator(&i, operand);
+          BranchTableOperand<Decoder::kNoValidate> operand(&i, i.pc());
+          BranchTableIterator<Decoder::kNoValidate> iterator(&i, operand);
           TRACE("control @%u: BrTable[count=%u]\n", i.pc_offset(),
                 operand.table_count);
           if (!unreachable) {
@@ -1090,12 +1062,14 @@ Handle<Object> WasmValueToNumber(Factory* factory, WasmValue val,
 
 // Convert JS value to WebAssembly, spec here:
 // https://github.com/WebAssembly/design/blob/master/JS.md#towebassemblyvalue
+// Return WasmValue() (i.e. of type kWasmStmt) on failure. In that case, an
+// exception will be pending on the isolate.
 WasmValue ToWebAssemblyValue(Isolate* isolate, Handle<Object> value,
                              wasm::ValueType type) {
   switch (type) {
     case kWasmI32: {
       MaybeHandle<Object> maybe_i32 = Object::ToInt32(isolate, value);
-      // TODO(clemensh): Handle failure here (unwind).
+      if (maybe_i32.is_null()) return {};
       int32_t value;
       CHECK(maybe_i32.ToHandleChecked()->ToInt32(&value));
       return WasmValue(value);
@@ -1105,13 +1079,13 @@ WasmValue ToWebAssemblyValue(Isolate* isolate, Handle<Object> value,
       UNREACHABLE();
     case kWasmF32: {
       MaybeHandle<Object> maybe_number = Object::ToNumber(value);
-      // TODO(clemensh): Handle failure here (unwind).
+      if (maybe_number.is_null()) return {};
       return WasmValue(
           static_cast<float>(maybe_number.ToHandleChecked()->Number()));
     }
     case kWasmF64: {
       MaybeHandle<Object> maybe_number = Object::ToNumber(value);
-      // TODO(clemensh): Handle failure here (unwind).
+      if (maybe_number.is_null()) return {};
       return WasmValue(maybe_number.ToHandleChecked()->Number());
     }
     default:
@@ -1119,6 +1093,42 @@ WasmValue ToWebAssemblyValue(Isolate* isolate, Handle<Object> value,
       UNIMPLEMENTED();
       return WasmValue();
   }
+}
+
+// Like a static_cast from src to dst, but specialized for boxed floats.
+template <typename dst, typename src>
+struct converter {
+  dst operator()(src val) const { return static_cast<dst>(val); }
+};
+template <>
+struct converter<Float64, uint64_t> {
+  Float64 operator()(uint64_t val) const { return Float64::FromBits(val); }
+};
+template <>
+struct converter<Float32, uint32_t> {
+  Float32 operator()(uint32_t val) const { return Float32::FromBits(val); }
+};
+template <>
+struct converter<uint64_t, Float64> {
+  uint64_t operator()(Float64 val) const { return val.get_bits(); }
+};
+template <>
+struct converter<uint32_t, Float32> {
+  uint32_t operator()(Float32 val) const { return val.get_bits(); }
+};
+
+template <typename T>
+V8_INLINE bool has_nondeterminism(T val) {
+  static_assert(!std::is_floating_point<T>::value, "missing specialization");
+  return false;
+}
+template <>
+V8_INLINE bool has_nondeterminism<float>(float val) {
+  return std::isnan(val);
+}
+template <>
+V8_INLINE bool has_nondeterminism<double>(double val) {
+  return std::isnan(val);
 }
 
 // Responsible for executing code directly.
@@ -1130,10 +1140,9 @@ class ThreadImpl {
   };
 
  public:
-  ThreadImpl(Zone* zone, CodeMap* codemap,
-             CachedInstanceInfo* cached_instance_info)
+  ThreadImpl(Zone* zone, CodeMap* codemap, WasmContext* wasm_context)
       : codemap_(codemap),
-        cached_instance_info_(cached_instance_info),
+        wasm_context_(wasm_context),
         zone_(zone),
         frames_(zone),
         activations_(zone) {}
@@ -1257,7 +1266,7 @@ class ThreadImpl {
   WasmInterpreter::Thread::ExceptionHandlingResult HandleException(
       Isolate* isolate) {
     DCHECK(isolate->has_pending_exception());
-    // TODO(wasm): Add wasm exception handling (would return true).
+    // TODO(wasm): Add wasm exception handling (would return HANDLED).
     USE(isolate->pending_exception());
     TRACE("----- UNWIND -----\n");
     DCHECK_LT(0, activations_.size());
@@ -1293,7 +1302,7 @@ class ThreadImpl {
   friend class InterpretedFrameImpl;
 
   CodeMap* codemap_;
-  CachedInstanceInfo* const cached_instance_info_;
+  WasmContext* wasm_context_;
   Zone* zone_;
   WasmValue* stack_start_ = nullptr;  // Start of allocated stack space.
   WasmValue* stack_limit_ = nullptr;  // End of allocated stack space.
@@ -1382,11 +1391,13 @@ class ThreadImpl {
   pc_t ReturnPc(Decoder* decoder, InterpreterCode* code, pc_t pc) {
     switch (code->orig_start[pc]) {
       case kExprCallFunction: {
-        CallFunctionOperand<false> operand(decoder, code->at(pc));
+        CallFunctionOperand<Decoder::kNoValidate> operand(decoder,
+                                                          code->at(pc));
         return pc + 1 + operand.length;
       }
       case kExprCallIndirect: {
-        CallIndirectOperand<false> operand(decoder, code->at(pc));
+        CallIndirectOperand<Decoder::kNoValidate> operand(decoder,
+                                                          code->at(pc));
         return pc + 1 + operand.length;
       }
       default:
@@ -1455,15 +1466,16 @@ class ThreadImpl {
   template <typename ctype, typename mtype>
   bool ExecuteLoad(Decoder* decoder, InterpreterCode* code, pc_t pc, int& len,
                    MachineRepresentation rep) {
-    MemoryAccessOperand<false> operand(decoder, code->at(pc), sizeof(ctype));
+    MemoryAccessOperand<Decoder::kNoValidate> operand(decoder, code->at(pc),
+                                                      sizeof(ctype));
     uint32_t index = Pop().to<uint32_t>();
-    if (!BoundsCheck<mtype>(cached_instance_info_->mem_size, operand.offset,
-                            index)) {
+    if (!BoundsCheck<mtype>(wasm_context_->mem_size, operand.offset, index)) {
       DoTrap(kTrapMemOutOfBounds, pc);
       return false;
     }
-    byte* addr = cached_instance_info_->mem_start + operand.offset + index;
-    WasmValue result(static_cast<ctype>(ReadLittleEndianValue<mtype>(addr)));
+    byte* addr = wasm_context_->mem_start + operand.offset + index;
+    WasmValue result(
+        converter<ctype, mtype>{}(ReadLittleEndianValue<mtype>(addr)));
 
     Push(result);
     len = 1 + operand.length;
@@ -1472,7 +1484,7 @@ class ThreadImpl {
       tracing::TraceMemoryOperation(
           tracing::kWasmInterpreted, false, rep, operand.offset + index,
           code->function->func_index, static_cast<int>(pc),
-          cached_instance_info_->mem_start);
+          wasm_context_->mem_start);
     }
 
     return true;
@@ -1481,30 +1493,24 @@ class ThreadImpl {
   template <typename ctype, typename mtype>
   bool ExecuteStore(Decoder* decoder, InterpreterCode* code, pc_t pc, int& len,
                     MachineRepresentation rep) {
-    MemoryAccessOperand<false> operand(decoder, code->at(pc), sizeof(ctype));
-    WasmValue val = Pop();
+    MemoryAccessOperand<Decoder::kNoValidate> operand(decoder, code->at(pc),
+                                                      sizeof(ctype));
+    ctype val = Pop().to<ctype>();
 
     uint32_t index = Pop().to<uint32_t>();
-    if (!BoundsCheck<mtype>(cached_instance_info_->mem_size, operand.offset,
-                            index)) {
+    if (!BoundsCheck<mtype>(wasm_context_->mem_size, operand.offset, index)) {
       DoTrap(kTrapMemOutOfBounds, pc);
       return false;
     }
-    byte* addr = cached_instance_info_->mem_start + operand.offset + index;
-    WriteLittleEndianValue<mtype>(addr, static_cast<mtype>(val.to<ctype>()));
+    byte* addr = wasm_context_->mem_start + operand.offset + index;
+    WriteLittleEndianValue<mtype>(addr, converter<mtype, ctype>{}(val));
     len = 1 + operand.length;
-
-    if (std::is_same<float, ctype>::value) {
-      possible_nondeterminism_ |= std::isnan(val.to<float>());
-    } else if (std::is_same<double, ctype>::value) {
-      possible_nondeterminism_ |= std::isnan(val.to<double>());
-    }
 
     if (FLAG_wasm_trace_memory) {
       tracing::TraceMemoryOperation(
           tracing::kWasmInterpreted, true, rep, operand.offset + index,
           code->function->func_index, static_cast<int>(pc),
-          cached_instance_info_->mem_start);
+          wasm_context_->mem_start);
     }
 
     return true;
@@ -1602,17 +1608,20 @@ class ThreadImpl {
         case kExprNop:
           break;
         case kExprBlock: {
-          BlockTypeOperand<false> operand(&decoder, code->at(pc));
+          BlockTypeOperand<Decoder::kNoValidate> operand(&decoder,
+                                                         code->at(pc));
           len = 1 + operand.length;
           break;
         }
         case kExprLoop: {
-          BlockTypeOperand<false> operand(&decoder, code->at(pc));
+          BlockTypeOperand<Decoder::kNoValidate> operand(&decoder,
+                                                         code->at(pc));
           len = 1 + operand.length;
           break;
         }
         case kExprIf: {
-          BlockTypeOperand<false> operand(&decoder, code->at(pc));
+          BlockTypeOperand<Decoder::kNoValidate> operand(&decoder,
+                                                         code->at(pc));
           WasmValue cond = Pop();
           bool is_true = cond.to<uint32_t>() != 0;
           if (is_true) {
@@ -1638,13 +1647,15 @@ class ThreadImpl {
           break;
         }
         case kExprBr: {
-          BreakDepthOperand<false> operand(&decoder, code->at(pc));
+          BreakDepthOperand<Decoder::kNoValidate> operand(&decoder,
+                                                          code->at(pc));
           len = DoBreak(code, pc, operand.depth);
           TRACE("  br => @%zu\n", pc + len);
           break;
         }
         case kExprBrIf: {
-          BreakDepthOperand<false> operand(&decoder, code->at(pc));
+          BreakDepthOperand<Decoder::kNoValidate> operand(&decoder,
+                                                          code->at(pc));
           WasmValue cond = Pop();
           bool is_true = cond.to<uint32_t>() != 0;
           if (is_true) {
@@ -1657,8 +1668,9 @@ class ThreadImpl {
           break;
         }
         case kExprBrTable: {
-          BranchTableOperand<false> operand(&decoder, code->at(pc));
-          BranchTableIterator<false> iterator(&decoder, operand);
+          BranchTableOperand<Decoder::kNoValidate> operand(&decoder,
+                                                           code->at(pc));
+          BranchTableIterator<Decoder::kNoValidate> iterator(&decoder, operand);
           uint32_t key = Pop().to<uint32_t>();
           uint32_t depth = 0;
           if (key >= operand.table_count) key = operand.table_count;
@@ -1683,44 +1695,47 @@ class ThreadImpl {
           break;
         }
         case kExprI32Const: {
-          ImmI32Operand<false> operand(&decoder, code->at(pc));
+          ImmI32Operand<Decoder::kNoValidate> operand(&decoder, code->at(pc));
           Push(WasmValue(operand.value));
           len = 1 + operand.length;
           break;
         }
         case kExprI64Const: {
-          ImmI64Operand<false> operand(&decoder, code->at(pc));
+          ImmI64Operand<Decoder::kNoValidate> operand(&decoder, code->at(pc));
           Push(WasmValue(operand.value));
           len = 1 + operand.length;
           break;
         }
         case kExprF32Const: {
-          ImmF32Operand<false> operand(&decoder, code->at(pc));
+          ImmF32Operand<Decoder::kNoValidate> operand(&decoder, code->at(pc));
           Push(WasmValue(operand.value));
           len = 1 + operand.length;
           break;
         }
         case kExprF64Const: {
-          ImmF64Operand<false> operand(&decoder, code->at(pc));
+          ImmF64Operand<Decoder::kNoValidate> operand(&decoder, code->at(pc));
           Push(WasmValue(operand.value));
           len = 1 + operand.length;
           break;
         }
         case kExprGetLocal: {
-          LocalIndexOperand<false> operand(&decoder, code->at(pc));
+          LocalIndexOperand<Decoder::kNoValidate> operand(&decoder,
+                                                          code->at(pc));
           Push(GetStackValue(frames_.back().sp + operand.index));
           len = 1 + operand.length;
           break;
         }
         case kExprSetLocal: {
-          LocalIndexOperand<false> operand(&decoder, code->at(pc));
+          LocalIndexOperand<Decoder::kNoValidate> operand(&decoder,
+                                                          code->at(pc));
           WasmValue val = Pop();
           SetStackValue(frames_.back().sp + operand.index, val);
           len = 1 + operand.length;
           break;
         }
         case kExprTeeLocal: {
-          LocalIndexOperand<false> operand(&decoder, code->at(pc));
+          LocalIndexOperand<Decoder::kNoValidate> operand(&decoder,
+                                                          code->at(pc));
           WasmValue val = Pop();
           SetStackValue(frames_.back().sp + operand.index, val);
           Push(val);
@@ -1732,7 +1747,8 @@ class ThreadImpl {
           break;
         }
         case kExprCallFunction: {
-          CallFunctionOperand<false> operand(&decoder, code->at(pc));
+          CallFunctionOperand<Decoder::kNoValidate> operand(&decoder,
+                                                            code->at(pc));
           InterpreterCode* target = codemap()->GetCode(operand.index);
           if (target->function->imported) {
             CommitPc(pc);
@@ -1764,7 +1780,8 @@ class ThreadImpl {
           continue;  // don't bump pc
         } break;
         case kExprCallIndirect: {
-          CallIndirectOperand<false> operand(&decoder, code->at(pc));
+          CallIndirectOperand<Decoder::kNoValidate> operand(&decoder,
+                                                            code->at(pc));
           uint32_t entry_index = Pop().to<uint32_t>();
           // Assume only one table for now.
           DCHECK_LE(module()->function_tables.size(), 1u);
@@ -1791,9 +1808,10 @@ class ThreadImpl {
           }
         } break;
         case kExprGetGlobal: {
-          GlobalIndexOperand<false> operand(&decoder, code->at(pc));
+          GlobalIndexOperand<Decoder::kNoValidate> operand(&decoder,
+                                                           code->at(pc));
           const WasmGlobal* global = &module()->globals[operand.index];
-          byte* ptr = cached_instance_info_->globals_start + global->offset;
+          byte* ptr = wasm_context_->globals_start + global->offset;
           WasmValue val;
           switch (global->type) {
 #define CASE_TYPE(wasm, ctype)                       \
@@ -1810,9 +1828,10 @@ class ThreadImpl {
           break;
         }
         case kExprSetGlobal: {
-          GlobalIndexOperand<false> operand(&decoder, code->at(pc));
+          GlobalIndexOperand<Decoder::kNoValidate> operand(&decoder,
+                                                           code->at(pc));
           const WasmGlobal* global = &module()->globals[operand.index];
-          byte* ptr = cached_instance_info_->globals_start + global->offset;
+          byte* ptr = wasm_context_->globals_start + global->offset;
           WasmValue val = Pop();
           switch (global->type) {
 #define CASE_TYPE(wasm, ctype)                        \
@@ -1848,8 +1867,8 @@ class ThreadImpl {
           LOAD_CASE(I64LoadMem32U, int64_t, uint32_t, kWord32);
           LOAD_CASE(I32LoadMem, int32_t, int32_t, kWord32);
           LOAD_CASE(I64LoadMem, int64_t, int64_t, kWord64);
-          LOAD_CASE(F32LoadMem, float, float, kFloat32);
-          LOAD_CASE(F64LoadMem, double, double, kFloat64);
+          LOAD_CASE(F32LoadMem, Float32, uint32_t, kFloat32);
+          LOAD_CASE(F64LoadMem, Float64, uint64_t, kFloat64);
 #undef LOAD_CASE
 
 #define STORE_CASE(name, ctype, mtype, rep)                      \
@@ -1867,23 +1886,23 @@ class ThreadImpl {
           STORE_CASE(I64StoreMem32, int64_t, int32_t, kWord32);
           STORE_CASE(I32StoreMem, int32_t, int32_t, kWord32);
           STORE_CASE(I64StoreMem, int64_t, int64_t, kWord64);
-          STORE_CASE(F32StoreMem, float, float, kFloat32);
-          STORE_CASE(F64StoreMem, double, double, kFloat64);
+          STORE_CASE(F32StoreMem, Float32, uint32_t, kFloat32);
+          STORE_CASE(F64StoreMem, Float64, uint64_t, kFloat64);
 #undef STORE_CASE
 
-#define ASMJS_LOAD_CASE(name, ctype, mtype, defval)                       \
-  case kExpr##name: {                                                     \
-    uint32_t index = Pop().to<uint32_t>();                                \
-    ctype result;                                                         \
-    if (!BoundsCheck<mtype>(cached_instance_info_->mem_size, 0, index)) { \
-      result = defval;                                                    \
-    } else {                                                              \
-      byte* addr = cached_instance_info_->mem_start + index;              \
-      /* TODO(titzer): alignment for asmjs load mem? */                   \
-      result = static_cast<ctype>(*reinterpret_cast<mtype*>(addr));       \
-    }                                                                     \
-    Push(WasmValue(result));                                              \
-    break;                                                                \
+#define ASMJS_LOAD_CASE(name, ctype, mtype, defval)                 \
+  case kExpr##name: {                                               \
+    uint32_t index = Pop().to<uint32_t>();                          \
+    ctype result;                                                   \
+    if (!BoundsCheck<mtype>(wasm_context_->mem_size, 0, index)) {   \
+      result = defval;                                              \
+    } else {                                                        \
+      byte* addr = wasm_context_->mem_start + index;                \
+      /* TODO(titzer): alignment for asmjs load mem? */             \
+      result = static_cast<ctype>(*reinterpret_cast<mtype*>(addr)); \
+    }                                                               \
+    Push(WasmValue(result));                                        \
+    break;                                                          \
   }
           ASMJS_LOAD_CASE(I32AsmjsLoadMem8S, int32_t, int8_t, 0);
           ASMJS_LOAD_CASE(I32AsmjsLoadMem8U, int32_t, uint8_t, 0);
@@ -1900,8 +1919,8 @@ class ThreadImpl {
   case kExpr##name: {                                                          \
     WasmValue val = Pop();                                                     \
     uint32_t index = Pop().to<uint32_t>();                                     \
-    if (BoundsCheck<mtype>(cached_instance_info_->mem_size, 0, index)) {       \
-      byte* addr = cached_instance_info_->mem_start + index;                   \
+    if (BoundsCheck<mtype>(wasm_context_->mem_size, 0, index)) {               \
+      byte* addr = wasm_context_->mem_start + index;                           \
       /* TODO(titzer): alignment for asmjs store mem? */                       \
       *(reinterpret_cast<mtype*>(addr)) = static_cast<mtype>(val.to<ctype>()); \
     }                                                                          \
@@ -1916,16 +1935,23 @@ class ThreadImpl {
           ASMJS_STORE_CASE(F64AsmjsStoreMem, double, double);
 #undef ASMJS_STORE_CASE
         case kExprGrowMemory: {
-          MemoryIndexOperand<false> operand(&decoder, code->at(pc));
+          MemoryIndexOperand<Decoder::kNoValidate> operand(&decoder,
+                                                           code->at(pc));
           uint32_t delta_pages = Pop().to<uint32_t>();
-          Push(WasmValue(ExecuteGrowMemory(
-              delta_pages, codemap_->maybe_instance(), cached_instance_info_)));
+          Handle<WasmInstanceObject> instance =
+              codemap()->maybe_instance().ToHandleChecked();
+          DCHECK_EQ(wasm_context_, instance->wasm_context()->get());
+          Isolate* isolate = instance->GetIsolate();
+          int32_t result =
+              WasmInstanceObject::GrowMemory(isolate, instance, delta_pages);
+          Push(WasmValue(result));
           len = 1 + operand.length;
           break;
         }
         case kExprMemorySize: {
-          MemoryIndexOperand<false> operand(&decoder, code->at(pc));
-          Push(WasmValue(static_cast<uint32_t>(cached_instance_info_->mem_size /
+          MemoryIndexOperand<Decoder::kNoValidate> operand(&decoder,
+                                                           code->at(pc));
+          Push(WasmValue(static_cast<uint32_t>(wasm_context_->mem_size /
                                                WasmModule::kPageSize)));
           len = 1 + operand.length;
           break;
@@ -1936,69 +1962,48 @@ class ThreadImpl {
         case kExprI32ReinterpretF32: {
           WasmValue val = Pop();
           Push(WasmValue(ExecuteI32ReinterpretF32(val)));
-          possible_nondeterminism_ |= std::isnan(val.to<float>());
           break;
         }
         case kExprI64ReinterpretF64: {
           WasmValue val = Pop();
           Push(WasmValue(ExecuteI64ReinterpretF64(val)));
-          possible_nondeterminism_ |= std::isnan(val.to<double>());
           break;
         }
 #define EXECUTE_SIMPLE_BINOP(name, ctype, op)               \
   case kExpr##name: {                                       \
     WasmValue rval = Pop();                                 \
     WasmValue lval = Pop();                                 \
-    WasmValue result(lval.to<ctype>() op rval.to<ctype>()); \
-    Push(result);                                           \
+    auto result = lval.to<ctype>() op rval.to<ctype>();     \
+    possible_nondeterminism_ |= has_nondeterminism(result); \
+    Push(WasmValue(result));                                \
     break;                                                  \
   }
           FOREACH_SIMPLE_BINOP(EXECUTE_SIMPLE_BINOP)
 #undef EXECUTE_SIMPLE_BINOP
 
-#define EXECUTE_OTHER_BINOP(name, ctype)                \
-  case kExpr##name: {                                   \
-    TrapReason trap = kTrapCount;                       \
-    volatile ctype rval = Pop().to<ctype>();            \
-    volatile ctype lval = Pop().to<ctype>();            \
-    WasmValue result(Execute##name(lval, rval, &trap)); \
-    if (trap != kTrapCount) return DoTrap(trap, pc);    \
-    Push(result);                                       \
-    break;                                              \
+#define EXECUTE_OTHER_BINOP(name, ctype)                    \
+  case kExpr##name: {                                       \
+    TrapReason trap = kTrapCount;                           \
+    ctype rval = Pop().to<ctype>();                         \
+    ctype lval = Pop().to<ctype>();                         \
+    auto result = Execute##name(lval, rval, &trap);         \
+    possible_nondeterminism_ |= has_nondeterminism(result); \
+    if (trap != kTrapCount) return DoTrap(trap, pc);        \
+    Push(WasmValue(result));                                \
+    break;                                                  \
   }
           FOREACH_OTHER_BINOP(EXECUTE_OTHER_BINOP)
 #undef EXECUTE_OTHER_BINOP
 
-        case kExprF32CopySign: {
-          // Handle kExprF32CopySign separately because it may introduce
-          // observable non-determinism.
-          TrapReason trap = kTrapCount;
-          volatile float rval = Pop().to<float>();
-          volatile float lval = Pop().to<float>();
-          WasmValue result(ExecuteF32CopySign(lval, rval, &trap));
-          Push(result);
-          possible_nondeterminism_ |= std::isnan(rval);
-          break;
-        }
-        case kExprF64CopySign: {
-          // Handle kExprF32CopySign separately because it may introduce
-          // observable non-determinism.
-          TrapReason trap = kTrapCount;
-          volatile double rval = Pop().to<double>();
-          volatile double lval = Pop().to<double>();
-          WasmValue result(ExecuteF64CopySign(lval, rval, &trap));
-          Push(result);
-          possible_nondeterminism_ |= std::isnan(rval);
-          break;
-        }
-#define EXECUTE_OTHER_UNOP(name, ctype)              \
-  case kExpr##name: {                                \
-    TrapReason trap = kTrapCount;                    \
-    volatile ctype val = Pop().to<ctype>();          \
-    WasmValue result(Execute##name(val, &trap));     \
-    if (trap != kTrapCount) return DoTrap(trap, pc); \
-    Push(result);                                    \
-    break;                                           \
+#define EXECUTE_OTHER_UNOP(name, ctype)                     \
+  case kExpr##name: {                                       \
+    TrapReason trap = kTrapCount;                           \
+    ctype val = Pop().to<ctype>();                          \
+    auto result = Execute##name(val, &trap);                \
+    possible_nondeterminism_ |= has_nondeterminism(result); \
+    if (trap != kTrapCount) return DoTrap(trap, pc);        \
+    Push(WasmValue(result));                                \
+    break;                                                  \
   }
           FOREACH_OTHER_UNOP(EXECUTE_OTHER_UNOP)
 #undef EXECUTE_OTHER_UNOP
@@ -2176,7 +2181,10 @@ class ThreadImpl {
     if (signature->return_count() > 0) {
       // TODO(wasm): Handle multiple returns.
       DCHECK_EQ(1, signature->return_count());
-      Push(ToWebAssemblyValue(isolate, retval, signature->GetReturn()));
+      WasmValue value =
+          ToWebAssemblyValue(isolate, retval, signature->GetReturn());
+      if (value.type() == kWasmStmt) return TryHandleException(isolate);
+      Push(value);
     }
     return {ExternalCallResult::EXTERNAL_RETURNED};
   }
@@ -2237,9 +2245,18 @@ class ThreadImpl {
     args[compiler::CWasmEntryParameters::kArgumentsBuffer] = arg_buffer_obj;
 
     Handle<Object> receiver = isolate->factory()->undefined_value();
+    trap_handler::SetThreadInWasm();
     MaybeHandle<Object> maybe_retval =
         Execution::Call(isolate, wasm_entry, receiver, arraysize(args), args);
-    if (maybe_retval.is_null()) return TryHandleException(isolate);
+    TRACE("  => External wasm function returned%s\n",
+          maybe_retval.is_null() ? " with exception" : "");
+
+    if (maybe_retval.is_null()) {
+      DCHECK(!trap_handler::IsThreadInWasm());
+      return TryHandleException(isolate);
+    }
+
+    trap_handler::ClearThreadInWasm();
 
     // Pop arguments off the stack.
     sp_ -= num_args;
@@ -2314,13 +2331,12 @@ class ThreadImpl {
       if (!code) return {ExternalCallResult::INVALID_FUNC};
       if (code->function->sig_index != sig_index) {
         // If not an exact match, we have to do a canonical check.
-        // TODO(titzer): make this faster with some kind of caching?
-        const WasmIndirectFunctionTable* table =
-            &module()->function_tables[table_index];
-        int function_key = table->map.Find(code->function->sig);
-        if (function_key < 0 ||
-            (function_key !=
-             table->map.Find(module()->signatures[sig_index]))) {
+        int function_canonical_id =
+            module()->signature_ids[code->function->sig_index];
+        int expected_canonical_id = module()->signature_ids[sig_index];
+        DCHECK_EQ(function_canonical_id,
+                  module()->signature_map.Find(code->function->sig));
+        if (function_canonical_id != expected_canonical_id) {
           return {ExternalCallResult::SIGNATURE_MISMATCH};
         }
       }
@@ -2338,11 +2354,9 @@ class ThreadImpl {
       // changes to the tables.
 
       // Canonicalize signature index.
-      // TODO(titzer): make this faster with some kind of caching?
-      const WasmIndirectFunctionTable* table =
-          &module()->function_tables[table_index];
-      FunctionSig* sig = module()->signatures[sig_index];
-      uint32_t canonical_sig_index = table->map.Find(sig);
+      uint32_t canonical_sig_index = module()->signature_ids[sig_index];
+      DCHECK_EQ(canonical_sig_index,
+                module()->signature_map.Find(module()->signatures[sig_index]));
 
       // Check signature.
       FixedArray* sig_tables = compiled_module->ptr_to_signature_tables();
@@ -2569,9 +2583,6 @@ uint32_t WasmInterpreter::Thread::ActivationFrameBase(uint32_t id) {
 //============================================================================
 class WasmInterpreterInternals : public ZoneObject {
  public:
-  // We cache the memory information of the debugged instance here, and all
-  // threads (currently, one) share it and update it in case of {GrowMemory}.
-  CachedInstanceInfo cached_instance_info_;
   // Create a copy of the module bytes for the interpreter, since the passed
   // pointer might be invalidated after constructing the interpreter.
   const ZoneVector<uint8_t> module_bytes_;
@@ -2581,13 +2592,11 @@ class WasmInterpreterInternals : public ZoneObject {
   WasmInterpreterInternals(Isolate* isolate, Zone* zone,
                            const WasmModule* module,
                            const ModuleWireBytes& wire_bytes,
-                           byte* globals_start, byte* mem_start,
-                           uint32_t mem_size)
-      : cached_instance_info_(globals_start, mem_start, mem_size),
-        module_bytes_(wire_bytes.start(), wire_bytes.end(), zone),
+                           WasmContext* wasm_context)
+      : module_bytes_(wire_bytes.start(), wire_bytes.end(), zone),
         codemap_(isolate, module, module_bytes_.data(), zone),
         threads_(zone) {
-    threads_.emplace_back(zone, &codemap_, &cached_instance_info_);
+    threads_.emplace_back(zone, &codemap_, wasm_context);
   }
 };
 
@@ -2596,12 +2605,10 @@ class WasmInterpreterInternals : public ZoneObject {
 //============================================================================
 WasmInterpreter::WasmInterpreter(Isolate* isolate, const WasmModule* module,
                                  const ModuleWireBytes& wire_bytes,
-                                 byte* globals_start, byte* mem_start,
-                                 uint32_t mem_size)
+                                 WasmContext* wasm_context)
     : zone_(isolate->allocator(), ZONE_NAME),
       internals_(new (&zone_) WasmInterpreterInternals(
-          isolate, &zone_, module, wire_bytes, globals_start, mem_start,
-          mem_size)) {}
+          isolate, &zone_, module, wire_bytes, wasm_context)) {}
 
 WasmInterpreter::~WasmInterpreter() { internals_->~WasmInterpreterInternals(); }
 
@@ -2651,14 +2658,6 @@ int WasmInterpreter::GetThreadCount() {
 WasmInterpreter::Thread* WasmInterpreter::GetThread(int id) {
   CHECK_EQ(0, id);  // only one thread for now.
   return ToThread(&internals_->threads_[id]);
-}
-
-void WasmInterpreter::UpdateMemory(byte* mem_start, uint32_t mem_size) {
-  // We assume one thread. Things are likely to be more complicated than this
-  // in a multi-threaded case.
-  DCHECK_EQ(1, internals_->threads_.size());
-  internals_->cached_instance_info_.mem_start = mem_start;
-  internals_->cached_instance_info_.mem_size = mem_size;
 }
 
 void WasmInterpreter::AddFunctionForTesting(const WasmFunction* function) {

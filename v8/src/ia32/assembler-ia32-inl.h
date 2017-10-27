@@ -107,7 +107,7 @@ void RelocInfo::set_target_object(HeapObject* target,
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
     Assembler::FlushICache(target->GetIsolate(), pc_, sizeof(Address));
   }
-  if (write_barrier_mode == UPDATE_WRITE_BARRIER && host() != NULL) {
+  if (write_barrier_mode == UPDATE_WRITE_BARRIER && host() != nullptr) {
     host()->GetHeap()->RecordWriteIntoCode(host(), this, target);
     host()->GetHeap()->incremental_marking()->RecordWriteIntoCode(host(), this,
                                                                   target);
@@ -150,7 +150,7 @@ void RelocInfo::set_target_runtime_entry(Isolate* isolate, Address target,
 void RelocInfo::WipeOut(Isolate* isolate) {
   if (IsEmbeddedObject(rmode_) || IsExternalReference(rmode_) ||
       IsInternalReference(rmode_)) {
-    Memory::Address_at(pc_) = NULL;
+    Memory::Address_at(pc_) = nullptr;
   } else if (IsCodeTarget(rmode_) || IsRuntimeEntry(rmode_)) {
     // Effectively write zero into the relocation.
     Assembler::set_target_address_at(isolate, pc_, host_,
@@ -262,14 +262,14 @@ void Assembler::set_target_address_at(Isolate* isolate, Address pc,
 }
 
 Address Assembler::target_address_at(Address pc, Code* code) {
-  Address constant_pool = code ? code->constant_pool() : NULL;
+  Address constant_pool = code ? code->constant_pool() : nullptr;
   return target_address_at(pc, constant_pool);
 }
 
 void Assembler::set_target_address_at(Isolate* isolate, Address pc, Code* code,
                                       Address target,
                                       ICacheFlushMode icache_flush_mode) {
-  Address constant_pool = code ? code->constant_pool() : NULL;
+  Address constant_pool = code ? code->constant_pool() : nullptr;
   set_target_address_at(isolate, pc, constant_pool, target);
 }
 
@@ -318,8 +318,8 @@ void Assembler::deserialization_set_target_internal_reference_at(
 
 
 void Operand::set_sib(ScaleFactor scale, Register index, Register base) {
-  DCHECK(len_ == 1);
-  DCHECK((scale & -4) == 0);
+  DCHECK_EQ(len_, 1);
+  DCHECK_EQ(scale & -4, 0);
   // Use SIB with no index register only for base esp.
   DCHECK(index != esp || base == esp);
   buf_[1] = scale << 6 | index.code() << 3 | base.code();

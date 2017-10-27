@@ -209,18 +209,13 @@ class AstValue : public ZoneObject {
     return Smi::FromInt(smi_);
   }
 
-  bool ToUint32(uint32_t* value) const;
-
-  bool EqualsString(const AstRawString* string) const {
-    return type_ == STRING && string_ == string;
-  }
-
   bool IsPropertyName() const;
 
-  bool BooleanValue() const;
+  V8_EXPORT_PRIVATE bool BooleanValue() const;
 
   bool IsSmi() const { return type_ == SMI; }
   bool IsHeapNumber() const { return type_ == NUMBER; }
+  bool IsBigInt() const { return type_ == BIGINT; }
   bool IsFalse() const { return type_ == BOOLEAN && !bool_; }
   bool IsTrue() const { return type_ == BOOLEAN && bool_; }
   bool IsUndefined() const { return type_ == UNDEFINED; }
@@ -249,6 +244,7 @@ class AstValue : public ZoneObject {
     SYMBOL,
     NUMBER,
     SMI,
+    BIGINT,
     BOOLEAN,
     NULL_TYPE,
     UNDEFINED,
@@ -268,6 +264,10 @@ class AstValue : public ZoneObject {
   AstValue(Type t, int i) : type_(t), next_(nullptr) {
     DCHECK(type_ == SMI);
     smi_ = i;
+  }
+
+  explicit AstValue(const char* n) : type_(BIGINT), next_(nullptr) {
+    bigint_buffer_ = n;
   }
 
   explicit AstValue(bool b) : type_(BOOLEAN), next_(nullptr) { bool_ = b; }
@@ -292,6 +292,7 @@ class AstValue : public ZoneObject {
     int smi_;
     bool bool_;
     AstSymbol symbol_;
+    const char* bigint_buffer_;
   };
 };
 
@@ -365,13 +366,6 @@ class AstStringConstants final {
   DISALLOW_COPY_AND_ASSIGN(AstStringConstants);
 };
 
-#define OTHER_CONSTANTS(F) \
-  F(true_value)            \
-  F(false_value)           \
-  F(null_value)            \
-  F(undefined_value)       \
-  F(the_hole_value)
-
 class AstValueFactory {
  public:
   AstValueFactory(Zone* zone, const AstStringConstants* string_constants,
@@ -386,9 +380,6 @@ class AstValueFactory {
         empty_cons_string_(nullptr),
         zone_(zone),
         hash_seed_(hash_seed) {
-#define F(name) name##_ = nullptr;
-    OTHER_CONSTANTS(F)
-#undef F
     DCHECK_EQ(hash_seed, string_constants->hash_seed());
     std::fill(smis_, smis_ + arraysize(smis_), nullptr);
     std::fill(one_character_strings_,
@@ -430,8 +421,8 @@ class AstValueFactory {
   const AstValue* NewSymbol(AstSymbol symbol);
   V8_EXPORT_PRIVATE const AstValue* NewNumber(double number);
   const AstValue* NewSmi(uint32_t number);
+  V8_EXPORT_PRIVATE const AstValue* NewBigInt(const char* number);
   const AstValue* NewBoolean(bool b);
-  const AstValue* NewStringList(ZoneList<const AstRawString*>* strings);
   const AstValue* NewNull();
   const AstValue* NewUndefined();
   const AstValue* NewTheHole();
@@ -468,7 +459,7 @@ class AstValueFactory {
   AstRawString* GetString(uint32_t hash, bool is_one_byte,
                           Vector<const byte> literal_bytes);
 
-  // All strings are copied here, one after another (no NULLs inbetween).
+  // All strings are copied here, one after another (no zeroes inbetween).
   base::CustomMatcherHashMap string_table_;
   // For keeping track of all AstValues and AstRawStrings we've created (so that
   // they can be internalized later).
@@ -494,13 +485,13 @@ class AstValueFactory {
 
   uint32_t hash_seed_;
 
-#define F(name) AstValue* name##_;
-  OTHER_CONSTANTS(F)
-#undef F
+  AstValue* true_value_ = nullptr;
+  AstValue* false_value_ = nullptr;
+  AstValue* null_value_ = nullptr;
+  AstValue* undefined_value_ = nullptr;
+  AstValue* the_hole_value_ = nullptr;
 };
 }  // namespace internal
 }  // namespace v8
-
-#undef OTHER_CONSTANTS
 
 #endif  // V8_AST_AST_VALUE_FACTORY_H_

@@ -23,7 +23,7 @@ class ElementsAccessor {
 
   // Returns a shared ElementsAccessor for the specified ElementsKind.
   static ElementsAccessor* ForKind(ElementsKind elements_kind) {
-    DCHECK(static_cast<int>(elements_kind) < kElementsKindCount);
+    DCHECK_LT(static_cast<int>(elements_kind), kElementsKindCount);
     return elements_accessors_[elements_kind];
   }
 
@@ -34,7 +34,7 @@ class ElementsAccessor {
   // Returns true if a holder contains an element with the specified index
   // without iterating up the prototype chain.  The caller can optionally pass
   // in the backing store to use for the check, which must be compatible with
-  // the ElementsKind of the ElementsAccessor. If backing_store is NULL, the
+  // the ElementsKind of the ElementsAccessor. If backing_store is nullptr, the
   // holder->elements() is used as the backing store. If a |filter| is
   // specified the PropertyAttributes of the element at the given index
   // are compared to the given |filter|. If they match/overlap the given
@@ -192,7 +192,8 @@ class ElementsAccessor {
                             Handle<FixedArrayBase> destination, int size) = 0;
 
   virtual Object* CopyElements(Handle<JSReceiver> source,
-                               Handle<JSObject> destination, size_t length) = 0;
+                               Handle<JSObject> destination, size_t length,
+                               uint32_t offset = 0) = 0;
 
   virtual Handle<FixedArray> CreateListFromArrayLike(Isolate* isolate,
                                                      Handle<JSObject> object,

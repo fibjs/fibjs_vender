@@ -14,7 +14,7 @@
 #include "src/base/division-by-constant.h"
 #include "src/bootstrapper.h"
 #include "src/callable.h"
-#include "src/codegen.h"
+#include "src/code-stubs.h"
 #include "src/debug/debug.h"
 #include "src/external-reference-table.h"
 #include "src/frames-inl.h"
@@ -157,7 +157,7 @@ void MacroAssembler::PushSafepointRegisters() {
   // Safepoints expect a block of kNumSafepointRegisters values on the
   // stack, so adjust the stack for unsaved registers.
   const int num_unsaved = kNumSafepointRegisters - kNumSafepointSavedRegisters;
-  DCHECK(num_unsaved >= 0);
+  DCHECK_GE(num_unsaved, 0);
   if (num_unsaved > 0) {
     Dsubu(sp, sp, Operand(num_unsaved * kPointerSize));
   }
@@ -235,7 +235,7 @@ void MacroAssembler::RecordWriteField(Register object, int offset,
 }
 
 void TurboAssembler::SaveRegisters(RegList registers) {
-  DCHECK(NumRegs(registers) > 0);
+  DCHECK_GT(NumRegs(registers), 0);
   RegList regs = 0;
   for (int i = 0; i < Register::kNumRegisters; ++i) {
     if ((registers >> i) & 1u) {
@@ -246,7 +246,7 @@ void TurboAssembler::SaveRegisters(RegList registers) {
 }
 
 void TurboAssembler::RestoreRegisters(RegList registers) {
-  DCHECK(NumRegs(registers) > 0);
+  DCHECK_GT(NumRegs(registers), 0);
   RegList regs = 0;
   for (int i = 0; i < Register::kNumRegisters; ++i) {
     if ((registers >> i) & 1u) {
@@ -1143,7 +1143,7 @@ void TurboAssembler::Ulw(Register rd, const MemOperand& rs) {
   if (kArchVariant == kMips64r6) {
     Lw(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     DCHECK(kMipsLwrOffset <= 3 && kMipsLwlOffset <= 3);
     MemOperand source = rs;
     // Adjust offset for two accesses and check if offset + 3 fits into int16_t.
@@ -1165,7 +1165,7 @@ void TurboAssembler::Ulwu(Register rd, const MemOperand& rs) {
   if (kArchVariant == kMips64r6) {
     Lwu(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     Ulw(rd, rs);
     Dext(rd, rd, 0, 32);
   }
@@ -1178,7 +1178,7 @@ void TurboAssembler::Usw(Register rd, const MemOperand& rs) {
   if (kArchVariant == kMips64r6) {
     Sw(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     DCHECK(kMipsSwrOffset <= 3 && kMipsSwlOffset <= 3);
     MemOperand source = rs;
     // Adjust offset for two accesses and check if offset + 3 fits into int16_t.
@@ -1194,7 +1194,7 @@ void TurboAssembler::Ulh(Register rd, const MemOperand& rs) {
   if (kArchVariant == kMips64r6) {
     Lh(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     MemOperand source = rs;
     // Adjust offset for two accesses and check if offset + 1 fits into int16_t.
     AdjustBaseAndOffset(source, OffsetAccessType::TWO_ACCESSES, 1);
@@ -1228,7 +1228,7 @@ void TurboAssembler::Ulhu(Register rd, const MemOperand& rs) {
   if (kArchVariant == kMips64r6) {
     Lhu(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     MemOperand source = rs;
     // Adjust offset for two accesses and check if offset + 1 fits into int16_t.
     AdjustBaseAndOffset(source, OffsetAccessType::TWO_ACCESSES, 1);
@@ -1264,7 +1264,7 @@ void TurboAssembler::Ush(Register rd, const MemOperand& rs, Register scratch) {
   if (kArchVariant == kMips64r6) {
     Sh(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     MemOperand source = rs;
     // Adjust offset for two accesses and check if offset + 1 fits into int16_t.
     AdjustBaseAndOffset(source, OffsetAccessType::TWO_ACCESSES, 1);
@@ -1291,7 +1291,7 @@ void TurboAssembler::Uld(Register rd, const MemOperand& rs) {
   if (kArchVariant == kMips64r6) {
     Ld(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     DCHECK(kMipsLdrOffset <= 7 && kMipsLdlOffset <= 7);
     MemOperand source = rs;
     // Adjust offset for two accesses and check if offset + 7 fits into int16_t.
@@ -1327,7 +1327,7 @@ void TurboAssembler::Usd(Register rd, const MemOperand& rs) {
   if (kArchVariant == kMips64r6) {
     Sd(rd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     DCHECK(kMipsSdrOffset <= 7 && kMipsSdlOffset <= 7);
     MemOperand source = rs;
     // Adjust offset for two accesses and check if offset + 7 fits into int16_t.
@@ -1351,7 +1351,7 @@ void TurboAssembler::Ulwc1(FPURegister fd, const MemOperand& rs,
   if (kArchVariant == kMips64r6) {
     Lwc1(fd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     Ulw(scratch, rs);
     mtc1(scratch, fd);
   }
@@ -1362,7 +1362,7 @@ void TurboAssembler::Uswc1(FPURegister fd, const MemOperand& rs,
   if (kArchVariant == kMips64r6) {
     Swc1(fd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     mfc1(scratch, fd);
     Usw(scratch, rs);
   }
@@ -1374,7 +1374,7 @@ void TurboAssembler::Uldc1(FPURegister fd, const MemOperand& rs,
   if (kArchVariant == kMips64r6) {
     Ldc1(fd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     Uld(scratch, rs);
     dmtc1(scratch, fd);
   }
@@ -1386,7 +1386,7 @@ void TurboAssembler::Usdc1(FPURegister fd, const MemOperand& rs,
   if (kArchVariant == kMips64r6) {
     Sdc1(fd, rs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     dmfc1(scratch, fd);
     Usd(scratch, rs);
   }
@@ -1966,8 +1966,8 @@ void TurboAssembler::MultiPopFPU(RegList regs) {
 
 void TurboAssembler::Ext(Register rt, Register rs, uint16_t pos,
                          uint16_t size) {
-  DCHECK(pos < 32);
-  DCHECK(pos + size < 33);
+  DCHECK_LT(pos, 32);
+  DCHECK_LT(pos + size, 33);
   ext_(rt, rs, pos, size);
 }
 
@@ -1986,9 +1986,9 @@ void TurboAssembler::Dext(Register rt, Register rs, uint16_t pos,
 
 void TurboAssembler::Ins(Register rt, Register rs, uint16_t pos,
                          uint16_t size) {
-  DCHECK(pos < 32);
-  DCHECK(pos + size <= 32);
-  DCHECK(size != 0);
+  DCHECK_LT(pos, 32);
+  DCHECK_LE(pos + size, 32);
+  DCHECK_NE(size, 0);
   ins_(rt, rs, pos, size);
 }
 
@@ -2045,7 +2045,7 @@ void TurboAssembler::Neg_s(FPURegister fd, FPURegister fs) {
     // r6 neg_s changes the sign for NaN-like operands as well.
     neg_s(fd, fs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     Label is_nan, done;
     Register scratch1 = t8;
     Register scratch2 = t9;
@@ -2068,7 +2068,7 @@ void TurboAssembler::Neg_d(FPURegister fd, FPURegister fs) {
     // r6 neg_d changes the sign for NaN-like operands as well.
     neg_d(fd, fs);
   } else {
-    DCHECK(kArchVariant == kMips64r2);
+    DCHECK_EQ(kArchVariant, kMips64r2);
     Label is_nan, done;
     Register scratch1 = t8;
     Register scratch2 = t9;
@@ -2283,7 +2283,7 @@ void TurboAssembler::Trunc_uw_d(FPURegister fd, Register rs,
   // Test if scratch > fd.
   // If fd < 2^31 we can convert it normally.
   Label simple_convert;
-  BranchF(&simple_convert, NULL, lt, fd, scratch);
+  BranchF(&simple_convert, nullptr, lt, fd, scratch);
 
   // First we subtract 2^31 from fd, then trunc it to rs
   // and add 2^31 to rs.
@@ -2317,7 +2317,7 @@ void TurboAssembler::Trunc_uw_s(FPURegister fd, Register rs,
   // Test if scratch > fd.
   // If fd < 2^31 we can convert it normally.
   Label simple_convert;
-  BranchF32(&simple_convert, NULL, lt, fd, scratch);
+  BranchF32(&simple_convert, nullptr, lt, fd, scratch);
 
   // First we subtract 2^31 from fd, then trunc it to rs
   // and add 2^31 to rs.
@@ -2849,7 +2849,7 @@ void MacroAssembler::EmitFPUTruncate(FPURoundingMode rounding_mode,
   cvt_w_d(double_scratch, double_input);
   mfc1(result, double_scratch);
   cvt_d_w(double_scratch, double_scratch);
-  BranchF(&done, NULL, eq, double_input, double_scratch);
+  BranchF(&done, nullptr, eq, double_input, double_scratch);
 
   int32_t except_mask = kFCSRFlagMask;  // Assume interested in all exceptions.
 
@@ -2928,7 +2928,7 @@ void TurboAssembler::TruncateDoubleToIDelayed(Zone* zone, Register result,
   Dsubu(sp, sp, Operand(kDoubleSize));  // Put input on stack.
   Sdc1(double_input, MemOperand(sp, 0));
 
-  CallStubDelayed(new (zone) DoubleToIStub(nullptr, sp, result, 0, true, true));
+  CallStubDelayed(new (zone) DoubleToIStub(nullptr, result));
 
   Daddu(sp, sp, Operand(kDoubleSize));
   pop(ra);
@@ -2944,7 +2944,7 @@ void TurboAssembler::TruncateDoubleToIDelayed(Zone* zone, Register result,
          (cond != cc_always && (rs != zero_reg || rt.rm() != zero_reg)))
 
 void TurboAssembler::Branch(int32_t offset, BranchDelaySlot bdslot) {
-  DCHECK(kArchVariant == kMips64r6 ? is_int26(offset) : is_int16(offset));
+  DCHECK_EQ(kArchVariant, kMips64r6 ? is_int26(offset) : is_int16(offset));
   BranchShort(offset, bdslot);
 }
 
@@ -3454,7 +3454,7 @@ bool TurboAssembler::BranchShortCheck(int32_t offset, Label* L, Condition cond,
       return BranchShortHelper(offset, nullptr, cond, rs, rt, bdslot);
     }
   } else {
-    DCHECK(offset == 0);
+    DCHECK_EQ(offset, 0);
     if (kArchVariant == kMips64r6 && bdslot == PROTECT) {
       return BranchShortHelperR6(0, L, cond, rs, rt);
     } else {
@@ -3809,7 +3809,7 @@ bool TurboAssembler::BranchAndLinkShortCheck(int32_t offset, Label* L,
       return BranchAndLinkShortHelper(offset, nullptr, cond, rs, rt, bdslot);
     }
   } else {
-    DCHECK(offset == 0);
+    DCHECK_EQ(offset, 0);
     if (kArchVariant == kMips64r6 && bdslot == PROTECT) {
       return BranchAndLinkShortHelperR6(0, L, cond, rs, rt);
     } else {
@@ -4114,22 +4114,6 @@ void MacroAssembler::PopStackHandler() {
   li(scratch,
      Operand(ExternalReference(IsolateAddressId::kHandlerAddress, isolate())));
   Sd(a1, MemOperand(scratch));
-}
-
-
-void MacroAssembler::JumpIfNotUniqueNameInstanceType(Register reg,
-                                                     Label* not_unique_name) {
-  STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
-  Label succeed;
-  {
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    And(scratch, reg, Operand(kIsNotStringMask | kIsNotInternalizedMask));
-    Branch(&succeed, eq, scratch, Operand(zero_reg));
-  }
-  Branch(not_unique_name, ne, reg, Operand(SYMBOL_TYPE));
-
-  bind(&succeed);
 }
 
 void MacroAssembler::GetWeakValue(Register value, Handle<WeakCell> cell) {
@@ -4815,7 +4799,7 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
 
 void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
                                       Register scratch1, Register scratch2) {
-  DCHECK(value > 0);
+  DCHECK_GT(value, 0);
   if (FLAG_native_code_counters && counter->Enabled()) {
     li(scratch2, Operand(ExternalReference(counter)));
     Lw(scratch1, MemOperand(scratch2));
@@ -4827,7 +4811,7 @@ void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
 
 void MacroAssembler::DecrementCounter(StatsCounter* counter, int value,
                                       Register scratch1, Register scratch2) {
-  DCHECK(value > 0);
+  DCHECK_GT(value, 0);
   if (FLAG_native_code_counters && counter->Enabled()) {
     li(scratch2, Operand(ExternalReference(counter)));
     Lw(scratch1, MemOperand(scratch2));
@@ -4860,7 +4844,7 @@ void TurboAssembler::Abort(BailoutReason reason) {
   bind(&abort_start);
 #ifdef DEBUG
   const char* msg = GetBailoutReason(reason);
-  if (msg != NULL) {
+  if (msg != nullptr) {
     RecordComment("Abort message: ");
     RecordComment(msg);
   }
@@ -4891,7 +4875,7 @@ void TurboAssembler::Abort(BailoutReason reason) {
     // generated instructions is 10, so we use this as a maximum value.
     static const int kExpectedAbortInstructions = 10;
     int abort_instructions = InstructionsGeneratedSince(&abort_start);
-    DCHECK(abort_instructions <= kExpectedAbortInstructions);
+    DCHECK_LE(abort_instructions, kExpectedAbortInstructions);
     while (abort_instructions++ < kExpectedAbortInstructions) {
       nop();
     }
@@ -5025,7 +5009,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
   // Reserve place for the return address, stack space and an optional slot
   // (used by the DirectCEntryStub to hold the return value if a struct is
   // returned) and align the frame preparing for calling the runtime function.
-  DCHECK(stack_space >= 0);
+  DCHECK_GE(stack_space, 0);
   Dsubu(sp, sp, Operand((stack_space + 2) * kPointerSize));
   if (frame_alignment > 0) {
     DCHECK(base::bits::IsPowerOfTwo(frame_alignment));
@@ -5585,7 +5569,7 @@ void MacroAssembler::JumpIfBlack(Register object,
                                  Register scratch1,
                                  Label* on_black) {
   HasColor(object, scratch0, scratch1, on_black, 1, 1);  // kBlackBitPattern.
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
+  DCHECK_EQ(strcmp(Marking::kBlackBitPattern, "11"), 0);
 }
 
 
@@ -5639,10 +5623,10 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
   GetMarkBits(value, bitmap_scratch, mask_scratch);
 
   // If the value is black or grey we don't need to do anything.
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK_EQ(strcmp(Marking::kWhiteBitPattern, "00"), 0);
+  DCHECK_EQ(strcmp(Marking::kBlackBitPattern, "11"), 0);
+  DCHECK_EQ(strcmp(Marking::kGreyBitPattern, "10"), 0);
+  DCHECK_EQ(strcmp(Marking::kImpossibleBitPattern, "01"), 0);
 
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.
@@ -5722,48 +5706,6 @@ bool AreAliased(Register reg1, Register reg2, Register reg3, Register reg4,
 
   return n_of_valid_regs != n_of_non_aliasing_regs;
 }
-
-
-CodePatcher::CodePatcher(Isolate* isolate, byte* address, int instructions,
-                         FlushICache flush_cache)
-    : address_(address),
-      size_(instructions * Assembler::kInstrSize),
-      masm_(isolate, address, size_ + Assembler::kGap, CodeObjectRequired::kNo),
-      flush_cache_(flush_cache) {
-  // Create a new macro assembler pointing to the address of the code to patch.
-  // The size is adjusted with kGap on order for the assembler to generate size
-  // bytes of instructions without failing with buffer size constraints.
-  DCHECK(masm_.reloc_info_writer.pos() == address_ + size_ + Assembler::kGap);
-}
-
-
-CodePatcher::~CodePatcher() {
-  // Indicate that code has changed.
-  if (flush_cache_ == FLUSH) {
-    Assembler::FlushICache(masm_.isolate(), address_, size_);
-  }
-  // Check that the code was patched as expected.
-  DCHECK(masm_.pc_ == address_ + size_);
-  DCHECK(masm_.reloc_info_writer.pos() == address_ + size_ + Assembler::kGap);
-}
-
-
-void CodePatcher::Emit(Instr instr) {
-  masm()->emit(instr);
-}
-
-
-void CodePatcher::Emit(Address addr) {
-  // masm()->emit(reinterpret_cast<Instr>(addr));
-}
-
-
-void CodePatcher::ChangeBranchCondition(Instr current_instr,
-                                        uint32_t new_opcode) {
-  current_instr = (current_instr & ~kOpcodeMask) | new_opcode;
-  masm_.emit(current_instr);
-}
-
 
 }  // namespace internal
 }  // namespace v8

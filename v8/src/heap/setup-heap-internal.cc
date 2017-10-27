@@ -304,6 +304,9 @@ bool Heap::CreateInitialMaps() {
     ALLOCATE_MAP(SHARED_FUNCTION_INFO_TYPE, SharedFunctionInfo::kAlignedSize,
                  shared_function_info)
 
+    ALLOCATE_MAP(CODE_DATA_CONTAINER_TYPE, CodeDataContainer::kSize,
+                 code_data_container)
+
     ALLOCATE_MAP(JS_MESSAGE_OBJECT_TYPE, JSMessageObject::kSize, message_object)
     ALLOCATE_MAP(JS_OBJECT_TYPE, JSObject::kHeaderSize + kPointerSize, external)
     external_map()->set_is_extensible(false);
@@ -542,7 +545,7 @@ void Heap::CreateInitialObjects() {
       ArrayList::cast(*(factory->NewFixedArray(16, TENURED))));
   weak_new_space_object_to_code_list()->SetLength(0);
 
-  set_code_coverage_list(undefined_value());
+  set_feedback_vectors_for_profiling_tools(undefined_value());
 
   set_script_list(Smi::kZero);
 

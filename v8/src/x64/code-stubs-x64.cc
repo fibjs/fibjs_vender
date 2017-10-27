@@ -11,7 +11,6 @@
 #include "src/api-arguments.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
-#include "src/codegen.h"
 #include "src/counters.h"
 #include "src/double.h"
 #include "src/frame-constants.h"
@@ -61,42 +60,23 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
 }
 
 
-class FloatingPointHelper : public AllStatic {
- public:
-  enum ConvertUndefined {
-    CONVERT_UNDEFINED_TO_ZERO,
-    BAILOUT_ON_UNDEFINED
-  };
-  // Load the operands from rdx and rax into xmm0 and xmm1, as doubles.
-  // If the operands are not both numbers, jump to not_numbers.
-  // Leaves rdx and rax unchanged.  SmiOperands assumes both are smis.
-  // NumberOperands assumes both are smis or heap numbers.
-  static void LoadSSE2UnknownOperands(MacroAssembler* masm,
-                                      Label* not_numbers);
-};
-
-
 void DoubleToIStub::Generate(MacroAssembler* masm) {
-    Register input_reg = this->source();
     Register final_result_reg = this->destination();
-    DCHECK(is_truncating());
 
     Label check_negative, process_64_bits, done;
 
-    int double_offset = offset();
+    // Account for return address and saved regs.
+    const int kArgumentOffset = 3 * kRegisterSize;
 
-    // Account for return address and saved regs if input is rsp.
-    if (input_reg == rsp) double_offset += 3 * kRegisterSize;
-
-    MemOperand mantissa_operand(MemOperand(input_reg, double_offset));
-    MemOperand exponent_operand(MemOperand(input_reg,
-                                           double_offset + kDoubleSize / 2));
+    MemOperand mantissa_operand(MemOperand(rsp, kArgumentOffset));
+    MemOperand exponent_operand(
+        MemOperand(rsp, kArgumentOffset + kDoubleSize / 2));
 
     Register scratch1 = no_reg;
     Register scratch_candidates[3] = { rbx, rdx, rdi };
     for (int i = 0; i < 3; i++) {
       scratch1 = scratch_candidates[i];
-      if (final_result_reg != scratch1 && input_reg != scratch1) break;
+      if (final_result_reg != scratch1) break;
     }
 
     // Since we must use rcx for shifts below, use some other register (rax)
@@ -109,11 +89,9 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
     __ pushq(scratch1);
     __ pushq(save_reg);
 
-    bool stash_exponent_copy = input_reg != rsp;
     __ movl(scratch1, mantissa_operand);
     __ Movsd(kScratchDoubleReg, mantissa_operand);
     __ movl(rcx, exponent_operand);
-    if (stash_exponent_copy) __ pushq(rcx);
 
     __ andl(rcx, Immediate(HeapNumber::kExponentMask));
     __ shrl(rcx, Immediate(HeapNumber::kExponentShift));
@@ -138,18 +116,11 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
     __ bind(&check_negative);
     __ movl(result_reg, scratch1);
     __ negl(result_reg);
-    if (stash_exponent_copy) {
-        __ cmpl(MemOperand(rsp, 0), Immediate(0));
-    } else {
-        __ cmpl(exponent_operand, Immediate(0));
-    }
+    __ cmpl(exponent_operand, Immediate(0));
     __ cmovl(greater, result_reg, scratch1);
 
     // Restore registers
     __ bind(&done);
-    if (stash_exponent_copy) {
-        __ addp(rsp, Immediate(kDoubleSize));
-    }
     if (final_result_reg != result_reg) {
       DCHECK(final_result_reg == rcx);
       __ movl(final_result_reg, result_reg);
@@ -158,37 +129,6 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
     __ popq(scratch1);
     __ ret(0);
 }
-
-
-void FloatingPointHelper::LoadSSE2UnknownOperands(MacroAssembler* masm,
-                                                  Label* not_numbers) {
-  Label load_smi_rdx, load_nonsmi_rax, load_smi_rax, load_float_rax, done;
-  // Load operand in rdx into xmm0, or branch to not_numbers.
-  __ LoadRoot(rcx, Heap::kHeapNumberMapRootIndex);
-  __ JumpIfSmi(rdx, &load_smi_rdx);
-  __ cmpp(FieldOperand(rdx, HeapObject::kMapOffset), rcx);
-  __ j(not_equal, not_numbers);  // Argument in rdx is not a number.
-  __ Movsd(xmm0, FieldOperand(rdx, HeapNumber::kValueOffset));
-  // Load operand in rax into xmm1, or branch to not_numbers.
-  __ JumpIfSmi(rax, &load_smi_rax);
-
-  __ bind(&load_nonsmi_rax);
-  __ cmpp(FieldOperand(rax, HeapObject::kMapOffset), rcx);
-  __ j(not_equal, not_numbers);
-  __ Movsd(xmm1, FieldOperand(rax, HeapNumber::kValueOffset));
-  __ jmp(&done);
-
-  __ bind(&load_smi_rdx);
-  __ SmiToInteger32(kScratchRegister, rdx);
-  __ Cvtlsi2sd(xmm0, kScratchRegister);
-  __ JumpIfNotSmi(rax, &load_nonsmi_rax);
-
-  __ bind(&load_smi_rax);
-  __ SmiToInteger32(kScratchRegister, rax);
-  __ Cvtlsi2sd(xmm1, kScratchRegister);
-  __ bind(&done);
-}
-
 
 void MathPowStub::Generate(MacroAssembler* masm) {
   const Register exponent = MathPowTaggedDescriptor::exponent();
@@ -673,142 +613,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ ret(0);
 }
 
-void StringHelper::GenerateFlatOneByteStringEquals(MacroAssembler* masm,
-                                                   Register left,
-                                                   Register right,
-                                                   Register scratch1,
-                                                   Register scratch2) {
-  Register length = scratch1;
-
-  // Compare lengths.
-  Label check_zero_length;
-  __ movp(length, FieldOperand(left, String::kLengthOffset));
-  __ SmiCompare(length, FieldOperand(right, String::kLengthOffset));
-  __ j(equal, &check_zero_length, Label::kNear);
-  __ Move(rax, Smi::FromInt(NOT_EQUAL));
-  __ ret(0);
-
-  // Check if the length is zero.
-  Label compare_chars;
-  __ bind(&check_zero_length);
-  STATIC_ASSERT(kSmiTag == 0);
-  __ SmiTest(length);
-  __ j(not_zero, &compare_chars, Label::kNear);
-  __ Move(rax, Smi::FromInt(EQUAL));
-  __ ret(0);
-
-  // Compare characters.
-  __ bind(&compare_chars);
-  Label strings_not_equal;
-  GenerateOneByteCharsCompareLoop(masm, left, right, length, scratch2,
-                                  &strings_not_equal, Label::kNear);
-
-  // Characters are equal.
-  __ Move(rax, Smi::FromInt(EQUAL));
-  __ ret(0);
-
-  // Characters are not equal.
-  __ bind(&strings_not_equal);
-  __ Move(rax, Smi::FromInt(NOT_EQUAL));
-  __ ret(0);
-}
-
-
-void StringHelper::GenerateCompareFlatOneByteStrings(
-    MacroAssembler* masm, Register left, Register right, Register scratch1,
-    Register scratch2, Register scratch3, Register scratch4) {
-  // Ensure that you can always subtract a string length from a non-negative
-  // number (e.g. another length).
-  STATIC_ASSERT(String::kMaxLength < 0x7fffffff);
-
-  // Find minimum length and length difference.
-  __ movp(scratch1, FieldOperand(left, String::kLengthOffset));
-  __ movp(scratch4, scratch1);
-  __ SmiSub(scratch4,
-            scratch4,
-            FieldOperand(right, String::kLengthOffset));
-  // Register scratch4 now holds left.length - right.length.
-  const Register length_difference = scratch4;
-  Label left_shorter;
-  __ j(less, &left_shorter, Label::kNear);
-  // The right string isn't longer that the left one.
-  // Get the right string's length by subtracting the (non-negative) difference
-  // from the left string's length.
-  __ SmiSub(scratch1, scratch1, length_difference);
-  __ bind(&left_shorter);
-  // Register scratch1 now holds Min(left.length, right.length).
-  const Register min_length = scratch1;
-
-  Label compare_lengths;
-  // If min-length is zero, go directly to comparing lengths.
-  __ SmiTest(min_length);
-  __ j(zero, &compare_lengths, Label::kNear);
-
-  // Compare loop.
-  Label result_not_equal;
-  GenerateOneByteCharsCompareLoop(
-      masm, left, right, min_length, scratch2, &result_not_equal,
-      // In debug-code mode, SmiTest below might push
-      // the target label outside the near range.
-      Label::kFar);
-
-  // Completed loop without finding different characters.
-  // Compare lengths (precomputed).
-  __ bind(&compare_lengths);
-  __ SmiTest(length_difference);
-  Label length_not_equal;
-  __ j(not_zero, &length_not_equal, Label::kNear);
-
-  // Result is EQUAL.
-  __ Move(rax, Smi::FromInt(EQUAL));
-  __ ret(0);
-
-  Label result_greater;
-  Label result_less;
-  __ bind(&length_not_equal);
-  __ j(greater, &result_greater, Label::kNear);
-  __ jmp(&result_less, Label::kNear);
-  __ bind(&result_not_equal);
-  // Unequal comparison of left to right, either character or length.
-  __ j(above, &result_greater, Label::kNear);
-  __ bind(&result_less);
-
-  // Result is LESS.
-  __ Move(rax, Smi::FromInt(LESS));
-  __ ret(0);
-
-  // Result is GREATER.
-  __ bind(&result_greater);
-  __ Move(rax, Smi::FromInt(GREATER));
-  __ ret(0);
-}
-
-
-void StringHelper::GenerateOneByteCharsCompareLoop(
-    MacroAssembler* masm, Register left, Register right, Register length,
-    Register scratch, Label* chars_not_equal, Label::Distance near_jump) {
-  // Change index to run from -length to -1 by adding length to string
-  // start. This means that loop ends when index reaches zero, which
-  // doesn't need an additional compare.
-  __ SmiToInteger32(length, length);
-  __ leap(left,
-         FieldOperand(left, length, times_1, SeqOneByteString::kHeaderSize));
-  __ leap(right,
-         FieldOperand(right, length, times_1, SeqOneByteString::kHeaderSize));
-  __ negq(length);
-  Register index = length;  // index = -length;
-
-  // Compare loop.
-  Label loop;
-  __ bind(&loop);
-  __ movb(scratch, Operand(left, index, times_1, 0));
-  __ cmpb(scratch, Operand(right, index, times_1, 0));
-  __ j(not_equal, chars_not_equal, near_jump);
-  __ incq(index);
-  __ j(not_zero, &loop);
-}
-
-
 void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
                                                       Label* miss,
                                                       Label* done,
@@ -848,21 +652,9 @@ void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
     // Stop if found the property.
     __ Cmp(entity_name, name);
     __ j(equal, miss);
-
-    Label good;
-    // Check for the hole and skip.
-    __ CompareRoot(entity_name, Heap::kTheHoleValueRootIndex);
-    __ j(equal, &good, Label::kNear);
-
-    // Check if the entry name is not a unique name.
-    __ movp(entity_name, FieldOperand(entity_name, HeapObject::kMapOffset));
-    __ JumpIfNotUniqueNameInstanceType(
-        FieldOperand(entity_name, Map::kInstanceTypeOffset), miss);
-    __ bind(&good);
   }
 
-  NameDictionaryLookupStub stub(masm->isolate(), properties, r0, r0,
-                                NEGATIVE_LOOKUP);
+  NameDictionaryLookupStub stub(masm->isolate(), properties, r0, r0);
   __ Push(name);
   __ Push(Immediate(name->Hash()));
   __ CallStub(&stub);
@@ -886,7 +678,7 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
   // Returns:
   //  result_ is zero if lookup failed, non zero otherwise.
 
-  Label in_dictionary, maybe_in_dictionary, not_in_dictionary;
+  Label in_dictionary, not_in_dictionary;
 
   Register scratch = result();
 
@@ -923,28 +715,6 @@ void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
     // Stop if found the property.
     __ cmpp(scratch, args.GetArgumentOperand(0));
     __ j(equal, &in_dictionary);
-
-    if (i != kTotalProbes - 1 && mode() == NEGATIVE_LOOKUP) {
-      // If we hit a key that is not a unique name during negative
-      // lookup we have to bailout as this key might be equal to the
-      // key we are looking for.
-
-      // Check if the entry name is not a unique name.
-      __ movp(scratch, FieldOperand(scratch, HeapObject::kMapOffset));
-      __ JumpIfNotUniqueNameInstanceType(
-          FieldOperand(scratch, Map::kInstanceTypeOffset),
-          &maybe_in_dictionary);
-    }
-  }
-
-  __ bind(&maybe_in_dictionary);
-  // If we are doing negative lookup then probing failure should be
-  // treated as a lookup success. For positive lookup probing failure
-  // should be treated as lookup failure.
-  if (mode() == POSITIVE_LOOKUP) {
-    __ movp(scratch, Immediate(0));
-    __ Drop(1);
-    __ ret(2 * kPointerSize);
   }
 
   __ bind(&in_dictionary);
@@ -975,13 +745,13 @@ RecordWriteStub::Mode RecordWriteStub::GetMode(Code* stub) {
     return INCREMENTAL;
   }
 
-  DCHECK(first_instruction == kTwoByteNopInstruction);
+  DCHECK_EQ(first_instruction, kTwoByteNopInstruction);
 
   if (second_instruction == kTwoByteJumpInstruction) {
     return INCREMENTAL_COMPACTION;
   }
 
-  DCHECK(second_instruction == kTwoByteNopInstruction);
+  DCHECK_EQ(second_instruction, kTwoByteNopInstruction);
 
   return STORE_BUFFER_ONLY;
 }
@@ -1174,7 +944,7 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
 
 
 void ProfileEntryHookStub::MaybeCallEntryHook(MacroAssembler* masm) {
-  if (masm->isolate()->function_entry_hook() != NULL) {
+  if (masm->isolate()->function_entry_hook() != nullptr) {
     ProfileEntryHookStub stub(masm->isolate());
     masm->CallStub(&stub);
   }
@@ -1386,7 +1156,7 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
 
     // Initial map for the builtin Array function should be a map.
     __ movp(rcx, FieldOperand(rdi, JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     STATIC_ASSERT(kSmiTag == 0);
     Condition not_smi = NegateCondition(masm->CheckSmi(rcx));
     __ Check(not_smi, kUnexpectedInitialMapForArrayFunction);
@@ -1485,7 +1255,7 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
 
     // Initial map for the builtin Array function should be a map.
     __ movp(rcx, FieldOperand(rdi, JSFunction::kPrototypeOrInitialMapOffset));
-    // Will both indicate a NULL and a Smi.
+    // Will both indicate a nullptr and a Smi.
     STATIC_ASSERT(kSmiTag == 0);
     Condition not_smi = NegateCondition(masm->CheckSmi(rcx));
     __ Check(not_smi, kUnexpectedInitialMapForArrayFunction);
@@ -1630,7 +1400,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
 
   // Leave the API exit frame.
   __ bind(&leave_exit_frame);
-  bool restore_context = context_restore_operand != NULL;
+  bool restore_context = context_restore_operand != nullptr;
   if (restore_context) {
     __ movp(rsi, *context_restore_operand);
   }
@@ -1925,7 +1695,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
       rbp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref, getter_arg,
                            kStackUnwindSpace, nullptr, return_value_operand,
-                           NULL);
+                           nullptr);
 }
 
 #undef __

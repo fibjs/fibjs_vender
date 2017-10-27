@@ -11,6 +11,7 @@
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/pipeline.h"
+#include "src/eh-frame.h"
 #include "src/frames.h"
 #include "src/macro-assembler-inl.h"
 
@@ -35,11 +36,12 @@ class CodeGenerator::JumpTable final : public ZoneObject {
   size_t const target_count_;
 };
 
-CodeGenerator::CodeGenerator(Zone* codegen_zone, Frame* frame, Linkage* linkage,
-                             InstructionSequence* code, CompilationInfo* info,
-                             base::Optional<OsrHelper> osr_helper,
-                             int start_source_position,
-                             JumpOptimizationInfo* jump_opt)
+CodeGenerator::CodeGenerator(
+    Zone* codegen_zone, Frame* frame, Linkage* linkage,
+    InstructionSequence* code, CompilationInfo* info,
+    base::Optional<OsrHelper> osr_helper, int start_source_position,
+    JumpOptimizationInfo* jump_opt,
+    std::vector<trap_handler::ProtectedInstructionData>* protected_instructions)
     : zone_(codegen_zone),
       frame_access_state_(nullptr),
       linkage_(linkage),
@@ -68,6 +70,7 @@ CodeGenerator::CodeGenerator(Zone* codegen_zone, Frame* frame, Linkage* linkage,
       optimized_out_literal_id_(-1),
       source_position_table_builder_(zone(),
                                      info->SourcePositionRecordingMode()),
+      protected_instructions_(protected_instructions),
       result_(kSuccess) {
   for (int i = 0; i < code->InstructionBlockCount(); ++i) {
     new (&labels_[i]) Label;
@@ -78,6 +81,15 @@ CodeGenerator::CodeGenerator(Zone* codegen_zone, Frame* frame, Linkage* linkage,
 }
 
 Isolate* CodeGenerator::isolate() const { return info_->isolate(); }
+
+void CodeGenerator::AddProtectedInstructionLanding(uint32_t instr_offset,
+                                                   uint32_t landing_offset) {
+  if (protected_instructions_ != nullptr) {
+    trap_handler::ProtectedInstructionData data = {instr_offset,
+                                                   landing_offset};
+    protected_instructions_->emplace_back(data);
+  }
+}
 
 void CodeGenerator::CreateFrameAccessState(Frame* frame) {
   FinishFrame(frame);
@@ -277,31 +289,42 @@ void CodeGenerator::AssembleCode() {
 Handle<Code> CodeGenerator::FinalizeCode() {
   if (result_ != kSuccess) return Handle<Code>();
 
-  Handle<Code> result = v8::internal::CodeGenerator::MakeCodeEpilogue(
-      tasm(), unwinding_info_writer_.eh_frame_writer(), info(),
-      Handle<Object>());
-  result->set_is_turbofanned(true);
-  result->set_stack_slots(frame()->GetTotalFrameSlotCount());
-  result->set_safepoint_table_offset(safepoints()->GetCodeOffset());
-  Handle<ByteArray> source_positions =
-      source_position_table_builder_.ToSourcePositionTable(
-          isolate(), Handle<AbstractCode>::cast(result));
-  result->set_source_position_table(*source_positions);
-
-  // Emit exception handler table.
+  // Allocate exception handler table.
+  Handle<HandlerTable> table = HandlerTable::Empty(isolate());
   if (!handlers_.empty()) {
-    Handle<HandlerTable> table =
-        Handle<HandlerTable>::cast(isolate()->factory()->NewFixedArray(
-            HandlerTable::LengthForReturn(static_cast<int>(handlers_.size())),
-            TENURED));
+    table = Handle<HandlerTable>::cast(isolate()->factory()->NewFixedArray(
+        HandlerTable::LengthForReturn(static_cast<int>(handlers_.size())),
+        TENURED));
     for (size_t i = 0; i < handlers_.size(); ++i) {
       table->SetReturnOffset(static_cast<int>(i), handlers_[i].pc_offset);
       table->SetReturnHandler(static_cast<int>(i), handlers_[i].handler->pos());
     }
-    result->set_handler_table(*table);
   }
 
-  PopulateDeoptimizationData(result);
+  // Allocate the source position table.
+  Handle<ByteArray> source_positions =
+      source_position_table_builder_.ToSourcePositionTable(isolate());
+
+  // Allocate deoptimization data.
+  Handle<DeoptimizationData> deopt_data = GenerateDeoptimizationData();
+
+  // Allocate and install the code.
+  CodeDesc desc;
+  tasm()->GetCode(isolate(), &desc);
+  if (unwinding_info_writer_.eh_frame_writer()) {
+    unwinding_info_writer_.eh_frame_writer()->GetEhFrame(&desc);
+  }
+
+  Handle<Code> result = isolate()->factory()->NewCode(
+      desc, info()->code_kind(), Handle<Object>(), table, source_positions,
+      deopt_data, false, info()->stub_key(), true,
+      frame()->GetTotalFrameSlotCount(), safepoints()->GetCodeOffset());
+  isolate()->counters()->total_compiled_code_size()->Increment(
+      result->instruction_size());
+
+  LOG_CODE_EVENT(isolate(),
+                 CodeLinePosInfoRecordEvent(*Handle<AbstractCode>::cast(result),
+                                            *source_positions));
 
   return result;
 }
@@ -598,12 +621,14 @@ Handle<PodArray<InliningPosition>> CreateInliningPositions(
 
 }  // namespace
 
-void CodeGenerator::PopulateDeoptimizationData(Handle<Code> code_object) {
+Handle<DeoptimizationData> CodeGenerator::GenerateDeoptimizationData() {
   CompilationInfo* info = this->info();
   int deopt_count = static_cast<int>(deoptimization_states_.size());
-  if (deopt_count == 0 && !info->is_osr()) return;
-  Handle<DeoptimizationInputData> data =
-      DeoptimizationInputData::New(isolate(), deopt_count, TENURED);
+  if (deopt_count == 0 && !info->is_osr()) {
+    return DeoptimizationData::Empty(isolate());
+  }
+  Handle<DeoptimizationData> data =
+      DeoptimizationData::New(isolate(), deopt_count, TENURED);
 
   Handle<ByteArray> translation_array =
       translations_.CreateByteArray(isolate()->factory());
@@ -650,7 +675,7 @@ void CodeGenerator::PopulateDeoptimizationData(Handle<Code> code_object) {
     data->SetPc(i, Smi::FromInt(deoptimization_state->pc_offset()));
   }
 
-  code_object->set_deoptimization_data(*data);
+  return data;
 }
 
 

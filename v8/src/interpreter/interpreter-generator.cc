@@ -12,7 +12,6 @@
 #include "src/code-events.h"
 #include "src/code-factory.h"
 #include "src/debug/debug.h"
-#include "src/factory.h"
 #include "src/ic/accessor-assembler.h"
 #include "src/ic/binary-op-assembler.h"
 #include "src/interpreter/bytecode-flags.h"
@@ -277,7 +276,8 @@ class InterpreterStoreGlobalAssembler : public InterpreterAssembler {
 // Store the value in the accumulator into the global with name in constant pool
 // entry <name_index> using FeedBackVector slot <slot> in sloppy mode.
 IGNITION_HANDLER(StaGlobalSloppy, InterpreterStoreGlobalAssembler) {
-  Callable ic = CodeFactory::StoreGlobalICInOptimizedCode(isolate(), SLOPPY);
+  Callable ic = CodeFactory::StoreGlobalICInOptimizedCode(
+      isolate(), LanguageMode::kSloppy);
   StaGlobal(ic);
 }
 
@@ -286,7 +286,8 @@ IGNITION_HANDLER(StaGlobalSloppy, InterpreterStoreGlobalAssembler) {
 // Store the value in the accumulator into the global with name in constant pool
 // entry <name_index> using FeedBackVector slot <slot> in strict mode.
 IGNITION_HANDLER(StaGlobalStrict, InterpreterStoreGlobalAssembler) {
-  Callable ic = CodeFactory::StoreGlobalICInOptimizedCode(isolate(), STRICT);
+  Callable ic = CodeFactory::StoreGlobalICInOptimizedCode(
+      isolate(), LanguageMode::kStrict);
   StaGlobal(ic);
 }
 
@@ -511,8 +512,8 @@ IGNITION_HANDLER(StaLookupSlot, InterpreterAssembler) {
   Variable var_result(this, MachineRepresentation::kTagged);
 
   Label sloppy(this), strict(this), end(this);
-  DCHECK_EQ(0, SLOPPY);
-  DCHECK_EQ(1, STRICT);
+  DCHECK_EQ(0, LanguageMode::kSloppy);
+  DCHECK_EQ(1, LanguageMode::kStrict);
   DCHECK_EQ(0, static_cast<int>(LookupHoistingMode::kNormal));
   DCHECK_EQ(1, static_cast<int>(LookupHoistingMode::kLegacySloppy));
   Branch(IsSetWord32<StoreLookupSlotFlags::LanguageModeBit>(bytecode_flags),
@@ -934,7 +935,7 @@ class InterpreterBitwiseBinaryOpAssembler : public InterpreterAssembler {
                                       OperandScale operand_scale)
       : InterpreterAssembler(state, bytecode, operand_scale) {}
 
-  void BitwiseBinaryOpWithFeedback(Token::Value bitwise_op) {
+  void BitwiseBinaryOpWithFeedback(Operation bitwise_op) {
     Node* reg_index = BytecodeOperandReg(0);
     Node* left = LoadRegister(reg_index);
     Node* right = GetAccumulator();
@@ -944,17 +945,23 @@ class InterpreterBitwiseBinaryOpAssembler : public InterpreterAssembler {
 
     VARIABLE(var_left_feedback, MachineRepresentation::kTaggedSigned);
     VARIABLE(var_right_feedback, MachineRepresentation::kTaggedSigned);
+    VARIABLE(var_left_word32, MachineRepresentation::kWord32);
+    VARIABLE(var_right_word32, MachineRepresentation::kWord32);
     VARIABLE(var_left_bigint, MachineRepresentation::kTagged, left);
-    VARIABLE(var_right_bigint, MachineRepresentation::kTagged, right);
+    VARIABLE(var_right_bigint, MachineRepresentation::kTagged);
+    Label if_left_number(this), do_number_op(this);
     Label if_left_bigint(this), do_bigint_op(this);
 
-    Node* left32 = TaggedToWord32OrBigIntWithFeedback(
-        context, left, &var_left_feedback, &if_left_bigint, &var_left_bigint);
-    Node* right32 = TaggedToWord32OrBigIntWithFeedback(
-        context, right, &var_right_feedback, &do_bigint_op, &var_right_bigint);
-
-    // Numbers case.
-    Node* result = BitwiseOp(left32, right32, bitwise_op);
+    TaggedToWord32OrBigIntWithFeedback(context, left, &if_left_number,
+                                       &var_left_word32, &if_left_bigint,
+                                       &var_left_bigint, &var_left_feedback);
+    BIND(&if_left_number);
+    TaggedToWord32OrBigIntWithFeedback(context, right, &do_number_op,
+                                       &var_right_word32, &do_bigint_op,
+                                       &var_right_bigint, &var_right_feedback);
+    BIND(&do_number_op);
+    Node* result = BitwiseOp(var_left_word32.value(), var_right_word32.value(),
+                             bitwise_op);
     Node* result_type = SelectSmiConstant(TaggedIsSmi(result),
                                           BinaryOperationFeedback::kSignedSmall,
                                           BinaryOperationFeedback::kNumber);
@@ -967,11 +974,8 @@ class InterpreterBitwiseBinaryOpAssembler : public InterpreterAssembler {
 
     // BigInt cases.
     BIND(&if_left_bigint);
-    // TODO(jkummerow): NumberBuiltinsAssembler::BitwiseOp inlines the
-    // relevant bits of this. Find a way to unify the approaches.
-    TaggedToWord32OrBigIntWithFeedback(context, right, &var_right_feedback,
-                                       &do_bigint_op, &var_right_bigint);
-    Goto(&do_bigint_op);
+    TaggedToNumericWithFeedback(context, right, &do_bigint_op,
+                                &var_right_bigint, &var_right_feedback);
 
     BIND(&do_bigint_op);
     SetAccumulator(
@@ -982,7 +986,7 @@ class InterpreterBitwiseBinaryOpAssembler : public InterpreterAssembler {
     Dispatch();
   }
 
-  void BitwiseBinaryOpWithSmi(Token::Value bitwise_op) {
+  void BitwiseBinaryOpWithSmi(Operation bitwise_op) {
     Node* left = GetAccumulator();
     Node* right = BytecodeOperandImmSmi(0);
     Node* slot_index = BytecodeOperandIdx(1);
@@ -990,12 +994,16 @@ class InterpreterBitwiseBinaryOpAssembler : public InterpreterAssembler {
     Node* context = GetContext();
 
     VARIABLE(var_left_feedback, MachineRepresentation::kTaggedSigned);
+    VARIABLE(var_left_word32, MachineRepresentation::kWord32);
     VARIABLE(var_left_bigint, MachineRepresentation::kTagged);
-    Label if_bigint_mix(this);
+    Label do_smi_op(this), if_bigint_mix(this);
 
-    Node* left32 = TaggedToWord32OrBigIntWithFeedback(
-        context, left, &var_left_feedback, &if_bigint_mix, &var_left_bigint);
-    Node* result = BitwiseOp(left32, SmiToWord32(right), bitwise_op);
+    TaggedToWord32OrBigIntWithFeedback(context, left, &do_smi_op,
+                                       &var_left_word32, &if_bigint_mix,
+                                       &var_left_bigint, &var_left_feedback);
+    BIND(&do_smi_op);
+    Node* result =
+        BitwiseOp(var_left_word32.value(), SmiToWord32(right), bitwise_op);
     Node* result_type = SelectSmiConstant(TaggedIsSmi(result),
                                           BinaryOperationFeedback::kSignedSmall,
                                           BinaryOperationFeedback::kNumber);
@@ -1008,51 +1016,27 @@ class InterpreterBitwiseBinaryOpAssembler : public InterpreterAssembler {
     UpdateFeedback(var_left_feedback.value(), feedback_vector, slot_index);
     ThrowTypeError(context, MessageTemplate::kBigIntMixedTypes);
   }
-
- private:
-  Node* BitwiseOp(Node* left32, Node* right32, Token::Value bitwise_op) {
-    switch (bitwise_op) {
-      case Token::BIT_AND:
-        return ChangeInt32ToTagged(Word32And(left32, right32));
-      case Token::BIT_OR:
-        return ChangeInt32ToTagged(Word32Or(left32, right32));
-      case Token::BIT_XOR:
-        return ChangeInt32ToTagged(Word32Xor(left32, right32));
-      case Token::SHL:
-        return ChangeInt32ToTagged(
-            Word32Shl(left32, Word32And(right32, Int32Constant(0x1f))));
-      case Token::SAR:
-        return ChangeInt32ToTagged(
-            Word32Sar(left32, Word32And(right32, Int32Constant(0x1f))));
-      case Token::SHR:
-        return ChangeUint32ToTagged(
-            Word32Shr(left32, Word32And(right32, Int32Constant(0x1f))));
-      default:
-        break;
-    }
-    UNREACHABLE();
-  }
 };
 
 // BitwiseOr <src>
 //
 // BitwiseOr register <src> to accumulator.
 IGNITION_HANDLER(BitwiseOr, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithFeedback(Token::BIT_OR);
+  BitwiseBinaryOpWithFeedback(Operation::kBitwiseOr);
 }
 
 // BitwiseXor <src>
 //
 // BitwiseXor register <src> to accumulator.
 IGNITION_HANDLER(BitwiseXor, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithFeedback(Token::BIT_XOR);
+  BitwiseBinaryOpWithFeedback(Operation::kBitwiseXor);
 }
 
 // BitwiseAnd <src>
 //
 // BitwiseAnd register <src> to accumulator.
 IGNITION_HANDLER(BitwiseAnd, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithFeedback(Token::BIT_AND);
+  BitwiseBinaryOpWithFeedback(Operation::kBitwiseAnd);
 }
 
 // ShiftLeft <src>
@@ -1062,7 +1046,7 @@ IGNITION_HANDLER(BitwiseAnd, InterpreterBitwiseBinaryOpAssembler) {
 // before the operation. 5 lsb bits from the accumulator are used as count
 // i.e. <src> << (accumulator & 0x1F).
 IGNITION_HANDLER(ShiftLeft, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithFeedback(Token::SHL);
+  BitwiseBinaryOpWithFeedback(Operation::kShiftLeft);
 }
 
 // ShiftRight <src>
@@ -1072,7 +1056,7 @@ IGNITION_HANDLER(ShiftLeft, InterpreterBitwiseBinaryOpAssembler) {
 // accumulator to uint32 before the operation. 5 lsb bits from the accumulator
 // are used as count i.e. <src> >> (accumulator & 0x1F).
 IGNITION_HANDLER(ShiftRight, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithFeedback(Token::SAR);
+  BitwiseBinaryOpWithFeedback(Operation::kShiftRight);
 }
 
 // ShiftRightLogical <src>
@@ -1082,28 +1066,28 @@ IGNITION_HANDLER(ShiftRight, InterpreterBitwiseBinaryOpAssembler) {
 // uint32 before the operation 5 lsb bits from the accumulator are used as
 // count i.e. <src> << (accumulator & 0x1F).
 IGNITION_HANDLER(ShiftRightLogical, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithFeedback(Token::SHR);
+  BitwiseBinaryOpWithFeedback(Operation::kShiftRightLogical);
 }
 
 // BitwiseOrSmi <imm>
 //
 // BitwiseOrSmi accumulator with <imm>.
 IGNITION_HANDLER(BitwiseOrSmi, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithSmi(Token::BIT_OR);
+  BitwiseBinaryOpWithSmi(Operation::kBitwiseOr);
 }
 
 // BitwiseXorSmi <imm>
 //
 // BitwiseXorSmi accumulator with <imm>.
 IGNITION_HANDLER(BitwiseXorSmi, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithSmi(Token::BIT_XOR);
+  BitwiseBinaryOpWithSmi(Operation::kBitwiseXor);
 }
 
 // BitwiseAndSmi <imm>
 //
 // BitwiseAndSmi accumulator with <imm>.
 IGNITION_HANDLER(BitwiseAndSmi, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithSmi(Token::BIT_AND);
+  BitwiseBinaryOpWithSmi(Operation::kBitwiseAnd);
 }
 
 // BitwiseNot <feedback_slot>
@@ -1115,15 +1099,16 @@ IGNITION_HANDLER(BitwiseNot, InterpreterAssembler) {
   Node* feedback_vector = LoadFeedbackVector();
   Node* context = GetContext();
 
+  VARIABLE(var_word32, MachineRepresentation::kWord32);
   VARIABLE(var_feedback, MachineRepresentation::kTaggedSigned);
   VARIABLE(var_bigint, MachineRepresentation::kTagged);
-  Label if_bigint(this);
-  Node* truncated_value = TaggedToWord32OrBigIntWithFeedback(
-      context, operand, &var_feedback, &if_bigint, &var_bigint);
+  Label if_number(this), if_bigint(this);
+  TaggedToWord32OrBigIntWithFeedback(context, operand, &if_number, &var_word32,
+                                     &if_bigint, &var_bigint, &var_feedback);
 
   // Number case.
-  Node* value = Word32Not(truncated_value);
-  Node* result = ChangeInt32ToTagged(value);
+  BIND(&if_number);
+  Node* result = ChangeInt32ToTagged(Signed(Word32Not(var_word32.value())));
   Node* result_type = SelectSmiConstant(TaggedIsSmi(result),
                                         BinaryOperationFeedback::kSignedSmall,
                                         BinaryOperationFeedback::kNumber);
@@ -1137,7 +1122,8 @@ IGNITION_HANDLER(BitwiseNot, InterpreterAssembler) {
   UpdateFeedback(SmiConstant(BinaryOperationFeedback::kBigInt), feedback_vector,
                  slot_index);
   SetAccumulator(CallRuntime(Runtime::kBigIntUnaryOp, context,
-                             var_bigint.value(), SmiConstant(Token::BIT_NOT)));
+                             var_bigint.value(),
+                             SmiConstant(Operation::kBitwiseNot)));
   Dispatch();
 }
 
@@ -1147,7 +1133,7 @@ IGNITION_HANDLER(BitwiseNot, InterpreterAssembler) {
 // The accumulator is converted to an int32 before the operation. The 5
 // lsb bits from <imm> are used as count i.e. <src> << (<imm> & 0x1F).
 IGNITION_HANDLER(ShiftLeftSmi, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithSmi(Token::SHL);
+  BitwiseBinaryOpWithSmi(Operation::kShiftLeft);
 }
 
 // ShiftRightSmi <imm>
@@ -1156,7 +1142,7 @@ IGNITION_HANDLER(ShiftLeftSmi, InterpreterBitwiseBinaryOpAssembler) {
 // extended. The accumulator is converted to an int32 before the operation. The
 // 5 lsb bits from <imm> are used as count i.e. <src> >> (<imm> & 0x1F).
 IGNITION_HANDLER(ShiftRightSmi, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithSmi(Token::SAR);
+  BitwiseBinaryOpWithSmi(Operation::kShiftRight);
 }
 
 // ShiftRightLogicalSmi <imm>
@@ -1165,7 +1151,7 @@ IGNITION_HANDLER(ShiftRightSmi, InterpreterBitwiseBinaryOpAssembler) {
 // extended. The accumulator is converted to an int32 before the operation. The
 // 5 lsb bits from <imm> are used as count i.e. <src> >>> (<imm> & 0x1F).
 IGNITION_HANDLER(ShiftRightLogicalSmi, InterpreterBitwiseBinaryOpAssembler) {
-  BitwiseBinaryOpWithSmi(Token::SHR);
+  BitwiseBinaryOpWithSmi(Operation::kShiftRightLogical);
 }
 
 class UnaryNumericOpAssembler : public InterpreterAssembler {
@@ -1174,14 +1160,17 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
                           OperandScale operand_scale)
       : InterpreterAssembler(state, bytecode, operand_scale) {}
 
-  // {smi_op} signature: (Node* smi_value, Variable* var_feedback,
-  // Label* do_float_op, Variable* var_float) => Node* tagged result.
-  // {float_op} signature: (Node* float_value) => Node* float_result.
-  // {bigint_op} signature: (Node* bigint_value) => Node* tagged_result.
-  void UnaryOpWithFeedback(
-      std::function<Node*(Node*, Variable*, Label*, Variable*)> smi_op,
-      std::function<Node*(Node*)> float_op,
-      std::function<Node*(Node*)> bigint_op) {
+  virtual ~UnaryNumericOpAssembler() {}
+
+  // Must return a tagged value.
+  virtual Node* SmiOp(Node* smi_value, Variable* var_feedback,
+                      Label* do_float_op, Variable* var_float) = 0;
+  // Must return a Float64 value.
+  virtual Node* FloatOp(Node* float_value) = 0;
+  // Must return a tagged value.
+  virtual Node* BigIntOp(Node* bigint_value) = 0;
+
+  void UnaryOpWithFeedback() {
     VARIABLE(var_value, MachineRepresentation::kTagged, GetAccumulator());
     Node* slot_index = BytecodeOperandIdx(0);
     Node* feedback_vector = LoadFeedbackVector();
@@ -1205,13 +1194,13 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
       GotoIf(IsHeapNumberMap(map), &if_heapnumber);
       Node* instance_type = LoadMapInstanceType(map);
       GotoIf(IsBigIntInstanceType(instance_type), &if_bigint);
-      Branch(Word32Equal(instance_type, Int32Constant(ODDBALL_TYPE)),
-             &if_oddball, &if_other);
+      Branch(InstanceTypeEqual(instance_type, ODDBALL_TYPE), &if_oddball,
+             &if_other);
 
       BIND(&if_smi);
       {
         var_result.Bind(
-            smi_op(value, &var_feedback, &do_float_op, &var_float_value));
+            SmiOp(value, &var_feedback, &do_float_op, &var_float_value));
         Goto(&end);
       }
 
@@ -1223,7 +1212,7 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
 
       BIND(&if_bigint);
       {
-        var_result.Bind(bigint_op(value));
+        var_result.Bind(BigIntOp(value));
         var_feedback.Bind(SmiOr(var_feedback.value(),
                                 SmiConstant(BinaryOperationFeedback::kBigInt)));
         Goto(&end);
@@ -1250,9 +1239,8 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
         CSA_ASSERT(this, SmiEqual(var_feedback.value(),
                                   SmiConstant(BinaryOperationFeedback::kNone)));
         var_feedback.Bind(SmiConstant(BinaryOperationFeedback::kAny));
-        // TODO(jkummerow): This should call kNonNumericToNumeric.
         var_value.Bind(
-            CallBuiltin(Builtins::kNonNumberToNumber, GetContext(), value));
+            CallBuiltin(Builtins::kNonNumberToNumeric, GetContext(), value));
         Goto(&start);
       }
     }
@@ -1262,7 +1250,7 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
       var_feedback.Bind(SmiOr(var_feedback.value(),
                               SmiConstant(BinaryOperationFeedback::kNumber)));
       var_result.Bind(
-          AllocateHeapNumberWithValue(float_op(var_float_value.value())));
+          AllocateHeapNumberWithValue(FloatOp(var_float_value.value())));
       Goto(&end);
     }
 
@@ -1271,85 +1259,54 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
     SetAccumulator(var_result.value());
     Dispatch();
   }
+};
 
-  void IncDecWithFeedback(Token::Value op) {
-    DCHECK(op == Token::INC || op == Token::DEC);
-    UnaryOpWithFeedback(
-        [=](Node* smi_value, Variable* var_feedback, Label* do_float_op,
-            Variable* var_float) {
-          // Try fast Smi operation first.
-          Node* value = BitcastTaggedToWord(smi_value);
-          Node* one = BitcastTaggedToWord(SmiConstant(1));
-          Node* pair = op == Token::INC ? IntPtrAddWithOverflow(value, one)
-                                        : IntPtrSubWithOverflow(value, one);
-          Node* overflow = Projection(1, pair);
+class NegateAssemblerImpl : public UnaryNumericOpAssembler {
+ public:
+  explicit NegateAssemblerImpl(CodeAssemblerState* state, Bytecode bytecode,
+                               OperandScale operand_scale)
+      : UnaryNumericOpAssembler(state, bytecode, operand_scale) {}
 
-          // Check if the Smi operation overflowed.
-          Label if_overflow(this), if_notoverflow(this);
-          Branch(overflow, &if_overflow, &if_notoverflow);
+  Node* SmiOp(Node* smi_value, Variable* var_feedback, Label* do_float_op,
+              Variable* var_float) override {
+    VARIABLE(var_result, MachineRepresentation::kTagged);
+    Label if_zero(this), if_min_smi(this), end(this);
+    // Return -0 if operand is 0.
+    GotoIf(SmiEqual(smi_value, SmiConstant(0)), &if_zero);
 
-          BIND(&if_overflow);
-          {
-            var_float->Bind(SmiToFloat64(smi_value));
-            Goto(do_float_op);
-          }
+    // Special-case the minimum Smi to avoid overflow.
+    GotoIf(SmiEqual(smi_value, SmiConstant(Smi::kMinValue)), &if_min_smi);
 
-          BIND(&if_notoverflow);
-          var_feedback->Bind(
-              SmiOr(var_feedback->value(),
-                    SmiConstant(BinaryOperationFeedback::kSignedSmall)));
-          return BitcastWordToTaggedSigned(Projection(0, pair));
-        },
-        [=](Node* float_value) {
-          return op == Token::INC
-                     ? Float64Add(float_value, Float64Constant(1.0))
-                     : Float64Sub(float_value, Float64Constant(1.0));
-        },
-        [=](Node* bigint_value) {
-          return CallRuntime(Runtime::kBigIntUnaryOp, GetContext(),
-                             bigint_value, SmiConstant(op));
-        });
+    // Else simply subtract operand from 0.
+    var_feedback->Bind(SmiConstant(BinaryOperationFeedback::kSignedSmall));
+    var_result.Bind(SmiSub(SmiConstant(0), smi_value));
+    Goto(&end);
+
+    BIND(&if_zero);
+    var_feedback->Bind(SmiConstant(BinaryOperationFeedback::kNumber));
+    var_result.Bind(MinusZeroConstant());
+    Goto(&end);
+
+    BIND(&if_min_smi);
+    var_float->Bind(SmiToFloat64(smi_value));
+    Goto(do_float_op);
+
+    BIND(&end);
+    return var_result.value();
+  }
+
+  Node* FloatOp(Node* float_value) override { return Float64Neg(float_value); }
+
+  Node* BigIntOp(Node* bigint_value) override {
+    return CallRuntime(Runtime::kBigIntUnaryOp, GetContext(), bigint_value,
+                       SmiConstant(Operation::kNegate));
   }
 };
 
 // Negate <feedback_slot>
 //
 // Perform arithmetic negation on the accumulator.
-IGNITION_HANDLER(Negate, UnaryNumericOpAssembler) {
-  UnaryOpWithFeedback(
-      [=](Node* operand, Variable* var_feedback, Label* do_float_op,
-          Variable* var_float) {
-        VARIABLE(var_result, MachineRepresentation::kTagged);
-        Label if_zero(this), if_min_smi(this), end(this);
-        // Return -0 if operand is 0.
-        GotoIf(SmiEqual(operand, SmiConstant(0)), &if_zero);
-
-        // Special-case the minimum Smi to avoid overflow.
-        GotoIf(SmiEqual(operand, SmiConstant(Smi::kMinValue)), &if_min_smi);
-
-        // Else simply subtract operand from 0.
-        var_feedback->Bind(SmiConstant(BinaryOperationFeedback::kSignedSmall));
-        var_result.Bind(SmiSub(SmiConstant(0), operand));
-        Goto(&end);
-
-        BIND(&if_zero);
-        var_feedback->Bind(SmiConstant(BinaryOperationFeedback::kNumber));
-        var_result.Bind(MinusZeroConstant());
-        Goto(&end);
-
-        BIND(&if_min_smi);
-        var_float->Bind(SmiToFloat64(operand));
-        Goto(do_float_op);
-
-        BIND(&end);
-        return var_result.value();
-      },
-      [=](Node* float_value) { return Float64Neg(float_value); },
-      [=](Node* bigint_value) {
-        return CallRuntime(Runtime::kBigIntUnaryOp, GetContext(), bigint_value,
-                           SmiConstant(Token::SUB));
-      });
-}
+IGNITION_HANDLER(Negate, NegateAssemblerImpl) { UnaryOpWithFeedback(); }
 
 // ToName <dst>
 //
@@ -1389,19 +1346,78 @@ IGNITION_HANDLER(ToObject, InterpreterAssembler) {
   Dispatch();
 }
 
+class IncDecAssembler : public UnaryNumericOpAssembler {
+ public:
+  explicit IncDecAssembler(CodeAssemblerState* state, Bytecode bytecode,
+                           OperandScale operand_scale)
+      : UnaryNumericOpAssembler(state, bytecode, operand_scale) {}
+
+  Operation op() {
+    DCHECK(op_ == Operation::kIncrement || op_ == Operation::kDecrement);
+    return op_;
+  }
+
+  Node* SmiOp(Node* smi_value, Variable* var_feedback, Label* do_float_op,
+              Variable* var_float) override {
+    // Try fast Smi operation first.
+    Node* value = BitcastTaggedToWord(smi_value);
+    Node* one = BitcastTaggedToWord(SmiConstant(1));
+    Node* pair = op() == Operation::kIncrement
+                     ? IntPtrAddWithOverflow(value, one)
+                     : IntPtrSubWithOverflow(value, one);
+    Node* overflow = Projection(1, pair);
+
+    // Check if the Smi operation overflowed.
+    Label if_overflow(this), if_notoverflow(this);
+    Branch(overflow, &if_overflow, &if_notoverflow);
+
+    BIND(&if_overflow);
+    {
+      var_float->Bind(SmiToFloat64(smi_value));
+      Goto(do_float_op);
+    }
+
+    BIND(&if_notoverflow);
+    var_feedback->Bind(
+        SmiOr(var_feedback->value(),
+              SmiConstant(BinaryOperationFeedback::kSignedSmall)));
+    return BitcastWordToTaggedSigned(Projection(0, pair));
+  }
+
+  Node* FloatOp(Node* float_value) override {
+    return op() == Operation::kIncrement
+               ? Float64Add(float_value, Float64Constant(1.0))
+               : Float64Sub(float_value, Float64Constant(1.0));
+  }
+
+  Node* BigIntOp(Node* bigint_value) override {
+    return CallRuntime(Runtime::kBigIntUnaryOp, GetContext(), bigint_value,
+                       SmiConstant(op()));
+  }
+
+  void IncWithFeedback() {
+    op_ = Operation::kIncrement;
+    UnaryOpWithFeedback();
+  }
+
+  void DecWithFeedback() {
+    op_ = Operation::kDecrement;
+    UnaryOpWithFeedback();
+  }
+
+ private:
+  Operation op_ = Operation::kEqual;  // Dummy initialization.
+};
+
 // Inc
 //
 // Increments value in the accumulator by one.
-IGNITION_HANDLER(Inc, UnaryNumericOpAssembler) {
-  IncDecWithFeedback(Token::INC);
-}
+IGNITION_HANDLER(Inc, IncDecAssembler) { IncWithFeedback(); }
 
 // Dec
 //
 // Decrements value in the accumulator by one.
-IGNITION_HANDLER(Dec, UnaryNumericOpAssembler) {
-  IncDecWithFeedback(Token::DEC);
-}
+IGNITION_HANDLER(Dec, IncDecAssembler) { DecWithFeedback(); }
 
 // LogicalNot
 //
@@ -1412,17 +1428,15 @@ IGNITION_HANDLER(ToBooleanLogicalNot, InterpreterAssembler) {
   Node* value = GetAccumulator();
   Variable result(this, MachineRepresentation::kTagged);
   Label if_true(this), if_false(this), end(this);
-  Node* true_value = BooleanConstant(true);
-  Node* false_value = BooleanConstant(false);
   BranchIfToBooleanIsTrue(value, &if_true, &if_false);
   BIND(&if_true);
   {
-    result.Bind(false_value);
+    result.Bind(FalseConstant());
     Goto(&end);
   }
   BIND(&if_false);
   {
-    result.Bind(true_value);
+    result.Bind(TrueConstant());
     Goto(&end);
   }
   BIND(&end);
@@ -1438,8 +1452,8 @@ IGNITION_HANDLER(LogicalNot, InterpreterAssembler) {
   Node* value = GetAccumulator();
   Variable result(this, MachineRepresentation::kTagged);
   Label if_true(this), if_false(this), end(this);
-  Node* true_value = BooleanConstant(true);
-  Node* false_value = BooleanConstant(false);
+  Node* true_value = TrueConstant();
+  Node* false_value = FalseConstant();
   Branch(WordEqual(value, true_value), &if_true, &if_false);
   BIND(&if_true);
   {
@@ -1448,10 +1462,7 @@ IGNITION_HANDLER(LogicalNot, InterpreterAssembler) {
   }
   BIND(&if_false);
   {
-    if (FLAG_debug_code) {
-      AbortIfWordNotEqual(value, false_value,
-                          BailoutReason::kExpectedBooleanValue);
-    }
+    CSA_ASSERT(this, WordEqual(value, false_value));
     result.Bind(true_value);
     Goto(&end);
   }
@@ -1481,7 +1492,7 @@ IGNITION_HANDLER(DeletePropertyStrict, InterpreterAssembler) {
   Node* key = GetAccumulator();
   Node* context = GetContext();
   Node* result = CallBuiltin(Builtins::kDeleteProperty, context, object, key,
-                             SmiConstant(STRICT));
+                             SmiConstant(Smi::FromEnum(LanguageMode::kStrict)));
   SetAccumulator(result);
   Dispatch();
 }
@@ -1496,7 +1507,7 @@ IGNITION_HANDLER(DeletePropertySloppy, InterpreterAssembler) {
   Node* key = GetAccumulator();
   Node* context = GetContext();
   Node* result = CallBuiltin(Builtins::kDeleteProperty, context, object, key,
-                             SmiConstant(SLOPPY));
+                             SmiConstant(Smi::FromEnum(LanguageMode::kSloppy)));
   SetAccumulator(result);
   Dispatch();
 }
@@ -1788,7 +1799,7 @@ class InterpreterCompareOpAssembler : public InterpreterAssembler {
                                 OperandScale operand_scale)
       : InterpreterAssembler(state, bytecode, operand_scale) {}
 
-  void CompareOpWithFeedback(Token::Value compare_op) {
+  void CompareOpWithFeedback(Operation compare_op) {
     Node* reg_index = BytecodeOperandReg(0);
     Node* lhs = LoadRegister(reg_index);
     Node* rhs = GetAccumulator();
@@ -1797,27 +1808,18 @@ class InterpreterCompareOpAssembler : public InterpreterAssembler {
     Variable var_type_feedback(this, MachineRepresentation::kTagged);
     Node* result;
     switch (compare_op) {
-      case Token::EQ:
+      case Operation::kEqual:
         result = Equal(lhs, rhs, context, &var_type_feedback);
         break;
-      case Token::EQ_STRICT:
+      case Operation::kStrictEqual:
         result = StrictEqual(lhs, rhs, &var_type_feedback);
         break;
-      case Token::LT:
-        result = RelationalComparison(CodeStubAssembler::kLessThan, lhs, rhs,
-                                      context, &var_type_feedback);
-        break;
-      case Token::GT:
-        result = RelationalComparison(CodeStubAssembler::kGreaterThan, lhs, rhs,
-                                      context, &var_type_feedback);
-        break;
-      case Token::LTE:
-        result = RelationalComparison(CodeStubAssembler::kLessThanOrEqual, lhs,
-                                      rhs, context, &var_type_feedback);
-        break;
-      case Token::GTE:
-        result = RelationalComparison(CodeStubAssembler::kGreaterThanOrEqual,
-                                      lhs, rhs, context, &var_type_feedback);
+      case Operation::kLessThan:
+      case Operation::kGreaterThan:
+      case Operation::kLessThanOrEqual:
+      case Operation::kGreaterThanOrEqual:
+        result = RelationalComparison(compare_op, lhs, rhs, context,
+                                      &var_type_feedback);
         break;
       default:
         UNREACHABLE();
@@ -1835,28 +1837,28 @@ class InterpreterCompareOpAssembler : public InterpreterAssembler {
 //
 // Test if the value in the <src> register equals the accumulator.
 IGNITION_HANDLER(TestEqual, InterpreterCompareOpAssembler) {
-  CompareOpWithFeedback(Token::Value::EQ);
+  CompareOpWithFeedback(Operation::kEqual);
 }
 
 // TestEqualStrict <src>
 //
 // Test if the value in the <src> register is strictly equal to the accumulator.
 IGNITION_HANDLER(TestEqualStrict, InterpreterCompareOpAssembler) {
-  CompareOpWithFeedback(Token::Value::EQ_STRICT);
+  CompareOpWithFeedback(Operation::kStrictEqual);
 }
 
 // TestLessThan <src>
 //
 // Test if the value in the <src> register is less than the accumulator.
 IGNITION_HANDLER(TestLessThan, InterpreterCompareOpAssembler) {
-  CompareOpWithFeedback(Token::Value::LT);
+  CompareOpWithFeedback(Operation::kLessThan);
 }
 
 // TestGreaterThan <src>
 //
 // Test if the value in the <src> register is greater than the accumulator.
 IGNITION_HANDLER(TestGreaterThan, InterpreterCompareOpAssembler) {
-  CompareOpWithFeedback(Token::Value::GT);
+  CompareOpWithFeedback(Operation::kGreaterThan);
 }
 
 // TestLessThanOrEqual <src>
@@ -1864,7 +1866,7 @@ IGNITION_HANDLER(TestGreaterThan, InterpreterCompareOpAssembler) {
 // Test if the value in the <src> register is less than or equal to the
 // accumulator.
 IGNITION_HANDLER(TestLessThanOrEqual, InterpreterCompareOpAssembler) {
-  CompareOpWithFeedback(Token::Value::LTE);
+  CompareOpWithFeedback(Operation::kLessThanOrEqual);
 }
 
 // TestGreaterThanOrEqual <src>
@@ -1872,7 +1874,7 @@ IGNITION_HANDLER(TestLessThanOrEqual, InterpreterCompareOpAssembler) {
 // Test if the value in the <src> register is greater than or equal to the
 // accumulator.
 IGNITION_HANDLER(TestGreaterThanOrEqual, InterpreterCompareOpAssembler) {
-  CompareOpWithFeedback(Token::Value::GTE);
+  CompareOpWithFeedback(Operation::kGreaterThanOrEqual);
 }
 
 // TestEqualStrictNoFeedback <src>
@@ -1906,16 +1908,23 @@ IGNITION_HANDLER(TestIn, InterpreterAssembler) {
   Dispatch();
 }
 
-// TestInstanceOf <src>
+// TestInstanceOf <src> <feedback_slot>
 //
 // Test if the object referenced by the <src> register is an an instance of type
 // referenced by the accumulator.
 IGNITION_HANDLER(TestInstanceOf, InterpreterAssembler) {
-  Node* reg_index = BytecodeOperandReg(0);
-  Node* name = LoadRegister(reg_index);
-  Node* object = GetAccumulator();
+  Node* object_reg = BytecodeOperandReg(0);
+  Node* object = LoadRegister(object_reg);
+  Node* callable = GetAccumulator();
+  Node* slot_id = BytecodeOperandIdx(1);
+  Node* feedback_vector = LoadFeedbackVector();
   Node* context = GetContext();
-  SetAccumulator(InstanceOf(name, object, context));
+
+  // Record feedback for the {callable} in the {feedback_vector}.
+  CollectCallableFeedback(callable, context, feedback_vector, slot_id);
+
+  // Perform the actual instanceof operation.
+  SetAccumulator(InstanceOf(object, callable, context));
   Dispatch();
 }
 
@@ -1928,7 +1937,7 @@ IGNITION_HANDLER(TestUndetectable, InterpreterAssembler) {
   Node* object = GetAccumulator();
 
   // If the object is an Smi then return false.
-  SetAccumulator(BooleanConstant(false));
+  SetAccumulator(FalseConstant());
   GotoIf(TaggedIsSmi(object), &end);
 
   // If it is a HeapObject, load the map and check for undetectable bit.
@@ -1945,8 +1954,7 @@ IGNITION_HANDLER(TestUndetectable, InterpreterAssembler) {
 // Test if the value in accumulator is strictly equal to null.
 IGNITION_HANDLER(TestNull, InterpreterAssembler) {
   Node* object = GetAccumulator();
-  Node* null_value = HeapConstant(isolate()->factory()->null_value());
-  Node* result = SelectBooleanConstant(WordEqual(object, null_value));
+  Node* result = SelectBooleanConstant(WordEqual(object, NullConstant()));
   SetAccumulator(result);
   Dispatch();
 }
@@ -1956,8 +1964,7 @@ IGNITION_HANDLER(TestNull, InterpreterAssembler) {
 // Test if the value in the accumulator is strictly equal to undefined.
 IGNITION_HANDLER(TestUndefined, InterpreterAssembler) {
   Node* object = GetAccumulator();
-  Node* undefined_value = HeapConstant(isolate()->factory()->undefined_value());
-  Node* result = SelectBooleanConstant(WordEqual(object, undefined_value));
+  Node* result = SelectBooleanConstant(WordEqual(object, UndefinedConstant()));
   SetAccumulator(result);
   Dispatch();
 }
@@ -2013,8 +2020,8 @@ IGNITION_HANDLER(TestTypeOf, InterpreterAssembler) {
   BIND(&if_boolean);
   {
     Comment("IfBoolean");
-    GotoIf(WordEqual(object, BooleanConstant(true)), &if_true);
-    Branch(WordEqual(object, BooleanConstant(false)), &if_true, &if_false);
+    GotoIf(WordEqual(object, TrueConstant()), &if_true);
+    Branch(WordEqual(object, FalseConstant()), &if_true, &if_false);
   }
   BIND(&if_undefined);
   {
@@ -2043,7 +2050,7 @@ IGNITION_HANDLER(TestTypeOf, InterpreterAssembler) {
     GotoIf(TaggedIsSmi(object), &if_false);
 
     // If the object is null then return true.
-    GotoIf(WordEqual(object, NullConstant()), &if_true);
+    GotoIf(IsNull(object), &if_true);
 
     // Check if the object is a receiver type and is not undefined or callable.
     Node* map = LoadMap(object);
@@ -2063,12 +2070,12 @@ IGNITION_HANDLER(TestTypeOf, InterpreterAssembler) {
 
   BIND(&if_false);
   {
-    SetAccumulator(BooleanConstant(false));
+    SetAccumulator(FalseConstant());
     Goto(&end);
   }
   BIND(&if_true);
   {
-    SetAccumulator(BooleanConstant(true));
+    SetAccumulator(TrueConstant());
     Goto(&end);
   }
   BIND(&end);
@@ -2101,10 +2108,9 @@ IGNITION_HANDLER(JumpConstant, InterpreterAssembler) {
 IGNITION_HANDLER(JumpIfTrue, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
   Node* relative_jump = BytecodeOperandUImmWord(0);
-  Node* true_value = BooleanConstant(true);
   CSA_ASSERT(this, TaggedIsNotSmi(accumulator));
   CSA_ASSERT(this, IsBoolean(accumulator));
-  JumpIfWordEqual(accumulator, true_value, relative_jump);
+  JumpIfWordEqual(accumulator, TrueConstant(), relative_jump);
 }
 
 // JumpIfTrueConstant <idx>
@@ -2116,10 +2122,9 @@ IGNITION_HANDLER(JumpIfTrueConstant, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
   Node* index = BytecodeOperandIdx(0);
   Node* relative_jump = LoadAndUntagConstantPoolEntry(index);
-  Node* true_value = BooleanConstant(true);
   CSA_ASSERT(this, TaggedIsNotSmi(accumulator));
   CSA_ASSERT(this, IsBoolean(accumulator));
-  JumpIfWordEqual(accumulator, true_value, relative_jump);
+  JumpIfWordEqual(accumulator, TrueConstant(), relative_jump);
 }
 
 // JumpIfFalse <imm>
@@ -2130,10 +2135,9 @@ IGNITION_HANDLER(JumpIfTrueConstant, InterpreterAssembler) {
 IGNITION_HANDLER(JumpIfFalse, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
   Node* relative_jump = BytecodeOperandUImmWord(0);
-  Node* false_value = BooleanConstant(false);
   CSA_ASSERT(this, TaggedIsNotSmi(accumulator));
   CSA_ASSERT(this, IsBoolean(accumulator));
-  JumpIfWordEqual(accumulator, false_value, relative_jump);
+  JumpIfWordEqual(accumulator, FalseConstant(), relative_jump);
 }
 
 // JumpIfFalseConstant <idx>
@@ -2145,10 +2149,9 @@ IGNITION_HANDLER(JumpIfFalseConstant, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
   Node* index = BytecodeOperandIdx(0);
   Node* relative_jump = LoadAndUntagConstantPoolEntry(index);
-  Node* false_value = BooleanConstant(false);
   CSA_ASSERT(this, TaggedIsNotSmi(accumulator));
   CSA_ASSERT(this, IsBoolean(accumulator));
-  JumpIfWordEqual(accumulator, false_value, relative_jump);
+  JumpIfWordEqual(accumulator, FalseConstant(), relative_jump);
 }
 
 // JumpIfToBooleanTrue <imm>
@@ -2221,9 +2224,8 @@ IGNITION_HANDLER(JumpIfToBooleanFalseConstant, InterpreterAssembler) {
 // referenced by the accumulator is the null constant.
 IGNITION_HANDLER(JumpIfNull, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* null_value = HeapConstant(isolate()->factory()->null_value());
   Node* relative_jump = BytecodeOperandUImmWord(0);
-  JumpIfWordEqual(accumulator, null_value, relative_jump);
+  JumpIfWordEqual(accumulator, NullConstant(), relative_jump);
 }
 
 // JumpIfNullConstant <idx>
@@ -2232,10 +2234,9 @@ IGNITION_HANDLER(JumpIfNull, InterpreterAssembler) {
 // pool if the object referenced by the accumulator is the null constant.
 IGNITION_HANDLER(JumpIfNullConstant, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* null_value = HeapConstant(isolate()->factory()->null_value());
   Node* index = BytecodeOperandIdx(0);
   Node* relative_jump = LoadAndUntagConstantPoolEntry(index);
-  JumpIfWordEqual(accumulator, null_value, relative_jump);
+  JumpIfWordEqual(accumulator, NullConstant(), relative_jump);
 }
 
 // JumpIfNotNull <imm>
@@ -2244,9 +2245,8 @@ IGNITION_HANDLER(JumpIfNullConstant, InterpreterAssembler) {
 // referenced by the accumulator is not the null constant.
 IGNITION_HANDLER(JumpIfNotNull, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* null_value = HeapConstant(isolate()->factory()->null_value());
   Node* relative_jump = BytecodeOperandUImmWord(0);
-  JumpIfWordNotEqual(accumulator, null_value, relative_jump);
+  JumpIfWordNotEqual(accumulator, NullConstant(), relative_jump);
 }
 
 // JumpIfNotNullConstant <idx>
@@ -2255,10 +2255,9 @@ IGNITION_HANDLER(JumpIfNotNull, InterpreterAssembler) {
 // pool if the object referenced by the accumulator is not the null constant.
 IGNITION_HANDLER(JumpIfNotNullConstant, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* null_value = HeapConstant(isolate()->factory()->null_value());
   Node* index = BytecodeOperandIdx(0);
   Node* relative_jump = LoadAndUntagConstantPoolEntry(index);
-  JumpIfWordNotEqual(accumulator, null_value, relative_jump);
+  JumpIfWordNotEqual(accumulator, NullConstant(), relative_jump);
 }
 
 // JumpIfUndefined <imm>
@@ -2267,9 +2266,8 @@ IGNITION_HANDLER(JumpIfNotNullConstant, InterpreterAssembler) {
 // referenced by the accumulator is the undefined constant.
 IGNITION_HANDLER(JumpIfUndefined, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* undefined_value = HeapConstant(isolate()->factory()->undefined_value());
   Node* relative_jump = BytecodeOperandUImmWord(0);
-  JumpIfWordEqual(accumulator, undefined_value, relative_jump);
+  JumpIfWordEqual(accumulator, UndefinedConstant(), relative_jump);
 }
 
 // JumpIfUndefinedConstant <idx>
@@ -2278,10 +2276,9 @@ IGNITION_HANDLER(JumpIfUndefined, InterpreterAssembler) {
 // pool if the object referenced by the accumulator is the undefined constant.
 IGNITION_HANDLER(JumpIfUndefinedConstant, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* undefined_value = HeapConstant(isolate()->factory()->undefined_value());
   Node* index = BytecodeOperandIdx(0);
   Node* relative_jump = LoadAndUntagConstantPoolEntry(index);
-  JumpIfWordEqual(accumulator, undefined_value, relative_jump);
+  JumpIfWordEqual(accumulator, UndefinedConstant(), relative_jump);
 }
 
 // JumpIfNotUndefined <imm>
@@ -2290,9 +2287,8 @@ IGNITION_HANDLER(JumpIfUndefinedConstant, InterpreterAssembler) {
 // referenced by the accumulator is not the undefined constant.
 IGNITION_HANDLER(JumpIfNotUndefined, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* undefined_value = HeapConstant(isolate()->factory()->undefined_value());
   Node* relative_jump = BytecodeOperandUImmWord(0);
-  JumpIfWordNotEqual(accumulator, undefined_value, relative_jump);
+  JumpIfWordNotEqual(accumulator, UndefinedConstant(), relative_jump);
 }
 
 // JumpIfNotUndefinedConstant <idx>
@@ -2302,10 +2298,9 @@ IGNITION_HANDLER(JumpIfNotUndefined, InterpreterAssembler) {
 // constant.
 IGNITION_HANDLER(JumpIfNotUndefinedConstant, InterpreterAssembler) {
   Node* accumulator = GetAccumulator();
-  Node* undefined_value = HeapConstant(isolate()->factory()->undefined_value());
   Node* index = BytecodeOperandIdx(0);
   Node* relative_jump = LoadAndUntagConstantPoolEntry(index);
-  JumpIfWordNotEqual(accumulator, undefined_value, relative_jump);
+  JumpIfWordNotEqual(accumulator, UndefinedConstant(), relative_jump);
 }
 
 // JumpIfJSReceiver <imm>
@@ -2812,10 +2807,9 @@ IGNITION_HANDLER(Return, InterpreterAssembler) {
 // Throws an exception if the value in the accumulator is TheHole.
 IGNITION_HANDLER(ThrowReferenceErrorIfHole, InterpreterAssembler) {
   Node* value = GetAccumulator();
-  Node* the_hole_value = HeapConstant(isolate()->factory()->the_hole_value());
 
   Label throw_error(this, Label::kDeferred);
-  GotoIf(WordEqual(value, the_hole_value), &throw_error);
+  GotoIf(WordEqual(value, TheHoleConstant()), &throw_error);
   Dispatch();
 
   BIND(&throw_error);
@@ -2832,10 +2826,9 @@ IGNITION_HANDLER(ThrowReferenceErrorIfHole, InterpreterAssembler) {
 // Throws an exception if the value in the accumulator is TheHole.
 IGNITION_HANDLER(ThrowSuperNotCalledIfHole, InterpreterAssembler) {
   Node* value = GetAccumulator();
-  Node* the_hole_value = HeapConstant(isolate()->factory()->the_hole_value());
 
   Label throw_error(this, Label::kDeferred);
-  GotoIf(WordEqual(value, the_hole_value), &throw_error);
+  GotoIf(WordEqual(value, TheHoleConstant()), &throw_error);
   Dispatch();
 
   BIND(&throw_error);
@@ -2852,10 +2845,9 @@ IGNITION_HANDLER(ThrowSuperNotCalledIfHole, InterpreterAssembler) {
 // TheHole.
 IGNITION_HANDLER(ThrowSuperAlreadyCalledIfNotHole, InterpreterAssembler) {
   Node* value = GetAccumulator();
-  Node* the_hole_value = HeapConstant(isolate()->factory()->the_hole_value());
 
   Label throw_error(this, Label::kDeferred);
-  GotoIf(WordNotEqual(value, the_hole_value), &throw_error);
+  GotoIf(WordNotEqual(value, TheHoleConstant()), &throw_error);
   Dispatch();
 
   BIND(&throw_error);
@@ -3075,12 +3067,12 @@ IGNITION_HANDLER(ForInContinue, InterpreterAssembler) {
   Branch(WordEqual(index, cache_length), &if_true, &if_false);
   BIND(&if_true);
   {
-    SetAccumulator(BooleanConstant(false));
+    SetAccumulator(FalseConstant());
     Goto(&end);
   }
   BIND(&if_false);
   {
-    SetAccumulator(BooleanConstant(true));
+    SetAccumulator(TrueConstant());
     Goto(&end);
   }
   BIND(&end);

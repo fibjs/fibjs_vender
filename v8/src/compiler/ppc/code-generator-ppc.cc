@@ -218,6 +218,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
   }
 
   void Generate() final {
+    ConstantPoolUnavailableScope constant_pool_unavailable(tasm());
     if (mode_ > RecordWriteMode::kValueIsPointer) {
       __ JumpIfSmi(value_, exit());
     }
@@ -245,7 +246,6 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
                            save_fp_mode);
 #else
     if (must_save_lr_ && FLAG_enable_embedded_constant_pool) {
-      ConstantPoolUnavailableScope constant_pool_unavailable(tasm());
       __ CallStubDelayed(
           new (zone_) RecordWriteStub(nullptr, object_, scratch0_, scratch1_,
                                       remembered_set_action, save_fp_mode));
@@ -970,7 +970,7 @@ void CodeGenerator::AssembleTailCallAfterGap(Instruction* instr,
 // to:
 //    1. load the address of the current instruction;
 //    2. read from memory the word that contains that bit, which can be found in
-//       the first set of flags ({kKindSpecificFlags1Offset});
+//       the flags in the referenced {CodeDataContainer} object;
 //    3. test kMarkedForDeoptimizationBit in those flags; and
 //    4. if it is not zero then it jumps to the builtin.
 void CodeGenerator::BailoutIfDeoptimized() {
@@ -978,9 +978,10 @@ void CodeGenerator::BailoutIfDeoptimized() {
   __ mov_label_addr(r11, &current);
   int pc_offset = __ pc_offset();
   __ bind(&current);
-  int offset =
-      Code::kKindSpecificFlags1Offset - (Code::kHeaderSize + pc_offset);
-  __ LoadWordArith(r11, MemOperand(r11, offset));
+  int offset = Code::kCodeDataContainerOffset - (Code::kHeaderSize + pc_offset);
+  __ LoadP(r11, MemOperand(r11, offset));
+  __ LoadWordArith(
+      r11, FieldMemOperand(r11, CodeDataContainer::kKindSpecificFlagsOffset));
   __ TestBit(r11, Code::kMarkedForDeoptimizationBit);
   Handle<Code> code = isolate()->builtins()->builtin_handle(
       Builtins::kCompileLazyDeoptimizedCode);
@@ -1725,10 +1726,19 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kPPC_Push:
       if (instr->InputAt(0)->IsFPRegister()) {
-        __ stfdu(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
-        frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
+        LocationOperand* op = LocationOperand::cast(instr->InputAt(0));
+        if (op->representation() == MachineRepresentation::kFloat64) {
+          __ StoreDoubleU(i.InputDoubleRegister(0),
+                          MemOperand(sp, -kDoubleSize), r0);
+          frame_access_state()->IncreaseSPDelta(kDoubleSize / kPointerSize);
+        } else {
+          DCHECK_EQ(MachineRepresentation::kFloat32, op->representation());
+          __ StoreSingleU(i.InputDoubleRegister(0),
+                          MemOperand(sp, -kPointerSize), r0);
+          frame_access_state()->IncreaseSPDelta(1);
+        }
       } else {
-        __ Push(i.InputRegister(0));
+        __ StorePU(i.InputRegister(0), MemOperand(sp, -kPointerSize), r0);
         frame_access_state()->IncreaseSPDelta(1);
       }
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
@@ -2299,7 +2309,7 @@ void CodeGenerator::FinishFrame(Frame* frame) {
   if (double_saves != 0) {
     frame->AlignSavedCalleeRegisterSlots();
     DCHECK_EQ(kNumCalleeSavedDoubles,
-              base::bits::CountPopulation32(double_saves));
+              base::bits::CountPopulation(double_saves));
     frame->AllocateSavedCalleeRegisterSlots(kNumCalleeSavedDoubles *
                                              (kDoubleSize / kPointerSize));
   }
@@ -2312,7 +2322,7 @@ void CodeGenerator::FinishFrame(Frame* frame) {
     // register save area does not include the fp or constant pool pointer.
     const int num_saves =
         kNumCalleeSaved - 1 - (FLAG_enable_embedded_constant_pool ? 1 : 0);
-    DCHECK(num_saves == base::bits::CountPopulation32(saves));
+    DCHECK(num_saves == base::bits::CountPopulation(saves));
     frame->AllocateSavedCalleeRegisterSlots(num_saves);
   }
 }
@@ -2368,7 +2378,7 @@ void CodeGenerator::AssembleConstructFrame() {
   if (double_saves != 0) {
     __ MultiPushDoubles(double_saves);
     DCHECK_EQ(kNumCalleeSavedDoubles,
-              base::bits::CountPopulation32(double_saves));
+              base::bits::CountPopulation(double_saves));
   }
 
   // Save callee-saved registers.
@@ -2429,7 +2439,7 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   __ Ret();
 }
 
-void CodeGenerator::FinishCode() {}
+void CodeGenerator::FinishCode() { __ EmitConstantPool(); }
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
@@ -2536,8 +2546,10 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
                   : Double(src.ToFloat64());
 #endif
       __ LoadDoubleLiteral(dst, value, kScratchReg);
-      if (destination->IsFPStackSlot()) {
+      if (destination->IsDoubleStackSlot()) {
         __ StoreDouble(dst, g.ToMemOperand(destination), r0);
+      } else if (destination->IsFloatStackSlot()) {
+        __ StoreSingle(dst, g.ToMemOperand(destination), r0);
       }
     }
   } else if (source->IsFPRegister()) {
@@ -2580,10 +2592,60 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
   }
 }
 
-
+// Swaping contents in source and destination.
+// source and destination could be:
+//   Register,
+//   FloatRegister,
+//   DoubleRegister,
+//   StackSlot,
+//   FloatStackSlot,
+//   or DoubleStackSlot
 void CodeGenerator::AssembleSwap(InstructionOperand* source,
                                  InstructionOperand* destination) {
   PPCOperandConverter g(this, nullptr);
+  if (source->IsRegister()) {
+    Register src = g.ToRegister(source);
+    if (destination->IsRegister()) {
+      __ SwapP(src, g.ToRegister(destination), kScratchReg);
+    } else {
+      DCHECK(destination->IsStackSlot());
+      __ SwapP(src, g.ToMemOperand(destination), kScratchReg);
+    }
+  } else if (source->IsStackSlot()) {
+    DCHECK(destination->IsStackSlot());
+    __ SwapP(g.ToMemOperand(source), g.ToMemOperand(destination), kScratchReg,
+             r0);
+  } else if (source->IsFloatRegister()) {
+    DoubleRegister src = g.ToDoubleRegister(source);
+    if (destination->IsFloatRegister()) {
+      __ SwapFloat32(src, g.ToDoubleRegister(destination), kScratchDoubleReg);
+    } else {
+      DCHECK(destination->IsFloatStackSlot());
+      __ SwapFloat32(src, g.ToMemOperand(destination), kScratchDoubleReg);
+    }
+  } else if (source->IsDoubleRegister()) {
+    DoubleRegister src = g.ToDoubleRegister(source);
+    if (destination->IsDoubleRegister()) {
+      __ SwapDouble(src, g.ToDoubleRegister(destination), kScratchDoubleReg);
+    } else {
+      DCHECK(destination->IsDoubleStackSlot());
+      __ SwapDouble(src, g.ToMemOperand(destination), kScratchDoubleReg);
+    }
+  } else if (source->IsFloatStackSlot()) {
+    DCHECK(destination->IsFloatStackSlot());
+    __ SwapFloat32(g.ToMemOperand(source), g.ToMemOperand(destination),
+                   kScratchDoubleReg, d0);
+  } else if (source->IsDoubleStackSlot()) {
+    DCHECK(destination->IsDoubleStackSlot());
+    __ SwapDouble(g.ToMemOperand(source), g.ToMemOperand(destination),
+                  kScratchDoubleReg, d0);
+  } else if (source->IsSimd128Register()) {
+    UNREACHABLE();
+  } else {
+    UNREACHABLE();
+  }
+
+  return;
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {

@@ -416,7 +416,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
   {
     UseScratchRegisterScope temps(this->masm());
     Register temp = temps.AcquireX();
-    __ Mov(temp, Smi::FromInt(language_mode));
+    __ Mov(temp, Smi::FromEnum(language_mode));
     __ Push(receiver(), holder_reg, scratch1(), scratch2(), value(), temp);
   }
 

@@ -11,6 +11,8 @@
 #include "src/messages.h"
 #include "src/objects/descriptor-array.h"
 #include "src/objects/dictionary.h"
+#include "src/objects/js-array.h"
+#include "src/objects/js-regexp.h"
 #include "src/objects/scope-info.h"
 #include "src/objects/string.h"
 #include "src/string-hasher.h"
@@ -416,7 +418,8 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<AllocationSite> NewAllocationSite();
 
   Handle<Map> NewMap(InstanceType type, int instance_size,
-                     ElementsKind elements_kind = TERMINAL_FAST_ELEMENTS_KIND);
+                     ElementsKind elements_kind = TERMINAL_FAST_ELEMENTS_KIND,
+                     int inobject_properties = 0);
 
   Handle<HeapObject> NewFillerObject(int size,
                                      bool double_align,
@@ -620,14 +623,14 @@ class V8_EXPORT_PRIVATE Factory final {
                                  Handle<SharedFunctionInfo> info,
                                  Handle<Object> context_or_undefined,
                                  PretenureFlag pretenure = TENURED);
-  Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
-                                 Handle<Object> prototype,
-                                 LanguageMode language_mode = SLOPPY,
-                                 MutableMode prototype_mutability = MUTABLE);
+  Handle<JSFunction> NewFunction(
+      Handle<String> name, Handle<Code> code, Handle<Object> prototype,
+      LanguageMode language_mode = LanguageMode::kSloppy,
+      MutableMode prototype_mutability = MUTABLE);
   Handle<JSFunction> NewFunction(Handle<String> name);
   Handle<JSFunction> NewFunctionWithoutPrototype(
       Handle<String> name, Handle<Code> code,
-      LanguageMode language_mode = SLOPPY);
+      LanguageMode language_mode = LanguageMode::kSloppy);
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<Map> initial_map, Handle<SharedFunctionInfo> function_info,
@@ -646,15 +649,14 @@ class V8_EXPORT_PRIVATE Factory final {
       Handle<SharedFunctionInfo> function_info, Handle<Context> context,
       PretenureFlag pretenure = TENURED);
 
+  Handle<JSFunction> NewFunction(
+      Handle<String> name, Handle<Code> code, Handle<Object> prototype,
+      InstanceType type, int instance_size, int inobject_properties,
+      LanguageMode language_mode = LanguageMode::kSloppy,
+      MutableMode prototype_mutability = MUTABLE);
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
-                                 Handle<Object> prototype, InstanceType type,
-                                 int instance_size,
-                                 LanguageMode language_mode = SLOPPY,
-                                 MutableMode prototype_mutability = MUTABLE);
-  Handle<JSFunction> NewFunction(Handle<String> name,
-                                 Handle<Code> code,
-                                 InstanceType type,
-                                 int instance_size);
+                                 InstanceType type, int instance_size,
+                                 int inobject_properties);
   Handle<JSFunction> NewFunction(Handle<Map> map, Handle<String> name,
                                  MaybeHandle<Code> maybe_code);
 
@@ -669,11 +671,23 @@ class V8_EXPORT_PRIVATE Factory final {
   // Create an External object for V8's external API.
   Handle<JSObject> NewExternal(void* value);
 
+  // Creates a new CodeDataContainer for a Code object.
+  Handle<CodeDataContainer> NewCodeDataContainer(int flags);
+
   // The reference to the Code object is stored in self_reference.
   // This allows generated code to reference its own Code object
   // by containing this handle.
   Handle<Code> NewCode(const CodeDesc& desc, Code::Kind kind,
-                       Handle<Object> self_reference, bool immovable = false);
+                       Handle<Object> self_reference,
+                       MaybeHandle<HandlerTable> maybe_handler_table =
+                           MaybeHandle<HandlerTable>(),
+                       MaybeHandle<ByteArray> maybe_source_position_table =
+                           MaybeHandle<ByteArray>(),
+                       MaybeHandle<DeoptimizationData> maybe_deopt_data =
+                           MaybeHandle<DeoptimizationData>(),
+                       bool immovable = false, uint32_t stub_key = 0,
+                       bool is_turbofanned = false, int stack_slots = 0,
+                       int safepoint_table_offset = 0);
 
   // Allocates a new, empty code object for use by builtin deserialization. The
   // given {size} argument specifies the size of the entire code object.
@@ -852,14 +866,6 @@ class V8_EXPORT_PRIVATE Factory final {
   // Create a JSArray with no elements and no length.
   Handle<JSArray> NewJSArray(ElementsKind elements_kind,
                              PretenureFlag pretenure = NOT_TENURED);
-
-  void SetSloppyFunctionInstanceDescriptor(Handle<Map> map,
-                                           FunctionMode function_mode);
-
-  void SetStrictFunctionInstanceDescriptor(Handle<Map> map,
-                                           FunctionMode function_mode);
-
-  void SetClassFunctionInstanceDescriptor(Handle<Map> map);
 };
 
 }  // namespace internal

@@ -62,9 +62,6 @@ const Register StoreTransitionDescriptor::SlotRegister() { return x4; }
 const Register StoreTransitionDescriptor::VectorRegister() { return x3; }
 const Register StoreTransitionDescriptor::MapRegister() { return x5; }
 
-const Register StringCompareDescriptor::LeftRegister() { return x1; }
-const Register StringCompareDescriptor::RightRegister() { return x0; }
-
 const Register ApiGetterDescriptor::HolderRegister() { return x0; }
 const Register ApiGetterDescriptor::CallbackRegister() { return x3; }
 
@@ -226,7 +223,7 @@ void ArrayConstructorDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   // kTarget, kNewTarget, kActualArgumentsCount, kAllocationSite
   Register registers[] = {x1, x3, x0, x2};
-  data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
+  data->InitializePlatformSpecific(arraysize(registers), registers, nullptr);
 }
 
 void ArrayNoArgumentConstructorDescriptor::InitializePlatformSpecific(
@@ -236,7 +233,7 @@ void ArrayNoArgumentConstructorDescriptor::InitializePlatformSpecific(
   // x2: allocation site with elements kind
   // x0: number of arguments to the constructor function
   Register registers[] = {x1, x2, x0};
-  data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
+  data->InitializePlatformSpecific(arraysize(registers), registers, nullptr);
 }
 
 void ArraySingleArgumentConstructorDescriptor::InitializePlatformSpecific(
@@ -246,7 +243,7 @@ void ArraySingleArgumentConstructorDescriptor::InitializePlatformSpecific(
   // x1: function
   // x2: allocation site with elements kind
   Register registers[] = {x1, x2, x0};
-  data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
+  data->InitializePlatformSpecific(arraysize(registers), registers, nullptr);
 }
 
 void ArrayNArgumentsConstructorDescriptor::InitializePlatformSpecific(
