@@ -1423,6 +1423,29 @@ Handle<BigInt> Factory::NewBigIntRaw(int length, PretenureFlag pretenure) {
       BigInt);
 }
 
+Handle<BigInt> Factory::NewBigIntFromSafeInteger(double value,
+                                                 PretenureFlag pretenure) {
+  if (value == 0) return NewBigInt(0);
+
+  uint64_t absolute = std::abs(value);
+
+#if V8_TARGET_ARCH_64_BIT
+  static_assert(sizeof(BigInt::digit_t) == sizeof(uint64_t),
+                "unexpected BigInt digit size");
+  Handle<BigInt> result = NewBigIntRaw(1);
+  result->set_digit(0, absolute);
+#else
+  static_assert(sizeof(BigInt::digit_t) == sizeof(uint32_t),
+                "unexpected BigInt digit size");
+  Handle<BigInt> result = NewBigIntRaw(2);
+  result->set_digit(0, absolute);
+  result->set_digit(1, absolute >> 32);
+#endif
+
+  result->set_sign(value < 0);  // Treats -0 like 0.
+  return result;
+}
+
 Handle<BigInt> Factory::NewBigIntFromInt(int value, PretenureFlag pretenure) {
   if (value == 0) return NewBigInt(0);
   Handle<BigInt> result = NewBigIntRaw(1);
@@ -2989,9 +3012,8 @@ Handle<Map> Factory::CreateSloppyFunctionMap(
   int field_index = 0;
   STATIC_ASSERT(JSFunction::kLengthDescriptorIndex == 0);
   {  // Add length accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionLengthInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(length_string(), info, roc_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        length_string(), function_length_accessor(), roc_attribs);
     map->AppendDescriptor(&d);
   }
 
@@ -3005,21 +3027,18 @@ Handle<Map> Factory::CreateSloppyFunctionMap(
 
   } else {
     // Add name accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionNameInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(name_string(), info, roc_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        name_string(), function_name_accessor(), roc_attribs);
     map->AppendDescriptor(&d);
   }
   {  // Add arguments accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionArgumentsInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(arguments_string(), info, ro_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        arguments_string(), function_arguments_accessor(), ro_attribs);
     map->AppendDescriptor(&d);
   }
   {  // Add caller accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionCallerInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(caller_string(), info, ro_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        caller_string(), function_caller_accessor(), ro_attribs);
     map->AppendDescriptor(&d);
   }
   if (IsFunctionModeWithPrototype(function_mode)) {
@@ -3027,9 +3046,8 @@ Handle<Map> Factory::CreateSloppyFunctionMap(
     PropertyAttributes attribs =
         IsFunctionModeWithWritablePrototype(function_mode) ? rw_attribs
                                                            : ro_attribs;
-    Handle<AccessorInfo> info = Accessors::FunctionPrototypeInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(prototype_string(), info, attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        prototype_string(), function_prototype_accessor(), attribs);
     map->AppendDescriptor(&d);
   }
   DCHECK_EQ(inobject_properties_count, field_index);
@@ -3070,9 +3088,8 @@ Handle<Map> Factory::CreateStrictFunctionMap(
   int field_index = 0;
   STATIC_ASSERT(JSFunction::kLengthDescriptorIndex == 0);
   {  // Add length accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionLengthInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(length_string(), info, roc_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        length_string(), function_length_accessor(), roc_attribs);
     map->AppendDescriptor(&d);
   }
 
@@ -3086,9 +3103,8 @@ Handle<Map> Factory::CreateStrictFunctionMap(
 
   } else {
     // Add name accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionNameInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(name_string(), info, roc_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        name_string(), function_name_accessor(), roc_attribs);
     map->AppendDescriptor(&d);
   }
 
@@ -3097,9 +3113,8 @@ Handle<Map> Factory::CreateStrictFunctionMap(
     PropertyAttributes attribs =
         IsFunctionModeWithWritablePrototype(function_mode) ? rw_attribs
                                                            : ro_attribs;
-    Handle<AccessorInfo> info = Accessors::FunctionPrototypeInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(prototype_string(), info, attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        prototype_string(), function_prototype_accessor(), attribs);
     map->AppendDescriptor(&d);
   }
 
@@ -3133,17 +3148,15 @@ Handle<Map> Factory::CreateClassFunctionMap(Handle<JSFunction> empty_function) {
 
   STATIC_ASSERT(JSFunction::kLengthDescriptorIndex == 0);
   {  // Add length accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionLengthInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(length_string(), info, roc_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        length_string(), function_length_accessor(), roc_attribs);
     map->AppendDescriptor(&d);
   }
 
   {
     // Add prototype accessor.
-    Handle<AccessorInfo> info = Accessors::FunctionPrototypeInfo(isolate());
-    Descriptor d =
-        Descriptor::AccessorConstant(prototype_string(), info, rw_attribs);
+    Descriptor d = Descriptor::AccessorConstant(
+        prototype_string(), function_prototype_accessor(), rw_attribs);
     map->AppendDescriptor(&d);
   }
   return map;

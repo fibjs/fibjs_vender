@@ -77,6 +77,7 @@ namespace internal {
   F(BigIntEqualToNumber, 2, 1)       \
   F(BigIntEqualToString, 2, 1)       \
   F(BigIntToBoolean, 1, 1)           \
+  F(BigIntToNumber, 1, 1)            \
   F(BigIntUnaryOp, 2, 1)
 
 #define FOR_EACH_INTRINSIC_CLASSES(F)        \
@@ -240,7 +241,6 @@ namespace internal {
   F(SetNativeFlag, 1, 1)                   \
   F(IsConstructor, 1, 1)                   \
   F(Call, -1 /* >= 2 */, 1)                \
-  F(ConvertReceiver, 1, 1)                 \
   F(IsFunction, 1, 1)                      \
   F(FunctionToString, 1, 1)
 
@@ -632,7 +632,8 @@ namespace internal {
   F(HeapObjectVerify, 1, 1)                   \
   F(WasmNumInterpretedCalls, 1, 1)            \
   F(RedirectToWasmInterpreter, 2, 1)          \
-  F(WasmTraceMemory, 4, 1)
+  F(WasmTraceMemory, 4, 1)                    \
+  F(IsLiftoffFunction, 1, 1)
 
 #define FOR_EACH_INTRINSIC_TYPEDARRAY(F) \
   F(ArrayBufferGetByteLength, 1, 1)      \
@@ -660,7 +661,7 @@ namespace internal {
   F(WasmGetExceptionRuntimeId, 0, 1) \
   F(WasmExceptionSetElement, 2, 1)   \
   F(WasmExceptionGetElement, 1, 1)   \
-  F(WasmRunInterpreter, 3, 1)        \
+  F(WasmRunInterpreter, 2, 1)        \
   F(WasmStackGuard, 0, 1)            \
   F(WasmCompileLazy, 0, 1)
 

@@ -204,7 +204,6 @@ namespace internal {
   TFH(KeyedLoadIC_Miss, LoadWithVector)                                        \
   TFH(KeyedLoadIC_PolymorphicName, LoadWithVector)                             \
   TFH(KeyedLoadIC_Slow, LoadWithVector)                                        \
-  TFH(KeyedLoadIC_IndexedString, LoadWithVector)                               \
   TFH(KeyedStoreIC_Megamorphic, StoreWithVector)                               \
   TFH(KeyedStoreIC_Miss, StoreWithVector)                                      \
   TFH(KeyedStoreIC_Slow, StoreWithVector)                                      \
@@ -700,6 +699,7 @@ namespace internal {
   TFC(GreaterThan, Compare, 1)                                                 \
   TFC(GreaterThanOrEqual, Compare, 1)                                          \
   TFC(Equal, Compare, 1)                                                       \
+  TFC(SameValue, Compare, 1)                                                   \
   TFC(StrictEqual, Compare, 1)                                                 \
                                                                                \
   /* Object */                                                                 \
@@ -1089,9 +1089,14 @@ namespace internal {
   TFS(WeakMapLookupHashIndex, kTable, kKey)                                    \
   TFJ(WeakMapGet, 1, kKey)                                                     \
   TFJ(WeakMapHas, 1, kKey)                                                     \
+  TFJ(WeakMapPrototypeSet, 2, kKey, kValue)                                    \
                                                                                \
   /* WeakSet */                                                                \
   TFJ(WeakSetHas, 1, kKey)                                                     \
+  TFJ(WeakSetPrototypeAdd, 1, kValue)                                          \
+                                                                               \
+  /* WeakSet / WeakMap Helpers */                                              \
+  TFS(WeakCollectionSet, kCollection, kKey, kValue)                            \
                                                                                \
   /* AsyncGenerator */                                                         \
                                                                                \

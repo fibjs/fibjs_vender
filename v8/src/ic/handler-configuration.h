@@ -19,6 +19,7 @@ class LoadHandler {
  public:
   enum Kind {
     kElement,
+    kIndexedString,
     kNormal,
     kGlobal,
     kField,
@@ -77,6 +78,11 @@ class LoadHandler {
       : public BitField<ElementsKind, ConvertHoleBits::kNext, 8> {};
   // Make sure we don't overflow the smi.
   STATIC_ASSERT(ElementsKindBits::kNext <= kSmiValueSize);
+
+  //
+  // Encoding when KindBits contains kIndexedString.
+  //
+  class AllowOutOfBoundsBits : public BitField<bool, KindBits::kNext, 1> {};
 
   //
   // Encoding when KindBits contains kModuleExport.
@@ -158,6 +164,10 @@ class LoadHandler {
                                         ElementsKind elements_kind,
                                         bool convert_hole_to_undefined,
                                         bool is_js_array);
+
+  // Creates a Smi-handler for loading from a String.
+  static inline Handle<Smi> LoadIndexedString(Isolate* isolate,
+                                              bool allow_out_of_bounds);
 
  private:
   // Sets DoAccessCheckOnReceiverBits in given Smi-handler. The receiver

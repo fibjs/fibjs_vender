@@ -216,10 +216,13 @@ void AccessorAssembler::HandleLoadICSmiHandlerCase(
   Node* handler_word = SmiUntag(smi_handler);
   Node* handler_kind = DecodeWord<LoadHandler::KindBits>(handler_word);
   if (support_elements == kSupportElements) {
-    Label property(this);
-    GotoIfNot(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kElement)),
-              &property);
+    Label if_element(this), if_indexed_string(this), if_property(this);
+    GotoIf(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kElement)),
+           &if_element);
+    Branch(WordEqual(handler_kind, IntPtrConstant(LoadHandler::kIndexedString)),
+           &if_indexed_string, &if_property);
 
+    BIND(&if_element);
     Comment("element_load");
     Node* intptr_index = TryToIntptr(p->name, miss);
     Node* elements = LoadElements(holder);
@@ -250,7 +253,29 @@ void AccessorAssembler::HandleLoadICSmiHandlerCase(
       exit_point->Return(UndefinedConstant());
     }
 
-    BIND(&property);
+    BIND(&if_indexed_string);
+    {
+      Label if_oob(this, Label::kDeferred);
+
+      Comment("indexed string");
+      Node* intptr_index = TryToIntptr(p->name, miss);
+      Node* length = SmiUntag(LoadStringLength(holder));
+      GotoIf(UintPtrGreaterThanOrEqual(intptr_index, length), &if_oob);
+      Node* code = StringCharCodeAt(holder, intptr_index, INTPTR_PARAMETERS);
+      Node* result = StringFromCharCode(code);
+      Return(result);
+
+      BIND(&if_oob);
+      Node* allow_out_of_bounds =
+          IsSetWord<LoadHandler::AllowOutOfBoundsBits>(handler_word);
+      GotoIfNot(allow_out_of_bounds, miss);
+      // TODO(bmeurer): This is going to be renamed to NoElementsProtector
+      // in a follow-up CL.
+      GotoIf(IsArrayProtectorCellInvalid(), miss);
+      Return(UndefinedConstant());
+    }
+
+    BIND(&if_property);
     Comment("property_load");
   }
 
@@ -1623,12 +1648,12 @@ void AccessorAssembler::GenericElementLoad(Node* receiver, Node* receiver_map,
 
   ExitPoint direct_exit(this);
 
-  Label if_element_hole(this), if_oob(this);
+  Label if_custom(this), if_element_hole(this), if_oob(this);
   // Receivers requiring non-standard element accesses (interceptors, access
   // checks, strings and string wrappers, proxies) are handled in the runtime.
   GotoIf(Int32LessThanOrEqual(instance_type,
                               Int32Constant(LAST_CUSTOM_ELEMENTS_RECEIVER)),
-         slow);
+         &if_custom);
   Node* elements = LoadElements(receiver);
   Node* elements_kind = LoadMapElementsKind(receiver_map);
   Node* is_jsarray_condition = InstanceTypeEqual(instance_type, JS_ARRAY_TYPE);
@@ -1663,6 +1688,18 @@ void AccessorAssembler::GenericElementLoad(Node* receiver, Node* receiver_map,
 
     BIND(&return_undefined);
     Return(UndefinedConstant());
+  }
+
+  BIND(&if_custom);
+  {
+    Comment("check if string");
+    GotoIfNot(IsStringInstanceType(instance_type), slow);
+    Comment("load string character");
+    Node* length = LoadAndUntagObjectField(receiver, String::kLengthOffset);
+    GotoIfNot(UintPtrLessThan(index, length), slow);
+    IncrementCounter(isolate()->counters()->ic_keyed_load_generic_smi(), 1);
+    TailCallBuiltin(Builtins::kStringCharAt, NoContextConstant(), receiver,
+                    index);
   }
 }
 

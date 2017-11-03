@@ -241,6 +241,18 @@ Type* OperationTyper::MultiplyRanger(Type* lhs, Type* rhs) {
                          : range;
 }
 
+Type* OperationTyper::ConvertReceiver(Type* type) {
+  if (type->Is(Type::Receiver())) return type;
+  bool const maybe_primitive = type->Maybe(Type::Primitive());
+  type = Type::Intersect(type, Type::Receiver(), zone());
+  if (maybe_primitive) {
+    // ConvertReceiver maps null and undefined to the JSGlobalProxy of the
+    // target function, and all other primitives are wrapped into a JSValue.
+    type = Type::Union(type, Type::OtherObject(), zone());
+  }
+  return type;
+}
+
 Type* OperationTyper::ToNumber(Type* type) {
   if (type->Is(Type::Number())) return type;
   if (type->Is(Type::NullOrUndefined())) {
@@ -1044,6 +1056,42 @@ Type* OperationTyper::FalsifyUndefined(ComparisonOutcome outcome) {
   // Type should be non empty, so we know it should be true.
   DCHECK_NE(0, outcome & kComparisonTrue);
   return singleton_true();
+}
+
+namespace {
+
+Type* JSType(Type* type) {
+  if (type->Is(Type::Boolean())) return Type::Boolean();
+  if (type->Is(Type::String())) return Type::String();
+  if (type->Is(Type::Number())) return Type::Number();
+  if (type->Is(Type::Undefined())) return Type::Undefined();
+  if (type->Is(Type::Null())) return Type::Null();
+  if (type->Is(Type::Symbol())) return Type::Symbol();
+  if (type->Is(Type::Receiver())) return Type::Receiver();  // JS "Object"
+  return Type::Any();
+}
+
+}  // namespace
+
+Type* OperationTyper::SameValue(Type* lhs, Type* rhs) {
+  if (!JSType(lhs)->Maybe(JSType(rhs))) return singleton_false();
+  if (lhs->Is(Type::NaN())) {
+    if (rhs->Is(Type::NaN())) return singleton_true();
+    if (!rhs->Maybe(Type::NaN())) return singleton_false();
+  } else if (rhs->Is(Type::NaN())) {
+    if (!lhs->Maybe(Type::NaN())) return singleton_false();
+  }
+  if (lhs->Is(Type::MinusZero())) {
+    if (rhs->Is(Type::MinusZero())) return singleton_true();
+    if (!rhs->Maybe(Type::MinusZero())) return singleton_false();
+  } else if (rhs->Is(Type::MinusZero())) {
+    if (!lhs->Maybe(Type::MinusZero())) return singleton_false();
+  }
+  if (lhs->Is(Type::OrderedNumber()) && rhs->Is(Type::OrderedNumber()) &&
+      (lhs->Max() < rhs->Min() || lhs->Min() > rhs->Max())) {
+    return singleton_false();
+  }
+  return Type::Boolean();
 }
 
 Type* OperationTyper::CheckFloat64Hole(Type* type) {

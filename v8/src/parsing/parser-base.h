@@ -565,6 +565,7 @@ class ParserBase {
           has_seen_constructor(false),
           has_name_static_property(false),
           has_static_computed_names(false),
+          has_static_class_fields(false),
           is_anonymous(false),
           field_scope(nullptr) {}
     Variable* variable;
@@ -575,6 +576,7 @@ class ParserBase {
     bool has_seen_constructor;
     bool has_name_static_property;
     bool has_static_computed_names;
+    bool has_static_class_fields;
     bool is_anonymous;
     DeclarationScope* field_scope;
   };
@@ -2297,6 +2299,7 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
       if (allow_harmony_class_fields()) {
         bool has_initializer = Check(Token::ASSIGN);
         ExpressionT initializer;
+        class_info->has_static_class_fields = true;
         if (class_info->field_scope == nullptr) {
           class_info->field_scope =
               NewFunctionScope(FunctionKind::kConciseMethod);
@@ -3562,6 +3565,12 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseImportExpressions(
     return impl()->ImportMetaExpression(pos);
   }
   Expect(Token::LPAREN, CHECK_OK);
+  if (peek() == Token::RPAREN) {
+    impl()->ReportMessageAt(scanner()->location(),
+                            MessageTemplate::kImportMissingSpecifier);
+    *ok = false;
+    return impl()->NullExpression();
+  }
   ExpressionT arg = ParseAssignmentExpression(true, CHECK_OK);
   Expect(Token::RPAREN, CHECK_OK);
   return factory()->NewImportCallExpression(arg, pos);
@@ -3707,6 +3716,7 @@ void ParserBase<Impl>::ParseFormalParameter(FormalParametersT* parameters,
   //   BindingElement[?Yield, ?GeneratorParameter]
   bool is_rest = parameters->has_rest;
 
+  FuncNameInferrer::State fni_state(fni_);
   ExpressionT pattern = ParsePrimaryExpression(CHECK_OK_CUSTOM(Void));
   ValidateBindingPattern(CHECK_OK_CUSTOM(Void));
 

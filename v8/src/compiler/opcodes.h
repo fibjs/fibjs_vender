@@ -168,7 +168,6 @@
   V(JSCallWithArrayLike)            \
   V(JSCallWithSpread)               \
   V(JSCallRuntime)                  \
-  V(JSConvertReceiver)              \
   V(JSForInEnumerate)               \
   V(JSForInNext)                    \
   V(JSForInPrepare)                 \
@@ -235,6 +234,7 @@
   V(SpeculativeNumberLessThan)           \
   V(SpeculativeNumberLessThanOrEqual)    \
   V(ReferenceEqual)                      \
+  V(SameValue)                           \
   V(StringEqual)                         \
   V(StringLessThan)                      \
   V(StringLessThanOrEqual)
@@ -339,6 +339,7 @@
   V(CheckEqualsInternalizedString)      \
   V(CheckEqualsSymbol)                  \
   V(CompareMaps)                        \
+  V(ConvertReceiver)                    \
   V(ConvertTaggedHoleToUndefined)       \
   V(TypeOf)                             \
   V(ClassOf)                            \

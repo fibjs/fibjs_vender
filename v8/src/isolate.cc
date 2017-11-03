@@ -390,7 +390,6 @@ class FrameArrayBuilder {
 
   void AppendStandardFrame(StandardFrame* frame) {
     std::vector<FrameSummary> frames;
-    frames.reserve(FLAG_max_inlining_levels + 1);
     frame->Summarize(&frames);
     // A standard frame may include many summarized frames (due to inlining).
     for (size_t i = frames.size(); i != 0 && !full(); i--) {
@@ -802,7 +801,6 @@ Handle<FixedArray> Isolate::CaptureCurrentStackTrace(
     // Set initial size to the maximum inlining level + 1 for the outermost
     // function.
     std::vector<FrameSummary> frames;
-    frames.reserve(FLAG_max_inlining_levels + 1);
     frame->Summarize(&frames);
     for (size_t i = frames.size(); i != 0 && frames_seen < limit; i--) {
       FrameSummary& frame = frames[i - 1];
@@ -1601,7 +1599,6 @@ bool Isolate::ComputeLocation(MessageLocation* target) {
   // baseline code. For optimized code this will use the deoptimization
   // information to get canonical location information.
   std::vector<FrameSummary> frames;
-  frames.reserve(FLAG_max_inlining_levels + 1);
   frame->Summarize(&frames);
   FrameSummary& summary = frames.back();
   int pos = summary.SourcePosition();
@@ -3091,12 +3088,13 @@ void Isolate::InitializeVectorListFromHeap() {
   SetFeedbackVectorsForProfilingTools(*list);
 }
 
-bool Isolate::IsArrayOrObjectPrototype(Object* object) {
+bool Isolate::IsArrayOrObjectOrStringPrototype(Object* object) {
   Object* context = heap()->native_contexts_list();
   while (!context->IsUndefined(this)) {
     Context* current_context = Context::cast(context);
     if (current_context->initial_object_prototype() == object ||
-        current_context->initial_array_prototype() == object) {
+        current_context->initial_array_prototype() == object ||
+        current_context->initial_string_prototype() == object) {
       return true;
     }
     context = current_context->next_context_link();
@@ -3131,6 +3129,8 @@ bool Isolate::IsFastArrayConstructorPrototypeChainIntact() {
       native_context->get(Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
   JSObject* initial_object_proto = JSObject::cast(
       native_context->get(Context::INITIAL_OBJECT_PROTOTYPE_INDEX));
+  JSObject* initial_string_proto = JSObject::cast(
+      native_context->get(Context::INITIAL_STRING_PROTOTYPE_INDEX));
 
   if (root_array_map == nullptr ||
       initial_array_proto == initial_object_proto) {
@@ -3152,13 +3152,7 @@ bool Isolate::IsFastArrayConstructorPrototypeChainIntact() {
     return cell_reports_intact;
   }
 
-  // Check that the object prototype hasn't been altered WRT empty elements.
-  PrototypeIterator iter(this, initial_array_proto);
-  if (iter.IsAtEnd() || iter.GetCurrent() != initial_object_proto) {
-    DCHECK_EQ(false, cell_reports_intact);
-    return cell_reports_intact;
-  }
-
+  // Check that the Object.prototype hasn't been altered WRT empty elements.
   elements = initial_object_proto->elements();
   if (elements != heap()->empty_fixed_array() &&
       elements != heap()->empty_slow_element_dictionary()) {
@@ -3166,8 +3160,30 @@ bool Isolate::IsFastArrayConstructorPrototypeChainIntact() {
     return cell_reports_intact;
   }
 
+  // Check that the Array.prototype has the Object.prototype as its
+  // [[Prototype]] and that the Object.prototype has a null [[Prototype]].
+  PrototypeIterator iter(this, initial_array_proto);
+  if (iter.IsAtEnd() || iter.GetCurrent() != initial_object_proto) {
+    DCHECK_EQ(false, cell_reports_intact);
+    return cell_reports_intact;
+  }
   iter.Advance();
   if (!iter.IsAtEnd()) {
+    DCHECK_EQ(false, cell_reports_intact);
+    return cell_reports_intact;
+  }
+
+  // Check that the String.prototype hasn't been altered WRT empty elements.
+  elements = initial_string_proto->elements();
+  if (elements != heap()->empty_fixed_array() &&
+      elements != heap()->empty_slow_element_dictionary()) {
+    DCHECK_EQ(false, cell_reports_intact);
+    return cell_reports_intact;
+  }
+
+  // Check that the String.prototype has the Object.prototype
+  // as its [[Prototype]] still.
+  if (initial_string_proto->map()->prototype() != initial_object_proto) {
     DCHECK_EQ(false, cell_reports_intact);
     return cell_reports_intact;
   }
@@ -3213,7 +3229,7 @@ void Isolate::UpdateArrayProtectorOnSetElement(Handle<JSObject> object) {
   DisallowHeapAllocation no_gc;
   if (!object->map()->is_prototype_map()) return;
   if (!IsFastArrayConstructorPrototypeChainIntact()) return;
-  if (!IsArrayOrObjectPrototype(*object)) return;
+  if (!IsArrayOrObjectOrStringPrototype(*object)) return;
   PropertyCell::SetValueWithInvalidation(
       factory()->array_protector(),
       handle(Smi::FromInt(kProtectorInvalid), this));

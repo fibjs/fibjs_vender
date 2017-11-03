@@ -491,6 +491,8 @@ class V8_EXPORT_PRIVATE Factory final {
                               PretenureFlag pretenure = NOT_TENURED);
   Handle<BigInt> NewBigIntFromInt(int value,
                                   PretenureFlag pretenure = NOT_TENURED);
+  Handle<BigInt> NewBigIntFromSafeInteger(
+      double value, PretenureFlag pretenure = NOT_TENURED);
 
   Handle<JSWeakMap> NewJSWeakMap();
 
@@ -754,6 +756,11 @@ class V8_EXPORT_PRIVATE Factory final {
   PUBLIC_SYMBOL_LIST(SYMBOL_ACCESSOR)
   WELL_KNOWN_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
+
+#define ACCESSOR_INFO_ACCESSOR(accessor_name, AccessorName) \
+  inline Handle<AccessorInfo> accessor_name##_accessor();
+  ACCESSOR_INFO_LIST(ACCESSOR_INFO_ACCESSOR)
+#undef ACCESSOR_INFO_ACCESSOR
 
   // Allocates a new SharedFunctionInfo object.
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(

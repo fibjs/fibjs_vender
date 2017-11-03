@@ -987,48 +987,72 @@ class SloppyBlockFunctionStatement final : public Statement {
 
 class Literal final : public Expression {
  public:
+  enum Type {
+    kSmi,
+    kHeapNumber,
+    kBigInt,
+    kString,
+    kSymbol,
+    kBoolean,
+    kUndefined,
+    kNull,
+    kTheHole,
+  };
+
+  Type type() const { return TypeField::decode(bit_field_); }
+
   // Returns true if literal represents a property name (i.e. cannot be parsed
   // as array indices).
-  bool IsPropertyName() const { return value_->IsPropertyName(); }
-
+  bool IsPropertyName() const;
   const AstRawString* AsRawPropertyName() {
     DCHECK(IsPropertyName());
-    return value_->AsString();
+    return string_;
   }
 
-  bool IsSmi() const { return value_->IsSmi(); }
   Smi* AsSmiLiteral() const {
-    DCHECK(IsSmi());
-    return value_->AsSmi();
+    DCHECK_EQ(kSmi, type());
+    return Smi::FromInt(smi_);
   }
 
-  bool IsNumber() const { return value_->IsNumber(); }
+  // Returns true if literal represents a Number.
+  bool IsNumber() const { return type() == kHeapNumber || type() == kSmi; }
   double AsNumber() const {
     DCHECK(IsNumber());
-    return value_->AsNumber();
+    switch (type()) {
+      case kSmi:
+        return smi_;
+      case kHeapNumber:
+        return number_;
+      default:
+        UNREACHABLE();
+    }
   }
 
-  bool IsString() const { return value_->IsString(); }
+  AstBigInt AsBigInt() const {
+    DCHECK_EQ(type(), kBigInt);
+    return bigint_;
+  }
+
+  bool IsString() const { return type() == kString; }
   const AstRawString* AsRawString() {
-    DCHECK(IsString());
-    return value_->AsString();
+    DCHECK_EQ(type(), kString);
+    return string_;
   }
 
-  bool IsNull() const { return value_->IsNull(); }
-  bool IsUndefined() const { return value_->IsUndefined(); }
-  bool IsTheHole() const { return value_->IsTheHole(); }
+  AstSymbol AsSymbol() {
+    DCHECK_EQ(type(), kSymbol);
+    return symbol_;
+  }
 
-  bool IsTrue() const { return value_->IsTrue(); }
-  bool IsFalse() const { return value_->IsFalse(); }
-
-  bool ToBooleanIsTrue() const { return value_->BooleanValue(); }
-  bool ToBooleanIsFalse() const { return !value_->BooleanValue(); }
+  V8_EXPORT_PRIVATE bool ToBooleanIsTrue() const;
+  bool ToBooleanIsFalse() const { return !ToBooleanIsTrue(); }
 
   bool ToUint32(uint32_t* value) const;
   bool ToArrayIndex(uint32_t* value) const;
 
-  Handle<Object> value() const { return value_->value(); }
-  const AstValue* raw_value() const { return value_; }
+  // Returns an appropriate Object representing this Literal, allocating
+  // a heap object if needed.
+  Handle<Object> BuildValue(Isolate* isolate) const;
 
   // Support for using Literal as a HashMap key. NOTE: Currently, this works
   // only for string and number literals!
@@ -1038,10 +1062,50 @@ class Literal final : public Expression {
  private:
   friend class AstNodeFactory;
 
-  Literal(const AstValue* value, int position)
-      : Expression(position, kLiteral), value_(value) {}
+  class TypeField : public BitField<Type, Expression::kNextBitFieldIndex, 4> {};
 
-  const AstValue* value_;
+  Literal(int smi, int position) : Expression(position, kLiteral), smi_(smi) {
+    bit_field_ = TypeField::update(bit_field_, kSmi);
+  }
+
+  Literal(double number, int position)
+      : Expression(position, kLiteral), number_(number) {
+    bit_field_ = TypeField::update(bit_field_, kHeapNumber);
+  }
+
+  Literal(AstBigInt bigint, int position)
+      : Expression(position, kLiteral), bigint_(bigint) {
+    bit_field_ = TypeField::update(bit_field_, kBigInt);
+  }
+
+  Literal(const AstRawString* string, int position)
+      : Expression(position, kLiteral), string_(string) {
+    bit_field_ = TypeField::update(bit_field_, kString);
+  }
+
+  Literal(AstSymbol symbol, int position)
+      : Expression(position, kLiteral), symbol_(symbol) {
+    bit_field_ = TypeField::update(bit_field_, kSymbol);
+  }
+
+  Literal(bool boolean, int position)
+      : Expression(position, kLiteral), boolean_(boolean) {
+    bit_field_ = TypeField::update(bit_field_, kBoolean);
+  }
+
+  Literal(Type type, int position) : Expression(position, kLiteral) {
+    DCHECK(type == kNull || type == kUndefined || type == kTheHole);
+    bit_field_ = TypeField::update(bit_field_, type);
+  }
+
+  union {
+    const AstRawString* string_;
+    int smi_;
+    double number_;
+    AstSymbol symbol_;
+    AstBigInt bigint_;
+    bool boolean_;
+  };
 };
 
 // Base class for literals that need space in the type feedback vector.
@@ -1758,18 +1822,15 @@ class NaryOperation final : public Expression {
   Expression* first() const { return first_; }
   void set_first(Expression* e) { first_ = e; }
   Expression* subsequent(size_t index) const {
-    if (index == 0) return second_;
-    return subsequent_[index - 1].expression;
+    return subsequent_[index].expression;
   }
   Expression* set_subsequent(size_t index, Expression* e) {
-    if (index == 0) return second_ = e;
-    return subsequent_[index - 1].expression = e;
+    return subsequent_[index].expression = e;
   }
 
-  size_t subsequent_length() const { return 1 + subsequent_.size(); }
+  size_t subsequent_length() const { return subsequent_.size(); }
   int subsequent_op_position(size_t index) const {
-    if (index == 0) return position();
-    return subsequent_[index - 1].op_position;
+    return subsequent_[index].op_position;
   }
 
   void AddSubsequent(Expression* expr, int pos) {
@@ -1780,33 +1841,32 @@ class NaryOperation final : public Expression {
   friend class AstNodeFactory;
 
   NaryOperation(Zone* zone, Token::Value op, Expression* first,
-                Expression* second, int pos)
-      : Expression(pos, kNaryOperation),
+                size_t initial_subsequent_size)
+      : Expression(kNoSourcePosition, kNaryOperation),
         first_(first),
-        second_(second),
         subsequent_(zone) {
     bit_field_ |= OperatorField::encode(op);
     DCHECK(Token::IsBinaryOp(op));
     DCHECK_NE(op, Token::EXP);
+    subsequent_.reserve(initial_subsequent_size);
   }
 
-  // Nary operations store the first operation (and so first two child
-  // expressions) inline, where the position of the first operation is the
-  // position of this expression. Subsequent child expressions are stored
-  // out-of-line, along with with their operation's position and feedback slot.
+  // Nary operations store the first (lhs) child expression inline, and the
+  // child expressions (rhs of each op) are stored out-of-line, along with
+  // their operation's position. Note that the Nary operation expression's
+  // position has no meaning.
   //
   // So an nary add:
   //
-  //    expr + expr + expr + expr + ...
+  //    expr + expr + expr + ...
   //
   // is stored as:
   //
-  //    (expr + expr) [(+ expr), (+ expr), ...]
-  //    '-----.-----' '-----------.-----------'
-  //        this        subsequent entry list
+  //    (expr) [(+ expr), (+ expr), ...]
+  //    '-.--' '-----------.-----------'
+  //    first    subsequent entry list
 
   Expression* first_;
-  Expression* second_;
 
   struct NaryOperationEntry {
     Expression* expression;
@@ -2411,21 +2471,30 @@ class ClassLiteral final : public Expression {
     return is_anonymous_expression();
   }
 
+  FunctionLiteral* static_fields_initializer() const {
+    return static_fields_initializer_;
+  }
+
+  void set_static_fields_initializer(FunctionLiteral* initializer) {
+    static_fields_initializer_ = initializer;
+  }
+
  private:
   friend class AstNodeFactory;
 
   ClassLiteral(Scope* scope, Variable* class_variable, Expression* extends,
                FunctionLiteral* constructor, ZoneList<Property*>* properties,
-               int start_position, int end_position,
-               bool has_name_static_property, bool has_static_computed_names,
-               bool is_anonymous)
+               FunctionLiteral* static_fields_initializer, int start_position,
+               int end_position, bool has_name_static_property,
+               bool has_static_computed_names, bool is_anonymous)
       : Expression(start_position, kClassLiteral),
         end_position_(end_position),
         scope_(scope),
         class_variable_(class_variable),
         extends_(extends),
         constructor_(constructor),
-        properties_(properties) {
+        properties_(properties),
+        static_fields_initializer_(static_fields_initializer) {
     bit_field_ |= HasNameStaticProperty::encode(has_name_static_property) |
                   HasStaticComputedNames::encode(has_static_computed_names) |
                   IsAnonymousExpression::encode(is_anonymous);
@@ -2437,6 +2506,7 @@ class ClassLiteral final : public Expression {
   Expression* extends_;
   FunctionLiteral* constructor_;
   ZoneList<Property*>* properties_;
+  FunctionLiteral* static_fields_initializer_;
 
   class HasNameStaticProperty
       : public BitField<bool, Expression::kNextBitFieldIndex, 1> {};
@@ -2933,41 +3003,38 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   Literal* NewStringLiteral(const AstRawString* string, int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewString(string), pos);
+    return new (zone_) Literal(string, pos);
   }
 
   // A JavaScript symbol (ECMA-262 edition 6).
   Literal* NewSymbolLiteral(AstSymbol symbol, int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewSymbol(symbol), pos);
+    return new (zone_) Literal(symbol, pos);
   }
 
-  Literal* NewNumberLiteral(double number, int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewNumber(number), pos);
+  Literal* NewNumberLiteral(double number, int pos);
+
+  Literal* NewSmiLiteral(int number, int pos) {
+    return new (zone_) Literal(number, pos);
   }
 
-  Literal* NewSmiLiteral(uint32_t number, int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewSmi(number), pos);
-  }
-
-  Literal* NewBigIntLiteral(const char* buffer, int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewBigInt(buffer), pos);
+  Literal* NewBigIntLiteral(AstBigInt bigint, int pos) {
+    return new (zone_) Literal(bigint, pos);
   }
 
   Literal* NewBooleanLiteral(bool b, int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewBoolean(b), pos);
+    return new (zone_) Literal(b, pos);
   }
 
   Literal* NewNullLiteral(int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewNull(), pos);
+    return new (zone_) Literal(Literal::kNull, pos);
   }
 
   Literal* NewUndefinedLiteral(int pos) {
-    return new (zone_) Literal(ast_value_factory_->NewUndefined(), pos);
+    return new (zone_) Literal(Literal::kUndefined, pos);
   }
 
   Literal* NewTheHoleLiteral() {
-    return new (zone_)
-        Literal(ast_value_factory_->NewTheHole(), kNoSourcePosition);
+    return new (zone_) Literal(Literal::kTheHole, kNoSourcePosition);
   }
 
   ObjectLiteral* NewObjectLiteral(
@@ -3077,8 +3144,8 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   NaryOperation* NewNaryOperation(Token::Value op, Expression* first,
-                                  Expression* second, int pos) {
-    return new (zone_) NaryOperation(zone_, op, first, second, pos);
+                                  size_t initial_subsequent_size) {
+    return new (zone_) NaryOperation(zone_, op, first, initial_subsequent_size);
   }
 
   CountOperation* NewCountOperation(Token::Value op,
@@ -3196,14 +3263,15 @@ class AstNodeFactory final BASE_EMBEDDED {
                                 Expression* extends,
                                 FunctionLiteral* constructor,
                                 ZoneList<ClassLiteral::Property*>* properties,
+                                FunctionLiteral* static_fields_initializer,
                                 int start_position, int end_position,
                                 bool has_name_static_property,
                                 bool has_static_computed_names,
                                 bool is_anonymous) {
-    return new (zone_)
-        ClassLiteral(scope, variable, extends, constructor, properties,
-                     start_position, end_position, has_name_static_property,
-                     has_static_computed_names, is_anonymous);
+    return new (zone_) ClassLiteral(
+        scope, variable, extends, constructor, properties,
+        static_fields_initializer, start_position, end_position,
+        has_name_static_property, has_static_computed_names, is_anonymous);
   }
 
   NativeFunctionLiteral* NewNativeFunctionLiteral(const AstRawString* name,

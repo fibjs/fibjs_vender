@@ -1712,9 +1712,10 @@ void MacroAssembler::AssertGeneratorObject(Register object) {
   Check(eq, kOperandIsNotAGeneratorObject);
 }
 
-void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
-                                                     Register scratch) {
+void MacroAssembler::AssertUndefinedOrAllocationSite(Register object) {
   if (emit_debug_code()) {
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.AcquireX();
     Label done_checking;
     AssertNotSmi(object);
     JumpIfRoot(object, Heap::kUndefinedValueRootIndex, &done_checking);
@@ -2482,13 +2483,21 @@ void TurboAssembler::EnterFrame(StackFrame::Type type) {
     // csp[1] : type
     // csp[0] : for alignment
   } else {
+    DCHECK_EQ(type, StackFrame::CONSTRUCT);
     DCHECK(jssp.Is(StackPointer()));
     Mov(type_reg, StackFrame::TypeToMarker(type));
-    Push(lr, fp, type_reg);
-    Add(fp, jssp, TypedFrameConstants::kFixedFrameSizeFromFp);
-    // jssp[2] : lr
-    // jssp[1] : fp
-    // jssp[0] : type
+
+    // Users of this frame type push a context pointer after the type field,
+    // so do it here to keep the stack pointer aligned.
+    Push(lr, fp, type_reg, cp);
+
+    // The context pointer isn't part of the fixed frame, so add an extra slot
+    // to account for it.
+    Add(fp, jssp, TypedFrameConstants::kFixedFrameSizeFromFp + kPointerSize);
+    // jssp[3] : lr
+    // jssp[2] : fp
+    // jssp[1] : type
+    // jssp[0] : cp
   }
 }
 
@@ -2611,8 +2620,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, const Register& scratch,
 
 // Leave the current exit frame.
 void MacroAssembler::LeaveExitFrame(bool restore_doubles,
-                                    const Register& scratch,
-                                    bool restore_context) {
+                                    const Register& scratch) {
   DCHECK(csp.Is(StackPointer()));
 
   if (restore_doubles) {
@@ -2620,11 +2628,9 @@ void MacroAssembler::LeaveExitFrame(bool restore_doubles,
   }
 
   // Restore the context pointer from the top frame.
-  if (restore_context) {
-    Mov(scratch, Operand(ExternalReference(IsolateAddressId::kContextAddress,
-                                           isolate())));
-    Ldr(cp, MemOperand(scratch));
-  }
+  Mov(scratch,
+      Operand(ExternalReference(IsolateAddressId::kContextAddress, isolate())));
+  Ldr(cp, MemOperand(scratch));
 
   if (emit_debug_code()) {
     // Also emit debug code to clear the cp in the top frame.
@@ -2723,19 +2729,6 @@ void MacroAssembler::LoadElementsKindFromMap(Register result, Register map) {
   Ldrb(result, FieldMemOperand(map, Map::kBitField2Offset));
   // Retrieve elements_kind from bit field 2.
   DecodeField<Map::ElementsKindBits>(result);
-}
-
-void MacroAssembler::GetMapConstructor(Register result, Register map,
-                                       Register temp, Register temp2) {
-  Label done, loop;
-  Ldr(result, FieldMemOperand(map, Map::kConstructorOrBackPointerOffset));
-  Bind(&loop);
-  JumpIfSmi(result, &done);
-  CompareObjectType(result, temp, temp2, MAP_TYPE);
-  B(ne, &done);
-  Ldr(result, FieldMemOperand(result, Map::kConstructorOrBackPointerOffset));
-  B(&loop);
-  Bind(&done);
 }
 
 void MacroAssembler::CompareRoot(const Register& obj,

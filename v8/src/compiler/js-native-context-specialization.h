@@ -75,10 +75,12 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
   Reduction ReduceElementAccess(Node* node, Node* index, Node* value,
                                 MapHandles const& receiver_maps,
                                 AccessMode access_mode,
+                                KeyedAccessLoadMode load_mode,
                                 KeyedAccessStoreMode store_mode);
   template <typename KeyedICNexus>
   Reduction ReduceKeyedAccess(Node* node, Node* index, Node* value,
                               KeyedICNexus const& nexus, AccessMode access_mode,
+                              KeyedAccessLoadMode load_mode,
                               KeyedAccessStoreMode store_mode);
   Reduction ReduceNamedAccessFromNexus(Node* node, Node* value,
                                        FeedbackNexus const& nexus,
@@ -140,14 +142,14 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
                                  Node** control,
                                  ZoneVector<Node*>* if_exceptions,
                                  PropertyAccessInfo const& access_info);
-  Node* InlinePropertySetterCall(Node* receiver, Node* value, Node* context,
-                                 Node* frame_state, Node** effect,
-                                 Node** control,
-                                 ZoneVector<Node*>* if_exceptions,
-                                 PropertyAccessInfo const& access_info);
-  Node* InlineApiCall(Node* receiver, Node* holder, Node* context, Node* target,
-                      Node* frame_state, Node* value, Node** effect,
-                      Node** control, Handle<SharedFunctionInfo> shared_info,
+  void InlinePropertySetterCall(Node* receiver, Node* value, Node* context,
+                                Node* frame_state, Node** effect,
+                                Node** control,
+                                ZoneVector<Node*>* if_exceptions,
+                                PropertyAccessInfo const& access_info);
+  Node* InlineApiCall(Node* receiver, Node* holder, Node* frame_state,
+                      Node* value, Node** effect, Node** control,
+                      Handle<SharedFunctionInfo> shared_info,
                       Handle<FunctionTemplateInfo> function_template_info);
 
   // Construct the appropriate subgraph for element access.
@@ -157,6 +159,11 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
                                         ElementAccessInfo const& access_info,
                                         AccessMode access_mode,
                                         KeyedAccessStoreMode store_mode);
+
+  // Construct appropriate subgraph to load from a String.
+  Node* BuildIndexedStringLoad(Node* receiver, Node* index, Node* length,
+                               Node** effect, Node** control,
+                               KeyedAccessLoadMode load_mode);
 
   // Construct appropriate subgraph to extend properties backing store.
   Node* BuildExtendPropertiesBackingStore(Handle<Map> map, Node* properties,

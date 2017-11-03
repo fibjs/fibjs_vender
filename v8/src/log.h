@@ -145,6 +145,14 @@ class Logger : public CodeEventListener {
   // object.
   void SuspectReadEvent(Name* name, Object* obj);
 
+  void FunctionEvent(const char* reason, Script* script, int script_id,
+                     double time_delta_ms, int start_position = -1,
+                     int end_position = -1, String* function_name = nullptr);
+  void FunctionEvent(const char* reason, Script* script, int script_id,
+                     double time_delta_ms, int start_position, int end_position,
+                     const char* function_name = nullptr,
+                     int function_name_length = 0);
+
   // ==== Events logged by --log-api. ====
   void ApiSecurityCheck();
   void ApiNamedPropertyAccess(const char* tag, JSObject* holder, Object* name);
@@ -194,6 +202,12 @@ class Logger : public CodeEventListener {
   void ICEvent(const char* type, bool keyed, Map* map, Object* key,
                char old_state, char new_state, const char* modifier,
                const char* slow_stub_reason);
+
+  void LogAllTransitions(Map* map);
+  void MapEvent(const char* type, Map* from, Map* to,
+                const char* reason = nullptr,
+                HeapObject* name_or_sfi = nullptr);
+  void MapDetails(Map* map);
 
   // ==== Events logged by --log-gc. ====
   // Heap sampling events: start, end, and individual types.

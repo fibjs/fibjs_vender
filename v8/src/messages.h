@@ -273,6 +273,10 @@ class ErrorUtils : public AllStatic {
   T(AtomicsWaitNotAllowed, "Atomics.wait cannot be called in this context")    \
   T(BadSortComparisonFunction,                                                 \
     "The comparison function must be either a function or undefined")          \
+  T(BigIntFromNumber,                                                          \
+    "The number % is not a safe integer and thus cannot be converted to a "    \
+    "BigInt")                                                                  \
+  T(BigIntFromObject, "Cannot convert % to a BigInt")                          \
   T(BigIntMixedTypes,                                                          \
     "Cannot mix BigInt and other types, use explicit conversions")             \
   T(BigIntSerializeJSON, "Do not know how to serialize a BigInt")              \
@@ -320,6 +324,7 @@ class ErrorUtils : public AllStatic {
     "Immutable prototype object '%' cannot have their prototype set")          \
   T(ImportCallNotNewExpression, "Cannot use new with import")                  \
   T(ImportMetaOutsideModule, "Cannot use 'import.meta' outside a module")      \
+  T(ImportMissingSpecifier, "import() requires a specifier")                   \
   T(IncompatibleMethodReceiver, "Method % called on incompatible receiver %")  \
   T(InstanceofNonobjectProto,                                                  \
     "Function has non-object prototype '%' in instanceof check")               \

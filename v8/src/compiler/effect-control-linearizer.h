@@ -103,6 +103,7 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Node* LowerNewSmiOrObjectElements(Node* node);
   Node* LowerNewArgumentsElements(Node* node);
   Node* LowerArrayBufferWasNeutered(Node* node);
+  Node* LowerSameValue(Node* node);
   Node* LowerStringToNumber(Node* node);
   Node* LowerStringCharAt(Node* node);
   Node* LowerStringCharCodeAt(Node* node);
@@ -139,6 +140,7 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   void LowerTransitionAndStoreNumberElement(Node* node);
   void LowerTransitionAndStoreNonNumberElement(Node* node);
   void LowerRuntimeAbort(Node* node);
+  Node* LowerConvertReceiver(Node* node);
 
   // Lowering of optional operators.
   Maybe<Node*> LowerFloat64RoundUp(Node* node);

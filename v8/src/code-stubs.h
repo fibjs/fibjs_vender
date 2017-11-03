@@ -631,30 +631,17 @@ class CallApiCallbackStub : public PlatformCodeStub {
   static const int kArgBits = 3;
   static const int kArgMax = (1 << kArgBits) - 1;
 
-  // CallApiCallbackStub for regular setters and getters.
-  CallApiCallbackStub(Isolate* isolate, bool is_store, bool is_lazy)
-      : CallApiCallbackStub(isolate, is_store ? 1 : 0, is_store, is_lazy) {}
-
-  // CallApiCallbackStub for callback functions.
-  CallApiCallbackStub(Isolate* isolate, int argc, bool is_lazy)
-      : CallApiCallbackStub(isolate, argc, false, is_lazy) {}
-
- private:
-  CallApiCallbackStub(Isolate* isolate, int argc, bool is_store, bool is_lazy)
+  CallApiCallbackStub(Isolate* isolate, int argc)
       : PlatformCodeStub(isolate) {
-    CHECK(0 <= argc && argc <= kArgMax);
-    minor_key_ = IsStoreBits::encode(is_store) |
-                 ArgumentBits::encode(argc) |
-                 IsLazyAccessorBits::encode(is_lazy);
+    CHECK_LE(0, argc);
+    CHECK_LE(argc, kArgMax);
+    minor_key_ = ArgumentBits::encode(argc);
   }
 
-  bool is_store() const { return IsStoreBits::decode(minor_key_); }
-  bool is_lazy() const { return IsLazyAccessorBits::decode(minor_key_); }
+ private:
   int argc() const { return ArgumentBits::decode(minor_key_); }
 
-  class IsStoreBits: public BitField<bool, 0, 1> {};
-  class IsLazyAccessorBits : public BitField<bool, 1, 1> {};
-  class ArgumentBits : public BitField<int, 2, kArgBits> {};
+  class ArgumentBits : public BitField<int, 0, kArgBits> {};
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(ApiCallback);
   DEFINE_PLATFORM_CODE_STUB(CallApiCallback, PlatformCodeStub);

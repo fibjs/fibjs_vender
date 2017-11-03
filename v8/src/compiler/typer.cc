@@ -314,6 +314,7 @@ class Typer::Visitor : public Reducer {
   static Type* NumberLessThanTyper(Type*, Type*, Typer*);
   static Type* NumberLessThanOrEqualTyper(Type*, Type*, Typer*);
   static Type* ReferenceEqualTyper(Type*, Type*, Typer*);
+  static Type* SameValueTyper(Type*, Type*, Typer*);
   static Type* StringFromCharCodeTyper(Type*, Typer*);
   static Type* StringFromCodePointTyper(Type*, Typer*);
 
@@ -1699,10 +1700,6 @@ Type* Typer::Visitor::TypeJSCallRuntime(Node* node) {
 }
 
 
-Type* Typer::Visitor::TypeJSConvertReceiver(Node* node) {
-  return Type::Receiver();
-}
-
 Type* Typer::Visitor::TypeJSForInEnumerate(Node* node) {
   return Type::OtherInternal();
 }
@@ -1826,6 +1823,15 @@ Type* Typer::Visitor::TypeReferenceEqual(Node* node) {
   return TypeBinaryOp(node, ReferenceEqualTyper);
 }
 
+// static
+Type* Typer::Visitor::SameValueTyper(Type* lhs, Type* rhs, Typer* t) {
+  return t->operation_typer()->SameValue(lhs, rhs);
+}
+
+Type* Typer::Visitor::TypeSameValue(Node* node) {
+  return TypeBinaryOp(node, SameValueTyper);
+}
+
 Type* Typer::Visitor::TypeStringEqual(Node* node) { return Type::Boolean(); }
 
 Type* Typer::Visitor::TypeStringLessThan(Node* node) { return Type::Boolean(); }
@@ -1937,6 +1943,11 @@ Type* Typer::Visitor::TypeCheckNotTaggedHole(Node* node) {
   Type* type = Operand(node, 0);
   type = Type::Intersect(type, Type::NonInternal(), zone());
   return type;
+}
+
+Type* Typer::Visitor::TypeConvertReceiver(Node* node) {
+  Type* arg = Operand(node, 0);
+  return typer_->operation_typer_.ConvertReceiver(arg);
 }
 
 Type* Typer::Visitor::TypeConvertTaggedHoleToUndefined(Node* node) {

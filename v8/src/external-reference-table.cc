@@ -269,6 +269,8 @@ void ExternalReferenceTable::AddReferences(Isolate* isolate) {
       "orderedhashmap_gethash_raw");
   Add(ExternalReference::get_or_create_hash_raw(isolate).address(),
       "get_or_create_hash_raw");
+  Add(ExternalReference::jsreceiver_create_identity_hash(isolate).address(),
+      "jsreceiver_create_identity_hash");
   Add(ExternalReference::log_enter_external_function(isolate).address(),
       "Logger::EnterExternal");
   Add(ExternalReference::log_leave_external_function(isolate).address(),
@@ -392,8 +394,9 @@ void ExternalReferenceTable::AddAccessors(Isolate* isolate) {
   };
 
   static const AccessorRefTable getters[] = {
-#define ACCESSOR_INFO_DECLARATION(name) \
-  {FUNCTION_ADDR(&Accessors::name##Getter), "Accessors::" #name "Getter"},
+#define ACCESSOR_INFO_DECLARATION(accessor_name, AccessorName) \
+  {FUNCTION_ADDR(&Accessors::AccessorName##Getter),            \
+   "Accessors::" #AccessorName "Getter"}, /* NOLINT(whitespace/indent) */
       ACCESSOR_INFO_LIST(ACCESSOR_INFO_DECLARATION)
 #undef ACCESSOR_INFO_DECLARATION
   };
@@ -401,7 +404,7 @@ void ExternalReferenceTable::AddAccessors(Isolate* isolate) {
 #define ACCESSOR_SETTER_DECLARATION(name) \
   { FUNCTION_ADDR(&Accessors::name), "Accessors::" #name},
       ACCESSOR_SETTER_LIST(ACCESSOR_SETTER_DECLARATION)
-#undef ACCESSOR_INFO_DECLARATION
+#undef ACCESSOR_SETTER_DECLARATION
   };
 
   for (unsigned i = 0; i < arraysize(getters); ++i) {
@@ -449,3 +452,5 @@ void ExternalReferenceTable::AddStubCache(Isolate* isolate) {
 
 }  // namespace internal
 }  // namespace v8
+
+#undef SYMBOLIZE_FUNCTION

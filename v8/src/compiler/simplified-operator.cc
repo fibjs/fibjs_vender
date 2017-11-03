@@ -128,6 +128,11 @@ ExternalArrayType ExternalArrayTypeOf(const Operator* op) {
   return OpParameter<ExternalArrayType>(op);
 }
 
+ConvertReceiverMode ConvertReceiverModeOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kConvertReceiver, op->opcode());
+  return OpParameter<ConvertReceiverMode>(op);
+}
+
 size_t hash_value(CheckFloat64HoleMode mode) {
   return static_cast<size_t>(mode);
 }
@@ -625,6 +630,7 @@ DeoptimizeReason DeoptimizeReasonOf(const Operator* op) {
   V(ObjectIsSymbol, Operator::kNoProperties, 1, 0)               \
   V(ObjectIsUndetectable, Operator::kNoProperties, 1, 0)         \
   V(ConvertTaggedHoleToUndefined, Operator::kNoProperties, 1, 0) \
+  V(SameValue, Operator::kCommutative, 2, 0)                     \
   V(ReferenceEqual, Operator::kCommutative, 2, 0)                \
   V(StringEqual, Operator::kCommutative, 2, 0)                   \
   V(StringLessThan, Operator::kNoProperties, 2, 0)               \
@@ -820,6 +826,23 @@ struct SimplifiedOperatorGlobalCache final {
       kCheckedTruncateTaggedToWord32NumberOperator;
   CheckedTruncateTaggedToWord32Operator<CheckTaggedInputMode::kNumberOrOddball>
       kCheckedTruncateTaggedToWord32NumberOrOddballOperator;
+
+  template <ConvertReceiverMode kMode>
+  struct ConvertReceiverOperator final : public Operator1<ConvertReceiverMode> {
+    ConvertReceiverOperator()
+        : Operator1<ConvertReceiverMode>(  // --
+              IrOpcode::kConvertReceiver,  // opcode
+              Operator::kEliminatable,     // flags
+              "ConvertReceiver",           // name
+              2, 1, 1, 1, 1, 0,            // counts
+              kMode) {}                    // param
+  };
+  ConvertReceiverOperator<ConvertReceiverMode::kAny>
+      kConvertReceiverAnyOperator;
+  ConvertReceiverOperator<ConvertReceiverMode::kNullOrUndefined>
+      kConvertReceiverNullOrUndefinedOperator;
+  ConvertReceiverOperator<ConvertReceiverMode::kNotNullOrUndefined>
+      kConvertReceiverNotNullOrUndefinedOperator;
 
   template <CheckFloat64HoleMode kMode>
   struct CheckFloat64HoleNaNOperator final
@@ -1025,6 +1048,20 @@ const Operator* SimplifiedOperatorBuilder::CompareMaps(
       "CompareMaps",                                 // name
       1, 1, 1, 1, 1, 0,                              // counts
       MapsParameterInfo(maps));                      // parameter
+}
+
+const Operator* SimplifiedOperatorBuilder::ConvertReceiver(
+    ConvertReceiverMode mode) {
+  switch (mode) {
+    case ConvertReceiverMode::kAny:
+      return &cache_.kConvertReceiverAnyOperator;
+    case ConvertReceiverMode::kNullOrUndefined:
+      return &cache_.kConvertReceiverNullOrUndefinedOperator;
+    case ConvertReceiverMode::kNotNullOrUndefined:
+      return &cache_.kConvertReceiverNotNullOrUndefinedOperator;
+  }
+  UNREACHABLE();
+  return nullptr;
 }
 
 const Operator* SimplifiedOperatorBuilder::CheckFloat64Hole(

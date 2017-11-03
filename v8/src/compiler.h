@@ -9,6 +9,7 @@
 
 #include "src/allocation.h"
 #include "src/bailout-reason.h"
+#include "src/code-events.h"
 #include "src/contexts.h"
 #include "src/isolate.h"
 #include "src/zone/zone.h"
@@ -113,6 +114,7 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
       MaybeHandle<Object> maybe_source_map_url, Handle<Context> context,
       v8::Extension* extension, ScriptData** cached_data,
       ScriptCompiler::CompileOptions compile_options,
+      ScriptCompiler::NoCacheReason no_cache_reason,
       NativesFlag is_natives_code,
       MaybeHandle<FixedArray> maybe_host_defined_options);
 
@@ -189,6 +191,7 @@ class V8_EXPORT_PRIVATE CompilationJob {
 
   void RecordOptimizedCompilationStats() const;
   void RecordUnoptimizedCompilationStats() const;
+  void RecordFunctionCompilation(CodeEventListener::LogEventsAndTags tag) const;
 
   void set_stack_limit(uintptr_t stack_limit) { stack_limit_ = stack_limit; }
   uintptr_t stack_limit() const { return stack_limit_; }

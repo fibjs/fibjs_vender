@@ -171,7 +171,6 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
     int accessor_index) {
   DCHECK(accessor_holder != scratch_in);
   DCHECK(receiver != scratch_in);
-  __ Push(accessor_holder);
   __ Push(receiver);
   // Write the arguments to stack frame.
   if (is_store) {
@@ -235,7 +234,7 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
   __ mov(api_function_address, Operand(ref));
 
   // Jump to stub.
-  CallApiCallbackStub stub(isolate, is_store, !optimization.is_constant_call());
+  CallApiCallbackStub stub(isolate, is_store ? 1 : 0);
   __ TailCallStub(&stub);
 }
 

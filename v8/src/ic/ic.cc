@@ -51,8 +51,14 @@ char IC::TransitionMarkFromState(IC::State state) {
   UNREACHABLE();
 }
 
+namespace {
 
-const char* GetTransitionMarkModifier(KeyedAccessStoreMode mode) {
+const char* GetModifier(KeyedAccessLoadMode mode) {
+  if (mode == LOAD_IGNORE_OUT_OF_BOUNDS) return ".IGNORE_OOB";
+  return "";
+}
+
+const char* GetModifier(KeyedAccessStoreMode mode) {
   if (mode == STORE_NO_TRANSITION_HANDLE_COW) return ".COW";
   if (mode == STORE_NO_TRANSITION_IGNORE_OUT_OF_BOUNDS) {
     return ".IGNORE_OOB";
@@ -60,6 +66,8 @@ const char* GetTransitionMarkModifier(KeyedAccessStoreMode mode) {
   if (IsGrowStoreMode(mode)) return ".GROW";
   return "";
 }
+
+}  // namespace
 
 #define TRACE_GENERIC_IC(reason) set_slow_stub_reason(reason);
 
@@ -81,10 +89,14 @@ void IC::TraceIC(const char* type, Handle<Object> name, State old_state,
   }
 
   const char* modifier = "";
-  if (IsKeyedStoreIC()) {
+  if (IsKeyedLoadIC()) {
+    KeyedAccessLoadMode mode =
+        casted_nexus<KeyedLoadICNexus>()->GetKeyedAccessLoadMode();
+    modifier = GetModifier(mode);
+  } else if (IsKeyedStoreIC()) {
     KeyedAccessStoreMode mode =
         casted_nexus<KeyedStoreICNexus>()->GetKeyedAccessStoreMode();
-    modifier = GetTransitionMarkModifier(mode);
+    modifier = GetModifier(mode);
   }
 
   if (!(FLAG_ic_stats &
@@ -948,15 +960,17 @@ Handle<Code> LoadIC::CompileHandler(LookupIterator* lookup) {
   DCHECK(accessors->IsAccessorPair());
   DCHECK(holder->HasFastProperties());
   DCHECK(!GetHostFunction()->shared()->HasBreakInfo());
-  Handle<Object> getter(Handle<AccessorPair>::cast(accessors)->getter(),
-                        isolate());
+  Handle<Object> getter(AccessorPair::cast(*accessors)->getter(), isolate());
+
   CallOptimization call_optimization(getter);
   NamedLoadHandlerCompiler compiler(isolate(), map, holder);
   DCHECK(call_optimization.is_simple_api_call());
   TRACE_HANDLER_STATS(isolate(), LoadIC_LoadCallback);
   int index = lookup->GetAccessorIndex();
   Handle<Code> code = compiler.CompileLoadCallback(
-      lookup->name(), call_optimization, index, slow_stub());
+      lookup->name(), call_optimization,
+      handle(call_optimization.GetAccessorContext(holder->map())), index,
+      slow_stub());
   return code;
 }
 
@@ -982,14 +996,15 @@ static Handle<Object> TryConvertKey(Handle<Object> key, Isolate* isolate) {
   return key;
 }
 
-void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
+void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver,
+                                    KeyedAccessLoadMode load_mode) {
   Handle<Map> receiver_map(receiver->map(), isolate());
   DCHECK(receiver_map->instance_type() != JS_VALUE_TYPE);  // Checked by caller.
   MapHandles target_receiver_maps;
   TargetMaps(&target_receiver_maps);
 
   if (target_receiver_maps.empty()) {
-    Handle<Object> handler = LoadElementHandler(receiver_map);
+    Handle<Object> handler = LoadElementHandler(receiver_map, load_mode);
     return ConfigureVectorState(Handle<Name>(), receiver_map, handler);
   }
 
@@ -1017,7 +1032,7 @@ void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
       IsMoreGeneralElementsKindTransition(
           target_receiver_maps.at(0)->elements_kind(),
           Handle<JSObject>::cast(receiver)->GetElementsKind())) {
-    Handle<Object> handler = LoadElementHandler(receiver_map);
+    Handle<Object> handler = LoadElementHandler(receiver_map, load_mode);
     return ConfigureVectorState(Handle<Name>(), receiver_map, handler);
   }
 
@@ -1026,10 +1041,17 @@ void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
   // Determine the list of receiver maps that this call site has seen,
   // adding the map that was just encountered.
   if (!AddOneReceiverMapIfMissing(&target_receiver_maps, receiver_map)) {
-    // If the miss wasn't due to an unseen map, a polymorphic stub
-    // won't help, use the generic stub.
-    TRACE_GENERIC_IC("same map added twice");
-    return;
+    // If the {receiver_map} is a primitive String map, we can only get
+    // here if the access was out of bounds (and the IC was not in that
+    // state already). In that case just go on and update the handler
+    // appropriately below.
+    if (!receiver_map->IsStringMap() ||
+        load_mode != LOAD_IGNORE_OUT_OF_BOUNDS) {
+      // If the miss wasn't due to an unseen map, a polymorphic stub
+      // won't help, use the generic stub.
+      TRACE_GENERIC_IC("same map added twice");
+      return;
+    }
   }
 
   // If the maximum number of receiver maps has been exceeded, use the generic
@@ -1041,7 +1063,7 @@ void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
 
   ObjectHandles handlers;
   handlers.reserve(target_receiver_maps.size());
-  LoadElementPolymorphicHandlers(&target_receiver_maps, &handlers);
+  LoadElementPolymorphicHandlers(&target_receiver_maps, &handlers, load_mode);
   DCHECK_LE(1, target_receiver_maps.size());
   if (target_receiver_maps.size() == 1) {
     ConfigureVectorState(Handle<Name>(), target_receiver_maps[0], handlers[0]);
@@ -1050,7 +1072,8 @@ void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
   }
 }
 
-Handle<Object> KeyedLoadIC::LoadElementHandler(Handle<Map> receiver_map) {
+Handle<Object> KeyedLoadIC::LoadElementHandler(Handle<Map> receiver_map,
+                                               KeyedAccessLoadMode load_mode) {
   if (receiver_map->has_indexed_interceptor() &&
       !receiver_map->GetIndexedInterceptor()->getter()->IsUndefined(
           isolate()) &&
@@ -1058,11 +1081,11 @@ Handle<Object> KeyedLoadIC::LoadElementHandler(Handle<Map> receiver_map) {
     TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_LoadIndexedInterceptorStub);
     return LoadIndexedInterceptorStub(isolate()).GetCode();
   }
-  if (receiver_map->IsStringMap()) {
-    TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_LoadIndexedStringStub);
-    return BUILTIN_CODE(isolate(), KeyedLoadIC_IndexedString);
-  }
   InstanceType instance_type = receiver_map->instance_type();
+  if (instance_type < FIRST_NONSTRING_TYPE) {
+    TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_LoadIndexedStringDH);
+    return LoadHandler::LoadIndexedString(isolate(), load_mode);
+  }
   if (instance_type < FIRST_JS_RECEIVER_TYPE) {
     TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_SlowStub);
     return BUILTIN_CODE(isolate(), KeyedLoadIC_Slow);
@@ -1094,8 +1117,9 @@ Handle<Object> KeyedLoadIC::LoadElementHandler(Handle<Map> receiver_map) {
                                   convert_hole_to_undefined, is_js_array);
 }
 
-void KeyedLoadIC::LoadElementPolymorphicHandlers(MapHandles* receiver_maps,
-                                                 ObjectHandles* handlers) {
+void KeyedLoadIC::LoadElementPolymorphicHandlers(
+    MapHandles* receiver_maps, ObjectHandles* handlers,
+    KeyedAccessLoadMode load_mode) {
   // Filter out deprecated maps to ensure their instances get migrated.
   receiver_maps->erase(
       std::remove_if(
@@ -1113,9 +1137,35 @@ void KeyedLoadIC::LoadElementPolymorphicHandlers(MapHandles* receiver_maps,
         receiver_map->NotifyLeafMapLayoutChange();
       }
     }
-    handlers->push_back(LoadElementHandler(receiver_map));
+    handlers->push_back(LoadElementHandler(receiver_map, load_mode));
   }
 }
+
+namespace {
+
+bool IsOutOfBoundsAccess(Handle<Object> receiver, uint32_t index) {
+  uint32_t length = 0;
+  if (receiver->IsJSArray()) {
+    JSArray::cast(*receiver)->length()->ToArrayLength(&length);
+  } else if (receiver->IsString()) {
+    length = String::cast(*receiver)->length();
+  } else {
+    length = JSObject::cast(*receiver)->elements()->length();
+  }
+  return index >= length;
+}
+
+KeyedAccessLoadMode GetLoadMode(Handle<Object> receiver, uint32_t index) {
+  if (receiver->IsString() && IsOutOfBoundsAccess(receiver, index)) {
+    Isolate* isolate = Handle<String>::cast(receiver)->GetIsolate();
+    if (isolate->IsFastArrayConstructorPrototypeChainIntact()) {
+      return LOAD_IGNORE_OUT_OF_BOUNDS;
+    }
+  }
+  return STANDARD_LOAD;
+}
+
+}  // namespace
 
 MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
                                       Handle<Object> key) {
@@ -1142,9 +1192,10 @@ MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
                                Object);
   } else if (FLAG_use_ic && !object->IsAccessCheckNeeded() &&
              !object->IsJSValue()) {
-    if ((object->IsJSReceiver() && key->IsSmi()) ||
-        (object->IsString() && key->IsNumber())) {
-      UpdateLoadElement(Handle<HeapObject>::cast(object));
+    if ((object->IsJSReceiver() || object->IsString()) &&
+        key->ToArrayIndex(&index)) {
+      KeyedAccessLoadMode load_mode = GetLoadMode(object, index);
+      UpdateLoadElement(Handle<HeapObject>::cast(object), load_mode);
       if (is_vector_set()) {
         TRACE_IC("LoadIC", key);
       }
@@ -1448,6 +1499,10 @@ Handle<Object> StoreIC::GetMapIndependentHandler(LookupIterator* lookup) {
           TRACE_GENERIC_IC("incompatible receiver");
           TRACE_HANDLER_STATS(isolate(), StoreIC_SlowStub);
           return slow_stub();
+        } else if (setter->IsFunctionTemplateInfo()) {
+          TRACE_GENERIC_IC("setter non-simple template");
+          TRACE_HANDLER_STATS(isolate(), StoreIC_SlowStub);
+          return slow_stub();
         }
         break;  // Custom-compiled handler.
       }
@@ -1542,8 +1597,7 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup) {
   }
 
   DCHECK(accessors->IsAccessorPair());
-  Handle<Object> setter(Handle<AccessorPair>::cast(accessors)->setter(),
-                        isolate());
+  Handle<Object> setter(AccessorPair::cast(*accessors)->setter(), isolate());
   DCHECK(setter->IsJSFunction() || setter->IsFunctionTemplateInfo());
   CallOptimization call_optimization(setter);
   NamedStoreHandlerCompiler compiler(isolate(), receiver_map(), holder);
@@ -1551,8 +1605,9 @@ Handle<Code> StoreIC::CompileHandler(LookupIterator* lookup) {
     DCHECK(call_optimization.IsCompatibleReceiver(receiver, holder));
     TRACE_HANDLER_STATS(isolate(), StoreIC_StoreCallback);
     Handle<Code> code = compiler.CompileStoreCallback(
-        receiver, lookup->name(), call_optimization, lookup->GetAccessorIndex(),
-        slow_stub());
+        receiver, lookup->name(), call_optimization,
+        handle(call_optimization.GetAccessorContext(holder->map())),
+        lookup->GetAccessorIndex(), slow_stub());
     return code;
   }
   TRACE_HANDLER_STATS(isolate(), StoreIC_StoreViaSetter);
@@ -1804,16 +1859,6 @@ void KeyedStoreIC::StoreElementPolymorphicHandlers(
     DCHECK(!handler.is_null());
     handlers->push_back(handler);
   }
-}
-
-bool IsOutOfBoundsAccess(Handle<JSObject> receiver, uint32_t index) {
-  uint32_t length = 0;
-  if (receiver->IsJSArray()) {
-    JSArray::cast(*receiver)->length()->ToArrayLength(&length);
-  } else {
-    length = static_cast<uint32_t>(receiver->elements()->length());
-  }
-  return index >= length;
 }
 
 

@@ -3419,6 +3419,9 @@ bool Map::is_callable() const {
 
 void Map::deprecate() {
   set_bit_field3(Deprecated::update(bit_field3(), true));
+  if (FLAG_trace_maps) {
+    LOG(GetIsolate(), MapEvent("Deprecate", this, nullptr));
+  }
 }
 
 bool Map::is_deprecated() const { return Deprecated::decode(bit_field3()); }
@@ -4567,8 +4570,9 @@ void JSReceiver::initialize_properties() {
 }
 
 bool JSReceiver::HasFastProperties() const {
-  DCHECK_EQ(raw_properties_or_hash()->IsDictionary(),
-            map()->is_dictionary_map());
+  DCHECK(
+      raw_properties_or_hash()->IsSmi() ||
+      (raw_properties_or_hash()->IsDictionary() == map()->is_dictionary_map()));
   return !map()->is_dictionary_map();
 }
 

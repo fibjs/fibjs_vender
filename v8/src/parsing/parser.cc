@@ -310,10 +310,7 @@ bool Parser::ShortcutNumericLiteralBinaryExpression(Expression** x,
 bool Parser::CollapseNaryExpression(Expression** x, Expression* y,
                                     Token::Value op, int pos) {
   // Filter out unsupported ops.
-  // TODO(leszeks): Support AND and OR in bytecode generator.
-  if (!Token::IsBinaryOp(op) || op == Token::AND || op == Token::OR ||
-      op == Token::EXP)
-    return false;
+  if (!Token::IsBinaryOp(op) || op == Token::EXP) return false;
 
   // Convert *x into an nary operation with the given op, returning false if
   // this is not possible.
@@ -322,8 +319,8 @@ bool Parser::CollapseNaryExpression(Expression** x, Expression* y,
     BinaryOperation* binop = (*x)->AsBinaryOperation();
     if (binop->op() != op) return false;
 
-    nary = factory()->NewNaryOperation(op, binop->left(), binop->right(),
-                                       binop->position());
+    nary = factory()->NewNaryOperation(op, binop->left(), 2);
+    nary->AddSubsequent(binop->right(), binop->position());
     *x = nary;
   } else if ((*x)->IsNaryOperation()) {
     nary = (*x)->AsNaryOperation();
@@ -437,7 +434,7 @@ Literal* Parser::ExpressionFromLiteral(Token::Value token, int pos) {
     }
     case Token::BIGINT:
       return factory()->NewBigIntLiteral(
-          scanner()->CurrentLiteralAsCString(zone()), pos);
+          AstBigInt(scanner()->CurrentLiteralAsCString(zone())), pos);
     default:
       DCHECK(false);
   }
@@ -3252,72 +3249,33 @@ Expression* Parser::RewriteClassLiteral(Scope* block_scope,
     class_info->variable->set_initializer_position(end_pos);
   }
 
+  FunctionLiteral* static_fields_initializer = nullptr;
+  if (class_info->has_static_class_fields) {
+    // function() { .. static class fields initializer .. }
+    ZoneList<Statement*>* statements = NewStatementList(1);
+    InitializeClassFieldsStatement* class_fields =
+        factory()->NewInitializeClassFieldsStatement(
+            class_info->static_fields,
+            class_info->field_scope->NeedsHomeObject(), kNoSourcePosition);
+    statements->Add(class_fields, zone());
+    static_fields_initializer = factory()->NewFunctionLiteral(
+        ast_value_factory()->empty_string(), class_info->field_scope,
+        statements, 0, 0, 0, FunctionLiteral::kNoDuplicateParameters,
+        FunctionLiteral::kAnonymousExpression,
+        FunctionLiteral::kShouldEagerCompile,
+        class_info->field_scope->start_position(), true,
+        GetNextFunctionLiteralId());
+  }
+
   ClassLiteral* class_literal = factory()->NewClassLiteral(
       block_scope, class_info->variable, class_info->extends,
-      class_info->constructor, class_info->properties, pos, end_pos,
+      class_info->constructor, class_info->properties,
+      static_fields_initializer, pos, end_pos,
       class_info->has_name_static_property,
       class_info->has_static_computed_names, class_info->is_anonymous);
 
   AddFunctionForNameInference(class_info->constructor);
-
-  Expression* result = class_literal;
-
-  if (class_info->static_fields->length() > 0) {
-    // The class literal is rewritten to:
-    // do {
-    //    temp = class { .. };
-    //    %_Call(function() { ... static class fields initializer ... }, temp);
-    //    temp;
-    // }
-    Block* do_block = factory()->NewBlock(2, false);
-
-    Variable* class_var = NewTemporary(ast_value_factory()->empty_string());
-    {
-      // temp = class { .. };
-      VariableProxy* class_proxy = factory()->NewVariableProxy(class_var);
-
-      Assignment* assign_class_proxy = factory()->NewAssignment(
-          Token::ASSIGN, class_proxy, class_literal, kNoSourcePosition);
-      do_block->statements()->Add(factory()->NewExpressionStatement(
-                                      assign_class_proxy, kNoSourcePosition),
-                                  zone());
-    }
-
-    FunctionLiteral* initializer;
-    {
-      // function() { .. static class fields initializer .. }
-      ZoneList<Statement*>* statements = NewStatementList(1);
-      InitializeClassFieldsStatement* class_fields =
-          factory()->NewInitializeClassFieldsStatement(
-              class_info->static_fields,
-              class_info->field_scope->NeedsHomeObject(), kNoSourcePosition);
-      statements->Add(class_fields, zone());
-      initializer = factory()->NewFunctionLiteral(
-          ast_value_factory()->empty_string(), class_info->field_scope,
-          statements, 0, 0, 0, FunctionLiteral::kNoDuplicateParameters,
-          FunctionLiteral::kAnonymousExpression,
-          FunctionLiteral::kShouldEagerCompile,
-          class_info->field_scope->start_position(), true,
-          GetNextFunctionLiteralId());
-    }
-
-    {
-      // %_Call(function() { .. initializer .. }, temp);
-      auto args = new (zone()) ZoneList<Expression*>(2, zone());
-      args->Add(initializer, zone());
-      args->Add(factory()->NewVariableProxy(class_var), zone());
-
-      Expression* call = factory()->NewCallRuntime(Runtime::kInlineCall, args,
-                                                   kNoSourcePosition);
-      do_block->statements()->Add(
-          factory()->NewExpressionStatement(call, kNoSourcePosition), zone());
-    }
-
-    result = factory()->NewDoExpression(do_block, class_var,
-                                        class_literal->position());
-  }
-
-  return result;
+  return class_literal;
 }
 
 void Parser::CheckConflictingVarDeclarations(Scope* scope, bool* ok) {
@@ -3530,9 +3488,16 @@ Expression* Parser::CloseTemplateLiteral(TemplateLiteralState* state, int start,
   DCHECK_EQ(cooked_strings->length(), expressions->length() + 1);
 
   if (!tag) {
-    // Build tree of BinaryOps to simplify code-generation
-    Expression* expr =
+    Expression* first_string =
         factory()->NewStringLiteral(cooked_strings->at(0), kNoSourcePosition);
+    if (expressions->length() == 0) return first_string;
+
+    // Build N-ary addition op to simplify code-generation.
+    // TODO(leszeks): Could we just store this expression in the
+    // TemplateLiteralState and build it as we go?
+    NaryOperation* expr = factory()->NewNaryOperation(
+        Token::ADD, first_string, 2 * expressions->length());
+
     int i = 0;
     while (i < expressions->length()) {
       Expression* sub = expressions->at(i++);
@@ -3543,13 +3508,11 @@ Expression* Parser::CloseTemplateLiteral(TemplateLiteralState* state, int start,
       ZoneList<Expression*>* args =
           new (zone()) ZoneList<Expression*>(1, zone());
       args->Add(sub, zone());
-      Expression* middle = factory()->NewCallRuntime(Runtime::kInlineToString,
-                                                     args, sub->position());
+      Expression* sub_to_string = factory()->NewCallRuntime(
+          Runtime::kInlineToString, args, sub->position());
 
-      expr = factory()->NewBinaryOperation(
-          Token::ADD,
-          factory()->NewBinaryOperation(Token::ADD, expr, middle,
-                                        expr->position()),
+      expr->AddSubsequent(sub_to_string, sub->position());
+      expr->AddSubsequent(
           factory()->NewStringLiteral(cooked_str, kNoSourcePosition),
           sub->position());
     }

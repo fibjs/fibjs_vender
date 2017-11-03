@@ -121,7 +121,6 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
                           kPointerSize));
   }
   // Write the receiver and arguments to stack frame.
-  __ push(accessor_holder);
   __ push(receiver);
   if (is_store) {
     DCHECK(!AreAliased(receiver, scratch, store_parameter));
@@ -179,7 +178,7 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
   __ mov(api_function_address, Immediate(function_address));
 
   // Jump to stub.
-  CallApiCallbackStub stub(isolate, is_store, !optimization.is_constant_call());
+  CallApiCallbackStub stub(isolate, is_store ? 1 : 0);
   __ TailCallStub(&stub);
 }
 

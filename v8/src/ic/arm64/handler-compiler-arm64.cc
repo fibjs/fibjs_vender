@@ -114,7 +114,6 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
   DCHECK(!AreAliased(receiver, scratch));
 
   MacroAssembler::PushPopQueue queue(masm);
-  queue.Queue(accessor_holder);
   queue.Queue(receiver);
   // Write the arguments to the stack frame.
   if (is_store) {
@@ -180,7 +179,7 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
   __ Mov(api_function_address, ref);
 
   // Jump to stub.
-  CallApiCallbackStub stub(isolate, is_store, !optimization.is_constant_call());
+  CallApiCallbackStub stub(isolate, is_store ? 1 : 0);
   __ TailCallStub(&stub);
 }
 

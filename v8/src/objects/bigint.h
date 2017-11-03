@@ -73,12 +73,24 @@ class V8_EXPORT_PRIVATE BigInt : public HeapObject {
   void Initialize(int length, bool zero_initialize);
 
   static MaybeHandle<String> ToString(Handle<BigInt> bigint, int radix = 10);
+  // "The Number value for x", see:
+  // https://tc39.github.io/ecma262/#sec-ecmascript-language-types-number-type
+  // Returns a Smi or HeapNumber.
+  static Handle<Object> ToNumber(Handle<BigInt> x);
+
+  // ECMAScript's NumberToBigInt
+  static MaybeHandle<BigInt> FromNumber(Isolate* isolate,
+                                        Handle<Object> number);
+
+  // ECMAScript's ToBigInt (throws for Number input)
+  static MaybeHandle<BigInt> FromObject(Isolate* isolate, Handle<Object> obj);
 
   // The maximum length that the current implementation supports would be
   // kMaxInt / kDigitBits. However, we use a lower limit for now, because
   // raising it later is easier than lowering it.
   // Support up to 1 million bits.
-  static const int kMaxLength = 1024 * 1024 / (kPointerSize * kBitsPerByte);
+  static const int kMaxLengthBits = 1024 * 1024;
+  static const int kMaxLength = kMaxLengthBits / (kPointerSize * kBitsPerByte);
 
   class BodyDescriptor;
 
@@ -100,6 +112,11 @@ class V8_EXPORT_PRIVATE BigInt : public HeapObject {
                                          int charcount,
                                          ShouldThrow should_throw);
   void RightTrim();
+
+  static double ToDouble(Handle<BigInt> x);
+  enum Rounding { kRoundDown, kTie, kRoundUp };
+  static Rounding DecideRounding(Handle<BigInt> x, int mantissa_bits_unset,
+                                 int digit_index, uint64_t current_digit);
 
   static Handle<BigInt> AbsoluteAdd(Handle<BigInt> x, Handle<BigInt> y,
                                     bool result_sign);
@@ -174,9 +191,9 @@ class V8_EXPORT_PRIVATE BigInt : public HeapObject {
     return static_cast<digit_t>(~x) == 0;
   }
 
-  static const int kMaxLengthBits = 20;
-  STATIC_ASSERT(kMaxLength <= ((1 << kMaxLengthBits) - 1));
-  class LengthBits : public BitField<int, 0, kMaxLengthBits> {};
+  static const int kLengthFieldBits = 20;
+  STATIC_ASSERT(kMaxLength <= ((1 << kLengthFieldBits) - 1));
+  class LengthBits : public BitField<int, 0, kLengthFieldBits> {};
   class SignBits : public BitField<bool, LengthBits::kNext, 1> {};
 
   // Low-level accessors.

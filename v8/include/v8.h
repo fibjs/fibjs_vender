@@ -984,9 +984,6 @@ class V8_EXPORT Data {
 };
 
 /**
- * This is an unfinished experimental feature, and is only exposed
- * here for internal testing purposes. DO NOT USE.
- *
  * A container type that holds relevant metadata for module loading.
  *
  * This is passed back to the embedder as part of
@@ -1008,9 +1005,6 @@ class V8_EXPORT ScriptOrModule {
 };
 
 /**
- * This is an unfinished experimental feature, and is only exposed
- * here for internal testing purposes. DO NOT USE.
- *
  * An array to hold Primitive values. This is used by the embedder to
  * pass host defined options to the ScriptOptions during compilation.
  *
@@ -1441,6 +1435,21 @@ class V8_EXPORT ScriptCompiler {
   };
 
   /**
+   * The reason for which we are not requesting or providing a code cache.
+   */
+  enum NoCacheReason {
+    kNoCacheNoReason = 0,
+    kNoCacheBecauseCachingDisabled,
+    kNoCacheBecauseNoResource,
+    kNoCacheBecauseInlineScript,
+    kNoCacheBecauseModule,
+    kNoCacheBecauseStreamingSource,
+    kNoCacheBecauseInspector,
+    kNoCacheBecauseScriptTooSmall,
+    kNoCacheBecauseCacheTooCold,
+  };
+
+  /**
    * Compiles the specified script (context-independent).
    * Cached data as part of the source object can be optionally produced to be
    * consumed later to speed up compilation of identical source scripts.
@@ -1456,10 +1465,12 @@ class V8_EXPORT ScriptCompiler {
   static V8_DEPRECATED("Use maybe version",
                        Local<UnboundScript> CompileUnbound(
                            Isolate* isolate, Source* source,
-                           CompileOptions options = kNoCompileOptions));
+                           CompileOptions options = kNoCompileOptions,
+                           NoCacheReason no_cache_reason = kNoCacheNoReason));
   static V8_WARN_UNUSED_RESULT MaybeLocal<UnboundScript> CompileUnboundScript(
       Isolate* isolate, Source* source,
-      CompileOptions options = kNoCompileOptions);
+      CompileOptions options = kNoCompileOptions,
+      NoCacheReason no_cache_reason = kNoCacheNoReason);
 
   /**
    * Compiles the specified script (bound to current context).
@@ -1475,10 +1486,12 @@ class V8_EXPORT ScriptCompiler {
   static V8_DEPRECATED(
       "Use maybe version",
       Local<Script> Compile(Isolate* isolate, Source* source,
-                            CompileOptions options = kNoCompileOptions));
+                            CompileOptions options = kNoCompileOptions,
+                            NoCacheReason no_cache_reason = kNoCacheNoReason));
   static V8_WARN_UNUSED_RESULT MaybeLocal<Script> Compile(
       Local<Context> context, Source* source,
-      CompileOptions options = kNoCompileOptions);
+      CompileOptions options = kNoCompileOptions,
+      NoCacheReason no_cache_reason = kNoCacheNoReason);
 
   /**
    * Returns a task which streams script data into V8, or NULL if the script
@@ -1568,7 +1581,8 @@ class V8_EXPORT ScriptCompiler {
 
  private:
   static V8_WARN_UNUSED_RESULT MaybeLocal<UnboundScript> CompileUnboundInternal(
-      Isolate* isolate, Source* source, CompileOptions options);
+      Isolate* isolate, Source* source, CompileOptions options,
+      NoCacheReason no_cache_reason);
 };
 
 
@@ -3709,8 +3723,6 @@ class FunctionCallbackInfo {
   V8_INLINE int Length() const;
   /** Accessor for the available arguments. */
   V8_INLINE Local<Value> operator[](int i) const;
-  V8_INLINE V8_DEPRECATED("Use Data() to explicitly pass Callee instead",
-                          Local<Function> Callee() const);
   /** Returns the receiver. This corresponds to the "this" value. */
   V8_INLINE Local<Object> This() const;
   /**
@@ -3735,7 +3747,7 @@ class FunctionCallbackInfo {
   /** The ReturnValue for the call. */
   V8_INLINE ReturnValue<T> GetReturnValue() const;
   // This shouldn't be public, but the arm compiler needs it.
-  static const int kArgsLength = 8;
+  static const int kArgsLength = 6;
 
  protected:
   friend class internal::FunctionCallbackArguments;
@@ -3746,9 +3758,7 @@ class FunctionCallbackInfo {
   static const int kReturnValueDefaultValueIndex = 2;
   static const int kReturnValueIndex = 3;
   static const int kDataIndex = 4;
-  static const int kCalleeIndex = 5;
-  static const int kContextSaveIndex = 6;
-  static const int kNewTargetIndex = 7;
+  static const int kNewTargetIndex = 5;
 
   V8_INLINE FunctionCallbackInfo(internal::Object** implicit_args,
                                  internal::Object** values, int length);
@@ -7063,6 +7073,7 @@ class V8_EXPORT Isolate {
     kConstructorNonUndefinedPrimitiveReturn = 39,
     kLabeledExpressionStatement = 40,
     kLineOrParagraphSeparatorAsLineTerminator = 41,
+    kIndexAccessor = 42,
 
     // If you add new values here, you'll also need to update Chromium's:
     // UseCounter.h, V8PerIsolateData.cpp, histograms.xml
@@ -7116,9 +7127,6 @@ class V8_EXPORT Isolate {
       AbortOnUncaughtExceptionCallback callback);
 
   /**
-   * This is an unfinished experimental feature, and is only exposed
-   * here for internal testing purposes. DO NOT USE.
-   *
    * This specifies the callback called by the upcoming dynamic
    * import() language feature to load modules.
    */
@@ -9574,13 +9582,6 @@ template<typename T>
 Local<Value> FunctionCallbackInfo<T>::operator[](int i) const {
   if (i < 0 || length_ <= i) return Local<Value>(*Undefined(GetIsolate()));
   return Local<Value>(reinterpret_cast<Value*>(values_ - i));
-}
-
-
-template<typename T>
-Local<Function> FunctionCallbackInfo<T>::Callee() const {
-  return Local<Function>(reinterpret_cast<Function*>(
-      &implicit_args_[kCalleeIndex]));
 }
 
 

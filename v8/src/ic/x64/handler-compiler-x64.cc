@@ -98,8 +98,6 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
   DCHECK(optimization.is_simple_api_call());
 
   __ PopReturnAddressTo(scratch);
-  // accessor_holder
-  __ Push(accessor_holder);
   // receiver
   __ Push(receiver);
   // Write the arguments to stack frame.
@@ -163,7 +161,7 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
           RelocInfo::EXTERNAL_REFERENCE);
 
   // Jump to stub.
-  CallApiCallbackStub stub(isolate, is_store, !optimization.is_constant_call());
+  CallApiCallbackStub stub(isolate, is_store ? 1 : 0);
   __ TailCallStub(&stub);
 }
 

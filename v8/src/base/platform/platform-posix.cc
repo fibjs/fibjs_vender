@@ -31,8 +31,6 @@
 #include <sys/sysctl.h>  // NOLINT, for sysctl
 #endif
 
-#undef MAP_TYPE
-
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
 #define LOG_TAG "v8"
 #include <android/log.h>  // NOLINT
@@ -105,6 +103,10 @@ int GetProtectionFromMemoryPermission(OS::MemoryPermission access) {
 #endif  // !V8_OS_FUCHSIA
 
 }  // namespace
+
+#if V8_OS_FREEBSD || V8_OS_MACOSX || V8_OS_OPENBSD || V8_OS_SOLARIS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 
 int OS::ActivationFrameAlignment() {
 #if V8_TARGET_ARCH_ARM
@@ -256,7 +258,7 @@ bool OS::CommitRegion(void* address, size_t size, bool is_executable) {
     return false;
   }
 #else
-  if (mprotect(base, size, prot) == -1) return false;
+  if (mprotect(address, size, prot) == -1) return false;
 #endif  // !V8_OS_AIX
   return true;
 }
@@ -274,7 +276,7 @@ bool OS::UncommitRegion(void* address, size_t size) {
   return mmap(address, size, PROT_NONE, map_flags, kMmapFd, kMmapFdOffset) !=
          MAP_FAILED;
 #else   // V8_OS_AIX
-  return mprotect(base, size, PROT_NONE) != -1;
+  return mprotect(address, size, PROT_NONE) != -1;
 #endif  // V8_OS_AIX
 }
 
@@ -896,6 +898,9 @@ void Thread::SetThreadLocal(LocalStorageKey key, void* value) {
   DCHECK_EQ(0, result);
   USE(result);
 }
+
+#undef LOG_TAG
+#undef MAP_ANONYMOUS
 
 #endif
 
