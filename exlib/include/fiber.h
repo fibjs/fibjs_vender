@@ -159,7 +159,7 @@ public:
     }
 
 public:
-    void wait();
+    bool wait(Task_base* current = NULL);
     void pulse();
     void set();
     void reset();

@@ -9,17 +9,23 @@
 #include "service.h"
 
 namespace exlib {
-void Event::wait()
+
+bool Event::wait(Task_base* current)
 {
     m_lock.lock();
     if (!m_set) {
-        Task_base* current = Thread_base::current();
+        if (!current)
+            current = Thread_base::current();
         assert(current != 0);
 
         m_blocks.putTail(current);
         current->suspend(m_lock);
-    } else
-        m_lock.unlock();
+
+        return false;
+    }
+
+    m_lock.unlock();
+    return true;
 }
 
 void Event::pulse()
