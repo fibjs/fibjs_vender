@@ -305,8 +305,7 @@ void ObjectStatsCollector::CollectGlobalStatistics() {
 }
 
 static bool CanRecordFixedArray(Heap* heap, FixedArrayBase* array) {
-  return (array->map()->instance_type() == FIXED_ARRAY_TYPE ||
-          array->map()->instance_type() == HASH_TABLE_TYPE) &&
+  return array->map()->instance_type() == FIXED_ARRAY_TYPE &&
          array->map() != heap->fixed_double_array_map() &&
          array != heap->empty_fixed_array() &&
          array != heap->empty_byte_array() &&
@@ -367,7 +366,7 @@ void ObjectStatsCollector::RecordJSObjectDetails(JSObject* object) {
   FixedArrayBase* elements = object->elements();
   if (CanRecordFixedArray(heap_, elements) && !IsCowArray(heap_, elements)) {
     if (elements->IsDictionary() && SameLiveness(object, elements)) {
-      SeededNumberDictionary* dict = SeededNumberDictionary::cast(elements);
+      NumberDictionary* dict = NumberDictionary::cast(elements);
       RecordHashTableHelper(object, dict, DICTIONARY_ELEMENTS_SUB_TYPE);
     } else {
       if (IsHoleyElementsKind(object->GetElementsKind())) {

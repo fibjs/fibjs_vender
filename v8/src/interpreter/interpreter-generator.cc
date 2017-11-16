@@ -311,8 +311,14 @@ IGNITION_HANDLER(LdaContextSlot, InterpreterAssembler) {
 // Load the object in |slot_index| of the context at |depth| in the context
 // chain starting at |context| into the accumulator.
 IGNITION_HANDLER(LdaImmutableContextSlot, InterpreterAssembler) {
-  // Same as LdaContextSlot, should never be called.
-  UNREACHABLE();
+  Node* reg_index = BytecodeOperandReg(0);
+  Node* context = LoadRegister(reg_index);
+  Node* slot_index = BytecodeOperandIdx(1);
+  Node* depth = BytecodeOperandUImm(2);
+  Node* slot_context = GetContextAtDepth(context, depth);
+  Node* result = LoadContextElement(slot_context, slot_index);
+  SetAccumulator(result);
+  Dispatch();
 }
 
 // LdaCurrentContextSlot <slot_index>
@@ -330,8 +336,11 @@ IGNITION_HANDLER(LdaCurrentContextSlot, InterpreterAssembler) {
 //
 // Load the object in |slot_index| of the current context into the accumulator.
 IGNITION_HANDLER(LdaImmutableCurrentContextSlot, InterpreterAssembler) {
-  // Same as LdaCurrentContextSlot, should never be called.
-  UNREACHABLE();
+  Node* slot_index = BytecodeOperandIdx(0);
+  Node* slot_context = GetContext();
+  Node* result = LoadContextElement(slot_context, slot_index);
+  SetAccumulator(result);
+  Dispatch();
 }
 
 // StaContextSlot <context> <slot_index> <depth>
@@ -631,8 +640,12 @@ class InterpreterStoreNamedPropertyAssembler : public InterpreterAssembler {
     Node* smi_slot = SmiTag(raw_slot);
     Node* feedback_vector = LoadFeedbackVector();
     Node* context = GetContext();
-    CallStub(ic.descriptor(), code_target, context, object, name, value,
-             smi_slot, feedback_vector);
+    Node* result = CallStub(ic.descriptor(), code_target, context, object, name,
+                            value, smi_slot, feedback_vector);
+    // It doesn't really matter what we write to the accumulator here, since we
+    // restore to the correct value on the outside. Storing the result means we
+    // don't need to keep unnecessary state alive across the callstub.
+    SetAccumulator(result);
     Dispatch();
   }
 };
@@ -673,8 +686,12 @@ IGNITION_HANDLER(StaKeyedProperty, InterpreterAssembler) {
   Node* smi_slot = SmiTag(raw_slot);
   Node* feedback_vector = LoadFeedbackVector();
   Node* context = GetContext();
-  CallStub(ic.descriptor(), code_target, context, object, name, value, smi_slot,
-           feedback_vector);
+  Node* result = CallStub(ic.descriptor(), code_target, context, object, name,
+                          value, smi_slot, feedback_vector);
+  // It doesn't really matter what we write to the accumulator here, since we
+  // restore to the correct value on the outside. Storing the result means we
+  // don't need to keep unnecessary state alive across the callstub.
+  SetAccumulator(result);
   Dispatch();
 }
 
@@ -2023,6 +2040,12 @@ IGNITION_HANDLER(TestTypeOf, InterpreterAssembler) {
     GotoIf(WordEqual(object, TrueConstant()), &if_true);
     Branch(WordEqual(object, FalseConstant()), &if_true, &if_false);
   }
+  BIND(&if_bigint);
+  {
+    Comment("IfBigInt");
+    GotoIf(TaggedIsSmi(object), &if_false);
+    Branch(IsBigInt(object), &if_true, &if_false);
+  }
   BIND(&if_undefined);
   {
     Comment("IfUndefined");
@@ -2731,20 +2754,9 @@ IGNITION_HANDLER(CreateRestParameter, InterpreterAssembler) {
 //
 // Performs a stack guard check.
 IGNITION_HANDLER(StackCheck, InterpreterAssembler) {
-  Label ok(this), stack_check_interrupt(this, Label::kDeferred);
-
-  Node* interrupt = StackCheckTriggeredInterrupt();
-  Branch(interrupt, &stack_check_interrupt, &ok);
-
-  BIND(&ok);
+  Node* context = GetContext();
+  PerformStackCheck(context);
   Dispatch();
-
-  BIND(&stack_check_interrupt);
-  {
-    Node* context = GetContext();
-    CallRuntime(Runtime::kStackGuard, context);
-    Dispatch();
-  }
 }
 
 // SetPendingMessage
@@ -2874,9 +2886,12 @@ IGNITION_HANDLER(Debugger, InterpreterAssembler) {
   IGNITION_HANDLER(Name, InterpreterAssembler) {                           \
     Node* context = GetContext();                                          \
     Node* accumulator = GetAccumulator();                                  \
-    Node* original_handler =                                               \
+    Node* result_pair =                                                    \
         CallRuntime(Runtime::kDebugBreakOnBytecode, context, accumulator); \
+    Node* return_value = Projection(0, result_pair);                       \
+    Node* original_handler = Projection(1, result_pair);                   \
     MaybeDropFrames(context);                                              \
+    SetAccumulator(return_value);                                          \
     DispatchToBytecodeHandler(original_handler);                           \
   }
 DEBUG_BREAK_BYTECODE_LIST(DEBUG_BREAK);
@@ -3234,6 +3249,71 @@ Handle<Code> GenerateBytecodeHandler(Isolate* isolate, Bytecode bytecode,
     os << std::flush;
   }
 #endif  // ENABLE_DISASSEMBLER
+  return code;
+}
+
+namespace {
+
+// DeserializeLazy
+//
+// Deserialize the bytecode handler, store it in the dispatch table, and
+// finally jump there (preserving existing args).
+// We manually create a custom assembler instead of using the helper macros
+// above since no corresponding bytecode exists.
+class DeserializeLazyAssembler : public InterpreterAssembler {
+ public:
+  static const Bytecode kFakeBytecode = Bytecode::kIllegal;
+
+  explicit DeserializeLazyAssembler(compiler::CodeAssemblerState* state,
+                                    OperandScale operand_scale)
+      : InterpreterAssembler(state, kFakeBytecode, operand_scale) {}
+
+  static void Generate(compiler::CodeAssemblerState* state,
+                       OperandScale operand_scale) {
+    DeserializeLazyAssembler assembler(state, operand_scale);
+    state->SetInitialDebugInformation("DeserializeLazy", __FILE__, __LINE__);
+    assembler.GenerateImpl();
+  }
+
+ private:
+  void GenerateImpl() { DeserializeLazyAndDispatch(); }
+
+  DISALLOW_COPY_AND_ASSIGN(DeserializeLazyAssembler);
+};
+
+}  // namespace
+
+Handle<Code> GenerateDeserializeLazyHandler(Isolate* isolate,
+                                            OperandScale operand_scale) {
+  Zone zone(isolate->allocator(), ZONE_NAME);
+  const size_t return_count = 0;
+
+  std::string debug_name = std::string("DeserializeLazy");
+  if (operand_scale > OperandScale::kSingle) {
+    Bytecode prefix_bytecode =
+        Bytecodes::OperandScaleToPrefixBytecode(operand_scale);
+    debug_name = debug_name.append(Bytecodes::ToString(prefix_bytecode));
+  }
+
+  InterpreterDispatchDescriptor descriptor(isolate);
+  compiler::CodeAssemblerState state(isolate, &zone, descriptor,
+                                     Code::BYTECODE_HANDLER, debug_name.c_str(),
+                                     return_count);
+
+  DeserializeLazyAssembler::Generate(&state, operand_scale);
+  Handle<Code> code = compiler::CodeAssembler::GenerateCode(&state);
+  PROFILE(isolate,
+          CodeCreateEvent(CodeEventListener::BYTECODE_HANDLER_TAG,
+                          AbstractCode::cast(*code), debug_name.c_str()));
+
+#ifdef ENABLE_DISASSEMBLER
+  if (FLAG_trace_ignition_codegen) {
+    OFStream os(stdout);
+    code->Disassemble(debug_name.c_str(), os);
+    os << std::flush;
+  }
+#endif  // ENABLE_DISASSEMBLER
+
   return code;
 }
 

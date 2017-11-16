@@ -75,13 +75,14 @@ class StartupSerializer : public Serializer<> {
   // roots. In the second pass, we serialize the rest.
   bool RootShouldBeSkipped(int root_index);
 
-  void CheckRehashability(HeapObject* hashtable);
+  void CheckRehashability(HeapObject* obj);
 
   const bool clear_function_code_;
   bool serializing_immortal_immovables_roots_;
   std::bitset<Heap::kStrongRootListLength> root_has_been_serialized_;
   PartialCacheIndexMap partial_cache_index_map_;
   std::vector<AccessorInfo*> accessor_infos_;
+  std::vector<CallHandlerInfo*> call_handler_infos_;
   // Indicates whether we only serialized hash tables that we can rehash.
   // TODO(yangguo): generalize rehashing, and remove this flag.
   bool can_be_rehashed_;

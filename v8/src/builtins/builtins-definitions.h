@@ -211,14 +211,13 @@ namespace internal {
   TFH(LoadGlobalIC_Slow, LoadGlobalWithVector)                                 \
   TFH(LoadField, LoadField)                                                    \
   TFH(LoadIC_FunctionPrototype, LoadWithVector)                                \
-  ASM(LoadIC_Getter_ForDeopt)                                                  \
   TFH(LoadIC_Miss, LoadWithVector)                                             \
   TFH(LoadIC_Slow, LoadWithVector)                                             \
   TFH(LoadIC_StringLength, LoadWithVector)                                     \
+  TFH(LoadIC_StringWrapperLength, LoadWithVector)                              \
   TFH(LoadIC_Uninitialized, LoadWithVector)                                    \
   TFH(StoreGlobalIC_Slow, StoreWithVector)                                     \
   TFH(StoreIC_Miss, StoreWithVector)                                           \
-  ASM(StoreIC_Setter_ForDeopt)                                                 \
   TFH(StoreIC_Uninitialized, StoreWithVector)                                  \
                                                                                \
   /* Promise helpers */                                                        \
@@ -1086,16 +1085,21 @@ namespace internal {
   TFC(ThrowWasmTrapFuncSigMismatch, WasmRuntimeCall, 1)                        \
                                                                                \
   /* WeakMap */                                                                \
+  TFJ(WeakMapConstructor, SharedFunctionInfo::kDontAdaptArgumentsSentinel)     \
   TFS(WeakMapLookupHashIndex, kTable, kKey)                                    \
   TFJ(WeakMapGet, 1, kKey)                                                     \
   TFJ(WeakMapHas, 1, kKey)                                                     \
   TFJ(WeakMapPrototypeSet, 2, kKey, kValue)                                    \
+  TFJ(WeakMapPrototypeDelete, 1, kKey)                                         \
                                                                                \
   /* WeakSet */                                                                \
+  TFJ(WeakSetConstructor, SharedFunctionInfo::kDontAdaptArgumentsSentinel)     \
   TFJ(WeakSetHas, 1, kKey)                                                     \
   TFJ(WeakSetPrototypeAdd, 1, kValue)                                          \
+  TFJ(WeakSetPrototypeDelete, 1, kValue)                                       \
                                                                                \
   /* WeakSet / WeakMap Helpers */                                              \
+  TFS(WeakCollectionDelete, kCollection, kKey)                                 \
   TFS(WeakCollectionSet, kCollection, kKey, kValue)                            \
                                                                                \
   /* AsyncGenerator */                                                         \

@@ -442,7 +442,7 @@ class WeakCallbackInfo {
     return embedder_fields_[1];
   }
 
-  V8_DEPRECATED("Not realiable once SetSecondPassCallback() was used.",
+  V8_DEPRECATED("Not reliable once SetSecondPassCallback() was used.",
                 bool IsFirstPass() const) {
     return callback_ != nullptr;
   }
@@ -583,7 +583,9 @@ template <class T> class PersistentBase {
 
   /**
    * Marks the reference to this object as active. The scavenge garbage
-   * collection should not reclaim the objects marked as active.
+   * collection should not reclaim the objects marked as active, even if the
+   * object held by the handle is otherwise unreachable.
+   *
    * This bit is cleared after the each garbage collection pass.
    */
   V8_INLINE void MarkActive();
@@ -1447,6 +1449,10 @@ class V8_EXPORT ScriptCompiler {
     kNoCacheBecauseInspector,
     kNoCacheBecauseScriptTooSmall,
     kNoCacheBecauseCacheTooCold,
+    kNoCacheBecauseV8Extension,
+    kNoCacheBecauseExtensionModule,
+    kNoCacheBecausePacScript,
+    kNoCacheBecauseInDocumentWrite
   };
 
   /**
@@ -2082,20 +2088,6 @@ class V8_EXPORT ValueDeserializer {
 
   struct PrivateData;
   PrivateData* private_;
-};
-
-/**
- * A map whose keys are referenced weakly. It is similar to JavaScript WeakMap
- * but can be created without entering a v8::Context and hence shouldn't
- * escape to JavaScript.
- */
-class V8_EXPORT NativeWeakMap : public Data {
- public:
-  static Local<NativeWeakMap> New(Isolate* isolate);
-  void Set(Local<Value> key, Local<Value> value);
-  Local<Value> Get(Local<Value> key) const;
-  bool Has(Local<Value> key);
-  bool Delete(Local<Value> key);
 };
 
 
@@ -5272,7 +5264,7 @@ typedef void (*GenericNamedPropertySetterCallback)(
  * defineProperty().
  *
  * Use `info.GetReturnValue().Set(value)` to set the property attributes. The
- * value is an interger encoding a `v8::PropertyAttribute`.
+ * value is an integer encoding a `v8::PropertyAttribute`.
  *
  * \param property The name of the property for which the request was
  * intercepted.
@@ -5996,7 +5988,7 @@ class V8_EXPORT ObjectTemplate : public Template {
   bool IsImmutableProto();
 
   /**
-   * Makes the ObjectTempate for an immutable prototype exotic object, with an
+   * Makes the ObjectTemplate for an immutable prototype exotic object, with an
    * immutable __proto__.
    */
   void SetImmutableProto();
@@ -6303,7 +6295,7 @@ typedef MaybeLocal<Promise> (*HostImportModuleDynamicallyCallback)(
 
 /**
  * HostInitializeImportMetaObjectCallback is called the first time import.meta
- * is accessed for a module. Subsequent acccess will reuse the same value.
+ * is accessed for a module. Subsequent access will reuse the same value.
  *
  * The method combines two implementation-defined abstract operations into one:
  * HostGetImportMetaProperties and HostFinalizeImportMeta.
@@ -6441,6 +6433,9 @@ typedef bool (*AllowCodeGenerationFromStringsCallback)(Local<Context> context,
 
 // --- WebAssembly compilation callbacks ---
 typedef bool (*ExtensionCallback)(const FunctionCallbackInfo<Value>&);
+
+typedef bool (*AllowWasmCodeGenerationCallback)(Local<Context> context,
+                                                Local<String> source);
 
 // --- Callback for APIs defined on v8-supported objects, but implemented
 // by the embedder. Example: WebAssembly.{compile|instantiate}Streaming ---
@@ -7074,9 +7069,13 @@ class V8_EXPORT Isolate {
     kLabeledExpressionStatement = 40,
     kLineOrParagraphSeparatorAsLineTerminator = 41,
     kIndexAccessor = 42,
+    kErrorCaptureStackTrace = 43,
+    kErrorPrepareStackTrace = 44,
+    kErrorStackTraceLimit = 45,
 
     // If you add new values here, you'll also need to update Chromium's:
-    // UseCounter.h, V8PerIsolateData.cpp, histograms.xml
+    // web_feature.mojom, UseCounterCallback.cpp, and enums.xml. V8 changes to
+    // this list need to be landed first, then changes on the Chromium side.
     kUseCounterFeatureCount  // This enum value must be last.
   };
 
@@ -7733,6 +7732,13 @@ class V8_EXPORT Isolate {
    */
   void SetAllowCodeGenerationFromStringsCallback(
       AllowCodeGenerationFromStringsCallback callback);
+
+  /**
+   * Set the callback to invoke to check if wasm code generation should
+   * be allowed.
+   */
+  void SetAllowWasmCodeGenerationCallback(
+      AllowWasmCodeGenerationCallback callback);
 
   /**
    * Embedder over{ride|load} injection points for wasm APIs. The expectation
@@ -8837,7 +8843,7 @@ class V8_EXPORT Context {
    * stack.
    * https://html.spec.whatwg.org/multipage/webappapis.html#backup-incumbent-settings-object-stack
    */
-  class BackupIncumbentScope {
+  class V8_EXPORT BackupIncumbentScope {
    public:
     /**
      * |backup_incumbent_context| is pushed onto the backup incumbent settings
@@ -9081,8 +9087,7 @@ class Internals {
   // These values match non-compiler-dependent values defined within
   // the implementation of v8.
   static const int kHeapObjectMapOffset = 0;
-  static const int kMapInstanceTypeAndBitFieldOffset =
-      1 * kApiPointerSize + kApiIntSize;
+  static const int kMapInstanceTypeOffset = 1 * kApiPointerSize + kApiIntSize;
   static const int kStringResourceOffset = 3 * kApiPointerSize;
 
   static const int kOddballKindOffset = 4 * kApiPointerSize + sizeof(double);
@@ -9160,9 +9165,7 @@ class Internals {
   V8_INLINE static int GetInstanceType(const internal::Object* obj) {
     typedef internal::Object O;
     O* map = ReadField<O*>(obj, kHeapObjectMapOffset);
-    // Map::InstanceType is defined so that it will always be loaded into
-    // the LS 8 bits of one 16-bit word, regardless of endianess.
-    return ReadField<uint16_t>(map, kMapInstanceTypeAndBitFieldOffset) & 0xff;
+    return ReadField<uint8_t>(map, kMapInstanceTypeOffset);
   }
 
   V8_INLINE static int GetOddballKind(const internal::Object* obj) {

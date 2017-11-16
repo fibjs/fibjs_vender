@@ -119,15 +119,13 @@ bool CodeRange::SetUp(size_t requested) {
 
   VirtualMemory reservation;
   if (!AlignedAllocVirtualMemory(
-          requested,
-          Max(kCodeRangeAreaAlignment,
-              static_cast<size_t>(base::OS::AllocateAlignment())),
+          requested, Max(kCodeRangeAreaAlignment, base::OS::AllocatePageSize()),
           base::OS::GetRandomMmapAddr(), &reservation)) {
     return false;
   }
 
   // We are sure that we have mapped a block of requested addresses.
-  DCHECK(reservation.size() == requested);
+  DCHECK_GE(reservation.size(), requested);
   Address base = reinterpret_cast<Address>(reservation.address());
 
   // On some platforms, specifically Win64, we need to reserve some pages at
@@ -445,7 +443,7 @@ void MemoryAllocator::FreeMemory(Address base, size_t size,
     code_range()->FreeRawMemory(base, size);
   } else {
     DCHECK(executable == NOT_EXECUTABLE || !code_range()->valid());
-    bool result = base::OS::ReleaseRegion(base, size);
+    bool result = base::OS::Free(base, size);
     USE(result);
     DCHECK(result);
   }
@@ -458,15 +456,10 @@ Address MemoryAllocator::ReserveAlignedMemory(size_t size, size_t alignment,
   if (!AlignedAllocVirtualMemory(size, alignment, hint, &reservation))
     return nullptr;
 
-  const Address base =
-      ::RoundUp(static_cast<Address>(reservation.address()), alignment);
-  if (base + size != reservation.end()) {
-    const Address unused_start = ::RoundUp(base + size, GetCommitPageSize());
-    reservation.ReleasePartial(unused_start);
-  }
+  Address result = static_cast<Address>(reservation.address());
   size_.Increment(reservation.size());
   controller->TakeControl(&reservation);
-  return base;
+  return result;
 }
 
 Address MemoryAllocator::AllocateAlignedMemory(
@@ -530,10 +523,7 @@ void MemoryChunk::InitializationMemoryFence() {
 
 void MemoryChunk::SetReadAndExecutable() {
   DCHECK(IsFlagSet(MemoryChunk::IS_EXECUTABLE));
-  // TODO(hpayer): owner() can only be null if we use the MemoryChunk outside
-  // of spaces. We actually should not do that and we should untangle this.
-  DCHECK(owner() == nullptr || owner()->identity() == CODE_SPACE ||
-         owner()->identity() == LO_SPACE);
+  DCHECK(owner()->identity() == CODE_SPACE || owner()->identity() == LO_SPACE);
   // Decrementing the write_unprotect_counter_ and changing the page
   // protection mode has to be atomic.
   base::LockGuard<base::Mutex> guard(page_protection_change_mutex_);
@@ -544,36 +534,46 @@ void MemoryChunk::SetReadAndExecutable() {
     return;
   }
   write_unprotect_counter_--;
-  DCHECK_LE(write_unprotect_counter_, 1);
+  DCHECK_LE(write_unprotect_counter_, 2);
   if (write_unprotect_counter_ == 0) {
     Address protect_start =
         address() + MemoryAllocator::CodePageAreaStartOffset();
-    size_t protect_size = size() - MemoryAllocator::CodePageAreaStartOffset();
     DCHECK(
         IsAddressAligned(protect_start, MemoryAllocator::GetCommitPageSize()));
-    base::OS::SetReadAndExecutable(protect_start, protect_size);
+    base::OS::SetReadAndExecutable(protect_start, area_size());
   }
 }
 
 void MemoryChunk::SetReadAndWritable() {
   DCHECK(IsFlagSet(MemoryChunk::IS_EXECUTABLE));
-  // TODO(hpayer): owner() can only be null if we use the MemoryChunk outside
-  // of spaces. We actually should not do that and we should untangle this.
-  DCHECK(owner() == nullptr || owner()->identity() == CODE_SPACE ||
-         owner()->identity() == LO_SPACE);
+  DCHECK(owner()->identity() == CODE_SPACE || owner()->identity() == LO_SPACE);
   // Incrementing the write_unprotect_counter_ and changing the page
   // protection mode has to be atomic.
   base::LockGuard<base::Mutex> guard(page_protection_change_mutex_);
   write_unprotect_counter_++;
-  DCHECK_LE(write_unprotect_counter_, 2);
+  DCHECK_LE(write_unprotect_counter_, 3);
   if (write_unprotect_counter_ == 1) {
     Address unprotect_start =
         address() + MemoryAllocator::CodePageAreaStartOffset();
-    size_t unprotect_size = size() - MemoryAllocator::CodePageAreaStartOffset();
     DCHECK(IsAddressAligned(unprotect_start,
                             MemoryAllocator::GetCommitPageSize()));
-    base::OS::SetReadAndWritable(unprotect_start, unprotect_size, false);
+    base::OS::SetReadAndWritable(unprotect_start, area_size(), false);
   }
+}
+
+void MemoryChunk::SetReadWriteAndExecutable() {
+  DCHECK(IsFlagSet(MemoryChunk::IS_EXECUTABLE));
+  DCHECK(owner()->identity() == CODE_SPACE || owner()->identity() == LO_SPACE);
+  // Incrementing the write_unprotect_counter_ and changing the page
+  // protection mode has to be atomic.
+  base::LockGuard<base::Mutex> guard(page_protection_change_mutex_);
+  write_unprotect_counter_++;
+  DCHECK_LE(write_unprotect_counter_, 3);
+  Address unprotect_start =
+      address() + MemoryAllocator::CodePageAreaStartOffset();
+  DCHECK(
+      IsAddressAligned(unprotect_start, MemoryAllocator::GetCommitPageSize()));
+  base::OS::SetReadWriteAndExecutable(unprotect_start, area_size());
 }
 
 MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
@@ -689,56 +689,6 @@ Page* Page::ConvertNewToOld(Page* old_page) {
   Page* new_page = old_space->InitializePage(old_page, NOT_EXECUTABLE);
   old_space->AddPage(new_page);
   return new_page;
-}
-
-// Commit MemoryChunk area to the requested size.
-bool MemoryChunk::CommitArea(size_t requested) {
-  size_t guard_size =
-      IsFlagSet(IS_EXECUTABLE) ? MemoryAllocator::CodePageGuardSize() : 0;
-  size_t header_size = area_start() - address() - guard_size;
-  size_t commit_size =
-      ::RoundUp(header_size + requested, MemoryAllocator::GetCommitPageSize());
-  size_t committed_size = ::RoundUp(header_size + (area_end() - area_start()),
-                                    MemoryAllocator::GetCommitPageSize());
-
-  if (commit_size > committed_size) {
-    // Commit size should be less or equal than the reserved size.
-    DCHECK(commit_size <= size() - 2 * guard_size);
-    // Append the committed area.
-    Address start = address() + committed_size + guard_size;
-    size_t length = commit_size - committed_size;
-    if (reservation_.IsReserved()) {
-      Executability executable =
-          IsFlagSet(IS_EXECUTABLE) ? EXECUTABLE : NOT_EXECUTABLE;
-      if (!heap()->memory_allocator()->CommitMemory(start, length,
-                                                    executable)) {
-        return false;
-      }
-    } else {
-      CodeRange* code_range = heap_->memory_allocator()->code_range();
-      DCHECK(code_range->valid() && IsFlagSet(IS_EXECUTABLE));
-      if (!code_range->CommitRawMemory(start, length)) return false;
-    }
-
-    if (Heap::ShouldZapGarbage()) {
-      heap_->memory_allocator()->ZapBlock(start, length);
-    }
-  } else if (commit_size < committed_size) {
-    DCHECK_LT(0, commit_size);
-    // Shrink the committed area.
-    size_t length = committed_size - commit_size;
-    Address start = address() + committed_size + guard_size - length;
-    if (reservation_.IsReserved()) {
-      if (!reservation_.Uncommit(start, length)) return false;
-    } else {
-      CodeRange* code_range = heap_->memory_allocator()->code_range();
-      DCHECK(code_range->valid() && IsFlagSet(IS_EXECUTABLE));
-      if (!code_range->UncommitRawMemory(start, length)) return false;
-    }
-  }
-
-  area_end_ = area_start_ + requested;
-  return true;
 }
 
 size_t MemoryChunk::CommittedPhysicalMemory() {
@@ -1433,7 +1383,6 @@ PagedSpace::PagedSpace(Heap* heap, AllocationSpace space,
     : Space(heap, space, executable),
       anchor_(this),
       free_list_(this),
-      preferred_sweeping_page_(nullptr),
       top_on_previous_step_(0) {
   area_size_ = MemoryAllocator::PageAreaSize(space);
   accounting_stats_.Clear();
@@ -2404,7 +2353,7 @@ bool SemiSpace::GrowTo(size_t new_capacity) {
   DCHECK_LE(new_capacity, maximum_capacity_);
   DCHECK_GT(new_capacity, current_capacity_);
   const size_t delta = new_capacity - current_capacity_;
-  DCHECK(IsAligned(delta, base::OS::AllocateAlignment()));
+  DCHECK(IsAligned(delta, base::OS::AllocatePageSize()));
   const int delta_pages = static_cast<int>(delta / Page::kPageSize);
   Page* last_page = anchor()->prev_page();
   DCHECK_NE(last_page, anchor());
@@ -2448,7 +2397,7 @@ bool SemiSpace::ShrinkTo(size_t new_capacity) {
   DCHECK_LT(new_capacity, current_capacity_);
   if (is_committed()) {
     const size_t delta = current_capacity_ - new_capacity;
-    DCHECK(IsAligned(delta, base::OS::AllocateAlignment()));
+    DCHECK(IsAligned(delta, base::OS::AllocatePageSize()));
     int delta_pages = static_cast<int>(delta / Page::kPageSize);
     Page* new_last_page;
     Page* last_page;
@@ -3271,14 +3220,6 @@ bool PagedSpace::RawSlowAllocateRaw(int size_in_bytes) {
 
     // Retry the free list allocation.
     if (free_list_.Allocate(static_cast<size_t>(size_in_bytes))) return true;
-
-    if (preferred_sweeping_page_ != nullptr) {
-      DCHECK_EQ(preferred_sweeping_page_->owner()->identity(), identity());
-      collector->sweeper().ParallelSweepPage(preferred_sweeping_page_,
-                                             identity());
-      preferred_sweeping_page_ = nullptr;
-      if (free_list_.Allocate(static_cast<size_t>(size_in_bytes))) return true;
-    }
 
     // If sweeping is still in progress try to sweep pages.
     int max_freed = collector->sweeper().ParallelSweepSpace(

@@ -6,6 +6,7 @@
 
 #include "src/assembler-inl.h"
 #include "src/isolate.h"
+#include "src/objects/hash-table.h"
 #include "src/objects/string.h"
 #include "src/snapshot/builtin-deserializer-allocator.h"
 #include "src/snapshot/natives.h"
@@ -36,6 +37,18 @@ void Deserializer<AllocatorT>::Initialize(Isolate* isolate) {
 template <class AllocatorT>
 bool Deserializer<AllocatorT>::IsLazyDeserializationEnabled() const {
   return FLAG_lazy_deserialization && !isolate()->serializer_enabled();
+}
+
+template <class AllocatorT>
+void Deserializer<AllocatorT>::Rehash() {
+  DCHECK(can_rehash() || deserializing_user_code());
+  for (const auto& item : to_rehash_) item->RehashBasedOnMap();
+  for (const auto& address : allocator()->GetAllocatedMaps()) {
+    Map* map = Map::cast(HeapObject::FromAddress(address));
+    if (map->instance_descriptors()->number_of_descriptors() > 1) {
+      map->instance_descriptors()->Sort();
+    }
+  }
 }
 
 template <class AllocatorT>
@@ -126,23 +139,30 @@ uint32_t StringTableInsertionKey::ComputeHashField(String* string) {
 template <class AllocatorT>
 HeapObject* Deserializer<AllocatorT>::PostProcessNewObject(HeapObject* obj,
                                                            int space) {
+  if ((FLAG_rehash_snapshot && can_rehash_) || deserializing_user_code()) {
+    if (obj->IsString()) {
+      // Uninitialize hash field as we need to recompute the hash.
+      String* string = String::cast(obj);
+      string->set_hash_field(String::kEmptyHashField);
+    } else if (obj->NeedsRehashing()) {
+      to_rehash_.push_back(obj);
+    }
+  }
+
   if (deserializing_user_code()) {
     if (obj->IsString()) {
       String* string = String::cast(obj);
-      // Uninitialize hash field as the hash seed may have changed.
-      string->set_hash_field(String::kEmptyHashField);
       if (string->IsInternalizedString()) {
         // Canonicalize the internalized string. If it already exists in the
         // string table, set it to forward to the existing one.
         StringTableInsertionKey key(string);
-        String* canonical = StringTable::LookupKeyIfExists(isolate_, &key);
-        if (canonical == nullptr) {
-          new_internalized_strings_.push_back(handle(string));
-          return string;
-        } else {
-          string->SetForwardedInternalizedString(canonical);
-          return canonical;
-        }
+        String* canonical =
+            StringTable::ForwardStringIfExists(isolate_, &key, string);
+
+        if (canonical != nullptr) return canonical;
+
+        new_internalized_strings_.push_back(handle(string));
+        return string;
       }
     } else if (obj->IsScript()) {
       new_scripts_.push_back(handle(Script::cast(obj)));
@@ -174,6 +194,10 @@ HeapObject* Deserializer<AllocatorT>::PostProcessNewObject(HeapObject* obj,
     if (isolate_->external_reference_redirector()) {
       accessor_infos_.push_back(AccessorInfo::cast(obj));
     }
+  } else if (obj->IsCallHandlerInfo()) {
+    if (isolate_->external_reference_redirector()) {
+      call_handler_infos_.push_back(CallHandlerInfo::cast(obj));
+    }
   } else if (obj->IsExternalOneByteString()) {
     DCHECK(obj->map() == isolate_->heap()->native_source_string_map());
     ExternalOneByteString* string = ExternalOneByteString::cast(obj);
@@ -182,6 +206,21 @@ HeapObject* Deserializer<AllocatorT>::PostProcessNewObject(HeapObject* obj,
         NativesExternalStringResource::DecodeForDeserialization(
             string->resource()));
     isolate_->heap()->RegisterExternalString(string);
+  } else if (obj->IsJSTypedArray()) {
+    JSTypedArray* typed_array = JSTypedArray::cast(obj);
+    CHECK(typed_array->byte_offset()->IsSmi());
+    int32_t byte_offset = NumberToInt32(typed_array->byte_offset());
+    if (byte_offset > 0) {
+      FixedTypedArrayBase* elements =
+          FixedTypedArrayBase::cast(typed_array->elements());
+      // Must be off-heap layout.
+      DCHECK_NULL(elements->base_pointer());
+
+      void* pointer_with_offset = reinterpret_cast<void*>(
+          reinterpret_cast<intptr_t>(elements->external_pointer()) +
+          byte_offset);
+      elements->set_external_pointer(pointer_with_offset);
+    }
   } else if (obj->IsJSArrayBuffer()) {
     JSArrayBuffer* buffer = JSArrayBuffer::cast(obj);
     // Only fixup for the off-heap case.
@@ -199,18 +238,7 @@ HeapObject* Deserializer<AllocatorT>::PostProcessNewObject(HeapObject* obj,
     if (fta->base_pointer() == nullptr) {
       Smi* store_index = reinterpret_cast<Smi*>(fta->external_pointer());
       void* backing_store = off_heap_backing_stores_[store_index->value()];
-
       fta->set_external_pointer(backing_store);
-    }
-  }
-  if (FLAG_rehash_snapshot && can_rehash_ && !deserializing_user_code()) {
-    if (obj->IsString()) {
-      // Uninitialize hash field as we are going to reinitialize the hash seed.
-      String* string = String::cast(obj);
-      string->set_hash_field(String::kEmptyHashField);
-    } else if (obj->IsTransitionArray() &&
-               TransitionArray::cast(obj)->number_of_entries() > 1) {
-      transition_arrays_.push_back(TransitionArray::cast(obj));
     }
   }
   // Check alignment.
@@ -246,22 +274,12 @@ HeapObject* Deserializer<AllocatorT>::GetBackReferencedObject(int space) {
       break;
   }
 
-  if (deserializing_user_code() && obj->IsInternalizedString()) {
-    obj = String::cast(obj)->GetForwardedInternalizedString();
+  if (deserializing_user_code() && obj->IsThinString()) {
+    obj = ThinString::cast(obj)->actual();
   }
 
   hot_objects_.Add(obj);
   return obj;
-}
-
-template <class AllocatorT>
-void Deserializer<AllocatorT>::SortMapDescriptors() {
-  for (const auto& address : allocator()->GetAllocatedMaps()) {
-    Map* map = Map::cast(HeapObject::FromAddress(address));
-    if (map->instance_descriptors()->number_of_descriptors() > 1) {
-      map->instance_descriptors()->Sort();
-    }
-  }
 }
 
 // This routine writes the new object into the pointer provided and then

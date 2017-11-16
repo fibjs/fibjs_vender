@@ -148,6 +148,7 @@ const int kMinUInt16 = 0;
 const uint32_t kMaxUInt32 = 0xFFFFFFFFu;
 const int kMinUInt32 = 0;
 
+const int kUInt8Size = sizeof(uint8_t);
 const int kCharSize = sizeof(char);
 const int kShortSize = sizeof(short);  // NOLINT
 const int kIntSize = sizeof(int);
@@ -299,13 +300,6 @@ F FUNCTION_CAST(Address addr) {
 #define USES_FUNCTION_DESCRIPTORS 0
 #endif
 
-
-// -----------------------------------------------------------------------------
-// Forward declarations for frequently used classes
-// (sorted alphabetically)
-
-class FreeStoreAllocationPolicy;
-template <typename T, class P = FreeStoreAllocationPolicy> class List;
 
 // -----------------------------------------------------------------------------
 // Declarations for use in both the preparser and the rest of V8.
@@ -468,11 +462,9 @@ const uint32_t kQuietNaNHighBitsMask = 0xfff << (51 - 32);
 // Forward declarations for frequently used classes
 
 class AccessorInfo;
-class Allocation;
 class Arguments;
 class Assembler;
 class Code;
-class CodeGenerator;
 class CodeStub;
 class Context;
 class Debug;
@@ -482,10 +474,10 @@ class DescriptorArray;
 class TransitionArray;
 class ExternalReference;
 class FixedArray;
+class FreeStoreAllocationPolicy;
 class FunctionTemplateInfo;
 class MemoryChunk;
-class SeededNumberDictionary;
-class UnseededNumberDictionary;
+class NumberDictionary;
 class NameDictionary;
 class GlobalDictionary;
 template <typename T> class MaybeHandle;
@@ -624,6 +616,8 @@ enum MinimumCapacity {
 enum GarbageCollector { SCAVENGER, MARK_COMPACTOR, MINOR_MARK_COMPACTOR };
 
 enum Executability { NOT_EXECUTABLE, EXECUTABLE };
+
+enum Movability { kMovable, kImmovable };
 
 enum VisitMode {
   VISIT_ALL,
@@ -1447,18 +1441,18 @@ inline std::ostream& operator<<(std::ostream& os,
 
 enum class ConcurrencyMode { kNotConcurrent, kConcurrent };
 
-#define FOR_EACH_ISOLATE_ADDRESS_NAME(C)                \
-  C(Handler, handler)                                   \
-  C(CEntryFP, c_entry_fp)                               \
-  C(CFunction, c_function)                              \
-  C(Context, context)                                   \
-  C(PendingException, pending_exception)                \
-  C(PendingHandlerContext, pending_handler_context)     \
-  C(PendingHandlerCode, pending_handler_code)           \
-  C(PendingHandlerOffset, pending_handler_offset)       \
-  C(PendingHandlerFP, pending_handler_fp)               \
-  C(PendingHandlerSP, pending_handler_sp)               \
-  C(ExternalCaughtException, external_caught_exception) \
+#define FOR_EACH_ISOLATE_ADDRESS_NAME(C)                       \
+  C(Handler, handler)                                          \
+  C(CEntryFP, c_entry_fp)                                      \
+  C(CFunction, c_function)                                     \
+  C(Context, context)                                          \
+  C(PendingException, pending_exception)                       \
+  C(PendingHandlerContext, pending_handler_context)            \
+  C(PendingHandlerEntrypoint, pending_handler_entrypoint)      \
+  C(PendingHandlerConstantPool, pending_handler_constant_pool) \
+  C(PendingHandlerFP, pending_handler_fp)                      \
+  C(PendingHandlerSP, pending_handler_sp)                      \
+  C(ExternalCaughtException, external_caught_exception)        \
   C(JSEntrySP, js_entry_sp)
 
 enum IsolateAddressId {

@@ -160,14 +160,21 @@ class GlobalHandles::Node {
 
   bool IsInUse() const { return state() != FREE; }
 
+  bool IsPhantomCallback() const {
+    return weakness_type() == PHANTOM_WEAK ||
+           weakness_type() == PHANTOM_WEAK_2_EMBEDDER_FIELDS;
+  }
+
+  bool IsPhantomResetHandle() const {
+    return weakness_type() == PHANTOM_WEAK_RESET_HANDLE;
+  }
+
   bool IsPendingPhantomCallback() const {
-    return state() == PENDING &&
-           (weakness_type() == PHANTOM_WEAK ||
-            weakness_type() == PHANTOM_WEAK_2_EMBEDDER_FIELDS);
+    return state() == PENDING && IsPhantomCallback();
   }
 
   bool IsPendingPhantomResetHandle() const {
-    return state() == PENDING && weakness_type() == PHANTOM_WEAK_RESET_HANDLE;
+    return state() == PENDING && IsPhantomResetHandle();
   }
 
   bool IsRetainer() const {
@@ -613,29 +620,44 @@ bool GlobalHandles::IsWeak(Object** location) {
 }
 
 DISABLE_CFI_PERF
-void GlobalHandles::IterateWeakRoots(RootVisitor* v) {
+void GlobalHandles::IterateWeakRootsForFinalizers(RootVisitor* v) {
   for (NodeIterator it(this); !it.done(); it.Advance()) {
     Node* node = it.node();
-    if (node->IsWeakRetainer()) {
-      // Pending weak phantom handles die immediately. Everything else survives.
-      if (node->IsPendingPhantomResetHandle()) {
+    if (node->IsWeakRetainer() && node->state() == Node::PENDING) {
+      DCHECK(!node->IsPhantomCallback());
+      DCHECK(!node->IsPhantomResetHandle());
+      // Finalizers need to survive.
+      v->VisitRootPointer(Root::kGlobalHandles, node->location());
+    }
+  }
+}
+
+DISABLE_CFI_PERF
+void GlobalHandles::IterateWeakRootsForPhantomHandles(
+    WeakSlotCallback should_reset_handle) {
+  for (NodeIterator it(this); !it.done(); it.Advance()) {
+    Node* node = it.node();
+    if (node->IsWeakRetainer() && should_reset_handle(node->location())) {
+      if (node->IsPhantomResetHandle()) {
+        node->MarkPending();
         node->ResetPhantomHandle();
         ++number_of_phantom_handle_resets_;
-      } else if (node->IsPendingPhantomCallback()) {
+      } else if (node->IsPhantomCallback()) {
+        node->MarkPending();
         node->CollectPhantomCallbackData(isolate(),
                                          &pending_phantom_callbacks_);
-      } else {
-        v->VisitRootPointer(Root::kGlobalHandles, node->location());
       }
     }
   }
 }
 
-
-void GlobalHandles::IdentifyWeakHandles(WeakSlotCallback f) {
+void GlobalHandles::IdentifyWeakHandles(WeakSlotCallback should_reset_handle) {
   for (NodeIterator it(this); !it.done(); it.Advance()) {
-    if (it.node()->IsWeak() && f(it.node()->location())) {
-      it.node()->MarkPending();
+    Node* node = it.node();
+    if (node->IsWeak() && should_reset_handle(node->location())) {
+      if (!node->IsPhantomCallback() && !node->IsPhantomResetHandle()) {
+        node->MarkPending();
+      }
     }
   }
 }
@@ -643,8 +665,7 @@ void GlobalHandles::IdentifyWeakHandles(WeakSlotCallback f) {
 void GlobalHandles::IterateNewSpaceStrongAndDependentRoots(RootVisitor* v) {
   for (Node* node : new_space_nodes_) {
     if (node->IsStrongRetainer() ||
-        (node->IsWeakRetainer() && !node->is_independent() &&
-         node->is_active())) {
+        (node->IsWeakRetainer() && node->is_active())) {
       v->VisitRootPointer(Root::kGlobalHandles, node->location());
     }
   }
@@ -658,8 +679,7 @@ void GlobalHandles::IterateNewSpaceStrongAndDependentRootsAndIdentifyUnmodified(
       node->set_active(true);
     }
     if (node->IsStrongRetainer() ||
-        (node->IsWeakRetainer() && !node->is_independent() &&
-         node->is_active())) {
+        (node->IsWeakRetainer() && node->is_active())) {
       v->VisitRootPointer(Root::kGlobalHandles, node->location());
     }
   }
@@ -674,31 +694,55 @@ void GlobalHandles::IdentifyWeakUnmodifiedObjects(
   }
 }
 
-
 void GlobalHandles::MarkNewSpaceWeakUnmodifiedObjectsPending(
-    WeakSlotCallbackWithHeap is_unscavenged) {
+    WeakSlotCallbackWithHeap is_dead) {
   for (Node* node : new_space_nodes_) {
     DCHECK(node->is_in_new_space_list());
-    if ((node->is_independent() || !node->is_active()) && node->IsWeak() &&
-        is_unscavenged(isolate_->heap(), node->location())) {
-      node->MarkPending();
+    if (node->IsWeak() && is_dead(isolate_->heap(), node->location())) {
+      DCHECK(!node->is_active());
+      if (!node->IsPhantomCallback() && !node->IsPhantomResetHandle()) {
+        node->MarkPending();
+      }
     }
   }
 }
 
-void GlobalHandles::IterateNewSpaceWeakUnmodifiedRoots(RootVisitor* v) {
+void GlobalHandles::IterateNewSpaceWeakUnmodifiedRootsForFinalizers(
+    RootVisitor* v) {
   for (Node* node : new_space_nodes_) {
     DCHECK(node->is_in_new_space_list());
-    if ((node->is_independent() || !node->is_active()) &&
-        node->IsWeakRetainer()) {
-      // Pending weak phantom handles die immediately. Everything else survives.
-      if (node->IsPendingPhantomResetHandle()) {
-        node->ResetPhantomHandle();
-        ++number_of_phantom_handle_resets_;
-      } else if (node->IsPendingPhantomCallback()) {
-        node->CollectPhantomCallbackData(isolate(),
-                                         &pending_phantom_callbacks_);
+    if (!node->is_active() && node->IsWeakRetainer() &&
+        (node->state() == Node::PENDING)) {
+      DCHECK(!node->IsPhantomCallback());
+      DCHECK(!node->IsPhantomResetHandle());
+      // Finalizers need to survive.
+      v->VisitRootPointer(Root::kGlobalHandles, node->location());
+    }
+  }
+}
+
+void GlobalHandles::IterateNewSpaceWeakUnmodifiedRootsForPhantomHandles(
+    RootVisitor* v, WeakSlotCallbackWithHeap should_reset_handle) {
+  for (Node* node : new_space_nodes_) {
+    DCHECK(node->is_in_new_space_list());
+    if (!node->is_active() && node->IsWeakRetainer() &&
+        (node->state() != Node::PENDING)) {
+      DCHECK(node->IsPhantomResetHandle() || node->IsPhantomCallback());
+      if (should_reset_handle(isolate_->heap(), node->location())) {
+        if (node->IsPhantomResetHandle()) {
+          node->MarkPending();
+          node->ResetPhantomHandle();
+          ++number_of_phantom_handle_resets_;
+
+        } else if (node->IsPhantomCallback()) {
+          node->MarkPending();
+          node->CollectPhantomCallbackData(isolate(),
+                                           &pending_phantom_callbacks_);
+        } else {
+          UNREACHABLE();
+        }
       } else {
+        // Node survived and needs to be visited.
         v->VisitRootPointer(Root::kGlobalHandles, node->location());
       }
     }
@@ -727,15 +771,12 @@ int GlobalHandles::PostScavengeProcessing(
       // the freed_nodes.
       continue;
     }
-    // Skip dependent or unmodified handles. Their weak callbacks might expect
-    // to be
-    // called between two global garbage collection callbacks which
-    // are not called for minor collections.
-      if (!node->is_independent() && (node->is_active())) {
-        node->set_active(false);
-        continue;
-      }
+
+    // Active nodes are kept alive, so no further processing is requires.
+    if (node->is_active()) {
       node->set_active(false);
+      continue;
+    }
 
     if (node->PostGarbageCollectionProcessing(isolate_)) {
       if (initial_post_gc_processing_count != post_gc_processing_count_) {
@@ -746,6 +787,7 @@ int GlobalHandles::PostScavengeProcessing(
         return freed_nodes;
       }
     }
+
     if (!node->IsRetainer()) {
       freed_nodes++;
     }

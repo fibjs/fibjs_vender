@@ -59,6 +59,9 @@ class V8_EXPORT_PRIVATE BigInt : public HeapObject {
   // Exposed for tests, do not call directly. Use CompareToNumber() instead.
   static ComparisonResult CompareToDouble(Handle<BigInt> x, double y);
 
+  static Handle<BigInt> AsIntN(uint64_t n, Handle<BigInt> x);
+  static Handle<BigInt> AsUintN(uint64_t n, Handle<BigInt> x);
+
   DECL_CAST(BigInt)
   DECL_VERIFIER(BigInt)
   DECL_PRINTER(BigInt)
@@ -84,6 +87,9 @@ class V8_EXPORT_PRIVATE BigInt : public HeapObject {
 
   // ECMAScript's ToBigInt (throws for Number input)
   static MaybeHandle<BigInt> FromObject(Isolate* isolate, Handle<Object> obj);
+
+  // Specialized version of Exponentiate(FromNumber(2), n) for n >= 0.
+  static Handle<BigInt> PowerOfTwo(Isolate* isolate, uint64_t n);
 
   // The maximum length that the current implementation supports would be
   // kMaxInt / kDigitBits. However, we use a lower limit for now, because
@@ -118,10 +124,15 @@ class V8_EXPORT_PRIVATE BigInt : public HeapObject {
   static Rounding DecideRounding(Handle<BigInt> x, int mantissa_bits_unset,
                                  int digit_index, uint64_t current_digit);
 
+  // NOTE: If x is negative, don't rely on the sign of a non-zero result.
+  static Handle<BigInt> AbsoluteAsUintN(uint64_t n, Handle<BigInt> x);
+
   static Handle<BigInt> AbsoluteAdd(Handle<BigInt> x, Handle<BigInt> y,
                                     bool result_sign);
   static Handle<BigInt> AbsoluteSub(Handle<BigInt> x, Handle<BigInt> y,
                                     bool result_sign);
+  static Handle<BigInt> AbsoluteSubFromPowerOfTwo(uint64_t n, Handle<BigInt> y,
+                                                  bool result_sign);
   static Handle<BigInt> AbsoluteAddOne(Handle<BigInt> x, bool sign,
                                        BigInt* result_storage = nullptr);
   static Handle<BigInt> AbsoluteSubOne(Handle<BigInt> x, int result_length);
@@ -142,6 +153,7 @@ class V8_EXPORT_PRIVATE BigInt : public HeapObject {
                                     BigInt* result_storage = nullptr);
 
   static int AbsoluteCompare(Handle<BigInt> x, Handle<BigInt> y);
+  static int AbsoluteCompareToPowerOfTwo(Handle<BigInt> x, uint64_t n);
 
   static void MultiplyAccumulate(Handle<BigInt> multiplicand,
                                  digit_t multiplier, Handle<BigInt> accumulator,

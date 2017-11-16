@@ -163,6 +163,10 @@ void CodeAssembler::CallEpilogue() {
   }
 }
 
+bool CodeAssembler::Word32ShiftIsSafe() const {
+  return raw_assembler()->machine()->Word32ShiftIsSafe();
+}
+
 // static
 Handle<Code> CodeAssembler::GenerateCode(CodeAssemblerState* state) {
   DCHECK(!state->code_generated_);
@@ -465,12 +469,12 @@ TNode<WordT> CodeAssembler::IntPtrMul(SloppyTNode<WordT> left,
     if (is_right_constant) {
       return IntPtrConstant(left_constant * right_constant);
     }
-    if (left_constant == 1) {
-      return right;
+    if (base::bits::IsPowerOfTwo(left_constant)) {
+      return WordShl(right, WhichPowerOf2(left_constant));
     }
   } else if (is_right_constant) {
-    if (right_constant == 1) {
-      return left;
+    if (base::bits::IsPowerOfTwo(right_constant)) {
+      return WordShl(left, WhichPowerOf2(right_constant));
     }
   }
   return UncheckedCast<IntPtrT>(raw_assembler()->IntPtrMul(left, right));
@@ -1023,7 +1027,10 @@ Node* CodeAssembler::CallStubR(const CallInterfaceDescriptor& descriptor,
                                size_t result_size, Node* target, Node* context,
                                TArgs... args) {
   Node* nodes[] = {target, args..., context};
-  return CallStubN(descriptor, result_size, arraysize(nodes), nodes);
+  int input_count = arraysize(nodes);
+  if (context == nullptr) --input_count;
+  return CallStubN(descriptor, result_size, input_count, nodes,
+                   context != nullptr);
 }
 
 // Instantiate CallStubR() for argument counts used by CSA-generated code.
@@ -1035,10 +1042,11 @@ REPEAT_1_TO_11(INSTANTIATE, Node*)
 
 Node* CodeAssembler::CallStubN(const CallInterfaceDescriptor& descriptor,
                                size_t result_size, int input_count,
-                               Node* const* inputs) {
-  // 2 is for target and context.
-  DCHECK_LE(2, input_count);
-  int argc = input_count - 2;
+                               Node* const* inputs, bool pass_context) {
+  // implicit nodes are target and optionally context.
+  int implicit_nodes = pass_context ? 2 : 1;
+  DCHECK_LE(implicit_nodes, input_count);
+  int argc = input_count - implicit_nodes;
   DCHECK_LE(descriptor.GetParameterCount(), argc);
   // Extra arguments not mentioned in the descriptor are passed on the stack.
   int stack_parameter_count = argc - descriptor.GetRegisterParameterCount();
@@ -1046,7 +1054,8 @@ Node* CodeAssembler::CallStubN(const CallInterfaceDescriptor& descriptor,
   CallDescriptor* desc = Linkage::GetStubCallDescriptor(
       isolate(), zone(), descriptor, stack_parameter_count,
       CallDescriptor::kNoFlags, Operator::kNoProperties,
-      MachineType::AnyTagged(), result_size);
+      MachineType::AnyTagged(), result_size,
+      pass_context ? Linkage::kPassContext : Linkage::kNoContext);
 
   CallPrologue();
   Node* return_value = raw_assembler()->CallN(desc, input_count, inputs);

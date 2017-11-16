@@ -1097,13 +1097,11 @@ void V8HeapExplorer::ExtractMapReferences(int entry, Map* map) {
                        Map::kDescriptorsOffset);
   SetInternalReference(map, entry, "prototype", map->prototype(),
                        Map::kPrototypeOffset);
-#if V8_DOUBLE_FIELDS_UNBOXING
   if (FLAG_unbox_double_fields) {
     SetInternalReference(map, entry, "layout_descriptor",
                          map->layout_descriptor(),
                          Map::kLayoutDescriptorOffset);
   }
-#endif
   Object* constructor_or_backpointer = map->constructor_or_backpointer();
   if (constructor_or_backpointer->IsMap()) {
     TagObject(constructor_or_backpointer, "(back pointer)");
@@ -1463,7 +1461,7 @@ void V8HeapExplorer::ExtractElementReferences(JSObject* js_obj, int entry) {
       }
     }
   } else if (js_obj->HasDictionaryElements()) {
-    SeededNumberDictionary* dictionary = js_obj->element_dictionary();
+    NumberDictionary* dictionary = js_obj->element_dictionary();
     int length = dictionary->Capacity();
     for (int i = 0; i < length; ++i) {
       Object* k = dictionary->KeyAt(i);

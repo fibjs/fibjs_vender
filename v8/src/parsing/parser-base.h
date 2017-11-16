@@ -14,6 +14,7 @@
 #include "src/base/hashmap.h"
 #include "src/counters.h"
 #include "src/globals.h"
+#include "src/log.h"
 #include "src/messages.h"
 #include "src/parsing/expression-classifier.h"
 #include "src/parsing/func-name-inferrer.h"
@@ -236,6 +237,7 @@ class ParserBase {
   typedef typename Types::ObjectLiteralProperty ObjectLiteralPropertyT;
   typedef typename Types::ClassLiteralProperty ClassLiteralPropertyT;
   typedef typename Types::Suspend SuspendExpressionT;
+  typedef typename Types::RewritableExpression RewritableExpressionT;
   typedef typename Types::ExpressionList ExpressionListT;
   typedef typename Types::FormalParameters FormalParametersT;
   typedef typename Types::Statement StatementT;
@@ -251,9 +253,9 @@ class ParserBase {
 
   ParserBase(Zone* zone, Scanner* scanner, uintptr_t stack_limit,
              v8::Extension* extension, AstValueFactory* ast_value_factory,
-             RuntimeCallStats* runtime_call_stats, bool parsing_module,
              PendingCompilationErrorHandler* pending_error_handler,
-             bool parsing_on_main_thread = true)
+             RuntimeCallStats* runtime_call_stats, Logger* logger,
+             int script_id, bool parsing_module, bool parsing_on_main_thread)
       : scope_(nullptr),
         original_scope_(nullptr),
         function_state_(nullptr),
@@ -262,6 +264,7 @@ class ParserBase {
         ast_value_factory_(ast_value_factory),
         ast_node_factory_(ast_value_factory, zone),
         runtime_call_stats_(runtime_call_stats),
+        logger_(logger),
         parsing_on_main_thread_(parsing_on_main_thread),
         parsing_module_(parsing_module),
         stack_limit_(stack_limit),
@@ -271,6 +274,7 @@ class ParserBase {
         scanner_(scanner),
         default_eager_compile_hint_(FunctionLiteral::kShouldLazyCompile),
         function_literal_id_(0),
+        script_id_(script_id),
         allow_natives_(false),
         allow_harmony_do_expressions_(false),
         allow_harmony_function_sent_(false),
@@ -370,15 +374,6 @@ class ParserBase {
     Scope* const outer_scope_;
   };
 
-  struct DestructuringAssignment {
-   public:
-    DestructuringAssignment(ExpressionT expression, Scope* scope)
-        : assignment(expression), scope(scope) {}
-
-    ExpressionT assignment;
-    Scope* scope;
-  };
-
   class FunctionState final : public BlockState {
    public:
     FunctionState(FunctionState** function_state_stack, Scope** scope_stack,
@@ -400,12 +395,12 @@ class ParserBase {
     void SetDestructuringAssignmentsScope(int pos, Scope* scope) {
       for (int i = pos; i < destructuring_assignments_to_rewrite_.length();
            ++i) {
-        destructuring_assignments_to_rewrite_[i].scope = scope;
+        destructuring_assignments_to_rewrite_[i]->set_scope(scope);
       }
     }
 
-    const ZoneList<DestructuringAssignment>&
-        destructuring_assignments_to_rewrite() const {
+    const ZoneList<RewritableExpressionT>&
+    destructuring_assignments_to_rewrite() const {
       return destructuring_assignments_to_rewrite_;
     }
 
@@ -413,7 +408,7 @@ class ParserBase {
       return &reported_errors_;
     }
 
-    ZoneList<ExpressionT>* non_patterns_to_rewrite() {
+    ZoneList<RewritableExpressionT>* non_patterns_to_rewrite() {
       return &non_patterns_to_rewrite_;
     }
 
@@ -454,15 +449,16 @@ class ParserBase {
     };
 
    private:
-    void AddDestructuringAssignment(DestructuringAssignment pair) {
-      destructuring_assignments_to_rewrite_.Add(pair, scope_->zone());
+    void AddDestructuringAssignment(RewritableExpressionT expr) {
+      destructuring_assignments_to_rewrite_.Add(expr, scope_->zone());
     }
 
-    void AddNonPatternForRewriting(ExpressionT expr, bool* ok) {
+    void AddNonPatternForRewriting(RewritableExpressionT expr, bool* ok) {
       non_patterns_to_rewrite_.Add(expr, scope_->zone());
       if (non_patterns_to_rewrite_.length() >=
-          std::numeric_limits<uint16_t>::max())
+          std::numeric_limits<uint16_t>::max()) {
         *ok = false;
+      }
     }
 
     // Properties count estimation.
@@ -472,8 +468,8 @@ class ParserBase {
     FunctionState* outer_function_state_;
     DeclarationScope* scope_;
 
-    ZoneList<DestructuringAssignment> destructuring_assignments_to_rewrite_;
-    ZoneList<ExpressionT> non_patterns_to_rewrite_;
+    ZoneList<RewritableExpressionT> destructuring_assignments_to_rewrite_;
+    ZoneList<RewritableExpressionT> non_patterns_to_rewrite_;
 
     ZoneList<typename ExpressionClassifier::Error> reported_errors_;
 
@@ -561,24 +557,32 @@ class ParserBase {
           extends(parser->impl()->NullExpression()),
           properties(parser->impl()->NewClassPropertyList(4)),
           static_fields(parser->impl()->NewClassPropertyList(4)),
+          instance_fields(parser->impl()->NewClassPropertyList(4)),
           constructor(parser->impl()->NullExpression()),
           has_seen_constructor(false),
           has_name_static_property(false),
           has_static_computed_names(false),
           has_static_class_fields(false),
+          has_instance_class_fields(false),
           is_anonymous(false),
-          field_scope(nullptr) {}
+          static_fields_scope(nullptr),
+          instance_fields_scope(nullptr) {}
     Variable* variable;
     ExpressionT extends;
     typename Types::ClassPropertyList properties;
     typename Types::ClassPropertyList static_fields;
+    typename Types::ClassPropertyList instance_fields;
     FunctionLiteralT constructor;
+
+    // TODO(gsathya): Use a bitfield store all the booleans.
     bool has_seen_constructor;
     bool has_name_static_property;
     bool has_static_computed_names;
     bool has_static_class_fields;
+    bool has_instance_class_fields;
     bool is_anonymous;
-    DeclarationScope* field_scope;
+    DeclarationScope* static_fields_scope;
+    DeclarationScope* instance_fields_scope;
   };
 
   DeclarationScope* NewScriptScope() const {
@@ -649,6 +653,8 @@ class ParserBase {
     return pending_error_handler()->stack_overflow();
   }
   void set_stack_overflow() { pending_error_handler()->set_stack_overflow(); }
+  int script_id() { return script_id_; }
+  void set_script_id(int id) { script_id_ = id; }
 
   INLINE(Token::Value peek()) {
     if (stack_overflow()) return Token::ILLEGAL;
@@ -1104,8 +1110,8 @@ class ParserBase {
       bool* is_computed_name, bool* has_seen_constructor,
       ClassLiteralProperty::Kind* property_kind, bool* is_static,
       bool* has_name_static_property, bool* ok);
-  FunctionLiteralT ParseClassFieldForInitializer(bool has_initializer,
-                                                 bool* ok);
+  ExpressionT ParseClassFieldInitializer(ClassInfo* class_info, bool is_static,
+                                         bool* ok);
   ObjectLiteralPropertyT ParseObjectPropertyDefinition(
       ObjectLiteralChecker* checker, bool* is_computed_name,
       bool* is_rest_property, bool* ok);
@@ -1498,6 +1504,7 @@ class ParserBase {
   AstValueFactory* ast_value_factory_;  // Not owned.
   typename Types::Factory ast_node_factory_;
   RuntimeCallStats* runtime_call_stats_;
+  internal::Logger* logger_;
   bool parsing_on_main_thread_;
   const bool parsing_module_;
   uintptr_t stack_limit_;
@@ -1514,6 +1521,7 @@ class ParserBase {
   FunctionLiteral::EagerCompileHint default_eager_compile_hint_;
 
   int function_literal_id_;
+  int script_id_;
 
   bool allow_natives_;
   bool allow_harmony_do_expressions_;
@@ -2056,8 +2064,8 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseArrayLiteral(
   ExpressionT result =
       factory()->NewArrayLiteral(values, first_spread_index, pos);
   if (first_spread_index >= 0) {
-    result = factory()->NewRewritableExpression(result);
-    impl()->QueueNonPatternForRewriting(result, ok);
+    auto rewritable = factory()->NewRewritableExpression(result, scope());
+    impl()->QueueNonPatternForRewriting(rewritable, ok);
     if (!*ok) {
       // If the non-pattern rewriting mechanism is used in the future for
       // rewriting other things than spreads, this error message will have
@@ -2066,6 +2074,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseArrayLiteral(
       ReportMessage(MessageTemplate::kTooManySpreads);
       return impl()->NullExpression();
     }
+    result = rewritable;
   }
   return result;
 }
@@ -2297,31 +2306,10 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
     case PropertyKind::kShorthandProperty:
     case PropertyKind::kValueProperty:
       if (allow_harmony_class_fields()) {
-        bool has_initializer = Check(Token::ASSIGN);
-        ExpressionT initializer;
-        class_info->has_static_class_fields = true;
-        if (class_info->field_scope == nullptr) {
-          class_info->field_scope =
-              NewFunctionScope(FunctionKind::kConciseMethod);
-          // TODO(gsathya): Make scopes be non contiguous.
-          class_info->field_scope->set_start_position(
-              scanner()->location().end_pos);
-          scope()->SetLanguageMode(LanguageMode::kStrict);
-        }
-        if (has_initializer) {
-          FunctionState initializer_state(&function_state_, &scope_,
-                                          class_info->field_scope);
-          ExpressionClassifier expression_classifier(this);
-          initializer =
-              ParseAssignmentExpression(true, CHECK_OK_CUSTOM(NullExpression));
-          impl()->RewriteNonPattern(CHECK_OK_CUSTOM(NullExpression));
-        } else {
-          initializer = factory()->NewUndefinedLiteral(kNoSourcePosition);
-        }
-        class_info->field_scope->set_end_position(
-            scanner()->location().end_pos);
-        ExpectSemicolon(CHECK_OK_CUSTOM(NullLiteralProperty));
         *property_kind = ClassLiteralProperty::FIELD;
+        ExpressionT initializer = ParseClassFieldInitializer(
+            class_info, *is_static, CHECK_OK_CUSTOM(NullLiteralProperty));
+        ExpectSemicolon(CHECK_OK_CUSTOM(NullLiteralProperty));
         ClassLiteralPropertyT result = factory()->NewClassLiteralProperty(
             name_expression, initializer, *property_kind, *is_static,
             *is_computed_name);
@@ -2420,36 +2408,43 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
 }
 
 template <typename Impl>
-typename ParserBase<Impl>::FunctionLiteralT
-ParserBase<Impl>::ParseClassFieldForInitializer(bool has_initializer,
-                                                bool* ok) {
-  // Makes a concise method which evaluates and returns the initialized value
-  // (or undefined if absent).
-  FunctionKind kind = FunctionKind::kConciseMethod;
-  DeclarationScope* initializer_scope = NewFunctionScope(kind);
-  initializer_scope->set_start_position(scanner()->location().end_pos);
-  FunctionState initializer_state(&function_state_, &scope_, initializer_scope);
-  DCHECK_EQ(initializer_scope, scope());
-  scope()->SetLanguageMode(LanguageMode::kStrict);
-  ExpressionClassifier expression_classifier(this);
-  ExpressionT value;
-  if (has_initializer) {
-    value =
-        this->ParseAssignmentExpression(true, CHECK_OK_CUSTOM(NullExpression));
+typename ParserBase<Impl>::ExpressionT
+ParserBase<Impl>::ParseClassFieldInitializer(ClassInfo* class_info,
+                                             bool is_static, bool* ok) {
+  DeclarationScope* initializer_scope = is_static
+                                            ? class_info->static_fields_scope
+                                            : class_info->instance_fields_scope;
+
+  if (initializer_scope == nullptr) {
+    initializer_scope = NewFunctionScope(FunctionKind::kConciseMethod);
+    // TODO(gsathya): Make scopes be non contiguous.
+    initializer_scope->set_start_position(scanner()->location().end_pos);
+    initializer_scope->SetLanguageMode(LanguageMode::kStrict);
+  }
+
+  ExpressionT initializer;
+  if (Check(Token::ASSIGN)) {
+    FunctionState initializer_state(&function_state_, &scope_,
+                                    initializer_scope);
+    ExpressionClassifier expression_classifier(this);
+
+    initializer =
+        ParseAssignmentExpression(true, CHECK_OK_CUSTOM(NullExpression));
     impl()->RewriteNonPattern(CHECK_OK_CUSTOM(NullExpression));
   } else {
-    value = factory()->NewUndefinedLiteral(kNoSourcePosition);
+    initializer = factory()->NewUndefinedLiteral(kNoSourcePosition);
   }
+
   initializer_scope->set_end_position(scanner()->location().end_pos);
-  typename Types::StatementList body = impl()->NewStatementList(1);
-  body->Add(factory()->NewReturnStatement(value, kNoSourcePosition), zone());
-  FunctionLiteralT function_literal = factory()->NewFunctionLiteral(
-      impl()->EmptyIdentifierString(), initializer_scope, body,
-      initializer_state.expected_property_count(), 0, 0,
-      FunctionLiteral::kNoDuplicateParameters,
-      FunctionLiteral::kAnonymousExpression, default_eager_compile_hint_,
-      initializer_scope->start_position(), true, GetNextFunctionLiteralId());
-  return function_literal;
+  if (is_static) {
+    class_info->static_fields_scope = initializer_scope;
+    class_info->has_static_class_fields = true;
+  } else {
+    class_info->instance_fields_scope = initializer_scope;
+    class_info->has_instance_class_fields = true;
+  }
+
+  return initializer;
 }
 
 template <typename Impl>
@@ -2976,8 +2971,9 @@ ParserBase<Impl>::ParseAssignmentExpression(bool accept_IN, bool* ok) {
   ExpressionT result = factory()->NewAssignment(op, expression, right, pos);
 
   if (is_destructuring_assignment) {
-    result = factory()->NewRewritableExpression(result);
-    impl()->QueueDestructuringAssignmentForRewriting(result);
+    auto rewritable = factory()->NewRewritableExpression(result, scope());
+    impl()->QueueDestructuringAssignmentForRewriting(rewritable);
+    result = rewritable;
   }
 
   return result;
@@ -3085,6 +3081,7 @@ template <typename Impl>
 typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryExpression(
     int prec, bool accept_IN, bool* ok) {
   DCHECK_GE(prec, 4);
+  SourceRange right_range;
   ExpressionT x = ParseUnaryExpression(CHECK_OK);
   for (int prec1 = Precedence(peek(), accept_IN); prec1 >= prec; prec1--) {
     // prec1 >= 4
@@ -3092,16 +3089,23 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryExpression(
       impl()->RewriteNonPattern(CHECK_OK);
       BindingPatternUnexpectedToken();
       ArrowFormalParametersUnexpectedToken();
+
+      SourceRangeScope right_range_scope(scanner(), &right_range);
       Token::Value op = Next();
       int pos = position();
 
       const bool is_right_associative = op == Token::EXP;
       const int next_prec = is_right_associative ? prec1 : prec1 + 1;
       ExpressionT y = ParseBinaryExpression(next_prec, accept_IN, CHECK_OK);
+      right_range_scope.Finalize();
       impl()->RewriteNonPattern(CHECK_OK);
 
       if (impl()->ShortcutNumericLiteralBinaryExpression(&x, y, op, pos)) {
         continue;
+      }
+
+      if (op == Token::OR || op == Token::AND) {
+        impl()->RecordExpressionSourceRange(y, right_range);
       }
 
       // For now we distinguish between comparisons and other binary
@@ -4312,6 +4316,8 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
   RuntimeCallTimerScope runtime_timer(
       runtime_call_stats_,
       counters[Impl::IsPreParser()][parsing_on_main_thread_]);
+  base::ElapsedTimer timer;
+  if (V8_UNLIKELY(FLAG_log_function_events)) timer.Start();
 
   if (peek() == Token::ARROW && scanner_->HasAnyLineTerminatorBeforeNext()) {
     // ASI inserts `;` after arrow parameters if a line terminator is found.
@@ -4411,12 +4417,6 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
     impl()->RewriteDestructuringAssignments();
   }
 
-  if (FLAG_trace_preparse) {
-    Scope* scope = formal_parameters.scope;
-    PrintF("  [%s]: %i-%i (arrow function)\n",
-           is_lazy_top_level_function ? "Preparse no-resolution" : "Full parse",
-           scope->start_position(), scope->end_position());
-  }
   FunctionLiteralT function_literal = factory()->NewFunctionLiteral(
       impl()->EmptyIdentifierString(), formal_parameters.scope, body,
       expected_property_count, formal_parameters.num_parameters(),
@@ -4430,6 +4430,17 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
       formal_parameters.scope->start_position());
 
   impl()->AddFunctionForNameInference(function_literal);
+
+  if (V8_UNLIKELY((FLAG_log_function_events))) {
+    Scope* scope = formal_parameters.scope;
+    double ms = timer.Elapsed().InMillisecondsF();
+    const char* event_name =
+        is_lazy_top_level_function ? "preparse-no-resolution" : "parse";
+    const char* name = "arrow function";
+    logger_->FunctionEvent(event_name, nullptr, script_id(), ms,
+                           scope->start_position(), scope->end_position(), name,
+                           strlen(name));
+  }
 
   return function_literal;
 }

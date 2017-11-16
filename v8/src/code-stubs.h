@@ -37,10 +37,7 @@ class Node;
   V(JSEntry)                                  \
   V(MathPow)                                  \
   V(ProfileEntryHook)                         \
-  V(RecordWrite)                              \
-  V(StoreBufferOverflow)                      \
   V(StoreSlowElement)                         \
-  V(NameDictionaryLookup)                     \
   /* --- TurboFanCodeStubs --- */             \
   V(ArrayNoArgumentConstructor)               \
   V(ArraySingleArgumentConstructor)           \
@@ -79,35 +76,23 @@ class Node;
 
 // List of code stubs only used on PPC platforms.
 #ifdef V8_TARGET_ARCH_PPC
-#define CODE_STUB_LIST_PPC(V) \
-  V(DirectCEntry)             \
-  V(StoreRegistersState)      \
-  V(RestoreRegistersState)
+#define CODE_STUB_LIST_PPC(V) V(DirectCEntry)
 #else
 #define CODE_STUB_LIST_PPC(V)
 #endif
 
 // List of code stubs only used on MIPS platforms.
 #if V8_TARGET_ARCH_MIPS
-#define CODE_STUB_LIST_MIPS(V) \
-  V(DirectCEntry)              \
-  V(RestoreRegistersState)     \
-  V(StoreRegistersState)
+#define CODE_STUB_LIST_MIPS(V) V(DirectCEntry)
 #elif V8_TARGET_ARCH_MIPS64
-#define CODE_STUB_LIST_MIPS(V) \
-  V(DirectCEntry)              \
-  V(RestoreRegistersState)     \
-  V(StoreRegistersState)
+#define CODE_STUB_LIST_MIPS(V) V(DirectCEntry)
 #else
 #define CODE_STUB_LIST_MIPS(V)
 #endif
 
 // List of code stubs only used on S390 platforms.
 #ifdef V8_TARGET_ARCH_S390
-#define CODE_STUB_LIST_S390(V) \
-  V(DirectCEntry)              \
-  V(StoreRegistersState)       \
-  V(RestoreRegistersState)
+#define CODE_STUB_LIST_S390(V) V(DirectCEntry)
 #else
 #define CODE_STUB_LIST_S390(V)
 #endif
@@ -209,7 +194,7 @@ class CodeStub : public ZoneObject {
 
   // Returns whether the code generated for this stub needs to be allocated as
   // a fixed (non-moveable) code object.
-  virtual bool NeedsImmovableCode() { return false; }
+  virtual Movability NeedsImmovableCode() { return kMovable; }
 
   virtual void PrintName(std::ostream& os) const;        // NOLINT
   virtual void PrintBaseName(std::ostream& os) const;    // NOLINT
@@ -432,9 +417,7 @@ class TurboFanCodeStub : public CodeStub {
 }  // namespace v8
 
 #if V8_TARGET_ARCH_IA32
-#include "src/ia32/code-stubs-ia32.h"
 #elif V8_TARGET_ARCH_X64
-#include "src/x64/code-stubs-x64.h"
 #elif V8_TARGET_ARCH_ARM64
 #include "src/arm64/code-stubs-arm64.h"
 #elif V8_TARGET_ARCH_ARM
@@ -710,7 +693,7 @@ class CEntryStub : public PlatformCodeStub {
   bool is_builtin_exit() const { return FrameTypeBits::decode(minor_key_); }
   int result_size() const { return ResultSizeBits::decode(minor_key_); }
 
-  bool NeedsImmovableCode() override;
+  Movability NeedsImmovableCode() override;
 
   class SaveDoublesBits : public BitField<bool, 0, 1> {};
   class ArgvMode : public BitField<bool, 1, 1> {};
@@ -720,7 +703,6 @@ class CEntryStub : public PlatformCodeStub {
   DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
   DEFINE_PLATFORM_CODE_STUB(CEntry, PlatformCodeStub);
 };
-
 
 class JSEntryStub : public PlatformCodeStub {
  public:
@@ -1053,25 +1035,6 @@ class ProfileEntryHookStub : public PlatformCodeStub {
   DEFINE_PLATFORM_CODE_STUB(ProfileEntryHook, PlatformCodeStub);
 };
 
-
-class StoreBufferOverflowStub : public PlatformCodeStub {
- public:
-  StoreBufferOverflowStub(Isolate* isolate, SaveFPRegsMode save_fp)
-      : PlatformCodeStub(isolate) {
-    minor_key_ = SaveDoublesBits::encode(save_fp == kSaveFPRegs);
-  }
-
-  static void GenerateFixedRegStubsAheadOfTime(Isolate* isolate);
-  bool SometimesSetsUpAFrame() override { return false; }
-
- private:
-  bool save_doubles() const { return SaveDoublesBits::decode(minor_key_); }
-
-  class SaveDoublesBits : public BitField<bool, 0, 1> {};
-
-  DEFINE_NULL_CALL_INTERFACE_DESCRIPTOR();
-  DEFINE_PLATFORM_CODE_STUB(StoreBufferOverflow, PlatformCodeStub);
-};
 
 #undef DEFINE_CALL_INTERFACE_DESCRIPTOR
 #undef DEFINE_PLATFORM_CODE_STUB

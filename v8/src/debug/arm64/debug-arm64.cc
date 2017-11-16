@@ -61,6 +61,8 @@ const bool LiveEdit::kFrameDropperSupported = true;
 }  // namespace internal
 }  // namespace v8
 
+#undef __
+
 #endif  // V8_TARGET_ARCH_ARM64
 
 

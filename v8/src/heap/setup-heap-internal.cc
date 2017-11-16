@@ -11,6 +11,7 @@
 #include "src/factory.h"
 #include "src/heap-symbols.h"
 #include "src/heap/heap.h"
+#include "src/interpreter/interpreter.h"
 #include "src/isolate.h"
 #include "src/layout-descriptor.h"
 #include "src/lookup-cache.h"
@@ -111,6 +112,10 @@ bool Heap::CreateInitialMaps() {
     fixed_cow_array_map()->set_elements_kind(HOLEY_ELEMENTS);
     DCHECK_NE(fixed_array_map(), fixed_cow_array_map());
 
+    ALLOCATE_PARTIAL_MAP(FIXED_ARRAY_TYPE, kVariableSizeSentinel,
+                         descriptor_array)
+    descriptor_array_map()->set_elements_kind(PACKED_ELEMENTS);
+
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, undefined);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, null);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, the_hole);
@@ -168,10 +173,13 @@ bool Heap::CreateInitialMaps() {
 
   // Allocate the empty descriptor array.
   {
+    STATIC_ASSERT(DescriptorArray::kFirstIndex != 0);
     AllocationResult allocation =
         AllocateUninitializedFixedArray(DescriptorArray::kFirstIndex, TENURED);
     if (!allocation.To(&obj)) return false;
   }
+  // TODO(ishell): set map to |descriptor_array_map| once we can use it for all
+  // descriptor arrays.
   set_empty_descriptor_array(DescriptorArray::cast(obj));
   DescriptorArray::cast(obj)->set(DescriptorArray::kDescriptorLengthIndex,
                                   Smi::kZero);
@@ -182,6 +190,7 @@ bool Heap::CreateInitialMaps() {
   FinalizePartialMap(this, meta_map());
   FinalizePartialMap(this, fixed_array_map());
   FinalizePartialMap(this, fixed_cow_array_map());
+  FinalizePartialMap(this, descriptor_array_map());
   FinalizePartialMap(this, undefined_map());
   undefined_map()->set_is_undetectable();
   FinalizePartialMap(this, null_map());
@@ -288,7 +297,9 @@ bool Heap::CreateInitialMaps() {
 
     ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, hash_table)
     ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, ordered_hash_table)
-    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, unseeded_number_dictionary)
+    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, name_dictionary)
+    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, global_dictionary)
+    ALLOCATE_VARSIZE_MAP(HASH_TABLE_TYPE, number_dictionary)
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, function_context)
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, catch_context)
@@ -457,7 +468,7 @@ void Heap::CreateInitialObjects() {
 
   // Create the code_stubs dictionary. The initial size is set to avoid
   // expanding the dictionary during bootstrapping.
-  set_code_stubs(*UnseededNumberDictionary::New(isolate(), 128));
+  set_code_stubs(*NumberDictionary::New(isolate(), 128));
 
   {
     HandleScope scope(isolate());
@@ -549,9 +560,8 @@ void Heap::CreateInitialObjects() {
 
   set_script_list(Smi::kZero);
 
-  Handle<SeededNumberDictionary> slow_element_dictionary =
-      SeededNumberDictionary::New(isolate(), 1, TENURED,
-                                  USE_CUSTOM_MINIMUM_CAPACITY);
+  Handle<NumberDictionary> slow_element_dictionary =
+      NumberDictionary::New(isolate(), 1, TENURED, USE_CUSTOM_MINIMUM_CAPACITY);
   DCHECK(!slow_element_dictionary->HasSufficientCapacityToAdd(1));
   slow_element_dictionary->set_requires_slow_elements();
   set_empty_slow_element_dictionary(*slow_element_dictionary);
@@ -619,6 +629,11 @@ void Heap::CreateInitialObjects() {
   set_weak_stack_trace_list(Smi::kZero);
 
   set_noscript_shared_function_infos(Smi::kZero);
+
+  STATIC_ASSERT(interpreter::BytecodeOperands::kOperandScaleCount == 3);
+  set_deserialize_lazy_handler(Smi::kZero);
+  set_deserialize_lazy_handler_wide(Smi::kZero);
+  set_deserialize_lazy_handler_extra_wide(Smi::kZero);
 
   // Initialize context slot cache.
   isolate_->context_slot_cache()->Clear();

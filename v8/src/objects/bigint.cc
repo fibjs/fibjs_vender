@@ -485,8 +485,7 @@ MaybeHandle<String> BigInt::ToString(Handle<BigInt> bigint, int radix) {
 
 namespace {
 
-bool IsSafeInteger(Handle<HeapNumber> number) {
-  double value = number->value();
+bool IsSafeInteger(double value) {
   if (std::isnan(value) || std::isinf(value)) return false;
 
   // Let integer be ! ToInteger(value).
@@ -504,7 +503,7 @@ MaybeHandle<BigInt> BigInt::FromNumber(Isolate* isolate,
   if (number->IsSmi()) {
     return isolate->factory()->NewBigIntFromInt(Smi::cast(*number)->value());
   }
-  if (!IsSafeInteger(Handle<HeapNumber>::cast(number))) {
+  if (!IsSafeInteger(Handle<HeapNumber>::cast(number)->value())) {
     THROW_NEW_ERROR(isolate,
                     NewRangeError(MessageTemplate::kBigIntFromNumber, number),
                     BigInt);
@@ -530,14 +529,16 @@ MaybeHandle<BigInt> BigInt::FromObject(Isolate* isolate, Handle<Object> obj) {
   }
   if (obj->IsString()) {
     Handle<BigInt> n;
-    if (StringToBigInt(isolate, Handle<String>::cast(obj)).ToHandle(&n)) {
-      return n;
+    if (!StringToBigInt(isolate, Handle<String>::cast(obj)).ToHandle(&n)) {
+      THROW_NEW_ERROR(isolate,
+                      NewSyntaxError(MessageTemplate::kBigIntFromObject, obj),
+                      BigInt);
     }
-    // ... else fall through.
+    return n;
   }
 
   THROW_NEW_ERROR(
-      isolate, NewSyntaxError(MessageTemplate::kBigIntFromObject, obj), BigInt);
+      isolate, NewTypeError(MessageTemplate::kBigIntFromObject, obj), BigInt);
 }
 
 Handle<Object> BigInt::ToNumber(Handle<BigInt> x) {
@@ -735,6 +736,23 @@ Handle<BigInt> BigInt::AbsoluteSub(Handle<BigInt> x, Handle<BigInt> y,
   return result;
 }
 
+// Computes 2^n - abs(y), assuming 2^n >= abs(y).
+Handle<BigInt> BigInt::AbsoluteSubFromPowerOfTwo(uint64_t n, Handle<BigInt> y,
+                                                 bool result_sign) {
+  Handle<BigInt> x = PowerOfTwo(y->GetIsolate(), n);
+  digit_t borrow = x->InplaceSub(*y, 0);
+  for (int i = y->length(); borrow != 0; ++i) {
+    DCHECK_LT(i, x->length());
+    digit_t new_borrow = 0;
+    digit_t new_digit = digit_sub(x->digit(i), borrow, &new_borrow);
+    x->set_digit(i, new_digit);
+    borrow = new_borrow;
+  }
+  x->set_sign(result_sign);
+  x->RightTrim();
+  return x;
+}
+
 // Adds 1 to the absolute value of {x} and sets the result's sign to {sign}.
 // {result_storage} is optional; if present, it will be used to store the
 // result, otherwise a new BigInt will be allocated for the result.
@@ -898,6 +916,32 @@ int BigInt::AbsoluteCompare(Handle<BigInt> x, Handle<BigInt> y) {
   while (i >= 0 && x->digit(i) == y->digit(i)) i--;
   if (i < 0) return 0;
   return x->digit(i) > y->digit(i) ? 1 : -1;
+}
+
+// Like AbsoluteCompare but only for y = 2^n.
+int BigInt::AbsoluteCompareToPowerOfTwo(Handle<BigInt> x, uint64_t n) {
+  DCHECK_LE(n, kMaxSafeInteger);
+
+  int x_length = x->length();
+  uint64_t y_length = (n + kDigitBits) / kDigitBits;
+
+  if (static_cast<uint64_t>(x_length) < y_length) return -1;
+  if (static_cast<uint64_t>(x_length) > y_length) return +1;
+  DCHECK_NE(x_length, 0);
+
+  digit_t x_msd = x->digit(x_length - 1);
+  digit_t y_msd = static_cast<digit_t>(1) << (n % kDigitBits);
+  if (x_msd < y_msd) {
+    return -1;
+  } else if (x_msd > y_msd) {
+    return +1;
+  }
+
+  for (int i = 0; i < x_length - 1; ++i) {
+    if (x->digit(i) != 0) return 1;
+  }
+
+  return 0;
 }
 
 // Multiplies {multiplicand} with {multiplier} and adds the result to
@@ -1414,7 +1458,7 @@ MaybeHandle<String> BigInt::ToStringBasePowerOfTwo(Handle<BigInt> x,
 
   const int length = x->length();
   const bool sign = x->sign();
-  const int bits_per_char = base::bits::CountTrailingZeros32(radix);
+  const int bits_per_char = base::bits::CountTrailingZeros(radix);
   const int char_mask = radix - 1;
   // Compute the length of the resulting string: divide the bit length of the
   // BigInt by the number of bits representable per character (rounding up).
@@ -1584,6 +1628,96 @@ MaybeHandle<String> BigInt::ToStringGeneric(Handle<BigInt> x, int radix) {
   DCHECK(result->length() == pos);
   for (int i = 0; i < pos; i++) DCHECK_NE(chars[i], '?');
 #endif
+  return result;
+}
+
+Handle<BigInt> BigInt::AsIntN(uint64_t n, Handle<BigInt> x) {
+  DCHECK_LE(n, kMaxSafeInteger);
+
+  Handle<BigInt> result = AbsoluteAsUintN(n, x);
+  if (result->is_zero()) return result;
+  DCHECK_NE(n, 0);
+  DCHECK(!x->is_zero());
+
+  int comparison = AbsoluteCompareToPowerOfTwo(result, n - 1);
+
+  if (!x->sign()) {
+    // x is positive.  Note that result == x mod 2^n.
+    if (comparison < 0) return result;
+    // Return (x mod 2^n) - 2^n, which is -(2^n - x mod 2^n).
+    return AbsoluteSubFromPowerOfTwo(n, result, true);
+  }
+
+  // x is negative.  Note that abs(result) == -x mod 2^n.
+  // We use the following facts:
+  // a) (x mod 2^n) == 2^n - abs(result)
+  // b) (x mod 2^n) >= 2^(n-1)  iff
+  //    2^n - abs(result) >= 2^(n-1)  iff
+  //    2^(n-1) >= abs(result)  iff
+  //    comparison <= 0
+  if (comparison <= 0) {
+    // Return (x mod 2^n) - 2^n, which is -abs(result).
+    return result->sign() ? result : UnaryMinus(result);
+  }
+  // Return x mod 2^n.
+  return AbsoluteSubFromPowerOfTwo(n, result, false);
+}
+
+Handle<BigInt> BigInt::AsUintN(uint64_t n, Handle<BigInt> x) {
+  DCHECK_LE(n, kMaxSafeInteger);
+  Handle<BigInt> result = AbsoluteAsUintN(n, x);
+  if (!x->sign()) return result;
+
+  // x is negative.  Note that abs(result) == -x mod 2^n.
+  // We use the following facts:
+  // a) If result == 0, then (x mod 2^n) == 0.
+  // b) If result != 0, then (x mod 2^n) == 2^n - abs(result).
+  if (result->is_zero()) return result;
+  return AbsoluteSubFromPowerOfTwo(n, result, false);
+}
+
+Handle<BigInt> BigInt::AbsoluteAsUintN(uint64_t n, Handle<BigInt> x) {
+  DCHECK_LE(n, kMaxSafeInteger);
+  Isolate* isolate = x->GetIsolate();
+  if (n == 0) return isolate->factory()->NewBigIntFromInt(0);
+
+  uint64_t total_bits = x->length() * kDigitBits;
+  if (total_bits <= n) return x;
+  DCHECK_LE(n, kMaxInt);
+  int N = static_cast<int>(n);
+
+  int needed_digits = (N + (kDigitBits - 1)) / kDigitBits;
+  DCHECK_LE(needed_digits, x->length());
+  Handle<BigInt> result = isolate->factory()->NewBigIntRaw(needed_digits);
+
+  // Copy all digits except the MSD.
+  int last = needed_digits - 1;
+  for (int i = 0; i < last; i++) {
+    result->set_digit(i, x->digit(i));
+  }
+
+  // The MSD might contain extra bits that we don't want.
+  digit_t msd = x->digit(last);
+  digit_t mask = std::numeric_limits<digit_t>::max();
+  if (N % kDigitBits != 0) mask = mask >> (kDigitBits - (N % kDigitBits));
+  result->set_digit(last, msd & mask);
+
+  result->RightTrim();
+  return result;
+}
+
+Handle<BigInt> BigInt::PowerOfTwo(Isolate* isolate, uint64_t n) {
+  DCHECK_LE(n, kMaxSafeInteger);
+  STATIC_ASSERT(kMaxLengthBits < kMaxInt);
+  // Truncate n to (1 + kMaxLengthBits), such that it doesn't overflow int but
+  // still causes the allocation to fail if it was too large.
+  int needed_bits =
+      1 + static_cast<int>(std::min(n, static_cast<uint64_t>(kMaxLengthBits)));
+  int needed_digits = (needed_bits + (kDigitBits - 1)) / kDigitBits;
+  Handle<BigInt> result = isolate->factory()->NewBigInt(needed_digits);
+  // All bits are zero. Now set the "n-th" bit.
+  digit_t msd = static_cast<digit_t>(1) << (n % kDigitBits);
+  result->set_digit(needed_digits - 1, msd);
   return result;
 }
 

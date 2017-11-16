@@ -31,19 +31,9 @@ BUILTIN(BigIntConstructor) {
 
 BUILTIN(BigIntConstructor_ConstructStub) {
   HandleScope scope(isolate);
-  Handle<Object> value = args.atOrUndefined(isolate, 1);
-  Handle<JSFunction> target = args.target();
-  Handle<JSReceiver> new_target = Handle<JSReceiver>::cast(args.new_target());
-  DCHECK(*target == target->native_context()->bigint_function());
-  Handle<JSObject> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
-                                     JSObject::New(target, new_target));
-
-  // TODO(jkummerow): Implement.
-  USE(value);
-  USE(result);
-
-  UNIMPLEMENTED();
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kNotConstructor,
+                            isolate->factory()->BigInt_string()));
 }
 
 BUILTIN(BigIntParseInt) {
@@ -79,11 +69,16 @@ BUILTIN(BigIntAsUintN) {
   Handle<Object> bits_obj = args.atOrUndefined(isolate, 1);
   Handle<Object> bigint_obj = args.atOrUndefined(isolate, 2);
 
-  // TODO(jkummerow): Implement.
-  USE(bits_obj);
-  USE(bigint_obj);
+  Handle<Object> bits;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, bits,
+      Object::ToIndex(isolate, bits_obj, MessageTemplate::kInvalidIndex));
 
-  UNIMPLEMENTED();
+  Handle<BigInt> bigint;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, bigint,
+                                     BigInt::FromObject(isolate, bigint_obj));
+
+  return *BigInt::AsUintN(bits->Number(), bigint);
 }
 
 BUILTIN(BigIntAsIntN) {
@@ -91,11 +86,16 @@ BUILTIN(BigIntAsIntN) {
   Handle<Object> bits_obj = args.atOrUndefined(isolate, 1);
   Handle<Object> bigint_obj = args.atOrUndefined(isolate, 2);
 
-  // TODO(jkummerow): Implement.
-  USE(bits_obj);
-  USE(bigint_obj);
+  Handle<Object> bits;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, bits,
+      Object::ToIndex(isolate, bits_obj, MessageTemplate::kInvalidIndex));
 
-  UNIMPLEMENTED();
+  Handle<BigInt> bigint;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, bigint,
+                                     BigInt::FromObject(isolate, bigint_obj));
+
+  return *BigInt::AsIntN(bits->Number(), bigint);
 }
 
 BUILTIN(BigIntPrototypeToLocaleString) {

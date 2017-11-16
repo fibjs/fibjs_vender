@@ -23,6 +23,7 @@ StartupSerializer::StartupSerializer(
 
 StartupSerializer::~StartupSerializer() {
   RestoreExternalReferenceRedirectors(accessor_infos_);
+  RestoreExternalReferenceRedirectors(call_handler_infos_);
   OutputStatistics("StartupSerializer");
 }
 
@@ -62,6 +63,13 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     Address original_address = Foreign::cast(info->getter())->foreign_address();
     Foreign::cast(info->js_getter())->set_foreign_address(original_address);
     accessor_infos_.push_back(info);
+  } else if (isolate()->external_reference_redirector() &&
+             obj->IsCallHandlerInfo()) {
+    CallHandlerInfo* info = CallHandlerInfo::cast(obj);
+    Address original_address =
+        Foreign::cast(info->callback())->foreign_address();
+    Foreign::cast(info->js_callback())->set_foreign_address(original_address);
+    call_handler_infos_.push_back(info);
   } else if (obj->IsScript() && Script::cast(obj)->IsUserJavaScript()) {
     Script::cast(obj)->set_context_data(
         isolate()->heap()->uninitialized_symbol());
@@ -73,7 +81,7 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     }
   }
 
-  if (obj->IsHashTable()) CheckRehashability(obj);
+  CheckRehashability(obj);
 
   // Object has not yet been serialized.  Serialize it here.
   ObjectSerializer object_serializer(this, obj, &sink_, how_to_code,
@@ -174,17 +182,15 @@ bool StartupSerializer::RootShouldBeSkipped(int root_index) {
          serializing_immortal_immovables_roots_;
 }
 
-void StartupSerializer::CheckRehashability(HeapObject* table) {
-  DCHECK(table->IsHashTable());
+void StartupSerializer::CheckRehashability(HeapObject* obj) {
   if (!can_be_rehashed_) return;
+  if (!obj->NeedsRehashing()) return;
+  if (obj->CanBeRehashed()) return;
   // We can only correctly rehash if the four hash tables below are the only
   // ones that we deserialize.
-  if (table->IsUnseededNumberDictionary()) return;
-  if (table == isolate()->heap()->empty_ordered_hash_table()) return;
-  if (table == isolate()->heap()->empty_slow_element_dictionary()) return;
-  if (table == isolate()->heap()->empty_property_dictionary()) return;
-  if (table == isolate()->heap()->weak_object_to_code_table()) return;
-  if (table == isolate()->heap()->string_table()) return;
+  if (obj == isolate()->heap()->empty_ordered_hash_table()) return;
+  if (obj == isolate()->heap()->weak_object_to_code_table()) return;
+  if (obj == isolate()->heap()->string_table()) return;
   can_be_rehashed_ = false;
 }
 

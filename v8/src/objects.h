@@ -1013,6 +1013,7 @@ template <class C> inline bool Is(Object* obj);
   V(FrameArray)                           \
   V(FreeSpace)                            \
   V(Function)                             \
+  V(GlobalDictionary)                     \
   V(HandlerTable)                         \
   V(HeapNumber)                           \
   V(InternalizedString)                   \
@@ -1056,6 +1057,7 @@ template <class C> inline bool Is(Object* obj);
   V(ModuleInfo)                           \
   V(MutableHeapNumber)                    \
   V(Name)                                 \
+  V(NameDictionary)                       \
   V(NativeContext)                        \
   V(NormalizedMapCache)                   \
   V(ObjectHashSet)                        \
@@ -1069,6 +1071,7 @@ template <class C> inline bool Is(Object* obj);
   V(RegExpMatchInfo)                      \
   V(ScopeInfo)                            \
   V(ScriptContextTable)                   \
+  V(NumberDictionary)                     \
   V(SeqOneByteString)                     \
   V(SeqString)                            \
   V(SeqTwoByteString)                     \
@@ -1093,7 +1096,6 @@ template <class C> inline bool Is(Object* obj);
   V(TypeFeedbackInfo)                     \
   V(Undetectable)                         \
   V(UniqueName)                           \
-  V(UnseededNumberDictionary)             \
   V(WasmInstanceObject)                   \
   V(WasmMemoryObject)                     \
   V(WasmModuleObject)                     \
@@ -1182,9 +1184,6 @@ class Object {
   // ES6, #sec-isarray.  NOT to be confused with %_IsArray.
   INLINE(MUST_USE_RESULT static Maybe<bool> IsArray(Handle<Object> object));
 
-  INLINE(bool IsNameDictionary() const);
-  INLINE(bool IsGlobalDictionary() const);
-  INLINE(bool IsSeededNumberDictionary() const);
   INLINE(bool IsOrderedHashSet() const);
   INLINE(bool IsOrderedHashMap() const);
   INLINE(bool IsSmallOrderedHashTable() const);
@@ -1722,6 +1721,8 @@ class HeapObject: public Object {
   HEAP_OBJECT_TYPE_LIST(IS_TYPE_FUNCTION_DECL)
 #undef IS_TYPE_FUNCTION_DECL
 
+  inline bool IsDescriptorArrayTemplate() const;
+
 #define IS_TYPE_FUNCTION_DECL(Type, Value) \
   INLINE(bool Is##Type(Isolate* isolate) const);
   ODDBALL_LIST(IS_TYPE_FUNCTION_DECL)
@@ -1815,6 +1816,19 @@ class HeapObject: public Object {
 #endif
 
   inline AllocationAlignment RequiredAlignment() const;
+
+  // Whether the object needs rehashing. That is the case if the object's
+  // content depends on FLAG_hash_seed. When the object is deserialized into
+  // a heap with a different hash seed, these objects need to adapt.
+  inline bool NeedsRehashing() const;
+
+  // Rehashing support is not implemented for all objects that need rehashing.
+  // With objects that need rehashing but cannot be rehashed, rehashing has to
+  // be disabled.
+  bool CanBeRehashed() const;
+
+  // Rehash the object based on the layout inferred from its map.
+  void RehashBasedOnMap();
 
   // Layout description.
   // First field in a heap object is map.
@@ -1980,6 +1994,9 @@ class JSReceiver: public HeapObject {
   // Gets slow properties for non-global objects.
   inline NameDictionary* property_dictionary() const;
 
+  // Sets the properties backing store and makes sure any existing hash is moved
+  // to the new properties store. To clear out the properties store, pass in the
+  // empty_fixed_array(), the hash will be maintained in this case as well.
   void SetProperties(HeapObject* properties);
 
   // There are five possible values for the properties offset.
@@ -2277,7 +2294,7 @@ class JSObject: public JSReceiver {
   inline bool HasSlowStringWrapperElements();
   bool HasEnumerableElements();
 
-  inline SeededNumberDictionary* element_dictionary();  // Gets slow elements.
+  inline NumberDictionary* element_dictionary();  // Gets slow elements.
 
   // Requires: HasFastElements().
   static void EnsureWritableFastElements(Handle<JSObject> object);
@@ -2512,11 +2529,10 @@ class JSObject: public JSReceiver {
                                   const char* reason);
 
   // Convert and update the elements backing store to be a
-  // SeededNumberDictionary dictionary.  Returns the backing after conversion.
-  static Handle<SeededNumberDictionary> NormalizeElements(
-      Handle<JSObject> object);
+  // NumberDictionary dictionary.  Returns the backing after conversion.
+  static Handle<NumberDictionary> NormalizeElements(Handle<JSObject> object);
 
-  void RequireSlowElements(SeededNumberDictionary* dictionary);
+  void RequireSlowElements(NumberDictionary* dictionary);
 
   // Transform slow named properties to fast variants.
   static void MigrateSlowToFast(Handle<JSObject> object,
@@ -5386,15 +5402,19 @@ class InterceptorInfo: public Struct {
   DISALLOW_IMPLICIT_CONSTRUCTORS(InterceptorInfo);
 };
 
-class CallHandlerInfo : public Tuple2 {
+class CallHandlerInfo : public Tuple3 {
  public:
   DECL_ACCESSORS(callback, Object)
+  DECL_ACCESSORS(js_callback, Object)
   DECL_ACCESSORS(data, Object)
 
   DECL_CAST(CallHandlerInfo)
 
+  Address redirected_callback() const;
+
   static const int kCallbackOffset = kValue1Offset;
-  static const int kDataOffset = kValue2Offset;
+  static const int kJsCallbackOffset = kValue2Offset;
+  static const int kDataOffset = kValue3Offset;
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(CallHandlerInfo);
@@ -5647,7 +5667,7 @@ class StackFrameInfo : public Struct {
 class SourcePositionTableWithFrameCache : public Tuple2 {
  public:
   DECL_ACCESSORS(source_position_table, ByteArray)
-  DECL_ACCESSORS(stack_frame_cache, UnseededNumberDictionary)
+  DECL_ACCESSORS(stack_frame_cache, NumberDictionary)
 
   DECL_CAST(SourcePositionTableWithFrameCache)
 

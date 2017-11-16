@@ -100,7 +100,7 @@ Handle<PrototypeInfo> Factory::NewPrototypeInfo() {
       Handle<PrototypeInfo>::cast(NewStruct(PROTOTYPE_INFO_TYPE, TENURED));
   result->set_prototype_users(WeakFixedArray::Empty());
   result->set_registry_slot(PrototypeInfo::UNREGISTERED);
-  result->set_validity_cell(Smi::kZero);
+  result->set_validity_cell(Smi::FromInt(Map::kPrototypeChainValid));
   result->set_bit_field(0);
   return result;
 }
@@ -181,6 +181,7 @@ Handle<FixedArray> Factory::NewFixedArray(int size, PretenureFlag pretenure) {
 Handle<PropertyArray> Factory::NewPropertyArray(int size,
                                                 PretenureFlag pretenure) {
   DCHECK_LE(0, size);
+  if (size == 0) return empty_property_array();
   CALL_HEAP_FUNCTION(isolate(),
                      isolate()->heap()->AllocatePropertyArray(size, pretenure),
                      PropertyArray);
@@ -835,7 +836,7 @@ Handle<String> Factory::NewProperSubString(Handle<String> str,
     return MakeOrFindTwoCharacterString(isolate(), c1, c2);
   }
 
-  if (length < SlicedString::kMinLength) {
+  if (!FLAG_string_slices || length < SlicedString::kMinLength) {
     if (str->IsOneByteRepresentation()) {
       Handle<SeqOneByteString> result =
           NewRawOneByteString(length).ToHandleChecked();
@@ -1331,6 +1332,7 @@ Handle<FixedArray> Factory::CopyFixedArrayAndGrow(Handle<FixedArray> array,
 
 Handle<PropertyArray> Factory::CopyPropertyArrayAndGrow(
     Handle<PropertyArray> array, int grow_by, PretenureFlag pretenure) {
+  DCHECK_LE(0, grow_by);
   CALL_HEAP_FUNCTION(
       isolate(),
       isolate()->heap()->CopyArrayAndGrow(*array, grow_by, pretenure),
@@ -1565,19 +1567,32 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   return function;
 }
 
-Handle<JSFunction> Factory::NewFunction(Handle<Map> map, Handle<String> name,
-                                        MaybeHandle<Code> maybe_code) {
-  DCHECK(!name.is_null());
+Handle<JSFunction> Factory::NewFunctionForTest(Handle<String> name) {
+  NewFunctionArgs args = NewFunctionArgs::ForFunctionWithoutCode(
+      name, isolate()->sloppy_function_map(), LanguageMode::kSloppy);
+  Handle<JSFunction> result = NewFunction(args);
+  DCHECK(is_sloppy(result->shared()->language_mode()));
+  return result;
+}
+
+Handle<JSFunction> Factory::NewFunction(const NewFunctionArgs& args) {
+  DCHECK(!args.name_.is_null());
+
+  // Create the SharedFunctionInfo.
   Handle<Context> context(isolate()->native_context());
+  Handle<Map> map = args.GetMap(isolate());
   Handle<SharedFunctionInfo> info =
-      NewSharedFunctionInfo(name, maybe_code, map->is_constructor());
-  // Proper language mode in shared function info will be set outside.
+      NewSharedFunctionInfo(args.name_, args.maybe_code_, map->is_constructor(),
+                            kNormalFunction, args.maybe_builtin_id_);
+
+  // Proper language mode in shared function info will be set later.
   DCHECK(is_sloppy(info->language_mode()));
   DCHECK(!map->IsUndefined(isolate()));
+
 #ifdef DEBUG
   if (isolate()->bootstrapper()->IsActive()) {
     Handle<Code> code;
-    bool has_code = maybe_code.ToHandle(&code);
+    bool has_code = args.maybe_code_.ToHandle(&code);
     DCHECK(
         // During bootstrapping some of these maps could be not created yet.
         (*map == context->get(Context::STRICT_FUNCTION_MAP_INDEX)) ||
@@ -1600,80 +1615,47 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map, Handle<String> name,
         (*map == *isolate()->native_function_map()));
   }
 #endif
-  return NewFunction(map, info, context);
-}
 
+  Handle<JSFunction> result = NewFunction(map, info, context);
 
-Handle<JSFunction> Factory::NewFunction(Handle<String> name) {
-  Handle<JSFunction> result =
-      NewFunction(isolate()->sloppy_function_map(), name, MaybeHandle<Code>());
-  DCHECK(is_sloppy(result->shared()->language_mode()));
-  return result;
-}
-
-Handle<JSFunction> Factory::NewFunctionWithoutPrototype(
-    Handle<String> name, Handle<Code> code, LanguageMode language_mode) {
-  Handle<Map> map = is_strict(language_mode)
-                        ? isolate()->strict_function_without_prototype_map()
-                        : isolate()->sloppy_function_without_prototype_map();
-  Handle<JSFunction> result = NewFunction(map, name, code);
-  result->shared()->set_language_mode(language_mode);
-  return result;
-}
-
-Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
-                                        Handle<Object> prototype,
-                                        LanguageMode language_mode,
-                                        MutableMode prototype_mutability) {
-  Handle<Map> map;
-  if (prototype_mutability == MUTABLE) {
-    map = is_strict(language_mode) ? isolate()->strict_function_map()
-                                   : isolate()->sloppy_function_map();
-  } else {
-    map = is_strict(language_mode)
-              ? isolate()->strict_function_with_readonly_prototype_map()
-              : isolate()->sloppy_function_with_readonly_prototype_map();
+  if (args.should_set_prototype_) {
+    result->set_prototype_or_initial_map(
+        *args.maybe_prototype_.ToHandleChecked());
   }
-  Handle<JSFunction> result = NewFunction(map, name, code);
-  result->set_prototype_or_initial_map(*prototype);
-  result->shared()->set_language_mode(language_mode);
-  return result;
-}
 
-Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
-                                        Handle<Object> prototype,
-                                        InstanceType type, int instance_size,
-                                        int inobject_properties,
-                                        LanguageMode language_mode,
-                                        MutableMode prototype_mutability) {
-  // Allocate the function
-  Handle<JSFunction> function =
-      NewFunction(name, code, prototype, language_mode, prototype_mutability);
+  if (args.should_set_language_mode_) {
+    result->shared()->set_language_mode(args.language_mode_);
+  }
 
-  ElementsKind elements_kind =
-      type == JS_ARRAY_TYPE ? PACKED_SMI_ELEMENTS : HOLEY_SMI_ELEMENTS;
-  Handle<Map> initial_map =
-      NewMap(type, instance_size, elements_kind, inobject_properties);
-  // TODO(littledan): Why do we have this is_generator test when
-  // NewFunctionPrototype already handles finding an appropriately
-  // shared prototype?
-  if (!IsResumableFunction(function->shared()->kind())) {
-    if (prototype->IsTheHole(isolate())) {
-      prototype = NewFunctionPrototype(function);
+  if (args.should_create_and_set_initial_map_) {
+    ElementsKind elements_kind;
+    switch (args.type_) {
+      case JS_ARRAY_TYPE:
+        elements_kind = PACKED_SMI_ELEMENTS;
+        break;
+      case JS_ARGUMENTS_TYPE:
+        elements_kind = PACKED_ELEMENTS;
+        break;
+      default:
+        elements_kind = TERMINAL_FAST_ELEMENTS_KIND;
+        break;
     }
+    Handle<Map> initial_map = NewMap(args.type_, args.instance_size_,
+                                     elements_kind, args.inobject_properties_);
+    // TODO(littledan): Why do we have this is_generator test when
+    // NewFunctionPrototype already handles finding an appropriately
+    // shared prototype?
+    Handle<Object> prototype = args.maybe_prototype_.ToHandleChecked();
+    if (!IsResumableFunction(result->shared()->kind())) {
+      if (prototype->IsTheHole(isolate())) {
+        prototype = NewFunctionPrototype(result);
+      }
+    }
+    JSFunction::SetInitialMap(result, initial_map, prototype);
   }
-  JSFunction::SetInitialMap(function, initial_map, prototype);
-  return function;
-}
 
-Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
-                                        InstanceType type, int instance_size,
-                                        int inobject_properties) {
-  DCHECK(isolate()->bootstrapper()->IsActive());
-  return NewFunction(name, code, the_hole_value(), type, instance_size,
-                     inobject_properties, LanguageMode::kStrict);
+  return result;
 }
-
 
 Handle<JSObject> Factory::NewFunctionPrototype(Handle<JSFunction> function) {
   // Make sure to use globals from the function's context, since the function
@@ -1810,9 +1792,9 @@ Handle<CodeDataContainer> Factory::NewCodeDataContainer(int flags) {
   return data_container;
 }
 
-Handle<Code> Factory::NewCodeRaw(int object_size, bool immovable) {
+Handle<Code> Factory::NewCodeRaw(int object_size, Movability movability) {
   CALL_HEAP_FUNCTION(isolate(),
-                     isolate()->heap()->AllocateCode(object_size, immovable),
+                     isolate()->heap()->AllocateCode(object_size, movability),
                      Code);
 }
 
@@ -1820,7 +1802,7 @@ Handle<Code> Factory::NewCode(
     const CodeDesc& desc, Code::Kind kind, Handle<Object> self_ref,
     MaybeHandle<HandlerTable> maybe_handler_table,
     MaybeHandle<ByteArray> maybe_source_position_table,
-    MaybeHandle<DeoptimizationData> maybe_deopt_data, bool immovable,
+    MaybeHandle<DeoptimizationData> maybe_deopt_data, Movability movability,
     uint32_t stub_key, bool is_turbofanned, int stack_slots,
     int safepoint_table_offset) {
   Handle<ByteArray> reloc_info = NewByteArray(desc.reloc_size, TENURED);
@@ -1851,7 +1833,7 @@ Handle<Code> Factory::NewCode(
   int obj_size = Code::SizeFor(RoundUp(body_size, kObjectAlignment));
 
   CodeSpaceMemoryModificationScope code_allocation(isolate()->heap());
-  Handle<Code> code = NewCodeRaw(obj_size, immovable);
+  Handle<Code> code = NewCodeRaw(obj_size, movability);
   DCHECK(!isolate()->heap()->memory_allocator()->code_range()->valid() ||
          isolate()->heap()->memory_allocator()->code_range()->contains(
              code->address()) ||
@@ -1883,6 +1865,7 @@ Handle<Code> Factory::NewCode(
       code->set_marked_for_deoptimization(false);
       break;
     case Code::JS_TO_WASM_FUNCTION:
+    case Code::C_WASM_ENTRY:
     case Code::WASM_FUNCTION:
       code->set_has_tagged_params(false);
       break;
@@ -1910,8 +1893,7 @@ Handle<Code> Factory::NewCode(
 }
 
 Handle<Code> Factory::NewCodeForDeserialization(uint32_t size) {
-  const bool kNotImmovable = false;
-  return NewCodeRaw(size, kNotImmovable);
+  return NewCodeRaw(size, kMovable);
 }
 
 Handle<Code> Factory::CopyCode(Handle<Code> code) {
@@ -2607,7 +2589,7 @@ Handle<JSMessageObject> Factory::NewJSMessageObject(
 
 Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
     MaybeHandle<String> maybe_name, MaybeHandle<Code> maybe_code,
-    bool is_constructor, FunctionKind kind) {
+    bool is_constructor, FunctionKind kind, int maybe_builtin_index) {
   // Function names are assumed to be flat elsewhere. Must flatten before
   // allocating SharedFunctionInfo to avoid GC seeing the uninitialized SFI.
   Handle<String> shared_name;
@@ -2627,14 +2609,15 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   if (!maybe_code.ToHandle(&code)) {
     code = BUILTIN_CODE(isolate(), Illegal);
   }
-  Object* function_data =
-      (code->is_builtin() && Builtins::IsLazy(code->builtin_index()))
-          ? Smi::FromInt(code->builtin_index())
-          : Object::cast(*undefined_value());
+  Object* function_data = (Builtins::IsBuiltinId(maybe_builtin_index) &&
+                           Builtins::IsLazy(maybe_builtin_index))
+                              ? Smi::FromInt(maybe_builtin_index)
+                              : Object::cast(*undefined_value());
   share->set_function_data(function_data, SKIP_WRITE_BARRIER);
   share->set_code(*code);
   share->set_scope_info(ScopeInfo::Empty(isolate()));
   share->set_outer_scope_info(*the_hole_value());
+  DCHECK(!Builtins::IsLazy(Builtins::kConstructedNonConstructable));
   Handle<Code> construct_stub =
       is_constructor ? isolate()->builtins()->JSConstructStubGeneric()
                      : BUILTIN_CODE(isolate(), ConstructedNonConstructable);
@@ -2812,7 +2795,7 @@ Handle<StackFrameInfo> Factory::NewStackFrameInfo() {
 Handle<SourcePositionTableWithFrameCache>
 Factory::NewSourcePositionTableWithFrameCache(
     Handle<ByteArray> source_position_table,
-    Handle<UnseededNumberDictionary> stack_frame_cache) {
+    Handle<NumberDictionary> stack_frame_cache) {
   Handle<SourcePositionTableWithFrameCache>
       source_position_table_with_frame_cache =
           Handle<SourcePositionTableWithFrameCache>::cast(
@@ -2842,15 +2825,6 @@ Handle<JSObject> Factory::NewArgumentsObject(Handle<JSFunction> callee,
         .Assert();
   }
   return result;
-}
-
-
-Handle<JSWeakMap> Factory::NewJSWeakMap() {
-  // TODO(adamk): Currently the map is only created three times per
-  // isolate. If it's created more often, the map should be moved into the
-  // strong root list.
-  Handle<Map> map = NewMap(JS_WEAK_MAP_TYPE, JSWeakMap::kSize);
-  return Handle<JSWeakMap>::cast(NewJSObjectFromMap(map));
 }
 
 Handle<Map> Factory::ObjectLiteralMapFromCache(Handle<Context> native_context,
@@ -3160,6 +3134,137 @@ Handle<Map> Factory::CreateClassFunctionMap(Handle<JSFunction> empty_function) {
     map->AppendDescriptor(&d);
   }
   return map;
+}
+
+// static
+NewFunctionArgs NewFunctionArgs::ForWasm(Handle<String> name, Handle<Code> code,
+                                         Handle<Map> map) {
+  NewFunctionArgs args;
+  args.name_ = name;
+  args.maybe_map_ = map;
+  args.maybe_code_ = code;
+  args.language_mode_ = LanguageMode::kSloppy;
+  args.prototype_mutability_ = MUTABLE;
+
+  return args;
+}
+
+// static
+NewFunctionArgs NewFunctionArgs::ForBuiltin(Handle<String> name,
+                                            Handle<Code> code, Handle<Map> map,
+                                            int builtin_id) {
+  DCHECK(Builtins::IsBuiltinId(builtin_id));
+
+  NewFunctionArgs args;
+  args.name_ = name;
+  args.maybe_map_ = map;
+  args.maybe_code_ = code;
+  args.maybe_builtin_id_ = builtin_id;
+  args.language_mode_ = LanguageMode::kStrict;
+  args.prototype_mutability_ = MUTABLE;
+
+  args.SetShouldSetLanguageMode();
+
+  return args;
+}
+
+// static
+NewFunctionArgs NewFunctionArgs::ForFunctionWithoutCode(
+    Handle<String> name, Handle<Map> map, LanguageMode language_mode) {
+  NewFunctionArgs args;
+  args.name_ = name;
+  args.maybe_map_ = map;
+  args.language_mode_ = language_mode;
+  args.prototype_mutability_ = MUTABLE;
+
+  args.SetShouldSetLanguageMode();
+
+  return args;
+}
+
+// static
+NewFunctionArgs NewFunctionArgs::ForBuiltinWithPrototype(
+    Handle<String> name, Handle<Code> code, Handle<Object> prototype,
+    InstanceType type, int instance_size, int inobject_properties,
+    int builtin_id, MutableMode prototype_mutability) {
+  DCHECK(Builtins::IsBuiltinId(builtin_id));
+
+  NewFunctionArgs args;
+  args.name_ = name;
+  args.maybe_code_ = code;
+  args.type_ = type;
+  args.instance_size_ = instance_size;
+  args.inobject_properties_ = inobject_properties;
+  args.maybe_prototype_ = prototype;
+  args.maybe_builtin_id_ = builtin_id;
+  args.language_mode_ = LanguageMode::kStrict;
+  args.prototype_mutability_ = prototype_mutability;
+
+  args.SetShouldCreateAndSetInitialMap();
+  args.SetShouldSetPrototype();
+  args.SetShouldSetLanguageMode();
+
+  return args;
+}
+
+// static
+NewFunctionArgs NewFunctionArgs::ForBuiltinWithoutPrototype(
+    Handle<String> name, Handle<Code> code, int builtin_id,
+    LanguageMode language_mode) {
+  DCHECK(Builtins::IsBuiltinId(builtin_id));
+
+  NewFunctionArgs args;
+  args.name_ = name;
+  args.maybe_code_ = code;
+  args.maybe_builtin_id_ = builtin_id;
+  args.language_mode_ = language_mode;
+  args.prototype_mutability_ = MUTABLE;
+
+  args.SetShouldSetLanguageMode();
+
+  return args;
+}
+
+void NewFunctionArgs::SetShouldCreateAndSetInitialMap() {
+  // Needed to create the initial map.
+  maybe_prototype_.Assert();
+  DCHECK_NE(kUninitialized, instance_size_);
+  DCHECK_NE(kUninitialized, inobject_properties_);
+
+  should_create_and_set_initial_map_ = true;
+}
+
+void NewFunctionArgs::SetShouldSetPrototype() {
+  maybe_prototype_.Assert();
+  should_set_prototype_ = true;
+}
+
+void NewFunctionArgs::SetShouldSetLanguageMode() {
+  DCHECK(language_mode_ == LanguageMode::kStrict ||
+         language_mode_ == LanguageMode::kSloppy);
+  should_set_language_mode_ = true;
+}
+
+Handle<Map> NewFunctionArgs::GetMap(Isolate* isolate) const {
+  if (!maybe_map_.is_null()) {
+    return maybe_map_.ToHandleChecked();
+  } else if (maybe_prototype_.is_null()) {
+    return is_strict(language_mode_)
+               ? isolate->strict_function_without_prototype_map()
+               : isolate->sloppy_function_without_prototype_map();
+  } else {
+    DCHECK(!maybe_prototype_.is_null());
+    switch (prototype_mutability_) {
+      case MUTABLE:
+        return is_strict(language_mode_) ? isolate->strict_function_map()
+                                         : isolate->sloppy_function_map();
+      case IMMUTABLE:
+        return is_strict(language_mode_)
+                   ? isolate->strict_function_with_readonly_prototype_map()
+                   : isolate->sloppy_function_with_readonly_prototype_map();
+    }
+  }
+  UNREACHABLE();
 }
 
 }  // namespace internal

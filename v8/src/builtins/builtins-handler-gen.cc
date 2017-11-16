@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-utils-gen.h"
 #include "src/builtins/builtins.h"
 #include "src/code-stub-assembler.h"
-#include "src/ic/handler-compiler.h"
 #include "src/ic/ic.h"
 #include "src/ic/keyed-store-generic.h"
 #include "src/objects-inl.h"
@@ -14,10 +13,14 @@ namespace v8 {
 namespace internal {
 
 TF_BUILTIN(LoadIC_StringLength, CodeStubAssembler) {
+  Node* string = Parameter(Descriptor::kReceiver);
+  Return(LoadStringLengthAsSmi(string));
+}
+
+TF_BUILTIN(LoadIC_StringWrapperLength, CodeStubAssembler) {
   Node* value = Parameter(Descriptor::kReceiver);
   Node* string = LoadJSValueValue(value);
-  Node* result = LoadStringLength(string);
-  Return(result);
+  Return(LoadStringLengthAsSmi(string));
 }
 
 TF_BUILTIN(KeyedLoadIC_Miss, CodeStubAssembler) {
@@ -93,10 +96,6 @@ TF_BUILTIN(LoadGlobalIC_Slow, CodeStubAssembler) {
   TailCallRuntime(Runtime::kLoadGlobalIC_Slow, context, name, slot, vector);
 }
 
-void Builtins::Generate_LoadIC_Getter_ForDeopt(MacroAssembler* masm) {
-  NamedLoadHandlerCompiler::GenerateLoadViaGetterForDeopt(masm);
-}
-
 TF_BUILTIN(LoadIC_FunctionPrototype, CodeStubAssembler) {
   Node* receiver = Parameter(Descriptor::kReceiver);
   Node* name = Parameter(Descriptor::kName);
@@ -139,10 +138,6 @@ TF_BUILTIN(StoreIC_Miss, CodeStubAssembler) {
 
   TailCallRuntime(Runtime::kStoreIC_Miss, context, value, slot, vector,
                   receiver, name);
-}
-
-void Builtins::Generate_StoreIC_Setter_ForDeopt(MacroAssembler* masm) {
-  NamedStoreHandlerCompiler::GenerateStoreViaSetterForDeopt(masm);
 }
 
 TF_BUILTIN(StoreGlobalIC_Slow, CodeStubAssembler) {

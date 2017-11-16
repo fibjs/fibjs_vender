@@ -82,16 +82,6 @@ void Heap::SetConstructStubInvokeDeoptPCOffset(int pc_offset) {
   set_construct_stub_invoke_deopt_pc_offset(Smi::FromInt(pc_offset));
 }
 
-void Heap::SetGetterStubDeoptPCOffset(int pc_offset) {
-  DCHECK_EQ(Smi::kZero, getter_stub_deopt_pc_offset());
-  set_getter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
-}
-
-void Heap::SetSetterStubDeoptPCOffset(int pc_offset) {
-  DCHECK_EQ(Smi::kZero, setter_stub_deopt_pc_offset());
-  set_setter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
-}
-
 void Heap::SetInterpreterEntryReturnPCOffset(int pc_offset) {
   DCHECK_EQ(Smi::kZero, interpreter_entry_return_pc_offset());
   set_interpreter_entry_return_pc_offset(Smi::FromInt(pc_offset));
@@ -469,21 +459,30 @@ void Heap::ReportStatisticsAfterGC() {
   }
 }
 
-void Heap::AddRetainingPathTarget(Handle<HeapObject> object) {
+void Heap::AddRetainingPathTarget(Handle<HeapObject> object,
+                                  RetainingPathOption option) {
   if (!FLAG_track_retaining_path) {
     PrintF("Retaining path tracking requires --trace-retaining-path\n");
   } else {
+    int index = 0;
     Handle<WeakFixedArray> array = WeakFixedArray::Add(
-        handle(retaining_path_targets(), isolate()), object);
+        handle(retaining_path_targets(), isolate()), object, &index);
     set_retaining_path_targets(*array);
+    retaining_path_target_option_[index] = option;
   }
 }
 
-bool Heap::IsRetainingPathTarget(HeapObject* object) {
-  WeakFixedArray::Iterator it(retaining_path_targets());
-  HeapObject* target;
-  while ((target = it.Next<HeapObject>()) != nullptr) {
-    if (target == object) return true;
+bool Heap::IsRetainingPathTarget(HeapObject* object,
+                                 RetainingPathOption* option) {
+  if (!retaining_path_targets()->IsWeakFixedArray()) return false;
+  WeakFixedArray* targets = WeakFixedArray::cast(retaining_path_targets());
+  int length = targets->Length();
+  for (int i = 0; i < length; i++) {
+    if (targets->Get(i) == object) {
+      DCHECK(retaining_path_target_option_.count(i));
+      *option = retaining_path_target_option_[i];
+      return true;
+    }
   }
   return false;
 }
@@ -512,17 +511,23 @@ const char* RootToString(Root root) {
 }
 }  // namespace
 
-void Heap::PrintRetainingPath(HeapObject* target) {
+void Heap::PrintRetainingPath(HeapObject* target, RetainingPathOption option) {
   PrintF("\n\n\n");
   PrintF("#################################################\n");
   PrintF("Retaining path for %p:\n", static_cast<void*>(target));
   HeapObject* object = target;
-  std::vector<HeapObject*> retaining_path;
+  std::vector<std::pair<HeapObject*, bool>> retaining_path;
   Root root = Root::kUnknown;
+  bool ephemeral = false;
   while (true) {
-    retaining_path.push_back(object);
-    if (retainer_.count(object)) {
+    retaining_path.push_back(std::make_pair(object, ephemeral));
+    if (option == RetainingPathOption::kTrackEphemeralPath &&
+        ephemeral_retainer_.count(object)) {
+      object = ephemeral_retainer_[object];
+      ephemeral = true;
+    } else if (retainer_.count(object)) {
       object = retainer_[object];
+      ephemeral = false;
     } else {
       if (retaining_root_.count(object)) {
         root = retaining_root_[object];
@@ -531,10 +536,13 @@ void Heap::PrintRetainingPath(HeapObject* target) {
     }
   }
   int distance = static_cast<int>(retaining_path.size());
-  for (auto object : retaining_path) {
+  for (auto node : retaining_path) {
+    HeapObject* object = node.first;
+    bool ephemeral = node.second;
     PrintF("\n");
     PrintF("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-    PrintF("Distance from root %d: ", distance);
+    PrintF("Distance from root %d%s: ", distance,
+           ephemeral ? " (ephemeral)" : "");
     object->ShortPrint();
     PrintF("\n");
 #ifdef OBJECT_PRINT
@@ -550,16 +558,38 @@ void Heap::PrintRetainingPath(HeapObject* target) {
 }
 
 void Heap::AddRetainer(HeapObject* retainer, HeapObject* object) {
+  if (retainer_.count(object)) return;
   retainer_[object] = retainer;
-  if (IsRetainingPathTarget(object)) {
-    PrintRetainingPath(object);
+  RetainingPathOption option = RetainingPathOption::kDefault;
+  if (IsRetainingPathTarget(object, &option)) {
+    // Check if the retaining path was already printed in
+    // AddEphemeralRetainer().
+    if (ephemeral_retainer_.count(object) == 0 ||
+        option == RetainingPathOption::kDefault) {
+      PrintRetainingPath(object, option);
+    }
+  }
+}
+
+void Heap::AddEphemeralRetainer(HeapObject* retainer, HeapObject* object) {
+  if (ephemeral_retainer_.count(object)) return;
+  ephemeral_retainer_[object] = retainer;
+  RetainingPathOption option = RetainingPathOption::kDefault;
+  if (IsRetainingPathTarget(object, &option) &&
+      option == RetainingPathOption::kTrackEphemeralPath) {
+    // Check if the retaining path was already printed in AddRetainer().
+    if (retainer_.count(object) == 0) {
+      PrintRetainingPath(object, option);
+    }
   }
 }
 
 void Heap::AddRetainingRoot(Root root, HeapObject* object) {
+  if (retaining_root_.count(object)) return;
   retaining_root_[object] = root;
-  if (IsRetainingPathTarget(object)) {
-    PrintRetainingPath(object);
+  RetainingPathOption option = RetainingPathOption::kDefault;
+  if (IsRetainingPathTarget(object, &option)) {
+    PrintRetainingPath(object, option);
   }
 }
 
@@ -609,6 +639,7 @@ void Heap::GarbageCollectionPrologue() {
   UpdateNewSpaceAllocationCounter();
   if (FLAG_track_retaining_path) {
     retainer_.clear();
+    ephemeral_retainer_.clear();
     retaining_root_.clear();
   }
 }
@@ -641,7 +672,7 @@ const char* Heap::GetSpaceName(int idx) {
   return nullptr;
 }
 
-void Heap::SetRootCodeStubs(UnseededNumberDictionary* value) {
+void Heap::SetRootCodeStubs(NumberDictionary* value) {
   roots_[kCodeStubsRootIndex] = value;
 }
 
@@ -836,6 +867,19 @@ void Heap::ProcessPretenuringFeedback() {
   }
 }
 
+void Heap::InvalidateCodeEmbeddedObjects(Code* code) {
+  MemoryChunk* chunk = MemoryChunk::FromAddress(code->address());
+  CodePageMemoryModificationScope modification_scope(
+      chunk, CodePageMemoryModificationScope::READ_WRITE);
+  code->InvalidateEmbeddedObjects();
+}
+
+void Heap::InvalidateCodeDeoptimizationData(Code* code) {
+  MemoryChunk* chunk = MemoryChunk::FromAddress(code->address());
+  CodePageMemoryModificationScope modification_scope(
+      chunk, CodePageMemoryModificationScope::READ_WRITE);
+  code->set_deoptimization_data(empty_fixed_array());
+}
 
 void Heap::DeoptMarkedAllocationSites() {
   // TODO(hpayer): If iterating over the allocation sites list becomes a
@@ -1438,6 +1482,11 @@ bool Heap::ReserveSpace(Reservation* reservations, std::vector<Address>* maps) {
         }
       }
       if (perform_gc) {
+        // We cannot perfom a GC with an uninitialized isolate. This check
+        // fails for example if the max old space size is chosen unwisely,
+        // so that we cannot allocate space to deserialize the initial heap.
+        CHECK_WITH_MSG(deserialization_complete_,
+                       "insufficient memory to create an Isolate");
         if (space == NEW_SPACE) {
           CollectGarbage(NEW_SPACE, GarbageCollectionReason::kDeserializer);
         } else {
@@ -1733,7 +1782,7 @@ void Heap::CheckNewSpaceExpansionCriteria() {
 }
 
 static bool IsUnscavengedHeapObject(Heap* heap, Object** p) {
-  return heap->InNewSpace(*p) &&
+  return heap->InFromSpace(*p) &&
          !HeapObject::cast(*p)->map_word().IsForwardingAddress();
 }
 
@@ -1968,9 +2017,18 @@ void Heap::Scavenge() {
                GCTracer::Scope::SCAVENGER_SCAVENGE_WEAK_GLOBAL_HANDLES_PROCESS);
       isolate()->global_handles()->MarkNewSpaceWeakUnmodifiedObjectsPending(
           &IsUnscavengedHeapObject);
-      isolate()->global_handles()->IterateNewSpaceWeakUnmodifiedRoots(
-          &root_scavenge_visitor);
+      isolate()
+          ->global_handles()
+          ->IterateNewSpaceWeakUnmodifiedRootsForFinalizers(
+              &root_scavenge_visitor);
       scavengers[kMainThreadId]->Process();
+
+      DCHECK(copied_list.IsGlobalEmpty());
+      DCHECK(promotion_list.IsGlobalEmpty());
+      isolate()
+          ->global_handles()
+          ->IterateNewSpaceWeakUnmodifiedRootsForPhantomHandles(
+              &root_scavenge_visitor, &IsUnscavengedHeapObject);
     }
 
     for (int i = 0; i < num_scavenge_tasks; i++) {
@@ -2582,6 +2640,9 @@ bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
     case kApiSymbolTableRootIndex:
     case kApiPrivateSymbolTableRootIndex:
     case kMessageListenersRootIndex:
+    case kDeserializeLazyHandlerRootIndex:
+    case kDeserializeLazyHandlerWideRootIndex:
+    case kDeserializeLazyHandlerExtraWideRootIndex:
 // Smi values
 #define SMI_ENTRY(type, name, Name) case k##Name##RootIndex:
       SMI_ROOT_LIST(SMI_ENTRY)
@@ -3018,23 +3079,21 @@ AllocationResult Heap::AllocateFixedTypedArray(int length,
   return elements;
 }
 
-
-AllocationResult Heap::AllocateCode(int object_size, bool immovable) {
+AllocationResult Heap::AllocateCode(int object_size, Movability movability) {
   DCHECK(IsAligned(static_cast<intptr_t>(object_size), kCodeAlignment));
   AllocationResult allocation = AllocateRaw(object_size, CODE_SPACE);
 
   HeapObject* result = nullptr;
   if (!allocation.To(&result)) return allocation;
-  if (immovable) {
+  if (movability == kImmovable) {
     Address address = result->address();
     MemoryChunk* chunk = MemoryChunk::FromAddress(address);
     // Code objects which should stay at a fixed address are allocated either
-    // in the first page of code space (objects on the first page of each space
-    // are never moved), in large object space, or (during snapshot creation)
-    // the containing page is marked as immovable.
-    if (!Heap::IsImmovable(result) &&
-        !code_space_->FirstPage()->Contains(address)) {
-      if (isolate()->serializer_enabled()) {
+    // in the first page of code space, in large object space, or (during
+    // snapshot creation) the containing page is marked as immovable.
+    if (!Heap::IsImmovable(result)) {
+      if (isolate()->serializer_enabled() ||
+          code_space_->FirstPage()->Contains(address)) {
         chunk->MarkNeverEvacuate();
       } else {
         // Discard the first code allocation, which was on a page where it could
@@ -3726,7 +3785,10 @@ AllocationResult Heap::AllocateFixedArrayWithFiller(int length,
 
 AllocationResult Heap::AllocatePropertyArray(int length,
                                              PretenureFlag pretenure) {
+  // Allow length = 0 for the empty_property_array singleton.
   DCHECK_LE(0, length);
+  DCHECK_IMPLIES(length == 0, pretenure == TENURED);
+
   DCHECK(!InNewSpace(undefined_value()));
   HeapObject* result = nullptr;
   {
@@ -5304,7 +5366,7 @@ Heap::IncrementalMarkingLimit Heap::IncrementalMarkingLimitReached() {
     return IncrementalMarkingLimit::kHardLimit;
   }
 
-  if (FLAG_stress_incremental_marking_percentage > 0) {
+  if (FLAG_stress_marking > 0) {
     double gained_since_last_gc =
         PromotedSinceLastGC() +
         (external_memory_ - external_memory_at_last_mark_compact_);
@@ -5319,8 +5381,8 @@ Heap::IncrementalMarkingLimit Heap::IncrementalMarkingLimitReached() {
             current_percent);
       }
 
-      if (static_cast<int>(current_percent) >=
-          FLAG_stress_incremental_marking_percentage) {
+      if (static_cast<int>(current_percent) >= stress_marking_percentage_) {
+        stress_marking_percentage_ = NextStressMarkingLimit();
         return IncrementalMarkingLimit::kHardLimit;
       }
     }
@@ -5361,6 +5423,7 @@ void Heap::DisableInlineAllocation() {
 
   // Update inline allocation limit for old spaces.
   PagedSpaces spaces(this);
+  CodeSpaceMemoryModificationScope modification_scope(this);
   for (PagedSpace* space = spaces.next(); space != nullptr;
        space = spaces.next()) {
     space->EmptyAllocationInfo();
@@ -5471,6 +5534,10 @@ bool Heap::SetUp() {
   SetGetExternallyAllocatedMemoryInBytesCallback(
       DefaultGetExternallyAllocatedMemoryInBytesCallback);
 
+  if (FLAG_stress_marking > 0) {
+    stress_marking_percentage_ = NextStressMarkingLimit();
+  }
+
   return true;
 }
 
@@ -5507,6 +5574,9 @@ void Heap::PrintAllocationsHash() {
   PrintF("\n### Allocations = %u, hash = 0x%08x\n", allocations_count(), hash);
 }
 
+int Heap::NextStressMarkingLimit() {
+  return isolate()->fuzzer_rng()->NextInt(FLAG_stress_marking + 1);
+}
 
 void Heap::NotifyDeserializationComplete() {
   PagedSpaces spaces(this);
@@ -6245,6 +6315,23 @@ void Heap::UnregisterStrongRoots(Object** start) {
   }
 }
 
+bool Heap::IsDeserializeLazyHandler(Code* code) {
+  return (code == deserialize_lazy_handler() ||
+          code == deserialize_lazy_handler_wide() ||
+          code == deserialize_lazy_handler_extra_wide());
+}
+
+void Heap::SetDeserializeLazyHandler(Code* code) {
+  set_deserialize_lazy_handler(code);
+}
+
+void Heap::SetDeserializeLazyHandlerWide(Code* code) {
+  set_deserialize_lazy_handler_wide(code);
+}
+
+void Heap::SetDeserializeLazyHandlerExtraWide(Code* code) {
+  set_deserialize_lazy_handler_extra_wide(code);
+}
 
 size_t Heap::NumberOfTrackedHeapObjectTypes() {
   return ObjectStats::OBJECT_STATS_COUNT;

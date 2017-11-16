@@ -125,7 +125,6 @@ class Logger : public CodeEventListener {
   void StringEvent(const char* name, const char* value);
 
   // Emits an event with an int value -> (name, value).
-  void IntEvent(const char* name, int value);
   void IntPtrTEvent(const char* name, intptr_t value);
 
   // Emits an event with an handle value -> (name, location).
@@ -151,7 +150,7 @@ class Logger : public CodeEventListener {
   void FunctionEvent(const char* reason, Script* script, int script_id,
                      double time_delta_ms, int start_position, int end_position,
                      const char* function_name = nullptr,
-                     int function_name_length = 0);
+                     size_t function_name_length = 0);
 
   // ==== Events logged by --log-api. ====
   void ApiSecurityCheck();
@@ -189,7 +188,7 @@ class Logger : public CodeEventListener {
   // Emits a code move event.
   void CodeMoveEvent(AbstractCode* from, Address to);
   // Emits a code line info record event.
-  void CodeLinePosInfoRecordEvent(AbstractCode* code,
+  void CodeLinePosInfoRecordEvent(Address code_start,
                                   ByteArray* source_position_table);
 
   void SharedFunctionInfoMoveEvent(Address from, Address to);
@@ -297,8 +296,7 @@ class Logger : public CodeEventListener {
   // Logs a StringEvent regardless of whether FLAG_log is true.
   void UncheckedStringEvent(const char* name, const char* value);
 
-  // Logs an IntEvent regardless of whether FLAG_log is true.
-  void UncheckedIntEvent(const char* name, int value);
+  // Logs an IntPtrTEvent regardless of whether FLAG_log is true.
   void UncheckedIntPtrTEvent(const char* name, intptr_t value);
 
   Isolate* isolate_;
@@ -342,15 +340,16 @@ class Logger : public CodeEventListener {
   friend class CpuProfiler;
 };
 
-#define TIMER_EVENTS_LIST(V)    \
-  V(RecompileSynchronous, true) \
-  V(RecompileConcurrent, true)  \
-  V(CompileIgnition, true)      \
-  V(CompileFullCode, true)      \
-  V(OptimizeCode, true)         \
-  V(CompileCode, true)          \
-  V(DeoptimizeCode, true)       \
-  V(Execute, true)              \
+#define TIMER_EVENTS_LIST(V)     \
+  V(RecompileSynchronous, true)  \
+  V(RecompileConcurrent, true)   \
+  V(CompileIgnition, true)       \
+  V(CompileFullCode, true)       \
+  V(OptimizeCode, true)          \
+  V(CompileCode, true)           \
+  V(CompileCodeBackground, true) \
+  V(DeoptimizeCode, true)        \
+  V(Execute, true)               \
   V(External, true)
 
 #define V(TimerName, expose)                          \

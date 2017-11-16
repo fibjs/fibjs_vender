@@ -506,8 +506,6 @@ class MemoryChunk {
   Address area_end() { return area_end_; }
   size_t area_size() { return static_cast<size_t>(area_end() - area_start()); }
 
-  bool CommitArea(size_t requested);
-
   // Approximate amount of physical memory committed for this chunk.
   size_t CommittedPhysicalMemory();
 
@@ -638,6 +636,9 @@ class MemoryChunk {
   void SetReadAndExecutable();
   void SetReadAndWritable();
 
+  // TODO(hpayer): Remove this method. Memory should never be rwx.
+  void SetReadWriteAndExecutable();
+
  protected:
   static MemoryChunk* Initialize(Heap* heap, Address base, size_t size,
                                  Address area_start, Address area_end,
@@ -696,8 +697,8 @@ class MemoryChunk {
   // times a component requested this page to be read+writeable. The
   // counter is decremented when a component resets to read+executable.
   // If Value() == 0 => The memory is read and executable.
-  // If Value() >= 1 => The Memory is read and writable.
-  // The maximum value can right now only be 2.
+  // If Value() >= 1 => The Memory is read and writable (and maybe executable).
+  // The maximum value can right now only be 3.
   uintptr_t write_unprotect_counter_;
 
   // Byte allocated on the page, which includes all objects on the page
@@ -2204,9 +2205,6 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
 
   std::unique_ptr<ObjectIterator> GetObjectIterator() override;
 
-  // This page will be preferred for sweeping.
-  void PreferredSweepingPage(Page* page) { preferred_sweeping_page_ = page; }
-
   Address ComputeLimit(Address start, Address end, size_t size_in_bytes);
   void SetAllocationInfo(Address top, Address limit);
 
@@ -2283,7 +2281,6 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
   // Mutex guarding any concurrent access to the space.
   base::Mutex space_mutex_;
 
-  Page* preferred_sweeping_page_;
   Address top_on_previous_step_;
 
   friend class IncrementalMarking;

@@ -161,8 +161,8 @@ void Log::MessageBuilder::AppendStringPart(String* str, int len) {
   }
 }
 
-void Log::MessageBuilder::AppendStringPart(const char* str, int len) {
-  for (int i = 0; i < len; i++) {
+void Log::MessageBuilder::AppendStringPart(const char* str, size_t len) {
+  for (size_t i = 0; i < len; i++) {
     DCHECK_NE(str[i], '\0');
     this->AppendCharacter(str[i]);
   }
@@ -170,17 +170,19 @@ void Log::MessageBuilder::AppendStringPart(const char* str, int len) {
 
 void Log::MessageBuilder::AppendCharacter(char c) {
   OFStream& os = log_->os_;
-  // A log entry (separate by commas) cannot contain commas or line-brakes.
+  // A log entry (separate by commas) cannot contain commas or line-breaks.
   if (c >= 32 && c <= 126) {
     if (c == ',') {
-      // Escape commas directly.
+      // Escape commas (log field separator) directly.
       os << "\x2c";
     } else {
       // Directly append any printable ascii character.
       os << c;
     }
+  } else if (c == '\n') {
+    os << "\\n";
   } else {
-    // Escape any non-printable haracters.
+    // Escape any non-printable characters.
     Append("\\x%02x", c);
   }
 }

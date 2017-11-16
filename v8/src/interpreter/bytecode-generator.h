@@ -28,7 +28,8 @@ class BytecodeJumpTable;
 
 class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
  public:
-  explicit BytecodeGenerator(CompilationInfo* info);
+  explicit BytecodeGenerator(CompilationInfo* info,
+                             const AstStringConstants* ast_string_constants);
 
   void GenerateBytecode(uintptr_t stack_limit);
   Handle<BytecodeArray> FinalizeBytecode(Isolate* isolate,
@@ -55,6 +56,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   class EffectResultScope;
   class FeedbackSlotCache;
   class GlobalDeclarationsBuilder;
+  class NArayCodeCoverageSlots;
   class RegisterAllocationScope;
   class TestResultScope;
   class ValueResultScope;
@@ -159,6 +161,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildClassLiteral(ClassLiteral* expr);
   void VisitNewTargetVariable(Variable* variable);
   void VisitThisFunctionVariable(Variable* variable);
+  void BuildInstanceFieldInitialization(Variable* initializer_var);
   void BuildGeneratorObjectVariableInitialization();
   void VisitBlockDeclarationsAndStatements(Block* stmt);
   void VisitFunctionClosureForContext();
@@ -172,20 +175,23 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
 
   // Visit a logical OR/AND within a test context, rewiring the jumps based
   // on the expression values.
-  void VisitLogicalTest(Token::Value token, Expression* left,
-                        Expression* right);
-  void VisitNaryLogicalTest(Token::Value token, NaryOperation* expr);
+  void VisitLogicalTest(Token::Value token, Expression* left, Expression* right,
+                        int right_coverage_slot);
+  void VisitNaryLogicalTest(Token::Value token, NaryOperation* expr,
+                            const NArayCodeCoverageSlots* coverage_slots);
   // Visit a (non-RHS) test for a logical op, which falls through if the test
   // fails or jumps to the appropriate labels if it succeeds.
   void VisitLogicalTestSubExpression(Token::Value token, Expression* expr,
                                      BytecodeLabels* then_labels,
-                                     BytecodeLabels* else_labels);
+                                     BytecodeLabels* else_labels,
+                                     int coverage_slot);
 
   // Helpers for binary and nary logical op value expressions.
-  bool VisitLogicalOrSubExpression(Expression* expr,
-                                   BytecodeLabels* end_labels);
+  bool VisitLogicalOrSubExpression(Expression* expr, BytecodeLabels* end_labels,
+                                   int coverage_slot);
   bool VisitLogicalAndSubExpression(Expression* expr,
-                                    BytecodeLabels* end_labels);
+                                    BytecodeLabels* end_labels,
+                                    int coverage_slot);
 
   // Visit the header/body of a loop iteration.
   void VisitIterationHeader(IterationStatement* stmt,
@@ -202,6 +208,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildLoadPropertyKey(LiteralProperty* property, Register out_reg);
 
   int AllocateBlockCoverageSlotIfEnabled(AstNode* node, SourceRangeKind kind);
+
   void BuildIncrementBlockCoverageCounterIfEnabled(AstNode* node,
                                                    SourceRangeKind kind);
   void BuildIncrementBlockCoverageCounterIfEnabled(int coverage_array_slot);

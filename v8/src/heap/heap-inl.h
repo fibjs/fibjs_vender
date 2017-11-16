@@ -601,28 +601,43 @@ CodeSpaceMemoryModificationScope::CodeSpaceMemoryModificationScope(Heap* heap)
     : heap_(heap) {
   if (FLAG_write_protect_code_memory) {
     heap_->code_space()->SetReadAndWritable();
+    LargePage* page = heap_->lo_space()->first_page();
+    while (page != nullptr) {
+      if (page->IsFlagSet(MemoryChunk::IS_EXECUTABLE)) {
+        page->SetReadAndWritable();
+      }
+      page = page->next_page();
+    }
   }
 }
 
 CodeSpaceMemoryModificationScope::~CodeSpaceMemoryModificationScope() {
   if (FLAG_write_protect_code_memory) {
     heap_->code_space()->SetReadAndExecutable();
+    LargePage* page = heap_->lo_space()->first_page();
+    while (page != nullptr) {
+      if (page->IsFlagSet(MemoryChunk::IS_EXECUTABLE)) {
+        page->SetReadAndExecutable();
+      }
+      page = page->next_page();
+    }
   }
 }
 
 CodePageMemoryModificationScope::CodePageMemoryModificationScope(
-    MemoryChunk* chunk)
+    MemoryChunk* chunk, CodePageModificationMode mode)
     : chunk_(chunk),
       scope_active_(FLAG_write_protect_code_memory &&
                     chunk_->IsFlagSet(MemoryChunk::IS_EXECUTABLE)) {
   if (scope_active_) {
-    // TODO(hpayer): owner() can only be null if we use the MemoryChunk outside
-    // of spaces. We actually should not do that and we should untangle this.
-    DCHECK(chunk_->owner() == nullptr ||
-           chunk_->owner()->identity() == CODE_SPACE ||
+    DCHECK(chunk_->owner()->identity() == CODE_SPACE ||
            (chunk_->owner()->identity() == LO_SPACE &&
             chunk_->IsFlagSet(MemoryChunk::IS_EXECUTABLE)));
-    chunk_->SetReadAndWritable();
+    if (mode == READ_WRITE_EXECUTABLE) {
+      chunk_->SetReadWriteAndExecutable();
+    } else {
+      chunk_->SetReadAndWritable();
+    }
   }
 }
 

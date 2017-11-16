@@ -19,7 +19,7 @@ const uint32_t kWasmMagic = 0x6d736100;
 const uint32_t kWasmVersion = 0x01;
 
 // Binary encoding of local types.
-enum ValueTypeCode {
+enum ValueTypeCode : uint8_t {
   kLocalVoid = 0x40,
   kLocalI32 = 0x7f,
   kLocalI64 = 0x7e,
@@ -538,7 +538,6 @@ class V8_EXPORT_PRIVATE WasmOpcodes {
   static const char* OpcodeName(WasmOpcode opcode);
   static FunctionSig* Signature(WasmOpcode opcode);
   static FunctionSig* AsmjsSignature(WasmOpcode opcode);
-  static FunctionSig* AtomicSignature(WasmOpcode opcode);
   static bool IsPrefixOpcode(WasmOpcode opcode);
   static bool IsControlOpcode(WasmOpcode opcode);
   // Check whether the given opcode always jumps, i.e. all instructions after

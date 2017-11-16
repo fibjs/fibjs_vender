@@ -810,15 +810,15 @@ void KeyedStoreGenericAssembler::EmitGenericPropertyStore(
       Label check_key(this, &var_transition_cell);
       BIND(&tuple3);
       {
-        var_transition_cell.Bind(LoadObjectField(
-            maybe_handler, StoreHandler::kTransitionOrHolderCellOffset));
+        var_transition_cell.Bind(
+            LoadObjectField(maybe_handler, StoreHandler::kDataOffset));
         Goto(&check_key);
       }
 
       BIND(&fixedarray);
       {
-        var_transition_cell.Bind(LoadFixedArrayElement(
-            maybe_handler, StoreHandler::kTransitionMapOrHolderCellIndex));
+        var_transition_cell.Bind(
+            LoadFixedArrayElement(maybe_handler, StoreHandler::kDataIndex));
         Goto(&check_key);
       }
 
@@ -982,7 +982,8 @@ void KeyedStoreGenericAssembler::KeyedStoreGeneric() {
   VARIABLE(var_index, MachineType::PointerRepresentation());
   VARIABLE(var_unique, MachineRepresentation::kTagged);
   var_unique.Bind(name);  // Dummy initialization.
-  Label if_index(this), if_unique_name(this), slow(this);
+  Label if_index(this), if_unique_name(this), not_internalized(this),
+      slow(this);
 
   GotoIf(TaggedIsSmi(receiver), &slow);
   Node* receiver_map = LoadMap(receiver);
@@ -993,7 +994,8 @@ void KeyedStoreGenericAssembler::KeyedStoreGeneric() {
                               Int32Constant(LAST_CUSTOM_ELEMENTS_RECEIVER)),
          &slow);
 
-  TryToName(name, &if_index, &var_index, &if_unique_name, &var_unique, &slow);
+  TryToName(name, &if_index, &var_index, &if_unique_name, &var_unique, &slow,
+            &not_internalized);
 
   BIND(&if_index);
   {
@@ -1008,6 +1010,16 @@ void KeyedStoreGenericAssembler::KeyedStoreGeneric() {
     StoreICParameters p(context, receiver, var_unique.value(), value, slot,
                         vector);
     EmitGenericPropertyStore(receiver, receiver_map, &p, &slow);
+  }
+
+  BIND(&not_internalized);
+  {
+    if (FLAG_internalize_on_the_fly) {
+      TryInternalizeString(name, &if_index, &var_index, &if_unique_name,
+                           &var_unique, &slow, &slow);
+    } else {
+      Goto(&slow);
+    }
   }
 
   BIND(&slow);

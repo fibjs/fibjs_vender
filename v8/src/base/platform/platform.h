@@ -161,25 +161,25 @@ class V8_BASE_EXPORT OS {
   // here even though most systems support additional modes.
   enum class MemoryPermission { kNoAccess, kReadWrite, kReadWriteExecute };
 
-  // Allocate/Free memory used by JS heap. Permissions are set according to the
-  // is_* flags. Returns the address of allocated memory, or nullptr if failed.
-  static void* Allocate(const size_t requested, size_t* allocated,
-                        MemoryPermission access, void* hint = nullptr);
-  // Allocate/Free memory used by JS heap. Pages are readable/writable, but
-  // they are not guaranteed to be executable unless 'executable' is true.
-  // Returns the address of allocated memory, or nullptr if failed.
-  static void* Allocate(const size_t requested, size_t* allocated,
-                        bool is_executable, void* hint = nullptr);
-  static void Free(void* address, const size_t size);
+  // Gets the page granularity for Allocate. Addresses returned by Allocate are
+  // aligned to this size.
+  static size_t AllocatePageSize();
 
-  // Allocates a region of memory that is inaccessible. On Windows this reserves
-  // but does not commit the memory. On POSIX systems it allocates memory as
-  // PROT_NONE, which also prevents it from being committed.
-  static void* AllocateGuarded(const size_t requested);
+  // Gets the granularity at which the permissions and commit calls can be made.
+  static size_t CommitPageSize();
 
-  // This is the granularity at which the SetReadAndExecutable(...) call can
-  // set page permissions.
-  static intptr_t CommitPageSize();
+  // Generate a random address to be used for hinting allocation calls.
+  static void* GetRandomMmapAddr();
+
+  // Allocates memory. Permissions are set according to the access argument.
+  // The address parameter is a hint. The size and alignment parameters must be
+  // multiples of AllocatePageSize(). Returns the address of the allocated
+  // memory, with the specified size and alignment, or nullptr on failure.
+  static void* Allocate(void* address, size_t size, size_t alignment,
+                        MemoryPermission access);
+
+  // Frees memory allocated by a call to Allocate.
+  static bool Free(void* address, const size_t size);
 
   // Mark a region of memory executable and readable but not writable.
   static void SetReadAndExecutable(void* address, const size_t size);
@@ -190,22 +190,13 @@ class V8_BASE_EXPORT OS {
   // Make a region of memory non-executable but readable and writable.
   static void SetReadAndWritable(void* address, const size_t size, bool commit);
 
-  // Generate a random address to be used for hinting mmap().
-  static void* GetRandomMmapAddr();
-
-  // Get the Alignment guaranteed by Allocate().
-  static size_t AllocateAlignment();
-
-  static void* ReserveRegion(size_t size, void* hint);
-
-  static void* ReserveAlignedRegion(size_t size, size_t alignment, void* hint,
-                                    size_t* allocated);
+  // Make a region of memory read, write, and executable. Do not use this
+  // function. This is only a temporary function and will go away soon.
+  static void SetReadWriteAndExecutable(void* address, const size_t size);
 
   static bool CommitRegion(void* address, size_t size, bool is_executable);
 
   static bool UncommitRegion(void* address, size_t size);
-
-  static bool ReleaseRegion(void* address, size_t size);
 
   // Release part of a reserved address range.
   static bool ReleasePartialRegion(void* address, size_t size);

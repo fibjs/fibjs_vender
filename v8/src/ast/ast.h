@@ -5,6 +5,8 @@
 #ifndef V8_AST_AST_H_
 #define V8_AST_AST_H_
 
+#include <memory>
+
 #include "src/ast/ast-value-factory.h"
 #include "src/ast/modules.h"
 #include "src/ast/variables.h"
@@ -335,9 +337,7 @@ inline ZoneList<const AstRawString*>* Block::labels() const {
 class DoExpression final : public Expression {
  public:
   Block* block() { return block_; }
-  void set_block(Block* b) { block_ = b; }
   VariableProxy* result() { return result_; }
-  void set_result(VariableProxy* v) { result_ = v; }
 
  private:
   friend class AstNodeFactory;
@@ -416,7 +416,6 @@ inline NestedVariableDeclaration* VariableDeclaration::AsNested() {
 class FunctionDeclaration final : public Declaration {
  public:
   FunctionLiteral* fun() const { return fun_; }
-  void set_fun(FunctionLiteral* f) { fun_ = f; }
 
  private:
   friend class AstNodeFactory;
@@ -473,7 +472,6 @@ class DoWhileStatement final : public IterationStatement {
   }
 
   Expression* cond() const { return cond_; }
-  void set_cond(Expression* e) { cond_ = e; }
 
  private:
   friend class AstNodeFactory;
@@ -493,7 +491,6 @@ class WhileStatement final : public IterationStatement {
   }
 
   Expression* cond() const { return cond_; }
-  void set_cond(Expression* e) { cond_ = e; }
 
  private:
   friend class AstNodeFactory;
@@ -518,10 +515,6 @@ class ForStatement final : public IterationStatement {
   Statement* init() const { return init_; }
   Expression* cond() const { return cond_; }
   Statement* next() const { return next_; }
-
-  void set_init(Statement* s) { init_ = s; }
-  void set_cond(Expression* e) { cond_ = e; }
-  void set_next(Statement* s) { next_ = s; }
 
  private:
   friend class AstNodeFactory;
@@ -573,14 +566,8 @@ class ForInStatement final : public ForEachStatement {
   Expression* each() const { return each_; }
   Expression* subject() const { return subject_; }
 
-  void set_each(Expression* e) { each_ = e; }
-  void set_subject(Expression* e) { subject_ = e; }
-
   enum ForInType { FAST_FOR_IN, SLOW_FOR_IN };
   ForInType for_in_type() const { return ForInTypeField::decode(bit_field_); }
-  void set_for_in_type(ForInType type) {
-    bit_field_ = ForInTypeField::update(bit_field_, type);
-  }
 
  private:
   friend class AstNodeFactory;
@@ -636,11 +623,6 @@ class ForOfStatement final : public ForEachStatement {
   Expression* assign_each() const {
     return assign_each_;
   }
-
-  void set_assign_iterator(Expression* e) { assign_iterator_ = e; }
-  void set_next_result(Expression* e) { next_result_ = e; }
-  void set_result_done(Expression* e) { result_done_ = e; }
-  void set_assign_each(Expression* e) { assign_each_ = e; }
 
  private:
   friend class AstNodeFactory;
@@ -719,7 +701,6 @@ class ReturnStatement final : public JumpStatement {
   enum Type { kNormal, kAsyncReturn };
   Expression* expression() const { return expression_; }
 
-  void set_expression(Expression* e) { expression_ = e; }
   Type type() const { return TypeField::decode(bit_field_); }
   bool is_async_return() const { return type() == kAsyncReturn; }
 
@@ -747,7 +728,6 @@ class WithStatement final : public Statement {
  public:
   Scope* scope() { return scope_; }
   Expression* expression() const { return expression_; }
-  void set_expression(Expression* e) { expression_ = e; }
   Statement* statement() const { return statement_; }
   void set_statement(Statement* s) { statement_ = s; }
 
@@ -773,7 +753,6 @@ class CaseClause final : public ZoneObject {
     DCHECK(!is_default());
     return label_;
   }
-  void set_label(Expression* e) { label_ = e; }
   ZoneList<Statement*>* statements() const { return statements_; }
 
  private:
@@ -825,7 +804,6 @@ class IfStatement final : public Statement {
   Statement* then_statement() const { return then_statement_; }
   Statement* else_statement() const { return else_statement_; }
 
-  void set_condition(Expression* e) { condition_ = e; }
   void set_then_statement(Statement* s) { then_statement_ = s; }
   void set_else_statement(Statement* s) { else_statement_ = s; }
 
@@ -1227,8 +1205,6 @@ class LiteralProperty : public ZoneObject {
  public:
   Expression* key() const { return key_; }
   Expression* value() const { return value_; }
-  void set_key(Expression* e) { key_ = e; }
-  void set_value(Expression* e) { value_ = e; }
 
   bool is_computed_name() const { return is_computed_name_; }
   bool NeedsSetFunctionName() const;
@@ -1601,9 +1577,6 @@ class Property final : public Expression {
   Expression* obj() const { return obj_; }
   Expression* key() const { return key_; }
 
-  void set_obj(Expression* e) { obj_ = e; }
-  void set_key(Expression* e) { key_ = e; }
-
   bool IsSuperAccess() { return obj()->IsSuperPropertyReference(); }
 
   // Returns the properties assign type.
@@ -1631,8 +1604,6 @@ class Call final : public Expression {
  public:
   Expression* expression() const { return expression_; }
   ZoneList<Expression*>* arguments() const { return arguments_; }
-
-  void set_expression(Expression* e) { expression_ = e; }
 
   bool is_possibly_eval() const {
     return IsPossiblyEvalField::decode(bit_field_);
@@ -1702,8 +1673,6 @@ class CallNew final : public Expression {
   Expression* expression() const { return expression_; }
   ZoneList<Expression*>* arguments() const { return arguments_; }
 
-  void set_expression(Expression* e) { expression_ = e; }
-
   bool only_last_arg_is_spread() {
     return !arguments_->is_empty() && arguments_->last()->IsSpread();
   }
@@ -1734,10 +1703,6 @@ class CallRuntime final : public Expression {
   int context_index() const {
     DCHECK(is_jsruntime());
     return context_index_;
-  }
-  void set_context_index(int index) {
-    DCHECK(is_jsruntime());
-    context_index_ = index;
   }
   const Runtime::Function* function() const {
     DCHECK(!is_jsruntime());
@@ -1770,7 +1735,6 @@ class UnaryOperation final : public Expression {
  public:
   Token::Value op() const { return OperatorField::decode(bit_field_); }
   Expression* expression() const { return expression_; }
-  void set_expression(Expression* e) { expression_ = e; }
 
  private:
   friend class AstNodeFactory;
@@ -1792,9 +1756,7 @@ class BinaryOperation final : public Expression {
  public:
   Token::Value op() const { return OperatorField::decode(bit_field_); }
   Expression* left() const { return left_; }
-  void set_left(Expression* e) { left_ = e; }
   Expression* right() const { return right_; }
-  void set_right(Expression* e) { right_ = e; }
 
   // Returns true if one side is a Smi literal, returning the other side's
   // sub-expression in |subexpr| and the literal Smi in |literal|.
@@ -1820,12 +1782,8 @@ class NaryOperation final : public Expression {
  public:
   Token::Value op() const { return OperatorField::decode(bit_field_); }
   Expression* first() const { return first_; }
-  void set_first(Expression* e) { first_ = e; }
   Expression* subsequent(size_t index) const {
     return subsequent_[index].expression;
-  }
-  Expression* set_subsequent(size_t index, Expression* e) {
-    return subsequent_[index].expression = e;
   }
 
   size_t subsequent_length() const { return subsequent_.size(); }
@@ -1888,7 +1846,6 @@ class CountOperation final : public Expression {
   Token::Value op() const { return TokenField::decode(bit_field_); }
 
   Expression* expression() const { return expression_; }
-  void set_expression(Expression* e) { expression_ = e; }
 
  private:
   friend class AstNodeFactory;
@@ -1911,9 +1868,6 @@ class CompareOperation final : public Expression {
   Token::Value op() const { return OperatorField::decode(bit_field_); }
   Expression* left() const { return left_; }
   Expression* right() const { return right_; }
-
-  void set_left(Expression* e) { left_ = e; }
-  void set_right(Expression* e) { right_ = e; }
 
   // Match special cases.
   bool IsLiteralCompareTypeof(Expression** expr, Literal** literal);
@@ -1941,7 +1895,6 @@ class CompareOperation final : public Expression {
 class Spread final : public Expression {
  public:
   Expression* expression() const { return expression_; }
-  void set_expression(Expression* e) { expression_ = e; }
 
   int expression_position() const { return expr_pos_; }
 
@@ -1964,10 +1917,6 @@ class Conditional final : public Expression {
   Expression* then_expression() const { return then_expression_; }
   Expression* else_expression() const { return else_expression_; }
 
-  void set_condition(Expression* e) { condition_ = e; }
-  void set_then_expression(Expression* e) { then_expression_ = e; }
-  void set_else_expression(Expression* e) { else_expression_ = e; }
-
  private:
   friend class AstNodeFactory;
 
@@ -1988,9 +1937,6 @@ class Assignment : public Expression {
   Token::Value op() const { return TokenField::decode(bit_field_); }
   Expression* target() const { return target_; }
   Expression* value() const { return value_; }
-
-  void set_target(Expression* e) { target_ = e; }
-  void set_value(Expression* e) { value_ = e; }
 
   // The assignment was generated as part of block-scoped sloppy-mode
   // function hoisting, see
@@ -2066,17 +2012,22 @@ class RewritableExpression final : public Expression {
     set_rewritten();
   }
 
+  Scope* scope() const { return scope_; }
+  void set_scope(Scope* scope) { scope_ = scope; }
+
  private:
   friend class AstNodeFactory;
 
-  explicit RewritableExpression(Expression* expression)
+  RewritableExpression(Expression* expression, Scope* scope)
       : Expression(expression->position(), kRewritableExpression),
-        expr_(expression) {
+        expr_(expression),
+        scope_(scope) {
     bit_field_ |= IsRewrittenField::encode(false);
     DCHECK(!expression->IsRewritableExpression());
   }
 
   Expression* expr_;
+  Scope* scope_;
 
   class IsRewrittenField
       : public BitField<bool, Expression::kNextBitFieldIndex, 1> {};
@@ -2106,8 +2057,6 @@ class Suspend : public Expression {
   }
 
   int suspend_id() const { return suspend_id_; }
-
-  void set_expression(Expression* e) { expression_ = e; }
   void set_suspend_id(int id) { suspend_id_ = id; }
 
   inline bool IsInitialYield() const { return suspend_id_ == 0 && IsYield(); }
@@ -2195,7 +2144,6 @@ class Await final : public Suspend {
 class Throw final : public Expression {
  public:
   Expression* exception() const { return exception_; }
-  void set_exception(Expression* e) { exception_ = e; }
 
  private:
   friend class AstNodeFactory;
@@ -2266,12 +2214,8 @@ class FunctionLiteral final : public Expression {
     return false;
   }
 
-  Handle<String> debug_name() const {
-    if (raw_name_ != nullptr && !raw_name_->IsEmpty()) {
-      return raw_name_->string();
-    }
-    return inferred_name();
-  }
+  // Returns either name or inferred name as a cstring.
+  std::unique_ptr<char[]> GetDebugName() const;
 
   Handle<String> inferred_name() const {
     if (!inferred_name_.is_null()) {
@@ -2291,6 +2235,8 @@ class FunctionLiteral final : public Expression {
     DCHECK(raw_inferred_name_ == nullptr || raw_inferred_name_->IsEmpty());
     raw_inferred_name_ = nullptr;
   }
+
+  const AstConsString* raw_inferred_name() { return raw_inferred_name_; }
 
   void set_raw_inferred_name(const AstConsString* raw_inferred_name) {
     DCHECK_NOT_NULL(raw_inferred_name);
@@ -2345,6 +2291,13 @@ class FunctionLiteral final : public Expression {
     function_literal_id_ = function_literal_id;
   }
 
+  void set_instance_class_fields_initializer(Variable* initializer) {
+    instance_class_fields_initializer_ = initializer;
+  }
+  Variable* instance_class_fields_initializer() {
+    return instance_class_fields_initializer_;
+  }
+
   ProducedPreParsedScopeData* produced_preparsed_scope_data() const {
     return produced_preparsed_scope_data_;
   }
@@ -2372,6 +2325,7 @@ class FunctionLiteral final : public Expression {
         body_(body),
         raw_inferred_name_(ast_value_factory->empty_cons_string()),
         function_literal_id_(function_literal_id),
+        instance_class_fields_initializer_(nullptr),
         produced_preparsed_scope_data_(produced_preparsed_scope_data) {
     bit_field_ |= FunctionTypeBits::encode(function_type) |
                   Pretenure::encode(false) |
@@ -2402,6 +2356,7 @@ class FunctionLiteral final : public Expression {
   const AstConsString* raw_inferred_name_;
   Handle<String> inferred_name_;
   int function_literal_id_;
+  Variable* instance_class_fields_initializer_;
   ProducedPreParsedScopeData* produced_preparsed_scope_data_;
 };
 
@@ -2415,6 +2370,9 @@ class ClassLiteralProperty final : public LiteralProperty {
 
   bool is_static() const { return is_static_; }
 
+  void set_computed_name_var(Variable* var) { computed_name_var_ = var; }
+  Variable* computed_name_var() const { return computed_name_var_; }
+
  private:
   friend class AstNodeFactory;
 
@@ -2423,25 +2381,21 @@ class ClassLiteralProperty final : public LiteralProperty {
 
   Kind kind_;
   bool is_static_;
+  Variable* computed_name_var_;
 };
 
 class InitializeClassFieldsStatement final : public Statement {
  public:
   typedef ClassLiteralProperty Property;
   ZoneList<Property*>* fields() const { return fields_; }
-  bool needs_home_object() const { return needs_home_object_; }
 
  private:
   friend class AstNodeFactory;
 
-  InitializeClassFieldsStatement(ZoneList<Property*>* fields,
-                                 bool needs_home_object, int pos)
-      : Statement(pos, kInitializeClassFieldsStatement),
-        fields_(fields),
-        needs_home_object_(needs_home_object) {}
+  InitializeClassFieldsStatement(ZoneList<Property*>* fields, int pos)
+      : Statement(pos, kInitializeClassFieldsStatement), fields_(fields) {}
 
   ZoneList<Property*>* fields_;
-  bool needs_home_object_;
 };
 
 class ClassLiteral final : public Expression {
@@ -2451,9 +2405,7 @@ class ClassLiteral final : public Expression {
   Scope* scope() const { return scope_; }
   Variable* class_variable() const { return class_variable_; }
   Expression* extends() const { return extends_; }
-  void set_extends(Expression* e) { extends_ = e; }
   FunctionLiteral* constructor() const { return constructor_; }
-  void set_constructor(FunctionLiteral* f) { constructor_ = f; }
   ZoneList<Property*>* properties() const { return properties_; }
   int start_position() const { return position(); }
   int end_position() const { return end_position_; }
@@ -2475,8 +2427,12 @@ class ClassLiteral final : public Expression {
     return static_fields_initializer_;
   }
 
-  void set_static_fields_initializer(FunctionLiteral* initializer) {
-    static_fields_initializer_ = initializer;
+  FunctionLiteral* instance_fields_initializer_function() const {
+    return instance_fields_initializer_function_;
+  }
+
+  Variable* instance_fields_initializer_var() const {
+    return instance_fields_initializer_var_;
   }
 
  private:
@@ -2484,7 +2440,9 @@ class ClassLiteral final : public Expression {
 
   ClassLiteral(Scope* scope, Variable* class_variable, Expression* extends,
                FunctionLiteral* constructor, ZoneList<Property*>* properties,
-               FunctionLiteral* static_fields_initializer, int start_position,
+               FunctionLiteral* static_fields_initializer,
+               FunctionLiteral* instance_fields_initializer_function,
+               Variable* instance_fields_initializer_var, int start_position,
                int end_position, bool has_name_static_property,
                bool has_static_computed_names, bool is_anonymous)
       : Expression(start_position, kClassLiteral),
@@ -2494,7 +2452,10 @@ class ClassLiteral final : public Expression {
         extends_(extends),
         constructor_(constructor),
         properties_(properties),
-        static_fields_initializer_(static_fields_initializer) {
+        static_fields_initializer_(static_fields_initializer),
+        instance_fields_initializer_function_(
+            instance_fields_initializer_function),
+        instance_fields_initializer_var_(instance_fields_initializer_var) {
     bit_field_ |= HasNameStaticProperty::encode(has_name_static_property) |
                   HasStaticComputedNames::encode(has_static_computed_names) |
                   IsAnonymousExpression::encode(is_anonymous);
@@ -2507,7 +2468,8 @@ class ClassLiteral final : public Expression {
   FunctionLiteral* constructor_;
   ZoneList<Property*>* properties_;
   FunctionLiteral* static_fields_initializer_;
-
+  FunctionLiteral* instance_fields_initializer_function_;
+  Variable* instance_fields_initializer_var_;
   class HasNameStaticProperty
       : public BitField<bool, Expression::kNextBitFieldIndex, 1> {};
   class HasStaticComputedNames
@@ -2520,6 +2482,7 @@ class ClassLiteral final : public Expression {
 class NativeFunctionLiteral final : public Expression {
  public:
   Handle<String> name() const { return name_->string(); }
+  const AstRawString* raw_name() const { return name_; }
   v8::Extension* extension() const { return extension_; }
 
  private:
@@ -2546,9 +2509,7 @@ class ThisFunction final : public Expression {
 class SuperPropertyReference final : public Expression {
  public:
   VariableProxy* this_var() const { return this_var_; }
-  void set_this_var(VariableProxy* v) { this_var_ = v; }
   Expression* home_object() const { return home_object_; }
-  void set_home_object(Expression* e) { home_object_ = e; }
 
  private:
   friend class AstNodeFactory;
@@ -2570,11 +2531,8 @@ class SuperPropertyReference final : public Expression {
 class SuperCallReference final : public Expression {
  public:
   VariableProxy* this_var() const { return this_var_; }
-  void set_this_var(VariableProxy* v) { this_var_ = v; }
   VariableProxy* new_target_var() const { return new_target_var_; }
-  void set_new_target_var(VariableProxy* v) { new_target_var_ = v; }
   VariableProxy* this_function_var() const { return this_function_var_; }
-  void set_this_function_var(VariableProxy* v) { this_function_var_ = v; }
 
  private:
   friend class AstNodeFactory;
@@ -2600,7 +2558,6 @@ class SuperCallReference final : public Expression {
 class ImportCallExpression final : public Expression {
  public:
   Expression* argument() const { return argument_; }
-  void set_argument(Expression* argument) { argument_ = argument; }
 
  private:
   friend class AstNodeFactory;
@@ -2630,7 +2587,6 @@ class GetIterator final : public Expression {
   IteratorType hint() const { return hint_; }
 
   Expression* iterable() const { return iterable_; }
-  void set_iterable(Expression* iterable) { iterable_ = iterable; }
 
   Expression* iterable_for_call_printer() const {
     return destructured_iterable_ != nullptr ? destructured_iterable_
@@ -2781,69 +2737,6 @@ class AstVisitor BASE_EMBEDDED {
   void Visit(AstNode* node) { GENERATE_AST_VISITOR_SWITCH() } \
                                                               \
  private:
-
-#define DEFINE_AST_REWRITER_SUBCLASS_MEMBERS()        \
- public:                                              \
-  AstNode* Rewrite(AstNode* node) {                   \
-    DCHECK_NULL(replacement_);                        \
-    DCHECK_NOT_NULL(node);                            \
-    Visit(node);                                      \
-    if (HasStackOverflow()) return node;              \
-    if (replacement_ == nullptr) return node;         \
-    AstNode* result = replacement_;                   \
-    replacement_ = nullptr;                           \
-    return result;                                    \
-  }                                                   \
-                                                      \
- private:                                             \
-  void InitializeAstRewriter(Isolate* isolate) {      \
-    InitializeAstVisitor(isolate);                    \
-    replacement_ = nullptr;                           \
-  }                                                   \
-                                                      \
-  void InitializeAstRewriter(uintptr_t stack_limit) { \
-    InitializeAstVisitor(stack_limit);                \
-    replacement_ = nullptr;                           \
-  }                                                   \
-                                                      \
-  DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();              \
-                                                      \
- protected:                                           \
-  AstNode* replacement_
-// Generic macro for rewriting things; `GET` is the expression to be
-// rewritten; `SET` is a command that should do the rewriting, i.e.
-// something sensible with the variable called `replacement`.
-#define AST_REWRITE(Type, GET, SET)                            \
-  do {                                                         \
-    DCHECK(!HasStackOverflow());                               \
-    DCHECK_NULL(replacement_);                                 \
-    Visit(GET);                                                \
-    if (HasStackOverflow()) return;                            \
-    if (replacement_ == nullptr) break;                        \
-    Type* replacement = reinterpret_cast<Type*>(replacement_); \
-    do {                                                       \
-      SET;                                                     \
-    } while (false);                                           \
-    replacement_ = nullptr;                                    \
-  } while (false)
-
-// Macro for rewriting object properties; it assumes that `object` has
-// `property` with a public getter and setter.
-#define AST_REWRITE_PROPERTY(Type, object, property)                        \
-  do {                                                                      \
-    auto _obj = (object);                                                   \
-    AST_REWRITE(Type, _obj->property(), _obj->set_##property(replacement)); \
-  } while (false)
-
-// Macro for rewriting list elements; it assumes that `list` has methods
-// `at` and `Set`.
-#define AST_REWRITE_LIST_ELEMENT(Type, list, index)                        \
-  do {                                                                     \
-    auto _list = (list);                                                   \
-    auto _index = (index);                                                 \
-    AST_REWRITE(Type, _list->at(_index), _list->Set(_index, replacement)); \
-  } while (false)
-
 
 // ----------------------------------------------------------------------------
 // AstNode factory
@@ -3174,9 +3067,10 @@ class AstNodeFactory final BASE_EMBEDDED {
         Conditional(condition, then_expression, else_expression, position);
   }
 
-  RewritableExpression* NewRewritableExpression(Expression* expression) {
+  RewritableExpression* NewRewritableExpression(Expression* expression,
+                                                Scope* scope) {
     DCHECK_NOT_NULL(expression);
-    return new (zone_) RewritableExpression(expression);
+    return new (zone_) RewritableExpression(expression, scope);
   }
 
   Assignment* NewAssignment(Token::Value op,
@@ -3259,18 +3153,19 @@ class AstNodeFactory final BASE_EMBEDDED {
         ClassLiteral::Property(key, value, kind, is_static, is_computed_name);
   }
 
-  ClassLiteral* NewClassLiteral(Scope* scope, Variable* variable,
-                                Expression* extends,
-                                FunctionLiteral* constructor,
-                                ZoneList<ClassLiteral::Property*>* properties,
-                                FunctionLiteral* static_fields_initializer,
-                                int start_position, int end_position,
-                                bool has_name_static_property,
-                                bool has_static_computed_names,
-                                bool is_anonymous) {
+  ClassLiteral* NewClassLiteral(
+      Scope* scope, Variable* variable, Expression* extends,
+      FunctionLiteral* constructor,
+      ZoneList<ClassLiteral::Property*>* properties,
+      FunctionLiteral* static_fields_initializer,
+      FunctionLiteral* instance_fields_initializer_function,
+      Variable* instance_fields_initializer_var, int start_position,
+      int end_position, bool has_name_static_property,
+      bool has_static_computed_names, bool is_anonymous) {
     return new (zone_) ClassLiteral(
         scope, variable, extends, constructor, properties,
-        static_fields_initializer, start_position, end_position,
+        static_fields_initializer, instance_fields_initializer_function,
+        instance_fields_initializer_var, start_position, end_position,
         has_name_static_property, has_static_computed_names, is_anonymous);
   }
 
@@ -3330,9 +3225,8 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   InitializeClassFieldsStatement* NewInitializeClassFieldsStatement(
-      ZoneList<ClassLiteralProperty*>* args, bool needs_home_object, int pos) {
-    return new (zone_)
-        InitializeClassFieldsStatement(args, needs_home_object, pos);
+      ZoneList<ClassLiteralProperty*>* args, int pos) {
+    return new (zone_) InitializeClassFieldsStatement(args, pos);
   }
 
   Zone* zone() const { return zone_; }

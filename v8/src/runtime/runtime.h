@@ -136,7 +136,6 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_DEBUG(F)             \
   F(HandleDebuggerStatement, 0, 1)              \
-  F(DebugBreakOnBytecode, 1, 1)                 \
   F(SetDebugEventListener, 2, 1)                \
   F(ScheduleBreak, 0, 1)                        \
   F(DebugGetInternalProperties, 1, 1)           \
@@ -225,6 +224,7 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_INTERPRETER(F)          \
   FOR_EACH_INTRINSIC_INTERPRETER_TRACE(F)          \
   FOR_EACH_INTRINSIC_INTERPRETER_TRACE_FEEDBACK(F) \
+  F(InterpreterDeserializeLazy, 2, 1)              \
   F(InterpreterNewClosure, 4, 1)
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)     \
@@ -408,7 +408,7 @@ namespace internal {
   F(ToFastProperties, 1, 1)                                     \
   F(AllocateHeapNumber, 0, 1)                                   \
   F(NewObject, 2, 1)                                            \
-  F(FinalizeInstanceSize, 1, 1)                                 \
+  F(CompleteInobjectSlackTrackingForMap, 1, 1)                  \
   F(LoadMutableDouble, 2, 1)                                    \
   F(TryMigrateInstance, 1, 1)                                   \
   F(IsJSGlobalProxy, 1, 1)                                      \
@@ -584,7 +584,7 @@ namespace internal {
   F(SetAllocationTimeout, -1 /* 2 || 3 */, 1) \
   F(DebugPrint, 1, 1)                         \
   F(DebugTrace, 0, 1)                         \
-  F(DebugTrackRetainingPath, 1, 1)            \
+  F(DebugTrackRetainingPath, -1, 1)           \
   F(PrintWithNameForAssert, 2, 1)             \
   F(GetExceptionDetails, 1, 1)                \
   F(GlobalPrint, 1, 1)                        \
@@ -624,6 +624,7 @@ namespace internal {
   F(IsWasmTrapHandlerEnabled, 0, 1)           \
   F(GetWasmRecoveredTrapCount, 0, 1)          \
   F(DisallowCodegenFromStrings, 1, 1)         \
+  F(DisallowWasmCodegen, 1, 1)                \
   F(ValidateWasmInstancesChain, 2, 1)         \
   F(ValidateWasmModuleState, 1, 1)            \
   F(ValidateWasmOrphanedInstance, 1, 1)       \
@@ -633,6 +634,7 @@ namespace internal {
   F(WasmNumInterpretedCalls, 1, 1)            \
   F(RedirectToWasmInterpreter, 2, 1)          \
   F(WasmTraceMemory, 4, 1)                    \
+  F(CompleteInobjectSlackTracking, 1, 1)      \
   F(IsLiftoffFunction, 1, 1)
 
 #define FOR_EACH_INTRINSIC_TYPEDARRAY(F) \
@@ -666,7 +668,8 @@ namespace internal {
   F(WasmCompileLazy, 0, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_PAIR(F) \
-  F(LoadLookupSlotForCall, 1, 2)
+  F(LoadLookupSlotForCall, 1, 2)          \
+  F(DebugBreakOnBytecode, 1, 2)
 
 // Most intrinsics are implemented in the runtime/ directory, but ICs are
 // implemented in ic.cc for now.

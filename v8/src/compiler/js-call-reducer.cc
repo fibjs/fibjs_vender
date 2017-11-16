@@ -935,6 +935,8 @@ Reduction JSCallReducer::ReduceArrayForEach(Handle<JSFunction> function,
   Node* loop = control = graph()->NewNode(common()->Loop(2), control, control);
   Node* eloop = effect =
       graph()->NewNode(common()->EffectPhi(2), effect, effect, loop);
+  Node* terminate = graph()->NewNode(common()->Terminate(), eloop, loop);
+  NodeProperties::MergeControlToEnd(graph(), common(), terminate);
   Node* vloop = k = graph()->NewNode(
       common()->Phi(MachineRepresentation::kTagged, 2), k, k, loop);
   checkpoint_params[3] = k;
@@ -1032,9 +1034,9 @@ Reduction JSCallReducer::ReduceArrayForEach(Handle<JSFunction> function,
   // Since {check_throw} is an unconditional throw, it's impossible to
   // return a successful completion. Therefore, we simply connect the successful
   // completion to the graph end.
-  Node* terminate =
+  Node* throw_node =
       graph()->NewNode(common()->Throw(), check_throw, check_fail);
-  NodeProperties::MergeControlToEnd(graph(), common(), terminate);
+  NodeProperties::MergeControlToEnd(graph(), common(), throw_node);
 
   ReplaceWithValue(node, jsgraph()->UndefinedConstant(), effect, control);
   return Replace(jsgraph()->UndefinedConstant());
@@ -1135,6 +1137,8 @@ Reduction JSCallReducer::ReduceArrayMap(Handle<JSFunction> function,
   Node* loop = control = graph()->NewNode(common()->Loop(2), control, control);
   Node* eloop = effect =
       graph()->NewNode(common()->EffectPhi(2), effect, effect, loop);
+  Node* terminate = graph()->NewNode(common()->Terminate(), eloop, loop);
+  NodeProperties::MergeControlToEnd(graph(), common(), terminate);
   Node* vloop = k = graph()->NewNode(
       common()->Phi(MachineRepresentation::kTagged, 2), k, k, loop);
   checkpoint_params[4] = k;
@@ -1208,9 +1212,9 @@ Reduction JSCallReducer::ReduceArrayMap(Handle<JSFunction> function,
   // Since {check_throw} is an unconditional throw, it's impossible to
   // return a successful completion. Therefore, we simply connect the successful
   // completion to the graph end.
-  Node* terminate =
+  Node* throw_node =
       graph()->NewNode(common()->Throw(), check_throw, check_fail);
-  NodeProperties::MergeControlToEnd(graph(), common(), terminate);
+  NodeProperties::MergeControlToEnd(graph(), common(), throw_node);
 
   ReplaceWithValue(node, a, effect, control);
   return Replace(a);
@@ -1247,8 +1251,8 @@ Reduction JSCallReducer::ReduceArrayFilter(Handle<JSFunction> function,
 
   const ElementsKind kind = receiver_maps[0]->elements_kind();
 
-  // TODO(danno): Handle holey and double elements kinds.
-  if (!IsFastPackedElementsKind(kind) || IsDoubleElementsKind(kind)) {
+  // TODO(danno): Handle holey elements kinds.
+  if (!IsFastPackedElementsKind(kind)) {
     return NoChange();
   }
 
@@ -1323,6 +1327,8 @@ Reduction JSCallReducer::ReduceArrayFilter(Handle<JSFunction> function,
   Node* loop = control = graph()->NewNode(common()->Loop(2), control, control);
   Node* eloop = effect =
       graph()->NewNode(common()->EffectPhi(2), effect, effect, loop);
+  Node* terminate = graph()->NewNode(common()->Terminate(), eloop, loop);
+  NodeProperties::MergeControlToEnd(graph(), common(), terminate);
   Node* vloop = k = graph()->NewNode(
       common()->Phi(MachineRepresentation::kTagged, 2), k, k, loop);
   Node* v_to_loop = to = graph()->NewNode(
@@ -1429,9 +1435,9 @@ Reduction JSCallReducer::ReduceArrayFilter(Handle<JSFunction> function,
   // Since {check_throw} is an unconditional throw, it's impossible to
   // return a successful completion. Therefore, we simply connect the successful
   // completion to the graph end.
-  Node* terminate =
+  Node* throw_node =
       graph()->NewNode(common()->Throw(), check_throw, check_fail);
-  NodeProperties::MergeControlToEnd(graph(), common(), terminate);
+  NodeProperties::MergeControlToEnd(graph(), common(), throw_node);
 
   ReplaceWithValue(node, a, effect, control);
   return Replace(a);
@@ -1467,10 +1473,9 @@ Node* JSCallReducer::DoFilterPostCallbackWork(ElementsKind kind, Node** control,
         simplified()->LoadField(AccessBuilder::ForFixedArrayLength()), elements,
         etrue, if_true);
 
-    GrowFastElementsMode mode = GrowFastElementsMode::kSmiOrObjectElements;
-    // TODO(mvstanton): Make sure{flags} is correct when we handle{a} as a
-    // double output array.
-    DCHECK(!IsDoubleElementsKind(kind));
+    GrowFastElementsMode mode =
+        IsDoubleElementsKind(kind) ? GrowFastElementsMode::kDoubleElements
+                                   : GrowFastElementsMode::kSmiOrObjectElements;
     elements = etrue =
         graph()->NewNode(simplified()->MaybeGrowFastElements(mode), a, elements,
                          checked_to, elements_length, etrue, if_true);
@@ -1882,9 +1887,9 @@ Reduction JSCallReducer::ReduceCallOrConstructWithArrayLikeOrSpread(
     // The above %ThrowTypeError runtime call is an unconditional throw, making
     // it impossible to return a successful completion in this case. We simply
     // connect the successful completion to the graph end.
-    Node* terminate =
+    Node* throw_node =
         graph()->NewNode(common()->Throw(), check_throw, check_fail);
-    NodeProperties::MergeControlToEnd(graph(), common(), terminate);
+    NodeProperties::MergeControlToEnd(graph(), common(), throw_node);
 
     Reduction const reduction = ReduceJSConstruct(node);
     return reduction.Changed() ? reduction : Changed(node);

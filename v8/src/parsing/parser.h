@@ -167,6 +167,7 @@ struct ParserTypes<Parser> {
   typedef ObjectLiteral::Property* ObjectLiteralProperty;
   typedef ClassLiteral::Property* ClassLiteralProperty;
   typedef v8::internal::Suspend* Suspend;
+  typedef v8::internal::RewritableExpression* RewritableExpression;
   typedef ZoneList<v8::internal::Expression*>* ExpressionList;
   typedef ZoneList<ObjectLiteral::Property*>* ObjectPropertyList;
   typedef ZoneList<ClassLiteral::Property*>* ClassPropertyList;
@@ -284,8 +285,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     if (reusable_preparser_ == nullptr) {
       reusable_preparser_ =
           new PreParser(zone(), &scanner_, stack_limit_, ast_value_factory(),
-                        pending_error_handler(), runtime_call_stats_,
-                        parsing_module_, parsing_on_main_thread_);
+                        pending_error_handler(), runtime_call_stats_, logger_,
+                        -1, parsing_module_, parsing_on_main_thread_);
 #define SET_ALLOW(name) reusable_preparser_->set_allow_##name(allow_##name());
       SET_ALLOW(natives);
       SET_ALLOW(harmony_do_expressions);
@@ -354,6 +355,10 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                              FunctionLiteral* function, VariableMode mode,
                              int pos, bool is_sloppy_block_function,
                              ZoneList<const AstRawString*>* names, bool* ok);
+  Variable* CreateSyntheticContextVariable(const AstRawString* synthetic_name,
+                                           bool* ok);
+  FunctionLiteral* CreateInitializerFunction(
+      DeclarationScope* scope, ZoneList<ClassLiteral::Property*>* fields);
   V8_INLINE Statement* DeclareClass(const AstRawString* variable_name,
                                     Expression* value,
                                     ZoneList<const AstRawString*>* names,
@@ -553,15 +558,15 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   V8_INLINE Expression* RewriteAssignExponentiation(Expression* left,
                                                     Expression* right, int pos);
 
-  friend class NonPatternRewriter;
-  V8_INLINE Expression* RewriteSpreads(ArrayLiteral* lit);
+  Expression* RewriteSpreads(ArrayLiteral* lit);
 
   // Rewrite expressions that are not used as patterns
   V8_INLINE void RewriteNonPattern(bool* ok);
 
   V8_INLINE void QueueDestructuringAssignmentForRewriting(
-      Expression* assignment);
-  V8_INLINE void QueueNonPatternForRewriting(Expression* expr, bool* ok);
+      RewritableExpression* assignment);
+  V8_INLINE void QueueNonPatternForRewriting(RewritableExpression* expr,
+                                             bool* ok);
 
   friend class InitializerRewriter;
   void RewriteParameterInitializer(Expression* expr);
@@ -992,7 +997,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     return function_state_->GetReportedErrorList();
   }
 
-  V8_INLINE ZoneList<Expression*>* GetNonPatternList() const {
+  V8_INLINE ZoneList<RewritableExpression*>* GetNonPatternList() const {
     return function_state_->non_patterns_to_rewrite();
   }
 
@@ -1027,6 +1032,13 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     source_range_map_->Insert(
         node->AsConditional(),
         new (zone()) ConditionalSourceRanges(then_range, else_range));
+  }
+
+  V8_INLINE void RecordExpressionSourceRange(Expression* node,
+                                             const SourceRange& body_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(node,
+                              new (zone()) ExpressionSourceRanges(body_range));
   }
 
   V8_INLINE void RecordJumpStatementSourceRange(Statement* node,

@@ -28,6 +28,8 @@
 #ifndef V8_AST_AST_VALUE_FACTORY_H_
 #define V8_AST_AST_VALUE_FACTORY_H_
 
+#include <forward_list>
+
 #include "src/base/hashmap.h"
 #include "src/conversions.h"
 #include "src/factory.h"
@@ -151,6 +153,8 @@ class AstConsString final : public ZoneObject {
     return Handle<String>(string_);
   }
 
+  std::forward_list<const AstRawString*> ToRawStrings() const;
+
  private:
   friend class AstValueFactory;
 
@@ -190,47 +194,49 @@ class AstBigInt {
 };
 
 // For generating constants.
-#define AST_STRING_CONSTANTS(F)                 \
-  F(anonymous_function, "(anonymous function)") \
-  F(arguments, "arguments")                     \
-  F(async, "async")                             \
-  F(await, "await")                             \
-  F(boolean, "boolean")                         \
-  F(constructor, "constructor")                 \
-  F(default, "default")                         \
-  F(done, "done")                               \
-  F(dot, ".")                                   \
-  F(dot_for, ".for")                            \
-  F(dot_generator_object, ".generator_object")  \
-  F(dot_iterator, ".iterator")                  \
-  F(dot_result, ".result")                      \
-  F(dot_switch_tag, ".switch_tag")              \
-  F(dot_catch, ".catch")                        \
-  F(empty, "")                                  \
-  F(eval, "eval")                               \
-  F(function, "function")                       \
-  F(get_space, "get ")                          \
-  F(length, "length")                           \
-  F(let, "let")                                 \
-  F(name, "name")                               \
-  F(native, "native")                           \
-  F(new_target, ".new.target")                  \
-  F(next, "next")                               \
-  F(number, "number")                           \
-  F(object, "object")                           \
-  F(proto, "__proto__")                         \
-  F(prototype, "prototype")                     \
-  F(return, "return")                           \
-  F(set_space, "set ")                          \
-  F(star_default_star, "*default*")             \
-  F(string, "string")                           \
-  F(symbol, "symbol")                           \
-  F(this, "this")                               \
-  F(this_function, ".this_function")            \
-  F(throw, "throw")                             \
-  F(undefined, "undefined")                     \
-  F(use_asm, "use asm")                         \
-  F(use_strict, "use strict")                   \
+#define AST_STRING_CONSTANTS(F)                                      \
+  F(anonymous_function, "(anonymous function)")                      \
+  F(arguments, "arguments")                                          \
+  F(async, "async")                                                  \
+  F(await, "await")                                                  \
+  F(bigint, "bigint")                                                \
+  F(boolean, "boolean")                                              \
+  F(constructor, "constructor")                                      \
+  F(default, "default")                                              \
+  F(done, "done")                                                    \
+  F(dot, ".")                                                        \
+  F(dot_for, ".for")                                                 \
+  F(dot_generator_object, ".generator_object")                       \
+  F(dot_instance_fields_initializer, ".instance_fields_initializer") \
+  F(dot_iterator, ".iterator")                                       \
+  F(dot_result, ".result")                                           \
+  F(dot_switch_tag, ".switch_tag")                                   \
+  F(dot_catch, ".catch")                                             \
+  F(empty, "")                                                       \
+  F(eval, "eval")                                                    \
+  F(function, "function")                                            \
+  F(get_space, "get ")                                               \
+  F(length, "length")                                                \
+  F(let, "let")                                                      \
+  F(name, "name")                                                    \
+  F(native, "native")                                                \
+  F(new_target, ".new.target")                                       \
+  F(next, "next")                                                    \
+  F(number, "number")                                                \
+  F(object, "object")                                                \
+  F(proto, "__proto__")                                              \
+  F(prototype, "prototype")                                          \
+  F(return, "return")                                                \
+  F(set_space, "set ")                                               \
+  F(star_default_star, "*default*")                                  \
+  F(string, "string")                                                \
+  F(symbol, "symbol")                                                \
+  F(this, "this")                                                    \
+  F(this_function, ".this_function")                                 \
+  F(throw, "throw")                                                  \
+  F(undefined, "undefined")                                          \
+  F(use_asm, "use asm")                                              \
+  F(use_strict, "use strict")                                        \
   F(value, "value")
 
 class AstStringConstants final {

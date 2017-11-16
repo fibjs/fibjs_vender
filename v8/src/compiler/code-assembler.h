@@ -903,6 +903,10 @@ class V8_EXPORT_PRIVATE CodeAssembler {
         function, context, base::implicit_cast<SloppyTNode<Object>>(args)...);
   }
 
+  //
+  // If context passed to CallStub is nullptr, it won't be passed to the stub.
+  //
+
   template <class... TArgs>
   Node* CallStub(Callable const& callable, Node* context, TArgs... args) {
     Node* target = HeapConstant(callable.code());
@@ -922,7 +926,8 @@ class V8_EXPORT_PRIVATE CodeAssembler {
                   Node* target, Node* context, TArgs... args);
 
   Node* CallStubN(const CallInterfaceDescriptor& descriptor, size_t result_size,
-                  int input_count, Node* const* inputs);
+                  int input_count, Node* const* inputs,
+                  bool pass_context = true);
 
   template <class... TArgs>
   Node* TailCallStub(Callable const& callable, Node* context, TArgs... args) {
@@ -1039,6 +1044,8 @@ class V8_EXPORT_PRIVATE CodeAssembler {
       const CodeAssemblerCallback& call_prologue,
       const CodeAssemblerCallback& call_epilogue);
   void UnregisterCallGenerationCallbacks();
+
+  bool Word32ShiftIsSafe() const;
 
  private:
   RawMachineAssembler* raw_assembler() const;

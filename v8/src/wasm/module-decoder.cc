@@ -228,7 +228,6 @@ class WasmSectionIterator {
     section_code_ = decoder_.failed() ? kUnknownSectionCode
                                       : static_cast<SectionCode>(section_code);
 
-    TRACE("Section: %s\n", SectionName(section_code_));
     if (section_code_ == kUnknownSectionCode && section_end_ > decoder_.pc()) {
       // skip to the end of the unknown section.
       uint32_t remaining = static_cast<uint32_t>(section_end_ - decoder_.pc());
@@ -738,10 +737,6 @@ class ModuleDecoderImpl : public Decoder {
 
   void DecodeFunctionBody(uint32_t index, uint32_t length, uint32_t offset,
                           bool verify_functions) {
-    auto size_histogram = module_->is_wasm()
-                              ? GetCounters()->wasm_wasm_function_size_bytes()
-                              : GetCounters()->wasm_asm_function_size_bytes();
-    size_histogram->AddSample(length);
     WasmFunction* function =
         &module_->functions[index + module_->num_imported_functions];
     function->code = {offset, length};

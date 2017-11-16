@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <atomic>
 #include <type_traits>
 
 #include "src/wasm/wasm-interpreter.h"
@@ -368,11 +369,11 @@ inline uint32_t ExecuteI32AsmjsUConvertF64(double a, TrapReason* trap) {
 }
 
 int32_t ExecuteI32Clz(uint32_t val, TrapReason* trap) {
-  return base::bits::CountLeadingZeros32(val);
+  return base::bits::CountLeadingZeros(val);
 }
 
 uint32_t ExecuteI32Ctz(uint32_t val, TrapReason* trap) {
-  return base::bits::CountTrailingZeros32(val);
+  return base::bits::CountTrailingZeros(val);
 }
 
 uint32_t ExecuteI32Popcnt(uint32_t val, TrapReason* trap) {
@@ -384,11 +385,11 @@ inline uint32_t ExecuteI32Eqz(uint32_t val, TrapReason* trap) {
 }
 
 int64_t ExecuteI64Clz(uint64_t val, TrapReason* trap) {
-  return base::bits::CountLeadingZeros64(val);
+  return base::bits::CountLeadingZeros(val);
 }
 
 inline uint64_t ExecuteI64Ctz(uint64_t val, TrapReason* trap) {
-  return base::bits::CountTrailingZeros64(val);
+  return base::bits::CountTrailingZeros(val);
 }
 
 inline int64_t ExecuteI64Popcnt(uint64_t val, TrapReason* trap) {
@@ -778,6 +779,7 @@ class SideTable : public ZoneObject {
     for (BytecodeIterator i(code->orig_start, code->orig_end, &code->locals);
          i.has_next(); i.next()) {
       WasmOpcode opcode = i.current();
+      if (WasmOpcodes::IsPrefixOpcode(opcode)) opcode = i.prefixed_opcode();
       bool unreachable = control_stack.back().unreachable;
       if (unreachable) {
         TRACE("@%u: %s (is unreachable)\n", i.pc_offset(),
@@ -1516,6 +1518,91 @@ class ThreadImpl {
     return true;
   }
 
+  template <typename type>
+  bool ExtractAtomicBinOpParams(Decoder* decoder, InterpreterCode* code,
+                                Address& address, pc_t pc, type& val,
+                                int& len) {
+    MemoryAccessOperand<Decoder::kNoValidate> operand(decoder, code->at(pc + 1),
+                                                      sizeof(type));
+    val = Pop().to<uint32_t>();
+    uint32_t index = Pop().to<uint32_t>();
+    if (!BoundsCheck<type>(wasm_context_->mem_size, operand.offset, index)) {
+      DoTrap(kTrapMemOutOfBounds, pc);
+      return false;
+    }
+    address = wasm_context_->mem_start + operand.offset + index;
+    len = 2 + operand.length;
+    return true;
+  }
+
+  bool ExecuteAtomicOp(WasmOpcode opcode, Decoder* decoder,
+                       InterpreterCode* code, pc_t pc, int& len) {
+    WasmValue result;
+    switch (opcode) {
+// TODO(gdeepti): Remove work-around when the bots are upgraded to a more
+// recent gcc version. The gcc bots (Android ARM, linux) currently use
+// gcc 4.8, in which atomics are insufficiently supported, also Bug#58016
+// (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58016)
+#if __GNUG__ && __GNUC__ < 5
+#define ATOMIC_BINOP_CASE(name, type, operation)                              \
+  case kExpr##name: {                                                         \
+    type val;                                                                 \
+    Address addr;                                                             \
+    if (!ExtractAtomicBinOpParams<type>(decoder, code, addr, pc, val, len)) { \
+      return false;                                                           \
+    }                                                                         \
+    result = WasmValue(                                                       \
+        __##operation(reinterpret_cast<type*>(addr), val, __ATOMIC_SEQ_CST)); \
+    break;                                                                    \
+  }
+#else
+#define ATOMIC_BINOP_CASE(name, type, operation)                               \
+  case kExpr##name: {                                                          \
+    type val;                                                                  \
+    Address addr;                                                              \
+    if (!ExtractAtomicBinOpParams<type>(decoder, code, addr, pc, val, len)) {  \
+      return false;                                                            \
+    }                                                                          \
+    static_assert(sizeof(std::atomic<std::type>) == sizeof(type),              \
+                  "Size mismatch for types std::atomic<std::" #type            \
+                  ">, and " #type);                                            \
+    result = WasmValue(                                                        \
+        std::operation(reinterpret_cast<std::atomic<std::type>*>(addr), val)); \
+    break;                                                                     \
+  }
+#endif
+      ATOMIC_BINOP_CASE(I32AtomicAdd, uint32_t, atomic_fetch_add);
+      ATOMIC_BINOP_CASE(I32AtomicAdd8U, uint8_t, atomic_fetch_add);
+      ATOMIC_BINOP_CASE(I32AtomicAdd16U, uint16_t, atomic_fetch_add);
+      ATOMIC_BINOP_CASE(I32AtomicSub, uint32_t, atomic_fetch_sub);
+      ATOMIC_BINOP_CASE(I32AtomicSub8U, uint8_t, atomic_fetch_sub);
+      ATOMIC_BINOP_CASE(I32AtomicSub16U, uint16_t, atomic_fetch_sub);
+      ATOMIC_BINOP_CASE(I32AtomicAnd, uint32_t, atomic_fetch_and);
+      ATOMIC_BINOP_CASE(I32AtomicAnd8U, uint8_t, atomic_fetch_and);
+      ATOMIC_BINOP_CASE(I32AtomicAnd16U, uint16_t, atomic_fetch_and);
+      ATOMIC_BINOP_CASE(I32AtomicOr, uint32_t, atomic_fetch_or);
+      ATOMIC_BINOP_CASE(I32AtomicOr8U, uint8_t, atomic_fetch_or);
+      ATOMIC_BINOP_CASE(I32AtomicOr16U, uint16_t, atomic_fetch_or);
+      ATOMIC_BINOP_CASE(I32AtomicXor, uint32_t, atomic_fetch_xor);
+      ATOMIC_BINOP_CASE(I32AtomicXor8U, uint8_t, atomic_fetch_xor);
+      ATOMIC_BINOP_CASE(I32AtomicXor16U, uint16_t, atomic_fetch_xor);
+#if __GNUG__ && __GNUC__ < 5
+      ATOMIC_BINOP_CASE(I32AtomicExchange, uint32_t, atomic_exchange_n);
+      ATOMIC_BINOP_CASE(I32AtomicExchange8U, uint8_t, atomic_exchange_n);
+      ATOMIC_BINOP_CASE(I32AtomicExchange16U, uint16_t, atomic_exchange_n);
+#else
+      ATOMIC_BINOP_CASE(I32AtomicExchange, uint32_t, atomic_exchange);
+      ATOMIC_BINOP_CASE(I32AtomicExchange8U, uint8_t, atomic_exchange);
+      ATOMIC_BINOP_CASE(I32AtomicExchange16U, uint16_t, atomic_exchange);
+#endif
+#undef ATOMIC_BINOP_CASE
+      default:
+        return false;
+    }
+    Push(result);
+    return true;
+  }
+
   // Check if our control stack (frames_) exceeds the limit. Trigger stack
   // overflow if it does, and unwinding the current frame.
   // Returns true if execution can continue, false if the current activation was
@@ -1523,8 +1610,15 @@ class ThreadImpl {
   // Do call this function immediately *after* pushing a new frame. The pc of
   // the top frame will be reset to 0 if the stack check fails.
   bool DoStackCheck() WARN_UNUSED_RESULT {
-    // Sum up the size of all dynamically growing structures.
-    if (V8_LIKELY(frames_.size() <= kV8MaxWasmInterpretedStackSize)) {
+    // The goal of this stack check is not to prevent actual stack overflows,
+    // but to simulate stack overflows during the execution of compiled code.
+    // That is why this function uses FLAG_stack_size, even though the value
+    // stack actually lies in zone memory.
+    const size_t stack_size_limit = FLAG_stack_size * KB;
+    // Sum up the value stack size and the control stack size.
+    const size_t current_stack_size =
+        (sp_ - stack_start_) + frames_.size() * sizeof(Frame);
+    if (V8_LIKELY(current_stack_size <= stack_size_limit)) {
       return true;
     }
     if (!codemap()->has_instance()) {
@@ -1567,16 +1661,22 @@ class ThreadImpl {
       // Do first check for a breakpoint, in order to set hit_break correctly.
       const char* skip = "        ";
       int len = 1;
-      byte opcode = code->start[pc];
-      byte orig = opcode;
-      if (V8_UNLIKELY(opcode == kInternalBreakpoint)) {
+      byte orig = code->start[pc];
+      WasmOpcode opcode = static_cast<WasmOpcode>(orig);
+      if (WasmOpcodes::IsPrefixOpcode(opcode)) {
+        opcode = static_cast<WasmOpcode>(opcode << 8 | code->start[pc + 1]);
+      }
+      if (V8_UNLIKELY(orig == kInternalBreakpoint)) {
         orig = code->orig_start[pc];
+        if (WasmOpcodes::IsPrefixOpcode(static_cast<WasmOpcode>(orig))) {
+          opcode =
+              static_cast<WasmOpcode>(orig << 8 | code->orig_start[pc + 1]);
+        }
         if (SkipBreakpoint(code, pc)) {
           // skip breakpoint by switching on original code.
           skip = "[skip]  ";
         } else {
-          TRACE("@%-3zu: [break] %-24s:", pc,
-                WasmOpcodes::OpcodeName(static_cast<WasmOpcode>(orig)));
+          TRACE("@%-3zu: [break] %-24s:", pc, WasmOpcodes::OpcodeName(opcode));
           TraceValueStack();
           TRACE("\n");
           hit_break = true;
@@ -1589,8 +1689,7 @@ class ThreadImpl {
       if (max > 0) --max;
 
       USE(skip);
-      TRACE("@%-3zu: %s%-24s:", pc, skip,
-            WasmOpcodes::OpcodeName(static_cast<WasmOpcode>(orig)));
+      TRACE("@%-3zu: %s%-24s:", pc, skip, WasmOpcodes::OpcodeName(opcode));
       TraceValueStack();
       TRACE("\n");
 
@@ -1969,6 +2068,11 @@ class ThreadImpl {
           Push(WasmValue(ExecuteI64ReinterpretF64(val)));
           break;
         }
+        case kAtomicPrefix: {
+          if (!ExecuteAtomicOp(opcode, &decoder, code, pc, len)) return;
+          break;
+        }
+
 #define EXECUTE_SIMPLE_BINOP(name, ctype, op)               \
   case kExpr##name: {                                       \
     WasmValue rval = Pop();                                 \
@@ -2015,7 +2119,7 @@ class ThreadImpl {
       }
 
 #ifdef DEBUG
-      if (!WasmOpcodes::IsControlOpcode(static_cast<WasmOpcode>(opcode))) {
+      if (!WasmOpcodes::IsControlOpcode(opcode)) {
         DCHECK_EQ(expected_new_stack_height, StackHeight());
       }
 #endif

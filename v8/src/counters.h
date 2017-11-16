@@ -614,11 +614,13 @@ class RuntimeCallTimer final {
   void Snapshot();
   inline RuntimeCallTimer* Stop();
 
+  // Make the time source configurable for testing purposes.
+  V8_EXPORT_PRIVATE static base::TimeTicks (*Now)();
+
  private:
   inline void Pause(base::TimeTicks now);
   inline void Resume(base::TimeTicks now);
   inline void CommitTimeToCounter();
-  inline base::TimeTicks Now();
 
   RuntimeCallCounter* counter_ = nullptr;
   base::AtomicValue<RuntimeCallTimer*> parent_;
@@ -783,17 +785,17 @@ class RuntimeCallTimer final {
   V(ArrayLengthSetter)                         \
   V(BoundFunctionNameGetter)                   \
   V(BoundFunctionLengthGetter)                 \
-  V(CompileCodeLazy)                           \
+  V(CompileBackgroundAnalyse)                  \
+  V(CompileBackgroundEval)                     \
+  V(CompileBackgroundIgnition)                 \
+  V(CompileBackgroundScript)                   \
   V(CompileDeserialize)                        \
   V(CompileEval)                               \
-  V(CompileFullCode)                           \
   V(CompileAnalyse)                            \
-  V(CompileBackgroundIgnition)                 \
   V(CompileFunction)                           \
   V(CompileGetFromOptimizedCodeMap)            \
   V(CompileIgnition)                           \
   V(CompileIgnitionFinalization)               \
-  V(CompileInnerFunction)                      \
   V(CompileRenumber)                           \
   V(CompileRewriteReturnResult)                \
   V(CompileScopeAnalysis)                      \
@@ -804,6 +806,7 @@ class RuntimeCallTimer final {
   V(FunctionCallback)                          \
   V(FunctionPrototypeGetter)                   \
   V(FunctionPrototypeSetter)                   \
+  V(FunctionLengthGetter)                      \
   V(GC_Custom_AllAvailableGarbage)             \
   V(GC_Custom_IncrementalMarkingObserver)      \
   V(GC_Custom_SlowAllocateRaw)                 \
@@ -854,56 +857,60 @@ class RuntimeCallTimer final {
   V(TestCounter2)                              \
   V(TestCounter3)
 
-#define FOR_EACH_HANDLER_COUNTER(V)              \
-  V(KeyedLoadIC_LoadIndexedInterceptorStub)      \
-  V(KeyedLoadIC_KeyedLoadSloppyArgumentsStub)    \
-  V(KeyedLoadIC_LoadElementDH)                   \
-  V(KeyedLoadIC_LoadIndexedStringDH)             \
-  V(KeyedLoadIC_SlowStub)                        \
-  V(KeyedStoreIC_ElementsTransitionAndStoreStub) \
-  V(KeyedStoreIC_KeyedStoreSloppyArgumentsStub)  \
-  V(KeyedStoreIC_SlowStub)                       \
-  V(KeyedStoreIC_StoreFastElementStub)           \
-  V(KeyedStoreIC_StoreElementStub)               \
-  V(LoadIC_FunctionPrototypeStub)                \
-  V(LoadIC_HandlerCacheHit_Accessor)             \
-  V(LoadIC_LoadAccessorDH)                       \
-  V(LoadIC_LoadAccessorFromPrototypeDH)          \
-  V(LoadIC_LoadApiGetterDH)                      \
-  V(LoadIC_LoadApiGetterFromPrototypeDH)         \
-  V(LoadIC_LoadCallback)                         \
-  V(LoadIC_LoadConstantDH)                       \
-  V(LoadIC_LoadConstantFromPrototypeDH)          \
-  V(LoadIC_LoadFieldDH)                          \
-  V(LoadIC_LoadFieldFromPrototypeDH)             \
-  V(LoadIC_LoadGlobalDH)                         \
-  V(LoadIC_LoadGlobalFromPrototypeDH)            \
-  V(LoadIC_LoadIntegerIndexedExoticDH)           \
-  V(LoadIC_LoadInterceptorDH)                    \
-  V(LoadIC_LoadNonMaskingInterceptorDH)          \
-  V(LoadIC_LoadInterceptorFromPrototypeDH)       \
-  V(LoadIC_LoadNonexistentDH)                    \
-  V(LoadIC_LoadNormalDH)                         \
-  V(LoadIC_LoadNormalFromPrototypeDH)            \
-  V(LoadIC_LoadScriptContextFieldStub)           \
-  V(LoadIC_LoadViaGetter)                        \
-  V(LoadIC_NonReceiver)                          \
-  V(LoadIC_Premonomorphic)                       \
-  V(LoadIC_SlowStub)                             \
-  V(LoadIC_StringLength)                         \
-  V(StoreIC_HandlerCacheHit_Accessor)            \
-  V(StoreIC_NonReceiver)                         \
-  V(StoreIC_Premonomorphic)                      \
-  V(StoreIC_SlowStub)                            \
-  V(StoreIC_StoreCallback)                       \
-  V(StoreIC_StoreFieldDH)                        \
-  V(StoreIC_StoreGlobalDH)                       \
-  V(StoreIC_StoreGlobalTransitionDH)             \
-  V(StoreIC_StoreInterceptorStub)                \
-  V(StoreIC_StoreNormalDH)                       \
-  V(StoreIC_StoreScriptContextFieldStub)         \
-  V(StoreIC_StoreTransitionDH)                   \
-  V(StoreIC_StoreViaSetter)
+#define FOR_EACH_HANDLER_COUNTER(V)               \
+  V(KeyedLoadIC_LoadIndexedInterceptorStub)       \
+  V(KeyedLoadIC_KeyedLoadSloppyArgumentsStub)     \
+  V(KeyedLoadIC_LoadElementDH)                    \
+  V(KeyedLoadIC_LoadIndexedStringDH)              \
+  V(KeyedLoadIC_SlowStub)                         \
+  V(KeyedStoreIC_ElementsTransitionAndStoreStub)  \
+  V(KeyedStoreIC_KeyedStoreSloppyArgumentsStub)   \
+  V(KeyedStoreIC_SlowStub)                        \
+  V(KeyedStoreIC_StoreFastElementStub)            \
+  V(KeyedStoreIC_StoreElementStub)                \
+  V(LoadIC_FunctionPrototypeStub)                 \
+  V(LoadIC_HandlerCacheHit_Accessor)              \
+  V(LoadIC_LoadAccessorDH)                        \
+  V(LoadIC_LoadAccessorFromPrototypeDH)           \
+  V(LoadIC_LoadApiGetterFromPrototypeDH)          \
+  V(LoadIC_LoadCallback)                          \
+  V(LoadIC_LoadConstantDH)                        \
+  V(LoadIC_LoadConstantFromPrototypeDH)           \
+  V(LoadIC_LoadFieldDH)                           \
+  V(LoadIC_LoadFieldFromPrototypeDH)              \
+  V(LoadIC_LoadGlobalDH)                          \
+  V(LoadIC_LoadGlobalFromPrototypeDH)             \
+  V(LoadIC_LoadIntegerIndexedExoticDH)            \
+  V(LoadIC_LoadInterceptorDH)                     \
+  V(LoadIC_LoadNonMaskingInterceptorDH)           \
+  V(LoadIC_LoadInterceptorFromPrototypeDH)        \
+  V(LoadIC_LoadNativeDataPropertyDH)              \
+  V(LoadIC_LoadNativeDataPropertyFromPrototypeDH) \
+  V(LoadIC_LoadNonexistentDH)                     \
+  V(LoadIC_LoadNormalDH)                          \
+  V(LoadIC_LoadNormalFromPrototypeDH)             \
+  V(LoadIC_LoadScriptContextFieldStub)            \
+  V(LoadIC_NonReceiver)                           \
+  V(LoadIC_Premonomorphic)                        \
+  V(LoadIC_SlowStub)                              \
+  V(LoadIC_StringLength)                          \
+  V(LoadIC_StringWrapperLength)                   \
+  V(StoreIC_HandlerCacheHit_Accessor)             \
+  V(StoreIC_NonReceiver)                          \
+  V(StoreIC_Premonomorphic)                       \
+  V(StoreIC_SlowStub)                             \
+  V(StoreIC_StoreAccessorDH)                      \
+  V(StoreIC_StoreAccessorOnPrototypeDH)           \
+  V(StoreIC_StoreApiSetterOnPrototypeDH)          \
+  V(StoreIC_StoreFieldDH)                         \
+  V(StoreIC_StoreGlobalDH)                        \
+  V(StoreIC_StoreGlobalTransitionDH)              \
+  V(StoreIC_StoreInterceptorStub)                 \
+  V(StoreIC_StoreNativeDataPropertyDH)            \
+  V(StoreIC_StoreNativeDataPropertyOnPrototypeDH) \
+  V(StoreIC_StoreNormalDH)                        \
+  V(StoreIC_StoreScriptContextFieldStub)          \
+  V(StoreIC_StoreTransitionDH)
 
 class RuntimeCallStats final : public ZoneObject {
  public:
@@ -954,6 +961,7 @@ class RuntimeCallStats final : public ZoneObject {
   // Add all entries from another stats object.
   void Add(RuntimeCallStats* other);
   V8_EXPORT_PRIVATE void Print(std::ostream& os);
+  V8_EXPORT_PRIVATE void Print();
   V8_NOINLINE void Dump(v8::tracing::TracedValue* value);
 
   ThreadId thread_id() const { return thread_id_; }
@@ -1058,7 +1066,7 @@ class RuntimeCallTimerScope {
      20)                                                                       \
   HR(wasm_lazy_compilation_throughput, V8.WasmLazyCompilationThroughput, 1,    \
      10000, 50)                                                                \
-  HR(compile_script_cache_behaviour, V8.CompileScript.CacheBehaviour, 0, 12, 13)
+  HR(compile_script_cache_behaviour, V8.CompileScript.CacheBehaviour, 0, 18, 19)
 
 #define HISTOGRAM_TIMER_LIST(HT)                                               \
   /* Garbage collection timers. */                                             \
@@ -1237,8 +1245,6 @@ class RuntimeCallTimerScope {
   SC(cow_arrays_converted, V8.COWArraysConverted)                              \
   SC(constructed_objects, V8.ConstructedObjects)                               \
   SC(constructed_objects_runtime, V8.ConstructedObjectsRuntime)                \
-  SC(negative_lookups, V8.NegativeLookups)                                     \
-  SC(negative_lookups_miss, V8.NegativeLookupsMiss)                            \
   SC(megamorphic_stub_cache_probes, V8.MegamorphicStubCacheProbes)             \
   SC(megamorphic_stub_cache_misses, V8.MegamorphicStubCacheMisses)             \
   SC(megamorphic_stub_cache_updates, V8.MegamorphicStubCacheUpdates)           \

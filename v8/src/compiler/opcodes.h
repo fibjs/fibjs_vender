@@ -344,6 +344,7 @@
   V(TypeOf)                             \
   V(ClassOf)                            \
   V(Allocate)                           \
+  V(AllocateRaw)                        \
   V(LoadFieldByIndex)                   \
   V(LoadField)                          \
   V(LoadElement)                        \
@@ -357,6 +358,7 @@
   V(TransitionAndStoreNonNumberElement) \
   V(ToBoolean)                          \
   V(ObjectIsArrayBufferView)            \
+  V(ObjectIsBigInt)                     \
   V(ObjectIsCallable)                   \
   V(ObjectIsConstructor)                \
   V(ObjectIsDetectableCallable)         \

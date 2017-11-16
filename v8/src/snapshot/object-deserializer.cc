@@ -79,6 +79,7 @@ MaybeHandle<HeapObject> ObjectDeserializer::Deserialize(Isolate* isolate) {
     DeserializeDeferredObjects();
     FlushICacheForNewCodeObjectsAndRecordEmbeddedObjects();
     result = Handle<HeapObject>(HeapObject::cast(root));
+    Rehash();
     allocator()->RegisterDeserializedObjectsForBlackAllocation();
   }
   CommitPostProcessedObjects();
@@ -102,7 +103,7 @@ void ObjectDeserializer::CommitPostProcessedObjects() {
       isolate(), static_cast<int>(new_internalized_strings().size()));
   for (Handle<String> string : new_internalized_strings()) {
     StringTableInsertionKey key(*string);
-    DCHECK_NULL(StringTable::LookupKeyIfExists(isolate(), &key));
+    DCHECK_NULL(StringTable::ForwardStringIfExists(isolate(), &key, *string));
     StringTable::LookupKey(isolate(), &key);
   }
 

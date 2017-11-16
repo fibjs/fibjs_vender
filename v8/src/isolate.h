@@ -334,8 +334,8 @@ class ThreadLocalTop BASE_EMBEDDED {
 
   // Communication channel between Isolate::FindHandler and the CEntryStub.
   Context* pending_handler_context_;
-  Code* pending_handler_code_;
-  intptr_t pending_handler_offset_;
+  Address pending_handler_entrypoint_;
+  Address pending_handler_constant_pool_;
   Address pending_handler_fp_;
   Address pending_handler_sp_;
 
@@ -420,6 +420,7 @@ typedef std::vector<HeapObject*> DebugObjectCache;
   V(OOMErrorCallback, oom_behavior, nullptr)                                  \
   V(LogEventCallback, event_logger, nullptr)                                  \
   V(AllowCodeGenerationFromStringsCallback, allow_code_gen_callback, nullptr) \
+  V(AllowWasmCodeGenerationCallback, allow_wasm_code_gen_callback, nullptr)   \
   V(ExtensionCallback, wasm_module_callback, &NoExtension)                    \
   V(ExtensionCallback, wasm_instance_callback, &NoExtension)                  \
   V(ApiImplementationCallback, wasm_compile_streaming_callback, nullptr)      \
@@ -619,8 +620,8 @@ class Isolate {
   inline bool has_pending_exception();
 
   THREAD_LOCAL_TOP_ADDRESS(Context*, pending_handler_context)
-  THREAD_LOCAL_TOP_ADDRESS(Code*, pending_handler_code)
-  THREAD_LOCAL_TOP_ADDRESS(intptr_t, pending_handler_offset)
+  THREAD_LOCAL_TOP_ADDRESS(Address, pending_handler_entrypoint)
+  THREAD_LOCAL_TOP_ADDRESS(Address, pending_handler_constant_pool)
   THREAD_LOCAL_TOP_ADDRESS(Address, pending_handler_fp)
   THREAD_LOCAL_TOP_ADDRESS(Address, pending_handler_sp)
 
@@ -1126,8 +1127,6 @@ class Isolate {
   V8_EXPORT_PRIVATE CallInterfaceDescriptorData* call_descriptor_data(
       int index);
 
-  AccessCompilerData* access_compiler_data() { return access_compiler_data_; }
-
   void IterateDeferredHandles(RootVisitor* visitor);
   void LinkDeferredHandles(DeferredHandles* deferred_handles);
   void UnlinkDeferredHandles(DeferredHandles* deferred_handles);
@@ -1162,6 +1161,8 @@ class Isolate {
   void* stress_deopt_count_address() { return &stress_deopt_count_; }
 
   V8_EXPORT_PRIVATE base::RandomNumberGenerator* random_number_generator();
+
+  V8_EXPORT_PRIVATE base::RandomNumberGenerator* fuzzer_rng();
 
   // Generates a random number that is non-zero when masked
   // with the provided mask.
@@ -1515,8 +1516,8 @@ class Isolate {
   std::vector<int> regexp_indices_;
   DateCache* date_cache_;
   CallInterfaceDescriptorData* call_descriptor_data_;
-  AccessCompilerData* access_compiler_data_;
   base::RandomNumberGenerator* random_number_generator_;
+  base::RandomNumberGenerator* fuzzer_rng_;
   base::AtomicValue<RAILMode> rail_mode_;
   bool promise_hook_or_debug_is_active_;
   PromiseHook promise_hook_;

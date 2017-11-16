@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "src/objects/js-array.h"
 #include "src/snapshot/default-deserializer-allocator.h"
 #include "src/snapshot/serializer-common.h"
 #include "src/snapshot/snapshot-source-sink.h"
@@ -68,9 +69,6 @@ class Deserializer : public SerializerDeserializer {
     attached_objects_.push_back(attached_object);
   }
 
-  // Sort descriptors of deserialized maps using new string hashes.
-  void SortMapDescriptors();
-
   Isolate* isolate() const { return isolate_; }
   SnapshotByteSource* source() { return &source_; }
   const std::vector<Code*>& new_code_objects() const {
@@ -79,14 +77,14 @@ class Deserializer : public SerializerDeserializer {
   const std::vector<AccessorInfo*>& accessor_infos() const {
     return accessor_infos_;
   }
+  const std::vector<CallHandlerInfo*>& call_handler_infos() const {
+    return call_handler_infos_;
+  }
   const std::vector<Handle<String>>& new_internalized_strings() const {
     return new_internalized_strings_;
   }
   const std::vector<Handle<Script>>& new_scripts() const {
     return new_scripts_;
-  }
-  const std::vector<TransitionArray*>& transition_arrays() const {
-    return transition_arrays_;
   }
 
   AllocatorT* allocator() { return &allocator_; }
@@ -94,6 +92,8 @@ class Deserializer : public SerializerDeserializer {
   bool can_rehash() const { return can_rehash_; }
 
   bool IsLazyDeserializationEnabled() const;
+
+  void Rehash();
 
  private:
   void VisitRootPointers(Root root, Object** start, Object** end) override;
@@ -141,9 +141,9 @@ class Deserializer : public SerializerDeserializer {
 
   std::vector<Code*> new_code_objects_;
   std::vector<AccessorInfo*> accessor_infos_;
+  std::vector<CallHandlerInfo*> call_handler_infos_;
   std::vector<Handle<String>> new_internalized_strings_;
   std::vector<Handle<Script>> new_scripts_;
-  std::vector<TransitionArray*> transition_arrays_;
   std::vector<byte*> off_heap_backing_stores_;
 
   AllocatorT allocator_;
@@ -151,6 +151,7 @@ class Deserializer : public SerializerDeserializer {
 
   // TODO(6593): generalize rehashing, and remove this flag.
   bool can_rehash_;
+  std::vector<HeapObject*> to_rehash_;
 
 #ifdef DEBUG
   uint32_t num_api_references_;

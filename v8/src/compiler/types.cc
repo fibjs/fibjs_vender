@@ -68,34 +68,38 @@ bool Type::Contains(RangeType* range, i::Object* val) {
 
 double Type::Min() {
   DCHECK(this->Is(Number()));
+  DCHECK(!this->Is(NaN()));
   if (this->IsBitset()) return BitsetType::Min(this->AsBitset());
   if (this->IsUnion()) {
     double min = +V8_INFINITY;
-    for (int i = 0, n = this->AsUnion()->Length(); i < n; ++i) {
+    for (int i = 1, n = this->AsUnion()->Length(); i < n; ++i) {
       min = std::min(min, this->AsUnion()->Get(i)->Min());
     }
+    Type* bitset = this->AsUnion()->Get(0);
+    if (!bitset->Is(NaN())) min = std::min(min, bitset->Min());
     return min;
   }
   if (this->IsRange()) return this->AsRange()->Min();
-  if (this->IsOtherNumberConstant())
-    return this->AsOtherNumberConstant()->Value();
-  UNREACHABLE();
+  DCHECK(this->IsOtherNumberConstant());
+  return this->AsOtherNumberConstant()->Value();
 }
 
 double Type::Max() {
   DCHECK(this->Is(Number()));
+  DCHECK(!this->Is(NaN()));
   if (this->IsBitset()) return BitsetType::Max(this->AsBitset());
   if (this->IsUnion()) {
     double max = -V8_INFINITY;
-    for (int i = 0, n = this->AsUnion()->Length(); i < n; ++i) {
+    for (int i = 1, n = this->AsUnion()->Length(); i < n; ++i) {
       max = std::max(max, this->AsUnion()->Get(i)->Max());
     }
+    Type* bitset = this->AsUnion()->Get(0);
+    if (!bitset->Is(NaN())) max = std::max(max, bitset->Max());
     return max;
   }
   if (this->IsRange()) return this->AsRange()->Max();
-  if (this->IsOtherNumberConstant())
-    return this->AsOtherNumberConstant()->Value();
-  UNREACHABLE();
+  DCHECK(this->IsOtherNumberConstant());
+  return this->AsOtherNumberConstant()->Value();
 }
 
 // -----------------------------------------------------------------------------
@@ -173,6 +177,8 @@ Type::bitset BitsetType::Lub(i::Map* map) {
       return kInternalizedSeqString;
     case SYMBOL_TYPE:
       return kSymbol;
+    case BIGINT_TYPE:
+      return kBigInt;
     case ODDBALL_TYPE: {
       Heap* heap = map->GetHeap();
       if (map == heap->undefined_map()) return kUndefined;
@@ -275,7 +281,6 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case MODULE_TYPE:
     case MODULE_INFO_ENTRY_TYPE:
     case CELL_TYPE:
-    case BIGINT_TYPE:
       return kOtherInternal;
 
     // Remaining instance types are unsupported for now. If any of them do
@@ -394,6 +399,7 @@ Type::bitset BitsetType::Glb(double min, double max) {
 double BitsetType::Min(bitset bits) {
   DisallowHeapAllocation no_allocation;
   DCHECK(Is(bits, kNumber));
+  DCHECK(!Is(bits, kNaN));
   const Boundary* mins = Boundaries();
   bool mz = bits & kMinusZero;
   for (size_t i = 0; i < BoundariesSize(); ++i) {
@@ -401,13 +407,14 @@ double BitsetType::Min(bitset bits) {
       return mz ? std::min(0.0, mins[i].min) : mins[i].min;
     }
   }
-  if (mz) return 0;
-  return std::numeric_limits<double>::quiet_NaN();
+  DCHECK(mz);
+  return 0;
 }
 
 double BitsetType::Max(bitset bits) {
   DisallowHeapAllocation no_allocation;
   DCHECK(Is(bits, kNumber));
+  DCHECK(!Is(bits, kNaN));
   const Boundary* mins = Boundaries();
   bool mz = bits & kMinusZero;
   if (BitsetType::Is(mins[BoundariesSize() - 1].internal, bits)) {
@@ -418,8 +425,8 @@ double BitsetType::Max(bitset bits) {
       return mz ? std::max(0.0, mins[i + 1].min - 1) : mins[i + 1].min - 1;
     }
   }
-  if (mz) return 0;
-  return std::numeric_limits<double>::quiet_NaN();
+  DCHECK(mz);
+  return 0;
 }
 
 // static
@@ -517,8 +524,7 @@ bool Type::SlowIs(Type* that) {
 bool Type::Maybe(Type* that) {
   DisallowHeapAllocation no_allocation;
 
-  if (!BitsetType::IsInhabited(this->BitsetLub() & that->BitsetLub()))
-    return false;
+  if (BitsetType::IsNone(this->BitsetLub() & that->BitsetLub())) return false;
 
   // (T1 \/ ... \/ Tn) overlaps T  if  (T1 overlaps T) \/ ... \/ (Tn overlaps T)
   if (this->IsUnion()) {
@@ -715,9 +721,7 @@ int Type::IntersectAux(Type* lhs, Type* rhs, UnionType* result, int size,
     return size;
   }
 
-  if (!BitsetType::IsInhabited(lhs->BitsetLub() & rhs->BitsetLub())) {
-    return size;
-  }
+  if (BitsetType::IsNone(lhs->BitsetLub() & rhs->BitsetLub())) return size;
 
   if (lhs->IsRange()) {
     if (rhs->IsBitset()) {

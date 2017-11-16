@@ -201,40 +201,32 @@ DEFINE_IMPLICATION(harmony_import_meta, harmony_dynamic_import)
   V(harmony_bigint, "harmony arbitrary precision integers")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
-#define HARMONY_STAGED_BASE(V)                                          \
+#define HARMONY_STAGED(V)                                               \
   V(harmony_function_tostring, "harmony Function.prototype.toString")   \
-  V(harmony_regexp_property, "harmony Unicode regexp property classes") \
   V(harmony_restrict_constructor_return,                                \
     "harmony disallow non undefined primitive return value from class " \
     "constructor")                                                      \
-  V(harmony_dynamic_import, "harmony dynamic import")                   \
-
-#ifdef V8_INTL_SUPPORT
-#define HARMONY_STAGED(V)           \
-  HARMONY_STAGED_BASE(V)            \
-  V(harmony_number_format_to_parts, \
-    "Intl.NumberFormat.prototype."  \
-    "formatToParts")
-#else
-#define HARMONY_STAGED(V) HARMONY_STAGED_BASE(V)
-#endif
+  V(harmony_dynamic_import, "harmony dynamic import")
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING_BASE(V)                                         \
-  V(harmony_strict_legacy_accessor_builtins,                             \
-    "treat __defineGetter__ and related functions as strict")            \
-  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")              \
-  V(harmony_regexp_dotall, "harmony regexp dotAll flag")                 \
-  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")              \
-  V(harmony_regexp_named_captures, "harmony regexp named captures")      \
-  V(harmony_async_iteration, "harmony async iteration")                  \
-  V(harmony_template_escapes,                                            \
-    "harmony invalid escapes in tagged template literals")               \
+#define HARMONY_SHIPPING_BASE(V)                                        \
+  V(harmony_strict_legacy_accessor_builtins,                            \
+    "treat __defineGetter__ and related functions as strict")           \
+  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")             \
+  V(harmony_regexp_dotall, "harmony regexp dotAll flag")                \
+  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")             \
+  V(harmony_regexp_named_captures, "harmony regexp named captures")     \
+  V(harmony_regexp_property, "harmony Unicode regexp property classes") \
+  V(harmony_async_iteration, "harmony async iteration")                 \
+  V(harmony_template_escapes,                                           \
+    "harmony invalid escapes in tagged template literals")              \
   V(harmony_promise_finally, "harmony Promise.prototype.finally")
 
 #ifdef V8_INTL_SUPPORT
-#define HARMONY_SHIPPING(V) \
-  HARMONY_SHIPPING_BASE(V)  \
+#define HARMONY_SHIPPING(V)                      \
+  HARMONY_SHIPPING_BASE(V)                       \
+  V(harmony_number_format_to_parts,              \
+    "Intl.NumberFormat.prototype.formatToParts") \
   V(harmony_plural_rules, "Intl.PluralRules")
 #else
 #define HARMONY_SHIPPING(V) HARMONY_SHIPPING_BASE(V)
@@ -304,7 +296,7 @@ DEFINE_BOOL(trace_block_coverage, false,
 DEFINE_BOOL(feedback_normalization, false,
             "feed back normalization to constructors")
 // TODO(jkummerow): This currently adds too much load on the stub cache.
-DEFINE_BOOL_READONLY(internalize_on_the_fly, false,
+DEFINE_BOOL_READONLY(internalize_on_the_fly, true,
                      "internalize string keys for generic keyed ICs on the fly")
 
 // Flags for optimization types.
@@ -316,6 +308,7 @@ DEFINE_VALUE_IMPLICATION(optimize_for_size, max_semi_space_size, 1)
 
 // Flags for data representation optimizations
 DEFINE_BOOL(unbox_double_arrays, true, "automatically unbox arrays of doubles")
+DEFINE_BOOL_READONLY(string_slices, true, "use string slices")
 
 // Flags for Ignition.
 DEFINE_BOOL(ignition_elide_noneffectful_bytecodes, true,
@@ -622,6 +615,8 @@ DEFINE_BOOL(write_protect_code_memory, false, "write protect code memory")
 #endif
 DEFINE_BOOL(concurrent_marking, V8_CONCURRENT_MARKING_BOOL,
             "use concurrent marking")
+DEFINE_BOOL(parallel_marking, false, "use parallel marking in atomic pause")
+DEFINE_IMPLICATION(parallel_marking, concurrent_marking)
 DEFINE_BOOL(trace_concurrent_marking, false, "trace concurrent marking")
 DEFINE_BOOL(minor_mc_parallel_marking, true,
             "use parallel marking for the young generation")
@@ -649,6 +644,7 @@ DEFINE_VALUE_IMPLICATION(track_gc_object_stats, gc_stats, 1)
 DEFINE_VALUE_IMPLICATION(trace_gc_object_stats, gc_stats, 1)
 DEFINE_NEG_IMPLICATION(trace_gc_object_stats, incremental_marking)
 DEFINE_NEG_IMPLICATION(track_retaining_path, incremental_marking)
+DEFINE_NEG_IMPLICATION(track_retaining_path, parallel_marking)
 DEFINE_NEG_IMPLICATION(track_retaining_path, concurrent_marking)
 DEFINE_BOOL(track_detached_contexts, true,
             "track native contexts that are expected to be garbage collected")
@@ -678,10 +674,14 @@ DEFINE_BOOL(force_marking_deque_overflows, false,
 DEFINE_BOOL(stress_compaction, false,
             "stress the GC compactor to flush out bugs (implies "
             "--force_marking_deque_overflows)")
+DEFINE_INT(stress_compaction_percentage, 0,
+           "Stress GC compaction by selecting X percent of pages as evacuation "
+           "candidates. It overrides stress_compaction.")
 DEFINE_BOOL(stress_incremental_marking, false,
             "force incremental marking for small heaps and run it more often")
-DEFINE_INT(stress_incremental_marking_percentage, 0,
-           "force incremental marking after X percent of the standard limit")
+DEFINE_INT(stress_marking, 0,
+           "force marking at random points between 0 and X (inclusive) percent "
+           "of the regular marking start limit")
 DEFINE_BOOL(manual_evacuation_candidates_selection, false,
             "Test mode only flag. It allows an unit test to select evacuation "
             "candidates pages (requires --stress_compaction).")
@@ -889,6 +889,9 @@ DEFINE_BOOL(preparser_scope_analysis, true,
             "perform scope analysis for preparsed inner functions")
 DEFINE_IMPLICATION(preparser_scope_analysis, aggressive_lazy_inner_functions)
 
+// compiler.cc
+DEFINE_BOOL(background_compile, false, "enable background compilation")
+
 // simulator-arm.cc, simulator-arm64.cc and simulator-mips.cc
 DEFINE_BOOL(trace_sim, false, "Trace simulator execution")
 DEFINE_BOOL(debug_sim, false, "Enable debugging the simulator")
@@ -937,6 +940,9 @@ DEFINE_INT(hash_seed, 0,
 DEFINE_INT(random_seed, 0,
            "Default seed for initializing random generator "
            "(0, the default, means to use system random).")
+DEFINE_INT(fuzzer_random_seed, 0,
+           "Default seed for initializing fuzzer random generator "
+           "(0, the default, means to use system random).")
 DEFINE_BOOL(trace_rail, false, "trace RAIL mode")
 DEFINE_BOOL(print_all_exceptions, false,
             "print exception object and stack trace on each thrown exception")
@@ -950,6 +956,10 @@ DEFINE_VALUE_IMPLICATION(runtime_call_stats, runtime_stats, 1)
 // snapshot-common.cc
 DEFINE_BOOL(lazy_deserialization, true,
             "Deserialize code lazily from the snapshot.")
+DEFINE_BOOL(lazy_handler_deserialization, false,
+            "Deserialize bytecode handlers lazily from the snapshot.")
+DEFINE_IMPLICATION(lazy_handler_deserialization, lazy_deserialization)
+DEFINE_IMPLICATION(future, lazy_handler_deserialization)
 DEFINE_BOOL(trace_lazy_deserialization, false, "Trace lazy deserialization.")
 DEFINE_BOOL(profile_deserialization, false,
             "Print the time it takes to deserialize the snapshot.")
@@ -958,6 +968,7 @@ DEFINE_BOOL(serialization_statistics, false,
 
 // Regexp
 DEFINE_BOOL(regexp_optimization, true, "generate optimized regexp code")
+DEFINE_BOOL(regexp_mode_modifiers, false, "enable inline flags in regexp.")
 
 // Testing flags test/cctest/test-{flags,api,serialization}.cc
 DEFINE_BOOL(testing_bool_flag, true, "testing_bool_flag")
@@ -1027,7 +1038,6 @@ DEFINE_BOOL(enable_slow_asserts, false,
 
 // codegen-ia32.cc / codegen-arm.cc / macro-assembler-*.cc
 DEFINE_BOOL(print_ast, false, "print source AST")
-DEFINE_BOOL(print_builtin_ast, false, "print source AST for builtins")
 DEFINE_BOOL(trap_on_abort, false, "replace aborts by breakpoints")
 
 // compiler.cc
@@ -1243,6 +1253,7 @@ DEFINE_BOOL(single_threaded_gc, false, "disable the use of background gc tasks")
 DEFINE_NEG_IMPLICATION(single_threaded_gc, concurrent_marking)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, concurrent_sweeping)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, parallel_compaction)
+DEFINE_NEG_IMPLICATION(single_threaded_gc, parallel_marking)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, parallel_pointer_update)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, parallel_scavenge)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, concurrent_store_buffer)

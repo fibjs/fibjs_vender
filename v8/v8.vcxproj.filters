@@ -100,18 +100,6 @@
     <Filter Include="Source Files\ic">
       <UniqueIdentifier>{6019b762-3351-6dad-b1ec-1384959b5883}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\ic\ia32">
-      <UniqueIdentifier>{6602bd0f-4c9a-7aa6-4b75-d8433dffae53}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\ic\ppc">
-      <UniqueIdentifier>{d6e99f08-7d31-eb33-b832-c0eb174f373a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\ic\s390">
-      <UniqueIdentifier>{6370d2e6-c57b-d64a-8b5c-ebc01206aa1c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\ic\x64">
-      <UniqueIdentifier>{7e4c29af-711e-18fb-353a-9dc159584321}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\interpreter">
       <UniqueIdentifier>{59810ce5-926b-7a85-f08d-bf58feae40cd}</UniqueIdentifier>
     </Filter>
@@ -305,9 +293,6 @@
     </ClInclude>
     <ClInclude Include="src\assert-scope.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ast\ast-expression-rewriter.h">
-      <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\ast-function-literal-id-reindexer.h">
       <Filter>Source Files\ast</Filter>
@@ -1233,9 +1218,6 @@
     <ClInclude Include="src\ia32\assembler-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="src\ia32\code-stubs-ia32.h">
-      <Filter>Source Files\ia32</Filter>
-    </ClInclude>
     <ClInclude Include="src\ia32\frame-constants-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
@@ -1248,12 +1230,6 @@
     <ClInclude Include="src\ia32\sse-instr.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="src\ic\access-compiler-data.h">
-      <Filter>Source Files\ic</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ic\access-compiler.h">
-      <Filter>Source Files\ic</Filter>
-    </ClInclude>
     <ClInclude Include="src\ic\accessor-assembler.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1261,9 +1237,6 @@
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\call-optimization.h">
-      <Filter>Source Files\ic</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ic\handler-compiler.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\handler-configuration-inl.h">
@@ -1403,6 +1376,12 @@
     </ClInclude>
     <ClInclude Include="src\layout-descriptor.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libplatform\default-background-task-runner.h">
+      <Filter>Source Files\libplatform</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libplatform\default-foreground-task-runner.h">
+      <Filter>Source Files\libplatform</Filter>
     </ClInclude>
     <ClInclude Include="src\libplatform\default-platform.h">
       <Filter>Source Files\libplatform</Filter>
@@ -2127,9 +2106,6 @@
     <ClInclude Include="src\x64\assembler-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
-    <ClInclude Include="src\x64\code-stubs-x64.h">
-      <Filter>Source Files\x64</Filter>
-    </ClInclude>
     <ClInclude Include="src\x64\frame-constants-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
@@ -2209,9 +2185,6 @@
     </ClCompile>
     <ClCompile Include="src\assert-scope.cc">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ast\ast-expression-rewriter.cc">
-      <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast-function-literal-id-reindexer.cc">
       <Filter>Source Files\ast</Filter>
@@ -3155,9 +3128,6 @@
     <ClCompile Include="src\ia32\simulator-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\access-compiler.cc">
-      <Filter>Source Files\ic</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\accessor-assembler.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
@@ -3167,17 +3137,8 @@
     <ClCompile Include="src\ic\call-optimization.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\handler-compiler.cc">
-      <Filter>Source Files\ic</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\handler-configuration.cc">
       <Filter>Source Files\ic</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\ia32\access-compiler-ia32.cc">
-      <Filter>Source Files\ic\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\ia32\handler-compiler-ia32.cc">
-      <Filter>Source Files\ic\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\ic-stats.cc">
       <Filter>Source Files\ic</Filter>
@@ -3188,26 +3149,8 @@
     <ClCompile Include="src\ic\keyed-store-generic.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\ppc\access-compiler-ppc.cc">
-      <Filter>Source Files\ic\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\ppc\handler-compiler-ppc.cc">
-      <Filter>Source Files\ic\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\s390\access-compiler-s390.cc">
-      <Filter>Source Files\ic\s390</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\s390\handler-compiler-s390.cc">
-      <Filter>Source Files\ic\s390</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\stub-cache.cc">
       <Filter>Source Files\ic</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x64\access-compiler-x64.cc">
-      <Filter>Source Files\ic\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x64\handler-compiler-x64.cc">
-      <Filter>Source Files\ic\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\icu_util.cc">
       <Filter>Source Files</Filter>
@@ -3304,6 +3247,12 @@
     </ClCompile>
     <ClCompile Include="src\layout-descriptor.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\default-background-task-runner.cc">
+      <Filter>Source Files\libplatform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\default-foreground-task-runner.cc">
+      <Filter>Source Files\libplatform</Filter>
     </ClCompile>
     <ClCompile Include="src\libplatform\default-platform.cc">
       <Filter>Source Files\libplatform</Filter>

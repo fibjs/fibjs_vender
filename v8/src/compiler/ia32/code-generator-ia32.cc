@@ -286,14 +286,8 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
                                              : OMIT_REMEMBERED_SET;
     SaveFPRegsMode const save_fp_mode =
         frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-#ifdef V8_CSA_WRITE_BARRIER
     __ CallRecordWriteStub(object_, scratch1_, remembered_set_action,
                            save_fp_mode);
-#else
-    __ CallStubDelayed(
-        new (zone_) RecordWriteStub(nullptr, object_, scratch0_, scratch1_,
-                                    remembered_set_action, save_fp_mode));
-#endif
   }
 
  private:
@@ -2231,6 +2225,173 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                  i.InputOperand(2), i.InputInt8(1));
       break;
     }
+    case kSSEI16x8Shl: {
+      __ psllw(i.OutputSimd128Register(), i.InputInt8(1));
+      break;
+    }
+    case kAVXI16x8Shl: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpsllw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt8(1));
+      break;
+    }
+    case kSSEI16x8ShrS: {
+      __ psraw(i.OutputSimd128Register(), i.InputInt8(1));
+      break;
+    }
+    case kAVXI16x8ShrS: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpsraw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt8(1));
+      break;
+    }
+    case kSSEI16x8Add: {
+      __ paddw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8Add: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpaddw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8AddSaturateS: {
+      __ paddsw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8AddSaturateS: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpaddsw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8Sub: {
+      __ psubw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8Sub: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpsubw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8SubSaturateS: {
+      __ psubsw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8SubSaturateS: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpsubsw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8Mul: {
+      __ pmullw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8Mul: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpmullw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8MinS: {
+      __ pminsw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8MinS: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpminsw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8MaxS: {
+      __ pmaxsw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8MaxS: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpmaxsw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8Eq: {
+      __ pcmpeqw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8Eq: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpcmpeqw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                  i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8Ne: {
+      __ pcmpeqw(i.OutputSimd128Register(), i.InputOperand(1));
+      __ pcmpeqw(kScratchDoubleReg, kScratchDoubleReg);
+      __ pxor(i.OutputSimd128Register(), kScratchDoubleReg);
+      break;
+    }
+    case kAVXI16x8Ne: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpcmpeqw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                  i.InputOperand(1));
+      __ vpcmpeqw(kScratchDoubleReg, kScratchDoubleReg, kScratchDoubleReg);
+      __ vpxor(i.OutputSimd128Register(), i.OutputSimd128Register(),
+               kScratchDoubleReg);
+      break;
+    }
+    case kSSEI16x8ShrU: {
+      __ psrlw(i.OutputSimd128Register(), i.InputInt8(1));
+      break;
+    }
+    case kAVXI16x8ShrU: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpsrlw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                i.InputInt8(1));
+      break;
+    }
+    case kSSEI16x8AddSaturateU: {
+      __ paddusw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8AddSaturateU: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpaddusw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                  i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8SubSaturateU: {
+      __ psubusw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8SubSaturateU: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpsubusw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                  i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8MinU: {
+      CpuFeatureScope sse_scope(tasm(), SSE4_1);
+      __ pminuw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8MinU: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpminuw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8MaxU: {
+      CpuFeatureScope sse_scope(tasm(), SSE4_1);
+      __ pmaxuw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8MaxU: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vpmaxuw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
     case kIA32I8x16Splat: {
       XMMRegister dst = i.OutputSimd128Register();
       __ Movd(dst, i.InputOperand(0));
@@ -2815,16 +2976,18 @@ void CodeGenerator::AssembleConstructFrame() {
       __ AssertUnreachable(kUnexpectedReturnFromWasmTrap);
       __ bind(&done);
     }
-    __ sub(esp, Immediate(shrink_slots * kPointerSize));
+
+    // Skip callee-saved slots, which are pushed below.
+    shrink_slots -= base::bits::CountPopulation(saves);
+    if (shrink_slots > 0) {
+      __ sub(esp, Immediate(shrink_slots * kPointerSize));
+    }
   }
 
   if (saves != 0) {  // Save callee-saved registers.
     DCHECK(!info()->is_osr());
-    int pushed = 0;
     for (int i = Register::kNumRegisters - 1; i >= 0; i--) {
-      if (!((1 << i) & saves)) continue;
-      __ push(Register::from_code(i));
-      ++pushed;
+      if (((1 << i) & saves)) __ push(Register::from_code(i));
     }
   }
 }

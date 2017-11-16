@@ -715,6 +715,9 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
     case IrOpcode::kObjectIsArrayBufferView:
       result = LowerObjectIsArrayBufferView(node);
       break;
+    case IrOpcode::kObjectIsBigInt:
+      result = LowerObjectIsBigInt(node);
+      break;
     case IrOpcode::kObjectIsCallable:
       result = LowerObjectIsCallable(node);
       break;
@@ -828,6 +831,9 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
       break;
     case IrOpcode::kCheckEqualsInternalizedString:
       LowerCheckEqualsInternalizedString(node, frame_state);
+      break;
+    case IrOpcode::kAllocate:
+      result = LowerAllocate(node);
       break;
     case IrOpcode::kCheckEqualsSymbol:
       LowerCheckEqualsSymbol(node, frame_state);
@@ -1917,6 +1923,13 @@ Node* EffectControlLinearizer::LowerCheckedTruncateTaggedToWord32(
   return done.PhiAt(0);
 }
 
+Node* EffectControlLinearizer::LowerAllocate(Node* node) {
+  Node* size = node->InputAt(0);
+  PretenureFlag pretenure = PretenureFlagOf(node->op());
+  Node* new_node = __ Allocate(pretenure, size);
+  return new_node;
+}
+
 Node* EffectControlLinearizer::LowerObjectIsArrayBufferView(Node* node) {
   Node* value = node->InputAt(0);
 
@@ -1933,6 +1946,28 @@ Node* EffectControlLinearizer::LowerObjectIsArrayBufferView(Node* node) {
   Node* vfalse = __ Uint32LessThan(
       __ Int32Sub(value_instance_type, __ Int32Constant(JS_TYPED_ARRAY_TYPE)),
       __ Int32Constant(2));
+  __ Goto(&done, vfalse);
+
+  __ Bind(&if_smi);
+  __ Goto(&done, __ Int32Constant(0));
+
+  __ Bind(&done);
+  return done.PhiAt(0);
+}
+
+Node* EffectControlLinearizer::LowerObjectIsBigInt(Node* node) {
+  Node* value = node->InputAt(0);
+
+  auto if_smi = __ MakeDeferredLabel();
+  auto done = __ MakeLabel(MachineRepresentation::kBit);
+
+  Node* check = ObjectIsSmi(value);
+  __ GotoIf(check, &if_smi);
+  Node* value_map = __ LoadField(AccessBuilder::ForMap(), value);
+  Node* value_instance_type =
+      __ LoadField(AccessBuilder::ForMapInstanceType(), value_map);
+  Node* vfalse =
+      __ Word32Equal(value_instance_type, __ Uint32Constant(BIGINT_TYPE));
   __ Goto(&done, vfalse);
 
   __ Bind(&if_smi);

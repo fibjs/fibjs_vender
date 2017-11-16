@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 
+#include "src/base/utils/random-number-generator.h"
 #include "src/cancelable-task.h"
 #include "src/code-stubs.h"
 #include "src/compilation-cache.h"
@@ -864,7 +865,6 @@ void MarkCompactCollector::ComputeEvacuationHeuristics(
   }
 }
 
-
 void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
   DCHECK(space->identity() == OLD_SPACE || space->identity() == CODE_SPACE);
 
@@ -909,6 +909,19 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
         total_live_bytes += pages[i].first;
         p->ClearFlag(MemoryChunk::FORCE_EVACUATION_CANDIDATE_FOR_TESTING);
         AddEvacuationCandidate(p);
+      }
+    }
+  } else if (FLAG_stress_compaction_percentage > 0) {
+    size_t percent =
+        isolate()->fuzzer_rng()->NextInt(FLAG_stress_compaction_percentage + 1);
+
+    size_t pages_to_mark_count = percent * pages.size() / 100;
+    if (pages_to_mark_count) {
+      for (uint64_t i : isolate()->fuzzer_rng()->NextSample(
+               pages.size(), pages_to_mark_count)) {
+        candidate_count++;
+        total_live_bytes += pages[i].first;
+        AddEvacuationCandidate(pages[i].second);
       }
     }
   } else if (FLAG_stress_compaction) {
@@ -2296,8 +2309,13 @@ void MinorMarkCompactCollector::MarkLiveObjects() {
     TRACE_GC(heap()->tracer(), GCTracer::Scope::MINOR_MC_MARK_GLOBAL_HANDLES);
     isolate()->global_handles()->MarkNewSpaceWeakUnmodifiedObjectsPending(
         &IsUnmarkedObjectForYoungGeneration);
-    isolate()->global_handles()->IterateNewSpaceWeakUnmodifiedRoots(
-        &root_visitor);
+    isolate()
+        ->global_handles()
+        ->IterateNewSpaceWeakUnmodifiedRootsForFinalizers(&root_visitor);
+    isolate()
+        ->global_handles()
+        ->IterateNewSpaceWeakUnmodifiedRootsForPhantomHandles(
+            &root_visitor, &IsUnmarkedObjectForYoungGeneration);
     ProcessMarkingWorklist();
   }
 }
@@ -2524,7 +2542,8 @@ void MarkCompactCollector::MarkLiveObjects() {
 
   {
     TRACE_GC(heap()->tracer(), GCTracer::Scope::MC_MARK_MAIN);
-    if (FLAG_concurrent_marking) {
+    if (FLAG_parallel_marking) {
+      DCHECK(FLAG_concurrent_marking);
       heap_->concurrent_marking()->RescheduleTasksIfNeeded();
     }
     ProcessMarkingWorklist();
@@ -2545,6 +2564,7 @@ void MarkCompactCollector::MarkLiveObjects() {
       TRACE_GC(heap()->tracer(),
                GCTracer::Scope::MC_MARK_WEAK_CLOSURE_EPHEMERAL);
       ProcessEphemeralMarking(false);
+      DCHECK(marking_worklist()->IsEmpty());
     }
 
     // The objects reachable from the roots, weak maps or object groups
@@ -2561,12 +2581,12 @@ void MarkCompactCollector::MarkLiveObjects() {
           &IsUnmarkedHeapObject);
       ProcessMarkingWorklist();
     }
-    // Then we mark the objects.
 
     {
       TRACE_GC(heap()->tracer(),
                GCTracer::Scope::MC_MARK_WEAK_CLOSURE_WEAK_ROOTS);
-      heap()->isolate()->global_handles()->IterateWeakRoots(&root_visitor);
+      heap()->isolate()->global_handles()->IterateWeakRootsForFinalizers(
+          &root_visitor);
       ProcessMarkingWorklist();
     }
 
@@ -2582,6 +2602,12 @@ void MarkCompactCollector::MarkLiveObjects() {
         TRACE_GC(heap()->tracer(), GCTracer::Scope::MC_MARK_WRAPPER_EPILOGUE);
         heap()->local_embedder_heap_tracer()->TraceEpilogue();
       }
+      DCHECK(marking_worklist()->IsEmpty());
+    }
+
+    {
+      heap()->isolate()->global_handles()->IterateWeakRootsForPhantomHandles(
+          &IsUnmarkedHeapObject);
     }
   }
 
@@ -2863,6 +2889,11 @@ void MarkCompactCollector::ProcessWeakCollections() {
           RecordSlot(table, key_slot, *key_slot);
           Object** value_slot =
               table->RawFieldOfElementAt(ObjectHashTable::EntryToValueIndex(i));
+          if (V8_UNLIKELY(FLAG_track_retaining_path) &&
+              (*value_slot)->IsHeapObject()) {
+            heap()->AddEphemeralRetainer(heap_object,
+                                         HeapObject::cast(*value_slot));
+          }
           visitor.VisitPointer(table, value_slot);
         }
       }
@@ -4442,8 +4473,10 @@ int MarkCompactCollector::Sweeper::ParallelSweepPage(Page* page,
     if (page->SweepingDone()) return 0;
 
     // If the page is a code page, the CodePageMemoryModificationScope changes
-    // the page protection mode from read+execute to read+write while sweeping.
-    CodePageMemoryModificationScope code_page_scope(page);
+    // the page protection mode from rx -> rwx while sweeping.
+    // TODO(hpayer): Allow only rx -> rw transitions.
+    CodePageMemoryModificationScope code_page_scope(
+        page, CodePageMemoryModificationScope::READ_WRITE_EXECUTABLE);
 
     DCHECK_EQ(Page::kSweepingPending,
               page->concurrent_sweeping_state().Value());

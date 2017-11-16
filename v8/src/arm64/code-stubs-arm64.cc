@@ -17,7 +17,6 @@
 #include "src/frame-constants.h"
 #include "src/frames.h"
 #include "src/heap/heap-inl.h"
-#include "src/ic/handler-compiler.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
 #include "src/isolate.h"
@@ -100,47 +99,6 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
 
   __ Bind(&done);
   __ Ret();
-}
-
-
-void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
-  CPURegList saved_regs = kCallerSaved;
-  CPURegList saved_fp_regs = kCallerSavedV;
-
-  // We don't allow a GC during a store buffer overflow so there is no need to
-  // store the registers in any particular way, but we do have to store and
-  // restore them.
-
-  // We don't care if MacroAssembler scratch registers are corrupted.
-  saved_regs.Remove(*(masm->TmpList()));
-  saved_fp_regs.Remove(*(masm->FPTmpList()));
-  DCHECK_EQ(saved_regs.Count() % 2, 0);
-  DCHECK_EQ(saved_fp_regs.Count() % 2, 0);
-
-  __ PushCPURegList(saved_regs);
-  if (save_doubles()) {
-    __ PushCPURegList(saved_fp_regs);
-  }
-
-  AllowExternalCallThatCantCauseGC scope(masm);
-  __ Mov(x0, ExternalReference::isolate_address(isolate()));
-  __ CallCFunction(
-      ExternalReference::store_buffer_overflow_function(isolate()), 1, 0);
-
-  if (save_doubles()) {
-    __ PopCPURegList(saved_fp_regs);
-  }
-  __ PopCPURegList(saved_regs);
-  __ Ret();
-}
-
-
-void StoreBufferOverflowStub::GenerateFixedRegStubsAheadOfTime(
-    Isolate* isolate) {
-  StoreBufferOverflowStub stub1(isolate, kDontSaveFPRegs);
-  stub1.GetCode();
-  StoreBufferOverflowStub stub2(isolate, kSaveFPRegs);
-  stub2.GetCode();
 }
 
 
@@ -269,10 +227,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   // It is important that the following stubs are generated in this order
   // because pregenerated stubs can only call other pregenerated stubs.
-  // RecordWriteStub uses StoreBufferOverflowStub, which in turn uses
-  // CEntryStub.
   CEntryStub::GenerateAheadOfTime(isolate);
-  StoreBufferOverflowStub::GenerateFixedRegStubsAheadOfTime(isolate);
   CommonArrayConstructorStub::GenerateStubsAheadOfTime(isolate);
   StoreFastElementStub::GenerateAheadOfTime(isolate);
 }
@@ -284,8 +239,7 @@ void CodeStub::GenerateFPStubs(Isolate* isolate) {
   USE(isolate);
 }
 
-
-bool CEntryStub::NeedsImmovableCode() {
+Movability CEntryStub::NeedsImmovableCode() {
   // CEntryStub stores the return address on the stack before calling into
   // C++ code. In some cases, the VM accesses this address, but it is not used
   // when the C++ code returns to the stub because LR holds the return address
@@ -294,7 +248,7 @@ bool CEntryStub::NeedsImmovableCode() {
   // TODO(jbramley): Whilst this is the only analysis that makes sense, I can't
   // find any comment to confirm this, and I don't hit any crashes whatever
   // this function returns. The anaylsis should be properly confirmed.
-  return true;
+  return kImmovable;
 }
 
 
@@ -483,10 +437,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
   ExternalReference pending_handler_context_address(
       IsolateAddressId::kPendingHandlerContextAddress, isolate());
-  ExternalReference pending_handler_code_address(
-      IsolateAddressId::kPendingHandlerCodeAddress, isolate());
-  ExternalReference pending_handler_offset_address(
-      IsolateAddressId::kPendingHandlerOffsetAddress, isolate());
+  ExternalReference pending_handler_entrypoint_address(
+      IsolateAddressId::kPendingHandlerEntrypointAddress, isolate());
   ExternalReference pending_handler_fp_address(
       IsolateAddressId::kPendingHandlerFPAddress, isolate());
   ExternalReference pending_handler_sp_address(
@@ -528,12 +480,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ Bind(&not_js_frame);
 
   // Compute the handler entry address and jump to it.
-  __ Mov(x10, Operand(pending_handler_code_address));
+  __ Mov(x10, Operand(pending_handler_entrypoint_address));
   __ Ldr(x10, MemOperand(x10));
-  __ Mov(x11, Operand(pending_handler_offset_address));
-  __ Ldr(x11, MemOperand(x11));
-  __ Add(x10, x10, Code::kHeaderSize - kHeapObjectTag);
-  __ Add(x10, x10, x11);
   __ Br(x10);
 }
 
@@ -723,264 +671,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ Ret();
 }
 
-
-RecordWriteStub::RegisterAllocation::RegisterAllocation(Register object,
-                                                        Register address,
-                                                        Register scratch)
-    : object_(object),
-      address_(address),
-      scratch0_(scratch),
-      saved_regs_(kCallerSaved),
-      saved_fp_regs_(kCallerSavedV) {
-  DCHECK(!AreAliased(scratch, object, address));
-
-  // The SaveCallerSaveRegisters method needs to save caller-saved
-  // registers, but we don't bother saving MacroAssembler scratch registers.
-  saved_regs_.Remove(MacroAssembler::DefaultTmpList());
-  saved_fp_regs_.Remove(MacroAssembler::DefaultFPTmpList());
-
-  // We would like to require more scratch registers for this stub,
-  // but the number of registers comes down to the ones used in
-  // FullCodeGen::SetVar(), which is architecture independent.
-  // We allocate 2 extra scratch registers that we'll save on the stack.
-  CPURegList pool_available = GetValidRegistersForAllocation();
-  CPURegList used_regs(object, address, scratch);
-  pool_available.Remove(used_regs);
-  scratch1_ = pool_available.PopLowestIndex().Reg();
-  scratch2_ = pool_available.PopLowestIndex().Reg();
-
-  // The scratch registers will be restored by other means so we don't need
-  // to save them with the other caller saved registers.
-  saved_regs_.Remove(scratch0_);
-  saved_regs_.Remove(scratch1_);
-  saved_regs_.Remove(scratch2_);
-}
-
-RecordWriteStub::Mode RecordWriteStub::GetMode(Code* stub) {
-  // Find the mode depending on the first two instructions.
-  Instruction* instr1 =
-      reinterpret_cast<Instruction*>(stub->instruction_start());
-  Instruction* instr2 = instr1->following();
-
-  if (instr1->IsUncondBranchImm()) {
-    DCHECK(instr2->IsPCRelAddressing() && (instr2->Rd() == xzr.code()));
-    return INCREMENTAL;
-  }
-
-  DCHECK(instr1->IsPCRelAddressing() && (instr1->Rd() == xzr.code()));
-
-  if (instr2->IsUncondBranchImm()) {
-    return INCREMENTAL_COMPACTION;
-  }
-
-  DCHECK(instr2->IsPCRelAddressing());
-
-  return STORE_BUFFER_ONLY;
-}
-
-// We patch the two first instructions of the stub back and forth between an
-// adr and branch when we start and stop incremental heap marking.
-// The branch is
-//   b label
-// The adr is
-//   adr xzr label
-// so effectively a nop.
-void RecordWriteStub::Patch(Code* stub, Mode mode) {
-  // We are going to patch the two first instructions of the stub.
-  PatchingAssembler patcher(stub->GetIsolate(), stub->instruction_start(), 2);
-  Instruction* instr1 = patcher.InstructionAt(0);
-  Instruction* instr2 = patcher.InstructionAt(kInstructionSize);
-  // Instructions must be either 'adr' or 'b'.
-  DCHECK(instr1->IsPCRelAddressing() || instr1->IsUncondBranchImm());
-  DCHECK(instr2->IsPCRelAddressing() || instr2->IsUncondBranchImm());
-  // Retrieve the offsets to the labels.
-  auto offset_to_incremental_noncompacting =
-      static_cast<int32_t>(instr1->ImmPCOffset());
-  auto offset_to_incremental_compacting =
-      static_cast<int32_t>(instr2->ImmPCOffset());
-
-  switch (mode) {
-    case STORE_BUFFER_ONLY:
-      DCHECK(GetMode(stub) == INCREMENTAL ||
-             GetMode(stub) == INCREMENTAL_COMPACTION);
-      patcher.adr(xzr, offset_to_incremental_noncompacting);
-      patcher.adr(xzr, offset_to_incremental_compacting);
-      break;
-    case INCREMENTAL:
-      DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
-      patcher.b(offset_to_incremental_noncompacting >> kInstructionSizeLog2);
-      patcher.adr(xzr, offset_to_incremental_compacting);
-      break;
-    case INCREMENTAL_COMPACTION:
-      DCHECK(GetMode(stub) == STORE_BUFFER_ONLY);
-      patcher.adr(xzr, offset_to_incremental_noncompacting);
-      patcher.b(offset_to_incremental_compacting >> kInstructionSizeLog2);
-      break;
-  }
-  DCHECK(GetMode(stub) == mode);
-}
-
-void RecordWriteStub::GenerateIncremental(MacroAssembler* masm, Mode mode) {
-  // We need some extra registers for this stub, they have been allocated
-  // but we need to save them before using them.
-  regs_.Save(masm);
-
-  if (remembered_set_action() == EMIT_REMEMBERED_SET) {
-    Label dont_need_remembered_set;
-
-    Register val = regs_.scratch0();
-    __ Ldr(val, MemOperand(regs_.address()));
-    __ JumpIfNotInNewSpace(val, &dont_need_remembered_set);
-
-    __ JumpIfInNewSpace(regs_.object(), &dont_need_remembered_set);
-
-    // First notify the incremental marker if necessary, then update the
-    // remembered set.
-    CheckNeedsToInformIncrementalMarker(
-        masm, kUpdateRememberedSetOnNoNeedToInformIncrementalMarker, mode);
-    InformIncrementalMarker(masm);
-    regs_.Restore(masm);  // Restore the extra scratch registers we used.
-
-    __ RememberedSetHelper(object(), address(),
-                           value(),  // scratch1
-                           save_fp_regs_mode());
-
-    __ Bind(&dont_need_remembered_set);
-  }
-
-  CheckNeedsToInformIncrementalMarker(
-      masm, kReturnOnNoNeedToInformIncrementalMarker, mode);
-  InformIncrementalMarker(masm);
-  regs_.Restore(masm);  // Restore the extra scratch registers we used.
-  __ Ret();
-}
-
-
-void RecordWriteStub::InformIncrementalMarker(MacroAssembler* masm) {
-  regs_.SaveCallerSaveRegisters(masm, save_fp_regs_mode());
-  Register address =
-    x0.Is(regs_.address()) ? regs_.scratch0() : regs_.address();
-  DCHECK(!address.Is(regs_.object()));
-  DCHECK(!address.Is(x0));
-  __ Mov(address, regs_.address());
-  __ Mov(x0, regs_.object());
-  __ Mov(x1, address);
-  __ Mov(x2, ExternalReference::isolate_address(isolate()));
-
-  AllowExternalCallThatCantCauseGC scope(masm);
-  ExternalReference function =
-      ExternalReference::incremental_marking_record_write_function(
-          isolate());
-  __ CallCFunction(function, 3, 0);
-
-  regs_.RestoreCallerSaveRegisters(masm, save_fp_regs_mode());
-}
-
-void RecordWriteStub::Activate(Code* code) {
-  code->GetHeap()->incremental_marking()->ActivateGeneratedStub(code);
-}
-
-void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
-    MacroAssembler* masm,
-    OnNoNeedToInformIncrementalMarker on_no_need,
-    Mode mode) {
-  Label need_incremental;
-  Label need_incremental_pop_scratch;
-
-#ifndef V8_CONCURRENT_MARKING
-  Label on_black;
-  // If the object is not black we don't have to inform the incremental marker.
-  __ JumpIfBlack(regs_.object(), regs_.scratch0(), regs_.scratch1(), &on_black);
-
-  regs_.Restore(masm);  // Restore the extra scratch registers we used.
-  if (on_no_need == kUpdateRememberedSetOnNoNeedToInformIncrementalMarker) {
-    __ RememberedSetHelper(object(), address(),
-                           value(),  // scratch1
-                           save_fp_regs_mode());
-  } else {
-    __ Ret();
-  }
-
-  __ Bind(&on_black);
-#endif
-
-  // Get the value from the slot.
-  Register val = regs_.scratch0();
-  __ Ldr(val, MemOperand(regs_.address()));
-
-  if (mode == INCREMENTAL_COMPACTION) {
-    Label ensure_not_white;
-
-    __ CheckPageFlagClear(val, regs_.scratch1(),
-                          MemoryChunk::kEvacuationCandidateMask,
-                          &ensure_not_white);
-
-    __ CheckPageFlagClear(regs_.object(),
-                          regs_.scratch1(),
-                          MemoryChunk::kSkipEvacuationSlotsRecordingMask,
-                          &need_incremental);
-
-    __ Bind(&ensure_not_white);
-  }
-
-  // We need extra registers for this, so we push the object and the address
-  // register temporarily.
-  __ Push(regs_.address(), regs_.object());
-  __ JumpIfWhite(val,
-                 regs_.scratch1(),  // Scratch.
-                 regs_.object(),    // Scratch.
-                 regs_.address(),   // Scratch.
-                 regs_.scratch2(),  // Scratch.
-                 &need_incremental_pop_scratch);
-  __ Pop(regs_.object(), regs_.address());
-
-  regs_.Restore(masm);  // Restore the extra scratch registers we used.
-  if (on_no_need == kUpdateRememberedSetOnNoNeedToInformIncrementalMarker) {
-    __ RememberedSetHelper(object(), address(),
-                           value(),  // scratch1
-                           save_fp_regs_mode());
-  } else {
-    __ Ret();
-  }
-
-  __ Bind(&need_incremental_pop_scratch);
-  __ Pop(regs_.object(), regs_.address());
-
-  __ Bind(&need_incremental);
-  // Fall through when we need to inform the incremental marker.
-}
-
-
-void RecordWriteStub::Generate(MacroAssembler* masm) {
-  Label skip_to_incremental_noncompacting;
-  Label skip_to_incremental_compacting;
-
-  // We patch these two first instructions back and forth between a nop and
-  // real branch when we start and stop incremental heap marking.
-  // Initially the stub is expected to be in STORE_BUFFER_ONLY mode, so 2 nops
-  // are generated.
-  // See RecordWriteStub::Patch for details.
-  {
-    InstructionAccurateScope scope(masm, 2);
-    __ adr(xzr, &skip_to_incremental_noncompacting);
-    __ adr(xzr, &skip_to_incremental_compacting);
-  }
-
-  if (remembered_set_action() == EMIT_REMEMBERED_SET) {
-    __ RememberedSetHelper(object(), address(),
-                           value(),  // scratch1
-                           save_fp_regs_mode());
-  }
-  __ Ret();
-
-  __ Bind(&skip_to_incremental_noncompacting);
-  GenerateIncremental(masm, INCREMENTAL);
-
-  __ Bind(&skip_to_incremental_compacting);
-  GenerateIncremental(masm, INCREMENTAL_COMPACTION);
-}
-
-
 // The entry hook is a "BumpSystemStackPointer" instruction (sub), followed by
 // a "Push lr" instruction, followed by a call.
 static const unsigned int kProfileEntryHookCallSize =
@@ -1095,138 +785,6 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm,
   // Branch to the stub.
   __ Blr(lr);
 }
-
-void NameDictionaryLookupStub::GenerateNegativeLookup(MacroAssembler* masm,
-                                                      Label* miss,
-                                                      Label* done,
-                                                      Register receiver,
-                                                      Register properties,
-                                                      Handle<Name> name,
-                                                      Register scratch0) {
-  DCHECK(!AreAliased(receiver, properties, scratch0));
-  DCHECK(name->IsUniqueName());
-  // If names of slots in range from 1 to kProbes - 1 for the hash value are
-  // not equal to the name and kProbes-th slot is not used (its name is the
-  // undefined value), it guarantees the hash table doesn't contain the
-  // property. It's true even if some slots represent deleted properties
-  // (their names are the hole value).
-  for (int i = 0; i < kInlinedProbes; i++) {
-    // scratch0 points to properties hash.
-    // Compute the masked index: (hash + i + i * i) & mask.
-    Register index = scratch0;
-    // Capacity is smi 2^n.
-    __ Ldrsw(index, UntagSmiFieldMemOperand(properties, kCapacityOffset));
-    __ Sub(index, index, 1);
-    __ And(index, index, name->Hash() + NameDictionary::GetProbeOffset(i));
-
-    // Scale the index by multiplying by the entry size.
-    STATIC_ASSERT(NameDictionary::kEntrySize == 3);
-    __ Add(index, index, Operand(index, LSL, 1));  // index *= 3.
-
-    Register entity_name = scratch0;
-    // Having undefined at this place means the name is not contained.
-    Register tmp = index;
-    __ Add(tmp, properties, Operand(index, LSL, kPointerSizeLog2));
-    __ Ldr(entity_name, FieldMemOperand(tmp, kElementsStartOffset));
-
-    __ JumpIfRoot(entity_name, Heap::kUndefinedValueRootIndex, done);
-
-    // Stop if found the property.
-    __ Cmp(entity_name, Operand(name));
-    __ B(eq, miss);
-  }
-
-  CPURegList spill_list(CPURegister::kRegister, kXRegSizeInBits, 0, 6);
-  spill_list.Remove(scratch0);  // Scratch registers don't need to be preserved.
-  spill_list.Combine(lr);
-  spill_list.Combine(padreg);  // Add padreg to make the list of even length.
-  DCHECK_EQ(spill_list.Count() % 2, 0);
-
-  __ PushCPURegList(spill_list);
-
-  __ Ldr(x0, FieldMemOperand(receiver, JSObject::kPropertiesOrHashOffset));
-  __ Mov(x1, Operand(name));
-  NameDictionaryLookupStub stub(masm->isolate());
-  __ CallStub(&stub);
-  // Move stub return value to scratch0. Note that scratch0 is not included in
-  // spill_list and won't be clobbered by PopCPURegList.
-  __ Mov(scratch0, x0);
-  __ PopCPURegList(spill_list);
-
-  __ Cbz(scratch0, done);
-  __ B(miss);
-}
-
-
-void NameDictionaryLookupStub::Generate(MacroAssembler* masm) {
-  // This stub overrides SometimesSetsUpAFrame() to return false. That means
-  // we cannot call anything that could cause a GC from this stub.
-  //
-  // Arguments are in x0 and x1:
-  //   x0: property dictionary.
-  //   x1: the name of the property we are looking for.
-  //
-  // Return value is in x0 and is zero if lookup failed, non zero otherwise.
-  // If the lookup is successful, x2 will contains the index of the entry.
-
-  Register result = x0;
-  Register dictionary = x0;
-  Register key = x1;
-  Register index = x2;
-  Register mask = x3;
-  Register hash = x4;
-  Register undefined = x5;
-  Register entry_key = x6;
-
-  Label in_dictionary, not_in_dictionary;
-
-  __ Ldrsw(mask, UntagSmiFieldMemOperand(dictionary, kCapacityOffset));
-  __ Sub(mask, mask, 1);
-
-  __ Ldr(hash, FieldMemOperand(key, Name::kHashFieldOffset));
-  __ LoadRoot(undefined, Heap::kUndefinedValueRootIndex);
-
-  for (int i = kInlinedProbes; i < kTotalProbes; i++) {
-    // Compute the masked index: (hash + i + i * i) & mask.
-    // Capacity is smi 2^n.
-    if (i > 0) {
-      // Add the probe offset (i + i * i) left shifted to avoid right shifting
-      // the hash in a separate instruction. The value hash + i + i * i is right
-      // shifted in the following and instruction.
-      DCHECK_LT(NameDictionary::GetProbeOffset(i),
-                1 << (32 - Name::kHashFieldOffset));
-      __ Add(index, hash,
-             NameDictionary::GetProbeOffset(i) << Name::kHashShift);
-    } else {
-      __ Mov(index, hash);
-    }
-    __ And(index, mask, Operand(index, LSR, Name::kHashShift));
-
-    // Scale the index by multiplying by the entry size.
-    STATIC_ASSERT(NameDictionary::kEntrySize == 3);
-    __ Add(index, index, Operand(index, LSL, 1));  // index *= 3.
-
-    __ Add(index, dictionary, Operand(index, LSL, kPointerSizeLog2));
-    __ Ldr(entry_key, FieldMemOperand(index, kElementsStartOffset));
-
-    // Having undefined at this place means the name is not contained.
-    __ Cmp(entry_key, undefined);
-    __ B(eq, &not_in_dictionary);
-
-    // Stop if found the property.
-    __ Cmp(entry_key, key);
-    __ B(eq, &in_dictionary);
-  }
-
-  __ Bind(&in_dictionary);
-  __ Mov(result, 1);
-  __ Ret();
-
-  __ Bind(&not_in_dictionary);
-  __ Mov(result, 0);
-  __ Ret();
-}
-
 
 template<class T>
 static void CreateArrayDispatch(MacroAssembler* masm,

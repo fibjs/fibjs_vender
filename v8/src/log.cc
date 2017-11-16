@@ -420,7 +420,7 @@ class JitLogger : public CodeEventLogger {
                                JitCodeEvent::PositionType position_type);
 
   void* StartCodePosInfoEvent();
-  void EndCodePosInfoEvent(AbstractCode* code, void* jit_handler_data);
+  void EndCodePosInfoEvent(Address start_address, void* jit_handler_data);
 
  private:
   void LogRecordedBuffer(AbstractCode* code, SharedFunctionInfo* shared,
@@ -496,12 +496,12 @@ void* JitLogger::StartCodePosInfoEvent() {
   return event.user_data;
 }
 
-void JitLogger::EndCodePosInfoEvent(AbstractCode* code,
+void JitLogger::EndCodePosInfoEvent(Address start_address,
                                     void* jit_handler_data) {
   JitCodeEvent event;
   memset(&event, 0, sizeof(event));
   event.type = JitCodeEvent::CODE_END_LINE_INFO_RECORDING;
-  event.code_start = code->instruction_start();
+  event.code_start = start_address;
   event.user_data = jit_handler_data;
 
   code_event_handler_(&event);
@@ -562,8 +562,8 @@ class Profiler: public base::Thread {
   virtual void Run();
 
   // Pause and Resume TickSample data collection.
-  void pause() { paused_ = true; }
-  void resume() { paused_ = false; }
+  void Pause() { paused_ = true; }
+  void Resume() { paused_ = false; }
 
  private:
   // Waits for a signal and removes profiling data.
@@ -588,7 +588,7 @@ class Profiler: public base::Thread {
   int head_;  // Index to the buffer head.
   base::Atomic32 tail_;             // Index to the buffer tail.
   bool overflow_;  // Tell whether a buffer overflow has occurred.
-  // Sempahore used for buffer synchronization.
+  // Semaphore used for buffer synchronization.
   base::Semaphore buffer_semaphore_;
 
   // Tells whether profiler is engaged, that is, processing thread is stated.
@@ -646,9 +646,8 @@ class Ticker: public sampler::Sampler {
   SamplingThread* sampling_thread_;
 };
 
-
 //
-// Profiler implementation.
+// Profiler implementation when invoking with --prof.
 //
 Profiler::Profiler(Isolate* isolate)
     : base::Thread(Options("v8:Profiler")),
@@ -669,10 +668,9 @@ void Profiler::Engage() {
 
   std::vector<base::OS::SharedLibraryAddress> addresses =
       base::OS::GetSharedLibraryAddresses();
-  for (size_t i = 0; i < addresses.size(); ++i) {
-    LOG(isolate_,
-        SharedLibraryEvent(addresses[i].library_path, addresses[i].start,
-                           addresses[i].end, addresses[i].aslr_slide));
+  for (const auto& address : addresses) {
+    LOG(isolate_, SharedLibraryEvent(address.library_path, address.start,
+                                     address.end, address.aslr_slide));
   }
 
   // Start thread processing the profiler buffer.
@@ -699,7 +697,7 @@ void Profiler::Disengage() {
   base::Relaxed_Store(&running_, 0);
   v8::TickSample sample;
   // Reset 'paused_' flag, otherwise semaphore may not be signalled.
-  resume();
+  Resume();
   Insert(&sample);
   Join();
 
@@ -769,21 +767,8 @@ void Logger::UncheckedStringEvent(const char* name, const char* value) {
 }
 
 
-void Logger::IntEvent(const char* name, int value) {
-  if (FLAG_log) UncheckedIntEvent(name, value);
-}
-
-
 void Logger::IntPtrTEvent(const char* name, intptr_t value) {
   if (FLAG_log) UncheckedIntPtrTEvent(name, value);
-}
-
-
-void Logger::UncheckedIntEvent(const char* name, int value) {
-  if (!log_->IsEnabled()) return;
-  Log::MessageBuilder msg(log_);
-  msg << name << kNext << value;
-  msg.WriteToLogFile();
 }
 
 
@@ -1196,7 +1181,7 @@ void Logger::CodeMoveEvent(AbstractCode* from, Address to) {
   MoveEventInternal(CodeEventListener::CODE_MOVE_EVENT, from->address(), to);
 }
 
-void Logger::CodeLinePosInfoRecordEvent(AbstractCode* code,
+void Logger::CodeLinePosInfoRecordEvent(Address code_start,
                                         ByteArray* source_position_table) {
   if (jit_logger_) {
     void* jit_handler_data = jit_logger_->StartCodePosInfoEvent();
@@ -1212,7 +1197,7 @@ void Logger::CodeLinePosInfoRecordEvent(AbstractCode* code,
           jit_handler_data, iter.code_offset(),
           iter.source_position().ScriptOffset(), JitCodeEvent::POSITION);
     }
-    jit_logger_->EndCodePosInfoEvent(code, jit_handler_data);
+    jit_logger_->EndCodePosInfoEvent(code_start, jit_handler_data);
   }
 }
 
@@ -1298,7 +1283,7 @@ void Logger::FunctionEvent(const char* reason, Script* script, int script_id,
 void Logger::FunctionEvent(const char* reason, Script* script, int script_id,
                            double time_delta, int start_position,
                            int end_position, const char* function_name,
-                           int function_name_length) {
+                           size_t function_name_length) {
   if (!log_->IsEnabled() || !FLAG_log_function_events) return;
   Log::MessageBuilder msg(log_);
   AppendFunctionMessage(msg, reason, script, script_id, time_delta,
@@ -1458,7 +1443,7 @@ void Logger::MapDetails(Map* map) {
 void Logger::StopProfiler() {
   if (!log_->IsEnabled()) return;
   if (profiler_ != nullptr) {
-    profiler_->pause();
+    profiler_->Pause();
     is_logging_ = false;
     removeCodeEventListener(this);
   }
@@ -1613,6 +1598,7 @@ void Logger::LogBytecodeHandlers() {
       interpreter::Bytecode bytecode = interpreter::Bytecodes::FromByte(index);
       if (interpreter::Bytecodes::BytecodeHasHandler(bytecode, operand_scale)) {
         Code* code = interpreter->GetBytecodeHandler(bytecode, operand_scale);
+        if (isolate_->heap()->IsDeserializeLazyHandler(code)) continue;
         std::string bytecode_name =
             interpreter::Bytecodes::ToString(bytecode, operand_scale);
         PROFILE(isolate_, CodeCreateEvent(

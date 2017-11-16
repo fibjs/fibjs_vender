@@ -1183,6 +1183,8 @@ Reduction JSBuiltinReducer::ReduceArrayShift(Node* node) {
         Node* loop = graph()->NewNode(common()->Loop(2), if_true1, if_true1);
         Node* eloop =
             graph()->NewNode(common()->EffectPhi(2), etrue1, etrue1, loop);
+        Node* terminate = graph()->NewNode(common()->Terminate(), eloop, loop);
+        NodeProperties::MergeControlToEnd(graph(), common(), terminate);
         Node* index = graph()->NewNode(
             common()->Phi(MachineRepresentation::kTagged, 2),
             jsgraph()->OneConstant(),
@@ -1414,6 +1416,8 @@ Reduction JSBuiltinReducer::ReduceCollectionIteratorNext(
         graph()->NewNode(common()->Loop(2), control, control);
     Node* eloop = effect =
         graph()->NewNode(common()->EffectPhi(2), effect, effect, loop);
+    Node* terminate = graph()->NewNode(common()->Terminate(), eloop, loop);
+    NodeProperties::MergeControlToEnd(graph(), common(), terminate);
 
     // Check if reached the final table of the {receiver}.
     Node* table = effect = graph()->NewNode(
@@ -1502,6 +1506,8 @@ Reduction JSBuiltinReducer::ReduceCollectionIteratorNext(
     Node* loop = graph()->NewNode(common()->Loop(2), control, control);
     Node* eloop =
         graph()->NewNode(common()->EffectPhi(2), effect, effect, loop);
+    Node* terminate = graph()->NewNode(common()->Terminate(), eloop, loop);
+    NodeProperties::MergeControlToEnd(graph(), common(), terminate);
     Node* iloop = graph()->NewNode(
         common()->Phi(MachineRepresentation::kTagged, 2), index, index, loop);
     NodeProperties::SetType(iloop, type_cache_.kFixedArrayLengthType);
@@ -2262,7 +2268,7 @@ Reduction JSBuiltinReducer::ReduceObjectCreate(Node* node) {
   Node* properties = jsgraph()->EmptyFixedArrayConstant();
   if (instance_map->is_dictionary_map()) {
     // Allocated an empty NameDictionary as backing store for the properties.
-    Handle<Map> map(isolate()->heap()->hash_table_map(), isolate());
+    Handle<Map> map(isolate()->heap()->name_dictionary_map(), isolate());
     int capacity =
         NameDictionary::ComputeCapacity(NameDictionary::kInitialCapacity);
     DCHECK(base::bits::IsPowerOfTwo(capacity));

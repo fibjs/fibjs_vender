@@ -1166,7 +1166,7 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
       // Access the actual element.
       ValueEffectControl continuation =
           BuildElementAccess(receiver, index, value, effect, control,
-                             access_info, access_mode, store_mode);
+                             access_info, access_mode, load_mode, store_mode);
       value = continuation.value();
       effect = continuation.effect();
       control = continuation.control();
@@ -1232,7 +1232,7 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
         // Access the actual element.
         ValueEffectControl continuation = BuildElementAccess(
             this_receiver, this_index, this_value, this_effect, this_control,
-            access_info, access_mode, store_mode);
+            access_info, access_mode, load_mode, store_mode);
         values.push_back(continuation.value());
         effects.push_back(continuation.effect());
         controls.push_back(continuation.control());
@@ -1583,26 +1583,13 @@ Node* JSNativeContextSpecialization::InlinePropertyGetterCall(
   FrameStateInfo const& frame_info = OpParameter<FrameStateInfo>(frame_state);
   Handle<SharedFunctionInfo> shared_info =
       frame_info.shared_info().ToHandleChecked();
-  // We need a FrameState for the getter stub to restore the correct
-  // context before returning to fullcodegen.
-  FrameStateFunctionInfo const* frame_info0 =
-      common()->CreateFrameStateFunctionInfo(FrameStateType::kGetterStub, 1, 0,
-                                             shared_info);
-  Node* frame_state0 = graph()->NewNode(
-      common()->FrameState(BailoutId::None(), OutputFrameStateCombine::Ignore(),
-                           frame_info0),
-      graph()->NewNode(common()->StateValues(1, SparseInputMask::Dense()),
-                       receiver),
-      jsgraph()->EmptyStateValues(), jsgraph()->EmptyStateValues(), context,
-      target, frame_state);
-
   // Introduce the call to the getter function.
   Node* value;
   if (access_info.constant()->IsJSFunction()) {
     value = *effect = *control = graph()->NewNode(
         jsgraph()->javascript()->Call(2, CallFrequency(), VectorSlotPair(),
                                       ConvertReceiverMode::kNotNullOrUndefined),
-        target, receiver, context, frame_state0, *effect, *control);
+        target, receiver, context, frame_state, *effect, *control);
   } else {
     DCHECK(access_info.constant()->IsFunctionTemplateInfo());
     Handle<FunctionTemplateInfo> function_template_info(
@@ -1612,7 +1599,7 @@ Node* JSNativeContextSpecialization::InlinePropertyGetterCall(
         access_info.holder().is_null()
             ? receiver
             : jsgraph()->Constant(access_info.holder().ToHandleChecked());
-    value = InlineApiCall(receiver, holder, frame_state0, nullptr, effect,
+    value = InlineApiCall(receiver, holder, frame_state, nullptr, effect,
                           control, shared_info, function_template_info);
   }
   // Remember to rewire the IfException edge if this is inside a try-block.
@@ -1635,25 +1622,12 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
   FrameStateInfo const& frame_info = OpParameter<FrameStateInfo>(frame_state);
   Handle<SharedFunctionInfo> shared_info =
       frame_info.shared_info().ToHandleChecked();
-  // We need a FrameState for the setter stub to restore the correct
-  // context and return the appropriate value to fullcodegen.
-  FrameStateFunctionInfo const* frame_info0 =
-      common()->CreateFrameStateFunctionInfo(FrameStateType::kSetterStub, 2, 0,
-                                             shared_info);
-  Node* frame_state0 = graph()->NewNode(
-      common()->FrameState(BailoutId::None(), OutputFrameStateCombine::Ignore(),
-                           frame_info0),
-      graph()->NewNode(common()->StateValues(2, SparseInputMask::Dense()),
-                       receiver, value),
-      jsgraph()->EmptyStateValues(), jsgraph()->EmptyStateValues(), context,
-      target, frame_state);
-
   // Introduce the call to the setter function.
   if (access_info.constant()->IsJSFunction()) {
     *effect = *control = graph()->NewNode(
         jsgraph()->javascript()->Call(3, CallFrequency(), VectorSlotPair(),
                                       ConvertReceiverMode::kNotNullOrUndefined),
-        target, receiver, value, context, frame_state0, *effect, *control);
+        target, receiver, value, context, frame_state, *effect, *control);
   } else {
     DCHECK(access_info.constant()->IsFunctionTemplateInfo());
     Handle<FunctionTemplateInfo> function_template_info(
@@ -1663,7 +1637,7 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
         access_info.holder().is_null()
             ? receiver
             : jsgraph()->Constant(access_info.holder().ToHandleChecked());
-    InlineApiCall(receiver, holder, frame_state0, value, effect, control,
+    InlineApiCall(receiver, holder, frame_state, value, effect, control,
                   shared_info, function_template_info);
   }
   // Remember to rewire the IfException edge if this is inside a try-block.
@@ -2074,7 +2048,7 @@ JSNativeContextSpecialization::ValueEffectControl
 JSNativeContextSpecialization::BuildElementAccess(
     Node* receiver, Node* index, Node* value, Node* effect, Node* control,
     ElementAccessInfo const& access_info, AccessMode access_mode,
-    KeyedAccessStoreMode store_mode) {
+    KeyedAccessLoadMode load_mode, KeyedAccessStoreMode store_mode) {
   DCHECK_NE(AccessMode::kStoreInLiteral, access_mode);
 
   // TODO(bmeurer): We currently specialize based on elements kind. We should
@@ -2149,7 +2123,8 @@ JSNativeContextSpecialization::BuildElementAccess(
           check, jsgraph()->ZeroConstant(), length);
     }
 
-    if (store_mode == STORE_NO_TRANSITION_IGNORE_OUT_OF_BOUNDS) {
+    if (load_mode == LOAD_IGNORE_OUT_OF_BOUNDS ||
+        store_mode == STORE_NO_TRANSITION_IGNORE_OUT_OF_BOUNDS) {
       // Check that the {index} is a valid array index, we do the actual
       // bounds check below and just skip the store below if it's out of
       // bounds for the {receiver}.
@@ -2167,9 +2142,43 @@ JSNativeContextSpecialization::BuildElementAccess(
         GetArrayTypeFromElementsKind(elements_kind);
     switch (access_mode) {
       case AccessMode::kLoad: {
-        value = effect = graph()->NewNode(
-            simplified()->LoadTypedElement(external_array_type), buffer,
-            base_pointer, external_pointer, index, effect, control);
+        // Check if we can return undefined for out-of-bounds loads.
+        if (load_mode == LOAD_IGNORE_OUT_OF_BOUNDS) {
+          Node* check =
+              graph()->NewNode(simplified()->NumberLessThan(), index, length);
+          Node* branch = graph()->NewNode(common()->Branch(BranchHint::kTrue),
+                                          check, control);
+
+          Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+          Node* etrue = effect;
+          Node* vtrue;
+          {
+            // Perform the actual load
+            vtrue = etrue = graph()->NewNode(
+                simplified()->LoadTypedElement(external_array_type), buffer,
+                base_pointer, external_pointer, index, etrue, if_true);
+          }
+
+          Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
+          Node* efalse = effect;
+          Node* vfalse;
+          {
+            // Materialize undefined for out-of-bounds loads.
+            vfalse = jsgraph()->UndefinedConstant();
+          }
+
+          control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+          effect =
+              graph()->NewNode(common()->EffectPhi(2), etrue, efalse, control);
+          value =
+              graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                               vtrue, vfalse, control);
+        } else {
+          // Perform the actual load.
+          value = effect = graph()->NewNode(
+              simplified()->LoadTypedElement(external_array_type), buffer,
+              base_pointer, external_pointer, index, effect, control);
+        }
         break;
       }
       case AccessMode::kStoreInLiteral:
@@ -2260,6 +2269,14 @@ JSNativeContextSpecialization::BuildElementAccess(
     if (IsGrowStoreMode(store_mode)) {
       // For growing stores we validate the {index} below.
       DCHECK_EQ(AccessMode::kStore, access_mode);
+    } else if (load_mode == LOAD_IGNORE_OUT_OF_BOUNDS &&
+               CanTreatHoleAsUndefined(receiver_maps)) {
+      // Check that the {index} is a valid array index, we do the actual
+      // bounds check below and just skip the store below if it's out of
+      // bounds for the {receiver}.
+      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
+                                        jsgraph()->Constant(Smi::kMaxValue),
+                                        effect, control);
     } else {
       // Check that the {index} is in the valid range for the {receiver}.
       index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
@@ -2292,34 +2309,88 @@ JSNativeContextSpecialization::BuildElementAccess(
           elements_kind == HOLEY_SMI_ELEMENTS) {
         element_access.machine_type = MachineType::AnyTagged();
       }
-      // Perform the actual backing store access.
-      value = effect =
-          graph()->NewNode(simplified()->LoadElement(element_access), elements,
-                           index, effect, control);
-      // Handle loading from holey backing stores correctly, by either mapping
-      // the hole to undefined if possible, or deoptimizing otherwise.
-      if (elements_kind == HOLEY_ELEMENTS ||
-          elements_kind == HOLEY_SMI_ELEMENTS) {
-        // Check if we are allowed to turn the hole into undefined.
-        if (CanTreatHoleAsUndefined(receiver_maps)) {
-          // Turn the hole into undefined.
-          value = graph()->NewNode(simplified()->ConvertTaggedHoleToUndefined(),
-                                   value);
-        } else {
-          // Bailout if we see the hole.
-          value = effect = graph()->NewNode(simplified()->CheckNotTaggedHole(),
-                                            value, effect, control);
+
+      // Check if we can return undefined for out-of-bounds loads.
+      if (load_mode == LOAD_IGNORE_OUT_OF_BOUNDS &&
+          CanTreatHoleAsUndefined(receiver_maps)) {
+        Node* check =
+            graph()->NewNode(simplified()->NumberLessThan(), index, length);
+        Node* branch = graph()->NewNode(common()->Branch(BranchHint::kTrue),
+                                        check, control);
+
+        Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+        Node* etrue = effect;
+        Node* vtrue;
+        {
+          // Perform the actual load
+          vtrue = etrue =
+              graph()->NewNode(simplified()->LoadElement(element_access),
+                               elements, index, etrue, if_true);
+
+          // Handle loading from holey backing stores correctly, by either
+          // mapping the hole to undefined if possible, or deoptimizing
+          // otherwise.
+          if (elements_kind == HOLEY_ELEMENTS ||
+              elements_kind == HOLEY_SMI_ELEMENTS) {
+            // Turn the hole into undefined.
+            vtrue = graph()->NewNode(
+                simplified()->ConvertTaggedHoleToUndefined(), vtrue);
+          } else if (elements_kind == HOLEY_DOUBLE_ELEMENTS) {
+            // Return the signaling NaN hole directly if all uses are
+            // truncating.
+            vtrue = etrue =
+                graph()->NewNode(simplified()->CheckFloat64Hole(
+                                     CheckFloat64HoleMode::kAllowReturnHole),
+                                 vtrue, etrue, if_true);
+          }
         }
-      } else if (elements_kind == HOLEY_DOUBLE_ELEMENTS) {
-        // Perform the hole check on the result.
-        CheckFloat64HoleMode mode = CheckFloat64HoleMode::kNeverReturnHole;
-        // Check if we are allowed to return the hole directly.
-        if (CanTreatHoleAsUndefined(receiver_maps)) {
-          // Return the signaling NaN hole directly if all uses are truncating.
-          mode = CheckFloat64HoleMode::kAllowReturnHole;
+
+        Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
+        Node* efalse = effect;
+        Node* vfalse;
+        {
+          // Materialize undefined for out-of-bounds loads.
+          vfalse = jsgraph()->UndefinedConstant();
         }
-        value = effect = graph()->NewNode(simplified()->CheckFloat64Hole(mode),
-                                          value, effect, control);
+
+        control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+        effect =
+            graph()->NewNode(common()->EffectPhi(2), etrue, efalse, control);
+        value =
+            graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                             vtrue, vfalse, control);
+      } else {
+        // Perform the actual load.
+        value = effect =
+            graph()->NewNode(simplified()->LoadElement(element_access),
+                             elements, index, effect, control);
+
+        // Handle loading from holey backing stores correctly, by either mapping
+        // the hole to undefined if possible, or deoptimizing otherwise.
+        if (elements_kind == HOLEY_ELEMENTS ||
+            elements_kind == HOLEY_SMI_ELEMENTS) {
+          // Check if we are allowed to turn the hole into undefined.
+          if (CanTreatHoleAsUndefined(receiver_maps)) {
+            // Turn the hole into undefined.
+            value = graph()->NewNode(
+                simplified()->ConvertTaggedHoleToUndefined(), value);
+          } else {
+            // Bailout if we see the hole.
+            value = effect = graph()->NewNode(
+                simplified()->CheckNotTaggedHole(), value, effect, control);
+          }
+        } else if (elements_kind == HOLEY_DOUBLE_ELEMENTS) {
+          // Perform the hole check on the result.
+          CheckFloat64HoleMode mode = CheckFloat64HoleMode::kNeverReturnHole;
+          // Check if we are allowed to return the hole directly.
+          if (CanTreatHoleAsUndefined(receiver_maps)) {
+            // Return the signaling NaN hole directly if all uses are
+            // truncating.
+            mode = CheckFloat64HoleMode::kAllowReturnHole;
+          }
+          value = effect = graph()->NewNode(
+              simplified()->CheckFloat64Hole(mode), value, effect, control);
+        }
       }
     } else {
       DCHECK_EQ(AccessMode::kStore, access_mode);

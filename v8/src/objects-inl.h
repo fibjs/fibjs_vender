@@ -77,10 +77,11 @@ int PropertyDetails::field_width_in_words() const {
 TYPE_CHECKER(BreakPoint, TUPLE2_TYPE)
 TYPE_CHECKER(BreakPointInfo, TUPLE2_TYPE)
 TYPE_CHECKER(ByteArray, BYTE_ARRAY_TYPE)
-TYPE_CHECKER(CallHandlerInfo, TUPLE2_TYPE)
+TYPE_CHECKER(CallHandlerInfo, TUPLE3_TYPE)
 TYPE_CHECKER(Cell, CELL_TYPE)
 TYPE_CHECKER(ConstantElementsPair, TUPLE2_TYPE)
 TYPE_CHECKER(CoverageInfo, FIXED_ARRAY_TYPE)
+TYPE_CHECKER(FeedbackVector, FEEDBACK_VECTOR_TYPE)
 TYPE_CHECKER(FixedDoubleArray, FIXED_DOUBLE_ARRAY_TYPE)
 TYPE_CHECKER(Foreign, FOREIGN_TYPE)
 TYPE_CHECKER(FreeSpace, FREE_SPACE_TYPE)
@@ -318,6 +319,14 @@ bool HeapObject::IsPromiseCapability() const { return IsTuple3(); }
 
 bool HeapObject::IsDescriptorArray() const { return IsFixedArray(); }
 
+// TODO(ishell): remove once we use |descriptor_array_map| for all
+// DescriptorArray objects.
+bool HeapObject::IsDescriptorArrayTemplate() const {
+  // We can't use descriptor_array_map() here because during deserialization
+  // we may call this function before the descriptor_array_map is deserialized.
+  return map() == GetHeap()->root(Heap::kDescriptorArrayMapRootIndex);
+}
+
 bool HeapObject::IsPropertyDescriptorObject() const { return IsFixedArray(); }
 
 bool HeapObject::IsEnumCache() const { return IsTuple2(); }
@@ -329,10 +338,6 @@ bool HeapObject::IsArrayList() const { return IsFixedArray(); }
 bool HeapObject::IsRegExpMatchInfo() const { return IsFixedArray(); }
 
 bool Object::IsLayoutDescriptor() const { return IsSmi() || IsByteArray(); }
-
-bool HeapObject::IsFeedbackVector() const {
-  return map() == GetHeap()->feedback_vector_map();
-}
 
 bool HeapObject::IsFeedbackMetadata() const { return IsFixedArray(); }
 
@@ -424,14 +429,16 @@ bool HeapObject::IsDictionary() const {
   return IsHashTable() && this != GetHeap()->string_table();
 }
 
-bool Object::IsNameDictionary() const { return IsDictionary(); }
+bool HeapObject::IsGlobalDictionary() const {
+  return map() == GetHeap()->global_dictionary_map();
+}
 
-bool Object::IsGlobalDictionary() const { return IsDictionary(); }
+bool HeapObject::IsNameDictionary() const {
+  return map() == GetHeap()->name_dictionary_map();
+}
 
-bool Object::IsSeededNumberDictionary() const { return IsDictionary(); }
-
-bool HeapObject::IsUnseededNumberDictionary() const {
-  return map() == GetHeap()->unseeded_number_dictionary_map();
+bool HeapObject::IsNumberDictionary() const {
+  return map() == GetHeap()->number_dictionary_map();
 }
 
 bool HeapObject::IsStringTable() const { return IsHashTable(); }
@@ -599,7 +606,7 @@ CAST_ACCESSOR(PropertyCell)
 CAST_ACCESSOR(PrototypeInfo)
 CAST_ACCESSOR(RegExpMatchInfo)
 CAST_ACCESSOR(ScopeInfo)
-CAST_ACCESSOR(SeededNumberDictionary)
+CAST_ACCESSOR(NumberDictionary)
 CAST_ACCESSOR(SmallOrderedHashMap)
 CAST_ACCESSOR(SmallOrderedHashSet)
 CAST_ACCESSOR(Smi)
@@ -615,7 +622,6 @@ CAST_ACCESSOR(TemplateObjectDescription)
 CAST_ACCESSOR(Tuple2)
 CAST_ACCESSOR(Tuple3)
 CAST_ACCESSOR(TypeFeedbackInfo)
-CAST_ACCESSOR(UnseededNumberDictionary)
 CAST_ACCESSOR(WeakCell)
 CAST_ACCESSOR(WeakFixedArray)
 CAST_ACCESSOR(WeakHashTable)
@@ -1957,6 +1963,23 @@ AllocationAlignment HeapObject::RequiredAlignment() const {
   return kWordAligned;
 }
 
+bool HeapObject::NeedsRehashing() const {
+  switch (map()->instance_type()) {
+    case FIXED_ARRAY_TYPE:
+      if (IsDescriptorArrayTemplate()) {
+        return DescriptorArray::cast(this)->number_of_descriptors() > 1;
+      }
+      return false;
+    case TRANSITION_ARRAY_TYPE:
+      return TransitionArray::cast(this)->number_of_entries() > 1;
+    case HASH_TABLE_TYPE:
+    case SMALL_ORDERED_HASH_MAP_TYPE:
+    case SMALL_ORDERED_HASH_SET_TYPE:
+      return true;
+    default:
+      return false;
+  }
+}
 
 void FixedArray::set(int index,
                      Object* value,
@@ -2031,17 +2054,15 @@ Object** FixedArray::RawFieldOfElementAt(int index) {
 ACCESSORS(EnumCache, keys, FixedArray, kKeysOffset)
 ACCESSORS(EnumCache, indices, FixedArray, kIndicesOffset)
 
-int DescriptorArray::number_of_descriptors() {
+int DescriptorArray::number_of_descriptors() const {
   return Smi::ToInt(get(kDescriptorLengthIndex));
 }
 
-
-int DescriptorArray::number_of_descriptors_storage() {
+int DescriptorArray::number_of_descriptors_storage() const {
   return (length() - kFirstIndex) / kEntrySize;
 }
 
-
-int DescriptorArray::NumberOfSlackDescriptors() {
+int DescriptorArray::NumberOfSlackDescriptors() const {
   return number_of_descriptors_storage() - number_of_descriptors();
 }
 
@@ -2050,8 +2071,7 @@ void DescriptorArray::SetNumberOfDescriptors(int number_of_descriptors) {
   set(kDescriptorLengthIndex, Smi::FromInt(number_of_descriptors));
 }
 
-
-inline int DescriptorArray::number_of_entries() {
+inline int DescriptorArray::number_of_entries() const {
   return number_of_descriptors();
 }
 
@@ -2486,14 +2506,13 @@ uint32_t StringTableShape::HashForObject(Isolate* isolate, Object* object) {
   return String::cast(object)->Hash();
 }
 
-bool SeededNumberDictionary::requires_slow_elements() {
+bool NumberDictionary::requires_slow_elements() {
   Object* max_index_object = get(kMaxNumberKeyIndex);
   if (!max_index_object->IsSmi()) return false;
   return 0 != (Smi::ToInt(max_index_object) & kRequiresSlowElementsMask);
 }
 
-
-uint32_t SeededNumberDictionary::max_number_key() {
+uint32_t NumberDictionary::max_number_key() {
   DCHECK(!requires_slow_elements());
   Object* max_index_object = get(kMaxNumberKeyIndex);
   if (!max_index_object->IsSmi()) return 0;
@@ -2501,8 +2520,7 @@ uint32_t SeededNumberDictionary::max_number_key() {
   return value >> kRequiresSlowElementsTagSize;
 }
 
-
-void SeededNumberDictionary::set_requires_slow_elements() {
+void NumberDictionary::set_requires_slow_elements() {
   set(kMaxNumberKeyIndex, Smi::FromInt(kRequiresSlowElementsMask));
 }
 
@@ -2950,9 +2968,11 @@ Handle<Object> Float64ArrayTraits::ToHandle(Isolate* isolate, double scalar) {
   return isolate->factory()->NewNumber(scalar);
 }
 
-int Map::visitor_id() const { return READ_BYTE_FIELD(this, kVisitorIdOffset); }
+VisitorId Map::visitor_id() const {
+  return static_cast<VisitorId>(READ_BYTE_FIELD(this, kVisitorIdOffset));
+}
 
-void Map::set_visitor_id(int id) {
+void Map::set_visitor_id(VisitorId id) {
   DCHECK_LE(0, id);
   DCHECK_LT(id, 256);
   WRITE_BYTE_FIELD(this, kVisitorIdOffset, static_cast<byte>(id));
@@ -3555,12 +3575,14 @@ void Map::set_prototype(Object* value, WriteBarrierMode mode) {
 }
 
 LayoutDescriptor* Map::layout_descriptor_gc_safe() const {
+  DCHECK(FLAG_unbox_double_fields);
   Object* layout_desc = RELAXED_READ_FIELD(this, kLayoutDescriptorOffset);
   return LayoutDescriptor::cast_gc_safe(layout_desc);
 }
 
 
 bool Map::HasFastPointerLayout() const {
+  DCHECK(FLAG_unbox_double_fields);
   Object* layout_desc = RELAXED_READ_FIELD(this, kLayoutDescriptorOffset);
   return LayoutDescriptor::IsFastPointerLayout(layout_desc);
 }
@@ -3577,7 +3599,7 @@ void Map::UpdateDescriptors(DescriptorArray* descriptors,
     // TODO(ishell): remove these checks from VERIFY_HEAP mode.
     if (FLAG_verify_heap) {
       CHECK(layout_descriptor()->IsConsistentWithMap(this));
-      CHECK(visitor_id() == Map::GetVisitorId(this));
+      CHECK_EQ(Map::GetVisitorId(this), visitor_id());
     }
 #else
     SLOW_DCHECK(layout_descriptor()->IsConsistentWithMap(this));
@@ -3609,7 +3631,8 @@ void Map::InitializeDescriptors(DescriptorArray* descriptors,
 
 
 ACCESSORS(Map, instance_descriptors, DescriptorArray, kDescriptorsOffset)
-ACCESSORS(Map, layout_descriptor, LayoutDescriptor, kLayoutDescriptorOffset)
+ACCESSORS_CHECKED(Map, layout_descriptor, LayoutDescriptor,
+                  kLayoutDescriptorOffset, FLAG_unbox_double_fields)
 
 void Map::set_bit_field3(uint32_t bits) {
   if (kInt32Size != kPointerSize) {
@@ -3871,6 +3894,7 @@ BOOL_ACCESSORS(InterceptorInfo, flags, all_can_read, kAllCanReadBit)
 BOOL_ACCESSORS(InterceptorInfo, flags, non_masking, kNonMasking)
 
 ACCESSORS(CallHandlerInfo, callback, Object, kCallbackOffset)
+ACCESSORS(CallHandlerInfo, js_callback, Object, kJsCallbackOffset)
 ACCESSORS(CallHandlerInfo, data, Object, kDataOffset)
 
 ACCESSORS(TemplateInfo, tag, Object, kTagOffset)
@@ -3989,7 +4013,7 @@ SMI_ACCESSORS(StackFrameInfo, id, kIdIndex)
 ACCESSORS(SourcePositionTableWithFrameCache, source_position_table, ByteArray,
           kSourcePositionTableIndex)
 ACCESSORS(SourcePositionTableWithFrameCache, stack_frame_cache,
-          UnseededNumberDictionary, kStackFrameCacheIndex)
+          NumberDictionary, kStackFrameCacheIndex)
 
 SMI_ACCESSORS(FunctionTemplateInfo, length, kLengthOffset)
 BOOL_ACCESSORS(FunctionTemplateInfo, flag, hidden_prototype,
@@ -4078,6 +4102,8 @@ bool Map::IsInobjectSlackTrackingInProgress() const {
 
 
 void Map::InobjectSlackTrackingStep() {
+  // Slack tracking should only be performed on an initial map.
+  DCHECK(GetBackPointer()->IsUndefined(GetIsolate()));
   if (!IsInobjectSlackTrackingInProgress()) return;
   int counter = construction_counter();
   set_construction_counter(counter - 1);
@@ -4458,10 +4484,9 @@ GlobalDictionary* JSGlobalObject::global_dictionary() {
   return GlobalDictionary::cast(raw_properties_or_hash());
 }
 
-
-SeededNumberDictionary* JSObject::element_dictionary() {
+NumberDictionary* JSObject::element_dictionary() {
   DCHECK(HasDictionaryElements() || HasSlowStringWrapperElements());
-  return SeededNumberDictionary::cast(elements());
+  return NumberDictionary::cast(elements());
 }
 
 // static
@@ -4778,7 +4803,15 @@ Object* GlobalDictionaryShape::Unwrap(Object* object) {
   return PropertyCell::cast(object)->name();
 }
 
+Map* GlobalDictionaryShape::GetMap(Isolate* isolate) {
+  return isolate->heap()->global_dictionary_map();
+}
+
 Name* NameDictionary::NameAt(int entry) { return Name::cast(KeyAt(entry)); }
+
+Map* NameDictionaryShape::GetMap(Isolate* isolate) {
+  return isolate->heap()->name_dictionary_map();
+}
 
 PropertyCell* GlobalDictionary::CellAt(int entry) {
   DCHECK(KeyAt(entry)->IsPropertyCell());
@@ -4815,31 +4848,19 @@ bool NumberDictionaryShape::IsMatch(uint32_t key, Object* other) {
   return key == static_cast<uint32_t>(other->Number());
 }
 
-uint32_t UnseededNumberDictionaryShape::Hash(Isolate* isolate, uint32_t key) {
-  return ComputeIntegerHash(key);
-}
-
-uint32_t UnseededNumberDictionaryShape::HashForObject(Isolate* isolate,
-                                                      Object* other) {
-  DCHECK(other->IsNumber());
-  return ComputeIntegerHash(static_cast<uint32_t>(other->Number()));
-}
-
-Map* UnseededNumberDictionaryShape::GetMap(Isolate* isolate) {
-  return isolate->heap()->unseeded_number_dictionary_map();
-}
-
-uint32_t SeededNumberDictionaryShape::Hash(Isolate* isolate, uint32_t key) {
+uint32_t NumberDictionaryShape::Hash(Isolate* isolate, uint32_t key) {
   return ComputeIntegerHash(key, isolate->heap()->HashSeed());
 }
 
-uint32_t SeededNumberDictionaryShape::HashForObject(Isolate* isolate,
-                                                    Object* other) {
+uint32_t NumberDictionaryShape::HashForObject(Isolate* isolate, Object* other) {
   DCHECK(other->IsNumber());
   return ComputeIntegerHash(static_cast<uint32_t>(other->Number()),
                             isolate->heap()->HashSeed());
 }
 
+Map* NumberDictionaryShape::GetMap(Isolate* isolate) {
+  return isolate->heap()->number_dictionary_map();
+}
 
 Handle<Object> NumberDictionaryShape::AsHandle(Isolate* isolate, uint32_t key) {
   return isolate->factory()->NewNumberFromUint(key);

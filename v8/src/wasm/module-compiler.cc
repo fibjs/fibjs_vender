@@ -234,6 +234,8 @@ class JSToWasmWrapperCache {
     int cached_idx = sig_map_.Find(func->sig);
     if (cached_idx >= 0) {
       Handle<Code> code = isolate->factory()->CopyCode(code_cache_[cached_idx]);
+      // TODO(6792): No longer needed once WebAssembly code is off heap.
+      CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
       // Now patch the call to wasm code.
       for (RelocIterator it(*code, RelocInfo::kCodeTargetMask);; it.next()) {
         DCHECK(!it.done());
@@ -402,6 +404,8 @@ static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
   WeakCell* weak_wasm_module = compiled_module->ptr_to_weak_wasm_module();
 
   if (trap_handler::UseTrapHandler()) {
+    // TODO(6792): No longer needed once WebAssembly code is off heap.
+    CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
     Handle<FixedArray> code_table = compiled_module->code_table();
     for (int i = 0; i < code_table->length(); ++i) {
       Handle<Code> code = code_table->GetValueChecked<Code>(isolate, i);
@@ -524,9 +528,8 @@ MaybeHandle<WasmInstanceObject> SyncCompileAndInstantiate(
   DCHECK_EQ(thrower->error(), module.is_null());
   if (module.is_null()) return {};
 
-  return SyncInstantiate(isolate, thrower, module.ToHandleChecked(),
-                         Handle<JSReceiver>::null(),
-                         Handle<JSArrayBuffer>::null());
+  return SyncInstantiate(isolate, thrower, module.ToHandleChecked(), imports,
+                         memory);
 }
 
 void RejectPromise(Isolate* isolate, Handle<Context> context,
@@ -659,6 +662,8 @@ Handle<Code> CompileLazy(Isolate* isolate) {
       DCHECK(exp_table->get(exp_index) == *lazy_compile_code);
       exp_table->set(exp_index, *compiled_code);
     }
+    // TODO(6792): No longer needed once WebAssembly code is off heap.
+    CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
     // After processing, remove the list of exported entries, such that we don't
     // do the patching redundantly.
     Handle<FixedArray> new_deopt_data =
@@ -741,6 +746,9 @@ void LazyCompilationOrchestrator::CompileFunction(
   // module creation time, and return a function that always traps here.
   CHECK(!thrower.error());
   Handle<Code> code = maybe_code.ToHandleChecked();
+
+  // TODO(6792): No longer needed once WebAssembly code is off heap.
+  CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
 
   Handle<FixedArray> deopt_data = isolate->factory()->NewFixedArray(2, TENURED);
   Handle<WeakCell> weak_instance = isolate->factory()->NewWeakCell(instance);
@@ -837,6 +845,8 @@ Handle<Code> LazyCompilationOrchestrator::CompileLazy(
 
   if (is_js_to_wasm || patch_caller) {
     DisallowHeapAllocation no_gc;
+    // TODO(6792): No longer needed once WebAssembly code is off heap.
+    CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
     // Now patch the code object with all functions which are now compiled.
     int idx = 0;
     for (RelocIterator it(*caller, RelocInfo::kCodeTargetMask); !it.done();
@@ -1237,6 +1247,10 @@ Handle<Code> EnsureExportedLazyDeoptData(Isolate* isolate,
            code->builtin_index() == Builtins::kIllegal);
     return code;
   }
+
+  // TODO(6792): No longer needed once WebAssembly code is off heap.
+  CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
+
   // deopt_data:
   //   #0: weak instance
   //   #1: func_index
@@ -1275,6 +1289,9 @@ Handle<Code> EnsureTableExportLazyDeoptData(
   Handle<Code> code =
       EnsureExportedLazyDeoptData(isolate, instance, code_table, func_index);
   if (code->builtin_index() != Builtins::kWasmCompileLazy) return code;
+
+  // TODO(6792): No longer needed once WebAssembly code is off heap.
+  CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
 
   // deopt_data:
   // #0: weak instance
@@ -1335,6 +1352,8 @@ Handle<Code> MakeWasmToWasmWrapper(
   Handle<Code> wrapper_code = compiler::CompileWasmToWasmWrapper(
       isolate, wasm_code, *sig, imported_function->function_index(),
       new_wasm_context_address);
+  // TODO(6792): No longer needed once WebAssembly code is off heap.
+  CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
   // Set the deoptimization data for the WasmToWasm wrapper. This is
   // needed by the interpreter to find the imported instance for
   // a cross-instance call.
@@ -1558,18 +1577,7 @@ MaybeHandle<WasmModuleObject> ModuleCompiler::CompileToModuleObjectInternal(
   }
 
   // Compile JS->wasm wrappers for exported functions.
-  JSToWasmWrapperCache js_to_wasm_cache;
-  int wrapper_index = 0;
-  for (auto exp : module_->export_table) {
-    if (exp.kind != kExternalFunction) continue;
-    Handle<Code> wasm_code = EnsureExportedLazyDeoptData(
-        isolate_, Handle<WasmInstanceObject>::null(), code_table, exp.index);
-    Handle<Code> wrapper_code = js_to_wasm_cache.CloneOrCompileJSToWasmWrapper(
-        isolate_, module_, wasm_code, exp.index);
-    export_wrappers->set(wrapper_index, *wrapper_code);
-    RecordStats(*wrapper_code, counters());
-    ++wrapper_index;
-  }
+  CompileJsToWasmWrappers(isolate_, compiled_module, counters());
   return WasmModuleObject::New(isolate_, compiled_module);
 }
 
@@ -1670,7 +1678,12 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
               Handle<FixedArray> deopt_data =
                   factory->NewFixedArray(2, TENURED);
               deopt_data->set(1, Smi::FromInt(i));
-              code->set_deoptimization_data(*deopt_data);
+              // TODO(6792): No longer needed once WebAssembly code is off heap.
+              {
+                CodeSpaceMemoryModificationScope modification_scope(
+                    isolate_->heap());
+                code->set_deoptimization_data(*deopt_data);
+              }
               code_table->set(i, *code);
             }
             break;
@@ -1851,6 +1864,8 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
       Handle<FixedArray> deopt_data = factory->NewFixedArray(2, TENURED);
       deopt_data->set(0, *weak_link);
       deopt_data->set(1, Smi::FromInt(i));
+      // TODO(6792): No longer needed once WebAssembly code is off heap.
+      CodeSpaceMemoryModificationScope modification_scope(isolate_->heap());
       code->set_deoptimization_data(*deopt_data);
       continue;
     }
@@ -3076,10 +3091,7 @@ class AsyncCompileJob::PrepareAndStartCompile : public CompileStep {
     // Initialize {code_table_} with the illegal builtin. All call sites
     // will be patched at instantiation.
     int code_table_size = static_cast<int>(module_->functions.size());
-    int export_wrapper_size = static_cast<int>(module_->num_exported_functions);
     job_->code_table_ = factory->NewFixedArray(code_table_size, TENURED);
-    job_->export_wrappers_ =
-        factory->NewFixedArray(export_wrapper_size, TENURED);
 
     for (int i = 0, e = module_->num_imported_functions; i < e; ++i) {
       job_->code_table_->set(i, *illegal_builtin);
@@ -3094,8 +3106,6 @@ class AsyncCompileJob::PrepareAndStartCompile : public CompileStep {
 
       centry_stub = Handle<Code>(*centry_stub, isolate);
       job_->code_table_ = Handle<FixedArray>(*job_->code_table_, isolate);
-      job_->export_wrappers_ =
-          Handle<FixedArray>(*job_->export_wrappers_, isolate);
       compiler::ModuleEnv* env = job_->module_env_.get();
       ReopenHandles(isolate, env->function_code);
       Handle<Code>* mut =
@@ -3284,9 +3294,13 @@ class AsyncCompileJob::FinishCompile : public CompileStep {
     // and information needed at instantiation time. This object needs to be
     // serializable. Instantiation may occur off a deserialized version of
     // this object.
+    int export_wrapper_size =
+        static_cast<int>(module_wrapper->get()->num_exported_functions);
+    Handle<FixedArray> export_wrappers =
+        job_->isolate_->factory()->NewFixedArray(export_wrapper_size, TENURED);
     job_->compiled_module_ =
         NewCompiledModule(job_->isolate_, shared, job_->code_table_,
-                          job_->export_wrappers_, job_->module_env_.get());
+                          export_wrappers, job_->module_env_.get());
     // Finish the wasm script now and make it public to the debugger.
     script->set_wasm_compiled_module(*job_->compiled_module_);
     job_->isolate_->debug()->OnAfterCompile(script);
@@ -3308,21 +3322,8 @@ class AsyncCompileJob::CompileWrappers : public CompileStep {
   void RunInForeground() override {
     TRACE_COMPILE("(6) Compile wrappers...\n");
     // Compile JS->wasm wrappers for exported functions.
-    JSToWasmWrapperCache js_to_wasm_cache;
-    int wrapper_index = 0;
-    WasmModule* module = job_->compiled_module_->module();
-    for (auto exp : module->export_table) {
-      if (exp.kind != kExternalFunction) continue;
-      Handle<Code> wasm_code(Code::cast(job_->code_table_->get(exp.index)),
-                             job_->isolate_);
-      Handle<Code> wrapper_code =
-          js_to_wasm_cache.CloneOrCompileJSToWasmWrapper(job_->isolate_, module,
-                                                         wasm_code, exp.index);
-      job_->export_wrappers_->set(wrapper_index, *wrapper_code);
-      RecordStats(*wrapper_code, job_->counters());
-      ++wrapper_index;
-    }
-
+    CompileJsToWasmWrappers(job_->isolate_, job_->compiled_module_,
+                            job_->counters());
     job_->DoSync<FinishModule>();
   }
 };
@@ -3492,6 +3493,25 @@ void AsyncStreamingProcessor::OnError(DecodeResult result) {
 void AsyncStreamingProcessor::OnAbort() {
   TRACE_STREAMING("Abort stream...\n");
   job_->Abort();
+}
+
+void CompileJsToWasmWrappers(Isolate* isolate,
+                             Handle<WasmCompiledModule> compiled_module,
+                             Counters* counters) {
+  JSToWasmWrapperCache js_to_wasm_cache;
+  int wrapper_index = 0;
+  Handle<FixedArray> export_wrappers = compiled_module->export_wrappers();
+  for (auto exp : compiled_module->module()->export_table) {
+    if (exp.kind != kExternalFunction) continue;
+    Handle<Code> wasm_code =
+        EnsureExportedLazyDeoptData(isolate, Handle<WasmInstanceObject>::null(),
+                                    compiled_module->code_table(), exp.index);
+    Handle<Code> wrapper_code = js_to_wasm_cache.CloneOrCompileJSToWasmWrapper(
+        isolate, compiled_module->module(), wasm_code, exp.index);
+    export_wrappers->set(wrapper_index, *wrapper_code);
+    RecordStats(*wrapper_code, counters);
+    ++wrapper_index;
+  }
 }
 
 }  // namespace wasm

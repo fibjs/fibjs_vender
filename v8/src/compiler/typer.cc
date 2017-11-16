@@ -288,6 +288,7 @@ class Typer::Visitor : public Reducer {
 #undef DECLARE_METHOD
 
   static Type* ObjectIsArrayBufferView(Type*, Typer*);
+  static Type* ObjectIsBigInt(Type*, Typer*);
   static Type* ObjectIsCallable(Type*, Typer*);
   static Type* ObjectIsConstructor(Type*, Typer*);
   static Type* ObjectIsDetectableCallable(Type*, Typer*);
@@ -389,15 +390,15 @@ void Typer::Decorator::Decorate(Node* node) {
 
 Type* Typer::Visitor::TypeUnaryOp(Node* node, UnaryTyperFun f) {
   Type* input = Operand(node, 0);
-  return input->IsInhabited() ? f(input, typer_) : Type::None();
+  return input->IsNone() ? Type::None() : f(input, typer_);
 }
 
 
 Type* Typer::Visitor::TypeBinaryOp(Node* node, BinaryTyperFun f) {
   Type* left = Operand(node, 0);
   Type* right = Operand(node, 1);
-  return left->IsInhabited() && right->IsInhabited() ? f(left, right, typer_)
-                                                     : Type::None();
+  return left->IsNone() || right->IsNone() ? Type::None()
+                                           : f(left, right, typer_);
 }
 
 
@@ -460,6 +461,7 @@ Type* Typer::Visitor::ToInteger(Type* type, Typer* t) {
 // static
 Type* Typer::Visitor::ToLength(Type* type, Typer* t) {
   // ES6 section 7.1.15 ToLength ( argument )
+  if (type->IsNone()) return type;
   type = ToInteger(type, t);
   double min = type->Min();
   double max = type->Max();
@@ -516,6 +518,12 @@ Type* Typer::Visitor::ToString(Type* type, Typer* t) {
 Type* Typer::Visitor::ObjectIsArrayBufferView(Type* type, Typer* t) {
   // TODO(turbofan): Introduce a Type::ArrayBufferView?
   if (!type->Maybe(Type::OtherObject())) return t->singleton_false_;
+  return Type::Boolean();
+}
+
+Type* Typer::Visitor::ObjectIsBigInt(Type* type, Typer* t) {
+  if (type->Is(Type::BigInt())) return t->singleton_true_;
+  if (!type->Maybe(Type::BigInt())) return t->singleton_false_;
   return Type::Boolean();
 }
 
@@ -721,7 +729,7 @@ Type* Typer::Visitor::TypeInductionVariablePhi(Node* node) {
   }
   // If we do not have enough type information for the initial value or
   // the increment, just return the initial value's type.
-  if (!initial_type->IsInhabited() ||
+  if (initial_type->IsNone() ||
       increment_type->Is(typer_->cache_.kSingletonZero)) {
     return initial_type;
   }
@@ -755,7 +763,7 @@ Type* Typer::Visitor::TypeInductionVariablePhi(Node* node) {
       // If the type is not an integer, just skip the bound.
       if (!bound_type->Is(typer_->cache_.kInteger)) continue;
       // If the type is not inhabited, then we can take the initial value.
-      if (!bound_type->IsInhabited()) {
+      if (bound_type->IsNone()) {
         max = initial_type->Max();
         break;
       }
@@ -775,7 +783,7 @@ Type* Typer::Visitor::TypeInductionVariablePhi(Node* node) {
       // If the type is not an integer, just skip the bound.
       if (!bound_type->Is(typer_->cache_.kInteger)) continue;
       // If the type is not inhabited, then we can take the initial value.
-      if (!bound_type->IsInhabited()) {
+      if (bound_type->IsNone()) {
         min = initial_type->Min();
         break;
       }
@@ -915,37 +923,9 @@ Type* Typer::Visitor::JSEqualTyper(Type* lhs, Type* rhs, Typer* t) {
   return Type::Boolean();
 }
 
-
-static Type* JSType(Type* type) {
-  if (type->Is(Type::Boolean())) return Type::Boolean();
-  if (type->Is(Type::String())) return Type::String();
-  if (type->Is(Type::Number())) return Type::Number();
-  if (type->Is(Type::Undefined())) return Type::Undefined();
-  if (type->Is(Type::Null())) return Type::Null();
-  if (type->Is(Type::Symbol())) return Type::Symbol();
-  if (type->Is(Type::Receiver())) return Type::Receiver();  // JS "Object"
-  return Type::Any();
-}
-
-
 Type* Typer::Visitor::JSStrictEqualTyper(Type* lhs, Type* rhs, Typer* t) {
-  if (!JSType(lhs)->Maybe(JSType(rhs))) return t->singleton_false_;
-  if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) return t->singleton_false_;
-  if (lhs->Is(Type::Number()) && rhs->Is(Type::Number()) &&
-      (lhs->Max() < rhs->Min() || lhs->Min() > rhs->Max())) {
-    return t->singleton_false_;
-  }
-  if ((lhs->Is(Type::Hole()) || rhs->Is(Type::Hole())) && !lhs->Maybe(rhs)) {
-    return t->singleton_false_;
-  }
-  if (lhs->IsHeapConstant() && rhs->Is(lhs)) {
-    // Types are equal and are inhabited only by a single semantic value,
-    // which is not nan due to the earlier check.
-    return t->singleton_true_;
-  }
-  return Type::Boolean();
+  return t->operation_typer()->StrictEqual(lhs, rhs);
 }
-
 
 // The EcmaScript specification defines the four relational comparison operators
 // (<, <=, >=, >) with the help of a single abstract one.  It behaves like <
@@ -1875,11 +1855,12 @@ Type* Typer::Visitor::TypeStringIndexOf(Node* node) { UNREACHABLE(); }
 Type* Typer::Visitor::TypeCheckBounds(Node* node) {
   Type* index = Operand(node, 0);
   Type* length = Operand(node, 1);
+  DCHECK(length->Is(Type::Unsigned31()));
   if (index->Maybe(Type::MinusZero())) {
     index = Type::Union(index, typer_->cache_.kSingletonZero, zone());
   }
   index = Type::Intersect(index, Type::Integral32(), zone());
-  if (!index->IsInhabited() || !length->IsInhabited()) return Type::None();
+  if (index->IsNone() || length->IsNone()) return Type::None();
   double min = std::max(index->Min(), 0.0);
   double max = std::min(index->Max(), length->Max() - 1);
   if (max < min) return Type::None();
@@ -1965,6 +1946,8 @@ Type* Typer::Visitor::TypeAllocate(Node* node) {
   return AllocateTypeOf(node->op());
 }
 
+Type* Typer::Visitor::TypeAllocateRaw(Node* node) { UNREACHABLE(); }
+
 Type* Typer::Visitor::TypeLoadFieldByIndex(Node* node) {
   return Type::NonInternal();
 }
@@ -2016,6 +1999,10 @@ Type* Typer::Visitor::TypeStoreTypedElement(Node* node) {
 
 Type* Typer::Visitor::TypeObjectIsArrayBufferView(Node* node) {
   return TypeUnaryOp(node, ObjectIsArrayBufferView);
+}
+
+Type* Typer::Visitor::TypeObjectIsBigInt(Node* node) {
+  return TypeUnaryOp(node, ObjectIsBigInt);
 }
 
 Type* Typer::Visitor::TypeObjectIsCallable(Node* node) {

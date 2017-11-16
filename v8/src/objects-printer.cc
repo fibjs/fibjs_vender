@@ -386,7 +386,7 @@ void PrintFixedArrayElements(std::ostream& os, T* array) {
 
 void PrintDictionaryElements(std::ostream& os, FixedArrayBase* elements) {
   // Print some internal fields
-  SeededNumberDictionary* dict = SeededNumberDictionary::cast(elements);
+  NumberDictionary* dict = NumberDictionary::cast(elements);
   if (dict->requires_slow_elements()) {
     os << "\n   - requires_slow_elements";
   } else {
@@ -491,6 +491,10 @@ static void JSObjectPrintHeader(std::ostream& os, JSObject* obj,
      << ElementsKindToString(obj->map()->elements_kind());
   if (obj->elements()->IsCowArray()) os << " (COW)";
   os << "]";
+  Object* hash = obj->GetHash();
+  if (hash->IsSmi()) {
+    os << "\n - hash = " << Brief(hash);
+  }
   if (obj->GetEmbedderFieldCount() > 0) {
     os << "\n - embedder fields: " << obj->GetEmbedderFieldCount();
   }
@@ -499,7 +503,12 @@ static void JSObjectPrintHeader(std::ostream& os, JSObject* obj,
 
 static void JSObjectPrintBody(std::ostream& os, JSObject* obj,  // NOLINT
                               bool print_elements = true) {
-  os << "\n - properties = " << Brief(obj->raw_properties_or_hash()) << " {";
+  os << "\n - properties = ";
+  Object* properties_or_hash = obj->raw_properties_or_hash();
+  if (!properties_or_hash->IsSmi()) {
+    os << Brief(properties_or_hash);
+  }
+  os << " {";
   if (obj->PrintProperties(os)) os << "\n ";
   os << "}\n";
   if (print_elements && obj->elements()->length() > 0) {

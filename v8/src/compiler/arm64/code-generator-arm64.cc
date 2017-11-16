@@ -344,14 +344,8 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
       unwinding_info_writer_->MarkLinkRegisterOnTopOfStack(__ pc_offset(),
                                                            __ StackPointer());
     }
-#ifdef V8_CSA_WRITE_BARRIER
     __ CallRecordWriteStub(object_, scratch1_, remembered_set_action,
                            save_fp_mode);
-#else
-    __ CallStubDelayed(
-        new (zone_) RecordWriteStub(nullptr, object_, scratch0_, scratch1_,
-                                    remembered_set_action, save_fp_mode));
-#endif
     if (must_save_lr_) {
       __ Pop(lr);
       unwinding_info_writer_->MarkPopLinkRegisterFromTopOfStack(__ pc_offset());
@@ -2489,6 +2483,11 @@ void CodeGenerator::AssembleConstructFrame() {
   int shrink_slots =
       frame()->GetTotalFrameSlotCount() - descriptor->CalculateFixedFrameSize();
 
+  CPURegList saves = CPURegList(CPURegister::kRegister, kXRegSizeInBits,
+                                descriptor->CalleeSavedRegisters());
+  CPURegList saves_fp = CPURegList(CPURegister::kVRegister, kDRegSizeInBits,
+                                   descriptor->CalleeSavedFPRegisters());
+
   if (frame_access_state()->has_frame()) {
     // Link the frame
     if (descriptor->IsJSFunctionCall()) {
@@ -2559,6 +2558,10 @@ void CodeGenerator::AssembleConstructFrame() {
       __ Bind(&done);
     }
 
+    // Skip callee-saved slots, which are pushed below.
+    shrink_slots -= saves.Count();
+    shrink_slots -= saves_fp.Count();
+
     // Build remainder of frame, including accounting for and filling-in
     // frame-specific header information, i.e. claiming the extra slot that
     // other platforms explicitly push for STUB (code object) frames and frames
@@ -2590,8 +2593,6 @@ void CodeGenerator::AssembleConstructFrame() {
   }
 
   // Save FP registers.
-  CPURegList saves_fp = CPURegList(CPURegister::kVRegister, kDRegSizeInBits,
-                                   descriptor->CalleeSavedFPRegisters());
   DCHECK_IMPLIES(saves_fp.Count() != 0,
                  saves_fp.list() == CPURegList::GetCalleeSavedV().list());
   __ PushCPURegList(saves_fp);
@@ -2600,8 +2601,6 @@ void CodeGenerator::AssembleConstructFrame() {
   // TODO(palfia): TF save list is not in sync with
   // CPURegList::GetCalleeSaved(): x30 is missing.
   // DCHECK(saves.list() == CPURegList::GetCalleeSaved().list());
-  CPURegList saves = CPURegList(CPURegister::kRegister, kXRegSizeInBits,
-                                descriptor->CalleeSavedRegisters());
   __ PushCPURegList(saves);
 }
 

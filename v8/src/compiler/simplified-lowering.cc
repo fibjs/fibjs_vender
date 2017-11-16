@@ -209,11 +209,11 @@ class InputUseInfos {
 bool CanOverflowSigned32(const Operator* op, Type* left, Type* right,
                          Zone* type_zone) {
   // We assume the inputs are checked Signed32 (or known statically
-  // to be Signed32). Technically, theinputs could also be minus zero, but
+  // to be Signed32). Technically, the inputs could also be minus zero, but
   // that cannot cause overflow.
   left = Type::Intersect(left, Type::Signed32(), type_zone);
   right = Type::Intersect(right, Type::Signed32(), type_zone);
-  if (!left->IsInhabited() || !right->IsInhabited()) return false;
+  if (left->IsNone() || right->IsNone()) return false;
   switch (op->opcode()) {
     case IrOpcode::kSpeculativeSafeIntegerAdd:
       return (left->Max() + right->Max() > kMaxInt) ||
@@ -227,6 +227,10 @@ bool CanOverflowSigned32(const Operator* op, Type* left, Type* right,
       UNREACHABLE();
   }
   return true;
+}
+
+bool IsSomePositiveOrderedNumber(Type* type) {
+  return type->Is(Type::OrderedNumber()) && !type->IsNone() && type->Min() > 0;
 }
 
 }  // namespace
@@ -557,8 +561,10 @@ class RepresentationSelector {
 
     Type* current_integer =
         Type::Intersect(current_type, integer, graph_zone());
+    DCHECK(!current_integer->IsNone());
     Type* previous_integer =
         Type::Intersect(previous_type, integer, graph_zone());
+    DCHECK(!previous_integer->IsNone());
 
     // Once we start weakening a node, we should always weaken.
     if (!GetInfo(node)->weakened()) {
@@ -1052,7 +1058,7 @@ class RepresentationSelector {
   }
 
   static MachineType DeoptMachineTypeOf(MachineRepresentation rep, Type* type) {
-    if (!type->IsInhabited()) {
+    if (type->IsNone()) {
       return MachineType::None();
     }
     // TODO(turbofan): Special treatment for ExternalPointer here,
@@ -1247,10 +1253,8 @@ class RepresentationSelector {
     // there is no need to return -0.
     CheckForMinusZeroMode mz_mode =
         truncation.IdentifiesZeroAndMinusZero() ||
-                (input0_type->Is(Type::OrderedNumber()) &&
-                 input0_type->Min() > 0) ||
-                (input1_type->Is(Type::OrderedNumber()) &&
-                 input1_type->Min() > 0)
+                IsSomePositiveOrderedNumber(input0_type) ||
+                IsSomePositiveOrderedNumber(input1_type)
             ? CheckForMinusZeroMode::kDontCheckForMinusZero
             : CheckForMinusZeroMode::kCheckForMinusZero;
 
@@ -1587,7 +1591,7 @@ class RepresentationSelector {
             node->AppendInput(jsgraph_->zone(), jsgraph_->FalseConstant());
             NodeProperties::ChangeOp(node, lowering->machine()->WordEqual());
           } else {
-            DCHECK(!TypeOf(node->InputAt(0))->IsInhabited());
+            DCHECK(TypeOf(node->InputAt(0))->IsNone());
             DeferReplacement(node, lowering->jsgraph()->Int32Constant(0));
           }
         } else {
@@ -2420,8 +2424,9 @@ class RepresentationSelector {
           VisitBinop(node, UseInfo::TruncatingWord32(),
                      MachineRepresentation::kWord32);
           if (lower()) {
-            if (index_type->Min() >= 0.0 &&
-                index_type->Max() < length_type->Min()) {
+            if (index_type->IsNone() || length_type->IsNone() ||
+                (index_type->Min() >= 0.0 &&
+                 index_type->Max() < length_type->Min())) {
               // The bounds check is redundant if we already know that
               // the index is within the bounds of [0.0, length[.
               DeferReplacement(node, node->InputAt(0));
@@ -2730,6 +2735,10 @@ class RepresentationSelector {
       case IrOpcode::kObjectIsArrayBufferView: {
         // TODO(turbofan): Introduce a Type::ArrayBufferView?
         VisitUnop(node, UseInfo::AnyTagged(), MachineRepresentation::kBit);
+        return;
+      }
+      case IrOpcode::kObjectIsBigInt: {
+        VisitObjectIs(node, Type::BigInt(), lowering);
         return;
       }
       case IrOpcode::kObjectIsCallable: {

@@ -11,6 +11,7 @@
 #include "src/compiler.h"
 #include "src/flags.h"
 #include "src/global-handles.h"
+#include "src/interpreter/interpreter.h"
 #include "src/isolate.h"
 #include "src/objects-inl.h"
 #include "src/parsing/parse-info.h"
@@ -360,8 +361,9 @@ void UnoptimizedCompileJob::PrepareToCompileOnMainThread(Isolate* isolate) {
   DCHECK_EQ(status(), Status::kAnalyzed);
   COMPILER_DISPATCHER_TRACE_SCOPE(tracer_, kPrepareToCompile);
 
-  compilation_job_.reset(
-      Compiler::PrepareUnoptimizedCompilationJob(parse_info_.get(), isolate));
+  compilation_job_.reset(interpreter::Interpreter::NewCompilationJob(
+      parse_info_.get(), parse_info_->literal(), isolate->allocator()));
+
   if (!compilation_job_.get()) {
     if (!isolate->has_pending_exception()) isolate->StackOverflow();
     status_ = Status::kFailed;
@@ -411,7 +413,8 @@ void UnoptimizedCompileJob::FinalizeCompilingOnMainThread(Isolate* isolate) {
                                          AnalyzeMode::kRegular);
     compilation_job_->compilation_info()->set_shared_info(shared_);
     if (compilation_job_->state() == CompilationJob::State::kFailed ||
-        !Compiler::FinalizeCompilationJob(compilation_job_.release())) {
+        !Compiler::FinalizeCompilationJob(compilation_job_.release(),
+                                          isolate)) {
       if (!isolate->has_pending_exception()) isolate->StackOverflow();
       status_ = Status::kFailed;
       return;

@@ -57,6 +57,7 @@ class LiftoffAssembler : public TurboAssembler {
     }
 
     RegList pinned_regs() const { return pinned_regs_; }
+    bool has(Register reg) const { return (pinned_regs_ & reg.bit()) != 0; }
 
    private:
     RegList pinned_regs_ = 0;
@@ -102,6 +103,7 @@ class LiftoffAssembler : public TurboAssembler {
   static_assert(IS_TRIVIALLY_COPYABLE(VarState),
                 "VarState should be trivially copyable");
 
+  // TODO(clemensh): Make this a proper class.
   struct CacheState {
     MOVE_ONLY_WITH_DEFAULT_CONSTRUCTORS(CacheState);
 
@@ -134,7 +136,7 @@ class LiftoffAssembler : public TurboAssembler {
       RegList available_regs =
           kGpCacheRegs & ~used_registers & ~pinned_scope.pinned_regs();
       Register reg =
-          Register::from_code(base::bits::CountTrailingZeros64(available_regs));
+          Register::from_code(base::bits::CountTrailingZeros(available_regs));
       DCHECK_EQ(0, used_registers & reg.bit());
       return reg;
     }
@@ -176,7 +178,7 @@ class LiftoffAssembler : public TurboAssembler {
       RegList remaining_regs = unpinned_regs & ~mask;
       if (!remaining_regs) remaining_regs = unpinned_regs;
       last_spilled_reg =
-          Register::from_code(base::bits::CountTrailingZeros64(remaining_regs));
+          Register::from_code(base::bits::CountTrailingZeros(remaining_regs));
       return last_spilled_reg;
     }
   };
@@ -189,7 +191,7 @@ class LiftoffAssembler : public TurboAssembler {
   }
 
   uint32_t GetNumUses(Register reg) const {
-    DCHECK_GT(CacheState::kMaxRegisterCode, reg.code());
+    DCHECK_GE(CacheState::kMaxRegisterCode, reg.code());
     return cache_state_.register_use_count[reg.code()];
   }
 

@@ -217,30 +217,30 @@ void Generate_JSBuiltinsConstructStubHelper(MacroAssembler* masm) {
       __ Check(eq, kUnexpectedValue);
     }
 
-    // Add slots for the tagged argc and receiver, and round up to maintain
-    // alignment.
+    // Push number of arguments.
+    __ SmiTag(x11, argc);
+    __ Push(x11, padreg);
+
+    // Add a slot for the receiver, and round up to maintain alignment.
     Register slot_count = x2;
     Register slot_count_without_rounding = x12;
-    __ Add(slot_count_without_rounding, argc, 3);
+    __ Add(slot_count_without_rounding, argc, 2);
     __ Bic(slot_count, slot_count_without_rounding, 1);
     __ Claim(slot_count);
 
     // Preserve the incoming parameters on the stack.
     __ LoadRoot(x10, Heap::kTheHoleValueRootIndex);
-    __ SmiTag(x11, argc);
 
     // Compute a pointer to the slot immediately above the location on the
     // stack to which arguments will be later copied.
     __ SlotAddress(x2, argc);
 
-    // Poke the hole (receiver) and number of arguments (tagged) into the
-    // highest claimed slots, with padding between them if argc was odd.
-    __ Stp(x10, x11, MemOperand(x2));
+    // Poke the hole (receiver) in the highest slot.
+    __ Str(x10, MemOperand(x2));
     __ Tbnz(slot_count_without_rounding, 0, &already_aligned);
 
-    // Overwrite the previously written argc with padding, and store argc at the
-    // next highest slot.
-    __ Stp(padreg, x11, MemOperand(x2, 1 * kPointerSize));
+    // Store padding, if needed.
+    __ Str(padreg, MemOperand(x2, 1 * kPointerSize));
     __ Bind(&already_aligned);
 
     // Copy arguments to the expression stack.
@@ -258,13 +258,23 @@ void Generate_JSBuiltinsConstructStubHelper(MacroAssembler* masm) {
     //  --                     x0: number of arguments (untagged)
     //  --                     x1: constructor function
     //  --                     x3: new target
+    // If argc is odd:
     //  --     sp[0*kPointerSize]: argument n - 1
     //  --             ...
     //  -- sp[(n-1)*kPointerSize]: argument 0
     //  -- sp[(n+0)*kPointerSize]: the hole (receiver)
-    //  -- sp[(n+1)*kPointerSize]: optional padding, depending on argc.
-    //  -- sp[(n+1+(argc&1))*kPointerSize]: number of arguments (tagged)
-    //  -- sp[(n+2+(argc&1))*kPointerSize]: context (pushed by FrameScope)
+    //  -- sp[(n+1)*kPointerSize]: padding
+    //  -- sp[(n+2)*kPointerSize]: padding
+    //  -- sp[(n+3)*kPointerSize]: number of arguments (tagged)
+    //  -- sp[(n+4)*kPointerSize]: context (pushed by FrameScope)
+    // If argc is even:
+    //  --     sp[0*kPointerSize]: argument n - 1
+    //  --             ...
+    //  -- sp[(n-1)*kPointerSize]: argument 0
+    //  -- sp[(n+0)*kPointerSize]: the hole (receiver)
+    //  -- sp[(n+1)*kPointerSize]: padding
+    //  -- sp[(n+2)*kPointerSize]: number of arguments (tagged)
+    //  -- sp[(n+3)*kPointerSize]: context (pushed by FrameScope)
     // -----------------------------------
 
     // Call the function.
@@ -314,13 +324,14 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
 
     // Preserve the incoming parameters on the stack.
     __ SmiTag(x0);
-    __ Push(x0, x1, x3);
+    __ Push(x0, x1, padreg, x3);
 
     // ----------- S t a t e -------------
     //  --        sp[0*kPointerSize]: new target
-    //  -- x1 and sp[1*kPointerSize]: constructor function
-    //  --        sp[2*kPointerSize]: number of arguments (tagged)
-    //  --        sp[3*kPointerSize]: context (pushed by FrameScope)
+    //  --        sp[1*kPointerSize]: padding
+    //  -- x1 and sp[2*kPointerSize]: constructor function
+    //  --        sp[3*kPointerSize]: number of arguments (tagged)
+    //  --        sp[4*kPointerSize]: context (pushed by FrameScope)
     // -----------------------------------
 
     __ Ldr(x4, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
@@ -349,38 +360,50 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     // Deoptimizer enters here.
     masm->isolate()->heap()->SetConstructStubCreateDeoptPCOffset(
         masm->pc_offset());
+
     __ Bind(&post_instantiation_deopt_entry);
 
-    // Restore new target.
-    __ Peek(x3, 0);
+    // Restore new target from the top of the stack.
+    __ Peek(x3, 0 * kPointerSize);
 
     // Restore constructor function and argument count.
     __ Ldr(x1, MemOperand(fp, ConstructFrameConstants::kConstructorOffset));
     __ Ldrsw(x12,
              UntagSmiMemOperand(fp, ConstructFrameConstants::kLengthOffset));
 
+    // Copy arguments to the expression stack. The called function pops the
+    // receiver along with its arguments, so we need an extra receiver on the
+    // stack, in case we have to return it later.
+
+    // Overwrite the new target with a receiver.
+    __ Poke(x0, 0);
+
+    // Push two further copies of the receiver. One will be popped by the called
+    // function. The second acts as padding if the number of arguments plus
+    // receiver is odd - pushing receiver twice avoids branching. It also means
+    // that we don't have to handle the even and odd cases specially on
+    // InvokeFunction's return, as top of stack will be the receiver in either
+    // case.
+    __ Push(x0, x0);
+
     // ----------- S t a t e -------------
     //  --                        x3: new target
     //  --                       x12: number of arguments (untagged)
-    //  --        sp[0*kPointerSize]: implicit receiver
+    //  --        sp[0*kPointerSize]: implicit receiver (overwrite if argc odd)
     //  --        sp[1*kPointerSize]: implicit receiver
-    //  -- x1 and sp[2*kPointerSize]: constructor function
-    //  --        sp[3*kPointerSize]: number of arguments (tagged)
-    //  --        sp[4*kPointerSize]: context
+    //  --        sp[2*kPointerSize]: implicit receiver
+    //  -- x1 and sp[3*kPointerSize]: constructor function
+    //  --        sp[4*kPointerSize]: number of arguments (tagged)
+    //  --        sp[5*kPointerSize]: context
     // -----------------------------------
 
-    // Copy arguments to the expression stack. Increment the number of slots by
-    // one to account for the two copies of the receiver, where one overwrites
-    // the slot used by the new target.
-    __ Add(x10, x12, 1);
+    // Round the number of arguments down to the next even number, and claim
+    // slots for the arguments. If the number of arguments was odd, the last
+    // argument will overwrite one of the receivers pushed above.
+    __ Bic(x10, x12, 1);
     __ Claim(x10);
 
-    // Poke the allocated receiver to the stack. We need two copies
-    // because we may have to return the original one and the calling
-    // conventions dictate that the called function pops the receiver.
-    __ Poke(x0, Operand(x10, LSL, kPointerSizeLog2));
-    __ Poke(x0, Operand(x12, LSL, kPointerSizeLog2));
-
+    // Copy the arguments.
     {
       Register count = x2;
       Register dst = x10;
@@ -397,11 +420,17 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     __ InvokeFunction(x1, x3, actual, CALL_FUNCTION);
 
     // ----------- S t a t e -------------
-    //  --                 x0: constructor result
+    // If argc is odd:
     //  -- sp[0*kPointerSize]: implicit receiver
     //  -- sp[1*kPointerSize]: constructor function
     //  -- sp[2*kPointerSize]: number of arguments
     //  -- sp[3*kPointerSize]: context
+    // If argc is even:
+    //  -- sp[0*kPointerSize]: implicit receiver
+    //  -- sp[1*kPointerSize]: implicit receiver
+    //  -- sp[2*kPointerSize]: constructor function
+    //  -- sp[3*kPointerSize]: number of arguments
+    //  -- sp[4*kPointerSize]: context
     // -----------------------------------
 
     // Store offset of return address for deoptimizer.
@@ -532,6 +561,12 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
                       &prepare_step_in_suspended_generator);
   __ Bind(&stepping_prepared);
 
+  // Check the stack for overflow. We are not trying to catch interruptions
+  // (i.e. debug break and preemption) here, so check the "real stack limit".
+  Label stack_overflow;
+  __ CompareRoot(jssp, Heap::kRealStackLimitRootIndex);
+  __ B(lo, &stack_overflow);
+
   // Get number of arguments for generator function.
   __ Ldr(x10, FieldMemOperand(x4, JSFunction::kSharedFunctionInfoOffset));
   __ Ldr(w10,
@@ -615,6 +650,13 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     __ Ldr(x4, FieldMemOperand(x1, JSGeneratorObject::kFunctionOffset));
   }
   __ B(&stepping_prepared);
+
+  __ bind(&stack_overflow);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ CallRuntime(Runtime::kThrowStackOverflow);
+    __ Unreachable();  // This should be unreachable.
+  }
 }
 
 static void Generate_StackOverflowCheck(MacroAssembler* masm, Register num_args,
@@ -654,6 +696,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
   Register argc = x3;
   Register argv = x4;
   Register scratch = x10;
+  Register slots_to_claim = x11;
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
@@ -668,12 +711,14 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
 
     __ InitializeRootRegister();
 
-    // Push the function and the receiver onto the stack.
-    __ Push(function, receiver);
+    // Claim enough space for the arguments, the receiver and the function,
+    // including an optional slot of padding.
+    __ Add(slots_to_claim, argc, 3);
+    __ Bic(slots_to_claim, slots_to_claim, 1);
 
     // Check if we have enough stack space to push all arguments.
     Label enough_stack_space, stack_overflow;
-    Generate_StackOverflowCheck(masm, argc, &stack_overflow);
+    Generate_StackOverflowCheck(masm, slots_to_claim, &stack_overflow);
     __ B(&enough_stack_space);
 
     __ Bind(&stack_overflow);
@@ -681,6 +726,15 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     __ Unreachable();
 
     __ Bind(&enough_stack_space);
+    __ Claim(slots_to_claim);
+
+    // Store padding (which might be overwritten).
+    __ SlotAddress(scratch, slots_to_claim);
+    __ Str(padreg, MemOperand(scratch, -kPointerSize));
+
+    // Store receiver and function on the stack.
+    __ SlotAddress(scratch, argc);
+    __ Stp(receiver, function, MemOperand(scratch));
 
     // Copy arguments to the stack in a loop, in reverse order.
     // x3: argc.
@@ -690,12 +744,8 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // Skip the argument set up if we have no arguments.
     __ Cbz(argc, &done);
 
-    // Set scratch to the current position of the stack pointer, which marks
-    // the end of the argument copy.
-    __ SlotAddress(scratch, 0);
-
-    // Claim enough space for the arguments.
-    __ Claim(argc);
+    // scratch has been set to point to the location of the receiver, which
+    // marks the end of the argument copy.
 
     __ Bind(&loop);
     // Load the handle.

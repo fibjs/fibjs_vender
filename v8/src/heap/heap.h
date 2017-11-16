@@ -101,10 +101,13 @@ using v8::MemoryPressureLevel;
   V(Map, debug_evaluate_context_map, DebugEvaluateContextMap)                  \
   V(Map, script_context_table_map, ScriptContextTableMap)                      \
   /* Maps */                                                                   \
+  V(Map, descriptor_array_map, DescriptorArrayMap)                             \
   V(Map, fixed_double_array_map, FixedDoubleArrayMap)                          \
   V(Map, mutable_heap_number_map, MutableHeapNumberMap)                        \
   V(Map, ordered_hash_table_map, OrderedHashTableMap)                          \
-  V(Map, unseeded_number_dictionary_map, UnseededNumberDictionaryMap)          \
+  V(Map, name_dictionary_map, NameDictionaryMap)                               \
+  V(Map, global_dictionary_map, GlobalDictionaryMap)                           \
+  V(Map, number_dictionary_map, NumberDictionaryMap)                           \
   V(Map, sloppy_arguments_elements_map, SloppyArgumentsElementsMap)            \
   V(Map, small_ordered_hash_map_map, SmallOrderedHashMapMap)                   \
   V(Map, small_ordered_hash_set_map, SmallOrderedHashSetMap)                   \
@@ -185,7 +188,7 @@ using v8::MemoryPressureLevel;
   V(Script, empty_script, EmptyScript)                                         \
   V(Cell, undefined_cell, UndefinedCell)                                       \
   V(FixedArray, empty_sloppy_arguments_elements, EmptySloppyArgumentsElements) \
-  V(SeededNumberDictionary, empty_slow_element_dictionary,                     \
+  V(NumberDictionary, empty_slow_element_dictionary,                           \
     EmptySlowElementDictionary)                                                \
   V(FixedArray, empty_ordered_hash_table, EmptyOrderedHashTable)               \
   V(PropertyCell, empty_property_cell, EmptyPropertyCell)                      \
@@ -218,7 +221,7 @@ using v8::MemoryPressureLevel;
   V(NameDictionary, api_symbol_table, ApiSymbolTable)                          \
   V(NameDictionary, api_private_symbol_table, ApiPrivateSymbolTable)           \
   V(Object, script_list, ScriptList)                                           \
-  V(UnseededNumberDictionary, code_stubs, CodeStubs)                           \
+  V(NumberDictionary, code_stubs, CodeStubs)                                   \
   V(FixedArray, materialized_objects, MaterializedObjects)                     \
   V(FixedArray, microtask_queue, MicrotaskQueue)                               \
   V(FixedArray, detached_contexts, DetachedContexts)                           \
@@ -238,6 +241,11 @@ using v8::MemoryPressureLevel;
   V(FixedArray, serialized_templates, SerializedTemplates)                     \
   V(FixedArray, serialized_global_proxy_sizes, SerializedGlobalProxySizes)     \
   V(TemplateList, message_listeners, MessageListeners)                         \
+  /* DeserializeLazy handlers for lazy bytecode deserialization */             \
+  V(Object, deserialize_lazy_handler, DeserializeLazyHandler)                  \
+  V(Object, deserialize_lazy_handler_wide, DeserializeLazyHandlerWide)         \
+  V(Object, deserialize_lazy_handler_extra_wide,                               \
+    DeserializeLazyHandlerExtraWide)                                           \
   /* JS Entries */                                                             \
   V(Code, js_entry_code, JsEntryCode)                                          \
   V(Code, js_construct_entry_code, JsConstructEntryCode)
@@ -256,8 +264,6 @@ using v8::MemoryPressureLevel;
     ConstructStubCreateDeoptPCOffset)                                          \
   V(Smi, construct_stub_invoke_deopt_pc_offset,                                \
     ConstructStubInvokeDeoptPCOffset)                                          \
-  V(Smi, getter_stub_deopt_pc_offset, GetterStubDeoptPCOffset)                 \
-  V(Smi, setter_stub_deopt_pc_offset, SetterStubDeoptPCOffset)                 \
   V(Smi, interpreter_entry_return_pc_offset, InterpreterEntryReturnPCOffset)
 
 #define ROOT_LIST(V)  \
@@ -311,6 +317,7 @@ using v8::MemoryPressureLevel;
   V(ForeignMap)                         \
   V(FreeSpaceMap)                       \
   V(FunctionContextMap)                 \
+  V(GlobalDictionaryMap)                \
   V(GlobalPropertyCellMap)              \
   V(HashTableMap)                       \
   V(HeapNumberMap)                      \
@@ -327,6 +334,7 @@ using v8::MemoryPressureLevel;
   V(ModuleContextMap)                   \
   V(ModuleInfoMap)                      \
   V(MutableHeapNumberMap)               \
+  V(NameDictionaryMap)                  \
   V(NanValue)                           \
   V(NativeContextMap)                   \
   V(NoClosuresCellMap)                  \
@@ -337,12 +345,13 @@ using v8::MemoryPressureLevel;
   V(OptimizedOut)                       \
   V(OrderedHashTableMap)                \
   V(PropertyArrayMap)                   \
-  V(SmallOrderedHashMapMap)             \
-  V(SmallOrderedHashSetMap)             \
   V(ScopeInfoMap)                       \
   V(ScriptContextMap)                   \
+  V(NumberDictionaryMap)                \
   V(SharedFunctionInfoMap)              \
   V(SloppyArgumentsElementsMap)         \
+  V(SmallOrderedHashMapMap)             \
+  V(SmallOrderedHashSetMap)             \
   V(SpeciesProtector)                   \
   V(StaleRegister)                      \
   V(StringLengthProtector)              \
@@ -407,6 +416,8 @@ enum class ClearRecordedSlots { kYes, kNo };
 enum class FixedArrayVisitationMode { kRegular, kIncremental };
 
 enum class TraceRetainingPathMode { kEnabled, kDisabled };
+
+enum class RetainingPathOption { kDefault, kTrackEphemeralPath };
 
 enum class GarbageCollectionReason {
   kUnknown = 0,
@@ -836,13 +847,6 @@ class Heap {
   inline int NextScriptId();
   inline int GetNextTemplateSerialNumber();
 
-  void SetArgumentsAdaptorDeoptPCOffset(int pc_offset);
-  void SetConstructStubCreateDeoptPCOffset(int pc_offset);
-  void SetConstructStubInvokeDeoptPCOffset(int pc_offset);
-  void SetGetterStubDeoptPCOffset(int pc_offset);
-  void SetSetterStubDeoptPCOffset(int pc_offset);
-  void SetInterpreterEntryReturnPCOffset(int pc_offset);
-
   void SetSerializedTemplates(FixedArray* templates);
   void SetSerializedGlobalProxySizes(FixedArray* sizes);
 
@@ -862,10 +866,6 @@ class Heap {
     external_memory_ -= external_memory_concurrently_freed_.Value();
     external_memory_concurrently_freed_.SetValue(0);
   }
-
-  void DeoptMarkedAllocationSites();
-
-  bool DeoptMaybeTenuredAllocationSites();
 
   void AddWeakNewSpaceObjectToCodeDependency(Handle<HeapObject> obj,
                                              Handle<WeakCell> code);
@@ -1048,7 +1048,7 @@ class Heap {
   Object** roots_array_start() { return roots_; }
 
   // Sets the stub_cache_ (only used when expanding the dictionary).
-  void SetRootCodeStubs(UnseededNumberDictionary* value);
+  void SetRootCodeStubs(NumberDictionary* value);
 
   void SetRootMaterializedObjects(FixedArray* objects) {
     roots_[kMaterializedObjectsRootIndex] = objects;
@@ -1090,6 +1090,11 @@ class Heap {
 
   void RegisterStrongRoots(Object** start, Object** end);
   void UnregisterStrongRoots(Object** start);
+
+  bool IsDeserializeLazyHandler(Code* code);
+  void SetDeserializeLazyHandler(Code* code);
+  void SetDeserializeLazyHandlerWide(Code* code);
+  void SetDeserializeLazyHandlerExtraWide(Code* code);
 
   // ===========================================================================
   // Inline allocation. ========================================================
@@ -1224,6 +1229,28 @@ class Heap {
   // - or it was communicated to GC using NotifyObjectLayoutChange.
   void VerifyObjectLayoutChange(HeapObject* object, Map* new_map);
 #endif
+
+  // ===========================================================================
+  // Deoptimization support API. ===============================================
+  // ===========================================================================
+
+  // Setters for code offsets of well-known deoptimization targets.
+  void SetArgumentsAdaptorDeoptPCOffset(int pc_offset);
+  void SetConstructStubCreateDeoptPCOffset(int pc_offset);
+  void SetConstructStubInvokeDeoptPCOffset(int pc_offset);
+  void SetInterpreterEntryReturnPCOffset(int pc_offset);
+
+  // Invalidates references in the given {code} object that are directly
+  // embedded within the instruction stream. Mutates write-protected code.
+  void InvalidateCodeEmbeddedObjects(Code* code);
+
+  // Invalidates references in the given {code} object that are referenced
+  // transitively from the deoptimization data. Mutates write-protected code.
+  void InvalidateCodeDeoptimizationData(Code* code);
+
+  void DeoptMarkedAllocationSites();
+
+  bool DeoptMaybeTenuredAllocationSites();
 
   // ===========================================================================
   // Embedder heap tracer support. =============================================
@@ -1518,7 +1545,8 @@ class Heap {
   // Adds the given object to the weak table of retaining path targets.
   // On each GC if the marker discovers the object, it will print the retaining
   // path. This requires --track-retaining-path flag.
-  void AddRetainingPathTarget(Handle<HeapObject> object);
+  void AddRetainingPathTarget(Handle<HeapObject> object,
+                              RetainingPathOption option);
 
 // =============================================================================
 #ifdef VERIFY_HEAP
@@ -1796,6 +1824,8 @@ class Heap {
   inline void UpdateAllocationsHash(HeapObject* object);
   inline void UpdateAllocationsHash(uint32_t value);
   void PrintAllocationsHash();
+
+  int NextStressMarkingLimit();
 
   void AddToRingBuffer(const char* string);
   void GetFromRingBuffer(char* buffer);
@@ -2199,8 +2229,8 @@ class Heap {
   MUST_USE_RESULT AllocationResult
       AllocateForeign(Address address, PretenureFlag pretenure = NOT_TENURED);
 
-  MUST_USE_RESULT AllocationResult
-      AllocateCode(int object_size, bool immovable);
+  MUST_USE_RESULT AllocationResult AllocateCode(int object_size,
+                                                Movability movability);
 
   void set_force_oom(bool value) { force_oom_ = value; }
 
@@ -2209,9 +2239,12 @@ class Heap {
   // ===========================================================================
 
   void AddRetainer(HeapObject* retainer, HeapObject* object);
+  void AddEphemeralRetainer(HeapObject* retainer, HeapObject* object);
   void AddRetainingRoot(Root root, HeapObject* object);
-  bool IsRetainingPathTarget(HeapObject* object);
-  void PrintRetainingPath(HeapObject* object);
+  // Returns true if the given object is a target of retaining path tracking.
+  // Stores the option corresponding to the object in the provided *option.
+  bool IsRetainingPathTarget(HeapObject* object, RetainingPathOption* option);
+  void PrintRetainingPath(HeapObject* object, RetainingPathOption option);
 
   // The amount of external memory registered through the API.
   int64_t external_memory_;
@@ -2284,6 +2317,10 @@ class Heap {
 
   // Running hash over allocations performed.
   uint32_t raw_allocations_hash_;
+
+  // Starts marking when stress_marking_percentage_% of the marking start limit
+  // is reached.
+  int stress_marking_percentage_;
 
   // How many mark-sweep collections happened.
   unsigned int ms_count_;
@@ -2450,6 +2487,12 @@ class Heap {
 
   std::map<HeapObject*, HeapObject*> retainer_;
   std::map<HeapObject*, Root> retaining_root_;
+  // If an object is retained by an ephemeron, then the retaining key of the
+  // ephemeron is stored in this map.
+  std::map<HeapObject*, HeapObject*> ephemeral_retainer_;
+  // For each index inthe retaining_path_targets_ array this map
+  // stores the option of the corresponding target.
+  std::map<int, RetainingPathOption> retaining_path_target_option_;
 
   // Classes in "heap" can be friends.
   friend class AlwaysAllocateScope;
@@ -2541,7 +2584,11 @@ class CodeSpaceMemoryModificationScope {
 
 class CodePageMemoryModificationScope {
  public:
-  explicit inline CodePageMemoryModificationScope(MemoryChunk* chunk);
+  enum CodePageModificationMode { READ_WRITE, READ_WRITE_EXECUTABLE };
+  // TODO(hpayer): Remove set_executable from the constructor. Code pages should
+  // never be executable and writable at the same time.
+  inline CodePageMemoryModificationScope(MemoryChunk* chunk,
+                                         CodePageModificationMode mode);
   inline ~CodePageMemoryModificationScope();
 
  private:

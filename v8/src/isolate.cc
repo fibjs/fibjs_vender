@@ -31,7 +31,6 @@
 #include "src/elements.h"
 #include "src/external-reference-table.h"
 #include "src/frames-inl.h"
-#include "src/ic/access-compiler-data.h"
 #include "src/ic/stub-cache.h"
 #include "src/interface-descriptors.h"
 #include "src/interpreter/interpreter.h"
@@ -568,6 +567,11 @@ bool GetStackTraceLimit(Isolate* isolate, int* result) {
 
   // Ensure that limit is not negative.
   *result = Max(FastD2IChecked(stack_trace_limit->Number()), 0);
+
+  if (*result != FLAG_stack_trace_limit) {
+    isolate->CountUsage(v8::Isolate::kErrorStackTraceLimit);
+  }
+
   return true;
 }
 
@@ -700,19 +704,19 @@ class CaptureStackTraceHelper {
     int code_offset;
     Handle<ByteArray> source_position_table;
     Handle<Object> maybe_cache;
-    Handle<UnseededNumberDictionary> cache;
+    Handle<NumberDictionary> cache;
     if (!FLAG_optimize_for_size) {
       code_offset = summ.code_offset();
       source_position_table =
           handle(summ.abstract_code()->source_position_table(), isolate_);
       maybe_cache = handle(summ.abstract_code()->stack_frame_cache(), isolate_);
-      if (maybe_cache->IsUnseededNumberDictionary()) {
-        cache = Handle<UnseededNumberDictionary>::cast(maybe_cache);
+      if (maybe_cache->IsNumberDictionary()) {
+        cache = Handle<NumberDictionary>::cast(maybe_cache);
       } else {
-        cache = UnseededNumberDictionary::New(isolate_, 1);
+        cache = NumberDictionary::New(isolate_, 1);
       }
       int entry = cache->FindEntry(code_offset);
-      if (entry != UnseededNumberDictionary::kNotFound) {
+      if (entry != NumberDictionary::kNotFound) {
         Handle<StackFrameInfo> frame(
             StackFrameInfo::cast(cache->ValueAt(entry)));
         DCHECK(frame->function_name()->IsString());
@@ -742,8 +746,8 @@ class CaptureStackTraceHelper {
     frame->set_is_constructor(summ.is_constructor());
     frame->set_is_wasm(false);
     if (!FLAG_optimize_for_size) {
-      auto new_cache = UnseededNumberDictionary::Set(cache, code_offset, frame);
-      if (*new_cache != *cache || !maybe_cache->IsUnseededNumberDictionary()) {
+      auto new_cache = NumberDictionary::Set(cache, code_offset, frame);
+      if (*new_cache != *cache || !maybe_cache->IsNumberDictionary()) {
         AbstractCode::SetStackFrameCache(summ.abstract_code(), new_cache);
       }
     }
@@ -1221,12 +1225,15 @@ Object* Isolate::ReThrow(Object* exception) {
 Object* Isolate::UnwindAndFindHandler() {
   Object* exception = pending_exception();
 
-  auto FoundHandler = [&](Context* context, Code* code, intptr_t offset,
-                          Address handler_sp, Address handler_fp) {
+  auto FoundHandler = [&](Context* context, Address instruction_start,
+                          intptr_t handler_offset,
+                          Address constant_pool_address, Address handler_sp,
+                          Address handler_fp) {
     // Store information to be consumed by the CEntryStub.
     thread_local_top()->pending_handler_context_ = context;
-    thread_local_top()->pending_handler_code_ = code;
-    thread_local_top()->pending_handler_offset_ = offset;
+    thread_local_top()->pending_handler_entrypoint_ =
+        instruction_start + handler_offset;
+    thread_local_top()->pending_handler_constant_pool_ = constant_pool_address;
     thread_local_top()->pending_handler_fp_ = handler_fp;
     thread_local_top()->pending_handler_sp_ = handler_sp;
 
@@ -1259,7 +1266,8 @@ Object* Isolate::UnwindAndFindHandler() {
         // Gather information from the handler.
         Code* code = frame->LookupCode();
         return FoundHandler(
-            nullptr, code, Smi::ToInt(code->handler_table()->get(0)),
+            nullptr, code->instruction_start(),
+            Smi::ToInt(code->handler_table()->get(0)), code->constant_pool(),
             handler->address() + StackHandlerConstants::kSize, 0);
       }
 
@@ -1286,8 +1294,9 @@ Object* Isolate::UnwindAndFindHandler() {
         trap_handler::SetThreadInWasm();
 
         set_wasm_caught_exception(exception);
-        return FoundHandler(nullptr, frame->LookupCode(), offset, return_sp,
-                            frame->fp());
+        Code* code = frame->LookupCode();
+        return FoundHandler(nullptr, code->instruction_start(), offset,
+                            code->constant_pool(), return_sp, frame->fp());
       }
 
       case StackFrame::OPTIMIZED: {
@@ -1318,7 +1327,8 @@ Object* Isolate::UnwindAndFindHandler() {
           set_deoptimizer_lazy_throw(true);
         }
 
-        return FoundHandler(nullptr, code, offset, return_sp, frame->fp());
+        return FoundHandler(nullptr, code->instruction_start(), offset,
+                            code->constant_pool(), return_sp, frame->fp());
       }
 
       case StackFrame::STUB: {
@@ -1341,7 +1351,8 @@ Object* Isolate::UnwindAndFindHandler() {
                             StandardFrameConstants::kFixedFrameSizeAboveFp -
                             stack_slots * kPointerSize;
 
-        return FoundHandler(nullptr, code, offset, return_sp, frame->fp());
+        return FoundHandler(nullptr, code->instruction_start(), offset,
+                            code->constant_pool(), return_sp, frame->fp());
       }
 
       case StackFrame::INTERPRETED: {
@@ -1373,7 +1384,8 @@ Object* Isolate::UnwindAndFindHandler() {
 
         Code* code =
             builtins()->builtin(Builtins::kInterpreterEnterBytecodeDispatch);
-        return FoundHandler(context, code, 0, return_sp, frame->fp());
+        return FoundHandler(context, code->instruction_start(), 0,
+                            code->constant_pool(), return_sp, frame->fp());
       }
 
       case StackFrame::BUILTIN:
@@ -2378,6 +2390,7 @@ Isolate::Isolate(bool enable_serializer)
       // TODO(bmeurer) Initialized lazily because it depends on flags; can
       // be fixed once the default isolate cleanup is done.
       random_number_generator_(nullptr),
+      fuzzer_rng_(nullptr),
       rail_mode_(PERFORMANCE_ANIMATION),
       promise_hook_or_debug_is_active_(false),
       promise_hook_(nullptr),
@@ -2597,9 +2610,6 @@ Isolate::~Isolate() {
   delete[] call_descriptor_data_;
   call_descriptor_data_ = nullptr;
 
-  delete access_compiler_data_;
-  access_compiler_data_ = nullptr;
-
   delete regexp_stack_;
   regexp_stack_ = nullptr;
 
@@ -2645,6 +2655,9 @@ Isolate::~Isolate() {
 
   delete random_number_generator_;
   random_number_generator_ = nullptr;
+
+  delete fuzzer_rng_;
+  fuzzer_rng_ = nullptr;
 
   delete debug_;
   debug_ = nullptr;
@@ -2772,7 +2785,6 @@ bool Isolate::Init(StartupDeserializer* des) {
   date_cache_ = new DateCache();
   call_descriptor_data_ =
       new CallInterfaceDescriptorData[CallDescriptors::NUMBER_OF_DESCRIPTORS];
-  access_compiler_data_ = new AccessCompilerData();
   cpu_profiler_ = new CpuProfiler(this);
   heap_profiler_ = new HeapProfiler(heap());
   interpreter_ = new interpreter::Interpreter(this);
@@ -2811,7 +2823,7 @@ bool Isolate::Init(StartupDeserializer* des) {
   INTERFACE_DESCRIPTOR_LIST(INTERFACE_DESCRIPTOR)
 #undef INTERFACE_DESCRIPTOR
 
-  deoptimizer_data_ = new DeoptimizerData(heap()->memory_allocator());
+  deoptimizer_data_ = new DeoptimizerData(heap());
 
   const bool create_heap_objects = (des == nullptr);
   if (setup_delegate_ == nullptr) {
@@ -2905,7 +2917,6 @@ bool Isolate::Init(StartupDeserializer* des) {
     // cannot be serialized into the snapshot have been generated.
     HandleScope scope(this);
     CodeStub::GenerateFPStubs(this);
-    StoreBufferOverflowStub::GenerateFixedRegStubsAheadOfTime(this);
   }
 
   initialized_from_snapshot_ = (des != nullptr);
@@ -3022,8 +3033,7 @@ void Isolate::DumpAndResetStats() {
   turbo_statistics_ = nullptr;
   if (V8_UNLIKELY(FLAG_runtime_stats ==
                   v8::tracing::TracingCategoryObserver::ENABLED_BY_NATIVE)) {
-    OFStream os(stdout);
-    counters()->runtime_call_stats()->Print(os);
+    counters()->runtime_call_stats()->Print();
     counters()->runtime_call_stats()->Reset();
   }
 }
@@ -3295,17 +3305,24 @@ CallInterfaceDescriptorData* Isolate::call_descriptor_data(int index) {
   return &call_descriptor_data_[index];
 }
 
-
-base::RandomNumberGenerator* Isolate::random_number_generator() {
-  if (random_number_generator_ == nullptr) {
-    if (FLAG_random_seed != 0) {
-      random_number_generator_ =
-          new base::RandomNumberGenerator(FLAG_random_seed);
+static base::RandomNumberGenerator* ensure_rng_exists(
+    base::RandomNumberGenerator** rng, int seed) {
+  if (*rng == nullptr) {
+    if (seed != 0) {
+      *rng = new base::RandomNumberGenerator(seed);
     } else {
-      random_number_generator_ = new base::RandomNumberGenerator();
+      *rng = new base::RandomNumberGenerator();
     }
   }
-  return random_number_generator_;
+  return *rng;
+}
+
+base::RandomNumberGenerator* Isolate::random_number_generator() {
+  return ensure_rng_exists(&random_number_generator_, FLAG_random_seed);
+}
+
+base::RandomNumberGenerator* Isolate::fuzzer_rng() {
+  return ensure_rng_exists(&fuzzer_rng_, FLAG_fuzzer_random_seed);
 }
 
 int Isolate::GenerateIdentityHash(uint32_t mask) {

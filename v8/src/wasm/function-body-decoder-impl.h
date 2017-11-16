@@ -1026,13 +1026,13 @@ class WasmDecoder : public Decoder {
 
   std::pair<uint32_t, uint32_t> StackEffect(const byte* pc) {
     WasmOpcode opcode = static_cast<WasmOpcode>(*pc);
+    if (WasmOpcodes::IsPrefixOpcode(opcode)) {
+      opcode = static_cast<WasmOpcode>(opcode << 8 | *(pc + 1));
+    }
     // Handle "simple" opcodes with a fixed signature first.
     FunctionSig* sig = WasmOpcodes::Signature(opcode);
     if (!sig) sig = WasmOpcodes::AsmjsSignature(opcode);
     if (sig) return {sig->parameter_count(), sig->return_count()};
-    if (WasmOpcodes::IsPrefixOpcode(opcode)) {
-      opcode = static_cast<WasmOpcode>(opcode << 8 | *(pc + 1));
-    }
 
 #define DECLARE_OPCODE_CASE(name, opcode, sig) case kExpr##name:
     // clang-format off
@@ -1283,6 +1283,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
     // Set up initial function block.
     {
       auto* c = PushBlock();
+      InitMerge(&c->start_merge, 0, [](uint32_t) -> Value { UNREACHABLE(); });
       InitMerge(&c->end_merge,
                 static_cast<uint32_t>(this->sig_->return_count()),
                 [&] (uint32_t i) {
@@ -1799,7 +1800,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             default:
               break;
           }
-          if (c.start_merge.arity) PrintF("%u-", c.end_merge.arity);
+          if (c.start_merge.arity) PrintF("%u-", c.start_merge.arity);
           PrintF("%u", c.end_merge.arity);
           if (!c.reachable()) PrintF("%c", c.unreachable() ? '*' : '#');
         }
@@ -2095,7 +2096,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
   unsigned DecodeAtomicOpcode(WasmOpcode opcode) {
     unsigned len = 0;
     ValueType ret_type;
-    FunctionSig* sig = WasmOpcodes::AtomicSignature(opcode);
+    FunctionSig* sig = WasmOpcodes::Signature(opcode);
     if (sig != nullptr) {
       MachineType memtype;
       switch (opcode) {

@@ -669,11 +669,20 @@ class TurboAssembler : public Assembler {
   void CopySlots(Register dst, Register src, Register slot_count);
 
   // Copy count double words from the address in register src to the address
-  // in register dst. Address dst must be less than src, or the gap between
-  // them must be greater than or equal to count double words, otherwise the
-  // result is unpredictable. The function may corrupt its register arguments.
-  // The registers must not alias each other.
-  void CopyDoubleWords(Register dst, Register src, Register count);
+  // in register dst. There are two modes for this function:
+  // 1) Address dst must be less than src, or the gap between them must be
+  //    greater than or equal to count double words, otherwise the result is
+  //    unpredictable. This is the default mode.
+  // 2) Address src must be less than dst, or the gap between them must be
+  //    greater than or equal to count double words, otherwise the result is
+  //    undpredictable. In this mode, src and dst specify the last (highest)
+  //    address of the regions to copy from and to.
+  // The case where src == dst is not supported.
+  // The function may corrupt its register arguments. The registers must not
+  // alias each other.
+  enum CopyDoubleWordsMode { kDstLessThanSrc, kSrcLessThanDst };
+  void CopyDoubleWords(Register dst, Register src, Register count,
+                       CopyDoubleWordsMode mode = kDstLessThanSrc);
 
   // Calculate the address of a double word-sized slot at slot_offset from the
   // stack pointer, and write it to dst. Positive slot_offsets are at addresses
@@ -1665,18 +1674,6 @@ class MacroAssembler : public TurboAssembler {
   // csp must be aligned to 16 bytes.
   void PeekPair(const CPURegister& dst1, const CPURegister& dst2, int offset);
 
-  // Emit code that loads |parameter_index|'th parameter from the stack to
-  // the register according to the CallInterfaceDescriptor definition.
-  // |sp_to_caller_sp_offset_in_words| specifies the number of words pushed
-  // below the caller's sp.
-  template <class Descriptor>
-  void LoadParameterFromStack(
-      Register reg, typename Descriptor::ParameterIndices parameter_index,
-      int sp_to_ra_offset_in_words = 0) {
-    DCHECK(Descriptor::kPassLastArgsOnStack);
-    UNIMPLEMENTED();
-  }
-
   // Variants of Claim and Drop, where the 'count' parameter is a SMI held in a
   // register.
   inline void ClaimBySMI(const Register& count_smi,
@@ -1742,11 +1739,6 @@ class MacroAssembler : public TurboAssembler {
   // Helpers ------------------------------------------------------------------
 
   static int SafepointRegisterStackIndex(int reg_code);
-
-  void LoadInstanceDescriptors(Register map,
-                               Register descriptors);
-  void LoadAccessor(Register dst, Register holder, int accessor_index,
-                    AccessorComponent accessor);
 
   template<typename Field>
   void DecodeField(Register dst, Register src) {
@@ -1926,12 +1918,6 @@ class MacroAssembler : public TurboAssembler {
                            Register type_reg,
                            InstanceType type);
 
-  void GetWeakValue(Register value, Handle<WeakCell> cell);
-
-  // Load the value of the weak cell in the value register. Branch to the given
-  // miss label if the weak cell was cleared.
-  void LoadWeakValue(Register value, Handle<WeakCell> cell, Label* miss);
-
   // Load the elements kind field from a map, and return it in the result
   // register.
   void LoadElementsKindFromMap(Register result, Register map);
@@ -2031,13 +2017,6 @@ class MacroAssembler : public TurboAssembler {
   // ---------------------------------------------------------------------------
   // Garbage collector support (GC).
 
-  // Record in the remembered set the fact that we have a pointer to new space
-  // at the address pointed to by the addr register. Only works if addr is not
-  // in new space.
-  void RememberedSetHelper(Register object,  // Used for debug code.
-                           Register addr, Register scratch1,
-                           SaveFPRegsMode save_fp);
-
   // Push and pop the registers that can hold pointers, as defined by the
   // RegList constant kSafepointSavedRegisters.
   void PushSafepointRegisters();
@@ -2045,18 +2024,6 @@ class MacroAssembler : public TurboAssembler {
 
   void CheckPageFlag(const Register& object, const Register& scratch, int mask,
                      Condition cc, Label* condition_met);
-
-  // Check if object is in new space and jump accordingly.
-  // Register 'object' is preserved.
-  void JumpIfNotInNewSpace(Register object,
-                           Label* branch) {
-    InNewSpace(object, ne, branch);
-  }
-
-  void JumpIfInNewSpace(Register object,
-                        Label* branch) {
-    InNewSpace(object, eq, branch);
-  }
 
   // Notify the garbage collector that we wrote a pointer into an object.
   // |object| is the object being stored into, |value| is the object being
@@ -2077,36 +2044,6 @@ class MacroAssembler : public TurboAssembler {
       LinkRegisterStatus lr_status, SaveFPRegsMode save_fp,
       RememberedSetAction remembered_set_action = EMIT_REMEMBERED_SET,
       SmiCheck smi_check = INLINE_SMI_CHECK);
-
-  // Checks the color of an object.  If the object is white we jump to the
-  // incremental marker.
-  void JumpIfWhite(Register value, Register scratch1, Register scratch2,
-                   Register scratch3, Register scratch4, Label* value_is_white);
-
-  // Helper for finding the mark bits for an address.
-  // Note that the behaviour slightly differs from other architectures.
-  // On exit:
-  //  - addr_reg is unchanged.
-  //  - The bitmap register points at the word with the mark bits.
-  //  - The shift register contains the index of the first color bit for this
-  //    object in the bitmap.
-  inline void GetMarkBits(Register addr_reg,
-                          Register bitmap_reg,
-                          Register shift_reg);
-
-  // Check if an object has a given incremental marking color.
-  void HasColor(Register object,
-                Register scratch0,
-                Register scratch1,
-                Label* has_color,
-                int first_bit,
-                int second_bit);
-
-  void JumpIfBlack(Register object,
-                   Register scratch0,
-                   Register scratch1,
-                   Label* on_black);
-
 
   // ---------------------------------------------------------------------------
   // Debugging.

@@ -430,7 +430,6 @@ Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
   JSBinopReduction r(this, node);
   if (r.BothInputsAre(Type::Number())) {
     // JSAdd(x:number, y:number) => NumberAdd(x, y)
-    r.ConvertInputsToNumber();
     return r.ChangeToPureOperator(simplified()->NumberAdd(), Type::Number());
   }
   if (r.BothInputsAre(Type::PlainPrimitive()) &&
@@ -881,7 +880,7 @@ Reduction JSTypedLowering::ReduceJSToLength(Node* node) {
   Node* input = NodeProperties::GetValueInput(node, 0);
   Type* input_type = NodeProperties::GetType(input);
   if (input_type->Is(type_cache_.kIntegerOrMinusZero)) {
-    if (input_type->Max() <= 0.0) {
+    if (input_type->IsNone() || input_type->Max() <= 0.0) {
       input = jsgraph()->ZeroConstant();
     } else if (input_type->Min() >= kMaxSafeInteger) {
       input = jsgraph()->Constant(kMaxSafeInteger);
@@ -1114,6 +1113,8 @@ Reduction JSTypedLowering::ReduceJSHasInPrototypeChain(Node* node) {
   Node* loop = control = graph()->NewNode(common()->Loop(2), control, control);
   Node* eloop = effect =
       graph()->NewNode(common()->EffectPhi(2), effect, effect, loop);
+  Node* terminate = graph()->NewNode(common()->Terminate(), eloop, loop);
+  NodeProperties::MergeControlToEnd(graph(), common(), terminate);
   Node* vloop = value = graph()->NewNode(
       common()->Phi(MachineRepresentation::kTagged, 2), value, value, loop);
   NodeProperties::SetType(vloop, Type::NonInternal());

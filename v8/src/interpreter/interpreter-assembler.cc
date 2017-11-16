@@ -1295,14 +1295,6 @@ void InterpreterAssembler::UpdateInterruptBudgetOnReturn() {
   UpdateInterruptBudget(profiling_weight, true);
 }
 
-Node* InterpreterAssembler::StackCheckTriggeredInterrupt() {
-  Node* sp = LoadStackPointer();
-  Node* stack_limit = Load(
-      MachineType::Pointer(),
-      ExternalConstant(ExternalReference::address_of_stack_limit(isolate())));
-  return UintPtrLessThan(sp, stack_limit);
-}
-
 Node* InterpreterAssembler::LoadOSRNestingLevel() {
   return LoadObjectField(BytecodeArrayTaggedPointer(),
                          BytecodeArray::kOSRNestingLevelOffset,
@@ -1533,6 +1525,18 @@ void InterpreterAssembler::ToNumberOrNumeric(Object::Conversion mode) {
 
   SetAccumulator(var_result.value());
   Dispatch();
+}
+
+void InterpreterAssembler::DeserializeLazyAndDispatch() {
+  Node* context = GetContext();
+  Node* bytecode_offset = BytecodeOffset();
+  Node* bytecode = LoadBytecode(bytecode_offset);
+
+  Node* target_handler =
+      CallRuntime(Runtime::kInterpreterDeserializeLazy, context,
+                  SmiTag(bytecode), SmiConstant(operand_scale()));
+
+  DispatchToBytecodeHandler(target_handler, bytecode_offset);
 }
 
 }  // namespace interpreter
