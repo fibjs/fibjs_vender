@@ -372,8 +372,11 @@ CompilationJob::Status FinalizeUnoptimizedCompilationJob(CompilationJob* job,
 
 bool Renumber(ParseInfo* parse_info,
               Compiler::EagerInnerFunctionLiterals* eager_literals) {
-  RuntimeCallTimerScope runtimeTimer(parse_info->runtime_call_stats(),
-                                     &RuntimeCallStats::CompileRenumber);
+  RuntimeCallTimerScope runtimeTimer(
+      parse_info->runtime_call_stats(),
+      parse_info->on_background_thread()
+          ? &RuntimeCallStats::CompileBackgroundRenumber
+          : &RuntimeCallStats::CompileRenumber);
   return AstNumbering::Renumber(parse_info->stack_limit(), parse_info->zone(),
                                 parse_info->literal(), eager_literals);
 }
@@ -910,7 +913,7 @@ bool Compiler::Compile(Handle<SharedFunctionInfo> shared_info,
       parse_info.consumed_preparsed_scope_data()->SetData(data);
       // After we've compiled the function, we don't need data about its
       // skippable functions any more.
-      shared_info->set_preparsed_scope_data(isolate->heap()->null_value());
+      shared_info->ClearPreParsedScopeData();
     }
   }
 
@@ -1236,6 +1239,9 @@ namespace {
 
 struct ScriptCompileTimerScope {
  public:
+  // TODO(leszeks): There are too many blink-specific entries in this enum,
+  // figure out a way to push produce/hit-isolate-cache/consume/consume-failed
+  // back up the API and log them in blink instead.
   enum class CacheBehaviour {
     kProduceCodeCache,
     kHitIsolateCacheWhenNoCache,
@@ -1256,6 +1262,7 @@ struct ScriptCompileTimerScope {
     kNoCacheBecauseExtensionModule,
     kNoCacheBecausePacScript,
     kNoCacheBecauseInDocumentWrite,
+    kNoCacheBecauseResourceWithNoCacheHandler,
     kCount
   };
 
@@ -1360,6 +1367,8 @@ struct ScriptCompileTimerScope {
         return CacheBehaviour::kNoCacheBecausePacScript;
       case ScriptCompiler::kNoCacheBecauseInDocumentWrite:
         return CacheBehaviour::kNoCacheBecauseInDocumentWrite;
+      case ScriptCompiler::kNoCacheBecauseResourceWithNoCacheHandler:
+        return CacheBehaviour::kNoCacheBecauseResourceWithNoCacheHandler;
     }
     UNREACHABLE();
   }
@@ -1406,6 +1415,7 @@ struct ScriptCompileTimerScope {
       case CacheBehaviour::kNoCacheBecauseExtensionModule:
       case CacheBehaviour::kNoCacheBecausePacScript:
       case CacheBehaviour::kNoCacheBecauseInDocumentWrite:
+      case CacheBehaviour::kNoCacheBecauseResourceWithNoCacheHandler:
         return isolate_->counters()->compile_script_no_cache_other();
 
       case CacheBehaviour::kCount:
@@ -1684,38 +1694,6 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
     result->set_outer_scope_info(*outer_scope->scope_info());
   }
   return result;
-}
-
-Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfoForNative(
-    v8::Extension* extension, Handle<String> name) {
-  Isolate* isolate = name->GetIsolate();
-  v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
-
-  // Compute the function template for the native function.
-  v8::Local<v8::FunctionTemplate> fun_template =
-      extension->GetNativeFunctionTemplate(v8_isolate,
-                                           v8::Utils::ToLocal(name));
-  DCHECK(!fun_template.IsEmpty());
-
-  // Instantiate the function and create a shared function info from it.
-  Handle<JSFunction> fun = Handle<JSFunction>::cast(Utils::OpenHandle(
-      *fun_template->GetFunction(v8_isolate->GetCurrentContext())
-           .ToLocalChecked()));
-  Handle<Code> code = Handle<Code>(fun->shared()->code());
-  Handle<Code> construct_stub = Handle<Code>(fun->shared()->construct_stub());
-  Handle<SharedFunctionInfo> shared = isolate->factory()->NewSharedFunctionInfo(
-      name, FunctionKind::kNormalFunction, code,
-      Handle<ScopeInfo>(fun->shared()->scope_info()));
-  shared->set_outer_scope_info(fun->shared()->outer_scope_info());
-  shared->SetConstructStub(*construct_stub);
-  shared->set_feedback_metadata(fun->shared()->feedback_metadata());
-
-  // Copy the function data to the shared function info.
-  shared->set_function_data(fun->shared()->function_data());
-  int parameters = fun->shared()->internal_formal_parameter_count();
-  shared->set_internal_formal_parameter_count(parameters);
-
-  return shared;
 }
 
 MaybeHandle<Code> Compiler::GetOptimizedCodeForOSR(Handle<JSFunction> function,

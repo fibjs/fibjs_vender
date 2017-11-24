@@ -51,14 +51,14 @@ inline void MemoryFence() {
 
 int localtime_s(tm* out_tm, const time_t* time) {
   tm* posix_local_time_struct = localtime_r(time, out_tm);
-  if (posix_local_time_struct == NULL) return 1;
+  if (posix_local_time_struct == nullptr) return 1;
   return 0;
 }
 
 
 int fopen_s(FILE** pFile, const char* filename, const char* mode) {
   *pFile = fopen(filename, mode);
-  return *pFile != NULL ? 0 : 1;
+  return *pFile != nullptr ? 0 : 1;
 }
 
 int _vsnprintf_s(char* buffer, size_t sizeOfBuffer, size_t count,
@@ -69,8 +69,8 @@ int _vsnprintf_s(char* buffer, size_t sizeOfBuffer, size_t count,
 
 
 int strncpy_s(char* dest, size_t dest_size, const char* source, size_t count) {
-  CHECK(source != NULL);
-  CHECK(dest != NULL);
+  CHECK(source != nullptr);
+  CHECK(dest != nullptr);
   CHECK_GT(dest_size, 0);
 
   if (count == _TRUNCATE) {
@@ -143,11 +143,11 @@ class WindowsTimezoneCache : public TimezoneCache {
     }
 
     // Make standard and DST timezone names.
-    WideCharToMultiByte(CP_UTF8, 0, tzinfo_.StandardName, -1,
-                        std_tz_name_, kTzNameSize, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, tzinfo_.StandardName, -1, std_tz_name_,
+                        kTzNameSize, nullptr, nullptr);
     std_tz_name_[kTzNameSize - 1] = '\0';
-    WideCharToMultiByte(CP_UTF8, 0, tzinfo_.DaylightName, -1,
-                        dst_tz_name_, kTzNameSize, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, tzinfo_.DaylightName, -1, dst_tz_name_,
+                        kTzNameSize, nullptr, nullptr);
     dst_tz_name_[kTzNameSize - 1] = '\0';
 
     // If OS returned empty string or resource id (like "@tzres.dll,-211")
@@ -557,7 +557,7 @@ FILE* OS::FOpen(const char* path, const char* mode) {
   if (fopen_s(&result, path, mode) == 0) {
     return result;
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -578,13 +578,13 @@ FILE* OS::OpenTemporaryFile() {
   char tempPathBuffer[MAX_PATH];
   DWORD path_result = 0;
   path_result = GetTempPathA(MAX_PATH, tempPathBuffer);
-  if (path_result > MAX_PATH || path_result == 0) return NULL;
+  if (path_result > MAX_PATH || path_result == 0) return nullptr;
   UINT name_result = 0;
   char tempNameBuffer[MAX_PATH];
   name_result = GetTempFileNameA(tempPathBuffer, "", 0, tempNameBuffer);
-  if (name_result == 0) return NULL;
+  if (name_result == 0) return nullptr;
   FILE* result = FOpen(tempNameBuffer, "w+");  // Same mode as tmpfile uses.
-  if (result != NULL) {
+  if (result != nullptr) {
     Remove(tempNameBuffer);  // Delete on close.
   }
   return result;
@@ -744,13 +744,15 @@ DWORD GetProtectionFromMemoryPermission(OS::MemoryPermission access) {
       return PAGE_READWRITE;
     case OS::MemoryPermission::kReadWriteExecute:
       return PAGE_EXECUTE_READWRITE;
+    case OS::MemoryPermission::kReadExecute:
+      return PAGE_EXECUTE_READ;
   }
   UNREACHABLE();
 }
 
 uint8_t* RandomizedVirtualAlloc(size_t size, DWORD flags, DWORD protect,
                                 void* hint) {
-  LPVOID base = NULL;
+  LPVOID base = nullptr;
   static BOOL use_aslr = -1;
 #ifdef V8_HOST_ARCH_32_BIT
   // Don't bother randomizing on 32-bit hosts, because they lack the room and
@@ -761,8 +763,7 @@ uint8_t* RandomizedVirtualAlloc(size_t size, DWORD flags, DWORD protect,
   use_aslr = TRUE;
 #endif
 
-  if (use_aslr &&
-      (protect == PAGE_EXECUTE_READWRITE || protect == PAGE_NOACCESS)) {
+  if (use_aslr && protect != PAGE_READWRITE) {
     // For executable or reserved pages try to randomize the allocation address.
     base = VirtualAlloc(hint, size, flags, protect);
   }
@@ -787,10 +788,10 @@ void* OS::Allocate(void* address, size_t size, size_t alignment,
   // Add the maximum misalignment so we are guaranteed an aligned base address.
   size_t padded_size = size + (alignment - page_size);
 
-  int flags = (access == OS::MemoryPermission::kNoAccess)
-                  ? MEM_RESERVE
-                  : MEM_RESERVE | MEM_COMMIT;
-  int protect = GetProtectionFromMemoryPermission(access);
+  DWORD flags = (access == OS::MemoryPermission::kNoAccess)
+                    ? MEM_RESERVE
+                    : MEM_RESERVE | MEM_COMMIT;
+  DWORD protect = GetProtectionFromMemoryPermission(access);
 
   const int kMaxAttempts = 3;
   uint8_t* base = nullptr;
@@ -819,50 +820,29 @@ void* OS::Allocate(void* address, size_t size, size_t alignment,
 
 // static
 bool OS::Free(void* address, const size_t size) {
+  DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % AllocatePageSize());
+  // TODO(bbudge) Add DCHECK_EQ(0, size % AllocatePageSize()) when callers
+  // pass the correct size on Windows.
+  USE(size);
   return VirtualFree(address, 0, MEM_RELEASE) != 0;
 }
 
-void OS::SetReadAndExecutable(void* address, const size_t size) {
-  DWORD old_protect;
-  CHECK_NE(NULL,
-           VirtualProtect(address, size, PAGE_EXECUTE_READ, &old_protect));
+// static
+bool OS::Release(void* address, size_t size) {
+  DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % CommitPageSize());
+  DCHECK_EQ(0, size % CommitPageSize());
+  return VirtualFree(address, size, MEM_DECOMMIT) != 0;
 }
 
-void OS::Guard(void* address, const size_t size) {
-  DWORD oldprotect;
-  VirtualProtect(address, size, PAGE_NOACCESS, &oldprotect);
-}
-
-void OS::SetReadAndWritable(void* address, const size_t size, bool commit) {
-  if (commit) {
-    CHECK(VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE));
-  } else {
-    DWORD oldprotect;
-    CHECK_NE(NULL, VirtualProtect(address, size, PAGE_READWRITE, &oldprotect));
+// static
+bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+  DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % CommitPageSize());
+  DCHECK_EQ(0, size % CommitPageSize());
+  if (access == MemoryPermission::kNoAccess) {
+    return VirtualFree(address, size, MEM_DECOMMIT) != 0;
   }
-}
-
-// Make a region of memory readable, writable, and executable.
-void OS::SetReadWriteAndExecutable(void* address, const size_t size) {
-  DWORD oldprotect;
-  CHECK_NE(NULL,
-           VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &oldprotect));
-}
-
-// static
-bool OS::CommitRegion(void* address, size_t size, bool is_executable) {
-  DWORD protect = is_executable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE;
+  DWORD protect = GetProtectionFromMemoryPermission(access);
   return VirtualAlloc(address, size, MEM_COMMIT, protect) != nullptr;
-}
-
-// static
-bool OS::UncommitRegion(void* address, size_t size) {
-  return VirtualFree(address, size, MEM_DECOMMIT) != 0;
-}
-
-// static
-bool OS::ReleasePartialRegion(void* address, size_t size) {
-  return VirtualFree(address, size, MEM_DECOMMIT) != 0;
 }
 
 // static
@@ -924,15 +904,16 @@ class Win32MemoryMappedFile final : public OS::MemoryMappedFile {
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
   // Open a physical file
   HANDLE file = CreateFileA(name, GENERIC_READ | GENERIC_WRITE,
-      FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-  if (file == INVALID_HANDLE_VALUE) return NULL;
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                            OPEN_EXISTING, 0, nullptr);
+  if (file == INVALID_HANDLE_VALUE) return nullptr;
 
-  DWORD size = GetFileSize(file, NULL);
+  DWORD size = GetFileSize(file, nullptr);
 
   // Create a file mapping for the physical file
   HANDLE file_mapping =
-      CreateFileMapping(file, NULL, PAGE_READWRITE, 0, size, NULL);
-  if (file_mapping == NULL) return NULL;
+      CreateFileMapping(file, nullptr, PAGE_READWRITE, 0, size, nullptr);
+  if (file_mapping == nullptr) return nullptr;
 
   // Map a view of the file into memory
   void* memory = MapViewOfFile(file_mapping, FILE_MAP_ALL_ACCESS, 0, 0, size);
@@ -945,13 +926,13 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
                                                    size_t size, void* initial) {
   // Open a physical file
   HANDLE file = CreateFileA(name, GENERIC_READ | GENERIC_WRITE,
-                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                            OPEN_ALWAYS, 0, NULL);
-  if (file == NULL) return NULL;
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                            OPEN_ALWAYS, 0, nullptr);
+  if (file == nullptr) return nullptr;
   // Create a file mapping for the physical file
-  HANDLE file_mapping = CreateFileMapping(file, NULL, PAGE_READWRITE, 0,
-                                          static_cast<DWORD>(size), NULL);
-  if (file_mapping == NULL) return NULL;
+  HANDLE file_mapping = CreateFileMapping(file, nullptr, PAGE_READWRITE, 0,
+                                          static_cast<DWORD>(size), nullptr);
+  if (file_mapping == nullptr) return nullptr;
   // Map a view of the file into memory
   void* memory = MapViewOfFile(file_mapping, FILE_MAP_ALL_ACCESS, 0, 0, size);
   if (memory) memmove(memory, initial, size);
@@ -1067,7 +1048,7 @@ typedef BOOL (__stdcall *DLL_FUNC_TYPE(Module32NextW))(HANDLE hSnapshot,
 #undef VOID
 
 // Declare a variable for each dynamically loaded DLL function.
-#define DEF_DLL_FUNCTION(name) DLL_FUNC_TYPE(name) DLL_FUNC_VAR(name) = NULL;
+#define DEF_DLL_FUNCTION(name) DLL_FUNC_TYPE(name) DLL_FUNC_VAR(name) = nullptr;
 DBGHELP_FUNCTION_LIST(DEF_DLL_FUNCTION)
 TLHELP32_FUNCTION_LIST(DEF_DLL_FUNCTION)
 #undef DEF_DLL_FUNCTION
@@ -1084,7 +1065,7 @@ static bool LoadDbgHelpAndTlHelp32() {
 
   // Load functions from the dbghelp.dll module.
   module = LoadLibrary(TEXT("dbghelp.dll"));
-  if (module == NULL) {
+  if (module == nullptr) {
     return false;
   }
 
@@ -1099,7 +1080,7 @@ DBGHELP_FUNCTION_LIST(LOAD_DLL_FUNC)
   // Load functions from the kernel32.dll module (the TlHelp32.h function used
   // to be in tlhelp32.dll but are now moved to kernel32.dll).
   module = LoadLibrary(TEXT("kernel32.dll"));
-  if (module == NULL) {
+  if (module == nullptr) {
     return false;
   }
 
@@ -1112,14 +1093,14 @@ TLHELP32_FUNCTION_LIST(LOAD_DLL_FUNC)
 #undef LOAD_DLL_FUNC
 
   // Check that all functions where loaded.
-  bool result =
-#define DLL_FUNC_LOADED(name) (DLL_FUNC_VAR(name) != NULL) &&
+bool result =
+#define DLL_FUNC_LOADED(name) (DLL_FUNC_VAR(name) != nullptr)&&
 
-DBGHELP_FUNCTION_LIST(DLL_FUNC_LOADED)
-TLHELP32_FUNCTION_LIST(DLL_FUNC_LOADED)
+    DBGHELP_FUNCTION_LIST(DLL_FUNC_LOADED)
+        TLHELP32_FUNCTION_LIST(DLL_FUNC_LOADED)
 
 #undef DLL_FUNC_LOADED
-  true;
+            true;
 
   dbghelp_loaded = result;
   return result;
@@ -1146,7 +1127,7 @@ static std::vector<OS::SharedLibraryAddress> LoadSymbols(
 
   // Initialize the symbol engine.
   ok = _SymInitialize(process_handle,  // hProcess
-                      NULL,            // UserSearchPath
+                      nullptr,         // UserSearchPath
                       false);          // fInvadeProcess
   if (!ok) return result;
 
@@ -1190,10 +1171,10 @@ static std::vector<OS::SharedLibraryAddress> LoadSymbols(
       }
     }
     int lib_name_length = WideCharToMultiByte(
-        CP_UTF8, 0, module_entry.szExePath, -1, NULL, 0, NULL, NULL);
+        CP_UTF8, 0, module_entry.szExePath, -1, nullptr, 0, nullptr, nullptr);
     std::string lib_name(lib_name_length, 0);
     WideCharToMultiByte(CP_UTF8, 0, module_entry.szExePath, -1, &lib_name[0],
-                        lib_name_length, NULL, NULL);
+                        lib_name_length, nullptr, nullptr);
     result.push_back(OS::SharedLibraryAddress(
         lib_name, reinterpret_cast<uintptr_t>(module_entry.modBaseAddr),
         reinterpret_cast<uintptr_t>(module_entry.modBaseAddr +
@@ -1270,8 +1251,7 @@ class Thread::PlatformData {
 // handle until it is started.
 
 Thread::Thread(const Options& options)
-    : stack_size_(options.stack_size()),
-      start_semaphore_(NULL) {
+    : stack_size_(options.stack_size()), start_semaphore_(nullptr) {
   data_ = new PlatformData(kNoThread);
   set_name(options.name());
 }
@@ -1295,12 +1275,8 @@ Thread::~Thread() {
 // initialize thread specific structures in the C runtime library.
 void Thread::Start() {
   data_->thread_ = reinterpret_cast<HANDLE>(
-      _beginthreadex(NULL,
-                     static_cast<unsigned>(stack_size_),
-                     ThreadEntry,
-                     this,
-                     0,
-                     &data_->thread_id_));
+      _beginthreadex(nullptr, static_cast<unsigned>(stack_size_), ThreadEntry,
+                     this, 0, &data_->thread_id_));
 }
 
 

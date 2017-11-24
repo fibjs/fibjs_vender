@@ -22,15 +22,15 @@ namespace internal {
 
 // Forward declarations.
 class AliasedArgumentsEntry;
-class BigInt;
 class BreakPointInfo;
 class BreakPoint;
 class BoilerplateDescription;
 class ConstantElementsPair;
 class CoverageInfo;
 class DebugInfo;
-class NewFunctionArgs;
+class FreshlyAllocatedBigInt;
 class JSModuleNamespace;
+class NewFunctionArgs;
 struct SourceRange;
 class PreParsedScopeData;
 class TemplateObjectDescription;
@@ -485,15 +485,9 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<HeapNumber> NewHeapNumber(MutableMode mode,
                                    PretenureFlag pretenure = NOT_TENURED);
 
-  // Allocates a new BigInt with {length} digits and zero-initializes them.
-  Handle<BigInt> NewBigInt(int length, PretenureFlag pretenure = NOT_TENURED);
-  // Initializes length and sign fields, but leaves digits uninitialized.
-  Handle<BigInt> NewBigIntRaw(int length,
-                              PretenureFlag pretenure = NOT_TENURED);
-  Handle<BigInt> NewBigIntFromInt(int value,
-                                  PretenureFlag pretenure = NOT_TENURED);
-  Handle<BigInt> NewBigIntFromSafeInteger(
-      double value, PretenureFlag pretenure = NOT_TENURED);
+  // Allocates a new BigInt with {length} digits. Only to be used by
+  // MutableBigInt::New*.
+  Handle<FreshlyAllocatedBigInt> NewBigInt(int length);
 
   Handle<JSObject> NewArgumentsObject(Handle<JSFunction> callee, int length);
 
@@ -672,6 +666,7 @@ class V8_EXPORT_PRIVATE Factory final {
   // by containing this handle.
   Handle<Code> NewCode(const CodeDesc& desc, Code::Kind kind,
                        Handle<Object> self_reference,
+                       int32_t builtin_index = Builtins::kNoBuiltinId,
                        MaybeHandle<HandlerTable> maybe_handler_table =
                            MaybeHandle<HandlerTable>(),
                        MaybeHandle<ByteArray> maybe_source_position_table =
@@ -851,9 +846,6 @@ class V8_EXPORT_PRIVATE Factory final {
 
   MaybeHandle<String> NewStringFromTwoByte(const uc16* string, int length,
                                            PretenureFlag pretenure);
-
-  // Creates a code object that is not yet fully initialized yet.
-  Handle<Code> NewCodeRaw(int object_size, Movability movability);
 
   // Attempt to find the number in a small cache.  If we finds it, return
   // the string representation of the number.  Otherwise return undefined.

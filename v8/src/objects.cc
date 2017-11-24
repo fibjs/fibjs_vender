@@ -70,6 +70,7 @@
 #include "src/string-builder.h"
 #include "src/string-search.h"
 #include "src/string-stream.h"
+#include "src/trap-handler/trap-handler.h"
 #include "src/unicode-cache-inl.h"
 #include "src/utils-inl.h"
 #include "src/wasm/wasm-objects.h"
@@ -1337,7 +1338,9 @@ Handle<SharedFunctionInfo> FunctionTemplateInfo::GetOrCreateSharedFunctionInfo(
   }
 
   result->set_length(info->length());
-  if (class_name->IsString()) result->set_instance_class_name(*class_name);
+  if (class_name->IsString()) {
+    result->set_instance_class_name(String::cast(*class_name));
+  }
   result->set_api_func_data(*info);
   result->DontAdaptArguments();
   DCHECK(result->IsApiFunction());
@@ -2634,7 +2637,7 @@ bool Object::IterationHasObservableEffects() {
   // the prototype. This could have different results if the prototype has been
   // changed.
   if (IsHoleyElementsKind(array_kind) &&
-      isolate->IsFastArrayConstructorPrototypeChainIntact()) {
+      isolate->IsNoElementsProtectorIntact()) {
     return false;
   }
   return true;
@@ -3141,6 +3144,7 @@ VisitorId Map::GetVisitorId(Map* map) {
 
     case HASH_TABLE_TYPE:
     case FIXED_ARRAY_TYPE:
+    case DESCRIPTOR_ARRAY_TYPE:
       return kVisitFixedArray;
 
     case FIXED_DOUBLE_ARRAY_TYPE:
@@ -3422,6 +3426,10 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
     case BYTECODE_ARRAY_TYPE:
       os << "<BytecodeArray[" << BytecodeArray::cast(this)->length() << "]>";
       break;
+    case DESCRIPTOR_ARRAY_TYPE:
+      os << "<DescriptorArray[" << DescriptorArray::cast(this)->length()
+         << "]>";
+      break;
     case TRANSITION_ARRAY_TYPE:
       os << "<TransitionArray[" << TransitionArray::cast(this)->length()
          << "]>";
@@ -3638,9 +3646,11 @@ bool HeapObject::CanBeRehashed() const {
   DCHECK(NeedsRehashing());
   switch (map()->instance_type()) {
     case HASH_TABLE_TYPE:
-      return IsNameDictionary() || IsGlobalDictionary() || IsNumberDictionary();
-    case FIXED_ARRAY_TYPE:
-      return IsDescriptorArrayTemplate();
+      // TODO(yangguo): actually support rehashing OrderedHash{Map,Set}.
+      return IsNameDictionary() || IsGlobalDictionary() ||
+             IsNumberDictionary() || IsStringTable() || IsWeakHashTable();
+    case DESCRIPTOR_ARRAY_TYPE:
+      return true;
     case TRANSITION_ARRAY_TYPE:
       return true;
     case SMALL_ORDERED_HASH_MAP_TYPE:
@@ -3662,20 +3672,17 @@ void HeapObject::RehashBasedOnMap() {
         NumberDictionary::cast(this)->Rehash();
       } else if (IsGlobalDictionary()) {
         GlobalDictionary::cast(this)->Rehash();
+      } else if (IsStringTable()) {
+        StringTable::cast(this)->Rehash();
+      } else if (IsWeakHashTable()) {
+        WeakHashTable::cast(this)->Rehash();
       } else {
-        // TODO(6593): Some hash tables cannot yet be rehashed based on the map,
-        // and are handled explicitly in StartupDeserializer::RehashHeap.
-        if (this == GetHeap()->empty_ordered_hash_table()) break;
-        if (this == GetHeap()->weak_object_to_code_table()) break;
-        if (this == GetHeap()->string_table()) break;
         UNREACHABLE();
       }
       break;
-    case FIXED_ARRAY_TYPE:
-      if (IsDescriptorArrayTemplate()) {
-        DCHECK_LE(1, DescriptorArray::cast(this)->number_of_descriptors());
-        DescriptorArray::cast(this)->Sort();
-      }
+    case DESCRIPTOR_ARRAY_TYPE:
+      DCHECK_LE(1, DescriptorArray::cast(this)->number_of_descriptors());
+      DescriptorArray::cast(this)->Sort();
       break;
     case TRANSITION_ARRAY_TYPE:
       TransitionArray::cast(this)->Sort();
@@ -3704,8 +3711,7 @@ Handle<String> JSReceiver::GetConstructorName(Handle<JSReceiver> receiver) {
     Object* maybe_constructor = receiver->map()->GetConstructor();
     if (maybe_constructor->IsJSFunction()) {
       JSFunction* constructor = JSFunction::cast(maybe_constructor);
-      String* name = constructor->shared()->name();
-      if (name->length() == 0) name = constructor->shared()->inferred_name();
+      String* name = constructor->shared()->DebugName();
       if (name->length() != 0 &&
           !name->Equals(isolate->heap()->Object_string())) {
         return handle(name, isolate);
@@ -3732,8 +3738,7 @@ Handle<String> JSReceiver::GetConstructorName(Handle<JSReceiver> receiver) {
   Handle<String> result = isolate->factory()->Object_string();
   if (maybe_constructor->IsJSFunction()) {
     JSFunction* constructor = JSFunction::cast(*maybe_constructor);
-    String* name = constructor->shared()->name();
-    if (name->length() == 0) name = constructor->shared()->inferred_name();
+    String* name = constructor->shared()->DebugName();
     if (name->length() > 0) result = handle(name, isolate);
   }
 
@@ -3805,10 +3810,10 @@ MaybeHandle<Map> Map::CopyWithField(Handle<Map> map, Handle<Name> name,
     constness = kMutable;
     representation = Representation::Tagged();
     type = FieldType::Any(isolate);
+  } else {
+    Map::GeneralizeIfCanHaveTransitionableFastElementsKind(
+        isolate, map->instance_type(), &constness, &representation, &type);
   }
-
-  Map::GeneralizeIfTransitionableFastElementsKind(
-      isolate, map->elements_kind(), &constness, &representation, &type);
 
   Handle<Object> wrapped_type(WrapFieldType(type));
 
@@ -9441,6 +9446,13 @@ void Map::InstallDescriptors(Handle<Map> parent, Handle<Map> child,
 
 Handle<Map> Map::CopyAsElementsKind(Handle<Map> map, ElementsKind kind,
                                     TransitionFlag flag) {
+  // Only certain objects are allowed to have non-terminal fast transitional
+  // elements kinds.
+  DCHECK(map->IsJSObjectMap());
+  DCHECK_IMPLIES(
+      !map->CanHaveFastTransitionableElementsKind(),
+      IsDictionaryElementsKind(kind) || IsTerminalElementsKind(kind));
+
   Map* maybe_elements_transition_map = nullptr;
   if (flag == INSERT_TRANSITION) {
     // Ensure we are requested to add elements kind transition "near the root".
@@ -9577,7 +9589,8 @@ Handle<Map> Map::Create(Isolate* isolate, int inobject_properties) {
 
   // Adjust the map with the extra inobject properties.
   copy->set_instance_size(new_instance_size);
-  copy->SetInObjectProperties(inobject_properties);
+  copy->SetInObjectPropertiesStartInWords(JSObject::kHeaderSize / kPointerSize);
+  DCHECK_EQ(copy->GetInObjectProperties(), inobject_properties);
   copy->SetInObjectUnusedPropertyFields(inobject_properties);
   copy->set_visitor_id(Map::GetVisitorId(*copy));
   return copy;
@@ -10356,8 +10369,7 @@ Handle<DescriptorArray> DescriptorArray::Allocate(Isolate* isolate,
   // Allocate the array of keys.
   Handle<FixedArray> result =
       factory->NewFixedArray(LengthFor(size), pretenure);
-  // TODO(ishell): set map to |descriptor_array_map| once we can use it for all
-  // descriptor arrays.
+  result->set_map_no_write_barrier(*factory->descriptor_array_map());
   result->set(kDescriptorLengthIndex, Smi::FromInt(number_of_descriptors));
   result->set(kEnumCacheIndex, isolate->heap()->empty_enum_cache());
   return Handle<DescriptorArray>::cast(result);
@@ -12315,16 +12327,16 @@ static void GetMinInobjectSlack(Map* map, void* data) {
 
 
 static void ShrinkInstanceSize(Map* map, void* data) {
-#ifdef DEBUG
-  int old_visitor_id = Map::GetVisitorId(map);
-#endif
   int slack = *reinterpret_cast<int*>(data);
   DCHECK_GE(slack, 0);
-  map->SetInObjectProperties(map->GetInObjectProperties() - slack);
-  map->set_unused_property_fields(map->unused_property_fields() - slack);
+#ifdef DEBUG
+  int old_visitor_id = Map::GetVisitorId(map);
+  int new_unused = map->UnusedPropertyFields() - slack;
+#endif
   map->set_instance_size(map->instance_size() - slack * kPointerSize);
   map->set_construction_counter(Map::kNoSlackTracking);
   DCHECK_EQ(old_visitor_id, Map::GetVisitorId(map));
+  DCHECK_EQ(new_unused, map->UnusedPropertyFields());
 }
 
 static void StopSlackTracking(Map* map, void* data) {
@@ -13465,8 +13477,8 @@ void SharedFunctionInfo::SetScript(Handle<SharedFunctionInfo> shared,
   if (shared->script() == *script_object) return;
   Isolate* isolate = shared->GetIsolate();
 
-  if (reset_preparsed_scope_data) {
-    shared->set_preparsed_scope_data(isolate->heap()->null_value());
+  if (reset_preparsed_scope_data && shared->HasPreParsedScopeData()) {
+    shared->ClearPreParsedScopeData();
   }
 
   // Add shared function info to new script's list. If a collection occurs,
@@ -13569,9 +13581,8 @@ void SharedFunctionInfo::set_debugger_hints(int value) {
 }
 
 String* SharedFunctionInfo::DebugName() {
-  String* n = name();
-  if (String::cast(n)->length() == 0) return inferred_name();
-  return String::cast(n);
+  if (name()->length() == 0) return inferred_name();
+  return name();
 }
 
 bool SharedFunctionInfo::HasNoSideEffect() {
@@ -13780,7 +13791,10 @@ void SharedFunctionInfo::InitFromFunctionLiteral(
   }
   shared_info->set_needs_home_object(lit->scope()->NeedsHomeObject());
   shared_info->set_function_literal_id(lit->function_literal_id());
-
+  DCHECK_IMPLIES(lit->instance_class_fields_initializer() != nullptr,
+                 IsClassConstructor(lit->kind()));
+  shared_info->set_requires_instance_fields_initializer(
+      lit->instance_class_fields_initializer() != nullptr);
   // For lazy parsed functions, the following flags will be inaccurate since we
   // don't have the information yet. They're set later in
   // SetSharedFunctionFlagsFromLiteral (compiler.cc), when the function is
@@ -15126,7 +15140,7 @@ Maybe<bool> JSObject::SetPrototype(Handle<JSObject> object,
 
   // Set the new prototype of the object.
 
-  isolate->UpdateArrayProtectorOnSetPrototype(real_receiver);
+  isolate->UpdateNoElementsProtectorOnSetPrototype(real_receiver);
 
   Handle<Map> new_map = Map::TransitionToPrototype(map, value);
   DCHECK(new_map->prototype() == *value);
@@ -15213,6 +15227,9 @@ bool JSObject::WouldConvertToSlowElements(uint32_t index) {
 
 
 static ElementsKind BestFittingFastElementsKind(JSObject* object) {
+  if (!object->map()->CanHaveFastTransitionableElementsKind()) {
+    return HOLEY_ELEMENTS;
+  }
   if (object->HasSloppyArgumentsElements()) {
     return FAST_SLOPPY_ARGUMENTS_ELEMENTS;
   }
@@ -15613,7 +15630,6 @@ void Dictionary<Derived, Shape>::Print(std::ostream& os) {
   int capacity = dictionary->Capacity();
   for (int i = 0; i < capacity; i++) {
     Object* k = dictionary->KeyAt(i);
-    if (!Shape::IsLive(isolate, k)) continue;
     if (!dictionary->ToKey(isolate, i, &k)) continue;
     os << "\n   ";
     if (k->IsString()) {
@@ -15629,6 +15645,7 @@ template <typename Derived, typename Shape>
 void Dictionary<Derived, Shape>::Print() {
   OFStream os(stdout);
   Print(os);
+  os << std::endl;
 }
 #endif
 
@@ -15826,11 +15843,7 @@ JSRegExp::Flags RegExpFlagsFromString(Handle<String> flags, bool* success) {
         flag = JSRegExp::kMultiline;
         break;
       case 's':
-        if (FLAG_harmony_regexp_dotall) {
-          flag = JSRegExp::kDotAll;
-        } else {
-          return JSRegExp::Flags(0);
-        }
+        flag = JSRegExp::kDotAll;
         break;
       case 'u':
         flag = JSRegExp::kUnicode;
@@ -16321,7 +16334,7 @@ template class HashTable<CompilationCacheTable, CompilationCacheShape>;
 
 template class HashTable<ObjectHashTable, ObjectHashTableShape>;
 
-template class HashTable<WeakHashTable, WeakHashTableShape<2>>;
+template class HashTable<WeakHashTable, WeakHashTableShape>;
 
 template class HashTable<TemplateMap, TemplateMapShape>;
 
@@ -17427,6 +17440,23 @@ Handle<Derived> Dictionary<Derived, Shape>::AtPut(Handle<Derived> dictionary,
 }
 
 template <typename Derived, typename Shape>
+Handle<Derived>
+BaseNameDictionary<Derived, Shape>::AddNoUpdateNextEnumerationIndex(
+    Handle<Derived> dictionary, Key key, Handle<Object> value,
+    PropertyDetails details, int* entry_out) {
+  // Insert element at empty or deleted entry
+  return Dictionary<Derived, Shape>::Add(dictionary, key, value, details,
+                                         entry_out);
+}
+
+// GCC workaround: Explicitly instantiate template method for NameDictionary
+// to avoid "undefined reference" issues during linking.
+template Handle<NameDictionary>
+BaseNameDictionary<NameDictionary, NameDictionaryShape>::
+    AddNoUpdateNextEnumerationIndex(Handle<NameDictionary>, Handle<Name>,
+                                    Handle<Object>, PropertyDetails, int*);
+
+template <typename Derived, typename Shape>
 Handle<Derived> BaseNameDictionary<Derived, Shape>::Add(
     Handle<Derived> dictionary, Key key, Handle<Object> value,
     PropertyDetails details, int* entry_out) {
@@ -17437,7 +17467,7 @@ Handle<Derived> BaseNameDictionary<Derived, Shape>::Add(
   int index = dictionary->NextEnumerationIndex();
   details = details.set_index(index);
   dictionary->SetNextEnumerationIndex(index + 1);
-  return Dictionary<Derived, Shape>::Add(dictionary, key, value, details,
+  return AddNoUpdateNextEnumerationIndex(dictionary, key, value, details,
                                          entry_out);
 }
 
@@ -17904,8 +17934,9 @@ Handle<Derived> OrderedHashTable<Derived, entrysize>::Allocate(
   int num_buckets = capacity / kLoadFactor;
   Handle<FixedArray> backing_store = isolate->factory()->NewFixedArray(
       kHashTableStartIndex + num_buckets + (capacity * kEntrySize), pretenure);
-  backing_store->set_map_no_write_barrier(
-      isolate->heap()->ordered_hash_table_map());
+  Map* map = Map::cast(isolate->heap()->root(
+      static_cast<Heap::RootListIndex>(Derived::GetMapRootIndex())));
+  backing_store->set_map_no_write_barrier(map);
   Handle<Derived> table = Handle<Derived>::cast(backing_store);
   for (int i = 0; i < num_buckets; ++i) {
     table->set(kHashTableStartIndex + i, Smi::FromInt(kNotFound));
@@ -17961,7 +17992,8 @@ Handle<Derived> OrderedHashTable<Derived, entrysize>::Clear(
 template <class Derived, int entrysize>
 bool OrderedHashTable<Derived, entrysize>::HasKey(Isolate* isolate,
                                                   Derived* table, Object* key) {
-  DCHECK(table->IsOrderedHashTable());
+  DCHECK((entrysize == 1 && table->IsOrderedHashSet()) ||
+         (entrysize == 2 && table->IsOrderedHashMap()));
   DisallowHeapAllocation no_gc;
   int entry = table->FindEntry(isolate, key);
   return entry != kNotFound;
@@ -18019,6 +18051,22 @@ Handle<FixedArray> OrderedHashSet::ConvertToKeysArray(
   }
   result->Shrink(length);
   return result;
+}
+
+HeapObject* OrderedHashSet::GetEmpty(Isolate* isolate) {
+  return isolate->heap()->empty_ordered_hash_set();
+}
+
+HeapObject* OrderedHashMap::GetEmpty(Isolate* isolate) {
+  return isolate->heap()->empty_ordered_hash_map();
+}
+
+int OrderedHashSet::GetMapRootIndex() {
+  return Heap::kOrderedHashSetMapRootIndex;
+}
+
+int OrderedHashMap::GetMapRootIndex() {
+  return Heap::kOrderedHashMapMapRootIndex;
 }
 
 template <class Derived, int entrysize>
@@ -18439,7 +18487,7 @@ bool OrderedHashTableIterator<Derived, TableType>::HasMore() {
 
   if (index < used_capacity) return true;
 
-  set_table(isolate->heap()->empty_ordered_hash_table());
+  set_table(TableType::GetEmpty(isolate));
   return false;
 }
 
@@ -18821,7 +18869,7 @@ void JSArrayBuffer::FreeBackingStore() {
   using AllocationMode = ArrayBuffer::Allocator::AllocationMode;
   const size_t length = allocation_length();
   const AllocationMode mode = allocation_mode();
-  GetIsolate()->array_buffer_allocator()->Free(allocation_base(), length, mode);
+  FreeBackingStore(GetIsolate(), {allocation_base(), length, mode});
 
   // Zero out the backing store and allocation base to avoid dangling
   // pointers.
@@ -18831,6 +18879,12 @@ void JSArrayBuffer::FreeBackingStore() {
   // FreeBackingStore while it is collecting.
   set_allocation_base(nullptr);
   set_allocation_length(0);
+}
+
+// static
+void JSArrayBuffer::FreeBackingStore(Isolate* isolate, Allocation allocation) {
+  isolate->array_buffer_allocator()->Free(allocation.allocation_base,
+                                          allocation.length, allocation.mode);
 }
 
 void JSArrayBuffer::Setup(Handle<JSArrayBuffer> array_buffer, Isolate* isolate,

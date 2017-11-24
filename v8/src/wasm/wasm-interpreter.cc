@@ -13,6 +13,7 @@
 #include "src/conversions.h"
 #include "src/identity-map.h"
 #include "src/objects-inl.h"
+#include "src/trap-handler/trap-handler.h"
 #include "src/utils.h"
 #include "src/wasm/decoder.h"
 #include "src/wasm/function-body-decoder-impl.h"
@@ -2338,6 +2339,16 @@ class ThreadImpl {
       offset += param_size;
     }
 
+    // Ensure that there is enough space in the arg_buffer to hold the return
+    // value(s).
+    uint32_t return_size = 0;
+    for (ValueType t : sig->returns()) {
+      return_size += 1 << ElementSizeLog2Of(t);
+    }
+    if (arg_buffer.size() < return_size) {
+      arg_buffer.resize(return_size);
+    }
+
     // Wrap the arg_buffer data pointer in a handle. As this is an aligned
     // pointer, to the GC it will look like a Smi.
     Handle<Object> arg_buffer_obj(reinterpret_cast<Object*>(arg_buffer.data()),
@@ -2393,7 +2404,8 @@ class ThreadImpl {
     DCHECK(AllowHandleAllocation::IsAllowed());
     DCHECK(AllowHeapAllocation::IsAllowed());
 
-    if (code->kind() == Code::WASM_FUNCTION) {
+    if (code->kind() == Code::WASM_FUNCTION ||
+        code->kind() == Code::WASM_TO_WASM_FUNCTION) {
       FixedArray* deopt_data = code->deoptimization_data();
       DCHECK_EQ(2, deopt_data->length());
       WasmInstanceObject* target_instance =
@@ -2493,8 +2505,7 @@ class ThreadImpl {
     // Call the code object. Use a new HandleScope to avoid leaking /
     // accumulating handles in the outer scope.
     HandleScope handle_scope(isolate);
-    FunctionSig* signature =
-        &codemap()->module()->signatures[table_index][sig_index];
+    FunctionSig* signature = module()->signatures[sig_index];
     return CallCodeObject(isolate, handle(target, isolate), signature);
   }
 

@@ -5,6 +5,7 @@
 #include "src/wasm/wasm-code-specialization.h"
 
 #include "src/assembler-inl.h"
+#include "src/base/optional.h"
 #include "src/objects-inl.h"
 #include "src/source-position-table.h"
 #include "src/wasm/decoder.h"
@@ -62,6 +63,7 @@ bool IsAtWasmDirectCallTarget(RelocIterator& it) {
   Code* code = Code::GetCodeFromTargetAddress(it.rinfo()->target_address());
   return code->kind() == Code::WASM_FUNCTION ||
          code->kind() == Code::WASM_TO_JS_FUNCTION ||
+         code->kind() == Code::WASM_TO_WASM_FUNCTION ||
          code->kind() == Code::WASM_INTERPRETER_ENTRY ||
          code->builtin_index() == Builtins::kIllegal ||
          code->builtin_index() == Builtins::kWasmCompileLazy;
@@ -111,9 +113,6 @@ bool CodeSpecialization::ApplyToWholeInstance(
   bool changed = false;
   int func_index = module->num_imported_functions;
 
-  // TODO(6792): No longer needed once WebAssembly code is off heap.
-  CodeSpaceMemoryModificationScope modification_scope(instance->GetHeap());
-
   // Patch all wasm functions.
   for (int num_wasm_functions = static_cast<int>(wasm_functions->size());
        func_index < num_wasm_functions; ++func_index) {
@@ -121,6 +120,9 @@ bool CodeSpecialization::ApplyToWholeInstance(
     if (wasm_function->kind() != Code::WASM_FUNCTION) continue;
     changed |= ApplyToWasmCode(wasm_function, icache_flush_mode);
   }
+
+  // TODO(6792): No longer needed once WebAssembly code is off heap.
+  CodeSpaceMemoryModificationScope modification_scope(instance->GetHeap());
 
   // Patch all exported functions (JS_TO_WASM_FUNCTION).
   int reloc_mode = 0;
@@ -187,7 +189,7 @@ bool CodeSpecialization::ApplyToWasmCode(Code* code,
   add_mode(reloc_direct_calls, RelocInfo::CODE_TARGET);
   add_mode(reloc_pointers, RelocInfo::WASM_GLOBAL_HANDLE);
 
-  std::unique_ptr<PatchDirectCallsHelper> patch_direct_calls_helper;
+  base::Optional<PatchDirectCallsHelper> patch_direct_calls_helper;
   bool changed = false;
 
   // TODO(6792): No longer needed once WebAssembly code is off heap.
@@ -207,8 +209,8 @@ bool CodeSpecialization::ApplyToWasmCode(Code* code,
         // bytes to find the new compiled function.
         size_t offset = it.rinfo()->pc() - code->instruction_start();
         if (!patch_direct_calls_helper) {
-          patch_direct_calls_helper.reset(new PatchDirectCallsHelper(
-              *relocate_direct_calls_instance, code));
+          patch_direct_calls_helper.emplace(*relocate_direct_calls_instance,
+                                            code);
         }
         int byte_pos = AdvanceSourcePositionTableIterator(
             patch_direct_calls_helper->source_pos_it, offset);

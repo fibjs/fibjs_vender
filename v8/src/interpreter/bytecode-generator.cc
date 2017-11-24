@@ -4,6 +4,7 @@
 
 #include "src/interpreter/bytecode-generator.h"
 
+#include "src/api.h"
 #include "src/ast/ast-source-ranges.h"
 #include "src/ast/compile-time-value.h"
 #include "src/ast/scopes.h"
@@ -18,6 +19,7 @@
 #include "src/interpreter/control-flow-builders.h"
 #include "src/objects-inl.h"
 #include "src/objects/debug-objects.h"
+#include "src/objects/literal-objects-inl.h"
 #include "src/parsing/parse-info.h"
 #include "src/parsing/token.h"
 
@@ -494,32 +496,6 @@ class BytecodeGenerator::ControlScopeForTryFinally final
   DeferredCommands* commands_;
 };
 
-// Allocate and fetch the coverage indices tracking NaryLogical Expressions.
-class BytecodeGenerator::NArayCodeCoverageSlots {
- public:
-  explicit NArayCodeCoverageSlots(BytecodeGenerator* generator,
-                                  NaryOperation* expr)
-      : generator_(generator) {
-    if (generator_->block_coverage_builder_ == nullptr) return;
-    for (size_t i = 0; i < expr->subsequent_length(); i++) {
-      coverage_slots_.push_back(generator_->AllocateBlockCoverageSlotIfEnabled(
-          expr->subsequent(i), SourceRangeKind::kBody));
-    }
-  }
-
-  int GetSlotFor(size_t subsequent_expr_index) const {
-    if (generator_->block_coverage_builder_ == nullptr) {
-      return BlockCoverageBuilder::kNoCoverageArraySlot;
-    }
-    DCHECK(coverage_slots_.size() > subsequent_expr_index);
-    return coverage_slots_[subsequent_expr_index];
-  }
-
- private:
-  BytecodeGenerator* generator_;
-  std::vector<int> coverage_slots_;
-};
-
 void BytecodeGenerator::ControlScope::PerformCommand(Command command,
                                                      Statement* statement,
                                                      int source_position) {
@@ -837,10 +813,9 @@ class BytecodeGenerator::FeedbackSlotCache : public ZoneObject {
 BytecodeGenerator::BytecodeGenerator(
     CompilationInfo* info, const AstStringConstants* ast_string_constants)
     : zone_(info->zone()),
-      builder_(new (zone()) BytecodeArrayBuilder(
-          info->zone(), info->num_parameters_including_this(),
-          info->scope()->num_stack_slots(), info->feedback_vector_spec(),
-          info->SourcePositionRecordingMode())),
+      builder_(zone(), info->num_parameters_including_this(),
+               info->scope()->num_stack_slots(), info->feedback_vector_spec(),
+               info->SourcePositionRecordingMode()),
       info_(info),
       ast_string_constants_(ast_string_constants),
       closure_scope_(info->scope()),
@@ -853,6 +828,7 @@ BytecodeGenerator::BytecodeGenerator(
       native_function_literals_(0, zone()),
       object_literals_(0, zone()),
       array_literals_(0, zone()),
+      class_literals_(0, zone()),
       template_objects_(0, zone()),
       execution_control_(nullptr),
       execution_context_(nullptr),
@@ -918,10 +894,18 @@ void BytecodeGenerator::AllocateDeferredConstants(Isolate* isolate,
   for (std::pair<NativeFunctionLiteral*, size_t> literal :
        native_function_literals_) {
     NativeFunctionLiteral* expr = literal.first;
+    v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
+
+    // Compute the function template for the native function.
+    v8::Local<v8::FunctionTemplate> info =
+        expr->extension()->GetNativeFunctionTemplate(
+            v8_isolate, Utils::ToLocal(expr->name()));
+    DCHECK(!info.IsEmpty());
+
     Handle<SharedFunctionInfo> shared_info =
-        Compiler::GetSharedFunctionInfoForNative(expr->extension(),
-                                                 expr->name());
-    if (shared_info.is_null()) return SetStackOverflow();
+        FunctionTemplateInfo::GetOrCreateSharedFunctionInfo(
+            isolate, Utils::OpenHandle(*info), expr->name());
+    DCHECK(!shared_info.is_null());
     builder()->SetDeferredConstantPoolEntry(literal.second, shared_info);
   }
 
@@ -945,6 +929,14 @@ void BytecodeGenerator::AllocateDeferredConstants(Isolate* isolate,
     Handle<ConstantElementsPair> constant_elements =
         array_literal->GetOrBuildConstantElements(isolate);
     builder()->SetDeferredConstantPoolEntry(literal.second, constant_elements);
+  }
+
+  // Build class literal boilerplates.
+  for (std::pair<ClassLiteral*, size_t> literal : class_literals_) {
+    ClassLiteral* class_literal = literal.first;
+    Handle<ClassBoilerplate> class_boilerplate =
+        ClassBoilerplate::BuildClassBoilerplate(isolate, class_literal);
+    builder()->SetDeferredConstantPoolEntry(literal.second, class_boilerplate);
   }
 
   // Build template literals.
@@ -1790,35 +1782,74 @@ void BytecodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
 }
 
 void BytecodeGenerator::BuildClassLiteral(ClassLiteral* expr) {
+  size_t class_boilerplate_entry =
+      builder()->AllocateDeferredConstantPoolEntry();
+  class_literals_.push_back(std::make_pair(expr, class_boilerplate_entry));
+
   VisitDeclarations(expr->scope()->declarations());
-  Register constructor = VisitForRegisterValue(expr->constructor());
+
   {
     RegisterAllocationScope register_scope(this);
-    RegisterList args = register_allocator()->NewRegisterList(4);
+    RegisterList args = register_allocator()->NewGrowableRegisterList();
+
+    Register class_boilerplate = register_allocator()->GrowRegisterList(&args);
+    Register class_constructor = register_allocator()->GrowRegisterList(&args);
+    Register super_class = register_allocator()->GrowRegisterList(&args);
+    DCHECK_EQ(ClassBoilerplate::kFirstDynamicArgumentIndex,
+              args.register_count());
+
     VisitForAccumulatorValueOrTheHole(expr->extends());
+    builder()->StoreAccumulatorInRegister(super_class);
+
+    VisitFunctionLiteral(expr->constructor());
     builder()
-        ->StoreAccumulatorInRegister(args[0])
-        .MoveRegister(constructor, args[1])
-        .LoadLiteral(Smi::FromInt(expr->start_position()))
-        .StoreAccumulatorInRegister(args[2])
-        .LoadLiteral(Smi::FromInt(expr->end_position()))
-        .StoreAccumulatorInRegister(args[3])
-        .CallRuntime(Runtime::kDefineClass, args);
-  }
-  Register prototype = register_allocator()->NewRegister();
-  builder()->StoreAccumulatorInRegister(prototype);
+        ->StoreAccumulatorInRegister(class_constructor)
+        .LoadConstantPoolEntry(class_boilerplate_entry)
+        .StoreAccumulatorInRegister(class_boilerplate);
 
-  if (FunctionLiteral::NeedsHomeObject(expr->constructor())) {
-    // Prototype is already in the accumulator.
-    FeedbackSlot slot = feedback_spec()->AddStoreICSlot(language_mode());
-    builder()->StoreHomeObjectProperty(constructor, feedback_index(slot),
-                                       language_mode());
-  }
+    // Create computed names and method values nodes to store into the literal.
+    for (int i = 0; i < expr->properties()->length(); i++) {
+      ClassLiteral::Property* property = expr->properties()->at(i);
+      if (property->is_computed_name()) {
+        Register key = register_allocator()->GrowRegisterList(&args);
 
-  VisitClassLiteralProperties(expr, constructor, prototype);
-  BuildClassLiteralNameProperty(expr, constructor);
-  // TODO(gsathya): Run this after initializing class static fields.
-  builder()->CallRuntime(Runtime::kToFastProperties, constructor);
+        BuildLoadPropertyKey(property, key);
+        if (property->is_static()) {
+          // The static prototype property is read only. We handle the non
+          // computed property name case in the parser. Since this is the only
+          // case where we need to check for an own read only property we
+          // special case this so we do not need to do this for every property.
+          BytecodeLabel done;
+          builder()
+              ->LoadLiteral(ast_string_constants()->prototype_string())
+              .CompareOperation(Token::Value::EQ_STRICT, key)
+              .JumpIfFalse(ToBooleanMode::kAlreadyBoolean, &done)
+              .CallRuntime(Runtime::kThrowStaticPrototypeError)
+              .Bind(&done);
+        }
+
+        if (property->kind() == ClassLiteral::Property::FIELD) {
+          // Initialize field's name variable with the computed name.
+          DCHECK_NOT_NULL(property->computed_name_var());
+          builder()->LoadAccumulatorWithRegister(key);
+          BuildVariableAssignment(property->computed_name_var(), Token::INIT,
+                                  HoleCheckMode::kElided);
+        }
+      }
+      if (property->kind() == ClassLiteral::Property::FIELD) {
+        // We don't compute field's value here, but instead do it in the
+        // initializer function.
+        continue;
+      }
+      Register value = register_allocator()->GrowRegisterList(&args);
+      VisitForRegisterValue(property->value(), value);
+    }
+
+    builder()->CallRuntime(Runtime::kDefineClass, args);
+  }
+  Register class_constructor = register_allocator()->NewRegister();
+  builder()->StoreAccumulatorInRegister(class_constructor);
+
   // Assign to class variable.
   if (expr->class_variable() != nullptr) {
     DCHECK(expr->class_variable()->IsStackLocal() ||
@@ -1835,9 +1866,8 @@ void BytecodeGenerator::BuildClassLiteral(ClassLiteral* expr) {
     // initializers.
 
     builder()->LoadAccumulatorWithRegister(initializer);
-    BuildVariableAssignment(expr->instance_fields_initializer_var(),
+    BuildVariableAssignment(expr->instance_fields_initializer_proxy()->var(),
                             Token::INIT, HoleCheckMode::kElided);
-    builder()->LoadAccumulatorWithRegister(constructor);
   }
 
   if (expr->static_fields_initializer() != nullptr) {
@@ -1848,17 +1878,17 @@ void BytecodeGenerator::BuildClassLiteral(ClassLiteral* expr) {
     if (FunctionLiteral::NeedsHomeObject(expr->static_fields_initializer())) {
       FeedbackSlot slot = feedback_spec()->AddStoreICSlot(language_mode());
       builder()
-          ->LoadAccumulatorWithRegister(constructor)
+          ->LoadAccumulatorWithRegister(class_constructor)
           .StoreHomeObjectProperty(initializer, feedback_index(slot),
                                    language_mode());
     }
 
     builder()
-        ->MoveRegister(constructor, args[0])
+        ->MoveRegister(class_constructor, args[0])
         .CallProperty(initializer, args,
-                      feedback_index(feedback_spec()->AddCallICSlot()))
-        .LoadAccumulatorWithRegister(constructor);
+                      feedback_index(feedback_spec()->AddCallICSlot()));
   }
+  builder()->LoadAccumulatorWithRegister(class_constructor);
 }
 
 void BytecodeGenerator::VisitClassLiteral(ClassLiteral* expr) {
@@ -1870,95 +1900,6 @@ void BytecodeGenerator::VisitClassLiteral(ClassLiteral* expr) {
     BuildClassLiteral(expr);
   } else {
     BuildClassLiteral(expr);
-  }
-}
-
-void BytecodeGenerator::VisitClassLiteralProperties(ClassLiteral* expr,
-                                                    Register constructor,
-                                                    Register prototype) {
-  RegisterAllocationScope register_scope(this);
-  RegisterList args = register_allocator()->NewRegisterList(4);
-  Register receiver = args[0], key = args[1], value = args[2], attr = args[3];
-
-  bool attr_assigned = false;
-  Register old_receiver = Register::invalid_value();
-
-  // Create nodes to store method values into the literal.
-  for (int i = 0; i < expr->properties()->length(); i++) {
-    ClassLiteral::Property* property = expr->properties()->at(i);
-
-    // Set-up receiver.
-    Register new_receiver = property->is_static() ? constructor : prototype;
-    if (new_receiver != old_receiver) {
-      builder()->MoveRegister(new_receiver, receiver);
-      old_receiver = new_receiver;
-    }
-
-    BuildLoadPropertyKey(property, key);
-    if (property->is_computed_name()) {
-      if (property->is_static()) {
-        // The static prototype property is read only. We handle the non
-        // computed property name case in the parser. Since this is the only
-        // case where we need to check for an own read only property we special
-        // case this so we do not need to do this for every property.
-        BytecodeLabel done;
-        builder()
-            ->LoadLiteral(ast_string_constants()->prototype_string())
-            .CompareOperation(Token::Value::EQ_STRICT, key)
-            .JumpIfFalse(ToBooleanMode::kAlreadyBoolean, &done)
-            .CallRuntime(Runtime::kThrowStaticPrototypeError)
-            .Bind(&done);
-      }
-
-      if (property->kind() == ClassLiteral::Property::FIELD) {
-        DCHECK_NOT_NULL(property->computed_name_var());
-        builder()->LoadAccumulatorWithRegister(key);
-        BuildVariableAssignment(property->computed_name_var(), Token::INIT,
-                                HoleCheckMode::kElided);
-        // We don't define the field here, but instead do it in the
-        // initializer function.
-        continue;
-      }
-    }
-
-    VisitForRegisterValue(property->value(), value);
-    VisitSetHomeObject(value, receiver, property);
-
-    if (!attr_assigned) {
-      builder()
-          ->LoadLiteral(Smi::FromInt(DONT_ENUM))
-          .StoreAccumulatorInRegister(attr);
-      attr_assigned = true;
-    }
-
-    switch (property->kind()) {
-      case ClassLiteral::Property::METHOD: {
-        DataPropertyInLiteralFlags flags = DataPropertyInLiteralFlag::kDontEnum;
-        if (property->NeedsSetFunctionName()) {
-          flags |= DataPropertyInLiteralFlag::kSetFunctionName;
-        }
-
-        FeedbackSlot slot =
-            feedback_spec()->AddStoreDataPropertyInLiteralICSlot();
-        builder()
-            ->LoadAccumulatorWithRegister(value)
-            .StoreDataPropertyInLiteral(receiver, key, flags,
-                                        feedback_index(slot));
-        break;
-      }
-      case ClassLiteral::Property::GETTER: {
-        builder()->CallRuntime(Runtime::kDefineGetterPropertyUnchecked, args);
-        break;
-      }
-      case ClassLiteral::Property::SETTER: {
-        builder()->CallRuntime(Runtime::kDefineSetterPropertyUnchecked, args);
-        break;
-      }
-      case ClassLiteral::Property::FIELD: {
-        UNREACHABLE();
-        break;
-      }
-    }
   }
 }
 
@@ -1990,28 +1931,16 @@ void BytecodeGenerator::VisitInitializeClassFieldsStatement(
 }
 
 void BytecodeGenerator::BuildInstanceFieldInitialization(
-    Variable* initializer_var) {
+    VariableProxy* initializer_proxy) {
   RegisterList args = register_allocator()->NewRegisterList(1);
   Register initializer = register_allocator()->NewRegister();
-  BuildVariableLoad(initializer_var, HoleCheckMode::kElided);
+  BuildVariableLoad(initializer_proxy->var(), HoleCheckMode::kElided);
 
   builder()
       ->StoreAccumulatorInRegister(initializer)
       .MoveRegister(builder()->Receiver(), args[0])
       .CallProperty(initializer, args,
                     feedback_index(feedback_spec()->AddCallICSlot()));
-}
-
-void BytecodeGenerator::BuildClassLiteralNameProperty(ClassLiteral* expr,
-                                                      Register literal) {
-  if (!expr->has_name_static_property() &&
-      expr->constructor()->has_shared_name()) {
-    Runtime::FunctionId runtime_id =
-        expr->has_static_computed_names()
-            ? Runtime::kInstallClassNameAccessorWithCheck
-            : Runtime::kInstallClassNameAccessor;
-    builder()->CallRuntime(runtime_id, literal);
-  }
 }
 
 void BytecodeGenerator::VisitNativeFunctionLiteral(
@@ -2441,7 +2370,7 @@ void BytecodeGenerator::BuildVariableLoad(Variable* variable,
         }
         case DYNAMIC_GLOBAL: {
           int depth =
-              closure_scope()->ContextChainLengthUntilOutermostSloppyEval();
+              current_scope()->ContextChainLengthUntilOutermostSloppyEval();
           FeedbackSlot slot = GetCachedLoadGlobalICSlot(typeof_mode, variable);
           builder()->LoadLookupGlobalSlot(variable->raw_name(), typeof_mode,
                                           feedback_index(slot), depth);
@@ -3798,7 +3727,7 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
     old_value = register_allocator()->NewRegister();
     // Convert old value into a number before saving it.
     // TODO(ignition): Think about adding proper PostInc/PostDec bytecodes
-    // instead of this ToNumber + Inc/Dec dance.
+    // instead of this ToNumeric + Inc/Dec dance.
     builder()
         ->ToNumeric(feedback_index(count_slot))
         .StoreAccumulatorInRegister(old_value);
@@ -4123,7 +4052,7 @@ void BytecodeGenerator::VisitNaryCommaExpression(NaryOperation* expr) {
 
 void BytecodeGenerator::VisitLogicalTestSubExpression(
     Token::Value token, Expression* expr, BytecodeLabels* then_labels,
-    BytecodeLabels* else_labels, int coverage_slot) {
+    BytecodeLabels* else_labels) {
   DCHECK(token == Token::OR || token == Token::AND);
 
   BytecodeLabels test_next(zone());
@@ -4134,28 +4063,23 @@ void BytecodeGenerator::VisitLogicalTestSubExpression(
     VisitForTest(expr, &test_next, else_labels, TestFallthrough::kThen);
   }
   test_next.Bind(builder());
-
-  BuildIncrementBlockCoverageCounterIfEnabled(coverage_slot);
 }
 
 void BytecodeGenerator::VisitLogicalTest(Token::Value token, Expression* left,
-                                         Expression* right,
-                                         int right_coverage_slot) {
+                                         Expression* right) {
   DCHECK(token == Token::OR || token == Token::AND);
   TestResultScope* test_result = execution_result()->AsTest();
   BytecodeLabels* then_labels = test_result->then_labels();
   BytecodeLabels* else_labels = test_result->else_labels();
   TestFallthrough fallthrough = test_result->fallthrough();
 
-  VisitLogicalTestSubExpression(token, left, then_labels, else_labels,
-                                right_coverage_slot);
+  VisitLogicalTestSubExpression(token, left, then_labels, else_labels);
   // The last test has the same then, else and fallthrough as the parent test.
   VisitForTest(right, then_labels, else_labels, fallthrough);
 }
 
-void BytecodeGenerator::VisitNaryLogicalTest(
-    Token::Value token, NaryOperation* expr,
-    const NArayCodeCoverageSlots* coverage_slots) {
+void BytecodeGenerator::VisitNaryLogicalTest(Token::Value token,
+                                             NaryOperation* expr) {
   DCHECK(token == Token::OR || token == Token::AND);
   DCHECK_GT(expr->subsequent_length(), 0);
 
@@ -4164,21 +4088,18 @@ void BytecodeGenerator::VisitNaryLogicalTest(
   BytecodeLabels* else_labels = test_result->else_labels();
   TestFallthrough fallthrough = test_result->fallthrough();
 
-  VisitLogicalTestSubExpression(token, expr->first(), then_labels, else_labels,
-                                coverage_slots->GetSlotFor(0));
+  VisitLogicalTestSubExpression(token, expr->first(), then_labels, else_labels);
   for (size_t i = 0; i < expr->subsequent_length() - 1; ++i) {
     VisitLogicalTestSubExpression(token, expr->subsequent(i), then_labels,
-                                  else_labels,
-                                  coverage_slots->GetSlotFor(i + 1));
+                                  else_labels);
   }
   // The last test has the same then, else and fallthrough as the parent test.
   VisitForTest(expr->subsequent(expr->subsequent_length() - 1), then_labels,
                else_labels, fallthrough);
 }
 
-bool BytecodeGenerator::VisitLogicalOrSubExpression(Expression* expr,
-                                                    BytecodeLabels* end_labels,
-                                                    int coverage_slot) {
+bool BytecodeGenerator::VisitLogicalOrSubExpression(
+    Expression* expr, BytecodeLabels* end_labels) {
   if (expr->ToBooleanIsTrue()) {
     VisitForAccumulatorValue(expr);
     end_labels->Bind(builder());
@@ -4188,15 +4109,11 @@ bool BytecodeGenerator::VisitLogicalOrSubExpression(Expression* expr,
     builder()->JumpIfTrue(ToBooleanModeFromTypeHint(type_hint),
                           end_labels->New());
   }
-
-  BuildIncrementBlockCoverageCounterIfEnabled(coverage_slot);
-
   return false;
 }
 
-bool BytecodeGenerator::VisitLogicalAndSubExpression(Expression* expr,
-                                                     BytecodeLabels* end_labels,
-                                                     int coverage_slot) {
+bool BytecodeGenerator::VisitLogicalAndSubExpression(
+    Expression* expr, BytecodeLabels* end_labels) {
   if (expr->ToBooleanIsFalse()) {
     VisitForAccumulatorValue(expr);
     end_labels->Bind(builder());
@@ -4206,9 +4123,6 @@ bool BytecodeGenerator::VisitLogicalAndSubExpression(Expression* expr,
     builder()->JumpIfFalse(ToBooleanModeFromTypeHint(type_hint),
                            end_labels->New());
   }
-
-  BuildIncrementBlockCoverageCounterIfEnabled(coverage_slot);
-
   return false;
 }
 
@@ -4216,25 +4130,19 @@ void BytecodeGenerator::VisitLogicalOrExpression(BinaryOperation* binop) {
   Expression* left = binop->left();
   Expression* right = binop->right();
 
-  int right_coverage_slot =
-      AllocateBlockCoverageSlotIfEnabled(right, SourceRangeKind::kBody);
-
   if (execution_result()->IsTest()) {
     TestResultScope* test_result = execution_result()->AsTest();
     if (left->ToBooleanIsTrue()) {
       builder()->Jump(test_result->NewThenLabel());
     } else if (left->ToBooleanIsFalse() && right->ToBooleanIsFalse()) {
-      BuildIncrementBlockCoverageCounterIfEnabled(right_coverage_slot);
       builder()->Jump(test_result->NewElseLabel());
     } else {
-      VisitLogicalTest(Token::OR, left, right, right_coverage_slot);
+      VisitLogicalTest(Token::OR, left, right);
     }
     test_result->SetResultConsumedByTest();
   } else {
     BytecodeLabels end_labels(zone());
-    if (VisitLogicalOrSubExpression(left, &end_labels, right_coverage_slot)) {
-      return;
-    }
+    if (VisitLogicalOrSubExpression(left, &end_labels)) return;
     VisitForAccumulatorValue(right);
     end_labels.Bind(builder());
   }
@@ -4244,25 +4152,19 @@ void BytecodeGenerator::VisitNaryLogicalOrExpression(NaryOperation* expr) {
   Expression* first = expr->first();
   DCHECK_GT(expr->subsequent_length(), 0);
 
-  NArayCodeCoverageSlots coverage_slots(this, expr);
-
   if (execution_result()->IsTest()) {
     TestResultScope* test_result = execution_result()->AsTest();
     if (first->ToBooleanIsTrue()) {
       builder()->Jump(test_result->NewThenLabel());
     } else {
-      VisitNaryLogicalTest(Token::OR, expr, &coverage_slots);
+      VisitNaryLogicalTest(Token::OR, expr);
     }
     test_result->SetResultConsumedByTest();
   } else {
     BytecodeLabels end_labels(zone());
-    if (VisitLogicalOrSubExpression(first, &end_labels,
-                                    coverage_slots.GetSlotFor(0))) {
-      return;
-    }
+    if (VisitLogicalOrSubExpression(first, &end_labels)) return;
     for (size_t i = 0; i < expr->subsequent_length() - 1; ++i) {
-      if (VisitLogicalOrSubExpression(expr->subsequent(i), &end_labels,
-                                      coverage_slots.GetSlotFor(i + 1))) {
+      if (VisitLogicalOrSubExpression(expr->subsequent(i), &end_labels)) {
         return;
       }
     }
@@ -4277,25 +4179,19 @@ void BytecodeGenerator::VisitLogicalAndExpression(BinaryOperation* binop) {
   Expression* left = binop->left();
   Expression* right = binop->right();
 
-  int right_coverage_slot =
-      AllocateBlockCoverageSlotIfEnabled(right, SourceRangeKind::kBody);
-
   if (execution_result()->IsTest()) {
     TestResultScope* test_result = execution_result()->AsTest();
     if (left->ToBooleanIsFalse()) {
       builder()->Jump(test_result->NewElseLabel());
     } else if (left->ToBooleanIsTrue() && right->ToBooleanIsTrue()) {
-      BuildIncrementBlockCoverageCounterIfEnabled(right_coverage_slot);
       builder()->Jump(test_result->NewThenLabel());
     } else {
-      VisitLogicalTest(Token::AND, left, right, right_coverage_slot);
+      VisitLogicalTest(Token::AND, left, right);
     }
     test_result->SetResultConsumedByTest();
   } else {
     BytecodeLabels end_labels(zone());
-    if (VisitLogicalAndSubExpression(left, &end_labels, right_coverage_slot)) {
-      return;
-    }
+    if (VisitLogicalAndSubExpression(left, &end_labels)) return;
     VisitForAccumulatorValue(right);
     end_labels.Bind(builder());
   }
@@ -4305,25 +4201,19 @@ void BytecodeGenerator::VisitNaryLogicalAndExpression(NaryOperation* expr) {
   Expression* first = expr->first();
   DCHECK_GT(expr->subsequent_length(), 0);
 
-  NArayCodeCoverageSlots coverage_slots(this, expr);
-
   if (execution_result()->IsTest()) {
     TestResultScope* test_result = execution_result()->AsTest();
     if (first->ToBooleanIsFalse()) {
       builder()->Jump(test_result->NewElseLabel());
     } else {
-      VisitNaryLogicalTest(Token::AND, expr, &coverage_slots);
+      VisitNaryLogicalTest(Token::AND, expr);
     }
     test_result->SetResultConsumedByTest();
   } else {
     BytecodeLabels end_labels(zone());
-    if (VisitLogicalAndSubExpression(first, &end_labels,
-                                     coverage_slots.GetSlotFor(0))) {
-      return;
-    }
+    if (VisitLogicalAndSubExpression(first, &end_labels)) return;
     for (size_t i = 0; i < expr->subsequent_length() - 1; ++i) {
-      if (VisitLogicalAndSubExpression(expr->subsequent(i), &end_labels,
-                                       coverage_slots.GetSlotFor(i + 1))) {
+      if (VisitLogicalAndSubExpression(expr->subsequent(i), &end_labels)) {
         return;
       }
     }

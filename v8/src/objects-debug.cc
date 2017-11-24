@@ -13,7 +13,7 @@
 #include "src/layout-descriptor.h"
 #include "src/macro-assembler.h"
 #include "src/objects-inl.h"
-#include "src/objects/bigint-inl.h"
+#include "src/objects/bigint.h"
 #include "src/objects/debug-objects-inl.h"
 #include "src/objects/literal-objects.h"
 #include "src/objects/module.h"
@@ -88,6 +88,9 @@ void HeapObject::HeapObjectVerify() {
       break;
     case BYTECODE_ARRAY_TYPE:
       BytecodeArray::cast(this)->BytecodeArrayVerify();
+      break;
+    case DESCRIPTOR_ARRAY_TYPE:
+      DescriptorArray::cast(this)->DescriptorArrayVerify();
       break;
     case TRANSITION_ARRAY_TYPE:
       TransitionArray::cast(this)->TransitionArrayVerify();
@@ -426,6 +429,9 @@ void Map::MapVerify() {
   CHECK_IMPLIES(has_named_interceptor(), may_have_interesting_symbols());
   CHECK_IMPLIES(is_dictionary_map(), may_have_interesting_symbols());
   CHECK_IMPLIES(is_access_check_needed(), may_have_interesting_symbols());
+  CHECK_IMPLIES(IsJSObjectMap() && !CanHaveFastTransitionableElementsKind(),
+                IsDictionaryElementsKind(elements_kind()) ||
+                    IsTerminalElementsKind(elements_kind()));
 }
 
 
@@ -447,13 +453,6 @@ void FixedArray::FixedArrayVerify() {
   for (int i = 0; i < length(); i++) {
     Object* e = get(i);
     VerifyPointer(e);
-  }
-  Heap* heap = GetHeap();
-  if (this == heap->empty_descriptor_array()) {
-    DescriptorArray* descriptors = DescriptorArray::cast(this);
-    CHECK_EQ(2, length());
-    CHECK_EQ(0, descriptors->number_of_descriptors());
-    CHECK_EQ(heap->empty_enum_cache(), descriptors->GetEnumCache());
   }
 }
 
@@ -485,12 +484,22 @@ void FixedDoubleArray::FixedDoubleArrayVerify() {
   }
 }
 
+void DescriptorArray::DescriptorArrayVerify() {
+  FixedArrayVerify();
+  if (number_of_descriptors_storage() == 0) {
+    Heap* heap = GetHeap();
+    CHECK_EQ(heap->empty_descriptor_array(), this);
+    CHECK_EQ(2, length());
+    CHECK_EQ(0, number_of_descriptors());
+    CHECK_EQ(heap->empty_enum_cache(), GetEnumCache());
+  } else {
+    CHECK_LT(2, length());
+    CHECK_LE(LengthFor(number_of_descriptors()), length());
+  }
+}
 
 void TransitionArray::TransitionArrayVerify() {
-  for (int i = 0; i < length(); i++) {
-    Object* e = get(i);
-    VerifyPointer(e);
-  }
+  FixedArrayVerify();
   CHECK_LE(LengthFor(number_of_transitions()), length());
 }
 
@@ -740,7 +749,7 @@ void SharedFunctionInfo::SharedFunctionInfoVerify() {
   Isolate* isolate = GetIsolate();
   CHECK(function_data()->IsUndefined(isolate) || IsApiFunction() ||
         HasBytecodeArray() || HasAsmWasmData() ||
-        HasLazyDeserializationBuiltinId());
+        HasLazyDeserializationBuiltinId() || HasPreParsedScopeData());
 
   CHECK(function_identifier()->IsUndefined(isolate) || HasBuiltinFunctionId() ||
         HasInferredName());
@@ -753,10 +762,6 @@ void SharedFunctionInfo::SharedFunctionInfoVerify() {
     CHECK(kind() == scope_info()->function_kind());
     CHECK_EQ(kind() == kModule, scope_info()->scope_type() == MODULE_SCOPE);
   }
-
-  CHECK(preparsed_scope_data()->IsNull(isolate) ||
-        preparsed_scope_data()->IsPreParsedScopeData());
-  VerifyObjectField(kPreParsedScopeDataOffset);
 }
 
 
@@ -945,7 +950,7 @@ void JSSet::JSSetVerify() {
   CHECK(IsJSSet());
   JSObjectVerify();
   VerifyHeapPointer(table());
-  CHECK(table()->IsOrderedHashTable() || table()->IsUndefined(GetIsolate()));
+  CHECK(table()->IsOrderedHashSet() || table()->IsUndefined(GetIsolate()));
   // TODO(arv): Verify OrderedHashTable too.
 }
 
@@ -954,7 +959,7 @@ void JSMap::JSMapVerify() {
   CHECK(IsJSMap());
   JSObjectVerify();
   VerifyHeapPointer(table());
-  CHECK(table()->IsOrderedHashTable() || table()->IsUndefined(GetIsolate()));
+  CHECK(table()->IsOrderedHashMap() || table()->IsUndefined(GetIsolate()));
   // TODO(arv): Verify OrderedHashTable too.
 }
 
@@ -963,7 +968,7 @@ void JSSetIterator::JSSetIteratorVerify() {
   CHECK(IsJSSetIterator());
   JSObjectVerify();
   VerifyHeapPointer(table());
-  CHECK(table()->IsOrderedHashTable());
+  CHECK(table()->IsOrderedHashSet());
   CHECK(index()->IsSmi());
 }
 
@@ -972,7 +977,7 @@ void JSMapIterator::JSMapIteratorVerify() {
   CHECK(IsJSMapIterator());
   JSObjectVerify();
   VerifyHeapPointer(table());
-  CHECK(table()->IsOrderedHashTable());
+  CHECK(table()->IsOrderedHashMap());
   CHECK(index()->IsSmi());
 }
 

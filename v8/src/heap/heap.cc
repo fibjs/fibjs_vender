@@ -23,6 +23,7 @@
 #include "src/deoptimizer.h"
 #include "src/feedback-vector.h"
 #include "src/global-handles.h"
+#include "src/heap/array-buffer-collector.h"
 #include "src/heap/array-buffer-tracker-inl.h"
 #include "src/heap/barrier.h"
 #include "src/heap/code-stats.h"
@@ -164,6 +165,8 @@ Heap::Heap()
       code_space_(nullptr),
       map_space_(nullptr),
       lo_space_(nullptr),
+      write_protect_code_memory_(false),
+      code_space_memory_modification_scope_depth_(0),
       gc_state_(NOT_IN_GC),
       gc_post_processing_depth_(0),
       allocations_count_(0),
@@ -191,6 +194,7 @@ Heap::Heap()
       last_gc_time_(0.0),
       mark_compact_collector_(nullptr),
       minor_mark_compact_collector_(nullptr),
+      array_buffer_collector_(nullptr),
       memory_allocator_(nullptr),
       store_buffer_(nullptr),
       incremental_marking_(nullptr),
@@ -243,7 +247,6 @@ size_t Heap::Capacity() {
 
 size_t Heap::OldGenerationCapacity() {
   if (!HasBeenSetUp()) return 0;
-
   return old_space_->Capacity() + code_space_->Capacity() +
          map_space_->Capacity() + lo_space_->SizeOfObjects();
 }
@@ -299,6 +302,14 @@ size_t Heap::Available() {
   return total;
 }
 
+bool Heap::CanExpandOldGeneration(size_t size) {
+  if (force_oom_) return false;
+  if (OldGenerationCapacity() + size > MaxOldGenerationSize()) return false;
+  // The OldGenerationCapacity does not account compaction spaces used
+  // during evacuation. Ensure that expanding the old generation does push
+  // the total allocated memory size over the maximum heap size.
+  return memory_allocator()->Size() + size <= MaxReserved();
+}
 
 bool Heap::HasBeenSetUp() {
   return old_space_ != nullptr && code_space_ != nullptr &&
@@ -326,16 +337,8 @@ GarbageCollector Heap::SelectGarbageCollector(AllocationSpace space,
     return MARK_COMPACTOR;
   }
 
-  // Is there enough space left in OLD to guarantee that a scavenge can
-  // succeed?
-  //
-  // Note that MemoryAllocator->MaxAvailable() undercounts the memory available
-  // for object promotion. It counts only the bytes that the memory
-  // allocator has not yet allocated from the OS and assigned to any space,
-  // and does not count available bytes already in the old space or code
-  // space.  Undercounting is safe---we may get an unrequested full GC when
-  // a scavenge would have succeeded.
-  if (memory_allocator()->MaxAvailable() <= new_space_->Size()) {
+  // Over-estimate the new space size using capacity to allow some slack.
+  if (!CanExpandOldGeneration(new_space_->TotalCapacity())) {
     isolate_->counters()
         ->gc_compactor_caused_by_oldspace_exhaustion()
         ->Increment();
@@ -869,15 +872,13 @@ void Heap::ProcessPretenuringFeedback() {
 
 void Heap::InvalidateCodeEmbeddedObjects(Code* code) {
   MemoryChunk* chunk = MemoryChunk::FromAddress(code->address());
-  CodePageMemoryModificationScope modification_scope(
-      chunk, CodePageMemoryModificationScope::READ_WRITE);
+  CodePageMemoryModificationScope modification_scope(chunk);
   code->InvalidateEmbeddedObjects();
 }
 
 void Heap::InvalidateCodeDeoptimizationData(Code* code) {
   MemoryChunk* chunk = MemoryChunk::FromAddress(code->address());
-  CodePageMemoryModificationScope modification_scope(
-      chunk, CodePageMemoryModificationScope::READ_WRITE);
+  CodePageMemoryModificationScope modification_scope(chunk);
   code->set_deoptimization_data(empty_fixed_array());
 }
 
@@ -1485,8 +1486,10 @@ bool Heap::ReserveSpace(Reservation* reservations, std::vector<Address>* maps) {
         // We cannot perfom a GC with an uninitialized isolate. This check
         // fails for example if the max old space size is chosen unwisely,
         // so that we cannot allocate space to deserialize the initial heap.
-        CHECK_WITH_MSG(deserialization_complete_,
-                       "insufficient memory to create an Isolate");
+        if (!deserialization_complete_) {
+          V8::FatalProcessOutOfMemory(
+              "insufficient memory to create an Isolate");
+        }
         if (space == NEW_SPACE) {
           CollectGarbage(NEW_SPACE, GarbageCollectionReason::kDeserializer);
         } else {
@@ -2059,8 +2062,10 @@ void Heap::Scavenge() {
 
   {
     TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_PROCESS_ARRAY_BUFFERS);
-    ArrayBufferTracker::FreeDeadInNewSpace(this);
+    ArrayBufferTracker::PrepareToFreeDeadInNewSpace(this);
   }
+  array_buffer_collector()->FreeAllocationsOnBackgroundThread();
+
   RememberedSet<OLD_TO_NEW>::IterateMemoryChunks(this, [](MemoryChunk* chunk) {
     if (chunk->SweepingDone()) {
       RememberedSet<OLD_TO_NEW>::FreeEmptyBuckets(chunk);
@@ -2398,7 +2403,8 @@ AllocationResult Heap::AllocatePartialMap(InstanceType instance_type,
   }
   // GetVisitorId requires a properly initialized LayoutDescriptor.
   map->set_visitor_id(Map::GetVisitorId(map));
-  map->set_inobject_properties_or_constructor_function_index(0);
+  map->set_inobject_properties_start_or_constructor_function_index(0);
+  DCHECK(!map->IsJSObjectMap());
   map->SetInObjectUnusedPropertyFields(0);
   map->set_bit_field(0);
   map->set_bit_field2(0);
@@ -2407,6 +2413,7 @@ AllocationResult Heap::AllocatePartialMap(InstanceType instance_type,
                    Map::ConstructionCounter::encode(Map::kNoSlackTracking);
   map->set_bit_field3(bit_field3);
   map->set_weak_cell_cache(Smi::kZero);
+  map->set_elements_kind(TERMINAL_FAST_ELEMENTS_KIND);
   return map;
 }
 
@@ -2414,6 +2421,11 @@ AllocationResult Heap::AllocateMap(InstanceType instance_type,
                                    int instance_size,
                                    ElementsKind elements_kind,
                                    int inobject_properties) {
+  STATIC_ASSERT(LAST_JS_OBJECT_TYPE == LAST_TYPE);
+  DCHECK_IMPLIES(instance_type >= FIRST_JS_OBJECT_TYPE &&
+                     !Map::CanHaveFastTransitionableElementsKind(instance_type),
+                 IsDictionaryElementsKind(elements_kind) ||
+                     IsTerminalElementsKind(elements_kind));
   HeapObject* result = nullptr;
   AllocationResult allocation = AllocateRaw(Map::kSize, MAP_SPACE);
   if (!allocation.To(&result)) return allocation;
@@ -2425,8 +2437,14 @@ AllocationResult Heap::AllocateMap(InstanceType instance_type,
   map->set_prototype(null_value(), SKIP_WRITE_BARRIER);
   map->set_constructor_or_backpointer(null_value(), SKIP_WRITE_BARRIER);
   map->set_instance_size(instance_size);
-  map->set_inobject_properties_or_constructor_function_index(
-      inobject_properties);
+  if (map->IsJSObjectMap()) {
+    map->SetInObjectPropertiesStartInWords(instance_size / kPointerSize -
+                                           inobject_properties);
+    DCHECK_EQ(map->GetInObjectProperties(), inobject_properties);
+  } else {
+    DCHECK_EQ(inobject_properties, 0);
+    map->set_inobject_properties_start_or_constructor_function_index(0);
+  }
   map->set_dependent_code(DependentCode::cast(empty_fixed_array()),
                           SKIP_WRITE_BARRIER);
   map->set_weak_cell_cache(Smi::kZero);
@@ -2489,20 +2507,18 @@ AllocationResult Heap::AllocateHeapNumber(MutableMode mode,
   return result;
 }
 
-AllocationResult Heap::AllocateBigInt(int length, bool zero_initialize,
-                                      PretenureFlag pretenure) {
+AllocationResult Heap::AllocateBigInt(int length) {
   if (length < 0 || length > BigInt::kMaxLength) {
     v8::internal::Heap::FatalProcessOutOfMemory("invalid BigInt length", true);
   }
   int size = BigInt::SizeFor(length);
-  AllocationSpace space = SelectSpace(pretenure);
+  AllocationSpace space = SelectSpace(NOT_TENURED);
   HeapObject* result = nullptr;
   {
     AllocationResult allocation = AllocateRaw(size, space);
     if (!allocation.To(&result)) return allocation;
   }
   result->set_map_after_allocation(bigint_map(), SKIP_WRITE_BARRIER);
-  BigInt::cast(result)->Initialize(length, zero_initialize);
   return result;
 }
 
@@ -2953,7 +2969,7 @@ void Heap::RightTrimFixedArray(FixedArrayBase* object, int elements_to_trim) {
     int new_size = ByteArray::SizeFor(len - elements_to_trim);
     bytes_to_trim = ByteArray::SizeFor(len) - new_size;
     DCHECK_GE(bytes_to_trim, 0);
-  } else if (object->IsFixedArray() || object->IsTransitionArray()) {
+  } else if (object->IsFixedArray()) {
     bytes_to_trim = elements_to_trim * kPointerSize;
   } else {
     DCHECK(object->IsFixedDoubleArray());
@@ -3116,6 +3132,85 @@ AllocationResult Heap::AllocateCode(int object_size, Movability movability) {
   return code;
 }
 
+AllocationResult Heap::AllocateCode(
+    const CodeDesc& desc, Code::Kind kind, Handle<Object> self_ref,
+    int32_t builtin_index, ByteArray* reloc_info,
+    CodeDataContainer* data_container, HandlerTable* handler_table,
+    ByteArray* source_position_table, DeoptimizationData* deopt_data,
+    Movability movability, uint32_t stub_key, bool is_turbofanned,
+    int stack_slots, int safepoint_table_offset) {
+  bool has_unwinding_info = desc.unwinding_info != nullptr;
+  DCHECK((has_unwinding_info && desc.unwinding_info_size > 0) ||
+         (!has_unwinding_info && desc.unwinding_info_size == 0));
+
+  // Compute size.
+  int body_size = desc.instr_size;
+  int unwinding_info_size_field_size = kInt64Size;
+  if (has_unwinding_info) {
+    body_size = RoundUp(body_size, kInt64Size) + desc.unwinding_info_size +
+                unwinding_info_size_field_size;
+  }
+  int object_size = Code::SizeFor(RoundUp(body_size, kObjectAlignment));
+
+  Code* code = nullptr;
+  CodeSpaceMemoryModificationScope code_allocation(this);
+  AllocationResult allocation = AllocateCode(object_size, movability);
+  if (!allocation.To(&code)) return allocation;
+
+  // The code object has not been fully initialized yet.  We rely on the
+  // fact that no allocation will happen from this point on.
+  DisallowHeapAllocation no_gc;
+  code->set_instruction_size(desc.instr_size);
+  code->set_relocation_info(reloc_info);
+  code->initialize_flags(kind, has_unwinding_info, is_turbofanned, stack_slots);
+  code->set_safepoint_table_offset(safepoint_table_offset);
+  code->set_code_data_container(data_container);
+  code->set_has_tagged_params(true);
+  code->set_deoptimization_data(deopt_data);
+  code->set_stub_key(stub_key);
+  code->set_handler_table(handler_table);
+  code->set_source_position_table(source_position_table);
+  code->set_protected_instructions(empty_fixed_array(), SKIP_WRITE_BARRIER);
+  code->set_constant_pool_offset(desc.instr_size - desc.constant_pool_size);
+  code->set_builtin_index(builtin_index);
+  code->set_trap_handler_index(Smi::FromInt(-1));
+
+  switch (code->kind()) {
+    case Code::OPTIMIZED_FUNCTION:
+      code->set_marked_for_deoptimization(false);
+      break;
+    case Code::JS_TO_WASM_FUNCTION:
+    case Code::C_WASM_ENTRY:
+    case Code::WASM_FUNCTION:
+      code->set_has_tagged_params(false);
+      break;
+    default:
+      break;
+  }
+
+  // Allow self references to created code object by patching the handle to
+  // point to the newly allocated Code object.
+  if (!self_ref.is_null()) *(self_ref.location()) = code;
+
+  // Migrate generated code.
+  // The generated code can contain Object** values (typically from handles)
+  // that are dereferenced during the copy to point directly to the actual heap
+  // objects. These pointers can include references to the code object itself,
+  // through the self_reference parameter.
+  code->CopyFrom(desc);
+
+  code->clear_padding();
+
+#ifdef VERIFY_HEAP
+  if (FLAG_verify_heap) code->ObjectVerify();
+#endif
+  DCHECK(IsAligned(bit_cast<intptr_t>(code->address()), kCodeAlignment));
+  DCHECK(!memory_allocator()->code_range()->valid() ||
+         memory_allocator()->code_range()->contains(code->address()) ||
+         object_size <= code_space()->AreaSize());
+  return code;
+}
+
 AllocationResult Heap::CopyCode(Code* code, CodeDataContainer* data_container) {
   CodeSpaceMemoryModificationScope code_modification(this);
   AllocationResult allocation;
@@ -3141,16 +3236,20 @@ AllocationResult Heap::CopyCode(Code* code, CodeDataContainer* data_container) {
   new_code->set_trap_handler_index(Smi::FromInt(trap_handler::kInvalidIndex));
 
   // Relocate the copy.
-  DCHECK(IsAligned(bit_cast<intptr_t>(new_code->address()), kCodeAlignment));
-  DCHECK(!memory_allocator()->code_range()->valid() ||
-         memory_allocator()->code_range()->contains(code->address()) ||
-         obj_size <= code_space()->AreaSize());
   new_code->Relocate(new_addr - old_addr);
   // We have to iterate over the object and process its pointers when black
   // allocation is on.
   incremental_marking()->ProcessBlackAllocatedObject(new_code);
   // Record all references to embedded objects in the new code object.
   RecordWritesIntoCode(new_code);
+
+#ifdef VERIFY_HEAP
+  if (FLAG_verify_heap) new_code->ObjectVerify();
+#endif
+  DCHECK(IsAligned(bit_cast<intptr_t>(new_code->address()), kCodeAlignment));
+  DCHECK(!memory_allocator()->code_range()->valid() ||
+         memory_allocator()->code_range()->contains(new_code->address()) ||
+         obj_size <= code_space()->AreaSize());
   return new_code;
 }
 
@@ -4872,10 +4971,6 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
   v->VisitRootPointers(Root::kStrongRootList, &roots_[0],
                        &roots_[kStrongRootListLength]);
   v->Synchronize(VisitorSynchronization::kStrongRootList);
-  // The serializer/deserializer iterates the root list twice, first to pick
-  // off immortal immovable roots to make sure they end up on the first page,
-  // and then again for the rest.
-  if (mode == VISIT_ONLY_STRONG_ROOT_LIST) return;
 
   isolate_->bootstrapper()->Iterate(v);
   v->Synchronize(VisitorSynchronization::kBootstrapper);
@@ -4908,11 +5003,7 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
 
   // Iterate over global handles.
   switch (mode) {
-    case VISIT_ONLY_STRONG_ROOT_LIST:
-      UNREACHABLE();
-      break;
     case VISIT_ONLY_STRONG_FOR_SERIALIZATION:
-      break;
     case VISIT_ONLY_STRONG:
       isolate_->global_handles()->IterateStrongRoots(v);
       break;
@@ -5508,6 +5599,7 @@ bool Heap::SetUp() {
 
   tracer_ = new GCTracer(this);
   minor_mark_compact_collector_ = new MinorMarkCompactCollector(this);
+  array_buffer_collector_ = new ArrayBufferCollector(this);
   gc_idle_time_handler_ = new GCIdleTimeHandler();
   memory_reducer_ = new MemoryReducer(this);
   if (V8_UNLIKELY(FLAG_gc_stats)) {
@@ -5537,6 +5629,8 @@ bool Heap::SetUp() {
   if (FLAG_stress_marking > 0) {
     stress_marking_percentage_ = NextStressMarkingLimit();
   }
+
+  write_protect_code_memory_ = FLAG_write_protect_code_memory;
 
   return true;
 }
@@ -5654,6 +5748,11 @@ void Heap::TearDown() {
     minor_mark_compact_collector_->TearDown();
     delete minor_mark_compact_collector_;
     minor_mark_compact_collector_ = nullptr;
+  }
+
+  if (array_buffer_collector_ != nullptr) {
+    delete array_buffer_collector_;
+    array_buffer_collector_ = nullptr;
   }
 
   delete incremental_marking_;

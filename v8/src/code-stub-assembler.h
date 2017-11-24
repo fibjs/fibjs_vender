@@ -505,9 +505,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   TNode<PrototypeInfo> LoadMapPrototypeInfo(SloppyTNode<Map> map,
                                             Label* if_has_no_proto_info);
   // Load the instance size of a Map.
-  TNode<IntPtrT> LoadMapInstanceSize(SloppyTNode<Map> map);
-  // Load the inobject properties count of a Map (valid only for JSObjects).
-  TNode<IntPtrT> LoadMapInobjectProperties(SloppyTNode<Map> map);
+  TNode<IntPtrT> LoadMapInstanceSizeInWords(SloppyTNode<Map> map);
+  // Load the inobject properties start of a Map (valid only for JSObjects).
+  TNode<IntPtrT> LoadMapInobjectPropertiesStartInWords(SloppyTNode<Map> map);
   // Load the constructor function index of a Map (only for primitive maps).
   TNode<IntPtrT> LoadMapConstructorFunctionIndex(SloppyTNode<Map> map);
   // Load the constructor of a Map (equivalent to Map::GetConstructor()).
@@ -1015,6 +1015,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* ThrowIfNotJSReceiver(Node* context, Node* value,
                              MessageTemplate::Template msg_template,
                              const char* method_name = nullptr);
+
+  void ThrowRangeError(Node* context, MessageTemplate::Template message,
+                       Node* arg0 = nullptr, Node* arg1 = nullptr,
+                       Node* arg2 = nullptr);
   void ThrowTypeError(Node* context, MessageTemplate::Template message,
                       char const* arg0 = nullptr, char const* arg1 = nullptr);
   void ThrowTypeError(Node* context, MessageTemplate::Template message,
@@ -1029,7 +1033,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsAllocationSite(Node* object);
   Node* IsAnyHeapNumber(Node* object);
   Node* IsArrayIteratorInstanceType(Node* instance_type);
-  Node* IsArrayProtectorCellInvalid();
+  Node* IsNoElementsProtectorCellInvalid();
   Node* IsBigIntInstanceType(Node* instance_type);
   Node* IsBigInt(Node* object);
   Node* IsBoolean(Node* object);
@@ -1047,6 +1051,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                              SloppyTNode<Context> context);
   Node* IsFeedbackVector(Node* object);
   Node* IsFixedArray(Node* object);
+  Node* IsFixedArraySubclass(Node* object);
   Node* IsFixedArrayWithKind(Node* object, ElementsKind kind);
   Node* IsFixedArrayWithKindOrEmpty(Node* object, ElementsKind kind);
   Node* IsFixedDoubleArray(Node* object);

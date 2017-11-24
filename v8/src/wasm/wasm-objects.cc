@@ -11,6 +11,7 @@
 #include "src/debug/debug-interface.h"
 #include "src/objects-inl.h"
 #include "src/objects/debug-objects-inl.h"
+#include "src/trap-handler/trap-handler.h"
 #include "src/wasm/module-compiler.h"
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-code-specialization.h"
@@ -298,11 +299,14 @@ void WasmTableObject::Set(Isolate* isolate, Handle<WasmTableObject> table,
     value = function;
     // TODO(titzer): Make JSToWasm wrappers just call the WASM to WASM wrapper,
     // and then we can just reuse the WASM to WASM wrapper.
-    Address new_context_address = reinterpret_cast<Address>(
-        exported_function->instance()->wasm_context()->get());
+    Handle<WasmInstanceObject> instance(exported_function->instance(), isolate);
+    int func_index = exported_function->function_index();
+    Address new_context_address =
+        reinterpret_cast<Address>(instance->wasm_context()->get());
     code = compiler::CompileWasmToWasmWrapper(
         isolate, exported_function->GetWasmCode(), wasm_function->sig,
-        exported_function->function_index(), new_context_address);
+        func_index, new_context_address);
+    compiler::AttachWasmFunctionInfo(isolate, code, instance, func_index);
   }
 
   UpdateDispatchTables(isolate, dispatch_tables, index, wasm_function, code);
@@ -679,20 +683,22 @@ Handle<Code> WasmExportedFunction::GetWasmCode() {
   Handle<Code> export_wrapper_code = handle(this->code());
   DCHECK_EQ(export_wrapper_code->kind(), Code::JS_TO_WASM_FUNCTION);
   int mask = RelocInfo::ModeMask(RelocInfo::CODE_TARGET);
+  auto IsWasmFunctionCode = [](Code* code) {
+    return code->kind() == Code::WASM_FUNCTION ||
+           code->kind() == Code::WASM_TO_JS_FUNCTION ||
+           code->kind() == Code::WASM_TO_WASM_FUNCTION ||
+           code->kind() == Code::WASM_INTERPRETER_ENTRY ||
+           code->builtin_index() == Builtins::kWasmCompileLazy;
+  };
   for (RelocIterator it(*export_wrapper_code, mask);; it.next()) {
     DCHECK(!it.done());
     Code* target = Code::GetCodeFromTargetAddress(it.rinfo()->target_address());
-    if (target->kind() != Code::WASM_FUNCTION &&
-        target->kind() != Code::WASM_TO_JS_FUNCTION &&
-        target->kind() != Code::WASM_INTERPRETER_ENTRY)
-      continue;
+    if (!IsWasmFunctionCode(target)) continue;
 // There should only be this one call to wasm code.
 #ifdef DEBUG
     for (it.next(); !it.done(); it.next()) {
       Code* code = Code::GetCodeFromTargetAddress(it.rinfo()->target_address());
-      DCHECK(code->kind() != Code::WASM_FUNCTION &&
-             code->kind() != Code::WASM_TO_JS_FUNCTION &&
-             code->kind() != Code::WASM_INTERPRETER_ENTRY);
+      DCHECK(!IsWasmFunctionCode(code));
     }
 #endif
     return handle(target);

@@ -956,11 +956,12 @@ class PreParser : public ParserBase<PreParser> {
                bool is_inner_function, bool may_abort, bool* ok) {
     UNREACHABLE();
   }
-  Expression ParseFunctionLiteral(
-      Identifier name, Scanner::Location function_name_location,
-      FunctionNameValidity function_name_validity, FunctionKind kind,
-      int function_token_pos, FunctionLiteral::FunctionType function_type,
-      LanguageMode language_mode, bool* ok);
+  Expression ParseFunctionLiteral(Identifier name,
+                                  Scanner::Location function_name_location,
+                                  FunctionNameValidity function_name_validity,
+                                  FunctionKind kind, int function_token_pos,
+                                  FunctionLiteral::FunctionType function_type,
+                                  LanguageMode language_mode, bool* ok);
   LazyParsingResult ParseStatementListAndLogFunction(
       PreParserFormalParameters* formals, bool maybe_abort, bool* ok);
 
@@ -1427,10 +1428,10 @@ class PreParser : public ParserBase<PreParser> {
   }
 
   // Reporting errors.
-  V8_INLINE void ReportMessageAt(Scanner::Location source_location,
-                                 MessageTemplate::Template message,
-                                 const char* arg = nullptr,
-                                 ParseErrorType error_type = kSyntaxError) {
+  void ReportMessageAt(Scanner::Location source_location,
+                       MessageTemplate::Template message,
+                       const char* arg = nullptr,
+                       ParseErrorType error_type = kSyntaxError) {
     pending_error_handler()->ReportMessageAt(source_location.beg_pos,
                                              source_location.end_pos, message,
                                              arg, error_type);

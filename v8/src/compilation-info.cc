@@ -67,6 +67,7 @@ CompilationInfo::CompilationInfo(Vector<const char> debug_name,
       flags_(0),
       code_kind_(code_kind),
       stub_key_(0),
+      builtin_index_(Builtins::kNoBuiltinId),
       mode_(mode),
       osr_offset_(BailoutId::None()),
       feedback_vector_spec_(zone),
@@ -151,6 +152,8 @@ StackFrame::Type CompilationInfo::GetOutputStackFrameType() const {
       return StackFrame::WASM_COMPILED;
     case Code::JS_TO_WASM_FUNCTION:
       return StackFrame::JS_TO_WASM;
+    case Code::WASM_TO_WASM_FUNCTION:
+      return StackFrame::WASM_TO_WASM;
     case Code::WASM_TO_JS_FUNCTION:
       return StackFrame::WASM_TO_JS;
     case Code::WASM_INTERPRETER_ENTRY:

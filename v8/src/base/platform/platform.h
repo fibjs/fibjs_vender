@@ -157,9 +157,13 @@ class V8_BASE_EXPORT OS {
   static PRINTF_FORMAT(1, 2) void PrintError(const char* format, ...);
   static PRINTF_FORMAT(1, 0) void VPrintError(const char* format, va_list args);
 
-  // Memory access permissions. Only the modes currently used by V8 are listed
-  // here even though most systems support additional modes.
-  enum class MemoryPermission { kNoAccess, kReadWrite, kReadWriteExecute };
+  enum class MemoryPermission {
+    kNoAccess,
+    kReadWrite,
+    // TODO(hpayer): Remove this flag. Memory should never be rwx.
+    kReadWriteExecute,
+    kReadExecute
+  };
 
   // Gets the page granularity for Allocate. Addresses returned by Allocate are
   // aligned to this size.
@@ -175,31 +179,24 @@ class V8_BASE_EXPORT OS {
   // The address parameter is a hint. The size and alignment parameters must be
   // multiples of AllocatePageSize(). Returns the address of the allocated
   // memory, with the specified size and alignment, or nullptr on failure.
-  static void* Allocate(void* address, size_t size, size_t alignment,
-                        MemoryPermission access);
+  V8_WARN_UNUSED_RESULT static void* Allocate(void* address, size_t size,
+                                              size_t alignment,
+                                              MemoryPermission access);
 
-  // Frees memory allocated by a call to Allocate.
-  static bool Free(void* address, const size_t size);
+  // Frees memory allocated by a call to Allocate. address and size must be
+  // multiples of AllocatePageSize(). Returns true on success, otherwise false.
+  V8_WARN_UNUSED_RESULT static bool Free(void* address, const size_t size);
 
-  // Mark a region of memory executable and readable but not writable.
-  static void SetReadAndExecutable(void* address, const size_t size);
+  // Releases memory that is no longer needed. The range specified by address
+  // and size must be part of an allocated memory region, and must be multiples
+  // of CommitPageSize(). Released memory is left in an undefined state, so it
+  // should not be accessed. Returns true on success, otherwise false.
+  V8_WARN_UNUSED_RESULT static bool Release(void* address, size_t size);
 
-  // Assign memory as a guard page so that access will cause an exception.
-  static void Guard(void* address, const size_t size);
-
-  // Make a region of memory non-executable but readable and writable.
-  static void SetReadAndWritable(void* address, const size_t size, bool commit);
-
-  // Make a region of memory read, write, and executable. Do not use this
-  // function. This is only a temporary function and will go away soon.
-  static void SetReadWriteAndExecutable(void* address, const size_t size);
-
-  static bool CommitRegion(void* address, size_t size, bool is_executable);
-
-  static bool UncommitRegion(void* address, size_t size);
-
-  // Release part of a reserved address range.
-  static bool ReleasePartialRegion(void* address, size_t size);
+  // Sets permissions according to the access argument. address and size must be
+  // multiples of CommitPageSize(). Returns true on success, otherwise false.
+  V8_WARN_UNUSED_RESULT static bool SetPermissions(void* address, size_t size,
+                                                   MemoryPermission access);
 
   static bool HasLazyCommits();
 

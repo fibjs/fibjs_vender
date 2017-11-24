@@ -98,6 +98,9 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case BYTECODE_ARRAY_TYPE:
       BytecodeArray::cast(this)->BytecodeArrayPrint(os);
       break;
+    case DESCRIPTOR_ARRAY_TYPE:
+      DescriptorArray::cast(this)->PrintDescriptors(os);
+      break;
     case TRANSITION_ARRAY_TYPE:
       TransitionArray::cast(this)->TransitionArrayPrint(os);
       break;
@@ -1150,6 +1153,9 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
     os << "<no-shared-name>";
   }
   os << "\n - kind = " << kind();
+  if (needs_home_object()) {
+    os << "\n - needs_home_object";
+  }
   os << "\n - function_map_index = " << function_map_index();
   os << "\n - formal_parameter_count = " << internal_formal_parameter_count();
   os << "\n - expected_nof_properties = " << expected_nof_properties();
@@ -1777,6 +1783,7 @@ void TransitionArray::Print() {
   Print(os);
 }
 
+// TODO(ishell): unify with TransitionArrayPrint().
 void TransitionArray::Print(std::ostream& os) {
   int num_transitions = number_of_transitions();
   os << "Transition array #" << num_transitions << ":";

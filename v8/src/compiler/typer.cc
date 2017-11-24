@@ -264,12 +264,16 @@ class Typer::Visitor : public Reducer {
   static ComparisonOutcome Invert(ComparisonOutcome, Typer*);
   static Type* FalsifyUndefined(ComparisonOutcome, Typer*);
 
+  static Type* BitwiseNot(Type*, Typer*);
+  static Type* Negate(Type*, Typer*);
+
   static Type* ToPrimitive(Type*, Typer*);
   static Type* ToBoolean(Type*, Typer*);
   static Type* ToInteger(Type*, Typer*);
   static Type* ToLength(Type*, Typer*);
   static Type* ToName(Type*, Typer*);
   static Type* ToNumber(Type*, Typer*);
+  static Type* ToNumeric(Type*, Typer*);
   static Type* ToObject(Type*, Typer*);
   static Type* ToString(Type*, Typer*);
 #define DECLARE_METHOD(Name)                \
@@ -423,6 +427,22 @@ Type* Typer::Visitor::FalsifyUndefined(ComparisonOutcome outcome, Typer* t) {
   return t->singleton_true_;
 }
 
+Type* Typer::Visitor::BitwiseNot(Type* type, Typer* t) {
+  type = ToNumeric(type, t);
+  if (type->Is(Type::Number())) {
+    return NumberBitwiseXor(type, t->cache_.kSingletonMinusOne, t);
+  }
+  return Type::Numeric();
+}
+
+Type* Typer::Visitor::Negate(Type* type, Typer* t) {
+  type = ToNumeric(type, t);
+  if (type->Is(Type::Number())) {
+    return NumberMultiply(type, t->cache_.kSingletonMinusOne, t);
+  }
+  return Type::Numeric();
+}
+
 // Type conversion.
 
 Type* Typer::Visitor::ToPrimitive(Type* type, Typer* t) {
@@ -461,8 +481,8 @@ Type* Typer::Visitor::ToInteger(Type* type, Typer* t) {
 // static
 Type* Typer::Visitor::ToLength(Type* type, Typer* t) {
   // ES6 section 7.1.15 ToLength ( argument )
-  if (type->IsNone()) return type;
   type = ToInteger(type, t);
+  if (type->IsNone()) return type;
   double min = type->Min();
   double max = type->Max();
   if (max <= 0.0) {
@@ -492,6 +512,10 @@ Type* Typer::Visitor::ToNumber(Type* type, Typer* t) {
   return t->operation_typer_.ToNumber(type);
 }
 
+// static
+Type* Typer::Visitor::ToNumeric(Type* type, Typer* t) {
+  return t->operation_typer_.ToNumeric(type);
+}
 
 // static
 Type* Typer::Visitor::ToObject(Type* type, Typer* t) {
@@ -903,6 +927,10 @@ Type* Typer::Visitor::TypeTypeGuard(Node* node) {
 
 Type* Typer::Visitor::TypeDead(Node* node) { return Type::None(); }
 
+Type* Typer::Visitor::TypeDeadValue(Node* node) { return Type::None(); }
+
+Type* Typer::Visitor::TypeUnreachable(Node* node) { UNREACHABLE(); }
+
 // JS comparison operators.
 
 
@@ -1060,6 +1088,14 @@ Type* Typer::Visitor::JSModulusTyper(Type* lhs, Type* rhs, Typer* t) {
 
 // JS unary operators.
 
+Type* Typer::Visitor::TypeJSBitwiseNot(Node* node) {
+  return TypeUnaryOp(node, BitwiseNot);
+}
+
+Type* Typer::Visitor::TypeJSNegate(Node* node) {
+  return TypeUnaryOp(node, Negate);
+}
+
 Type* Typer::Visitor::TypeClassOf(Node* node) {
   return Type::InternalizedStringOrNull();
 }
@@ -1089,6 +1125,10 @@ Type* Typer::Visitor::TypeJSToName(Node* node) {
 
 Type* Typer::Visitor::TypeJSToNumber(Node* node) {
   return TypeUnaryOp(node, ToNumber);
+}
+
+Type* Typer::Visitor::TypeJSToNumeric(Node* node) {
+  return TypeUnaryOp(node, ToNumeric);
 }
 
 Type* Typer::Visitor::TypeJSToObject(Node* node) {
@@ -1337,10 +1377,6 @@ Type* Typer::Visitor::TypeJSCreateWithContext(Node* node) {
 }
 
 Type* Typer::Visitor::TypeJSCreateBlockContext(Node* node) {
-  return Type::OtherInternal();
-}
-
-Type* Typer::Visitor::TypeJSCreateScriptContext(Node* node) {
   return Type::OtherInternal();
 }
 

@@ -151,6 +151,7 @@ const int kMinUInt32 = 0;
 const int kUInt8Size = sizeof(uint8_t);
 const int kCharSize = sizeof(char);
 const int kShortSize = sizeof(short);  // NOLINT
+const int kUInt16Size = sizeof(uint16_t);
 const int kIntSize = sizeof(int);
 const int kInt32Size = sizeof(int32_t);
 const int kInt64Size = sizeof(int64_t);
@@ -627,7 +628,6 @@ enum VisitMode {
   VISIT_ALL_IN_SWEEP_NEWSPACE,
   VISIT_ONLY_STRONG,
   VISIT_ONLY_STRONG_FOR_SERIALIZATION,
-  VISIT_ONLY_STRONG_ROOT_LIST,
 };
 
 // Flag indicating whether code is built into the VM (one of the natives files).

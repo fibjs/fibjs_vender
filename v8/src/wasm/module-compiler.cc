@@ -15,6 +15,7 @@
 #include "src/compiler/wasm-compiler.h"
 #include "src/counters.h"
 #include "src/property-descriptor.h"
+#include "src/trap-handler/trap-handler.h"
 #include "src/wasm/compilation-manager.h"
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-code-specialization.h"
@@ -218,6 +219,8 @@ class ModuleCompiler {
   Handle<Code> centry_stub_;
 };
 
+namespace {
+
 class JSToWasmWrapperCache {
  public:
   void SetContextAddress(Address context_address) {
@@ -243,6 +246,7 @@ class JSToWasmWrapperCache {
             Code::GetCodeFromTargetAddress(it.rinfo()->target_address());
         if (target->kind() == Code::WASM_FUNCTION ||
             target->kind() == Code::WASM_TO_JS_FUNCTION ||
+            target->kind() == Code::WASM_TO_WASM_FUNCTION ||
             target->builtin_index() == Builtins::kIllegal ||
             target->builtin_index() == Builtins::kWasmCompileLazy) {
           it.rinfo()->set_target_address(isolate,
@@ -391,7 +395,7 @@ class InstanceBuilder {
 };
 
 // TODO(titzer): move to wasm-objects.cc
-static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
+void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
   DisallowHeapAllocation no_gc;
   JSObject** p = reinterpret_cast<JSObject**>(data.GetParameter());
   WasmInstanceObject* owner = reinterpret_cast<WasmInstanceObject*>(*p);
@@ -464,6 +468,8 @@ static void InstanceFinalizer(const v8::WeakCallbackInfo<void>& data) {
   GlobalHandles::Destroy(reinterpret_cast<Object**>(p));
   TRACE("}\n");
 }
+
+}  // namespace
 
 bool SyncValidate(Isolate* isolate, const ModuleWireBytes& bytes) {
   if (bytes.start() == nullptr || bytes.length() == 0) return false;
@@ -615,8 +621,10 @@ Handle<Code> CompileLazy(Isolate* isolate) {
   Handle<WasmInstanceObject> instance;
   Handle<FixedArray> exp_deopt_data;
   int func_index = -1;
+  // If the lazy compile stub has deopt data, use that to determine the
+  // instance and function index. Otherwise this must be a wasm->wasm call
+  // within one instance, so extract the information from the caller.
   if (lazy_compile_code->deoptimization_data()->length() > 0) {
-    // Then it's an indirect call or via JS->wasm wrapper.
     DCHECK_LE(2, lazy_compile_code->deoptimization_data()->length());
     exp_deopt_data = handle(lazy_compile_code->deoptimization_data(), isolate);
     auto* weak_cell = WeakCell::cast(exp_deopt_data->get(0));
@@ -747,15 +755,7 @@ void LazyCompilationOrchestrator::CompileFunction(
   CHECK(!thrower.error());
   Handle<Code> code = maybe_code.ToHandleChecked();
 
-  // TODO(6792): No longer needed once WebAssembly code is off heap.
-  CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
-
-  Handle<FixedArray> deopt_data = isolate->factory()->NewFixedArray(2, TENURED);
-  Handle<WeakCell> weak_instance = isolate->factory()->NewWeakCell(instance);
-  // TODO(wasm): Introduce constants for the indexes in wasm deopt data.
-  deopt_data->set(0, *weak_instance);
-  deopt_data->set(1, Smi::FromInt(func_index));
-  code->set_deoptimization_data(*deopt_data);
+  compiler::AttachWasmFunctionInfo(isolate, code, instance, func_index);
 
   DCHECK_EQ(Builtins::kWasmCompileLazy,
             Code::cast(compiled_module->code_table()->get(func_index))
@@ -810,14 +810,20 @@ Handle<Code> LazyCompilationOrchestrator::CompileLazy(
     non_compiled_functions.push_back({0, exported_func_index});
   } else if (patch_caller) {
     DisallowHeapAllocation no_gc;
-    SeqOneByteString* module_bytes = compiled_module->module_bytes();
     SourcePositionTableIterator source_pos_iterator(
         caller->SourcePositionTable());
     DCHECK_EQ(2, caller->deoptimization_data()->length());
+    Handle<WeakCell> weak_caller_instance(
+        WeakCell::cast(caller->deoptimization_data()->get(0)), isolate);
+    Handle<WasmInstanceObject> caller_instance(
+        WasmInstanceObject::cast(weak_caller_instance->value()), isolate);
+    Handle<WasmCompiledModule> caller_module(caller_instance->compiled_module(),
+                                             isolate);
+    SeqOneByteString* module_bytes = caller_module->module_bytes();
     int caller_func_index = Smi::ToInt(caller->deoptimization_data()->get(1));
     const byte* func_bytes =
         module_bytes->GetChars() +
-        compiled_module->module()->functions[caller_func_index].code.offset();
+        caller_module->module()->functions[caller_func_index].code.offset();
     for (RelocIterator it(*caller, RelocInfo::kCodeTargetMask); !it.done();
          it.next()) {
       Code* callee =
@@ -1004,11 +1010,13 @@ size_t ModuleCompiler::InitializeCompilationUnits(
 }
 
 void ModuleCompiler::RestartCompilationTasks() {
+  v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate_);
+  std::shared_ptr<v8::TaskRunner> task_runner =
+      V8::GetCurrentPlatform()->GetBackgroundTaskRunner(v8_isolate);
+
   base::LockGuard<base::Mutex> guard(&tasks_mutex_);
   for (; stopped_compilation_tasks_ > 0; --stopped_compilation_tasks_) {
-    V8::GetCurrentPlatform()->CallOnBackgroundThread(
-        new CompilationTask(this),
-        v8::Platform::ExpectedRuntime::kShortRunningTask);
+    task_runner->PostTask(base::make_unique<CompilationTask>(this));
   }
 }
 
@@ -1244,31 +1252,21 @@ Handle<Code> EnsureExportedLazyDeoptData(Isolate* isolate,
     // instantiation time).
     DCHECK(code->kind() == Code::WASM_FUNCTION ||
            code->kind() == Code::WASM_TO_JS_FUNCTION ||
+           code->kind() == Code::WASM_TO_WASM_FUNCTION ||
            code->builtin_index() == Builtins::kIllegal);
     return code;
   }
-
-  // TODO(6792): No longer needed once WebAssembly code is off heap.
-  CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
 
   // deopt_data:
   //   #0: weak instance
   //   #1: func_index
   // might be extended later for table exports (see
   // EnsureTableExportLazyDeoptData).
-  Handle<FixedArray> deopt_data(code->deoptimization_data());
-  DCHECK_EQ(0, deopt_data->length() % 2);
-  if (deopt_data->length() == 0) {
+  DCHECK_EQ(0, code->deoptimization_data()->length() % 2);
+  if (code->deoptimization_data()->length() == 0) {
     code = isolate->factory()->CopyCode(code);
     code_table->set(func_index, *code);
-    deopt_data = isolate->factory()->NewFixedArray(2, TENURED);
-    code->set_deoptimization_data(*deopt_data);
-    if (!instance.is_null()) {
-      Handle<WeakCell> weak_instance =
-          isolate->factory()->NewWeakCell(instance);
-      deopt_data->set(0, *weak_instance);
-    }
-    deopt_data->set(1, Smi::FromInt(func_index));
+    compiler::AttachWasmFunctionInfo(isolate, code, instance, func_index);
   }
   DCHECK_IMPLIES(!instance.is_null(),
                  WeakCell::cast(code->deoptimization_data()->get(0))->value() ==
@@ -1352,18 +1350,11 @@ Handle<Code> MakeWasmToWasmWrapper(
   Handle<Code> wrapper_code = compiler::CompileWasmToWasmWrapper(
       isolate, wasm_code, *sig, imported_function->function_index(),
       new_wasm_context_address);
-  // TODO(6792): No longer needed once WebAssembly code is off heap.
-  CodeSpaceMemoryModificationScope modification_scope(isolate->heap());
   // Set the deoptimization data for the WasmToWasm wrapper. This is
   // needed by the interpreter to find the imported instance for
   // a cross-instance call.
-  Factory* factory = isolate->factory();
-  Handle<WeakCell> weak_link = factory->NewWeakCell(imported_instance);
-  Handle<FixedArray> deopt_data = factory->NewFixedArray(2, TENURED);
-  deopt_data->set(0, *weak_link);
-  auto function_index = Smi::FromInt(imported_function->function_index());
-  deopt_data->set(1, function_index);
-  wrapper_code->set_deoptimization_data(*deopt_data);
+  compiler::AttachWasmFunctionInfo(isolate, wrapper_code, imported_instance,
+                                   imported_function->function_index());
   return wrapper_code;
 }
 
@@ -1667,6 +1658,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
         Handle<Code> orig_code(Code::cast(code_table->get(i)), isolate_);
         switch (orig_code->kind()) {
           case Code::WASM_TO_JS_FUNCTION:
+          case Code::WASM_TO_WASM_FUNCTION:
             // Imports will be overwritten with newly compiled wrappers.
             break;
           case Code::BUILTIN:
@@ -1675,15 +1667,8 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
             // unique copy to attach updated deoptimization data.
             if (orig_code->deoptimization_data()->length() > 0) {
               Handle<Code> code = factory->CopyCode(orig_code);
-              Handle<FixedArray> deopt_data =
-                  factory->NewFixedArray(2, TENURED);
-              deopt_data->set(1, Smi::FromInt(i));
-              // TODO(6792): No longer needed once WebAssembly code is off heap.
-              {
-                CodeSpaceMemoryModificationScope modification_scope(
-                    isolate_->heap());
-                code->set_deoptimization_data(*deopt_data);
-              }
+              compiler::AttachWasmFunctionInfo(isolate_, code,
+                                               Handle<WasmInstanceObject>(), i);
               code_table->set(i, *code);
             }
             break;
@@ -1861,12 +1846,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
        i < num_functions; ++i) {
     Handle<Code> code = handle(Code::cast(code_table->get(i)), isolate_);
     if (code->kind() == Code::WASM_FUNCTION) {
-      Handle<FixedArray> deopt_data = factory->NewFixedArray(2, TENURED);
-      deopt_data->set(0, *weak_link);
-      deopt_data->set(1, Smi::FromInt(i));
-      // TODO(6792): No longer needed once WebAssembly code is off heap.
-      CodeSpaceMemoryModificationScope modification_scope(isolate_->heap());
-      code->set_deoptimization_data(*deopt_data);
+      compiler::AttachWasmFunctionInfo(isolate_, code, weak_link, i);
       continue;
     }
     DCHECK_EQ(Builtins::kWasmCompileLazy, code->builtin_index());
@@ -2834,6 +2814,10 @@ AsyncCompileJob::AsyncCompileJob(Isolate* isolate,
       async_counters_(isolate->async_counters()),
       bytes_copy_(std::move(bytes_copy)),
       wire_bytes_(bytes_copy_.get(), bytes_copy_.get() + length) {
+  v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
+  v8::Platform* platform = V8::GetCurrentPlatform();
+  foreground_task_runner_ = platform->GetForegroundTaskRunner(v8_isolate);
+  background_task_runner_ = platform->GetBackgroundTaskRunner(v8_isolate);
   // The handles for the context and promise must be deferred.
   DeferredHandleScope deferred(isolate);
   context_ = Handle<Context>(*context);
@@ -2975,11 +2959,7 @@ void AsyncCompileJob::StartForegroundTask() {
   ++num_pending_foreground_tasks_;
   DCHECK_EQ(1, num_pending_foreground_tasks_);
 
-  v8::Platform* platform = V8::GetCurrentPlatform();
-  // TODO(ahaas): This is a CHECK to debug issue 764313.
-  CHECK(platform);
-  platform->CallOnForegroundThread(reinterpret_cast<v8::Isolate*>(isolate_),
-                                   new CompileTask(this, true));
+  foreground_task_runner_->PostTask(base::make_unique<CompileTask>(this, true));
 }
 
 template <typename Step, typename... Args>
@@ -2989,8 +2969,8 @@ void AsyncCompileJob::DoSync(Args&&... args) {
 }
 
 void AsyncCompileJob::StartBackgroundTask() {
-  V8::GetCurrentPlatform()->CallOnBackgroundThread(
-      new CompileTask(this, false), v8::Platform::kShortRunningTask);
+  background_task_runner_->PostTask(
+      base::make_unique<CompileTask>(this, false));
 }
 
 void AsyncCompileJob::RestartBackgroundTasks() {
@@ -3437,8 +3417,6 @@ bool AsyncStreamingProcessor::ProcessCodeSectionHeader(size_t functions_count,
   // Set outstanding_finishers_ to 2, because both the AsyncCompileJob and the
   // AsyncStreamingProcessor have to finish.
   job_->outstanding_finishers_.SetValue(2);
-  next_function_ = decoder_.module()->num_imported_functions +
-                   FLAG_skip_compiling_wasm_funcs;
   compilation_unit_builder_.reset(
       new ModuleCompiler::CompilationUnitBuilder(job_->compiler_.get()));
   return true;
@@ -3449,16 +3427,19 @@ bool AsyncStreamingProcessor::ProcessFunctionBody(Vector<const uint8_t> bytes,
                                                   uint32_t offset) {
   TRACE_STREAMING("Process function body %d ...\n", next_function_);
 
-  decoder_.DecodeFunctionBody(
-      next_function_, static_cast<uint32_t>(bytes.length()), offset, false);
-  if (next_function_ >= decoder_.module()->num_imported_functions +
-                            FLAG_skip_compiling_wasm_funcs) {
-    const WasmFunction* func = &decoder_.module()->functions[next_function_];
+  if (next_function_ >= FLAG_skip_compiling_wasm_funcs) {
+    decoder_.DecodeFunctionBody(
+        next_function_, static_cast<uint32_t>(bytes.length()), offset, false);
+
+    uint32_t index = next_function_ + decoder_.module()->num_imported_functions;
+    const WasmFunction* func = &decoder_.module()->functions[index];
     WasmName name = {nullptr, 0};
     compilation_unit_builder_->AddUnit(job_->module_env_.get(), func, offset,
                                        bytes, name);
   }
   ++next_function_;
+  // This method always succeeds. The return value is necessary to comply with
+  // the StreamingProcessor interface.
   return true;
 }
 
@@ -3480,8 +3461,18 @@ void AsyncStreamingProcessor::OnFinishedStream(std::unique_ptr<uint8_t[]> bytes,
   ModuleResult result = decoder_.FinishDecoding(false);
   DCHECK(result.ok());
   job_->module_ = std::move(result.val);
-  if (job_->DecrementAndCheckFinisherCount())
-    job_->DoSync<AsyncCompileJob::FinishCompile>();
+  if (job_->DecrementAndCheckFinisherCount()) {
+    if (!job_->compiler_) {
+      // We are processing a WebAssembly module without code section. We need to
+      // prepare compilation first before we can finish it.
+      // {PrepareAndStartCompile} will call {FinishCompile} by itself if there
+      // is no code section.
+      job_->DoSync<AsyncCompileJob::PrepareAndStartCompile>(job_->module_.get(),
+                                                            true);
+    } else {
+      job_->DoSync<AsyncCompileJob::FinishCompile>();
+    }
+  }
 }
 
 // Report an error detected in the StreamingDecoder.

@@ -14,6 +14,7 @@
 #include "src/execution.h"
 #include "src/frames-inl.h"
 #include "src/global-handles.h"
+#include "src/heap/array-buffer-collector.h"
 #include "src/heap/array-buffer-tracker-inl.h"
 #include "src/heap/concurrent-marking.h"
 #include "src/heap/gc-tracer.h"
@@ -30,6 +31,7 @@
 #include "src/transitions-inl.h"
 #include "src/utils-inl.h"
 #include "src/v8.h"
+#include "src/vm-state-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -677,6 +679,8 @@ class MarkCompactCollector::Sweeper::SweeperTask final : public CancelableTask {
     const int num_spaces = LAST_PAGED_SPACE - FIRST_SPACE + 1;
     for (int i = 0; i < num_spaces; i++) {
       const int space_id = FIRST_SPACE + ((i + offset) % num_spaces);
+      // Do not sweep code space concurrently.
+      if (static_cast<AllocationSpace>(space_id) == CODE_SPACE) continue;
       DCHECK_GE(space_id, FIRST_SPACE);
       DCHECK_LE(space_id, LAST_PAGED_SPACE);
       sweeper_->SweepSpaceFromTask(static_cast<AllocationSpace>(space_id));
@@ -691,6 +695,33 @@ class MarkCompactCollector::Sweeper::SweeperTask final : public CancelableTask {
   AllocationSpace space_to_start_;
 
   DISALLOW_COPY_AND_ASSIGN(SweeperTask);
+};
+
+class MarkCompactCollector::Sweeper::IncrementalSweeperTask final
+    : public CancelableTask {
+ public:
+  IncrementalSweeperTask(Isolate* isolate, Sweeper* sweeper)
+      : CancelableTask(isolate), isolate_(isolate), sweeper_(sweeper) {}
+
+  virtual ~IncrementalSweeperTask() {}
+
+ private:
+  void RunInternal() final {
+    VMState<GC> state(isolate_);
+    TRACE_EVENT_CALL_STATS_SCOPED(isolate_, "v8", "V8.Task");
+
+    sweeper_->incremental_sweeper_pending_ = false;
+
+    if (sweeper_->sweeping_in_progress()) {
+      if (!sweeper_->SweepSpaceIncrementallyFromTask(CODE_SPACE)) {
+        sweeper_->ScheduleIncrementalSweepingTask();
+      }
+    }
+  }
+
+  Isolate* const isolate_;
+  Sweeper* const sweeper_;
+  DISALLOW_COPY_AND_ASSIGN(IncrementalSweeperTask);
 };
 
 void MarkCompactCollector::Sweeper::StartSweeping() {
@@ -723,6 +754,7 @@ void MarkCompactCollector::Sweeper::StartSweeperTasks() {
       V8::GetCurrentPlatform()->CallOnBackgroundThread(
           task, v8::Platform::kShortRunningTask);
     });
+    ScheduleIncrementalSweepingTask();
   }
 }
 
@@ -911,18 +943,15 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
         AddEvacuationCandidate(p);
       }
     }
-  } else if (FLAG_stress_compaction_percentage > 0) {
-    size_t percent =
-        isolate()->fuzzer_rng()->NextInt(FLAG_stress_compaction_percentage + 1);
-
-    size_t pages_to_mark_count = percent * pages.size() / 100;
-    if (pages_to_mark_count) {
-      for (uint64_t i : isolate()->fuzzer_rng()->NextSample(
-               pages.size(), pages_to_mark_count)) {
-        candidate_count++;
-        total_live_bytes += pages[i].first;
-        AddEvacuationCandidate(pages[i].second);
-      }
+  } else if (FLAG_stress_compaction_random) {
+    double fraction = isolate()->fuzzer_rng()->NextDouble();
+    size_t pages_to_mark_count =
+        static_cast<size_t>(fraction * (pages.size() + 1));
+    for (uint64_t i : isolate()->fuzzer_rng()->NextSample(
+             pages.size(), pages_to_mark_count)) {
+      candidate_count++;
+      total_live_bytes += pages[i].first;
+      AddEvacuationCandidate(pages[i].second);
     }
   } else if (FLAG_stress_compaction) {
     for (size_t i = 0; i < pages.size(); i++) {
@@ -3163,7 +3192,6 @@ class Evacuator : public Malloced {
   Evacuator(Heap* heap, RecordMigratedSlotVisitor* record_visitor)
       : heap_(heap),
         local_allocator_(heap_),
-        compaction_spaces_(heap_),
         local_pretenuring_feedback_(kInitialLocalPretenuringFeedbackCapacity),
         new_space_visitor_(heap_, &local_allocator_, record_visitor,
                            &local_pretenuring_feedback_),
@@ -3206,7 +3234,6 @@ class Evacuator : public Malloced {
 
   // Locally cached collector data.
   LocalAllocator local_allocator_;
-  CompactionSpaceCollection compaction_spaces_;
   Heap::PretenuringFeedbackMap local_pretenuring_feedback_;
 
   // Visitors for the corresponding spaces.
@@ -4295,6 +4322,7 @@ void MarkCompactCollector::UpdatePointersAfterEvacuation() {
         updating_job.AddTask(new PointersUpdatingTask(isolate()));
       }
       updating_job.Run();
+      heap()->array_buffer_collector()->FreeAllocationsOnBackgroundThread();
     }
   }
 
@@ -4352,6 +4380,7 @@ void MinorMarkCompactCollector::UpdatePointersAfterEvacuation() {
     TRACE_GC(heap()->tracer(),
              GCTracer::Scope::MINOR_MC_EVACUATE_UPDATE_POINTERS_SLOTS);
     updating_job.Run();
+    heap()->array_buffer_collector()->FreeAllocationsOnBackgroundThread();
   }
 
   {
@@ -4442,6 +4471,14 @@ void MarkCompactCollector::Sweeper::SweepSpaceFromTask(
   }
 }
 
+bool MarkCompactCollector::Sweeper::SweepSpaceIncrementallyFromTask(
+    AllocationSpace identity) {
+  if (Page* page = GetSweepingPageSafe(identity)) {
+    ParallelSweepPage(page, identity);
+  }
+  return sweeping_list_[identity].empty();
+}
+
 int MarkCompactCollector::Sweeper::ParallelSweepSpace(AllocationSpace identity,
                                                       int required_freed_bytes,
                                                       int max_pages) {
@@ -4473,10 +4510,8 @@ int MarkCompactCollector::Sweeper::ParallelSweepPage(Page* page,
     if (page->SweepingDone()) return 0;
 
     // If the page is a code page, the CodePageMemoryModificationScope changes
-    // the page protection mode from rx -> rwx while sweeping.
-    // TODO(hpayer): Allow only rx -> rw transitions.
-    CodePageMemoryModificationScope code_page_scope(
-        page, CodePageMemoryModificationScope::READ_WRITE_EXECUTABLE);
+    // the page protection mode from rx -> rw while sweeping.
+    CodePageMemoryModificationScope code_page_scope(page);
 
     DCHECK_EQ(Page::kSweepingPending,
               page->concurrent_sweeping_state().Value());
@@ -4506,6 +4541,16 @@ int MarkCompactCollector::Sweeper::ParallelSweepPage(Page* page,
     swept_list_[identity].push_back(page);
   }
   return max_freed;
+}
+
+void MarkCompactCollector::Sweeper::ScheduleIncrementalSweepingTask() {
+  if (!incremental_sweeper_pending_) {
+    incremental_sweeper_pending_ = true;
+    IncrementalSweeperTask* task =
+        new IncrementalSweeperTask(heap_->isolate(), this);
+    v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(heap_->isolate());
+    V8::GetCurrentPlatform()->CallOnForegroundThread(isolate, task);
+  }
 }
 
 void MarkCompactCollector::Sweeper::AddPage(

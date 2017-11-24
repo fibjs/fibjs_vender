@@ -198,14 +198,11 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
       int deopt_index = safepoint.deoptimization_index();
 
       // Turbofan deopt is checked when we are patching addresses on stack.
-      bool is_non_deoptimizing_asm_code =
-          code->is_turbofanned() && !function->shared()->HasBytecodeArray();
       bool safe_if_deopt_triggered =
-          deopt_index != Safepoint::kNoDeoptimizationIndex ||
-          is_non_deoptimizing_asm_code;
+          deopt_index != Safepoint::kNoDeoptimizationIndex;
       bool is_builtin_code = code->kind() == Code::BUILTIN;
       DCHECK(topmost_optimized_code == nullptr || safe_if_deopt_triggered ||
-             is_non_deoptimizing_asm_code || is_builtin_code);
+             is_builtin_code);
       if (topmost_optimized_code == nullptr) {
         topmost_optimized_code = code;
         safe_to_deopt_topmost_optimized_code = safe_if_deopt_triggered;
@@ -1786,8 +1783,9 @@ void Deoptimizer::EnsureCodeForDeoptimizationEntry(Isolate* isolate,
   // Allocate the code as immovable since the entry addresses will be used
   // directly and there is no support for relocating them.
   Handle<Code> code = isolate->factory()->NewCode(
-      desc, Code::STUB, Handle<Object>(), MaybeHandle<HandlerTable>(),
-      MaybeHandle<ByteArray>(), MaybeHandle<DeoptimizationData>(), kImmovable);
+      desc, Code::STUB, Handle<Object>(), Builtins::kNoBuiltinId,
+      MaybeHandle<HandlerTable>(), MaybeHandle<ByteArray>(),
+      MaybeHandle<DeoptimizationData>(), kImmovable);
   CHECK(Heap::IsImmovable(*code));
 
   CHECK_NULL(data->deopt_entry_code_[type]);
@@ -3656,6 +3654,7 @@ Handle<Object> TranslatedState::MaterializeCapturedObjectAt(
     case ACCESSOR_PAIR_TYPE:
     case BYTE_ARRAY_TYPE:
     case BYTECODE_ARRAY_TYPE:
+    case DESCRIPTOR_ARRAY_TYPE:
     case TRANSITION_ARRAY_TYPE:
     case FEEDBACK_VECTOR_TYPE:
     case FOREIGN_TYPE:

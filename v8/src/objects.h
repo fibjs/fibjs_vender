@@ -372,8 +372,9 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(ASYNC_GENERATOR_REQUEST_TYPE)                               \
   V(FIXED_ARRAY_TYPE)                                           \
   V(HASH_TABLE_TYPE)                                            \
-  V(FEEDBACK_VECTOR_TYPE)                                       \
+  V(DESCRIPTOR_ARRAY_TYPE)                                      \
   V(TRANSITION_ARRAY_TYPE)                                      \
+  V(FEEDBACK_VECTOR_TYPE)                                       \
   V(PROPERTY_ARRAY_TYPE)                                        \
   V(SHARED_FUNCTION_INFO_TYPE)                                  \
   V(CELL_TYPE)                                                  \
@@ -554,12 +555,11 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(MODULE_INFO_ENTRY, ModuleInfoEntry, module_info_entry)                   \
   V(ASYNC_GENERATOR_REQUEST, AsyncGeneratorRequest, async_generator_request)
 
-// We use the full 8 bits of the instance_type field to encode heap object
-// instance types.  The high-order bit (bit 7) is set if the object is not a
-// string, and cleared if it is a string.
-const uint32_t kIsNotStringMask = 0x80;
+// We use the full 16 bits of the instance_type field to encode heap object
+// instance types. All the high-order bits (bit 7-15) are cleared if the object
+// is a string, and contain set bits if it is not a string.
+const uint32_t kIsNotStringMask = 0xff80;
 const uint32_t kStringTag = 0x0;
-const uint32_t kNotStringTag = 0x80;
 
 // Bit 6 indicates that the object is an internalized string (if set) or not.
 // Bit 7 has to be clear as well.
@@ -619,7 +619,7 @@ static inline bool IsShortcutCandidate(int type) {
   return ((type & kShortcutTypeMask) == kShortcutTypeTag);
 }
 
-enum InstanceType : uint8_t {
+enum InstanceType : uint16_t {
   // String types.
   INTERNALIZED_STRING_TYPE = kTwoByteStringTag | kSeqStringTag |
                              kInternalizedTag,  // FIRST_PRIMITIVE_TYPE
@@ -670,7 +670,10 @@ enum InstanceType : uint8_t {
       kOneByteStringTag | kThinStringTag | kNotInternalizedTag,
 
   // Non-string names
-  SYMBOL_TYPE = kNotStringTag,  // FIRST_NONSTRING_TYPE, LAST_NAME_TYPE
+  SYMBOL_TYPE =
+      1 + (kIsNotInternalizedMask | kShortExternalStringMask |
+           kOneByteDataHintMask | kStringEncodingMask |
+           kStringRepresentationMask),  // FIRST_NONSTRING_TYPE, LAST_NAME_TYPE
 
   // Other primitives (cannot contain non-map-word pointers to heap objects).
   HEAP_NUMBER_TYPE,
@@ -722,10 +725,11 @@ enum InstanceType : uint8_t {
   MODULE_TYPE,
   MODULE_INFO_ENTRY_TYPE,
   ASYNC_GENERATOR_REQUEST_TYPE,
-  FIXED_ARRAY_TYPE,
+  FIXED_ARRAY_TYPE,  // FIRST_FIXED_ARRAY_TYPE
   HASH_TABLE_TYPE,
+  DESCRIPTOR_ARRAY_TYPE,
+  TRANSITION_ARRAY_TYPE,  // LAST_FIXED_ARRAY_TYPE
   FEEDBACK_VECTOR_TYPE,
-  TRANSITION_ARRAY_TYPE,
   PROPERTY_ARRAY_TYPE,
   SHARED_FUNCTION_INFO_TYPE,
   CELL_TYPE,
@@ -798,6 +802,9 @@ enum InstanceType : uint8_t {
   LAST_PRIMITIVE_TYPE = ODDBALL_TYPE,
   FIRST_FUNCTION_TYPE = JS_BOUND_FUNCTION_TYPE,
   LAST_FUNCTION_TYPE = JS_FUNCTION_TYPE,
+  // Boundaries for testing if given HeapObject is a subclass of FixedArray.
+  FIRST_FIXED_ARRAY_TYPE = FIXED_ARRAY_TYPE,
+  LAST_FIXED_ARRAY_TYPE = TRANSITION_ARRAY_TYPE,
   // Boundaries for testing for a fixed typed array.
   FIRST_FIXED_TYPED_ARRAY_TYPE = FIXED_INT8_ARRAY_TYPE,
   LAST_FIXED_TYPED_ARRAY_TYPE = FIXED_UINT8_CLAMPED_ARRAY_TYPE,
@@ -839,6 +846,7 @@ enum InstanceType : uint8_t {
   LAST_MAP_ITERATOR_TYPE = JS_MAP_VALUE_ITERATOR_TYPE,
 };
 
+STATIC_ASSERT((FIRST_NONSTRING_TYPE & kIsNotStringMask) != kStringTag);
 STATIC_ASSERT(JS_OBJECT_TYPE == Internals::kJSObjectType);
 STATIC_ASSERT(JS_API_OBJECT_TYPE == Internals::kJSApiObjectType);
 STATIC_ASSERT(JS_SPECIAL_API_OBJECT_TYPE == Internals::kJSSpecialApiObjectType);
@@ -977,6 +985,7 @@ template <class C> inline bool Is(Object* obj);
   V(Callable)                             \
   V(CallHandlerInfo)                      \
   V(Cell)                                 \
+  V(ClassBoilerplate)                     \
   V(Code)                                 \
   V(CodeDataContainer)                    \
   V(CompilationCacheTable)                \
@@ -998,6 +1007,7 @@ template <class C> inline bool Is(Object* obj);
   V(Filler)                               \
   V(FixedArray)                           \
   V(FixedArrayBase)                       \
+  V(FixedArrayExact)                      \
   V(FixedDoubleArray)                     \
   V(FixedFloat32Array)                    \
   V(FixedFloat64Array)                    \
@@ -1063,6 +1073,8 @@ template <class C> inline bool Is(Object* obj);
   V(ObjectHashSet)                        \
   V(ObjectHashTable)                      \
   V(Oddball)                              \
+  V(OrderedHashMap)                       \
+  V(OrderedHashSet)                       \
   V(PreParsedScopeData)                   \
   V(PromiseCapability)                    \
   V(PropertyArray)                        \
@@ -1106,8 +1118,7 @@ template <class C> inline bool Is(Object* obj);
 
 #define HEAP_OBJECT_TEMPLATE_TYPE_LIST(V) \
   V(Dictionary)                           \
-  V(HashTable)                            \
-  V(OrderedHashTable)
+  V(HashTable)
 
 #define HEAP_OBJECT_TYPE_LIST(V)    \
   HEAP_OBJECT_ORDINARY_TYPE_LIST(V) \
@@ -1184,8 +1195,6 @@ class Object {
   // ES6, #sec-isarray.  NOT to be confused with %_IsArray.
   INLINE(MUST_USE_RESULT static Maybe<bool> IsArray(Handle<Object> object));
 
-  INLINE(bool IsOrderedHashSet() const);
-  INLINE(bool IsOrderedHashMap() const);
   INLINE(bool IsSmallOrderedHashTable() const);
 
   // Extract the number.
@@ -1720,8 +1729,6 @@ class HeapObject: public Object {
 #define IS_TYPE_FUNCTION_DECL(Type) INLINE(bool Is##Type() const);
   HEAP_OBJECT_TYPE_LIST(IS_TYPE_FUNCTION_DECL)
 #undef IS_TYPE_FUNCTION_DECL
-
-  inline bool IsDescriptorArrayTemplate() const;
 
 #define IS_TYPE_FUNCTION_DECL(Type, Value) \
   INLINE(bool Is##Type(Isolate* isolate) const);
@@ -2917,6 +2924,14 @@ class FixedArray: public FixedArrayBase {
   DISALLOW_IMPLICIT_CONSTRUCTORS(FixedArray);
 };
 
+// FixedArray alias added only because of IsFixedArrayExact() predicate, which
+// checks for the exact instance type FIXED_ARRAY_TYPE instead of a range
+// check: [FIRST_FIXED_ARRAY_TYPE, LAST_FIXED_ARRAY_TYPE].
+class FixedArrayExact final : public FixedArray {
+ public:
+  DECL_CAST(FixedArrayExact)
+};
+
 // FixedDoubleArray describes fixed-sized arrays with element type double.
 class FixedDoubleArray: public FixedArrayBase {
  public:
@@ -3933,6 +3948,8 @@ class JSFunction: public JSObject {
 
   static const int kLengthDescriptorIndex = 0;
   static const int kNameDescriptorIndex = 1;
+  // Home object descriptor index when function has a [[HomeObject]] slot.
+  static const int kMaybeHomeObjectDescriptorIndex = 2;
 
   // [context]: The context for this function.
   inline Context* context();

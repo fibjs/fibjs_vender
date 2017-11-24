@@ -636,9 +636,6 @@ class MemoryChunk {
   void SetReadAndExecutable();
   void SetReadAndWritable();
 
-  // TODO(hpayer): Remove this method. Memory should never be rwx.
-  void SetReadWriteAndExecutable();
-
  protected:
   static MemoryChunk* Initialize(Heap* heap, Address base, size_t size,
                                  Address area_start, Address area_end,
@@ -699,6 +696,11 @@ class MemoryChunk {
   // If Value() == 0 => The memory is read and executable.
   // If Value() >= 1 => The Memory is read and writable (and maybe executable).
   // The maximum value can right now only be 3.
+  // All executable MemoryChunks are allocated rw based on the assumption that
+  // they will be used immediatelly for an allocation. They are initialized
+  // with the number of open CodeSpaceMemoryModificationScopes. The caller
+  // that triggers the page allocation is responsible for decrementing the
+  // counter.
   uintptr_t write_unprotect_counter_;
 
   // Byte allocated on the page, which includes all objects on the page
@@ -1027,7 +1029,7 @@ class CodeRange {
  public:
   explicit CodeRange(Isolate* isolate);
   ~CodeRange() {
-    if (virtual_memory_.IsReserved()) virtual_memory_.Release();
+    if (virtual_memory_.IsReserved()) virtual_memory_.Free();
   }
 
   // Reserves a range of virtual memory, but does not commit any of it.

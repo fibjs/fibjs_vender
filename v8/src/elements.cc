@@ -911,7 +911,7 @@ class ElementsAccessorBase : public ElementsAccessor {
       // Array optimizations rely on the prototype lookups of Array objects
       // always returning undefined. If there is a store to the initial
       // prototype object, make sure all of these optimizations are invalidated.
-      object->GetIsolate()->UpdateArrayProtectorOnSetLength(object);
+      object->GetIsolate()->UpdateNoElementsProtectorOnSetLength(object);
     }
     Handle<FixedArrayBase> old_elements(object->elements());
     // This method should only be called if there's a reason to update the
@@ -1444,17 +1444,16 @@ class DictionaryElementsAccessor
     int entry_count = source_dict->Capacity();
     for (int i = 0; i < entry_count; i++) {
       Object* key = source_dict->KeyAt(i);
-      if (!key->IsUndefined(isolate)) {
-        uint64_t key_value = NumberToInt64(key);
-        if (key_value >= start && key_value < end) {
-          Handle<NumberDictionary> dest_dict(
-              NumberDictionary::cast(result_array->elements()));
-          Handle<Object> value(source_dict->ValueAt(i), isolate);
-          PropertyDetails details = source_dict->DetailsAt(i);
-          PropertyAttributes attr = details.attributes();
-          AddImpl(result_array, static_cast<uint32_t>(key_value) - start, value,
-                  attr, 0);
-        }
+      if (!source_dict->ToKey(isolate, i, &key)) continue;
+      uint64_t key_value = NumberToInt64(key);
+      if (key_value >= start && key_value < end) {
+        Handle<NumberDictionary> dest_dict(
+            NumberDictionary::cast(result_array->elements()));
+        Handle<Object> value(source_dict->ValueAt(i), isolate);
+        PropertyDetails details = source_dict->DetailsAt(i);
+        PropertyAttributes attr = details.attributes();
+        AddImpl(result_array, static_cast<uint32_t>(key_value) - start, value,
+                attr, 0);
       }
     }
 
@@ -1886,7 +1885,7 @@ class FastElementsAccessor : public ElementsAccessorBase<Subclass, KindTraits> {
     // normalizing.
     if (IsSmiOrObjectElementsKind(kind) ||
         kind == FAST_STRING_WRAPPER_ELEMENTS) {
-      isolate->UpdateArrayProtectorOnNormalizeElements(object);
+      isolate->UpdateNoElementsProtectorOnNormalizeElements(object);
     }
 
     int capacity = object->GetFastElementsUsage();
@@ -3281,7 +3280,7 @@ class TypedElementsAccessor
     if (!isolate->is_initial_array_prototype(JSObject::cast(source_proto))) {
       return true;
     }
-    return !isolate->IsFastArrayConstructorPrototypeChainIntact();
+    return !isolate->IsNoElementsProtectorIntact();
   }
 
   static bool TryCopyElementsHandleFastNumber(Handle<JSArray> source,
@@ -4152,7 +4151,7 @@ class StringWrapperElementsAccessor
       // objects always returning undefined. If there's a store to the
       // initial String.prototype object, make sure all the optimizations
       // are invalidated.
-      object->GetIsolate()->UpdateArrayProtectorOnSetLength(object);
+      object->GetIsolate()->UpdateNoElementsProtectorOnSetLength(object);
     }
     // This method should only be called if there's a reason to update the
     // elements.

@@ -433,20 +433,6 @@ class WeakCallbackInfo {
   V8_INLINE T* GetParameter() const { return parameter_; }
   V8_INLINE void* GetInternalField(int index) const;
 
-  V8_INLINE V8_DEPRECATED("use indexed version",
-                          void* GetInternalField1() const) {
-    return embedder_fields_[0];
-  }
-  V8_INLINE V8_DEPRECATED("use indexed version",
-                          void* GetInternalField2() const) {
-    return embedder_fields_[1];
-  }
-
-  V8_DEPRECATED("Not reliable once SetSecondPassCallback() was used.",
-                bool IsFirstPass() const) {
-    return callback_ != nullptr;
-  }
-
   // When first called, the embedder MUST Reset() the Global which triggered the
   // callback. The Global itself is unusable for anything else. No v8 other api
   // calls may be called in the first callback. Should additional work be
@@ -579,7 +565,10 @@ template <class T> class PersistentBase {
    * independent handle should not assume that it will be preceded by a global
    * GC prologue callback or followed by a global GC epilogue callback.
    */
-  V8_INLINE void MarkIndependent();
+  V8_DEPRECATE_SOON(
+      "Objects are always considered independent. "
+      "Use MarkActive to avoid collecting otherwise dead weak handles.",
+      V8_INLINE void MarkIndependent());
 
   /**
    * Marks the reference to this object as active. The scavenge garbage
@@ -590,7 +579,8 @@ template <class T> class PersistentBase {
    */
   V8_INLINE void MarkActive();
 
-  V8_INLINE bool IsIndependent() const;
+  V8_DEPRECATE_SOON("See MarkIndependent.",
+                    V8_INLINE bool IsIndependent() const);
 
   /** Checks if the handle holds the only reference to an object. */
   V8_INLINE bool IsNearDeath() const;
@@ -1452,7 +1442,8 @@ class V8_EXPORT ScriptCompiler {
     kNoCacheBecauseV8Extension,
     kNoCacheBecauseExtensionModule,
     kNoCacheBecausePacScript,
-    kNoCacheBecauseInDocumentWrite
+    kNoCacheBecauseInDocumentWrite,
+    kNoCacheBecauseResourceWithNoCacheHandler
   };
 
   /**
@@ -7072,6 +7063,7 @@ class V8_EXPORT Isolate {
     kErrorCaptureStackTrace = 43,
     kErrorPrepareStackTrace = 44,
     kErrorStackTraceLimit = 45,
+    kWebAssemblyInstantiation = 46,
 
     // If you add new values here, you'll also need to update Chromium's:
     // web_feature.mojom, UseCounterCallback.cpp, and enums.xml. V8 changes to
@@ -7306,8 +7298,8 @@ class V8_EXPORT Isolate {
    * is initialized. It is the embedder's responsibility to stop all CPU
    * profiling activities if it has started any.
    */
-  V8_DEPRECATE_SOON("CpuProfiler should be created with CpuProfiler::New call.",
-                    CpuProfiler* GetCpuProfiler());
+  V8_DEPRECATED("CpuProfiler should be created with CpuProfiler::New call.",
+                CpuProfiler* GetCpuProfiler());
 
   /** Returns true if this isolate has a current context. */
   bool InContext();
@@ -8014,9 +8006,8 @@ class V8_EXPORT V8 {
    * This function removes callback which was installed by
    * AddGCPrologueCallback function.
    */
-  V8_INLINE static V8_DEPRECATED(
-      "Use isolate version",
-      void RemoveGCPrologueCallback(GCCallback callback));
+  static V8_DEPRECATED("Use isolate version",
+                       void RemoveGCPrologueCallback(GCCallback callback));
 
   /**
    * Enables the host application to receive a notification after a
@@ -8037,9 +8028,8 @@ class V8_EXPORT V8 {
    * This function removes callback which was installed by
    * AddGCEpilogueCallback function.
    */
-  V8_INLINE static V8_DEPRECATED(
-      "Use isolate version",
-      void RemoveGCEpilogueCallback(GCCallback callback));
+  static V8_DEPRECATED("Use isolate version",
+                       void RemoveGCEpilogueCallback(GCCallback callback));
 
   /**
    * Initializes V8. This function needs to be called before the first Isolate
@@ -8124,35 +8114,6 @@ class V8_EXPORT V8 {
   V8_INLINE static V8_DEPRECATED(
       "Use isolate version",
       void VisitExternalResources(ExternalResourceVisitor* visitor));
-
-  /**
-   * Iterates through all the persistent handles in the current isolate's heap
-   * that have class_ids.
-   */
-  V8_INLINE static V8_DEPRECATED(
-      "Use isolate version",
-      void VisitHandlesWithClassIds(PersistentHandleVisitor* visitor));
-
-  /**
-   * Iterates through all the persistent handles in isolate's heap that have
-   * class_ids.
-   */
-  V8_INLINE static V8_DEPRECATED(
-      "Use isolate version",
-      void VisitHandlesWithClassIds(Isolate* isolate,
-                                    PersistentHandleVisitor* visitor));
-
-  /**
-   * Iterates through all the persistent handles in the current isolate's heap
-   * that have class_ids and are candidates to be marked as partially dependent
-   * handles. This will visit handles to young objects created since the last
-   * garbage collection but is free to visit an arbitrary superset of these
-   * objects.
-   */
-  V8_INLINE static V8_DEPRECATED(
-      "Use isolate version",
-      void VisitHandlesForPartialDependence(Isolate* isolate,
-                                            PersistentHandleVisitor* visitor));
 
   /**
    * Initialize the ICU library bundled with V8. The embedder should only
@@ -8423,18 +8384,45 @@ class Maybe {
   friend Maybe<U> Just(const U& u);
 };
 
-
 template <class T>
 inline Maybe<T> Nothing() {
   return Maybe<T>();
 }
-
 
 template <class T>
 inline Maybe<T> Just(const T& t) {
   return Maybe<T>(t);
 }
 
+// A template specialization of Maybe<T> for the case of T = void.
+template <>
+class Maybe<void> {
+ public:
+  V8_INLINE bool IsNothing() const { return !is_valid_; }
+  V8_INLINE bool IsJust() const { return is_valid_; }
+
+  V8_INLINE bool operator==(const Maybe& other) const {
+    return IsJust() == other.IsJust();
+  }
+
+  V8_INLINE bool operator!=(const Maybe& other) const {
+    return !operator==(other);
+  }
+
+ private:
+  struct JustTag {};
+
+  Maybe() : is_valid_(false) {}
+  explicit Maybe(JustTag) : is_valid_(true) {}
+
+  bool is_valid_;
+
+  template <class U>
+  friend Maybe<U> Nothing();
+  friend Maybe<void> JustVoid();
+};
+
+inline Maybe<void> JustVoid() { return Maybe<void>(Maybe<void>::JustTag()); }
 
 /**
  * An external exception handler.
@@ -9123,15 +9111,14 @@ class Internals {
   static const int kNodeStateIsWeakValue = 2;
   static const int kNodeStateIsPendingValue = 3;
   static const int kNodeStateIsNearDeathValue = 4;
-  static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsActiveShift = 4;
 
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
   static const int kForeignType = 0x87;
-  static const int kJSSpecialApiObjectType = 0xbb;
-  static const int kJSApiObjectType = 0xbf;
-  static const int kJSObjectType = 0xc0;
+  static const int kJSSpecialApiObjectType = 0xbc;
+  static const int kJSApiObjectType = 0xc0;
+  static const int kJSObjectType = 0xc1;
 
   static const int kUndefinedOddballKind = 5;
   static const int kNullOddballKind = 3;
@@ -9165,7 +9152,7 @@ class Internals {
   V8_INLINE static int GetInstanceType(const internal::Object* obj) {
     typedef internal::Object O;
     O* map = ReadField<O*>(obj, kHeapObjectMapOffset);
-    return ReadField<uint8_t>(map, kMapInstanceTypeOffset);
+    return ReadField<uint16_t>(map, kMapInstanceTypeOffset);
   }
 
   V8_INLINE static int GetOddballKind(const internal::Object* obj) {
@@ -9322,15 +9309,10 @@ void Persistent<T, M>::Copy(const Persistent<S, M2>& that) {
   M::Copy(that, this);
 }
 
-
 template <class T>
 bool PersistentBase<T>::IsIndependent() const {
-  typedef internal::Internals I;
-  if (this->IsEmpty()) return false;
-  return I::GetNodeFlag(reinterpret_cast<internal::Object**>(this->val_),
-                        I::kNodeIsIndependentShift);
+  return true;
 }
-
 
 template <class T>
 bool PersistentBase<T>::IsNearDeath() const {
@@ -9412,13 +9394,7 @@ void PersistentBase<T>::RegisterExternalReference(Isolate* isolate) const {
 }
 
 template <class T>
-void PersistentBase<T>::MarkIndependent() {
-  typedef internal::Internals I;
-  if (this->IsEmpty()) return;
-  I::UpdateNodeFlag(reinterpret_cast<internal::Object**>(this->val_),
-                    true,
-                    I::kNodeIsIndependentShift);
-}
+void PersistentBase<T>::MarkIndependent() {}
 
 template <class T>
 void PersistentBase<T>::MarkActive() {
@@ -10416,19 +10392,6 @@ void V8::SetFatalErrorHandler(FatalErrorCallback callback) {
   isolate->SetFatalErrorHandler(callback);
 }
 
-void V8::RemoveGCPrologueCallback(GCCallback callback) {
-  Isolate* isolate = Isolate::GetCurrent();
-  isolate->RemoveGCPrologueCallback(
-      reinterpret_cast<Isolate::GCCallback>(callback));
-}
-
-
-void V8::RemoveGCEpilogueCallback(GCCallback callback) {
-  Isolate* isolate = Isolate::GetCurrent();
-  isolate->RemoveGCEpilogueCallback(
-      reinterpret_cast<Isolate::GCCallback>(callback));
-}
-
 void V8::TerminateExecution(Isolate* isolate) { isolate->TerminateExecution(); }
 
 
@@ -10448,24 +10411,6 @@ void V8::CancelTerminateExecution(Isolate* isolate) {
 void V8::VisitExternalResources(ExternalResourceVisitor* visitor) {
   Isolate* isolate = Isolate::GetCurrent();
   isolate->VisitExternalResources(visitor);
-}
-
-
-void V8::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
-  Isolate* isolate = Isolate::GetCurrent();
-  isolate->VisitHandlesWithClassIds(visitor);
-}
-
-
-void V8::VisitHandlesWithClassIds(Isolate* isolate,
-                                  PersistentHandleVisitor* visitor) {
-  isolate->VisitHandlesWithClassIds(visitor);
-}
-
-
-void V8::VisitHandlesForPartialDependence(Isolate* isolate,
-                                          PersistentHandleVisitor* visitor) {
-  isolate->VisitHandlesForPartialDependence(visitor);
 }
 
 /**

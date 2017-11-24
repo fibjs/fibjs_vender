@@ -1682,12 +1682,9 @@ void MacroAssembler::AssertGeneratorObject(Register object) {
   Register temp = temps.AcquireX();
   Ldr(temp, FieldMemOperand(object, HeapObject::kMapOffset));
 
-  // Load instance type
-  Ldrb(temp, FieldMemOperand(temp, Map::kInstanceTypeOffset));
-
   Label do_check;
-  // Check if JSGeneratorObject
-  Cmp(temp, JS_GENERATOR_OBJECT_TYPE);
+  // Load instance type and check if JSGeneratorObject
+  CompareInstanceType(temp, temp, JS_GENERATOR_OBJECT_TYPE);
   B(eq, &do_check);
 
   // Check if JSAsyncGeneratorObject
@@ -2022,6 +2019,29 @@ void TurboAssembler::Call(ExternalReference target) {
   // EXTERNAL_REFERENCE.
   Ldr(temp, Immediate(target));
   Call(temp);
+}
+
+void TurboAssembler::CallForDeoptimization(Address target,
+                                           RelocInfo::Mode rmode) {
+  DCHECK_EQ(rmode, RelocInfo::RUNTIME_ENTRY);
+
+  BlockPoolsScope scope(this);
+#ifdef DEBUG
+  Label start_call;
+  Bind(&start_call);
+#endif
+  UseScratchRegisterScope temps(this);
+  Register temp = temps.AcquireX();
+
+  // Deoptimisation table entries require the call address to be in x16, in
+  // order to compute the entry id.
+  DCHECK(temp.Is(x16));
+  Ldr(temp, Immediate(reinterpret_cast<intptr_t>(target), rmode));
+  Blr(temp);
+
+#ifdef DEBUG
+  AssertSizeOfCodeGeneratedSince(&start_call, CallSize(target, rmode));
+#endif
 }
 
 int TurboAssembler::CallSize(Register target) {
@@ -2693,7 +2713,7 @@ void MacroAssembler::CompareObjectType(Register object,
 void MacroAssembler::CompareInstanceType(Register map,
                                          Register type_reg,
                                          InstanceType type) {
-  Ldrb(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
+  Ldrh(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
   Cmp(type_reg, type);
 }
 

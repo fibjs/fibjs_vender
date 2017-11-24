@@ -190,9 +190,9 @@ void Displacement::init(Label* L, Type type) {
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo
 
-const int RelocInfo::kApplyMask = RelocInfo::kCodeTargetMask |
-                                  1 << RelocInfo::RUNTIME_ENTRY |
-                                  1 << RelocInfo::INTERNAL_REFERENCE;
+const int RelocInfo::kApplyMask =
+    RelocInfo::kCodeTargetMask | 1 << RelocInfo::RUNTIME_ENTRY |
+    1 << RelocInfo::INTERNAL_REFERENCE | 1 << RelocInfo::JS_TO_WASM_CALL;
 
 bool RelocInfo::IsCodedSpecially() {
   // The deserializer needs to know whether a pointer is specially coded.  Being
@@ -225,6 +225,18 @@ void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
     Assembler::FlushICache(isolate, pc_, sizeof(uint32_t));
   }
+}
+
+void RelocInfo::set_js_to_wasm_address(Isolate* isolate, Address address,
+                                       ICacheFlushMode icache_flush_mode) {
+  DCHECK_EQ(rmode_, JS_TO_WASM_CALL);
+  Assembler::set_target_address_at(isolate, pc_, constant_pool_, address,
+                                   icache_flush_mode);
+}
+
+Address RelocInfo::js_to_wasm_address() const {
+  DCHECK_EQ(rmode_, JS_TO_WASM_CALL);
+  return Assembler::target_address_at(pc_, constant_pool_);
 }
 
 // -----------------------------------------------------------------------------
@@ -1507,14 +1519,14 @@ void Assembler::ud2() {
 // to be generated; pos() is the position of the 32bit
 // Displacement of the last instruction using the label.
 
-
-void Assembler::print(Label* L) {
+void Assembler::print(const Label* L) {
   if (L->is_unused()) {
     PrintF("unused label\n");
   } else if (L->is_bound()) {
     PrintF("bound label to %d\n", L->pos());
   } else if (L->is_linked()) {
-    Label l = *L;
+    Label l;
+    l.link_to(L->pos());
     PrintF("unbound label");
     while (l.is_linked()) {
       Displacement disp = disp_at(&l);
@@ -1635,6 +1647,11 @@ void Assembler::call(byte* entry, RelocInfo::Mode rmode) {
   }
 }
 
+void Assembler::wasm_call(Address entry, RelocInfo::Mode rmode) {
+  EnsureSpace ensure_space(this);
+  EMIT(0xE8);
+  emit(reinterpret_cast<intptr_t>(entry), rmode);
+}
 
 int Assembler::CallSize(const Operand& adr) {
   // Call size is 1 (opcode) + adr.len_ (operand).
@@ -1703,7 +1720,6 @@ void Assembler::jmp(Label* L, Label::Distance distance) {
     emit_disp(L, Displacement::UNCONDITIONAL_JUMP);
   }
 }
-
 
 void Assembler::jmp(byte* entry, RelocInfo::Mode rmode) {
   EnsureSpace ensure_space(this);

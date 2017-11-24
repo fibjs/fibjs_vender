@@ -857,6 +857,7 @@ class Assembler : public AssemblerBase {
   int CallSize(Handle<Code> code, RelocInfo::Mode mode);
   void call(Handle<Code> code, RelocInfo::Mode rmode);
   void call(CodeStub* stub);
+  void wasm_call(Address address, RelocInfo::Mode rmode);
 
   // Jumps
   // unconditional jump to L
@@ -1758,7 +1759,7 @@ class Assembler : public AssemblerBase {
                               LeadingOpcode m, VexW w);
 
   // labels
-  void print(Label* L);
+  void print(const Label* L);
   void bind_to(Label* L, int pos);
 
   // displacements

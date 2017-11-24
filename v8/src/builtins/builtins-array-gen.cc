@@ -1101,13 +1101,18 @@ class FastArraySliceCodeStubAssembler : public CodeStubAssembler {
     // Check prototype chain if receiver does not have packed elements
     GotoIfNot(IsPrototypeInitialArrayPrototype(context, map), slow);
 
-    GotoIf(IsArrayProtectorCellInvalid(), slow);
+    GotoIf(IsNoElementsProtectorCellInvalid(), slow);
 
     GotoIf(IsSpeciesProtectorCellInvalid(), slow);
 
     // Bailout if receiver has slow elements.
     Node* elements_kind = LoadMapElementsKind(map);
     GotoIfNot(IsFastElementsKind(elements_kind), &try_simple_slice);
+
+    // Make sure that the length hasn't been changed by side-effect.
+    Node* array_length = LoadJSArrayLength(array);
+    GotoIf(TaggedIsNotSmi(array_length), slow);
+    GotoIf(SmiAbove(SmiAdd(from, count), array_length), slow);
 
     CSA_ASSERT(this, SmiGreaterThanOrEqual(from, SmiConstant(0)));
 
@@ -1161,15 +1166,25 @@ class FastArraySliceCodeStubAssembler : public CodeStubAssembler {
     BuildFastLoop(
         var_list, from_mapped, to,
         [this, result_elements, arguments_context, sloppy_elements,
-         &index_out](Node* current) {
+         unmapped_elements, &index_out](Node* current) {
           Node* context_index = LoadFixedArrayElement(
               sloppy_elements, current,
               kPointerSize * SloppyArgumentsElements::kParameterMapStart,
               SMI_PARAMETERS);
-          Node* argument =
+          Label is_the_hole(this), done(this);
+          GotoIf(IsTheHole(context_index), &is_the_hole);
+          Node* mapped_argument =
               LoadContextElement(arguments_context, SmiUntag(context_index));
+          StoreFixedArrayElement(result_elements, index_out.value(),
+                                 mapped_argument, SKIP_WRITE_BARRIER);
+          Goto(&done);
+          BIND(&is_the_hole);
+          Node* argument = LoadFixedArrayElement(unmapped_elements, current, 0,
+                                                 SMI_PARAMETERS);
           StoreFixedArrayElement(result_elements, index_out.value(), argument,
                                  SKIP_WRITE_BARRIER);
+          Goto(&done);
+          BIND(&done);
           index_out.Bind(IntPtrAdd(index_out.value(), IntPtrConstant(1)));
         },
         1, SMI_PARAMETERS, IndexAdvanceMode::kPost);
@@ -1562,7 +1577,7 @@ TF_BUILTIN(ExtractFastJSArray, ArrayBuiltinCodeStubAssembler) {
   Node* count = TaggedToParameter(Parameter(Descriptor::kCount), mode);
 
   CSA_ASSERT(this, IsJSArray(array));
-  CSA_ASSERT(this, Word32BinaryNot(IsArrayProtectorCellInvalid()));
+  CSA_ASSERT(this, Word32BinaryNot(IsNoElementsProtectorCellInvalid()));
 
   Return(ExtractFastJSArray(context, array, begin, count, mode));
 }
@@ -1572,7 +1587,7 @@ TF_BUILTIN(CloneFastJSArray, ArrayBuiltinCodeStubAssembler) {
   Node* array = Parameter(Descriptor::kSource);
 
   CSA_ASSERT(this, IsJSArray(array));
-  CSA_ASSERT(this, Word32BinaryNot(IsArrayProtectorCellInvalid()));
+  CSA_ASSERT(this, Word32BinaryNot(IsNoElementsProtectorCellInvalid()));
 
   ParameterMode mode = OptimalParameterMode();
   Return(CloneFastJSArray(context, array, mode));
@@ -2705,8 +2720,9 @@ TF_BUILTIN(ArrayIteratorPrototypeNext, CodeStubAssembler) {
 
     BIND(&holey_object_values);
     {
-      // Check the array_protector cell, and take the slow path if it's invalid.
-      GotoIf(IsArrayProtectorCellInvalid(), &generic_values);
+      // Check the no_elements_protector cell, and take the slow path if it's
+      // invalid.
+      GotoIf(IsNoElementsProtectorCellInvalid(), &generic_values);
 
       var_value.Bind(UndefinedConstant());
       Node* value = LoadFixedArrayElement(elements, index, 0, SMI_PARAMETERS);
@@ -2717,8 +2733,9 @@ TF_BUILTIN(ArrayIteratorPrototypeNext, CodeStubAssembler) {
 
     BIND(&holey_double_values);
     {
-      // Check the array_protector cell, and take the slow path if it's invalid.
-      GotoIf(IsArrayProtectorCellInvalid(), &generic_values);
+      // Check the no_elements_protector cell, and take the slow path if it's
+      // invalid.
+      GotoIf(IsNoElementsProtectorCellInvalid(), &generic_values);
 
       var_value.Bind(UndefinedConstant());
       Node* value = LoadFixedDoubleArrayElement(

@@ -80,23 +80,21 @@ namespace internal {
   F(BigIntToNumber, 1, 1)            \
   F(BigIntUnaryOp, 2, 1)
 
-#define FOR_EACH_INTRINSIC_CLASSES(F)        \
-  F(ThrowUnsupportedSuperError, 0, 1)        \
-  F(ThrowConstructorNonCallableError, 1, 1)  \
-  F(ThrowStaticPrototypeError, 0, 1)         \
-  F(ThrowSuperAlreadyCalledError, 0, 1)      \
-  F(ThrowSuperNotCalled, 0, 1)               \
-  F(ThrowNotSuperConstructor, 2, 1)          \
-  F(HomeObjectSymbol, 0, 1)                  \
-  F(DefineClass, 4, 1)                       \
-  F(InstallClassNameAccessor, 1, 1)          \
-  F(InstallClassNameAccessorWithCheck, 1, 1) \
-  F(LoadFromSuper, 3, 1)                     \
-  F(LoadKeyedFromSuper, 3, 1)                \
-  F(StoreToSuper_Strict, 4, 1)               \
-  F(StoreToSuper_Sloppy, 4, 1)               \
-  F(StoreKeyedToSuper_Strict, 4, 1)          \
-  F(StoreKeyedToSuper_Sloppy, 4, 1)          \
+#define FOR_EACH_INTRINSIC_CLASSES(F)       \
+  F(ThrowUnsupportedSuperError, 0, 1)       \
+  F(ThrowConstructorNonCallableError, 1, 1) \
+  F(ThrowStaticPrototypeError, 0, 1)        \
+  F(ThrowSuperAlreadyCalledError, 0, 1)     \
+  F(ThrowSuperNotCalled, 0, 1)              \
+  F(ThrowNotSuperConstructor, 2, 1)         \
+  F(HomeObjectSymbol, 0, 1)                 \
+  F(DefineClass, -1 /* >= 3 */, 1)          \
+  F(LoadFromSuper, 3, 1)                    \
+  F(LoadKeyedFromSuper, 3, 1)               \
+  F(StoreToSuper_Strict, 4, 1)              \
+  F(StoreToSuper_Sloppy, 4, 1)              \
+  F(StoreKeyedToSuper_Strict, 4, 1)         \
+  F(StoreKeyedToSuper_Sloppy, 4, 1)         \
   F(GetSuperConstructor, 1, 1)
 
 #define FOR_EACH_INTRINSIC_COLLECTIONS(F) \
@@ -191,7 +189,6 @@ namespace internal {
   F(DebugPushPromise, 1, 1)                     \
   F(DebugPopPromise, 0, 1)                      \
   F(DebugPromiseReject, 2, 1)                   \
-  F(DebugAsyncEventEnqueueRecurring, 2, 1)      \
   F(DebugAsyncFunctionPromiseCreated, 1, 1)     \
   F(DebugIsActive, 0, 1)                        \
   F(DebugBreakInOptimizedCode, 0, 1)            \
@@ -499,7 +496,6 @@ namespace internal {
   F(RegExpInternalReplace, 3, 1)                    \
   F(RegExpReplace, 3, 1)                            \
   F(RegExpSplit, 3, 1)                              \
-  F(StringReplaceGlobalRegExpWithString, 4, 1)      \
   F(StringReplaceNonGlobalRegExpWithFunction, 3, 1) \
   F(StringSplit, 3, 1)
 
@@ -647,6 +643,7 @@ namespace internal {
   F(TypedArrayGetLength, 1, 1)           \
   F(TypedArrayGetBuffer, 1, 1)           \
   F(TypedArraySortFast, 1, 1)            \
+  F(TypedArraySet, 2, 1)                 \
   F(IsTypedArray, 1, 1)                  \
   F(IsSharedTypedArray, 1, 1)            \
   F(IsSharedIntegerTypedArray, 1, 1)     \

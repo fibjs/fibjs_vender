@@ -54,6 +54,8 @@ ParseInfo::ParseInfo(Handle<SharedFunctionInfo> shared)
   function_literal_id_ = shared->function_literal_id();
   set_language_mode(shared->language_mode());
   set_asm_wasm_broken(shared->is_asm_wasm_broken());
+  set_requires_instance_fields_initializer(
+      shared->requires_instance_fields_initializer());
 
   Handle<Script> script(Script::cast(shared->script()));
   set_script(script);
@@ -161,7 +163,21 @@ void ParseInfo::InitFromIsolate(Isolate* isolate) {
   if (isolate->is_collecting_type_profile()) set_collect_type_profile();
 }
 
-void ParseInfo::UpdateStatisticsAfterBackgroundParse(Isolate* isolate) {
+void ParseInfo::EmitBackgroundParseStatisticsOnBackgroundThread() {
+  // If runtime call stats was enabled by tracing, emit a trace event at the
+  // end of background parsing on the background thread.
+  if (runtime_call_stats_ &&
+      (FLAG_runtime_stats &
+       v8::tracing::TracingCategoryObserver::ENABLED_BY_TRACING)) {
+    auto value = v8::tracing::TracedValue::Create();
+    runtime_call_stats_->Dump(value.get());
+    TRACE_EVENT_INSTANT1(TRACE_DISABLED_BY_DEFAULT("v8.runtime_stats"),
+                         "V8.RuntimeStats", TRACE_EVENT_SCOPE_THREAD,
+                         "runtime-call-stats", std::move(value));
+  }
+}
+
+void ParseInfo::UpdateBackgroundParseStatisticsOnMainThread(Isolate* isolate) {
   // Copy over the counters from the background thread to the main counters on
   // the isolate.
   RuntimeCallStats* main_call_stats = isolate->counters()->runtime_call_stats();

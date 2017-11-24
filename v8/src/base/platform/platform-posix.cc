@@ -63,6 +63,10 @@
 #include <sys/syscall.h>
 #endif
 
+#if V8_OS_FREEBSD || V8_OS_MACOSX || V8_OS_OPENBSD || V8_OS_SOLARIS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 namespace v8 {
 namespace base {
 
@@ -100,6 +104,8 @@ int GetProtectionFromMemoryPermission(OS::MemoryPermission access) {
       return PROT_READ | PROT_WRITE;
     case OS::MemoryPermission::kReadWriteExecute:
       return PROT_READ | PROT_WRITE | PROT_EXEC;
+    case OS::MemoryPermission::kReadExecute:
+      return PROT_READ | PROT_EXEC;
   }
   UNREACHABLE();
 }
@@ -127,10 +133,6 @@ void* Allocate(void* address, size_t size, OS::MemoryPermission access) {
 #endif  // !V8_OS_FUCHSIA
 
 }  // namespace
-
-#if V8_OS_FREEBSD || V8_OS_MACOSX || V8_OS_OPENBSD || V8_OS_SOLARIS
-#define MAP_ANONYMOUS MAP_ANON
-#endif
 
 void OS::Initialize(int64_t random_seed, bool hard_abort,
                     const char* const gc_fake_mmap) {
@@ -160,15 +162,18 @@ int OS::ActivationFrameAlignment() {
 #endif
 }
 
+// static
 size_t OS::AllocatePageSize() {
   return static_cast<size_t>(sysconf(_SC_PAGESIZE));
 }
 
+// static
 size_t OS::CommitPageSize() {
   static size_t page_size = getpagesize();
   return page_size;
 }
 
+// static
 void* OS::GetRandomMmapAddr() {
 #if defined(ADDRESS_SANITIZER) || defined(MEMORY_SANITIZER) || \
     defined(THREAD_SANITIZER)
@@ -254,14 +259,14 @@ void* OS::Allocate(void* address, size_t size, size_t alignment,
   if (aligned_base != base) {
     DCHECK_LT(base, aligned_base);
     size_t prefix_size = static_cast<size_t>(aligned_base - base);
-    OS::Free(base, prefix_size);
+    CHECK(Free(base, prefix_size));
     request_size -= prefix_size;
   }
   // Unmap memory allocated after the potentially unaligned end.
   if (size != request_size) {
     DCHECK_LT(size, request_size);
     size_t suffix_size = request_size - size;
-    OS::Free(aligned_base + size, suffix_size);
+    CHECK(Free(aligned_base + size, suffix_size));
     request_size -= suffix_size;
   }
 
@@ -271,89 +276,24 @@ void* OS::Allocate(void* address, size_t size, size_t alignment,
 
 // static
 bool OS::Free(void* address, const size_t size) {
+  DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % AllocatePageSize());
+  DCHECK_EQ(0, size % AllocatePageSize());
   return munmap(address, size) == 0;
 }
-#endif  // !V8_OS_CYGWIN && !V8_OS_FUCHSIA
-
-void OS::SetReadAndExecutable(void* address, const size_t size) {
-#if V8_OS_CYGWIN
-  DWORD old_protect;
-  CHECK_NOT_NULL(
-      VirtualProtect(address, size, PAGE_EXECUTE_READ, &old_protect));
-#else
-  CHECK_EQ(0, mprotect(address, size, PROT_READ | PROT_EXEC));
-#endif
-}
-
-// Create guard pages.
-#if !V8_OS_FUCHSIA
-void OS::Guard(void* address, const size_t size) {
-#if V8_OS_CYGWIN
-  DWORD oldprotect;
-  VirtualProtect(address, size, PAGE_NOACCESS, &oldprotect);
-#else
-  mprotect(address, size, PROT_NONE);
-#endif
-}
-#endif  // !V8_OS_FUCHSIA
-
-// Make a region of memory readable and writable.
-void OS::SetReadAndWritable(void* address, const size_t size, bool commit) {
-#if V8_OS_CYGWIN
-  DWORD oldprotect;
-  CHECK_NOT_NULL(VirtualProtect(address, size, PAGE_READWRITE, &oldprotect));
-#else
-  CHECK_EQ(0, mprotect(address, size, PROT_READ | PROT_WRITE));
-#endif
-}
-
-// Make a region of memory readable, writable, and executable.
-void OS::SetReadWriteAndExecutable(void* address, const size_t size) {
-#if V8_OS_CYGWIN
-  DWORD oldprotect;
-  CHECK_NOT_NULL(
-      VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &oldprotect));
-#else
-  CHECK_EQ(0, mprotect(address, size, PROT_READ | PROT_WRITE | PROT_EXEC));
-#endif
-}
-
-#if !V8_OS_CYGWIN && !V8_OS_FUCHSIA
-// static
-bool OS::CommitRegion(void* address, size_t size, bool is_executable) {
-  int prot = PROT_READ | PROT_WRITE | (is_executable ? PROT_EXEC : 0);
-#if !V8_OS_AIX
-  if (MAP_FAILED == mmap(address, size, prot,
-                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, kMmapFd,
-                         kMmapFdOffset)) {
-    return false;
-  }
-#else
-  if (mprotect(address, size, prot) == -1) return false;
-#endif  // !V8_OS_AIX
-  return true;
-}
 
 // static
-bool OS::UncommitRegion(void* address, size_t size) {
-#if !V8_OS_AIX
-  int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
-#if !V8_OS_FREEBSD && !V8_OS_QNX
-  map_flags |= MAP_NORESERVE;
-#endif  // !V8_OS_FREEBSD && !V8_OS_QNX
-#if V8_OS_QNX
-  map_flags |= MAP_LAZY;
-#endif  // V8_OS_QNX
-  return mmap(address, size, PROT_NONE, map_flags, kMmapFd, kMmapFdOffset) !=
-         MAP_FAILED;
-#else   // V8_OS_AIX
-  return mprotect(address, size, PROT_NONE) != -1;
-#endif  // V8_OS_AIX
-}
-
-// static
-bool OS::ReleasePartialRegion(void* address, size_t size) {
+bool OS::Release(void* address, size_t size) {
+  DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % CommitPageSize());
+  DCHECK_EQ(0, size % CommitPageSize());
   return munmap(address, size) == 0;
+}
+
+// static
+bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+  DCHECK_EQ(0, reinterpret_cast<uintptr_t>(address) % CommitPageSize());
+  DCHECK_EQ(0, size % CommitPageSize());
+  int prot = GetProtectionFromMemoryPermission(access);
+  return mprotect(address, size, prot) == 0;
 }
 
 // static
@@ -464,7 +404,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
 
 
 PosixMemoryMappedFile::~PosixMemoryMappedFile() {
-  if (memory_) OS::Free(memory_, size_);
+  if (memory_) CHECK(OS::Free(memory_, size_));
   fclose(file_);
 }
 

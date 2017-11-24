@@ -804,10 +804,10 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   }
 
   // Reporting errors.
-  V8_INLINE void ReportMessageAt(Scanner::Location source_location,
-                                 MessageTemplate::Template message,
-                                 const char* arg = nullptr,
-                                 ParseErrorType error_type = kSyntaxError) {
+  void ReportMessageAt(Scanner::Location source_location,
+                       MessageTemplate::Template message,
+                       const char* arg = nullptr,
+                       ParseErrorType error_type = kSyntaxError) {
     if (stack_overflow()) {
       // Suppress the error message (syntax error or such) in the presence of a
       // stack overflow. The isolate allows only one pending exception at at
@@ -820,10 +820,10 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                              arg, error_type);
   }
 
-  V8_INLINE void ReportMessageAt(Scanner::Location source_location,
-                                 MessageTemplate::Template message,
-                                 const AstRawString* arg,
-                                 ParseErrorType error_type = kSyntaxError) {
+  void ReportMessageAt(Scanner::Location source_location,
+                       MessageTemplate::Template message,
+                       const AstRawString* arg,
+                       ParseErrorType error_type = kSyntaxError) {
     if (stack_overflow()) {
       // Suppress the error message (syntax error or such) in the presence of a
       // stack overflow. The isolate allows only one pending exception at at
@@ -1032,13 +1032,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     source_range_map_->Insert(
         node->AsConditional(),
         new (zone()) ConditionalSourceRanges(then_range, else_range));
-  }
-
-  V8_INLINE void RecordExpressionSourceRange(Expression* node,
-                                             const SourceRange& body_range) {
-    if (source_range_map_ == nullptr) return;
-    source_range_map_->Insert(node,
-                              new (zone()) ExpressionSourceRanges(body_range));
   }
 
   V8_INLINE void RecordJumpStatementSourceRange(Statement* node,

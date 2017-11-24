@@ -70,11 +70,14 @@ REPLACE_STUB_CALL(LessThan)
 REPLACE_STUB_CALL(LessThanOrEqual)
 REPLACE_STUB_CALL(GreaterThan)
 REPLACE_STUB_CALL(GreaterThanOrEqual)
+REPLACE_STUB_CALL(BitwiseNot)
+REPLACE_STUB_CALL(Negate)
 REPLACE_STUB_CALL(HasProperty)
 REPLACE_STUB_CALL(Equal)
 REPLACE_STUB_CALL(ToInteger)
 REPLACE_STUB_CALL(ToLength)
 REPLACE_STUB_CALL(ToNumber)
+REPLACE_STUB_CALL(ToNumeric)
 REPLACE_STUB_CALL(ToName)
 REPLACE_STUB_CALL(ToObject)
 REPLACE_STUB_CALL(ToString)
@@ -516,12 +519,6 @@ void JSGenericLowering::LowerJSCreateBlockContext(Node* node) {
   ReplaceWithRuntimeCall(node, Runtime::kPushBlockContext);
 }
 
-
-void JSGenericLowering::LowerJSCreateScriptContext(Node* node) {
-  Handle<ScopeInfo> scope_info = OpParameter<Handle<ScopeInfo>>(node);
-  node->InsertInput(zone(), 1, jsgraph()->HeapConstant(scope_info));
-  ReplaceWithRuntimeCall(node, Runtime::kNewScriptContext);
-}
 
 void JSGenericLowering::LowerJSConstructForwardVarargs(Node* node) {
   ConstructForwardVarargsParameters p =

@@ -33,7 +33,7 @@
 #include "src/lookup.h"
 #include "src/objects.h"
 #include "src/objects/arguments-inl.h"
-#include "src/objects/bigint-inl.h"
+#include "src/objects/bigint.h"
 #include "src/objects/hash-table-inl.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/js-array-inl.h"
@@ -74,6 +74,7 @@ int PropertyDetails::field_width_in_words() const {
   return representation().IsDouble() ? kDoubleSize / kPointerSize : 1;
 }
 
+TYPE_CHECKER(BigInt, BIGINT_TYPE)
 TYPE_CHECKER(BreakPoint, TUPLE2_TYPE)
 TYPE_CHECKER(BreakPointInfo, TUPLE2_TYPE)
 TYPE_CHECKER(ByteArray, BYTE_ARRAY_TYPE)
@@ -81,7 +82,9 @@ TYPE_CHECKER(CallHandlerInfo, TUPLE3_TYPE)
 TYPE_CHECKER(Cell, CELL_TYPE)
 TYPE_CHECKER(ConstantElementsPair, TUPLE2_TYPE)
 TYPE_CHECKER(CoverageInfo, FIXED_ARRAY_TYPE)
+TYPE_CHECKER(DescriptorArray, DESCRIPTOR_ARRAY_TYPE)
 TYPE_CHECKER(FeedbackVector, FEEDBACK_VECTOR_TYPE)
+TYPE_CHECKER(FixedArrayExact, FIXED_ARRAY_TYPE)
 TYPE_CHECKER(FixedDoubleArray, FIXED_DOUBLE_ARRAY_TYPE)
 TYPE_CHECKER(Foreign, FOREIGN_TYPE)
 TYPE_CHECKER(FreeSpace, FREE_SPACE_TYPE)
@@ -110,6 +113,7 @@ TYPE_CHECKER(Oddball, ODDBALL_TYPE)
 TYPE_CHECKER(PreParsedScopeData, TUPLE2_TYPE)
 TYPE_CHECKER(PropertyArray, PROPERTY_ARRAY_TYPE)
 TYPE_CHECKER(PropertyCell, PROPERTY_CELL_TYPE)
+TYPE_CHECKER(PropertyDescriptorObject, FIXED_ARRAY_TYPE)
 TYPE_CHECKER(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE)
 TYPE_CHECKER(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE)
 TYPE_CHECKER(SourcePositionTableWithFrameCache, TUPLE2_TYPE)
@@ -136,10 +140,13 @@ bool HeapObject::IsFixedArrayBase() const {
 
 bool HeapObject::IsFixedArray() const {
   InstanceType instance_type = map()->instance_type();
-  return instance_type == FIXED_ARRAY_TYPE || instance_type == HASH_TABLE_TYPE;
+  return instance_type >= FIRST_FIXED_ARRAY_TYPE &&
+         instance_type <= LAST_FIXED_ARRAY_TYPE;
 }
 
-bool HeapObject::IsSloppyArgumentsElements() const { return IsFixedArray(); }
+bool HeapObject::IsSloppyArgumentsElements() const {
+  return IsFixedArrayExact();
+}
 
 bool HeapObject::IsJSSloppyArgumentsObject() const {
   return IsJSArgumentsObject();
@@ -150,7 +157,11 @@ bool HeapObject::IsJSGeneratorObject() const {
          IsJSAsyncGeneratorObject();
 }
 
-bool HeapObject::IsBoilerplateDescription() const { return IsFixedArray(); }
+bool HeapObject::IsBoilerplateDescription() const {
+  return IsFixedArrayExact();
+}
+
+bool HeapObject::IsClassBoilerplate() const { return IsFixedArrayExact(); }
 
 bool HeapObject::IsExternal() const {
   return map()->FindRootMap() == GetHeap()->external_map();
@@ -317,33 +328,21 @@ bool HeapObject::IsJSCollection() const { return IsJSMap() || IsJSSet(); }
 
 bool HeapObject::IsPromiseCapability() const { return IsTuple3(); }
 
-bool HeapObject::IsDescriptorArray() const { return IsFixedArray(); }
-
-// TODO(ishell): remove once we use |descriptor_array_map| for all
-// DescriptorArray objects.
-bool HeapObject::IsDescriptorArrayTemplate() const {
-  // We can't use descriptor_array_map() here because during deserialization
-  // we may call this function before the descriptor_array_map is deserialized.
-  return map() == GetHeap()->root(Heap::kDescriptorArrayMapRootIndex);
-}
-
-bool HeapObject::IsPropertyDescriptorObject() const { return IsFixedArray(); }
-
 bool HeapObject::IsEnumCache() const { return IsTuple2(); }
 
-bool HeapObject::IsFrameArray() const { return IsFixedArray(); }
+bool HeapObject::IsFrameArray() const { return IsFixedArrayExact(); }
 
-bool HeapObject::IsArrayList() const { return IsFixedArray(); }
+bool HeapObject::IsArrayList() const { return IsFixedArrayExact(); }
 
-bool HeapObject::IsRegExpMatchInfo() const { return IsFixedArray(); }
+bool HeapObject::IsRegExpMatchInfo() const { return IsFixedArrayExact(); }
 
 bool Object::IsLayoutDescriptor() const { return IsSmi() || IsByteArray(); }
 
-bool HeapObject::IsFeedbackMetadata() const { return IsFixedArray(); }
+bool HeapObject::IsFeedbackMetadata() const { return IsFixedArrayExact(); }
 
 bool HeapObject::IsDeoptimizationData() const {
   // Must be a fixed array.
-  if (!IsFixedArray()) return false;
+  if (!IsFixedArrayExact()) return false;
 
   // There's no sure way to detect the difference between a fixed array and
   // a deoptimization data array.  Since this is used for asserts we can
@@ -357,14 +356,14 @@ bool HeapObject::IsDeoptimizationData() const {
 }
 
 bool HeapObject::IsHandlerTable() const {
-  if (!IsFixedArray()) return false;
+  if (!IsFixedArrayExact()) return false;
   // There's actually no way to see the difference between a fixed array and
   // a handler table array.
   return true;
 }
 
 bool HeapObject::IsTemplateList() const {
-  if (!IsFixedArray()) return false;
+  if (!IsFixedArrayExact()) return false;
   // There's actually no way to see the difference between a fixed array and
   // a template list.
   if (FixedArray::cast(this)->length() < 1) return false;
@@ -372,7 +371,7 @@ bool HeapObject::IsTemplateList() const {
 }
 
 bool HeapObject::IsDependentCode() const {
-  if (!IsFixedArray()) return false;
+  if (!IsFixedArrayExact()) return false;
   // There's actually no way to see the difference between a fixed array and
   // a dependent codes array.
   return true;
@@ -423,7 +422,9 @@ bool HeapObject::IsJSArrayBufferView() const {
   return IsJSDataView() || IsJSTypedArray();
 }
 
-bool HeapObject::IsWeakHashTable() const { return IsHashTable(); }
+bool HeapObject::IsWeakHashTable() const {
+  return map() == GetHeap()->weak_hash_table_map();
+}
 
 bool HeapObject::IsDictionary() const {
   return IsHashTable() && this != GetHeap()->string_table();
@@ -441,7 +442,9 @@ bool HeapObject::IsNumberDictionary() const {
   return map() == GetHeap()->number_dictionary_map();
 }
 
-bool HeapObject::IsStringTable() const { return IsHashTable(); }
+bool HeapObject::IsStringTable() const {
+  return map() == GetHeap()->string_table_map();
+}
 
 bool HeapObject::IsStringSet() const { return IsHashTable(); }
 
@@ -457,13 +460,13 @@ bool HeapObject::IsMapCache() const { return IsHashTable(); }
 
 bool HeapObject::IsObjectHashTable() const { return IsHashTable(); }
 
-bool HeapObject::IsOrderedHashTable() const {
-  return map() == GetHeap()->ordered_hash_table_map();
+bool HeapObject::IsOrderedHashSet() const {
+  return map() == GetHeap()->ordered_hash_set_map();
 }
 
-bool Object::IsOrderedHashSet() const { return IsOrderedHashTable(); }
-
-bool Object::IsOrderedHashMap() const { return IsOrderedHashTable(); }
+bool HeapObject::IsOrderedHashMap() const {
+  return map() == GetHeap()->ordered_hash_map_map();
+}
 
 bool Object::IsSmallOrderedHashTable() const {
   return IsSmallOrderedHashSet() || IsSmallOrderedHashMap();
@@ -1736,7 +1739,7 @@ void FixedArray::set(int index, Smi* value) {
 
 void FixedArray::set(int index, Object* value) {
   DCHECK_NE(GetHeap()->fixed_cow_array_map(), map());
-  DCHECK(IsFixedArray() || IsTransitionArray());
+  DCHECK(IsFixedArray());
   DCHECK_GE(index, 0);
   DCHECK_LT(index, this->length());
   int offset = kHeaderSize + index * kPointerSize;
@@ -1965,14 +1968,17 @@ AllocationAlignment HeapObject::RequiredAlignment() const {
 
 bool HeapObject::NeedsRehashing() const {
   switch (map()->instance_type()) {
-    case FIXED_ARRAY_TYPE:
-      if (IsDescriptorArrayTemplate()) {
-        return DescriptorArray::cast(this)->number_of_descriptors() > 1;
-      }
-      return false;
+    case DESCRIPTOR_ARRAY_TYPE:
+      return DescriptorArray::cast(this)->number_of_descriptors() > 1;
     case TRANSITION_ARRAY_TYPE:
       return TransitionArray::cast(this)->number_of_entries() > 1;
     case HASH_TABLE_TYPE:
+      if (IsOrderedHashMap()) {
+        return OrderedHashMap::cast(this)->NumberOfElements() > 0;
+      } else if (IsOrderedHashSet()) {
+        return OrderedHashSet::cast(this)->NumberOfElements() > 0;
+      }
+      return true;
     case SMALL_ORDERED_HASH_MAP_TYPE:
     case SMALL_ORDERED_HASH_SET_TYPE:
       return true;
@@ -2506,6 +2512,10 @@ uint32_t StringTableShape::HashForObject(Isolate* isolate, Object* object) {
   return String::cast(object)->Hash();
 }
 
+Map* StringTableShape::GetMap(Isolate* isolate) {
+  return isolate->heap()->string_table_map();
+}
+
 bool NumberDictionary::requires_slow_elements() {
   Object* max_index_object = get(kMaxNumberKeyIndex);
   if (!max_index_object->IsSmi()) return false;
@@ -2978,51 +2988,68 @@ void Map::set_visitor_id(VisitorId id) {
   WRITE_BYTE_FIELD(this, kVisitorIdOffset, static_cast<byte>(id));
 }
 
+int Map::instance_size_in_words() const {
+  return RELAXED_READ_BYTE_FIELD(this, kInstanceSizeInWordsOffset);
+}
+
+void Map::set_instance_size_in_words(int value) {
+  RELAXED_WRITE_BYTE_FIELD(this, kInstanceSizeInWordsOffset,
+                           static_cast<byte>(value));
+}
+
 int Map::instance_size() const {
-  return RELAXED_READ_BYTE_FIELD(this, kInstanceSizeOffset) << kPointerSizeLog2;
+  return instance_size_in_words() << kPointerSizeLog2;
 }
 
-int Map::inobject_properties_or_constructor_function_index() const {
+void Map::set_instance_size(int value) {
+  DCHECK_EQ(0, value & (kPointerSize - 1));
+  value >>= kPointerSizeLog2;
+  DCHECK(0 <= value && value < 256);
+  set_instance_size_in_words(value);
+}
+
+int Map::inobject_properties_start_or_constructor_function_index() const {
   return RELAXED_READ_BYTE_FIELD(
-      this, kInObjectPropertiesOrConstructorFunctionIndexOffset);
+      this, kInObjectPropertiesStartOrConstructorFunctionIndexOffset);
 }
 
-
-void Map::set_inobject_properties_or_constructor_function_index(int value) {
+void Map::set_inobject_properties_start_or_constructor_function_index(
+    int value) {
   DCHECK_LE(0, value);
   DCHECK_LT(value, 256);
-  RELAXED_WRITE_BYTE_FIELD(this,
-                           kInObjectPropertiesOrConstructorFunctionIndexOffset,
-                           static_cast<byte>(value));
+  RELAXED_WRITE_BYTE_FIELD(
+      this, kInObjectPropertiesStartOrConstructorFunctionIndexOffset,
+      static_cast<byte>(value));
+}
+
+int Map::GetInObjectPropertiesStartInWords() const {
+  DCHECK(IsJSObjectMap());
+  return inobject_properties_start_or_constructor_function_index();
+}
+
+void Map::SetInObjectPropertiesStartInWords(int value) {
+  DCHECK(IsJSObjectMap());
+  set_inobject_properties_start_or_constructor_function_index(value);
 }
 
 int Map::GetInObjectProperties() const {
   DCHECK(IsJSObjectMap());
-  return inobject_properties_or_constructor_function_index();
-}
-
-
-void Map::SetInObjectProperties(int value) {
-  DCHECK(IsJSObjectMap());
-  set_inobject_properties_or_constructor_function_index(value);
+  return instance_size_in_words() - GetInObjectPropertiesStartInWords();
 }
 
 int Map::GetConstructorFunctionIndex() const {
   DCHECK(IsPrimitiveMap());
-  return inobject_properties_or_constructor_function_index();
+  return inobject_properties_start_or_constructor_function_index();
 }
 
 
 void Map::SetConstructorFunctionIndex(int value) {
   DCHECK(IsPrimitiveMap());
-  set_inobject_properties_or_constructor_function_index(value);
+  set_inobject_properties_start_or_constructor_function_index(value);
 }
 
 int Map::GetInObjectPropertyOffset(int index) const {
-  // Adjust for the number of properties stored in the object.
-  index -= GetInObjectProperties();
-  DCHECK_LE(index, 0);
-  return instance_size() + (index * kPointerSize);
+  return (GetInObjectPropertiesStartInWords() + index) * kPointerSize;
 }
 
 
@@ -3037,8 +3064,8 @@ int HeapObject::SizeFromMap(Map* map) const {
   if (instance_size != kVariableSizeSentinel) return instance_size;
   // Only inline the most frequent cases.
   InstanceType instance_type = map->instance_type();
-  if (instance_type == FIXED_ARRAY_TYPE || instance_type == HASH_TABLE_TYPE ||
-      instance_type == TRANSITION_ARRAY_TYPE) {
+  if (instance_type >= FIRST_FIXED_ARRAY_TYPE &&
+      instance_type <= LAST_FIXED_ARRAY_TYPE) {
     return FixedArray::SizeFor(
         reinterpret_cast<const FixedArray*>(this)->synchronized_length());
   }
@@ -3097,51 +3124,43 @@ int HeapObject::SizeFromMap(Map* map) const {
   return reinterpret_cast<const Code*>(this)->CodeSize();
 }
 
-
-void Map::set_instance_size(int value) {
-  DCHECK_EQ(0, value & (kPointerSize - 1));
-  value >>= kPointerSizeLog2;
-  DCHECK(0 <= value && value < 256);
-  RELAXED_WRITE_BYTE_FIELD(this, kInstanceSizeOffset, static_cast<byte>(value));
-}
-
-
 InstanceType Map::instance_type() const {
-  return static_cast<InstanceType>(READ_BYTE_FIELD(this, kInstanceTypeOffset));
+  return static_cast<InstanceType>(
+      READ_UINT16_FIELD(this, kInstanceTypeOffset));
 }
 
 
 void Map::set_instance_type(InstanceType value) {
-  WRITE_BYTE_FIELD(this, kInstanceTypeOffset, value);
-}
-
-int Map::unused_property_fields() const {
-  return READ_BYTE_FIELD(this, kUnusedPropertyFieldsOffset);
+  WRITE_UINT16_FIELD(this, kInstanceTypeOffset, value);
 }
 
 int Map::UnusedPropertyFields() const {
-  VerifyUnusedPropertyFields();
-  return unused_property_fields();
+  int value = used_or_unused_instance_size_in_words();
+  DCHECK_IMPLIES(!IsJSObjectMap(), value == 0);
+  int unused;
+  if (value >= JSObject::kFieldsAdded) {
+    unused = instance_size_in_words() - value;
+  } else {
+    // For out of object properties "used_or_unused_instance_size_in_words"
+    // byte encodes the slack in the property array.
+    unused = value;
+  }
+  return unused;
 }
 
-void Map::set_unused_property_fields(int value) {
-  WRITE_BYTE_FIELD(this, kUnusedPropertyFieldsOffset, Min(value, 255));
+int Map::used_or_unused_instance_size_in_words() const {
+  return READ_BYTE_FIELD(this, kUsedOrUnusedInstanceSizeInWordsOffset);
 }
 
-int Map::used_instance_size_in_words() const {
-  return READ_BYTE_FIELD(this, kUsedInstanceSizeInWordsOffset);
-}
-
-void Map::set_used_instance_size_in_words(int value) {
+void Map::set_used_or_unused_instance_size_in_words(int value) {
   DCHECK_LE(0, value);
   DCHECK_LE(value, 255);
-  WRITE_BYTE_FIELD(this, kUsedInstanceSizeInWordsOffset,
+  WRITE_BYTE_FIELD(this, kUsedOrUnusedInstanceSizeInWordsOffset,
                    static_cast<byte>(value));
-  VerifyUnusedPropertyFields();
 }
 
 int Map::UsedInstanceSize() const {
-  int words = used_instance_size_in_words();
+  int words = used_or_unused_instance_size_in_words();
   if (words < JSObject::kFieldsAdded) {
     // All in-object properties are used and the words is tracking the slack
     // in the property array.
@@ -3154,55 +3173,53 @@ void Map::SetInObjectUnusedPropertyFields(int value) {
   STATIC_ASSERT(JSObject::kFieldsAdded == JSObject::kHeaderSize / kPointerSize);
   if (!IsJSObjectMap()) {
     DCHECK_EQ(0, value);
-    set_unused_property_fields(0);
-    set_used_instance_size_in_words(0);
+    set_used_or_unused_instance_size_in_words(0);
+    DCHECK_EQ(0, UnusedPropertyFields());
     return;
   }
   DCHECK_LE(0, value);
   DCHECK_LE(value, GetInObjectProperties());
-  set_unused_property_fields(value);
   int used_inobject_properties = GetInObjectProperties() - value;
-  set_used_instance_size_in_words(
+  set_used_or_unused_instance_size_in_words(
       GetInObjectPropertyOffset(used_inobject_properties) / kPointerSize);
-  VerifyUnusedPropertyFields();
+  DCHECK_EQ(value, UnusedPropertyFields());
 }
 
 void Map::SetOutOfObjectUnusedPropertyFields(int value) {
   STATIC_ASSERT(JSObject::kFieldsAdded == JSObject::kHeaderSize / kPointerSize);
   DCHECK_LE(0, value);
   DCHECK_LT(value, JSObject::kFieldsAdded);
-  set_unused_property_fields(value);
   // For out of object properties "used_instance_size_in_words" byte encodes
   // the slack in the property array.
-  set_used_instance_size_in_words(value);
-  VerifyUnusedPropertyFields();
+  set_used_or_unused_instance_size_in_words(value);
+  DCHECK_EQ(value, UnusedPropertyFields());
 }
 
 void Map::CopyUnusedPropertyFields(Map* map) {
-  set_unused_property_fields(map->unused_property_fields());
-  set_used_instance_size_in_words(map->used_instance_size_in_words());
-  VerifyUnusedPropertyFields();
+  set_used_or_unused_instance_size_in_words(
+      map->used_or_unused_instance_size_in_words());
+  DCHECK_EQ(UnusedPropertyFields(), map->UnusedPropertyFields());
 }
 
 void Map::AccountAddedPropertyField() {
+  // Update used instance size and unused property fields number.
   STATIC_ASSERT(JSObject::kFieldsAdded == JSObject::kHeaderSize / kPointerSize);
-  // Update unused_property_fields.
-  int new_unused = unused_property_fields() - 1;
+#ifdef DEBUG
+  int new_unused = UnusedPropertyFields() - 1;
   if (new_unused < 0) new_unused += JSObject::kFieldsAdded;
-  set_unused_property_fields(new_unused);
-  // Update used_instance_size_in_words.
-  int value = used_instance_size_in_words();
+#endif
+  int value = used_or_unused_instance_size_in_words();
   if (value >= JSObject::kFieldsAdded) {
-    if (value == instance_size() / kPointerSize) {
+    if (value == instance_size_in_words()) {
       AccountAddedOutOfObjectPropertyField(0);
     } else {
       // The property is added in-object, so simply increment the counter.
-      set_used_instance_size_in_words(value + 1);
+      set_used_or_unused_instance_size_in_words(value + 1);
     }
   } else {
     AccountAddedOutOfObjectPropertyField(value);
   }
-  VerifyUnusedPropertyFields();
+  DCHECK_EQ(new_unused, UnusedPropertyFields());
 }
 
 void Map::AccountAddedOutOfObjectPropertyField(int unused_in_property_array) {
@@ -3212,26 +3229,8 @@ void Map::AccountAddedOutOfObjectPropertyField(int unused_in_property_array) {
   }
   DCHECK_GE(unused_in_property_array, 0);
   DCHECK_LT(unused_in_property_array, JSObject::kFieldsAdded);
-  set_used_instance_size_in_words(unused_in_property_array);
-}
-
-void Map::VerifyUnusedPropertyFields() const {
-#ifdef DEBUG
-  if (!IsJSObjectMap()) {
-    DCHECK_EQ(unused_property_fields(), used_instance_size_in_words());
-  } else {
-    int value = used_instance_size_in_words();
-    int unused;
-    if (value >= JSObject::kFieldsAdded) {
-      unused = instance_size() / kPointerSize - value;
-    } else {
-      // For out of object properties "used_instance_size_in_words" byte encodes
-      // the slack in the property array.
-      unused = value;
-    }
-    DCHECK_EQ(unused_property_fields(), unused);
-  }
-#endif
+  set_used_or_unused_instance_size_in_words(unused_in_property_array);
+  DCHECK_EQ(unused_in_property_array, UnusedPropertyFields());
 }
 
 byte Map::bit_field() const { return READ_BYTE_FIELD(this, kBitFieldOffset); }
@@ -4939,16 +4938,13 @@ Handle<ObjectHashTable> ObjectHashTable::Shrink(Handle<ObjectHashTable> table) {
   return DerivedHashTable::Shrink(table);
 }
 
-template <int entrysize>
-bool WeakHashTableShape<entrysize>::IsMatch(Handle<Object> key, Object* other) {
+bool WeakHashTableShape::IsMatch(Handle<Object> key, Object* other) {
   if (other->IsWeakCell()) other = WeakCell::cast(other)->value();
   return key->IsWeakCell() ? WeakCell::cast(*key)->value() == other
                            : *key == other;
 }
 
-template <int entrysize>
-uint32_t WeakHashTableShape<entrysize>::Hash(Isolate* isolate,
-                                             Handle<Object> key) {
+uint32_t WeakHashTableShape::Hash(Isolate* isolate, Handle<Object> key) {
   intptr_t hash =
       key->IsWeakCell()
           ? reinterpret_cast<intptr_t>(WeakCell::cast(*key)->value())
@@ -4956,21 +4952,20 @@ uint32_t WeakHashTableShape<entrysize>::Hash(Isolate* isolate,
   return (uint32_t)(hash & 0xFFFFFFFF);
 }
 
-template <int entrysize>
-uint32_t WeakHashTableShape<entrysize>::HashForObject(Isolate* isolate,
-                                                      Object* other) {
+uint32_t WeakHashTableShape::HashForObject(Isolate* isolate, Object* other) {
   if (other->IsWeakCell()) other = WeakCell::cast(other)->value();
   intptr_t hash = reinterpret_cast<intptr_t>(other);
   return (uint32_t)(hash & 0xFFFFFFFF);
 }
 
-
-template <int entrysize>
-Handle<Object> WeakHashTableShape<entrysize>::AsHandle(Isolate* isolate,
-                                                       Handle<Object> key) {
+Handle<Object> WeakHashTableShape::AsHandle(Isolate* isolate,
+                                            Handle<Object> key) {
   return key;
 }
 
+Map* WeakHashTableShape::GetMap(Isolate* isolate) {
+  return isolate->heap()->weak_hash_table_map();
+}
 
 int Map::SlackForArraySize(int old_size, int size_limit) {
   const int max_slack = size_limit - old_size;

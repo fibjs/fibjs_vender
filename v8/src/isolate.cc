@@ -47,6 +47,7 @@
 #include "src/simulator.h"
 #include "src/snapshot/startup-deserializer.h"
 #include "src/tracing/tracing-category-observer.h"
+#include "src/trap-handler/trap-handler.h"
 #include "src/unicode-cache.h"
 #include "src/v8.h"
 #include "src/version.h"
@@ -2863,6 +2864,7 @@ bool Isolate::Init(StartupDeserializer* des) {
   // If we are deserializing, read the state into the now-empty heap.
   {
     AlwaysAllocateScope always_allocate(this);
+    CodeSpaceMemoryModificationScope modification_scope(&heap_);
 
     if (!create_heap_objects) des->DeserializeInto(this);
     load_stub_cache_->Initialize();
@@ -3125,8 +3127,8 @@ bool Isolate::IsInAnyContext(Object* object, uint32_t index) {
   return false;
 }
 
-bool Isolate::IsFastArrayConstructorPrototypeChainIntact() {
-  PropertyCell* no_elements_cell = heap()->array_protector();
+bool Isolate::IsNoElementsProtectorIntact() {
+  PropertyCell* no_elements_cell = heap()->no_elements_protector();
   bool cell_reports_intact =
       no_elements_cell->value()->IsSmi() &&
       Smi::ToInt(no_elements_cell->value()) == kProtectorValid;
@@ -3235,13 +3237,13 @@ bool Isolate::IsIsConcatSpreadableLookupChainIntact(JSReceiver* receiver) {
   return !receiver->HasProxyInPrototype(this);
 }
 
-void Isolate::UpdateArrayProtectorOnSetElement(Handle<JSObject> object) {
+void Isolate::UpdateNoElementsProtectorOnSetElement(Handle<JSObject> object) {
   DisallowHeapAllocation no_gc;
   if (!object->map()->is_prototype_map()) return;
-  if (!IsFastArrayConstructorPrototypeChainIntact()) return;
+  if (!IsNoElementsProtectorIntact()) return;
   if (!IsArrayOrObjectOrStringPrototype(*object)) return;
   PropertyCell::SetValueWithInvalidation(
-      factory()->array_protector(),
+      factory()->no_elements_protector(),
       handle(Smi::FromInt(kProtectorInvalid), this));
 }
 

@@ -129,7 +129,7 @@ VirtualMemory::VirtualMemory(size_t size, void* hint, size_t alignment)
 
 VirtualMemory::~VirtualMemory() {
   if (IsReserved()) {
-    Release();
+    Free();
   }
 }
 
@@ -138,24 +138,19 @@ void VirtualMemory::Reset() {
   size_ = 0;
 }
 
-bool VirtualMemory::Commit(void* address, size_t size, bool is_executable) {
+bool VirtualMemory::SetPermissions(void* address, size_t size,
+                                   base::OS::MemoryPermission access) {
   CHECK(InVM(address, size));
-  return base::OS::CommitRegion(address, size, is_executable);
+  bool result = base::OS::SetPermissions(address, size, access);
+  DCHECK(result);
+  USE(result);
+  return result;
 }
 
-bool VirtualMemory::Uncommit(void* address, size_t size) {
-  CHECK(InVM(address, size));
-  return base::OS::UncommitRegion(address, size);
-}
-
-bool VirtualMemory::Guard(void* address) {
-  CHECK(InVM(address, base::OS::CommitPageSize()));
-  base::OS::Guard(address, base::OS::CommitPageSize());
-  return true;
-}
-
-size_t VirtualMemory::ReleasePartial(void* free_start) {
+size_t VirtualMemory::Release(void* free_start) {
   DCHECK(IsReserved());
+  DCHECK(IsAddressAligned(static_cast<Address>(free_start),
+                          base::OS::CommitPageSize()));
   // Notice: Order is important here. The VirtualMemory object might live
   // inside the allocated region.
   const size_t free_size = size_ - (reinterpret_cast<size_t>(free_start) -
@@ -168,14 +163,12 @@ size_t VirtualMemory::ReleasePartial(void* free_start) {
   __lsan_unregister_root_region(address_, size_);
   __lsan_register_root_region(address_, size_ - free_size);
 #endif
-  const bool result = base::OS::ReleasePartialRegion(free_start, free_size);
-  USE(result);
-  DCHECK(result);
+  CHECK(base::OS::Release(free_start, free_size));
   size_ -= free_size;
   return free_size;
 }
 
-void VirtualMemory::Release() {
+void VirtualMemory::Free() {
   DCHECK(IsReserved());
   // Notice: Order is important here. The VirtualMemory object might live
   // inside the allocated region.
@@ -183,9 +176,10 @@ void VirtualMemory::Release() {
   size_t size = size_;
   CHECK(InVM(address, size));
   Reset();
-  bool result = base::OS::Free(address, size);
-  USE(result);
-  DCHECK(result);
+#if defined(LEAK_SANITIZER)
+  __lsan_unregister_root_region(address, size);
+#endif
+  CHECK(base::OS::Free(address, size));
 }
 
 void VirtualMemory::TakeControl(VirtualMemory* from) {

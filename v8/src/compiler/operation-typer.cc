@@ -245,7 +245,7 @@ Type* OperationTyper::ConvertReceiver(Type* type) {
   return type;
 }
 
-Type* OperationTyper::ToNumber(Type* type) {
+Type* OperationTyper::ToNumberOrNumeric(Object::Conversion mode, Type* type) {
   if (type->Is(Type::Number())) return type;
   if (type->Is(Type::NullOrUndefined())) {
     if (type->Is(Type::Null())) return cache_.kSingletonZero;
@@ -269,7 +269,19 @@ Type* OperationTyper::ToNumber(Type* type) {
     }
     return Type::Intersect(type, Type::Number(), zone());
   }
-  return Type::Number();
+  if (type->Is(Type::BigInt())) {
+    return mode == Object::Conversion::kToNumber ? Type::None() : type;
+  }
+  return mode == Object::Conversion::kToNumber ? Type::Number()
+                                               : Type::Numeric();
+}
+
+Type* OperationTyper::ToNumber(Type* type) {
+  return ToNumberOrNumeric(Object::Conversion::kToNumber, type);
+}
+
+Type* OperationTyper::ToNumeric(Type* type) {
+  return ToNumberOrNumeric(Object::Conversion::kToNumeric, type);
 }
 
 Type* OperationTyper::NumberAbs(Type* type) {
@@ -611,7 +623,7 @@ Type* OperationTyper::SpeculativeSafeIntegerAdd(Type* lhs, Type* rhs) {
   // In either case the result will be in the safe integer range, so we
   // can bake in the type here. This needs to be in sync with
   // SimplifiedLowering::VisitSpeculativeAdditiveOp.
-  return Type::Intersect(result, cache_.kSafeInteger, zone());
+  return Type::Intersect(result, cache_.kSafeIntegerOrMinusZero, zone());
 }
 
 Type* OperationTyper::SpeculativeSafeIntegerSubtract(Type* lhs, Type* rhs) {
@@ -742,10 +754,10 @@ Type* OperationTyper::NumberBitwiseOr(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
 
-  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
-
   lhs = NumberToInt32(lhs);
   rhs = NumberToInt32(rhs);
+
+  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
 
   double lmin = lhs->Min();
   double rmin = rhs->Min();
@@ -779,10 +791,10 @@ Type* OperationTyper::NumberBitwiseAnd(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
 
-  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
-
   lhs = NumberToInt32(lhs);
   rhs = NumberToInt32(rhs);
+
+  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
 
   double lmin = lhs->Min();
   double rmin = rhs->Min();
@@ -810,10 +822,10 @@ Type* OperationTyper::NumberBitwiseXor(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
 
-  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
-
   lhs = NumberToInt32(lhs);
   rhs = NumberToInt32(rhs);
+
+  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
 
   double lmin = lhs->Min();
   double rmin = rhs->Min();
@@ -835,10 +847,10 @@ Type* OperationTyper::NumberShiftLeft(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
 
-  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
-
   lhs = NumberToInt32(lhs);
   rhs = NumberToUint32(rhs);
+
+  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
 
   int32_t min_lhs = lhs->Min();
   int32_t max_lhs = lhs->Max();
@@ -870,10 +882,10 @@ Type* OperationTyper::NumberShiftRight(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
 
-  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
-
   lhs = NumberToInt32(lhs);
   rhs = NumberToUint32(rhs);
+
+  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
 
   int32_t min_lhs = lhs->Min();
   int32_t max_lhs = lhs->Max();
@@ -895,10 +907,10 @@ Type* OperationTyper::NumberShiftRightLogical(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
 
-  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
-
   lhs = NumberToUint32(lhs);
   rhs = NumberToUint32(rhs);
+
+  if (lhs->IsNone() || rhs->IsNone()) return Type::None();
 
   uint32_t min_lhs = lhs->Min();
   uint32_t max_lhs = lhs->Max();

@@ -805,6 +805,9 @@ Handle<Map> CreateNonConstructorMap(Handle<Map> source_map,
     // TODO(ulan): Do not change instance size after map creation.
     int unused_property_fields = map->UnusedPropertyFields();
     map->set_instance_size(map->instance_size() + kPointerSize);
+    // The prototype slot shifts the in-object properties area by one slot.
+    map->SetInObjectPropertiesStartInWords(
+        map->GetInObjectPropertiesStartInWords() + 1);
     map->set_has_prototype_slot(true);
     map->SetInObjectUnusedPropertyFields(unused_property_fields);
   }
@@ -1053,8 +1056,8 @@ void Genesis::CreateJSProxyMaps() {
   // Allocate maps for all Proxy types.
   // Next to the default proxy, we need maps indicating callable and
   // constructable proxies.
-  Handle<Map> proxy_map =
-      factory()->NewMap(JS_PROXY_TYPE, JSProxy::kSize, PACKED_ELEMENTS);
+  Handle<Map> proxy_map = factory()->NewMap(JS_PROXY_TYPE, JSProxy::kSize,
+                                            TERMINAL_FAST_ELEMENTS_KIND);
   proxy_map->set_dictionary_map(true);
   proxy_map->set_may_have_interesting_symbols(true);
   native_context()->set_proxy_map(*proxy_map);
@@ -2468,6 +2471,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
         native_context()->set_regexp_exec_function(*fun);
       }
 
+      SimpleInstallGetter(prototype, factory->dotAll_string(),
+                          Builtins::kRegExpPrototypeDotAllGetter, true);
       SimpleInstallGetter(prototype, factory->flags_string(),
                           Builtins::kRegExpPrototypeFlagsGetter, true);
       SimpleInstallGetter(prototype, factory->global_string(),
@@ -3367,6 +3372,9 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     // TODO(ulan): Do not change instance size after map creation.
     int unused_property_fields = proxy_function_map->UnusedPropertyFields();
     proxy_function_map->set_instance_size(JSFunction::kSizeWithPrototype);
+    // The prototype slot shifts the in-object properties area by one slot.
+    proxy_function_map->SetInObjectPropertiesStartInWords(
+        proxy_function_map->GetInObjectPropertiesStartInWords() + 1);
     proxy_function_map->set_has_prototype_slot(true);
     proxy_function_map->set_is_constructor(true);
     proxy_function_map->SetInObjectUnusedPropertyFields(unused_property_fields);
@@ -4260,7 +4268,6 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
   void Genesis::InitializeGlobal_##id() {}
 
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_do_expressions)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_lookbehind)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_named_captures)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_property)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_sent)
@@ -4270,7 +4277,6 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_dynamic_import)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_import_meta)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_template_escapes)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_restrict_constructor_return)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_strict_legacy_accessor_builtins)
 
 void InstallPublicSymbol(Factory* factory, Handle<Context> native_context,
                          const char* name, Handle<Symbol> value) {
@@ -4377,22 +4383,6 @@ void Genesis::InitializeGlobal_harmony_promise_finally() {
         0);
     native_context()->set_promise_thrower_finally_shared_fun(*info);
   }
-}
-
-void Genesis::InitializeGlobal_harmony_regexp_dotall() {
-  if (!FLAG_harmony_regexp_dotall) return;
-
-  Handle<JSFunction> constructor(native_context()->regexp_function());
-  Handle<JSObject> prototype(JSObject::cast(constructor->instance_prototype()));
-
-  SimpleInstallGetter(prototype, isolate()->factory()->dotAll_string(),
-                      Builtins::kRegExpPrototypeDotAllGetter, true);
-
-  // The regexp prototype map has changed because we added a property
-  // to it, so we update the saved map.
-  Handle<Map> prototype_map(prototype->map());
-  Map::SetShouldBeFastPrototypeMap(prototype_map, true, isolate());
-  native_context()->set_regexp_prototype_map(*prototype_map);
 }
 
 void Genesis::InitializeGlobal_harmony_bigint() {
@@ -5520,7 +5510,7 @@ Genesis::Genesis(Isolate* isolate,
   DCHECK_EQ(global_proxy_data->embedder_field_count(),
             global_proxy_template->InternalFieldCount());
   Handle<Map> global_proxy_map = isolate->factory()->NewMap(
-      JS_GLOBAL_PROXY_TYPE, proxy_size, HOLEY_SMI_ELEMENTS);
+      JS_GLOBAL_PROXY_TYPE, proxy_size, TERMINAL_FAST_ELEMENTS_KIND);
   global_proxy_map->set_is_access_check_needed(true);
   global_proxy_map->set_has_hidden_prototype(true);
   global_proxy_map->set_may_have_interesting_symbols(true);

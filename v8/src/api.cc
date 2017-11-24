@@ -509,9 +509,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
         return Free(data, length);
       }
       case v8::ArrayBuffer::Allocator::AllocationMode::kReservation: {
-        bool result = base::OS::Free(data, length);
-        DCHECK(result);
-        USE(result);
+        CHECK(base::OS::Free(data, length));
         return;
       }
     }
@@ -520,16 +518,13 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   virtual void SetProtection(
       void* data, size_t length,
       v8::ArrayBuffer::Allocator::Protection protection) {
-    switch (protection) {
-      case v8::ArrayBuffer::Allocator::Protection::kNoAccess: {
-        base::OS::Guard(data, length);
-        return;
-      }
-      case v8::ArrayBuffer::Allocator::Protection::kReadWrite: {
-        base::OS::SetReadAndWritable(data, length, true);
-        return;
-      }
-    }
+    DCHECK(protection == v8::ArrayBuffer::Allocator::Protection::kNoAccess ||
+           protection == v8::ArrayBuffer::Allocator::Protection::kReadWrite);
+    base::OS::MemoryPermission permission =
+        (protection == v8::ArrayBuffer::Allocator::Protection::kReadWrite)
+            ? base::OS::MemoryPermission::kReadWrite
+            : base::OS::MemoryPermission::kNoAccess;
+    CHECK(base::OS::SetPermissions(data, length, permission));
   }
 };
 
@@ -2462,7 +2457,7 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
     Local<Object> context_extensions[]) {
   PREPARE_FOR_EXECUTION(v8_context, ScriptCompiler, CompileFunctionInContext,
                         Function);
-  TRACE_EVENT0("v8", "V8.ScriptCompiler");
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.ScriptCompiler");
   i::Handle<i::String> source_string;
   auto factory = isolate->factory();
   if (arguments_count) {
@@ -2587,7 +2582,7 @@ MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
                                            Local<String> full_source_string,
                                            const ScriptOrigin& origin) {
   PREPARE_FOR_EXECUTION(context, ScriptCompiler, Compile, Script);
-  TRACE_EVENT0("v8", "V8.ScriptCompiler");
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.ScriptCompiler");
   i::StreamedSource* source = v8_source->impl();
   i::Handle<i::String> str = Utils::OpenHandle(*(full_source_string));
   i::Handle<i::Script> script = isolate->factory()->NewScript(str);
@@ -2614,7 +2609,7 @@ MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
 
   source->info->set_script(script);
   source->parser->UpdateStatistics(isolate, script);
-  source->info->UpdateStatisticsAfterBackgroundParse(isolate);
+  source->info->UpdateBackgroundParseStatisticsOnMainThread(isolate);
   source->parser->HandleSourceURLComments(isolate, script);
 
   i::Handle<i::SharedFunctionInfo> result;
@@ -8501,6 +8496,18 @@ void V8::AddGCEpilogueCallback(v8::GCCallback callback, GCType gc_type) {
                                                data, gc_type);
 }
 
+void V8::RemoveGCPrologueCallback(GCCallback callback) {
+  void* data = reinterpret_cast<void*>(callback);
+  Isolate::GetCurrent()->RemoveGCPrologueCallback(CallGCCallbackWithoutIsolate,
+                                                  data);
+}
+
+void V8::RemoveGCEpilogueCallback(GCCallback callback) {
+  void* data = reinterpret_cast<void*>(callback);
+  Isolate::GetCurrent()->RemoveGCEpilogueCallback(CallGCCallbackWithoutIsolate,
+                                                  data);
+}
+
 void Isolate::SetEmbedderHeapTracer(EmbedderHeapTracer* tracer) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   isolate->heap()->SetEmbedderHeapTracer(tracer);
@@ -8614,6 +8621,9 @@ Isolate* IsolateNewImpl(internal::Isolate* isolate,
   // TODO(jochen): Once we got rid of Isolate::Current(), we can remove this.
   Isolate::Scope isolate_scope(v8_isolate);
   if (params.entry_hook || !i::Snapshot::Initialize(isolate)) {
+    // If snapshot data was provided and we failed to deserialize it must
+    // have been corrupted.
+    CHECK_NULL(isolate->snapshot_blob());
     base::ElapsedTimer timer;
     if (i::FLAG_profile_deserialization) timer.Start();
     isolate->Init(nullptr);
@@ -10135,6 +10145,12 @@ int debug::GetNativeAccessorDescriptor(v8::Local<v8::Context> context,
   if (accessor_info->setter())
     result |= static_cast<int>(debug::NativeAccessorType::HasSetter);
   return result;
+}
+
+int64_t debug::GetNextRandomInt64(v8::Isolate* v8_isolate) {
+  return reinterpret_cast<i::Isolate*>(v8_isolate)
+      ->random_number_generator()
+      ->NextInt64();
 }
 
 Local<String> CpuProfileNode::GetFunctionName() const {

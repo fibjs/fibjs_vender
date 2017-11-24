@@ -369,12 +369,16 @@ static bool MigrateDeprecated(Handle<Object> object) {
   return true;
 }
 
-void IC::ConfigureVectorState(IC::State new_state, Handle<Object> key) {
+bool IC::ConfigureVectorState(IC::State new_state, Handle<Object> key) {
+  bool changed = true;
   if (new_state == PREMONOMORPHIC) {
     nexus()->ConfigurePremonomorphic();
   } else if (new_state == MEGAMORPHIC) {
     DCHECK_IMPLIES(!is_keyed(), key->IsName());
-    nexus()->ConfigureMegamorphic(key->IsName() ? PROPERTY : ELEMENT);
+    // Even though we don't change the feedback data, we still want to reset the
+    // profiler ticks. Real-world observations suggest that optimizing these
+    // functions doesn't improve performance.
+    changed = nexus()->ConfigureMegamorphic(key->IsName() ? PROPERTY : ELEMENT);
   } else {
     UNREACHABLE();
   }
@@ -383,6 +387,7 @@ void IC::ConfigureVectorState(IC::State new_state, Handle<Object> key) {
   OnFeedbackChanged(
       isolate(), *vector(), slot(), GetHostFunction(),
       new_state == PREMONOMORPHIC ? "Premonomorphic" : "Megamorphic");
+  return changed;
 }
 
 void IC::ConfigureVectorState(Handle<Name> name, Handle<Map> map,
@@ -1136,7 +1141,7 @@ KeyedAccessLoadMode GetLoadMode(Handle<Object> receiver, uint32_t index) {
 
     // For other {receiver}s we need to check the "no elements" protector.
     Isolate* isolate = Handle<HeapObject>::cast(receiver)->GetIsolate();
-    if (isolate->IsFastArrayConstructorPrototypeChainIntact()) {
+    if (isolate->IsNoElementsProtectorIntact()) {
       if (receiver->IsString()) {
         // ToObject(receiver) will have the initial String.prototype.
         return LOAD_IGNORE_OUT_OF_BOUNDS;
@@ -1392,6 +1397,7 @@ void StoreIC::UpdateCaches(LookupIterator* lookup, Handle<Object> value,
     if (created_new_transition_) {
       // The first time a transition is performed, there's a good chance that
       // it won't be taken again, so don't bother creating a handler.
+      TRACE_GENERIC_IC("new transition");
       TRACE_IC("StoreIC", lookup->name());
       return;
     }
@@ -1943,9 +1949,10 @@ MaybeHandle<Object> KeyedStoreIC::Store(Handle<Object> object,
                        JSReceiver::MAY_BE_STORE_FROM_KEYED),
         Object);
     if (vector_needs_update()) {
-      ConfigureVectorState(MEGAMORPHIC, key);
-      TRACE_GENERIC_IC("unhandled internalized string key");
-      TRACE_IC("StoreIC", key);
+      if (ConfigureVectorState(MEGAMORPHIC, key)) {
+        TRACE_GENERIC_IC("unhandled internalized string key");
+        TRACE_IC("StoreIC", key);
+      }
     }
     return store_handle;
   }

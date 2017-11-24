@@ -93,21 +93,19 @@ typedef std::vector<Handle<Map>> MapHandles;
 //      | Byte     | If Map for a primitive type:                |
 //      |          |   native context index for constructor fn   |
 //      |          | If Map for an Object type:                  |
-//      |          |   number of in-object properties            |
+//      |          |   inobject properties start offset in words |
 //      +----------+---------------------------------------------+
-//      | Byte     | [used_instance_size_in_words]               |
+//      | Byte     | [used_or_unused_instance_size_in_words]     |
 //      |          | For JSObject in fast mode this byte encodes |
 //      |          | the size of the object that includes only   |
-//      |          | the used property fields.                   |
+//      |          | the used property fields or the slack size  |
+//      |          | in properties backing store.                |
 //      +----------+---------------------------------------------+
 //      | Byte     | [visitor_id]                                |
 // +----+----------+---------------------------------------------+
 // | Int           | The second int field                        |
 //  `---+----------+---------------------------------------------+
-//      | Byte     | [instance_type]                             |
-//      +----------+---------------------------------------------+
-//      | Byte     | [unused_property_fields] number of unused   |
-//      |          | property fields in JSObject (for fast-mode) |
+//      | Short    | [instance_type]                             |
 //      +----------+---------------------------------------------+
 //      | Byte     | [bit_field]                                 |
 //      |          |   - has_non_instance_prototype (bit 0)      |
@@ -168,15 +166,20 @@ class Map : public HeapObject {
   // Size in bytes or kVariableSizeSentinel if instances do not have
   // a fixed size.
   DECL_INT_ACCESSORS(instance_size)
+  // Size in words or kVariableSizeSentinel if instances do not have
+  // a fixed size.
+  DECL_INT_ACCESSORS(instance_size_in_words)
 
-  // [inobject_properties_or_constructor_function_index]: Provides access
-  // to the inobject properties in case of JSObject maps, or the constructor
-  // function index in case of primitive maps.
-  DECL_INT_ACCESSORS(inobject_properties_or_constructor_function_index)
+  // [inobject_properties_start_or_constructor_function_index]:
+  // Provides access to the inobject properties start offset in words in case of
+  // JSObject maps, or the constructor function index in case of primitive maps.
+  DECL_INT_ACCESSORS(inobject_properties_start_or_constructor_function_index)
 
+  // Get/set the in-object property area start offset in words in the object.
+  inline int GetInObjectPropertiesStartInWords() const;
+  inline void SetInObjectPropertiesStartInWords(int value);
   // Count of properties allocated in the object (JSObject only).
   inline int GetInObjectProperties() const;
-  inline void SetInObjectProperties(int value);
   // Index of the constructor function in the native context (primitives only),
   // or the special sentinel value to indicate that there is no object wrapper
   // for the primitive (i.e. in case of null or undefined).
@@ -194,24 +197,13 @@ class Map : public HeapObject {
   inline InstanceType instance_type() const;
   inline void set_instance_type(InstanceType value);
 
-  // Tells how many unused property fields are available in the
-  // instance (only used for JSObject in fast mode).
-  inline int unused_property_fields() const;
-  inline void set_unused_property_fields(int value);
-
-  // This byte encodes the instance size without the slack.
-  // Let H be JSObject::kHeaderSize / kPointerSize.
-  // If value >= H then:
-  //     - all field properties are stored in the object.
-  //     - there is no property array.
-  //     - value * kPointerSize is the actual object size without the slack.
-  // Otherwise:
-  //     - there is no slack in the object.
-  //     - the property array has value slack slots.
-  // Note that this encoding requires that H = JSObject::kFieldsAdded.
-  DECL_INT_ACCESSORS(used_instance_size_in_words)
+  // Returns the size of the used in-object area including object header
+  // (only used for JSObject in fast mode, for the other kinds of objects it
+  // is equal to the instance size).
   inline int UsedInstanceSize() const;
 
+  // Tells how many unused property fields (in-object or out-of object) are
+  // available in the instance (only used for JSObject in fast mode).
   inline int UnusedPropertyFields() const;
   // Updates the counters tracking unused fields in the object.
   inline void SetInObjectUnusedPropertyFields(int unused_property_fields);
@@ -221,7 +213,6 @@ class Map : public HeapObject {
   inline void AccountAddedPropertyField();
   inline void AccountAddedOutOfObjectPropertyField(
       int unused_in_property_array);
-  inline void VerifyUnusedPropertyFields() const;
 
   // Bit field.
   inline byte bit_field() const;
@@ -463,14 +454,15 @@ class Map : public HeapObject {
                                                  Representation representation,
                                                  FieldType* field_type);
 
-  // Generalizes constness, representation and field_type if the given elements
-  // kind is a fast and transitionable by stubs / optimized code.
+  // Generalizes constness, representation and field_type if objects with given
+  // instance type can have fast elements that can be transitioned by stubs or
+  // optimized code to more general elements kind.
   // This generalization is necessary in order to ensure that elements kind
   // transitions performed by stubs / optimized code don't silently transition
   // kMutable fields back to kConst state or fields with HeapObject
   // representation and "Any" type back to "Class" type.
-  static inline void GeneralizeIfTransitionableFastElementsKind(
-      Isolate* isolate, ElementsKind elements_kind,
+  static inline void GeneralizeIfCanHaveTransitionableFastElementsKind(
+      Isolate* isolate, InstanceType instance_type,
       PropertyConstness* constness, Representation* representation,
       Handle<FieldType>* field_type);
 
@@ -731,14 +723,11 @@ class Map : public HeapObject {
   // Layout description.
 #define MAP_FIELDS(V)                                                       \
   /* Raw data fields. */                                                    \
-  V(kInstanceSizeOffset, kUInt8Size)                                        \
-  V(kInObjectPropertiesOrConstructorFunctionIndexOffset, kUInt8Size)        \
-  V(kUsedInstanceSizeInWordsOffset, kUInt8Size)                             \
+  V(kInstanceSizeInWordsOffset, kUInt8Size)                                 \
+  V(kInObjectPropertiesStartOrConstructorFunctionIndexOffset, kUInt8Size)   \
+  V(kUsedOrUnusedInstanceSizeInWordsOffset, kUInt8Size)                     \
   V(kVisitorIdOffset, kUInt8Size)                                           \
-  V(kInstanceTypeOffset, kUInt8Size)                                        \
-  /* TODO(ulan): Free this byte after unused_property_fields are */         \
-  /* computed using the used_instance_size_in_words() byte. */              \
-  V(kUnusedPropertyFieldsOffset, kUInt8Size)                                \
+  V(kInstanceTypeOffset, kUInt16Size)                                       \
   V(kBitFieldOffset, kUInt8Size)                                            \
   V(kBitField2Offset, kUInt8Size)                                           \
   V(kBitField3Offset, kUInt32Size)                                          \
@@ -804,7 +793,30 @@ class Map : public HeapObject {
 
   static VisitorId GetVisitorId(Map* map);
 
+  // Returns true if objects with given instance type are allowed to have
+  // fast transitionable elements kinds. This predicate is used to ensure
+  // that objects that can have transitionable fast elements kind will not
+  // get in-place generalizable fields because the elements kind transition
+  // performed by stubs or optimized code can't properly generalize such
+  // fields.
+  static inline bool CanHaveFastTransitionableElementsKind(
+      InstanceType instance_type);
+  inline bool CanHaveFastTransitionableElementsKind() const;
+
  private:
+  // This byte encodes either the instance size without the in-object slack or
+  // the slack size in properties backing store.
+  // Let H be JSObject::kHeaderSize / kPointerSize.
+  // If value >= H then:
+  //     - all field properties are stored in the object.
+  //     - there is no property array.
+  //     - value * kPointerSize is the actual object size without the slack.
+  // Otherwise:
+  //     - there is no slack in the object.
+  //     - the property array has value slack slots.
+  // Note that this encoding requires that H = JSObject::kFieldsAdded.
+  DECL_INT_ACCESSORS(used_or_unused_instance_size_in_words)
+
   // Returns the map that this (root) map transitions to if its elements_kind
   // is changed to |elements_kind|, or |nullptr| if no such map is cached yet.
   Map* LookupElementsTransitionMap(ElementsKind elements_kind);

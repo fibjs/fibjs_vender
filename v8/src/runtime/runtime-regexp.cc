@@ -21,6 +21,20 @@ namespace internal {
 
 namespace {
 
+// Returns -1 for failure.
+uint32_t GetArgcForReplaceCallable(uint32_t num_captures,
+                                   bool has_named_captures) {
+  const uint32_t kAdditionalArgsWithoutNamedCaptures = 2;
+  const uint32_t kAdditionalArgsWithNamedCaptures = 3;
+  if (num_captures > Code::kMaxArguments) return -1;
+  uint32_t argc = has_named_captures
+                      ? num_captures + kAdditionalArgsWithNamedCaptures
+                      : num_captures + kAdditionalArgsWithoutNamedCaptures;
+  STATIC_ASSERT(Code::kMaxArguments < std::numeric_limits<uint32_t>::max() -
+                                          kAdditionalArgsWithNamedCaptures);
+  return (argc > Code::kMaxArguments) ? -1 : argc;
+}
+
 // Looks up the capture of the given name. Returns the (1-based) numbered
 // capture index or -1 on failure.
 int LookupNamedCapture(std::function<bool(String*)> name_matches,
@@ -808,19 +822,6 @@ Object* StringReplaceGlobalRegExpWithStringHelper(
 
 }  // namespace
 
-RUNTIME_FUNCTION(Runtime_StringReplaceGlobalRegExpWithString) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(4, args.length());
-
-  CONVERT_ARG_HANDLE_CHECKED(String, subject, 0);
-  CONVERT_ARG_HANDLE_CHECKED(String, replacement, 2);
-  CONVERT_ARG_HANDLE_CHECKED(JSRegExp, regexp, 1);
-  CONVERT_ARG_HANDLE_CHECKED(RegExpMatchInfo, last_match_info, 3);
-
-  return StringReplaceGlobalRegExpWithStringHelper(
-      isolate, regexp, subject, replacement, last_match_info);
-}
-
 RUNTIME_FUNCTION(Runtime_StringSplit) {
   HandleScope handle_scope(isolate);
   DCHECK_EQ(3, args.length());
@@ -1331,7 +1332,7 @@ MUST_USE_RESULT MaybeHandle<String> RegExpReplace(Isolate* isolate,
                                  String);
       last_index = PositiveNumberToUint32(*last_index_obj);
 
-      if (static_cast<int>(last_index) > string->length()) last_index = 0;
+      if (last_index > static_cast<uint32_t>(string->length())) last_index = 0;
     }
 
     Handle<Object> match_indices_obj;
@@ -1450,7 +1451,7 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
         isolate, last_index_obj, Object::ToLength(isolate, last_index_obj));
     last_index = PositiveNumberToUint32(*last_index_obj);
 
-    if (static_cast<int>(last_index) > subject->length()) last_index = 0;
+    if (last_index > static_cast<uint32_t>(subject->length())) last_index = 0;
   }
 
   Handle<Object> match_indices_obj;
@@ -1496,7 +1497,11 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
   }
 
   DCHECK_IMPLIES(has_named_captures, FLAG_harmony_regexp_named_captures);
-  const int argc = has_named_captures ? m + 3 : m + 2;
+  const uint32_t argc = GetArgcForReplaceCallable(m, has_named_captures);
+  if (argc == static_cast<uint32_t>(-1)) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewRangeError(MessageTemplate::kTooManyArguments));
+  }
   ScopedVector<Handle<Object>> argv(argc);
 
   int cursor = 0;
@@ -1641,7 +1646,7 @@ RUNTIME_FUNCTION(Runtime_RegExpSplit) {
 
   static const int kInitialArraySize = 8;
   Handle<FixedArray> elems = factory->NewFixedArrayWithHoles(kInitialArraySize);
-  int num_elems = 0;
+  uint32_t num_elems = 0;
 
   uint32_t string_index = 0;
   uint32_t prev_string_index = 0;
@@ -1679,7 +1684,7 @@ RUNTIME_FUNCTION(Runtime_RegExpSplit) {
       Handle<String> substr =
           factory->NewSubString(string, prev_string_index, string_index);
       elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
-      if (static_cast<uint32_t>(num_elems) == limit) {
+      if (num_elems == limit) {
         return *NewJSArrayWithElements(isolate, elems, num_elems);
       }
     }
@@ -1693,14 +1698,14 @@ RUNTIME_FUNCTION(Runtime_RegExpSplit) {
 
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
         isolate, num_captures_obj, Object::ToLength(isolate, num_captures_obj));
-    const int num_captures = PositiveNumberToUint32(*num_captures_obj);
+    const uint32_t num_captures = PositiveNumberToUint32(*num_captures_obj);
 
-    for (int i = 1; i < num_captures; i++) {
+    for (uint32_t i = 1; i < num_captures; i++) {
       Handle<Object> capture;
       ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
           isolate, capture, Object::GetElement(isolate, result, i));
       elems = FixedArray::SetAndGrow(elems, num_elems++, capture);
-      if (static_cast<uint32_t>(num_elems) == limit) {
+      if (num_elems == limit) {
         return *NewJSArrayWithElements(isolate, elems, num_elems);
       }
     }
@@ -1807,7 +1812,8 @@ RUNTIME_FUNCTION(Runtime_RegExpReplace) {
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
         isolate, captures_length_obj,
         Object::ToLength(isolate, captures_length_obj));
-    const int captures_length = PositiveNumberToUint32(*captures_length_obj);
+    const uint32_t captures_length =
+        PositiveNumberToUint32(*captures_length_obj);
 
     Handle<Object> match_obj;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, match_obj,
@@ -1832,7 +1838,7 @@ RUNTIME_FUNCTION(Runtime_RegExpReplace) {
     // Do not reserve capacity since captures_length is user-controlled.
     ZoneVector<Handle<Object>> captures(&zone);
 
-    for (int n = 0; n < captures_length; n++) {
+    for (uint32_t n = 0; n < captures_length; n++) {
       Handle<Object> capture;
       ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
           isolate, capture, Object::GetElement(isolate, result, n));
@@ -1856,12 +1862,17 @@ RUNTIME_FUNCTION(Runtime_RegExpReplace) {
 
     Handle<String> replacement;
     if (functional_replace) {
-      const int argc =
-          has_named_captures ? captures_length + 3 : captures_length + 2;
+      const uint32_t argc =
+          GetArgcForReplaceCallable(captures_length, has_named_captures);
+      if (argc == static_cast<uint32_t>(-1)) {
+        THROW_NEW_ERROR_RETURN_FAILURE(
+            isolate, NewRangeError(MessageTemplate::kTooManyArguments));
+      }
+
       ScopedVector<Handle<Object>> argv(argc);
 
       int cursor = 0;
-      for (int j = 0; j < captures_length; j++) {
+      for (uint32_t j = 0; j < captures_length; j++) {
         argv[cursor++] = captures[j];
       }
 

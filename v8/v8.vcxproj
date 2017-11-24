@@ -326,6 +326,7 @@
     <ClInclude Include="src\handles-inl.h" />
     <ClInclude Include="src\handles.h" />
     <ClInclude Include="src\heap-symbols.h" />
+    <ClInclude Include="src\heap\array-buffer-collector.h" />
     <ClInclude Include="src\heap\array-buffer-tracker-inl.h" />
     <ClInclude Include="src\heap\array-buffer-tracker.h" />
     <ClInclude Include="src\heap\barrier.h" />
@@ -443,7 +444,6 @@
     <ClInclude Include="src\objects.h" />
     <ClInclude Include="src\objects\arguments-inl.h" />
     <ClInclude Include="src\objects\arguments.h" />
-    <ClInclude Include="src\objects\bigint-inl.h" />
     <ClInclude Include="src\objects\bigint.h" />
     <ClInclude Include="src\objects\code-inl.h" />
     <ClInclude Include="src\objects\code.h" />
@@ -461,6 +461,7 @@
     <ClInclude Include="src\objects\js-array.h" />
     <ClInclude Include="src\objects\js-regexp-inl.h" />
     <ClInclude Include="src\objects\js-regexp.h" />
+    <ClInclude Include="src\objects\literal-objects-inl.h" />
     <ClInclude Include="src\objects\literal-objects.h" />
     <ClInclude Include="src\objects\map-inl.h" />
     <ClInclude Include="src\objects\map.h" />
@@ -969,6 +970,7 @@
     <ClCompile Include="src\gen\libraries.cc" />
     <ClCompile Include="src\global-handles.cc" />
     <ClCompile Include="src\handles.cc" />
+    <ClCompile Include="src\heap\array-buffer-collector.cc" />
     <ClCompile Include="src\heap\array-buffer-tracker.cc" />
     <ClCompile Include="src\heap\code-stats.cc" />
     <ClCompile Include="src\heap\concurrent-marking.cc" />

@@ -885,7 +885,7 @@ void CodeStubAssembler::BranchIfFastJSArray(Node* object, Node* context,
   // Check prototype chain if receiver does not have packed elements
   GotoIfNot(IsPrototypeInitialArrayPrototype(context, map), if_false);
 
-  Branch(IsArrayProtectorCellInvalid(), if_false, if_true);
+  Branch(IsNoElementsProtectorCellInvalid(), if_false, if_true);
 }
 
 void CodeStubAssembler::BranchIfFastJSArrayForCopy(Node* object, Node* context,
@@ -1330,7 +1330,7 @@ TNode<Uint32T> CodeStubAssembler::LoadMapBitField3(SloppyTNode<Map> map) {
 
 TNode<Int32T> CodeStubAssembler::LoadMapInstanceType(SloppyTNode<Map> map) {
   return UncheckedCast<Int32T>(
-      LoadObjectField(map, Map::kInstanceTypeOffset, MachineType::Uint8()));
+      LoadObjectField(map, Map::kInstanceTypeOffset, MachineType::Uint16()));
 }
 
 TNode<Int32T> CodeStubAssembler::LoadMapElementsKind(SloppyTNode<Map> map) {
@@ -1362,19 +1362,20 @@ TNode<PrototypeInfo> CodeStubAssembler::LoadMapPrototypeInfo(
   return CAST(prototype_info);
 }
 
-TNode<IntPtrT> CodeStubAssembler::LoadMapInstanceSize(SloppyTNode<Map> map) {
-  CSA_SLOW_ASSERT(this, IsMap(map));
-  return ChangeInt32ToIntPtr(
-      LoadObjectField(map, Map::kInstanceSizeOffset, MachineType::Uint8()));
-}
-
-TNode<IntPtrT> CodeStubAssembler::LoadMapInobjectProperties(
+TNode<IntPtrT> CodeStubAssembler::LoadMapInstanceSizeInWords(
     SloppyTNode<Map> map) {
   CSA_SLOW_ASSERT(this, IsMap(map));
-  // See Map::GetInObjectProperties() for details.
+  return ChangeInt32ToIntPtr(LoadObjectField(
+      map, Map::kInstanceSizeInWordsOffset, MachineType::Uint8()));
+}
+
+TNode<IntPtrT> CodeStubAssembler::LoadMapInobjectPropertiesStartInWords(
+    SloppyTNode<Map> map) {
+  CSA_SLOW_ASSERT(this, IsMap(map));
+  // See Map::GetInObjectPropertiesStartInWords() for details.
   CSA_ASSERT(this, IsJSObjectMap(map));
   return ChangeInt32ToIntPtr(LoadObjectField(
-      map, Map::kInObjectPropertiesOrConstructorFunctionIndexOffset,
+      map, Map::kInObjectPropertiesStartOrConstructorFunctionIndexOffset,
       MachineType::Uint8()));
 }
 
@@ -1384,7 +1385,7 @@ TNode<IntPtrT> CodeStubAssembler::LoadMapConstructorFunctionIndex(
   // See Map::GetConstructorFunctionIndex() for details.
   CSA_ASSERT(this, IsPrimitiveInstanceType(LoadMapInstanceType(map)));
   return ChangeInt32ToIntPtr(LoadObjectField(
-      map, Map::kInObjectPropertiesOrConstructorFunctionIndexOffset,
+      map, Map::kInObjectPropertiesStartOrConstructorFunctionIndexOffset,
       MachineType::Uint8()));
 }
 
@@ -1627,7 +1628,7 @@ Node* CodeStubAssembler::LoadFeedbackVectorSlot(Node* object,
 Node* CodeStubAssembler::LoadAndUntagToWord32FixedArrayElement(
     Node* object, Node* index_node, int additional_offset,
     ParameterMode parameter_mode) {
-  CSA_SLOW_ASSERT(this, Word32Or(IsFixedArray(object), IsHashTable(object)));
+  CSA_SLOW_ASSERT(this, IsFixedArraySubclass(object));
   CSA_SLOW_ASSERT(this, MatchesParameterMode(index_node, parameter_mode));
   int32_t header_size =
       FixedArray::kHeaderSize + additional_offset - kHeapObjectTag;
@@ -2464,7 +2465,7 @@ Node* CodeStubAssembler::CopyNameDictionary(Node* dictionary,
 Node* CodeStubAssembler::AllocateStruct(Node* map, AllocationFlags flags) {
   Comment("AllocateStruct");
   CSA_ASSERT(this, IsMap(map));
-  Node* size = TimesPointerSize(LoadMapInstanceSize(map));
+  Node* size = TimesPointerSize(LoadMapInstanceSizeInWords(map));
   Node* object = Allocate(size, flags);
   StoreMapNoWriteBarrier(object, map);
   InitializeStructBody(object, map, size, Struct::kHeaderSize);
@@ -2492,7 +2493,7 @@ Node* CodeStubAssembler::AllocateJSObjectFromMap(
   CSA_ASSERT(this, Word32BinaryNot(IsJSFunctionMap(map)));
   CSA_ASSERT(this, Word32BinaryNot(InstanceTypeEqual(LoadMapInstanceType(map),
                                                      JS_GLOBAL_OBJECT_TYPE)));
-  Node* instance_size = TimesPointerSize(LoadMapInstanceSize(map));
+  Node* instance_size = TimesPointerSize(LoadMapInstanceSizeInWords(map));
   Node* object = AllocateInNewSpace(instance_size, flags);
   StoreMapNoWriteBarrier(object, map);
   InitializeJSObjectFromMap(object, map, instance_size, properties, elements,
@@ -2568,10 +2569,11 @@ void CodeStubAssembler::InitializeJSObjectBodyWithSlackTracking(
                                    MachineRepresentation::kWord32);
     STATIC_ASSERT(Map::kSlackTrackingCounterEnd == 1);
 
-    Node* unused_fields = LoadObjectField(map, Map::kUnusedPropertyFieldsOffset,
-                                          MachineType::Uint8());
-    Node* used_size = IntPtrSub(
-        instance_size, TimesPointerSize(ChangeUint32ToWord(unused_fields)));
+    // The object still has in-object slack therefore the |unsed_or_unused|
+    // field contain the "used" value.
+    Node* used_size = TimesPointerSize(ChangeUint32ToWord(
+        LoadObjectField(map, Map::kUsedOrUnusedInstanceSizeInWordsOffset,
+                        MachineType::Uint8())));
 
     Comment("iInitialize filler fields");
     InitializeFieldsWithRoot(object, used_size, instance_size,
@@ -3021,7 +3023,6 @@ void CodeStubAssembler::FillPropertyArrayWithUndefined(Node* array,
   CSA_SLOW_ASSERT(this, MatchesParameterMode(from_node, mode));
   CSA_SLOW_ASSERT(this, MatchesParameterMode(to_node, mode));
   CSA_SLOW_ASSERT(this, IsPropertyArray(array));
-  STATIC_ASSERT(kHoleNanLower32 == kHoleNanUpper32);
   ElementsKind kind = PACKED_ELEMENTS;
   Node* value = UndefinedConstant();
   BuildFastFixedArrayForEach(array, kind, from_node, to_node,
@@ -3039,38 +3040,22 @@ void CodeStubAssembler::FillFixedArrayWithValue(
   CSA_SLOW_ASSERT(this, MatchesParameterMode(from_node, mode));
   CSA_SLOW_ASSERT(this, MatchesParameterMode(to_node, mode));
   CSA_SLOW_ASSERT(this, IsFixedArrayWithKind(array, kind));
-  bool is_double = IsDoubleElementsKind(kind);
   DCHECK(value_root_index == Heap::kTheHoleValueRootIndex ||
          value_root_index == Heap::kUndefinedValueRootIndex);
-  DCHECK_IMPLIES(is_double, value_root_index == Heap::kTheHoleValueRootIndex);
-  STATIC_ASSERT(kHoleNanLower32 == kHoleNanUpper32);
-  Node* double_hole =
-      Is64() ? ReinterpretCast<UintPtrT>(Int64Constant(kHoleNanInt64))
-             : ReinterpretCast<UintPtrT>(Int32Constant(kHoleNanLower32));
+
+  // Determine the value to initialize the {array} based
+  // on the {value_root_index} and the elements {kind}.
   Node* value = LoadRoot(value_root_index);
+  if (IsDoubleElementsKind(kind)) {
+    value = LoadHeapNumberValue(value);
+  }
 
   BuildFastFixedArrayForEach(
       array, kind, from_node, to_node,
-      [this, value, is_double, double_hole](Node* array, Node* offset) {
-        if (is_double) {
-          // Don't use doubles to store the hole double, since manipulating the
-          // signaling NaN used for the hole in C++, e.g. with bit_cast, will
-          // change its value on ia32 (the x87 stack is used to return values
-          // and stores to the stack silently clear the signalling bit).
-          //
-          // TODO(danno): When we have a Float32/Float64 wrapper class that
-          // preserves double bits during manipulation, remove this code/change
-          // this to an indexed Float64 store.
-          if (Is64()) {
-            StoreNoWriteBarrier(MachineRepresentation::kWord64, array, offset,
-                                double_hole);
-          } else {
-            StoreNoWriteBarrier(MachineRepresentation::kWord32, array, offset,
-                                double_hole);
-            StoreNoWriteBarrier(MachineRepresentation::kWord32, array,
-                                IntPtrAdd(offset, IntPtrConstant(kPointerSize)),
-                                double_hole);
-          }
+      [this, value, kind](Node* array, Node* offset) {
+        if (IsDoubleElementsKind(kind)) {
+          StoreNoWriteBarrier(MachineRepresentation::kFloat64, array, offset,
+                              value);
         } else {
           StoreNoWriteBarrier(MachineRepresentation::kTagged, array, offset,
                               value);
@@ -3796,8 +3781,7 @@ TNode<String> CodeStubAssembler::ToThisString(Node* context, Node* value,
   BIND(&if_valueissmi);
   {
     // The {value} is a Smi, convert it to a String.
-    Callable callable = CodeFactory::NumberToString(isolate());
-    var_value.Bind(CallStub(callable, context, value));
+    var_value.Bind(CallBuiltin(Builtins::kNumberToString, context, value));
     Goto(&if_valueisstring);
   }
   BIND(&if_valueisstring);
@@ -3988,6 +3972,23 @@ Node* CodeStubAssembler::ThrowIfNotJSReceiver(
   return var_value_map.value();
 }
 
+void CodeStubAssembler::ThrowRangeError(Node* context,
+                                        MessageTemplate::Template message,
+                                        Node* arg0, Node* arg1, Node* arg2) {
+  Node* template_index = SmiConstant(message);
+  if (arg0 == nullptr) {
+    CallRuntime(Runtime::kThrowRangeError, context, template_index);
+  } else if (arg1 == nullptr) {
+    CallRuntime(Runtime::kThrowRangeError, context, template_index, arg0);
+  } else if (arg2 == nullptr) {
+    CallRuntime(Runtime::kThrowRangeError, context, template_index, arg0, arg1);
+  } else {
+    CallRuntime(Runtime::kThrowRangeError, context, template_index, arg0, arg1,
+                arg2);
+  }
+  Unreachable();
+}
+
 void CodeStubAssembler::ThrowTypeError(Node* context,
                                        MessageTemplate::Template message,
                                        char const* arg0, char const* arg1) {
@@ -4058,9 +4059,9 @@ Node* CodeStubAssembler::IsUndetectableMap(Node* map) {
   return IsSetWord32(LoadMapBitField(map), 1 << Map::kIsUndetectable);
 }
 
-Node* CodeStubAssembler::IsArrayProtectorCellInvalid() {
+Node* CodeStubAssembler::IsNoElementsProtectorCellInvalid() {
   Node* invalid = SmiConstant(Isolate::kProtectorInvalid);
-  Node* cell = LoadRoot(Heap::kArrayProtectorRootIndex);
+  Node* cell = LoadRoot(Heap::kNoElementsProtectorRootIndex);
   Node* cell_value = LoadObjectField(cell, PropertyCell::kValueOffset);
   return WordEqual(cell_value, invalid);
 }
@@ -4241,6 +4242,14 @@ Node* CodeStubAssembler::IsFixedArray(Node* object) {
   return HasInstanceType(object, FIXED_ARRAY_TYPE);
 }
 
+Node* CodeStubAssembler::IsFixedArraySubclass(Node* object) {
+  Node* instance_type = LoadInstanceType(object);
+  return Word32And(Int32GreaterThanOrEqual(
+                       instance_type, Int32Constant(FIRST_FIXED_ARRAY_TYPE)),
+                   Int32LessThanOrEqual(instance_type,
+                                        Int32Constant(LAST_FIXED_ARRAY_TYPE)));
+}
+
 Node* CodeStubAssembler::IsPropertyArray(Node* object) {
   return HasInstanceType(object, PROPERTY_ARRAY_TYPE);
 }
@@ -4276,7 +4285,7 @@ Node* CodeStubAssembler::IsFixedArrayWithKind(Node* object, ElementsKind kind) {
     return IsFixedDoubleArray(object);
   } else {
     DCHECK(IsSmiOrObjectElementsKind(kind));
-    return Word32Or(IsFixedArray(object), IsHashTable(object));
+    return IsFixedArraySubclass(object);
   }
 }
 
@@ -5312,8 +5321,7 @@ Node* CodeStubAssembler::ToName(Node* context, Node* value) {
 
   BIND(&is_number);
   {
-    Callable callable = CodeFactory::NumberToString(isolate());
-    var_result.Bind(CallStub(callable, context, value));
+    var_result.Bind(CallBuiltin(Builtins::kNumberToString, context, value));
     Goto(&end);
   }
 
@@ -6616,19 +6624,19 @@ void CodeStubAssembler::LoadPropertyFromFastObject(Node* object, Node* map,
     Node* representation =
         DecodeWord32<PropertyDetails::RepresentationField>(details);
 
-    Node* inobject_properties = LoadMapInobjectProperties(map);
+    field_index =
+        IntPtrAdd(field_index, LoadMapInobjectPropertiesStartInWords(map));
+    Node* instance_size_in_words = LoadMapInstanceSizeInWords(map);
 
     Label if_inobject(this), if_backing_store(this);
     VARIABLE(var_double_value, MachineRepresentation::kFloat64);
     Label rebox_double(this, &var_double_value);
-    Branch(UintPtrLessThan(field_index, inobject_properties), &if_inobject,
+    Branch(UintPtrLessThan(field_index, instance_size_in_words), &if_inobject,
            &if_backing_store);
     BIND(&if_inobject);
     {
       Comment("if_inobject");
-      Node* field_offset = TimesPointerSize(
-          IntPtrAdd(IntPtrSub(LoadMapInstanceSize(map), inobject_properties),
-                    field_index));
+      Node* field_offset = TimesPointerSize(field_index);
 
       Label if_double(this), if_tagged(this);
       Branch(Word32NotEqual(representation,
@@ -6655,7 +6663,7 @@ void CodeStubAssembler::LoadPropertyFromFastObject(Node* object, Node* map,
     {
       Comment("if_backing_store");
       Node* properties = LoadFastProperties(object);
-      field_index = IntPtrSub(field_index, inobject_properties);
+      field_index = IntPtrSub(field_index, instance_size_in_words);
       Node* value = LoadFixedArrayElement(properties, field_index);
 
       Label if_double(this), if_tagged(this);
@@ -7995,7 +8003,7 @@ Node* CodeStubAssembler::CreateWeakCellInFeedbackVector(Node* feedback_vector,
 
   // Store the WeakCell in the feedback vector.
   StoreFeedbackVectorSlot(feedback_vector, slot, cell, UPDATE_WRITE_BARRIER, 0,
-                          CodeStubAssembler::SMI_PARAMETERS);
+                          CodeStubAssembler::INTPTR_PARAMETERS);
   return cell;
 }
 
@@ -10244,7 +10252,7 @@ Node* CodeStubAssembler::CreateArrayIterator(Node* array, Node* array_map,
           // its initial state (because the protector cell is only tracked for
           // initial the Array and Object prototypes). Check these conditions
           // here, and take the slow path if any fail.
-          GotoIf(IsArrayProtectorCellInvalid(), &if_isslow);
+          GotoIf(IsNoElementsProtectorCellInvalid(), &if_isslow);
 
           Node* native_context = LoadNativeContext(context);
 

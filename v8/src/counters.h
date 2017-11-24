@@ -789,6 +789,9 @@ class RuntimeCallTimer final {
   V(CompileBackgroundEval)                     \
   V(CompileBackgroundIgnition)                 \
   V(CompileBackgroundScript)                   \
+  V(CompileBackgroundRenumber)                 \
+  V(CompileBackgroundRewriteReturnResult)      \
+  V(CompileBackgroundScopeAnalysis)            \
   V(CompileDeserialize)                        \
   V(CompileEval)                               \
   V(CompileAnalyse)                            \
@@ -835,6 +838,7 @@ class RuntimeCallTimer final {
   V(ParseArrowFunctionLiteral)                 \
   V(ParseBackgroundArrowFunctionLiteral)       \
   V(ParseBackgroundFunctionLiteral)            \
+  V(ParseBackgroundProgram)                    \
   V(ParseEval)                                 \
   V(ParseFunction)                             \
   V(ParseFunctionLiteral)                      \
@@ -1066,7 +1070,7 @@ class RuntimeCallTimerScope {
      20)                                                                       \
   HR(wasm_lazy_compilation_throughput, V8.WasmLazyCompilationThroughput, 1,    \
      10000, 50)                                                                \
-  HR(compile_script_cache_behaviour, V8.CompileScript.CacheBehaviour, 0, 18, 19)
+  HR(compile_script_cache_behaviour, V8.CompileScript.CacheBehaviour, 0, 19, 20)
 
 #define HISTOGRAM_TIMER_LIST(HT)                                               \
   /* Garbage collection timers. */                                             \
