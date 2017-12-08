@@ -20,6 +20,7 @@
 #include "src/feedback-vector.h"
 #include "src/field-index-inl.h"
 #include "src/isolate-inl.h"
+#include "src/vector-slot-pair.h"
 
 namespace v8 {
 namespace internal {
@@ -1065,9 +1066,7 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
                                          effect, control);
 
     // Determine the {receiver} length.
-    Node* length = effect = graph()->NewNode(
-        simplified()->LoadField(AccessBuilder::ForStringLength()), receiver,
-        effect, control);
+    Node* length = graph()->NewNode(simplified()->StringLength(), receiver);
 
     // Load the single character string from {receiver} or yield undefined
     // if the {index} is out of bounds (depending on the {load_mode}).

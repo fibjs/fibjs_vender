@@ -129,6 +129,7 @@
     <ClInclude Include="src\builtins\builtins-descriptors.h" />
     <ClInclude Include="src\builtins\builtins-intl.h" />
     <ClInclude Include="src\builtins\builtins-iterator-gen.h" />
+    <ClInclude Include="src\builtins\builtins-math-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
     <ClInclude Include="src\builtins\builtins-proxy-gen.h" />
     <ClInclude Include="src\builtins\builtins-regexp-gen.h" />
@@ -359,6 +360,9 @@
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
     <ClInclude Include="src\heap\store-buffer.h" />
+    <ClInclude Include="src\heap\stress-marking-observer.h" />
+    <ClInclude Include="src\heap\stress-scavenge-observer.h" />
+    <ClInclude Include="src\heap\sweeper.h" />
     <ClInclude Include="src\heap\worklist.h" />
     <ClInclude Include="src\ia32\assembler-ia32-inl.h" />
     <ClInclude Include="src\ia32\assembler-ia32.h" />
@@ -449,16 +453,22 @@
     <ClInclude Include="src\objects\code.h" />
     <ClInclude Include="src\objects\compilation-cache-inl.h" />
     <ClInclude Include="src\objects\compilation-cache.h" />
+    <ClInclude Include="src\objects\data-handler-inl.h" />
+    <ClInclude Include="src\objects\data-handler.h" />
     <ClInclude Include="src\objects\debug-objects-inl.h" />
     <ClInclude Include="src\objects\debug-objects.h" />
     <ClInclude Include="src\objects\descriptor-array.h" />
     <ClInclude Include="src\objects\dictionary.h" />
+    <ClInclude Include="src\objects\fixed-array-inl.h" />
+    <ClInclude Include="src\objects\fixed-array.h" />
     <ClInclude Include="src\objects\frame-array-inl.h" />
     <ClInclude Include="src\objects\frame-array.h" />
     <ClInclude Include="src\objects\hash-table-inl.h" />
     <ClInclude Include="src\objects\hash-table.h" />
     <ClInclude Include="src\objects\js-array-inl.h" />
     <ClInclude Include="src\objects\js-array.h" />
+    <ClInclude Include="src\objects\js-collection-inl.h" />
+    <ClInclude Include="src\objects\js-collection.h" />
     <ClInclude Include="src\objects\js-regexp-inl.h" />
     <ClInclude Include="src\objects\js-regexp.h" />
     <ClInclude Include="src\objects\literal-objects-inl.h" />
@@ -615,19 +625,18 @@
     <ClInclude Include="src\v8memory.h" />
     <ClInclude Include="src\v8threads.h" />
     <ClInclude Include="src\value-serializer.h" />
+    <ClInclude Include="src\vector-slot-pair.h" />
     <ClInclude Include="src\vector.h" />
     <ClInclude Include="src\version.h" />
     <ClInclude Include="src\visitors.h" />
     <ClInclude Include="src\vm-state-inl.h" />
     <ClInclude Include="src\vm-state.h" />
-    <ClInclude Include="src\wasm\baseline\ia32\liftoff-assembler-ia32-defs.h" />
     <ClInclude Include="src\wasm\baseline\ia32\liftoff-assembler-ia32.h" />
+    <ClInclude Include="src\wasm\baseline\liftoff-assembler-defs.h" />
     <ClInclude Include="src\wasm\baseline\liftoff-assembler.h" />
-    <ClInclude Include="src\wasm\baseline\ppc\liftoff-assembler-ppc-defs.h" />
+    <ClInclude Include="src\wasm\baseline\liftoff-register.h" />
     <ClInclude Include="src\wasm\baseline\ppc\liftoff-assembler-ppc.h" />
-    <ClInclude Include="src\wasm\baseline\s390\liftoff-assembler-s390-defs.h" />
     <ClInclude Include="src\wasm\baseline\s390\liftoff-assembler-s390.h" />
-    <ClInclude Include="src\wasm\baseline\x64\liftoff-assembler-x64-defs.h" />
     <ClInclude Include="src\wasm\baseline\x64\liftoff-assembler-x64.h" />
     <ClInclude Include="src\wasm\compilation-manager.h" />
     <ClInclude Include="src\wasm\decoder.h" />
@@ -641,9 +650,11 @@
     <ClInclude Include="src\wasm\signature-map.h" />
     <ClInclude Include="src\wasm\streaming-decoder.h" />
     <ClInclude Include="src\wasm\wasm-api.h" />
+    <ClInclude Include="src\wasm\wasm-code-manager.h" />
     <ClInclude Include="src\wasm\wasm-code-specialization.h" />
+    <ClInclude Include="src\wasm\wasm-code-wrapper.h" />
+    <ClInclude Include="src\wasm\wasm-engine.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
-    <ClInclude Include="src\wasm\wasm-heap.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
     <ClInclude Include="src\wasm\wasm-js.h" />
     <ClInclude Include="src\wasm\wasm-limits.h" />
@@ -654,6 +665,7 @@
     <ClInclude Include="src\wasm\wasm-objects.h" />
     <ClInclude Include="src\wasm\wasm-opcodes.h" />
     <ClInclude Include="src\wasm\wasm-result.h" />
+    <ClInclude Include="src\wasm\wasm-serialization.h" />
     <ClInclude Include="src\wasm\wasm-text.h" />
     <ClInclude Include="src\wasm\wasm-value.h" />
     <ClInclude Include="src\x64\assembler-x64-inl.h" />
@@ -991,6 +1003,9 @@
     <ClCompile Include="src\heap\setup-heap-internal.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
+    <ClCompile Include="src\heap\stress-marking-observer.cc" />
+    <ClCompile Include="src\heap\stress-scavenge-observer.cc" />
+    <ClCompile Include="src\heap\sweeper.cc" />
     <ClCompile Include="src\ia32\assembler-ia32.cc" />
     <ClCompile Include="src\ia32\code-stubs-ia32.cc" />
     <ClCompile Include="src\ia32\codegen-ia32.cc" />
@@ -1224,6 +1239,7 @@
     <ClCompile Include="src\v8.cc" />
     <ClCompile Include="src\v8threads.cc" />
     <ClCompile Include="src\value-serializer.cc" />
+    <ClCompile Include="src\vector-slot-pair.cc" />
     <ClCompile Include="src\version.cc" />
     <ClCompile Include="src\visitors.cc" />
     <ClCompile Include="src\wasm\baseline\liftoff-assembler.cc" />
@@ -1237,10 +1253,11 @@
     <ClCompile Include="src\wasm\signature-map.cc" />
     <ClCompile Include="src\wasm\streaming-decoder.cc" />
     <ClCompile Include="src\wasm\wasm-api.cc" />
+    <ClCompile Include="src\wasm\wasm-code-manager.cc" />
     <ClCompile Include="src\wasm\wasm-code-specialization.cc" />
+    <ClCompile Include="src\wasm\wasm-code-wrapper.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
-    <ClCompile Include="src\wasm\wasm-heap.cc" />
     <ClCompile Include="src\wasm\wasm-interpreter.cc" />
     <ClCompile Include="src\wasm\wasm-js.cc" />
     <ClCompile Include="src\wasm\wasm-memory.cc" />
@@ -1249,6 +1266,7 @@
     <ClCompile Include="src\wasm\wasm-objects.cc" />
     <ClCompile Include="src\wasm\wasm-opcodes.cc" />
     <ClCompile Include="src\wasm\wasm-result.cc" />
+    <ClCompile Include="src\wasm\wasm-serialization.cc" />
     <ClCompile Include="src\wasm\wasm-text.cc" />
     <ClCompile Include="src\x64\assembler-x64.cc" />
     <ClCompile Include="src\x64\code-stubs-x64.cc" />
@@ -1339,7 +1357,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>4091;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4091;4101;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -1360,7 +1378,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>4091;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4091;4101;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -1384,7 +1402,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <DisableSpecificWarnings>4091;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4091;4101;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -1411,7 +1429,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <DisableSpecificWarnings>4091;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4091;4101;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>

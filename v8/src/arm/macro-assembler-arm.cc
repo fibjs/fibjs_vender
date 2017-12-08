@@ -240,8 +240,8 @@ void MacroAssembler::CallDeoptimizer(Address target) {
   // used by the deoptimizer to work out what called it.
   if (CpuFeatures::IsSupported(ARMv7)) {
     CpuFeatureScope scope(this, ARMv7);
-    movw(ip, target_raw & 0xffff);
-    movt(ip, (target_raw >> 16) & 0xffff);
+    movw(ip, target_raw & 0xFFFF);
+    movt(ip, (target_raw >> 16) & 0xFFFF);
     blx(ip);
   } else {
     // We need to load a literal, but we can't use the usual constant pool
@@ -989,7 +989,7 @@ void TurboAssembler::LslPair(Register dst_low, Register dst_high,
   rsb(scratch, shift, Operand(32), SetCC);
   b(gt, &less_than_32);
   // If shift >= 32
-  and_(scratch, shift, Operand(0x1f));
+  and_(scratch, shift, Operand(0x1F));
   lsl(dst_high, src_low, Operand(scratch));
   mov(dst_low, Operand(0));
   jmp(&done);
@@ -1014,7 +1014,7 @@ void TurboAssembler::LslPair(Register dst_low, Register dst_high,
     Move(dst_high, src_low);
     Move(dst_low, Operand(0));
   } else if (shift >= 32) {
-    shift &= 0x1f;
+    shift &= 0x1F;
     lsl(dst_high, src_low, Operand(shift));
     mov(dst_low, Operand(0));
   } else {
@@ -1035,7 +1035,7 @@ void TurboAssembler::LsrPair(Register dst_low, Register dst_high,
   rsb(scratch, shift, Operand(32), SetCC);
   b(gt, &less_than_32);
   // If shift >= 32
-  and_(scratch, shift, Operand(0x1f));
+  and_(scratch, shift, Operand(0x1F));
   lsr(dst_low, src_high, Operand(scratch));
   mov(dst_high, Operand(0));
   jmp(&done);
@@ -1058,7 +1058,7 @@ void TurboAssembler::LsrPair(Register dst_low, Register dst_high,
     mov(dst_low, src_high);
     mov(dst_high, Operand(0));
   } else if (shift > 32) {
-    shift &= 0x1f;
+    shift &= 0x1F;
     lsr(dst_low, src_high, Operand(shift));
     mov(dst_high, Operand(0));
   } else if (shift == 0) {
@@ -1082,7 +1082,7 @@ void TurboAssembler::AsrPair(Register dst_low, Register dst_high,
   rsb(scratch, shift, Operand(32), SetCC);
   b(gt, &less_than_32);
   // If shift >= 32
-  and_(scratch, shift, Operand(0x1f));
+  and_(scratch, shift, Operand(0x1F));
   asr(dst_low, src_high, Operand(scratch));
   asr(dst_high, src_high, Operand(31));
   jmp(&done);
@@ -1104,7 +1104,7 @@ void TurboAssembler::AsrPair(Register dst_low, Register dst_high,
     mov(dst_low, src_high);
     asr(dst_high, src_high, Operand(31));
   } else if (shift > 32) {
-    shift &= 0x1f;
+    shift &= 0x1F;
     asr(dst_low, src_high, Operand(shift));
     asr(dst_high, src_high, Operand(31));
   } else if (shift == 0) {
@@ -1222,7 +1222,6 @@ int TurboAssembler::ActivationFrameAlignment() {
 #endif  // V8_HOST_ARCH_ARM
 }
 
-
 void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
                                     bool argument_count_is_length) {
   ConstantPoolUnavailableScope constant_pool_unavailable(this);
@@ -1248,6 +1247,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
       Operand(ExternalReference(IsolateAddressId::kContextAddress, isolate())));
   ldr(cp, MemOperand(scratch));
 #ifdef DEBUG
+  mov(r3, Operand(Context::kInvalidContext));
   mov(scratch,
       Operand(ExternalReference(IsolateAddressId::kContextAddress, isolate())));
   str(r3, MemOperand(scratch));
@@ -1664,9 +1664,9 @@ void TurboAssembler::TryInlineTruncateDoubleToI(Register result,
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
 
-  // If result is not saturated (0x7fffffff or 0x80000000), we are done.
+  // If result is not saturated (0x7FFFFFFF or 0x80000000), we are done.
   sub(scratch, result, Operand(1));
-  cmp(scratch, Operand(0x7ffffffe));
+  cmp(scratch, Operand(0x7FFFFFFE));
   b(lt, done);
 }
 

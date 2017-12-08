@@ -400,6 +400,10 @@ class MemoryChunk {
 
   static const int kAllocatableMemory = kPageSize - kObjectStartOffset;
 
+  // Maximum number of nested code memory modification scopes.
+  // TODO(6792,mstarzinger): Drop to 3 or lower once WebAssembly is off heap.
+  static const int kMaxWriteUnprotectCounter = 4;
+
   // Only works if the pointer is in the first kPageSize of the MemoryChunk.
   static MemoryChunk* FromAddress(Address a) {
     return reinterpret_cast<MemoryChunk*>(OffsetFrom(a) & ~kAlignmentMask);
@@ -636,6 +640,8 @@ class MemoryChunk {
   void SetReadAndExecutable();
   void SetReadAndWritable();
 
+  inline void InitializeFreeListCategories();
+
  protected:
   static MemoryChunk* Initialize(Heap* heap, Address base, size_t size,
                                  Address area_start, Address area_end,
@@ -695,7 +701,8 @@ class MemoryChunk {
   // counter is decremented when a component resets to read+executable.
   // If Value() == 0 => The memory is read and executable.
   // If Value() >= 1 => The Memory is read and writable (and maybe executable).
-  // The maximum value can right now only be 3.
+  // The maximum value is limited by {kMaxWriteUnprotectCounter} to prevent
+  // excessive nesting of scopes.
   // All executable MemoryChunks are allocated rw based on the assumption that
   // they will be used immediatelly for an allocation. They are initialized
   // with the number of open CodeSpaceMemoryModificationScopes. The caller
@@ -840,8 +847,6 @@ class Page : public MemoryChunk {
     return &categories_[type];
   }
 
-  inline void InitializeFreeListCategories();
-
   bool is_anchor() { return IsFlagSet(Page::ANCHOR); }
 
   size_t wasted_memory() { return wasted_memory_; }
@@ -928,9 +933,11 @@ class Space : public Malloced {
   // Identity used in error reporting.
   AllocationSpace identity() { return id_; }
 
-  void AddAllocationObserver(AllocationObserver* observer);
+  V8_EXPORT_PRIVATE virtual void AddAllocationObserver(
+      AllocationObserver* observer);
 
-  void RemoveAllocationObserver(AllocationObserver* observer);
+  V8_EXPORT_PRIVATE virtual void RemoveAllocationObserver(
+      AllocationObserver* observer);
 
   V8_EXPORT_PRIVATE virtual void PauseAllocationObservers();
 
@@ -1218,19 +1225,11 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
     void FreeQueuedChunks();
     void WaitUntilCompleted();
     void TearDown();
-
-    bool has_delayed_chunks() { return delayed_regular_chunks_.size() > 0; }
-
-    int NumberOfDelayedChunks() {
-      base::LockGuard<base::Mutex> guard(&mutex_);
-      return static_cast<int>(delayed_regular_chunks_.size());
-    }
-
     int NumberOfChunks();
 
    private:
     static const int kReservedQueueingSlots = 64;
-    static const int kMaxUnmapperTasks = 24;
+    static const int kMaxUnmapperTasks = 4;
 
     enum ChunkQueueType {
       kRegular,     // Pages of kPageSize that do not live in a CodeRange and
@@ -1248,12 +1247,7 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
     template <ChunkQueueType type>
     void AddMemoryChunkSafe(MemoryChunk* chunk) {
       base::LockGuard<base::Mutex> guard(&mutex_);
-      if (type != kRegular || allocator_->CanFreeMemoryChunk(chunk)) {
-        chunks_[type].push_back(chunk);
-      } else {
-        DCHECK_EQ(type, kRegular);
-        delayed_regular_chunks_.push_back(chunk);
-      }
+      chunks_[type].push_back(chunk);
     }
 
     template <ChunkQueueType type>
@@ -1265,7 +1259,6 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
       return chunk;
     }
 
-    void ReconsiderDelayedChunks();
     template <FreeMode mode>
     void PerformFreeMemoryOnQueuedChunks();
 
@@ -1273,10 +1266,6 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
     MemoryAllocator* const allocator_;
     base::Mutex mutex_;
     std::vector<MemoryChunk*> chunks_[kNumberOfChunkQueues];
-    // Delayed chunks cannot be processed in the current unmapping cycle because
-    // of dependencies such as an active sweeper.
-    // See MemoryAllocator::CanFreeMemoryChunk.
-    std::list<MemoryChunk*> delayed_regular_chunks_;
     CancelableTaskManager::Id task_ids_[kMaxUnmapperTasks];
     base::Semaphore pending_unmapping_tasks_semaphore_;
     intptr_t concurrent_unmapping_tasks_active_;
@@ -1336,8 +1325,6 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
 
   template <MemoryAllocator::FreeMode mode = kFull>
   void Free(MemoryChunk* chunk);
-
-  bool CanFreeMemoryChunk(MemoryChunk* chunk);
 
   // Returns allocated spaces in bytes.
   size_t Size() { return size_.Value(); }
@@ -1979,7 +1966,50 @@ class LocalAllocationBuffer {
   AllocationInfo allocation_info_;
 };
 
-class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
+class SpaceWithLinearArea : public Space {
+ public:
+  SpaceWithLinearArea(Heap* heap, AllocationSpace id, Executability executable)
+      : Space(heap, id, executable), top_on_previous_step_(0) {
+    allocation_info_.Reset(nullptr, nullptr);
+  }
+
+  // Returns the allocation pointer in this space.
+  Address top() { return allocation_info_.top(); }
+  Address limit() { return allocation_info_.limit(); }
+
+  // The allocation top address.
+  Address* allocation_top_address() { return allocation_info_.top_address(); }
+
+  // The allocation limit address.
+  Address* allocation_limit_address() {
+    return allocation_info_.limit_address();
+  }
+
+  // If we are doing inline allocation in steps, this method performs the 'step'
+  // operation. top is the memory address of the bump pointer at the last
+  // inline allocation (i.e. it determines the numbers of bytes actually
+  // allocated since the last step.) new_top is the address of the bump pointer
+  // where the next byte is going to be allocated from. top and new_top may be
+  // different when we cross a page boundary or reset the space.
+  // TODO(ofrobots): clarify the precise difference between this and
+  // Space::AllocationStep.
+  void InlineAllocationStep(Address top, Address new_top, Address soon_object,
+                            size_t size);
+
+  V8_EXPORT_PRIVATE void AddAllocationObserver(
+      AllocationObserver* observer) override;
+  V8_EXPORT_PRIVATE void RemoveAllocationObserver(
+      AllocationObserver* observer) override;
+  V8_EXPORT_PRIVATE void ResumeAllocationObservers() override;
+
+ protected:
+  // TODO(ofrobots): make these private after refactoring is complete.
+  AllocationInfo allocation_info_;
+  Address top_on_previous_step_;
+};
+
+class V8_EXPORT_PRIVATE PagedSpace
+    : NON_EXPORTED_BASE(public SpaceWithLinearArea) {
  public:
   typedef PageIterator iterator;
 
@@ -2051,18 +2081,6 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
   // due to being too small to use for allocation.
   virtual size_t Waste() { return free_list_.wasted_bytes(); }
 
-  // Returns the allocation pointer in this space.
-  Address top() { return allocation_info_.top(); }
-  Address limit() { return allocation_info_.limit(); }
-
-  // The allocation top address.
-  Address* allocation_top_address() { return allocation_info_.top_address(); }
-
-  // The allocation limit address.
-  Address* allocation_limit_address() {
-    return allocation_info_.limit_address();
-  }
-
   enum UpdateSkipList { UPDATE_SKIP_LIST, IGNORE_SKIP_LIST };
 
   // Allocate the requested number of bytes in the space if possible, return a
@@ -2104,7 +2122,6 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
   void ResetFreeList() { free_list_.Reset(); }
 
   void PauseAllocationObservers() override;
-  void ResumeAllocationObservers() override;
 
   // Empty space allocation info, returning unused area to free list.
   void EmptyAllocationInfo();
@@ -2220,7 +2237,9 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
   }
   void DecreaseLimit(Address new_limit);
   void StartNextInlineAllocationStep() override;
-  bool SupportsInlineAllocation() { return identity() == OLD_SPACE; }
+  bool SupportsInlineAllocation() {
+    return identity() == OLD_SPACE && !is_local();
+  }
 
  protected:
   // PagedSpaces that should be included in snapshots have different, i.e.,
@@ -2277,13 +2296,8 @@ class V8_EXPORT_PRIVATE PagedSpace : NON_EXPORTED_BASE(public Space) {
   // The space's free list.
   FreeList free_list_;
 
-  // Normal allocation information.
-  AllocationInfo allocation_info_;
-
   // Mutex guarding any concurrent access to the space.
   base::Mutex space_mutex_;
-
-  Address top_on_previous_step_;
 
   friend class IncrementalMarking;
   friend class MarkCompactCollector;
@@ -2495,13 +2509,12 @@ class SemiSpaceIterator : public ObjectIterator {
 // The new space consists of a contiguous pair of semispaces.  It simply
 // forwards most functions to the appropriate semispace.
 
-class NewSpace : public Space {
+class NewSpace : public SpaceWithLinearArea {
  public:
   typedef PageIterator iterator;
 
   explicit NewSpace(Heap* heap)
-      : Space(heap, NEW_SPACE, NOT_EXECUTABLE),
-        top_on_previous_step_(0),
+      : SpaceWithLinearArea(heap, NEW_SPACE, NOT_EXECUTABLE),
         to_space_(heap, kToSpace),
         from_space_(heap, kFromSpace),
         reservation_(),
@@ -2626,18 +2639,6 @@ class NewSpace : public Space {
     return to_space_.minimum_capacity();
   }
 
-  // Return the address of the allocation pointer in the active semispace.
-  Address top() {
-    DCHECK(to_space_.current_page()->ContainsLimit(allocation_info_.top()));
-    return allocation_info_.top();
-  }
-
-  // Return the address of the allocation pointer limit in the active semispace.
-  Address limit() {
-    DCHECK(to_space_.current_page()->ContainsLimit(allocation_info_.limit()));
-    return allocation_info_.limit();
-  }
-
   void ResetOriginalTop() {
     DCHECK_GE(top(), original_top());
     DCHECK_LE(top(), original_limit());
@@ -2654,14 +2655,6 @@ class NewSpace : public Space {
   Address age_mark() { return from_space_.age_mark(); }
   // Set the age mark in the active semispace.
   void set_age_mark(Address mark) { to_space_.set_age_mark(mark); }
-
-  // The allocation top and limit address.
-  Address* allocation_top_address() { return allocation_info_.top_address(); }
-
-  // The allocation limit address.
-  Address* allocation_limit_address() {
-    return allocation_info_.limit_address();
-  }
 
   MUST_USE_RESULT INLINE(AllocationResult AllocateRawAligned(
       int size_in_bytes, AllocationAlignment alignment));
@@ -2753,7 +2746,6 @@ class NewSpace : public Space {
   SemiSpace* active_space() { return &to_space_; }
 
   void PauseAllocationObservers() override;
-  void ResumeAllocationObservers() override;
 
   iterator begin() { return to_space_.begin(); }
   iterator end() { return to_space_.end(); }
@@ -2769,10 +2761,6 @@ class NewSpace : public Space {
 
   base::Mutex mutex_;
 
-  // Allocation pointer and limit for normal allocation and allocation during
-  // mark-compact collection.
-  AllocationInfo allocation_info_;
-  Address top_on_previous_step_;
   // The top and the limit at the time of setting the allocation info.
   // These values can be accessed by background tasks.
   base::AtomicValue<Address> original_top_;
@@ -2788,14 +2776,6 @@ class NewSpace : public Space {
 
   bool EnsureAllocation(int size_in_bytes, AllocationAlignment alignment);
 
-  // If we are doing inline allocation in steps, this method performs the 'step'
-  // operation. top is the memory address of the bump pointer at the last
-  // inline allocation (i.e. it determines the numbers of bytes actually
-  // allocated since the last step.) new_top is the address of the bump pointer
-  // where the next byte is going to be allocated from. top and new_top may be
-  // different when we cross a page boundary or reset the space.
-  void InlineAllocationStep(Address top, Address new_top, Address soon_object,
-                            size_t size);
   void StartNextInlineAllocationStep() override;
 
   friend class SemiSpaceIterator;

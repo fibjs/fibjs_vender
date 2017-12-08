@@ -362,6 +362,9 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::BinaryOperation(Token::Value op,
     case Token::Value::MOD:
       OutputMod(reg, feedback_slot);
       break;
+    case Token::Value::EXP:
+      OutputExp(reg, feedback_slot);
+      break;
     case Token::Value::BIT_OR:
       OutputBitwiseOr(reg, feedback_slot);
       break;
@@ -403,6 +406,9 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::BinaryOperationSmiLiteral(
       break;
     case Token::Value::MOD:
       OutputModSmi(literal->value(), feedback_slot);
+      break;
+    case Token::Value::EXP:
+      OutputExpSmi(literal->value(), feedback_slot);
       break;
     case Token::Value::BIT_OR:
       OutputBitwiseOrSmi(literal->value(), feedback_slot);
@@ -867,6 +873,20 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreHomeObjectProperty(
     Register object, int feedback_slot, LanguageMode language_mode) {
   size_t name_index = HomeObjectSymbolConstantPoolEntry();
   return StoreNamedProperty(object, name_index, feedback_slot, language_mode);
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::StoreClassFieldsInitializer(
+    Register constructor, int feedback_slot) {
+  size_t name_index = ClassFieldsSymbolConstantPoolEntry();
+  return StoreNamedProperty(constructor, name_index, feedback_slot,
+                            LanguageMode::kStrict);
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::LoadClassFieldsInitializer(
+    Register constructor, int feedback_slot) {
+  size_t name_index = ClassFieldsSymbolConstantPoolEntry();
+  OutputLdaNamedProperty(constructor, name_index, feedback_slot);
+  return *this;
 }
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateClosure(

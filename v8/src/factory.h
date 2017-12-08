@@ -7,8 +7,10 @@
 
 #include "src/feedback-vector.h"
 #include "src/globals.h"
+#include "src/ic/handler-configuration.h"
 #include "src/isolate.h"
 #include "src/messages.h"
+#include "src/objects/data-handler.h"
 #include "src/objects/descriptor-array.h"
 #include "src/objects/dictionary.h"
 #include "src/objects/js-array.h"
@@ -29,7 +31,12 @@ class ConstantElementsPair;
 class CoverageInfo;
 class DebugInfo;
 class FreshlyAllocatedBigInt;
+class JSMap;
+class JSMapIterator;
 class JSModuleNamespace;
+class JSSet;
+class JSSetIterator;
+class JSWeakMap;
 class NewFunctionArgs;
 struct SourceRange;
 class PreParsedScopeData;
@@ -70,10 +77,15 @@ class V8_EXPORT_PRIVATE Factory final {
                              Handle<Object> to_number, const char* type_of,
                              byte kind);
 
+  // Allocates a fixed array-like object with given map and initialized with
+  // undefined values.
+  Handle<FixedArray> NewFixedArrayWithMap(Heap::RootListIndex map_root_index,
+                                          int length, PretenureFlag pretenure);
+
   // Allocates a fixed array initialized with undefined values.
-  Handle<FixedArray> NewFixedArray(int size,
+  Handle<FixedArray> NewFixedArray(int length,
                                    PretenureFlag pretenure = NOT_TENURED);
-  Handle<PropertyArray> NewPropertyArray(int size,
+  Handle<PropertyArray> NewPropertyArray(int length,
                                          PretenureFlag pretenure = NOT_TENURED);
   // Tries allocating a fixed array initialized with undefined values.
   // In case of an allocation failure (OOM) an empty handle is returned.
@@ -82,15 +94,14 @@ class V8_EXPORT_PRIVATE Factory final {
   // NewFixedArray as a fallback.
   MUST_USE_RESULT
   MaybeHandle<FixedArray> TryNewFixedArray(
-      int size, PretenureFlag pretenure = NOT_TENURED);
+      int length, PretenureFlag pretenure = NOT_TENURED);
 
   // Allocate a new fixed array with non-existing entries (the hole).
   Handle<FixedArray> NewFixedArrayWithHoles(
-      int size,
-      PretenureFlag pretenure = NOT_TENURED);
+      int length, PretenureFlag pretenure = NOT_TENURED);
 
   // Allocates an uninitialized fixed array. It must be filled by the caller.
-  Handle<FixedArray> NewUninitializedFixedArray(int size);
+  Handle<FixedArray> NewUninitializedFixedArray(int length);
 
   // Allocates a feedback vector whose slots are initialized with undefined
   // values.
@@ -159,9 +170,6 @@ class V8_EXPORT_PRIVATE Factory final {
 
   // Create a pre-tenured empty AccessorPair.
   Handle<AccessorPair> NewAccessorPair();
-
-  // Create an empty TypeFeedbackInfo.
-  Handle<TypeFeedbackInfo> NewTypeFeedbackInfo();
 
   // Finds the internalized copy for string in the string table.
   // If not found, a new string is added to the table and returned.
@@ -548,6 +556,8 @@ class V8_EXPORT_PRIVATE Factory final {
       int capacity,
       ArrayStorageAllocationMode mode = DONT_INITIALIZE_ARRAY_ELEMENTS);
 
+  Handle<JSWeakMap> NewJSWeakMap();
+
   Handle<JSGeneratorObject> NewJSGeneratorObject(Handle<JSFunction> function);
 
   Handle<JSModuleNamespace> NewJSModuleNamespace();
@@ -730,6 +740,11 @@ class V8_EXPORT_PRIVATE Factory final {
   STRUCT_LIST(STRUCT_MAP_ACCESSOR)
 #undef STRUCT_MAP_ACCESSOR
 
+#define DATA_HANDLER_MAP_ACCESSOR(NAME, Name, Size, name) \
+  inline Handle<Map> name##_map();
+  DATA_HANDLER_LIST(DATA_HANDLER_MAP_ACCESSOR)
+#undef DATA_HANDLER_MAP_ACCESSOR
+
 #define STRING_ACCESSOR(name, str) inline Handle<String> name();
   INTERNALIZED_STRING_LIST(STRING_ACCESSOR)
 #undef STRING_ACCESSOR
@@ -800,6 +815,9 @@ class V8_EXPORT_PRIVATE Factory final {
   // native context.
   Handle<Map> ObjectLiteralMapFromCache(Handle<Context> native_context,
                                         int number_of_properties);
+
+  Handle<LoadHandler> NewLoadHandler(int data_count);
+  Handle<StoreHandler> NewStoreHandler(int data_count);
 
   Handle<RegExpMatchInfo> NewRegExpMatchInfo();
 

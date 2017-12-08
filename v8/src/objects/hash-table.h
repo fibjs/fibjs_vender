@@ -5,10 +5,9 @@
 #ifndef V8_OBJECTS_HASH_TABLE_H_
 #define V8_OBJECTS_HASH_TABLE_H_
 
-#include "src/objects.h"
-
 #include "src/base/compiler-specific.h"
 #include "src/globals.h"
+#include "src/objects/fixed-array.h"
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
@@ -56,7 +55,7 @@ template <typename KeyT>
 class BaseShape {
  public:
   typedef KeyT Key;
-  static inline Map* GetMap(Isolate* isolate);
+  static inline int GetMapRootIndex();
   static const bool kNeedsHoleCheck = true;
   static Object* Unwrap(Object* key) { return key; }
   static bool IsKey(Isolate* isolate, Object* key) {
@@ -554,7 +553,7 @@ class OrderedHashSet : public OrderedHashTable<OrderedHashSet, 1> {
   static Handle<FixedArray> ConvertToKeysArray(Handle<OrderedHashSet> table,
                                                GetKeysConversion convert);
   static HeapObject* GetEmpty(Isolate* isolate);
-  static int GetMapRootIndex();
+  static inline int GetMapRootIndex();
 };
 
 class OrderedHashMap : public OrderedHashTable<OrderedHashMap, 2> {
@@ -570,7 +569,7 @@ class OrderedHashMap : public OrderedHashTable<OrderedHashMap, 2> {
   static Object* GetHash(Isolate* isolate, Object* key);
 
   static HeapObject* GetEmpty(Isolate* isolate);
-  static int GetMapRootIndex();
+  static inline int GetMapRootIndex();
 
   static const int kValueOffset = 1;
 };
@@ -581,7 +580,7 @@ class WeakHashTableShape : public BaseShape<Handle<Object>> {
   static inline uint32_t Hash(Isolate* isolate, Handle<Object> key);
   static inline uint32_t HashForObject(Isolate* isolate, Object* object);
   static inline Handle<Object> AsHandle(Isolate* isolate, Handle<Object> key);
-  static inline Map* GetMap(Isolate* isolate);
+  static inline int GetMapRootIndex();
   static const int kPrefixSize = 0;
   static const int kEntrySize = 2;
   static const bool kNeedsHoleCheck = false;
@@ -896,37 +895,6 @@ class OrderedHashTableIterator : public JSCollectionIterator {
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(OrderedHashTableIterator);
 };
-
-class JSSetIterator
-    : public OrderedHashTableIterator<JSSetIterator, OrderedHashSet> {
- public:
-  // Dispatched behavior.
-  DECL_PRINTER(JSSetIterator)
-  DECL_VERIFIER(JSSetIterator)
-
-  DECL_CAST(JSSetIterator)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSSetIterator);
-};
-
-class JSMapIterator
-    : public OrderedHashTableIterator<JSMapIterator, OrderedHashMap> {
- public:
-  // Dispatched behavior.
-  DECL_PRINTER(JSMapIterator)
-  DECL_VERIFIER(JSMapIterator)
-
-  DECL_CAST(JSMapIterator)
-
-  // Returns the current value of the iterator. This should only be called when
-  // |HasMore| returns true.
-  inline Object* CurrentValue();
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSMapIterator);
-};
-
 }  // namespace internal
 }  // namespace v8
 

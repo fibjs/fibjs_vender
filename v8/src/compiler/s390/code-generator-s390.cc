@@ -2111,7 +2111,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Label done;
       __ ConvertDoubleToInt32(i.OutputRegister(0), i.InputDoubleRegister(0),
                               kRoundToNearest);
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       __ lghi(i.OutputRegister(0), Operand::Zero());
       __ bind(&done);
       break;
@@ -2120,7 +2120,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Label done;
       __ ConvertDoubleToUnsignedInt32(i.OutputRegister(0),
                                       i.InputDoubleRegister(0));
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       __ lghi(i.OutputRegister(0), Operand::Zero());
       __ bind(&done);
       break;
@@ -2131,7 +2131,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ lghi(i.OutputRegister(1), Operand(1));
       }
       __ ConvertDoubleToInt64(i.OutputRegister(0), i.InputDoubleRegister(0));
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       if (i.OutputCount() > 1) {
         __ lghi(i.OutputRegister(1), Operand::Zero());
       } else {
@@ -2147,7 +2147,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       __ ConvertDoubleToUnsignedInt64(i.OutputRegister(0),
                                       i.InputDoubleRegister(0));
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       if (i.OutputCount() > 1) {
         __ lghi(i.OutputRegister(1), Operand::Zero());
       } else {
@@ -2160,7 +2160,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Label done;
       __ ConvertFloat32ToInt32(i.OutputRegister(0), i.InputDoubleRegister(0),
                                kRoundToZero);
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       __ lghi(i.OutputRegister(0), Operand::Zero());
       __ bind(&done);
       break;
@@ -2169,7 +2169,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       Label done;
       __ ConvertFloat32ToUnsignedInt32(i.OutputRegister(0),
                                        i.InputDoubleRegister(0));
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       __ lghi(i.OutputRegister(0), Operand::Zero());
       __ bind(&done);
       break;
@@ -2181,7 +2181,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       __ ConvertFloat32ToUnsignedInt64(i.OutputRegister(0),
                                        i.InputDoubleRegister(0));
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       if (i.OutputCount() > 1) {
         __ lghi(i.OutputRegister(1), Operand::Zero());
       } else {
@@ -2196,7 +2196,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ lghi(i.OutputRegister(1), Operand(1));
       }
       __ ConvertFloat32ToInt64(i.OutputRegister(0), i.InputDoubleRegister(0));
-      __ b(Condition(0xe), &done, Label::kNear);  // normal case
+      __ b(Condition(0xE), &done, Label::kNear);  // normal case
       if (i.OutputCount() > 1) {
         __ lghi(i.OutputRegister(1), Operand::Zero());
       } else {

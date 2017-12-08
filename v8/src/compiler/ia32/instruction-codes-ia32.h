@@ -111,6 +111,20 @@ namespace compiler {
   V(IA32PushFloat64)               \
   V(IA32Poke)                      \
   V(IA32StackCheck)                \
+  V(SSEF32x4Splat)                 \
+  V(AVXF32x4Splat)                 \
+  V(SSEF32x4ExtractLane)           \
+  V(AVXF32x4ExtractLane)           \
+  V(SSEF32x4ReplaceLane)           \
+  V(AVXF32x4ReplaceLane)           \
+  V(SSEF32x4Eq)                    \
+  V(AVXF32x4Eq)                    \
+  V(SSEF32x4Ne)                    \
+  V(AVXF32x4Ne)                    \
+  V(SSEF32x4Lt)                    \
+  V(AVXF32x4Lt)                    \
+  V(SSEF32x4Le)                    \
+  V(AVXF32x4Le)                    \
   V(IA32I32x4Splat)                \
   V(IA32I32x4ExtractLane)          \
   V(SSEI32x4ReplaceLane)           \
@@ -152,6 +166,7 @@ namespace compiler {
   V(IA32I16x8ExtractLane)          \
   V(SSEI16x8ReplaceLane)           \
   V(AVXI16x8ReplaceLane)           \
+  V(IA32I16x8Neg)                  \
   V(SSEI16x8Shl)                   \
   V(AVXI16x8Shl)                   \
   V(SSEI16x8ShrS)                  \
@@ -174,6 +189,10 @@ namespace compiler {
   V(AVXI16x8Eq)                    \
   V(SSEI16x8Ne)                    \
   V(AVXI16x8Ne)                    \
+  V(SSEI16x8GtS)                   \
+  V(AVXI16x8GtS)                   \
+  V(SSEI16x8GeS)                   \
+  V(AVXI16x8GeS)                   \
   V(SSEI16x8ShrU)                  \
   V(AVXI16x8ShrU)                  \
   V(SSEI16x8AddSaturateU)          \
@@ -184,10 +203,56 @@ namespace compiler {
   V(AVXI16x8MinU)                  \
   V(SSEI16x8MaxU)                  \
   V(AVXI16x8MaxU)                  \
+  V(SSEI16x8GtU)                   \
+  V(AVXI16x8GtU)                   \
+  V(SSEI16x8GeU)                   \
+  V(AVXI16x8GeU)                   \
   V(IA32I8x16Splat)                \
   V(IA32I8x16ExtractLane)          \
   V(SSEI8x16ReplaceLane)           \
-  V(AVXI8x16ReplaceLane)
+  V(AVXI8x16ReplaceLane)           \
+  V(IA32I8x16Neg)                  \
+  V(SSEI8x16Add)                   \
+  V(AVXI8x16Add)                   \
+  V(SSEI8x16AddSaturateS)          \
+  V(AVXI8x16AddSaturateS)          \
+  V(SSEI8x16Sub)                   \
+  V(AVXI8x16Sub)                   \
+  V(SSEI8x16SubSaturateS)          \
+  V(AVXI8x16SubSaturateS)          \
+  V(SSEI8x16MinS)                  \
+  V(AVXI8x16MinS)                  \
+  V(SSEI8x16MaxS)                  \
+  V(AVXI8x16MaxS)                  \
+  V(SSEI8x16Eq)                    \
+  V(AVXI8x16Eq)                    \
+  V(SSEI8x16Ne)                    \
+  V(AVXI8x16Ne)                    \
+  V(SSEI8x16GtS)                   \
+  V(AVXI8x16GtS)                   \
+  V(SSEI8x16GeS)                   \
+  V(AVXI8x16GeS)                   \
+  V(SSEI8x16AddSaturateU)          \
+  V(AVXI8x16AddSaturateU)          \
+  V(SSEI8x16SubSaturateU)          \
+  V(AVXI8x16SubSaturateU)          \
+  V(SSEI8x16MinU)                  \
+  V(AVXI8x16MinU)                  \
+  V(SSEI8x16MaxU)                  \
+  V(AVXI8x16MaxU)                  \
+  V(SSEI8x16GtU)                   \
+  V(AVXI8x16GtU)                   \
+  V(SSEI8x16GeU)                   \
+  V(AVXI8x16GeU)                   \
+  V(IA32S128Zero)                  \
+  V(SSES128Not)                    \
+  V(AVXS128Not)                    \
+  V(SSES128And)                    \
+  V(AVXS128And)                    \
+  V(SSES128Or)                     \
+  V(AVXS128Or)                     \
+  V(SSES128Xor)                    \
+  V(AVXS128Xor)
 
 // Addressing modes represent the "shape" of inputs to an instruction.
 // Many instructions support multiple addressing modes. Addressing modes

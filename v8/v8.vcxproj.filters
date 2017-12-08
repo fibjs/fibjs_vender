@@ -522,6 +522,9 @@
     <ClInclude Include="src\builtins\builtins-iterator-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-math-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-promise-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -1212,6 +1215,15 @@
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\stress-marking-observer.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\stress-scavenge-observer.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\sweeper.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\worklist.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1482,6 +1494,12 @@
     <ClInclude Include="src\objects\compilation-cache.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\data-handler-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\data-handler.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\debug-objects-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1492,6 +1510,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\dictionary.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\fixed-array-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\fixed-array.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\frame-array-inl.h">
@@ -1510,6 +1534,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\js-array.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-collection-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-collection.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\js-regexp-inl.h">
@@ -1980,6 +2010,9 @@
     <ClInclude Include="src\value-serializer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\vector-slot-pair.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\vector.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1995,29 +2028,23 @@
     <ClInclude Include="src\vm-state.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\baseline\ia32\liftoff-assembler-ia32-defs.h">
-      <Filter>Source Files\wasm\baseline\ia32</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\baseline\ia32\liftoff-assembler-ia32.h">
       <Filter>Source Files\wasm\baseline\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\baseline\liftoff-assembler-defs.h">
+      <Filter>Source Files\wasm\baseline</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\baseline\liftoff-assembler.h">
       <Filter>Source Files\wasm\baseline</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\baseline\ppc\liftoff-assembler-ppc-defs.h">
-      <Filter>Source Files\wasm\baseline\ppc</Filter>
+    <ClInclude Include="src\wasm\baseline\liftoff-register.h">
+      <Filter>Source Files\wasm\baseline</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\baseline\ppc\liftoff-assembler-ppc.h">
       <Filter>Source Files\wasm\baseline\ppc</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\baseline\s390\liftoff-assembler-s390-defs.h">
-      <Filter>Source Files\wasm\baseline\s390</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\baseline\s390\liftoff-assembler-s390.h">
       <Filter>Source Files\wasm\baseline\s390</Filter>
-    </ClInclude>
-    <ClInclude Include="src\wasm\baseline\x64\liftoff-assembler-x64-defs.h">
-      <Filter>Source Files\wasm\baseline\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\baseline\x64\liftoff-assembler-x64.h">
       <Filter>Source Files\wasm\baseline\x64</Filter>
@@ -2058,13 +2085,19 @@
     <ClInclude Include="src\wasm\wasm-api.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\wasm-code-manager.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-specialization.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\wasm-external-refs.h">
+    <ClInclude Include="src\wasm\wasm-code-wrapper.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\wasm-heap.h">
+    <ClInclude Include="src\wasm\wasm-engine.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-external-refs.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-interpreter.h">
@@ -2095,6 +2128,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-result.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-serialization.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-text.h">
@@ -3104,6 +3140,15 @@
     <ClCompile Include="src\heap\store-buffer.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
+    <ClCompile Include="src\heap\stress-marking-observer.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\stress-scavenge-observer.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\sweeper.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
     <ClCompile Include="src\ia32\assembler-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
@@ -3803,6 +3848,9 @@
     <ClCompile Include="src\value-serializer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\vector-slot-pair.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\version.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3842,16 +3890,19 @@
     <ClCompile Include="src\wasm\wasm-api.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
+    <ClCompile Include="src\wasm\wasm-code-manager.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
     <ClCompile Include="src\wasm\wasm-code-specialization.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-code-wrapper.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-debug.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-external-refs.cc">
-      <Filter>Source Files\wasm</Filter>
-    </ClCompile>
-    <ClCompile Include="src\wasm\wasm-heap.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-interpreter.cc">
@@ -3876,6 +3927,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-result.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-serialization.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-text.cc">

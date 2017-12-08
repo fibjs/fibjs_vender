@@ -15,6 +15,7 @@ namespace internal {
 // Forward declarations.
 class CompilationDependencies;
 class Factory;
+class VectorSlotPair;
 
 namespace compiler {
 
@@ -24,7 +25,6 @@ class CommonOperatorBuilder;
 class JSGraph;
 class JSOperatorBuilder;
 class SimplifiedOperatorBuilder;
-class VectorSlotPair;
 
 // Performs strength reduction on {JSConstruct} and {JSCall} nodes,
 // which might allow inlining or other optimizations to be performed afterwards.
@@ -55,7 +55,6 @@ class JSCallReducer final : public AdvancedReducer {
   Reduction ReduceArrayConstructor(Node* node);
   Reduction ReduceBooleanConstructor(Node* node);
   Reduction ReduceCallApiFunction(Node* node, Handle<JSFunction> function);
-  Reduction ReduceNumberConstructor(Node* node);
   Reduction ReduceFunctionPrototypeApply(Node* node);
   Reduction ReduceFunctionPrototypeBind(Node* node);
   Reduction ReduceFunctionPrototypeCall(Node* node);

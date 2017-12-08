@@ -291,11 +291,10 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
       SET_ALLOW(natives);
       SET_ALLOW(harmony_do_expressions);
       SET_ALLOW(harmony_function_sent);
-      SET_ALLOW(harmony_class_fields);
+      SET_ALLOW(harmony_public_fields);
       SET_ALLOW(harmony_dynamic_import);
       SET_ALLOW(harmony_import_meta);
       SET_ALLOW(harmony_async_iteration);
-      SET_ALLOW(harmony_template_escapes);
       SET_ALLOW(harmony_bigint);
 #undef SET_ALLOW
     }
@@ -346,10 +345,9 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   void ParseAndRewriteAsyncGeneratorFunctionBody(int pos, FunctionKind kind,
                                                  ZoneList<Statement*>* body,
                                                  bool* ok);
-  void CreateFunctionNameAssignment(const AstRawString* function_name, int pos,
-                                    FunctionLiteral::FunctionType function_type,
-                                    DeclarationScope* function_scope,
-                                    ZoneList<Statement*>* result, int index);
+  void DeclareFunctionNameVar(const AstRawString* function_name,
+                              FunctionLiteral::FunctionType function_type,
+                              DeclarationScope* function_scope);
 
   Statement* DeclareFunction(const AstRawString* variable_name,
                              FunctionLiteral* function, VariableMode mode,
@@ -370,6 +368,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                       ClassLiteralProperty* property,
                                       ClassLiteralProperty::Kind kind,
                                       bool is_static, bool is_constructor,
+                                      bool is_computed_name,
                                       ClassInfo* class_info, bool* ok);
   V8_INLINE Expression* RewriteClassLiteral(Scope* block_scope,
                                             const AstRawString* name,
@@ -528,9 +527,8 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   // "should_cook" means that the span can be "cooked": in tagged template
   // literals, both the raw and "cooked" representations are available to user
   // code ("cooked" meaning that escape sequences are converted to their
-  // interpreted values). With the --harmony-template-escapes flag, invalid
-  // escape sequences cause the cooked span to be represented by undefined,
-  // instead of being a syntax error.
+  // interpreted values). Invalid escape sequences cause the cooked span
+  // to be represented by undefined, instead of being a syntax error.
   // "tail" indicates that this span is the last in the literal.
   void AddTemplateSpan(TemplateLiteralState* state, bool should_cook,
                        bool tail);
@@ -552,11 +550,6 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   // Rewrite all DestructuringAssignments in the current FunctionState.
   V8_INLINE void RewriteDestructuringAssignments();
-
-  V8_INLINE Expression* RewriteExponentiation(Expression* left,
-                                              Expression* right, int pos);
-  V8_INLINE Expression* RewriteAssignExponentiation(Expression* left,
-                                                    Expression* right, int pos);
 
   Expression* RewriteSpreads(ArrayLiteral* lit);
 
@@ -765,19 +758,13 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
   // into a single n-ary expression. In that case, *x will be changed to an
   // n-ary expression.
   bool CollapseNaryExpression(Expression** x, Expression* y, Token::Value op,
-                              int pos);
+                              int pos, const SourceRange& range);
 
-  // Rewrites the following types of unary expressions:
-  // not <literal> -> true / false
-  // + <numeric literal> -> <numeric literal>
-  // - <numeric literal> -> <numeric literal with value negated>
+  // Returns a UnaryExpression or, in one of the following cases, a Literal.
   // ! <literal> -> true / false
-  // The following rewriting rules enable the collection of type feedback
-  // without any special stub and the multiplication is removed later in
-  // Crankshaft's canonicalization pass.
-  // + foo -> foo * 1
-  // - foo -> foo * (-1)
-  // ~ foo -> foo ^(~0)
+  // + <Number literal> -> <Number literal>
+  // - <Number literal> -> <Number literal with value negated>
+  // ~ <literal> -> true / false
   Expression* BuildUnaryExpression(Expression* expression, Token::Value op,
                                    int pos);
 
@@ -1011,6 +998,32 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     return parameters_end_pos_ != kNoSourcePosition;
   }
 
+  V8_INLINE void ConvertBinaryToNaryOperationSourceRange(
+      BinaryOperation* binary_op, NaryOperation* nary_op) {
+    if (source_range_map_ == nullptr) return;
+    DCHECK_NULL(source_range_map_->Find(nary_op));
+
+    BinaryOperationSourceRanges* ranges =
+        static_cast<BinaryOperationSourceRanges*>(
+            source_range_map_->Find(binary_op));
+    if (ranges == nullptr) return;
+
+    SourceRange range = ranges->GetRange(SourceRangeKind::kRight);
+    source_range_map_->Insert(
+        nary_op, new (zone()) NaryOperationSourceRanges(zone(), range));
+  }
+
+  V8_INLINE void AppendNaryOperationSourceRange(NaryOperation* node,
+                                                const SourceRange& range) {
+    if (source_range_map_ == nullptr) return;
+    NaryOperationSourceRanges* ranges =
+        static_cast<NaryOperationSourceRanges*>(source_range_map_->Find(node));
+    if (ranges == nullptr) return;
+
+    ranges->AddRange(range);
+    DCHECK_EQ(node->subsequent_length(), ranges->RangeCount());
+  }
+
   V8_INLINE void RecordBlockSourceRange(Block* node,
                                         int32_t continuation_position) {
     if (source_range_map_ == nullptr) return;
@@ -1032,6 +1045,14 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     source_range_map_->Insert(
         node->AsConditional(),
         new (zone()) ConditionalSourceRanges(then_range, else_range));
+  }
+
+  V8_INLINE void RecordBinaryOperationSourceRange(
+      Expression* node, const SourceRange& right_range) {
+    if (source_range_map_ == nullptr) return;
+    source_range_map_->Insert(node->AsBinaryOperation(),
+                              new (zone())
+                                  BinaryOperationSourceRanges(right_range));
   }
 
   V8_INLINE void RecordJumpStatementSourceRange(Statement* node,

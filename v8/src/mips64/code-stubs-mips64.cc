@@ -529,7 +529,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // caller fp          |
   // function slot      | entry frame
   // context slot       |
-  // bad fp (0xff...f)  |
+  // bad fp (0xFF...F)  |
   // callee saved registers + ra
   // [ O32: 4 args slots]
   // args
@@ -591,13 +591,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // callee saved registers + ra
   // [ O32: 4 args slots]
   // args
-
-  if (type() == StackFrame::CONSTRUCT_ENTRY) {
-    __ Call(BUILTIN_CODE(isolate, JSConstructEntryTrampoline),
-            RelocInfo::CODE_TARGET);
-  } else {
-    __ Call(BUILTIN_CODE(isolate, JSEntryTrampoline), RelocInfo::CODE_TARGET);
-  }
+  __ Call(EntryTrampoline(), RelocInfo::CODE_TARGET);
 
   // Unlink this frame from the handler chain.
   __ PopStackHandler();

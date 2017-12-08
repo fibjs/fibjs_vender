@@ -278,11 +278,10 @@ class ParserBase {
         allow_natives_(false),
         allow_harmony_do_expressions_(false),
         allow_harmony_function_sent_(false),
-        allow_harmony_class_fields_(false),
+        allow_harmony_public_fields_(false),
         allow_harmony_dynamic_import_(false),
         allow_harmony_import_meta_(false),
-        allow_harmony_async_iteration_(false),
-        allow_harmony_template_escapes_(false) {}
+        allow_harmony_async_iteration_(false) {}
 
 #define ALLOW_ACCESSORS(name)                           \
   bool allow_##name() const { return allow_##name##_; } \
@@ -291,11 +290,10 @@ class ParserBase {
   ALLOW_ACCESSORS(natives);
   ALLOW_ACCESSORS(harmony_do_expressions);
   ALLOW_ACCESSORS(harmony_function_sent);
-  ALLOW_ACCESSORS(harmony_class_fields);
+  ALLOW_ACCESSORS(harmony_public_fields);
   ALLOW_ACCESSORS(harmony_dynamic_import);
   ALLOW_ACCESSORS(harmony_import_meta);
   ALLOW_ACCESSORS(harmony_async_iteration);
-  ALLOW_ACCESSORS(harmony_template_escapes);
 
 #undef ALLOW_ACCESSORS
 
@@ -566,7 +564,8 @@ class ParserBase {
           has_instance_class_fields(false),
           is_anonymous(false),
           static_fields_scope(nullptr),
-          instance_fields_scope(nullptr) {}
+          instance_fields_scope(nullptr),
+          computed_field_count(0) {}
     Variable* variable;
     ExpressionT extends;
     typename Types::ClassPropertyList properties;
@@ -583,7 +582,14 @@ class ParserBase {
     bool is_anonymous;
     DeclarationScope* static_fields_scope;
     DeclarationScope* instance_fields_scope;
+    int computed_field_count;
   };
+
+  const AstRawString* ClassFieldVariableName(AstValueFactory* ast_value_factory,
+                                             int index) {
+    std::string name = ".class-field-" + std::to_string(index);
+    return ast_value_factory->GetOneByteString(name.c_str());
+  }
 
   DeclarationScope* NewScriptScope() const {
     return new (zone()) DeclarationScope(zone(), ast_value_factory());
@@ -1074,8 +1080,8 @@ class ParserBase {
 
   // This method wraps the parsing of the expression inside a new expression
   // classifier and calls RewriteNonPattern if parsing is successful.
-  // It should be used whenever we're parsing an expression that will be
-  // used as a non-pattern (i.e., in most cases).
+  // It should be used whenever we're parsing an expression that is known
+  // to not be a pattern or part of a pattern.
   V8_INLINE ExpressionT ParseExpression(bool accept_IN, bool* ok);
 
   // This method does not wrap the parsing of the expression inside a
@@ -1425,6 +1431,7 @@ class ParserBase {
     void CheckClassMethodName(Token::Value property, PropertyKind type,
                               bool is_generator, bool is_async, bool is_static,
                               bool* ok);
+    void CheckClassFieldName(bool is_static, bool* ok);
 
    private:
     bool IsConstructor() {
@@ -1526,11 +1533,10 @@ class ParserBase {
   bool allow_natives_;
   bool allow_harmony_do_expressions_;
   bool allow_harmony_function_sent_;
-  bool allow_harmony_class_fields_;
+  bool allow_harmony_public_fields_;
   bool allow_harmony_dynamic_import_;
   bool allow_harmony_import_meta_;
   bool allow_harmony_async_iteration_;
-  bool allow_harmony_template_escapes_;
 
   friend class DiscardableZoneScope;
 };
@@ -1980,7 +1986,8 @@ ParserBase<Impl>::ParseExpressionCoverGrammar(bool accept_IN, bool* ok) {
       // First time through the loop.
       result = right;
     } else if (impl()->CollapseNaryExpression(&result, right, Token::COMMA,
-                                              comma_pos)) {
+                                              comma_pos,
+                                              SourceRange::Empty())) {
       // Do nothing, "result" is already updated.
     } else {
       result =
@@ -2305,8 +2312,12 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
                                  // as an uninitialized field.
     case PropertyKind::kShorthandProperty:
     case PropertyKind::kValueProperty:
-      if (allow_harmony_class_fields()) {
+      if (allow_harmony_public_fields()) {
         *property_kind = ClassLiteralProperty::FIELD;
+        if (!*is_computed_name) {
+          checker->CheckClassFieldName(*is_static,
+                                       CHECK_OK_CUSTOM(NullLiteralProperty));
+        }
         ExpressionT initializer = ParseClassFieldInitializer(
             class_info, *is_static, CHECK_OK_CUSTOM(NullLiteralProperty));
         ExpectSemicolon(CHECK_OK_CUSTOM(NullLiteralProperty));
@@ -2962,15 +2973,11 @@ ParserBase<Impl>::ParseAssignmentExpression(bool accept_IN, bool* ok) {
     impl()->SetFunctionNameFromIdentifierRef(right, expression);
   }
 
-  if (op == Token::ASSIGN_EXP) {
-    DCHECK(!is_destructuring_assignment);
-    return impl()->RewriteAssignExponentiation(expression, right, pos);
-  }
-
   DCHECK_NE(op, Token::INIT);
   ExpressionT result = factory()->NewAssignment(op, expression, right, pos);
 
   if (is_destructuring_assignment) {
+    DCHECK_NE(op, Token::ASSIGN_EXP);
     auto rewritable = factory()->NewRewritableExpression(result, scope());
     impl()->QueueDestructuringAssignmentForRewriting(rewritable);
     result = rewritable;
@@ -3081,6 +3088,7 @@ template <typename Impl>
 typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryExpression(
     int prec, bool accept_IN, bool* ok) {
   DCHECK_GE(prec, 4);
+  SourceRange right_range;
   ExpressionT x = ParseUnaryExpression(CHECK_OK);
   for (int prec1 = Precedence(peek(), accept_IN); prec1 >= prec; prec1--) {
     // prec1 >= 4
@@ -3088,12 +3096,15 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryExpression(
       impl()->RewriteNonPattern(CHECK_OK);
       BindingPatternUnexpectedToken();
       ArrowFormalParametersUnexpectedToken();
+
+      SourceRangeScope right_range_scope(scanner(), &right_range);
       Token::Value op = Next();
       int pos = position();
 
       const bool is_right_associative = op == Token::EXP;
       const int next_prec = is_right_associative ? prec1 : prec1 + 1;
       ExpressionT y = ParseBinaryExpression(next_prec, accept_IN, CHECK_OK);
+      right_range_scope.Finalize();
       impl()->RewriteNonPattern(CHECK_OK);
 
       if (impl()->ShortcutNumericLiteralBinaryExpression(&x, y, op, pos)) {
@@ -3116,13 +3127,14 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBinaryExpression(
           // The comparison was negated - add a NOT.
           x = factory()->NewUnaryOperation(Token::NOT, x, pos);
         }
-      } else if (op == Token::EXP) {
-        x = impl()->RewriteExponentiation(x, y, pos);
-      } else if (impl()->CollapseNaryExpression(&x, y, op, pos)) {
+      } else if (impl()->CollapseNaryExpression(&x, y, op, pos, right_range)) {
         continue;
       } else {
         // We have a "normal" binary operation.
         x = factory()->NewBinaryOperation(op, x, y, pos);
+        if (op == Token::OR || op == Token::AND) {
+          impl()->RecordBinaryOperationSourceRange(x, right_range);
+        }
       }
     }
   }
@@ -4125,18 +4137,6 @@ void ParserBase<Impl>::ParseFunctionBody(
     typename ParserBase<Impl>::StatementListT result, IdentifierT function_name,
     int pos, const FormalParametersT& parameters, FunctionKind kind,
     FunctionLiteral::FunctionType function_type, bool* ok) {
-  static const int kFunctionNameAssignmentIndex = 0;
-  if (function_type == FunctionLiteral::kNamedExpression) {
-    DCHECK(!impl()->IsNull(function_name));
-    // If we have a named function expression, we add a local variable
-    // declaration to the body of the function with the name of the
-    // function and let it refer to the function itself (closure).
-    // Not having parsed the function body, the language mode may still change,
-    // so we reserve a spot and create the actual const assignment later.
-    DCHECK_EQ(kFunctionNameAssignmentIndex, result->length());
-    result->Add(impl()->NullStatement(), zone());
-  }
-
   DeclarationScope* function_scope = scope()->AsDeclarationScope();
   DeclarationScope* inner_scope = function_scope;
   BlockT inner_block = impl()->NullStatement();
@@ -4217,9 +4217,7 @@ void ParserBase<Impl>::ParseFunctionBody(
     function_scope->DeclareArguments(ast_value_factory());
   }
 
-  impl()->CreateFunctionNameAssignment(function_name, pos, function_type,
-                                       function_scope, result,
-                                       kFunctionNameAssignmentIndex);
+  impl()->DeclareFunctionNameVar(function_name, function_type, function_scope);
 }
 
 template <typename Impl>
@@ -4300,11 +4298,11 @@ typename ParserBase<Impl>::ExpressionT
 ParserBase<Impl>::ParseArrowFunctionLiteral(
     bool accept_IN, const FormalParametersT& formal_parameters,
     int rewritable_length, bool* ok) {
-  const RuntimeCallStats::CounterId counters[2][2] = {
-      {&RuntimeCallStats::ParseBackgroundArrowFunctionLiteral,
-       &RuntimeCallStats::ParseArrowFunctionLiteral},
-      {&RuntimeCallStats::PreParseBackgroundArrowFunctionLiteral,
-       &RuntimeCallStats::PreParseArrowFunctionLiteral}};
+  const RuntimeCallCounterId counters[2][2] = {
+      {RuntimeCallCounterId::kParseBackgroundArrowFunctionLiteral,
+       RuntimeCallCounterId::kParseArrowFunctionLiteral},
+      {RuntimeCallCounterId::kPreParseBackgroundArrowFunctionLiteral,
+       RuntimeCallCounterId::kPreParseArrowFunctionLiteral}};
   RuntimeCallTimerScope runtime_timer(
       runtime_call_stats_,
       counters[Impl::IsPreParser()][parsing_on_main_thread_]);
@@ -4499,12 +4497,16 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseClassLiteral(
         is_computed_name) {
       class_info.has_static_computed_names = true;
     }
+    if (is_computed_name && property_kind == ClassLiteralProperty::FIELD) {
+      class_info.computed_field_count++;
+    }
     is_constructor &= class_info.has_seen_constructor;
     impl()->RewriteNonPattern(CHECK_OK);
     AccumulateFormalParameterContainmentErrors();
 
     impl()->DeclareClassProperty(name, property, property_kind, is_static,
-                                 is_constructor, &class_info, CHECK_OK);
+                                 is_constructor, is_computed_name, &class_info,
+                                 CHECK_OK);
     impl()->InferFunctionName();
   }
 
@@ -4604,9 +4606,9 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseTemplateLiteral(
   //
   // When parsing a TemplateLiteral, we must have scanned either an initial
   // TEMPLATE_SPAN, or a TEMPLATE_TAIL.
-  CHECK(peek() == Token::TEMPLATE_SPAN || peek() == Token::TEMPLATE_TAIL);
+  DCHECK(peek() == Token::TEMPLATE_SPAN || peek() == Token::TEMPLATE_TAIL);
 
-  bool forbid_illegal_escapes = !allow_harmony_template_escapes() || !tagged;
+  bool forbid_illegal_escapes = !tagged;
 
   // If we reach a TEMPLATE_TAIL first, we are parsing a NoSubstitutionTemplate.
   // In this case we may simply consume the token and build a template with a
@@ -5812,7 +5814,7 @@ ParserBase<Impl>::ParseForEachStatementWithoutDeclarations(
     ForInfo* for_info, ZoneList<const AstRawString*>* labels, bool* ok) {
   // Initializer is reference followed by in/of.
   if (!expression->IsArrayLiteral() && !expression->IsObjectLiteral()) {
-    expression = impl()->CheckAndRewriteReferenceExpression(
+    expression = CheckAndRewriteReferenceExpression(
         expression, lhs_beg_pos, lhs_end_pos, MessageTemplate::kInvalidLhsInFor,
         kSyntaxError, CHECK_OK);
   }
@@ -6013,7 +6015,7 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseForAwaitStatement(
       ValidateAssignmentPattern(CHECK_OK);
     } else {
       impl()->RewriteNonPattern(CHECK_OK);
-      each_variable = impl()->CheckAndRewriteReferenceExpression(
+      each_variable = CheckAndRewriteReferenceExpression(
           lhs, lhs_beg_pos, lhs_end_pos, MessageTemplate::kInvalidLhsInFor,
           kSyntaxError, CHECK_OK);
     }
@@ -6131,6 +6133,22 @@ void ParserBase<Impl>::ClassLiteralChecker::CheckClassMethodName(
       return;
     }
     has_seen_constructor_ = true;
+    return;
+  }
+}
+
+template <typename Impl>
+void ParserBase<Impl>::ClassLiteralChecker::CheckClassFieldName(bool is_static,
+                                                                bool* ok) {
+  if (is_static && IsPrototype()) {
+    this->parser()->ReportMessage(MessageTemplate::kStaticPrototype);
+    *ok = false;
+    return;
+  }
+
+  if (IsConstructor()) {
+    this->parser()->ReportMessage(MessageTemplate::kConstructorClassField);
+    *ok = false;
     return;
   }
 }

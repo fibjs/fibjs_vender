@@ -17,6 +17,7 @@
 #include "src/lookup-cache.h"
 #include "src/objects-inl.h"
 #include "src/objects/arguments.h"
+#include "src/objects/data-handler.h"
 #include "src/objects/debug-objects.h"
 #include "src/objects/descriptor-array.h"
 #include "src/objects/dictionary.h"
@@ -69,6 +70,11 @@ const Heap::StructTable Heap::struct_table[] = {
   {NAME##_TYPE, Name::kSize, k##Name##MapRootIndex},
     STRUCT_LIST(STRUCT_TABLE_ELEMENT)
 #undef STRUCT_TABLE_ELEMENT
+
+#define DATA_HANDLER_ELEMENT(NAME, Name, Size, name) \
+  {NAME##_TYPE, Name::kSizeWithData##Size, k##Name##Size##MapRootIndex},
+        DATA_HANDLER_LIST(DATA_HANDLER_ELEMENT)
+#undef DATA_HANDLER_ELEMENT
 };
 
 namespace {
@@ -188,9 +194,9 @@ bool Heap::CreateInitialMaps() {
   FinalizePartialMap(this, fixed_cow_array_map());
   FinalizePartialMap(this, descriptor_array_map());
   FinalizePartialMap(this, undefined_map());
-  undefined_map()->set_is_undetectable();
+  undefined_map()->set_is_undetectable(true);
   FinalizePartialMap(this, null_map());
-  null_map()->set_is_undetectable();
+  null_map()->set_is_undetectable(true);
   FinalizePartialMap(this, the_hole_map());
   for (unsigned i = 0; i < arraysize(struct_table); ++i) {
     const StructTable& entry = struct_table[i];

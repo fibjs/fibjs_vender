@@ -62,7 +62,6 @@
   V(dot_catch_string, ".catch")                                             \
   V(dot_for_string, ".for")                                                 \
   V(dot_generator_object_string, ".generator_object")                       \
-  V(dot_instance_fields_initializer_string, ".instance_fields_initializer") \
   V(dot_iterator_string, ".iterator")                                       \
   V(dot_result_string, ".result")                                           \
   V(dot_switch_tag_string, ".switch_tag")                                   \
@@ -213,6 +212,7 @@
   V(call_site_frame_index_symbol)           \
   V(console_context_id_symbol)              \
   V(console_context_name_symbol)            \
+  V(class_fields_symbol)                    \
   V(class_positions_symbol)                 \
   V(detailed_stack_trace_symbol)            \
   V(elements_transition_symbol)             \
@@ -355,5 +355,18 @@
   F(SCAVENGER_SCAVENGE_PARALLEL)                     \
   F(SCAVENGER_SCAVENGE_ROOTS)                        \
   F(SCAVENGER_SCAVENGE_WEAK)
+
+#define TRACER_BACKGROUND_SCOPES(F)               \
+  F(BACKGROUND_ARRAY_BUFFER_FREE)                 \
+  F(BACKGROUND_STORE_BUFFER)                      \
+  F(BACKGROUND_UNMAPPER)                          \
+  F(MC_BACKGROUND_EVACUATE_COPY)                  \
+  F(MC_BACKGROUND_EVACUATE_UPDATE_POINTERS)       \
+  F(MC_BACKGROUND_MARKING)                        \
+  F(MC_BACKGROUND_SWEEPING)                       \
+  F(MINOR_MC_BACKGROUND_EVACUATE_COPY)            \
+  F(MINOR_MC_BACKGROUND_EVACUATE_UPDATE_POINTERS) \
+  F(MINOR_MC_BACKGROUND_MARKING)                  \
+  F(SCAVENGER_BACKGROUND_SCAVENGE_PARALLEL)
 
 #endif  // V8_HEAP_SYMBOLS_H_

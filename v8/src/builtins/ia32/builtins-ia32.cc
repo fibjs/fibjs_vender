@@ -698,6 +698,9 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
     __ j(equal, &fallthrough);
 
     TailCallRuntimeIfMarkerEquals(masm, optimized_code_entry,
+                                  OptimizationMarker::kLogFirstExecution,
+                                  Runtime::kFunctionFirstExecution);
+    TailCallRuntimeIfMarkerEquals(masm, optimized_code_entry,
                                   OptimizationMarker::kCompileOptimized,
                                   Runtime::kCompileOptimized_NotConcurrent);
     TailCallRuntimeIfMarkerEquals(
@@ -1879,6 +1882,8 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   STATIC_ASSERT(kSmiTagSize == 1);
   __ lea(edi, Operand(eax, eax, times_1, kSmiTag));
   __ push(edi);
+
+  __ Push(Immediate(0));  // Padding.
 }
 
 static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
@@ -1984,7 +1989,7 @@ void Builtins::Generate_CallOrConstructForwardVarargs(MacroAssembler* masm,
     __ JumpIfSmi(edx, &new_target_not_constructor, Label::kNear);
     __ mov(ebx, FieldOperand(edx, HeapObject::kMapOffset));
     __ test_b(FieldOperand(ebx, Map::kBitFieldOffset),
-              Immediate(1 << Map::kIsConstructor));
+              Immediate(Map::IsConstructorBit::kMask));
     __ j(not_zero, &new_target_constructor, Label::kNear);
     __ bind(&new_target_not_constructor);
     {
@@ -2298,7 +2303,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
 
   // Check if target is a proxy and call CallProxy external builtin
   __ test_b(FieldOperand(ecx, Map::kBitFieldOffset),
-            Immediate(1 << Map::kIsCallable));
+            Immediate(Map::IsCallableBit::kMask));
   __ j(zero, &non_callable);
 
   // Call CallProxy external builtin
@@ -2393,7 +2398,7 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
 
   // Check if target has a [[Construct]] internal method.
   __ test_b(FieldOperand(ecx, Map::kBitFieldOffset),
-            Immediate(1 << Map::kIsConstructor));
+            Immediate(Map::IsConstructorBit::kMask));
   __ j(zero, &non_constructor, Label::kNear);
 
   // Only dispatch to bound functions after checking whether they are

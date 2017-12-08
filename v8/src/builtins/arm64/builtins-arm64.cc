@@ -877,6 +877,9 @@ static void MaybeTailCallOptimizedCodeSlot(MacroAssembler* masm,
                         &fallthrough);
 
     TailCallRuntimeIfMarkerEquals(masm, optimized_code_entry,
+                                  OptimizationMarker::kLogFirstExecution,
+                                  Runtime::kFunctionFirstExecution);
+    TailCallRuntimeIfMarkerEquals(masm, optimized_code_entry,
                                   OptimizationMarker::kCompileOptimized,
                                   Runtime::kCompileOptimized_NotConcurrent);
     TailCallRuntimeIfMarkerEquals(
@@ -2068,10 +2071,9 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ Push(lr, fp);
   __ Mov(x11, StackFrame::TypeToMarker(StackFrame::ARGUMENTS_ADAPTOR));
   __ Push(x11, x1);  // x1: function
-  // We do not yet push the number of arguments, to maintain a 16-byte aligned
-  // stack pointer. This is done in step (3) in
-  // Generate_ArgumentsAdaptorTrampoline.
-  __ Add(fp, jssp, StandardFrameConstants::kFixedFrameSizeFromFp);
+  __ SmiTag(x11, x0);  // x0: number of arguments.
+  __ Push(x11, padreg);
+  __ Add(fp, jssp, ArgumentsAdaptorFrameConstants::kFixedFrameSizeFromFp);
 }
 
 static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
@@ -2080,8 +2082,7 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
   // -----------------------------------
   // Get the number of arguments passed (as a smi), tear down the frame and
   // then drop the parameters and the receiver.
-  __ Ldr(x10, MemOperand(fp, -(StandardFrameConstants::kFixedFrameSizeFromFp +
-                               kPointerSize)));
+  __ Ldr(x10, MemOperand(fp, ArgumentsAdaptorFrameConstants::kLengthOffset));
   __ Mov(jssp, fp);
   __ Pop(fp, lr);
 
@@ -2168,7 +2169,7 @@ void Builtins::Generate_CallOrConstructForwardVarargs(MacroAssembler* masm,
     __ JumpIfSmi(x3, &new_target_not_constructor);
     __ Ldr(x5, FieldMemOperand(x3, HeapObject::kMapOffset));
     __ Ldrb(x5, FieldMemOperand(x5, Map::kBitFieldOffset));
-    __ TestAndBranchIfAnySet(x5, 1 << Map::kIsConstructor,
+    __ TestAndBranchIfAnySet(x5, Map::IsConstructorBit::kMask,
                              &new_target_constructor);
     __ Bind(&new_target_not_constructor);
     {
@@ -2442,7 +2443,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
 
   // Check if target has a [[Call]] internal method.
   __ Ldrb(x4, FieldMemOperand(x4, Map::kBitFieldOffset));
-  __ TestAndBranchIfAllClear(x4, 1 << Map::kIsCallable, &non_callable);
+  __ TestAndBranchIfAllClear(x4, Map::IsCallableBit::kMask, &non_callable);
 
   // Check if target is a proxy and call CallProxy external builtin
   __ Cmp(x5, JS_PROXY_TYPE);
@@ -2537,7 +2538,8 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
 
   // Check if target has a [[Construct]] internal method.
   __ Ldrb(x2, FieldMemOperand(x4, Map::kBitFieldOffset));
-  __ TestAndBranchIfAllClear(x2, 1 << Map::kIsConstructor, &non_constructor);
+  __ TestAndBranchIfAllClear(x2, Map::IsConstructorBit::kMask,
+                             &non_constructor);
 
   // Only dispatch to bound functions after checking whether they are
   // constructors.
@@ -2655,14 +2657,16 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   //   4   |     num of      |                            |
   //       |   actual args   |                            |
   //       |- - - - - - - - -|                            |
-  //  [5]  |    [padding]    |                            |
+  //   5   |     padding     |                            |
   //       |-----------------+----                        |
-  // 5+pad |    receiver     |   ^                        |
+  //  [6]  |    [padding]    |   ^                        |
+  //       |- - - - - - - - -|   |                        |
+  // 6+pad |    receiver     |   |                        |
   //       |  (parameter 0)  |   |                        |
   //       |- - - - - - - - -|   |                        |
-  // 6+pad |   parameter 1   |   |                        |
+  // 7+pad |   parameter 1   |   |                        |
   //       |- - - - - - - - -| Frame slots ----> expected args
-  // 7+pad |   parameter 2   |   |                        |
+  // 8+pad |   parameter 2   |   |                        |
   //       |- - - - - - - - -|   |                        |
   //       |                 |   |                        |
   //  ...  |       ...       |   |                        |
@@ -2675,7 +2679,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   //       |   [undefined]   |   v   <-- stack ptr        v
   //  -----+-----------------+---------------------------------
   //
-  // There is an optional slot of padding to ensure stack alignment.
+  // There is an optional slot of padding above the receiver to ensure stack
+  // alignment of the arguments.
   // If the number of expected arguments is larger than the number of actual
   // arguments, the remaining expected slots will be filled with undefined.
 
@@ -2699,10 +2704,10 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   Register argc_unused_actual = x14;
   Register scratch1 = x15, scratch2 = x16;
 
-  // We need slots for the expected arguments, with two extra slots for the
-  // number of actual arguments and the receiver.
+  // We need slots for the expected arguments, with one extra slot for the
+  // receiver.
   __ RecordComment("-- Stack check --");
-  __ Add(scratch1, argc_expected, 2);
+  __ Add(scratch1, argc_expected, 1);
   Generate_StackOverflowCheck(masm, scratch1, &stack_overflow);
 
   // Round up number of slots to be even, to maintain stack alignment.
@@ -2742,7 +2747,9 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
 
   __ Bind(&enough_arguments);
   // (2) Copy all of the actual arguments, or as many as we need.
+  Label skip_copy;
   __ RecordComment("-- Copy actual arguments --");
+  __ Cbz(argc_to_copy, &skip_copy);
   __ Add(copy_end, copy_to, Operand(argc_to_copy, LSL, kPointerSizeLog2));
   __ Add(copy_from, fp, 2 * kPointerSize);
   // Adjust for difference between actual and expected arguments.
@@ -2759,12 +2766,12 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   __ Stp(scratch1, scratch2, MemOperand(copy_to, 2 * kPointerSize, PostIndex));
   __ Cmp(copy_end, copy_to);
   __ B(hi, &copy_2_by_2);
+  __ Bind(&skip_copy);
 
-  // (3) Store number of actual arguments and padding. The padding might be
-  // unnecessary, in which case it will be overwritten by the receiver.
-  __ RecordComment("-- Store number of args and padding --");
-  __ SmiTag(scratch1, argc_actual);
-  __ Stp(xzr, scratch1, MemOperand(fp, -4 * kPointerSize));
+  // (3) Store padding, which might be overwritten by the receiver, if it is not
+  // necessary.
+  __ RecordComment("-- Store padding --");
+  __ Str(padreg, MemOperand(fp, -5 * kPointerSize));
 
   // (4) Store receiver. Calculate target address from jssp to avoid checking
   // for padding. Storing the receiver will overwrite either the extra slot

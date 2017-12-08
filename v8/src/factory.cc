@@ -169,51 +169,68 @@ Handle<Oddball> Factory::NewOddball(Handle<Map> map, const char* to_string,
   return oddball;
 }
 
-
-Handle<FixedArray> Factory::NewFixedArray(int size, PretenureFlag pretenure) {
-  DCHECK_LE(0, size);
-  CALL_HEAP_FUNCTION(
-      isolate(),
-      isolate()->heap()->AllocateFixedArray(size, pretenure),
-      FixedArray);
-}
-
-Handle<PropertyArray> Factory::NewPropertyArray(int size,
+Handle<PropertyArray> Factory::NewPropertyArray(int length,
                                                 PretenureFlag pretenure) {
-  DCHECK_LE(0, size);
-  if (size == 0) return empty_property_array();
-  CALL_HEAP_FUNCTION(isolate(),
-                     isolate()->heap()->AllocatePropertyArray(size, pretenure),
-                     PropertyArray);
+  DCHECK_LE(0, length);
+  if (length == 0) return empty_property_array();
+  CALL_HEAP_FUNCTION(
+      isolate(), isolate()->heap()->AllocatePropertyArray(length, pretenure),
+      PropertyArray);
 }
 
-MaybeHandle<FixedArray> Factory::TryNewFixedArray(int size,
+Handle<FixedArray> Factory::NewFixedArrayWithMap(
+    Heap::RootListIndex map_root_index, int length, PretenureFlag pretenure) {
+  // Zero-length case must be handled outside, where the knowledge about
+  // the map is.
+  DCHECK_LT(0, length);
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateFixedArrayWithMap(
+                         map_root_index, length, pretenure),
+                     FixedArray);
+}
+
+Handle<FixedArray> Factory::NewFixedArray(int length, PretenureFlag pretenure) {
+  DCHECK_LE(0, length);
+  if (length == 0) return empty_fixed_array();
+
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateFixedArray(length, pretenure),
+                     FixedArray);
+}
+
+MaybeHandle<FixedArray> Factory::TryNewFixedArray(int length,
                                                   PretenureFlag pretenure) {
-  DCHECK_LE(0, size);
+  DCHECK_LE(0, length);
+  if (length == 0) return empty_fixed_array();
+
   AllocationResult allocation =
-      isolate()->heap()->AllocateFixedArray(size, pretenure);
+      isolate()->heap()->AllocateFixedArray(length, pretenure);
   Object* array = nullptr;
   if (!allocation.To(&array)) return MaybeHandle<FixedArray>();
   return Handle<FixedArray>(FixedArray::cast(array), isolate());
 }
 
-Handle<FixedArray> Factory::NewFixedArrayWithHoles(int size,
+Handle<FixedArray> Factory::NewFixedArrayWithHoles(int length,
                                                    PretenureFlag pretenure) {
-  DCHECK_LE(0, size);
+  DCHECK_LE(0, length);
+  if (length == 0) return empty_fixed_array();
+
   CALL_HEAP_FUNCTION(
       isolate(),
-      isolate()->heap()->AllocateFixedArrayWithFiller(size,
-                                                      pretenure,
-                                                      *the_hole_value()),
+      isolate()->heap()->AllocateFixedArrayWithFiller(
+          Heap::kFixedArrayMapRootIndex, length, pretenure, *the_hole_value()),
       FixedArray);
 }
 
-Handle<FixedArray> Factory::NewUninitializedFixedArray(int size) {
+Handle<FixedArray> Factory::NewUninitializedFixedArray(int length) {
+  DCHECK_LE(0, length);
+  if (length == 0) return empty_fixed_array();
+
   // TODO(ulan): As an experiment this temporarily returns an initialized fixed
   // array. After getting canary/performance coverage, either remove the
   // function or revert to returning uninitilized array.
   CALL_HEAP_FUNCTION(isolate(),
-                     isolate()->heap()->AllocateFixedArray(size, NOT_TENURED),
+                     isolate()->heap()->AllocateFixedArray(length, NOT_TENURED),
                      FixedArray);
 }
 
@@ -317,14 +334,6 @@ Handle<AccessorPair> Factory::NewAccessorPair() {
   accessors->set_getter(*null_value(), SKIP_WRITE_BARRIER);
   accessors->set_setter(*null_value(), SKIP_WRITE_BARRIER);
   return accessors;
-}
-
-
-Handle<TypeFeedbackInfo> Factory::NewTypeFeedbackInfo() {
-  Handle<TypeFeedbackInfo> info =
-      Handle<TypeFeedbackInfo>::cast(NewStruct(TUPLE3_TYPE, TENURED));
-  info->initialize_storage();
-  return info;
 }
 
 
@@ -1863,7 +1872,7 @@ Handle<JSGlobalObject> Factory::NewJSGlobalObject(
   // Create a new map for the global object.
   Handle<Map> new_map = Map::CopyDropDescriptors(map);
   new_map->set_may_have_interesting_symbols(true);
-  new_map->set_dictionary_map(true);
+  new_map->set_is_dictionary_map(true);
 
   // Set up the global object as a normalized object.
   global->set_global_dictionary(*dictionary);
@@ -1965,6 +1974,18 @@ void Factory::NewJSArrayStorage(Handle<JSArray> array,
 
   array->set_elements(*elms);
   array->set_length(Smi::FromInt(length));
+}
+
+Handle<JSWeakMap> Factory::NewJSWeakMap() {
+  Context* native_context = isolate()->raw_native_context();
+  Handle<Map> map(native_context->js_weak_map_fun()->initial_map());
+  Handle<JSWeakMap> weakmap(JSWeakMap::cast(*NewJSObjectFromMap(map)));
+  {
+    // Do not leak handles for the hash table, it would make entries strong.
+    HandleScope scope(isolate());
+    JSWeakCollection::Initialize(weakmap, isolate());
+  }
+  return weakmap;
 }
 
 Handle<JSModuleNamespace> Factory::NewJSModuleNamespace() {
@@ -2757,6 +2778,27 @@ Handle<Map> Factory::ObjectLiteralMapFromCache(Handle<Context> native_context,
   return map;
 }
 
+Handle<LoadHandler> Factory::NewLoadHandler(int data_count) {
+  Handle<Map> map;
+  if (data_count == 1) {
+    map = load_handler1_map();
+  } else {
+    DCHECK_EQ(2, data_count);
+    map = load_handler2_map();
+  }
+  return New<LoadHandler>(map, OLD_SPACE);
+}
+
+Handle<StoreHandler> Factory::NewStoreHandler(int data_count) {
+  Handle<Map> map;
+  if (data_count == 1) {
+    map = store_handler1_map();
+  } else {
+    DCHECK_EQ(2, data_count);
+    map = store_handler2_map();
+  }
+  return New<StoreHandler>(map, OLD_SPACE);
+}
 
 void Factory::SetRegExpAtomData(Handle<JSRegExp> regexp,
                                 JSRegExp::Type type,
@@ -2848,7 +2890,7 @@ Handle<Map> Factory::CreateSloppyFunctionMap(
       TERMINAL_FAST_ELEMENTS_KIND, inobject_properties_count);
   map->set_has_prototype_slot(has_prototype);
   map->set_is_constructor(has_prototype);
-  map->set_is_callable();
+  map->set_is_callable(true);
   Handle<JSFunction> empty_function;
   if (maybe_empty_function.ToHandle(&empty_function)) {
     Map::SetPrototype(map, empty_function);
@@ -2927,7 +2969,7 @@ Handle<Map> Factory::CreateStrictFunctionMap(
       TERMINAL_FAST_ELEMENTS_KIND, inobject_properties_count);
   map->set_has_prototype_slot(has_prototype);
   map->set_is_constructor(has_prototype);
-  map->set_is_callable();
+  map->set_is_callable(true);
   Map::SetPrototype(map, empty_function);
 
   //
@@ -2992,7 +3034,7 @@ Handle<Map> Factory::CreateClassFunctionMap(Handle<JSFunction> empty_function) {
   map->set_has_prototype_slot(true);
   map->set_is_constructor(true);
   map->set_is_prototype_map(true);
-  map->set_is_callable();
+  map->set_is_callable(true);
   Map::SetPrototype(map, empty_function);
 
   //

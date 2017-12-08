@@ -88,13 +88,13 @@ using ProtectedInstructions =
 class V8_EXPORT_PRIVATE WasmCode final {
  public:
   enum Kind {
-    Function,
-    WasmToWasmWrapper,
-    WasmToJsWrapper,
-    LazyStub,
-    InterpreterStub,
-    CopiedStub,
-    Trampoline
+    kFunction,
+    kWasmToWasmWrapper,
+    kWasmToJsWrapper,
+    kLazyStub,
+    kInterpreterStub,
+    kCopiedStub,
+    kTrampoline
   };
 
   Vector<byte> instructions() const { return instructions_; }
@@ -174,6 +174,9 @@ class V8_EXPORT_PRIVATE WasmCode final {
   bool is_liftoff_;
 };
 
+// Return a textual description of the kind.
+const char* GetWasmCodeKindAsString(WasmCode::Kind);
+
 class WasmCodeManager;
 
 // Note that we currently need to add code on the main thread, because we may
@@ -227,6 +230,8 @@ class V8_EXPORT_PRIVATE NativeModule final {
   // TODO(mtrofin): perhaps we can do exactly that - either before or after
   // this change.
   WasmCode* CloneLazyBuiltinInto(uint32_t);
+
+  bool SetExecutable(bool executable);
 
   // For cctests, where we build both WasmModule and the runtime objects
   // on the fly, and bypass the instance builder pipeline.
@@ -292,7 +297,7 @@ class V8_EXPORT_PRIVATE NativeModule final {
   // code is obtained (CodeDesc vs, as a point in time, Code*), the kind,
   // whether it has an index or is anonymous, etc.
   WasmCode* AddOwnedCode(Vector<const byte> orig_instructions,
-                         std::unique_ptr<const byte[]>&& reloc_info,
+                         std::unique_ptr<const byte[]> reloc_info,
                          size_t reloc_size, Maybe<uint32_t> index,
                          WasmCode::Kind kind, size_t constant_pool_offset,
                          uint32_t stack_slots, size_t safepoint_table_offset,
@@ -325,6 +330,7 @@ class V8_EXPORT_PRIVATE NativeModule final {
   Handle<WasmCompiledModule> compiled_module_;
   size_t committed_memory_ = 0;
   bool can_request_more_memory_;
+  bool is_executable_ = false;
 
   // Specialization data that needs to be serialized and cloned.
   // Keeping it groupped together because it makes cloning of all these
@@ -358,9 +364,11 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
   WasmCode* GetCodeFromStartAddress(Address pc) const;
   intptr_t remaining_uncommitted() const;
 
- private:
-  static const size_t kMaxWasmCodeMemory = 256 * MB;
+  // TODO(mtrofin): replace this API with an alternative that is Isolate-
+  // independent.
+  void FlushICache(Address start, size_t size);
 
+ private:
   friend class NativeModule;
 
   WasmCodeManager(const WasmCodeManager&) = delete;
@@ -382,7 +390,28 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
   // worth requesting a GC on memory pressure.
   size_t active_ = 0;
   base::AtomicNumber<intptr_t> remaining_uncommitted_;
+
+  // TODO(mtrofin): remove the dependency on isolate.
   v8::Isolate* isolate_;
+};
+
+// Within the scope, the native_module is writable and not executable.
+// At the scope's destruction, the native_module is executable and not writable.
+// The states inside the scope and at the scope termination are irrespective of
+// native_module's state when entering the scope.
+// We currently mark the entire module's memory W^X:
+//  - for AOT, that's as efficient as it can be.
+//  - for Lazy, we don't have a heuristic for functions that may need patching,
+//    and even if we did, the resulting set of pages may be fragmented.
+//    Currently, we try and keep the number of syscalls low.
+// -  similar argument for debug time.
+class NativeModuleModificationScope final {
+ public:
+  explicit NativeModuleModificationScope(NativeModule* native_module);
+  ~NativeModuleModificationScope();
+
+ private:
+  NativeModule* native_module_;
 };
 
 }  // namespace wasm

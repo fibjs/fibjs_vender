@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/wasm/wasm-heap.h"
+#include "src/wasm/wasm-code-manager.h"
 
 #include "src/assembler-inl.h"
 #include "src/base/atomic-utils.h"
@@ -190,6 +190,26 @@ void WasmCode::Print(Isolate* isolate) const {
   Disassemble(isolate, "", os);
 }
 
+const char* GetWasmCodeKindAsString(WasmCode::Kind kind) {
+  switch (kind) {
+    case WasmCode::kFunction:
+      return "wasm function";
+    case WasmCode::kWasmToWasmWrapper:
+      return "wasm-to-wasm";
+    case WasmCode::kWasmToJsWrapper:
+      return "wasm-to-js";
+    case WasmCode::kLazyStub:
+      return "lazy-compile";
+    case WasmCode::kInterpreterStub:
+      return "interpreter-entry";
+    case WasmCode::kCopiedStub:
+      return "copied stub";
+    case WasmCode::kTrampoline:
+      return "trampoline";
+  }
+  return "unknown kind";
+}
+
 WasmCode::~WasmCode() {
   // Depending on finalizer order, the WasmCompiledModule finalizer may be
   // called first, case in which we release here. If the InstanceFinalizer is
@@ -246,7 +266,7 @@ uint32_t NativeModule::FunctionCount() const {
 
 WasmCode* NativeModule::AddOwnedCode(
     Vector<const byte> orig_instructions,
-    std::unique_ptr<const byte[]>&& reloc_info, size_t reloc_size,
+    std::unique_ptr<const byte[]> reloc_info, size_t reloc_size,
     Maybe<uint32_t> index, WasmCode::Kind kind, size_t constant_pool_offset,
     uint32_t stack_slots, size_t safepoint_table_offset,
     std::shared_ptr<ProtectedInstructions> protected_instructions,
@@ -261,7 +281,7 @@ WasmCode* NativeModule::AddOwnedCode(
   std::unique_ptr<WasmCode> code(new WasmCode(
       {executable_buffer, orig_instructions.size()}, std::move(reloc_info),
       reloc_size, this, index, kind, constant_pool_offset, stack_slots,
-      safepoint_table_offset, protected_instructions, is_liftoff));
+      safepoint_table_offset, std::move(protected_instructions), is_liftoff));
   WasmCode* ret = code.get();
 
   // TODO(mtrofin): We allocate in increasing address order, and
@@ -270,6 +290,9 @@ WasmCode* NativeModule::AddOwnedCode(
   auto insert_before = std::upper_bound(owned_code_.begin(), owned_code_.end(),
                                         code, owned_code_comparer_);
   owned_code_.insert(insert_before, std::move(code));
+  wasm_code_manager_->FlushICache(ret->instructions().start(),
+                                  ret->instructions().size());
+
   return ret;
 }
 
@@ -287,14 +310,14 @@ WasmCode* NativeModule::AddCodeCopy(Handle<Code> code, WasmCode::Kind kind,
 
 WasmCode* NativeModule::AddInterpreterWrapper(Handle<Code> code,
                                               uint32_t index) {
-  WasmCode* ret = AddAnonymousCode(code, WasmCode::InterpreterStub);
+  WasmCode* ret = AddAnonymousCode(code, WasmCode::kInterpreterStub);
   ret->index_ = Just(index);
   return ret;
 }
 
 WasmCode* NativeModule::SetLazyBuiltin(Handle<Code> code) {
   DCHECK_NULL(lazy_builtin_);
-  lazy_builtin_ = AddAnonymousCode(code, WasmCode::LazyStub);
+  lazy_builtin_ = AddAnonymousCode(code, WasmCode::kLazyStub);
 
   for (uint32_t i = num_imported_functions(), e = FunctionCount(); i < e; ++i) {
     SetCodeTable(i, lazy_builtin_);
@@ -368,8 +391,9 @@ WasmCode* NativeModule::AddCode(
   WasmCode* ret = AddOwnedCode(
       {desc.buffer, static_cast<size_t>(desc.instr_size)},
       std::move(reloc_info), static_cast<size_t>(desc.reloc_size), Just(index),
-      WasmCode::Function, desc.instr_size - desc.constant_pool_size,
-      frame_slots, safepoint_table_offset, protected_instructions, is_liftoff);
+      WasmCode::kFunction, desc.instr_size - desc.constant_pool_size,
+      frame_slots, safepoint_table_offset, std::move(protected_instructions),
+      is_liftoff);
   if (ret == nullptr) return nullptr;
 
   SetCodeTable(index, ret);
@@ -417,7 +441,7 @@ Address NativeModule::CreateTrampolineTo(Handle<Code> code) {
   masm.GetCode(nullptr, &code_desc);
   WasmCode* wasm_code = AddOwnedCode(
       {code_desc.buffer, static_cast<size_t>(code_desc.instr_size)}, nullptr, 0,
-      Nothing<uint32_t>(), WasmCode::Trampoline, 0, 0, 0, {});
+      Nothing<uint32_t>(), WasmCode::kTrampoline, 0, 0, 0, {});
   if (wasm_code == nullptr) return nullptr;
   Address ret = wasm_code->instructions().start();
   trampolines_.emplace(std::make_pair(dest, ret));
@@ -438,7 +462,7 @@ Address NativeModule::GetLocalAddressFor(Handle<Code> code) {
     uint32_t key = code->stub_key();
     auto copy = stubs_.find(key);
     if (copy == stubs_.end()) {
-      WasmCode* ret = AddAnonymousCode(code, WasmCode::CopiedStub);
+      WasmCode* ret = AddAnonymousCode(code, WasmCode::kCopiedStub);
       copy = stubs_.emplace(std::make_pair(key, ret)).first;
     }
     return copy->second->instructions().start();
@@ -462,7 +486,7 @@ WasmCode* NativeModule::GetExportedWrapper(uint32_t index) {
 }
 
 WasmCode* NativeModule::AddExportedWrapper(Handle<Code> code, uint32_t index) {
-  WasmCode* ret = AddAnonymousCode(code, WasmCode::WasmToWasmWrapper);
+  WasmCode* ret = AddAnonymousCode(code, WasmCode::kWasmToWasmWrapper);
   ret->index_ = Just(index);
   exported_wasm_to_wasm_wrappers_.insert(std::make_pair(index, ret));
   return ret;
@@ -663,9 +687,11 @@ bool WasmCodeManager::Commit(Address start, size_t size) {
     remaining_uncommitted_.Increment(size);
     return false;
   }
-  // TODO(v8:7105) Enable W^X instead of setting W|X permissions below.
-  bool ret = base::OS::SetPermissions(
-      start, size, base::OS::MemoryPermission::kReadWriteExecute);
+  bool ret = base::OS::SetPermissions(start, size,
+                                      base::OS::MemoryPermission::kReadWrite);
+  TRACE_HEAP("Setting rw permissions for %p:%p\n",
+             reinterpret_cast<void*>(start),
+             reinterpret_cast<void*>(start + size));
   if (!ret) {
     // Highly unlikely.
     remaining_uncommitted_.Increment(size);
@@ -759,6 +785,51 @@ std::unique_ptr<NativeModule> WasmCodeManager::NewNativeModule(
   return nullptr;
 }
 
+bool NativeModule::SetExecutable(bool executable) {
+  if (is_executable_ == executable) return true;
+  TRACE_HEAP("Setting module %zu as executable: %d.\n", instance_id,
+             executable);
+  base::OS::MemoryPermission permission =
+      executable ? base::OS::MemoryPermission::kReadExecute
+                 : base::OS::MemoryPermission::kReadWrite;
+
+#if V8_OS_WIN
+  // On windows, we need to switch permissions per separate virtual memory
+  // reservation. This is really just a problem when the NativeModule is
+  // growable (meaning can_request_more_memory_). That's 32-bit in production,
+  // or unittests.
+  // For now, in that case, we commit at reserved memory granularity.
+  // Technically, that may be a waste, because we may reserve more than we use.
+  // On 32-bit though, the scarce resource is the address space - committed or
+  // not.
+  if (can_request_more_memory_) {
+    for (auto& vmem : owned_memory_) {
+      if (!base::OS::SetPermissions(vmem.address(), vmem.size(), permission)) {
+        return false;
+      }
+      TRACE_HEAP("Set %p:%p to executable:%d\n", vmem.address(), vmem.end(),
+                 executable);
+    }
+    is_executable_ = executable;
+    return true;
+  }
+#endif
+  for (auto& range : allocated_memory_.ranges()) {
+    // allocated_memory_ is fine-grained, so we need to
+    // page-align it.
+    size_t range_size = RoundUp(static_cast<size_t>(range.second - range.first),
+                                base::OS::AllocatePageSize());
+    if (!base::OS::SetPermissions(range.first, range_size, permission)) {
+      return false;
+    }
+    TRACE_HEAP("Set %p:%p to executable:%d\n",
+               reinterpret_cast<void*>(range.first),
+               reinterpret_cast<void*>(range.second), executable);
+  }
+  is_executable_ = executable;
+  return true;
+}
+
 std::unique_ptr<NativeModule> NativeModule::Clone() {
   std::unique_ptr<NativeModule> ret = wasm_code_manager_->NewNativeModule(
       owned_memory_.front().size(), FunctionCount(), num_imported_functions(),
@@ -802,14 +873,14 @@ std::unique_ptr<NativeModule> NativeModule::Clone() {
   for (uint32_t i = num_imported_functions(), e = FunctionCount(); i < e; ++i) {
     const WasmCode* original_code = GetCode(i);
     switch (original_code->kind()) {
-      case WasmCode::LazyStub: {
+      case WasmCode::kLazyStub: {
         if (original_code->IsAnonymous()) {
           ret->SetCodeTable(i, ret->lazy_builtin());
         } else {
           if (!ret->CloneLazyBuiltinInto(i)) return nullptr;
         }
       } break;
-      case WasmCode::Function: {
+      case WasmCode::kFunction: {
         WasmCode* new_code = ret->CloneCode(original_code);
         if (new_code == nullptr) return nullptr;
         PatchTrampolineAndStubCalls(original_code, new_code, reverse_lookup);
@@ -847,7 +918,11 @@ void WasmCodeManager::FreeNativeModuleMemories(NativeModule* native_module) {
 // easily identify those places where we know we have the first
 // instruction PC.
 WasmCode* WasmCodeManager::GetCodeFromStartAddress(Address pc) const {
-  return LookupCode(pc);
+  WasmCode* code = LookupCode(pc);
+  // This method can only be called for valid instruction start addresses.
+  DCHECK_NOT_NULL(code);
+  DCHECK_EQ(pc, code->instructions().start());
+  return code;
 }
 
 WasmCode* WasmCodeManager::LookupCode(Address pc) const {
@@ -878,6 +953,23 @@ void WasmCodeManager::Free(VirtualMemory* mem) {
 
 intptr_t WasmCodeManager::remaining_uncommitted() const {
   return remaining_uncommitted_.Value();
+}
+
+void WasmCodeManager::FlushICache(Address start, size_t size) {
+  Assembler::FlushICache(reinterpret_cast<internal::Isolate*>(isolate_), start,
+                         size);
+}
+
+NativeModuleModificationScope::NativeModuleModificationScope(
+    NativeModule* native_module)
+    : native_module_(native_module) {
+  bool success = native_module_->SetExecutable(false);
+  CHECK(success);
+}
+
+NativeModuleModificationScope::~NativeModuleModificationScope() {
+  bool success = native_module_->SetExecutable(true);
+  CHECK(success);
 }
 
 }  // namespace wasm

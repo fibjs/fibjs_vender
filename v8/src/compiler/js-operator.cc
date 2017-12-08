@@ -9,9 +9,9 @@
 #include "src/base/lazy-instance.h"
 #include "src/compiler/opcodes.h"
 #include "src/compiler/operator.h"
-#include "src/feedback-vector.h"
 #include "src/handles-inl.h"
 #include "src/objects-inl.h"
+#include "src/vector-slot-pair.h"
 
 namespace v8 {
 namespace internal {
@@ -26,29 +26,6 @@ CallFrequency CallFrequencyOf(Operator const* op) {
   DCHECK(op->opcode() == IrOpcode::kJSCallWithArrayLike ||
          op->opcode() == IrOpcode::kJSConstructWithArrayLike);
   return OpParameter<CallFrequency>(op);
-}
-
-VectorSlotPair::VectorSlotPair() {}
-
-
-int VectorSlotPair::index() const {
-  return vector_.is_null() ? -1 : FeedbackVector::GetIndex(slot_);
-}
-
-
-bool operator==(VectorSlotPair const& lhs, VectorSlotPair const& rhs) {
-  return lhs.slot() == rhs.slot() &&
-         lhs.vector().location() == rhs.vector().location();
-}
-
-
-bool operator!=(VectorSlotPair const& lhs, VectorSlotPair const& rhs) {
-  return !(lhs == rhs);
-}
-
-
-size_t hash_value(VectorSlotPair const& p) {
-  return base::hash_combine(p.slot(), p.vector().location());
 }
 
 
@@ -577,7 +554,10 @@ CompareOperationHint CompareOperationHintOf(const Operator* op) {
   V(Multiply, Operator::kNoProperties, 2, 1)                    \
   V(Divide, Operator::kNoProperties, 2, 1)                      \
   V(Modulus, Operator::kNoProperties, 2, 1)                     \
+  V(Exponentiate, Operator::kNoProperties, 2, 1)                \
   V(BitwiseNot, Operator::kNoProperties, 1, 1)                  \
+  V(Decrement, Operator::kNoProperties, 1, 1)                   \
+  V(Increment, Operator::kNoProperties, 1, 1)                   \
   V(Negate, Operator::kNoProperties, 1, 1)                      \
   V(ToInteger, Operator::kNoProperties, 1, 1)                   \
   V(ToLength, Operator::kNoProperties, 1, 1)                    \

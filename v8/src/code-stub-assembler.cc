@@ -175,7 +175,9 @@ Node* CodeStubAssembler::SelectSmiConstant(Node* condition, Smi* true_value,
                         MachineRepresentation::kTaggedSigned);
 }
 
-Node* CodeStubAssembler::NoContextConstant() { return SmiConstant(0); }
+Node* CodeStubAssembler::NoContextConstant() {
+  return SmiConstant(Context::kNoContext);
+}
 
 #define HEAP_CONSTANT_ACCESSOR(rootIndexName, rootAccessorName, name) \
   compiler::TNode<std::remove_reference<decltype(                     \
@@ -642,8 +644,9 @@ Node* CodeStubAssembler::SmiMod(Node* a, Node* b) {
   return TNode<Object>::UncheckedCast(var_result.value());
 }
 
-Node* CodeStubAssembler::SmiMul(Node* a, Node* b) {
-  VARIABLE(var_result, MachineRepresentation::kTagged);
+TNode<Number> CodeStubAssembler::SmiMul(SloppyTNode<Smi> a,
+                                        SloppyTNode<Smi> b) {
+  TVARIABLE(Number, var_result);
   VARIABLE(var_lhs_float64, MachineRepresentation::kFloat64);
   VARIABLE(var_rhs_float64, MachineRepresentation::kFloat64);
   Label return_result(this, &var_result);
@@ -668,7 +671,7 @@ Node* CodeStubAssembler::SmiMul(Node* a, Node* b) {
     Branch(Word32Equal(answer, zero), &answer_zero, &answer_not_zero);
     BIND(&answer_not_zero);
     {
-      var_result.Bind(ChangeInt32ToTagged(answer));
+      var_result = ChangeInt32ToTagged(answer);
       Goto(&return_result);
     }
     BIND(&answer_zero);
@@ -679,12 +682,12 @@ Node* CodeStubAssembler::SmiMul(Node* a, Node* b) {
              &if_should_be_zero);
       BIND(&if_should_be_negative_zero);
       {
-        var_result.Bind(MinusZeroConstant());
+        var_result = MinusZeroConstant();
         Goto(&return_result);
       }
       BIND(&if_should_be_zero);
       {
-        var_result.Bind(SmiConstant(0));
+        var_result = SmiConstant(0);
         Goto(&return_result);
       }
     }
@@ -694,13 +697,12 @@ Node* CodeStubAssembler::SmiMul(Node* a, Node* b) {
     var_lhs_float64.Bind(SmiToFloat64(a));
     var_rhs_float64.Bind(SmiToFloat64(b));
     Node* value = Float64Mul(var_lhs_float64.value(), var_rhs_float64.value());
-    Node* result = AllocateHeapNumberWithValue(value);
-    var_result.Bind(result);
+    var_result = AllocateHeapNumberWithValue(value);
     Goto(&return_result);
   }
 
   BIND(&return_result);
-  return var_result.value();
+  return var_result;
 }
 
 Node* CodeStubAssembler::TrySmiDiv(Node* dividend, Node* divisor,
@@ -872,6 +874,8 @@ TNode<BoolT> CodeStubAssembler::IsFastJSArray(SloppyTNode<Object> object,
 
 void CodeStubAssembler::BranchIfFastJSArray(Node* object, Node* context,
                                             Label* if_true, Label* if_false) {
+  GotoIfForceSlowPath(if_false);
+
   // Bailout if receiver is a Smi.
   GotoIf(TaggedIsSmi(object), if_false);
 
@@ -893,6 +897,16 @@ void CodeStubAssembler::BranchIfFastJSArrayForCopy(Node* object, Node* context,
                                                    Label* if_false) {
   GotoIf(IsSpeciesProtectorCellInvalid(), if_false);
   BranchIfFastJSArray(object, context, if_true, if_false);
+}
+
+void CodeStubAssembler::GotoIfForceSlowPath(Label* if_true) {
+#ifdef V8_ENABLE_FORCE_SLOW_PATH
+  Node* const force_slow_path_addr =
+      ExternalConstant(ExternalReference::force_slow_path(isolate()));
+  Node* const force_slow = Load(MachineType::Uint8(), force_slow_path_addr);
+
+  GotoIf(force_slow, if_true);
+#endif
 }
 
 Node* CodeStubAssembler::AllocateRaw(Node* size_in_bytes, AllocationFlags flags,
@@ -1776,8 +1790,8 @@ Node* CodeStubAssembler::LoadJSFunctionPrototype(Node* function,
   CSA_ASSERT(this, TaggedIsNotSmi(function));
   CSA_ASSERT(this, IsJSFunction(function));
   CSA_ASSERT(this, IsFunctionWithPrototypeSlotMap(LoadMap(function)));
-  CSA_ASSERT(this, IsClearWord32(LoadMapBitField(LoadMap(function)),
-                                 1 << Map::kHasNonInstancePrototype));
+  CSA_ASSERT(this, IsClearWord32<Map::HasNonInstancePrototypeBit>(
+                       LoadMapBitField(LoadMap(function))));
   Node* proto_or_map =
       LoadObjectField(function, JSFunction::kPrototypeOrInitialMapOffset);
   GotoIf(IsTheHole(proto_or_map), if_bailout);
@@ -1931,10 +1945,10 @@ Node* CodeStubAssembler::EnsureArrayPushable(Node* receiver, Label* bailout) {
   Comment("Disallow pushing onto prototypes");
   Node* map = LoadMap(receiver);
   Node* bit_field2 = LoadMapBitField2(map);
-  int mask = static_cast<int>(Map::IsPrototypeMapBits::kMask) |
-             (1 << Map::kIsExtensible);
+  int mask = Map::IsPrototypeMapBit::kMask | Map::IsExtensibleBit::kMask;
   Node* test = Word32And(bit_field2, Int32Constant(mask));
-  GotoIf(Word32NotEqual(test, Int32Constant(1 << Map::kIsExtensible)), bailout);
+  GotoIf(Word32NotEqual(test, Int32Constant(Map::IsExtensibleBit::kMask)),
+         bailout);
 
   // Disallow pushing onto arrays in dictionary named property mode. We need
   // to figure out whether the length property is still writable.
@@ -2116,7 +2130,7 @@ Node* CodeStubAssembler::AllocateSeqOneByteString(int length,
   StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kLengthOffset,
                                  SmiConstant(length),
                                  MachineRepresentation::kTagged);
-  StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kHashFieldOffset,
+  StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kHashFieldSlot,
                                  IntPtrConstant(String::kEmptyHashField),
                                  MachineType::PointerRepresentation());
   return result;
@@ -2163,7 +2177,7 @@ Node* CodeStubAssembler::AllocateSeqOneByteString(Node* context,
     StoreMapNoWriteBarrier(result, Heap::kOneByteStringMapRootIndex);
     StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kLengthOffset,
                                    length, MachineRepresentation::kTagged);
-    StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kHashFieldOffset,
+    StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kHashFieldSlot,
                                    IntPtrConstant(String::kEmptyHashField),
                                    MachineType::PointerRepresentation());
     var_result.Bind(result);
@@ -2201,7 +2215,7 @@ Node* CodeStubAssembler::AllocateSeqTwoByteString(int length,
   StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kLengthOffset,
                                  SmiConstant(Smi::FromInt(length)),
                                  MachineRepresentation::kTagged);
-  StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kHashFieldOffset,
+  StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kHashFieldSlot,
                                  IntPtrConstant(String::kEmptyHashField),
                                  MachineType::PointerRepresentation());
   return result;
@@ -2234,7 +2248,7 @@ Node* CodeStubAssembler::AllocateSeqTwoByteString(Node* context,
     StoreMapNoWriteBarrier(result, Heap::kStringMapRootIndex);
     StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kLengthOffset,
                                    length, MachineRepresentation::kTagged);
-    StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kHashFieldOffset,
+    StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kHashFieldSlot,
                                    IntPtrConstant(String::kEmptyHashField),
                                    MachineType::PointerRepresentation());
     var_result.Bind(result);
@@ -2270,7 +2284,7 @@ Node* CodeStubAssembler::AllocateSlicedString(
   StoreMapNoWriteBarrier(result, map_root_index);
   StoreObjectFieldNoWriteBarrier(result, SlicedString::kLengthOffset, length,
                                  MachineRepresentation::kTagged);
-  StoreObjectFieldNoWriteBarrier(result, SlicedString::kHashFieldOffset,
+  StoreObjectFieldNoWriteBarrier(result, SlicedString::kHashFieldSlot,
                                  IntPtrConstant(String::kEmptyHashField),
                                  MachineType::PointerRepresentation());
   StoreObjectFieldNoWriteBarrier(result, SlicedString::kParentOffset, parent,
@@ -2305,7 +2319,7 @@ Node* CodeStubAssembler::AllocateConsString(Heap::RootListIndex map_root_index,
   StoreMapNoWriteBarrier(result, map_root_index);
   StoreObjectFieldNoWriteBarrier(result, ConsString::kLengthOffset, length,
                                  MachineRepresentation::kTagged);
-  StoreObjectFieldNoWriteBarrier(result, ConsString::kHashFieldOffset,
+  StoreObjectFieldNoWriteBarrier(result, ConsString::kHashFieldSlot,
                                  IntPtrConstant(String::kEmptyHashField),
                                  MachineType::PointerRepresentation());
   bool const new_space = !(flags & kPretenured);
@@ -2536,8 +2550,8 @@ void CodeStubAssembler::InitializeJSObjectFromMap(
 void CodeStubAssembler::InitializeJSObjectBodyNoSlackTracking(
     Node* object, Node* map, Node* instance_size, int start_offset) {
   STATIC_ASSERT(Map::kNoSlackTracking == 0);
-  CSA_ASSERT(this,
-             IsClearWord32<Map::ConstructionCounter>(LoadMapBitField3(map)));
+  CSA_ASSERT(
+      this, IsClearWord32<Map::ConstructionCounterBits>(LoadMapBitField3(map)));
   InitializeFieldsWithRoot(object, IntPtrConstant(start_offset), instance_size,
                            Heap::kUndefinedValueRootIndex);
 }
@@ -2552,7 +2566,8 @@ void CodeStubAssembler::InitializeJSObjectBodyWithSlackTracking(
   Node* bit_field3 = LoadMapBitField3(map);
   Label end(this), slack_tracking(this), complete(this, Label::kDeferred);
   STATIC_ASSERT(Map::kNoSlackTracking == 0);
-  GotoIf(IsSetWord32<Map::ConstructionCounter>(bit_field3), &slack_tracking);
+  GotoIf(IsSetWord32<Map::ConstructionCounterBits>(bit_field3),
+         &slack_tracking);
   Comment("No slack tracking");
   InitializeJSObjectBodyNoSlackTracking(object, map, instance_size);
   Goto(&end);
@@ -2562,9 +2577,9 @@ void CodeStubAssembler::InitializeJSObjectBodyWithSlackTracking(
     Comment("Decrease construction counter");
     // Slack tracking is only done on initial maps.
     CSA_ASSERT(this, IsUndefined(LoadMapBackPointer(map)));
-    STATIC_ASSERT(Map::ConstructionCounter::kNext == 32);
+    STATIC_ASSERT(Map::ConstructionCounterBits::kNext == 32);
     Node* new_bit_field3 = Int32Sub(
-        bit_field3, Int32Constant(1 << Map::ConstructionCounter::kShift));
+        bit_field3, Int32Constant(1 << Map::ConstructionCounterBits::kShift));
     StoreObjectFieldNoWriteBarrier(map, Map::kBitField3Offset, new_bit_field3,
                                    MachineRepresentation::kWord32);
     STATIC_ASSERT(Map::kSlackTrackingCounterEnd == 1);
@@ -2583,7 +2598,9 @@ void CodeStubAssembler::InitializeJSObjectBodyWithSlackTracking(
     InitializeFieldsWithRoot(object, IntPtrConstant(start_offset), used_size,
                              Heap::kUndefinedValueRootIndex);
 
-    GotoIf(IsClearWord32<Map::ConstructionCounter>(new_bit_field3), &complete);
+    STATIC_ASSERT(Map::kNoSlackTracking == 0);
+    GotoIf(IsClearWord32<Map::ConstructionCounterBits>(new_bit_field3),
+           &complete);
     Goto(&end);
   }
 
@@ -3810,9 +3827,7 @@ TNode<Float64T> CodeStubAssembler::ChangeNumberToFloat64(
 }
 
 TNode<UintPtrT> CodeStubAssembler::ChangeNonnegativeNumberToUintPtr(
-    SloppyTNode<Number> value) {
-  // TODO(tebbi): Remove assert once argument is TNode instead of SloppyTNode.
-  CSA_SLOW_ASSERT(this, IsNumber(value));
+    TNode<Number> value) {
   TVARIABLE(UintPtrT, result);
   Label smi(this), done(this, &result);
   GotoIf(TaggedIsSmi(value), &smi);
@@ -4024,7 +4039,7 @@ Node* CodeStubAssembler::IsSpecialReceiverMap(Node* map) {
   CSA_SLOW_ASSERT(this, IsMap(map));
   Node* is_special = IsSpecialReceiverInstanceType(LoadMapInstanceType(map));
   uint32_t mask =
-      1 << Map::kHasNamedInterceptor | 1 << Map::kIsAccessCheckNeeded;
+      Map::HasNamedInterceptorBit::kMask | Map::IsAccessCheckNeededBit::kMask;
   USE(mask);
   // Interceptors or access checks imply special receiver.
   CSA_ASSERT(this,
@@ -4036,27 +4051,27 @@ Node* CodeStubAssembler::IsSpecialReceiverMap(Node* map) {
 TNode<BoolT> CodeStubAssembler::IsDictionaryMap(SloppyTNode<Map> map) {
   CSA_SLOW_ASSERT(this, IsMap(map));
   Node* bit_field3 = LoadMapBitField3(map);
-  return IsSetWord32<Map::DictionaryMap>(bit_field3);
+  return IsSetWord32<Map::IsDictionaryMapBit>(bit_field3);
 }
 
 Node* CodeStubAssembler::IsExtensibleMap(Node* map) {
   CSA_ASSERT(this, IsMap(map));
-  return IsSetWord32(LoadMapBitField2(map), 1 << Map::kIsExtensible);
+  return IsSetWord32<Map::IsExtensibleBit>(LoadMapBitField2(map));
 }
 
 Node* CodeStubAssembler::IsCallableMap(Node* map) {
   CSA_ASSERT(this, IsMap(map));
-  return IsSetWord32(LoadMapBitField(map), 1 << Map::kIsCallable);
+  return IsSetWord32<Map::IsCallableBit>(LoadMapBitField(map));
 }
 
 Node* CodeStubAssembler::IsDeprecatedMap(Node* map) {
   CSA_ASSERT(this, IsMap(map));
-  return IsSetWord32<Map::Deprecated>(LoadMapBitField3(map));
+  return IsSetWord32<Map::IsDeprecatedBit>(LoadMapBitField3(map));
 }
 
 Node* CodeStubAssembler::IsUndetectableMap(Node* map) {
   CSA_ASSERT(this, IsMap(map));
-  return IsSetWord32(LoadMapBitField(map), 1 << Map::kIsUndetectable);
+  return IsSetWord32<Map::IsUndetectableBit>(LoadMapBitField(map));
 }
 
 Node* CodeStubAssembler::IsNoElementsProtectorCellInvalid() {
@@ -4092,7 +4107,7 @@ Node* CodeStubAssembler::IsCell(Node* object) {
 
 Node* CodeStubAssembler::IsConstructorMap(Node* map) {
   CSA_ASSERT(this, IsMap(map));
-  return IsSetWord32(LoadMapBitField(map), 1 << Map::kIsConstructor);
+  return IsSetWord32<Map::IsConstructorBit>(LoadMapBitField(map));
 }
 
 Node* CodeStubAssembler::IsConstructor(Node* object) {
@@ -4101,7 +4116,7 @@ Node* CodeStubAssembler::IsConstructor(Node* object) {
 
 Node* CodeStubAssembler::IsFunctionWithPrototypeSlotMap(Node* map) {
   CSA_ASSERT(this, IsMap(map));
-  return IsSetWord32(LoadMapBitField(map), 1 << Map::kHasPrototypeSlot);
+  return IsSetWord32<Map::HasPrototypeSlotBit>(LoadMapBitField(map));
 }
 
 Node* CodeStubAssembler::IsSpecialReceiverInstanceType(Node* instance_type) {
@@ -6175,14 +6190,14 @@ Node* CodeStubAssembler::ComputeIntegerHash(Node* key, Node* seed) {
   // See v8::internal::ComputeIntegerHash()
   Node* hash = TruncateWordToWord32(key);
   hash = Word32Xor(hash, seed);
-  hash = Int32Add(Word32Xor(hash, Int32Constant(0xffffffff)),
+  hash = Int32Add(Word32Xor(hash, Int32Constant(0xFFFFFFFF)),
                   Word32Shl(hash, Int32Constant(15)));
   hash = Word32Xor(hash, Word32Shr(hash, Int32Constant(12)));
   hash = Int32Add(hash, Word32Shl(hash, Int32Constant(2)));
   hash = Word32Xor(hash, Word32Shr(hash, Int32Constant(4)));
   hash = Int32Mul(hash, Int32Constant(2057));
   hash = Word32Xor(hash, Word32Shr(hash, Int32Constant(16)));
-  return Word32And(hash, Int32Constant(0x3fffffff));
+  return Word32And(hash, Int32Constant(0x3FFFFFFF));
 }
 
 void CodeStubAssembler::NumberDictionaryLookup(Node* dictionary,
@@ -6519,13 +6534,13 @@ void CodeStubAssembler::TryLookupProperty(
          &if_objectisspecial);
 
   uint32_t mask =
-      1 << Map::kHasNamedInterceptor | 1 << Map::kIsAccessCheckNeeded;
+      Map::HasNamedInterceptorBit::kMask | Map::IsAccessCheckNeededBit::kMask;
   CSA_ASSERT(this, Word32BinaryNot(IsSetWord32(LoadMapBitField(map), mask)));
   USE(mask);
 
   Node* bit_field3 = LoadMapBitField3(map);
   Label if_isfastmap(this), if_isslowmap(this);
-  Branch(IsSetWord32<Map::DictionaryMap>(bit_field3), &if_isslowmap,
+  Branch(IsSetWord32<Map::IsDictionaryMapBit>(bit_field3), &if_isslowmap,
          &if_isfastmap);
   BIND(&if_isfastmap);
   {
@@ -6551,7 +6566,8 @@ void CodeStubAssembler::TryLookupProperty(
 
     // Handle interceptors and access checks in runtime.
     Node* bit_field = LoadMapBitField(map);
-    int mask = 1 << Map::kHasNamedInterceptor | 1 << Map::kIsAccessCheckNeeded;
+    int mask =
+        Map::HasNamedInterceptorBit::kMask | Map::IsAccessCheckNeededBit::kMask;
     GotoIf(IsSetWord32(bit_field, mask), if_bailout);
 
     Node* dictionary = LoadSlowProperties(object);
@@ -6814,13 +6830,12 @@ Node* CodeStubAssembler::CallGetterIfAccessor(Node* value, Node* details,
 
       // if (!(has_prototype_slot() && !has_non_instance_prototype())) use
       // generic property loading mechanism.
-      int has_prototype_slot_mask = 1 << Map::kHasPrototypeSlot;
-      int has_non_instance_prototype_mask = 1 << Map::kHasNonInstancePrototype;
       GotoIfNot(
-          Word32Equal(Word32And(LoadMapBitField(receiver_map),
-                                Int32Constant(has_prototype_slot_mask |
-                                              has_non_instance_prototype_mask)),
-                      Int32Constant(has_prototype_slot_mask)),
+          Word32Equal(
+              Word32And(LoadMapBitField(receiver_map),
+                        Int32Constant(Map::HasPrototypeSlotBit::kMask |
+                                      Map::HasNonInstancePrototypeBit::kMask)),
+              Int32Constant(Map::HasPrototypeSlotBit::kMask)),
           if_bailout);
       var_value.Bind(LoadJSFunctionPrototype(receiver, if_bailout));
       Goto(&done);
@@ -7180,8 +7195,8 @@ Node* CodeStubAssembler::HasInPrototypeChain(Node* context, Node* object,
       GotoIf(InstanceTypeEqual(object_instance_type, JS_PROXY_TYPE),
              &return_runtime);
       Node* object_bitfield = LoadMapBitField(object_map);
-      int mask =
-          1 << Map::kHasNamedInterceptor | 1 << Map::kIsAccessCheckNeeded;
+      int mask = Map::HasNamedInterceptorBit::kMask |
+                 Map::IsAccessCheckNeededBit::kMask;
       Branch(IsSetWord32(object_bitfield, mask), &return_runtime,
              &if_objectisdirect);
     }
@@ -7240,12 +7255,12 @@ Node* CodeStubAssembler::OrdinaryHasInstance(Node* context, Node* callable,
   // Goto runtime if {callable} is not a constructor or has
   // a non-instance "prototype".
   Node* callable_bitfield = LoadMapBitField(callable_map);
-  GotoIfNot(
-      Word32Equal(Word32And(callable_bitfield,
-                            Int32Constant((1 << Map::kHasNonInstancePrototype) |
-                                          (1 << Map::kIsConstructor))),
-                  Int32Constant(1 << Map::kIsConstructor)),
-      &return_runtime);
+  GotoIfNot(Word32Equal(
+                Word32And(callable_bitfield,
+                          Int32Constant(Map::HasNonInstancePrototypeBit::kMask |
+                                        Map::IsConstructorBit::kMask)),
+                Int32Constant(Map::IsConstructorBit::kMask)),
+            &return_runtime);
 
   // Get the "prototype" (or initial map) of the {callable}.
   Node* callable_prototype =
@@ -7555,7 +7570,7 @@ void CodeStubAssembler::StoreElement(Node* elements, ElementsKind kind,
   if (IsFixedTypedArrayElementsKind(kind)) {
     if (kind == UINT8_CLAMPED_ELEMENTS) {
       CSA_ASSERT(this,
-                 Word32Equal(value, Word32And(Int32Constant(0xff), value)));
+                 Word32Equal(value, Word32And(Int32Constant(0xFF), value)));
     }
     Node* offset = ElementOffsetFromIndex(index, kind, mode, 0);
     MachineRepresentation rep = ElementsKindToMachineRepresentation(kind);
@@ -8017,8 +8032,8 @@ Node* CodeStubAssembler::BuildFastLoop(
                                         ? MachineType::PointerRepresentation()
                                         : MachineRepresentation::kTaggedSigned;
   VARIABLE(var, index_rep, start_index);
-  VariableList vars_copy(vars, zone());
-  vars_copy.Add(&var, zone());
+  VariableList vars_copy(vars.begin(), vars.end(), zone());
+  vars_copy.push_back(&var);
   Label loop(this, vars_copy);
   Label after_loop(this);
   // Introduce an explicit second check of the termination condition before the
@@ -8279,7 +8294,7 @@ Node* CodeStubAssembler::RelationalComparison(Operation op, Node* lhs,
     // Initialize the type feedback to None. The current feedback is combined
     // with the previous feedback.
     var_type_feedback->Bind(SmiConstant(CompareOperationFeedback::kNone));
-    loop_variable_list.Add(var_type_feedback, zone());
+    loop_variable_list.push_back(var_type_feedback);
   }
   Label loop(this, loop_variable_list);
   Goto(&loop);
@@ -8838,7 +8853,7 @@ Node* CodeStubAssembler::Equal(Node* left, Node* right, Node* context,
     // Initialize the type feedback to None. The current feedback is combined
     // with the previous feedback.
     var_type_feedback->Bind(SmiConstant(CompareOperationFeedback::kNone));
-    loop_variable_list.Add(var_type_feedback, zone());
+    loop_variable_list.push_back(var_type_feedback);
   }
   Label loop(this, loop_variable_list);
   Goto(&loop);
@@ -9757,10 +9772,10 @@ Node* CodeStubAssembler::Typeof(Node* value) {
 
   Node* callable_or_undetectable_mask = Word32And(
       LoadMapBitField(map),
-      Int32Constant(1 << Map::kIsCallable | 1 << Map::kIsUndetectable));
+      Int32Constant(Map::IsCallableBit::kMask | Map::IsUndetectableBit::kMask));
 
   GotoIf(Word32Equal(callable_or_undetectable_mask,
-                     Int32Constant(1 << Map::kIsCallable)),
+                     Int32Constant(Map::IsCallableBit::kMask)),
          &return_function);
 
   GotoIfNot(Word32Equal(callable_or_undetectable_mask, Int32Constant(0)),
@@ -10127,17 +10142,17 @@ Node* CodeStubAssembler::BitwiseOp(Node* left32, Node* right32,
       return ChangeInt32ToTagged(Signed(Word32Xor(left32, right32)));
     case Operation::kShiftLeft:
       if (!Word32ShiftIsSafe()) {
-        right32 = Word32And(right32, Int32Constant(0x1f));
+        right32 = Word32And(right32, Int32Constant(0x1F));
       }
       return ChangeInt32ToTagged(Signed(Word32Shl(left32, right32)));
     case Operation::kShiftRight:
       if (!Word32ShiftIsSafe()) {
-        right32 = Word32And(right32, Int32Constant(0x1f));
+        right32 = Word32And(right32, Int32Constant(0x1F));
       }
       return ChangeInt32ToTagged(Signed(Word32Sar(left32, right32)));
     case Operation::kShiftRightLogical:
       if (!Word32ShiftIsSafe()) {
-        right32 = Word32And(right32, Int32Constant(0x1f));
+        right32 = Word32And(right32, Int32Constant(0x1F));
       }
       return ChangeUint32ToTagged(Unsigned(Word32Shr(left32, right32)));
     default:
@@ -10574,6 +10589,7 @@ Node* CodeStubAssembler::AllocateFunctionWithMapAndContext(Node* map,
   CSA_ASSERT(this, Word32BinaryNot(IsConstructorMap(map)));
   CSA_ASSERT(this, Word32BinaryNot(IsFunctionWithPrototypeSlotMap(map)));
   Node* const fun = Allocate(JSFunction::kSizeWithoutPrototype);
+  STATIC_ASSERT(JSFunction::kSizeWithoutPrototype == 7 * kPointerSize);
   StoreMapNoWriteBarrier(fun, map);
   StoreObjectFieldRoot(fun, JSObject::kPropertiesOrHashOffset,
                        Heap::kEmptyFixedArrayRootIndex);
