@@ -9,12 +9,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <time.h>
-#include <chrono>
 
 #include "osconfig.h"
 #include "service.h"
 #include "thread.h"
+#include "hrtime.h"
 
 #include <map>
 
@@ -28,7 +27,7 @@ namespace exlib {
 class Sleeping : public linkitem,
                  public Service::switchConextCallback {
 public:
-    Sleeping(Task_base* now, int32_t tm)
+    Sleeping(Task_base* now, int64_t tm)
         : m_now(now)
         , m_tm(tm)
     {
@@ -39,7 +38,7 @@ public:
 
 public:
     Task_base* m_now;
-    int32_t m_tm;
+    int64_t m_tm;
 };
 
 class Canceling : public linkitem {
@@ -134,11 +133,11 @@ static class _timerThread : public OSThread {
 public:
     void wait()
     {
-        std::multimap<double, Sleeping*>::iterator e;
+        std::multimap<int64_t, Sleeping*>::iterator e;
 
         e = m_tms.begin();
         if (e != m_tms.end())
-            m_sem.TimedWait((int32_t)(e->first - m_tm));
+            m_sem.TimedWait((int32_t)((e->first - m_tm) / NANOS_PER_MICRO));
         else
             m_sem.Wait();
     }
@@ -148,13 +147,11 @@ public:
         while (1) {
             Sleeping* p;
             Canceling* p1;
-            std::multimap<double, Sleeping*>::iterator e;
+            std::multimap<int64_t, Sleeping*>::iterator e;
 
             wait();
 
-            m_tm = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch())
-                       .count();
+            m_tm = _hrtime();
 
             while ((p = m_acSleep.getHead()) != NULL) {
                 m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
@@ -192,7 +189,7 @@ public:
 
     void post(Task_base* now, int32_t ms)
     {
-        m_acSleep.putTail(new Sleeping(now, ms));
+        m_acSleep.putTail(new Sleeping(now, ms * NANOS_PER_MICRO));
         m_sem.Post();
     }
 
@@ -204,10 +201,10 @@ public:
 
 private:
     OSSemaphore m_sem;
-    double m_tm;
+    int64_t m_tm;
     LockedList<Sleeping> m_acSleep;
     LockedList<Canceling> m_acCancel;
-    std::multimap<double, Sleeping*> m_tms;
+    std::multimap<int64_t, Sleeping*> m_tms;
 
     friend class Sleeping;
 } s_timer;
@@ -234,7 +231,7 @@ void Fiber::sleep(int32_t ms, Task_base* now)
         if (ms <= 0)
             ((Fiber*)now)->yield();
         else {
-            ((Fiber*)now)->m_pService->switchConext(new Sleeping(now, ms));
+            ((Fiber*)now)->m_pService->switchConext(new Sleeping(now, ms * NANOS_PER_MICRO));
         }
     } else if (now->is(OSThread::type)) {
         if (ms <= 0)
