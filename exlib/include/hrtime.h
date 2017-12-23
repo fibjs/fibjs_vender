@@ -6,8 +6,8 @@
  */
 #include "osconfig.h"
 
-#define NANOS_PER_SEC 1000000000
-#define NANOS_PER_MICRO 1000000
+#define NANOS_PER_SEC 1000000000LL
+#define NANOS_PER_MICRO 1000000LL
 
 #ifdef _WIN32
 
