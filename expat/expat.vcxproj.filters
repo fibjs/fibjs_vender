@@ -39,6 +39,9 @@
     <ClInclude Include="src\nametab.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\siphash.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\utf8tab.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -56,6 +59,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\loadlibrary.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\xmlparse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
