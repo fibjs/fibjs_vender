@@ -295,6 +295,7 @@ class Register : public CPURegister {
 static_assert(IS_TRIVIALLY_COPYABLE(Register),
               "Register can efficiently be passed by value");
 
+constexpr bool kPadArguments = true;
 constexpr bool kSimpleFPAliasing = true;
 constexpr bool kSimdMaskRegisters = false;
 

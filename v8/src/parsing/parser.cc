@@ -506,7 +506,7 @@ Parser::Parser(ParseInfo* info)
                          info->runtime_call_stats(), info->logger(),
                          info->script().is_null() ? -1 : info->script()->id(),
                          info->is_module(), true),
-      scanner_(info->unicode_cache(), use_counts_),
+      scanner_(info->unicode_cache()),
       reusable_preparser_(nullptr),
       mode_(PARSE_EAGERLY),  // Lazy mode must be set explicitly.
       source_range_map_(info->source_range_map()),
@@ -543,6 +543,7 @@ Parser::Parser(ParseInfo* info)
   set_allow_harmony_do_expressions(FLAG_harmony_do_expressions);
   set_allow_harmony_function_sent(FLAG_harmony_function_sent);
   set_allow_harmony_public_fields(FLAG_harmony_public_fields);
+  set_allow_harmony_static_fields(FLAG_harmony_static_fields);
   set_allow_harmony_dynamic_import(FLAG_harmony_dynamic_import);
   set_allow_harmony_import_meta(FLAG_harmony_import_meta);
   set_allow_harmony_async_iteration(FLAG_harmony_async_iteration);
@@ -668,11 +669,9 @@ FunctionLiteral* Parser::DoParseProgram(ParseInfo* info) {
     }
 
     DeclarationScope* scope = outer->AsDeclarationScope();
-
     scope->set_start_position(0);
 
     FunctionState function_state(&function_state_, &scope_, scope);
-
     ZoneList<Statement*>* body = new(zone()) ZoneList<Statement*>(16, zone());
     bool ok = true;
     int beg_pos = scanner()->location().beg_pos;
@@ -690,7 +689,6 @@ FunctionLiteral* Parser::DoParseProgram(ParseInfo* info) {
       var->AllocateTo(VariableLocation::PARAMETER, 0);
 
       PrepareGeneratorVariables();
-      scope->ForceContextAllocation();
       Expression* initial_yield =
           BuildInitialYield(kNoSourcePosition, kGeneratorFunction);
       body->Add(
@@ -700,6 +698,8 @@ FunctionLiteral* Parser::DoParseProgram(ParseInfo* info) {
       ParseModuleItemList(body, &ok);
       ok = ok && module()->Validate(this->scope()->AsModuleScope(),
                                     pending_error_handler(), zone());
+    } else if (info->is_wrapped_as_function()) {
+      ParseWrapped(info, body, scope, zone(), &ok);
     } else {
       // Don't count the mode in the use counters--give the program a chance
       // to enable script-wide strict mode below.
@@ -752,6 +752,46 @@ FunctionLiteral* Parser::DoParseProgram(ParseInfo* info) {
   return result;
 }
 
+ZoneList<const AstRawString*>* Parser::PrepareWrappedArguments(ParseInfo* info,
+                                                               Zone* zone) {
+  DCHECK(parsing_on_main_thread_);
+  Handle<FixedArray> arguments(info->script()->wrapped_arguments());
+  int arguments_length = arguments->length();
+  ZoneList<const AstRawString*>* arguments_for_wrapped_function =
+      new (zone) ZoneList<const AstRawString*>(arguments_length, zone);
+  for (int i = 0; i < arguments_length; i++) {
+    const AstRawString* argument_string = ast_value_factory()->GetString(
+        Handle<String>(String::cast(arguments->get(i))));
+    arguments_for_wrapped_function->Add(argument_string, zone);
+  }
+  return arguments_for_wrapped_function;
+}
+
+void Parser::ParseWrapped(ParseInfo* info, ZoneList<Statement*>* body,
+                          DeclarationScope* outer_scope, Zone* zone, bool* ok) {
+  DCHECK(info->is_wrapped_as_function());
+  ParsingModeScope parsing_mode(this, PARSE_EAGERLY);
+
+  // Set function and block state for the outer eval scope.
+  DCHECK(outer_scope->is_eval_scope());
+  FunctionState function_state(&function_state_, &scope_, outer_scope);
+
+  const AstRawString* function_name = nullptr;
+  Scanner::Location location(0, 0);
+
+  ZoneList<const AstRawString*>* arguments_for_wrapped_function =
+      PrepareWrappedArguments(info, zone);
+
+  FunctionLiteral* function_literal = ParseFunctionLiteral(
+      function_name, location, kSkipFunctionNameCheck, kNormalFunction,
+      kNoSourcePosition, FunctionLiteral::kWrapped, LanguageMode::kSloppy,
+      arguments_for_wrapped_function, CHECK_OK_VOID);
+
+  Statement* return_statement = factory()->NewReturnStatement(
+      function_literal, kNoSourcePosition, kNoSourcePosition);
+  body->Add(return_statement, zone);
+}
+
 FunctionLiteral* Parser::ParseFunction(Isolate* isolate, ParseInfo* info,
                                        Handle<SharedFunctionInfo> shared_info) {
   // It's OK to use the Isolate & counters here, since this function is only
@@ -795,7 +835,9 @@ FunctionLiteral* Parser::ParseFunction(Isolate* isolate, ParseInfo* info,
 }
 
 static FunctionLiteral::FunctionType ComputeFunctionType(ParseInfo* info) {
-  if (info->is_declaration()) {
+  if (info->is_wrapped_as_function()) {
+    return FunctionLiteral::kWrapped;
+  } else if (info->is_declaration()) {
     return FunctionLiteral::kDeclaration;
   } else if (info->is_named_expression()) {
     return FunctionLiteral::kNamedExpression;
@@ -928,9 +970,13 @@ FunctionLiteral* Parser::DoParseFunction(ParseInfo* info,
       result = DefaultConstructor(raw_name, IsDerivedConstructor(kind),
                                   info->start_position(), info->end_position());
     } else {
+      ZoneList<const AstRawString*>* arguments_for_wrapped_function =
+          info->is_wrapped_as_function() ? PrepareWrappedArguments(info, zone())
+                                         : nullptr;
       result = ParseFunctionLiteral(
           raw_name, Scanner::Location::invalid(), kSkipFunctionNameCheck, kind,
-          kNoSourcePosition, function_type, info->language_mode(), &ok);
+          kNoSourcePosition, function_type, info->language_mode(),
+          arguments_for_wrapped_function, &ok);
     }
 
     if (ok) {
@@ -1252,7 +1298,6 @@ Statement* Parser::ParseExportDefault(bool* ok) {
       int pos = position();
       ExpressionClassifier classifier(this);
       Expression* value = ParseAssignmentExpression(true, CHECK_OK);
-      RewriteNonPattern(CHECK_OK);
       SetFunctionName(value, ast_value_factory()->default_string());
 
       const AstRawString* local_name =
@@ -2511,7 +2556,8 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     const AstRawString* function_name, Scanner::Location function_name_location,
     FunctionNameValidity function_name_validity, FunctionKind kind,
     int function_token_pos, FunctionLiteral::FunctionType function_type,
-    LanguageMode language_mode, bool* ok) {
+    LanguageMode language_mode,
+    ZoneList<const AstRawString*>* arguments_for_wrapped_function, bool* ok) {
   // Function ::
   //   '(' FormalParameterList? ')' '{' FunctionBody '}'
   //
@@ -2521,8 +2567,12 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   // Setter ::
   //   '(' PropertySetParameterList ')' '{' FunctionBody '}'
 
+  bool is_wrapped = function_type == FunctionLiteral::kWrapped;
+  DCHECK_EQ(is_wrapped, arguments_for_wrapped_function != nullptr);
+
   int pos = function_token_pos == kNoSourcePosition ? peek_position()
                                                     : function_token_pos;
+  DCHECK_NE(kNoSourcePosition, pos);
 
   // Anonymous functions were passed either the empty symbol or a null
   // handle as the function name.  Remember if we were passed a non-empty
@@ -2536,7 +2586,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
   }
 
   FunctionLiteral::EagerCompileHint eager_compile_hint =
-      function_state_->next_function_is_likely_called()
+      function_state_->next_function_is_likely_called() || is_wrapped
           ? FunctionLiteral::kShouldEagerCompile
           : default_eager_compile_hint();
 
@@ -2651,7 +2701,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     if (should_preparse) scope->set_needs_migration();
 #endif
 
-    Expect(Token::LPAREN, CHECK_OK);
+    if (!is_wrapped) Expect(Token::LPAREN, CHECK_OK);
     scope->set_start_position(scanner()->location().beg_pos);
 
     // Eager or lazy parse? If is_lazy_top_level_function, we'll parse
@@ -2662,6 +2712,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     if (should_preparse) {
       DCHECK(parse_lazily());
       DCHECK(is_lazy_top_level_function || is_lazy_inner_function);
+      DCHECK(!is_wrapped);
       Scanner::BookmarkScope bookmark(scanner());
       bookmark.Set();
       LazyParsingResult result = SkipFunction(
@@ -2688,7 +2739,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
       body = ParseFunction(function_name, pos, kind, function_type, scope,
                            &num_parameters, &function_length,
                            &has_duplicate_parameters, &expected_property_count,
-                           CHECK_OK);
+                           arguments_for_wrapped_function, CHECK_OK);
     }
 
     DCHECK_EQ(should_preparse, temp_zoned_);
@@ -3121,10 +3172,13 @@ ZoneList<Statement*>* Parser::ParseFunction(
     const AstRawString* function_name, int pos, FunctionKind kind,
     FunctionLiteral::FunctionType function_type,
     DeclarationScope* function_scope, int* num_parameters, int* function_length,
-    bool* has_duplicate_parameters, int* expected_property_count, bool* ok) {
+    bool* has_duplicate_parameters, int* expected_property_count,
+    ZoneList<const AstRawString*>* arguments_for_wrapped_function, bool* ok) {
   ParsingModeScope mode(this, allow_lazy_ ? PARSE_LAZILY : PARSE_EAGERLY);
 
   FunctionState function_state(&function_state_, &scope_, function_scope);
+
+  bool is_wrapped = function_type == FunctionLiteral::kWrapped;
 
   DuplicateFinder duplicate_finder;
   ExpressionClassifier formals_classifier(this, &duplicate_finder);
@@ -3139,33 +3193,52 @@ ZoneList<Statement*>* Parser::ParseFunction(
   }
 
   ParserFormalParameters formals(function_scope);
-  ParseFormalParameterList(&formals, CHECK_OK);
-  if (expected_parameters_end_pos != kNoSourcePosition) {
-    // Check for '(' or ')' shenanigans in the parameter string for dynamic
-    // functions.
-    int position = peek_position();
-    if (position < expected_parameters_end_pos) {
-      ReportMessageAt(Scanner::Location(position, position + 1),
-                      MessageTemplate::kArgStringTerminatesParametersEarly);
-      *ok = false;
-      return nullptr;
-    } else if (position > expected_parameters_end_pos) {
-      ReportMessageAt(Scanner::Location(expected_parameters_end_pos - 2,
-                                        expected_parameters_end_pos),
-                      MessageTemplate::kUnexpectedEndOfArgString);
-      *ok = false;
-      return nullptr;
+
+  if (is_wrapped) {
+    // For a function implicitly wrapped in function header and footer, the
+    // function arguments are provided separately to the source, and are
+    // declared directly here.
+    int arguments_length = arguments_for_wrapped_function->length();
+    for (int i = 0; i < arguments_length; i++) {
+      const bool is_rest = false;
+      Expression* argument = ExpressionFromIdentifier(
+          arguments_for_wrapped_function->at(i), kNoSourcePosition);
+      AddFormalParameter(&formals, argument, NullExpression(),
+                         kNoSourcePosition, is_rest);
     }
+    DCHECK_EQ(arguments_length, formals.num_parameters());
+    DeclareFormalParameters(formals.scope, formals.params, formals.is_simple);
+  } else {
+    // For a regular function, the function arguments are parsed from source.
+    DCHECK_NULL(arguments_for_wrapped_function);
+    ParseFormalParameterList(&formals, CHECK_OK);
+    if (expected_parameters_end_pos != kNoSourcePosition) {
+      // Check for '(' or ')' shenanigans in the parameter string for dynamic
+      // functions.
+      int position = peek_position();
+      if (position < expected_parameters_end_pos) {
+        ReportMessageAt(Scanner::Location(position, position + 1),
+                        MessageTemplate::kArgStringTerminatesParametersEarly);
+        *ok = false;
+        return nullptr;
+      } else if (position > expected_parameters_end_pos) {
+        ReportMessageAt(Scanner::Location(expected_parameters_end_pos - 2,
+                                          expected_parameters_end_pos),
+                        MessageTemplate::kUnexpectedEndOfArgString);
+        *ok = false;
+        return nullptr;
+      }
+    }
+    Expect(Token::RPAREN, CHECK_OK);
+    int formals_end_position = scanner()->location().end_pos;
+
+    CheckArityRestrictions(formals.arity, kind, formals.has_rest,
+                           function_scope->start_position(),
+                           formals_end_position, CHECK_OK);
+    Expect(Token::LBRACE, CHECK_OK);
   }
-  Expect(Token::RPAREN, CHECK_OK);
-  int formals_end_position = scanner()->location().end_pos;
   *num_parameters = formals.num_parameters();
   *function_length = formals.function_length;
-
-  CheckArityRestrictions(formals.arity, kind, formals.has_rest,
-                         function_scope->start_position(), formals_end_position,
-                         CHECK_OK);
-  Expect(Token::LBRACE, CHECK_OK);
 
   ZoneList<Statement*>* body = new (zone()) ZoneList<Statement*>(8, zone());
   ParseFunctionBody(body, function_name, pos, formals, kind, function_type, ok);
@@ -3246,6 +3319,7 @@ void Parser::DeclareClassProperty(const AstRawString* class_name,
   DCHECK(allow_harmony_public_fields());
 
   if (is_static) {
+    DCHECK(allow_harmony_static_fields());
     class_info->static_fields->Add(property, zone());
   } else {
     class_info->instance_fields->Add(property, zone());
@@ -3811,24 +3885,6 @@ void Parser::RewriteAsyncFunctionBody(ZoneList<Statement*>* body, Block* block,
   body->Add(block, zone());
 }
 
-void Parser::RewriteNonPattern(bool* ok) {
-  ValidateExpression(CHECK_OK_VOID);
-  auto non_patterns_to_rewrite = function_state_->non_patterns_to_rewrite();
-  int begin = classifier()->GetNonPatternBegin();
-  int end = non_patterns_to_rewrite->length();
-  if (begin < end) {
-    for (int i = begin; i < end; i++) {
-      RewritableExpression* expr = non_patterns_to_rewrite->at(i);
-      // TODO(adamk): Make this more typesafe.
-      DCHECK(expr->expression()->IsArrayLiteral());
-      ArrayLiteral* lit = expr->expression()->AsArrayLiteral();
-      expr->Rewrite(RewriteSpreads(lit));
-    }
-    non_patterns_to_rewrite->Rewind(begin);
-  }
-}
-
-
 void Parser::RewriteDestructuringAssignments() {
   const auto& assignments =
       function_state_->destructuring_assignments_to_rewrite();
@@ -3848,100 +3904,9 @@ void Parser::RewriteDestructuringAssignments() {
   }
 }
 
-Expression* Parser::RewriteSpreads(ArrayLiteral* lit) {
-  // Array literals containing spreads are rewritten using do expressions, e.g.
-  //    [1, 2, 3, ...x, 4, ...y, 5]
-  // is roughly rewritten as:
-  //    do {
-  //      $R = [1, 2, 3];
-  //      for ($i of x) %AppendElement($R, $i);
-  //      %AppendElement($R, 4);
-  //      for ($j of y) %AppendElement($R, $j);
-  //      %AppendElement($R, 5);
-  //      $R
-  //    }
-  // where $R, $i and $j are fresh temporary variables.
-  ZoneList<Expression*>::iterator s = lit->FirstSpread();
-  if (s == lit->EndValue()) return nullptr;  // no spread, no rewriting...
-  Variable* result = NewTemporary(ast_value_factory()->dot_result_string());
-  // NOTE: The value assigned to R is the whole original array literal,
-  // spreads included. This will be fixed before the rewritten AST is returned.
-  // $R = lit
-  Expression* init_result = factory()->NewAssignment(
-      Token::INIT, factory()->NewVariableProxy(result), lit, kNoSourcePosition);
-  Block* do_block = factory()->NewBlock(16, false);
-  do_block->statements()->Add(
-      factory()->NewExpressionStatement(init_result, kNoSourcePosition),
-      zone());
-  // Traverse the array literal starting from the first spread.
-  while (s != lit->EndValue()) {
-    Expression* value = *s++;
-    Spread* spread = value->AsSpread();
-    if (spread == nullptr) {
-      // If the element is not a spread, we're adding a single:
-      // %AppendElement($R, value)
-      // or, in case of a hole,
-      // ++($R.length)
-      if (!value->IsTheHoleLiteral()) {
-        ZoneList<Expression*>* append_element_args = NewExpressionList(2);
-        append_element_args->Add(factory()->NewVariableProxy(result), zone());
-        append_element_args->Add(value, zone());
-        do_block->statements()->Add(
-            factory()->NewExpressionStatement(
-                factory()->NewCallRuntime(Runtime::kAppendElement,
-                                          append_element_args,
-                                          kNoSourcePosition),
-                kNoSourcePosition),
-            zone());
-      } else {
-        Property* length_property = factory()->NewProperty(
-            factory()->NewVariableProxy(result),
-            factory()->NewStringLiteral(ast_value_factory()->length_string(),
-                                        kNoSourcePosition),
-            kNoSourcePosition);
-        CountOperation* count_op = factory()->NewCountOperation(
-            Token::INC, true /* prefix */, length_property, kNoSourcePosition);
-        do_block->statements()->Add(
-            factory()->NewExpressionStatement(count_op, kNoSourcePosition),
-            zone());
-      }
-    } else {
-      // If it's a spread, we're adding a for/of loop iterating through it.
-      Variable* each = NewTemporary(ast_value_factory()->dot_for_string());
-      Expression* subject = spread->expression();
-      // %AppendElement($R, each)
-      Statement* append_body;
-      {
-        ZoneList<Expression*>* append_element_args = NewExpressionList(2);
-        append_element_args->Add(factory()->NewVariableProxy(result), zone());
-        append_element_args->Add(factory()->NewVariableProxy(each), zone());
-        append_body = factory()->NewExpressionStatement(
-            factory()->NewCallRuntime(Runtime::kAppendElement,
-                                      append_element_args, kNoSourcePosition),
-            kNoSourcePosition);
-      }
-      // for (each of spread) %AppendElement($R, each)
-      ForOfStatement* loop =
-          factory()->NewForOfStatement(nullptr, kNoSourcePosition);
-      const bool finalize = false;
-      InitializeForOfStatement(loop, factory()->NewVariableProxy(each), subject,
-                               append_body, finalize, IteratorType::kNormal);
-      do_block->statements()->Add(loop, zone());
-    }
-  }
-  // Now, rewind the original array literal to truncate everything from the
-  // first spread (included) until the end. This fixes $R's initialization.
-  lit->RewindSpreads();
-  return factory()->NewDoExpression(do_block, result, lit->position());
-}
-
 void Parser::QueueDestructuringAssignmentForRewriting(
     RewritableExpression* expr) {
   function_state_->AddDestructuringAssignment(expr);
-}
-
-void Parser::QueueNonPatternForRewriting(RewritableExpression* expr, bool* ok) {
-  function_state_->AddNonPatternForRewriting(expr, ok);
 }
 
 void Parser::SetFunctionNameFromPropertyName(LiteralProperty* property,

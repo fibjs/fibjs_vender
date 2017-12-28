@@ -67,6 +67,14 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
+#if defined(V8_OS_SOLARIS)
+#if (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE > 2) || defined(__EXTENSIONS__)
+extern "C" int madvise(caddr_t, size_t, int);
+#else
+extern int madvise(caddr_t, size_t, int);
+#endif
+#endif
+
 #ifndef MADV_FREE
 #define MADV_FREE MADV_DONTNEED
 #endif
@@ -85,6 +93,7 @@ const char* g_gc_fake_mmap = nullptr;
 
 static LazyInstance<RandomNumberGenerator>::type
     platform_random_number_generator = LAZY_INSTANCE_INITIALIZER;
+static LazyMutex rng_mutex = LAZY_MUTEX_INITIALIZER;
 
 #if !V8_OS_FUCHSIA
 #if V8_OS_MACOSX
@@ -128,11 +137,9 @@ int GetFlagsForMemoryPermission(OS::MemoryPermission access) {
 }
 
 void* Allocate(void* address, size_t size, OS::MemoryPermission access) {
-  const size_t actual_size = RoundUp(size, OS::AllocatePageSize());
   int prot = GetProtectionFromMemoryPermission(access);
   int flags = GetFlagsForMemoryPermission(access);
-  void* result =
-      mmap(address, actual_size, prot, flags, kMmapFd, kMmapFdOffset);
+  void* result = mmap(address, size, prot, flags, kMmapFd, kMmapFdOffset);
   if (result == MAP_FAILED) return nullptr;
   return result;
 }
@@ -143,6 +150,8 @@ int ReclaimInaccessibleMemory(void* address, size_t size) {
   // marks the pages with the reusable bit, which allows both Activity Monitor
   // and memory-infra to correctly track the pages.
   int ret = madvise(address, size, MADV_FREE_REUSABLE);
+#elif defined(_AIX) || defined(V8_OS_SOLARIS)
+  int ret = madvise(reinterpret_cast<caddr_t>(address), size, MADV_FREE);
 #else
   int ret = madvise(address, size, MADV_FREE);
 #endif
@@ -150,7 +159,11 @@ int ReclaimInaccessibleMemory(void* address, size_t size) {
     // MADV_FREE only works on Linux 4.5+ . If request failed, retry with older
     // MADV_DONTNEED . Note that MADV_FREE being defined at compile time doesn't
     // imply runtime support.
+#if defined(_AIX) || defined(V8_OS_SOLARIS)
+    ret = madvise(reinterpret_cast<caddr_t>(address), size, MADV_DONTNEED);
+#else
     ret = madvise(address, size, MADV_DONTNEED);
+#endif
   }
   return ret;
 }
@@ -159,11 +172,7 @@ int ReclaimInaccessibleMemory(void* address, size_t size) {
 
 }  // namespace
 
-void OS::Initialize(int64_t random_seed, bool hard_abort,
-                    const char* const gc_fake_mmap) {
-  if (random_seed) {
-    platform_random_number_generator.Pointer()->SetSeed(random_seed);
-  }
+void OS::Initialize(bool hard_abort, const char* const gc_fake_mmap) {
   g_hard_abort = hard_abort;
   g_gc_fake_mmap = gc_fake_mmap;
 }
@@ -199,15 +208,30 @@ size_t OS::CommitPageSize() {
 }
 
 // static
+void OS::SetRandomMmapSeed(int64_t seed) {
+  if (seed) {
+    LockGuard<Mutex> guard(rng_mutex.Pointer());
+    platform_random_number_generator.Pointer()->SetSeed(seed);
+  }
+}
+
+// static
 void* OS::GetRandomMmapAddr() {
-#if defined(ADDRESS_SANITIZER) || defined(MEMORY_SANITIZER) || \
-    defined(THREAD_SANITIZER)
-  // Dynamic tools do not support custom mmap addresses.
-  return nullptr;
-#else
   uintptr_t raw_addr;
-  platform_random_number_generator.Pointer()->NextBytes(&raw_addr,
-                                                        sizeof(raw_addr));
+  {
+    LockGuard<Mutex> guard(rng_mutex.Pointer());
+    platform_random_number_generator.Pointer()->NextBytes(&raw_addr,
+                                                          sizeof(raw_addr));
+  }
+#if defined(V8_USE_ADDRESS_SANITIZER) || defined(MEMORY_SANITIZER) || \
+    defined(THREAD_SANITIZER) || defined(LEAK_SANITIZER)
+  // If random hint addresses interfere with address ranges hard coded in
+  // sanitizers, bad things happen. This address range is copied from TSAN
+  // source but works with all tools.
+  // See crbug.com/539863.
+  raw_addr &= 0x007fffff0000ULL;
+  raw_addr += 0x7e8000000000ULL;
+#else
 #if V8_TARGET_ARCH_X64
   // Currently available CPUs have 48 bits of virtual addressing.  Truncate
   // the hint address to 46 bits to give the kernel a fighting chance of
@@ -261,8 +285,8 @@ void* OS::GetRandomMmapAddr() {
   raw_addr += 0x20000000;
 #endif
 #endif
-  return reinterpret_cast<void*>(raw_addr);
 #endif
+  return reinterpret_cast<void*>(raw_addr);
 }
 
 // TODO(bbudge) Move Cygwin and Fuschia stuff into platform-specific files.
@@ -276,6 +300,7 @@ void* OS::Allocate(void* address, size_t size, size_t alignment,
   address = AlignedAddress(address, alignment);
   // Add the maximum misalignment so we are guaranteed an aligned base address.
   size_t request_size = size + (alignment - page_size);
+  request_size = RoundUp(request_size, OS::AllocatePageSize());
   void* result = base::Allocate(address, request_size, access);
   if (result == nullptr) return nullptr;
 

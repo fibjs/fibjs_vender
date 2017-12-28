@@ -597,8 +597,8 @@ Reduction JSNativeContextSpecialization::ReduceGlobalAccess(
           representation = MachineRepresentation::kTaggedPointer;
         } else {
           // Check that the {value} is a Smi.
-          value = effect = graph()->NewNode(simplified()->CheckSmi(), value,
-                                            effect, control);
+          value = effect = graph()->NewNode(
+              simplified()->CheckSmi(VectorSlotPair()), value, effect, control);
           property_cell_value_type = Type::SignedSmall();
           representation = MachineRepresentation::kTaggedSigned;
         }
@@ -1062,8 +1062,8 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
     if (access_mode == AccessMode::kStore) return NoChange();
 
     // Ensure that the {receiver} is actually a String.
-    receiver = effect = graph()->NewNode(simplified()->CheckString(), receiver,
-                                         effect, control);
+    receiver = effect = graph()->NewNode(
+        simplified()->CheckString(VectorSlotPair()), receiver, effect, control);
 
     // Determine the {receiver} length.
     Node* length = graph()->NewNode(simplified()->StringLength(), receiver);
@@ -1424,9 +1424,9 @@ Reduction JSNativeContextSpecialization::ReduceSoftDeoptimize(
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
   Node* frame_state = NodeProperties::FindFrameStateBefore(node);
-  Node* deoptimize =
-      graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kSoft, reason),
-                       frame_state, effect, control);
+  Node* deoptimize = graph()->NewNode(
+      common()->Deoptimize(DeoptimizeKind::kSoft, reason, VectorSlotPair()),
+      frame_state, effect, control);
   // TODO(bmeurer): This should be on the AdvancedReducer somehow.
   NodeProperties::MergeControlToEnd(graph(), common(), deoptimize);
   Revisit(graph()->end());
@@ -1808,8 +1808,9 @@ JSNativeContextSpecialization::BuildPropertyStore(
            access_mode == AccessMode::kStoreInLiteral);
     switch (field_representation) {
       case MachineRepresentation::kFloat64: {
-        value = effect = graph()->NewNode(simplified()->CheckNumber(), value,
-                                          effect, control);
+        value = effect =
+            graph()->NewNode(simplified()->CheckNumber(VectorSlotPair()), value,
+                             effect, control);
         if (!field_index.is_inobject() || field_index.is_hidden_field() ||
             !FLAG_unbox_double_fields) {
           if (access_info.HasTransitionMap()) {
@@ -1876,8 +1877,8 @@ JSNativeContextSpecialization::BuildPropertyStore(
         }
 
         if (field_representation == MachineRepresentation::kTaggedSigned) {
-          value = effect = graph()->NewNode(simplified()->CheckSmi(), value,
-                                            effect, control);
+          value = effect = graph()->NewNode(
+              simplified()->CheckSmi(VectorSlotPair()), value, effect, control);
           field_access.write_barrier_kind = kNoWriteBarrier;
 
         } else if (field_representation ==
@@ -2126,13 +2127,14 @@ JSNativeContextSpecialization::BuildElementAccess(
       // Check that the {index} is a valid array index, we do the actual
       // bounds check below and just skip the store below if it's out of
       // bounds for the {receiver}.
-      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                        jsgraph()->Constant(Smi::kMaxValue),
-                                        effect, control);
+      index = effect = graph()->NewNode(
+          simplified()->CheckBounds(VectorSlotPair()), index,
+          jsgraph()->Constant(Smi::kMaxValue), effect, control);
     } else {
       // Check that the {index} is in the valid range for the {receiver}.
-      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                        length, effect, control);
+      index = effect =
+          graph()->NewNode(simplified()->CheckBounds(VectorSlotPair()), index,
+                           length, effect, control);
     }
 
     // Access the actual element.
@@ -2151,10 +2153,13 @@ JSNativeContextSpecialization::BuildElementAccess(
           Node* etrue = effect;
           Node* vtrue;
           {
+            Node* masked_index = graph()->NewNode(
+                simplified()->MaskIndexWithBound(), index, length);
+
             // Perform the actual load
             vtrue = etrue = graph()->NewNode(
                 simplified()->LoadTypedElement(external_array_type), buffer,
-                base_pointer, external_pointer, index, etrue, if_true);
+                base_pointer, external_pointer, masked_index, etrue, if_true);
           }
 
           Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
@@ -2172,10 +2177,13 @@ JSNativeContextSpecialization::BuildElementAccess(
               graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
                                vtrue, vfalse, control);
         } else {
+          Node* masked_index = graph()->NewNode(
+              simplified()->MaskIndexWithBound(), index, length);
+
           // Perform the actual load.
           value = effect = graph()->NewNode(
               simplified()->LoadTypedElement(external_array_type), buffer,
-              base_pointer, external_pointer, index, effect, control);
+              base_pointer, external_pointer, masked_index, effect, control);
         }
         break;
       }
@@ -2272,13 +2280,14 @@ JSNativeContextSpecialization::BuildElementAccess(
       // Check that the {index} is a valid array index, we do the actual
       // bounds check below and just skip the store below if it's out of
       // bounds for the {receiver}.
-      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                        jsgraph()->Constant(Smi::kMaxValue),
-                                        effect, control);
+      index = effect = graph()->NewNode(
+          simplified()->CheckBounds(VectorSlotPair()), index,
+          jsgraph()->Constant(Smi::kMaxValue), effect, control);
     } else {
       // Check that the {index} is in the valid range for the {receiver}.
-      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                        length, effect, control);
+      index = effect =
+          graph()->NewNode(simplified()->CheckBounds(VectorSlotPair()), index,
+                           length, effect, control);
     }
 
     // Compute the element access.
@@ -2320,10 +2329,13 @@ JSNativeContextSpecialization::BuildElementAccess(
         Node* etrue = effect;
         Node* vtrue;
         {
+          Node* masked_index = graph()->NewNode(
+              simplified()->MaskIndexWithBound(), index, length);
+
           // Perform the actual load
           vtrue = etrue =
               graph()->NewNode(simplified()->LoadElement(element_access),
-                               elements, index, etrue, if_true);
+                               elements, masked_index, etrue, if_true);
 
           // Handle loading from holey backing stores correctly, by either
           // mapping the hole to undefined if possible, or deoptimizing
@@ -2358,10 +2370,13 @@ JSNativeContextSpecialization::BuildElementAccess(
             graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
                              vtrue, vfalse, control);
       } else {
+        Node* masked_index =
+            graph()->NewNode(simplified()->MaskIndexWithBound(), index, length);
+
         // Perform the actual load.
         value = effect =
             graph()->NewNode(simplified()->LoadElement(element_access),
-                             elements, index, effect, control);
+                             elements, masked_index, effect, control);
 
         // Handle loading from holey backing stores correctly, by either mapping
         // the hole to undefined if possible, or deoptimizing otherwise.
@@ -2393,11 +2408,12 @@ JSNativeContextSpecialization::BuildElementAccess(
     } else {
       DCHECK_EQ(AccessMode::kStore, access_mode);
       if (IsSmiElementsKind(elements_kind)) {
-        value = effect =
-            graph()->NewNode(simplified()->CheckSmi(), value, effect, control);
+        value = effect = graph()->NewNode(
+            simplified()->CheckSmi(VectorSlotPair()), value, effect, control);
       } else if (IsDoubleElementsKind(elements_kind)) {
-        value = effect = graph()->NewNode(simplified()->CheckNumber(), value,
-                                          effect, control);
+        value = effect =
+            graph()->NewNode(simplified()->CheckNumber(VectorSlotPair()), value,
+                             effect, control);
         // Make sure we do not store signalling NaNs into double arrays.
         value = graph()->NewNode(simplified()->NumberSilenceNaN(), value);
       }
@@ -2430,8 +2446,9 @@ JSNativeContextSpecialization::BuildElementAccess(
                                    jsgraph()->Constant(JSObject::kMaxGap))
                 : graph()->NewNode(simplified()->NumberAdd(), length,
                                    jsgraph()->OneConstant());
-        index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                          limit, effect, control);
+        index = effect =
+            graph()->NewNode(simplified()->CheckBounds(VectorSlotPair()), index,
+                             limit, effect, control);
 
         // Grow {elements} backing store if necessary.
         GrowFastElementsMode mode =
@@ -2439,8 +2456,8 @@ JSNativeContextSpecialization::BuildElementAccess(
                 ? GrowFastElementsMode::kDoubleElements
                 : GrowFastElementsMode::kSmiOrObjectElements;
         elements = effect = graph()->NewNode(
-            simplified()->MaybeGrowFastElements(mode), receiver, elements,
-            index, elements_length, effect, control);
+            simplified()->MaybeGrowFastElements(mode, VectorSlotPair()),
+            receiver, elements, index, elements_length, effect, control);
 
         // Also update the "length" property if {receiver} is a JSArray.
         if (receiver_is_jsarray) {
@@ -2492,9 +2509,9 @@ Node* JSNativeContextSpecialization::BuildIndexedStringLoad(
     dependencies()->AssumePropertyCell(factory()->no_elements_protector());
 
     // Ensure that the {index} is a valid String length.
-    index = *effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                       jsgraph()->Constant(String::kMaxLength),
-                                       *effect, *control);
+    index = *effect = graph()->NewNode(
+        simplified()->CheckBounds(VectorSlotPair()), index,
+        jsgraph()->Constant(String::kMaxLength), *effect, *control);
 
     // Load the single character string from {receiver} or yield
     // undefined if the {index} is not within the valid bounds.
@@ -2503,9 +2520,12 @@ Node* JSNativeContextSpecialization::BuildIndexedStringLoad(
     Node* branch =
         graph()->NewNode(common()->Branch(BranchHint::kTrue), check, *control);
 
+    Node* masked_index =
+        graph()->NewNode(simplified()->MaskIndexWithBound(), index, length);
+
     Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
     Node* vtrue = graph()->NewNode(simplified()->StringCharAt(), receiver,
-                                   index, if_true);
+                                   masked_index, if_true);
 
     Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
     Node* vfalse = jsgraph()->UndefinedConstant();
@@ -2515,12 +2535,16 @@ Node* JSNativeContextSpecialization::BuildIndexedStringLoad(
                             vtrue, vfalse, *control);
   } else {
     // Ensure that {index} is less than {receiver} length.
-    index = *effect = graph()->NewNode(simplified()->CheckBounds(), index,
-                                       length, *effect, *control);
+    index = *effect =
+        graph()->NewNode(simplified()->CheckBounds(VectorSlotPair()), index,
+                         length, *effect, *control);
+
+    Node* masked_index =
+        graph()->NewNode(simplified()->MaskIndexWithBound(), index, length);
 
     // Return the character from the {receiver} as single character string.
-    return graph()->NewNode(simplified()->StringCharAt(), receiver, index,
-                            *control);
+    return graph()->NewNode(simplified()->StringCharAt(), receiver,
+                            masked_index, *control);
   }
 }
 

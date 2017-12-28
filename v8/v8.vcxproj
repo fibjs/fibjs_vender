@@ -94,6 +94,7 @@
     <ClInclude Include="src\base\macros.h" />
     <ClInclude Include="src\base\once.h" />
     <ClInclude Include="src\base\optional.h" />
+    <ClInclude Include="src\base\page-allocator.h" />
     <ClInclude Include="src\base\platform\condition-variable.h" />
     <ClInclude Include="src\base\platform\elapsed-timer.h" />
     <ClInclude Include="src\base\platform\mutex.h" />
@@ -572,6 +573,7 @@
     <ClInclude Include="src\safepoint-table.h" />
     <ClInclude Include="src\setup-isolate.h" />
     <ClInclude Include="src\signature.h" />
+    <ClInclude Include="src\simulator-base.h" />
     <ClInclude Include="src\simulator.h" />
     <ClInclude Include="src\snapshot\builtin-deserializer-allocator.h" />
     <ClInclude Include="src\snapshot\builtin-deserializer.h" />
@@ -604,6 +606,7 @@
     <ClInclude Include="src\string-search.h" />
     <ClInclude Include="src\string-stream.h" />
     <ClInclude Include="src\strtod.h" />
+    <ClInclude Include="src\third_party\utf8-decoder\utf8-decoder.h" />
     <ClInclude Include="src\third_party\valgrind\valgrind.h" />
     <ClInclude Include="src\tracing\trace-event.h" />
     <ClInclude Include="src\tracing\traced-value.h" />
@@ -721,6 +724,7 @@
     <ClCompile Include="src\base\ieee754.cc" />
     <ClCompile Include="src\base\logging.cc" />
     <ClCompile Include="src\base\once.cc" />
+    <ClCompile Include="src\base\page-allocator.cc" />
     <ClCompile Include="src\base\platform\condition-variable.cc" />
     <ClCompile Include="src\base\platform\mutex.cc" />
     <ClCompile Include="src\base\platform\platform-aix.cc" />
@@ -1183,6 +1187,7 @@
     <ClCompile Include="src\s390\simulator-s390.cc" />
     <ClCompile Include="src\safepoint-table.cc" />
     <ClCompile Include="src\setup-isolate-full.cc" />
+    <ClCompile Include="src\simulator-base.cc" />
     <ClCompile Include="src\snapshot\builtin-deserializer-allocator.cc" />
     <ClCompile Include="src\snapshot\builtin-deserializer.cc" />
     <ClCompile Include="src\snapshot\builtin-serializer-allocator.cc" />

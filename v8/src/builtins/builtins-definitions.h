@@ -190,6 +190,7 @@ namespace internal {
   TFC(NumberToString, TypeConversion, 1)                                       \
   TFC(ToString, TypeConversion, 1)                                             \
   TFC(ToInteger, TypeConversion, 1)                                            \
+  TFC(ToInteger_TruncateMinusZero, TypeConversion, 1)                          \
   TFC(ToLength, TypeConversion, 1)                                             \
   TFC(ClassOf, Typeof, 1)                                                      \
   TFC(Typeof, Typeof, 1)                                                       \
@@ -199,26 +200,19 @@ namespace internal {
   TFC(ToBooleanLazyDeoptContinuation, TypeConversionStackParameter, 1)         \
                                                                                \
   /* Handlers */                                                               \
-  TFH(LoadICProtoArray, LoadICProtoArray)                                      \
-  TFH(LoadICProtoArrayThrowIfNonexistent, LoadICProtoArray)                    \
   TFH(KeyedLoadIC_Megamorphic, LoadWithVector)                                 \
-  TFH(KeyedLoadIC_Miss, LoadWithVector)                                        \
   TFH(KeyedLoadIC_PolymorphicName, LoadWithVector)                             \
   TFH(KeyedLoadIC_Slow, LoadWithVector)                                        \
   TFH(KeyedStoreIC_Megamorphic, StoreWithVector)                               \
-  TFH(KeyedStoreIC_Miss, StoreWithVector)                                      \
   TFH(KeyedStoreIC_Slow, StoreWithVector)                                      \
-  TFH(LoadGlobalIC_Miss, LoadGlobalWithVector)                                 \
-  TFH(LoadGlobalIC_Slow, LoadGlobalWithVector)                                 \
+  TFH(LoadGlobalIC_Slow, LoadWithVector)                                       \
   TFH(LoadField, LoadField)                                                    \
   TFH(LoadIC_FunctionPrototype, LoadWithVector)                                \
-  TFH(LoadIC_Miss, LoadWithVector)                                             \
   TFH(LoadIC_Slow, LoadWithVector)                                             \
   TFH(LoadIC_StringLength, LoadWithVector)                                     \
   TFH(LoadIC_StringWrapperLength, LoadWithVector)                              \
   TFH(LoadIC_Uninitialized, LoadWithVector)                                    \
   TFH(StoreGlobalIC_Slow, StoreWithVector)                                     \
-  TFH(StoreIC_Miss, StoreWithVector)                                           \
   TFH(StoreIC_Uninitialized, StoreWithVector)                                  \
                                                                                \
   /* Promise helpers */                                                        \
@@ -235,7 +229,7 @@ namespace internal {
                                                                                \
   /* Abort */                                                                  \
   ASM(Abort)                                                                   \
-  ASM(AbortJS)                                                                 \
+  TFC(AbortJS, AbortJS, 1)                                                     \
                                                                                \
   /* Built-in functions for Javascript */                                      \
   /* Special internal builtins */                                              \
@@ -309,20 +303,40 @@ namespace internal {
   /* ES6 #sec-array.prototype.reduce */                                        \
   TFS(ArrayReduceLoopContinuation, kReceiver, kCallbackFn, kThisArg,           \
       kAccumulator, kObject, kInitialK, kLength, kTo)                          \
+  TFJ(ArrayReduceLoopEagerDeoptContinuation, 4, kCallbackFn, kInitialK,        \
+      kLength, kAccumulator)                                                   \
+  TFJ(ArrayReduceLoopLazyDeoptContinuation, 4, kCallbackFn, kInitialK,         \
+      kLength, kResult)                                                        \
   TFJ(ArrayReduce, SharedFunctionInfo::kDontAdaptArgumentsSentinel)            \
   /* ES6 #sec-array.prototype.reduceRight */                                   \
   TFS(ArrayReduceRightLoopContinuation, kReceiver, kCallbackFn, kThisArg,      \
       kAccumulator, kObject, kInitialK, kLength, kTo)                          \
+  TFJ(ArrayReduceRightLoopEagerDeoptContinuation, 4, kCallbackFn, kInitialK,   \
+      kLength, kAccumulator)                                                   \
+  TFJ(ArrayReduceRightLoopLazyDeoptContinuation, 4, kCallbackFn, kInitialK,    \
+      kLength, kResult)                                                        \
   TFJ(ArrayReduceRight, SharedFunctionInfo::kDontAdaptArgumentsSentinel)       \
   /* ES6 #sec-array.prototype.entries */                                       \
   TFJ(ArrayPrototypeEntries, 0)                                                \
   /* ES6 #sec-array.prototype.find */                                          \
   TFS(ArrayFindLoopContinuation, kReceiver, kCallbackFn, kThisArg, kArray,     \
       kObject, kInitialK, kLength, kTo)                                        \
+  TFJ(ArrayFindLoopEagerDeoptContinuation, 4, kCallbackFn, kThisArg,           \
+      kInitialK, kLength)                                                      \
+  TFJ(ArrayFindLoopLazyDeoptContinuation, 5, kCallbackFn, kThisArg, kInitialK, \
+      kLength, kResult)                                                        \
+  TFJ(ArrayFindLoopAfterCallbackLazyDeoptContinuation, 6, kCallbackFn,         \
+      kThisArg, kInitialK, kLength, kFoundValue, kIsFound)                     \
   TFJ(ArrayPrototypeFind, SharedFunctionInfo::kDontAdaptArgumentsSentinel)     \
   /* ES6 #sec-array.prototype.findIndex */                                     \
   TFS(ArrayFindIndexLoopContinuation, kReceiver, kCallbackFn, kThisArg,        \
       kArray, kObject, kInitialK, kLength, kTo)                                \
+  TFJ(ArrayFindIndexLoopEagerDeoptContinuation, 4, kCallbackFn, kThisArg,      \
+      kInitialK, kLength)                                                      \
+  TFJ(ArrayFindIndexLoopLazyDeoptContinuation, 5, kCallbackFn, kThisArg,       \
+      kInitialK, kLength, kResult)                                             \
+  TFJ(ArrayFindIndexLoopAfterCallbackLazyDeoptContinuation, 6, kCallbackFn,    \
+      kThisArg, kInitialK, kLength, kFoundValue, kIsFound)                     \
   TFJ(ArrayPrototypeFindIndex,                                                 \
       SharedFunctionInfo::kDontAdaptArgumentsSentinel)                         \
   /* ES6 #sec-array.prototype.keys */                                          \
@@ -566,6 +580,8 @@ namespace internal {
   TFH(LoadICTrampoline, Load)                                                  \
   TFH(KeyedLoadIC, LoadWithVector)                                             \
   TFH(KeyedLoadICTrampoline, Load)                                             \
+  TFH(StoreGlobalIC, StoreGlobalWithVector)                                    \
+  TFH(StoreGlobalICTrampoline, StoreGlobal)                                    \
   TFH(StoreIC, StoreWithVector)                                                \
   TFH(StoreICTrampoline, Store)                                                \
   TFH(KeyedStoreIC, StoreWithVector)                                           \
@@ -756,6 +772,8 @@ namespace internal {
   CPP(ObjectPrototypePropertyIsEnumerable)                                     \
   CPP(ObjectPrototypeGetProto)                                                 \
   CPP(ObjectPrototypeSetProto)                                                 \
+  /* ES #sec-object.prototype.tolocalestring */                                \
+  TFJ(ObjectPrototypeToLocaleString, 0)                                        \
   CPP(ObjectSeal)                                                              \
   CPP(ObjectValues)                                                            \
                                                                                \

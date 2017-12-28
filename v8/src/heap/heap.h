@@ -526,39 +526,6 @@ struct CommentStatistic {
 };
 #endif
 
-class NumberAndSizeInfo BASE_EMBEDDED {
- public:
-  NumberAndSizeInfo() : number_(0), bytes_(0) {}
-
-  int number() const { return number_; }
-  void increment_number(int num) { number_ += num; }
-
-  int bytes() const { return bytes_; }
-  void increment_bytes(int size) { bytes_ += size; }
-
-  void clear() {
-    number_ = 0;
-    bytes_ = 0;
-  }
-
- private:
-  int number_;
-  int bytes_;
-};
-
-// HistogramInfo class for recording a single "bar" of a histogram.  This
-// class is used for collecting statistics to print to the log file.
-class HistogramInfo : public NumberAndSizeInfo {
- public:
-  HistogramInfo() : NumberAndSizeInfo(), name_(nullptr) {}
-
-  const char* name() { return name_; }
-  void set_name(const char* name) { name_ = name; }
-
- private:
-  const char* name_;
-};
-
 class Heap {
  public:
   // Declare all the root indices.  This defines the root list order.
@@ -1366,6 +1333,12 @@ class Heap {
   bool GetObjectTypeName(size_t index, const char** object_type,
                          const char** object_sub_type);
 
+  // The total number of native contexts object on the heap.
+  size_t NumberOfNativeContexts();
+  // The total number of native contexts that were detached but were not
+  // garbage collected yet.
+  size_t NumberOfDetachedContexts();
+
   // ===========================================================================
   // Code statistics. ==========================================================
   // ===========================================================================
@@ -1635,12 +1608,11 @@ class Heap {
   void Print();
   void PrintHandles();
 
-  // Report heap statistics.
-  void ReportHeapStatistics(const char* title);
+  // Report code statistics.
   void ReportCodeStatistics(const char* title);
 #endif
   void* GetRandomMmapAddr() {
-    void* result = base::OS::GetRandomMmapAddr();
+    void* result = v8::internal::GetRandomMmapAddr();
 #if V8_TARGET_ARCH_X64
 #if V8_OS_MACOSX
     // The Darwin kernel [as of macOS 10.12.5] does not clean up page
@@ -1651,7 +1623,7 @@ class Heap {
     // killed. Confine the hint to a 32-bit section of the virtual address
     // space. See crbug.com/700928.
     uintptr_t offset =
-        reinterpret_cast<uintptr_t>(base::OS::GetRandomMmapAddr()) &
+        reinterpret_cast<uintptr_t>(v8::internal::GetRandomMmapAddr()) &
         kMmapRegionMask;
     result = reinterpret_cast<void*>(mmap_region_base_ + offset);
 #endif  // V8_OS_MACOSX
@@ -1865,8 +1837,7 @@ class Heap {
   // the old space.
   void EvaluateOldSpaceLocalPretenuring(uint64_t size_of_objects_before_gc);
 
-  // Record statistics before and after garbage collection.
-  void ReportStatisticsBeforeGC();
+  // Record statistics after garbage collection.
   void ReportStatisticsAfterGC();
 
   // Creates and installs the full-sized number string cache.
@@ -2720,24 +2691,10 @@ class VerifySmisVisitor : public RootVisitor {
   void VisitRootPointers(Root root, Object** start, Object** end) override;
 };
 
-
-// Space iterator for iterating over all old spaces of the heap: Old space
-// and code space.  Returns each space in turn, and null when it is done.
-class V8_EXPORT_PRIVATE OldSpaces BASE_EMBEDDED {
- public:
-  explicit OldSpaces(Heap* heap) : heap_(heap), counter_(OLD_SPACE) {}
-  OldSpace* next();
-
- private:
-  Heap* heap_;
-  int counter_;
-};
-
-
 // Space iterator for iterating over all the paged spaces of the heap: Map
 // space, old space, code space and cell space.  Returns
 // each space in turn, and null when it is done.
-class PagedSpaces BASE_EMBEDDED {
+class V8_EXPORT_PRIVATE PagedSpaces BASE_EMBEDDED {
  public:
   explicit PagedSpaces(Heap* heap) : heap_(heap), counter_(OLD_SPACE) {}
   PagedSpace* next();

@@ -158,68 +158,29 @@ class InterpreterLoadGlobalAssembler : public InterpreterAssembler {
 
   void LdaGlobal(int slot_operand_index, int name_operand_index,
                  TypeofMode typeof_mode) {
-    // Must be kept in sync with AccessorAssembler::LoadGlobalIC.
-
-    // Load the global via the LoadGlobalIC.
-    Node* feedback_vector = LoadFeedbackVector();
+    TNode<FeedbackVector> feedback_vector = CAST(LoadFeedbackVector());
     Node* feedback_slot = BytecodeOperandIdx(slot_operand_index);
 
     AccessorAssembler accessor_asm(state());
+    Label done(this);
+    Variable var_result(this, MachineRepresentation::kTagged);
+    ExitPoint exit_point(this, &done, &var_result);
 
-    Label try_handler(this, Label::kDeferred), miss(this, Label::kDeferred);
+    LazyNode<Context> lazy_context = [=] { return CAST(GetContext()); };
 
-    // Fast path without frame construction for the data case.
-    {
-      Label done(this);
-      Variable var_result(this, MachineRepresentation::kTagged);
-      ExitPoint exit_point(this, &done, &var_result);
+    LazyNode<Name> lazy_name = [=] {
+      Node* name_index = BytecodeOperandIdx(name_operand_index);
+      Node* name = LoadConstantPoolEntry(name_index);
+      return CAST(name);
+    };
 
-      accessor_asm.LoadGlobalIC_TryPropertyCellCase(
-          feedback_vector, feedback_slot, &exit_point, &try_handler, &miss,
-          CodeStubAssembler::INTPTR_PARAMETERS);
+    accessor_asm.LoadGlobalIC(feedback_vector, feedback_slot, lazy_context,
+                              lazy_name, typeof_mode, &exit_point,
+                              CodeStubAssembler::INTPTR_PARAMETERS);
 
-      BIND(&done);
-      SetAccumulator(var_result.value());
-      Dispatch();
-    }
-
-    // Slow path with frame construction.
-    {
-      Label done(this);
-      Variable var_result(this, MachineRepresentation::kTagged);
-      ExitPoint exit_point(this, &done, &var_result);
-
-      BIND(&try_handler);
-      {
-        Node* context = GetContext();
-        Node* smi_slot = SmiTag(feedback_slot);
-        Node* name_index = BytecodeOperandIdx(name_operand_index);
-        Node* name = LoadConstantPoolEntry(name_index);
-
-        AccessorAssembler::LoadICParameters params(context, nullptr, name,
-                                                   smi_slot, feedback_vector);
-        accessor_asm.LoadGlobalIC_TryHandlerCase(&params, typeof_mode,
-                                                 &exit_point, &miss);
-      }
-
-      BIND(&miss);
-      {
-        Node* context = GetContext();
-        Node* smi_slot = SmiTag(feedback_slot);
-        Node* name_index = BytecodeOperandIdx(name_operand_index);
-        Node* name = LoadConstantPoolEntry(name_index);
-
-        AccessorAssembler::LoadICParameters params(context, nullptr, name,
-                                                   smi_slot, feedback_vector);
-        accessor_asm.LoadGlobalIC_MissCase(&params, &exit_point);
-      }
-
-      BIND(&done);
-      {
-        SetAccumulator(var_result.value());
-        Dispatch();
-      }
-    }
+    BIND(&done);
+    SetAccumulator(var_result.value());
+    Dispatch();
   }
 };
 
@@ -245,50 +206,23 @@ IGNITION_HANDLER(LdaGlobalInsideTypeof, InterpreterLoadGlobalAssembler) {
   LdaGlobal(kSlotOperandIndex, kNameOperandIndex, INSIDE_TYPEOF);
 }
 
-class InterpreterStoreGlobalAssembler : public InterpreterAssembler {
- public:
-  InterpreterStoreGlobalAssembler(CodeAssemblerState* state, Bytecode bytecode,
-                                  OperandScale operand_scale)
-      : InterpreterAssembler(state, bytecode, operand_scale) {}
-
-  void StaGlobal(Callable ic) {
-    // Get the global object.
-    Node* context = GetContext();
-    Node* native_context = LoadNativeContext(context);
-    Node* global = LoadContextElement(native_context, Context::EXTENSION_INDEX);
-
-    // Store the global via the StoreIC.
-    Node* code_target = HeapConstant(ic.code());
-    Node* constant_index = BytecodeOperandIdx(0);
-    Node* name = LoadConstantPoolEntry(constant_index);
-    Node* value = GetAccumulator();
-    Node* raw_slot = BytecodeOperandIdx(1);
-    Node* smi_slot = SmiTag(raw_slot);
-    Node* feedback_vector = LoadFeedbackVector();
-    CallStub(ic.descriptor(), code_target, context, global, name, value,
-             smi_slot, feedback_vector);
-    Dispatch();
-  }
-};
-
-// StaGlobalSloppy <name_index> <slot>
+// StaGlobal <name_index> <slot>
 //
 // Store the value in the accumulator into the global with name in constant pool
-// entry <name_index> using FeedBackVector slot <slot> in sloppy mode.
-IGNITION_HANDLER(StaGlobalSloppy, InterpreterStoreGlobalAssembler) {
-  Callable ic = CodeFactory::StoreGlobalICInOptimizedCode(
-      isolate(), LanguageMode::kSloppy);
-  StaGlobal(ic);
-}
+// entry <name_index> using FeedBackVector slot <slot>.
+IGNITION_HANDLER(StaGlobal, InterpreterAssembler) {
+  Node* context = GetContext();
 
-// StaGlobalStrict <name_index> <slot>
-//
-// Store the value in the accumulator into the global with name in constant pool
-// entry <name_index> using FeedBackVector slot <slot> in strict mode.
-IGNITION_HANDLER(StaGlobalStrict, InterpreterStoreGlobalAssembler) {
-  Callable ic = CodeFactory::StoreGlobalICInOptimizedCode(
-      isolate(), LanguageMode::kStrict);
-  StaGlobal(ic);
+  // Store the global via the StoreGlobalIC.
+  Node* constant_index = BytecodeOperandIdx(0);
+  Node* name = LoadConstantPoolEntry(constant_index);
+  Node* value = GetAccumulator();
+  Node* raw_slot = BytecodeOperandIdx(1);
+  Node* smi_slot = SmiTag(raw_slot);
+  Node* feedback_vector = LoadFeedbackVector();
+  Callable ic = Builtins::CallableFor(isolate(), Builtins::kStoreGlobalIC);
+  CallStub(ic, context, name, value, smi_slot, feedback_vector);
+  Dispatch();
 }
 
 // LdaContextSlot <context> <slot_index> <depth>
@@ -1245,8 +1179,7 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
       BIND(&if_bigint);
       {
         var_result.Bind(BigIntOp(value));
-        CombineFeedback(&var_feedback,
-                        SmiConstant(BinaryOperationFeedback::kBigInt));
+        CombineFeedback(&var_feedback, BinaryOperationFeedback::kBigInt);
         Goto(&end);
       }
 
@@ -1257,8 +1190,8 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
         // only reach this path on the first pass when the feedback is kNone.
         CSA_ASSERT(this, SmiEqual(var_feedback.value(),
                                   SmiConstant(BinaryOperationFeedback::kNone)));
-        var_feedback.Bind(
-            SmiConstant(BinaryOperationFeedback::kNumberOrOddball));
+        OverwriteFeedback(&var_feedback,
+                          BinaryOperationFeedback::kNumberOrOddball);
         var_value.Bind(LoadObjectField(value, Oddball::kToNumberOffset));
         Goto(&start);
       }
@@ -1270,7 +1203,7 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
         // only reach this path on the first pass when the feedback is kNone.
         CSA_ASSERT(this, SmiEqual(var_feedback.value(),
                                   SmiConstant(BinaryOperationFeedback::kNone)));
-        var_feedback.Bind(SmiConstant(BinaryOperationFeedback::kAny));
+        OverwriteFeedback(&var_feedback, BinaryOperationFeedback::kAny);
         var_value.Bind(
             CallBuiltin(Builtins::kNonNumberToNumeric, GetContext(), value));
         Goto(&start);
@@ -1279,8 +1212,7 @@ class UnaryNumericOpAssembler : public InterpreterAssembler {
 
     BIND(&do_float_op);
     {
-      CombineFeedback(&var_feedback,
-                      SmiConstant(BinaryOperationFeedback::kNumber));
+      CombineFeedback(&var_feedback, BinaryOperationFeedback::kNumber);
       var_result.Bind(
           AllocateHeapNumberWithValue(FloatOp(var_float_value.value())));
       Goto(&end);
@@ -1310,14 +1242,12 @@ class NegateAssemblerImpl : public UnaryNumericOpAssembler {
     GotoIf(SmiEqual(smi_value, SmiConstant(Smi::kMinValue)), &if_min_smi);
 
     // Else simply subtract operand from 0.
-    CombineFeedback(var_feedback,
-                    SmiConstant(BinaryOperationFeedback::kSignedSmall));
+    CombineFeedback(var_feedback, BinaryOperationFeedback::kSignedSmall);
     var_result.Bind(SmiSub(SmiConstant(0), smi_value));
     Goto(&end);
 
     BIND(&if_zero);
-    CombineFeedback(var_feedback,
-                    SmiConstant(BinaryOperationFeedback::kNumber));
+    CombineFeedback(var_feedback, BinaryOperationFeedback::kNumber);
     var_result.Bind(MinusZeroConstant());
     Goto(&end);
 
@@ -1412,8 +1342,7 @@ class IncDecAssembler : public UnaryNumericOpAssembler {
     }
 
     BIND(&if_notoverflow);
-    CombineFeedback(var_feedback,
-                    SmiConstant(BinaryOperationFeedback::kSignedSmall));
+    CombineFeedback(var_feedback, BinaryOperationFeedback::kSignedSmall);
     return BitcastWordToTaggedSigned(Projection(0, pair));
   }
 

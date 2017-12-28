@@ -8,9 +8,6 @@
 #ifdef V8_USE_ADDRESS_SANITIZER
 #include <sanitizer/asan_interface.h>
 #endif  // V8_USE_ADDRESS_SANITIZER
-#if defined(LEAK_SANITIZER)
-#include <sanitizer/lsan_interface.h>
-#endif            // defined(LEAK_SANITIZER)
 #include <cmath>  // For isnan.
 #include <limits>
 #include <vector>
@@ -484,23 +481,34 @@ namespace {
 class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
  public:
   virtual void* Allocate(size_t length) {
-    void* data = AllocateUninitialized(length);
-    return data == nullptr ? data : memset(data, 0, length);
+#if V8_OS_AIX && _LINUX_SOURCE_COMPAT
+    // Work around for GCC bug on AIX
+    // See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79839
+    void* data = __linux_calloc(length, 1);
+#else
+    void* data = calloc(length, 1);
+#endif
+    return data;
   }
-  virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
+
+  virtual void* AllocateUninitialized(size_t length) {
+#if V8_OS_AIX && _LINUX_SOURCE_COMPAT
+    // Work around for GCC bug on AIX
+    // See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79839
+    void* data = __linux_malloc(length);
+#else
+    void* data = malloc(length);
+#endif
+    return data;
+  }
+
   virtual void Free(void* data, size_t) { free(data); }
 
   virtual void* Reserve(size_t length) {
-    size_t page_size = base::OS::AllocatePageSize();
+    size_t page_size = i::AllocatePageSize();
     size_t allocated = RoundUp(length, page_size);
-    void* address =
-        base::OS::Allocate(base::OS::GetRandomMmapAddr(), allocated, page_size,
-                           base::OS::MemoryPermission::kNoAccess);
-#if defined(LEAK_SANITIZER)
-    if (address != nullptr) {
-      __lsan_register_root_region(address, allocated);
-    }
-#endif
+    void* address = i::AllocatePages(i::GetRandomMmapAddr(), allocated,
+                                     page_size, PageAllocator::kNoAccess);
     return address;
   }
 
@@ -511,7 +519,9 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
         return Free(data, length);
       }
       case v8::ArrayBuffer::Allocator::AllocationMode::kReservation: {
-        CHECK(base::OS::Free(data, length));
+        size_t page_size = i::AllocatePageSize();
+        size_t allocated = RoundUp(length, page_size);
+        CHECK(i::FreePages(data, allocated));
         return;
       }
     }
@@ -522,11 +532,11 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
       v8::ArrayBuffer::Allocator::Protection protection) {
     DCHECK(protection == v8::ArrayBuffer::Allocator::Protection::kNoAccess ||
            protection == v8::ArrayBuffer::Allocator::Protection::kReadWrite);
-    base::OS::MemoryPermission permission =
+    PageAllocator::Permission permission =
         (protection == v8::ArrayBuffer::Allocator::Protection::kReadWrite)
-            ? base::OS::MemoryPermission::kReadWrite
-            : base::OS::MemoryPermission::kNoAccess;
-    CHECK(base::OS::SetPermissions(data, length, permission));
+            ? PageAllocator::kReadWrite
+            : PageAllocator::kNoAccess;
+    CHECK(i::SetPermissions(data, length, permission));
   }
 };
 
@@ -1748,11 +1758,10 @@ static i::Handle<i::InterceptorInfo> CreateInterceptorInfo(
     i::Isolate* isolate, Getter getter, Setter setter, Query query,
     Descriptor descriptor, Deleter remover, Enumerator enumerator,
     Definer definer, Local<Value> data, PropertyHandlerFlags flags) {
-  DCHECK(query == nullptr ||
-         descriptor == nullptr);  // Either intercept attributes or descriptor.
-  DCHECK(query == nullptr ||
-         definer ==
-             nullptr);  // Only use descriptor callback with definer callback.
+  // Either intercept attributes or descriptor.
+  DCHECK(query == nullptr || descriptor == nullptr);
+  // Only use descriptor callback with definer callback.
+  DCHECK(query == nullptr || definer == nullptr);
   auto obj = i::Handle<i::InterceptorInfo>::cast(
       isolate->factory()->NewStruct(i::INTERCEPTOR_INFO_TYPE, i::TENURED));
   obj->set_flags(0);
@@ -1781,6 +1790,32 @@ static i::Handle<i::InterceptorInfo> CreateInterceptorInfo(
 
 template <typename Getter, typename Setter, typename Query, typename Descriptor,
           typename Deleter, typename Enumerator, typename Definer>
+static i::Handle<i::InterceptorInfo> CreateNamedInterceptorInfo(
+    i::Isolate* isolate, Getter getter, Setter setter, Query query,
+    Descriptor descriptor, Deleter remover, Enumerator enumerator,
+    Definer definer, Local<Value> data, PropertyHandlerFlags flags) {
+  auto interceptor =
+      CreateInterceptorInfo(isolate, getter, setter, query, descriptor, remover,
+                            enumerator, definer, data, flags);
+  interceptor->set_is_named(true);
+  return interceptor;
+}
+
+template <typename Getter, typename Setter, typename Query, typename Descriptor,
+          typename Deleter, typename Enumerator, typename Definer>
+static i::Handle<i::InterceptorInfo> CreateIndexedInterceptorInfo(
+    i::Isolate* isolate, Getter getter, Setter setter, Query query,
+    Descriptor descriptor, Deleter remover, Enumerator enumerator,
+    Definer definer, Local<Value> data, PropertyHandlerFlags flags) {
+  auto interceptor =
+      CreateInterceptorInfo(isolate, getter, setter, query, descriptor, remover,
+                            enumerator, definer, data, flags);
+  interceptor->set_is_named(false);
+  return interceptor;
+}
+
+template <typename Getter, typename Setter, typename Query, typename Descriptor,
+          typename Deleter, typename Enumerator, typename Definer>
 static void ObjectTemplateSetNamedPropertyHandler(
     ObjectTemplate* templ, Getter getter, Setter setter, Query query,
     Descriptor descriptor, Deleter remover, Enumerator enumerator,
@@ -1790,8 +1825,9 @@ static void ObjectTemplateSetNamedPropertyHandler(
   i::HandleScope scope(isolate);
   auto cons = EnsureConstructor(isolate, templ);
   EnsureNotInstantiated(cons, "ObjectTemplateSetNamedPropertyHandler");
-  auto obj = CreateInterceptorInfo(isolate, getter, setter, query, descriptor,
-                                   remover, enumerator, definer, data, flags);
+  auto obj =
+      CreateNamedInterceptorInfo(isolate, getter, setter, query, descriptor,
+                                 remover, enumerator, definer, data, flags);
   cons->set_named_property_handler(*obj);
 }
 
@@ -1868,12 +1904,12 @@ void ObjectTemplate::SetAccessCheckCallbackAndHandler(
       i::Handle<i::AccessCheckInfo>::cast(struct_info);
 
   SET_FIELD_WRAPPED(info, set_callback, callback);
-  auto named_interceptor = CreateInterceptorInfo(
+  auto named_interceptor = CreateNamedInterceptorInfo(
       isolate, named_handler.getter, named_handler.setter, named_handler.query,
       named_handler.descriptor, named_handler.deleter, named_handler.enumerator,
       named_handler.definer, named_handler.data, named_handler.flags);
   info->set_named_interceptor(*named_interceptor);
-  auto indexed_interceptor = CreateInterceptorInfo(
+  auto indexed_interceptor = CreateIndexedInterceptorInfo(
       isolate, indexed_handler.getter, indexed_handler.setter,
       indexed_handler.query, indexed_handler.descriptor,
       indexed_handler.deleter, indexed_handler.enumerator,
@@ -1896,10 +1932,10 @@ void ObjectTemplate::SetHandler(
   i::HandleScope scope(isolate);
   auto cons = EnsureConstructor(isolate, this);
   EnsureNotInstantiated(cons, "v8::ObjectTemplate::SetHandler");
-  auto obj = CreateInterceptorInfo(isolate, config.getter, config.setter,
-                                   config.query, config.descriptor,
-                                   config.deleter, config.enumerator,
-                                   config.definer, config.data, config.flags);
+  auto obj = CreateIndexedInterceptorInfo(
+      isolate, config.getter, config.setter, config.query, config.descriptor,
+      config.deleter, config.enumerator, config.definer, config.data,
+      config.flags);
   cons->set_indexed_property_handler(*obj);
 }
 
@@ -2461,57 +2497,27 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
   PREPARE_FOR_EXECUTION(v8_context, ScriptCompiler, CompileFunctionInContext,
                         Function);
   TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.ScriptCompiler");
-  i::Handle<i::String> source_string;
-  auto factory = isolate->factory();
-  if (arguments_count) {
-    source_string = factory->NewStringFromStaticChars("(function(");
-    for (size_t i = 0; i < arguments_count; ++i) {
-      IsIdentifierHelper helper;
-      if (!helper.Check(*Utils::OpenHandle(*arguments[i]))) {
-        return Local<Function>();
-      }
-      has_pending_exception =
-          !factory->NewConsString(source_string,
-                                  Utils::OpenHandle(*arguments[i]))
-               .ToHandle(&source_string);
-      RETURN_ON_FAILED_EXECUTION(Function);
-      if (i + 1 == arguments_count) continue;
-      has_pending_exception =
-          !factory->NewConsString(source_string,
-                                  factory->LookupSingleCharacterStringFromCode(
-                                      ',')).ToHandle(&source_string);
-      RETURN_ON_FAILED_EXECUTION(Function);
-    }
-    i::Handle<i::String> brackets;
-    brackets = factory->NewStringFromStaticChars("){");
-    has_pending_exception = !factory->NewConsString(source_string, brackets)
-                                 .ToHandle(&source_string);
-    RETURN_ON_FAILED_EXECUTION(Function);
-  } else {
-    source_string = factory->NewStringFromStaticChars("(function(){");
-  }
-
-  int scope_position = source_string->length();
-  has_pending_exception =
-      !factory->NewConsString(source_string,
-                              Utils::OpenHandle(*source->source_string))
-           .ToHandle(&source_string);
-  RETURN_ON_FAILED_EXECUTION(Function);
-  // Include \n in case the source contains a line end comment.
-  auto brackets = factory->NewStringFromStaticChars("\n})");
-  has_pending_exception =
-      !factory->NewConsString(source_string, brackets).ToHandle(&source_string);
-  RETURN_ON_FAILED_EXECUTION(Function);
 
   i::Handle<i::Context> context = Utils::OpenHandle(*v8_context);
   i::Handle<i::SharedFunctionInfo> outer_info(context->closure()->shared(),
                                               isolate);
+
+  i::Handle<i::JSFunction> fun;
+  i::Handle<i::FixedArray> arguments_list =
+      isolate->factory()->NewFixedArray(static_cast<int>(arguments_count));
+  for (int i = 0; i < static_cast<int>(arguments_count); i++) {
+    IsIdentifierHelper helper;
+    i::Handle<i::String> argument = Utils::OpenHandle(*arguments[i]);
+    if (!helper.Check(*argument)) return Local<Function>();
+    arguments_list->set(i, *argument);
+  }
+
   for (size_t i = 0; i < context_extension_count; ++i) {
     i::Handle<i::JSReceiver> extension =
         Utils::OpenHandle(*context_extensions[i]);
     if (!extension->IsJSObject()) return Local<Function>();
     i::Handle<i::JSFunction> closure(context->closure(), isolate);
-    context = factory->NewWithContext(
+    context = isolate->factory()->NewWithContext(
         closure, context,
         i::ScopeInfo::CreateForWithScope(
             isolate, context->IsNativeContext()
@@ -2521,8 +2527,6 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
   }
 
   i::Handle<i::Object> name_obj;
-  int eval_scope_position = 0;
-  int eval_position = i::kNoSourcePosition;
   int line_offset = 0;
   int column_offset = 0;
   if (!source->resource_name.IsEmpty()) {
@@ -2534,27 +2538,15 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
   if (!source->resource_column_offset.IsEmpty()) {
     column_offset = static_cast<int>(source->resource_column_offset->Value());
   }
-  i::Handle<i::JSFunction> fun;
-  has_pending_exception =
-      !i::Compiler::GetFunctionFromEval(
-           source_string, outer_info, context, i::LanguageMode::kSloppy,
-           i::ONLY_SINGLE_FUNCTION_LITERAL, i::kNoSourcePosition,
-           eval_scope_position, eval_position, line_offset,
-           column_offset - scope_position, name_obj, source->resource_options)
-           .ToHandle(&fun);
-  if (has_pending_exception) {
-    isolate->ReportPendingMessages();
-  }
-  RETURN_ON_FAILED_EXECUTION(Function);
 
-  i::Handle<i::Object> result;
+  i::Handle<i::JSFunction> result;
   has_pending_exception =
-      !i::Execution::Call(isolate, fun,
-                          Utils::OpenHandle(*v8_context->Global()), 0,
-                          nullptr).ToHandle(&result);
+      !i::Compiler::GetWrappedFunction(
+           Utils::OpenHandle(*source->source_string), arguments_list, context,
+           line_offset, column_offset, name_obj, source->resource_options)
+           .ToHandle(&result);
   RETURN_ON_FAILED_EXECUTION(Function);
-  RETURN_ESCAPED(
-      Utils::CallableToLocal(i::Handle<i::JSFunction>::cast(result)));
+  RETURN_ESCAPED(Utils::CallableToLocal(result));
 }
 
 
@@ -2589,6 +2581,9 @@ MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
   i::StreamedSource* source = v8_source->impl();
   i::Handle<i::String> str = Utils::OpenHandle(*(full_source_string));
   i::Handle<i::Script> script = isolate->factory()->NewScript(str);
+  if (isolate->NeedsSourcePositionsForProfiling()) {
+    i::Script::InitLineEnds(script);
+  }
   if (!origin.ResourceName().IsEmpty()) {
     script->set_name(*Utils::OpenHandle(*(origin.ResourceName())));
   }
@@ -2667,19 +2662,36 @@ ScriptCompiler::CachedData* ScriptCompiler::CreateCodeCache(
   i::Handle<i::SharedFunctionInfo> shared =
       i::Handle<i::SharedFunctionInfo>::cast(
           Utils::OpenHandle(*unbound_script));
+  i::Isolate* isolate = shared->GetIsolate();
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
+  base::ElapsedTimer timer;
+  if (i::FLAG_profile_deserialization) {
+    timer.Start();
+  }
+  i::HistogramTimerScope histogram_timer(
+      isolate->counters()->compile_serialize());
+  i::RuntimeCallTimerScope runtimeTimer(
+      isolate, i::RuntimeCallCounterId::kCompileSerialize);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileSerialize");
+
   DCHECK(shared->is_toplevel());
   i::Handle<i::Script> script(i::Script::cast(shared->script()));
-  i::Isolate* isolate = shared->GetIsolate();
   // TODO(7110): Enable serialization of Asm modules once the AsmWasmData is
   // context independent.
   if (script->ContainsAsmModule()) return nullptr;
   if (isolate->debug()->is_loaded()) return nullptr;
+
   i::ScriptData* script_data =
       i::CodeSerializer::Serialize(isolate, shared, Utils::OpenHandle(*source));
   CachedData* result = new CachedData(
       script_data->data(), script_data->length(), CachedData::BufferOwned);
   script_data->ReleaseDataOwnership();
   delete script_data;
+
+  if (i::FLAG_profile_deserialization) {
+    i::PrintF("[Serializing took %0.3f ms]\n",
+              timer.Elapsed().InMillisecondsF());
+  }
   return result;
 }
 
@@ -5362,6 +5374,8 @@ MaybeLocal<v8::Value> Function::Call(Local<Context> context,
            InternalEscapableScope);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   auto self = Utils::OpenHandle(this);
+  Utils::ApiCheck(!self.is_null(), "v8::Function::Call",
+                  "Function to be called is a null pointer");
   i::Handle<i::Object> recv_obj = Utils::OpenHandle(*recv);
   STATIC_ASSERT(sizeof(v8::Local<v8::Value>) == sizeof(i::Object**));
   i::Handle<i::Object>* args = reinterpret_cast<i::Handle<i::Object>*>(argv);
@@ -6419,7 +6433,9 @@ HeapStatistics::HeapStatistics()
       heap_size_limit_(0),
       malloced_memory_(0),
       peak_malloced_memory_(0),
-      does_zap_garbage_(0) {}
+      does_zap_garbage_(0),
+      number_of_native_contexts_(0),
+      number_of_detached_contexts_(0) {}
 
 HeapSpaceStatistics::HeapSpaceStatistics(): space_name_(0),
                                             space_size_(0),
@@ -7764,8 +7780,8 @@ Local<String> WasmCompiledModule::GetWasmWireBytes() {
   i::Handle<i::WasmModuleObject> obj =
       i::Handle<i::WasmModuleObject>::cast(Utils::OpenHandle(this));
   i::Handle<i::WasmCompiledModule> compiled_part =
-      i::handle(i::WasmCompiledModule::cast(obj->compiled_module()));
-  i::Handle<i::String> wire_bytes(compiled_part->module_bytes());
+      i::handle(obj->compiled_module());
+  i::Handle<i::String> wire_bytes(compiled_part->shared()->module_bytes());
   return Local<String>::Cast(Utils::ToLocal(wire_bytes));
 }
 
@@ -8221,14 +8237,14 @@ v8::SharedArrayBuffer::Contents v8::SharedArrayBuffer::GetContents() {
   i::Handle<i::JSArrayBuffer> self = Utils::OpenHandle(this);
   size_t byte_length = static_cast<size_t>(self->byte_length()->Number());
   Contents contents;
+  contents.allocation_base_ = self->allocation_base();
+  contents.allocation_length_ = self->allocation_length();
+  contents.allocation_mode_ =
+      self->has_guard_region()
+          ? ArrayBufferAllocator::Allocator::AllocationMode::kReservation
+          : ArrayBufferAllocator::Allocator::AllocationMode::kNormal;
   contents.data_ = self->backing_store();
   contents.byte_length_ = byte_length;
-  // SharedArrayBuffers never have guard regions, so their allocation and data
-  // are equivalent.
-  contents.allocation_base_ = self->backing_store();
-  contents.allocation_length_ = byte_length;
-  contents.allocation_mode_ =
-      ArrayBufferAllocator::Allocator::AllocationMode::kNormal;
   return contents;
 }
 
@@ -8766,6 +8782,9 @@ void Isolate::GetHeapStatistics(HeapStatistics* heap_statistics) {
       isolate->allocator()->GetCurrentMemoryUsage();
   heap_statistics->peak_malloced_memory_ =
       isolate->allocator()->GetMaxMemoryUsage();
+  heap_statistics->number_of_native_contexts_ = heap->NumberOfNativeContexts();
+  heap_statistics->number_of_detached_contexts_ =
+      heap->NumberOfDetachedContexts();
   heap_statistics->does_zap_garbage_ = heap->ShouldZapGarbage();
 }
 
@@ -8893,7 +8912,6 @@ void Isolate::RemoveCallCompletedCallback(CallCompletedCallback callback) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   isolate->RemoveCallCompletedCallback(callback);
 }
-
 
 void Isolate::AddCallCompletedCallback(
     DeprecatedCallCompletedCallback callback) {
@@ -9688,9 +9706,9 @@ bool debug::Script::GetPossibleBreakpoints(
   CHECK(!start.IsEmpty());
   i::Handle<i::Script> script = Utils::OpenHandle(this);
   if (script->type() == i::Script::TYPE_WASM) {
-    i::Handle<i::WasmCompiledModule> compiled_module(
-        i::WasmCompiledModule::cast(script->wasm_compiled_module()));
-    return compiled_module->GetPossibleBreakpoints(start, end, locations);
+    i::WasmSharedModuleData* shared =
+        i::WasmCompiledModule::cast(script->wasm_compiled_module())->shared();
+    return shared->GetPossibleBreakpoints(start, end, locations);
   }
 
   i::Script::InitLineEnds(script);
@@ -9739,6 +9757,7 @@ int debug::Script::GetSourceOffset(const debug::Location& location) const {
   i::Handle<i::Script> script = Utils::OpenHandle(this);
   if (script->type() == i::Script::TYPE_WASM) {
     return i::WasmCompiledModule::cast(script->wasm_compiled_module())
+               ->shared()
                ->GetFunctionOffset(location.GetLineNumber()) +
            location.GetColumnNumber();
   }
@@ -9808,8 +9827,9 @@ int debug::WasmScript::NumFunctions() const {
   DCHECK_EQ(i::Script::TYPE_WASM, script->type());
   i::WasmCompiledModule* compiled_module =
       i::WasmCompiledModule::cast(script->wasm_compiled_module());
-  DCHECK_GE(i::kMaxInt, compiled_module->module()->functions.size());
-  return static_cast<int>(compiled_module->module()->functions.size());
+  i::wasm::WasmModule* module = compiled_module->shared()->module();
+  DCHECK_GE(i::kMaxInt, module->functions.size());
+  return static_cast<int>(module->functions.size());
 }
 
 int debug::WasmScript::NumImportedFunctions() const {
@@ -9818,8 +9838,9 @@ int debug::WasmScript::NumImportedFunctions() const {
   DCHECK_EQ(i::Script::TYPE_WASM, script->type());
   i::WasmCompiledModule* compiled_module =
       i::WasmCompiledModule::cast(script->wasm_compiled_module());
-  DCHECK_GE(i::kMaxInt, compiled_module->module()->num_imported_functions);
-  return static_cast<int>(compiled_module->module()->num_imported_functions);
+  i::wasm::WasmModule* module = compiled_module->shared()->module();
+  DCHECK_GE(i::kMaxInt, module->num_imported_functions);
+  return static_cast<int>(module->num_imported_functions);
 }
 
 std::pair<int, int> debug::WasmScript::GetFunctionRange(
@@ -9829,10 +9850,10 @@ std::pair<int, int> debug::WasmScript::GetFunctionRange(
   DCHECK_EQ(i::Script::TYPE_WASM, script->type());
   i::WasmCompiledModule* compiled_module =
       i::WasmCompiledModule::cast(script->wasm_compiled_module());
+  i::wasm::WasmModule* module = compiled_module->shared()->module();
   DCHECK_LE(0, function_index);
-  DCHECK_GT(compiled_module->module()->functions.size(), function_index);
-  i::wasm::WasmFunction& func =
-      compiled_module->module()->functions[function_index];
+  DCHECK_GT(module->functions.size(), function_index);
+  i::wasm::WasmFunction& func = module->functions[function_index];
   DCHECK_GE(i::kMaxInt, func.code.offset());
   DCHECK_GE(i::kMaxInt, func.code.end_offset());
   return std::make_pair(static_cast<int>(func.code.offset()),
@@ -9846,7 +9867,7 @@ debug::WasmDisassembly debug::WasmScript::DisassembleFunction(
   DCHECK_EQ(i::Script::TYPE_WASM, script->type());
   i::WasmCompiledModule* compiled_module =
       i::WasmCompiledModule::cast(script->wasm_compiled_module());
-  return compiled_module->DisassembleFunction(function_index);
+  return compiled_module->shared()->DisassembleFunction(function_index);
 }
 
 debug::Location::Location(int line_number, int column_number)

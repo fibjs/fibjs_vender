@@ -1450,14 +1450,14 @@ class ArrayLiteral final : public AggregateLiteral {
   }
 
   // Provide a mechanism for iterating through values to rewrite spreads.
-  ZoneList<Expression*>::iterator FirstSpread() const {
+  ZoneList<Expression*>::iterator FirstSpreadOrEndValue() const {
     return (first_spread_index_ >= 0) ? values_->begin() + first_spread_index_
                                       : values_->end();
   }
+  ZoneList<Expression*>::iterator BeginValue() const {
+    return values_->begin();
+  }
   ZoneList<Expression*>::iterator EndValue() const { return values_->end(); }
-
-  // Rewind an array literal omitting everything from the first spread on.
-  void RewindSpreads();
 
  private:
   friend class AstNodeFactory;
@@ -1465,7 +1465,8 @@ class ArrayLiteral final : public AggregateLiteral {
   ArrayLiteral(ZoneList<Expression*>* values, int first_spread_index, int pos)
       : AggregateLiteral(pos, kArrayLiteral),
         first_spread_index_(first_spread_index),
-        values_(values) {}
+        values_(values) {
+  }
 
   int first_spread_index_;
   Handle<ConstantElementsPair> constant_elements_;
@@ -1697,11 +1698,10 @@ class CallNew final : public Expression {
   ZoneList<Expression*>* arguments_;
 };
 
-
 // The CallRuntime class does not represent any official JavaScript
 // language construct. Instead it is used to call a C or JS function
 // with a set of arguments. This is used from the builtins that are
-// implemented in JavaScript (see "v8natives.js").
+// implemented in JavaScript.
 class CallRuntime final : public Expression {
  public:
   ZoneList<Expression*>* arguments() const { return arguments_; }
@@ -1807,7 +1807,7 @@ class NaryOperation final : public Expression {
 
   NaryOperation(Zone* zone, Token::Value op, Expression* first,
                 size_t initial_subsequent_size)
-      : Expression(kNoSourcePosition, kNaryOperation),
+      : Expression(first->position(), kNaryOperation),
         first_(first),
         subsequent_(zone) {
     bit_field_ |= OperatorField::encode(op);
@@ -2168,7 +2168,8 @@ class FunctionLiteral final : public Expression {
     kAnonymousExpression,
     kNamedExpression,
     kDeclaration,
-    kAccessorOrMethod
+    kAccessorOrMethod,
+    kWrapped,
   };
 
   enum IdType { kIdTypeInvalid = -1, kIdTypeTopLevel = 0 };
@@ -2199,6 +2200,7 @@ class FunctionLiteral final : public Expression {
   bool is_anonymous_expression() const {
     return function_type() == kAnonymousExpression;
   }
+  bool is_wrapped() const { return function_type() == kWrapped; }
   LanguageMode language_mode() const;
 
   static bool NeedsHomeObject(Expression* expr);
@@ -2344,7 +2346,7 @@ class FunctionLiteral final : public Expression {
   }
 
   class FunctionTypeBits
-      : public BitField<FunctionType, Expression::kNextBitFieldIndex, 2> {};
+      : public BitField<FunctionType, Expression::kNextBitFieldIndex, 3> {};
   class Pretenure : public BitField<bool, FunctionTypeBits::kNext, 1> {};
   class HasDuplicateParameters : public BitField<bool, Pretenure::kNext, 1> {};
   class DontOptimizeReasonField

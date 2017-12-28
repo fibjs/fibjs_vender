@@ -121,6 +121,24 @@ MaybeHandle<Map> GetMapWitness(Node* node) {
   return MaybeHandle<Map>();
 }
 
+Maybe<InstanceType> GetInstanceTypeWitness(Node* node) {
+  ZoneHandleSet<Map> maps;
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  NodeProperties::InferReceiverMapsResult result =
+      NodeProperties::InferReceiverMaps(receiver, effect, &maps);
+
+  if (result == NodeProperties::kNoReceiverMaps || maps.size() == 0) {
+    return Nothing<InstanceType>();
+  }
+
+  InstanceType first_type = maps[0]->instance_type();
+  for (const Handle<Map>& map : maps) {
+    if (map->instance_type() != first_type) return Nothing<InstanceType>();
+  }
+  return Just(first_type);
+}
+
 // TODO(turbofan): This was copied from Crankshaft, might be too restrictive.
 bool IsReadOnlyLengthDescriptor(Handle<Map> jsarray_map) {
   DCHECK(!jsarray_map->is_dictionary_map());
@@ -313,8 +331,9 @@ Reduction JSBuiltinReducer::ReduceArrayIterator(Handle<Map> receiver_map,
   return Replace(value);
 }
 
-Reduction JSBuiltinReducer::ReduceFastArrayIteratorNext(
-    Handle<Map> iterator_map, Node* node, IterationKind kind) {
+Reduction JSBuiltinReducer::ReduceFastArrayIteratorNext(InstanceType type,
+                                                        Node* node,
+                                                        IterationKind kind) {
   Node* iterator = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
@@ -327,8 +346,8 @@ Reduction JSBuiltinReducer::ReduceFastArrayIteratorNext(
     return NoChange();
   }
 
-  ElementsKind elements_kind = JSArrayIterator::ElementsKindForInstanceType(
-      iterator_map->instance_type());
+  ElementsKind elements_kind =
+      JSArrayIterator::ElementsKindForInstanceType(type);
 
   if (IsHoleyElementsKind(elements_kind)) {
     if (!isolate()->IsNoElementsProtectorIntact()) {
@@ -484,15 +503,16 @@ Reduction JSBuiltinReducer::ReduceFastArrayIteratorNext(
   return Replace(value);
 }
 
-Reduction JSBuiltinReducer::ReduceTypedArrayIteratorNext(
-    Handle<Map> iterator_map, Node* node, IterationKind kind) {
+Reduction JSBuiltinReducer::ReduceTypedArrayIteratorNext(InstanceType type,
+                                                         Node* node,
+                                                         IterationKind kind) {
   Node* iterator = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
   Node* context = NodeProperties::GetContextInput(node);
 
-  ElementsKind elements_kind = JSArrayIterator::ElementsKindForInstanceType(
-      iterator_map->instance_type());
+  ElementsKind elements_kind =
+      JSArrayIterator::ElementsKindForInstanceType(type);
 
   Node* array = effect = graph()->NewNode(
       simplified()->LoadField(AccessBuilder::ForJSArrayIteratorObject()),
@@ -725,65 +745,58 @@ Reduction JSBuiltinReducer::ReduceTypedArrayToStringTag(Node* node) {
 }
 
 Reduction JSBuiltinReducer::ReduceArrayIteratorNext(Node* node) {
-  Handle<Map> receiver_map;
-  if (GetMapWitness(node).ToHandle(&receiver_map)) {
-    switch (receiver_map->instance_type()) {
-      case JS_TYPED_ARRAY_KEY_ITERATOR_TYPE:
-        return ReduceTypedArrayIteratorNext(receiver_map, node,
-                                            IterationKind::kKeys);
+  Maybe<InstanceType> maybe_type = GetInstanceTypeWitness(node);
+  if (!maybe_type.IsJust()) return NoChange();
+  InstanceType type = maybe_type.FromJust();
+  switch (type) {
+    case JS_TYPED_ARRAY_KEY_ITERATOR_TYPE:
+      return ReduceTypedArrayIteratorNext(type, node, IterationKind::kKeys);
 
-      case JS_FAST_ARRAY_KEY_ITERATOR_TYPE:
-        return ReduceFastArrayIteratorNext(receiver_map, node,
-                                           IterationKind::kKeys);
+    case JS_FAST_ARRAY_KEY_ITERATOR_TYPE:
+      return ReduceFastArrayIteratorNext(type, node, IterationKind::kKeys);
 
-      case JS_INT8_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_UINT8_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_INT16_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_UINT16_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_INT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_UINT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_FLOAT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_FLOAT64_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_UINT8_CLAMPED_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-        return ReduceTypedArrayIteratorNext(receiver_map, node,
-                                            IterationKind::kEntries);
+    case JS_INT8_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_INT16_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT16_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_INT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT64_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_CLAMPED_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+      return ReduceTypedArrayIteratorNext(type, node, IterationKind::kEntries);
 
-      case JS_FAST_SMI_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_HOLEY_SMI_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_HOLEY_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_DOUBLE_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_HOLEY_DOUBLE_ARRAY_KEY_VALUE_ITERATOR_TYPE:
-        return ReduceFastArrayIteratorNext(receiver_map, node,
-                                           IterationKind::kEntries);
+    case JS_FAST_SMI_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_SMI_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_DOUBLE_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_DOUBLE_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+      return ReduceFastArrayIteratorNext(type, node, IterationKind::kEntries);
 
-      case JS_INT8_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_UINT8_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_INT16_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_UINT16_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_INT32_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_UINT32_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_FLOAT32_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_FLOAT64_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_UINT8_CLAMPED_ARRAY_VALUE_ITERATOR_TYPE:
-        return ReduceTypedArrayIteratorNext(receiver_map, node,
-                                            IterationKind::kValues);
+    case JS_INT8_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_INT16_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT16_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_INT32_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT32_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT32_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT64_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_CLAMPED_ARRAY_VALUE_ITERATOR_TYPE:
+      return ReduceTypedArrayIteratorNext(type, node, IterationKind::kValues);
 
-      case JS_FAST_SMI_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_HOLEY_SMI_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_HOLEY_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_DOUBLE_ARRAY_VALUE_ITERATOR_TYPE:
-      case JS_FAST_HOLEY_DOUBLE_ARRAY_VALUE_ITERATOR_TYPE:
-        return ReduceFastArrayIteratorNext(receiver_map, node,
-                                           IterationKind::kValues);
+    case JS_FAST_SMI_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_SMI_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_DOUBLE_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_DOUBLE_ARRAY_VALUE_ITERATOR_TYPE:
+      return ReduceFastArrayIteratorNext(type, node, IterationKind::kValues);
 
-      default:
-        // Slow array iterators are not reduced
-        return NoChange();
-    }
+    default:
+      // Slow array iterators are not reduced
+      return NoChange();
   }
-  return NoChange();
 }
 
 // ES6 section 22.1.2.2 Array.isArray ( arg )
@@ -992,6 +1005,11 @@ Reduction JSBuiltinReducer::ReduceArrayPop(Node* node) {
 // ES6 section 22.1.3.18 Array.prototype.push ( )
 Reduction JSBuiltinReducer::ReduceArrayPush(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCall, node->opcode());
+  CallParameters const& p = CallParametersOf(node->op());
+  if (p.speculation_mode() == SpeculationMode::kDisallowSpeculation) {
+    return NoChange();
+  }
+
   int const num_values = node->op()->ValueInputCount() - 2;
   Node* receiver = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
@@ -1022,12 +1040,9 @@ Reduction JSBuiltinReducer::ReduceArrayPush(Node* node) {
       if (receiver_map->is_stable()) {
         dependencies()->AssumeMapStable(receiver_map);
       } else {
-        // TODO(turbofan): This is a potential - yet unlikely - deoptimization
-        // loop, since we might not learn from this deoptimization in baseline
-        // code. We need a way to learn from deoptimizations in optimized to
-        // address these problems.
         effect = graph()->NewNode(
-            simplified()->CheckMaps(CheckMapsFlag::kNone, receiver_maps),
+            simplified()->CheckMaps(CheckMapsFlag::kNone, receiver_maps,
+                                    p.feedback()),
             receiver, effect, control);
       }
     }
@@ -1042,11 +1057,11 @@ Reduction JSBuiltinReducer::ReduceArrayPush(Node* node) {
     // Array.prototype.push inlining for this function.
     for (auto& value : values) {
       if (IsSmiElementsKind(receiver_map->elements_kind())) {
-        value = effect =
-            graph()->NewNode(simplified()->CheckSmi(), value, effect, control);
+        value = effect = graph()->NewNode(simplified()->CheckSmi(p.feedback()),
+                                          value, effect, control);
       } else if (IsDoubleElementsKind(receiver_map->elements_kind())) {
-        value = effect = graph()->NewNode(simplified()->CheckNumber(), value,
-                                          effect, control);
+        value = effect = graph()->NewNode(
+            simplified()->CheckNumber(p.feedback()), value, effect, control);
         // Make sure we do not store signaling NaNs into double arrays.
         value = graph()->NewNode(simplified()->NumberSilenceNaN(), value);
       }
@@ -1082,7 +1097,8 @@ Reduction JSBuiltinReducer::ReduceArrayPush(Node* node) {
               ? GrowFastElementsMode::kDoubleElements
               : GrowFastElementsMode::kSmiOrObjectElements;
       elements = effect = graph()->NewNode(
-          simplified()->MaybeGrowFastElements(mode), receiver, elements,
+          simplified()->MaybeGrowFastElements(mode, p.feedback()), receiver,
+          elements,
           graph()->NewNode(simplified()->NumberAdd(), length,
                            jsgraph()->Constant(num_values - 1)),
           elements_length, effect, control);
@@ -2258,14 +2274,13 @@ Reduction JSBuiltinReducer::ReduceObjectCreate(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   Node* prototype = NodeProperties::GetValueInput(node, 2);
   Type* prototype_type = NodeProperties::GetType(prototype);
-  Handle<Map> instance_map;
   if (!prototype_type->IsHeapConstant()) return NoChange();
   Handle<HeapObject> prototype_const =
       prototype_type->AsHeapConstant()->Value();
-  if (!prototype_const->IsNull(isolate()) && !prototype_const->IsJSReceiver()) {
-    return NoChange();
-  }
-  instance_map = Map::GetObjectCreateMap(prototype_const);
+  Handle<Map> instance_map;
+  MaybeHandle<Map> maybe_instance_map =
+      Map::TryGetObjectCreateMap(prototype_const);
+  if (!maybe_instance_map.ToHandle(&instance_map)) return NoChange();
   Node* properties = jsgraph()->EmptyFixedArrayConstant();
   if (instance_map->is_dictionary_map()) {
     // Allocated an empty NameDictionary as backing store for the properties.
@@ -2403,8 +2418,12 @@ Reduction JSBuiltinReducer::ReduceStringCharAt(Node* node) {
 
         // Return the character from the {receiver} as single character string.
         Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+
+        Node* masked_index = graph()->NewNode(
+            simplified()->MaskIndexWithBound(), index, receiver_length);
+
         Node* vtrue = graph()->NewNode(simplified()->StringCharAt(), receiver,
-                                       index, if_true);
+                                       masked_index, if_true);
 
         // Return the empty string otherwise.
         Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
@@ -2456,8 +2475,12 @@ Reduction JSBuiltinReducer::ReduceStringCharCodeAt(Node* node) {
 
         // Load the character from the {receiver}.
         Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+
+        Node* masked_index = graph()->NewNode(
+            simplified()->MaskIndexWithBound(), index, receiver_length);
+
         Node* vtrue = graph()->NewNode(simplified()->StringCharCodeAt(),
-                                       receiver, index, if_true);
+                                       receiver, masked_index, if_true);
 
         // Return NaN otherwise.
         Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
@@ -2505,34 +2528,6 @@ Reduction JSBuiltinReducer::ReduceStringConcat(Node* node) {
     }
   }
 
-  return NoChange();
-}
-
-// ES6 String.prototype.indexOf(searchString [, position])
-// #sec-string.prototype.indexof
-Reduction JSBuiltinReducer::ReduceStringIndexOf(Node* node) {
-  // We need at least target, receiver and search_string parameters.
-  if (node->op()->ValueInputCount() >= 3) {
-    Node* search_string = NodeProperties::GetValueInput(node, 2);
-    Type* search_string_type = NodeProperties::GetType(search_string);
-    Node* position = (node->op()->ValueInputCount() >= 4)
-                         ? NodeProperties::GetValueInput(node, 3)
-                         : jsgraph()->ZeroConstant();
-    Type* position_type = NodeProperties::GetType(position);
-
-    if (search_string_type->Is(Type::String()) &&
-        position_type->Is(Type::SignedSmall())) {
-      if (Node* receiver = GetStringWitness(node)) {
-        RelaxEffectsAndControls(node);
-        node->ReplaceInput(0, receiver);
-        node->ReplaceInput(1, search_string);
-        node->ReplaceInput(2, position);
-        node->TrimInputCount(3);
-        NodeProperties::ChangeOp(node, simplified()->StringIndexOf());
-        return Changed(node);
-      }
-    }
-  }
   return NoChange();
 }
 
@@ -3018,8 +3013,6 @@ Reduction JSBuiltinReducer::Reduce(Node* node) {
       return ReduceStringCharCodeAt(node);
     case kStringConcat:
       return ReduceStringConcat(node);
-    case kStringIndexOf:
-      return ReduceStringIndexOf(node);
     case kStringIterator:
       return ReduceStringIterator(node);
     case kStringIteratorNext:

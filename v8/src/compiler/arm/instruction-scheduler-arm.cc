@@ -266,6 +266,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmLdrh:
     case kArmLdrsh:
     case kArmLdr:
+    case kArmPeek:
       return kIsLoadOperation;
 
     case kArmVstrF32:

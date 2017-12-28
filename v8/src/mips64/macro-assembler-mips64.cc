@@ -4041,8 +4041,10 @@ void MacroAssembler::MaybeDropFrames() {
 
 void MacroAssembler::PushStackHandler() {
   // Adjust this code if not the case.
-  STATIC_ASSERT(StackHandlerConstants::kSize == 1 * kPointerSize);
+  STATIC_ASSERT(StackHandlerConstants::kSize == 2 * kPointerSize);
   STATIC_ASSERT(StackHandlerConstants::kNextOffset == 0 * kPointerSize);
+
+  Push(Smi::kZero);  // Padding.
 
   // Link the current handler as the next handler.
   li(a6,
@@ -5406,8 +5408,8 @@ void TurboAssembler::PrepareCallCFunction(int num_reg_arguments,
 void TurboAssembler::CallCFunction(ExternalReference function,
                                    int num_reg_arguments,
                                    int num_double_arguments) {
-  li(t8, Operand(function));
-  CallCFunctionHelper(t8, num_reg_arguments, num_double_arguments);
+  li(t9, Operand(function));
+  CallCFunctionHelper(t9, num_reg_arguments, num_double_arguments);
 }
 
 void TurboAssembler::CallCFunction(Register function, int num_reg_arguments,

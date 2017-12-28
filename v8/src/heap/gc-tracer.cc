@@ -6,6 +6,7 @@
 
 #include <cstdarg>
 
+#include "src/base/atomic-utils.h"
 #include "src/counters.h"
 #include "src/heap/heap-inl.h"
 #include "src/isolate.h"
@@ -15,8 +16,8 @@ namespace internal {
 
 static size_t CountTotalHolesSize(Heap* heap) {
   size_t holes_size = 0;
-  OldSpaces spaces(heap);
-  for (OldSpace* space = spaces.next(); space != nullptr;
+  PagedSpaces spaces(heap);
+  for (PagedSpace* space = spaces.next(); space != nullptr;
        space = spaces.next()) {
     DCHECK_GE(holes_size + space->Waste() + space->Available(), holes_size);
     holes_size += space->Waste() + space->Available();
@@ -52,7 +53,7 @@ GCTracer::BackgroundScope::BackgroundScope(GCTracer* tracer, ScopeId scope)
     : tracer_(tracer), scope_(scope), runtime_stats_enabled_(false) {
   start_time_ = tracer_->heap_->MonotonicallyIncreasingTimeInMs();
   // TODO(cbruni): remove once we fully moved to a trace-based system.
-  if (V8_LIKELY(!FLAG_runtime_stats)) return;
+  if (V8_LIKELY(!base::AsAtomic32::Relaxed_Load(&FLAG_runtime_stats))) return;
   timer_.Start(&counter_, nullptr);
   runtime_stats_enabled_ = true;
 }
@@ -80,7 +81,22 @@ const char* GCTracer::Scope::Name(ScopeId id) {
       break;
   }
 #undef CASE
-  return "(unknown)";
+  UNREACHABLE();
+  return nullptr;
+}
+
+const char* GCTracer::BackgroundScope::Name(ScopeId id) {
+#define CASE(scope)            \
+  case BackgroundScope::scope: \
+    return "V8.GC_" #scope;
+  switch (id) {
+    TRACER_BACKGROUND_SCOPES(CASE)
+    case BackgroundScope::NUMBER_OF_SCOPES:
+      break;
+  }
+#undef CASE
+  UNREACHABLE();
+  return nullptr;
 }
 
 GCTracer::Event::Event(Type type, GarbageCollectionReason gc_reason,
@@ -172,6 +188,7 @@ void GCTracer::ResetForTesting() {
   recorded_context_disposal_times_.Reset();
   recorded_survival_ratios_.Reset();
   start_counter_ = 0;
+  base::LockGuard<base::Mutex> guard(&background_counter_mutex_);
   for (int i = 0; i < BackgroundScope::NUMBER_OF_SCOPES; i++) {
     background_counter_[i].total_duration_ms = 0;
     background_counter_[i].runtime_call_counter.Reset();
@@ -967,6 +984,10 @@ void GCTracer::FetchBackgroundMarkCompactCounters() {
                           Scope::LAST_MC_BACKGROUND_SCOPE,
                           BackgroundScope::FIRST_MC_BACKGROUND_SCOPE,
                           BackgroundScope::LAST_MC_BACKGROUND_SCOPE);
+  heap_->isolate()->counters()->background_marking()->AddSample(
+      static_cast<int>(current_.scopes[Scope::MC_BACKGROUND_MARKING]));
+  heap_->isolate()->counters()->background_sweeping()->AddSample(
+      static_cast<int>(current_.scopes[Scope::MC_BACKGROUND_SWEEPING]));
 }
 
 void GCTracer::FetchBackgroundMinorGCCounters() {
@@ -974,6 +995,9 @@ void GCTracer::FetchBackgroundMinorGCCounters() {
                           Scope::LAST_MINOR_GC_BACKGROUND_SCOPE,
                           BackgroundScope::FIRST_MINOR_GC_BACKGROUND_SCOPE,
                           BackgroundScope::LAST_MINOR_GC_BACKGROUND_SCOPE);
+  heap_->isolate()->counters()->background_scavenger()->AddSample(
+      static_cast<int>(
+          current_.scopes[Scope::SCAVENGER_BACKGROUND_SCAVENGE_PARALLEL]));
 }
 
 void GCTracer::FetchBackgroundGeneralCounters() {

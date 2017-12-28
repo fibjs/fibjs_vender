@@ -197,6 +197,7 @@ DEFINE_IMPLICATION(es_staging, harmony)
 // Enabling import.meta requires to also enable import()
 DEFINE_IMPLICATION(harmony_import_meta, harmony_dynamic_import)
 DEFINE_IMPLICATION(harmony_class_fields, harmony_public_fields)
+DEFINE_IMPLICATION(harmony_class_fields, harmony_static_fields)
 
 // Features that are still work in progress (behind individual flags).
 #define HARMONY_INPROGRESS(V)                                         \
@@ -206,6 +207,7 @@ DEFINE_IMPLICATION(harmony_class_fields, harmony_public_fields)
   V(harmony_do_expressions, "harmony do-expressions")                 \
   V(harmony_class_fields, "harmony fields in class literals")         \
   V(harmony_public_fields, "harmony public fields in class literals") \
+  V(harmony_static_fields, "harmony static fields in class literals") \
   V(harmony_bigint, "harmony arbitrary precision integers")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
@@ -463,6 +465,10 @@ DEFINE_BOOL(turbo_store_elimination, true,
 DEFINE_BOOL(trace_store_elimination, false, "trace store elimination")
 DEFINE_BOOL(turbo_rewrite_far_jumps, true,
             "rewrite far to near jumps (ia32,x64)")
+DEFINE_BOOL(extra_masking, false, "Extra mask for memory accesses")
+DEFINE_BOOL(mask_array_index, false, "Mask array index with bound")
+DEFINE_IMPLICATION(future, extra_masking)
+DEFINE_IMPLICATION(extra_masking, mask_array_index)
 
 // Flags to help platform porters
 DEFINE_BOOL(minimal, false,
@@ -483,11 +489,12 @@ DEFINE_DEBUG_BOOL(wasm_trace_native_heap, false,
                   "trace wasm native heap events")
 DEFINE_BOOL(wasm_jit_to_native, false,
             "JIT wasm code to native (not JS GC) memory")
+DEFINE_IMPLICATION(future, wasm_jit_to_native)
 DEFINE_BOOL(wasm_trace_serialization, false,
             "trace serialization/deserialization")
 DEFINE_BOOL(wasm_async_compilation, true,
             "enable actual asynchronous compilation for WebAssembly.compile")
-DEFINE_BOOL(wasm_stream_compilation, false,
+DEFINE_BOOL(wasm_stream_compilation, true,
             "enable streaming compilation for WebAssembly")
 DEFINE_IMPLICATION(wasm_stream_compilation, wasm_async_compilation)
 DEFINE_BOOL(wasm_test_streaming, false,
@@ -541,6 +548,8 @@ DEFINE_BOOL(experimental_wasm_mv, false,
             "enable prototype multi-value support for wasm")
 DEFINE_BOOL(experimental_wasm_threads, false,
             "enable prototype threads for wasm")
+DEFINE_BOOL(experimental_wasm_sat_f2i_conversions, false,
+            "enable non-trapping float-to-int conversions for wasm")
 
 DEFINE_BOOL(wasm_opt, false, "enable wasm optimization")
 DEFINE_BOOL(wasm_no_bounds_checks, false,
@@ -891,6 +900,7 @@ DEFINE_BOOL(trace_prototype_users, false,
 DEFINE_BOOL(use_verbose_printer, true, "allows verbose printing")
 DEFINE_BOOL(trace_for_in_enumerate, false, "Trace for-in enumerate slow-paths")
 DEFINE_BOOL(trace_maps, false, "trace map creation")
+DEFINE_BOOL(trace_maps_details, true, "also log map details")
 DEFINE_IMPLICATION(trace_maps, log_code)
 
 // parser.cc
@@ -1061,7 +1071,6 @@ DEFINE_BOOL(trace_contexts, false, "trace contexts operations")
 
 // heap.cc
 DEFINE_BOOL(gc_verbose, false, "print stuff during garbage collection")
-DEFINE_BOOL(heap_stats, false, "report heap statistics before and after GC")
 DEFINE_BOOL(code_stats, false, "report code statistics after GC")
 DEFINE_BOOL(print_handles, false, "report handles after GC")
 DEFINE_BOOL(check_handle_count, false,
@@ -1114,8 +1123,6 @@ DEFINE_BOOL(log_all, false, "Log all events to the log file.")
 DEFINE_BOOL(log_api, false, "Log API events to the log file.")
 DEFINE_BOOL(log_code, false,
             "Log code events to the log file without profiling.")
-DEFINE_BOOL(log_gc, false,
-            "Log heap samples on garbage collection for the hp2ps tool.")
 DEFINE_BOOL(log_handles, false, "Log global handle events.")
 DEFINE_BOOL(log_suspect, false, "Log suspect operations.")
 DEFINE_BOOL(log_source_code, false, "Log source code.")

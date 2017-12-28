@@ -363,30 +363,6 @@ void Heap::SetGCState(HeapState state) {
   gc_state_ = state;
 }
 
-// TODO(1238405): Combine the infrastructure for --heap-stats and
-// --log-gc to avoid the complicated preprocessor and flag testing.
-void Heap::ReportStatisticsBeforeGC() {
-// Heap::ReportHeapStatistics will also log NewSpace statistics when
-// compiled --log-gc is set.  The following logic is used to avoid
-// double logging.
-#ifdef DEBUG
-  if (FLAG_heap_stats || FLAG_log_gc) new_space_->CollectStatistics();
-  if (FLAG_heap_stats) {
-    ReportHeapStatistics("Before GC");
-  } else if (FLAG_log_gc) {
-    new_space_->ReportStatistics();
-  }
-  if (FLAG_heap_stats || FLAG_log_gc) new_space_->ClearHistograms();
-#else
-  if (FLAG_log_gc) {
-    new_space_->CollectStatistics();
-    new_space_->ReportStatistics();
-    new_space_->ClearHistograms();
-  }
-#endif  // DEBUG
-}
-
-
 void Heap::PrintShortHeapStatistics() {
   if (!FLAG_trace_gc_verbose) return;
   PrintIsolate(isolate_, "Memory allocator,   used: %6" PRIuS
@@ -444,21 +420,7 @@ void Heap::PrintShortHeapStatistics() {
                total_gc_time_ms_);
 }
 
-// TODO(1238405): Combine the infrastructure for --heap-stats and
-// --log-gc to avoid the complicated preprocessor and flag testing.
 void Heap::ReportStatisticsAfterGC() {
-// Similar to the before GC, we use some complicated logic to ensure that
-// NewSpace statistics are logged exactly once when --log-gc is turned on.
-#if defined(DEBUG)
-  if (FLAG_heap_stats) {
-    new_space_->CollectStatistics();
-    ReportHeapStatistics("After GC");
-  } else if (FLAG_log_gc) {
-    new_space_->ReportStatistics();
-  }
-#else
-  if (FLAG_log_gc) new_space_->ReportStatistics();
-#endif  // DEBUG
   for (int i = 0; i < static_cast<int>(v8::Isolate::kUseCounterFeatureCount);
        ++i) {
     int count = deferred_counters_[i];
@@ -637,8 +599,6 @@ void Heap::GarbageCollectionPrologue() {
   DCHECK(!AllowHeapAllocation::IsAllowed() && gc_state_ == NOT_IN_GC);
 
   if (FLAG_gc_verbose) Print();
-
-  ReportStatisticsBeforeGC();
 #endif  // DEBUG
 
   if (new_space_->IsAtMaximumCapacity()) {
@@ -1612,7 +1572,7 @@ bool Heap::PerformGarbageCollection(
 
   EnsureFromSpaceIsCommitted();
 
-  int start_new_space_size = static_cast<int>(Heap::new_space()->Size());
+  size_t start_new_space_size = Heap::new_space()->Size();
 
   {
     Heap::SkipStoreBufferScope skip_store_buffer_scope(store_buffer_);
@@ -1651,8 +1611,15 @@ bool Heap::PerformGarbageCollection(
     ProcessPretenuringFeedback();
   }
 
-  UpdateSurvivalStatistics(start_new_space_size);
+  UpdateSurvivalStatistics(static_cast<int>(start_new_space_size));
   ConfigureInitialOldGenerationSize();
+
+  if (collector != MARK_COMPACTOR) {
+    // Objects that died in the new space might have been accounted
+    // as bytes marked ahead of schedule by the incremental marker.
+    incremental_marking()->UpdateMarkedBytesAfterScavenge(
+        start_new_space_size - SurvivedNewSpaceObjectSize());
+  }
 
   if (!fast_promotion_mode_ || collector == MARK_COMPACTOR) {
     ComputeFastPromotionMode(promotion_ratio_ + semi_space_copied_rate_);
@@ -1773,6 +1740,7 @@ void Heap::MinorMarkCompact() {
   IncrementalMarking::PauseBlackAllocationScope pause_black_allocation(
       incremental_marking());
   CodeSpaceMemoryModificationScope code_modifcation(this);
+  ConcurrentMarking::PauseScope pause_scope(concurrent_marking());
 
   minor_mark_compact_collector()->CollectGarbage();
 
@@ -1919,7 +1887,7 @@ class ScavengingTask final : public ItemParallelJob::Task {
         barrier_(barrier) {}
 
   void RunInParallel() final {
-    GCTracer::BackgroundScope scope(
+    TRACE_BACKGROUND_GC(
         heap_->tracer(),
         GCTracer::BackgroundScope::SCAVENGER_BACKGROUND_SCAVENGE_PARALLEL);
     double scavenging_time = 0.0;
@@ -2500,7 +2468,7 @@ AllocationResult Heap::AllocateMap(InstanceType instance_type,
   map->set_bit_field3(bit_field3);
   map->set_elements_kind(elements_kind);
   map->set_new_target_is_base(true);
-
+  if (FLAG_trace_maps) LOG(isolate(), MapCreate(map));
   return map;
 }
 
@@ -4595,37 +4563,6 @@ void Heap::ReportCodeStatistics(const char* title) {
   CodeStatistics::ReportCodeStatistics(isolate());
 }
 
-
-// This function expects that NewSpace's allocated objects histogram is
-// populated (via a call to CollectStatistics or else as a side effect of a
-// just-completed scavenge collection).
-void Heap::ReportHeapStatistics(const char* title) {
-  USE(title);
-  PrintF(">>>>>> =============== %s (%d) =============== >>>>>>\n", title,
-         gc_count_);
-  PrintF("old_generation_allocation_limit_ %" PRIuS "\n",
-         old_generation_allocation_limit_);
-
-  PrintF("\n");
-  PrintF("Number of handles : %d\n", HandleScope::NumberOfHandles(isolate_));
-  isolate_->global_handles()->PrintStats();
-  PrintF("\n");
-
-  PrintF("Heap statistics : ");
-  memory_allocator()->ReportStatistics();
-  PrintF("To space : ");
-  new_space_->ReportStatistics();
-  PrintF("Old space : ");
-  old_space_->ReportStatistics();
-  PrintF("Code space : ");
-  code_space_->ReportStatistics();
-  PrintF("Map space : ");
-  map_space_->ReportStatistics();
-  PrintF("Large object space : ");
-  lo_space_->ReportStatistics();
-  PrintF(">>>>>> ========================================= >>>>>>\n");
-}
-
 #endif  // DEBUG
 
 const char* Heap::GarbageCollectionReasonToString(
@@ -4940,8 +4877,11 @@ void Heap::IterateWeakRoots(RootVisitor* v, VisitMode mode) {
   v->VisitRootPointer(Root::kStringTable, reinterpret_cast<Object**>(
                                               &roots_[kStringTableRootIndex]));
   v->Synchronize(VisitorSynchronization::kStringTable);
-  if (!isMinorGC && mode != VISIT_ALL_IN_SWEEP_NEWSPACE) {
+  if (!isMinorGC && mode != VISIT_ALL_IN_SWEEP_NEWSPACE &&
+      mode != VISIT_FOR_SERIALIZATION) {
     // Scavenge collections have special processing for this.
+    // Do not visit for serialization, since the external string table will
+    // be populated from scratch upon deserialization.
     external_string_table_.IterateAll(v);
   }
   v->Synchronize(VisitorSynchronization::kExternalStringsTable);
@@ -5043,7 +4983,7 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
 
   // Iterate over global handles.
   switch (mode) {
-    case VISIT_ONLY_STRONG_FOR_SERIALIZATION:
+    case VISIT_FOR_SERIALIZATION:
     case VISIT_ONLY_STRONG:
       isolate_->global_handles()->IterateStrongRoots(v);
       break;
@@ -5082,7 +5022,7 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
   v->Synchronize(VisitorSynchronization::kStrongRoots);
 
   // Iterate over the partial snapshot cache unless serializing.
-  if (mode != VISIT_ONLY_STRONG_FOR_SERIALIZATION) {
+  if (mode != VISIT_FOR_SERIALIZATION) {
     SerializerDeserializer::Iterate(isolate_, v);
   }
   // We don't do a v->Synchronize call here, because in debug mode that will
@@ -5579,7 +5519,7 @@ bool Heap::SetUp() {
   }
 
   mmap_region_base_ =
-      reinterpret_cast<uintptr_t>(base::OS::GetRandomMmapAddr()) &
+      reinterpret_cast<uintptr_t>(v8::internal::GetRandomMmapAddr()) &
       ~kMmapRegionMask;
 
   // Set up memory allocator.
@@ -6156,18 +6096,6 @@ PagedSpace* PagedSpaces::next() {
   }
 }
 
-
-OldSpace* OldSpaces::next() {
-  switch (counter_++) {
-    case OLD_SPACE:
-      return heap_->old_space();
-    case CODE_SPACE:
-      return heap_->code_space();
-    default:
-      return nullptr;
-  }
-}
-
 SpaceIterator::SpaceIterator(Heap* heap)
     : heap_(heap), current_space_(FIRST_SPACE - 1) {}
 
@@ -6523,6 +6451,22 @@ bool Heap::GetObjectTypeName(size_t index, const char** object_type,
 #undef COMPARE_AND_RETURN_NAME
   }
   return false;
+}
+
+size_t Heap::NumberOfNativeContexts() {
+  int result = 0;
+  Object* context = native_contexts_list();
+  while (!context->IsUndefined(isolate())) {
+    ++result;
+    Context* native_context = Context::cast(context);
+    context = native_context->next_context_link();
+  }
+  return result;
+}
+
+size_t Heap::NumberOfDetachedContexts() {
+  // The detached_contexts() array has two entries per detached context.
+  return detached_contexts()->length() / 2;
 }
 
 const char* AllocationSpaceName(AllocationSpace space) {

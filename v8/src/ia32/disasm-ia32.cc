@@ -949,6 +949,15 @@ int DisassemblerIA32::AVXInstruction(byte* data) {
                        NameOfXMMRegister(vvvv));
         current += PrintRightXMMOperand(current);
         break;
+      case 0x6f:
+        AppendToBuffer("vmovdqu %s,", NameOfXMMRegister(regop));
+        current += PrintRightOperand(current);
+        break;
+      case 0x7f:
+        AppendToBuffer("vmovdqu ");
+        current += PrintRightOperand(current);
+        AppendToBuffer(",%s", NameOfXMMRegister(regop));
+        break;
       default:
         UnimplementedInstruction();
     }
@@ -2287,6 +2296,9 @@ int DisassemblerIA32::InstructionDecode(v8::internal::Vector<char> out_buffer,
                 break;
               case 0x5F:
                 mnem = "maxsd";
+                break;
+              case 0x7C:
+                mnem = "haddps";
                 break;
             }
             data += 3;

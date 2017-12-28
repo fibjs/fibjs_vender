@@ -157,6 +157,9 @@
     <Filter Include="Source Files\third_party">
       <UniqueIdentifier>{517d88ea-d211-bcd7-bc22-b7165eec24c6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\third_party\utf8-decoder">
+      <UniqueIdentifier>{61c78fd1-2a9f-14a4-571b-a25eb88cbc9b}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\third_party\valgrind">
       <UniqueIdentifier>{d995e528-12ff-117d-98c4-5a4e21697a61}</UniqueIdentifier>
     </Filter>
@@ -415,6 +418,9 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\optional.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\page-allocator.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\platform\condition-variable.h">
@@ -1851,6 +1857,9 @@
     <ClInclude Include="src\signature.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\simulator-base.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\simulator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1946,6 +1955,9 @@
     </ClInclude>
     <ClInclude Include="src\strtod.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\third_party\utf8-decoder\utf8-decoder.h">
+      <Filter>Source Files\third_party\utf8-decoder</Filter>
     </ClInclude>
     <ClInclude Include="src\third_party\valgrind\valgrind.h">
       <Filter>Source Files\third_party\valgrind</Filter>
@@ -2292,6 +2304,9 @@
       <Filter>Source Files\base</Filter>
     </ClCompile>
     <ClCompile Include="src\base\once.cc">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\page-allocator.cc">
       <Filter>Source Files\base</Filter>
     </ClCompile>
     <ClCompile Include="src\base\platform\condition-variable.cc">
@@ -3678,6 +3693,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\setup-isolate-full.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\simulator-base.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\builtin-deserializer-allocator.cc">

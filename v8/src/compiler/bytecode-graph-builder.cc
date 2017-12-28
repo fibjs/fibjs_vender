@@ -950,7 +950,7 @@ void BytecodeGraphBuilder::VisitLdaGlobalInsideTypeof() {
   environment()->BindAccumulator(node, Environment::kAttachFrameState);
 }
 
-void BytecodeGraphBuilder::BuildStoreGlobal(LanguageMode language_mode) {
+void BytecodeGraphBuilder::VisitStaGlobal() {
   PrepareEagerCheckpoint();
   Handle<Name> name =
       Handle<Name>::cast(bytecode_iterator().GetConstantForIndexOperand(0));
@@ -958,17 +958,11 @@ void BytecodeGraphBuilder::BuildStoreGlobal(LanguageMode language_mode) {
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(1));
   Node* value = environment()->LookupAccumulator();
 
+  LanguageMode language_mode =
+      feedback.vector()->GetLanguageMode(feedback.slot());
   const Operator* op = javascript()->StoreGlobal(language_mode, name, feedback);
   Node* node = NewNode(op, value);
   environment()->RecordAfterState(node, Environment::kAttachFrameState);
-}
-
-void BytecodeGraphBuilder::VisitStaGlobalSloppy() {
-  BuildStoreGlobal(LanguageMode::kSloppy);
-}
-
-void BytecodeGraphBuilder::VisitStaGlobalStrict() {
-  BuildStoreGlobal(LanguageMode::kStrict);
 }
 
 void BytecodeGraphBuilder::VisitStaDataPropertyInLiteral() {
@@ -1610,7 +1604,8 @@ void BytecodeGraphBuilder::BuildCall(ConvertReceiverMode receiver_mode,
 
   CallFrequency frequency = ComputeCallFrequency(slot_id);
   const Operator* op =
-      javascript()->Call(arg_count, frequency, feedback, receiver_mode);
+      javascript()->Call(arg_count, frequency, feedback, receiver_mode,
+                         GetSpeculationMode(slot_id));
   JSTypeHintLowering::LoweringResult lowering = TryBuildSimplifiedCall(
       op, args, static_cast<int>(arg_count), feedback.slot());
   if (lowering.IsExit()) return;
@@ -2105,6 +2100,11 @@ CallFrequency BytecodeGraphBuilder::ComputeCallFrequency(int slot_id) const {
                        invocation_frequency_.value());
 }
 
+SpeculationMode BytecodeGraphBuilder::GetSpeculationMode(int slot_id) const {
+  CallICNexus nexus(feedback_vector(), feedback_vector()->ToSlot(slot_id));
+  return nexus.GetSpeculationMode();
+}
+
 void BytecodeGraphBuilder::VisitBitwiseNot() {
   BuildUnaryOp(javascript()->BitwiseNot());
 }
@@ -2575,7 +2575,7 @@ void BytecodeGraphBuilder::VisitSwitchOnSmiNoFeedback() {
   PrepareEagerCheckpoint();
 
   Node* acc = environment()->LookupAccumulator();
-  Node* acc_smi = NewNode(simplified()->CheckSmi(), acc);
+  Node* acc_smi = NewNode(simplified()->CheckSmi(VectorSlotPair()), acc);
   BuildSwitchOnSmi(acc_smi);
 }
 

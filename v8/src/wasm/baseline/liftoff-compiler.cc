@@ -37,15 +37,21 @@ namespace {
 class MovableLabel {
  public:
   Label* get() { return label_.get(); }
+  MovableLabel() : MovableLabel(new Label()) {}
+
+  static MovableLabel None() { return MovableLabel(nullptr); }
 
  private:
-  std::unique_ptr<Label> label_ = base::make_unique<Label>();
+  std::unique_ptr<Label> label_;
+  explicit MovableLabel(Label* label) : label_(label) {}
 };
 #else
 // On all other platforms, just store the Label directly.
 class MovableLabel {
  public:
   Label* get() { return &label_; }
+
+  static MovableLabel None() { return MovableLabel(); }
 
  private:
   Label label_;
@@ -71,10 +77,46 @@ class LiftoffCompiler {
 
   using Decoder = WasmFullDecoder<validate, LiftoffCompiler>;
 
+  struct OutOfLineCode {
+    MovableLabel label;
+    MovableLabel continuation;
+    Builtins::Name builtin;
+    wasm::WasmCodePosition position;
+    LiftoffRegList regs_to_save;
+
+    // Named constructors:
+    static OutOfLineCode Trap(Builtins::Name b, wasm::WasmCodePosition pos) {
+      return {{}, {}, b, pos, {}};
+    }
+    static OutOfLineCode StackCheck(wasm::WasmCodePosition pos,
+                                    LiftoffRegList regs) {
+      return {{}, MovableLabel::None(), Builtins::kWasmStackGuard, pos, regs};
+    }
+  };
+
   LiftoffCompiler(LiftoffAssembler* liftoff_asm,
-                  compiler::CallDescriptor* call_desc,
-                  const compiler::ModuleEnv* env)
-      : asm_(liftoff_asm), call_desc_(call_desc), env_(env) {}
+                  compiler::CallDescriptor* call_desc, compiler::ModuleEnv* env,
+                  compiler::RuntimeExceptionSupport runtime_exception_support,
+                  SourcePositionTableBuilder* source_position_table_builder)
+      : asm_(liftoff_asm),
+        call_desc_(call_desc),
+        env_(env),
+        min_size_(env_->module->initial_pages * wasm::WasmModule::kPageSize),
+        max_size_((env_->module->has_maximum_pages
+                       ? env_->module->maximum_pages
+                       : wasm::kV8MaxWasmMemoryPages) *
+                  wasm::WasmModule::kPageSize),
+        runtime_exception_support_(runtime_exception_support),
+        source_position_table_builder_(source_position_table_builder),
+        compilation_zone_(liftoff_asm->isolate()->allocator(),
+                          "liftoff compilation"),
+        safepoint_table_builder_(&compilation_zone_) {
+    // Check for overflow in max_size_.
+    DCHECK_EQ(max_size_, uint64_t{env_->module->has_maximum_pages
+                                      ? env_->module->maximum_pages
+                                      : wasm::kV8MaxWasmMemoryPages} *
+                             wasm::WasmModule::kPageSize);
+  }
 
   bool ok() const { return ok_; }
 
@@ -85,6 +127,10 @@ class LiftoffCompiler {
     BindUnboundLabels(decoder);
   }
 
+  int GetSafepointTableOffset() const {
+    return safepoint_table_builder_.GetCodeOffset();
+  }
+
   void BindUnboundLabels(Decoder* decoder) {
 #ifdef DEBUG
     // Bind all labels now, otherwise their destructor will fire a DCHECK error
@@ -92,6 +138,9 @@ class LiftoffCompiler {
     for (uint32_t i = 0, e = decoder->control_depth(); i < e; ++i) {
       Label* label = decoder->control_at(i)->label.get();
       if (!label->is_bound()) __ bind(label);
+    }
+    for (auto& ool : out_of_line_code_) {
+      if (!ool.label.get()->is_bound()) __ bind(ool.label.get());
     }
 #endif
   }
@@ -145,13 +194,24 @@ class LiftoffCompiler {
     UNREACHABLE();
   }
 
+  void StackCheck(wasm::WasmCodePosition position) {
+    if (FLAG_wasm_no_stack_checks || !runtime_exception_support_) return;
+    out_of_line_code_.push_back(
+        OutOfLineCode::StackCheck(position, __ cache_state()->used_registers));
+    OutOfLineCode& ool = out_of_line_code_.back();
+    __ StackCheck(ool.label.get());
+    __ bind(ool.continuation.get());
+  }
+
   void StartFunctionBody(Decoder* decoder, Control* block) {
     if (!kLiftoffAssemblerImplementedOnThisPlatform) {
       unsupported(decoder, "platform");
       return;
     }
     __ EnterFrame(StackFrame::WASM_COMPILED);
-    __ ReserveStackSpace(__ GetTotalFrameSlotCount());
+    __ set_has_frame(true);
+    __ ReserveStackSpace(LiftoffAssembler::kStackSlotSize *
+                         __ GetTotalFrameSlotCount());
     // Parameter 0 is the wasm context.
     uint32_t num_params =
         static_cast<uint32_t>(call_desc_->ParameterCount()) - 1;
@@ -209,12 +269,53 @@ class LiftoffCompiler {
       }
     }
     block->label_state.stack_base = __ num_locals();
+
+    // The function-prologue stack check is associated with position 0, which
+    // is never a position of any instruction in the function.
+    StackCheck(0);
+
     DCHECK_EQ(__ num_locals(), param_idx);
     DCHECK_EQ(__ num_locals(), __ cache_state()->stack_height());
     CheckStackSizeLimit(decoder);
   }
 
-  void FinishFunction(Decoder* decoder) {}
+  void GenerateOutOfLineCode(OutOfLineCode& ool) {
+    __ bind(ool.label.get());
+    const bool is_stack_check = ool.builtin == Builtins::kWasmStackGuard;
+    if (!runtime_exception_support_) {
+      // We cannot test calls to the runtime in cctest/test-run-wasm.
+      // Therefore we emit a call to C here instead of a call to the runtime.
+      // In this mode, we never generate stack checks.
+      DCHECK(!is_stack_check);
+      __ CallTrapCallbackForTesting();
+      __ LeaveFrame(StackFrame::WASM_COMPILED);
+      __ Ret();
+      return;
+    }
+
+    if (!ool.regs_to_save.is_empty()) __ PushRegisters(ool.regs_to_save);
+
+    source_position_table_builder_->AddPosition(
+        __ pc_offset(), SourcePosition(ool.position), false);
+    __ Call(__ isolate()->builtins()->builtin_handle(ool.builtin),
+            RelocInfo::CODE_TARGET);
+    safepoint_table_builder_.DefineSafepoint(asm_, Safepoint::kSimple, 0,
+                                             Safepoint::kNoLazyDeopt);
+    DCHECK_EQ(ool.continuation.get()->is_bound(), is_stack_check);
+    if (!ool.regs_to_save.is_empty()) __ PopRegisters(ool.regs_to_save);
+    if (is_stack_check) {
+      __ emit_jump(ool.continuation.get());
+    } else {
+      __ AssertUnreachable(kUnexpectedReturnFromWasmTrap);
+    }
+  }
+
+  void FinishFunction(Decoder* decoder) {
+    for (OutOfLineCode& ool : out_of_line_code_) {
+      GenerateOutOfLineCode(ool);
+    }
+    safepoint_table_builder_.Emit(asm_, __ GetTotalFrameSlotCount());
+  }
 
   void OnFirstError(Decoder* decoder) {
     ok_ = false;
@@ -224,6 +325,8 @@ class LiftoffCompiler {
   void Block(Decoder* decoder, Control* new_block) {
     // Note: This is called for blocks and loops.
     DCHECK_EQ(new_block, decoder->control_at(0));
+
+    TraceCacheState(decoder);
 
     new_block->label_state.stack_base = __ cache_state()->stack_height();
 
@@ -251,6 +354,7 @@ class LiftoffCompiler {
   }
 
   void FallThruTo(Decoder* decoder, Control* c) {
+    TraceCacheState(decoder);
     if (c->end_merge.reached) {
       __ MergeFullStackWith(c->label_state);
     } else {
@@ -301,6 +405,7 @@ class LiftoffCompiler {
 
   void BinOp(Decoder* decoder, WasmOpcode opcode, FunctionSig*,
              const Value& lhs, const Value& rhs, Value* result) {
+    TraceCacheState(decoder);
 #define CASE_BINOP(opcode, type, fn) \
   case WasmOpcode::kExpr##opcode:    \
     return type##BinOp(&LiftoffAssembler::emit_##fn);
@@ -321,6 +426,7 @@ class LiftoffCompiler {
   }
 
   void I32Const(Decoder* decoder, Value* result, int32_t value) {
+    TraceCacheState(decoder);
     __ cache_state()->stack_state.emplace_back(kWasmI32, value);
     CheckStackSizeLimit(decoder);
   }
@@ -341,6 +447,7 @@ class LiftoffCompiler {
   }
 
   void Drop(Decoder* decoder, const Value& value) {
+    TraceCacheState(decoder);
     __ DropStackSlot(&__ cache_state()->stack_state.back());
     __ cache_state()->stack_state.pop_back();
   }
@@ -359,7 +466,8 @@ class LiftoffCompiler {
       __ MoveToReturnRegister(reg);
     }
     __ LeaveFrame(StackFrame::WASM_COMPILED);
-    __ Ret();
+    __ DropStackSlotsAndRet(
+        static_cast<uint32_t>(call_desc_->StackParameterCount()));
   }
 
   void GetLocal(Decoder* decoder, Value* result,
@@ -447,10 +555,11 @@ class LiftoffCompiler {
                        kPointerSize);
     LiftoffRegister value =
         pinned.set(__ GetUnusedRegister(reg_class_for(global->type), pinned));
-    int size = 1 << ElementSizeLog2Of(global->type);
-    if (size > kPointerSize)
+    LoadType type =
+        global->type == kWasmI32 ? LoadType::kI32Load : LoadType::kI64Load;
+    if (type.size() > kPointerSize)
       return unsupported(decoder, "global > kPointerSize");
-    __ Load(value, addr, global->offset, size, pinned);
+    __ Load(value, addr, no_reg, global->offset, type, pinned);
     __ PushRegister(global->type, value);
     CheckStackSizeLimit(decoder);
   }
@@ -465,8 +574,9 @@ class LiftoffCompiler {
                        kPointerSize);
     LiftoffRegister reg =
         pinned.set(__ PopToRegister(reg_class_for(global->type), pinned));
-    int size = 1 << ElementSizeLog2Of(global->type);
-    __ Store(addr, global->offset, reg, size, pinned);
+    StoreType type =
+        global->type == kWasmI32 ? StoreType::kI32Store : StoreType::kI64Store;
+    __ Store(addr, no_reg, global->offset, reg, type, pinned);
   }
 
   void Unreachable(Decoder* decoder) { unsupported(decoder, "unreachable"); }
@@ -476,7 +586,7 @@ class LiftoffCompiler {
     unsupported(decoder, "select");
   }
 
-  void Br(Decoder* decoder, Control* target) {
+  void Br(Control* target) {
     if (!target->br_merge()->reached) {
       target->label_state.InitMerge(*__ cache_state(), __ num_locals(),
                                     target->br_merge()->arity);
@@ -485,12 +595,19 @@ class LiftoffCompiler {
     __ jmp(target->label.get());
   }
 
+  void Br(Decoder* decoder, Control* target) {
+    TraceCacheState(decoder);
+    Br(target);
+  }
+
   void BrIf(Decoder* decoder, const Value& cond, Control* target) {
+    TraceCacheState(decoder);
     Label cont_false;
     Register value = __ PopToRegister(kGpReg).gp();
-    __ JumpIfZero(value, &cont_false);
+    __ emit_i32_test(value);
+    __ emit_cond_jump(kEqual, &cont_false);
 
-    Br(decoder, target);
+    Br(target);
     __ bind(&cont_false);
   }
 
@@ -501,16 +618,89 @@ class LiftoffCompiler {
   void Else(Decoder* decoder, Control* if_block) {
     unsupported(decoder, "else");
   }
-  void LoadMem(Decoder* decoder, ValueType type, MachineType mem_type,
-               const MemoryAccessOperand<validate>& operand, const Value& index,
-               Value* result) {
-    unsupported(decoder, "memory load");
+
+  void BoundsCheckMem(uint32_t access_size, uint32_t offset, Register index,
+                      wasm::WasmCodePosition position, LiftoffRegList pinned) {
+    if (FLAG_wasm_no_bounds_checks) return;
+
+    // Add OOL code.
+    out_of_line_code_.push_back(
+        OutOfLineCode::Trap(Builtins::kThrowWasmTrapMemOutOfBounds, position));
+    Label* trap_label = out_of_line_code_.back().label.get();
+
+    if (access_size > max_size_ || offset > max_size_ - access_size) {
+      // The access will be out of bounds, even for the largest memory.
+      __ emit_jump(trap_label);
+      return;
+    }
+    uint32_t end_offset = offset + access_size - 1;
+
+    // If the end offset is larger than the smallest memory, dynamically check
+    // the end offset against the actual memory size, which is not known at
+    // compile time. Otherwise, only one check is required (see below).
+    LiftoffRegister end_offset_reg =
+        pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+    LiftoffRegister mem_size = __ GetUnusedRegister(kGpReg, pinned);
+    __ LoadFromContext(mem_size.gp(), offsetof(WasmContext, mem_size), 4);
+    __ LoadConstant(end_offset_reg, WasmValue(end_offset));
+    if (end_offset >= min_size_) {
+      __ emit_i32_compare(end_offset_reg.gp(), mem_size.gp());
+      __ emit_cond_jump(kUnsignedGreaterEqual, trap_label);
+    }
+
+    // Just reuse the end_offset register for computing the effective size.
+    LiftoffRegister effective_size_reg = end_offset_reg;
+    __ emit_i32_sub(effective_size_reg.gp(), mem_size.gp(),
+                    end_offset_reg.gp());
+
+    __ emit_i32_compare(index, effective_size_reg.gp());
+    __ emit_cond_jump(kUnsignedGreaterEqual, trap_label);
   }
-  void StoreMem(Decoder* decoder, ValueType type, MachineType mem_type,
+
+  void LoadMem(Decoder* decoder, LoadType type,
+               const MemoryAccessOperand<validate>& operand,
+               const Value& index_val, Value* result) {
+    ValueType value_type = type.value_type();
+    if (value_type != kWasmI32) return unsupported(decoder, "non-i32 load");
+    LiftoffRegList pinned;
+    Register index = pinned.set(__ PopToRegister(kGpReg)).gp();
+    if (!env_->use_trap_handler) {
+      // Emit an explicit bounds check.
+      BoundsCheckMem(type.size(), operand.offset, index, decoder->position(),
+                     pinned);
+    }
+    Register addr = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+    __ LoadFromContext(addr, offsetof(WasmContext, mem_start), kPointerSize);
+    RegClass rc = reg_class_for(value_type);
+    LiftoffRegister value = pinned.set(__ GetUnusedRegister(rc, pinned));
+    __ Load(value, addr, index, operand.offset, type, pinned);
+    __ PushRegister(value_type, value);
+    CheckStackSizeLimit(decoder);
+  }
+
+  void StoreMem(Decoder* decoder, StoreType type,
                 const MemoryAccessOperand<validate>& operand,
-                const Value& index, const Value& value) {
-    unsupported(decoder, "memory store");
+                const Value& index_val, const Value& value_val) {
+    ValueType value_type = type.value_type();
+    if (value_type != kWasmI32) return unsupported(decoder, "non-i32 store");
+    if (!env_->use_trap_handler) {
+      return unsupported(decoder, "non-traphandler");
+    }
+    RegClass rc = reg_class_for(value_type);
+    LiftoffRegList pinned;
+    LiftoffRegister value = pinned.set(__ PopToRegister(rc));
+    Register index = pinned.set(__ PopToRegister(kGpReg, pinned)).gp();
+    if (!env_->use_trap_handler) {
+      // Emit an explicit bounds check.
+      BoundsCheckMem(type.size(), operand.offset, index, decoder->position(),
+                     pinned);
+    }
+    Register addr = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+    __ LoadFromContext(addr, offsetof(WasmContext, mem_start), kPointerSize);
+    __ Store(addr, index, operand.offset, value, type, pinned);
+    __ PushRegister(value_type, value);
   }
+
   void CurrentMemoryPages(Decoder* decoder, Value* result) {
     unsupported(decoder, "current_memory");
   }
@@ -562,10 +752,56 @@ class LiftoffCompiler {
   }
 
  private:
-  LiftoffAssembler* asm_;
-  compiler::CallDescriptor* call_desc_;
-  const compiler::ModuleEnv* env_;
+  LiftoffAssembler* const asm_;
+  compiler::CallDescriptor* const call_desc_;
+  compiler::ModuleEnv* const env_;
+  // {min_size_} and {max_size_} are cached values computed from the ModuleEnv.
+  const uint32_t min_size_;
+  const uint32_t max_size_;
+  const compiler::RuntimeExceptionSupport runtime_exception_support_;
   bool ok_ = true;
+  std::vector<OutOfLineCode> out_of_line_code_;
+  SourcePositionTableBuilder* const source_position_table_builder_;
+  // Zone used to store information during compilation. The result will be
+  // stored independently, such that this zone can die together with the
+  // LiftoffCompiler after compilation.
+  Zone compilation_zone_;
+  SafepointTableBuilder safepoint_table_builder_;
+
+  void TraceCacheState(Decoder* decoder) const {
+#ifdef DEBUG
+    if (!FLAG_trace_liftoff) return;
+    for (int control_depth = decoder->control_depth() - 1; control_depth >= -1;
+         --control_depth) {
+      LiftoffAssembler::CacheState* cache_state =
+          control_depth == -1
+              ? asm_->cache_state()
+              : &decoder->control_at(control_depth)->label_state;
+      int idx = 0;
+      for (LiftoffAssembler::VarState& slot : cache_state->stack_state) {
+        if (idx++) PrintF("-");
+        PrintF("%s:", WasmOpcodes::TypeName(slot.type()));
+        switch (slot.loc()) {
+          case kStack:
+            PrintF("s");
+            break;
+          case kRegister:
+            if (slot.reg().is_gp()) {
+              PrintF("gp%d", slot.reg().gp().code());
+            } else {
+              PrintF("fp%d", slot.reg().fp().code());
+            }
+            break;
+          case kConstant:
+            PrintF("c");
+            break;
+        }
+      }
+      if (control_depth != -1) PrintF("; ");
+    }
+    PrintF("\n");
+#endif
+  }
 };
 
 }  // namespace
@@ -581,7 +817,9 @@ bool compiler::WasmCompilationUnit::ExecuteLiftoffCompilation() {
   const wasm::WasmModule* module = env_ ? env_->module : nullptr;
   auto* call_desc = compiler::GetWasmCallDescriptor(&zone, func_body_.sig);
   wasm::WasmFullDecoder<wasm::Decoder::kValidate, wasm::LiftoffCompiler>
-      decoder(&zone, module, func_body_, &liftoff_.asm_, call_desc, env_);
+      decoder(&zone, module, func_body_, &liftoff_.asm_, call_desc, env_,
+              runtime_exception_support_,
+              &liftoff_.source_position_table_builder_);
   decoder.Decode();
   if (!decoder.interface().ok()) {
     // Liftoff compilation failed.
@@ -601,6 +839,8 @@ bool compiler::WasmCompilationUnit::ExecuteLiftoffCompilation() {
   // Record the memory cost this unit places on the system until
   // it is finalized.
   memory_cost_ = liftoff_.asm_.pc_offset();
+  liftoff_.safepoint_table_offset_ =
+      decoder.interface().GetSafepointTableOffset();
   isolate_->counters()->liftoff_compiled_functions()->Increment();
   return true;
 }

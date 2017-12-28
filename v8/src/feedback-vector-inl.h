@@ -172,9 +172,7 @@ BinaryOperationHint BinaryOperationHintFromFeedback(int type_feedback) {
     case BinaryOperationFeedback::kString:
       return BinaryOperationHint::kString;
     case BinaryOperationFeedback::kBigInt:
-    // TODO(jarin/jkummerow/neis): Support BigInts in TF.
-    // Fall through for now.
-    case BinaryOperationFeedback::kAny:
+      return BinaryOperationHint::kBigInt;
     default:
       return BinaryOperationHint::kAny;
   }
@@ -198,6 +196,8 @@ CompareOperationHint CompareOperationHintFromFeedback(int type_feedback) {
       return CompareOperationHint::kString;
     case CompareOperationFeedback::kSymbol:
       return CompareOperationHint::kSymbol;
+    case CompareOperationFeedback::kBigInt:
+      return CompareOperationHint::kBigInt;
     case CompareOperationFeedback::kReceiver:
       return CompareOperationHint::kReceiver;
     default:

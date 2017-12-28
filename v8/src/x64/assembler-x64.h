@@ -182,6 +182,7 @@ constexpr Register arg_reg_4 = rcx;
   V(xmm13)                              \
   V(xmm14)
 
+constexpr bool kPadArguments = false;
 constexpr bool kSimpleFPAliasing = true;
 constexpr bool kSimdMaskRegisters = false;
 
@@ -1211,6 +1212,9 @@ class Assembler : public AssemblerBase {
   void xorpd(XMMRegister dst, const Operand& src);
   void sqrtsd(XMMRegister dst, XMMRegister src);
   void sqrtsd(XMMRegister dst, const Operand& src);
+
+  void haddps(XMMRegister dst, XMMRegister src);
+  void haddps(XMMRegister dst, const Operand& src);
 
   void ucomisd(XMMRegister dst, XMMRegister src);
   void ucomisd(XMMRegister dst, const Operand& src);

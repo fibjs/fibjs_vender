@@ -172,11 +172,21 @@ Callable Builtins::CallableFor(Isolate* isolate, Name name) {
 #undef CASE_OTHER
     case kArrayFilterLoopEagerDeoptContinuation:
     case kArrayFilterLoopLazyDeoptContinuation:
+    case kArrayFindIndexLoopAfterCallbackLazyDeoptContinuation:
+    case kArrayFindIndexLoopEagerDeoptContinuation:
+    case kArrayFindIndexLoopLazyDeoptContinuation:
+    case kArrayFindLoopAfterCallbackLazyDeoptContinuation:
+    case kArrayFindLoopEagerDeoptContinuation:
+    case kArrayFindLoopLazyDeoptContinuation:
     case kArrayForEach:
     case kArrayForEachLoopEagerDeoptContinuation:
     case kArrayForEachLoopLazyDeoptContinuation:
     case kArrayMapLoopEagerDeoptContinuation:
     case kArrayMapLoopLazyDeoptContinuation:
+    case kArrayReduceLoopEagerDeoptContinuation:
+    case kArrayReduceLoopLazyDeoptContinuation:
+    case kArrayReduceRightLoopEagerDeoptContinuation:
+    case kArrayReduceRightLoopLazyDeoptContinuation:
     case kConsoleAssert:
       return Callable(code, BuiltinDescriptor(isolate));
     default:
@@ -213,12 +223,26 @@ bool Builtins::IsLazy(int index) {
   // TODO(wasm): Remove wasm builtins once immovability is no longer required.
   switch (index) {
     case kAbort:  // Required by wasm.
+    case kArrayFindLoopEagerDeoptContinuation:  // https://crbug.com/v8/6786.
+    case kArrayFindLoopLazyDeoptContinuation:   // https://crbug.com/v8/6786.
+    // https://crbug.com/v8/6786.
+    case kArrayFindLoopAfterCallbackLazyDeoptContinuation:
+    // https://crbug.com/v8/6786.
+    case kArrayFindIndexLoopEagerDeoptContinuation:
+    // https://crbug.com/v8/6786.
+    case kArrayFindIndexLoopLazyDeoptContinuation:
+    // https://crbug.com/v8/6786.
+    case kArrayFindIndexLoopAfterCallbackLazyDeoptContinuation:
     case kArrayForEachLoopEagerDeoptContinuation:  // https://crbug.com/v8/6786.
     case kArrayForEachLoopLazyDeoptContinuation:   // https://crbug.com/v8/6786.
     case kArrayMapLoopEagerDeoptContinuation:      // https://crbug.com/v8/6786.
     case kArrayMapLoopLazyDeoptContinuation:       // https://crbug.com/v8/6786.
     case kArrayFilterLoopEagerDeoptContinuation:   // https://crbug.com/v8/6786.
     case kArrayFilterLoopLazyDeoptContinuation:    // https://crbug.com/v8/6786.
+    case kArrayReduceLoopEagerDeoptContinuation:   // https://crbug.com/v8/6786.
+    case kArrayReduceLoopLazyDeoptContinuation:    // https://crbug.com/v8/6786.
+    case kArrayReduceRightLoopEagerDeoptContinuation:
+    case kArrayReduceRightLoopLazyDeoptContinuation:
     case kCheckOptimizationMarker:
     case kCompileLazy:
     case kDeserializeLazy:

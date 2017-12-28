@@ -287,14 +287,16 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     Label post_instantiation_deopt_entry, not_create_implicit_receiver;
 
     // Preserve the incoming parameters on the stack.
+    __ LoadRoot(r4, Heap::kTheHoleValueRootIndex);
     __ SmiTag(r0);
-    __ Push(cp, r0, r1, r3);
+    __ Push(cp, r0, r1, r4, r3);
 
     // ----------- S t a t e -------------
     //  --        sp[0*kPointerSize]: new target
-    //  -- r1 and sp[1*kPointerSize]: constructor function
-    //  --        sp[2*kPointerSize]: number of arguments (tagged)
-    //  --        sp[3*kPointerSize]: context
+    //  --        sp[1*kPointerSize]: padding
+    //  -- r1 and sp[2*kPointerSize]: constructor function
+    //  --        sp[3*kPointerSize]: number of arguments (tagged)
+    //  --        sp[4*kPointerSize]: context
     // -----------------------------------
 
     __ ldr(r4, FieldMemOperand(r1, JSFunction::kSharedFunctionInfoOffset));
@@ -336,9 +338,10 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     //  --                 r3: new target
     //  -- sp[0*kPointerSize]: implicit receiver
     //  -- sp[1*kPointerSize]: implicit receiver
-    //  -- sp[2*kPointerSize]: constructor function
-    //  -- sp[3*kPointerSize]: number of arguments (tagged)
-    //  -- sp[4*kPointerSize]: context
+    //  -- sp[2*kPointerSize]: padding
+    //  -- sp[3*kPointerSize]: constructor function
+    //  -- sp[4*kPointerSize]: number of arguments (tagged)
+    //  -- sp[5*kPointerSize]: context
     // -----------------------------------
 
     // Restore constructor function and argument count.
@@ -359,9 +362,10 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     //  --                        r5: counter
     //  --        sp[0*kPointerSize]: implicit receiver
     //  --        sp[1*kPointerSize]: implicit receiver
-    //  -- r1 and sp[2*kPointerSize]: constructor function
-    //  --        sp[3*kPointerSize]: number of arguments (tagged)
-    //  --        sp[4*kPointerSize]: context
+    //  --        sp[2*kPointerSize]: padding
+    //  -- r1 and sp[3*kPointerSize]: constructor function
+    //  --        sp[4*kPointerSize]: number of arguments (tagged)
+    //  --        sp[5*kPointerSize]: context
     // -----------------------------------
     __ b(&entry);
 
@@ -379,9 +383,10 @@ void Generate_JSConstructStubGeneric(MacroAssembler* masm,
     // ----------- S t a t e -------------
     //  --                 r0: constructor result
     //  -- sp[0*kPointerSize]: implicit receiver
-    //  -- sp[1*kPointerSize]: constructor function
-    //  -- sp[2*kPointerSize]: number of arguments
-    //  -- sp[3*kPointerSize]: context
+    //  -- sp[1*kPointerSize]: padding
+    //  -- sp[2*kPointerSize]: constructor function
+    //  -- sp[3*kPointerSize]: number of arguments
+    //  -- sp[4*kPointerSize]: context
     // -----------------------------------
 
     // Store offset of return address for deoptimizer.
@@ -876,7 +881,6 @@ static void AdvanceBytecodeOffset(MacroAssembler* masm, Register bytecode_array,
   __ ldrb(bytecode, MemOperand(bytecode_array, bytecode_offset));
   __ add(bytecode_size_table, bytecode_size_table,
          Operand(2 * kIntSize * interpreter::Bytecodes::kBytecodeCount));
-  __ jmp(&load_size);
 
   // Load the size of the current bytecode.
   __ bind(&load_size);
@@ -2340,17 +2344,6 @@ void Builtins::Generate_Abort(MacroAssembler* masm) {
   __ Push(r1);
   __ Move(cp, Smi::kZero);
   __ TailCallRuntime(Runtime::kAbort);
-}
-
-// static
-void Builtins::Generate_AbortJS(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- r1 : message as String object
-  //  -- lr : return address
-  // -----------------------------------
-  __ Push(r1);
-  __ Move(cp, Smi::kZero);
-  __ TailCallRuntime(Runtime::kAbortJS);
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

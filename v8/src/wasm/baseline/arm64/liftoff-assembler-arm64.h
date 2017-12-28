@@ -11,7 +11,7 @@ namespace v8 {
 namespace internal {
 namespace wasm {
 
-void LiftoffAssembler::ReserveStackSpace(uint32_t space) { USE(stack_space_); }
+void LiftoffAssembler::ReserveStackSpace(uint32_t bytes) {}
 
 void LiftoffAssembler::LoadConstant(LiftoffRegister reg, WasmValue value) {}
 
@@ -21,12 +21,12 @@ void LiftoffAssembler::LoadFromContext(Register dst, uint32_t offset,
 void LiftoffAssembler::SpillContext(Register context) {}
 
 void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
-                            uint32_t offset_imm, int size,
-                            LiftoffRegList pinned) {}
+                            Register offset_reg, uint32_t offset_imm,
+                            LoadType type, LiftoffRegList pinned) {}
 
-void LiftoffAssembler::Store(Register dst_addr, uint32_t offset_imm,
-                             LiftoffRegister src, int size,
-                             LiftoffRegList pinned) {}
+void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
+                             uint32_t offset_imm, LiftoffRegister src,
+                             StoreType type, LiftoffRegList pinned) {}
 
 void LiftoffAssembler::LoadCallerFrameSlot(LiftoffRegister dst,
                                            uint32_t caller_slot_idx) {}
@@ -64,7 +64,26 @@ void LiftoffAssembler::emit_f32_sub(DoubleRegister dst, DoubleRegister lhs,
                                     DoubleRegister rhs) {}
 void LiftoffAssembler::emit_f32_mul(DoubleRegister dst, DoubleRegister lhs,
                                     DoubleRegister rhs) {}
-void LiftoffAssembler::JumpIfZero(Register reg, Label* label) {}
+
+void LiftoffAssembler::emit_i32_test(Register reg) {}
+
+void LiftoffAssembler::emit_i32_compare(Register lhs, Register rhs) {}
+
+void LiftoffAssembler::emit_jump(Label* label) {}
+
+void LiftoffAssembler::emit_cond_jump(Condition cond, Label* label) {}
+
+void LiftoffAssembler::StackCheck(Label* ool_code) {}
+
+void LiftoffAssembler::CallTrapCallbackForTesting() {}
+
+void LiftoffAssembler::AssertUnreachable(BailoutReason reason) {}
+
+void LiftoffAssembler::PushRegisters(LiftoffRegList regs) {}
+
+void LiftoffAssembler::PopRegisters(LiftoffRegList regs) {}
+
+void LiftoffAssembler::DropStackSlotsAndRet(uint32_t num_stack_slots) {}
 
 }  // namespace wasm
 }  // namespace internal

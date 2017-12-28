@@ -499,6 +499,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   //   kCEntryFPAddress
   //   Frame type
   __ lay(sp, MemOperand(sp, -5 * kPointerSize));
+
   // Push a bad frame pointer to fail if it is used.
   __ LoadImmP(r10, Operand(-1));
 
@@ -515,6 +516,8 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // frame already for the frame type being pushed later.
   __ lay(fp,
          MemOperand(sp, -EntryFrameConstants::kCallerFPOffset + kPointerSize));
+
+  __ InitializeRootRegister();
 
   // If this is the outermost JS call, set js_entry_sp value.
   Label non_outermost_js;
@@ -568,12 +571,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // r4: receiver
   // r5: argc
   // r6: argv
-  if (type() == StackFrame::CONSTRUCT_ENTRY) {
-    __ Call(BUILTIN_CODE(isolate(), JSConstructEntryTrampoline),
-            RelocInfo::CODE_TARGET);
-  } else {
-    __ Call(BUILTIN_CODE(isolate(), JSEntryTrampoline), RelocInfo::CODE_TARGET);
-  }
+  __ Call(EntryTrampoline(), RelocInfo::CODE_TARGET);
 
   // Unlink this frame from the handler chain.
   __ PopStackHandler();

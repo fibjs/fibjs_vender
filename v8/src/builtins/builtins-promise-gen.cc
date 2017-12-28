@@ -366,8 +366,6 @@ Node* PromiseBuiltinsAssembler::InternalPromiseThen(Node* context,
   VARIABLE(var_deferred_on_resolve, MachineRepresentation::kTagged);
   VARIABLE(var_deferred_on_reject, MachineRepresentation::kTagged);
 
-  GotoIfForceSlowPath(&promise_capability);
-
   Branch(WordEqual(promise_fun, constructor), &fast_promise_capability,
          &promise_capability);
 
@@ -1489,8 +1487,6 @@ TF_BUILTIN(PromiseReject, PromiseBuiltinsAssembler) {
   Label if_nativepromise(this), if_custompromise(this, Label::kDeferred);
   Node* const native_context = LoadNativeContext(context);
 
-  GotoIfForceSlowPath(&if_custompromise);
-
   Node* const promise_fun =
       LoadContextElement(native_context, Context::PROMISE_FUNCTION_INDEX);
   Branch(WordEqual(promise_fun, receiver), &if_nativepromise,
@@ -1683,9 +1679,9 @@ TF_BUILTIN(PromiseFinally, PromiseBuiltinsAssembler) {
   Node* const on_finally = Parameter(Descriptor::kOnFinally);
   Node* const context = Parameter(Descriptor::kContext);
 
-  // 2. If IsPromise(promise) is false, throw a TypeError exception.
-  ThrowIfNotInstanceType(context, promise, JS_PROMISE_TYPE,
-                         "Promise.prototype.finally");
+  // 2. If Type(promise) is not Object, throw a TypeError exception.
+  ThrowIfNotJSReceiver(context, promise, MessageTemplate::kCalledOnNonObject,
+                       "Promise.prototype.finally");
 
   // 3. Let C be ? SpeciesConstructor(promise, %Promise%).
   Node* const native_context = LoadNativeContext(context);

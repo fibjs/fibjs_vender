@@ -180,14 +180,18 @@ void WasmCode::ResetTrapHandlerIndex() { trap_handler_index_ = -1; }
 // Disassembler::Decode.
 void WasmCode::Disassemble(Isolate* isolate, const char* name,
                            std::ostream& os) const {
-  os << name << std::endl;
+  if (name) os << name << std::endl;
   Disassembler::Decode(isolate, &os, instructions().start(),
                        instructions().end(), nullptr);
 }
 
 void WasmCode::Print(Isolate* isolate) const {
   OFStream os(stdout);
-  Disassemble(isolate, "", os);
+  if (index_.IsJust()) {
+    os << "index: " << index_.FromJust() << "\n";
+  }
+  os << "kind: " << GetWasmCodeKindAsString(kind_) << "\n";
+  Disassemble(isolate, nullptr, os);
 }
 
 const char* GetWasmCodeKindAsString(WasmCode::Kind kind) {
@@ -246,12 +250,16 @@ void NativeModule::ResizeCodeTableForTest(size_t last_index) {
     code_table_.resize(new_size);
     int grow_by = static_cast<int>(new_size) -
                   compiled_module()->source_positions()->length();
-    compiled_module()->set_source_positions(
-        isolate->factory()->CopyFixedArrayAndGrow(
-            compiled_module()->source_positions(), grow_by, TENURED));
-    compiled_module()->set_handler_table(
-        isolate->factory()->CopyFixedArrayAndGrow(
-            compiled_module()->handler_table(), grow_by, TENURED));
+    Handle<FixedArray> source_positions(compiled_module()->source_positions(),
+                                        isolate);
+    source_positions = isolate->factory()->CopyFixedArrayAndGrow(
+        source_positions, grow_by, TENURED);
+    compiled_module()->set_source_positions(*source_positions);
+    Handle<FixedArray> handler_table(compiled_module()->handler_table(),
+                                     isolate);
+    handler_table = isolate->factory()->CopyFixedArrayAndGrow(handler_table,
+                                                              grow_by, TENURED);
+    compiled_module()->set_handler_table(*handler_table);
   }
 }
 
@@ -301,10 +309,10 @@ WasmCode* NativeModule::AddCodeCopy(Handle<Code> code, WasmCode::Kind kind,
   WasmCode* ret = AddAnonymousCode(code, kind);
   SetCodeTable(index, ret);
   ret->index_ = Just(index);
-  compiled_module()->ptr_to_source_positions()->set(
-      static_cast<int>(index), code->source_position_table());
-  compiled_module()->ptr_to_handler_table()->set(static_cast<int>(index),
-                                                 code->handler_table());
+  compiled_module()->source_positions()->set(static_cast<int>(index),
+                                             code->source_position_table());
+  compiled_module()->handler_table()->set(static_cast<int>(index),
+                                          code->handler_table());
   return ret;
 }
 
@@ -348,8 +356,8 @@ WasmCode* NativeModule::AddAnonymousCode(Handle<Code> code,
        static_cast<size_t>(code->instruction_size())},
       std::move(reloc_info), static_cast<size_t>(code->relocation_size()),
       Nothing<uint32_t>(), kind, code->constant_pool_offset(),
-      (code->is_turbofanned() ? code->stack_slots() : 0),
-      (code->is_turbofanned() ? code->safepoint_table_offset() : 0), {});
+      (code->has_safepoint_info() ? code->stack_slots() : 0),
+      (code->has_safepoint_info() ? code->safepoint_table_offset() : 0), {});
   if (ret == nullptr) return nullptr;
   intptr_t delta = ret->instructions().start() - code->instruction_start();
   int mask = RelocInfo::kApplyMask | RelocInfo::kCodeTargetMask |
@@ -506,8 +514,7 @@ void NativeModule::Link(uint32_t index) {
   for (RelocIterator it(code->instructions(), code->reloc_info(),
                         code->constant_pool(), mode_mask);
        !it.done(); it.next()) {
-    uint32_t index =
-        *(reinterpret_cast<uint32_t*>(it.rinfo()->target_address_address()));
+    uint32_t index = GetWasmCalleeTag(it.rinfo());
     const WasmCode* target = GetCode(index);
     if (target == nullptr) continue;
     Address target_addr = target->instructions().start();
@@ -543,8 +550,8 @@ Address NativeModule::AllocateForCode(size_t size) {
   }
   Address ret = mem.ranges().front().first;
   Address end = ret + size;
-  Address commit_start = RoundUp(ret, base::OS::AllocatePageSize());
-  Address commit_end = RoundUp(end, base::OS::AllocatePageSize());
+  Address commit_start = RoundUp(ret, AllocatePageSize());
+  Address commit_end = RoundUp(end, AllocatePageSize());
   // {commit_start} will be either ret or the start of the next page.
   // {commit_end} will be the start of the page after the one in which
   // the allocation ends.
@@ -566,7 +573,7 @@ Address NativeModule::AllocateForCode(size_t size) {
       Address start =
           std::max(commit_start, reinterpret_cast<Address>(it->address()));
       size_t commit_size = static_cast<size_t>(commit_end - start);
-      DCHECK(IsAligned(commit_size, base::OS::AllocatePageSize()));
+      DCHECK(IsAligned(commit_size, AllocatePageSize()));
       if (!wasm_code_manager_->Commit(start, commit_size)) {
         return nullptr;
       }
@@ -575,7 +582,7 @@ Address NativeModule::AllocateForCode(size_t size) {
     }
 #else
     size_t commit_size = static_cast<size_t>(commit_end - commit_start);
-    DCHECK(IsAligned(commit_size, base::OS::AllocatePageSize()));
+    DCHECK(IsAligned(commit_size, AllocatePageSize()));
     if (!wasm_code_manager_->Commit(commit_start, commit_size)) {
       return nullptr;
     }
@@ -675,9 +682,8 @@ WasmCodeManager::WasmCodeManager(v8::Isolate* isolate, size_t max_committed)
 }
 
 bool WasmCodeManager::Commit(Address start, size_t size) {
-  DCHECK(
-      IsAligned(reinterpret_cast<size_t>(start), base::OS::AllocatePageSize()));
-  DCHECK(IsAligned(size, base::OS::AllocatePageSize()));
+  DCHECK(IsAligned(reinterpret_cast<size_t>(start), AllocatePageSize()));
+  DCHECK(IsAligned(size, AllocatePageSize()));
   if (size > static_cast<size_t>(std::numeric_limits<intptr_t>::max())) {
     return false;
   }
@@ -687,8 +693,7 @@ bool WasmCodeManager::Commit(Address start, size_t size) {
     remaining_uncommitted_.Increment(size);
     return false;
   }
-  bool ret = base::OS::SetPermissions(start, size,
-                                      base::OS::MemoryPermission::kReadWrite);
+  bool ret = SetPermissions(start, size, PageAllocator::kReadWrite);
   TRACE_HEAP("Setting rw permissions for %p:%p\n",
              reinterpret_cast<void*>(start),
              reinterpret_cast<void*>(start + size));
@@ -730,11 +735,11 @@ void WasmCodeManager::AssignRanges(void* start, void* end,
 
 void WasmCodeManager::TryAllocate(size_t size, VirtualMemory* ret, void* hint) {
   DCHECK_GT(size, 0);
-  size = RoundUp(size, base::OS::AllocatePageSize());
-  if (hint == nullptr) hint = base::OS::GetRandomMmapAddr();
+  size = RoundUp(size, AllocatePageSize());
+  if (hint == nullptr) hint = GetRandomMmapAddr();
 
-  if (!AlignedAllocVirtualMemory(
-          size, static_cast<size_t>(base::OS::AllocatePageSize()), hint, ret)) {
+  if (!AlignedAllocVirtualMemory(size, static_cast<size_t>(AllocatePageSize()),
+                                 hint, ret)) {
     DCHECK(!ret->IsReserved());
   }
   TRACE_HEAP("VMem alloc: %p:%p (%zu)\n", ret->address(), ret->end(),
@@ -746,7 +751,7 @@ size_t WasmCodeManager::GetAllocationChunk(const WasmModule& module) {
   // from something embedder-provided
   if (kRequiresCodeRange) return kMaxWasmCodeMemory;
   DCHECK(kModuleCanAllocateMoreMemory);
-  size_t ret = base::OS::AllocatePageSize();
+  size_t ret = AllocatePageSize();
   // a ballpark guesstimate on native inflation factor.
   constexpr size_t kMultiplier = 4;
 
@@ -789,9 +794,8 @@ bool NativeModule::SetExecutable(bool executable) {
   if (is_executable_ == executable) return true;
   TRACE_HEAP("Setting module %zu as executable: %d.\n", instance_id,
              executable);
-  base::OS::MemoryPermission permission =
-      executable ? base::OS::MemoryPermission::kReadExecute
-                 : base::OS::MemoryPermission::kReadWrite;
+  PageAllocator::Permission permission =
+      executable ? PageAllocator::kReadExecute : PageAllocator::kReadWrite;
 
 #if V8_OS_WIN
   // On windows, we need to switch permissions per separate virtual memory
@@ -804,7 +808,7 @@ bool NativeModule::SetExecutable(bool executable) {
   // not.
   if (can_request_more_memory_) {
     for (auto& vmem : owned_memory_) {
-      if (!base::OS::SetPermissions(vmem.address(), vmem.size(), permission)) {
+      if (!SetPermissions(vmem.address(), vmem.size(), permission)) {
         return false;
       }
       TRACE_HEAP("Set %p:%p to executable:%d\n", vmem.address(), vmem.end(),
@@ -818,8 +822,8 @@ bool NativeModule::SetExecutable(bool executable) {
     // allocated_memory_ is fine-grained, so we need to
     // page-align it.
     size_t range_size = RoundUp(static_cast<size_t>(range.second - range.first),
-                                base::OS::AllocatePageSize());
-    if (!base::OS::SetPermissions(range.first, range_size, permission)) {
+                                AllocatePageSize());
+    if (!SetPermissions(range.first, range_size, permission)) {
       return false;
     }
     TRACE_HEAP("Set %p:%p to executable:%d\n",
@@ -906,7 +910,7 @@ void WasmCodeManager::FreeNativeModuleMemories(NativeModule* native_module) {
   // which we currently indicate by having the isolate_ as null
   if (isolate_ == nullptr) return;
   size_t freed_mem = native_module->committed_memory_;
-  DCHECK(IsAligned(freed_mem, base::OS::AllocatePageSize()));
+  DCHECK(IsAligned(freed_mem, AllocatePageSize()));
   remaining_uncommitted_.Increment(freed_mem);
   isolate_->AdjustAmountOfExternalAllocatedMemory(
       -static_cast<int64_t>(freed_mem));
@@ -963,13 +967,40 @@ void WasmCodeManager::FlushICache(Address start, size_t size) {
 NativeModuleModificationScope::NativeModuleModificationScope(
     NativeModule* native_module)
     : native_module_(native_module) {
-  bool success = native_module_->SetExecutable(false);
-  CHECK(success);
+  if (native_module_) {
+    bool success = native_module_->SetExecutable(false);
+    CHECK(success);
+  }
 }
 
 NativeModuleModificationScope::~NativeModuleModificationScope() {
-  bool success = native_module_->SetExecutable(true);
-  CHECK(success);
+  if (native_module_) {
+    bool success = native_module_->SetExecutable(true);
+    CHECK(success);
+  }
+}
+
+// On Intel, call sites are encoded as a displacement. For linking
+// and for serialization/deserialization, we want to store/retrieve
+// a tag (the function index). On Intel, that means accessing the
+// raw displacement. Everywhere else, that simply means accessing
+// the target address.
+void SetWasmCalleeTag(RelocInfo* rinfo, uint32_t tag) {
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_IA32
+  *(reinterpret_cast<uint32_t*>(rinfo->target_address_address())) = tag;
+#else
+  rinfo->set_target_address(nullptr, reinterpret_cast<Address>(tag),
+                            SKIP_WRITE_BARRIER, SKIP_ICACHE_FLUSH);
+#endif
+}
+
+uint32_t GetWasmCalleeTag(RelocInfo* rinfo) {
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_IA32
+  return *(reinterpret_cast<uint32_t*>(rinfo->target_address_address()));
+#else
+  return static_cast<uint32_t>(
+      reinterpret_cast<size_t>(rinfo->target_address()));
+#endif
 }
 
 }  // namespace wasm

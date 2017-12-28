@@ -56,6 +56,7 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(OneClosureCellMap, one_closure_cell_map, OneClosureCellMap)          \
   V(prototype_string, prototype_string, PrototypeString)                 \
   V(SpeciesProtector, species_protector, SpeciesProtector)               \
+  V(StoreHandler0Map, store_handler0_map, StoreHandler0Map)              \
   V(SymbolMap, symbol_map, SymbolMap)                                    \
   V(TheHoleValue, the_hole_value, TheHole)                               \
   V(TrueValue, true_value, True)                                         \
@@ -77,6 +78,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   using TNode = compiler::TNode<T>;
   template <class T>
   using SloppyTNode = compiler::SloppyTNode<T>;
+
+  template <typename T>
+  using LazyNode = std::function<TNode<T>()>;
 
   CodeStubAssembler(compiler::CodeAssemblerState* state);
 
@@ -552,8 +556,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Load value field of a JSValue object.
   Node* LoadJSValueValue(Node* object);
   // Load value field of a WeakCell object.
-  Node* LoadWeakCellValueUnchecked(Node* weak_cell);
-  Node* LoadWeakCellValue(Node* weak_cell, Label* if_cleared = nullptr);
+  TNode<Object> LoadWeakCellValueUnchecked(Node* weak_cell);
+  TNode<Object> LoadWeakCellValue(SloppyTNode<WeakCell> weak_cell,
+                                  Label* if_cleared = nullptr);
 
   // Load an array element from a FixedArray.
   Node* LoadFixedArrayElement(Node* object, Node* index,
@@ -576,7 +581,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
       Label* if_hole = nullptr);
 
   // Load a feedback slot from a FeedbackVector.
-  Node* LoadFeedbackVectorSlot(
+  TNode<Object> LoadFeedbackVectorSlot(
       Node* object, Node* index, int additional_offset = 0,
       ParameterMode parameter_mode = INTPTR_PARAMETERS);
 
@@ -1232,7 +1237,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // ES6 7.1.15 ToLength, but with inlined fast path.
   Node* ToLength_Inline(Node* const context, Node* const input);
 
-  // Convert any object to an Integer.
+  // ES6 7.1.4 ToInteger ( argument )
+  TNode<Number> ToInteger_Inline(TNode<Context> context, TNode<Object> input,
+                                 ToIntegerTruncationMode mode = kNoTruncation);
   TNode<Number> ToInteger(SloppyTNode<Context> context,
                           SloppyTNode<Object> input,
                           ToIntegerTruncationMode mode = kNoTruncation);
@@ -1247,22 +1254,23 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Returns a node that contains a decoded (unsigned!) value of a bit
   // field |BitField| in |word|. Returns result as a word-size node.
   template <typename BitField>
-  Node* DecodeWord(Node* word) {
+  TNode<UintPtrT> DecodeWord(SloppyTNode<WordT> word) {
     return DecodeWord(word, BitField::kShift, BitField::kMask);
   }
 
   // Returns a node that contains a decoded (unsigned!) value of a bit
   // field |BitField| in |word32|. Returns result as a word-size node.
   template <typename BitField>
-  Node* DecodeWordFromWord32(Node* word32) {
+  TNode<UintPtrT> DecodeWordFromWord32(SloppyTNode<Word32T> word32) {
     return DecodeWord<BitField>(ChangeUint32ToWord(word32));
   }
 
   // Returns a node that contains a decoded (unsigned!) value of a bit
   // field |BitField| in |word|. Returns result as an uint32 node.
   template <typename BitField>
-  Node* DecodeWord32FromWord(Node* word) {
-    return TruncateWordToWord32(DecodeWord<BitField>(word));
+  TNode<Uint32T> DecodeWord32FromWord(SloppyTNode<WordT> word) {
+    return UncheckedCast<Uint32T>(
+        TruncateWordToWord32(Signed(DecodeWord<BitField>(word))));
   }
 
   // Decodes an unsigned (!) value from |word32| to an uint32 node.
@@ -1270,7 +1278,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                               uint32_t mask);
 
   // Decodes an unsigned (!) value from |word| to a word-size node.
-  Node* DecodeWord(Node* word, uint32_t shift, uint32_t mask);
+  TNode<UintPtrT> DecodeWord(SloppyTNode<WordT> word, uint32_t shift,
+                             uint32_t mask);
 
   // Returns a node that contains the updated values of a |BitField|.
   template <typename BitField>
@@ -1634,8 +1643,14 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   void ReportFeedbackUpdate(SloppyTNode<FeedbackVector> feedback_vector,
                             SloppyTNode<IntPtrT> slot_id, const char* reason);
 
-  // Combine the new feedback with the existing_feedback.
+  // Combine the new feedback with the existing_feedback. Do nothing if
+  // existing_feedback is nullptr.
+  void CombineFeedback(Variable* existing_feedback, int feedback);
   void CombineFeedback(Variable* existing_feedback, Node* feedback);
+
+  // Overwrite the existing feedback with new_feedback. Do nothing if
+  // existing_feedback is nullptr.
+  void OverwriteFeedback(Variable* existing_feedback, int new_feedback);
 
   // Check if a property name might require protector invalidation when it is
   // used for a property store or deletion.
@@ -1656,7 +1671,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   }
 
   // Loads script context from the script context table.
-  Node* LoadScriptContext(Node* context, int context_index);
+  TNode<Context> LoadScriptContext(TNode<Context> context,
+                                   TNode<IntPtrT> context_index);
 
   Node* Int32ToUint8Clamped(Node* int32_value);
   Node* Float64ToUint8Clamped(Node* float64_value);
@@ -1758,11 +1774,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   void InitializeFieldsWithRoot(Node* object, Node* start_offset,
                                 Node* end_offset, Heap::RootListIndex root);
 
-  Node* RelationalComparison(Operation op, Node* lhs, Node* rhs, Node* context,
+  Node* RelationalComparison(Operation op, Node* left, Node* right,
+                             Node* context,
                              Variable* var_type_feedback = nullptr);
 
-  void BranchIfNumericRelationalComparison(Operation op, Node* lhs, Node* rhs,
-                                           Label* if_true, Label* if_false);
+  void BranchIfNumberRelationalComparison(Operation op, Node* left, Node* right,
+                                          Label* if_true, Label* if_false);
 
   void BranchIfAccessorPair(Node* value, Label* if_accessor_pair,
                             Label* if_not_accessor_pair) {
@@ -1770,7 +1787,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
     Branch(IsAccessorPair(value), if_accessor_pair, if_not_accessor_pair);
   }
 
-  void GotoIfNumericGreaterThanOrEqual(Node* lhs, Node* rhs, Label* if_false);
+  void GotoIfNumberGreaterThanOrEqual(Node* left, Node* right, Label* if_false);
 
   Node* Equal(Node* lhs, Node* rhs, Node* context,
               Variable* var_type_feedback = nullptr);
@@ -1785,8 +1802,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   enum HasPropertyLookupMode { kHasProperty, kForInHasProperty };
 
-  Node* HasProperty(Node* object, Node* key, Node* context,
-                    HasPropertyLookupMode mode);
+  TNode<Oddball> HasProperty(SloppyTNode<HeapObject> object,
+                             SloppyTNode<Name> key,
+                             SloppyTNode<Context> context,
+                             HasPropertyLookupMode mode);
 
   Node* ClassOf(Node* object);
 
@@ -1931,12 +1950,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
       Node* context, Node* input, Object::Conversion mode,
       BigIntHandling bigint_handling = BigIntHandling::kThrow);
 
-  enum class Feedback { kCollect, kNone };
-  template <Feedback feedback>
   void TaggedToNumeric(Node* context, Node* value, Label* done,
-                       Variable* var_numeric, Variable* var_feedback = nullptr);
+                       Variable* var_numeric, Variable* var_feedback);
 
-  template <Feedback feedback, Object::Conversion conversion>
+  template <Object::Conversion conversion>
   void TaggedToWord32OrBigIntImpl(Node* context, Node* value, Label* if_number,
                                   Variable* var_word32,
                                   Label* if_bigint = nullptr,

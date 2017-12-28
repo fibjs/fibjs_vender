@@ -43,8 +43,9 @@ bool IsWasmCompileAllowed(v8::Isolate* isolate, v8::Local<v8::Value> value,
   DCHECK_GT(g_PerIsolateWasmControls.Get().count(isolate), 0);
   const WasmCompileControls& ctrls = g_PerIsolateWasmControls.Get().at(isolate);
   return (is_async && ctrls.AllowAnySizeForAsync) ||
-         (v8::Local<v8::ArrayBuffer>::Cast(value)->ByteLength() <=
-          ctrls.MaxWasmBufferSize);
+         (value->IsArrayBuffer() &&
+          v8::Local<v8::ArrayBuffer>::Cast(value)->ByteLength() <=
+              ctrls.MaxWasmBufferSize);
 }
 
 // Use the compile controls for instantiation, too
@@ -1186,7 +1187,7 @@ RUNTIME_FUNCTION(Runtime_FreezeWasmLazyCompilation) {
   DisallowHeapAllocation no_gc;
   CONVERT_ARG_CHECKED(WasmInstanceObject, instance, 0);
 
-  WasmSharedModuleData* shared = instance->compiled_module()->ptr_to_shared();
+  WasmSharedModuleData* shared = instance->compiled_module()->shared();
   CHECK(shared->has_lazy_compilation_orchestrator());
   auto* orchestrator = Managed<wasm::LazyCompilationOrchestrator>::cast(
                            shared->lazy_compilation_orchestrator())

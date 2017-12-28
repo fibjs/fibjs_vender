@@ -786,8 +786,7 @@ class RuntimeCallTimer final {
 
 #define FOR_EACH_MANUAL_COUNTER(V)             \
   V(AccessorGetterCallback)                    \
-  V(AccessorNameGetterCallback)                \
-  V(AccessorNameSetterCallback)                \
+  V(AccessorSetterCallback)                    \
   V(ArrayLengthGetter)                         \
   V(ArrayLengthSetter)                         \
   V(BoundFunctionNameGetter)                   \
@@ -822,18 +821,21 @@ class RuntimeCallTimer final {
   V(GC_Custom_SlowAllocateRaw)                 \
   V(GCEpilogueCallback)                        \
   V(GCPrologueCallback)                        \
-  V(GenericNamedPropertyDefinerCallback)       \
-  V(GenericNamedPropertyDeleterCallback)       \
-  V(GenericNamedPropertyDescriptorCallback)    \
-  V(GenericNamedPropertyQueryCallback)         \
-  V(GenericNamedPropertySetterCallback)        \
   V(GetMoreDataCallback)                       \
-  V(IndexedPropertyDefinerCallback)            \
-  V(IndexedPropertyDeleterCallback)            \
-  V(IndexedPropertyDescriptorCallback)         \
-  V(IndexedPropertyGetterCallback)             \
-  V(IndexedPropertyQueryCallback)              \
-  V(IndexedPropertySetterCallback)             \
+  V(NamedDefinerCallback)                      \
+  V(NamedDeleterCallback)                      \
+  V(NamedDescriptorCallback)                   \
+  V(NamedQueryCallback)                        \
+  V(NamedSetterCallback)                       \
+  V(NamedGetterCallback)                       \
+  V(NamedEnumeratorCallback)                   \
+  V(IndexedDefinerCallback)                    \
+  V(IndexedDeleterCallback)                    \
+  V(IndexedDescriptorCallback)                 \
+  V(IndexedGetterCallback)                     \
+  V(IndexedQueryCallback)                      \
+  V(IndexedSetterCallback)                     \
+  V(IndexedEnumeratorCallback)                 \
   V(InvokeApiInterruptCallbacks)               \
   V(InvokeFunctionCallback)                    \
   V(JS_Execution)                              \
@@ -879,6 +881,8 @@ class RuntimeCallTimer final {
   V(KeyedStoreIC_SlowStub)                        \
   V(KeyedStoreIC_StoreFastElementStub)            \
   V(KeyedStoreIC_StoreElementStub)                \
+  V(LoadGlobalIC_LoadScriptContextField)          \
+  V(LoadGlobalIC_SlowStub)                        \
   V(LoadIC_FunctionPrototypeStub)                 \
   V(LoadIC_HandlerCacheHit_Accessor)              \
   V(LoadIC_LoadAccessorDH)                        \
@@ -900,12 +904,13 @@ class RuntimeCallTimer final {
   V(LoadIC_LoadNonexistentDH)                     \
   V(LoadIC_LoadNormalDH)                          \
   V(LoadIC_LoadNormalFromPrototypeDH)             \
-  V(LoadIC_LoadScriptContextFieldStub)            \
   V(LoadIC_NonReceiver)                           \
   V(LoadIC_Premonomorphic)                        \
   V(LoadIC_SlowStub)                              \
   V(LoadIC_StringLength)                          \
   V(LoadIC_StringWrapperLength)                   \
+  V(StoreGlobalIC_StoreScriptContextField)        \
+  V(StoreGlobalIC_SlowStub)                       \
   V(StoreIC_HandlerCacheHit_Accessor)             \
   V(StoreIC_NonReceiver)                          \
   V(StoreIC_Premonomorphic)                       \
@@ -920,7 +925,6 @@ class RuntimeCallTimer final {
   V(StoreIC_StoreNativeDataPropertyDH)            \
   V(StoreIC_StoreNativeDataPropertyOnPrototypeDH) \
   V(StoreIC_StoreNormalDH)                        \
-  V(StoreIC_StoreScriptContextFieldStub)          \
   V(StoreIC_StoreTransitionDH)
 
 enum RuntimeCallCounterId {
@@ -1041,6 +1045,9 @@ class RuntimeCallTimerScope {
 
 #define HISTOGRAM_RANGE_LIST(HR)                                               \
   /* Generic range histograms: HR(name, caption, min, max, num_buckets) */     \
+  HR(background_marking, V8.GCBackgroundMarking, 0, 10000, 101)                \
+  HR(background_scavenger, V8.GCBackgroundScavenger, 0, 10000, 101)            \
+  HR(background_sweeping, V8.GCBackgroundSweeping, 0, 10000, 101)              \
   HR(detached_context_age_in_gc, V8.DetachedContextAgeInGC, 0, 20, 21)         \
   HR(code_cache_reject_reason, V8.CodeCacheRejectReason, 1, 6, 6)              \
   HR(errors_thrown_per_context, V8.ErrorsThrownPerContext, 0, 200, 20)         \

@@ -8,5 +8,7 @@
 
 #include "src/x64/simulator-x64.h"
 
+// Since there is no simulator for the x64 architecture this file is empty.
+
 
 #endif  // V8_TARGET_ARCH_X64

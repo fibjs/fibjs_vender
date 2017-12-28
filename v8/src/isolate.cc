@@ -437,7 +437,7 @@ class FrameArrayBuilder {
         }
         Handle<WasmInstanceObject> instance = summary.wasm_instance();
         int flags = 0;
-        if (instance->compiled_module()->is_asm_js()) {
+        if (instance->compiled_module()->shared()->is_asm_js()) {
           flags |= FrameArray::kIsAsmJsWasmFrame;
           if (WasmCompiledFrame::cast(frame)->at_to_number_conversion()) {
             flags |= FrameArray::kAsmJsAtNumberConversion;
@@ -456,7 +456,7 @@ class FrameArrayBuilder {
         const auto& summary = summ.AsWasmInterpreted();
         Handle<WasmInstanceObject> instance = summary.wasm_instance();
         int flags = FrameArray::kIsWasmInterpretedFrame;
-        DCHECK(!instance->compiled_module()->is_asm_js());
+        DCHECK(!instance->compiled_module()->shared()->is_asm_js());
         elements_ = FrameArray::AppendWasmFrame(elements_, instance,
                                                 summary.function_index(), {},
                                                 summary.byte_offset(), flags);
@@ -670,6 +670,11 @@ Handle<FixedArray> Isolate::GetDetailedStackTrace(
 Address Isolate::GetAbstractPC(int* line, int* column) {
   JavaScriptFrameIterator it(this);
 
+  if (it.done()) {
+    *line = -1;
+    *column = -1;
+    return nullptr;
+  }
   JavaScriptFrame* frame = it.frame();
   DCHECK(!frame->is_builtin());
   int position = frame->position();
@@ -767,10 +772,10 @@ class CaptureStackTraceHelper {
       const FrameSummary::WasmFrameSummary& summ) {
     Handle<StackFrameInfo> info = factory()->NewStackFrameInfo();
 
-    Handle<WasmCompiledModule> compiled_module(
-        summ.wasm_instance()->compiled_module(), isolate_);
-    Handle<String> name = WasmCompiledModule::GetFunctionName(
-        isolate_, compiled_module, summ.function_index());
+    Handle<WasmSharedModuleData> shared(
+        summ.wasm_instance()->compiled_module()->shared(), isolate_);
+    Handle<String> name = WasmSharedModuleData::GetFunctionName(
+        isolate_, shared, summ.function_index());
     info->set_function_name(*name);
     // Encode the function index as line number (1-based).
     info->set_line_number(summ.function_index() + 1);
@@ -1686,8 +1691,7 @@ bool Isolate::ComputeLocationFromStackTrace(MessageLocation* target,
   for (int i = 0; i < frame_count; i++) {
     if (elements->IsWasmFrame(i) || elements->IsAsmJsWasmFrame(i)) {
       Handle<WasmCompiledModule> compiled_module(
-          WasmInstanceObject::cast(elements->WasmInstance(i))
-              ->compiled_module());
+          elements->WasmInstance(i)->compiled_module());
       uint32_t func_index =
           static_cast<uint32_t>(elements->WasmFunctionIndex(i)->value());
       int code_offset = elements->Offset(i)->value();
@@ -1704,9 +1708,10 @@ bool Isolate::ComputeLocationFromStackTrace(MessageLocation* target,
       bool is_at_number_conversion =
           elements->IsAsmJsWasmFrame(i) &&
           elements->Flags(i)->value() & FrameArray::kAsmJsAtNumberConversion;
-      int pos = WasmCompiledModule::GetSourcePosition(
-          compiled_module, func_index, byte_offset, is_at_number_conversion);
-      Handle<Script> script(compiled_module->script());
+      int pos = WasmSharedModuleData::GetSourcePosition(
+          handle(compiled_module->shared(), this), func_index, byte_offset,
+          is_at_number_conversion);
+      Handle<Script> script(compiled_module->shared()->script());
 
       *target = MessageLocation(script, pos, pos + 1);
       return true;
@@ -2538,9 +2543,6 @@ Isolate::Isolate(bool enable_serializer)
   thread_manager_->isolate_ = this;
 
 #ifdef DEBUG
-  // heap_histograms_ initializes itself.
-  memset(&js_spill_information_, 0, sizeof(js_spill_information_));
-
   non_disposed_isolates_.Increment(1);
 #endif  // DEBUG
 
@@ -2770,9 +2772,8 @@ Isolate::~Isolate() {
   allocator_ = nullptr;
 
 #if USE_SIMULATOR
-  Simulator::TearDown(simulator_i_cache_, simulator_redirection_);
+  Simulator::TearDown(simulator_i_cache_);
   simulator_i_cache_ = nullptr;
-  simulator_redirection_ = nullptr;
 #endif
 }
 
@@ -2900,10 +2901,7 @@ bool Isolate::Init(StartupDeserializer* des) {
 
   // Initialize other runtime facilities
 #if defined(USE_SIMULATOR)
-#if V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_MIPS || \
-    V8_TARGET_ARCH_MIPS64 || V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_S390
   Simulator::Initialize(this);
-#endif
 #endif
 
   { // NOLINT
@@ -3173,7 +3171,7 @@ bool Isolate::use_optimizer() {
 bool Isolate::NeedsSourcePositionsForProfiling() const {
   return FLAG_trace_deopt || FLAG_trace_turbo || FLAG_trace_turbo_graph ||
          FLAG_turbo_profiling || FLAG_perf_prof || is_profiling() ||
-         debug_->is_active() || logger_->is_logging();
+         debug_->is_active() || logger_->is_logging() || FLAG_trace_maps;
 }
 
 void Isolate::SetFeedbackVectorsForProfilingTools(Object* value) {
@@ -3181,27 +3179,32 @@ void Isolate::SetFeedbackVectorsForProfilingTools(Object* value) {
   heap()->set_feedback_vectors_for_profiling_tools(value);
 }
 
-void Isolate::InitializeVectorListFromHeap() {
+void Isolate::MaybeInitializeVectorListFromHeap() {
+  if (!heap()->feedback_vectors_for_profiling_tools()->IsUndefined(this)) {
+    // Already initialized, return early.
+    DCHECK(heap()->feedback_vectors_for_profiling_tools()->IsArrayList());
+    return;
+  }
+
   // Collect existing feedback vectors.
   std::vector<Handle<FeedbackVector>> vectors;
+
   {
     HeapIterator heap_iterator(heap());
     while (HeapObject* current_obj = heap_iterator.next()) {
-      if (current_obj->IsSharedFunctionInfo()) {
-        SharedFunctionInfo* shared = SharedFunctionInfo::cast(current_obj);
-        shared->set_has_reported_binary_coverage(false);
-      } else if (current_obj->IsFeedbackVector()) {
-        FeedbackVector* vector = FeedbackVector::cast(current_obj);
-        SharedFunctionInfo* shared = vector->shared_function_info();
-        if (!shared->IsSubjectToDebugging()) continue;
-        vector->clear_invocation_count();
-        vectors.emplace_back(vector, this);
-      }
+      if (!current_obj->IsFeedbackVector()) continue;
+
+      FeedbackVector* vector = FeedbackVector::cast(current_obj);
+      SharedFunctionInfo* shared = vector->shared_function_info();
+
+      // No need to preserve the feedback vector for non-user-visible functions.
+      if (!shared->IsSubjectToDebugging()) continue;
+
+      vectors.emplace_back(vector, this);
     }
   }
 
-  // Add collected feedback vectors to the root list lest we lose them to
-  // GC.
+  // Add collected feedback vectors to the root list lest we lose them to GC.
   Handle<ArrayList> list =
       ArrayList::New(this, static_cast<int>(vectors.size()));
   for (const auto& vector : vectors) list = ArrayList::Add(list, vector);

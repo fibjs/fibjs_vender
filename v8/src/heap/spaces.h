@@ -170,8 +170,6 @@ class FreeListCategory {
     next_ = nullptr;
   }
 
-  void Invalidate();
-
   void Reset();
 
   void ResetStats() { Reset(); }
@@ -997,6 +995,9 @@ class Space : public Malloced {
 
  protected:
   intptr_t GetNextInlineAllocationStepSize();
+  bool AllocationObserversActive() {
+    return !allocation_observers_paused_ && !allocation_observers_.empty();
+  }
 
   std::vector<AllocationObserver*> allocation_observers_;
   bool allocation_observers_paused_;
@@ -1396,11 +1397,6 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
 
   CodeRange* code_range() { return code_range_; }
   Unmapper* unmapper() { return &unmapper_; }
-
-#ifdef DEBUG
-  // Reports statistic info of the space.
-  void ReportStatistics();
-#endif
 
  private:
   // PreFree logically frees the object, i.e., it takes care of the size
@@ -1973,6 +1969,8 @@ class SpaceWithLinearArea : public Space {
     allocation_info_.Reset(nullptr, nullptr);
   }
 
+  virtual bool SupportsInlineAllocation() = 0;
+
   // Returns the allocation pointer in this space.
   Address top() { return allocation_info_.top(); }
   Address limit() { return allocation_info_.limit(); }
@@ -1985,24 +1983,36 @@ class SpaceWithLinearArea : public Space {
     return allocation_info_.limit_address();
   }
 
-  // If we are doing inline allocation in steps, this method performs the 'step'
-  // operation. top is the memory address of the bump pointer at the last
-  // inline allocation (i.e. it determines the numbers of bytes actually
-  // allocated since the last step.) new_top is the address of the bump pointer
-  // where the next byte is going to be allocated from. top and new_top may be
-  // different when we cross a page boundary or reset the space.
-  // TODO(ofrobots): clarify the precise difference between this and
-  // Space::AllocationStep.
-  void InlineAllocationStep(Address top, Address new_top, Address soon_object,
-                            size_t size);
-
   V8_EXPORT_PRIVATE void AddAllocationObserver(
       AllocationObserver* observer) override;
   V8_EXPORT_PRIVATE void RemoveAllocationObserver(
       AllocationObserver* observer) override;
   V8_EXPORT_PRIVATE void ResumeAllocationObservers() override;
+  V8_EXPORT_PRIVATE void PauseAllocationObservers() override;
+
+  // When allocation observers are active we may use a lower limit to allow the
+  // observers to 'interrupt' earlier than the natural limit. Given a linear
+  // area bounded by [start, end), this function computes the limit to use to
+  // allow proper observation based on existing observers. min_size specifies
+  // the minimum size that the limited area should have.
+  Address ComputeLimit(Address start, Address end, size_t min_size);
+  V8_EXPORT_PRIVATE virtual void UpdateInlineAllocationLimit(
+      size_t min_size) = 0;
 
  protected:
+  // If we are doing inline allocation in steps, this method performs the 'step'
+  // operation. top is the memory address of the bump pointer at the last
+  // inline allocation (i.e. it determines the numbers of bytes actually
+  // allocated since the last step.) top_for_next_step is the address of the
+  // bump pointer where the next byte is going to be allocated from. top and
+  // top_for_next_step may be different when we cross a page boundary or reset
+  // the space.
+  // TODO(ofrobots): clarify the precise difference between this and
+  // Space::AllocationStep.
+  void InlineAllocationStep(Address top, Address top_for_next_step,
+                            Address soon_object, size_t size);
+  V8_EXPORT_PRIVATE void StartNextInlineAllocationStep() override;
+
   // TODO(ofrobots): make these private after refactoring is complete.
   AllocationInfo allocation_info_;
   Address top_on_previous_step_;
@@ -2119,9 +2129,7 @@ class V8_EXPORT_PRIVATE PagedSpace
 
   inline bool TryFreeLast(HeapObject* object, int object_size);
 
-  void ResetFreeList() { free_list_.Reset(); }
-
-  void PauseAllocationObservers() override;
+  void ResetFreeList();
 
   // Empty space allocation info, returning unused area to free list.
   void EmptyAllocationInfo();
@@ -2177,9 +2185,6 @@ class V8_EXPORT_PRIVATE PagedSpace
   // Print meta info and objects in this space.
   void Print() override;
 
-  // Reports statistics for the space
-  void ReportStatistics();
-
   // Report code object related statistics
   static void ReportCodeStatistics(Isolate* isolate);
   static void ResetCodeStatistics(Isolate* isolate);
@@ -2224,7 +2229,6 @@ class V8_EXPORT_PRIVATE PagedSpace
 
   std::unique_ptr<ObjectIterator> GetObjectIterator() override;
 
-  Address ComputeLimit(Address start, Address end, size_t size_in_bytes);
   void SetAllocationInfo(Address top, Address limit);
 
  private:
@@ -2236,8 +2240,8 @@ class V8_EXPORT_PRIVATE PagedSpace
     allocation_info_.Reset(top, limit);
   }
   void DecreaseLimit(Address new_limit);
-  void StartNextInlineAllocationStep() override;
-  bool SupportsInlineAllocation() {
+  void UpdateInlineAllocationLimit(size_t min_size) override;
+  bool SupportsInlineAllocation() override {
     return identity() == OLD_SPACE && !is_local();
   }
 
@@ -2517,9 +2521,7 @@ class NewSpace : public SpaceWithLinearArea {
       : SpaceWithLinearArea(heap, NEW_SPACE, NOT_EXECUTABLE),
         to_space_(heap, kToSpace),
         from_space_(heap, kFromSpace),
-        reservation_(),
-        allocated_histogram_(nullptr),
-        promoted_histogram_(nullptr) {}
+        reservation_() {}
 
   inline bool Contains(HeapObject* o);
   inline bool ContainsSlow(Address a);
@@ -2676,12 +2678,7 @@ class NewSpace : public SpaceWithLinearArea {
   // inline allocation every once in a while. This is done by setting
   // allocation_info_.limit to be lower than the actual limit and and increasing
   // it in steps to guarantee that the observers are notified periodically.
-  void UpdateInlineAllocationLimit(int size_in_bytes);
-
-  void DisableInlineAllocationSteps() {
-    top_on_previous_step_ = 0;
-    UpdateInlineAllocationLimit(0);
-  }
+  void UpdateInlineAllocationLimit(size_t size_in_bytes) override;
 
   // Get the extent of the inactive semispace (for use as a marking stack,
   // or to zap it). Notice: space-addresses are not necessarily on the
@@ -2717,19 +2714,6 @@ class NewSpace : public SpaceWithLinearArea {
   void Print() override { to_space_.Print(); }
 #endif
 
-  // Iterates the active semispace to collect statistics.
-  void CollectStatistics();
-  // Reports previously collected statistics of the active semispace.
-  void ReportStatistics();
-  // Clears previously collected statistics.
-  void ClearHistograms();
-
-  // Record the allocation or promotion of a heap object.  Note that we don't
-  // record every single allocation, but only those that happen in the
-  // to space during a scavenge GC.
-  void RecordAllocation(HeapObject* obj);
-  void RecordPromotion(HeapObject* obj);
-
   // Return whether the operation succeeded.
   bool CommitFromSpaceIfNeeded() {
     if (from_space_.is_committed()) return true;
@@ -2744,8 +2728,6 @@ class NewSpace : public SpaceWithLinearArea {
   bool IsFromSpaceCommitted() { return from_space_.is_committed(); }
 
   SemiSpace* active_space() { return &to_space_; }
-
-  void PauseAllocationObservers() override;
 
   iterator begin() { return to_space_.begin(); }
   iterator end() { return to_space_.end(); }
@@ -2771,12 +2753,8 @@ class NewSpace : public SpaceWithLinearArea {
   SemiSpace from_space_;
   VirtualMemory reservation_;
 
-  HistogramInfo* allocated_histogram_;
-  HistogramInfo* promoted_histogram_;
-
   bool EnsureAllocation(int size_in_bytes, AllocationAlignment alignment);
-
-  void StartNextInlineAllocationStep() override;
+  bool SupportsInlineAllocation() override { return true; }
 
   friend class SemiSpaceIterator;
 };
@@ -2967,7 +2945,6 @@ class LargeObjectSpace : public Space {
 
 #ifdef DEBUG
   void Print() override;
-  void ReportStatistics();
 #endif
 
  private:

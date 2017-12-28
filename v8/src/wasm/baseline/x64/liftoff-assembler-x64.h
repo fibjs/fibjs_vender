@@ -19,9 +19,9 @@ namespace liftoff {
 inline Operand GetStackSlot(uint32_t index) {
   // rbp-8 holds the stack marker, rbp-16 is the wasm context, first stack slot
   // is located at rbp-24.
-  constexpr int32_t kStackSlotSize = 8;
   constexpr int32_t kFirstStackSlotOffset = -24;
-  return Operand(rbp, kFirstStackSlotOffset - index * kStackSlotSize);
+  return Operand(
+      rbp, kFirstStackSlotOffset - index * LiftoffAssembler::kStackSlotSize);
 }
 
 // TODO(clemensh): Make this a constexpr variable once Operand is constexpr.
@@ -29,9 +29,9 @@ inline Operand GetContextOperand() { return Operand(rbp, -16); }
 
 }  // namespace liftoff
 
-void LiftoffAssembler::ReserveStackSpace(uint32_t space) {
-  stack_space_ = space;
-  subl(rsp, Immediate(space));
+void LiftoffAssembler::ReserveStackSpace(uint32_t bytes) {
+  DCHECK_LE(bytes, kMaxInt);
+  subp(rsp, Immediate(bytes));
 }
 
 void LiftoffAssembler::LoadConstant(LiftoffRegister reg, WasmValue value) {
@@ -68,48 +68,82 @@ void LiftoffAssembler::SpillContext(Register context) {
 }
 
 void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
-                            uint32_t offset_imm, int size,
-                            LiftoffRegList pinned) {
-  Operand src_op = Operand(src_addr, offset_imm);
+                            Register offset_reg, uint32_t offset_imm,
+                            LoadType type, LiftoffRegList pinned) {
+  Operand src_op = offset_reg == no_reg
+                       ? Operand(src_addr, offset_imm)
+                       : Operand(src_addr, offset_reg, times_1, offset_imm);
   if (offset_imm > kMaxInt) {
     // The immediate can not be encoded in the operand. Load it to a register
     // first.
     Register src = GetUnusedRegister(kGpReg, pinned).gp();
     movl(src, Immediate(offset_imm));
+    if (offset_reg != no_reg) {
+      emit_ptrsize_add(src, src, offset_reg);
+    }
     src_op = Operand(src_addr, src, times_1, 0);
   }
-  DCHECK(size == 4 || size == 8);
-  if (size == 4) {
-    movl(dst.gp(), src_op);
-  } else {
-    movq(dst.gp(), src_op);
+  switch (type.value()) {
+    case LoadType::kI32Load8U:
+      movzxbl(dst.gp(), src_op);
+      break;
+    case LoadType::kI32Load8S:
+      movsxbl(dst.gp(), src_op);
+      break;
+    case LoadType::kI32Load16U:
+      movzxwl(dst.gp(), src_op);
+      break;
+    case LoadType::kI32Load16S:
+      movsxwl(dst.gp(), src_op);
+      break;
+    case LoadType::kI32Load:
+      movl(dst.gp(), src_op);
+      break;
+    case LoadType::kI64Load:
+      movq(dst.gp(), src_op);
+      break;
+    default:
+      UNREACHABLE();
   }
 }
 
-void LiftoffAssembler::Store(Register dst_addr, uint32_t offset_imm,
-                             LiftoffRegister src, int size,
-                             LiftoffRegList pinned) {
-  Operand dst_op = Operand(dst_addr, offset_imm);
+void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
+                             uint32_t offset_imm, LiftoffRegister src,
+                             StoreType type, LiftoffRegList pinned) {
+  Operand dst_op = offset_reg == no_reg
+                       ? Operand(dst_addr, offset_imm)
+                       : Operand(dst_addr, offset_reg, times_1, offset_imm);
   if (offset_imm > kMaxInt) {
     // The immediate can not be encoded in the operand. Load it to a register
     // first.
     Register dst = GetUnusedRegister(kGpReg, pinned).gp();
     movl(dst, Immediate(offset_imm));
+    if (offset_reg != no_reg) {
+      emit_ptrsize_add(dst, dst, offset_reg);
+    }
     dst_op = Operand(dst_addr, dst, times_1, 0);
   }
-  DCHECK(size == 4 || size == 8);
-  if (src.is_fp()) UNIMPLEMENTED();
-  if (size == 4) {
-    movl(dst_op, src.gp());
-  } else {
-    movp(dst_op, src.gp());
+  switch (type.value()) {
+    case StoreType::kI32Store8:
+      movb(dst_op, src.gp());
+      break;
+    case StoreType::kI32Store16:
+      movw(dst_op, src.gp());
+      break;
+    case StoreType::kI32Store:
+      movl(dst_op, src.gp());
+      break;
+    case StoreType::kI64Store:
+      movq(dst_op, src.gp());
+      break;
+    default:
+      UNREACHABLE();
   }
 }
 
 void LiftoffAssembler::LoadCallerFrameSlot(LiftoffRegister dst,
                                            uint32_t caller_slot_idx) {
-  constexpr int32_t kStackSlotSize = 8;
-  Operand src(rbp, kStackSlotSize * (caller_slot_idx + 1));
+  Operand src(rbp, kPointerSize * (caller_slot_idx + 1));
   // TODO(clemensh): Handle different sizes here.
   if (dst.is_gp()) {
     movq(dst.gp(), src);
@@ -194,6 +228,15 @@ void LiftoffAssembler::emit_i32_add(Register dst, Register lhs, Register rhs) {
   }
 }
 
+void LiftoffAssembler::emit_ptrsize_add(Register dst, Register lhs,
+                                        Register rhs) {
+  if (lhs != dst) {
+    leap(dst, Operand(lhs, rhs, times_1, 0));
+  } else {
+    addp(dst, rhs);
+  }
+}
+
 void LiftoffAssembler::emit_i32_sub(Register dst, Register lhs, Register rhs) {
   if (dst == rhs) {
     negl(dst);
@@ -265,9 +308,78 @@ void LiftoffAssembler::emit_f32_mul(DoubleRegister dst, DoubleRegister lhs,
   }
 }
 
-void LiftoffAssembler::JumpIfZero(Register reg, Label* label) {
-  testl(reg, reg);
-  j(zero, label);
+void LiftoffAssembler::emit_i32_test(Register reg) { testl(reg, reg); }
+
+void LiftoffAssembler::emit_i32_compare(Register lhs, Register rhs) {
+  cmpl(lhs, rhs);
+}
+
+void LiftoffAssembler::emit_jump(Label* label) { jmp(label); }
+
+void LiftoffAssembler::emit_cond_jump(Condition cond, Label* label) {
+  j(cond, label);
+}
+
+void LiftoffAssembler::StackCheck(Label* ool_code) {
+  Register limit = GetUnusedRegister(kGpReg).gp();
+  LoadAddress(limit, ExternalReference::address_of_stack_limit(isolate()));
+  cmpp(rsp, Operand(limit, 0));
+  j(below_equal, ool_code);
+}
+
+void LiftoffAssembler::CallTrapCallbackForTesting() {
+  PrepareCallCFunction(0);
+  CallCFunction(
+      ExternalReference::wasm_call_trap_callback_for_testing(isolate()), 0);
+}
+
+void LiftoffAssembler::AssertUnreachable(BailoutReason reason) {
+  TurboAssembler::AssertUnreachable(reason);
+}
+
+void LiftoffAssembler::PushRegisters(LiftoffRegList regs) {
+  LiftoffRegList gp_regs = regs & kGpCacheRegList;
+  while (!gp_regs.is_empty()) {
+    LiftoffRegister reg = gp_regs.GetFirstRegSet();
+    pushq(reg.gp());
+    gp_regs.clear(reg);
+  }
+  LiftoffRegList fp_regs = regs & kFpCacheRegList;
+  unsigned num_fp_regs = fp_regs.GetNumRegsSet();
+  if (num_fp_regs) {
+    subp(rsp, Immediate(num_fp_regs * kStackSlotSize));
+    unsigned offset = 0;
+    while (!fp_regs.is_empty()) {
+      LiftoffRegister reg = fp_regs.GetFirstRegSet();
+      movsd(Operand(rsp, offset), reg.fp());
+      fp_regs.clear(reg);
+      offset += sizeof(double);
+    }
+    DCHECK_EQ(offset, num_fp_regs * sizeof(double));
+  }
+}
+
+void LiftoffAssembler::PopRegisters(LiftoffRegList regs) {
+  LiftoffRegList fp_regs = regs & kFpCacheRegList;
+  unsigned fp_offset = 0;
+  while (!fp_regs.is_empty()) {
+    LiftoffRegister reg = fp_regs.GetFirstRegSet();
+    movsd(reg.fp(), Operand(rsp, fp_offset));
+    fp_regs.clear(reg);
+    fp_offset += sizeof(double);
+  }
+  if (fp_offset) addp(rsp, Immediate(fp_offset));
+  LiftoffRegList gp_regs = regs & kGpCacheRegList;
+  while (!gp_regs.is_empty()) {
+    LiftoffRegister reg = gp_regs.GetLastRegSet();
+    popq(reg.gp());
+    gp_regs.clear(reg);
+  }
+}
+
+void LiftoffAssembler::DropStackSlotsAndRet(uint32_t num_stack_slots) {
+  DCHECK_LT(num_stack_slots, (1 << 16) / kPointerSize);  // 16 bit immediate
+  ret(static_cast<int>(num_stack_slots * kPointerSize));
 }
 
 }  // namespace wasm

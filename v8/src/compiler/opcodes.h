@@ -398,6 +398,7 @@
   V(TransitionElementsKind)             \
   V(FindOrderedHashMapEntry)            \
   V(FindOrderedHashMapEntryForInt32Key) \
+  V(MaskIndexWithBound)                 \
   V(RuntimeAbort)
 
 #define SIMPLIFIED_OP_LIST(V)                 \
@@ -595,7 +596,6 @@
   V(LoadFramePointer)           \
   V(LoadParentFramePointer)     \
   V(CheckedLoad)                \
-  V(CheckedStore)               \
   V(UnalignedLoad)              \
   V(UnalignedStore)             \
   V(Int32PairAdd)               \

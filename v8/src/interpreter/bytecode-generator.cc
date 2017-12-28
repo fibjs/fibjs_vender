@@ -835,6 +835,32 @@ class BytecodeGenerator::FeedbackSlotCache : public ZoneObject {
   ZoneMap<Key, FeedbackSlot> map_;
 };
 
+class BytecodeGenerator::IteratorRecord final {
+ public:
+  // TODO(caitp): This constructor is used for legacy code which doesn't load
+  // the `next` method immediately during GetIterator. It should be removed once
+  // the followup CL lands.
+  IteratorRecord(Register object_register,
+                 IteratorType type = IteratorType::kNormal)
+      : type_(type), object_(object_register) {
+    DCHECK(object_.is_valid());
+  }
+  IteratorRecord(Register object_register, Register next_register,
+                 IteratorType type = IteratorType::kNormal)
+      : type_(type), object_(object_register), next_(next_register) {
+    DCHECK(object_.is_valid() && next_.is_valid());
+  }
+
+  inline IteratorType type() const { return type_; }
+  inline Register object() const { return object_; }
+  inline Register next() const { return next_; }
+
+ private:
+  IteratorType type_;
+  Register object_;
+  Register next_;
+};
+
 BytecodeGenerator::BytecodeGenerator(
     CompilationInfo* info, const AstStringConstants* ast_string_constants)
     : zone_(info->zone()),
@@ -2069,6 +2095,8 @@ void BytecodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
 }
 
 void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
+  expr->InitDepthAndFlags();
+
   // Fast path for the empty object literal which doesn't need an
   // AllocationSite.
   if (expr->IsEmptyObjectLiteral()) {
@@ -2275,6 +2303,8 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 }
 
 void BytecodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
+  expr->InitDepthAndFlags();
+
   // Deep-copy the literal boilerplate.
   int literal_index = feedback_index(feedback_spec()->AddLiteralSlot());
   if (expr->is_empty()) {
@@ -2290,31 +2320,25 @@ void BytecodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   builder()->CreateArrayLiteral(entry, literal_index, flags);
   array_literals_.push_back(std::make_pair(expr, entry));
 
-  Register index, literal;
+  Register index = register_allocator()->NewRegister();
+  Register literal = register_allocator()->NewRegister();
+  builder()->StoreAccumulatorInRegister(literal);
 
   // We'll reuse the same literal slot for all of the non-constant
   // subexpressions that use a keyed store IC.
 
   // Evaluate all the non-constant subexpressions and store them into the
   // newly cloned array.
-  bool literal_in_accumulator = true;
   FeedbackSlot slot;
-  for (int array_index = 0; array_index < expr->values()->length();
-       array_index++) {
-    Expression* subexpr = expr->values()->at(array_index);
-    if (CompileTimeValue::IsCompileTimeValue(subexpr)) continue;
+  int array_index = 0;
+  ZoneList<Expression*>::iterator iter = expr->BeginValue();
+  for (; iter != expr->FirstSpreadOrEndValue(); ++iter, array_index++) {
+    Expression* subexpr = *iter;
     DCHECK(!subexpr->IsSpread());
-
-    if (literal_in_accumulator) {
-      index = register_allocator()->NewRegister();
-      literal = register_allocator()->NewRegister();
-      builder()->StoreAccumulatorInRegister(literal);
-      literal_in_accumulator = false;
-    }
+    if (CompileTimeValue::IsCompileTimeValue(subexpr)) continue;
     if (slot.IsInvalid()) {
       slot = feedback_spec()->AddKeyedStoreICSlot(language_mode());
     }
-
     builder()
         ->LoadLiteral(Smi::FromInt(array_index))
         .StoreAccumulatorInRegister(index);
@@ -2323,10 +2347,68 @@ void BytecodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
                                   language_mode());
   }
 
-  if (!literal_in_accumulator) {
-    // Restore literal array into accumulator.
-    builder()->LoadAccumulatorWithRegister(literal);
+  // Handle spread elements and elements following.
+  for (; iter != expr->EndValue(); ++iter) {
+    Expression* subexpr = *iter;
+    if (subexpr->IsSpread()) {
+      BuildArrayLiteralSpread(subexpr->AsSpread(), literal);
+    } else if (!subexpr->IsTheHoleLiteral()) {
+      // Perform %AppendElement(array, <subexpr>)
+      RegisterAllocationScope register_scope(this);
+      RegisterList args = register_allocator()->NewRegisterList(2);
+      builder()->MoveRegister(literal, args[0]);
+      VisitForRegisterValue(subexpr, args[1]);
+      builder()->CallRuntime(Runtime::kAppendElement, args);
+    } else {
+      // Peform ++<array>.length;
+      // TODO(caitp): Why can't we just %AppendElement(array, <The Hole>?)
+      auto length = ast_string_constants()->length_string();
+      builder()->LoadNamedProperty(
+          literal, length, feedback_index(feedback_spec()->AddLoadICSlot()));
+      builder()->UnaryOperation(
+          Token::INC, feedback_index(feedback_spec()->AddBinaryOpICSlot()));
+      builder()->StoreNamedProperty(
+          literal, length,
+          feedback_index(
+              feedback_spec()->AddStoreICSlot(LanguageMode::kStrict)),
+          LanguageMode::kStrict);
+    }
   }
+
+  // Restore literal array into accumulator.
+  builder()->LoadAccumulatorWithRegister(literal);
+}
+
+void BytecodeGenerator::BuildArrayLiteralSpread(Spread* spread,
+                                                Register array) {
+  RegisterAllocationScope register_scope(this);
+  RegisterList args = register_allocator()->NewRegisterList(2);
+  builder()->MoveRegister(array, args[0]);
+  Register next_result = args[1];
+
+  builder()->SetExpressionAsStatementPosition(spread->expression());
+  IteratorRecord iterator =
+      BuildGetIteratorRecord(spread->expression(), IteratorType::kNormal);
+  LoopBuilder loop_builder(builder(), nullptr, nullptr);
+  loop_builder.LoopHeader();
+
+  // Call the iterator's .next() method. Break from the loop if the `done`
+  // property is truthy, otherwise load the value from the iterator result and
+  // append the argument.
+  BuildIteratorNext(iterator, next_result);
+  builder()->LoadNamedProperty(
+      next_result, ast_string_constants()->done_string(),
+      feedback_index(feedback_spec()->AddLoadICSlot()));
+  loop_builder.BreakIfTrue(ToBooleanMode::kConvertToBoolean);
+
+  loop_builder.LoopBody();
+  builder()
+      ->LoadNamedProperty(next_result, ast_string_constants()->value_string(),
+                          feedback_index(feedback_spec()->AddLoadICSlot()))
+      .StoreAccumulatorInRegister(args[1])
+      .CallRuntime(Runtime::kAppendElement, args);
+  loop_builder.BindContinueTarget();
+  loop_builder.JumpToHeader(loop_depth_);
 }
 
 void BytecodeGenerator::VisitVariableProxy(VariableProxy* proxy) {
@@ -2557,8 +2639,7 @@ void BytecodeGenerator::BuildVariableAssignment(
       // TODO(ishell): consider using FeedbackSlotCache for variables here.
       FeedbackSlot slot =
           feedback_spec()->AddStoreGlobalICSlot(language_mode());
-      builder()->StoreGlobal(variable->raw_name(), feedback_index(slot),
-                             language_mode());
+      builder()->StoreGlobal(variable->raw_name(), feedback_index(slot));
       break;
     }
     case VariableLocation::CONTEXT: {
@@ -2787,7 +2868,7 @@ void BytecodeGenerator::VisitCompoundAssignment(CompoundAssignment* expr) {
 // accumulator. When the generator is resumed, the sent value is loaded in the
 // accumulator.
 void BytecodeGenerator::BuildSuspendPoint(int suspend_id) {
-  RegisterList registers(0, register_allocator()->next_register_index());
+  RegisterList registers = register_allocator()->AllLiveRegisters();
 
   // Save context, registers, and state. Then return.
   builder()->SuspendGenerator(generator_object(), registers, suspend_id);
@@ -2966,10 +3047,10 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
 
     RegisterList iterator_and_input = register_allocator()->NewRegisterList(2);
 
-    Register iterator = iterator_and_input[0];
-
+    IteratorRecord iterator(iterator_and_input[0], iterator_type);
     BuildGetIterator(expr->expression(), iterator_type);
-    builder()->StoreAccumulatorInRegister(iterator);
+    builder()->StoreAccumulatorInRegister(iterator.object());
+
     Register input = iterator_and_input[1];
     builder()->LoadUndefined().StoreAccumulatorInRegister(input);
     builder()
@@ -3006,7 +3087,7 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
           FeedbackSlot load_slot = feedback_spec()->AddLoadICSlot();
           FeedbackSlot call_slot = feedback_spec()->AddCallICSlot();
           builder()
-              ->LoadNamedProperty(iterator,
+              ->LoadNamedProperty(iterator.object(),
                                   ast_string_constants()->next_string(),
                                   feedback_index(load_slot))
               .StoreAccumulatorInRegister(iterator_next)
@@ -3025,7 +3106,7 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
           FeedbackSlot load_slot = feedback_spec()->AddLoadICSlot();
           FeedbackSlot call_slot = feedback_spec()->AddCallICSlot();
           builder()
-              ->LoadNamedProperty(iterator,
+              ->LoadNamedProperty(iterator.object(),
                                   ast_string_constants()->return_string(),
                                   feedback_index(load_slot))
               .JumpIfUndefined(return_input.New())
@@ -3058,7 +3139,7 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
             FeedbackSlot load_slot = feedback_spec()->AddLoadICSlot();
             FeedbackSlot call_slot = feedback_spec()->AddCallICSlot();
             builder()
-                ->LoadNamedProperty(iterator,
+                ->LoadNamedProperty(iterator.object(),
                                     ast_string_constants()->throw_string(),
                                     feedback_index(load_slot))
                 .JumpIfUndefined(iterator_throw_is_undefined.New())
@@ -3080,14 +3161,14 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
             FeedbackSlot load_slot = feedback_spec()->AddLoadICSlot();
             FeedbackSlot call_slot = feedback_spec()->AddCallICSlot();
             builder()
-                ->LoadNamedProperty(iterator,
+                ->LoadNamedProperty(iterator.object(),
                                     ast_string_constants()->return_string(),
                                     feedback_index(load_slot))
                 .StoreAccumulatorInRegister(iterator_return);
             builder()
                 ->JumpIfUndefined(throw_throw_method_missing.New())
                 .JumpIfNull(throw_throw_method_missing.New())
-                .CallProperty(iterator_return, RegisterList(iterator),
+                .CallProperty(iterator_return, RegisterList(iterator.object()),
                               feedback_index(call_slot));
 
             if (iterator_type == IteratorType::kAsync) {
@@ -3421,16 +3502,15 @@ void BytecodeGenerator::VisitCall(Call* expr) {
         Register name = register_allocator()->NewRegister();
 
         // Call %LoadLookupSlotForCall to get the callee and receiver.
-        DCHECK(Register::AreContiguous(callee, receiver));
-        RegisterList result_pair(callee.index(), 2);
-        USE(receiver);
-
+        RegisterList result_pair = register_allocator()->NewRegisterList(2);
         Variable* variable = callee_expr->AsVariableProxy()->var();
         builder()
             ->LoadLiteral(variable->raw_name())
             .StoreAccumulatorInRegister(name)
             .CallRuntimeForPair(Runtime::kLoadLookupSlotForCall, name,
-                                result_pair);
+                                result_pair)
+            .MoveRegister(result_pair[0], callee)
+            .MoveRegister(result_pair[1], receiver);
       }
       break;
     }
@@ -4073,6 +4153,38 @@ void BytecodeGenerator::BuildGetIterator(Expression* iterable,
     builder()->CallRuntime(Runtime::kThrowSymbolIteratorInvalid);
     builder()->Bind(&no_type_error);
   }
+}
+
+// Returns an IteratorRecord which is valid for the lifetime of the current
+// register_allocation_scope.
+BytecodeGenerator::IteratorRecord BytecodeGenerator::BuildGetIteratorRecord(
+    Expression* iterable, IteratorType hint) {
+  BuildGetIterator(iterable, hint);
+
+  Register object = register_allocator()->NewRegister();
+  Register next = register_allocator()->NewRegister();
+  builder()
+      ->StoreAccumulatorInRegister(object)
+      .LoadNamedProperty(object, ast_string_constants()->next_string(),
+                         feedback_index(feedback_spec()->AddLoadICSlot()))
+      .StoreAccumulatorInRegister(next);
+  return IteratorRecord(object, next, hint);
+}
+
+void BytecodeGenerator::BuildIteratorNext(const IteratorRecord& iterator,
+                                          Register next_result) {
+  DCHECK(next_result.is_valid());
+  builder()->CallProperty(iterator.next(), RegisterList(iterator.object()),
+                          feedback_index(feedback_spec()->AddCallICSlot()));
+
+  // TODO(caitp): support async IteratorNext here.
+
+  BytecodeLabel is_object;
+  builder()
+      ->StoreAccumulatorInRegister(next_result)
+      .JumpIfJSReceiver(&is_object)
+      .CallRuntime(Runtime::kThrowIteratorResultNotAnObject, next_result)
+      .Bind(&is_object);
 }
 
 void BytecodeGenerator::VisitGetIterator(GetIterator* expr) {

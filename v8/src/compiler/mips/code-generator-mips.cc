@@ -429,48 +429,6 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
     __ bind(ool->exit());                                                     \
   } while (0)
 
-#define ASSEMBLE_CHECKED_STORE_FLOAT(width, asm_instr)                 \
-  do {                                                                 \
-    Label done;                                                        \
-    if (instr->InputAt(0)->IsRegister()) {                             \
-      auto offset = i.InputRegister(0);                                \
-      auto value = i.InputOrZero##width##Register(2);                  \
-      if (value == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {       \
-        __ Move(kDoubleRegZero, 0.0);                                  \
-      }                                                                \
-      __ Branch(USE_DELAY_SLOT, &done, hs, offset, i.InputOperand(1)); \
-      __ Addu(kScratchReg, i.InputRegister(3), offset);                \
-      __ asm_instr(value, MemOperand(kScratchReg, 0));                 \
-    } else {                                                           \
-      auto offset = i.InputOperand(0).immediate();                     \
-      auto value = i.InputOrZero##width##Register(2);                  \
-      if (value == kDoubleRegZero && !__ IsDoubleZeroRegSet()) {       \
-        __ Move(kDoubleRegZero, 0.0);                                  \
-      }                                                                \
-      __ Branch(&done, ls, i.InputRegister(1), Operand(offset));       \
-      __ asm_instr(value, MemOperand(i.InputRegister(3), offset));     \
-    }                                                                  \
-    __ bind(&done);                                                    \
-  } while (0)
-
-#define ASSEMBLE_CHECKED_STORE_INTEGER(asm_instr)                      \
-  do {                                                                 \
-    Label done;                                                        \
-    if (instr->InputAt(0)->IsRegister()) {                             \
-      auto offset = i.InputRegister(0);                                \
-      auto value = i.InputOrZeroRegister(2);                           \
-      __ Branch(USE_DELAY_SLOT, &done, hs, offset, i.InputOperand(1)); \
-      __ Addu(kScratchReg, i.InputRegister(3), offset);                \
-      __ asm_instr(value, MemOperand(kScratchReg, 0));                 \
-    } else {                                                           \
-      auto offset = i.InputOperand(0).immediate();                     \
-      auto value = i.InputOrZeroRegister(2);                           \
-      __ Branch(&done, ls, i.InputRegister(1), Operand(offset));       \
-      __ asm_instr(value, MemOperand(i.InputRegister(3), offset));     \
-    }                                                                  \
-    __ bind(&done);                                                    \
-  } while (0)
-
 #define ASSEMBLE_ROUND_DOUBLE_TO_DOUBLE(mode)                                  \
   if (IsMipsArchVariant(kMips32r6)) {                                          \
     __ cfc1(kScratchReg, FCSR);                                                \
@@ -791,7 +749,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ Call(wasm_code, info()->IsWasm() ? RelocInfo::WASM_CALL
                                             : RelocInfo::JS_TO_WASM_CALL);
       } else {
-        __ Call(at, i.InputRegister(0), 0);
+        __ Call(i.InputRegister(0));
       }
       RecordCallPosition(instr);
       frame_access_state()->ClearSPDelta();
@@ -820,7 +778,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ Jump(wasm_code, info()->IsWasm() ? RelocInfo::WASM_CALL
                                             : RelocInfo::JS_TO_WASM_CALL);
       } else {
-        __ Jump(at, i.InputRegister(0), 0);
+        __ Jump(i.InputRegister(0));
       }
       frame_access_state()->ClearSPDelta();
       frame_access_state()->SetFrameAccessToDefault();
@@ -1754,6 +1712,23 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         frame_access_state()->IncreaseSPDelta(1);
       }
       break;
+    case kMipsPeek: {
+      int reverse_slot = MiscField::decode(instr->opcode());
+      int offset =
+          FrameSlotToFPOffset(frame()->GetTotalFrameSlotCount() - reverse_slot);
+      if (instr->OutputAt(0)->IsFPRegister()) {
+        LocationOperand* op = LocationOperand::cast(instr->OutputAt(0));
+        if (op->representation() == MachineRepresentation::kFloat64) {
+          __ Ldc1(i.OutputDoubleRegister(), MemOperand(fp, offset));
+        } else {
+          DCHECK_EQ(op->representation(), MachineRepresentation::kFloat32);
+          __ lwc1(i.OutputSingleRegister(0), MemOperand(fp, offset));
+        }
+      } else {
+        __ lw(i.OutputRegister(0), MemOperand(fp, offset));
+      }
+      break;
+    }
     case kMipsStackClaim: {
       __ Subu(sp, sp, Operand(i.InputInt32(0)));
       frame_access_state()->IncreaseSPDelta(i.InputInt32(0) / kPointerSize);
@@ -1798,24 +1773,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kCheckedLoadFloat64:
       ASSEMBLE_CHECKED_LOAD_FLOAT(Double, Ldc1);
       break;
-    case kCheckedStoreWord8:
-      ASSEMBLE_CHECKED_STORE_INTEGER(sb);
-      break;
-    case kCheckedStoreWord16:
-      ASSEMBLE_CHECKED_STORE_INTEGER(sh);
-      break;
-    case kCheckedStoreWord32:
-      ASSEMBLE_CHECKED_STORE_INTEGER(sw);
-      break;
-    case kCheckedStoreFloat32:
-      ASSEMBLE_CHECKED_STORE_FLOAT(Single, swc1);
-      break;
-    case kCheckedStoreFloat64:
-      ASSEMBLE_CHECKED_STORE_FLOAT(Double, Sdc1);
-      break;
     case kCheckedLoadWord64:
-    case kCheckedStoreWord64:
-      UNREACHABLE();  // currently unsupported checked int64 load/store.
+      UNREACHABLE();  // currently unsupported checked int64 load.
       break;
     case kAtomicLoadInt8:
       ASSEMBLE_ATOMIC_LOAD_INTEGER(lb);
@@ -3455,10 +3414,12 @@ void CodeGenerator::AssembleConstructFrame() {
 
   const RegList saves = descriptor->CalleeSavedRegisters();
   const RegList saves_fpu = descriptor->CalleeSavedFPRegisters();
+  const int returns = frame()->GetReturnSlotCount();
 
-  // Skip callee-saved slots, which are pushed below.
+  // Skip callee-saved and return slots, which are pushed below.
   shrink_slots -= base::bits::CountPopulation(saves);
   shrink_slots -= 2 * base::bits::CountPopulation(saves_fpu);
+  shrink_slots -= returns;
   if (shrink_slots > 0) {
     __ Subu(sp, sp, Operand(shrink_slots * kPointerSize));
   }
@@ -3473,11 +3434,21 @@ void CodeGenerator::AssembleConstructFrame() {
     __ MultiPush(saves);
     DCHECK_EQ(kNumCalleeSaved, base::bits::CountPopulation(saves) + 1);
   }
+
+  if (returns != 0) {
+    // Create space for returns.
+    __ Subu(sp, sp, Operand(returns * kPointerSize));
+  }
 }
 
 void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
   int pop_count = static_cast<int>(descriptor->StackParameterCount());
+
+  const int returns = frame()->GetReturnSlotCount();
+  if (returns != 0) {
+    __ Addu(sp, sp, Operand(returns * kPointerSize));
+  }
 
   // Restore GP registers.
   const RegList saves = descriptor->CalleeSavedRegisters();

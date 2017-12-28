@@ -395,32 +395,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     DCHECK_EQ(LeaveCC, i.OutputSBit());                         \
   } while (0)
 
-#define ASSEMBLE_CHECKED_STORE_FP(Type)      \
-  do {                                       \
-    auto offset = i.InputRegister(0);        \
-    if (instr->InputAt(1)->IsRegister()) {   \
-      __ cmp(offset, i.InputRegister(1));    \
-    } else {                                 \
-      __ cmp(offset, i.InputImmediate(1));   \
-    }                                        \
-    auto value = i.Input##Type##Register(2); \
-    __ vstr(value, i.InputOffset(3), lo);    \
-    DCHECK_EQ(LeaveCC, i.OutputSBit());      \
-  } while (0)
-
-#define ASSEMBLE_CHECKED_STORE_INTEGER(asm_instr) \
-  do {                                            \
-    auto offset = i.InputRegister(0);             \
-    if (instr->InputAt(1)->IsRegister()) {        \
-      __ cmp(offset, i.InputRegister(1));         \
-    } else {                                      \
-      __ cmp(offset, i.InputImmediate(1));        \
-    }                                             \
-    auto value = i.InputRegister(2);              \
-    __ asm_instr(value, i.InputOffset(3), lo);    \
-    DCHECK_EQ(LeaveCC, i.OutputSBit());           \
-  } while (0)
-
 #define ASSEMBLE_ATOMIC_LOAD_INTEGER(asm_instr)                       \
   do {                                                                \
     __ asm_instr(i.OutputRegister(),                                  \
@@ -1705,6 +1679,23 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
     }
+    case kArmPeek: {
+      int reverse_slot = MiscField::decode(instr->opcode());
+      int offset =
+          FrameSlotToFPOffset(frame()->GetTotalFrameSlotCount() - reverse_slot);
+      if (instr->OutputAt(0)->IsFPRegister()) {
+        LocationOperand* op = LocationOperand::cast(instr->OutputAt(0));
+        if (op->representation() == MachineRepresentation::kFloat64) {
+          __ vldr(i.OutputDoubleRegister(), MemOperand(fp, offset));
+        } else {
+          DCHECK_EQ(MachineRepresentation::kFloat32, op->representation());
+          __ vldr(i.OutputFloatRegister(), MemOperand(fp, offset));
+        }
+      } else {
+        __ ldr(i.OutputRegister(), MemOperand(fp, offset));
+      }
+      break;
+    }
     case kArmF32x4Splat: {
       int src_code = i.InputFloatRegister(0).code();
       __ vdup(Neon32, i.OutputSimd128Register(),
@@ -2583,24 +2574,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kCheckedLoadFloat64:
       ASSEMBLE_CHECKED_LOAD_FP(Double);
       break;
-    case kCheckedStoreWord8:
-      ASSEMBLE_CHECKED_STORE_INTEGER(strb);
-      break;
-    case kCheckedStoreWord16:
-      ASSEMBLE_CHECKED_STORE_INTEGER(strh);
-      break;
-    case kCheckedStoreWord32:
-      ASSEMBLE_CHECKED_STORE_INTEGER(str);
-      break;
-    case kCheckedStoreFloat32:
-      ASSEMBLE_CHECKED_STORE_FP(Float);
-      break;
-    case kCheckedStoreFloat64:
-      ASSEMBLE_CHECKED_STORE_FP(Double);
-      break;
     case kCheckedLoadWord64:
-    case kCheckedStoreWord64:
-      UNREACHABLE();  // currently unsupported checked int64 load/store.
+      UNREACHABLE();  // currently unsupported checked int64 load.
       break;
 
     case kAtomicLoadInt8:
@@ -2702,8 +2677,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 #undef ATOMIC_BINOP_CASE
 #undef ASSEMBLE_CHECKED_LOAD_FP
 #undef ASSEMBLE_CHECKED_LOAD_INTEGER
-#undef ASSEMBLE_CHECKED_STORE_FP
-#undef ASSEMBLE_CHECKED_STORE_INTEGER
 #undef ASSEMBLE_ATOMIC_LOAD_INTEGER
 #undef ASSEMBLE_ATOMIC_STORE_INTEGER
 #undef ASSEMBLE_ATOMIC_EXCHANGE_INTEGER
@@ -2950,8 +2923,9 @@ void CodeGenerator::AssembleConstructFrame() {
       }
     }
 
-    // Skip callee-saved slots, which are pushed below.
+    // Skip callee-saved and return slots, which are pushed below.
     shrink_slots -= base::bits::CountPopulation(saves);
+    shrink_slots -= frame()->GetReturnSlotCount();
     shrink_slots -= 2 * base::bits::CountPopulation(saves_fp);
     if (shrink_slots > 0) {
       __ sub(sp, sp, Operand(shrink_slots * kPointerSize));
@@ -2967,15 +2941,28 @@ void CodeGenerator::AssembleConstructFrame() {
     __ vstm(db_w, sp, DwVfpRegister::from_code(first),
             DwVfpRegister::from_code(last));
   }
+
   if (saves != 0) {
     // Save callee-saved registers.
     __ stm(db_w, sp, saves);
+  }
+
+  const int returns = frame()->GetReturnSlotCount();
+  if (returns != 0) {
+    // Create space for returns.
+    __ sub(sp, sp, Operand(returns * kPointerSize));
   }
 }
 
 void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
   int pop_count = static_cast<int>(descriptor->StackParameterCount());
+
+  const int returns = frame()->GetReturnSlotCount();
+  if (returns != 0) {
+    // Free space of returns.
+    __ add(sp, sp, Operand(returns * kPointerSize));
+  }
 
   // Restore registers.
   const RegList saves = descriptor->CalleeSavedRegisters();

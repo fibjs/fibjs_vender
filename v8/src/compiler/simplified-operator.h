@@ -16,6 +16,7 @@
 #include "src/machine-type.h"
 #include "src/objects.h"
 #include "src/type-hints.h"
+#include "src/vector-slot-pair.h"
 #include "src/zone/zone-handle-set.h"
 
 namespace v8 {
@@ -91,6 +92,28 @@ ExternalArrayType ExternalArrayTypeOf(const Operator* op) WARN_UNUSED_RESULT;
 // The ConvertReceiverMode is used as parameter by ConvertReceiver operators.
 ConvertReceiverMode ConvertReceiverModeOf(Operator const* op);
 
+// A the parameters for several Check nodes. The {feedback} parameter is
+// optional. If {feedback} references a valid CallIC slot and this MapCheck
+// fails, then speculation on that CallIC slot will be disabled.
+class CheckParameters final {
+ public:
+  explicit CheckParameters(const VectorSlotPair& feedback)
+      : feedback_(feedback) {}
+
+  VectorSlotPair const& feedback() const { return feedback_; }
+
+ private:
+  VectorSlotPair feedback_;
+};
+
+bool operator==(CheckParameters const&, CheckParameters const&);
+
+size_t hash_value(CheckParameters const&);
+
+std::ostream& operator<<(std::ostream&, CheckParameters const&);
+
+CheckParameters const& CheckParametersOf(Operator const*) WARN_UNUSED_RESULT;
+
 enum class CheckFloat64HoleMode : uint8_t {
   kNeverReturnHole,  // Never return the hole (deoptimize instead).
   kAllowReturnHole   // Allow to return the hole (signaling NaN).
@@ -111,7 +134,32 @@ size_t hash_value(CheckTaggedInputMode);
 
 std::ostream& operator<<(std::ostream&, CheckTaggedInputMode);
 
-CheckTaggedInputMode CheckTaggedInputModeOf(const Operator*) WARN_UNUSED_RESULT;
+CheckTaggedInputMode CheckTaggedInputModeOf(const Operator*);
+
+class CheckTaggedInputParameters {
+ public:
+  CheckTaggedInputParameters(CheckTaggedInputMode mode,
+                             const VectorSlotPair& feedback)
+      : mode_(mode), feedback_(feedback) {}
+
+  CheckTaggedInputMode mode() const { return mode_; }
+  const VectorSlotPair& feedback() const { return feedback_; }
+
+ private:
+  CheckTaggedInputMode mode_;
+  VectorSlotPair feedback_;
+};
+
+const CheckTaggedInputParameters& CheckTaggedInputParametersOf(const Operator*)
+    WARN_UNUSED_RESULT;
+
+std::ostream& operator<<(std::ostream&,
+                         const CheckTaggedInputParameters& params);
+
+size_t hash_value(const CheckTaggedInputParameters& params);
+
+bool operator==(CheckTaggedInputParameters const&,
+                CheckTaggedInputParameters const&);
 
 enum class CheckForMinusZeroMode : uint8_t {
   kCheckForMinusZero,
@@ -124,6 +172,30 @@ V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&,
                                            CheckForMinusZeroMode);
 
 CheckForMinusZeroMode CheckMinusZeroModeOf(const Operator*) WARN_UNUSED_RESULT;
+
+class CheckMinusZeroParameters {
+ public:
+  CheckMinusZeroParameters(CheckForMinusZeroMode mode,
+                           const VectorSlotPair& feedback)
+      : mode_(mode), feedback_(feedback) {}
+
+  CheckForMinusZeroMode mode() const { return mode_; }
+  const VectorSlotPair& feedback() const { return feedback_; }
+
+ private:
+  CheckForMinusZeroMode mode_;
+  VectorSlotPair feedback_;
+};
+
+const CheckMinusZeroParameters& CheckMinusZeroParametersOf(const Operator* op)
+    WARN_UNUSED_RESULT;
+
+std::ostream& operator<<(std::ostream&, const CheckMinusZeroParameters& params);
+
+size_t hash_value(const CheckMinusZeroParameters& params);
+
+bool operator==(CheckMinusZeroParameters const&,
+                CheckMinusZeroParameters const&);
 
 // Flags for map checks.
 enum class CheckMapsFlag : uint8_t {
@@ -155,19 +227,24 @@ bool operator!=(MapsParameterInfo const&, MapsParameterInfo const&);
 
 size_t hash_value(MapsParameterInfo const&);
 
-// A descriptor for map checks.
+// A descriptor for map checks. The {feedback} parameter is optional.
+// If {feedback} references a valid CallIC slot and this MapCheck fails,
+// then speculation on that CallIC slot will be disabled.
 class CheckMapsParameters final {
  public:
-  CheckMapsParameters(CheckMapsFlags flags, ZoneHandleSet<Map> const& maps)
-      : flags_(flags), maps_info_(maps) {}
+  CheckMapsParameters(CheckMapsFlags flags, ZoneHandleSet<Map> const& maps,
+                      const VectorSlotPair& feedback)
+      : flags_(flags), maps_info_(maps), feedback_(feedback) {}
 
   CheckMapsFlags flags() const { return flags_; }
   ZoneHandleSet<Map> const& maps() const { return maps_info_.maps(); }
   MapsParameterInfo const& maps_info() const { return maps_info_; }
+  VectorSlotPair const& feedback() const { return feedback_; }
 
  private:
   CheckMapsFlags const flags_;
   MapsParameterInfo const maps_info_;
+  VectorSlotPair const feedback_;
 };
 
 bool operator==(CheckMapsParameters const&, CheckMapsParameters const&);
@@ -197,7 +274,29 @@ inline size_t hash_value(GrowFastElementsMode mode) {
 
 std::ostream& operator<<(std::ostream&, GrowFastElementsMode);
 
-GrowFastElementsMode GrowFastElementsModeOf(const Operator*) WARN_UNUSED_RESULT;
+class GrowFastElementsParameters {
+ public:
+  GrowFastElementsParameters(GrowFastElementsMode mode,
+                             const VectorSlotPair& feedback)
+      : mode_(mode), feedback_(feedback) {}
+
+  GrowFastElementsMode mode() const { return mode_; }
+  const VectorSlotPair& feedback() const { return feedback_; }
+
+ private:
+  GrowFastElementsMode mode_;
+  VectorSlotPair feedback_;
+};
+
+bool operator==(const GrowFastElementsParameters&,
+                const GrowFastElementsParameters&);
+
+inline size_t hash_value(const GrowFastElementsParameters&);
+
+std::ostream& operator<<(std::ostream&, const GrowFastElementsParameters&);
+
+const GrowFastElementsParameters& GrowFastElementsParametersOf(const Operator*)
+    WARN_UNUSED_RESULT;
 
 // A descriptor for elements kind transitions.
 class ElementsTransition final {
@@ -437,16 +536,18 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* TruncateTaggedPointerToBit();
 
   const Operator* CheckIf(DeoptimizeReason deoptimize_reason);
-  const Operator* CheckBounds();
-  const Operator* CheckMaps(CheckMapsFlags, ZoneHandleSet<Map>);
+  const Operator* CheckBounds(const VectorSlotPair& feedback);
+  const Operator* CheckMaps(CheckMapsFlags, ZoneHandleSet<Map>,
+                            const VectorSlotPair& = VectorSlotPair());
+  const Operator* MaskIndexWithBound();
   const Operator* CompareMaps(ZoneHandleSet<Map>);
   const Operator* MapGuard(ZoneHandleSet<Map> maps);
 
   const Operator* CheckHeapObject();
   const Operator* CheckInternalizedString();
-  const Operator* CheckNumber();
-  const Operator* CheckSmi();
-  const Operator* CheckString();
+  const Operator* CheckNumber(const VectorSlotPair& feedback);
+  const Operator* CheckSmi(const VectorSlotPair& feedback);
+  const Operator* CheckString(const VectorSlotPair& feedback);
   const Operator* CheckSeqString();
   const Operator* CheckSymbol();
   const Operator* CheckReceiver();
@@ -458,16 +559,19 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* CheckedUint32Div();
   const Operator* CheckedUint32Mod();
   const Operator* CheckedInt32Mul(CheckForMinusZeroMode);
-  const Operator* CheckedInt32ToTaggedSigned();
-  const Operator* CheckedUint32ToInt32();
-  const Operator* CheckedUint32ToTaggedSigned();
-  const Operator* CheckedFloat64ToInt32(CheckForMinusZeroMode);
-  const Operator* CheckedTaggedSignedToInt32();
-  const Operator* CheckedTaggedToInt32(CheckForMinusZeroMode);
+  const Operator* CheckedInt32ToTaggedSigned(const VectorSlotPair& feedback);
+  const Operator* CheckedUint32ToInt32(const VectorSlotPair& feedback);
+  const Operator* CheckedUint32ToTaggedSigned(const VectorSlotPair& feedback);
+  const Operator* CheckedFloat64ToInt32(CheckForMinusZeroMode,
+                                        const VectorSlotPair& feedback);
+  const Operator* CheckedTaggedSignedToInt32(const VectorSlotPair& feedback);
+  const Operator* CheckedTaggedToInt32(CheckForMinusZeroMode,
+                                       const VectorSlotPair& feedback);
   const Operator* CheckedTaggedToFloat64(CheckTaggedInputMode);
-  const Operator* CheckedTaggedToTaggedSigned();
-  const Operator* CheckedTaggedToTaggedPointer();
-  const Operator* CheckedTruncateTaggedToWord32(CheckTaggedInputMode);
+  const Operator* CheckedTaggedToTaggedSigned(const VectorSlotPair& feedback);
+  const Operator* CheckedTaggedToTaggedPointer(const VectorSlotPair& feedback);
+  const Operator* CheckedTruncateTaggedToWord32(CheckTaggedInputMode,
+                                                const VectorSlotPair& feedback);
 
   const Operator* ConvertReceiver(ConvertReceiverMode);
 
@@ -513,7 +617,8 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* EnsureWritableFastElements();
 
   // maybe-grow-fast-elements object, elements, index, length
-  const Operator* MaybeGrowFastElements(GrowFastElementsMode mode);
+  const Operator* MaybeGrowFastElements(GrowFastElementsMode mode,
+                                        const VectorSlotPair& feedback);
 
   // transition-elements-kind object, from-map, to-map
   const Operator* TransitionElementsKind(ElementsTransition transition);

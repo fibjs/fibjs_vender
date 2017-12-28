@@ -47,6 +47,7 @@ class JSBinopReduction final {
       case CompareOperationHint::kNone:
       case CompareOperationHint::kString:
       case CompareOperationHint::kSymbol:
+      case CompareOperationHint::kBigInt:
       case CompareOperationHint::kReceiver:
       case CompareOperationHint::kInternalizedString:
         break;
@@ -156,14 +157,16 @@ class JSBinopReduction final {
   // CheckString node.
   void CheckInputsToString() {
     if (!left_type()->Is(Type::String())) {
-      Node* left_input = graph()->NewNode(simplified()->CheckString(), left(),
-                                          effect(), control());
+      Node* left_input =
+          graph()->NewNode(simplified()->CheckString(VectorSlotPair()), left(),
+                           effect(), control());
       node_->ReplaceInput(0, left_input);
       update_effect(left_input);
     }
     if (!right_type()->Is(Type::String())) {
-      Node* right_input = graph()->NewNode(simplified()->CheckString(), right(),
-                                           effect(), control());
+      Node* right_input =
+          graph()->NewNode(simplified()->CheckString(VectorSlotPair()), right(),
+                           effect(), control());
       node_->ReplaceInput(1, right_input);
       update_effect(right_input);
     }
@@ -308,7 +311,8 @@ class JSBinopReduction final {
       case IrOpcode::kSpeculativeNumberLessThanOrEqual:
         return simplified()->NumberLessThanOrEqual();
       case IrOpcode::kSpeculativeNumberAdd:
-        return simplified()->NumberAdd();
+        // Handled by ReduceSpeculativeNumberAdd.
+        UNREACHABLE();
       case IrOpcode::kSpeculativeNumberSubtract:
         return simplified()->NumberSubtract();
       case IrOpcode::kSpeculativeNumberMultiply:
@@ -539,13 +543,15 @@ Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
       Node* effect = NodeProperties::GetEffectInput(node);
       Node* control = NodeProperties::GetControlInput(node);
       if (r.LeftInputIs(empty_string_type_)) {
-        Node* value = effect = graph()->NewNode(simplified()->CheckString(),
-                                                r.right(), effect, control);
+        Node* value = effect =
+            graph()->NewNode(simplified()->CheckString(VectorSlotPair()),
+                             r.right(), effect, control);
         ReplaceWithValue(node, value, effect, control);
         return Replace(value);
       } else if (r.RightInputIs(empty_string_type_)) {
-        Node* value = effect = graph()->NewNode(simplified()->CheckString(),
-                                                r.left(), effect, control);
+        Node* value = effect =
+            graph()->NewNode(simplified()->CheckString(VectorSlotPair()),
+                             r.left(), effect, control);
         ReplaceWithValue(node, value, effect, control);
         return Replace(value);
       }
@@ -594,6 +600,9 @@ Reduction JSTypedLowering::ReduceSpeculativeNumberBinop(Node* node) {
   if ((hint == NumberOperationHint::kNumber ||
        hint == NumberOperationHint::kNumberOrOddball) &&
       r.BothInputsAre(Type::NumberOrUndefinedOrNullOrBoolean())) {
+    // We intentionally do this only in the Number and NumberOrOddball hint case
+    // because simplified lowering of these speculative ops may do some clever
+    // reductions in the other cases.
     r.ConvertInputsToNumber();
     return r.ChangeToPureOperator(r.NumberOpFromSpeculativeNumberOp(),
                                   Type::Number());
@@ -634,16 +643,16 @@ Reduction JSTypedLowering::ReduceCreateConsString(Node* node) {
   // Make sure {first} is actually a String.
   Type* first_type = NodeProperties::GetType(first);
   if (!first_type->Is(Type::String())) {
-    first = effect =
-        graph()->NewNode(simplified()->CheckString(), first, effect, control);
+    first = effect = graph()->NewNode(
+        simplified()->CheckString(VectorSlotPair()), first, effect, control);
     first_type = NodeProperties::GetType(first);
   }
 
   // Make sure {second} is actually a String.
   Type* second_type = NodeProperties::GetType(second);
   if (!second_type->Is(Type::String())) {
-    second = effect =
-        graph()->NewNode(simplified()->CheckString(), second, effect, control);
+    second = effect = graph()->NewNode(
+        simplified()->CheckString(VectorSlotPair()), second, effect, control);
     second_type = NodeProperties::GetType(second);
   }
 
@@ -661,9 +670,9 @@ Reduction JSTypedLowering::ReduceCreateConsString(Node* node) {
     // has the additional benefit of not holding on to the lazy {frame_state}
     // and thus potentially reduces the number of live ranges and allows for
     // more truncations.
-    length = effect = graph()->NewNode(simplified()->CheckBounds(), length,
-                                       jsgraph()->Constant(String::kMaxLength),
-                                       effect, control);
+    length = effect = graph()->NewNode(
+        simplified()->CheckBounds(VectorSlotPair()), length,
+        jsgraph()->Constant(String::kMaxLength), effect, control);
   } else {
     // Check if we would overflow the allowed maximum string length.
     Node* check =
@@ -999,6 +1008,7 @@ Reduction JSTypedLowering::ReduceJSToNumberOrNumeric(Node* node) {
     NodeProperties::ChangeOp(node, simplified()->PlainPrimitiveToNumber());
     return Changed(node);
   }
+  // TODO(neis): Reduce ToNumeric to ToNumber if input can't be BigInt?
   return NoChange();
 }
 
