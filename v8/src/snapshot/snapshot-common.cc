@@ -307,7 +307,7 @@ Vector<const byte> Snapshot::ExtractContextData(const v8::StartupData* data,
 }
 
 void Snapshot::CheckVersion(const v8::StartupData* data) {
-  char version[kVersionStringLength];
+  char version[kVersionStringLength];return;
   memset(version, 0, kVersionStringLength);
   CHECK_LT(kVersionStringOffset + kVersionStringLength,
            static_cast<uint32_t>(data->raw_size));

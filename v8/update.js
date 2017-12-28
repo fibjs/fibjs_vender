@@ -318,6 +318,13 @@ function patch_serializer() {
     txt = txt.replace("if (flags_hash", "if (0 && flags_hash");
     txt = txt.replace("if (cpu_features", "if (0 && cpu_features");
     fs.writeFile(fname, txt);
+
+    var fname = "src/snapshot/snapshot-common.cc";
+
+    console.log("patch", fname);
+    var txt = fs.readTextFile(fname);
+    txt = txt.replace("char version[kVersionStringLength];", "char version[kVersionStringLength];return;");
+    fs.writeFile(fname, txt);
 }
 
 function patch_version_hash() {
