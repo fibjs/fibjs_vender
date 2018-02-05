@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_BUILTINS_BUILTINS_PROMISE_H_
-#define V8_BUILTINS_BUILTINS_PROMISE_H_
+#ifndef V8_BUILTINS_BUILTINS_PROMISE_GEN_H_
+#define V8_BUILTINS_BUILTINS_PROMISE_GEN_H_
 
 #include "src/code-stub-assembler.h"
 #include "src/contexts.h"
@@ -90,8 +90,18 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
   Node* AllocateAndSetJSPromise(Node* context, v8::Promise::PromiseState status,
                                 Node* result);
 
-  Node* AllocatePromiseResolveThenableJobInfo(Node* result, Node* then,
-                                              Node* resolve, Node* reject,
+  Node* AllocatePromiseReaction(Node* next, Node* promise_or_capability,
+                                Node* fulfill_handler, Node* reject_handler);
+
+  Node* AllocatePromiseReactionJobTask(Heap::RootListIndex map_root_index,
+                                       Node* context, Node* argument,
+                                       Node* handler,
+                                       Node* promise_or_capability);
+  Node* AllocatePromiseReactionJobTask(Node* map, Node* context, Node* argument,
+                                       Node* handler,
+                                       Node* promise_or_capability);
+  Node* AllocatePromiseResolveThenableJobTask(Node* promise_to_resolve,
+                                              Node* then, Node* thenable,
                                               Node* context);
 
   std::pair<Node*, Node*> CreatePromiseResolvingFunctions(
@@ -105,29 +115,15 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
   Node* CreatePromiseGetCapabilitiesExecutorContext(Node* native_context,
                                                     Node* promise_capability);
 
-  Node* NewPromiseCapability(Node* context, Node* constructor,
-                             Node* debug_event = nullptr);
-
  protected:
   void PromiseInit(Node* promise);
-
-  Node* SpeciesConstructor(Node* context, Node* object,
-                           Node* default_constructor);
 
   void PromiseSetHasHandler(Node* promise);
   void PromiseSetHandledHint(Node* promise);
 
-  void AppendPromiseCallback(int offset, compiler::Node* promise,
-                             compiler::Node* value);
-
-  Node* InternalPromiseThen(Node* context, Node* promise, Node* on_resolve,
-                            Node* on_reject);
-
-  Node* InternalPerformPromiseThen(Node* context, Node* promise,
-                                   Node* on_resolve, Node* on_reject,
-                                   Node* deferred_promise,
-                                   Node* deferred_on_resolve,
-                                   Node* deferred_on_reject);
+  void PerformPromiseThen(Node* context, Node* promise, Node* on_fulfilled,
+                          Node* on_rejected,
+                          Node* result_promise_or_capability);
 
   void InternalResolvePromise(Node* context, Node* promise, Node* result);
 
@@ -137,7 +133,6 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
   void BranchIfFastPath(Node* native_context, Node* promise_fun, Node* promise,
                         Label* if_isunmodified, Label* if_ismodified);
 
-  void InitializeFunctionContext(Node* native_context, Node* context, int len);
   Node* CreatePromiseContext(Node* native_context, int slots);
   void PromiseFulfill(Node* context, Node* promise, Node* result,
                       v8::Promise::PromiseState status);
@@ -158,7 +153,7 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
   Node* CreateThrowerFunction(Node* reason, Node* native_context);
 
   Node* PerformPromiseAll(Node* context, Node* constructor, Node* capability,
-                          Node* iterator, Label* if_exception,
+                          const IteratorRecord& record, Label* if_exception,
                           Variable* var_exception);
 
   Node* IncrementSmiCell(Node* cell, Label* if_overflow = nullptr);
@@ -175,9 +170,13 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
                                  const NodeGenerator& handled_by);
 
   Node* PromiseStatus(Node* promise);
-  void PerformFulfillClosure(Node* context, Node* value, bool should_resolve);
+  void PerformFulfillClosure(Node* context, Node* value,
+                             PromiseReaction::Type type);
 
- private:
+  void PromiseReactionJob(Node* context, Node* argument, Node* handler,
+                          Node* promise_or_capability,
+                          PromiseReaction::Type type);
+
   Node* IsPromiseStatus(Node* actual, v8::Promise::PromiseState expected);
   void PromiseSetStatus(Node* promise, v8::Promise::PromiseState status);
 
@@ -187,4 +186,4 @@ class PromiseBuiltinsAssembler : public CodeStubAssembler {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_BUILTINS_BUILTINS_PROMISE_H_
+#endif  // V8_BUILTINS_BUILTINS_PROMISE_GEN_H_

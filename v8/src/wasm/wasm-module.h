@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_MODULE_H_
-#define V8_WASM_MODULE_H_
+#ifndef V8_WASM_WASM_MODULE_H_
+#define V8_WASM_WASM_MODULE_H_
 
 #include <memory>
 
@@ -15,7 +15,7 @@
 
 #include "src/wasm/decoder.h"
 #include "src/wasm/signature-map.h"
-#include "src/wasm/wasm-opcodes.h"
+#include "src/wasm/wasm-constants.h"
 
 namespace v8 {
 namespace internal {
@@ -35,13 +35,6 @@ class CallDescriptor;
 namespace wasm {
 class ErrorThrower;
 class NativeModule;
-
-enum WasmExternalKind {
-  kExternalFunction = 0,
-  kExternalTable = 1,
-  kExternalMemory = 2,
-  kExternalGlobal = 3
-};
 
 // Static representation of a wasm function.
 struct WasmFunction {
@@ -118,14 +111,14 @@ struct WasmTableInit {
 struct WasmImport {
   WireBytesRef module_name;  // module name.
   WireBytesRef field_name;   // import name.
-  WasmExternalKind kind;     // kind of the import.
+  ImportExportKindCode kind;  // kind of the import.
   uint32_t index;            // index into the respective space.
 };
 
 // Static representation of a wasm export.
 struct WasmExport {
   WireBytesRef name;      // exported name.
-  WasmExternalKind kind;  // kind of the export.
+  ImportExportKindCode kind;  // kind of the export.
   uint32_t index;         // index into the respective space.
 };
 
@@ -136,11 +129,6 @@ struct ModuleWireBytes;
 // Static representation of a module.
 struct V8_EXPORT_PRIVATE WasmModule {
   MOVE_ONLY_NO_DEFAULT_CONSTRUCTOR(WasmModule);
-
-  static const uint32_t kPageSize = 0x10000;    // Page size, 64kb.
-  static const uint32_t kMinMemPages = 1;       // Minimum memory size = 64kb
-
-  static constexpr int kInvalidExceptionTag = -1;
 
   std::unique_ptr<Zone> signature_zone;
   uint32_t initial_pages = 0;      // initial size of the memory in 64k pages
@@ -285,10 +273,6 @@ Handle<FixedArray> DecodeLocalNames(Isolate*, Handle<WasmSharedModuleData>);
 // TODO(titzer): move this to WasmExportedFunction.
 WasmFunction* GetWasmFunctionForExport(Isolate* isolate, Handle<Object> target);
 
-void UpdateDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
-                          int index, const WasmFunction* function,
-                          Handle<Object> code_or_foreign);
-
 Handle<Object> GetOrCreateIndirectCallWrapper(
     Isolate* isolate, Handle<WasmInstanceObject> owning_instance,
     WasmCodeWrapper wasm_code, uint32_t index, FunctionSig* sig);
@@ -298,8 +282,6 @@ void UnpackAndRegisterProtectedInstructionsGC(Isolate* isolate,
 
 void UnpackAndRegisterProtectedInstructions(
     Isolate* isolate, const wasm::NativeModule* native_module);
-
-const char* ExternalKindName(WasmExternalKind);
 
 // TruncatedUserString makes it easy to output names up to a certain length, and
 // output a truncation followed by '...' if they exceed a limit.
@@ -341,4 +323,4 @@ class TruncatedUserString {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_WASM_MODULE_H_
+#endif  // V8_WASM_WASM_MODULE_H_

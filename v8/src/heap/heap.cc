@@ -94,14 +94,12 @@ void Heap::SetInterpreterEntryReturnPCOffset(int pc_offset) {
   set_interpreter_entry_return_pc_offset(Smi::FromInt(pc_offset));
 }
 
-void Heap::SetSerializedTemplates(FixedArray* templates) {
-  DCHECK_EQ(empty_fixed_array(), serialized_templates());
+void Heap::SetSerializedObjects(FixedArray* objects) {
   DCHECK(isolate()->serializer_enabled());
-  set_serialized_templates(templates);
+  set_serialized_objects(objects);
 }
 
 void Heap::SetSerializedGlobalProxySizes(FixedArray* sizes) {
-  DCHECK_EQ(empty_fixed_array(), serialized_global_proxy_sizes());
   DCHECK(isolate()->serializer_enabled());
   set_serialized_global_proxy_sizes(sizes);
 }
@@ -179,13 +177,12 @@ Heap::Heap()
       raw_allocations_hash_(0),
       stress_marking_observer_(nullptr),
       stress_scavenge_observer_(nullptr),
+      allocation_step_in_progress_(false),
+      max_marking_limit_reached_(0.0),
       ms_count_(0),
       gc_count_(0),
       mmap_region_base_(0),
       remembered_unmapped_pages_index_(0),
-#ifdef DEBUG
-      allocation_timeout_(0),
-#endif  // DEBUG
       old_generation_allocation_limit_(initial_old_generation_size_),
       inline_allocation_disabled_(false),
       tracer_(nullptr),
@@ -234,7 +231,12 @@ Heap::Heap()
       use_tasks_(true),
       force_oom_(false),
       delay_sweeper_tasks_for_testing_(false),
-      pending_layout_change_object_(nullptr) {
+      pending_layout_change_object_(nullptr)
+#ifdef V8_ENABLE_ALLOCATION_TIMEOUT
+      ,
+      allocation_timeout_(0)
+#endif  // V8_ENABLE_ALLOCATION_TIMEOUT
+{
   // Ensure old_generation_size_ is a multiple of kPageSize.
   DCHECK_EQ(0, max_old_generation_size_ & (Page::kPageSize - 1));
 
@@ -643,7 +645,7 @@ const char* Heap::GetSpaceName(int idx) {
   return nullptr;
 }
 
-void Heap::SetRootCodeStubs(NumberDictionary* value) {
+void Heap::SetRootCodeStubs(SimpleNumberDictionary* value) {
   roots_[kCodeStubsRootIndex] = value;
 }
 
@@ -1111,6 +1113,66 @@ void Heap::CollectAllGarbage(int flags, GarbageCollectionReason gc_reason,
   set_current_gc_flags(kNoGCFlags);
 }
 
+namespace {
+
+intptr_t CompareWords(int size, HeapObject* a, HeapObject* b) {
+  int words = size / kPointerSize;
+  DCHECK_EQ(a->Size(), size);
+  DCHECK_EQ(b->Size(), size);
+  intptr_t* slot_a = reinterpret_cast<intptr_t*>(a->address());
+  intptr_t* slot_b = reinterpret_cast<intptr_t*>(b->address());
+  for (int i = 0; i < words; i++) {
+    if (*slot_a != *slot_b) {
+      return *slot_a - *slot_b;
+    }
+    slot_a++;
+    slot_b++;
+  }
+  return 0;
+}
+
+void ReportDuplicates(int size, std::vector<HeapObject*>& objects) {
+  if (objects.size() == 0) return;
+
+  sort(objects.begin(), objects.end(), [size](HeapObject* a, HeapObject* b) {
+    intptr_t c = CompareWords(size, a, b);
+    if (c != 0) return c < 0;
+    return a < b;
+  });
+
+  std::vector<std::pair<int, HeapObject*>> duplicates;
+  HeapObject* current = objects[0];
+  int count = 1;
+  for (size_t i = 1; i < objects.size(); i++) {
+    if (CompareWords(size, current, objects[i]) == 0) {
+      count++;
+    } else {
+      if (count > 1) {
+        duplicates.push_back(std::make_pair(count - 1, current));
+      }
+      count = 1;
+      current = objects[i];
+    }
+  }
+  if (count > 1) {
+    duplicates.push_back(std::make_pair(count - 1, current));
+  }
+
+  int threshold = FLAG_trace_duplicate_threshold_kb * KB;
+
+  sort(duplicates.begin(), duplicates.end());
+  for (auto it = duplicates.rbegin(); it != duplicates.rend(); ++it) {
+    int duplicate_bytes = it->first * size;
+    if (duplicate_bytes < threshold) break;
+    PrintF("%d duplicates of size %d each (%dKB)\n", it->first, size,
+           duplicate_bytes / KB);
+    PrintF("Sample object: ");
+    it->second->Print();
+    PrintF("============================\n");
+  }
+}
+}  // anonymous namespace
+
 void Heap::CollectAllAvailableGarbage(GarbageCollectionReason gc_reason) {
   // Since we are ignoring the return value, the exact choice of space does
   // not matter, so long as we do not specify NEW_SPACE, which would not
@@ -1150,6 +1212,28 @@ void Heap::CollectAllAvailableGarbage(GarbageCollectionReason gc_reason) {
   set_current_gc_flags(kNoGCFlags);
   new_space_->Shrink();
   UncommitFromSpace();
+
+  if (FLAG_trace_duplicate_threshold_kb) {
+    std::map<int, std::vector<HeapObject*>> objects_by_size;
+    PagedSpaces spaces(this);
+    for (PagedSpace* space = spaces.next(); space != nullptr;
+         space = spaces.next()) {
+      HeapObjectIterator it(space);
+      for (HeapObject* obj = it.Next(); obj != nullptr; obj = it.Next()) {
+        objects_by_size[obj->Size()].push_back(obj);
+      }
+    }
+    {
+      LargeObjectIterator it(lo_space());
+      for (HeapObject* obj = it.Next(); obj != nullptr; obj = it.Next()) {
+        objects_by_size[obj->Size()].push_back(obj);
+      }
+    }
+    for (auto it = objects_by_size.rbegin(); it != objects_by_size.rend();
+         ++it) {
+      ReportDuplicates(it->first, it->second);
+    }
+  }
 }
 
 void Heap::ReportExternalMemoryPressure() {
@@ -1215,13 +1299,14 @@ bool Heap::CollectGarbage(AllocationSpace space,
   const char* collector_reason = nullptr;
   GarbageCollector collector = SelectGarbageCollector(space, &collector_reason);
 
-#ifdef DEBUG
-  // Reset the allocation timeout to the GC interval, but make sure to
-  // allow at least a few allocations after a collection. The reason
-  // for this is that we have a lot of allocation sequences and we
-  // assume that a garbage collection will allow the subsequent
-  // allocation attempts to go through.
-  allocation_timeout_ = Max(6, FLAG_gc_interval);
+#ifdef V8_ENABLE_ALLOCATION_TIMEOUT
+  // Reset the allocation timeout, but make sure to allow at least a few
+  // allocations after a collection. The reason for this is that we have a lot
+  // of allocation sequences and we assume that a garbage collection will allow
+  // the subsequent allocation attempts to go through.
+  if (FLAG_random_gc_interval > 0 || FLAG_gc_interval >= 0) {
+    allocation_timeout_ = Max(6, NextAllocationTimeout(allocation_timeout_));
+  }
 #endif
 
   EnsureFillerObjectAtTop();
@@ -1845,7 +1930,7 @@ void Heap::EvacuateYoungGeneration() {
   if (!new_space()->Rebalance()) {
     FatalProcessOutOfMemory("NewSpace::Rebalance");
   }
-  new_space()->ResetAllocationInfo();
+  new_space()->ResetLinearAllocationArea();
   new_space()->set_age_mark(new_space()->top());
 
   // Fix up special trackers.
@@ -1956,7 +2041,7 @@ void Heap::Scavenge() {
   // Flip the semispaces.  After flipping, to space is empty, from space has
   // live objects.
   new_space_->Flip();
-  new_space_->ResetAllocationInfo();
+  new_space_->ResetLinearAllocationArea();
 
   ItemParallelJob job(isolate()->cancelable_task_manager(),
                       &parallel_scavenge_semaphore_);
@@ -2658,7 +2743,7 @@ bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
     case kFeedbackVectorsForProfilingToolsRootIndex:
     case kNoScriptSharedFunctionInfosRootIndex:
     case kWeakStackTraceListRootIndex:
-    case kSerializedTemplatesRootIndex:
+    case kSerializedObjectsRootIndex:
     case kSerializedGlobalProxySizesRootIndex:
     case kPublicSymbolTableRootIndex:
     case kApiSymbolTableRootIndex:
@@ -2847,7 +2932,7 @@ AllocationResult Heap::AllocateBytecodeArray(int length,
   instance->set_parameter_count(parameter_count);
   instance->set_incoming_new_target_or_generator_register(
       interpreter::Register::invalid_value());
-  instance->set_interrupt_budget(interpreter::Interpreter::kInterruptBudget);
+  instance->set_interrupt_budget(interpreter::Interpreter::InterruptBudget());
   instance->set_osr_loop_nesting_level(0);
   instance->set_bytecode_age(BytecodeArray::kNoAgeBytecodeAge);
   instance->set_constant_pool(constant_pool);
@@ -4860,7 +4945,8 @@ void Heap::ZapFromSpace() {
        PageRange(new_space_->FromSpaceStart(), new_space_->FromSpaceEnd())) {
     for (Address cursor = page->area_start(), limit = page->area_end();
          cursor < limit; cursor += kPointerSize) {
-      Memory::Address_at(cursor) = kFromSpaceZapValue;
+      Memory::Address_at(cursor) =
+          reinterpret_cast<Address>(kFromSpaceZapValue);
     }
   }
 }
@@ -4984,6 +5070,9 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
   // Iterate over global handles.
   switch (mode) {
     case VISIT_FOR_SERIALIZATION:
+      // Global handles are not iterated by the serializer. Values referenced by
+      // global handles need to be added manually.
+      break;
     case VISIT_ONLY_STRONG:
       isolate_->global_handles()->IterateStrongRoots(v);
       break;
@@ -5003,11 +5092,14 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
   }
   v->Synchronize(VisitorSynchronization::kGlobalHandles);
 
-  // Iterate over eternal handles.
-  if (isMinorGC) {
-    isolate_->eternal_handles()->IterateNewSpaceRoots(v);
-  } else {
-    isolate_->eternal_handles()->IterateAllRoots(v);
+  // Iterate over eternal handles. Eternal handles are not iterated by the
+  // serializer. Values referenced by eternal handles need to be added manually.
+  if (mode != VISIT_FOR_SERIALIZATION) {
+    if (isMinorGC) {
+      isolate_->eternal_handles()->IterateNewSpaceRoots(v);
+    } else {
+      isolate_->eternal_handles()->IterateAllRoots(v);
+    }
   }
   v->Synchronize(VisitorSynchronization::kEternalHandles);
 
@@ -5024,11 +5116,9 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
   // Iterate over the partial snapshot cache unless serializing.
   if (mode != VISIT_FOR_SERIALIZATION) {
     SerializerDeserializer::Iterate(isolate_, v);
+    // We don't do a v->Synchronize call here because the serializer and the
+    // deserializer are deliberately out of sync here.
   }
-  // We don't do a v->Synchronize call here, because in debug mode that will
-  // output a flag to the snapshot.  However at this point the serializer and
-  // deserializer are deliberately a little unsynchronized (see above) so the
-  // checking of the sync flag in the snapshot would fail.
 }
 
 
@@ -5446,13 +5536,20 @@ Heap::IncrementalMarkingLimit Heap::IncrementalMarkingLimitReached() {
     if (bytes_to_limit > 0) {
       double current_percent = (gained_since_last_gc / bytes_to_limit) * 100.0;
 
-      if (FLAG_trace_incremental_marking) {
+      if (FLAG_trace_stress_marking) {
         isolate()->PrintWithTimestamp(
             "[IncrementalMarking] %.2lf%% of the memory limit reached\n",
             current_percent);
       }
 
-      if (static_cast<int>(current_percent) >= stress_marking_percentage_) {
+      if (FLAG_fuzzer_gc_analysis) {
+        // Skips values >=100% since they already trigger marking.
+        if (current_percent < 100.0) {
+          max_marking_limit_reached_ =
+              std::max(max_marking_limit_reached_, current_percent);
+        }
+      } else if (static_cast<int>(current_percent) >=
+                 stress_marking_percentage_) {
         stress_marking_percentage_ = NextStressMarkingLimit();
         return IncrementalMarkingLimit::kHardLimit;
       }
@@ -5497,13 +5594,13 @@ void Heap::DisableInlineAllocation() {
   CodeSpaceMemoryModificationScope modification_scope(this);
   for (PagedSpace* space = spaces.next(); space != nullptr;
        space = spaces.next()) {
-    space->EmptyAllocationInfo();
+    space->FreeLinearAllocationArea();
   }
 }
 
 bool Heap::SetUp() {
-#ifdef DEBUG
-  allocation_timeout_ = FLAG_gc_interval;
+#ifdef V8_ENABLE_ALLOCATION_TIMEOUT
+  allocation_timeout_ = NextAllocationTimeout();
 #endif
 
   // Initialize heap spaces and initial maps and objects. Whenever something
@@ -5608,12 +5705,11 @@ bool Heap::SetUp() {
 
   if (FLAG_stress_marking > 0) {
     stress_marking_percentage_ = NextStressMarkingLimit();
-
     stress_marking_observer_ = new StressMarkingObserver(*this);
     AddAllocationObserversToAllSpaces(stress_marking_observer_,
                                       stress_marking_observer_);
   }
-  if (FLAG_stress_scavenge_analysis || FLAG_stress_scavenge > 0) {
+  if (FLAG_stress_scavenge > 0) {
     stress_scavenge_observer_ = new StressScavengeObserver(*this);
     new_space()->AddAllocationObserver(stress_scavenge_observer_);
   }
@@ -5651,9 +5747,32 @@ void Heap::ClearStackLimits() {
   roots_[kRealStackLimitRootIndex] = Smi::kZero;
 }
 
+int Heap::NextAllocationTimeout(int current_timeout) {
+  if (FLAG_random_gc_interval > 0) {
+    // If current timeout hasn't reached 0 the GC was caused by something
+    // different than --stress-atomic-gc flag and we don't update the timeout.
+    if (current_timeout <= 0) {
+      return isolate()->fuzzer_rng()->NextInt(FLAG_random_gc_interval + 1);
+    } else {
+      return current_timeout;
+    }
+  }
+  return FLAG_gc_interval;
+}
+
 void Heap::PrintAllocationsHash() {
   uint32_t hash = StringHasher::GetHashCore(raw_allocations_hash_);
   PrintF("\n### Allocations = %u, hash = 0x%08x\n", allocations_count(), hash);
+}
+
+void Heap::PrintMaxMarkingLimitReached() {
+  PrintF("\n### Maximum marking limit reached = %.02lf\n",
+         max_marking_limit_reached_);
+}
+
+void Heap::PrintMaxNewSpaceSizeReached() {
+  PrintF("\n### Maximum new space size reached = %.02lf\n",
+         stress_scavenge_observer_->MaxNewSpaceSizeReached());
 }
 
 int Heap::NextStressMarkingLimit() {
@@ -5718,8 +5837,17 @@ void Heap::TearDown() {
 
   UpdateMaximumCommitted();
 
-  if (FLAG_verify_predictable) {
+  if (FLAG_verify_predictable || FLAG_fuzzer_gc_analysis) {
     PrintAllocationsHash();
+  }
+
+  if (FLAG_fuzzer_gc_analysis) {
+    if (FLAG_stress_marking > 0) {
+      PrintMaxMarkingLimitReached();
+    }
+    if (FLAG_stress_scavenge > 0) {
+      PrintMaxNewSpaceSizeReached();
+    }
   }
 
   new_space()->RemoveAllocationObserver(idle_scavenge_observer_);
@@ -5732,7 +5860,7 @@ void Heap::TearDown() {
     delete stress_marking_observer_;
     stress_marking_observer_ = nullptr;
   }
-  if (FLAG_stress_scavenge_analysis || FLAG_stress_scavenge > 0) {
+  if (FLAG_stress_scavenge > 0) {
     new_space()->RemoveAllocationObserver(stress_scavenge_observer_);
     delete stress_scavenge_observer_;
     stress_scavenge_observer_ = nullptr;
@@ -6435,19 +6563,13 @@ bool Heap::GetObjectTypeName(size_t index, const char** object_type,
     return true;
     INSTANCE_TYPE_LIST(COMPARE_AND_RETURN_NAME)
 #undef COMPARE_AND_RETURN_NAME
-#define COMPARE_AND_RETURN_NAME(name)                      \
-  case ObjectStats::FIRST_CODE_KIND_SUB_TYPE + Code::name: \
-    *object_type = "CODE_TYPE";                            \
-    *object_sub_type = "CODE_KIND/" #name;                 \
+
+#define COMPARE_AND_RETURN_NAME(name)                       \
+  case ObjectStats::FIRST_VIRTUAL_TYPE + ObjectStats::name: \
+    *object_type = #name;                                   \
+    *object_sub_type = "";                                  \
     return true;
-    CODE_KIND_LIST(COMPARE_AND_RETURN_NAME)
-#undef COMPARE_AND_RETURN_NAME
-#define COMPARE_AND_RETURN_NAME(name)                  \
-  case ObjectStats::FIRST_FIXED_ARRAY_SUB_TYPE + name: \
-    *object_type = "FIXED_ARRAY_TYPE";                 \
-    *object_sub_type = #name;                          \
-    return true;
-    FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(COMPARE_AND_RETURN_NAME)
+    VIRTUAL_INSTANCE_TYPE_LIST(COMPARE_AND_RETURN_NAME)
 #undef COMPARE_AND_RETURN_NAME
   }
   return false;
@@ -6567,6 +6689,7 @@ void AllocationObserver::AllocationStep(int bytes_allocated,
     step_size_ = GetNextStepSize();
     bytes_to_next_step_ = step_size_;
   }
+  DCHECK_GE(bytes_to_next_step_, 0);
 }
 
 namespace {
@@ -6605,9 +6728,7 @@ Code* Heap::GcSafeFindCodeForInnerPointer(Address inner_pointer) {
     return GcSafeCastToCode(this, large_page->GetObject(), inner_pointer);
   }
 
-  if (!code_space()->Contains(inner_pointer)) {
-    return nullptr;
-  }
+  DCHECK(code_space()->Contains(inner_pointer));
 
   // Iterate through the page until we reach the end or find an object starting
   // after the inner pointer.

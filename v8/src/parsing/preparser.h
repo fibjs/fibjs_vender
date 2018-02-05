@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_PARSING_PREPARSER_H
-#define V8_PARSING_PREPARSER_H
+#ifndef V8_PARSING_PREPARSER_H_
+#define V8_PARSING_PREPARSER_H_
 
 #include "src/ast/ast.h"
 #include "src/ast/scopes.h"
@@ -298,12 +298,21 @@ class PreParserExpression {
   // and PreParser.
   PreParserExpression* operator->() { return this; }
 
+  void set_is_private_field() {
+    if (variables_ != nullptr) {
+      DCHECK(IsIdentifier());
+      DCHECK_EQ(1, variables_->length());
+      variables_->first()->set_is_private_field();
+    }
+  }
+
   // More dummy implementations of things PreParser doesn't need to track:
   void SetShouldEagerCompile() {}
 
   int position() const { return kNoSourcePosition; }
   void set_function_token_position(int position) {}
   void set_scope(Scope* scope) {}
+  void set_suspend_count(int suspend_count) {}
 
  private:
   enum Type {
@@ -1146,7 +1155,9 @@ class PreParser : public ParserBase<PreParser> {
                                       bool is_static, bool is_constructor,
                                       bool is_computed_name,
                                       ClassInfo* class_info, bool* ok) {
-    if (kind == ClassLiteralProperty::FIELD && is_computed_name) {
+    // TODO(gsathya): Fix preparsed scope data for PRIVATE_FIELDs by
+    // allocating context variable here.
+    if (kind == ClassLiteralProperty::PUBLIC_FIELD && is_computed_name) {
       scope()->DeclareVariableName(
           ClassFieldVariableName(ast_value_factory(),
                                  class_info->computed_field_count),
@@ -1707,4 +1718,4 @@ PreParserExpression PreParser::SpreadCallNew(
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_PARSING_PREPARSER_H
+#endif  // V8_PARSING_PREPARSER_H_

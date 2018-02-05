@@ -613,7 +613,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
   // Call the entry hook function.
   __ Move(rax, FUNCTION_ADDR(isolate()->function_entry_hook()),
-          Assembler::RelocInfoNone());
+          RelocInfo::NONE);
 
   AllowExternalCallThatCantCauseGC scope(masm);
 
@@ -650,7 +650,7 @@ static void CreateArrayDispatch(MacroAssembler* masm,
     }
 
     // If we reached this point there is a problem.
-    __ Abort(kUnexpectedElementsKindInArrayConstructor);
+    __ Abort(AbortReason::kUnexpectedElementsKindInArrayConstructor);
   } else {
     UNREACHABLE();
   }
@@ -695,7 +695,7 @@ static void CreateArrayDispatchOneArgument(MacroAssembler* masm,
       Handle<Map> allocation_site_map =
           masm->isolate()->factory()->allocation_site_map();
       __ Cmp(FieldOperand(rbx, 0), allocation_site_map);
-      __ Assert(equal, kExpectedAllocationSite);
+      __ Assert(equal, AbortReason::kExpectedAllocationSite);
     }
 
     // Save the resulting elements kind in type info. We can't just store r3
@@ -720,7 +720,7 @@ static void CreateArrayDispatchOneArgument(MacroAssembler* masm,
     }
 
     // If we reached this point there is a problem.
-    __ Abort(kUnexpectedElementsKindInArrayConstructor);
+    __ Abort(AbortReason::kUnexpectedElementsKindInArrayConstructor);
   } else {
     UNREACHABLE();
   }
@@ -795,9 +795,9 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
     // Will both indicate a nullptr and a Smi.
     STATIC_ASSERT(kSmiTag == 0);
     Condition not_smi = NegateCondition(masm->CheckSmi(rcx));
-    __ Check(not_smi, kUnexpectedInitialMapForArrayFunction);
+    __ Check(not_smi, AbortReason::kUnexpectedInitialMapForArrayFunction);
     __ CmpObjectType(rcx, MAP_TYPE, rcx);
-    __ Check(equal, kUnexpectedInitialMapForArrayFunction);
+    __ Check(equal, AbortReason::kUnexpectedInitialMapForArrayFunction);
 
     // We should either have undefined in rbx or a valid AllocationSite
     __ AssertUndefinedOrAllocationSite(rbx);
@@ -894,9 +894,9 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
     // Will both indicate a nullptr and a Smi.
     STATIC_ASSERT(kSmiTag == 0);
     Condition not_smi = NegateCondition(masm->CheckSmi(rcx));
-    __ Check(not_smi, kUnexpectedInitialMapForArrayFunction);
+    __ Check(not_smi, AbortReason::kUnexpectedInitialMapForArrayFunction);
     __ CmpObjectType(rcx, MAP_TYPE, rcx);
-    __ Check(equal, kUnexpectedInitialMapForArrayFunction);
+    __ Check(equal, AbortReason::kUnexpectedInitialMapForArrayFunction);
   }
 
   // Figure out the right elements kind
@@ -913,8 +913,9 @@ void InternalArrayConstructorStub::Generate(MacroAssembler* masm) {
     __ cmpl(rcx, Immediate(PACKED_ELEMENTS));
     __ j(equal, &done);
     __ cmpl(rcx, Immediate(HOLEY_ELEMENTS));
-    __ Assert(equal,
-              kInvalidElementsKindForInternalArrayOrInternalPackedArray);
+    __ Assert(
+        equal,
+        AbortReason::kInvalidElementsKindForInternalArrayOrInternalPackedArray);
     __ bind(&done);
   }
 
@@ -1075,7 +1076,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ CompareRoot(return_value, Heap::kNullValueRootIndex);
   __ j(equal, &ok, Label::kNear);
 
-  __ Abort(kAPICallReturnedInvalidObject);
+  __ Abort(AbortReason::kAPICallReturnedInvalidObject);
 
   __ bind(&ok);
 #endif

@@ -310,7 +310,10 @@ MaybeHandle<HandlerTable> CodeGenerator::GetHandlerTable() const {
 }
 
 Handle<Code> CodeGenerator::FinalizeCode() {
-  if (result_ != kSuccess) return Handle<Code>();
+  if (result_ != kSuccess) {
+    tasm()->AbortedCodeGeneration();
+    return Handle<Code>();
+  }
 
   // Allocate exception handler table.
   Handle<HandlerTable> table = HandlerTable::Empty(isolate());
@@ -483,6 +486,54 @@ void CodeGenerator::GetPushCompatibleMoves(Instruction* instr,
   std::copy(pushes->begin() + push_begin,
             pushes->begin() + push_begin + push_count, pushes->begin());
   pushes->resize(push_count);
+}
+
+CodeGenerator::MoveType::Type CodeGenerator::MoveType::InferMove(
+    InstructionOperand* source, InstructionOperand* destination) {
+  if (source->IsConstant()) {
+    if (destination->IsAnyRegister()) {
+      return MoveType::kConstantToRegister;
+    } else {
+      DCHECK(destination->IsAnyStackSlot());
+      return MoveType::kConstantToStack;
+    }
+  }
+  DCHECK(LocationOperand::cast(source)->IsCompatible(
+      LocationOperand::cast(destination)));
+  if (source->IsAnyRegister()) {
+    if (destination->IsAnyRegister()) {
+      return MoveType::kRegisterToRegister;
+    } else {
+      DCHECK(destination->IsAnyStackSlot());
+      return MoveType::kRegisterToStack;
+    }
+  } else {
+    DCHECK(source->IsAnyStackSlot());
+    if (destination->IsAnyRegister()) {
+      return MoveType::kStackToRegister;
+    } else {
+      DCHECK(destination->IsAnyStackSlot());
+      return MoveType::kStackToStack;
+    }
+  }
+}
+
+CodeGenerator::MoveType::Type CodeGenerator::MoveType::InferSwap(
+    InstructionOperand* source, InstructionOperand* destination) {
+  DCHECK(LocationOperand::cast(source)->IsCompatible(
+      LocationOperand::cast(destination)));
+  if (source->IsAnyRegister()) {
+    if (destination->IsAnyRegister()) {
+      return MoveType::kRegisterToRegister;
+    } else {
+      DCHECK(destination->IsAnyStackSlot());
+      return MoveType::kRegisterToStack;
+    }
+  } else {
+    DCHECK(source->IsAnyStackSlot());
+    DCHECK(destination->IsAnyStackSlot());
+    return MoveType::kStackToStack;
+  }
 }
 
 CodeGenerator::CodeGenResult CodeGenerator::AssembleInstruction(

@@ -73,6 +73,7 @@
 #include "src/trap-handler/trap-handler.h"
 #include "src/unicode-cache-inl.h"
 #include "src/utils-inl.h"
+#include "src/wasm/wasm-engine.h"
 #include "src/wasm/wasm-objects.h"
 #include "src/zone/zone.h"
 
@@ -1163,7 +1164,7 @@ MaybeHandle<Object> JSProxy::GetProperty(Isolate* isolate,
                     Object);
   }
   // 5. Let target be the value of the [[ProxyTarget]] internal slot of O.
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   // 6. Let trap be ? GetMethod(handler, "get").
   Handle<Object> trap;
   ASSIGN_RETURN_ON_EXCEPTION(
@@ -1536,7 +1537,7 @@ MaybeHandle<Object> JSProxy::GetPrototype(Handle<JSProxy> proxy) {
                     NewTypeError(MessageTemplate::kProxyRevoked, trap_name),
                     Object);
   }
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   Handle<JSReceiver> handler(JSReceiver::cast(proxy->handler()), isolate);
 
   // 5. Let trap be ? GetMethod(handler, "getPrototypeOf").
@@ -1894,22 +1895,6 @@ Maybe<PropertyAttributes> GetPropertyAttributesWithInterceptorInternal(
       int32_t value;
       CHECK(result->ToInt32(&value));
       return Just(static_cast<PropertyAttributes>(value));
-    }
-  } else if (!interceptor->descriptor()->IsUndefined(isolate)) {
-    Handle<Object> result;
-    if (it->IsElement()) {
-      result = args.CallIndexedDescriptor(interceptor, it->index());
-    } else {
-      result = args.CallNamedDescriptor(interceptor, it->name());
-    }
-    if (!result.is_null()) {
-      PropertyDescriptor desc;
-      Utils::ApiCheck(
-          PropertyDescriptor::ToPropertyDescriptor(isolate, result, &desc),
-          it->IsElement() ? "v8::IndexedPropertyDescriptorCallback"
-                          : "v8::NamedPropertyDescriptorCallback",
-          "Invalid property descriptor.");
-      return Just(desc.ToAttributes());
     }
   } else if (!interceptor->getter()->IsUndefined(isolate)) {
     // TODO(verwaest): Use GetPropertyWithInterceptor?
@@ -2497,7 +2482,7 @@ MaybeHandle<Object> Object::ArraySpeciesConstructor(
   Handle<Object> default_species = isolate->array_function();
   if (original_array->IsJSArray() &&
       Handle<JSArray>::cast(original_array)->HasArrayPrototype(isolate) &&
-      isolate->IsArraySpeciesLookupChainIntact()) {
+      isolate->IsSpeciesLookupChainIntact()) {
     return default_species;
   }
   Handle<Object> constructor = isolate->factory()->undefined_value();
@@ -3555,6 +3540,10 @@ void Tuple3::BriefPrintDetails(std::ostream& os) {
      << Brief(value3());
 }
 
+void CallableTask::BriefPrintDetails(std::ostream& os) {
+  os << " callable=" << Brief(callable());
+}
+
 void HeapObject::Iterate(ObjectVisitor* v) { IterateFast<ObjectVisitor>(v); }
 
 
@@ -3627,7 +3616,8 @@ bool HeapObject::CanBeRehashed() const {
     case HASH_TABLE_TYPE:
       // TODO(yangguo): actually support rehashing OrderedHash{Map,Set}.
       return IsNameDictionary() || IsGlobalDictionary() ||
-             IsNumberDictionary() || IsStringTable() || IsWeakHashTable();
+             IsNumberDictionary() || IsSimpleNumberDictionary() ||
+             IsStringTable() || IsWeakHashTable();
     case DESCRIPTOR_ARRAY_TYPE:
       return true;
     case TRANSITION_ARRAY_TYPE:
@@ -3649,6 +3639,8 @@ void HeapObject::RehashBasedOnMap() {
         NameDictionary::cast(this)->Rehash();
       } else if (IsNumberDictionary()) {
         NumberDictionary::cast(this)->Rehash();
+      } else if (IsSimpleNumberDictionary()) {
+        SimpleNumberDictionary::cast(this)->Rehash();
       } else if (IsGlobalDictionary()) {
         GlobalDictionary::cast(this)->Rehash();
       } else if (IsStringTable()) {
@@ -5528,7 +5520,13 @@ Handle<Map> JSObject::GetElementsTransitionMap(Handle<JSObject> object,
 
 void JSProxy::Revoke(Handle<JSProxy> proxy) {
   Isolate* isolate = proxy->GetIsolate();
-  if (!proxy->IsRevoked()) proxy->set_handler(isolate->heap()->null_value());
+  // ES#sec-proxy-revocation-functions
+  if (!proxy->IsRevoked()) {
+    // 5. Set p.[[ProxyTarget]] to null.
+    proxy->set_target(isolate->heap()->null_value());
+    // 6. Set p.[[ProxyHandler]] to null.
+    proxy->set_handler(isolate->heap()->null_value());
+  }
   DCHECK(proxy->IsRevoked());
 }
 
@@ -5544,7 +5542,7 @@ Maybe<bool> JSProxy::IsArray(Handle<JSProxy> proxy) {
           isolate->factory()->NewStringFromAsciiChecked("IsArray")));
       return Nothing<bool>();
     }
-    object = handle(proxy->target(), isolate);
+    object = handle(JSReceiver::cast(proxy->target()), isolate);
     if (object->IsJSArray()) return Just(true);
     if (!object->IsJSProxy()) return Just(false);
   }
@@ -5569,7 +5567,7 @@ Maybe<bool> JSProxy::HasProperty(Isolate* isolate, Handle<JSProxy> proxy,
     return Nothing<bool>();
   }
   // 5. Let target be the value of the [[ProxyTarget]] internal slot of O.
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   // 6. Let trap be ? GetMethod(handler, "has").
   Handle<Object> trap;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -5642,7 +5640,7 @@ Maybe<bool> JSProxy::SetProperty(Handle<JSProxy> proxy, Handle<Name> name,
         *factory->NewTypeError(MessageTemplate::kProxyRevoked, trap_name));
     return Nothing<bool>();
   }
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   Handle<JSReceiver> handler(JSReceiver::cast(proxy->handler()), isolate);
 
   Handle<Object> trap;
@@ -5693,7 +5691,7 @@ Maybe<bool> JSProxy::DeletePropertyOrElement(Handle<JSProxy> proxy,
         *factory->NewTypeError(MessageTemplate::kProxyRevoked, trap_name));
     return Nothing<bool>();
   }
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   Handle<JSReceiver> handler(JSReceiver::cast(proxy->handler()), isolate);
 
   Handle<Object> trap;
@@ -7497,7 +7495,7 @@ Maybe<bool> JSProxy::DefineOwnProperty(Isolate* isolate, Handle<JSProxy> proxy,
     return Nothing<bool>();
   }
   // 5. Let target be the value of the [[ProxyTarget]] internal slot of O.
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   // 6. Let trap be ? GetMethod(handler, "defineProperty").
   Handle<Object> trap;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -7638,17 +7636,13 @@ namespace {
 
 Maybe<bool> GetPropertyDescriptorWithInterceptor(LookupIterator* it,
                                                  PropertyDescriptor* desc) {
+  bool has_access = true;
   if (it->state() == LookupIterator::ACCESS_CHECK) {
-    if (it->HasAccess()) {
-      it->Next();
-    } else if (!JSObject::AllCanRead(it) ||
-               it->state() != LookupIterator::INTERCEPTOR) {
-      it->Restart();
-      return Just(false);
-    }
+    has_access = it->HasAccess() || JSObject::AllCanRead(it);
+    it->Next();
   }
 
-  if (it->state() == LookupIterator::INTERCEPTOR) {
+  if (has_access && it->state() == LookupIterator::INTERCEPTOR) {
     Isolate* isolate = it->isolate();
     Handle<InterceptorInfo> interceptor = it->GetInterceptor();
     if (!interceptor->descriptor()->IsUndefined(isolate)) {
@@ -7680,9 +7674,9 @@ Maybe<bool> GetPropertyDescriptorWithInterceptor(LookupIterator* it,
 
         return Just(true);
       }
-      it->Next();
     }
   }
+  it->Restart();
   return Just(false);
 }
 }  // namespace
@@ -7774,7 +7768,7 @@ Maybe<bool> JSProxy::GetOwnPropertyDescriptor(Isolate* isolate,
     return Nothing<bool>();
   }
   // 5. Let target be the value of the [[ProxyTarget]] internal slot of O.
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   // 6. Let trap be ? GetMethod(handler, "getOwnPropertyDescriptor").
   Handle<Object> trap;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -8226,7 +8220,7 @@ Maybe<bool> JSProxy::PreventExtensions(Handle<JSProxy> proxy,
         *factory->NewTypeError(MessageTemplate::kProxyRevoked, trap_name));
     return Nothing<bool>();
   }
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   Handle<JSReceiver> handler(JSReceiver::cast(proxy->handler()), isolate);
 
   Handle<Object> trap;
@@ -8334,7 +8328,7 @@ Maybe<bool> JSProxy::IsExtensible(Handle<JSProxy> proxy) {
         *factory->NewTypeError(MessageTemplate::kProxyRevoked, trap_name));
     return Nothing<bool>();
   }
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   Handle<JSReceiver> handler(JSReceiver::cast(proxy->handler()), isolate);
 
   Handle<Object> trap;
@@ -10256,8 +10250,10 @@ Handle<ArrayList> ArrayList::Add(Handle<ArrayList> array, Handle<Object> obj1,
 
 // static
 Handle<ArrayList> ArrayList::New(Isolate* isolate, int size) {
-  Handle<ArrayList> result = Handle<ArrayList>::cast(
-      isolate->factory()->NewFixedArray(size + kFirstIndex));
+  Handle<FixedArray> fixed_array =
+      isolate->factory()->NewFixedArray(size + kFirstIndex);
+  fixed_array->set_map_no_write_barrier(isolate->heap()->array_list_map());
+  Handle<ArrayList> result = Handle<ArrayList>::cast(fixed_array);
   result->SetLength(0);
   return result;
 }
@@ -10296,10 +10292,13 @@ Handle<FixedArray> EnsureSpaceInFixedArray(Handle<FixedArray> array,
 // static
 Handle<ArrayList> ArrayList::EnsureSpace(Handle<ArrayList> array, int length) {
   const bool empty = (array->length() == 0);
-  auto ret = Handle<ArrayList>::cast(
-      EnsureSpaceInFixedArray(array, kFirstIndex + length));
-  if (empty) ret->SetLength(0);
-  return ret;
+  auto ret = EnsureSpaceInFixedArray(array, kFirstIndex + length);
+  if (empty) {
+    ret->set_map_no_write_barrier(array->GetHeap()->array_list_map());
+
+    Handle<ArrayList>::cast(ret)->SetLength(0);
+  }
+  return Handle<ArrayList>::cast(ret);
 }
 
 Handle<RegExpMatchInfo> RegExpMatchInfo::ReserveCaptures(
@@ -10568,7 +10567,7 @@ Handle<String> String::Trim(Handle<String> string, TrimMode mode) {
   // Perform left trimming if requested.
   int left = 0;
   UnicodeCache* unicode_cache = isolate->unicode_cache();
-  if (mode == kTrim || mode == kTrimLeft) {
+  if (mode == kTrim || mode == kTrimStart) {
     while (left < length &&
            unicode_cache->IsWhiteSpaceOrLineTerminator(string->Get(left))) {
       left++;
@@ -10577,7 +10576,7 @@ Handle<String> String::Trim(Handle<String> string, TrimMode mode) {
 
   // Perform right trimming if requested.
   int right = length;
-  if (mode == kTrim || mode == kTrimRight) {
+  if (mode == kTrim || mode == kTrimEnd) {
     while (
         right > left &&
         unicode_cache->IsWhiteSpaceOrLineTerminator(string->Get(right - 1))) {
@@ -13019,14 +13018,19 @@ MaybeHandle<Map> JSFunction::GetDerivedMap(Isolate* isolate,
                           constructor_initial_map->UnusedPropertyFields();
       int instance_size;
       int in_object_properties;
-      CalculateInstanceSizeForDerivedClass(function, instance_type,
-                                           embedder_fields, &instance_size,
-                                           &in_object_properties);
+      bool success = CalculateInstanceSizeForDerivedClass(
+          function, instance_type, embedder_fields, &instance_size,
+          &in_object_properties);
 
       int unused_property_fields = in_object_properties - pre_allocated;
-      Handle<Map> map =
-          Map::CopyInitialMap(constructor_initial_map, instance_size,
-                              in_object_properties, unused_property_fields);
+
+      Handle<Map> map;
+      if (success) {
+        map = Map::CopyInitialMap(constructor_initial_map, instance_size,
+                                  in_object_properties, unused_property_fields);
+      } else {
+        map = Map::CopyInitialMap(constructor_initial_map);
+      }
       map->set_new_target_is_base(false);
 
       JSFunction::SetInitialMap(function, map, prototype);
@@ -13657,14 +13661,14 @@ String* SharedFunctionInfo::DebugName() {
   return name();
 }
 
-bool SharedFunctionInfo::HasNoSideEffect() {
-  if (!computed_has_no_side_effect()) {
-    DisallowHeapAllocation not_handlified;
-    Handle<SharedFunctionInfo> info(this);
-    set_has_no_side_effect(DebugEvaluate::FunctionHasNoSideEffect(info));
-    set_computed_has_no_side_effect(true);
+// static
+bool SharedFunctionInfo::HasNoSideEffect(Handle<SharedFunctionInfo> info) {
+  if (!info->computed_has_no_side_effect()) {
+    bool has_no_side_effect = DebugEvaluate::FunctionHasNoSideEffect(info);
+    info->set_has_no_side_effect(has_no_side_effect);
+    info->set_computed_has_no_side_effect(true);
   }
-  return has_no_side_effect();
+  return info->has_no_side_effect();
 }
 
 // The filter is a pattern that matches function names in this way:
@@ -13732,8 +13736,11 @@ Handle<Object> SharedFunctionInfo::GetSourceCodeHarmony(
       script_source, start_pos, shared->end_position());
   if (!shared->is_wrapped()) return source;
 
+  DCHECK(!shared->name_should_print_as_anonymous());
   IncrementalStringBuilder builder(isolate);
-  builder.AppendCString("function (");
+  builder.AppendCString("function ");
+  builder.AppendString(Handle<String>(shared->name(), isolate));
+  builder.AppendCString("(");
   Handle<FixedArray> args(Script::cast(shared->script())->wrapped_arguments());
   int argc = args->length();
   for (int i = 0; i < argc; i++) {
@@ -13779,12 +13786,14 @@ void JSFunction::CalculateInstanceSizeHelper(InstanceType instance_type,
                           requested_embedder_fields;
 }
 
-void JSFunction::CalculateInstanceSizeForDerivedClass(
+// static
+bool JSFunction::CalculateInstanceSizeForDerivedClass(
     Handle<JSFunction> function, InstanceType instance_type,
     int requested_embedder_fields, int* instance_size,
     int* in_object_properties) {
   Isolate* isolate = function->GetIsolate();
   int expected_nof_properties = 0;
+  bool result = true;
   for (PrototypeIterator iter(isolate, function, kStartAtReceiver);
        !iter.IsAtEnd(); iter.Advance()) {
     Handle<JSReceiver> current =
@@ -13798,6 +13807,11 @@ void JSFunction::CalculateInstanceSizeForDerivedClass(
         Compiler::Compile(func, Compiler::CLEAR_EXCEPTION)) {
       DCHECK(shared->is_compiled());
       expected_nof_properties += shared->expected_nof_properties();
+    } else if (!shared->is_compiled()) {
+      // In case there was a compilation error for the constructor we will
+      // throw an error during instantiation. Hence we directly return 0;
+      result = false;
+      break;
     }
     if (!IsDerivedConstructor(shared->kind())) {
       break;
@@ -13806,6 +13820,7 @@ void JSFunction::CalculateInstanceSizeForDerivedClass(
   CalculateInstanceSizeHelper(instance_type, true, requested_embedder_fields,
                               expected_nof_properties, instance_size,
                               in_object_properties);
+  return result;
 }
 
 
@@ -13844,7 +13859,7 @@ std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
 
 
 void SharedFunctionInfo::DisableOptimization(BailoutReason reason) {
-  DCHECK_NE(reason, kNoReason);
+  DCHECK_NE(reason, BailoutReason::kNoReason);
 
   set_compiler_hints(
       DisabledOptimizationReasonBits::update(compiler_hints(), reason));
@@ -14056,7 +14071,7 @@ SafepointEntry Code::GetSafepointEntry(Address pc) {
 namespace {
 template <typename Code>
 void SetStackFrameCacheCommon(Handle<Code> code,
-                              Handle<NumberDictionary> cache) {
+                              Handle<SimpleNumberDictionary> cache) {
   Handle<Object> maybe_table(code->source_position_table(), code->GetIsolate());
   if (maybe_table->IsSourcePositionTableWithFrameCache()) {
     Handle<SourcePositionTableWithFrameCache>::cast(maybe_table)
@@ -14074,7 +14089,7 @@ void SetStackFrameCacheCommon(Handle<Code> code,
 
 // static
 void AbstractCode::SetStackFrameCache(Handle<AbstractCode> abstract_code,
-                                      Handle<NumberDictionary> cache) {
+                                      Handle<SimpleNumberDictionary> cache) {
   if (abstract_code->IsCode()) {
     SetStackFrameCacheCommon(handle(abstract_code->GetCode()), cache);
   } else {
@@ -14142,11 +14157,11 @@ void JSFunction::ClearTypeFeedbackInfo() {
   }
 }
 
-void Code::PrintDeoptLocation(FILE* out, Address pc) {
+void Code::PrintDeoptLocation(FILE* out, const char* str, Address pc) {
   Deoptimizer::DeoptInfo info = Deoptimizer::GetDeoptInfo(this, pc);
   class SourcePosition pos = info.position;
-  if (info.deopt_reason != DeoptimizeReason::kNoReason || pos.IsKnown()) {
-    PrintF(out, "            ;;; deoptimize at ");
+  if (info.deopt_reason != DeoptimizeReason::kUnknown || pos.IsKnown()) {
+    PrintF(out, "%s", str);
     OFStream outstr(out);
     pos.Print(outstr, this);
     PrintF(out, ", %s\n", DeoptimizeReasonToString(info.deopt_reason));
@@ -14255,30 +14270,6 @@ Code* Code::OptimizedCodeIterator::Next() {
   DCHECK_EQ(Code::OPTIMIZED_FUNCTION, code->kind());
   return code;
 }
-
-#if defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
-
-const char* Code::ICState2String(InlineCacheState state) {
-  switch (state) {
-    case UNINITIALIZED:
-      return "UNINITIALIZED";
-    case PREMONOMORPHIC:
-      return "PREMONOMORPHIC";
-    case MONOMORPHIC:
-      return "MONOMORPHIC";
-    case RECOMPUTE_HANDLER:
-      return "RECOMPUTE_HANDLER";
-    case POLYMORPHIC:
-      return "POLYMORPHIC";
-    case MEGAMORPHIC:
-      return "MEGAMORPHIC";
-    case GENERIC:
-      return "GENERIC";
-  }
-  UNREACHABLE();
-}
-
-#endif  // defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
 
 #ifdef ENABLE_DISASSEMBLER
 
@@ -14536,8 +14527,7 @@ void HandlerTable::HandlerTableReturnPrint(std::ostream& os) {
   }
 }
 
-
-void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
+void Code::Disassemble(const char* name, std::ostream& os, void* current_pc) {
   os << "kind = " << Kind2String(kind()) << "\n";
   if (is_stub()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this));
@@ -14565,7 +14555,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
   os << "compiler = " << (is_turbofanned() ? "turbofan" : "unknown") << "\n";
   os << "address = " << static_cast<const void*>(this) << "\n";
 
-  os << "Instructions (size = " << instruction_size() << ")\n";
+  os << "Body (size = " << instruction_size() << ")\n";
   {
     Isolate* isolate = GetIsolate();
     int size = instruction_size();
@@ -14577,9 +14567,10 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
 
     // Stop before reaching any embedded tables
     int code_size = Min(safepoint_offset, constant_pool_offset);
+    os << "Instructions (size = " << code_size << ")\n";
     byte* begin = instruction_start();
     byte* end = begin + code_size;
-    Disassembler::Decode(isolate, &os, begin, end, this);
+    Disassembler::Decode(isolate, &os, begin, end, this, current_pc);
 
     if (constant_pool_offset < size) {
       int constant_pool_size = safepoint_offset - constant_pool_offset;
@@ -15108,7 +15099,7 @@ Maybe<bool> JSProxy::SetPrototype(Handle<JSProxy> proxy, Handle<Object> value,
     return Nothing<bool>();
   }
   // 5. Let target be the value of the [[ProxyTarget]] internal slot.
-  Handle<JSReceiver> target(proxy->target(), isolate);
+  Handle<JSReceiver> target(JSReceiver::cast(proxy->target()), isolate);
   // 6. Let trap be ? GetMethod(handler, "getPrototypeOf").
   Handle<Object> trap;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -15922,6 +15913,29 @@ const char* JSPromise::Status(v8::Promise::PromiseState status) {
   UNREACHABLE();
 }
 
+// static
+MaybeHandle<Object> JSPromise::Resolve(Handle<JSPromise> promise,
+                                       Handle<Object> value) {
+  Isolate* isolate = promise->GetIsolate();
+  Handle<Object> argv[] = {promise, value};
+  MaybeHandle<Object> result = Execution::Call(
+      isolate, isolate->promise_resolve(),
+      isolate->factory()->undefined_value(), arraysize(argv), argv);
+  return result;
+}
+
+// static
+MaybeHandle<Object> JSPromise::Reject(Handle<JSPromise> promise,
+                                      Handle<Object> value) {
+  Isolate* isolate = promise->GetIsolate();
+  // We pass true to trigger the debugger's on exception handler.
+  Handle<Object> argv[] = {promise, value, isolate->factory()->ToBoolean(true)};
+  MaybeHandle<Object> result = Execution::Call(
+      isolate, isolate->promise_internal_reject(),
+      isolate->factory()->undefined_value(), arraysize(argv), argv);
+  return result;
+}
+
 namespace {
 
 JSRegExp::Flags RegExpFlagsFromString(Handle<String> flags, bool* success) {
@@ -16449,6 +16463,12 @@ template class EXPORT_TEMPLATE_DEFINE(
 template class EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE)
     Dictionary<NumberDictionary, NumberDictionaryShape>;
 
+template class EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE)
+    HashTable<SimpleNumberDictionary, SimpleNumberDictionaryShape>;
+
+template class EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE)
+    Dictionary<SimpleNumberDictionary, SimpleNumberDictionaryShape>;
+
 template Handle<NameDictionary>
 BaseNameDictionary<NameDictionary, NameDictionaryShape>::New(
     Isolate*, int n, PretenureFlag pretenure, MinimumCapacity capacity_option);
@@ -16460,6 +16480,11 @@ BaseNameDictionary<GlobalDictionary, GlobalDictionaryShape>::New(
 template Handle<NumberDictionary>
     Dictionary<NumberDictionary, NumberDictionaryShape>::AtPut(
         Handle<NumberDictionary>, uint32_t, Handle<Object>, PropertyDetails);
+
+template Handle<SimpleNumberDictionary>
+    Dictionary<SimpleNumberDictionary, SimpleNumberDictionaryShape>::AtPut(
+        Handle<SimpleNumberDictionary>, uint32_t, Handle<Object>,
+        PropertyDetails);
 
 template Object* Dictionary<
     NumberDictionary, NumberDictionaryShape>::SlowReverseLookup(Object* value);
@@ -16474,6 +16499,10 @@ Dictionary<NameDictionary, NameDictionaryShape>::DeleteEntry(
 template Handle<NumberDictionary>
 Dictionary<NumberDictionary, NumberDictionaryShape>::DeleteEntry(
     Handle<NumberDictionary>, int);
+
+template Handle<SimpleNumberDictionary>
+Dictionary<SimpleNumberDictionary, SimpleNumberDictionaryShape>::DeleteEntry(
+    Handle<SimpleNumberDictionary>, int);
 
 template Handle<NameDictionary>
 HashTable<NameDictionary, NameDictionaryShape>::New(Isolate*, int,
@@ -16507,6 +16536,11 @@ Dictionary<NumberDictionary, NumberDictionaryShape>::Add(
 template Handle<NameDictionary>
 BaseNameDictionary<NameDictionary, NameDictionaryShape>::EnsureCapacity(
     Handle<NameDictionary>, int);
+
+template Handle<SimpleNumberDictionary>
+Dictionary<SimpleNumberDictionary, SimpleNumberDictionaryShape>::Add(
+    Handle<SimpleNumberDictionary>, uint32_t, Handle<Object>, PropertyDetails,
+    int*);
 
 template int Dictionary<GlobalDictionary,
                         GlobalDictionaryShape>::NumberOfEnumerableProperties();
@@ -16703,26 +16737,18 @@ MaybeHandle<JSTypedArray> JSTypedArray::SpeciesCreate(
 
   // 2. Let defaultConstructor be the intrinsic object listed in column one of
   // Table 51 for exemplar.[[TypedArrayName]].
-  Handle<JSFunction> default_ctor = isolate->uint8_array_fun();
-  switch (exemplar->type()) {
-#define TYPED_ARRAY_CTOR(Type, type, TYPE, ctype, size) \
-  case kExternal##Type##Array: {                        \
-    default_ctor = isolate->type##_array_fun();         \
-    break;                                              \
-  }
-
-    TYPED_ARRAYS(TYPED_ARRAY_CTOR)
-#undef TYPED_ARRAY_CTOR
-    default:
-      UNREACHABLE();
-  }
+  Handle<JSFunction> default_ctor =
+      JSTypedArray::DefaultConstructor(isolate, exemplar);
 
   // 3. Let constructor be ? SpeciesConstructor(exemplar, defaultConstructor).
-  Handle<Object> ctor;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, ctor,
-      Object::SpeciesConstructor(isolate, exemplar, default_ctor),
-      JSTypedArray);
+  Handle<Object> ctor = default_ctor;
+  if (!exemplar->HasJSTypedArrayPrototype(isolate) ||
+      !isolate->IsSpeciesLookupChainIntact()) {
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, ctor,
+        Object::SpeciesConstructor(isolate, exemplar, default_ctor),
+        JSTypedArray);
+  }
 
   // 4. Return ? TypedArrayCreate(constructor, argumentList).
   return Create(isolate, ctor, argc, argv, method_name);
@@ -17598,6 +17624,13 @@ Handle<Derived> Dictionary<Derived, Shape>::Add(Handle<Derived> dictionary,
   dictionary->ElementAdded();
   if (entry_out) *entry_out = entry;
   return dictionary;
+}
+
+// static
+Handle<SimpleNumberDictionary> SimpleNumberDictionary::Set(
+    Handle<SimpleNumberDictionary> dictionary, uint32_t key,
+    Handle<Object> value) {
+  return AtPut(dictionary, key, value, PropertyDetails::Empty());
 }
 
 bool NumberDictionary::HasComplexElements() {
@@ -18978,6 +19011,13 @@ void JSArrayBuffer::FreeBackingStore() {
 
 // static
 void JSArrayBuffer::FreeBackingStore(Isolate* isolate, Allocation allocation) {
+  if (allocation.mode == ArrayBuffer::Allocator::AllocationMode::kReservation) {
+    // TODO(eholk): check with WasmAllocationTracker to make sure this is
+    // actually a buffer we are tracking.
+    isolate->wasm_engine()->allocation_tracker()->ReleaseAddressSpace(
+        allocation.length);
+  }
+
   isolate->array_buffer_allocator()->Free(allocation.allocation_base,
                                           allocation.length, allocation.mode);
 }

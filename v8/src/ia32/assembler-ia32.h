@@ -233,30 +233,19 @@ enum RoundingMode {
 
 class Immediate BASE_EMBEDDED {
  public:
-  inline explicit Immediate(int x) {
+  inline explicit Immediate(int x, RelocInfo::Mode rmode = RelocInfo::NONE) {
     value_.immediate = x;
-    rmode_ = RelocInfo::NONE32;
-  }
-  inline explicit Immediate(const ExternalReference& ext) {
-    value_.immediate = reinterpret_cast<int32_t>(ext.address());
-    rmode_ = RelocInfo::EXTERNAL_REFERENCE;
-  }
-  inline explicit Immediate(Handle<HeapObject> handle) {
-    value_.immediate = reinterpret_cast<intptr_t>(handle.address());
-    rmode_ = RelocInfo::EMBEDDED_OBJECT;
-  }
-  inline explicit Immediate(Smi* value) {
-    value_.immediate = reinterpret_cast<intptr_t>(value);
-    rmode_ = RelocInfo::NONE32;
-  }
-  inline explicit Immediate(Address addr) {
-    value_.immediate = reinterpret_cast<int32_t>(addr);
-    rmode_ = RelocInfo::NONE32;
-  }
-  inline explicit Immediate(Address x, RelocInfo::Mode rmode) {
-    value_.immediate = reinterpret_cast<int32_t>(x);
     rmode_ = rmode;
   }
+  inline explicit Immediate(const ExternalReference& ext)
+      : Immediate(ext.address(), RelocInfo::EXTERNAL_REFERENCE) {}
+  inline explicit Immediate(Handle<HeapObject> handle)
+      : Immediate(handle.address(), RelocInfo::EMBEDDED_OBJECT) {}
+  inline explicit Immediate(Smi* value)
+      : Immediate(reinterpret_cast<intptr_t>(value)) {}
+  inline explicit Immediate(Address addr,
+                            RelocInfo::Mode rmode = RelocInfo::NONE)
+      : Immediate(reinterpret_cast<int32_t>(addr), rmode) {}
 
   static Immediate EmbeddedNumber(double number);  // Smi or HeapNumber.
   static Immediate EmbeddedCode(CodeStub* code);
@@ -356,20 +345,15 @@ class Operand BASE_EMBEDDED {
 
   // [base + disp/r]
   explicit Operand(Register base, int32_t disp,
-                   RelocInfo::Mode rmode = RelocInfo::NONE32);
+                   RelocInfo::Mode rmode = RelocInfo::NONE);
 
   // [base + index*scale + disp/r]
-  explicit Operand(Register base,
-                   Register index,
-                   ScaleFactor scale,
-                   int32_t disp,
-                   RelocInfo::Mode rmode = RelocInfo::NONE32);
+  explicit Operand(Register base, Register index, ScaleFactor scale,
+                   int32_t disp, RelocInfo::Mode rmode = RelocInfo::NONE);
 
   // [index*scale + disp/r]
-  explicit Operand(Register index,
-                   ScaleFactor scale,
-                   int32_t disp,
-                   RelocInfo::Mode rmode = RelocInfo::NONE32);
+  explicit Operand(Register index, ScaleFactor scale, int32_t disp,
+                   RelocInfo::Mode rmode = RelocInfo::NONE);
 
   static Operand JumpTable(Register index, ScaleFactor scale, Label* table) {
     return Operand(index, scale, reinterpret_cast<int32_t>(table),
@@ -531,10 +515,6 @@ class Assembler : public AssemblerBase {
   inline static void set_target_address_at(
       Isolate* isolate, Address pc, Address constant_pool, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
-  static inline Address target_address_at(Address pc, Code* code);
-  static inline void set_target_address_at(
-      Isolate* isolate, Address pc, Code* code, Address target,
-      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
 
   // Return the code target address at a call site from the return address
   // of that call in the instruction stream.
@@ -643,6 +623,7 @@ class Assembler : public AssemblerBase {
   void mov(const Operand& dst, const Immediate& x);
   void mov(const Operand& dst, Handle<HeapObject> handle);
   void mov(const Operand& dst, Register src);
+  void mov(const Operand& dst, Address src, RelocInfo::Mode);
 
   void movsx_b(Register dst, Register src) { movsx_b(dst, Operand(src)); }
   void movsx_b(Register dst, const Operand& src);
@@ -683,6 +664,11 @@ class Assembler : public AssemblerBase {
   void cmpxchg(const Operand& dst, Register src);
   void cmpxchg_b(const Operand& dst, Register src);
   void cmpxchg_w(const Operand& dst, Register src);
+
+  // Memory Fence
+  void lfence();
+
+  void pause();
 
   // Arithmetics
   void adc(Register dst, int32_t imm32);

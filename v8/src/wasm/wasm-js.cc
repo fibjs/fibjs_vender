@@ -16,14 +16,10 @@
 #include "src/objects.h"
 #include "src/parsing/parse-info.h"
 #include "src/trap-handler/trap-handler.h"
-#include "src/wasm/module-compiler.h"
-#include "src/wasm/module-decoder.h"
-#include "src/wasm/wasm-api.h"
+#include "src/wasm/wasm-engine.h"
 #include "src/wasm/wasm-limits.h"
 #include "src/wasm/wasm-memory.h"
-#include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects-inl.h"
-#include "src/wasm/wasm-result.h"
 
 using v8::internal::wasm::ErrorThrower;
 
@@ -41,6 +37,35 @@ namespace {
       DCHECK(!i_isolate->has_scheduled_exception()); \
     }                                                \
   } while (false)
+
+// Like an ErrorThrower, but turns all pending exceptions into scheduled
+// exceptions when going out of scope. Use this in API methods.
+// Note that pending exceptions are not necessarily created by the ErrorThrower,
+// but e.g. by the wasm start function. There might also be a scheduled
+// exception, created by another API call (e.g. v8::Object::Get). But there
+// should never be both pending and scheduled exceptions.
+class ScheduledErrorThrower : public ErrorThrower {
+ public:
+  ScheduledErrorThrower(i::Isolate* isolate, const char* context)
+      : ErrorThrower(isolate, context) {}
+
+  ~ScheduledErrorThrower();
+};
+
+ScheduledErrorThrower::~ScheduledErrorThrower() {
+  // There should never be both a pending and a scheduled exception.
+  DCHECK(!isolate()->has_scheduled_exception() ||
+         !isolate()->has_pending_exception());
+  // Don't throw another error if there is already a scheduled error.
+  if (isolate()->has_scheduled_exception()) {
+    Reset();
+  } else if (isolate()->has_pending_exception()) {
+    Reset();
+    isolate()->OptionalRescheduleException(false);
+  } else if (error()) {
+    isolate()->ScheduleThrow(*Reify());
+  }
+}
 
 i::Handle<i::String> v8_str(i::Isolate* isolate, const char* str) {
   return isolate->factory()->NewStringFromAsciiChecked(str);
@@ -63,7 +88,8 @@ i::MaybeHandle<i::WasmModuleObject> GetFirstArgumentAsModule(
 }
 
 i::wasm::ModuleWireBytes GetFirstArgumentAsBytes(
-    const v8::FunctionCallbackInfo<v8::Value>& args, ErrorThrower* thrower) {
+    const v8::FunctionCallbackInfo<v8::Value>& args, ErrorThrower* thrower,
+    bool* is_shared) {
   const uint8_t* start = nullptr;
   size_t length = 0;
   v8::Local<v8::Value> source = args[0];
@@ -74,6 +100,7 @@ i::wasm::ModuleWireBytes GetFirstArgumentAsBytes(
 
     start = reinterpret_cast<const uint8_t*>(contents.Data());
     length = contents.ByteLength();
+    *is_shared = buffer->IsSharedArrayBuffer();
   } else if (source->IsTypedArray()) {
     // A TypedArray was passed.
     Local<TypedArray> array = Local<TypedArray>::Cast(source);
@@ -84,6 +111,7 @@ i::wasm::ModuleWireBytes GetFirstArgumentAsBytes(
     start =
         reinterpret_cast<const uint8_t*>(contents.Data()) + array->ByteOffset();
     length = array->ByteLength();
+    *is_shared = buffer->IsSharedArrayBuffer();
   } else {
     thrower->TypeError("Argument 0 must be a buffer source");
   }
@@ -122,8 +150,7 @@ void WebAssemblyCompileStreaming(
     ASSIGN(Promise::Resolver, resolver, Promise::Resolver::New(context));
     v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
     return_value.Set(resolver->GetPromise());
-    i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                           "WebAssembly.compileStreaming()");
+    ScheduledErrorThrower thrower(i_isolate, "WebAssembly.compileStreaming()");
     thrower.CompileError("Wasm code generation disallowed by embedder");
     auto maybe = resolver->Reject(context, Utils::ToLocal(thrower.Reify()));
     CHECK_IMPLIES(!maybe.FromMaybe(false),
@@ -143,7 +170,7 @@ void WebAssemblyCompile(const v8::FunctionCallbackInfo<v8::Value>& args) {
   MicrotasksScope runs_microtasks(isolate, MicrotasksScope::kRunMicrotasks);
 
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.compile()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.compile()");
 
   if (!i::wasm::IsWasmCodegenAllowed(i_isolate, i_isolate->native_context())) {
     thrower.CompileError("Wasm code generation disallowed by embedder");
@@ -154,7 +181,8 @@ void WebAssemblyCompile(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
   return_value.Set(resolver->GetPromise());
 
-  auto bytes = GetFirstArgumentAsBytes(args, &thrower);
+  bool is_shared = false;
+  auto bytes = GetFirstArgumentAsBytes(args, &thrower, &is_shared);
   if (thrower.error()) {
     auto maybe = resolver->Reject(context, Utils::ToLocal(thrower.Reify()));
     CHECK_IMPLIES(!maybe.FromMaybe(false),
@@ -162,7 +190,8 @@ void WebAssemblyCompile(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return;
   }
   i::Handle<i::JSPromise> promise = Utils::OpenHandle(*resolver->GetPromise());
-  i::wasm::AsyncCompile(i_isolate, promise, bytes);
+  // Asynchronous compilation handles copying wire bytes if necessary.
+  i_isolate->wasm_engine()->AsyncCompile(i_isolate, promise, bytes, is_shared);
 }
 
 // WebAssembly.validate(bytes) -> bool
@@ -170,18 +199,33 @@ void WebAssemblyValidate(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.validate()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.validate()");
 
-  auto bytes = GetFirstArgumentAsBytes(args, &thrower);
+  bool is_shared = false;
+  auto bytes = GetFirstArgumentAsBytes(args, &thrower, &is_shared);
 
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
-  if (!thrower.error() &&
-      i::wasm::SyncValidate(reinterpret_cast<i::Isolate*>(isolate), bytes)) {
-    return_value.Set(v8::True(isolate));
-  } else {
+
+  if (thrower.error()) {
     if (thrower.wasm_error()) thrower.Reset();  // Clear error.
     return_value.Set(v8::False(isolate));
+    return;
   }
+
+  bool validated = false;
+  if (is_shared) {
+    // Make a copy of the wire bytes to avoid concurrent modification.
+    std::unique_ptr<uint8_t[]> copy(new uint8_t[bytes.length()]);
+    memcpy(copy.get(), bytes.start(), bytes.length());
+    i::wasm::ModuleWireBytes bytes_copy(copy.get(),
+                                        copy.get() + bytes.length());
+    validated = i_isolate->wasm_engine()->SyncValidate(i_isolate, bytes_copy);
+  } else {
+    // The wire bytes are not shared, OK to use them directly.
+    validated = i_isolate->wasm_engine()->SyncValidate(i_isolate, bytes);
+  }
+
+  return_value.Set(Boolean::New(isolate, validated));
 }
 
 // new WebAssembly.Module(bytes) -> WebAssembly.Module
@@ -191,7 +235,7 @@ void WebAssemblyModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (i_isolate->wasm_module_callback()(args)) return;
 
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Module()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Module()");
 
   if (!args.IsConstructCall()) {
     thrower.TypeError("WebAssembly.Module must be invoked with 'new'");
@@ -202,13 +246,27 @@ void WebAssemblyModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return;
   }
 
-  auto bytes = GetFirstArgumentAsBytes(args, &thrower);
+  bool is_shared = false;
+  auto bytes = GetFirstArgumentAsBytes(args, &thrower, &is_shared);
 
   if (thrower.error()) {
     return;
   }
-  i::MaybeHandle<i::Object> module_obj =
-      i::wasm::SyncCompile(i_isolate, &thrower, bytes);
+  i::MaybeHandle<i::Object> module_obj;
+  if (is_shared) {
+    // Make a copy of the wire bytes to avoid concurrent modification.
+    std::unique_ptr<uint8_t[]> copy(new uint8_t[bytes.length()]);
+    memcpy(copy.get(), bytes.start(), bytes.length());
+    i::wasm::ModuleWireBytes bytes_copy(copy.get(),
+                                        copy.get() + bytes.length());
+    module_obj =
+        i_isolate->wasm_engine()->SyncCompile(i_isolate, &thrower, bytes_copy);
+  } else {
+    // The wire bytes are not shared, OK to use them directly.
+    module_obj =
+        i_isolate->wasm_engine()->SyncCompile(i_isolate, &thrower, bytes);
+  }
+
   if (module_obj.is_null()) return;
 
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
@@ -220,8 +278,7 @@ void WebAssemblyModuleImports(const v8::FunctionCallbackInfo<v8::Value>& args) {
   HandleScope scope(args.GetIsolate());
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.Module.imports()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Module.imports()");
 
   auto maybe_module = GetFirstArgumentAsModule(args, &thrower);
   if (thrower.error()) return;
@@ -234,8 +291,7 @@ void WebAssemblyModuleExports(const v8::FunctionCallbackInfo<v8::Value>& args) {
   HandleScope scope(args.GetIsolate());
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.Module.exports()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Module.exports()");
 
   auto maybe_module = GetFirstArgumentAsModule(args, &thrower);
   if (thrower.error()) return;
@@ -249,8 +305,8 @@ void WebAssemblyModuleCustomSections(
   HandleScope scope(args.GetIsolate());
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.Module.customSections()");
+  ScheduledErrorThrower thrower(i_isolate,
+                                "WebAssembly.Module.customSections()");
 
   auto maybe_module = GetFirstArgumentAsModule(args, &thrower);
   if (thrower.error()) return;
@@ -273,8 +329,7 @@ MaybeLocal<Value> WebAssemblyInstantiateImpl(Isolate* isolate,
 
   i::MaybeHandle<i::Object> instance_object;
   {
-    i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                           "WebAssembly Instantiation");
+    ScheduledErrorThrower thrower(i_isolate, "WebAssembly Instantiation");
     i::MaybeHandle<i::JSReceiver> maybe_imports =
         GetValueAsImports(ffi, &thrower);
     if (thrower.error()) return {};
@@ -282,9 +337,9 @@ MaybeLocal<Value> WebAssemblyInstantiateImpl(Isolate* isolate,
     i::Handle<i::WasmModuleObject> module_obj =
         i::Handle<i::WasmModuleObject>::cast(
             Utils::OpenHandle(Object::Cast(*module)));
-    instance_object =
-        i::wasm::SyncInstantiate(i_isolate, &thrower, module_obj, maybe_imports,
-                                 i::MaybeHandle<i::JSArrayBuffer>());
+    instance_object = i_isolate->wasm_engine()->SyncInstantiate(
+        i_isolate, &thrower, module_obj, maybe_imports,
+        i::MaybeHandle<i::JSArrayBuffer>());
   }
 
   DCHECK_EQ(instance_object.is_null(), i_isolate->has_scheduled_exception());
@@ -356,7 +411,7 @@ void WebAssemblyInstance(const v8::FunctionCallbackInfo<v8::Value>& args) {
   HandleScope scope(args.GetIsolate());
   if (i_isolate->wasm_instance_callback()(args)) return;
 
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Instance()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Instance()");
   if (!args.IsConstructCall()) {
     thrower.TypeError("WebAssembly.Instance must be invoked with 'new'");
     return;
@@ -414,8 +469,7 @@ void WebAssemblyInstantiate(const v8::FunctionCallbackInfo<v8::Value>& args) {
       v8::Isolate::UseCounterFeature::kWebAssemblyInstantiation);
   MicrotasksScope runs_microtasks(isolate, MicrotasksScope::kRunMicrotasks);
 
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.instantiate()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.instantiate()");
 
   HandleScope scope(isolate);
 
@@ -491,7 +545,7 @@ void WebAssemblyTable(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Module()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Module()");
   if (!args.IsConstructCall()) {
     thrower.TypeError("WebAssembly.Table must be invoked with 'new'");
     return;
@@ -548,7 +602,7 @@ void WebAssemblyMemory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Memory()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Memory()");
   if (!args.IsConstructCall()) {
     thrower.TypeError("WebAssembly.Memory must be invoked with 'new'");
     return;
@@ -598,7 +652,7 @@ void WebAssemblyMemory(const v8::FunctionCallbackInfo<v8::Value>& args) {
     }
   }
 
-  size_t size = static_cast<size_t>(i::wasm::WasmModule::kPageSize) *
+  size_t size = static_cast<size_t>(i::wasm::kWasmPageSize) *
                 static_cast<size_t>(initial);
   const bool enable_guard_regions =
       internal::trap_handler::IsTrapHandlerEnabled();
@@ -642,8 +696,7 @@ void WebAssemblyInstanceGetExports(
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.Instance.exports()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Instance.exports()");
   EXTRACT_THIS(receiver, WasmInstanceObject);
   i::Handle<i::JSObject> exports_object(receiver->exports_object());
   args.GetReturnValue().Set(Utils::ToLocal(exports_object));
@@ -654,8 +707,7 @@ void WebAssemblyTableGetLength(
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.Table.length()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Table.length()");
   EXTRACT_THIS(receiver, WasmTableObject);
   args.GetReturnValue().Set(
       v8::Number::New(isolate, receiver->current_length()));
@@ -666,7 +718,7 @@ void WebAssemblyTableGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Table.grow()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Table.grow()");
   Local<Context> context = isolate->GetCurrentContext();
   EXTRACT_THIS(receiver, WasmTableObject);
 
@@ -708,7 +760,7 @@ void WebAssemblyTableGet(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Table.get()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Table.get()");
   Local<Context> context = isolate->GetCurrentContext();
   EXTRACT_THIS(receiver, WasmTableObject);
   i::Handle<i::FixedArray> array(receiver->functions(), i_isolate);
@@ -729,7 +781,7 @@ void WebAssemblyTableSet(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Table.set()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Table.set()");
   Local<Context> context = isolate->GetCurrentContext();
   EXTRACT_THIS(receiver, WasmTableObject);
 
@@ -777,8 +829,7 @@ void WebAssemblyMemoryGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.Memory.grow()");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Memory.grow()");
   Local<Context> context = isolate->GetCurrentContext();
   EXTRACT_THIS(receiver, WasmMemoryObject);
 
@@ -796,7 +847,7 @@ void WebAssemblyMemoryGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return;
   }
   uint32_t old_size =
-      old_buffer->byte_length()->Number() / i::wasm::kSpecMaxWasmMemoryPages;
+      old_buffer->byte_length()->Number() / i::wasm::kWasmPageSize;
   int64_t new_size64 = old_size + delta_size;
   if (delta_size < 0 || max_size64 < new_size64 || new_size64 < old_size) {
     thrower.RangeError(new_size64 < old_size ? "trying to shrink memory"
@@ -809,10 +860,6 @@ void WebAssemblyMemoryGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
     thrower.RangeError("Unable to grow instance memory.");
     return;
   }
-  if (!old_buffer->is_shared()) {
-    bool free_memory = delta_size != 0 && !old_buffer->has_guard_region();
-    i::wasm::DetachMemoryBuffer(i_isolate, old_buffer, free_memory);
-  }
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
   return_value.Set(ret);
 }
@@ -823,8 +870,7 @@ void WebAssemblyMemoryGetBuffer(
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   HandleScope scope(isolate);
-  i::wasm::ScheduledErrorThrower thrower(i_isolate,
-                                         "WebAssembly.Memory.buffer");
+  ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Memory.buffer");
   EXTRACT_THIS(receiver, WasmMemoryObject);
 
   i::Handle<i::Object> buffer_obj(receiver->array_buffer(), i_isolate);

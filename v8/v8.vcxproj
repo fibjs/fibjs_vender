@@ -54,7 +54,6 @@
     <ClInclude Include="src\assembler.h" />
     <ClInclude Include="src\assert-scope.h" />
     <ClInclude Include="src\ast\ast-function-literal-id-reindexer.h" />
-    <ClInclude Include="src\ast\ast-numbering.h" />
     <ClInclude Include="src\ast\ast-source-ranges.h" />
     <ClInclude Include="src\ast\ast-traversal-visitor.h" />
     <ClInclude Include="src\ast\ast-value-factory.h" />
@@ -122,6 +121,7 @@
     <ClInclude Include="src\bootstrapper.h" />
     <ClInclude Include="src\boxed-float.h" />
     <ClInclude Include="src\builtins\builtins-arguments-gen.h" />
+    <ClInclude Include="src\builtins\builtins-array-gen.h" />
     <ClInclude Include="src\builtins\builtins-async-gen.h" />
     <ClInclude Include="src\builtins\builtins-call-gen.h" />
     <ClInclude Include="src\builtins\builtins-constructor-gen.h" />
@@ -188,6 +188,7 @@
     <ClInclude Include="src\compiler\frame-elider.h" />
     <ClInclude Include="src\compiler\frame-states.h" />
     <ClInclude Include="src\compiler\frame.h" />
+    <ClInclude Include="src\compiler\functional-list.h" />
     <ClInclude Include="src\compiler\gap-resolver.h" />
     <ClInclude Include="src\compiler\graph-assembler.h" />
     <ClInclude Include="src\compiler\graph-reducer.h" />
@@ -383,6 +384,7 @@
     <ClInclude Include="src\ic\stub-cache.h" />
     <ClInclude Include="src\icu_util.h" />
     <ClInclude Include="src\identity-map.h" />
+    <ClInclude Include="src\instruction-stream.h" />
     <ClInclude Include="src\interface-descriptors.h" />
     <ClInclude Include="src\interpreter\block-coverage-builder.h" />
     <ClInclude Include="src\interpreter\bytecode-array-accessor.h" />
@@ -652,10 +654,10 @@
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\signature-map.h" />
     <ClInclude Include="src\wasm\streaming-decoder.h" />
-    <ClInclude Include="src\wasm\wasm-api.h" />
     <ClInclude Include="src\wasm\wasm-code-manager.h" />
     <ClInclude Include="src\wasm\wasm-code-specialization.h" />
     <ClInclude Include="src\wasm\wasm-code-wrapper.h" />
+    <ClInclude Include="src\wasm\wasm-constants.h" />
     <ClInclude Include="src\wasm\wasm-engine.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
@@ -702,7 +704,6 @@
     <ClCompile Include="src\assembler.cc" />
     <ClCompile Include="src\assert-scope.cc" />
     <ClCompile Include="src\ast\ast-function-literal-id-reindexer.cc" />
-    <ClCompile Include="src\ast\ast-numbering.cc" />
     <ClCompile Include="src\ast\ast-value-factory.cc" />
     <ClCompile Include="src\ast\ast.cc" />
     <ClCompile Include="src\ast\compile-time-value.cc" />
@@ -1030,6 +1031,7 @@
     <ClCompile Include="src\ic\stub-cache.cc" />
     <ClCompile Include="src\icu_util.cc" />
     <ClCompile Include="src\identity-map.cc" />
+    <ClCompile Include="src\instruction-stream.cc" />
     <ClCompile Include="src\interface-descriptors.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-accessor.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc" />
@@ -1257,11 +1259,11 @@
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\signature-map.cc" />
     <ClCompile Include="src\wasm\streaming-decoder.cc" />
-    <ClCompile Include="src\wasm\wasm-api.cc" />
     <ClCompile Include="src\wasm\wasm-code-manager.cc" />
     <ClCompile Include="src\wasm\wasm-code-specialization.cc" />
     <ClCompile Include="src\wasm\wasm-code-wrapper.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
+    <ClCompile Include="src\wasm\wasm-engine.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
     <ClCompile Include="src\wasm\wasm-interpreter.cc" />
     <ClCompile Include="src\wasm\wasm-js.cc" />
@@ -1358,7 +1360,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
@@ -1379,7 +1381,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
@@ -1402,7 +1404,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
@@ -1429,7 +1431,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>

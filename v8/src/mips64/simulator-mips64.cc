@@ -866,18 +866,6 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 Simulator::~Simulator() { free(stack_); }
 
 
-// static
-void SimulatorBase::TearDown(base::CustomMatcherHashMap* i_cache) {
-  if (i_cache != nullptr) {
-    for (base::HashMap::Entry* entry = i_cache->Start(); entry != nullptr;
-         entry = i_cache->Next(entry)) {
-      delete static_cast<CachePage*>(entry->value);
-    }
-    delete i_cache;
-  }
-}
-
-
 // Get the active Simulator for the current thread.
 Simulator* Simulator::current(Isolate* isolate) {
   v8::internal::Isolate::PerIsolateThreadData* isolate_data =
@@ -6889,7 +6877,6 @@ void Simulator::DecodeTypeImmediate() {
       break;
     // ------------- Arithmetic instructions.
     case ADDIU: {
-      DCHECK(is_int32(rs));
       int32_t alu32_out = static_cast<int32_t>(rs + se_imm16);
       // Sign-extend result of 32bit operation into 64bit register.
       SetResult(rt_reg, static_cast<int64_t>(alu32_out));
@@ -7038,7 +7025,7 @@ void Simulator::DecodeTypeImmediate() {
       uint64_t mask = byte_shift ? (~0UL << (al_offset + 1) * 8) : 0;
       addr = rs + se_imm16 - al_offset;
       uint64_t mem_value = Read2W(addr, instr_.instr()) & mask;
-      mem_value |= rt >> byte_shift * 8;
+      mem_value |= static_cast<uint64_t>(rt) >> byte_shift * 8;
       Write2W(addr, mem_value, instr_.instr());
       break;
     }
@@ -7420,33 +7407,30 @@ void Simulator::CallInternal(byte* entry) {
   set_register(fp, fp_val);
 }
 
-
-int64_t Simulator::Call(byte* entry, int argument_count, ...) {
-  const int kRegisterPassedArguments = 8;
-  va_list parameters;
-  va_start(parameters, argument_count);
+intptr_t Simulator::CallImpl(byte* entry, int argument_count,
+                             const intptr_t* arguments) {
+  constexpr int kRegisterPassedArguments = 8;
   // Set up arguments.
 
   // First four arguments passed in registers in both ABI's.
-  DCHECK_GE(argument_count, 4);
-  set_register(a0, va_arg(parameters, int64_t));
-  set_register(a1, va_arg(parameters, int64_t));
-  set_register(a2, va_arg(parameters, int64_t));
-  set_register(a3, va_arg(parameters, int64_t));
+  int reg_arg_count = std::min(kRegisterPassedArguments, argument_count);
+  if (reg_arg_count > 0) set_register(a0, arguments[0]);
+  if (reg_arg_count > 1) set_register(a1, arguments[1]);
+  if (reg_arg_count > 2) set_register(a2, arguments[2]);
+  if (reg_arg_count > 2) set_register(a3, arguments[3]);
 
   // Up to eight arguments passed in registers in N64 ABI.
   // TODO(plind): N64 ABI calls these regs a4 - a7. Clarify this.
-  if (argument_count >= 5) set_register(a4, va_arg(parameters, int64_t));
-  if (argument_count >= 6) set_register(a5, va_arg(parameters, int64_t));
-  if (argument_count >= 7) set_register(a6, va_arg(parameters, int64_t));
-  if (argument_count >= 8) set_register(a7, va_arg(parameters, int64_t));
+  if (reg_arg_count > 4) set_register(a4, arguments[4]);
+  if (reg_arg_count > 5) set_register(a5, arguments[5]);
+  if (reg_arg_count > 6) set_register(a6, arguments[6]);
+  if (reg_arg_count > 7) set_register(a7, arguments[7]);
 
   // Remaining arguments passed on stack.
   int64_t original_stack = get_register(sp);
   // Compute position of stack on entry to generated code.
-  int stack_args_count = (argument_count > kRegisterPassedArguments) ?
-                         (argument_count - kRegisterPassedArguments) : 0;
-  int stack_args_size = stack_args_count * sizeof(int64_t) + kCArgsSlotsSize;
+  int stack_args_count = argument_count - reg_arg_count;
+  int stack_args_size = stack_args_count * sizeof(*arguments) + kCArgsSlotsSize;
   int64_t entry_stack = original_stack - stack_args_size;
 
   if (base::OS::ActivationFrameAlignment() != 0) {
@@ -7454,11 +7438,8 @@ int64_t Simulator::Call(byte* entry, int argument_count, ...) {
   }
   // Store remaining arguments on stack, from low to high memory.
   intptr_t* stack_argument = reinterpret_cast<intptr_t*>(entry_stack);
-  for (int i = kRegisterPassedArguments; i < argument_count; i++) {
-    int stack_index = i - kRegisterPassedArguments + kCArgSlotCount;
-    stack_argument[stack_index] = va_arg(parameters, int64_t);
-  }
-  va_end(parameters);
+  memcpy(stack_argument + kCArgSlotCount, arguments + reg_arg_count,
+         stack_args_count * sizeof(*arguments));
   set_register(sp, entry_stack);
 
   CallInternal(entry);
@@ -7467,8 +7448,7 @@ int64_t Simulator::Call(byte* entry, int argument_count, ...) {
   CHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
 
-  int64_t result = get_register(v0);
-  return result;
+  return get_register(v0);
 }
 
 

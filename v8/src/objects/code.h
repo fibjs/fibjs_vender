@@ -133,13 +133,9 @@ class Code : public HeapObject {
 
   static const char* Kind2String(Kind kind);
 
-#if defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
-  // Printing
-  static const char* ICState2String(InlineCacheState state);
-#endif  // defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
-
 #ifdef ENABLE_DISASSEMBLER
-  void Disassemble(const char* name, std::ostream& os);  // NOLINT
+  void Disassemble(const char* name, std::ostream& os,
+                   void* current_pc = nullptr);  // NOLINT
 #endif
 
   // [instruction_size]: Size of the native instructions
@@ -389,7 +385,7 @@ class Code : public HeapObject {
   DECL_PRINTER(Code)
   DECL_VERIFIER(Code)
 
-  void PrintDeoptLocation(FILE* out, Address pc);
+  void PrintDeoptLocation(FILE* out, const char* str, Address pc);
   bool CanDeoptAt(Address pc);
 
   inline HandlerTable::CatchPrediction GetBuiltinCatchPrediction();
@@ -583,7 +579,7 @@ class AbstractCode : public HeapObject {
 
   inline Object* stack_frame_cache();
   static void SetStackFrameCache(Handle<AbstractCode> abstract_code,
-                                 Handle<NumberDictionary> cache);
+                                 Handle<SimpleNumberDictionary> cache);
   void DropStackFrameCache();
 
   // Returns the size of instructions and the metadata.

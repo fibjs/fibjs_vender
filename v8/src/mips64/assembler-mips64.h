@@ -32,9 +32,8 @@
 // modified significantly by Google Inc.
 // Copyright 2012 the V8 project authors. All rights reserved.
 
-
-#ifndef V8_MIPS_ASSEMBLER_MIPS_H_
-#define V8_MIPS_ASSEMBLER_MIPS_H_
+#ifndef V8_MIPS64_ASSEMBLER_MIPS64_H_
+#define V8_MIPS64_ASSEMBLER_MIPS64_H_
 
 #include <stdio.h>
 
@@ -396,7 +395,7 @@ class Operand BASE_EMBEDDED {
  public:
   // Immediate.
   INLINE(explicit Operand(int64_t immediate,
-                          RelocInfo::Mode rmode = RelocInfo::NONE64))
+                          RelocInfo::Mode rmode = RelocInfo::NONE))
       : rm_(no_reg), rmode_(rmode) {
     value_.immediate = immediate;
   }
@@ -408,8 +407,7 @@ class Operand BASE_EMBEDDED {
   INLINE(explicit Operand(Object** opp));
   INLINE(explicit Operand(Context** cpp));
   explicit Operand(Handle<HeapObject> handle);
-  INLINE(explicit Operand(Smi* value))
-      : rm_(no_reg), rmode_(RelocInfo::NONE32) {
+  INLINE(explicit Operand(Smi* value)) : rm_(no_reg), rmode_(RelocInfo::NONE) {
     value_.immediate = reinterpret_cast<intptr_t>(value);
   }
 
@@ -591,10 +589,6 @@ class Assembler : public AssemblerBase {
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED)) {
     set_target_address_at(isolate, pc, target, icache_flush_mode);
   }
-  INLINE(static Address target_address_at(Address pc, Code* code));
-  INLINE(static void set_target_address_at(
-      Isolate* isolate, Address pc, Code* code, Address target,
-      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED));
 
   static void set_target_value_at(
       Isolate* isolate, Address pc, uint64_t target,
@@ -2304,4 +2298,4 @@ class UseScratchRegisterScope {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_ARM_ASSEMBLER_MIPS_H_
+#endif  // V8_MIPS64_ASSEMBLER_MIPS64_H_

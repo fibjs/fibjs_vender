@@ -151,9 +151,6 @@ CPURegList CPURegList::GetSafepointSavedRegisters() {
   // is a caller-saved register according to the procedure call standard.
   list.Combine(18);
 
-  // Drop jssp as the stack pointer doesn't need to be included.
-  list.Remove(28);
-
   // Add the link register (x30) to the safepoint list.
   list.Combine(30);
 
@@ -190,7 +187,8 @@ uint32_t RelocInfo::embedded_size() const {
 
 void RelocInfo::set_embedded_address(Isolate* isolate, Address address,
                                      ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, host_, address, flush_mode);
+  Assembler::set_target_address_at(isolate, pc_, constant_pool_, address,
+                                   flush_mode);
 }
 
 void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
@@ -473,9 +471,6 @@ void ConstPool::Clear() {
 
 
 bool ConstPool::CanBeShared(RelocInfo::Mode mode) {
-  // Constant pool currently does not support 32-bit entries.
-  DCHECK(mode != RelocInfo::NONE32);
-
   return RelocInfo::IsNone(mode) ||
          (mode >= RelocInfo::FIRST_SHAREABLE_RELOC_MODE);
 }
@@ -4751,6 +4746,9 @@ void Assembler::GrowBuffer() {
 
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
+  // Non-relocatable constants should not end up in the literal pool.
+  DCHECK(!RelocInfo::IsNone(rmode));
+
   // We do not try to reuse pool constants.
   RelocInfo rinfo(reinterpret_cast<byte*>(pc_), rmode, data, nullptr);
   bool write_reloc_info = true;

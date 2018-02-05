@@ -726,48 +726,6 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
   }
 }
 
-void InstructionSelector::VisitCheckedLoad(Node* node) {
-  CheckedLoadRepresentation load_rep = CheckedLoadRepresentationOf(node->op());
-  ArmOperandGenerator g(this);
-  Node* const buffer = node->InputAt(0);
-  Node* const offset = node->InputAt(1);
-  Node* const length = node->InputAt(2);
-  ArchOpcode opcode = kArchNop;
-  switch (load_rep.representation()) {
-    case MachineRepresentation::kWord8:
-      opcode = load_rep.IsSigned() ? kCheckedLoadInt8 : kCheckedLoadUint8;
-      break;
-    case MachineRepresentation::kWord16:
-      opcode = load_rep.IsSigned() ? kCheckedLoadInt16 : kCheckedLoadUint16;
-      break;
-    case MachineRepresentation::kWord32:
-      opcode = kCheckedLoadWord32;
-      break;
-    case MachineRepresentation::kFloat32:
-      opcode = kCheckedLoadFloat32;
-      break;
-    case MachineRepresentation::kFloat64:
-      opcode = kCheckedLoadFloat64;
-      break;
-    case MachineRepresentation::kBit:      // Fall through.
-    case MachineRepresentation::kTaggedSigned:   // Fall through.
-    case MachineRepresentation::kTaggedPointer:  // Fall through.
-    case MachineRepresentation::kTagged:   // Fall through.
-    case MachineRepresentation::kWord64:   // Fall through.
-    case MachineRepresentation::kSimd128:  // Fall through.
-    case MachineRepresentation::kNone:
-      UNREACHABLE();
-      return;
-  }
-  InstructionOperand offset_operand = g.UseRegister(offset);
-  InstructionOperand length_operand = g.CanBeImmediate(length, kArmCmp)
-                                          ? g.UseImmediate(length)
-                                          : g.UseRegister(length);
-  Emit(opcode | AddressingModeField::encode(kMode_Offset_RR),
-       g.DefineAsRegister(node), offset_operand, length_operand,
-       g.UseRegister(buffer), offset_operand);
-}
-
 namespace {
 
 void EmitBic(InstructionSelector* selector, Node* node, Node* left,
@@ -1167,6 +1125,10 @@ void InstructionSelector::VisitWord32ReverseBytes(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
 
+void InstructionSelector::VisitSpeculationFence(Node* node) {
+  ArmOperandGenerator g(this);
+  Emit(kArmDsbIsb, g.NoOutput());
+}
 
 void InstructionSelector::VisitInt32Add(Node* node) {
   ArmOperandGenerator g(this);
@@ -1582,7 +1544,6 @@ void InstructionSelector::EmitPrepareResults(ZoneVector<PushParameter>* results,
   int reverse_slot = 0;
   for (PushParameter output : *results) {
     if (!output.location.IsCallerFrameSlot()) continue;
-    ++reverse_slot;
     // Skip any alignment holes in nodes.
     if (output.node != nullptr) {
       DCHECK(!descriptor->IsCFunctionCall());
@@ -1591,13 +1552,10 @@ void InstructionSelector::EmitPrepareResults(ZoneVector<PushParameter>* results,
       } else if (output.location.GetType() == MachineType::Float64()) {
         MarkAsFloat64(output.node);
       }
-      InstructionOperand result = g.DefineAsRegister(output.node);
-      Emit(kArmPeek | MiscField::encode(reverse_slot), result);
+      Emit(kArmPeek, g.DefineAsRegister(output.node),
+           g.UseImmediate(reverse_slot));
     }
-    if (output.location.GetType() == MachineType::Float64()) {
-      // Float64 require an implicit second slot.
-      ++reverse_slot;
-    }
+    reverse_slot += output.location.GetSizeInPointers();
   }
 }
 
@@ -2026,24 +1984,26 @@ void InstructionSelector::VisitSwitch(Node* node, const SwitchInfo& sw) {
   InstructionOperand value_operand = g.UseRegister(node->InputAt(0));
 
   // Emit either ArchTableSwitch or ArchLookupSwitch.
-  static const size_t kMaxTableSwitchValueRange = 2 << 16;
-  size_t table_space_cost = 4 + sw.value_range;
-  size_t table_time_cost = 3;
-  size_t lookup_space_cost = 3 + 2 * sw.case_count;
-  size_t lookup_time_cost = sw.case_count;
-  if (sw.case_count > 0 &&
-      table_space_cost + 3 * table_time_cost <=
-          lookup_space_cost + 3 * lookup_time_cost &&
-      sw.min_value > std::numeric_limits<int32_t>::min() &&
-      sw.value_range <= kMaxTableSwitchValueRange) {
-    InstructionOperand index_operand = value_operand;
-    if (sw.min_value) {
-      index_operand = g.TempRegister();
-      Emit(kArmSub | AddressingModeField::encode(kMode_Operand2_I),
-           index_operand, value_operand, g.TempImmediate(sw.min_value));
+  if (enable_switch_jump_table_ == kEnableSwitchJumpTable) {
+    static const size_t kMaxTableSwitchValueRange = 2 << 16;
+    size_t table_space_cost = 4 + sw.value_range;
+    size_t table_time_cost = 3;
+    size_t lookup_space_cost = 3 + 2 * sw.case_count;
+    size_t lookup_time_cost = sw.case_count;
+    if (sw.case_count > 0 &&
+        table_space_cost + 3 * table_time_cost <=
+            lookup_space_cost + 3 * lookup_time_cost &&
+        sw.min_value > std::numeric_limits<int32_t>::min() &&
+        sw.value_range <= kMaxTableSwitchValueRange) {
+      InstructionOperand index_operand = value_operand;
+      if (sw.min_value) {
+        index_operand = g.TempRegister();
+        Emit(kArmSub | AddressingModeField::encode(kMode_Operand2_I),
+             index_operand, value_operand, g.TempImmediate(sw.min_value));
+      }
+      // Generate a table lookup.
+      return EmitTableSwitch(sw, index_operand);
     }
-    // Generate a table lookup.
-    return EmitTableSwitch(sw, index_operand);
   }
 
   // Generate a sequence of conditional jumps.
@@ -2680,6 +2640,18 @@ void InstructionSelector::VisitS8x16Shuffle(Node* node) {
        g.UseImmediate(Pack4Lanes(shuffle + 12, mask)));
 }
 
+void InstructionSelector::VisitSignExtendWord8ToInt32(Node* node) {
+  ArmOperandGenerator g(this);
+  Emit(kArmSxtb, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
+       g.TempImmediate(0));
+}
+
+void InstructionSelector::VisitSignExtendWord16ToInt32(Node* node) {
+  ArmOperandGenerator g(this);
+  Emit(kArmSxth, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
+       g.TempImmediate(0));
+}
+
 void InstructionSelector::VisitInt32AbsWithOverflow(Node* node) {
   UNREACHABLE();
 }
@@ -2691,7 +2663,8 @@ void InstructionSelector::VisitInt64AbsWithOverflow(Node* node) {
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
-  MachineOperatorBuilder::Flags flags;
+  MachineOperatorBuilder::Flags flags =
+      MachineOperatorBuilder::kSpeculationFence;
   if (CpuFeatures::IsSupported(SUDIV)) {
     // The sdiv and udiv instructions correctly return 0 if the divisor is 0,
     // but the fall-back implementation does not.

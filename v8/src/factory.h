@@ -386,7 +386,13 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<SourcePositionTableWithFrameCache>
   NewSourcePositionTableWithFrameCache(
       Handle<ByteArray> source_position_table,
-      Handle<NumberDictionary> stack_frame_cache);
+      Handle<SimpleNumberDictionary> stack_frame_cache);
+
+  // Allocate various microtasks.
+  Handle<CallableTask> NewCallableTask(Handle<JSReceiver> callable,
+                                       Handle<Context> context);
+  Handle<CallbackTask> NewCallbackTask(Handle<Foreign> callback,
+                                       Handle<Foreign> data);
 
   // Foreign objects are pretenured when allocated by the bootstrapper.
   Handle<Foreign> NewForeign(Address addr,
@@ -594,7 +600,7 @@ class V8_EXPORT_PRIVATE Factory final {
 
   Handle<JSIteratorResult> NewJSIteratorResult(Handle<Object> value, bool done);
   Handle<JSAsyncFromSyncIterator> NewJSAsyncFromSyncIterator(
-      Handle<JSReceiver> sync_iterator);
+      Handle<JSReceiver> sync_iterator, Handle<Object> next);
 
   Handle<JSMap> NewJSMap();
   Handle<JSSet> NewJSSet();

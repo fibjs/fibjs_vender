@@ -144,14 +144,13 @@ void MemoryChunk::InitializeFreeListCategories() {
 }
 
 bool PagedSpace::Contains(Address addr) {
+  if (heap_->lo_space()->FindPage(addr)) return false;
   return MemoryChunk::FromAnyPointerAddress(heap(), addr)->owner() == this;
 }
 
 bool PagedSpace::Contains(Object* o) {
   if (!o->IsHeapObject()) return false;
-  Page* p = Page::FromAddress(HeapObject::cast(o)->address());
-  if (!Page::IsValid(p)) return false;
-  return p->owner() == this;
+  return Page::FromAddress(HeapObject::cast(o)->address())->owner() == this;
 }
 
 void PagedSpace::UnlinkFreeListCategories(Page* page) {
@@ -186,16 +185,11 @@ bool PagedSpace::TryFreeLast(HeapObject* object, int object_size) {
 }
 
 MemoryChunk* MemoryChunk::FromAnyPointerAddress(Heap* heap, Address addr) {
-  MemoryChunk* chunk = MemoryChunk::FromAddress(addr);
-  uintptr_t offset = addr - chunk->address();
-  if (offset < MemoryChunk::kHeaderSize || !chunk->HasPageHeader()) {
-    chunk = heap->lo_space()->FindPageThreadSafe(addr);
+  MemoryChunk* chunk = heap->lo_space()->FindPage(addr);
+  if (chunk == nullptr) {
+    chunk = MemoryChunk::FromAddress(addr);
   }
   return chunk;
-}
-
-Page* Page::FromAnyPointerAddress(Heap* heap, Address addr) {
-  return static_cast<Page*>(MemoryChunk::FromAnyPointerAddress(heap, addr));
 }
 
 void Page::MarkNeverAllocateForTesting() {
@@ -301,8 +295,7 @@ AllocationResult LocalAllocationBuffer::AllocateRawAligned(
 bool PagedSpace::EnsureLinearAllocationArea(int size_in_bytes) {
   if (allocation_info_.top() + size_in_bytes <= allocation_info_.limit())
     return true;
-  if (free_list_.Allocate(size_in_bytes)) return true;
-  return SlowAllocateRaw(size_in_bytes);
+  return SlowRefillLinearAllocationArea(size_in_bytes);
 }
 
 HeapObject* PagedSpace::AllocateLinearly(int size_in_bytes) {
@@ -490,7 +483,7 @@ size_t LargeObjectSpace::Available() {
 
 
 LocalAllocationBuffer LocalAllocationBuffer::InvalidBuffer() {
-  return LocalAllocationBuffer(nullptr, AllocationInfo(nullptr, nullptr));
+  return LocalAllocationBuffer(nullptr, LinearAllocationArea(nullptr, nullptr));
 }
 
 
@@ -503,7 +496,7 @@ LocalAllocationBuffer LocalAllocationBuffer::FromResult(Heap* heap,
   USE(ok);
   DCHECK(ok);
   Address top = HeapObject::cast(obj)->address();
-  return LocalAllocationBuffer(heap, AllocationInfo(top, top + size));
+  return LocalAllocationBuffer(heap, LinearAllocationArea(top, top + size));
 }
 
 

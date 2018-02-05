@@ -546,8 +546,9 @@ Parser::Parser(ParseInfo* info)
   set_allow_harmony_static_fields(FLAG_harmony_static_fields);
   set_allow_harmony_dynamic_import(FLAG_harmony_dynamic_import);
   set_allow_harmony_import_meta(FLAG_harmony_import_meta);
-  set_allow_harmony_async_iteration(FLAG_harmony_async_iteration);
   set_allow_harmony_bigint(FLAG_harmony_bigint);
+  set_allow_harmony_optional_catch_binding(FLAG_harmony_optional_catch_binding);
+  set_allow_harmony_private_fields(FLAG_harmony_private_fields);
   for (int feature = 0; feature < v8::Isolate::kUseCounterFeatureCount;
        ++feature) {
     use_counts_[feature] = 0;
@@ -741,6 +742,7 @@ FunctionLiteral* Parser::DoParseProgram(ParseInfo* info) {
       result = factory()->NewScriptOrEvalFunctionLiteral(
           scope, body, function_state.expected_property_count(),
           parameter_count);
+      result->set_suspend_count(function_state.suspend_count());
     }
   }
 
@@ -1298,6 +1300,7 @@ Statement* Parser::ParseExportDefault(bool* ok) {
       int pos = position();
       ExpressionClassifier classifier(this);
       Expression* value = ParseAssignmentExpression(true, CHECK_OK);
+      ValidateExpression(CHECK_OK);
       SetFunctionName(value, ast_value_factory()->default_string());
 
       const AstRawString* local_name =
@@ -1529,8 +1532,7 @@ Statement* Parser::DeclareFunction(const AstRawString* variable_name,
                                    ZoneList<const AstRawString*>* names,
                                    bool* ok) {
   VariableProxy* proxy =
-      factory()->NewVariableProxy(variable_name, NORMAL_VARIABLE);
-
+      factory()->NewVariableProxy(variable_name, NORMAL_VARIABLE, pos);
   Declaration* declaration =
       factory()->NewFunctionDeclaration(proxy, function, pos);
   Declare(declaration, DeclarationDescriptor::NORMAL, mode, kCreatedInitialized,
@@ -1760,7 +1762,6 @@ Statement* Parser::RewriteTryStatement(Block* try_block, Block* catch_block,
 
   if (catch_block != nullptr && finally_block != nullptr) {
     // If we have both, create an inner try/catch.
-    DCHECK_NOT_NULL(catch_info.scope);
     TryCatchStatement* statement;
     statement = factory()->NewTryCatchStatement(try_block, catch_info.scope,
                                                 catch_block, kNoSourcePosition);
@@ -1773,7 +1774,6 @@ Statement* Parser::RewriteTryStatement(Block* try_block, Block* catch_block,
 
   if (catch_block != nullptr) {
     DCHECK_NULL(finally_block);
-    DCHECK_NOT_NULL(catch_info.scope);
     TryCatchStatement* stmt = factory()->NewTryCatchStatement(
         try_block, catch_info.scope, catch_block, pos);
     RecordTryCatchStatementSourceRange(stmt, catch_range);
@@ -1831,6 +1831,8 @@ void Parser::ParseAndRewriteAsyncGeneratorFunctionBody(
 
   // Don't create iterator result for async generators, as the resume methods
   // will create it.
+  // TODO(leszeks): This will create another suspend point, which is unnecessary
+  // if there is already an unconditional return in the body.
   Statement* final_return = BuildReturnStatement(
       factory()->NewUndefinedLiteral(kNoSourcePosition), kNoSourcePosition);
   try_block->statements()->Add(final_return, zone());
@@ -1890,18 +1892,17 @@ void Parser::DeclareFunctionNameVar(const AstRawString* function_name,
 //     !%_IsJSReceiver(result = Await(iterator.next())) &&
 //         %ThrowIteratorResultNotAnObject(result)
 // [endif]
-Expression* Parser::BuildIteratorNextResult(Expression* iterator,
+Expression* Parser::BuildIteratorNextResult(VariableProxy* iterator,
+                                            VariableProxy* next,
                                             Variable* result, IteratorType type,
                                             int pos) {
-  Expression* next_literal = factory()->NewStringLiteral(
-      ast_value_factory()->next_string(), kNoSourcePosition);
-  Expression* next_property =
-      factory()->NewProperty(iterator, next_literal, kNoSourcePosition);
+  Expression* next_property = factory()->NewResolvedProperty(iterator, next);
   ZoneList<Expression*>* next_arguments =
       new (zone()) ZoneList<Expression*>(0, zone());
   Expression* next_call =
       factory()->NewCall(next_property, next_arguments, kNoSourcePosition);
   if (type == IteratorType::kAsync) {
+    function_state_->AddSuspend();
     next_call = factory()->NewAwait(next_call, pos);
   }
   Expression* result_proxy = factory()->NewVariableProxy(result);
@@ -2099,6 +2100,7 @@ Statement* Parser::InitializeForOfStatement(
   auto avfactory = ast_value_factory();
 
   Variable* iterator = NewTemporary(avfactory->dot_iterator_string());
+  Variable* next = NewTemporary(avfactory->empty_string());
   Variable* result = NewTemporary(avfactory->dot_result_string());
   Variable* completion = NewTemporary(avfactory->empty_string());
 
@@ -2111,6 +2113,17 @@ Statement* Parser::InitializeForOfStatement(
         iterable->position());
   }
 
+  Expression* assign_next;
+  {
+    assign_next = factory()->NewAssignment(
+        Token::ASSIGN, factory()->NewVariableProxy(next),
+        factory()->NewProperty(factory()->NewVariableProxy(iterator),
+                               factory()->NewStringLiteral(
+                                   avfactory->next_string(), kNoSourcePosition),
+                               kNoSourcePosition),
+        kNoSourcePosition);
+  }
+
   // [if (IteratorType == kNormal)]
   //     !%_IsJSReceiver(result = iterator.next()) &&
   //         %ThrowIteratorResultNotAnObject(result)
@@ -2120,9 +2133,10 @@ Statement* Parser::InitializeForOfStatement(
   // [endif]
   Expression* next_result;
   {
-    Expression* iterator_proxy = factory()->NewVariableProxy(iterator);
-    next_result =
-        BuildIteratorNextResult(iterator_proxy, result, type, next_result_pos);
+    VariableProxy* iterator_proxy = factory()->NewVariableProxy(iterator);
+    VariableProxy* next_proxy = factory()->NewVariableProxy(next);
+    next_result = BuildIteratorNextResult(iterator_proxy, next_proxy, result,
+                                          type, next_result_pos);
   }
 
   // result.done
@@ -2192,8 +2206,8 @@ Statement* Parser::InitializeForOfStatement(
     body = block;
   }
 
-  for_of->Initialize(body, iterator, assign_iterator, next_result, result_done,
-                     assign_each);
+  for_of->Initialize(body, iterator, assign_iterator, assign_next, next_result,
+                     result_done, assign_each);
   return finalize ? FinalizeForOfStatement(for_of, completion, type, nopos)
                   : for_of;
 }
@@ -2670,6 +2684,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
 
   ZoneList<Statement*>* body = nullptr;
   int expected_property_count = -1;
+  int suspend_count = -1;
   int num_parameters = -1;
   int function_length = -1;
   bool has_duplicate_parameters = false;
@@ -2736,10 +2751,10 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     if (should_preparse) {
       scope->AnalyzePartially(&previous_zone_ast_node_factory);
     } else {
-      body = ParseFunction(function_name, pos, kind, function_type, scope,
-                           &num_parameters, &function_length,
-                           &has_duplicate_parameters, &expected_property_count,
-                           arguments_for_wrapped_function, CHECK_OK);
+      body = ParseFunction(
+          function_name, pos, kind, function_type, scope, &num_parameters,
+          &function_length, &has_duplicate_parameters, &expected_property_count,
+          &suspend_count, arguments_for_wrapped_function, CHECK_OK);
     }
 
     DCHECK_EQ(should_preparse, temp_zoned_);
@@ -2797,6 +2812,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
       function_length, duplicate_parameters, function_type, eager_compile_hint,
       pos, true, function_literal_id, produced_preparsed_scope_data);
   function_literal->set_function_token_position(function_token_pos);
+  function_literal->set_suspend_count(suspend_count);
 
   if (should_infer_name) {
     DCHECK_NOT_NULL(fni_);
@@ -3164,6 +3180,7 @@ Expression* Parser::BuildInitialYield(int pos, FunctionKind kind) {
   // The position of the yield is important for reporting the exception
   // caused by calling the .throw method on a generator suspended at the
   // initial yield (i.e. right after generator instantiation).
+  function_state_->AddSuspend();
   return factory()->NewYield(yield_result, scope()->start_position(),
                              Suspend::kOnExceptionThrow);
 }
@@ -3173,6 +3190,7 @@ ZoneList<Statement*>* Parser::ParseFunction(
     FunctionLiteral::FunctionType function_type,
     DeclarationScope* function_scope, int* num_parameters, int* function_length,
     bool* has_duplicate_parameters, int* expected_property_count,
+    int* suspend_count,
     ZoneList<const AstRawString*>* arguments_for_wrapped_function, bool* ok) {
   ParsingModeScope mode(this, allow_lazy_ ? PARSE_LAZILY : PARSE_EAGERLY);
 
@@ -3257,6 +3275,7 @@ ZoneList<Statement*>* Parser::ParseFunction(
       !classifier()->is_valid_formal_parameter_list_without_duplicates();
 
   *expected_property_count = function_state.expected_property_count();
+  *suspend_count = function_state.suspend_count();
   return body;
 }
 
@@ -3311,21 +3330,24 @@ void Parser::DeclareClassProperty(const AstRawString* class_name,
     return;
   }
 
-  if (kind != ClassLiteralProperty::FIELD) {
+  if (kind != ClassLiteralProperty::PUBLIC_FIELD &&
+      kind != ClassLiteralProperty::PRIVATE_FIELD) {
     class_info->properties->Add(property, zone());
     return;
   }
 
-  DCHECK(allow_harmony_public_fields());
+  DCHECK(allow_harmony_public_fields() || allow_harmony_private_fields());
 
   if (is_static) {
     DCHECK(allow_harmony_static_fields());
+    DCHECK_EQ(kind, ClassLiteralProperty::PUBLIC_FIELD);
     class_info->static_fields->Add(property, zone());
   } else {
     class_info->instance_fields->Add(property, zone());
   }
 
   if (is_computed_name) {
+    DCHECK_EQ(kind, ClassLiteralProperty::PUBLIC_FIELD);
     // We create a synthetic variable name here so that scope
     // analysis doesn't dedupe the vars.
     Variable* computed_name_var = CreateSyntheticContextVariable(
@@ -3335,10 +3357,19 @@ void Parser::DeclareClassProperty(const AstRawString* class_name,
     property->set_computed_name_var(computed_name_var);
     class_info->properties->Add(property, zone());
   }
+
+  if (kind == ClassLiteralProperty::PRIVATE_FIELD) {
+    Variable* private_field_name_var = CreateSyntheticContextVariable(
+        property->key()->AsLiteral()->AsRawPropertyName(), CHECK_OK_VOID);
+    property->set_private_field_name_var(private_field_name_var);
+    class_info->properties->Add(property, zone());
+  }
 }
 
 FunctionLiteral* Parser::CreateInitializerFunction(
     DeclarationScope* scope, ZoneList<ClassLiteral::Property*>* fields) {
+  DCHECK_EQ(scope->function_kind(),
+            FunctionKind::kClassFieldsInitializerFunction);
   // function() { .. class fields initializer .. }
   ZoneList<Statement*>* statements = NewStatementList(1);
   InitializeClassFieldsStatement* static_fields =
@@ -4057,6 +4088,7 @@ void Parser::BuildIteratorClose(ZoneList<Statement*>* statements,
     Expression* call =
         factory()->NewCallRuntime(Runtime::kInlineCall, args, nopos);
     if (type == IteratorType::kAsync) {
+      function_state_->AddSuspend();
       call = factory()->NewAwait(call, nopos);
     }
     Expression* output_proxy = factory()->NewVariableProxy(var_output);
@@ -4275,6 +4307,7 @@ void Parser::BuildIteratorCloseForCompletion(ZoneList<Statement*>* statements,
         factory()->NewCallRuntime(Runtime::kInlineCall, args, nopos);
 
     if (type == IteratorType::kAsync) {
+      function_state_->AddSuspend();
       call = factory()->NewAwait(call, nopos);
     }
 
@@ -4283,9 +4316,8 @@ void Parser::BuildIteratorCloseForCompletion(ZoneList<Statement*>* statements,
                                  zone());
 
     Block* catch_block = factory()->NewBlock(0, false);
-    Scope* catch_scope = NewHiddenCatchScope();
-    try_call_return = factory()->NewTryCatchStatement(try_block, catch_scope,
-                                                      catch_block, nopos);
+    try_call_return =
+        factory()->NewTryCatchStatement(try_block, nullptr, catch_block, nopos);
   }
 
   // let output = %_Call(iteratorReturn, iterator);
@@ -4303,6 +4335,7 @@ void Parser::BuildIteratorCloseForCompletion(ZoneList<Statement*>* statements,
       Expression* call =
           factory()->NewCallRuntime(Runtime::kInlineCall, args, nopos);
       if (type == IteratorType::kAsync) {
+        function_state_->AddSuspend();
         call = factory()->NewAwait(call, nopos);
       }
 

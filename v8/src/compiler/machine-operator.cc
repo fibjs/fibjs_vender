@@ -59,12 +59,6 @@ UnalignedStoreRepresentation const& UnalignedStoreRepresentationOf(
   return OpParameter<UnalignedStoreRepresentation>(op);
 }
 
-CheckedLoadRepresentation CheckedLoadRepresentationOf(Operator const* op) {
-  DCHECK_EQ(IrOpcode::kCheckedLoad, op->opcode());
-  return OpParameter<CheckedLoadRepresentation>(op);
-}
-
-
 bool operator==(StackSlotRepresentation lhs, StackSlotRepresentation rhs) {
   return lhs.size() == rhs.size() && lhs.alignment() == rhs.alignment();
 }
@@ -144,7 +138,6 @@ MachineType AtomicOpRepresentationOf(Operator const* op) {
   PURE_BINARY_OP_LIST_64(V)                                               \
   V(Word32Clz, Operator::kNoProperties, 1, 0, 1)                          \
   V(Word64Clz, Operator::kNoProperties, 1, 0, 1)                          \
-  V(BitcastTaggedToWord, Operator::kNoProperties, 1, 0, 1)                \
   V(BitcastWordToTaggedSigned, Operator::kNoProperties, 1, 0, 1)          \
   V(TruncateFloat64ToWord32, Operator::kNoProperties, 1, 0, 1)            \
   V(ChangeFloat32ToFloat64, Operator::kNoProperties, 1, 0, 1)             \
@@ -176,6 +169,11 @@ MachineType AtomicOpRepresentationOf(Operator const* op) {
   V(BitcastFloat64ToInt64, Operator::kNoProperties, 1, 0, 1)              \
   V(BitcastInt32ToFloat32, Operator::kNoProperties, 1, 0, 1)              \
   V(BitcastInt64ToFloat64, Operator::kNoProperties, 1, 0, 1)              \
+  V(SignExtendWord8ToInt32, Operator::kNoProperties, 1, 0, 1)             \
+  V(SignExtendWord16ToInt32, Operator::kNoProperties, 1, 0, 1)            \
+  V(SignExtendWord8ToInt64, Operator::kNoProperties, 1, 0, 1)             \
+  V(SignExtendWord16ToInt64, Operator::kNoProperties, 1, 0, 1)            \
+  V(SignExtendWord32ToInt64, Operator::kNoProperties, 1, 0, 1)            \
   V(Float32Abs, Operator::kNoProperties, 1, 0, 1)                         \
   V(Float32Add, Operator::kCommutative, 2, 0, 1)                          \
   V(Float32Sub, Operator::kNoProperties, 2, 0, 1)                         \
@@ -469,14 +467,6 @@ struct MachineOperatorGlobalCache {
               Operator::kNoDeopt | Operator::kNoThrow | Operator::kNoWrite,   \
               "UnalignedLoad", 2, 1, 1, 1, 1, 0, MachineType::Type()) {}      \
   };                                                                          \
-  struct CheckedLoad##Type##Operator final                                    \
-      : public Operator1<CheckedLoadRepresentation> {                         \
-    CheckedLoad##Type##Operator()                                             \
-        : Operator1<CheckedLoadRepresentation>(                               \
-              IrOpcode::kCheckedLoad,                                         \
-              Operator::kNoDeopt | Operator::kNoThrow | Operator::kNoWrite,   \
-              "CheckedLoad", 3, 1, 1, 1, 1, 0, MachineType::Type()) {}        \
-  };                                                                          \
   struct ProtectedLoad##Type##Operator final                                  \
       : public Operator1<LoadRepresentation> {                                \
     ProtectedLoad##Type##Operator()                                           \
@@ -487,7 +477,6 @@ struct MachineOperatorGlobalCache {
   };                                                                          \
   Load##Type##Operator kLoad##Type;                                           \
   UnalignedLoad##Type##Operator kUnalignedLoad##Type;                         \
-  CheckedLoad##Type##Operator kCheckedLoad##Type;                             \
   ProtectedLoad##Type##Operator kProtectedLoad##Type;
   MACHINE_TYPE_LIST(LOAD)
 #undef LOAD
@@ -629,9 +618,24 @@ struct MachineOperatorGlobalCache {
     BitcastWordToTaggedOperator()
         : Operator(IrOpcode::kBitcastWordToTagged,
                    Operator::kEliminatable | Operator::kNoWrite,
-                   "BitcastWordToTagged", 1, 0, 0, 1, 0, 0) {}
+                   "BitcastWordToTagged", 1, 1, 1, 1, 1, 0) {}
   };
   BitcastWordToTaggedOperator kBitcastWordToTagged;
+
+  struct BitcastTaggedToWordOperator : public Operator {
+    BitcastTaggedToWordOperator()
+        : Operator(IrOpcode::kBitcastTaggedToWord,
+                   Operator::kEliminatable | Operator::kNoWrite,
+                   "BitcastTaggedToWord", 1, 1, 1, 1, 1, 0) {}
+  };
+  BitcastTaggedToWordOperator kBitcastTaggedToWord;
+
+  struct SpeculationFenceOperator : public Operator {
+    SpeculationFenceOperator()
+        : Operator(IrOpcode::kSpeculationFence, Operator::kNoThrow,
+                   "SpeculationFence", 0, 1, 1, 0, 1, 0) {}
+  };
+  SpeculationFenceOperator kSpeculationFence;
 
   struct DebugAbortOperator : public Operator {
     DebugAbortOperator()
@@ -808,6 +812,10 @@ const Operator* MachineOperatorBuilder::BitcastWordToTagged() {
   return &cache_.kBitcastWordToTagged;
 }
 
+const Operator* MachineOperatorBuilder::BitcastTaggedToWord() {
+  return &cache_.kBitcastTaggedToWord;
+}
+
 const Operator* MachineOperatorBuilder::DebugAbort() {
   return &cache_.kDebugAbort;
 }
@@ -818,17 +826,6 @@ const Operator* MachineOperatorBuilder::DebugBreak() {
 
 const Operator* MachineOperatorBuilder::Comment(const char* msg) {
   return new (zone_) CommentOperator(msg);
-}
-
-const Operator* MachineOperatorBuilder::CheckedLoad(
-    CheckedLoadRepresentation rep) {
-#define LOAD(Type)                     \
-  if (rep == MachineType::Type()) {    \
-    return &cache_.kCheckedLoad##Type; \
-  }
-    MACHINE_TYPE_LIST(LOAD)
-#undef LOAD
-  UNREACHABLE();
 }
 
 const Operator* MachineOperatorBuilder::AtomicLoad(LoadRepresentation rep) {
@@ -919,6 +916,11 @@ const Operator* MachineOperatorBuilder::AtomicXor(MachineType rep) {
   ATOMIC_TYPE_LIST(XOR)
 #undef XOR
   UNREACHABLE();
+}
+
+const OptionalOperator MachineOperatorBuilder::SpeculationFence() {
+  return OptionalOperator(flags_ & kSpeculationFence,
+                          &cache_.kSpeculationFence);
 }
 
 #define SIMD_LANE_OPS(Type, lane_count)                                     \

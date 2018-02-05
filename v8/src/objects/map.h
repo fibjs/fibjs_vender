@@ -270,6 +270,8 @@ class Map : public HeapObject {
   DEFINE_BIT_FIELDS(MAP_BIT_FIELD3_FIELDS)
 #undef MAP_BIT_FIELD3_FIELDS
 
+  STATIC_ASSERT(NumberOfOwnDescriptorsBits::kMax >= kMaxNumberOfDescriptors);
+
   static const int kSlackTrackingCounterStart = 7;
   static const int kSlackTrackingCounterEnd = 1;
   static const int kNoSlackTracking = 0;
@@ -711,6 +713,7 @@ class Map : public HeapObject {
   inline bool IsPrimitiveMap() const;
   inline bool IsJSReceiverMap() const;
   inline bool IsJSObjectMap() const;
+  inline bool IsJSPromiseMap() const;
   inline bool IsJSArrayMap() const;
   inline bool IsJSFunctionMap() const;
   inline bool IsStringMap() const;

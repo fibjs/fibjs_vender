@@ -94,6 +94,7 @@ namespace internal {
   V(Literal)                    \
   V(NativeFunctionLiteral)      \
   V(Property)                   \
+  V(ResolvedProperty)           \
   V(RewritableExpression)       \
   V(Spread)                     \
   V(SuperCallReference)         \
@@ -436,21 +437,12 @@ class IterationStatement : public BreakableStatement {
 
   ZoneList<const AstRawString*>* labels() const { return labels_; }
 
-  int suspend_count() const { return suspend_count_; }
-  int first_suspend_id() const { return first_suspend_id_; }
-  void set_suspend_count(int suspend_count) { suspend_count_ = suspend_count; }
-  void set_first_suspend_id(int first_suspend_id) {
-    first_suspend_id_ = first_suspend_id;
-  }
-
  protected:
   IterationStatement(ZoneList<const AstRawString*>* labels, int pos,
                      NodeType type)
       : BreakableStatement(TARGET_FOR_ANONYMOUS, pos, type),
         labels_(labels),
-        body_(nullptr),
-        suspend_count_(0),
-        first_suspend_id_(0) {}
+        body_(nullptr) {}
   void Initialize(Statement* body) { body_ = body; }
 
   static const uint8_t kNextBitFieldIndex =
@@ -459,8 +451,6 @@ class IterationStatement : public BreakableStatement {
  private:
   ZoneList<const AstRawString*>* labels_;
   Statement* body_;
-  int suspend_count_;
-  int first_suspend_id_;
 };
 
 
@@ -590,11 +580,13 @@ class ForInStatement final : public ForEachStatement {
 class ForOfStatement final : public ForEachStatement {
  public:
   void Initialize(Statement* body, Variable* iterator,
-                  Expression* assign_iterator, Expression* next_result,
-                  Expression* result_done, Expression* assign_each) {
+                  Expression* assign_iterator, Expression* assign_next,
+                  Expression* next_result, Expression* result_done,
+                  Expression* assign_each) {
     ForEachStatement::Initialize(body);
     iterator_ = iterator;
     assign_iterator_ = assign_iterator;
+    assign_next_ = assign_next;
     next_result_ = next_result;
     result_done_ = result_done;
     assign_each_ = assign_each;
@@ -608,6 +600,9 @@ class ForOfStatement final : public ForEachStatement {
   Expression* assign_iterator() const {
     return assign_iterator_;
   }
+
+  // iteratorRecord.next = iterator.next
+  Expression* assign_next() const { return assign_next_; }
 
   // result = iterator.next()  // with type check
   Expression* next_result() const {
@@ -624,6 +619,12 @@ class ForOfStatement final : public ForEachStatement {
     return assign_each_;
   }
 
+  void set_assign_iterator(Expression* e) { assign_iterator_ = e; }
+  void set_assign_next(Expression* e) { assign_next_ = e; }
+  void set_next_result(Expression* e) { next_result_ = e; }
+  void set_result_done(Expression* e) { result_done_ = e; }
+  void set_assign_each(Expression* e) { assign_each_ = e; }
+
  private:
   friend class AstNodeFactory;
 
@@ -637,6 +638,7 @@ class ForOfStatement final : public ForEachStatement {
 
   Variable* iterator_;
   Expression* assign_iterator_;
+  Expression* assign_next_;
   Expression* next_result_;
   Expression* result_done_;
   Expression* assign_each_;
@@ -1527,6 +1529,11 @@ class VariableProxy final : public Expression {
         HoleCheckModeField::update(bit_field_, HoleCheckMode::kRequired);
   }
 
+  bool is_private_field() const { return IsPrivateField::decode(bit_field_); }
+  void set_is_private_field() {
+    bit_field_ = IsPrivateField::update(bit_field_, true);
+  }
+
   // Bind this proxy to the variable var.
   void BindTo(Variable* var);
 
@@ -1546,7 +1553,8 @@ class VariableProxy final : public Expression {
     bit_field_ |= IsThisField::encode(variable_kind == THIS_VARIABLE) |
                   IsAssignedField::encode(false) |
                   IsResolvedField::encode(false) |
-                  HoleCheckModeField::encode(HoleCheckMode::kElided);
+                  HoleCheckModeField::encode(HoleCheckMode::kElided) |
+                  IsPrivateField::encode(false);
   }
 
   explicit VariableProxy(const VariableProxy* copy_from);
@@ -1558,6 +1566,7 @@ class VariableProxy final : public Expression {
   class IsNewTargetField : public BitField<bool, IsResolvedField::kNext, 1> {};
   class HoleCheckModeField
       : public BitField<HoleCheckMode, IsNewTargetField::kNext, 1> {};
+  class IsPrivateField : public BitField<bool, HoleCheckModeField::kNext, 1> {};
 
   union {
     const AstRawString* raw_name_;  // if !is_resolved_
@@ -1576,7 +1585,6 @@ enum LhsKind {
   NAMED_SUPER_PROPERTY,
   KEYED_SUPER_PROPERTY
 };
-
 
 class Property final : public Expression {
  public:
@@ -1607,6 +1615,25 @@ class Property final : public Expression {
   Expression* key_;
 };
 
+// ResolvedProperty pairs a receiver field with a value field. It allows Call
+// to support arbitrary receivers while still taking advantage of TypeFeedback.
+class ResolvedProperty final : public Expression {
+ public:
+  VariableProxy* object() const { return object_; }
+  VariableProxy* property() const { return property_; }
+
+  void set_object(VariableProxy* e) { object_ = e; }
+  void set_property(VariableProxy* e) { property_ = e; }
+
+ private:
+  friend class AstNodeFactory;
+
+  ResolvedProperty(VariableProxy* obj, VariableProxy* property, int pos)
+      : Expression(pos, kResolvedProperty), object_(obj), property_(property) {}
+
+  VariableProxy* object_;
+  VariableProxy* property_;
+};
 
 class Call final : public Expression {
  public:
@@ -1633,6 +1660,7 @@ class Call final : public Expression {
     NAMED_SUPER_PROPERTY_CALL,
     KEYED_SUPER_PROPERTY_CALL,
     SUPER_CALL,
+    RESOLVED_PROPERTY_CALL,
     OTHER_CALL
   };
 
@@ -2063,11 +2091,6 @@ class Suspend : public Expression {
     return OnAbruptResumeField::decode(bit_field_);
   }
 
-  int suspend_id() const { return suspend_id_; }
-  void set_suspend_id(int id) { suspend_id_ = id; }
-
-  inline bool IsInitialYield() const { return suspend_id_ == 0 && IsYield(); }
-
  private:
   friend class AstNodeFactory;
   friend class Yield;
@@ -2076,11 +2099,10 @@ class Suspend : public Expression {
 
   Suspend(NodeType node_type, Expression* expression, int pos,
           OnAbruptResume on_abrupt_resume)
-      : Expression(pos, node_type), suspend_id_(-1), expression_(expression) {
+      : Expression(pos, node_type), expression_(expression) {
     bit_field_ |= OnAbruptResumeField::encode(on_abrupt_resume);
   }
 
-  int suspend_id_;
   Expression* expression_;
 
   class OnAbruptResumeField
@@ -2095,49 +2117,11 @@ class Yield final : public Suspend {
 };
 
 class YieldStar final : public Suspend {
- public:
-  // In addition to the normal suspend for yield*, a yield* in an async
-  // generator has 2 additional suspends:
-  //   - One for awaiting the iterator result of closing the generator when
-  //     resumed with a "throw" completion, and a throw method is not present
-  //     on the delegated iterator (await_iterator_close_suspend_id)
-  //   - One for awaiting the iterator result yielded by the delegated iterator
-  //     (await_delegated_iterator_output_suspend_id)
-  int await_iterator_close_suspend_id() const {
-    DCHECK_NE(-1, await_iterator_close_suspend_id_);
-    return await_iterator_close_suspend_id_;
-  }
-  void set_await_iterator_close_suspend_id(int id) {
-    await_iterator_close_suspend_id_ = id;
-  }
-
-  int await_delegated_iterator_output_suspend_id() const {
-    DCHECK_NE(-1, await_delegated_iterator_output_suspend_id_);
-    return await_delegated_iterator_output_suspend_id_;
-  }
-  void set_await_delegated_iterator_output_suspend_id(int id) {
-    await_delegated_iterator_output_suspend_id_ = id;
-  }
-
-  inline int suspend_count() const {
-    if (await_iterator_close_suspend_id_ != -1) {
-      DCHECK_NE(-1, await_delegated_iterator_output_suspend_id_);
-      return 3;
-    }
-    return 1;
-  }
-
  private:
   friend class AstNodeFactory;
-
   YieldStar(Expression* expression, int pos)
       : Suspend(kYieldStar, expression, pos,
-                Suspend::OnAbruptResume::kNoControl),
-        await_iterator_close_suspend_id_(-1),
-        await_delegated_iterator_output_suspend_id_(-1) {}
-
-  int await_iterator_close_suspend_id_;
-  int await_delegated_iterator_output_suspend_id_;
+                Suspend::OnAbruptResume::kNoControl) {}
 };
 
 class Await final : public Suspend {
@@ -2276,7 +2260,9 @@ class FunctionLiteral final : public Expression {
   }
   FunctionKind kind() const;
 
-  bool dont_optimize() { return dont_optimize_reason() != kNoReason; }
+  bool dont_optimize() {
+    return dont_optimize_reason() != BailoutReason::kNoReason;
+  }
   BailoutReason dont_optimize_reason() {
     return DontOptimizeReasonField::decode(bit_field_);
   }
@@ -2339,7 +2325,7 @@ class FunctionLiteral final : public Expression {
                   Pretenure::encode(false) |
                   HasDuplicateParameters::encode(has_duplicate_parameters ==
                                                  kHasDuplicateParameters) |
-                  DontOptimizeReasonField::encode(kNoReason) |
+                  DontOptimizeReasonField::encode(BailoutReason::kNoReason) |
                   RequiresInstanceFieldsInitializer::encode(false);
     if (eager_compile_hint == kShouldEagerCompile) SetShouldEagerCompile();
     DCHECK_EQ(body == nullptr, expected_property_count < 0);
@@ -2374,14 +2360,29 @@ class FunctionLiteral final : public Expression {
 // about a class literal's properties from the parser to the code generator.
 class ClassLiteralProperty final : public LiteralProperty {
  public:
-  enum Kind : uint8_t { METHOD, GETTER, SETTER, FIELD };
+  enum Kind : uint8_t { METHOD, GETTER, SETTER, PUBLIC_FIELD, PRIVATE_FIELD };
 
   Kind kind() const { return kind_; }
 
   bool is_static() const { return is_static_; }
 
-  void set_computed_name_var(Variable* var) { computed_name_var_ = var; }
-  Variable* computed_name_var() const { return computed_name_var_; }
+  void set_computed_name_var(Variable* var) {
+    DCHECK_EQ(PUBLIC_FIELD, kind());
+    private_or_computed_name_var_ = var;
+  }
+  Variable* computed_name_var() const {
+    DCHECK_EQ(PUBLIC_FIELD, kind());
+    return private_or_computed_name_var_;
+  }
+
+  void set_private_field_name_var(Variable* var) {
+    DCHECK_EQ(PRIVATE_FIELD, kind());
+    private_or_computed_name_var_ = var;
+  }
+  Variable* private_field_name_var() const {
+    DCHECK_EQ(PRIVATE_FIELD, kind());
+    return private_or_computed_name_var_;
+  }
 
  private:
   friend class AstNodeFactory;
@@ -2391,7 +2392,7 @@ class ClassLiteralProperty final : public LiteralProperty {
 
   Kind kind_;
   bool is_static_;
-  Variable* computed_name_var_;
+  Variable* private_or_computed_name_var_;
 };
 
 class InitializeClassFieldsStatement final : public Statement {
@@ -2993,6 +2994,12 @@ class AstNodeFactory final BASE_EMBEDDED {
 
   Property* NewProperty(Expression* obj, Expression* key, int pos) {
     return new (zone_) Property(obj, key, pos);
+  }
+
+  ResolvedProperty* NewResolvedProperty(VariableProxy* obj,
+                                        VariableProxy* property,
+                                        int pos = kNoSourcePosition) {
+    return new (zone_) ResolvedProperty(obj, property, pos);
   }
 
   Call* NewCall(Expression* expression, ZoneList<Expression*>* arguments,

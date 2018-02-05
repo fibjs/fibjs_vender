@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_MIPS_MACRO_ASSEMBLER_MIPS_H_
-#define V8_MIPS_MACRO_ASSEMBLER_MIPS_H_
+#ifndef V8_MIPS64_MACRO_ASSEMBLER_MIPS64_H_
+#define V8_MIPS64_MACRO_ASSEMBLER_MIPS64_H_
 
 #include "src/assembler.h"
 #include "src/globals.h"
@@ -23,8 +23,10 @@ constexpr Register kInterpreterAccumulatorRegister = v0;
 constexpr Register kInterpreterBytecodeOffsetRegister = t0;
 constexpr Register kInterpreterBytecodeArrayRegister = t1;
 constexpr Register kInterpreterDispatchTableRegister = t2;
+constexpr Register kInterpreterTargetBytecodeRegister = a7;
 constexpr Register kJavaScriptCallArgCountRegister = a0;
 constexpr Register kJavaScriptCallNewTargetRegister = a3;
+constexpr Register kOffHeapTrampolineRegister = at;
 constexpr Register kRuntimeCallFunctionRegister = a1;
 constexpr Register kRuntimeCallArgCountRegister = a0;
 
@@ -195,13 +197,13 @@ class TurboAssembler : public Assembler {
 
   // Calls Abort(msg) if the condition cc is not satisfied.
   // Use --debug_code to enable.
-  void Assert(Condition cc, BailoutReason reason, Register rs, Operand rt);
+  void Assert(Condition cc, AbortReason reason, Register rs, Operand rt);
 
   // Like Assert(), but always enabled.
-  void Check(Condition cc, BailoutReason reason, Register rs, Operand rt);
+  void Check(Condition cc, AbortReason reason, Register rs, Operand rt);
 
   // Print a message to stdout and abort execution.
-  void Abort(BailoutReason msg);
+  void Abort(AbortReason msg);
 
   inline bool AllowThisStubCall(CodeStub* stub);
 
@@ -1091,10 +1093,6 @@ class MacroAssembler : public TurboAssembler {
   void InvokeFunction(Register function, const ParameterCount& expected,
                       const ParameterCount& actual, InvokeFlag flag);
 
-  void InvokeFunction(Handle<JSFunction> function,
-                      const ParameterCount& expected,
-                      const ParameterCount& actual, InvokeFlag flag);
-
   // Frame restart support.
   void MaybeDropFrames();
 
@@ -1155,6 +1153,9 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   void JumpToExternalReference(const ExternalReference& builtin,
                                BranchDelaySlot bd = PROTECT,
                                bool builtin_exit_frame = false);
+
+  // Generates a trampoline to jump to the off-heap instruction stream.
+  void JumpToInstructionStream(const InstructionStream* stream);
 
   // -------------------------------------------------------------------------
   // StatsCounter support.
@@ -1301,4 +1302,4 @@ void TurboAssembler::GenerateSwitchTable(Register index, size_t case_count,
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_MIPS_MACRO_ASSEMBLER_MIPS_H_
+#endif  // V8_MIPS64_MACRO_ASSEMBLER_MIPS64_H_

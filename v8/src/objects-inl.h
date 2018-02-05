@@ -322,13 +322,24 @@ bool HeapObject::IsJSWeakCollection() const {
 
 bool HeapObject::IsJSCollection() const { return IsJSMap() || IsJSSet(); }
 
-bool HeapObject::IsPromiseCapability() const { return IsTuple3(); }
+bool HeapObject::IsMicrotask() const {
+  InstanceType instance_type = map()->instance_type();
+  return (instance_type >= FIRST_MICROTASK_TYPE &&
+          instance_type <= LAST_MICROTASK_TYPE);
+}
+
+bool HeapObject::IsPromiseReactionJobTask() const {
+  return IsPromiseFulfillReactionJobTask() || IsPromiseRejectReactionJobTask();
+}
 
 bool HeapObject::IsEnumCache() const { return IsTuple2(); }
 
 bool HeapObject::IsFrameArray() const { return IsFixedArrayExact(); }
 
-bool HeapObject::IsArrayList() const { return IsFixedArrayExact(); }
+bool HeapObject::IsArrayList() const {
+  return map() == GetHeap()->array_list_map() ||
+         this == GetHeap()->empty_fixed_array();
+}
 
 bool HeapObject::IsRegExpMatchInfo() const { return IsFixedArrayExact(); }
 
@@ -436,6 +447,10 @@ bool HeapObject::IsNameDictionary() const {
 
 bool HeapObject::IsNumberDictionary() const {
   return map() == GetHeap()->number_dictionary_map();
+}
+
+bool HeapObject::IsSimpleNumberDictionary() const {
+  return map() == GetHeap()->simple_number_dictionary_map();
 }
 
 bool HeapObject::IsStringTable() const {
@@ -547,6 +562,7 @@ CAST_ACCESSOR(AllocationSite)
 CAST_ACCESSOR(AsyncGeneratorRequest)
 CAST_ACCESSOR(BigInt)
 CAST_ACCESSOR(BoilerplateDescription)
+CAST_ACCESSOR(CallbackTask)
 CAST_ACCESSOR(CallHandlerInfo)
 CAST_ACCESSOR(Cell)
 CAST_ACCESSOR(ConstantElementsPair)
@@ -554,6 +570,7 @@ CAST_ACCESSOR(ContextExtension)
 CAST_ACCESSOR(DescriptorArray)
 CAST_ACCESSOR(EnumCache)
 CAST_ACCESSOR(Foreign)
+CAST_ACCESSOR(CallableTask)
 CAST_ACCESSOR(FunctionTemplateInfo)
 CAST_ACCESSOR(GlobalDictionary)
 CAST_ACCESSOR(HeapObject)
@@ -575,8 +592,10 @@ CAST_ACCESSOR(JSReceiver)
 CAST_ACCESSOR(JSStringIterator)
 CAST_ACCESSOR(JSValue)
 CAST_ACCESSOR(LayoutDescriptor)
+CAST_ACCESSOR(Microtask)
 CAST_ACCESSOR(NameDictionary)
 CAST_ACCESSOR(NormalizedMapCache)
+CAST_ACCESSOR(NumberDictionary)
 CAST_ACCESSOR(Object)
 CAST_ACCESSOR(ObjectHashSet)
 CAST_ACCESSOR(ObjectHashTable)
@@ -585,14 +604,17 @@ CAST_ACCESSOR(Oddball)
 CAST_ACCESSOR(OrderedHashMap)
 CAST_ACCESSOR(OrderedHashSet)
 CAST_ACCESSOR(PromiseCapability)
-CAST_ACCESSOR(PromiseReactionJobInfo)
-CAST_ACCESSOR(PromiseResolveThenableJobInfo)
+CAST_ACCESSOR(PromiseReaction)
+CAST_ACCESSOR(PromiseReactionJobTask)
+CAST_ACCESSOR(PromiseFulfillReactionJobTask)
+CAST_ACCESSOR(PromiseRejectReactionJobTask)
+CAST_ACCESSOR(PromiseResolveThenableJobTask)
 CAST_ACCESSOR(PropertyArray)
 CAST_ACCESSOR(PropertyCell)
 CAST_ACCESSOR(PrototypeInfo)
 CAST_ACCESSOR(RegExpMatchInfo)
 CAST_ACCESSOR(ScopeInfo)
-CAST_ACCESSOR(NumberDictionary)
+CAST_ACCESSOR(SimpleNumberDictionary)
 CAST_ACCESSOR(SmallOrderedHashMap)
 CAST_ACCESSOR(SmallOrderedHashSet)
 CAST_ACCESSOR(Smi)
@@ -2269,21 +2291,11 @@ bool AccessorInfo::has_getter() {
   return result;
 }
 
-ACCESSORS(PromiseResolveThenableJobInfo, thenable, JSReceiver, kThenableOffset)
-ACCESSORS(PromiseResolveThenableJobInfo, then, JSReceiver, kThenOffset)
-ACCESSORS(PromiseResolveThenableJobInfo, resolve, JSFunction, kResolveOffset)
-ACCESSORS(PromiseResolveThenableJobInfo, reject, JSFunction, kRejectOffset)
-ACCESSORS(PromiseResolveThenableJobInfo, context, Context, kContextOffset);
-
-ACCESSORS(PromiseReactionJobInfo, value, Object, kValueOffset);
-ACCESSORS(PromiseReactionJobInfo, tasks, Object, kTasksOffset);
-ACCESSORS(PromiseReactionJobInfo, deferred_promise, Object,
-          kDeferredPromiseOffset);
-ACCESSORS(PromiseReactionJobInfo, deferred_on_resolve, Object,
-          kDeferredOnResolveOffset);
-ACCESSORS(PromiseReactionJobInfo, deferred_on_reject, Object,
-          kDeferredOnRejectOffset);
-ACCESSORS(PromiseReactionJobInfo, context, Context, kContextOffset);
+ACCESSORS(PromiseReaction, next, Object, kNextOffset)
+ACCESSORS(PromiseReaction, reject_handler, HeapObject, kRejectHandlerOffset)
+ACCESSORS(PromiseReaction, fulfill_handler, HeapObject, kFulfillHandlerOffset)
+ACCESSORS(PromiseReaction, promise_or_capability, HeapObject,
+          kPromiseOrCapabilityOffset)
 
 ACCESSORS(AsyncGeneratorRequest, next, Object, kNextOffset)
 SMI_ACCESSORS(AsyncGeneratorRequest, resume_mode, kResumeModeOffset)
@@ -2490,7 +2502,7 @@ SMI_ACCESSORS(StackFrameInfo, id, kIdIndex)
 ACCESSORS(SourcePositionTableWithFrameCache, source_position_table, ByteArray,
           kSourcePositionTableIndex)
 ACCESSORS(SourcePositionTableWithFrameCache, stack_frame_cache,
-          NumberDictionary, kStackFrameCacheIndex)
+          SimpleNumberDictionary, kStackFrameCacheIndex)
 
 SMI_ACCESSORS(FunctionTemplateInfo, length, kLengthOffset)
 BOOL_ACCESSORS(FunctionTemplateInfo, flag, hidden_prototype,
@@ -2715,7 +2727,7 @@ bool JSFunction::is_compiled() {
   return code() != builtins->builtin(Builtins::kCompileLazy);
 }
 
-ACCESSORS(JSProxy, target, JSReceiver, kTargetOffset)
+ACCESSORS(JSProxy, target, Object, kTargetOffset)
 ACCESSORS(JSProxy, handler, Object, kHandlerOffset)
 
 bool JSProxy::IsRevoked() const { return !handler()->IsJSReceiver(); }
@@ -2765,8 +2777,7 @@ bool JSGeneratorObject::is_executing() const {
 }
 
 ACCESSORS(JSAsyncGeneratorObject, queue, HeapObject, kQueueOffset)
-ACCESSORS(JSAsyncGeneratorObject, awaited_promise, HeapObject,
-          kAwaitedPromiseOffset)
+SMI_ACCESSORS(JSAsyncGeneratorObject, is_awaiting, kIsAwaitingOffset)
 
 ACCESSORS(JSValue, value, Object, kValueOffset)
 
@@ -2802,22 +2813,42 @@ SMI_ACCESSORS(JSMessageObject, start_position, kStartPositionOffset)
 SMI_ACCESSORS(JSMessageObject, end_position, kEndPositionOffset)
 SMI_ACCESSORS(JSMessageObject, error_level, kErrorLevelOffset)
 
+ACCESSORS(CallableTask, callable, JSReceiver, kCallableOffset)
+ACCESSORS(CallableTask, context, Context, kContextOffset)
 
+ACCESSORS(CallbackTask, callback, Foreign, kCallbackOffset)
+ACCESSORS(CallbackTask, data, Foreign, kDataOffset)
 
-ACCESSORS(PromiseCapability, promise, Object, kPromiseOffset)
+ACCESSORS(PromiseResolveThenableJobTask, context, Context, kContextOffset)
+ACCESSORS(PromiseResolveThenableJobTask, promise_to_resolve, JSPromise,
+          kPromiseToResolveOffset)
+ACCESSORS(PromiseResolveThenableJobTask, then, JSReceiver, kThenOffset)
+ACCESSORS(PromiseResolveThenableJobTask, thenable, JSReceiver, kThenableOffset)
+
+ACCESSORS(PromiseReactionJobTask, context, Context, kContextOffset)
+ACCESSORS(PromiseReactionJobTask, argument, Object, kArgumentOffset);
+ACCESSORS(PromiseReactionJobTask, handler, HeapObject, kHandlerOffset);
+ACCESSORS(PromiseReactionJobTask, promise_or_capability, HeapObject,
+          kPromiseOrCapabilityOffset);
+
+ACCESSORS(PromiseCapability, promise, HeapObject, kPromiseOffset)
 ACCESSORS(PromiseCapability, resolve, Object, kResolveOffset)
 ACCESSORS(PromiseCapability, reject, Object, kRejectOffset)
 
-ACCESSORS(JSPromise, result, Object, kResultOffset)
-ACCESSORS(JSPromise, deferred_promise, Object, kDeferredPromiseOffset)
-ACCESSORS(JSPromise, deferred_on_resolve, Object, kDeferredOnResolveOffset)
-ACCESSORS(JSPromise, deferred_on_reject, Object, kDeferredOnRejectOffset)
-ACCESSORS(JSPromise, fulfill_reactions, Object, kFulfillReactionsOffset)
-ACCESSORS(JSPromise, reject_reactions, Object, kRejectReactionsOffset)
+ACCESSORS(JSPromise, reactions_or_result, Object, kReactionsOrResultOffset)
 SMI_ACCESSORS(JSPromise, flags, kFlagsOffset)
 BOOL_ACCESSORS(JSPromise, flags, has_handler, kHasHandlerBit)
 BOOL_ACCESSORS(JSPromise, flags, handled_hint, kHandledHintBit)
 
+Object* JSPromise::result() const {
+  DCHECK_NE(Promise::kPending, status());
+  return reactions_or_result();
+}
+
+Object* JSPromise::reactions() const {
+  DCHECK_EQ(Promise::kPending, status());
+  return reactions_or_result();
+}
 
 ElementsKind JSObject::GetElementsKind() {
   ElementsKind kind = map()->elements_kind();
@@ -3300,29 +3331,34 @@ void GlobalDictionary::ValueAtPut(int entry, Object* value) {
   set(EntryToIndex(entry), value);
 }
 
-bool NumberDictionaryShape::IsMatch(uint32_t key, Object* other) {
+bool NumberDictionaryBaseShape::IsMatch(uint32_t key, Object* other) {
   DCHECK(other->IsNumber());
   return key == static_cast<uint32_t>(other->Number());
 }
 
-uint32_t NumberDictionaryShape::Hash(Isolate* isolate, uint32_t key) {
+uint32_t NumberDictionaryBaseShape::Hash(Isolate* isolate, uint32_t key) {
   return ComputeIntegerHash(key, isolate->heap()->HashSeed());
 }
 
-uint32_t NumberDictionaryShape::HashForObject(Isolate* isolate, Object* other) {
+uint32_t NumberDictionaryBaseShape::HashForObject(Isolate* isolate,
+                                                  Object* other) {
   DCHECK(other->IsNumber());
   return ComputeIntegerHash(static_cast<uint32_t>(other->Number()),
                             isolate->heap()->HashSeed());
+}
+
+Handle<Object> NumberDictionaryBaseShape::AsHandle(Isolate* isolate,
+                                                   uint32_t key) {
+  return isolate->factory()->NewNumberFromUint(key);
 }
 
 int NumberDictionaryShape::GetMapRootIndex() {
   return Heap::kNumberDictionaryMapRootIndex;
 }
 
-Handle<Object> NumberDictionaryShape::AsHandle(Isolate* isolate, uint32_t key) {
-  return isolate->factory()->NewNumberFromUint(key);
+int SimpleNumberDictionaryShape::GetMapRootIndex() {
+  return Heap::kSimpleNumberDictionaryMapRootIndex;
 }
-
 
 bool NameDictionaryShape::IsMatch(Handle<Name> key, Object* other) {
   DCHECK(other->IsTheHole(key->GetIsolate()) ||
@@ -3484,6 +3520,7 @@ ACCESSORS(JSIteratorResult, done, Object, kDoneOffset)
 
 ACCESSORS(JSAsyncFromSyncIterator, sync_iterator, JSReceiver,
           kSyncIteratorOffset)
+ACCESSORS(JSAsyncFromSyncIterator, next, Object, kNextOffset)
 
 ACCESSORS(JSStringIterator, string, String, kStringOffset)
 SMI_ACCESSORS(JSStringIterator, index, kNextIndexOffset)

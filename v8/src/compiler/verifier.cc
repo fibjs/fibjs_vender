@@ -236,10 +236,19 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       // Dead is never connected to the graph.
       UNREACHABLE();
     case IrOpcode::kDeadValue:
+      CheckValueInputIs(node, 0, Type::None());
       CheckTypeIs(node, Type::None());
       break;
     case IrOpcode::kUnreachable:
-      CheckNotTyped(node);
+      CheckTypeIs(node, Type::None());
+      for (Edge edge : node->use_edges()) {
+        Node* use = edge.from();
+        if (NodeProperties::IsValueEdge(edge) && all.IsLive(use)) {
+          // {Unreachable} nodes can only be used by {DeadValue}, because they
+          // don't actually produce a value.
+          CHECK_EQ(IrOpcode::kDeadValue, use->opcode());
+        }
+      }
       break;
     case IrOpcode::kBranch: {
       // Branch uses are IfTrue and IfFalse.
@@ -672,6 +681,10 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       // Type is OtherObject.
       CheckTypeIs(node, Type::OtherObject());
       break;
+    case IrOpcode::kJSCreatePromise:
+      // Type is OtherObject.
+      CheckTypeIs(node, Type::OtherObject());
+      break;
     case IrOpcode::kJSCreateLiteralArray:
       // Type is Array.
       CheckTypeIs(node, Type::Array());
@@ -822,7 +835,15 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       CheckTypeIs(node, Type::SignedSmall());
       break;
 
+    case IrOpcode::kJSGeneratorRestoreContext:
+      CheckTypeIs(node, Type::Any());
+      break;
+
     case IrOpcode::kJSGeneratorRestoreRegister:
+      CheckTypeIs(node, Type::Any());
+      break;
+
+    case IrOpcode::kJSGeneratorRestoreInputOrDebugPos:
       CheckTypeIs(node, Type::Any());
       break;
 
@@ -830,6 +851,14 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
     case IrOpcode::kJSDebugger:
       // Type is empty.
       CheckNotTyped(node);
+      break;
+
+    case IrOpcode::kJSPerformPromiseThen:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckValueInputIs(node, 1, Type::Any());
+      CheckValueInputIs(node, 2, Type::Any());
+      CheckValueInputIs(node, 3, Type::Any());
+      CheckTypeIs(node, Type::OtherObject());
       break;
 
     case IrOpcode::kComment:
@@ -984,6 +1013,11 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       CheckValueInputIs(node, 0, Type::Number());
       CheckTypeIs(node, Type::Signed32());
       break;
+    case IrOpcode::kNumberToString:
+      // Number -> String
+      CheckValueInputIs(node, 0, Type::Number());
+      CheckTypeIs(node, Type::String());
+      break;
     case IrOpcode::kNumberToUint32:
     case IrOpcode::kNumberToUint8Clamped:
       // Number -> Unsigned32
@@ -1038,6 +1072,18 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
     case IrOpcode::kSeqStringCharCodeAt:
       // (SeqString, Unsigned32) -> UnsignedSmall
       CheckValueInputIs(node, 0, Type::SeqString());
+      CheckValueInputIs(node, 1, Type::Unsigned32());
+      CheckTypeIs(node, Type::UnsignedSmall());
+      break;
+    case IrOpcode::kStringCodePointAt:
+      // (String, Unsigned32) -> UnsignedSmall
+      CheckValueInputIs(node, 0, Type::String());
+      CheckValueInputIs(node, 1, Type::Unsigned32());
+      CheckTypeIs(node, Type::UnsignedSmall());
+      break;
+    case IrOpcode::kSeqStringCodePointAt:
+      // (String, Unsigned32) -> UnsignedSmall
+      CheckValueInputIs(node, 0, Type::String());
       CheckValueInputIs(node, 1, Type::Unsigned32());
       CheckTypeIs(node, Type::UnsignedSmall());
       break;
@@ -1096,6 +1142,10 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
     case IrOpcode::kObjectIsUndetectable:
     case IrOpcode::kArrayBufferWasNeutered:
       CheckValueInputIs(node, 0, Type::Any());
+      CheckTypeIs(node, Type::Boolean());
+      break;
+    case IrOpcode::kNumberIsFloat64Hole:
+      CheckValueInputIs(node, 0, Type::NumberOrHole());
       CheckTypeIs(node, Type::Boolean());
       break;
     case IrOpcode::kFindOrderedHashMapEntry:
@@ -1601,7 +1651,6 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
     case IrOpcode::kLoadParentFramePointer:
     case IrOpcode::kUnalignedLoad:
     case IrOpcode::kUnalignedStore:
-    case IrOpcode::kCheckedLoad:
     case IrOpcode::kAtomicLoad:
     case IrOpcode::kAtomicStore:
     case IrOpcode::kAtomicExchange:
@@ -1611,6 +1660,12 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
     case IrOpcode::kAtomicAnd:
     case IrOpcode::kAtomicOr:
     case IrOpcode::kAtomicXor:
+    case IrOpcode::kSpeculationFence:
+    case IrOpcode::kSignExtendWord8ToInt32:
+    case IrOpcode::kSignExtendWord16ToInt32:
+    case IrOpcode::kSignExtendWord8ToInt64:
+    case IrOpcode::kSignExtendWord16ToInt64:
+    case IrOpcode::kSignExtendWord32ToInt64:
 
 #define SIMD_MACHINE_OP_CASE(Name) case IrOpcode::k##Name:
       MACHINE_SIMD_OP_LIST(SIMD_MACHINE_OP_CASE)

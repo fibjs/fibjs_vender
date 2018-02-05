@@ -50,6 +50,8 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
     kSourcePositionsEnabled = 1 << 8,
     kBailoutOnUninitialized = 1 << 9,
     kLoopPeelingEnabled = 1 << 10,
+    kUntrustedCodeMitigations = 1 << 11,
+    kSwitchJumpTableEnabled = 1 << 12,
   };
 
   // TODO(mtrofin): investigate if this might be generalized outside wasm, with
@@ -164,6 +166,14 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
   void MarkAsLoopPeelingEnabled() { SetFlag(kLoopPeelingEnabled); }
   bool is_loop_peeling_enabled() const { return GetFlag(kLoopPeelingEnabled); }
 
+  bool has_untrusted_code_mitigations() const {
+    return GetFlag(kUntrustedCodeMitigations);
+  }
+
+  bool switch_jump_table_enabled() const {
+    return GetFlag(kSwitchJumpTableEnabled);
+  }
+
   // Code getters and setters.
 
   void SetCode(Handle<Code> code) { code_ = code; }
@@ -206,13 +216,13 @@ class V8_EXPORT_PRIVATE CompilationInfo final {
   void ReopenHandlesInNewHandleScope();
 
   void AbortOptimization(BailoutReason reason) {
-    DCHECK_NE(reason, kNoReason);
-    if (bailout_reason_ == kNoReason) bailout_reason_ = reason;
+    DCHECK_NE(reason, BailoutReason::kNoReason);
+    if (bailout_reason_ == BailoutReason::kNoReason) bailout_reason_ = reason;
     SetFlag(kDisableFutureOptimization);
   }
 
   void RetryOptimization(BailoutReason reason) {
-    DCHECK_NE(reason, kNoReason);
+    DCHECK_NE(reason, BailoutReason::kNoReason);
     if (GetFlag(kDisableFutureOptimization)) return;
     bailout_reason_ = reason;
   }

@@ -199,7 +199,7 @@ void ProfilerListener::RecordInliningInfo(CodeEntry* entry,
     DCHECK_EQ(Translation::BEGIN, opcode);
     it.Skip(Translation::NumberOfOperandsFor(opcode));
     int depth = 0;
-    std::vector<CodeEntry*> inline_stack;
+    std::vector<std::unique_ptr<CodeEntry>> inline_stack;
     while (it.HasNext() &&
            Translation::BEGIN !=
                (opcode = static_cast<Translation::Opcode>(it.Next()))) {
@@ -213,14 +213,21 @@ void ProfilerListener::RecordInliningInfo(CodeEntry* entry,
       SharedFunctionInfo* shared_info = SharedFunctionInfo::cast(
           deopt_input_data->LiteralArray()->get(shared_info_id));
       if (!depth++) continue;  // Skip the current function itself.
+
+      const char* resource_name =
+          (shared_info->script()->IsScript() &&
+           Script::cast(shared_info->script())->name()->IsName())
+              ? GetName(Name::cast(Script::cast(shared_info->script())->name()))
+              : CodeEntry::kEmptyResourceName;
+
       CodeEntry* inline_entry =
           new CodeEntry(entry->tag(), GetFunctionName(shared_info->DebugName()),
-                        CodeEntry::kEmptyNamePrefix, entry->resource_name(),
+                        CodeEntry::kEmptyNamePrefix, resource_name,
                         CpuProfileNode::kNoLineNumberInfo,
                         CpuProfileNode::kNoColumnNumberInfo, nullptr,
                         code->instruction_start());
       inline_entry->FillFunctionInfo(shared_info);
-      inline_stack.push_back(inline_entry);
+      inline_stack.emplace_back(inline_entry);
     }
     if (!inline_stack.empty()) {
       entry->AddInlineStack(pc_offset, std::move(inline_stack));

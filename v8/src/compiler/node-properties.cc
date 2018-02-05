@@ -12,6 +12,7 @@
 #include "src/compiler/simplified-operator.h"
 #include "src/compiler/verifier.h"
 #include "src/handles-inl.h"
+#include "src/zone/zone-handle-set.h"
 
 namespace v8 {
 namespace internal {
@@ -410,7 +411,8 @@ NodeProperties::InferReceiverMapsResult NodeProperties::InferReceiverMaps(
         if (IsSame(receiver, effect)) {
           HeapObjectMatcher mtarget(GetValueInput(effect, 0));
           HeapObjectMatcher mnewtarget(GetValueInput(effect, 1));
-          if (mtarget.HasValue() && mnewtarget.HasValue()) {
+          if (mtarget.HasValue() && mnewtarget.HasValue() &&
+              mnewtarget.Value()->IsJSFunction()) {
             Handle<JSFunction> original_constructor =
                 Handle<JSFunction>::cast(mnewtarget.Value());
             if (original_constructor->has_initial_map()) {
@@ -501,6 +503,19 @@ NodeProperties::InferReceiverMapsResult NodeProperties::InferReceiverMaps(
 }
 
 // static
+MaybeHandle<Map> NodeProperties::GetMapWitness(Node* node) {
+  ZoneHandleSet<Map> maps;
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  NodeProperties::InferReceiverMapsResult result =
+      NodeProperties::InferReceiverMaps(receiver, effect, &maps);
+  if (result == NodeProperties::kReliableReceiverMaps && maps.size() == 1) {
+    return maps[0];
+  }
+  return MaybeHandle<Map>();
+}
+
+// static
 bool NodeProperties::NoObservableSideEffectBetween(Node* effect,
                                                    Node* dominator) {
   while (effect != dominator) {
@@ -551,19 +566,19 @@ bool NodeProperties::CanBePrimitive(Node* receiver, Node* effect) {
 bool NodeProperties::CanBeNullOrUndefined(Node* receiver, Node* effect) {
   if (CanBePrimitive(receiver, effect)) {
     switch (receiver->opcode()) {
-      case IrOpcode::kCheckSmi:
-      case IrOpcode::kCheckNumber:
-      case IrOpcode::kCheckSymbol:
-      case IrOpcode::kCheckString:
-      case IrOpcode::kCheckSeqString:
       case IrOpcode::kCheckInternalizedString:
-      case IrOpcode::kToBoolean:
+      case IrOpcode::kCheckNumber:
+      case IrOpcode::kCheckSeqString:
+      case IrOpcode::kCheckSmi:
+      case IrOpcode::kCheckString:
+      case IrOpcode::kCheckSymbol:
       case IrOpcode::kJSToInteger:
       case IrOpcode::kJSToLength:
       case IrOpcode::kJSToName:
       case IrOpcode::kJSToNumber:
       case IrOpcode::kJSToNumeric:
       case IrOpcode::kJSToString:
+      case IrOpcode::kToBoolean:
         return false;
       case IrOpcode::kHeapConstant: {
         Handle<HeapObject> value = HeapObjectMatcher(receiver).Value();

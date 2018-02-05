@@ -795,7 +795,6 @@ class RuntimeCallTimer final {
   V(CompileBackgroundEval)                     \
   V(CompileBackgroundIgnition)                 \
   V(CompileBackgroundScript)                   \
-  V(CompileBackgroundRenumber)                 \
   V(CompileBackgroundRewriteReturnResult)      \
   V(CompileBackgroundScopeAnalysis)            \
   V(CompileDeserialize)                        \
@@ -805,7 +804,6 @@ class RuntimeCallTimer final {
   V(CompileGetFromOptimizedCodeMap)            \
   V(CompileIgnition)                           \
   V(CompileIgnitionFinalization)               \
-  V(CompileRenumber)                           \
   V(CompileRewriteReturnResult)                \
   V(CompileScopeAnalysis)                      \
   V(CompileScript)                             \
@@ -1145,6 +1143,8 @@ class RuntimeCallTimerScope {
      1000000, MICROSECOND)                                                     \
   HT(wasm_compile_wasm_function_time, V8.WasmCompileFunctionMicroSeconds.wasm, \
      1000000, MICROSECOND)                                                     \
+  HT(liftoff_compile_time, V8.LiftoffCompileMicroSeconds, 10000000,            \
+     MICROSECOND)                                                              \
   HT(wasm_instantiate_wasm_module_time,                                        \
      V8.WasmInstantiateModuleMicroSeconds.wasm, 10000000, MICROSECOND)         \
   HT(wasm_instantiate_asm_module_time,                                         \
@@ -1396,28 +1396,6 @@ class Counters : public std::enable_shared_from_this<Counters> {
 #define SC(name, caption) \
   StatsCounterThreadSafe* name() { return &name##_; }
   STATS_COUNTER_TS_LIST(SC)
-#undef SC
-
-#define SC(name) \
-  StatsCounter* count_of_##name() { return &count_of_##name##_; } \
-  StatsCounter* size_of_##name() { return &size_of_##name##_; }
-  INSTANCE_TYPE_LIST(SC)
-#undef SC
-
-#define SC(name) \
-  StatsCounter* count_of_CODE_TYPE_##name() \
-    { return &count_of_CODE_TYPE_##name##_; } \
-  StatsCounter* size_of_CODE_TYPE_##name() \
-    { return &size_of_CODE_TYPE_##name##_; }
-  CODE_KIND_LIST(SC)
-#undef SC
-
-#define SC(name) \
-  StatsCounter* count_of_FIXED_ARRAY_##name() \
-    { return &count_of_FIXED_ARRAY_##name##_; } \
-  StatsCounter* size_of_FIXED_ARRAY_##name() \
-    { return &size_of_FIXED_ARRAY_##name##_; }
-  FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(SC)
 #undef SC
 
   // clang-format off

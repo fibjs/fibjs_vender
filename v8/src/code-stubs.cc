@@ -71,9 +71,9 @@ void CodeStubDescriptor::Initialize(Register stack_parameter_count,
 
 
 bool CodeStub::FindCodeInCache(Code** code_out) {
-  NumberDictionary* stubs = isolate()->heap()->code_stubs();
+  SimpleNumberDictionary* stubs = isolate()->heap()->code_stubs();
   int index = stubs->FindEntry(isolate(), GetKey());
-  if (index != NumberDictionary::kNotFound) {
+  if (index != SimpleNumberDictionary::kNotFound) {
     *code_out = Code::cast(stubs->ValueAt(index));
     return true;
   }
@@ -97,10 +97,10 @@ void CodeStub::RecordCodeGeneration(Handle<Code> code) {
 
 void CodeStub::DeleteStubFromCacheForTesting() {
   Heap* heap = isolate_->heap();
-  Handle<NumberDictionary> dict(heap->code_stubs());
+  Handle<SimpleNumberDictionary> dict(heap->code_stubs());
   int entry = dict->FindEntry(GetKey());
-  DCHECK_NE(NumberDictionary::kNotFound, entry);
-  dict = NumberDictionary::DeleteEntry(dict, entry);
+  DCHECK_NE(SimpleNumberDictionary::kNotFound, entry);
+  dict = SimpleNumberDictionary::DeleteEntry(dict, entry);
   heap->SetRootCodeStubs(*dict);
 }
 
@@ -166,8 +166,8 @@ Handle<Code> CodeStub::GetCode() {
 #endif
 
     // Update the dictionary and the root in Heap.
-    Handle<NumberDictionary> dict =
-        NumberDictionary::Set(handle(heap->code_stubs()), GetKey(), new_object);
+    Handle<SimpleNumberDictionary> dict = SimpleNumberDictionary::Set(
+        handle(heap->code_stubs()), GetKey(), new_object);
     heap->SetRootCodeStubs(*dict);
     code = *new_object;
   }
@@ -541,12 +541,13 @@ void StoreFastElementStub::GenerateAheadOfTime(Isolate* isolate) {
   StoreFastElementStub(isolate, false, HOLEY_ELEMENTS, STANDARD_STORE)
       .GetCode();
   StoreFastElementStub(isolate, false, HOLEY_ELEMENTS,
-                       STORE_AND_GROW_NO_TRANSITION)
+                       STORE_AND_GROW_NO_TRANSITION_HANDLE_COW)
       .GetCode();
   for (int i = FIRST_FAST_ELEMENTS_KIND; i <= LAST_FAST_ELEMENTS_KIND; i++) {
     ElementsKind kind = static_cast<ElementsKind>(i);
     StoreFastElementStub(isolate, true, kind, STANDARD_STORE).GetCode();
-    StoreFastElementStub(isolate, true, kind, STORE_AND_GROW_NO_TRANSITION)
+    StoreFastElementStub(isolate, true, kind,
+                         STORE_AND_GROW_NO_TRANSITION_HANDLE_COW)
         .GetCode();
   }
 }
@@ -616,7 +617,7 @@ void ArrayConstructorAssembler::GenerateConstructor(
     Branch(SmiEqual(array_size, SmiConstant(0)), &small_smi_size, &abort);
 
     BIND(&abort);
-    Node* reason = SmiConstant(kAllocatingNonEmptyPackedArray);
+    Node* reason = SmiConstant(AbortReason::kAllocatingNonEmptyPackedArray);
     TailCallRuntime(Runtime::kAbort, context, reason);
   } else {
     int element_size =

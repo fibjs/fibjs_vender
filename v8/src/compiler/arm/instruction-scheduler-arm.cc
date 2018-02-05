@@ -278,6 +278,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmStr:
     case kArmPush:
     case kArmPoke:
+    case kArmDsbIsb:
       return kHasSideEffect;
 
 #define CASE(Name) case k##Name:

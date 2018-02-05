@@ -160,45 +160,6 @@ static inline bool HasStackSlotInput(Instruction* instr, size_t index) {
 
 namespace {
 
-class OutOfLineLoadNAN32 final : public OutOfLineCode {
- public:
-  OutOfLineLoadNAN32(CodeGenerator* gen, DoubleRegister result)
-      : OutOfLineCode(gen), result_(result) {}
-
-  void Generate() final {
-    __ LoadDoubleLiteral(result_, std::numeric_limits<float>::quiet_NaN(),
-                         kScratchReg);
-  }
-
- private:
-  DoubleRegister const result_;
-};
-
-class OutOfLineLoadNAN64 final : public OutOfLineCode {
- public:
-  OutOfLineLoadNAN64(CodeGenerator* gen, DoubleRegister result)
-      : OutOfLineCode(gen), result_(result) {}
-
-  void Generate() final {
-    __ LoadDoubleLiteral(result_, std::numeric_limits<double>::quiet_NaN(),
-                         kScratchReg);
-  }
-
- private:
-  DoubleRegister const result_;
-};
-
-class OutOfLineLoadZero final : public OutOfLineCode {
- public:
-  OutOfLineLoadZero(CodeGenerator* gen, Register result)
-      : OutOfLineCode(gen), result_(result) {}
-
-  void Generate() final { __ LoadImmP(result_, Operand::Zero()); }
-
- private:
-  Register const result_;
-};
-
 class OutOfLineRecordWrite final : public OutOfLineCode {
  public:
   OutOfLineRecordWrite(CodeGenerator* gen, Register object, Register offset,
@@ -942,44 +903,6 @@ static inline int AssembleUnaryOp(Instruction* instr, _R _r, _M _m, _I _i) {
     __ asm_instr(value, operand);                        \
   } while (0)
 
-#define ASSEMBLE_CHECKED_LOAD_FLOAT(asm_instr, width)              \
-  do {                                                             \
-    DoubleRegister result = i.OutputDoubleRegister();              \
-    size_t index = 0;                                              \
-    AddressingMode mode = kMode_None;                              \
-    MemOperand operand = i.MemoryOperand(&mode, index);            \
-    Register offset = operand.rb();                                \
-    if (HasRegisterInput(instr, 2)) {                              \
-      __ CmpLogical32(offset, i.InputRegister(2));                 \
-    } else {                                                       \
-      __ CmpLogical32(offset, i.InputImmediate(2));                \
-    }                                                              \
-    auto ool = new (zone()) OutOfLineLoadNAN##width(this, result); \
-    __ bge(ool->entry());                                          \
-    __ CleanUInt32(offset);                                        \
-    __ asm_instr(result, operand);                                 \
-    __ bind(ool->exit());                                          \
-  } while (0)
-
-#define ASSEMBLE_CHECKED_LOAD_INTEGER(asm_instr)             \
-  do {                                                       \
-    Register result = i.OutputRegister();                    \
-    size_t index = 0;                                        \
-    AddressingMode mode = kMode_None;                        \
-    MemOperand operand = i.MemoryOperand(&mode, index);      \
-    Register offset = operand.rb();                          \
-    if (HasRegisterInput(instr, 2)) {                        \
-      __ CmpLogical32(offset, i.InputRegister(2));           \
-    } else {                                                 \
-      __ CmpLogical32(offset, i.InputImmediate(2));          \
-    }                                                        \
-    auto ool = new (zone()) OutOfLineLoadZero(this, result); \
-    __ bge(ool->entry());                                    \
-    __ CleanUInt32(offset);                                  \
-    __ asm_instr(result, operand);                           \
-    __ bind(ool->exit());                                    \
-  } while (0)
-
 void CodeGenerator::AssembleDeconstructFrame() {
   __ LeaveFrame(StackFrame::MANUAL);
 }
@@ -1165,8 +1088,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
 
       if (instr->InputAt(0)->IsImmediate()) {
+#ifdef V8_TARGET_ARCH_S390X
+        Address wasm_code = reinterpret_cast<Address>(
+            i.ToConstant(instr->InputAt(0)).ToInt64());
+#else
         Address wasm_code = reinterpret_cast<Address>(
             i.ToConstant(instr->InputAt(0)).ToInt32());
+#endif
         __ Call(wasm_code, rmode);
       } else {
         __ Call(i.InputRegister(0));
@@ -1229,7 +1157,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ LoadP(kScratchReg,
                  FieldMemOperand(func, JSFunction::kContextOffset));
         __ CmpP(cp, kScratchReg);
-        __ Assert(eq, kWrongFunctionContext);
+        __ Assert(eq, AbortReason::kWrongFunctionContext);
       }
       __ LoadP(ip, FieldMemOperand(func, JSFunction::kCodeOffset));
       __ AddP(ip, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
@@ -2001,15 +1929,21 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       break;
     }
-    case kS390_ExtendSignWord8:
+    case kS390_SignExtendWord8ToInt32:
       __ lbr(i.OutputRegister(), i.InputRegister(0));
       CHECK_AND_ZERO_EXT_OUTPUT(1);
       break;
-    case kS390_ExtendSignWord16:
+    case kS390_SignExtendWord16ToInt32:
       __ lhr(i.OutputRegister(), i.InputRegister(0));
       CHECK_AND_ZERO_EXT_OUTPUT(1);
       break;
-    case kS390_ExtendSignWord32:
+    case kS390_SignExtendWord8ToInt64:
+      __ lgbr(i.OutputRegister(), i.InputRegister(0));
+      break;
+    case kS390_SignExtendWord16ToInt64:
+      __ lghr(i.OutputRegister(), i.InputRegister(0));
+      break;
+    case kS390_SignExtendWord32ToInt64:
       __ lgfr(i.OutputRegister(), i.InputRegister(0));
       break;
     case kS390_Uint32ToUint64:
@@ -2280,35 +2214,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kS390_Lay:
       __ lay(i.OutputRegister(), i.MemoryOperand());
       break;
-    case kCheckedLoadInt8:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(LoadB);
-      break;
-    case kCheckedLoadUint8:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(LoadlB);
-      break;
-    case kCheckedLoadInt16:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(LoadHalfWordP);
-      break;
-    case kCheckedLoadUint16:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(LoadLogicalHalfWordP);
-      break;
-    case kCheckedLoadWord32:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(LoadlW);
-      break;
-    case kCheckedLoadWord64:
-#if V8_TARGET_ARCH_S390X
-      ASSEMBLE_CHECKED_LOAD_INTEGER(LoadP);
-#else
-      UNREACHABLE();
-#endif
-      break;
-    case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadFloat32, 32);
-      break;
-    case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(LoadDouble, 64);
-      break;
-      break;
     case kAtomicLoadInt8:
       __ LoadB(i.OutputRegister(), i.MemoryOperand());
       break;
@@ -2554,7 +2459,7 @@ void CodeGenerator::AssembleArchTrap(Instruction* instr,
         gen_->RecordSafepoint(reference_map, Safepoint::kSimple, 0,
                               Safepoint::kNoLazyDeopt);
         if (FLAG_debug_code) {
-          __ stop(GetBailoutReason(kUnexpectedReturnFromWasmTrap));
+          __ stop(GetAbortReason(AbortReason::kUnexpectedReturnFromWasmTrap));
         }
       }
     }
@@ -2687,7 +2592,7 @@ void CodeGenerator::AssembleConstructFrame() {
       frame()->GetTotalFrameSlotCount() - descriptor->CalculateFixedFrameSize();
   if (info()->is_osr()) {
     // TurboFan OSR-compiled functions cannot be entered directly.
-    __ Abort(kShouldNotDirectlyEnterOsrFunction);
+    __ Abort(AbortReason::kShouldNotDirectlyEnterOsrFunction);
 
     // Unoptimized code jumps directly to this entrypoint while the unoptimized
     // frame is still on the stack. Optimized code uses OSR values directly from

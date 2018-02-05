@@ -343,21 +343,23 @@ bool RelocInfo::IsInConstantPool() {
 }
 
 Address RelocInfo::embedded_address() const {
-  return Assembler::target_address_at(pc_, host_);
+  return Assembler::target_address_at(pc_, constant_pool_);
 }
 
 uint32_t RelocInfo::embedded_size() const {
-  return reinterpret_cast<uint32_t>(Assembler::target_address_at(pc_, host_));
+  return reinterpret_cast<uint32_t>(
+      Assembler::target_address_at(pc_, constant_pool_));
 }
 
 void RelocInfo::set_embedded_address(Isolate* isolate, Address address,
                                      ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, host_, address, flush_mode);
+  Assembler::set_target_address_at(isolate, pc_, constant_pool_, address,
+                                   flush_mode);
 }
 
 void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
                                   ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, host_,
+  Assembler::set_target_address_at(isolate, pc_, constant_pool_,
                                    reinterpret_cast<Address>(size), flush_mode);
 }
 
@@ -568,9 +570,15 @@ Assembler::Assembler(IsolateData isolate_data, void* buffer, int buffer_size)
     // it's awkward to use CpuFeatures::VFP32DREGS with CpuFeatureScope. To make
     // its use consistent with other features, we always enable it if we can.
     EnableCpuFeature(VFP32DREGS);
+    // Make sure we pick two D registers which alias a Q register. This way, we
+    // can use a Q as a scratch if NEON is supported.
+    scratch_vfp_register_list_ = d14.ToVfpRegList() | d15.ToVfpRegList();
+  } else {
+    // When VFP32DREGS is not supported, d15 become allocatable. Therefore we
+    // cannot use it as a scratch.
+    scratch_vfp_register_list_ = d14.ToVfpRegList();
   }
 }
-
 
 Assembler::~Assembler() {
   DCHECK_EQ(const_pool_blocked_nesting_, 0);
@@ -1190,7 +1198,7 @@ void Assembler::Move32BitImmediate(Register rd, const Operand& x,
       immediate = x.immediate();
     }
     ConstantPoolAddEntry(pc_offset(), x.rmode_, immediate);
-    ldr(rd, MemOperand(pc, 0), cond);
+    ldr_pcrel(rd, 0, cond);
   }
 }
 
@@ -1216,6 +1224,7 @@ void Assembler::AddrMode1(Instr instr, Register rd, Register rn,
     DCHECK(x.IsImmediate());
     // Upon failure to encode, the opcode should not have changed.
     DCHECK(opcode == (instr & kOpCodeMask));
+    UseScratchRegisterScope temps(this);
     Condition cond = Instruction::ConditionField(instr);
     if ((opcode == MOV) && !set_flags) {
       // Generate a sequence of mov instructions or a load from the constant
@@ -1223,7 +1232,7 @@ void Assembler::AddrMode1(Instr instr, Register rd, Register rn,
       DCHECK(!rn.is_valid());
       Move32BitImmediate(rd, x, cond);
     } else if ((opcode == ADD) && !set_flags && (rd == rn) &&
-               (scratch_register_list_ == 0)) {
+               !temps.CanAcquire()) {
       // Split the operation into a sequence of additions if we cannot use a
       // scratch register. In this case, we cannot re-use rn and the assembler
       // does not have any scratch registers to spare.
@@ -1246,7 +1255,6 @@ void Assembler::AddrMode1(Instr instr, Register rd, Register rn,
       // The immediate operand cannot be encoded as a shifter operand, so load
       // it first to a scratch register and change the original instruction to
       // use it.
-      UseScratchRegisterScope temps(this);
       // Re-use the destination register if possible.
       Register scratch =
           (rd.is_valid() && rd != rn && rd != pc) ? rd : temps.Acquire();
@@ -1297,6 +1305,9 @@ bool Assembler::AddrMode1TryEncodeOperand(Instr* instr, const Operand& x) {
 
 void Assembler::AddrMode2(Instr instr, Register rd, const MemOperand& x) {
   DCHECK((instr & ~(kCondMask | B | L)) == B26);
+  // This method does not handle pc-relative addresses. ldr_pcrel() should be
+  // used instead.
+  DCHECK(x.rn_ != pc);
   int am = x.am_;
   if (!x.rm_.is_valid()) {
     // Immediate offset.
@@ -1334,6 +1345,9 @@ void Assembler::AddrMode2(Instr instr, Register rd, const MemOperand& x) {
 void Assembler::AddrMode3(Instr instr, Register rd, const MemOperand& x) {
   DCHECK((instr & ~(kCondMask | L | S6 | H)) == (B4 | B7));
   DCHECK(x.rn_.is_valid());
+  // This method does not handle pc-relative addresses. ldr_pcrel() should be
+  // used instead.
+  DCHECK(x.rn_ != pc);
   int am = x.am_;
   bool is_load = (instr & L) == L;
   if (!x.rm_.is_valid()) {
@@ -2160,6 +2174,16 @@ void Assembler::strd(Register src1, Register src2,
   DCHECK_EQ(0, src1.code() % 2);
   DCHECK_EQ(src1.code() + 1, src2.code());
   AddrMode3(cond | B7 | B6 | B5 | B4, src1, dst);
+}
+
+void Assembler::ldr_pcrel(Register dst, int imm12, Condition cond) {
+  AddrMode am = Offset;
+  if (imm12 < 0) {
+    imm12 = -imm12;
+    am = NegOffset;
+  }
+  DCHECK(is_uint12(imm12));
+  emit(cond | B26 | am | L | pc.code() * B16 | dst.code() * B12 | imm12);
 }
 
 // Load/Store exclusive instructions.
@@ -5139,8 +5163,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
 
 void Assembler::ConstantPoolAddEntry(int position, RelocInfo::Mode rmode,
                                      intptr_t value) {
-  DCHECK(rmode != RelocInfo::COMMENT && rmode != RelocInfo::CONST_POOL &&
-         rmode != RelocInfo::NONE64);
+  DCHECK(rmode != RelocInfo::COMMENT && rmode != RelocInfo::CONST_POOL);
   bool sharing_ok = RelocInfo::IsNone(rmode) ||
                     (rmode >= RelocInfo::FIRST_SHAREABLE_RELOC_MODE);
   DCHECK_LT(pending_32_bit_constants_.size(), kMaxNumPending32Constants);
@@ -5465,19 +5488,23 @@ void PatchingAssembler::FlushICache(Isolate* isolate) {
 }
 
 UseScratchRegisterScope::UseScratchRegisterScope(Assembler* assembler)
-    : available_(assembler->GetScratchRegisterList()),
-      old_available_(*available_) {}
+    : assembler_(assembler),
+      old_available_(*assembler->GetScratchRegisterList()),
+      old_available_vfp_(*assembler->GetScratchVfpRegisterList()) {}
 
 UseScratchRegisterScope::~UseScratchRegisterScope() {
-  *available_ = old_available_;
+  *assembler_->GetScratchRegisterList() = old_available_;
+  *assembler_->GetScratchVfpRegisterList() = old_available_vfp_;
 }
 
 Register UseScratchRegisterScope::Acquire() {
-  DCHECK_NOT_NULL(available_);
-  DCHECK_NE(*available_, 0);
-  int index = static_cast<int>(base::bits::CountTrailingZeros32(*available_));
-  *available_ &= ~(1UL << index);
-  return Register::from_code(index);
+  RegList* available = assembler_->GetScratchRegisterList();
+  DCHECK_NOT_NULL(available);
+  DCHECK_NE(*available, 0);
+  int index = static_cast<int>(base::bits::CountTrailingZeros32(*available));
+  Register reg = Register::from_code(index);
+  *available &= ~reg.bit();
+  return reg;
 }
 
 }  // namespace internal

@@ -245,7 +245,12 @@ TNode<IntPtrT> CodeAssembler::IntPtrConstant(intptr_t value) {
 }
 
 TNode<Number> CodeAssembler::NumberConstant(double value) {
-  return UncheckedCast<Number>(raw_assembler()->NumberConstant(value));
+  int smi_value;
+  if (DoubleToSmiInteger(value, &smi_value)) {
+    return UncheckedCast<Number>(SmiConstant(smi_value));
+  } else {
+    return UncheckedCast<Number>(raw_assembler()->NumberConstant(value));
+  }
 }
 
 TNode<Smi> CodeAssembler::SmiConstant(Smi* value) {
@@ -1134,7 +1139,7 @@ Node* CodeAssembler::TailCallBytecodeDispatch(
 // CSA-generated code
 template V8_EXPORT_PRIVATE Node* CodeAssembler::TailCallBytecodeDispatch(
     const CallInterfaceDescriptor& descriptor, Node* target, Node*, Node*,
-    Node*, Node*);
+    Node*, Node*, Node*);
 
 Node* CodeAssembler::CallCFunctionN(Signature<MachineType>* signature,
                                     int input_count, Node* const* inputs) {

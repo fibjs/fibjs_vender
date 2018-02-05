@@ -18,7 +18,6 @@
 #include "src/trap-handler/trap-handler.h"
 #include "src/v8.h"
 #include "src/wasm/compilation-manager.h"
-#include "src/wasm/module-compiler.h"
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-code-manager.h"
 #include "src/wasm/wasm-code-specialization.h"
@@ -186,30 +185,6 @@ Handle<Object> GetOrCreateIndirectCallWrapper(
   AttachWasmFunctionInfo(isolate, code, owning_instance,
                          static_cast<int>(index));
   return code;
-}
-
-void UpdateDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
-                          int index, const WasmFunction* function,
-                          Handle<Object> code_or_foreign) {
-  DCHECK_EQ(0, dispatch_tables->length() % 4);
-  for (int i = 0; i < dispatch_tables->length(); i += 4) {
-    Handle<FixedArray> function_table(
-        FixedArray::cast(dispatch_tables->get(i + 2)), isolate);
-    Handle<FixedArray> signature_table(
-        FixedArray::cast(dispatch_tables->get(i + 3)), isolate);
-    if (function) {
-      Handle<WasmInstanceObject> instance(
-          WasmInstanceObject::cast(dispatch_tables->get(i)), isolate);
-      // Note that {SignatureMap::Find} may return {-1} if the signature is
-      // not found; it will simply never match any check.
-      auto sig_index = instance->module()->signature_map.Find(function->sig);
-      signature_table->set(index, Smi::FromInt(sig_index));
-      function_table->set(index, *code_or_foreign);
-    } else {
-      signature_table->set(index, Smi::FromInt(-1));
-      function_table->set(index, Smi::kZero);
-    }
-  }
 }
 
 bool IsWasmCodegenAllowed(Isolate* isolate, Handle<Context> context) {
@@ -450,21 +425,6 @@ Handle<FixedArray> DecodeLocalNames(Isolate* isolate,
   }
   return locals_names;
 }
-
-const char* ExternalKindName(WasmExternalKind kind) {
-  switch (kind) {
-    case kExternalFunction:
-      return "function";
-    case kExternalTable:
-      return "table";
-    case kExternalMemory:
-      return "memory";
-    case kExternalGlobal:
-      return "global";
-  }
-  return "unknown";
-}
-
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8

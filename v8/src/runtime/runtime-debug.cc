@@ -53,21 +53,25 @@ RUNTIME_FUNCTION_RETURN_PAIR(Runtime_DebugBreakOnBytecode) {
   BytecodeArray* bytecode_array = shared->bytecode_array();
   int bytecode_offset = interpreted_frame->GetBytecodeOffset();
   Bytecode bytecode = Bytecodes::FromByte(bytecode_array->get(bytecode_offset));
-  if (bytecode == Bytecode::kReturn) {
-    // If we are returning, reset the bytecode array on the interpreted stack
-    // frame to the non-debug variant so that the interpreter entry trampoline
-    // sees the return bytecode rather than the DebugBreak.
+  if (Bytecodes::Returns(bytecode)) {
+    // If we are returning (or suspending), reset the bytecode array on the
+    // interpreted stack frame to the non-debug variant so that the interpreter
+    // entry trampoline sees the return/suspend bytecode rather than the
+    // DebugBreak.
     interpreted_frame->PatchBytecodeArray(bytecode_array);
   }
 
   // We do not have to deal with operand scale here. If the bytecode at the
   // break is prefixed by operand scaling, we would have patched over the
   // scaling prefix. We now simply dispatch to the handler for the prefix.
+  // We need to deserialize now to ensure we don't hit the debug break again
+  // after deserializing.
   OperandScale operand_scale = OperandScale::kSingle;
-  Code* code = isolate->interpreter()->GetAndMaybeDeserializeBytecodeHandler(
-      bytecode, operand_scale);
+  isolate->interpreter()->GetAndMaybeDeserializeBytecodeHandler(bytecode,
+                                                                operand_scale);
 
-  return MakePair(isolate->debug()->return_value(), code);
+  return MakePair(isolate->debug()->return_value(),
+                  Smi::FromInt(static_cast<uint8_t>(bytecode)));
 }
 
 
@@ -261,7 +265,10 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     Handle<String> status_str = factory->NewStringFromAsciiChecked(status);
     result->set(1, *status_str);
 
-    Handle<Object> value_obj(promise->result(), isolate);
+    Handle<Object> value_obj(promise->status() == Promise::kPending
+                                 ? isolate->heap()->undefined_value()
+                                 : promise->result(),
+                             isolate);
     Handle<String> promise_value =
         factory->NewStringFromAsciiChecked("[[PromiseValue]]");
     result->set(2, *promise_value);
@@ -855,8 +862,7 @@ RUNTIME_FUNCTION(Runtime_GetAllScopesDetails) {
   // local).
   if (frame->is_wasm_interpreter_entry()) {
     Handle<WasmDebugInfo> debug_info(
-        WasmInterpreterEntryFrame::cast(frame)->wasm_instance()->debug_info(),
-        isolate);
+        WasmInterpreterEntryFrame::cast(frame)->debug_info(), isolate);
     return *WasmDebugInfo::GetScopeDetails(debug_info, frame->fp(),
                                            inlined_frame_index);
   }
@@ -1833,15 +1839,6 @@ RUNTIME_FUNCTION(Runtime_DebugPrepareStepInSuspendedGenerator) {
   HandleScope scope(isolate);
   DCHECK_EQ(0, args.length());
   isolate->debug()->PrepareStepInSuspendedGenerator();
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_DebugRecordGenerator) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSGeneratorObject, generator, 0);
-  CHECK(isolate->debug()->last_step_action() >= StepNext);
-  isolate->debug()->RecordGenerator(generator);
   return isolate->heap()->undefined_value();
 }
 

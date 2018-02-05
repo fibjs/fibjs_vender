@@ -134,6 +134,11 @@ Node* GraphAssembler::DebugBreak() {
                                             current_effect_, current_control_);
 }
 
+Node* GraphAssembler::Unreachable() {
+  return current_effect_ = graph()->NewNode(common()->Unreachable(),
+                                            current_effect_, current_control_);
+}
+
 Node* GraphAssembler::Store(StoreRepresentation rep, Node* object, Node* offset,
                             Node* value) {
   return current_effect_ =
@@ -162,6 +167,12 @@ Node* GraphAssembler::ToNumber(Node* value) {
   return current_effect_ =
              graph()->NewNode(ToNumberOperator(), ToNumberBuiltinConstant(),
                               value, NoContextConstant(), current_effect_);
+}
+
+Node* GraphAssembler::BitcastWordToTagged(Node* value) {
+  return current_effect_ =
+             graph()->NewNode(machine()->BitcastWordToTagged(), value,
+                              current_effect_, current_control_);
 }
 
 Node* GraphAssembler::DeoptimizeIf(DeoptimizeReason reason,

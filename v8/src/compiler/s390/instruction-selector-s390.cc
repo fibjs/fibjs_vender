@@ -333,6 +333,8 @@ ArchOpcode SelectLoadOpcode(Node* node) {
   V(Word32Popcnt)                  \
   V(Float64ExtractLowWord32)       \
   V(Float64ExtractHighWord32)      \
+  V(SignExtendWord8ToInt32)        \
+  V(SignExtendWord16ToInt32)       \
   /* Word32 bin op */              \
   V(Int32Add)                      \
   V(Int32Sub)                      \
@@ -856,52 +858,6 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) { UNREACHABLE(); }
 // Architecture supports unaligned access, therefore VisitStore is used instead
 void InstructionSelector::VisitUnalignedStore(Node* node) { UNREACHABLE(); }
 
-void InstructionSelector::VisitCheckedLoad(Node* node) {
-  CheckedLoadRepresentation load_rep = CheckedLoadRepresentationOf(node->op());
-  S390OperandGenerator g(this);
-  Node* const base = node->InputAt(0);
-  Node* const offset = node->InputAt(1);
-  Node* const length = node->InputAt(2);
-  ArchOpcode opcode = kArchNop;
-  switch (load_rep.representation()) {
-    case MachineRepresentation::kWord8:
-      opcode = load_rep.IsSigned() ? kCheckedLoadInt8 : kCheckedLoadUint8;
-      break;
-    case MachineRepresentation::kWord16:
-      opcode = load_rep.IsSigned() ? kCheckedLoadInt16 : kCheckedLoadUint16;
-      break;
-    case MachineRepresentation::kWord32:
-      opcode = kCheckedLoadWord32;
-      break;
-#if V8_TARGET_ARCH_S390X
-    case MachineRepresentation::kWord64:
-      opcode = kCheckedLoadWord64;
-      break;
-#endif
-    case MachineRepresentation::kFloat32:
-      opcode = kCheckedLoadFloat32;
-      break;
-    case MachineRepresentation::kFloat64:
-      opcode = kCheckedLoadFloat64;
-      break;
-    case MachineRepresentation::kBit:     // Fall through.
-    case MachineRepresentation::kTaggedSigned:   // Fall through.
-    case MachineRepresentation::kTaggedPointer:  // Fall through.
-    case MachineRepresentation::kTagged:  // Fall through.
-#if !V8_TARGET_ARCH_S390X
-    case MachineRepresentation::kWord64:  // Fall through.
-#endif
-    case MachineRepresentation::kSimd128:  // Fall through.
-    case MachineRepresentation::kNone:
-      UNREACHABLE();
-      return;
-  }
-  AddressingMode addressingMode = kMode_MRR;
-  Emit(opcode | AddressingModeField::encode(addressingMode),
-       g.DefineAsRegister(node), g.UseRegister(base), g.UseRegister(offset),
-       g.UseOperand(length, OperandMode::kUint32Imm));
-}
-
 #if 0
 static inline bool IsContiguousMask32(uint32_t value, int* mb, int* me) {
   int mask_width = base::bits::CountPopulation(value);
@@ -1069,7 +1025,7 @@ static inline bool TryMatchSignExtInt16OrInt8FromWord32Sar(
     Int32BinopMatcher mleft(m.left().node());
     if (mleft.right().Is(16) && m.right().Is(16)) {
       bool canEliminateZeroExt = ProduceWord32Result(mleft.left().node());
-      selector->Emit(kS390_ExtendSignWord16,
+      selector->Emit(kS390_SignExtendWord16ToInt32,
                      canEliminateZeroExt ? g.DefineSameAsFirst(node)
                                          : g.DefineAsRegister(node),
                      g.UseRegister(mleft.left().node()),
@@ -1077,7 +1033,7 @@ static inline bool TryMatchSignExtInt16OrInt8FromWord32Sar(
       return true;
     } else if (mleft.right().Is(24) && m.right().Is(24)) {
       bool canEliminateZeroExt = ProduceWord32Result(mleft.left().node());
-      selector->Emit(kS390_ExtendSignWord8,
+      selector->Emit(kS390_SignExtendWord8ToInt32,
                      canEliminateZeroExt ? g.DefineSameAsFirst(node)
                                          : g.DefineAsRegister(node),
                      g.UseRegister(mleft.left().node()),
@@ -1207,6 +1163,8 @@ void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
 #if V8_TARGET_ARCH_S390X
 void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
 #endif
+
+void InstructionSelector::VisitSpeculationFence(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitInt32AbsWithOverflow(Node* node) {
   VisitWord32UnaryOp(this, node, kS390_Abs32, OperandMode::kNone);
@@ -1463,6 +1421,10 @@ static inline bool TryMatchDoubleConstructFromInsert(
     null)                                                                    \
   V(Word32, ChangeUint32ToFloat64, kS390_Uint32ToDouble, OperandMode::kNone, \
     null)                                                                    \
+  V(Word32, SignExtendWord8ToInt32, kS390_SignExtendWord8ToInt32,            \
+    OperandMode::kNone, null)                                                \
+  V(Word32, SignExtendWord16ToInt32, kS390_SignExtendWord16ToInt32,          \
+    OperandMode::kNone, null)                                                \
   V(Word32, BitcastInt32ToFloat32, kS390_BitcastInt32ToFloat32,              \
     OperandMode::kNone, null)
 
@@ -1475,8 +1437,14 @@ static inline bool TryMatchDoubleConstructFromInsert(
     OperandMode::kNone, null)
 #define WORD32_UNARY_OP_LIST(V)                                             \
   WORD32_UNARY_OP_LIST_32(V)                                                \
-  V(Word32, ChangeInt32ToInt64, kS390_ExtendSignWord32, OperandMode::kNone, \
-    null)                                                                   \
+  V(Word32, ChangeInt32ToInt64, kS390_SignExtendWord32ToInt64,              \
+    OperandMode::kNone, null)                                               \
+  V(Word32, SignExtendWord8ToInt64, kS390_SignExtendWord8ToInt64,           \
+    OperandMode::kNone, null)                                               \
+  V(Word32, SignExtendWord16ToInt64, kS390_SignExtendWord16ToInt64,         \
+    OperandMode::kNone, null)                                               \
+  V(Word32, SignExtendWord32ToInt64, kS390_SignExtendWord32ToInt64,         \
+    OperandMode::kNone, null)                                               \
   V(Word32, ChangeUint32ToUint64, kS390_Uint32ToUint64, OperandMode::kNone, \
     [&]() -> bool {                                                         \
       if (ProduceWord32Result(node->InputAt(0))) {                          \
@@ -2174,22 +2142,23 @@ void InstructionSelector::VisitSwitch(Node* node, const SwitchInfo& sw) {
   InstructionOperand value_operand = g.UseRegister(node->InputAt(0));
 
   // Emit either ArchTableSwitch or ArchLookupSwitch.
-  static const size_t kMaxTableSwitchValueRange = 2 << 16;
-  size_t table_space_cost = 4 + sw.value_range;
-  size_t table_time_cost = 3;
-  size_t lookup_space_cost = 3 + 2 * sw.case_count;
-  size_t lookup_time_cost = sw.case_count;
-  if (sw.case_count > 0 &&
-      table_space_cost + 3 * table_time_cost <=
-          lookup_space_cost + 3 * lookup_time_cost &&
-      sw.min_value > std::numeric_limits<int32_t>::min() &&
-      sw.value_range <= kMaxTableSwitchValueRange) {
-    InstructionOperand index_operand = value_operand;
-    if (sw.min_value) {
-      index_operand = g.TempRegister();
-      Emit(kS390_Lay | AddressingModeField::encode(kMode_MRI), index_operand,
-           value_operand, g.TempImmediate(-sw.min_value));
-    }
+  if (enable_switch_jump_table_ == kEnableSwitchJumpTable) {
+    static const size_t kMaxTableSwitchValueRange = 2 << 16;
+    size_t table_space_cost = 4 + sw.value_range;
+    size_t table_time_cost = 3;
+    size_t lookup_space_cost = 3 + 2 * sw.case_count;
+    size_t lookup_time_cost = sw.case_count;
+    if (sw.case_count > 0 &&
+        table_space_cost + 3 * table_time_cost <=
+            lookup_space_cost + 3 * lookup_time_cost &&
+        sw.min_value > std::numeric_limits<int32_t>::min() &&
+        sw.value_range <= kMaxTableSwitchValueRange) {
+      InstructionOperand index_operand = value_operand;
+      if (sw.min_value) {
+        index_operand = g.TempRegister();
+        Emit(kS390_Lay | AddressingModeField::encode(kMode_MRI), index_operand,
+             value_operand, g.TempImmediate(-sw.min_value));
+      }
 #if V8_TARGET_ARCH_S390X
     InstructionOperand index_operand_zero_ext = g.TempRegister();
     Emit(kS390_Uint32ToUint64, index_operand_zero_ext, index_operand);
@@ -2197,6 +2166,7 @@ void InstructionSelector::VisitSwitch(Node* node, const SwitchInfo& sw) {
 #endif
     // Generate a table lookup.
     return EmitTableSwitch(sw, index_operand);
+  }
   }
 
   // Generate a sequence of conditional jumps.
@@ -2625,6 +2595,16 @@ void InstructionSelector::EmitPrepareResults(ZoneVector<PushParameter>* results,
                                              Node* node) {
   // TODO(John): Port.
 }
+
+void InstructionSelector::VisitF32x4Add(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4Sub(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4Mul(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4Min(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4Max(Node* node) { UNIMPLEMENTED(); }
 
 // static
 MachineOperatorBuilder::Flags

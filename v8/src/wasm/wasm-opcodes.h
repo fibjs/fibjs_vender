@@ -2,31 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_OPCODES_H_
-#define V8_WASM_OPCODES_H_
+#ifndef V8_WASM_WASM_OPCODES_H_
+#define V8_WASM_WASM_OPCODES_H_
 
 #include "src/globals.h"
 #include "src/machine-type.h"
 #include "src/runtime/runtime.h"
 #include "src/signature.h"
+#include "src/wasm/wasm-constants.h"
 
 namespace v8 {
 namespace internal {
 namespace wasm {
-
-// Binary encoding of the module header.
-const uint32_t kWasmMagic = 0x6d736100;
-const uint32_t kWasmVersion = 0x01;
-
-// Binary encoding of local types.
-enum ValueTypeCode : uint8_t {
-  kLocalVoid = 0x40,
-  kLocalI32 = 0x7f,
-  kLocalI64 = 0x7e,
-  kLocalF32 = 0x7d,
-  kLocalF64 = 0x7c,
-  kLocalS128 = 0x7b
-};
 
 // We reuse the internal machine type to represent WebAssembly types.
 // A typedef improves readability without adding a whole new type system.
@@ -44,9 +31,6 @@ std::ostream& operator<<(std::ostream& os, const FunctionSig& function);
 bool IsJSCompatibleSignature(const FunctionSig* sig);
 
 using WasmName = Vector<const char>;
-
-using WasmCodePosition = int;
-constexpr WasmCodePosition kNoCodePosition = -1;
 
 // Control expressions and blocks.
 #define FOREACH_CONTROL_OPCODE(V)         \
@@ -241,21 +225,26 @@ constexpr WasmCodePosition kNoCodePosition = -1;
   V(I32ReinterpretF32, 0xbc, i_f) \
   V(I64ReinterpretF64, 0xbd, l_d) \
   V(F32ReinterpretI32, 0xbe, f_i) \
-  V(F64ReinterpretI64, 0xbf, d_l)
+  V(F64ReinterpretI64, 0xbf, d_l) \
+  V(I32SExtendI8, 0xc0, i_i)      \
+  V(I32SExtendI16, 0xc1, i_i)     \
+  V(I64SExtendI8, 0xc2, l_l)      \
+  V(I64SExtendI16, 0xc3, l_l)     \
+  V(I64SExtendI32, 0xc4, l_l)
 
 // For compatibility with Asm.js.
 #define FOREACH_ASMJS_COMPAT_OPCODE(V) \
-  V(F64Acos, 0xc2, d_d)                \
-  V(F64Asin, 0xc3, d_d)                \
-  V(F64Atan, 0xc4, d_d)                \
-  V(F64Cos, 0xc5, d_d)                 \
-  V(F64Sin, 0xc6, d_d)                 \
-  V(F64Tan, 0xc7, d_d)                 \
-  V(F64Exp, 0xc8, d_d)                 \
-  V(F64Log, 0xc9, d_d)                 \
-  V(F64Atan2, 0xca, d_dd)              \
-  V(F64Pow, 0xcb, d_dd)                \
-  V(F64Mod, 0xcc, d_dd)                \
+  V(F64Acos, 0xc5, d_d)                \
+  V(F64Asin, 0xc6, d_d)                \
+  V(F64Atan, 0xc7, d_d)                \
+  V(F64Cos, 0xc8, d_d)                 \
+  V(F64Sin, 0xc9, d_d)                 \
+  V(F64Tan, 0xca, d_d)                 \
+  V(F64Exp, 0xcb, d_d)                 \
+  V(F64Log, 0xcc, d_d)                 \
+  V(F64Atan2, 0xcd, d_dd)              \
+  V(F64Pow, 0xce, d_dd)                \
+  V(F64Mod, 0xcf, d_dd)                \
   V(I32AsmjsDivS, 0xd0, i_ii)          \
   V(I32AsmjsDivU, 0xd1, i_ii)          \
   V(I32AsmjsRemS, 0xd2, i_ii)          \
@@ -415,7 +404,12 @@ constexpr WasmCodePosition kNoCodePosition = -1;
   V(S128LoadMem, 0xfd80, s_i)      \
   V(S128StoreMem, 0xfd81, v_is)
 
-#define FOREACH_NUMERIC_OPCODE(V) V(I32SConvertSatF32, 0xfc00, i_f)
+#define FOREACH_NUMERIC_OPCODE(V)   \
+  V(I32SConvertSatF32, 0xfc00, i_f) \
+  V(I32UConvertSatF32, 0xfc01, i_f) \
+  V(I32SConvertSatF64, 0xfc02, i_d) \
+  V(I32UConvertSatF64, 0xfc03, i_d) \
+  V(I64SConvertSatF32, 0xfc04, l_f)
 // TODO(kschimpf): Add remaining numeric opcodes.
 
 #define FOREACH_ATOMIC_OPCODE(V)               \
@@ -659,6 +653,7 @@ class V8_EXPORT_PRIVATE WasmOpcodes {
   static FunctionSig* AsmjsSignature(WasmOpcode opcode);
   static bool IsPrefixOpcode(WasmOpcode opcode);
   static bool IsControlOpcode(WasmOpcode opcode);
+  static bool IsSignExtensionOpcode(WasmOpcode opcode);
   // Check whether the given opcode always jumps, i.e. all instructions after
   // this one in the current block are dead. Returns false for |end|.
   static bool IsUnconditionalJump(WasmOpcode opcode);
@@ -805,4 +800,4 @@ struct WasmInitExpr {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_WASM_OPCODES_H_
+#endif  // V8_WASM_WASM_OPCODES_H_

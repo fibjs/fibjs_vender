@@ -1,8 +1,10 @@
 // Copyright 2016 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
 #include "src/runtime/runtime-utils.h"
 
+#include "src/api.h"
 #include "src/arguments.h"
 #include "src/counters.h"
 #include "src/debug/debug.h"
@@ -70,26 +72,12 @@ RUNTIME_FUNCTION(Runtime_PromiseRevokeReject) {
   return isolate->heap()->undefined_value();
 }
 
-RUNTIME_FUNCTION(Runtime_EnqueuePromiseReactionJob) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(PromiseReactionJobInfo, info, 0);
-  isolate->EnqueueMicrotask(info);
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_EnqueuePromiseResolveThenableJob) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(args.length(), 1);
-  CONVERT_ARG_HANDLE_CHECKED(PromiseResolveThenableJobInfo, info, 0);
-  isolate->EnqueueMicrotask(info);
-  return isolate->heap()->undefined_value();
-}
-
 RUNTIME_FUNCTION(Runtime_EnqueueMicrotask) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, microtask, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
+  Handle<CallableTask> microtask =
+      isolate->factory()->NewCallableTask(function, isolate->native_context());
   isolate->EnqueueMicrotask(microtask);
   return isolate->heap()->undefined_value();
 }
@@ -98,6 +86,17 @@ RUNTIME_FUNCTION(Runtime_RunMicrotasks) {
   HandleScope scope(isolate);
   DCHECK_EQ(0, args.length());
   isolate->RunMicrotasks();
+  return isolate->heap()->undefined_value();
+}
+
+RUNTIME_FUNCTION(Runtime_RunMicrotaskCallback) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_ARG_CHECKED(Object, microtask_callback, 0);
+  CONVERT_ARG_CHECKED(Object, microtask_data, 1);
+  MicrotaskCallback callback = ToCData<MicrotaskCallback>(microtask_callback);
+  void* data = ToCData<void*>(microtask_data);
+  callback(data);
   return isolate->heap()->undefined_value();
 }
 
@@ -147,6 +146,7 @@ RUNTIME_FUNCTION(Runtime_PromiseHookBefore) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
+  if (isolate->debug()->is_active()) isolate->PushPromise(promise);
   if (promise->IsJSPromise()) {
     isolate->RunPromiseHook(PromiseHookType::kBefore,
                             Handle<JSPromise>::cast(promise),
@@ -159,6 +159,7 @@ RUNTIME_FUNCTION(Runtime_PromiseHookAfter) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
+  if (isolate->debug()->is_active()) isolate->PopPromise();
   if (promise->IsJSPromise()) {
     isolate->RunPromiseHook(PromiseHookType::kAfter,
                             Handle<JSPromise>::cast(promise),

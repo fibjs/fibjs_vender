@@ -2,16 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-
 // Declares a Simulator for MIPS instructions if we are not generating a native
 // MIPS binary. This Simulator allows us to run and debug MIPS code generation
 // on regular desktop machines.
-// V8 calls into generated code by "calling" the CALL_GENERATED_CODE macro,
+// V8 calls into generated code via the GeneratedCode wrapper,
 // which will start execution in the Simulator or forwards to the real entry
 // on a MIPS HW platform.
 
-#ifndef V8_MIPS_SIMULATOR_MIPS_H_
-#define V8_MIPS_SIMULATOR_MIPS_H_
+#ifndef V8_MIPS64_SIMULATOR_MIPS64_H_
+#define V8_MIPS64_SIMULATOR_MIPS64_H_
 
 #include "src/allocation.h"
 #include "src/mips64/constants-mips64.h"
@@ -172,7 +171,7 @@ class Simulator : public SimulatorBase {
 
   // The currently executing Simulator instance. Potentially there can be one
   // for each native thread.
-  static Simulator* current(v8::internal::Isolate* isolate);
+  V8_EXPORT_PRIVATE static Simulator* current(v8::internal::Isolate* isolate);
 
   // Accessors for register state. Reading the pc value adheres to the MIPS
   // architecture specification and is off by a 8 from the currently executing
@@ -239,10 +238,11 @@ class Simulator : public SimulatorBase {
   // Executes MIPS instructions until the PC reaches end_sim_pc.
   void Execute();
 
-  // V8 generally calls into generated JS code with 5 parameters and into
-  // generated RegExp code with 7 parameters. This is a convenience function,
-  // which sets up the simulator state and grabs the result on return.
-  int64_t Call(byte* entry, int argument_count, ...);
+  template <typename Return, typename... Args>
+  Return Call(byte* entry, Args... args) {
+    return VariadicCall<Return>(this, &Simulator::CallImpl, entry, args...);
+  }
+
   // Alternative: call a 2-argument double function.
   double CallFP(byte* entry, double d0, double d1);
 
@@ -280,6 +280,9 @@ class Simulator : public SimulatorBase {
     // Unpredictable value.
     Unpredictable = 0xbadbeaf
   };
+
+  V8_EXPORT_PRIVATE intptr_t CallImpl(byte* entry, int argument_count,
+                                      const intptr_t* arguments);
 
   // Unsupported instructions use Format to print an error and stop execution.
   void Format(Instruction* instr, const char* format);
@@ -579,23 +582,8 @@ class Simulator : public SimulatorBase {
   StopCountAndDesc watched_stops_[kMaxStopCode + 1];
 };
 
-
-// When running with the simulator transition into simulated execution at this
-// point.
-#define CALL_GENERATED_CODE(isolate, entry, p0, p1, p2, p3, p4)       \
-  reinterpret_cast<Object*>(Simulator::current(isolate)->Call(        \
-      FUNCTION_ADDR(entry), 5, reinterpret_cast<int64_t*>(p0),        \
-      reinterpret_cast<int64_t*>(p1), reinterpret_cast<int64_t*>(p2), \
-      reinterpret_cast<int64_t*>(p3), reinterpret_cast<int64_t*>(p4)))
-
-#define CALL_GENERATED_REGEXP_CODE(isolate, entry, p0, p1, p2, p3, p4, p5, p6, \
-                                   p7, p8)                                     \
-  static_cast<int>(Simulator::current(isolate)->Call(                          \
-      entry, 9, p0, p1, p2, p3, p4, reinterpret_cast<int64_t*>(p5), p6, p7,    \
-      p8))
-
 }  // namespace internal
 }  // namespace v8
 
 #endif  // defined(USE_SIMULATOR)
-#endif  // V8_MIPS_SIMULATOR_MIPS_H_
+#endif  // V8_MIPS64_SIMULATOR_MIPS64_H_

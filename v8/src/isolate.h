@@ -75,6 +75,7 @@ class HeapObjectToIndexHashMap;
 class HeapProfiler;
 class InlineRuntimeFunctionsTable;
 class InnerPointerToCodeCache;
+class InstructionStream;
 class Logger;
 class MaterializedObjectStore;
 class OptimizingCompileDispatcher;
@@ -371,9 +372,6 @@ class ThreadLocalTop BASE_EMBEDDED {
 
   // Call back function to report unsafe JS accesses.
   v8::FailedAccessCheckCallback failed_access_check_callback_;
-
-  int microtask_queue_bailout_index_;
-  int microtask_queue_bailout_count_;
 
  private:
   void InitializeInternal();
@@ -673,18 +671,6 @@ class Isolate {
   }
   inline Address* js_entry_sp_address() {
     return &thread_local_top_.js_entry_sp_;
-  }
-
-  THREAD_LOCAL_TOP_ACCESSOR(int, microtask_queue_bailout_index)
-  Address microtask_queue_bailout_index_address() {
-    return reinterpret_cast<Address>(
-        &thread_local_top_.microtask_queue_bailout_index_);
-  }
-
-  THREAD_LOCAL_TOP_ACCESSOR(int, microtask_queue_bailout_count)
-  Address microtask_queue_bailout_count_address() {
-    return reinterpret_cast<Address>(
-        &thread_local_top_.microtask_queue_bailout_count_);
   }
 
   // Returns the global object of the current context. It could be
@@ -1104,7 +1090,7 @@ class Isolate {
   bool IsNoElementsProtectorIntact(Context* context);
   bool IsNoElementsProtectorIntact();
 
-  inline bool IsArraySpeciesLookupChainIntact();
+  inline bool IsSpeciesLookupChainIntact();
   bool IsIsConcatSpreadableLookupChainIntact();
   bool IsIsConcatSpreadableLookupChainIntact(JSReceiver* receiver);
   inline bool IsStringLengthOverflowIntact();
@@ -1115,6 +1101,10 @@ class Isolate {
 
   // Make sure we do check for neutered array buffers.
   inline bool IsArrayBufferNeuteringIntact();
+
+  // Disable promise optimizations if promise (debug) hooks have ever been
+  // active.
+  bool IsPromiseHookProtectorIntact();
 
   // On intent to set an element in object, make sure that appropriate
   // notifications occur if the set is on the elements of the array or
@@ -1131,11 +1121,12 @@ class Isolate {
     UpdateNoElementsProtectorOnSetElement(object);
   }
   void InvalidateArrayConstructorProtector();
-  void InvalidateArraySpeciesProtector();
+  void InvalidateSpeciesProtector();
   void InvalidateIsConcatSpreadableProtector();
   void InvalidateStringLengthOverflowProtector();
   void InvalidateArrayIteratorProtector();
   void InvalidateArrayBufferNeuteringProtector();
+  void InvalidatePromiseHookProtector();
 
   // Returns true if array is the initial array prototype in any native context.
   bool IsAnyInitialArrayPrototype(Handle<JSArray> array);
@@ -1176,8 +1167,8 @@ class Isolate {
 
   void* stress_deopt_count_address() { return &stress_deopt_count_; }
 
-  bool force_slow_path() { return force_slow_path_; }
-
+  void set_force_slow_path(bool v) { force_slow_path_ = v; }
+  bool force_slow_path() const { return force_slow_path_; }
   bool* force_slow_path_address() { return &force_slow_path_; }
 
   V8_EXPORT_PRIVATE base::RandomNumberGenerator* random_number_generator();
@@ -1215,14 +1206,7 @@ class Isolate {
   void ReportPromiseReject(Handle<JSPromise> promise, Handle<Object> value,
                            v8::PromiseRejectEvent event);
 
-  void PromiseReactionJob(Handle<PromiseReactionJobInfo> info,
-                          MaybeHandle<Object>* result,
-                          MaybeHandle<Object>* maybe_exception);
-  void PromiseResolveThenableJob(Handle<PromiseResolveThenableJobInfo> info,
-                                 MaybeHandle<Object>* result,
-                                 MaybeHandle<Object>* maybe_exception);
-
-  void EnqueueMicrotask(Handle<Object> microtask);
+  void EnqueueMicrotask(Handle<Microtask> microtask);
   void RunMicrotasks();
   bool IsRunningMicrotasks() const { return is_running_microtasks_; }
 
@@ -1264,6 +1248,10 @@ class Isolate {
 
   std::vector<Object*>* partial_snapshot_cache() {
     return &partial_snapshot_cache_;
+  }
+
+  void PushOffHeapCode(InstructionStream* stream) {
+    off_heap_code_.emplace_back(stream);
   }
 
   void set_array_buffer_allocator(v8::ArrayBuffer::Allocator* allocator) {
@@ -1476,8 +1464,6 @@ class Isolate {
   // then return true.
   bool PropagatePendingExceptionToExternalTryCatch();
 
-  void RunMicrotasksInternal();
-
   const char* RAILModeName(RAILMode rail_mode) const {
     switch (rail_mode) {
       case PERFORMANCE_RESPONSE:
@@ -1638,6 +1624,12 @@ class Isolate {
   BasicBlockProfiler* basic_block_profiler_;
 
   std::vector<Object*> partial_snapshot_cache_;
+
+  // Stores off-heap instruction streams. Only used if --stress-off-heap-code
+  // is enabled.
+  // TODO(jgruber,v8:6666): Remove once isolate-independent builtins are
+  // implemented.
+  std::vector<InstructionStream*> off_heap_code_;
 
   v8::ArrayBuffer::Allocator* array_buffer_allocator_;
 

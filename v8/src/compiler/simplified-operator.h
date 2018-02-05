@@ -369,6 +369,8 @@ class AllocateParameters {
   PretenureFlag pretenure_;
 };
 
+bool IsCheckedWithFeedback(const Operator* op);
+
 size_t hash_value(AllocateParameters);
 
 V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, AllocateParameters);
@@ -381,7 +383,7 @@ Type* AllocateTypeOf(const Operator* op) WARN_UNUSED_RESULT;
 
 UnicodeEncoding UnicodeEncodingOf(const Operator*) WARN_UNUSED_RESULT;
 
-BailoutReason BailoutReasonOf(const Operator* op) WARN_UNUSED_RESULT;
+AbortReason AbortReasonOf(const Operator* op) WARN_UNUSED_RESULT;
 
 DeoptimizeReason DeoptimizeReasonOf(const Operator* op) WARN_UNUSED_RESULT;
 
@@ -463,6 +465,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* NumberTrunc();
   const Operator* NumberToBoolean();
   const Operator* NumberToInt32();
+  const Operator* NumberToString();
   const Operator* NumberToUint32();
   const Operator* NumberToUint8Clamped();
 
@@ -501,6 +504,8 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* StringCharAt();
   const Operator* StringCharCodeAt();
   const Operator* SeqStringCharCodeAt();
+  const Operator* StringCodePointAt(UnicodeEncoding encoding);
+  const Operator* SeqStringCodePointAt(UnicodeEncoding encoding);
   const Operator* StringFromCharCode();
   const Operator* StringFromCodePoint(UnicodeEncoding encoding);
   const Operator* StringIndexOf();
@@ -535,52 +540,51 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* TruncateTaggedToBit();
   const Operator* TruncateTaggedPointerToBit();
 
-  const Operator* CheckIf(DeoptimizeReason deoptimize_reason);
-  const Operator* CheckBounds(const VectorSlotPair& feedback);
-  const Operator* CheckMaps(CheckMapsFlags, ZoneHandleSet<Map>,
-                            const VectorSlotPair& = VectorSlotPair());
   const Operator* MaskIndexWithBound();
   const Operator* CompareMaps(ZoneHandleSet<Map>);
   const Operator* MapGuard(ZoneHandleSet<Map> maps);
 
+  const Operator* CheckBounds(const VectorSlotPair& feedback);
+  const Operator* CheckEqualsInternalizedString();
+  const Operator* CheckEqualsSymbol();
+  const Operator* CheckFloat64Hole(CheckFloat64HoleMode);
   const Operator* CheckHeapObject();
+  const Operator* CheckIf(DeoptimizeReason deoptimize_reason);
   const Operator* CheckInternalizedString();
+  const Operator* CheckMaps(CheckMapsFlags, ZoneHandleSet<Map>,
+                            const VectorSlotPair& = VectorSlotPair());
+  const Operator* CheckNotTaggedHole();
   const Operator* CheckNumber(const VectorSlotPair& feedback);
+  const Operator* CheckReceiver();
+  const Operator* CheckSeqString();
   const Operator* CheckSmi(const VectorSlotPair& feedback);
   const Operator* CheckString(const VectorSlotPair& feedback);
-  const Operator* CheckSeqString();
   const Operator* CheckSymbol();
-  const Operator* CheckReceiver();
 
-  const Operator* CheckedInt32Add();
-  const Operator* CheckedInt32Sub();
-  const Operator* CheckedInt32Div();
-  const Operator* CheckedInt32Mod();
-  const Operator* CheckedUint32Div();
-  const Operator* CheckedUint32Mod();
-  const Operator* CheckedInt32Mul(CheckForMinusZeroMode);
-  const Operator* CheckedInt32ToTaggedSigned(const VectorSlotPair& feedback);
-  const Operator* CheckedUint32ToInt32(const VectorSlotPair& feedback);
-  const Operator* CheckedUint32ToTaggedSigned(const VectorSlotPair& feedback);
   const Operator* CheckedFloat64ToInt32(CheckForMinusZeroMode,
                                         const VectorSlotPair& feedback);
+  const Operator* CheckedInt32Add();
+  const Operator* CheckedInt32Div();
+  const Operator* CheckedInt32Mod();
+  const Operator* CheckedInt32Mul(CheckForMinusZeroMode);
+  const Operator* CheckedInt32Sub();
+  const Operator* CheckedInt32ToTaggedSigned(const VectorSlotPair& feedback);
   const Operator* CheckedTaggedSignedToInt32(const VectorSlotPair& feedback);
+  const Operator* CheckedTaggedToFloat64(CheckTaggedInputMode);
   const Operator* CheckedTaggedToInt32(CheckForMinusZeroMode,
                                        const VectorSlotPair& feedback);
-  const Operator* CheckedTaggedToFloat64(CheckTaggedInputMode);
-  const Operator* CheckedTaggedToTaggedSigned(const VectorSlotPair& feedback);
   const Operator* CheckedTaggedToTaggedPointer(const VectorSlotPair& feedback);
+  const Operator* CheckedTaggedToTaggedSigned(const VectorSlotPair& feedback);
   const Operator* CheckedTruncateTaggedToWord32(CheckTaggedInputMode,
                                                 const VectorSlotPair& feedback);
+  const Operator* CheckedUint32Div();
+  const Operator* CheckedUint32Mod();
+  const Operator* CheckedUint32ToInt32(const VectorSlotPair& feedback);
+  const Operator* CheckedUint32ToTaggedSigned(const VectorSlotPair& feedback);
 
   const Operator* ConvertReceiver(ConvertReceiverMode);
 
-  const Operator* CheckFloat64Hole(CheckFloat64HoleMode);
-  const Operator* CheckNotTaggedHole();
   const Operator* ConvertTaggedHoleToUndefined();
-
-  const Operator* CheckEqualsInternalizedString();
-  const Operator* CheckEqualsSymbol();
 
   const Operator* ObjectIsArrayBufferView();
   const Operator* ObjectIsBigInt();
@@ -596,6 +600,8 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* ObjectIsString();
   const Operator* ObjectIsSymbol();
   const Operator* ObjectIsUndetectable();
+
+  const Operator* NumberIsFloat64Hole();
 
   const Operator* ArgumentsFrame();
   const Operator* ArgumentsLength(int formal_parameter_count,
@@ -657,7 +663,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* StoreTypedElement(ExternalArrayType const&);
 
   // Abort (for terminating execution on internal error).
-  const Operator* RuntimeAbort(BailoutReason reason);
+  const Operator* RuntimeAbort(AbortReason reason);
 
  private:
   Zone* zone() const { return zone_; }

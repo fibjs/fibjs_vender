@@ -211,9 +211,9 @@ Operand::Operand(Register index,
   set_disp32(disp);
 }
 
-
-Operand::Operand(Label* label) : rex_(0), len_(1) {
+Operand::Operand(Label* label, int addend) : rex_(0), len_(1), addend_(addend) {
   DCHECK_NOT_NULL(label);
+  DCHECK(addend == 0 || (is_int8(addend) && label->is_bound()));
   set_modrm(0, rbp);
   set_disp64(reinterpret_cast<intptr_t>(label));
 }
@@ -546,7 +546,7 @@ void Assembler::emit_operand(int code, const Operand& adr) {
     DCHECK_EQ(9u, length);
     Label* label = *bit_cast<Label* const*>(&adr.buf_[1]);
     if (label->is_bound()) {
-      int offset = label->pos() - pc_offset() - sizeof(int32_t);
+      int offset = label->pos() - pc_offset() - sizeof(int32_t) + adr.addend_;
       DCHECK_GE(0, offset);
       emitl(offset);
     } else if (label->is_linked()) {
@@ -1142,6 +1142,13 @@ void Assembler::emit_cmpxchg(const Operand& dst, Register src, int size) {
   emit(0x0F);
   emit(0xB1);
   emit_operand(src, dst);
+}
+
+void Assembler::lfence() {
+  EnsureSpace ensure_space(this);
+  emit(0x0F);
+  emit(0xAE);
+  emit(0xE8);
 }
 
 void Assembler::cpuid() {
@@ -4566,6 +4573,11 @@ void Assembler::rorxl(Register dst, const Operand& src, byte imm8) {
   emit(0xF0);
   emit_operand(dst, src);
   emit(imm8);
+}
+
+void Assembler::pause() {
+  emit(0xF3);
+  emit(0x90);
 }
 
 void Assembler::minps(XMMRegister dst, XMMRegister src) {

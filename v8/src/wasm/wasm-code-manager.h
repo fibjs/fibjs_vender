@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_HEAP_H_
-#define V8_WASM_HEAP_H_
+#ifndef V8_WASM_WASM_CODE_MANAGER_H_
+#define V8_WASM_WASM_CODE_MANAGER_H_
 
 #include <functional>
 #include <list>
@@ -123,8 +123,8 @@ class V8_EXPORT_PRIVATE WasmCode final {
     return *protected_instructions_.get();
   }
 
-  void Disassemble(Isolate* isolate, const char* name, std::ostream& os) const;
   void Print(Isolate* isolate) const;
+  void Disassemble(const char* name, Isolate* isolate, std::ostream& os) const;
 
   ~WasmCode();
 
@@ -151,7 +151,7 @@ class V8_EXPORT_PRIVATE WasmCode final {
         constant_pool_offset_(constant_pool_offset),
         stack_slots_(stack_slots),
         safepoint_table_offset_(safepoint_table_offset),
-        protected_instructions_(protected_instructions),
+        protected_instructions_(std::move(protected_instructions)),
         is_liftoff_(is_liftoff) {}
 
   WasmCode(const WasmCode&) = delete;
@@ -190,7 +190,7 @@ class V8_EXPORT_PRIVATE NativeModule final {
 
   WasmCode* AddCode(const CodeDesc& desc, uint32_t frame_count, uint32_t index,
                     size_t safepoint_table_offset,
-                    std::shared_ptr<ProtectedInstructions>,
+                    std::unique_ptr<ProtectedInstructions>,
                     bool is_liftoff = false);
 
   // A way to copy over JS-allocated code. This is because we compile
@@ -204,11 +204,11 @@ class V8_EXPORT_PRIVATE NativeModule final {
   WasmCode* AddInterpreterWrapper(Handle<Code> code, uint32_t index);
 
   // When starting lazy compilation, provide the WasmLazyCompile builtin by
-  // calling SetLazyBuiltin. It will initialize the code table with it, and the
-  // lazy_builtin_ field. The latter is used when creating entries for exported
+  // calling SetLazyBuiltin. It will initialize the code table with it. Copies
+  // of it might be cloned from them later when creating entries for exported
   // functions and indirect callable functions, so that they may be identified
   // by the runtime.
-  WasmCode* SetLazyBuiltin(Handle<Code> code);
+  void SetLazyBuiltin(Handle<Code> code);
 
   // ExportedWrappers are WasmToWasmWrappers for functions placed on import
   // tables. We construct them as-needed.
@@ -219,8 +219,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
   uint32_t FunctionCount() const;
   WasmCode* GetCode(uint32_t index) const;
 
-  WasmCode* lazy_builtin() const { return lazy_builtin_; }
-
   // We special-case lazy cloning because we currently rely on making copies
   // of the lazy builtin, to be able to identify, in the runtime, which function
   // the lazy builtin is a placeholder of. If we used trampolines, we would call
@@ -229,7 +227,7 @@ class V8_EXPORT_PRIVATE NativeModule final {
   // builtin. The logic for seeking though frames would change, though.
   // TODO(mtrofin): perhaps we can do exactly that - either before or after
   // this change.
-  WasmCode* CloneLazyBuiltinInto(uint32_t);
+  WasmCode* CloneLazyBuiltinInto(const WasmCode* code, uint32_t);
 
   bool SetExecutable(bool executable);
 
@@ -248,15 +246,9 @@ class V8_EXPORT_PRIVATE NativeModule final {
   std::vector<wasm::GlobalHandleAddress>& function_tables() {
     return specialization_data_.function_tables;
   }
-  std::vector<wasm::GlobalHandleAddress>& signature_tables() {
-    return specialization_data_.signature_tables;
-  }
 
   std::vector<wasm::GlobalHandleAddress>& empty_function_tables() {
     return specialization_data_.empty_function_tables;
-  }
-  std::vector<wasm::GlobalHandleAddress>& empty_signature_tables() {
-    return specialization_data_.empty_signature_tables;
   }
 
   uint32_t num_imported_functions() const { return num_imported_functions_; }
@@ -282,7 +274,7 @@ class V8_EXPORT_PRIVATE NativeModule final {
     }
   };
 
-  static base::AtomicNumber<uint32_t> next_id_;
+  static base::AtomicNumber<size_t> next_id_;
   NativeModule(const NativeModule&) = delete;
   NativeModule& operator=(const NativeModule&) = delete;
   NativeModule(uint32_t num_functions, uint32_t num_imports,
@@ -325,7 +317,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
   DisjointAllocationPool allocated_memory_;
   std::list<VirtualMemory> owned_memory_;
   WasmCodeManager* wasm_code_manager_;
-  wasm::WasmCode* lazy_builtin_ = nullptr;
   base::Mutex allocation_mutex_;
   Handle<WasmCompiledModule> compiled_module_;
   size_t committed_memory_ = 0;
@@ -337,9 +328,7 @@ class V8_EXPORT_PRIVATE NativeModule final {
   // elements a 1 line copy.
   struct {
     std::vector<wasm::GlobalHandleAddress> function_tables;
-    std::vector<wasm::GlobalHandleAddress> signature_tables;
     std::vector<wasm::GlobalHandleAddress> empty_function_tables;
-    std::vector<wasm::GlobalHandleAddress> empty_signature_tables;
   } specialization_data_;
 };
 
@@ -424,4 +413,5 @@ uint32_t GetWasmCalleeTag(RelocInfo* rinfo);
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8
-#endif
+
+#endif  // V8_WASM_WASM_CODE_MANAGER_H_

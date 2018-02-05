@@ -165,7 +165,8 @@ static void PrintRelocInfo(StringBuilder* out, Isolate* isolate,
 }
 
 static int DecodeIt(Isolate* isolate, std::ostream* os,
-                    const V8NameConverter& converter, byte* begin, byte* end) {
+                    const V8NameConverter& converter, byte* begin, byte* end,
+                    void* current_pc) {
   SealHandleScope shs(isolate);
   DisallowHeapAllocation no_alloc;
   ExternalReferenceEncoder ref_encoder(isolate);
@@ -242,6 +243,10 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
     }
 
     // Instruction address and instruction offset.
+    if (FLAG_log_colour && prev_pc == current_pc) {
+      // If this is the given "current" pc, make it yellow and bold.
+      out.AddFormatted("\033[33;1m");
+    }
     out.AddFormatted("%p  %4" V8PRIxPTRDIFF "  ", static_cast<void*>(prev_pc),
                      prev_pc - begin);
 
@@ -262,7 +267,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
     // already, check if we can find some RelocInfo for the target address in
     // the constant pool.
     if (pcs.empty() && converter.code() != nullptr) {
-      RelocInfo dummy_rinfo(prev_pc, RelocInfo::NONE32, 0, nullptr);
+      RelocInfo dummy_rinfo(prev_pc, RelocInfo::NONE, 0, nullptr);
       if (dummy_rinfo.IsInConstantPool()) {
         byte* constant_pool_entry_address =
             dummy_rinfo.constant_pool_entry_address();
@@ -277,6 +282,10 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
           reloc_it.next();
         }
       }
+    }
+
+    if (FLAG_log_colour && prev_pc == current_pc) {
+      out.AddFormatted("\033[m");
     }
 
     DumpBuffer(os, &out);
@@ -297,17 +306,16 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
   return static_cast<int>(pc - begin);
 }
 
-
 int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
-                         byte* end, Code* code) {
+                         byte* end, Code* code, void* current_pc) {
   V8NameConverter v8NameConverter(code);
-  return DecodeIt(isolate, os, v8NameConverter, begin, end);
+  return DecodeIt(isolate, os, v8NameConverter, begin, end, current_pc);
 }
 
 #else  // ENABLE_DISASSEMBLER
 
 int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
-                         byte* end, Code* code) {
+                         byte* end, Code* code, void* current_pc) {
   return 0;
 }
 

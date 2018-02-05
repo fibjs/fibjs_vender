@@ -47,6 +47,7 @@ CompilationInfo::CompilationInfo(Zone* zone, Isolate* isolate,
 
   if (FLAG_function_context_specialization) MarkAsFunctionContextSpecializing();
   if (FLAG_turbo_splitting) MarkAsSplittingEnabled();
+  if (!FLAG_turbo_disable_switch_jump_table) SetFlag(kSwitchJumpTableEnabled);
 
   // Collect source positions for optimized code when profiling or if debugger
   // is active, to be able to get more precise source positions at the price of
@@ -64,7 +65,7 @@ CompilationInfo::CompilationInfo(Vector<const char> debug_name,
                                  Code::Kind code_kind, Mode mode, Zone* zone)
     : literal_(nullptr),
       source_range_map_(nullptr),
-      flags_(0),
+      flags_(FLAG_untrusted_code_mitigations ? kUntrustedCodeMitigations : 0),
       code_kind_(code_kind),
       stub_key_(0),
       builtin_index_(Builtins::kNoBuiltinId),
@@ -74,7 +75,7 @@ CompilationInfo::CompilationInfo(Vector<const char> debug_name,
       zone_(zone),
       deferred_handles_(nullptr),
       dependencies_(nullptr),
-      bailout_reason_(kNoReason),
+      bailout_reason_(BailoutReason::kNoReason),
       parameter_count_(0),
       optimization_id_(-1),
       debug_name_(debug_name) {}

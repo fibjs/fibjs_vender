@@ -45,7 +45,7 @@ namespace internal {
   V(RETAINED_MAPS_SUB_TYPE)                      \
   V(SCOPE_INFO_SUB_TYPE)                         \
   V(SCRIPT_LIST_SUB_TYPE)                        \
-  V(SERIALIZED_TEMPLATES_SUB_TYPE)               \
+  V(SERIALIZED_OBJECTS_SUB_TYPE)                 \
   V(SHARED_FUNCTION_INFOS_SUB_TYPE)              \
   V(SINGLE_CHARACTER_STRING_CACHE_SUB_TYPE)      \
   V(SLOW_TEMPLATE_INSTANTIATIONS_CACHE_SUB_TYPE) \
@@ -540,6 +540,7 @@ class FixedTypedArray : public FixedTypedArrayBase {
 
   DECL_CAST(FixedTypedArray<Traits>)
 
+  static inline ElementType get_scalar_from_data_ptr(void* data_ptr, int index);
   inline ElementType get_scalar(int index);
   static inline Handle<Object> get(FixedTypedArray* array, int index);
   inline void set(int index, ElementType value);

@@ -420,7 +420,7 @@ void IncrementalMarking::StartMarking() {
   IncrementalMarkingRootMarkingVisitor visitor(this);
   heap_->IterateStrongRoots(&visitor, VISIT_ONLY_STRONG);
 
-  if (FLAG_concurrent_marking) {
+  if (FLAG_concurrent_marking && heap_->use_tasks()) {
     heap_->concurrent_marking()->ScheduleTasks();
   }
 
@@ -435,9 +435,9 @@ void IncrementalMarking::StartBlackAllocation() {
   DCHECK(!black_allocation_);
   DCHECK(IsMarking());
   black_allocation_ = true;
-  heap()->old_space()->MarkAllocationInfoBlack();
-  heap()->map_space()->MarkAllocationInfoBlack();
-  heap()->code_space()->MarkAllocationInfoBlack();
+  heap()->old_space()->MarkLinearAllocationAreaBlack();
+  heap()->map_space()->MarkLinearAllocationAreaBlack();
+  heap()->code_space()->MarkLinearAllocationAreaBlack();
   if (FLAG_trace_incremental_marking) {
     heap()->isolate()->PrintWithTimestamp(
         "[IncrementalMarking] Black allocation started\n");
@@ -447,9 +447,9 @@ void IncrementalMarking::StartBlackAllocation() {
 void IncrementalMarking::PauseBlackAllocation() {
   DCHECK(FLAG_black_allocation);
   DCHECK(IsMarking());
-  heap()->old_space()->UnmarkAllocationInfo();
-  heap()->map_space()->UnmarkAllocationInfo();
-  heap()->code_space()->UnmarkAllocationInfo();
+  heap()->old_space()->UnmarkLinearAllocationArea();
+  heap()->map_space()->UnmarkLinearAllocationArea();
+  heap()->code_space()->UnmarkLinearAllocationArea();
   if (FLAG_trace_incremental_marking) {
     heap()->isolate()->PrintWithTimestamp(
         "[IncrementalMarking] Black allocation paused\n");
@@ -653,15 +653,17 @@ bool IncrementalMarking::IsFixedArrayWithProgressBar(HeapObject* obj) {
 
 int IncrementalMarking::VisitObject(Map* map, HeapObject* obj) {
   DCHECK(marking_state()->IsGrey(obj) || marking_state()->IsBlack(obj));
-  // The object can already be black in two cases:
-  // 1. The object is a fixed array with the progress bar.
-  // 2. The object is a JSObject that was colored black before
-  //    unsafe layout change.
-  // 3. The object is a string that was colored black before
-  //    unsafe layout change.
   if (!marking_state()->GreyToBlack(obj)) {
-    DCHECK(IsFixedArrayWithProgressBar(obj) || obj->IsJSObject() ||
-           obj->IsString());
+    // The object can already be black in these cases:
+    // 1. The object is a fixed array with the progress bar.
+    // 2. The object is a JSObject that was colored black before
+    //    unsafe layout change.
+    // 3. The object is a string that was colored black before
+    //    unsafe layout change.
+    // 4. The object is materizalized by the deoptimizer.
+    DCHECK(obj->IsHashTable() || obj->IsPropertyArray() ||
+           obj->IsContextExtension() || obj->IsFixedArray() ||
+           obj->IsJSObject() || obj->IsString());
   }
   DCHECK(marking_state()->IsBlack(obj));
   WhiteToGreyAndPush(map);
@@ -680,7 +682,7 @@ void IncrementalMarking::RevisitObject(HeapObject* obj) {
   DCHECK(IsMarking());
   DCHECK(FLAG_concurrent_marking || marking_state()->IsBlack(obj));
   Page* page = Page::FromAddress(obj->address());
-  if ((page->owner() != nullptr) && (page->owner()->identity() == LO_SPACE)) {
+  if (page->owner()->identity() == LO_SPACE) {
     page->ResetProgressBar();
   }
   Map* map = obj->map();

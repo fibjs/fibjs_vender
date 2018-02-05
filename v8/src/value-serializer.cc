@@ -18,7 +18,7 @@
 #include "src/objects.h"
 #include "src/snapshot/code-serializer.h"
 #include "src/transitions.h"
-#include "src/wasm/module-compiler.h"
+#include "src/wasm/wasm-engine.h"
 #include "src/wasm/wasm-objects-inl.h"
 #include "src/wasm/wasm-result.h"
 #include "src/wasm/wasm-serialization.h"
@@ -856,20 +856,10 @@ Maybe<bool> ValueSerializer::WriteWasmModule(Handle<WasmModuleObject> object) {
     String::WriteToFlat(*wire_bytes, destination, 0, wire_bytes_length);
   }
 
-  if (FLAG_wasm_jit_to_native) {
-    std::pair<std::unique_ptr<byte[]>, size_t> serialized_module =
-        wasm::NativeModuleSerializer::SerializeWholeModule(isolate_,
-                                                           compiled_part);
-    WriteVarint<uint32_t>(static_cast<uint32_t>(serialized_module.second));
-    WriteRawBytes(serialized_module.first.get(), serialized_module.second);
-  } else {
-    std::unique_ptr<ScriptData> script_data =
-        WasmCompiledModuleSerializer::SerializeWasmModule(isolate_,
-                                                          compiled_part);
-    int script_data_length = script_data->length();
-    WriteVarint<uint32_t>(script_data_length);
-    WriteRawBytes(script_data->data(), script_data_length);
-  }
+  std::pair<std::unique_ptr<const byte[]>, size_t> serialized_module =
+      wasm::SerializeNativeModule(isolate_, compiled_part);
+  WriteVarint<uint32_t>(static_cast<uint32_t>(serialized_module.second));
+  WriteRawBytes(serialized_module.first.get(), serialized_module.second);
   return ThrowIfOutOfMemory();
 }
 
@@ -1094,13 +1084,13 @@ bool ValueDeserializer::ReadRawBytes(size_t length, const void** data) {
 void ValueDeserializer::TransferArrayBuffer(
     uint32_t transfer_id, Handle<JSArrayBuffer> array_buffer) {
   if (array_buffer_transfer_map_.is_null()) {
-    array_buffer_transfer_map_ =
-        isolate_->global_handles()->Create(*NumberDictionary::New(isolate_, 0));
+    array_buffer_transfer_map_ = isolate_->global_handles()->Create(
+        *SimpleNumberDictionary::New(isolate_, 0));
   }
-  Handle<NumberDictionary> dictionary =
+  Handle<SimpleNumberDictionary> dictionary =
       array_buffer_transfer_map_.ToHandleChecked();
-  Handle<NumberDictionary> new_dictionary =
-      NumberDictionary::Set(dictionary, transfer_id, array_buffer);
+  Handle<SimpleNumberDictionary> new_dictionary =
+      SimpleNumberDictionary::Set(dictionary, transfer_id, array_buffer);
   if (!new_dictionary.is_identical_to(dictionary)) {
     GlobalHandles::Destroy(Handle<Object>::cast(dictionary).location());
     array_buffer_transfer_map_ =
@@ -1192,15 +1182,16 @@ MaybeHandle<Object> ValueDeserializer::ReadObjectInternal() {
       return ReadJSMap();
     case SerializationTag::kBeginJSSet:
       return ReadJSSet();
-    case SerializationTag::kArrayBuffer:
-      return ReadJSArrayBuffer();
-    case SerializationTag::kArrayBufferTransfer: {
+    case SerializationTag::kArrayBuffer: {
       const bool is_shared = false;
-      return ReadTransferredJSArrayBuffer(is_shared);
+      return ReadJSArrayBuffer(is_shared);
+    }
+    case SerializationTag::kArrayBufferTransfer: {
+      return ReadTransferredJSArrayBuffer();
     }
     case SerializationTag::kSharedArrayBuffer: {
       const bool is_shared = true;
-      return ReadTransferredJSArrayBuffer(is_shared);
+      return ReadJSArrayBuffer(is_shared);
     }
     case SerializationTag::kWasmModule:
       return ReadWasmModule();
@@ -1582,8 +1573,25 @@ MaybeHandle<JSSet> ValueDeserializer::ReadJSSet() {
   return scope.CloseAndEscape(set);
 }
 
-MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadJSArrayBuffer() {
+MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadJSArrayBuffer(
+    bool is_shared) {
   uint32_t id = next_id_++;
+  if (is_shared) {
+    uint32_t clone_id;
+    Local<SharedArrayBuffer> sab_value;
+    if (!ReadVarint<uint32_t>().To(&clone_id) || delegate_ == nullptr ||
+        !delegate_
+             ->GetSharedArrayBufferFromId(
+                 reinterpret_cast<v8::Isolate*>(isolate_), clone_id)
+             .ToLocal(&sab_value)) {
+      RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate_, JSArrayBuffer);
+      return MaybeHandle<JSArrayBuffer>();
+    }
+    Handle<JSArrayBuffer> array_buffer = Utils::OpenHandle(*sab_value);
+    DCHECK_EQ(is_shared, array_buffer->is_shared());
+    AddObjectWithID(id, array_buffer);
+    return array_buffer;
+  }
   uint32_t byte_length;
   if (!ReadVarint<uint32_t>().To(&byte_length) ||
       byte_length > static_cast<size_t>(end_ - position_)) {
@@ -1602,22 +1610,20 @@ MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadJSArrayBuffer() {
   return array_buffer;
 }
 
-MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadTransferredJSArrayBuffer(
-    bool is_shared) {
+MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadTransferredJSArrayBuffer() {
   uint32_t id = next_id_++;
   uint32_t transfer_id;
-  Handle<NumberDictionary> transfer_map;
+  Handle<SimpleNumberDictionary> transfer_map;
   if (!ReadVarint<uint32_t>().To(&transfer_id) ||
       !array_buffer_transfer_map_.ToHandle(&transfer_map)) {
     return MaybeHandle<JSArrayBuffer>();
   }
   int index = transfer_map->FindEntry(isolate_, transfer_id);
-  if (index == NumberDictionary::kNotFound) {
+  if (index == SimpleNumberDictionary::kNotFound) {
     return MaybeHandle<JSArrayBuffer>();
   }
   Handle<JSArrayBuffer> array_buffer(
       JSArrayBuffer::cast(transfer_map->ValueAt(index)), isolate_);
-  DCHECK_EQ(is_shared, array_buffer->is_shared());
   AddObjectWithID(id, array_buffer);
   return array_buffer;
 }
@@ -1716,28 +1722,16 @@ MaybeHandle<JSObject> ValueDeserializer::ReadWasmModule() {
   }
 
   // Try to deserialize the compiled module first.
-  Handle<FixedArray> compiled_part;
+  Handle<WasmCompiledModule> compiled_module;
   MaybeHandle<JSObject> result;
-  if (FLAG_wasm_jit_to_native) {
-    if (wasm::NativeModuleDeserializer::DeserializeFullBuffer(
-            isolate_, compiled_bytes, wire_bytes)
-            .ToHandle(&compiled_part)) {
-      result = WasmModuleObject::New(
-          isolate_, Handle<WasmCompiledModule>::cast(compiled_part));
-    }
-  } else {
-    ScriptData script_data(compiled_bytes.start(), compiled_bytes.length());
-    if (WasmCompiledModuleSerializer::DeserializeWasmModule(
-            isolate_, &script_data, wire_bytes)
-            .ToHandle(&compiled_part)) {
-      result = WasmModuleObject::New(
-          isolate_, Handle<WasmCompiledModule>::cast(compiled_part));
-    }
+  if (wasm::DeserializeNativeModule(isolate_, compiled_bytes, wire_bytes)
+          .ToHandle(&compiled_module)) {
+    result = WasmModuleObject::New(isolate_, compiled_module);
   }
   if (result.is_null()) {
     wasm::ErrorThrower thrower(isolate_, "ValueDeserializer::ReadWasmModule");
-    result = wasm::SyncCompile(isolate_, &thrower,
-                               wasm::ModuleWireBytes(wire_bytes));
+    result = isolate_->wasm_engine()->SyncCompile(
+        isolate_, &thrower, wasm::ModuleWireBytes(wire_bytes));
   }
   RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate_, JSObject);
   uint32_t id = next_id_++;
@@ -1766,7 +1760,7 @@ MaybeHandle<WasmMemoryObject> ValueDeserializer::ReadWasmMemory() {
 
   const bool is_shared = true;
   Handle<JSArrayBuffer> buffer;
-  if (!ReadTransferredJSArrayBuffer(is_shared).ToHandle(&buffer)) {
+  if (!ReadJSArrayBuffer(is_shared).ToHandle(&buffer)) {
     return MaybeHandle<WasmMemoryObject>();
   }
 

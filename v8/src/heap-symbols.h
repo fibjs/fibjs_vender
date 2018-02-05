@@ -146,6 +146,7 @@
   V(promise_string, "promise")                                              \
   V(proto_string, "__proto__")                                              \
   V(prototype_string, "prototype")                                          \
+  V(proxy_string, "proxy")                                                  \
   V(Proxy_string, "Proxy")                                                  \
   V(query_colon_string, "(?:)")                                             \
   V(RangeError_string, "RangeError")                                        \
@@ -155,6 +156,7 @@
   V(reject_string, "reject")                                                \
   V(resolve_string, "resolve")                                              \
   V(return_string, "return")                                                \
+  V(revoke_string, "revoke")                                                \
   V(script_string, "script")                                                \
   V(second_string, "second")                                                \
   V(setPrototypeOf_string, "setPrototypeOf")                                \
@@ -235,8 +237,6 @@
   V(promise_forwarding_handler_symbol)      \
   V(promise_handled_by_symbol)              \
   V(promise_async_id_symbol)                \
-  V(promise_default_resolve_handler_symbol) \
-  V(promise_default_reject_handler_symbol)  \
   V(sealed_symbol)                          \
   V(stack_trace_symbol)                     \
   V(strict_function_transition_symbol)      \

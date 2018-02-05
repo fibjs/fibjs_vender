@@ -141,6 +141,7 @@
   V(JSCreateGeneratorObject)    \
   V(JSCreateIterResultObject)   \
   V(JSCreateKeyValueArray)      \
+  V(JSCreatePromise)            \
   V(JSCreateLiteralArray)       \
   V(JSCreateEmptyLiteralArray)  \
   V(JSCreateLiteralObject)      \
@@ -175,24 +176,27 @@
   V(JSConstructWithArrayLike)   \
   V(JSConstructWithSpread)
 
-#define JS_OTHER_OP_LIST(V)         \
-  JS_CONSTRUCT_OP_LIST(V)           \
-  V(JSCallForwardVarargs)           \
-  V(JSCall)                         \
-  V(JSCallWithArrayLike)            \
-  V(JSCallWithSpread)               \
-  V(JSCallRuntime)                  \
-  V(JSForInEnumerate)               \
-  V(JSForInNext)                    \
-  V(JSForInPrepare)                 \
-  V(JSLoadMessage)                  \
-  V(JSStoreMessage)                 \
-  V(JSLoadModule)                   \
-  V(JSStoreModule)                  \
-  V(JSGeneratorStore)               \
-  V(JSGeneratorRestoreContinuation) \
-  V(JSGeneratorRestoreRegister)     \
-  V(JSStackCheck)                   \
+#define JS_OTHER_OP_LIST(V)            \
+  JS_CONSTRUCT_OP_LIST(V)              \
+  V(JSCallForwardVarargs)              \
+  V(JSCall)                            \
+  V(JSCallWithArrayLike)               \
+  V(JSCallWithSpread)                  \
+  V(JSCallRuntime)                     \
+  V(JSForInEnumerate)                  \
+  V(JSForInNext)                       \
+  V(JSForInPrepare)                    \
+  V(JSLoadMessage)                     \
+  V(JSStoreMessage)                    \
+  V(JSLoadModule)                      \
+  V(JSStoreModule)                     \
+  V(JSGeneratorStore)                  \
+  V(JSGeneratorRestoreContinuation)    \
+  V(JSGeneratorRestoreContext)         \
+  V(JSGeneratorRestoreRegister)        \
+  V(JSGeneratorRestoreInputOrDebugPos) \
+  V(JSPerformPromiseThen)              \
+  V(JSStackCheck)                      \
   V(JSDebugger)
 
 #define JS_OP_LIST(V)     \
@@ -317,6 +321,7 @@
   V(NumberTrunc)                       \
   V(NumberToBoolean)                   \
   V(NumberToInt32)                     \
+  V(NumberToString)                    \
   V(NumberToUint32)                    \
   V(NumberToUint8Clamped)              \
   V(NumberSilenceNaN)
@@ -332,6 +337,8 @@
   V(StringCharAt)                       \
   V(StringCharCodeAt)                   \
   V(SeqStringCharCodeAt)                \
+  V(StringCodePointAt)                  \
+  V(SeqStringCodePointAt)               \
   V(StringFromCharCode)                 \
   V(StringFromCodePoint)                \
   V(StringIndexOf)                      \
@@ -372,6 +379,7 @@
   V(TransitionAndStoreNumberElement)    \
   V(TransitionAndStoreNonNumberElement) \
   V(ToBoolean)                          \
+  V(NumberIsFloat64Hole)                \
   V(ObjectIsArrayBufferView)            \
   V(ObjectIsBigInt)                     \
   V(ObjectIsCallable)                   \
@@ -595,7 +603,6 @@
   V(LoadStackPointer)           \
   V(LoadFramePointer)           \
   V(LoadParentFramePointer)     \
-  V(CheckedLoad)                \
   V(UnalignedLoad)              \
   V(UnalignedStore)             \
   V(Int32PairAdd)               \
@@ -615,6 +622,12 @@
   V(AtomicAnd)                  \
   V(AtomicOr)                   \
   V(AtomicXor)                  \
+  V(SpeculationFence)           \
+  V(SignExtendWord8ToInt32)     \
+  V(SignExtendWord16ToInt32)    \
+  V(SignExtendWord8ToInt64)     \
+  V(SignExtendWord16ToInt64)    \
+  V(SignExtendWord32ToInt64)    \
   V(UnsafePointerAdd)
 
 #define MACHINE_SIMD_OP_LIST(V) \

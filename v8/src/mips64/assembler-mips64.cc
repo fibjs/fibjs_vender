@@ -80,11 +80,20 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 #ifndef __mips__
   // For the simulator build, use FPU.
   supported_ |= 1u << FPU;
+#if defined(_MIPS_ARCH_MIPS64R6) && defined(_MIPS_MSA)
+  supported_ |= 1u << MIPS_SIMD;
+#endif
 #else
   // Probe for additional features at runtime.
   base::CPU cpu;
   if (cpu.has_fpu()) supported_ |= 1u << FPU;
+#if defined(_MIPS_ARCH_MIPS64R6)
+#if defined(_MIPS_MSA)
+  supported_ |= 1u << MIPS_SIMD;
+#else
   if (cpu.has_msa()) supported_ |= 1u << MIPS_SIMD;
+#endif
+#endif
 #endif
 }
 
@@ -174,22 +183,23 @@ bool RelocInfo::IsInConstantPool() {
 }
 
 Address RelocInfo::embedded_address() const {
-  return Assembler::target_address_at(pc_, host_);
+  return Assembler::target_address_at(pc_, constant_pool_);
 }
 
 uint32_t RelocInfo::embedded_size() const {
-  return static_cast<uint32_t>(
-      reinterpret_cast<intptr_t>((Assembler::target_address_at(pc_, host_))));
+  return static_cast<uint32_t>(reinterpret_cast<intptr_t>(
+      (Assembler::target_address_at(pc_, constant_pool_))));
 }
 
 void RelocInfo::set_embedded_address(Isolate* isolate, Address address,
                                      ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, host_, address, flush_mode);
+  Assembler::set_target_address_at(isolate, pc_, constant_pool_, address,
+                                   flush_mode);
 }
 
 void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
                                   ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, host_,
+  Assembler::set_target_address_at(isolate, pc_, constant_pool_,
                                    reinterpret_cast<Address>(size), flush_mode);
 }
 

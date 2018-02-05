@@ -300,9 +300,6 @@
     <ClInclude Include="src\ast\ast-function-literal-id-reindexer.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast\ast-numbering.h">
-      <Filter>Source Files\ast</Filter>
-    </ClInclude>
     <ClInclude Include="src\ast\ast-source-ranges.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
@@ -504,6 +501,9 @@
     <ClInclude Include="src\builtins\builtins-arguments-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-array-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-async-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -700,6 +700,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\frame.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\functional-list.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\gap-resolver.h">
@@ -1285,6 +1288,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\identity-map.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\instruction-stream.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\interface-descriptors.h">
@@ -2094,9 +2100,6 @@
     <ClInclude Include="src\wasm\streaming-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\wasm-api.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-manager.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -2104,6 +2107,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-wrapper.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-constants.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-engine.h">
@@ -2238,9 +2244,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast-function-literal-id-reindexer.cc">
-      <Filter>Source Files\ast</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ast\ast-numbering.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast-value-factory.cc">
@@ -3224,6 +3227,9 @@
     <ClCompile Include="src\identity-map.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\instruction-stream.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\interface-descriptors.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3905,9 +3911,6 @@
     <ClCompile Include="src\wasm\streaming-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
-    <ClCompile Include="src\wasm\wasm-api.cc">
-      <Filter>Source Files\wasm</Filter>
-    </ClCompile>
     <ClCompile Include="src\wasm\wasm-code-manager.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
@@ -3918,6 +3921,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-debug.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-engine.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-external-refs.cc">

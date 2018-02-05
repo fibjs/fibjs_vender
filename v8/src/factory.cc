@@ -995,6 +995,7 @@ Handle<Context> Factory::NewNativeContext() {
   context->set_math_random_index(Smi::kZero);
   Handle<WeakCell> weak_cell = NewWeakCell(context);
   context->set_self_weak_cell(*weak_cell);
+  context->set_serialized_objects(*empty_fixed_array());
   DCHECK(context->IsNativeContext());
   return context;
 }
@@ -1185,6 +1186,24 @@ Handle<Script> Factory::NewScript(Handle<String> source) {
   return script;
 }
 
+Handle<CallableTask> Factory::NewCallableTask(Handle<JSReceiver> callable,
+                                              Handle<Context> context) {
+  DCHECK(callable->IsCallable());
+  Handle<CallableTask> microtask =
+      Handle<CallableTask>::cast(NewStruct(CALLABLE_TASK_TYPE));
+  microtask->set_callable(*callable);
+  microtask->set_context(*context);
+  return microtask;
+}
+
+Handle<CallbackTask> Factory::NewCallbackTask(Handle<Foreign> callback,
+                                              Handle<Foreign> data) {
+  Handle<CallbackTask> microtask =
+      Handle<CallbackTask>::cast(NewStruct(CALLBACK_TASK_TYPE));
+  microtask->set_callback(*callback);
+  microtask->set_data(*data);
+  return microtask;
+}
 
 Handle<Foreign> Factory::NewForeign(Address addr, PretenureFlag pretenure) {
   CALL_HEAP_FUNCTION(isolate(),
@@ -1605,6 +1624,7 @@ Handle<JSFunction> Factory::NewFunction(const NewFunctionArgs& args) {
     }
     Handle<Map> initial_map = NewMap(args.type_, args.instance_size_,
                                      elements_kind, args.inobject_properties_);
+    result->shared()->set_expected_nof_properties(args.inobject_properties_);
     // TODO(littledan): Why do we have this is_generator test when
     // NewFunctionPrototype already handles finding an appropriately
     // shared prototype?
@@ -2077,12 +2097,13 @@ Handle<JSIteratorResult> Factory::NewJSIteratorResult(Handle<Object> value,
 }
 
 Handle<JSAsyncFromSyncIterator> Factory::NewJSAsyncFromSyncIterator(
-    Handle<JSReceiver> sync_iterator) {
+    Handle<JSReceiver> sync_iterator, Handle<Object> next) {
   Handle<Map> map(isolate()->native_context()->async_from_sync_iterator_map());
   Handle<JSAsyncFromSyncIterator> iterator =
       Handle<JSAsyncFromSyncIterator>::cast(NewJSObjectFromMap(map));
 
   iterator->set_sync_iterator(*sync_iterator);
+  iterator->set_next(*next);
   return iterator;
 }
 
@@ -2532,9 +2553,7 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   share->set_script(*undefined_value(), SKIP_WRITE_BARRIER);
   share->set_debug_info(Smi::kZero, SKIP_WRITE_BARRIER);
   share->set_function_identifier(*undefined_value(), SKIP_WRITE_BARRIER);
-  StaticFeedbackVectorSpec empty_spec;
-  Handle<FeedbackMetadata> feedback_metadata =
-      FeedbackMetadata::New(isolate(), &empty_spec);
+  Handle<FeedbackMetadata> feedback_metadata = FeedbackMetadata::New(isolate());
   share->set_feedback_metadata(*feedback_metadata, SKIP_WRITE_BARRIER);
   share->set_function_literal_id(FunctionLiteral::kIdTypeInvalid);
 #if V8_SFI_HAS_UNIQUE_ID
@@ -2699,7 +2718,7 @@ Handle<StackFrameInfo> Factory::NewStackFrameInfo() {
 Handle<SourcePositionTableWithFrameCache>
 Factory::NewSourcePositionTableWithFrameCache(
     Handle<ByteArray> source_position_table,
-    Handle<NumberDictionary> stack_frame_cache) {
+    Handle<SimpleNumberDictionary> stack_frame_cache) {
   Handle<SourcePositionTableWithFrameCache>
       source_position_table_with_frame_cache =
           Handle<SourcePositionTableWithFrameCache>::cast(

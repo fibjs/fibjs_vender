@@ -121,8 +121,7 @@ Simulator* Simulator::current(Isolate* isolate) {
   return sim;
 }
 
-
-void Simulator::CallVoid(byte* entry, CallArgument* args) {
+void Simulator::CallImpl(byte* entry, CallArgument* args) {
   int index_x = 0;
   int index_d = 0;
 
@@ -163,63 +162,6 @@ void Simulator::CallVoid(byte* entry, CallArgument* args) {
 
   set_sp(original_stack);
 }
-
-
-int64_t Simulator::CallInt64(byte* entry, CallArgument* args) {
-  CallVoid(entry, args);
-  return xreg(0);
-}
-
-
-double Simulator::CallDouble(byte* entry, CallArgument* args) {
-  CallVoid(entry, args);
-  return dreg(0);
-}
-
-
-int64_t Simulator::CallJS(byte* entry,
-                          Object* new_target,
-                          Object* target,
-                          Object* revc,
-                          int64_t argc,
-                          Object*** argv) {
-  CallArgument args[] = {
-    CallArgument(new_target),
-    CallArgument(target),
-    CallArgument(revc),
-    CallArgument(argc),
-    CallArgument(argv),
-    CallArgument::End()
-  };
-  return CallInt64(entry, args);
-}
-
-
-int64_t Simulator::CallRegExp(byte* entry,
-                              String* input,
-                              int64_t start_offset,
-                              const byte* input_start,
-                              const byte* input_end,
-                              int* output,
-                              int64_t output_size,
-                              Address stack_base,
-                              int64_t direct_call,
-                              Isolate* isolate) {
-  CallArgument args[] = {
-    CallArgument(input),
-    CallArgument(start_offset),
-    CallArgument(input_start),
-    CallArgument(input_end),
-    CallArgument(output),
-    CallArgument(output_size),
-    CallArgument(stack_base),
-    CallArgument(direct_call),
-    CallArgument(isolate),
-    CallArgument::End()
-  };
-  return CallInt64(entry, args);
-}
-
 
 void Simulator::CheckPCSComplianceAndRun() {
   // Adjust JS-based stack limit to C-based stack limit.
@@ -460,12 +402,6 @@ void Simulator::RunFrom(Instruction* start) {
 }
 
 
-// static
-void SimulatorBase::TearDown(base::CustomMatcherHashMap* i_cache) {
-  // TODO(all): Simulator flush I cache
-}
-
-
 // Calls into the V8 runtime are based on this very simple interface.
 // Note: To be able to return two values from some calls the code in runtime.cc
 // uses the ObjectPair structure.
@@ -693,18 +629,16 @@ void Simulator::DoRuntimeCall(Instruction* instr) {
   set_pc(return_address);
 }
 
-
 const char* Simulator::xreg_names[] = {
-"x0",  "x1",  "x2",  "x3",  "x4",   "x5",  "x6",  "x7",
-"x8",  "x9",  "x10", "x11", "x12",  "x13", "x14", "x15",
-"ip0", "ip1", "x18", "x19", "x20",  "x21", "x22", "x23",
-"x24", "x25", "x26", "cp",  "jssp", "fp",  "lr",  "xzr", "csp"};
+    "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",  "x8",  "x9",  "x10",
+    "x11", "x12", "x13", "x14", "x15", "ip0", "ip1", "x18", "x19", "x20", "x21",
+    "x22", "x23", "x24", "x25", "x26", "cp",  "x28", "fp",  "lr",  "xzr", "sp"};
 
 const char* Simulator::wreg_names[] = {
-"w0",  "w1",  "w2",  "w3",  "w4",    "w5",  "w6",  "w7",
-"w8",  "w9",  "w10", "w11", "w12",   "w13", "w14", "w15",
-"w16", "w17", "w18", "w19", "w20",   "w21", "w22", "w23",
-"w24", "w25", "w26", "wcp", "wjssp", "wfp", "wlr", "wzr", "wcsp"};
+    "w0",  "w1",  "w2",  "w3",  "w4",  "w5",  "w6",  "w7",  "w8",
+    "w9",  "w10", "w11", "w12", "w13", "w14", "w15", "w16", "w17",
+    "w18", "w19", "w20", "w21", "w22", "w23", "w24", "w25", "w26",
+    "wcp", "w28", "wfp", "wlr", "wzr", "wsp"};
 
 const char* Simulator::sreg_names[] = {
 "s0",  "s1",  "s2",  "s3",  "s4",  "s5",  "s6",  "s7",
@@ -837,7 +771,7 @@ int Simulator::CodeFromName(const char* name) {
       return i;
     }
   }
-  if ((strcmp("csp", name) == 0) || (strcmp("wcsp", name) == 0)) {
+  if ((strcmp("sp", name) == 0) || (strcmp("wsp", name) == 0)) {
     return kSPRegInternalCode;
   }
   return -1;
@@ -3065,15 +2999,15 @@ bool Simulator::GetValue(const char* desc, int64_t* value) {
 
 
 bool Simulator::PrintValue(const char* desc) {
-  if (strcmp(desc, "csp") == 0) {
+  if (strcmp(desc, "sp") == 0) {
     DCHECK(CodeFromName(desc) == static_cast<int>(kSPRegInternalCode));
-    PrintF(stream_, "%s csp:%s 0x%016" PRIx64 "%s\n",
-        clr_reg_name, clr_reg_value, xreg(31, Reg31IsStackPointer), clr_normal);
+    PrintF(stream_, "%s sp:%s 0x%016" PRIx64 "%s\n", clr_reg_name,
+           clr_reg_value, xreg(31, Reg31IsStackPointer), clr_normal);
     return true;
-  } else if (strcmp(desc, "wcsp") == 0) {
+  } else if (strcmp(desc, "wsp") == 0) {
     DCHECK(CodeFromName(desc) == static_cast<int>(kSPRegInternalCode));
-    PrintF(stream_, "%s wcsp:%s 0x%08" PRIx32 "%s\n",
-        clr_reg_name, clr_reg_value, wreg(31, Reg31IsStackPointer), clr_normal);
+    PrintF(stream_, "%s wsp:%s 0x%08" PRIx32 "%s\n", clr_reg_name,
+           clr_reg_value, wreg(31, Reg31IsStackPointer), clr_normal);
     return true;
   }
 
@@ -3266,7 +3200,7 @@ void Simulator::Debug() {
         int next_arg = 1;
 
         if (strcmp(cmd, "stack") == 0) {
-          cur = reinterpret_cast<int64_t*>(jssp());
+          cur = reinterpret_cast<int64_t*>(sp());
 
         } else {  // "mem"
           int64_t value;

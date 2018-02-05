@@ -254,7 +254,7 @@ class SharedFunctionInfo : public HeapObject {
   String* DebugName();
 
   // The function cannot cause any side effects.
-  bool HasNoSideEffect();
+  static bool HasNoSideEffect(Handle<SharedFunctionInfo> info);
 
   // Used for flags such as --turbo-filter.
   bool PassesFilter(const char* raw_filter);
@@ -469,22 +469,24 @@ class SharedFunctionInfo : public HeapObject {
   V(IsNativeBit, bool, 1, _)                             \
   V(IsStrictBit, bool, 1, _)                             \
   V(IsWrappedBit, bool, 1, _)                            \
-  V(FunctionKindBits, FunctionKind, 10, _)               \
+  V(FunctionKindBits, FunctionKind, 11, _)               \
   V(HasDuplicateParametersBit, bool, 1, _)               \
   V(AllowLazyCompilationBit, bool, 1, _)                 \
   V(NeedsHomeObjectBit, bool, 1, _)                      \
   V(IsDeclarationBit, bool, 1, _)                        \
   V(IsAsmWasmBrokenBit, bool, 1, _)                      \
   V(FunctionMapIndexBits, int, 5, _)                     \
-  V(DisabledOptimizationReasonBits, BailoutReason, 7, _) \
+  V(DisabledOptimizationReasonBits, BailoutReason, 4, _) \
   V(RequiresInstanceFieldsInitializer, bool, 1, _)
 
   DEFINE_BIT_FIELDS(COMPILER_HINTS_BIT_FIELDS)
 #undef COMPILER_HINTS_BIT_FIELDS
 
   // Bailout reasons must fit in the DisabledOptimizationReason bitfield.
-  STATIC_ASSERT(kLastErrorMessage <= DisabledOptimizationReasonBits::kMax);
+  STATIC_ASSERT(BailoutReason::kLastErrorMessage <=
+                DisabledOptimizationReasonBits::kMax);
 
+  STATIC_ASSERT(kLastFunctionKind <= FunctionKindBits::kMax);
   // Masks for checking if certain FunctionKind bits are set without fully
   // decoding of the FunctionKind bit field.
   static const int kClassConstructorMask = FunctionKind::kClassConstructor

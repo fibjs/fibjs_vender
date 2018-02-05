@@ -147,46 +147,6 @@ static inline bool HasRegisterInput(Instruction* instr, size_t index) {
 
 namespace {
 
-class OutOfLineLoadSingle final : public OutOfLineCode {
- public:
-  OutOfLineLoadSingle(CodeGenerator* gen, FloatRegister result)
-      : OutOfLineCode(gen), result_(result) {}
-
-  void Generate() final {
-    __ Move(result_, std::numeric_limits<float>::quiet_NaN());
-  }
-
- private:
-  FloatRegister const result_;
-};
-
-
-class OutOfLineLoadDouble final : public OutOfLineCode {
- public:
-  OutOfLineLoadDouble(CodeGenerator* gen, DoubleRegister result)
-      : OutOfLineCode(gen), result_(result) {}
-
-  void Generate() final {
-    __ Move(result_, std::numeric_limits<double>::quiet_NaN());
-  }
-
- private:
-  DoubleRegister const result_;
-};
-
-
-class OutOfLineLoadInteger final : public OutOfLineCode {
- public:
-  OutOfLineLoadInteger(CodeGenerator* gen, Register result)
-      : OutOfLineCode(gen), result_(result) {}
-
-  void Generate() final { __ mov(result_, zero_reg); }
-
- private:
-  Register const result_;
-};
-
-
 class OutOfLineRound : public OutOfLineCode {
  public:
   OutOfLineRound(CodeGenerator* gen, DoubleRegister result)
@@ -407,65 +367,6 @@ FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
 }
 
 }  // namespace
-#define ASSEMBLE_BOUNDS_CHECK_REGISTER(offset, length, out_of_bounds)       \
-  do {                                                                      \
-    if (!length.is_reg() && base::bits::IsPowerOfTwo(length.immediate())) { \
-      __ And(kScratchReg, offset, Operand(~(length.immediate() - 1)));      \
-      __ Branch(USE_DELAY_SLOT, out_of_bounds, ne, kScratchReg,             \
-                Operand(zero_reg));                                         \
-    } else {                                                                \
-      __ Branch(USE_DELAY_SLOT, out_of_bounds, hs, offset, length);         \
-    }                                                                       \
-  } while (0)
-
-#define ASSEMBLE_BOUNDS_CHECK_IMMEDIATE(offset, length, out_of_bounds)      \
-  do {                                                                      \
-    if (!length.is_reg() && base::bits::IsPowerOfTwo(length.immediate())) { \
-      __ Or(kScratchReg, zero_reg, Operand(offset));                        \
-      __ And(kScratchReg, kScratchReg, Operand(~(length.immediate() - 1))); \
-      __ Branch(out_of_bounds, ne, kScratchReg, Operand(zero_reg));         \
-    } else {                                                                \
-      __ Branch(out_of_bounds, ls, length.rm(), Operand(offset));           \
-    }                                                                       \
-  } while (0)
-
-#define ASSEMBLE_CHECKED_LOAD_FLOAT(width, asm_instr)                          \
-  do {                                                                         \
-    auto result = i.Output##width##Register();                                 \
-    auto ool = new (zone()) OutOfLineLoad##width(this, result);                \
-    if (instr->InputAt(0)->IsRegister()) {                                     \
-      auto offset = i.InputRegister(0);                                        \
-      ASSEMBLE_BOUNDS_CHECK_REGISTER(offset, i.InputOperand(1), ool->entry()); \
-      __ And(kScratchReg, offset, Operand(0xFFFFFFFF));                        \
-      __ Daddu(kScratchReg, i.InputRegister(2), kScratchReg);                  \
-      __ asm_instr(result, MemOperand(kScratchReg, 0));                        \
-    } else {                                                                   \
-      int offset = static_cast<int>(i.InputOperand(0).immediate());            \
-      ASSEMBLE_BOUNDS_CHECK_IMMEDIATE(offset, i.InputOperand(1),               \
-                                      ool->entry());                           \
-      __ asm_instr(result, MemOperand(i.InputRegister(2), offset));            \
-    }                                                                          \
-    __ bind(ool->exit());                                                      \
-  } while (0)
-
-#define ASSEMBLE_CHECKED_LOAD_INTEGER(asm_instr)                               \
-  do {                                                                         \
-    auto result = i.OutputRegister();                                          \
-    auto ool = new (zone()) OutOfLineLoadInteger(this, result);                \
-    if (instr->InputAt(0)->IsRegister()) {                                     \
-      auto offset = i.InputRegister(0);                                        \
-      ASSEMBLE_BOUNDS_CHECK_REGISTER(offset, i.InputOperand(1), ool->entry()); \
-      __ And(kScratchReg, offset, Operand(0xFFFFFFFF));                        \
-      __ Daddu(kScratchReg, i.InputRegister(2), kScratchReg);                  \
-      __ asm_instr(result, MemOperand(kScratchReg, 0));                        \
-    } else {                                                                   \
-      int offset = static_cast<int>(i.InputOperand(0).immediate());            \
-      ASSEMBLE_BOUNDS_CHECK_IMMEDIATE(offset, i.InputOperand(1),               \
-                                      ool->entry());                           \
-      __ asm_instr(result, MemOperand(i.InputRegister(2), offset));            \
-    }                                                                          \
-    __ bind(ool->exit());                                                      \
-  } while (0)
 
 #define ASSEMBLE_ROUND_DOUBLE_TO_DOUBLE(mode)                                  \
   if (kArchVariant == kMips64r6) {                                             \
@@ -793,14 +694,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (instr->InputAt(0)->IsImmediate()) {
         Address wasm_code = reinterpret_cast<Address>(
             i.ToConstant(instr->InputAt(0)).ToInt64());
-        __ Jump(wasm_code, info()->IsWasm() ? RelocInfo::WASM_CALL
+        __ Call(wasm_code, info()->IsWasm() ? RelocInfo::WASM_CALL
                                             : RelocInfo::JS_TO_WASM_CALL);
       } else {
         __ daddiu(at, i.InputRegister(0), 0);
-        __ Jump(at);
+        __ Call(at);
       }
+      RecordCallPosition(instr);
       frame_access_state()->ClearSPDelta();
-      frame_access_state()->SetFrameAccessToDefault();
       break;
     }
     case kArchTailCallCodeObjectFromJSFunction:
@@ -846,7 +747,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (FLAG_debug_code) {
         // Check the function's context matches the context argument.
         __ Ld(kScratchReg, FieldMemOperand(func, JSFunction::kContextOffset));
-        __ Assert(eq, kWrongFunctionContext, cp, Operand(kScratchReg));
+        __ Assert(eq, AbortReason::kWrongFunctionContext, cp,
+                  Operand(kScratchReg));
       }
       __ Ld(at, FieldMemOperand(func, JSFunction::kCodeOffset));
       __ Daddu(at, at, Operand(Code::kHeaderSize - kHeapObjectTag));
@@ -1010,7 +912,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       if (FLAG_debug_code && alignment > 0) {
         // Verify that the output_register is properly aligned
         __ And(kScratchReg, i.OutputRegister(), Operand(kPointerSize - 1));
-        __ Assert(eq, kAllocationIsNotDoubleAligned, kScratchReg,
+        __ Assert(eq, AbortReason::kAllocationIsNotDoubleAligned, kScratchReg,
                   Operand(zero_reg));
       }
       if (alignment == 2 * kPointerSize) {
@@ -2003,7 +1905,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kMips64Peek: {
       // The incoming value is 0-based, but we need a 1-based value.
-      int reverse_slot = MiscField::decode(instr->opcode()) + 1;
+      int reverse_slot = i.InputInt32(0) + 1;
       int offset =
           FrameSlotToFPOffset(frame()->GetTotalFrameSlotCount() - reverse_slot);
       if (instr->OutputAt(0)->IsFPRegister()) {
@@ -2041,30 +1943,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ dsrl32(i.OutputRegister(0), i.OutputRegister(0), 0);
       break;
     }
-    case kCheckedLoadInt8:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(Lb);
-      break;
-    case kCheckedLoadUint8:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(Lbu);
-      break;
-    case kCheckedLoadInt16:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(Lh);
-      break;
-    case kCheckedLoadUint16:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(Lhu);
-      break;
-    case kCheckedLoadWord32:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(Lw);
-      break;
-    case kCheckedLoadWord64:
-      ASSEMBLE_CHECKED_LOAD_INTEGER(Ld);
-      break;
-    case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(Single, Lwc1);
-      break;
-    case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(Double, Ldc1);
-      break;
     case kAtomicLoadInt8:
       ASSEMBLE_ATOMIC_LOAD_INTEGER(Lb);
       break;
@@ -2143,7 +2021,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ATOMIC_BINOP_CASE(Xor, Xor)
 #undef ATOMIC_BINOP_CASE
     case kMips64AssertEqual:
-      __ Assert(eq, static_cast<BailoutReason>(i.InputOperand(2).immediate()),
+      __ Assert(eq, static_cast<AbortReason>(i.InputOperand(2).immediate()),
                 i.InputRegister(0), Operand(i.InputRegister(1)));
       break;
     case kMips64S128Zero: {
@@ -3425,7 +3303,7 @@ void CodeGenerator::AssembleArchTrap(Instruction* instr,
         gen_->RecordSafepoint(reference_map, Safepoint::kSimple, 0,
                               Safepoint::kNoLazyDeopt);
         if (FLAG_debug_code) {
-          __ stop(GetBailoutReason(kUnexpectedReturnFromWasmTrap));
+          __ stop(GetAbortReason(AbortReason::kUnexpectedReturnFromWasmTrap));
         }
       }
     }
@@ -3707,7 +3585,7 @@ void CodeGenerator::AssembleConstructFrame() {
 
   if (info()->is_osr()) {
     // TurboFan OSR-compiled functions cannot be entered directly.
-    __ Abort(kShouldNotDirectlyEnterOsrFunction);
+    __ Abort(AbortReason::kShouldNotDirectlyEnterOsrFunction);
 
     // Unoptimized code jumps directly to this entrypoint while the unoptimized
     // frame is still on the stack. Optimized code uses OSR values directly from
@@ -3788,7 +3666,6 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   }
   int pop_count = static_cast<int>(descriptor->StackParameterCount());
   if (pop->IsImmediate()) {
-    DCHECK_EQ(Constant::kInt32, g.ToConstant(pop).type());
     pop_count += g.ToConstant(pop).ToInt32();
   } else {
     Register pop_reg = g.ToRegister(pop);

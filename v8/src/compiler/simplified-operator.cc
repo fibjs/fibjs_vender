@@ -537,13 +537,15 @@ Type* AllocateTypeOf(const Operator* op) {
 }
 
 UnicodeEncoding UnicodeEncodingOf(const Operator* op) {
-  DCHECK_EQ(IrOpcode::kStringFromCodePoint, op->opcode());
+  DCHECK(op->opcode() == IrOpcode::kStringFromCodePoint ||
+         op->opcode() == IrOpcode::kStringCodePointAt ||
+         op->opcode() == IrOpcode::kSeqStringCodePointAt);
   return OpParameter<UnicodeEncoding>(op);
 }
 
-BailoutReason BailoutReasonOf(const Operator* op) {
+AbortReason AbortReasonOf(const Operator* op) {
   DCHECK_EQ(IrOpcode::kRuntimeAbort, op->opcode());
-  return OpParameter<BailoutReason>(op);
+  return static_cast<AbortReason>(OpParameter<int>(op));
 }
 
 DeoptimizeReason DeoptimizeReasonOf(const Operator* op) {
@@ -650,13 +652,11 @@ bool operator==(CheckMinusZeroParameters const& lhs,
   V(NumberTrunc, Operator::kNoProperties, 1, 0)                  \
   V(NumberToBoolean, Operator::kNoProperties, 1, 0)              \
   V(NumberToInt32, Operator::kNoProperties, 1, 0)                \
+  V(NumberToString, Operator::kNoProperties, 1, 0)               \
   V(NumberToUint32, Operator::kNoProperties, 1, 0)               \
   V(NumberToUint8Clamped, Operator::kNoProperties, 1, 0)         \
   V(NumberSilenceNaN, Operator::kNoProperties, 1, 0)             \
   V(StringToNumber, Operator::kNoProperties, 1, 0)               \
-  V(StringCharAt, Operator::kNoProperties, 2, 1)                 \
-  V(StringCharCodeAt, Operator::kNoProperties, 2, 1)             \
-  V(SeqStringCharCodeAt, Operator::kNoProperties, 2, 1)          \
   V(StringFromCharCode, Operator::kNoProperties, 1, 0)           \
   V(StringIndexOf, Operator::kNoProperties, 3, 0)                \
   V(StringLength, Operator::kNoProperties, 1, 0)                 \
@@ -696,6 +696,7 @@ bool operator==(CheckMinusZeroParameters const& lhs,
   V(ObjectIsString, Operator::kNoProperties, 1, 0)               \
   V(ObjectIsSymbol, Operator::kNoProperties, 1, 0)               \
   V(ObjectIsUndetectable, Operator::kNoProperties, 1, 0)         \
+  V(NumberIsFloat64Hole, Operator::kNoProperties, 1, 0)          \
   V(ConvertTaggedHoleToUndefined, Operator::kNoProperties, 1, 0) \
   V(SameValue, Operator::kCommutative, 2, 0)                     \
   V(ReferenceEqual, Operator::kCommutative, 2, 0)                \
@@ -706,6 +707,11 @@ bool operator==(CheckMinusZeroParameters const& lhs,
   V(NewConsString, Operator::kNoProperties, 3, 0)                \
   V(MaskIndexWithBound, Operator::kNoProperties, 2, 0)
 
+#define EFFECT_DEPENDENT_OP_LIST(V)                  \
+  V(StringCharAt, Operator::kNoProperties, 2, 1)     \
+  V(StringCharCodeAt, Operator::kNoProperties, 2, 1) \
+  V(SeqStringCharCodeAt, Operator::kNoProperties, 2, 1)
+
 #define SPECULATIVE_NUMBER_BINOP_LIST(V)      \
   SIMPLIFIED_SPECULATIVE_NUMBER_BINOP_LIST(V) \
   V(SpeculativeNumberEqual)                   \
@@ -713,32 +719,32 @@ bool operator==(CheckMinusZeroParameters const& lhs,
   V(SpeculativeNumberLessThanOrEqual)
 
 #define CHECKED_OP_LIST(V)               \
+  V(CheckEqualsInternalizedString, 2, 0) \
+  V(CheckEqualsSymbol, 2, 0)             \
   V(CheckHeapObject, 1, 1)               \
   V(CheckInternalizedString, 1, 1)       \
+  V(CheckNotTaggedHole, 1, 1)            \
   V(CheckReceiver, 1, 1)                 \
   V(CheckSeqString, 1, 1)                \
   V(CheckSymbol, 1, 1)                   \
-  V(CheckNotTaggedHole, 1, 1)            \
-  V(CheckEqualsInternalizedString, 2, 0) \
-  V(CheckEqualsSymbol, 2, 0)             \
   V(CheckedInt32Add, 2, 1)               \
-  V(CheckedInt32Sub, 2, 1)               \
   V(CheckedInt32Div, 2, 1)               \
   V(CheckedInt32Mod, 2, 1)               \
+  V(CheckedInt32Sub, 2, 1)               \
   V(CheckedUint32Div, 2, 1)              \
   V(CheckedUint32Mod, 2, 1)
 
 #define CHECKED_WITH_FEEDBACK_OP_LIST(V) \
   V(CheckBounds, 2, 1)                   \
+  V(CheckNumber, 1, 1)                   \
   V(CheckSmi, 1, 1)                      \
   V(CheckString, 1, 1)                   \
+  V(CheckedInt32ToTaggedSigned, 1, 1)    \
   V(CheckedTaggedSignedToInt32, 1, 1)    \
+  V(CheckedTaggedToTaggedPointer, 1, 1)  \
   V(CheckedTaggedToTaggedSigned, 1, 1)   \
   V(CheckedUint32ToInt32, 1, 1)          \
-  V(CheckedUint32ToTaggedSigned, 1, 1)   \
-  V(CheckedInt32ToTaggedSigned, 1, 1)    \
-  V(CheckedTaggedToTaggedPointer, 1, 1)  \
-  V(CheckNumber, 1, 1)
+  V(CheckedUint32ToTaggedSigned, 1, 1)
 
 struct SimplifiedOperatorGlobalCache final {
 #define PURE(Name, properties, value_input_count, control_input_count)     \
@@ -750,6 +756,20 @@ struct SimplifiedOperatorGlobalCache final {
   Name##Operator k##Name;
   PURE_OP_LIST(PURE)
 #undef PURE
+
+#define EFFECT_DEPENDENT(Name, properties, value_input_count,              \
+                         control_input_count)                              \
+  struct Name##Operator final : public Operator {                          \
+    Name##Operator()                                                       \
+        : Operator(IrOpcode::k##Name,                                      \
+                   Operator::kNoDeopt | Operator::kNoWrite |               \
+                       Operator::kNoThrow | properties,                    \
+                   #Name, value_input_count, 1, control_input_count, 1, 1, \
+                   0) {}                                                   \
+  };                                                                       \
+  Name##Operator k##Name;
+  EFFECT_DEPENDENT_OP_LIST(EFFECT_DEPENDENT)
+#undef EFFECT_DEPENDENT
 
 #define CHECKED(Name, value_input_count, value_output_count)             \
   struct Name##Operator final : public Operator {                        \
@@ -785,6 +805,33 @@ struct SimplifiedOperatorGlobalCache final {
   CheckIfOperator<DeoptimizeReason::k##Name> kCheckIf##Name;
   DEOPTIMIZE_REASON_LIST(CHECK_IF)
 #undef CHECK_IF
+
+  template <UnicodeEncoding kEncoding>
+  struct StringCodePointAtOperator final : public Operator1<UnicodeEncoding> {
+    StringCodePointAtOperator()
+        : Operator1<UnicodeEncoding>(IrOpcode::kStringCodePointAt,
+                                     Operator::kFoldable | Operator::kNoThrow,
+                                     "StringCodePointAt", 2, 1, 1, 1, 1, 0,
+                                     kEncoding) {}
+  };
+  StringCodePointAtOperator<UnicodeEncoding::UTF16>
+      kStringCodePointAtOperatorUTF16;
+  StringCodePointAtOperator<UnicodeEncoding::UTF32>
+      kStringCodePointAtOperatorUTF32;
+
+  template <UnicodeEncoding kEncoding>
+  struct SeqStringCodePointAtOperator final
+      : public Operator1<UnicodeEncoding> {
+    SeqStringCodePointAtOperator()
+        : Operator1<UnicodeEncoding>(IrOpcode::kSeqStringCodePointAt,
+                                     Operator::kFoldable | Operator::kNoThrow,
+                                     "SeqStringCodePointAt", 2, 1, 1, 1, 1, 0,
+                                     kEncoding) {}
+  };
+  SeqStringCodePointAtOperator<UnicodeEncoding::UTF16>
+      kSeqStringCodePointAtOperatorUTF16;
+  SeqStringCodePointAtOperator<UnicodeEncoding::UTF32>
+      kSeqStringCodePointAtOperatorUTF32;
 
   template <UnicodeEncoding kEncoding>
   struct StringFromCodePointOperator final : public Operator1<UnicodeEncoding> {
@@ -1028,6 +1075,7 @@ SimplifiedOperatorBuilder::SimplifiedOperatorBuilder(Zone* zone)
 #define GET_FROM_CACHE(Name, ...) \
   const Operator* SimplifiedOperatorBuilder::Name() { return &cache_.k##Name; }
 PURE_OP_LIST(GET_FROM_CACHE)
+EFFECT_DEPENDENT_OP_LIST(GET_FROM_CACHE)
 CHECKED_OP_LIST(GET_FROM_CACHE)
 GET_FROM_CACHE(ArrayBufferWasNeutered)
 GET_FROM_CACHE(ArgumentsFrame)
@@ -1051,13 +1099,23 @@ GET_FROM_CACHE(LoadFieldByIndex)
 CHECKED_WITH_FEEDBACK_OP_LIST(GET_FROM_CACHE_WITH_FEEDBACK)
 #undef GET_FROM_CACHE_WITH_FEEDBACK
 
-const Operator* SimplifiedOperatorBuilder::RuntimeAbort(BailoutReason reason) {
-  return new (zone()) Operator1<BailoutReason>(  // --
-      IrOpcode::kRuntimeAbort,                   // opcode
-      Operator::kNoThrow | Operator::kNoDeopt,   // flags
-      "RuntimeAbort",                            // name
-      0, 1, 1, 0, 1, 0,                          // counts
-      reason);                                   // parameter
+bool IsCheckedWithFeedback(const Operator* op) {
+#define CASE(Name, ...) case IrOpcode::k##Name:
+  switch (op->opcode()) {
+    CHECKED_WITH_FEEDBACK_OP_LIST(CASE) return true;
+    default:
+      return false;
+  }
+#undef CASE
+}
+
+const Operator* SimplifiedOperatorBuilder::RuntimeAbort(AbortReason reason) {
+  return new (zone()) Operator1<int>(           // --
+      IrOpcode::kRuntimeAbort,                  // opcode
+      Operator::kNoThrow | Operator::kNoDeopt,  // flags
+      "RuntimeAbort",                           // name
+      0, 1, 1, 0, 1, 0,                         // counts
+      static_cast<int>(reason));                // parameter
 }
 
 const Operator* SimplifiedOperatorBuilder::CheckIf(DeoptimizeReason reason) {
@@ -1364,6 +1422,28 @@ const Operator* SimplifiedOperatorBuilder::AllocateRaw(
       "AllocateRaw", 1, 1, 1, 1, 1, 1, AllocateParameters(type, pretenure));
 }
 
+const Operator* SimplifiedOperatorBuilder::StringCodePointAt(
+    UnicodeEncoding encoding) {
+  switch (encoding) {
+    case UnicodeEncoding::UTF16:
+      return &cache_.kStringCodePointAtOperatorUTF16;
+    case UnicodeEncoding::UTF32:
+      return &cache_.kStringCodePointAtOperatorUTF32;
+  }
+  UNREACHABLE();
+}
+
+const Operator* SimplifiedOperatorBuilder::SeqStringCodePointAt(
+    UnicodeEncoding encoding) {
+  switch (encoding) {
+    case UnicodeEncoding::UTF16:
+      return &cache_.kSeqStringCodePointAtOperatorUTF16;
+    case UnicodeEncoding::UTF32:
+      return &cache_.kSeqStringCodePointAtOperatorUTF32;
+  }
+  UNREACHABLE();
+}
+
 const Operator* SimplifiedOperatorBuilder::StringFromCodePoint(
     UnicodeEncoding encoding) {
   switch (encoding) {
@@ -1449,6 +1529,7 @@ const Operator* SimplifiedOperatorBuilder::TransitionAndStoreNonNumberElement(
 }
 
 #undef PURE_OP_LIST
+#undef EFFECT_DEPENDENT_OP_LIST
 #undef SPECULATIVE_NUMBER_BINOP_LIST
 #undef CHECKED_WITH_FEEDBACK_OP_LIST
 #undef CHECKED_OP_LIST

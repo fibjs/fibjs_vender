@@ -66,6 +66,17 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(WeakCellMap, weak_cell_map, WeakCellMap)                             \
   V(SharedFunctionInfoMap, shared_function_info_map, SharedFunctionInfoMap)
 
+// Returned from IteratorBuiltinsAssembler::GetIterator(). Struct is declared
+// here to simplify use in other generated builtins.
+struct IteratorRecord {
+ public:
+  // iteratorRecord.[[Iterator]]
+  compiler::TNode<JSReceiver> object;
+
+  // iteratorRecord.[[NextMethod]]
+  compiler::TNode<Object> next;
+};
+
 // Provides JavaScript-specific "macro-assembler" functionality on top of the
 // CodeAssembler. By factoring the JavaScript-isms out of the CodeAssembler,
 // it's possible to add JavaScript-specific useful CodeAssembler "macros"
@@ -206,6 +217,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   TNode<Object> NumberMax(SloppyTNode<Object> left, SloppyTNode<Object> right);
   // Select the minimum of the two provided Number values.
   TNode<Object> NumberMin(SloppyTNode<Object> left, SloppyTNode<Object> right);
+
+  // After converting an index to an integer, calculate a relative index: if
+  // index < 0, max(length + index, 0); else min(index, length)
+  TNode<Smi> ConvertToRelativeIndex(TNode<Context> context, TNode<Object> index,
+                                    TNode<Smi> length);
 
   // Tag a Word as a Smi value.
   TNode<Smi> SmiTag(SloppyTNode<IntPtrT> value);
@@ -481,6 +497,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   TNode<Int32T> LoadInstanceType(SloppyTNode<HeapObject> object);
   // Compare the instance the type of the object against the provided one.
   Node* HasInstanceType(Node* object, InstanceType type);
+  // Determines whether Array Iterator's prototype has changed.
+  TNode<BoolT> HasInitialArrayIteratorPrototypeMap(
+      TNode<Context> native_context);
+  // Determines whether Array's prototype has changed.
+  TNode<BoolT> InitialArrayPrototypeHasInitialArrayPrototypeMap(
+      TNode<Context> native_context);
+  // Determines whether an array's elements map has changed.
+  TNode<BoolT> HasInitialFastElementsKindMap(TNode<Context> native_context,
+                                             TNode<JSArray> jsarray);
   Node* DoesntHaveInstanceType(Node* object, InstanceType type);
   Node* TaggedDoesntHaveInstanceType(Node* any_tagged, InstanceType type);
   // Load the properties backing store of a JSObject.
@@ -1061,6 +1086,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsExternalStringInstanceType(Node* instance_type);
   TNode<BoolT> IsFastJSArray(SloppyTNode<Object> object,
                              SloppyTNode<Context> context);
+  TNode<BoolT> IsFastJSArrayWithNoCustomIteration(
+      TNode<Object> object, TNode<Context> context,
+      TNode<Context> native_context);
   Node* IsFeedbackVector(Node* object);
   Node* IsFixedArray(Node* object);
   Node* IsFixedArraySubclass(Node* object);
@@ -1084,6 +1112,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsJSObjectInstanceType(Node* instance_type);
   Node* IsJSObjectMap(Node* map);
   Node* IsJSObject(Node* object);
+  Node* IsJSPromiseMap(Node* map);
+  Node* IsJSPromise(Node* object);
   Node* IsJSProxy(Node* object);
   Node* IsJSReceiverInstanceType(Node* instance_type);
   Node* IsJSReceiverMap(Node* map);
@@ -1103,9 +1133,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsOneByteStringInstanceType(Node* instance_type);
   Node* IsPrimitiveInstanceType(Node* instance_type);
   Node* IsPrivateSymbol(Node* object);
+  Node* IsPromiseCapability(Node* object);
   Node* IsPropertyArray(Node* object);
   Node* IsPropertyCell(Node* object);
   Node* IsPrototypeInitialArrayPrototype(Node* context, Node* map);
+  TNode<BoolT> IsPrototypeTypedArrayPrototype(SloppyTNode<Context> context,
+                                              SloppyTNode<Map> map);
   Node* IsSequentialStringInstanceType(Node* instance_type);
   Node* IsShortExternalStringInstanceType(Node* instance_type);
   Node* IsSpecialReceiverInstanceType(Node* instance_type);
@@ -1149,10 +1182,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   // String helpers.
   // Load a character from a String (might flatten a ConsString).
-  TNode<Uint32T> StringCharCodeAt(SloppyTNode<String> string,
-                                  SloppyTNode<IntPtrT> index);
+  TNode<Int32T> StringCharCodeAt(SloppyTNode<String> string,
+                                 SloppyTNode<IntPtrT> index);
   // Return the single character string with only {code}.
-  Node* StringFromCharCode(Node* code);
+  TNode<String> StringFromCharCode(TNode<Int32T> code);
 
   enum class SubStringFlags { NONE, FROM_TO_ARE_BOUNDED };
 
@@ -1183,14 +1216,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                  Variable* var_right, Node* right_instance_type,
                                  Label* did_something);
 
-  Node* StringFromCodePoint(Node* codepoint, UnicodeEncoding encoding);
+  TNode<String> StringFromCodePoint(TNode<Int32T> codepoint,
+                                    UnicodeEncoding encoding);
 
   // Type conversion helpers.
   enum class BigIntHandling { kConvertToNumber, kThrow };
   // Convert a String to a Number.
-  TNode<Number> StringToNumber(SloppyTNode<Context> context,
-                               SloppyTNode<String> input);
-  Node* NumberToString(Node* context, Node* input);
+  TNode<Number> StringToNumber(SloppyTNode<String> input);
+  // Convert a Number to a String.
+  Node* NumberToString(Node* input);
   // Convert an object to a name.
   Node* ToName(Node* context, Node* input);
   // Convert a Non-Number object to a Number.
@@ -1608,6 +1642,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                              Label* if_bailout)>
       LookupInHolder;
 
+  // For integer indexed exotic cases, check if the given string cannot be a
+  // special index. If we are not sure that the given string is not a special
+  // index with a simple check, return False. Note that "False" return value
+  // does not mean that the name_string is a special index in the current
+  // implementation.
+  void BranchIfMaybeSpecialIndex(TNode<String> name_string,
+                                 Label* if_maybe_special_index,
+                                 Label* if_not_special_index);
+
   // Generic property prototype chain lookup generator.
   // For properties it generates lookup using given {lookup_property_in_holder}
   // and for elements it uses {lookup_element_in_holder}.
@@ -1689,8 +1732,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                         KeyedAccessStoreMode store_mode, Label* bailout);
 
   Node* CheckForCapacityGrow(Node* object, Node* elements, ElementsKind kind,
-                             Node* length, Node* key, ParameterMode mode,
-                             bool is_js_array, Label* bailout);
+                             KeyedAccessStoreMode store_mode, Node* length,
+                             Node* key, ParameterMode mode, bool is_js_array,
+                             Label* bailout);
 
   Node* CopyElementsOnWrite(Node* object, Node* elements, ElementsKind kind,
                             Node* length, ParameterMode mode, Label* bailout);
@@ -1813,6 +1857,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   Node* GetSuperConstructor(Node* value, Node* context);
 
+  Node* SpeciesConstructor(Node* context, Node* object,
+                           Node* default_constructor);
+
   Node* InstanceOf(Node* object, Node* callable, Node* context);
 
   // Debug helpers
@@ -1829,11 +1876,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   // Promise helpers
   Node* IsPromiseHookEnabledOrDebugIsActive();
-
-  Node* AllocatePromiseReactionJobInfo(Node* value, Node* tasks,
-                                       Node* deferred_promise,
-                                       Node* deferred_on_resolve,
-                                       Node* deferred_on_reject, Node* context);
 
   // Helpers for StackFrame markers.
   Node* MarkerIsFrameType(Node* marker_or_function,
@@ -1863,7 +1905,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                   UndefinedConstant(), SmiConstant(message), args...);
   }
 
-  void Abort(BailoutReason reason) {
+  void Abort(AbortReason reason) {
     CallRuntime(Runtime::kAbort, NoContextConstant(), SmiConstant(reason));
     Unreachable();
   }
@@ -1895,6 +1937,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   void BranchIfPrototypesHaveNoElements(Node* receiver_map,
                                         Label* definitely_no_elements,
                                         Label* possibly_elements);
+
+  void InitializeFunctionContext(Node* native_context, Node* context,
+                                 int slots);
 
  private:
   friend class CodeStubArguments;
@@ -1973,15 +2018,16 @@ class CodeStubArguments {
   // |argc| is an intptr value which specifies the number of arguments passed
   // to the builtin excluding the receiver. The arguments will include a
   // receiver iff |receiver_mode| is kHasReceiver.
-  CodeStubArguments(CodeStubAssembler* assembler, SloppyTNode<IntPtrT> argc,
+  CodeStubArguments(CodeStubAssembler* assembler, Node* argc,
                     ReceiverMode receiver_mode = ReceiverMode::kHasReceiver)
       : CodeStubArguments(assembler, argc, nullptr,
                           CodeStubAssembler::INTPTR_PARAMETERS, receiver_mode) {
   }
+
   // |argc| is either a smi or intptr depending on |param_mode|. The arguments
   // include a receiver iff |receiver_mode| is kHasReceiver.
-  CodeStubArguments(CodeStubAssembler* assembler, SloppyTNode<IntPtrT> argc,
-                    Node* fp, CodeStubAssembler::ParameterMode param_mode,
+  CodeStubArguments(CodeStubAssembler* assembler, Node* argc, Node* fp,
+                    CodeStubAssembler::ParameterMode param_mode,
                     ReceiverMode receiver_mode = ReceiverMode::kHasReceiver);
 
   TNode<Object> GetReceiver() const;
@@ -2003,7 +2049,10 @@ class CodeStubArguments {
   TNode<Object> GetOptionalArgumentValue(int index,
                                          SloppyTNode<Object> default_value);
 
-  TNode<IntPtrT> GetLength() const { return argc_; }
+  Node* GetLength(CodeStubAssembler::ParameterMode mode) const {
+    DCHECK_EQ(mode, argc_mode_);
+    return argc_;
+  }
 
   typedef std::function<void(Node* arg)> ForEachBodyFunction;
 
@@ -2029,7 +2078,7 @@ class CodeStubArguments {
   CodeStubAssembler* assembler_;
   CodeStubAssembler::ParameterMode argc_mode_;
   ReceiverMode receiver_mode_;
-  TNode<IntPtrT> argc_;
+  Node* argc_;
   TNode<RawPtr<Object>> arguments_;
   Node* fp_;
 };

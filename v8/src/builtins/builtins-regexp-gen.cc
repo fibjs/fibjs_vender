@@ -1219,8 +1219,7 @@ TF_BUILTIN(RegExpPrototypeFlagsGetter, RegExpBuiltinsAssembler) {
   Node* const receiver = maybe_receiver;
 
   Label if_isfastpath(this), if_isslowpath(this, Label::kDeferred);
-  Branch(IsFastRegExpNoPrototype(context, receiver, map), &if_isfastpath,
-         &if_isslowpath);
+  BranchIfFastRegExp(context, receiver, map, &if_isfastpath, &if_isslowpath);
 
   BIND(&if_isfastpath);
   Return(FlagsGetter(context, receiver, true));
@@ -2537,7 +2536,7 @@ TF_BUILTIN(RegExpSplit, RegExpBuiltinsAssembler) {
   // to verify the constructor property and jump to the slow path if it has
   // been changed.
 
-  // Convert {maybe_limit} to a uint32, capping at the maximal smi value.
+  // Verify {maybe_limit}.
 
   VARIABLE(var_limit, MachineRepresentation::kTagged, maybe_limit);
   Label if_limitissmimax(this), runtime(this, Label::kDeferred);
@@ -2546,21 +2545,12 @@ TF_BUILTIN(RegExpSplit, RegExpBuiltinsAssembler) {
     Label next(this);
 
     GotoIf(IsUndefined(maybe_limit), &if_limitissmimax);
-    GotoIf(TaggedIsPositiveSmi(maybe_limit), &next);
+    Branch(TaggedIsPositiveSmi(maybe_limit), &next, &runtime);
 
-    var_limit.Bind(ToUint32(context, maybe_limit));
-    {
-      // ToUint32(limit) could potentially change the shape of the RegExp
-      // object. Recheck that we are still on the fast path and bail to runtime
-      // otherwise.
-      {
-        Label next(this);
-        BranchIfFastRegExp(context, regexp, &next, &runtime);
-        BIND(&next);
-      }
-
-      Branch(TaggedIsPositiveSmi(var_limit.value()), &next, &if_limitissmimax);
-    }
+    // We need to be extra-strict and require the given limit to be either
+    // undefined or a positive smi. We can't call ToUint32(maybe_limit) since
+    // that might move us onto the slow path, resulting in ordering spec
+    // violations (see https://crbug.com/801171).
 
     BIND(&if_limitissmimax);
     {
@@ -2584,13 +2574,8 @@ TF_BUILTIN(RegExpSplit, RegExpBuiltinsAssembler) {
   RegExpPrototypeSplitBody(context, regexp, string, var_limit.value());
 
   BIND(&runtime);
-  {
-    // The runtime call passes in limit to ensure the second ToUint32(limit)
-    // call is not observable.
-    CSA_ASSERT(this, IsNumber(var_limit.value()));
-    Return(CallRuntime(Runtime::kRegExpSplit, context, regexp, string,
-                       var_limit.value()));
-  }
+  Return(CallRuntime(Runtime::kRegExpSplit, context, regexp, string,
+                     var_limit.value()));
 }
 
 // ES#sec-regexp.prototype-@@split

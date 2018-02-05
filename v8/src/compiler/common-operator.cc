@@ -29,10 +29,27 @@ std::ostream& operator<<(std::ostream& os, BranchHint hint) {
   UNREACHABLE();
 }
 
+std::ostream& operator<<(std::ostream& os, IsSafetyCheck is_safety_check) {
+  switch (is_safety_check) {
+    case IsSafetyCheck::kSafetyCheck:
+      return os << "SafetyCheck";
+    case IsSafetyCheck::kNoSafetyCheck:
+      return os << "NoSafetyCheck";
+  }
+  UNREACHABLE();
+}
+
+std::ostream& operator<<(std::ostream& os, BranchOperatorInfo info) {
+  return os << info.hint << "|" << info.is_safety_check;
+}
+
+const BranchOperatorInfo& BranchOperatorInfoOf(const Operator* const op) {
+  DCHECK_EQ(IrOpcode::kBranch, op->opcode());
+  return OpParameter<BranchOperatorInfo>(op);
+}
 
 BranchHint BranchHintOf(const Operator* const op) {
-  DCHECK_EQ(IrOpcode::kBranch, op->opcode());
-  return OpParameter<BranchHint>(op);
+  return BranchOperatorInfoOf(op).hint;
 }
 
 int ValueInputCountOfReturn(Operator const* const op) {
@@ -44,7 +61,8 @@ int ValueInputCountOfReturn(Operator const* const op) {
 
 bool operator==(DeoptimizeParameters lhs, DeoptimizeParameters rhs) {
   return lhs.kind() == rhs.kind() && lhs.reason() == rhs.reason() &&
-         lhs.feedback() == rhs.feedback();
+         lhs.feedback() == rhs.feedback() &&
+         lhs.is_safety_check() == rhs.is_safety_check();
 }
 
 bool operator!=(DeoptimizeParameters lhs, DeoptimizeParameters rhs) {
@@ -52,11 +70,12 @@ bool operator!=(DeoptimizeParameters lhs, DeoptimizeParameters rhs) {
 }
 
 size_t hash_value(DeoptimizeParameters p) {
-  return base::hash_combine(p.kind(), p.reason(), p.feedback());
+  return base::hash_combine(p.kind(), p.reason(), p.feedback(),
+                            p.is_safety_check());
 }
 
 std::ostream& operator<<(std::ostream& os, DeoptimizeParameters p) {
-  os << p.kind() << ":" << p.reason();
+  os << p.kind() << ":" << p.reason() << ":" << p.is_safety_check();
   if (p.feedback().IsValid()) {
     os << "; " << p.feedback();
   }
@@ -70,6 +89,32 @@ DeoptimizeParameters const& DeoptimizeParametersOf(Operator const* const op) {
   return OpParameter<DeoptimizeParameters>(op);
 }
 
+IsSafetyCheck IsSafetyCheckOf(const Operator* op) {
+  if (op->opcode() == IrOpcode::kBranch) {
+    return BranchOperatorInfoOf(op).is_safety_check;
+  }
+  return DeoptimizeParametersOf(op).is_safety_check();
+}
+
+const Operator* CommonOperatorBuilder::MarkAsSafetyCheck(const Operator* op) {
+  if (op->opcode() == IrOpcode::kBranch) {
+    BranchOperatorInfo info = BranchOperatorInfoOf(op);
+    if (info.is_safety_check == IsSafetyCheck::kSafetyCheck) return op;
+    return Branch(info.hint, IsSafetyCheck::kSafetyCheck);
+  }
+  DeoptimizeParameters p = DeoptimizeParametersOf(op);
+  if (p.is_safety_check() == IsSafetyCheck::kSafetyCheck) return op;
+  switch (op->opcode()) {
+    case IrOpcode::kDeoptimizeIf:
+      return DeoptimizeIf(p.kind(), p.reason(), p.feedback(),
+                          IsSafetyCheck::kSafetyCheck);
+    case IrOpcode::kDeoptimizeUnless:
+      return DeoptimizeUnless(p.kind(), p.reason(), p.feedback(),
+                              IsSafetyCheck::kSafetyCheck);
+    default:
+      UNREACHABLE();
+  }
+}
 
 bool operator==(SelectParameters const& lhs, SelectParameters const& rhs) {
   return lhs.representation() == rhs.representation() &&
@@ -348,8 +393,7 @@ ZoneVector<MachineType> const* MachineTypesOf(Operator const* op) {
 
 #define COMMON_CACHED_OP_LIST(V)                                              \
   V(Dead, Operator::kFoldable, 0, 0, 0, 1, 1, 1)                              \
-  V(DeadValue, Operator::kFoldable, 0, 0, 0, 1, 0, 0)                         \
-  V(Unreachable, Operator::kFoldable, 0, 1, 1, 0, 1, 0)                       \
+  V(Unreachable, Operator::kFoldable, 0, 1, 1, 1, 1, 0)                       \
   V(IfTrue, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                             \
   V(IfFalse, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                            \
   V(IfSuccess, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                          \
@@ -365,6 +409,14 @@ ZoneVector<MachineType> const* MachineTypesOf(Operator const* op) {
   V(Checkpoint, Operator::kKontrol, 0, 1, 1, 0, 1, 0)                         \
   V(FinishRegion, Operator::kKontrol, 1, 1, 0, 1, 1, 0)                       \
   V(Retain, Operator::kKontrol, 1, 1, 0, 0, 1, 0)
+
+#define CACHED_BRANCH_LIST(V) \
+  V(None, SafetyCheck)        \
+  V(True, SafetyCheck)        \
+  V(False, SafetyCheck)       \
+  V(None, NoSafetyCheck)      \
+  V(True, NoSafetyCheck)      \
+  V(False, NoSafetyCheck)
 
 #define CACHED_RETURN_LIST(V) \
   V(1)                        \
@@ -414,28 +466,32 @@ ZoneVector<MachineType> const* MachineTypesOf(Operator const* op) {
 
 #define CACHED_DEOPTIMIZE_LIST(V)                        \
   V(Eager, MinusZero)                                    \
-  V(Eager, NoReason)                                     \
   V(Eager, WrongMap)                                     \
   V(Soft, InsufficientTypeFeedbackForGenericKeyedAccess) \
   V(Soft, InsufficientTypeFeedbackForGenericNamedAccess)
 
-#define CACHED_DEOPTIMIZE_IF_LIST(V) \
-  V(Eager, DivisionByZero)           \
-  V(Eager, Hole)                     \
-  V(Eager, MinusZero)                \
-  V(Eager, Overflow)                 \
-  V(Eager, Smi)
+#define CACHED_DEOPTIMIZE_IF_LIST(V)      \
+  V(Eager, DivisionByZero, NoSafetyCheck) \
+  V(Eager, DivisionByZero, SafetyCheck)   \
+  V(Eager, Hole, NoSafetyCheck)           \
+  V(Eager, Hole, SafetyCheck)             \
+  V(Eager, MinusZero, NoSafetyCheck)      \
+  V(Eager, MinusZero, SafetyCheck)        \
+  V(Eager, Overflow, NoSafetyCheck)       \
+  V(Eager, Overflow, SafetyCheck)         \
+  V(Eager, Smi, SafetyCheck)
 
-#define CACHED_DEOPTIMIZE_UNLESS_LIST(V) \
-  V(Eager, LostPrecision)                \
-  V(Eager, LostPrecisionOrNaN)           \
-  V(Eager, NoReason)                     \
-  V(Eager, NotAHeapNumber)               \
-  V(Eager, NotANumberOrOddball)          \
-  V(Eager, NotASmi)                      \
-  V(Eager, OutOfBounds)                  \
-  V(Eager, WrongInstanceType)            \
-  V(Eager, WrongMap)
+#define CACHED_DEOPTIMIZE_UNLESS_LIST(V)      \
+  V(Eager, LostPrecision, NoSafetyCheck)      \
+  V(Eager, LostPrecision, SafetyCheck)        \
+  V(Eager, LostPrecisionOrNaN, NoSafetyCheck) \
+  V(Eager, LostPrecisionOrNaN, SafetyCheck)   \
+  V(Eager, NotAHeapNumber, SafetyCheck)       \
+  V(Eager, NotANumberOrOddball, SafetyCheck)  \
+  V(Eager, NotASmi, SafetyCheck)              \
+  V(Eager, OutOfBounds, SafetyCheck)          \
+  V(Eager, WrongInstanceType, SafetyCheck)    \
+  V(Eager, WrongMap, SafetyCheck)
 
 #define CACHED_TRAP_IF_LIST(V) \
   V(TrapDivUnrepresentable)    \
@@ -537,18 +593,20 @@ struct CommonOperatorGlobalCache final {
   CACHED_RETURN_LIST(CACHED_RETURN)
 #undef CACHED_RETURN
 
-  template <BranchHint kBranchHint>
-  struct BranchOperator final : public Operator1<BranchHint> {
+  template <BranchHint hint, IsSafetyCheck is_safety_check>
+  struct BranchOperator final : public Operator1<BranchOperatorInfo> {
     BranchOperator()
-        : Operator1<BranchHint>(                      // --
-              IrOpcode::kBranch, Operator::kKontrol,  // opcode
-              "Branch",                               // name
-              1, 0, 1, 0, 0, 2,                       // counts
-              kBranchHint) {}                         // parameter
+        : Operator1<BranchOperatorInfo>(                     // --
+              IrOpcode::kBranch, Operator::kKontrol,         // opcode
+              "Branch",                                      // name
+              1, 0, 1, 0, 0, 2,                              // counts
+              BranchOperatorInfo{hint, is_safety_check}) {}  // parameter
   };
-  BranchOperator<BranchHint::kNone> kBranchNoneOperator;
-  BranchOperator<BranchHint::kTrue> kBranchTrueOperator;
-  BranchOperator<BranchHint::kFalse> kBranchFalseOperator;
+#define CACHED_BRANCH(Hint, IsCheck)                             \
+  BranchOperator<BranchHint::k##Hint, IsSafetyCheck::k##IsCheck> \
+      kBranch##Hint##IsCheck##Operator;
+  CACHED_BRANCH_LIST(CACHED_BRANCH)
+#undef CACHED_BRANCH
 
   template <int kEffectInputCount>
   struct EffectPhiOperator final : public Operator {
@@ -611,7 +669,8 @@ struct CommonOperatorGlobalCache final {
               Operator::kFoldable | Operator::kNoThrow,  // properties
               "Deoptimize",                              // name
               1, 1, 1, 0, 0, 1,                          // counts
-              DeoptimizeParameters(kKind, kReason, VectorSlotPair())) {}
+              DeoptimizeParameters(kKind, kReason, VectorSlotPair(),
+                                   IsSafetyCheck::kNoSafetyCheck)) {}
   };
 #define CACHED_DEOPTIMIZE(Kind, Reason)                                    \
   DeoptimizeOperator<DeoptimizeKind::k##Kind, DeoptimizeReason::k##Reason> \
@@ -619,7 +678,8 @@ struct CommonOperatorGlobalCache final {
   CACHED_DEOPTIMIZE_LIST(CACHED_DEOPTIMIZE)
 #undef CACHED_DEOPTIMIZE
 
-  template <DeoptimizeKind kKind, DeoptimizeReason kReason>
+  template <DeoptimizeKind kKind, DeoptimizeReason kReason,
+            IsSafetyCheck is_safety_check>
   struct DeoptimizeIfOperator final : public Operator1<DeoptimizeParameters> {
     DeoptimizeIfOperator()
         : Operator1<DeoptimizeParameters>(               // --
@@ -627,15 +687,18 @@ struct CommonOperatorGlobalCache final {
               Operator::kFoldable | Operator::kNoThrow,  // properties
               "DeoptimizeIf",                            // name
               2, 1, 1, 0, 1, 1,                          // counts
-              DeoptimizeParameters(kKind, kReason, VectorSlotPair())) {}
+              DeoptimizeParameters(kKind, kReason, VectorSlotPair(),
+                                   is_safety_check)) {}
   };
-#define CACHED_DEOPTIMIZE_IF(Kind, Reason)                                   \
-  DeoptimizeIfOperator<DeoptimizeKind::k##Kind, DeoptimizeReason::k##Reason> \
-      kDeoptimizeIf##Kind##Reason##Operator;
+#define CACHED_DEOPTIMIZE_IF(Kind, Reason, IsCheck)                          \
+  DeoptimizeIfOperator<DeoptimizeKind::k##Kind, DeoptimizeReason::k##Reason, \
+                       IsSafetyCheck::k##IsCheck>                            \
+      kDeoptimizeIf##Kind##Reason##IsCheck##Operator;
   CACHED_DEOPTIMIZE_IF_LIST(CACHED_DEOPTIMIZE_IF)
 #undef CACHED_DEOPTIMIZE_IF
 
-  template <DeoptimizeKind kKind, DeoptimizeReason kReason>
+  template <DeoptimizeKind kKind, DeoptimizeReason kReason,
+            IsSafetyCheck is_safety_check>
   struct DeoptimizeUnlessOperator final
       : public Operator1<DeoptimizeParameters> {
     DeoptimizeUnlessOperator()
@@ -644,12 +707,14 @@ struct CommonOperatorGlobalCache final {
               Operator::kFoldable | Operator::kNoThrow,  // properties
               "DeoptimizeUnless",                        // name
               2, 1, 1, 0, 1, 1,                          // counts
-              DeoptimizeParameters(kKind, kReason, VectorSlotPair())) {}
+              DeoptimizeParameters(kKind, kReason, VectorSlotPair(),
+                                   is_safety_check)) {}
   };
-#define CACHED_DEOPTIMIZE_UNLESS(Kind, Reason)          \
+#define CACHED_DEOPTIMIZE_UNLESS(Kind, Reason, IsCheck) \
   DeoptimizeUnlessOperator<DeoptimizeKind::k##Kind,     \
-                           DeoptimizeReason::k##Reason> \
-      kDeoptimizeUnless##Kind##Reason##Operator;
+                           DeoptimizeReason::k##Reason, \
+                           IsSafetyCheck::k##IsCheck>   \
+      kDeoptimizeUnless##Kind##Reason##IsCheck##Operator;
   CACHED_DEOPTIMIZE_UNLESS_LIST(CACHED_DEOPTIMIZE_UNLESS)
 #undef CACHED_DEOPTIMIZE_UNLESS
 
@@ -809,16 +874,15 @@ const Operator* CommonOperatorBuilder::Return(int value_input_count) {
       value_input_count + 1, 1, 1, 0, 0, 1);  // counts
 }
 
-
-const Operator* CommonOperatorBuilder::Branch(BranchHint hint) {
-  switch (hint) {
-    case BranchHint::kNone:
-      return &cache_.kBranchNoneOperator;
-    case BranchHint::kTrue:
-      return &cache_.kBranchTrueOperator;
-    case BranchHint::kFalse:
-      return &cache_.kBranchFalseOperator;
+const Operator* CommonOperatorBuilder::Branch(BranchHint hint,
+                                              IsSafetyCheck is_safety_check) {
+#define CACHED_BRANCH(Hint, IsCheck)                  \
+  if (hint == BranchHint::k##Hint &&                  \
+      is_safety_check == IsSafetyCheck::k##IsCheck) { \
+    return &cache_.kBranch##Hint##IsCheck##Operator;  \
   }
+  CACHED_BRANCH_LIST(CACHED_BRANCH)
+#undef CACHED_BRANCH
   UNREACHABLE();
 }
 
@@ -833,7 +897,8 @@ const Operator* CommonOperatorBuilder::Deoptimize(
   CACHED_DEOPTIMIZE_LIST(CACHED_DEOPTIMIZE)
 #undef CACHED_DEOPTIMIZE
   // Uncached
-  DeoptimizeParameters parameter(kind, reason, feedback);
+  DeoptimizeParameters parameter(kind, reason, feedback,
+                                 IsSafetyCheck::kNoSafetyCheck);
   return new (zone()) Operator1<DeoptimizeParameters>(  // --
       IrOpcode::kDeoptimize,                            // opcodes
       Operator::kFoldable | Operator::kNoThrow,         // properties
@@ -844,16 +909,17 @@ const Operator* CommonOperatorBuilder::Deoptimize(
 
 const Operator* CommonOperatorBuilder::DeoptimizeIf(
     DeoptimizeKind kind, DeoptimizeReason reason,
-    VectorSlotPair const& feedback) {
-#define CACHED_DEOPTIMIZE_IF(Kind, Reason)                            \
-  if (kind == DeoptimizeKind::k##Kind &&                              \
-      reason == DeoptimizeReason::k##Reason && !feedback.IsValid()) { \
-    return &cache_.kDeoptimizeIf##Kind##Reason##Operator;             \
+    VectorSlotPair const& feedback, IsSafetyCheck is_safety_check) {
+#define CACHED_DEOPTIMIZE_IF(Kind, Reason, IsCheck)                          \
+  if (kind == DeoptimizeKind::k##Kind &&                                     \
+      reason == DeoptimizeReason::k##Reason &&                               \
+      is_safety_check == IsSafetyCheck::k##IsCheck && !feedback.IsValid()) { \
+    return &cache_.kDeoptimizeIf##Kind##Reason##IsCheck##Operator;           \
   }
   CACHED_DEOPTIMIZE_IF_LIST(CACHED_DEOPTIMIZE_IF)
 #undef CACHED_DEOPTIMIZE_IF
   // Uncached
-  DeoptimizeParameters parameter(kind, reason, feedback);
+  DeoptimizeParameters parameter(kind, reason, feedback, is_safety_check);
   return new (zone()) Operator1<DeoptimizeParameters>(  // --
       IrOpcode::kDeoptimizeIf,                          // opcode
       Operator::kFoldable | Operator::kNoThrow,         // properties
@@ -864,16 +930,17 @@ const Operator* CommonOperatorBuilder::DeoptimizeIf(
 
 const Operator* CommonOperatorBuilder::DeoptimizeUnless(
     DeoptimizeKind kind, DeoptimizeReason reason,
-    VectorSlotPair const& feedback) {
-#define CACHED_DEOPTIMIZE_UNLESS(Kind, Reason)                        \
-  if (kind == DeoptimizeKind::k##Kind &&                              \
-      reason == DeoptimizeReason::k##Reason && !feedback.IsValid()) { \
-    return &cache_.kDeoptimizeUnless##Kind##Reason##Operator;         \
+    VectorSlotPair const& feedback, IsSafetyCheck is_safety_check) {
+#define CACHED_DEOPTIMIZE_UNLESS(Kind, Reason, IsCheck)                      \
+  if (kind == DeoptimizeKind::k##Kind &&                                     \
+      reason == DeoptimizeReason::k##Reason &&                               \
+      is_safety_check == IsSafetyCheck::k##IsCheck && !feedback.IsValid()) { \
+    return &cache_.kDeoptimizeUnless##Kind##Reason##IsCheck##Operator;       \
   }
   CACHED_DEOPTIMIZE_UNLESS_LIST(CACHED_DEOPTIMIZE_UNLESS)
 #undef CACHED_DEOPTIMIZE_UNLESS
   // Uncached
-  DeoptimizeParameters parameter(kind, reason, feedback);
+  DeoptimizeParameters parameter(kind, reason, feedback, is_safety_check);
   return new (zone()) Operator1<DeoptimizeParameters>(  // --
       IrOpcode::kDeoptimizeUnless,                      // opcode
       Operator::kFoldable | Operator::kNoThrow,         // properties
@@ -1139,7 +1206,7 @@ const Operator* CommonOperatorBuilder::TypeGuard(Type* type) {
   return new (zone()) Operator1<Type*>(       // --
       IrOpcode::kTypeGuard, Operator::kPure,  // opcode
       "TypeGuard",                            // name
-      1, 0, 1, 1, 0, 0,                       // counts
+      1, 1, 1, 1, 1, 0,                       // counts
       type);                                  // parameter
 }
 
@@ -1286,6 +1353,11 @@ uint32_t ObjectIdOf(Operator const* op) {
   }
 }
 
+MachineRepresentation DeadValueRepresentationOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kDeadValue, op->opcode());
+  return OpParameter<MachineRepresentation>(op);
+}
+
 const Operator* CommonOperatorBuilder::FrameState(
     BailoutId bailout_id, OutputFrameStateCombine state_combine,
     const FrameStateFunctionInfo* function_info) {
@@ -1401,7 +1473,16 @@ CommonOperatorBuilder::CreateFrameStateFunctionInfo(
       FrameStateFunctionInfo(type, parameter_count, local_count, shared_info);
 }
 
+const Operator* CommonOperatorBuilder::DeadValue(MachineRepresentation rep) {
+  return new (zone()) Operator1<MachineRepresentation>(  // --
+      IrOpcode::kDeadValue, Operator::kPure,             // opcode
+      "DeadValue",                                       // name
+      1, 0, 0, 1, 0, 0,                                  // counts
+      rep);                                              // parameter
+}
+
 #undef COMMON_CACHED_OP_LIST
+#undef CACHED_BRANCH_LIST
 #undef CACHED_RETURN_LIST
 #undef CACHED_END_LIST
 #undef CACHED_EFFECT_PHI_LIST

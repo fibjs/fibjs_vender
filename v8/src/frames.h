@@ -30,6 +30,9 @@ class RootVisitor;
 class StackFrameIteratorBase;
 class ThreadLocalTop;
 class WasmInstanceObject;
+class WasmSharedModuleData;
+class WasmDebugInfo;
+class WasmCompiledModule;
 
 class InnerPointerToCodeCache {
  public:
@@ -286,9 +289,8 @@ class StackFrame BASE_EMBEDDED {
 
   // Printing support.
   enum PrintMode { OVERVIEW, DETAILS };
-  virtual void Print(StringStream* accumulator,
-                     PrintMode mode,
-                     int index) const { }
+  virtual void Print(StringStream* accumulator, PrintMode mode,
+                     int index) const;
 
   Isolate* isolate() const { return isolate_; }
 
@@ -704,6 +706,7 @@ class JavaScriptFrame : public StandardFrame {
 
   // Accessors.
   virtual JSFunction* function() const;
+  Object* unchecked_function() const;
   Object* receiver() const override;
   Object* context() const override;
   Script* script() const override;
@@ -889,6 +892,11 @@ class InterpretedFrame : public JavaScriptFrame {
 
   static int GetBytecodeOffset(Address fp);
 
+  static InterpretedFrame* cast(StackFrame* frame) {
+    DCHECK(frame->is_interpreted());
+    return static_cast<InterpretedFrame*>(frame);
+  }
+
  protected:
   inline explicit InterpretedFrame(StackFrameIteratorBase* iterator);
 
@@ -967,7 +975,8 @@ class WasmCompiledFrame final : public StandardFrame {
   Code* unchecked_code() const override;
 
   // Accessors.
-  WasmInstanceObject* wasm_instance() const;
+  WasmInstanceObject* wasm_instance() const;  // TODO(titzer): deprecate.
+  WasmCodeWrapper wasm_code() const;
   uint32_t function_index() const;
   Script* script() const override;
   int position() const override;
@@ -987,6 +996,8 @@ class WasmCompiledFrame final : public StandardFrame {
 
  private:
   friend class StackFrameIteratorBase;
+  WasmCompiledModule* compiled_module() const;
+  WasmSharedModuleData* shared() const;
 };
 
 class WasmInterpreterEntryFrame final : public StandardFrame {
@@ -1006,7 +1017,9 @@ class WasmInterpreterEntryFrame final : public StandardFrame {
   Code* unchecked_code() const override;
 
   // Accessors.
-  WasmInstanceObject* wasm_instance() const;
+  WasmDebugInfo* debug_info() const;
+  WasmInstanceObject* wasm_instance() const;  // TODO(titzer): deprecate.
+
   Script* script() const override;
   int position() const override;
   Object* context() const override;
@@ -1023,6 +1036,8 @@ class WasmInterpreterEntryFrame final : public StandardFrame {
 
  private:
   friend class StackFrameIteratorBase;
+  WasmCompiledModule* compiled_module() const;
+  WasmSharedModuleData* shared() const;
 };
 
 class WasmToJsFrame : public StubFrame {

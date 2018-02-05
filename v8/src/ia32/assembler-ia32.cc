@@ -659,6 +659,13 @@ void Assembler::mov(const Operand& dst, const Immediate& x) {
   emit(x);
 }
 
+void Assembler::mov(const Operand& dst, Address src, RelocInfo::Mode rmode) {
+  EnsureSpace ensure_space(this);
+  EMIT(0xC7);
+  emit_operand(eax, dst);
+  emit(reinterpret_cast<uint32_t>(src), rmode);
+}
+
 void Assembler::mov(const Operand& dst, Handle<HeapObject> handle) {
   EnsureSpace ensure_space(this);
   EMIT(0xC7);
@@ -798,6 +805,19 @@ void Assembler::cmpxchg_w(const Operand& dst, Register src) {
   EMIT(0x0F);
   EMIT(0xB1);
   emit_operand(src, dst);
+}
+
+void Assembler::lfence() {
+  EnsureSpace ensure_space(this);
+  EMIT(0x0F);
+  EMIT(0xAE);
+  EMIT(0xE8);
+}
+
+void Assembler::pause() {
+  EnsureSpace ensure_space(this);
+  EMIT(0xF3);
+  EMIT(0x90);
 }
 
 void Assembler::adc(Register dst, int32_t imm32) {

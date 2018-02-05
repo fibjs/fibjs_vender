@@ -278,10 +278,12 @@ class ObjectDescriptor {
   void IncPropertiesCount() { ++property_count_; }
   void IncElementsCount() { ++element_count_; }
 
-  bool has_computed_properties() const { return computed_count_ != 0; }
+  bool HasDictionaryProperties() const {
+    return computed_count_ > 0 || property_count_ > kMaxNumberOfDescriptors;
+  }
 
   Handle<Object> properties_template() const {
-    return has_computed_properties()
+    return HasDictionaryProperties()
                ? Handle<Object>::cast(properties_dictionary_template_)
                : Handle<Object>::cast(descriptor_array_template_);
   }
@@ -298,8 +300,8 @@ class ObjectDescriptor {
     Factory* factory = isolate->factory();
     descriptor_array_template_ = factory->empty_descriptor_array();
     properties_dictionary_template_ = factory->empty_property_dictionary();
-    if (property_count_ || has_computed_properties() || slack) {
-      if (has_computed_properties()) {
+    if (property_count_ || HasDictionaryProperties() || slack) {
+      if (HasDictionaryProperties()) {
         properties_dictionary_template_ = NameDictionary::New(
             isolate, property_count_ + computed_count_ + slack);
       } else {
@@ -325,7 +327,7 @@ class ObjectDescriptor {
                    PropertyAttributes attribs) {
     bool is_accessor = value->IsAccessorInfo();
     DCHECK(!value->IsAccessorPair());
-    if (has_computed_properties()) {
+    if (HasDictionaryProperties()) {
       PropertyKind kind = is_accessor ? i::kAccessor : i::kData;
       PropertyDetails details(kind, attribs, PropertyCellType::kNoCell,
                               next_enumeration_index_++);
@@ -344,7 +346,7 @@ class ObjectDescriptor {
                         ClassBoilerplate::ValueKind value_kind,
                         int value_index) {
     Smi* value = Smi::FromInt(value_index);
-    if (has_computed_properties()) {
+    if (HasDictionaryProperties()) {
       UpdateNextEnumerationIndex(value_index);
       AddToDictionaryTemplate(isolate, properties_dictionary_template_, name,
                               value_index, value_kind, value);
@@ -378,7 +380,7 @@ class ObjectDescriptor {
   }
 
   void Finalize(Isolate* isolate) {
-    if (has_computed_properties()) {
+    if (HasDictionaryProperties()) {
       properties_dictionary_template_->SetNextEnumerationIndex(
           next_enumeration_index_);
 
@@ -421,6 +423,10 @@ void ClassBoilerplate::AddToElementsTemplate(
 
 Handle<ClassBoilerplate> ClassBoilerplate::BuildClassBoilerplate(
     Isolate* isolate, ClassLiteral* expr) {
+  // Create a non-caching handle scope to ensure that the temporary handle used
+  // by ObjectDescriptor for passing Smis around does not corrupt handle cache
+  // in CanonicalHandleScope.
+  HandleScope scope(isolate);
   Factory* factory = isolate->factory();
   ObjectDescriptor static_desc;
   ObjectDescriptor instance_desc;
@@ -507,10 +513,13 @@ Handle<ClassBoilerplate> ClassBoilerplate::BuildClassBoilerplate(
       case ClassLiteral::Property::SETTER:
         value_kind = ClassBoilerplate::kSetter;
         break;
-      case ClassLiteral::Property::FIELD:
+      case ClassLiteral::Property::PUBLIC_FIELD:
         if (property->is_computed_name()) {
           ++dynamic_argument_index;
         }
+        continue;
+      case ClassLiteral::Property::PRIVATE_FIELD:
+        DCHECK(!property->is_computed_name());
         continue;
     }
 
@@ -540,7 +549,7 @@ Handle<ClassBoilerplate> ClassBoilerplate::BuildClassBoilerplate(
   bool install_class_name_accessor = false;
   if (!expr->has_name_static_property() &&
       expr->constructor()->has_shared_name()) {
-    if (static_desc.has_computed_properties()) {
+    if (static_desc.HasDictionaryProperties()) {
       // Install class name accessor if necessary during class literal
       // instantiation.
       install_class_name_accessor = true;
@@ -578,7 +587,7 @@ Handle<ClassBoilerplate> ClassBoilerplate::BuildClassBoilerplate(
   class_boilerplate->set_instance_computed_properties(
       *instance_desc.computed_properties());
 
-  return class_boilerplate;
+  return scope.CloseAndEscape(class_boilerplate);
 }
 
 }  // namespace internal

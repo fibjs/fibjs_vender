@@ -311,7 +311,7 @@ ClassLiteralProperty::ClassLiteralProperty(Expression* key, Expression* value,
     : LiteralProperty(key, value, is_computed_name),
       kind_(kind),
       is_static_(is_static),
-      computed_name_var_(nullptr) {}
+      private_or_computed_name_var_(nullptr) {}
 
 bool ObjectLiteral::Property::IsCompileTimeValue() const {
   return kind_ == CONSTANT ||
@@ -803,6 +803,10 @@ Call::CallType Call::GetCallType() const {
     } else {
       return is_super ? KEYED_SUPER_PROPERTY_CALL : KEYED_PROPERTY_CALL;
     }
+  }
+
+  if (expression()->IsResolvedProperty()) {
+    return RESOLVED_PROPERTY_CALL;
   }
 
   return OTHER_CALL;

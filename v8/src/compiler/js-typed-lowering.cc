@@ -707,8 +707,9 @@ Reduction JSTypedLowering::ReduceCreateConsString(Node* node) {
       Revisit(graph()->end());
     }
     control = graph()->NewNode(common()->IfTrue(), branch);
-    length = graph()->NewNode(
-        common()->TypeGuard(type_cache_.kStringLengthType), length, control);
+    length = effect =
+        graph()->NewNode(common()->TypeGuard(type_cache_.kStringLengthType),
+                         length, effect, control);
   }
 
   Node* value =
@@ -1045,7 +1046,9 @@ Reduction JSTypedLowering::ReduceJSToStringInput(Node* input) {
     return Replace(jsgraph()->HeapConstant(
         factory()->NumberToString(factory()->NewNumber(input_type->Min()))));
   }
-  // TODO(turbofan): js-typed-lowering of ToString(x:number)
+  if (input_type->Is(Type::Number())) {
+    return Replace(graph()->NewNode(simplified()->NumberToString(), input));
+  }
   return NoChange();
 }
 
@@ -1773,7 +1776,7 @@ Reduction JSTypedLowering::ReduceJSForInNext(Node* node) {
       Node* check = graph()->NewNode(simplified()->ReferenceEqual(),
                                      receiver_map, cache_type);
       effect =
-          graph()->NewNode(simplified()->CheckIf(DeoptimizeReason::kNoReason),
+          graph()->NewNode(simplified()->CheckIf(DeoptimizeReason::kWrongMap),
                            check, effect, control);
 
       // Since the change to LoadElement() below is effectful, we connect
@@ -2066,6 +2069,21 @@ Reduction JSTypedLowering::ReduceJSGeneratorRestoreContinuation(Node* node) {
   return Changed(continuation);
 }
 
+Reduction JSTypedLowering::ReduceJSGeneratorRestoreContext(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSGeneratorRestoreContext, node->opcode());
+
+  const Operator* new_op =
+      simplified()->LoadField(AccessBuilder::ForJSGeneratorObjectContext());
+
+  // Mutate the node in-place.
+  DCHECK(OperatorProperties::HasContextInput(node->op()));
+  DCHECK(!OperatorProperties::HasContextInput(new_op));
+  node->RemoveInput(NodeProperties::FirstContextIndex(node));
+
+  NodeProperties::ChangeOp(node, new_op);
+  return Changed(node);
+}
+
 Reduction JSTypedLowering::ReduceJSGeneratorRestoreRegister(Node* node) {
   DCHECK_EQ(IrOpcode::kJSGeneratorRestoreRegister, node->opcode());
   Node* generator = NodeProperties::GetValueInput(node, 0);
@@ -2086,6 +2104,22 @@ Reduction JSTypedLowering::ReduceJSGeneratorRestoreRegister(Node* node) {
 
   ReplaceWithValue(node, element, effect, control);
   return Changed(element);
+}
+
+Reduction JSTypedLowering::ReduceJSGeneratorRestoreInputOrDebugPos(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSGeneratorRestoreInputOrDebugPos, node->opcode());
+
+  FieldAccess input_or_debug_pos_field =
+      AccessBuilder::ForJSGeneratorObjectInputOrDebugPos();
+  const Operator* new_op = simplified()->LoadField(input_or_debug_pos_field);
+
+  // Mutate the node in-place.
+  DCHECK(OperatorProperties::HasContextInput(node->op()));
+  DCHECK(!OperatorProperties::HasContextInput(new_op));
+  node->RemoveInput(NodeProperties::FirstContextIndex(node));
+
+  NodeProperties::ChangeOp(node, new_op);
+  return Changed(node);
 }
 
 Reduction JSTypedLowering::Reduce(Node* node) {
@@ -2171,8 +2205,12 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSGeneratorStore(node);
     case IrOpcode::kJSGeneratorRestoreContinuation:
       return ReduceJSGeneratorRestoreContinuation(node);
+    case IrOpcode::kJSGeneratorRestoreContext:
+      return ReduceJSGeneratorRestoreContext(node);
     case IrOpcode::kJSGeneratorRestoreRegister:
       return ReduceJSGeneratorRestoreRegister(node);
+    case IrOpcode::kJSGeneratorRestoreInputOrDebugPos:
+      return ReduceJSGeneratorRestoreInputOrDebugPos(node);
     // TODO(mstarzinger): Simplified operations hiding in JS-level reducer not
     // fooling anyone. Consider moving this into a separate reducer.
     case IrOpcode::kSpeculativeNumberAdd:

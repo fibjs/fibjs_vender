@@ -168,7 +168,7 @@ Reduction JSNativeContextSpecialization::ReduceJSInstanceOf(Node* node) {
   if (m.HasValue() && m.Value()->IsJSObject()) {
     receiver = Handle<JSObject>::cast(m.Value());
   } else if (p.feedback().IsValid()) {
-    InstanceOfICNexus nexus(p.feedback().vector(), p.feedback().slot());
+    FeedbackNexus nexus(p.feedback().vector(), p.feedback().slot());
     if (!nexus.GetConstructorFeedback().ToHandle(&receiver)) return NoChange();
   } else {
     return NoChange();
@@ -1007,9 +1007,9 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadNamed(Node* node) {
     }
   }
 
-  // Extract receiver maps from the load IC using the LoadICNexus.
+  // Extract receiver maps from the load IC using the FeedbackNexus.
   if (!p.feedback().IsValid()) return NoChange();
-  LoadICNexus nexus(p.feedback().vector(), p.feedback().slot());
+  FeedbackNexus nexus(p.feedback().vector(), p.feedback().slot());
 
   // Try to lower the named access based on the {receiver_maps}.
   return ReduceNamedAccessFromNexus(node, value, nexus, p.name(),
@@ -1022,9 +1022,9 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreNamed(Node* node) {
   NamedAccess const& p = NamedAccessOf(node->op());
   Node* const value = NodeProperties::GetValueInput(node, 1);
 
-  // Extract receiver maps from the store IC using the StoreICNexus.
+  // Extract receiver maps from the store IC using the FeedbackNexus.
   if (!p.feedback().IsValid()) return NoChange();
-  StoreICNexus nexus(p.feedback().vector(), p.feedback().slot());
+  FeedbackNexus nexus(p.feedback().vector(), p.feedback().slot());
 
   // Try to lower the named access based on the {receiver_maps}.
   return ReduceNamedAccessFromNexus(node, value, nexus, p.name(),
@@ -1036,9 +1036,9 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreNamedOwn(Node* node) {
   StoreNamedOwnParameters const& p = StoreNamedOwnParametersOf(node->op());
   Node* const value = NodeProperties::GetValueInput(node, 1);
 
-  // Extract receiver maps from the IC using the StoreOwnICNexus.
+  // Extract receiver maps from the IC using the FeedbackNexus.
   if (!p.feedback().IsValid()) return NoChange();
-  StoreOwnICNexus nexus(p.feedback().vector(), p.feedback().slot());
+  FeedbackNexus nexus(p.feedback().vector(), p.feedback().slot());
 
   // Try to lower the creation of a named property based on the {receiver_maps}.
   return ReduceNamedAccessFromNexus(node, value, nexus, p.name(),
@@ -1264,9 +1264,8 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
   return Replace(value);
 }
 
-template <typename KeyedICNexus>
 Reduction JSNativeContextSpecialization::ReduceKeyedAccess(
-    Node* node, Node* index, Node* value, KeyedICNexus const& nexus,
+    Node* node, Node* index, Node* value, FeedbackNexus const& nexus,
     AccessMode access_mode, KeyedAccessLoadMode load_mode,
     KeyedAccessStoreMode store_mode) {
   DCHECK(node->opcode() == IrOpcode::kJSLoadProperty ||
@@ -1503,7 +1502,7 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadProperty(Node* node) {
           Node* check = graph()->NewNode(simplified()->ReferenceEqual(),
                                          receiver_map, enumerator);
           effect = graph()->NewNode(
-              simplified()->CheckIf(DeoptimizeReason::kNoReason), check, effect,
+              simplified()->CheckIf(DeoptimizeReason::kWrongMap), check, effect,
               control);
         }
 
@@ -1524,9 +1523,9 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadProperty(Node* node) {
             simplified()->BooleanNot(),
             graph()->NewNode(simplified()->ReferenceEqual(), enum_indices,
                              jsgraph()->EmptyFixedArrayConstant()));
-        effect =
-            graph()->NewNode(simplified()->CheckIf(DeoptimizeReason::kNoReason),
-                             check, effect, control);
+        effect = graph()->NewNode(
+            simplified()->CheckIf(DeoptimizeReason::kWrongEnumIndices), check,
+            effect, control);
 
         // Determine the index from the {enum_indices}.
         index = effect = graph()->NewNode(
@@ -1543,9 +1542,9 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadProperty(Node* node) {
     }
   }
 
-  // Extract receiver maps from the keyed load IC using the KeyedLoadICNexus.
+  // Extract receiver maps from the keyed load IC using the FeedbackNexus.
   if (!p.feedback().IsValid()) return NoChange();
-  KeyedLoadICNexus nexus(p.feedback().vector(), p.feedback().slot());
+  FeedbackNexus nexus(p.feedback().vector(), p.feedback().slot());
 
   // Extract the keyed access load mode from the keyed load IC.
   KeyedAccessLoadMode load_mode = nexus.GetKeyedAccessLoadMode();
@@ -1561,9 +1560,9 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreProperty(Node* node) {
   Node* const index = NodeProperties::GetValueInput(node, 1);
   Node* const value = NodeProperties::GetValueInput(node, 2);
 
-  // Extract receiver maps from the keyed store IC using the KeyedStoreICNexus.
+  // Extract receiver maps from the keyed store IC using the FeedbackNexus.
   if (!p.feedback().IsValid()) return NoChange();
-  KeyedStoreICNexus nexus(p.feedback().vector(), p.feedback().slot());
+  FeedbackNexus nexus(p.feedback().vector(), p.feedback().slot());
 
   // Extract the keyed access store mode from the keyed store IC.
   KeyedAccessStoreMode store_mode = nexus.GetKeyedAccessStoreMode();
@@ -1774,7 +1773,7 @@ JSNativeContextSpecialization::BuildPropertyStore(
     Node* check =
         graph()->NewNode(simplified()->ReferenceEqual(), value, constant_value);
     effect =
-        graph()->NewNode(simplified()->CheckIf(DeoptimizeReason::kNoReason),
+        graph()->NewNode(simplified()->CheckIf(DeoptimizeReason::kWrongValue),
                          check, effect, control);
     value = constant_value;
   } else if (access_info.IsAccessorConstant()) {
@@ -1852,8 +1851,8 @@ JSNativeContextSpecialization::BuildPropertyStore(
           Node* check = graph()->NewNode(simplified()->NumberEqual(),
                                          current_value, value);
           effect = graph()->NewNode(
-              simplified()->CheckIf(DeoptimizeReason::kNoReason), check, effect,
-              control);
+              simplified()->CheckIf(DeoptimizeReason::kWrongValue), check,
+              effect, control);
           return ValueEffectControl(value, effect, control);
         }
         break;
@@ -1871,8 +1870,8 @@ JSNativeContextSpecialization::BuildPropertyStore(
           Node* check = graph()->NewNode(simplified()->ReferenceEqual(),
                                          current_value, value);
           effect = graph()->NewNode(
-              simplified()->CheckIf(DeoptimizeReason::kNoReason), check, effect,
-              control);
+              simplified()->CheckIf(DeoptimizeReason::kWrongValue), check,
+              effect, control);
           return ValueEffectControl(value, effect, control);
         }
 
@@ -1960,8 +1959,7 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreDataPropertyInLiteral(
 
   if (!p.feedback().IsValid()) return NoChange();
 
-  StoreDataPropertyInLiteralICNexus nexus(p.feedback().vector(),
-                                          p.feedback().slot());
+  FeedbackNexus nexus(p.feedback().vector(), p.feedback().slot());
   if (nexus.IsUninitialized()) {
     return NoChange();
   }
@@ -2007,7 +2005,7 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreDataPropertyInLiteral(
   Node* name = NodeProperties::GetValueInput(node, 1);
   Node* check = graph()->NewNode(simplified()->ReferenceEqual(), name,
                                  jsgraph()->HeapConstant(cached_name));
-  effect = graph()->NewNode(simplified()->CheckIf(DeoptimizeReason::kNoReason),
+  effect = graph()->NewNode(simplified()->CheckIf(DeoptimizeReason::kWrongName),
                             check, effect, control);
 
   Node* value = NodeProperties::GetValueInput(node, 2);
@@ -2246,10 +2244,11 @@ JSNativeContextSpecialization::BuildElementAccess(
         simplified()->LoadField(AccessBuilder::ForJSObjectElements()), receiver,
         effect, control);
 
-    // Don't try to store to a copy-on-write backing store.
+    // Don't try to store to a copy-on-write backing store (unless supported by
+    // the store mode).
     if (access_mode == AccessMode::kStore &&
         IsSmiOrObjectElementsKind(elements_kind) &&
-        store_mode != STORE_NO_TRANSITION_HANDLE_COW) {
+        !IsCOWHandlingStoreMode(store_mode)) {
       effect = graph()->NewNode(
           simplified()->CheckMaps(
               CheckMapsFlag::kNone,
@@ -2459,6 +2458,15 @@ JSNativeContextSpecialization::BuildElementAccess(
             simplified()->MaybeGrowFastElements(mode, VectorSlotPair()),
             receiver, elements, index, elements_length, effect, control);
 
+        // If we didn't grow {elements}, it might still be COW, in which case we
+        // copy it now.
+        if (IsSmiOrObjectElementsKind(elements_kind) &&
+            store_mode == STORE_AND_GROW_NO_TRANSITION_HANDLE_COW) {
+          elements = effect =
+              graph()->NewNode(simplified()->EnsureWritableFastElements(),
+                               receiver, elements, effect, control);
+        }
+
         // Also update the "length" property if {receiver} is a JSArray.
         if (receiver_is_jsarray) {
           Node* check =
@@ -2524,13 +2532,16 @@ Node* JSNativeContextSpecialization::BuildIndexedStringLoad(
         graph()->NewNode(simplified()->MaskIndexWithBound(), index, length);
 
     Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
-    Node* vtrue = graph()->NewNode(simplified()->StringCharAt(), receiver,
-                                   masked_index, if_true);
+    Node* etrue;
+    Node* vtrue = etrue = graph()->NewNode(
+        simplified()->StringCharAt(), receiver, masked_index, *effect, if_true);
 
     Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
     Node* vfalse = jsgraph()->UndefinedConstant();
 
     *control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+    *effect =
+        graph()->NewNode(common()->EffectPhi(2), etrue, *effect, *control);
     return graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
                             vtrue, vfalse, *control);
   } else {
@@ -2543,8 +2554,10 @@ Node* JSNativeContextSpecialization::BuildIndexedStringLoad(
         graph()->NewNode(simplified()->MaskIndexWithBound(), index, length);
 
     // Return the character from the {receiver} as single character string.
-    return graph()->NewNode(simplified()->StringCharAt(), receiver,
-                            masked_index, *control);
+    Node* value = *effect =
+        graph()->NewNode(simplified()->StringCharAt(), receiver, masked_index,
+                         *effect, *control);
+    return value;
   }
 }
 
@@ -2584,8 +2597,8 @@ Node* JSNativeContextSpecialization::BuildExtendPropertiesBackingStore(
         common()->Select(MachineRepresentation::kTaggedSigned),
         graph()->NewNode(simplified()->ObjectIsSmi(), properties), properties,
         jsgraph()->SmiConstant(PropertyArray::kNoHashSentinel));
-    hash = graph()->NewNode(common()->TypeGuard(Type::SignedSmall()), hash,
-                            control);
+    hash = effect = graph()->NewNode(common()->TypeGuard(Type::SignedSmall()),
+                                     hash, effect, control);
     hash =
         graph()->NewNode(simplified()->NumberShiftLeft(), hash,
                          jsgraph()->Constant(PropertyArray::HashField::kShift));

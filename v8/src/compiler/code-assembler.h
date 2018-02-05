@@ -404,6 +404,7 @@ class SloppyTNode : public TNode<T> {
   V(IntPtrEqual, BoolT, WordT, WordT)                     \
   V(Uint32LessThan, BoolT, Word32T, Word32T)              \
   V(Uint32LessThanOrEqual, BoolT, Word32T, Word32T)       \
+  V(Uint32GreaterThan, BoolT, Word32T, Word32T)           \
   V(Uint32GreaterThanOrEqual, BoolT, Word32T, Word32T)    \
   V(UintPtrLessThan, BoolT, WordT, WordT)                 \
   V(UintPtrLessThanOrEqual, BoolT, WordT, WordT)          \
@@ -491,6 +492,7 @@ TNode<Float64T> Float64Add(TNode<Float64T> a, TNode<Float64T> b);
   V(Float64RoundTruncate, Float64T, Float64T)                  \
   V(Word32Clz, Int32T, Word32T)                                \
   V(Word32Not, Word32T, Word32T)                               \
+  V(WordNot, WordT, WordT)                                     \
   V(Int32AbsWithOverflow, PAIR_TYPE(Int32T, BoolT), Int32T)    \
   V(Int64AbsWithOverflow, PAIR_TYPE(Int64T, BoolT), Int64T)    \
   V(IntPtrAbsWithOverflow, PAIR_TYPE(IntPtrT, BoolT), IntPtrT) \
@@ -651,6 +653,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   TNode<ExternalReference> ExternalConstant(ExternalReference address);
   TNode<Float64T> Float64Constant(double value);
   TNode<HeapNumber> NaNConstant();
+  TNode<BoolT> Int32TrueConstant() {
+    return ReinterpretCast<BoolT>(Int32Constant(1));
+  }
+  TNode<BoolT> Int32FalseConstant() {
+    return ReinterpretCast<BoolT>(Int32Constant(0));
+  }
 
   bool ToInt32Constant(Node* node, int32_t& out_value);
   bool ToInt64Constant(Node* node, int64_t& out_value);

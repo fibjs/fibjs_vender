@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_OBJECTS_INL_H_
-#define V8_WASM_OBJECTS_INL_H_
+#ifndef V8_WASM_WASM_OBJECTS_INL_H_
+#define V8_WASM_WASM_OBJECTS_INL_H_
 
 #include "src/heap/heap-inl.h"
 #include "src/wasm/wasm-objects.h"
@@ -56,8 +56,6 @@ OPTIONAL_ACCESSORS(WasmInstanceObject, table_object, WasmTableObject,
                    kTableObjectOffset)
 OPTIONAL_ACCESSORS(WasmInstanceObject, function_tables, FixedArray,
                    kFunctionTablesOffset)
-OPTIONAL_ACCESSORS(WasmInstanceObject, signature_tables, FixedArray,
-                   kSignatureTablesOffset)
 ACCESSORS(WasmInstanceObject, directly_called_instances, FixedArray,
           kDirectlyCalledInstancesOffset)
 ACCESSORS(WasmInstanceObject, js_imports_table, FixedArray,
@@ -160,4 +158,4 @@ void WasmCompiledModule::ReplaceCodeTableForTesting(
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_WASM_OBJECTS_INL_H_
+#endif  // V8_WASM_WASM_OBJECTS_INL_H_

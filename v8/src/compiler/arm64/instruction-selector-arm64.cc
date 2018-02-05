@@ -765,57 +765,6 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) { UNREACHABLE(); }
 // Architecture supports unaligned access, therefore VisitStore is used instead
 void InstructionSelector::VisitUnalignedStore(Node* node) { UNREACHABLE(); }
 
-void InstructionSelector::VisitCheckedLoad(Node* node) {
-  CheckedLoadRepresentation load_rep = CheckedLoadRepresentationOf(node->op());
-  Arm64OperandGenerator g(this);
-  Node* const buffer = node->InputAt(0);
-  Node* const offset = node->InputAt(1);
-  Node* const length = node->InputAt(2);
-  ArchOpcode opcode = kArchNop;
-  switch (load_rep.representation()) {
-    case MachineRepresentation::kWord8:
-      opcode = load_rep.IsSigned() ? kCheckedLoadInt8 : kCheckedLoadUint8;
-      break;
-    case MachineRepresentation::kWord16:
-      opcode = load_rep.IsSigned() ? kCheckedLoadInt16 : kCheckedLoadUint16;
-      break;
-    case MachineRepresentation::kWord32:
-      opcode = kCheckedLoadWord32;
-      break;
-    case MachineRepresentation::kWord64:
-      opcode = kCheckedLoadWord64;
-      break;
-    case MachineRepresentation::kFloat32:
-      opcode = kCheckedLoadFloat32;
-      break;
-    case MachineRepresentation::kFloat64:
-      opcode = kCheckedLoadFloat64;
-      break;
-    case MachineRepresentation::kBit:      // Fall through.
-    case MachineRepresentation::kTaggedSigned:   // Fall through.
-    case MachineRepresentation::kTaggedPointer:  // Fall through.
-    case MachineRepresentation::kTagged:   // Fall through.
-    case MachineRepresentation::kSimd128:  // Fall through.
-    case MachineRepresentation::kNone:
-      UNREACHABLE();
-      return;
-  }
-  // If the length is a constant power of two, allow the code generator to
-  // pick a more efficient bounds check sequence by passing the length as an
-  // immediate.
-  if (length->opcode() == IrOpcode::kInt32Constant) {
-    Int32Matcher m(length);
-    if (m.IsPowerOf2()) {
-      Emit(opcode, g.DefineAsRegister(node), g.UseRegister(buffer),
-           g.UseRegister(offset), g.UseImmediate(length));
-      return;
-    }
-  }
-  Emit(opcode, g.DefineAsRegister(node), g.UseRegister(buffer),
-       g.UseRegister(offset), g.UseOperand(length, kArithmeticImm));
-}
-
-
 template <typename Matcher>
 static void VisitLogical(InstructionSelector* selector, Node* node, Matcher* m,
                          ArchOpcode opcode, bool left_can_cover,
@@ -1313,6 +1262,11 @@ void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitWord64Popcnt(Node* node) { UNREACHABLE(); }
 
+void InstructionSelector::VisitSpeculationFence(Node* node) {
+  Arm64OperandGenerator g(this);
+  Emit(kArm64DsbIsb, g.NoOutput());
+}
+
 void InstructionSelector::VisitInt32Add(Node* node) {
   Arm64OperandGenerator g(this);
   Int32BinopMatcher m(node);
@@ -1737,36 +1691,33 @@ void InstructionSelector::EmitPrepareArguments(
     Node* node) {
   Arm64OperandGenerator g(this);
 
-  bool from_native_stack = linkage()->GetIncomingDescriptor()->UseNativeStack();
-  bool to_native_stack = descriptor->UseNativeStack();
-
-  bool always_claim = to_native_stack != from_native_stack;
-
+  // `arguments` includes alignment "holes". This means that slots bigger than
+  // kPointerSize, e.g. Simd128, will span across multiple arguments.
   int claim_count = static_cast<int>(arguments->size());
   int slot = claim_count - 1;
   claim_count = RoundUp(claim_count, 2);
   // Bump the stack pointer(s).
-  if (claim_count > 0 || always_claim) {
+  if (claim_count > 0) {
     // TODO(titzer): claim and poke probably take small immediates.
-    // TODO(titzer): it would be better to bump the csp here only
-    //                and emit paired stores with increment for non c frames.
-    ArchOpcode claim = to_native_stack ? kArm64ClaimCSP : kArm64ClaimJSSP;
-    // ClaimJSSP(0) or ClaimCSP(0) isn't a nop if there is a mismatch between
-    // CSP and JSSP.
-    Emit(claim, g.NoOutput(), g.TempImmediate(claim_count));
+    // TODO(titzer): it would be better to bump the sp here only
+    //               and emit paired stores with increment for non c frames.
+    Emit(kArm64Claim, g.NoOutput(), g.TempImmediate(claim_count));
   }
 
-  ArchOpcode poke = to_native_stack ? kArm64PokeCSP : kArm64PokeJSSP;
   if (claim_count > 0) {
     // Store padding, which might be overwritten.
-    Emit(poke, g.NoOutput(), g.UseImmediate(0),
+    Emit(kArm64Poke, g.NoOutput(), g.UseImmediate(0),
          g.TempImmediate(claim_count - 1));
   }
 
   // Poke the arguments into the stack.
   while (slot >= 0) {
-    Emit(poke, g.NoOutput(), g.UseRegister((*arguments)[slot].node),
-         g.TempImmediate(slot));
+    Node* input_node = (*arguments)[slot].node;
+    // Skip any alignment holes in pushed nodes.
+    if (input_node != nullptr) {
+      Emit(kArm64Poke, g.NoOutput(), g.UseRegister(input_node),
+           g.TempImmediate(slot));
+    }
     slot--;
     // TODO(ahaas): Poke arguments in pairs if two subsequent arguments have the
     //              same type.
@@ -1779,7 +1730,25 @@ void InstructionSelector::EmitPrepareArguments(
 void InstructionSelector::EmitPrepareResults(ZoneVector<PushParameter>* results,
                                              const CallDescriptor* descriptor,
                                              Node* node) {
-  // TODO(ahaas): Port.
+  Arm64OperandGenerator g(this);
+
+  int reverse_slot = 0;
+  for (PushParameter output : *results) {
+    if (!output.location.IsCallerFrameSlot()) continue;
+    reverse_slot += output.location.GetSizeInPointers();
+    // Skip any alignment holes in nodes.
+    if (output.node == nullptr) continue;
+    DCHECK(!descriptor->IsCFunctionCall());
+
+    if (output.location.GetType() == MachineType::Float32()) {
+      MarkAsFloat32(output.node);
+    } else if (output.location.GetType() == MachineType::Float64()) {
+      MarkAsFloat64(output.node);
+    }
+
+    Emit(kArm64Peek, g.DefineAsRegister(output.node),
+         g.UseImmediate(reverse_slot));
+  }
 }
 
 bool InstructionSelector::IsTailCallAddressImmediate() { return false; }
@@ -2396,24 +2365,26 @@ void InstructionSelector::VisitSwitch(Node* node, const SwitchInfo& sw) {
   InstructionOperand value_operand = g.UseRegister(node->InputAt(0));
 
   // Emit either ArchTableSwitch or ArchLookupSwitch.
-  static const size_t kMaxTableSwitchValueRange = 2 << 16;
-  size_t table_space_cost = 4 + sw.value_range;
-  size_t table_time_cost = 3;
-  size_t lookup_space_cost = 3 + 2 * sw.case_count;
-  size_t lookup_time_cost = sw.case_count;
-  if (sw.case_count > 0 &&
-      table_space_cost + 3 * table_time_cost <=
-          lookup_space_cost + 3 * lookup_time_cost &&
-      sw.min_value > std::numeric_limits<int32_t>::min() &&
-      sw.value_range <= kMaxTableSwitchValueRange) {
-    InstructionOperand index_operand = value_operand;
-    if (sw.min_value) {
-      index_operand = g.TempRegister();
-      Emit(kArm64Sub32, index_operand, value_operand,
-           g.TempImmediate(sw.min_value));
+  if (enable_switch_jump_table_ == kEnableSwitchJumpTable) {
+    static const size_t kMaxTableSwitchValueRange = 2 << 16;
+    size_t table_space_cost = 4 + sw.value_range;
+    size_t table_time_cost = 3;
+    size_t lookup_space_cost = 3 + 2 * sw.case_count;
+    size_t lookup_time_cost = sw.case_count;
+    if (sw.case_count > 0 &&
+        table_space_cost + 3 * table_time_cost <=
+            lookup_space_cost + 3 * lookup_time_cost &&
+        sw.min_value > std::numeric_limits<int32_t>::min() &&
+        sw.value_range <= kMaxTableSwitchValueRange) {
+      InstructionOperand index_operand = value_operand;
+      if (sw.min_value) {
+        index_operand = g.TempRegister();
+        Emit(kArm64Sub32, index_operand, value_operand,
+             g.TempImmediate(sw.min_value));
+      }
+      // Generate a table lookup.
+      return EmitTableSwitch(sw, index_operand);
     }
-    // Generate a table lookup.
-    return EmitTableSwitch(sw, index_operand);
   }
 
   // Generate a sequence of conditional jumps.
@@ -3170,6 +3141,26 @@ void InstructionSelector::VisitS8x16Shuffle(Node* node) {
        g.UseImmediate(Pack4Lanes(shuffle + 12, mask)));
 }
 
+void InstructionSelector::VisitSignExtendWord8ToInt32(Node* node) {
+  VisitRR(this, kArm64Sxtb32, node);
+}
+
+void InstructionSelector::VisitSignExtendWord16ToInt32(Node* node) {
+  VisitRR(this, kArm64Sxth32, node);
+}
+
+void InstructionSelector::VisitSignExtendWord8ToInt64(Node* node) {
+  VisitRR(this, kArm64Sxtb, node);
+}
+
+void InstructionSelector::VisitSignExtendWord16ToInt64(Node* node) {
+  VisitRR(this, kArm64Sxth, node);
+}
+
+void InstructionSelector::VisitSignExtendWord32ToInt64(Node* node) {
+  VisitRR(this, kArm64Sxtw, node);
+}
+
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
@@ -3186,7 +3177,8 @@ InstructionSelector::SupportedMachineOperatorFlags() {
          MachineOperatorBuilder::kInt32DivIsSafe |
          MachineOperatorBuilder::kUint32DivIsSafe |
          MachineOperatorBuilder::kWord32ReverseBits |
-         MachineOperatorBuilder::kWord64ReverseBits;
+         MachineOperatorBuilder::kWord64ReverseBits |
+         MachineOperatorBuilder::kSpeculationFence;
 }
 
 // static

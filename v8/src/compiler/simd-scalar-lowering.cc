@@ -85,6 +85,7 @@ void SimdScalarLowering::LowerGraph() {
   V(I32x4Shl)                     \
   V(I32x4ShrS)                    \
   V(I32x4Add)                     \
+  V(I32x4AddHoriz)                \
   V(I32x4Sub)                     \
   V(I32x4Mul)                     \
   V(I32x4MinS)                    \
@@ -387,14 +388,23 @@ void SimdScalarLowering::LowerStoreOp(MachineRepresentation rep, Node* node,
 }
 
 void SimdScalarLowering::LowerBinaryOp(Node* node, SimdType input_rep_type,
-                                       const Operator* op) {
+                                       const Operator* op,
+                                       bool not_horizontal) {
   DCHECK_EQ(2, node->InputCount());
   Node** rep_left = GetReplacementsWithType(node->InputAt(0), input_rep_type);
   Node** rep_right = GetReplacementsWithType(node->InputAt(1), input_rep_type);
   int num_lanes = NumLanes(input_rep_type);
   Node** rep_node = zone()->NewArray<Node*>(num_lanes);
-  for (int i = 0; i < num_lanes; ++i) {
-    rep_node[i] = graph()->NewNode(op, rep_left[i], rep_right[i]);
+  if (not_horizontal) {
+    for (int i = 0; i < num_lanes; ++i) {
+      rep_node[i] = graph()->NewNode(op, rep_left[i], rep_right[i]);
+    }
+  } else {
+    for (int i = 0; i < num_lanes / 2; ++i) {
+      rep_node[i] = graph()->NewNode(op, rep_left[i * 2], rep_left[i * 2 + 1]);
+      rep_node[i + num_lanes / 2] =
+          graph()->NewNode(op, rep_right[i * 2], rep_right[i * 2 + 1]);
+    }
   }
   ReplaceNode(node, rep_node, num_lanes);
 }
@@ -831,6 +841,10 @@ void SimdScalarLowering::LowerNode(Node* node) {
       I32X4_BINOP_CASE(kS128Or, Word32Or)
       I32X4_BINOP_CASE(kS128Xor, Word32Xor)
 #undef I32X4_BINOP_CASE
+    case IrOpcode::kI32x4AddHoriz: {
+      LowerBinaryOp(node, rep_type, machine()->Int32Add(), false);
+      break;
+    }
     case IrOpcode::kI16x8Add:
     case IrOpcode::kI8x16Add: {
       LowerBinaryOpForSmallInt(node, rep_type, machine()->Int32Add());
@@ -1002,7 +1016,11 @@ void SimdScalarLowering::LowerNode(Node* node) {
       DCHECK_EQ(2, node->InputCount());
       Node* repNode = node->InputAt(1);
       int32_t lane = OpParameter<int32_t>(node);
-      Node** rep_node = GetReplacementsWithType(node->InputAt(0), rep_type);
+      Node** old_rep_node = GetReplacementsWithType(node->InputAt(0), rep_type);
+      Node** rep_node = zone()->NewArray<Node*>(num_lanes);
+      for (int i = 0; i < num_lanes; ++i) {
+        rep_node[i] = old_rep_node[i];
+      }
       if (HasReplacement(0, repNode)) {
         rep_node[lane] = GetReplacements(repNode)[0];
       } else {
@@ -1075,11 +1093,12 @@ void SimdScalarLowering::LowerNode(Node* node) {
       Node** rep_right = GetReplacementsWithType(node->InputAt(2), rep_type);
       Node** rep_node = zone()->NewArray<Node*>(num_lanes);
       for (int i = 0; i < num_lanes; ++i) {
-        Diamond d(graph(), common(),
-                  graph()->NewNode(machine()->Word32Equal(), boolean_input[i],
-                                   jsgraph_->Int32Constant(0)));
-        rep_node[i] = d.Phi(MachineTypeFrom(rep_type).representation(),
-                            rep_right[1], rep_left[0]);
+        Node* tmp1 =
+            graph()->NewNode(machine()->Word32Xor(), rep_left[i], rep_right[i]);
+        Node* tmp2 =
+            graph()->NewNode(machine()->Word32And(), boolean_input[i], tmp1);
+        rep_node[i] =
+            graph()->NewNode(machine()->Word32Xor(), rep_right[i], tmp2);
       }
       ReplaceNode(node, rep_node, num_lanes);
       break;

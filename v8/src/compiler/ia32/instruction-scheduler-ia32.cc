@@ -107,6 +107,20 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kAVXF32x4ExtractLane:
     case kSSEF32x4ReplaceLane:
     case kAVXF32x4ReplaceLane:
+    case kSSEF32x4Abs:
+    case kAVXF32x4Abs:
+    case kSSEF32x4Neg:
+    case kAVXF32x4Neg:
+    case kSSEF32x4Add:
+    case kAVXF32x4Add:
+    case kSSEF32x4Sub:
+    case kAVXF32x4Sub:
+    case kSSEF32x4Mul:
+    case kAVXF32x4Mul:
+    case kSSEF32x4Min:
+    case kAVXF32x4Min:
+    case kSSEF32x4Max:
+    case kAVXF32x4Max:
     case kSSEF32x4Eq:
     case kAVXF32x4Eq:
     case kSSEF32x4Ne:
@@ -202,6 +216,10 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kSSEI8x16ReplaceLane:
     case kAVXI8x16ReplaceLane:
     case kIA32I8x16Neg:
+    case kSSEI8x16Shl:
+    case kAVXI8x16Shl:
+    case kSSEI8x16ShrS:
+    case kAVXI8x16ShrS:
     case kSSEI8x16Add:
     case kAVXI8x16Add:
     case kSSEI8x16AddSaturateS:
@@ -210,6 +228,8 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kAVXI8x16Sub:
     case kSSEI8x16SubSaturateS:
     case kAVXI8x16SubSaturateS:
+    case kSSEI8x16Mul:
+    case kAVXI8x16Mul:
     case kSSEI8x16MinS:
     case kAVXI8x16MinS:
     case kSSEI8x16MaxS:
@@ -226,6 +246,8 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kAVXI8x16AddSaturateU:
     case kSSEI8x16SubSaturateU:
     case kAVXI8x16SubSaturateU:
+    case kSSEI8x16ShrU:
+    case kAVXI8x16ShrU:
     case kSSEI8x16MinU:
     case kAVXI8x16MinU:
     case kSSEI8x16MaxU:
@@ -273,7 +295,9 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kIA32Push:
     case kIA32PushFloat32:
     case kIA32PushFloat64:
+    case kIA32PushSimd128:
     case kIA32Poke:
+    case kLFence:
       return kHasSideEffect;
 
 #define CASE(Name) case k##Name:
@@ -291,13 +315,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
   // Basic latency modeling for ia32 instructions. They have been determined
   // in an empirical way.
   switch (instr->arch_opcode()) {
-    case kCheckedLoadInt8:
-    case kCheckedLoadUint8:
-    case kCheckedLoadInt16:
-    case kCheckedLoadUint16:
-    case kCheckedLoadWord32:
-    case kCheckedLoadFloat32:
-    case kCheckedLoadFloat64:
     case kSSEFloat64Mul:
       return 5;
     case kIA32Imul:

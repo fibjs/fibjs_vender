@@ -30,6 +30,9 @@ RUNTIME_FUNCTION(Runtime_CreateJSGeneratorObject) {
   generator->set_receiver(*receiver);
   generator->set_register_file(*register_file);
   generator->set_continuation(JSGeneratorObject::kGeneratorExecuting);
+  if (generator->IsJSAsyncGeneratorObject()) {
+    Handle<JSAsyncGeneratorObject>::cast(generator)->set_is_awaiting(0);
+  }
   return *generator;
 }
 
@@ -53,12 +56,6 @@ RUNTIME_FUNCTION(Runtime_GeneratorGetReceiver) {
   CONVERT_ARG_HANDLE_CHECKED(JSGeneratorObject, generator, 0);
 
   return generator->receiver();
-}
-
-RUNTIME_FUNCTION(Runtime_GeneratorGetContext) {
-  // Runtime call is implemented in InterpreterIntrinsics and lowered in
-  // JSIntrinsicLowering
-  UNREACHABLE();
 }
 
 RUNTIME_FUNCTION(Runtime_GeneratorGetInputOrDebugPos) {

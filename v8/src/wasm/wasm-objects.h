@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_OBJECTS_H_
-#define V8_WASM_OBJECTS_H_
+#ifndef V8_WASM_WASM_OBJECTS_H_
+#define V8_WASM_WASM_OBJECTS_H_
 
 #include "src/base/bits.h"
 #include "src/debug/debug.h"
@@ -14,6 +14,7 @@
 #include "src/wasm/decoder.h"
 #include "src/wasm/wasm-interpreter.h"
 #include "src/wasm/wasm-limits.h"
+#include "src/wasm/wasm-module.h"
 
 #include "src/heap/heap.h"
 
@@ -68,8 +69,7 @@ struct WasmContext {
   byte* globals_start = nullptr;
 
   inline void SetRawMemory(void* mem_start, size_t mem_size) {
-    DCHECK_LE(mem_size,
-              wasm::kV8MaxWasmMemoryPages * wasm::kSpecMaxWasmMemoryPages);
+    DCHECK_LE(mem_size, wasm::kV8MaxWasmMemoryPages * wasm::kWasmPageSize);
     this->mem_start = static_cast<byte*>(mem_start);
     this->mem_size = static_cast<uint32_t>(mem_size);
     this->mem_mask = base::bits::RoundUpToPowerOfTwo32(this->mem_size) - 1;
@@ -129,13 +129,17 @@ class WasmTableObject : public JSObject {
   static Handle<WasmTableObject> New(Isolate* isolate, uint32_t initial,
                                      int64_t maximum,
                                      Handle<FixedArray>* js_functions);
-  static Handle<FixedArray> AddDispatchTable(
-      Isolate* isolate, Handle<WasmTableObject> table,
-      Handle<WasmInstanceObject> instance, int table_index,
-      Handle<FixedArray> function_table, Handle<FixedArray> signature_table);
+  static void AddDispatchTable(Isolate* isolate, Handle<WasmTableObject> table,
+                               Handle<WasmInstanceObject> instance,
+                               int table_index,
+                               Handle<FixedArray> function_table);
 
   static void Set(Isolate* isolate, Handle<WasmTableObject> table,
                   int32_t index, Handle<JSFunction> function);
+
+  static void UpdateDispatchTables(Handle<WasmTableObject> table, int index,
+                                   wasm::FunctionSig* sig,
+                                   Handle<Object> code_or_foreign);
 };
 
 // Representation of a WebAssembly.Memory JavaScript-level object.
@@ -190,7 +194,6 @@ class WasmInstanceObject : public JSObject {
   DECL_OPTIONAL_ACCESSORS(debug_info, WasmDebugInfo)
   DECL_OPTIONAL_ACCESSORS(table_object, WasmTableObject)
   DECL_OPTIONAL_ACCESSORS(function_tables, FixedArray)
-  DECL_OPTIONAL_ACCESSORS(signature_tables, FixedArray)
 
   // FixedArray of all instances whose code was imported
   DECL_OPTIONAL_ACCESSORS(directly_called_instances, FixedArray)
@@ -205,7 +208,6 @@ class WasmInstanceObject : public JSObject {
     kDebugInfoIndex,
     kTableObjectIndex,
     kFunctionTablesIndex,
-    kSignatureTablesIndex,
     kDirectlyCalledInstancesIndex,
     kJsImportsTableIndex,
     kFieldCount
@@ -220,7 +222,6 @@ class WasmInstanceObject : public JSObject {
   DEF_OFFSET(DebugInfo)
   DEF_OFFSET(TableObject)
   DEF_OFFSET(FunctionTables)
-  DEF_OFFSET(SignatureTables)
   DEF_OFFSET(DirectlyCalledInstances)
   DEF_OFFSET(JsImportsTable)
 
@@ -233,12 +234,8 @@ class WasmInstanceObject : public JSObject {
 
   static Handle<WasmInstanceObject> New(Isolate*, Handle<WasmCompiledModule>);
 
-  int32_t GetMemorySize();
-
   static int32_t GrowMemory(Isolate*, Handle<WasmInstanceObject>,
                             uint32_t pages);
-
-  uint32_t GetMaxMemoryPages();
 
   // Assumed to be called with a code object associated to a wasm module
   // instance. Intended to be called from runtime functions. Returns nullptr on
@@ -252,6 +249,9 @@ class WasmInstanceObject : public JSObject {
 
   static void ValidateOrphanedInstanceForTesting(
       Isolate* isolate, Handle<WasmInstanceObject> instance);
+
+  static void InstallFinalizer(Isolate* isolate,
+                               Handle<WasmInstanceObject> instance);
 };
 
 // A WASM function that is wrapped and exported to JavaScript.
@@ -483,8 +483,7 @@ class WasmCompiledModule : public FixedArray {
   MACRO(OBJECT, FixedArray, function_tables)                  \
   MACRO(OBJECT, FixedArray, signature_tables)                 \
   MACRO(CONST_OBJECT, FixedArray, empty_function_tables)      \
-  MACRO(CONST_OBJECT, FixedArray, empty_signature_tables)     \
-  MACRO(SMALL_CONST_NUMBER, uint32_t, initial_pages)
+  MACRO(CONST_OBJECT, FixedArray, empty_signature_tables)
 
 // TODO(mtrofin): this is unnecessary when we stop needing
 // FLAG_wasm_jit_to_native, because we have instance_id on NativeModule.
@@ -514,17 +513,11 @@ class WasmCompiledModule : public FixedArray {
       Isolate* isolate, wasm::WasmModule* module, Handle<FixedArray> code_table,
       Handle<FixedArray> export_wrappers,
       const std::vector<wasm::GlobalHandleAddress>& function_tables,
-      const std::vector<wasm::GlobalHandleAddress>& signature_tables,
       bool use_trap_hander);
 
   static Handle<WasmCompiledModule> Clone(Isolate* isolate,
                                           Handle<WasmCompiledModule> module);
   static void Reset(Isolate* isolate, WasmCompiledModule* module);
-
-  // TODO(mtrofin): delete this when we don't need FLAG_wasm_jit_to_native
-  static void ResetGCModel(Isolate* isolate, WasmCompiledModule* module);
-
-  uint32_t default_mem_size() const;
 
   wasm::NativeModule* GetNativeModule() const;
   void InsertInChain(WasmModuleObject*);
@@ -699,4 +692,4 @@ WasmFunctionInfo GetWasmFunctionInfo(Isolate*, Handle<Code>);
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_WASM_OBJECTS_H_
+#endif  // V8_WASM_WASM_OBJECTS_H_

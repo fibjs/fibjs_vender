@@ -37,6 +37,12 @@ struct WasmException;
     return true;                  \
   }())
 
+#define RET_ON_PROTOTYPE_OPCODE(flag)                                          \
+  DCHECK(!this->module_ || !this->module_->is_asm_js());                       \
+  if (!FLAG_experimental_wasm_##flag) {                                        \
+    this->error("Invalid opcode (enable with --experimental-wasm-" #flag ")"); \
+  }
+
 #define CHECK_PROTOTYPE_OPCODE(flag)                                           \
   DCHECK(!this->module_ || !this->module_->is_asm_js());                       \
   if (!FLAG_experimental_wasm_##flag) {                                        \
@@ -246,12 +252,12 @@ struct BreakDepthOperand {
 template <Decoder::ValidateFlag validate>
 struct CallIndirectOperand {
   uint32_t table_index;
-  uint32_t index;
+  uint32_t sig_index;
   FunctionSig* sig = nullptr;
   unsigned length = 0;
   inline CallIndirectOperand(Decoder* decoder, const byte* pc) {
     unsigned len = 0;
-    index = decoder->read_u32v<validate>(pc + 1, &len, "signature index");
+    sig_index = decoder->read_u32v<validate>(pc + 1, &len, "signature index");
     if (!VALIDATE(decoder->ok())) return;
     table_index = decoder->read_u8<validate>(pc + 1 + len, "table index");
     if (!VALIDATE(table_index == 0)) {
@@ -551,6 +557,7 @@ struct ControlWithNamedConstructors : public ControlBase<Value> {
   F(StartFunctionBody, Control* block)                                         \
   F(FinishFunction)                                                            \
   F(OnFirstError)                                                              \
+  F(NextInstruction, WasmOpcode)                                               \
   /* Control: */                                                               \
   F(Block, Control* block)                                                     \
   F(Loop, Control* block)                                                      \
@@ -788,10 +795,10 @@ class WasmDecoder : public Decoder {
 
   inline bool Complete(const byte* pc, CallIndirectOperand<validate>& operand) {
     if (!VALIDATE(module_ != nullptr &&
-                  operand.index < module_->signatures.size())) {
+                  operand.sig_index < module_->signatures.size())) {
       return false;
     }
-    operand.sig = module_->signatures[operand.index];
+    operand.sig = module_->signatures[operand.sig_index];
     return true;
   }
 
@@ -801,7 +808,7 @@ class WasmDecoder : public Decoder {
       return false;
     }
     if (!Complete(pc, operand)) {
-      errorf(pc + 1, "invalid signature index: #%u", operand.index);
+      errorf(pc + 1, "invalid signature index: #%u", operand.sig_index);
       return false;
     }
     return true;
@@ -1156,9 +1163,6 @@ class WasmFullDecoder : public WasmDecoder<validate> {
     DCHECK(stack_.empty());
     DCHECK(control_.empty());
 
-    if (FLAG_wasm_code_fuzzer_gen_test) {
-      PrintRawWasmCode(this->start_, this->end_);
-    }
     base::ElapsedTimer decode_timer;
     if (FLAG_trace_wasm_decode_time) {
       decode_timer.Start();
@@ -1334,6 +1338,9 @@ class WasmFullDecoder : public WasmDecoder<validate> {
     while (this->pc_ < this->end_) {  // decoding loop.
       unsigned len = 1;
       WasmOpcode opcode = static_cast<WasmOpcode>(*this->pc_);
+
+      CALL_INTERFACE_IF_REACHABLE(NextInstruction, opcode);
+
 #if DEBUG
       TraceLine trace_msg;
 #define TRACE_PART(...) trace_msg.Append(__VA_ARGS__)
@@ -1474,8 +1481,8 @@ class WasmFullDecoder : public WasmDecoder<validate> {
               this->error(this->pc_, "else already present for if");
               break;
             }
-            c->kind = kControlIfElse;
             FallThruTo(c);
+            c->kind = kControlIfElse;
             CALL_INTERFACE_IF_PARENT_REACHABLE(Else, c);
             PushMergeValues(c, &c->start_merge);
             c->reachability = control_at(1)->innerReachability();
@@ -1494,6 +1501,7 @@ class WasmFullDecoder : public WasmDecoder<validate> {
             if (c->is_onearmed_if()) {
               // Emulate empty else arm.
               FallThruTo(c);
+              if (this->failed()) break;
               CALL_INTERFACE_IF_PARENT_REACHABLE(Else, c);
               PushMergeValues(c, &c->start_merge);
               c->reachability = control_at(1)->innerReachability();
@@ -1874,22 +1882,25 @@ class WasmFullDecoder : public WasmDecoder<validate> {
           TRACE_PART(" %c@%d:%s", WasmOpcodes::ShortNameOf(val.type),
                      static_cast<int>(val.pc - this->start_),
                      WasmOpcodes::OpcodeName(opcode));
+          // If the decoder failed, don't try to decode the operands, as this
+          // can trigger a DCHECK failure.
+          if (this->failed()) continue;
           switch (opcode) {
             case kExprI32Const: {
-              ImmI32Operand<validate> operand(this, val.pc);
+              ImmI32Operand<Decoder::kNoValidate> operand(this, val.pc);
               TRACE_PART("[%d]", operand.value);
               break;
             }
             case kExprGetLocal:
             case kExprSetLocal:
             case kExprTeeLocal: {
-              LocalIndexOperand<Decoder::kValidate> operand(this, val.pc);
+              LocalIndexOperand<Decoder::kNoValidate> operand(this, val.pc);
               TRACE_PART("[%u]", operand.index);
               break;
             }
             case kExprGetGlobal:
             case kExprSetGlobal: {
-              GlobalIndexOperand<validate> operand(this, val.pc);
+              GlobalIndexOperand<Decoder::kNoValidate> operand(this, val.pc);
               TRACE_PART("[%u]", operand.index);
               break;
             }
@@ -2339,6 +2350,9 @@ class WasmFullDecoder : public WasmDecoder<validate> {
   }
 
   inline void BuildSimpleOperator(WasmOpcode opcode, FunctionSig* sig) {
+    if (WasmOpcodes::IsSignExtensionOpcode(opcode)) {
+      RET_ON_PROTOTYPE_OPCODE(se);
+    }
     switch (sig->parameter_count()) {
       case 1: {
         auto val = Pop(0, sig->GetParam(0));

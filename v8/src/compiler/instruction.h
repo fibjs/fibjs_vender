@@ -491,6 +491,9 @@ class LocationOperand : public InstructionOperand {
     UNREACHABLE();
   }
 
+  // Return true if the locations can be moved to one another.
+  bool IsCompatible(LocationOperand* op);
+
   static LocationOperand* cast(InstructionOperand* op) {
     DCHECK(op->IsAnyLocationOperand());
     return static_cast<LocationOperand*>(op);
@@ -1093,11 +1096,7 @@ class V8_EXPORT_PRIVATE Constant final {
 
  private:
   Type type_;
-#if V8_TARGET_ARCH_32_BIT
-  RelocInfo::Mode rmode_ = RelocInfo::NONE32;
-#else
-  RelocInfo::Mode rmode_ = RelocInfo::NONE64;
-#endif
+  RelocInfo::Mode rmode_ = RelocInfo::NONE;
   int64_t value_;
 };
 
@@ -1331,7 +1330,7 @@ class DeoptimizationEntry final {
  private:
   FrameStateDescriptor* descriptor_ = nullptr;
   DeoptimizeKind kind_ = DeoptimizeKind::kEager;
-  DeoptimizeReason reason_ = DeoptimizeReason::kNoReason;
+  DeoptimizeReason reason_ = DeoptimizeReason::kUnknown;
   VectorSlotPair feedback_ = VectorSlotPair();
 };
 

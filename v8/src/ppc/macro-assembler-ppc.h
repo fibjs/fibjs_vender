@@ -25,8 +25,10 @@ const Register kInterpreterAccumulatorRegister = r3;
 const Register kInterpreterBytecodeOffsetRegister = r15;
 const Register kInterpreterBytecodeArrayRegister = r16;
 const Register kInterpreterDispatchTableRegister = r17;
+const Register kInterpreterTargetBytecodeRegister = r14;
 const Register kJavaScriptCallArgCountRegister = r3;
 const Register kJavaScriptCallNewTargetRegister = r6;
+const Register kOffHeapTrampolineRegister = ip;
 const Register kRuntimeCallFunctionRegister = r4;
 const Register kRuntimeCallArgCountRegister = r3;
 
@@ -404,13 +406,13 @@ class TurboAssembler : public Assembler {
 
   // Calls Abort(msg) if the condition cond is not satisfied.
   // Use --debug_code to enable.
-  void Assert(Condition cond, BailoutReason reason, CRegister cr = cr7);
+  void Assert(Condition cond, AbortReason reason, CRegister cr = cr7);
 
   // Like Assert(), but always enabled.
-  void Check(Condition cond, BailoutReason reason, CRegister cr = cr7);
+  void Check(Condition cond, AbortReason reason, CRegister cr = cr7);
 
   // Print a message to stdout and abort execution.
-  void Abort(BailoutReason reason);
+  void Abort(AbortReason reason);
 
   inline bool AllowThisStubCall(CodeStub* stub);
 #if !V8_TARGET_ARCH_PPC64
@@ -829,10 +831,6 @@ class MacroAssembler : public TurboAssembler {
   void InvokeFunction(Register function, const ParameterCount& expected,
                       const ParameterCount& actual, InvokeFlag flag);
 
-  void InvokeFunction(Handle<JSFunction> function,
-                      const ParameterCount& expected,
-                      const ParameterCount& actual, InvokeFlag flag);
-
   void DebugBreak();
   // Frame restart support
   void MaybeDropFrames();
@@ -932,6 +930,9 @@ class MacroAssembler : public TurboAssembler {
   // Jump to a runtime routine.
   void JumpToExternalReference(const ExternalReference& builtin,
                                bool builtin_exit_frame = false);
+
+  // Generates a trampoline to jump to the off-heap instruction stream.
+  void JumpToInstructionStream(const InstructionStream* stream);
 
   // ---------------------------------------------------------------------------
   // StatsCounter support

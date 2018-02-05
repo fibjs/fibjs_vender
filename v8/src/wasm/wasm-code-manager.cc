@@ -4,6 +4,8 @@
 
 #include "src/wasm/wasm-code-manager.h"
 
+#include <iomanip>
+
 #include "src/assembler-inl.h"
 #include "src/base/atomic-utils.h"
 #include "src/base/macros.h"
@@ -28,7 +30,6 @@ namespace internal {
 namespace wasm {
 
 namespace {
-size_t native_module_ids = 0;
 
 #if V8_TARGET_ARCH_X64
 #define __ masm->
@@ -37,6 +38,15 @@ constexpr bool kModuleCanAllocateMoreMemory = false;
 void GenerateJumpTrampoline(MacroAssembler* masm, Address target) {
   __ movq(kScratchRegister, reinterpret_cast<uint64_t>(target));
   __ jmp(kScratchRegister);
+}
+#undef __
+#elif V8_TARGET_ARCH_S390X
+#define __ masm->
+constexpr bool kModuleCanAllocateMoreMemory = false;
+
+void GenerateJumpTrampoline(MacroAssembler* masm, Address target) {
+  __ mov(ip, Operand(bit_cast<intptr_t, Address>(target)));
+  __ b(ip);
 }
 #undef __
 #else
@@ -53,7 +63,7 @@ void PatchTrampolineAndStubCalls(
                         new_code->constant_pool(), RelocInfo::kCodeTargetMask);
        !it.done(); it.next(), orig_it.next()) {
     Address old_target = orig_it.rinfo()->target_address();
-#if V8_TARGET_ARCH_X64
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_S390X
     auto found = reverse_lookup.find(old_target);
     DCHECK(found != reverse_lookup.end());
     Address new_target = found->second;
@@ -64,6 +74,7 @@ void PatchTrampolineAndStubCalls(
                                    SKIP_ICACHE_FLUSH);
   }
 }
+
 }  // namespace
 
 DisjointAllocationPool::DisjointAllocationPool(Address start, Address end) {
@@ -176,22 +187,55 @@ bool WasmCode::HasTrapHandlerIndex() const { return trap_handler_index_ >= 0; }
 
 void WasmCode::ResetTrapHandlerIndex() { trap_handler_index_ = -1; }
 
-// TODO(mtrofin): rework the dependency on isolate and code in
-// Disassembler::Decode.
-void WasmCode::Disassemble(Isolate* isolate, const char* name,
-                           std::ostream& os) const {
-  if (name) os << name << std::endl;
-  Disassembler::Decode(isolate, &os, instructions().start(),
-                       instructions().end(), nullptr);
-}
-
 void WasmCode::Print(Isolate* isolate) const {
   OFStream os(stdout);
-  if (index_.IsJust()) {
-    os << "index: " << index_.FromJust() << "\n";
-  }
+  Disassemble(nullptr, isolate, os);
+}
+
+void WasmCode::Disassemble(const char* name, Isolate* isolate,
+                           std::ostream& os) const {
+  if (name) os << "name: " << name << "\n";
+  if (index_.IsJust()) os << "index: " << index_.FromJust() << "\n";
   os << "kind: " << GetWasmCodeKindAsString(kind_) << "\n";
-  Disassemble(isolate, nullptr, os);
+  os << "compiler: " << (is_liftoff() ? "Liftoff" : "TurboFan") << "\n";
+  size_t body_size = instructions().size();
+  os << "Body (size = " << body_size << ")\n";
+
+#ifdef ENABLE_DISASSEMBLER
+
+  size_t instruction_size =
+      std::min(constant_pool_offset_, safepoint_table_offset_);
+  os << "Instructions (size = " << instruction_size << ")\n";
+  // TODO(mtrofin): rework the dependency on isolate and code in
+  // Disassembler::Decode.
+  Disassembler::Decode(isolate, &os, instructions().start(),
+                       instructions().start() + instruction_size, nullptr);
+  os << "\n";
+
+  // Anonymous functions don't have source positions.
+  if (!IsAnonymous()) {
+    Object* source_positions_or_undef =
+        owner_->compiled_module()->source_positions()->get(index());
+    if (!source_positions_or_undef->IsUndefined(isolate)) {
+      os << "Source positions:\n pc offset  position\n";
+      for (SourcePositionTableIterator it(
+               ByteArray::cast(source_positions_or_undef));
+           !it.done(); it.Advance()) {
+        os << std::setw(10) << std::hex << it.code_offset() << std::dec
+           << std::setw(10) << it.source_position().ScriptOffset()
+           << (it.is_statement() ? "  statement" : "") << "\n";
+      }
+      os << "\n";
+    }
+  }
+
+  os << "RelocInfo (size = " << reloc_size_ << ")\n";
+  for (RelocIterator it(instructions(), reloc_info(), constant_pool());
+       !it.done(); it.next()) {
+    it.rinfo()->Print(isolate, os);
+  }
+  os << "\n";
+#endif  // ENABLE_DISASSEMBLER
 }
 
 const char* GetWasmCodeKindAsString(WasmCode::Kind kind) {
@@ -227,10 +271,12 @@ WasmCode::~WasmCode() {
   }
 }
 
+base::AtomicNumber<size_t> NativeModule::next_id_;
+
 NativeModule::NativeModule(uint32_t num_functions, uint32_t num_imports,
                            bool can_request_more, VirtualMemory* mem,
                            WasmCodeManager* code_manager)
-    : instance_id(native_module_ids++),
+    : instance_id(next_id_.Increment(1)),
       code_table_(num_functions),
       num_imported_functions_(num_imports),
       free_memory_(reinterpret_cast<Address>(mem->address()),
@@ -323,15 +369,11 @@ WasmCode* NativeModule::AddInterpreterWrapper(Handle<Code> code,
   return ret;
 }
 
-WasmCode* NativeModule::SetLazyBuiltin(Handle<Code> code) {
-  DCHECK_NULL(lazy_builtin_);
-  lazy_builtin_ = AddAnonymousCode(code, WasmCode::kLazyStub);
-
+void NativeModule::SetLazyBuiltin(Handle<Code> code) {
+  WasmCode* lazy_builtin = AddAnonymousCode(code, WasmCode::kLazyStub);
   for (uint32_t i = num_imported_functions(), e = FunctionCount(); i < e; ++i) {
-    SetCodeTable(i, lazy_builtin_);
+    SetCodeTable(i, lazy_builtin);
   }
-
-  return lazy_builtin_;
 }
 
 WasmCompiledModule* NativeModule::compiled_module() const {
@@ -387,7 +429,7 @@ WasmCode* NativeModule::AddAnonymousCode(Handle<Code> code,
 WasmCode* NativeModule::AddCode(
     const CodeDesc& desc, uint32_t frame_slots, uint32_t index,
     size_t safepoint_table_offset,
-    std::shared_ptr<ProtectedInstructions> protected_instructions,
+    std::unique_ptr<ProtectedInstructions> protected_instructions,
     bool is_liftoff) {
   std::unique_ptr<byte[]> reloc_info;
   if (desc.reloc_size) {
@@ -440,7 +482,7 @@ WasmCode* NativeModule::AddCode(
   return ret;
 }
 
-#if V8_TARGET_ARCH_X64
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_S390X
 Address NativeModule::CreateTrampolineTo(Handle<Code> code) {
   MacroAssembler masm(code->GetIsolate(), nullptr, 0, CodeObjectRequired::kNo);
   Address dest = code->instruction_start();
@@ -614,9 +656,10 @@ WasmCode* NativeModule::Lookup(Address pc) {
   return nullptr;
 }
 
-WasmCode* NativeModule::CloneLazyBuiltinInto(uint32_t index) {
-  DCHECK_NOT_NULL(lazy_builtin());
-  WasmCode* ret = CloneCode(lazy_builtin());
+WasmCode* NativeModule::CloneLazyBuiltinInto(const WasmCode* code,
+                                             uint32_t index) {
+  DCHECK_EQ(wasm::WasmCode::kLazyStub, code->kind());
+  WasmCode* ret = CloneCode(code);
   SetCodeTable(index, ret);
   ret->index_ = Just(index);
   return ret;
@@ -841,10 +884,6 @@ std::unique_ptr<NativeModule> NativeModule::Clone() {
   TRACE_HEAP("%zu cloned from %zu\n", ret->instance_id, instance_id);
   if (!ret) return ret;
 
-  if (lazy_builtin() != nullptr) {
-    ret->lazy_builtin_ = ret->CloneCode(lazy_builtin());
-  }
-
   if (!ret->CloneTrampolinesAndStubs(this)) return nullptr;
 
   std::unordered_map<Address, Address, AddressHasher> reverse_lookup;
@@ -869,20 +908,29 @@ std::unique_ptr<NativeModule> NativeModule::Clone() {
     WasmCode* old_stub = stubs_.find(pair.first)->second;
     PatchTrampolineAndStubCalls(old_stub, new_stub, reverse_lookup);
   }
-  if (lazy_builtin_ != nullptr) {
-    PatchTrampolineAndStubCalls(lazy_builtin_, ret->lazy_builtin_,
-                                reverse_lookup);
-  }
 
+  WasmCode* anonymous_lazy_builtin = nullptr;
   for (uint32_t i = num_imported_functions(), e = FunctionCount(); i < e; ++i) {
     const WasmCode* original_code = GetCode(i);
     switch (original_code->kind()) {
       case WasmCode::kLazyStub: {
-        if (original_code->IsAnonymous()) {
-          ret->SetCodeTable(i, ret->lazy_builtin());
-        } else {
-          if (!ret->CloneLazyBuiltinInto(i)) return nullptr;
+        // Use the first anonymous lazy compile stub hit in this loop as the
+        // canonical copy for all further ones by remembering it locally via
+        // the {anonymous_lazy_builtin} variable. All non-anonymous such stubs
+        // are just cloned directly via {CloneLazyBuiltinInto} below.
+        if (!original_code->IsAnonymous()) {
+          WasmCode* new_code = ret->CloneLazyBuiltinInto(original_code, i);
+          if (new_code == nullptr) return nullptr;
+          PatchTrampolineAndStubCalls(original_code, new_code, reverse_lookup);
+          break;
         }
+        if (anonymous_lazy_builtin == nullptr) {
+          WasmCode* new_code = ret->CloneCode(original_code);
+          if (new_code == nullptr) return nullptr;
+          PatchTrampolineAndStubCalls(original_code, new_code, reverse_lookup);
+          anonymous_lazy_builtin = new_code;
+        }
+        ret->SetCodeTable(i, anonymous_lazy_builtin);
       } break;
       case WasmCode::kFunction: {
         WasmCode* new_code = ret->CloneCode(original_code);

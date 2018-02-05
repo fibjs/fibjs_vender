@@ -170,26 +170,11 @@ Callable Builtins::CallableFor(Isolate* isolate, Name name) {
     BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, CASE_OTHER,
                  CASE_OTHER, CASE_OTHER, IGNORE_BUILTIN)
 #undef CASE_OTHER
-    case kArrayFilterLoopEagerDeoptContinuation:
-    case kArrayFilterLoopLazyDeoptContinuation:
-    case kArrayFindIndexLoopAfterCallbackLazyDeoptContinuation:
-    case kArrayFindIndexLoopEagerDeoptContinuation:
-    case kArrayFindIndexLoopLazyDeoptContinuation:
-    case kArrayFindLoopAfterCallbackLazyDeoptContinuation:
-    case kArrayFindLoopEagerDeoptContinuation:
-    case kArrayFindLoopLazyDeoptContinuation:
-    case kArrayForEach:
-    case kArrayForEachLoopEagerDeoptContinuation:
-    case kArrayForEachLoopLazyDeoptContinuation:
-    case kArrayMapLoopEagerDeoptContinuation:
-    case kArrayMapLoopLazyDeoptContinuation:
-    case kArrayReduceLoopEagerDeoptContinuation:
-    case kArrayReduceLoopLazyDeoptContinuation:
-    case kArrayReduceRightLoopEagerDeoptContinuation:
-    case kArrayReduceRightLoopLazyDeoptContinuation:
-    case kConsoleAssert:
-      return Callable(code, BuiltinDescriptor(isolate));
     default:
+      Builtins::Kind kind = Builtins::KindOf(name);
+      if (kind == TFJ || kind == CPP) {
+        return Callable(code, BuiltinDescriptor(isolate));
+      }
       UNREACHABLE();
   }
   CallInterfaceDescriptor descriptor(isolate, key);
@@ -237,12 +222,16 @@ bool Builtins::IsLazy(int index) {
     case kArrayForEachLoopLazyDeoptContinuation:   // https://crbug.com/v8/6786.
     case kArrayMapLoopEagerDeoptContinuation:      // https://crbug.com/v8/6786.
     case kArrayMapLoopLazyDeoptContinuation:       // https://crbug.com/v8/6786.
+    case kArrayEveryLoopEagerDeoptContinuation:    // https://crbug.com/v8/6786.
+    case kArrayEveryLoopLazyDeoptContinuation:     // https://crbug.com/v8/6786.
     case kArrayFilterLoopEagerDeoptContinuation:   // https://crbug.com/v8/6786.
     case kArrayFilterLoopLazyDeoptContinuation:    // https://crbug.com/v8/6786.
     case kArrayReduceLoopEagerDeoptContinuation:   // https://crbug.com/v8/6786.
     case kArrayReduceLoopLazyDeoptContinuation:    // https://crbug.com/v8/6786.
     case kArrayReduceRightLoopEagerDeoptContinuation:
     case kArrayReduceRightLoopLazyDeoptContinuation:
+    case kArraySomeLoopEagerDeoptContinuation:  // https://crbug.com/v8/6786.
+    case kArraySomeLoopLazyDeoptContinuation:   // https://crbug.com/v8/6786.
     case kCheckOptimizationMarker:
     case kCompileLazy:
     case kDeserializeLazy:
@@ -256,6 +245,7 @@ bool Builtins::IsLazy(int index) {
     case kProxyConstructor_ConstructStub:     // https://crbug.com/v8/6787.
     case kNumberConstructor_ConstructStub:    // https://crbug.com/v8/6787.
     case kStringConstructor_ConstructStub:    // https://crbug.com/v8/6787.
+    case kTypedArrayConstructor_ConstructStub:  // https://crbug.com/v8/6787.
     case kProxyConstructor:                   // https://crbug.com/v8/6787.
     case kRecordWrite:  // https://crbug.com/chromium/765301.
     case kThrowWasmTrapDivByZero:             // Required by wasm.
@@ -273,6 +263,33 @@ bool Builtins::IsLazy(int index) {
     default:
       // TODO(6624): Extend to other kinds.
       return KindOf(index) == TFJ;
+  }
+  UNREACHABLE();
+}
+
+// static
+bool Builtins::IsIsolateIndependent(int index) {
+  DCHECK(IsBuiltinId(index));
+  // TODO(jgruber): Extend this list.
+  switch (index) {
+    case kContinueToCodeStubBuiltin:
+    case kContinueToCodeStubBuiltinWithResult:
+    case kContinueToJavaScriptBuiltin:
+    case kContinueToJavaScriptBuiltinWithResult:
+#ifndef DEBUG
+#if !V8_TARGET_ARCH_IA32
+    case kClassOf:
+    case kConstructFunction:
+    case kTypeof:
+    case kWeakMapLookupHashIndex:
+#endif
+    case kLoadIC_StringLength:
+    case kLoadIC_StringWrapperLength:
+    case kOrderedHashTableHealIndex:
+#endif
+      return true;
+    default:
+      return false;
   }
   UNREACHABLE();
 }

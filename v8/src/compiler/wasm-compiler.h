@@ -43,25 +43,34 @@ class WasmCode;
 
 namespace compiler {
 
+// Indirect function tables contain a <smi(sig), code> pair for each entry.
+enum FunctionTableEntries : int {
+  kFunctionTableSignatureOffset = 0,
+  kFunctionTableCodeOffset = 1,
+  kFunctionTableEntrySize = 2
+};
+constexpr inline int FunctionTableSigOffset(int i) {
+  return kFunctionTableEntrySize * i + kFunctionTableSignatureOffset;
+}
+constexpr inline int FunctionTableCodeOffset(int i) {
+  return kFunctionTableEntrySize * i + kFunctionTableCodeOffset;
+}
+
 // The {ModuleEnv} encapsulates the module data that is used by the
 // {WasmGraphBuilder} during graph building. It represents the parameters to
 // which the  compiled code should be specialized, including which code to call
 // for direct calls {function_code}, which tables to use for indirect calls
 // {function_tables}, memory start address and size {mem_start, mem_size},
-// as well as signature maps {signature_maps} and the module itself {module}.
+// as well as the module itself {module}.
 // ModuleEnvs are shareable across multiple compilations.
 struct ModuleEnv {
   // A pointer to the decoded module's static representation.
   const wasm::WasmModule* module;
-  // The function tables are FixedArrays of code used to dispatch indirect
-  // calls. (the same length as module.function_tables). We use the address
-  // to a global handle to the FixedArray.
+  // The function tables are FixedArrays of <smi, code> pairs used to signature
+  // check and dispatch indirect calls. It has the same length as
+  // module.function_tables. We use the address to a global handle to the
+  // FixedArray.
   const std::vector<Address> function_tables;
-  // The signatures tables are FixedArrays of SMIs used to check signatures
-  // match at runtime.
-  // (the same length as module.function_tables)
-  //  We use the address to a global handle to the FixedArray.
-  const std::vector<Address> signature_tables;
 
   // TODO(mtrofin): remove these 2 once we don't need FLAG_wasm_jit_to_native
   // Contains the code objects to call for each direct call.
@@ -72,6 +81,22 @@ struct ModuleEnv {
   // True if trap handling should be used in compiled code, rather than
   // compiling in bounds checks for each memory access.
   const bool use_trap_handler;
+
+  ModuleEnv(const wasm::WasmModule* module, Handle<Code> default_function_code,
+            bool use_trap_handler)
+      : module(module),
+        default_function_code(default_function_code),
+        use_trap_handler(use_trap_handler) {}
+
+  ModuleEnv(const wasm::WasmModule* module,
+            std::vector<Address> function_tables,
+            std::vector<Handle<Code>> function_code,
+            Handle<Code> default_function_code, bool use_trap_handler)
+      : module(module),
+        function_tables(std::move(function_tables)),
+        function_code(std::move(function_code)),
+        default_function_code(default_function_code),
+        use_trap_handler(use_trap_handler) {}
 };
 
 enum RuntimeExceptionSupport : bool {
@@ -119,6 +144,9 @@ class WasmCompilationUnit final {
     wasm::LiftoffAssembler asm_;
     int safepoint_table_offset_;
     SourcePositionTableBuilder source_position_table_builder_;
+    // The {codegen_zone_} needs to survive until FinishCompilation. It's only
+    // rarely used (e.g. for runtime calls), so it's only allocated when needed.
+    std::unique_ptr<Zone> codegen_zone_;
     explicit LiftoffData(Isolate* isolate) : asm_(isolate) {}
   };
   struct TurbofanData {
@@ -156,7 +184,7 @@ class WasmCompilationUnit final {
   size_t memory_cost_ = 0;
   wasm::NativeModule* native_module_;
   bool lower_simd_;
-  std::shared_ptr<std::vector<trap_handler::ProtectedInstructionData>>
+  std::unique_ptr<std::vector<trap_handler::ProtectedInstructionData>>
       protected_instructions_;
   CompilationMode mode_;
   // {liftoff_} is valid if mode_ == kLiftoff, tf_ if mode_ == kTurbofan.
@@ -227,6 +255,16 @@ typedef ZoneVector<Node*> NodeVector;
 class WasmGraphBuilder {
  public:
   enum EnforceBoundsCheck : bool { kNeedsBoundsCheck, kCanOmitBoundsCheck };
+  enum class Type {
+    kInt8s,
+    kInt8u,
+    kInt32s,
+    kInt32u,
+    kInt64s,
+    kInt64u,
+    kFloat32,
+    kFloat64
+  };
 
   WasmGraphBuilder(ModuleEnv* env, Zone* zone, JSGraph* graph,
                    Handle<Code> centry_stub, wasm::FunctionSig* sig,
@@ -423,36 +461,40 @@ class WasmGraphBuilder {
 
  private:
   enum class NumericImplementation : uint8_t { kTrap, kSaturate };
+
   static const int kDefaultBufferSize = 16;
 
-  Zone* zone_;
-  JSGraph* jsgraph_;
-  Node* centry_stub_node_;
+  Zone* const zone_;
+  JSGraph* const jsgraph_;
+  Node* const centry_stub_node_;
   // env_ == nullptr means we're not compiling Wasm functions, such as for
   // wrappers or interpreter stubs.
-  ModuleEnv* env_ = nullptr;
-  Node* wasm_context_ = nullptr;
-  NodeVector signature_tables_;
-  NodeVector function_tables_;
-  NodeVector function_table_sizes_;
+  ModuleEnv* const env_ = nullptr;
+  SetOncePointer<Node> wasm_context_;
+  struct FunctionTableNodes {
+    Node* table_addr;
+    Node* size;
+  };
+  ZoneVector<FunctionTableNodes> function_tables_;
   Node** control_ = nullptr;
   Node** effect_ = nullptr;
   WasmContextCacheNodes* context_cache_ = nullptr;
-  Node* globals_start_ = nullptr;
+  SetOncePointer<Node> globals_start_;
   Node** cur_buffer_;
   size_t cur_bufsize_;
   Node* def_buffer_[kDefaultBufferSize];
   bool has_simd_ = false;
   bool needs_stack_check_ = false;
+  const bool untrusted_code_mitigations_ = true;
   // If the runtime doesn't support exception propagation,
   // we won't generate stack checks, and trap handling will also
   // be generated differently.
-  RuntimeExceptionSupport runtime_exception_support_;
+  const RuntimeExceptionSupport runtime_exception_support_;
 
-  wasm::FunctionSig* sig_;
+  wasm::FunctionSig* const sig_;
   SetOncePointer<const Operator> allocate_heap_number_operator_;
 
-  compiler::SourcePositionTable* source_position_table_ = nullptr;
+  compiler::SourcePositionTable* const source_position_table_ = nullptr;
 
   // Internal helper methods.
   JSGraph* jsgraph() { return jsgraph_; }
@@ -481,11 +523,19 @@ class WasmGraphBuilder {
 
   Node* BuildF32CopySign(Node* left, Node* right);
   Node* BuildF64CopySign(Node* left, Node* right);
+
+  Node* BuildI32ConvertFloat(Node* input, wasm::WasmCodePosition position,
+                             NumericImplementation impl, Type int_type,
+                             Type float_type, const Operator* conv_op,
+                             const wasm::WasmOpcode check_op);
   Node* BuildI32SConvertF32(Node* input, wasm::WasmCodePosition position,
                             NumericImplementation impl);
-  Node* BuildI32SConvertF64(Node* input, wasm::WasmCodePosition position);
-  Node* BuildI32UConvertF32(Node* input, wasm::WasmCodePosition position);
-  Node* BuildI32UConvertF64(Node* input, wasm::WasmCodePosition position);
+  Node* BuildI32SConvertF64(Node* input, wasm::WasmCodePosition position,
+                            NumericImplementation impl);
+  Node* BuildI32UConvertF32(Node* input, wasm::WasmCodePosition position,
+                            NumericImplementation impl);
+  Node* BuildI32UConvertF64(Node* input, wasm::WasmCodePosition position,
+                            NumericImplementation impl);
   Node* BuildI32Ctz(Node* input);
   Node* BuildI32Popcnt(Node* input);
   Node* BuildI64Ctz(Node* input);
@@ -524,7 +574,15 @@ class WasmGraphBuilder {
       Node* input, ExternalReference ref,
       MachineRepresentation parameter_representation,
       const MachineType result_type, wasm::WasmCodePosition position);
-  Node* BuildI64SConvertF32(Node* input, wasm::WasmCodePosition position);
+  Node* BuildI64CcallConvertFloat(Node* input, wasm::WasmCodePosition position,
+                                  NumericImplementation impl, Type int_type,
+                                  Type float_type, ExternalReference call_ref);
+  Node* BuildI64TruncConvertFloat(Node* input, wasm::WasmCodePosition position,
+                                  NumericImplementation impl, Type int_type,
+                                  Type float_type, const Operator* trunc_op);
+
+  Node* BuildI64SConvertF32(Node* input, wasm::WasmCodePosition position,
+                            NumericImplementation impl);
   Node* BuildI64UConvertF32(Node* input, wasm::WasmCodePosition position);
   Node* BuildI64SConvertF64(Node* input, wasm::WasmCodePosition position);
   Node* BuildI64UConvertF64(Node* input, wasm::WasmCodePosition position);

@@ -145,6 +145,8 @@ Reduction JSCreateLowering::Reduce(Node* node) {
       return ReduceJSCreateIterResultObject(node);
     case IrOpcode::kJSCreateKeyValueArray:
       return ReduceJSCreateKeyValueArray(node);
+    case IrOpcode::kJSCreatePromise:
+      return ReduceJSCreatePromise(node);
     case IrOpcode::kJSCreateLiteralArray:
     case IrOpcode::kJSCreateLiteralObject:
       return ReduceJSCreateLiteralArrayOrObject(node);
@@ -490,8 +492,8 @@ Reduction JSCreateLowering::ReduceJSCreateGeneratorObject(Node* node) {
 
     if (initial_map->instance_type() == JS_ASYNC_GENERATOR_OBJECT_TYPE) {
       a.Store(AccessBuilder::ForJSAsyncGeneratorObjectQueue(), undefined);
-      a.Store(AccessBuilder::ForJSAsyncGeneratorObjectAwaitedPromise(),
-              undefined);
+      a.Store(AccessBuilder::ForJSAsyncGeneratorObjectIsAwaiting(),
+              jsgraph()->ZeroConstant());
     }
 
     // Handle in-object properties, too.
@@ -994,6 +996,34 @@ Reduction JSCreateLowering::ReduceJSCreateKeyValueArray(Node* node) {
   a.Store(AccessBuilder::ForJSObjectElements(), elements);
   a.Store(AccessBuilder::ForJSArrayLength(PACKED_ELEMENTS), length);
   STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
+  a.FinishAndChange(node);
+  return Changed(node);
+}
+
+Reduction JSCreateLowering::ReduceJSCreatePromise(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSCreatePromise, node->opcode());
+  Node* effect = NodeProperties::GetEffectInput(node);
+
+  Handle<Map> promise_map(native_context()->promise_function()->initial_map());
+
+  AllocationBuilder a(jsgraph(), effect, graph()->start());
+  a.Allocate(promise_map->instance_size());
+  a.Store(AccessBuilder::ForMap(), promise_map);
+  a.Store(AccessBuilder::ForJSObjectPropertiesOrHash(),
+          jsgraph()->EmptyFixedArrayConstant());
+  a.Store(AccessBuilder::ForJSObjectElements(),
+          jsgraph()->EmptyFixedArrayConstant());
+  a.Store(AccessBuilder::ForJSObjectOffset(JSPromise::kReactionsOrResultOffset),
+          jsgraph()->ZeroConstant());
+  STATIC_ASSERT(v8::Promise::kPending == 0);
+  a.Store(AccessBuilder::ForJSObjectOffset(JSPromise::kFlagsOffset),
+          jsgraph()->ZeroConstant());
+  STATIC_ASSERT(JSPromise::kSize == 5 * kPointerSize);
+  for (int i = 0; i < v8::Promise::kEmbedderFieldCount; ++i) {
+    a.Store(
+        AccessBuilder::ForJSObjectOffset(JSPromise::kSize + i * kPointerSize),
+        jsgraph()->ZeroConstant());
+  }
   a.FinishAndChange(node);
   return Changed(node);
 }

@@ -656,6 +656,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
                                 PretenureFlag pretenure);
   const Operator* CreateIterResultObject();
   const Operator* CreateKeyValueArray();
+  const Operator* CreatePromise();
   const Operator* CreateLiteralArray(Handle<ConstantElementsPair> constant,
                                      VectorSlotPair const& feedback,
                                      int literal_flags, int number_of_elements);
@@ -742,13 +743,18 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   // Used to implement Ignition's SuspendGenerator bytecode.
   const Operator* GeneratorStore(int register_count);
 
-  // Used to implement Ignition's RestoreGeneratorState bytecode.
+  // Used to implement Ignition's SwitchOnGeneratorState bytecode.
   const Operator* GeneratorRestoreContinuation();
-  // Used to implement Ignition's RestoreGeneratorRegisters bytecode.
+  const Operator* GeneratorRestoreContext();
+
+  // Used to implement Ignition's ResumeGenerator bytecode.
   const Operator* GeneratorRestoreRegister(int index);
+  const Operator* GeneratorRestoreInputOrDebugPos();
 
   const Operator* StackCheck();
   const Operator* Debugger();
+
+  const Operator* PerformPromiseThen();
 
   const Operator* CreateFunctionContext(int slot_count, ScopeType scope_type);
   const Operator* CreateCatchContext(const Handle<String>& name,
