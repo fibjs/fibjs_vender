@@ -162,8 +162,8 @@ class Register : public RegisterBase<Register, kRegAfterLast> {
   explicit constexpr Register(int code) : RegisterBase(code) {}
 };
 
-static_assert(IS_TRIVIALLY_COPYABLE(Register) &&
-                  sizeof(Register) == sizeof(int),
+ASSERT_TRIVIALLY_COPYABLE(Register);
+static_assert(sizeof(Register) == sizeof(int),
               "Register can efficiently be passed by value");
 
 // r7: context register
@@ -218,8 +218,8 @@ class SwVfpRegister : public RegisterBase<SwVfpRegister, kSwVfpAfterLast> {
   explicit constexpr SwVfpRegister(int code) : RegisterBase(code) {}
 };
 
-static_assert(IS_TRIVIALLY_COPYABLE(SwVfpRegister) &&
-                  sizeof(SwVfpRegister) == sizeof(int),
+ASSERT_TRIVIALLY_COPYABLE(SwVfpRegister);
+static_assert(sizeof(SwVfpRegister) == sizeof(int),
               "SwVfpRegister can efficiently be passed by value");
 
 typedef SwVfpRegister FloatRegister;
@@ -256,8 +256,8 @@ class DwVfpRegister : public RegisterBase<DwVfpRegister, kDoubleAfterLast> {
   explicit constexpr DwVfpRegister(int code) : RegisterBase(code) {}
 };
 
-static_assert(IS_TRIVIALLY_COPYABLE(DwVfpRegister) &&
-                  sizeof(DwVfpRegister) == sizeof(int),
+ASSERT_TRIVIALLY_COPYABLE(DwVfpRegister);
+static_assert(sizeof(DwVfpRegister) == sizeof(int),
               "DwVfpRegister can efficiently be passed by value");
 
 typedef DwVfpRegister DoubleRegister;
@@ -673,7 +673,7 @@ class Assembler : public AssemblerBase {
   // The isolate argument is unused (and may be nullptr) when skipping flushing.
   INLINE(static Address target_address_at(Address pc, Address constant_pool));
   INLINE(static void set_target_address_at(
-      Isolate* isolate, Address pc, Address constant_pool, Address target,
+      Address pc, Address constant_pool, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED));
 
   // Return the code target address at a call site from the return address
@@ -687,12 +687,11 @@ class Assembler : public AssemblerBase {
   // This sets the branch destination (which is in the constant pool on ARM).
   // This is for calls and branches within generated code.
   inline static void deserialization_set_special_target_at(
-      Isolate* isolate, Address constant_pool_entry, Code* code,
-      Address target);
+      Address constant_pool_entry, Code* code, Address target);
 
   // This sets the internal reference at the pc.
   inline static void deserialization_set_target_internal_reference_at(
-      Isolate* isolate, Address pc, Address target,
+      Address pc, Address target,
       RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
 
   // Here we are patching the address in the constant pool, not the actual call
@@ -742,6 +741,8 @@ class Assembler : public AssemblerBase {
 
   void and_(Register dst, Register src1, const Operand& src2,
             SBit s = LeaveCC, Condition cond = al);
+  void and_(Register dst, Register src1, Register src2, SBit s = LeaveCC,
+            Condition cond = al);
 
   void eor(Register dst, Register src1, const Operand& src2,
            SBit s = LeaveCC, Condition cond = al);
@@ -960,6 +961,9 @@ class Assembler : public AssemblerBase {
   void dmb(BarrierOption option);
   void dsb(BarrierOption option);
   void isb(BarrierOption option);
+
+  // Conditional speculation barrier.
+  void csdb();
 
   // Coprocessor instructions
 
@@ -1774,8 +1778,6 @@ class Assembler : public AssemblerBase {
   std::forward_list<HeapObjectRequest> heap_object_requests_;
 };
 
-constexpr int kNoCodeAgeSequenceLength = 3 * Assembler::kInstrSize;
-
 class EnsureSpace BASE_EMBEDDED {
  public:
   INLINE(explicit EnsureSpace(Assembler* assembler));
@@ -1787,7 +1789,6 @@ class PatchingAssembler : public Assembler {
   ~PatchingAssembler();
 
   void Emit(Address addr);
-  void FlushICache(Isolate* isolate);
 };
 
 // This scope utility allows scratch registers to be managed safely. The
@@ -1819,15 +1820,14 @@ class UseScratchRegisterScope {
     return reg;
   }
 
+  // Check if we have registers available to acquire.
+  bool CanAcquire() const { return *assembler_->GetScratchRegisterList() != 0; }
+  bool CanAcquireD() const { return CanAcquireVfp<DwVfpRegister>(); }
+
  private:
   friend class Assembler;
   friend class TurboAssembler;
 
-  // Check if we have registers available to acquire.
-  // These methods are kept private intentionally to restrict their usage to the
-  // assemblers. Choosing to emit a difference instruction sequence depending on
-  // the availability of scratch registers is generally their job.
-  bool CanAcquire() const { return *assembler_->GetScratchRegisterList() != 0; }
   template <typename T>
   bool CanAcquireVfp() const;
 

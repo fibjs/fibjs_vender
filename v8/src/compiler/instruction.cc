@@ -156,8 +156,10 @@ std::ostream& operator<<(std::ostream& os,
           return os << "(S)";
         case UnallocatedOperand::SAME_AS_FIRST_INPUT:
           return os << "(1)";
-        case UnallocatedOperand::ANY:
+        case UnallocatedOperand::REGISTER_OR_SLOT:
           return os << "(-)";
+        case UnallocatedOperand::REGISTER_OR_SLOT_OR_CONSTANT:
+          return os << "(*)";
       }
     }
     case InstructionOperand::CONSTANT:
@@ -446,8 +448,12 @@ std::ostream& operator<<(std::ostream& os, const FlagsMode& fm) {
       return os;
     case kFlags_branch:
       return os << "branch";
+    case kFlags_branch_and_poison:
+      return os << "branch_and_poison";
     case kFlags_deoptimize:
       return os << "deoptimize";
+    case kFlags_deoptimize_and_poison:
+      return os << "deoptimize_and_poison";
     case kFlags_set:
       return os << "set";
     case kFlags_trap:

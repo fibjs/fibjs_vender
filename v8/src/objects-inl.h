@@ -40,6 +40,7 @@
 #include "src/objects/hash-table.h"
 #include "src/objects/js-array-inl.h"
 #include "src/objects/js-collection-inl.h"
+#include "src/objects/js-promise-inl.h"
 #include "src/objects/js-regexp-inl.h"
 #include "src/objects/literal-objects.h"
 #include "src/objects/module-inl.h"
@@ -78,6 +79,7 @@ int PropertyDetails::field_width_in_words() const {
 }
 
 TYPE_CHECKER(BigInt, BIGINT_TYPE)
+TYPE_CHECKER(BoilerplateDescription, BOILERPLATE_DESCRIPTION_TYPE)
 TYPE_CHECKER(BreakPoint, TUPLE2_TYPE)
 TYPE_CHECKER(BreakPointInfo, TUPLE2_TYPE)
 TYPE_CHECKER(CallHandlerInfo, TUPLE3_TYPE)
@@ -85,11 +87,14 @@ TYPE_CHECKER(Cell, CELL_TYPE)
 TYPE_CHECKER(ConstantElementsPair, TUPLE2_TYPE)
 TYPE_CHECKER(CoverageInfo, FIXED_ARRAY_TYPE)
 TYPE_CHECKER(DescriptorArray, DESCRIPTOR_ARRAY_TYPE)
+TYPE_CHECKER(FeedbackCell, FEEDBACK_CELL_TYPE)
+TYPE_CHECKER(FeedbackMetadata, FEEDBACK_METADATA_TYPE)
 TYPE_CHECKER(FeedbackVector, FEEDBACK_VECTOR_TYPE)
 TYPE_CHECKER(Foreign, FOREIGN_TYPE)
 TYPE_CHECKER(FreeSpace, FREE_SPACE_TYPE)
 TYPE_CHECKER(HashTable, HASH_TABLE_TYPE)
 TYPE_CHECKER(HeapNumber, HEAP_NUMBER_TYPE)
+TYPE_CHECKER(JSArrayIterator, JS_ARRAY_ITERATOR_TYPE)
 TYPE_CHECKER(JSAsyncFromSyncIterator, JS_ASYNC_FROM_SYNC_ITERATOR_TYPE)
 TYPE_CHECKER(JSAsyncGeneratorObject, JS_ASYNC_GENERATOR_OBJECT_TYPE)
 TYPE_CHECKER(JSBoundFunction, JS_BOUND_FUNCTION_TYPE)
@@ -100,7 +105,6 @@ TYPE_CHECKER(JSError, JS_ERROR_TYPE)
 TYPE_CHECKER(JSFunction, JS_FUNCTION_TYPE)
 TYPE_CHECKER(JSGlobalObject, JS_GLOBAL_OBJECT_TYPE)
 TYPE_CHECKER(JSMessageObject, JS_MESSAGE_OBJECT_TYPE)
-TYPE_CHECKER(JSPromise, JS_PROMISE_TYPE)
 TYPE_CHECKER(JSStringIterator, JS_STRING_ITERATOR_TYPE)
 TYPE_CHECKER(JSValue, JS_VALUE_TYPE)
 TYPE_CHECKER(MutableHeapNumber, MUTABLE_HEAP_NUMBER_TYPE)
@@ -109,11 +113,11 @@ TYPE_CHECKER(PreParsedScopeData, TUPLE2_TYPE)
 TYPE_CHECKER(PropertyArray, PROPERTY_ARRAY_TYPE)
 TYPE_CHECKER(PropertyCell, PROPERTY_CELL_TYPE)
 TYPE_CHECKER(PropertyDescriptorObject, FIXED_ARRAY_TYPE)
+TYPE_CHECKER(ScopeInfo, SCOPE_INFO_TYPE)
 TYPE_CHECKER(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE)
 TYPE_CHECKER(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE)
 TYPE_CHECKER(SourcePositionTableWithFrameCache, TUPLE2_TYPE)
-TYPE_CHECKER(TemplateMap, HASH_TABLE_TYPE)
-TYPE_CHECKER(TemplateObjectDescription, TUPLE3_TYPE)
+TYPE_CHECKER(TemplateObjectDescription, TUPLE2_TYPE)
 TYPE_CHECKER(TransitionArray, TRANSITION_ARRAY_TYPE)
 TYPE_CHECKER(WasmInstanceObject, WASM_INSTANCE_TYPE)
 TYPE_CHECKER(WasmMemoryObject, WASM_MEMORY_TYPE)
@@ -148,10 +152,6 @@ bool HeapObject::IsJSSloppyArgumentsObject() const {
 bool HeapObject::IsJSGeneratorObject() const {
   return map()->instance_type() == JS_GENERATOR_OBJECT_TYPE ||
          IsJSAsyncGeneratorObject();
-}
-
-bool HeapObject::IsBoilerplateDescription() const {
-  return IsFixedArrayExact();
 }
 
 bool HeapObject::IsClassBoilerplate() const { return IsFixedArrayExact(); }
@@ -310,12 +310,6 @@ bool HeapObject::IsJSSetIterator() const {
           instance_type == JS_SET_KEY_VALUE_ITERATOR_TYPE);
 }
 
-bool HeapObject::IsJSArrayIterator() const {
-  InstanceType instance_type = map()->instance_type();
-  return (instance_type >= FIRST_ARRAY_ITERATOR_TYPE &&
-          instance_type <= LAST_ARRAY_ITERATOR_TYPE);
-}
-
 bool HeapObject::IsJSWeakCollection() const {
   return IsJSWeakMap() || IsJSWeakSet();
 }
@@ -344,8 +338,6 @@ bool HeapObject::IsArrayList() const {
 bool HeapObject::IsRegExpMatchInfo() const { return IsFixedArrayExact(); }
 
 bool Object::IsLayoutDescriptor() const { return IsSmi() || IsByteArray(); }
-
-bool HeapObject::IsFeedbackMetadata() const { return IsFixedArrayExact(); }
 
 bool HeapObject::IsDeoptimizationData() const {
   // Must be a fixed array.
@@ -403,10 +395,6 @@ bool HeapObject::IsScriptContextTable() const {
   return map() == GetHeap()->script_context_table_map();
 }
 
-bool HeapObject::IsScopeInfo() const {
-  return map() == GetHeap()->scope_info_map();
-}
-
 template <>
 inline bool Is<JSFunction>(Object* obj) {
   return obj->IsJSFunction();
@@ -420,6 +408,26 @@ bool HeapObject::IsStringWrapper() const {
   return IsJSValue() && JSValue::cast(this)->value()->IsString();
 }
 
+bool HeapObject::IsBooleanWrapper() const {
+  return IsJSValue() && JSValue::cast(this)->value()->IsBoolean();
+}
+
+bool HeapObject::IsScriptWrapper() const {
+  return IsJSValue() && JSValue::cast(this)->value()->IsScript();
+}
+
+bool HeapObject::IsNumberWrapper() const {
+  return IsJSValue() && JSValue::cast(this)->value()->IsNumber();
+}
+
+bool HeapObject::IsBigIntWrapper() const {
+  return IsJSValue() && JSValue::cast(this)->value()->IsBigInt();
+}
+
+bool HeapObject::IsSymbolWrapper() const {
+  return IsJSValue() && JSValue::cast(this)->value()->IsSymbol();
+}
+
 bool HeapObject::IsBoolean() const {
   return IsOddball() &&
          ((Oddball::cast(this)->kind() & Oddball::kNotBooleanMask) == 0);
@@ -427,10 +435,6 @@ bool HeapObject::IsBoolean() const {
 
 bool HeapObject::IsJSArrayBufferView() const {
   return IsJSDataView() || IsJSTypedArray();
-}
-
-bool HeapObject::IsWeakHashTable() const {
-  return map() == GetHeap()->weak_hash_table_map();
 }
 
 bool HeapObject::IsDictionary() const {
@@ -562,15 +566,14 @@ CAST_ACCESSOR(AllocationSite)
 CAST_ACCESSOR(AsyncGeneratorRequest)
 CAST_ACCESSOR(BigInt)
 CAST_ACCESSOR(BoilerplateDescription)
-CAST_ACCESSOR(CallbackTask)
 CAST_ACCESSOR(CallHandlerInfo)
 CAST_ACCESSOR(Cell)
 CAST_ACCESSOR(ConstantElementsPair)
 CAST_ACCESSOR(ContextExtension)
 CAST_ACCESSOR(DescriptorArray)
 CAST_ACCESSOR(EnumCache)
+CAST_ACCESSOR(FeedbackCell)
 CAST_ACCESSOR(Foreign)
-CAST_ACCESSOR(CallableTask)
 CAST_ACCESSOR(FunctionTemplateInfo)
 CAST_ACCESSOR(GlobalDictionary)
 CAST_ACCESSOR(HeapObject)
@@ -586,13 +589,11 @@ CAST_ACCESSOR(JSGlobalObject)
 CAST_ACCESSOR(JSGlobalProxy)
 CAST_ACCESSOR(JSMessageObject)
 CAST_ACCESSOR(JSObject)
-CAST_ACCESSOR(JSPromise)
 CAST_ACCESSOR(JSProxy)
 CAST_ACCESSOR(JSReceiver)
 CAST_ACCESSOR(JSStringIterator)
 CAST_ACCESSOR(JSValue)
 CAST_ACCESSOR(LayoutDescriptor)
-CAST_ACCESSOR(Microtask)
 CAST_ACCESSOR(NameDictionary)
 CAST_ACCESSOR(NormalizedMapCache)
 CAST_ACCESSOR(NumberDictionary)
@@ -603,12 +604,6 @@ CAST_ACCESSOR(ObjectTemplateInfo)
 CAST_ACCESSOR(Oddball)
 CAST_ACCESSOR(OrderedHashMap)
 CAST_ACCESSOR(OrderedHashSet)
-CAST_ACCESSOR(PromiseCapability)
-CAST_ACCESSOR(PromiseReaction)
-CAST_ACCESSOR(PromiseReactionJobTask)
-CAST_ACCESSOR(PromiseFulfillReactionJobTask)
-CAST_ACCESSOR(PromiseRejectReactionJobTask)
-CAST_ACCESSOR(PromiseResolveThenableJobTask)
 CAST_ACCESSOR(PropertyArray)
 CAST_ACCESSOR(PropertyCell)
 CAST_ACCESSOR(PrototypeInfo)
@@ -624,12 +619,10 @@ CAST_ACCESSOR(StringSet)
 CAST_ACCESSOR(StringTable)
 CAST_ACCESSOR(Struct)
 CAST_ACCESSOR(TemplateInfo)
-CAST_ACCESSOR(TemplateMap)
 CAST_ACCESSOR(TemplateObjectDescription)
 CAST_ACCESSOR(Tuple2)
 CAST_ACCESSOR(Tuple3)
 CAST_ACCESSOR(WeakCell)
-CAST_ACCESSOR(WeakHashTable)
 
 bool Object::HasValidElements() {
   // Dictionary is covered under FixedArray.
@@ -824,10 +817,6 @@ MaybeHandle<Object> Object::ToIndex(Isolate* isolate, Handle<Object> input,
   return ConvertToIndex(isolate, input, error_index);
 }
 
-bool Object::HasSpecificClassOf(String* name) {
-  return this->IsJSObject() && (JSObject::cast(this)->class_name() == name);
-}
-
 MaybeHandle<Object> Object::GetProperty(Handle<Object> object,
                                         Handle<Name> name) {
   LookupIterator it(object, name);
@@ -923,6 +912,10 @@ bool JSObject::PrototypeHasNoElements(Isolate* isolate, JSObject* object) {
 
 Object** HeapObject::RawField(HeapObject* obj, int byte_offset) {
   return reinterpret_cast<Object**>(FIELD_ADDR(obj, byte_offset));
+}
+
+MaybeObject** HeapObject::RawMaybeWeakField(HeapObject* obj, int byte_offset) {
+  return reinterpret_cast<MaybeObject**>(FIELD_ADDR(obj, byte_offset));
 }
 
 int Smi::ToInt(const Object* object) { return Smi::cast(object)->value(); }
@@ -1390,6 +1383,7 @@ Handle<Object> Oddball::ToNumber(Handle<Oddball> input) {
 
 
 ACCESSORS(Cell, value, Object, kValueOffset)
+ACCESSORS(FeedbackCell, value, HeapObject, kValueOffset)
 ACCESSORS(PropertyCell, dependent_code, DependentCode, kDependentCodeOffset)
 ACCESSORS(PropertyCell, name, Name, kNameOffset)
 ACCESSORS(PropertyCell, value, Object, kValueOffset)
@@ -1662,8 +1656,8 @@ void Object::VerifyApiCallResultType() {
   DCHECK(IsHeapObject());
   Isolate* isolate = HeapObject::cast(this)->GetIsolate();
   if (!(IsString() || IsSymbol() || IsJSReceiver() || IsHeapNumber() ||
-        IsUndefined(isolate) || IsTrue(isolate) || IsFalse(isolate) ||
-        IsNull(isolate))) {
+        IsBigInt() || IsUndefined(isolate) || IsTrue(isolate) ||
+        IsFalse(isolate) || IsNull(isolate))) {
     FATAL("API call returned invalid object");
   }
 #endif  // DEBUG
@@ -1735,13 +1729,14 @@ WriteBarrierMode HeapObject::GetWriteBarrierMode(
   return UPDATE_WRITE_BARRIER;
 }
 
-AllocationAlignment HeapObject::RequiredAlignment() const {
+AllocationAlignment HeapObject::RequiredAlignment(Map* map) {
 #ifdef V8_HOST_ARCH_32_BIT
-  if ((IsFixedFloat64Array() || IsFixedDoubleArray()) &&
-      FixedArrayBase::cast(this)->length() != 0) {
+  int instance_type = map->instance_type();
+  if (instance_type == FIXED_FLOAT64_ARRAY_TYPE ||
+      instance_type == FIXED_DOUBLE_ARRAY_TYPE) {
     return kDoubleAligned;
   }
-  if (IsHeapNumber()) return kDoubleUnaligned;
+  if (instance_type == HEAP_NUMBER_TYPE) return kDoubleUnaligned;
 #endif  // V8_HOST_ARCH_32_BIT
   return kWordAligned;
 }
@@ -2229,6 +2224,15 @@ int HeapObject::SizeFromMap(Map* map) const {
     return FixedDoubleArray::SizeFor(
         reinterpret_cast<const FixedDoubleArray*>(this)->synchronized_length());
   }
+  if (instance_type == FEEDBACK_METADATA_TYPE) {
+    return FeedbackMetadata::SizeFor(
+        reinterpret_cast<const FeedbackMetadata*>(this)
+            ->synchronized_slot_count());
+  }
+  if (instance_type == WEAK_FIXED_ARRAY_TYPE) {
+    return WeakFixedArray::SizeFor(
+        reinterpret_cast<const WeakFixedArray*>(this)->synchronized_length());
+  }
   if (instance_type >= FIRST_FIXED_TYPED_ARRAY_TYPE &&
       instance_type <= LAST_FIXED_TYPED_ARRAY_TYPE) {
     return reinterpret_cast<const FixedTypedArrayBase*>(this)->TypedArraySize(
@@ -2265,7 +2269,7 @@ ACCESSORS(JSBoundFunction, bound_this, Object, kBoundThisOffset)
 ACCESSORS(JSBoundFunction, bound_arguments, FixedArray, kBoundArgumentsOffset)
 
 ACCESSORS(JSFunction, shared, SharedFunctionInfo, kSharedFunctionInfoOffset)
-ACCESSORS(JSFunction, feedback_vector_cell, Cell, kFeedbackVectorOffset)
+ACCESSORS(JSFunction, feedback_cell, FeedbackCell, kFeedbackCellOffset)
 
 ACCESSORS(JSGlobalObject, native_context, Context, kNativeContextOffset)
 ACCESSORS(JSGlobalObject, global_proxy, JSObject, kGlobalProxyOffset)
@@ -2291,11 +2295,12 @@ bool AccessorInfo::has_getter() {
   return result;
 }
 
-ACCESSORS(PromiseReaction, next, Object, kNextOffset)
-ACCESSORS(PromiseReaction, reject_handler, HeapObject, kRejectHandlerOffset)
-ACCESSORS(PromiseReaction, fulfill_handler, HeapObject, kFulfillHandlerOffset)
-ACCESSORS(PromiseReaction, promise_or_capability, HeapObject,
-          kPromiseOrCapabilityOffset)
+bool AccessorInfo::has_setter() {
+  bool result = setter() != Smi::kZero;
+  DCHECK_EQ(result, setter() != Smi::kZero &&
+                        Foreign::cast(setter())->foreign_address() != nullptr);
+  return result;
+}
 
 ACCESSORS(AsyncGeneratorRequest, next, Object, kNextOffset)
 SMI_ACCESSORS(AsyncGeneratorRequest, resume_mode, kResumeModeOffset)
@@ -2347,7 +2352,6 @@ ACCESSORS(PrototypeInfo, weak_cell, Object, kWeakCellOffset)
 ACCESSORS(PrototypeInfo, prototype_users, Object, kPrototypeUsersOffset)
 ACCESSORS(PrototypeInfo, object_create_map, Object, kObjectCreateMap)
 SMI_ACCESSORS(PrototypeInfo, registry_slot, kRegistrySlotOffset)
-ACCESSORS(PrototypeInfo, validity_cell, Object, kValidityCellOffset)
 SMI_ACCESSORS(PrototypeInfo, bit_field, kBitFieldOffset)
 BOOL_ACCESSORS(PrototypeInfo, bit_field, should_be_fast_map, kShouldBeFastBit)
 
@@ -2365,7 +2369,6 @@ bool ConstantElementsPair::is_empty() const {
   return constant_values()->length() == 0;
 }
 
-SMI_ACCESSORS(TemplateObjectDescription, hash, kHashOffset)
 ACCESSORS(TemplateObjectDescription, raw_strings, FixedArray, kRawStringsOffset)
 ACCESSORS(TemplateObjectDescription, cooked_strings, FixedArray,
           kCookedStringsOffset)
@@ -2393,6 +2396,7 @@ BOOL_ACCESSORS(InterceptorInfo, flags, can_intercept_symbols,
 BOOL_ACCESSORS(InterceptorInfo, flags, all_can_read, kAllCanReadBit)
 BOOL_ACCESSORS(InterceptorInfo, flags, non_masking, kNonMasking)
 BOOL_ACCESSORS(InterceptorInfo, flags, is_named, kNamed)
+BOOL_ACCESSORS(InterceptorInfo, flags, has_no_side_effect, kHasNoSideEffect)
 
 ACCESSORS(CallHandlerInfo, callback, Object, kCallbackOffset)
 ACCESSORS(CallHandlerInfo, js_callback, Object, kJsCallbackOffset)
@@ -2440,6 +2444,7 @@ int ObjectTemplateInfo::embedder_field_count() const {
 }
 
 void ObjectTemplateInfo::set_embedder_field_count(int count) {
+  DCHECK_LE(count, JSObject::kMaxEmbedderFields);
   return set_data(
       Smi::FromInt(EmbedderFieldCount::update(Smi::ToInt(data()), count)));
 }
@@ -2520,8 +2525,8 @@ BOOL_ACCESSORS(FunctionTemplateInfo, flag, accept_any_receiver,
                kAcceptAnyReceiver)
 
 FeedbackVector* JSFunction::feedback_vector() const {
-  DCHECK(feedback_vector_cell()->value()->IsFeedbackVector());
-  return FeedbackVector::cast(feedback_vector_cell()->value());
+  DCHECK(has_feedback_vector());
+  return FeedbackVector::cast(feedback_cell()->value());
 }
 
 // Code objects that are marked for deoptimization are not considered to be
@@ -2550,8 +2555,12 @@ void JSFunction::ClearOptimizationMarker() {
   feedback_vector()->ClearOptimizationMarker();
 }
 
+// Optimized code marked for deoptimization will tier back down to running
+// interpreted on its next activation, and already doesn't count as IsOptimized.
 bool JSFunction::IsInterpreted() {
-  return code()->is_interpreter_trampoline_builtin();
+  return code()->is_interpreter_trampoline_builtin() ||
+         (code()->kind() == Code::OPTIMIZED_FUNCTION &&
+          code()->marked_for_deoptimization());
 }
 
 bool JSFunction::ChecksOptimizationMarker() {
@@ -2628,21 +2637,7 @@ void JSFunction::SetOptimizationMarker(OptimizationMarker marker) {
 }
 
 bool JSFunction::has_feedback_vector() const {
-  return !feedback_vector_cell()->value()->IsUndefined(GetIsolate());
-}
-
-JSFunction::FeedbackVectorState JSFunction::GetFeedbackVectorState(
-    Isolate* isolate) const {
-  Cell* cell = feedback_vector_cell();
-  if (shared()->HasAsmWasmData()) {
-    return NO_VECTOR_NEEDED;
-  } else if (cell == isolate->heap()->undefined_cell()) {
-    return TOP_LEVEL_SCRIPT_NEEDS_VECTOR;
-  } else if (cell->value() == isolate->heap()->undefined_value() ||
-             !has_feedback_vector()) {
-    return NEEDS_VECTOR;
-  }
-  return HAS_VECTOR;
+  return !feedback_cell()->value()->IsUndefined(GetIsolate());
 }
 
 Context* JSFunction::context() {
@@ -2812,43 +2807,6 @@ ACCESSORS(JSMessageObject, stack_frames, Object, kStackFramesOffset)
 SMI_ACCESSORS(JSMessageObject, start_position, kStartPositionOffset)
 SMI_ACCESSORS(JSMessageObject, end_position, kEndPositionOffset)
 SMI_ACCESSORS(JSMessageObject, error_level, kErrorLevelOffset)
-
-ACCESSORS(CallableTask, callable, JSReceiver, kCallableOffset)
-ACCESSORS(CallableTask, context, Context, kContextOffset)
-
-ACCESSORS(CallbackTask, callback, Foreign, kCallbackOffset)
-ACCESSORS(CallbackTask, data, Foreign, kDataOffset)
-
-ACCESSORS(PromiseResolveThenableJobTask, context, Context, kContextOffset)
-ACCESSORS(PromiseResolveThenableJobTask, promise_to_resolve, JSPromise,
-          kPromiseToResolveOffset)
-ACCESSORS(PromiseResolveThenableJobTask, then, JSReceiver, kThenOffset)
-ACCESSORS(PromiseResolveThenableJobTask, thenable, JSReceiver, kThenableOffset)
-
-ACCESSORS(PromiseReactionJobTask, context, Context, kContextOffset)
-ACCESSORS(PromiseReactionJobTask, argument, Object, kArgumentOffset);
-ACCESSORS(PromiseReactionJobTask, handler, HeapObject, kHandlerOffset);
-ACCESSORS(PromiseReactionJobTask, promise_or_capability, HeapObject,
-          kPromiseOrCapabilityOffset);
-
-ACCESSORS(PromiseCapability, promise, HeapObject, kPromiseOffset)
-ACCESSORS(PromiseCapability, resolve, Object, kResolveOffset)
-ACCESSORS(PromiseCapability, reject, Object, kRejectOffset)
-
-ACCESSORS(JSPromise, reactions_or_result, Object, kReactionsOrResultOffset)
-SMI_ACCESSORS(JSPromise, flags, kFlagsOffset)
-BOOL_ACCESSORS(JSPromise, flags, has_handler, kHasHandlerBit)
-BOOL_ACCESSORS(JSPromise, flags, handled_hint, kHandledHintBit)
-
-Object* JSPromise::result() const {
-  DCHECK_NE(Promise::kPending, status());
-  return reactions_or_result();
-}
-
-Object* JSPromise::reactions() const {
-  DCHECK_EQ(Promise::kPending, status());
-  return reactions_or_result();
-}
 
 ElementsKind JSObject::GetElementsKind() {
   ElementsKind kind = map()->elements_kind();
@@ -3207,6 +3165,8 @@ BIT_FIELD_ACCESSORS(AccessorInfo, flags, is_special_data_property,
 BIT_FIELD_ACCESSORS(AccessorInfo, flags, replace_on_access,
                     AccessorInfo::ReplaceOnAccessBit)
 BIT_FIELD_ACCESSORS(AccessorInfo, flags, is_sloppy, AccessorInfo::IsSloppyBit)
+BIT_FIELD_ACCESSORS(AccessorInfo, flags, has_no_side_effect,
+                    AccessorInfo::HasNoSideEffectBit)
 BIT_FIELD_ACCESSORS(AccessorInfo, flags, initial_property_attributes,
                     AccessorInfo::InitialAttributesBits)
 
@@ -3432,35 +3392,6 @@ Handle<ObjectHashTable> ObjectHashTable::Shrink(Handle<ObjectHashTable> table) {
   return DerivedHashTable::Shrink(table);
 }
 
-bool WeakHashTableShape::IsMatch(Handle<Object> key, Object* other) {
-  if (other->IsWeakCell()) other = WeakCell::cast(other)->value();
-  return key->IsWeakCell() ? WeakCell::cast(*key)->value() == other
-                           : *key == other;
-}
-
-uint32_t WeakHashTableShape::Hash(Isolate* isolate, Handle<Object> key) {
-  intptr_t hash =
-      key->IsWeakCell()
-          ? reinterpret_cast<intptr_t>(WeakCell::cast(*key)->value())
-          : reinterpret_cast<intptr_t>(*key);
-  return (uint32_t)(hash & 0xFFFFFFFF);
-}
-
-uint32_t WeakHashTableShape::HashForObject(Isolate* isolate, Object* other) {
-  if (other->IsWeakCell()) other = WeakCell::cast(other)->value();
-  intptr_t hash = reinterpret_cast<intptr_t>(other);
-  return (uint32_t)(hash & 0xFFFFFFFF);
-}
-
-Handle<Object> WeakHashTableShape::AsHandle(Isolate* isolate,
-                                            Handle<Object> key) {
-  return key;
-}
-
-int WeakHashTableShape::GetMapRootIndex() {
-  return Heap::kWeakHashTableMapRootIndex;
-}
-
 Relocatable::Relocatable(Isolate* isolate) {
   isolate_ = isolate;
   prev_ = isolate->relocatable_top();
@@ -3525,15 +3456,15 @@ ACCESSORS(JSAsyncFromSyncIterator, next, Object, kNextOffset)
 ACCESSORS(JSStringIterator, string, String, kStringOffset)
 SMI_ACCESSORS(JSStringIterator, index, kNextIndexOffset)
 
-bool ScopeInfo::IsAsmModule() { return AsmModuleField::decode(Flags()); }
+bool ScopeInfo::IsAsmModule() const { return AsmModuleField::decode(Flags()); }
 
-bool ScopeInfo::HasSimpleParameters() {
+bool ScopeInfo::HasSimpleParameters() const {
   return HasSimpleParametersField::decode(Flags());
 }
 
 #define FIELD_ACCESSORS(name)                                                 \
   void ScopeInfo::Set##name(int value) { set(k##name, Smi::FromInt(value)); } \
-  int ScopeInfo::name() {                                                     \
+  int ScopeInfo::name() const {                                               \
     if (length() > 0) {                                                       \
       return Smi::ToInt(get(k##name));                                        \
     } else {                                                                  \

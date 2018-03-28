@@ -47,11 +47,11 @@ namespace internal {
 #define kJSFunctionRegister x1
 #define kContextRegister cp
 #define kAllocateSizeRegister x1
+#define kSpeculationPoisonRegister x18
 #define kInterpreterAccumulatorRegister x0
 #define kInterpreterBytecodeOffsetRegister x19
 #define kInterpreterBytecodeArrayRegister x20
 #define kInterpreterDispatchTableRegister x21
-#define kInterpreterTargetBytecodeRegister x18
 #define kJavaScriptCallArgCountRegister x0
 #define kJavaScriptCallCodeStartRegister x2
 #define kJavaScriptCallNewTargetRegister x3
@@ -559,6 +559,7 @@ class TurboAssembler : public Assembler {
   inline void Dmb(BarrierDomain domain, BarrierType type);
   inline void Dsb(BarrierDomain domain, BarrierType type);
   inline void Isb();
+  inline void Csdb();
 
   bool AllowThisStubCall(CodeStub* stub);
   void CallStubDelayed(CodeStub* stub);
@@ -644,6 +645,8 @@ class TurboAssembler : public Assembler {
   inline void Cmp(const Register& rn, const Operand& operand);
   inline void Subs(const Register& rd, const Register& rn,
                    const Operand& operand);
+  void Csel(const Register& rd, const Register& rn, const Operand& operand,
+            Condition cond);
 
   // Emits a runtime assert that the stack pointer is aligned.
   void AssertSpAligned();
@@ -1009,7 +1012,9 @@ class TurboAssembler : public Assembler {
   void CanonicalizeNaN(const VRegister& dst, const VRegister& src);
   void CanonicalizeNaN(const VRegister& reg) { CanonicalizeNaN(reg, reg); }
 
+  inline void CmovX(const Register& rd, const Register& rn, Condition cond);
   inline void Cset(const Register& rd, Condition cond);
+  inline void Csetm(const Register& rd, Condition cond);
   inline void Fccmp(const VRegister& fn, const VRegister& fm, StatusFlags nzcv,
                     Condition cond);
   inline void Csinc(const Register& rd, const Register& rn, const Register& rm,
@@ -1195,6 +1200,12 @@ class TurboAssembler : public Assembler {
   inline void Fcvtas(const Register& rd, const VRegister& fn);
   inline void Fcvtau(const Register& rd, const VRegister& fn);
 
+  // Compute the start of the generated instruction stream from the current PC.
+  // This is an alternative to embedding the {CodeObject} handle as a reference.
+  void ComputeCodeStartAddress(const Register& rd);
+
+  void ResetSpeculationPoisonRegister();
+
  protected:
   // The actual Push and Pop implementations. These don't generate any code
   // other than that required for the push or pop. This allows
@@ -1288,8 +1299,6 @@ class MacroAssembler : public TurboAssembler {
 
   inline void Ccmn(const Register& rn, const Operand& operand, StatusFlags nzcv,
                    Condition cond);
-  void Csel(const Register& rd, const Register& rn, const Operand& operand,
-            Condition cond);
 
 #define DECLARE_FUNCTION(FN, OP) \
   inline void FN(const Register& rs, const Register& rt, const Register& rn);
@@ -1306,8 +1315,6 @@ class MacroAssembler : public TurboAssembler {
   inline void Cinc(const Register& rd, const Register& rn, Condition cond);
   inline void Cinv(const Register& rd, const Register& rn, Condition cond);
   inline void CzeroX(const Register& rd, Condition cond);
-  inline void CmovX(const Register& rd, const Register& rn, Condition cond);
-  inline void Csetm(const Register& rd, Condition cond);
   inline void Csinv(const Register& rd, const Register& rn, const Register& rm,
                     Condition cond);
   inline void Csneg(const Register& rd, const Register& rn, const Register& rm,
@@ -1706,6 +1713,9 @@ class MacroAssembler : public TurboAssembler {
   // Abort execution if argument is not a FixedArray, enabled via --debug-code.
   void AssertFixedArray(Register object);
 
+  // Abort execution if argument is not a Constructor, enabled via --debug-code.
+  void AssertConstructor(Register object);
+
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
   void AssertFunction(Register object);
 
@@ -1720,11 +1730,6 @@ class MacroAssembler : public TurboAssembler {
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object);
-
-  void JumpIfHeapNumber(Register object, Label* on_heap_number,
-                        SmiCheckType smi_check_type = DONT_DO_SMI_CHECK);
-  void JumpIfNotHeapNumber(Register object, Label* on_not_heap_number,
-                           SmiCheckType smi_check_type = DONT_DO_SMI_CHECK);
 
   // Try to represent a double as a signed 64-bit int.
   // This succeeds if the result compares equal to the input, so inputs of -0.0
@@ -1769,7 +1774,7 @@ class MacroAssembler : public TurboAssembler {
                                bool builtin_exit_frame = false);
 
   // Generates a trampoline to jump to the off-heap instruction stream.
-  void JumpToInstructionStream(const InstructionStream* stream);
+  void JumpToInstructionStream(Address entry);
 
   // Registers used through the invocation chain are hard-coded.
   // We force passing the parameters to ensure the contracts are correctly
@@ -1918,6 +1923,10 @@ class MacroAssembler : public TurboAssembler {
   void LoadGlobalProxy(Register dst) {
     LoadNativeContextSlot(Context::GLOBAL_PROXY_INDEX, dst);
   }
+
+  // ---------------------------------------------------------------------------
+  // In-place weak references.
+  void LoadWeakValue(Register out, Register in, Label* target_if_cleared);
 
   // ---------------------------------------------------------------------------
   // StatsCounter support

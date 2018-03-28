@@ -207,9 +207,6 @@
     <ClInclude Include="include\libplatform\v8-tracing.h">
       <Filter>Header Files\libplatform</Filter>
     </ClInclude>
-    <ClInclude Include="include\v8-debug.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\v8-inspector-protocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -477,6 +474,9 @@
     <ClInclude Include="src\base\utils\random-number-generator.h">
       <Filter>Source Files\base\utils</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\v8-fallthrough.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
     <ClInclude Include="src\base\win32-headers.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
@@ -543,6 +543,9 @@
     <ClInclude Include="src\builtins\builtins-string-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-typedarray-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-utils-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -550,6 +553,12 @@
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\constants-table-builder.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\growable-fixed-array-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\cached-powers.h">
@@ -1062,6 +1071,9 @@
     <ClInclude Include="src\external-reference-table.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\external-reference.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\factory-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1114,6 +1126,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\globals.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\handler-table.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\handles-inl.h">
@@ -1404,13 +1419,13 @@
     <ClInclude Include="src\layout-descriptor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\libplatform\default-background-task-runner.h">
-      <Filter>Source Files\libplatform</Filter>
-    </ClInclude>
     <ClInclude Include="src\libplatform\default-foreground-task-runner.h">
       <Filter>Source Files\libplatform</Filter>
     </ClInclude>
     <ClInclude Include="src\libplatform\default-platform.h">
+      <Filter>Source Files\libplatform</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libplatform\default-worker-threads-task-runner.h">
       <Filter>Source Files\libplatform</Filter>
     </ClInclude>
     <ClInclude Include="src\libplatform\task-queue.h">
@@ -1554,6 +1569,12 @@
     <ClInclude Include="src\objects\js-collection.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\js-promise-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-promise.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\js-regexp-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1572,6 +1593,18 @@
     <ClInclude Include="src\objects\map.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\maybe-object-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\maybe-object.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\microtask-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\microtask.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\module-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1588,6 +1621,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\object-macros.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\promise-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\promise.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\property-descriptor-object-inl.h">
@@ -1629,9 +1668,6 @@
     <ClInclude Include="src\ostreams.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\parsing\background-parsing-task.h">
-      <Filter>Source Files\parsing</Filter>
-    </ClInclude>
     <ClInclude Include="src\parsing\duplicate-finder.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
@@ -1654,9 +1690,6 @@
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\parsing.h">
-      <Filter>Source Files\parsing</Filter>
-    </ClInclude>
-    <ClInclude Include="src\parsing\preparse-data-format.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\preparse-data.h">
@@ -1896,6 +1929,9 @@
     <ClInclude Include="src\snapshot\deserializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
+    <ClInclude Include="src\snapshot\macros.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
     <ClInclude Include="src\snapshot\natives.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
@@ -2104,9 +2140,6 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-specialization.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
-    <ClInclude Include="src\wasm\wasm-code-wrapper.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-constants.h">
@@ -2559,6 +2592,12 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\constants-table-builder.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\growable-fixed-array-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\ia32\builtins-ia32.cc">
@@ -3053,6 +3092,9 @@
     <ClCompile Include="src\external-reference-table.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\external-reference.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\factory.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3092,6 +3134,9 @@
     <ClCompile Include="src\global-handles.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\handler-table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\handles.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3126,6 +3171,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\invalidated-slots.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\item-parallel-job.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\mark-compact.cc">
@@ -3320,13 +3368,13 @@
     <ClCompile Include="src\layout-descriptor.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\libplatform\default-background-task-runner.cc">
-      <Filter>Source Files\libplatform</Filter>
-    </ClCompile>
     <ClCompile Include="src\libplatform\default-foreground-task-runner.cc">
       <Filter>Source Files\libplatform</Filter>
     </ClCompile>
     <ClCompile Include="src\libplatform\default-platform.cc">
+      <Filter>Source Files\libplatform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\default-worker-threads-task-runner.cc">
       <Filter>Source Files\libplatform</Filter>
     </ClCompile>
     <ClCompile Include="src\libplatform\task-queue.cc">
@@ -3403,9 +3451,6 @@
     </ClCompile>
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\parsing\background-parsing-task.cc">
-      <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\expression-scope-reparenter.cc">
       <Filter>Source Files\parsing</Filter>
@@ -3731,6 +3776,9 @@
     <ClCompile Include="src\snapshot\deserializer.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
+    <ClCompile Include="src\snapshot\embedded-empty.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
     <ClCompile Include="src\snapshot\natives-common.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
@@ -3915,9 +3963,6 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-code-specialization.cc">
-      <Filter>Source Files\wasm</Filter>
-    </ClCompile>
-    <ClCompile Include="src\wasm\wasm-code-wrapper.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-debug.cc">

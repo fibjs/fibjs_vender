@@ -14,14 +14,6 @@
 namespace v8 {
 namespace internal {
 
-RUNTIME_FUNCTION(Runtime_ArrayBufferGetByteLength) {
-  SealHandleScope shs(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_CHECKED(JSArrayBuffer, holder, 0);
-  return holder->byte_length();
-}
-
-
 RUNTIME_FUNCTION(Runtime_ArrayBufferNeuter) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
@@ -56,7 +48,7 @@ RUNTIME_FUNCTION(Runtime_TypedArrayCopyElements) {
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSTypedArray, target, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, source, 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, source, 1);
   CONVERT_NUMBER_ARG_HANDLE_CHECKED(length_obj, 2);
 
   size_t length;
@@ -66,18 +58,12 @@ RUNTIME_FUNCTION(Runtime_TypedArrayCopyElements) {
   return accessor->CopyElements(source, target, length);
 }
 
-#define BUFFER_VIEW_GETTER(Type, getter, accessor)   \
-  RUNTIME_FUNCTION(Runtime_##Type##Get##getter) {    \
-    HandleScope scope(isolate);                      \
-    DCHECK_EQ(1, args.length());                     \
-    CONVERT_ARG_HANDLE_CHECKED(JS##Type, holder, 0); \
-    return holder->accessor();                       \
-  }
-
-BUFFER_VIEW_GETTER(ArrayBufferView, ByteOffset, byte_offset)
-BUFFER_VIEW_GETTER(TypedArray, Length, length)
-
-#undef BUFFER_VIEW_GETTER
+RUNTIME_FUNCTION(Runtime_TypedArrayGetLength) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSTypedArray, holder, 0);
+  return holder->length();
+}
 
 RUNTIME_FUNCTION(Runtime_ArrayBufferViewWasNeutered) {
   HandleScope scope(isolate);
@@ -161,58 +147,6 @@ RUNTIME_FUNCTION(Runtime_IsTypedArray) {
   return isolate->heap()->ToBoolean(args[0]->IsJSTypedArray());
 }
 
-RUNTIME_FUNCTION(Runtime_IsSharedTypedArray) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  return isolate->heap()->ToBoolean(
-      args[0]->IsJSTypedArray() &&
-      JSTypedArray::cast(args[0])->GetBuffer()->is_shared());
-}
-
-
-RUNTIME_FUNCTION(Runtime_IsSharedIntegerTypedArray) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  if (!args[0]->IsJSTypedArray()) {
-    return isolate->heap()->false_value();
-  }
-
-  Handle<JSTypedArray> obj(JSTypedArray::cast(args[0]));
-  return isolate->heap()->ToBoolean(obj->GetBuffer()->is_shared() &&
-                                    obj->type() != kExternalFloat32Array &&
-                                    obj->type() != kExternalFloat64Array &&
-                                    obj->type() != kExternalUint8ClampedArray);
-}
-
-
-RUNTIME_FUNCTION(Runtime_IsSharedInteger32TypedArray) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  if (!args[0]->IsJSTypedArray()) {
-    return isolate->heap()->false_value();
-  }
-
-  Handle<JSTypedArray> obj(JSTypedArray::cast(args[0]));
-  return isolate->heap()->ToBoolean(obj->GetBuffer()->is_shared() &&
-                                    obj->type() == kExternalInt32Array);
-}
-
-RUNTIME_FUNCTION(Runtime_TypedArraySpeciesCreateByLength) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(args.length(), 2);
-  Handle<JSTypedArray> exemplar = args.at<JSTypedArray>(0);
-  Handle<Object> length = args.at(1);
-  int argc = 1;
-  ScopedVector<Handle<Object>> argv(argc);
-  argv[0] = length;
-  Handle<JSTypedArray> result_array;
-  // TODO(tebbi): Pass correct method name.
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result_array,
-      JSTypedArray::SpeciesCreate(isolate, exemplar, argc, argv.start(), ""));
-  return *result_array;
-}
-
 // 22.2.3.23 %TypedArray%.prototype.set ( overloaded [ , offset ] )
 RUNTIME_FUNCTION(Runtime_TypedArraySet) {
   HandleScope scope(isolate);
@@ -256,22 +190,6 @@ RUNTIME_FUNCTION(Runtime_TypedArraySet) {
   Handle<JSReceiver> source = Handle<JSReceiver>::cast(obj);
   ElementsAccessor* accessor = target->GetElementsAccessor();
   return accessor->CopyElements(source, target, int_l, uint_offset);
-}
-
-// 22.2.3.4 %TypedArray%.prototype.slice ( start, end )
-RUNTIME_FUNCTION(Runtime_TypedArraySlice) {
-  HandleScope scope(isolate);
-  Handle<JSTypedArray> source = args.at<JSTypedArray>(0);
-  Handle<Smi> start = args.at<Smi>(1);
-  Handle<Smi> end = args.at<Smi>(2);
-  Handle<JSTypedArray> result = args.at<JSTypedArray>(3);
-
-  DCHECK(!source->WasNeutered());
-  DCHECK(!result->WasNeutered());
-  DCHECK_LE(start->value(), end->value());
-
-  ElementsAccessor* accessor = source->GetElementsAccessor();
-  return *accessor->Slice(source, start->value(), end->value(), result);
 }
 
 }  // namespace internal

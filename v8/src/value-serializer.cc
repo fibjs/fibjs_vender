@@ -58,6 +58,9 @@ static size_t BytesNeededForVarint(T value) {
   return result;
 }
 
+// Note that some additional tag values are defined in Blink's
+// Source/bindings/core/v8/serialization/SerializationTag.h, which must
+// not clash with values defined here.
 enum class SerializationTag : uint8_t {
   // version:uint32_t (if at beginning of data, sets version > 0)
   kVersion = 0xFF,
@@ -80,6 +83,8 @@ enum class SerializationTag : uint8_t {
   // Number represented as a 64-bit double.
   // Host byte order is used (N.B. this makes the format non-portable).
   kDouble = 'N',
+  // BigInt. Bitfield:uint32_t, then raw digits storage.
+  kBigInt = 'Z',
   // byteLength:uint32_t, then raw data
   kUtf8String = 'S',
   kOneByteString = '"',
@@ -107,6 +112,8 @@ enum class SerializationTag : uint8_t {
   kFalseObject = 'x',
   // Number object. value:double
   kNumberObject = 'n',
+  // BigInt object. Bitfield:uint32_t, then raw digits storage.
+  kBigIntObject = 'z',
   // String object, UTF-8 encoding. byteLength:uint32_t, then raw data.
   kStringObject = 's',
   // Regular expression, UTF-8 encoding. byteLength:uint32_t, raw data,
@@ -161,6 +168,8 @@ enum class ArrayBufferViewTag : uint8_t {
   kUint32Array = 'D',
   kFloat32Array = 'f',
   kFloat64Array = 'F',
+  kBigInt64Array = 'q',
+  kBigUint64Array = 'Q',
   kDataView = '?',
 };
 
@@ -251,6 +260,16 @@ void ValueSerializer::WriteTwoByteString(Vector<const uc16> chars) {
   WriteRawBytes(chars.begin(), chars.length() * sizeof(uc16));
 }
 
+void ValueSerializer::WriteBigIntContents(BigInt* bigint) {
+  uint32_t bitfield = bigint->GetBitfieldForSerialization();
+  int bytelength = BigInt::DigitsByteLengthForBitfield(bitfield);
+  WriteVarint<uint32_t>(bitfield);
+  uint8_t* dest;
+  if (ReserveRawBytes(bytelength).To(&dest)) {
+    bigint->SerializeDigits(dest);
+  }
+}
+
 void ValueSerializer::WriteRawBytes(const void* source, size_t length) {
   uint8_t* dest;
   if (ReserveRawBytes(length).To(&dest)) {
@@ -338,6 +357,9 @@ Maybe<bool> ValueSerializer::WriteObject(Handle<Object> object) {
     case MUTABLE_HEAP_NUMBER_TYPE:
       WriteHeapNumber(HeapNumber::cast(*object));
       return ThrowIfOutOfMemory();
+    case BIGINT_TYPE:
+      WriteBigInt(BigInt::cast(*object));
+      return ThrowIfOutOfMemory();
     case JS_TYPED_ARRAY_TYPE:
     case JS_DATA_VIEW_TYPE: {
       // Despite being JSReceivers, these have their wrapped buffer serialized
@@ -399,6 +421,11 @@ void ValueSerializer::WriteSmi(Smi* smi) {
 void ValueSerializer::WriteHeapNumber(HeapNumber* number) {
   WriteTag(SerializationTag::kDouble);
   WriteDouble(number->value());
+}
+
+void ValueSerializer::WriteBigInt(BigInt* bigint) {
+  WriteTag(SerializationTag::kBigInt);
+  WriteBigIntContents(bigint);
 }
 
 void ValueSerializer::WriteString(Handle<String> string) {
@@ -685,6 +712,9 @@ Maybe<bool> ValueSerializer::WriteJSValue(Handle<JSValue> value) {
   } else if (inner_value->IsNumber()) {
     WriteTag(SerializationTag::kNumberObject);
     WriteDouble(inner_value->Number());
+  } else if (inner_value->IsBigInt()) {
+    WriteTag(SerializationTag::kBigIntObject);
+    WriteBigIntContents(BigInt::cast(inner_value));
   } else if (inner_value->IsString()) {
     WriteTag(SerializationTag::kStringObject);
     WriteString(handle(String::cast(inner_value), isolate_));
@@ -1152,6 +1182,8 @@ MaybeHandle<Object> ValueDeserializer::ReadObjectInternal() {
       if (number.IsNothing()) return MaybeHandle<Object>();
       return isolate_->factory()->NewNumber(number.FromJust(), pretenure_);
     }
+    case SerializationTag::kBigInt:
+      return ReadBigInt();
     case SerializationTag::kUtf8String:
       return ReadUtf8String();
     case SerializationTag::kOneByteString:
@@ -1174,6 +1206,7 @@ MaybeHandle<Object> ValueDeserializer::ReadObjectInternal() {
     case SerializationTag::kTrueObject:
     case SerializationTag::kFalseObject:
     case SerializationTag::kNumberObject:
+    case SerializationTag::kBigIntObject:
     case SerializationTag::kStringObject:
       return ReadJSValue(tag);
     case SerializationTag::kRegExp:
@@ -1219,6 +1252,19 @@ MaybeHandle<String> ValueDeserializer::ReadString() {
     return MaybeHandle<String>();
   }
   return Handle<String>::cast(object);
+}
+
+MaybeHandle<BigInt> ValueDeserializer::ReadBigInt() {
+  if (!FLAG_harmony_bigint) return MaybeHandle<BigInt>();
+  uint32_t bitfield;
+  if (!ReadVarint<uint32_t>().To(&bitfield)) return MaybeHandle<BigInt>();
+  int bytelength = BigInt::DigitsByteLengthForBitfield(bitfield);
+  Vector<const uint8_t> digits_storage;
+  if (!ReadRawBytes(bytelength).To(&digits_storage)) {
+    return MaybeHandle<BigInt>();
+  }
+  return BigInt::FromSerializedDigits(isolate_, bitfield, digits_storage,
+                                      pretenure_);
 }
 
 MaybeHandle<String> ValueDeserializer::ReadUtf8String() {
@@ -1462,6 +1508,14 @@ MaybeHandle<JSValue> ValueDeserializer::ReadJSValue(SerializationTag tag) {
       value->set_value(*number_object);
       break;
     }
+    case SerializationTag::kBigIntObject: {
+      Handle<BigInt> bigint;
+      if (!ReadBigInt().ToHandle(&bigint)) return MaybeHandle<JSValue>();
+      value = Handle<JSValue>::cast(isolate_->factory()->NewJSObject(
+          isolate_->bigint_function(), pretenure_));
+      value->set_value(*bigint);
+      break;
+    }
     case SerializationTag::kStringObject: {
       Handle<String> string;
       if (!ReadString().ToHandle(&string)) return MaybeHandle<JSValue>();
@@ -1644,6 +1698,16 @@ MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
   uint32_t id = next_id_++;
   ExternalArrayType external_array_type = kExternalInt8Array;
   unsigned element_size = 0;
+
+  if (!FLAG_harmony_bigint) {
+    // Refuse to construct BigInt64Arrays unless the flag is on.
+    ArrayBufferViewTag cast_tag = static_cast<ArrayBufferViewTag>(tag);
+    if (cast_tag == ArrayBufferViewTag::kBigInt64Array ||
+        cast_tag == ArrayBufferViewTag::kBigUint64Array) {
+      return MaybeHandle<JSArrayBufferView>();
+    }
+  }
+
   switch (static_cast<ArrayBufferViewTag>(tag)) {
     case ArrayBufferViewTag::kDataView: {
       Handle<JSDataView> data_view =
@@ -1849,9 +1913,9 @@ Maybe<uint32_t> ValueDeserializer::ReadJSObjectProperties(
           key =
               isolate_->factory()->InternalizeString(Handle<String>::cast(key));
           // Don't reuse |transitions| because it could be stale.
-          target = TransitionsAccessor(map).FindTransitionToField(
-              Handle<String>::cast(key));
-          transitioning = !target.is_null();
+          transitioning = TransitionsAccessor(map)
+                              .FindTransitionToField(Handle<String>::cast(key))
+                              .ToHandle(&target);
         } else {
           transitioning = false;
         }

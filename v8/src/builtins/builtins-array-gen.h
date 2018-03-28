@@ -69,12 +69,12 @@ class ArrayBuiltinsAssembler : public CodeStubAssembler {
   void NullPostLoopAction();
 
  protected:
-  Node* context() { return context_; }
-  Node* receiver() { return receiver_; }
+  TNode<Context> context() { return context_; }
+  TNode<Object> receiver() { return receiver_; }
   Node* new_target() { return new_target_; }
-  Node* argc() { return argc_; }
-  Node* o() { return o_; }
-  Node* len() { return len_; }
+  TNode<IntPtrT> argc() { return argc_; }
+  TNode<JSReceiver> o() { return o_; }
+  TNode<Number> len() { return len_; }
   Node* callbackfn() { return callbackfn_; }
   Node* this_arg() { return this_arg_; }
   Node* k() { return k_.value(); }
@@ -82,9 +82,10 @@ class ArrayBuiltinsAssembler : public CodeStubAssembler {
 
   void ReturnFromBuiltin(Node* value);
 
-  void InitIteratingArrayBuiltinBody(Node* context, Node* receiver,
-                                     Node* callbackfn, Node* this_arg,
-                                     Node* new_target, Node* argc);
+  void InitIteratingArrayBuiltinBody(TNode<Context> context,
+                                     TNode<Object> receiver, Node* callbackfn,
+                                     Node* this_arg, Node* new_target,
+                                     TNode<IntPtrT> argc);
 
   void GenerateIteratingArrayBuiltinBody(
       const char* name, const BuiltinResultGenerator& generator,
@@ -92,11 +93,10 @@ class ArrayBuiltinsAssembler : public CodeStubAssembler {
       const Callable& slow_case_continuation,
       MissingPropertyMode missing_property_mode,
       ForEachDirection direction = ForEachDirection::kForward);
-  void InitIteratingArrayBuiltinLoopContinuation(Node* context, Node* receiver,
-                                                 Node* callbackfn,
-                                                 Node* this_arg, Node* a,
-                                                 Node* o, Node* initial_k,
-                                                 Node* len, Node* to);
+  void InitIteratingArrayBuiltinLoopContinuation(
+      TNode<Context> context, TNode<Object> receiver, Node* callbackfn,
+      Node* this_arg, Node* a, TNode<JSReceiver> o, Node* initial_k,
+      TNode<Number> len, Node* to);
 
   void GenerateIteratingTypedArrayBuiltinBody(
       const char* name, const BuiltinResultGenerator& generator,
@@ -113,13 +113,15 @@ class ArrayBuiltinsAssembler : public CodeStubAssembler {
 
   void VisitAllTypedArrayElements(Node* array_buffer,
                                   const CallResultProcessor& processor,
-                                  Label* detached, ForEachDirection direction);
+                                  Label* detached, ForEachDirection direction,
+                                  TNode<JSTypedArray> typed_array);
 
   void VisitAllFastElementsOneKind(ElementsKind kind,
                                    const CallResultProcessor& processor,
                                    Label* array_changed, ParameterMode mode,
                                    ForEachDirection direction,
-                                   MissingPropertyMode missing_property_mode);
+                                   MissingPropertyMode missing_property_mode,
+                                   TNode<Smi> length);
 
   void HandleFastElements(const CallResultProcessor& processor,
                           const PostLoopAction& action, Label* slow,
@@ -132,16 +134,16 @@ class ArrayBuiltinsAssembler : public CodeStubAssembler {
   void GenerateArraySpeciesCreate();
 
   // Perform ArraySpeciesCreate (ES6 #sec-arrayspeciescreate).
-  void GenerateArraySpeciesCreate(SloppyTNode<Smi> len);
+  void GenerateArraySpeciesCreate(TNode<Number> len);
 
   Node* callbackfn_ = nullptr;
-  Node* o_ = nullptr;
+  TNode<JSReceiver> o_;
   Node* this_arg_ = nullptr;
-  Node* len_ = nullptr;
-  Node* context_ = nullptr;
-  Node* receiver_ = nullptr;
+  TNode<Number> len_;
+  TNode<Context> context_;
+  TNode<Object> receiver_;
   Node* new_target_ = nullptr;
-  Node* argc_ = nullptr;
+  TNode<IntPtrT> argc_;
   Node* fast_typed_array_target_ = nullptr;
   const char* name_ = nullptr;
   Variable k_;

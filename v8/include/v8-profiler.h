@@ -335,7 +335,8 @@ class V8_EXPORT CpuProfiler {
   /**
    * Tells the profiler whether the embedder is idle.
    */
-  void SetIdle(bool is_idle);
+  V8_DEPRECATED("Use Isolate::SetIdle(bool) instead.",
+                void SetIdle(bool is_idle));
 
  private:
   CpuProfiler();
@@ -401,7 +402,8 @@ class V8_EXPORT HeapGraphNode {
                          // snapshot items together.
     kConsString = 10,    // Concatenated string. A pair of pointers to strings.
     kSlicedString = 11,  // Sliced string. A fragment of another string.
-    kSymbol = 12         // A Symbol (ES6).
+    kSymbol = 12,        // A Symbol (ES6).
+    kBigInt = 13         // BigInt.
   };
 
   /** Returns node type (see HeapGraphNode::Type). */
@@ -648,9 +650,19 @@ class V8_EXPORT EmbedderGraph {
     virtual ~Node() = default;
     virtual const char* Name() = 0;
     virtual size_t SizeInBytes() = 0;
+    /**
+     * The corresponding V8 wrapper node if not null.
+     * During heap snapshot generation the embedder node and the V8 wrapper
+     * node will be merged into one node to simplify retaining paths.
+     */
+    virtual Node* WrapperNode() { return nullptr; }
     virtual bool IsRootNode() { return false; }
     /** Must return true for non-V8 nodes. */
     virtual bool IsEmbedderNode() { return true; }
+    /**
+     * Optional name prefix. It is used in Chrome for tagging detached nodes.
+     */
+    virtual const char* NamePrefix() { return nullptr; }
 
    private:
     Node(const Node&) = delete;
@@ -865,11 +877,15 @@ class V8_EXPORT HeapProfiler {
   void DeleteAllHeapSnapshots();
 
   /** Binds a callback to embedder's class ID. */
-  void SetWrapperClassInfoProvider(
-      uint16_t class_id,
-      WrapperInfoCallback callback);
+  V8_DEPRECATED(
+      "Use SetBuildEmbedderGraphCallback to provide info about embedder nodes",
+      void SetWrapperClassInfoProvider(uint16_t class_id,
+                                       WrapperInfoCallback callback));
 
-  void SetGetRetainerInfosCallback(GetRetainerInfosCallback callback);
+  V8_DEPRECATED(
+      "Use SetBuildEmbedderGraphCallback to provide info about embedder nodes",
+      void SetGetRetainerInfosCallback(GetRetainerInfosCallback callback));
+
   void SetBuildEmbedderGraphCallback(BuildEmbedderGraphCallback callback);
 
   /**

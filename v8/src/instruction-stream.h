@@ -6,27 +6,33 @@
 #define V8_INSTRUCTION_STREAM_H_
 
 #include "src/base/macros.h"
+#include "src/globals.h"
 
 namespace v8 {
 namespace internal {
 
 class Code;
+class Isolate;
 
-// Wraps an mmap'ed off-heap instruction stream. This class will likely become
-// unneeded once --stress-off-heap-code is removed.
-class InstructionStream final {
+// Wraps an off-heap instruction stream.
+// TODO(jgruber,v8:6666): Remove this class.
+class InstructionStream final : public AllStatic {
  public:
-  explicit InstructionStream(Code* code);
-  ~InstructionStream();
+  // Returns true, iff the given pc points into an off-heap instruction stream.
+  static bool PcIsOffHeap(Isolate* isolate, Address pc);
 
-  size_t byte_length() const { return byte_length_; }
-  uint8_t* bytes() const { return bytes_; }
+  // Returns the corresponding Code object if it exists, and nullptr otherwise.
+  static Code* TryLookupCode(Isolate* isolate, Address address);
 
- private:
-  size_t byte_length_;
-  uint8_t* bytes_;
-
-  DISALLOW_COPY_AND_ASSIGN(InstructionStream)
+#ifdef V8_EMBEDDED_BUILTINS
+  // During snapshot creation, we first create an executable off-heap area
+  // containing all off-heap code. The area is guaranteed to be contiguous.
+  // Note that this only applies when building the snapshot, e.g. for
+  // mksnapshot. Otherwise, off-heap code is embedded directly into the binary.
+  static void CreateOffHeapInstructionStream(Isolate* isolate, uint8_t** data,
+                                             uint32_t* size);
+  static void FreeOffHeapInstructionStream(uint8_t* data, uint32_t size);
+#endif
 };
 
 }  // namespace internal

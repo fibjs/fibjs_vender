@@ -71,12 +71,6 @@ const Register MathPowIntegerDescriptor::exponent() {
 const Register GrowArrayElementsDescriptor::ObjectRegister() { return r3; }
 const Register GrowArrayElementsDescriptor::KeyRegister() { return r6; }
 
-void FastNewClosureDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {r4, r5, r6};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
 
 // static
 const Register TypeConversionDescriptor::ArgumentRegister() { return r3; }
@@ -295,8 +289,7 @@ void InterpreterDispatchDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       kInterpreterAccumulatorRegister, kInterpreterBytecodeOffsetRegister,
-      kInterpreterBytecodeArrayRegister, kInterpreterDispatchTableRegister,
-      kInterpreterTargetBytecodeRegister};
+      kInterpreterBytecodeArrayRegister, kInterpreterDispatchTableRegister};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 

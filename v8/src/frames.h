@@ -5,8 +5,6 @@
 #ifndef V8_FRAMES_H_
 #define V8_FRAMES_H_
 
-#include "src/allocation.h"
-#include "src/flags.h"
 #include "src/handles.h"
 #include "src/objects.h"
 #include "src/objects/code.h"
@@ -18,21 +16,20 @@ namespace wasm {
 class WasmCode;
 }
 
+// Forward declarations.
 class AbstractCode;
 class Debug;
-class ObjectVisitor;
-class StringStream;
-
-// Forward declarations.
 class ExternalCallbackScope;
 class Isolate;
+class ObjectVisitor;
 class RootVisitor;
 class StackFrameIteratorBase;
+class StringStream;
 class ThreadLocalTop;
+class WasmCompiledModule;
+class WasmDebugInfo;
 class WasmInstanceObject;
 class WasmSharedModuleData;
-class WasmDebugInfo;
-class WasmCompiledModule;
 
 class InnerPointerToCodeCache {
  public:
@@ -552,16 +549,16 @@ class FrameSummary BASE_EMBEDDED {
   class WasmCompiledFrameSummary : public WasmFrameSummary {
    public:
     WasmCompiledFrameSummary(Isolate*, Handle<WasmInstanceObject>,
-                             WasmCodeWrapper, int code_offset,
+                             wasm::WasmCode*, int code_offset,
                              bool at_to_number_conversion);
     uint32_t function_index() const;
-    WasmCodeWrapper code() const { return code_; }
+    wasm::WasmCode* code() const { return code_; }
     int code_offset() const { return code_offset_; }
     int byte_offset() const;
     static int GetWasmSourcePosition(const wasm::WasmCode* code, int offset);
 
    private:
-    WasmCodeWrapper const code_;
+    wasm::WasmCode* const code_;
     int code_offset_;
   };
 
@@ -851,6 +848,8 @@ class OptimizedFrame : public JavaScriptFrame {
  protected:
   inline explicit OptimizedFrame(StackFrameIteratorBase* iterator);
 
+  int GetNumberOfIncomingArguments() const override;
+
  private:
   friend class StackFrameIteratorBase;
 
@@ -976,7 +975,7 @@ class WasmCompiledFrame final : public StandardFrame {
 
   // Accessors.
   WasmInstanceObject* wasm_instance() const;  // TODO(titzer): deprecate.
-  WasmCodeWrapper wasm_code() const;
+  wasm::WasmCode* wasm_code() const;
   uint32_t function_index() const;
   Script* script() const override;
   int position() const override;

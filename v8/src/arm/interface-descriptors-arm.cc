@@ -74,12 +74,6 @@ const Register GrowArrayElementsDescriptor::ObjectRegister() { return r0; }
 const Register GrowArrayElementsDescriptor::KeyRegister() { return r3; }
 
 
-void FastNewClosureDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {r1, r2, r3};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
 // static
 const Register TypeConversionDescriptor::ArgumentRegister() { return r0; }
 
@@ -304,8 +298,7 @@ void InterpreterDispatchDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       kInterpreterAccumulatorRegister, kInterpreterBytecodeOffsetRegister,
-      kInterpreterBytecodeArrayRegister, kInterpreterDispatchTableRegister,
-      kInterpreterTargetBytecodeRegister};
+      kInterpreterBytecodeArrayRegister, kInterpreterDispatchTableRegister};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 

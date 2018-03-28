@@ -390,8 +390,8 @@ JSTypeHintLowering::LoweringResult JSTypeHintLowering::ReduceToNumberOperation(
   if (BinaryOperationHintToNumberOperationHint(
           nexus.GetBinaryOperationFeedback(), &hint)) {
     Node* node = jsgraph()->graph()->NewNode(
-        jsgraph()->simplified()->SpeculativeToNumber(hint), input, effect,
-        control);
+        jsgraph()->simplified()->SpeculativeToNumber(hint, VectorSlotPair()),
+        input, effect, control);
     return LoweringResult::SideEffectFree(node, node, control);
   }
   return LoweringResult::NoChange();
@@ -477,7 +477,8 @@ JSTypeHintLowering::ReduceStoreKeyedOperation(const Operator* op, Node* obj,
                                               Node* key, Node* val,
                                               Node* effect, Node* control,
                                               FeedbackSlot slot) const {
-  DCHECK_EQ(IrOpcode::kJSStoreProperty, op->opcode());
+  DCHECK(op->opcode() == IrOpcode::kJSStoreProperty ||
+         op->opcode() == IrOpcode::kJSStoreInArrayLiteral);
   DCHECK(!slot.IsInvalid());
   FeedbackNexus nexus(feedback_vector(), slot);
   if (Node* node = TryBuildSoftDeopt(

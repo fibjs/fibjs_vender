@@ -10,23 +10,24 @@
 #include <queue>
 #include <vector>
 
-#include "include/v8-debug.h"
+#include "include/v8-inspector.h"
+#include "include/v8.h"
 #include "src/allocation.h"
 #include "src/base/atomicops.h"
+#include "src/base/macros.h"
 #include "src/builtins/builtins.h"
 #include "src/contexts.h"
 #include "src/date.h"
 #include "src/debug/debug-interface.h"
 #include "src/execution.h"
 #include "src/futex-emulation.h"
-#include "src/global-handles.h"
+#include "src/globals.h"
 #include "src/handles.h"
 #include "src/heap/heap.h"
 #include "src/messages.h"
 #include "src/objects/code.h"
-#include "src/regexp/regexp-stack.h"
 #include "src/runtime/runtime.h"
-#include "src/zone/zone.h"
+#include "src/unicode.h"
 
 namespace v8 {
 
@@ -49,6 +50,7 @@ class AddressToIndexHashMap;
 class AstStringConstants;
 class BasicBlockProfiler;
 class Bootstrapper;
+class BuiltinsConstantsTableBuilder;
 class CallInterfaceDescriptorData;
 class CancelableTaskManager;
 class CodeEventDispatcher;
@@ -67,8 +69,8 @@ class Debug;
 class DeoptimizerData;
 class DescriptorLookupCache;
 class EmptyStatement;
+class EternalHandles;
 class ExternalCallbackScope;
-class ExternalReferenceTable;
 class Factory;
 class HandleScopeImplementer;
 class HeapObjectToIndexHashMap;
@@ -78,6 +80,7 @@ class InnerPointerToCodeCache;
 class InstructionStream;
 class Logger;
 class MaterializedObjectStore;
+class Microtask;
 class OptimizingCompileDispatcher;
 class PromiseOnStack;
 class Redirection;
@@ -380,17 +383,6 @@ class ThreadLocalTop BASE_EMBEDDED {
 };
 
 
-#if USE_SIMULATOR
-
-#define ISOLATE_INIT_SIMULATOR_LIST(V)  \
-  V(base::CustomMatcherHashMap*, simulator_i_cache, nullptr)
-#else
-
-#define ISOLATE_INIT_SIMULATOR_LIST(V)
-
-#endif
-
-
 #ifdef DEBUG
 
 #define ISOLATE_INIT_DEBUG_ARRAY_LIST(V)               \
@@ -429,7 +421,6 @@ typedef std::vector<HeapObject*> DebugObjectCache;
   V(Relocatable*, relocatable_top, nullptr)                                   \
   V(DebugObjectCache*, string_stream_debug_object_cache, nullptr)             \
   V(Object*, string_stream_current_security_token, nullptr)                   \
-  V(ExternalReferenceTable*, external_reference_table, nullptr)               \
   V(const intptr_t*, api_external_references, nullptr)                        \
   V(AddressToIndexHashMap*, external_reference_map, nullptr)                  \
   V(HeapObjectToIndexHashMap*, root_index_map, nullptr)                       \
@@ -452,7 +443,7 @@ typedef std::vector<HeapObject*> DebugObjectCache;
   V(debug::TypeProfile::Mode, type_profile_mode, debug::TypeProfile::kNone)   \
   V(int, last_stack_frame_info_id, 0)                                         \
   V(int, last_console_context_id, 0)                                          \
-  ISOLATE_INIT_SIMULATOR_LIST(V)
+  V(v8_inspector::V8Inspector*, inspector, nullptr)
 
 #define THREAD_LOCAL_TOP_ACCESSOR(type, name)                        \
   inline void set_##name(type v) { thread_local_top_.name##_ = v; }  \
@@ -729,16 +720,10 @@ class Isolate {
   Handle<String> StackTraceString();
   // Stores a stack trace in a stack-allocated temporary buffer which will
   // end up in the minidump for debugging purposes.
-  NO_INLINE(void PushStackTraceAndDie(unsigned int magic1, void* ptr1,
-                                      void* ptr2, unsigned int magic2));
-  NO_INLINE(void PushStackTraceAndDie(unsigned int magic1, void* ptr1,
-                                      void* ptr2, void* ptr3, void* ptr4,
-                                      void* ptr5, void* ptr6, void* ptr7,
-                                      void* ptr8, unsigned int magic2));
-  NO_INLINE(void PushCodeObjectsAndDie(unsigned int magic, void* ptr1,
-                                       void* ptr2, void* ptr3, void* ptr4,
-                                       void* ptr5, void* ptr6, void* ptr7,
-                                       void* ptr8, unsigned int magic2));
+  NO_INLINE(void PushStackTraceAndDie(void* ptr1 = nullptr,
+                                      void* ptr2 = nullptr,
+                                      void* ptr3 = nullptr,
+                                      void* ptr4 = nullptr));
   Handle<FixedArray> CaptureCurrentStackTrace(
       int frame_limit, StackTrace::StackTraceOptions options);
   Handle<Object> CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
@@ -1096,15 +1081,24 @@ class Isolate {
   inline bool IsStringLengthOverflowIntact();
   inline bool IsArrayIteratorLookupChainIntact();
 
-  // Avoid deopt loops if fast Array Iterators migrate to slow Array Iterators.
-  inline bool IsFastArrayIterationIntact();
-
   // Make sure we do check for neutered array buffers.
   inline bool IsArrayBufferNeuteringIntact();
 
   // Disable promise optimizations if promise (debug) hooks have ever been
   // active.
   bool IsPromiseHookProtectorIntact();
+
+  // Make sure a lookup of "resolve" on the %Promise% intrinsic object
+  // yeidls the initial Promise.resolve method.
+  bool IsPromiseResolveLookupChainIntact();
+
+  // Make sure a lookup of "then" on any JSPromise whose [[Prototype]] is the
+  // initial %PromisePrototype% yields the initial method. In addition this
+  // protector also guards the negative lookup of "then" on the intrinsic
+  // %ObjectPrototype%, meaning that such lookups are guaranteed to yield
+  // undefined without triggering any side-effects.
+  bool IsPromiseThenLookupChainIntact();
+  bool IsPromiseThenLookupChainIntact(Handle<JSReceiver> receiver);
 
   // On intent to set an element in object, make sure that appropriate
   // notifications occur if the set is on the elements of the array or
@@ -1126,7 +1120,9 @@ class Isolate {
   void InvalidateStringLengthOverflowProtector();
   void InvalidateArrayIteratorProtector();
   void InvalidateArrayBufferNeuteringProtector();
-  void InvalidatePromiseHookProtector();
+  V8_EXPORT_PRIVATE void InvalidatePromiseHookProtector();
+  void InvalidatePromiseResolveProtector();
+  void InvalidatePromiseThenProtector();
 
   // Returns true if array is the initial array prototype in any native context.
   bool IsAnyInitialArrayPrototype(Handle<JSArray> array);
@@ -1152,6 +1148,9 @@ class Isolate {
   OptimizingCompileDispatcher* optimizing_compile_dispatcher() {
     return optimizing_compile_dispatcher_;
   }
+  // Flushes all pending concurrent optimzation jobs from the optimizing
+  // compile dispatcher's queue.
+  void AbortConcurrentOptimization(BlockingBehavior blocking_behavior);
 
   int id() const { return static_cast<int>(id_); }
 
@@ -1190,6 +1189,9 @@ class Isolate {
     return id;
   }
 
+  void AddNearHeapLimitCallback(v8::NearHeapLimitCallback, void* data);
+  void RemoveNearHeapLimitCallback(v8::NearHeapLimitCallback callback,
+                                   size_t heap_limit);
   void AddCallCompletedCallback(CallCompletedCallback callback);
   void RemoveCallCompletedCallback(CallCompletedCallback callback);
   void FireCallCompletedCallback();
@@ -1250,9 +1252,23 @@ class Isolate {
     return &partial_snapshot_cache_;
   }
 
-  void PushOffHeapCode(InstructionStream* stream) {
-    off_heap_code_.emplace_back(stream);
+#ifdef V8_EMBEDDED_BUILTINS
+  // Called only prior to serialization.
+  // This function copies off-heap-safe builtins off the heap, creates off-heap
+  // trampolines, and sets up this isolate's embedded blob.
+  void PrepareEmbeddedBlobForSerialization();
+
+  BuiltinsConstantsTableBuilder* builtins_constants_table_builder() const {
+    return builtins_constants_table_builder_;
   }
+
+  static const uint8_t* CurrentEmbeddedBlob();
+  static uint32_t CurrentEmbeddedBlobSize();
+
+  // TODO(jgruber): Remove these in favor of the static methods above.
+  const uint8_t* embedded_blob() const;
+  uint32_t embedded_blob_size() const;
+#endif
 
   void set_array_buffer_allocator(v8::ArrayBuffer::Allocator* allocator) {
     array_buffer_allocator_ = allocator;
@@ -1305,10 +1321,6 @@ class Isolate {
 
   PRINTF_FORMAT(2, 3) void PrintWithTimestamp(const char* format, ...);
 
-#ifdef USE_SIMULATOR
-  base::Mutex* simulator_i_cache_mutex() { return &simulator_i_cache_mutex_; }
-#endif
-
   void set_allow_atomics_wait(bool set) { allow_atomics_wait_ = set; }
   bool allow_atomics_wait() { return allow_atomics_wait_; }
 
@@ -1360,6 +1372,8 @@ class Isolate {
       const v8::Context::BackupIncumbentScope* top_backup_incumbent_scope) {
     top_backup_incumbent_scope_ = top_backup_incumbent_scope;
   }
+
+  void SetIdle(bool is_idle);
 
  protected:
   explicit Isolate(bool enable_serializer);
@@ -1463,6 +1477,8 @@ class Isolate {
   // If there is no external try-catch or message was successfully propagated,
   // then return true.
   bool PropagatePendingExceptionToExternalTryCatch();
+
+  void SetTerminationOnExternalTryCatch();
 
   const char* RAILModeName(RAILMode rail_mode) const {
     switch (rail_mode) {
@@ -1625,11 +1641,16 @@ class Isolate {
 
   std::vector<Object*> partial_snapshot_cache_;
 
-  // Stores off-heap instruction streams. Only used if --stress-off-heap-code
-  // is enabled.
-  // TODO(jgruber,v8:6666): Remove once isolate-independent builtins are
-  // implemented.
-  std::vector<InstructionStream*> off_heap_code_;
+#ifdef V8_EMBEDDED_BUILTINS
+  // Used during builtins compilation to build the builtins constants table,
+  // which is stored on the root list prior to serialization.
+  BuiltinsConstantsTableBuilder* builtins_constants_table_builder_ = nullptr;
+
+  void SetEmbeddedBlob(const uint8_t* blob, uint32_t blob_size);
+
+  const uint8_t* embedded_blob_ = nullptr;
+  uint32_t embedded_blob_size_ = 0;
+#endif
 
   v8::ArrayBuffer::Allocator* array_buffer_allocator_;
 
@@ -1641,10 +1662,6 @@ class Isolate {
 
   v8::Isolate::AbortOnUncaughtExceptionCallback
       abort_on_uncaught_exception_callback_;
-
-#ifdef USE_SIMULATOR
-  base::Mutex simulator_i_cache_mutex_;
-#endif
 
   bool allow_atomics_wait_;
 
@@ -1664,16 +1681,16 @@ class Isolate {
   friend class HandleScopeImplementer;
   friend class heap::HeapTester;
   friend class OptimizingCompileDispatcher;
-  friend class SweeperThread;
-  friend class ThreadManager;
   friend class Simulator;
   friend class StackGuard;
+  friend class SweeperThread;
   friend class TestIsolate;
   friend class ThreadId;
+  friend class ThreadManager;
   friend class v8::Isolate;
   friend class v8::Locker;
-  friend class v8::Unlocker;
   friend class v8::SnapshotCreator;
+  friend class v8::Unlocker;
   friend v8::StartupData v8::V8::CreateSnapshotDataBlob(const char*);
   friend v8::StartupData v8::V8::WarmUpSnapshotDataBlob(v8::StartupData,
                                                         const char*);
@@ -1887,6 +1904,29 @@ class CodeTracer final : public Malloced {
   EmbeddedVector<char, 128> filename_;
   FILE* file_;
   int scope_depth_;
+};
+
+class StackTraceFailureMessage {
+ public:
+  explicit StackTraceFailureMessage(Isolate* isolate, void* ptr1 = nullptr,
+                                    void* ptr2 = nullptr, void* ptr3 = nullptr,
+                                    void* ptr4 = nullptr);
+
+  V8_NOINLINE void Print() volatile;
+
+  static const uintptr_t kStartMarker = 0xdecade30;
+  static const uintptr_t kEndMarker = 0xdecade31;
+  static const int kStacktraceBufferSize = 32 * KB;
+
+  uintptr_t start_marker_ = kStartMarker;
+  void* isolate_;
+  void* ptr1_;
+  void* ptr2_;
+  void* ptr3_;
+  void* ptr4_;
+  void* code_objects_[4];
+  char js_stack_trace_[kStacktraceBufferSize];
+  uintptr_t end_marker_ = kEndMarker;
 };
 
 }  // namespace internal

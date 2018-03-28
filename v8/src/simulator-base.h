@@ -9,6 +9,7 @@
 
 #include "src/assembler.h"
 #include "src/globals.h"
+#include "src/isolate.h"
 
 #if defined(USE_SIMULATOR)
 
@@ -24,13 +25,15 @@ class SimulatorBase {
   static void InitializeOncePerProcess();
   static void GlobalTearDown();
 
-  // Call on isolate initialization and teardown.
+  // Call on isolate initialization.
   static void Initialize(Isolate* isolate);
-  static void TearDown(base::CustomMatcherHashMap* i_cache);
 
   static base::Mutex* redirection_mutex() { return redirection_mutex_; }
   static Redirection* redirection() { return redirection_; }
   static void set_redirection(Redirection* r) { redirection_ = r; }
+
+  static base::Mutex* i_cache_mutex() { return i_cache_mutex_; }
+  static base::CustomMatcherHashMap* i_cache() { return i_cache_; }
 
  protected:
   template <typename Return, typename SimT, typename CallImpl, typename... Args>
@@ -43,14 +46,36 @@ class SimulatorBase {
     return ConvertReturn<Return>(ret);
   }
 
+  // Convert back integral return types. This is always a narrowing conversion.
+  template <typename T>
+  static typename std::enable_if<std::is_integral<T>::value, T>::type
+  ConvertReturn(intptr_t ret) {
+    static_assert(sizeof(T) <= sizeof(intptr_t), "type bigger than ptrsize");
+    return static_cast<T>(ret);
+  }
+
+  // Convert back pointer-typed return types.
+  template <typename T>
+  static typename std::enable_if<std::is_pointer<T>::value, T>::type
+  ConvertReturn(intptr_t ret) {
+    return reinterpret_cast<T>(ret);
+  }
+
+  // Convert back void return type (i.e. no return).
+  template <typename T>
+  static typename std::enable_if<std::is_void<T>::value, T>::type ConvertReturn(
+      intptr_t ret) {}
+
  private:
-  // Runtime call support. Uses the isolate in a thread-safe way.
-  static void* RedirectExternalReference(Isolate* isolate,
-                                         void* external_function,
+  // Runtime call support.
+  static void* RedirectExternalReference(void* external_function,
                                          ExternalReference::Type type);
 
   static base::Mutex* redirection_mutex_;
   static Redirection* redirection_;
+
+  static base::Mutex* i_cache_mutex_;
+  static base::CustomMatcherHashMap* i_cache_;
 
   // Helper methods to convert arbitrary integer or pointer arguments to the
   // needed generic argument type intptr_t.
@@ -78,26 +103,6 @@ class SimulatorBase {
   ConvertArg(T arg) {
     return reinterpret_cast<intptr_t>(arg);
   }
-
-  // Convert back integral return types. This is always a narrowing conversion.
-  template <typename T>
-  static typename std::enable_if<std::is_integral<T>::value, T>::type
-  ConvertReturn(intptr_t ret) {
-    static_assert(sizeof(T) <= sizeof(intptr_t), "type bigger than ptrsize");
-    return static_cast<T>(ret);
-  }
-
-  // Convert back pointer-typed return types.
-  template <typename T>
-  static typename std::enable_if<std::is_pointer<T>::value, T>::type
-  ConvertReturn(intptr_t ret) {
-    return reinterpret_cast<T>(ret);
-  }
-
-  // Convert back void return type (i.e. no return).
-  template <typename T>
-  static typename std::enable_if<std::is_void<T>::value, T>::type ConvertReturn(
-      intptr_t ret) {}
 };
 
 // When the generated code calls an external reference we need to catch that in
@@ -117,8 +122,7 @@ class SimulatorBase {
 //  - V8_TARGET_ARCH_S390: svc (Supervisor Call)
 class Redirection {
  public:
-  Redirection(Isolate* isolate, void* external_function,
-              ExternalReference::Type type);
+  Redirection(void* external_function, ExternalReference::Type type);
 
   Address address_of_instruction() {
 #if ABI_USES_FUNCTION_DESCRIPTORS
@@ -131,7 +135,7 @@ class Redirection {
   void* external_function() { return external_function_; }
   ExternalReference::Type type() { return type_; }
 
-  static Redirection* Get(Isolate* isolate, void* external_function,
+  static Redirection* Get(void* external_function,
                           ExternalReference::Type type);
 
   static Redirection* FromInstruction(Instruction* instruction) {

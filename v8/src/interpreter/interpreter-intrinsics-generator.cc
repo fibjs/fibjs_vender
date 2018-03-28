@@ -20,6 +20,7 @@ namespace internal {
 namespace interpreter {
 
 using compiler::Node;
+using compiler::TNode;
 
 class IntrinsicsGenerator {
  public:
@@ -132,63 +133,22 @@ Node* IntrinsicsGenerator::CompareInstanceType(Node* object, int type,
 }
 
 Node* IntrinsicsGenerator::IsInstanceType(Node* input, int type) {
-  InterpreterAssembler::Variable return_value(assembler_,
-                                              MachineRepresentation::kTagged);
-  // TODO(ishell): Use Select here.
-  InterpreterAssembler::Label if_not_smi(assembler_), return_true(assembler_),
-      return_false(assembler_), end(assembler_);
-  __ GotoIf(__ TaggedIsSmi(input), &return_false);
-
-  Node* condition = CompareInstanceType(input, type, kInstanceTypeEqual);
-  __ Branch(condition, &return_true, &return_false);
-
-  __ BIND(&return_true);
-  {
-    return_value.Bind(__ TrueConstant());
-    __ Goto(&end);
-  }
-
-  __ BIND(&return_false);
-  {
-    return_value.Bind(__ FalseConstant());
-    __ Goto(&end);
-  }
-
-  __ BIND(&end);
-  return return_value.value();
+  TNode<Oddball> result = __ Select<Oddball>(
+      __ TaggedIsSmi(input), [=] { return __ FalseConstant(); },
+      [=] {
+        return __ SelectBooleanConstant(
+            CompareInstanceType(input, type, kInstanceTypeEqual));
+      });
+  return result;
 }
 
 Node* IntrinsicsGenerator::IsJSReceiver(
     const InterpreterAssembler::RegListNodePair& args, Node* context) {
-  // TODO(ishell): Use Select here.
-  // TODO(ishell): Use CSA::IsJSReceiverInstanceType here.
-  InterpreterAssembler::Variable return_value(assembler_,
-                                              MachineRepresentation::kTagged);
-  InterpreterAssembler::Label return_true(assembler_), return_false(assembler_),
-      end(assembler_);
-
   Node* input = __ LoadRegisterFromRegisterList(args, 0);
-  __ GotoIf(__ TaggedIsSmi(input), &return_false);
-
-  STATIC_ASSERT(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
-  Node* condition = CompareInstanceType(input, FIRST_JS_RECEIVER_TYPE,
-                                        kInstanceTypeGreaterThanOrEqual);
-  __ Branch(condition, &return_true, &return_false);
-
-  __ BIND(&return_true);
-  {
-    return_value.Bind(__ TrueConstant());
-    __ Goto(&end);
-  }
-
-  __ BIND(&return_false);
-  {
-    return_value.Bind(__ FalseConstant());
-    __ Goto(&end);
-  }
-
-  __ BIND(&end);
-  return return_value.value();
+  TNode<Oddball> result = __ Select<Oddball>(
+      __ TaggedIsSmi(input), [=] { return __ FalseConstant(); },
+      [=] { return __ SelectBooleanConstant(__ IsJSReceiver(input)); });
+  return result;
 }
 
 Node* IntrinsicsGenerator::IsArray(
@@ -235,29 +195,8 @@ Node* IntrinsicsGenerator::IsJSWeakSet(
 
 Node* IntrinsicsGenerator::IsSmi(
     const InterpreterAssembler::RegListNodePair& args, Node* context) {
-  // TODO(ishell): Use SelectBooleanConstant here.
-  InterpreterAssembler::Variable return_value(assembler_,
-                                              MachineRepresentation::kTagged);
-  InterpreterAssembler::Label if_smi(assembler_), if_not_smi(assembler_),
-      end(assembler_);
-
   Node* input = __ LoadRegisterFromRegisterList(args, 0);
-
-  __ Branch(__ TaggedIsSmi(input), &if_smi, &if_not_smi);
-  __ BIND(&if_smi);
-  {
-    return_value.Bind(__ TrueConstant());
-    __ Goto(&end);
-  }
-
-  __ BIND(&if_not_smi);
-  {
-    return_value.Bind(__ FalseConstant());
-    __ Goto(&end);
-  }
-
-  __ BIND(&end);
-  return return_value.value();
+  return __ SelectBooleanConstant(__ TaggedIsSmi(input));
 }
 
 Node* IntrinsicsGenerator::IntrinsicAsStubCall(
@@ -293,6 +232,20 @@ Node* IntrinsicsGenerator::HasProperty(
     const InterpreterAssembler::RegListNodePair& args, Node* context) {
   return IntrinsicAsStubCall(
       args, context, Builtins::CallableFor(isolate(), Builtins::kHasProperty));
+}
+
+Node* IntrinsicsGenerator::RejectPromise(
+    const InterpreterAssembler::RegListNodePair& args, Node* context) {
+  return IntrinsicAsStubCall(
+      args, context,
+      Builtins::CallableFor(isolate(), Builtins::kRejectPromise));
+}
+
+Node* IntrinsicsGenerator::ResolvePromise(
+    const InterpreterAssembler::RegListNodePair& args, Node* context) {
+  return IntrinsicAsStubCall(
+      args, context,
+      Builtins::CallableFor(isolate(), Builtins::kResolvePromise));
 }
 
 Node* IntrinsicsGenerator::ToString(
@@ -349,12 +302,6 @@ Node* IntrinsicsGenerator::Call(
   __ CallJSAndDispatch(function, context, target_args,
                        ConvertReceiverMode::kAny);
   return nullptr;  // We never return from the CallJSAndDispatch above.
-}
-
-Node* IntrinsicsGenerator::ClassOf(
-    const InterpreterAssembler::RegListNodePair& args, Node* context) {
-  Node* value = __ LoadRegisterFromRegisterList(args, 0);
-  return __ ClassOf(value);
 }
 
 Node* IntrinsicsGenerator::CreateAsyncFromSyncIterator(
@@ -452,6 +399,30 @@ Node* IntrinsicsGenerator::GetImportMetaObject(
 
   __ BIND(&end);
   return return_value.value();
+}
+
+Node* IntrinsicsGenerator::AsyncFunctionAwaitCaught(
+    const InterpreterAssembler::RegListNodePair& args, Node* context) {
+  return IntrinsicAsBuiltinCall(args, context,
+                                Builtins::kAsyncFunctionAwaitCaught);
+}
+
+Node* IntrinsicsGenerator::AsyncFunctionAwaitUncaught(
+    const InterpreterAssembler::RegListNodePair& args, Node* context) {
+  return IntrinsicAsBuiltinCall(args, context,
+                                Builtins::kAsyncFunctionAwaitUncaught);
+}
+
+Node* IntrinsicsGenerator::AsyncGeneratorAwaitCaught(
+    const InterpreterAssembler::RegListNodePair& args, Node* context) {
+  return IntrinsicAsBuiltinCall(args, context,
+                                Builtins::kAsyncGeneratorAwaitCaught);
+}
+
+Node* IntrinsicsGenerator::AsyncGeneratorAwaitUncaught(
+    const InterpreterAssembler::RegListNodePair& args, Node* context) {
+  return IntrinsicAsBuiltinCall(args, context,
+                                Builtins::kAsyncGeneratorAwaitUncaught);
 }
 
 Node* IntrinsicsGenerator::AsyncGeneratorReject(

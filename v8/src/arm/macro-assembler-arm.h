@@ -20,15 +20,15 @@ constexpr Register kReturnRegister2 = r2;
 constexpr Register kJSFunctionRegister = r1;
 constexpr Register kContextRegister = r7;
 constexpr Register kAllocateSizeRegister = r1;
+constexpr Register kSpeculationPoisonRegister = r9;
 constexpr Register kInterpreterAccumulatorRegister = r0;
 constexpr Register kInterpreterBytecodeOffsetRegister = r5;
 constexpr Register kInterpreterBytecodeArrayRegister = r6;
 constexpr Register kInterpreterDispatchTableRegister = r8;
-constexpr Register kInterpreterTargetBytecodeRegister = r4;
 constexpr Register kJavaScriptCallArgCountRegister = r0;
 constexpr Register kJavaScriptCallCodeStartRegister = r2;
 constexpr Register kJavaScriptCallNewTargetRegister = r3;
-constexpr Register kOffHeapTrampolineRegister = r4;
+constexpr Register kOffHeapTrampolineRegister = r6;
 constexpr Register kRuntimeCallFunctionRegister = r1;
 constexpr Register kRuntimeCallArgCountRegister = r0;
 
@@ -534,6 +534,12 @@ class TurboAssembler : public Assembler {
 #endif
   }
 
+  // Compute the start of the generated instruction stream from the current PC.
+  // This is an alternative to embedding the {CodeObject} handle as a reference.
+  void ComputeCodeStartAddress(Register dst);
+
+  void ResetSpeculationPoisonRegister();
+
  private:
   bool has_frame_ = false;
   Isolate* const isolate_;
@@ -793,7 +799,11 @@ class MacroAssembler : public TurboAssembler {
                                bool builtin_exit_frame = false);
 
   // Generates a trampoline to jump to the off-heap instruction stream.
-  void JumpToInstructionStream(const InstructionStream* stream);
+  void JumpToInstructionStream(Address entry);
+
+  // ---------------------------------------------------------------------------
+  // In-place weak references.
+  void LoadWeakValue(Register out, Register in, Label* target_if_cleared);
 
   // ---------------------------------------------------------------------------
   // StatsCounter support
@@ -826,6 +836,9 @@ class MacroAssembler : public TurboAssembler {
 
   // Abort execution if argument is not a FixedArray, enabled via --debug-code.
   void AssertFixedArray(Register object);
+
+  // Abort execution if argument is not a Constructor, enabled via --debug-code.
+  void AssertConstructor(Register object);
 
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
   void AssertFunction(Register object);

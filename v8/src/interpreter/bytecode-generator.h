@@ -66,7 +66,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   using ToBooleanMode = BytecodeArrayBuilder::ToBooleanMode;
 
   enum class TestFallthrough { kThen, kElse, kNone };
-  enum class TypeHint { kAny, kBoolean };
+  enum class TypeHint { kAny, kBoolean, kString };
 
   void GenerateBytecodeBody();
   void AllocateDeferredConstants(Isolate* isolate, Handle<Script> script);
@@ -127,7 +127,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildVariableAssignment(
       Variable* variable, Token::Value op, HoleCheckMode hole_check_mode,
       LookupHoistingMode lookup_hoisting_mode = LookupHoistingMode::kNormal);
-  void BuildLiteralCompareNil(Token::Value compare_op, NilValue nil);
+  void BuildLiteralCompareNil(Token::Value compare_op,
+                              BytecodeArrayBuilder::NilValue nil);
   void BuildReturn(int source_position = kNoSourcePosition);
   void BuildAsyncReturn(int source_position = kNoSourcePosition);
   void BuildAsyncGeneratorReturn();
@@ -172,7 +173,9 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
                                BytecodeLabel* if_called,
                                BytecodeLabels* if_notcalled);
 
-  void BuildArrayLiteralSpread(Spread* spread, Register array);
+  void BuildArrayLiteralSpread(Spread* spread, Register array, Register index,
+                               FeedbackSlot index_slot,
+                               FeedbackSlot element_slot);
 
   void AllocateTopLevelRegisters();
   void VisitArgumentsObject(Variable* variable);
@@ -259,6 +262,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   // already exists.
   FeedbackSlot GetCachedLoadGlobalICSlot(TypeofMode typeof_mode,
                                          Variable* variable);
+  FeedbackSlot GetCachedStoreGlobalICSlot(LanguageMode language_mode,
+                                          Variable* variable);
   FeedbackSlot GetCachedCreateClosureSlot(FunctionLiteral* literal);
 
   void AddToEagerLiteralsIfEager(FunctionLiteral* literal);

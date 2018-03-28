@@ -135,6 +135,8 @@ static void PrintRelocInfo(StringBuilder* out, Isolate* isolate,
       out->AddFormatted(" %s, %s, ", Code::Kind2String(kind),
                         CodeStub::MajorName(major_key));
       out->AddFormatted("minor: %d", minor_key);
+    } else if (code->is_builtin()) {
+      out->AddFormatted(" Builtin::%s", Builtins::name(code->builtin_index()));
     } else {
       out->AddFormatted(" %s", Code::Kind2String(kind));
     }
@@ -256,7 +258,9 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
     // Print all the reloc info for this instruction which are not comments.
     for (size_t i = 0; i < pcs.size(); i++) {
       // Put together the reloc info
-      RelocInfo relocinfo(pcs[i], rmodes[i], datas[i], converter.code());
+      Code* host = converter.code();
+      RelocInfo relocinfo(pcs[i], rmodes[i], datas[i], host);
+      relocinfo.set_constant_pool(host ? host->constant_pool() : nullptr);
 
       bool first_reloc_info = (i == 0);
       PrintRelocInfo(&out, isolate, ref_encoder, os, &relocinfo,

@@ -12,17 +12,6 @@
 namespace v8 {
 namespace internal {
 
-RUNTIME_FUNCTION(Runtime_CreateSymbol) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(Object, name, 0);
-  CHECK(name->IsString() || name->IsUndefined(isolate));
-  Handle<Symbol> symbol = isolate->factory()->NewSymbol();
-  if (name->IsString()) symbol->set_name(*name);
-  return *symbol;
-}
-
-
 RUNTIME_FUNCTION(Runtime_CreatePrivateSymbol) {
   HandleScope scope(isolate);
   DCHECK_GE(1, args.length());
@@ -35,6 +24,12 @@ RUNTIME_FUNCTION(Runtime_CreatePrivateSymbol) {
   return *symbol;
 }
 
+RUNTIME_FUNCTION(Runtime_CreatePrivateFieldSymbol) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(0, args.length());
+  Handle<Symbol> symbol = isolate->factory()->NewPrivateFieldSymbol();
+  return *symbol;
+}
 
 RUNTIME_FUNCTION(Runtime_SymbolDescription) {
   SealHandleScope shs(isolate);

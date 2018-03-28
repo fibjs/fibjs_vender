@@ -404,8 +404,7 @@ void MacroAssembler::CzeroX(const Register& rd,
 
 // Conditionally move a value into the destination register. Only X registers
 // are supported due to the truncation side-effect when used on W registers.
-void MacroAssembler::CmovX(const Register& rd,
-                           const Register& rn,
+void TurboAssembler::CmovX(const Register& rd, const Register& rn,
                            Condition cond) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsSP());
@@ -416,6 +415,11 @@ void MacroAssembler::CmovX(const Register& rd,
   }
 }
 
+void TurboAssembler::Csdb() {
+  DCHECK(allow_macro_instructions());
+  csdb();
+}
+
 void TurboAssembler::Cset(const Register& rd, Condition cond) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
@@ -423,8 +427,7 @@ void TurboAssembler::Cset(const Register& rd, Condition cond) {
   cset(rd, cond);
 }
 
-
-void MacroAssembler::Csetm(const Register& rd, Condition cond) {
+void TurboAssembler::Csetm(const Register& rd, Condition cond) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
   DCHECK((cond != al) && (cond != nv));

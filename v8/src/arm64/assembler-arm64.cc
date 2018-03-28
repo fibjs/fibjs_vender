@@ -185,22 +185,20 @@ uint32_t RelocInfo::embedded_size() const {
   return Memory::uint32_at(Assembler::target_pointer_address_at(pc_));
 }
 
-void RelocInfo::set_embedded_address(Isolate* isolate, Address address,
+void RelocInfo::set_embedded_address(Address address,
                                      ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, constant_pool_, address,
-                                   flush_mode);
+  Assembler::set_target_address_at(pc_, constant_pool_, address, flush_mode);
 }
 
-void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
-                                  ICacheFlushMode flush_mode) {
+void RelocInfo::set_embedded_size(uint32_t size, ICacheFlushMode flush_mode) {
   Memory::uint32_at(Assembler::target_pointer_address_at(pc_)) = size;
   // No icache flushing needed, see comment in set_target_address_at.
 }
 
-void RelocInfo::set_js_to_wasm_address(Isolate* isolate, Address address,
+void RelocInfo::set_js_to_wasm_address(Address address,
                                        ICacheFlushMode icache_flush_mode) {
   DCHECK_EQ(rmode_, JS_TO_WASM_CALL);
-  set_embedded_address(isolate, address, icache_flush_mode);
+  set_embedded_address(address, icache_flush_mode);
 }
 
 Address RelocInfo::js_to_wasm_address() const {
@@ -2995,6 +2993,8 @@ void Assembler::isb() {
   Emit(ISB | ImmBarrierDomain(FullSystem) | ImmBarrierType(BarrierAll));
 }
 
+void Assembler::csdb() { hint(CSDB); }
+
 void Assembler::fmov(const VRegister& vd, double imm) {
   if (vd.IsScalar()) {
     DCHECK(vd.Is1D());
@@ -4702,7 +4702,7 @@ void Assembler::GrowBuffer() {
   // Some internal data structures overflow for very large buffers,
   // they must ensure that kMaximalBufferSize is not too large.
   if (desc.buffer_size > kMaximalBufferSize) {
-    V8::FatalProcessOutOfMemory("Assembler::GrowBuffer");
+    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
   }
 
   byte* buffer = reinterpret_cast<byte*>(buffer_);

@@ -66,6 +66,8 @@ namespace v8 {
 class AccessorSignature;
 class Array;
 class ArrayBuffer;
+class BigInt;
+class BigIntObject;
 class Boolean;
 class BooleanObject;
 class Context;
@@ -145,7 +147,7 @@ class Heap;
 class HeapObject;
 class Isolate;
 class Object;
-struct StreamedSource;
+struct ScriptStreamingData;
 template<typename T> class CustomArguments;
 class PropertyCallbackArguments;
 class FunctionCallbackArguments;
@@ -554,6 +556,14 @@ template <class T> class PersistentBase {
   V8_INLINE void ClearWeak() { ClearWeak<void>(); }
 
   /**
+   * Annotates the strong handle with the given label, which is then used by the
+   * heap snapshot generator as a name of the edge from the root to the handle.
+   * The function does not take ownership of the label and assumes that the
+   * label is valid as long as the handle is valid.
+   */
+  V8_INLINE void AnnotateStrongRetainer(const char* label);
+
+  /**
    * Allows the embedder to tell the v8 garbage collector that a certain object
    * is alive. Only allowed when the embedder is asked to trace its heap by
    * EmbedderHeapTracer.
@@ -945,7 +955,7 @@ class V8_EXPORT EscapableHandleScope : public HandleScope {
  */
 class V8_EXPORT SealHandleScope {
  public:
-  SealHandleScope(Isolate* isolate);
+  explicit SealHandleScope(Isolate* isolate);
   ~SealHandleScope();
 
   SealHandleScope(const SealHandleScope&) = delete;
@@ -1398,14 +1408,14 @@ class V8_EXPORT ScriptCompiler {
     // object is alive.
     const CachedData* GetCachedData() const;
 
-    internal::StreamedSource* impl() const { return impl_; }
+    internal::ScriptStreamingData* impl() const { return impl_; }
 
     // Prevent copying.
     StreamedSource(const StreamedSource&) = delete;
     StreamedSource& operator=(const StreamedSource&) = delete;
 
    private:
-    internal::StreamedSource* impl_;
+    internal::ScriptStreamingData* impl_;
   };
 
   /**
@@ -1633,13 +1643,14 @@ class V8_EXPORT Message {
    * Returns the index within the line of the first character where
    * the error occurred.
    */
-  V8_DEPRECATED("Use maybe version", int GetStartColumn() const);
+  int GetStartColumn() const;
   V8_WARN_UNUSED_RESULT Maybe<int> GetStartColumn(Local<Context> context) const;
 
   /**
    * Returns the index within the line of the last character where
    * the error occurred.
    */
+  int GetEndColumn() const;
   V8_WARN_UNUSED_RESULT Maybe<int> GetEndColumn(Local<Context> context) const;
 
   /**
@@ -2144,6 +2155,11 @@ class V8_EXPORT Value : public Data {
   bool IsObject() const;
 
   /**
+   * Returns true if this value is a bigint.
+   */
+  bool IsBigInt() const;
+
+  /**
    * Returns true if this value is boolean.
    */
   bool IsBoolean() const;
@@ -2177,6 +2193,11 @@ class V8_EXPORT Value : public Data {
    * Returns true if this value is an Arguments object.
    */
   bool IsArgumentsObject() const;
+
+  /**
+   * Returns true if this value is a BigInt object.
+   */
+  bool IsBigIntObject() const;
 
   /**
    * Returns true if this value is a Boolean object.
@@ -2319,6 +2340,16 @@ class V8_EXPORT Value : public Data {
   bool IsFloat64Array() const;
 
   /**
+   * Returns true if this value is a BigInt64Array.
+   */
+  bool IsBigInt64Array() const;
+
+  /**
+   * Returns true if this value is a BigUint64Array.
+   */
+  bool IsBigUint64Array() const;
+
+  /**
    * Returns true if this value is a DataView.
    */
   bool IsDataView() const;
@@ -2336,6 +2367,8 @@ class V8_EXPORT Value : public Data {
 
   bool IsWebAssemblyCompiledModule() const;
 
+  V8_WARN_UNUSED_RESULT MaybeLocal<BigInt> ToBigInt(
+      Local<Context> context) const;
   V8_WARN_UNUSED_RESULT MaybeLocal<Boolean> ToBoolean(
       Local<Context> context) const;
   V8_WARN_UNUSED_RESULT MaybeLocal<Number> ToNumber(
@@ -2988,6 +3021,19 @@ class V8_EXPORT Uint32 : public Integer {
 };
 
 /**
+ * A JavaScript BigInt value (https://tc39.github.io/proposal-bigint)
+ */
+class V8_EXPORT BigInt : public Primitive {
+ public:
+  static Local<BigInt> New(Isolate* isolate, int64_t value);
+  V8_INLINE static BigInt* Cast(v8::Value* obj);
+
+ private:
+  BigInt();
+  static void CheckCast(v8::Value* obj);
+};
+
+/**
  * PropertyAttribute.
  */
 enum PropertyAttribute {
@@ -3063,9 +3109,15 @@ enum class KeyCollectionMode { kOwnOnly, kIncludePrototypes };
 
 /**
  * kIncludesIndices allows for integer indices to be collected, while
- * kSkipIndices will exclude integer indicies from being collected.
+ * kSkipIndices will exclude integer indices from being collected.
  */
 enum class IndexFilter { kIncludeIndices, kSkipIndices };
+
+/**
+ * kConvertToString will convert integer indices to strings.
+ * kKeepNumbers will return numbers for integer indices.
+ */
+enum class KeyConversionMode { kConvertToString, kKeepNumbers };
 
 /**
  * Integrity level for objects.
@@ -3237,7 +3289,8 @@ class V8_EXPORT Object : public Value {
       Local<Context> context);
   V8_WARN_UNUSED_RESULT MaybeLocal<Array> GetPropertyNames(
       Local<Context> context, KeyCollectionMode mode,
-      PropertyFilter property_filter, IndexFilter index_filter);
+      PropertyFilter property_filter, IndexFilter index_filter,
+      KeyConversionMode key_conversion = KeyConversionMode::kKeepNumbers);
 
   /**
    * This function has the same functionality as GetPropertyNames but
@@ -3255,7 +3308,8 @@ class V8_EXPORT Object : public Value {
    * be enumerated by a for-in statement over this object.
    */
   V8_WARN_UNUSED_RESULT MaybeLocal<Array> GetOwnPropertyNames(
-      Local<Context> context, PropertyFilter filter);
+      Local<Context> context, PropertyFilter filter,
+      KeyConversionMode key_conversion = KeyConversionMode::kKeepNumbers);
 
   /**
    * Get the prototype object.  This does not skip objects marked to
@@ -3465,7 +3519,7 @@ class V8_EXPORT Object : public Value {
   /**
    * Return the isolate to which the Object belongs to.
    */
-  V8_DEPRECATE_SOON("Keep track of isolate correctly", Isolate* GetIsolate());
+  Isolate* GetIsolate();
 
   static Local<Object> New(Isolate* isolate);
 
@@ -4068,11 +4122,15 @@ class V8_EXPORT Proxy : public Object {
 class V8_EXPORT WasmCompiledModule : public Object {
  public:
   typedef std::pair<std::unique_ptr<const uint8_t[]>, size_t> SerializedModule;
-  // A buffer that is owned by the caller.
+  /**
+   * A buffer that is owned by the caller.
+   */
   typedef std::pair<const uint8_t*, size_t> CallerOwnedBuffer;
 
-  // An opaque, native heap object for transferring wasm modules. It
-  // supports move semantics, and does not support copy semantics.
+  /**
+   * An opaque, native heap object for transferring wasm modules. It
+   * supports move semantics, and does not support copy semantics.
+   */
   class TransferrableModule final {
    public:
     TransferrableModule(TransferrableModule&& src) = default;
@@ -4091,35 +4149,41 @@ class V8_EXPORT WasmCompiledModule : public Object {
     OwnedBuffer wire_bytes = {nullptr, 0};
   };
 
-  // Get an in-memory, non-persistable, and context-independent (meaning,
-  // suitable for transfer to another Isolate and Context) representation
-  // of this wasm compiled module.
+  /**
+   * Get an in-memory, non-persistable, and context-independent (meaning,
+   * suitable for transfer to another Isolate and Context) representation
+   * of this wasm compiled module.
+   */
   TransferrableModule GetTransferrableModule();
 
-  // Efficiently re-create a WasmCompiledModule, without recompiling, from
-  // a TransferrableModule.
+  /**
+   * Efficiently re-create a WasmCompiledModule, without recompiling, from
+   * a TransferrableModule.
+   */
   static MaybeLocal<WasmCompiledModule> FromTransferrableModule(
       Isolate* isolate, const TransferrableModule&);
 
-  // Get the wasm-encoded bytes that were used to compile this module.
+  /**
+   * Get the wasm-encoded bytes that were used to compile this module.
+   */
   Local<String> GetWasmWireBytes();
 
-  // Serialize the compiled module. The serialized data does not include the
-  // uncompiled bytes.
+  /**
+   * Serialize the compiled module. The serialized data does not include the
+   * uncompiled bytes.
+   */
   SerializedModule Serialize();
 
-  // If possible, deserialize the module, otherwise compile it from the provided
-  // uncompiled bytes.
+  /**
+   * If possible, deserialize the module, otherwise compile it from the provided
+   * uncompiled bytes.
+   */
   static MaybeLocal<WasmCompiledModule> DeserializeOrCompile(
       Isolate* isolate, const CallerOwnedBuffer& serialized_module,
       const CallerOwnedBuffer& wire_bytes);
   V8_INLINE static WasmCompiledModule* Cast(Value* obj);
 
  private:
-  // TODO(ahaas): please remove the friend once streamed compilation is
-  // implemented
-  friend class WasmModuleObjectBuilder;
-
   static MaybeLocal<WasmCompiledModule> Deserialize(
       Isolate* isolate, const CallerOwnedBuffer& serialized_module,
       const CallerOwnedBuffer& wire_bytes);
@@ -4139,11 +4203,18 @@ class V8_EXPORT WasmCompiledModule : public Object {
 // to simply WasmModuleObjectBuilder
 class V8_EXPORT WasmModuleObjectBuilderStreaming final {
  public:
-  WasmModuleObjectBuilderStreaming(Isolate* isolate);
-  // The buffer passed into OnBytesReceived is owned by the caller.
+  explicit WasmModuleObjectBuilderStreaming(Isolate* isolate);
+  /**
+   * The buffer passed into OnBytesReceived is owned by the caller.
+   */
   void OnBytesReceived(const uint8_t*, size_t size);
   void Finish();
-  void Abort(Local<Value> exception);
+  /**
+   * Abort streaming compilation. If {exception} has a value, then the promise
+   * associated with streaming compilation is rejected with that value. If
+   * {exception} does not have value, the promise does not get rejected.
+   */
+  void Abort(MaybeLocal<Value> exception);
   Local<Promise> GetPromise();
 
   ~WasmModuleObjectBuilderStreaming();
@@ -4162,11 +4233,13 @@ class V8_EXPORT WasmModuleObjectBuilderStreaming final {
   Isolate* isolate_ = nullptr;
 
 #if V8_CC_MSVC
-  // We don't need the static Copy API, so the default
-  // NonCopyablePersistentTraits would be sufficient, however,
-  // MSVC eagerly instantiates the Copy.
-  // We ensure we don't use Copy, however, by compiling with the
-  // defaults everywhere else.
+  /**
+   * We don't need the static Copy API, so the default
+   * NonCopyablePersistentTraits would be sufficient, however,
+   * MSVC eagerly instantiates the Copy.
+   * We ensure we don't use Copy, however, by compiling with the
+   * defaults everywhere else.
+   */
   Persistent<Promise, CopyablePersistentTraits<Promise>> promise_;
 #else
   Persistent<Promise> promise_;
@@ -4174,30 +4247,6 @@ class V8_EXPORT WasmModuleObjectBuilderStreaming final {
   std::vector<Buffer> received_buffers_;
   size_t total_size_ = 0;
   std::shared_ptr<internal::wasm::StreamingDecoder> streaming_decoder_;
-};
-
-class V8_EXPORT WasmModuleObjectBuilder final {
- public:
-  WasmModuleObjectBuilder(Isolate* isolate) : isolate_(isolate) {}
-  // The buffer passed into OnBytesReceived is owned by the caller.
-  void OnBytesReceived(const uint8_t*, size_t size);
-  MaybeLocal<WasmCompiledModule> Finish();
-
- private:
-  Isolate* isolate_ = nullptr;
-  // TODO(ahaas): We probably need none of this below here once streamed
-  // compilation is implemented.
-  typedef std::pair<std::unique_ptr<const uint8_t[]>, size_t> Buffer;
-
-  // Disable copy semantics *in this implementation*. We can choose to
-  // relax this, albeit it's not clear why.
-  WasmModuleObjectBuilder(const WasmModuleObjectBuilder&) = delete;
-  WasmModuleObjectBuilder(WasmModuleObjectBuilder&&) = default;
-  WasmModuleObjectBuilder& operator=(const WasmModuleObjectBuilder&) = delete;
-  WasmModuleObjectBuilder& operator=(WasmModuleObjectBuilder&&) = default;
-
-  std::vector<Buffer> received_buffers_;
-  size_t total_size_ = 0;
 };
 
 #ifndef V8_ARRAY_BUFFER_INTERNAL_FIELD_COUNT
@@ -4246,40 +4295,17 @@ class V8_EXPORT ArrayBuffer : public Object {
     virtual void* AllocateUninitialized(size_t length) = 0;
 
     /**
-     * Reserved |length| bytes, but do not commit the memory. Must call
-     * |SetProtection| to make memory accessible.
-     */
-    // TODO(eholk): make this pure virtual once blink implements this.
-    virtual void* Reserve(size_t length);
-
-    /**
      * Free the memory block of size |length|, pointed to by |data|.
      * That memory is guaranteed to be previously allocated by |Allocate|.
      */
     virtual void Free(void* data, size_t length) = 0;
 
+    /**
+     * ArrayBuffer allocation mode. kNormal is a malloc/free style allocation,
+     * while kReservation is for larger allocations with the ability to set
+     * access permissions.
+     */
     enum class AllocationMode { kNormal, kReservation };
-
-    /**
-     * Free the memory block of size |length|, pointed to by |data|.
-     * That memory is guaranteed to be previously allocated by |Allocate| or
-     * |Reserve|, depending on |mode|.
-     */
-    // TODO(eholk): make this pure virtual once blink implements this.
-    virtual void Free(void* data, size_t length, AllocationMode mode);
-
-    enum class Protection { kNoAccess, kReadWrite };
-
-    /**
-     * Change the protection on a region of memory.
-     *
-     * On platforms that make a distinction between reserving and committing
-     * memory, changing the protection to kReadWrite must also ensure the memory
-     * is committed.
-     */
-    // TODO(eholk): make this pure virtual once blink implements this.
-    virtual void SetProtection(void* data, size_t length,
-                               Protection protection);
 
     /**
      * malloc/free based convenience allocator.
@@ -4639,6 +4665,37 @@ class V8_EXPORT Float64Array : public TypedArray {
   static void CheckCast(Value* obj);
 };
 
+/**
+ * An instance of BigInt64Array constructor.
+ */
+class V8_EXPORT BigInt64Array : public TypedArray {
+ public:
+  static Local<BigInt64Array> New(Local<ArrayBuffer> array_buffer,
+                                  size_t byte_offset, size_t length);
+  static Local<BigInt64Array> New(Local<SharedArrayBuffer> shared_array_buffer,
+                                  size_t byte_offset, size_t length);
+  V8_INLINE static BigInt64Array* Cast(Value* obj);
+
+ private:
+  BigInt64Array();
+  static void CheckCast(Value* obj);
+};
+
+/**
+ * An instance of BigUint64Array constructor.
+ */
+class V8_EXPORT BigUint64Array : public TypedArray {
+ public:
+  static Local<BigUint64Array> New(Local<ArrayBuffer> array_buffer,
+                                   size_t byte_offset, size_t length);
+  static Local<BigUint64Array> New(Local<SharedArrayBuffer> shared_array_buffer,
+                                   size_t byte_offset, size_t length);
+  V8_INLINE static BigUint64Array* Cast(Value* obj);
+
+ private:
+  BigUint64Array();
+  static void CheckCast(Value* obj);
+};
 
 /**
  * An instance of DataView constructor (ES6 draft 15.13.7).
@@ -4822,6 +4879,20 @@ class V8_EXPORT NumberObject : public Object {
   static void CheckCast(Value* obj);
 };
 
+/**
+ * A BigInt object (https://tc39.github.io/proposal-bigint)
+ */
+class V8_EXPORT BigIntObject : public Object {
+ public:
+  static Local<Value> New(Isolate* isolate, int64_t value);
+
+  Local<BigInt> ValueOf() const;
+
+  V8_INLINE static BigIntObject* Cast(Value* obj);
+
+ private:
+  static void CheckCast(Value* obj);
+};
 
 /**
  * A Boolean object (ECMA-262, 4.3.15).
@@ -5483,7 +5554,7 @@ class V8_EXPORT FunctionTemplate : public Template {
 
   /**
    * Causes the function template to inherit from a parent function template.
-   * This means the the function's prototype.__proto__ is set to the parent
+   * This means the function's prototype.__proto__ is set to the parent
    * function's prototype.
    **/
   void Inherit(Local<FunctionTemplate> parent);
@@ -5771,7 +5842,7 @@ class V8_EXPORT ObjectTemplate : public Template {
    * \param data A piece of data that will be passed to the callbacks
    *   whenever they are invoked.
    */
-  V8_DEPRECATE_SOON(
+  V8_DEPRECATED(
       "Use SetHandler(const NamedPropertyHandlerConfiguration) "
       "with the kOnlyInterceptStrings flag set.",
       void SetNamedPropertyHandler(
@@ -6051,13 +6122,13 @@ class V8_EXPORT ResourceConstraints {
 
   // Returns the max semi-space size in MB.
   V8_DEPRECATE_SOON("Use max_semi_space_size_in_kb()",
-                    int max_semi_space_size()) {
-    return static_cast<int>(max_semi_space_size_in_kb_ / 1024);
+                    size_t max_semi_space_size()) {
+    return max_semi_space_size_in_kb_ / 1024;
   }
 
   // Sets the max semi-space size in MB.
   V8_DEPRECATE_SOON("Use set_max_semi_space_size_in_kb(size_t limit_in_kb)",
-                    void set_max_semi_space_size(int limit_in_mb)) {
+                    void set_max_semi_space_size(size_t limit_in_mb)) {
     max_semi_space_size_in_kb_ = limit_in_mb * 1024;
   }
 
@@ -6071,16 +6142,16 @@ class V8_EXPORT ResourceConstraints {
     max_semi_space_size_in_kb_ = limit_in_kb;
   }
 
-  int max_old_space_size() const { return max_old_space_size_; }
-  void set_max_old_space_size(int limit_in_mb) {
+  size_t max_old_space_size() const { return max_old_space_size_; }
+  void set_max_old_space_size(size_t limit_in_mb) {
     max_old_space_size_ = limit_in_mb;
   }
   V8_DEPRECATE_SOON("max_executable_size_ is subsumed by max_old_space_size_",
-                    int max_executable_size() const) {
+                    size_t max_executable_size() const) {
     return max_executable_size_;
   }
   V8_DEPRECATE_SOON("max_executable_size_ is subsumed by max_old_space_size_",
-                    void set_max_executable_size(int limit_in_mb)) {
+                    void set_max_executable_size(size_t limit_in_mb)) {
     max_executable_size_ = limit_in_mb;
   }
   uint32_t* stack_limit() const { return stack_limit_; }
@@ -6091,17 +6162,15 @@ class V8_EXPORT ResourceConstraints {
     code_range_size_ = limit_in_mb;
   }
   size_t max_zone_pool_size() const { return max_zone_pool_size_; }
-  void set_max_zone_pool_size(const size_t bytes) {
-    max_zone_pool_size_ = bytes;
-  }
+  void set_max_zone_pool_size(size_t bytes) { max_zone_pool_size_ = bytes; }
 
  private:
   // max_semi_space_size_ is in KB
   size_t max_semi_space_size_in_kb_;
 
   // The remaining limits are in MB
-  int max_old_space_size_;
-  int max_executable_size_;
+  size_t max_old_space_size_;
+  size_t max_executable_size_;
   uint32_t* stack_limit_;
   size_t code_range_size_;
   size_t max_zone_pool_size_;
@@ -6161,24 +6230,6 @@ typedef void* (*CreateHistogramCallback)(const char* name,
                                          size_t buckets);
 
 typedef void (*AddHistogramSampleCallback)(void* histogram, int sample);
-
-// --- Memory Allocation Callback ---
-enum ObjectSpace {
-  kObjectSpaceNewSpace = 1 << 0,
-  kObjectSpaceOldSpace = 1 << 1,
-  kObjectSpaceCodeSpace = 1 << 2,
-  kObjectSpaceMapSpace = 1 << 3,
-  kObjectSpaceLoSpace = 1 << 4,
-  kObjectSpaceAll = kObjectSpaceNewSpace | kObjectSpaceOldSpace |
-                    kObjectSpaceCodeSpace | kObjectSpaceMapSpace |
-                    kObjectSpaceLoSpace
-};
-
-  enum AllocationAction {
-    kAllocationActionAllocate = 1 << 0,
-    kAllocationActionFree = 1 << 1,
-    kAllocationActionAll = kAllocationActionAllocate | kAllocationActionFree
-  };
 
 // --- Enter/Leave Script Callback ---
 typedef void (*BeforeCallEnteredCallback)(Isolate*);
@@ -6398,6 +6449,15 @@ typedef void (*GCCallback)(GCType type, GCCallbackFlags flags);
 
 typedef void (*InterruptCallback)(Isolate* isolate, void* data);
 
+/**
+ * This callback is invoked when the heap size is close to the heap limit and
+ * V8 is likely to abort with out-of-memory error.
+ * The callback can extend the heap limit by returning a value that is greater
+ * than the current_heap_limit. The initial heap limit is the limit that was
+ * set after heap setup.
+ */
+typedef size_t (*NearHeapLimitCallback)(void* data, size_t current_heap_limit,
+                                        size_t initial_heap_limit);
 
 /**
  * Collection of V8 heap information.
@@ -6531,8 +6591,17 @@ struct JitCodeEvent {
   // statement, and is used to indicate possible break locations.
   enum PositionType { POSITION, STATEMENT_POSITION };
 
+  // There are two different kinds of JitCodeEvents, one for JIT code generated
+  // by the optimizing compiler, and one for byte code generated for the
+  // interpreter.  For JIT_CODE events, the |code_start| member of the event
+  // points to the beginning of jitted assembly code, while for BYTE_CODE
+  // events, |code_start| points to the first bytecode of the interpreted
+  // function.
+  enum CodeType { BYTE_CODE, JIT_CODE };
+
   // Type of event.
   EventType type;
+  CodeType code_type;
   // Start of the instructions.
   void* code_start;
   // Size of the instructions.
@@ -7231,6 +7300,11 @@ class V8_EXPORT Isolate {
   V8_DEPRECATED("CpuProfiler should be created with CpuProfiler::New call.",
                 CpuProfiler* GetCpuProfiler());
 
+  /**
+   * Tells the CPU profiler whether the embedder is idle.
+   */
+  void SetIdle(bool is_idle);
+
   /** Returns true if this isolate has a current context. */
   bool InContext();
 
@@ -7643,6 +7717,23 @@ class V8_EXPORT Isolate {
   void SetOOMErrorHandler(OOMErrorCallback that);
 
   /**
+   * Add a callback to invoke in case the heap size is close to the heap limit.
+   * If multiple callbacks are added, only the most recently added callback is
+   * invoked.
+   */
+  void AddNearHeapLimitCallback(NearHeapLimitCallback callback, void* data);
+
+  /**
+   * Remove the given callback and restore the heap limit to the
+   * given limit. If the given limit is zero, then it is ignored.
+   * If the current heap size is greater than the given limit,
+   * then the heap limit is restored to the minimal limit that
+   * is possible for the current heap size.
+   */
+  void RemoveNearHeapLimitCallback(NearHeapLimitCallback callback,
+                                   size_t heap_limit);
+
+  /**
    * Set the callback to invoke to check if code generation from
    * strings should be allowed.
    */
@@ -7899,6 +7990,15 @@ class V8_EXPORT V8 {
 
   /**
    * Initialize the ICU library bundled with V8. The embedder should only
+   * invoke this method when using the bundled ICU. Returns true on success.
+   *
+   * If V8 was compiled with the ICU data in an external file, the location
+   * of the data file has to be provided.
+   */
+  static bool InitializeICU(const char* icu_data_file = nullptr);
+
+  /**
+   * Initialize the ICU library bundled with V8. The embedder should only
    * invoke this method when using the bundled ICU. If V8 was compiled with
    * the ICU data in an external file and when the default location of that
    * file should be used, a path to the executable must be provided.
@@ -7970,7 +8070,16 @@ class V8_EXPORT V8 {
    * Enable the default signal handler rather than using one provided by the
    * embedder.
    */
-  static bool RegisterDefaultSignalHandler();
+  V8_DEPRECATE_SOON("Use EnableWebAssemblyTrapHandler",
+                    static bool RegisterDefaultSignalHandler());
+
+  /**
+   * Activate trap-based bounds checking for WebAssembly.
+   *
+   * \param use_v8_signal_handler Whether V8 should install its own signal
+   * handler or rely on the embedder's.
+   */
+  static bool EnableWebAssemblyTrapHandler(bool use_v8_signal_handler);
 
  private:
   V8();
@@ -7990,6 +8099,8 @@ class V8_EXPORT V8 {
                        WeakCallbackInfo<void>::Callback weak_callback);
   static void MakeWeak(internal::Object*** location_addr);
   static void* ClearWeak(internal::Object** location);
+  static void AnnotateStrongRetainer(internal::Object** location,
+                                     const char* label);
   static Value* Eternalize(Isolate* isolate, Value* handle);
 
   static void RegisterExternallyReferencedObject(internal::Object** object,
@@ -8226,7 +8337,7 @@ class V8_EXPORT TryCatch {
    * all TryCatch blocks should be stack allocated because the memory
    * location itself is compared against JavaScript try/catch blocks.
    */
-  TryCatch(Isolate* isolate);
+  explicit TryCatch(Isolate* isolate);
 
   /**
    * Unregisters and deletes this try/catch block.
@@ -8528,6 +8639,11 @@ class V8_EXPORT Context {
   enum EmbedderDataFields { kDebugIdIndex = 0 };
 
   /**
+   * Return the number of fields allocated for embedder data.
+   */
+  uint32_t GetNumberOfEmbedderDataFields();
+
+  /**
    * Gets the embedder data with the given index, which must have been set by a
    * previous call to SetEmbedderData with the same index.
    */
@@ -8782,6 +8898,7 @@ const int kApiInt64Size = sizeof(int64_t);  // NOLINT
 
 // Tag information for HeapObject.
 const int kHeapObjectTag = 1;
+const int kWeakHeapObjectTag = 3;
 const int kHeapObjectTagSize = 2;
 const intptr_t kHeapObjectTagMask = (1 << kHeapObjectTagSize) - 1;
 
@@ -9195,6 +9312,12 @@ template <typename P>
 P* PersistentBase<T>::ClearWeak() {
   return reinterpret_cast<P*>(
     V8::ClearWeak(reinterpret_cast<internal::Object**>(this->val_)));
+}
+
+template <class T>
+void PersistentBase<T>::AnnotateStrongRetainer(const char* label) {
+  V8::AnnotateStrongRetainer(reinterpret_cast<internal::Object**>(this->val_),
+                             label);
 }
 
 template <class T>
@@ -9790,6 +9913,12 @@ Uint32* Uint32::Cast(v8::Value* value) {
   return static_cast<Uint32*>(value);
 }
 
+BigInt* BigInt::Cast(v8::Value* value) {
+#ifdef V8_ENABLE_CHECKS
+  CheckCast(value);
+#endif
+  return static_cast<BigInt*>(value);
+}
 
 Date* Date::Cast(v8::Value* value) {
 #ifdef V8_ENABLE_CHECKS
@@ -9822,6 +9951,12 @@ NumberObject* NumberObject::Cast(v8::Value* value) {
   return static_cast<NumberObject*>(value);
 }
 
+BigIntObject* BigIntObject::Cast(v8::Value* value) {
+#ifdef V8_ENABLE_CHECKS
+  CheckCast(value);
+#endif
+  return static_cast<BigIntObject*>(value);
+}
 
 BooleanObject* BooleanObject::Cast(v8::Value* value) {
 #ifdef V8_ENABLE_CHECKS

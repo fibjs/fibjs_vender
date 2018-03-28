@@ -599,11 +599,8 @@ void TurboAssembler::ConditionalCompareMacro(const Register& rn,
   }
 }
 
-
-void MacroAssembler::Csel(const Register& rd,
-                          const Register& rn,
-                          const Operand& operand,
-                          Condition cond) {
+void TurboAssembler::Csel(const Register& rd, const Register& rn,
+                          const Operand& operand, Condition cond) {
   DCHECK(allow_macro_instructions());
   DCHECK(!rd.IsZero());
   DCHECK((cond != al) && (cond != nv));
@@ -1632,6 +1629,21 @@ void MacroAssembler::AssertFixedArray(Register object) {
   }
 }
 
+void MacroAssembler::AssertConstructor(Register object) {
+  if (emit_debug_code()) {
+    AssertNotSmi(object, AbortReason::kOperandIsASmiAndNotAConstructor);
+
+    UseScratchRegisterScope temps(this);
+    Register temp = temps.AcquireX();
+
+    Ldr(temp, FieldMemOperand(object, HeapObject::kMapOffset));
+    Ldrb(temp, FieldMemOperand(temp, Map::kBitFieldOffset));
+    Tst(temp, Operand(Map::IsConstructorBit::kMask));
+
+    Check(ne, AbortReason::kOperandIsNotAConstructor);
+  }
+}
+
 void MacroAssembler::AssertFunction(Register object) {
   if (emit_debug_code()) {
     AssertNotSmi(object, AbortReason::kOperandIsASmiAndNotAFunction);
@@ -1766,9 +1778,9 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
   Jump(stub.GetCode(), RelocInfo::CODE_TARGET);
 }
 
-void MacroAssembler::JumpToInstructionStream(const InstructionStream* stream) {
-  uint64_t bytes_address = reinterpret_cast<uint64_t>(stream->bytes());
-  Mov(kOffHeapTrampolineRegister, bytes_address);
+void MacroAssembler::JumpToInstructionStream(Address entry) {
+  Mov(kOffHeapTrampolineRegister,
+      Operand(reinterpret_cast<uint64_t>(entry), RelocInfo::OFF_HEAP_TARGET));
   Br(kOffHeapTrampolineRegister);
 }
 
@@ -1997,41 +2009,6 @@ int TurboAssembler::CallSize(Handle<Code> code, RelocInfo::Mode rmode) {
                                   : kCallSizeWithRelocation;
 }
 
-
-void MacroAssembler::JumpIfHeapNumber(Register object, Label* on_heap_number,
-                                      SmiCheckType smi_check_type) {
-  Label on_not_heap_number;
-
-  if (smi_check_type == DO_SMI_CHECK) {
-    JumpIfSmi(object, &on_not_heap_number);
-  }
-
-  AssertNotSmi(object);
-
-  UseScratchRegisterScope temps(this);
-  Register temp = temps.AcquireX();
-  Ldr(temp, FieldMemOperand(object, HeapObject::kMapOffset));
-  JumpIfRoot(temp, Heap::kHeapNumberMapRootIndex, on_heap_number);
-
-  Bind(&on_not_heap_number);
-}
-
-
-void MacroAssembler::JumpIfNotHeapNumber(Register object,
-                                         Label* on_not_heap_number,
-                                         SmiCheckType smi_check_type) {
-  if (smi_check_type == DO_SMI_CHECK) {
-    JumpIfSmi(object, on_not_heap_number);
-  }
-
-  AssertNotSmi(object);
-
-  UseScratchRegisterScope temps(this);
-  Register temp = temps.AcquireX();
-  Ldr(temp, FieldMemOperand(object, HeapObject::kMapOffset));
-  JumpIfNotRoot(temp, Heap::kHeapNumberMapRootIndex, on_not_heap_number);
-}
-
 void MacroAssembler::TryRepresentDoubleAsInt(Register as_int, VRegister value,
                                              VRegister scratch_d,
                                              Label* on_successful_conversion,
@@ -2187,11 +2164,13 @@ void MacroAssembler::CheckDebugHook(Register fun, Register new_target,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual) {
   Label skip_hook;
+
   ExternalReference debug_hook_active =
       ExternalReference::debug_hook_on_function_call_address(isolate());
   Mov(x4, Operand(debug_hook_active));
   Ldrsb(x4, MemOperand(x4));
   Cbz(x4, &skip_hook);
+
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -2529,6 +2508,12 @@ void MacroAssembler::LeaveExitFrame(bool restore_doubles,
   Pop(fp, lr);
 }
 
+void MacroAssembler::LoadWeakValue(Register out, Register in,
+                                   Label* target_if_cleared) {
+  CompareAndBranch(in, Operand(kClearedWeakHeapObject), eq, target_if_cleared);
+
+  and_(out, in, Operand(~kWeakHeapObjectMask));
+}
 
 void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
                                       Register scratch1, Register scratch2) {
@@ -3287,6 +3272,14 @@ InlineSmiCheckInfo::InlineSmiCheckInfo(Address info)
   }
 }
 
+void TurboAssembler::ComputeCodeStartAddress(const Register& rd) {
+  // We can use adr to load a pc relative location.
+  adr(rd, -pc_offset());
+}
+
+void TurboAssembler::ResetSpeculationPoisonRegister() {
+  Mov(kSpeculationPoisonRegister, -1);
+}
 
 #undef __
 

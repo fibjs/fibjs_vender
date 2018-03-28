@@ -150,15 +150,10 @@ enum RememberedSetType {
 // A free list category maintains a linked list of free memory blocks.
 class FreeListCategory {
  public:
-  static const int kSize = kIntSize +      // FreeListCategoryType type_
-                           kIntSize +      // padding for type_
-                           kSizetSize +    // size_t available_
-                           kPointerSize +  // FreeSpace* top_
-                           kPointerSize +  // FreeListCategory* prev_
-                           kPointerSize;   // FreeListCategory* next_
-
-  FreeListCategory()
-      : type_(kInvalidCategory),
+  FreeListCategory(FreeList* free_list, Page* page)
+      : free_list_(free_list),
+        page_(page),
+        type_(kInvalidCategory),
         available_(0),
         top_(nullptr),
         prev_(nullptr),
@@ -184,24 +179,22 @@ class FreeListCategory {
 
   void Free(Address address, size_t size_in_bytes, FreeMode mode);
 
-  // Picks a node from the list and stores its size in |node_size|. Returns
-  // nullptr if the category is empty.
-  FreeSpace* PickNodeFromList(size_t* node_size);
-
   // Performs a single try to pick a node of at least |minimum_size| from the
   // category. Stores the actual size in |node_size|. Returns nullptr if no
   // node is found.
-  FreeSpace* TryPickNodeFromList(size_t minimum_size, size_t* node_size);
+  FreeSpace* PickNodeFromList(size_t minimum_size, size_t* node_size);
 
   // Picks a node of at least |minimum_size| from the category. Stores the
   // actual size in |node_size|. Returns nullptr if no node is found.
   FreeSpace* SearchForNodeInList(size_t minimum_size, size_t* node_size);
 
   inline FreeList* owner();
-  inline Page* page() const;
+  inline Page* page() const { return page_; }
   inline bool is_linked();
   bool is_empty() { return top() == nullptr; }
   size_t available() const { return available_; }
+
+  void set_free_list(FreeList* free_list) { free_list_ = free_list; }
 
 #ifdef DEBUG
   size_t SumFreeList();
@@ -220,6 +213,12 @@ class FreeListCategory {
   FreeListCategory* next() { return next_; }
   void set_next(FreeListCategory* next) { next_ = next; }
 
+  // This FreeListCategory is owned by the given free_list_.
+  FreeList* free_list_;
+
+  // This FreeListCategory holds free list entries of the given page_.
+  Page* const page_;
+
   // |type_|: The type of this free list category.
   FreeListCategoryType type_;
 
@@ -235,6 +234,8 @@ class FreeListCategory {
 
   friend class FreeList;
   friend class PagedSpace;
+
+  DISALLOW_IMPLICIT_CONSTRUCTORS(FreeListCategory);
 };
 
 // MemoryChunk represents a memory region owned by a specific space.
@@ -372,7 +373,7 @@ class MemoryChunk {
       + kSizetSize    // size_t wasted_memory_
       + kPointerSize  // AtomicValue next_chunk_
       + kPointerSize  // AtomicValue prev_chunk_
-      + FreeListCategory::kSize * kNumberOfCategories
+      + kPointerSize * kNumberOfCategories
       // FreeListCategory categories_[kNumberOfCategories]
       + kPointerSize   // LocalArrayBufferTracker* local_tracker_
       + kIntptrSize    // intptr_t young_generation_live_byte_count_
@@ -612,6 +613,8 @@ class MemoryChunk {
 
   void set_owner(Space* space) { owner_.SetValue(space); }
 
+  bool IsPagedSpace() const;
+
   void InsertAfter(MemoryChunk* other);
   void Unlink();
 
@@ -621,8 +624,6 @@ class MemoryChunk {
 
   void SetReadAndExecutable();
   void SetReadAndWritable();
-
-  inline void InitializeFreeListCategories();
 
  protected:
   static MemoryChunk* Initialize(Heap* heap, Address base, size_t size,
@@ -701,7 +702,7 @@ class MemoryChunk {
   // prev_chunk_ holds a pointer of type MemoryChunk
   base::AtomicValue<MemoryChunk*> prev_chunk_;
 
-  FreeListCategory categories_[kNumberOfCategories];
+  FreeListCategory* categories_[kNumberOfCategories];
 
   LocalArrayBufferTracker* local_tracker_;
 
@@ -790,7 +791,7 @@ class Page : public MemoryChunk {
   template <typename Callback>
   inline void ForAllFreeListCategories(Callback callback) {
     for (int i = kFirstCategory; i < kNumberOfCategories; i++) {
-      callback(&categories_[i]);
+      callback(categories_[i]);
     }
   }
 
@@ -822,7 +823,7 @@ class Page : public MemoryChunk {
   }
 
   FreeListCategory* free_list_category(FreeListCategoryType type) {
-    return &categories_[type];
+    return categories_[type];
   }
 
   bool is_anchor() { return IsFlagSet(Page::ANCHOR); }
@@ -846,6 +847,10 @@ class Page : public MemoryChunk {
 
   V8_EXPORT_PRIVATE void CreateBlackArea(Address start, Address end);
   void DestroyBlackArea(Address start, Address end);
+
+  void InitializeFreeListCategories();
+  void AllocateFreeListCategories();
+  void ReleaseFreeListCategories();
 
 #ifdef DEBUG
   void Print();
@@ -1172,14 +1177,14 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
         : heap_(heap),
           allocator_(allocator),
           pending_unmapping_tasks_semaphore_(0),
-          concurrent_unmapping_tasks_active_(0) {
+          pending_unmapping_tasks_(0),
+          active_unmapping_tasks_(0) {
       chunks_[kRegular].reserve(kReservedQueueingSlots);
       chunks_[kPooled].reserve(kReservedQueueingSlots);
     }
 
     void AddMemoryChunkSafe(MemoryChunk* chunk) {
-      if ((chunk->size() == Page::kPageSize) &&
-          (chunk->executable() != EXECUTABLE)) {
+      if (chunk->IsPagedSpace() && chunk->executable() != EXECUTABLE) {
         AddMemoryChunkSafe<kRegular>(chunk);
       } else {
         AddMemoryChunkSafe<kNonRegular>(chunk);
@@ -1240,6 +1245,8 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
       return chunk;
     }
 
+    bool MakeRoomForNewTasks();
+
     template <FreeMode mode>
     void PerformFreeMemoryOnQueuedChunks();
 
@@ -1249,7 +1256,8 @@ class V8_EXPORT_PRIVATE MemoryAllocator {
     std::vector<MemoryChunk*> chunks_[kNumberOfChunkQueues];
     CancelableTaskManager::Id task_ids_[kMaxUnmapperTasks];
     base::Semaphore pending_unmapping_tasks_semaphore_;
-    intptr_t concurrent_unmapping_tasks_active_;
+    intptr_t pending_unmapping_tasks_;
+    base::AtomicNumber<intptr_t> active_unmapping_tasks_;
 
     friend class MemoryAllocator;
   };
@@ -1867,12 +1875,14 @@ class V8_EXPORT_PRIVATE FreeList {
 
   // Walks all available categories for a given |type| and tries to retrieve
   // a node. Returns nullptr if the category is empty.
-  FreeSpace* FindNodeIn(FreeListCategoryType type, size_t* node_size);
+  FreeSpace* FindNodeIn(FreeListCategoryType type, size_t minimum_size,
+                        size_t* node_size);
 
   // Tries to retrieve a node from the first category in a given |type|.
-  // Returns nullptr if the category is empty.
-  FreeSpace* TryFindNodeIn(FreeListCategoryType type, size_t* node_size,
-                           size_t minimum_size);
+  // Returns nullptr if the category is empty or the top entry is smaller
+  // than minimum_size.
+  FreeSpace* TryFindNodeIn(FreeListCategoryType type, size_t minimum_size,
+                           size_t* node_size);
 
   // Searches a given |type| for a node of at least |minimum_size|.
   FreeSpace* SearchForNodeInList(FreeListCategoryType type, size_t* node_size,
@@ -2868,6 +2878,14 @@ class MapSpace : public PagedSpace {
 #endif
 };
 
+// -----------------------------------------------------------------------------
+// Read Only space for all Immortal Immovable and Immutable objects
+
+class ReadOnlySpace : public PagedSpace {
+ public:
+  ReadOnlySpace(Heap* heap, AllocationSpace id, Executability executable)
+      : PagedSpace(heap, id, executable) {}
+};
 
 // -----------------------------------------------------------------------------
 // Large objects ( > kMaxRegularHeapObjectSize ) are allocated and

@@ -329,6 +329,7 @@ void LoadElimination::AbstractElements::Print() const {
 
 Node* LoadElimination::AbstractField::Lookup(Node* object) const {
   for (auto pair : info_for_node_) {
+    if (pair.first->IsDead()) continue;
     if (MustAlias(object, pair.first)) return pair.second.value;
   }
   return nullptr;
@@ -364,6 +365,7 @@ LoadElimination::AbstractField const* LoadElimination::AbstractField::Kill(
     const AliasStateInfo& alias_info, MaybeHandle<Name> name,
     Zone* zone) const {
   for (auto pair : this->info_for_node_) {
+    if (pair.first->IsDead()) continue;
     if (alias_info.MayAlias(pair.first)) {
       AbstractField* that = new (zone) AbstractField(zone);
       for (auto pair : this->info_for_node_) {
@@ -1346,7 +1348,7 @@ int LoadElimination::FieldIndexOf(FieldAccess const& access) {
       if (kDoubleSize != kPointerSize) {
         return -1;  // We currently only track pointer size fields.
       }
-    // Fall through.
+      break;
     case MachineRepresentation::kTaggedSigned:
     case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:

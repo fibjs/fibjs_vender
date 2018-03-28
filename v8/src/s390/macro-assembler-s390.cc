@@ -165,7 +165,7 @@ void TurboAssembler::Call(Register target) {
 }
 
 void MacroAssembler::CallJSEntry(Register target) {
-  DCHECK(target == ip);
+  DCHECK(target == r4);
   Call(target);
 }
 
@@ -1221,12 +1221,13 @@ void MacroAssembler::CheckDebugHook(Register fun, Register new_target,
                                     const ParameterCount& expected,
                                     const ParameterCount& actual) {
   Label skip_hook;
+
   ExternalReference debug_hook_avtive =
       ExternalReference::debug_hook_on_function_call_address(isolate());
   mov(r6, Operand(debug_hook_avtive));
-  LoadB(r6, MemOperand(r6));
-  CmpP(r6, Operand::Zero());
-  beq(&skip_hook);
+  tm(MemOperand(r6), Operand::Zero());
+  bne(&skip_hook);
+
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -1284,7 +1285,7 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
     // We call indirectly through the code field in the function to
     // allow recompilation to take effect without changing any of the
     // call sites.
-    Register code = ip;
+    Register code = kJavaScriptCallCodeStartRegister;
     LoadP(code, FieldMemOperand(function, JSFunction::kCodeOffset));
     AddP(code, code, Operand(Code::kHeaderSize - kHeapObjectTag));
     if (flag == CALL_FUNCTION) {
@@ -1526,10 +1527,18 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
   Jump(stub.GetCode(), RelocInfo::CODE_TARGET);
 }
 
-void MacroAssembler::JumpToInstructionStream(const InstructionStream* stream) {
-  intptr_t bytes_address = reinterpret_cast<intptr_t>(stream->bytes());
-  mov(kOffHeapTrampolineRegister, Operand(bytes_address));
+void MacroAssembler::JumpToInstructionStream(Address entry) {
+  mov(kOffHeapTrampolineRegister,
+      Operand(reinterpret_cast<intptr_t>(entry), RelocInfo::OFF_HEAP_TARGET));
   Jump(kOffHeapTrampolineRegister);
+}
+
+void MacroAssembler::LoadWeakValue(Register out, Register in,
+                                   Label* target_if_cleared) {
+  CmpP(in, Operand(kClearedWeakHeapObject));
+  beq(target_if_cleared);
+
+  AndP(out, in, Operand(~kWeakHeapObjectMask));
 }
 
 void MacroAssembler::IncrementCounter(StatsCounter* counter, int value,
@@ -1646,6 +1655,18 @@ void MacroAssembler::AssertFixedArray(Register object) {
     CompareObjectType(object, object, object, FIXED_ARRAY_TYPE);
     pop(object);
     Check(eq, AbortReason::kOperandIsNotAFixedArray);
+  }
+}
+
+void MacroAssembler::AssertConstructor(Register object, Register scratch) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    TestIfSmi(object);
+    Check(ne, AbortReason::kOperandIsASmiAndNotAConstructor);
+    LoadP(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
+    tm(FieldMemOperand(scratch, Map::kBitFieldOffset),
+       Operand(Map::IsConstructorBit::kMask));
+    Check(ne, AbortReason::kOperandIsNotAConstructor);
   }
 }
 
@@ -4271,6 +4292,10 @@ bool AreAliased(DoubleRegister reg1, DoubleRegister reg2, DoubleRegister reg3,
   return n_of_valid_regs != n_of_non_aliasing_regs;
 }
 #endif
+
+void TurboAssembler::ResetSpeculationPoisonRegister() {
+  mov(kSpeculationPoisonRegister, Operand(-1));
+}
 
 }  // namespace internal
 }  // namespace v8

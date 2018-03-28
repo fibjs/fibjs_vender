@@ -103,7 +103,7 @@ void UpdateInLiveness(Bytecode bytecode, BytecodeLivenessState& in_liveness,
     in_liveness.MarkRegisterLive(accessor.GetRegisterOperand(0).index());
     // Suspend additionally reads and returns the accumulator
     DCHECK(Bytecodes::ReadsAccumulator(bytecode));
-    in_liveness.MarkAccumulatorDead();
+    in_liveness.MarkAccumulatorLive();
     return;
   }
   if (bytecode == Bytecode::kResumeGenerator) {
@@ -236,9 +236,9 @@ void UpdateOutLiveness(Bytecode bytecode, BytecodeLivenessState& out_liveness,
   if (!interpreter::Bytecodes::IsWithoutExternalSideEffects(bytecode)) {
     int handler_context;
     // TODO(leszeks): We should look up this range only once per entry.
-    HandlerTable* table = HandlerTable::cast(bytecode_array->handler_table());
+    HandlerTable table(*bytecode_array);
     int handler_offset =
-        table->LookupRange(current_offset, &handler_context, nullptr);
+        table.LookupRange(current_offset, &handler_context, nullptr);
 
     if (handler_offset != -1) {
       bool was_accumulator_live = out_liveness.AccumulatorIsLive();

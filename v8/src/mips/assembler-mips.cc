@@ -213,22 +213,20 @@ uint32_t RelocInfo::embedded_size() const {
       Assembler::target_address_at(pc_, constant_pool_));
 }
 
-void RelocInfo::set_embedded_address(Isolate* isolate, Address address,
+void RelocInfo::set_embedded_address(Address address,
                                      ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, constant_pool_, address,
-                                   flush_mode);
+  Assembler::set_target_address_at(pc_, constant_pool_, address, flush_mode);
 }
 
-void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
-                                  ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, constant_pool_,
+void RelocInfo::set_embedded_size(uint32_t size, ICacheFlushMode flush_mode) {
+  Assembler::set_target_address_at(pc_, constant_pool_,
                                    reinterpret_cast<Address>(size), flush_mode);
 }
 
-void RelocInfo::set_js_to_wasm_address(Isolate* isolate, Address address,
+void RelocInfo::set_js_to_wasm_address(Address address,
                                        ICacheFlushMode icache_flush_mode) {
   DCHECK_EQ(rmode_, JS_TO_WASM_CALL);
-  set_embedded_address(isolate, address, icache_flush_mode);
+  set_embedded_address(address, icache_flush_mode);
 }
 
 Address RelocInfo::js_to_wasm_address() const {
@@ -285,8 +283,7 @@ void Assembler::AllocateAndInstallRequestedHeapObjects(Isolate* isolate) {
         break;
     }
     Address pc = buffer_ + request.offset();
-    set_target_value_at(isolate, pc,
-                        reinterpret_cast<uint32_t>(object.location()));
+    set_target_value_at(pc, reinterpret_cast<uint32_t>(object.location()));
   }
 }
 
@@ -2505,15 +2502,6 @@ void Assembler::cfc1(Register rt, FPUControlRegister fs) {
 }
 
 
-void Assembler::DoubleAsTwoUInt32(double d, uint32_t* lo, uint32_t* hi) {
-  uint64_t i;
-  memcpy(&i, &d, 8);
-
-  *lo = i & 0xFFFFFFFF;
-  *hi = i >> 32;
-}
-
-
 void Assembler::movn_s(FPURegister fd, FPURegister fs, Register rt) {
   DCHECK(!IsMipsArchVariant(kMips32r6));
   GenInstrRegister(COP1, S, rt, fs, fd, MOVN_C);
@@ -3682,7 +3670,7 @@ void Assembler::GrowBuffer() {
   // Some internal data structures overflow for very large buffers,
   // they must ensure that kMaximalBufferSize is not too large.
   if (desc.buffer_size > kMaximalBufferSize) {
-    V8::FatalProcessOutOfMemory("Assembler::GrowBuffer");
+    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
   }
 
   // Set up new buffer.
@@ -3902,11 +3890,8 @@ void Assembler::QuietNaN(HeapObject* object) {
 // There is an optimization below, which emits a nop when the address
 // fits in just 16 bits. This is unlikely to help, and should be benchmarked,
 // and possibly removed.
-void Assembler::set_target_value_at(Isolate* isolate, Address pc,
-                                    uint32_t target,
+void Assembler::set_target_value_at(Address pc, uint32_t target,
                                     ICacheFlushMode icache_flush_mode) {
-  DCHECK_IMPLIES(isolate == nullptr, icache_flush_mode == SKIP_ICACHE_FLUSH);
-
   Instr instr2 = instr_at(pc + kInstrSize);
   uint32_t rt_code = GetRtField(instr2);
   uint32_t* p = reinterpret_cast<uint32_t*>(pc);
@@ -3937,7 +3922,7 @@ void Assembler::set_target_value_at(Isolate* isolate, Address pc,
   }
 
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    Assembler::FlushICache(isolate, pc, 2 * sizeof(int32_t));
+    Assembler::FlushICache(pc, 2 * sizeof(int32_t));
   }
 }
 

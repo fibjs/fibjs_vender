@@ -170,7 +170,8 @@ class UnallocatedOperand final : public InstructionOperand {
 
   enum ExtendedPolicy {
     NONE,
-    ANY,
+    REGISTER_OR_SLOT,
+    REGISTER_OR_SLOT_OR_CONSTANT,
     FIXED_REGISTER,
     FIXED_FP_REGISTER,
     MUST_HAVE_REGISTER,
@@ -236,8 +237,13 @@ class UnallocatedOperand final : public InstructionOperand {
   }
 
   // Predicates for the operand policy.
-  bool HasAnyPolicy() const {
-    return basic_policy() == EXTENDED_POLICY && extended_policy() == ANY;
+  bool HasRegisterOrSlotPolicy() const {
+    return basic_policy() == EXTENDED_POLICY &&
+           extended_policy() == REGISTER_OR_SLOT;
+  }
+  bool HasRegisterOrSlotOrConstantPolicy() const {
+    return basic_policy() == EXTENDED_POLICY &&
+           extended_policy() == REGISTER_OR_SLOT_OR_CONSTANT;
   }
   bool HasFixedPolicy() const {
     return basic_policy() == FIXED_SLOT ||
@@ -892,7 +898,8 @@ class V8_EXPORT_PRIVATE Instruction final {
 
   bool IsDeoptimizeCall() const {
     return arch_opcode() == ArchOpcode::kArchDeoptimize ||
-           FlagsModeField::decode(opcode()) == kFlags_deoptimize;
+           FlagsModeField::decode(opcode()) == kFlags_deoptimize ||
+           FlagsModeField::decode(opcode()) == kFlags_deoptimize_and_poison;
   }
 
   bool IsTrap() const {

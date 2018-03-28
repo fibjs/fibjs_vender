@@ -9,6 +9,7 @@
 #if V8_TARGET_ARCH_X64
 
 #include "src/codegen.h"
+#include "src/isolate.h"
 #include "src/macro-assembler.h"
 #include "src/x64/assembler-x64-inl.h"
 
@@ -32,9 +33,9 @@ UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
 
   CodeDesc desc;
   masm.GetCode(isolate, &desc);
-  DCHECK(!RelocInfo::RequiresRelocation(isolate, desc));
+  DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, allocated);
+  Assembler::FlushICache(buffer, allocated);
   CHECK(SetPermissions(buffer, allocated, PageAllocator::kReadExecute));
   return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
 }

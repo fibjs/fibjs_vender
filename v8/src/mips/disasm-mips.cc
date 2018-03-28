@@ -921,6 +921,7 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
         PrintMsaImmElm(instr);
         return 4;
       }
+      UNREACHABLE();
     }
     case 'r': {   // 'r: registers.
       return FormatRegister(instr, format);

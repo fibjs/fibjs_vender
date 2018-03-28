@@ -911,7 +911,7 @@ Handle<JSFunction> InstallFunc(Isolate* isolate, Handle<JSObject> object,
   Handle<FunctionTemplateInfo> temp = NewTemplate(isolate, func);
   Handle<JSFunction> function =
       ApiNatives::InstantiateFunction(temp, name).ToHandleChecked();
-  DCHECK(function->shared()->has_shared_name());
+  DCHECK(function->shared()->HasSharedName());
   function->shared()->set_length(length);
   PropertyAttributes attributes = static_cast<PropertyAttributes>(DONT_ENUM);
   JSObject::AddProperty(object, name, function, attributes);
@@ -925,7 +925,7 @@ void InstallGetter(Isolate* isolate, Handle<JSObject> object,
   // TODO(ishell): shouldn't we set "get "+name as getter's name?
   Handle<JSFunction> function =
       ApiNatives::InstantiateFunction(temp).ToHandleChecked();
-  DCHECK(function->shared()->has_shared_name());
+  DCHECK(function->shared()->HasSharedName());
   v8::PropertyAttribute attributes =
       static_cast<v8::PropertyAttribute>(v8::DontEnum);
   Utils::ToLocal(object)->SetAccessorProperty(Utils::ToLocal(name),
@@ -951,7 +951,6 @@ void WasmJs::Install(Isolate* isolate, bool exposed_on_global_object) {
       name, isolate->strict_function_map(), LanguageMode::kStrict);
   Handle<JSFunction> cons = factory->NewFunction(args);
   JSFunction::SetPrototype(cons, isolate->initial_object_prototype());
-  cons->shared()->set_instance_class_name(*name);
   Handle<JSObject> webassembly = factory->NewJSObject(cons, TENURED);
   PropertyAttributes attributes = static_cast<PropertyAttributes>(DONT_ENUM);
 
@@ -982,9 +981,8 @@ void WasmJs::Install(Isolate* isolate, bool exposed_on_global_object) {
   JSFunction::EnsureHasInitialMap(module_constructor);
   Handle<JSObject> module_proto(
       JSObject::cast(module_constructor->instance_prototype()));
-  i::Handle<i::Map> module_map = isolate->factory()->NewMap(
-      i::WASM_MODULE_TYPE, i::JSObject::kHeaderSize +
-                               WasmModuleObject::kFieldCount * i::kPointerSize);
+  i::Handle<i::Map> module_map =
+      isolate->factory()->NewMap(i::WASM_MODULE_TYPE, WasmModuleObject::kSize);
   JSFunction::SetInitialMap(module_constructor, module_map, module_proto);
   InstallFunc(isolate, module_constructor, "imports", WebAssemblyModuleImports,
               1);

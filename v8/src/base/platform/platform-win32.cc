@@ -497,6 +497,13 @@ int OS::GetCurrentThreadId() {
   return static_cast<int>(::GetCurrentThreadId());
 }
 
+void OS::ExitProcess(int exit_code) {
+  // Use TerminateProcess avoid races between isolate threads and
+  // static destructors.
+  fflush(stdout);
+  fflush(stderr);
+  TerminateProcess(GetCurrentProcess(), exit_code);
+}
 
 // ----------------------------------------------------------------------------
 // Win32 console output.
@@ -833,7 +840,7 @@ void* OS::Allocate(void* address, size_t size, size_t alignment,
     // base will be nullptr.
     if (base != nullptr) break;
   }
-  DCHECK_EQ(base, aligned_base);
+  DCHECK_IMPLIES(base, base == aligned_base);
   return reinterpret_cast<void*>(base);
 }
 
@@ -875,6 +882,10 @@ void OS_Sleep(TimeDelta interval) {
 
 
 void OS::Abort() {
+  // Before aborting, make sure to flush output buffers.
+  fflush(stdout);
+  fflush(stderr);
+
   if (g_hard_abort) {
     V8_IMMEDIATE_CRASH();
   }
@@ -1238,6 +1249,24 @@ int OS::ActivationFrameAlignment() {
   return 8;  // Floating-point math runs faster with 8-byte alignment.
 #endif
 }
+
+#if (defined(_WIN32) || defined(_WIN64))
+void EnsureConsoleOutputWin32() {
+  UINT new_flags =
+      SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX;
+  UINT existing_flags = SetErrorMode(new_flags);
+  SetErrorMode(existing_flags | new_flags);
+#if defined(_MSC_VER)
+  _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
+  _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+  _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
+  _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+  _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
+  _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+  _set_error_mode(_OUT_TO_STDERR);
+#endif  // defined(_MSC_VER)
+}
+#endif  // (defined(_WIN32) || defined(_WIN64))
 
 // ----------------------------------------------------------------------------
 // Win32 thread support.

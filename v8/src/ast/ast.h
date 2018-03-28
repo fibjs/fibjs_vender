@@ -97,8 +97,10 @@ namespace internal {
   V(ResolvedProperty)           \
   V(RewritableExpression)       \
   V(Spread)                     \
+  V(StoreInArrayLiteral)        \
   V(SuperCallReference)         \
   V(SuperPropertyReference)     \
+  V(TemplateLiteral)            \
   V(ThisFunction)               \
   V(Throw)                      \
   V(UnaryOperation)             \
@@ -1475,6 +1477,7 @@ class ArrayLiteral final : public AggregateLiteral {
   ZoneList<Expression*>* values_;
 };
 
+enum class HoleCheckMode { kRequired, kElided };
 
 class VariableProxy final : public Expression {
  public:
@@ -1945,6 +1948,29 @@ class Spread final : public Expression {
   Expression* expression_;
 };
 
+// The StoreInArrayLiteral node corresponds to the StaInArrayLiteral bytecode.
+// It is used in the rewriting of destructuring assignments that contain an
+// array rest pattern.
+class StoreInArrayLiteral final : public Expression {
+ public:
+  Expression* array() const { return array_; }
+  Expression* index() const { return index_; }
+  Expression* value() const { return value_; }
+
+ private:
+  friend class AstNodeFactory;
+
+  StoreInArrayLiteral(Expression* array, Expression* index, Expression* value,
+                      int position)
+      : Expression(position, kStoreInArrayLiteral),
+        array_(array),
+        index_(index),
+        value_(value) {}
+
+  Expression* array_;
+  Expression* index_;
+  Expression* value_;
+};
 
 class Conditional final : public Expression {
  public:
@@ -2278,7 +2304,9 @@ class FunctionLiteral final : public Expression {
   void set_suspend_count(int suspend_count) { suspend_count_ = suspend_count; }
 
   int return_position() {
-    return std::max(start_position(), end_position() - (has_braces_ ? 1 : 0));
+    return std::max(
+        start_position(),
+        end_position() - (HasBracesField::decode(bit_field_) ? 1 : 0));
   }
 
   int function_literal_id() const { return function_literal_id_; }
@@ -2314,19 +2342,19 @@ class FunctionLiteral final : public Expression {
         function_length_(function_length),
         function_token_position_(kNoSourcePosition),
         suspend_count_(0),
-        has_braces_(has_braces),
+        function_literal_id_(function_literal_id),
         raw_name_(name ? ast_value_factory->NewConsString(name) : nullptr),
         scope_(scope),
         body_(body),
         raw_inferred_name_(ast_value_factory->empty_cons_string()),
-        function_literal_id_(function_literal_id),
         produced_preparsed_scope_data_(produced_preparsed_scope_data) {
     bit_field_ |= FunctionTypeBits::encode(function_type) |
                   Pretenure::encode(false) |
                   HasDuplicateParameters::encode(has_duplicate_parameters ==
                                                  kHasDuplicateParameters) |
                   DontOptimizeReasonField::encode(BailoutReason::kNoReason) |
-                  RequiresInstanceFieldsInitializer::encode(false);
+                  RequiresInstanceFieldsInitializer::encode(false) |
+                  HasBracesField::encode(has_braces);
     if (eager_compile_hint == kShouldEagerCompile) SetShouldEagerCompile();
     DCHECK_EQ(body == nullptr, expected_property_count < 0);
   }
@@ -2339,20 +2367,21 @@ class FunctionLiteral final : public Expression {
       : public BitField<BailoutReason, HasDuplicateParameters::kNext, 8> {};
   class RequiresInstanceFieldsInitializer
       : public BitField<bool, DontOptimizeReasonField::kNext, 1> {};
+  class HasBracesField
+      : public BitField<bool, RequiresInstanceFieldsInitializer::kNext, 1> {};
 
   int expected_property_count_;
   int parameter_count_;
   int function_length_;
   int function_token_position_;
   int suspend_count_;
-  bool has_braces_;
+  int function_literal_id_;
 
   const AstConsString* raw_name_;
   DeclarationScope* scope_;
   ZoneList<Statement*>* body_;
   const AstConsString* raw_inferred_name_;
   Handle<String> inferred_name_;
-  int function_literal_id_;
   ProducedPreParsedScopeData* produced_preparsed_scope_data_;
 };
 
@@ -2633,7 +2662,6 @@ class GetTemplateObject final : public Expression {
   const ZoneList<const AstRawString*>* raw_strings() const {
     return raw_strings_;
   }
-  int hash() const { return hash_; }
 
   Handle<TemplateObjectDescription> GetOrBuildDescription(Isolate* isolate);
 
@@ -2641,16 +2669,33 @@ class GetTemplateObject final : public Expression {
   friend class AstNodeFactory;
 
   GetTemplateObject(const ZoneList<const AstRawString*>* cooked_strings,
-                    const ZoneList<const AstRawString*>* raw_strings, int hash,
-                    int pos)
+                    const ZoneList<const AstRawString*>* raw_strings, int pos)
       : Expression(pos, kGetTemplateObject),
         cooked_strings_(cooked_strings),
-        raw_strings_(raw_strings),
-        hash_(hash) {}
+        raw_strings_(raw_strings) {}
 
   const ZoneList<const AstRawString*>* cooked_strings_;
   const ZoneList<const AstRawString*>* raw_strings_;
-  int hash_;
+};
+
+class TemplateLiteral final : public Expression {
+ public:
+  using StringList = ZoneList<const AstRawString*>;
+  using ExpressionList = ZoneList<Expression*>;
+
+  const StringList* string_parts() const { return string_parts_; }
+  const ExpressionList* substitutions() const { return substitutions_; }
+
+ private:
+  friend class AstNodeFactory;
+  TemplateLiteral(const StringList* parts, const ExpressionList* substitutions,
+                  int pos)
+      : Expression(pos, kTemplateLiteral),
+        string_parts_(parts),
+        substitutions_(substitutions) {}
+
+  const StringList* string_parts_;
+  const ExpressionList* substitutions_;
 };
 
 // ----------------------------------------------------------------------------
@@ -3070,6 +3115,12 @@ class AstNodeFactory final BASE_EMBEDDED {
     return new (zone_) Spread(expression, pos, expr_pos);
   }
 
+  StoreInArrayLiteral* NewStoreInArrayLiteral(Expression* array,
+                                              Expression* index,
+                                              Expression* value, int pos) {
+    return new (zone_) StoreInArrayLiteral(array, index, value, pos);
+  }
+
   Conditional* NewConditional(Expression* condition,
                               Expression* then_expression,
                               Expression* else_expression,
@@ -3225,9 +3276,14 @@ class AstNodeFactory final BASE_EMBEDDED {
 
   GetTemplateObject* NewGetTemplateObject(
       const ZoneList<const AstRawString*>* cooked_strings,
-      const ZoneList<const AstRawString*>* raw_strings, int hash, int pos) {
-    return new (zone_)
-        GetTemplateObject(cooked_strings, raw_strings, hash, pos);
+      const ZoneList<const AstRawString*>* raw_strings, int pos) {
+    return new (zone_) GetTemplateObject(cooked_strings, raw_strings, pos);
+  }
+
+  TemplateLiteral* NewTemplateLiteral(
+      const ZoneList<const AstRawString*>* string_parts,
+      const ZoneList<Expression*>* substitutions, int pos) {
+    return new (zone_) TemplateLiteral(string_parts, substitutions, pos);
   }
 
   ImportCallExpression* NewImportCallExpression(Expression* args, int pos) {

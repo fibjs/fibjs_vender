@@ -121,17 +121,17 @@ Handle<Code> PlatformCodeStub::GenerateCode() {
     Generate(&masm);
   }
 
-  // Allocate the handler table.
-  Handle<HandlerTable> table = GenerateHandlerTable();
+  // Generate the handler table.
+  int handler_table_offset = GenerateHandlerTable(&masm);
 
   // Create the code object.
   CodeDesc desc;
   masm.GetCode(isolate(), &desc);
   // Copy the generated code into a heap object.
   Handle<Code> new_object = factory->NewCode(
-      desc, Code::STUB, masm.CodeObject(), Builtins::kNoBuiltinId, table,
+      desc, Code::STUB, masm.CodeObject(), Builtins::kNoBuiltinId,
       MaybeHandle<ByteArray>(), DeoptimizationData::Empty(isolate()),
-      NeedsImmovableCode(), GetKey());
+      NeedsImmovableCode(), GetKey(), false, 0, 0, handler_table_offset);
   return new_object;
 }
 
@@ -225,9 +225,7 @@ void CodeStub::Dispatch(Isolate* isolate, uint32_t key, void** value_out,
   }
 }
 
-Handle<HandlerTable> PlatformCodeStub::GenerateHandlerTable() {
-  return HandlerTable::Empty(isolate());
-}
+int PlatformCodeStub::GenerateHandlerTable(MacroAssembler* masm) { return 0; }
 
 static void InitializeDescriptorDispatchedCall(CodeStub* stub,
                                                void** value_out) {
@@ -289,7 +287,7 @@ TF_STUB(StringAddStub, CodeStubAssembler) {
     CodeStubAssembler::AllocationFlag allocation_flags =
         (pretenure_flag == TENURED) ? CodeStubAssembler::kPretenured
                                     : CodeStubAssembler::kNone;
-    Return(StringAdd(context, left, right, allocation_flags));
+    Return(StringAdd(context, CAST(left), CAST(right), allocation_flags));
   } else {
     Callable callable = CodeFactory::StringAdd(isolate(), STRING_ADD_CHECK_NONE,
                                                pretenure_flag);
@@ -302,7 +300,8 @@ Handle<Code> TurboFanCodeStub::GenerateCode() {
   Zone zone(isolate()->allocator(), ZONE_NAME);
   CallInterfaceDescriptor descriptor(GetCallInterfaceDescriptor());
   compiler::CodeAssemblerState state(isolate(), &zone, descriptor, Code::STUB,
-                                     name, 1, GetKey());
+                                     name, PoisoningMitigationLevel::kOff, 1,
+                                     GetKey());
   GenerateAssembly(&state);
   return compiler::CodeAssembler::GenerateCode(&state);
 }
@@ -332,7 +331,7 @@ TF_STUB(ElementsTransitionAndStoreStub, CodeStubAssembler) {
     TransitionElementsKind(receiver, map, stub->from_kind(), stub->to_kind(),
                            stub->is_jsarray(), &miss);
     EmitElementStore(receiver, key, value, stub->is_jsarray(), stub->to_kind(),
-                     stub->store_mode(), &miss);
+                     stub->store_mode(), &miss, context);
     Return(value);
   }
 
@@ -434,11 +433,10 @@ TF_STUB(LoadIndexedInterceptorStub, CodeStubAssembler) {
                   vector);
 }
 
-Handle<HandlerTable> JSEntryStub::GenerateHandlerTable() {
-  Handle<FixedArray> handler_table =
-      isolate()->factory()->NewFixedArray(1, TENURED);
-  handler_table->set(0, Smi::FromInt(handler_offset_));
-  return Handle<HandlerTable>::cast(handler_table);
+int JSEntryStub::GenerateHandlerTable(MacroAssembler* masm) {
+  int handler_table_offset = HandlerTable::EmitReturnTableStart(masm, 1);
+  HandlerTable::EmitReturnEntry(masm, 0, handler_offset_);
+  return handler_table_offset;
 }
 
 
@@ -509,6 +507,15 @@ TF_STUB(StoreSlowElementStub, CodeStubAssembler) {
                   receiver, name);
 }
 
+TF_STUB(StoreInArrayLiteralSlowStub, CodeStubAssembler) {
+  Node* array = Parameter(Descriptor::kReceiver);
+  Node* index = Parameter(Descriptor::kName);
+  Node* value = Parameter(Descriptor::kValue);
+  Node* context = Parameter(Descriptor::kContext);
+  TailCallRuntime(Runtime::kStoreInArrayLiteralIC_Slow, context, value, array,
+                  index);
+}
+
 TF_STUB(StoreFastElementStub, CodeStubAssembler) {
   Comment("StoreFastElementStub: js_array=%d, elements_kind=%s, store_mode=%d",
           stub->is_js_array(), ElementsKindToString(stub->elements_kind()),
@@ -524,7 +531,7 @@ TF_STUB(StoreFastElementStub, CodeStubAssembler) {
   Label miss(this);
 
   EmitElementStore(receiver, key, value, stub->is_js_array(),
-                   stub->elements_kind(), stub->store_mode(), &miss);
+                   stub->elements_kind(), stub->store_mode(), &miss, context);
   Return(value);
 
   BIND(&miss);

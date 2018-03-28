@@ -14,6 +14,7 @@
 
 #include "src/base/compiler-specific.h"
 #include "src/base/lazy-instance.h"
+#include "src/base/v8-fallthrough.h"
 #include "src/disasm.h"
 #include "src/x64/sse-instr.h"
 
@@ -1043,6 +1044,11 @@ int DisassemblerX64::AVXInstruction(byte* data) {
                        NameOfCPURegister(regop));
         current += PrintRightXMMOperand(current);
         break;
+      case 0x51:
+        AppendToBuffer("vsqrtss %s,%s,", NameOfXMMRegister(regop),
+                       NameOfXMMRegister(vvvv));
+        current += PrintRightXMMOperand(current);
+        break;
       case 0x58:
         AppendToBuffer("vaddss %s,%s,", NameOfXMMRegister(regop),
                        NameOfXMMRegister(vvvv));
@@ -1157,6 +1163,11 @@ int DisassemblerX64::AVXInstruction(byte* data) {
         break;
       case 0xF0:
         AppendToBuffer("vlddqu %s,", NameOfXMMRegister(regop));
+        current += PrintRightXMMOperand(current);
+        break;
+      case 0x7C:
+        AppendToBuffer("vhaddps %s,%s,", NameOfXMMRegister(regop),
+                       NameOfXMMRegister(vvvv));
         current += PrintRightXMMOperand(current);
         break;
       default:
@@ -1844,6 +1855,8 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
         } else if (opcode == 0xD9) {
           mnemonic = "psubusw";
         } else if (opcode == 0xDA) {
+          mnemonic = "pand";
+        } else if (opcode == 0xDB) {
           mnemonic = "pminub";
         } else if (opcode == 0xDC) {
           mnemonic = "paddusb";
@@ -1861,6 +1874,8 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
           mnemonic = "psubsw";
         } else if (opcode == 0xEA) {
           mnemonic = "pminsw";
+        } else if (opcode == 0xEB) {
+          mnemonic = "por";
         } else if (opcode == 0xEC) {
           mnemonic = "paddsb";
         } else if (opcode == 0xED) {
@@ -1979,7 +1994,7 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
       int mod, regop, rm;
       get_modrm(*current, &mod, &regop, &rm);
       AppendToBuffer("haddps %s,", NameOfXMMRegister(regop));
-      current += PrintRightOperand(current);
+      current += PrintRightXMMOperand(current);
     } else {
       UnimplementedInstruction();
     }
@@ -2707,7 +2722,8 @@ int DisassemblerX64::InstructionDecode(v8::internal::Vector<char> out_buffer,
         break;
 
       case 0xF6:
-        byte_size_operand_ = true;  // fall through
+        byte_size_operand_ = true;
+        V8_FALLTHROUGH;
       case 0xF7:
         data += F6F7Instruction(data);
         break;
@@ -2818,6 +2834,11 @@ int Disassembler::InstructionDecode(v8::internal::Vector<char> buffer,
   return d.InstructionDecode(buffer, instruction);
 }
 
+int Disassembler::InstructionDecodeForTesting(v8::internal::Vector<char> buffer,
+                                              byte* instruction) {
+  DisassemblerX64 d(converter_, ABORT_ON_UNIMPLEMENTED_OPCODE);
+  return d.InstructionDecode(buffer, instruction);
+}
 
 // The X64 assembler does not use constant pools.
 int Disassembler::ConstantPoolSizeAt(byte* instruction) {

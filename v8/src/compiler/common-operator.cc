@@ -220,7 +220,7 @@ bool operator!=(RelocatablePtrConstantInfo const& lhs,
 }
 
 size_t hash_value(RelocatablePtrConstantInfo const& p) {
-  return base::hash_combine(p.value(), p.rmode(), p.type());
+  return base::hash_combine(p.value(), int8_t{p.rmode()}, p.type());
 }
 
 std::ostream& operator<<(std::ostream& os,
@@ -389,6 +389,26 @@ ZoneVector<MachineType> const* MachineTypesOf(Operator const* op) {
     return OpParameter<TypedStateValueInfo>(op).machine_types();
   }
   return OpParameter<TypedObjectStateInfo>(op).machine_types();
+}
+
+V8_EXPORT_PRIVATE bool operator==(IfValueParameters const& l,
+                                  IfValueParameters const& r) {
+  return l.value() == r.value() && r.comparison_order() == r.comparison_order();
+}
+
+size_t hash_value(IfValueParameters const& p) {
+  return base::hash_combine(p.value(), p.comparison_order());
+}
+
+V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& out,
+                                           IfValueParameters const& p) {
+  out << p.value() << " (order " << p.comparison_order() << ")";
+  return out;
+}
+
+IfValueParameters const& IfValueParametersOf(const Operator* op) {
+  DCHECK(op->opcode() == IrOpcode::kIfValue);
+  return OpParameter<IfValueParameters>(op);
 }
 
 #define COMMON_CACHED_OP_LIST(V)                                              \
@@ -994,13 +1014,13 @@ const Operator* CommonOperatorBuilder::Switch(size_t control_output_count) {
       1, 0, 1, 0, 0, control_output_count);   // counts
 }
 
-
-const Operator* CommonOperatorBuilder::IfValue(int32_t index) {
-  return new (zone()) Operator1<int32_t>(      // --
-      IrOpcode::kIfValue, Operator::kKontrol,  // opcode
-      "IfValue",                               // name
-      0, 0, 1, 0, 0, 1,                        // counts
-      index);                                  // parameter
+const Operator* CommonOperatorBuilder::IfValue(int32_t index,
+                                               int32_t comparison_order) {
+  return new (zone()) Operator1<IfValueParameters>(  // --
+      IrOpcode::kIfValue, Operator::kKontrol,        // opcode
+      "IfValue",                                     // name
+      0, 0, 1, 0, 0, 1,                              // counts
+      IfValueParameters(index, comparison_order));   // parameter
 }
 
 
@@ -1146,6 +1166,11 @@ const Operator* CommonOperatorBuilder::HeapConstant(
       "HeapConstant",                                 // name
       0, 0, 0, 1, 0, 0,                               // counts
       value);                                         // parameter
+}
+
+Handle<HeapObject> HeapConstantOf(const Operator* op) {
+  DCHECK_EQ(IrOpcode::kHeapConstant, op->opcode());
+  return OpParameter<Handle<HeapObject>>(op);
 }
 
 const Operator* CommonOperatorBuilder::RelocatableInt32Constant(
@@ -1369,65 +1394,70 @@ const Operator* CommonOperatorBuilder::FrameState(
       state_info);                                // parameter
 }
 
-
-const Operator* CommonOperatorBuilder::Call(const CallDescriptor* descriptor) {
+const Operator* CommonOperatorBuilder::Call(
+    const CallDescriptor* call_descriptor) {
   class CallOperator final : public Operator1<const CallDescriptor*> {
    public:
-    explicit CallOperator(const CallDescriptor* descriptor)
+    explicit CallOperator(const CallDescriptor* call_descriptor)
         : Operator1<const CallDescriptor*>(
-              IrOpcode::kCall, descriptor->properties(), "Call",
-              descriptor->InputCount() + descriptor->FrameStateCount(),
-              Operator::ZeroIfPure(descriptor->properties()),
-              Operator::ZeroIfEliminatable(descriptor->properties()),
-              descriptor->ReturnCount(),
-              Operator::ZeroIfPure(descriptor->properties()),
-              Operator::ZeroIfNoThrow(descriptor->properties()), descriptor) {}
+              IrOpcode::kCall, call_descriptor->properties(), "Call",
+              call_descriptor->InputCount() +
+                  call_descriptor->FrameStateCount(),
+              Operator::ZeroIfPure(call_descriptor->properties()),
+              Operator::ZeroIfEliminatable(call_descriptor->properties()),
+              call_descriptor->ReturnCount(),
+              Operator::ZeroIfPure(call_descriptor->properties()),
+              Operator::ZeroIfNoThrow(call_descriptor->properties()),
+              call_descriptor) {}
 
     void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };
-  return new (zone()) CallOperator(descriptor);
+  return new (zone()) CallOperator(call_descriptor);
 }
 
 const Operator* CommonOperatorBuilder::CallWithCallerSavedRegisters(
-    const CallDescriptor* descriptor) {
+    const CallDescriptor* call_descriptor) {
   class CallOperator final : public Operator1<const CallDescriptor*> {
    public:
-    explicit CallOperator(const CallDescriptor* descriptor)
+    explicit CallOperator(const CallDescriptor* call_descriptor)
         : Operator1<const CallDescriptor*>(
-              IrOpcode::kCallWithCallerSavedRegisters, descriptor->properties(),
-              "CallWithCallerSavedRegisters",
-              descriptor->InputCount() + descriptor->FrameStateCount(),
-              Operator::ZeroIfPure(descriptor->properties()),
-              Operator::ZeroIfEliminatable(descriptor->properties()),
-              descriptor->ReturnCount(),
-              Operator::ZeroIfPure(descriptor->properties()),
-              Operator::ZeroIfNoThrow(descriptor->properties()), descriptor) {}
+              IrOpcode::kCallWithCallerSavedRegisters,
+              call_descriptor->properties(), "CallWithCallerSavedRegisters",
+              call_descriptor->InputCount() +
+                  call_descriptor->FrameStateCount(),
+              Operator::ZeroIfPure(call_descriptor->properties()),
+              Operator::ZeroIfEliminatable(call_descriptor->properties()),
+              call_descriptor->ReturnCount(),
+              Operator::ZeroIfPure(call_descriptor->properties()),
+              Operator::ZeroIfNoThrow(call_descriptor->properties()),
+              call_descriptor) {}
 
     void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };
-  return new (zone()) CallOperator(descriptor);
+  return new (zone()) CallOperator(call_descriptor);
 }
 
 const Operator* CommonOperatorBuilder::TailCall(
-    const CallDescriptor* descriptor) {
+    const CallDescriptor* call_descriptor) {
   class TailCallOperator final : public Operator1<const CallDescriptor*> {
    public:
-    explicit TailCallOperator(const CallDescriptor* descriptor)
+    explicit TailCallOperator(const CallDescriptor* call_descriptor)
         : Operator1<const CallDescriptor*>(
               IrOpcode::kTailCall,
-              descriptor->properties() | Operator::kNoThrow, "TailCall",
-              descriptor->InputCount() + descriptor->FrameStateCount(), 1, 1, 0,
-              0, 1, descriptor) {}
+              call_descriptor->properties() | Operator::kNoThrow, "TailCall",
+              call_descriptor->InputCount() +
+                  call_descriptor->FrameStateCount(),
+              1, 1, 0, 0, 1, call_descriptor) {}
 
     void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };
-  return new (zone()) TailCallOperator(descriptor);
+  return new (zone()) TailCallOperator(call_descriptor);
 }
 
 const Operator* CommonOperatorBuilder::Projection(size_t index) {
@@ -1479,6 +1509,11 @@ const Operator* CommonOperatorBuilder::DeadValue(MachineRepresentation rep) {
       "DeadValue",                                       // name
       1, 0, 0, 1, 0, 0,                                  // counts
       rep);                                              // parameter
+}
+
+const FrameStateInfo& FrameStateInfoOf(const Operator* op) {
+  DCHECK_EQ(IrOpcode::kFrameState, op->opcode());
+  return OpParameter<FrameStateInfo>(op);
 }
 
 #undef COMMON_CACHED_OP_LIST

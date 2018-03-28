@@ -351,22 +351,20 @@ uint32_t RelocInfo::embedded_size() const {
       Assembler::target_address_at(pc_, constant_pool_));
 }
 
-void RelocInfo::set_embedded_address(Isolate* isolate, Address address,
+void RelocInfo::set_embedded_address(Address address,
                                      ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, constant_pool_, address,
-                                   flush_mode);
+  Assembler::set_target_address_at(pc_, constant_pool_, address, flush_mode);
 }
 
-void RelocInfo::set_embedded_size(Isolate* isolate, uint32_t size,
-                                  ICacheFlushMode flush_mode) {
-  Assembler::set_target_address_at(isolate, pc_, constant_pool_,
+void RelocInfo::set_embedded_size(uint32_t size, ICacheFlushMode flush_mode) {
+  Assembler::set_target_address_at(pc_, constant_pool_,
                                    reinterpret_cast<Address>(size), flush_mode);
 }
 
-void RelocInfo::set_js_to_wasm_address(Isolate* isolate, Address address,
+void RelocInfo::set_js_to_wasm_address(Address address,
                                        ICacheFlushMode icache_flush_mode) {
   DCHECK_EQ(rmode_, JS_TO_WASM_CALL);
-  set_embedded_address(isolate, address, icache_flush_mode);
+  set_embedded_address(address, icache_flush_mode);
 }
 
 Address RelocInfo::js_to_wasm_address() const {
@@ -1511,6 +1509,10 @@ void Assembler::and_(Register dst, Register src1, const Operand& src2,
   AddrMode1(cond | AND | s, dst, src1, src2);
 }
 
+void Assembler::and_(Register dst, Register src1, Register src2, SBit s,
+                     Condition cond) {
+  and_(dst, src1, Operand(src2), s, cond);
+}
 
 void Assembler::eor(Register dst, Register src1, const Operand& src2,
                     SBit s, Condition cond) {
@@ -2377,6 +2379,11 @@ void Assembler::isb(BarrierOption option) {
   }
 }
 
+void Assembler::csdb() {
+  // Details available in Arm Cache Speculation Side-channels white paper,
+  // version 1.1, page 4.
+  emit(0xE320F014);
+}
 
 // Coprocessor instructions.
 void Assembler::cdp(Coprocessor coproc,
@@ -5078,7 +5085,7 @@ void Assembler::GrowBuffer() {
   // Some internal data structures overflow for very large buffers,
   // they must ensure that kMaximalBufferSize is not too large.
   if (desc.buffer_size > kMaximalBufferSize) {
-    V8::FatalProcessOutOfMemory("Assembler::GrowBuffer");
+    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
   }
 
   // Set up new buffer.
@@ -5172,7 +5179,8 @@ void Assembler::ConstantPoolAddEntry(int position, RelocInfo::Mode rmode,
   }
   ConstantPoolEntry entry(position, value,
                           sharing_ok || (rmode == RelocInfo::CODE_TARGET &&
-                                         IsCodeTargetSharingAllowed()));
+                                         IsCodeTargetSharingAllowed()),
+                          rmode);
 
   bool shared = false;
   if (sharing_ok) {
@@ -5180,7 +5188,8 @@ void Assembler::ConstantPoolAddEntry(int position, RelocInfo::Mode rmode,
     for (size_t i = 0; i < pending_32_bit_constants_.size(); i++) {
       ConstantPoolEntry& current_entry = pending_32_bit_constants_[i];
       if (!current_entry.sharing_ok()) continue;
-      if (entry.value() == current_entry.value()) {
+      if (entry.value() == current_entry.value() &&
+          entry.rmode() == current_entry.rmode()) {
         entry.set_merged_index(i);
         shared = true;
         break;
@@ -5481,10 +5490,6 @@ PatchingAssembler::~PatchingAssembler() {
 
 void PatchingAssembler::Emit(Address addr) {
   emit(reinterpret_cast<Instr>(addr));
-}
-
-void PatchingAssembler::FlushICache(Isolate* isolate) {
-  Assembler::FlushICache(isolate, buffer_, buffer_size_ - kGap);
 }
 
 UseScratchRegisterScope::UseScratchRegisterScope(Assembler* assembler)
