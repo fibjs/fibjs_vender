@@ -466,10 +466,46 @@ public:
     virtual void suspend(spinlock& lock);
     virtual void resume();
 
-    void join();
+    virtual void join();
     void yield();
 
     virtual void Run(){};
+
+public:
+    static void Create(fiber_func func, void* data, Thread_base** retVal = NULL)
+    {
+        class _thread : public OSThread {
+        public:
+            typedef void (*thread_func)(void*);
+
+        public:
+            _thread(thread_func proc, void* arg)
+                : m_proc(proc)
+                , m_arg(arg)
+            {
+            }
+
+        public:
+            virtual void Run()
+            {
+                m_proc(m_arg);
+            }
+
+        private:
+            thread_func m_proc;
+            void* m_arg;
+        };
+
+        _thread* pth;
+
+        pth = new _thread(func, data);
+        if (retVal) {
+            *retVal = pth;
+            pth->Ref();
+        }
+
+        pth->start();
+    }
 
 private:
     virtual void destroy();

@@ -60,29 +60,6 @@ Service* Service::current()
     return (Service*)thread_;
 }
 
-#ifdef DEBUG
-
-static LockedList<linkitem> s_fibers;
-static spinlock s_locker;
-
-void Service::forEach(void (*func)(Fiber*))
-{
-    s_locker.lock();
-
-    linkitem* p = s_fibers.head();
-
-    while (p) {
-        Fiber* zfb = 0;
-        func((Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link)));
-
-        p = s_fibers.next(p);
-    }
-
-    s_locker.unlock();
-}
-
-#endif
-
 Service::Service()
     : m_master(s_service)
     , m_main(this, NULL, NULL)
@@ -123,12 +100,6 @@ static void _fiber_proc(void* param)
     public:
         virtual void invoke()
         {
-#ifdef DEBUG
-            s_locker.lock();
-            s_fibers.remove(&m_fb->m_link);
-            s_locker.unlock();
-#endif
-
             m_fb->m_joins.set();
             m_fb->Unref();
         }
@@ -144,16 +115,17 @@ static void _fiber_proc(void* param)
     now->switchConext(&_cb);
 }
 
-void Service::Create(fiber_func func, void* data, int32_t stacksize, const char* name, Fiber** retVal)
+bool Service::use_thread = false;
+
+void Service::Create(fiber_func func, void* data, int32_t stacksize, const char* name, Thread_base** retVal)
 {
+    if (use_thread) {
+        OSThread::Create(func, data, retVal);
+        return;
+    }
+
     Fiber* fb = new Fiber(s_service, func, data);
     fb->m_ctx = create_fiber(stacksize, _fiber_proc, fb);
-
-#ifdef DEBUG
-    s_locker.lock();
-    s_fibers.putTail(&fb->m_link);
-    s_locker.unlock();
-#endif
 
     if (retVal) {
         *retVal = fb;

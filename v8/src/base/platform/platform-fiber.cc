@@ -48,7 +48,7 @@ namespace base {
 
     public:
         Thread* thread;
-        exlib::Fiber* fb;
+        exlib::Thread_base* fb;
     };
 
     Thread::Thread(const Options& options)

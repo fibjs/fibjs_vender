@@ -54,6 +54,9 @@ public:
     }
 
 public:
+    virtual void join()
+    {}
+
     virtual bool is(int32_t t) = 0;
 
     void saveStackGuard()
@@ -297,7 +300,7 @@ public:
     virtual void suspend(spinlock& lock);
     virtual void resume();
 
-    void join();
+    virtual void join();
     void yield();
 
 private:

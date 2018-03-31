@@ -47,7 +47,7 @@ public:
     static void init();
 
     static void Create(fiber_func func, void* data, int32_t stacksize,
-        const char* name = NULL, Fiber** retVal = NULL);
+        const char* name = NULL, Thread_base** retVal = NULL);
 
     void post(Fiber* fiber)
     {
@@ -115,10 +115,8 @@ public:
         switchConext();
     }
 
-#ifdef DEBUG
 public:
-    static void forEach(void (*func)(Fiber*));
-#endif
+    static bool use_thread;
 
 private:
     static void fiber_proc(fiber_func func, Fiber* fb);
