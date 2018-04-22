@@ -37,7 +37,7 @@ void Service::init(int32_t workers)
 Thread_base* Thread_base::current()
 {
     if (!s_service_inited)
-        return 0;
+        return OSThread::current();
 
     OSThread* thread_ = OSThread::current();
 
