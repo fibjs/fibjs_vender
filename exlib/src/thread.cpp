@@ -71,13 +71,13 @@ void OSThread::bindCurrent()
     saveStackGuard();
 
     assert(thread_ == 0);
-    assert(th_current == 0);
 
     Ref();
     th_current = this;
 
 #ifdef _WIN32
     thread_ = GetCurrentThread();
+    thread_id = GetCurrentThreadId();
 #else
     thread_ = pthread_self();
 #endif
