@@ -156,7 +156,6 @@
     <ClInclude Include="src\collector.h" />
     <ClInclude Include="src\compilation-cache.h" />
     <ClInclude Include="src\compilation-dependencies.h" />
-    <ClInclude Include="src\compilation-info.h" />
     <ClInclude Include="src\compilation-statistics.h" />
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-job.h" />
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-tracer.h" />
@@ -312,8 +311,6 @@
     <ClInclude Include="src\extensions\trigger-failure-extension.h" />
     <ClInclude Include="src\external-reference-table.h" />
     <ClInclude Include="src\external-reference.h" />
-    <ClInclude Include="src\factory-inl.h" />
-    <ClInclude Include="src\factory.h" />
     <ClInclude Include="src\fast-dtoa.h" />
     <ClInclude Include="src\feedback-vector-inl.h" />
     <ClInclude Include="src\feedback-vector.h" />
@@ -341,6 +338,8 @@
     <ClInclude Include="src\heap\code-stats.h" />
     <ClInclude Include="src\heap\concurrent-marking.h" />
     <ClInclude Include="src\heap\embedder-tracing.h" />
+    <ClInclude Include="src\heap\factory-inl.h" />
+    <ClInclude Include="src\heap\factory.h" />
     <ClInclude Include="src\heap\gc-idle-time-handler.h" />
     <ClInclude Include="src\heap\gc-tracer.h" />
     <ClInclude Include="src\heap\heap-inl.h" />
@@ -480,6 +479,8 @@
     <ClInclude Include="src\objects\js-promise-inl.h" />
     <ClInclude Include="src\objects\js-promise.h" />
     <ClInclude Include="src\objects\js-regexp-inl.h" />
+    <ClInclude Include="src\objects\js-regexp-string-iterator-inl.h" />
+    <ClInclude Include="src\objects\js-regexp-string-iterator.h" />
     <ClInclude Include="src\objects\js-regexp.h" />
     <ClInclude Include="src\objects\literal-objects-inl.h" />
     <ClInclude Include="src\objects\literal-objects.h" />
@@ -509,6 +510,7 @@
     <ClInclude Include="src\objects\string-table.h" />
     <ClInclude Include="src\objects\string.h" />
     <ClInclude Include="src\objects\template-objects.h" />
+    <ClInclude Include="src\optimized-compilation-info.h" />
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\duplicate-finder.h" />
     <ClInclude Include="src\parsing\expression-classifier.h" />
@@ -635,6 +637,7 @@
     <ClInclude Include="src\unicode-decoder.h" />
     <ClInclude Include="src\unicode-inl.h" />
     <ClInclude Include="src\unicode.h" />
+    <ClInclude Include="src\unoptimized-compilation-info.h" />
     <ClInclude Include="src\uri.h" />
     <ClInclude Include="src\utils-inl.h" />
     <ClInclude Include="src\utils.h" />
@@ -703,7 +706,6 @@
     <ClCompile Include="src\accessors.cc" />
     <ClCompile Include="src\address-map.cc" />
     <ClCompile Include="src\allocation.cc" />
-    <ClCompile Include="src\api-arguments.cc" />
     <ClCompile Include="src\api-natives.cc" />
     <ClCompile Include="src\api.cc" />
     <ClCompile Include="src\arguments.cc" />
@@ -835,7 +837,6 @@
     <ClCompile Include="src\codegen.cc" />
     <ClCompile Include="src\compilation-cache.cc" />
     <ClCompile Include="src\compilation-dependencies.cc" />
-    <ClCompile Include="src\compilation-info.cc" />
     <ClCompile Include="src\compilation-statistics.cc" />
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-job.cc" />
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-tracer.cc" />
@@ -987,7 +988,6 @@
     <ClCompile Include="src\extensions\trigger-failure-extension.cc" />
     <ClCompile Include="src\external-reference-table.cc" />
     <ClCompile Include="src\external-reference.cc" />
-    <ClCompile Include="src\factory.cc" />
     <ClCompile Include="src\fast-dtoa.cc" />
     <ClCompile Include="src\feedback-vector.cc" />
     <ClCompile Include="src\field-type.cc" />
@@ -1007,6 +1007,7 @@
     <ClCompile Include="src\heap\code-stats.cc" />
     <ClCompile Include="src\heap\concurrent-marking.cc" />
     <ClCompile Include="src\heap\embedder-tracing.cc" />
+    <ClCompile Include="src\heap\factory.cc" />
     <ClCompile Include="src\heap\gc-idle-time-handler.cc" />
     <ClCompile Include="src\heap\gc-tracer.cc" />
     <ClCompile Include="src\heap\heap.cc" />
@@ -1105,6 +1106,7 @@
     <ClCompile Include="src\objects\module.cc" />
     <ClCompile Include="src\objects\scope-info.cc" />
     <ClCompile Include="src\objects\template-objects.cc" />
+    <ClCompile Include="src\optimized-compilation-info.cc" />
     <ClCompile Include="src\ostreams.cc" />
     <ClCompile Include="src\parsing\expression-scope-reparenter.cc" />
     <ClCompile Include="src\parsing\func-name-inferrer.cc" />
@@ -1257,6 +1259,7 @@
     <ClCompile Include="src\type-hints.cc" />
     <ClCompile Include="src\unicode-decoder.cc" />
     <ClCompile Include="src\unicode.cc" />
+    <ClCompile Include="src\unoptimized-compilation-info.cc" />
     <ClCompile Include="src\uri.cc" />
     <ClCompile Include="src\utils.cc" />
     <ClCompile Include="src\v8.cc" />

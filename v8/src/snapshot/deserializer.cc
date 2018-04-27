@@ -220,7 +220,7 @@ HeapObject* Deserializer<AllocatorT>::PostProcessNewObject(HeapObject* obj,
       FixedTypedArrayBase* elements =
           FixedTypedArrayBase::cast(typed_array->elements());
       // Must be off-heap layout.
-      DCHECK_NULL(elements->base_pointer());
+      DCHECK(!typed_array->is_on_heap());
 
       void* pointer_with_offset = reinterpret_cast<void*>(
           reinterpret_cast<intptr_t>(elements->external_pointer()) +
@@ -281,6 +281,18 @@ HeapObject* Deserializer<AllocatorT>::GetBackReferencedObject(int space) {
     case MAP_SPACE:
       obj = allocator()->GetMap(back_reference.map_index());
       break;
+    case RO_SPACE:
+      if (isolate()->heap()->deserialization_complete()) {
+        PagedSpace* read_only_space = isolate()->heap()->read_only_space();
+        Page* page = read_only_space->FirstPage();
+        for (uint32_t i = 0; i < back_reference.chunk_index(); ++i) {
+          page = page->next_page();
+        }
+        Address address = page->OffsetToAddress(back_reference.chunk_offset());
+        obj = HeapObject::FromAddress(address);
+        break;
+      }
+      V8_FALLTHROUGH;
     default:
       obj = allocator()->GetObject(static_cast<AllocationSpace>(space),
                                    back_reference.chunk_index(),
@@ -503,8 +515,9 @@ bool Deserializer<AllocatorT>::ReadData(MaybeObject** current,
         int target_offset = source_.GetInt();
         Code* code =
             Code::cast(HeapObject::FromAddress(current_object_address));
-        DCHECK(0 <= pc_offset && pc_offset <= code->instruction_size());
-        DCHECK(0 <= target_offset && target_offset <= code->instruction_size());
+        DCHECK(0 <= pc_offset && pc_offset <= code->raw_instruction_size());
+        DCHECK(0 <= target_offset &&
+               target_offset <= code->raw_instruction_size());
         Address pc = code->entry() + pc_offset;
         Address target = code->entry() + target_offset;
         Assembler::deserialization_set_target_internal_reference_at(
@@ -836,10 +849,10 @@ MaybeObject** Deserializer<AllocatorT>::ReadDataCase(
         // At this point, new_object may still be uninitialized, thus the
         // unchecked Code cast.
         new_object = reinterpret_cast<Object*>(
-            reinterpret_cast<Code*>(new_object)->instruction_start());
+            reinterpret_cast<Code*>(new_object)->raw_instruction_start());
       } else if (new_object->IsCode()) {
         new_object = reinterpret_cast<Object*>(
-            Code::cast(new_object)->instruction_start());
+            Code::cast(new_object)->raw_instruction_start());
       } else {
         Cell* cell = Cell::cast(new_object);
         new_object = reinterpret_cast<Object*>(cell->ValueAddress());

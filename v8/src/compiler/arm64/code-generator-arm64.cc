@@ -10,13 +10,13 @@
 
 #include "src/arm64/assembler-arm64-inl.h"
 #include "src/arm64/macro-assembler-arm64-inl.h"
-#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
 #include "src/frame-constants.h"
 #include "src/heap/heap-inl.h"
+#include "src/optimized-compilation-info.h"
 
 namespace v8 {
 namespace internal {
@@ -448,6 +448,18 @@ void EmitWordLoadPoisoningIfNeeded(CodeGenerator* codegen,
     __ store_instr(i.TempRegister32(2), i.TempRegister32(1),           \
                    i.TempRegister(0));                                 \
     __ Cbnz(i.TempRegister32(2), &binop);                              \
+  } while (0)
+
+#define ASSEMBLE_ATOMIC64_BINOP(load_instr, store_instr, bin_instr)          \
+  do {                                                                       \
+    Label binop;                                                             \
+    __ Add(i.TempRegister(0), i.InputRegister(0), i.InputRegister(1));       \
+    __ Bind(&binop);                                                         \
+    __ load_instr(i.OutputRegister(), i.TempRegister(0));                    \
+    __ bin_instr(i.TempRegister(1), i.OutputRegister(),                      \
+                 Operand(i.InputRegister(2)));                               \
+    __ store_instr(i.TempRegister(2), i.TempRegister(1), i.TempRegister(0)); \
+    __ Cbnz(i.TempRegister(2), &binop);                                      \
   } while (0)
 
 #define ASSEMBLE_IEEE754_BINOP(name)                                       \
@@ -932,8 +944,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_IEEE754_UNOP(log10);
       break;
     case kIeee754Float64Pow: {
-      __ CallStubDelayed(new (zone())
-                             MathPowStub(nullptr, MathPowStub::DOUBLE));
+      __ CallStubDelayed(new (zone()) MathPowStub());
       break;
     }
     case kIeee754Float64Sin:
@@ -1664,6 +1675,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     __ Sxtb(i.OutputRegister(0), i.OutputRegister(0)); \
     break;                                             \
   case kWord32Atomic##op##Uint8:                       \
+  case kArm64Word64Atomic##op##Uint8:                  \
     ASSEMBLE_ATOMIC_BINOP(ldaxrb, stlxrb, inst);       \
     break;                                             \
   case kWord32Atomic##op##Int16:                       \
@@ -1671,9 +1683,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     __ Sxth(i.OutputRegister(0), i.OutputRegister(0)); \
     break;                                             \
   case kWord32Atomic##op##Uint16:                      \
+  case kArm64Word64Atomic##op##Uint16:                 \
     ASSEMBLE_ATOMIC_BINOP(ldaxrh, stlxrh, inst);       \
     break;                                             \
   case kWord32Atomic##op##Word32:                      \
+  case kArm64Word64Atomic##op##Uint32:                 \
     ASSEMBLE_ATOMIC_BINOP(ldaxr, stlxr, inst);         \
     break;
       ATOMIC_BINOP_CASE(Add, Add)
@@ -1682,11 +1696,22 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ATOMIC_BINOP_CASE(Or, Orr)
       ATOMIC_BINOP_CASE(Xor, Eor)
 #undef ATOMIC_BINOP_CASE
+#define ATOMIC64_BINOP_CASE(op, inst)            \
+  case kArm64Word64Atomic##op##Uint64:           \
+    ASSEMBLE_ATOMIC64_BINOP(ldaxr, stlxr, inst); \
+    break;
+      ATOMIC64_BINOP_CASE(Add, Add)
+      ATOMIC64_BINOP_CASE(Sub, Sub)
+      ATOMIC64_BINOP_CASE(And, And)
+      ATOMIC64_BINOP_CASE(Or, Orr)
+      ATOMIC64_BINOP_CASE(Xor, Eor)
+#undef ATOMIC64_BINOP_CASE
 #undef ASSEMBLE_SHIFT
 #undef ASSEMBLE_ATOMIC_LOAD_INTEGER
 #undef ASSEMBLE_ATOMIC_STORE_INTEGER
 #undef ASSEMBLE_ATOMIC_EXCHANGE_INTEGER
 #undef ASSEMBLE_ATOMIC_BINOP
+#undef ASSEMBLE_ATOMIC64_BINOP
 #undef ASSEMBLE_IEEE754_BINOP
 #undef ASSEMBLE_IEEE754_UNOP
 #undef ASSEMBLE_ATOMIC_COMPARE_EXCHANGE_INTEGER

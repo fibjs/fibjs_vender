@@ -1669,8 +1669,15 @@ void InstructionSelector::VisitNode(Node* node) {
       MarkAsRepresentation(type.representation(), node);
       return VisitWord32AtomicLoad(node);
     }
+    case IrOpcode::kWord64AtomicLoad: {
+      LoadRepresentation type = LoadRepresentationOf(node->op());
+      MarkAsRepresentation(type.representation(), node);
+      return VisitWord64AtomicLoad(node);
+    }
     case IrOpcode::kWord32AtomicStore:
       return VisitWord32AtomicStore(node);
+    case IrOpcode::kWord64AtomicStore:
+      return VisitWord64AtomicStore(node);
 #define ATOMIC_CASE(name, rep)                               \
   case IrOpcode::k##rep##Atomic##name: {                     \
     MachineType type = AtomicOpRepresentationOf(node->op()); \
@@ -2299,7 +2306,7 @@ void InstructionSelector::VisitWord32PairSar(Node* node) { UNIMPLEMENTED(); }
 #endif  // V8_TARGET_ARCH_64_BIT
 
 #if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS && \
-    !V8_TARGET_ARCH_MIPS64
+    !V8_TARGET_ARCH_MIPS64 && !V8_TARGET_ARCH_IA32
 void InstructionSelector::VisitF32x4SConvertI32x4(Node* node) {
   UNIMPLEMENTED();
 }
@@ -2308,9 +2315,17 @@ void InstructionSelector::VisitF32x4UConvertI32x4(Node* node) {
   UNIMPLEMENTED();
 }
 #endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS
-        // && !V8_TARGET_ARCH_MIPS64
+        // && !V8_TARGET_ARCH_MIPS64 && !V8_TARGET_ARCH_IA32
 
 #if !V8_TARGET_ARCH_X64
+void InstructionSelector::VisitWord64AtomicLoad(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitWord64AtomicStore(Node* node) {
+  UNIMPLEMENTED();
+}
+#endif  // !V8_TARGET_ARCH_X64
+
+#if !V8_TARGET_ARCH_X64 && !V8_TARGET_ARCH_ARM64
 void InstructionSelector::VisitWord64AtomicAdd(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitWord64AtomicSub(Node* node) { UNIMPLEMENTED(); }
@@ -2320,7 +2335,9 @@ void InstructionSelector::VisitWord64AtomicAnd(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitWord64AtomicOr(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitWord64AtomicXor(Node* node) { UNIMPLEMENTED(); }
+#endif  // !V8_TARGET_ARCH_X64 && !V8_TARGET_ARCH_ARM64
 
+#if !V8_TARGET_ARCH_X64
 void InstructionSelector::VisitWord64AtomicExchange(Node* node) {
   UNIMPLEMENTED();
 }
@@ -2329,18 +2346,6 @@ void InstructionSelector::VisitWord64AtomicCompareExchange(Node* node) {
   UNIMPLEMENTED();
 }
 #endif  // !V8_TARGET_ARCH_X64
-
-#if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS && \
-    !V8_TARGET_ARCH_MIPS64 && !V8_TARGET_ARCH_X64
-void InstructionSelector::VisitF32x4RecipApprox(Node* node) { UNIMPLEMENTED(); }
-
-void InstructionSelector::VisitF32x4RecipSqrtApprox(Node* node) {
-  UNIMPLEMENTED();
-}
-
-void InstructionSelector::VisitF32x4AddHoriz(Node* node) { UNIMPLEMENTED(); }
-#endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64
-        // && !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
 
 #if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS && \
     !V8_TARGET_ARCH_MIPS64
@@ -2353,12 +2358,6 @@ void InstructionSelector::VisitI32x4UConvertF32x4(Node* node) {
 }
 #endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS
         // && !V8_TARGET_ARCH_MIPS64
-
-#if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS && \
-    !V8_TARGET_ARCH_MIPS64 && !V8_TARGET_ARCH_X64
-void InstructionSelector::VisitI32x4AddHoriz(Node* node) { UNIMPLEMENTED(); }
-#endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS
-        // && !V8_TARGET_ARCH_MIPS64 && !V8_TARGET_ARCH_X64
 
 #if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS && \
     !V8_TARGET_ARCH_MIPS64
@@ -2391,12 +2390,6 @@ void InstructionSelector::VisitI16x8SConvertI32x4(Node* node) {
 }
 #endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS
         // && !V8_TARGET_ARCH_MIPS64
-
-#if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64 && \
-    !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
-void InstructionSelector::VisitI16x8AddHoriz(Node* node) { UNIMPLEMENTED(); }
-#endif  // !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_X64
-        // && !V8_TARGET_ARCH_MIPS && !V8_TARGET_ARCH_MIPS64
 
 #if !V8_TARGET_ARCH_ARM && !V8_TARGET_ARCH_ARM64 && !V8_TARGET_ARCH_MIPS && \
     !V8_TARGET_ARCH_MIPS64

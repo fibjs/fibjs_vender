@@ -676,6 +676,7 @@ class Assembler : public AssemblerBase {
 
   // Arithmetics
   void adc(Register dst, int32_t imm32);
+  void adc(Register dst, Register src) { adc(dst, Operand(src)); }
   void adc(Register dst, Operand src);
 
   void add(Register dst, Register src) { add(dst, Operand(src)); }
@@ -766,6 +767,7 @@ class Assembler : public AssemblerBase {
   void sar_cl(Register dst) { sar_cl(Operand(dst)); }
   void sar_cl(Operand dst);
 
+  void sbb(Register dst, Register src) { sbb(dst, Operand(src)); }
   void sbb(Register dst, Operand src);
 
   void shl(Register dst, uint8_t imm8) { shl(Operand(dst), imm8); }
@@ -1131,6 +1133,11 @@ class Assembler : public AssemblerBase {
   }
   void pshufd(XMMRegister dst, Operand src, uint8_t shuffle);
 
+  void pblendw(XMMRegister dst, XMMRegister src, uint8_t mask) {
+    pblendw(dst, Operand(src), mask);
+  }
+  void pblendw(XMMRegister dst, Operand src, uint8_t mask);
+
   void pextrb(Register dst, XMMRegister src, int8_t offset) {
     pextrb(Operand(dst), src, offset);
   }
@@ -1438,6 +1445,12 @@ class Assembler : public AssemblerBase {
     vpshufd(dst, Operand(src), shuffle);
   }
   void vpshufd(XMMRegister dst, Operand src, uint8_t shuffle);
+
+  void vpblendw(XMMRegister dst, XMMRegister src1, XMMRegister src2,
+                uint8_t mask) {
+    vpblendw(dst, src1, Operand(src2), mask);
+  }
+  void vpblendw(XMMRegister dst, XMMRegister src1, Operand src2, uint8_t mask);
 
   void vpextrb(Register dst, XMMRegister src, int8_t offset) {
     vpextrb(Operand(dst), src, offset);

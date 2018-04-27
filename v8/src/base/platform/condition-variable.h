@@ -21,7 +21,7 @@ namespace base {
         void NotifyOne();
         void NotifyAll();
         void Wait(Mutex* mutex);
-        bool WaitFor(Mutex* mutex, const TimeDelta& rel_time) WARN_UNUSED_RESULT;
+        bool WaitFor(Mutex* mutex, const TimeDelta& rel_time);
 
         typedef exlib::CondVar* NativeHandle;
 

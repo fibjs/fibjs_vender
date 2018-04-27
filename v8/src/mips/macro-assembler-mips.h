@@ -210,30 +210,30 @@ class TurboAssembler : public Assembler {
 #undef COND_TYPED_ARGS
 #undef COND_ARGS
 
-  // Wrapper functions for the different cmp/branch types.
-  inline void BranchF32(Label* target, Label* nan, Condition cc,
-                        FPURegister cmp1, FPURegister cmp2,
-                        BranchDelaySlot bd = PROTECT) {
-    BranchFCommon(S, target, nan, cc, cmp1, cmp2, bd);
+  // Floating point branches
+  void CompareF32(FPUCondition cc, FPURegister cmp1, FPURegister cmp2) {
+    CompareF(S, cc, cmp1, cmp2);
   }
 
-  inline void BranchF64(Label* target, Label* nan, Condition cc,
-                        FPURegister cmp1, FPURegister cmp2,
-                        BranchDelaySlot bd = PROTECT) {
-    BranchFCommon(D, target, nan, cc, cmp1, cmp2, bd);
+  void CompareIsNanF32(FPURegister cmp1, FPURegister cmp2) {
+    CompareIsNanF(S, cmp1, cmp2);
   }
 
-  // Alternate (inline) version for better readability with USE_DELAY_SLOT.
-  inline void BranchF64(BranchDelaySlot bd, Label* target, Label* nan,
-                        Condition cc, FPURegister cmp1, FPURegister cmp2) {
-    BranchF64(target, nan, cc, cmp1, cmp2, bd);
+  void CompareF64(FPUCondition cc, FPURegister cmp1, FPURegister cmp2) {
+    CompareF(D, cc, cmp1, cmp2);
   }
 
-  inline void BranchF32(BranchDelaySlot bd, Label* target, Label* nan,
-                        Condition cc, FPURegister cmp1, FPURegister cmp2) {
-    BranchF32(target, nan, cc, cmp1, cmp2, bd);
+  void CompareIsNanF64(FPURegister cmp1, FPURegister cmp2) {
+    CompareIsNanF(D, cmp1, cmp2);
   }
 
+  void BranchTrueShortF(Label* target);
+  void BranchFalseShortF(Label* target);
+
+  void BranchTrueF(Label* target);
+  void BranchFalseF(Label* target);
+
+  // MSA Branches
   void BranchMSA(Label* target, MSABranchDF df, MSABranchCondition cond,
                  MSARegister wt, BranchDelaySlot bd = PROTECT);
 
@@ -584,22 +584,25 @@ class TurboAssembler : public Assembler {
                Register left_high, Register right_low, Register right_high);
 
   void ShlPair(Register dst_low, Register dst_high, Register src_low,
-               Register src_high, Register shift);
+               Register src_high, Register shift, Register scratch1,
+               Register scratch2);
 
   void ShlPair(Register dst_low, Register dst_high, Register src_low,
-               Register src_high, uint32_t shift);
+               Register src_high, uint32_t shift, Register scratch);
 
   void ShrPair(Register dst_low, Register dst_high, Register src_low,
-               Register src_high, Register shift);
+               Register src_high, Register shift, Register scratch1,
+               Register scratch2);
 
   void ShrPair(Register dst_low, Register dst_high, Register src_low,
-               Register src_high, uint32_t shift);
+               Register src_high, uint32_t shift, Register scratch);
 
   void SarPair(Register dst_low, Register dst_high, Register src_low,
-               Register src_high, Register shift);
+               Register src_high, Register shift, Register scratch1,
+               Register scratch2);
 
   void SarPair(Register dst_low, Register dst_high, Register src_low,
-               Register src_high, uint32_t shift);
+               Register src_high, uint32_t shift, Register scratch);
 
   // MIPS32 R2 instruction macro.
   void Ins(Register rt, Register rs, uint16_t pos, uint16_t size);
@@ -625,6 +628,18 @@ class TurboAssembler : public Assembler {
   void Round_w_d(FPURegister fd, FPURegister fs);
   void Floor_w_d(FPURegister fd, FPURegister fs);
   void Ceil_w_d(FPURegister fd, FPURegister fs);
+
+  // Round double functions
+  void Trunc_d_d(FPURegister fd, FPURegister fs);
+  void Round_d_d(FPURegister fd, FPURegister fs);
+  void Floor_d_d(FPURegister fd, FPURegister fs);
+  void Ceil_d_d(FPURegister fd, FPURegister fs);
+
+  // Round float functions
+  void Trunc_s_s(FPURegister fd, FPURegister fs);
+  void Round_s_s(FPURegister fd, FPURegister fs);
+  void Floor_s_s(FPURegister fd, FPURegister fs);
+  void Ceil_s_s(FPURegister fd, FPURegister fs);
 
   // FP32 mode: Move the general purpose register into
   // the high part of the double-register pair.
@@ -807,17 +822,6 @@ class TurboAssembler : public Assembler {
   // Get the actual activation frame alignment for target environment.
   static int ActivationFrameAlignment();
 
-  // Alias functions for backward compatibility.
-  inline void BranchF(Label* target, Label* nan, Condition cc, FPURegister cmp1,
-                      FPURegister cmp2, BranchDelaySlot bd = PROTECT) {
-    BranchF64(target, nan, cc, cmp1, cmp2, bd);
-  }
-
-  inline void BranchF(BranchDelaySlot bd, Label* target, Label* nan,
-                      Condition cc, FPURegister cmp1, FPURegister cmp2) {
-    BranchF64(bd, target, nan, cc, cmp1, cmp2);
-  }
-
   // Compute the start of the generated instruction stream from the current PC.
   // This is an alternative to embedding the {CodeObject} handle as a reference.
   void ComputeCodeStartAddress(Register dst);
@@ -841,14 +845,11 @@ class TurboAssembler : public Assembler {
   void CallCFunctionHelper(Register function_base, int16_t function_offset,
                            int num_reg_arguments, int num_double_arguments);
 
-  // Common implementation of BranchF functions for the different formats.
-  void BranchFCommon(SecondaryField sizeField, Label* target, Label* nan,
-                     Condition cc, FPURegister cmp1, FPURegister cmp2,
-                     BranchDelaySlot bd = PROTECT);
+  void CompareF(SecondaryField sizeField, FPUCondition cc, FPURegister cmp1,
+                FPURegister cmp2);
 
-  void BranchShortF(SecondaryField sizeField, Label* target, Condition cc,
-                    FPURegister cmp1, FPURegister cmp2,
-                    BranchDelaySlot bd = PROTECT);
+  void CompareIsNanF(SecondaryField sizeField, FPURegister cmp1,
+                     FPURegister cmp2);
 
   void BranchShortMSA(MSABranchDF df, Label* target, MSABranchCondition cond,
                       MSARegister wt, BranchDelaySlot bd = PROTECT);
@@ -880,6 +881,14 @@ class TurboAssembler : public Assembler {
                                Register rs, const Operand& rt,
                                BranchDelaySlot bdslot);
   void BranchAndLinkLong(Label* L, BranchDelaySlot bdslot);
+
+  template <typename RoundFunc>
+  void RoundDouble(FPURegister dst, FPURegister src, FPURoundingMode mode,
+                   RoundFunc round);
+
+  template <typename RoundFunc>
+  void RoundFloat(FPURegister dst, FPURegister src, FPURoundingMode mode,
+                  RoundFunc round);
 
   // Push a fixed frame, consisting of ra, fp.
   void PushCommonFrame(Register marker_reg = no_reg);

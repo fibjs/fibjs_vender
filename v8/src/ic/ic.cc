@@ -124,8 +124,7 @@ void IC::TraceIC(const char* type, Handle<Object> name, State old_state,
   if (function->IsInterpreted()) {
     code_offset = InterpretedFrame::GetBytecodeOffset(fp());
   } else {
-    code_offset =
-        static_cast<int>(pc() - function->code()->instruction_start());
+    code_offset = static_cast<int>(pc() - function->code()->InstructionStart());
   }
   JavaScriptFrame::CollectFunctionAndOffsetForICStats(
       function, function->abstract_code(), code_offset);
@@ -820,15 +819,16 @@ Handle<Object> LoadIC::ComputeHandler(LookupIterator* lookup) {
           return ComputeHandler(lookup);
         }
 
-        // When debugging we need to go the slow path to flood the accessor.
-        if (GetHostFunction()->shared()->HasBreakInfo()) {
+        Handle<Object> getter(AccessorPair::cast(*accessors)->getter(),
+                              isolate());
+        if (!getter->IsJSFunction() && !getter->IsFunctionTemplateInfo()) {
           TRACE_HANDLER_STATS(isolate(), LoadIC_SlowStub);
           return slow_stub();
         }
 
-        Handle<Object> getter(AccessorPair::cast(*accessors)->getter(),
-                              isolate());
-        if (!getter->IsJSFunction() && !getter->IsFunctionTemplateInfo()) {
+        if (getter->IsFunctionTemplateInfo() &&
+            FunctionTemplateInfo::cast(*getter)->BreakAtEntry()) {
+          // Do not install an IC if the api function has a breakpoint.
           TRACE_HANDLER_STATS(isolate(), LoadIC_SlowStub);
           return slow_stub();
         }
@@ -1300,8 +1300,8 @@ bool StoreIC::LookupForWrite(LookupIterator* it, Handle<Object> value,
           if (it->HolderIsReceiverOrHiddenPrototype()) return false;
 
           if (it->ExtendingNonExtensible(receiver)) return false;
-          created_new_transition_ = it->PrepareTransitionToDataProperty(
-              receiver, value, NONE, store_mode);
+          it->PrepareTransitionToDataProperty(receiver, value, NONE,
+                                              store_mode);
           return it->IsCacheableTransition();
         }
       }
@@ -1310,8 +1310,7 @@ bool StoreIC::LookupForWrite(LookupIterator* it, Handle<Object> value,
 
   receiver = it->GetStoreTarget<JSObject>();
   if (it->ExtendingNonExtensible(receiver)) return false;
-  created_new_transition_ =
-      it->PrepareTransitionToDataProperty(receiver, value, NONE, store_mode);
+  it->PrepareTransitionToDataProperty(receiver, value, NONE, store_mode);
   return it->IsCacheableTransition();
 }
 
@@ -1390,16 +1389,7 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
   if (state() != UNINITIALIZED) {
     JSObject::MakePrototypesFast(object, kStartAtPrototype, isolate());
   }
-  MaybeHandle<Map> maybe_transition_map;
-  if (object->IsJSReceiver()) {
-    name = isolate()->factory()->InternalizeName(name);
-    maybe_transition_map =
-        TransitionsAccessor(receiver_map()).FindTransitionToDataProperty(name);
-  }
-
-  LookupIterator it = LookupIterator::ForTransitionHandler(
-      isolate(), object, name, value, maybe_transition_map);
-
+  LookupIterator it(object, name);
   bool use_ic = FLAG_use_ic;
 
   if (name->IsPrivate()) {
@@ -1443,13 +1433,6 @@ void StoreIC::UpdateCaches(LookupIterator* lookup, Handle<Object> value,
         TraceIC("StoreGlobalIC", lookup->name());
         return;
       }
-    }
-    if (created_new_transition_) {
-      // The first time a transition is performed, there's a good chance that
-      // it won't be taken again, so don't bother creating a handler.
-      set_slow_stub_reason("new transition");
-      TraceIC("StoreIC", lookup->name());
-      return;
     }
     handler = ComputeHandler(lookup);
   } else {
@@ -1554,6 +1537,14 @@ Handle<Object> StoreIC::ComputeHandler(LookupIterator* lookup) {
           TRACE_HANDLER_STATS(isolate(), StoreIC_SlowStub);
           return slow_stub();
         }
+
+        if (setter->IsFunctionTemplateInfo() &&
+            FunctionTemplateInfo::cast(*setter)->BreakAtEntry()) {
+          // Do not install an IC if the api function has a breakpoint.
+          TRACE_HANDLER_STATS(isolate(), StoreIC_SlowStub);
+          return slow_stub();
+        }
+
         CallOptimization call_optimization(setter);
         if (call_optimization.is_simple_api_call()) {
           if (call_optimization.IsCompatibleReceiver(receiver, holder)) {
@@ -1851,7 +1842,10 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
 
   Handle<Object> validity_cell =
       Map::GetOrCreatePrototypeChainValidityCell(receiver_map, isolate());
-  if (validity_cell.is_null()) return stub;
+  if (validity_cell->IsSmi()) {
+    // There's no prototype validity cell to check, so we can just use the stub.
+    return stub;
+  }
   Handle<StoreHandler> handler = isolate()->factory()->NewStoreHandler(0);
   handler->set_validity_cell(*validity_cell);
   handler->set_smi_handler(*stub);

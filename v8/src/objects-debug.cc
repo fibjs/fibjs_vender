@@ -120,6 +120,9 @@ void HeapObject::HeapObjectVerify() {
     case BIGINT_TYPE:
       BigInt::cast(this)->BigIntVerify();
       break;
+    case CALL_HANDLER_INFO_TYPE:
+      CallHandlerInfo::cast(this)->CallHandlerInfoVerify();
+      break;
     case HASH_TABLE_TYPE:
     case BOILERPLATE_DESCRIPTION_TYPE:
     case FIXED_ARRAY_TYPE:
@@ -188,6 +191,7 @@ void HeapObject::HeapObjectVerify() {
     case JS_API_OBJECT_TYPE:
     case JS_SPECIAL_API_OBJECT_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
+    case WASM_GLOBAL_TYPE:
     case WASM_INSTANCE_TYPE:
     case WASM_MEMORY_TYPE:
     case WASM_MODULE_TYPE:
@@ -271,6 +275,9 @@ void HeapObject::HeapObjectVerify() {
       break;
     case JS_REGEXP_TYPE:
       JSRegExp::cast(this)->JSRegExpVerify();
+      break;
+    case JS_REGEXP_STRING_ITERATOR_TYPE:
+      JSRegExpStringIterator::cast(this)->JSRegExpStringIteratorVerify();
       break;
     case FILLER_TYPE:
       break;
@@ -591,15 +598,29 @@ void FeedbackMetadata::FeedbackMetadataVerify() {
 
 void DescriptorArray::DescriptorArrayVerify() {
   FixedArrayVerify();
+  int nof_descriptors = number_of_descriptors();
   if (number_of_descriptors_storage() == 0) {
     Heap* heap = GetHeap();
     CHECK_EQ(heap->empty_descriptor_array(), this);
     CHECK_EQ(2, length());
-    CHECK_EQ(0, number_of_descriptors());
+    CHECK_EQ(0, nof_descriptors);
     CHECK_EQ(heap->empty_enum_cache(), GetEnumCache());
   } else {
     CHECK_LT(2, length());
-    CHECK_LE(LengthFor(number_of_descriptors()), length());
+    CHECK_LE(LengthFor(nof_descriptors), length());
+
+    Isolate* isolate = GetIsolate();
+    // Check that properties with private symbols names are non-enumerable.
+    for (int descriptor = 0; descriptor < nof_descriptors; descriptor++) {
+      Object* key = get(ToKeyIndex(descriptor));
+      // number_of_descriptors() may be out of sync with the actual descriptors
+      // written during descriptor array construction.
+      if (key->IsUndefined(isolate)) continue;
+      if (Name::cast(key)->IsPrivate()) {
+        PropertyDetails details = GetDetails(descriptor);
+        CHECK_NE(details.attributes() & DONT_ENUM, 0);
+      }
+    }
   }
 }
 
@@ -843,10 +864,9 @@ void SharedFunctionInfo::SharedFunctionInfoVerify() {
 
   VerifyObjectField(kFunctionDataOffset);
   VerifyObjectField(kDebugInfoOffset);
-  VerifyObjectField(kFeedbackMetadataOffset);
+  VerifyObjectField(kOuterScopeInfoOrFeedbackMetadataOffset);
   VerifyObjectField(kFunctionIdentifierOffset);
   VerifyObjectField(kNameOrScopeInfoOffset);
-  VerifyObjectField(kOuterScopeInfoOffset);
   VerifyObjectField(kScriptOffset);
 
   Object* value = name_or_scope_info();
@@ -864,6 +884,15 @@ void SharedFunctionInfo::SharedFunctionInfoVerify() {
   CHECK(function_identifier()->IsUndefined(isolate) || HasBuiltinFunctionId() ||
         HasInferredName());
 
+  if (!is_compiled()) {
+    CHECK(!HasFeedbackMetadata());
+    CHECK(outer_scope_info()->IsScopeInfo() ||
+          outer_scope_info()->IsTheHole(isolate));
+  } else if (HasBytecodeArray()) {
+    CHECK(HasFeedbackMetadata());
+    CHECK(feedback_metadata()->IsFeedbackMetadata());
+  }
+
   int expected_map_index = Context::FunctionMapIndex(
       language_mode(), kind(), true, HasSharedName(), needs_home_object());
   CHECK_EQ(expected_map_index, function_map_index());
@@ -874,6 +903,19 @@ void SharedFunctionInfo::SharedFunctionInfoVerify() {
     CHECK_EQ(kind() == kModule, info->scope_type() == MODULE_SCOPE);
     CHECK_EQ(raw_start_position(), info->StartPosition());
     CHECK_EQ(raw_end_position(), info->EndPosition());
+  }
+
+  if (IsApiFunction()) {
+    CHECK(construct_as_builtin());
+  } else if (!HasBuiltinId()) {
+    CHECK(!construct_as_builtin());
+  } else {
+    int id = builtin_id();
+    if (id != Builtins::kCompileLazy && id != Builtins::kEmptyFunction) {
+      CHECK(construct_as_builtin());
+    } else {
+      CHECK(!construct_as_builtin());
+    }
   }
 }
 
@@ -1284,6 +1326,14 @@ void JSRegExp::JSRegExpVerify() {
   }
 }
 
+void JSRegExpStringIterator::JSRegExpStringIteratorVerify() {
+  CHECK(IsJSRegExpStringIterator());
+  JSObjectVerify();
+  CHECK(iterating_string()->IsString());
+  CHECK(iterating_regexp()->IsObject());
+  VerifySmiField(kFlagsOffset);
+}
+
 void JSProxy::JSProxyVerify() {
   CHECK(IsJSProxy());
   VerifyPointer(target());
@@ -1454,7 +1504,6 @@ void WasmCompiledModule::WasmCompiledModuleVerify() {
   VerifyObjectField(kSharedOffset);
   VerifyObjectField(kNativeContextOffset);
   VerifyObjectField(kExportWrappersOffset);
-  VerifyObjectField(kWeakExportedFunctionsOffset);
   VerifyObjectField(kNextInstanceOffset);
   VerifyObjectField(kPrevInstanceOffset);
   VerifyObjectField(kOwningInstanceOffset);
@@ -1485,7 +1534,6 @@ void WasmSharedModuleData::WasmSharedModuleDataVerify() {
   VerifyObjectField(kScriptOffset);
   VerifyObjectField(kAsmJsOffsetTableOffset);
   VerifyObjectField(kBreakPointInfosOffset);
-  VerifyObjectField(kLazyCompilationOrchestratorOffset);
 }
 
 void DataHandler::DataHandlerVerify() {
@@ -1547,6 +1595,14 @@ void AccessCheckInfo::AccessCheckInfoVerify() {
   VerifyPointer(data());
 }
 
+void CallHandlerInfo::CallHandlerInfoVerify() {
+  CHECK(IsCallHandlerInfo());
+  CHECK(map() == GetHeap()->side_effect_call_handler_info_map() ||
+        map() == GetHeap()->side_effect_free_call_handler_info_map());
+  VerifyPointer(callback());
+  VerifyPointer(js_callback());
+  VerifyPointer(data());
+}
 
 void InterceptorInfo::InterceptorInfoVerify() {
   CHECK(IsInterceptorInfo());
@@ -1657,6 +1713,12 @@ void PreParsedScopeData::PreParsedScopeDataVerify() {
   CHECK(IsPreParsedScopeData());
   CHECK(scope_data()->IsByteArray());
   CHECK(child_data()->IsFixedArray());
+}
+
+void InterpreterData::InterpreterDataVerify() {
+  CHECK(IsInterpreterData());
+  CHECK(bytecode_array()->IsBytecodeArray());
+  CHECK(interpreter_trampoline()->IsCode());
 }
 
 #endif  // VERIFY_HEAP

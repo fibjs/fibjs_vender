@@ -10,7 +10,6 @@
 
 #include "src/assembler-inl.h"
 #include "src/callable.h"
-#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
@@ -20,6 +19,7 @@
 #include "src/heap/heap-inl.h"
 #include "src/ia32/assembler-ia32.h"
 #include "src/ia32/macro-assembler-ia32.h"
+#include "src/optimized-compilation-info.h"
 
 namespace v8 {
 namespace internal {
@@ -917,8 +917,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ movaps(xmm1, xmm2);
         __ movaps(xmm2, xmm0);
       }
-      __ CallStubDelayed(new (zone())
-                             MathPowStub(nullptr, MathPowStub::DOUBLE));
+      __ CallStubDelayed(new (zone()) MathPowStub());
       __ movaps(i.OutputDoubleRegister(), xmm3);
       break;
     }
@@ -1772,6 +1771,40 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                    i.InputOperand(2), i.InputInt8(1) << 4);
       break;
     }
+    case kIA32F32x4SConvertI32x4: {
+      __ Cvtdq2ps(i.OutputSimd128Register(), i.InputOperand(0));
+      break;
+    }
+    case kSSEF32x4UConvertI32x4: {
+      DCHECK_EQ(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      CpuFeatureScope sse_scope(tasm(), SSE4_1);
+      XMMRegister dst = i.OutputSimd128Register();
+      __ pxor(kScratchDoubleReg, kScratchDoubleReg);      // zeros
+      __ pblendw(kScratchDoubleReg, dst, 0x55);           // get lo 16 bits
+      __ psubd(dst, kScratchDoubleReg);                   // get hi 16 bits
+      __ cvtdq2ps(kScratchDoubleReg, kScratchDoubleReg);  // convert lo exactly
+      __ psrld(dst, 1);                  // divide by 2 to get in unsigned range
+      __ cvtdq2ps(dst, dst);             // convert hi exactly
+      __ addps(dst, dst);                // double hi, exactly
+      __ addps(dst, kScratchDoubleReg);  // add hi and lo, may round.
+      break;
+    }
+    case kAVXF32x4UConvertI32x4: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      XMMRegister dst = i.OutputSimd128Register();
+      XMMRegister src = i.InputSimd128Register(0);
+      __ vpxor(kScratchDoubleReg, kScratchDoubleReg,
+               kScratchDoubleReg);  // zeros
+      __ vpblendw(kScratchDoubleReg, kScratchDoubleReg, src,
+                  0x55);                                   // get lo 16 bits
+      __ vpsubd(dst, src, kScratchDoubleReg);              // get hi 16 bits
+      __ vcvtdq2ps(kScratchDoubleReg, kScratchDoubleReg);  // convert lo exactly
+      __ vpsrld(dst, dst, 1);    // divide by 2 to get in unsigned range
+      __ vcvtdq2ps(dst, dst);    // convert hi exactly
+      __ vaddps(dst, dst, dst);  // double hi, exactly
+      __ vaddps(dst, dst, kScratchDoubleReg);  // add hi and lo, may round.
+      break;
+    }
     case kSSEF32x4Abs: {
       XMMRegister dst = i.OutputSimd128Register();
       Operand src = i.InputOperand(0);
@@ -1816,6 +1849,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                 i.InputOperand(0));
       break;
     }
+    case kIA32F32x4RecipApprox: {
+      __ Rcpps(i.OutputSimd128Register(), i.InputOperand(0));
+      break;
+    }
+    case kIA32F32x4RecipSqrtApprox: {
+      __ Rsqrtps(i.OutputSimd128Register(), i.InputOperand(0));
+      break;
+    }
     case kSSEF32x4Add: {
       DCHECK_EQ(i.OutputSimd128Register(), i.InputSimd128Register(0));
       __ addps(i.OutputSimd128Register(), i.InputOperand(1));
@@ -1825,6 +1866,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       CpuFeatureScope avx_scope(tasm(), AVX);
       __ vaddps(i.OutputSimd128Register(), i.InputSimd128Register(0),
                 i.InputOperand(1));
+      break;
+    }
+    case kSSEF32x4AddHoriz: {
+      DCHECK_EQ(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      CpuFeatureScope sse_scope(tasm(), SSE3);
+      __ haddps(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXF32x4AddHoriz: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vhaddps(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
       break;
     }
     case kSSEF32x4Sub: {
@@ -1980,6 +2033,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       CpuFeatureScope avx_scope(tasm(), AVX);
       __ vpaddd(i.OutputSimd128Register(), i.InputSimd128Register(0),
                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI32x4AddHoriz: {
+      DCHECK_EQ(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      CpuFeatureScope sse_scope(tasm(), SSSE3);
+      __ phaddd(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI32x4AddHoriz: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vphaddd(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
       break;
     }
     case kSSEI32x4Sub: {
@@ -2235,6 +2300,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kAVXI16x8AddSaturateS: {
       CpuFeatureScope avx_scope(tasm(), AVX);
       __ vpaddsw(i.OutputSimd128Register(), i.InputSimd128Register(0),
+                 i.InputOperand(1));
+      break;
+    }
+    case kSSEI16x8AddHoriz: {
+      DCHECK_EQ(i.OutputSimd128Register(), i.InputSimd128Register(0));
+      CpuFeatureScope sse_scope(tasm(), SSSE3);
+      __ phaddw(i.OutputSimd128Register(), i.InputOperand(1));
+      break;
+    }
+    case kAVXI16x8AddHoriz: {
+      CpuFeatureScope avx_scope(tasm(), AVX);
+      __ vphaddw(i.OutputSimd128Register(), i.InputSimd128Register(0),
                  i.InputOperand(1));
       break;
     }

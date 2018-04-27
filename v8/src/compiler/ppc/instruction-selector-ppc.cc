@@ -223,7 +223,7 @@ void InstructionSelector::VisitLoad(Node* node) {
   }
 
   if (node->opcode() == IrOpcode::kPoisonedLoad &&
-      poisoning_enabled == PoisoningMitigationLevel::kOn) {
+      poisoning_enabled_ == PoisoningMitigationLevel::kOn) {
     opcode |= MiscField::encode(kMemoryAccessPoisoned);
   }
 
@@ -2209,6 +2209,16 @@ void InstructionSelector::VisitS128Select(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitF32x4Neg(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitF32x4Abs(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4RecipSqrtApprox(Node* node) {
+  UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitF32x4RecipApprox(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4AddHoriz(Node* node) { UNIMPLEMENTED(); }
+void InstructionSelector::VisitI32x4AddHoriz(Node* node) { UNIMPLEMENTED(); }
+void InstructionSelector::VisitI16x8AddHoriz(Node* node) { UNIMPLEMENTED(); }
 
 // static
 MachineOperatorBuilder::Flags

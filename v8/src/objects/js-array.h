@@ -51,17 +51,16 @@ class JSArray : public JSObject {
                                 Handle<FixedArrayBase> storage);
 
   // ES6 9.4.2.1
-  MUST_USE_RESULT static Maybe<bool> DefineOwnProperty(
+  V8_WARN_UNUSED_RESULT static Maybe<bool> DefineOwnProperty(
       Isolate* isolate, Handle<JSArray> o, Handle<Object> name,
       PropertyDescriptor* desc, ShouldThrow should_throw);
 
   static bool AnythingToArrayLength(Isolate* isolate,
                                     Handle<Object> length_object,
                                     uint32_t* output);
-  MUST_USE_RESULT static Maybe<bool> ArraySetLength(Isolate* isolate,
-                                                    Handle<JSArray> a,
-                                                    PropertyDescriptor* desc,
-                                                    ShouldThrow should_throw);
+  V8_WARN_UNUSED_RESULT static Maybe<bool> ArraySetLength(
+      Isolate* isolate, Handle<JSArray> a, PropertyDescriptor* desc,
+      ShouldThrow should_throw);
 
   // Checks whether the Array has the current realm's Array.prototype as its
   // prototype. This function is best-effort and only gives a conservative
@@ -81,6 +80,8 @@ class JSArray : public JSObject {
   // Layout description.
   static const int kLengthOffset = JSObject::kHeaderSize;
   static const int kSize = kLengthOffset + kPointerSize;
+
+  static const int kLengthDescriptorIndex = 0;
 
   // Max. number of elements being copied in Array builtins.
   static const int kMaxCopyElements = 100;
@@ -206,7 +207,7 @@ class JSArrayBuffer : public JSObject {
   static bool SetupAllocatingData(
       Handle<JSArrayBuffer> array_buffer, Isolate* isolate,
       size_t allocated_length, bool initialize = true,
-      SharedFlag shared = SharedFlag::kNotShared) WARN_UNUSED_RESULT;
+      SharedFlag shared = SharedFlag::kNotShared) V8_WARN_UNUSED_RESULT;
 
   // Dispatched behavior.
   DECL_PRINTER(JSArrayBuffer)
@@ -282,7 +283,7 @@ class JSTypedArray : public JSArrayBufferView {
   inline uint32_t length_value() const;
 
   // ES6 9.4.5.3
-  MUST_USE_RESULT static Maybe<bool> DefineOwnProperty(
+  V8_WARN_UNUSED_RESULT static Maybe<bool> DefineOwnProperty(
       Isolate* isolate, Handle<JSTypedArray> o, Handle<Object> key,
       PropertyDescriptor* desc, ShouldThrow should_throw);
 
@@ -292,6 +293,9 @@ class JSTypedArray : public JSArrayBufferView {
   V8_EXPORT_PRIVATE size_t element_size();
 
   Handle<JSArrayBuffer> GetBuffer();
+
+  // Whether the buffer's backing store is on-heap or off-heap.
+  inline bool is_on_heap() const;
 
   static inline MaybeHandle<JSTypedArray> Validate(Isolate* isolate,
                                                    Handle<Object> receiver,

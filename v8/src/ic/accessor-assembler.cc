@@ -17,8 +17,10 @@ namespace internal {
 
 using compiler::CodeAssemblerState;
 using compiler::Node;
-using compiler::TNode;
-using compiler::SloppyTNode;
+template <typename T>
+using TNode = compiler::TNode<T>;
+template <typename T>
+using SloppyTNode = compiler::SloppyTNode<T>;
 
 //////////////////// Private helpers.
 
@@ -127,7 +129,7 @@ void AccessorAssembler::HandlePolymorphicCase(Node* receiver_map,
 
     Label next_entry(this);
     Node* cached_map =
-        LoadWeakCellValue(LoadFixedArrayElement(feedback, map_index));
+        LoadWeakCellValue(CAST(LoadFixedArrayElement(feedback, map_index)));
     GotoIf(WordNotEqual(receiver_map, cached_map), &next_entry);
 
     // Found, now call handler.
@@ -147,7 +149,7 @@ void AccessorAssembler::HandlePolymorphicCase(Node* receiver_map,
       start_index, end_index,
       [this, receiver_map, feedback, if_handler, var_handler](Node* index) {
         Node* cached_map =
-            LoadWeakCellValue(LoadFixedArrayElement(feedback, index));
+            LoadWeakCellValue(CAST(LoadFixedArrayElement(feedback, index)));
 
         Label next_entry(this);
         GotoIf(WordNotEqual(receiver_map, cached_map), &next_entry);
@@ -892,6 +894,7 @@ void AccessorAssembler::HandleStoreICHandlerCase(
     }
     BIND(&store_transition);
     HandleStoreICTransitionMapHandlerCase(p, map_or_property_cell, miss, false);
+    Return(p->value);
   }
 }
 
@@ -947,7 +950,6 @@ void AccessorAssembler::HandleStoreICTransitionMapHandlerCase(
   OverwriteExistingFastDataProperty(p->receiver, transition_map, descriptors,
                                     last_key_index, details, p->value, miss,
                                     true);
-  Return(p->value);
 }
 
 void AccessorAssembler::CheckFieldType(Node* descriptors, Node* name_index,
@@ -1908,8 +1910,8 @@ void AccessorAssembler::BranchIfStrictMode(Node* vector, Node* slot,
                                            Label* if_strict) {
   Node* sfi =
       LoadObjectField(vector, FeedbackVector::kSharedFunctionInfoOffset);
-  Node* metadata =
-      LoadObjectField(sfi, SharedFunctionInfo::kFeedbackMetadataOffset);
+  TNode<FeedbackMetadata> metadata = CAST(LoadObjectField(
+      sfi, SharedFunctionInfo::kOuterScopeInfoOrFeedbackMetadataOffset));
   Node* slot_int = SmiToInt32(slot);
 
   // See VectorICComputer::index().
@@ -2058,7 +2060,7 @@ void AccessorAssembler::GenericPropertyLoad(Node* receiver, Node* receiver_map,
   Node* descriptors = LoadMapDescriptors(receiver_map);
 
   Label if_descriptor_found(this), stub_cache(this);
-  VARIABLE(var_name_index, MachineType::PointerRepresentation());
+  TVARIABLE(IntPtrT, var_name_index);
   Label* notfound =
       use_stub_cache == kUseStubCache ? &stub_cache : &lookup_prototype_chain;
   DescriptorLookup(p->name, descriptors, bitfield3, &if_descriptor_found,

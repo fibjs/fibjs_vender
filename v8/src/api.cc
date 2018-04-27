@@ -734,10 +734,14 @@ StartupData SnapshotCreator::CreateBlob(
 
   i::HeapIterator heap_iterator(isolate->heap());
   while (i::HeapObject* current_obj = heap_iterator.next()) {
-    // Complete in-object slack tracking for all functions.
     if (current_obj->IsJSFunction()) {
       i::JSFunction* fun = i::JSFunction::cast(current_obj);
+
+      // Complete in-object slack tracking for all functions.
       fun->CompleteInobjectSlackTrackingIfActive();
+
+      // Also, clear out feedback vectors.
+      fun->feedback_cell()->set_value(isolate->heap()->undefined_value());
     }
 
     // Clear out re-compilable data from all shared function infos. Any
@@ -746,12 +750,8 @@ StartupData SnapshotCreator::CreateBlob(
     if (current_obj->IsSharedFunctionInfo() &&
         function_code_handling == FunctionCodeHandling::kClear) {
       i::SharedFunctionInfo* shared = i::SharedFunctionInfo::cast(current_obj);
-      if (shared->HasBytecodeArray()) {
-        shared->ClearBytecodeArray();
-      } else if (shared->HasAsmWasmData()) {
-        shared->ClearAsmWasmData();
-      } else if (shared->HasPreParsedScopeData()) {
-        shared->ClearPreParsedScopeData();
+      if (shared->CanFlushCompiled()) {
+        shared->FlushCompiled();
       }
       DCHECK(shared->HasCodeObject() || shared->HasBuiltinId() ||
              shared->IsApiFunction());
@@ -1402,7 +1402,8 @@ void FunctionTemplate::Inherit(v8::Local<FunctionTemplate> value) {
 static Local<FunctionTemplate> FunctionTemplateNew(
     i::Isolate* isolate, FunctionCallback callback, v8::Local<Value> data,
     v8::Local<Signature> signature, int length, bool do_not_cache,
-    v8::Local<Private> cached_property_name = v8::Local<Private>()) {
+    v8::Local<Private> cached_property_name = v8::Local<Private>(),
+    SideEffectType side_effect_type = SideEffectType::kHasSideEffect) {
   i::Handle<i::Struct> struct_obj =
       isolate->factory()->NewStruct(i::FUNCTION_TEMPLATE_INFO_TYPE, i::TENURED);
   i::Handle<i::FunctionTemplateInfo> obj =
@@ -1415,7 +1416,7 @@ static Local<FunctionTemplate> FunctionTemplateNew(
   }
   obj->set_serial_number(i::Smi::FromInt(next_serial_number));
   if (callback != 0) {
-    Utils::ToLocal(obj)->SetCallHandler(callback, data);
+    Utils::ToLocal(obj)->SetCallHandler(callback, data, side_effect_type);
   }
   obj->set_length(length);
   obj->set_undetectable(false);
@@ -1433,14 +1434,15 @@ static Local<FunctionTemplate> FunctionTemplateNew(
 
 Local<FunctionTemplate> FunctionTemplate::New(
     Isolate* isolate, FunctionCallback callback, v8::Local<Value> data,
-    v8::Local<Signature> signature, int length, ConstructorBehavior behavior) {
+    v8::Local<Signature> signature, int length, ConstructorBehavior behavior,
+    SideEffectType side_effect_type) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   // Changes to the environment cannot be captured in the snapshot. Expect no
   // function templates when the isolate is created for serialization.
   LOG_API(i_isolate, FunctionTemplate, New);
   ENTER_V8_NO_SCRIPT_NO_EXCEPTION(i_isolate);
-  auto templ =
-      FunctionTemplateNew(i_isolate, callback, data, signature, length, false);
+  auto templ = FunctionTemplateNew(i_isolate, callback, data, signature, length,
+                                   false, Local<Private>(), side_effect_type);
   if (behavior == ConstructorBehavior::kThrow) templ->RemovePrototype();
   return templ;
 }
@@ -1462,12 +1464,13 @@ MaybeLocal<FunctionTemplate> FunctionTemplate::FromSnapshot(Isolate* isolate,
 
 Local<FunctionTemplate> FunctionTemplate::NewWithCache(
     Isolate* isolate, FunctionCallback callback, Local<Private> cache_property,
-    Local<Value> data, Local<Signature> signature, int length) {
+    Local<Value> data, Local<Signature> signature, int length,
+    SideEffectType side_effect_type) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   LOG_API(i_isolate, FunctionTemplate, NewWithCache);
   ENTER_V8_NO_SCRIPT_NO_EXCEPTION(i_isolate);
   return FunctionTemplateNew(i_isolate, callback, data, signature, length,
-                             false, cache_property);
+                             false, cache_property, side_effect_type);
 }
 
 Local<Signature> Signature::New(Isolate* isolate,
@@ -1488,16 +1491,15 @@ Local<AccessorSignature> AccessorSignature::New(
   } while (false)
 
 void FunctionTemplate::SetCallHandler(FunctionCallback callback,
-                                      v8::Local<Value> data) {
+                                      v8::Local<Value> data,
+                                      SideEffectType side_effect_type) {
   auto info = Utils::OpenHandle(this);
   EnsureNotInstantiated(info, "v8::FunctionTemplate::SetCallHandler");
   i::Isolate* isolate = info->GetIsolate();
   ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate);
   i::HandleScope scope(isolate);
-  i::Handle<i::Struct> struct_obj =
-      isolate->factory()->NewStruct(i::TUPLE3_TYPE, i::TENURED);
-  i::Handle<i::CallHandlerInfo> obj =
-      i::Handle<i::CallHandlerInfo>::cast(struct_obj);
+  i::Handle<i::CallHandlerInfo> obj = isolate->factory()->NewCallHandlerInfo(
+      side_effect_type == SideEffectType::kHasNoSideEffect);
   SET_FIELD_WRAPPED(obj, set_callback, callback);
   SET_FIELD_WRAPPED(obj, set_js_callback, obj->redirected_callback());
   if (data.IsEmpty()) {
@@ -1805,6 +1807,9 @@ static i::Handle<i::InterceptorInfo> CreateInterceptorInfo(
                         static_cast<int>(PropertyHandlerFlags::kAllCanRead));
   obj->set_non_masking(static_cast<int>(flags) &
                        static_cast<int>(PropertyHandlerFlags::kNonMasking));
+  obj->set_has_no_side_effect(
+      static_cast<int>(flags) &
+      static_cast<int>(PropertyHandlerFlags::kHasNoSideEffect));
 
   if (data.IsEmpty()) {
     data = v8::Undefined(reinterpret_cast<v8::Isolate*>(isolate));
@@ -1964,7 +1969,6 @@ void ObjectTemplate::SetHandler(
   cons->set_indexed_property_handler(*obj);
 }
 
-
 void ObjectTemplate::SetCallAsFunctionHandler(FunctionCallback callback,
                                               Local<Value> data) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
@@ -1972,10 +1976,7 @@ void ObjectTemplate::SetCallAsFunctionHandler(FunctionCallback callback,
   i::HandleScope scope(isolate);
   auto cons = EnsureConstructor(isolate, this);
   EnsureNotInstantiated(cons, "v8::ObjectTemplate::SetCallAsFunctionHandler");
-  i::Handle<i::Struct> struct_obj =
-      isolate->factory()->NewStruct(i::TUPLE3_TYPE, i::TENURED);
-  i::Handle<i::CallHandlerInfo> obj =
-      i::Handle<i::CallHandlerInfo>::cast(struct_obj);
+  i::Handle<i::CallHandlerInfo> obj = isolate->factory()->NewCallHandlerInfo();
   SET_FIELD_WRAPPED(obj, set_callback, callback);
   SET_FIELD_WRAPPED(obj, set_js_callback, obj->redirected_callback());
   if (data.IsEmpty()) {
@@ -2398,22 +2399,14 @@ MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundInternal(
       source->host_defined_options);
   i::MaybeHandle<i::SharedFunctionInfo> maybe_function_info =
       i::Compiler::GetSharedFunctionInfoForScript(
-          str, script_details, source->resource_options, nullptr, &script_data,
+          str, script_details, source->resource_options, nullptr, script_data,
           options, no_cache_reason, i::NOT_NATIVES_CODE);
-  has_pending_exception = !maybe_function_info.ToHandle(&result);
-  if (has_pending_exception && script_data != nullptr) {
-    // This case won't happen during normal operation; we have compiled
-    // successfully and produced cached data, and but the second compilation
-    // of the same source code fails.
-    delete script_data;
-    script_data = nullptr;
-  }
-  RETURN_ON_FAILED_EXECUTION(UnboundScript);
-
   if (options == kConsumeCodeCache) {
     source->cached_data->rejected = script_data->rejected();
   }
   delete script_data;
+  has_pending_exception = !maybe_function_info.ToHandle(&result);
+  RETURN_ON_FAILED_EXECUTION(UnboundScript);
   RETURN_ESCAPED(ToApiHandle<UnboundScript>(result));
 }
 
@@ -2498,14 +2491,18 @@ class IsIdentifierHelper {
   DISALLOW_COPY_AND_ASSIGN(IsIdentifierHelper);
 };
 
-
 MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
     Local<Context> v8_context, Source* source, size_t arguments_count,
     Local<String> arguments[], size_t context_extension_count,
-    Local<Object> context_extensions[]) {
+    Local<Object> context_extensions[], CompileOptions options,
+    NoCacheReason no_cache_reason) {
   PREPARE_FOR_EXECUTION(v8_context, ScriptCompiler, CompileFunctionInContext,
                         Function);
   TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.ScriptCompiler");
+
+  DCHECK(options == CompileOptions::kConsumeCodeCache ||
+         options == CompileOptions::kEagerCompile ||
+         options == CompileOptions::kNoCompileOptions);
 
   i::Handle<i::Context> context = Utils::OpenHandle(*v8_context);
   i::Handle<i::SharedFunctionInfo> outer_info(context->closure()->shared(),
@@ -2535,25 +2532,30 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
         extension);
   }
 
-  i::Handle<i::Object> name_obj;
-  int line_offset = 0;
-  int column_offset = 0;
-  if (!source->resource_name.IsEmpty()) {
-    name_obj = Utils::OpenHandle(*(source->resource_name));
-  }
-  if (!source->resource_line_offset.IsEmpty()) {
-    line_offset = static_cast<int>(source->resource_line_offset->Value());
-  }
-  if (!source->resource_column_offset.IsEmpty()) {
-    column_offset = static_cast<int>(source->resource_column_offset->Value());
+  i::Compiler::ScriptDetails script_details = GetScriptDetails(
+      isolate, source->resource_name, source->resource_line_offset,
+      source->resource_column_offset, source->source_map_url,
+      source->host_defined_options);
+
+  i::ScriptData* script_data = nullptr;
+  if (options == kConsumeCodeCache) {
+    DCHECK(source->cached_data);
+    // ScriptData takes care of pointer-aligning the data.
+    script_data = new i::ScriptData(source->cached_data->data,
+                                    source->cached_data->length);
   }
 
   i::Handle<i::JSFunction> result;
   has_pending_exception =
       !i::Compiler::GetWrappedFunction(
            Utils::OpenHandle(*source->source_string), arguments_list, context,
-           line_offset, column_offset, name_obj, source->resource_options)
+           script_details, source->resource_options, script_data, options,
+           no_cache_reason)
            .ToHandle(&result);
+  if (options == kConsumeCodeCache) {
+    source->cached_data->rejected = script_data->rejected();
+  }
+  delete script_data;
   RETURN_ON_FAILED_EXECUTION(Function);
   RETURN_ESCAPED(Utils::CallableToLocal(result));
 }
@@ -2627,37 +2629,18 @@ ScriptCompiler::CachedData* ScriptCompiler::CreateCodeCache(
   i::Handle<i::SharedFunctionInfo> shared =
       i::Handle<i::SharedFunctionInfo>::cast(
           Utils::OpenHandle(*unbound_script));
-  i::Isolate* isolate = shared->GetIsolate();
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
-  base::ElapsedTimer timer;
-  if (i::FLAG_profile_deserialization) {
-    timer.Start();
-  }
-  i::HistogramTimerScope histogram_timer(
-      isolate->counters()->compile_serialize());
-  i::RuntimeCallTimerScope runtimeTimer(
-      isolate, i::RuntimeCallCounterId::kCompileSerialize);
-  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileSerialize");
-
+  i::Handle<i::String> source_str = Utils::OpenHandle(*source);
   DCHECK(shared->is_toplevel());
-  i::Handle<i::Script> script(i::Script::cast(shared->script()));
-  // TODO(7110): Enable serialization of Asm modules once the AsmWasmData is
-  // context independent.
-  if (script->ContainsAsmModule()) return nullptr;
-  if (isolate->debug()->is_loaded()) return nullptr;
+  return i::CodeSerializer::Serialize(shared, source_str);
+}
 
-  i::ScriptData* script_data =
-      i::CodeSerializer::Serialize(isolate, shared, Utils::OpenHandle(*source));
-  CachedData* result = new CachedData(
-      script_data->data(), script_data->length(), CachedData::BufferOwned);
-  script_data->ReleaseDataOwnership();
-  delete script_data;
-
-  if (i::FLAG_profile_deserialization) {
-    i::PrintF("[Serializing took %0.3f ms]\n",
-              timer.Elapsed().InMillisecondsF());
-  }
-  return result;
+ScriptCompiler::CachedData* ScriptCompiler::CreateCodeCacheForFunction(
+    Local<Function> function, Local<String> source) {
+  i::Handle<i::SharedFunctionInfo> shared(
+      i::Handle<i::JSFunction>::cast(Utils::OpenHandle(*function))->shared());
+  i::Handle<i::String> source_str = Utils::OpenHandle(*source);
+  CHECK(shared->is_wrapped());
+  return i::CodeSerializer::Serialize(shared, source_str);
 }
 
 MaybeLocal<Script> Script::Compile(Local<Context> context, Local<String> source,
@@ -4716,13 +4699,12 @@ Maybe<bool> v8::Object::Has(Local<Context> context, uint32_t index) {
 }
 
 template <typename Getter, typename Setter, typename Data>
-static Maybe<bool> ObjectSetAccessor(Local<Context> context, Object* self,
-                                     Local<Name> name, Getter getter,
-                                     Setter setter, Data data,
-                                     AccessControl settings,
-                                     PropertyAttribute attributes,
-                                     bool is_special_data_property,
-                                     bool replace_on_access) {
+static Maybe<bool> ObjectSetAccessor(
+    Local<Context> context, Object* self, Local<Name> name, Getter getter,
+    Setter setter, Data data, AccessControl settings,
+    PropertyAttribute attributes, bool is_special_data_property,
+    bool replace_on_access,
+    SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect) {
   auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
   ENTER_V8_NO_SCRIPT(isolate, context, Object, SetAccessor, Nothing<bool>(),
                      i::HandleScope);
@@ -4733,6 +4715,8 @@ static Maybe<bool> ObjectSetAccessor(Local<Context> context, Object* self,
   i::Handle<i::AccessorInfo> info =
       MakeAccessorInfo(isolate, name, getter, setter, data, settings, signature,
                        is_special_data_property, replace_on_access);
+  info->set_has_no_side_effect(getter_side_effect_type ==
+                               SideEffectType::kHasNoSideEffect);
   if (info.is_null()) return Nothing<bool>();
   bool fast = obj->HasFastProperties();
   i::Handle<i::Object> result;
@@ -4750,15 +4734,16 @@ static Maybe<bool> ObjectSetAccessor(Local<Context> context, Object* self,
   return Just(true);
 }
 
-
 Maybe<bool> Object::SetAccessor(Local<Context> context, Local<Name> name,
                                 AccessorNameGetterCallback getter,
                                 AccessorNameSetterCallback setter,
                                 MaybeLocal<Value> data, AccessControl settings,
-                                PropertyAttribute attribute) {
+                                PropertyAttribute attribute,
+                                SideEffectType getter_side_effect_type) {
   return ObjectSetAccessor(context, this, name, getter, setter,
                            data.FromMaybe(Local<Value>()), settings, attribute,
-                           i::FLAG_disable_old_api_accessors, false);
+                           i::FLAG_disable_old_api_accessors, false,
+                           getter_side_effect_type);
 }
 
 
@@ -4781,24 +4766,23 @@ void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
                               static_cast<i::PropertyAttributes>(attribute));
 }
 
-Maybe<bool> Object::SetNativeDataProperty(v8::Local<v8::Context> context,
-                                          v8::Local<Name> name,
-                                          AccessorNameGetterCallback getter,
-                                          AccessorNameSetterCallback setter,
-                                          v8::Local<Value> data,
-                                          PropertyAttribute attributes) {
+Maybe<bool> Object::SetNativeDataProperty(
+    v8::Local<v8::Context> context, v8::Local<Name> name,
+    AccessorNameGetterCallback getter, AccessorNameSetterCallback setter,
+    v8::Local<Value> data, PropertyAttribute attributes,
+    SideEffectType getter_side_effect_type) {
   return ObjectSetAccessor(context, this, name, getter, setter, data, DEFAULT,
-                           attributes, true, false);
+                           attributes, true, false, getter_side_effect_type);
 }
 
-Maybe<bool> Object::SetLazyDataProperty(v8::Local<v8::Context> context,
-                                        v8::Local<Name> name,
-                                        AccessorNameGetterCallback getter,
-                                        v8::Local<Value> data,
-                                        PropertyAttribute attributes) {
+Maybe<bool> Object::SetLazyDataProperty(
+    v8::Local<v8::Context> context, v8::Local<Name> name,
+    AccessorNameGetterCallback getter, v8::Local<Value> data,
+    PropertyAttribute attributes, SideEffectType getter_side_effect_type) {
   return ObjectSetAccessor(context, this, name, getter,
                            static_cast<AccessorNameSetterCallback>(nullptr),
-                           data, DEFAULT, attributes, true, true);
+                           data, DEFAULT, attributes, true, true,
+                           getter_side_effect_type);
 }
 
 Maybe<bool> v8::Object::HasOwnProperty(Local<Context> context,
@@ -5061,15 +5045,16 @@ MaybeLocal<Value> Object::CallAsConstructor(Local<Context> context, int argc,
   RETURN_ESCAPED(result);
 }
 
-
 MaybeLocal<Function> Function::New(Local<Context> context,
                                    FunctionCallback callback, Local<Value> data,
-                                   int length, ConstructorBehavior behavior) {
+                                   int length, ConstructorBehavior behavior,
+                                   SideEffectType side_effect_type) {
   i::Isolate* isolate = Utils::OpenHandle(*context)->GetIsolate();
   LOG_API(isolate, Function, New);
   ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate);
-  auto templ = FunctionTemplateNew(isolate, callback, data, Local<Signature>(),
-                                   length, true);
+  auto templ =
+      FunctionTemplateNew(isolate, callback, data, Local<Signature>(), length,
+                          true, Local<Private>(), side_effect_type);
   if (behavior == ConstructorBehavior::kThrow) templ->RemovePrototype();
   return templ->GetFunction(context);
 }
@@ -6650,8 +6635,7 @@ inline int StringLength(const uint16_t* string) {
   return length;
 }
 
-
-MUST_USE_RESULT
+V8_WARN_UNUSED_RESULT
 inline i::MaybeHandle<i::String> NewString(i::Factory* factory,
                                            v8::NewStringType type,
                                            i::Vector<const char> string) {
@@ -6661,8 +6645,7 @@ inline i::MaybeHandle<i::String> NewString(i::Factory* factory,
   return factory->NewStringFromUtf8(string);
 }
 
-
-MUST_USE_RESULT
+V8_WARN_UNUSED_RESULT
 inline i::MaybeHandle<i::String> NewString(i::Factory* factory,
                                            v8::NewStringType type,
                                            i::Vector<const uint8_t> string) {
@@ -6672,8 +6655,7 @@ inline i::MaybeHandle<i::String> NewString(i::Factory* factory,
   return factory->NewStringFromOneByte(string);
 }
 
-
-MUST_USE_RESULT
+V8_WARN_UNUSED_RESULT
 inline i::MaybeHandle<i::String> NewString(i::Factory* factory,
                                            v8::NewStringType type,
                                            i::Vector<const uint16_t> string) {
@@ -9603,15 +9585,15 @@ MaybeLocal<UnboundScript> debug::CompileInspectorScript(Isolate* v8_isolate,
                                                         Local<String> source) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
   PREPARE_FOR_DEBUG_INTERFACE_EXECUTION_WITH_ISOLATE(isolate, UnboundScript);
-  i::ScriptData* script_data = nullptr;
   i::Handle<i::String> str = Utils::OpenHandle(*source);
   i::Handle<i::SharedFunctionInfo> result;
   {
     ScriptOriginOptions origin_options;
+    i::ScriptData* script_data = nullptr;
     i::MaybeHandle<i::SharedFunctionInfo> maybe_function_info =
         i::Compiler::GetSharedFunctionInfoForScript(
             str, i::Compiler::ScriptDetails(), origin_options, nullptr,
-            &script_data, ScriptCompiler::kNoCompileOptions,
+            script_data, ScriptCompiler::kNoCompileOptions,
             ScriptCompiler::kNoCacheBecauseInspector,
             i::FLAG_expose_inspector_scripts ? i::NOT_NATIVES_CODE
                                              : i::INSPECTOR_CODE);

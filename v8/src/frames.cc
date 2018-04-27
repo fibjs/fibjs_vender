@@ -169,7 +169,8 @@ bool StackTraceFrameIterator::IsValidFrame(StackFrame* frame) const {
 
 namespace {
 
-bool IsInterpreterFramePc(Isolate* isolate, Address pc) {
+bool IsInterpreterFramePc(Isolate* isolate, Address pc,
+                          StackFrame::State* state) {
   Code* interpreter_entry_trampoline =
       isolate->builtins()->builtin(Builtins::kInterpreterEntryTrampoline);
   Code* interpreter_bytecode_advance =
@@ -177,12 +178,30 @@ bool IsInterpreterFramePc(Isolate* isolate, Address pc) {
   Code* interpreter_bytecode_dispatch =
       isolate->builtins()->builtin(Builtins::kInterpreterEnterBytecodeDispatch);
 
-  return (pc >= interpreter_entry_trampoline->InstructionStart() &&
-          pc < interpreter_entry_trampoline->InstructionEnd()) ||
-         (pc >= interpreter_bytecode_advance->InstructionStart() &&
-          pc < interpreter_bytecode_advance->InstructionEnd()) ||
-         (pc >= interpreter_bytecode_dispatch->InstructionStart() &&
-          pc < interpreter_bytecode_dispatch->InstructionEnd());
+  if (interpreter_entry_trampoline->contains(pc) ||
+      interpreter_bytecode_advance->contains(pc) ||
+      interpreter_bytecode_dispatch->contains(pc)) {
+    return true;
+  } else if (FLAG_interpreted_frames_native_stack) {
+    intptr_t marker = Memory::intptr_at(
+        state->fp + CommonFrameConstants::kContextOrFrameTypeOffset);
+    MSAN_MEMORY_IS_INITIALIZED(
+        state->fp + StandardFrameConstants::kFunctionOffset, kPointerSize);
+    Object* maybe_function =
+        Memory::Object_at(state->fp + StandardFrameConstants::kFunctionOffset);
+    // There's no need to run a full ContainsSlow if we know the frame can't be
+    // an InterpretedFrame,  so we do these fast checks first
+    if (StackFrame::IsTypeMarker(marker) || maybe_function->IsSmi()) {
+      return false;
+    } else if (!isolate->heap()->code_space()->ContainsSlow(pc)) {
+      return false;
+    }
+    interpreter_entry_trampoline =
+        isolate->heap()->GcSafeFindCodeForInnerPointer(pc);
+    return interpreter_entry_trampoline->is_interpreter_trampoline_builtin();
+  } else {
+    return false;
+  }
 }
 
 DISABLE_ASAN Address ReadMemoryAt(Address address) {
@@ -229,7 +248,7 @@ SafeStackFrameIterator::SafeStackFrameIterator(
     if (IsValidStackAddress(sp)) {
       MSAN_MEMORY_IS_INITIALIZED(sp, kPointerSize);
       Address tos = ReadMemoryAt(reinterpret_cast<Address>(sp));
-      if (IsInterpreterFramePc(isolate, tos)) {
+      if (IsInterpreterFramePc(isolate, tos, &state)) {
         state.pc_address = reinterpret_cast<Address*>(sp);
         advance_frame = false;
       }
@@ -297,7 +316,7 @@ void SafeStackFrameIterator::AdvanceOneFrame() {
   if (!frame_) return;
 
   // Check that we have actually moved to the previous frame in the stack.
-  if (frame_->sp() < last_sp || frame_->fp() < last_fp) {
+  if (frame_->sp() <= last_sp || frame_->fp() <= last_fp) {
     frame_ = nullptr;
   }
 }
@@ -436,8 +455,8 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
     if (!StackFrame::IsTypeMarker(marker)) {
       if (maybe_function->IsSmi()) {
         return NATIVE;
-      } else if (IsInterpreterFramePc(iterator->isolate(),
-                                      *(state->pc_address))) {
+      } else if (IsInterpreterFramePc(iterator->isolate(), *(state->pc_address),
+                                      state)) {
         return INTERPRETED;
       } else {
         return OPTIMIZED;
@@ -460,7 +479,6 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
           if (StackFrame::IsTypeMarker(marker)) break;
           return BUILTIN;
         case wasm::WasmCode::kWasmToJsWrapper:
-        case wasm::WasmCode::kWasmToWasmWrapper:
           return WASM_TO_JS;
         default:
           UNREACHABLE();
@@ -512,6 +530,7 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
     case EXIT:
     case BUILTIN_CONTINUATION:
     case JAVA_SCRIPT_BUILTIN_CONTINUATION:
+    case JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH:
     case BUILTIN_EXIT:
     case STUB:
     case INTERNAL:
@@ -768,7 +787,7 @@ Object* StandardFrame::context() const {
 
 int StandardFrame::position() const {
   AbstractCode* code = AbstractCode::cast(LookupCode());
-  int code_offset = static_cast<int>(pc() - code->instruction_start());
+  int code_offset = static_cast<int>(pc() - code->InstructionStart());
   return code->SourcePosition(code_offset);
 }
 
@@ -855,6 +874,7 @@ void StandardFrame::IterateCompiledFrame(RootVisitor* v) const {
       case EXIT:
       case BUILTIN_CONTINUATION:
       case JAVA_SCRIPT_BUILTIN_CONTINUATION:
+      case JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH:
       case BUILTIN_EXIT:
       case ARGUMENTS_ADAPTOR:
       case STUB:
@@ -862,7 +882,6 @@ void StandardFrame::IterateCompiledFrame(RootVisitor* v) const {
       case CONSTRUCT:
       case JS_TO_WASM:
       case WASM_TO_JS:
-      case WASM_TO_WASM:
       case WASM_COMPILED:
       case WASM_INTERPRETER_ENTRY:
       case C_WASM_ENTRY:
@@ -1220,6 +1239,30 @@ int JavaScriptBuiltinContinuationFrame::ComputeParametersCount() const {
   return Smi::ToInt(argc_object);
 }
 
+intptr_t JavaScriptBuiltinContinuationFrame::GetSPToFPDelta() const {
+  Address height_slot =
+      fp() + BuiltinContinuationFrameConstants::kFrameSPtoFPDeltaAtDeoptimize;
+  intptr_t height = Smi::ToInt(*reinterpret_cast<Smi**>(height_slot));
+  return height;
+}
+
+Object* JavaScriptBuiltinContinuationFrame::context() const {
+  return Memory::Object_at(
+      fp() + BuiltinContinuationFrameConstants::kBuiltinContextOffset);
+}
+
+void JavaScriptBuiltinContinuationWithCatchFrame::SetException(
+    Object* exception) {
+  Address exception_argument_slot =
+      fp() + JavaScriptFrameConstants::kLastParameterOffset +
+      kPointerSize;  // Skip over return value slot.
+
+  // Only allow setting exception if previous value was the hole.
+  CHECK_EQ(isolate()->heap()->the_hole_value(),
+           Memory::Object_at(exception_argument_slot));
+  Memory::Object_at(exception_argument_slot) = exception;
+}
+
 FrameSummary::JavaScriptFrameSummary::JavaScriptFrameSummary(
     Isolate* isolate, Object* receiver, JSFunction* function,
     AbstractCode* abstract_code, int code_offset, bool is_constructor)
@@ -1436,7 +1479,9 @@ void OptimizedFrame::Summarize(std::vector<FrameSummary>* frames) const {
   bool is_constructor = IsConstructor();
   for (auto it = translated.begin(); it != translated.end(); it++) {
     if (it->kind() == TranslatedFrame::kInterpretedFunction ||
-        it->kind() == TranslatedFrame::kJavaScriptBuiltinContinuation) {
+        it->kind() == TranslatedFrame::kJavaScriptBuiltinContinuation ||
+        it->kind() ==
+            TranslatedFrame::kJavaScriptBuiltinContinuationWithCatch) {
       Handle<SharedFunctionInfo> shared_info = it->shared_info();
 
       // The translation commands are ordered and the function is always
@@ -1456,7 +1501,9 @@ void OptimizedFrame::Summarize(std::vector<FrameSummary>* frames) const {
       // the translation corresponding to the frame type in question.
       Handle<AbstractCode> abstract_code;
       unsigned code_offset;
-      if (it->kind() == TranslatedFrame::kJavaScriptBuiltinContinuation) {
+      if (it->kind() == TranslatedFrame::kJavaScriptBuiltinContinuation ||
+          it->kind() ==
+              TranslatedFrame::kJavaScriptBuiltinContinuationWithCatch) {
         code_offset = 0;
         abstract_code =
             handle(AbstractCode::cast(isolate()->builtins()->builtin(
@@ -1575,7 +1622,9 @@ void OptimizedFrame::GetFunctions(
   while (jsframe_count != 0) {
     opcode = static_cast<Translation::Opcode>(it.Next());
     if (opcode == Translation::INTERPRETED_FRAME ||
-        opcode == Translation::JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME) {
+        opcode == Translation::JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME ||
+        opcode ==
+            Translation::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME) {
       it.Next();  // Skip bailout id.
       jsframe_count--;
 
@@ -1611,7 +1660,7 @@ int InterpretedFrame::position() const {
 
 int InterpretedFrame::LookupExceptionHandlerInTable(
     int* context_register, HandlerTable::CatchPrediction* prediction) {
-  HandlerTable table(function()->shared()->bytecode_array());
+  HandlerTable table(function()->shared()->GetBytecodeArray());
   return table.LookupRange(GetBytecodeOffset(), context_register, prediction);
 }
 
@@ -1680,7 +1729,7 @@ void InterpretedFrame::WriteInterpreterRegister(int register_index,
 void InterpretedFrame::Summarize(std::vector<FrameSummary>* functions) const {
   DCHECK(functions->empty());
   AbstractCode* abstract_code =
-      AbstractCode::cast(function()->shared()->bytecode_array());
+      AbstractCode::cast(function()->shared()->GetBytecodeArray());
   FrameSummary::JavaScriptFrameSummary summary(
       isolate(), receiver(), function(), abstract_code, GetBytecodeOffset(),
       IsConstructor());

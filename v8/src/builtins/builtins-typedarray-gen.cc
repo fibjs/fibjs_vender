@@ -36,9 +36,7 @@ TNode<Map> TypedArrayBuiltinsAssembler::LoadMapForType(
   DispatchTypedArrayByElementsKind(
       elements_kind,
       [&](ElementsKind kind, int size, int typed_array_fun_index) {
-        ExternalArrayType type =
-            isolate()->factory()->GetArrayTypeFromElementsKind(kind);
-        Handle<Map> map(isolate()->heap()->MapForFixedTypedArray(type));
+        Handle<Map> map(isolate()->heap()->MapForFixedTypedArray(kind));
         var_typed_map = HeapConstant(map);
       });
 
@@ -630,6 +628,12 @@ void TypedArrayBuiltinsAssembler::ConstructByIterable(
                        element_size);
 }
 
+TF_BUILTIN(TypedArrayBaseConstructor, TypedArrayBuiltinsAssembler) {
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  ThrowTypeError(context, MessageTemplate::kConstructAbstractClass,
+                 "TypedArray");
+}
+
 // ES #sec-typedarray-constructors
 TF_BUILTIN(CreateTypedArray, TypedArrayBuiltinsAssembler) {
   TNode<Context> context = CAST(Parameter(Descriptor::kContext));
@@ -863,11 +867,10 @@ TNode<Object> TypedArrayBuiltinsAssembler::TypedArraySpeciesConstructor(
   var_constructor = default_constructor;
   Node* map = LoadMap(exemplar);
   GotoIfNot(IsPrototypeTypedArrayPrototype(context, map), &slow);
-  Branch(IsSpeciesProtectorCellInvalid(), &slow, &done);
+  Branch(IsTypedArraySpeciesProtectorCellInvalid(), &slow, &done);
 
   BIND(&slow);
-  var_constructor =
-      CAST(SpeciesConstructor(context, exemplar, default_constructor));
+  var_constructor = SpeciesConstructor(context, exemplar, default_constructor);
   Goto(&done);
 
   BIND(&done);

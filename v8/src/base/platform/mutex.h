@@ -151,7 +151,7 @@ namespace base {
 
         void Lock();
         void Unlock();
-        bool TryLock() WARN_UNUSED_RESULT;
+        bool TryLock();
 
         typedef exlib::Locker* NativeHandle;
 
@@ -193,7 +193,7 @@ namespace base {
 
         void Lock();
         void Unlock();
-        bool TryLock() WARN_UNUSED_RESULT;
+        bool TryLock();
         typedef Mutex::NativeHandle NativeHandle;
 
         NativeHandle& native_handle()

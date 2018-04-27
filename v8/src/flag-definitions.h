@@ -213,7 +213,8 @@ DEFINE_IMPLICATION(harmony_class_fields, harmony_private_fields)
   V(harmony_do_expressions, "harmony do-expressions")                 \
   V(harmony_class_fields, "harmony fields in class literals")         \
   V(harmony_static_fields, "harmony static fields in class literals") \
-  V(harmony_array_flatten, "harmony Array.prototype.flat{ten,Map}")
+  V(harmony_array_flatten, "harmony Array.prototype.flat{ten,Map}")   \
+  V(harmony_string_matchall, "harmony String.prototype.matchAll")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                               \
@@ -222,7 +223,6 @@ DEFINE_IMPLICATION(harmony_class_fields, harmony_private_fields)
     "constructor")                                                      \
   V(harmony_public_fields, "harmony public fields in class literals")   \
   V(harmony_private_fields, "harmony private fields in class literals") \
-  V(harmony_bigint, "harmony arbitrary precision integers")             \
   V(harmony_numeric_separator, "harmony numeric separator between digits")
 
 // Features that are shipping (turned on by default, but internal flag remains).
@@ -236,6 +236,7 @@ DEFINE_IMPLICATION(harmony_class_fields, harmony_private_fields)
   V(harmony_promise_finally, "harmony Promise.prototype.finally")             \
   V(harmony_optional_catch_binding, "allow omitting binding in catch blocks") \
   V(harmony_import_meta, "harmony import.meta property")                      \
+  V(harmony_bigint, "harmony arbitrary precision integers")                   \
   V(harmony_dynamic_import, "harmony dynamic import")
 
 #ifdef V8_INTL_SUPPORT
@@ -542,6 +543,9 @@ DEFINE_UINT(wasm_max_mem_pages, v8::internal::wasm::kV8MaxWasmMemoryPages,
             "maximum memory size of a wasm instance")
 DEFINE_UINT(wasm_max_table_size, v8::internal::wasm::kV8MaxWasmTableSize,
             "maximum table size of a wasm instance")
+DEFINE_BOOL(wasm_tier_up, false,
+            "enable basic tiering up to the optimizing compiler")
+DEFINE_IMPLICATION(wasm_tier_up, liftoff)
 DEFINE_DEBUG_BOOL(trace_wasm_decoder, false, "trace decoding of wasm code")
 DEFINE_DEBUG_BOOL(trace_wasm_decode_time, false,
                   "trace decoding time of wasm code")
@@ -590,6 +594,8 @@ DEFINE_BOOL(experimental_wasm_se, false,
             "enable prototype sign extension opcodes for wasm")
 DEFINE_BOOL(experimental_wasm_anyref, false,
             "enable prototype anyref support for wasm")
+DEFINE_BOOL(experimental_wasm_mut_global, false,
+            "enable prototype import/export mutable global support for wasm")
 
 DEFINE_BOOL(wasm_opt, false, "enable wasm optimization")
 DEFINE_BOOL(wasm_no_bounds_checks, false,
@@ -686,11 +692,6 @@ DEFINE_BOOL(concurrent_marking, V8_CONCURRENT_MARKING_BOOL,
 DEFINE_BOOL(parallel_marking, true, "use parallel marking in atomic pause")
 DEFINE_IMPLICATION(parallel_marking, concurrent_marking)
 DEFINE_BOOL(trace_concurrent_marking, false, "trace concurrent marking")
-DEFINE_BOOL(minor_mc_parallel_marking, true,
-            "use parallel marking for the young generation")
-DEFINE_BOOL(trace_minor_mc_parallel_marking, false,
-            "trace parallel marking for the young generation")
-DEFINE_BOOL(minor_mc, false, "perform young generation mark compact GCs")
 DEFINE_BOOL(black_allocation, true, "use black allocation")
 DEFINE_BOOL(concurrent_store_buffer, true,
             "use concurrent store buffer processing")
@@ -698,6 +699,8 @@ DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
 DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
 DEFINE_BOOL(parallel_pointer_update, true,
             "use parallel pointer update during compaction")
+DEFINE_BOOL(detect_ineffective_gcs_near_heap_limit, true,
+            "trigger out-of-memory failure to avoid GC storm near heap limit")
 DEFINE_BOOL(trace_incremental_marking, false,
             "trace progress of the incremental marking")
 DEFINE_BOOL(trace_stress_marking, false, "trace stress marking progress")
@@ -832,7 +835,7 @@ DEFINE_BOOL(expose_trigger_failure, false, "expose trigger-failure extension")
 DEFINE_INT(stack_trace_limit, 10, "number of stack frames to capture")
 DEFINE_BOOL(builtins_in_stack_traces, false,
             "show built-in functions in stack traces")
-DEFINE_BOOL(enable_experimental_builtins, true,
+DEFINE_BOOL(enable_experimental_builtins, false,
             "enable new csa-based experimental builtins")
 DEFINE_BOOL(disallow_code_generation_from_strings, false,
             "disallow eval and friends")
@@ -1072,6 +1075,17 @@ DEFINE_STRING(startup_blob, nullptr,
               "Write V8 startup blob file. (mksnapshot only)")
 
 //
+// Minor mark compact collector flags.
+//
+#ifdef ENABLE_MINOR_MC
+DEFINE_BOOL(minor_mc_parallel_marking, true,
+            "use parallel marking for the young generation")
+DEFINE_BOOL(trace_minor_mc_parallel_marking, false,
+            "trace parallel marking for the young generation")
+DEFINE_BOOL(minor_mc, false, "perform young generation mark compact GCs")
+#endif  // ENABLE_MINOR_MC
+
+//
 // Dev shell flags
 //
 
@@ -1215,6 +1229,9 @@ DEFINE_BOOL(prof_browser_mode, true,
 DEFINE_STRING(logfile, "v8.log", "Specify the name of the log file.")
 DEFINE_BOOL(logfile_per_isolate, true, "Separate log files for each isolate.")
 DEFINE_BOOL(ll_prof, false, "Enable low-level linux profiler.")
+DEFINE_BOOL(interpreted_frames_native_stack, false,
+            "Show interpreted frames on the native stack (useful for external "
+            "profilers).")
 DEFINE_BOOL(perf_basic_prof, false,
             "Enable perf linux profiler (basic support).")
 DEFINE_NEG_IMPLICATION(perf_basic_prof, compact_code_space)
@@ -1337,7 +1354,9 @@ DEFINE_NEG_IMPLICATION(single_threaded_gc, parallel_marking)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, parallel_pointer_update)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, parallel_scavenge)
 DEFINE_NEG_IMPLICATION(single_threaded_gc, concurrent_store_buffer)
+#ifdef ENABLE_MINOR_MC
 DEFINE_NEG_IMPLICATION(single_threaded_gc, minor_mc_parallel_marking)
+#endif  // ENABLE_MINOR_MC
 DEFINE_NEG_IMPLICATION(single_threaded_gc, concurrent_array_buffer_freeing)
 
 #undef FLAG

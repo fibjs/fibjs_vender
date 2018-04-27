@@ -65,7 +65,6 @@ namespace internal {
   TFC(ConstructWithArrayLike, ConstructWithArrayLike, 1)                       \
   ASM(ConstructForwardVarargs)                                                 \
   ASM(ConstructFunctionForwardVarargs)                                         \
-  ASM(JSConstructStubApi)                                                      \
   ASM(JSConstructStubGenericRestrictedReturn)                                  \
   ASM(JSConstructStubGenericUnrestrictedReturn)                                \
   ASM(JSBuiltinsConstructStub)                                                 \
@@ -269,7 +268,6 @@ namespace internal {
   CPP(ArrayShift)                                                              \
   TFJ(ArrayPrototypeShift, SharedFunctionInfo::kDontAdaptArgumentsSentinel)    \
   /* ES6 #sec-array.prototype.slice */                                         \
-  CPP(ArraySlice)                                                              \
   TFJ(ArrayPrototypeSlice, SharedFunctionInfo::kDontAdaptArgumentsSentinel)    \
   /* ES6 #sec-array.prototype.splice */                                        \
   CPP(ArraySplice)                                                             \
@@ -828,7 +826,8 @@ namespace internal {
   TFJ(PromiseGetCapabilitiesExecutor, 2, kResolve, kReject)                    \
   /* ES6 #sec-newpromisecapability */                                          \
   TFS(NewPromiseCapability, kConstructor, kDebugEvent)                         \
-  TFJ(PromiseConstructorLazyDeoptContinuation, 2, kPromise, kResult)           \
+  TFJ(PromiseConstructorLazyDeoptContinuation, 4, kPromise, kReject,           \
+      kException, kResult)                                                     \
   /* ES6 #sec-promise-executor */                                              \
   TFJ(PromiseConstructor, 1, kExecutor)                                        \
   CPP(IsPromise)                                                               \
@@ -921,6 +920,8 @@ namespace internal {
   TFJ(RegExpPrototypeIgnoreCaseGetter, 0)                                      \
   /* ES #sec-regexp.prototype-@@match */                                       \
   TFJ(RegExpPrototypeMatch, 1, kString)                                        \
+  /* https://tc39.github.io/proposal-string-matchall/ */                       \
+  TFJ(RegExpPrototypeMatchAll, 1, kString)                                     \
   /* ES #sec-get-regexp.prototype.multiline */                                 \
   TFJ(RegExpPrototypeMultilineGetter, 0)                                       \
   /* ES #sec-regexp.prototype-@@search */                                      \
@@ -947,6 +948,10 @@ namespace internal {
   TFS(RegExpReplace, kRegExp, kString, kReplaceValue)                          \
   TFS(RegExpSearchFast, kReceiver, kPattern)                                   \
   TFS(RegExpSplit, kRegExp, kString, kLimit)                                   \
+                                                                               \
+  /* RegExp String Iterator */                                                 \
+  /* https://tc39.github.io/proposal-string-matchall/ */                       \
+  TFJ(RegExpStringIteratorPrototypeNext, 0)                                    \
                                                                                \
   /* Set */                                                                    \
   TFJ(SetConstructor, SharedFunctionInfo::kDontAdaptArgumentsSentinel)         \
@@ -1025,6 +1030,8 @@ namespace internal {
   TFJ(StringPrototypeLink, 1, kValue)                                          \
   /* ES6 #sec-string.prototype.match */                                        \
   TFJ(StringPrototypeMatch, 1, kRegexp)                                        \
+  /* ES #sec-string.prototype.matchAll */                                      \
+  TFJ(StringPrototypeMatchAll, 1, kRegexp)                                     \
   /* ES6 #sec-string.prototype.localecompare */                                \
   CPP(StringPrototypeLocaleCompare)                                            \
   /* ES6 #sec-string.prototype.padEnd */                                       \
@@ -1095,6 +1102,7 @@ namespace internal {
       kByteOffset)                                                             \
   /* ES #sec-typedarray-constructors */                                        \
   TFS(CreateTypedArray, kTarget, kNewTarget, kArg1, kArg2, kArg3)              \
+  TFJ(TypedArrayBaseConstructor, 0)                                            \
   TFJ(TypedArrayConstructorLazyDeoptContinuation, 1, kResult)                  \
   TFJ(TypedArrayConstructor, SharedFunctionInfo::kDontAdaptArgumentsSentinel)  \
   CPP(TypedArrayPrototypeBuffer)                                               \
@@ -1279,6 +1287,7 @@ namespace internal {
   V(AsyncGeneratorResolve)                           \
   V(PromiseAll)                                      \
   V(PromiseConstructor)                              \
+  V(PromiseConstructorLazyDeoptContinuation)         \
   V(PromiseFulfillReactionJob)                       \
   V(PromiseRace)                                     \
   V(ResolvePromise)
@@ -1310,8 +1319,6 @@ namespace internal {
 #define BUILTIN_LIST_TFC(V)                                       \
   BUILTIN_LIST(IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN, V, \
                IGNORE_BUILTIN, IGNORE_BUILTIN, IGNORE_BUILTIN)
-
-#define BUILTINS_WITH_UNTAGGED_PARAMS(V) V(WasmCompileLazy)
 
 }  // namespace internal
 }  // namespace v8

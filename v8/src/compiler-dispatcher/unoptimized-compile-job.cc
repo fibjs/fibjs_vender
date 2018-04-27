@@ -6,7 +6,6 @@
 
 #include "src/assert-scope.h"
 #include "src/base/optional.h"
-#include "src/compilation-info.h"
 #include "src/compiler-dispatcher/compiler-dispatcher-tracer.h"
 #include "src/compiler.h"
 #include "src/flags.h"
@@ -18,6 +17,7 @@
 #include "src/parsing/parser.h"
 #include "src/parsing/scanner-character-streams.h"
 #include "src/unicode-cache.h"
+#include "src/unoptimized-compilation-info.h"
 #include "src/utils.h"
 
 namespace v8 {
@@ -77,8 +77,7 @@ UnoptimizedCompileJob::UnoptimizedCompileJob(Isolate* isolate,
       trace_compiler_dispatcher_jobs_(FLAG_trace_compiler_dispatcher_jobs) {
   DCHECK(!shared_->is_toplevel());
   // TODO(rmcilroy): Handle functions with non-empty outer scope info.
-  DCHECK(shared_->outer_scope_info()->IsTheHole(isolate) ||
-         ScopeInfo::cast(shared_->outer_scope_info())->length() == 0);
+  DCHECK(!shared_->HasOuterScopeInfo());
   HandleScope scope(isolate);
   Handle<Script> script(Script::cast(shared_->script()), isolate);
   Handle<String> source(String::cast(script->source()), isolate);
@@ -206,9 +205,8 @@ void UnoptimizedCompileJob::PrepareOnMainThread(Isolate* isolate) {
 
   parser_.reset(new Parser(parse_info_.get()));
   MaybeHandle<ScopeInfo> outer_scope_info;
-  if (!shared_->outer_scope_info()->IsTheHole(isolate) &&
-      ScopeInfo::cast(shared_->outer_scope_info())->length() > 0) {
-    outer_scope_info = handle(ScopeInfo::cast(shared_->outer_scope_info()));
+  if (shared_->HasOuterScopeInfo()) {
+    outer_scope_info = handle(shared_->GetOuterScopeInfo());
   }
   parser_->DeserializeScopeChain(parse_info_.get(), outer_scope_info);
 
@@ -292,9 +290,8 @@ void UnoptimizedCompileJob::FinalizeOnMainThread(Isolate* isolate) {
     // Allocate scope infos for the literal.
     DeclarationScope::AllocateScopeInfos(parse_info_.get(), isolate,
                                          AnalyzeMode::kRegular);
-    compilation_job_->compilation_info()->set_shared_info(shared_);
     if (compilation_job_->state() == CompilationJob::State::kFailed ||
-        !Compiler::FinalizeCompilationJob(compilation_job_.release(),
+        !Compiler::FinalizeCompilationJob(compilation_job_.release(), shared_,
                                           isolate)) {
       if (!isolate->has_pending_exception()) isolate->StackOverflow();
       set_status(Status::kFailed);

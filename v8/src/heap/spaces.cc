@@ -61,10 +61,14 @@ bool HeapObjectIterator::AdvanceToNextPage() {
   Heap* heap = space_->heap();
 
   heap->mark_compact_collector()->sweeper()->EnsurePageIsIterable(cur_page);
+#ifdef ENABLE_MINOR_MC
   if (cur_page->IsFlagSet(Page::SWEEP_TO_ITERATE))
     heap->minor_mark_compact_collector()->MakeIterable(
         cur_page, MarkingTreatmentMode::CLEAR,
         FreeSpaceTreatmentMode::IGNORE_FREE_SPACE);
+#else
+  DCHECK(!cur_page->IsFlagSet(Page::SWEEP_TO_ITERATE));
+#endif  // ENABLE_MINOR_MC
   cur_addr_ = cur_page->area_start();
   cur_end_ = cur_page->area_end();
   DCHECK(cur_page->SweepingDone());
@@ -687,6 +691,7 @@ Page* SemiSpace::InitializePage(MemoryChunk* chunk, Executability executable) {
   Page* page = static_cast<Page*>(chunk);
   heap()->incremental_marking()->SetNewSpacePageFlags(page);
   page->AllocateLocalTracker();
+#ifdef ENABLE_MINOR_MC
   if (FLAG_minor_mc) {
     page->AllocateYoungGenerationBitmap();
     heap()
@@ -694,6 +699,7 @@ Page* SemiSpace::InitializePage(MemoryChunk* chunk, Executability executable) {
         ->non_atomic_marking_state()
         ->ClearLiveness(page);
   }
+#endif  // ENABLE_MINOR_MC
   page->InitializationMemoryFence();
   return page;
 }
@@ -1472,7 +1478,6 @@ bool PagedSpace::HasBeenSetUp() { return true; }
 void PagedSpace::TearDown() {
   for (auto it = begin(); it != end();) {
     Page* page = *(it++);  // Will be erased.
-    ArrayBufferTracker::FreeAll(page);
     heap()->memory_allocator()->Free<MemoryAllocator::kFull>(page);
   }
   anchor_.set_next_page(&anchor_);
@@ -1857,7 +1862,8 @@ bool PagedSpace::RefillLinearAllocationAreaFromFreeList(size_t size_in_bytes) {
 
   if (!is_local()) {
     heap()->StartIncrementalMarkingIfAllocationLimitIsReached(
-        Heap::kNoGCFlags, kGCCallbackScheduleIdleGarbageCollection);
+        heap()->GCFlagsForIncrementalMarking(),
+        kGCCallbackScheduleIdleGarbageCollection);
   }
 
   size_t new_node_size = 0;
@@ -2418,9 +2424,6 @@ void SemiSpace::SetUp(size_t initial_capacity, size_t maximum_capacity) {
 void SemiSpace::TearDown() {
   // Properly uncommit memory to keep the allocator counters in sync.
   if (is_committed()) {
-    for (Page* p : *this) {
-      ArrayBufferTracker::FreeAll(p);
-    }
     Uncommit();
   }
   current_capacity_ = maximum_capacity_ = 0;
@@ -3279,7 +3282,8 @@ AllocationResult LargeObjectSpace::AllocateRaw(int object_size,
   }
 
   heap()->StartIncrementalMarkingIfAllocationLimitIsReached(
-      Heap::kNoGCFlags, kGCCallbackScheduleIdleGarbageCollection);
+      heap()->GCFlagsForIncrementalMarking(),
+      kGCCallbackScheduleIdleGarbageCollection);
   heap()->CreateFillerObjectAt(object->address(), object_size,
                                ClearRecordedSlots::kNo);
   if (heap()->incremental_marking()->black_allocation()) {

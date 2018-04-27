@@ -635,7 +635,7 @@ void PromiseBuiltinsAssembler::BranchIfPromiseSpeciesLookupChainIntact(
   GotoIfForceSlowPath(if_slow);
   GotoIfNot(WordEqual(LoadMapPrototype(promise_map), promise_prototype),
             if_slow);
-  Branch(IsSpeciesProtectorCellInvalid(), if_slow, if_fast);
+  Branch(IsPromiseSpeciesProtectorCellInvalid(), if_slow, if_fast);
 }
 
 void PromiseBuiltinsAssembler::BranchIfPromiseThenLookupChainIntact(
@@ -767,6 +767,18 @@ TF_BUILTIN(PromiseCapabilityDefaultResolve, PromiseBuiltinsAssembler) {
 
 TF_BUILTIN(PromiseConstructorLazyDeoptContinuation, PromiseBuiltinsAssembler) {
   Node* promise = Parameter(Descriptor::kPromise);
+  Node* reject = Parameter(Descriptor::kReject);
+  Node* exception = Parameter(Descriptor::kException);
+  Node* const context = Parameter(Descriptor::kContext);
+
+  Label finally(this);
+
+  GotoIf(IsTheHole(exception), &finally);
+  CallJS(CodeFactory::Call(isolate(), ConvertReceiverMode::kNotNullOrUndefined),
+         context, reject, UndefinedConstant(), exception);
+  Goto(&finally);
+
+  BIND(&finally);
   Return(promise);
 }
 
@@ -1098,7 +1110,7 @@ TF_BUILTIN(PromiseResolveThenableJob, PromiseBuiltinsAssembler) {
       // We need to reject the {thenable}.
       Node* const result = CallJS(
           CodeFactory::Call(isolate(), ConvertReceiverMode::kNullOrUndefined),
-          native_context, UndefinedConstant(), var_exception.value());
+          native_context, reject, UndefinedConstant(), var_exception.value());
       Return(result);
     }
   }
@@ -1273,7 +1285,7 @@ TF_BUILTIN(PromiseResolve, PromiseBuiltinsAssembler) {
       LoadContextElement(native_context, Context::PROMISE_PROTOTYPE_INDEX);
   GotoIfNot(WordEqual(LoadMapPrototype(value_map), promise_prototype),
             &if_slow_constructor);
-  GotoIf(IsSpeciesProtectorCellInvalid(), &if_slow_constructor);
+  GotoIf(IsPromiseSpeciesProtectorCellInvalid(), &if_slow_constructor);
 
   // If the {constructor} is the Promise function, we just immediately
   // return the {value} here and don't bother wrapping it into a

@@ -1738,6 +1738,7 @@ VISIT_ATOMIC_BINOP(Xor)
 
 #define SIMD_BINOP_LIST(V) \
   V(F32x4Add)              \
+  V(F32x4AddHoriz)         \
   V(F32x4Sub)              \
   V(F32x4Mul)              \
   V(F32x4Min)              \
@@ -1747,6 +1748,7 @@ VISIT_ATOMIC_BINOP(Xor)
   V(F32x4Lt)               \
   V(F32x4Le)               \
   V(I32x4Add)              \
+  V(I32x4AddHoriz)         \
   V(I32x4Sub)              \
   V(I32x4Mul)              \
   V(I32x4MinS)             \
@@ -1761,6 +1763,7 @@ VISIT_ATOMIC_BINOP(Xor)
   V(I32x4GeU)              \
   V(I16x8Add)              \
   V(I16x8AddSaturateS)     \
+  V(I16x8AddHoriz)         \
   V(I16x8Sub)              \
   V(I16x8SubSaturateS)     \
   V(I16x8Mul)              \
@@ -1796,14 +1799,17 @@ VISIT_ATOMIC_BINOP(Xor)
   V(S128Or)                \
   V(S128Xor)
 
-#define SIMD_INT_UNOP_LIST(V) \
-  V(I32x4Neg)                 \
-  V(I16x8Neg)                 \
+#define SIMD_UNOP_LIST(V) \
+  V(F32x4SConvertI32x4)   \
+  V(F32x4RecipApprox)     \
+  V(F32x4RecipSqrtApprox) \
+  V(I32x4Neg)             \
+  V(I16x8Neg)             \
   V(I8x16Neg)
 
-#define SIMD_OTHER_UNOP_LIST(V) \
-  V(F32x4Abs)                   \
-  V(F32x4Neg)                   \
+#define SIMD_UNOP_PREFIX_LIST(V) \
+  V(F32x4Abs)                    \
+  V(F32x4Neg)                    \
   V(S128Not)
 
 #define SIMD_SHIFT_OPCODES(V) \
@@ -1833,6 +1839,16 @@ void InstructionSelector::VisitF32x4ExtractLane(Node* node) {
     Emit(kAVXF32x4ExtractLane, g.DefineAsRegister(node), operand0, operand1);
   } else {
     Emit(kSSEF32x4ExtractLane, g.DefineSameAsFirst(node), operand0, operand1);
+  }
+}
+
+void InstructionSelector::VisitF32x4UConvertI32x4(Node* node) {
+  IA32OperandGenerator g(this);
+  InstructionOperand operand0 = g.UseRegister(node->InputAt(0));
+  if (IsSupported(AVX)) {
+    Emit(kAVXF32x4UConvertI32x4, g.DefineAsRegister(node), operand0);
+  } else {
+    Emit(kSSEF32x4UConvertI32x4, g.DefineSameAsFirst(node), operand0);
   }
 }
 
@@ -1936,24 +1952,24 @@ SIMD_SHIFT_OPCODES(VISIT_SIMD_SHIFT)
 #undef VISIT_SIMD_SHIFT
 #undef SIMD_SHIFT_OPCODES
 
-#define VISIT_SIMD_INT_UNOP(Opcode)                                         \
+#define VISIT_SIMD_UNOP(Opcode)                                             \
   void InstructionSelector::Visit##Opcode(Node* node) {                     \
     IA32OperandGenerator g(this);                                           \
     Emit(kIA32##Opcode, g.DefineAsRegister(node), g.Use(node->InputAt(0))); \
   }
-SIMD_INT_UNOP_LIST(VISIT_SIMD_INT_UNOP)
-#undef VISIT_SIMD_INT_UNOP
-#undef SIMD_INT_UNOP_LIST
+SIMD_UNOP_LIST(VISIT_SIMD_UNOP)
+#undef VISIT_SIMD_UNOP
+#undef SIMD_UNOP_LIST
 
-#define VISIT_SIMD_OTHER_UNOP(Opcode)                                        \
+#define VISIT_SIMD_UNOP_PREFIX(Opcode)                                       \
   void InstructionSelector::Visit##Opcode(Node* node) {                      \
     IA32OperandGenerator g(this);                                            \
     InstructionCode opcode = IsSupported(AVX) ? kAVX##Opcode : kSSE##Opcode; \
     Emit(opcode, g.DefineAsRegister(node), g.Use(node->InputAt(0)));         \
   }
-SIMD_OTHER_UNOP_LIST(VISIT_SIMD_OTHER_UNOP)
-#undef VISIT_SIMD_OTHER_UNOP
-#undef SIMD_OTHER_UNOP_LIST
+SIMD_UNOP_PREFIX_LIST(VISIT_SIMD_UNOP_PREFIX)
+#undef VISIT_SIMD_UNOP_PREFIX
+#undef SIMD_UNOP_PREFIX_LIST
 
 #define VISIT_SIMD_BINOP(Opcode)                           \
   void InstructionSelector::Visit##Opcode(Node* node) {    \

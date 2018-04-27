@@ -243,6 +243,7 @@
   V(intl_initialized_marker_symbol)    \
   V(intl_pattern_symbol)               \
   V(intl_resolved_symbol)              \
+  V(interpreter_trampoline_symbol)     \
   V(megamorphic_symbol)                \
   V(native_context_index_symbol)       \
   V(nonextensible_symbol)              \
@@ -264,6 +265,7 @@
   V(async_iterator_symbol, Symbol.asyncIterator) \
   V(iterator_symbol, Symbol.iterator)            \
   V(intl_fallback_symbol, IntlFallback)          \
+  V(match_all_symbol, Symbol.matchAll)           \
   V(match_symbol, Symbol.match)                  \
   V(replace_symbol, Symbol.replace)              \
   V(search_symbol, Symbol.search)                \

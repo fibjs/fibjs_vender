@@ -213,12 +213,6 @@ bool RelocInfo::OffHeapTargetIsCodedSpecially() {
 #endif
 }
 
-void RelocInfo::set_wasm_context_reference(Address address,
-                                           ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsWasmContextReference(rmode_));
-  set_embedded_address(address, icache_flush_mode);
-}
-
 void RelocInfo::set_global_handle(Address address,
                                   ICacheFlushMode icache_flush_mode) {
   DCHECK_EQ(rmode_, WASM_GLOBAL_HANDLE);
@@ -239,11 +233,6 @@ void RelocInfo::set_wasm_call_address(Address address,
 
 Address RelocInfo::global_handle() const {
   DCHECK_EQ(rmode_, WASM_GLOBAL_HANDLE);
-  return embedded_address();
-}
-
-Address RelocInfo::wasm_context_reference() const {
-  DCHECK(IsWasmContextReference(rmode_));
   return embedded_address();
 }
 
@@ -463,7 +452,7 @@ void RelocIterator::next() {
 RelocIterator::RelocIterator(Code* code, int mode_mask)
     : mode_mask_(mode_mask) {
   rinfo_.host_ = code;
-  rinfo_.pc_ = code->instruction_start();
+  rinfo_.pc_ = code->raw_instruction_start();
   rinfo_.data_ = 0;
   rinfo_.constant_pool_ = code->constant_pool();
   // Relocation info is read backwards.
@@ -546,12 +535,12 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "constant pool";
     case VENEER_POOL:
       return "veneer pool";
-    case WASM_CONTEXT_REFERENCE:
-      return "wasm context reference";
     case WASM_GLOBAL_HANDLE:
       return "global handle";
     case WASM_CALL:
       return "internal wasm call";
+    case WASM_CODE_TABLE_ENTRY:
+      return "wasm code table entry";
     case JS_TO_WASM_CALL:
       return "js to wasm call";
     case NUMBER_OF_MODES:
@@ -631,8 +620,8 @@ void RelocInfo::Verify(Isolate* isolate) {
       Address target = target_internal_reference();
       Address pc = target_internal_reference_address();
       Code* code = Code::cast(isolate->FindCodeObject(pc));
-      CHECK(target >= code->instruction_start());
-      CHECK(target <= code->instruction_end());
+      CHECK(target >= code->InstructionStart());
+      CHECK(target <= code->InstructionEnd());
       break;
     }
     case OFF_HEAP_TARGET: {
@@ -650,10 +639,10 @@ void RelocInfo::Verify(Isolate* isolate) {
     case DEOPT_ID:
     case CONST_POOL:
     case VENEER_POOL:
-    case WASM_CONTEXT_REFERENCE:
     case WASM_GLOBAL_HANDLE:
     case WASM_CALL:
     case JS_TO_WASM_CALL:
+    case WASM_CODE_TABLE_ENTRY:
     case NONE:
       break;
     case NUMBER_OF_MODES:

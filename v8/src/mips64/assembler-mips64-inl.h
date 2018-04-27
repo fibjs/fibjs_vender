@@ -185,6 +185,12 @@ Address RelocInfo::target_external_reference() {
   return Assembler::target_address_at(pc_, constant_pool_);
 }
 
+void RelocInfo::set_target_external_reference(
+    Address target, ICacheFlushMode icache_flush_mode) {
+  DCHECK(rmode_ == RelocInfo::EXTERNAL_REFERENCE);
+  Assembler::set_target_address_at(pc_, constant_pool_, target,
+                                   icache_flush_mode);
+}
 
 Address RelocInfo::target_internal_reference() {
   if (rmode_ == INTERNAL_REFERENCE) {
@@ -207,6 +213,12 @@ Address RelocInfo::target_internal_reference_address() {
   return reinterpret_cast<Address>(pc_);
 }
 
+void RelocInfo::set_wasm_code_table_entry(Address target,
+                                          ICacheFlushMode icache_flush_mode) {
+  DCHECK(rmode_ == RelocInfo::WASM_CODE_TABLE_ENTRY);
+  Assembler::set_target_address_at(pc_, constant_pool_, target,
+                                   icache_flush_mode);
+}
 
 Address RelocInfo::target_runtime_entry(Assembler* origin) {
   DCHECK(IsRuntimeEntry(rmode_));

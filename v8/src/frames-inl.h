@@ -206,9 +206,6 @@ inline WasmToJsFrame::WasmToJsFrame(StackFrameIteratorBase* iterator)
 inline JsToWasmFrame::JsToWasmFrame(StackFrameIteratorBase* iterator)
     : StubFrame(iterator) {}
 
-inline WasmToWasmFrame::WasmToWasmFrame(StackFrameIteratorBase* iterator)
-    : StubFrame(iterator) {}
-
 inline CWasmEntryFrame::CWasmEntryFrame(StackFrameIteratorBase* iterator)
     : StubFrame(iterator) {}
 
@@ -227,6 +224,11 @@ inline BuiltinContinuationFrame::BuiltinContinuationFrame(
 inline JavaScriptBuiltinContinuationFrame::JavaScriptBuiltinContinuationFrame(
     StackFrameIteratorBase* iterator)
     : JavaScriptFrame(iterator) {}
+
+inline JavaScriptBuiltinContinuationWithCatchFrame::
+    JavaScriptBuiltinContinuationWithCatchFrame(
+        StackFrameIteratorBase* iterator)
+    : JavaScriptBuiltinContinuationFrame(iterator) {}
 
 inline JavaScriptFrameIterator::JavaScriptFrameIterator(
     Isolate* isolate)

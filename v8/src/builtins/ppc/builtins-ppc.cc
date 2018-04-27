@@ -452,11 +452,20 @@ void Builtins::Generate_JSConstructStubGenericUnrestrictedReturn(
     MacroAssembler* masm) {
   Generate_JSConstructStubGeneric(masm, false);
 }
-void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSBuiltinsConstructStubHelper(masm);
-}
 void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
   Generate_JSBuiltinsConstructStubHelper(masm);
+}
+
+static void GetSharedFunctionInfoBytecode(MacroAssembler* masm,
+                                          Register sfi_data,
+                                          Register scratch1) {
+  Label done;
+
+  __ CompareObjectType(sfi_data, scratch1, scratch1, INTERPRETER_DATA_TYPE);
+  __ bne(&done);
+  __ LoadP(sfi_data,
+           FieldMemOperand(sfi_data, InterpreterData::kBytecodeArrayOffset));
+  __ bind(&done);
 }
 
 // static
@@ -539,7 +548,9 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
 
   // Underlying function needs to have bytecode available.
   if (FLAG_debug_code) {
+    __ LoadP(r6, FieldMemOperand(r7, JSFunction::kSharedFunctionInfoOffset));
     __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kFunctionDataOffset));
+    GetSharedFunctionInfoBytecode(masm, r6, r3);
     __ CompareObjectType(r6, r6, r6, BYTECODE_ARRAY_TYPE);
     __ Assert(eq, AbortReason::kMissingBytecodeArray);
   }
@@ -928,6 +939,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Load original bytecode array or the debug copy.
   __ LoadP(kInterpreterBytecodeArrayRegister,
            FieldMemOperand(r3, SharedFunctionInfo::kFunctionDataOffset));
+  GetSharedFunctionInfoBytecode(masm, kInterpreterBytecodeArrayRegister, r7);
   __ LoadP(r7, FieldMemOperand(r3, SharedFunctionInfo::kDebugInfoOffset));
   __ TestIfSmi(r7, r0);
   __ bne(&maybe_load_debug_bytecode_array, cr0);
@@ -1057,15 +1069,27 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Load debug copy of the bytecode array if it exists.
   // kInterpreterBytecodeArrayRegister is already loaded with
   // SharedFunctionInfo::kFunctionDataOffset.
-  Label done;
   __ bind(&maybe_load_debug_bytecode_array);
+  __ LoadP(ip, FieldMemOperand(r7, DebugInfo::kDebugBytecodeArrayOffset));
+  __ JumpIfRoot(ip, Heap::kUndefinedValueRootIndex, &bytecode_array_loaded);
+
+  __ mr(kInterpreterBytecodeArrayRegister, ip);
   __ LoadP(ip, FieldMemOperand(r7, DebugInfo::kFlagsOffset));
   __ SmiUntag(ip);
-  __ andi(r0, ip, Operand(DebugInfo::kHasBreakInfo));
-  __ beq(&done, cr0);
-  __ LoadP(kInterpreterBytecodeArrayRegister,
-           FieldMemOperand(r7, DebugInfo::kDebugBytecodeArrayOffset));
-  __ bind(&done);
+  __ andi(ip, ip, Operand(DebugInfo::kDebugExecutionMode));
+
+  ExternalReference debug_execution_mode =
+      ExternalReference::debug_execution_mode_address(masm->isolate());
+  __ mov(r7, Operand(debug_execution_mode));
+  __ lwz(r7, MemOperand(r7));
+  STATIC_ASSERT(static_cast<int>(DebugInfo::kDebugExecutionMode) ==
+                static_cast<int>(DebugInfo::kSideEffects));
+  __ cmp(r7, ip);
+  __ beq(&bytecode_array_loaded);
+
+  __ Push(closure, feedback_vector, kInterpreterBytecodeArrayRegister, closure);
+  __ CallRuntime(Runtime::kDebugApplyInstrumentation);
+  __ Pop(closure, feedback_vector, kInterpreterBytecodeArrayRegister);
   __ b(&bytecode_array_loaded);
 }
 
@@ -1208,10 +1232,29 @@ void Builtins::Generate_InterpreterPushArgsThenConstructImpl(
 static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   // Set the return address to the correct point in the interpreter entry
   // trampoline.
+  Label builtin_trampoline, trampoline_loaded;
   Smi* interpreter_entry_return_pc_offset(
       masm->isolate()->heap()->interpreter_entry_return_pc_offset());
   DCHECK_NE(interpreter_entry_return_pc_offset, Smi::kZero);
+
+  // If the SFI function_data is an InterpreterData, get the trampoline stored
+  // in it, otherwise get the trampoline from the builtins list.
+  __ LoadP(r5, MemOperand(fp, StandardFrameConstants::kFunctionOffset));
+  __ LoadP(r5, FieldMemOperand(r5, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadP(r5, FieldMemOperand(r5, SharedFunctionInfo::kFunctionDataOffset));
+  __ CompareObjectType(r5, kInterpreterDispatchTableRegister,
+                       kInterpreterDispatchTableRegister,
+                       INTERPRETER_DATA_TYPE);
+  __ bne(&builtin_trampoline);
+
+  __ LoadP(r5,
+           FieldMemOperand(r5, InterpreterData::kInterpreterTrampolineOffset));
+  __ b(&trampoline_loaded);
+
+  __ bind(&builtin_trampoline);
   __ Move(r5, BUILTIN_CODE(masm->isolate(), InterpreterEntryTrampoline));
+
+  __ bind(&trampoline_loaded);
   __ addi(r0, r5, Operand(interpreter_entry_return_pc_offset->value() +
                           Code::kHeaderSize - kHeapObjectTag));
   __ mtlr(r0);
@@ -1304,6 +1347,7 @@ static void GetSharedFunctionInfoCode(MacroAssembler* masm, Register sfi_data,
   Label check_is_fixed_array;
   Label check_is_pre_parsed_scope_data;
   Label check_is_function_template_info;
+  Label check_is_interpreter_data;
 
   Register data_type = scratch1;
 
@@ -1348,11 +1392,21 @@ static void GetSharedFunctionInfoCode(MacroAssembler* masm, Register sfi_data,
 
   // IsFunctionTemplateInfo: API call
   __ bind(&check_is_function_template_info);
+  __ cmpi(data_type, Operand(FUNCTION_TEMPLATE_INFO_TYPE));
+  __ bne(&check_is_interpreter_data);
+  __ Move(sfi_data, BUILTIN_CODE(masm->isolate(), HandleApiCall));
+  __ b(&done);
+
+  // IsInterpreterData: Interpret bytecode
+  __ bind(&check_is_interpreter_data);
   if (FLAG_debug_code) {
-    __ cmpi(data_type, Operand(FUNCTION_TEMPLATE_INFO_TYPE));
+    __ cmpi(data_type, Operand(INTERPRETER_DATA_TYPE));
     __ Assert(eq, AbortReason::kInvalidSharedFunctionInfoData);
   }
   __ Move(sfi_data, BUILTIN_CODE(masm->isolate(), HandleApiCall));
+  __ LoadP(
+      sfi_data,
+      FieldMemOperand(sfi_data, InterpreterData::kInterpreterTrampolineOffset));
 
   __ bind(&done);
 }
@@ -2327,12 +2381,21 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
   // r5 to contain either an AllocationSite or undefined.
   __ LoadRoot(r5, Heap::kUndefinedValueRootIndex);
 
-  // Tail call to the function-specific construct stub (still in the caller
-  // context at this point).
+  Label call_generic_stub;
+
+  // Jump to JSBuiltinsConstructStub or JSConstructStubGeneric.
   __ LoadP(r7, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadP(r7, FieldMemOperand(r7, SharedFunctionInfo::kConstructStubOffset));
-  __ addi(ip, r7, Operand(Code::kHeaderSize - kHeapObjectTag));
-  __ JumpToJSEntry(ip);
+  __ lwz(r7, FieldMemOperand(r7, SharedFunctionInfo::kFlagsOffset));
+  __ mov(ip, Operand(SharedFunctionInfo::ConstructAsBuiltinBit::kMask));
+  __ and_(r7, r7, ip, SetRC);
+  __ beq(&call_generic_stub, cr0);
+
+  __ Jump(BUILTIN_CODE(masm->isolate(), JSBuiltinsConstructStub),
+          RelocInfo::CODE_TARGET);
+
+  __ bind(&call_generic_stub);
+  __ Jump(masm->isolate()->builtins()->JSConstructStubGeneric(),
+          RelocInfo::CODE_TARGET);
 }
 
 // static
@@ -2590,28 +2653,33 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
 
+    auto wasm_instance_reg = r10;  // TODO(titzer): put in a common place.
+
     // Save all parameter registers (see wasm-linkage.cc). They might be
     // overwritten in the runtime call below. We don't have any callee-saved
     // registers in wasm, so no need to store anything else.
-    constexpr RegList gp_regs =
-        Register::ListOf<r3, r4, r5, r6, r7, r8, r9, r10>();
+    constexpr RegList gp_regs = Register::ListOf<r3, r4, r5, r6, r7, r8, r9>();
     constexpr RegList fp_regs =
         DoubleRegister::ListOf<d1, d2, d3, d4, d5, d6, d7, d8>();
     __ MultiPush(gp_regs);
     __ MultiPushDoubles(fp_regs);
 
-    // Initialize cp register with kZero, CEntryStub will use it to set the
-    // current context on the isolate.
+    // Pass the WASM instance as an explicit argument to WasmCompileLazy.
+    __ Push(wasm_instance_reg);
+    // Initialize the JavaScript context with 0. CEntryStub will use it to
+    // set the current context on the isolate.
     __ LoadSmiLiteral(cp, Smi::kZero);
     __ CallRuntime(Runtime::kWasmCompileLazy);
-    // Store returned instruction start in r11.
-    __ addi(r11, r3, Operand(Code::kHeaderSize - kHeapObjectTag));
+    // The entrypoint address is the first return value.
+    __ mr(r11, kReturnRegister0);
+    // The WASM instance is the second return value.
+    __ mr(wasm_instance_reg, kReturnRegister1);
 
     // Restore registers.
     __ MultiPopDoubles(fp_regs);
     __ MultiPop(gp_regs);
   }
-  // Now jump to the instructions of the returned code object.
+  // Finally, jump to the entrypoint.
   __ Jump(r11);
 }
 

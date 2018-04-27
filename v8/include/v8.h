@@ -1569,7 +1569,9 @@ class V8_EXPORT ScriptCompiler {
   static V8_WARN_UNUSED_RESULT MaybeLocal<Function> CompileFunctionInContext(
       Local<Context> context, Source* source, size_t arguments_count,
       Local<String> arguments[], size_t context_extension_count,
-      Local<Object> context_extensions[]);
+      Local<Object> context_extensions[],
+      CompileOptions options = kNoCompileOptions,
+      NoCacheReason no_cache_reason = kNoCacheNoReason);
 
   /**
    * Creates and returns code cache for the specified unbound_script.
@@ -1578,6 +1580,15 @@ class V8_EXPORT ScriptCompiler {
    */
   static CachedData* CreateCodeCache(Local<UnboundScript> unbound_script,
                                      Local<String> source);
+
+  /**
+   * Creates and returns code cache for the specified function that was
+   * previously produced by CompileFunctionInContext.
+   * This will return nullptr if the script cannot be serialized. The
+   * CachedData returned by this function should be owned by the caller.
+   */
+  static CachedData* CreateCodeCacheForFunction(Local<Function> function,
+                                                Local<String> source);
 
  private:
   static V8_WARN_UNUSED_RESULT MaybeLocal<UnboundScript> CompileUnboundInternal(
@@ -3099,6 +3110,15 @@ enum PropertyFilter {
 };
 
 /**
+ * Options for marking whether callbacks may trigger JS-observable side effects.
+ * Side-effect-free callbacks are whitelisted during debug evaluation with
+ * throwOnSideEffect. It applies when calling a Function, FunctionTemplate,
+ * or an Accessor's getter callback. For Interceptors, please see
+ * PropertyHandlerFlags's kHasNoSideEffect.
+ */
+enum class SideEffectType { kHasSideEffect, kHasNoSideEffect };
+
+/**
  * Keys/Properties filter enums:
  *
  * KeyCollectionMode limits the range of collected properties. kOwnOnly limits
@@ -3224,19 +3244,20 @@ class V8_EXPORT Object : public Value {
   V8_WARN_UNUSED_RESULT Maybe<bool> Delete(Local<Context> context,
                                            Local<Value> key);
 
-  V8_WARN_UNUSED_RESULT Maybe<bool> Has(Local<Context> context,
-                                        uint32_t index);
+  V8_WARN_UNUSED_RESULT Maybe<bool> Has(Local<Context> context, uint32_t index);
 
   V8_WARN_UNUSED_RESULT Maybe<bool> Delete(Local<Context> context,
                                            uint32_t index);
 
-  V8_WARN_UNUSED_RESULT Maybe<bool> SetAccessor(Local<Context> context,
-                          Local<Name> name,
-                          AccessorNameGetterCallback getter,
-                          AccessorNameSetterCallback setter = 0,
-                          MaybeLocal<Value> data = MaybeLocal<Value>(),
-                          AccessControl settings = DEFAULT,
-                          PropertyAttribute attribute = None);
+  /**
+   * Note: SideEffectType affects the getter only, not the setter.
+   */
+  V8_WARN_UNUSED_RESULT Maybe<bool> SetAccessor(
+      Local<Context> context, Local<Name> name,
+      AccessorNameGetterCallback getter, AccessorNameSetterCallback setter = 0,
+      MaybeLocal<Value> data = MaybeLocal<Value>(),
+      AccessControl settings = DEFAULT, PropertyAttribute attribute = None,
+      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect);
 
   void SetAccessorProperty(Local<Name> name, Local<Function> getter,
                            Local<Function> setter = Local<Function>(),
@@ -3251,7 +3272,8 @@ class V8_EXPORT Object : public Value {
       Local<Context> context, Local<Name> name,
       AccessorNameGetterCallback getter,
       AccessorNameSetterCallback setter = nullptr,
-      Local<Value> data = Local<Value>(), PropertyAttribute attributes = None);
+      Local<Value> data = Local<Value>(), PropertyAttribute attributes = None,
+      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect);
 
   /**
    * Attempts to create a property with the given name which behaves like a data
@@ -3264,7 +3286,8 @@ class V8_EXPORT Object : public Value {
   V8_WARN_UNUSED_RESULT Maybe<bool> SetLazyDataProperty(
       Local<Context> context, Local<Name> name,
       AccessorNameGetterCallback getter, Local<Value> data = Local<Value>(),
-      PropertyAttribute attributes = None);
+      PropertyAttribute attributes = None,
+      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect);
 
   /**
    * Functionality for private properties.
@@ -3856,7 +3879,8 @@ class V8_EXPORT Function : public Object {
   static MaybeLocal<Function> New(
       Local<Context> context, FunctionCallback callback,
       Local<Value> data = Local<Value>(), int length = 0,
-      ConstructorBehavior behavior = ConstructorBehavior::kAllow);
+      ConstructorBehavior behavior = ConstructorBehavior::kAllow,
+      SideEffectType side_effect_type = SideEffectType::kHasSideEffect);
   static V8_DEPRECATE_SOON(
       "Use maybe version",
       Local<Function> New(Isolate* isolate, FunctionCallback callback,
@@ -5510,7 +5534,8 @@ class V8_EXPORT FunctionTemplate : public Template {
       Isolate* isolate, FunctionCallback callback = 0,
       Local<Value> data = Local<Value>(),
       Local<Signature> signature = Local<Signature>(), int length = 0,
-      ConstructorBehavior behavior = ConstructorBehavior::kAllow);
+      ConstructorBehavior behavior = ConstructorBehavior::kAllow,
+      SideEffectType side_effect_type = SideEffectType::kHasSideEffect);
 
   /** Get a template included in the snapshot by index. */
   static MaybeLocal<FunctionTemplate> FromSnapshot(Isolate* isolate,
@@ -5522,7 +5547,8 @@ class V8_EXPORT FunctionTemplate : public Template {
   static Local<FunctionTemplate> NewWithCache(
       Isolate* isolate, FunctionCallback callback,
       Local<Private> cache_property, Local<Value> data = Local<Value>(),
-      Local<Signature> signature = Local<Signature>(), int length = 0);
+      Local<Signature> signature = Local<Signature>(), int length = 0,
+      SideEffectType side_effect_type = SideEffectType::kHasSideEffect);
 
   /** Returns the unique function instance in the current execution context.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Function> GetFunction());
@@ -5543,8 +5569,9 @@ class V8_EXPORT FunctionTemplate : public Template {
    * callback is called whenever the function created from this
    * FunctionTemplate is called.
    */
-  void SetCallHandler(FunctionCallback callback,
-                      Local<Value> data = Local<Value>());
+  void SetCallHandler(
+      FunctionCallback callback, Local<Value> data = Local<Value>(),
+      SideEffectType side_effect_type = SideEffectType::kHasSideEffect);
 
   /** Set the predefined length property for the FunctionTemplate. */
   void SetLength(int length);
@@ -5655,6 +5682,11 @@ enum class PropertyHandlerFlags {
    * named interceptors.
    */
   kOnlyInterceptStrings = 1 << 2,
+
+  /**
+   * The getter, query, enumerator callbacks do not produce side effects.
+   */
+  kHasNoSideEffect = 1 << 3,
 };
 
 struct NamedPropertyHandlerConfiguration {

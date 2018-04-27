@@ -1663,7 +1663,7 @@ void MacroAssembler::AssertConstructor(Register object, Register scratch) {
     STATIC_ASSERT(kSmiTag == 0);
     TestIfSmi(object);
     Check(ne, AbortReason::kOperandIsASmiAndNotAConstructor);
-    LoadP(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
+    LoadP(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
     tm(FieldMemOperand(scratch, Map::kBitFieldOffset),
        Operand(Map::IsConstructorBit::kMask));
     Check(ne, AbortReason::kOperandIsNotAConstructor);
@@ -4295,6 +4295,10 @@ bool AreAliased(DoubleRegister reg1, DoubleRegister reg2, DoubleRegister reg3,
 
 void TurboAssembler::ResetSpeculationPoisonRegister() {
   mov(kSpeculationPoisonRegister, Operand(-1));
+}
+
+void TurboAssembler::ComputeCodeStartAddress(Register dst) {
+  larl(dst, Operand(-pc_offset() / 2));
 }
 
 }  // namespace internal

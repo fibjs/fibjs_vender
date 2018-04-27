@@ -2087,6 +2087,8 @@ Simulator::TransactionSize Simulator::get_transaction_size(unsigned size) {
       return TransactionSize::HalfWord;
     case 4:
       return TransactionSize::Word;
+    case 8:
+      return TransactionSize::DoubleWord;
     default:
       UNREACHABLE();
   }
@@ -2131,6 +2133,10 @@ void Simulator::VisitLoadStoreAcquireRelease(Instruction* instr) {
       case LDAXR_w:
         set_wreg_no_log(rt, MemoryRead<uint32_t>(address));
         break;
+      case LDAR_x:
+      case LDAXR_x:
+        set_xreg_no_log(rt, MemoryRead<uint64_t>(address));
+        break;
       default:
         UNIMPLEMENTED();
     }
@@ -2154,6 +2160,9 @@ void Simulator::VisitLoadStoreAcquireRelease(Instruction* instr) {
           case STLXR_w:
             MemoryWrite<uint32_t>(address, wreg(rt));
             break;
+          case STLXR_x:
+            MemoryWrite<uint64_t>(address, xreg(rt));
+            break;
           default:
             UNIMPLEMENTED();
         }
@@ -2174,6 +2183,9 @@ void Simulator::VisitLoadStoreAcquireRelease(Instruction* instr) {
           break;
         case STLR_w:
           MemoryWrite<uint32_t>(address, wreg(rt));
+          break;
+        case STLR_x:
+          MemoryWrite<uint64_t>(address, xreg(rt));
           break;
         default:
           UNIMPLEMENTED();

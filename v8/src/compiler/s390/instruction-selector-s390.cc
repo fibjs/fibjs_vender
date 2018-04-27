@@ -275,7 +275,7 @@ bool S390OpcodeOnlySupport12BitDisp(InstructionCode op) {
 
 ArchOpcode SelectLoadOpcode(Node* node) {
   NodeMatcher m(node);
-  DCHECK(m.IsLoad());
+  DCHECK(m.IsLoad() || m.IsPoisonedLoad());
   LoadRepresentation load_rep = LoadRepresentationOf(node->op());
   ArchOpcode opcode = kArchNop;
   switch (load_rep.representation()) {
@@ -2480,6 +2480,16 @@ void InstructionSelector::VisitS128Select(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitF32x4Neg(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitF32x4Abs(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4RecipSqrtApprox(Node* node) {
+  UNIMPLEMENTED();
+}
+
+void InstructionSelector::VisitF32x4RecipApprox(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitF32x4AddHoriz(Node* node) { UNIMPLEMENTED(); }
+void InstructionSelector::VisitI32x4AddHoriz(Node* node) { UNIMPLEMENTED(); }
+void InstructionSelector::VisitI16x8AddHoriz(Node* node) { UNIMPLEMENTED(); }
 
 // static
 MachineOperatorBuilder::Flags

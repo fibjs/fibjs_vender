@@ -10,8 +10,8 @@
 #include "src/compiler/wasm-compiler.h"
 #include "src/debug/debug-scopes.h"
 #include "src/debug/debug.h"
-#include "src/factory.h"
 #include "src/frames-inl.h"
+#include "src/heap/factory.h"
 #include "src/identity-map.h"
 #include "src/isolate.h"
 #include "src/wasm/module-decoder.h"
@@ -140,12 +140,13 @@ class InterpreterHandle {
   }
 
  public:
+  // TODO(wasm): properly handlify this constructor.
   InterpreterHandle(Isolate* isolate, WasmDebugInfo* debug_info)
       : isolate_(isolate),
         module_(
             debug_info->wasm_instance()->compiled_module()->shared()->module()),
         interpreter_(isolate, module_, GetBytes(debug_info),
-                     debug_info->wasm_instance()->wasm_context()->get()) {}
+                     handle(debug_info->wasm_instance())) {}
 
   ~InterpreterHandle() { DCHECK_EQ(0, activations_.size()); }
 
@@ -197,8 +198,6 @@ class InterpreterHandle {
 
     uint32_t activation_id = StartActivation(frame_pointer);
 
-    WasmInterpreter::HeapObjectsScope heap_objects_scope(&interpreter_,
-                                                         instance_object);
     WasmInterpreter::Thread* thread = interpreter_.GetThread(0);
     thread->InitFrame(&module()->functions[func_index], wasm_args.start());
     bool finished = false;
@@ -613,12 +612,9 @@ void RedirectCallsitesInInstance(Isolate* isolate, WasmInstanceObject* instance,
   // TODO(6668): Find instances that imported our code and also patch those.
 
   // Redirect all calls in exported functions.
-  FixedArray* weak_exported_functions =
-      instance->compiled_module()->weak_exported_functions();
-  for (int i = 0, e = weak_exported_functions->length(); i != e; ++i) {
-    WeakCell* weak_function = WeakCell::cast(weak_exported_functions->get(i));
-    if (weak_function->cleared()) continue;
-    Code* code = JSFunction::cast(weak_function->value())->code();
+  FixedArray* export_wrapper = instance->compiled_module()->export_wrappers();
+  for (int i = 0, e = export_wrapper->length(); i != e; ++i) {
+    Code* code = Code::cast(export_wrapper->get(i));
     RedirectCallsitesInJSWrapperCode(isolate, code, map);
   }
 }
@@ -681,7 +677,7 @@ void WasmDebugInfo::RedirectToInterpreter(Handle<WasmDebugInfo> debug_info,
     if (!interpreted_functions->get(func_index)->IsUndefined(isolate)) continue;
 
     Handle<Code> new_code = compiler::CompileWasmInterpreterEntry(
-        isolate, func_index, module->functions[func_index].sig, instance);
+        isolate, func_index, module->functions[func_index].sig);
     const wasm::WasmCode* wasm_new_code =
         native_module->AddInterpreterWrapper(new_code, func_index);
     const wasm::WasmCode* old_code =

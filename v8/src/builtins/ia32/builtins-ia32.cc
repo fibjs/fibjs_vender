@@ -386,9 +386,6 @@ void Builtins::Generate_JSConstructStubGenericUnrestrictedReturn(
     MacroAssembler* masm) {
   return Generate_JSConstructStubGeneric(masm, false);
 }
-void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSBuiltinsConstructStubHelper(masm);
-}
 void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
   Generate_JSBuiltinsConstructStubHelper(masm);
 }
@@ -501,6 +498,19 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
   Generate_JSEntryTrampolineHelper(masm, true);
 }
 
+static void GetSharedFunctionInfoBytecode(MacroAssembler* masm,
+                                          Register sfi_data,
+                                          Register scratch1) {
+  Label done;
+
+  __ CmpObjectType(sfi_data, INTERPRETER_DATA_TYPE, scratch1);
+  __ j(not_equal, &done, Label::kNear);
+  __ mov(sfi_data,
+         FieldOperand(sfi_data, InterpreterData::kBytecodeArrayOffset));
+
+  __ bind(&done);
+}
+
 // static
 void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   // ----------- S t a t e -------------
@@ -575,6 +585,9 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   if (FLAG_debug_code) {
     __ mov(ecx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
     __ mov(ecx, FieldOperand(ecx, SharedFunctionInfo::kFunctionDataOffset));
+    __ Push(eax);
+    GetSharedFunctionInfoBytecode(masm, ecx, eax);
+    __ Pop(eax);
     __ CmpObjectType(ecx, BYTECODE_ARRAY_TYPE, ecx);
     __ Assert(equal, AbortReason::kMissingBytecodeArray);
   }
@@ -857,10 +870,14 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
 
   // Get the bytecode array from the function object (or from the DebugInfo if
   // it is present) and load it into kInterpreterBytecodeArrayRegister.
-  Label maybe_load_debug_bytecode_array, bytecode_array_loaded;
+  Label maybe_load_debug_bytecode_array, bytecode_array_loaded,
+      apply_instrumentation;
   __ mov(eax, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
   __ mov(kInterpreterBytecodeArrayRegister,
          FieldOperand(eax, SharedFunctionInfo::kFunctionDataOffset));
+  __ Push(eax);
+  GetSharedFunctionInfoBytecode(masm, kInterpreterBytecodeArrayRegister, eax);
+  __ Pop(eax);
   __ JumpIfNotSmi(FieldOperand(eax, SharedFunctionInfo::kDebugInfoOffset),
                   &maybe_load_debug_bytecode_array);
   __ bind(&bytecode_array_loaded);
@@ -977,15 +994,29 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // kInterpreterBytecodeArrayRegister is already loaded with
   // SharedFunctionInfo::kFunctionDataOffset.
   __ bind(&maybe_load_debug_bytecode_array);
-  __ push(ebx);  // feedback_vector == ebx, so save it.
-  __ mov(ecx, FieldOperand(eax, SharedFunctionInfo::kDebugInfoOffset));
-  __ mov(ebx, FieldOperand(ecx, DebugInfo::kFlagsOffset));
-  __ SmiUntag(ebx);
-  __ test(ebx, Immediate(DebugInfo::kHasBreakInfo));
+  __ mov(eax, FieldOperand(eax, SharedFunctionInfo::kDebugInfoOffset));
+  __ mov(ecx, FieldOperand(eax, DebugInfo::kDebugBytecodeArrayOffset));
+  __ JumpIfRoot(ecx, Heap::kUndefinedValueRootIndex, &bytecode_array_loaded);
+
+  __ mov(kInterpreterBytecodeArrayRegister, ecx);
+  __ mov(ecx, FieldOperand(eax, DebugInfo::kFlagsOffset));
+  __ SmiUntag(ecx);
+  __ and_(ecx, Immediate(DebugInfo::kDebugExecutionMode));
+  STATIC_ASSERT(static_cast<int>(DebugInfo::kDebugExecutionMode) ==
+                static_cast<int>(DebugInfo::kSideEffects));
+  ExternalReference debug_execution_mode =
+      ExternalReference::debug_execution_mode_address(masm->isolate());
+  __ cmp(ecx, Operand::StaticVariable(debug_execution_mode));
+  __ j(equal, &bytecode_array_loaded);
+
+  __ pop(ecx);  // get JSFunction from stack
+  __ push(ecx);
+  __ push(ebx);  // preserve feedback_vector and bytecode array register
+  __ push(kInterpreterBytecodeArrayRegister);
+  __ push(ecx);  // pass function as argument
+  __ CallRuntime(Runtime::kDebugApplyInstrumentation);
+  __ pop(kInterpreterBytecodeArrayRegister);
   __ pop(ebx);
-  __ j(zero, &bytecode_array_loaded);
-  __ mov(kInterpreterBytecodeArrayRegister,
-         FieldOperand(ecx, DebugInfo::kDebugBytecodeArrayOffset));
   __ jmp(&bytecode_array_loaded);
 }
 
@@ -1231,10 +1262,28 @@ void Builtins::Generate_InterpreterPushArgsThenConstructImpl(
 static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   // Set the return address to the correct point in the interpreter entry
   // trampoline.
+  Label builtin_trampoline, trampoline_loaded;
   Smi* interpreter_entry_return_pc_offset(
       masm->isolate()->heap()->interpreter_entry_return_pc_offset());
   DCHECK_NE(interpreter_entry_return_pc_offset, Smi::kZero);
+
+  // If the SFI function_data is an InterpreterData, get the trampoline stored
+  // in it, otherwise get the trampoline from the builtins list.
+  __ mov(ebx, Operand(ebp, StandardFrameConstants::kFunctionOffset));
+  __ mov(ebx, FieldOperand(ebx, JSFunction::kSharedFunctionInfoOffset));
+  __ mov(ebx, FieldOperand(ebx, SharedFunctionInfo::kFunctionDataOffset));
+  __ Push(eax);
+  __ CmpObjectType(ebx, INTERPRETER_DATA_TYPE, eax);
+  __ j(not_equal, &builtin_trampoline, Label::kNear);
+
+  __ mov(ebx, FieldOperand(ebx, InterpreterData::kInterpreterTrampolineOffset));
+  __ jmp(&trampoline_loaded, Label::kNear);
+
+  __ bind(&builtin_trampoline);
   __ Move(ebx, BUILTIN_CODE(masm->isolate(), InterpreterEntryTrampoline));
+
+  __ bind(&trampoline_loaded);
+  __ Pop(eax);
   __ add(ebx, Immediate(interpreter_entry_return_pc_offset->value() +
                         Code::kHeaderSize - kHeapObjectTag));
   __ push(ebx);
@@ -1325,6 +1374,7 @@ static void GetSharedFunctionInfoCode(MacroAssembler* masm, Register sfi_data,
   Label check_is_fixed_array;
   Label check_is_pre_parsed_scope_data;
   Label check_is_function_template_info;
+  Label check_is_interpreter_data;
 
   Register data_type = scratch1;
 
@@ -1369,11 +1419,19 @@ static void GetSharedFunctionInfoCode(MacroAssembler* masm, Register sfi_data,
 
   // IsFunctionTemplateInfo: API call
   __ bind(&check_is_function_template_info);
+  __ cmpw(data_type, Immediate(FUNCTION_TEMPLATE_INFO_TYPE));
+  __ j(not_equal, &check_is_interpreter_data);
+  __ Move(sfi_data, BUILTIN_CODE(masm->isolate(), HandleApiCall));
+  __ jmp(&done);
+
+  // IsInterpreterData: Interpret bytecode
+  __ bind(&check_is_interpreter_data);
   if (FLAG_debug_code) {
-    __ cmpw(data_type, Immediate(FUNCTION_TEMPLATE_INFO_TYPE));
+    __ cmpw(data_type, Immediate(INTERPRETER_DATA_TYPE));
     __ Check(equal, AbortReason::kInvalidSharedFunctionInfoData);
   }
-  __ Move(sfi_data, BUILTIN_CODE(masm->isolate(), HandleApiCall));
+  __ mov(sfi_data,
+         FieldOperand(sfi_data, InterpreterData::kInterpreterTrampolineOffset));
 
   __ bind(&done);
 }
@@ -2388,12 +2446,20 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
   // ebx to contain either an AllocationSite or undefined.
   __ LoadRoot(ebx, Heap::kUndefinedValueRootIndex);
 
-  // Tail call to the function-specific construct stub (still in the caller
-  // context at this point).
+  Label call_generic_stub;
+
+  // Jump to JSBuiltinsConstructStub or JSConstructStubGeneric.
   __ mov(ecx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-  __ mov(ecx, FieldOperand(ecx, SharedFunctionInfo::kConstructStubOffset));
-  __ lea(ecx, FieldOperand(ecx, Code::kHeaderSize));
-  __ jmp(ecx);
+  __ test(FieldOperand(ecx, SharedFunctionInfo::kFlagsOffset),
+          Immediate(SharedFunctionInfo::ConstructAsBuiltinBit::kMask));
+  __ j(zero, &call_generic_stub, Label::kNear);
+
+  __ Jump(BUILTIN_CODE(masm->isolate(), JSBuiltinsConstructStub),
+          RelocInfo::CODE_TARGET);
+
+  __ bind(&call_generic_stub);
+  __ Jump(masm->isolate()->builtins()->JSConstructStubGeneric(),
+          RelocInfo::CODE_TARGET);
 }
 
 // static
@@ -2696,10 +2762,12 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
 
+    auto wasm_instance_reg = esi;  // TODO(titzer): put in a common place.
+
     // Save all parameter registers (see wasm-linkage.cc). They might be
     // overwritten in the runtime call below. We don't have any callee-saved
     // registers in wasm, so no need to store anything else.
-    constexpr Register gp_regs[]{eax, ebx, ecx, edx, esi};
+    constexpr Register gp_regs[]{eax, ebx, ecx, edx};
     constexpr XMMRegister xmm_regs[]{xmm1, xmm2, xmm3, xmm4, xmm5, xmm6};
 
     for (auto reg : gp_regs) {
@@ -2710,12 +2778,16 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
       __ movdqu(Operand(esp, 16 * i), xmm_regs[i]);
     }
 
-    // Initialize rsi register with kZero, CEntryStub will use it to set the
-    // current context on the isolate.
+    // Pass the WASM instance as an explicit argument to WasmCompileLazy.
+    __ Push(wasm_instance_reg);
+    // Initialize the JavaScript context with 0. CEntryStub will use it to
+    // set the current context on the isolate.
     __ Move(esi, Smi::kZero);
     __ CallRuntime(Runtime::kWasmCompileLazy);
-    // Store returned instruction start in edi.
-    __ lea(edi, FieldOperand(eax, Code::kHeaderSize));
+    // The entrypoint address is the first return value.
+    __ mov(edi, kReturnRegister0);
+    // The WASM instance is the second return value.
+    __ mov(wasm_instance_reg, kReturnRegister1);
 
     // Restore registers.
     for (int i = arraysize(xmm_regs) - 1; i >= 0; --i) {
@@ -2726,7 +2798,7 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
       __ Pop(gp_regs[i]);
     }
   }
-  // Now jump to the instructions of the returned code object.
+  // Finally, jump to the entrypoint.
   __ jmp(edi);
 }
 

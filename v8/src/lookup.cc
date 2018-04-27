@@ -74,6 +74,7 @@ LookupIterator LookupIterator::PropertyOrElement(Isolate* isolate,
   return LookupIterator(receiver, name, configuration);
 }
 
+// TODO(ishell): Consider removing this way of LookupIterator creation.
 // static
 LookupIterator LookupIterator::ForTransitionHandler(
     Isolate* isolate, Handle<Object> receiver, Handle<Name> name,
@@ -271,14 +272,27 @@ void LookupIterator::InternalUpdateProtector() {
   if (isolate_->bootstrapper()->IsActive()) return;
 
   if (*name_ == heap()->constructor_string()) {
-    if (!isolate_->IsSpeciesLookupChainIntact()) return;
+    if (!isolate_->IsArraySpeciesLookupChainIntact() &&
+        !isolate_->IsTypedArraySpeciesLookupChainIntact() &&
+        !isolate_->IsPromiseSpeciesLookupChainIntact())
+      return;
     // Setting the constructor property could change an instance's @@species
-    if (holder_->IsJSArray() || holder_->IsJSPromise() ||
-        holder_->IsJSTypedArray()) {
+    if (holder_->IsJSArray()) {
+      if (!isolate_->IsArraySpeciesLookupChainIntact()) return;
       isolate_->CountUsage(
           v8::Isolate::UseCounterFeature::kArrayInstanceConstructorModified);
-      isolate_->InvalidateSpeciesProtector();
-    } else if (holder_->map()->is_prototype_map()) {
+      isolate_->InvalidateArraySpeciesProtector();
+      return;
+    } else if (holder_->IsJSPromise()) {
+      if (!isolate_->IsPromiseSpeciesLookupChainIntact()) return;
+      isolate_->InvalidatePromiseSpeciesProtector();
+      return;
+    } else if (holder_->IsJSTypedArray()) {
+      if (!isolate_->IsTypedArraySpeciesLookupChainIntact()) return;
+      isolate_->InvalidateTypedArraySpeciesProtector();
+      return;
+    }
+    if (holder_->map()->is_prototype_map()) {
       DisallowHeapAllocation no_gc;
       // Setting the constructor of Array.prototype, Promise.prototype or
       // %TypedArray%.prototype of any realm also needs to invalidate the
@@ -287,14 +301,20 @@ void LookupIterator::InternalUpdateProtector() {
       // have different prototypes for each type, and their parent prototype is
       // pointing the same TYPED_ARRAY_PROTOTYPE.
       if (isolate_->IsInAnyContext(*holder_,
-                                   Context::INITIAL_ARRAY_PROTOTYPE_INDEX) ||
-          isolate_->IsInAnyContext(*holder_,
-                                   Context::PROMISE_PROTOTYPE_INDEX) ||
-          isolate_->IsInAnyContext(holder_->map()->prototype(),
-                                   Context::TYPED_ARRAY_PROTOTYPE_INDEX)) {
-        isolate_->CountUsage(v8::Isolate::UseCounterFeature::
-                                 kArrayPrototypeConstructorModified);
-        isolate_->InvalidateSpeciesProtector();
+                                   Context::INITIAL_ARRAY_PROTOTYPE_INDEX)) {
+        if (!isolate_->IsArraySpeciesLookupChainIntact()) return;
+        isolate_->CountUsage(
+            v8::Isolate::UseCounterFeature::kArrayPrototypeConstructorModified);
+        isolate_->InvalidateArraySpeciesProtector();
+      } else if (isolate_->IsInAnyContext(*holder_,
+                                          Context::PROMISE_PROTOTYPE_INDEX)) {
+        if (!isolate_->IsPromiseSpeciesLookupChainIntact()) return;
+        isolate_->InvalidatePromiseSpeciesProtector();
+      } else if (isolate_->IsInAnyContext(
+                     holder_->map()->prototype(),
+                     Context::TYPED_ARRAY_PROTOTYPE_INDEX)) {
+        if (!isolate_->IsTypedArraySpeciesLookupChainIntact()) return;
+        isolate_->InvalidateTypedArraySpeciesProtector();
       }
     }
   } else if (*name_ == heap()->next_string()) {
@@ -306,15 +326,24 @@ void LookupIterator::InternalUpdateProtector() {
       isolate_->InvalidateArrayIteratorProtector();
     }
   } else if (*name_ == heap()->species_symbol()) {
-    if (!isolate_->IsSpeciesLookupChainIntact()) return;
+    if (!isolate_->IsArraySpeciesLookupChainIntact() &&
+        !isolate_->IsTypedArraySpeciesLookupChainIntact() &&
+        !isolate_->IsPromiseSpeciesLookupChainIntact())
+      return;
     // Setting the Symbol.species property of any Array, Promise or TypedArray
     // constructor invalidates the @@species protector
-    if (isolate_->IsInAnyContext(*holder_, Context::ARRAY_FUNCTION_INDEX) ||
-        isolate_->IsInAnyContext(*holder_, Context::PROMISE_FUNCTION_INDEX) ||
-        IsTypedArrayFunctionInAnyContext(isolate_, *holder_)) {
+    if (isolate_->IsInAnyContext(*holder_, Context::ARRAY_FUNCTION_INDEX)) {
+      if (!isolate_->IsArraySpeciesLookupChainIntact()) return;
       isolate_->CountUsage(
           v8::Isolate::UseCounterFeature::kArraySpeciesModified);
-      isolate_->InvalidateSpeciesProtector();
+      isolate_->InvalidateArraySpeciesProtector();
+    } else if (isolate_->IsInAnyContext(*holder_,
+                                        Context::PROMISE_FUNCTION_INDEX)) {
+      if (!isolate_->IsPromiseSpeciesLookupChainIntact()) return;
+      isolate_->InvalidatePromiseSpeciesProtector();
+    } else if (IsTypedArrayFunctionInAnyContext(isolate_, *holder_)) {
+      if (!isolate_->IsTypedArraySpeciesLookupChainIntact()) return;
+      isolate_->InvalidateTypedArraySpeciesProtector();
     }
   } else if (*name_ == heap()->is_concat_spreadable_symbol()) {
     if (!isolate_->IsIsConcatSpreadableLookupChainIntact()) return;
@@ -494,14 +523,12 @@ void LookupIterator::ReconfigureDataProperty(Handle<Object> value,
 
 // Can only be called when the receiver is a JSObject. JSProxy has to be handled
 // via a trap. Adding properties to primitive values is not observable.
-// Returns true if a new transition has been created, or false if an existing
-// transition was followed.
-bool LookupIterator::PrepareTransitionToDataProperty(
+void LookupIterator::PrepareTransitionToDataProperty(
     Handle<JSReceiver> receiver, Handle<Object> value,
     PropertyAttributes attributes, Object::StoreFromKeyed store_mode) {
   DCHECK_IMPLIES(receiver->IsJSProxy(), name()->IsPrivate());
   DCHECK(receiver.is_identical_to(GetStoreTarget<JSReceiver>()));
-  if (state_ == TRANSITION) return false;
+  if (state_ == TRANSITION) return;
 
   if (!IsElement() && name()->IsPrivate()) {
     attributes = static_cast<PropertyAttributes>(attributes | DONT_ENUM);
@@ -547,13 +574,11 @@ bool LookupIterator::PrepareTransitionToDataProperty(
           PropertyDetails(kData, attributes, PropertyCellType::kNoCell);
       transition_ = map;
     }
-    return false;
+    return;
   }
 
-  bool created_new_map;
   Handle<Map> transition = Map::TransitionToDataProperty(
-      map, name_, value, attributes, kDefaultFieldConstness, store_mode,
-      &created_new_map);
+      map, name_, value, attributes, kDefaultFieldConstness, store_mode);
   state_ = TRANSITION;
   transition_ = transition;
 
@@ -565,7 +590,6 @@ bool LookupIterator::PrepareTransitionToDataProperty(
     property_details_ = transition->GetLastDescriptorDetails();
     has_property_ = true;
   }
-  return created_new_map;
 }
 
 void LookupIterator::ApplyTransitionToDataProperty(
@@ -588,10 +612,6 @@ void LookupIterator::ApplyTransitionToDataProperty(
     // configuration can produce valid transition handler maps.
     Handle<Object> validity_cell =
         Map::GetOrCreatePrototypeChainValidityCell(transition, isolate());
-    if (validity_cell.is_null()) {
-      validity_cell =
-          handle(Smi::FromInt(Map::kPrototypeChainValid), isolate());
-    }
     transition->set_prototype_validity_cell(*validity_cell);
   }
 

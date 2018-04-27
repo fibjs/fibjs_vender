@@ -502,7 +502,7 @@ class FrameArrayBuilder {
     Handle<Object> receiver(exit_frame->receiver(), isolate_);
     Handle<Code> code(exit_frame->LookupCode(), isolate_);
     const int offset =
-        static_cast<int>(exit_frame->pc() - code->instruction_start());
+        static_cast<int>(exit_frame->pc() - code->InstructionStart());
 
     int flags = 0;
     if (IsStrictFrame(function)) flags |= FrameArray::kIsStrict;
@@ -631,6 +631,7 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
 
     switch (frame->type()) {
       case StackFrame::JAVA_SCRIPT_BUILTIN_CONTINUATION:
+      case StackFrame::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH:
       case StackFrame::OPTIMIZED:
       case StackFrame::INTERPRETED:
       case StackFrame::BUILTIN:
@@ -1451,6 +1452,20 @@ Object* Isolate::UnwindAndFindHandler() {
         interpreter_frame->debug_info()->Unwind(frame->fp());
       } break;
 
+      case StackFrame::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH: {
+        // Builtin continuation frames with catch can handle exceptions.
+        if (!catchable_by_js) break;
+        JavaScriptBuiltinContinuationWithCatchFrame* js_frame =
+            JavaScriptBuiltinContinuationWithCatchFrame::cast(frame);
+        js_frame->SetException(exception);
+
+        // Reconstruct the stack pointer from the frame pointer.
+        Address return_sp = js_frame->fp() - js_frame->GetSPToFPDelta();
+        Code* code = js_frame->LookupCode();
+        return FoundHandler(nullptr, code->InstructionStart(), 0,
+                            code->constant_pool(), return_sp, frame->fp());
+      } break;
+
       default:
         // All other types can not handle exception.
         break;
@@ -1564,6 +1579,12 @@ Isolate::CatchType Isolate::PredictExceptionCatcher() {
         if (prediction != NOT_CAUGHT) return prediction;
       } break;
 
+      case StackFrame::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH: {
+        Handle<Code> code(frame->LookupCode());
+        CatchType prediction = ToCatchType(code->GetBuiltinCatchPrediction());
+        if (prediction != NOT_CAUGHT) return prediction;
+      } break;
+
       default:
         // All other types can not handle exception.
         break;
@@ -1634,8 +1655,7 @@ void Isolate::PrintCurrentStackTrace(FILE* out) {
     Handle<Object> receiver(frame->receiver(), this);
     Handle<JSFunction> function(frame->function(), this);
     Handle<AbstractCode> code(AbstractCode::cast(frame->LookupCode()), this);
-    const int offset =
-        static_cast<int>(frame->pc() - code->instruction_start());
+    const int offset = static_cast<int>(frame->pc() - code->InstructionStart());
 
     JSStackFrame site(this, receiver, function, code, offset);
     Handle<String> line = site.ToString().ToHandleChecked();
@@ -2653,6 +2673,10 @@ void Isolate::Deinit() {
   if (sampler && sampler->IsActive()) sampler->Stop();
 
   FreeThreadResources();
+
+  // We start with the heap tear down so that releasing managed objects does
+  // not cause a GC.
+  heap_.StartTearDown();
   // Release managed objects before shutting down the heap. The finalizer might
   // need to access heap objects.
   ReleaseManagedObjects();
@@ -2873,7 +2897,7 @@ void CreateOffHeapTrampolines(Isolate* isolate) {
 
   CodeSpaceMemoryModificationScope code_allocation(isolate->heap());
   for (int i = 0; i < Builtins::builtin_count; i++) {
-    if (!Builtins::IsOffHeapSafe(i)) continue;
+    if (!Builtins::IsIsolateIndependent(i)) continue;
 
     const uint8_t* instruction_start = d.InstructionStartOfBuiltin(i);
     Handle<Code> trampoline = isolate->factory()->NewOffHeapTrampolineFor(
@@ -3539,11 +3563,28 @@ void Isolate::InvalidateArrayConstructorProtector() {
   DCHECK(!IsArrayConstructorIntact());
 }
 
-void Isolate::InvalidateSpeciesProtector() {
-  DCHECK(factory()->species_protector()->value()->IsSmi());
-  DCHECK(IsSpeciesLookupChainIntact());
-  factory()->species_protector()->set_value(Smi::FromInt(kProtectorInvalid));
-  DCHECK(!IsSpeciesLookupChainIntact());
+void Isolate::InvalidateArraySpeciesProtector() {
+  DCHECK(factory()->array_species_protector()->value()->IsSmi());
+  DCHECK(IsArraySpeciesLookupChainIntact());
+  factory()->array_species_protector()->set_value(
+      Smi::FromInt(kProtectorInvalid));
+  DCHECK(!IsArraySpeciesLookupChainIntact());
+}
+
+void Isolate::InvalidateTypedArraySpeciesProtector() {
+  DCHECK(factory()->typed_array_species_protector()->value()->IsSmi());
+  DCHECK(IsTypedArraySpeciesLookupChainIntact());
+  factory()->typed_array_species_protector()->set_value(
+      Smi::FromInt(kProtectorInvalid));
+  DCHECK(!IsTypedArraySpeciesLookupChainIntact());
+}
+
+void Isolate::InvalidatePromiseSpeciesProtector() {
+  DCHECK(factory()->promise_species_protector()->value()->IsSmi());
+  DCHECK(IsPromiseSpeciesLookupChainIntact());
+  factory()->promise_species_protector()->set_value(
+      Smi::FromInt(kProtectorInvalid));
+  DCHECK(!IsPromiseSpeciesLookupChainIntact());
 }
 
 void Isolate::InvalidateStringLengthOverflowProtector() {

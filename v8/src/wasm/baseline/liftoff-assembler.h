@@ -322,11 +322,22 @@ class LiftoffAssembler : public TurboAssembler {
   // register, or {no_reg} if target was spilled to the stack.
   void PrepareCall(wasm::FunctionSig*, compiler::CallDescriptor*,
                    Register* target = nullptr,
-                   LiftoffRegister* explicit_context = nullptr);
+                   LiftoffRegister* target_instance = nullptr);
   // Process return values of the call.
   void FinishCall(wasm::FunctionSig*, compiler::CallDescriptor*);
 
+  // Move {src} into {dst}. {src} and {dst} must be different.
   void Move(LiftoffRegister dst, LiftoffRegister src, ValueType);
+
+  // Parallel register move: For a list of tuples <dst, src, type>, move the
+  // {src} register of type {type} into {dst}. If {src} equals {dst}, ignore
+  // that tuple.
+  struct ParallelRegisterMoveTuple {
+    LiftoffRegister dst;
+    LiftoffRegister src;
+    ValueType type;
+  };
+  void ParallelRegisterMove(std::initializer_list<ParallelRegisterMoveTuple>);
 
   ////////////////////////////////////
   // Platform-specific part.        //
@@ -341,9 +352,9 @@ class LiftoffAssembler : public TurboAssembler {
 
   inline void LoadConstant(LiftoffRegister, WasmValue,
                            RelocInfo::Mode rmode = RelocInfo::NONE);
-  inline void LoadFromContext(Register dst, uint32_t offset, int size);
-  inline void SpillContext(Register context);
-  inline void FillContextInto(Register dst);
+  inline void LoadFromInstance(Register dst, uint32_t offset, int size);
+  inline void SpillInstance(Register instance);
+  inline void FillInstanceInto(Register dst);
   inline void Load(LiftoffRegister dst, Register src_addr, Register offset_reg,
                    uint32_t offset_imm, LoadType type, LiftoffRegList pinned,
                    uint32_t* protected_load_pc = nullptr);
@@ -386,6 +397,16 @@ class LiftoffAssembler : public TurboAssembler {
   inline bool emit_i32_popcnt(Register dst, Register src);
 
   // i64 binops.
+  inline void emit_i64_add(LiftoffRegister dst, LiftoffRegister lhs,
+                           LiftoffRegister rhs);
+  inline void emit_i64_sub(LiftoffRegister dst, LiftoffRegister lhs,
+                           LiftoffRegister rhs);
+  inline void emit_i64_and(LiftoffRegister dst, LiftoffRegister lhs,
+                           LiftoffRegister rhs);
+  inline void emit_i64_or(LiftoffRegister dst, LiftoffRegister lhs,
+                          LiftoffRegister rhs);
+  inline void emit_i64_xor(LiftoffRegister dst, LiftoffRegister lhs,
+                           LiftoffRegister rhs);
   inline void emit_i64_shl(LiftoffRegister dst, LiftoffRegister src,
                            Register amount, LiftoffRegList pinned = {});
   inline void emit_i64_sar(LiftoffRegister dst, LiftoffRegister src,
@@ -393,7 +414,14 @@ class LiftoffAssembler : public TurboAssembler {
   inline void emit_i64_shr(LiftoffRegister dst, LiftoffRegister src,
                            Register amount, LiftoffRegList pinned = {});
 
-  inline void emit_ptrsize_add(Register dst, Register lhs, Register rhs);
+  inline void emit_ptrsize_add(Register dst, Register lhs, Register rhs) {
+    if (kPointerSize == 8) {
+      emit_i64_add(LiftoffRegister(dst), LiftoffRegister(lhs),
+                   LiftoffRegister(rhs));
+    } else {
+      emit_i32_add(dst, lhs, rhs);
+    }
+  }
 
   // f32 binops.
   inline void emit_f32_add(DoubleRegister dst, DoubleRegister lhs,
@@ -407,6 +435,10 @@ class LiftoffAssembler : public TurboAssembler {
   // f32 unops.
   inline void emit_f32_abs(DoubleRegister dst, DoubleRegister src);
   inline void emit_f32_neg(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f32_ceil(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f32_floor(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f32_trunc(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f32_nearest_int(DoubleRegister dst, DoubleRegister src);
   inline void emit_f32_sqrt(DoubleRegister dst, DoubleRegister src);
 
   // f64 binops.
@@ -422,6 +454,10 @@ class LiftoffAssembler : public TurboAssembler {
   // f64 unops.
   inline void emit_f64_abs(DoubleRegister dst, DoubleRegister src);
   inline void emit_f64_neg(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f64_ceil(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f64_floor(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f64_trunc(DoubleRegister dst, DoubleRegister src);
+  inline void emit_f64_nearest_int(DoubleRegister dst, DoubleRegister src);
   inline void emit_f64_sqrt(DoubleRegister dst, DoubleRegister src);
 
   // type conversions.
@@ -429,6 +465,8 @@ class LiftoffAssembler : public TurboAssembler {
                                    LiftoffRegister src);
 
   inline void emit_jump(Label*);
+  inline void emit_jump(Register);
+
   inline void emit_cond_jump(Condition, Label*, ValueType value, Register lhs,
                              Register rhs = no_reg);
   // Set {dst} to 1 if condition holds, 0 otherwise.
@@ -439,6 +477,8 @@ class LiftoffAssembler : public TurboAssembler {
   inline void emit_i64_set_cond(Condition condition, Register dst,
                                 LiftoffRegister lhs, LiftoffRegister rhs);
   inline void emit_f32_set_cond(Condition condition, Register dst,
+                                DoubleRegister lhs, DoubleRegister rhs);
+  inline void emit_f64_set_cond(Condition condition, Register dst,
                                 DoubleRegister lhs, DoubleRegister rhs);
 
   inline void StackCheck(Label* ool_code);
@@ -538,6 +578,51 @@ class LiftoffAssembler : public TurboAssembler {
 };
 
 std::ostream& operator<<(std::ostream& os, LiftoffAssembler::VarState);
+
+// =======================================================================
+// Partially platform-independent implementations of the platform-dependent
+// part.
+
+#ifdef V8_TARGET_ARCH_32_BIT
+
+namespace liftoff {
+template <void (LiftoffAssembler::*op)(Register, Register, Register)>
+void EmitI64IndependentHalfOperation(LiftoffAssembler* assm,
+                                     LiftoffRegister dst, LiftoffRegister lhs,
+                                     LiftoffRegister rhs) {
+  // Register pairs are either the same, or they don't overlap at all, so the
+  // low and high registers must be disjoint. Just handle them separately.
+  DCHECK_EQ(LiftoffRegList{},
+            LiftoffRegList::ForRegs(dst.low(), lhs.low(), rhs.low()) &
+                LiftoffRegList::ForRegs(dst.high(), lhs.high(), rhs.high()));
+  (assm->*op)(dst.low_gp(), lhs.low_gp(), rhs.low_gp());
+  (assm->*op)(dst.high_gp(), lhs.high_gp(), rhs.high_gp());
+}
+}  // namespace liftoff
+
+void LiftoffAssembler::emit_i64_and(LiftoffRegister dst, LiftoffRegister lhs,
+                                    LiftoffRegister rhs) {
+  liftoff::EmitI64IndependentHalfOperation<&LiftoffAssembler::emit_i32_and>(
+      this, dst, lhs, rhs);
+}
+
+void LiftoffAssembler::emit_i64_or(LiftoffRegister dst, LiftoffRegister lhs,
+                                   LiftoffRegister rhs) {
+  liftoff::EmitI64IndependentHalfOperation<&LiftoffAssembler::emit_i32_or>(
+      this, dst, lhs, rhs);
+}
+
+void LiftoffAssembler::emit_i64_xor(LiftoffRegister dst, LiftoffRegister lhs,
+                                    LiftoffRegister rhs) {
+  liftoff::EmitI64IndependentHalfOperation<&LiftoffAssembler::emit_i32_xor>(
+      this, dst, lhs, rhs);
+}
+
+#endif  // V8_TARGET_ARCH_32_BIT
+
+// End of the partially platform-independent implementations of the
+// platform-dependent part.
+// =======================================================================
 
 }  // namespace wasm
 }  // namespace internal

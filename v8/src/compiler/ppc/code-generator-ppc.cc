@@ -10,12 +10,12 @@
 
 #include "src/assembler-inl.h"
 #include "src/callable.h"
-#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/osr.h"
 #include "src/double.h"
+#include "src/optimized-compilation-info.h"
 #include "src/ppc/macro-assembler-ppc.h"
 
 namespace v8 {
@@ -798,12 +798,7 @@ void CodeGenerator::AssembleTailCallAfterGap(Instruction* instr,
 // Check that {kJavaScriptCallCodeStartRegister} is correct.
 void CodeGenerator::AssembleCodeStartRegisterCheck() {
   Register scratch = kScratchReg;
-
-  Label current_pc;
-  __ mov_label_addr(scratch, &current_pc);
-
-  __ bind(&current_pc);
-  __ subi(scratch, scratch, Operand(__ pc_offset()));
+  __ ComputeCodeStartAddress(scratch);
   __ cmp(scratch, kJavaScriptCallCodeStartRegister);
   __ Assert(eq, AbortReason::kWrongFunctionCodeStart);
 }
@@ -818,11 +813,7 @@ void CodeGenerator::AssembleCodeStartRegisterCheck() {
 void CodeGenerator::BailoutIfDeoptimized() {
   if (FLAG_debug_code) {
     // Check that {kJavaScriptCallCodeStartRegister} is correct.
-    Label current_pc;
-    __ mov_label_addr(ip, &current_pc);
-
-    __ bind(&current_pc);
-    __ subi(ip, ip, Operand(__ pc_offset()));
+    __ ComputeCodeStartAddress(ip);
     __ cmp(ip, kJavaScriptCallCodeStartRegister);
     __ Assert(eq, AbortReason::kWrongFunctionCodeStart);
   }
@@ -1558,8 +1549,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_IEEE754_UNOP(log10);
       break;
     case kIeee754Float64Pow: {
-      __ CallStubDelayed(new (zone())
-                             MathPowStub(nullptr, MathPowStub::DOUBLE));
+      __ CallStubDelayed(new (zone()) MathPowStub());
       __ Move(d1, d3);
       break;
     }
@@ -2330,7 +2320,8 @@ void CodeGenerator::AssembleReturn(InstructionOperand* pop) {
   // Constant pool is unavailable since the frame has been destructed
   ConstantPoolUnavailableScope constant_pool_unavailable(tasm());
   if (pop->IsImmediate()) {
-    DCHECK_EQ(Constant::kInt32, g.ToConstant(pop).type());
+    DCHECK(Constant::kInt32 == g.ToConstant(pop).type() ||
+           Constant::kInt64 == g.ToConstant(pop).type());
     pop_count += g.ToConstant(pop).ToInt32();
   } else {
     __ Drop(g.ToRegister(pop));

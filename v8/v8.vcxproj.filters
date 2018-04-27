@@ -606,9 +606,6 @@
     <ClInclude Include="src\compilation-dependencies.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\compilation-info.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\compilation-statistics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1074,12 +1071,6 @@
     <ClInclude Include="src\external-reference.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\factory-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\factory.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\fast-dtoa.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1159,6 +1150,12 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\embedder-tracing.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\factory-inl.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\factory.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\gc-idle-time-handler.h">
@@ -1578,6 +1575,12 @@
     <ClInclude Include="src\objects\js-regexp-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\js-regexp-string-iterator-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-regexp-string-iterator.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\js-regexp.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1664,6 +1667,9 @@
     </ClInclude>
     <ClInclude Include="src\objects\template-objects.h">
       <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\optimized-compilation-info.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ostreams.h">
       <Filter>Source Files</Filter>
@@ -2043,6 +2049,9 @@
     <ClInclude Include="src\unicode.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\unoptimized-compilation-info.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\uri.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -2241,9 +2250,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\allocation.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\api-arguments.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\api-natives.cc">
@@ -2637,9 +2643,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\compilation-dependencies.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compilation-info.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\compilation-statistics.cc">
@@ -3095,9 +3098,6 @@
     <ClCompile Include="src\external-reference.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\factory.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\fast-dtoa.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3153,6 +3153,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\embedder-tracing.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\factory.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\gc-idle-time-handler.cc">
@@ -3448,6 +3451,9 @@
     </ClCompile>
     <ClCompile Include="src\objects\template-objects.cc">
       <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\optimized-compilation-info.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
@@ -3903,6 +3909,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\unicode.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unoptimized-compilation-info.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\uri.cc">

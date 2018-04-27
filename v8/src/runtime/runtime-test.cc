@@ -840,11 +840,24 @@ TYPED_ARRAYS(FIXED_TYPED_ARRAYS_CHECK_RUNTIME_FUNCTION)
 
 #undef FIXED_TYPED_ARRAYS_CHECK_RUNTIME_FUNCTION
 
-
-RUNTIME_FUNCTION(Runtime_SpeciesProtector) {
+RUNTIME_FUNCTION(Runtime_ArraySpeciesProtector) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(0, args.length());
-  return isolate->heap()->ToBoolean(isolate->IsSpeciesLookupChainIntact());
+  return isolate->heap()->ToBoolean(isolate->IsArraySpeciesLookupChainIntact());
+}
+
+RUNTIME_FUNCTION(Runtime_TypedArraySpeciesProtector) {
+  SealHandleScope shs(isolate);
+  DCHECK_EQ(0, args.length());
+  return isolate->heap()->ToBoolean(
+      isolate->IsTypedArraySpeciesLookupChainIntact());
+}
+
+RUNTIME_FUNCTION(Runtime_PromiseSpeciesProtector) {
+  SealHandleScope shs(isolate);
+  DCHECK_EQ(0, args.length());
+  return isolate->heap()->ToBoolean(
+      isolate->IsPromiseSpeciesLookupChainIntact());
 }
 
 // Take a compiled wasm module, serialize it and copy the buffer into an array
@@ -1018,12 +1031,7 @@ RUNTIME_FUNCTION(Runtime_FreezeWasmLazyCompilation) {
   DisallowHeapAllocation no_gc;
   CONVERT_ARG_CHECKED(WasmInstanceObject, instance, 0);
 
-  WasmSharedModuleData* shared = instance->compiled_module()->shared();
-  CHECK(shared->has_lazy_compilation_orchestrator());
-  auto* orchestrator = Managed<wasm::LazyCompilationOrchestrator>::cast(
-                           shared->lazy_compilation_orchestrator())
-                           ->get();
-  orchestrator->FreezeLazyCompilationForTesting();
+  instance->compiled_module()->GetNativeModule()->set_lazy_compile_frozen(true);
   return isolate->heap()->undefined_value();
 }
 

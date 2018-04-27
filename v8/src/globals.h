@@ -274,10 +274,6 @@ constexpr int kUC16Size = sizeof(uc16);  // NOLINT
 // 128 bit SIMD value size.
 constexpr int kSimd128Size = 16;
 
-// Round up n to be a multiple of sz, where sz is a power of 2.
-#define ROUND_UP(n, sz) (((n) + ((sz) - 1)) & ~((sz) - 1))
-
-
 // FUNCTION_ADDR(f) gets the address of a C function f.
 #define FUNCTION_ADDR(f)                                        \
   (reinterpret_cast<v8::internal::Address>(reinterpret_cast<intptr_t>(f)))
@@ -420,6 +416,7 @@ const intptr_t kClearedWeakHeapObject = 3;
 // Zap-value: The value used for zapping dead objects.
 // Should be a recognizable hex value tagged as a failure.
 #ifdef V8_HOST_ARCH_64_BIT
+constexpr uint64_t kClearedFreeMemoryValue = 0;
 constexpr uint64_t kZapValue = uint64_t{0xdeadbeedbeadbeef};
 constexpr uint64_t kHandleZapValue = uint64_t{0x1baddead0baddeaf};
 constexpr uint64_t kGlobalHandleZapValue = uint64_t{0x1baffed00baffedf};
@@ -428,6 +425,7 @@ constexpr uint64_t kDebugZapValue = uint64_t{0xbadbaddbbadbaddb};
 constexpr uint64_t kSlotsZapValue = uint64_t{0xbeefdeadbeefdeef};
 constexpr uint64_t kFreeListZapValue = 0xfeed1eaffeed1eaf;
 #else
+constexpr uint32_t kClearedFreeMemoryValue = 0;
 constexpr uint32_t kZapValue = 0xdeadbeef;
 constexpr uint32_t kHandleZapValue = 0xbaddeaf;
 constexpr uint32_t kGlobalHandleZapValue = 0xbaffedf;
@@ -1366,6 +1364,18 @@ inline std::ostream& operator<<(std::ostream& os, IterationKind kind) {
       return os << "IterationKind::kValues";
     case IterationKind::kEntries:
       return os << "IterationKind::kEntries";
+  }
+  UNREACHABLE();
+}
+
+enum class CollectionKind { kMap, kSet };
+
+inline std::ostream& operator<<(std::ostream& os, CollectionKind kind) {
+  switch (kind) {
+    case CollectionKind::kMap:
+      return os << "CollectionKind::kMap";
+    case CollectionKind::kSet:
+      return os << "CollectionKind::kSet";
   }
   UNREACHABLE();
 }

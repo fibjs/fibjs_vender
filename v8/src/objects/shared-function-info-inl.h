@@ -19,15 +19,17 @@ CAST_ACCESSOR(PreParsedScopeData)
 ACCESSORS(PreParsedScopeData, scope_data, PodArray<uint8_t>, kScopeDataOffset)
 ACCESSORS(PreParsedScopeData, child_data, FixedArray, kChildDataOffset)
 
+CAST_ACCESSOR(InterpreterData)
+ACCESSORS(InterpreterData, bytecode_array, BytecodeArray, kBytecodeArrayOffset)
+ACCESSORS(InterpreterData, interpreter_trampoline, Code,
+          kInterpreterTrampolineOffset)
+
 TYPE_CHECKER(SharedFunctionInfo, SHARED_FUNCTION_INFO_TYPE)
 CAST_ACCESSOR(SharedFunctionInfo)
 DEFINE_DEOPT_ELEMENT_ACCESSORS(SharedFunctionInfo, Object)
 
 ACCESSORS(SharedFunctionInfo, name_or_scope_info, Object,
           kNameOrScopeInfoOffset)
-ACCESSORS(SharedFunctionInfo, construct_stub, Code, kConstructStubOffset)
-ACCESSORS(SharedFunctionInfo, feedback_metadata, FeedbackMetadata,
-          kFeedbackMetadataOffset)
 ACCESSORS(SharedFunctionInfo, function_data, Object, kFunctionDataOffset)
 ACCESSORS(SharedFunctionInfo, script, Object, kScriptOffset)
 ACCESSORS(SharedFunctionInfo, debug_info, Object, kDebugInfoOffset)
@@ -90,7 +92,7 @@ void SharedFunctionInfo::SetName(String* name) {
 
 AbstractCode* SharedFunctionInfo::abstract_code() {
   if (HasBytecodeArray()) {
-    return AbstractCode::cast(bytecode_array());
+    return AbstractCode::cast(GetBytecodeArray());
   } else {
     return AbstractCode::cast(GetCode());
   }
@@ -161,6 +163,26 @@ void SharedFunctionInfo::set_needs_home_object(bool value) {
   UpdateFunctionMapIndex();
 }
 
+bool SharedFunctionInfo::construct_as_builtin() const {
+  return ConstructAsBuiltinBit::decode(flags());
+}
+
+void SharedFunctionInfo::CalculateConstructAsBuiltin() {
+  bool uses_builtins_construct_stub = false;
+  if (HasBuiltinId()) {
+    int id = builtin_id();
+    if (id != Builtins::kCompileLazy && id != Builtins::kEmptyFunction) {
+      uses_builtins_construct_stub = true;
+    }
+  } else if (IsApiFunction()) {
+    uses_builtins_construct_stub = true;
+  }
+
+  int f = flags();
+  f = ConstructAsBuiltinBit::update(f, uses_builtins_construct_stub);
+  set_flags(f);
+}
+
 int SharedFunctionInfo::function_map_index() const {
   // Note: Must be kept in sync with the FastNewClosure builtin.
   int index =
@@ -197,6 +219,9 @@ BIT_FIELD_ACCESSORS(SharedFunctionInfo, debugger_hints, deserialized,
                     SharedFunctionInfo::IsDeserializedBit)
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, debugger_hints, has_no_side_effect,
                     SharedFunctionInfo::HasNoSideEffectBit)
+BIT_FIELD_ACCESSORS(SharedFunctionInfo, debugger_hints,
+                    requires_runtime_side_effect_checks,
+                    SharedFunctionInfo::RequiresRuntimeSideEffectChecksBit)
 BIT_FIELD_ACCESSORS(SharedFunctionInfo, debugger_hints,
                     computed_has_no_side_effect,
                     SharedFunctionInfo::ComputedHasNoSideEffectBit)
@@ -271,6 +296,11 @@ Code* SharedFunctionInfo::GetCode() const {
     // Having a code object means we should run it.
     DCHECK(HasCodeObject());
     return Code::cast(data);
+  } else if (data->IsInterpreterData()) {
+    Code* code = InterpreterTrampoline();
+    DCHECK(code->IsCode());
+    DCHECK(code->is_interpreter_trampoline_builtin());
+    return code;
   }
   UNREACHABLE();
 }
@@ -300,14 +330,65 @@ void SharedFunctionInfo::set_scope_info(ScopeInfo* scope_info,
   DCHECK(name->IsString() || name == kNoSharedNameSentinel);
   // Only set the function name for function scopes.
   scope_info->SetFunctionName(name);
+  if (HasInferredName() && inferred_name()->length() != 0) {
+    scope_info->SetInferredFunctionName(inferred_name());
+  }
   WRITE_FIELD(this, kNameOrScopeInfoOffset,
               reinterpret_cast<Object*>(scope_info));
   CONDITIONAL_WRITE_BARRIER(GetHeap(), this, kNameOrScopeInfoOffset,
                             reinterpret_cast<Object*>(scope_info), mode);
 }
 
-ACCESSORS(SharedFunctionInfo, outer_scope_info, HeapObject,
-          kOuterScopeInfoOffset)
+ACCESSORS(SharedFunctionInfo, raw_outer_scope_info_or_feedback_metadata,
+          HeapObject, kOuterScopeInfoOrFeedbackMetadataOffset)
+
+HeapObject* SharedFunctionInfo::outer_scope_info() const {
+  DCHECK(!is_compiled());
+  DCHECK(!HasFeedbackMetadata());
+  return raw_outer_scope_info_or_feedback_metadata();
+}
+
+bool SharedFunctionInfo::HasOuterScopeInfo() const {
+  ScopeInfo* outer_info = nullptr;
+  if (!is_compiled()) {
+    if (!outer_scope_info()->IsScopeInfo()) return false;
+    outer_info = ScopeInfo::cast(outer_scope_info());
+  } else {
+    if (!scope_info()->HasOuterScopeInfo()) return false;
+    outer_info = scope_info()->OuterScopeInfo();
+  }
+  return outer_info->length() > 0;
+}
+
+ScopeInfo* SharedFunctionInfo::GetOuterScopeInfo() const {
+  DCHECK(HasOuterScopeInfo());
+  if (!is_compiled()) return ScopeInfo::cast(outer_scope_info());
+  return scope_info()->OuterScopeInfo();
+}
+
+void SharedFunctionInfo::set_outer_scope_info(HeapObject* value,
+                                              WriteBarrierMode mode) {
+  DCHECK(!is_compiled());
+  DCHECK(raw_outer_scope_info_or_feedback_metadata()->IsTheHole(GetIsolate()));
+  DCHECK(value->IsScopeInfo() || value->IsTheHole(GetIsolate()));
+  return set_raw_outer_scope_info_or_feedback_metadata(value, mode);
+}
+
+bool SharedFunctionInfo::HasFeedbackMetadata() const {
+  return raw_outer_scope_info_or_feedback_metadata()->IsFeedbackMetadata();
+}
+
+FeedbackMetadata* SharedFunctionInfo::feedback_metadata() const {
+  DCHECK(HasFeedbackMetadata());
+  return FeedbackMetadata::cast(raw_outer_scope_info_or_feedback_metadata());
+}
+
+void SharedFunctionInfo::set_feedback_metadata(FeedbackMetadata* value,
+                                               WriteBarrierMode mode) {
+  DCHECK(!HasFeedbackMetadata());
+  DCHECK(value->IsFeedbackMetadata());
+  return set_raw_outer_scope_info_or_feedback_metadata(value, mode);
+}
 
 bool SharedFunctionInfo::is_compiled() const {
   Object* data = function_data();
@@ -346,23 +427,43 @@ FunctionTemplateInfo* SharedFunctionInfo::get_api_func_data() {
 }
 
 bool SharedFunctionInfo::HasBytecodeArray() const {
-  return function_data()->IsBytecodeArray();
+  return function_data()->IsBytecodeArray() ||
+         function_data()->IsInterpreterData();
 }
 
-BytecodeArray* SharedFunctionInfo::bytecode_array() const {
+BytecodeArray* SharedFunctionInfo::GetBytecodeArray() const {
   DCHECK(HasBytecodeArray());
-  return BytecodeArray::cast(function_data());
+  if (function_data()->IsBytecodeArray()) {
+    return BytecodeArray::cast(function_data());
+  } else {
+    DCHECK(function_data()->IsInterpreterData());
+    return InterpreterData::cast(function_data())->bytecode_array();
+  }
 }
 
-void SharedFunctionInfo::set_bytecode_array(BytecodeArray* bytecode) {
+void SharedFunctionInfo::set_bytecode_array(class BytecodeArray* bytecode) {
   DCHECK(function_data() == Smi::FromEnum(Builtins::kCompileLazy));
   set_function_data(bytecode);
 }
 
-void SharedFunctionInfo::ClearBytecodeArray() {
-  DCHECK(function_data() == Smi::FromEnum(Builtins::kCompileLazy) ||
-         HasBytecodeArray());
-  set_builtin_id(Builtins::kCompileLazy);
+Code* SharedFunctionInfo::InterpreterTrampoline() const {
+  DCHECK(HasInterpreterData());
+  return interpreter_data()->interpreter_trampoline();
+}
+
+bool SharedFunctionInfo::HasInterpreterData() const {
+  return function_data()->IsInterpreterData();
+}
+
+InterpreterData* SharedFunctionInfo::interpreter_data() const {
+  DCHECK(HasInterpreterData());
+  return InterpreterData::cast(function_data());
+}
+
+void SharedFunctionInfo::set_interpreter_data(
+    InterpreterData* interpreter_data) {
+  DCHECK(FLAG_interpreted_frames_native_stack);
+  set_function_data(interpreter_data);
 }
 
 bool SharedFunctionInfo::HasAsmWasmData() const {
@@ -378,11 +479,6 @@ void SharedFunctionInfo::set_asm_wasm_data(FixedArray* data) {
   DCHECK(function_data() == Smi::FromEnum(Builtins::kCompileLazy) ||
          HasAsmWasmData());
   set_function_data(data);
-}
-
-void SharedFunctionInfo::ClearAsmWasmData() {
-  DCHECK(HasAsmWasmData());
-  set_builtin_id(Builtins::kCompileLazy);
 }
 
 bool SharedFunctionInfo::HasBuiltinId() const {
@@ -467,6 +563,36 @@ bool SharedFunctionInfo::IsUserJavaScript() {
 
 bool SharedFunctionInfo::IsSubjectToDebugging() {
   return IsUserJavaScript() && !HasAsmWasmData();
+}
+
+bool SharedFunctionInfo::CanFlushCompiled() const {
+  bool can_decompile =
+      (HasBytecodeArray() || HasAsmWasmData() || HasPreParsedScopeData());
+  return can_decompile;
+}
+
+void SharedFunctionInfo::FlushCompiled() {
+  DisallowHeapAllocation no_gc;
+
+  DCHECK(CanFlushCompiled());
+
+  Oddball* the_hole = GetIsolate()->heap()->the_hole_value();
+
+  if (is_compiled()) {
+    HeapObject* outer_scope_info = the_hole;
+    if (!is_toplevel()) {
+      if (scope_info()->HasOuterScopeInfo()) {
+        outer_scope_info = scope_info()->OuterScopeInfo();
+      }
+    }
+    // Raw setter to avoid validity checks, since we're performing the unusual
+    // task of decompiling.
+    set_raw_outer_scope_info_or_feedback_metadata(outer_scope_info);
+  } else {
+    DCHECK(outer_scope_info()->IsScopeInfo() || is_toplevel());
+  }
+
+  set_builtin_id(Builtins::kCompileLazy);
 }
 
 }  // namespace internal

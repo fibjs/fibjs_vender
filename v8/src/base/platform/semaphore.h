@@ -27,7 +27,7 @@ namespace base {
 
         void Signal();
         void Wait();
-        bool WaitFor(const TimeDelta& rel_time) WARN_UNUSED_RESULT;
+        bool WaitFor(const TimeDelta& rel_time);
 
         typedef exlib::Semaphore* NativeHandle;
 

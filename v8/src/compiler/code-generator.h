@@ -18,11 +18,7 @@
 namespace v8 {
 namespace internal {
 
-class CompilationInfo;
-
-namespace trap_handler {
-struct ProtectedInstructionData;
-}  // namespace trap_handler
+class OptimizedCompilationInfo;
 
 namespace compiler {
 
@@ -31,6 +27,7 @@ class DeoptimizationExit;
 class FrameAccessState;
 class Linkage;
 class OutOfLineCode;
+class WasmCompilationData;
 
 struct BranchInfo {
   FlagsCondition condition;
@@ -77,17 +74,23 @@ class DeoptimizationLiteral {
   double number_;
 };
 
+enum class CodeGeneratorPoisoningLevel {
+  kDontPoison,
+  kPoisonStackPointerInPrologue,
+  kPoisonAll
+};
+
 // Generates native code for a sequence of instructions.
 class CodeGenerator final : public GapResolver::Assembler {
  public:
   explicit CodeGenerator(Zone* codegen_zone, Frame* frame, Linkage* linkage,
-                         InstructionSequence* code, CompilationInfo* info,
-                         Isolate* isolate, base::Optional<OsrHelper> osr_helper,
+                         InstructionSequence* code,
+                         OptimizedCompilationInfo* info, Isolate* isolate,
+                         base::Optional<OsrHelper> osr_helper,
                          int start_source_position,
                          JumpOptimizationInfo* jump_opt,
-                         std::vector<trap_handler::ProtectedInstructionData>*
-                             protected_instructions,
-                         PoisoningMitigationLevel poisoning_enabled);
+                         WasmCompilationData* wasm_compilation_data,
+                         CodeGeneratorPoisoningLevel poisoning_level);
 
   // Generate native code. After calling AssembleCode, call FinalizeCode to
   // produce the actual code object. If an error occurs during either phase,
@@ -108,6 +111,8 @@ class CodeGenerator final : public GapResolver::Assembler {
   void AddProtectedInstructionLanding(uint32_t instr_offset,
                                       uint32_t landing_offset);
 
+  bool wasm_runtime_exception_support() const;
+
   SourcePosition start_source_position() const {
     return start_source_position_;
   }
@@ -127,7 +132,7 @@ class CodeGenerator final : public GapResolver::Assembler {
  private:
   GapResolver* resolver() { return &resolver_; }
   SafepointTableBuilder* safepoints() { return &safepoints_; }
-  CompilationInfo* info() const { return info_; }
+  OptimizedCompilationInfo* info() const { return info_; }
   OsrHelper* osr_helper() { return &(*osr_helper_); }
 
   // Create the FrameAccessState object. The Frame is immutable from here on.
@@ -378,7 +383,7 @@ class CodeGenerator final : public GapResolver::Assembler {
   Linkage* const linkage_;
   InstructionSequence* const code_;
   UnwindingInfoWriter unwinding_info_writer_;
-  CompilationInfo* const info_;
+  OptimizedCompilationInfo* const info_;
   Label* const labels_;
   Label return_label_;
   RpoNumber current_block_;
@@ -414,9 +419,9 @@ class CodeGenerator final : public GapResolver::Assembler {
   int osr_pc_offset_;
   int optimized_out_literal_id_;
   SourcePositionTableBuilder source_position_table_builder_;
-  std::vector<trap_handler::ProtectedInstructionData>* protected_instructions_;
+  WasmCompilationData* wasm_compilation_data_;
   CodeGenResult result_;
-  PoisoningMitigationLevel poisoning_enabled_;
+  CodeGeneratorPoisoningLevel poisoning_level_;
 };
 
 }  // namespace compiler

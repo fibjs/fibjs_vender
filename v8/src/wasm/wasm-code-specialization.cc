@@ -59,14 +59,16 @@ class PatchDirectCallsHelper {
 
 }  // namespace
 
-CodeSpecialization::CodeSpecialization(Isolate* isolate, Zone* zone) {}
+CodeSpecialization::CodeSpecialization() {}
 
 CodeSpecialization::~CodeSpecialization() {}
 
-void CodeSpecialization::RelocateWasmContextReferences(Address new_context) {
-  DCHECK_NOT_NULL(new_context);
-  DCHECK_NULL(new_wasm_context_address_);
-  new_wasm_context_address_ = new_context;
+void CodeSpecialization::UpdateInstanceReferences(
+    Handle<WeakCell> old_weak_instance, Handle<WeakCell> new_weak_instance) {
+  DCHECK(!old_weak_instance.is_null());
+  DCHECK(!new_weak_instance.is_null());
+  old_weak_instance_ = old_weak_instance;
+  new_weak_instance_ = new_weak_instance;
 }
 
 void CodeSpecialization::RelocateDirectCalls(NativeModule* native_module) {
@@ -100,18 +102,21 @@ bool CodeSpecialization::ApplyToWholeModule(NativeModule* native_module,
     changed |= ApplyToWasmCode(wasm_function, icache_flush_mode);
   }
 
+  bool patch_wasm_weak_instances =
+      !old_weak_instance_.is_identical_to(new_weak_instance_);
+
   // Patch all exported functions (JS_TO_WASM_FUNCTION).
   int reloc_mode = 0;
-  // We need to patch WASM_CONTEXT_REFERENCE to put the correct address.
-  if (new_wasm_context_address_) {
-    reloc_mode |= RelocInfo::ModeMask(RelocInfo::WASM_CONTEXT_REFERENCE);
-  }
   // Patch CODE_TARGET if we shall relocate direct calls. If we patch direct
   // calls, the instance registered for that (relocate_direct_calls_module_)
   // should match the instance we currently patch (instance).
   if (relocate_direct_calls_module_ != nullptr) {
     DCHECK_EQ(native_module, relocate_direct_calls_module_);
     reloc_mode |= RelocInfo::ModeMask(RelocInfo::JS_TO_WASM_CALL);
+  }
+  // Instance references are simply embedded objects.
+  if (patch_wasm_weak_instances) {
+    reloc_mode |= RelocInfo::ModeMask(RelocInfo::EMBEDDED_OBJECT);
   }
   if (!reloc_mode) return changed;
   int wrapper_index = 0;
@@ -123,20 +128,26 @@ bool CodeSpecialization::ApplyToWholeModule(NativeModule* native_module,
     for (RelocIterator it(export_wrapper, reloc_mode); !it.done(); it.next()) {
       RelocInfo::Mode mode = it.rinfo()->rmode();
       switch (mode) {
-        case RelocInfo::WASM_CONTEXT_REFERENCE:
-          it.rinfo()->set_wasm_context_reference(new_wasm_context_address_,
-                                                 icache_flush_mode);
-          break;
         case RelocInfo::JS_TO_WASM_CALL: {
-          const WasmCode* new_code = native_module->GetCode(exp.index);
+          changed = true;
+          const WasmCode* new_code =
+              native_module->GetIndirectlyCallableCode(exp.index);
           it.rinfo()->set_js_to_wasm_address(new_code->instructions().start(),
                                              icache_flush_mode);
+        } break;
+        case RelocInfo::EMBEDDED_OBJECT: {
+          changed = true;
+          const HeapObject* old = it.rinfo()->target_object();
+          if (*old_weak_instance_ == old) {
+            it.rinfo()->set_target_object(
+                *new_weak_instance_, WriteBarrierMode::UPDATE_WRITE_BARRIER,
+                icache_flush_mode);
+          }
         } break;
         default:
           UNREACHABLE();
       }
     }
-    changed = true;
   }
   DCHECK_EQ(module->functions.size(), func_index);
   DCHECK_EQ(compiled_module->export_wrappers()->length(), wrapper_index);
@@ -155,6 +166,10 @@ bool CodeSpecialization::ApplyToWasmCode(wasm::WasmCode* code,
     if (cond) reloc_mode |= RelocInfo::ModeMask(mode);
   };
   add_mode(reloc_direct_calls, RelocInfo::WASM_CALL);
+
+  // Always patch the code table entry address which is used in Liftoff
+  // prologue to jump to optimized code if existent.
+  reloc_mode |= RelocInfo::ModeMask(RelocInfo::WASM_CODE_TABLE_ENTRY);
 
   base::Optional<PatchDirectCallsHelper> patch_direct_calls_helper;
   bool changed = false;
@@ -188,6 +203,16 @@ bool CodeSpecialization::ApplyToWasmCode(wasm::WasmCode* code,
                                           icache_flush_mode);
         changed = true;
       } break;
+      case RelocInfo::WASM_CODE_TABLE_ENTRY: {
+        DCHECK(FLAG_wasm_tier_up);
+        WasmCode* const* code_table_entry =
+            native_module->code_table().data() + code->index();
+        it.rinfo()->set_wasm_code_table_entry(
+            const_cast<Address>(
+                reinterpret_cast<byte const*>(code_table_entry)),
+            icache_flush_mode);
+      } break;
+
       default:
         UNREACHABLE();
     }

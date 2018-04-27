@@ -130,6 +130,7 @@ namespace internal {
   F(CheckExecutionState, 1, 1)                  \
   F(ClearStepping, 0, 1)                        \
   F(CollectGarbage, 1, 1)                       \
+  F(DebugApplyInstrumentation, 1, 1)            \
   F(DebugAsyncFunctionPromiseCreated, 1, 1)     \
   F(DebugBreakAtEntry, 1, 1)                    \
   F(DebugCollectCoverage, 0, 1)                 \
@@ -586,7 +587,9 @@ namespace internal {
   F(SetForceSlowPath, 1, 1)                   \
   F(SetWasmCompileControls, 2, 1)             \
   F(SetWasmInstantiateControls, 0, 1)         \
-  F(SpeciesProtector, 0, 1)                   \
+  F(ArraySpeciesProtector, 0, 1)              \
+  F(TypedArraySpeciesProtector, 0, 1)         \
+  F(PromiseSpeciesProtector, 0, 1)            \
   F(SystemBreak, 0, 1)                        \
   F(TraceEnter, 0, 1)                         \
   F(TraceExit, 1, 1)                          \
@@ -610,7 +613,6 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_WASM(F)   \
   F(ThrowWasmError, 1, 1)            \
   F(ThrowWasmStackOverflow, 0, 1)    \
-  F(WasmCompileLazy, 0, 1)           \
   F(WasmExceptionGetElement, 1, 1)   \
   F(WasmExceptionSetElement, 2, 1)   \
   F(WasmGetExceptionRuntimeId, 0, 1) \
@@ -622,6 +624,7 @@ namespace internal {
   F(WasmThrowTypeError, 0, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_PAIR(F) \
+  F(WasmCompileLazy, 1, 2)                \
   F(DebugBreakOnBytecode, 1, 2)           \
   F(LoadLookupSlotForCall, 1, 2)
 
@@ -745,22 +748,22 @@ class Runtime : public AllStatic {
   // Get the runtime intrinsic function table.
   static const Function* RuntimeFunctionTable(Isolate* isolate);
 
-  MUST_USE_RESULT static Maybe<bool> DeleteObjectProperty(
+  V8_WARN_UNUSED_RESULT static Maybe<bool> DeleteObjectProperty(
       Isolate* isolate, Handle<JSReceiver> receiver, Handle<Object> key,
       LanguageMode language_mode);
 
-  MUST_USE_RESULT static MaybeHandle<Object> SetObjectProperty(
+  V8_WARN_UNUSED_RESULT static MaybeHandle<Object> SetObjectProperty(
       Isolate* isolate, Handle<Object> object, Handle<Object> key,
       Handle<Object> value, LanguageMode language_mode);
 
-  MUST_USE_RESULT static MaybeHandle<Object> GetObjectProperty(
+  V8_WARN_UNUSED_RESULT static MaybeHandle<Object> GetObjectProperty(
       Isolate* isolate, Handle<Object> object, Handle<Object> key,
       bool* is_found_out = nullptr);
 
-  MUST_USE_RESULT static MaybeHandle<JSArray> GetInternalProperties(
+  V8_WARN_UNUSED_RESULT static MaybeHandle<JSArray> GetInternalProperties(
       Isolate* isolate, Handle<Object>);
 
-  MUST_USE_RESULT static MaybeHandle<Object> ThrowIteratorError(
+  V8_WARN_UNUSED_RESULT static MaybeHandle<Object> ThrowIteratorError(
       Isolate* isolate, Handle<Object> object);
 };
 

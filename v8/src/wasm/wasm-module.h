@@ -22,6 +22,7 @@ namespace internal {
 
 class WasmCompiledModule;
 class WasmDebugInfo;
+class WasmGlobalObject;
 class WasmInstanceObject;
 class WasmMemoryObject;
 class WasmModuleObject;
@@ -260,16 +261,6 @@ V8_EXPORT_PRIVATE Handle<JSArray> GetCustomSections(
 // FixedArray of <undefined|String>. The outer fixed array is indexed by the
 // function index, the inner one by the local index.
 Handle<FixedArray> DecodeLocalNames(Isolate*, Handle<WasmSharedModuleData>);
-
-// If the target is an export wrapper, return the {WasmFunction*} corresponding
-// to the wrapped wasm function; in all other cases, return nullptr.
-// The returned pointer is owned by the wasm instance target belongs to. The
-// result is alive as long as the instance exists.
-// TODO(titzer): move this to WasmExportedFunction.
-WasmFunction* GetWasmFunctionForExport(Isolate* isolate, Handle<Object> target);
-
-void UnpackAndRegisterProtectedInstructions(
-    Isolate* isolate, const wasm::NativeModule* native_module);
 
 // TruncatedUserString makes it easy to output names up to a certain length, and
 // output a truncation followed by '...' if they exceed a limit.

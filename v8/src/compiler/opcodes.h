@@ -139,6 +139,7 @@
   V(JSCreateArrayIterator)      \
   V(JSCreateBoundFunction)      \
   V(JSCreateClosure)            \
+  V(JSCreateCollectionIterator) \
   V(JSCreateGeneratorObject)    \
   V(JSCreateIterResultObject)   \
   V(JSCreateStringIterator)     \
@@ -636,6 +637,8 @@
   V(Word32AtomicAnd)             \
   V(Word32AtomicOr)              \
   V(Word32AtomicXor)             \
+  V(Word64AtomicLoad)            \
+  V(Word64AtomicStore)           \
   V(Word64AtomicAdd)             \
   V(Word64AtomicSub)             \
   V(Word64AtomicAnd)             \

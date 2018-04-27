@@ -405,7 +405,7 @@ class Map : public HeapObject {
   // [raw_transitions]: Provides access to the transitions storage field.
   // Don't call set_raw_transitions() directly to overwrite transitions, use
   // the TransitionArray::ReplaceTransitions() wrapper instead!
-  DECL_ACCESSORS(raw_transitions, Object)
+  DECL_ACCESSORS(raw_transitions, MaybeObject)
   // [prototype_info]: Per-prototype metadata. Aliased with transitions
   // (which prototype maps don't have).
   DECL_ACCESSORS(prototype_info, Object)
@@ -420,11 +420,13 @@ class Map : public HeapObject {
                                           Isolate* isolate);
 
   // [prototype chain validity cell]: Associated with a prototype object,
-  // stored in that object's map's PrototypeInfo, indicates that prototype
-  // chains through this object are currently valid. The cell will be
-  // invalidated and replaced when the prototype chain changes.
-  static Handle<Cell> GetOrCreatePrototypeChainValidityCell(Handle<Map> map,
-                                                            Isolate* isolate);
+  // stored in that object's map, indicates that prototype chains through this
+  // object are currently valid. The cell will be invalidated and replaced when
+  // the prototype chain changes. When there's nothing to guard (for example,
+  // when direct prototype is null or Proxy) this function returns Smi with
+  // |kPrototypeChainValid| sentinel value.
+  static Handle<Object> GetOrCreatePrototypeChainValidityCell(Handle<Map> map,
+                                                              Isolate* isolate);
   static const int kPrototypeChainValid = 0;
   static const int kPrototypeChainInvalid = 1;
 
@@ -464,7 +466,7 @@ class Map : public HeapObject {
                               int* old_number_of_fields) const;
   // TODO(ishell): moveit!
   static Handle<Map> GeneralizeAllFields(Handle<Map> map);
-  MUST_USE_RESULT static Handle<FieldType> GeneralizeFieldType(
+  V8_WARN_UNUSED_RESULT static Handle<FieldType> GeneralizeFieldType(
       Representation rep1, Handle<FieldType> type1, Representation rep2,
       Handle<FieldType> type2, Isolate* isolate);
   static void GeneralizeField(Handle<Map> map, int modify_index,
@@ -624,7 +626,7 @@ class Map : public HeapObject {
   // is found by re-transitioning from the root of the transition tree using the
   // descriptor array of the map. Returns MaybeHandle<Map>() if no updated map
   // is found.
-  static MaybeHandle<Map> TryUpdate(Handle<Map> map) WARN_UNUSED_RESULT;
+  static MaybeHandle<Map> TryUpdate(Handle<Map> map) V8_WARN_UNUSED_RESULT;
 
   // Returns a non-deprecated version of the input. This method may deprecate
   // existing maps along the way if encodings conflict. Not for use while
@@ -646,12 +648,12 @@ class Map : public HeapObject {
   static Handle<Object> WrapFieldType(Handle<FieldType> type);
   static FieldType* UnwrapFieldType(Object* wrapped_type);
 
-  MUST_USE_RESULT static MaybeHandle<Map> CopyWithField(
+  V8_WARN_UNUSED_RESULT static MaybeHandle<Map> CopyWithField(
       Handle<Map> map, Handle<Name> name, Handle<FieldType> type,
       PropertyAttributes attributes, PropertyConstness constness,
       Representation representation, TransitionFlag flag);
 
-  MUST_USE_RESULT static MaybeHandle<Map> CopyWithConstant(
+  V8_WARN_UNUSED_RESULT static MaybeHandle<Map> CopyWithConstant(
       Handle<Map> map, Handle<Name> name, Handle<Object> constant,
       PropertyAttributes attributes, TransitionFlag flag);
 
@@ -679,10 +681,12 @@ class Map : public HeapObject {
   // transitions to avoid an explosion in the number of maps for objects used as
   // dictionaries.
   inline bool TooManyFastProperties(StoreFromKeyed store_mode) const;
-  static Handle<Map> TransitionToDataProperty(
-      Handle<Map> map, Handle<Name> name, Handle<Object> value,
-      PropertyAttributes attributes, PropertyConstness constness,
-      StoreFromKeyed store_mode, bool* created_new_map);
+  static Handle<Map> TransitionToDataProperty(Handle<Map> map,
+                                              Handle<Name> name,
+                                              Handle<Object> value,
+                                              PropertyAttributes attributes,
+                                              PropertyConstness constness,
+                                              StoreFromKeyed store_mode);
   static Handle<Map> TransitionToAccessorProperty(
       Isolate* isolate, Handle<Map> map, Handle<Name> name, int descriptor,
       Handle<Object> getter, Handle<Object> setter,
@@ -807,9 +811,7 @@ class Map : public HeapObject {
 
   STATIC_ASSERT(kInstanceTypeOffset == Internals::kMapInstanceTypeOffset);
 
-  typedef FixedBodyDescriptor<kPointerFieldsBeginOffset,
-                              kPointerFieldsEndOffset, kSize>
-      BodyDescriptor;
+  class BodyDescriptor;
 
   // Compares this map to another to see if they describe equivalent objects.
   // If |mode| is set to CLEAR_INOBJECT_PROPERTIES, |other| is treated as if
@@ -898,7 +900,7 @@ class Map : public HeapObject {
                                            Handle<DescriptorArray> descriptors,
                                            Descriptor* descriptor, int index,
                                            TransitionFlag flag);
-  static MUST_USE_RESULT MaybeHandle<Map> TryReconfigureExistingProperty(
+  static V8_WARN_UNUSED_RESULT MaybeHandle<Map> TryReconfigureExistingProperty(
       Handle<Map> map, int descriptor, PropertyKind kind,
       PropertyAttributes attributes, const char** reason);
 
@@ -950,8 +952,8 @@ class NormalizedMapCache : public FixedArray {
  public:
   static Handle<NormalizedMapCache> New(Isolate* isolate);
 
-  MUST_USE_RESULT MaybeHandle<Map> Get(Handle<Map> fast_map,
-                                       PropertyNormalizationMode mode);
+  V8_WARN_UNUSED_RESULT MaybeHandle<Map> Get(Handle<Map> fast_map,
+                                             PropertyNormalizationMode mode);
   void Set(Handle<Map> fast_map, Handle<Map> normalized_map,
            Handle<WeakCell> normalized_map_weak_cell);
 

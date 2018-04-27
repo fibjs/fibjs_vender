@@ -8,7 +8,7 @@
 #include "src/code-stubs.h"
 #include "src/conversions-inl.h"
 #include "src/elements.h"
-#include "src/factory.h"
+#include "src/heap/factory.h"
 #include "src/isolate-inl.h"
 #include "src/keys.h"
 #include "src/messages.h"
@@ -391,7 +391,7 @@ RUNTIME_FUNCTION(Runtime_TrySliceSimpleNonFastElements) {
   // implementation.
   if (receiver->IsJSArray()) {
     // This "fastish" path must make sure the destination array is a JSArray.
-    if (!isolate->IsSpeciesLookupChainIntact() ||
+    if (!isolate->IsArraySpeciesLookupChainIntact() ||
         !JSArray::cast(*receiver)->HasArrayPrototype(isolate)) {
       return Smi::FromInt(0);
     }

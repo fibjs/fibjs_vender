@@ -8,8 +8,8 @@
 #include "src/builtins/builtins-utils-gen.h"
 #include "src/builtins/builtins.h"
 #include "src/code-stub-assembler.h"
-#include "src/factory-inl.h"
 #include "src/frame-constants.h"
+#include "src/heap/factory-inl.h"
 
 #include "src/builtins/builtins-array-gen.h"
 
@@ -151,7 +151,7 @@ Node* ArrayBuiltinsAssembler::FindProcessor(Node* k_value, Node* k) {
       BIND(&fast);
       {
         GotoIf(SmiNotEqual(LoadJSArrayLength(a()), to_.value()), &runtime);
-        kind = EnsureArrayPushable(a(), &runtime);
+        kind = EnsureArrayPushable(LoadMap(a()), &runtime);
         GotoIf(IsElementsKindGreaterThan(kind, HOLEY_SMI_ELEMENTS),
                &object_push_pre);
 
@@ -815,7 +815,7 @@ Node* ArrayBuiltinsAssembler::FindProcessor(Node* k_value, Node* k) {
     GotoIfNot(IsPrototypeInitialArrayPrototype(context(), original_map),
               &runtime);
 
-    Node* species_protector = SpeciesProtectorConstant();
+    Node* species_protector = ArraySpeciesProtectorConstant();
     Node* value =
         LoadObjectField(species_protector, PropertyCell::kValueOffset);
     TNode<Smi> const protector_invalid =
@@ -860,7 +860,7 @@ Node* ArrayBuiltinsAssembler::FindProcessor(Node* k_value, Node* k) {
     GotoIfNot(IsPrototypeInitialArrayPrototype(context(), original_map),
               &runtime);
 
-    Node* species_protector = SpeciesProtectorConstant();
+    Node* species_protector = ArraySpeciesProtectorConstant();
     Node* value =
         LoadObjectField(species_protector, PropertyCell::kValueOffset);
     Node* const protector_invalid = SmiConstant(Isolate::kProtectorInvalid);
@@ -1026,7 +1026,7 @@ TF_BUILTIN(ArrayPrototypePush, CodeStubAssembler) {
   {
     array_receiver = CAST(receiver);
     arg_index = IntPtrConstant(0);
-    kind = EnsureArrayPushable(array_receiver, &runtime);
+    kind = EnsureArrayPushable(LoadMap(array_receiver), &runtime);
     GotoIf(IsElementsKindGreaterThan(kind, HOLEY_SMI_ELEMENTS),
            &object_push_pre);
 
@@ -1153,7 +1153,7 @@ class ArrayPrototypeSliceCodeStubAssembler : public CodeStubAssembler {
 
     GotoIf(IsNoElementsProtectorCellInvalid(), slow);
 
-    GotoIf(IsSpeciesProtectorCellInvalid(), slow);
+    GotoIf(IsArraySpeciesProtectorCellInvalid(), slow);
 
     // Bailout if receiver has slow elements.
     Node* elements_kind = LoadMapElementsKind(map);

@@ -26,6 +26,7 @@
 #include "src/heap/heap.h"
 #include "src/messages.h"
 #include "src/objects/code.h"
+#include "src/objects/debug-objects.h"
 #include "src/runtime/runtime.h"
 #include "src/unicode.h"
 
@@ -437,7 +438,7 @@ typedef std::vector<HeapObject*> DebugObjectCache;
   /* true if a trace is being formatted through Error.prepareStackTrace. */   \
   V(bool, formatting_stack_trace, false)                                      \
   /* Perform side effect checks on function call and API callbacks. */        \
-  V(bool, needs_side_effect_check, false)                                     \
+  V(DebugInfo::ExecutionMode, debug_execution_mode, DebugInfo::kBreakpoints)  \
   /* Current code coverage mode */                                            \
   V(debug::Coverage::Mode, code_coverage_mode, debug::Coverage::kBestEffort)  \
   V(debug::TypeProfile::Mode, type_profile_mode, debug::TypeProfile::kNone)   \
@@ -752,8 +753,8 @@ class Isolate {
   Object* ThrowIllegalOperation();
 
   template <typename T>
-  MUST_USE_RESULT MaybeHandle<T> Throw(Handle<Object> exception,
-                                       MessageLocation* location = nullptr) {
+  V8_WARN_UNUSED_RESULT MaybeHandle<T> Throw(
+      Handle<Object> exception, MessageLocation* location = nullptr) {
     Throw(*exception, location);
     return MaybeHandle<T>();
   }
@@ -1075,7 +1076,9 @@ class Isolate {
   bool IsNoElementsProtectorIntact(Context* context);
   bool IsNoElementsProtectorIntact();
 
-  inline bool IsSpeciesLookupChainIntact();
+  inline bool IsArraySpeciesLookupChainIntact();
+  inline bool IsTypedArraySpeciesLookupChainIntact();
+  inline bool IsPromiseSpeciesLookupChainIntact();
   bool IsIsConcatSpreadableLookupChainIntact();
   bool IsIsConcatSpreadableLookupChainIntact(JSReceiver* receiver);
   inline bool IsStringLengthOverflowIntact();
@@ -1115,7 +1118,9 @@ class Isolate {
     UpdateNoElementsProtectorOnSetElement(object);
   }
   void InvalidateArrayConstructorProtector();
-  void InvalidateSpeciesProtector();
+  void InvalidateArraySpeciesProtector();
+  void InvalidateTypedArraySpeciesProtector();
+  void InvalidatePromiseSpeciesProtector();
   void InvalidateIsConcatSpreadableProtector();
   void InvalidateStringLengthOverflowProtector();
   void InvalidateArrayIteratorProtector();
@@ -1237,6 +1242,10 @@ class Isolate {
 
   Address handle_scope_implementer_address() {
     return reinterpret_cast<Address>(&handle_scope_implementer_);
+  }
+
+  Address debug_execution_mode_address() {
+    return reinterpret_cast<Address>(&debug_execution_mode_);
   }
 
   void DebugStateUpdated();

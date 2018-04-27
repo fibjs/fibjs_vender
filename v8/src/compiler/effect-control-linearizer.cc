@@ -13,7 +13,7 @@
 #include "src/compiler/node-properties.h"
 #include "src/compiler/node.h"
 #include "src/compiler/schedule.h"
-#include "src/factory-inl.h"
+#include "src/heap/factory-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -3167,7 +3167,11 @@ Node* EffectControlLinearizer::LowerStringFromSingleCodePoint(Node* node) {
                                   __ Int32Constant(0xDC00));
 
         // codpoint = (trail << 16) | lead;
+#if V8_TARGET_BIG_ENDIAN
+        code = __ Word32Or(__ Word32Shl(lead, __ Int32Constant(16)), trail);
+#else
         code = __ Word32Or(__ Word32Shl(trail, __ Int32Constant(16)), lead);
+#endif
         break;
       }
     }

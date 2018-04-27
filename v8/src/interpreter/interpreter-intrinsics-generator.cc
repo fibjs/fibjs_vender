@@ -7,8 +7,8 @@
 #include "src/allocation.h"
 #include "src/builtins/builtins.h"
 #include "src/code-factory.h"
-#include "src/factory-inl.h"
 #include "src/frames.h"
+#include "src/heap/factory-inl.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/interpreter/interpreter-assembler.h"
 #include "src/interpreter/interpreter-intrinsics.h"
@@ -20,7 +20,8 @@ namespace internal {
 namespace interpreter {
 
 using compiler::Node;
-using compiler::TNode;
+template <typename T>
+using TNode = compiler::TNode<T>;
 
 class IntrinsicsGenerator {
  public:

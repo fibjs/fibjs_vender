@@ -52,7 +52,7 @@ static void PrintDeserializedCodeInfo(Handle<JSFunction> function) {
 
 namespace {
 
-MUST_USE_RESULT MaybeHandle<Object> Invoke(
+V8_WARN_UNUSED_RESULT MaybeHandle<Object> Invoke(
     Isolate* isolate, bool is_construct, Handle<Object> target,
     Handle<Object> receiver, int argc, Handle<Object> args[],
     Handle<Object> new_target, Execution::MessageHandling message_handling,
@@ -74,11 +74,13 @@ MUST_USE_RESULT MaybeHandle<Object> Invoke(
   }
 #endif
 
-  // api callbacks can be called directly.
+  // api callbacks can be called directly, unless we want to take the detour
+  // through JS to set up a frame for break-at-entry.
   if (target->IsJSFunction()) {
     Handle<JSFunction> function = Handle<JSFunction>::cast(target);
     if ((!is_construct || function->IsConstructor()) &&
-        function->shared()->IsApiFunction()) {
+        function->shared()->IsApiFunction() &&
+        !function->shared()->BreakAtEntry()) {
       SaveContext save(isolate);
       isolate->set_context(function->context());
       DCHECK(function->context()->global_object()->IsJSGlobalObject());

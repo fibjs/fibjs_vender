@@ -187,10 +187,8 @@ Register ToRegister(int num) {
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo.
 
-const int RelocInfo::kApplyMask = RelocInfo::kCodeTargetMask |
-                                  1 << RelocInfo::INTERNAL_REFERENCE |
+const int RelocInfo::kApplyMask = 1 << RelocInfo::INTERNAL_REFERENCE |
                                   1 << RelocInfo::INTERNAL_REFERENCE_ENCODED;
-
 
 bool RelocInfo::IsCodedSpecially() {
   // The deserializer needs to know whether a pointer is specially coded.  Being
@@ -3042,14 +3040,14 @@ void Assembler::cmp_d(FPUCondition cond, FPURegister fd, FPURegister fs,
 void Assembler::bc1eqz(int16_t offset, FPURegister ft) {
   DCHECK(IsMipsArchVariant(kMips32r6));
   Instr instr = COP1 | BC1EQZ | ft.code() << kFtShift | (offset & kImm16Mask);
-  emit(instr);
+  emit(instr, CompactBranchType::COMPACT_BRANCH);
 }
 
 
 void Assembler::bc1nez(int16_t offset, FPURegister ft) {
   DCHECK(IsMipsArchVariant(kMips32r6));
   Instr instr = COP1 | BC1NEZ | ft.code() << kFtShift | (offset & kImm16Mask);
-  emit(instr);
+  emit(instr, CompactBranchType::COMPACT_BRANCH);
 }
 
 
@@ -3087,16 +3085,20 @@ void Assembler::fcmp(FPURegister src1, const double src2,
 
 
 void Assembler::bc1f(int16_t offset, uint16_t cc) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   DCHECK(is_uint3(cc));
   Instr instr = COP1 | BC1 | cc << 18 | 0 << 16 | (offset & kImm16Mask);
   emit(instr);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 
 void Assembler::bc1t(int16_t offset, uint16_t cc) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   DCHECK(is_uint3(cc));
   Instr instr = COP1 | BC1 | cc << 18 | 1 << 16 | (offset & kImm16Mask);
   emit(instr);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 // ---------- MSA instructions ------------

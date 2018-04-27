@@ -60,46 +60,7 @@ V8_EXPORT_PRIVATE Handle<Script> CreateWasmScript(
 // an error occurred. In the latter case, a pending exception has been set,
 // which will be triggered when returning from the runtime function, i.e. the
 // Illegal builtin will never be called.
-Address CompileLazy(Isolate* isolate);
-
-// This class orchestrates the lazy compilation of wasm functions. It is
-// triggered by the WasmCompileLazy builtin.
-// It contains the logic for compiling and specializing wasm functions, and
-// patching the calling wasm code.
-// Once we support concurrent lazy compilation, this class will contain the
-// logic to actually orchestrate parallel execution of wasm compilation jobs.
-// TODO(clemensh): Implement concurrent lazy compilation.
-class LazyCompilationOrchestrator {
-  const WasmCode* CompileFunction(Isolate*, Handle<WasmInstanceObject>,
-                                  int func_index);
-
- public:
-  const wasm::WasmCode* CompileFromJsToWasm(Isolate*,
-                                            Handle<WasmInstanceObject>,
-                                            Handle<Code> caller,
-                                            uint32_t exported_func_index);
-  const wasm::WasmCode* CompileDirectCall(Isolate*, Handle<WasmInstanceObject>,
-                                          Maybe<uint32_t>,
-                                          const WasmCode* caller,
-                                          int call_offset);
-  const wasm::WasmCode* CompileIndirectCall(Isolate*,
-                                            Handle<WasmInstanceObject>,
-                                            uint32_t func_index);
-
-#ifdef DEBUG
-  // Call this method in tests to disallow any further lazy compilation; then
-  // call into the wasm instance again to verify that no lazy compilation is
-  // triggered.
-  void FreezeLazyCompilationForTesting() { frozen_ = true; }
-  bool IsFrozenForTesting() const { return frozen_; }
-
- private:
-  bool frozen_;
-#else
-  void FreezeLazyCompilationForTesting() {}
-  bool IsFrozenForTesting() { return false; }
-#endif
-};
+Address CompileLazy(Isolate* isolate, Handle<WasmInstanceObject> instance);
 
 // Encapsulates all the state and steps of an asynchronous compilation.
 // An asynchronous compile job consists of a number of tasks that are executed
