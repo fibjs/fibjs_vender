@@ -84,6 +84,7 @@ Connection::Connection (UMConnectionCAPI *_capi)
   memcpy (&m_capi, _capi, sizeof (UMConnectionCAPI));
   m_dbgMethodProgress = 0;
   m_errorType = UME_OTHER;
+  m_has_more_result = false;
 }
 
 Connection::~Connection()
@@ -292,6 +293,9 @@ bool Connection::processHandshake()
     m_clientCaps  &= ~MCP_COMPRESS;
     m_clientCaps  &= ~MCP_NO_SCHEMA;
     m_clientCaps &= ~MCP_SSL;
+
+    if(serverVersion[0]=='5')
+        m_clientCaps |= MCP_MULTI_STATEMENTS | MCP_MULTI_RESULTS;
 
     if (!(serverCaps & MCP_CONNECT_WITH_DB) && !m_database.empty())
     {
@@ -582,6 +586,8 @@ void *Connection::handleOKPacket()
 
   m_reader.skip();
 
+  m_has_more_result = serverStatus & SERVER_MORE_RESULTS_EXISTS;
+
   return m_capi.resultOK(affectedRows, insertId, serverStatus, (char *) message, len);
 }
 
@@ -634,6 +640,12 @@ void *Connection::handleResultPacket(int _fieldCount)
 
     if (result == 0xfe)
     {
+      // ignore warning count.
+      m_reader.readBytes(2); 
+
+      UINT16 serverStatus = m_reader.readShort();
+      m_has_more_result = serverStatus & SERVER_MORE_RESULTS_EXISTS;
+
       m_reader.skip();
       break;
     }
@@ -720,6 +732,7 @@ void *Connection::handleResultPacket(int _fieldCount)
 void *Connection::query(const char *_query, size_t _cbQuery)
 {
   m_dbgMethodProgress ++;
+  m_has_more_result = false;
 
   if (m_dbgMethodProgress > 1)
   {
@@ -762,6 +775,11 @@ void *Connection::query(const char *_query, size_t _cbQuery)
     return NULL;
   }
 
+  return nextResultSet();
+}
+
+void *Connection::nextResultSet()
+{
   if (!recvPacket())
   {
     PRINTMARK();

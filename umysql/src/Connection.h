@@ -98,6 +98,7 @@ private:
   PacketWriter m_writer;
   UINT32 m_clientCaps;
   std::string m_query;
+  bool m_has_more_result;
 
   std::string m_errorMessage;
   int m_errno;
@@ -117,6 +118,8 @@ public:
   bool connect(const char *_host, int _port, const char *_username, const char *_password, const char *_database, int *_autoCommit, MYSQL_CHARSETS _charset);
   //void handleSocketEvent (SocketEvents _evt);
   void *query(const char *_query, size_t _cbQuery);
+  bool hasMoreResult() { return m_has_more_result; }
+  void *nextResultSet();
   bool getLastError (const char **_ppOutMessage, int *_outErrno, int *_outErrorType);
 
   int getRxBufferSize();
