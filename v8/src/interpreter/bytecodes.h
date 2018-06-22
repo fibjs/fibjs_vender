@@ -28,6 +28,23 @@ namespace interpreter {
   V(Wide, AccumulatorUse::kNone)                                               \
   V(ExtraWide, AccumulatorUse::kNone)                                          \
                                                                                \
+  /* Debug Breakpoints - one for each possible size of unscaled bytecodes */   \
+  /* and one for each operand widening prefix bytecode                    */   \
+  V(DebugBreakWide, AccumulatorUse::kReadWrite)                                \
+  V(DebugBreakExtraWide, AccumulatorUse::kReadWrite)                           \
+  V(DebugBreak0, AccumulatorUse::kReadWrite)                                   \
+  V(DebugBreak1, AccumulatorUse::kReadWrite, OperandType::kReg)                \
+  V(DebugBreak2, AccumulatorUse::kReadWrite, OperandType::kReg,                \
+    OperandType::kReg)                                                         \
+  V(DebugBreak3, AccumulatorUse::kReadWrite, OperandType::kReg,                \
+    OperandType::kReg, OperandType::kReg)                                      \
+  V(DebugBreak4, AccumulatorUse::kReadWrite, OperandType::kReg,                \
+    OperandType::kReg, OperandType::kReg, OperandType::kReg)                   \
+  V(DebugBreak5, AccumulatorUse::kReadWrite, OperandType::kRuntimeId,          \
+    OperandType::kReg, OperandType::kReg)                                      \
+  V(DebugBreak6, AccumulatorUse::kReadWrite, OperandType::kRuntimeId,          \
+    OperandType::kReg, OperandType::kReg, OperandType::kReg)                   \
+                                                                               \
   /* Loading the accumulator */                                                \
   V(LdaZero, AccumulatorUse::kWrite)                                           \
   V(LdaSmi, AccumulatorUse::kWrite, OperandType::kImm)                         \
@@ -209,7 +226,7 @@ namespace interpreter {
     OperandType::kIdx)                                                         \
   V(TestGreaterThanOrEqual, AccumulatorUse::kReadWrite, OperandType::kReg,     \
     OperandType::kIdx)                                                         \
-  V(TestEqualStrictNoFeedback, AccumulatorUse::kReadWrite, OperandType::kReg)  \
+  V(TestReferenceEqual, AccumulatorUse::kReadWrite, OperandType::kReg)         \
   V(TestInstanceOf, AccumulatorUse::kReadWrite, OperandType::kReg,             \
     OperandType::kIdx)                                                         \
   V(TestIn, AccumulatorUse::kReadWrite, OperandType::kReg)                     \
@@ -244,12 +261,14 @@ namespace interpreter {
     OperandType::kIdx, OperandType::kFlag8)                                    \
                                                                                \
   /* Context allocation */                                                     \
-  V(CreateBlockContext, AccumulatorUse::kReadWrite, OperandType::kIdx)         \
-  V(CreateCatchContext, AccumulatorUse::kReadWrite, OperandType::kReg,         \
-    OperandType::kIdx, OperandType::kIdx)                                      \
-  V(CreateFunctionContext, AccumulatorUse::kWrite, OperandType::kUImm)         \
-  V(CreateEvalContext, AccumulatorUse::kWrite, OperandType::kUImm)             \
-  V(CreateWithContext, AccumulatorUse::kReadWrite, OperandType::kReg,          \
+  V(CreateBlockContext, AccumulatorUse::kWrite, OperandType::kIdx)             \
+  V(CreateCatchContext, AccumulatorUse::kWrite, OperandType::kReg,             \
+    OperandType::kIdx)                                                         \
+  V(CreateFunctionContext, AccumulatorUse::kWrite, OperandType::kIdx,          \
+    OperandType::kUImm)                                                        \
+  V(CreateEvalContext, AccumulatorUse::kWrite, OperandType::kIdx,              \
+    OperandType::kUImm)                                                        \
+  V(CreateWithContext, AccumulatorUse::kWrite, OperandType::kReg,              \
     OperandType::kIdx)                                                         \
                                                                                \
   /* Arguments allocation */                                                   \
@@ -327,23 +346,6 @@ namespace interpreter {
                                                                                \
   /* Debugger */                                                               \
   V(Debugger, AccumulatorUse::kNone)                                           \
-                                                                               \
-  /* Debug Breakpoints - one for each possible size of unscaled bytecodes */   \
-  /* and one for each operand widening prefix bytecode                    */   \
-  V(DebugBreak0, AccumulatorUse::kReadWrite)                                   \
-  V(DebugBreak1, AccumulatorUse::kReadWrite, OperandType::kReg)                \
-  V(DebugBreak2, AccumulatorUse::kReadWrite, OperandType::kReg,                \
-    OperandType::kReg)                                                         \
-  V(DebugBreak3, AccumulatorUse::kReadWrite, OperandType::kReg,                \
-    OperandType::kReg, OperandType::kReg)                                      \
-  V(DebugBreak4, AccumulatorUse::kReadWrite, OperandType::kReg,                \
-    OperandType::kReg, OperandType::kReg, OperandType::kReg)                   \
-  V(DebugBreak5, AccumulatorUse::kReadWrite, OperandType::kRuntimeId,          \
-    OperandType::kReg, OperandType::kReg)                                      \
-  V(DebugBreak6, AccumulatorUse::kReadWrite, OperandType::kRuntimeId,          \
-    OperandType::kReg, OperandType::kReg, OperandType::kReg)                   \
-  V(DebugBreakWide, AccumulatorUse::kReadWrite)                                \
-  V(DebugBreakExtraWide, AccumulatorUse::kReadWrite)                           \
                                                                                \
   /* Block Coverage */                                                         \
   V(IncBlockCounter, AccumulatorUse::kNone, OperandType::kIdx)                 \

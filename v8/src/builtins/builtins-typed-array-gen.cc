@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/builtins/builtins-typedarray-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
 
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
@@ -122,6 +122,8 @@ TF_BUILTIN(TypedArrayInitialize, TypedArrayBuiltinsAssembler) {
   TNode<Smi> length = CAST(Parameter(Descriptor::kLength));
   TNode<Smi> element_size = CAST(Parameter(Descriptor::kElementSize));
   Node* initialize = Parameter(Descriptor::kInitialize);
+  TNode<JSReceiver> buffer_constructor =
+      CAST(Parameter(Descriptor::kBufferConstructor));
   TNode<Context> context = CAST(Parameter(Descriptor::kContext));
 
   CSA_ASSERT(this, TaggedIsPositiveSmi(length));
@@ -135,6 +137,7 @@ TF_BUILTIN(TypedArrayInitialize, TypedArrayBuiltinsAssembler) {
 
   Label setup_holder(this), allocate_on_heap(this), aligned(this),
       allocate_elements(this), allocate_off_heap(this),
+      allocate_off_heap_custom_constructor(this),
       allocate_off_heap_no_init(this), attach_buffer(this), done(this);
   TVARIABLE(IntPtrT, var_total_size);
 
@@ -144,8 +147,15 @@ TF_BUILTIN(TypedArrayInitialize, TypedArrayBuiltinsAssembler) {
   SetupTypedArray(holder, length, byte_offset, byte_length);
 
   TNode<Map> fixed_typed_map = LoadMapForType(holder);
+
+  // If target and new_target for the buffer differ, allocate off-heap.
+  TNode<JSFunction> default_constructor = CAST(LoadContextElement(
+      LoadNativeContext(context), Context::ARRAY_BUFFER_FUN_INDEX));
+  GotoIfNot(WordEqual(buffer_constructor, default_constructor),
+            &allocate_off_heap_custom_constructor);
+
+  // For buffers with byte_length over the threshold, allocate off-heap.
   GotoIf(TaggedIsNotSmi(byte_length), &allocate_off_heap);
-  // The goto above ensures that byte_length is a Smi.
   TNode<Smi> smi_byte_length = CAST(byte_length);
   GotoIf(SmiGreaterThan(smi_byte_length,
                         SmiConstant(V8_TYPED_ARRAY_MAX_SIZE_IN_HEAP)),
@@ -195,8 +205,10 @@ TF_BUILTIN(TypedArrayInitialize, TypedArrayBuiltinsAssembler) {
     StoreObjectField(holder, JSArrayBufferView::kBufferOffset, buffer);
 
     // Check the alignment.
-    GotoIf(SmiEqual(SmiMod(element_size, SmiConstant(kObjectAlignment)),
-                    SmiConstant(0)),
+    // TODO(ishell): remove <Object, Object>
+    GotoIf(WordEqual<Object, Object>(
+               SmiMod(element_size, SmiConstant(kObjectAlignment)),
+               SmiConstant(0)),
            &aligned);
 
     // Fix alignment if needed.
@@ -247,8 +259,7 @@ TF_BUILTIN(TypedArrayInitialize, TypedArrayBuiltinsAssembler) {
     Node* backing_store = IntPtrAdd(BitcastTaggedToWord(elements),
                                     IntPtrConstant(fta_base_data_offset));
     // Call out to memset to perform initialization.
-    Node* memset =
-        ExternalConstant(ExternalReference::libc_memset_function(isolate()));
+    Node* memset = ExternalConstant(ExternalReference::libc_memset_function());
     CallCFunction3(MachineType::AnyTagged(), MachineType::Pointer(),
                    MachineType::IntPtr(), MachineType::UintPtr(), memset,
                    backing_store, IntPtrConstant(0), word_byte_length);
@@ -260,11 +271,17 @@ TF_BUILTIN(TypedArrayInitialize, TypedArrayBuiltinsAssembler) {
   BIND(&allocate_off_heap);
   {
     GotoIf(IsFalse(initialize), &allocate_off_heap_no_init);
-
-    Node* buffer_constructor = LoadContextElement(
-        LoadNativeContext(context), Context::ARRAY_BUFFER_FUN_INDEX);
     var_buffer = CAST(ConstructJS(CodeFactory::Construct(isolate()), context,
-                                  buffer_constructor, byte_length));
+                                  default_constructor, byte_length));
+    Goto(&attach_buffer);
+  }
+
+  BIND(&allocate_off_heap_custom_constructor);
+  {
+    var_buffer =
+        CAST(CallStub(CodeFactory::Construct(isolate()), context,
+                      default_constructor, buffer_constructor, Int32Constant(1),
+                      UndefinedConstant(), byte_length));
     Goto(&attach_buffer);
   }
 
@@ -310,8 +327,10 @@ void TypedArrayBuiltinsAssembler::ConstructByLength(TNode<Context> context,
   GotoIf(SmiLessThan(smi_converted_length, SmiConstant(0)), &invalid_length);
 
   Node* initialize = TrueConstant();
+  TNode<JSFunction> default_constructor = CAST(LoadContextElement(
+      LoadNativeContext(context), Context::ARRAY_BUFFER_FUN_INDEX));
   CallBuiltin(Builtins::kTypedArrayInitialize, context, holder,
-              converted_length, element_size, initialize);
+              converted_length, element_size, initialize, default_constructor);
   Goto(&done);
 
   BIND(&invalid_length);
@@ -350,10 +369,12 @@ void TypedArrayBuiltinsAssembler::ConstructByArrayBuffer(
   // Check that the offset is a multiple of the element size.
   BIND(&offset_is_smi);
   {
-    GotoIf(SmiEqual(offset.value(), SmiConstant(0)), &check_length);
-    GotoIf(SmiLessThan(offset.value(), SmiConstant(0)), &invalid_length);
-    Node* remainder = SmiMod(offset.value(), element_size);
-    Branch(SmiEqual(remainder, SmiConstant(0)), &check_length,
+    TNode<Smi> smi_offset = CAST(offset.value());
+    GotoIf(SmiEqual(smi_offset, SmiConstant(0)), &check_length);
+    GotoIf(SmiLessThan(smi_offset, SmiConstant(0)), &invalid_length);
+    TNode<Number> remainder = SmiMod(smi_offset, element_size);
+    // TODO(ishell): remove <Object, Object>
+    Branch(WordEqual<Object, Object>(remainder, SmiConstant(0)), &check_length,
            &start_offset_error);
   }
   BIND(&offset_not_smi);
@@ -507,14 +528,7 @@ void TypedArrayBuiltinsAssembler::ConstructByTypedArray(
   BIND(&construct);
   {
     ConstructByArrayLike(context, holder, typed_array, source_length.value(),
-                         element_size);
-    TNode<Object> proto = GetProperty(context, buffer_constructor.value(),
-                                      PrototypeStringConstant());
-    // TODO(petermarshall): Correct for realm as per 9.1.14 step 4.
-    TNode<JSArrayBuffer> buffer = LoadObjectField<JSArrayBuffer>(
-        holder, JSArrayBufferView::kBufferOffset);
-    CallRuntime(Runtime::kInternalSetPrototype, context, buffer, proto);
-
+                         element_size, buffer_constructor.value());
     Goto(&done);
   }
 
@@ -554,20 +568,28 @@ TNode<BoolT> TypedArrayBuiltinsAssembler::ByteLengthIsValid(
 void TypedArrayBuiltinsAssembler::ConstructByArrayLike(
     TNode<Context> context, TNode<JSTypedArray> holder,
     TNode<HeapObject> array_like, TNode<Object> initial_length,
-    TNode<Smi> element_size) {
-  Node* initialize = FalseConstant();
-
-  Label invalid_length(this), fill(this), fast_copy(this), done(this);
+    TNode<Smi> element_size, TNode<JSReceiver> buffer_constructor) {
+  Label invalid_length(this, Label::kDeferred), fill(this), fast_copy(this),
+      detached_check(this), done(this), detached_error(this, Label::kDeferred);
 
   // The caller has looked up length on array_like, which is observable.
   TNode<Smi> length = ToSmiLength(initial_length, context, &invalid_length);
 
+  Node* initialize = FalseConstant();
   CallBuiltin(Builtins::kTypedArrayInitialize, context, holder, length,
-              element_size, initialize);
-  GotoIf(SmiNotEqual(length, SmiConstant(0)), &fill);
-  Goto(&done);
+              element_size, initialize, buffer_constructor);
+
+  GotoIf(IsJSTypedArray(array_like), &detached_check);
+  Goto(&fill);
+
+  BIND(&detached_check);
+  GotoIf(IsDetachedBuffer(
+             LoadObjectField(array_like, JSTypedArray::kBufferOffset)),
+         &detached_error);
+  Goto(&fill);
 
   BIND(&fill);
+  GotoIf(SmiEqual(length, SmiConstant(0)), &done);
   TNode<Int32T> holder_kind = LoadMapElementsKind(LoadMap(holder));
   TNode<Int32T> source_kind = LoadMapElementsKind(LoadMap(array_like));
   GotoIf(Word32Equal(holder_kind, source_kind), &fast_copy);
@@ -597,13 +619,15 @@ void TypedArrayBuiltinsAssembler::ConstructByArrayLike(
                          byte_length_intptr,
                          IntPtrConstant(FixedTypedArrayBase::kMaxByteLength)));
 
-    Node* memcpy =
-        ExternalConstant(ExternalReference::libc_memcpy_function(isolate()));
+    Node* memcpy = ExternalConstant(ExternalReference::libc_memcpy_function());
     CallCFunction3(MachineType::AnyTagged(), MachineType::Pointer(),
                    MachineType::Pointer(), MachineType::UintPtr(), memcpy,
                    holder_data_ptr, source_data_ptr, byte_length_intptr);
     Goto(&done);
   }
+
+  BIND(&detached_error);
+  { ThrowTypeError(context, MessageTemplate::kDetachedOperation, "Construct"); }
 
   BIND(&invalid_length);
   {
@@ -616,16 +640,19 @@ void TypedArrayBuiltinsAssembler::ConstructByArrayLike(
 
 void TypedArrayBuiltinsAssembler::ConstructByIterable(
     TNode<Context> context, TNode<JSTypedArray> holder,
-    TNode<JSReceiver> iterable, TNode<Object> iterator_fn,
+    TNode<JSReceiver> iterable, TNode<JSReceiver> iterator_fn,
     TNode<Smi> element_size) {
-  CSA_ASSERT(this, IsCallable(iterator_fn));
   Label fast_path(this), slow_path(this), done(this);
+  CSA_ASSERT(this, IsCallable(iterator_fn));
 
   TNode<JSArray> array_like = CAST(
       CallBuiltin(Builtins::kIterableToList, context, iterable, iterator_fn));
   TNode<Object> initial_length = LoadJSArrayLength(array_like);
+
+  TNode<JSFunction> default_constructor = CAST(LoadContextElement(
+      LoadNativeContext(context), Context::ARRAY_BUFFER_FUN_INDEX));
   ConstructByArrayLike(context, holder, array_like, initial_length,
-                       element_size);
+                       element_size, default_constructor);
 }
 
 TF_BUILTIN(TypedArrayBaseConstructor, TypedArrayBuiltinsAssembler) {
@@ -657,9 +684,10 @@ TF_BUILTIN(CreateTypedArray, TypedArrayBuiltinsAssembler) {
       SmiTag(GetTypedArrayElementSize(LoadElementsKind(result)));
 
   GotoIf(TaggedIsSmi(arg1), &if_arg1isnumber);
-  GotoIf(IsJSArrayBuffer(arg1), &if_arg1isbuffer);
-  GotoIf(IsJSTypedArray(arg1), &if_arg1istypedarray);
-  GotoIf(IsJSReceiver(arg1), &if_arg1isreceiver);
+  TNode<HeapObject> arg1_heap_object = UncheckedCast<HeapObject>(arg1);
+  GotoIf(IsJSArrayBuffer(arg1_heap_object), &if_arg1isbuffer);
+  GotoIf(IsJSTypedArray(arg1_heap_object), &if_arg1istypedarray);
+  GotoIf(IsJSReceiver(arg1_heap_object), &if_arg1isreceiver);
   Goto(&if_arg1isnumber);
 
   // https://tc39.github.io/ecma262/#sec-typedarray-buffer-byteoffset-length
@@ -673,7 +701,7 @@ TF_BUILTIN(CreateTypedArray, TypedArrayBuiltinsAssembler) {
   // https://tc39.github.io/ecma262/#sec-typedarray-typedarray
   BIND(&if_arg1istypedarray);
   {
-    TNode<JSTypedArray> typed_array = CAST(arg1);
+    TNode<JSTypedArray> typed_array = CAST(arg1_heap_object);
     ConstructByTypedArray(context, result, typed_array, element_size);
     Goto(&return_result);
   }
@@ -683,23 +711,26 @@ TF_BUILTIN(CreateTypedArray, TypedArrayBuiltinsAssembler) {
   {
     Label if_iteratorundefined(this), if_iteratornotcallable(this);
     // Get iterator symbol
-    TNode<Object> iteratorFn =
-        CAST(GetMethod(context, arg1, isolate()->factory()->iterator_symbol(),
-                       &if_iteratorundefined));
+    TNode<Object> iteratorFn = CAST(GetMethod(
+        context, arg1_heap_object, isolate()->factory()->iterator_symbol(),
+        &if_iteratorundefined));
     GotoIf(TaggedIsSmi(iteratorFn), &if_iteratornotcallable);
-    GotoIfNot(IsCallable(iteratorFn), &if_iteratornotcallable);
+    GotoIfNot(IsCallable(CAST(iteratorFn)), &if_iteratornotcallable);
 
-    ConstructByIterable(context, result, CAST(arg1), iteratorFn, element_size);
+    ConstructByIterable(context, result, CAST(arg1_heap_object),
+                        CAST(iteratorFn), element_size);
     Goto(&return_result);
 
     BIND(&if_iteratorundefined);
     {
-      TNode<HeapObject> array_like = CAST(arg1);
+      TNode<HeapObject> array_like = arg1_heap_object;
       TNode<Object> initial_length =
           GetProperty(context, arg1, LengthStringConstant());
 
+      TNode<JSFunction> default_constructor = CAST(LoadContextElement(
+          LoadNativeContext(context), Context::ARRAY_BUFFER_FUN_INDEX));
       ConstructByArrayLike(context, result, array_like, initial_length,
-                           element_size);
+                           element_size, default_constructor);
       Goto(&return_result);
     }
 
@@ -750,7 +781,8 @@ TF_BUILTIN(TypedArrayConstructor, TypedArrayBuiltinsAssembler) {
 
   BIND(&throwtypeerror);
   {
-    Node* name = CallRuntime(Runtime::kGetFunctionName, context, target);
+    TNode<String> name =
+        CAST(CallRuntime(Runtime::kGetFunctionName, context, target));
     ThrowTypeError(context, MessageTemplate::kConstructorNotFunction, name);
   }
 }
@@ -841,6 +873,42 @@ TNode<IntPtrT> TypedArrayBuiltinsAssembler::GetTypedArrayElementSize(
   return element_size.value();
 }
 
+TF_BUILTIN(TypedArrayLoadElementAsTagged, TypedArrayBuiltinsAssembler) {
+  TVARIABLE(Object, result);
+  TNode<JSTypedArray> array = CAST(Parameter(Descriptor::kArray));
+  TNode<Smi> kind = CAST(Parameter(Descriptor::kKind));
+  TNode<Smi> index_node = CAST(Parameter(Descriptor::kIndex));
+
+  TNode<RawPtrT> data_pointer = UncheckedCast<RawPtrT>(LoadDataPtr(array));
+  TNode<Int32T> elements_kind = SmiToInt32(kind);
+
+  DispatchTypedArrayByElementsKind(
+      elements_kind, [&](ElementsKind el_kind, int, int) {
+        result = CAST(LoadFixedTypedArrayElementAsTagged(
+            data_pointer, index_node, el_kind, SMI_PARAMETERS));
+      });
+
+  Return(result.value());
+}
+
+TF_BUILTIN(TypedArrayStoreElementFromTagged, TypedArrayBuiltinsAssembler) {
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  TNode<JSTypedArray> array = CAST(Parameter(Descriptor::kArray));
+  TNode<Smi> kind = CAST(Parameter(Descriptor::kKind));
+  TNode<Smi> index_node = CAST(Parameter(Descriptor::kIndex));
+  TNode<Object> value = CAST(Parameter(Descriptor::kValue));
+
+  TNode<FixedTypedArrayBase> elements = CAST(LoadElements(array));
+  TNode<Int32T> elements_kind = SmiToInt32(kind);
+
+  DispatchTypedArrayByElementsKind(
+      elements_kind, [&](ElementsKind el_kind, int, int) {
+        StoreFixedTypedArrayElementFromTagged(context, elements, index_node,
+                                              value, el_kind, SMI_PARAMETERS);
+      });
+  Return(UndefinedConstant());
+}
+
 TNode<Object> TypedArrayBuiltinsAssembler::GetDefaultConstructor(
     TNode<Context> context, TNode<JSTypedArray> exemplar) {
   TVARIABLE(IntPtrT, context_slot);
@@ -899,9 +967,8 @@ TNode<JSTypedArray> TypedArrayBuiltinsAssembler::SpeciesCreateByLength(
   CSA_ASSERT(this, TaggedIsPositiveSmi(len));
 
   // Let constructor be ? SpeciesConstructor(exemplar, defaultConstructor).
-  TNode<Object> constructor = TypedArraySpeciesConstructor(context, exemplar);
-  CSA_ASSERT(this, IsJSFunction(constructor));
-
+  TNode<HeapObject> constructor =
+      CAST(TypedArraySpeciesConstructor(context, exemplar));
   return CreateByLength(context, constructor, len, method_name);
 }
 
@@ -1097,7 +1164,7 @@ void TypedArrayBuiltinsAssembler::CallCMemmove(TNode<IntPtrT> dest_ptr,
                                                TNode<IntPtrT> src_ptr,
                                                TNode<IntPtrT> byte_length) {
   TNode<ExternalReference> memmove =
-      ExternalConstant(ExternalReference::libc_memmove_function(isolate()));
+      ExternalConstant(ExternalReference::libc_memmove_function());
   CallCFunction3(MachineType::AnyTagged(), MachineType::Pointer(),
                  MachineType::Pointer(), MachineType::UintPtr(), memmove,
                  dest_ptr, src_ptr, byte_length);
@@ -1111,8 +1178,7 @@ void TypedArrayBuiltinsAssembler::
                                                    TNode<IntPtrT> offset) {
   CSA_ASSERT(this, Word32Not(IsBigInt64ElementsKind(LoadElementsKind(dest))));
   TNode<ExternalReference> f = ExternalConstant(
-      ExternalReference::copy_fast_number_jsarray_elements_to_typed_array(
-          isolate()));
+      ExternalReference::copy_fast_number_jsarray_elements_to_typed_array());
   CallCFunction5(MachineType::AnyTagged(), MachineType::AnyTagged(),
                  MachineType::AnyTagged(), MachineType::AnyTagged(),
                  MachineType::UintPtr(), MachineType::UintPtr(), f, context,
@@ -1123,7 +1189,7 @@ void TypedArrayBuiltinsAssembler::CallCCopyTypedArrayElementsToTypedArray(
     TNode<JSTypedArray> source, TNode<JSTypedArray> dest,
     TNode<IntPtrT> source_length, TNode<IntPtrT> offset) {
   TNode<ExternalReference> f = ExternalConstant(
-      ExternalReference::copy_typed_array_elements_to_typed_array(isolate()));
+      ExternalReference::copy_typed_array_elements_to_typed_array());
   CallCFunction4(MachineType::AnyTagged(), MachineType::AnyTagged(),
                  MachineType::AnyTagged(), MachineType::UintPtr(),
                  MachineType::UintPtr(), f, source, dest, source_length,
@@ -1133,8 +1199,8 @@ void TypedArrayBuiltinsAssembler::CallCCopyTypedArrayElementsToTypedArray(
 void TypedArrayBuiltinsAssembler::CallCCopyTypedArrayElementsSlice(
     TNode<JSTypedArray> source, TNode<JSTypedArray> dest, TNode<IntPtrT> start,
     TNode<IntPtrT> end) {
-  TNode<ExternalReference> f = ExternalConstant(
-      ExternalReference::copy_typed_array_elements_slice(isolate()));
+  TNode<ExternalReference> f =
+      ExternalConstant(ExternalReference::copy_typed_array_elements_slice());
   CallCFunction4(MachineType::AnyTagged(), MachineType::AnyTagged(),
                  MachineType::AnyTagged(), MachineType::UintPtr(),
                  MachineType::UintPtr(), f, source, dest, start, end);
@@ -1180,6 +1246,27 @@ void TypedArrayBuiltinsAssembler::DispatchTypedArrayByElementsKind(
   BIND(&next);
 }
 
+TNode<BoolT> TypedArrayBuiltinsAssembler::NumberIsNaN(TNode<Number> value) {
+  Label is_heapnumber(this), done(this);
+  TVARIABLE(BoolT, result);
+
+  GotoIf(TaggedIsNotSmi(value), &is_heapnumber);
+  result = Int32FalseConstant();
+  Goto(&done);
+
+  BIND(&is_heapnumber);
+  {
+    CSA_ASSERT(this, IsHeapNumber(CAST(value)));
+
+    TNode<Float64T> value_f = LoadHeapNumberValue(CAST(value));
+    result = Float64NotEqual(value_f, value_f);
+    Goto(&done);
+  }
+
+  BIND(&done);
+  return result.value();
+}
+
 // ES #sec-get-%typedarray%.prototype.set
 TF_BUILTIN(TypedArrayPrototypeSet, TypedArrayBuiltinsAssembler) {
   TNode<Context> context = CAST(Parameter(BuiltinDescriptor::kContext));
@@ -1195,7 +1282,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, TypedArrayBuiltinsAssembler) {
   // Check the receiver is a typed array.
   TNode<Object> receiver = args.GetReceiver();
   GotoIf(TaggedIsSmi(receiver), &if_receiver_is_not_typedarray);
-  GotoIfNot(IsJSTypedArray(receiver), &if_receiver_is_not_typedarray);
+  GotoIfNot(IsJSTypedArray(CAST(receiver)), &if_receiver_is_not_typedarray);
 
   // Normalize offset argument (using ToInteger) and handle heap number cases.
   TNode<Object> offset = args.GetOptionalArgumentValue(1, SmiConstant(0));
@@ -1221,7 +1308,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, TypedArrayBuiltinsAssembler) {
   Label call_runtime(this);
   TNode<Object> source = args.GetOptionalArgumentValue(0);
   GotoIf(TaggedIsSmi(source), &call_runtime);
-  GotoIf(IsJSTypedArray(source), &if_source_is_typed_array);
+  GotoIf(IsJSTypedArray(CAST(source)), &if_source_is_typed_array);
   BranchIfFastJSArray(source, context, &if_source_is_fast_jsarray,
                       &call_runtime);
 
@@ -1495,16 +1582,16 @@ TF_BUILTIN(TypedArrayPrototypeToStringTag, TypedArrayBuiltinsAssembler) {
 }
 
 void TypedArrayBuiltinsAssembler::GenerateTypedArrayPrototypeIterationMethod(
-    Node* context, Node* receiver, const char* method_name,
+    TNode<Context> context, TNode<Object> receiver, const char* method_name,
     IterationKind kind) {
   Label throw_bad_receiver(this, Label::kDeferred);
 
   GotoIf(TaggedIsSmi(receiver), &throw_bad_receiver);
-  GotoIfNot(IsJSTypedArray(receiver), &throw_bad_receiver);
+  GotoIfNot(IsJSTypedArray(CAST(receiver)), &throw_bad_receiver);
 
   // Check if the {receiver}'s JSArrayBuffer was neutered.
-  Node* receiver_buffer =
-      LoadObjectField(receiver, JSTypedArray::kBufferOffset);
+  TNode<JSArrayBuffer> receiver_buffer = LoadObjectField<JSArrayBuffer>(
+      CAST(receiver), JSTypedArray::kBufferOffset);
   Label if_receiverisneutered(this, Label::kDeferred);
   GotoIf(IsDetachedBuffer(receiver_buffer), &if_receiverisneutered);
 
@@ -1519,8 +1606,8 @@ void TypedArrayBuiltinsAssembler::GenerateTypedArrayPrototypeIterationMethod(
 
 // ES #sec-%typedarray%.prototype.values
 TF_BUILTIN(TypedArrayPrototypeValues, TypedArrayBuiltinsAssembler) {
-  Node* context = Parameter(Descriptor::kContext);
-  Node* receiver = Parameter(Descriptor::kReceiver);
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  TNode<Object> receiver = CAST(Parameter(Descriptor::kReceiver));
   GenerateTypedArrayPrototypeIterationMethod(context, receiver,
                                              "%TypedArray%.prototype.values()",
                                              IterationKind::kValues);
@@ -1528,8 +1615,8 @@ TF_BUILTIN(TypedArrayPrototypeValues, TypedArrayBuiltinsAssembler) {
 
 // ES #sec-%typedarray%.prototype.entries
 TF_BUILTIN(TypedArrayPrototypeEntries, TypedArrayBuiltinsAssembler) {
-  Node* context = Parameter(Descriptor::kContext);
-  Node* receiver = Parameter(Descriptor::kReceiver);
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  TNode<Object> receiver = CAST(Parameter(Descriptor::kReceiver));
   GenerateTypedArrayPrototypeIterationMethod(context, receiver,
                                              "%TypedArray%.prototype.entries()",
                                              IterationKind::kEntries);
@@ -1537,8 +1624,8 @@ TF_BUILTIN(TypedArrayPrototypeEntries, TypedArrayBuiltinsAssembler) {
 
 // ES #sec-%typedarray%.prototype.keys
 TF_BUILTIN(TypedArrayPrototypeKeys, TypedArrayBuiltinsAssembler) {
-  Node* context = Parameter(Descriptor::kContext);
-  Node* receiver = Parameter(Descriptor::kReceiver);
+  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
+  TNode<Object> receiver = CAST(Parameter(Descriptor::kReceiver));
   GenerateTypedArrayPrototypeIterationMethod(
       context, receiver, "%TypedArray%.prototype.keys()", IterationKind::kKeys);
 }
@@ -1561,7 +1648,7 @@ TF_BUILTIN(TypedArrayOf, TypedArrayBuiltinsAssembler) {
   // 4. If IsConstructor(C) is false, throw a TypeError exception.
   TNode<Object> receiver = args.GetReceiver();
   GotoIf(TaggedIsSmi(receiver), &if_not_constructor);
-  GotoIfNot(IsConstructor(receiver), &if_not_constructor);
+  GotoIfNot(IsConstructor(CAST(receiver)), &if_not_constructor);
 
   // 5. Let newObj be ? TypedArrayCreate(C, len).
   TNode<JSTypedArray> new_typed_array =
@@ -1707,7 +1794,7 @@ TF_BUILTIN(TypedArrayFrom, TypedArrayBuiltinsAssembler) {
   // 2. If IsConstructor(C) is false, throw a TypeError exception.
   TNode<Object> receiver = args.GetReceiver();
   GotoIf(TaggedIsSmi(receiver), &if_not_constructor);
-  GotoIfNot(IsConstructor(receiver), &if_not_constructor);
+  GotoIfNot(IsConstructor(CAST(receiver)), &if_not_constructor);
 
   // 3. If mapfn is present and mapfn is not undefined, then
   TNode<Object> map_fn = args.GetOptionalArgumentValue(1);
@@ -1718,7 +1805,7 @@ TF_BUILTIN(TypedArrayFrom, TypedArrayBuiltinsAssembler) {
   //  b. Let mapping be true.
   // 4. Else, let mapping be false.
   GotoIf(TaggedIsSmi(map_fn), &if_map_fn_not_callable);
-  GotoIfNot(IsCallable(map_fn), &if_map_fn_not_callable);
+  GotoIfNot(IsCallable(CAST(map_fn)), &if_map_fn_not_callable);
   mapping = Int32TrueConstant();
   Goto(&check_iterator);
 
@@ -1741,7 +1828,7 @@ TF_BUILTIN(TypedArrayFrom, TypedArrayBuiltinsAssembler) {
         CAST(GetMethod(context, source, isolate()->factory()->iterator_symbol(),
                        &from_array_like));
     GotoIf(TaggedIsSmi(iterator_fn), &if_iterator_fn_not_callable);
-    GotoIfNot(IsCallable(iterator_fn), &if_iterator_fn_not_callable);
+    GotoIfNot(IsCallable(CAST(iterator_fn)), &if_iterator_fn_not_callable);
 
     // We are using the iterator.
     Label if_length_not_smi(this, Label::kDeferred);
@@ -1888,7 +1975,7 @@ TF_BUILTIN(TypedArrayPrototypeFilter, TypedArrayBuiltinsAssembler) {
   // 4. If IsCallable(callbackfn) is false, throw a TypeError exception.
   TNode<Object> callbackfn = args.GetOptionalArgumentValue(0);
   GotoIf(TaggedIsSmi(callbackfn), &if_callback_not_callable);
-  GotoIfNot(IsCallable(callbackfn), &if_callback_not_callable);
+  GotoIfNot(IsCallable(CAST(callbackfn)), &if_callback_not_callable);
 
   // 5. If thisArg is present, let T be thisArg; else let T be undefined.
   TNode<Object> this_arg = args.GetOptionalArgumentValue(1);

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_BUILTINS_BUILTINS_TYPEDARRAY_GEN_H_
-#define V8_BUILTINS_BUILTINS_TYPEDARRAY_GEN_H_
+#ifndef V8_BUILTINS_BUILTINS_TYPED_ARRAY_GEN_H_
+#define V8_BUILTINS_BUILTINS_TYPED_ARRAY_GEN_H_
 
 #include "src/code-stub-assembler.h"
 
@@ -24,7 +24,8 @@ class TypedArrayBuiltinsAssembler : public CodeStubAssembler {
   void GenerateTypedArrayPrototypeGetter(Node* context, Node* receiver,
                                          const char* method_name,
                                          int object_offset);
-  void GenerateTypedArrayPrototypeIterationMethod(Node* context, Node* receiver,
+  void GenerateTypedArrayPrototypeIterationMethod(TNode<Context> context,
+                                                  TNode<Object> receiver,
                                                   const char* method_name,
                                                   IterationKind iteration_kind);
 
@@ -41,10 +42,12 @@ class TypedArrayBuiltinsAssembler : public CodeStubAssembler {
   void ConstructByArrayLike(TNode<Context> context, TNode<JSTypedArray> holder,
                             TNode<HeapObject> array_like,
                             TNode<Object> initial_length,
-                            TNode<Smi> element_size);
+                            TNode<Smi> element_size,
+                            TNode<JSReceiver> buffer_constructor);
   void ConstructByIterable(TNode<Context> context, TNode<JSTypedArray> holder,
                            TNode<JSReceiver> iterable,
-                           TNode<Object> iterator_fn, TNode<Smi> element_size);
+                           TNode<JSReceiver> iterator_fn,
+                           TNode<Smi> element_size);
 
   void SetupTypedArray(TNode<JSTypedArray> holder, TNode<Smi> length,
                        TNode<Number> byte_offset, TNode<Number> byte_length);
@@ -69,6 +72,15 @@ class TypedArrayBuiltinsAssembler : public CodeStubAssembler {
 
   // Returns the byte size of an element for a TypedArray elements kind.
   TNode<IntPtrT> GetTypedArrayElementSize(TNode<Word32T> elements_kind);
+
+  TNode<Smi> LoadTypedArrayLength(TNode<JSTypedArray> typed_array) {
+    return LoadObjectField<Smi>(typed_array, JSTypedArray::kLengthOffset);
+  }
+
+  TNode<JSArrayBuffer> LoadTypedArrayBuffer(TNode<JSTypedArray> typed_array) {
+    return LoadObjectField<JSArrayBuffer>(typed_array,
+                                          JSTypedArray::kBufferOffset);
+  }
 
   TNode<Object> GetDefaultConstructor(TNode<Context> context,
                                       TNode<JSTypedArray> exemplar);
@@ -125,9 +137,13 @@ class TypedArrayBuiltinsAssembler : public CodeStubAssembler {
 
   void DispatchTypedArrayByElementsKind(
       TNode<Word32T> elements_kind, const TypedArraySwitchCase& case_function);
+
+  // Returns true iff number is NaN.
+  // TOOD(szuend): Remove when UncheckedCasts are supported in Torque.
+  TNode<BoolT> NumberIsNaN(TNode<Number> number);
 };
 
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_BUILTINS_BUILTINS_TYPEDARRAY_GEN_H_
+#endif  // V8_BUILTINS_BUILTINS_TYPED_ARRAY_GEN_H_

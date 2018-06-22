@@ -49,6 +49,9 @@
     <Filter Include="Source Files\builtins\s390">
       <UniqueIdentifier>{cb19e761-5ef1-800d-6a7a-08e2bf33a2b0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\builtins\torque-generated">
+      <UniqueIdentifier>{fc008981-e04b-34bb-e96c-282d6f003475}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\builtins\x64">
       <UniqueIdentifier>{b8368f3d-c5c5-3548-da65-f1bbd980cfee}</UniqueIdentifier>
     </Filter>
@@ -69,6 +72,9 @@
     </Filter>
     <Filter Include="Source Files\compiler\x64">
       <UniqueIdentifier>{7e4db021-7f1c-d574-294e-09b6102be2dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\d8.xcodeproj">
+      <UniqueIdentifier>{21b6a2cb-ceaf-378e-a76c-933ad5762d5c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\debug">
       <UniqueIdentifier>{fd6ab6b3-d8d6-b8ec-f3aa-bee52ed75151}</UniqueIdentifier>
@@ -267,6 +273,9 @@
     <ClInclude Include="src\arguments.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\asan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\asmjs\asm-js.h">
       <Filter>Source Files\asmjs</Filter>
     </ClInclude>
@@ -284,6 +293,9 @@
     </ClInclude>
     <ClInclude Include="src\asmjs\switch-logic.h">
       <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assembler-arch.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\assembler-inl.h">
       <Filter>Source Files</Filter>
@@ -543,7 +555,10 @@
     <ClInclude Include="src\builtins\builtins-string-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins\builtins-typedarray-gen.h">
+    <ClInclude Include="src\builtins\builtins-test-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-typed-array-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-utils-gen.h">
@@ -560,6 +575,21 @@
     </ClInclude>
     <ClInclude Include="src\builtins\growable-fixed-array-gen.h">
       <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\torque-generated\builtin-definitions-from-dsl.h">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\torque-generated\builtins-array-from-dsl-gen.h">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\torque-generated\builtins-base-from-dsl-gen.h">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\torque-generated\builtins-test-from-dsl-gen.h">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\torque-generated\builtins-typed-array-from-dsl-gen.h">
+      <Filter>Source Files\builtins\torque-generated</Filter>
     </ClInclude>
     <ClInclude Include="src\cached-powers.h">
       <Filter>Source Files</Filter>
@@ -583,6 +613,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\code-factory.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\code-reference.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\code-stub-assembler.h">
@@ -678,6 +711,9 @@
     <ClInclude Include="src\compiler\compiler-source-position-table.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\constant-folding-reducer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\control-equivalence.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -750,9 +786,6 @@
     <ClInclude Include="src\compiler\int64-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\js-builtin-reducer.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\js-call-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -813,6 +846,9 @@
     <ClInclude Include="src\compiler\machine-graph-verifier.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\machine-graph.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\machine-operator-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -835,6 +871,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\node-matchers.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\node-origin-table.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\node-properties.h">
@@ -919,6 +958,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\type-cache.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\type-narrowing-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\typed-optimization.h">
@@ -1464,6 +1506,9 @@
     <ClInclude Include="src\lookup.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\lsan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\machine-type.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1471,9 +1516,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\macro-assembler.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\managed.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\map-updater.h">
@@ -1496,6 +1538,12 @@
     </ClInclude>
     <ClInclude Include="src\objects.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\api-callbacks-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\api-callbacks.h">
+      <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\arguments-inl.h">
       <Filter>Source Files\objects</Filter>
@@ -1566,6 +1614,9 @@
     <ClInclude Include="src\objects\js-collection.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\js-locale-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\js-promise-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1588,6 +1639,9 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\literal-objects.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\managed.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\map-inl.h">
@@ -1624,6 +1678,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\object-macros.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\ordered-hash-table-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\ordered-hash-table.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\promise-inl.h">
@@ -1666,6 +1726,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\template-objects.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\templates-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\templates.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\optimized-compilation-info.h">
@@ -2100,6 +2166,9 @@
     <ClInclude Include="src\wasm\baseline\liftoff-assembler.h">
       <Filter>Source Files\wasm\baseline</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\baseline\liftoff-compiler.h">
+      <Filter>Source Files\wasm\baseline</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\baseline\liftoff-register.h">
       <Filter>Source Files\wasm\baseline</Filter>
     </ClInclude>
@@ -2112,9 +2181,6 @@
     <ClInclude Include="src\wasm\baseline\x64\liftoff-assembler-x64.h">
       <Filter>Source Files\wasm\baseline\x64</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\compilation-manager.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -2122,6 +2188,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\function-body-decoder.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\function-compiler.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\leb-helper.h">
@@ -2143,6 +2212,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\streaming-decoder.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\value-type.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-manager.h">
@@ -2167,6 +2239,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-limits.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-linkage.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-memory.h">
@@ -2588,10 +2663,10 @@
     <ClCompile Include="src\builtins\builtins-symbol.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-typedarray-gen.cc">
+    <ClCompile Include="src\builtins\builtins-typed-array-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-typedarray.cc">
+    <ClCompile Include="src\builtins\builtins-typed-array.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-wasm-gen.cc">
@@ -2618,6 +2693,18 @@
     <ClCompile Include="src\builtins\setup-builtins-internal.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\torque-generated\builtins-array-from-dsl-gen.cc">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\torque-generated\builtins-base-from-dsl-gen.cc">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\torque-generated\builtins-test-from-dsl-gen.cc">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\torque-generated\builtins-typed-array-from-dsl-gen.cc">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\x64\builtins-x64.cc">
       <Filter>Source Files\builtins\x64</Filter>
     </ClCompile>
@@ -2628,6 +2715,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\code-factory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\code-reference.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\code-stub-assembler.cc">
@@ -2714,6 +2804,9 @@
     <ClCompile Include="src\compiler\compiler-source-position-table.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\constant-folding-reducer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\control-equivalence.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2780,9 +2873,6 @@
     <ClCompile Include="src\compiler\int64-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\js-builtin-reducer.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\js-call-reducer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2843,6 +2933,9 @@
     <ClCompile Include="src\compiler\machine-graph-verifier.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\machine-graph.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\machine-operator-reducer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2862,6 +2955,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\node-matchers.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\node-origin-table.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\node-properties.cc">
@@ -2957,6 +3053,9 @@
     <ClCompile Include="src\compiler\type-cache.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\type-narrowing-reducer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\typed-optimization.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2973,9 +3072,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\wasm-compiler.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\wasm-linkage.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\x64\code-generator-x64.cc">
@@ -3443,7 +3539,13 @@
     <ClCompile Include="src\objects\literal-objects.cc">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
+    <ClCompile Include="src\objects\managed.cc">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
     <ClCompile Include="src\objects\module.cc">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\ordered-hash-table.cc">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\scope-info.cc">
@@ -3893,7 +3995,16 @@
     <ClCompile Include="src\transitions.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\trap-handler\handler-inside-linux.cc">
+      <Filter>Source Files\trap-handler</Filter>
+    </ClCompile>
     <ClCompile Include="src\trap-handler\handler-inside.cc">
+      <Filter>Source Files\trap-handler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trap-handler\handler-outside-linux.cc">
+      <Filter>Source Files\trap-handler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trap-handler\handler-outside-win.cc">
       <Filter>Source Files\trap-handler</Filter>
     </ClCompile>
     <ClCompile Include="src\trap-handler\handler-outside.cc">
@@ -3944,10 +4055,10 @@
     <ClCompile Include="src\wasm\baseline\liftoff-compiler.cc">
       <Filter>Source Files\wasm\baseline</Filter>
     </ClCompile>
-    <ClCompile Include="src\wasm\compilation-manager.cc">
+    <ClCompile Include="src\wasm\function-body-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
-    <ClCompile Include="src\wasm\function-body-decoder.cc">
+    <ClCompile Include="src\wasm\function-compiler.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\local-decl-encoder.cc">

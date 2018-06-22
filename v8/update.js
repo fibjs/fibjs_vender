@@ -97,6 +97,8 @@ var files = {
     'src/intl.h': 1,
     'src/objects/intl-objects.cc': 1,
     'src/objects/intl-objects.h': 1,
+    'src/objects/js-locale.cc': 1,
+    'src/objects/js-locale.h': 1,
     'src/runtime/runtime-intl.cc': 1
 };
 
@@ -170,6 +172,15 @@ function cp_gen() {
         console.log("cp " + f);
         fs.writeFile('src/gen/' + path.basename(f), fs.readTextFile(v8Folder + f));
     });
+
+    fs.mkdir('src/builtins/torque-generated');
+
+    var dir = fs.readdir(v8Folder + '/out.gn/x64.release/gen/torque-generated');
+    dir.forEach(function (name) {
+        console.log("cp " + 'src/builtins/torque-generated/' + name);
+        fs.copy(v8Folder + '/out.gn/x64.release/gen/torque-generated/' + name,
+            'src/builtins/torque-generated/' + name);
+    });
 }
 
 function fix_src(path, val) {
@@ -224,11 +235,10 @@ var plats1 = {
 };
 
 function patch_plat() {
-    for (var f in plats1) {
-        var fname = paltFolder + '/platform-' + f + '.cc';
+    function patch_plat_file(fname, plat) {
         var txt = fs.readTextFile(fname);
         var txt1;
-        var val = plats1[f];
+        var val = plats1[plat];
 
         console.log("patch", fname);
         txt = '#include <exlib/include/osconfig.h>\n\n' + val + '\n\n' + txt + '\n\n#endif';
@@ -245,6 +255,13 @@ function patch_plat() {
 
         fs.writeFile(fname, txt1);
     }
+
+    for (var f in plats1)
+        patch_plat_file(paltFolder + '/platform-' + f + '.cc', f);
+
+    patch_plat_file('src/trap-handler/handler-inside-linux.cc', 'linux');
+    patch_plat_file('src/trap-handler/handler-outside-linux.cc', 'linux');
+    patch_plat_file('src/trap-handler/handler-outside-win.cc', 'win32');
 }
 
 var traces = {
@@ -399,6 +416,8 @@ clean_folder('src');
 cp_folder('include');
 cp_folder('src');
 
+update_plat();
+
 patch_plat();
 
 fs.mkdir('include/base');
@@ -412,7 +431,8 @@ fs.rmdir('src/third_party/vtune');
 clean_folder('src/inspector');
 fs.rmdir('src/inspector');
 
-update_plat();
+clean_folder('src/torque');
+fs.rmdir('src/torque');
 
 patch_src('src');
 patch_trace();
