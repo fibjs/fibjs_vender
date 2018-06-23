@@ -238,10 +238,9 @@ function patch_plat() {
     function patch_plat_file(fname, plat) {
         var txt = fs.readTextFile(fname);
         var txt1;
-        var val = plats1[plat];
 
         console.log("patch", fname);
-        txt = '#include <exlib/include/osconfig.h>\n\n' + val + '\n\n' + txt + '\n\n#endif';
+        txt = '#include <exlib/include/osconfig.h>\n\n' + plat + '\n\n' + txt + '\n\n#endif';
         txt1 = txt.replace('void OS::Sleep', 'void OS_Sleep');
         txt1 = txt1.replace('class Thread::PlatformData {', '#if 0\nclass Thread::PlatformData {');
 
@@ -257,11 +256,11 @@ function patch_plat() {
     }
 
     for (var f in plats1)
-        patch_plat_file(paltFolder + '/platform-' + f + '.cc', f);
+        patch_plat_file(paltFolder + '/platform-' + f + '.cc', plats1[f]);
 
-    patch_plat_file('src/trap-handler/handler-inside-linux.cc', 'linux');
-    patch_plat_file('src/trap-handler/handler-outside-linux.cc', 'linux');
-    patch_plat_file('src/trap-handler/handler-outside-win.cc', 'win32');
+    patch_plat_file('src/trap-handler/handler-inside-linux.cc', '#include "src/trap-handler/trap-handler.h"\n\n#if V8_TRAP_HANDLER_SUPPORTED');
+    patch_plat_file('src/trap-handler/handler-outside-linux.cc', '#ifdef Linux');
+    patch_plat_file('src/trap-handler/handler-outside-win.cc', '#ifdef Windows');
 }
 
 var traces = {

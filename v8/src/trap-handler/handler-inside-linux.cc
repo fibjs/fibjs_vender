@@ -1,6 +1,8 @@
 #include <exlib/include/osconfig.h>
 
-#ifdef Linux
+#include "src/trap-handler/trap-handler.h"
+
+#if V8_TRAP_HANDLER_SUPPORTED
 
 // Copyright 2018 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
