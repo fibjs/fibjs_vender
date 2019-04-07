@@ -17,11 +17,20 @@ class TypedArrayBuiltinsFromDSLAssembler: public TypedArrayBuiltinsAssembler {
   template <class T>
   using SloppyTNode = compiler::SloppyTNode<T>;
 
-  TNode<Number> CallCompareWithDetachedCheck(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<JSReceiver> p_comparefn, TNode<Object> p_a, TNode<Object> p_b, Label* label_Detached_88);
-  TNode<Object> Load(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<Smi> p_kind, TNode<Smi> p_index);
-  void Store(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<Smi> p_kind, TNode<Smi> p_index, TNode<Object> p_value);
-  void TypedArrayInsertionSort(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<Smi> p_kind, TNode<Smi> p_from_arg, TNode<Smi> p_to_arg, TNode<JSReceiver> p_comparefn, Label* label_Detached_93);
-  void TypedArrayQuickSortImpl(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<Smi> p_kind, TNode<Smi> p_from_arg, TNode<Smi> p_to_arg, TNode<JSReceiver> p_comparefn, Label* label_Detached_102);
+  ElementsKind KindForArrayType17ATFixedUint8Array();
+  ElementsKind KindForArrayType16ATFixedInt8Array();
+  ElementsKind KindForArrayType18ATFixedUint16Array();
+  ElementsKind KindForArrayType17ATFixedInt16Array();
+  ElementsKind KindForArrayType18ATFixedUint32Array();
+  ElementsKind KindForArrayType17ATFixedInt32Array();
+  ElementsKind KindForArrayType19ATFixedFloat32Array();
+  ElementsKind KindForArrayType19ATFixedFloat64Array();
+  ElementsKind KindForArrayType24ATFixedUint8ClampedArray();
+  ElementsKind KindForArrayType21ATFixedBigUint64Array();
+  ElementsKind KindForArrayType20ATFixedBigInt64Array();
+  TNode<Number> CallCompareWithDetachedCheck(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<JSReceiver> p_comparefn, TNode<Object> p_a, TNode<Object> p_b, Label* label_Detached_102);
+  void TypedArrayInsertionSort(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<Smi> p_from_arg, TNode<Smi> p_to_arg, TNode<JSReceiver> p_comparefn, TNode<Code> p_Load, TNode<Code> p_Store, Label* label_Detached_107);
+  void TypedArrayQuickSortImpl(TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<Smi> p_from_arg, TNode<Smi> p_to_arg, TNode<JSReceiver> p_comparefn, TNode<Code> p_Load, TNode<Code> p_Store, Label* label_Detached_116);
 };
 
 }  // namepsace internal

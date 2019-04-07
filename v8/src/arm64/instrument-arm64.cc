@@ -73,6 +73,7 @@ static const CounterDescriptor kCounterList[] = {
     {"Logical DP", Gauge},
     {"Other Int DP", Gauge},
     {"FP DP", Gauge},
+    {"NEON", Gauge},
 
     {"Conditional Select", Gauge},
     {"Conditional Compare", Gauge},

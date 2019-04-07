@@ -121,6 +121,7 @@
   V(JSToLength)                    \
   V(JSToName)                      \
   V(JSToNumber)                    \
+  V(JSToNumberConvertBigInt)       \
   V(JSToNumeric)                   \
   V(JSToObject)                    \
   V(JSToString)                    \
@@ -209,6 +210,7 @@
   V(JSResolvePromise)                  \
   V(JSStackCheck)                      \
   V(JSObjectIsArray)                   \
+  V(JSRegExpTest)                      \
   V(JSDebugger)
 
 #define JS_OP_LIST(V)     \
@@ -379,9 +381,11 @@
   V(LoadField)                          \
   V(LoadElement)                        \
   V(LoadTypedElement)                   \
+  V(LoadDataViewElement)                \
   V(StoreField)                         \
   V(StoreElement)                       \
   V(StoreTypedElement)                  \
+  V(StoreDataViewElement)               \
   V(StoreSignedSmallElement)            \
   V(TransitionAndStoreElement)          \
   V(TransitionAndStoreNumberElement)    \
@@ -623,7 +627,6 @@
   V(LoadStackPointer)            \
   V(LoadFramePointer)            \
   V(LoadParentFramePointer)      \
-  V(LoadRootsPointer)            \
   V(UnalignedLoad)               \
   V(UnalignedStore)              \
   V(Int32PairAdd)                \

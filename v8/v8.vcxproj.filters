@@ -73,9 +73,6 @@
     <Filter Include="Source Files\compiler\x64">
       <UniqueIdentifier>{7e4db021-7f1c-d574-294e-09b6102be2dd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\d8.xcodeproj">
-      <UniqueIdentifier>{21b6a2cb-ceaf-378e-a76c-933ad5762d5c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\debug">
       <UniqueIdentifier>{fd6ab6b3-d8d6-b8ec-f3aa-bee52ed75151}</UniqueIdentifier>
     </Filter>
@@ -321,9 +318,6 @@
     <ClInclude Include="src\ast\ast.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast\compile-time-value.h">
-      <Filter>Source Files\ast</Filter>
-    </ClInclude>
     <ClInclude Include="src\ast\context-slot-cache.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
@@ -412,6 +406,9 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\lazy-instance.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\list.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\logging.h">
@@ -528,6 +525,9 @@
     <ClInclude Include="src\builtins\builtins-constructor.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-data-view-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-definitions.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -538,6 +538,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-iterator-gen.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-lazy-gen.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-math-gen.h">
@@ -585,6 +588,9 @@
     <ClInclude Include="src\builtins\torque-generated\builtins-base-from-dsl-gen.h">
       <Filter>Source Files\builtins\torque-generated</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\torque-generated\builtins-data-view-from-dsl-gen.h">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\torque-generated\builtins-test-from-dsl-gen.h">
       <Filter>Source Files\builtins\torque-generated</Filter>
     </ClInclude>
@@ -627,6 +633,9 @@
     <ClInclude Include="src\code-stubs.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\code-tracer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\codegen.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -634,9 +643,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\compilation-cache.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compilation-dependencies.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\compilation-statistics.h">
@@ -706,6 +712,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\common-operator.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\compilation-dependencies.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\compiler-source-position-table.h">
@@ -799,6 +808,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-graph.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\js-heap-broker.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-inlining-heuristic.h">
@@ -1206,6 +1218,9 @@
     <ClInclude Include="src\heap\gc-tracer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\heap-controller.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\heap-inl.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1294,6 +1309,9 @@
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
     <ClInclude Include="src\ia32\assembler-ia32.h">
+      <Filter>Source Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ia32\constants-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
     <ClInclude Include="src\ia32\frame-constants-ia32.h">
@@ -1533,6 +1551,9 @@
     <ClInclude Include="src\objects-body-descriptors.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects-definitions.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1602,6 +1623,9 @@
     <ClInclude Include="src\objects\hash-table.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\intl-objects-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\js-array-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1614,13 +1638,16 @@
     <ClInclude Include="src\objects\js-collection.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
-    <ClInclude Include="src\objects\js-locale-inl.h">
-      <Filter>Source Files\objects</Filter>
-    </ClInclude>
     <ClInclude Include="src\objects\js-promise-inl.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\js-promise.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-proxy-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\js-proxy.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\js-regexp-inl.h">
@@ -1696,6 +1723,12 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\property-descriptor-object.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\prototype-info-inl.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\prototype-info.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\regexp-match-info.h">
@@ -1929,6 +1962,12 @@
     <ClInclude Include="src\reglist.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\roots-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\roots.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\runtime-profiler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -2016,6 +2055,9 @@
     <ClInclude Include="src\snapshot\partial-serializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
+    <ClInclude Include="src\snapshot\references.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
     <ClInclude Include="src\snapshot\serializer-common.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
@@ -2096,6 +2138,9 @@
     </ClInclude>
     <ClInclude Include="src\trap-handler\trap-handler.h">
       <Filter>Source Files\trap-handler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\turbo-assembler.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\type-hints.h">
       <Filter>Source Files</Filter>
@@ -2193,6 +2238,9 @@
     <ClInclude Include="src\wasm\function-compiler.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\jump-table-assembler.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\leb-helper.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -2218,9 +2266,6 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-code-manager.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
-    <ClInclude Include="src\wasm\wasm-code-specialization.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-constants.h">
@@ -2278,6 +2323,9 @@
       <Filter>Source Files\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\x64\assembler-x64.h">
+      <Filter>Source Files\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\x64\constants-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\x64\frame-constants-x64.h">
@@ -2364,9 +2412,6 @@
       <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast.cc">
-      <Filter>Source Files\ast</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ast\compile-time-value.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\context-slot-cache.cc">
@@ -2606,6 +2651,9 @@
     <ClCompile Include="src\builtins\builtins-json.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-lazy-gen.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-math-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2663,6 +2711,9 @@
     <ClCompile Include="src\builtins\builtins-symbol.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-trace.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-typed-array-gen.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2699,6 +2750,9 @@
     <ClCompile Include="src\builtins\torque-generated\builtins-base-from-dsl-gen.cc">
       <Filter>Source Files\builtins\torque-generated</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\torque-generated\builtins-data-view-from-dsl-gen.cc">
+      <Filter>Source Files\builtins\torque-generated</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\torque-generated\builtins-test-from-dsl-gen.cc">
       <Filter>Source Files\builtins\torque-generated</Filter>
     </ClCompile>
@@ -2730,9 +2784,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\compilation-cache.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compilation-dependencies.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\compilation-statistics.cc">
@@ -2799,6 +2850,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\common-operator.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\compilation-dependencies.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\compiler-source-position-table.cc">
@@ -2886,6 +2940,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-graph.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\js-heap-broker.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-inlining-heuristic.cc">
@@ -3258,6 +3315,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\gc-tracer.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\heap-controller.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\heap.cc">
@@ -3743,9 +3803,6 @@
     <ClCompile Include="src\runtime\runtime-debug.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
-    <ClCompile Include="src\runtime\runtime-error.cc">
-      <Filter>Source Files\runtime</Filter>
-    </ClCompile>
     <ClCompile Include="src\runtime\runtime-forin.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
@@ -3765,9 +3822,6 @@
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-literals.cc">
-      <Filter>Source Files\runtime</Filter>
-    </ClCompile>
-    <ClCompile Include="src\runtime\runtime-liveedit.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-maths.cc">
@@ -4013,6 +4067,9 @@
     <ClCompile Include="src\trap-handler\handler-shared.cc">
       <Filter>Source Files\trap-handler</Filter>
     </ClCompile>
+    <ClCompile Include="src\turbo-assembler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\type-hints.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -4061,6 +4118,9 @@
     <ClCompile Include="src\wasm\function-compiler.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
+    <ClCompile Include="src\wasm\jump-table-assembler.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
     <ClCompile Include="src\wasm\local-decl-encoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
@@ -4080,9 +4140,6 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-code-manager.cc">
-      <Filter>Source Files\wasm</Filter>
-    </ClCompile>
-    <ClCompile Include="src\wasm\wasm-code-specialization.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-debug.cc">

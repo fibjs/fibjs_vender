@@ -59,7 +59,6 @@
     <ClInclude Include="src\ast\ast-traversal-visitor.h" />
     <ClInclude Include="src\ast\ast-value-factory.h" />
     <ClInclude Include="src\ast\ast.h" />
-    <ClInclude Include="src\ast\compile-time-value.h" />
     <ClInclude Include="src\ast\context-slot-cache.h" />
     <ClInclude Include="src\ast\modules.h" />
     <ClInclude Include="src\ast\prettyprinter.h" />
@@ -90,6 +89,7 @@
     <ClInclude Include="src\base\ieee754.h" />
     <ClInclude Include="src\base\iterator.h" />
     <ClInclude Include="src\base\lazy-instance.h" />
+    <ClInclude Include="src\base\list.h" />
     <ClInclude Include="src\base\logging.h" />
     <ClInclude Include="src\base\macros.h" />
     <ClInclude Include="src\base\once.h" />
@@ -128,10 +128,12 @@
     <ClInclude Include="src\builtins\builtins-call-gen.h" />
     <ClInclude Include="src\builtins\builtins-constructor-gen.h" />
     <ClInclude Include="src\builtins\builtins-constructor.h" />
+    <ClInclude Include="src\builtins\builtins-data-view-gen.h" />
     <ClInclude Include="src\builtins\builtins-definitions.h" />
     <ClInclude Include="src\builtins\builtins-descriptors.h" />
     <ClInclude Include="src\builtins\builtins-intl.h" />
     <ClInclude Include="src\builtins\builtins-iterator-gen.h" />
+    <ClInclude Include="src\builtins\builtins-lazy-gen.h" />
     <ClInclude Include="src\builtins\builtins-math-gen.h" />
     <ClInclude Include="src\builtins\builtins-promise-gen.h" />
     <ClInclude Include="src\builtins\builtins-proxy-gen.h" />
@@ -147,6 +149,7 @@
     <ClInclude Include="src\builtins\torque-generated\builtin-definitions-from-dsl.h" />
     <ClInclude Include="src\builtins\torque-generated\builtins-array-from-dsl-gen.h" />
     <ClInclude Include="src\builtins\torque-generated\builtins-base-from-dsl-gen.h" />
+    <ClInclude Include="src\builtins\torque-generated\builtins-data-view-from-dsl-gen.h" />
     <ClInclude Include="src\builtins\torque-generated\builtins-test-from-dsl-gen.h" />
     <ClInclude Include="src\builtins\torque-generated\builtins-typed-array-from-dsl-gen.h" />
     <ClInclude Include="src\cached-powers.h" />
@@ -161,10 +164,10 @@
     <ClInclude Include="src\code-stub-assembler.h" />
     <ClInclude Include="src\code-stubs-utils.h" />
     <ClInclude Include="src\code-stubs.h" />
+    <ClInclude Include="src\code-tracer.h" />
     <ClInclude Include="src\codegen.h" />
     <ClInclude Include="src\collector.h" />
     <ClInclude Include="src\compilation-cache.h" />
-    <ClInclude Include="src\compilation-dependencies.h" />
     <ClInclude Include="src\compilation-statistics.h" />
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-job.h" />
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-tracer.h" />
@@ -188,6 +191,7 @@
     <ClInclude Include="src\compiler\common-node-cache.h" />
     <ClInclude Include="src\compiler\common-operator-reducer.h" />
     <ClInclude Include="src\compiler\common-operator.h" />
+    <ClInclude Include="src\compiler\compilation-dependencies.h" />
     <ClInclude Include="src\compiler\compiler-source-position-table.h" />
     <ClInclude Include="src\compiler\constant-folding-reducer.h" />
     <ClInclude Include="src\compiler\control-equivalence.h" />
@@ -219,6 +223,7 @@
     <ClInclude Include="src\compiler\js-create-lowering.h" />
     <ClInclude Include="src\compiler\js-generic-lowering.h" />
     <ClInclude Include="src\compiler\js-graph.h" />
+    <ClInclude Include="src\compiler\js-heap-broker.h" />
     <ClInclude Include="src\compiler\js-inlining-heuristic.h" />
     <ClInclude Include="src\compiler\js-inlining.h" />
     <ClInclude Include="src\compiler\js-intrinsic-lowering.h" />
@@ -354,6 +359,7 @@
     <ClInclude Include="src\heap\factory.h" />
     <ClInclude Include="src\heap\gc-idle-time-handler.h" />
     <ClInclude Include="src\heap\gc-tracer.h" />
+    <ClInclude Include="src\heap\heap-controller.h" />
     <ClInclude Include="src\heap\heap-inl.h" />
     <ClInclude Include="src\heap\heap.h" />
     <ClInclude Include="src\heap\incremental-marking-inl.h" />
@@ -384,6 +390,7 @@
     <ClInclude Include="src\heap\worklist.h" />
     <ClInclude Include="src\ia32\assembler-ia32-inl.h" />
     <ClInclude Include="src\ia32\assembler-ia32.h" />
+    <ClInclude Include="src\ia32\constants-ia32.h" />
     <ClInclude Include="src\ia32\frame-constants-ia32.h" />
     <ClInclude Include="src\ia32\macro-assembler-ia32.h" />
     <ClInclude Include="src\ia32\simulator-ia32.h" />
@@ -463,6 +470,7 @@
     <ClInclude Include="src\msan.h" />
     <ClInclude Include="src\objects-body-descriptors-inl.h" />
     <ClInclude Include="src\objects-body-descriptors.h" />
+    <ClInclude Include="src\objects-definitions.h" />
     <ClInclude Include="src\objects-inl.h" />
     <ClInclude Include="src\objects.h" />
     <ClInclude Include="src\objects\api-callbacks-inl.h" />
@@ -486,13 +494,15 @@
     <ClInclude Include="src\objects\frame-array.h" />
     <ClInclude Include="src\objects\hash-table-inl.h" />
     <ClInclude Include="src\objects\hash-table.h" />
+    <ClInclude Include="src\objects\intl-objects-inl.h" />
     <ClInclude Include="src\objects\js-array-inl.h" />
     <ClInclude Include="src\objects\js-array.h" />
     <ClInclude Include="src\objects\js-collection-inl.h" />
     <ClInclude Include="src\objects\js-collection.h" />
-    <ClInclude Include="src\objects\js-locale-inl.h" />
     <ClInclude Include="src\objects\js-promise-inl.h" />
     <ClInclude Include="src\objects\js-promise.h" />
+    <ClInclude Include="src\objects\js-proxy-inl.h" />
+    <ClInclude Include="src\objects\js-proxy.h" />
     <ClInclude Include="src\objects\js-regexp-inl.h" />
     <ClInclude Include="src\objects\js-regexp-string-iterator-inl.h" />
     <ClInclude Include="src\objects\js-regexp-string-iterator.h" />
@@ -518,6 +528,8 @@
     <ClInclude Include="src\objects\promise.h" />
     <ClInclude Include="src\objects\property-descriptor-object-inl.h" />
     <ClInclude Include="src\objects\property-descriptor-object.h" />
+    <ClInclude Include="src\objects\prototype-info-inl.h" />
+    <ClInclude Include="src\objects\prototype-info.h" />
     <ClInclude Include="src\objects\regexp-match-info.h" />
     <ClInclude Include="src\objects\scope-info.h" />
     <ClInclude Include="src\objects\script-inl.h" />
@@ -595,6 +607,8 @@
     <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h" />
     <ClInclude Include="src\register-configuration.h" />
     <ClInclude Include="src\reglist.h" />
+    <ClInclude Include="src\roots-inl.h" />
+    <ClInclude Include="src\roots.h" />
     <ClInclude Include="src\runtime-profiler.h" />
     <ClInclude Include="src\runtime\runtime-utils.h" />
     <ClInclude Include="src\runtime\runtime.h" />
@@ -624,6 +638,7 @@
     <ClInclude Include="src\snapshot\object-deserializer.h" />
     <ClInclude Include="src\snapshot\partial-deserializer.h" />
     <ClInclude Include="src\snapshot\partial-serializer.h" />
+    <ClInclude Include="src\snapshot\references.h" />
     <ClInclude Include="src\snapshot\serializer-common.h" />
     <ClInclude Include="src\snapshot\serializer.h" />
     <ClInclude Include="src\snapshot\snapshot-source-sink.h" />
@@ -651,6 +666,7 @@
     <ClInclude Include="src\transitions.h" />
     <ClInclude Include="src\trap-handler\trap-handler-internal.h" />
     <ClInclude Include="src\trap-handler\trap-handler.h" />
+    <ClInclude Include="src\turbo-assembler.h" />
     <ClInclude Include="src\type-hints.h" />
     <ClInclude Include="src\unicode-cache-inl.h" />
     <ClInclude Include="src\unicode-cache.h" />
@@ -683,6 +699,7 @@
     <ClInclude Include="src\wasm\function-body-decoder-impl.h" />
     <ClInclude Include="src\wasm\function-body-decoder.h" />
     <ClInclude Include="src\wasm\function-compiler.h" />
+    <ClInclude Include="src\wasm\jump-table-assembler.h" />
     <ClInclude Include="src\wasm\leb-helper.h" />
     <ClInclude Include="src\wasm\local-decl-encoder.h" />
     <ClInclude Include="src\wasm\memory-tracing.h" />
@@ -692,7 +709,6 @@
     <ClInclude Include="src\wasm\streaming-decoder.h" />
     <ClInclude Include="src\wasm\value-type.h" />
     <ClInclude Include="src\wasm\wasm-code-manager.h" />
-    <ClInclude Include="src\wasm\wasm-code-specialization.h" />
     <ClInclude Include="src\wasm\wasm-constants.h" />
     <ClInclude Include="src\wasm\wasm-engine.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
@@ -712,6 +728,7 @@
     <ClInclude Include="src\wasm\wasm-value.h" />
     <ClInclude Include="src\x64\assembler-x64-inl.h" />
     <ClInclude Include="src\x64\assembler-x64.h" />
+    <ClInclude Include="src\x64\constants-x64.h" />
     <ClInclude Include="src\x64\frame-constants-x64.h" />
     <ClInclude Include="src\x64\macro-assembler-x64.h" />
     <ClInclude Include="src\x64\simulator-x64.h" />
@@ -742,7 +759,6 @@
     <ClCompile Include="src\ast\ast-function-literal-id-reindexer.cc" />
     <ClCompile Include="src\ast\ast-value-factory.cc" />
     <ClCompile Include="src\ast\ast.cc" />
-    <ClCompile Include="src\ast\compile-time-value.cc" />
     <ClCompile Include="src\ast\context-slot-cache.cc" />
     <ClCompile Include="src\ast\modules.cc" />
     <ClCompile Include="src\ast\prettyprinter.cc" />
@@ -822,6 +838,7 @@
     <ClCompile Include="src\builtins\builtins-interpreter.cc" />
     <ClCompile Include="src\builtins\builtins-iterator-gen.cc" />
     <ClCompile Include="src\builtins\builtins-json.cc" />
+    <ClCompile Include="src\builtins\builtins-lazy-gen.cc" />
     <ClCompile Include="src\builtins\builtins-math-gen.cc" />
     <ClCompile Include="src\builtins\builtins-math.cc" />
     <ClCompile Include="src\builtins\builtins-number-gen.cc" />
@@ -841,6 +858,7 @@
     <ClCompile Include="src\builtins\builtins-string.cc" />
     <ClCompile Include="src\builtins\builtins-symbol-gen.cc" />
     <ClCompile Include="src\builtins\builtins-symbol.cc" />
+    <ClCompile Include="src\builtins\builtins-trace.cc" />
     <ClCompile Include="src\builtins\builtins-typed-array-gen.cc" />
     <ClCompile Include="src\builtins\builtins-typed-array.cc" />
     <ClCompile Include="src\builtins\builtins-wasm-gen.cc" />
@@ -853,6 +871,7 @@
     <ClCompile Include="src\builtins\setup-builtins-internal.cc" />
     <ClCompile Include="src\builtins\torque-generated\builtins-array-from-dsl-gen.cc" />
     <ClCompile Include="src\builtins\torque-generated\builtins-base-from-dsl-gen.cc" />
+    <ClCompile Include="src\builtins\torque-generated\builtins-data-view-from-dsl-gen.cc" />
     <ClCompile Include="src\builtins\torque-generated\builtins-test-from-dsl-gen.cc" />
     <ClCompile Include="src\builtins\torque-generated\builtins-typed-array-from-dsl-gen.cc" />
     <ClCompile Include="src\builtins\x64\builtins-x64.cc" />
@@ -864,7 +883,6 @@
     <ClCompile Include="src\code-stubs.cc" />
     <ClCompile Include="src\codegen.cc" />
     <ClCompile Include="src\compilation-cache.cc" />
-    <ClCompile Include="src\compilation-dependencies.cc" />
     <ClCompile Include="src\compilation-statistics.cc" />
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-job.cc" />
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-tracer.cc" />
@@ -887,6 +905,7 @@
     <ClCompile Include="src\compiler\common-node-cache.cc" />
     <ClCompile Include="src\compiler\common-operator-reducer.cc" />
     <ClCompile Include="src\compiler\common-operator.cc" />
+    <ClCompile Include="src\compiler\compilation-dependencies.cc" />
     <ClCompile Include="src\compiler\compiler-source-position-table.cc" />
     <ClCompile Include="src\compiler\constant-folding-reducer.cc" />
     <ClCompile Include="src\compiler\control-equivalence.cc" />
@@ -916,6 +935,7 @@
     <ClCompile Include="src\compiler\js-create-lowering.cc" />
     <ClCompile Include="src\compiler\js-generic-lowering.cc" />
     <ClCompile Include="src\compiler\js-graph.cc" />
+    <ClCompile Include="src\compiler\js-heap-broker.cc" />
     <ClCompile Include="src\compiler\js-inlining-heuristic.cc" />
     <ClCompile Include="src\compiler\js-inlining.cc" />
     <ClCompile Include="src\compiler\js-intrinsic-lowering.cc" />
@@ -1040,6 +1060,7 @@
     <ClCompile Include="src\heap\factory.cc" />
     <ClCompile Include="src\heap\gc-idle-time-handler.cc" />
     <ClCompile Include="src\heap\gc-tracer.cc" />
+    <ClCompile Include="src\heap\heap-controller.cc" />
     <ClCompile Include="src\heap\heap.cc" />
     <ClCompile Include="src\heap\incremental-marking-job.cc" />
     <ClCompile Include="src\heap\incremental-marking.cc" />
@@ -1201,7 +1222,6 @@
     <ClCompile Include="src\runtime\runtime-compiler.cc" />
     <ClCompile Include="src\runtime\runtime-date.cc" />
     <ClCompile Include="src\runtime\runtime-debug.cc" />
-    <ClCompile Include="src\runtime\runtime-error.cc" />
     <ClCompile Include="src\runtime\runtime-forin.cc" />
     <ClCompile Include="src\runtime\runtime-function.cc" />
     <ClCompile Include="src\runtime\runtime-futex.cc" />
@@ -1209,7 +1229,6 @@
     <ClCompile Include="src\runtime\runtime-internal.cc" />
     <ClCompile Include="src\runtime\runtime-interpreter.cc" />
     <ClCompile Include="src\runtime\runtime-literals.cc" />
-    <ClCompile Include="src\runtime\runtime-liveedit.cc" />
     <ClCompile Include="src\runtime\runtime-maths.cc" />
     <ClCompile Include="src\runtime\runtime-module.cc" />
     <ClCompile Include="src\runtime\runtime-numbers.cc" />
@@ -1291,6 +1310,7 @@
     <ClCompile Include="src\trap-handler\handler-outside-win.cc" />
     <ClCompile Include="src\trap-handler\handler-outside.cc" />
     <ClCompile Include="src\trap-handler\handler-shared.cc" />
+    <ClCompile Include="src\turbo-assembler.cc" />
     <ClCompile Include="src\type-hints.cc" />
     <ClCompile Include="src\unicode-decoder.cc" />
     <ClCompile Include="src\unicode.cc" />
@@ -1307,6 +1327,7 @@
     <ClCompile Include="src\wasm\baseline\liftoff-compiler.cc" />
     <ClCompile Include="src\wasm\function-body-decoder.cc" />
     <ClCompile Include="src\wasm\function-compiler.cc" />
+    <ClCompile Include="src\wasm\jump-table-assembler.cc" />
     <ClCompile Include="src\wasm\local-decl-encoder.cc" />
     <ClCompile Include="src\wasm\memory-tracing.cc" />
     <ClCompile Include="src\wasm\module-compiler.cc" />
@@ -1314,7 +1335,6 @@
     <ClCompile Include="src\wasm\signature-map.cc" />
     <ClCompile Include="src\wasm\streaming-decoder.cc" />
     <ClCompile Include="src\wasm\wasm-code-manager.cc" />
-    <ClCompile Include="src\wasm\wasm-code-specialization.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-engine.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />

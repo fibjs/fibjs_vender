@@ -79,6 +79,8 @@ function clean_folder(path) {
 }
 
 var files = {
+    'src/async-hooks-wrapper.cc': 1,
+    'src/async-hooks-wrapper.h': 1,
     'src/v8dll-main.cc': 1,
     'src/setup-isolate-deserialize.cc': 1,
     'src/interpreter/mkpeephole.cc': 1,
@@ -97,8 +99,12 @@ var files = {
     'src/intl.h': 1,
     'src/objects/intl-objects.cc': 1,
     'src/objects/intl-objects.h': 1,
+    'src/objects/js-locale-inl.h': 1,
     'src/objects/js-locale.cc': 1,
     'src/objects/js-locale.h': 1,
+    'src/objects/js-relative-time-format-inl.h': 1,
+    'src/objects/js-relative-time-format.cc': 1,
+    'src/objects/js-relative-time-format.h': 1,
     'src/runtime/runtime-intl.cc': 1
 };
 

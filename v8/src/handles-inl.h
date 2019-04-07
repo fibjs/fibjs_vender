@@ -35,9 +35,6 @@ HandleScope::HandleScope(Isolate* isolate) {
 }
 
 template <typename T>
-Handle<T>::Handle(T* object) : Handle(object, object->GetIsolate()) {}
-
-template <typename T>
 Handle<T>::Handle(T* object, Isolate* isolate) : HandleBase(object, isolate) {}
 
 template <typename T>
@@ -79,6 +76,10 @@ MaybeObjectHandle::MaybeObjectHandle(Handle<Object> object,
 
 MaybeObjectHandle MaybeObjectHandle::Weak(Handle<Object> object) {
   return MaybeObjectHandle(object, HeapObjectReferenceType::WEAK);
+}
+
+MaybeObjectHandle MaybeObjectHandle::Weak(Object* object, Isolate* isolate) {
+  return MaybeObjectHandle(object, HeapObjectReferenceType::WEAK, isolate);
 }
 
 MaybeObject* MaybeObjectHandle::operator*() const {
