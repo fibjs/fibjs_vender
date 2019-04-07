@@ -92,6 +92,9 @@
     <ClCompile Include="src\fbLocker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\fbRWLocker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\fbSemaphore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -118,7 +121,7 @@
     </ClCompile>
     <ClCompile Include="fbSwitch_mips64.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>    
+    </ClCompile>
     <ClCompile Include="src\fbTls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -55,6 +55,7 @@
     <ClCompile Include="src\fbEvent.cpp" />
     <ClCompile Include="src\fbFiber.cpp" />
     <ClCompile Include="src\fbLocker.cpp" />
+    <ClCompile Include="src\fbRWLocker.cpp" />
     <ClCompile Include="src\fbSemaphore.cpp" />
     <ClCompile Include="src\fbService.cpp" />
     <ClCompile Include="src\fbSwitch_amd64.cpp" />

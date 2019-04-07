@@ -55,7 +55,8 @@ public:
 
 public:
     virtual void join()
-    {}
+    {
+    }
 
     virtual bool is(int32_t t) = 0;
 
@@ -135,6 +136,28 @@ private:
     spinlock m_lock;
     List<Task_base> m_blocks;
     Task_base* m_locker;
+};
+
+class RWLocker {
+public:
+    RWLocker()
+        : m_count(0)
+    {
+    }
+
+public:
+    void rdlock(Task_base* current = NULL);
+    void wrlock(Task_base* current = NULL);
+    void rdunlock(Task_base* current = NULL);
+    void wrunlock(Task_base* current = NULL);
+    bool tryrdlock(Task_base* current = NULL);
+    bool trywrlock(Task_base* current = NULL);
+
+private:
+    int32_t m_count;
+    Locker m_reader;
+    Locker m_writer;
+    List<Task_base> m_blocks;
 };
 
 class autoLocker {
