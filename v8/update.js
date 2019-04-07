@@ -5,7 +5,7 @@ var path = require('path');
 var process = require('process');
 
 var workFolder = process.cwd();
-var v8Folder = path.fullpath("../../../source/js/v8/v8");
+var v8Folder = path.fullpath(process.env.HOME + "/works/source/js/v8/v8");
 
 console.log(v8Folder);
 
