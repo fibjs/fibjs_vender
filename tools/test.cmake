@@ -37,7 +37,7 @@ if(${OS} STREQUAL "Darwin")
 endif()
 
 if(${OS} STREQUAL "Linux")
-	target_link_libraries(${name}_test dl rt)
+	target_link_libraries(${name}_test dl rt atomic)
 endif()
 
 if(${OS} STREQUAL "FreeBSD")
