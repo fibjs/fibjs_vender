@@ -1,0 +1,15 @@
+#define CONFIG_SIGSTOP
+
+// #define CONFIG_USE_TERMCAP
+
+#define CONFIG_ANSI_ARROWS
+
+#define CONFIG_SIGINT
+
+#define CONFIG_EOF
+
+#define CONFIG_UNIQUE_HISTORY
+
+// #define TIOCGWINSZ
+
+#define CONFIG_TERMINAL_BELL

@@ -1,44 +1,7 @@
-/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+/* Unix system-dependant routines for editline library.
  *
- * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla Communicator client code, released
- * March 31, 1998.
- *
- * The Initial Developer of the Original Code is
- * Simmule Turner and Rich Salz.
- * Portions created by the Initial Developer are Copyright (C) 1998
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
-
-/*
- * Copyright 1992,1993 Simmule Turner and Rich Salz.  All rights reserved.
+ * Copyright (c) 1992, 1993  Simmule Turner and Rich Salz
+ * All rights reserved.
  *
  * This software is not subject to any license of the American Telephone
  * and Telegraph Company or of the Regents of the University of California.
@@ -57,126 +20,232 @@
  * 4. This notice may not be removed or altered.
  */
 
-
-/*
-**  Unix system-dependant routines for editline library.
-*/
+#include <errno.h>
 #include "editline.h"
 
-#if	defined(HAVE_TCGETATTR)
+#ifndef HAVE_TCGETATTR
+/* Wrapper for ioctl syscalls to restart on signal */
+static int ioctl_wrap(int fd, int req, void *arg)
+{
+    int result, retries = 3;
+
+    while (-1 == (result = ioctl(fd, req, arg)) && retries > 0) {
+	retries--;
+
+	if (EINTR == errno)
+	    continue;
+
+	break;
+    }
+
+    return result;
+}
+#endif
+
+/* Prefer termios over the others since it is likely the most portable. */
+#if defined(HAVE_TCGETATTR)
 #include <termios.h>
 
-void
-rl_ttyset(Reset)
-    int				Reset;
+/* Wrapper for tcgetattr */
+static int getattr(int fd, struct termios *arg)
 {
-    static struct termios	old;
-    struct termios		new;
+    int result, retries = 3;
 
-    if (Reset == 0) {
-	(void)tcgetattr(0, &old);
-	rl_erase = old.c_cc[VERASE];
-	rl_kill = old.c_cc[VKILL];
-	rl_eof = old.c_cc[VEOF];
-	rl_intr = old.c_cc[VINTR];
-	rl_quit = old.c_cc[VQUIT];
+    while (-1 == (result = tcgetattr(fd, arg)) && retries > 0) {
+	retries--;
 
-	new = old;
-	new.c_cc[VINTR] = -1;
-	new.c_cc[VQUIT] = -1;
-	new.c_lflag &= ~(ECHO | ICANON);
-	new.c_iflag &= ~(ISTRIP | INPCK);
-	new.c_cc[VMIN] = 1;
-	new.c_cc[VTIME] = 0;
-	(void)tcsetattr(0, TCSADRAIN, &new);
+	if (EINTR == errno)
+	    continue;
+
+	break;
     }
-    else
-	(void)tcsetattr(0, TCSADRAIN, &old);
+
+    return result;
 }
 
-#else
-#if	defined(HAVE_TERMIO)
+/* Wrapper for tcgetattr */
+static int setattr(int fd, int opt, const struct termios *arg)
+{
+    int result, retries = 3;
+
+    while (-1 == (result = tcsetattr(fd, opt, arg)) && retries > 0) {
+	retries--;
+
+	if (EINTR == errno)
+	    continue;
+
+	break;
+    }
+
+    return result;
+}
+
+void rl_ttyset(int Reset)
+{
+    static struct termios       old;
+    struct termios              new;
+
+    if (!Reset) {
+        if (-1 == getattr(0, &old))
+	    perror("Failed tcgetattr()");
+
+        rl_erase = old.c_cc[VERASE];
+        rl_kill = old.c_cc[VKILL];
+        rl_eof = old.c_cc[VEOF];
+        rl_intr = old.c_cc[VINTR];
+        rl_quit = old.c_cc[VQUIT];
+#ifdef CONFIG_SIGSTOP
+        rl_susp = old.c_cc[VSUSP];
+#endif
+
+        new = old;
+        new.c_lflag &= ~(ECHO | ICANON | ISIG);
+        new.c_iflag &= ~INPCK;
+	if (rl_meta_chars)
+	    new.c_iflag |= ISTRIP;
+	else
+	    new.c_iflag &= ~ISTRIP;
+        new.c_cc[VMIN] = 1;
+        new.c_cc[VTIME] = 0;
+        if (-1 == setattr(0, TCSADRAIN, &new))
+	    perror("Failed tcsetattr(TCSADRAIN)");
+    } else {
+        if (-1 == setattr(0, TCSADRAIN, &old))
+	    perror("Failed tcsetattr(TCSADRAIN)");
+    }
+}
+
+#elif defined(HAVE_TERMIO_H)
 #include <termio.h>
 
-void
-rl_ttyset(Reset)
-    int				Reset;
+void rl_ttyset(int Reset)
 {
-    static struct termio	old;
-    struct termio		new;
+    static struct termio        old;
+    struct termio               new;
 
-    if (Reset == 0) {
-	(void)ioctl(0, TCGETA, &old);
-	rl_erase = old.c_cc[VERASE];
-	rl_kill = old.c_cc[VKILL];
-	rl_eof = old.c_cc[VEOF];
-	rl_intr = old.c_cc[VINTR];
-	rl_quit = old.c_cc[VQUIT];
+    if (!Reset) {
+	if (-1 == ioctl_wrap(0, TCGETA, &old))
+	    perror("Failed ioctl(TCGETA)");
 
-	new = old;
-	new.c_cc[VINTR] = -1;
-	new.c_cc[VQUIT] = -1;
-	new.c_lflag &= ~(ECHO | ICANON);
-	new.c_iflag &= ~(ISTRIP | INPCK);
-	new.c_cc[VMIN] = 1;
-	new.c_cc[VTIME] = 0;
-	(void)ioctl(0, TCSETAW, &new);
+        rl_erase = old.c_cc[VERASE];
+        rl_kill = old.c_cc[VKILL];
+        rl_eof = old.c_cc[VEOF];
+        rl_intr = old.c_cc[VINTR];
+        rl_quit = old.c_cc[VQUIT];
+#ifdef CONFIG_SIGSTOP
+        rl_susp = old.c_cc[VSUSP];
+#endif
+
+        new = old;
+        new.c_lflag &= ~(ECHO | ICANON | ISIG);
+        new.c_iflag &= ~INPCK;
+	if (rl_meta_chars)
+	    new.c_iflag |= ISTRIP;
+	else
+	    new.c_iflag &= ~ISTRIP;
+
+        new.c_cc[VMIN] = 1;
+        new.c_cc[VTIME] = 0;
+        if (-1 == ioctl_wrap(0, TCSETAW, &new))
+	    perror("Failed ioctl(TCSETAW)");
+    } else {
+	if (-1 == ioctl_wrap(0, TCSETAW, &old))
+	    perror("Failed ioctl(TCSETAW)");
     }
-    else
-	(void)ioctl(0, TCSETAW, &old);
 }
 
-#else
+#elif defined(HAVE_SGTTY_H)
 #include <sgtty.h>
 
-void
-rl_ttyset(Reset)
-    int				Reset;
+void rl_ttyset(int Reset)
 {
-    static struct sgttyb	old_sgttyb;
-    static struct tchars	old_tchars;
-    struct sgttyb		new_sgttyb;
-    struct tchars		new_tchars;
+    static struct sgttyb        old_sgttyb;
+    static struct tchars        old_tchars;
+    struct sgttyb               new_sgttyb;
+    struct tchars               new_tchars;
+#ifdef CONFIG_SIGSTOP
+    struct ltchars              old_ltchars;
+#endif
 
-    if (Reset == 0) {
-	(void)ioctl(0, TIOCGETP, &old_sgttyb);
-	rl_erase = old_sgttyb.sg_erase;
-	rl_kill = old_sgttyb.sg_kill;
+    if (!Reset) {
+        if (-1 == ioctl_wrap(0, TIOCGETP, &old_sgttyb))
+	    perror("Failed TIOCGETP");
 
-	(void)ioctl(0, TIOCGETC, &old_tchars);
+        rl_erase = old_sgttyb.sg_erase;
+        rl_kill = old_sgttyb.sg_kill;
+
+        if (-1 == ioctl_wrap(0, TIOCGETC, &old_tchars))
+	    perror("Failed TIOCGETC");
+
 	rl_eof = old_tchars.t_eofc;
-	rl_intr = old_tchars.t_intrc;
-	rl_quit = old_tchars.t_quitc;
+        rl_intr = old_tchars.t_intrc;
+        rl_quit = old_tchars.t_quitc;
 
-	new_sgttyb = old_sgttyb;
-	new_sgttyb.sg_flags &= ~ECHO;
-	new_sgttyb.sg_flags |= RAW;
-#if	defined(PASS8)
-	new_sgttyb.sg_flags |= PASS8;
-#endif	/* defined(PASS8) */
-	(void)ioctl(0, TIOCSETP, &new_sgttyb);
+#ifdef CONFIG_SIGSTOP
+        if (-1 == ioctl_wrap(0, TIOCGLTC, &old_ltchars))
+	    perror("Failed TIOCGLTC");
+
+	rl_susp = old_ltchars.t_suspc;
+#endif
+
+        new_sgttyb = old_sgttyb;
+        new_sgttyb.sg_flags &= ~ECHO;
+        new_sgttyb.sg_flags |= RAW;
+	if (rl_meta_chars)
+	    new_sgttyb.sg_flags &= ~PASS8;
+	else
+	    new_sgttyb.sg_flags |= PASS8;
+
+	if (-1 == ioctl_wrap(0, TIOCSETP, &new_sgttyb))
+	    perror("Failed TIOCSETP");
 
 	new_tchars = old_tchars;
-	new_tchars.t_intrc = -1;
-	new_tchars.t_quitc = -1;
-	(void)ioctl(0, TIOCSETC, &new_tchars);
-    }
-    else {
-	(void)ioctl(0, TIOCSETP, &old_sgttyb);
-	(void)ioctl(0, TIOCSETC, &old_tchars);
+        new_tchars.t_intrc = -1;
+        new_tchars.t_quitc = -1;
+        if (-1 == ioctl_wrap(0, TIOCSETC, &new_tchars))
+	    perror("Failed TIOCSETC");
+    } else {
+        if (-1 == ioctl_wrap(0, TIOCSETP, &old_sgttyb))
+	    perror("Failed TIOCSETP");
+
+	if (-1 == ioctl_wrap(0, TIOCSETC, &old_tchars))
+	    perror("Failed TIOCSETC");
     }
 }
-#endif	/* defined(HAVE_TERMIO) */
-#endif	/* defined(HAVE_TCGETATTR) */
+#else /* Neither HAVE_SGTTY_H, HAVE_TERMIO_H or HAVE_TCGETATTR */
+#error Unsupported platform, missing tcgetattr(), termio.h and sgtty.h
+#endif /* Neither HAVE_SGTTY_H, HAVE_TERMIO_H or HAVE_TCGETATTR */
 
-void
-rl_add_slash(path, p)
-    char	*path;
-    char	*p;
+#ifndef HAVE_STRDUP
+/* Return an allocated copy of a string. */
+char *strdup(const char *s)
 {
-    struct stat	Sb;
+    size_t len;
+    char *ptr;
+
+    if (!s)
+	return NULL;
+
+    len = strlen(s) + 1;
+    ptr = malloc(len);
+    if (ptr)
+        return memcpy(ptr, s, len);
+
+    return NULL;
+}
+#endif
+
+void rl_add_slash(char *path, char *p)
+{
+    struct stat Sb;
 
     if (stat(path, &Sb) >= 0)
-	(void)strcat(p, S_ISDIR(Sb.st_mode) ? "/" : " ");
+        strcat(p, S_ISDIR(Sb.st_mode) ? "/" : " ");
 }
 
+/**
+ * Local Variables:
+ *  c-file-style: "k&r"
+ *  c-basic-offset: 4
+ * End:
+ */

@@ -1,44 +1,6 @@
-/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
- *
- * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla Communicator client code, released
- * March 31, 1998.
- *
- * The Initial Developer of the Original Code is
- * Simmule Turner and Rich Salz.
- * Portions created by the Initial Developer are Copyright (C) 1998
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
-
 /*
- * Copyright 1992,1993 Simmule Turner and Rich Salz.  All rights reserved.
+ * Copyright (c) 1992, 1993  Simmule Turner and Rich Salz
+ * All rights reserved.
  *
  * This software is not subject to any license of the American Telephone
  * and Telegraph Company or of the Regents of the University of California.
@@ -56,80 +18,115 @@
  *    ever read sources, credits must appear in the documentation.
  * 4. This notice may not be removed or altered.
  */
+#ifndef EDITLINE_H_
+#define EDITLINE_H_
 
-/*
-**  Internal header file for editline library.
-*/
-#include <stdio.h>
-#if	defined(HAVE_STDLIB)
-#include <stdlib.h>
-#include <string.h>
-#endif	/* defined(HAVE_STDLIB) */
-#if	defined(SYS_UNIX)
-#include "unix.h"
-#endif	/* defined(SYS_UNIX) */
-#if	defined(SYS_OS9)
-#include "os9.h"
-#endif	/* defined(SYS_OS9) */
+/* Handy macros when binding keys. */
+#define CTL(x)          ((x) & 0x1F)
+#define ISCTL(x)        ((x) && (x) < ' ')
+#define UNCTL(x)        ((x) + 64)
+#define META(x)         ((x) | 0x80)
+#define ISMETA(x)       ((x) & 0x80)
+#define UNMETA(x)       ((x) & 0x7F)
 
-#if	!defined(SIZE_T)
-#define SIZE_T	unsigned int
-#endif	/* !defined(SIZE_T) */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef unsigned char	CHAR;
+/* Command status codes. */
+typedef enum {
+    CSdone = 0,                 /* OK */
+    CSeof,                      /* Error, or EOF */
+    CSmove,
+    CSdispatch,
+    CSstay,
+    CSsignal
+} el_status_t;
 
-#if	defined(HIDE)
-#define STATIC	static
-#else
-#define STATIC	/* NULL */
-#endif	/* !defined(HIDE) */
+/* Editline specific types, despite rl_ prefix.  From Heimdal project. */
+typedef int rl_list_possib_func_t(char*, char***);
+typedef el_status_t el_keymap_func_t(void);
+typedef int  rl_hook_func_t(void);
+typedef int  rl_getc_func_t(void);
+typedef void rl_voidfunc_t(void);
+typedef void rl_vintfunc_t(int);
+typedef void rl_vcpfunc_t(char *);
 
-#if	!defined(CONST)
-#if	defined(__STDC__)
-#define CONST	const
-#else
-#define CONST
-#endif	/* defined(__STDC__) */
-#endif	/* !defined(CONST) */
+/* FSF Readline compat tupes */
+typedef char  *rl_complete_func_t   (char *, int*);
+typedef char  *rl_compentry_func_t  (const char *, int);
+typedef char **rl_completion_func_t (const char *, int, int);
 
+/* Display 8-bit chars "as-is" or as `M-x'? Toggle with M-m. (Default:0 - "as-is") */
+extern int rl_meta_chars;
 
-#define MEM_INC		64
-#define SCREEN_INC	256
+/* Editline specific functions. */
+extern char *      el_find_word(void);
+extern void        el_print_columns(int ac, char **av);
+extern el_status_t el_ring_bell(void);
+extern el_status_t el_del_char(void);
 
-#define DISPOSE(p)	free((char *)(p))
-#define NEW(T, c)	\
-	((T *)malloc((unsigned int)(sizeof (T) * (c))))
-#define RENEW(p, T, c)	\
-	(p = (T *)realloc((char *)(p), (unsigned int)(sizeof (T) * (c))))
-#define COPYFROMTO(new, p, len)	\
-	(void)memcpy((char *)(new), (char *)(p), (int)(len))
+extern el_status_t el_bind_key(int key, el_keymap_func_t function);
+extern el_status_t el_bind_key_in_metamap(int key, el_keymap_func_t function);
 
+extern const char *el_next_hist(void);
+extern const char *el_prev_hist(void);
 
-/*
-**  Variables and routines internal to this package.
-*/
-extern int	rl_eof;
-extern int	rl_erase;
-extern int	rl_intr;
-extern int	rl_kill;
-extern int	rl_quit;
-extern char	*rl_complete();
-extern int	rl_list_possib();
-extern void	rl_ttyset();
-extern void	rl_add_slash();
+extern char       *rl_complete(char *token, int *match);
+extern int         rl_list_possib(char *token, char ***av);
+extern char      **rl_completion_matches(const char *token, rl_compentry_func_t *generator);
+extern char       *rl_filename_completion_function(const char *text, int state);
 
-#if	!defined(HAVE_STDLIB)
-extern char	*getenv();
-extern char	*malloc();
-extern char	*realloc();
-extern char	*memcpy();
-extern char	*strcat();
-extern char	*strchr();
-extern char	*strrchr();
-extern char	*strcpy();
-extern char	*strdup();
-extern int	strcmp();
-extern int	strlen();
-extern int	strncmp();
-#endif	/* !defined(HAVE_STDLIB) */
+/* For compatibility with FSF readline. */
+extern int         rl_point;
+extern int         rl_mark;
+extern int         rl_end;
+extern int         rl_inhibit_complete;
+extern char       *rl_line_buffer;
+extern const char *rl_readline_name;
+extern FILE       *rl_instream;  /* The stdio stream from which input is read. Defaults to stdin if NULL - Not supported yet! */
+extern FILE       *rl_outstream; /* The stdio stream to which output is flushed. Defaults to stdout if NULL - Not supported yet! */
+extern int         el_no_echo;   /* E.g under emacs, don't echo except prompt */
+extern int         el_no_hist;   /* Disable auto-save of and access to history -- e.g. for password prompts or wizards */
+extern int         el_hist_size; /* size of history scrollback buffer, default: 15 */
 
+extern void  rl_initialize      (void);
+extern void  rl_reset_terminal  (const char *terminal_name);
+extern void  rl_uninitialize    (void);
+
+extern void  rl_save_prompt     (void);
+extern void  rl_restore_prompt  (void);
+extern void  rl_set_prompt      (const char *prompt);
+
+extern void  rl_clear_message   (void);
+extern void  rl_forced_update_display(void);
+
+extern void  rl_prep_terminal   (int meta_flag);
+extern void  rl_deprep_terminal (void);
+
+extern int   rl_getc(void);
+extern int   rl_insert_text     (const char *text);
+extern int   rl_refresh_line    (int ignore1, int ignore2);
+
+extern char *readline           (const char *prompt);
+
+extern void  add_history        (const char *line);
+extern int   read_history       (const char *filename);
+extern int   write_history      (const char *filename);
+
+extern rl_getc_func_t *rl_set_getc_func(rl_getc_func_t *func);
+
+extern rl_completion_func_t  *rl_attempted_completion_function;
+extern rl_complete_func_t    *rl_set_complete_func    (rl_complete_func_t *func);
+extern rl_list_possib_func_t *rl_set_list_possib_func (rl_list_possib_func_t *func);
+
+/* Alternate interface to plain readline(), for event loops */
+extern void rl_callback_handler_install (const char *prompt, rl_vcpfunc_t *lhandler);
+extern void rl_callback_read_char       (void);
+extern void rl_callback_handler_remove  (void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  /* EDITLINE_H_ */
