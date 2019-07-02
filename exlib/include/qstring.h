@@ -559,7 +559,7 @@ public:
 
         for (i = 0; i < len; i++) {
             if (sizeof(T) == 2) {
-                data[pos] = HexChar[(unsigned char)ptr[i] >> 12];
+                data[pos] = HexChar[(unsigned char)(ptr[i] >> 12)];
                 data[pos + 1] = HexChar[(unsigned char)(ptr[i] >> 8) & 0xf];
                 pos += 2;
                 len1 += 2;
