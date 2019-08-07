@@ -177,7 +177,7 @@ do
 	fi
 
 	cd ${lib}
-	cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DARCH=${TARGET_ARCH}  -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dname=${lib} ${VENDER_PATH}/${lib} > CMake.log
+	cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DARCH=${TARGET_ARCH}  -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dname=${lib} ${VENDER_PATH}/${lib} > CMake.log
 	if [ $? != 0 ]; then
 		exit 1
 	fi
@@ -204,7 +204,7 @@ do
 		fi
 
 		cd ${lib}_test
-		cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dname=${lib} ${VENDER_PATH}/${lib}/test > CMake.log
+		cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dname=${lib} ${VENDER_PATH}/${lib}/test > CMake.log
 		if [ $? != 0 ]; then
 			exit 1
 		fi
