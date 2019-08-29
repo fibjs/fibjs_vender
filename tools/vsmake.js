@@ -2,6 +2,10 @@
 
 var fs = require("fs");
 var hash = require("hash");
+var path = require("path");
+
+var baseDir = process.cwd();
+var prjName = path.basename(baseDir);
 
 var Includes = {};
 var Compiles = {};
@@ -14,34 +18,41 @@ var dis_archs = {
     mips64: 1
 };
 
-function do_folder(path, base) {
+function do_folder(p, base) {
+    var dir = fs.readdir(path.join(baseDir, p.replace(/\\/g, '/')));
+
     filters.push(base);
 
-    var dir = fs.readdir(path.replace(/\\/g, '/'));
-
-    dir.forEach(function(name) {
-        var f = fs.stat(path.replace(/\\/g, '/') + '/' + name);
+    dir.forEach(function (name) {
+        var f = fs.stat(path.join(baseDir, p.replace(/\\/g, '/') + '/' + name));
         if (f.isDirectory()) {
             if (!dis_archs[name])
-                do_folder(path + '\\' + name, base + '\\' + name);
+                do_folder(p + '\\' + name, base + '\\' + name);
         } else {
             var len = name.length;
             var bInc = name.substr(len - 2, 2) === '.h';
-            var bCc = name.substr(len - 3, 3) === '.cc';
+            var bCc = name.substr(len - 3, 3) === '.cc' || name.substr(len - 4, 4) === '.cpp' || name.substr(len - 2, 2) === '.c';
 
-            if (name.substr(len - 2, 2) === '.h')
-                Includes[path + '\\' + name] = base;
-            else if (name.substr(len - 3, 3) === '.cc')
-                Compiles[path + '\\' + name] = base;
+            if (bInc)
+                Includes[p + '\\' + name] = base;
+            else if (bCc)
+                Compiles[p + '\\' + name] = base;
         }
     });
 }
 
-do_folder("include", "Header Files");
+try {
+    do_folder("include", "Header Files");
+} catch (e) {}
+
+try {
+    do_folder(prjName, "Header Files");
+} catch (e) {}
+
 do_folder("src", "Source Files");
 
-var proj = fs.readTextFile('tools/proj.txt');
-var filter = fs.readTextFile('tools/filter.txt');
+var proj = fs.readTextFile(path.join(baseDir, 'tools/proj.txt'));
+var filter = fs.readTextFile(path.join(baseDir, 'tools/filter.txt'));
 
 var txts, f, s, h;
 
@@ -61,13 +72,12 @@ txts.sort();
 proj = proj.replace('<ClCompiles />', txts.join('\r\n'));
 
 
-fs.writeFile("v8.vcxproj", proj);
-
+fs.writeFile(path.join(baseDir, prjName + ".vcxproj"), proj);
 
 filters.sort();
 
 txts = [];
-filters.forEach(function(f) {
+filters.forEach(function (f) {
     h = hash.md5(f).digest().hex();
 
     s = '    <Filter Include="' + f + '">\r\n      <UniqueIdentifier>{';
@@ -92,5 +102,4 @@ for (f in Compiles) {
 txts.sort();
 filter = filter.replace('<ClCompiles />', txts.join('\r\n'));
 
-
-fs.writeFile("v8.vcxproj.filters", filter);
+fs.writeFile(path.join(baseDir, prjName + ".vcxproj.filters"), filter);

@@ -451,4 +451,4 @@ patch_trap();
 
 patch_snapshot();
 
-run('./vsmake.js');
+run('../tools/vsmake.js');
