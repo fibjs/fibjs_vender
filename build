@@ -190,9 +190,11 @@ unzip
 zmq
 editline"
 
-BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+if [ -z $GIT_BRANCH ]; then
+	GIT_BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+fi
 
-if [ $BRANCH = "test_ci" ]; then
+if [ "$GIT_BRANCH" = "test_ci" ]; then
 	echo "this is ci test branch :)"
 	libs="uuid"
 fi

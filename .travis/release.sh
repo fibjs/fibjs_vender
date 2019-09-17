@@ -13,19 +13,20 @@ case "${ARCH}" in
       ;;
 esac
 
-if [[ $TRAVIS_TAG != "" ]]; then
-  mkdir -p ${TRAVIS_TAG}
-fi
-
-DIST_FILE=""
+mkdir -p ${TRAVIS_TAG}
 
 if [[ $TRAVIS_OS_NAME == 'linux' ]]; then # linux
-  DIST_FILE=Linux_${ARCH}_release
-  zip -j ./${TRAVIS_TAG}/vender-${TRAVIS_TAG}-linux-${TARGET_ARCH}.zip .dist/bin/${DIST_FILE}/*
+  # file "Linux_${ARCH}_release" existed .dist/bin
+  DIST_FILE=vender-${TRAVIS_TAG}-linux-${TARGET_ARCH}.zip
 else # darwin
-  DIST_FILE=Darwin_${ARCH}_release
-  zip -j ./${TRAVIS_TAG}/vender-${TRAVIS_TAG}-darwin-${TARGET_ARCH}.zip .dist/bin/${DIST_FILE}/*
+  # file "Darwin_${ARCH}_release" existed .dist/bin
+  DIST_FILE=vender-${TRAVIS_TAG}-darwin-${TARGET_ARCH}.zip
 fi
+
+CUR=`pwd`
+cd ./.dist/bin
+zip -r ${CUR}/${TRAVIS_TAG}/${DIST_FILE} ./*
+cd $CUR
 
 if [[ ($TRAVIS_OS_NAME == 'linux']) && ($TARGET_ARCH == 'x64') ]]; then
   echo "zip fullsrc..."
