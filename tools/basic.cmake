@@ -12,7 +12,13 @@ endif(CCACHE_FOUND)
 file(GLOB_RECURSE src_list "src/*.c*")
 add_library(${name} ${src_list})
 
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../bin/${OS}_${ARCH}_${BUILD_TYPE})
+set(VENDOR_ROOT ${PROJECT_SOURCE_DIR}/..)
+
+if((${ctx_used_by_fibjs}) STREQUAL "1")
+	set(LIBRARY_OUTPUT_PATH ${VENDOR_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
+else()
+	set(LIBRARY_OUTPUT_PATH ${VENDOR_ROOT}/.dist/bin/${OS}_${ARCH}_${BUILD_TYPE})
+endif()
 
 if(NOT flags)
 	set(flags " ")

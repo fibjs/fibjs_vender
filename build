@@ -52,6 +52,15 @@ do
 			;;
 		release|debug|clean) BUILD_TYPE=$i
 			;;
+		ci) CI="ci"
+			;;
+		-j*) 
+			if [ "$BUILD_JOBS" = "" ]; then
+				BUILD_JOBS="${i#-j}"
+			fi
+			;;
+		-v) BUILD_VERBOSE='VERBOSE=1' 
+			;;
   		--help|-h) usage
 			;;
 		*) echo "illegal option $i"
@@ -120,7 +129,19 @@ if [ $TARGET_ARCH != $HOST_ARCH ] || [ $TARGET_OS != $HOST_OS ]; then
 fi
 
 VENDER_PATH=`pwd`
-OUT_PATH=${VENDER_PATH}/../out
+PARENT_PATH="$(dirname "${VENDER_PATH}")"
+
+USED_BY_FIBJS=""
+# when used in fibjs
+if [ -e "${PARENT_PATH}/build" ]; then
+	USED_BY_FIBJS=1
+fi
+
+if [ ! -z "${USED_BY_FIBJS}" ]; then
+	OUT_PATH=${VENDER_PATH}/../out
+else
+	OUT_PATH=${VENDER_PATH}/.dist/out
+fi
 
 if [ ${BUILD_TYPE} = 'clean' ]; then
 	if [ -e "${OUT_PATH}" ]; then
@@ -131,11 +152,11 @@ if [ ${BUILD_TYPE} = 'clean' ]; then
 fi
 
 if [ ! -e "${OUT_PATH}" ]; then
-	mkdir "${OUT_PATH}"
+	mkdir -p "${OUT_PATH}"
 fi
 
 if [ ! -e "${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}" ]; then
-	mkdir "${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
+	mkdir -p "${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
 fi
 
 OUT_PATH="${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
@@ -169,6 +190,13 @@ unzip
 zmq
 editline"
 
+BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+
+if [ $BRANCH = "test_ci" ]; then
+	echo "this is ci test branch :)"
+	libs="uuid"
+fi
+
 for lib in ${libs}
 do
 
@@ -177,7 +205,7 @@ do
 	fi
 
 	cd ${lib}
-	cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DARCH=${TARGET_ARCH}  -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dname=${lib} ${VENDER_PATH}/${lib} > CMake.log
+	cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DARCH=${TARGET_ARCH}  -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dctx_used_by_fibjs="${USED_BY_FIBJS}" -Dname=${lib} ${VENDER_PATH}/${lib} > CMake.log
 	if [ $? != 0 ]; then
 		exit 1
 	fi
@@ -204,7 +232,7 @@ do
 		fi
 
 		cd ${lib}_test
-		cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dname=${lib} ${VENDER_PATH}/${lib}/test > CMake.log
+		cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dctx_used_by_fibjs="${USED_BY_FIBJS}" -Dname=${lib} ${VENDER_PATH}/${lib}/test > CMake.log
 		if [ $? != 0 ]; then
 			exit 1
 		fi
