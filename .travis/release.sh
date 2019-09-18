@@ -13,32 +13,28 @@ case "${ARCH}" in
       ;;
 esac
 
+GIT_COMMIT_SHORTCUTS=$(git log --format=%h -1)
+GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S $TRAVIS_BRANCH)
 if [[ -z $TRAVIS_TAG ]]; then
-  export TRAVIS_TAG="release-$(git log --format=%h -1)";
+  export TRAVIS_TAG="release-$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
   echo "TRAVIS_TAG is $TRAVIS_TAG";
 fi
 
 mkdir -p ${TRAVIS_TAG};
 
-CUR_BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
-case ${CUR_BRANCH} in
-	dev|master) ZIP_KEY=$CUR_BRANCH
-		;;
-  *) ZIP_KEY=$TRAVIS_TAG
-    ;;
-esac
-
 if [[ $TRAVIS_OS_NAME == 'linux' ]]; then # linux
   # file "Linux_${ARCH}_release" existed .dist/bin
-  DIST_FILE=vender-${ZIP_KEY}-linux-${TARGET_ARCH}.zip
+  DIST_FILE=vender-linux-${TARGET_ARCH}.zip
 else # darwin
   # file "Darwin_${ARCH}_release" existed .dist/bin
-  DIST_FILE=vender-${ZIP_KEY}-darwin-${TARGET_ARCH}.zip
+  DIST_FILE=vender-darwin-${TARGET_ARCH}.zip
 fi
 
 CUR=`pwd`
 cd ./.dist/bin
+echo "archiving file: $DIST_FILE"
 zip -r ${CUR}/${TRAVIS_TAG}/${DIST_FILE} ./*
+echo "finish archiving!"
 cd $CUR
 
 if [[ ($TRAVIS_OS_NAME == 'linux']) && ($TARGET_ARCH == 'x64') ]]; then

@@ -52,19 +52,20 @@ script:
   - ./.travis/build.sh
   - ./.travis/release.sh
 before_deploy:
-  - export T_COMMIT_SHORTCUTS=$(git log --format=%h -1)
+  - export GIT_COMMIT_SHORTCUTS=$(git log --format=%h -1)
+  - export GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S $TRAVIS_BRANCH)
   - if [[ -z $TRAVIS_TAG ]]; then
-      export TRAVIS_TAG="release-$T_COMMIT_SHORTCUTS";
+      export TRAVIS_TAG="release-$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
       if [ $(git tag --list | egrep "^$TRAVIS_TAG$") ]; then
         echo "tag $TRAVIS_TAG existed";
       else
         git config --local user.name "richardo2016";
         git config --local user.email "richardo2016@gmail.com";
-        git tag "$TRAVIS_TAG" "$T_COMMIT_SHORTCUTS";
+        git tag "$TRAVIS_TAG" "$GIT_COMMIT_SHORTCUTS";
         echo "created new tag $TRAVIS_TAG";
       fi
     fi
-  - echo "$TRAVIS_TAG" "$T_COMMIT_SHORTCUTS"
+  - echo "$TRAVIS_TAG" "$GIT_COMMIT_SHORTCUTS"
 deploy:
   - provider: releases
     name: ${TRAVIS_TAG}
