@@ -1,0 +1,73 @@
+dist: trusty
+language: cpp
+services:
+  - docker
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode9
+      env:
+        - ARCH=amd64
+    - os: osx
+      osx_image: xcode9
+      env:
+        - ARCH=i386
+    - os: linux
+      env:
+        - ARCH=amd64
+    - os: linux
+      env:
+        - ARCH=i386
+    - os: linux
+      env:
+        - ARCH=arm
+    - os: linux
+      env:
+        - ARCH=arm64
+    - os: linux
+      env:
+        - ARCH=mips
+    - os: linux
+      env:
+        - ARCH=mips64
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      rvm install ruby-2.4.0;
+      rvm --default use 2.4.0;
+      ruby -v;
+      brew update;
+    fi
+install:
+  - git submodule init
+  - git submodule update
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew install xz;
+    fi
+script:
+  - echo "${ARCH}"
+  - if [[ -z $TRAVIS_TAG ]]; then
+        git config --local user.name "richardo2016";
+        git config --local user.email "richardo2016@gmail.com";
+        export TRAVIS_TAG=${TRAVIS_BRANCH:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)};
+        git tag $TRAVIS_TAG;
+    fi
+  - ./.travis/build.sh
+  - if [[ ! -z $TRAVIS_TAG ]]; then
+      ./.travis/release.sh;
+    fi
+deploy:
+  provider: releases
+  api_key:
+    secure: FbRQUq20NURkts8bswu1lkRCLCBlPZLZUoEYdRw5hMMvKqdUNJqlEKpwowvOelsKDcrgdUkgLrFMGlCIu38shZomx/dg+5N9PEnPQS7iNS9tT2I3IjNAMoPCtpkXaLz9zqo17d1jajNZs2t6WNyKYTWq+8oENXa6MbgWSt/odRhPLdl00S9iO4hUukOKI13gf1iW3FsYTYrkHQ3mMG/a4HkOC57RyEXoyXGpqDi/fHQGof55AMONCVTG3Tts2IZgUOf0GJMCEzAur970m6x3cLa0rX0XQ0Ykwi4NwDVubhcO6+pgFeu1WCwjZCLsX6qD1usl5s3Ny3MloO2iSbM+QNBdiyrX499odLzIgnwfL5n5AMkYGgr4SJvOEpc+I8OZOW2aLTa1I6xtIWBdJad6tP2+EXZ6LSX6DJgFMkZ5JhRhVLol0TGV+2K2RhUoF/tjDBBwYqCeEoeH6EgOM5Aq1sVsl+e/SenRynSv6n1aO6IfkyVcVG2KssfuN3nwVcw+QIn9HqFJ4PoBGZR5y4lrzsE+F6lP1y5DLyW0gdxKQaRnG9xixCEuh7C6DWs4p9w9jJalx1nt+J1JQ6keJ+F7tWohew1ZWtNzf4kapinpPYR3SEkNCAhCq9S7vYFT/GZAv2tWk3axYkWyZ8nF3Gx6EK4D6n3EVqGLIfFfJrYK1R8=
+  file_glob: true
+  file: ${TRAVIS_TAG}/*
+  skip_cleanup: true
+  overwrite: true
+  on:
+    tags: true
+    repo: fibjs/fibjs_vender
+    branches:
+      only:
+        - dev
+        - master
+        - test_ci
