@@ -32,6 +32,10 @@ matrix:
       env:
         - ARCH=mips64
 cache: ccache
+addons:
+  apt:
+    packages:
+     - ccache
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       rvm install ruby-2.4.0;
