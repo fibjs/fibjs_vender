@@ -41,7 +41,9 @@ esac
 
 TARGET_OS=$HOST_OS
 TARGET_ARCH=$HOST_ARCH
-BUILD_TYPE="release"
+if [ -z "${BUILD_TYPE}" ]; then
+	BUILD_TYPE="release"
+fi
 BUILD_OPTION=""
 GCC_VERSION=`gcc -dumpversion`
 
