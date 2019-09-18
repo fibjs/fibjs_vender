@@ -66,7 +66,7 @@ before_deploy:
   - export GIT_COMMIT_SHORTCUTS=$(git log --format=%h -1)
   - export GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S $TRAVIS_BRANCH)
   - if [[ -z $TRAVIS_TAG ]]; then
-      export TRAVIS_TAG="$GIT_COMMIT_TIME-$BUILD_TYPE-$GIT_COMMIT_SHORTCUTS";
+      export TRAVIS_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
       if [ $(git tag --list | egrep "^$TRAVIS_TAG$") ]; then
         echo "tag $TRAVIS_TAG existed";
       else

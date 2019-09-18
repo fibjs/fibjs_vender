@@ -16,7 +16,7 @@ esac
 GIT_COMMIT_SHORTCUTS=$(git log --format=%h -1)
 GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S $TRAVIS_BRANCH)
 if [[ -z $TRAVIS_TAG ]]; then
-  export TRAVIS_TAG="$GIT_COMMIT_TIME-$BUILD_TYPE-$GIT_COMMIT_SHORTCUTS";
+  export TRAVIS_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
   echo "TRAVIS_TAG is $TRAVIS_TAG";
 fi
 
@@ -24,10 +24,10 @@ mkdir -p ${TRAVIS_TAG};
 
 if [[ $TRAVIS_OS_NAME == 'linux' ]]; then # linux
   # file "Linux_${ARCH}_$BUILD_TYPE" existed .dist/bin
-  DIST_FILE=vender-linux-${TARGET_ARCH}.zip
+  DIST_FILE=vender-linux-${TARGET_ARCH}-$BUILD_TYPE.zip
 else # darwin
   # file "Darwin_${ARCH}_$BUILD_TYPE" existed .dist/bin
-  DIST_FILE=vender-darwin-${TARGET_ARCH}.zip
+  DIST_FILE=vender-darwin-${TARGET_ARCH}-$BUILD_TYPE.zip
 fi
 
 CUR=`pwd`
