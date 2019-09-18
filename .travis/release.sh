@@ -13,7 +13,12 @@ case "${ARCH}" in
       ;;
 esac
 
-mkdir -p ${TRAVIS_TAG}
+if [[ -z $TRAVIS_TAG ]]; then
+  export TRAVIS_TAG="release-$(git log --format=%h -1)";
+  echo "TRAVIS_TAG is $TRAVIS_TAG";
+fi
+
+mkdir -p ${TRAVIS_TAG};
 
 if [[ $TRAVIS_OS_NAME == 'linux' ]]; then # linux
   # file "Linux_${ARCH}_release" existed .dist/bin
