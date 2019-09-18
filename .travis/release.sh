@@ -20,12 +20,20 @@ fi
 
 mkdir -p ${TRAVIS_TAG};
 
+CUR_BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+case ${CUR_BRANCH} in
+	dev|master) ZIP_KEY=$CUR_BRANCH
+		;;
+  *) ZIP_KEY=$TRAVIS_TAG
+    ;;
+esac
+
 if [[ $TRAVIS_OS_NAME == 'linux' ]]; then # linux
   # file "Linux_${ARCH}_release" existed .dist/bin
-  DIST_FILE=vender-${TRAVIS_TAG}-linux-${TARGET_ARCH}.zip
+  DIST_FILE=vender-${ZIP_KEY}-linux-${TARGET_ARCH}.zip
 else # darwin
   # file "Darwin_${ARCH}_release" existed .dist/bin
-  DIST_FILE=vender-${TRAVIS_TAG}-darwin-${TARGET_ARCH}.zip
+  DIST_FILE=vender-${ZIP_KEY}-darwin-${TARGET_ARCH}.zip
 fi
 
 CUR=`pwd`
