@@ -14,6 +14,7 @@ case "${ARCH}" in
 esac
 
 GIT_COMMIT_SHORTCUTS=$(git log --format=%h -1)
+GIT_COMMIT_SHORTCUTS=${GIT_COMMIT_SHORTCUTS:0:7}
 GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S $TRAVIS_BRANCH)
 if [[ -z $TRAVIS_TAG ]]; then
   export TRAVIS_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
