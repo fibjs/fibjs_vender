@@ -612,6 +612,11 @@ public:
         return assign(str);
     }
 
+    operator std::basic_string<T>() const
+    {
+        return std::basic_string<T>(c_str(), length());
+    }
+
 private:
     size_t m_length;
     union {
