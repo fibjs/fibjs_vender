@@ -33,7 +33,6 @@
 #if defined(MBEDTLS_MD5_C)
 
 #include "mbedtls/md5.h"
-#include "mbedtls/platform_util.h"
 
 #include <string.h>
 
@@ -47,6 +46,11 @@
 #endif /* MBEDTLS_SELF_TEST */
 
 #if !defined(MBEDTLS_MD5_ALT)
+
+/* Implementation that should never be optimized out by the compiler */
+static void mbedtls_zeroize( void *v, size_t n ) {
+    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
+}
 
 /*
  * 32-bit integer manipulation macros (little endian)
@@ -81,7 +85,7 @@ void mbedtls_md5_free( mbedtls_md5_context *ctx )
     if( ctx == NULL )
         return;
 
-    mbedtls_platform_zeroize( ctx, sizeof( mbedtls_md5_context ) );
+    mbedtls_zeroize( ctx, sizeof( mbedtls_md5_context ) );
 }
 
 void mbedtls_md5_clone( mbedtls_md5_context *dst,
@@ -136,22 +140,19 @@ int mbedtls_internal_md5_process( mbedtls_md5_context *ctx,
     GET_UINT32_LE( X[14], data, 56 );
     GET_UINT32_LE( X[15], data, 60 );
 
-#define S(x,n)                                                          \
-    ( ( (x) << (n) ) | ( ( (x) & 0xFFFFFFFF) >> ( 32 - (n) ) ) )
+#define S(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 
-#define P(a,b,c,d,k,s,t)                                        \
-    do                                                          \
-    {                                                           \
-        (a) += F((b),(c),(d)) + X[(k)] + (t);                   \
-        (a) = S((a),(s)) + (b);                                 \
-    } while( 0 )
+#define P(a,b,c,d,k,s,t)                                \
+{                                                       \
+    a += F(b,c,d) + X[k] + t; a = S(a,s) + b;           \
+}
 
     A = ctx->state[0];
     B = ctx->state[1];
     C = ctx->state[2];
     D = ctx->state[3];
 
-#define F(x,y,z) ((z) ^ ((x) & ((y) ^ (z))))
+#define F(x,y,z) (z ^ (x & (y ^ z)))
 
     P( A, B, C, D,  0,  7, 0xD76AA478 );
     P( D, A, B, C,  1, 12, 0xE8C7B756 );
@@ -172,7 +173,7 @@ int mbedtls_internal_md5_process( mbedtls_md5_context *ctx,
 
 #undef F
 
-#define F(x,y,z) ((y) ^ ((z) & ((x) ^ (y))))
+#define F(x,y,z) (y ^ (z & (x ^ y)))
 
     P( A, B, C, D,  1,  5, 0xF61E2562 );
     P( D, A, B, C,  6,  9, 0xC040B340 );
@@ -193,7 +194,7 @@ int mbedtls_internal_md5_process( mbedtls_md5_context *ctx,
 
 #undef F
 
-#define F(x,y,z) ((x) ^ (y) ^ (z))
+#define F(x,y,z) (x ^ y ^ z)
 
     P( A, B, C, D,  5,  4, 0xFFFA3942 );
     P( D, A, B, C,  8, 11, 0x8771F681 );
@@ -214,7 +215,7 @@ int mbedtls_internal_md5_process( mbedtls_md5_context *ctx,
 
 #undef F
 
-#define F(x,y,z) ((y) ^ ((x) | ~(z)))
+#define F(x,y,z) (y ^ (x | ~z))
 
     P( A, B, C, D,  0,  6, 0xF4292244 );
     P( D, A, B, C,  7, 10, 0x432AFF97 );

@@ -24,9 +24,6 @@
     <ClInclude Include="mbedtls\arc4.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mbedtls\aria.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="mbedtls\asn1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -52,12 +49,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mbedtls\certs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mbedtls\chacha20.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mbedtls\chachapoly.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mbedtls\check_config.h">
@@ -120,9 +111,6 @@
     <ClInclude Include="mbedtls\havege.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mbedtls\hkdf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="mbedtls\hmac_drbg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -148,9 +136,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mbedtls\net_sockets.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mbedtls\nist_kw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mbedtls\oid.h">
@@ -181,12 +166,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mbedtls\platform_time.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mbedtls\platform_util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mbedtls\poly1305.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mbedtls\ripemd160.h">
@@ -260,9 +239,6 @@
     <ClCompile Include="src\arc4.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\aria.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\asn1parse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -282,12 +258,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\certs.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\chacha20.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\chachapoly.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cipher.c">
@@ -338,9 +308,6 @@
     <ClCompile Include="src\havege.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\hkdf.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\hmac_drbg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -363,9 +330,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\net_sockets.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\nist_kw.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\oid.c">
@@ -399,12 +363,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\platform.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\platform_util.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\poly1305.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ripemd160.c">

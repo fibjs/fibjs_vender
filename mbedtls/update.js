@@ -112,7 +112,7 @@ console.notice("threading.c")
 file_path = fibjs_mbedtls_path + '/mbedtls/cipher.h';
 
 datas = fs.readLines(file_path);
-line = datas.indexOf("    MBEDTLS_CIPHER_ARC4_128,             /**< RC4 cipher with 128-bit mode. */");
+line = datas.indexOf("    MBEDTLS_CIPHER_ARC4_128,");
 if (line != -1) {
     insert = '    MBEDTLS_CIPHER_ARC4_40,\n    MBEDTLS_CIPHER_ARC4_56,\n    MBEDTLS_CIPHER_ARC4_64,';
     datas.splice(line, 0, insert)

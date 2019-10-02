@@ -37,30 +37,24 @@
 #define MBEDTLS_XTEA_DECRYPT     0
 
 #define MBEDTLS_ERR_XTEA_INVALID_INPUT_LENGTH             -0x0028  /**< The data input has an invalid length. */
-
-/* MBEDTLS_ERR_XTEA_HW_ACCEL_FAILED is deprecated and should not be used. */
 #define MBEDTLS_ERR_XTEA_HW_ACCEL_FAILED                  -0x0029  /**< XTEA hardware accelerator failed. */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #if !defined(MBEDTLS_XTEA_ALT)
 // Regular implementation
 //
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * \brief          XTEA context structure
  */
-typedef struct mbedtls_xtea_context
+typedef struct
 {
     uint32_t k[4];       /*!< key */
 }
 mbedtls_xtea_context;
-
-#else  /* MBEDTLS_XTEA_ALT */
-#include "xtea_alt.h"
-#endif /* MBEDTLS_XTEA_ALT */
 
 /**
  * \brief          Initialize XTEA context
@@ -121,7 +115,17 @@ int mbedtls_xtea_crypt_cbc( mbedtls_xtea_context *ctx,
                     unsigned char *output);
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
-#if defined(MBEDTLS_SELF_TEST)
+#ifdef __cplusplus
+}
+#endif
+
+#else  /* MBEDTLS_XTEA_ALT */
+#include "xtea_alt.h"
+#endif /* MBEDTLS_XTEA_ALT */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * \brief          Checkup routine
@@ -129,8 +133,6 @@ int mbedtls_xtea_crypt_cbc( mbedtls_xtea_context *ctx,
  * \return         0 if successful, or 1 if the test failed
  */
 int mbedtls_xtea_self_test( int verbose );
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #ifdef __cplusplus
 }

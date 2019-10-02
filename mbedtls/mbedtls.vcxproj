@@ -22,7 +22,6 @@
     <ClInclude Include="mbedtls\aes.h" />
     <ClInclude Include="mbedtls\aesni.h" />
     <ClInclude Include="mbedtls\arc4.h" />
-    <ClInclude Include="mbedtls\aria.h" />
     <ClInclude Include="mbedtls\asn1.h" />
     <ClInclude Include="mbedtls\asn1write.h" />
     <ClInclude Include="mbedtls\base64.h" />
@@ -32,8 +31,6 @@
     <ClInclude Include="mbedtls\camellia.h" />
     <ClInclude Include="mbedtls\ccm.h" />
     <ClInclude Include="mbedtls\certs.h" />
-    <ClInclude Include="mbedtls\chacha20.h" />
-    <ClInclude Include="mbedtls\chachapoly.h" />
     <ClInclude Include="mbedtls\check_config.h" />
     <ClInclude Include="mbedtls\cipher.h" />
     <ClInclude Include="mbedtls\cipher_internal.h" />
@@ -54,7 +51,6 @@
     <ClInclude Include="mbedtls\error.h" />
     <ClInclude Include="mbedtls\gcm.h" />
     <ClInclude Include="mbedtls\havege.h" />
-    <ClInclude Include="mbedtls\hkdf.h" />
     <ClInclude Include="mbedtls\hmac_drbg.h" />
     <ClInclude Include="mbedtls\md.h" />
     <ClInclude Include="mbedtls\md2.h" />
@@ -64,7 +60,6 @@
     <ClInclude Include="mbedtls\memory_buffer_alloc.h" />
     <ClInclude Include="mbedtls\net.h" />
     <ClInclude Include="mbedtls\net_sockets.h" />
-    <ClInclude Include="mbedtls\nist_kw.h" />
     <ClInclude Include="mbedtls\oid.h" />
     <ClInclude Include="mbedtls\padlock.h" />
     <ClInclude Include="mbedtls\pem.h" />
@@ -75,8 +70,6 @@
     <ClInclude Include="mbedtls\pkcs5.h" />
     <ClInclude Include="mbedtls\platform.h" />
     <ClInclude Include="mbedtls\platform_time.h" />
-    <ClInclude Include="mbedtls\platform_util.h" />
-    <ClInclude Include="mbedtls\poly1305.h" />
     <ClInclude Include="mbedtls\ripemd160.h" />
     <ClInclude Include="mbedtls\rsa.h" />
     <ClInclude Include="mbedtls\rsa_internal.h" />
@@ -102,7 +95,6 @@
     <ClCompile Include="src\aes.c" />
     <ClCompile Include="src\aesni.c" />
     <ClCompile Include="src\arc4.c" />
-    <ClCompile Include="src\aria.c" />
     <ClCompile Include="src\asn1parse.c" />
     <ClCompile Include="src\asn1write.c" />
     <ClCompile Include="src\base64.c" />
@@ -110,8 +102,6 @@
     <ClCompile Include="src\camellia.c" />
     <ClCompile Include="src\ccm.c" />
     <ClCompile Include="src\certs.c" />
-    <ClCompile Include="src\chacha20.c" />
-    <ClCompile Include="src\chachapoly.c" />
     <ClCompile Include="src\cipher.c" />
     <ClCompile Include="src\cipher_wrap.c" />
     <ClCompile Include="src\cmac.c" />
@@ -128,7 +118,6 @@
     <ClCompile Include="src\error.c" />
     <ClCompile Include="src\gcm.c" />
     <ClCompile Include="src\havege.c" />
-    <ClCompile Include="src\hkdf.c" />
     <ClCompile Include="src\hmac_drbg.c" />
     <ClCompile Include="src\md.c" />
     <ClCompile Include="src\md2.c" />
@@ -137,7 +126,6 @@
     <ClCompile Include="src\md_wrap.c" />
     <ClCompile Include="src\memory_buffer_alloc.c" />
     <ClCompile Include="src\net_sockets.c" />
-    <ClCompile Include="src\nist_kw.c" />
     <ClCompile Include="src\oid.c" />
     <ClCompile Include="src\padlock.c" />
     <ClCompile Include="src\pem.c" />
@@ -149,8 +137,6 @@
     <ClCompile Include="src\pkparse.c" />
     <ClCompile Include="src\pkwrite.c" />
     <ClCompile Include="src\platform.c" />
-    <ClCompile Include="src\platform_util.c" />
-    <ClCompile Include="src\poly1305.c" />
     <ClCompile Include="src\ripemd160.c" />
     <ClCompile Include="src\rsa.c" />
     <ClCompile Include="src\rsa_internal.c" />
