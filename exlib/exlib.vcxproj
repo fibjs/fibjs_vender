@@ -23,12 +23,6 @@
     <ClInclude Include="include\fiber.h" />
     <ClInclude Include="include\hrtime.h" />
     <ClInclude Include="include\osconfig.h" />
-    <ClInclude Include="include\pratom.h" />
-    <ClInclude Include="include\prcvar.h" />
-    <ClInclude Include="include\prinit.h" />
-    <ClInclude Include="include\prlock.h" />
-    <ClInclude Include="include\prthread.h" />
-    <ClInclude Include="include\prtypes.h" />
     <ClInclude Include="include\service.h" />
     <ClInclude Include="include\thread.h" />
     <ClInclude Include="include\utils.h" />
@@ -66,10 +60,6 @@
     <ClCompile Include="src\fbSwitch_i386.cpp" />
     <ClCompile Include="src\fbSwitch_mips64.cpp" />
     <ClCompile Include="src\fbTls.cpp" />
-    <ClCompile Include="src\pratom.cpp" />
-    <ClCompile Include="src\prcvar.cpp" />
-    <ClCompile Include="src\prlock.cpp" />
-    <ClCompile Include="src\prthread.cpp" />
     <ClCompile Include="src\thread.cpp" />
     <ClCompile Include="src\win_lock.cpp" />
     <ClCompile Include="src\osx_tls.cpp" />
