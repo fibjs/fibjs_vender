@@ -30,7 +30,6 @@
     <ClInclude Include="include\utils_arm64.h" />
     <ClInclude Include="include\utils_mips.h" />
     <ClInclude Include="include\utils_mips64.h" />
-    <ClInclude Include="include\utils_win.h" />
     <ClInclude Include="include\utils_x64.h" />
     <ClInclude Include="include\utils_x86.h" />
   </ItemGroup>

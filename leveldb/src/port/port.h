@@ -34,11 +34,11 @@ static const bool kLittleEndian = false;
 typedef exlib::OSMutex Mutex;
 typedef exlib::OSCondVar CondVar;
 
-typedef intptr_t OnceType;
+typedef exlib::atomic OnceType;
 #define LEVELDB_ONCE_INIT 0
 inline void InitOnce(port::OnceType *once, void (*initializer)())
 {
-    exlib::InitOnce(once, initializer);
+    exlib::InitOnce(*once, initializer);
 }
 
 class AtomicPointer
@@ -59,12 +59,12 @@ public:
     inline void *Acquire_Load() const
     {
         void *result = rep_;
-        exlib::MemoryBarrier();
+        std::atomic_thread_fence(std::memory_order_seq_cst);
         return result;
     }
     inline void Release_Store(void *v)
     {
-        exlib::MemoryBarrier();
+        std::atomic_thread_fence(std::memory_order_seq_cst);
         rep_ = v;
     }
 };

@@ -45,9 +45,6 @@
     <ClInclude Include="include\utils_mips64.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\utils_win.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\utils_x64.h">
       <Filter>Header Files</Filter>
     </ClInclude>
