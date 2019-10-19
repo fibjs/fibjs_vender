@@ -29,6 +29,10 @@
 #error unknoen arch....
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace exlib {
 
 class atomic {
