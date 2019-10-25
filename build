@@ -189,7 +189,6 @@ mbedtls
 v8
 jssdk
 unzip
-zmq
 editline"
 
 if [ -z $GIT_BRANCH ]; then
