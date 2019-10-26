@@ -294,7 +294,7 @@ bool Connection::processHandshake()
     m_clientCaps  &= ~MCP_NO_SCHEMA;
     m_clientCaps &= ~MCP_SSL;
 
-    if(serverVersion[0]=='5')
+    if(serverVersion[0]>='5')
         m_clientCaps |= MCP_MULTI_STATEMENTS | MCP_MULTI_RESULTS;
 
     if (!(serverCaps & MCP_CONNECT_WITH_DB) && !m_database.empty())
