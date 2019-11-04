@@ -208,28 +208,6 @@ private:
     List<Task_base> m_blocks;
 };
 
-class CondVar {
-public:
-    void wait(Locker& l);
-    void notify_one();
-    void notify_all();
-
-    int32_t count()
-    {
-        int32_t cnt;
-
-        m_lock.lock();
-        cnt = m_blocks.count();
-        m_lock.unlock();
-
-        return cnt;
-    }
-
-private:
-    spinlock m_lock;
-    List<Task_base> m_blocks;
-};
-
 class Semaphore {
 public:
     Semaphore(int32_t count = 0)
@@ -239,7 +217,7 @@ public:
 
 public:
     void wait();
-    void post();
+    void post(int32_t cnt = 1);
     bool trywait();
 
     int32_t count()
@@ -257,6 +235,41 @@ private:
     int32_t m_count;
     spinlock m_lock;
     List<Task_base> m_blocks;
+};
+
+class CondVar {
+public:
+    CondVar()
+        : m_semBlockLock(1)
+    {
+    }
+
+public:
+    void wait(Locker& mtxExternal);
+    void notify(bool bAll);
+
+    void notify_one()
+    {
+        notify(false);
+    }
+
+    void notify_all()
+    {
+        notify(true);
+    }
+
+    int32_t count()
+    {
+        return m_semBlockQueue.count();
+    }
+
+private:
+    Semaphore m_semBlockLock;
+    Semaphore m_semBlockQueue;
+    Locker m_mtxUnblockLock;
+    int32_t m_nWaitersGone = 0;
+    int32_t m_nWaitersBlocked = 0;
+    int32_t m_nWaitersToUnblock = 0;
 };
 
 template <class T>

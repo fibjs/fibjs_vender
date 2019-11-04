@@ -7,45 +7,76 @@
  */
 
 #include "service.h"
+#include "limits.h"
 
 namespace exlib {
 
-void CondVar::wait(Locker& l)
+void CondVar::wait(Locker& mtxExternal)
 {
-    l.unlock();
+    int32_t nSignalsWasLeft;
 
-    Task_base* current = Thread_base::current();
-    assert(current != 0);
+    m_semBlockLock.wait();
+    ++m_nWaitersBlocked;
+    m_semBlockLock.post();
 
-    m_lock.lock();
-    m_blocks.putTail(current);
-    current->suspend(m_lock);
+    mtxExternal.unlock();
+    m_semBlockQueue.wait();
 
-    l.lock();
+    m_mtxUnblockLock.lock();
+    if (0 != (nSignalsWasLeft = m_nWaitersToUnblock))
+        --m_nWaitersToUnblock;
+    else if (INT_MAX / 2 == ++m_nWaitersGone) {
+        m_semBlockLock.wait();
+        m_nWaitersBlocked -= m_nWaitersGone;
+        m_semBlockLock.post();
+        m_nWaitersGone = 0;
+    }
+    m_mtxUnblockLock.unlock();
+
+    if (1 == nSignalsWasLeft)
+        m_semBlockLock.post();
+
+    mtxExternal.lock();
 }
 
-void CondVar::notify_one()
+void CondVar::notify(bool bAll)
 {
-    Task_base* fb;
+    int32_t nSignalsToIssue;
 
-    m_lock.lock();
-    fb = m_blocks.getHead();
-    m_lock.unlock();
+    m_mtxUnblockLock.lock();
 
-    if (fb != 0)
-        fb->resume();
-}
+    if (0 != m_nWaitersToUnblock) {
+        if (0 == m_nWaitersBlocked) {
+            m_mtxUnblockLock.unlock();
+            return;
+        }
+        if (bAll) {
+            m_nWaitersToUnblock += nSignalsToIssue = m_nWaitersBlocked;
+            m_nWaitersBlocked = 0;
+        } else {
+            nSignalsToIssue = 1;
+            ++m_nWaitersToUnblock;
+            --m_nWaitersBlocked;
+        }
+    } else if (m_nWaitersBlocked > m_nWaitersGone) {
+        m_semBlockLock.wait();
+        if (0 != m_nWaitersGone) {
+            m_nWaitersBlocked -= m_nWaitersGone;
+            m_nWaitersGone = 0;
+        }
+        if (bAll) {
+            nSignalsToIssue = m_nWaitersToUnblock = m_nWaitersBlocked;
+            m_nWaitersBlocked = 0;
+        } else {
+            nSignalsToIssue = m_nWaitersToUnblock = 1;
+            --m_nWaitersBlocked;
+        }
+    } else {
+        m_mtxUnblockLock.unlock();
+        return;
+    }
 
-void CondVar::notify_all()
-{
-    List<Task_base> blocks;
-
-    m_lock.lock();
-    m_blocks.getList(blocks);
-    m_lock.unlock();
-
-    Task_base* fb;
-    while ((fb = blocks.getHead()) != 0)
-        fb->resume();
+    m_mtxUnblockLock.unlock();
+    m_semBlockQueue.post(nSignalsToIssue);
 }
 }

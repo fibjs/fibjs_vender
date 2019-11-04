@@ -26,18 +26,21 @@ void Semaphore::wait()
     }
 }
 
-void Semaphore::post()
+void Semaphore::post(int32_t cnt)
 {
-    Task_base* fb;
-
     m_lock.lock();
-    fb = m_blocks.getHead();
-    if (fb == 0)
-        m_count++;
-    m_lock.unlock();
 
-    if (fb != 0)
-        fb->resume();
+    while (cnt--) {
+        Task_base* fb;
+
+        fb = m_blocks.getHead();
+        if (fb == 0)
+            m_count++;
+        else
+            fb->resume();
+    }
+
+    m_lock.unlock();
 }
 
 bool Semaphore::trywait()
