@@ -42,6 +42,9 @@
 #if defined(MBEDTLS_ECDSA_C)
 #include "mbedtls/ecdsa.h"
 #endif
+#if defined(MBEDTLS_SM2_C)
+#include "mbedtls/sm2.h"
+#endif
 #if defined(MBEDTLS_PEM_PARSE_C)
 #include "mbedtls/pem.h"
 #endif
@@ -643,7 +646,8 @@ int mbedtls_pk_parse_subpubkey( unsigned char **p, const unsigned char *end,
     } else
 #endif /* MBEDTLS_RSA_C */
 #if defined(MBEDTLS_ECP_C)
-    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY )
+    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY ||
+        pk_alg == MBEDTLS_PK_SM2 )
     {
         ret = pk_use_ecparams( &alg_params, &mbedtls_pk_ec( *pk )->grp );
         if( ret == 0 )
@@ -1001,7 +1005,8 @@ static int pk_parse_key_pkcs8_unencrypted_der(
     } else
 #endif /* MBEDTLS_RSA_C */
 #if defined(MBEDTLS_ECP_C)
-    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH )
+    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH ||
+        pk_alg == MBEDTLS_PK_SM2 )
     {
         if( ( ret = pk_use_ecparams( &params, &mbedtls_pk_ec( *pk )->grp ) ) != 0 ||
             ( ret = pk_parse_key_sec1_der( mbedtls_pk_ec( *pk ), p, len )  ) != 0 )

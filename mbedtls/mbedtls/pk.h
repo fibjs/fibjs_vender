@@ -45,6 +45,10 @@
 #include "ecdsa.h"
 #endif
 
+#if defined(MBEDTLS_SM2_C)
+#include "sm2.h"
+#endif
+
 #if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
     !defined(inline) && !defined(__cplusplus)
 #define inline __inline
@@ -81,6 +85,7 @@ typedef enum {
     MBEDTLS_PK_ECDSA,
     MBEDTLS_PK_RSA_ALT,
     MBEDTLS_PK_RSASSA_PSS,
+    MBEDTLS_PK_SM2,
 } mbedtls_pk_type_t;
 
 /**
