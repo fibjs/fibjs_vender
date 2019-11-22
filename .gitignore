@@ -1,1 +1,16 @@
 .dist/**
+*/out
+
+# ignore .vs local files
+.vs
+*/*.sln
+*vcxproj.user
+
+# ignore cmake temp files
+*/arch.c
+*/os.c
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles
+ALL_BUILD.vcxproj*
+ZERO_CHECK.vcxproj*
