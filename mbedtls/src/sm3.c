@@ -74,7 +74,7 @@ void mbedtls_sm3_clone(mbedtls_sm3_context *dst,
 /*
  * SM3 context setup
  */
-void mbedtls_sm3_starts(mbedtls_sm3_context *ctx)
+int mbedtls_sm3_starts_ret(mbedtls_sm3_context *ctx)
 {
     ctx->total[0] = 0;
     ctx->total[1] = 0;
@@ -87,10 +87,12 @@ void mbedtls_sm3_starts(mbedtls_sm3_context *ctx)
     ctx->state[5] = 0x163138AA;
     ctx->state[6] = 0xE38DEE4D;
     ctx->state[7] = 0xB0FB0E4E;
+
+    return( 0 );
 }
 
 #if !defined(MBEDTLS_SM3_PROCESS_ALT)
-void mbedtls_sm3_process(mbedtls_sm3_context *ctx,
+int mbedtls_sm3_process(mbedtls_sm3_context *ctx,
         const unsigned char data[64])
 {
     uint32_t SS1, SS2, TT1, TT2, W[68], W1[64];
@@ -195,20 +197,23 @@ void mbedtls_sm3_process(mbedtls_sm3_context *ctx,
     ctx->state[5] ^= F;
     ctx->state[6] ^= G;
     ctx->state[7] ^= H;
+
+    return( 0 );
 }
 #endif /* !MBEDTLS_SM3_PROCESS_ALT */
 
 /*
  * SM3 process buffer
  */
-void mbedtls_sm3_update(mbedtls_sm3_context *ctx,
+int mbedtls_sm3_update_ret(mbedtls_sm3_context *ctx,
         const unsigned char *input, int ilen)
 {
+    int ret;
     int fill;
     uint32_t left;
 
     if (ilen <= 0)
-        return;
+        return( 0 );
 
     left = ctx->total[0] & 0x3F;
     fill = 64 - left;
@@ -221,21 +226,26 @@ void mbedtls_sm3_update(mbedtls_sm3_context *ctx,
 
     if (left && ilen >= fill) {
         memcpy((void *) (ctx->buffer + left), (void *) input, fill);
-        mbedtls_sm3_process(ctx, ctx->buffer);
+
+        if( ( ret = mbedtls_sm3_process( ctx, ctx->buffer ) ) != 0 )
+            return( ret );
+
         input += fill;
         ilen  -= fill;
         left = 0;
     }
 
     while (ilen >= 64) {
-        mbedtls_sm3_process(ctx, input);
+        if( ( ret = mbedtls_sm3_process( ctx, input ) ) != 0 )
+            return( ret );
         input += 64;
         ilen  -= 64;
     }
 
-    if (ilen > 0) {
+    if (ilen > 0)
         memcpy((void *) (ctx->buffer + left), (void *) input, ilen);
-    }
+
+    return( 0 );
 }
 
 static const unsigned char sm3_padding[64] = {
@@ -248,8 +258,9 @@ static const unsigned char sm3_padding[64] = {
 /*
  * SM3 final digest
  */
-void mbedtls_sm3_finish(mbedtls_sm3_context *ctx, unsigned char output[32])
+int mbedtls_sm3_finish_ret(mbedtls_sm3_context *ctx, unsigned char output[32])
 {
+    int ret;
     uint32_t last, padn;
     uint32_t high, low;
     unsigned char msglen[8];
@@ -264,8 +275,10 @@ void mbedtls_sm3_finish(mbedtls_sm3_context *ctx, unsigned char output[32])
     last = ctx->total[0] & 0x3F;
     padn = (last < 56) ? (56 - last) : (120 - last);
 
-    mbedtls_sm3_update(ctx, (unsigned char *) sm3_padding, padn);
-    mbedtls_sm3_update(ctx, msglen, 8);
+    if( ( ret = mbedtls_sm3_update_ret(ctx, (unsigned char *) sm3_padding, padn) ) != 0 )
+        return( ret );
+    if( ( ret = mbedtls_sm3_update_ret(ctx, msglen, 8) ) != 0 )
+        return( ret );
 
     PUT_UINT32_BE(ctx->state[0], output,  0);
     PUT_UINT32_BE(ctx->state[1], output,  4);
@@ -275,6 +288,8 @@ void mbedtls_sm3_finish(mbedtls_sm3_context *ctx, unsigned char output[32])
     PUT_UINT32_BE(ctx->state[5], output, 20);
     PUT_UINT32_BE(ctx->state[6], output, 24);
     PUT_UINT32_BE(ctx->state[7], output, 28);
+
+    return( 0 );
 }
 
 #endif /* !MBEDTLS_SM3_ALT */
@@ -282,16 +297,23 @@ void mbedtls_sm3_finish(mbedtls_sm3_context *ctx, unsigned char output[32])
 /*
  * output = SM3(input buffer)
  */
-void mbedtls_sm3(const unsigned char *input, int ilen,
+int mbedtls_sm3_ret(const unsigned char *input, int ilen,
         unsigned char output[32])
 {
+    int ret;
     mbedtls_sm3_context ctx;
 
-    mbedtls_sm3_starts(&ctx);
-    mbedtls_sm3_update(&ctx, input, ilen);
-    mbedtls_sm3_finish(&ctx, output);
+    if( ( ret = mbedtls_sm3_starts_ret( &ctx ) ) != 0 )
+        goto exit;
+    if( ( ret = mbedtls_sm3_update_ret(&ctx, input, ilen) ) != 0 )
+        goto exit;
+    if( ( ret = mbedtls_sm3_finish_ret(&ctx, output) ) != 0 )
+        goto exit;
 
-    memset(&ctx, 0, sizeof(mbedtls_sm3_context));
+exit:
+    mbedtls_sm3_free( &ctx );
+
+    return( ret );
 }
 
 #if defined(MBEDTLS_SM3_FILE) && defined(MBEDTLS_FS_IO)
@@ -447,9 +469,9 @@ int mbedtls_sm3_self_test(int verbose)
         if (verbose != 0) {
             mbedtls_printf("  SM3 test #%d: ", i + 1);
         }
-        mbedtls_sm3_starts(&ctx);
-        mbedtls_sm3_update(&ctx, sm3_test_buf[i], sm3_test_buflen[i]);
-        mbedtls_sm3_finish(&ctx, sm3sum);
+        mbedtls_sm3_starts_ret(&ctx);
+        mbedtls_sm3_update_ret(&ctx, sm3_test_buf[i], sm3_test_buflen[i]);
+        mbedtls_sm3_finish_ret(&ctx, sm3sum);
 
         if (memcmp(sm3sum, sm3_test_sum[i], 32) != 0) {
             int j;

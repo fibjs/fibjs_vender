@@ -589,26 +589,26 @@ const mbedtls_md_info_t mbedtls_sha512_info = {
 
 #if defined(MBEDTLS_SM3_C)
 
-static void sm3_starts_wrap( void *ctx )
+static int sm3_starts_wrap( void *ctx )
 {
-    mbedtls_sm3_starts( (mbedtls_sm3_context *) ctx );
+    return( mbedtls_sm3_starts_ret( (mbedtls_sm3_context *) ctx ) );
 }
 
-static void sm3_update_wrap( void *ctx, const unsigned char *input,
+static int sm3_update_wrap( void *ctx, const unsigned char *input,
                                 size_t ilen )
 {
-    mbedtls_sm3_update( (mbedtls_sm3_context *) ctx, input, ilen );
+    return( mbedtls_sm3_update_ret( (mbedtls_sm3_context *) ctx, input, ilen ) );
 }
 
-static void sm3_finish_wrap( void *ctx, unsigned char *output )
+static int sm3_finish_wrap( void *ctx, unsigned char *output )
 {
-    mbedtls_sm3_finish( (mbedtls_sm3_context *) ctx, output );
+    return( mbedtls_sm3_finish_ret( (mbedtls_sm3_context *) ctx, output ) );
 }
 
-static void sm3_wrap( const unsigned char *input, size_t ilen,
+static int sm3_wrap( const unsigned char *input, size_t ilen,
                     unsigned char *output )
 {
-    mbedtls_sm3( input, ilen, output );
+    return( mbedtls_sm3_ret( input, ilen, output ) );
 }
 
 static void *sm3_ctx_alloc( void )
@@ -633,9 +633,9 @@ static void sm3_clone_wrap( void *dst, const void *src )
                     (const mbedtls_sm3_context *) src );
 }
 
-static void sm3_process_wrap( void *ctx, const unsigned char *data )
+static int sm3_process_wrap( void *ctx, const unsigned char *data )
 {
-    mbedtls_sm3_process( (mbedtls_sm3_context *) ctx, data );
+    return( mbedtls_sm3_process( (mbedtls_sm3_context *) ctx, data ) );
 }
 
 const mbedtls_md_info_t mbedtls_sm3_info = {

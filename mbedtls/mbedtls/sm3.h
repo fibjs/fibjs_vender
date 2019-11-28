@@ -57,7 +57,7 @@ void mbedtls_sm3_clone(mbedtls_sm3_context *dst,
  *
  * \param ctx      context to be initialized
  */
-void mbedtls_sm3_starts(mbedtls_sm3_context *ctx);
+int mbedtls_sm3_starts_ret(mbedtls_sm3_context *ctx);
 
 /**
  * \brief          SM3 process buffer
@@ -66,7 +66,7 @@ void mbedtls_sm3_starts(mbedtls_sm3_context *ctx);
  * \param input    buffer holding the data
  * \param ilen     length of the input data
  */
-void mbedtls_sm3_update(mbedtls_sm3_context *ctx,
+int mbedtls_sm3_update_ret(mbedtls_sm3_context *ctx,
         const unsigned char *input, int ilen);
 
 /**
@@ -75,10 +75,10 @@ void mbedtls_sm3_update(mbedtls_sm3_context *ctx,
  * \param ctx      SM3 context
  * \param output   SM3 checksum result
  */
-void mbedtls_sm3_finish(mbedtls_sm3_context *ctx, unsigned char output[32]);
+int mbedtls_sm3_finish_ret(mbedtls_sm3_context *ctx, unsigned char output[32]);
 
 /* Internal use */
-void mbedtls_sm3_process(mbedtls_sm3_context *ctx,
+int mbedtls_sm3_process(mbedtls_sm3_context *ctx,
         const unsigned char data[64]);
 
 /**
@@ -88,7 +88,7 @@ void mbedtls_sm3_process(mbedtls_sm3_context *ctx,
  * \param ilen     length of the input data
  * \param output   SM3 checksum result
  */
-void mbedtls_sm3(const unsigned char *input, int ilen,
+int mbedtls_sm3_ret(const unsigned char *input, int ilen,
         unsigned char output[32]);
 
 #ifdef __cplusplus
