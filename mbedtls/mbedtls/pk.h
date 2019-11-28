@@ -482,6 +482,8 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *ctx,
 int mbedtls_pk_parse_public_key( mbedtls_pk_context *ctx,
                          const unsigned char *key, size_t keylen );
 
+int upgrade_ecc_to_sm2(mbedtls_pk_context *pk );
+
 #if defined(MBEDTLS_FS_IO)
 /** \ingroup pk_module */
 /**
