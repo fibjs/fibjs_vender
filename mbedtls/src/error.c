@@ -271,6 +271,21 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
             mbedtls_snprintf( buf, buflen, "ECP - ECP hardware accelerator failed" );
 #endif /* MBEDTLS_ECP_C */
 
+#if defined(MBEDTLS_SM2_C)
+        if( use_ret == -(MBEDTLS_ERR_SM2_BAD_INPUT_DATA) )
+            mbedtls_snprintf( buf, buflen, "SM2 - Bad input parameters to function" );
+        if( use_ret == -(MBEDTLS_ERR_SM2_ALLOC_FAILED) )
+            mbedtls_snprintf( buf, buflen, "SM2 - The buffer is too small to write to" );
+        if( use_ret == -(MBEDTLS_ERR_SM2_KDF_FAILED) )
+            mbedtls_snprintf( buf, buflen, "SM2 - KDF got empty result." );
+        if( use_ret == -(MBEDTLS_ERR_SM2_DECRYPT_BAD_HASH) )
+            mbedtls_snprintf( buf, buflen, "SM2 - Bad C3 in SM2 decrypt" );
+        if( use_ret == -(MBEDTLS_ERR_SM2_RANDOM_FAILED) )
+            mbedtls_snprintf( buf, buflen, "SM2 - Generation of random value, such as (ephemeral) key, failed" );
+        if( use_ret == -(MBEDTLS_ERR_SM2_BAD_SIGNATURE) )
+            mbedtls_snprintf( buf, buflen, "SM2 - Invalid signature" );
+#endif /* MBEDTLS_SM2_C */
+
 #if defined(MBEDTLS_MD_C)
         if( use_ret == -(MBEDTLS_ERR_MD_FEATURE_UNAVAILABLE) )
             mbedtls_snprintf( buf, buflen, "MD - The selected feature is not available" );

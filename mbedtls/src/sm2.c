@@ -400,7 +400,7 @@ int mbedtls_sm2_verify(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
             mbedtls_mpi_cmp_mpi(&r, &ctx->grp.N) >= 0 ||
             mbedtls_mpi_cmp_int(&s, 1) < 0 ||
             mbedtls_mpi_cmp_mpi(&s, &ctx->grp.N) >= 0) {
-        MBEDTLS_MPI_CHK(MBEDTLS_ERR_SM2_BAD_SIGNATURE - 1);
+        MBEDTLS_MPI_CHK(MBEDTLS_ERR_SM2_BAD_SIGNATURE);
     }
 
     /**
@@ -415,7 +415,7 @@ int mbedtls_sm2_verify(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
     MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(&t, &r, &s));
     MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&t, &t, &ctx->grp.N));
     if (mbedtls_mpi_cmp_int(&t, 0) == 0) {
-        MBEDTLS_MPI_CHK(MBEDTLS_ERR_SM2_BAD_SIGNATURE - 2);
+        MBEDTLS_MPI_CHK(MBEDTLS_ERR_SM2_BAD_SIGNATURE);
     }
 
     /* B6: (x1, y1) = [s]G + [t]P */
@@ -427,7 +427,7 @@ int mbedtls_sm2_verify(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
     MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(&t, &e, &point.X));
     MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&t, &t, &ctx->grp.N));
     if (mbedtls_mpi_cmp_mpi(&t, &r) != 0) {
-        MBEDTLS_MPI_CHK(MBEDTLS_ERR_SM2_BAD_SIGNATURE - 3);
+        MBEDTLS_MPI_CHK(MBEDTLS_ERR_SM2_BAD_SIGNATURE);
     }
 
 cleanup:
