@@ -419,11 +419,16 @@ static int sm2_verify_wrap( void *ctx, mbedtls_md_type_t md_alg,
                        const unsigned char *hash, size_t hash_len,
                        const unsigned char *sig, size_t sig_len )
 {
-    if( hash_len != mbedtls_md_get_size( mbedtls_md_info_from_type( md_alg ) )
-            || sig_len <= 0 )
-        return( MBEDTLS_ERR_ECP_VERIFY_FAILED );
+     int ret;
+    ((void) md_alg);
 
-    return mbedtls_sm2_verify( (mbedtls_sm2_context *) ctx, md_alg, hash, sig );
+    ret = mbedtls_sm2_read_signature( (mbedtls_ecdsa_context *) ctx,
+                                hash, hash_len, sig, sig_len );
+
+    if( ret == MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH )
+        return( MBEDTLS_ERR_PK_SIG_LEN_MISMATCH );
+
+    return( ret );
 }
 
 static int sm2_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
@@ -431,17 +436,8 @@ static int sm2_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
                    unsigned char *sig, size_t *sig_len,
                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
 {
-    int ret;
-
-    if( hash_len != mbedtls_md_get_size( mbedtls_md_info_from_type( md_alg ) )
-            || sig_len == NULL )
-        return( MBEDTLS_ERR_SM2_BAD_INPUT_DATA );
-    ret = mbedtls_sm2_sign( (mbedtls_sm2_context *) ctx, md_alg, hash, sig,
-            f_rng, p_rng );
-    if( ret == 0 )
-        *sig_len = ( ((mbedtls_sm2_context *) ctx)->grp.nbits + 7 ) / 8 * 2;
-
-    return( ret );
+    return( mbedtls_sm2_write_signature( (mbedtls_ecdsa_context *) ctx,
+                md_alg, hash, hash_len, sig, sig_len, f_rng, p_rng ) );
 }
 
 static int sm2_decrypt_wrap( void *ctx,
