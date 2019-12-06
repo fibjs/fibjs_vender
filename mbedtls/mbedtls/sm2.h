@@ -83,14 +83,16 @@ int mbedtls_sm2_decrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
         unsigned char *output, size_t *olen);
 
 /**
- * \brief           Compute SM2 signature of a previously hashed message
+ * \brief           Compute SM2 signature of a previously hashed message 
  *
- * \param ctx       SM2 context
- * \param md_alg    Algorithm that was used to hash the message
- * \param hash      Message digest
- * \param sig       Buffer holding the signature data
- * \param f_rng     RNG function
- * \param p_rng     RNG parameter
+ * \param grp       The ECP group.
+ * \param r         The first output integer.
+ * \param s         The second output integer.
+ * \param d         The private signing key.
+ * \param buf       The message hash.
+ * \param blen      The length of \p buf.
+ * \param f_rng     The RNG function.
+ * \param p_rng     The RNG parameter.
  *
  * \return          0 if successful, or a error code
  */
@@ -101,10 +103,12 @@ int mbedtls_sm2_sign(mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
 /**
  * \brief           Verify SM2 signature of a previously hashed message
  *
- * \param ctx       SM2 context
- * \param md_alg    Algorithm that was used to hash the message
- * \param hash      Message digest
- * \param sig       Signature to verify
+ * \param grp       The ECP group.
+ * \param buf       The message hash.
+ * \param blen      The length of \p buf.
+ * \param Q         The public key to use for verification.
+ * \param r         The first integer of the signature.
+ * \param s         The second integer of the signature.
  *
  * \return          0 if successful, or a error code
  */
@@ -112,12 +116,38 @@ int mbedtls_sm2_verify(mbedtls_ecp_group *grp,
 			const unsigned char *buf, size_t blen,
 			const mbedtls_ecp_point *Q, const mbedtls_mpi *r, const mbedtls_mpi *s);
 
+/**
+ * \brief           Compute SM2 signature of a previously hashed message and writes it
+ *                  to a buffer
+ *
+ * \param ctx       SM2 context
+ * \param md_alg    Algorithm that was used to hash the message
+ * \param hash      Message digest
+ * \param hlen      The size of the digest
+ * \param sig       Buffer holding the signature data
+ * \param slen      The size of the signature
+ * \param f_rng     RNG function
+ * \param p_rng     RNG parameter
+ *
+ * \return          0 if successful, or a error code
+ */
 int mbedtls_sm2_write_signature(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
 				const unsigned char *hash, size_t hlen,
 				unsigned char *sig, size_t *slen,
 				int(*f_rng)(void *, unsigned char *, size_t),
 			        void *p_rng);
 
+/**
+ * \brief           This function reads and verifies an SM2 signature.
+ *
+ * \param ctx       The SM2 context.
+ * \param hash      The message hash.
+ * \param hlen      The size of the hash.
+ * \param sig       The signature to read and verify.
+ * \param slen      The size of \p sig.
+ *
+ * \return          0 if successful, or a error code
+ */
 int mbedtls_sm2_read_signature(mbedtls_sm2_context *ctx,
 				const unsigned char *hash, size_t hlen,
 				const unsigned char *sig, size_t slen);

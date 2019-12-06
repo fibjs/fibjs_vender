@@ -196,6 +196,7 @@ int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
 			goto cleanup;
         }
 
+        /* A1,A2: generate C1 = [k]G */
         MBEDTLS_MPI_CHK(mbedtls_ecp_gen_keypair(&ctx->grp, &k, &point, f_rng, p_rng));
         xlen = get_point_size(&point.X);
         ylen = get_point_size(&point.X);
