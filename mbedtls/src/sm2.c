@@ -37,32 +37,9 @@
 #define mbedtls_free        free
 #endif /* MBEDTLS_PLATFORM_C */
 
+#define ciL    (sizeof(mbedtls_mpi_uint))
+
 #if !defined(MBEDTLS_SM2_ALT)
-
-#if !defined(MBEDTLS_SM2_CRYPT_ALT) || !defined(MBEDTLS_SM2_SIGN_ALT)
-/**
- * Get random r in [1, n-1]
- */
-static int sm2_get_rand(mbedtls_sm2_context *ctx, mbedtls_mpi *r,
-        int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
-{
-    int ret;
-    size_t blind_tries = 0;
-    size_t nlen;
-    do {
-        nlen = (ctx->grp.nbits + 7) / 8;
-        MBEDTLS_MPI_CHK(mbedtls_mpi_fill_random(r, nlen, f_rng, p_rng));
-        MBEDTLS_MPI_CHK(mbedtls_mpi_shift_r(r, 8 * nlen - ctx->grp.nbits));
-
-        /* See mbedtls_ecp_gen_keypair() */
-        if (++blind_tries > 30)
-            return (MBEDTLS_ERR_SM2_RANDOM_FAILED);
-    } while (mbedtls_mpi_cmp_int(r, 1) < 0 ||
-            mbedtls_mpi_cmp_mpi(r, &ctx->grp.N) >= 0);
-cleanup:
-    return (ret);
-}
-#endif /* !MBEDTLS_SM2_CRYPT_ALT || !MBEDTLS_SM2_SIGN_ALT */
 
 #if !defined(MBEDTLS_SM2_CRYPT_ALT)
 /**
@@ -173,6 +150,23 @@ cleanup:
     return( ret );
 }
 
+static size_t get_point_size( const mbedtls_mpi *X  )
+{
+    size_t i;
+
+    if( X->n == 0 )
+        return( 0 );
+
+    for( i = X->n - 1; i > 0; i-- )
+        if( X->p[i] != 0 )
+            break;
+    
+    if (X->p[0])
+        return (i + 1) * ciL;
+
+    return 0; 
+}
+
 int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
         const unsigned char *input, size_t ilen,
         unsigned char *output, size_t *olen,
@@ -194,17 +188,26 @@ int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
     MBEDTLS_MPI_CHK(mbedtls_md_setup(&md_ctx,
                 mbedtls_md_info_from_type(md_alg), 0));
 
+    size_t enc_tries = 0;
     do {
+        if (enc_tries++ > 10)
+        {
+            ret = MBEDTLS_ERR_ECP_RANDOM_FAILED;
+			goto cleanup;
+        }
+
         MBEDTLS_MPI_CHK(mbedtls_ecp_gen_keypair(&ctx->grp, &k, &point, f_rng, p_rng));
-        
+        xlen = get_point_size(&point.X);
+        ylen = get_point_size(&point.X);
+
         output[0] = MBEDTLS_ECP_POINT_CONVERSION_UNCOMPRESSED;
         *olen = 1;
         MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&point.X, output + *olen,
-                    mbedtls_mpi_size(&point.X)));
-        *olen += mbedtls_mpi_size(&point.X);
+                    xlen));
+        *olen +=xlen;
         MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&point.Y, output + *olen,
-                    mbedtls_mpi_size(&point.Y)));
-        *olen += mbedtls_mpi_size(&point.Y);
+                    ylen));
+        *olen +=ylen;
 
         /* A3: check [h]P != O */
         MBEDTLS_MPI_CHK(mbedtls_mpi_lset(&h, 1));
@@ -217,8 +220,6 @@ int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
                     NULL, NULL));
 
         /* A5: t = KDF(x2 || y2, klen) */
-        xlen = mbedtls_mpi_size(&point.X);
-        ylen = mbedtls_mpi_size(&point.Y);
         if ((xym = mbedtls_calloc(1, xlen + ylen + ilen)) == NULL) {
             MBEDTLS_MPI_CHK(MBEDTLS_ERR_SM2_ALLOC_FAILED);
         }
@@ -236,7 +237,7 @@ int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
         }
 
         break;
-    } while (0);
+    } while (1);
 
     /* A6: C2 = M xor t */
     for (i = 0; i < ilen; i++) {
@@ -299,8 +300,8 @@ int mbedtls_sm2_decrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
                 NULL, NULL));
 
     /* B4: t = KDF(x2 || y2, klen) */
-    xlen = mbedtls_mpi_size(&point.X);
-    ylen = mbedtls_mpi_size(&point.Y);
+    xlen = get_point_size(&point.X);
+    ylen = get_point_size(&point.Y);
     mdlen = mbedtls_md_get_size(md_ctx.md_info);
     ptlen = ilen - c1len - mdlen;
     if ((xym = mbedtls_calloc(1, xlen + ylen + ptlen)) == NULL) {

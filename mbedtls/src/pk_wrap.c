@@ -453,7 +453,7 @@ static int sm2_decrypt_wrap( void *ctx,
     ((void) p_rng);
 
     if( ilen < addlen || osize < (ilen - addlen) )
-        return( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
+        return( MBEDTLS_ERR_SM2_BAD_INPUT_DATA );
     return mbedtls_sm2_decrypt( (mbedtls_sm2_context *) ctx, md_type,
             input, ilen, output, olen );
 }
@@ -469,7 +469,7 @@ static int sm2_encrypt_wrap( void *ctx,
         mbedtls_md_get_size( mbedtls_md_info_from_type( md_type ) );
 
     if( osize < (ilen + addlen) )
-        return( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
+        return( MBEDTLS_ERR_SM2_BAD_INPUT_DATA );
     return mbedtls_sm2_encrypt( (mbedtls_sm2_context *) ctx, md_type,
             input, ilen, output, olen, f_rng, p_rng );
 }
