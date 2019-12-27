@@ -186,6 +186,15 @@
     <ClInclude Include="mbedtls\sha512.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mbedtls\sm2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mbedtls\sm3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mbedtls\sm4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="mbedtls\ssl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -381,6 +390,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\sha512.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sm2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sm3.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sm4.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ssl_bignum.c">
