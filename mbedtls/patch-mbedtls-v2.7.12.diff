@@ -1,0 +1,1583 @@
+diff --git a/mbedtls/check_config.h b/mbedtls/check_config.h
+index 8ea1c1572..1bcfe1aae 100755
+--- a/mbedtls/check_config.h
++++ b/mbedtls/check_config.h
+@@ -119,10 +119,29 @@
+     !defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED) &&                  \
+     !defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED) &&                  \
+     !defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED) &&                  \
+-    !defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED) ) )
++    !defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)&&                  \
++    !defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED) &&                  \
++    !defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED) ) )
+ #error "MBEDTLS_ECP_C defined, but not all prerequisites"
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C) &&                                       \
++    ( !defined(MBEDTLS_SM3_C) ||                                    \
++      !defined(MBEDTLS_ECP_C) )
++#error "MBEDTLS_SM2_C defined, but not all prerequisites"
++#endif
++
++#if defined(MBEDTLS_KEY_EXCHANGE_SM2_ENABLED) &&                    \
++    !defined(MBEDTLS_SM2_C)
++#error "MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED defined, but not all prerequisites"
++#endif
++
++#if defined(MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED) &&             \
++    ( !defined(MBEDTLS_SM2_C) ||                                    \
++      !defined(MBEDTLS_ECDH_C) )
++#error "MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED defined, but not all prerequisites"
++#endif
++
+ #if defined(MBEDTLS_PK_PARSE_C) && !defined(MBEDTLS_ASN1_PARSE_C)
+ #error "MBEDTLS_PK_PARSE_C defined, but not all prerequesites"
+ #endif
+diff --git a/mbedtls/cipher.h b/mbedtls/cipher.h
+index 1c453a1d3..b479c38a3 100755
+--- a/mbedtls/cipher.h
++++ b/mbedtls/cipher.h
+@@ -84,6 +84,7 @@ typedef enum {
+     MBEDTLS_CIPHER_ID_CAMELLIA,
+     MBEDTLS_CIPHER_ID_BLOWFISH,
+     MBEDTLS_CIPHER_ID_ARC4,
++    MBEDTLS_CIPHER_ID_SM4,
+ } mbedtls_cipher_id_t;
+ 
+ /**
+@@ -136,6 +137,9 @@ typedef enum {
+     MBEDTLS_CIPHER_BLOWFISH_CBC,
+     MBEDTLS_CIPHER_BLOWFISH_CFB64,
+     MBEDTLS_CIPHER_BLOWFISH_CTR,
++    MBEDTLS_CIPHER_ARC4_40,
++    MBEDTLS_CIPHER_ARC4_56,
++    MBEDTLS_CIPHER_ARC4_64,
+     MBEDTLS_CIPHER_ARC4_128,
+     MBEDTLS_CIPHER_AES_128_CCM,
+     MBEDTLS_CIPHER_AES_192_CCM,
+@@ -143,6 +147,8 @@ typedef enum {
+     MBEDTLS_CIPHER_CAMELLIA_128_CCM,
+     MBEDTLS_CIPHER_CAMELLIA_192_CCM,
+     MBEDTLS_CIPHER_CAMELLIA_256_CCM,
++    MBEDTLS_CIPHER_SM4_ECB,
++    MBEDTLS_CIPHER_SM4_CBC,
+ } mbedtls_cipher_type_t;
+ 
+ /** Supported cipher modes. */
+@@ -749,4 +755,4 @@ int mbedtls_cipher_auth_decrypt( mbedtls_cipher_context_t *ctx,
+ }
+ #endif
+ 
+-#endif /* MBEDTLS_CIPHER_H */
++#endif /* MBEDTLS_CIPHER_H */
+\ No newline at end of file
+diff --git a/mbedtls/config.h b/mbedtls/config.h
+index fa88ebf01..0f5b867f7 100755
+--- a/mbedtls/config.h
++++ b/mbedtls/config.h
+@@ -288,6 +288,9 @@
+ //#define MBEDTLS_SHA256_ALT
+ //#define MBEDTLS_SHA512_ALT
+ //#define MBEDTLS_XTEA_ALT
++//#define MBEDTLS_SM4_ALT
++//#define MBEDTLS_SM3_ALT
++//#define MBEDTLS_SM2_ALT
+ /*
+  * When replacing the elliptic curve module, pleace consider, that it is
+  * implemented with two .c files:
+@@ -606,6 +609,8 @@
+ #define MBEDTLS_ECP_DP_BP384R1_ENABLED
+ #define MBEDTLS_ECP_DP_BP512R1_ENABLED
+ #define MBEDTLS_ECP_DP_CURVE25519_ENABLED
++#define MBEDTLS_ECP_DP_SM2P256R1_ENABLED
++#define MBEDTLS_ECP_DP_SM2P256T1_ENABLED
+ 
+ /**
+  * \def MBEDTLS_ECP_NIST_OPTIM
+@@ -630,7 +635,7 @@
+  *
+  * Comment this macro to disable deterministic ECDSA.
+  */
+-#define MBEDTLS_ECDSA_DETERMINISTIC
++//#define MBEDTLS_ECDSA_DETERMINISTIC
+ 
+ /**
+  * \def MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
+@@ -1276,7 +1281,7 @@
+  *
+  * Comment this macro to disable support for SSL 3.0
+  */
+-//#define MBEDTLS_SSL_PROTO_SSL3
++#define MBEDTLS_SSL_PROTO_SSL3
+ 
+ /**
+  * \def MBEDTLS_SSL_PROTO_TLS1
+@@ -1486,7 +1491,7 @@
+  *
+  * Uncomment this to enable pthread mutexes.
+  */
+-//#define MBEDTLS_THREADING_PTHREAD
++#define MBEDTLS_THREADING_PTHREAD
+ 
+ /**
+  * \def MBEDTLS_VERSION_FEATURES
+@@ -1509,7 +1514,7 @@
+  *
+  * Uncomment to prevent an error.
+  */
+-//#define MBEDTLS_X509_ALLOW_EXTENSIONS_NON_V3
++#define MBEDTLS_X509_ALLOW_EXTENSIONS_NON_V3
+ 
+ /**
+  * \def MBEDTLS_X509_ALLOW_UNSUPPORTED_CRITICAL_EXTENSION
+@@ -1905,7 +1910,7 @@
+  *
+  * This module provides debugging functions.
+  */
+-#define MBEDTLS_DEBUG_C
++//#define MBEDTLS_DEBUG_C
+ 
+ /**
+  * \def MBEDTLS_DES_C
+@@ -2016,6 +2021,7 @@
+  * Caller:  library/ecdh.c
+  *          library/ecdsa.c
+  *          library/ecjpake.c
++ *          library/sm2.c
+  *
+  * Requires: MBEDTLS_BIGNUM_C and at least one MBEDTLS_ECP_DP_XXX_ENABLED
+  */
+@@ -2082,7 +2088,7 @@
+  *
+  * Uncomment to enable the HAVEGE random generator.
+  */
+-//#define MBEDTLS_HAVEGE_C
++#define MBEDTLS_HAVEGE_C
+ 
+ /**
+  * \def MBEDTLS_HMAC_DRBG_C
+@@ -2125,7 +2131,7 @@
+  *            it, and considering stronger message digests instead.
+  *
+  */
+-//#define MBEDTLS_MD2_C
++#define MBEDTLS_MD2_C
+ 
+ /**
+  * \def MBEDTLS_MD4_C
+@@ -2142,7 +2148,7 @@
+  *            it, and considering stronger message digests instead.
+  *
+  */
+-//#define MBEDTLS_MD4_C
++#define MBEDTLS_MD4_C
+ 
+ /**
+  * \def MBEDTLS_MD5_C
+@@ -2563,7 +2569,7 @@
+  *
+  * Enable this layer to allow use of mutexes within mbed TLS
+  */
+-//#define MBEDTLS_THREADING_C
++#define MBEDTLS_THREADING_C
+ 
+ /**
+  * \def MBEDTLS_TIMING_C
+@@ -2826,7 +2832,7 @@
+  *            on it, and considering stronger message digests instead.
+  *
+  */
+-// #define MBEDTLS_TLS_DEFAULT_ALLOW_SHA1_IN_CERTIFICATES
++#define MBEDTLS_TLS_DEFAULT_ALLOW_SHA1_IN_CERTIFICATES
+ 
+ /**
+  * Allow SHA-1 in the default TLS configuration for TLS 1.2 handshake
+@@ -2847,6 +2853,110 @@
+ 
+ /* \} name SECTION: Customisation configuration options */
+ 
++/**
++ * \name SECTION: GM ciphers and features
++ *
++ * \{
++ */
++
++/**
++ * \def MBEDTLS_SM2_C
++ *
++ * Enable the SM2 public key cryptographic algorithm based on elliptic curves.
++ *
++ * Module:  library/sm2.c
++ * Caller:
++ *
++ * Requires: MBEDTLS_SM3_C, MBEDTLS_ECP_C
++ */
++#define MBEDTLS_SM2_C
++
++/**
++ * \def MBEDTLS_SM3_C
++ *
++ * Enable the SM3 cryptographic hash algorithms.
++ *
++ * Module:  library/sm3.c
++ * Caller:  library/sm2.c
++ */
++#define MBEDTLS_SM3_C
++
++/**
++ * \def MBEDTLS_SM4_C
++ *
++ * Enable the SM4 block cipher.
++ *
++ * Module:  library/sm4.c
++ *
++ * Requires:
++ */
++#define MBEDTLS_SM4_C
++
++/**
++ * \def MBEDTLS_GM_PROTO_SSL1_1
++ *
++ * Enable support for GM-TLS 1.1 (no GM-DTLS support temporarily).
++ *
++ * Requires: MBEDTLS_SM3_C
++ *
++ * Comment this macro to disable support for GM-TLS 1.1/GM-DTLS 1.1
++ */
++#define MBEDTLS_GM_PROTO_SSL1_1
++
++/**
++ * \def MBEDTLS_KEY_EXCHANGE_SM2_ENABLED
++ *
++ * Enable the SM2 based ciphersuite modes in SSL / TLS.
++ *
++ * Requires: MBEDTLS_SM2_C
++ *
++ * This enables the following ciphersuites (if other requisites are
++ * enabled as well):
++ *      MBEDTLS_GM_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_SM2_WITH_SM4_CBC_SM3
++ */
++#define MBEDTLS_KEY_EXCHANGE_SM2_ENABLED
++
++/**
++ * \def MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED
++ *
++ * Enable the SM2DHE-SM2 based ciphersuite modes in SSL / TLS.
++ *
++ * Requires: MBEDTLS_SM2_C, MBEDTLS_ECDH_C(@TODO: Need SM2DHE?)
++ *
++ * This enables the following ciphersuites (if other requisites are
++ * enabled as well):
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM4_CBC_SM3
++ */
++#define MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED
++
++/**
++ * \def MBEDTLS_KEY_EXCHANGE_GM_ENABLED
++ *
++ * Enable the GM ciphers based ciphersuite modes in SSL / TLS.
++ *
++ * Requires:
++ *
++ * This enables the following ciphersuites (if other requisites are
++ * enabled as well):
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_IBSDH_IBC_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_IBC_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM1_CBC_SHA1
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_SM2_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_IBSDH_IBC_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_IBC_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM4_CBC_SHA1
++ */
++#define MBEDTLS_KEY_EXCHANGE_GM_ENABLED
++
++/* \} name SECTION: GM modules */
++
+ /* Target and application specific configurations */
+ //#define YOTTA_CFG_MBEDTLS_TARGET_CONFIG_FILE "target_config.h"
+ 
+@@ -2869,4 +2979,4 @@
+ 
+ #include "check_config.h"
+ 
+-#endif /* MBEDTLS_CONFIG_H */
++#endif /* MBEDTLS_CONFIG_H */
+\ No newline at end of file
+diff --git a/mbedtls/ecp.h b/mbedtls/ecp.h
+index 691415e0a..2eab203b3 100755
+--- a/mbedtls/ecp.h
++++ b/mbedtls/ecp.h
+@@ -82,6 +82,8 @@ typedef enum
+     MBEDTLS_ECP_DP_SECP192K1,      /*!< 192-bits "Koblitz" curve */
+     MBEDTLS_ECP_DP_SECP224K1,      /*!< 224-bits "Koblitz" curve */
+     MBEDTLS_ECP_DP_SECP256K1,      /*!< 256-bits "Koblitz" curve */
++    MBEDTLS_ECP_DP_SM2P256R1,      /*!< 256-bits "SM2" curve */
++    MBEDTLS_ECP_DP_SM2P256T1,      /*!< 256-bits "SM2" curve for test */
+ } mbedtls_ecp_group_id;
+ 
+ /**
+diff --git a/mbedtls/error.h b/mbedtls/error.h
+index ef22bc684..1782aee26 100755
+--- a/mbedtls/error.h
++++ b/mbedtls/error.h
+@@ -92,6 +92,7 @@
+  * DHM       3   11
+  * PK        3   15 (Started from top)
+  * RSA       4   11
++ * SM2       4   6
+  * ECP       4   9 (Started from top)
+  * MD        5   5
+  * CIPHER    6   8
+diff --git a/mbedtls/md.h b/mbedtls/md.h
+index 06538c382..9785e89de 100755
+--- a/mbedtls/md.h
++++ b/mbedtls/md.h
+@@ -64,6 +64,7 @@ typedef enum {
+     MBEDTLS_MD_SHA384,
+     MBEDTLS_MD_SHA512,
+     MBEDTLS_MD_RIPEMD160,
++    MBEDTLS_MD_SM3,
+ } mbedtls_md_type_t;
+ 
+ #if defined(MBEDTLS_SHA512_C)
+diff --git a/mbedtls/md_internal.h b/mbedtls/md_internal.h
+index 04de48291..71a39b6c3 100755
+--- a/mbedtls/md_internal.h
++++ b/mbedtls/md_internal.h
+@@ -107,6 +107,9 @@ extern const mbedtls_md_info_t mbedtls_sha256_info;
+ extern const mbedtls_md_info_t mbedtls_sha384_info;
+ extern const mbedtls_md_info_t mbedtls_sha512_info;
+ #endif
++#if defined(MBEDTLS_SM3_C)
++extern const mbedtls_md_info_t mbedtls_sm3_info;
++#endif
+ 
+ #ifdef __cplusplus
+ }
+diff --git a/mbedtls/oid.h b/mbedtls/oid.h
+index 408645ece..634e087d1 100755
+--- a/mbedtls/oid.h
++++ b/mbedtls/oid.h
+@@ -381,6 +381,57 @@
+  *   ecdsa-with-SHA2(3) 4 } */
+ #define MBEDTLS_OID_ECDSA_SHA512            MBEDTLS_OID_ANSI_X9_62_SIG_SHA2 "\x04"
+ 
++/*
++ * GM algorithms identifiers, from (GB/T 30277-2013) Information security
++ *      technology - Public key infrastructures - Certification
++ *      authentication institution identity code specification, appendix A.
++ */
++#define MBEDTLS_OID_COUNTRY_CN                  "\x81\x1c"      /* {cn(156)} */
++#define MBEDTLS_OID_ORG_SCA                     "\xcf\x55"      /* {state-cryptography-administration(10197)} */
++#define MBEDTLS_OID_GM_ALGORITHM                "\x01"          /* {gm(1)} */
++#define MBEDTLS_OID_GM                          MBEDTLS_OID_ISO_MEMBER_BODIES \
++    MBEDTLS_OID_COUNTRY_CN MBEDTLS_OID_ORG_SCA MBEDTLS_OID_GM_ALGORITHM
++
++#define MBEDTLS_OID_GM_SM2                  MBEDTLS_OID_GM "\x82\x2d"   /* {sm2(301)} */
++#define MBEDTLS_OID_GM_SM3                  MBEDTLS_OID_GM "\x83\x11"   /* {sm3(401)} */
++#define MBEDTLS_OID_GM_SM4                  MBEDTLS_OID_GM "\x68"       /* {sm4(104)} */
++
++/* sm2p256r1 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2(301) } */
++#define MBEDTLS_OID_EC_SM2P256R1            MBEDTLS_OID_GM_SM2
++/* sm2-with-sm3 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sm3(501) } */
++#define MBEDTLS_OID_SM2_SM3                 MBEDTLS_OID_GM "\x83\x75"
++/* sm2-with-sha1 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha1(502) } */
++#define MBEDTLS_OID_SM2_SHA1                MBEDTLS_OID_GM "\x83\x76"
++/* sm2-with-sha256 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha256(503) } */
++#define MBEDTLS_OID_SM2_SHA256              MBEDTLS_OID_GM "\x83\x77"
++/* sm2-with-sha512 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha512(504) } */
++#define MBEDTLS_OID_SM2_SHA512              MBEDTLS_OID_GM "\x83\x78"
++/* sm2-with-sha224 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha224(505) } */
++#define MBEDTLS_OID_SM2_SHA224              MBEDTLS_OID_GM "\x83\x79"
++/* sm2-with-sha384 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha384(506) } */
++#define MBEDTLS_OID_SM2_SHA384              MBEDTLS_OID_GM "\x83\x7A"
++
++/* sm3 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm3(401) 1 } */
++#define MBEDTLS_OID_GM_SM3_ECB              MBEDTLS_OID_GM_SM3 "\x01"
++/* sm3-hmac OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm3(401) 2 } */
++#define MBEDTLS_OID_GM_SM3_CBC              MBEDTLS_OID_GM_SM3 "\x02"
++
++/* sm4-ecb OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm4(104) 1 } */
++#define MBEDTLS_OID_GM_SM4_ECB              MBEDTLS_OID_GM_SM4 "\x01"
++/* sm4-cbc OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm4(104) 2 } */
++#define MBEDTLS_OID_GM_SM4_CBC              MBEDTLS_OID_GM_SM4 "\x02"
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+diff --git a/mbedtls/pk.h b/mbedtls/pk.h
+index 8beb2af41..5ed04755b 100755
+--- a/mbedtls/pk.h
++++ b/mbedtls/pk.h
+@@ -45,6 +45,10 @@
+ #include "ecdsa.h"
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C)
++#include "sm2.h"
++#endif
++
+ #if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
+     !defined(inline) && !defined(__cplusplus)
+ #define inline __inline
+@@ -81,6 +85,7 @@ typedef enum {
+     MBEDTLS_PK_ECDSA,
+     MBEDTLS_PK_RSA_ALT,
+     MBEDTLS_PK_RSASSA_PSS,
++    MBEDTLS_PK_SM2,
+ } mbedtls_pk_type_t;
+ 
+ /**
+@@ -477,6 +482,8 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *ctx,
+ int mbedtls_pk_parse_public_key( mbedtls_pk_context *ctx,
+                          const unsigned char *key, size_t keylen );
+ 
++int upgrade_ecc_to_sm2(mbedtls_pk_context *pk );
++
+ #if defined(MBEDTLS_FS_IO)
+ /** \ingroup pk_module */
+ /**
+diff --git a/mbedtls/pk_internal.h b/mbedtls/pk_internal.h
+index 3dae0fc5b..a6e8b2fec 100755
+--- a/mbedtls/pk_internal.h
++++ b/mbedtls/pk_internal.h
+@@ -108,6 +108,10 @@ extern const mbedtls_pk_info_t mbedtls_eckeydh_info;
+ extern const mbedtls_pk_info_t mbedtls_ecdsa_info;
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C)
++extern const mbedtls_pk_info_t mbedtls_sm2_info;
++#endif
++
+ #if defined(MBEDTLS_PK_RSA_ALT_SUPPORT)
+ extern const mbedtls_pk_info_t mbedtls_rsa_alt_info;
+ #endif
+diff --git a/mbedtls/threading.h b/mbedtls/threading.h
+index aeea5d0e1..17ef006f3 100755
+--- a/mbedtls/threading.h
++++ b/mbedtls/threading.h
+@@ -41,6 +41,12 @@ extern "C" {
+ #define MBEDTLS_ERR_THREADING_MUTEX_ERROR                 -0x001E  /**< Locking / unlocking / free failed with error code. */
+ 
+ #if defined(MBEDTLS_THREADING_PTHREAD)
++#ifdef _WIN32
++#include <winsock2.h>
++#include <windows.h>
++typedef CRITICAL_SECTION mbedtls_threading_mutex_t;
++
++#else
+ #include <pthread.h>
+ typedef struct
+ {
+@@ -48,6 +54,7 @@ typedef struct
+     char is_valid;
+ } mbedtls_threading_mutex_t;
+ #endif
++#endif
+ 
+ #if defined(MBEDTLS_THREADING_ALT)
+ /* You should define the mbedtls_threading_mutex_t type in your header */
+@@ -108,4 +115,4 @@ extern mbedtls_threading_mutex_t mbedtls_threading_gmtime_mutex;
+ }
+ #endif
+ 
+-#endif /* threading.h */
++#endif /* threading.h */
+\ No newline at end of file
+diff --git a/src/cipher_wrap.c b/src/cipher_wrap.c
+index dbc5d3fe4..32e269d97 100755
+--- a/src/cipher_wrap.c
++++ b/src/cipher_wrap.c
+@@ -61,6 +61,10 @@
+ #include "mbedtls/ccm.h"
+ #endif
+ 
++#if defined(MBEDTLS_SM4_C)
++#include "mbedtls/sm4.h"
++#endif
++
+ #if defined(MBEDTLS_CIPHER_NULL_CIPHER)
+ #include <string.h>
+ #endif
+@@ -1270,6 +1274,37 @@ static const mbedtls_cipher_base_t arc4_base_info = {
+     arc4_ctx_alloc,
+     arc4_ctx_free
+ };
++static const mbedtls_cipher_info_t arc4_40_info = {
++    MBEDTLS_CIPHER_ARC4_40,
++    MBEDTLS_MODE_STREAM,
++    40,
++    "ARC4-40",
++    0,
++    0,
++    1,
++    &arc4_base_info
++};
++static const mbedtls_cipher_info_t arc4_56_info = {
++    MBEDTLS_CIPHER_ARC4_56,
++    MBEDTLS_MODE_STREAM,
++    56,
++    "ARC4-56",
++    0,
++    0,
++    1,
++    &arc4_base_info
++};
++
++static const mbedtls_cipher_info_t arc4_64_info = {
++    MBEDTLS_CIPHER_ARC4_64,
++    MBEDTLS_MODE_STREAM,
++    64,
++   "ARC4-64",
++    0,
++    0,
++    1,
++    &arc4_base_info
++};
+ 
+ static const mbedtls_cipher_info_t arc4_128_info = {
+     MBEDTLS_CIPHER_ARC4_128,
+@@ -1283,6 +1318,100 @@ static const mbedtls_cipher_info_t arc4_128_info = {
+ };
+ #endif /* MBEDTLS_ARC4_C */
+ 
++#if defined(MBEDTLS_SM4_C)
++static void *sm4_ctx_alloc( void )
++{
++    mbedtls_sm4_context *sm4 = mbedtls_calloc( 1, sizeof( mbedtls_sm4_context ) );
++
++    if( sm4 == NULL )
++        return( NULL );
++
++    mbedtls_sm4_init( sm4 );
++
++    return( sm4 );
++}
++
++static void sm4_ctx_free( void *ctx )
++{
++    mbedtls_sm4_free( (mbedtls_sm4_context *) ctx );
++    mbedtls_free( ctx );
++}
++
++static int sm4_setkey_enc_wrap( void *ctx, const unsigned char *key,
++                                unsigned int key_bitlen )
++{
++    if (key_bitlen) { };
++    return mbedtls_sm4_setkey_enc( (mbedtls_sm4_context *) ctx, key );
++}
++
++static int sm4_setkey_dec_wrap( void *ctx, const unsigned char *key,
++                                unsigned int key_bitlen )
++{
++    if (key_bitlen) { };
++    return mbedtls_sm4_setkey_dec( (mbedtls_sm4_context *) ctx, key );
++}
++
++static int sm4_crypt_ecb_wrap( void *ctx, mbedtls_operation_t operation,
++        const unsigned char *input, unsigned char *output )
++{
++    return mbedtls_sm4_crypt_ecb( (mbedtls_sm4_context *) ctx, operation,
++            input, output );
++}
++
++static int sm4_crypt_cbc_wrap( void *ctx, mbedtls_operation_t operation,
++        size_t length, unsigned char *iv,
++        const unsigned char *input, unsigned char *output )
++{
++    return mbedtls_sm4_crypt_cbc( (mbedtls_sm4_context *) ctx, operation,
++            length, iv, input, output );
++}
++
++static const mbedtls_cipher_base_t sm4_base_info = {
++    MBEDTLS_CIPHER_ID_SM4,
++    sm4_crypt_ecb_wrap,
++#if defined(MBEDTLS_CIPHER_MODE_CBC)
++    sm4_crypt_cbc_wrap,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_CFB)
++    NULL,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_CTR)
++    NULL,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_STREAM)
++    NULL,
++#endif
++    sm4_setkey_enc_wrap,
++    sm4_setkey_dec_wrap,
++    sm4_ctx_alloc,
++    sm4_ctx_free,
++};
++
++static const mbedtls_cipher_info_t sm4_ecb_info = {
++    MBEDTLS_CIPHER_SM4_ECB,
++    MBEDTLS_MODE_ECB,
++    128,
++    "SM4-ECB",
++    16,
++    0,
++    16,
++    &sm4_base_info,
++};
++
++#if defined(MBEDTLS_CIPHER_MODE_CBC)
++static const mbedtls_cipher_info_t sm4_cbc_info = {
++    MBEDTLS_CIPHER_SM4_CBC,
++    MBEDTLS_MODE_CBC,
++    128,
++    "SM4-CBC",
++    16,
++    0,
++    16,
++    &sm4_base_info,
++};
++#endif /* MBEDTLS_CIPHER_MODE_CBC */
++#endif /* MBEDTLS_SM4_C */
++
+ #if defined(MBEDTLS_CIPHER_NULL_CIPHER)
+ static int null_crypt_stream( void *ctx, size_t length,
+                               const unsigned char *input,
+@@ -1380,6 +1509,9 @@ const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] =
+ #endif /* MBEDTLS_AES_C */
+ 
+ #if defined(MBEDTLS_ARC4_C)
++    { MBEDTLS_CIPHER_ARC4_40,              &arc4_40_info },
++    { MBEDTLS_CIPHER_ARC4_56,              &arc4_56_info },
++    { MBEDTLS_CIPHER_ARC4_64,              &arc4_64_info },
+     { MBEDTLS_CIPHER_ARC4_128,             &arc4_128_info },
+ #endif
+ 
+@@ -1438,6 +1570,13 @@ const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] =
+ #endif
+ #endif /* MBEDTLS_DES_C */
+ 
++#if defined(MBEDTLS_SM4_C)
++    { MBEDTLS_CIPHER_SM4_ECB,              &sm4_ecb_info, },
++#if defined(MBEDTLS_CIPHER_MODE_CBC)
++    { MBEDTLS_CIPHER_SM4_CBC,              &sm4_cbc_info, },
++#endif
++#endif /* MBEDTLS_SM4_C */
++
+ #if defined(MBEDTLS_CIPHER_NULL_CIPHER)
+     { MBEDTLS_CIPHER_NULL,                 &null_cipher_info },
+ #endif /* MBEDTLS_CIPHER_NULL_CIPHER */
+@@ -1448,4 +1587,4 @@ const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] =
+ #define NUM_CIPHERS sizeof mbedtls_cipher_definitions / sizeof mbedtls_cipher_definitions[0]
+ int mbedtls_cipher_supported[NUM_CIPHERS];
+ 
+-#endif /* MBEDTLS_CIPHER_C */
++#endif /* MBEDTLS_CIPHER_C */
+\ No newline at end of file
+diff --git a/src/ecp.c b/src/ecp.c
+index cb8e947db..2afc01a71 100755
+--- a/src/ecp.c
++++ b/src/ecp.c
+@@ -159,6 +159,12 @@ static const mbedtls_ecp_curve_info ecp_supported_curves[] =
+ #endif
+ #if defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED)
+     { MBEDTLS_ECP_DP_SECP192K1,    18,     192,    "secp192k1"         },
++#endif
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++    { MBEDTLS_ECP_DP_SM2P256R1,    29,     256,    "sm2p256r1"         },
++#endif
++#if defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED)
++    { MBEDTLS_ECP_DP_SM2P256T1,    30,     256,    "sm2p256t1"         },
+ #endif
+     { MBEDTLS_ECP_DP_NONE,          0,     0,      NULL                },
+ };
+diff --git a/src/ecp_curves.c b/src/ecp_curves.c
+index df5ac3eea..b7d7cef75 100755
+--- a/src/ecp_curves.c
++++ b/src/ecp_curves.c
+@@ -549,6 +549,87 @@ static const mbedtls_mpi_uint brainpoolP512r1_n[] = {
+ };
+ #endif /* MBEDTLS_ECP_DP_BP512R1_ENABLED */
+ 
++/*
++ * Domain parameters for SM2 (http://www.oscca.gov.cn/News/201012/News_1197.htm)
++ */
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++static const mbedtls_mpi_uint SM2P256r1_p[] = {
++    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    BYTES_TO_T_UINT_8( 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF ),
++    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF ),
++};
++static const mbedtls_mpi_uint SM2P256r1_a[] = {
++    BYTES_TO_T_UINT_8( 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    BYTES_TO_T_UINT_8( 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF ),
++    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF ),
++};
++static const mbedtls_mpi_uint SM2P256r1_b[] = {
++    BYTES_TO_T_UINT_8( 0x93, 0x0E, 0x94, 0x4D, 0x41, 0xBD, 0xBC, 0xDD ),
++    BYTES_TO_T_UINT_8( 0x92, 0x8F, 0xAB, 0x15, 0xF5, 0x89, 0x97, 0xF3 ),
++    BYTES_TO_T_UINT_8( 0xA7, 0x09, 0x65, 0xCF, 0x4B, 0x9E, 0x5A, 0x4D ),
++    BYTES_TO_T_UINT_8( 0x34, 0x5E, 0x9F, 0x9D, 0x9E, 0xFA, 0xE9, 0x28 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_gx[] = {
++    BYTES_TO_T_UINT_8( 0xC7, 0x74, 0x4C, 0x33, 0x89, 0x45, 0x5A, 0x71 ),
++    BYTES_TO_T_UINT_8( 0xE1, 0x0B, 0x66, 0xF2, 0xBF, 0x0B, 0xE3, 0x8F ),
++    BYTES_TO_T_UINT_8( 0x94, 0xC9, 0x39, 0x6A, 0x46, 0x04, 0x99, 0x5F ),
++    BYTES_TO_T_UINT_8( 0x19, 0x81, 0x19, 0x1F, 0x2C, 0xAE, 0xC4, 0x32 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_gy[] = {
++    BYTES_TO_T_UINT_8( 0xA0, 0xF0, 0x39, 0x21, 0xE5, 0x32, 0xDF, 0x02 ),
++    BYTES_TO_T_UINT_8( 0x40, 0x47, 0x2A, 0xC6, 0x7C, 0x87, 0xA9, 0xD0 ),
++    BYTES_TO_T_UINT_8( 0x53, 0x21, 0x69, 0x6B, 0xE3, 0xCE, 0xBD, 0x59 ),
++    BYTES_TO_T_UINT_8( 0x9C, 0x77, 0xF6, 0xF4, 0xA2, 0x36, 0x37, 0xBC ),
++};
++static const mbedtls_mpi_uint SM2P256r1_n[] = {
++    BYTES_TO_T_UINT_8( 0x23, 0x41, 0xD5, 0x39, 0x09, 0xF4, 0xBB, 0x53 ),
++    BYTES_TO_T_UINT_8( 0x2B, 0x05, 0xC6, 0x21, 0x6B, 0xDF, 0x03, 0x72 ),
++    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF ),
++};
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
++
++#if defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED)
++static const mbedtls_mpi_uint SM2P256t1_p[] = {
++    BYTES_TO_T_UINT_8( 0xC3, 0xDF, 0xF1, 0x08, 0x8B, 0xDB, 0x2E, 0x72 ),
++    BYTES_TO_T_UINT_8( 0x7D, 0x51, 0x45, 0x5C, 0x91, 0x83, 0x72, 0x45 ),
++    BYTES_TO_T_UINT_8( 0xDE, 0xF7, 0x6F, 0xBF, 0x35, 0x24, 0xB9, 0xE8 ),
++    BYTES_TO_T_UINT_8( 0x18, 0x4F, 0x04, 0x4C, 0x9E, 0xD6, 0x42, 0x85 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_a[] = {
++    BYTES_TO_T_UINT_8( 0x98, 0xE4, 0x37, 0x39, 0x8B, 0x22, 0x65, 0xEC ),
++    BYTES_TO_T_UINT_8( 0xE0, 0xD7, 0x31, 0x68, 0x8B, 0x84, 0x3C, 0x2F ),
++    BYTES_TO_T_UINT_8( 0xFF, 0xFE, 0xBB, 0x73, 0x2E, 0x84, 0x17, 0x24 ),
++    BYTES_TO_T_UINT_8( 0xFD, 0xC3, 0x32, 0xFA, 0xB4, 0x68, 0x79, 0x78 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_b[] = {
++    BYTES_TO_T_UINT_8( 0x9A, 0x24, 0xC5, 0x27, 0xDA, 0xD1, 0x12, 0x6E ),
++    BYTES_TO_T_UINT_8( 0x6E, 0xA0, 0x6B, 0xB1, 0xA5, 0x59, 0x1D, 0xF6 ),
++    BYTES_TO_T_UINT_8( 0x48, 0xFE, 0x4B, 0x48, 0x41, 0x42, 0xF8, 0x9C ),
++    BYTES_TO_T_UINT_8( 0x84, 0x0C, 0x3B, 0xB2, 0xD3, 0xC6, 0xE4, 0x63 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_gx[] = {
++    BYTES_TO_T_UINT_8( 0x3D, 0xD4, 0xED, 0x7F, 0x14, 0x6C, 0x4E, 0x4C ),
++    BYTES_TO_T_UINT_8( 0xDC, 0x0B, 0xD5, 0xAD, 0x3B, 0x0B, 0x22, 0x32 ),
++    BYTES_TO_T_UINT_8( 0x5E, 0x31, 0xCC, 0xC3, 0xEB, 0x34, 0x64, 0x74 ),
++    BYTES_TO_T_UINT_8( 0xB6, 0xEA, 0x62, 0x1B, 0xD6, 0xEB, 0x1D, 0x42 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_gy[] = {
++    BYTES_TO_T_UINT_8( 0xA2, 0x09, 0x6E, 0xE4, 0xB9, 0x41, 0x58, 0xA8 ),
++    BYTES_TO_T_UINT_8( 0xA1, 0x6E, 0xA3, 0xBF, 0xFC, 0xFD, 0xD7, 0xE5 ),
++    BYTES_TO_T_UINT_8( 0xC4, 0x70, 0x3B, 0x15, 0xD2, 0x49, 0x73, 0xD4 ),
++    BYTES_TO_T_UINT_8( 0x07, 0x2C, 0xB4, 0xCB, 0x2B, 0x51, 0x80, 0x06 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_n[] = {
++    BYTES_TO_T_UINT_8( 0xB7, 0x79, 0x2E, 0xC3, 0xE7, 0x4E, 0xE7, 0x5A ),
++    BYTES_TO_T_UINT_8( 0x8D, 0x62, 0x85, 0x04, 0x63, 0x20, 0x77, 0x29 ),
++    BYTES_TO_T_UINT_8( 0xDD, 0xF7, 0x6F, 0xBF, 0x35, 0x24, 0xB9, 0xE8 ),
++    BYTES_TO_T_UINT_8( 0x18, 0x4F, 0x04, 0x4C, 0x9E, 0xD6, 0x42, 0x85 ),
++};
++#endif /* MBEDTLS_ECP_DP_SM2P256T1_ENABLED */
++
+ /*
+  * Create an MPI from embedded constants
+  * (assumes len is an exact multiple of sizeof mbedtls_mpi_uint)
+@@ -767,6 +848,15 @@ int mbedtls_ecp_group_load( mbedtls_ecp_group *grp, mbedtls_ecp_group_id id )
+             return( ecp_use_curve25519( grp ) );
+ #endif /* MBEDTLS_ECP_DP_CURVE25519_ENABLED */
+ 
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++        case MBEDTLS_ECP_DP_SM2P256R1:
++            return( LOAD_GROUP_A( SM2P256r1 ) );
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
++
++#if defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED)
++        case MBEDTLS_ECP_DP_SM2P256T1:
++            return( LOAD_GROUP_A( SM2P256t1 ) );
++#endif /* MBEDTLS_ECP_DP_SM2P256T1_ENABLED */
+         default:
+             mbedtls_ecp_group_free( grp );
+             return( MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE );
+diff --git a/src/error.c b/src/error.c
+index 9445e510e..13afb3ab8 100755
+--- a/src/error.c
++++ b/src/error.c
+@@ -271,6 +271,21 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
+             mbedtls_snprintf( buf, buflen, "ECP - ECP hardware accelerator failed" );
+ #endif /* MBEDTLS_ECP_C */
+ 
++#if defined(MBEDTLS_SM2_C)
++        if( use_ret == -(MBEDTLS_ERR_SM2_BAD_INPUT_DATA) )
++            mbedtls_snprintf( buf, buflen, "SM2 - Bad input parameters to function" );
++        if( use_ret == -(MBEDTLS_ERR_SM2_ALLOC_FAILED) )
++            mbedtls_snprintf( buf, buflen, "SM2 - The buffer is too small to write to" );
++        if( use_ret == -(MBEDTLS_ERR_SM2_KDF_FAILED) )
++            mbedtls_snprintf( buf, buflen, "SM2 - KDF got empty result." );
++        if( use_ret == -(MBEDTLS_ERR_SM2_DECRYPT_BAD_HASH) )
++            mbedtls_snprintf( buf, buflen, "SM2 - Bad C3 in SM2 decrypt" );
++        if( use_ret == -(MBEDTLS_ERR_SM2_RANDOM_FAILED) )
++            mbedtls_snprintf( buf, buflen, "SM2 - Generation of random value, such as (ephemeral) key, failed" );
++        if( use_ret == -(MBEDTLS_ERR_SM2_BAD_SIGNATURE) )
++            mbedtls_snprintf( buf, buflen, "SM2 - Invalid signature" );
++#endif /* MBEDTLS_SM2_C */
++
+ #if defined(MBEDTLS_MD_C)
+         if( use_ret == -(MBEDTLS_ERR_MD_FEATURE_UNAVAILABLE) )
+             mbedtls_snprintf( buf, buflen, "MD - The selected feature is not available" );
+diff --git a/src/md.c b/src/md.c
+index 00249af78..84e3dcf35 100755
+--- a/src/md.c
++++ b/src/md.c
+@@ -58,6 +58,10 @@ static void mbedtls_zeroize( void *v, size_t n ) {
+  */
+ static const int supported_digests[] = {
+ 
++#if defined(MBEDTLS_SM3_C)
++        MBEDTLS_MD_SM3,
++#endif
++
+ #if defined(MBEDTLS_SHA512_C)
+         MBEDTLS_MD_SHA512,
+         MBEDTLS_MD_SHA384,
+@@ -133,6 +137,10 @@ const mbedtls_md_info_t *mbedtls_md_info_from_string( const char *md_name )
+         return mbedtls_md_info_from_type( MBEDTLS_MD_SHA384 );
+     if( !strcmp( "SHA512", md_name ) )
+         return mbedtls_md_info_from_type( MBEDTLS_MD_SHA512 );
++#endif
++#if defined(MBEDTLS_SM3_C)
++    if( !strcmp( "SM3", md_name ) )
++        return mbedtls_md_info_from_type( MBEDTLS_MD_SM3 );
+ #endif
+     return( NULL );
+ }
+@@ -172,6 +180,10 @@ const mbedtls_md_info_t *mbedtls_md_info_from_type( mbedtls_md_type_t md_type )
+             return( &mbedtls_sha384_info );
+         case MBEDTLS_MD_SHA512:
+             return( &mbedtls_sha512_info );
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            return( &mbedtls_sm3_info );
+ #endif
+         default:
+             return( NULL );
+diff --git a/src/md_wrap.c b/src/md_wrap.c
+index 32f087197..e494c5385 100755
+--- a/src/md_wrap.c
++++ b/src/md_wrap.c
+@@ -61,6 +61,10 @@
+ #include "mbedtls/sha512.h"
+ #endif
+ 
++#if defined(MBEDTLS_SM3_C)
++#include "mbedtls/sm3.h"
++#endif
++
+ #if defined(MBEDTLS_PLATFORM_C)
+ #include "mbedtls/platform.h"
+ #else
+@@ -583,4 +587,72 @@ const mbedtls_md_info_t mbedtls_sha512_info = {
+ 
+ #endif /* MBEDTLS_SHA512_C */
+ 
++#if defined(MBEDTLS_SM3_C)
++
++static int sm3_starts_wrap( void *ctx )
++{
++    return( mbedtls_sm3_starts_ret( (mbedtls_sm3_context *) ctx ) );
++}
++
++static int sm3_update_wrap( void *ctx, const unsigned char *input,
++                                size_t ilen )
++{
++    return( mbedtls_sm3_update_ret( (mbedtls_sm3_context *) ctx, input, ilen ) );
++}
++
++static int sm3_finish_wrap( void *ctx, unsigned char *output )
++{
++    return( mbedtls_sm3_finish_ret( (mbedtls_sm3_context *) ctx, output ) );
++}
++
++static int sm3_wrap( const unsigned char *input, size_t ilen,
++                    unsigned char *output )
++{
++    return( mbedtls_sm3_ret( input, ilen, output ) );
++}
++
++static void *sm3_ctx_alloc( void )
++{
++    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_sm3_context ) );
++
++    if( ctx != NULL )
++        mbedtls_sm3_init( (mbedtls_sm3_context *) ctx );
++
++    return( ctx );
++}
++
++static void sm3_ctx_free( void *ctx )
++{
++    mbedtls_sm3_free( (mbedtls_sm3_context *) ctx );
++    mbedtls_free( ctx );
++}
++
++static void sm3_clone_wrap( void *dst, const void *src )
++{
++    mbedtls_sm3_clone( (mbedtls_sm3_context *) dst,
++                    (const mbedtls_sm3_context *) src );
++}
++
++static int sm3_process_wrap( void *ctx, const unsigned char *data )
++{
++    return( mbedtls_sm3_process( (mbedtls_sm3_context *) ctx, data ) );
++}
++
++const mbedtls_md_info_t mbedtls_sm3_info = {
++    MBEDTLS_MD_SM3,
++    "SM3",
++    32,
++    64,
++    sm3_starts_wrap,
++    sm3_update_wrap,
++    sm3_finish_wrap,
++    sm3_wrap,
++    sm3_ctx_alloc,
++    sm3_ctx_free,
++    sm3_clone_wrap,
++    sm3_process_wrap,
++};
++
++#endif /* MBEDTLS_SM3_C */
++
+ #endif /* MBEDTLS_MD_C */
+diff --git a/src/oid.c b/src/oid.c
+index edea950f8..f74542e9e 100755
+--- a/src/oid.c
++++ b/src/oid.c
+@@ -31,6 +31,7 @@
+ 
+ #include "mbedtls/oid.h"
+ #include "mbedtls/rsa.h"
++#include "mbedtls/sm2.h"
+ 
+ #include <stdio.h>
+ #include <string.h>
+@@ -400,6 +401,40 @@ static const oid_sig_alg_t oid_sig_alg[] =
+         MBEDTLS_MD_NONE,     MBEDTLS_PK_RSASSA_PSS,
+     },
+ #endif /* MBEDTLS_RSA_C */
++#if defined(MBEDTLS_SM2_C)
++#if defined(MBEDTLS_SM3_C)
++    {
++        { ADD_LEN( MBEDTLS_OID_SM2_SM3 ),           "sm2-with-sm3",         "SM2 with SM3" },
++        MBEDTLS_MD_SM3,     MBEDTLS_PK_SM2,
++    },
++#endif/* MBEDTLS_SM3_C */
++#if defined(MBEDTLS_SHA1_C)
++    {
++        { ADD_LEN( MBEDTLS_OID_SM2_SHA1 ),          "sm2-with-sha1",        "SM2 with SHA1" },
++        MBEDTLS_MD_SHA1,    MBEDTLS_PK_SM2,
++    },
++#endif /* MBEDTLS_SHA1_C */
++#if defined(MBEDTLS_SHA256_C)
++    {
++        { ADD_LEN( MBEDTLS_OID_SM2_SHA224 ),        "sm2-with-sha224",      "SM2 with SHA224" },
++        MBEDTLS_MD_SHA224,  MBEDTLS_PK_SM2,
++    },
++    {
++        { ADD_LEN( MBEDTLS_OID_SM2_SHA256 ),        "sm2-with-sha256",      "SM2 with SHA256" },
++        MBEDTLS_MD_SHA256,  MBEDTLS_PK_SM2,
++    },
++#endif /* MBEDTLS_SHA256_C */
++#if defined(MBEDTLS_SHA512_C)
++    {
++        { ADD_LEN( MBEDTLS_OID_SM2_SHA384 ),        "sm2-with-sha384",      "SM2 with SHA384" },
++        MBEDTLS_MD_SHA384,  MBEDTLS_PK_SM2,
++    },
++    {
++        { ADD_LEN( MBEDTLS_OID_SM2_SHA512 ),        "sm2-with-sha512",      "SM2 with SHA512" },
++        MBEDTLS_MD_SHA512,  MBEDTLS_PK_SM2,
++    },
++#endif /* MBEDTLS_SHA512_C */
++#endif /* MBEDTLS_SM2_C */
+     {
+         { NULL, 0, NULL, NULL },
+         MBEDTLS_MD_NONE, MBEDTLS_PK_NONE,
+@@ -434,6 +469,10 @@ static const oid_pk_alg_t oid_pk_alg[] =
+         { ADD_LEN( MBEDTLS_OID_EC_ALG_ECDH ),          "id-ecDH",          "EC key for ECDH" },
+         MBEDTLS_PK_ECKEY_DH,
+     },
++    {
++        { ADD_LEN( MBEDTLS_OID_EC_ALG_UNRESTRICTED ),  "id-sm2",    "SM2" },
++        MBEDTLS_PK_SM2,
++    },
+     {
+         { NULL, 0, NULL, NULL },
+         MBEDTLS_PK_NONE,
+@@ -521,6 +560,12 @@ static const oid_ecp_grp_t oid_ecp_grp[] =
+         MBEDTLS_ECP_DP_BP512R1,
+     },
+ #endif /* MBEDTLS_ECP_DP_BP512R1_ENABLED */
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++    {
++        { ADD_LEN( MBEDTLS_OID_EC_SM2P256R1 ),      "sm2p256r1",   "sm2p256r1" },
++        MBEDTLS_ECP_DP_SM2P256R1,
++    },
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
+     {
+         { NULL, 0, NULL, NULL },
+         MBEDTLS_ECP_DP_NONE,
+diff --git a/src/pk.c b/src/pk.c
+index b52c73fbc..19c745a28 100755
+--- a/src/pk.c
++++ b/src/pk.c
+@@ -38,6 +38,9 @@
+ #if defined(MBEDTLS_ECDSA_C)
+ #include "mbedtls/ecdsa.h"
+ #endif
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
+ 
+ #include <limits.h>
+ #include <stdint.h>
+@@ -91,6 +94,10 @@ const mbedtls_pk_info_t * mbedtls_pk_info_from_type( mbedtls_pk_type_t pk_type )
+ #if defined(MBEDTLS_ECDSA_C)
+         case MBEDTLS_PK_ECDSA:
+             return( &mbedtls_ecdsa_info );
++#endif
++#if defined(MBEDTLS_SM2_C)
++        case MBEDTLS_PK_SM2:
++            return( &mbedtls_sm2_info );
+ #endif
+         /* MBEDTLS_PK_RSA_ALT omitted on purpose */
+         default:
+@@ -379,4 +386,32 @@ mbedtls_pk_type_t mbedtls_pk_get_type( const mbedtls_pk_context *ctx )
+     return( ctx->pk_info->type );
+ }
+ 
++/*
++ * Helper for get length of cipher text that encrypted by public key
++ */
++size_t mbedtls_pk_cipherlen_helper( const mbedtls_pk_context *ctx,
++        size_t plain_len, size_t *cipher_len )
++{
++#if defined(MBEDTLS_RSA_C)
++    if( mbedtls_pk_can_do( ctx, MBEDTLS_PK_RSA ) )
++    {
++        size_t keylen = mbedtls_pk_get_len( ctx );
++        *cipher_len = ( ( plain_len + keylen - 1 ) / keylen ) * keylen;
++        return 0;
++    }
++    else
++#endif
++#if defined(MBEDTLS_SM2_C)
++    if( mbedtls_pk_can_do( ctx, MBEDTLS_PK_SM2 ) )
++    {
++        *cipher_len = plain_len + 97;
++        return 0;
++    }
++    else
++#endif
++    {
++        return( MBEDTLS_ERR_PK_INVALID_ALG );
++    }
++}
++
+ #endif /* MBEDTLS_PK_C */
+diff --git a/src/pk_wrap.c b/src/pk_wrap.c
+index 5446e2350..d0aa86f25 100755
+--- a/src/pk_wrap.c
++++ b/src/pk_wrap.c
+@@ -41,6 +41,10 @@
+ #include "mbedtls/ecdsa.h"
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
++
+ #if defined(MBEDTLS_PLATFORM_C)
+ #include "mbedtls/platform.h"
+ #else
+@@ -404,6 +408,104 @@ const mbedtls_pk_info_t mbedtls_ecdsa_info = {
+ };
+ #endif /* MBEDTLS_ECDSA_C */
+ 
++#if defined(MBEDTLS_SM2_C)
++
++static int sm2_can_do( mbedtls_pk_type_t type )
++{
++    return( type == MBEDTLS_PK_SM2 );
++}
++
++static int sm2_verify_wrap( void *ctx, mbedtls_md_type_t md_alg,
++                       const unsigned char *hash, size_t hash_len,
++                       const unsigned char *sig, size_t sig_len )
++{
++     int ret;
++    ((void) md_alg);
++
++    ret = mbedtls_sm2_read_signature( (mbedtls_ecdsa_context *) ctx,
++                                hash, hash_len, sig, sig_len );
++
++    if( ret == MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH )
++        return( MBEDTLS_ERR_PK_SIG_LEN_MISMATCH );
++
++    return( ret );
++}
++
++static int sm2_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
++                   const unsigned char *hash, size_t hash_len,
++                   unsigned char *sig, size_t *sig_len,
++                   int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
++{
++    return( mbedtls_sm2_write_signature( (mbedtls_ecdsa_context *) ctx,
++                md_alg, hash, hash_len, sig, sig_len, f_rng, p_rng ) );
++}
++
++static int sm2_decrypt_wrap( void *ctx,
++                    const unsigned char *input, size_t ilen,
++                    unsigned char *output, size_t *olen, size_t osize,
++                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
++{
++    mbedtls_md_type_t md_type = MBEDTLS_SM2_SPECIFIC_MD_ALGORITHM;
++    size_t addlen = 1 +
++        ( ((mbedtls_sm2_context *) ctx)->grp.nbits + 7 ) / 8 * 2 +
++        mbedtls_md_get_size( mbedtls_md_info_from_type( md_type ) );
++    ((void) f_rng);
++    ((void) p_rng);
++
++    if( ilen < addlen || osize < (ilen - addlen) )
++        return( MBEDTLS_ERR_SM2_BAD_INPUT_DATA );
++    return mbedtls_sm2_decrypt( (mbedtls_sm2_context *) ctx, md_type,
++            input, ilen, output, olen );
++}
++
++static int sm2_encrypt_wrap( void *ctx,
++                    const unsigned char *input, size_t ilen,
++                    unsigned char *output, size_t *olen, size_t osize,
++                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
++{
++    mbedtls_md_type_t md_type = MBEDTLS_SM2_SPECIFIC_MD_ALGORITHM;
++    size_t addlen = 1 +
++        ( ((mbedtls_sm2_context *) ctx)->grp.nbits + 7 ) / 8 * 2 +
++        mbedtls_md_get_size( mbedtls_md_info_from_type( md_type ) );
++
++    if( osize < (ilen + addlen) )
++        return( MBEDTLS_ERR_SM2_BAD_INPUT_DATA );
++    return mbedtls_sm2_encrypt( (mbedtls_sm2_context *) ctx, md_type,
++            input, ilen, output, olen, f_rng, p_rng );
++}
++
++static void *sm2_alloc_wrap( void )
++{
++    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_sm2_context ) );
++
++    if( ctx != NULL )
++        mbedtls_sm2_init( (mbedtls_sm2_context *) ctx );
++
++    return( ctx );
++}
++
++static void sm2_free_wrap( void *ctx )
++{
++    mbedtls_sm2_free( (mbedtls_sm2_context *) ctx );
++    mbedtls_free( ctx );
++}
++
++const mbedtls_pk_info_t mbedtls_sm2_info = {
++    MBEDTLS_PK_SM2,
++    "SM2",
++    eckey_get_bitlen,   /* Compatible key structures */
++    sm2_can_do,
++    sm2_verify_wrap,
++    sm2_sign_wrap,
++    sm2_decrypt_wrap,
++    sm2_encrypt_wrap,
++    eckey_check_pair,   /* Compatible key structures */
++    sm2_alloc_wrap,
++    sm2_free_wrap,
++    eckey_debug,        /* Compatible key structures */
++};
++#endif /* MBEDTLS_SM2_C */
++
+ #if defined(MBEDTLS_PK_RSA_ALT_SUPPORT)
+ /*
+  * Support for alternative RSA-private implementations
+diff --git a/src/pkparse.c b/src/pkparse.c
+index ec9b55f8c..e2ae4c70d 100755
+--- a/src/pkparse.c
++++ b/src/pkparse.c
+@@ -42,6 +42,9 @@
+ #if defined(MBEDTLS_ECDSA_C)
+ #include "mbedtls/ecdsa.h"
+ #endif
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
+ #if defined(MBEDTLS_PEM_PARSE_C)
+ #include "mbedtls/pem.h"
+ #endif
+@@ -643,11 +646,14 @@ int mbedtls_pk_parse_subpubkey( unsigned char **p, const unsigned char *end,
+     } else
+ #endif /* MBEDTLS_RSA_C */
+ #if defined(MBEDTLS_ECP_C)
+-    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY )
++    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY ||
++        pk_alg == MBEDTLS_PK_SM2 )
+     {
+         ret = pk_use_ecparams( &alg_params, &mbedtls_pk_ec( *pk )->grp );
+         if( ret == 0 )
+             ret = pk_get_ecpubkey( p, end, mbedtls_pk_ec( *pk ) );
++        if( ret == 0 )
++            upgrade_ecc_to_sm2(pk);
+     } else
+ #endif /* MBEDTLS_ECP_C */
+         ret = MBEDTLS_ERR_PK_UNKNOWN_PK_ALG;
+@@ -1001,7 +1007,8 @@ static int pk_parse_key_pkcs8_unencrypted_der(
+     } else
+ #endif /* MBEDTLS_RSA_C */
+ #if defined(MBEDTLS_ECP_C)
+-    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH )
++    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH ||
++        pk_alg == MBEDTLS_PK_SM2 )
+     {
+         if( ( ret = pk_use_ecparams( &params, &mbedtls_pk_ec( *pk )->grp ) ) != 0 ||
+             ( ret = pk_parse_key_sec1_der( mbedtls_pk_ec( *pk ), p, len )  ) != 0 )
+@@ -1009,6 +1016,11 @@ static int pk_parse_key_pkcs8_unencrypted_der(
+             mbedtls_pk_free( pk );
+             return( ret );
+         }
++        if( ( ret = upgrade_ecc_to_sm2(pk) ) != 0)
++        {
++            mbedtls_pk_free( pk );
++            return( ret );
++        }
+     } else
+ #endif /* MBEDTLS_ECP_C */
+         return( MBEDTLS_ERR_PK_UNKNOWN_PK_ALG );
+@@ -1210,6 +1222,11 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *pk,
+             mbedtls_pk_free( pk );
+         }
+ 
++        if( ( ret = upgrade_ecc_to_sm2(pk) ) != 0)
++        {
++            mbedtls_pk_free( pk );
++        }
++
+         mbedtls_pem_free( &pem );
+         return( ret );
+     }
+@@ -1333,7 +1350,8 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *pk,
+     pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
+     if( mbedtls_pk_setup( pk, pk_info ) == 0 &&
+         pk_parse_key_sec1_der( mbedtls_pk_ec( *pk ),
+-                               key, keylen ) == 0 )
++                               key, keylen ) == 0 &&
++        upgrade_ecc_to_sm2( pk ) == 0)
+     {
+         return( 0 );
+     }
+@@ -1401,4 +1419,17 @@ int mbedtls_pk_parse_public_key( mbedtls_pk_context *ctx,
+     return( ret );
+ }
+ 
++int upgrade_ecc_to_sm2(mbedtls_pk_context *pk )
++{
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++    const mbedtls_pk_info_t *pk_info;
++    if ((mbedtls_pk_ec( *pk )->grp.id) != MBEDTLS_ECP_DP_SM2P256R1)
++        return( 0 );
++    if( ( pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_SM2 ) ) == NULL )
++        return( MBEDTLS_ERR_PK_UNKNOWN_PK_ALG );
++    pk->pk_info = pk_info;
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */ 
++    return ( 0 );
++}
++
+ #endif /* MBEDTLS_PK_PARSE_C */
+diff --git a/src/pkwrite.c b/src/pkwrite.c
+index fa934703a..3b8450324 100755
+--- a/src/pkwrite.c
++++ b/src/pkwrite.c
+@@ -43,6 +43,9 @@
+ #if defined(MBEDTLS_ECDSA_C)
+ #include "mbedtls/ecdsa.h"
+ #endif
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
+ #if defined(MBEDTLS_PEM_WRITE_C)
+ #include "mbedtls/pem.h"
+ #endif
+@@ -185,7 +188,8 @@ int mbedtls_pk_write_pubkey( unsigned char **p, unsigned char *start,
+     else
+ #endif
+ #if defined(MBEDTLS_ECP_C)
+-    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY )
++    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY ||
++        mbedtls_pk_get_type( key ) == MBEDTLS_PK_SM2 )
+         MBEDTLS_ASN1_CHK_ADD( len, pk_write_ec_pubkey( p, start, mbedtls_pk_ec( *key ) ) );
+     else
+ #endif
+@@ -226,7 +230,8 @@ int mbedtls_pk_write_pubkey_der( mbedtls_pk_context *key, unsigned char *buf, si
+     }
+ 
+ #if defined(MBEDTLS_ECP_C)
+-    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY )
++    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY ||
++        mbedtls_pk_get_type( key ) == MBEDTLS_PK_SM2 )
+     {
+         MBEDTLS_ASN1_CHK_ADD( par_len, pk_write_ec_param( &c, buf, mbedtls_pk_ec( *key ) ) );
+     }
+@@ -328,7 +333,8 @@ int mbedtls_pk_write_key_der( mbedtls_pk_context *key, unsigned char *buf, size_
+     else
+ #endif /* MBEDTLS_RSA_C */
+ #if defined(MBEDTLS_ECP_C)
+-    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY )
++    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY ||
++        mbedtls_pk_get_type( key ) == MBEDTLS_PK_SM2 )
+     {
+         mbedtls_ecp_keypair *ec = mbedtls_pk_ec( *key );
+         size_t pub_len = 0, par_len = 0;
+@@ -519,7 +525,8 @@ int mbedtls_pk_write_key_pem( mbedtls_pk_context *key, unsigned char *buf, size_
+     else
+ #endif
+ #if defined(MBEDTLS_ECP_C)
+-    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY )
++    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY ||
++         mbedtls_pk_get_type( key ) == MBEDTLS_PK_SM2 )
+     {
+         begin = PEM_BEGIN_PRIVATE_KEY_EC;
+         end = PEM_END_PRIVATE_KEY_EC;
+diff --git a/src/threading.c b/src/threading.c
+index f1c37245c..41d36dcdd 100755
+--- a/src/threading.c
++++ b/src/threading.c
+@@ -30,6 +30,44 @@
+ #include "mbedtls/threading.h"
+ 
+ #if defined(MBEDTLS_THREADING_PTHREAD)
++#ifdef _WIN32
++static void threading_mutex_init_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return;
++    InitializeCriticalSection( mutex );
++}
++
++static void threading_mutex_free_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return;
++
++    DeleteCriticalSection( mutex );
++}
++
++static int threading_mutex_lock_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return ( MBEDTLS_ERR_THREADING_BAD_INPUT_DATA );
++
++    EnterCriticalSection( mutex );
++
++    return ( 0 );
++}
++
++static int threading_mutex_unlock_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return ( MBEDTLS_ERR_THREADING_BAD_INPUT_DATA );
++
++    LeaveCriticalSection( mutex );
++
++    return ( 0 );
++}
++
++#else
++
+ static void threading_mutex_init_pthread( mbedtls_threading_mutex_t *mutex )
+ {
+     if( mutex == NULL )
+@@ -68,6 +106,7 @@ static int threading_mutex_unlock_pthread( mbedtls_threading_mutex_t *mutex )
+ 
+     return( 0 );
+ }
++#endif
+ 
+ void (*mbedtls_mutex_init)( mbedtls_threading_mutex_t * ) = threading_mutex_init_pthread;
+ void (*mbedtls_mutex_free)( mbedtls_threading_mutex_t * ) = threading_mutex_free_pthread;
+@@ -136,6 +175,7 @@ void mbedtls_threading_free_alt( void )
+ /*
+  * Define global mutexes
+  */
++#ifndef _WIN32
+ #ifndef MUTEX_INIT
+ #define MUTEX_INIT
+ #endif
+@@ -147,3 +187,4 @@ mbedtls_threading_mutex_t mbedtls_threading_gmtime_mutex MUTEX_INIT;
+ #endif
+ 
+ #endif /* MBEDTLS_THREADING_C */
++#endif
+\ No newline at end of file
+diff --git a/src/x509_crt.c b/src/x509_crt.c
+index 3ad53a715..293d5fc28 100755
+--- a/src/x509_crt.c
++++ b/src/x509_crt.c
+@@ -96,7 +96,7 @@ const mbedtls_x509_crt_profile mbedtls_x509_crt_profile_default =
+     MBEDTLS_X509_ID_FLAG( MBEDTLS_MD_SHA512 ),
+     0xFFFFFFF, /* Any PK alg    */
+     0xFFFFFFF, /* Any curve     */
+-    2048,
++    1024,
+ };
+ 
+ /*
+@@ -198,7 +198,8 @@ static int x509_profile_check_key( const mbedtls_x509_crt_profile *profile,
+ #if defined(MBEDTLS_ECP_C)
+     if( pk_alg == MBEDTLS_PK_ECDSA ||
+         pk_alg == MBEDTLS_PK_ECKEY ||
+-        pk_alg == MBEDTLS_PK_ECKEY_DH )
++        pk_alg == MBEDTLS_PK_ECKEY_DH ||
++        pk_alg == MBEDTLS_PK_SM2 )
+     {
+         mbedtls_ecp_group_id gid = mbedtls_pk_ec( *pk )->grp.id;
+ 
+@@ -1818,6 +1819,25 @@ static int x509_crt_verifycrl( mbedtls_x509_crt *crt, mbedtls_x509_crt *ca,
+             break;
+         }
+ 
++#if defined(MBEDTLS_SM2_C)
++        if( crl_list->sig_pk == MBEDTLS_PK_SM2 )
++        {
++            int ret;
++            unsigned char z[MBEDTLS_MD_MAX_SIZE];
++
++            if( ( ret = mbedtls_sm2_hash_z( ca->pk.pk_ctx, crl_list->sig_md,
++                            NULL, 0, z ) ) != 0 )
++                return( ret );
++            if( ( ret = mbedtls_sm2_hash_e( crl_list->sig_md,
++                            z, crl_list->tbs.p, crl_list->tbs.len, hash ) ) != 0 )
++                return( ret );
++        }
++        else
++#endif /* MBEDTLS_SM2_C */
++        {
++            mbedtls_md( md_info, crl_list->tbs.p, crl_list->tbs.len, hash );
++        }
++
+         if( x509_profile_check_key( profile, crl_list->sig_pk, &ca->pk ) != 0 )
+             flags |= MBEDTLS_X509_BADCERT_BAD_KEY;
+ 
+@@ -1960,6 +1980,23 @@ static int x509_crt_verify_top(
+         /* Cannot check signature, no need to try any CA */
+         trust_ca = NULL;
+     }
++#if defined(MBEDTLS_SM2_C)
++    if( child->sig_pk == MBEDTLS_PK_SM2 )
++    {
++        unsigned char z[MBEDTLS_MD_MAX_SIZE];
++
++        if( ( ret = mbedtls_sm2_hash_z( trust_ca->pk.pk_ctx, child->sig_md,
++                        NULL, 0, z ) ) != 0 )
++            return( ret );
++        if( ( ret = mbedtls_sm2_hash_e( child->sig_md,
++                        z, child->tbs.p, child->tbs.len, hash ) ) != 0 )
++            return( ret );
++    }
++    else
++#endif /* MBEDTLS_SM2_C */
++    {
++        mbedtls_md( md_info, child->tbs.p, child->tbs.len, hash );
++    }
+ 
+     for( /* trust_ca */ ; trust_ca != NULL; trust_ca = trust_ca->next )
+     {
+@@ -2111,6 +2148,24 @@ static int x509_crt_verify_child(
+     }
+     else
+     {
++#if defined(MBEDTLS_SM2_C)
++        if( child->sig_pk == MBEDTLS_PK_SM2 )
++        {
++            unsigned char z[MBEDTLS_MD_MAX_SIZE];
++
++            if( ( ret = mbedtls_sm2_hash_z( parent->pk.pk_ctx, child->sig_md,
++                            NULL, 0, z ) ) != 0 )
++                return( ret );
++            if( ( ret = mbedtls_sm2_hash_e( child->sig_md,
++                            z, child->tbs.p, child->tbs.len, hash ) ) != 0 )
++                return( ret );
++        }
++        else
++#endif /* MBEDTLS_SM2_C */
++        {
++            mbedtls_md( md_info, child->tbs.p, child->tbs.len, hash );
++        }
++
+         if( x509_profile_check_key( profile, child->sig_pk, &parent->pk ) != 0 )
+             *flags |= MBEDTLS_X509_BADCERT_BAD_KEY;
+ 
+diff --git a/src/x509write_crt.c b/src/x509write_crt.c
+index 905de4cfa..8bdef0188 100755
+--- a/src/x509write_crt.c
++++ b/src/x509write_crt.c
+@@ -367,6 +367,8 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf,
+         pk_alg = MBEDTLS_PK_RSA;
+     else if( mbedtls_pk_can_do( ctx->issuer_key, MBEDTLS_PK_ECDSA ) )
+         pk_alg = MBEDTLS_PK_ECDSA;
++    else if( mbedtls_pk_can_do( ctx->issuer_key, MBEDTLS_PK_SM2 ) )
++        pk_alg = MBEDTLS_PK_SM2;
+     else
+         return( MBEDTLS_ERR_X509_INVALID_ALG );
+ 
+@@ -461,6 +463,20 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf,
+     /*
+      * Make signature
+      */
++#if defined(MBEDTLS_SM2_C)
++    if( pk_alg == MBEDTLS_PK_SM2 )
++    {
++        unsigned char z[MBEDTLS_MD_MAX_SIZE];
++
++        if( ( ret = mbedtls_sm2_hash_z( ctx->issuer_key->pk_ctx, ctx->md_alg,
++                        NULL, 0, z ) ) != 0 )
++            return( ret );
++        if( ( ret = mbedtls_sm2_hash_e( ctx->md_alg, z, c, len, hash ) )
++                != 0 )
++            return( ret );
++    }
++    else
++#endif /* MBEDTLS_SM2_C */
+     if( ( ret = mbedtls_md( mbedtls_md_info_from_type( ctx->md_alg ), c,
+                             len, hash ) ) != 0 )
+     {
+
+diff --git a/src/x509write_csr.c b/src/x509write_csr.c
+index d6e8c1306..501544919 100755
+--- a/src/x509write_csr.c
++++ b/src/x509write_csr.c
+@@ -242,6 +242,8 @@ int mbedtls_x509write_csr_der( mbedtls_x509write_csr *ctx, unsigned char *buf, s
+         pk_alg = MBEDTLS_PK_RSA;
+     else if( mbedtls_pk_can_do( ctx->key, MBEDTLS_PK_ECDSA ) )
+         pk_alg = MBEDTLS_PK_ECDSA;
++    else if( mbedtls_pk_can_do( ctx->key, MBEDTLS_PK_SM2 ) )
++        pk_alg = MBEDTLS_PK_SM2;
+     else
+         return( MBEDTLS_ERR_X509_INVALID_ALG );
+
