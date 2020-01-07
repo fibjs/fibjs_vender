@@ -42,6 +42,9 @@
 #if defined(MBEDTLS_ECDSA_C)
 #include "mbedtls/ecdsa.h"
 #endif
+#if defined(MBEDTLS_SM2_C)
+#include "mbedtls/sm2.h"
+#endif
 #if defined(MBEDTLS_PEM_PARSE_C)
 #include "mbedtls/pem.h"
 #endif
@@ -643,11 +646,14 @@ int mbedtls_pk_parse_subpubkey( unsigned char **p, const unsigned char *end,
     } else
 #endif /* MBEDTLS_RSA_C */
 #if defined(MBEDTLS_ECP_C)
-    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY )
+    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY ||
+        pk_alg == MBEDTLS_PK_SM2 )
     {
         ret = pk_use_ecparams( &alg_params, &mbedtls_pk_ec( *pk )->grp );
         if( ret == 0 )
             ret = pk_get_ecpubkey( p, end, mbedtls_pk_ec( *pk ) );
+        if( ret == 0 )
+            upgrade_ecc_to_sm2(pk);
     } else
 #endif /* MBEDTLS_ECP_C */
         ret = MBEDTLS_ERR_PK_UNKNOWN_PK_ALG;
@@ -1001,10 +1007,16 @@ static int pk_parse_key_pkcs8_unencrypted_der(
     } else
 #endif /* MBEDTLS_RSA_C */
 #if defined(MBEDTLS_ECP_C)
-    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH )
+    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH ||
+        pk_alg == MBEDTLS_PK_SM2 )
     {
         if( ( ret = pk_use_ecparams( &params, &mbedtls_pk_ec( *pk )->grp ) ) != 0 ||
             ( ret = pk_parse_key_sec1_der( mbedtls_pk_ec( *pk ), p, len )  ) != 0 )
+        {
+            mbedtls_pk_free( pk );
+            return( ret );
+        }
+        if( ( ret = upgrade_ecc_to_sm2(pk) ) != 0)
         {
             mbedtls_pk_free( pk );
             return( ret );
@@ -1210,6 +1222,11 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *pk,
             mbedtls_pk_free( pk );
         }
 
+        if( ( ret = upgrade_ecc_to_sm2(pk) ) != 0)
+        {
+            mbedtls_pk_free( pk );
+        }
+
         mbedtls_pem_free( &pem );
         return( ret );
     }
@@ -1333,7 +1350,8 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *pk,
     pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
     if( mbedtls_pk_setup( pk, pk_info ) == 0 &&
         pk_parse_key_sec1_der( mbedtls_pk_ec( *pk ),
-                               key, keylen ) == 0 )
+                               key, keylen ) == 0 &&
+        upgrade_ecc_to_sm2( pk ) == 0)
     {
         return( 0 );
     }
@@ -1399,6 +1417,19 @@ int mbedtls_pk_parse_public_key( mbedtls_pk_context *ctx,
 #endif
 
     return( ret );
+}
+
+int upgrade_ecc_to_sm2(mbedtls_pk_context *pk )
+{
+#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
+    const mbedtls_pk_info_t *pk_info;
+    if ((mbedtls_pk_ec( *pk )->grp.id) != MBEDTLS_ECP_DP_SM2P256R1)
+        return( 0 );
+    if( ( pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_SM2 ) ) == NULL )
+        return( MBEDTLS_ERR_PK_UNKNOWN_PK_ALG );
+    pk->pk_info = pk_info;
+#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */ 
+    return ( 0 );
 }
 
 #endif /* MBEDTLS_PK_PARSE_C */

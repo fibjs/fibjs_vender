@@ -288,6 +288,9 @@
 //#define MBEDTLS_SHA256_ALT
 //#define MBEDTLS_SHA512_ALT
 //#define MBEDTLS_XTEA_ALT
+//#define MBEDTLS_SM4_ALT
+//#define MBEDTLS_SM3_ALT
+//#define MBEDTLS_SM2_ALT
 /*
  * When replacing the elliptic curve module, pleace consider, that it is
  * implemented with two .c files:
@@ -606,6 +609,8 @@
 #define MBEDTLS_ECP_DP_BP384R1_ENABLED
 #define MBEDTLS_ECP_DP_BP512R1_ENABLED
 #define MBEDTLS_ECP_DP_CURVE25519_ENABLED
+#define MBEDTLS_ECP_DP_SM2P256R1_ENABLED
+#define MBEDTLS_ECP_DP_SM2P256T1_ENABLED
 
 /**
  * \def MBEDTLS_ECP_NIST_OPTIM
@@ -2016,6 +2021,7 @@
  * Caller:  library/ecdh.c
  *          library/ecdsa.c
  *          library/ecjpake.c
+ *          library/sm2.c
  *
  * Requires: MBEDTLS_BIGNUM_C and at least one MBEDTLS_ECP_DP_XXX_ENABLED
  */
@@ -2846,6 +2852,110 @@
 #define MBEDTLS_TLS_DEFAULT_ALLOW_SHA1_IN_KEY_EXCHANGE
 
 /* \} name SECTION: Customisation configuration options */
+
+/**
+ * \name SECTION: GM ciphers and features
+ *
+ * \{
+ */
+
+/**
+ * \def MBEDTLS_SM2_C
+ *
+ * Enable the SM2 public key cryptographic algorithm based on elliptic curves.
+ *
+ * Module:  library/sm2.c
+ * Caller:
+ *
+ * Requires: MBEDTLS_SM3_C, MBEDTLS_ECP_C
+ */
+#define MBEDTLS_SM2_C
+
+/**
+ * \def MBEDTLS_SM3_C
+ *
+ * Enable the SM3 cryptographic hash algorithms.
+ *
+ * Module:  library/sm3.c
+ * Caller:  library/sm2.c
+ */
+#define MBEDTLS_SM3_C
+
+/**
+ * \def MBEDTLS_SM4_C
+ *
+ * Enable the SM4 block cipher.
+ *
+ * Module:  library/sm4.c
+ *
+ * Requires:
+ */
+#define MBEDTLS_SM4_C
+
+/**
+ * \def MBEDTLS_GM_PROTO_SSL1_1
+ *
+ * Enable support for GM-TLS 1.1 (no GM-DTLS support temporarily).
+ *
+ * Requires: MBEDTLS_SM3_C
+ *
+ * Comment this macro to disable support for GM-TLS 1.1/GM-DTLS 1.1
+ */
+#define MBEDTLS_GM_PROTO_SSL1_1
+
+/**
+ * \def MBEDTLS_KEY_EXCHANGE_SM2_ENABLED
+ *
+ * Enable the SM2 based ciphersuite modes in SSL / TLS.
+ *
+ * Requires: MBEDTLS_SM2_C
+ *
+ * This enables the following ciphersuites (if other requisites are
+ * enabled as well):
+ *      MBEDTLS_GM_SM2_WITH_SM1_CBC_SM3
+ *      MBEDTLS_GM_SM2_WITH_SM4_CBC_SM3
+ */
+#define MBEDTLS_KEY_EXCHANGE_SM2_ENABLED
+
+/**
+ * \def MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED
+ *
+ * Enable the SM2DHE-SM2 based ciphersuite modes in SSL / TLS.
+ *
+ * Requires: MBEDTLS_SM2_C, MBEDTLS_ECDH_C(@TODO: Need SM2DHE?)
+ *
+ * This enables the following ciphersuites (if other requisites are
+ * enabled as well):
+ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM1_CBC_SM3
+ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM4_CBC_SM3
+ */
+#define MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED
+
+/**
+ * \def MBEDTLS_KEY_EXCHANGE_GM_ENABLED
+ *
+ * Enable the GM ciphers based ciphersuite modes in SSL / TLS.
+ *
+ * Requires:
+ *
+ * This enables the following ciphersuites (if other requisites are
+ * enabled as well):
+ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM1_CBC_SM3
+ *      MBEDTLS_GM_SM2_WITH_SM1_CBC_SM3
+ *      MBEDTLS_GM_IBSDH_IBC_WITH_SM1_CBC_SM3
+ *      MBEDTLS_GM_IBC_WITH_SM1_CBC_SM3
+ *      MBEDTLS_GM_RSA_WITH_SM1_CBC_SM3
+ *      MBEDTLS_GM_RSA_WITH_SM1_CBC_SHA1
+ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM4_CBC_SM3
+ *      MBEDTLS_GM_SM2_WITH_SM4_CBC_SM3
+ *      MBEDTLS_GM_IBSDH_IBC_WITH_SM4_CBC_SM3
+ *      MBEDTLS_GM_IBC_WITH_SM4_CBC_SM3
+ *      MBEDTLS_GM_RSA_WITH_SM4_CBC_SM3
+ *      MBEDTLS_GM_RSA_WITH_SM4_CBC_SHA1
+ */
+#define MBEDTLS_KEY_EXCHANGE_GM_ENABLED
+
+/* \} name SECTION: GM modules */
 
 /* Target and application specific configurations */
 //#define YOTTA_CFG_MBEDTLS_TARGET_CONFIG_FILE "target_config.h"

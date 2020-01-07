@@ -367,6 +367,8 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf, 
         pk_alg = MBEDTLS_PK_RSA;
     else if( mbedtls_pk_can_do( ctx->issuer_key, MBEDTLS_PK_ECDSA ) )
         pk_alg = MBEDTLS_PK_ECDSA;
+    else if( mbedtls_pk_can_do( ctx->issuer_key, MBEDTLS_PK_SM2 ) )
+        pk_alg = MBEDTLS_PK_SM2;
     else
         return( MBEDTLS_ERR_X509_INVALID_ALG );
 
@@ -461,6 +463,20 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf, 
     /*
      * Make signature
      */
+#if defined(MBEDTLS_SM2_C)
+    if( pk_alg == MBEDTLS_PK_SM2 )
+    {
+        unsigned char z[MBEDTLS_MD_MAX_SIZE];
+
+        if( ( ret = mbedtls_sm2_hash_z( ctx->issuer_key->pk_ctx, ctx->md_alg,
+                        NULL, 0, z ) ) != 0 )
+            return( ret );
+        if( ( ret = mbedtls_sm2_hash_e( ctx->md_alg, z, c, len, hash ) )
+                != 0 )
+            return( ret );
+    }
+    else
+#endif /* MBEDTLS_SM2_C */
     if( ( ret = mbedtls_md( mbedtls_md_info_from_type( ctx->md_alg ), c,
                             len, hash ) ) != 0 )
     {

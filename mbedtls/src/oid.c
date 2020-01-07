@@ -31,6 +31,7 @@
 
 #include "mbedtls/oid.h"
 #include "mbedtls/rsa.h"
+#include "mbedtls/sm2.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -400,6 +401,40 @@ static const oid_sig_alg_t oid_sig_alg[] =
         MBEDTLS_MD_NONE,     MBEDTLS_PK_RSASSA_PSS,
     },
 #endif /* MBEDTLS_RSA_C */
+#if defined(MBEDTLS_SM2_C)
+#if defined(MBEDTLS_SM3_C)
+    {
+        { ADD_LEN( MBEDTLS_OID_SM2_SM3 ),           "sm2-with-sm3",         "SM2 with SM3" },
+        MBEDTLS_MD_SM3,     MBEDTLS_PK_SM2,
+    },
+#endif/* MBEDTLS_SM3_C */
+#if defined(MBEDTLS_SHA1_C)
+    {
+        { ADD_LEN( MBEDTLS_OID_SM2_SHA1 ),          "sm2-with-sha1",        "SM2 with SHA1" },
+        MBEDTLS_MD_SHA1,    MBEDTLS_PK_SM2,
+    },
+#endif /* MBEDTLS_SHA1_C */
+#if defined(MBEDTLS_SHA256_C)
+    {
+        { ADD_LEN( MBEDTLS_OID_SM2_SHA224 ),        "sm2-with-sha224",      "SM2 with SHA224" },
+        MBEDTLS_MD_SHA224,  MBEDTLS_PK_SM2,
+    },
+    {
+        { ADD_LEN( MBEDTLS_OID_SM2_SHA256 ),        "sm2-with-sha256",      "SM2 with SHA256" },
+        MBEDTLS_MD_SHA256,  MBEDTLS_PK_SM2,
+    },
+#endif /* MBEDTLS_SHA256_C */
+#if defined(MBEDTLS_SHA512_C)
+    {
+        { ADD_LEN( MBEDTLS_OID_SM2_SHA384 ),        "sm2-with-sha384",      "SM2 with SHA384" },
+        MBEDTLS_MD_SHA384,  MBEDTLS_PK_SM2,
+    },
+    {
+        { ADD_LEN( MBEDTLS_OID_SM2_SHA512 ),        "sm2-with-sha512",      "SM2 with SHA512" },
+        MBEDTLS_MD_SHA512,  MBEDTLS_PK_SM2,
+    },
+#endif /* MBEDTLS_SHA512_C */
+#endif /* MBEDTLS_SM2_C */
     {
         { NULL, 0, NULL, NULL },
         MBEDTLS_MD_NONE, MBEDTLS_PK_NONE,
@@ -433,6 +468,10 @@ static const oid_pk_alg_t oid_pk_alg[] =
     {
         { ADD_LEN( MBEDTLS_OID_EC_ALG_ECDH ),          "id-ecDH",          "EC key for ECDH" },
         MBEDTLS_PK_ECKEY_DH,
+    },
+    {
+        { ADD_LEN( MBEDTLS_OID_EC_ALG_UNRESTRICTED ),  "id-sm2",    "SM2" },
+        MBEDTLS_PK_SM2,
     },
     {
         { NULL, 0, NULL, NULL },
@@ -521,6 +560,12 @@ static const oid_ecp_grp_t oid_ecp_grp[] =
         MBEDTLS_ECP_DP_BP512R1,
     },
 #endif /* MBEDTLS_ECP_DP_BP512R1_ENABLED */
+#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
+    {
+        { ADD_LEN( MBEDTLS_OID_EC_SM2P256R1 ),      "sm2p256r1",   "sm2p256r1" },
+        MBEDTLS_ECP_DP_SM2P256R1,
+    },
+#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
     {
         { NULL, 0, NULL, NULL },
         MBEDTLS_ECP_DP_NONE,

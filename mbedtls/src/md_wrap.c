@@ -61,6 +61,10 @@
 #include "mbedtls/sha512.h"
 #endif
 
+#if defined(MBEDTLS_SM3_C)
+#include "mbedtls/sm3.h"
+#endif
+
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
 #else
@@ -582,5 +586,73 @@ const mbedtls_md_info_t mbedtls_sha512_info = {
 };
 
 #endif /* MBEDTLS_SHA512_C */
+
+#if defined(MBEDTLS_SM3_C)
+
+static int sm3_starts_wrap( void *ctx )
+{
+    return( mbedtls_sm3_starts_ret( (mbedtls_sm3_context *) ctx ) );
+}
+
+static int sm3_update_wrap( void *ctx, const unsigned char *input,
+                                size_t ilen )
+{
+    return( mbedtls_sm3_update_ret( (mbedtls_sm3_context *) ctx, input, ilen ) );
+}
+
+static int sm3_finish_wrap( void *ctx, unsigned char *output )
+{
+    return( mbedtls_sm3_finish_ret( (mbedtls_sm3_context *) ctx, output ) );
+}
+
+static int sm3_wrap( const unsigned char *input, size_t ilen,
+                    unsigned char *output )
+{
+    return( mbedtls_sm3_ret( input, ilen, output ) );
+}
+
+static void *sm3_ctx_alloc( void )
+{
+    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_sm3_context ) );
+
+    if( ctx != NULL )
+        mbedtls_sm3_init( (mbedtls_sm3_context *) ctx );
+
+    return( ctx );
+}
+
+static void sm3_ctx_free( void *ctx )
+{
+    mbedtls_sm3_free( (mbedtls_sm3_context *) ctx );
+    mbedtls_free( ctx );
+}
+
+static void sm3_clone_wrap( void *dst, const void *src )
+{
+    mbedtls_sm3_clone( (mbedtls_sm3_context *) dst,
+                    (const mbedtls_sm3_context *) src );
+}
+
+static int sm3_process_wrap( void *ctx, const unsigned char *data )
+{
+    return( mbedtls_sm3_process( (mbedtls_sm3_context *) ctx, data ) );
+}
+
+const mbedtls_md_info_t mbedtls_sm3_info = {
+    MBEDTLS_MD_SM3,
+    "SM3",
+    32,
+    64,
+    sm3_starts_wrap,
+    sm3_update_wrap,
+    sm3_finish_wrap,
+    sm3_wrap,
+    sm3_ctx_alloc,
+    sm3_ctx_free,
+    sm3_clone_wrap,
+    sm3_process_wrap,
+};
+
+#endif /* MBEDTLS_SM3_C */
 
 #endif /* MBEDTLS_MD_C */

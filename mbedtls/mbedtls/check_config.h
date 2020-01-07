@@ -119,8 +119,27 @@
     !defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED) &&                  \
     !defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED) &&                  \
     !defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED) &&                  \
-    !defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED) ) )
+    !defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)&&                  \
+    !defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED) &&                  \
+    !defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED) ) )
 #error "MBEDTLS_ECP_C defined, but not all prerequisites"
+#endif
+
+#if defined(MBEDTLS_SM2_C) &&                                       \
+    ( !defined(MBEDTLS_SM3_C) ||                                    \
+      !defined(MBEDTLS_ECP_C) )
+#error "MBEDTLS_SM2_C defined, but not all prerequisites"
+#endif
+
+#if defined(MBEDTLS_KEY_EXCHANGE_SM2_ENABLED) &&                    \
+    !defined(MBEDTLS_SM2_C)
+#error "MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED defined, but not all prerequisites"
+#endif
+
+#if defined(MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED) &&             \
+    ( !defined(MBEDTLS_SM2_C) ||                                    \
+      !defined(MBEDTLS_ECDH_C) )
+#error "MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED defined, but not all prerequisites"
 #endif
 
 #if defined(MBEDTLS_PK_PARSE_C) && !defined(MBEDTLS_ASN1_PARSE_C)

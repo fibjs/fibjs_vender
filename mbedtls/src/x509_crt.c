@@ -198,7 +198,8 @@ static int x509_profile_check_key( const mbedtls_x509_crt_profile *profile,
 #if defined(MBEDTLS_ECP_C)
     if( pk_alg == MBEDTLS_PK_ECDSA ||
         pk_alg == MBEDTLS_PK_ECKEY ||
-        pk_alg == MBEDTLS_PK_ECKEY_DH )
+        pk_alg == MBEDTLS_PK_ECKEY_DH ||
+        pk_alg == MBEDTLS_PK_SM2 )
     {
         mbedtls_ecp_group_id gid = mbedtls_pk_ec( *pk )->grp.id;
 
@@ -1818,6 +1819,25 @@ static int x509_crt_verifycrl( mbedtls_x509_crt *crt, mbedtls_x509_crt *ca,
             break;
         }
 
+#if defined(MBEDTLS_SM2_C)
+        if( crl_list->sig_pk == MBEDTLS_PK_SM2 )
+        {
+            int ret;
+            unsigned char z[MBEDTLS_MD_MAX_SIZE];
+
+            if( ( ret = mbedtls_sm2_hash_z( ca->pk.pk_ctx, crl_list->sig_md,
+                            NULL, 0, z ) ) != 0 )
+                return( ret );
+            if( ( ret = mbedtls_sm2_hash_e( crl_list->sig_md,
+                            z, crl_list->tbs.p, crl_list->tbs.len, hash ) ) != 0 )
+                return( ret );
+        }
+        else
+#endif /* MBEDTLS_SM2_C */
+        {
+            mbedtls_md( md_info, crl_list->tbs.p, crl_list->tbs.len, hash );
+        }
+
         if( x509_profile_check_key( profile, crl_list->sig_pk, &ca->pk ) != 0 )
             flags |= MBEDTLS_X509_BADCERT_BAD_KEY;
 
@@ -1959,6 +1979,23 @@ static int x509_crt_verify_top(
         /* Note: this can't happen except after an internal error */
         /* Cannot check signature, no need to try any CA */
         trust_ca = NULL;
+    }
+#if defined(MBEDTLS_SM2_C)
+    if( child->sig_pk == MBEDTLS_PK_SM2 )
+    {
+        unsigned char z[MBEDTLS_MD_MAX_SIZE];
+
+        if( ( ret = mbedtls_sm2_hash_z( trust_ca->pk.pk_ctx, child->sig_md,
+                        NULL, 0, z ) ) != 0 )
+            return( ret );
+        if( ( ret = mbedtls_sm2_hash_e( child->sig_md,
+                        z, child->tbs.p, child->tbs.len, hash ) ) != 0 )
+            return( ret );
+    }
+    else
+#endif /* MBEDTLS_SM2_C */
+    {
+        mbedtls_md( md_info, child->tbs.p, child->tbs.len, hash );
     }
 
     for( /* trust_ca */ ; trust_ca != NULL; trust_ca = trust_ca->next )
@@ -2111,6 +2148,24 @@ static int x509_crt_verify_child(
     }
     else
     {
+#if defined(MBEDTLS_SM2_C)
+        if( child->sig_pk == MBEDTLS_PK_SM2 )
+        {
+            unsigned char z[MBEDTLS_MD_MAX_SIZE];
+
+            if( ( ret = mbedtls_sm2_hash_z( parent->pk.pk_ctx, child->sig_md,
+                            NULL, 0, z ) ) != 0 )
+                return( ret );
+            if( ( ret = mbedtls_sm2_hash_e( child->sig_md,
+                            z, child->tbs.p, child->tbs.len, hash ) ) != 0 )
+                return( ret );
+        }
+        else
+#endif /* MBEDTLS_SM2_C */
+        {
+            mbedtls_md( md_info, child->tbs.p, child->tbs.len, hash );
+        }
+
         if( x509_profile_check_key( profile, child->sig_pk, &parent->pk ) != 0 )
             *flags |= MBEDTLS_X509_BADCERT_BAD_KEY;
 

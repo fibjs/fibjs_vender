@@ -38,6 +38,9 @@
 #if defined(MBEDTLS_ECDSA_C)
 #include "mbedtls/ecdsa.h"
 #endif
+#if defined(MBEDTLS_SM2_C)
+#include "mbedtls/sm2.h"
+#endif
 
 #include <limits.h>
 #include <stdint.h>
@@ -91,6 +94,10 @@ const mbedtls_pk_info_t * mbedtls_pk_info_from_type( mbedtls_pk_type_t pk_type )
 #if defined(MBEDTLS_ECDSA_C)
         case MBEDTLS_PK_ECDSA:
             return( &mbedtls_ecdsa_info );
+#endif
+#if defined(MBEDTLS_SM2_C)
+        case MBEDTLS_PK_SM2:
+            return( &mbedtls_sm2_info );
 #endif
         /* MBEDTLS_PK_RSA_ALT omitted on purpose */
         default:
@@ -377,6 +384,34 @@ mbedtls_pk_type_t mbedtls_pk_get_type( const mbedtls_pk_context *ctx )
         return( MBEDTLS_PK_NONE );
 
     return( ctx->pk_info->type );
+}
+
+/*
+ * Helper for get length of cipher text that encrypted by public key
+ */
+size_t mbedtls_pk_cipherlen_helper( const mbedtls_pk_context *ctx,
+        size_t plain_len, size_t *cipher_len )
+{
+#if defined(MBEDTLS_RSA_C)
+    if( mbedtls_pk_can_do( ctx, MBEDTLS_PK_RSA ) )
+    {
+        size_t keylen = mbedtls_pk_get_len( ctx );
+        *cipher_len = ( ( plain_len + keylen - 1 ) / keylen ) * keylen;
+        return 0;
+    }
+    else
+#endif
+#if defined(MBEDTLS_SM2_C)
+    if( mbedtls_pk_can_do( ctx, MBEDTLS_PK_SM2 ) )
+    {
+        *cipher_len = plain_len + 97;
+        return 0;
+    }
+    else
+#endif
+    {
+        return( MBEDTLS_ERR_PK_INVALID_ALG );
+    }
 }
 
 #endif /* MBEDTLS_PK_C */

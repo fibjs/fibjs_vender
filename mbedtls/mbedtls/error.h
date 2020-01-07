@@ -92,6 +92,7 @@
  * DHM       3   11
  * PK        3   15 (Started from top)
  * RSA       4   11
+ * SM2       4   6
  * ECP       4   9 (Started from top)
  * MD        5   5
  * CIPHER    6   8

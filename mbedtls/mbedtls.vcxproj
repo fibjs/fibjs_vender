@@ -76,6 +76,9 @@
     <ClInclude Include="mbedtls\sha1.h" />
     <ClInclude Include="mbedtls\sha256.h" />
     <ClInclude Include="mbedtls\sha512.h" />
+    <ClInclude Include="mbedtls\sm2.h" />
+    <ClInclude Include="mbedtls\sm3.h" />
+    <ClInclude Include="mbedtls\sm4.h" />
     <ClInclude Include="mbedtls\ssl.h" />
     <ClInclude Include="mbedtls\ssl_cache.h" />
     <ClInclude Include="mbedtls\ssl_ciphersuites.h" />
@@ -143,6 +146,9 @@
     <ClCompile Include="src\sha1.c" />
     <ClCompile Include="src\sha256.c" />
     <ClCompile Include="src\sha512.c" />
+    <ClCompile Include="src\sm2.c" />
+    <ClCompile Include="src\sm3.c" />
+    <ClCompile Include="src\sm4.c" />
     <ClCompile Include="src\ssl_bignum.c" />
     <ClCompile Include="src\ssl_cache.c" />
     <ClCompile Include="src\ssl_ciphersuites.c" />
