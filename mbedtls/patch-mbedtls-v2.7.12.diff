@@ -1581,3 +1581,21 @@ index d6e8c1306..501544919 100755
      else
          return( MBEDTLS_ERR_X509_INVALID_ALG );
 
+diff --git a/src/ecp.c b/src/ecp.c
+index 2afc01a7..cb8e947d 100755
+--- a/src/ecp.c
++++ b/src/ecp.c
+@@ -159,12 +159,6 @@ static const mbedtls_ecp_curve_info ecp_supported_curves[] =
+ #endif
+ #if defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED)
+     { MBEDTLS_ECP_DP_SECP192K1,    18,     192,    "secp192k1"         },
+-#endif
+-#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
+-    { MBEDTLS_ECP_DP_SM2P256R1,    29,     256,    "sm2p256r1"         },
+-#endif
+-#if defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED)
+-    { MBEDTLS_ECP_DP_SM2P256T1,    30,     256,    "sm2p256t1"         },
+ #endif
+     { MBEDTLS_ECP_DP_NONE,          0,     0,      NULL                },
+ };
+
