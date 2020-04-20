@@ -1,0 +1,37 @@
+image: Visual Studio 2017
+
+platform:
+  - x64
+  - x86
+
+configuration: Release
+
+install:
+  - call "%APPVEYOR_BUILD_FOLDER%\.appveyor\install-llvm.cmd"
+  - call "%APPVEYOR_BUILD_FOLDER%\.appveyor\set-llvm.cmd"
+
+build_script:
+  - IF /I "%PLATFORM%" == "x64" ECHO "x64 building..." && build release amd64
+  - IF /I "%PLATFORM%" == "x86" ECHO "x86 building..." && build release i386
+  - IF /I "%APPVEYOR_REPO_TAG%" == "false" set APPVEYOR_REPO_TAG_NAME=dist
+  - IF /I "%PLATFORM%" == "x64" mkdir -p %APPVEYOR_REPO_TAG_NAME%\x64\Windows_amd64_release && copy .\bin\Windows_amd64_release\* .\%APPVEYOR_REPO_TAG_NAME%\x64\Windows_amd64_release\
+  - IF /I "%PLATFORM%" == "x86" mkdir -p %APPVEYOR_REPO_TAG_NAME%\x86\Windows_i386_release && copy .\bin\Windows_i386_release\* .\%APPVEYOR_REPO_TAG_NAME%\x86\Windows_i386_release\
+test: off
+
+matrix:
+  fast_finish: true
+artifacts:
+  - path: .\%APPVEYOR_REPO_TAG_NAME%\x64
+    name: vender-windows-x64-release
+    type: zip
+  - path: .\%APPVEYOR_REPO_TAG_NAME%\x86
+    name: vender-windows-x86-release
+    type: zip
+deploy:
+  - provider: GitHub
+    auth_token:
+      secure: lejIg4SxHHd6XIwmw8v6tZvjEFmrC4FVHudUe+x3lh803kYNNrhaCknibW6h+/Uv
+    draft: false
+    prerelease: false
+    on:
+      appveyor_repo_tag: true
