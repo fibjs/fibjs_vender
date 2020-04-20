@@ -1,10 +1,12 @@
 .dist/**
 */out
+/out
+/bin
 
 # ignore .vs local files
 .vs
 */*.sln
-*/*vcxproj.user
+**/*vcxproj.user
 */*.dir
 
 # ignore cmake temp files

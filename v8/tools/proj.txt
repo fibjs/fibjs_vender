@@ -56,15 +56,8 @@
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Label="LLVM">
-    <UseClangCl>true</UseClangCl>
-    <!--
-      @notice Default VCToolsVersion of VS2019 is 14.23.28105, but For v8 6.9, we need 14.16.27023,
-      If error occured when upgrading v8 version, try to comment next line.
-    -->
-    <VCToolsVersion>14.16.27023</VCToolsVersion>
-  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\..\.VCTargets\Toolset-llvm-vs2017.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -96,9 +89,6 @@
     <OutDir>$(SolutionDir)bin\Windows_amd64_release\</OutDir>
     <IntDir>$(SolutionDir)out\Windows_amd64_release\v8\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Label="LLVM">
-    <UseClangCl>true</UseClangCl>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>
@@ -106,7 +96,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4091;4101;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -127,7 +117,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4091;4101;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -144,13 +134,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -178,7 +166,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_CONCURRENT_MARKING;ENABLE_HANDLE_ZAPPING;DISABLE_UNTRUSTED_CODE_MITIGATIONS;DISABLE_UNTRUSTED_CODE_MITIGATIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;$(ProjectDir)src;$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -199,6 +187,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\..\.VCTargets\Toolset-llvm-vs2017.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
