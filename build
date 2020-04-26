@@ -177,6 +177,7 @@ webp
 zlib
 leveldb
 snappy
+jemalloc
 ev
 pcre
 sqlite

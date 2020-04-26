@@ -25,7 +25,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PositionIndependentCode>false</PositionIndependentCode>
       <AdditionalOptions>-fms-extensions -fmsc-version=1910 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions>-fsigned-char -fmessage-length=0 -fdata-sections -ffunction-sections -fno-exceptions -D_FILE_OFFSET_BITS=64 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-fsigned-char -fmessage-length=0 -fdata-sections -ffunction-sections -D_FILE_OFFSET_BITS=64 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)'=='Release'">-s -w -fvisibility=hidden %(AdditionalOptions)</AdditionalOptions>
       <!-- Set the value of _MSC_VER to claim for compatibility -->
       <AdditionalOptions Condition="'$(Platform)'=='Win32'">-m32 -frtti %(AdditionalOptions)</AdditionalOptions>
