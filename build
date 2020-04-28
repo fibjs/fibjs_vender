@@ -177,6 +177,7 @@ webp
 zlib
 leveldb
 snappy
+msgpack
 jemalloc
 ev
 pcre
