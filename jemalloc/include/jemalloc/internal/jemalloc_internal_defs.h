@@ -49,7 +49,11 @@
  * total number of bits in a pointer, e.g. on x64, for which the uppermost 16
  * bits are the same as bit 47.
  */
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64)
 #define LG_VADDR 48
+#else
+#define LG_VADDR 32
+#endif
 
 /* Defined if C11 atomics are available. */
 #define JEMALLOC_C11_ATOMICS 1
@@ -317,7 +321,11 @@
 #define LG_SIZEOF_INT 2
 
 /* sizeof(long) == 2^LG_SIZEOF_LONG. */
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64)
 #define LG_SIZEOF_LONG 3
+#else
+#define LG_SIZEOF_LONG 2
+#endif
 
 /* sizeof(long long) == 2^LG_SIZEOF_LONG_LONG. */
 #define LG_SIZEOF_LONG_LONG 3
