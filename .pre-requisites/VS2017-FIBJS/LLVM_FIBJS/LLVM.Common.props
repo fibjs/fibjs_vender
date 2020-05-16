@@ -1,0 +1,32 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Clang.props" />
+
+  <PropertyGroup>
+    <LLVMInstallDir>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\LLVM\LLVM)</LLVMInstallDir>
+    <LLVMInstallDir Condition="'$(LLVMInstallDir)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\LLVM\LLVM)</LLVMInstallDir>
+    <LLVMInstallDir Condition="'$(LLVMInstallDir)' != ''">$(LLVMInstallDir)\</LLVMInstallDir>
+    <UseMultiToolTask>true</UseMultiToolTask>
+    
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Short names for platform toolsets (added to project name in Solution Explorer) -->
+    <_PlatformToolsetShortNameFor_LLVM_FIBJS_v141>LLVM_FIBJS v141</_PlatformToolsetShortNameFor_LLVM_FIBJS_v141>
+
+    <!-- Friendly names added to the PlatformToolset in the property pages. -->
+    <_PlatformToolsetFriendlyNameFor_LLVM_FIBJS_v141>LLVM_FIBJS for Visual Studio 2017 (LLVM_FIBJS_v141)</_PlatformToolsetFriendlyNameFor_LLVM_FIBJS_v141>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PositionIndependentCode>false</PositionIndependentCode>
+      <AdditionalOptions>-fms-extensions -fmsc-version=1910 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-fsigned-char -fmessage-length=0 -fdata-sections -ffunction-sections -D_FILE_OFFSET_BITS=64 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)'=='Release'">-s -w -fvisibility=hidden %(AdditionalOptions)</AdditionalOptions>
+      <!-- Set the value of _MSC_VER to claim for compatibility -->
+      <AdditionalOptions Condition="'$(Platform)'=='Win32'">-m32 -frtti %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'=='x64'">-m64 -frtti %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

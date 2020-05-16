@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Rule
+      Name="LLVM_FIBJSGeneral"
+      DisplayName="LLVM_FIBJS"
+      PageTemplate="generic"
+      Description="LLVM for fibjs compilation"
+      xmlns="http://schemas.microsoft.com/build/2009/properties">
+  <Rule.Categories>
+    <Category Name="General" DisplayName="General" Description="General" />
+  </Rule.Categories>
+  <Rule.DataSource>
+    <DataSource Persistence="ProjectFile" Label="LLVMFIBJS" />
+  </Rule.DataSource>
+
+  <BoolProperty Name="UseMultiToolTask"
+                DisplayName="UseMultiToolTask"
+                Description="Use multiple tasks to compile."
+                Category="General"
+                Default="true">
+  </BoolProperty>
+
+  <!-- <StringProperty Name="LinkAdditionalOptions"
+                  DisplayName="Additional Linker Options"
+                  Description="Additional options to pass to lld-link.  This is essentially the same as General > Linker > Command Line > Additional Options, except that it is safe to put options here that will be rejected by link.exe in case you switch toolchains back and forth."
+                  Category="General">
+  </StringProperty> -->
+</Rule>
