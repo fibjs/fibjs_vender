@@ -7,15 +7,17 @@ platform:
 configuration: Release
 
 install:
+  - call "%APPVEYOR_BUILD_FOLDER%\.appveyor\set-git-bash.cmd"
   - call "%APPVEYOR_BUILD_FOLDER%\.appveyor\install-llvm.cmd"
   - call "%APPVEYOR_BUILD_FOLDER%\.appveyor\set-llvm.cmd"
 
 build_script:
-  - IF /I "%PLATFORM%" == "x64" ECHO "x64 building..." && build release amd64
-  - IF /I "%PLATFORM%" == "x86" ECHO "x86 building..." && build release i386
+  - SET BUILD_JOBS=8
+  - IF /I "%PLATFORM%" == "x64" ECHO "x64 building..." && build.cmd release amd64
+  - IF /I "%PLATFORM%" == "x86" ECHO "x86 building..." && build.cmd release i386
   - IF /I "%APPVEYOR_REPO_TAG%" == "false" set APPVEYOR_REPO_TAG_NAME=dist
-  - IF /I "%PLATFORM%" == "x64" mkdir -p %APPVEYOR_REPO_TAG_NAME%\x64\Windows_amd64_release && copy .\bin\Windows_amd64_release\* .\%APPVEYOR_REPO_TAG_NAME%\x64\Windows_amd64_release\
-  - IF /I "%PLATFORM%" == "x86" mkdir -p %APPVEYOR_REPO_TAG_NAME%\x86\Windows_i386_release && copy .\bin\Windows_i386_release\* .\%APPVEYOR_REPO_TAG_NAME%\x86\Windows_i386_release\
+  - IF /I "%PLATFORM%" == "x64" mkdir -p %APPVEYOR_REPO_TAG_NAME%\x64\Windows_amd64_release && copy .\.dist\bin\Windows_amd64_release\* .\%APPVEYOR_REPO_TAG_NAME%\x64\Windows_amd64_release\
+  - IF /I "%PLATFORM%" == "x86" mkdir -p %APPVEYOR_REPO_TAG_NAME%\x86\Windows_i386_release && copy .\.dist\bin\Windows_i386_release\* .\%APPVEYOR_REPO_TAG_NAME%\x86\Windows_i386_release\
 test: off
 
 matrix:

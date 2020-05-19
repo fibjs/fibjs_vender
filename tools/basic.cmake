@@ -1,5 +1,6 @@
 include(../tools/os.cmake)
 include(../tools/arch.cmake)
+include(../tools/platform.cmake)
 
 project(${name})
 
@@ -12,12 +13,14 @@ endif(CCACHE_FOUND)
 file(GLOB_RECURSE src_list "src/*.c*")
 add_library(${name} ${src_list})
 
-set(VENDOR_ROOT ${PROJECT_SOURCE_DIR}/..)
+if(NOT DEFINED BUILD_TYPE)
+set(BUILD_TYPE "release")
+endif()
 
-if((${ctx_used_by_fibjs}) STREQUAL "1")
-	set(LIBRARY_OUTPUT_PATH ${VENDOR_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
+if((${USED_BY_FIBJS}) STREQUAL "1")
+	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
 else()
-	set(LIBRARY_OUTPUT_PATH ${VENDOR_ROOT}/.dist/bin/${OS}_${ARCH}_${BUILD_TYPE})
+	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/.dist/bin/${OS}_${ARCH}_${BUILD_TYPE})
 endif()
 
 if(NOT flags)
@@ -28,12 +31,27 @@ set(flags "${flags} -fsigned-char -fmessage-length=0 -fdata-sections -ffunction-
 if(NOT ccflags)
 	set(ccflags " ")
 endif()
-set(ccflags "${ccflags} -std=c++11")
+
+set(ccflags "${ccflags} ${CXX_STD_VER_FLAG}")
+if(FIBJS_CMAKE_BUILD_VERBOSE)
+	message("CXX_STD_VER_FLAG is ${CXX_STD_VER_FLAG}")
+endif()
 
 set(link_flags " ")
 
 if(${OS} STREQUAL "Darwin")
 	set(flags "${flags} -mmacosx-version-min=10.9")
+endif()
+
+if(${OS} STREQUAL "Windows")
+	add_definitions(-DWIN32 -D_LIB -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -DNOMINMAX)
+	set(flags "${flags} -fms-extensions -fmsc-version=1910 -frtti")
+	
+	if(${ARCH} STREQUAL "amd64")
+		set(flags "${flags} -m64")
+	elseif(${ARCH} STREQUAL "i386")
+		set(flags "${flags} -m32")
+	endif()
 endif()
 
 if(${BUILD_TYPE} STREQUAL "release")
@@ -55,8 +73,8 @@ if(${BUILD_TYPE} STREQUAL "debug")
 	add_definitions(-DDEBUG=1)
 endif()
 
-set(CMAKE_C_FLAGS "${flags}")
-set(CMAKE_CXX_FLAGS "${flags} ${ccflags}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flags}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flags} ${ccflags}")
 
 if(link_flags)
 	set_target_properties(${name} PROPERTIES LINK_FLAGS ${link_flags})

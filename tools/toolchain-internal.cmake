@@ -1,0 +1,7 @@
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+set(CMAKE_C_COMPILER "clang.exe")
+set(CMAKE_CXX_COMPILER "clang++.exe")
+else()
+set(CMAKE_C_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")
+endif()

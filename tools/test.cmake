@@ -1,5 +1,6 @@
 include(../../tools/arch.cmake)
 include(../../tools/os.cmake)
+include(../../tools/platform.cmake)
 
 project(${name}_test)
 
@@ -8,7 +9,7 @@ add_executable(${name}_test ${src_list})
 
 set(VENDOR_ROOT ${PROJECT_SOURCE_DIR}/../../)
 
-if((${ctx_used_by_fibjs}) STREQUAL "1")
+if((${USED_BY_FIBJS}) STREQUAL "1")
 	set(BIN_DIR ${VENDOR_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
 else()
 	set(BIN_DIR ${VENDOR_ROOT}/.dist/bin/${OS}_${ARCH}_${BUILD_TYPE})
@@ -24,16 +25,16 @@ set(flags "${flags} -fsigned-char -fmessage-length=0 -fdata-sections -ffunction-
 if(NOT ccflags)
 	set(ccflags " ")
 endif()
-set(ccflags "${ccflags} -std=c++11")
+set(ccflags "${ccflags} ${CXX_STD_VER_FLAG}")
 
 set(link_flags " ")
 
-target_link_libraries(${name}_test "${BIN_DIR}/libgtest.a")
-target_link_libraries(${name}_test "${BIN_DIR}/lib${name}.a")
+target_link_libraries(${name}_test "${BIN_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}")
+target_link_libraries(${name}_test "${BIN_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${name}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
 if(libs)
 	foreach(lib ${libs})
-		target_link_libraries(${name}_test "${BIN_DIR}/lib${lib}.a")
+		target_link_libraries(${name}_test "${BIN_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${lib}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 	endforeach()
 endif()
 
@@ -41,6 +42,18 @@ if(${OS} STREQUAL "Darwin")
 	set(link_flags "${link_flags} -mmacosx-version-min=10.9")
 	set(flags "${flags} -mmacosx-version-min=10.9")
 	target_link_libraries(${name}_test dl iconv stdc++)
+endif()
+
+if(${OS} STREQUAL "Windows")
+	add_definitions(-DWIN32 -D_LIB -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -DNOMINMAX)
+	set(flags "${flags} -fms-extensions -fmsc-version=1910 -frtti")
+	set(link_flags "${link_flags} -ldbghelp -lwinmm -lshlwapi")
+	
+	if(${ARCH} STREQUAL "amd64")
+		set(flags "${flags} -m64")
+	elseif(${ARCH} STREQUAL "i386")
+		set(flags "${flags} -m32")
+	endif()
 endif()
 
 if(${OS} STREQUAL "Linux")
@@ -71,7 +84,9 @@ endif()
 set(CMAKE_C_FLAGS "${flags}")
 set(CMAKE_CXX_FLAGS "${flags} ${ccflags}")
 
-target_link_libraries(${name}_test pthread)
+if(NOT ${OS} STREQUAL "Windows")
+	target_link_libraries(${name}_test pthread)
+endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/../ "${PROJECT_SOURCE_DIR}/../include" "${PROJECT_SOURCE_DIR}/../../")
 

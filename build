@@ -1,5 +1,13 @@
 #!/bin/bash
 
+. ./scripts/get_env.sh --source-only
+
+get_build_env;
+
+echo "HOST_OS is $HOST_OS";
+echo "HOST_ARCH is $HOST_ARCH";
+echo "BUILD_TYPE is $BUILD_TYPE";
+
 usage()
 {
 	echo ""
@@ -16,36 +24,6 @@ usage()
 	echo ""
 	exit 0
 }
-
-HOST_OS=`uname`
-HOST_ARCH=`uname -m`
-
-case ${HOST_ARCH} in
-	i386|i686) HOST_ARCH="i386"
-		;;
-	x86_64|amd64) HOST_ARCH="amd64"
-		;;
-	armv6|armv7|armv7s|armv7l) HOST_ARCH="arm"
-		;;
-	aarch64) HOST_ARCH="arm64"
-		;;
-	mips|mipsel) HOST_ARCH="mips"
-		;;
-	mips64) HOST_ARCH="mips64"
-		;;
-	powerpc) HOST_ARCH="ppc"
-		;;
-	ppc64) HOST_ARCH="ppc64"
-		;;
-esac
-
-TARGET_OS=$HOST_OS
-TARGET_ARCH=$HOST_ARCH
-if [ -z "${BUILD_TYPE}" ]; then
-	BUILD_TYPE="release"
-fi
-BUILD_OPTION=""
-GCC_VERSION=`gcc -dumpversion`
 
 for i in "$@"
 do
@@ -133,11 +111,23 @@ fi
 VENDER_PATH=`pwd`
 PARENT_PATH="$(dirname "${VENDER_PATH}")"
 
+# # when used in fibjs
+if [ -z "${USED_BY_FIBJS}" ]; then
 USED_BY_FIBJS=""
-# when used in fibjs
 if [ -e "${PARENT_PATH}/build" ]; then
 	USED_BY_FIBJS=1
 fi
+fi
+
+case ${BUILD_TYPE} in
+	release|*)
+		BUILD_TYPE="release"
+		CMAKE_BUILD_TYPE="Release"
+		;;
+	debug)
+		CMAKE_BUILD_TYPE="Debug"
+		;;
+esac
 
 if [ ! -z "${USED_BY_FIBJS}" ]; then
 	OUT_PATH=${VENDER_PATH}/../out
@@ -164,6 +154,33 @@ fi
 OUT_PATH="${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
 cd ${OUT_PATH}
 
+if [ $HOST_OS = "Windows" ]; then
+libs="exlib
+cares
+gtest
+expat
+gumbo
+gd
+tiff
+jpeg
+png
+webp
+zlib
+leveldb
+snappy
+msgpack
+pcre
+sqlite
+mongo
+umysql
+uuid
+exif
+winiconv
+mbedtls
+v8
+jssdk
+unzip"
+else
 libs="exlib
 cares
 gtest
@@ -190,8 +207,8 @@ winiconv
 mbedtls
 v8
 jssdk
-unzip
-editline"
+unzip"
+fi
 
 if [ -z $GIT_BRANCH ]; then
 	GIT_BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
@@ -202,6 +219,13 @@ if [ "$GIT_BRANCH" = "test_ci" ]; then
 	libs="uuid"
 fi
 
+if [ $HOST_OS == "Windows" ]; then
+	get_windows_vctool_install_path;
+	export VCToolsInstallDir;
+fi
+
+echo "BUILD_JOBS is $BUILD_JOBS";
+
 for lib in ${libs}
 do
 
@@ -210,16 +234,28 @@ do
 	fi
 
 	cd ${lib}
-	cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DARCH=${TARGET_ARCH}  -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dctx_used_by_fibjs="${USED_BY_FIBJS}" -Dname=${lib} ${VENDER_PATH}/${lib} > CMake.log
+	cmake \
+		-DCMAKE_TOOLCHAIN_FILE="${VENDER_PATH}/tools/toolchain-internal.cmake" \
+		-Wno-dev \
+		-DCMAKE_MAKE_PROGRAM=make \
+		-G "Unix Makefiles" \
+		-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+		-DARCH=${TARGET_ARCH} \
+		-DBUILD_TYPE=${BUILD_TYPE} \
+		-DBUILD_OPTION="${BUILD_OPTION}" \
+		-DUSED_BY_FIBJS="${USED_BY_FIBJS}" \
+		-Dname=${lib} \
+		${VENDER_PATH}/${lib} > CMake.log
 	if [ $? != 0 ]; then
 		exit 1
 	fi
 
 	if [ ! "$BUILD_JOBS" = "" ]; then
-		sh -c "${BUILD_VERBOSE} make -j${BUILD_JOBS}"
+		cmake --build ./ --config ${CMAKE_BUILD_TYPE} -j ${BUILD_JOBS}
 	else
-		sh -c "${BUILD_VERBOSE} make"
+		cmake --build ./ --config ${CMAKE_BUILD_TYPE}
 	fi
+
 	if [ $? != 0 ]; then
 		exit 1
 	fi
@@ -237,16 +273,27 @@ do
 		fi
 
 		cd ${lib}_test
-		cmake -Wno-dev -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBUILD_TYPE=${BUILD_TYPE} -DBUILD_OPTION="${BUILD_OPTION}" -Dctx_used_by_fibjs="${USED_BY_FIBJS}" -Dname=${lib} ${VENDER_PATH}/${lib}/test > CMake.log
+		cmake \
+			-DCMAKE_TOOLCHAIN_FILE="${VENDER_PATH}/tools/toolchain-internal.cmake" \
+			-Wno-dev \
+			-DCMAKE_MAKE_PROGRAM=make \
+			-G "Unix Makefiles" \
+			-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+			-DBUILD_TYPE=${BUILD_TYPE} \
+			-DBUILD_OPTION="${BUILD_OPTION}" \
+			-DUSED_BY_FIBJS="${USED_BY_FIBJS}" \
+			-Dname=${lib} \
+			${VENDER_PATH}/${lib}/test > CMake.log
 		if [ $? != 0 ]; then
 			exit 1
 		fi
-
+		
 		if [ ! "$BUILD_JOBS" = "" ]; then
-			sh -c "${BUILD_VERBOSE} make -j${BUILD_JOBS}"
+			cmake --build ./ --config ${CMAKE_BUILD_TYPE} -j ${BUILD_JOBS}
 		else
-			sh -c "${BUILD_VERBOSE} make"
+			cmake --build ./ --config ${CMAKE_BUILD_TYPE}
 		fi
+		
 		if [ $? != 0 ]; then
 			exit 1
 		fi
