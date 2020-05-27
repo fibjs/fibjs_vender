@@ -5,4 +5,4 @@ add_definitions(
 	-DSQLITE_THREADSAFE=2
 )
 
-include(../tools/basic.cmake)
+include(../tools/Library.cmake)

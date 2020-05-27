@@ -9,18 +9,18 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 	if(NOT ${BUILD_TYPE} STREQUAL "release")
 		set(flags "${flags} -O2")
 	endif()
+	
+	include_directories(
+		${PROJECT_SOURCE_DIR}
+		"${PROJECT_SOURCE_DIR}/src"
+		"${PROJECT_SOURCE_DIR}/include"
+		"${PROJECT_SOURCE_DIR}/../"
+	)
 else()
 	include_directories("/usr/local/include/")
 endif()
 
-include_directories(
-	${PROJECT_SOURCE_DIR}
-	"${PROJECT_SOURCE_DIR}/src"
-	"${PROJECT_SOURCE_DIR}/include"
-	"${PROJECT_SOURCE_DIR}/../"
-)
-
-include(../tools/basic.cmake)
+include(../tools/Library.cmake)
 
 add_definitions(
 	-DV8_NO_FAST_TLS=1

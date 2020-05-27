@@ -5,4 +5,4 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 endif()
 add_definitions(-DWEBP_USE_THREAD=1)
 
-include(../tools/basic.cmake)
+include(../tools/Library.cmake)

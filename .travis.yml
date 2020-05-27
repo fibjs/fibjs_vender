@@ -4,10 +4,10 @@ if: (branch =~ ^(dev|master|test_ci)$) || (tag =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$)
 services:
   - docker
 env:
-  - BUILD_TYPE=release ARCH=amd64
-  - BUILD_TYPE=debug ARCH=amd64
-  - BUILD_TYPE=release ARCH=i386
-  - BUILD_TYPE=debug ARCH=i386
+  - BUILD_TYPE=release TARGET_ARCH=amd64
+  - BUILD_TYPE=debug TARGET_ARCH=amd64
+  - BUILD_TYPE=release TARGET_ARCH=i386
+  - BUILD_TYPE=debug TARGET_ARCH=i386
 os:
   - osx
   - linux
@@ -16,28 +16,28 @@ matrix:
   include:
     - os: linux
       env:
-        - BUILD_TYPE=release ARCH=arm
+        - BUILD_TYPE=release TARGET_ARCH=arm
     - os: linux
       env:
-        - BUILD_TYPE=debug ARCH=arm
+        - BUILD_TYPE=debug TARGET_ARCH=arm
     - os: linux
       env:
-        - BUILD_TYPE=release ARCH=arm64
+        - BUILD_TYPE=release TARGET_ARCH=arm64
     - os: linux
       env:
-        - BUILD_TYPE=debug ARCH=arm64
+        - BUILD_TYPE=debug TARGET_ARCH=arm64
     - os: linux
       env:
-        - BUILD_TYPE=release ARCH=mips
+        - BUILD_TYPE=release TARGET_ARCH=mips
     - os: linux
       env:
-        - BUILD_TYPE=debug ARCH=mips
+        - BUILD_TYPE=debug TARGET_ARCH=mips
     - os: linux
       env:
-        - BUILD_TYPE=release ARCH=mips64
+        - BUILD_TYPE=release TARGET_ARCH=mips64
     - os: linux
       env:
-        - BUILD_TYPE=debug ARCH=mips64
+        - BUILD_TYPE=debug TARGET_ARCH=mips64
 cache: ccache
 addons:
   apt:
@@ -59,7 +59,7 @@ install:
       brew install xz;
     fi
 script:
-  - echo "${ARCH}"
+  - echo "${TARGET_ARCH}"
   - ./.travis/build.sh
   - ./.travis/release.sh
 before_deploy:

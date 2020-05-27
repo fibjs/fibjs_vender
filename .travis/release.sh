@@ -2,15 +2,16 @@
 
 set -ev
 
-TARGET_ARCH=${ARCH}
-
-case "${ARCH}" in
+case "${TARGET_ARCH}" in
   i386)
-    TARGET_ARCH=x86
+    DIST_ARCH=x86
       ;;
   amd64)
-    TARGET_ARCH=x64
+    DIST_ARCH=x64
       ;;
+  *)
+    DIST_ARCH=$TARGET_ARCH
+    ;;
 esac
 
 GIT_COMMIT_SHORTCUTS=$(git log --format=%h -1)
@@ -23,11 +24,11 @@ fi
 mkdir -p ${TRAVIS_TAG};
 
 if [[ $TRAVIS_OS_NAME == 'linux' ]]; then # linux
-  # file "Linux_${ARCH}_$BUILD_TYPE" existed .dist/bin
-  DIST_FILE=vender-linux-${TARGET_ARCH}-$BUILD_TYPE.zip
+  # file "Linux_${TARGET_ARCH}_$BUILD_TYPE" existed .dist/bin
+  DIST_FILE=vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip
 else # darwin
-  # file "Darwin_${ARCH}_$BUILD_TYPE" existed .dist/bin
-  DIST_FILE=vender-darwin-${TARGET_ARCH}-$BUILD_TYPE.zip
+  # file "Darwin_${TARGET_ARCH}_$BUILD_TYPE" existed .dist/bin
+  DIST_FILE=vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip
 fi
 
 CUR=`pwd`
@@ -37,7 +38,7 @@ zip -r ${CUR}/${TRAVIS_TAG}/${DIST_FILE} ./*
 echo "finish archiving!"
 cd $CUR
 
-if [[ ($TRAVIS_OS_NAME == 'linux']) && ($TARGET_ARCH == 'x64') ]]; then
+if [[ ($TRAVIS_OS_NAME == 'linux']) && ($DIST_ARCH == 'x64') ]]; then
   echo "zip fullsrc..."
   sudo rm -rf .git
   sudo sh build clean

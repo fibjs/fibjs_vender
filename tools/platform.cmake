@@ -1,7 +1,3 @@
-if (NOT DEFINED VENDER_ROOT)
-    set(VENDER_ROOT "${CMAKE_SOURCE_DIR}/../")
-endif()
-
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     # keep same name format with Unix
     set(CMAKE_STATIC_LIBRARY_PREFIX "lib")

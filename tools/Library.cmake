@@ -17,6 +17,8 @@ if(NOT DEFINED BUILD_TYPE)
 set(BUILD_TYPE "release")
 endif()
 
+set(VENDER_ROOT ${PROJECT_SOURCE_DIR}/../)
+
 if((${USED_BY_FIBJS}) STREQUAL "1")
 	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
 else()

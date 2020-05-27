@@ -4,4 +4,4 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     set(flags "-fexceptions")
 endif()
 
-include(../tools/basic.cmake)
+include(../tools/Library.cmake)

@@ -4,4 +4,4 @@ include_directories("${PROJECT_SOURCE_DIR}/../zlib/include/")
 
 add_definitions(-DUSE_FILE32API)
 
-include(../tools/basic.cmake)
+include(../tools/Library.cmake)

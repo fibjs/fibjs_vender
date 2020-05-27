@@ -7,12 +7,12 @@ project(${name}_test)
 file(GLOB_RECURSE src_list "src/*.c*")
 add_executable(${name}_test ${src_list})
 
-set(VENDOR_ROOT ${PROJECT_SOURCE_DIR}/../../)
+set(VENDER_ROOT ${PROJECT_SOURCE_DIR}/../../)
 
 if((${USED_BY_FIBJS}) STREQUAL "1")
-	set(BIN_DIR ${VENDOR_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
+	set(BIN_DIR ${VENDER_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
 else()
-	set(BIN_DIR ${VENDOR_ROOT}/.dist/bin/${OS}_${ARCH}_${BUILD_TYPE})
+	set(BIN_DIR ${VENDER_ROOT}/.dist/bin/${OS}_${ARCH}_${BUILD_TYPE})
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${BIN_DIR})

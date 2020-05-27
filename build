@@ -4,9 +4,9 @@
 
 get_build_env;
 
-echo "HOST_OS is $HOST_OS";
-echo "HOST_ARCH is $HOST_ARCH";
-echo "BUILD_TYPE is $BUILD_TYPE";
+echo "HOST_OS: $HOST_OS; HOST_ARCH: $HOST_ARCH;"
+echo "TARGET_OS: $TARGET_OS; TARGET_ARCH: $TARGET_ARCH;";
+echo "BUILD_TYPE: $BUILD_TYPE";
 
 usage()
 {
@@ -154,7 +154,6 @@ fi
 OUT_PATH="${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
 cd ${OUT_PATH}
 
-if [ $HOST_OS = "Windows" ]; then
 libs="exlib
 cares
 gtest
@@ -180,35 +179,14 @@ mbedtls
 v8
 jssdk
 unzip"
-else
-libs="exlib
-cares
-gtest
-expat
-gumbo
-gd
-tiff
-jpeg
-png
-webp
-zlib
-leveldb
-snappy
-msgpack
+
+if [ $HOST_OS != "Windows" ]; then
+libs="${libs}
 jemalloc
 ev
-pcre
-sqlite
-mongo
-umysql
-uuid
-exif
-winiconv
-mbedtls
-v8
-jssdk
-unzip"
+"
 fi
+
 
 if [ -z $GIT_BRANCH ]; then
 	GIT_BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
@@ -219,12 +197,23 @@ if [ "$GIT_BRANCH" = "test_ci" ]; then
 	libs="uuid"
 fi
 
-if [ $HOST_OS == "Windows" ]; then
+if [ "$HOST_OS" = "Windows" ]; then
 	get_windows_vctool_install_path;
 	export VCToolsInstallDir;
 fi
 
 echo "BUILD_JOBS is $BUILD_JOBS";
+if [ "$USED_BY_FIBJS" != "" ]; then
+	echo "vender is used by fibjs in parent directory";
+fi
+
+if [ "$HOST_OS" = "Windows" ]; then
+	CMAKE_C_COMPILER=clang.exe
+	CMAKE_CXX_COMPILER=clang++.exe
+else
+	CMAKE_C_COMPILER=clang
+	CMAKE_CXX_COMPILER=clang++
+fi
 
 for lib in ${libs}
 do
@@ -235,10 +224,11 @@ do
 
 	cd ${lib}
 	cmake \
-		-DCMAKE_TOOLCHAIN_FILE="${VENDER_PATH}/tools/toolchain-internal.cmake" \
 		-Wno-dev \
 		-DCMAKE_MAKE_PROGRAM=make \
 		-G "Unix Makefiles" \
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} \
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} \
 		-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
 		-DARCH=${TARGET_ARCH} \
 		-DBUILD_TYPE=${BUILD_TYPE} \
@@ -251,9 +241,9 @@ do
 	fi
 
 	if [ ! "$BUILD_JOBS" = "" ]; then
-		cmake --build ./ --config ${CMAKE_BUILD_TYPE} -j ${BUILD_JOBS}
+		sh -c "${BUILD_VERBOSE} make -j${BUILD_JOBS}"
 	else
-		cmake --build ./ --config ${CMAKE_BUILD_TYPE}
+		sh -c "${BUILD_VERBOSE} make"
 	fi
 
 	if [ $? != 0 ]; then
@@ -274,10 +264,11 @@ do
 
 		cd ${lib}_test
 		cmake \
-			-DCMAKE_TOOLCHAIN_FILE="${VENDER_PATH}/tools/toolchain-internal.cmake" \
 			-Wno-dev \
 			-DCMAKE_MAKE_PROGRAM=make \
 			-G "Unix Makefiles" \
+			-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} \
+			-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} \
 			-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
 			-DBUILD_TYPE=${BUILD_TYPE} \
 			-DBUILD_OPTION="${BUILD_OPTION}" \
@@ -289,9 +280,9 @@ do
 		fi
 		
 		if [ ! "$BUILD_JOBS" = "" ]; then
-			cmake --build ./ --config ${CMAKE_BUILD_TYPE} -j ${BUILD_JOBS}
+			sh -c "${BUILD_VERBOSE} make -j${BUILD_JOBS}"
 		else
-			cmake --build ./ --config ${CMAKE_BUILD_TYPE}
+			sh -c "${BUILD_VERBOSE} make"
 		fi
 		
 		if [ $? != 0 ]; then
