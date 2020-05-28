@@ -176,7 +176,6 @@ mongo
 umysql
 uuid
 exif
-winiconv
 mbedtls
 v8
 jssdk
@@ -185,8 +184,12 @@ unzip"
 if [ $HOST_OS != "Windows" ]; then
 libs="${libs}
 jemalloc
+editline
 ev
 "
+else
+libs="${libs}
+winiconv"
 fi
 
 
