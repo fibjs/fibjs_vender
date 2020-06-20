@@ -73,7 +73,7 @@ namespace base {
 
     void Thread::Start()
     {
-        exlib::Service::Create(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024,
+        exlib::Service::CreateFiber(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024,
             name_, &((PlatformData*)data_)->fb);
     }
 

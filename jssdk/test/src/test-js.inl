@@ -212,7 +212,7 @@ TEST(ENG(api), fiber)
 
     g.set("my_func_fiber", rt->NewFunction(my_func_fiber));
 
-    exlib::Service::Create(fiber_proc, 0, 128 * 1024);
+    exlib::Service::CreateFiber(fiber_proc, 0, 128 * 1024);
     {
         ASSERT_FALSE(s_fiber_test);
         exlib::Fiber::sleep(100);

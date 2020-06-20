@@ -117,7 +117,7 @@ static void _fiber_proc(void* param)
 
 bool Service::use_thread = false;
 
-void Service::Create(fiber_func func, void* data, int32_t stacksize, const char* name, Thread_base** retVal)
+void Service::CreateFiber(fiber_func func, void* data, int32_t stacksize, const char* name, Thread_base** retVal)
 {
     if (use_thread) {
         OSThread::Create(func, data, retVal);
