@@ -10,7 +10,9 @@ if(CCACHE_FOUND)
 	set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif(CCACHE_FOUND)
 
+if(NOT DEFINED src_list)
 file(GLOB_RECURSE src_list "src/*.c*")
+endif()
 add_library(${name} ${src_list})
 
 if(NOT DEFINED BUILD_TYPE)
@@ -29,6 +31,10 @@ if(NOT flags)
 	set(flags " ")
 endif()
 set(flags "${flags} -fsigned-char -fmessage-length=0 -fdata-sections -ffunction-sections -D_FILE_OFFSET_BITS=64")
+
+if(NOT cflags)
+	set(cflags " ")
+endif()
 
 if(NOT ccflags)
 	set(ccflags " ")
@@ -75,7 +81,7 @@ if(${BUILD_TYPE} STREQUAL "debug")
 	add_definitions(-DDEBUG=1)
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flags}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flags} ${cflags}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flags} ${ccflags}")
 
 if(link_flags)

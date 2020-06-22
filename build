@@ -179,7 +179,8 @@ exif
 mbedtls
 v8
 jssdk
-unzip"
+unzip
+uv"
 
 if [ $HOST_OS != "Windows" ]; then
 libs="${libs}
@@ -191,7 +192,6 @@ else
 libs="${libs}
 winiconv"
 fi
-
 
 if [ -z $GIT_BRANCH ]; then
 	GIT_BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
