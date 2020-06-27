@@ -11,7 +11,8 @@ set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 90)
 
 option(QEMU "build for qemu" OFF)
-if(QEMU)
+# if(QEMU)
+if(QEMU OR CMAKE_SYSTEM_NAME STREQUAL "Linux") # we use qemu to make build for Linux in docker
   add_definitions(-D__QEMU__=1)
 endif()
 
