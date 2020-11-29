@@ -237,7 +237,7 @@ Handle<Cell> PropertyAccessInfo::export_cell() const {
   return Handle<Cell>::cast(constant_);
 }
 
-AccessInfoFactory::AccessInfoFactory(const JSHeapBroker* js_heap_broker,
+AccessInfoFactory::AccessInfoFactory(JSHeapBroker* js_heap_broker,
                                      CompilationDependencies* dependencies,
                                      Handle<Context> native_context, Zone* zone)
     : js_heap_broker_(js_heap_broker),
@@ -428,10 +428,8 @@ bool AccessInfoFactory::ComputePropertyAccessInfo(
             DCHECK(map->is_prototype_map());
             Handle<PrototypeInfo> proto_info =
                 Map::GetOrCreatePrototypeInfo(map, isolate());
-            DCHECK(proto_info->weak_cell()->IsWeakCell());
             Handle<JSModuleNamespace> module_namespace(
-                JSModuleNamespace::cast(
-                    WeakCell::cast(proto_info->weak_cell())->value()),
+                JSModuleNamespace::cast(proto_info->module_namespace()),
                 isolate());
             Handle<Cell> cell(
                 Cell::cast(module_namespace->module()->exports()->Lookup(
@@ -583,9 +581,9 @@ namespace {
 
 Maybe<ElementsKind> GeneralizeElementsKind(ElementsKind this_kind,
                                            ElementsKind that_kind) {
-  if (IsHoleyOrDictionaryElementsKind(this_kind)) {
+  if (IsHoleyElementsKind(this_kind)) {
     that_kind = GetHoleyElementsKind(that_kind);
-  } else if (IsHoleyOrDictionaryElementsKind(that_kind)) {
+  } else if (IsHoleyElementsKind(that_kind)) {
     this_kind = GetHoleyElementsKind(this_kind);
   }
   if (this_kind == that_kind) return Just(this_kind);

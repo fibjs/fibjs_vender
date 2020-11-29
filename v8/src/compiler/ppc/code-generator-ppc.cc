@@ -17,6 +17,7 @@
 #include "src/double.h"
 #include "src/optimized-compilation-info.h"
 #include "src/ppc/macro-assembler-ppc.h"
+#include "src/wasm/wasm-objects.h"
 
 namespace v8 {
 namespace internal {
@@ -885,11 +886,7 @@ void CodeGenerator::BailoutIfDeoptimized() {
 void CodeGenerator::GenerateSpeculationPoisonFromCodeStartRegister() {
   Register scratch = kScratchReg;
 
-  Label current_pc;
-  __ mov_label_addr(scratch, &current_pc);
-
-  __ bind(&current_pc);
-  __ subi(scratch, scratch, Operand(__ pc_offset()));
+  __ ComputeCodeStartAddress(scratch);
 
   // Calculate a mask which has all bits set in the normal case, but has all
   // bits cleared if we are speculatively executing the wrong PC.
@@ -1060,11 +1057,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchPrepareTailCall:
       AssemblePrepareTailCall();
       break;
-    case kArchComment: {
-      Address comment_string = i.InputExternalReference(0).address();
-      __ RecordComment(reinterpret_cast<const char*>(comment_string));
+    case kArchComment:
+#ifdef V8_TARGET_ARCH_PPC64
+      __ RecordComment(reinterpret_cast<const char*>(i.InputInt64(0)));
+#else
+      __ RecordComment(reinterpret_cast<const char*>(i.InputInt32(0)));
+#endif
       break;
-    }
     case kArchCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       if (instr->InputAt(0)->IsImmediate()) {
@@ -1836,7 +1835,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
           __ isel(i.OutputRegister(1), r0, i.OutputRegister(1), crbit);
         } else {
           __ li(i.OutputRegister(1), Operand::Zero());
-          __ bc(v8::internal::Assembler::kInstrSize * 2, BT, crbit);
+          __ bc(v8::internal::kInstrSize * 2, BT, crbit);
           __ li(i.OutputRegister(1), Operand(1));
         }
       }
@@ -1863,7 +1862,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
           __ isel(i.OutputRegister(1), r0, i.OutputRegister(1), crbit);
         } else {
           __ li(i.OutputRegister(1), Operand::Zero());
-          __ bc(v8::internal::Assembler::kInstrSize * 2, BT, crbit);
+          __ bc(v8::internal::kInstrSize * 2, BT, crbit);
           __ li(i.OutputRegister(1), Operand(1));
         }
       }
@@ -2059,6 +2058,35 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ATOMIC_BINOP_CASE(Xor, xor_)
 #undef ATOMIC_BINOP_CASE
 
+    case kPPC_ByteRev32: {
+      Register input = i.InputRegister(0);
+      Register output = i.OutputRegister();
+      Register temp1 = r0;
+      __ rotlwi(temp1, input, 8);
+      __ rlwimi(temp1, input, 24, 0, 7);
+      __ rlwimi(temp1, input, 24, 16, 23);
+      __ extsw(output, temp1);
+      break;
+    }
+#ifdef V8_TARGET_ARCH_PPC64
+    case kPPC_ByteRev64: {
+      Register input = i.InputRegister(0);
+      Register output = i.OutputRegister();
+      Register temp1 = r0;
+      Register temp2 = kScratchReg;
+      Register temp3 = i.TempRegister(0);
+      __ rldicl(temp1, input, 32, 32);
+      __ rotlwi(temp2, input, 8);
+      __ rlwimi(temp2, input, 24, 0, 7);
+      __ rotlwi(temp3, temp1, 8);
+      __ rlwimi(temp2, input, 24, 16, 23);
+      __ rlwimi(temp3, temp1, 24, 0, 7);
+      __ rlwimi(temp3, temp1, 24, 16, 23);
+      __ rldicr(temp2, temp2, 32, 31);
+      __ orx(output, temp2, temp3);
+      break;
+    }
+#endif  // V8_TARGET_ARCH_PPC64
     default:
       UNREACHABLE();
       break;

@@ -180,7 +180,7 @@ ExternalReference::incremental_marking_record_write_function() {
 
 ExternalReference ExternalReference::store_buffer_overflow_function() {
   return ExternalReference(
-      Redirect(FUNCTION_ADDR(StoreBuffer::StoreBufferOverflow)));
+      Redirect(Heap::store_buffer_overflow_function_address()));
 }
 
 ExternalReference ExternalReference::delete_handle_scope_extensions() {
@@ -459,8 +459,16 @@ ExternalReference ExternalReference::address_of_pending_message_obj(
   return ExternalReference(isolate->pending_message_obj_address());
 }
 
+ExternalReference ExternalReference::abort_with_reason() {
+  return ExternalReference(Redirect(FUNCTION_ADDR(i::abort_with_reason)));
+}
+
 ExternalReference ExternalReference::address_of_min_int() {
   return ExternalReference(reinterpret_cast<Address>(&double_min_int_constant));
+}
+
+ExternalReference ExternalReference::address_of_runtime_stats_flag() {
+  return ExternalReference(&FLAG_runtime_stats);
 }
 
 ExternalReference ExternalReference::address_of_one_half() {
@@ -949,6 +957,17 @@ std::ostream& operator<<(std::ostream& os, ExternalReference reference) {
   const Runtime::Function* fn = Runtime::FunctionForEntry(reference.address());
   if (fn) os << "<" << fn->name << ".entry>";
   return os;
+}
+
+void abort_with_reason(int reason) {
+  if (IsValidAbortReason(reason)) {
+    const char* message = GetAbortReason(static_cast<AbortReason>(reason));
+    base::OS::PrintError("abort: %s\n", message);
+  } else {
+    base::OS::PrintError("abort: <unknown reason: %d>\n", reason);
+  }
+  base::OS::Abort();
+  UNREACHABLE();
 }
 
 }  // namespace internal

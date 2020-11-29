@@ -286,7 +286,7 @@ class RepresentationSelector {
     bool weakened_ = false;
   };
 
-  RepresentationSelector(JSGraph* jsgraph, const JSHeapBroker* js_heap_broker,
+  RepresentationSelector(JSGraph* jsgraph, JSHeapBroker* js_heap_broker,
                          Zone* zone, RepresentationChanger* changer,
                          SourcePositionTable* source_positions,
                          NodeOriginTable* node_origins)
@@ -2973,7 +2973,8 @@ class RepresentationSelector {
         if (input_type.Is(Type::Number())) {
           VisitNoop(node, truncation);
         } else {
-          CheckFloat64HoleMode mode = CheckFloat64HoleModeOf(node->op());
+          CheckFloat64HoleMode mode =
+              CheckFloat64HoleParametersOf(node->op()).mode();
           switch (mode) {
             case CheckFloat64HoleMode::kAllowReturnHole:
               if (truncation.IsUnused()) return VisitUnused(node);
@@ -3275,8 +3276,7 @@ class RepresentationSelector {
 };
 
 SimplifiedLowering::SimplifiedLowering(JSGraph* jsgraph,
-                                       const JSHeapBroker* js_heap_broker,
-                                       Zone* zone,
+                                       JSHeapBroker* js_heap_broker, Zone* zone,
                                        SourcePositionTable* source_positions,
                                        NodeOriginTable* node_origins,
                                        PoisoningMitigationLevel poisoning_level)

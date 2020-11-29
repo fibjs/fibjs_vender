@@ -8,10 +8,11 @@
 #include "src/objects/module.h"
 
 #include "src/accessors.h"
-#include "src/api.h"
+#include "src/api-inl.h"
 #include "src/ast/modules.h"
 #include "src/objects-inl.h"
 #include "src/objects/hash-table-inl.h"
+#include "src/objects/js-generator-inl.h"
 #include "src/objects/module-inl.h"
 
 namespace v8 {
@@ -899,7 +900,10 @@ Handle<JSModuleNamespace> Module::GetModuleNamespace(Isolate* isolate,
   // - We can store a pointer from the map back to the namespace object.
   //   Turbofan can use this for inlining the access.
   JSObject::OptimizeAsPrototype(ns);
-  Map::GetOrCreatePrototypeWeakCell(ns, isolate);
+
+  Handle<PrototypeInfo> proto_info =
+      Map::GetOrCreatePrototypeInfo(Handle<JSObject>::cast(ns), isolate);
+  proto_info->set_module_namespace(*ns);
   return ns;
 }
 

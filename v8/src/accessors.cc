@@ -4,7 +4,7 @@
 
 #include "src/accessors.h"
 
-#include "src/api.h"
+#include "src/api-inl.h"
 #include "src/contexts.h"
 #include "src/deoptimizer.h"
 #include "src/execution.h"
@@ -13,6 +13,7 @@
 #include "src/isolate-inl.h"
 #include "src/messages.h"
 #include "src/objects/api-callbacks.h"
+#include "src/objects/js-array-inl.h"
 #include "src/objects/module-inl.h"
 #include "src/property-details.h"
 #include "src/prototype.h"
@@ -326,6 +327,7 @@ void Accessors::FunctionPrototypeGetter(
   HandleScope scope(isolate);
   Handle<JSFunction> function =
       Handle<JSFunction>::cast(Utils::OpenHandle(*info.Holder()));
+  DCHECK(function->has_prototype_property());
   Handle<Object> result = GetFunctionPrototype(isolate, function);
   info.GetReturnValue().Set(Utils::ToLocal(result));
 }
@@ -340,6 +342,7 @@ void Accessors::FunctionPrototypeSetter(
   Handle<Object> value = Utils::OpenHandle(*val);
   Handle<JSFunction> object =
       Handle<JSFunction>::cast(Utils::OpenHandle(*info.Holder()));
+  DCHECK(object->has_prototype_property());
   JSFunction::SetPrototype(object, value);
   info.GetReturnValue().Set(true);
 }

@@ -4,7 +4,7 @@
 
 #include "src/debug/liveedit.h"
 
-#include "src/api.h"
+#include "src/api-inl.h"
 #include "src/ast/ast-traversal-visitor.h"
 #include "src/ast/ast.h"
 #include "src/ast/scopes.h"
@@ -17,6 +17,7 @@
 #include "src/messages.h"
 #include "src/objects-inl.h"
 #include "src/objects/hash-table-inl.h"
+#include "src/objects/js-generator-inl.h"
 #include "src/parsing/parse-info.h"
 #include "src/parsing/parsing.h"
 #include "src/source-position-table.h"

@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "Debug jssdk (lldb)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workSpaceFloader}/.dist/bin/Darwin_amd64_debug/jssdk_test",
+            "args": [
+                "--use-thread"
+            ]
+        }
+    ]
+}

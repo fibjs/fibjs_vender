@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "src/api.h"
+#include "src/api-inl.h"
 #include "src/asmjs/asm-js.h"
 #include "src/assembler-inl.h"
 #include "src/ast/prettyprinter.h"
@@ -130,11 +130,7 @@ void LogFunctionCompilation(CodeEventListener::LogEventsAndTags tag,
 // Implementation of UnoptimizedCompilationJob
 
 CompilationJob::Status UnoptimizedCompilationJob::ExecuteJob() {
-  DisallowHeapAllocation no_allocation;
-  DisallowHandleAllocation no_handles;
-  DisallowHandleDereference no_deref;
-  DisallowCodeDependencyChange no_dependency_change;
-
+  DisallowHeapAccess no_heap_access;
   // Delegate to the underlying implementation.
   DCHECK_EQ(state(), State::kReadyToExecute);
   ScopedTimer t(&time_taken_to_execute_);
@@ -212,11 +208,7 @@ CompilationJob::Status OptimizedCompilationJob::PrepareJob(Isolate* isolate) {
 }
 
 CompilationJob::Status OptimizedCompilationJob::ExecuteJob() {
-  DisallowHeapAllocation no_allocation;
-  DisallowHandleAllocation no_handles;
-  DisallowHandleDereference no_deref;
-  DisallowCodeDependencyChange no_dependency_change;
-
+  DisallowHeapAccess no_heap_access;
   // Delegate to the underlying implementation.
   DCHECK_EQ(state(), State::kReadyToExecute);
   ScopedTimer t(&time_taken_to_execute_);
@@ -478,9 +470,7 @@ std::unique_ptr<UnoptimizedCompilationJob> ExecuteUnoptimizedCompileJobs(
 std::unique_ptr<UnoptimizedCompilationJob> GenerateUnoptimizedCode(
     ParseInfo* parse_info, AccountingAllocator* allocator,
     UnoptimizedCompilationJobList* inner_function_jobs) {
-  DisallowHeapAllocation no_allocation;
-  DisallowHandleAllocation no_handles;
-  DisallowHandleDereference no_deref;
+  DisallowHeapAccess no_heap_access;
   DCHECK(inner_function_jobs->empty());
 
   if (!Compiler::Analyze(parse_info)) {
@@ -922,9 +912,7 @@ MaybeHandle<SharedFunctionInfo> CompileToplevel(ParseInfo* parse_info,
 std::unique_ptr<UnoptimizedCompilationJob> CompileTopLevelOnBackgroundThread(
     ParseInfo* parse_info, AccountingAllocator* allocator,
     UnoptimizedCompilationJobList* inner_function_jobs) {
-  DisallowHeapAllocation no_allocation;
-  DisallowHandleAllocation no_handles;
-  DisallowHandleDereference no_deref;
+  DisallowHeapAccess no_heap_access;
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
                "V8.CompileCodeBackground");
   RuntimeCallTimerScope runtimeTimer(
@@ -1003,9 +991,7 @@ BackgroundCompileTask::BackgroundCompileTask(ScriptStreamingData* source,
 
 void BackgroundCompileTask::Run() {
   TimedHistogramScope timer(timer_);
-  DisallowHeapAllocation no_allocation;
-  DisallowHandleAllocation no_handles;
-  DisallowHandleDereference no_deref;
+  DisallowHeapAccess no_heap_access;
 
   source_->info->set_on_background_thread(true);
 
@@ -1397,6 +1383,7 @@ struct ScriptCompileTimerScope {
     kNoCacheBecausePacScript,
     kNoCacheBecauseInDocumentWrite,
     kNoCacheBecauseResourceWithNoCacheHandler,
+    kHitIsolateCacheWhenStreamingSource,
     kCount
   };
 
@@ -1469,8 +1456,9 @@ struct ScriptCompileTimerScope {
     }
 
     if (hit_isolate_cache_) {
-      // There's probably no need to distinguish the different isolate cache
-      // hits.
+      if (no_cache_reason_ == ScriptCompiler::kNoCacheBecauseStreamingSource) {
+        return CacheBehaviour::kHitIsolateCacheWhenStreamingSource;
+      }
       return CacheBehaviour::kHitIsolateCacheWhenNoCache;
     }
 
@@ -1524,6 +1512,7 @@ struct ScriptCompileTimerScope {
         return isolate_->counters()->compile_script_with_produce_cache();
       case CacheBehaviour::kHitIsolateCacheWhenNoCache:
       case CacheBehaviour::kHitIsolateCacheWhenConsumeCodeCache:
+      case CacheBehaviour::kHitIsolateCacheWhenStreamingSource:
         return isolate_->counters()->compile_script_with_isolate_cache_hit();
       case CacheBehaviour::kConsumeCodeCacheFailed:
         return isolate_->counters()->compile_script_consume_failed();
@@ -1665,7 +1654,6 @@ MaybeHandle<SharedFunctionInfo> Compiler::GetSharedFunctionInfoForScript(
               natives);
 
     // Compile the function and add it to the isolate cache.
-    Zone compile_zone(isolate->allocator(), ZONE_NAME);
     if (origin_options.IsModule()) parse_info.set_module();
     parse_info.set_extension(extension);
     parse_info.set_eager(compile_options == ScriptCompiler::kEagerCompile);

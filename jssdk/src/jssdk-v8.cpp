@@ -168,15 +168,16 @@ public:
 
     Value execute(exlib::string code, exlib::string soname)
     {
-        v8::Local<v8::Context> context = v8::Context::New(m_isolate);
+        v8::Local<v8::Context> context = m_isolate->GetCurrentContext();
         v8::Local<v8::String> str_code = v8::String::NewFromUtf8(m_isolate,
             code.c_str(), v8::String::kNormalString,
             (int32_t)code.length());
         v8::Local<v8::String> str_name = v8::String::NewFromUtf8(m_isolate,
             soname.c_str(), v8::String::kNormalString,
             (int32_t)soname.length());
-        v8::Local<v8::Script> script = v8::Script::Compile(str_code, str_name);
 
+        v8::ScriptOrigin origin(str_name);
+        v8::Local<v8::Script> script = v8::Script::Compile(context, str_code, &origin).ToLocalChecked();
         v8::MaybeLocal<v8::Value> result = script->Run(context);
 
         if (result.IsEmpty())
@@ -251,7 +252,7 @@ public:
 public:
     exlib::string ValueToString(const Value& v)
     {
-        v8::String::Utf8Value tmp(v.m_v);
+        v8::String::Utf8Value tmp(m_isolate, v.m_v);
         if (*tmp)
             return exlib::string(*tmp, tmp.length());
         return exlib::string();

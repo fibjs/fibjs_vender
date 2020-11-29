@@ -16,52 +16,52 @@
 namespace v8 {
 namespace internal {
 
-#define VISITOR_ID_LIST(V)            \
-  V(AllocationSite)                   \
-  V(BigInt)                           \
-  V(ByteArray)                        \
-  V(BytecodeArray)                    \
-  V(Cell)                             \
-  V(Code)                             \
-  V(CodeDataContainer)                \
-  V(ConsString)                       \
-  V(DataHandler)                      \
-  V(DataObject)                       \
-  V(EphemeronHashTable)               \
-  V(FeedbackCell)                     \
-  V(FeedbackVector)                   \
-  V(FixedArray)                       \
-  V(FixedDoubleArray)                 \
-  V(FixedFloat64Array)                \
-  V(FixedTypedArrayBase)              \
-  V(FreeSpace)                        \
-  V(JSApiObject)                      \
-  V(JSArrayBuffer)                    \
-  V(JSFunction)                       \
-  V(JSObject)                         \
-  V(JSObjectFast)                     \
-  V(JSWeakCollection)                 \
-  V(Map)                              \
-  V(NativeContext)                    \
-  V(Oddball)                          \
-  V(PreParsedScopeData)               \
-  V(PropertyArray)                    \
-  V(PropertyCell)                     \
-  V(PrototypeInfo)                    \
-  V(SeqOneByteString)                 \
-  V(SeqTwoByteString)                 \
-  V(SharedFunctionInfo)               \
-  V(ShortcutCandidate)                \
-  V(SlicedString)                     \
-  V(SmallOrderedHashMap)              \
-  V(SmallOrderedHashSet)              \
-  V(Struct)                           \
-  V(Symbol)                           \
-  V(ThinString)                       \
-  V(TransitionArray)                  \
-  V(UncompiledDataWithPreParsedScope) \
-  V(WasmInstanceObject)               \
-  V(WeakCell)                         \
+#define VISITOR_ID_LIST(V)               \
+  V(AllocationSite)                      \
+  V(BigInt)                              \
+  V(ByteArray)                           \
+  V(BytecodeArray)                       \
+  V(Cell)                                \
+  V(Code)                                \
+  V(CodeDataContainer)                   \
+  V(ConsString)                          \
+  V(DataHandler)                         \
+  V(DataObject)                          \
+  V(EphemeronHashTable)                  \
+  V(FeedbackCell)                        \
+  V(FeedbackVector)                      \
+  V(FixedArray)                          \
+  V(FixedDoubleArray)                    \
+  V(FixedFloat64Array)                   \
+  V(FixedTypedArrayBase)                 \
+  V(FreeSpace)                           \
+  V(JSApiObject)                         \
+  V(JSArrayBuffer)                       \
+  V(JSFunction)                          \
+  V(JSObject)                            \
+  V(JSObjectFast)                        \
+  V(JSWeakCollection)                    \
+  V(Map)                                 \
+  V(NativeContext)                       \
+  V(Oddball)                             \
+  V(PreParsedScopeData)                  \
+  V(PropertyArray)                       \
+  V(PropertyCell)                        \
+  V(PrototypeInfo)                       \
+  V(SeqOneByteString)                    \
+  V(SeqTwoByteString)                    \
+  V(SharedFunctionInfo)                  \
+  V(ShortcutCandidate)                   \
+  V(SlicedString)                        \
+  V(SmallOrderedHashMap)                 \
+  V(SmallOrderedHashSet)                 \
+  V(Struct)                              \
+  V(Symbol)                              \
+  V(ThinString)                          \
+  V(TransitionArray)                     \
+  V(UncompiledDataWithoutPreParsedScope) \
+  V(UncompiledDataWithPreParsedScope)    \
+  V(WasmInstanceObject)                  \
   V(WeakArray)
 
 // For data objects, JS objects and structs along with generic visitor which
@@ -211,11 +211,14 @@ class Map : public HeapObject {
   // Tells how many unused property fields (in-object or out-of object) are
   // available in the instance (only used for JSObject in fast mode).
   inline int UnusedPropertyFields() const;
+  // Tells how many unused in-object property words are present.
+  inline int UnusedInObjectProperties() const;
   // Updates the counters tracking unused fields in the object.
   inline void SetInObjectUnusedPropertyFields(int unused_property_fields);
   // Updates the counters tracking unused fields in the property array.
   inline void SetOutOfObjectUnusedPropertyFields(int unused_property_fields);
   inline void CopyUnusedPropertyFields(Map* map);
+  inline void CopyUnusedPropertyFieldsAdjustedForInstanceSize(Map* map);
   inline void AccountAddedPropertyField();
   inline void AccountAddedOutOfObjectPropertyField(
       int unused_in_property_array);
@@ -325,6 +328,11 @@ class Map : public HeapObject {
 
   // Does the tracking step.
   inline void InobjectSlackTrackingStep(Isolate* isolate);
+
+  // Computes inobject slack for the transition tree starting at this initial
+  // map.
+  int ComputeMinObjectSlack(Isolate* isolate);
+  inline int InstanceSizeFromSlack(int slack) const;
 
   // Completes inobject slack tracking for the transition tree starting at this
   // initial map.
@@ -438,11 +446,6 @@ class Map : public HeapObject {
 
   // Return the map of the root of object's prototype chain.
   Map* GetPrototypeChainRootMap(Isolate* isolate) const;
-
-  // Returns a WeakCell object containing given prototype. The cell is cached
-  // in PrototypeInfo which is created lazily.
-  static Handle<WeakCell> GetOrCreatePrototypeWeakCell(
-      Handle<JSReceiver> prototype, Isolate* isolate);
 
   Map* FindRootMap(Isolate* isolate) const;
   Map* FindFieldOwner(Isolate* isolate, int descriptor) const;
@@ -758,6 +761,9 @@ class Map : public HeapObject {
   inline bool CanTransition() const;
 
   inline bool IsBooleanMap() const;
+  inline bool IsNullMap() const;
+  inline bool IsUndefinedMap() const;
+  inline bool IsNullOrUndefinedMap() const;
   inline bool IsPrimitiveMap() const;
   inline bool IsJSReceiverMap() const;
   inline bool IsJSObjectMap() const;

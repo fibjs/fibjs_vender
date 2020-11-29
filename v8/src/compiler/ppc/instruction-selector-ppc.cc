@@ -941,9 +941,18 @@ void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
 void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
 #endif
 
-void InstructionSelector::VisitWord64ReverseBytes(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitWord64ReverseBytes(Node* node) {
+  PPCOperandGenerator g(this);
+  InstructionOperand temp[] = {g.TempRegister()};
+  Emit(kPPC_ByteRev64, g.DefineAsRegister(node),
+       g.UseUniqueRegister(node->InputAt(0)), 1, temp);
+}
 
-void InstructionSelector::VisitWord32ReverseBytes(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitWord32ReverseBytes(Node* node) {
+  PPCOperandGenerator g(this);
+  Emit(kPPC_ByteRev32, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)));
+}
 
 void InstructionSelector::VisitSpeculationFence(Node* node) { UNREACHABLE(); }
 
@@ -1981,7 +1990,7 @@ void InstructionSelector::VisitWord32AtomicExchange(Node* node) {
   Node* index = node->InputAt(1);
   Node* value = node->InputAt(2);
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   if (type == MachineType::Int8()) {
     opcode = kWord32AtomicExchangeInt8;
   } else if (type == MachineType::Uint8()) {
@@ -2016,7 +2025,7 @@ void InstructionSelector::VisitWord32AtomicCompareExchange(Node* node) {
   Node* old_value = node->InputAt(2);
   Node* new_value = node->InputAt(3);
 
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   ArchOpcode opcode = kArchNop;
   if (type == MachineType::Int8()) {
     opcode = kWord32AtomicCompareExchangeInt8;
@@ -2057,7 +2066,7 @@ void InstructionSelector::VisitWord32AtomicBinaryOperation(
   Node* index = node->InputAt(1);
   Node* value = node->InputAt(2);
 
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   ArchOpcode opcode = kArchNop;
 
   if (type == MachineType::Int8()) {

@@ -103,7 +103,7 @@ RegExpMacroAssemblerX64::RegExpMacroAssemblerX64(Isolate* isolate, Zone* zone,
     : NativeRegExpMacroAssembler(isolate, zone),
       masm_(isolate, nullptr, kRegExpCodeSize, CodeObjectRequired::kYes),
       no_root_array_scope_(&masm_),
-      code_relative_fixup_positions_(4, zone),
+      code_relative_fixup_positions_(zone),
       mode_(mode),
       num_registers_(registers_to_save),
       num_saved_registers_(registers_to_save),
@@ -1212,7 +1212,7 @@ void RegExpMacroAssemblerX64::CallCheckStackGuardState() {
 // Helper function for reading a value out of a stack frame.
 template <typename T>
 static T& frame_entry(Address re_frame, int frame_offset) {
-  return reinterpret_cast<T&>(Memory::int32_at(re_frame + frame_offset));
+  return reinterpret_cast<T&>(Memory<int32_t>(re_frame + frame_offset));
 }
 
 
@@ -1308,8 +1308,7 @@ void RegExpMacroAssemblerX64::Push(Immediate value) {
 
 
 void RegExpMacroAssemblerX64::FixupCodeRelativePositions() {
-  for (int i = 0, n = code_relative_fixup_positions_.length(); i < n; i++) {
-    int position = code_relative_fixup_positions_[i];
+  for (int position : code_relative_fixup_positions_) {
     // The position succeeds a relative label offset from position.
     // Patch the relative offset to be relative to the Code object pointer
     // instead.
@@ -1321,7 +1320,7 @@ void RegExpMacroAssemblerX64::FixupCodeRelativePositions() {
                        + Code::kHeaderSize
                        - kHeapObjectTag);
   }
-  code_relative_fixup_positions_.Clear();
+  code_relative_fixup_positions_.Rewind(0);
 }
 
 

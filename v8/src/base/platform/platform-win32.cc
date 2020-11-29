@@ -31,6 +31,8 @@
 #include "src/base/timezone-cache.h"
 #include "src/base/utils/random-number-generator.h"
 
+#include <VersionHelpers.h>
+
 #if defined(_MSC_VER)
 #include <crtdbg.h>  // NOLINT
 #endif               // defined(_MSC_VER)
@@ -767,8 +769,12 @@ DWORD GetProtectionFromMemoryPermission(OS::MemoryPermission access) {
     case OS::MemoryPermission::kReadWrite:
       return PAGE_READWRITE;
     case OS::MemoryPermission::kReadWriteExecute:
+      if (IsWindows10OrGreater())
+        return PAGE_EXECUTE_READWRITE | PAGE_TARGETS_INVALID;
       return PAGE_EXECUTE_READWRITE;
     case OS::MemoryPermission::kReadExecute:
+      if (IsWindows10OrGreater())
+        return PAGE_EXECUTE_READ | PAGE_TARGETS_INVALID;
       return PAGE_EXECUTE_READ;
   }
   UNREACHABLE();

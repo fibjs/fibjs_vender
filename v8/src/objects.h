@@ -75,7 +75,10 @@
 //           - JSDate
 //         - JSMessageObject
 //         - JSModuleNamespace
-//         - JSLocale  // If V8_INTL_SUPPORT enabled.
+//         - JSCollator            // If V8_INTL_SUPPORT enabled.
+//         - JSListFormat          // If V8_INTL_SUPPORT enabled.
+//         - JSLocale              // If V8_INTL_SUPPORT enabled.
+//         - JSPluralRules         // If V8_INTL_SUPPORT enabled.
 //         - JSRelativeTimeFormat  // If V8_INTL_SUPPORT enabled.
 //         - WasmGlobalObject
 //         - WasmInstanceObject
@@ -105,7 +108,6 @@
 //         - ScopeInfo
 //         - ModuleInfo
 //         - ScriptContextTable
-//         - FixedArrayOfWeakCells
 //       - FixedDoubleArray
 //     - Name
 //       - String
@@ -170,7 +172,6 @@
 //         - PromiseResolveThenableJobTask
 //       - Module
 //       - ModuleInfoEntry
-//     - WeakCell
 //     - FeedbackCell
 //     - FeedbackVector
 //     - PreParsedScopeData
@@ -532,7 +533,6 @@ enum InstanceType : uint16_t {
   STORE_HANDLER_TYPE,
   UNCOMPILED_DATA_WITHOUT_PRE_PARSED_SCOPE_TYPE,
   UNCOMPILED_DATA_WITH_PRE_PARSED_SCOPE_TYPE,
-  WEAK_CELL_TYPE,
   WEAK_ARRAY_LIST_TYPE,
 
   // All the following types are subtypes of JSReceiver, which corresponds to
@@ -582,7 +582,10 @@ enum InstanceType : uint16_t {
   JS_DATA_VIEW_TYPE,
 
 #ifdef V8_INTL_SUPPORT
+  JS_INTL_COLLATOR_TYPE,
+  JS_INTL_LIST_FORMAT_TYPE,
   JS_INTL_LOCALE_TYPE,
+  JS_INTL_PLURAL_RULES_TYPE,
   JS_INTL_RELATIVE_TIME_FORMAT_TYPE,
 #endif  // V8_INTL_SUPPORT
 
@@ -692,10 +695,15 @@ class FixedArrayBase;
 class PropertyArray;
 class FunctionLiteral;
 class FunctionTemplateInfo;
+class JSGeneratorObject;
+class JSAsyncGeneratorObject;
 class JSGlobalObject;
 class JSGlobalProxy;
 #ifdef V8_INTL_SUPPORT
+class JSCollator;
+class JSListFormat;
 class JSLocale;
+class JSPluralRules;
 class JSRelativeTimeFormat;
 #endif  // V8_INTL_SUPPORT
 class JSPromise;
@@ -719,15 +727,11 @@ class FeedbackCell;
 class FeedbackMetadata;
 class FeedbackVector;
 class UncompiledData;
-class WeakCell;
 class TemplateInfo;
 class TransitionArray;
 class TemplateList;
 template <typename T>
 class ZoneForwardList;
-
-// A template-ized version of the IsXXX functions.
-template <class C> inline bool Is(Object* obj);
 
 #ifdef OBJECT_PRINT
 #define DECL_PRINTER(Name) void Name##Print(std::ostream& os);  // NOLINT
@@ -784,7 +788,6 @@ template <class C> inline bool Is(Object* obj);
   V(FixedArray)                                \
   V(FixedArrayBase)                            \
   V(FixedArrayExact)                           \
-  V(FixedArrayOfWeakCells)                     \
   V(FixedBigInt64Array)                        \
   V(FixedBigUint64Array)                       \
   V(FixedDoubleArray)                          \
@@ -832,6 +835,7 @@ template <class C> inline bool Is(Object* obj);
   V(JSProxy)                                   \
   V(JSReceiver)                                \
   V(JSRegExp)                                  \
+  V(JSRegExpResult)                            \
   V(JSRegExpStringIterator)                    \
   V(JSSet)                                     \
   V(JSSetIterator)                             \
@@ -901,14 +905,16 @@ template <class C> inline bool Is(Object* obj);
   V(WasmMemoryObject)                          \
   V(WasmModuleObject)                          \
   V(WasmTableObject)                           \
-  V(WeakCell)                                  \
   V(WeakFixedArray)                            \
   V(WeakArrayList)
 
 #ifdef V8_INTL_SUPPORT
 #define HEAP_OBJECT_ORDINARY_TYPE_LIST(V) \
   HEAP_OBJECT_ORDINARY_TYPE_LIST_BASE(V)  \
+  V(JSCollator)                           \
+  V(JSListFormat)                         \
   V(JSLocale)                             \
+  V(JSPluralRules)                        \
   V(JSRelativeTimeFormat)
 #else
 #define HEAP_OBJECT_ORDINARY_TYPE_LIST(V) HEAP_OBJECT_ORDINARY_TYPE_LIST_BASE(V)
@@ -933,6 +939,152 @@ template <class C> inline bool Is(Object* obj);
   V(ArgumentsMarker, arguments_marker)  \
   V(OptimizedOut, optimized_out)        \
   V(StaleRegister, stale_register)
+
+// List of object types that have a single unique instance type.
+#define INSTANCE_TYPE_CHECKERS_SINGLE_BASE(V)                          \
+  V(AllocationSite, ALLOCATION_SITE_TYPE)                              \
+  V(BigInt, BIGINT_TYPE)                                               \
+  V(ObjectBoilerplateDescription, OBJECT_BOILERPLATE_DESCRIPTION_TYPE) \
+  V(BreakPoint, TUPLE2_TYPE)                                           \
+  V(BreakPointInfo, TUPLE2_TYPE)                                       \
+  V(ByteArray, BYTE_ARRAY_TYPE)                                        \
+  V(BytecodeArray, BYTECODE_ARRAY_TYPE)                                \
+  V(CallHandlerInfo, CALL_HANDLER_INFO_TYPE)                           \
+  V(Cell, CELL_TYPE)                                                   \
+  V(Code, CODE_TYPE)                                                   \
+  V(CodeDataContainer, CODE_DATA_CONTAINER_TYPE)                       \
+  V(CoverageInfo, FIXED_ARRAY_TYPE)                                    \
+  V(DescriptorArray, DESCRIPTOR_ARRAY_TYPE)                            \
+  V(EphemeronHashTable, EPHEMERON_HASH_TABLE_TYPE)                     \
+  V(FeedbackCell, FEEDBACK_CELL_TYPE)                                  \
+  V(FeedbackMetadata, FEEDBACK_METADATA_TYPE)                          \
+  V(FeedbackVector, FEEDBACK_VECTOR_TYPE)                              \
+  V(FixedArrayExact, FIXED_ARRAY_TYPE)                                 \
+  V(FixedDoubleArray, FIXED_DOUBLE_ARRAY_TYPE)                         \
+  V(Foreign, FOREIGN_TYPE)                                             \
+  V(FreeSpace, FREE_SPACE_TYPE)                                        \
+  V(GlobalDictionary, GLOBAL_DICTIONARY_TYPE)                          \
+  V(HeapNumber, HEAP_NUMBER_TYPE)                                      \
+  V(JSArgumentsObject, JS_ARGUMENTS_TYPE)                              \
+  V(JSArray, JS_ARRAY_TYPE)                                            \
+  V(JSArrayBuffer, JS_ARRAY_BUFFER_TYPE)                               \
+  V(JSArrayIterator, JS_ARRAY_ITERATOR_TYPE)                           \
+  V(JSAsyncFromSyncIterator, JS_ASYNC_FROM_SYNC_ITERATOR_TYPE)         \
+  V(JSAsyncGeneratorObject, JS_ASYNC_GENERATOR_OBJECT_TYPE)            \
+  V(JSBoundFunction, JS_BOUND_FUNCTION_TYPE)                           \
+  V(JSContextExtensionObject, JS_CONTEXT_EXTENSION_OBJECT_TYPE)        \
+  V(JSDataView, JS_DATA_VIEW_TYPE)                                     \
+  V(JSDate, JS_DATE_TYPE)                                              \
+  V(JSError, JS_ERROR_TYPE)                                            \
+  V(JSFunction, JS_FUNCTION_TYPE)                                      \
+  V(JSGlobalObject, JS_GLOBAL_OBJECT_TYPE)                             \
+  V(JSGlobalProxy, JS_GLOBAL_PROXY_TYPE)                               \
+  V(JSMap, JS_MAP_TYPE)                                                \
+  V(JSMessageObject, JS_MESSAGE_OBJECT_TYPE)                           \
+  V(JSModuleNamespace, JS_MODULE_NAMESPACE_TYPE)                       \
+  V(JSPromise, JS_PROMISE_TYPE)                                        \
+  V(JSRegExp, JS_REGEXP_TYPE)                                          \
+  V(JSRegExpResult, JS_ARRAY_TYPE)                                     \
+  V(JSRegExpStringIterator, JS_REGEXP_STRING_ITERATOR_TYPE)            \
+  V(JSSet, JS_SET_TYPE)                                                \
+  V(JSStringIterator, JS_STRING_ITERATOR_TYPE)                         \
+  V(JSTypedArray, JS_TYPED_ARRAY_TYPE)                                 \
+  V(JSValue, JS_VALUE_TYPE)                                            \
+  V(JSWeakMap, JS_WEAK_MAP_TYPE)                                       \
+  V(JSWeakSet, JS_WEAK_SET_TYPE)                                       \
+  V(LoadHandler, LOAD_HANDLER_TYPE)                                    \
+  V(Map, MAP_TYPE)                                                     \
+  V(MutableHeapNumber, MUTABLE_HEAP_NUMBER_TYPE)                       \
+  V(NameDictionary, NAME_DICTIONARY_TYPE)                              \
+  V(NativeContext, NATIVE_CONTEXT_TYPE)                                \
+  V(NumberDictionary, NUMBER_DICTIONARY_TYPE)                          \
+  V(Oddball, ODDBALL_TYPE)                                             \
+  V(OrderedHashMap, ORDERED_HASH_MAP_TYPE)                             \
+  V(OrderedHashSet, ORDERED_HASH_SET_TYPE)                             \
+  V(PreParsedScopeData, PRE_PARSED_SCOPE_DATA_TYPE)                    \
+  V(PropertyArray, PROPERTY_ARRAY_TYPE)                                \
+  V(PropertyCell, PROPERTY_CELL_TYPE)                                  \
+  V(PropertyDescriptorObject, FIXED_ARRAY_TYPE)                        \
+  V(ScopeInfo, SCOPE_INFO_TYPE)                                        \
+  V(ScriptContextTable, SCRIPT_CONTEXT_TABLE_TYPE)                     \
+  V(SharedFunctionInfo, SHARED_FUNCTION_INFO_TYPE)                     \
+  V(SimpleNumberDictionary, SIMPLE_NUMBER_DICTIONARY_TYPE)             \
+  V(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE)                  \
+  V(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE)                  \
+  V(SourcePositionTableWithFrameCache, TUPLE2_TYPE)                    \
+  V(StoreHandler, STORE_HANDLER_TYPE)                                  \
+  V(StringTable, STRING_TABLE_TYPE)                                    \
+  V(Symbol, SYMBOL_TYPE)                                               \
+  V(TemplateObjectDescription, TUPLE2_TYPE)                            \
+  V(TransitionArray, TRANSITION_ARRAY_TYPE)                            \
+  V(UncompiledDataWithoutPreParsedScope,                               \
+    UNCOMPILED_DATA_WITHOUT_PRE_PARSED_SCOPE_TYPE)                     \
+  V(UncompiledDataWithPreParsedScope,                                  \
+    UNCOMPILED_DATA_WITH_PRE_PARSED_SCOPE_TYPE)                        \
+  V(WasmGlobalObject, WASM_GLOBAL_TYPE)                                \
+  V(WasmInstanceObject, WASM_INSTANCE_TYPE)                            \
+  V(WasmMemoryObject, WASM_MEMORY_TYPE)                                \
+  V(WasmModuleObject, WASM_MODULE_TYPE)                                \
+  V(WasmTableObject, WASM_TABLE_TYPE)                                  \
+  V(WeakArrayList, WEAK_ARRAY_LIST_TYPE)
+#ifdef V8_INTL_SUPPORT
+
+#define INSTANCE_TYPE_CHECKERS_SINGLE(V)      \
+  INSTANCE_TYPE_CHECKERS_SINGLE_BASE(V)       \
+  V(JSCollator, JS_INTL_COLLATOR_TYPE)        \
+  V(JSListFormat, JS_INTL_LIST_FORMAT_TYPE)   \
+  V(JSLocale, JS_INTL_LOCALE_TYPE)            \
+  V(JSPluralRules, JS_INTL_PLURAL_RULES_TYPE) \
+  V(JSRelativeTimeFormat, JS_INTL_RELATIVE_TIME_FORMAT_TYPE)
+
+#else
+
+#define INSTANCE_TYPE_CHECKERS_SINGLE(V) INSTANCE_TYPE_CHECKERS_SINGLE_BASE(V)
+
+#endif  // V8_INTL_SUPPORT
+
+#define INSTANCE_TYPE_CHECKERS_RANGE(V)                             \
+  V(Context, FIRST_CONTEXT_TYPE, LAST_CONTEXT_TYPE)                 \
+  V(Dictionary, FIRST_DICTIONARY_TYPE, LAST_DICTIONARY_TYPE)        \
+  V(FixedArray, FIRST_FIXED_ARRAY_TYPE, LAST_FIXED_ARRAY_TYPE)      \
+  V(FixedTypedArrayBase, FIRST_FIXED_TYPED_ARRAY_TYPE,              \
+    LAST_FIXED_TYPED_ARRAY_TYPE)                                    \
+  V(HashTable, FIRST_HASH_TABLE_TYPE, LAST_HASH_TABLE_TYPE)         \
+  V(JSMapIterator, FIRST_MAP_ITERATOR_TYPE, LAST_MAP_ITERATOR_TYPE) \
+  V(JSSetIterator, FIRST_SET_ITERATOR_TYPE, LAST_SET_ITERATOR_TYPE) \
+  V(Microtask, FIRST_MICROTASK_TYPE, LAST_MICROTASK_TYPE)           \
+  V(Name, FIRST_TYPE, LAST_NAME_TYPE)                               \
+  V(String, FIRST_TYPE, FIRST_NONSTRING_TYPE - 1)                   \
+  V(WeakFixedArray, FIRST_WEAK_FIXED_ARRAY_TYPE, LAST_WEAK_FIXED_ARRAY_TYPE)
+
+#define INSTANCE_TYPE_CHECKERS_CUSTOM(V) \
+  V(FixedArrayBase)                      \
+  V(InternalizedString)                  \
+  V(JSObject)
+
+#define INSTANCE_TYPE_CHECKERS(V)  \
+  INSTANCE_TYPE_CHECKERS_SINGLE(V) \
+  INSTANCE_TYPE_CHECKERS_RANGE(V)  \
+  INSTANCE_TYPE_CHECKERS_CUSTOM(V)
+
+namespace InstanceTypeChecker {
+#define IS_TYPE_FUNCTION_DECL(Type, ...) \
+  V8_INLINE bool Is##Type(InstanceType instance_type);
+
+INSTANCE_TYPE_CHECKERS(IS_TYPE_FUNCTION_DECL)
+
+#define TYPED_ARRAY_IS_TYPE_FUNCTION_DECL(Type, ...) \
+  IS_TYPE_FUNCTION_DECL(Fixed##Type##Array)
+TYPED_ARRAYS(TYPED_ARRAY_IS_TYPE_FUNCTION_DECL)
+#undef TYPED_ARRAY_IS_TYPE_FUNCTION_DECL
+
+#define STRUCT_IS_TYPE_FUNCTION_DECL(NAME, Name, name) \
+  IS_TYPE_FUNCTION_DECL(Name)
+STRUCT_LIST(STRUCT_IS_TYPE_FUNCTION_DECL)
+#undef STRUCT_IS_TYPE_FUNCTION_DECL
+
+#undef IS_TYPE_FUNCTION_DECL
+}  // namespace InstanceTypeChecker
 
 // The element types selection for CreateListFromArrayLike.
 enum class ElementTypes { kAll, kStringAndSymbol };
@@ -1138,7 +1290,7 @@ class Object {
 
   // Get length property and apply ToLength.
   V8_WARN_UNUSED_RESULT static MaybeHandle<Object> GetLengthFromArrayLike(
-      Isolate* isolate, Handle<Object> object);
+      Isolate* isolate, Handle<JSReceiver> object);
 
   // ES6 section 12.5.6 The typeof Operator
   static Handle<String> TypeOf(Isolate* isolate, Handle<Object> object);
@@ -1366,18 +1518,12 @@ bool Object::IsHeapObject() const {
 }
 
 struct Brief {
-  explicit Brief(const Object* const v) : value(v) {}
-  const Object* value;
-};
-
-struct MaybeObjectBrief {
-  explicit MaybeObjectBrief(const MaybeObject* const v) : value(v) {}
+  V8_EXPORT_PRIVATE explicit Brief(const Object* v);
+  explicit Brief(const MaybeObject* v) : value(v) {}
   const MaybeObject* value;
 };
 
 V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os, const Brief& v);
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
-                                           const MaybeObjectBrief& v);
 
 // Smi represents integer Numbers that can be stored in 31 bits.
 // Smis are immediate which means they are NOT allocated in the heap.
@@ -1672,9 +1818,11 @@ class NeverReadOnlySpaceObject {
 template <int start_offset, int end_offset, int size>
 class FixedBodyDescriptor;
 
-
 template <int start_offset>
 class FlexibleBodyDescriptor;
+
+template <class ParentBodyDescriptor, class ChildBodyDescriptor>
+class SubclassBodyDescriptor;
 
 // The HeapNumber class describes heap allocated numbers that cannot be
 // represented in a Smi (small integer). MutableHeapNumber is the same, but its
@@ -1947,6 +2095,9 @@ class JSReceiver : public HeapObject, public NeverReadOnlySpaceObject {
 
   // ES6 7.3.4 (when passed kDontThrow)
   V8_WARN_UNUSED_RESULT static Maybe<bool> CreateDataProperty(
+      Isolate* isolate, Handle<JSReceiver> object, Handle<Name> key,
+      Handle<Object> value, ShouldThrow should_throw);
+  V8_WARN_UNUSED_RESULT static Maybe<bool> CreateDataProperty(
       LookupIterator* it, Handle<Object> value, ShouldThrow should_throw);
 
   // ES6 9.1.6.1
@@ -1995,6 +2146,10 @@ class JSReceiver : public HeapObject, public NeverReadOnlySpaceObject {
 
   // Returns the class name ([[Class]] property in the specification).
   V8_EXPORT_PRIVATE String* class_name();
+
+  // Returns the constructor (the function that was used to instantiate the
+  // object).
+  static MaybeHandle<JSFunction> GetConstructor(Handle<JSReceiver> receiver);
 
   // Returns the constructor name (the name (possibly, inferred name) of the
   // function that was used to instantiate the object).
@@ -2084,6 +2239,11 @@ class JSObject: public JSReceiver {
 
   static MaybeHandle<Context> GetFunctionRealm(Handle<JSObject> object);
 
+  // 9.1.12 ObjectCreate ( proto [ , internalSlotsList ] )
+  // Notice: This is NOT 19.1.2.2 Object.create ( O, Properties )
+  static V8_WARN_UNUSED_RESULT MaybeHandle<JSObject> ObjectCreate(
+      Isolate* isolate, Handle<Object> prototype);
+
   // [elements]: The elements (properties with names that are integers).
   //
   // Elements can be in two general modes: fast and slow. Each mode
@@ -2106,7 +2266,7 @@ class JSObject: public JSReceiver {
   static inline void SetMapAndElements(Handle<JSObject> object,
                                        Handle<Map> map,
                                        Handle<FixedArrayBase> elements);
-  inline ElementsKind GetElementsKind();
+  inline ElementsKind GetElementsKind() const;
   ElementsAccessor* GetElementsAccessor();
   // Returns true if an object has elements of PACKED_SMI_ELEMENTS or
   // HOLEY_SMI_ELEMENTS ElementsKind.
@@ -2359,7 +2519,12 @@ class JSObject: public JSReceiver {
   inline Object* GetEmbedderField(int index);
   inline void SetEmbedderField(int index, Object* value);
   inline void SetEmbedderField(int index, Smi* value);
-  bool WasConstructedFromApiFunction();
+
+  // Returns true when the object is potentially a wrapper that gets special
+  // garbage collection treatment.
+  // TODO(mlippautz): Make check exact and replace the pattern match in
+  // Heap::TracePossibleWrapper.
+  bool IsApiWrapper();
 
   // Returns a new map with all transitions dropped from the object's current
   // map and the ElementsKind set.
@@ -2496,7 +2661,7 @@ class JSObject: public JSReceiver {
   // If a GC was caused while constructing this object, the elements pointer
   // may point to a one pointer filler map. The object won't be rooted, but
   // our heap verification code could stumble across it.
-  bool ElementsAreSafeToExamine();
+  bool ElementsAreSafeToExamine() const;
 #endif
 
   Object* SlowReverseLookup(Object* value);
@@ -2915,8 +3080,7 @@ class AsyncGeneratorRequest : public Struct {
   V(Atomics, or, AtomicsOr)                           \
   V(Atomics, xor, AtomicsXor)
 
-enum BuiltinFunctionId {
-  kInvalidBuiltinFunctionId = -1,
+enum class BuiltinFunctionId : uint8_t {
   kArrayConstructor,
 #define DECL_FUNCTION_ID(ignored1, ignore2, name) k##name,
   FUNCTIONS_WITH_ID_LIST(DECL_FUNCTION_ID)
@@ -2960,97 +3124,8 @@ enum BuiltinFunctionId {
   kStringIterator,
   kStringIteratorNext,
   kStringToLowerCaseIntl,
-  kStringToUpperCaseIntl
-};
-
-class JSGeneratorObject: public JSObject {
- public:
-  // [function]: The function corresponding to this generator object.
-  DECL_ACCESSORS(function, JSFunction)
-
-  // [context]: The context of the suspended computation.
-  DECL_ACCESSORS(context, Context)
-
-  // [receiver]: The receiver of the suspended computation.
-  DECL_ACCESSORS(receiver, Object)
-
-  // [input_or_debug_pos]
-  // For executing generators: the most recent input value.
-  // For suspended generators: debug information (bytecode offset).
-  // There is currently no need to remember the most recent input value for a
-  // suspended generator.
-  DECL_ACCESSORS(input_or_debug_pos, Object)
-
-  // [resume_mode]: The most recent resume mode.
-  enum ResumeMode { kNext, kReturn, kThrow };
-  DECL_INT_ACCESSORS(resume_mode)
-
-  // [continuation]
-  //
-  // A positive value indicates a suspended generator.  The special
-  // kGeneratorExecuting and kGeneratorClosed values indicate that a generator
-  // cannot be resumed.
-  inline int continuation() const;
-  inline void set_continuation(int continuation);
-  inline bool is_closed() const;
-  inline bool is_executing() const;
-  inline bool is_suspended() const;
-
-  // For suspended generators: the source position at which the generator
-  // is suspended.
-  int source_position() const;
-
-  // [parameters_and_registers]: Saved interpreter register file.
-  DECL_ACCESSORS(parameters_and_registers, FixedArray)
-
-  DECL_CAST(JSGeneratorObject)
-
-  // Dispatched behavior.
-  DECL_PRINTER(JSGeneratorObject)
-  DECL_VERIFIER(JSGeneratorObject)
-
-  // Magic sentinel values for the continuation.
-  static const int kGeneratorExecuting = -2;
-  static const int kGeneratorClosed = -1;
-
-  // Layout description.
-  static const int kFunctionOffset = JSObject::kHeaderSize;
-  static const int kContextOffset = kFunctionOffset + kPointerSize;
-  static const int kReceiverOffset = kContextOffset + kPointerSize;
-  static const int kInputOrDebugPosOffset = kReceiverOffset + kPointerSize;
-  static const int kResumeModeOffset = kInputOrDebugPosOffset + kPointerSize;
-  static const int kContinuationOffset = kResumeModeOffset + kPointerSize;
-  static const int kParametersAndRegistersOffset =
-      kContinuationOffset + kPointerSize;
-  static const int kSize = kParametersAndRegistersOffset + kPointerSize;
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSGeneratorObject);
-};
-
-class JSAsyncGeneratorObject : public JSGeneratorObject {
- public:
-  DECL_CAST(JSAsyncGeneratorObject)
-
-  // Dispatched behavior.
-  DECL_VERIFIER(JSAsyncGeneratorObject)
-
-  // [queue]
-  // Pointer to the head of a singly linked list of AsyncGeneratorRequest, or
-  // undefined.
-  DECL_ACCESSORS(queue, HeapObject)
-
-  // [is_awaiting]
-  // Whether or not the generator is currently awaiting.
-  DECL_INT_ACCESSORS(is_awaiting)
-
-  // Layout description.
-  static const int kQueueOffset = JSGeneratorObject::kSize;
-  static const int kIsAwaitingOffset = kQueueOffset + kPointerSize;
-  static const int kSize = kIsAwaitingOffset + kPointerSize;
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSAsyncGeneratorObject);
+  kStringToUpperCaseIntl,
+  kInvalidBuiltinFunctionId = static_cast<uint8_t>(-1),
 };
 
 // JSBoundFunction describes a bound function exotic object.
@@ -3179,6 +3254,11 @@ class JSFunction: public JSObject {
   // Clears the optimization marker in the function's feedback vector.
   inline void ClearOptimizationMarker();
 
+  // If slack tracking is active, it computes instance size of the initial map
+  // with minimum permissible object slack.  If it is not active, it simply
+  // returns the initial map's instance size.
+  int ComputeInstanceSizeWithMinSlack(Isolate* isolate);
+
   // Completes inobject slack tracking on initial map if it is active.
   inline void CompleteInobjectSlackTrackingIfActive();
 
@@ -3218,6 +3298,8 @@ class JSFunction: public JSObject {
   inline bool has_instance_prototype();
   inline Object* prototype();
   inline Object* instance_prototype();
+  inline bool has_prototype_property();
+  inline bool PrototypeRequiresRuntimeLookup();
   static void SetPrototype(Handle<JSFunction> function,
                            Handle<Object> value);
 
@@ -3949,34 +4031,6 @@ class PropertyCell : public HeapObject {
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(PropertyCell);
-};
-
-
-class WeakCell : public HeapObject {
- public:
-  inline Object* value() const;
-
-  // This should not be called by anyone except GC.
-  inline void clear();
-
-  // This should not be called by anyone except allocator.
-  inline void initialize(HeapObject* value);
-
-  inline bool cleared() const;
-
-  DECL_CAST(WeakCell)
-
-  DECL_PRINTER(WeakCell)
-  DECL_VERIFIER(WeakCell)
-
-  // Layout description.
-  static const int kValueOffset = HeapObject::kHeaderSize;
-  static const int kSize = kValueOffset + kPointerSize;
-
-  typedef FixedBodyDescriptor<kValueOffset, kSize, kSize> BodyDescriptor;
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(WeakCell);
 };
 
 // The [Async-from-Sync Iterator] object

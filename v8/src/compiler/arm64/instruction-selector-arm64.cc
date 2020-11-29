@@ -1193,6 +1193,8 @@ void InstructionSelector::VisitWord64Ror(Node* node) {
   V(Word32Clz, kArm64Clz32)                                   \
   V(Word32ReverseBits, kArm64Rbit32)                          \
   V(Word64ReverseBits, kArm64Rbit)                            \
+  V(Word32ReverseBytes, kArm64Rev32)                          \
+  V(Word64ReverseBytes, kArm64Rev)                            \
   V(ChangeFloat32ToFloat64, kArm64Float32ToFloat64)           \
   V(RoundInt32ToFloat32, kArm64Int32ToFloat32)                \
   V(RoundUint32ToFloat32, kArm64Uint32ToFloat32)              \
@@ -1275,10 +1277,6 @@ RRR_OP_LIST(RRR_VISITOR)
 void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitWord64Ctz(Node* node) { UNREACHABLE(); }
-
-void InstructionSelector::VisitWord64ReverseBytes(Node* node) { UNREACHABLE(); }
-
-void InstructionSelector::VisitWord32ReverseBytes(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
 
@@ -2086,23 +2084,42 @@ void VisitWord64Test(InstructionSelector* selector, Node* node,
   VisitWordTest(selector, node, kArm64Tst, cont);
 }
 
-template <typename Matcher, ArchOpcode kOpcode>
-bool TryEmitTestAndBranch(InstructionSelector* selector, Node* node,
-                          FlagsContinuation* cont) {
-  Arm64OperandGenerator g(selector);
-  Matcher m(node);
-  if (cont->IsBranch() && !cont->IsPoisoned() && m.right().HasValue() &&
-      base::bits::IsPowerOfTwo(m.right().Value())) {
-    // If the mask has only one bit set, we can use tbz/tbnz.
-    DCHECK((cont->condition() == kEqual) || (cont->condition() == kNotEqual));
-    selector->EmitWithContinuation(
-        kOpcode, g.UseRegister(m.left().node()),
-        g.TempImmediate(base::bits::CountTrailingZeros(m.right().Value())),
-        cont);
-    return true;
+template <typename Matcher>
+struct TestAndBranchMatcher {
+  TestAndBranchMatcher(Node* node, FlagsContinuation* cont)
+      : matches_(false), cont_(cont), matcher_(node) {
+    Initialize();
   }
-  return false;
-}
+  bool Matches() const { return matches_; }
+
+  unsigned bit() const {
+    DCHECK(Matches());
+    return base::bits::CountTrailingZeros(matcher_.right().Value());
+  }
+
+  Node* input() const {
+    DCHECK(Matches());
+    return matcher_.left().node();
+  }
+
+ private:
+  bool matches_;
+  FlagsContinuation* cont_;
+  Matcher matcher_;
+
+  void Initialize() {
+    if (cont_->IsBranch() && !cont_->IsPoisoned() &&
+        matcher_.right().HasValue() &&
+        base::bits::IsPowerOfTwo(matcher_.right().Value())) {
+      // If the mask has only one bit set, we can use tbz/tbnz.
+      DCHECK((cont_->condition() == kEqual) ||
+             (cont_->condition() == kNotEqual));
+      matches_ = true;
+    } else {
+      matches_ = false;
+    }
+  }
+};
 
 // Shared routine for multiple float32 compare operations.
 void VisitFloat32Compare(InstructionSelector* selector, Node* node,
@@ -2232,6 +2249,58 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
     cont->Negate();
   }
 
+  // Try to match bit checks to create TBZ/TBNZ instructions.
+  // Unlike the switch below, CanCover check is not needed here.
+  // If there are several uses of the given operation, we will generate a TBZ
+  // instruction for each. This is useful even if there are other uses of the
+  // arithmetic result, because it moves dependencies further back.
+  switch (value->opcode()) {
+    case IrOpcode::kWord64Equal: {
+      Int64BinopMatcher m(value);
+      if (m.right().Is(0)) {
+        Node* const left = m.left().node();
+        if (left->opcode() == IrOpcode::kWord64And) {
+          // Attempt to merge the Word64Equal(Word64And(x, y), 0) comparison
+          // into a tbz/tbnz instruction.
+          TestAndBranchMatcher<Uint64BinopMatcher> tbm(left, cont);
+          if (tbm.Matches()) {
+            Arm64OperandGenerator gen(this);
+            cont->OverwriteAndNegateIfEqual(kEqual);
+            this->EmitWithContinuation(kArm64TestAndBranch,
+                                       gen.UseRegister(tbm.input()),
+                                       gen.TempImmediate(tbm.bit()), cont);
+            return;
+          }
+        }
+      }
+      break;
+    }
+    case IrOpcode::kWord32And: {
+      TestAndBranchMatcher<Uint32BinopMatcher> tbm(value, cont);
+      if (tbm.Matches()) {
+        Arm64OperandGenerator gen(this);
+        this->EmitWithContinuation(kArm64TestAndBranch32,
+                                   gen.UseRegister(tbm.input()),
+                                   gen.TempImmediate(tbm.bit()), cont);
+        return;
+      }
+      break;
+    }
+    case IrOpcode::kWord64And: {
+      TestAndBranchMatcher<Uint64BinopMatcher> tbm(value, cont);
+      if (tbm.Matches()) {
+        Arm64OperandGenerator gen(this);
+        this->EmitWithContinuation(kArm64TestAndBranch,
+                                   gen.UseRegister(tbm.input()),
+                                   gen.TempImmediate(tbm.bit()), cont);
+        return;
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
   if (CanCover(user, value)) {
     switch (value->opcode()) {
       case IrOpcode::kWord32Equal:
@@ -2255,12 +2324,6 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
         if (m.right().Is(0)) {
           Node* const left = m.left().node();
           if (CanCover(value, left) && left->opcode() == IrOpcode::kWord64And) {
-            // Attempt to merge the Word64Equal(Word64And(x, y), 0) comparison
-            // into a tbz/tbnz instruction.
-            if (TryEmitTestAndBranch<Uint64BinopMatcher, kArm64TestAndBranch>(
-                    this, left, cont)) {
-              return;
-            }
             return VisitWordCompare(this, left, kArm64Tst, cont, true,
                                     kLogical64Imm);
           }
@@ -2357,17 +2420,9 @@ void InstructionSelector::VisitWordCompareZero(Node* user, Node* value,
       case IrOpcode::kInt32Sub:
         return VisitWord32Compare(this, value, cont);
       case IrOpcode::kWord32And:
-        if (TryEmitTestAndBranch<Uint32BinopMatcher, kArm64TestAndBranch32>(
-                this, value, cont)) {
-          return;
-        }
         return VisitWordCompare(this, value, kArm64Tst32, cont, true,
                                 kLogical32Imm);
       case IrOpcode::kWord64And:
-        if (TryEmitTestAndBranch<Uint64BinopMatcher, kArm64TestAndBranch>(
-                this, value, cont)) {
-          return;
-        }
         return VisitWordCompare(this, value, kArm64Tst, cont, true,
                                 kLogical64Imm);
       default:
@@ -2746,7 +2801,7 @@ void InstructionSelector::VisitWord64AtomicStore(Node* node) {
 
 void InstructionSelector::VisitWord32AtomicExchange(Node* node) {
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   if (type == MachineType::Int8()) {
     opcode = kWord32AtomicExchangeInt8;
   } else if (type == MachineType::Uint8()) {
@@ -2766,7 +2821,7 @@ void InstructionSelector::VisitWord32AtomicExchange(Node* node) {
 
 void InstructionSelector::VisitWord64AtomicExchange(Node* node) {
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   if (type == MachineType::Uint8()) {
     opcode = kArm64Word64AtomicExchangeUint8;
   } else if (type == MachineType::Uint16()) {
@@ -2784,7 +2839,7 @@ void InstructionSelector::VisitWord64AtomicExchange(Node* node) {
 
 void InstructionSelector::VisitWord32AtomicCompareExchange(Node* node) {
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   if (type == MachineType::Int8()) {
     opcode = kWord32AtomicCompareExchangeInt8;
   } else if (type == MachineType::Uint8()) {
@@ -2804,7 +2859,7 @@ void InstructionSelector::VisitWord32AtomicCompareExchange(Node* node) {
 
 void InstructionSelector::VisitWord64AtomicCompareExchange(Node* node) {
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   if (type == MachineType::Uint8()) {
     opcode = kArm64Word64AtomicCompareExchangeUint8;
   } else if (type == MachineType::Uint16()) {
@@ -2824,7 +2879,7 @@ void InstructionSelector::VisitWord32AtomicBinaryOperation(
     Node* node, ArchOpcode int8_op, ArchOpcode uint8_op, ArchOpcode int16_op,
     ArchOpcode uint16_op, ArchOpcode word32_op) {
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   if (type == MachineType::Int8()) {
     opcode = int8_op;
   } else if (type == MachineType::Uint8()) {
@@ -2860,7 +2915,7 @@ void InstructionSelector::VisitWord64AtomicBinaryOperation(
     Node* node, ArchOpcode uint8_op, ArchOpcode uint16_op, ArchOpcode uint32_op,
     ArchOpcode uint64_op) {
   ArchOpcode opcode = kArchNop;
-  MachineType type = AtomicOpRepresentationOf(node->op());
+  MachineType type = AtomicOpType(node->op());
   if (type == MachineType::Uint8()) {
     opcode = uint8_op;
   } else if (type == MachineType::Uint16()) {

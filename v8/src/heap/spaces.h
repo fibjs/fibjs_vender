@@ -110,7 +110,7 @@ class Space;
 // Some assertion macros used in the debugging mode.
 
 #define DCHECK_PAGE_ALIGNED(address) \
-  DCHECK((OffsetFrom(address) & Page::kPageAlignmentMask) == 0)
+  DCHECK((OffsetFrom(address) & kPageAlignmentMask) == 0)
 
 #define DCHECK_OBJECT_ALIGNED(address) \
   DCHECK((OffsetFrom(address) & kObjectAlignmentMask) == 0)
@@ -312,7 +312,11 @@ class MemoryChunk {
 
     // |SWEEP_TO_ITERATE|: The page requires sweeping using external markbits
     // to iterate the page.
-    SWEEP_TO_ITERATE = 1u << 17
+    SWEEP_TO_ITERATE = 1u << 17,
+
+    // |INCREMENTAL_MARKING|: Indicates whether incremental marking is currently
+    // enabled.
+    INCREMENTAL_MARKING = 1u << 18
   };
 
   using Flags = uintptr_t;
@@ -403,7 +407,6 @@ class MemoryChunk {
 
   // Page size in bytes.  This must be a multiple of the OS page size.
   static const int kPageSize = 1 << kPageSizeBits;
-  static const intptr_t kPageAlignmentMask = (1 << kPageSizeBits) - 1;
 
   static const int kAllocatableMemory = kPageSize - kObjectStartOffset;
 
@@ -512,6 +515,9 @@ class MemoryChunk {
   InvalidatedSlots* AllocateInvalidatedSlots();
   void ReleaseInvalidatedSlots();
   void RegisterObjectWithInvalidatedSlots(HeapObject* object, int size);
+  // Updates invalidated_slots after array left-trimming.
+  void MoveObjectWithInvalidatedSlots(HeapObject* old_start,
+                                      HeapObject* new_start);
   InvalidatedSlots* invalidated_slots() { return invalidated_slots_; }
 
   void ReleaseLocalTracker();
@@ -622,6 +628,10 @@ class MemoryChunk {
   bool InToSpace() { return IsFlagSet(IN_TO_SPACE); }
 
   bool InFromSpace() { return IsFlagSet(IN_FROM_SPACE); }
+
+  bool InOldSpace() const;
+
+  bool InLargeObjectSpace() const;
 
   Space* owner() const { return owner_; }
 
@@ -758,13 +768,18 @@ class Page : public MemoryChunk {
   // Page flags copied from from-space to to-space when flipping semispaces.
   static const intptr_t kCopyOnFlipFlagsMask =
       static_cast<intptr_t>(MemoryChunk::POINTERS_TO_HERE_ARE_INTERESTING) |
-      static_cast<intptr_t>(MemoryChunk::POINTERS_FROM_HERE_ARE_INTERESTING);
+      static_cast<intptr_t>(MemoryChunk::POINTERS_FROM_HERE_ARE_INTERESTING) |
+      static_cast<intptr_t>(MemoryChunk::INCREMENTAL_MARKING);
 
   // Returns the page containing a given address. The address ranges
   // from [page_addr .. page_addr + kPageSize[. This only works if the object
   // is in fact in a page.
   static Page* FromAddress(Address addr) {
     return reinterpret_cast<Page*>(OffsetFrom(addr) & ~kPageAlignmentMask);
+  }
+  static Page* FromHeapObject(const HeapObject* o) {
+    return reinterpret_cast<Page*>(reinterpret_cast<Address>(o) &
+                                   ~kAlignmentMask);
   }
 
   // Returns the page containing the address provided. The address can
@@ -1069,9 +1084,7 @@ class MemoryChunkValidator {
 class CodeRange {
  public:
   CodeRange(Isolate* isolate, size_t requested_size);
-  ~CodeRange() {
-    if (virtual_memory_.IsReserved()) virtual_memory_.Free();
-  }
+  ~CodeRange();
 
   bool valid() { return virtual_memory_.IsReserved(); }
   Address start() {
@@ -1144,10 +1157,31 @@ class CodeRange {
   // The block at current_allocation_block_index_ is the current block.
   std::vector<FreeBlock> allocation_list_;
   size_t current_allocation_block_index_;
+  size_t requested_code_range_size_;
 
   DISALLOW_COPY_AND_ASSIGN(CodeRange);
 };
 
+// The process-wide singleton that keeps track of code range regions with the
+// intention to reuse free code range regions as a workaround for CFG memory
+// leaks (see crbug.com/870054).
+class CodeRangeAddressHint {
+ public:
+  // Returns the most recently freed code range start address for the given
+  // size. If there is no such entry, then a random address is returned.
+  V8_EXPORT_PRIVATE void* GetAddressHint(size_t code_range_size);
+
+  V8_EXPORT_PRIVATE void NotifyFreedCodeRange(void* code_range_start,
+                                              size_t code_range_size);
+
+ private:
+  base::Mutex mutex_;
+  // A map from code range size to an array of recently freed code range
+  // addresses. There should be O(1) different code range sizes.
+  // The length of each array is limited by the peak number of code ranges,
+  // which should be also O(1).
+  std::map<size_t, std::vector<void*>> recently_freed_;
+};
 
 class SkipList {
  public:
@@ -1177,7 +1211,7 @@ class SkipList {
   }
 
   static inline int RegionNumber(Address addr) {
-    return (OffsetFrom(addr) & Page::kPageAlignmentMask) >> kRegionSizeLog2;
+    return (OffsetFrom(addr) & kPageAlignmentMask) >> kRegionSizeLog2;
   }
 
   static void Update(Address addr, int size) {
@@ -1971,7 +2005,10 @@ class LocalAllocationBuffer {
   // Indicates that a buffer cannot be used for allocations anymore. Can result
   // from either reassigning a buffer, or trying to construct it from an
   // invalid {AllocationResult}.
-  static inline LocalAllocationBuffer InvalidBuffer();
+  static LocalAllocationBuffer InvalidBuffer() {
+    return LocalAllocationBuffer(
+        nullptr, LinearAllocationArea(kNullAddress, kNullAddress));
+  }
 
   // Creates a new LAB from a given {AllocationResult}. Results in
   // InvalidBuffer if the result indicates a retry.

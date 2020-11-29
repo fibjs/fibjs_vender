@@ -71,12 +71,14 @@ class StatsCounter;
   EXTERNAL_REFERENCE_LIST_NON_INTERPRETED_REGEXP(V)
 
 #define EXTERNAL_REFERENCE_LIST(V)                                            \
+  V(abort_with_reason, "abort_with_reason")                                   \
   V(address_of_double_abs_constant, "double_absolute_constant")               \
   V(address_of_double_neg_constant, "double_negate_constant")                 \
   V(address_of_float_abs_constant, "float_absolute_constant")                 \
   V(address_of_float_neg_constant, "float_negate_constant")                   \
   V(address_of_min_int, "LDoubleConstant::min_int")                           \
   V(address_of_one_half, "LDoubleConstant::one_half")                         \
+  V(address_of_runtime_stats_flag, "FLAG_runtime_stats")                      \
   V(address_of_the_hole_nan, "the_hole_nan")                                  \
   V(address_of_uint32_bias, "uint32_bias")                                    \
   V(bytecode_size_table_address, "Bytecodes::bytecode_size_table_address")    \
@@ -300,6 +302,8 @@ bool operator!=(ExternalReference, ExternalReference);
 size_t hash_value(ExternalReference);
 
 V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, ExternalReference);
+
+void abort_with_reason(int reason);
 
 }  // namespace internal
 }  // namespace v8

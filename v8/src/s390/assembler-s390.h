@@ -272,7 +272,6 @@ GENERAL_REGISTERS(DEFINE_REGISTER)
 constexpr Register no_reg = Register::no_reg();
 
 // Register aliases
-constexpr Register kLithiumScratch = r1;  // lithium scratch.
 constexpr Register kRootRegister = r10;   // Roots array pointer.
 constexpr Register cp = r13;              // JavaScript context pointer.
 
@@ -472,7 +471,7 @@ class DeferredRelocInfo {
   intptr_t data_;
 };
 
-class Assembler : public AssemblerBase {
+class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
  public:
   // Create an assembler. Instructions and relocation information are emitted
   // into a buffer, with the instructions starting from the beginning and the
@@ -980,7 +979,7 @@ enum FIDBRA_FLAGS {
 
 inline void rsi_format(Opcode op, int f1, int f2, int f3) {
   DCHECK(is_uint8(op));
-  DCHECK(is_uint16(f3));
+  DCHECK(is_uint16(f3) || is_int16(f3));
   uint32_t code = getfield<uint32_t, 4, 0, 8>(op) |
                   getfield<uint32_t, 4, 8, 12>(f1) |
                   getfield<uint32_t, 4, 12, 16>(f2) |
@@ -1074,7 +1073,7 @@ inline void si_format(Opcode op, int f1, int f2, int f3) {
 inline void siy_format(Opcode op, int f1, int f2, int f3) {
   DCHECK(is_uint20(f3) || is_int20(f3));
   DCHECK(is_uint16(op));
-  DCHECK(is_uint8(f1));
+  DCHECK(is_uint8(f1) || is_int8(f1));
   uint64_t code = getfield<uint64_t, 6, 0, 8>(op >> 8) |
                   getfield<uint64_t, 6, 8, 16>(f1) |
                   getfield<uint64_t, 6, 16, 20>(f2) |

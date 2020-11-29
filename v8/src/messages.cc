@@ -6,12 +6,13 @@
 
 #include <memory>
 
-#include "src/api.h"
+#include "src/api-inl.h"
 #include "src/execution.h"
 #include "src/isolate-inl.h"
 #include "src/keys.h"
 #include "src/objects/frame-array-inl.h"
-#include "src/string-builder.h"
+#include "src/objects/js-array-inl.h"
+#include "src/string-builder-inl.h"
 #include "src/wasm/wasm-code-manager.h"
 #include "src/wasm/wasm-objects.h"
 
@@ -649,8 +650,8 @@ void WasmStackFrame::FromFrameArray(Isolate* isolate, Handle<FrameArray> array,
   if (array->IsWasmInterpretedFrame(frame_ix)) {
     code_ = nullptr;
   } else {
-    code_ = wasm_instance_->module_object()->native_module()->code(
-        wasm_func_index_);
+    code_ = reinterpret_cast<wasm::WasmCode*>(
+        array->WasmCodeObject(frame_ix)->foreign_address());
   }
   offset_ = array->Offset(frame_ix)->value();
 }

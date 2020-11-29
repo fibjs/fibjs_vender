@@ -32,7 +32,13 @@ add_definitions(
 
 if(${OS} STREQUAL "Windows")
 	# always disable debug for MSVC(1925, VS 2019) + v8(6.9), maybe cancel in the future
-	add_definitions(-DNDEBUG)
+	# add_definitions(-DNDEBUG)	
+	if(${BUILD_TYPE} STREQUAL "debug")
+		add_definitions(-DDEBUG)	
+		set_property(TARGET ${name} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDllDebug")
+	elseif(${BUILD_TYPE} STREQUAL "release")
+		set_property(TARGET ${name} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
+	endif()
 else()
 	if(${BUILD_TYPE} STREQUAL "Debug")
 		add_definitions(

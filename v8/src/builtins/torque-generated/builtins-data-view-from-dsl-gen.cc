@@ -5,6 +5,7 @@
 #include "src/elements-kind.h"
 #include "src/heap/factory-inl.h"
 #include "src/objects.h"
+#include "src/objects/bigint.h"
 #include "builtins-data-view-from-dsl-gen.h"
 
 namespace v8 {
@@ -12,1990 +13,158 @@ namespace internal {
 
 using Node = compiler::Node;
 
-compiler::TNode<BoolT> DataViewBuiltinsFromDSLAssembler::WasNeutered(TNode<JSArrayBufferView> p_view) {
-  TVARIABLE(BoolT, _return_186_impl);
-  auto _return_186 = &_return_186_impl;
-  USE(_return_186);
-  Label label_macro_end_670_impl(this, {_return_186});
-  Label* label_macro_end_670 = &label_macro_end_670_impl;
-  USE(label_macro_end_670);
-  // ../../src/builtins/data-view.tq:14:51
+compiler::TNode<String> DataViewBuiltinsFromDSLAssembler::MakeDataViewGetterNameString(ElementsKind p_kind) {
+  TVARIABLE(String, _return_172_impl);
+  auto _return_172 = &_return_172_impl;
+  USE(_return_172);
+  Label label_macro_end_1155_impl(this, {_return_172});
+  Label* label_macro_end_1155 = &label_macro_end_1155_impl;
+  USE(label_macro_end_1155);
+  // ../../src/builtins/data-view.tq:16:76
   {
-    // ../../src/builtins/data-view.tq:15:4
-    TNode<JSArrayBuffer> t526 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer(p_view));
-    TNode<BoolT> t527 = UncheckedCast<BoolT>(IsDetachedBuffer(t526));
-    USE(t527);
-    *_return_186 = t527;
-    Goto(label_macro_end_670);
-  }
-  BIND(label_macro_end_670);
-  return (*_return_186).value();
-}
-
-compiler::TNode<JSDataView> DataViewBuiltinsFromDSLAssembler::ValidateDataView(TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_method) {
-  TVARIABLE(JSDataView, _return_187_impl);
-  auto _return_187 = &_return_187_impl;
-  USE(_return_187);
-  Label label_macro_end_671_impl(this, {_return_187});
-  Label* label_macro_end_671 = &label_macro_end_671_impl;
-  USE(label_macro_end_671);
-  // ../../src/builtins/data-view.tq:19:45
-  {
-    // ../../src/builtins/data-view.tq:20:4
+    // ../../src/builtins/data-view.tq:17:5
     {
-      Label label_try_done_530_672_impl(this);
-      Label* label_try_done_530_672 = &label_try_done_530_672_impl;
-      USE(label_try_done_530_672);
-      Label label_CastError_178_impl(this);
-      Label* label_CastError_178 = &label_CastError_178_impl;
-      USE(label_CastError_178);
-      Label label_try_begin_531_673_impl(this);
-      Label* label_try_begin_531_673 = &label_try_begin_531_673_impl;
-      USE(label_try_begin_531_673);
-      Goto(label_try_begin_531_673);
-      if (label_try_begin_531_673->is_used())
-      {
-        BIND(label_try_begin_531_673);
-        // ../../src/builtins/data-view.tq:20:8
+      bool t645 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+      USE(implicit_cast<bool>(t645));
+      if ((implicit_cast<bool>(t645))) {
+        // ../../src/builtins/data-view.tq:17:43
         {
-          // ../../src/builtins/data-view.tq:21:6
-          TNode<JSDataView> t528 = UncheckedCast<JSDataView>(cast12ATJSDataView(p_o, label_CastError_178));
-          USE(t528);
-          *_return_187 = t528;
-          Goto(label_macro_end_671);
-        }
-      }
-      if (label_CastError_178->is_used())
-      {
-        BIND(label_CastError_178);
-        // ../../src/builtins/data-view.tq:23:20
-        {
-          // ../../src/builtins/data-view.tq:24:6
-          ThrowTypeError(p_context, MessageTemplate::kIncompatibleMethodReceiver, p_method);
-        }
-      }
-    }
-  }
-  BIND(label_macro_end_671);
-  return (*_return_187).value();
-}
-
-TF_BUILTIN(DataViewPrototypeGetBuffer, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:30:71
-  {
-    // ../../src/builtins/data-view.tq:31:4
-    const char* t529 = "get DataView.prototype.buffer";
-    TNode<String> t530 = UncheckedCast<String>(from_constexpr8ATString(t529));
-    TNode<JSDataView> t531 = UncheckedCast<JSDataView>(ValidateDataView(p_context, p_receiver, t530));
-    USE(t531);
-    TVARIABLE(JSDataView, data_view_188_impl);
-    auto data_view_188 = &data_view_188_impl;
-    USE(data_view_188);
-    *data_view_188 = t531;
-    // ../../src/builtins/data-view.tq:33:4
-    TNode<JSArrayBuffer> t532 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer((*data_view_188).value()));
-    arguments->PopAndReturn(t532);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetByteLength, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:38:61
-  {
-    // ../../src/builtins/data-view.tq:39:4
-    const char* t533 = "get DataView.prototype.byte_length";
-    TNode<String> t534 = UncheckedCast<String>(from_constexpr8ATString(t533));
-    TNode<JSDataView> t535 = UncheckedCast<JSDataView>(ValidateDataView(p_context, p_receiver, t534));
-    USE(t535);
-    TVARIABLE(JSDataView, data_view_189_impl);
-    auto data_view_189 = &data_view_189_impl;
-    USE(data_view_189);
-    *data_view_189 = t535;
-    // ../../src/builtins/data-view.tq:41:4
-    {
-      Label label__True_179_impl(this);
-      Label* label__True_179 = &label__True_179_impl;
-      USE(label__True_179);
-      Label label__False_180_impl(this, {});
-      Label* label__False_180 = &label__False_180_impl;
-      USE(label__False_180);
-      TNode<BoolT> t536 = UncheckedCast<BoolT>(WasNeutered((*data_view_189).value()));
-      USE(t536);
-      Branch(t536, label__True_179, label__False_180);
-      if (label__True_179->is_used())
-      {
-        BIND(label__True_179);
-        // ../../src/builtins/data-view.tq:41:32
-        {
-          // ../../src/builtins/data-view.tq:44:6
-          int31_t t537 = 0;
-          TNode<Smi> t538 = UncheckedCast<Smi>(from_constexpr5ATSmi(t537));
-          arguments->PopAndReturn(t538);
-        }
-      }
-      BIND(label__False_180);
-    }
-    // ../../src/builtins/data-view.tq:46:4
-    TNode<Smi> t539 = UncheckedCast<Smi>(LoadDataViewByteLength((*data_view_189).value()));
-    arguments->PopAndReturn(t539);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetByteOffset, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:51:61
-  {
-    // ../../src/builtins/data-view.tq:52:4
-    const char* t540 = "get DataView.prototype.byte_offset";
-    TNode<String> t541 = UncheckedCast<String>(from_constexpr8ATString(t540));
-    TNode<JSDataView> t542 = UncheckedCast<JSDataView>(ValidateDataView(p_context, p_receiver, t541));
-    USE(t542);
-    TVARIABLE(JSDataView, data_view_190_impl);
-    auto data_view_190 = &data_view_190_impl;
-    USE(data_view_190);
-    *data_view_190 = t542;
-    // ../../src/builtins/data-view.tq:54:4
-    {
-      Label label__True_181_impl(this);
-      Label* label__True_181 = &label__True_181_impl;
-      USE(label__True_181);
-      Label label__False_182_impl(this, {});
-      Label* label__False_182 = &label__False_182_impl;
-      USE(label__False_182);
-      TNode<BoolT> t543 = UncheckedCast<BoolT>(WasNeutered((*data_view_190).value()));
-      USE(t543);
-      Branch(t543, label__True_181, label__False_182);
-      if (label__True_181->is_used())
-      {
-        BIND(label__True_181);
-        // ../../src/builtins/data-view.tq:54:32
-        {
-          // ../../src/builtins/data-view.tq:57:6
-          int31_t t544 = 0;
-          TNode<Smi> t545 = UncheckedCast<Smi>(from_constexpr5ATSmi(t544));
-          arguments->PopAndReturn(t545);
-        }
-      }
-      BIND(label__False_182);
-    }
-    // ../../src/builtins/data-view.tq:59:4
-    TNode<Smi> t546 = UncheckedCast<Smi>(LoadDataViewByteOffset((*data_view_190).value()));
-    arguments->PopAndReturn(t546);
-  }
-}
-
-compiler::TNode<Smi> DataViewBuiltinsFromDSLAssembler::LoadDataViewUint8(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset) {
-  TVARIABLE(Smi, _return_191_impl);
-  auto _return_191 = &_return_191_impl;
-  USE(_return_191);
-  Label label_macro_end_674_impl(this, {_return_191});
-  Label* label_macro_end_674 = &label_macro_end_674_impl;
-  USE(label_macro_end_674);
-  // ../../src/builtins/data-view.tq:72:70
-  {
-    // ../../src/builtins/data-view.tq:73:4
-    TNode<RawPtrT> t547 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TNode<Uint32T> t548 = UncheckedCast<Uint32T>(LoadUint8(t547, p_offset));
-    USE(t548);
-    TNode<Smi> t549 = UncheckedCast<Smi>(convert5ATSmi(t548));
-    USE(t549);
-    *_return_191 = t549;
-    Goto(label_macro_end_674);
-  }
-  BIND(label_macro_end_674);
-  return (*_return_191).value();
-}
-
-compiler::TNode<Smi> DataViewBuiltinsFromDSLAssembler::LoadDataViewInt8(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset) {
-  TVARIABLE(Smi, _return_192_impl);
-  auto _return_192 = &_return_192_impl;
-  USE(_return_192);
-  Label label_macro_end_675_impl(this, {_return_192});
-  Label* label_macro_end_675 = &label_macro_end_675_impl;
-  USE(label_macro_end_675);
-  // ../../src/builtins/data-view.tq:76:69
-  {
-    // ../../src/builtins/data-view.tq:77:4
-    TNode<RawPtrT> t550 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TNode<Int32T> t551 = UncheckedCast<Int32T>(LoadInt8(t550, p_offset));
-    USE(t551);
-    TNode<Smi> t552 = UncheckedCast<Smi>(convert5ATSmi(t551));
-    USE(t552);
-    *_return_192 = t552;
-    Goto(label_macro_end_675);
-  }
-  BIND(label_macro_end_675);
-  return (*_return_192).value();
-}
-
-compiler::TNode<Number> DataViewBuiltinsFromDSLAssembler::LoadDataView16(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian, bool p_signed) {
-  TVARIABLE(Number, _return_193_impl);
-  auto _return_193 = &_return_193_impl;
-  USE(_return_193);
-  Label label_macro_end_676_impl(this, {_return_193});
-  Label* label_macro_end_676 = &label_macro_end_676_impl;
-  USE(label_macro_end_676);
-  // ../../src/builtins/data-view.tq:82:55
-  {
-    // ../../src/builtins/data-view.tq:83:4
-    TNode<RawPtrT> t553 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_194_impl);
-    auto data_pointer_194 = &data_pointer_194_impl;
-    USE(data_pointer_194);
-    *data_pointer_194 = t553;
-    // ../../src/builtins/data-view.tq:85:4
-    TVARIABLE(Int32T, b0_195_impl);
-    auto b0_195 = &b0_195_impl;
-    USE(b0_195);
-    // ../../src/builtins/data-view.tq:86:4
-    TVARIABLE(Int32T, b1_196_impl);
-    auto b1_196 = &b1_196_impl;
-    USE(b1_196);
-    // ../../src/builtins/data-view.tq:87:4
-    TVARIABLE(Int32T, result_197_impl);
-    auto result_197 = &result_197_impl;
-    USE(result_197);
-    // ../../src/builtins/data-view.tq:90:4
-    {
-      Label label__True_183_impl(this);
-      Label* label__True_183 = &label__True_183_impl;
-      USE(label__True_183);
-      Label label__False_184_impl(this);
-      Label* label__False_184 = &label__False_184_impl;
-      USE(label__False_184);
-      Label label_if_done_label_532_677_impl(this, {b0_195, b1_196, result_197});
-      Label* label_if_done_label_532_677 = &label_if_done_label_532_677_impl;
-      USE(label_if_done_label_532_677);
-      Branch(p_requested_little_endian, label__True_183, label__False_184);
-      if (label__True_183->is_used())
-      {
-        BIND(label__True_183);
-        // ../../src/builtins/data-view.tq:90:33
-        {
-          // ../../src/builtins/data-view.tq:91:6
-          TNode<Uint32T> t554 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_194).value(), p_offset));
-          USE(t554);
-          TNode<Int32T> t555 = UncheckedCast<Int32T>(Signed(t554));
-          USE(t555);
-          *b0_195 = t555;
-          // ../../src/builtins/data-view.tq:92:6
-          int31_t t556 = 1;
-          TNode<IntPtrT> t557 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t556));
-          TNode<IntPtrT> t558 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t557));
-          USE(t558);
-          TNode<Int32T> t559 = UncheckedCast<Int32T>(LoadInt8((*data_pointer_194).value(), t558));
-          USE(t559);
-          *b1_196 = t559;
-          // ../../src/builtins/data-view.tq:93:6
-          int31_t t560 = 8;
-          TNode<Int32T> t561 = UncheckedCast<Int32T>(from_constexpr7ATint32(t560));
-          TNode<Int32T> t562 = UncheckedCast<Int32T>(Word32Shl((*b1_196).value(), t561));
-          USE(t562);
-          TNode<Int32T> t563 = UncheckedCast<Int32T>(Int32Add(t562, (*b0_195).value()));
-          USE(t563);
-          *result_197 = t563;
-        }
-        Goto(label_if_done_label_532_677);
-      }
-      if (label__False_184->is_used())
-      {
-        BIND(label__False_184);
-        // ../../src/builtins/data-view.tq:94:11
-        {
-          // ../../src/builtins/data-view.tq:95:6
-          TNode<Int32T> t564 = UncheckedCast<Int32T>(LoadInt8((*data_pointer_194).value(), p_offset));
-          USE(t564);
-          *b0_195 = t564;
-          // ../../src/builtins/data-view.tq:96:6
-          int31_t t565 = 1;
-          TNode<IntPtrT> t566 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t565));
-          TNode<IntPtrT> t567 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t566));
-          USE(t567);
-          TNode<Uint32T> t568 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_194).value(), t567));
-          USE(t568);
-          TNode<Int32T> t569 = UncheckedCast<Int32T>(Signed(t568));
-          USE(t569);
-          *b1_196 = t569;
-          // ../../src/builtins/data-view.tq:97:6
-          int31_t t570 = 8;
-          TNode<Int32T> t571 = UncheckedCast<Int32T>(from_constexpr7ATint32(t570));
-          TNode<Int32T> t572 = UncheckedCast<Int32T>(Word32Shl((*b0_195).value(), t571));
-          USE(t572);
-          TNode<Int32T> t573 = UncheckedCast<Int32T>(Int32Add(t572, (*b1_196).value()));
-          USE(t573);
-          *result_197 = t573;
-        }
-        Goto(label_if_done_label_532_677);
-      }
-      BIND(label_if_done_label_532_677);
-    }
-    // ../../src/builtins/data-view.tq:99:4
-    {
-      if ((p_signed)) {
-        // ../../src/builtins/data-view.tq:99:26
-        {
-          // ../../src/builtins/data-view.tq:100:6
-          TNode<Smi> t574 = UncheckedCast<Smi>(convert5ATSmi((*result_197).value()));
-          USE(t574);
-          *_return_193 = t574;
-          Goto(label_macro_end_676);
+          // ../../src/builtins/data-view.tq:18:7
+          const char* t646 = "DataView.prototype.getUint8";
+          TNode<String> t647 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t646)));
+          *_return_172 = implicit_cast<TNode<String>>(t647);
+          Goto(label_macro_end_1155);
         }
       } else {
-        // ../../src/builtins/data-view.tq:101:11
+        // ../../src/builtins/data-view.tq:19:12
         {
-          // ../../src/builtins/data-view.tq:103:6
-          int31_t t575 = 0xFFFF;
-          TNode<Int32T> t576 = UncheckedCast<Int32T>(from_constexpr7ATint32(t575));
-          TNode<Int32T> t577 = UncheckedCast<Int32T>(Word32And((*result_197).value(), t576));
-          USE(t577);
-          TNode<Smi> t578 = UncheckedCast<Smi>(convert5ATSmi(t577));
-          USE(t578);
-          *_return_193 = t578;
-          Goto(label_macro_end_676);
-        }
-      }
-    }
-  }
-  BIND(label_macro_end_676);
-  return (*_return_193).value();
-}
-
-compiler::TNode<Number> DataViewBuiltinsFromDSLAssembler::LoadDataView32(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian, bool p_signed) {
-  TVARIABLE(Number, _return_198_impl);
-  auto _return_198 = &_return_198_impl;
-  USE(_return_198);
-  Label label_macro_end_678_impl(this, {_return_198});
-  Label* label_macro_end_678 = &label_macro_end_678_impl;
-  USE(label_macro_end_678);
-  // ../../src/builtins/data-view.tq:109:55
-  {
-    // ../../src/builtins/data-view.tq:110:4
-    TNode<RawPtrT> t579 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_199_impl);
-    auto data_pointer_199 = &data_pointer_199_impl;
-    USE(data_pointer_199);
-    *data_pointer_199 = t579;
-    // ../../src/builtins/data-view.tq:112:4
-    TNode<Uint32T> t580 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_199).value(), p_offset));
-    USE(t580);
-    TVARIABLE(Uint32T, b0_200_impl);
-    auto b0_200 = &b0_200_impl;
-    USE(b0_200);
-    *b0_200 = t580;
-    // ../../src/builtins/data-view.tq:113:4
-    int31_t t581 = 1;
-    TNode<IntPtrT> t582 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t581));
-    TNode<IntPtrT> t583 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t582));
-    USE(t583);
-    TNode<Uint32T> t584 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_199).value(), t583));
-    USE(t584);
-    TVARIABLE(Uint32T, b1_201_impl);
-    auto b1_201 = &b1_201_impl;
-    USE(b1_201);
-    *b1_201 = t584;
-    // ../../src/builtins/data-view.tq:114:4
-    int31_t t585 = 2;
-    TNode<IntPtrT> t586 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t585));
-    TNode<IntPtrT> t587 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t586));
-    USE(t587);
-    TNode<Uint32T> t588 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_199).value(), t587));
-    USE(t588);
-    TVARIABLE(Uint32T, b2_202_impl);
-    auto b2_202 = &b2_202_impl;
-    USE(b2_202);
-    *b2_202 = t588;
-    // ../../src/builtins/data-view.tq:115:4
-    int31_t t589 = 3;
-    TNode<IntPtrT> t590 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t589));
-    TNode<IntPtrT> t591 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t590));
-    USE(t591);
-    TNode<Uint32T> t592 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_199).value(), t591));
-    USE(t592);
-    TVARIABLE(Uint32T, b3_203_impl);
-    auto b3_203 = &b3_203_impl;
-    USE(b3_203);
-    *b3_203 = t592;
-    // ../../src/builtins/data-view.tq:116:4
-    TVARIABLE(Uint32T, result_204_impl);
-    auto result_204 = &result_204_impl;
-    USE(result_204);
-    // ../../src/builtins/data-view.tq:118:4
-    {
-      Label label__True_187_impl(this);
-      Label* label__True_187 = &label__True_187_impl;
-      USE(label__True_187);
-      Label label__False_188_impl(this);
-      Label* label__False_188 = &label__False_188_impl;
-      USE(label__False_188);
-      Label label_if_done_label_533_679_impl(this, {result_204});
-      Label* label_if_done_label_533_679 = &label_if_done_label_533_679_impl;
-      USE(label_if_done_label_533_679);
-      Branch(p_requested_little_endian, label__True_187, label__False_188);
-      if (label__True_187->is_used())
-      {
-        BIND(label__True_187);
-        // ../../src/builtins/data-view.tq:118:33
-        {
-          // ../../src/builtins/data-view.tq:119:6
-          int31_t t593 = 24;
-          TNode<Uint32T> t594 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t593));
-          TNode<Uint32T> t595 = UncheckedCast<Uint32T>(Word32Shl((*b3_203).value(), t594));
-          USE(t595);
-          int31_t t596 = 16;
-          TNode<Uint32T> t597 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t596));
-          TNode<Uint32T> t598 = UncheckedCast<Uint32T>(Word32Shl((*b2_202).value(), t597));
-          USE(t598);
-          TNode<Uint32T> t599 = UncheckedCast<Uint32T>(Word32Or(t595, t598));
-          USE(t599);
-          int31_t t600 = 8;
-          TNode<Uint32T> t601 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t600));
-          TNode<Uint32T> t602 = UncheckedCast<Uint32T>(Word32Shl((*b1_201).value(), t601));
-          USE(t602);
-          TNode<Uint32T> t603 = UncheckedCast<Uint32T>(Word32Or(t599, t602));
-          USE(t603);
-          TNode<Uint32T> t604 = UncheckedCast<Uint32T>(Word32Or(t603, (*b0_200).value()));
-          USE(t604);
-          *result_204 = t604;
-        }
-        Goto(label_if_done_label_533_679);
-      }
-      if (label__False_188->is_used())
-      {
-        BIND(label__False_188);
-        // ../../src/builtins/data-view.tq:120:11
-        {
-          // ../../src/builtins/data-view.tq:121:6
-          int31_t t605 = 24;
-          TNode<Uint32T> t606 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t605));
-          TNode<Uint32T> t607 = UncheckedCast<Uint32T>(Word32Shl((*b0_200).value(), t606));
-          USE(t607);
-          int31_t t608 = 16;
-          TNode<Uint32T> t609 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t608));
-          TNode<Uint32T> t610 = UncheckedCast<Uint32T>(Word32Shl((*b1_201).value(), t609));
-          USE(t610);
-          TNode<Uint32T> t611 = UncheckedCast<Uint32T>(Word32Or(t607, t610));
-          USE(t611);
-          int31_t t612 = 8;
-          TNode<Uint32T> t613 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t612));
-          TNode<Uint32T> t614 = UncheckedCast<Uint32T>(Word32Shl((*b2_202).value(), t613));
-          USE(t614);
-          TNode<Uint32T> t615 = UncheckedCast<Uint32T>(Word32Or(t611, t614));
-          USE(t615);
-          TNode<Uint32T> t616 = UncheckedCast<Uint32T>(Word32Or(t615, (*b3_203).value()));
-          USE(t616);
-          *result_204 = t616;
-        }
-        Goto(label_if_done_label_533_679);
-      }
-      BIND(label_if_done_label_533_679);
-    }
-    // ../../src/builtins/data-view.tq:124:4
-    {
-      if ((p_signed)) {
-        // ../../src/builtins/data-view.tq:124:26
-        {
-          // ../../src/builtins/data-view.tq:125:6
-          TNode<Int32T> t617 = UncheckedCast<Int32T>(Signed((*result_204).value()));
-          USE(t617);
-          TNode<Number> t618 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi(t617));
-          USE(t618);
-          *_return_198 = t618;
-          Goto(label_macro_end_678);
-        }
-      } else {
-        // ../../src/builtins/data-view.tq:126:11
-        {
-          // ../../src/builtins/data-view.tq:127:6
-          TNode<Number> t619 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi((*result_204).value()));
-          USE(t619);
-          *_return_198 = t619;
-          Goto(label_macro_end_678);
-        }
-      }
-    }
-  }
-  BIND(label_macro_end_678);
-  return (*_return_198).value();
-}
-
-compiler::TNode<Number> DataViewBuiltinsFromDSLAssembler::LoadDataViewFloat32(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian) {
-  TVARIABLE(Number, _return_205_impl);
-  auto _return_205 = &_return_205_impl;
-  USE(_return_205);
-  Label label_macro_end_680_impl(this, {_return_205});
-  Label* label_macro_end_680 = &label_macro_end_680_impl;
-  USE(label_macro_end_680);
-  // ../../src/builtins/data-view.tq:132:67
-  {
-    // ../../src/builtins/data-view.tq:133:4
-    TNode<RawPtrT> t620 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_206_impl);
-    auto data_pointer_206 = &data_pointer_206_impl;
-    USE(data_pointer_206);
-    *data_pointer_206 = t620;
-    // ../../src/builtins/data-view.tq:135:4
-    TNode<Uint32T> t621 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_206).value(), p_offset));
-    USE(t621);
-    TVARIABLE(Uint32T, b0_207_impl);
-    auto b0_207 = &b0_207_impl;
-    USE(b0_207);
-    *b0_207 = t621;
-    // ../../src/builtins/data-view.tq:136:4
-    int31_t t622 = 1;
-    TNode<IntPtrT> t623 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t622));
-    TNode<IntPtrT> t624 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t623));
-    USE(t624);
-    TNode<Uint32T> t625 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_206).value(), t624));
-    USE(t625);
-    TVARIABLE(Uint32T, b1_208_impl);
-    auto b1_208 = &b1_208_impl;
-    USE(b1_208);
-    *b1_208 = t625;
-    // ../../src/builtins/data-view.tq:137:4
-    int31_t t626 = 2;
-    TNode<IntPtrT> t627 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t626));
-    TNode<IntPtrT> t628 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t627));
-    USE(t628);
-    TNode<Uint32T> t629 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_206).value(), t628));
-    USE(t629);
-    TVARIABLE(Uint32T, b2_209_impl);
-    auto b2_209 = &b2_209_impl;
-    USE(b2_209);
-    *b2_209 = t629;
-    // ../../src/builtins/data-view.tq:138:4
-    int31_t t630 = 3;
-    TNode<IntPtrT> t631 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t630));
-    TNode<IntPtrT> t632 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t631));
-    USE(t632);
-    TNode<Uint32T> t633 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_206).value(), t632));
-    USE(t633);
-    TVARIABLE(Uint32T, b3_210_impl);
-    auto b3_210 = &b3_210_impl;
-    USE(b3_210);
-    *b3_210 = t633;
-    // ../../src/builtins/data-view.tq:139:4
-    TVARIABLE(Uint32T, result_211_impl);
-    auto result_211 = &result_211_impl;
-    USE(result_211);
-    // ../../src/builtins/data-view.tq:141:4
-    {
-      Label label__True_191_impl(this);
-      Label* label__True_191 = &label__True_191_impl;
-      USE(label__True_191);
-      Label label__False_192_impl(this);
-      Label* label__False_192 = &label__False_192_impl;
-      USE(label__False_192);
-      Label label_if_done_label_534_681_impl(this, {result_211});
-      Label* label_if_done_label_534_681 = &label_if_done_label_534_681_impl;
-      USE(label_if_done_label_534_681);
-      Branch(p_requested_little_endian, label__True_191, label__False_192);
-      if (label__True_191->is_used())
-      {
-        BIND(label__True_191);
-        // ../../src/builtins/data-view.tq:141:33
-        {
-          // ../../src/builtins/data-view.tq:142:6
-          int31_t t634 = 24;
-          TNode<Uint32T> t635 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t634));
-          TNode<Uint32T> t636 = UncheckedCast<Uint32T>(Word32Shl((*b3_210).value(), t635));
-          USE(t636);
-          int31_t t637 = 16;
-          TNode<Uint32T> t638 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t637));
-          TNode<Uint32T> t639 = UncheckedCast<Uint32T>(Word32Shl((*b2_209).value(), t638));
-          USE(t639);
-          TNode<Uint32T> t640 = UncheckedCast<Uint32T>(Word32Or(t636, t639));
-          USE(t640);
-          int31_t t641 = 8;
-          TNode<Uint32T> t642 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t641));
-          TNode<Uint32T> t643 = UncheckedCast<Uint32T>(Word32Shl((*b1_208).value(), t642));
-          USE(t643);
-          TNode<Uint32T> t644 = UncheckedCast<Uint32T>(Word32Or(t640, t643));
-          USE(t644);
-          TNode<Uint32T> t645 = UncheckedCast<Uint32T>(Word32Or(t644, (*b0_207).value()));
-          USE(t645);
-          *result_211 = t645;
-        }
-        Goto(label_if_done_label_534_681);
-      }
-      if (label__False_192->is_used())
-      {
-        BIND(label__False_192);
-        // ../../src/builtins/data-view.tq:143:11
-        {
-          // ../../src/builtins/data-view.tq:144:6
-          int31_t t646 = 24;
-          TNode<Uint32T> t647 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t646));
-          TNode<Uint32T> t648 = UncheckedCast<Uint32T>(Word32Shl((*b0_207).value(), t647));
-          USE(t648);
-          int31_t t649 = 16;
-          TNode<Uint32T> t650 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t649));
-          TNode<Uint32T> t651 = UncheckedCast<Uint32T>(Word32Shl((*b1_208).value(), t650));
-          USE(t651);
-          TNode<Uint32T> t652 = UncheckedCast<Uint32T>(Word32Or(t648, t651));
-          USE(t652);
-          int31_t t653 = 8;
-          TNode<Uint32T> t654 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t653));
-          TNode<Uint32T> t655 = UncheckedCast<Uint32T>(Word32Shl((*b2_209).value(), t654));
-          USE(t655);
-          TNode<Uint32T> t656 = UncheckedCast<Uint32T>(Word32Or(t652, t655));
-          USE(t656);
-          TNode<Uint32T> t657 = UncheckedCast<Uint32T>(Word32Or(t656, (*b3_210).value()));
-          USE(t657);
-          *result_211 = t657;
-        }
-        Goto(label_if_done_label_534_681);
-      }
-      BIND(label_if_done_label_534_681);
-    }
-    // ../../src/builtins/data-view.tq:147:4
-    TNode<Float32T> t658 = UncheckedCast<Float32T>(BitcastInt32ToFloat32((*result_211).value()));
-    USE(t658);
-    TNode<Float64T> t659 = UncheckedCast<Float64T>(convert9ATfloat64(t658));
-    USE(t659);
-    TVARIABLE(Float64T, float_res_212_impl);
-    auto float_res_212 = &float_res_212_impl;
-    USE(float_res_212);
-    *float_res_212 = t659;
-    // ../../src/builtins/data-view.tq:148:4
-    TNode<Number> t660 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi((*float_res_212).value()));
-    USE(t660);
-    *_return_205 = t660;
-    Goto(label_macro_end_680);
-  }
-  BIND(label_macro_end_680);
-  return (*_return_205).value();
-}
-
-compiler::TNode<Number> DataViewBuiltinsFromDSLAssembler::LoadDataViewFloat64(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian) {
-  TVARIABLE(Number, _return_213_impl);
-  auto _return_213 = &_return_213_impl;
-  USE(_return_213);
-  Label label_macro_end_682_impl(this, {_return_213});
-  Label* label_macro_end_682 = &label_macro_end_682_impl;
-  USE(label_macro_end_682);
-  // ../../src/builtins/data-view.tq:152:67
-  {
-    // ../../src/builtins/data-view.tq:153:4
-    TNode<RawPtrT> t661 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_214_impl);
-    auto data_pointer_214 = &data_pointer_214_impl;
-    USE(data_pointer_214);
-    *data_pointer_214 = t661;
-    // ../../src/builtins/data-view.tq:155:4
-    TNode<Uint32T> t662 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), p_offset));
-    USE(t662);
-    TVARIABLE(Uint32T, b0_215_impl);
-    auto b0_215 = &b0_215_impl;
-    USE(b0_215);
-    *b0_215 = t662;
-    // ../../src/builtins/data-view.tq:156:4
-    int31_t t663 = 1;
-    TNode<IntPtrT> t664 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t663));
-    TNode<IntPtrT> t665 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t664));
-    USE(t665);
-    TNode<Uint32T> t666 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), t665));
-    USE(t666);
-    TVARIABLE(Uint32T, b1_216_impl);
-    auto b1_216 = &b1_216_impl;
-    USE(b1_216);
-    *b1_216 = t666;
-    // ../../src/builtins/data-view.tq:157:4
-    int31_t t667 = 2;
-    TNode<IntPtrT> t668 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t667));
-    TNode<IntPtrT> t669 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t668));
-    USE(t669);
-    TNode<Uint32T> t670 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), t669));
-    USE(t670);
-    TVARIABLE(Uint32T, b2_217_impl);
-    auto b2_217 = &b2_217_impl;
-    USE(b2_217);
-    *b2_217 = t670;
-    // ../../src/builtins/data-view.tq:158:4
-    int31_t t671 = 3;
-    TNode<IntPtrT> t672 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t671));
-    TNode<IntPtrT> t673 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t672));
-    USE(t673);
-    TNode<Uint32T> t674 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), t673));
-    USE(t674);
-    TVARIABLE(Uint32T, b3_218_impl);
-    auto b3_218 = &b3_218_impl;
-    USE(b3_218);
-    *b3_218 = t674;
-    // ../../src/builtins/data-view.tq:159:4
-    int31_t t675 = 4;
-    TNode<IntPtrT> t676 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t675));
-    TNode<IntPtrT> t677 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t676));
-    USE(t677);
-    TNode<Uint32T> t678 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), t677));
-    USE(t678);
-    TVARIABLE(Uint32T, b4_219_impl);
-    auto b4_219 = &b4_219_impl;
-    USE(b4_219);
-    *b4_219 = t678;
-    // ../../src/builtins/data-view.tq:160:4
-    int31_t t679 = 5;
-    TNode<IntPtrT> t680 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t679));
-    TNode<IntPtrT> t681 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t680));
-    USE(t681);
-    TNode<Uint32T> t682 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), t681));
-    USE(t682);
-    TVARIABLE(Uint32T, b5_220_impl);
-    auto b5_220 = &b5_220_impl;
-    USE(b5_220);
-    *b5_220 = t682;
-    // ../../src/builtins/data-view.tq:161:4
-    int31_t t683 = 6;
-    TNode<IntPtrT> t684 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t683));
-    TNode<IntPtrT> t685 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t684));
-    USE(t685);
-    TNode<Uint32T> t686 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), t685));
-    USE(t686);
-    TVARIABLE(Uint32T, b6_221_impl);
-    auto b6_221 = &b6_221_impl;
-    USE(b6_221);
-    *b6_221 = t686;
-    // ../../src/builtins/data-view.tq:162:4
-    int31_t t687 = 7;
-    TNode<IntPtrT> t688 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t687));
-    TNode<IntPtrT> t689 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t688));
-    USE(t689);
-    TNode<Uint32T> t690 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_214).value(), t689));
-    USE(t690);
-    TVARIABLE(Uint32T, b7_222_impl);
-    auto b7_222 = &b7_222_impl;
-    USE(b7_222);
-    *b7_222 = t690;
-    // ../../src/builtins/data-view.tq:163:4
-    TVARIABLE(Uint32T, low_word_223_impl);
-    auto low_word_223 = &low_word_223_impl;
-    USE(low_word_223);
-    // ../../src/builtins/data-view.tq:164:4
-    TVARIABLE(Uint32T, high_word_224_impl);
-    auto high_word_224 = &high_word_224_impl;
-    USE(high_word_224);
-    // ../../src/builtins/data-view.tq:166:4
-    {
-      Label label__True_193_impl(this);
-      Label* label__True_193 = &label__True_193_impl;
-      USE(label__True_193);
-      Label label__False_194_impl(this);
-      Label* label__False_194 = &label__False_194_impl;
-      USE(label__False_194);
-      Label label_if_done_label_535_683_impl(this, {low_word_223, high_word_224});
-      Label* label_if_done_label_535_683 = &label_if_done_label_535_683_impl;
-      USE(label_if_done_label_535_683);
-      Branch(p_requested_little_endian, label__True_193, label__False_194);
-      if (label__True_193->is_used())
-      {
-        BIND(label__True_193);
-        // ../../src/builtins/data-view.tq:166:33
-        {
-          // ../../src/builtins/data-view.tq:167:6
-          int31_t t691 = 24;
-          TNode<Uint32T> t692 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t691));
-          TNode<Uint32T> t693 = UncheckedCast<Uint32T>(Word32Shl((*b3_218).value(), t692));
-          USE(t693);
-          int31_t t694 = 16;
-          TNode<Uint32T> t695 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t694));
-          TNode<Uint32T> t696 = UncheckedCast<Uint32T>(Word32Shl((*b2_217).value(), t695));
-          USE(t696);
-          TNode<Uint32T> t697 = UncheckedCast<Uint32T>(Word32Or(t693, t696));
-          USE(t697);
-          int31_t t698 = 8;
-          TNode<Uint32T> t699 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t698));
-          TNode<Uint32T> t700 = UncheckedCast<Uint32T>(Word32Shl((*b1_216).value(), t699));
-          USE(t700);
-          TNode<Uint32T> t701 = UncheckedCast<Uint32T>(Word32Or(t697, t700));
-          USE(t701);
-          TNode<Uint32T> t702 = UncheckedCast<Uint32T>(Word32Or(t701, (*b0_215).value()));
-          USE(t702);
-          *low_word_223 = t702;
-          // ../../src/builtins/data-view.tq:168:6
-          int31_t t703 = 24;
-          TNode<Uint32T> t704 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t703));
-          TNode<Uint32T> t705 = UncheckedCast<Uint32T>(Word32Shl((*b7_222).value(), t704));
-          USE(t705);
-          int31_t t706 = 16;
-          TNode<Uint32T> t707 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t706));
-          TNode<Uint32T> t708 = UncheckedCast<Uint32T>(Word32Shl((*b6_221).value(), t707));
-          USE(t708);
-          TNode<Uint32T> t709 = UncheckedCast<Uint32T>(Word32Or(t705, t708));
-          USE(t709);
-          int31_t t710 = 8;
-          TNode<Uint32T> t711 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t710));
-          TNode<Uint32T> t712 = UncheckedCast<Uint32T>(Word32Shl((*b5_220).value(), t711));
-          USE(t712);
-          TNode<Uint32T> t713 = UncheckedCast<Uint32T>(Word32Or(t709, t712));
-          USE(t713);
-          TNode<Uint32T> t714 = UncheckedCast<Uint32T>(Word32Or(t713, (*b4_219).value()));
-          USE(t714);
-          *high_word_224 = t714;
-        }
-        Goto(label_if_done_label_535_683);
-      }
-      if (label__False_194->is_used())
-      {
-        BIND(label__False_194);
-        // ../../src/builtins/data-view.tq:169:11
-        {
-          // ../../src/builtins/data-view.tq:170:6
-          int31_t t715 = 24;
-          TNode<Uint32T> t716 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t715));
-          TNode<Uint32T> t717 = UncheckedCast<Uint32T>(Word32Shl((*b0_215).value(), t716));
-          USE(t717);
-          int31_t t718 = 16;
-          TNode<Uint32T> t719 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t718));
-          TNode<Uint32T> t720 = UncheckedCast<Uint32T>(Word32Shl((*b1_216).value(), t719));
-          USE(t720);
-          TNode<Uint32T> t721 = UncheckedCast<Uint32T>(Word32Or(t717, t720));
-          USE(t721);
-          int31_t t722 = 8;
-          TNode<Uint32T> t723 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t722));
-          TNode<Uint32T> t724 = UncheckedCast<Uint32T>(Word32Shl((*b2_217).value(), t723));
-          USE(t724);
-          TNode<Uint32T> t725 = UncheckedCast<Uint32T>(Word32Or(t721, t724));
-          USE(t725);
-          TNode<Uint32T> t726 = UncheckedCast<Uint32T>(Word32Or(t725, (*b3_218).value()));
-          USE(t726);
-          *high_word_224 = t726;
-          // ../../src/builtins/data-view.tq:171:6
-          int31_t t727 = 24;
-          TNode<Uint32T> t728 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t727));
-          TNode<Uint32T> t729 = UncheckedCast<Uint32T>(Word32Shl((*b4_219).value(), t728));
-          USE(t729);
-          int31_t t730 = 16;
-          TNode<Uint32T> t731 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t730));
-          TNode<Uint32T> t732 = UncheckedCast<Uint32T>(Word32Shl((*b5_220).value(), t731));
-          USE(t732);
-          TNode<Uint32T> t733 = UncheckedCast<Uint32T>(Word32Or(t729, t732));
-          USE(t733);
-          int31_t t734 = 8;
-          TNode<Uint32T> t735 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t734));
-          TNode<Uint32T> t736 = UncheckedCast<Uint32T>(Word32Shl((*b6_221).value(), t735));
-          USE(t736);
-          TNode<Uint32T> t737 = UncheckedCast<Uint32T>(Word32Or(t733, t736));
-          USE(t737);
-          TNode<Uint32T> t738 = UncheckedCast<Uint32T>(Word32Or(t737, (*b7_222).value()));
-          USE(t738);
-          *low_word_223 = t738;
-        }
-        Goto(label_if_done_label_535_683);
-      }
-      BIND(label_if_done_label_535_683);
-    }
-    // ../../src/builtins/data-view.tq:174:4
-    int31_t t739 = 0;
-    TVARIABLE(Float64T, result_225_impl);
-    auto result_225 = &result_225_impl;
-    USE(result_225);
-    TNode<Float64T> t740 = UncheckedCast<Float64T>(from_constexpr9ATfloat64(t739));
-    *result_225 = t740;
-    // ../../src/builtins/data-view.tq:175:4
-    TNode<Float64T> t741 = UncheckedCast<Float64T>(Float64InsertLowWord32((*result_225).value(), (*low_word_223).value()));
-    USE(t741);
-    *result_225 = t741;
-    // ../../src/builtins/data-view.tq:176:4
-    TNode<Float64T> t742 = UncheckedCast<Float64T>(Float64InsertHighWord32((*result_225).value(), (*high_word_224).value()));
-    USE(t742);
-    *result_225 = t742;
-    // ../../src/builtins/data-view.tq:178:4
-    TNode<Number> t743 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi((*result_225).value()));
-    USE(t743);
-    *_return_213 = t743;
-    Goto(label_macro_end_682);
-  }
-  BIND(label_macro_end_682);
-  return (*_return_213).value();
-}
-
-compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::CreateEmptyBigInt(TNode<BoolT> p_is_positive, int31_t p_length) {
-  TVARIABLE(BigInt, _return_226_impl);
-  auto _return_226 = &_return_226_impl;
-  USE(_return_226);
-  Label label_macro_end_684_impl(this, {_return_226});
-  Label* label_macro_end_684 = &label_macro_end_684_impl;
-  USE(label_macro_end_684);
-  // ../../src/builtins/data-view.tq:193:78
-  {
-    // ../../src/builtins/data-view.tq:195:4
-    TNode<IntPtrT> t744 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(p_length));
-    TNode<BigInt> t745 = UncheckedCast<BigInt>(AllocateBigInt(t744));
-    USE(t745);
-    TVARIABLE(BigInt, result_227_impl);
-    auto result_227 = &result_227_impl;
-    USE(result_227);
-    *result_227 = t745;
-    // ../../src/builtins/data-view.tq:198:4
-    {
-      Label label__True_195_impl(this);
-      Label* label__True_195 = &label__True_195_impl;
-      USE(label__True_195);
-      Label label__False_196_impl(this);
-      Label* label__False_196 = &label__False_196_impl;
-      USE(label__False_196);
-      Label label_if_done_label_536_685_impl(this, {});
-      Label* label_if_done_label_536_685 = &label_if_done_label_536_685_impl;
-      USE(label_if_done_label_536_685);
-      Branch(p_is_positive, label__True_195, label__False_196);
-      if (label__True_195->is_used())
-      {
-        BIND(label__True_195);
-        // ../../src/builtins/data-view.tq:198:21
-        {
-          // ../../src/builtins/data-view.tq:199:6
-          TNode<IntPtrT> t746 = UncheckedCast<IntPtrT>(DataViewEncodeBigIntBits(false, p_length));
-          USE(t746);
-          StoreBigIntBitfield((*result_227).value(), t746);
-        }
-        Goto(label_if_done_label_536_685);
-      }
-      if (label__False_196->is_used())
-      {
-        BIND(label__False_196);
-        // ../../src/builtins/data-view.tq:201:11
-        {
-          // ../../src/builtins/data-view.tq:202:6
-          TNode<IntPtrT> t747 = UncheckedCast<IntPtrT>(DataViewEncodeBigIntBits(true, p_length));
-          USE(t747);
-          StoreBigIntBitfield((*result_227).value(), t747);
-        }
-        Goto(label_if_done_label_536_685);
-      }
-      BIND(label_if_done_label_536_685);
-    }
-    // ../../src/builtins/data-view.tq:206:4
-    *_return_226 = (*result_227).value();
-    Goto(label_macro_end_684);
-  }
-  BIND(label_macro_end_684);
-  return (*_return_226).value();
-}
-
-compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::MakeBigIntOn64Bit(TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, bool p_signed) {
-  TVARIABLE(BigInt, _return_228_impl);
-  auto _return_228 = &_return_228_impl;
-  USE(_return_228);
-  Label label_macro_end_686_impl(this, {_return_228});
-  Label* label_macro_end_686 = &label_macro_end_686_impl;
-  USE(label_macro_end_686);
-  // ../../src/builtins/data-view.tq:211:58
-  {
-    // ../../src/builtins/data-view.tq:214:4
-    {
-      Label label__True_197_impl(this);
-      Label* label__True_197 = &label__True_197_impl;
-      USE(label__True_197);
-      Label label__False_198_impl(this, {});
-      Label* label__False_198 = &label__False_198_impl;
-      USE(label__False_198);
-      Label label__True_199_impl(this);
-      Label* label__True_199 = &label__True_199_impl;
-      USE(label__True_199);
-      int31_t t748 = 0;
-      TNode<Uint32T> t749 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t748));
-      TNode<BoolT> t750 = UncheckedCast<BoolT>(Word32Equal(p_low_word, t749));
-      USE(t750);
-      GotoIfNot(t750, label__False_198);
-      int31_t t751 = 0;
-      TNode<Uint32T> t752 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t751));
-      TNode<BoolT> t753 = UncheckedCast<BoolT>(Word32Equal(p_high_word, t752));
-      USE(t753);
-      Branch(t753, label__True_197, label__False_198);
-      if (label__True_197->is_used())
-      {
-        BIND(label__True_197);
-        // ../../src/builtins/data-view.tq:214:41
-        {
-          // ../../src/builtins/data-view.tq:215:6
-          TNode<IntPtrT> t754 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(0));
-          TNode<BigInt> t755 = UncheckedCast<BigInt>(AllocateBigInt(t754));
-          USE(t755);
-          *_return_228 = t755;
-          Goto(label_macro_end_686);
-        }
-      }
-      BIND(label__False_198);
-    }
-    // ../../src/builtins/data-view.tq:218:4
-    TVARIABLE(BoolT, is_positive_229_impl);
-    auto is_positive_229 = &is_positive_229_impl;
-    USE(is_positive_229);
-    TNode<BoolT> t756 = UncheckedCast<BoolT>(from_constexpr6ATbool(true));
-    *is_positive_229 = t756;
-    // ../../src/builtins/data-view.tq:219:4
-    TNode<UintPtrT> t757 = UncheckedCast<UintPtrT>(convert9ATuintptr(p_high_word));
-    USE(t757);
-    TNode<IntPtrT> t758 = UncheckedCast<IntPtrT>(Signed(t757));
-    USE(t758);
-    TVARIABLE(IntPtrT, high_part_230_impl);
-    auto high_part_230 = &high_part_230_impl;
-    USE(high_part_230);
-    *high_part_230 = t758;
-    // ../../src/builtins/data-view.tq:220:4
-    TNode<UintPtrT> t759 = UncheckedCast<UintPtrT>(convert9ATuintptr(p_low_word));
-    USE(t759);
-    TNode<IntPtrT> t760 = UncheckedCast<IntPtrT>(Signed(t759));
-    USE(t760);
-    TVARIABLE(IntPtrT, low_part_231_impl);
-    auto low_part_231 = &low_part_231_impl;
-    USE(low_part_231);
-    *low_part_231 = t760;
-    // ../../src/builtins/data-view.tq:221:4
-    int31_t t761 = 32;
-    TNode<IntPtrT> t762 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t761));
-    TNode<IntPtrT> t763 = UncheckedCast<IntPtrT>(WordShl((*high_part_230).value(), t762));
-    USE(t763);
-    TNode<IntPtrT> t764 = UncheckedCast<IntPtrT>(IntPtrAdd(t763, (*low_part_231).value()));
-    USE(t764);
-    TVARIABLE(IntPtrT, raw_value_232_impl);
-    auto raw_value_232 = &raw_value_232_impl;
-    USE(raw_value_232);
-    *raw_value_232 = t764;
-    // ../../src/builtins/data-view.tq:223:4
-    {
-      if ((p_signed)) {
-        // ../../src/builtins/data-view.tq:223:26
-        {
-          // ../../src/builtins/data-view.tq:224:6
-          {
-            Label label__True_202_impl(this);
-            Label* label__True_202 = &label__True_202_impl;
-            USE(label__True_202);
-            Label label__False_203_impl(this, {is_positive_229, raw_value_232});
-            Label* label__False_203 = &label__False_203_impl;
-            USE(label__False_203);
-            int31_t t765 = 0;
-            TNode<IntPtrT> t766 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t765));
-            TNode<BoolT> t767 = UncheckedCast<BoolT>(IntPtrLessThan((*raw_value_232).value(), t766));
-            USE(t767);
-            Branch(t767, label__True_202, label__False_203);
-            if (label__True_202->is_used())
+          bool t648 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT8_ELEMENTS));
+          USE(implicit_cast<bool>(t648));
+          if ((implicit_cast<bool>(t648))) {
+            // ../../src/builtins/data-view.tq:19:49
             {
-              BIND(label__True_202);
-              // ../../src/builtins/data-view.tq:224:25
-              {
-                // ../../src/builtins/data-view.tq:225:8
-                TNode<BoolT> t768 = UncheckedCast<BoolT>(from_constexpr6ATbool(false));
-                *is_positive_229 = t768;
-                // ../../src/builtins/data-view.tq:227:8
-                int31_t t769 = 0;
-                TNode<IntPtrT> t770 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t769));
-                TNode<IntPtrT> t771 = UncheckedCast<IntPtrT>(IntPtrSub(t770, (*raw_value_232).value()));
-                USE(t771);
-                *raw_value_232 = t771;
-              }
-              Goto(label__False_203);
-            }
-            BIND(label__False_203);
-          }
-        }
-      }
-    }
-    // ../../src/builtins/data-view.tq:232:4
-    TNode<BigInt> t772 = UncheckedCast<BigInt>(CreateEmptyBigInt((*is_positive_229).value(), 1));
-    USE(t772);
-    TVARIABLE(BigInt, result_233_impl);
-    auto result_233 = &result_233_impl;
-    USE(result_233);
-    *result_233 = t772;
-    // ../../src/builtins/data-view.tq:234:4
-    int31_t t773 = 0;
-    TNode<UintPtrT> t774 = UncheckedCast<UintPtrT>(Unsigned((*raw_value_232).value()));
-    USE(t774);
-    StoreBigIntDigit((*result_233).value(), t773, t774);
-    // ../../src/builtins/data-view.tq:236:4
-    *_return_228 = (*result_233).value();
-    Goto(label_macro_end_686);
-  }
-  BIND(label_macro_end_686);
-  return (*_return_228).value();
-}
-
-compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::MakeBigIntOn32Bit(TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, bool p_signed) {
-  TVARIABLE(BigInt, _return_234_impl);
-  auto _return_234 = &_return_234_impl;
-  USE(_return_234);
-  Label label_macro_end_687_impl(this, {_return_234});
-  Label* label_macro_end_687 = &label_macro_end_687_impl;
-  USE(label_macro_end_687);
-  // ../../src/builtins/data-view.tq:241:58
-  {
-    // ../../src/builtins/data-view.tq:244:4
-    {
-      Label label__True_204_impl(this);
-      Label* label__True_204 = &label__True_204_impl;
-      USE(label__True_204);
-      Label label__False_205_impl(this, {});
-      Label* label__False_205 = &label__False_205_impl;
-      USE(label__False_205);
-      Label label__True_206_impl(this);
-      Label* label__True_206 = &label__True_206_impl;
-      USE(label__True_206);
-      int31_t t775 = 0;
-      TNode<Uint32T> t776 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t775));
-      TNode<BoolT> t777 = UncheckedCast<BoolT>(Word32Equal(p_low_word, t776));
-      USE(t777);
-      GotoIfNot(t777, label__False_205);
-      int31_t t778 = 0;
-      TNode<Uint32T> t779 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t778));
-      TNode<BoolT> t780 = UncheckedCast<BoolT>(Word32Equal(p_high_word, t779));
-      USE(t780);
-      Branch(t780, label__True_204, label__False_205);
-      if (label__True_204->is_used())
-      {
-        BIND(label__True_204);
-        // ../../src/builtins/data-view.tq:244:41
-        {
-          // ../../src/builtins/data-view.tq:245:6
-          TNode<IntPtrT> t781 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(0));
-          TNode<BigInt> t782 = UncheckedCast<BigInt>(AllocateBigInt(t781));
-          USE(t782);
-          *_return_234 = t782;
-          Goto(label_macro_end_687);
-        }
-      }
-      BIND(label__False_205);
-    }
-    // ../../src/builtins/data-view.tq:249:4
-    TVARIABLE(BoolT, need_two_digits_235_impl);
-    auto need_two_digits_235 = &need_two_digits_235_impl;
-    USE(need_two_digits_235);
-    TNode<BoolT> t783 = UncheckedCast<BoolT>(from_constexpr6ATbool(false));
-    *need_two_digits_235 = t783;
-    // ../../src/builtins/data-view.tq:250:4
-    TVARIABLE(BoolT, is_positive_236_impl);
-    auto is_positive_236 = &is_positive_236_impl;
-    USE(is_positive_236);
-    TNode<BoolT> t784 = UncheckedCast<BoolT>(from_constexpr6ATbool(true));
-    *is_positive_236 = t784;
-    // ../../src/builtins/data-view.tq:254:4
-    TNode<Int32T> t785 = UncheckedCast<Int32T>(Signed(p_low_word));
-    USE(t785);
-    TVARIABLE(Int32T, low_part_237_impl);
-    auto low_part_237 = &low_part_237_impl;
-    USE(low_part_237);
-    *low_part_237 = t785;
-    // ../../src/builtins/data-view.tq:255:4
-    TNode<Int32T> t786 = UncheckedCast<Int32T>(Signed(p_high_word));
-    USE(t786);
-    TVARIABLE(Int32T, high_part_238_impl);
-    auto high_part_238 = &high_part_238_impl;
-    USE(high_part_238);
-    *high_part_238 = t786;
-    // ../../src/builtins/data-view.tq:260:4
-    {
-      Label label__True_207_impl(this);
-      Label* label__True_207 = &label__True_207_impl;
-      USE(label__True_207);
-      Label label__False_208_impl(this, {need_two_digits_235, is_positive_236, low_part_237, high_part_238});
-      Label* label__False_208 = &label__False_208_impl;
-      USE(label__False_208);
-      int31_t t787 = 0;
-      TNode<Uint32T> t788 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t787));
-      TNode<BoolT> t789 = UncheckedCast<BoolT>(Word32NotEqual(p_high_word, t788));
-      USE(t789);
-      Branch(t789, label__True_207, label__False_208);
-      if (label__True_207->is_used())
-      {
-        BIND(label__True_207);
-        // ../../src/builtins/data-view.tq:260:24
-        {
-          // ../../src/builtins/data-view.tq:261:6
-          {
-            if ((p_signed)) {
-              // ../../src/builtins/data-view.tq:261:28
-              {
-                // ../../src/builtins/data-view.tq:264:8
-                {
-                  Label label__True_211_impl(this);
-                  Label* label__True_211 = &label__True_211_impl;
-                  USE(label__True_211);
-                  Label label__False_212_impl(this);
-                  Label* label__False_212 = &label__False_212_impl;
-                  USE(label__False_212);
-                  Label label_if_done_label_537_688_impl(this, {need_two_digits_235, is_positive_236, low_part_237, high_part_238});
-                  Label* label_if_done_label_537_688 = &label_if_done_label_537_688_impl;
-                  USE(label_if_done_label_537_688);
-                  int31_t t790 = 0;
-                  TNode<Int32T> t791 = UncheckedCast<Int32T>(from_constexpr7ATint32(t790));
-                  TNode<BoolT> t792 = UncheckedCast<BoolT>(Int32LessThan((*high_part_238).value(), t791));
-                  USE(t792);
-                  Branch(t792, label__True_211, label__False_212);
-                  if (label__True_211->is_used())
-                  {
-                    BIND(label__True_211);
-                    // ../../src/builtins/data-view.tq:264:27
-                    {
-                      // ../../src/builtins/data-view.tq:265:10
-                      TNode<BoolT> t793 = UncheckedCast<BoolT>(from_constexpr6ATbool(false));
-                      *is_positive_236 = t793;
-                      // ../../src/builtins/data-view.tq:270:10
-                      int31_t t794 = 0;
-                      TNode<Int32T> t795 = UncheckedCast<Int32T>(from_constexpr7ATint32(t794));
-                      TNode<Int32T> t796 = UncheckedCast<Int32T>(Int32Sub(t795, (*high_part_238).value()));
-                      USE(t796);
-                      *high_part_238 = t796;
-                      // ../../src/builtins/data-view.tq:271:10
-                      {
-                        Label label__True_213_impl(this);
-                        Label* label__True_213 = &label__True_213_impl;
-                        USE(label__True_213);
-                        Label label__False_214_impl(this, {high_part_238});
-                        Label* label__False_214 = &label__False_214_impl;
-                        USE(label__False_214);
-                        int31_t t797 = 0;
-                        TNode<Int32T> t798 = UncheckedCast<Int32T>(from_constexpr7ATint32(t797));
-                        TNode<BoolT> t799 = UncheckedCast<BoolT>(Word32NotEqual((*low_part_237).value(), t798));
-                        USE(t799);
-                        Branch(t799, label__True_213, label__False_214);
-                        if (label__True_213->is_used())
-                        {
-                          BIND(label__True_213);
-                          // ../../src/builtins/data-view.tq:271:29
-                          {
-                            // ../../src/builtins/data-view.tq:272:12
-                            int31_t t800 = 1;
-                            TNode<Int32T> t801 = UncheckedCast<Int32T>(from_constexpr7ATint32(t800));
-                            TNode<Int32T> t802 = UncheckedCast<Int32T>(Int32Sub((*high_part_238).value(), t801));
-                            USE(t802);
-                            *high_part_238 = t802;
-                          }
-                          Goto(label__False_214);
-                        }
-                        BIND(label__False_214);
-                      }
-                      // ../../src/builtins/data-view.tq:274:10
-                      int31_t t803 = 0;
-                      TNode<Int32T> t804 = UncheckedCast<Int32T>(from_constexpr7ATint32(t803));
-                      TNode<Int32T> t805 = UncheckedCast<Int32T>(Int32Sub(t804, (*low_part_237).value()));
-                      USE(t805);
-                      *low_part_237 = t805;
-                      // ../../src/builtins/data-view.tq:277:10
-                      {
-                        Label label__True_215_impl(this);
-                        Label* label__True_215 = &label__True_215_impl;
-                        USE(label__True_215);
-                        Label label__False_216_impl(this, {need_two_digits_235});
-                        Label* label__False_216 = &label__False_216_impl;
-                        USE(label__False_216);
-                        int31_t t806 = 0;
-                        TNode<Int32T> t807 = UncheckedCast<Int32T>(from_constexpr7ATint32(t806));
-                        TNode<BoolT> t808 = UncheckedCast<BoolT>(Word32NotEqual((*high_part_238).value(), t807));
-                        USE(t808);
-                        Branch(t808, label__True_215, label__False_216);
-                        if (label__True_215->is_used())
-                        {
-                          BIND(label__True_215);
-                          // ../../src/builtins/data-view.tq:277:30
-                          {
-                            // ../../src/builtins/data-view.tq:278:12
-                            TNode<BoolT> t809 = UncheckedCast<BoolT>(from_constexpr6ATbool(true));
-                            *need_two_digits_235 = t809;
-                          }
-                          Goto(label__False_216);
-                        }
-                        BIND(label__False_216);
-                      }
-                    }
-                    Goto(label_if_done_label_537_688);
-                  }
-                  if (label__False_212->is_used())
-                  {
-                    BIND(label__False_212);
-                    // ../../src/builtins/data-view.tq:281:15
-                    {
-                      // ../../src/builtins/data-view.tq:283:10
-                      TNode<BoolT> t810 = UncheckedCast<BoolT>(from_constexpr6ATbool(true));
-                      *need_two_digits_235 = t810;
-                    }
-                    Goto(label_if_done_label_537_688);
-                  }
-                  BIND(label_if_done_label_537_688);
-                }
-              }
-            } else {
-              // ../../src/builtins/data-view.tq:286:13
-              {
-                // ../../src/builtins/data-view.tq:289:8
-                TNode<BoolT> t811 = UncheckedCast<BoolT>(from_constexpr6ATbool(true));
-                *need_two_digits_235 = t811;
-              }
-            }
-          }
-        }
-        Goto(label__False_208);
-      }
-      BIND(label__False_208);
-    }
-    // ../../src/builtins/data-view.tq:294:4
-    TVARIABLE(BigInt, result_239_impl);
-    auto result_239 = &result_239_impl;
-    USE(result_239);
-    // ../../src/builtins/data-view.tq:295:4
-    {
-      Label label__True_217_impl(this);
-      Label* label__True_217 = &label__True_217_impl;
-      USE(label__True_217);
-      Label label__False_218_impl(this);
-      Label* label__False_218 = &label__False_218_impl;
-      USE(label__False_218);
-      Label label_if_done_label_538_689_impl(this, {result_239});
-      Label* label_if_done_label_538_689 = &label_if_done_label_538_689_impl;
-      USE(label_if_done_label_538_689);
-      Branch((*need_two_digits_235).value(), label__True_217, label__False_218);
-      if (label__True_217->is_used())
-      {
-        BIND(label__True_217);
-        // ../../src/builtins/data-view.tq:295:25
-        {
-          // ../../src/builtins/data-view.tq:296:6
-          TNode<BigInt> t812 = UncheckedCast<BigInt>(CreateEmptyBigInt((*is_positive_236).value(), 2));
-          USE(t812);
-          *result_239 = t812;
-        }
-        Goto(label_if_done_label_538_689);
-      }
-      if (label__False_218->is_used())
-      {
-        BIND(label__False_218);
-        // ../../src/builtins/data-view.tq:297:11
-        {
-          // ../../src/builtins/data-view.tq:298:6
-          TNode<BigInt> t813 = UncheckedCast<BigInt>(CreateEmptyBigInt((*is_positive_236).value(), 1));
-          USE(t813);
-          *result_239 = t813;
-        }
-        Goto(label_if_done_label_538_689);
-      }
-      BIND(label_if_done_label_538_689);
-    }
-    // ../../src/builtins/data-view.tq:302:4
-    int31_t t814 = 0;
-    TNode<IntPtrT> t815 = UncheckedCast<IntPtrT>(convert8ATintptr((*low_part_237).value()));
-    USE(t815);
-    TNode<UintPtrT> t816 = UncheckedCast<UintPtrT>(Unsigned(t815));
-    USE(t816);
-    StoreBigIntDigit((*result_239).value(), t814, t816);
-    // ../../src/builtins/data-view.tq:304:4
-    {
-      Label label__True_219_impl(this);
-      Label* label__True_219 = &label__True_219_impl;
-      USE(label__True_219);
-      Label label__False_220_impl(this, {});
-      Label* label__False_220 = &label__False_220_impl;
-      USE(label__False_220);
-      Branch((*need_two_digits_235).value(), label__True_219, label__False_220);
-      if (label__True_219->is_used())
-      {
-        BIND(label__True_219);
-        // ../../src/builtins/data-view.tq:304:25
-        {
-          // ../../src/builtins/data-view.tq:305:6
-          int31_t t817 = 1;
-          TNode<IntPtrT> t818 = UncheckedCast<IntPtrT>(convert8ATintptr((*high_part_238).value()));
-          USE(t818);
-          TNode<UintPtrT> t819 = UncheckedCast<UintPtrT>(Unsigned(t818));
-          USE(t819);
-          StoreBigIntDigit((*result_239).value(), t817, t819);
-        }
-        Goto(label__False_220);
-      }
-      BIND(label__False_220);
-    }
-    // ../../src/builtins/data-view.tq:308:4
-    *_return_234 = (*result_239).value();
-    Goto(label_macro_end_687);
-  }
-  BIND(label_macro_end_687);
-  return (*_return_234).value();
-}
-
-compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::MakeBigInt(TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, bool p_signed) {
-  TVARIABLE(BigInt, _return_240_impl);
-  auto _return_240 = &_return_240_impl;
-  USE(_return_240);
-  Label label_macro_end_690_impl(this, {_return_240});
-  Label* label_macro_end_690 = &label_macro_end_690_impl;
-  USE(label_macro_end_690);
-  // ../../src/builtins/data-view.tq:312:51
-  {
-    // ../../src/builtins/data-view.tq:315:4
-    {
-      bool t820 = Is64();
-      USE(t820);
-      if ((t820)) {
-        // ../../src/builtins/data-view.tq:315:26
-        {
-          // ../../src/builtins/data-view.tq:316:6
-          TNode<BigInt> t821 = UncheckedCast<BigInt>(MakeBigIntOn64Bit(p_low_word, p_high_word, p_signed));
-          USE(t821);
-          *_return_240 = t821;
-          Goto(label_macro_end_690);
-        }
-      } else {
-        // ../../src/builtins/data-view.tq:317:11
-        {
-          // ../../src/builtins/data-view.tq:318:6
-          TNode<BigInt> t822 = UncheckedCast<BigInt>(MakeBigIntOn32Bit(p_low_word, p_high_word, p_signed));
-          USE(t822);
-          *_return_240 = t822;
-          Goto(label_macro_end_690);
-        }
-      }
-    }
-  }
-  BIND(label_macro_end_690);
-  return (*_return_240).value();
-}
-
-compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::LoadDataViewBigInt(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian, bool p_signed) {
-  TVARIABLE(BigInt, _return_241_impl);
-  auto _return_241 = &_return_241_impl;
-  USE(_return_241);
-  Label label_macro_end_691_impl(this, {_return_241});
-  Label* label_macro_end_691 = &label_macro_end_691_impl;
-  USE(label_macro_end_691);
-  // ../../src/builtins/data-view.tq:324:59
-  {
-    // ../../src/builtins/data-view.tq:325:4
-    TNode<RawPtrT> t823 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_242_impl);
-    auto data_pointer_242 = &data_pointer_242_impl;
-    USE(data_pointer_242);
-    *data_pointer_242 = t823;
-    // ../../src/builtins/data-view.tq:327:4
-    TNode<Uint32T> t824 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), p_offset));
-    USE(t824);
-    TVARIABLE(Uint32T, b0_243_impl);
-    auto b0_243 = &b0_243_impl;
-    USE(b0_243);
-    *b0_243 = t824;
-    // ../../src/builtins/data-view.tq:328:4
-    int31_t t825 = 1;
-    TNode<IntPtrT> t826 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t825));
-    TNode<IntPtrT> t827 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t826));
-    USE(t827);
-    TNode<Uint32T> t828 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), t827));
-    USE(t828);
-    TVARIABLE(Uint32T, b1_244_impl);
-    auto b1_244 = &b1_244_impl;
-    USE(b1_244);
-    *b1_244 = t828;
-    // ../../src/builtins/data-view.tq:329:4
-    int31_t t829 = 2;
-    TNode<IntPtrT> t830 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t829));
-    TNode<IntPtrT> t831 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t830));
-    USE(t831);
-    TNode<Uint32T> t832 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), t831));
-    USE(t832);
-    TVARIABLE(Uint32T, b2_245_impl);
-    auto b2_245 = &b2_245_impl;
-    USE(b2_245);
-    *b2_245 = t832;
-    // ../../src/builtins/data-view.tq:330:4
-    int31_t t833 = 3;
-    TNode<IntPtrT> t834 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t833));
-    TNode<IntPtrT> t835 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t834));
-    USE(t835);
-    TNode<Uint32T> t836 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), t835));
-    USE(t836);
-    TVARIABLE(Uint32T, b3_246_impl);
-    auto b3_246 = &b3_246_impl;
-    USE(b3_246);
-    *b3_246 = t836;
-    // ../../src/builtins/data-view.tq:331:4
-    int31_t t837 = 4;
-    TNode<IntPtrT> t838 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t837));
-    TNode<IntPtrT> t839 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t838));
-    USE(t839);
-    TNode<Uint32T> t840 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), t839));
-    USE(t840);
-    TVARIABLE(Uint32T, b4_247_impl);
-    auto b4_247 = &b4_247_impl;
-    USE(b4_247);
-    *b4_247 = t840;
-    // ../../src/builtins/data-view.tq:332:4
-    int31_t t841 = 5;
-    TNode<IntPtrT> t842 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t841));
-    TNode<IntPtrT> t843 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t842));
-    USE(t843);
-    TNode<Uint32T> t844 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), t843));
-    USE(t844);
-    TVARIABLE(Uint32T, b5_248_impl);
-    auto b5_248 = &b5_248_impl;
-    USE(b5_248);
-    *b5_248 = t844;
-    // ../../src/builtins/data-view.tq:333:4
-    int31_t t845 = 6;
-    TNode<IntPtrT> t846 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t845));
-    TNode<IntPtrT> t847 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t846));
-    USE(t847);
-    TNode<Uint32T> t848 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), t847));
-    USE(t848);
-    TVARIABLE(Uint32T, b6_249_impl);
-    auto b6_249 = &b6_249_impl;
-    USE(b6_249);
-    *b6_249 = t848;
-    // ../../src/builtins/data-view.tq:334:4
-    int31_t t849 = 7;
-    TNode<IntPtrT> t850 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t849));
-    TNode<IntPtrT> t851 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t850));
-    USE(t851);
-    TNode<Uint32T> t852 = UncheckedCast<Uint32T>(LoadUint8((*data_pointer_242).value(), t851));
-    USE(t852);
-    TVARIABLE(Uint32T, b7_250_impl);
-    auto b7_250 = &b7_250_impl;
-    USE(b7_250);
-    *b7_250 = t852;
-    // ../../src/builtins/data-view.tq:335:4
-    TVARIABLE(Uint32T, low_word_251_impl);
-    auto low_word_251 = &low_word_251_impl;
-    USE(low_word_251);
-    // ../../src/builtins/data-view.tq:336:4
-    TVARIABLE(Uint32T, high_word_252_impl);
-    auto high_word_252 = &high_word_252_impl;
-    USE(high_word_252);
-    // ../../src/builtins/data-view.tq:338:4
-    {
-      Label label__True_223_impl(this);
-      Label* label__True_223 = &label__True_223_impl;
-      USE(label__True_223);
-      Label label__False_224_impl(this);
-      Label* label__False_224 = &label__False_224_impl;
-      USE(label__False_224);
-      Label label_if_done_label_539_692_impl(this, {low_word_251, high_word_252});
-      Label* label_if_done_label_539_692 = &label_if_done_label_539_692_impl;
-      USE(label_if_done_label_539_692);
-      Branch(p_requested_little_endian, label__True_223, label__False_224);
-      if (label__True_223->is_used())
-      {
-        BIND(label__True_223);
-        // ../../src/builtins/data-view.tq:338:33
-        {
-          // ../../src/builtins/data-view.tq:339:6
-          int31_t t853 = 24;
-          TNode<Uint32T> t854 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t853));
-          TNode<Uint32T> t855 = UncheckedCast<Uint32T>(Word32Shl((*b3_246).value(), t854));
-          USE(t855);
-          int31_t t856 = 16;
-          TNode<Uint32T> t857 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t856));
-          TNode<Uint32T> t858 = UncheckedCast<Uint32T>(Word32Shl((*b2_245).value(), t857));
-          USE(t858);
-          TNode<Uint32T> t859 = UncheckedCast<Uint32T>(Word32Or(t855, t858));
-          USE(t859);
-          int31_t t860 = 8;
-          TNode<Uint32T> t861 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t860));
-          TNode<Uint32T> t862 = UncheckedCast<Uint32T>(Word32Shl((*b1_244).value(), t861));
-          USE(t862);
-          TNode<Uint32T> t863 = UncheckedCast<Uint32T>(Word32Or(t859, t862));
-          USE(t863);
-          TNode<Uint32T> t864 = UncheckedCast<Uint32T>(Word32Or(t863, (*b0_243).value()));
-          USE(t864);
-          *low_word_251 = t864;
-          // ../../src/builtins/data-view.tq:340:6
-          int31_t t865 = 24;
-          TNode<Uint32T> t866 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t865));
-          TNode<Uint32T> t867 = UncheckedCast<Uint32T>(Word32Shl((*b7_250).value(), t866));
-          USE(t867);
-          int31_t t868 = 16;
-          TNode<Uint32T> t869 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t868));
-          TNode<Uint32T> t870 = UncheckedCast<Uint32T>(Word32Shl((*b6_249).value(), t869));
-          USE(t870);
-          TNode<Uint32T> t871 = UncheckedCast<Uint32T>(Word32Or(t867, t870));
-          USE(t871);
-          int31_t t872 = 8;
-          TNode<Uint32T> t873 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t872));
-          TNode<Uint32T> t874 = UncheckedCast<Uint32T>(Word32Shl((*b5_248).value(), t873));
-          USE(t874);
-          TNode<Uint32T> t875 = UncheckedCast<Uint32T>(Word32Or(t871, t874));
-          USE(t875);
-          TNode<Uint32T> t876 = UncheckedCast<Uint32T>(Word32Or(t875, (*b4_247).value()));
-          USE(t876);
-          *high_word_252 = t876;
-        }
-        Goto(label_if_done_label_539_692);
-      }
-      if (label__False_224->is_used())
-      {
-        BIND(label__False_224);
-        // ../../src/builtins/data-view.tq:341:11
-        {
-          // ../../src/builtins/data-view.tq:342:6
-          int31_t t877 = 24;
-          TNode<Uint32T> t878 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t877));
-          TNode<Uint32T> t879 = UncheckedCast<Uint32T>(Word32Shl((*b0_243).value(), t878));
-          USE(t879);
-          int31_t t880 = 16;
-          TNode<Uint32T> t881 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t880));
-          TNode<Uint32T> t882 = UncheckedCast<Uint32T>(Word32Shl((*b1_244).value(), t881));
-          USE(t882);
-          TNode<Uint32T> t883 = UncheckedCast<Uint32T>(Word32Or(t879, t882));
-          USE(t883);
-          int31_t t884 = 8;
-          TNode<Uint32T> t885 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t884));
-          TNode<Uint32T> t886 = UncheckedCast<Uint32T>(Word32Shl((*b2_245).value(), t885));
-          USE(t886);
-          TNode<Uint32T> t887 = UncheckedCast<Uint32T>(Word32Or(t883, t886));
-          USE(t887);
-          TNode<Uint32T> t888 = UncheckedCast<Uint32T>(Word32Or(t887, (*b3_246).value()));
-          USE(t888);
-          *high_word_252 = t888;
-          // ../../src/builtins/data-view.tq:343:6
-          int31_t t889 = 24;
-          TNode<Uint32T> t890 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t889));
-          TNode<Uint32T> t891 = UncheckedCast<Uint32T>(Word32Shl((*b4_247).value(), t890));
-          USE(t891);
-          int31_t t892 = 16;
-          TNode<Uint32T> t893 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t892));
-          TNode<Uint32T> t894 = UncheckedCast<Uint32T>(Word32Shl((*b5_248).value(), t893));
-          USE(t894);
-          TNode<Uint32T> t895 = UncheckedCast<Uint32T>(Word32Or(t891, t894));
-          USE(t895);
-          int31_t t896 = 8;
-          TNode<Uint32T> t897 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t896));
-          TNode<Uint32T> t898 = UncheckedCast<Uint32T>(Word32Shl((*b6_249).value(), t897));
-          USE(t898);
-          TNode<Uint32T> t899 = UncheckedCast<Uint32T>(Word32Or(t895, t898));
-          USE(t899);
-          TNode<Uint32T> t900 = UncheckedCast<Uint32T>(Word32Or(t899, (*b7_250).value()));
-          USE(t900);
-          *low_word_251 = t900;
-        }
-        Goto(label_if_done_label_539_692);
-      }
-      BIND(label_if_done_label_539_692);
-    }
-    // ../../src/builtins/data-view.tq:346:4
-    TNode<BigInt> t901 = UncheckedCast<BigInt>(MakeBigInt((*low_word_251).value(), (*high_word_252).value(), p_signed));
-    USE(t901);
-    *_return_241 = t901;
-    Goto(label_macro_end_691);
-  }
-  BIND(label_macro_end_691);
-  return (*_return_241).value();
-}
-
-compiler::TNode<Numeric> DataViewBuiltinsFromDSLAssembler::DataViewGet(TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_offset, TNode<Object> p_requested_little_endian, ElementsKind p_kind) {
-  TVARIABLE(Numeric, _return_253_impl);
-  auto _return_253 = &_return_253_impl;
-  USE(_return_253);
-  Label label_macro_end_693_impl(this, {_return_253});
-  Label* label_macro_end_693 = &label_macro_end_693_impl;
-  USE(label_macro_end_693);
-  // ../../src/builtins/data-view.tq:356:59
-  {
-    // ../../src/builtins/data-view.tq:360:4
-    const char* t902 = "get DataView.prototype.get";
-    TNode<String> t903 = UncheckedCast<String>(from_constexpr8ATString(t902));
-    TNode<JSDataView> t904 = UncheckedCast<JSDataView>(ValidateDataView(p_context, p_receiver, t903));
-    USE(t904);
-    TVARIABLE(JSDataView, data_view_254_impl);
-    auto data_view_254 = &data_view_254_impl;
-    USE(data_view_254);
-    *data_view_254 = t904;
-    // ../../src/builtins/data-view.tq:363:4
-    TVARIABLE(Smi, getIndexSmi_255_impl);
-    auto getIndexSmi_255 = &getIndexSmi_255_impl;
-    USE(getIndexSmi_255);
-    // ../../src/builtins/data-view.tq:364:4
-    {
-      Label label_try_done_540_694_impl(this);
-      Label* label_try_done_540_694 = &label_try_done_540_694_impl;
-      USE(label_try_done_540_694);
-      Label label_RangeError_225_impl(this);
-      Label* label_RangeError_225 = &label_RangeError_225_impl;
-      USE(label_RangeError_225);
-      Label label_try_begin_541_695_impl(this);
-      Label* label_try_begin_541_695 = &label_try_begin_541_695_impl;
-      USE(label_try_begin_541_695);
-      Goto(label_try_begin_541_695);
-      if (label_try_begin_541_695->is_used())
-      {
-        BIND(label_try_begin_541_695);
-        // ../../src/builtins/data-view.tq:364:8
-        {
-          // ../../src/builtins/data-view.tq:365:6
-          TNode<Smi> t905 = UncheckedCast<Smi>(ToSmiIndex(p_offset, p_context, label_RangeError_225));
-          USE(t905);
-          *getIndexSmi_255 = t905;
-        }
-        Goto(label_try_done_540_694);
-      }
-      if (label_RangeError_225->is_used())
-      {
-        BIND(label_RangeError_225);
-        // ../../src/builtins/data-view.tq:367:21
-        {
-          // ../../src/builtins/data-view.tq:368:6
-          ThrowRangeError(p_context, MessageTemplate::kInvalidDataViewAccessorOffset);
-        }
-      }
-      BIND(label_try_done_540_694);
-    }
-    // ../../src/builtins/data-view.tq:370:4
-    TNode<IntPtrT> t906 = UncheckedCast<IntPtrT>(convert8ATintptr((*getIndexSmi_255).value()));
-    USE(t906);
-    TVARIABLE(IntPtrT, getIndex_256_impl);
-    auto getIndex_256 = &getIndex_256_impl;
-    USE(getIndex_256);
-    *getIndex_256 = t906;
-    // ../../src/builtins/data-view.tq:372:4
-    TNode<BoolT> t907 = UncheckedCast<BoolT>(ToBoolean(p_requested_little_endian));
-    USE(t907);
-    TVARIABLE(BoolT, littleEndian_257_impl);
-    auto littleEndian_257 = &littleEndian_257_impl;
-    USE(littleEndian_257);
-    *littleEndian_257 = t907;
-    // ../../src/builtins/data-view.tq:373:4
-    TNode<JSArrayBuffer> t908 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer((*data_view_254).value()));
-    TVARIABLE(JSArrayBuffer, buffer_258_impl);
-    auto buffer_258 = &buffer_258_impl;
-    USE(buffer_258);
-    *buffer_258 = t908;
-    // ../../src/builtins/data-view.tq:375:4
-    {
-      Label label__True_226_impl(this);
-      Label* label__True_226 = &label__True_226_impl;
-      USE(label__True_226);
-      Label label__False_227_impl(this, {});
-      Label* label__False_227 = &label__False_227_impl;
-      USE(label__False_227);
-      TNode<BoolT> t909 = UncheckedCast<BoolT>(IsDetachedBuffer((*buffer_258).value()));
-      USE(t909);
-      Branch(t909, label__True_226, label__False_227);
-      if (label__True_226->is_used())
-      {
-        BIND(label__True_226);
-        // ../../src/builtins/data-view.tq:375:34
-        {
-          // ../../src/builtins/data-view.tq:376:6
-          const char* t910 = "DataView.prototype.get";
-          TNode<Object> t911 = UncheckedCast<Object>(from_constexpr22UT12ATHeapObject5ATSmi(t910));
-          ThrowTypeError(p_context, MessageTemplate::kDetachedOperation, t911);
-        }
-      }
-      BIND(label__False_227);
-    }
-    // ../../src/builtins/data-view.tq:379:4
-    TNode<Smi> t912 = UncheckedCast<Smi>(LoadDataViewByteOffset((*data_view_254).value()));
-    TNode<IntPtrT> t913 = UncheckedCast<IntPtrT>(convert8ATintptr(t912));
-    USE(t913);
-    TVARIABLE(IntPtrT, viewOffset_259_impl);
-    auto viewOffset_259 = &viewOffset_259_impl;
-    USE(viewOffset_259);
-    *viewOffset_259 = t913;
-    // ../../src/builtins/data-view.tq:380:4
-    TNode<Smi> t914 = UncheckedCast<Smi>(LoadDataViewByteLength((*data_view_254).value()));
-    TNode<IntPtrT> t915 = UncheckedCast<IntPtrT>(convert8ATintptr(t914));
-    USE(t915);
-    TVARIABLE(IntPtrT, viewSize_260_impl);
-    auto viewSize_260 = &viewSize_260_impl;
-    USE(viewSize_260);
-    *viewSize_260 = t915;
-    // ../../src/builtins/data-view.tq:381:4
-    int31_t t916 = DataViewElementSize(p_kind);
-    USE(t916);
-    TVARIABLE(IntPtrT, elementSize_261_impl);
-    auto elementSize_261 = &elementSize_261_impl;
-    USE(elementSize_261);
-    TNode<IntPtrT> t917 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t916));
-    *elementSize_261 = t917;
-    // ../../src/builtins/data-view.tq:383:4
-    {
-      Label label__True_228_impl(this);
-      Label* label__True_228 = &label__True_228_impl;
-      USE(label__True_228);
-      Label label__False_229_impl(this, {});
-      Label* label__False_229 = &label__False_229_impl;
-      USE(label__False_229);
-      TNode<IntPtrT> t918 = UncheckedCast<IntPtrT>(IntPtrAdd((*getIndex_256).value(), (*elementSize_261).value()));
-      USE(t918);
-      TNode<BoolT> t919 = UncheckedCast<BoolT>(IntPtrGreaterThan(t918, (*viewSize_260).value()));
-      USE(t919);
-      Branch(t919, label__True_228, label__False_229);
-      if (label__True_228->is_used())
-      {
-        BIND(label__True_228);
-        // ../../src/builtins/data-view.tq:383:43
-        {
-          // ../../src/builtins/data-view.tq:384:6
-          ThrowRangeError(p_context, MessageTemplate::kInvalidDataViewAccessorOffset);
-        }
-      }
-      BIND(label__False_229);
-    }
-    // ../../src/builtins/data-view.tq:387:4
-    TNode<IntPtrT> t920 = UncheckedCast<IntPtrT>(IntPtrAdd((*getIndex_256).value(), (*viewOffset_259).value()));
-    USE(t920);
-    TVARIABLE(IntPtrT, bufferIndex_262_impl);
-    auto bufferIndex_262 = &bufferIndex_262_impl;
-    USE(bufferIndex_262);
-    *bufferIndex_262 = t920;
-    // ../../src/builtins/data-view.tq:389:4
-    {
-      bool t921 = ElementsKindEqual(p_kind, UINT8_ELEMENTS);
-      USE(t921);
-      if ((t921)) {
-        // ../../src/builtins/data-view.tq:389:42
-        {
-          // ../../src/builtins/data-view.tq:390:6
-          TNode<Smi> t922 = UncheckedCast<Smi>(LoadDataViewUint8((*buffer_258).value(), (*bufferIndex_262).value()));
-          USE(t922);
-          *_return_253 = t922;
-          Goto(label_macro_end_693);
-        }
-      } else {
-        // ../../src/builtins/data-view.tq:391:11
-        {
-          bool t923 = ElementsKindEqual(p_kind, INT8_ELEMENTS);
-          USE(t923);
-          if ((t923)) {
-            // ../../src/builtins/data-view.tq:391:48
-            {
-              // ../../src/builtins/data-view.tq:392:6
-              TNode<Smi> t924 = UncheckedCast<Smi>(LoadDataViewInt8((*buffer_258).value(), (*bufferIndex_262).value()));
-              USE(t924);
-              *_return_253 = t924;
-              Goto(label_macro_end_693);
+              // ../../src/builtins/data-view.tq:20:7
+              const char* t649 = "DataView.prototype.getInt8";
+              TNode<String> t650 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t649)));
+              *_return_172 = implicit_cast<TNode<String>>(t650);
+              Goto(label_macro_end_1155);
             }
           } else {
-            // ../../src/builtins/data-view.tq:393:11
+            // ../../src/builtins/data-view.tq:21:12
             {
-              bool t925 = ElementsKindEqual(p_kind, UINT16_ELEMENTS);
-              USE(t925);
-              if ((t925)) {
-                // ../../src/builtins/data-view.tq:393:50
+              bool t651 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+              USE(implicit_cast<bool>(t651));
+              if ((implicit_cast<bool>(t651))) {
+                // ../../src/builtins/data-view.tq:21:51
                 {
-                  // ../../src/builtins/data-view.tq:394:6
-                  TNode<Number> t926 = UncheckedCast<Number>(LoadDataView16((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value(), false));
-                  USE(t926);
-                  *_return_253 = t926;
-                  Goto(label_macro_end_693);
+                  // ../../src/builtins/data-view.tq:22:7
+                  const char* t652 = "DataView.prototype.getUint16";
+                  TNode<String> t653 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t652)));
+                  *_return_172 = implicit_cast<TNode<String>>(t653);
+                  Goto(label_macro_end_1155);
                 }
               } else {
-                // ../../src/builtins/data-view.tq:395:11
+                // ../../src/builtins/data-view.tq:23:12
                 {
-                  bool t927 = ElementsKindEqual(p_kind, INT16_ELEMENTS);
-                  USE(t927);
-                  if ((t927)) {
-                    // ../../src/builtins/data-view.tq:395:49
+                  bool t654 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT16_ELEMENTS));
+                  USE(implicit_cast<bool>(t654));
+                  if ((implicit_cast<bool>(t654))) {
+                    // ../../src/builtins/data-view.tq:23:50
                     {
-                      // ../../src/builtins/data-view.tq:396:6
-                      TNode<Number> t928 = UncheckedCast<Number>(LoadDataView16((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value(), true));
-                      USE(t928);
-                      *_return_253 = t928;
-                      Goto(label_macro_end_693);
+                      // ../../src/builtins/data-view.tq:24:7
+                      const char* t655 = "DataView.prototype.getInt16";
+                      TNode<String> t656 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t655)));
+                      *_return_172 = implicit_cast<TNode<String>>(t656);
+                      Goto(label_macro_end_1155);
                     }
                   } else {
-                    // ../../src/builtins/data-view.tq:397:11
+                    // ../../src/builtins/data-view.tq:25:12
                     {
-                      bool t929 = ElementsKindEqual(p_kind, UINT32_ELEMENTS);
-                      USE(t929);
-                      if ((t929)) {
-                        // ../../src/builtins/data-view.tq:397:50
+                      bool t657 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT32_ELEMENTS));
+                      USE(implicit_cast<bool>(t657));
+                      if ((implicit_cast<bool>(t657))) {
+                        // ../../src/builtins/data-view.tq:25:51
                         {
-                          // ../../src/builtins/data-view.tq:398:6
-                          TNode<Number> t930 = UncheckedCast<Number>(LoadDataView32((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value(), false));
-                          USE(t930);
-                          *_return_253 = t930;
-                          Goto(label_macro_end_693);
+                          // ../../src/builtins/data-view.tq:26:7
+                          const char* t658 = "DataView.prototype.getUint32";
+                          TNode<String> t659 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t658)));
+                          *_return_172 = implicit_cast<TNode<String>>(t659);
+                          Goto(label_macro_end_1155);
                         }
                       } else {
-                        // ../../src/builtins/data-view.tq:399:11
+                        // ../../src/builtins/data-view.tq:27:12
                         {
-                          bool t931 = ElementsKindEqual(p_kind, INT32_ELEMENTS);
-                          USE(t931);
-                          if ((t931)) {
-                            // ../../src/builtins/data-view.tq:399:49
+                          bool t660 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT32_ELEMENTS));
+                          USE(implicit_cast<bool>(t660));
+                          if ((implicit_cast<bool>(t660))) {
+                            // ../../src/builtins/data-view.tq:27:50
                             {
-                              // ../../src/builtins/data-view.tq:400:6
-                              TNode<Number> t932 = UncheckedCast<Number>(LoadDataView32((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value(), true));
-                              USE(t932);
-                              *_return_253 = t932;
-                              Goto(label_macro_end_693);
+                              // ../../src/builtins/data-view.tq:28:7
+                              const char* t661 = "DataView.prototype.getInt32";
+                              TNode<String> t662 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t661)));
+                              *_return_172 = implicit_cast<TNode<String>>(t662);
+                              Goto(label_macro_end_1155);
                             }
                           } else {
-                            // ../../src/builtins/data-view.tq:401:11
+                            // ../../src/builtins/data-view.tq:29:12
                             {
-                              bool t933 = ElementsKindEqual(p_kind, FLOAT32_ELEMENTS);
-                              USE(t933);
-                              if ((t933)) {
-                                // ../../src/builtins/data-view.tq:401:51
+                              bool t663 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT32_ELEMENTS));
+                              USE(implicit_cast<bool>(t663));
+                              if ((implicit_cast<bool>(t663))) {
+                                // ../../src/builtins/data-view.tq:29:52
                                 {
-                                  // ../../src/builtins/data-view.tq:402:6
-                                  TNode<Number> t934 = UncheckedCast<Number>(LoadDataViewFloat32((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value()));
-                                  USE(t934);
-                                  *_return_253 = t934;
-                                  Goto(label_macro_end_693);
+                                  // ../../src/builtins/data-view.tq:30:7
+                                  const char* t664 = "DataView.prototype.getFloat32";
+                                  TNode<String> t665 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t664)));
+                                  *_return_172 = implicit_cast<TNode<String>>(t665);
+                                  Goto(label_macro_end_1155);
                                 }
                               } else {
-                                // ../../src/builtins/data-view.tq:403:11
+                                // ../../src/builtins/data-view.tq:31:12
                                 {
-                                  bool t935 = ElementsKindEqual(p_kind, FLOAT64_ELEMENTS);
-                                  USE(t935);
-                                  if ((t935)) {
-                                    // ../../src/builtins/data-view.tq:403:51
+                                  bool t666 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT64_ELEMENTS));
+                                  USE(implicit_cast<bool>(t666));
+                                  if ((implicit_cast<bool>(t666))) {
+                                    // ../../src/builtins/data-view.tq:31:52
                                     {
-                                      // ../../src/builtins/data-view.tq:404:6
-                                      TNode<Number> t936 = UncheckedCast<Number>(LoadDataViewFloat64((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value()));
-                                      USE(t936);
-                                      *_return_253 = t936;
-                                      Goto(label_macro_end_693);
+                                      // ../../src/builtins/data-view.tq:32:7
+                                      const char* t667 = "DataView.prototype.getFloat64";
+                                      TNode<String> t668 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t667)));
+                                      *_return_172 = implicit_cast<TNode<String>>(t668);
+                                      Goto(label_macro_end_1155);
                                     }
                                   } else {
-                                    // ../../src/builtins/data-view.tq:405:11
+                                    // ../../src/builtins/data-view.tq:33:12
                                     {
-                                      bool t937 = ElementsKindEqual(p_kind, BIGINT64_ELEMENTS);
-                                      USE(t937);
-                                      if ((t937)) {
-                                        // ../../src/builtins/data-view.tq:405:52
+                                      bool t669 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGINT64_ELEMENTS));
+                                      USE(implicit_cast<bool>(t669));
+                                      if ((implicit_cast<bool>(t669))) {
+                                        // ../../src/builtins/data-view.tq:33:53
                                         {
-                                          // ../../src/builtins/data-view.tq:406:6
-                                          TNode<BigInt> t938 = UncheckedCast<BigInt>(LoadDataViewBigInt((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value(), true));
-                                          USE(t938);
-                                          *_return_253 = t938;
-                                          Goto(label_macro_end_693);
+                                          // ../../src/builtins/data-view.tq:34:7
+                                          const char* t670 = "DataView.prototype.getBigInt64";
+                                          TNode<String> t671 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t670)));
+                                          *_return_172 = implicit_cast<TNode<String>>(t671);
+                                          Goto(label_macro_end_1155);
                                         }
                                       } else {
-                                        // ../../src/builtins/data-view.tq:407:11
+                                        // ../../src/builtins/data-view.tq:35:12
                                         {
-                                          bool t939 = ElementsKindEqual(p_kind, BIGUINT64_ELEMENTS);
-                                          USE(t939);
-                                          if ((t939)) {
-                                            // ../../src/builtins/data-view.tq:407:53
+                                          bool t672 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGUINT64_ELEMENTS));
+                                          USE(implicit_cast<bool>(t672));
+                                          if ((implicit_cast<bool>(t672))) {
+                                            // ../../src/builtins/data-view.tq:35:54
                                             {
-                                              // ../../src/builtins/data-view.tq:408:6
-                                              TNode<BigInt> t940 = UncheckedCast<BigInt>(LoadDataViewBigInt((*buffer_258).value(), (*bufferIndex_262).value(), (*littleEndian_257).value(), false));
-                                              USE(t940);
-                                              *_return_253 = t940;
-                                              Goto(label_macro_end_693);
+                                              // ../../src/builtins/data-view.tq:36:7
+                                              const char* t673 = "DataView.prototype.getBigUint64";
+                                              TNode<String> t674 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t673)));
+                                              *_return_172 = implicit_cast<TNode<String>>(t674);
+                                              Goto(label_macro_end_1155);
                                             }
                                           } else {
-                                            // ../../src/builtins/data-view.tq:409:11
+                                            // ../../src/builtins/data-view.tq:37:12
                                             {
-                                              // ../../src/builtins/data-view.tq:410:6
+                                              // ../../src/builtins/data-view.tq:38:7
                                               Unreachable();
                                             }
                                           }
@@ -2019,1899 +188,170 @@ compiler::TNode<Numeric> DataViewBuiltinsFromDSLAssembler::DataViewGet(TNode<Con
       }
     }
   }
-  BIND(label_macro_end_693);
-  return (*_return_253).value();
+  BIND(label_macro_end_1155);
+  return implicit_cast<TNode<String>>((*_return_172).value());
 }
 
-TF_BUILTIN(DataViewPrototypeGetInt8, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:415:64
+compiler::TNode<String> DataViewBuiltinsFromDSLAssembler::MakeDataViewSetterNameString(ElementsKind p_kind) {
+  TVARIABLE(String, _return_173_impl);
+  auto _return_173 = &_return_173_impl;
+  USE(_return_173);
+  Label label_macro_end_1156_impl(this, {_return_173});
+  Label* label_macro_end_1156 = &label_macro_end_1156_impl;
+  USE(label_macro_end_1156);
+  // ../../src/builtins/data-view.tq:42:76
   {
-    // ../../src/builtins/data-view.tq:416:4
-    auto t941 = [=]() {
-      int31_t t943 = 0;
-      TNode<IntPtrT> t944 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t943));
-      TNode<Object> t945 = UncheckedCast<Object>(GetArgumentValue(arguments, t944));
-      return t945;
-    };
-    auto t942 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t946_542_impl);
-    auto t946_542 = &t946_542_impl;
-    USE(t946_542);
+    // ../../src/builtins/data-view.tq:43:5
     {
-      Label label__True_250_impl(this);
-      Label* label__True_250 = &label__True_250_impl;
-      USE(label__True_250);
-      Label label__False_251_impl(this);
-      Label* label__False_251 = &label__False_251_impl;
-      USE(label__False_251);
-      Label label__done_543_696_impl(this, {t946_542});
-      Label* label__done_543_696 = &label__done_543_696_impl;
-      USE(label__done_543_696);
-      TNode<IntPtrT> t947 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t948 = 0;
-      TNode<IntPtrT> t949 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t948));
-      TNode<BoolT> t950 = UncheckedCast<BoolT>(IntPtrGreaterThan(t947, t949));
-      USE(t950);
-      Branch(t950, label__True_250, label__False_251);
-      BIND(label__True_250);
-            *t946_542 = t941();
-      Goto(label__done_543_696);
-      BIND(label__False_251);
-            *t946_542 = t942();
-      Goto(label__done_543_696);
-      BIND(label__done_543_696);
-    }
-    TVARIABLE(Object, offset_263_impl);
-    auto offset_263 = &offset_263_impl;
-    USE(offset_263);
-    *offset_263 = (*t946_542).value();
-    // ../../src/builtins/data-view.tq:419:4
-    TNode<Numeric> t951 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_263).value(), Undefined(), INT8_ELEMENTS));
-    USE(t951);
-    arguments->PopAndReturn(t951);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetUint8, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:423:62
-  {
-    // ../../src/builtins/data-view.tq:424:6
-    auto t952 = [=]() {
-      int31_t t954 = 0;
-      TNode<IntPtrT> t955 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t954));
-      TNode<Object> t956 = UncheckedCast<Object>(GetArgumentValue(arguments, t955));
-      return t956;
-    };
-    auto t953 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t957_544_impl);
-    auto t957_544 = &t957_544_impl;
-    USE(t957_544);
-    {
-      Label label__True_252_impl(this);
-      Label* label__True_252 = &label__True_252_impl;
-      USE(label__True_252);
-      Label label__False_253_impl(this);
-      Label* label__False_253 = &label__False_253_impl;
-      USE(label__False_253);
-      Label label__done_545_697_impl(this, {t957_544});
-      Label* label__done_545_697 = &label__done_545_697_impl;
-      USE(label__done_545_697);
-      TNode<IntPtrT> t958 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t959 = 0;
-      TNode<IntPtrT> t960 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t959));
-      TNode<BoolT> t961 = UncheckedCast<BoolT>(IntPtrGreaterThan(t958, t960));
-      USE(t961);
-      Branch(t961, label__True_252, label__False_253);
-      BIND(label__True_252);
-            *t957_544 = t952();
-      Goto(label__done_545_697);
-      BIND(label__False_253);
-            *t957_544 = t953();
-      Goto(label__done_545_697);
-      BIND(label__done_545_697);
-    }
-    TVARIABLE(Object, offset_264_impl);
-    auto offset_264 = &offset_264_impl;
-    USE(offset_264);
-    *offset_264 = (*t957_544).value();
-    // ../../src/builtins/data-view.tq:427:6
-    TNode<Numeric> t962 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_264).value(), Undefined(), UINT8_ELEMENTS));
-    USE(t962);
-    arguments->PopAndReturn(t962);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetInt16, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:431:62
-  {
-    // ../../src/builtins/data-view.tq:432:6
-    auto t963 = [=]() {
-      int31_t t965 = 0;
-      TNode<IntPtrT> t966 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t965));
-      TNode<Object> t967 = UncheckedCast<Object>(GetArgumentValue(arguments, t966));
-      return t967;
-    };
-    auto t964 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t968_546_impl);
-    auto t968_546 = &t968_546_impl;
-    USE(t968_546);
-    {
-      Label label__True_254_impl(this);
-      Label* label__True_254 = &label__True_254_impl;
-      USE(label__True_254);
-      Label label__False_255_impl(this);
-      Label* label__False_255 = &label__False_255_impl;
-      USE(label__False_255);
-      Label label__done_547_698_impl(this, {t968_546});
-      Label* label__done_547_698 = &label__done_547_698_impl;
-      USE(label__done_547_698);
-      TNode<IntPtrT> t969 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t970 = 0;
-      TNode<IntPtrT> t971 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t970));
-      TNode<BoolT> t972 = UncheckedCast<BoolT>(IntPtrGreaterThan(t969, t971));
-      USE(t972);
-      Branch(t972, label__True_254, label__False_255);
-      BIND(label__True_254);
-            *t968_546 = t963();
-      Goto(label__done_547_698);
-      BIND(label__False_255);
-            *t968_546 = t964();
-      Goto(label__done_547_698);
-      BIND(label__done_547_698);
-    }
-    TVARIABLE(Object, offset_265_impl);
-    auto offset_265 = &offset_265_impl;
-    USE(offset_265);
-    *offset_265 = (*t968_546).value();
-    // ../../src/builtins/data-view.tq:435:6
-    auto t973 = [=]() {
-      int31_t t975 = 1;
-      TNode<IntPtrT> t976 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t975));
-      TNode<Object> t977 = UncheckedCast<Object>(GetArgumentValue(arguments, t976));
-      return t977;
-    };
-    auto t974 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t978_548_impl);
-    auto t978_548 = &t978_548_impl;
-    USE(t978_548);
-    {
-      Label label__True_256_impl(this);
-      Label* label__True_256 = &label__True_256_impl;
-      USE(label__True_256);
-      Label label__False_257_impl(this);
-      Label* label__False_257 = &label__False_257_impl;
-      USE(label__False_257);
-      Label label__done_549_699_impl(this, {t978_548});
-      Label* label__done_549_699 = &label__done_549_699_impl;
-      USE(label__done_549_699);
-      TNode<IntPtrT> t979 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t980 = 1;
-      TNode<IntPtrT> t981 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t980));
-      TNode<BoolT> t982 = UncheckedCast<BoolT>(IntPtrGreaterThan(t979, t981));
-      USE(t982);
-      Branch(t982, label__True_256, label__False_257);
-      BIND(label__True_256);
-            *t978_548 = t973();
-      Goto(label__done_549_699);
-      BIND(label__False_257);
-            *t978_548 = t974();
-      Goto(label__done_549_699);
-      BIND(label__done_549_699);
-    }
-    TVARIABLE(Object, is_little_endian_266_impl);
-    auto is_little_endian_266 = &is_little_endian_266_impl;
-    USE(is_little_endian_266);
-    *is_little_endian_266 = (*t978_548).value();
-    // ../../src/builtins/data-view.tq:438:6
-    TNode<Numeric> t983 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_265).value(), (*is_little_endian_266).value(), INT16_ELEMENTS));
-    USE(t983);
-    arguments->PopAndReturn(t983);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetUint16, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:443:62
-  {
-    // ../../src/builtins/data-view.tq:444:6
-    auto t984 = [=]() {
-      int31_t t986 = 0;
-      TNode<IntPtrT> t987 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t986));
-      TNode<Object> t988 = UncheckedCast<Object>(GetArgumentValue(arguments, t987));
-      return t988;
-    };
-    auto t985 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t989_550_impl);
-    auto t989_550 = &t989_550_impl;
-    USE(t989_550);
-    {
-      Label label__True_258_impl(this);
-      Label* label__True_258 = &label__True_258_impl;
-      USE(label__True_258);
-      Label label__False_259_impl(this);
-      Label* label__False_259 = &label__False_259_impl;
-      USE(label__False_259);
-      Label label__done_551_700_impl(this, {t989_550});
-      Label* label__done_551_700 = &label__done_551_700_impl;
-      USE(label__done_551_700);
-      TNode<IntPtrT> t990 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t991 = 0;
-      TNode<IntPtrT> t992 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t991));
-      TNode<BoolT> t993 = UncheckedCast<BoolT>(IntPtrGreaterThan(t990, t992));
-      USE(t993);
-      Branch(t993, label__True_258, label__False_259);
-      BIND(label__True_258);
-            *t989_550 = t984();
-      Goto(label__done_551_700);
-      BIND(label__False_259);
-            *t989_550 = t985();
-      Goto(label__done_551_700);
-      BIND(label__done_551_700);
-    }
-    TVARIABLE(Object, offset_267_impl);
-    auto offset_267 = &offset_267_impl;
-    USE(offset_267);
-    *offset_267 = (*t989_550).value();
-    // ../../src/builtins/data-view.tq:447:6
-    auto t994 = [=]() {
-      int31_t t996 = 1;
-      TNode<IntPtrT> t997 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t996));
-      TNode<Object> t998 = UncheckedCast<Object>(GetArgumentValue(arguments, t997));
-      return t998;
-    };
-    auto t995 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t999_552_impl);
-    auto t999_552 = &t999_552_impl;
-    USE(t999_552);
-    {
-      Label label__True_260_impl(this);
-      Label* label__True_260 = &label__True_260_impl;
-      USE(label__True_260);
-      Label label__False_261_impl(this);
-      Label* label__False_261 = &label__False_261_impl;
-      USE(label__False_261);
-      Label label__done_553_701_impl(this, {t999_552});
-      Label* label__done_553_701 = &label__done_553_701_impl;
-      USE(label__done_553_701);
-      TNode<IntPtrT> t1000 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1001 = 1;
-      TNode<IntPtrT> t1002 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1001));
-      TNode<BoolT> t1003 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1000, t1002));
-      USE(t1003);
-      Branch(t1003, label__True_260, label__False_261);
-      BIND(label__True_260);
-            *t999_552 = t994();
-      Goto(label__done_553_701);
-      BIND(label__False_261);
-            *t999_552 = t995();
-      Goto(label__done_553_701);
-      BIND(label__done_553_701);
-    }
-    TVARIABLE(Object, is_little_endian_268_impl);
-    auto is_little_endian_268 = &is_little_endian_268_impl;
-    USE(is_little_endian_268);
-    *is_little_endian_268 = (*t999_552).value();
-    // ../../src/builtins/data-view.tq:450:6
-    TNode<Numeric> t1004 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_267).value(), (*is_little_endian_268).value(), UINT16_ELEMENTS));
-    USE(t1004);
-    arguments->PopAndReturn(t1004);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetInt32, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:455:62
-  {
-    // ../../src/builtins/data-view.tq:456:6
-    auto t1005 = [=]() {
-      int31_t t1007 = 0;
-      TNode<IntPtrT> t1008 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1007));
-      TNode<Object> t1009 = UncheckedCast<Object>(GetArgumentValue(arguments, t1008));
-      return t1009;
-    };
-    auto t1006 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1010_554_impl);
-    auto t1010_554 = &t1010_554_impl;
-    USE(t1010_554);
-    {
-      Label label__True_262_impl(this);
-      Label* label__True_262 = &label__True_262_impl;
-      USE(label__True_262);
-      Label label__False_263_impl(this);
-      Label* label__False_263 = &label__False_263_impl;
-      USE(label__False_263);
-      Label label__done_555_702_impl(this, {t1010_554});
-      Label* label__done_555_702 = &label__done_555_702_impl;
-      USE(label__done_555_702);
-      TNode<IntPtrT> t1011 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1012 = 0;
-      TNode<IntPtrT> t1013 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1012));
-      TNode<BoolT> t1014 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1011, t1013));
-      USE(t1014);
-      Branch(t1014, label__True_262, label__False_263);
-      BIND(label__True_262);
-            *t1010_554 = t1005();
-      Goto(label__done_555_702);
-      BIND(label__False_263);
-            *t1010_554 = t1006();
-      Goto(label__done_555_702);
-      BIND(label__done_555_702);
-    }
-    TVARIABLE(Object, offset_269_impl);
-    auto offset_269 = &offset_269_impl;
-    USE(offset_269);
-    *offset_269 = (*t1010_554).value();
-    // ../../src/builtins/data-view.tq:459:6
-    auto t1015 = [=]() {
-      int31_t t1017 = 1;
-      TNode<IntPtrT> t1018 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1017));
-      TNode<Object> t1019 = UncheckedCast<Object>(GetArgumentValue(arguments, t1018));
-      return t1019;
-    };
-    auto t1016 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1020_556_impl);
-    auto t1020_556 = &t1020_556_impl;
-    USE(t1020_556);
-    {
-      Label label__True_264_impl(this);
-      Label* label__True_264 = &label__True_264_impl;
-      USE(label__True_264);
-      Label label__False_265_impl(this);
-      Label* label__False_265 = &label__False_265_impl;
-      USE(label__False_265);
-      Label label__done_557_703_impl(this, {t1020_556});
-      Label* label__done_557_703 = &label__done_557_703_impl;
-      USE(label__done_557_703);
-      TNode<IntPtrT> t1021 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1022 = 1;
-      TNode<IntPtrT> t1023 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1022));
-      TNode<BoolT> t1024 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1021, t1023));
-      USE(t1024);
-      Branch(t1024, label__True_264, label__False_265);
-      BIND(label__True_264);
-            *t1020_556 = t1015();
-      Goto(label__done_557_703);
-      BIND(label__False_265);
-            *t1020_556 = t1016();
-      Goto(label__done_557_703);
-      BIND(label__done_557_703);
-    }
-    TVARIABLE(Object, is_little_endian_270_impl);
-    auto is_little_endian_270 = &is_little_endian_270_impl;
-    USE(is_little_endian_270);
-    *is_little_endian_270 = (*t1020_556).value();
-    // ../../src/builtins/data-view.tq:462:6
-    TNode<Numeric> t1025 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_269).value(), (*is_little_endian_270).value(), INT32_ELEMENTS));
-    USE(t1025);
-    arguments->PopAndReturn(t1025);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetUint32, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:467:62
-  {
-    // ../../src/builtins/data-view.tq:468:6
-    auto t1026 = [=]() {
-      int31_t t1028 = 0;
-      TNode<IntPtrT> t1029 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1028));
-      TNode<Object> t1030 = UncheckedCast<Object>(GetArgumentValue(arguments, t1029));
-      return t1030;
-    };
-    auto t1027 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1031_558_impl);
-    auto t1031_558 = &t1031_558_impl;
-    USE(t1031_558);
-    {
-      Label label__True_266_impl(this);
-      Label* label__True_266 = &label__True_266_impl;
-      USE(label__True_266);
-      Label label__False_267_impl(this);
-      Label* label__False_267 = &label__False_267_impl;
-      USE(label__False_267);
-      Label label__done_559_704_impl(this, {t1031_558});
-      Label* label__done_559_704 = &label__done_559_704_impl;
-      USE(label__done_559_704);
-      TNode<IntPtrT> t1032 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1033 = 0;
-      TNode<IntPtrT> t1034 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1033));
-      TNode<BoolT> t1035 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1032, t1034));
-      USE(t1035);
-      Branch(t1035, label__True_266, label__False_267);
-      BIND(label__True_266);
-            *t1031_558 = t1026();
-      Goto(label__done_559_704);
-      BIND(label__False_267);
-            *t1031_558 = t1027();
-      Goto(label__done_559_704);
-      BIND(label__done_559_704);
-    }
-    TVARIABLE(Object, offset_271_impl);
-    auto offset_271 = &offset_271_impl;
-    USE(offset_271);
-    *offset_271 = (*t1031_558).value();
-    // ../../src/builtins/data-view.tq:471:6
-    auto t1036 = [=]() {
-      int31_t t1038 = 1;
-      TNode<IntPtrT> t1039 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1038));
-      TNode<Object> t1040 = UncheckedCast<Object>(GetArgumentValue(arguments, t1039));
-      return t1040;
-    };
-    auto t1037 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1041_560_impl);
-    auto t1041_560 = &t1041_560_impl;
-    USE(t1041_560);
-    {
-      Label label__True_268_impl(this);
-      Label* label__True_268 = &label__True_268_impl;
-      USE(label__True_268);
-      Label label__False_269_impl(this);
-      Label* label__False_269 = &label__False_269_impl;
-      USE(label__False_269);
-      Label label__done_561_705_impl(this, {t1041_560});
-      Label* label__done_561_705 = &label__done_561_705_impl;
-      USE(label__done_561_705);
-      TNode<IntPtrT> t1042 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1043 = 1;
-      TNode<IntPtrT> t1044 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1043));
-      TNode<BoolT> t1045 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1042, t1044));
-      USE(t1045);
-      Branch(t1045, label__True_268, label__False_269);
-      BIND(label__True_268);
-            *t1041_560 = t1036();
-      Goto(label__done_561_705);
-      BIND(label__False_269);
-            *t1041_560 = t1037();
-      Goto(label__done_561_705);
-      BIND(label__done_561_705);
-    }
-    TVARIABLE(Object, is_little_endian_272_impl);
-    auto is_little_endian_272 = &is_little_endian_272_impl;
-    USE(is_little_endian_272);
-    *is_little_endian_272 = (*t1041_560).value();
-    // ../../src/builtins/data-view.tq:474:6
-    TNode<Numeric> t1046 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_271).value(), (*is_little_endian_272).value(), UINT32_ELEMENTS));
-    USE(t1046);
-    arguments->PopAndReturn(t1046);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetFloat32, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:479:62
-  {
-    // ../../src/builtins/data-view.tq:480:6
-    auto t1047 = [=]() {
-      int31_t t1049 = 0;
-      TNode<IntPtrT> t1050 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1049));
-      TNode<Object> t1051 = UncheckedCast<Object>(GetArgumentValue(arguments, t1050));
-      return t1051;
-    };
-    auto t1048 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1052_562_impl);
-    auto t1052_562 = &t1052_562_impl;
-    USE(t1052_562);
-    {
-      Label label__True_270_impl(this);
-      Label* label__True_270 = &label__True_270_impl;
-      USE(label__True_270);
-      Label label__False_271_impl(this);
-      Label* label__False_271 = &label__False_271_impl;
-      USE(label__False_271);
-      Label label__done_563_706_impl(this, {t1052_562});
-      Label* label__done_563_706 = &label__done_563_706_impl;
-      USE(label__done_563_706);
-      TNode<IntPtrT> t1053 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1054 = 0;
-      TNode<IntPtrT> t1055 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1054));
-      TNode<BoolT> t1056 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1053, t1055));
-      USE(t1056);
-      Branch(t1056, label__True_270, label__False_271);
-      BIND(label__True_270);
-            *t1052_562 = t1047();
-      Goto(label__done_563_706);
-      BIND(label__False_271);
-            *t1052_562 = t1048();
-      Goto(label__done_563_706);
-      BIND(label__done_563_706);
-    }
-    TVARIABLE(Object, offset_273_impl);
-    auto offset_273 = &offset_273_impl;
-    USE(offset_273);
-    *offset_273 = (*t1052_562).value();
-    // ../../src/builtins/data-view.tq:483:6
-    auto t1057 = [=]() {
-      int31_t t1059 = 1;
-      TNode<IntPtrT> t1060 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1059));
-      TNode<Object> t1061 = UncheckedCast<Object>(GetArgumentValue(arguments, t1060));
-      return t1061;
-    };
-    auto t1058 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1062_564_impl);
-    auto t1062_564 = &t1062_564_impl;
-    USE(t1062_564);
-    {
-      Label label__True_272_impl(this);
-      Label* label__True_272 = &label__True_272_impl;
-      USE(label__True_272);
-      Label label__False_273_impl(this);
-      Label* label__False_273 = &label__False_273_impl;
-      USE(label__False_273);
-      Label label__done_565_707_impl(this, {t1062_564});
-      Label* label__done_565_707 = &label__done_565_707_impl;
-      USE(label__done_565_707);
-      TNode<IntPtrT> t1063 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1064 = 1;
-      TNode<IntPtrT> t1065 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1064));
-      TNode<BoolT> t1066 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1063, t1065));
-      USE(t1066);
-      Branch(t1066, label__True_272, label__False_273);
-      BIND(label__True_272);
-            *t1062_564 = t1057();
-      Goto(label__done_565_707);
-      BIND(label__False_273);
-            *t1062_564 = t1058();
-      Goto(label__done_565_707);
-      BIND(label__done_565_707);
-    }
-    TVARIABLE(Object, is_little_endian_274_impl);
-    auto is_little_endian_274 = &is_little_endian_274_impl;
-    USE(is_little_endian_274);
-    *is_little_endian_274 = (*t1062_564).value();
-    // ../../src/builtins/data-view.tq:486:6
-    TNode<Numeric> t1067 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_273).value(), (*is_little_endian_274).value(), FLOAT32_ELEMENTS));
-    USE(t1067);
-    arguments->PopAndReturn(t1067);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetFloat64, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:491:62
-  {
-    // ../../src/builtins/data-view.tq:492:6
-    auto t1068 = [=]() {
-      int31_t t1070 = 0;
-      TNode<IntPtrT> t1071 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1070));
-      TNode<Object> t1072 = UncheckedCast<Object>(GetArgumentValue(arguments, t1071));
-      return t1072;
-    };
-    auto t1069 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1073_566_impl);
-    auto t1073_566 = &t1073_566_impl;
-    USE(t1073_566);
-    {
-      Label label__True_274_impl(this);
-      Label* label__True_274 = &label__True_274_impl;
-      USE(label__True_274);
-      Label label__False_275_impl(this);
-      Label* label__False_275 = &label__False_275_impl;
-      USE(label__False_275);
-      Label label__done_567_708_impl(this, {t1073_566});
-      Label* label__done_567_708 = &label__done_567_708_impl;
-      USE(label__done_567_708);
-      TNode<IntPtrT> t1074 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1075 = 0;
-      TNode<IntPtrT> t1076 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1075));
-      TNode<BoolT> t1077 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1074, t1076));
-      USE(t1077);
-      Branch(t1077, label__True_274, label__False_275);
-      BIND(label__True_274);
-            *t1073_566 = t1068();
-      Goto(label__done_567_708);
-      BIND(label__False_275);
-            *t1073_566 = t1069();
-      Goto(label__done_567_708);
-      BIND(label__done_567_708);
-    }
-    TVARIABLE(Object, offset_275_impl);
-    auto offset_275 = &offset_275_impl;
-    USE(offset_275);
-    *offset_275 = (*t1073_566).value();
-    // ../../src/builtins/data-view.tq:495:6
-    auto t1078 = [=]() {
-      int31_t t1080 = 1;
-      TNode<IntPtrT> t1081 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1080));
-      TNode<Object> t1082 = UncheckedCast<Object>(GetArgumentValue(arguments, t1081));
-      return t1082;
-    };
-    auto t1079 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1083_568_impl);
-    auto t1083_568 = &t1083_568_impl;
-    USE(t1083_568);
-    {
-      Label label__True_276_impl(this);
-      Label* label__True_276 = &label__True_276_impl;
-      USE(label__True_276);
-      Label label__False_277_impl(this);
-      Label* label__False_277 = &label__False_277_impl;
-      USE(label__False_277);
-      Label label__done_569_709_impl(this, {t1083_568});
-      Label* label__done_569_709 = &label__done_569_709_impl;
-      USE(label__done_569_709);
-      TNode<IntPtrT> t1084 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1085 = 1;
-      TNode<IntPtrT> t1086 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1085));
-      TNode<BoolT> t1087 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1084, t1086));
-      USE(t1087);
-      Branch(t1087, label__True_276, label__False_277);
-      BIND(label__True_276);
-            *t1083_568 = t1078();
-      Goto(label__done_569_709);
-      BIND(label__False_277);
-            *t1083_568 = t1079();
-      Goto(label__done_569_709);
-      BIND(label__done_569_709);
-    }
-    TVARIABLE(Object, is_little_endian_276_impl);
-    auto is_little_endian_276 = &is_little_endian_276_impl;
-    USE(is_little_endian_276);
-    *is_little_endian_276 = (*t1083_568).value();
-    // ../../src/builtins/data-view.tq:498:6
-    TNode<Numeric> t1088 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_275).value(), (*is_little_endian_276).value(), FLOAT64_ELEMENTS));
-    USE(t1088);
-    arguments->PopAndReturn(t1088);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetBigInt64, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:503:62
-  {
-    // ../../src/builtins/data-view.tq:504:6
-    auto t1089 = [=]() {
-      int31_t t1091 = 0;
-      TNode<IntPtrT> t1092 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1091));
-      TNode<Object> t1093 = UncheckedCast<Object>(GetArgumentValue(arguments, t1092));
-      return t1093;
-    };
-    auto t1090 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1094_570_impl);
-    auto t1094_570 = &t1094_570_impl;
-    USE(t1094_570);
-    {
-      Label label__True_278_impl(this);
-      Label* label__True_278 = &label__True_278_impl;
-      USE(label__True_278);
-      Label label__False_279_impl(this);
-      Label* label__False_279 = &label__False_279_impl;
-      USE(label__False_279);
-      Label label__done_571_710_impl(this, {t1094_570});
-      Label* label__done_571_710 = &label__done_571_710_impl;
-      USE(label__done_571_710);
-      TNode<IntPtrT> t1095 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1096 = 0;
-      TNode<IntPtrT> t1097 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1096));
-      TNode<BoolT> t1098 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1095, t1097));
-      USE(t1098);
-      Branch(t1098, label__True_278, label__False_279);
-      BIND(label__True_278);
-            *t1094_570 = t1089();
-      Goto(label__done_571_710);
-      BIND(label__False_279);
-            *t1094_570 = t1090();
-      Goto(label__done_571_710);
-      BIND(label__done_571_710);
-    }
-    TVARIABLE(Object, offset_277_impl);
-    auto offset_277 = &offset_277_impl;
-    USE(offset_277);
-    *offset_277 = (*t1094_570).value();
-    // ../../src/builtins/data-view.tq:507:6
-    auto t1099 = [=]() {
-      int31_t t1101 = 1;
-      TNode<IntPtrT> t1102 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1101));
-      TNode<Object> t1103 = UncheckedCast<Object>(GetArgumentValue(arguments, t1102));
-      return t1103;
-    };
-    auto t1100 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1104_572_impl);
-    auto t1104_572 = &t1104_572_impl;
-    USE(t1104_572);
-    {
-      Label label__True_280_impl(this);
-      Label* label__True_280 = &label__True_280_impl;
-      USE(label__True_280);
-      Label label__False_281_impl(this);
-      Label* label__False_281 = &label__False_281_impl;
-      USE(label__False_281);
-      Label label__done_573_711_impl(this, {t1104_572});
-      Label* label__done_573_711 = &label__done_573_711_impl;
-      USE(label__done_573_711);
-      TNode<IntPtrT> t1105 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1106 = 1;
-      TNode<IntPtrT> t1107 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1106));
-      TNode<BoolT> t1108 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1105, t1107));
-      USE(t1108);
-      Branch(t1108, label__True_280, label__False_281);
-      BIND(label__True_280);
-            *t1104_572 = t1099();
-      Goto(label__done_573_711);
-      BIND(label__False_281);
-            *t1104_572 = t1100();
-      Goto(label__done_573_711);
-      BIND(label__done_573_711);
-    }
-    TVARIABLE(Object, is_little_endian_278_impl);
-    auto is_little_endian_278 = &is_little_endian_278_impl;
-    USE(is_little_endian_278);
-    *is_little_endian_278 = (*t1104_572).value();
-    // ../../src/builtins/data-view.tq:510:6
-    TNode<Numeric> t1109 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_277).value(), (*is_little_endian_278).value(), BIGINT64_ELEMENTS));
-    USE(t1109);
-    arguments->PopAndReturn(t1109);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeGetBigUint64, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:515:62
-  {
-    // ../../src/builtins/data-view.tq:516:6
-    auto t1110 = [=]() {
-      int31_t t1112 = 0;
-      TNode<IntPtrT> t1113 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1112));
-      TNode<Object> t1114 = UncheckedCast<Object>(GetArgumentValue(arguments, t1113));
-      return t1114;
-    };
-    auto t1111 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1115_574_impl);
-    auto t1115_574 = &t1115_574_impl;
-    USE(t1115_574);
-    {
-      Label label__True_282_impl(this);
-      Label* label__True_282 = &label__True_282_impl;
-      USE(label__True_282);
-      Label label__False_283_impl(this);
-      Label* label__False_283 = &label__False_283_impl;
-      USE(label__False_283);
-      Label label__done_575_712_impl(this, {t1115_574});
-      Label* label__done_575_712 = &label__done_575_712_impl;
-      USE(label__done_575_712);
-      TNode<IntPtrT> t1116 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1117 = 0;
-      TNode<IntPtrT> t1118 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1117));
-      TNode<BoolT> t1119 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1116, t1118));
-      USE(t1119);
-      Branch(t1119, label__True_282, label__False_283);
-      BIND(label__True_282);
-            *t1115_574 = t1110();
-      Goto(label__done_575_712);
-      BIND(label__False_283);
-            *t1115_574 = t1111();
-      Goto(label__done_575_712);
-      BIND(label__done_575_712);
-    }
-    TVARIABLE(Object, offset_279_impl);
-    auto offset_279 = &offset_279_impl;
-    USE(offset_279);
-    *offset_279 = (*t1115_574).value();
-    // ../../src/builtins/data-view.tq:519:6
-    auto t1120 = [=]() {
-      int31_t t1122 = 1;
-      TNode<IntPtrT> t1123 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1122));
-      TNode<Object> t1124 = UncheckedCast<Object>(GetArgumentValue(arguments, t1123));
-      return t1124;
-    };
-    auto t1121 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1125_576_impl);
-    auto t1125_576 = &t1125_576_impl;
-    USE(t1125_576);
-    {
-      Label label__True_284_impl(this);
-      Label* label__True_284 = &label__True_284_impl;
-      USE(label__True_284);
-      Label label__False_285_impl(this);
-      Label* label__False_285 = &label__False_285_impl;
-      USE(label__False_285);
-      Label label__done_577_713_impl(this, {t1125_576});
-      Label* label__done_577_713 = &label__done_577_713_impl;
-      USE(label__done_577_713);
-      TNode<IntPtrT> t1126 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1127 = 1;
-      TNode<IntPtrT> t1128 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1127));
-      TNode<BoolT> t1129 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1126, t1128));
-      USE(t1129);
-      Branch(t1129, label__True_284, label__False_285);
-      BIND(label__True_284);
-            *t1125_576 = t1120();
-      Goto(label__done_577_713);
-      BIND(label__False_285);
-            *t1125_576 = t1121();
-      Goto(label__done_577_713);
-      BIND(label__done_577_713);
-    }
-    TVARIABLE(Object, is_little_endian_280_impl);
-    auto is_little_endian_280 = &is_little_endian_280_impl;
-    USE(is_little_endian_280);
-    *is_little_endian_280 = (*t1125_576).value();
-    // ../../src/builtins/data-view.tq:522:6
-    TNode<Numeric> t1130 = UncheckedCast<Numeric>(DataViewGet(p_context, p_receiver, (*offset_279).value(), (*is_little_endian_280).value(), BIGUINT64_ELEMENTS));
-    USE(t1130);
-    arguments->PopAndReturn(t1130);
-  }
-}
-
-void DataViewBuiltinsFromDSLAssembler::StoreDataView8(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_value) {
-  Label label_macro_end_714_impl(this, {});
-  Label* label_macro_end_714 = &label_macro_end_714_impl;
-  USE(label_macro_end_714);
-  // ../../src/builtins/data-view.tq:534:38
-  {
-    // ../../src/builtins/data-view.tq:535:4
-    TNode<RawPtrT> t1131 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    int31_t t1132 = 0xFF;
-    TNode<Uint32T> t1133 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1132));
-    TNode<Uint32T> t1134 = UncheckedCast<Uint32T>(Word32And(p_value, t1133));
-    USE(t1134);
-    StoreWord8(t1131, p_offset, t1134);
-  }
-}
-
-void DataViewBuiltinsFromDSLAssembler::StoreDataView16(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requested_little_endian) {
-  Label label_macro_end_715_impl(this, {});
-  Label* label_macro_end_715 = &label_macro_end_715_impl;
-  USE(label_macro_end_715);
-  // ../../src/builtins/data-view.tq:539:55
-  {
-    // ../../src/builtins/data-view.tq:540:4
-    TNode<RawPtrT> t1135 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_281_impl);
-    auto data_pointer_281 = &data_pointer_281_impl;
-    USE(data_pointer_281);
-    *data_pointer_281 = t1135;
-    // ../../src/builtins/data-view.tq:542:4
-    int31_t t1136 = 0xFF;
-    TNode<Uint32T> t1137 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1136));
-    TNode<Uint32T> t1138 = UncheckedCast<Uint32T>(Word32And(p_value, t1137));
-    USE(t1138);
-    TVARIABLE(Uint32T, b0_282_impl);
-    auto b0_282 = &b0_282_impl;
-    USE(b0_282);
-    *b0_282 = t1138;
-    // ../../src/builtins/data-view.tq:543:4
-    int31_t t1139 = 8;
-    TNode<Uint32T> t1140 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1139));
-    TNode<Uint32T> t1141 = UncheckedCast<Uint32T>(Word32Shr(p_value, t1140));
-    USE(t1141);
-    int31_t t1142 = 0xFF;
-    TNode<Uint32T> t1143 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1142));
-    TNode<Uint32T> t1144 = UncheckedCast<Uint32T>(Word32And(t1141, t1143));
-    USE(t1144);
-    TVARIABLE(Uint32T, b1_283_impl);
-    auto b1_283 = &b1_283_impl;
-    USE(b1_283);
-    *b1_283 = t1144;
-    // ../../src/builtins/data-view.tq:545:4
-    {
-      Label label__True_286_impl(this);
-      Label* label__True_286 = &label__True_286_impl;
-      USE(label__True_286);
-      Label label__False_287_impl(this);
-      Label* label__False_287 = &label__False_287_impl;
-      USE(label__False_287);
-      Label label_if_done_label_578_716_impl(this, {});
-      Label* label_if_done_label_578_716 = &label_if_done_label_578_716_impl;
-      USE(label_if_done_label_578_716);
-      Branch(p_requested_little_endian, label__True_286, label__False_287);
-      if (label__True_286->is_used())
-      {
-        BIND(label__True_286);
-        // ../../src/builtins/data-view.tq:545:33
+      bool t675 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+      USE(implicit_cast<bool>(t675));
+      if ((implicit_cast<bool>(t675))) {
+        // ../../src/builtins/data-view.tq:43:43
         {
-          // ../../src/builtins/data-view.tq:546:6
-          StoreWord8((*data_pointer_281).value(), p_offset, (*b0_282).value());
-          // ../../src/builtins/data-view.tq:547:6
-          int31_t t1145 = 1;
-          TNode<IntPtrT> t1146 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1145));
-          TNode<IntPtrT> t1147 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1146));
-          USE(t1147);
-          StoreWord8((*data_pointer_281).value(), t1147, (*b1_283).value());
+          // ../../src/builtins/data-view.tq:44:7
+          const char* t676 = "DataView.prototype.setUint8";
+          TNode<String> t677 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t676)));
+          *_return_173 = implicit_cast<TNode<String>>(t677);
+          Goto(label_macro_end_1156);
         }
-        Goto(label_if_done_label_578_716);
-      }
-      if (label__False_287->is_used())
-      {
-        BIND(label__False_287);
-        // ../../src/builtins/data-view.tq:548:11
+      } else {
+        // ../../src/builtins/data-view.tq:45:12
         {
-          // ../../src/builtins/data-view.tq:549:6
-          StoreWord8((*data_pointer_281).value(), p_offset, (*b1_283).value());
-          // ../../src/builtins/data-view.tq:550:6
-          int31_t t1148 = 1;
-          TNode<IntPtrT> t1149 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1148));
-          TNode<IntPtrT> t1150 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1149));
-          USE(t1150);
-          StoreWord8((*data_pointer_281).value(), t1150, (*b0_282).value());
-        }
-        Goto(label_if_done_label_578_716);
-      }
-      BIND(label_if_done_label_578_716);
-    }
-  }
-}
-
-void DataViewBuiltinsFromDSLAssembler::StoreDataView32(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requested_little_endian) {
-  Label label_macro_end_717_impl(this, {});
-  Label* label_macro_end_717 = &label_macro_end_717_impl;
-  USE(label_macro_end_717);
-  // ../../src/builtins/data-view.tq:555:55
-  {
-    // ../../src/builtins/data-view.tq:556:4
-    TNode<RawPtrT> t1151 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_284_impl);
-    auto data_pointer_284 = &data_pointer_284_impl;
-    USE(data_pointer_284);
-    *data_pointer_284 = t1151;
-    // ../../src/builtins/data-view.tq:558:4
-    int31_t t1152 = 0xFF;
-    TNode<Uint32T> t1153 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1152));
-    TNode<Uint32T> t1154 = UncheckedCast<Uint32T>(Word32And(p_value, t1153));
-    USE(t1154);
-    TVARIABLE(Uint32T, b0_285_impl);
-    auto b0_285 = &b0_285_impl;
-    USE(b0_285);
-    *b0_285 = t1154;
-    // ../../src/builtins/data-view.tq:559:4
-    int31_t t1155 = 8;
-    TNode<Uint32T> t1156 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1155));
-    TNode<Uint32T> t1157 = UncheckedCast<Uint32T>(Word32Shr(p_value, t1156));
-    USE(t1157);
-    int31_t t1158 = 0xFF;
-    TNode<Uint32T> t1159 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1158));
-    TNode<Uint32T> t1160 = UncheckedCast<Uint32T>(Word32And(t1157, t1159));
-    USE(t1160);
-    TVARIABLE(Uint32T, b1_286_impl);
-    auto b1_286 = &b1_286_impl;
-    USE(b1_286);
-    *b1_286 = t1160;
-    // ../../src/builtins/data-view.tq:560:4
-    int31_t t1161 = 16;
-    TNode<Uint32T> t1162 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1161));
-    TNode<Uint32T> t1163 = UncheckedCast<Uint32T>(Word32Shr(p_value, t1162));
-    USE(t1163);
-    int31_t t1164 = 0xFF;
-    TNode<Uint32T> t1165 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1164));
-    TNode<Uint32T> t1166 = UncheckedCast<Uint32T>(Word32And(t1163, t1165));
-    USE(t1166);
-    TVARIABLE(Uint32T, b2_287_impl);
-    auto b2_287 = &b2_287_impl;
-    USE(b2_287);
-    *b2_287 = t1166;
-    // ../../src/builtins/data-view.tq:561:4
-    int31_t t1167 = 24;
-    TNode<Uint32T> t1168 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1167));
-    TNode<Uint32T> t1169 = UncheckedCast<Uint32T>(Word32Shr(p_value, t1168));
-    USE(t1169);
-    TVARIABLE(Uint32T, b3_288_impl);
-    auto b3_288 = &b3_288_impl;
-    USE(b3_288);
-    *b3_288 = t1169;
-    // ../../src/builtins/data-view.tq:563:4
-    {
-      Label label__True_288_impl(this);
-      Label* label__True_288 = &label__True_288_impl;
-      USE(label__True_288);
-      Label label__False_289_impl(this);
-      Label* label__False_289 = &label__False_289_impl;
-      USE(label__False_289);
-      Label label_if_done_label_579_718_impl(this, {});
-      Label* label_if_done_label_579_718 = &label_if_done_label_579_718_impl;
-      USE(label_if_done_label_579_718);
-      Branch(p_requested_little_endian, label__True_288, label__False_289);
-      if (label__True_288->is_used())
-      {
-        BIND(label__True_288);
-        // ../../src/builtins/data-view.tq:563:33
-        {
-          // ../../src/builtins/data-view.tq:564:6
-          StoreWord8((*data_pointer_284).value(), p_offset, (*b0_285).value());
-          // ../../src/builtins/data-view.tq:565:6
-          int31_t t1170 = 1;
-          TNode<IntPtrT> t1171 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1170));
-          TNode<IntPtrT> t1172 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1171));
-          USE(t1172);
-          StoreWord8((*data_pointer_284).value(), t1172, (*b1_286).value());
-          // ../../src/builtins/data-view.tq:566:6
-          int31_t t1173 = 2;
-          TNode<IntPtrT> t1174 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1173));
-          TNode<IntPtrT> t1175 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1174));
-          USE(t1175);
-          StoreWord8((*data_pointer_284).value(), t1175, (*b2_287).value());
-          // ../../src/builtins/data-view.tq:567:6
-          int31_t t1176 = 3;
-          TNode<IntPtrT> t1177 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1176));
-          TNode<IntPtrT> t1178 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1177));
-          USE(t1178);
-          StoreWord8((*data_pointer_284).value(), t1178, (*b3_288).value());
-        }
-        Goto(label_if_done_label_579_718);
-      }
-      if (label__False_289->is_used())
-      {
-        BIND(label__False_289);
-        // ../../src/builtins/data-view.tq:568:11
-        {
-          // ../../src/builtins/data-view.tq:569:6
-          StoreWord8((*data_pointer_284).value(), p_offset, (*b3_288).value());
-          // ../../src/builtins/data-view.tq:570:6
-          int31_t t1179 = 1;
-          TNode<IntPtrT> t1180 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1179));
-          TNode<IntPtrT> t1181 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1180));
-          USE(t1181);
-          StoreWord8((*data_pointer_284).value(), t1181, (*b2_287).value());
-          // ../../src/builtins/data-view.tq:571:6
-          int31_t t1182 = 2;
-          TNode<IntPtrT> t1183 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1182));
-          TNode<IntPtrT> t1184 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1183));
-          USE(t1184);
-          StoreWord8((*data_pointer_284).value(), t1184, (*b1_286).value());
-          // ../../src/builtins/data-view.tq:572:6
-          int31_t t1185 = 3;
-          TNode<IntPtrT> t1186 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1185));
-          TNode<IntPtrT> t1187 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1186));
-          USE(t1187);
-          StoreWord8((*data_pointer_284).value(), t1187, (*b0_285).value());
-        }
-        Goto(label_if_done_label_579_718);
-      }
-      BIND(label_if_done_label_579_718);
-    }
-  }
-}
-
-void DataViewBuiltinsFromDSLAssembler::StoreDataView64(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, TNode<BoolT> p_requested_little_endian) {
-  Label label_macro_end_719_impl(this, {});
-  Label* label_macro_end_719 = &label_macro_end_719_impl;
-  USE(label_macro_end_719);
-  // ../../src/builtins/data-view.tq:578:55
-  {
-    // ../../src/builtins/data-view.tq:579:4
-    TNode<RawPtrT> t1188 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(p_buffer));
-    TVARIABLE(RawPtrT, data_pointer_289_impl);
-    auto data_pointer_289 = &data_pointer_289_impl;
-    USE(data_pointer_289);
-    *data_pointer_289 = t1188;
-    // ../../src/builtins/data-view.tq:581:4
-    int31_t t1189 = 0xFF;
-    TNode<Uint32T> t1190 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1189));
-    TNode<Uint32T> t1191 = UncheckedCast<Uint32T>(Word32And(p_low_word, t1190));
-    USE(t1191);
-    TVARIABLE(Uint32T, b0_290_impl);
-    auto b0_290 = &b0_290_impl;
-    USE(b0_290);
-    *b0_290 = t1191;
-    // ../../src/builtins/data-view.tq:582:4
-    int31_t t1192 = 8;
-    TNode<Uint32T> t1193 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1192));
-    TNode<Uint32T> t1194 = UncheckedCast<Uint32T>(Word32Shr(p_low_word, t1193));
-    USE(t1194);
-    int31_t t1195 = 0xFF;
-    TNode<Uint32T> t1196 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1195));
-    TNode<Uint32T> t1197 = UncheckedCast<Uint32T>(Word32And(t1194, t1196));
-    USE(t1197);
-    TVARIABLE(Uint32T, b1_291_impl);
-    auto b1_291 = &b1_291_impl;
-    USE(b1_291);
-    *b1_291 = t1197;
-    // ../../src/builtins/data-view.tq:583:4
-    int31_t t1198 = 16;
-    TNode<Uint32T> t1199 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1198));
-    TNode<Uint32T> t1200 = UncheckedCast<Uint32T>(Word32Shr(p_low_word, t1199));
-    USE(t1200);
-    int31_t t1201 = 0xFF;
-    TNode<Uint32T> t1202 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1201));
-    TNode<Uint32T> t1203 = UncheckedCast<Uint32T>(Word32And(t1200, t1202));
-    USE(t1203);
-    TVARIABLE(Uint32T, b2_292_impl);
-    auto b2_292 = &b2_292_impl;
-    USE(b2_292);
-    *b2_292 = t1203;
-    // ../../src/builtins/data-view.tq:584:4
-    int31_t t1204 = 24;
-    TNode<Uint32T> t1205 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1204));
-    TNode<Uint32T> t1206 = UncheckedCast<Uint32T>(Word32Shr(p_low_word, t1205));
-    USE(t1206);
-    TVARIABLE(Uint32T, b3_293_impl);
-    auto b3_293 = &b3_293_impl;
-    USE(b3_293);
-    *b3_293 = t1206;
-    // ../../src/builtins/data-view.tq:586:4
-    int31_t t1207 = 0xFF;
-    TNode<Uint32T> t1208 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1207));
-    TNode<Uint32T> t1209 = UncheckedCast<Uint32T>(Word32And(p_high_word, t1208));
-    USE(t1209);
-    TVARIABLE(Uint32T, b4_294_impl);
-    auto b4_294 = &b4_294_impl;
-    USE(b4_294);
-    *b4_294 = t1209;
-    // ../../src/builtins/data-view.tq:587:4
-    int31_t t1210 = 8;
-    TNode<Uint32T> t1211 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1210));
-    TNode<Uint32T> t1212 = UncheckedCast<Uint32T>(Word32Shr(p_high_word, t1211));
-    USE(t1212);
-    int31_t t1213 = 0xFF;
-    TNode<Uint32T> t1214 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1213));
-    TNode<Uint32T> t1215 = UncheckedCast<Uint32T>(Word32And(t1212, t1214));
-    USE(t1215);
-    TVARIABLE(Uint32T, b5_295_impl);
-    auto b5_295 = &b5_295_impl;
-    USE(b5_295);
-    *b5_295 = t1215;
-    // ../../src/builtins/data-view.tq:588:4
-    int31_t t1216 = 16;
-    TNode<Uint32T> t1217 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1216));
-    TNode<Uint32T> t1218 = UncheckedCast<Uint32T>(Word32Shr(p_high_word, t1217));
-    USE(t1218);
-    int31_t t1219 = 0xFF;
-    TNode<Uint32T> t1220 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1219));
-    TNode<Uint32T> t1221 = UncheckedCast<Uint32T>(Word32And(t1218, t1220));
-    USE(t1221);
-    TVARIABLE(Uint32T, b6_296_impl);
-    auto b6_296 = &b6_296_impl;
-    USE(b6_296);
-    *b6_296 = t1221;
-    // ../../src/builtins/data-view.tq:589:4
-    int31_t t1222 = 24;
-    TNode<Uint32T> t1223 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1222));
-    TNode<Uint32T> t1224 = UncheckedCast<Uint32T>(Word32Shr(p_high_word, t1223));
-    USE(t1224);
-    TVARIABLE(Uint32T, b7_297_impl);
-    auto b7_297 = &b7_297_impl;
-    USE(b7_297);
-    *b7_297 = t1224;
-    // ../../src/builtins/data-view.tq:592:4
-    {
-      Label label__True_290_impl(this);
-      Label* label__True_290 = &label__True_290_impl;
-      USE(label__True_290);
-      Label label__False_291_impl(this);
-      Label* label__False_291 = &label__False_291_impl;
-      USE(label__False_291);
-      Label label_if_done_label_580_720_impl(this, {});
-      Label* label_if_done_label_580_720 = &label_if_done_label_580_720_impl;
-      USE(label_if_done_label_580_720);
-      Branch(p_requested_little_endian, label__True_290, label__False_291);
-      if (label__True_290->is_used())
-      {
-        BIND(label__True_290);
-        // ../../src/builtins/data-view.tq:592:33
-        {
-          // ../../src/builtins/data-view.tq:593:6
-          StoreWord8((*data_pointer_289).value(), p_offset, (*b0_290).value());
-          // ../../src/builtins/data-view.tq:594:6
-          int31_t t1225 = 1;
-          TNode<IntPtrT> t1226 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1225));
-          TNode<IntPtrT> t1227 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1226));
-          USE(t1227);
-          StoreWord8((*data_pointer_289).value(), t1227, (*b1_291).value());
-          // ../../src/builtins/data-view.tq:595:6
-          int31_t t1228 = 2;
-          TNode<IntPtrT> t1229 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1228));
-          TNode<IntPtrT> t1230 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1229));
-          USE(t1230);
-          StoreWord8((*data_pointer_289).value(), t1230, (*b2_292).value());
-          // ../../src/builtins/data-view.tq:596:6
-          int31_t t1231 = 3;
-          TNode<IntPtrT> t1232 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1231));
-          TNode<IntPtrT> t1233 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1232));
-          USE(t1233);
-          StoreWord8((*data_pointer_289).value(), t1233, (*b3_293).value());
-          // ../../src/builtins/data-view.tq:597:6
-          int31_t t1234 = 4;
-          TNode<IntPtrT> t1235 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1234));
-          TNode<IntPtrT> t1236 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1235));
-          USE(t1236);
-          StoreWord8((*data_pointer_289).value(), t1236, (*b4_294).value());
-          // ../../src/builtins/data-view.tq:598:6
-          int31_t t1237 = 5;
-          TNode<IntPtrT> t1238 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1237));
-          TNode<IntPtrT> t1239 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1238));
-          USE(t1239);
-          StoreWord8((*data_pointer_289).value(), t1239, (*b5_295).value());
-          // ../../src/builtins/data-view.tq:599:6
-          int31_t t1240 = 6;
-          TNode<IntPtrT> t1241 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1240));
-          TNode<IntPtrT> t1242 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1241));
-          USE(t1242);
-          StoreWord8((*data_pointer_289).value(), t1242, (*b6_296).value());
-          // ../../src/builtins/data-view.tq:600:6
-          int31_t t1243 = 7;
-          TNode<IntPtrT> t1244 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1243));
-          TNode<IntPtrT> t1245 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1244));
-          USE(t1245);
-          StoreWord8((*data_pointer_289).value(), t1245, (*b7_297).value());
-        }
-        Goto(label_if_done_label_580_720);
-      }
-      if (label__False_291->is_used())
-      {
-        BIND(label__False_291);
-        // ../../src/builtins/data-view.tq:601:11
-        {
-          // ../../src/builtins/data-view.tq:602:6
-          StoreWord8((*data_pointer_289).value(), p_offset, (*b7_297).value());
-          // ../../src/builtins/data-view.tq:603:6
-          int31_t t1246 = 1;
-          TNode<IntPtrT> t1247 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1246));
-          TNode<IntPtrT> t1248 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1247));
-          USE(t1248);
-          StoreWord8((*data_pointer_289).value(), t1248, (*b6_296).value());
-          // ../../src/builtins/data-view.tq:604:6
-          int31_t t1249 = 2;
-          TNode<IntPtrT> t1250 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1249));
-          TNode<IntPtrT> t1251 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1250));
-          USE(t1251);
-          StoreWord8((*data_pointer_289).value(), t1251, (*b5_295).value());
-          // ../../src/builtins/data-view.tq:605:6
-          int31_t t1252 = 3;
-          TNode<IntPtrT> t1253 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1252));
-          TNode<IntPtrT> t1254 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1253));
-          USE(t1254);
-          StoreWord8((*data_pointer_289).value(), t1254, (*b4_294).value());
-          // ../../src/builtins/data-view.tq:606:6
-          int31_t t1255 = 4;
-          TNode<IntPtrT> t1256 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1255));
-          TNode<IntPtrT> t1257 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1256));
-          USE(t1257);
-          StoreWord8((*data_pointer_289).value(), t1257, (*b3_293).value());
-          // ../../src/builtins/data-view.tq:607:6
-          int31_t t1258 = 5;
-          TNode<IntPtrT> t1259 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1258));
-          TNode<IntPtrT> t1260 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1259));
-          USE(t1260);
-          StoreWord8((*data_pointer_289).value(), t1260, (*b2_292).value());
-          // ../../src/builtins/data-view.tq:608:6
-          int31_t t1261 = 6;
-          TNode<IntPtrT> t1262 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1261));
-          TNode<IntPtrT> t1263 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1262));
-          USE(t1263);
-          StoreWord8((*data_pointer_289).value(), t1263, (*b1_291).value());
-          // ../../src/builtins/data-view.tq:609:6
-          int31_t t1264 = 7;
-          TNode<IntPtrT> t1265 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1264));
-          TNode<IntPtrT> t1266 = UncheckedCast<IntPtrT>(IntPtrAdd(p_offset, t1265));
-          USE(t1266);
-          StoreWord8((*data_pointer_289).value(), t1266, (*b0_290).value());
-        }
-        Goto(label_if_done_label_580_720);
-      }
-      BIND(label_if_done_label_580_720);
-    }
-  }
-}
-
-void DataViewBuiltinsFromDSLAssembler::StoreDataViewBigInt(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BigInt> p_bigint_value, TNode<BoolT> p_requested_little_endian) {
-  Label label_macro_end_721_impl(this, {});
-  Label* label_macro_end_721 = &label_macro_end_721_impl;
-  USE(label_macro_end_721);
-  // ../../src/builtins/data-view.tq:622:59
-  {
-    // ../../src/builtins/data-view.tq:624:4
-    TNode<UintPtrT> t1267 = UncheckedCast<UintPtrT>(DataViewDecodeBigIntLength(p_bigint_value));
-    USE(t1267);
-    TVARIABLE(UintPtrT, length_298_impl);
-    auto length_298 = &length_298_impl;
-    USE(length_298);
-    *length_298 = t1267;
-    // ../../src/builtins/data-view.tq:625:4
-    TNode<UintPtrT> t1268 = UncheckedCast<UintPtrT>(DataViewDecodeBigIntSign(p_bigint_value));
-    USE(t1268);
-    TVARIABLE(UintPtrT, sign_299_impl);
-    auto sign_299 = &sign_299_impl;
-    USE(sign_299);
-    *sign_299 = t1268;
-    // ../../src/builtins/data-view.tq:629:4
-    int31_t t1269 = 0;
-    TVARIABLE(Uint32T, low_word_300_impl);
-    auto low_word_300 = &low_word_300_impl;
-    USE(low_word_300);
-    TNode<Uint32T> t1270 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1269));
-    *low_word_300 = t1270;
-    // ../../src/builtins/data-view.tq:630:4
-    int31_t t1271 = 0;
-    TVARIABLE(Uint32T, high_word_301_impl);
-    auto high_word_301 = &high_word_301_impl;
-    USE(high_word_301);
-    TNode<Uint32T> t1272 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1271));
-    *high_word_301 = t1272;
-    // ../../src/builtins/data-view.tq:633:4
-    {
-      Label label__True_292_impl(this);
-      Label* label__True_292 = &label__True_292_impl;
-      USE(label__True_292);
-      Label label__False_293_impl(this, {low_word_300, high_word_301});
-      Label* label__False_293 = &label__False_293_impl;
-      USE(label__False_293);
-      int31_t t1273 = 0;
-      TNode<UintPtrT> t1274 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(t1273));
-      TNode<BoolT> t1275 = UncheckedCast<BoolT>(WordNotEqual((*length_298).value(), t1274));
-      USE(t1275);
-      Branch(t1275, label__True_292, label__False_293);
-      if (label__True_292->is_used())
-      {
-        BIND(label__True_292);
-        // ../../src/builtins/data-view.tq:633:21
-        {
-          // ../../src/builtins/data-view.tq:634:6
-          {
-            bool t1276 = Is64();
-            USE(t1276);
-            if ((t1276)) {
-              // ../../src/builtins/data-view.tq:634:28
-              {
-                // ../../src/builtins/data-view.tq:636:8
-                int31_t t1277 = 0;
-                TNode<UintPtrT> t1278 = UncheckedCast<UintPtrT>(LoadBigIntDigit(p_bigint_value, t1277));
-                USE(t1278);
-                TVARIABLE(UintPtrT, value_302_impl);
-                auto value_302 = &value_302_impl;
-                USE(value_302);
-                *value_302 = t1278;
-                // ../../src/builtins/data-view.tq:637:8
-                TNode<Uint32T> t1279 = UncheckedCast<Uint32T>(convert8ATuint32((*value_302).value()));
-                USE(t1279);
-                *low_word_300 = t1279;
-                // ../../src/builtins/data-view.tq:638:8
-                int31_t t1280 = 32;
-                TNode<UintPtrT> t1281 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(t1280));
-                TNode<UintPtrT> t1282 = UncheckedCast<UintPtrT>(WordShr((*value_302).value(), t1281));
-                USE(t1282);
-                TNode<Uint32T> t1283 = UncheckedCast<Uint32T>(convert8ATuint32(t1282));
-                USE(t1283);
-                *high_word_301 = t1283;
-              }
-            } else {
-              // ../../src/builtins/data-view.tq:640:11
-              {
-                // ../../src/builtins/data-view.tq:641:8
-                int31_t t1284 = 0;
-                TNode<UintPtrT> t1285 = UncheckedCast<UintPtrT>(LoadBigIntDigit(p_bigint_value, t1284));
-                USE(t1285);
-                TNode<Uint32T> t1286 = UncheckedCast<Uint32T>(convert8ATuint32(t1285));
-                USE(t1286);
-                *low_word_300 = t1286;
-                // ../../src/builtins/data-view.tq:642:8
-                {
-                  Label label__True_296_impl(this);
-                  Label* label__True_296 = &label__True_296_impl;
-                  USE(label__True_296);
-                  Label label__False_297_impl(this, {high_word_301});
-                  Label* label__False_297 = &label__False_297_impl;
-                  USE(label__False_297);
-                  int31_t t1287 = 2;
-                  TNode<UintPtrT> t1288 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(t1287));
-                  TNode<BoolT> t1289 = UncheckedCast<BoolT>(UintPtrGreaterThanOrEqual((*length_298).value(), t1288));
-                  USE(t1289);
-                  Branch(t1289, label__True_296, label__False_297);
-                  if (label__True_296->is_used())
-                  {
-                    BIND(label__True_296);
-                    // ../../src/builtins/data-view.tq:642:25
-                    {
-                      // ../../src/builtins/data-view.tq:643:10
-                      int31_t t1290 = 1;
-                      TNode<UintPtrT> t1291 = UncheckedCast<UintPtrT>(LoadBigIntDigit(p_bigint_value, t1290));
-                      USE(t1291);
-                      TNode<Uint32T> t1292 = UncheckedCast<Uint32T>(convert8ATuint32(t1291));
-                      USE(t1292);
-                      *high_word_301 = t1292;
-                    }
-                    Goto(label__False_297);
-                  }
-                  BIND(label__False_297);
-                }
-              }
-            }
-          }
-        }
-        Goto(label__False_293);
-      }
-      BIND(label__False_293);
-    }
-    // ../../src/builtins/data-view.tq:648:4
-    {
-      Label label__True_298_impl(this);
-      Label* label__True_298 = &label__True_298_impl;
-      USE(label__True_298);
-      Label label__False_299_impl(this, {low_word_300, high_word_301});
-      Label* label__False_299 = &label__False_299_impl;
-      USE(label__False_299);
-      int31_t t1293 = 0;
-      TNode<UintPtrT> t1294 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(t1293));
-      TNode<BoolT> t1295 = UncheckedCast<BoolT>(WordNotEqual((*sign_299).value(), t1294));
-      USE(t1295);
-      Branch(t1295, label__True_298, label__False_299);
-      if (label__True_298->is_used())
-      {
-        BIND(label__True_298);
-        // ../../src/builtins/data-view.tq:648:19
-        {
-          // ../../src/builtins/data-view.tq:649:6
-          int31_t t1296 = 0;
-          TNode<Int32T> t1297 = UncheckedCast<Int32T>(Signed((*high_word_301).value()));
-          USE(t1297);
-          TNode<Int32T> t1298 = UncheckedCast<Int32T>(from_constexpr7ATint32(t1296));
-          TNode<Int32T> t1299 = UncheckedCast<Int32T>(Int32Sub(t1298, t1297));
-          USE(t1299);
-          TNode<Uint32T> t1300 = UncheckedCast<Uint32T>(Unsigned(t1299));
-          USE(t1300);
-          *high_word_301 = t1300;
-          // ../../src/builtins/data-view.tq:650:6
-          {
-            Label label__True_300_impl(this);
-            Label* label__True_300 = &label__True_300_impl;
-            USE(label__True_300);
-            Label label__False_301_impl(this, {high_word_301});
-            Label* label__False_301 = &label__False_301_impl;
-            USE(label__False_301);
-            int31_t t1301 = 0;
-            TNode<Uint32T> t1302 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(t1301));
-            TNode<BoolT> t1303 = UncheckedCast<BoolT>(Word32NotEqual((*low_word_300).value(), t1302));
-            USE(t1303);
-            Branch(t1303, label__True_300, label__False_301);
-            if (label__True_300->is_used())
+          bool t678 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT8_ELEMENTS));
+          USE(implicit_cast<bool>(t678));
+          if ((implicit_cast<bool>(t678))) {
+            // ../../src/builtins/data-view.tq:45:49
             {
-              BIND(label__True_300);
-              // ../../src/builtins/data-view.tq:650:25
-              {
-                // ../../src/builtins/data-view.tq:651:8
-                TNode<Int32T> t1304 = UncheckedCast<Int32T>(Signed((*high_word_301).value()));
-                USE(t1304);
-                int31_t t1305 = 1;
-                TNode<Int32T> t1306 = UncheckedCast<Int32T>(from_constexpr7ATint32(t1305));
-                TNode<Int32T> t1307 = UncheckedCast<Int32T>(Int32Sub(t1304, t1306));
-                USE(t1307);
-                TNode<Uint32T> t1308 = UncheckedCast<Uint32T>(Unsigned(t1307));
-                USE(t1308);
-                *high_word_301 = t1308;
-              }
-              Goto(label__False_301);
+              // ../../src/builtins/data-view.tq:46:7
+              const char* t679 = "DataView.prototype.setInt8";
+              TNode<String> t680 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t679)));
+              *_return_173 = implicit_cast<TNode<String>>(t680);
+              Goto(label_macro_end_1156);
             }
-            BIND(label__False_301);
-          }
-          // ../../src/builtins/data-view.tq:653:6
-          int31_t t1309 = 0;
-          TNode<Int32T> t1310 = UncheckedCast<Int32T>(Signed((*low_word_300).value()));
-          USE(t1310);
-          TNode<Int32T> t1311 = UncheckedCast<Int32T>(from_constexpr7ATint32(t1309));
-          TNode<Int32T> t1312 = UncheckedCast<Int32T>(Int32Sub(t1311, t1310));
-          USE(t1312);
-          TNode<Uint32T> t1313 = UncheckedCast<Uint32T>(Unsigned(t1312));
-          USE(t1313);
-          *low_word_300 = t1313;
-        }
-        Goto(label__False_299);
-      }
-      BIND(label__False_299);
-    }
-    // ../../src/builtins/data-view.tq:656:4
-    StoreDataView64(p_buffer, p_offset, (*low_word_300).value(), (*high_word_301).value(), p_requested_little_endian);
-  }
-}
-
-compiler::TNode<Object> DataViewBuiltinsFromDSLAssembler::DataViewSet(TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_offset, TNode<Object> p_value, TNode<Object> p_requested_little_endian, ElementsKind p_kind) {
-  TVARIABLE(Object, _return_303_impl);
-  auto _return_303 = &_return_303_impl;
-  USE(_return_303);
-  Label label_macro_end_722_impl(this, {_return_303});
-  Label* label_macro_end_722 = &label_macro_end_722_impl;
-  USE(label_macro_end_722);
-  // ../../src/builtins/data-view.tq:665:58
-  {
-    // ../../src/builtins/data-view.tq:669:4
-    const char* t1314 = "get DataView.prototype.get";
-    TNode<String> t1315 = UncheckedCast<String>(from_constexpr8ATString(t1314));
-    TNode<JSDataView> t1316 = UncheckedCast<JSDataView>(ValidateDataView(p_context, p_receiver, t1315));
-    USE(t1316);
-    TVARIABLE(JSDataView, data_view_304_impl);
-    auto data_view_304 = &data_view_304_impl;
-    USE(data_view_304);
-    *data_view_304 = t1316;
-    // ../../src/builtins/data-view.tq:672:4
-    TVARIABLE(Smi, getIndexSmi_305_impl);
-    auto getIndexSmi_305 = &getIndexSmi_305_impl;
-    USE(getIndexSmi_305);
-    // ../../src/builtins/data-view.tq:673:4
-    {
-      Label label_try_done_581_723_impl(this);
-      Label* label_try_done_581_723 = &label_try_done_581_723_impl;
-      USE(label_try_done_581_723);
-      Label label_RangeError_302_impl(this);
-      Label* label_RangeError_302 = &label_RangeError_302_impl;
-      USE(label_RangeError_302);
-      Label label_try_begin_582_724_impl(this);
-      Label* label_try_begin_582_724 = &label_try_begin_582_724_impl;
-      USE(label_try_begin_582_724);
-      Goto(label_try_begin_582_724);
-      if (label_try_begin_582_724->is_used())
-      {
-        BIND(label_try_begin_582_724);
-        // ../../src/builtins/data-view.tq:673:8
-        {
-          // ../../src/builtins/data-view.tq:674:6
-          TNode<Smi> t1317 = UncheckedCast<Smi>(ToSmiIndex(p_offset, p_context, label_RangeError_302));
-          USE(t1317);
-          *getIndexSmi_305 = t1317;
-        }
-        Goto(label_try_done_581_723);
-      }
-      if (label_RangeError_302->is_used())
-      {
-        BIND(label_RangeError_302);
-        // ../../src/builtins/data-view.tq:676:21
-        {
-          // ../../src/builtins/data-view.tq:677:6
-          ThrowRangeError(p_context, MessageTemplate::kInvalidDataViewAccessorOffset);
-        }
-      }
-      BIND(label_try_done_581_723);
-    }
-    // ../../src/builtins/data-view.tq:679:4
-    TNode<IntPtrT> t1318 = UncheckedCast<IntPtrT>(convert8ATintptr((*getIndexSmi_305).value()));
-    USE(t1318);
-    TVARIABLE(IntPtrT, getIndex_306_impl);
-    auto getIndex_306 = &getIndex_306_impl;
-    USE(getIndex_306);
-    *getIndex_306 = t1318;
-    // ../../src/builtins/data-view.tq:681:4
-    TNode<BoolT> t1319 = UncheckedCast<BoolT>(ToBoolean(p_requested_little_endian));
-    USE(t1319);
-    TVARIABLE(BoolT, littleEndian_307_impl);
-    auto littleEndian_307 = &littleEndian_307_impl;
-    USE(littleEndian_307);
-    *littleEndian_307 = t1319;
-    // ../../src/builtins/data-view.tq:682:4
-    TNode<JSArrayBuffer> t1320 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer((*data_view_304).value()));
-    TVARIABLE(JSArrayBuffer, buffer_308_impl);
-    auto buffer_308 = &buffer_308_impl;
-    USE(buffer_308);
-    *buffer_308 = t1320;
-    // ../../src/builtins/data-view.tq:684:4
-    TVARIABLE(BigInt, bigint_value_309_impl);
-    auto bigint_value_309 = &bigint_value_309_impl;
-    USE(bigint_value_309);
-    // ../../src/builtins/data-view.tq:685:4
-    TVARIABLE(Number, num_value_310_impl);
-    auto num_value_310 = &num_value_310_impl;
-    USE(num_value_310);
-    // ../../src/builtins/data-view.tq:688:4
-    {
-      Label label__False_305_impl(this);
-      Label* label__False_305 = &label__False_305_impl;
-      USE(label__False_305);
-      bool t1321 = ElementsKindEqual(p_kind, BIGUINT64_ELEMENTS);
-      USE(t1321);
-      bool t1322 = ElementsKindEqual(p_kind, BIGINT64_ELEMENTS);
-      USE(t1322);
-      if (((t1321 || t1322))) {
-        // ../../src/builtins/data-view.tq:688:75
-        {
-          // ../../src/builtins/data-view.tq:689:6
-          TNode<BigInt> t1323 = UncheckedCast<BigInt>(ToBigInt(p_context, p_value));
-          USE(t1323);
-          *bigint_value_309 = t1323;
-        }
-      } else {
-        // ../../src/builtins/data-view.tq:690:11
-        {
-          // ../../src/builtins/data-view.tq:691:6
-          TNode<Number> t1324 = UncheckedCast<Number>(ToNumber(p_context, p_value));
-          USE(t1324);
-          *num_value_310 = t1324;
-        }
-      }
-    }
-    // ../../src/builtins/data-view.tq:694:4
-    {
-      Label label__True_306_impl(this);
-      Label* label__True_306 = &label__True_306_impl;
-      USE(label__True_306);
-      Label label__False_307_impl(this, {});
-      Label* label__False_307 = &label__False_307_impl;
-      USE(label__False_307);
-      TNode<BoolT> t1325 = UncheckedCast<BoolT>(IsDetachedBuffer((*buffer_308).value()));
-      USE(t1325);
-      Branch(t1325, label__True_306, label__False_307);
-      if (label__True_306->is_used())
-      {
-        BIND(label__True_306);
-        // ../../src/builtins/data-view.tq:694:34
-        {
-          // ../../src/builtins/data-view.tq:695:6
-          const char* t1326 = "DataView.prototype.get";
-          TNode<Object> t1327 = UncheckedCast<Object>(from_constexpr22UT12ATHeapObject5ATSmi(t1326));
-          ThrowTypeError(p_context, MessageTemplate::kDetachedOperation, t1327);
-        }
-      }
-      BIND(label__False_307);
-    }
-    // ../../src/builtins/data-view.tq:698:4
-    TNode<Smi> t1328 = UncheckedCast<Smi>(LoadDataViewByteOffset((*data_view_304).value()));
-    TNode<IntPtrT> t1329 = UncheckedCast<IntPtrT>(convert8ATintptr(t1328));
-    USE(t1329);
-    TVARIABLE(IntPtrT, viewOffset_311_impl);
-    auto viewOffset_311 = &viewOffset_311_impl;
-    USE(viewOffset_311);
-    *viewOffset_311 = t1329;
-    // ../../src/builtins/data-view.tq:699:4
-    TNode<Smi> t1330 = UncheckedCast<Smi>(LoadDataViewByteLength((*data_view_304).value()));
-    TNode<IntPtrT> t1331 = UncheckedCast<IntPtrT>(convert8ATintptr(t1330));
-    USE(t1331);
-    TVARIABLE(IntPtrT, viewSize_312_impl);
-    auto viewSize_312 = &viewSize_312_impl;
-    USE(viewSize_312);
-    *viewSize_312 = t1331;
-    // ../../src/builtins/data-view.tq:700:4
-    int31_t t1332 = DataViewElementSize(p_kind);
-    USE(t1332);
-    TVARIABLE(IntPtrT, elementSize_313_impl);
-    auto elementSize_313 = &elementSize_313_impl;
-    USE(elementSize_313);
-    TNode<IntPtrT> t1333 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1332));
-    *elementSize_313 = t1333;
-    // ../../src/builtins/data-view.tq:702:4
-    {
-      Label label__True_308_impl(this);
-      Label* label__True_308 = &label__True_308_impl;
-      USE(label__True_308);
-      Label label__False_309_impl(this, {});
-      Label* label__False_309 = &label__False_309_impl;
-      USE(label__False_309);
-      TNode<IntPtrT> t1334 = UncheckedCast<IntPtrT>(IntPtrAdd((*getIndex_306).value(), (*elementSize_313).value()));
-      USE(t1334);
-      TNode<BoolT> t1335 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1334, (*viewSize_312).value()));
-      USE(t1335);
-      Branch(t1335, label__True_308, label__False_309);
-      if (label__True_308->is_used())
-      {
-        BIND(label__True_308);
-        // ../../src/builtins/data-view.tq:702:43
-        {
-          // ../../src/builtins/data-view.tq:703:6
-          ThrowRangeError(p_context, MessageTemplate::kInvalidDataViewAccessorOffset);
-        }
-      }
-      BIND(label__False_309);
-    }
-    // ../../src/builtins/data-view.tq:706:4
-    TNode<IntPtrT> t1336 = UncheckedCast<IntPtrT>(IntPtrAdd((*getIndex_306).value(), (*viewOffset_311).value()));
-    USE(t1336);
-    TVARIABLE(IntPtrT, bufferIndex_314_impl);
-    auto bufferIndex_314 = &bufferIndex_314_impl;
-    USE(bufferIndex_314);
-    *bufferIndex_314 = t1336;
-    // ../../src/builtins/data-view.tq:708:4
-    {
-      Label label__False_312_impl(this);
-      Label* label__False_312 = &label__False_312_impl;
-      USE(label__False_312);
-      bool t1337 = ElementsKindEqual(p_kind, BIGUINT64_ELEMENTS);
-      USE(t1337);
-      bool t1338 = ElementsKindEqual(p_kind, BIGINT64_ELEMENTS);
-      USE(t1338);
-      if (((t1337 || t1338))) {
-        // ../../src/builtins/data-view.tq:708:75
-        {
-          // ../../src/builtins/data-view.tq:709:6
-          StoreDataViewBigInt((*buffer_308).value(), (*bufferIndex_314).value(), (*bigint_value_309).value(), (*littleEndian_307).value());
-        }
-      } else {
-        // ../../src/builtins/data-view.tq:712:9
-        {
-          // ../../src/builtins/data-view.tq:713:6
-          TNode<Float64T> t1339 = UncheckedCast<Float64T>(ChangeNumberToFloat64((*num_value_310).value()));
-          USE(t1339);
-          TVARIABLE(Float64T, double_value_315_impl);
-          auto double_value_315 = &double_value_315_impl;
-          USE(double_value_315);
-          *double_value_315 = t1339;
-          // ../../src/builtins/data-view.tq:715:6
-          {
-            Label label__False_315_impl(this);
-            Label* label__False_315 = &label__False_315_impl;
-            USE(label__False_315);
-            bool t1340 = ElementsKindEqual(p_kind, UINT8_ELEMENTS);
-            USE(t1340);
-            bool t1341 = ElementsKindEqual(p_kind, INT8_ELEMENTS);
-            USE(t1341);
-            if (((t1340 || t1341))) {
-              // ../../src/builtins/data-view.tq:715:69
-              {
-                // ../../src/builtins/data-view.tq:716:8
-                TNode<Uint32T> t1342 = UncheckedCast<Uint32T>(TruncateFloat64ToWord32((*double_value_315).value()));
-                USE(t1342);
-                StoreDataView8((*buffer_308).value(), (*bufferIndex_314).value(), t1342);
-              }
-            } else {
-              // ../../src/builtins/data-view.tq:719:11
-              {
-                Label label__False_318_impl(this);
-                Label* label__False_318 = &label__False_318_impl;
-                USE(label__False_318);
-                bool t1343 = ElementsKindEqual(p_kind, UINT16_ELEMENTS);
-                USE(t1343);
-                bool t1344 = ElementsKindEqual(p_kind, INT16_ELEMENTS);
-                USE(t1344);
-                if (((t1343 || t1344))) {
-                  // ../../src/builtins/data-view.tq:719:76
-                  {
-                    // ../../src/builtins/data-view.tq:720:8
-                    TNode<Uint32T> t1345 = UncheckedCast<Uint32T>(TruncateFloat64ToWord32((*double_value_315).value()));
-                    USE(t1345);
-                    StoreDataView16((*buffer_308).value(), (*bufferIndex_314).value(), t1345, (*littleEndian_307).value());
-                  }
-                } else {
-                  // ../../src/builtins/data-view.tq:723:11
-                  {
-                    Label label__False_321_impl(this);
-                    Label* label__False_321 = &label__False_321_impl;
-                    USE(label__False_321);
-                    bool t1346 = ElementsKindEqual(p_kind, UINT32_ELEMENTS);
-                    USE(t1346);
-                    bool t1347 = ElementsKindEqual(p_kind, INT32_ELEMENTS);
-                    USE(t1347);
-                    if (((t1346 || t1347))) {
-                      // ../../src/builtins/data-view.tq:723:76
-                      {
-                        // ../../src/builtins/data-view.tq:724:8
-                        TNode<Uint32T> t1348 = UncheckedCast<Uint32T>(TruncateFloat64ToWord32((*double_value_315).value()));
-                        USE(t1348);
-                        StoreDataView32((*buffer_308).value(), (*bufferIndex_314).value(), t1348, (*littleEndian_307).value());
-                      }
-                    } else {
-                      // ../../src/builtins/data-view.tq:727:11
-                      {
-                        bool t1349 = ElementsKindEqual(p_kind, FLOAT32_ELEMENTS);
-                        USE(t1349);
-                        if ((t1349)) {
-                          // ../../src/builtins/data-view.tq:727:51
-                          {
-                            // ../../src/builtins/data-view.tq:728:8
-                            TNode<Float32T> t1350 = UncheckedCast<Float32T>(TruncateFloat64ToFloat32((*double_value_315).value()));
-                            USE(t1350);
-                            TVARIABLE(Float32T, float_value_316_impl);
-                            auto float_value_316 = &float_value_316_impl;
-                            USE(float_value_316);
-                            *float_value_316 = t1350;
-                            // ../../src/builtins/data-view.tq:729:8
-                            TNode<Uint32T> t1351 = UncheckedCast<Uint32T>(BitcastFloat32ToInt32((*float_value_316).value()));
-                            USE(t1351);
-                            StoreDataView32((*buffer_308).value(), (*bufferIndex_314).value(), t1351, (*littleEndian_307).value());
-                          }
-                        } else {
-                          // ../../src/builtins/data-view.tq:732:11
-                          {
-                            bool t1352 = ElementsKindEqual(p_kind, FLOAT64_ELEMENTS);
-                            USE(t1352);
-                            if ((t1352)) {
-                              // ../../src/builtins/data-view.tq:732:51
-                              {
-                                // ../../src/builtins/data-view.tq:733:8
-                                TNode<Uint32T> t1353 = UncheckedCast<Uint32T>(Float64ExtractLowWord32((*double_value_315).value()));
-                                USE(t1353);
-                                TVARIABLE(Uint32T, low_word_317_impl);
-                                auto low_word_317 = &low_word_317_impl;
-                                USE(low_word_317);
-                                *low_word_317 = t1353;
-                                // ../../src/builtins/data-view.tq:734:8
-                                TNode<Uint32T> t1354 = UncheckedCast<Uint32T>(Float64ExtractHighWord32((*double_value_315).value()));
-                                USE(t1354);
-                                TVARIABLE(Uint32T, high_word_318_impl);
-                                auto high_word_318 = &high_word_318_impl;
-                                USE(high_word_318);
-                                *high_word_318 = t1354;
-                                // ../../src/builtins/data-view.tq:735:8
-                                StoreDataView64((*buffer_308).value(), (*bufferIndex_314).value(), (*low_word_317).value(), (*high_word_318).value(), (*littleEndian_307).value());
+          } else {
+            // ../../src/builtins/data-view.tq:47:12
+            {
+              bool t681 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+              USE(implicit_cast<bool>(t681));
+              if ((implicit_cast<bool>(t681))) {
+                // ../../src/builtins/data-view.tq:47:51
+                {
+                  // ../../src/builtins/data-view.tq:48:7
+                  const char* t682 = "DataView.prototype.setUint16";
+                  TNode<String> t683 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t682)));
+                  *_return_173 = implicit_cast<TNode<String>>(t683);
+                  Goto(label_macro_end_1156);
+                }
+              } else {
+                // ../../src/builtins/data-view.tq:49:12
+                {
+                  bool t684 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT16_ELEMENTS));
+                  USE(implicit_cast<bool>(t684));
+                  if ((implicit_cast<bool>(t684))) {
+                    // ../../src/builtins/data-view.tq:49:50
+                    {
+                      // ../../src/builtins/data-view.tq:50:7
+                      const char* t685 = "DataView.prototype.setInt16";
+                      TNode<String> t686 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t685)));
+                      *_return_173 = implicit_cast<TNode<String>>(t686);
+                      Goto(label_macro_end_1156);
+                    }
+                  } else {
+                    // ../../src/builtins/data-view.tq:51:12
+                    {
+                      bool t687 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT32_ELEMENTS));
+                      USE(implicit_cast<bool>(t687));
+                      if ((implicit_cast<bool>(t687))) {
+                        // ../../src/builtins/data-view.tq:51:51
+                        {
+                          // ../../src/builtins/data-view.tq:52:7
+                          const char* t688 = "DataView.prototype.setUint32";
+                          TNode<String> t689 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t688)));
+                          *_return_173 = implicit_cast<TNode<String>>(t689);
+                          Goto(label_macro_end_1156);
+                        }
+                      } else {
+                        // ../../src/builtins/data-view.tq:53:12
+                        {
+                          bool t690 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT32_ELEMENTS));
+                          USE(implicit_cast<bool>(t690));
+                          if ((implicit_cast<bool>(t690))) {
+                            // ../../src/builtins/data-view.tq:53:50
+                            {
+                              // ../../src/builtins/data-view.tq:54:7
+                              const char* t691 = "DataView.prototype.setInt32";
+                              TNode<String> t692 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t691)));
+                              *_return_173 = implicit_cast<TNode<String>>(t692);
+                              Goto(label_macro_end_1156);
+                            }
+                          } else {
+                            // ../../src/builtins/data-view.tq:55:12
+                            {
+                              bool t693 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT32_ELEMENTS));
+                              USE(implicit_cast<bool>(t693));
+                              if ((implicit_cast<bool>(t693))) {
+                                // ../../src/builtins/data-view.tq:55:52
+                                {
+                                  // ../../src/builtins/data-view.tq:56:7
+                                  const char* t694 = "DataView.prototype.setFloat32";
+                                  TNode<String> t695 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t694)));
+                                  *_return_173 = implicit_cast<TNode<String>>(t695);
+                                  Goto(label_macro_end_1156);
+                                }
+                              } else {
+                                // ../../src/builtins/data-view.tq:57:12
+                                {
+                                  bool t696 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT64_ELEMENTS));
+                                  USE(implicit_cast<bool>(t696));
+                                  if ((implicit_cast<bool>(t696))) {
+                                    // ../../src/builtins/data-view.tq:57:52
+                                    {
+                                      // ../../src/builtins/data-view.tq:58:7
+                                      const char* t697 = "DataView.prototype.setFloat64";
+                                      TNode<String> t698 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t697)));
+                                      *_return_173 = implicit_cast<TNode<String>>(t698);
+                                      Goto(label_macro_end_1156);
+                                    }
+                                  } else {
+                                    // ../../src/builtins/data-view.tq:59:12
+                                    {
+                                      bool t699 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGINT64_ELEMENTS));
+                                      USE(implicit_cast<bool>(t699));
+                                      if ((implicit_cast<bool>(t699))) {
+                                        // ../../src/builtins/data-view.tq:59:53
+                                        {
+                                          // ../../src/builtins/data-view.tq:60:7
+                                          const char* t700 = "DataView.prototype.setBigInt64";
+                                          TNode<String> t701 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t700)));
+                                          *_return_173 = implicit_cast<TNode<String>>(t701);
+                                          Goto(label_macro_end_1156);
+                                        }
+                                      } else {
+                                        // ../../src/builtins/data-view.tq:61:12
+                                        {
+                                          bool t702 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGUINT64_ELEMENTS));
+                                          USE(implicit_cast<bool>(t702));
+                                          if ((implicit_cast<bool>(t702))) {
+                                            // ../../src/builtins/data-view.tq:61:54
+                                            {
+                                              // ../../src/builtins/data-view.tq:62:7
+                                              const char* t703 = "DataView.prototype.setBigUint64";
+                                              TNode<String> t704 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t703)));
+                                              *_return_173 = implicit_cast<TNode<String>>(t704);
+                                              Goto(label_macro_end_1156);
+                                            }
+                                          } else {
+                                            // ../../src/builtins/data-view.tq:63:12
+                                            {
+                                              // ../../src/builtins/data-view.tq:64:7
+                                              Unreachable();
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
                               }
                             }
                           }
@@ -3926,15 +366,80 @@ compiler::TNode<Object> DataViewBuiltinsFromDSLAssembler::DataViewSet(TNode<Cont
         }
       }
     }
-    // ../../src/builtins/data-view.tq:739:4
-    *_return_303 = Undefined();
-    Goto(label_macro_end_722);
   }
-  BIND(label_macro_end_722);
-  return (*_return_303).value();
+  BIND(label_macro_end_1156);
+  return implicit_cast<TNode<String>>((*_return_173).value());
 }
 
-TF_BUILTIN(DataViewPrototypeSetInt8, DataViewBuiltinsFromDSLAssembler) {
+compiler::TNode<BoolT> DataViewBuiltinsFromDSLAssembler::WasNeutered(TNode<JSArrayBufferView> p_view) {
+  TVARIABLE(BoolT, _return_174_impl);
+  auto _return_174 = &_return_174_impl;
+  USE(_return_174);
+  Label label_macro_end_1157_impl(this, {_return_174});
+  Label* label_macro_end_1157 = &label_macro_end_1157_impl;
+  USE(label_macro_end_1157);
+  // ../../src/builtins/data-view.tq:68:52
+  {
+    // ../../src/builtins/data-view.tq:69:5
+    TNode<JSArrayBuffer> t705 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer(implicit_cast<TNode<JSArrayBufferView>>(p_view)));
+    TNode<BoolT> t706 = UncheckedCast<BoolT>(IsDetachedBuffer(implicit_cast<TNode<JSArrayBuffer>>(t705)));
+    USE(implicit_cast<TNode<BoolT>>(t706));
+    *_return_174 = implicit_cast<TNode<BoolT>>(t706);
+    Goto(label_macro_end_1157);
+  }
+  BIND(label_macro_end_1157);
+  return implicit_cast<TNode<BoolT>>((*_return_174).value());
+}
+
+compiler::TNode<JSDataView> DataViewBuiltinsFromDSLAssembler::ValidateDataView(TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_method) {
+  TVARIABLE(JSDataView, _return_175_impl);
+  auto _return_175 = &_return_175_impl;
+  USE(_return_175);
+  Label label_macro_end_1158_impl(this, {_return_175});
+  Label* label_macro_end_1158 = &label_macro_end_1158_impl;
+  USE(label_macro_end_1158);
+  // ../../src/builtins/data-view.tq:73:46
+  {
+    // ../../src/builtins/data-view.tq:74:5
+    {
+      Label label_try_done_716_1159_impl(this);
+      Label* label_try_done_716_1159 = &label_try_done_716_1159_impl;
+      USE(label_try_done_716_1159);
+      Label label_CastError_259_impl(this);
+      Label* label_CastError_259 = &label_CastError_259_impl;
+      USE(label_CastError_259);
+      Label label_try_begin_717_1160_impl(this);
+      Label* label_try_begin_717_1160 = &label_try_begin_717_1160_impl;
+      USE(label_try_begin_717_1160);
+      Goto(label_try_begin_717_1160);
+      if (label_try_begin_717_1160->is_used())
+      {
+        BIND(label_try_begin_717_1160);
+        // ../../src/builtins/data-view.tq:74:9
+        {
+          // ../../src/builtins/data-view.tq:75:7
+          TNode<JSDataView> t707 = UncheckedCast<JSDataView>(cast12ATJSDataView(implicit_cast<TNode<Object>>(p_o), label_CastError_259));
+          USE(implicit_cast<TNode<JSDataView>>(t707));
+          *_return_175 = implicit_cast<TNode<JSDataView>>(t707);
+          Goto(label_macro_end_1158);
+        }
+      }
+      if (label_CastError_259->is_used())
+      {
+        BIND(label_CastError_259);
+        // ../../src/builtins/data-view.tq:77:21
+        {
+          // ../../src/builtins/data-view.tq:78:7
+          ThrowTypeError(implicit_cast<TNode<Context>>(p_context), implicit_cast<MessageTemplate::Template>(MessageTemplate::kIncompatibleMethodReceiver), implicit_cast<TNode<Object>>(p_method));
+        }
+      }
+    }
+  }
+  BIND(label_macro_end_1158);
+  return implicit_cast<TNode<JSDataView>>((*_return_175).value());
+}
+
+TF_BUILTIN(DataViewPrototypeGetBuffer, DataViewBuiltinsFromDSLAssembler) {
   TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(p_context);
   Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
@@ -3943,95 +448,3800 @@ TF_BUILTIN(DataViewPrototypeSetInt8, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:743:62
+  // ../../src/builtins/data-view.tq:84:72
   {
-    // ../../src/builtins/data-view.tq:744:6
-    auto t1355 = [=]() {
-      int31_t t1357 = 0;
-      TNode<IntPtrT> t1358 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1357));
-      TNode<Object> t1359 = UncheckedCast<Object>(GetArgumentValue(arguments, t1358));
-      return t1359;
-    };
-    auto t1356 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1360_583_impl);
-    auto t1360_583 = &t1360_583_impl;
-    USE(t1360_583);
-    {
-      Label label__True_326_impl(this);
-      Label* label__True_326 = &label__True_326_impl;
-      USE(label__True_326);
-      Label label__False_327_impl(this);
-      Label* label__False_327 = &label__False_327_impl;
-      USE(label__False_327);
-      Label label__done_584_725_impl(this, {t1360_583});
-      Label* label__done_584_725 = &label__done_584_725_impl;
-      USE(label__done_584_725);
-      TNode<IntPtrT> t1361 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1362 = 0;
-      TNode<IntPtrT> t1363 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1362));
-      TNode<BoolT> t1364 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1361, t1363));
-      USE(t1364);
-      Branch(t1364, label__True_326, label__False_327);
-      BIND(label__True_326);
-            *t1360_583 = t1355();
-      Goto(label__done_584_725);
-      BIND(label__False_327);
-            *t1360_583 = t1356();
-      Goto(label__done_584_725);
-      BIND(label__done_584_725);
-    }
-    TVARIABLE(Object, offset_319_impl);
-    auto offset_319 = &offset_319_impl;
-    USE(offset_319);
-    *offset_319 = (*t1360_583).value();
-    // ../../src/builtins/data-view.tq:747:6
-    auto t1365 = [=]() {
-      int31_t t1367 = 1;
-      TNode<IntPtrT> t1368 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1367));
-      TNode<Object> t1369 = UncheckedCast<Object>(GetArgumentValue(arguments, t1368));
-      return t1369;
-    };
-    auto t1366 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1370_585_impl);
-    auto t1370_585 = &t1370_585_impl;
-    USE(t1370_585);
-    {
-      Label label__True_328_impl(this);
-      Label* label__True_328 = &label__True_328_impl;
-      USE(label__True_328);
-      Label label__False_329_impl(this);
-      Label* label__False_329 = &label__False_329_impl;
-      USE(label__False_329);
-      Label label__done_586_726_impl(this, {t1370_585});
-      Label* label__done_586_726 = &label__done_586_726_impl;
-      USE(label__done_586_726);
-      TNode<IntPtrT> t1371 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1372 = 1;
-      TNode<IntPtrT> t1373 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1372));
-      TNode<BoolT> t1374 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1371, t1373));
-      USE(t1374);
-      Branch(t1374, label__True_328, label__False_329);
-      BIND(label__True_328);
-            *t1370_585 = t1365();
-      Goto(label__done_586_726);
-      BIND(label__False_329);
-            *t1370_585 = t1366();
-      Goto(label__done_586_726);
-      BIND(label__done_586_726);
-    }
-    TVARIABLE(Object, value_320_impl);
-    auto value_320 = &value_320_impl;
-    USE(value_320);
-    *value_320 = (*t1370_585).value();
-    // ../../src/builtins/data-view.tq:750:6
-    TNode<Object> t1375 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_319).value(), (*value_320).value(), Undefined(), INT8_ELEMENTS));
-    USE(t1375);
-    arguments->PopAndReturn(t1375);
+    // ../../src/builtins/data-view.tq:85:5
+    const char* t708 = "get DataView.prototype.buffer";
+    TNode<String> t709 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t708)));
+    TNode<JSDataView> t710 = UncheckedCast<JSDataView>(ValidateDataView(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<String>>(t709)));
+    USE(implicit_cast<TNode<JSDataView>>(t710));
+    TVARIABLE(JSDataView, data_view_176_impl);
+    auto data_view_176 = &data_view_176_impl;
+    USE(data_view_176);
+    *data_view_176 = implicit_cast<TNode<JSDataView>>(t710);
+    // ../../src/builtins/data-view.tq:87:5
+    TNode<JSArrayBuffer> t711 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer(implicit_cast<TNode<JSArrayBufferView>>((*data_view_176).value())));
+    arguments->PopAndReturn(implicit_cast<TNode<JSArrayBuffer>>(t711));
   }
+}
+
+TF_BUILTIN(DataViewPrototypeGetByteLength, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:92:65
+  {
+    // ../../src/builtins/data-view.tq:93:5
+    const char* t712 = "get DataView.prototype.byte_length";
+    TNode<String> t713 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t712)));
+    TNode<JSDataView> t714 = UncheckedCast<JSDataView>(ValidateDataView(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<String>>(t713)));
+    USE(implicit_cast<TNode<JSDataView>>(t714));
+    TVARIABLE(JSDataView, data_view_177_impl);
+    auto data_view_177 = &data_view_177_impl;
+    USE(data_view_177);
+    *data_view_177 = implicit_cast<TNode<JSDataView>>(t714);
+    // ../../src/builtins/data-view.tq:95:5
+    {
+      Label label__True_260_impl(this);
+      Label* label__True_260 = &label__True_260_impl;
+      USE(label__True_260);
+      Label label__False_261_impl(this, {});
+      Label* label__False_261 = &label__False_261_impl;
+      USE(label__False_261);
+      TNode<BoolT> t715 = UncheckedCast<BoolT>(WasNeutered(implicit_cast<TNode<JSArrayBufferView>>((*data_view_177).value())));
+      USE(implicit_cast<TNode<BoolT>>(t715));
+      Branch(implicit_cast<TNode<BoolT>>(t715), label__True_260, label__False_261);
+      if (label__True_260->is_used())
+      {
+        BIND(label__True_260);
+        // ../../src/builtins/data-view.tq:95:33
+        {
+          // ../../src/builtins/data-view.tq:98:7
+          int31_t t716 = 0;
+          TNode<Number> t717 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<int31_t>(t716)));
+          arguments->PopAndReturn(implicit_cast<TNode<Number>>(t717));
+        }
+      }
+      BIND(label__False_261);
+    }
+    // ../../src/builtins/data-view.tq:100:5
+    TNode<Number> t718 = UncheckedCast<Number>(LoadDataViewByteLength(implicit_cast<TNode<JSDataView>>((*data_view_177).value())));
+    arguments->PopAndReturn(implicit_cast<TNode<Number>>(t718));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetByteOffset, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:105:65
+  {
+    // ../../src/builtins/data-view.tq:106:5
+    const char* t719 = "get DataView.prototype.byte_offset";
+    TNode<String> t720 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t719)));
+    TNode<JSDataView> t721 = UncheckedCast<JSDataView>(ValidateDataView(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<String>>(t720)));
+    USE(implicit_cast<TNode<JSDataView>>(t721));
+    TVARIABLE(JSDataView, data_view_178_impl);
+    auto data_view_178 = &data_view_178_impl;
+    USE(data_view_178);
+    *data_view_178 = implicit_cast<TNode<JSDataView>>(t721);
+    // ../../src/builtins/data-view.tq:108:5
+    {
+      Label label__True_262_impl(this);
+      Label* label__True_262 = &label__True_262_impl;
+      USE(label__True_262);
+      Label label__False_263_impl(this, {});
+      Label* label__False_263 = &label__False_263_impl;
+      USE(label__False_263);
+      TNode<BoolT> t722 = UncheckedCast<BoolT>(WasNeutered(implicit_cast<TNode<JSArrayBufferView>>((*data_view_178).value())));
+      USE(implicit_cast<TNode<BoolT>>(t722));
+      Branch(implicit_cast<TNode<BoolT>>(t722), label__True_262, label__False_263);
+      if (label__True_262->is_used())
+      {
+        BIND(label__True_262);
+        // ../../src/builtins/data-view.tq:108:33
+        {
+          // ../../src/builtins/data-view.tq:111:7
+          int31_t t723 = 0;
+          TNode<Number> t724 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<int31_t>(t723)));
+          arguments->PopAndReturn(implicit_cast<TNode<Number>>(t724));
+        }
+      }
+      BIND(label__False_263);
+    }
+    // ../../src/builtins/data-view.tq:113:5
+    TNode<Number> t725 = UncheckedCast<Number>(LoadDataViewByteOffset(implicit_cast<TNode<JSDataView>>((*data_view_178).value())));
+    arguments->PopAndReturn(implicit_cast<TNode<Number>>(t725));
+  }
+}
+
+compiler::TNode<Smi> DataViewBuiltinsFromDSLAssembler::LoadDataView8(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, bool p_signed) {
+  TVARIABLE(Smi, _return_179_impl);
+  auto _return_179 = &_return_179_impl;
+  USE(_return_179);
+  Label label_macro_end_1161_impl(this, {_return_179});
+  Label* label_macro_end_1161 = &label_macro_end_1161_impl;
+  USE(label_macro_end_1161);
+  // ../../src/builtins/data-view.tq:127:56
+  {
+    // ../../src/builtins/data-view.tq:128:5
+    {
+      if ((implicit_cast<bool>(p_signed))) {
+        // ../../src/builtins/data-view.tq:128:27
+        {
+          // ../../src/builtins/data-view.tq:129:7
+          TNode<RawPtrT> t726 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+          TNode<Int32T> t727 = UncheckedCast<Int32T>(LoadInt8(implicit_cast<TNode<RawPtrT>>(t726), implicit_cast<TNode<IntPtrT>>(p_offset)));
+          USE(implicit_cast<TNode<Int32T>>(t727));
+          TNode<Smi> t728 = UncheckedCast<Smi>(convert5ATSmi(implicit_cast<TNode<Int32T>>(t727)));
+          USE(implicit_cast<TNode<Smi>>(t728));
+          *_return_179 = implicit_cast<TNode<Smi>>(t728);
+          Goto(label_macro_end_1161);
+        }
+      } else {
+        // ../../src/builtins/data-view.tq:130:12
+        {
+          // ../../src/builtins/data-view.tq:131:7
+          TNode<RawPtrT> t729 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+          TNode<Uint32T> t730 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>(t729), implicit_cast<TNode<IntPtrT>>(p_offset)));
+          USE(implicit_cast<TNode<Uint32T>>(t730));
+          TNode<Smi> t731 = UncheckedCast<Smi>(convert5ATSmi(implicit_cast<TNode<Uint32T>>(t730)));
+          USE(implicit_cast<TNode<Smi>>(t731));
+          *_return_179 = implicit_cast<TNode<Smi>>(t731);
+          Goto(label_macro_end_1161);
+        }
+      }
+    }
+  }
+  BIND(label_macro_end_1161);
+  return implicit_cast<TNode<Smi>>((*_return_179).value());
+}
+
+compiler::TNode<Number> DataViewBuiltinsFromDSLAssembler::LoadDataView16(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian, bool p_signed) {
+  TVARIABLE(Number, _return_180_impl);
+  auto _return_180 = &_return_180_impl;
+  USE(_return_180);
+  Label label_macro_end_1162_impl(this, {_return_180});
+  Label* label_macro_end_1162 = &label_macro_end_1162_impl;
+  USE(label_macro_end_1162);
+  // ../../src/builtins/data-view.tq:137:56
+  {
+    // ../../src/builtins/data-view.tq:138:5
+    TNode<RawPtrT> t732 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    TVARIABLE(RawPtrT, data_pointer_181_impl);
+    auto data_pointer_181 = &data_pointer_181_impl;
+    USE(data_pointer_181);
+    *data_pointer_181 = implicit_cast<TNode<RawPtrT>>(t732);
+    // ../../src/builtins/data-view.tq:140:5
+    TVARIABLE(Int32T, b0_182_impl);
+    auto b0_182 = &b0_182_impl;
+    USE(b0_182);
+    // ../../src/builtins/data-view.tq:141:5
+    TVARIABLE(Int32T, b1_183_impl);
+    auto b1_183 = &b1_183_impl;
+    USE(b1_183);
+    // ../../src/builtins/data-view.tq:142:5
+    TVARIABLE(Int32T, result_184_impl);
+    auto result_184 = &result_184_impl;
+    USE(result_184);
+    // ../../src/builtins/data-view.tq:145:5
+    {
+      Label label__True_266_impl(this);
+      Label* label__True_266 = &label__True_266_impl;
+      USE(label__True_266);
+      Label label__False_267_impl(this);
+      Label* label__False_267 = &label__False_267_impl;
+      USE(label__False_267);
+      Label label_if_done_label_718_1163_impl(this, {b0_182, b1_183, result_184});
+      Label* label_if_done_label_718_1163 = &label_if_done_label_718_1163_impl;
+      USE(label_if_done_label_718_1163);
+      Branch(implicit_cast<TNode<BoolT>>(p_requested_little_endian), label__True_266, label__False_267);
+      if (label__True_266->is_used())
+      {
+        BIND(label__True_266);
+        // ../../src/builtins/data-view.tq:145:34
+        {
+          // ../../src/builtins/data-view.tq:146:7
+          TNode<Uint32T> t733 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_181).value()), implicit_cast<TNode<IntPtrT>>(p_offset)));
+          USE(implicit_cast<TNode<Uint32T>>(t733));
+          TNode<Int32T> t734 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>(t733)));
+          USE(implicit_cast<TNode<Int32T>>(t734));
+          *b0_182 = implicit_cast<TNode<Int32T>>(t734);
+          // ../../src/builtins/data-view.tq:147:7
+          int31_t t735 = 1;
+          TNode<IntPtrT> t736 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t735)));
+          TNode<IntPtrT> t737 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t736)));
+          USE(implicit_cast<TNode<IntPtrT>>(t737));
+          TNode<Int32T> t738 = UncheckedCast<Int32T>(LoadInt8(implicit_cast<TNode<RawPtrT>>((*data_pointer_181).value()), implicit_cast<TNode<IntPtrT>>(t737)));
+          USE(implicit_cast<TNode<Int32T>>(t738));
+          *b1_183 = implicit_cast<TNode<Int32T>>(t738);
+          // ../../src/builtins/data-view.tq:148:7
+          int31_t t739 = 8;
+          TNode<Int32T> t740 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t739)));
+          TNode<Int32T> t741 = UncheckedCast<Int32T>(Word32Shl(implicit_cast<TNode<Int32T>>((*b1_183).value()), implicit_cast<TNode<Int32T>>(t740)));
+          USE(implicit_cast<TNode<Int32T>>(t741));
+          TNode<Int32T> t742 = UncheckedCast<Int32T>(Int32Add(implicit_cast<TNode<Int32T>>(t741), implicit_cast<TNode<Int32T>>((*b0_182).value())));
+          USE(implicit_cast<TNode<Int32T>>(t742));
+          *result_184 = implicit_cast<TNode<Int32T>>(t742);
+        }
+        Goto(label_if_done_label_718_1163);
+      }
+      if (label__False_267->is_used())
+      {
+        BIND(label__False_267);
+        // ../../src/builtins/data-view.tq:149:12
+        {
+          // ../../src/builtins/data-view.tq:150:7
+          TNode<Int32T> t743 = UncheckedCast<Int32T>(LoadInt8(implicit_cast<TNode<RawPtrT>>((*data_pointer_181).value()), implicit_cast<TNode<IntPtrT>>(p_offset)));
+          USE(implicit_cast<TNode<Int32T>>(t743));
+          *b0_182 = implicit_cast<TNode<Int32T>>(t743);
+          // ../../src/builtins/data-view.tq:151:7
+          int31_t t744 = 1;
+          TNode<IntPtrT> t745 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t744)));
+          TNode<IntPtrT> t746 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t745)));
+          USE(implicit_cast<TNode<IntPtrT>>(t746));
+          TNode<Uint32T> t747 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_181).value()), implicit_cast<TNode<IntPtrT>>(t746)));
+          USE(implicit_cast<TNode<Uint32T>>(t747));
+          TNode<Int32T> t748 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>(t747)));
+          USE(implicit_cast<TNode<Int32T>>(t748));
+          *b1_183 = implicit_cast<TNode<Int32T>>(t748);
+          // ../../src/builtins/data-view.tq:152:7
+          int31_t t749 = 8;
+          TNode<Int32T> t750 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t749)));
+          TNode<Int32T> t751 = UncheckedCast<Int32T>(Word32Shl(implicit_cast<TNode<Int32T>>((*b0_182).value()), implicit_cast<TNode<Int32T>>(t750)));
+          USE(implicit_cast<TNode<Int32T>>(t751));
+          TNode<Int32T> t752 = UncheckedCast<Int32T>(Int32Add(implicit_cast<TNode<Int32T>>(t751), implicit_cast<TNode<Int32T>>((*b1_183).value())));
+          USE(implicit_cast<TNode<Int32T>>(t752));
+          *result_184 = implicit_cast<TNode<Int32T>>(t752);
+        }
+        Goto(label_if_done_label_718_1163);
+      }
+      BIND(label_if_done_label_718_1163);
+    }
+    // ../../src/builtins/data-view.tq:154:5
+    {
+      if ((implicit_cast<bool>(p_signed))) {
+        // ../../src/builtins/data-view.tq:154:27
+        {
+          // ../../src/builtins/data-view.tq:155:7
+          TNode<Smi> t753 = UncheckedCast<Smi>(convert5ATSmi(implicit_cast<TNode<Int32T>>((*result_184).value())));
+          USE(implicit_cast<TNode<Smi>>(t753));
+          *_return_180 = implicit_cast<TNode<Number>>(t753);
+          Goto(label_macro_end_1162);
+        }
+      } else {
+        // ../../src/builtins/data-view.tq:156:12
+        {
+          // ../../src/builtins/data-view.tq:158:7
+          int31_t t754 = 0xFFFF;
+          TNode<Int32T> t755 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t754)));
+          TNode<Int32T> t756 = UncheckedCast<Int32T>(Word32And(implicit_cast<TNode<Int32T>>((*result_184).value()), implicit_cast<TNode<Int32T>>(t755)));
+          USE(implicit_cast<TNode<Int32T>>(t756));
+          TNode<Smi> t757 = UncheckedCast<Smi>(convert5ATSmi(implicit_cast<TNode<Int32T>>(t756)));
+          USE(implicit_cast<TNode<Smi>>(t757));
+          *_return_180 = implicit_cast<TNode<Number>>(t757);
+          Goto(label_macro_end_1162);
+        }
+      }
+    }
+  }
+  BIND(label_macro_end_1162);
+  return implicit_cast<TNode<Number>>((*_return_180).value());
+}
+
+compiler::TNode<Number> DataViewBuiltinsFromDSLAssembler::LoadDataView32(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian, ElementsKind p_kind) {
+  TVARIABLE(Number, _return_185_impl);
+  auto _return_185 = &_return_185_impl;
+  USE(_return_185);
+  Label label_macro_end_1164_impl(this, {_return_185});
+  Label* label_macro_end_1164 = &label_macro_end_1164_impl;
+  USE(label_macro_end_1164);
+  // ../../src/builtins/data-view.tq:164:62
+  {
+    // ../../src/builtins/data-view.tq:165:5
+    TNode<RawPtrT> t758 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    TVARIABLE(RawPtrT, data_pointer_186_impl);
+    auto data_pointer_186 = &data_pointer_186_impl;
+    USE(data_pointer_186);
+    *data_pointer_186 = implicit_cast<TNode<RawPtrT>>(t758);
+    // ../../src/builtins/data-view.tq:167:5
+    TNode<Uint32T> t759 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_186).value()), implicit_cast<TNode<IntPtrT>>(p_offset)));
+    USE(implicit_cast<TNode<Uint32T>>(t759));
+    TVARIABLE(Uint32T, b0_187_impl);
+    auto b0_187 = &b0_187_impl;
+    USE(b0_187);
+    *b0_187 = implicit_cast<TNode<Uint32T>>(t759);
+    // ../../src/builtins/data-view.tq:168:5
+    int31_t t760 = 1;
+    TNode<IntPtrT> t761 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t760)));
+    TNode<IntPtrT> t762 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t761)));
+    USE(implicit_cast<TNode<IntPtrT>>(t762));
+    TNode<Uint32T> t763 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_186).value()), implicit_cast<TNode<IntPtrT>>(t762)));
+    USE(implicit_cast<TNode<Uint32T>>(t763));
+    TVARIABLE(Uint32T, b1_188_impl);
+    auto b1_188 = &b1_188_impl;
+    USE(b1_188);
+    *b1_188 = implicit_cast<TNode<Uint32T>>(t763);
+    // ../../src/builtins/data-view.tq:169:5
+    int31_t t764 = 2;
+    TNode<IntPtrT> t765 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t764)));
+    TNode<IntPtrT> t766 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t765)));
+    USE(implicit_cast<TNode<IntPtrT>>(t766));
+    TNode<Uint32T> t767 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_186).value()), implicit_cast<TNode<IntPtrT>>(t766)));
+    USE(implicit_cast<TNode<Uint32T>>(t767));
+    TVARIABLE(Uint32T, b2_189_impl);
+    auto b2_189 = &b2_189_impl;
+    USE(b2_189);
+    *b2_189 = implicit_cast<TNode<Uint32T>>(t767);
+    // ../../src/builtins/data-view.tq:170:5
+    int31_t t768 = 3;
+    TNode<IntPtrT> t769 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t768)));
+    TNode<IntPtrT> t770 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t769)));
+    USE(implicit_cast<TNode<IntPtrT>>(t770));
+    TNode<Uint32T> t771 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_186).value()), implicit_cast<TNode<IntPtrT>>(t770)));
+    USE(implicit_cast<TNode<Uint32T>>(t771));
+    TVARIABLE(Uint32T, b3_190_impl);
+    auto b3_190 = &b3_190_impl;
+    USE(b3_190);
+    *b3_190 = implicit_cast<TNode<Uint32T>>(t771);
+    // ../../src/builtins/data-view.tq:171:5
+    TVARIABLE(Uint32T, result_191_impl);
+    auto result_191 = &result_191_impl;
+    USE(result_191);
+    // ../../src/builtins/data-view.tq:173:5
+    {
+      Label label__True_270_impl(this);
+      Label* label__True_270 = &label__True_270_impl;
+      USE(label__True_270);
+      Label label__False_271_impl(this);
+      Label* label__False_271 = &label__False_271_impl;
+      USE(label__False_271);
+      Label label_if_done_label_719_1165_impl(this, {result_191});
+      Label* label_if_done_label_719_1165 = &label_if_done_label_719_1165_impl;
+      USE(label_if_done_label_719_1165);
+      Branch(implicit_cast<TNode<BoolT>>(p_requested_little_endian), label__True_270, label__False_271);
+      if (label__True_270->is_used())
+      {
+        BIND(label__True_270);
+        // ../../src/builtins/data-view.tq:173:34
+        {
+          // ../../src/builtins/data-view.tq:174:7
+          int31_t t772 = 24;
+          TNode<Uint32T> t773 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t772)));
+          TNode<Uint32T> t774 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b3_190).value()), implicit_cast<TNode<Uint32T>>(t773)));
+          USE(implicit_cast<TNode<Uint32T>>(t774));
+          int31_t t775 = 16;
+          TNode<Uint32T> t776 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t775)));
+          TNode<Uint32T> t777 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b2_189).value()), implicit_cast<TNode<Uint32T>>(t776)));
+          USE(implicit_cast<TNode<Uint32T>>(t777));
+          TNode<Uint32T> t778 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t774), implicit_cast<TNode<Uint32T>>(t777)));
+          USE(implicit_cast<TNode<Uint32T>>(t778));
+          int31_t t779 = 8;
+          TNode<Uint32T> t780 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t779)));
+          TNode<Uint32T> t781 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b1_188).value()), implicit_cast<TNode<Uint32T>>(t780)));
+          USE(implicit_cast<TNode<Uint32T>>(t781));
+          TNode<Uint32T> t782 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t778), implicit_cast<TNode<Uint32T>>(t781)));
+          USE(implicit_cast<TNode<Uint32T>>(t782));
+          TNode<Uint32T> t783 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t782), implicit_cast<TNode<Uint32T>>((*b0_187).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t783));
+          *result_191 = implicit_cast<TNode<Uint32T>>(t783);
+        }
+        Goto(label_if_done_label_719_1165);
+      }
+      if (label__False_271->is_used())
+      {
+        BIND(label__False_271);
+        // ../../src/builtins/data-view.tq:175:12
+        {
+          // ../../src/builtins/data-view.tq:176:7
+          int31_t t784 = 24;
+          TNode<Uint32T> t785 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t784)));
+          TNode<Uint32T> t786 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b0_187).value()), implicit_cast<TNode<Uint32T>>(t785)));
+          USE(implicit_cast<TNode<Uint32T>>(t786));
+          int31_t t787 = 16;
+          TNode<Uint32T> t788 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t787)));
+          TNode<Uint32T> t789 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b1_188).value()), implicit_cast<TNode<Uint32T>>(t788)));
+          USE(implicit_cast<TNode<Uint32T>>(t789));
+          TNode<Uint32T> t790 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t786), implicit_cast<TNode<Uint32T>>(t789)));
+          USE(implicit_cast<TNode<Uint32T>>(t790));
+          int31_t t791 = 8;
+          TNode<Uint32T> t792 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t791)));
+          TNode<Uint32T> t793 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b2_189).value()), implicit_cast<TNode<Uint32T>>(t792)));
+          USE(implicit_cast<TNode<Uint32T>>(t793));
+          TNode<Uint32T> t794 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t790), implicit_cast<TNode<Uint32T>>(t793)));
+          USE(implicit_cast<TNode<Uint32T>>(t794));
+          TNode<Uint32T> t795 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t794), implicit_cast<TNode<Uint32T>>((*b3_190).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t795));
+          *result_191 = implicit_cast<TNode<Uint32T>>(t795);
+        }
+        Goto(label_if_done_label_719_1165);
+      }
+      BIND(label_if_done_label_719_1165);
+    }
+    // ../../src/builtins/data-view.tq:179:5
+    {
+      bool t796 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT32_ELEMENTS));
+      USE(implicit_cast<bool>(t796));
+      if ((implicit_cast<bool>(t796))) {
+        // ../../src/builtins/data-view.tq:179:43
+        {
+          // ../../src/builtins/data-view.tq:180:7
+          TNode<Int32T> t797 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>((*result_191).value())));
+          USE(implicit_cast<TNode<Int32T>>(t797));
+          TNode<Number> t798 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi(implicit_cast<TNode<Int32T>>(t797)));
+          USE(implicit_cast<TNode<Number>>(t798));
+          *_return_185 = implicit_cast<TNode<Number>>(t798);
+          Goto(label_macro_end_1164);
+        }
+      } else {
+        // ../../src/builtins/data-view.tq:181:12
+        {
+          bool t799 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT32_ELEMENTS));
+          USE(implicit_cast<bool>(t799));
+          if ((implicit_cast<bool>(t799))) {
+            // ../../src/builtins/data-view.tq:181:51
+            {
+              // ../../src/builtins/data-view.tq:182:7
+              TNode<Number> t800 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi(implicit_cast<TNode<Uint32T>>((*result_191).value())));
+              USE(implicit_cast<TNode<Number>>(t800));
+              *_return_185 = implicit_cast<TNode<Number>>(t800);
+              Goto(label_macro_end_1164);
+            }
+          } else {
+            // ../../src/builtins/data-view.tq:183:12
+            {
+              bool t801 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT32_ELEMENTS));
+              USE(implicit_cast<bool>(t801));
+              if ((implicit_cast<bool>(t801))) {
+                // ../../src/builtins/data-view.tq:183:52
+                {
+                  // ../../src/builtins/data-view.tq:184:7
+                  TNode<Float32T> t802 = UncheckedCast<Float32T>(BitcastInt32ToFloat32(implicit_cast<TNode<Uint32T>>((*result_191).value())));
+                  USE(implicit_cast<TNode<Float32T>>(t802));
+                  TNode<Float64T> t803 = UncheckedCast<Float64T>(convert9ATfloat64(implicit_cast<TNode<Float32T>>(t802)));
+                  USE(implicit_cast<TNode<Float64T>>(t803));
+                  TVARIABLE(Float64T, float_res_192_impl);
+                  auto float_res_192 = &float_res_192_impl;
+                  USE(float_res_192);
+                  *float_res_192 = implicit_cast<TNode<Float64T>>(t803);
+                  // ../../src/builtins/data-view.tq:185:7
+                  TNode<Number> t804 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi(implicit_cast<TNode<Float64T>>((*float_res_192).value())));
+                  USE(implicit_cast<TNode<Number>>(t804));
+                  *_return_185 = implicit_cast<TNode<Number>>(t804);
+                  Goto(label_macro_end_1164);
+                }
+              } else {
+                // ../../src/builtins/data-view.tq:186:12
+                {
+                  // ../../src/builtins/data-view.tq:187:7
+                  Unreachable();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  BIND(label_macro_end_1164);
+  return implicit_cast<TNode<Number>>((*_return_185).value());
+}
+
+compiler::TNode<Number> DataViewBuiltinsFromDSLAssembler::LoadDataViewFloat64(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian) {
+  TVARIABLE(Number, _return_193_impl);
+  auto _return_193 = &_return_193_impl;
+  USE(_return_193);
+  Label label_macro_end_1166_impl(this, {_return_193});
+  Label* label_macro_end_1166 = &label_macro_end_1166_impl;
+  USE(label_macro_end_1166);
+  // ../../src/builtins/data-view.tq:192:68
+  {
+    // ../../src/builtins/data-view.tq:193:5
+    TNode<RawPtrT> t805 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    TVARIABLE(RawPtrT, data_pointer_194_impl);
+    auto data_pointer_194 = &data_pointer_194_impl;
+    USE(data_pointer_194);
+    *data_pointer_194 = implicit_cast<TNode<RawPtrT>>(t805);
+    // ../../src/builtins/data-view.tq:195:5
+    TNode<Uint32T> t806 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(p_offset)));
+    USE(implicit_cast<TNode<Uint32T>>(t806));
+    TVARIABLE(Uint32T, b0_195_impl);
+    auto b0_195 = &b0_195_impl;
+    USE(b0_195);
+    *b0_195 = implicit_cast<TNode<Uint32T>>(t806);
+    // ../../src/builtins/data-view.tq:196:5
+    int31_t t807 = 1;
+    TNode<IntPtrT> t808 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t807)));
+    TNode<IntPtrT> t809 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t808)));
+    USE(implicit_cast<TNode<IntPtrT>>(t809));
+    TNode<Uint32T> t810 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(t809)));
+    USE(implicit_cast<TNode<Uint32T>>(t810));
+    TVARIABLE(Uint32T, b1_196_impl);
+    auto b1_196 = &b1_196_impl;
+    USE(b1_196);
+    *b1_196 = implicit_cast<TNode<Uint32T>>(t810);
+    // ../../src/builtins/data-view.tq:197:5
+    int31_t t811 = 2;
+    TNode<IntPtrT> t812 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t811)));
+    TNode<IntPtrT> t813 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t812)));
+    USE(implicit_cast<TNode<IntPtrT>>(t813));
+    TNode<Uint32T> t814 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(t813)));
+    USE(implicit_cast<TNode<Uint32T>>(t814));
+    TVARIABLE(Uint32T, b2_197_impl);
+    auto b2_197 = &b2_197_impl;
+    USE(b2_197);
+    *b2_197 = implicit_cast<TNode<Uint32T>>(t814);
+    // ../../src/builtins/data-view.tq:198:5
+    int31_t t815 = 3;
+    TNode<IntPtrT> t816 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t815)));
+    TNode<IntPtrT> t817 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t816)));
+    USE(implicit_cast<TNode<IntPtrT>>(t817));
+    TNode<Uint32T> t818 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(t817)));
+    USE(implicit_cast<TNode<Uint32T>>(t818));
+    TVARIABLE(Uint32T, b3_198_impl);
+    auto b3_198 = &b3_198_impl;
+    USE(b3_198);
+    *b3_198 = implicit_cast<TNode<Uint32T>>(t818);
+    // ../../src/builtins/data-view.tq:199:5
+    int31_t t819 = 4;
+    TNode<IntPtrT> t820 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t819)));
+    TNode<IntPtrT> t821 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t820)));
+    USE(implicit_cast<TNode<IntPtrT>>(t821));
+    TNode<Uint32T> t822 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(t821)));
+    USE(implicit_cast<TNode<Uint32T>>(t822));
+    TVARIABLE(Uint32T, b4_199_impl);
+    auto b4_199 = &b4_199_impl;
+    USE(b4_199);
+    *b4_199 = implicit_cast<TNode<Uint32T>>(t822);
+    // ../../src/builtins/data-view.tq:200:5
+    int31_t t823 = 5;
+    TNode<IntPtrT> t824 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t823)));
+    TNode<IntPtrT> t825 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t824)));
+    USE(implicit_cast<TNode<IntPtrT>>(t825));
+    TNode<Uint32T> t826 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(t825)));
+    USE(implicit_cast<TNode<Uint32T>>(t826));
+    TVARIABLE(Uint32T, b5_200_impl);
+    auto b5_200 = &b5_200_impl;
+    USE(b5_200);
+    *b5_200 = implicit_cast<TNode<Uint32T>>(t826);
+    // ../../src/builtins/data-view.tq:201:5
+    int31_t t827 = 6;
+    TNode<IntPtrT> t828 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t827)));
+    TNode<IntPtrT> t829 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t828)));
+    USE(implicit_cast<TNode<IntPtrT>>(t829));
+    TNode<Uint32T> t830 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(t829)));
+    USE(implicit_cast<TNode<Uint32T>>(t830));
+    TVARIABLE(Uint32T, b6_201_impl);
+    auto b6_201 = &b6_201_impl;
+    USE(b6_201);
+    *b6_201 = implicit_cast<TNode<Uint32T>>(t830);
+    // ../../src/builtins/data-view.tq:202:5
+    int31_t t831 = 7;
+    TNode<IntPtrT> t832 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t831)));
+    TNode<IntPtrT> t833 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t832)));
+    USE(implicit_cast<TNode<IntPtrT>>(t833));
+    TNode<Uint32T> t834 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_194).value()), implicit_cast<TNode<IntPtrT>>(t833)));
+    USE(implicit_cast<TNode<Uint32T>>(t834));
+    TVARIABLE(Uint32T, b7_202_impl);
+    auto b7_202 = &b7_202_impl;
+    USE(b7_202);
+    *b7_202 = implicit_cast<TNode<Uint32T>>(t834);
+    // ../../src/builtins/data-view.tq:203:5
+    TVARIABLE(Uint32T, low_word_203_impl);
+    auto low_word_203 = &low_word_203_impl;
+    USE(low_word_203);
+    // ../../src/builtins/data-view.tq:204:5
+    TVARIABLE(Uint32T, high_word_204_impl);
+    auto high_word_204 = &high_word_204_impl;
+    USE(high_word_204);
+    // ../../src/builtins/data-view.tq:206:5
+    {
+      Label label__True_278_impl(this);
+      Label* label__True_278 = &label__True_278_impl;
+      USE(label__True_278);
+      Label label__False_279_impl(this);
+      Label* label__False_279 = &label__False_279_impl;
+      USE(label__False_279);
+      Label label_if_done_label_720_1167_impl(this, {high_word_204, low_word_203});
+      Label* label_if_done_label_720_1167 = &label_if_done_label_720_1167_impl;
+      USE(label_if_done_label_720_1167);
+      Branch(implicit_cast<TNode<BoolT>>(p_requested_little_endian), label__True_278, label__False_279);
+      if (label__True_278->is_used())
+      {
+        BIND(label__True_278);
+        // ../../src/builtins/data-view.tq:206:34
+        {
+          // ../../src/builtins/data-view.tq:207:7
+          int31_t t835 = 24;
+          TNode<Uint32T> t836 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t835)));
+          TNode<Uint32T> t837 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b3_198).value()), implicit_cast<TNode<Uint32T>>(t836)));
+          USE(implicit_cast<TNode<Uint32T>>(t837));
+          int31_t t838 = 16;
+          TNode<Uint32T> t839 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t838)));
+          TNode<Uint32T> t840 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b2_197).value()), implicit_cast<TNode<Uint32T>>(t839)));
+          USE(implicit_cast<TNode<Uint32T>>(t840));
+          TNode<Uint32T> t841 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t837), implicit_cast<TNode<Uint32T>>(t840)));
+          USE(implicit_cast<TNode<Uint32T>>(t841));
+          int31_t t842 = 8;
+          TNode<Uint32T> t843 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t842)));
+          TNode<Uint32T> t844 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b1_196).value()), implicit_cast<TNode<Uint32T>>(t843)));
+          USE(implicit_cast<TNode<Uint32T>>(t844));
+          TNode<Uint32T> t845 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t841), implicit_cast<TNode<Uint32T>>(t844)));
+          USE(implicit_cast<TNode<Uint32T>>(t845));
+          TNode<Uint32T> t846 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t845), implicit_cast<TNode<Uint32T>>((*b0_195).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t846));
+          *low_word_203 = implicit_cast<TNode<Uint32T>>(t846);
+          // ../../src/builtins/data-view.tq:208:7
+          int31_t t847 = 24;
+          TNode<Uint32T> t848 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t847)));
+          TNode<Uint32T> t849 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b7_202).value()), implicit_cast<TNode<Uint32T>>(t848)));
+          USE(implicit_cast<TNode<Uint32T>>(t849));
+          int31_t t850 = 16;
+          TNode<Uint32T> t851 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t850)));
+          TNode<Uint32T> t852 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b6_201).value()), implicit_cast<TNode<Uint32T>>(t851)));
+          USE(implicit_cast<TNode<Uint32T>>(t852));
+          TNode<Uint32T> t853 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t849), implicit_cast<TNode<Uint32T>>(t852)));
+          USE(implicit_cast<TNode<Uint32T>>(t853));
+          int31_t t854 = 8;
+          TNode<Uint32T> t855 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t854)));
+          TNode<Uint32T> t856 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b5_200).value()), implicit_cast<TNode<Uint32T>>(t855)));
+          USE(implicit_cast<TNode<Uint32T>>(t856));
+          TNode<Uint32T> t857 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t853), implicit_cast<TNode<Uint32T>>(t856)));
+          USE(implicit_cast<TNode<Uint32T>>(t857));
+          TNode<Uint32T> t858 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t857), implicit_cast<TNode<Uint32T>>((*b4_199).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t858));
+          *high_word_204 = implicit_cast<TNode<Uint32T>>(t858);
+        }
+        Goto(label_if_done_label_720_1167);
+      }
+      if (label__False_279->is_used())
+      {
+        BIND(label__False_279);
+        // ../../src/builtins/data-view.tq:209:12
+        {
+          // ../../src/builtins/data-view.tq:210:7
+          int31_t t859 = 24;
+          TNode<Uint32T> t860 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t859)));
+          TNode<Uint32T> t861 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b0_195).value()), implicit_cast<TNode<Uint32T>>(t860)));
+          USE(implicit_cast<TNode<Uint32T>>(t861));
+          int31_t t862 = 16;
+          TNode<Uint32T> t863 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t862)));
+          TNode<Uint32T> t864 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b1_196).value()), implicit_cast<TNode<Uint32T>>(t863)));
+          USE(implicit_cast<TNode<Uint32T>>(t864));
+          TNode<Uint32T> t865 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t861), implicit_cast<TNode<Uint32T>>(t864)));
+          USE(implicit_cast<TNode<Uint32T>>(t865));
+          int31_t t866 = 8;
+          TNode<Uint32T> t867 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t866)));
+          TNode<Uint32T> t868 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b2_197).value()), implicit_cast<TNode<Uint32T>>(t867)));
+          USE(implicit_cast<TNode<Uint32T>>(t868));
+          TNode<Uint32T> t869 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t865), implicit_cast<TNode<Uint32T>>(t868)));
+          USE(implicit_cast<TNode<Uint32T>>(t869));
+          TNode<Uint32T> t870 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t869), implicit_cast<TNode<Uint32T>>((*b3_198).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t870));
+          *high_word_204 = implicit_cast<TNode<Uint32T>>(t870);
+          // ../../src/builtins/data-view.tq:211:7
+          int31_t t871 = 24;
+          TNode<Uint32T> t872 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t871)));
+          TNode<Uint32T> t873 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b4_199).value()), implicit_cast<TNode<Uint32T>>(t872)));
+          USE(implicit_cast<TNode<Uint32T>>(t873));
+          int31_t t874 = 16;
+          TNode<Uint32T> t875 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t874)));
+          TNode<Uint32T> t876 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b5_200).value()), implicit_cast<TNode<Uint32T>>(t875)));
+          USE(implicit_cast<TNode<Uint32T>>(t876));
+          TNode<Uint32T> t877 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t873), implicit_cast<TNode<Uint32T>>(t876)));
+          USE(implicit_cast<TNode<Uint32T>>(t877));
+          int31_t t878 = 8;
+          TNode<Uint32T> t879 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t878)));
+          TNode<Uint32T> t880 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b6_201).value()), implicit_cast<TNode<Uint32T>>(t879)));
+          USE(implicit_cast<TNode<Uint32T>>(t880));
+          TNode<Uint32T> t881 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t877), implicit_cast<TNode<Uint32T>>(t880)));
+          USE(implicit_cast<TNode<Uint32T>>(t881));
+          TNode<Uint32T> t882 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t881), implicit_cast<TNode<Uint32T>>((*b7_202).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t882));
+          *low_word_203 = implicit_cast<TNode<Uint32T>>(t882);
+        }
+        Goto(label_if_done_label_720_1167);
+      }
+      BIND(label_if_done_label_720_1167);
+    }
+    // ../../src/builtins/data-view.tq:214:5
+    int31_t t883 = 0;
+    TVARIABLE(Float64T, result_205_impl);
+    auto result_205 = &result_205_impl;
+    USE(result_205);
+    TNode<Float64T> t884 = UncheckedCast<Float64T>(from_constexpr9ATfloat64(implicit_cast<int31_t>(t883)));
+    *result_205 = implicit_cast<TNode<Float64T>>(t884);
+    // ../../src/builtins/data-view.tq:215:5
+    TNode<Float64T> t885 = UncheckedCast<Float64T>(Float64InsertLowWord32(implicit_cast<TNode<Float64T>>((*result_205).value()), implicit_cast<TNode<Uint32T>>((*low_word_203).value())));
+    USE(implicit_cast<TNode<Float64T>>(t885));
+    *result_205 = implicit_cast<TNode<Float64T>>(t885);
+    // ../../src/builtins/data-view.tq:216:5
+    TNode<Float64T> t886 = UncheckedCast<Float64T>(Float64InsertHighWord32(implicit_cast<TNode<Float64T>>((*result_205).value()), implicit_cast<TNode<Uint32T>>((*high_word_204).value())));
+    USE(implicit_cast<TNode<Float64T>>(t886));
+    *result_205 = implicit_cast<TNode<Float64T>>(t886);
+    // ../../src/builtins/data-view.tq:218:5
+    TNode<Number> t887 = UncheckedCast<Number>(convert22UT12ATHeapNumber5ATSmi(implicit_cast<TNode<Float64T>>((*result_205).value())));
+    USE(implicit_cast<TNode<Number>>(t887));
+    *_return_193 = implicit_cast<TNode<Number>>(t887);
+    Goto(label_macro_end_1166);
+  }
+  BIND(label_macro_end_1166);
+  return implicit_cast<TNode<Number>>((*_return_193).value());
+}
+
+bool DataViewBuiltinsFromDSLAssembler::kPositiveBigInt() {
+  return implicit_cast<bool>(false);
+}
+
+bool DataViewBuiltinsFromDSLAssembler::kNegativeBigInt() {
+  return implicit_cast<bool>(true);
+}
+
+int31_t DataViewBuiltinsFromDSLAssembler::kZeroDigitBigInt() {
+  int31_t t888 = 0;
+  return implicit_cast<int31_t>(t888);
+}
+
+int31_t DataViewBuiltinsFromDSLAssembler::kOneDigitBigInt() {
+  int31_t t889 = 1;
+  return implicit_cast<int31_t>(t889);
+}
+
+int31_t DataViewBuiltinsFromDSLAssembler::kTwoDigitBigInt() {
+  int31_t t890 = 2;
+  return implicit_cast<int31_t>(t890);
+}
+
+compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::CreateEmptyBigInt(TNode<BoolT> p_is_positive, int31_t p_length) {
+  TVARIABLE(BigInt, _return_206_impl);
+  auto _return_206 = &_return_206_impl;
+  USE(_return_206);
+  Label label_macro_end_1168_impl(this, {_return_206});
+  Label* label_macro_end_1168 = &label_macro_end_1168_impl;
+  USE(label_macro_end_1168);
+  // ../../src/builtins/data-view.tq:233:79
+  {
+    // ../../src/builtins/data-view.tq:235:5
+    TNode<IntPtrT> t891 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(p_length)));
+    TNode<BigInt> t892 = UncheckedCast<BigInt>(AllocateBigInt(implicit_cast<TNode<IntPtrT>>(t891)));
+    USE(implicit_cast<TNode<BigInt>>(t892));
+    TVARIABLE(BigInt, result_207_impl);
+    auto result_207 = &result_207_impl;
+    USE(result_207);
+    *result_207 = implicit_cast<TNode<BigInt>>(t892);
+    // ../../src/builtins/data-view.tq:238:5
+    {
+      Label label__True_280_impl(this);
+      Label* label__True_280 = &label__True_280_impl;
+      USE(label__True_280);
+      Label label__False_281_impl(this);
+      Label* label__False_281 = &label__False_281_impl;
+      USE(label__False_281);
+      Label label_if_done_label_721_1169_impl(this, {});
+      Label* label_if_done_label_721_1169 = &label_if_done_label_721_1169_impl;
+      USE(label_if_done_label_721_1169);
+      Branch(implicit_cast<TNode<BoolT>>(p_is_positive), label__True_280, label__False_281);
+      if (label__True_280->is_used())
+      {
+        BIND(label__True_280);
+        // ../../src/builtins/data-view.tq:238:22
+        {
+          // ../../src/builtins/data-view.tq:239:7
+          TNode<IntPtrT> t893 = UncheckedCast<IntPtrT>(DataViewEncodeBigIntBits(implicit_cast<bool>(kPositiveBigInt()), implicit_cast<int31_t>(p_length)));
+          USE(implicit_cast<TNode<IntPtrT>>(t893));
+          StoreBigIntBitfield(implicit_cast<TNode<BigInt>>((*result_207).value()), implicit_cast<TNode<IntPtrT>>(t893));
+        }
+        Goto(label_if_done_label_721_1169);
+      }
+      if (label__False_281->is_used())
+      {
+        BIND(label__False_281);
+        // ../../src/builtins/data-view.tq:241:12
+        {
+          // ../../src/builtins/data-view.tq:242:7
+          TNode<IntPtrT> t894 = UncheckedCast<IntPtrT>(DataViewEncodeBigIntBits(implicit_cast<bool>(kNegativeBigInt()), implicit_cast<int31_t>(p_length)));
+          USE(implicit_cast<TNode<IntPtrT>>(t894));
+          StoreBigIntBitfield(implicit_cast<TNode<BigInt>>((*result_207).value()), implicit_cast<TNode<IntPtrT>>(t894));
+        }
+        Goto(label_if_done_label_721_1169);
+      }
+      BIND(label_if_done_label_721_1169);
+    }
+    // ../../src/builtins/data-view.tq:246:5
+    *_return_206 = implicit_cast<TNode<BigInt>>((*result_207).value());
+    Goto(label_macro_end_1168);
+  }
+  BIND(label_macro_end_1168);
+  return implicit_cast<TNode<BigInt>>((*_return_206).value());
+}
+
+compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::MakeBigIntOn64Bit(TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, bool p_signed) {
+  TVARIABLE(BigInt, _return_208_impl);
+  auto _return_208 = &_return_208_impl;
+  USE(_return_208);
+  Label label_macro_end_1170_impl(this, {_return_208});
+  Label* label_macro_end_1170 = &label_macro_end_1170_impl;
+  USE(label_macro_end_1170);
+  // ../../src/builtins/data-view.tq:251:59
+  {
+    // ../../src/builtins/data-view.tq:254:5
+    {
+      Label label__True_282_impl(this);
+      Label* label__True_282 = &label__True_282_impl;
+      USE(label__True_282);
+      Label label__False_283_impl(this, {});
+      Label* label__False_283 = &label__False_283_impl;
+      USE(label__False_283);
+      Label label__True_284_impl(this);
+      Label* label__True_284 = &label__True_284_impl;
+      USE(label__True_284);
+      int31_t t895 = 0;
+      TNode<Uint32T> t896 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t895)));
+      TNode<BoolT> t897 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(t896)));
+      USE(implicit_cast<TNode<BoolT>>(t897));
+      GotoIfNot(implicit_cast<TNode<BoolT>>(t897), label__False_283);
+      int31_t t898 = 0;
+      TNode<Uint32T> t899 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t898)));
+      TNode<BoolT> t900 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<TNode<Uint32T>>(t899)));
+      USE(implicit_cast<TNode<BoolT>>(t900));
+      Branch(implicit_cast<TNode<BoolT>>(t900), label__True_282, label__False_283);
+      if (label__True_282->is_used())
+      {
+        BIND(label__True_282);
+        // ../../src/builtins/data-view.tq:254:42
+        {
+          // ../../src/builtins/data-view.tq:255:7
+          TNode<IntPtrT> t901 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(kZeroDigitBigInt())));
+          TNode<BigInt> t902 = UncheckedCast<BigInt>(AllocateBigInt(implicit_cast<TNode<IntPtrT>>(t901)));
+          USE(implicit_cast<TNode<BigInt>>(t902));
+          *_return_208 = implicit_cast<TNode<BigInt>>(t902);
+          Goto(label_macro_end_1170);
+        }
+      }
+      BIND(label__False_283);
+    }
+    // ../../src/builtins/data-view.tq:258:5
+    TVARIABLE(BoolT, is_positive_209_impl);
+    auto is_positive_209 = &is_positive_209_impl;
+    USE(is_positive_209);
+    TNode<BoolT> t903 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(true)));
+    *is_positive_209 = implicit_cast<TNode<BoolT>>(t903);
+    // ../../src/builtins/data-view.tq:259:5
+    TNode<UintPtrT> t904 = UncheckedCast<UintPtrT>(convert9ATuintptr(implicit_cast<TNode<Uint32T>>(p_high_word)));
+    USE(implicit_cast<TNode<UintPtrT>>(t904));
+    TNode<IntPtrT> t905 = UncheckedCast<IntPtrT>(Signed(implicit_cast<TNode<UintPtrT>>(t904)));
+    USE(implicit_cast<TNode<IntPtrT>>(t905));
+    TVARIABLE(IntPtrT, high_part_210_impl);
+    auto high_part_210 = &high_part_210_impl;
+    USE(high_part_210);
+    *high_part_210 = implicit_cast<TNode<IntPtrT>>(t905);
+    // ../../src/builtins/data-view.tq:260:5
+    TNode<UintPtrT> t906 = UncheckedCast<UintPtrT>(convert9ATuintptr(implicit_cast<TNode<Uint32T>>(p_low_word)));
+    USE(implicit_cast<TNode<UintPtrT>>(t906));
+    TNode<IntPtrT> t907 = UncheckedCast<IntPtrT>(Signed(implicit_cast<TNode<UintPtrT>>(t906)));
+    USE(implicit_cast<TNode<IntPtrT>>(t907));
+    TVARIABLE(IntPtrT, low_part_211_impl);
+    auto low_part_211 = &low_part_211_impl;
+    USE(low_part_211);
+    *low_part_211 = implicit_cast<TNode<IntPtrT>>(t907);
+    // ../../src/builtins/data-view.tq:261:5
+    int31_t t908 = 32;
+    TNode<IntPtrT> t909 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t908)));
+    TNode<IntPtrT> t910 = UncheckedCast<IntPtrT>(WordShl(implicit_cast<TNode<IntPtrT>>((*high_part_210).value()), implicit_cast<TNode<IntPtrT>>(t909)));
+    USE(implicit_cast<TNode<IntPtrT>>(t910));
+    TNode<IntPtrT> t911 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(t910), implicit_cast<TNode<IntPtrT>>((*low_part_211).value())));
+    USE(implicit_cast<TNode<IntPtrT>>(t911));
+    TVARIABLE(IntPtrT, raw_value_212_impl);
+    auto raw_value_212 = &raw_value_212_impl;
+    USE(raw_value_212);
+    *raw_value_212 = implicit_cast<TNode<IntPtrT>>(t911);
+    // ../../src/builtins/data-view.tq:263:5
+    {
+      if ((implicit_cast<bool>(p_signed))) {
+        // ../../src/builtins/data-view.tq:263:27
+        {
+          // ../../src/builtins/data-view.tq:264:7
+          {
+            Label label__True_287_impl(this);
+            Label* label__True_287 = &label__True_287_impl;
+            USE(label__True_287);
+            Label label__False_288_impl(this, {is_positive_209, raw_value_212});
+            Label* label__False_288 = &label__False_288_impl;
+            USE(label__False_288);
+            int31_t t912 = 0;
+            TNode<IntPtrT> t913 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t912)));
+            TNode<BoolT> t914 = UncheckedCast<BoolT>(IntPtrLessThan(implicit_cast<TNode<IntPtrT>>((*raw_value_212).value()), implicit_cast<TNode<IntPtrT>>(t913)));
+            USE(implicit_cast<TNode<BoolT>>(t914));
+            Branch(implicit_cast<TNode<BoolT>>(t914), label__True_287, label__False_288);
+            if (label__True_287->is_used())
+            {
+              BIND(label__True_287);
+              // ../../src/builtins/data-view.tq:264:26
+              {
+                // ../../src/builtins/data-view.tq:265:9
+                TNode<BoolT> t915 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(false)));
+                *is_positive_209 = implicit_cast<TNode<BoolT>>(t915);
+                // ../../src/builtins/data-view.tq:267:9
+                int31_t t916 = 0;
+                TNode<IntPtrT> t917 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t916)));
+                TNode<IntPtrT> t918 = UncheckedCast<IntPtrT>(IntPtrSub(implicit_cast<TNode<IntPtrT>>(t917), implicit_cast<TNode<IntPtrT>>((*raw_value_212).value())));
+                USE(implicit_cast<TNode<IntPtrT>>(t918));
+                *raw_value_212 = implicit_cast<TNode<IntPtrT>>(t918);
+              }
+              Goto(label__False_288);
+            }
+            BIND(label__False_288);
+          }
+        }
+      }
+    }
+    // ../../src/builtins/data-view.tq:272:5
+    TNode<BigInt> t919 = UncheckedCast<BigInt>(CreateEmptyBigInt(implicit_cast<TNode<BoolT>>((*is_positive_209).value()), implicit_cast<int31_t>(kOneDigitBigInt())));
+    USE(implicit_cast<TNode<BigInt>>(t919));
+    TVARIABLE(BigInt, result_213_impl);
+    auto result_213 = &result_213_impl;
+    USE(result_213);
+    *result_213 = implicit_cast<TNode<BigInt>>(t919);
+    // ../../src/builtins/data-view.tq:274:5
+    int31_t t920 = 0;
+    TNode<UintPtrT> t921 = UncheckedCast<UintPtrT>(Unsigned(implicit_cast<TNode<IntPtrT>>((*raw_value_212).value())));
+    USE(implicit_cast<TNode<UintPtrT>>(t921));
+    StoreBigIntDigit(implicit_cast<TNode<BigInt>>((*result_213).value()), implicit_cast<int31_t>(t920), implicit_cast<TNode<UintPtrT>>(t921));
+    // ../../src/builtins/data-view.tq:276:5
+    *_return_208 = implicit_cast<TNode<BigInt>>((*result_213).value());
+    Goto(label_macro_end_1170);
+  }
+  BIND(label_macro_end_1170);
+  return implicit_cast<TNode<BigInt>>((*_return_208).value());
+}
+
+compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::MakeBigIntOn32Bit(TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, bool p_signed) {
+  TVARIABLE(BigInt, _return_214_impl);
+  auto _return_214 = &_return_214_impl;
+  USE(_return_214);
+  Label label_macro_end_1171_impl(this, {_return_214});
+  Label* label_macro_end_1171 = &label_macro_end_1171_impl;
+  USE(label_macro_end_1171);
+  // ../../src/builtins/data-view.tq:281:59
+  {
+    // ../../src/builtins/data-view.tq:284:5
+    {
+      Label label__True_289_impl(this);
+      Label* label__True_289 = &label__True_289_impl;
+      USE(label__True_289);
+      Label label__False_290_impl(this, {});
+      Label* label__False_290 = &label__False_290_impl;
+      USE(label__False_290);
+      Label label__True_291_impl(this);
+      Label* label__True_291 = &label__True_291_impl;
+      USE(label__True_291);
+      int31_t t922 = 0;
+      TNode<Uint32T> t923 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t922)));
+      TNode<BoolT> t924 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(t923)));
+      USE(implicit_cast<TNode<BoolT>>(t924));
+      GotoIfNot(implicit_cast<TNode<BoolT>>(t924), label__False_290);
+      int31_t t925 = 0;
+      TNode<Uint32T> t926 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t925)));
+      TNode<BoolT> t927 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<TNode<Uint32T>>(t926)));
+      USE(implicit_cast<TNode<BoolT>>(t927));
+      Branch(implicit_cast<TNode<BoolT>>(t927), label__True_289, label__False_290);
+      if (label__True_289->is_used())
+      {
+        BIND(label__True_289);
+        // ../../src/builtins/data-view.tq:284:42
+        {
+          // ../../src/builtins/data-view.tq:285:7
+          TNode<IntPtrT> t928 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(kZeroDigitBigInt())));
+          TNode<BigInt> t929 = UncheckedCast<BigInt>(AllocateBigInt(implicit_cast<TNode<IntPtrT>>(t928)));
+          USE(implicit_cast<TNode<BigInt>>(t929));
+          *_return_214 = implicit_cast<TNode<BigInt>>(t929);
+          Goto(label_macro_end_1171);
+        }
+      }
+      BIND(label__False_290);
+    }
+    // ../../src/builtins/data-view.tq:289:5
+    TVARIABLE(BoolT, need_two_digits_215_impl);
+    auto need_two_digits_215 = &need_two_digits_215_impl;
+    USE(need_two_digits_215);
+    TNode<BoolT> t930 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(false)));
+    *need_two_digits_215 = implicit_cast<TNode<BoolT>>(t930);
+    // ../../src/builtins/data-view.tq:290:5
+    TVARIABLE(BoolT, is_positive_216_impl);
+    auto is_positive_216 = &is_positive_216_impl;
+    USE(is_positive_216);
+    TNode<BoolT> t931 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(true)));
+    *is_positive_216 = implicit_cast<TNode<BoolT>>(t931);
+    // ../../src/builtins/data-view.tq:294:5
+    TNode<Int32T> t932 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>(p_low_word)));
+    USE(implicit_cast<TNode<Int32T>>(t932));
+    TVARIABLE(Int32T, low_part_217_impl);
+    auto low_part_217 = &low_part_217_impl;
+    USE(low_part_217);
+    *low_part_217 = implicit_cast<TNode<Int32T>>(t932);
+    // ../../src/builtins/data-view.tq:295:5
+    TNode<Int32T> t933 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>(p_high_word)));
+    USE(implicit_cast<TNode<Int32T>>(t933));
+    TVARIABLE(Int32T, high_part_218_impl);
+    auto high_part_218 = &high_part_218_impl;
+    USE(high_part_218);
+    *high_part_218 = implicit_cast<TNode<Int32T>>(t933);
+    // ../../src/builtins/data-view.tq:300:5
+    {
+      Label label__True_292_impl(this);
+      Label* label__True_292 = &label__True_292_impl;
+      USE(label__True_292);
+      Label label__False_293_impl(this, {high_part_218, is_positive_216, low_part_217, need_two_digits_215});
+      Label* label__False_293 = &label__False_293_impl;
+      USE(label__False_293);
+      int31_t t934 = 0;
+      TNode<Uint32T> t935 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t934)));
+      TNode<BoolT> t936 = UncheckedCast<BoolT>(Word32NotEqual(implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<TNode<Uint32T>>(t935)));
+      USE(implicit_cast<TNode<BoolT>>(t936));
+      Branch(implicit_cast<TNode<BoolT>>(t936), label__True_292, label__False_293);
+      if (label__True_292->is_used())
+      {
+        BIND(label__True_292);
+        // ../../src/builtins/data-view.tq:300:25
+        {
+          // ../../src/builtins/data-view.tq:301:7
+          {
+            if ((implicit_cast<bool>(p_signed))) {
+              // ../../src/builtins/data-view.tq:301:29
+              {
+                // ../../src/builtins/data-view.tq:304:9
+                {
+                  Label label__True_296_impl(this);
+                  Label* label__True_296 = &label__True_296_impl;
+                  USE(label__True_296);
+                  Label label__False_297_impl(this);
+                  Label* label__False_297 = &label__False_297_impl;
+                  USE(label__False_297);
+                  Label label_if_done_label_722_1172_impl(this, {high_part_218, is_positive_216, low_part_217, need_two_digits_215});
+                  Label* label_if_done_label_722_1172 = &label_if_done_label_722_1172_impl;
+                  USE(label_if_done_label_722_1172);
+                  int31_t t937 = 0;
+                  TNode<Int32T> t938 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t937)));
+                  TNode<BoolT> t939 = UncheckedCast<BoolT>(Int32LessThan(implicit_cast<TNode<Int32T>>((*high_part_218).value()), implicit_cast<TNode<Int32T>>(t938)));
+                  USE(implicit_cast<TNode<BoolT>>(t939));
+                  Branch(implicit_cast<TNode<BoolT>>(t939), label__True_296, label__False_297);
+                  if (label__True_296->is_used())
+                  {
+                    BIND(label__True_296);
+                    // ../../src/builtins/data-view.tq:304:28
+                    {
+                      // ../../src/builtins/data-view.tq:305:11
+                      TNode<BoolT> t940 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(false)));
+                      *is_positive_216 = implicit_cast<TNode<BoolT>>(t940);
+                      // ../../src/builtins/data-view.tq:310:11
+                      int31_t t941 = 0;
+                      TNode<Int32T> t942 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t941)));
+                      TNode<Int32T> t943 = UncheckedCast<Int32T>(Int32Sub(implicit_cast<TNode<Int32T>>(t942), implicit_cast<TNode<Int32T>>((*high_part_218).value())));
+                      USE(implicit_cast<TNode<Int32T>>(t943));
+                      *high_part_218 = implicit_cast<TNode<Int32T>>(t943);
+                      // ../../src/builtins/data-view.tq:311:11
+                      {
+                        Label label__True_298_impl(this);
+                        Label* label__True_298 = &label__True_298_impl;
+                        USE(label__True_298);
+                        Label label__False_299_impl(this, {high_part_218});
+                        Label* label__False_299 = &label__False_299_impl;
+                        USE(label__False_299);
+                        int31_t t944 = 0;
+                        TNode<Int32T> t945 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t944)));
+                        TNode<BoolT> t946 = UncheckedCast<BoolT>(Word32NotEqual(implicit_cast<TNode<Int32T>>((*low_part_217).value()), implicit_cast<TNode<Int32T>>(t945)));
+                        USE(implicit_cast<TNode<BoolT>>(t946));
+                        Branch(implicit_cast<TNode<BoolT>>(t946), label__True_298, label__False_299);
+                        if (label__True_298->is_used())
+                        {
+                          BIND(label__True_298);
+                          // ../../src/builtins/data-view.tq:311:30
+                          {
+                            // ../../src/builtins/data-view.tq:312:13
+                            int31_t t947 = 1;
+                            TNode<Int32T> t948 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t947)));
+                            TNode<Int32T> t949 = UncheckedCast<Int32T>(Int32Sub(implicit_cast<TNode<Int32T>>((*high_part_218).value()), implicit_cast<TNode<Int32T>>(t948)));
+                            USE(implicit_cast<TNode<Int32T>>(t949));
+                            *high_part_218 = implicit_cast<TNode<Int32T>>(t949);
+                          }
+                          Goto(label__False_299);
+                        }
+                        BIND(label__False_299);
+                      }
+                      // ../../src/builtins/data-view.tq:314:11
+                      int31_t t950 = 0;
+                      TNode<Int32T> t951 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t950)));
+                      TNode<Int32T> t952 = UncheckedCast<Int32T>(Int32Sub(implicit_cast<TNode<Int32T>>(t951), implicit_cast<TNode<Int32T>>((*low_part_217).value())));
+                      USE(implicit_cast<TNode<Int32T>>(t952));
+                      *low_part_217 = implicit_cast<TNode<Int32T>>(t952);
+                      // ../../src/builtins/data-view.tq:317:11
+                      {
+                        Label label__True_300_impl(this);
+                        Label* label__True_300 = &label__True_300_impl;
+                        USE(label__True_300);
+                        Label label__False_301_impl(this, {need_two_digits_215});
+                        Label* label__False_301 = &label__False_301_impl;
+                        USE(label__False_301);
+                        int31_t t953 = 0;
+                        TNode<Int32T> t954 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t953)));
+                        TNode<BoolT> t955 = UncheckedCast<BoolT>(Word32NotEqual(implicit_cast<TNode<Int32T>>((*high_part_218).value()), implicit_cast<TNode<Int32T>>(t954)));
+                        USE(implicit_cast<TNode<BoolT>>(t955));
+                        Branch(implicit_cast<TNode<BoolT>>(t955), label__True_300, label__False_301);
+                        if (label__True_300->is_used())
+                        {
+                          BIND(label__True_300);
+                          // ../../src/builtins/data-view.tq:317:31
+                          {
+                            // ../../src/builtins/data-view.tq:318:13
+                            TNode<BoolT> t956 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(true)));
+                            *need_two_digits_215 = implicit_cast<TNode<BoolT>>(t956);
+                          }
+                          Goto(label__False_301);
+                        }
+                        BIND(label__False_301);
+                      }
+                    }
+                    Goto(label_if_done_label_722_1172);
+                  }
+                  if (label__False_297->is_used())
+                  {
+                    BIND(label__False_297);
+                    // ../../src/builtins/data-view.tq:321:16
+                    {
+                      // ../../src/builtins/data-view.tq:323:11
+                      TNode<BoolT> t957 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(true)));
+                      *need_two_digits_215 = implicit_cast<TNode<BoolT>>(t957);
+                    }
+                    Goto(label_if_done_label_722_1172);
+                  }
+                  BIND(label_if_done_label_722_1172);
+                }
+              }
+            } else {
+              // ../../src/builtins/data-view.tq:326:14
+              {
+                // ../../src/builtins/data-view.tq:329:9
+                TNode<BoolT> t958 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(true)));
+                *need_two_digits_215 = implicit_cast<TNode<BoolT>>(t958);
+              }
+            }
+          }
+        }
+        Goto(label__False_293);
+      }
+      BIND(label__False_293);
+    }
+    // ../../src/builtins/data-view.tq:334:5
+    TVARIABLE(BigInt, result_219_impl);
+    auto result_219 = &result_219_impl;
+    USE(result_219);
+    // ../../src/builtins/data-view.tq:335:5
+    {
+      Label label__True_302_impl(this);
+      Label* label__True_302 = &label__True_302_impl;
+      USE(label__True_302);
+      Label label__False_303_impl(this);
+      Label* label__False_303 = &label__False_303_impl;
+      USE(label__False_303);
+      Label label_if_done_label_723_1173_impl(this, {result_219});
+      Label* label_if_done_label_723_1173 = &label_if_done_label_723_1173_impl;
+      USE(label_if_done_label_723_1173);
+      Branch(implicit_cast<TNode<BoolT>>((*need_two_digits_215).value()), label__True_302, label__False_303);
+      if (label__True_302->is_used())
+      {
+        BIND(label__True_302);
+        // ../../src/builtins/data-view.tq:335:26
+        {
+          // ../../src/builtins/data-view.tq:336:7
+          TNode<BigInt> t959 = UncheckedCast<BigInt>(CreateEmptyBigInt(implicit_cast<TNode<BoolT>>((*is_positive_216).value()), implicit_cast<int31_t>(kTwoDigitBigInt())));
+          USE(implicit_cast<TNode<BigInt>>(t959));
+          *result_219 = implicit_cast<TNode<BigInt>>(t959);
+        }
+        Goto(label_if_done_label_723_1173);
+      }
+      if (label__False_303->is_used())
+      {
+        BIND(label__False_303);
+        // ../../src/builtins/data-view.tq:337:12
+        {
+          // ../../src/builtins/data-view.tq:338:7
+          TNode<BigInt> t960 = UncheckedCast<BigInt>(CreateEmptyBigInt(implicit_cast<TNode<BoolT>>((*is_positive_216).value()), implicit_cast<int31_t>(kOneDigitBigInt())));
+          USE(implicit_cast<TNode<BigInt>>(t960));
+          *result_219 = implicit_cast<TNode<BigInt>>(t960);
+        }
+        Goto(label_if_done_label_723_1173);
+      }
+      BIND(label_if_done_label_723_1173);
+    }
+    // ../../src/builtins/data-view.tq:342:5
+    int31_t t961 = 0;
+    TNode<IntPtrT> t962 = UncheckedCast<IntPtrT>(convert8ATintptr(implicit_cast<TNode<Int32T>>((*low_part_217).value())));
+    USE(implicit_cast<TNode<IntPtrT>>(t962));
+    TNode<UintPtrT> t963 = UncheckedCast<UintPtrT>(Unsigned(implicit_cast<TNode<IntPtrT>>(t962)));
+    USE(implicit_cast<TNode<UintPtrT>>(t963));
+    StoreBigIntDigit(implicit_cast<TNode<BigInt>>((*result_219).value()), implicit_cast<int31_t>(t961), implicit_cast<TNode<UintPtrT>>(t963));
+    // ../../src/builtins/data-view.tq:344:5
+    {
+      Label label__True_304_impl(this);
+      Label* label__True_304 = &label__True_304_impl;
+      USE(label__True_304);
+      Label label__False_305_impl(this, {});
+      Label* label__False_305 = &label__False_305_impl;
+      USE(label__False_305);
+      Branch(implicit_cast<TNode<BoolT>>((*need_two_digits_215).value()), label__True_304, label__False_305);
+      if (label__True_304->is_used())
+      {
+        BIND(label__True_304);
+        // ../../src/builtins/data-view.tq:344:26
+        {
+          // ../../src/builtins/data-view.tq:345:7
+          int31_t t964 = 1;
+          TNode<IntPtrT> t965 = UncheckedCast<IntPtrT>(convert8ATintptr(implicit_cast<TNode<Int32T>>((*high_part_218).value())));
+          USE(implicit_cast<TNode<IntPtrT>>(t965));
+          TNode<UintPtrT> t966 = UncheckedCast<UintPtrT>(Unsigned(implicit_cast<TNode<IntPtrT>>(t965)));
+          USE(implicit_cast<TNode<UintPtrT>>(t966));
+          StoreBigIntDigit(implicit_cast<TNode<BigInt>>((*result_219).value()), implicit_cast<int31_t>(t964), implicit_cast<TNode<UintPtrT>>(t966));
+        }
+        Goto(label__False_305);
+      }
+      BIND(label__False_305);
+    }
+    // ../../src/builtins/data-view.tq:348:5
+    *_return_214 = implicit_cast<TNode<BigInt>>((*result_219).value());
+    Goto(label_macro_end_1171);
+  }
+  BIND(label_macro_end_1171);
+  return implicit_cast<TNode<BigInt>>((*_return_214).value());
+}
+
+compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::MakeBigInt(TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, bool p_signed) {
+  TVARIABLE(BigInt, _return_220_impl);
+  auto _return_220 = &_return_220_impl;
+  USE(_return_220);
+  Label label_macro_end_1174_impl(this, {_return_220});
+  Label* label_macro_end_1174 = &label_macro_end_1174_impl;
+  USE(label_macro_end_1174);
+  // ../../src/builtins/data-view.tq:352:52
+  {
+    // ../../src/builtins/data-view.tq:355:5
+    {
+      bool t967 = Is64();
+      USE(implicit_cast<bool>(t967));
+      if ((implicit_cast<bool>(t967))) {
+        // ../../src/builtins/data-view.tq:355:27
+        {
+          // ../../src/builtins/data-view.tq:356:7
+          TNode<BigInt> t968 = UncheckedCast<BigInt>(MakeBigIntOn64Bit(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<bool>(p_signed)));
+          USE(implicit_cast<TNode<BigInt>>(t968));
+          *_return_220 = implicit_cast<TNode<BigInt>>(t968);
+          Goto(label_macro_end_1174);
+        }
+      } else {
+        // ../../src/builtins/data-view.tq:357:12
+        {
+          // ../../src/builtins/data-view.tq:358:7
+          TNode<BigInt> t969 = UncheckedCast<BigInt>(MakeBigIntOn32Bit(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<bool>(p_signed)));
+          USE(implicit_cast<TNode<BigInt>>(t969));
+          *_return_220 = implicit_cast<TNode<BigInt>>(t969);
+          Goto(label_macro_end_1174);
+        }
+      }
+    }
+  }
+  BIND(label_macro_end_1174);
+  return implicit_cast<TNode<BigInt>>((*_return_220).value());
+}
+
+compiler::TNode<BigInt> DataViewBuiltinsFromDSLAssembler::LoadDataViewBigInt(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BoolT> p_requested_little_endian, bool p_signed) {
+  TVARIABLE(BigInt, _return_221_impl);
+  auto _return_221 = &_return_221_impl;
+  USE(_return_221);
+  Label label_macro_end_1175_impl(this, {_return_221});
+  Label* label_macro_end_1175 = &label_macro_end_1175_impl;
+  USE(label_macro_end_1175);
+  // ../../src/builtins/data-view.tq:364:60
+  {
+    // ../../src/builtins/data-view.tq:365:5
+    TNode<RawPtrT> t970 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    TVARIABLE(RawPtrT, data_pointer_222_impl);
+    auto data_pointer_222 = &data_pointer_222_impl;
+    USE(data_pointer_222);
+    *data_pointer_222 = implicit_cast<TNode<RawPtrT>>(t970);
+    // ../../src/builtins/data-view.tq:367:5
+    TNode<Uint32T> t971 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(p_offset)));
+    USE(implicit_cast<TNode<Uint32T>>(t971));
+    TVARIABLE(Uint32T, b0_223_impl);
+    auto b0_223 = &b0_223_impl;
+    USE(b0_223);
+    *b0_223 = implicit_cast<TNode<Uint32T>>(t971);
+    // ../../src/builtins/data-view.tq:368:5
+    int31_t t972 = 1;
+    TNode<IntPtrT> t973 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t972)));
+    TNode<IntPtrT> t974 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t973)));
+    USE(implicit_cast<TNode<IntPtrT>>(t974));
+    TNode<Uint32T> t975 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(t974)));
+    USE(implicit_cast<TNode<Uint32T>>(t975));
+    TVARIABLE(Uint32T, b1_224_impl);
+    auto b1_224 = &b1_224_impl;
+    USE(b1_224);
+    *b1_224 = implicit_cast<TNode<Uint32T>>(t975);
+    // ../../src/builtins/data-view.tq:369:5
+    int31_t t976 = 2;
+    TNode<IntPtrT> t977 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t976)));
+    TNode<IntPtrT> t978 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t977)));
+    USE(implicit_cast<TNode<IntPtrT>>(t978));
+    TNode<Uint32T> t979 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(t978)));
+    USE(implicit_cast<TNode<Uint32T>>(t979));
+    TVARIABLE(Uint32T, b2_225_impl);
+    auto b2_225 = &b2_225_impl;
+    USE(b2_225);
+    *b2_225 = implicit_cast<TNode<Uint32T>>(t979);
+    // ../../src/builtins/data-view.tq:370:5
+    int31_t t980 = 3;
+    TNode<IntPtrT> t981 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t980)));
+    TNode<IntPtrT> t982 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t981)));
+    USE(implicit_cast<TNode<IntPtrT>>(t982));
+    TNode<Uint32T> t983 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(t982)));
+    USE(implicit_cast<TNode<Uint32T>>(t983));
+    TVARIABLE(Uint32T, b3_226_impl);
+    auto b3_226 = &b3_226_impl;
+    USE(b3_226);
+    *b3_226 = implicit_cast<TNode<Uint32T>>(t983);
+    // ../../src/builtins/data-view.tq:371:5
+    int31_t t984 = 4;
+    TNode<IntPtrT> t985 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t984)));
+    TNode<IntPtrT> t986 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t985)));
+    USE(implicit_cast<TNode<IntPtrT>>(t986));
+    TNode<Uint32T> t987 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(t986)));
+    USE(implicit_cast<TNode<Uint32T>>(t987));
+    TVARIABLE(Uint32T, b4_227_impl);
+    auto b4_227 = &b4_227_impl;
+    USE(b4_227);
+    *b4_227 = implicit_cast<TNode<Uint32T>>(t987);
+    // ../../src/builtins/data-view.tq:372:5
+    int31_t t988 = 5;
+    TNode<IntPtrT> t989 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t988)));
+    TNode<IntPtrT> t990 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t989)));
+    USE(implicit_cast<TNode<IntPtrT>>(t990));
+    TNode<Uint32T> t991 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(t990)));
+    USE(implicit_cast<TNode<Uint32T>>(t991));
+    TVARIABLE(Uint32T, b5_228_impl);
+    auto b5_228 = &b5_228_impl;
+    USE(b5_228);
+    *b5_228 = implicit_cast<TNode<Uint32T>>(t991);
+    // ../../src/builtins/data-view.tq:373:5
+    int31_t t992 = 6;
+    TNode<IntPtrT> t993 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t992)));
+    TNode<IntPtrT> t994 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t993)));
+    USE(implicit_cast<TNode<IntPtrT>>(t994));
+    TNode<Uint32T> t995 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(t994)));
+    USE(implicit_cast<TNode<Uint32T>>(t995));
+    TVARIABLE(Uint32T, b6_229_impl);
+    auto b6_229 = &b6_229_impl;
+    USE(b6_229);
+    *b6_229 = implicit_cast<TNode<Uint32T>>(t995);
+    // ../../src/builtins/data-view.tq:374:5
+    int31_t t996 = 7;
+    TNode<IntPtrT> t997 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t996)));
+    TNode<IntPtrT> t998 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t997)));
+    USE(implicit_cast<TNode<IntPtrT>>(t998));
+    TNode<Uint32T> t999 = UncheckedCast<Uint32T>(LoadUint8(implicit_cast<TNode<RawPtrT>>((*data_pointer_222).value()), implicit_cast<TNode<IntPtrT>>(t998)));
+    USE(implicit_cast<TNode<Uint32T>>(t999));
+    TVARIABLE(Uint32T, b7_230_impl);
+    auto b7_230 = &b7_230_impl;
+    USE(b7_230);
+    *b7_230 = implicit_cast<TNode<Uint32T>>(t999);
+    // ../../src/builtins/data-view.tq:375:5
+    TVARIABLE(Uint32T, low_word_231_impl);
+    auto low_word_231 = &low_word_231_impl;
+    USE(low_word_231);
+    // ../../src/builtins/data-view.tq:376:5
+    TVARIABLE(Uint32T, high_word_232_impl);
+    auto high_word_232 = &high_word_232_impl;
+    USE(high_word_232);
+    // ../../src/builtins/data-view.tq:378:5
+    {
+      Label label__True_308_impl(this);
+      Label* label__True_308 = &label__True_308_impl;
+      USE(label__True_308);
+      Label label__False_309_impl(this);
+      Label* label__False_309 = &label__False_309_impl;
+      USE(label__False_309);
+      Label label_if_done_label_724_1176_impl(this, {high_word_232, low_word_231});
+      Label* label_if_done_label_724_1176 = &label_if_done_label_724_1176_impl;
+      USE(label_if_done_label_724_1176);
+      Branch(implicit_cast<TNode<BoolT>>(p_requested_little_endian), label__True_308, label__False_309);
+      if (label__True_308->is_used())
+      {
+        BIND(label__True_308);
+        // ../../src/builtins/data-view.tq:378:34
+        {
+          // ../../src/builtins/data-view.tq:379:7
+          int31_t t1000 = 24;
+          TNode<Uint32T> t1001 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1000)));
+          TNode<Uint32T> t1002 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b3_226).value()), implicit_cast<TNode<Uint32T>>(t1001)));
+          USE(implicit_cast<TNode<Uint32T>>(t1002));
+          int31_t t1003 = 16;
+          TNode<Uint32T> t1004 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1003)));
+          TNode<Uint32T> t1005 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b2_225).value()), implicit_cast<TNode<Uint32T>>(t1004)));
+          USE(implicit_cast<TNode<Uint32T>>(t1005));
+          TNode<Uint32T> t1006 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1002), implicit_cast<TNode<Uint32T>>(t1005)));
+          USE(implicit_cast<TNode<Uint32T>>(t1006));
+          int31_t t1007 = 8;
+          TNode<Uint32T> t1008 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1007)));
+          TNode<Uint32T> t1009 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b1_224).value()), implicit_cast<TNode<Uint32T>>(t1008)));
+          USE(implicit_cast<TNode<Uint32T>>(t1009));
+          TNode<Uint32T> t1010 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1006), implicit_cast<TNode<Uint32T>>(t1009)));
+          USE(implicit_cast<TNode<Uint32T>>(t1010));
+          TNode<Uint32T> t1011 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1010), implicit_cast<TNode<Uint32T>>((*b0_223).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t1011));
+          *low_word_231 = implicit_cast<TNode<Uint32T>>(t1011);
+          // ../../src/builtins/data-view.tq:380:7
+          int31_t t1012 = 24;
+          TNode<Uint32T> t1013 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1012)));
+          TNode<Uint32T> t1014 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b7_230).value()), implicit_cast<TNode<Uint32T>>(t1013)));
+          USE(implicit_cast<TNode<Uint32T>>(t1014));
+          int31_t t1015 = 16;
+          TNode<Uint32T> t1016 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1015)));
+          TNode<Uint32T> t1017 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b6_229).value()), implicit_cast<TNode<Uint32T>>(t1016)));
+          USE(implicit_cast<TNode<Uint32T>>(t1017));
+          TNode<Uint32T> t1018 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1014), implicit_cast<TNode<Uint32T>>(t1017)));
+          USE(implicit_cast<TNode<Uint32T>>(t1018));
+          int31_t t1019 = 8;
+          TNode<Uint32T> t1020 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1019)));
+          TNode<Uint32T> t1021 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b5_228).value()), implicit_cast<TNode<Uint32T>>(t1020)));
+          USE(implicit_cast<TNode<Uint32T>>(t1021));
+          TNode<Uint32T> t1022 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1018), implicit_cast<TNode<Uint32T>>(t1021)));
+          USE(implicit_cast<TNode<Uint32T>>(t1022));
+          TNode<Uint32T> t1023 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1022), implicit_cast<TNode<Uint32T>>((*b4_227).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t1023));
+          *high_word_232 = implicit_cast<TNode<Uint32T>>(t1023);
+        }
+        Goto(label_if_done_label_724_1176);
+      }
+      if (label__False_309->is_used())
+      {
+        BIND(label__False_309);
+        // ../../src/builtins/data-view.tq:381:12
+        {
+          // ../../src/builtins/data-view.tq:382:7
+          int31_t t1024 = 24;
+          TNode<Uint32T> t1025 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1024)));
+          TNode<Uint32T> t1026 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b0_223).value()), implicit_cast<TNode<Uint32T>>(t1025)));
+          USE(implicit_cast<TNode<Uint32T>>(t1026));
+          int31_t t1027 = 16;
+          TNode<Uint32T> t1028 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1027)));
+          TNode<Uint32T> t1029 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b1_224).value()), implicit_cast<TNode<Uint32T>>(t1028)));
+          USE(implicit_cast<TNode<Uint32T>>(t1029));
+          TNode<Uint32T> t1030 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1026), implicit_cast<TNode<Uint32T>>(t1029)));
+          USE(implicit_cast<TNode<Uint32T>>(t1030));
+          int31_t t1031 = 8;
+          TNode<Uint32T> t1032 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1031)));
+          TNode<Uint32T> t1033 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b2_225).value()), implicit_cast<TNode<Uint32T>>(t1032)));
+          USE(implicit_cast<TNode<Uint32T>>(t1033));
+          TNode<Uint32T> t1034 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1030), implicit_cast<TNode<Uint32T>>(t1033)));
+          USE(implicit_cast<TNode<Uint32T>>(t1034));
+          TNode<Uint32T> t1035 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1034), implicit_cast<TNode<Uint32T>>((*b3_226).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t1035));
+          *high_word_232 = implicit_cast<TNode<Uint32T>>(t1035);
+          // ../../src/builtins/data-view.tq:383:7
+          int31_t t1036 = 24;
+          TNode<Uint32T> t1037 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1036)));
+          TNode<Uint32T> t1038 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b4_227).value()), implicit_cast<TNode<Uint32T>>(t1037)));
+          USE(implicit_cast<TNode<Uint32T>>(t1038));
+          int31_t t1039 = 16;
+          TNode<Uint32T> t1040 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1039)));
+          TNode<Uint32T> t1041 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b5_228).value()), implicit_cast<TNode<Uint32T>>(t1040)));
+          USE(implicit_cast<TNode<Uint32T>>(t1041));
+          TNode<Uint32T> t1042 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1038), implicit_cast<TNode<Uint32T>>(t1041)));
+          USE(implicit_cast<TNode<Uint32T>>(t1042));
+          int31_t t1043 = 8;
+          TNode<Uint32T> t1044 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1043)));
+          TNode<Uint32T> t1045 = UncheckedCast<Uint32T>(Word32Shl(implicit_cast<TNode<Uint32T>>((*b6_229).value()), implicit_cast<TNode<Uint32T>>(t1044)));
+          USE(implicit_cast<TNode<Uint32T>>(t1045));
+          TNode<Uint32T> t1046 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1042), implicit_cast<TNode<Uint32T>>(t1045)));
+          USE(implicit_cast<TNode<Uint32T>>(t1046));
+          TNode<Uint32T> t1047 = UncheckedCast<Uint32T>(Word32Or(implicit_cast<TNode<Uint32T>>(t1046), implicit_cast<TNode<Uint32T>>((*b7_230).value())));
+          USE(implicit_cast<TNode<Uint32T>>(t1047));
+          *low_word_231 = implicit_cast<TNode<Uint32T>>(t1047);
+        }
+        Goto(label_if_done_label_724_1176);
+      }
+      BIND(label_if_done_label_724_1176);
+    }
+    // ../../src/builtins/data-view.tq:386:5
+    TNode<BigInt> t1048 = UncheckedCast<BigInt>(MakeBigInt(implicit_cast<TNode<Uint32T>>((*low_word_231).value()), implicit_cast<TNode<Uint32T>>((*high_word_232).value()), implicit_cast<bool>(p_signed)));
+    USE(implicit_cast<TNode<BigInt>>(t1048));
+    *_return_221 = implicit_cast<TNode<BigInt>>(t1048);
+    Goto(label_macro_end_1175);
+  }
+  BIND(label_macro_end_1175);
+  return implicit_cast<TNode<BigInt>>((*_return_221).value());
+}
+
+compiler::TNode<Numeric> DataViewBuiltinsFromDSLAssembler::DataViewGet(TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_offset, TNode<Object> p_requested_little_endian, ElementsKind p_kind) {
+  TVARIABLE(Numeric, _return_233_impl);
+  auto _return_233 = &_return_233_impl;
+  USE(_return_233);
+  Label label_macro_end_1177_impl(this, {_return_233});
+  Label* label_macro_end_1177 = &label_macro_end_1177_impl;
+  USE(label_macro_end_1177);
+  // ../../src/builtins/data-view.tq:396:60
+  {
+    // ../../src/builtins/data-view.tq:398:5
+    TNode<String> t1049 = UncheckedCast<String>(MakeDataViewGetterNameString(implicit_cast<ElementsKind>(p_kind)));
+    USE(implicit_cast<TNode<String>>(t1049));
+    TNode<JSDataView> t1050 = UncheckedCast<JSDataView>(ValidateDataView(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<String>>(t1049)));
+    USE(implicit_cast<TNode<JSDataView>>(t1050));
+    TVARIABLE(JSDataView, data_view_234_impl);
+    auto data_view_234 = &data_view_234_impl;
+    USE(data_view_234);
+    *data_view_234 = implicit_cast<TNode<JSDataView>>(t1050);
+    // ../../src/builtins/data-view.tq:401:5
+    TVARIABLE(Number, getIndex_235_impl);
+    auto getIndex_235 = &getIndex_235_impl;
+    USE(getIndex_235);
+    // ../../src/builtins/data-view.tq:402:5
+    {
+      Label label_try_done_725_1178_impl(this);
+      Label* label_try_done_725_1178 = &label_try_done_725_1178_impl;
+      USE(label_try_done_725_1178);
+      Label label_RangeError_310_impl(this);
+      Label* label_RangeError_310 = &label_RangeError_310_impl;
+      USE(label_RangeError_310);
+      Label label_try_begin_726_1179_impl(this);
+      Label* label_try_begin_726_1179 = &label_try_begin_726_1179_impl;
+      USE(label_try_begin_726_1179);
+      Goto(label_try_begin_726_1179);
+      if (label_try_begin_726_1179->is_used())
+      {
+        BIND(label_try_begin_726_1179);
+        // ../../src/builtins/data-view.tq:402:9
+        {
+          // ../../src/builtins/data-view.tq:403:7
+          TNode<Number> t1051 = UncheckedCast<Number>(ToIndex(implicit_cast<TNode<Object>>(p_offset), implicit_cast<TNode<Context>>(p_context), label_RangeError_310));
+          USE(implicit_cast<TNode<Number>>(t1051));
+          *getIndex_235 = implicit_cast<TNode<Number>>(t1051);
+        }
+        Goto(label_try_done_725_1178);
+      }
+      if (label_RangeError_310->is_used())
+      {
+        BIND(label_RangeError_310);
+        // ../../src/builtins/data-view.tq:405:22
+        {
+          // ../../src/builtins/data-view.tq:406:7
+          ThrowRangeError(implicit_cast<TNode<Context>>(p_context), implicit_cast<MessageTemplate::Template>(MessageTemplate::kInvalidDataViewAccessorOffset));
+        }
+      }
+      BIND(label_try_done_725_1178);
+    }
+    // ../../src/builtins/data-view.tq:409:5
+    TNode<BoolT> t1052 = UncheckedCast<BoolT>(ToBoolean(implicit_cast<TNode<Object>>(p_requested_little_endian)));
+    USE(implicit_cast<TNode<BoolT>>(t1052));
+    TVARIABLE(BoolT, littleEndian_236_impl);
+    auto littleEndian_236 = &littleEndian_236_impl;
+    USE(littleEndian_236);
+    *littleEndian_236 = implicit_cast<TNode<BoolT>>(t1052);
+    // ../../src/builtins/data-view.tq:410:5
+    TNode<JSArrayBuffer> t1053 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer(implicit_cast<TNode<JSArrayBufferView>>((*data_view_234).value())));
+    TVARIABLE(JSArrayBuffer, buffer_237_impl);
+    auto buffer_237 = &buffer_237_impl;
+    USE(buffer_237);
+    *buffer_237 = implicit_cast<TNode<JSArrayBuffer>>(t1053);
+    // ../../src/builtins/data-view.tq:412:5
+    {
+      Label label__True_311_impl(this);
+      Label* label__True_311 = &label__True_311_impl;
+      USE(label__True_311);
+      Label label__False_312_impl(this, {});
+      Label* label__False_312 = &label__False_312_impl;
+      USE(label__False_312);
+      TNode<BoolT> t1054 = UncheckedCast<BoolT>(IsDetachedBuffer(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value())));
+      USE(implicit_cast<TNode<BoolT>>(t1054));
+      Branch(implicit_cast<TNode<BoolT>>(t1054), label__True_311, label__False_312);
+      if (label__True_311->is_used())
+      {
+        BIND(label__True_311);
+        // ../../src/builtins/data-view.tq:412:35
+        {
+          // ../../src/builtins/data-view.tq:413:7
+          TNode<String> t1055 = UncheckedCast<String>(MakeDataViewGetterNameString(implicit_cast<ElementsKind>(p_kind)));
+          USE(implicit_cast<TNode<String>>(t1055));
+          ThrowTypeError(implicit_cast<TNode<Context>>(p_context), implicit_cast<MessageTemplate::Template>(MessageTemplate::kDetachedOperation), implicit_cast<TNode<Object>>(t1055));
+        }
+      }
+      BIND(label__False_312);
+    }
+    // ../../src/builtins/data-view.tq:417:5
+    TNode<Number> t1056 = UncheckedCast<Number>(LoadDataViewByteOffset(implicit_cast<TNode<JSDataView>>((*data_view_234).value())));
+    TVARIABLE(Number, viewOffset_238_impl);
+    auto viewOffset_238 = &viewOffset_238_impl;
+    USE(viewOffset_238);
+    *viewOffset_238 = implicit_cast<TNode<Number>>(t1056);
+    // ../../src/builtins/data-view.tq:418:5
+    TNode<Number> t1057 = UncheckedCast<Number>(LoadDataViewByteLength(implicit_cast<TNode<JSDataView>>((*data_view_234).value())));
+    TVARIABLE(Number, viewSize_239_impl);
+    auto viewSize_239 = &viewSize_239_impl;
+    USE(viewSize_239);
+    *viewSize_239 = implicit_cast<TNode<Number>>(t1057);
+    // ../../src/builtins/data-view.tq:419:5
+    int31_t t1058 = DataViewElementSize(implicit_cast<ElementsKind>(p_kind));
+    USE(implicit_cast<int31_t>(t1058));
+    TVARIABLE(Number, elementSize_240_impl);
+    auto elementSize_240 = &elementSize_240_impl;
+    USE(elementSize_240);
+    TNode<Number> t1059 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<int31_t>(t1058)));
+    *elementSize_240 = implicit_cast<TNode<Number>>(t1059);
+    // ../../src/builtins/data-view.tq:421:5
+    {
+      Label label__True_313_impl(this);
+      Label* label__True_313 = &label__True_313_impl;
+      USE(label__True_313);
+      Label label__False_314_impl(this, {});
+      Label* label__False_314 = &label__False_314_impl;
+      USE(label__False_314);
+      TNode<Number> t1060 = UncheckedCast<Number>(NumberAdd(implicit_cast<TNode<Number>>((*getIndex_235).value()), implicit_cast<TNode<Number>>((*elementSize_240).value())));
+      USE(implicit_cast<TNode<Number>>(t1060));
+      BranchIfNumberGreaterThan(implicit_cast<TNode<Number>>(t1060), implicit_cast<TNode<Number>>((*viewSize_239).value()), label__True_313, label__False_314);
+      if (label__True_313->is_used())
+      {
+        BIND(label__True_313);
+        // ../../src/builtins/data-view.tq:421:44
+        {
+          // ../../src/builtins/data-view.tq:422:7
+          ThrowRangeError(implicit_cast<TNode<Context>>(p_context), implicit_cast<MessageTemplate::Template>(MessageTemplate::kInvalidDataViewAccessorOffset));
+        }
+      }
+      BIND(label__False_314);
+    }
+    // ../../src/builtins/data-view.tq:425:5
+    TNode<Float64T> t1061 = UncheckedCast<Float64T>(convert9ATfloat64(implicit_cast<TNode<Number>>((*getIndex_235).value())));
+    USE(implicit_cast<TNode<Float64T>>(t1061));
+    TVARIABLE(Float64T, getIndexFloat_241_impl);
+    auto getIndexFloat_241 = &getIndexFloat_241_impl;
+    USE(getIndexFloat_241);
+    *getIndexFloat_241 = implicit_cast<TNode<Float64T>>(t1061);
+    // ../../src/builtins/data-view.tq:426:5
+    TNode<UintPtrT> t1062 = UncheckedCast<UintPtrT>(convert9ATuintptr(implicit_cast<TNode<Float64T>>((*getIndexFloat_241).value())));
+    USE(implicit_cast<TNode<UintPtrT>>(t1062));
+    TNode<IntPtrT> t1063 = UncheckedCast<IntPtrT>(Signed(implicit_cast<TNode<UintPtrT>>(t1062)));
+    USE(implicit_cast<TNode<IntPtrT>>(t1063));
+    TVARIABLE(IntPtrT, getIndexIntptr_242_impl);
+    auto getIndexIntptr_242 = &getIndexIntptr_242_impl;
+    USE(getIndexIntptr_242);
+    *getIndexIntptr_242 = implicit_cast<TNode<IntPtrT>>(t1063);
+    // ../../src/builtins/data-view.tq:427:5
+    TNode<Float64T> t1064 = UncheckedCast<Float64T>(convert9ATfloat64(implicit_cast<TNode<Number>>((*viewOffset_238).value())));
+    USE(implicit_cast<TNode<Float64T>>(t1064));
+    TVARIABLE(Float64T, viewOffsetFloat_243_impl);
+    auto viewOffsetFloat_243 = &viewOffsetFloat_243_impl;
+    USE(viewOffsetFloat_243);
+    *viewOffsetFloat_243 = implicit_cast<TNode<Float64T>>(t1064);
+    // ../../src/builtins/data-view.tq:428:5
+    TNode<UintPtrT> t1065 = UncheckedCast<UintPtrT>(convert9ATuintptr(implicit_cast<TNode<Float64T>>((*viewOffsetFloat_243).value())));
+    USE(implicit_cast<TNode<UintPtrT>>(t1065));
+    TNode<IntPtrT> t1066 = UncheckedCast<IntPtrT>(Signed(implicit_cast<TNode<UintPtrT>>(t1065)));
+    USE(implicit_cast<TNode<IntPtrT>>(t1066));
+    TVARIABLE(IntPtrT, viewOffsetIntptr_244_impl);
+    auto viewOffsetIntptr_244 = &viewOffsetIntptr_244_impl;
+    USE(viewOffsetIntptr_244);
+    *viewOffsetIntptr_244 = implicit_cast<TNode<IntPtrT>>(t1066);
+    // ../../src/builtins/data-view.tq:430:5
+    TNode<IntPtrT> t1067 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>((*getIndexIntptr_242).value()), implicit_cast<TNode<IntPtrT>>((*viewOffsetIntptr_244).value())));
+    USE(implicit_cast<TNode<IntPtrT>>(t1067));
+    TVARIABLE(IntPtrT, bufferIndex_245_impl);
+    auto bufferIndex_245 = &bufferIndex_245_impl;
+    USE(bufferIndex_245);
+    *bufferIndex_245 = implicit_cast<TNode<IntPtrT>>(t1067);
+    // ../../src/builtins/data-view.tq:432:5
+    {
+      bool t1068 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+      USE(implicit_cast<bool>(t1068));
+      if ((implicit_cast<bool>(t1068))) {
+        // ../../src/builtins/data-view.tq:432:43
+        {
+          // ../../src/builtins/data-view.tq:433:7
+          TNode<Smi> t1069 = UncheckedCast<Smi>(LoadDataView8(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<bool>(false)));
+          USE(implicit_cast<TNode<Smi>>(t1069));
+          *_return_233 = implicit_cast<TNode<Numeric>>(t1069);
+          Goto(label_macro_end_1177);
+        }
+      } else {
+        // ../../src/builtins/data-view.tq:434:12
+        {
+          bool t1070 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT8_ELEMENTS));
+          USE(implicit_cast<bool>(t1070));
+          if ((implicit_cast<bool>(t1070))) {
+            // ../../src/builtins/data-view.tq:434:49
+            {
+              // ../../src/builtins/data-view.tq:435:7
+              TNode<Smi> t1071 = UncheckedCast<Smi>(LoadDataView8(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<bool>(true)));
+              USE(implicit_cast<TNode<Smi>>(t1071));
+              *_return_233 = implicit_cast<TNode<Numeric>>(t1071);
+              Goto(label_macro_end_1177);
+            }
+          } else {
+            // ../../src/builtins/data-view.tq:436:12
+            {
+              bool t1072 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+              USE(implicit_cast<bool>(t1072));
+              if ((implicit_cast<bool>(t1072))) {
+                // ../../src/builtins/data-view.tq:436:51
+                {
+                  // ../../src/builtins/data-view.tq:437:7
+                  TNode<Number> t1073 = UncheckedCast<Number>(LoadDataView16(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value()), implicit_cast<bool>(false)));
+                  USE(implicit_cast<TNode<Number>>(t1073));
+                  *_return_233 = implicit_cast<TNode<Numeric>>(t1073);
+                  Goto(label_macro_end_1177);
+                }
+              } else {
+                // ../../src/builtins/data-view.tq:438:12
+                {
+                  bool t1074 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT16_ELEMENTS));
+                  USE(implicit_cast<bool>(t1074));
+                  if ((implicit_cast<bool>(t1074))) {
+                    // ../../src/builtins/data-view.tq:438:50
+                    {
+                      // ../../src/builtins/data-view.tq:439:7
+                      TNode<Number> t1075 = UncheckedCast<Number>(LoadDataView16(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value()), implicit_cast<bool>(true)));
+                      USE(implicit_cast<TNode<Number>>(t1075));
+                      *_return_233 = implicit_cast<TNode<Numeric>>(t1075);
+                      Goto(label_macro_end_1177);
+                    }
+                  } else {
+                    // ../../src/builtins/data-view.tq:440:12
+                    {
+                      bool t1076 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT32_ELEMENTS));
+                      USE(implicit_cast<bool>(t1076));
+                      if ((implicit_cast<bool>(t1076))) {
+                        // ../../src/builtins/data-view.tq:440:51
+                        {
+                          // ../../src/builtins/data-view.tq:441:7
+                          TNode<Number> t1077 = UncheckedCast<Number>(LoadDataView32(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value()), implicit_cast<ElementsKind>(p_kind)));
+                          USE(implicit_cast<TNode<Number>>(t1077));
+                          *_return_233 = implicit_cast<TNode<Numeric>>(t1077);
+                          Goto(label_macro_end_1177);
+                        }
+                      } else {
+                        // ../../src/builtins/data-view.tq:442:12
+                        {
+                          bool t1078 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT32_ELEMENTS));
+                          USE(implicit_cast<bool>(t1078));
+                          if ((implicit_cast<bool>(t1078))) {
+                            // ../../src/builtins/data-view.tq:442:50
+                            {
+                              // ../../src/builtins/data-view.tq:443:7
+                              TNode<Number> t1079 = UncheckedCast<Number>(LoadDataView32(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value()), implicit_cast<ElementsKind>(p_kind)));
+                              USE(implicit_cast<TNode<Number>>(t1079));
+                              *_return_233 = implicit_cast<TNode<Numeric>>(t1079);
+                              Goto(label_macro_end_1177);
+                            }
+                          } else {
+                            // ../../src/builtins/data-view.tq:444:12
+                            {
+                              bool t1080 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT32_ELEMENTS));
+                              USE(implicit_cast<bool>(t1080));
+                              if ((implicit_cast<bool>(t1080))) {
+                                // ../../src/builtins/data-view.tq:444:52
+                                {
+                                  // ../../src/builtins/data-view.tq:445:7
+                                  TNode<Number> t1081 = UncheckedCast<Number>(LoadDataView32(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value()), implicit_cast<ElementsKind>(p_kind)));
+                                  USE(implicit_cast<TNode<Number>>(t1081));
+                                  *_return_233 = implicit_cast<TNode<Numeric>>(t1081);
+                                  Goto(label_macro_end_1177);
+                                }
+                              } else {
+                                // ../../src/builtins/data-view.tq:446:12
+                                {
+                                  bool t1082 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT64_ELEMENTS));
+                                  USE(implicit_cast<bool>(t1082));
+                                  if ((implicit_cast<bool>(t1082))) {
+                                    // ../../src/builtins/data-view.tq:446:52
+                                    {
+                                      // ../../src/builtins/data-view.tq:447:7
+                                      TNode<Number> t1083 = UncheckedCast<Number>(LoadDataViewFloat64(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value())));
+                                      USE(implicit_cast<TNode<Number>>(t1083));
+                                      *_return_233 = implicit_cast<TNode<Numeric>>(t1083);
+                                      Goto(label_macro_end_1177);
+                                    }
+                                  } else {
+                                    // ../../src/builtins/data-view.tq:448:12
+                                    {
+                                      bool t1084 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGUINT64_ELEMENTS));
+                                      USE(implicit_cast<bool>(t1084));
+                                      if ((implicit_cast<bool>(t1084))) {
+                                        // ../../src/builtins/data-view.tq:448:54
+                                        {
+                                          // ../../src/builtins/data-view.tq:449:7
+                                          TNode<BigInt> t1085 = UncheckedCast<BigInt>(LoadDataViewBigInt(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value()), implicit_cast<bool>(false)));
+                                          USE(implicit_cast<TNode<BigInt>>(t1085));
+                                          *_return_233 = implicit_cast<TNode<Numeric>>(t1085);
+                                          Goto(label_macro_end_1177);
+                                        }
+                                      } else {
+                                        // ../../src/builtins/data-view.tq:450:12
+                                        {
+                                          bool t1086 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGINT64_ELEMENTS));
+                                          USE(implicit_cast<bool>(t1086));
+                                          if ((implicit_cast<bool>(t1086))) {
+                                            // ../../src/builtins/data-view.tq:450:53
+                                            {
+                                              // ../../src/builtins/data-view.tq:451:7
+                                              TNode<BigInt> t1087 = UncheckedCast<BigInt>(LoadDataViewBigInt(implicit_cast<TNode<JSArrayBuffer>>((*buffer_237).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_245).value()), implicit_cast<TNode<BoolT>>((*littleEndian_236).value()), implicit_cast<bool>(true)));
+                                              USE(implicit_cast<TNode<BigInt>>(t1087));
+                                              *_return_233 = implicit_cast<TNode<Numeric>>(t1087);
+                                              Goto(label_macro_end_1177);
+                                            }
+                                          } else {
+                                            // ../../src/builtins/data-view.tq:452:12
+                                            {
+                                              // ../../src/builtins/data-view.tq:453:7
+                                              Unreachable();
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  BIND(label_macro_end_1177);
+  return implicit_cast<TNode<Numeric>>((*_return_233).value());
+}
+
+TF_BUILTIN(DataViewPrototypeGetUint8, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:458:63
+  {
+    // ../../src/builtins/data-view.tq:459:7
+    auto t1088 = [=]() {
+      int31_t t1090 = 0;
+      TNode<IntPtrT> t1091 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1090)));
+      TNode<Object> t1092 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1091)));
+      return implicit_cast<TNode<Object>>(t1092);
+    };
+    auto t1089 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1093_727_impl);
+    auto t1093_727 = &t1093_727_impl;
+    USE(t1093_727);
+    {
+      Label label__True_335_impl(this);
+      Label* label__True_335 = &label__True_335_impl;
+      USE(label__True_335);
+      Label label__False_336_impl(this);
+      Label* label__False_336 = &label__False_336_impl;
+      USE(label__False_336);
+      Label label__done_728_1180_impl(this, {t1093_727});
+      Label* label__done_728_1180 = &label__done_728_1180_impl;
+      USE(label__done_728_1180);
+      TNode<IntPtrT> t1094 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1095 = 0;
+      TNode<IntPtrT> t1096 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1095)));
+      TNode<BoolT> t1097 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1094), implicit_cast<TNode<IntPtrT>>(t1096)));
+      USE(implicit_cast<TNode<BoolT>>(t1097));
+      Branch(implicit_cast<TNode<BoolT>>(t1097), label__True_335, label__False_336);
+      BIND(label__True_335);
+            *t1093_727 = implicit_cast<TNode<Object>>(t1088());
+      Goto(label__done_728_1180);
+      BIND(label__False_336);
+            *t1093_727 = implicit_cast<TNode<Object>>(t1089());
+      Goto(label__done_728_1180);
+      BIND(label__done_728_1180);
+    }
+    TVARIABLE(Object, offset_246_impl);
+    auto offset_246 = &offset_246_impl;
+    USE(offset_246);
+    *offset_246 = implicit_cast<TNode<Object>>((*t1093_727).value());
+    // ../../src/builtins/data-view.tq:462:7
+    TNode<Numeric> t1098 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_246).value()), implicit_cast<TNode<Object>>(Undefined()), implicit_cast<ElementsKind>(UINT8_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1098));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1098));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetInt8, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:466:65
+  {
+    // ../../src/builtins/data-view.tq:467:5
+    auto t1099 = [=]() {
+      int31_t t1101 = 0;
+      TNode<IntPtrT> t1102 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1101)));
+      TNode<Object> t1103 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1102)));
+      return implicit_cast<TNode<Object>>(t1103);
+    };
+    auto t1100 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1104_729_impl);
+    auto t1104_729 = &t1104_729_impl;
+    USE(t1104_729);
+    {
+      Label label__True_337_impl(this);
+      Label* label__True_337 = &label__True_337_impl;
+      USE(label__True_337);
+      Label label__False_338_impl(this);
+      Label* label__False_338 = &label__False_338_impl;
+      USE(label__False_338);
+      Label label__done_730_1181_impl(this, {t1104_729});
+      Label* label__done_730_1181 = &label__done_730_1181_impl;
+      USE(label__done_730_1181);
+      TNode<IntPtrT> t1105 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1106 = 0;
+      TNode<IntPtrT> t1107 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1106)));
+      TNode<BoolT> t1108 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1105), implicit_cast<TNode<IntPtrT>>(t1107)));
+      USE(implicit_cast<TNode<BoolT>>(t1108));
+      Branch(implicit_cast<TNode<BoolT>>(t1108), label__True_337, label__False_338);
+      BIND(label__True_337);
+            *t1104_729 = implicit_cast<TNode<Object>>(t1099());
+      Goto(label__done_730_1181);
+      BIND(label__False_338);
+            *t1104_729 = implicit_cast<TNode<Object>>(t1100());
+      Goto(label__done_730_1181);
+      BIND(label__done_730_1181);
+    }
+    TVARIABLE(Object, offset_247_impl);
+    auto offset_247 = &offset_247_impl;
+    USE(offset_247);
+    *offset_247 = implicit_cast<TNode<Object>>((*t1104_729).value());
+    // ../../src/builtins/data-view.tq:470:5
+    TNode<Numeric> t1109 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_247).value()), implicit_cast<TNode<Object>>(Undefined()), implicit_cast<ElementsKind>(INT8_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1109));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1109));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetUint16, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:474:63
+  {
+    // ../../src/builtins/data-view.tq:475:7
+    auto t1110 = [=]() {
+      int31_t t1112 = 0;
+      TNode<IntPtrT> t1113 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1112)));
+      TNode<Object> t1114 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1113)));
+      return implicit_cast<TNode<Object>>(t1114);
+    };
+    auto t1111 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1115_731_impl);
+    auto t1115_731 = &t1115_731_impl;
+    USE(t1115_731);
+    {
+      Label label__True_339_impl(this);
+      Label* label__True_339 = &label__True_339_impl;
+      USE(label__True_339);
+      Label label__False_340_impl(this);
+      Label* label__False_340 = &label__False_340_impl;
+      USE(label__False_340);
+      Label label__done_732_1182_impl(this, {t1115_731});
+      Label* label__done_732_1182 = &label__done_732_1182_impl;
+      USE(label__done_732_1182);
+      TNode<IntPtrT> t1116 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1117 = 0;
+      TNode<IntPtrT> t1118 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1117)));
+      TNode<BoolT> t1119 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1116), implicit_cast<TNode<IntPtrT>>(t1118)));
+      USE(implicit_cast<TNode<BoolT>>(t1119));
+      Branch(implicit_cast<TNode<BoolT>>(t1119), label__True_339, label__False_340);
+      BIND(label__True_339);
+            *t1115_731 = implicit_cast<TNode<Object>>(t1110());
+      Goto(label__done_732_1182);
+      BIND(label__False_340);
+            *t1115_731 = implicit_cast<TNode<Object>>(t1111());
+      Goto(label__done_732_1182);
+      BIND(label__done_732_1182);
+    }
+    TVARIABLE(Object, offset_248_impl);
+    auto offset_248 = &offset_248_impl;
+    USE(offset_248);
+    *offset_248 = implicit_cast<TNode<Object>>((*t1115_731).value());
+    // ../../src/builtins/data-view.tq:478:7
+    auto t1120 = [=]() {
+      int31_t t1122 = 1;
+      TNode<IntPtrT> t1123 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1122)));
+      TNode<Object> t1124 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1123)));
+      return implicit_cast<TNode<Object>>(t1124);
+    };
+    auto t1121 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1125_733_impl);
+    auto t1125_733 = &t1125_733_impl;
+    USE(t1125_733);
+    {
+      Label label__True_341_impl(this);
+      Label* label__True_341 = &label__True_341_impl;
+      USE(label__True_341);
+      Label label__False_342_impl(this);
+      Label* label__False_342 = &label__False_342_impl;
+      USE(label__False_342);
+      Label label__done_734_1183_impl(this, {t1125_733});
+      Label* label__done_734_1183 = &label__done_734_1183_impl;
+      USE(label__done_734_1183);
+      TNode<IntPtrT> t1126 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1127 = 1;
+      TNode<IntPtrT> t1128 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1127)));
+      TNode<BoolT> t1129 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1126), implicit_cast<TNode<IntPtrT>>(t1128)));
+      USE(implicit_cast<TNode<BoolT>>(t1129));
+      Branch(implicit_cast<TNode<BoolT>>(t1129), label__True_341, label__False_342);
+      BIND(label__True_341);
+            *t1125_733 = implicit_cast<TNode<Object>>(t1120());
+      Goto(label__done_734_1183);
+      BIND(label__False_342);
+            *t1125_733 = implicit_cast<TNode<Object>>(t1121());
+      Goto(label__done_734_1183);
+      BIND(label__done_734_1183);
+    }
+    TVARIABLE(Object, is_little_endian_249_impl);
+    auto is_little_endian_249 = &is_little_endian_249_impl;
+    USE(is_little_endian_249);
+    *is_little_endian_249 = implicit_cast<TNode<Object>>((*t1125_733).value());
+    // ../../src/builtins/data-view.tq:481:7
+    TNode<Numeric> t1130 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_248).value()), implicit_cast<TNode<Object>>((*is_little_endian_249).value()), implicit_cast<ElementsKind>(UINT16_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1130));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1130));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetInt16, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:486:63
+  {
+    // ../../src/builtins/data-view.tq:487:7
+    auto t1131 = [=]() {
+      int31_t t1133 = 0;
+      TNode<IntPtrT> t1134 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1133)));
+      TNode<Object> t1135 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1134)));
+      return implicit_cast<TNode<Object>>(t1135);
+    };
+    auto t1132 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1136_735_impl);
+    auto t1136_735 = &t1136_735_impl;
+    USE(t1136_735);
+    {
+      Label label__True_343_impl(this);
+      Label* label__True_343 = &label__True_343_impl;
+      USE(label__True_343);
+      Label label__False_344_impl(this);
+      Label* label__False_344 = &label__False_344_impl;
+      USE(label__False_344);
+      Label label__done_736_1184_impl(this, {t1136_735});
+      Label* label__done_736_1184 = &label__done_736_1184_impl;
+      USE(label__done_736_1184);
+      TNode<IntPtrT> t1137 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1138 = 0;
+      TNode<IntPtrT> t1139 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1138)));
+      TNode<BoolT> t1140 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1137), implicit_cast<TNode<IntPtrT>>(t1139)));
+      USE(implicit_cast<TNode<BoolT>>(t1140));
+      Branch(implicit_cast<TNode<BoolT>>(t1140), label__True_343, label__False_344);
+      BIND(label__True_343);
+            *t1136_735 = implicit_cast<TNode<Object>>(t1131());
+      Goto(label__done_736_1184);
+      BIND(label__False_344);
+            *t1136_735 = implicit_cast<TNode<Object>>(t1132());
+      Goto(label__done_736_1184);
+      BIND(label__done_736_1184);
+    }
+    TVARIABLE(Object, offset_250_impl);
+    auto offset_250 = &offset_250_impl;
+    USE(offset_250);
+    *offset_250 = implicit_cast<TNode<Object>>((*t1136_735).value());
+    // ../../src/builtins/data-view.tq:490:7
+    auto t1141 = [=]() {
+      int31_t t1143 = 1;
+      TNode<IntPtrT> t1144 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1143)));
+      TNode<Object> t1145 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1144)));
+      return implicit_cast<TNode<Object>>(t1145);
+    };
+    auto t1142 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1146_737_impl);
+    auto t1146_737 = &t1146_737_impl;
+    USE(t1146_737);
+    {
+      Label label__True_345_impl(this);
+      Label* label__True_345 = &label__True_345_impl;
+      USE(label__True_345);
+      Label label__False_346_impl(this);
+      Label* label__False_346 = &label__False_346_impl;
+      USE(label__False_346);
+      Label label__done_738_1185_impl(this, {t1146_737});
+      Label* label__done_738_1185 = &label__done_738_1185_impl;
+      USE(label__done_738_1185);
+      TNode<IntPtrT> t1147 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1148 = 1;
+      TNode<IntPtrT> t1149 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1148)));
+      TNode<BoolT> t1150 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1147), implicit_cast<TNode<IntPtrT>>(t1149)));
+      USE(implicit_cast<TNode<BoolT>>(t1150));
+      Branch(implicit_cast<TNode<BoolT>>(t1150), label__True_345, label__False_346);
+      BIND(label__True_345);
+            *t1146_737 = implicit_cast<TNode<Object>>(t1141());
+      Goto(label__done_738_1185);
+      BIND(label__False_346);
+            *t1146_737 = implicit_cast<TNode<Object>>(t1142());
+      Goto(label__done_738_1185);
+      BIND(label__done_738_1185);
+    }
+    TVARIABLE(Object, is_little_endian_251_impl);
+    auto is_little_endian_251 = &is_little_endian_251_impl;
+    USE(is_little_endian_251);
+    *is_little_endian_251 = implicit_cast<TNode<Object>>((*t1146_737).value());
+    // ../../src/builtins/data-view.tq:493:7
+    TNode<Numeric> t1151 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_250).value()), implicit_cast<TNode<Object>>((*is_little_endian_251).value()), implicit_cast<ElementsKind>(INT16_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1151));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1151));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetUint32, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:498:63
+  {
+    // ../../src/builtins/data-view.tq:499:7
+    auto t1152 = [=]() {
+      int31_t t1154 = 0;
+      TNode<IntPtrT> t1155 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1154)));
+      TNode<Object> t1156 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1155)));
+      return implicit_cast<TNode<Object>>(t1156);
+    };
+    auto t1153 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1157_739_impl);
+    auto t1157_739 = &t1157_739_impl;
+    USE(t1157_739);
+    {
+      Label label__True_347_impl(this);
+      Label* label__True_347 = &label__True_347_impl;
+      USE(label__True_347);
+      Label label__False_348_impl(this);
+      Label* label__False_348 = &label__False_348_impl;
+      USE(label__False_348);
+      Label label__done_740_1186_impl(this, {t1157_739});
+      Label* label__done_740_1186 = &label__done_740_1186_impl;
+      USE(label__done_740_1186);
+      TNode<IntPtrT> t1158 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1159 = 0;
+      TNode<IntPtrT> t1160 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1159)));
+      TNode<BoolT> t1161 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1158), implicit_cast<TNode<IntPtrT>>(t1160)));
+      USE(implicit_cast<TNode<BoolT>>(t1161));
+      Branch(implicit_cast<TNode<BoolT>>(t1161), label__True_347, label__False_348);
+      BIND(label__True_347);
+            *t1157_739 = implicit_cast<TNode<Object>>(t1152());
+      Goto(label__done_740_1186);
+      BIND(label__False_348);
+            *t1157_739 = implicit_cast<TNode<Object>>(t1153());
+      Goto(label__done_740_1186);
+      BIND(label__done_740_1186);
+    }
+    TVARIABLE(Object, offset_252_impl);
+    auto offset_252 = &offset_252_impl;
+    USE(offset_252);
+    *offset_252 = implicit_cast<TNode<Object>>((*t1157_739).value());
+    // ../../src/builtins/data-view.tq:502:7
+    auto t1162 = [=]() {
+      int31_t t1164 = 1;
+      TNode<IntPtrT> t1165 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1164)));
+      TNode<Object> t1166 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1165)));
+      return implicit_cast<TNode<Object>>(t1166);
+    };
+    auto t1163 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1167_741_impl);
+    auto t1167_741 = &t1167_741_impl;
+    USE(t1167_741);
+    {
+      Label label__True_349_impl(this);
+      Label* label__True_349 = &label__True_349_impl;
+      USE(label__True_349);
+      Label label__False_350_impl(this);
+      Label* label__False_350 = &label__False_350_impl;
+      USE(label__False_350);
+      Label label__done_742_1187_impl(this, {t1167_741});
+      Label* label__done_742_1187 = &label__done_742_1187_impl;
+      USE(label__done_742_1187);
+      TNode<IntPtrT> t1168 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1169 = 1;
+      TNode<IntPtrT> t1170 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1169)));
+      TNode<BoolT> t1171 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1168), implicit_cast<TNode<IntPtrT>>(t1170)));
+      USE(implicit_cast<TNode<BoolT>>(t1171));
+      Branch(implicit_cast<TNode<BoolT>>(t1171), label__True_349, label__False_350);
+      BIND(label__True_349);
+            *t1167_741 = implicit_cast<TNode<Object>>(t1162());
+      Goto(label__done_742_1187);
+      BIND(label__False_350);
+            *t1167_741 = implicit_cast<TNode<Object>>(t1163());
+      Goto(label__done_742_1187);
+      BIND(label__done_742_1187);
+    }
+    TVARIABLE(Object, is_little_endian_253_impl);
+    auto is_little_endian_253 = &is_little_endian_253_impl;
+    USE(is_little_endian_253);
+    *is_little_endian_253 = implicit_cast<TNode<Object>>((*t1167_741).value());
+    // ../../src/builtins/data-view.tq:505:7
+    TNode<Numeric> t1172 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_252).value()), implicit_cast<TNode<Object>>((*is_little_endian_253).value()), implicit_cast<ElementsKind>(UINT32_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1172));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1172));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetInt32, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:510:63
+  {
+    // ../../src/builtins/data-view.tq:511:7
+    auto t1173 = [=]() {
+      int31_t t1175 = 0;
+      TNode<IntPtrT> t1176 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1175)));
+      TNode<Object> t1177 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1176)));
+      return implicit_cast<TNode<Object>>(t1177);
+    };
+    auto t1174 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1178_743_impl);
+    auto t1178_743 = &t1178_743_impl;
+    USE(t1178_743);
+    {
+      Label label__True_351_impl(this);
+      Label* label__True_351 = &label__True_351_impl;
+      USE(label__True_351);
+      Label label__False_352_impl(this);
+      Label* label__False_352 = &label__False_352_impl;
+      USE(label__False_352);
+      Label label__done_744_1188_impl(this, {t1178_743});
+      Label* label__done_744_1188 = &label__done_744_1188_impl;
+      USE(label__done_744_1188);
+      TNode<IntPtrT> t1179 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1180 = 0;
+      TNode<IntPtrT> t1181 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1180)));
+      TNode<BoolT> t1182 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1179), implicit_cast<TNode<IntPtrT>>(t1181)));
+      USE(implicit_cast<TNode<BoolT>>(t1182));
+      Branch(implicit_cast<TNode<BoolT>>(t1182), label__True_351, label__False_352);
+      BIND(label__True_351);
+            *t1178_743 = implicit_cast<TNode<Object>>(t1173());
+      Goto(label__done_744_1188);
+      BIND(label__False_352);
+            *t1178_743 = implicit_cast<TNode<Object>>(t1174());
+      Goto(label__done_744_1188);
+      BIND(label__done_744_1188);
+    }
+    TVARIABLE(Object, offset_254_impl);
+    auto offset_254 = &offset_254_impl;
+    USE(offset_254);
+    *offset_254 = implicit_cast<TNode<Object>>((*t1178_743).value());
+    // ../../src/builtins/data-view.tq:514:7
+    auto t1183 = [=]() {
+      int31_t t1185 = 1;
+      TNode<IntPtrT> t1186 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1185)));
+      TNode<Object> t1187 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1186)));
+      return implicit_cast<TNode<Object>>(t1187);
+    };
+    auto t1184 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1188_745_impl);
+    auto t1188_745 = &t1188_745_impl;
+    USE(t1188_745);
+    {
+      Label label__True_353_impl(this);
+      Label* label__True_353 = &label__True_353_impl;
+      USE(label__True_353);
+      Label label__False_354_impl(this);
+      Label* label__False_354 = &label__False_354_impl;
+      USE(label__False_354);
+      Label label__done_746_1189_impl(this, {t1188_745});
+      Label* label__done_746_1189 = &label__done_746_1189_impl;
+      USE(label__done_746_1189);
+      TNode<IntPtrT> t1189 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1190 = 1;
+      TNode<IntPtrT> t1191 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1190)));
+      TNode<BoolT> t1192 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1189), implicit_cast<TNode<IntPtrT>>(t1191)));
+      USE(implicit_cast<TNode<BoolT>>(t1192));
+      Branch(implicit_cast<TNode<BoolT>>(t1192), label__True_353, label__False_354);
+      BIND(label__True_353);
+            *t1188_745 = implicit_cast<TNode<Object>>(t1183());
+      Goto(label__done_746_1189);
+      BIND(label__False_354);
+            *t1188_745 = implicit_cast<TNode<Object>>(t1184());
+      Goto(label__done_746_1189);
+      BIND(label__done_746_1189);
+    }
+    TVARIABLE(Object, is_little_endian_255_impl);
+    auto is_little_endian_255 = &is_little_endian_255_impl;
+    USE(is_little_endian_255);
+    *is_little_endian_255 = implicit_cast<TNode<Object>>((*t1188_745).value());
+    // ../../src/builtins/data-view.tq:517:7
+    TNode<Numeric> t1193 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_254).value()), implicit_cast<TNode<Object>>((*is_little_endian_255).value()), implicit_cast<ElementsKind>(INT32_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1193));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1193));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetFloat32, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:522:63
+  {
+    // ../../src/builtins/data-view.tq:523:7
+    auto t1194 = [=]() {
+      int31_t t1196 = 0;
+      TNode<IntPtrT> t1197 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1196)));
+      TNode<Object> t1198 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1197)));
+      return implicit_cast<TNode<Object>>(t1198);
+    };
+    auto t1195 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1199_747_impl);
+    auto t1199_747 = &t1199_747_impl;
+    USE(t1199_747);
+    {
+      Label label__True_355_impl(this);
+      Label* label__True_355 = &label__True_355_impl;
+      USE(label__True_355);
+      Label label__False_356_impl(this);
+      Label* label__False_356 = &label__False_356_impl;
+      USE(label__False_356);
+      Label label__done_748_1190_impl(this, {t1199_747});
+      Label* label__done_748_1190 = &label__done_748_1190_impl;
+      USE(label__done_748_1190);
+      TNode<IntPtrT> t1200 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1201 = 0;
+      TNode<IntPtrT> t1202 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1201)));
+      TNode<BoolT> t1203 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1200), implicit_cast<TNode<IntPtrT>>(t1202)));
+      USE(implicit_cast<TNode<BoolT>>(t1203));
+      Branch(implicit_cast<TNode<BoolT>>(t1203), label__True_355, label__False_356);
+      BIND(label__True_355);
+            *t1199_747 = implicit_cast<TNode<Object>>(t1194());
+      Goto(label__done_748_1190);
+      BIND(label__False_356);
+            *t1199_747 = implicit_cast<TNode<Object>>(t1195());
+      Goto(label__done_748_1190);
+      BIND(label__done_748_1190);
+    }
+    TVARIABLE(Object, offset_256_impl);
+    auto offset_256 = &offset_256_impl;
+    USE(offset_256);
+    *offset_256 = implicit_cast<TNode<Object>>((*t1199_747).value());
+    // ../../src/builtins/data-view.tq:526:7
+    auto t1204 = [=]() {
+      int31_t t1206 = 1;
+      TNode<IntPtrT> t1207 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1206)));
+      TNode<Object> t1208 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1207)));
+      return implicit_cast<TNode<Object>>(t1208);
+    };
+    auto t1205 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1209_749_impl);
+    auto t1209_749 = &t1209_749_impl;
+    USE(t1209_749);
+    {
+      Label label__True_357_impl(this);
+      Label* label__True_357 = &label__True_357_impl;
+      USE(label__True_357);
+      Label label__False_358_impl(this);
+      Label* label__False_358 = &label__False_358_impl;
+      USE(label__False_358);
+      Label label__done_750_1191_impl(this, {t1209_749});
+      Label* label__done_750_1191 = &label__done_750_1191_impl;
+      USE(label__done_750_1191);
+      TNode<IntPtrT> t1210 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1211 = 1;
+      TNode<IntPtrT> t1212 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1211)));
+      TNode<BoolT> t1213 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1210), implicit_cast<TNode<IntPtrT>>(t1212)));
+      USE(implicit_cast<TNode<BoolT>>(t1213));
+      Branch(implicit_cast<TNode<BoolT>>(t1213), label__True_357, label__False_358);
+      BIND(label__True_357);
+            *t1209_749 = implicit_cast<TNode<Object>>(t1204());
+      Goto(label__done_750_1191);
+      BIND(label__False_358);
+            *t1209_749 = implicit_cast<TNode<Object>>(t1205());
+      Goto(label__done_750_1191);
+      BIND(label__done_750_1191);
+    }
+    TVARIABLE(Object, is_little_endian_257_impl);
+    auto is_little_endian_257 = &is_little_endian_257_impl;
+    USE(is_little_endian_257);
+    *is_little_endian_257 = implicit_cast<TNode<Object>>((*t1209_749).value());
+    // ../../src/builtins/data-view.tq:529:7
+    TNode<Numeric> t1214 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_256).value()), implicit_cast<TNode<Object>>((*is_little_endian_257).value()), implicit_cast<ElementsKind>(FLOAT32_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1214));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1214));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetFloat64, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:534:63
+  {
+    // ../../src/builtins/data-view.tq:535:7
+    auto t1215 = [=]() {
+      int31_t t1217 = 0;
+      TNode<IntPtrT> t1218 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1217)));
+      TNode<Object> t1219 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1218)));
+      return implicit_cast<TNode<Object>>(t1219);
+    };
+    auto t1216 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1220_751_impl);
+    auto t1220_751 = &t1220_751_impl;
+    USE(t1220_751);
+    {
+      Label label__True_359_impl(this);
+      Label* label__True_359 = &label__True_359_impl;
+      USE(label__True_359);
+      Label label__False_360_impl(this);
+      Label* label__False_360 = &label__False_360_impl;
+      USE(label__False_360);
+      Label label__done_752_1192_impl(this, {t1220_751});
+      Label* label__done_752_1192 = &label__done_752_1192_impl;
+      USE(label__done_752_1192);
+      TNode<IntPtrT> t1221 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1222 = 0;
+      TNode<IntPtrT> t1223 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1222)));
+      TNode<BoolT> t1224 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1221), implicit_cast<TNode<IntPtrT>>(t1223)));
+      USE(implicit_cast<TNode<BoolT>>(t1224));
+      Branch(implicit_cast<TNode<BoolT>>(t1224), label__True_359, label__False_360);
+      BIND(label__True_359);
+            *t1220_751 = implicit_cast<TNode<Object>>(t1215());
+      Goto(label__done_752_1192);
+      BIND(label__False_360);
+            *t1220_751 = implicit_cast<TNode<Object>>(t1216());
+      Goto(label__done_752_1192);
+      BIND(label__done_752_1192);
+    }
+    TVARIABLE(Object, offset_258_impl);
+    auto offset_258 = &offset_258_impl;
+    USE(offset_258);
+    *offset_258 = implicit_cast<TNode<Object>>((*t1220_751).value());
+    // ../../src/builtins/data-view.tq:538:7
+    auto t1225 = [=]() {
+      int31_t t1227 = 1;
+      TNode<IntPtrT> t1228 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1227)));
+      TNode<Object> t1229 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1228)));
+      return implicit_cast<TNode<Object>>(t1229);
+    };
+    auto t1226 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1230_753_impl);
+    auto t1230_753 = &t1230_753_impl;
+    USE(t1230_753);
+    {
+      Label label__True_361_impl(this);
+      Label* label__True_361 = &label__True_361_impl;
+      USE(label__True_361);
+      Label label__False_362_impl(this);
+      Label* label__False_362 = &label__False_362_impl;
+      USE(label__False_362);
+      Label label__done_754_1193_impl(this, {t1230_753});
+      Label* label__done_754_1193 = &label__done_754_1193_impl;
+      USE(label__done_754_1193);
+      TNode<IntPtrT> t1231 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1232 = 1;
+      TNode<IntPtrT> t1233 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1232)));
+      TNode<BoolT> t1234 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1231), implicit_cast<TNode<IntPtrT>>(t1233)));
+      USE(implicit_cast<TNode<BoolT>>(t1234));
+      Branch(implicit_cast<TNode<BoolT>>(t1234), label__True_361, label__False_362);
+      BIND(label__True_361);
+            *t1230_753 = implicit_cast<TNode<Object>>(t1225());
+      Goto(label__done_754_1193);
+      BIND(label__False_362);
+            *t1230_753 = implicit_cast<TNode<Object>>(t1226());
+      Goto(label__done_754_1193);
+      BIND(label__done_754_1193);
+    }
+    TVARIABLE(Object, is_little_endian_259_impl);
+    auto is_little_endian_259 = &is_little_endian_259_impl;
+    USE(is_little_endian_259);
+    *is_little_endian_259 = implicit_cast<TNode<Object>>((*t1230_753).value());
+    // ../../src/builtins/data-view.tq:541:7
+    TNode<Numeric> t1235 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_258).value()), implicit_cast<TNode<Object>>((*is_little_endian_259).value()), implicit_cast<ElementsKind>(FLOAT64_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1235));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1235));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetBigUint64, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:546:63
+  {
+    // ../../src/builtins/data-view.tq:547:7
+    auto t1236 = [=]() {
+      int31_t t1238 = 0;
+      TNode<IntPtrT> t1239 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1238)));
+      TNode<Object> t1240 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1239)));
+      return implicit_cast<TNode<Object>>(t1240);
+    };
+    auto t1237 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1241_755_impl);
+    auto t1241_755 = &t1241_755_impl;
+    USE(t1241_755);
+    {
+      Label label__True_363_impl(this);
+      Label* label__True_363 = &label__True_363_impl;
+      USE(label__True_363);
+      Label label__False_364_impl(this);
+      Label* label__False_364 = &label__False_364_impl;
+      USE(label__False_364);
+      Label label__done_756_1194_impl(this, {t1241_755});
+      Label* label__done_756_1194 = &label__done_756_1194_impl;
+      USE(label__done_756_1194);
+      TNode<IntPtrT> t1242 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1243 = 0;
+      TNode<IntPtrT> t1244 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1243)));
+      TNode<BoolT> t1245 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1242), implicit_cast<TNode<IntPtrT>>(t1244)));
+      USE(implicit_cast<TNode<BoolT>>(t1245));
+      Branch(implicit_cast<TNode<BoolT>>(t1245), label__True_363, label__False_364);
+      BIND(label__True_363);
+            *t1241_755 = implicit_cast<TNode<Object>>(t1236());
+      Goto(label__done_756_1194);
+      BIND(label__False_364);
+            *t1241_755 = implicit_cast<TNode<Object>>(t1237());
+      Goto(label__done_756_1194);
+      BIND(label__done_756_1194);
+    }
+    TVARIABLE(Object, offset_260_impl);
+    auto offset_260 = &offset_260_impl;
+    USE(offset_260);
+    *offset_260 = implicit_cast<TNode<Object>>((*t1241_755).value());
+    // ../../src/builtins/data-view.tq:550:7
+    auto t1246 = [=]() {
+      int31_t t1248 = 1;
+      TNode<IntPtrT> t1249 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1248)));
+      TNode<Object> t1250 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1249)));
+      return implicit_cast<TNode<Object>>(t1250);
+    };
+    auto t1247 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1251_757_impl);
+    auto t1251_757 = &t1251_757_impl;
+    USE(t1251_757);
+    {
+      Label label__True_365_impl(this);
+      Label* label__True_365 = &label__True_365_impl;
+      USE(label__True_365);
+      Label label__False_366_impl(this);
+      Label* label__False_366 = &label__False_366_impl;
+      USE(label__False_366);
+      Label label__done_758_1195_impl(this, {t1251_757});
+      Label* label__done_758_1195 = &label__done_758_1195_impl;
+      USE(label__done_758_1195);
+      TNode<IntPtrT> t1252 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1253 = 1;
+      TNode<IntPtrT> t1254 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1253)));
+      TNode<BoolT> t1255 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1252), implicit_cast<TNode<IntPtrT>>(t1254)));
+      USE(implicit_cast<TNode<BoolT>>(t1255));
+      Branch(implicit_cast<TNode<BoolT>>(t1255), label__True_365, label__False_366);
+      BIND(label__True_365);
+            *t1251_757 = implicit_cast<TNode<Object>>(t1246());
+      Goto(label__done_758_1195);
+      BIND(label__False_366);
+            *t1251_757 = implicit_cast<TNode<Object>>(t1247());
+      Goto(label__done_758_1195);
+      BIND(label__done_758_1195);
+    }
+    TVARIABLE(Object, is_little_endian_261_impl);
+    auto is_little_endian_261 = &is_little_endian_261_impl;
+    USE(is_little_endian_261);
+    *is_little_endian_261 = implicit_cast<TNode<Object>>((*t1251_757).value());
+    // ../../src/builtins/data-view.tq:553:7
+    TNode<Numeric> t1256 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_260).value()), implicit_cast<TNode<Object>>((*is_little_endian_261).value()), implicit_cast<ElementsKind>(BIGUINT64_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1256));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1256));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeGetBigInt64, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:558:63
+  {
+    // ../../src/builtins/data-view.tq:559:7
+    auto t1257 = [=]() {
+      int31_t t1259 = 0;
+      TNode<IntPtrT> t1260 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1259)));
+      TNode<Object> t1261 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1260)));
+      return implicit_cast<TNode<Object>>(t1261);
+    };
+    auto t1258 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1262_759_impl);
+    auto t1262_759 = &t1262_759_impl;
+    USE(t1262_759);
+    {
+      Label label__True_367_impl(this);
+      Label* label__True_367 = &label__True_367_impl;
+      USE(label__True_367);
+      Label label__False_368_impl(this);
+      Label* label__False_368 = &label__False_368_impl;
+      USE(label__False_368);
+      Label label__done_760_1196_impl(this, {t1262_759});
+      Label* label__done_760_1196 = &label__done_760_1196_impl;
+      USE(label__done_760_1196);
+      TNode<IntPtrT> t1263 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1264 = 0;
+      TNode<IntPtrT> t1265 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1264)));
+      TNode<BoolT> t1266 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1263), implicit_cast<TNode<IntPtrT>>(t1265)));
+      USE(implicit_cast<TNode<BoolT>>(t1266));
+      Branch(implicit_cast<TNode<BoolT>>(t1266), label__True_367, label__False_368);
+      BIND(label__True_367);
+            *t1262_759 = implicit_cast<TNode<Object>>(t1257());
+      Goto(label__done_760_1196);
+      BIND(label__False_368);
+            *t1262_759 = implicit_cast<TNode<Object>>(t1258());
+      Goto(label__done_760_1196);
+      BIND(label__done_760_1196);
+    }
+    TVARIABLE(Object, offset_262_impl);
+    auto offset_262 = &offset_262_impl;
+    USE(offset_262);
+    *offset_262 = implicit_cast<TNode<Object>>((*t1262_759).value());
+    // ../../src/builtins/data-view.tq:562:7
+    auto t1267 = [=]() {
+      int31_t t1269 = 1;
+      TNode<IntPtrT> t1270 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1269)));
+      TNode<Object> t1271 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1270)));
+      return implicit_cast<TNode<Object>>(t1271);
+    };
+    auto t1268 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1272_761_impl);
+    auto t1272_761 = &t1272_761_impl;
+    USE(t1272_761);
+    {
+      Label label__True_369_impl(this);
+      Label* label__True_369 = &label__True_369_impl;
+      USE(label__True_369);
+      Label label__False_370_impl(this);
+      Label* label__False_370 = &label__False_370_impl;
+      USE(label__False_370);
+      Label label__done_762_1197_impl(this, {t1272_761});
+      Label* label__done_762_1197 = &label__done_762_1197_impl;
+      USE(label__done_762_1197);
+      TNode<IntPtrT> t1273 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1274 = 1;
+      TNode<IntPtrT> t1275 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1274)));
+      TNode<BoolT> t1276 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1273), implicit_cast<TNode<IntPtrT>>(t1275)));
+      USE(implicit_cast<TNode<BoolT>>(t1276));
+      Branch(implicit_cast<TNode<BoolT>>(t1276), label__True_369, label__False_370);
+      BIND(label__True_369);
+            *t1272_761 = implicit_cast<TNode<Object>>(t1267());
+      Goto(label__done_762_1197);
+      BIND(label__False_370);
+            *t1272_761 = implicit_cast<TNode<Object>>(t1268());
+      Goto(label__done_762_1197);
+      BIND(label__done_762_1197);
+    }
+    TVARIABLE(Object, is_little_endian_263_impl);
+    auto is_little_endian_263 = &is_little_endian_263_impl;
+    USE(is_little_endian_263);
+    *is_little_endian_263 = implicit_cast<TNode<Object>>((*t1272_761).value());
+    // ../../src/builtins/data-view.tq:565:7
+    TNode<Numeric> t1277 = UncheckedCast<Numeric>(DataViewGet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_262).value()), implicit_cast<TNode<Object>>((*is_little_endian_263).value()), implicit_cast<ElementsKind>(BIGINT64_ELEMENTS)));
+    USE(implicit_cast<TNode<Numeric>>(t1277));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1277));
+  }
+}
+
+void DataViewBuiltinsFromDSLAssembler::StoreDataView8(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_value) {
+  Label label_macro_end_1198_impl(this, {});
+  Label* label_macro_end_1198 = &label_macro_end_1198_impl;
+  USE(label_macro_end_1198);
+  // ../../src/builtins/data-view.tq:577:39
+  {
+    // ../../src/builtins/data-view.tq:578:5
+    TNode<RawPtrT> t1278 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    int31_t t1279 = 0xFF;
+    TNode<Uint32T> t1280 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1279)));
+    TNode<Uint32T> t1281 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(p_value), implicit_cast<TNode<Uint32T>>(t1280)));
+    USE(implicit_cast<TNode<Uint32T>>(t1281));
+    StoreWord8(implicit_cast<TNode<RawPtrT>>(t1278), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>(t1281));
+  }
+}
+
+void DataViewBuiltinsFromDSLAssembler::StoreDataView16(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requested_little_endian) {
+  Label label_macro_end_1199_impl(this, {});
+  Label* label_macro_end_1199 = &label_macro_end_1199_impl;
+  USE(label_macro_end_1199);
+  // ../../src/builtins/data-view.tq:582:56
+  {
+    // ../../src/builtins/data-view.tq:583:5
+    TNode<RawPtrT> t1282 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    TVARIABLE(RawPtrT, data_pointer_264_impl);
+    auto data_pointer_264 = &data_pointer_264_impl;
+    USE(data_pointer_264);
+    *data_pointer_264 = implicit_cast<TNode<RawPtrT>>(t1282);
+    // ../../src/builtins/data-view.tq:585:5
+    int31_t t1283 = 0xFF;
+    TNode<Uint32T> t1284 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1283)));
+    TNode<Uint32T> t1285 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(p_value), implicit_cast<TNode<Uint32T>>(t1284)));
+    USE(implicit_cast<TNode<Uint32T>>(t1285));
+    TVARIABLE(Uint32T, b0_265_impl);
+    auto b0_265 = &b0_265_impl;
+    USE(b0_265);
+    *b0_265 = implicit_cast<TNode<Uint32T>>(t1285);
+    // ../../src/builtins/data-view.tq:586:5
+    int31_t t1286 = 8;
+    TNode<Uint32T> t1287 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1286)));
+    TNode<Uint32T> t1288 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_value), implicit_cast<TNode<Uint32T>>(t1287)));
+    USE(implicit_cast<TNode<Uint32T>>(t1288));
+    int31_t t1289 = 0xFF;
+    TNode<Uint32T> t1290 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1289)));
+    TNode<Uint32T> t1291 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(t1288), implicit_cast<TNode<Uint32T>>(t1290)));
+    USE(implicit_cast<TNode<Uint32T>>(t1291));
+    TVARIABLE(Uint32T, b1_266_impl);
+    auto b1_266 = &b1_266_impl;
+    USE(b1_266);
+    *b1_266 = implicit_cast<TNode<Uint32T>>(t1291);
+    // ../../src/builtins/data-view.tq:588:5
+    {
+      Label label__True_371_impl(this);
+      Label* label__True_371 = &label__True_371_impl;
+      USE(label__True_371);
+      Label label__False_372_impl(this);
+      Label* label__False_372 = &label__False_372_impl;
+      USE(label__False_372);
+      Label label_if_done_label_763_1200_impl(this, {});
+      Label* label_if_done_label_763_1200 = &label_if_done_label_763_1200_impl;
+      USE(label_if_done_label_763_1200);
+      Branch(implicit_cast<TNode<BoolT>>(p_requested_little_endian), label__True_371, label__False_372);
+      if (label__True_371->is_used())
+      {
+        BIND(label__True_371);
+        // ../../src/builtins/data-view.tq:588:34
+        {
+          // ../../src/builtins/data-view.tq:589:7
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_264).value()), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>((*b0_265).value()));
+          // ../../src/builtins/data-view.tq:590:7
+          int31_t t1292 = 1;
+          TNode<IntPtrT> t1293 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1292)));
+          TNode<IntPtrT> t1294 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1293)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1294));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_264).value()), implicit_cast<TNode<IntPtrT>>(t1294), implicit_cast<TNode<Uint32T>>((*b1_266).value()));
+        }
+        Goto(label_if_done_label_763_1200);
+      }
+      if (label__False_372->is_used())
+      {
+        BIND(label__False_372);
+        // ../../src/builtins/data-view.tq:591:12
+        {
+          // ../../src/builtins/data-view.tq:592:7
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_264).value()), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>((*b1_266).value()));
+          // ../../src/builtins/data-view.tq:593:7
+          int31_t t1295 = 1;
+          TNode<IntPtrT> t1296 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1295)));
+          TNode<IntPtrT> t1297 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1296)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1297));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_264).value()), implicit_cast<TNode<IntPtrT>>(t1297), implicit_cast<TNode<Uint32T>>((*b0_265).value()));
+        }
+        Goto(label_if_done_label_763_1200);
+      }
+      BIND(label_if_done_label_763_1200);
+    }
+  }
+}
+
+void DataViewBuiltinsFromDSLAssembler::StoreDataView32(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requested_little_endian) {
+  Label label_macro_end_1201_impl(this, {});
+  Label* label_macro_end_1201 = &label_macro_end_1201_impl;
+  USE(label_macro_end_1201);
+  // ../../src/builtins/data-view.tq:598:56
+  {
+    // ../../src/builtins/data-view.tq:599:5
+    TNode<RawPtrT> t1298 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    TVARIABLE(RawPtrT, data_pointer_267_impl);
+    auto data_pointer_267 = &data_pointer_267_impl;
+    USE(data_pointer_267);
+    *data_pointer_267 = implicit_cast<TNode<RawPtrT>>(t1298);
+    // ../../src/builtins/data-view.tq:601:5
+    int31_t t1299 = 0xFF;
+    TNode<Uint32T> t1300 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1299)));
+    TNode<Uint32T> t1301 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(p_value), implicit_cast<TNode<Uint32T>>(t1300)));
+    USE(implicit_cast<TNode<Uint32T>>(t1301));
+    TVARIABLE(Uint32T, b0_268_impl);
+    auto b0_268 = &b0_268_impl;
+    USE(b0_268);
+    *b0_268 = implicit_cast<TNode<Uint32T>>(t1301);
+    // ../../src/builtins/data-view.tq:602:5
+    int31_t t1302 = 8;
+    TNode<Uint32T> t1303 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1302)));
+    TNode<Uint32T> t1304 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_value), implicit_cast<TNode<Uint32T>>(t1303)));
+    USE(implicit_cast<TNode<Uint32T>>(t1304));
+    int31_t t1305 = 0xFF;
+    TNode<Uint32T> t1306 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1305)));
+    TNode<Uint32T> t1307 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(t1304), implicit_cast<TNode<Uint32T>>(t1306)));
+    USE(implicit_cast<TNode<Uint32T>>(t1307));
+    TVARIABLE(Uint32T, b1_269_impl);
+    auto b1_269 = &b1_269_impl;
+    USE(b1_269);
+    *b1_269 = implicit_cast<TNode<Uint32T>>(t1307);
+    // ../../src/builtins/data-view.tq:603:5
+    int31_t t1308 = 16;
+    TNode<Uint32T> t1309 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1308)));
+    TNode<Uint32T> t1310 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_value), implicit_cast<TNode<Uint32T>>(t1309)));
+    USE(implicit_cast<TNode<Uint32T>>(t1310));
+    int31_t t1311 = 0xFF;
+    TNode<Uint32T> t1312 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1311)));
+    TNode<Uint32T> t1313 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(t1310), implicit_cast<TNode<Uint32T>>(t1312)));
+    USE(implicit_cast<TNode<Uint32T>>(t1313));
+    TVARIABLE(Uint32T, b2_270_impl);
+    auto b2_270 = &b2_270_impl;
+    USE(b2_270);
+    *b2_270 = implicit_cast<TNode<Uint32T>>(t1313);
+    // ../../src/builtins/data-view.tq:604:5
+    int31_t t1314 = 24;
+    TNode<Uint32T> t1315 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1314)));
+    TNode<Uint32T> t1316 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_value), implicit_cast<TNode<Uint32T>>(t1315)));
+    USE(implicit_cast<TNode<Uint32T>>(t1316));
+    TVARIABLE(Uint32T, b3_271_impl);
+    auto b3_271 = &b3_271_impl;
+    USE(b3_271);
+    *b3_271 = implicit_cast<TNode<Uint32T>>(t1316);
+    // ../../src/builtins/data-view.tq:606:5
+    {
+      Label label__True_373_impl(this);
+      Label* label__True_373 = &label__True_373_impl;
+      USE(label__True_373);
+      Label label__False_374_impl(this);
+      Label* label__False_374 = &label__False_374_impl;
+      USE(label__False_374);
+      Label label_if_done_label_764_1202_impl(this, {});
+      Label* label_if_done_label_764_1202 = &label_if_done_label_764_1202_impl;
+      USE(label_if_done_label_764_1202);
+      Branch(implicit_cast<TNode<BoolT>>(p_requested_little_endian), label__True_373, label__False_374);
+      if (label__True_373->is_used())
+      {
+        BIND(label__True_373);
+        // ../../src/builtins/data-view.tq:606:34
+        {
+          // ../../src/builtins/data-view.tq:607:7
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>((*b0_268).value()));
+          // ../../src/builtins/data-view.tq:608:7
+          int31_t t1317 = 1;
+          TNode<IntPtrT> t1318 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1317)));
+          TNode<IntPtrT> t1319 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1318)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1319));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(t1319), implicit_cast<TNode<Uint32T>>((*b1_269).value()));
+          // ../../src/builtins/data-view.tq:609:7
+          int31_t t1320 = 2;
+          TNode<IntPtrT> t1321 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1320)));
+          TNode<IntPtrT> t1322 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1321)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1322));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(t1322), implicit_cast<TNode<Uint32T>>((*b2_270).value()));
+          // ../../src/builtins/data-view.tq:610:7
+          int31_t t1323 = 3;
+          TNode<IntPtrT> t1324 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1323)));
+          TNode<IntPtrT> t1325 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1324)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1325));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(t1325), implicit_cast<TNode<Uint32T>>((*b3_271).value()));
+        }
+        Goto(label_if_done_label_764_1202);
+      }
+      if (label__False_374->is_used())
+      {
+        BIND(label__False_374);
+        // ../../src/builtins/data-view.tq:611:12
+        {
+          // ../../src/builtins/data-view.tq:612:7
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>((*b3_271).value()));
+          // ../../src/builtins/data-view.tq:613:7
+          int31_t t1326 = 1;
+          TNode<IntPtrT> t1327 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1326)));
+          TNode<IntPtrT> t1328 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1327)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1328));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(t1328), implicit_cast<TNode<Uint32T>>((*b2_270).value()));
+          // ../../src/builtins/data-view.tq:614:7
+          int31_t t1329 = 2;
+          TNode<IntPtrT> t1330 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1329)));
+          TNode<IntPtrT> t1331 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1330)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1331));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(t1331), implicit_cast<TNode<Uint32T>>((*b1_269).value()));
+          // ../../src/builtins/data-view.tq:615:7
+          int31_t t1332 = 3;
+          TNode<IntPtrT> t1333 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1332)));
+          TNode<IntPtrT> t1334 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1333)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1334));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_267).value()), implicit_cast<TNode<IntPtrT>>(t1334), implicit_cast<TNode<Uint32T>>((*b0_268).value()));
+        }
+        Goto(label_if_done_label_764_1202);
+      }
+      BIND(label_if_done_label_764_1202);
+    }
+  }
+}
+
+void DataViewBuiltinsFromDSLAssembler::StoreDataView64(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<Uint32T> p_low_word, TNode<Uint32T> p_high_word, TNode<BoolT> p_requested_little_endian) {
+  Label label_macro_end_1203_impl(this, {});
+  Label* label_macro_end_1203 = &label_macro_end_1203_impl;
+  USE(label_macro_end_1203);
+  // ../../src/builtins/data-view.tq:621:56
+  {
+    // ../../src/builtins/data-view.tq:622:5
+    TNode<RawPtrT> t1335 = UncheckedCast<RawPtrT>(LoadArrayBufferBackingStore(implicit_cast<TNode<JSArrayBuffer>>(p_buffer)));
+    TVARIABLE(RawPtrT, data_pointer_272_impl);
+    auto data_pointer_272 = &data_pointer_272_impl;
+    USE(data_pointer_272);
+    *data_pointer_272 = implicit_cast<TNode<RawPtrT>>(t1335);
+    // ../../src/builtins/data-view.tq:624:5
+    int31_t t1336 = 0xFF;
+    TNode<Uint32T> t1337 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1336)));
+    TNode<Uint32T> t1338 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(t1337)));
+    USE(implicit_cast<TNode<Uint32T>>(t1338));
+    TVARIABLE(Uint32T, b0_273_impl);
+    auto b0_273 = &b0_273_impl;
+    USE(b0_273);
+    *b0_273 = implicit_cast<TNode<Uint32T>>(t1338);
+    // ../../src/builtins/data-view.tq:625:5
+    int31_t t1339 = 8;
+    TNode<Uint32T> t1340 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1339)));
+    TNode<Uint32T> t1341 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(t1340)));
+    USE(implicit_cast<TNode<Uint32T>>(t1341));
+    int31_t t1342 = 0xFF;
+    TNode<Uint32T> t1343 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1342)));
+    TNode<Uint32T> t1344 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(t1341), implicit_cast<TNode<Uint32T>>(t1343)));
+    USE(implicit_cast<TNode<Uint32T>>(t1344));
+    TVARIABLE(Uint32T, b1_274_impl);
+    auto b1_274 = &b1_274_impl;
+    USE(b1_274);
+    *b1_274 = implicit_cast<TNode<Uint32T>>(t1344);
+    // ../../src/builtins/data-view.tq:626:5
+    int31_t t1345 = 16;
+    TNode<Uint32T> t1346 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1345)));
+    TNode<Uint32T> t1347 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(t1346)));
+    USE(implicit_cast<TNode<Uint32T>>(t1347));
+    int31_t t1348 = 0xFF;
+    TNode<Uint32T> t1349 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1348)));
+    TNode<Uint32T> t1350 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(t1347), implicit_cast<TNode<Uint32T>>(t1349)));
+    USE(implicit_cast<TNode<Uint32T>>(t1350));
+    TVARIABLE(Uint32T, b2_275_impl);
+    auto b2_275 = &b2_275_impl;
+    USE(b2_275);
+    *b2_275 = implicit_cast<TNode<Uint32T>>(t1350);
+    // ../../src/builtins/data-view.tq:627:5
+    int31_t t1351 = 24;
+    TNode<Uint32T> t1352 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1351)));
+    TNode<Uint32T> t1353 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_low_word), implicit_cast<TNode<Uint32T>>(t1352)));
+    USE(implicit_cast<TNode<Uint32T>>(t1353));
+    TVARIABLE(Uint32T, b3_276_impl);
+    auto b3_276 = &b3_276_impl;
+    USE(b3_276);
+    *b3_276 = implicit_cast<TNode<Uint32T>>(t1353);
+    // ../../src/builtins/data-view.tq:629:5
+    int31_t t1354 = 0xFF;
+    TNode<Uint32T> t1355 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1354)));
+    TNode<Uint32T> t1356 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<TNode<Uint32T>>(t1355)));
+    USE(implicit_cast<TNode<Uint32T>>(t1356));
+    TVARIABLE(Uint32T, b4_277_impl);
+    auto b4_277 = &b4_277_impl;
+    USE(b4_277);
+    *b4_277 = implicit_cast<TNode<Uint32T>>(t1356);
+    // ../../src/builtins/data-view.tq:630:5
+    int31_t t1357 = 8;
+    TNode<Uint32T> t1358 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1357)));
+    TNode<Uint32T> t1359 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<TNode<Uint32T>>(t1358)));
+    USE(implicit_cast<TNode<Uint32T>>(t1359));
+    int31_t t1360 = 0xFF;
+    TNode<Uint32T> t1361 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1360)));
+    TNode<Uint32T> t1362 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(t1359), implicit_cast<TNode<Uint32T>>(t1361)));
+    USE(implicit_cast<TNode<Uint32T>>(t1362));
+    TVARIABLE(Uint32T, b5_278_impl);
+    auto b5_278 = &b5_278_impl;
+    USE(b5_278);
+    *b5_278 = implicit_cast<TNode<Uint32T>>(t1362);
+    // ../../src/builtins/data-view.tq:631:5
+    int31_t t1363 = 16;
+    TNode<Uint32T> t1364 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1363)));
+    TNode<Uint32T> t1365 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<TNode<Uint32T>>(t1364)));
+    USE(implicit_cast<TNode<Uint32T>>(t1365));
+    int31_t t1366 = 0xFF;
+    TNode<Uint32T> t1367 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1366)));
+    TNode<Uint32T> t1368 = UncheckedCast<Uint32T>(Word32And(implicit_cast<TNode<Uint32T>>(t1365), implicit_cast<TNode<Uint32T>>(t1367)));
+    USE(implicit_cast<TNode<Uint32T>>(t1368));
+    TVARIABLE(Uint32T, b6_279_impl);
+    auto b6_279 = &b6_279_impl;
+    USE(b6_279);
+    *b6_279 = implicit_cast<TNode<Uint32T>>(t1368);
+    // ../../src/builtins/data-view.tq:632:5
+    int31_t t1369 = 24;
+    TNode<Uint32T> t1370 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1369)));
+    TNode<Uint32T> t1371 = UncheckedCast<Uint32T>(Word32Shr(implicit_cast<TNode<Uint32T>>(p_high_word), implicit_cast<TNode<Uint32T>>(t1370)));
+    USE(implicit_cast<TNode<Uint32T>>(t1371));
+    TVARIABLE(Uint32T, b7_280_impl);
+    auto b7_280 = &b7_280_impl;
+    USE(b7_280);
+    *b7_280 = implicit_cast<TNode<Uint32T>>(t1371);
+    // ../../src/builtins/data-view.tq:635:5
+    {
+      Label label__True_375_impl(this);
+      Label* label__True_375 = &label__True_375_impl;
+      USE(label__True_375);
+      Label label__False_376_impl(this);
+      Label* label__False_376 = &label__False_376_impl;
+      USE(label__False_376);
+      Label label_if_done_label_765_1204_impl(this, {});
+      Label* label_if_done_label_765_1204 = &label_if_done_label_765_1204_impl;
+      USE(label_if_done_label_765_1204);
+      Branch(implicit_cast<TNode<BoolT>>(p_requested_little_endian), label__True_375, label__False_376);
+      if (label__True_375->is_used())
+      {
+        BIND(label__True_375);
+        // ../../src/builtins/data-view.tq:635:34
+        {
+          // ../../src/builtins/data-view.tq:636:7
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>((*b0_273).value()));
+          // ../../src/builtins/data-view.tq:637:7
+          int31_t t1372 = 1;
+          TNode<IntPtrT> t1373 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1372)));
+          TNode<IntPtrT> t1374 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1373)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1374));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1374), implicit_cast<TNode<Uint32T>>((*b1_274).value()));
+          // ../../src/builtins/data-view.tq:638:7
+          int31_t t1375 = 2;
+          TNode<IntPtrT> t1376 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1375)));
+          TNode<IntPtrT> t1377 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1376)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1377));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1377), implicit_cast<TNode<Uint32T>>((*b2_275).value()));
+          // ../../src/builtins/data-view.tq:639:7
+          int31_t t1378 = 3;
+          TNode<IntPtrT> t1379 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1378)));
+          TNode<IntPtrT> t1380 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1379)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1380));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1380), implicit_cast<TNode<Uint32T>>((*b3_276).value()));
+          // ../../src/builtins/data-view.tq:640:7
+          int31_t t1381 = 4;
+          TNode<IntPtrT> t1382 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1381)));
+          TNode<IntPtrT> t1383 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1382)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1383));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1383), implicit_cast<TNode<Uint32T>>((*b4_277).value()));
+          // ../../src/builtins/data-view.tq:641:7
+          int31_t t1384 = 5;
+          TNode<IntPtrT> t1385 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1384)));
+          TNode<IntPtrT> t1386 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1385)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1386));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1386), implicit_cast<TNode<Uint32T>>((*b5_278).value()));
+          // ../../src/builtins/data-view.tq:642:7
+          int31_t t1387 = 6;
+          TNode<IntPtrT> t1388 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1387)));
+          TNode<IntPtrT> t1389 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1388)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1389));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1389), implicit_cast<TNode<Uint32T>>((*b6_279).value()));
+          // ../../src/builtins/data-view.tq:643:7
+          int31_t t1390 = 7;
+          TNode<IntPtrT> t1391 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1390)));
+          TNode<IntPtrT> t1392 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1391)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1392));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1392), implicit_cast<TNode<Uint32T>>((*b7_280).value()));
+        }
+        Goto(label_if_done_label_765_1204);
+      }
+      if (label__False_376->is_used())
+      {
+        BIND(label__False_376);
+        // ../../src/builtins/data-view.tq:644:12
+        {
+          // ../../src/builtins/data-view.tq:645:7
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>((*b7_280).value()));
+          // ../../src/builtins/data-view.tq:646:7
+          int31_t t1393 = 1;
+          TNode<IntPtrT> t1394 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1393)));
+          TNode<IntPtrT> t1395 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1394)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1395));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1395), implicit_cast<TNode<Uint32T>>((*b6_279).value()));
+          // ../../src/builtins/data-view.tq:647:7
+          int31_t t1396 = 2;
+          TNode<IntPtrT> t1397 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1396)));
+          TNode<IntPtrT> t1398 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1397)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1398));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1398), implicit_cast<TNode<Uint32T>>((*b5_278).value()));
+          // ../../src/builtins/data-view.tq:648:7
+          int31_t t1399 = 3;
+          TNode<IntPtrT> t1400 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1399)));
+          TNode<IntPtrT> t1401 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1400)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1401));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1401), implicit_cast<TNode<Uint32T>>((*b4_277).value()));
+          // ../../src/builtins/data-view.tq:649:7
+          int31_t t1402 = 4;
+          TNode<IntPtrT> t1403 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1402)));
+          TNode<IntPtrT> t1404 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1403)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1404));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1404), implicit_cast<TNode<Uint32T>>((*b3_276).value()));
+          // ../../src/builtins/data-view.tq:650:7
+          int31_t t1405 = 5;
+          TNode<IntPtrT> t1406 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1405)));
+          TNode<IntPtrT> t1407 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1406)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1407));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1407), implicit_cast<TNode<Uint32T>>((*b2_275).value()));
+          // ../../src/builtins/data-view.tq:651:7
+          int31_t t1408 = 6;
+          TNode<IntPtrT> t1409 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1408)));
+          TNode<IntPtrT> t1410 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1409)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1410));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1410), implicit_cast<TNode<Uint32T>>((*b1_274).value()));
+          // ../../src/builtins/data-view.tq:652:7
+          int31_t t1411 = 7;
+          TNode<IntPtrT> t1412 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1411)));
+          TNode<IntPtrT> t1413 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<IntPtrT>>(t1412)));
+          USE(implicit_cast<TNode<IntPtrT>>(t1413));
+          StoreWord8(implicit_cast<TNode<RawPtrT>>((*data_pointer_272).value()), implicit_cast<TNode<IntPtrT>>(t1413), implicit_cast<TNode<Uint32T>>((*b0_273).value()));
+        }
+        Goto(label_if_done_label_765_1204);
+      }
+      BIND(label_if_done_label_765_1204);
+    }
+  }
+}
+
+void DataViewBuiltinsFromDSLAssembler::StoreDataViewBigInt(TNode<JSArrayBuffer> p_buffer, TNode<IntPtrT> p_offset, TNode<BigInt> p_bigint_value, TNode<BoolT> p_requested_little_endian) {
+  Label label_macro_end_1205_impl(this, {});
+  Label* label_macro_end_1205 = &label_macro_end_1205_impl;
+  USE(label_macro_end_1205);
+  // ../../src/builtins/data-view.tq:665:60
+  {
+    // ../../src/builtins/data-view.tq:667:5
+    TNode<UintPtrT> t1414 = UncheckedCast<UintPtrT>(DataViewDecodeBigIntLength(implicit_cast<TNode<BigInt>>(p_bigint_value)));
+    USE(implicit_cast<TNode<UintPtrT>>(t1414));
+    TVARIABLE(UintPtrT, length_281_impl);
+    auto length_281 = &length_281_impl;
+    USE(length_281);
+    *length_281 = implicit_cast<TNode<UintPtrT>>(t1414);
+    // ../../src/builtins/data-view.tq:668:5
+    TNode<UintPtrT> t1415 = UncheckedCast<UintPtrT>(DataViewDecodeBigIntSign(implicit_cast<TNode<BigInt>>(p_bigint_value)));
+    USE(implicit_cast<TNode<UintPtrT>>(t1415));
+    TVARIABLE(UintPtrT, sign_282_impl);
+    auto sign_282 = &sign_282_impl;
+    USE(sign_282);
+    *sign_282 = implicit_cast<TNode<UintPtrT>>(t1415);
+    // ../../src/builtins/data-view.tq:672:5
+    int31_t t1416 = 0;
+    TVARIABLE(Uint32T, low_word_283_impl);
+    auto low_word_283 = &low_word_283_impl;
+    USE(low_word_283);
+    TNode<Uint32T> t1417 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1416)));
+    *low_word_283 = implicit_cast<TNode<Uint32T>>(t1417);
+    // ../../src/builtins/data-view.tq:673:5
+    int31_t t1418 = 0;
+    TVARIABLE(Uint32T, high_word_284_impl);
+    auto high_word_284 = &high_word_284_impl;
+    USE(high_word_284);
+    TNode<Uint32T> t1419 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1418)));
+    *high_word_284 = implicit_cast<TNode<Uint32T>>(t1419);
+    // ../../src/builtins/data-view.tq:676:5
+    {
+      Label label__True_377_impl(this);
+      Label* label__True_377 = &label__True_377_impl;
+      USE(label__True_377);
+      Label label__False_378_impl(this, {high_word_284, low_word_283});
+      Label* label__False_378 = &label__False_378_impl;
+      USE(label__False_378);
+      int31_t t1420 = 0;
+      TNode<UintPtrT> t1421 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(implicit_cast<int31_t>(t1420)));
+      TNode<BoolT> t1422 = UncheckedCast<BoolT>(WordNotEqual(implicit_cast<TNode<UintPtrT>>((*length_281).value()), implicit_cast<TNode<UintPtrT>>(t1421)));
+      USE(implicit_cast<TNode<BoolT>>(t1422));
+      Branch(implicit_cast<TNode<BoolT>>(t1422), label__True_377, label__False_378);
+      if (label__True_377->is_used())
+      {
+        BIND(label__True_377);
+        // ../../src/builtins/data-view.tq:676:22
+        {
+          // ../../src/builtins/data-view.tq:677:7
+          {
+            bool t1423 = Is64();
+            USE(implicit_cast<bool>(t1423));
+            if ((implicit_cast<bool>(t1423))) {
+              // ../../src/builtins/data-view.tq:677:29
+              {
+                // ../../src/builtins/data-view.tq:679:9
+                int31_t t1424 = 0;
+                TNode<UintPtrT> t1425 = UncheckedCast<UintPtrT>(LoadBigIntDigit(implicit_cast<TNode<BigInt>>(p_bigint_value), implicit_cast<int31_t>(t1424)));
+                USE(implicit_cast<TNode<UintPtrT>>(t1425));
+                TVARIABLE(UintPtrT, value_285_impl);
+                auto value_285 = &value_285_impl;
+                USE(value_285);
+                *value_285 = implicit_cast<TNode<UintPtrT>>(t1425);
+                // ../../src/builtins/data-view.tq:680:9
+                TNode<Uint32T> t1426 = UncheckedCast<Uint32T>(convert8ATuint32(implicit_cast<TNode<UintPtrT>>((*value_285).value())));
+                USE(implicit_cast<TNode<Uint32T>>(t1426));
+                *low_word_283 = implicit_cast<TNode<Uint32T>>(t1426);
+                // ../../src/builtins/data-view.tq:681:9
+                int31_t t1427 = 32;
+                TNode<UintPtrT> t1428 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(implicit_cast<int31_t>(t1427)));
+                TNode<UintPtrT> t1429 = UncheckedCast<UintPtrT>(WordShr(implicit_cast<TNode<UintPtrT>>((*value_285).value()), implicit_cast<TNode<UintPtrT>>(t1428)));
+                USE(implicit_cast<TNode<UintPtrT>>(t1429));
+                TNode<Uint32T> t1430 = UncheckedCast<Uint32T>(convert8ATuint32(implicit_cast<TNode<UintPtrT>>(t1429)));
+                USE(implicit_cast<TNode<Uint32T>>(t1430));
+                *high_word_284 = implicit_cast<TNode<Uint32T>>(t1430);
+              }
+            } else {
+              // ../../src/builtins/data-view.tq:683:12
+              {
+                // ../../src/builtins/data-view.tq:684:9
+                int31_t t1431 = 0;
+                TNode<UintPtrT> t1432 = UncheckedCast<UintPtrT>(LoadBigIntDigit(implicit_cast<TNode<BigInt>>(p_bigint_value), implicit_cast<int31_t>(t1431)));
+                USE(implicit_cast<TNode<UintPtrT>>(t1432));
+                TNode<Uint32T> t1433 = UncheckedCast<Uint32T>(convert8ATuint32(implicit_cast<TNode<UintPtrT>>(t1432)));
+                USE(implicit_cast<TNode<Uint32T>>(t1433));
+                *low_word_283 = implicit_cast<TNode<Uint32T>>(t1433);
+                // ../../src/builtins/data-view.tq:685:9
+                {
+                  Label label__True_381_impl(this);
+                  Label* label__True_381 = &label__True_381_impl;
+                  USE(label__True_381);
+                  Label label__False_382_impl(this, {high_word_284});
+                  Label* label__False_382 = &label__False_382_impl;
+                  USE(label__False_382);
+                  int31_t t1434 = 2;
+                  TNode<UintPtrT> t1435 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(implicit_cast<int31_t>(t1434)));
+                  TNode<BoolT> t1436 = UncheckedCast<BoolT>(UintPtrGreaterThanOrEqual(implicit_cast<TNode<UintPtrT>>((*length_281).value()), implicit_cast<TNode<UintPtrT>>(t1435)));
+                  USE(implicit_cast<TNode<BoolT>>(t1436));
+                  Branch(implicit_cast<TNode<BoolT>>(t1436), label__True_381, label__False_382);
+                  if (label__True_381->is_used())
+                  {
+                    BIND(label__True_381);
+                    // ../../src/builtins/data-view.tq:685:26
+                    {
+                      // ../../src/builtins/data-view.tq:686:11
+                      int31_t t1437 = 1;
+                      TNode<UintPtrT> t1438 = UncheckedCast<UintPtrT>(LoadBigIntDigit(implicit_cast<TNode<BigInt>>(p_bigint_value), implicit_cast<int31_t>(t1437)));
+                      USE(implicit_cast<TNode<UintPtrT>>(t1438));
+                      TNode<Uint32T> t1439 = UncheckedCast<Uint32T>(convert8ATuint32(implicit_cast<TNode<UintPtrT>>(t1438)));
+                      USE(implicit_cast<TNode<Uint32T>>(t1439));
+                      *high_word_284 = implicit_cast<TNode<Uint32T>>(t1439);
+                    }
+                    Goto(label__False_382);
+                  }
+                  BIND(label__False_382);
+                }
+              }
+            }
+          }
+        }
+        Goto(label__False_378);
+      }
+      BIND(label__False_378);
+    }
+    // ../../src/builtins/data-view.tq:691:5
+    {
+      Label label__True_383_impl(this);
+      Label* label__True_383 = &label__True_383_impl;
+      USE(label__True_383);
+      Label label__False_384_impl(this, {high_word_284, low_word_283});
+      Label* label__False_384 = &label__False_384_impl;
+      USE(label__False_384);
+      int31_t t1440 = 0;
+      TNode<UintPtrT> t1441 = UncheckedCast<UintPtrT>(from_constexpr9ATuintptr(implicit_cast<int31_t>(t1440)));
+      TNode<BoolT> t1442 = UncheckedCast<BoolT>(WordNotEqual(implicit_cast<TNode<UintPtrT>>((*sign_282).value()), implicit_cast<TNode<UintPtrT>>(t1441)));
+      USE(implicit_cast<TNode<BoolT>>(t1442));
+      Branch(implicit_cast<TNode<BoolT>>(t1442), label__True_383, label__False_384);
+      if (label__True_383->is_used())
+      {
+        BIND(label__True_383);
+        // ../../src/builtins/data-view.tq:691:20
+        {
+          // ../../src/builtins/data-view.tq:692:7
+          int31_t t1443 = 0;
+          TNode<Int32T> t1444 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>((*high_word_284).value())));
+          USE(implicit_cast<TNode<Int32T>>(t1444));
+          TNode<Int32T> t1445 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t1443)));
+          TNode<Int32T> t1446 = UncheckedCast<Int32T>(Int32Sub(implicit_cast<TNode<Int32T>>(t1445), implicit_cast<TNode<Int32T>>(t1444)));
+          USE(implicit_cast<TNode<Int32T>>(t1446));
+          TNode<Uint32T> t1447 = UncheckedCast<Uint32T>(Unsigned(implicit_cast<TNode<Int32T>>(t1446)));
+          USE(implicit_cast<TNode<Uint32T>>(t1447));
+          *high_word_284 = implicit_cast<TNode<Uint32T>>(t1447);
+          // ../../src/builtins/data-view.tq:693:7
+          {
+            Label label__True_385_impl(this);
+            Label* label__True_385 = &label__True_385_impl;
+            USE(label__True_385);
+            Label label__False_386_impl(this, {high_word_284});
+            Label* label__False_386 = &label__False_386_impl;
+            USE(label__False_386);
+            int31_t t1448 = 0;
+            TNode<Uint32T> t1449 = UncheckedCast<Uint32T>(from_constexpr8ATuint32(implicit_cast<int31_t>(t1448)));
+            TNode<BoolT> t1450 = UncheckedCast<BoolT>(Word32NotEqual(implicit_cast<TNode<Uint32T>>((*low_word_283).value()), implicit_cast<TNode<Uint32T>>(t1449)));
+            USE(implicit_cast<TNode<BoolT>>(t1450));
+            Branch(implicit_cast<TNode<BoolT>>(t1450), label__True_385, label__False_386);
+            if (label__True_385->is_used())
+            {
+              BIND(label__True_385);
+              // ../../src/builtins/data-view.tq:693:26
+              {
+                // ../../src/builtins/data-view.tq:694:9
+                TNode<Int32T> t1451 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>((*high_word_284).value())));
+                USE(implicit_cast<TNode<Int32T>>(t1451));
+                int31_t t1452 = 1;
+                TNode<Int32T> t1453 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t1452)));
+                TNode<Int32T> t1454 = UncheckedCast<Int32T>(Int32Sub(implicit_cast<TNode<Int32T>>(t1451), implicit_cast<TNode<Int32T>>(t1453)));
+                USE(implicit_cast<TNode<Int32T>>(t1454));
+                TNode<Uint32T> t1455 = UncheckedCast<Uint32T>(Unsigned(implicit_cast<TNode<Int32T>>(t1454)));
+                USE(implicit_cast<TNode<Uint32T>>(t1455));
+                *high_word_284 = implicit_cast<TNode<Uint32T>>(t1455);
+              }
+              Goto(label__False_386);
+            }
+            BIND(label__False_386);
+          }
+          // ../../src/builtins/data-view.tq:696:7
+          int31_t t1456 = 0;
+          TNode<Int32T> t1457 = UncheckedCast<Int32T>(Signed(implicit_cast<TNode<Uint32T>>((*low_word_283).value())));
+          USE(implicit_cast<TNode<Int32T>>(t1457));
+          TNode<Int32T> t1458 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t1456)));
+          TNode<Int32T> t1459 = UncheckedCast<Int32T>(Int32Sub(implicit_cast<TNode<Int32T>>(t1458), implicit_cast<TNode<Int32T>>(t1457)));
+          USE(implicit_cast<TNode<Int32T>>(t1459));
+          TNode<Uint32T> t1460 = UncheckedCast<Uint32T>(Unsigned(implicit_cast<TNode<Int32T>>(t1459)));
+          USE(implicit_cast<TNode<Uint32T>>(t1460));
+          *low_word_283 = implicit_cast<TNode<Uint32T>>(t1460);
+        }
+        Goto(label__False_384);
+      }
+      BIND(label__False_384);
+    }
+    // ../../src/builtins/data-view.tq:699:5
+    StoreDataView64(implicit_cast<TNode<JSArrayBuffer>>(p_buffer), implicit_cast<TNode<IntPtrT>>(p_offset), implicit_cast<TNode<Uint32T>>((*low_word_283).value()), implicit_cast<TNode<Uint32T>>((*high_word_284).value()), implicit_cast<TNode<BoolT>>(p_requested_little_endian));
+  }
+}
+
+compiler::TNode<Object> DataViewBuiltinsFromDSLAssembler::DataViewSet(TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_offset, TNode<Object> p_value, TNode<Object> p_requested_little_endian, ElementsKind p_kind) {
+  TVARIABLE(Object, _return_286_impl);
+  auto _return_286 = &_return_286_impl;
+  USE(_return_286);
+  Label label_macro_end_1206_impl(this, {_return_286});
+  Label* label_macro_end_1206 = &label_macro_end_1206_impl;
+  USE(label_macro_end_1206);
+  // ../../src/builtins/data-view.tq:708:59
+  {
+    // ../../src/builtins/data-view.tq:710:5
+    TNode<String> t1461 = UncheckedCast<String>(MakeDataViewSetterNameString(implicit_cast<ElementsKind>(p_kind)));
+    USE(implicit_cast<TNode<String>>(t1461));
+    TNode<JSDataView> t1462 = UncheckedCast<JSDataView>(ValidateDataView(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<String>>(t1461)));
+    USE(implicit_cast<TNode<JSDataView>>(t1462));
+    TVARIABLE(JSDataView, data_view_287_impl);
+    auto data_view_287 = &data_view_287_impl;
+    USE(data_view_287);
+    *data_view_287 = implicit_cast<TNode<JSDataView>>(t1462);
+    // ../../src/builtins/data-view.tq:713:5
+    TVARIABLE(Number, getIndex_288_impl);
+    auto getIndex_288 = &getIndex_288_impl;
+    USE(getIndex_288);
+    // ../../src/builtins/data-view.tq:714:5
+    {
+      Label label_try_done_766_1207_impl(this);
+      Label* label_try_done_766_1207 = &label_try_done_766_1207_impl;
+      USE(label_try_done_766_1207);
+      Label label_RangeError_387_impl(this);
+      Label* label_RangeError_387 = &label_RangeError_387_impl;
+      USE(label_RangeError_387);
+      Label label_try_begin_767_1208_impl(this);
+      Label* label_try_begin_767_1208 = &label_try_begin_767_1208_impl;
+      USE(label_try_begin_767_1208);
+      Goto(label_try_begin_767_1208);
+      if (label_try_begin_767_1208->is_used())
+      {
+        BIND(label_try_begin_767_1208);
+        // ../../src/builtins/data-view.tq:714:9
+        {
+          // ../../src/builtins/data-view.tq:715:7
+          TNode<Number> t1463 = UncheckedCast<Number>(ToIndex(implicit_cast<TNode<Object>>(p_offset), implicit_cast<TNode<Context>>(p_context), label_RangeError_387));
+          USE(implicit_cast<TNode<Number>>(t1463));
+          *getIndex_288 = implicit_cast<TNode<Number>>(t1463);
+        }
+        Goto(label_try_done_766_1207);
+      }
+      if (label_RangeError_387->is_used())
+      {
+        BIND(label_RangeError_387);
+        // ../../src/builtins/data-view.tq:717:22
+        {
+          // ../../src/builtins/data-view.tq:718:7
+          ThrowRangeError(implicit_cast<TNode<Context>>(p_context), implicit_cast<MessageTemplate::Template>(MessageTemplate::kInvalidDataViewAccessorOffset));
+        }
+      }
+      BIND(label_try_done_766_1207);
+    }
+    // ../../src/builtins/data-view.tq:721:5
+    TNode<BoolT> t1464 = UncheckedCast<BoolT>(ToBoolean(implicit_cast<TNode<Object>>(p_requested_little_endian)));
+    USE(implicit_cast<TNode<BoolT>>(t1464));
+    TVARIABLE(BoolT, littleEndian_289_impl);
+    auto littleEndian_289 = &littleEndian_289_impl;
+    USE(littleEndian_289);
+    *littleEndian_289 = implicit_cast<TNode<BoolT>>(t1464);
+    // ../../src/builtins/data-view.tq:722:5
+    TNode<JSArrayBuffer> t1465 = UncheckedCast<JSArrayBuffer>(LoadArrayBufferViewBuffer(implicit_cast<TNode<JSArrayBufferView>>((*data_view_287).value())));
+    TVARIABLE(JSArrayBuffer, buffer_290_impl);
+    auto buffer_290 = &buffer_290_impl;
+    USE(buffer_290);
+    *buffer_290 = implicit_cast<TNode<JSArrayBuffer>>(t1465);
+    // ../../src/builtins/data-view.tq:724:5
+    TVARIABLE(BigInt, bigint_value_291_impl);
+    auto bigint_value_291 = &bigint_value_291_impl;
+    USE(bigint_value_291);
+    // ../../src/builtins/data-view.tq:725:5
+    TVARIABLE(Number, num_value_292_impl);
+    auto num_value_292 = &num_value_292_impl;
+    USE(num_value_292);
+    // ../../src/builtins/data-view.tq:728:5
+    {
+      Label label__False_390_impl(this);
+      Label* label__False_390 = &label__False_390_impl;
+      USE(label__False_390);
+      bool t1466 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGUINT64_ELEMENTS));
+      USE(implicit_cast<bool>(t1466));
+      bool t1467 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGINT64_ELEMENTS));
+      USE(implicit_cast<bool>(t1467));
+      if ((implicit_cast<bool>((implicit_cast<bool>(t1466) || implicit_cast<bool>(t1467))))) {
+        // ../../src/builtins/data-view.tq:728:76
+        {
+          // ../../src/builtins/data-view.tq:729:7
+          TNode<BigInt> t1468 = UncheckedCast<BigInt>(ToBigInt(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_value)));
+          USE(implicit_cast<TNode<BigInt>>(t1468));
+          *bigint_value_291 = implicit_cast<TNode<BigInt>>(t1468);
+        }
+      } else {
+        // ../../src/builtins/data-view.tq:730:12
+        {
+          // ../../src/builtins/data-view.tq:731:7
+          TNode<Number> t1469 = UncheckedCast<Number>(ToNumber(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_value)));
+          USE(implicit_cast<TNode<Number>>(t1469));
+          *num_value_292 = implicit_cast<TNode<Number>>(t1469);
+        }
+      }
+    }
+    // ../../src/builtins/data-view.tq:734:5
+    {
+      Label label__True_391_impl(this);
+      Label* label__True_391 = &label__True_391_impl;
+      USE(label__True_391);
+      Label label__False_392_impl(this, {});
+      Label* label__False_392 = &label__False_392_impl;
+      USE(label__False_392);
+      TNode<BoolT> t1470 = UncheckedCast<BoolT>(IsDetachedBuffer(implicit_cast<TNode<JSArrayBuffer>>((*buffer_290).value())));
+      USE(implicit_cast<TNode<BoolT>>(t1470));
+      Branch(implicit_cast<TNode<BoolT>>(t1470), label__True_391, label__False_392);
+      if (label__True_391->is_used())
+      {
+        BIND(label__True_391);
+        // ../../src/builtins/data-view.tq:734:35
+        {
+          // ../../src/builtins/data-view.tq:735:7
+          TNode<String> t1471 = UncheckedCast<String>(MakeDataViewSetterNameString(implicit_cast<ElementsKind>(p_kind)));
+          USE(implicit_cast<TNode<String>>(t1471));
+          ThrowTypeError(implicit_cast<TNode<Context>>(p_context), implicit_cast<MessageTemplate::Template>(MessageTemplate::kDetachedOperation), implicit_cast<TNode<Object>>(t1471));
+        }
+      }
+      BIND(label__False_392);
+    }
+    // ../../src/builtins/data-view.tq:739:5
+    TNode<Number> t1472 = UncheckedCast<Number>(LoadDataViewByteOffset(implicit_cast<TNode<JSDataView>>((*data_view_287).value())));
+    TVARIABLE(Number, viewOffset_293_impl);
+    auto viewOffset_293 = &viewOffset_293_impl;
+    USE(viewOffset_293);
+    *viewOffset_293 = implicit_cast<TNode<Number>>(t1472);
+    // ../../src/builtins/data-view.tq:740:5
+    TNode<Number> t1473 = UncheckedCast<Number>(LoadDataViewByteLength(implicit_cast<TNode<JSDataView>>((*data_view_287).value())));
+    TVARIABLE(Number, viewSize_294_impl);
+    auto viewSize_294 = &viewSize_294_impl;
+    USE(viewSize_294);
+    *viewSize_294 = implicit_cast<TNode<Number>>(t1473);
+    // ../../src/builtins/data-view.tq:741:5
+    int31_t t1474 = DataViewElementSize(implicit_cast<ElementsKind>(p_kind));
+    USE(implicit_cast<int31_t>(t1474));
+    TVARIABLE(Number, elementSize_295_impl);
+    auto elementSize_295 = &elementSize_295_impl;
+    USE(elementSize_295);
+    TNode<Number> t1475 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<int31_t>(t1474)));
+    *elementSize_295 = implicit_cast<TNode<Number>>(t1475);
+    // ../../src/builtins/data-view.tq:743:5
+    {
+      Label label__True_393_impl(this);
+      Label* label__True_393 = &label__True_393_impl;
+      USE(label__True_393);
+      Label label__False_394_impl(this, {});
+      Label* label__False_394 = &label__False_394_impl;
+      USE(label__False_394);
+      TNode<Number> t1476 = UncheckedCast<Number>(NumberAdd(implicit_cast<TNode<Number>>((*getIndex_288).value()), implicit_cast<TNode<Number>>((*elementSize_295).value())));
+      USE(implicit_cast<TNode<Number>>(t1476));
+      BranchIfNumberGreaterThan(implicit_cast<TNode<Number>>(t1476), implicit_cast<TNode<Number>>((*viewSize_294).value()), label__True_393, label__False_394);
+      if (label__True_393->is_used())
+      {
+        BIND(label__True_393);
+        // ../../src/builtins/data-view.tq:743:44
+        {
+          // ../../src/builtins/data-view.tq:744:7
+          ThrowRangeError(implicit_cast<TNode<Context>>(p_context), implicit_cast<MessageTemplate::Template>(MessageTemplate::kInvalidDataViewAccessorOffset));
+        }
+      }
+      BIND(label__False_394);
+    }
+    // ../../src/builtins/data-view.tq:747:5
+    TNode<Float64T> t1477 = UncheckedCast<Float64T>(convert9ATfloat64(implicit_cast<TNode<Number>>((*getIndex_288).value())));
+    USE(implicit_cast<TNode<Float64T>>(t1477));
+    TVARIABLE(Float64T, getIndexFloat_296_impl);
+    auto getIndexFloat_296 = &getIndexFloat_296_impl;
+    USE(getIndexFloat_296);
+    *getIndexFloat_296 = implicit_cast<TNode<Float64T>>(t1477);
+    // ../../src/builtins/data-view.tq:748:5
+    TNode<UintPtrT> t1478 = UncheckedCast<UintPtrT>(convert9ATuintptr(implicit_cast<TNode<Float64T>>((*getIndexFloat_296).value())));
+    USE(implicit_cast<TNode<UintPtrT>>(t1478));
+    TNode<IntPtrT> t1479 = UncheckedCast<IntPtrT>(Signed(implicit_cast<TNode<UintPtrT>>(t1478)));
+    USE(implicit_cast<TNode<IntPtrT>>(t1479));
+    TVARIABLE(IntPtrT, getIndexIntptr_297_impl);
+    auto getIndexIntptr_297 = &getIndexIntptr_297_impl;
+    USE(getIndexIntptr_297);
+    *getIndexIntptr_297 = implicit_cast<TNode<IntPtrT>>(t1479);
+    // ../../src/builtins/data-view.tq:749:5
+    TNode<Float64T> t1480 = UncheckedCast<Float64T>(convert9ATfloat64(implicit_cast<TNode<Number>>((*viewOffset_293).value())));
+    USE(implicit_cast<TNode<Float64T>>(t1480));
+    TVARIABLE(Float64T, viewOffsetFloat_298_impl);
+    auto viewOffsetFloat_298 = &viewOffsetFloat_298_impl;
+    USE(viewOffsetFloat_298);
+    *viewOffsetFloat_298 = implicit_cast<TNode<Float64T>>(t1480);
+    // ../../src/builtins/data-view.tq:750:5
+    TNode<UintPtrT> t1481 = UncheckedCast<UintPtrT>(convert9ATuintptr(implicit_cast<TNode<Float64T>>((*viewOffsetFloat_298).value())));
+    USE(implicit_cast<TNode<UintPtrT>>(t1481));
+    TNode<IntPtrT> t1482 = UncheckedCast<IntPtrT>(Signed(implicit_cast<TNode<UintPtrT>>(t1481)));
+    USE(implicit_cast<TNode<IntPtrT>>(t1482));
+    TVARIABLE(IntPtrT, viewOffsetIntptr_299_impl);
+    auto viewOffsetIntptr_299 = &viewOffsetIntptr_299_impl;
+    USE(viewOffsetIntptr_299);
+    *viewOffsetIntptr_299 = implicit_cast<TNode<IntPtrT>>(t1482);
+    // ../../src/builtins/data-view.tq:752:5
+    TNode<IntPtrT> t1483 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>((*getIndexIntptr_297).value()), implicit_cast<TNode<IntPtrT>>((*viewOffsetIntptr_299).value())));
+    USE(implicit_cast<TNode<IntPtrT>>(t1483));
+    TVARIABLE(IntPtrT, bufferIndex_300_impl);
+    auto bufferIndex_300 = &bufferIndex_300_impl;
+    USE(bufferIndex_300);
+    *bufferIndex_300 = implicit_cast<TNode<IntPtrT>>(t1483);
+    // ../../src/builtins/data-view.tq:754:5
+    {
+      Label label__False_397_impl(this);
+      Label* label__False_397 = &label__False_397_impl;
+      USE(label__False_397);
+      bool t1484 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGUINT64_ELEMENTS));
+      USE(implicit_cast<bool>(t1484));
+      bool t1485 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(BIGINT64_ELEMENTS));
+      USE(implicit_cast<bool>(t1485));
+      if ((implicit_cast<bool>((implicit_cast<bool>(t1484) || implicit_cast<bool>(t1485))))) {
+        // ../../src/builtins/data-view.tq:754:76
+        {
+          // ../../src/builtins/data-view.tq:755:7
+          StoreDataViewBigInt(implicit_cast<TNode<JSArrayBuffer>>((*buffer_290).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_300).value()), implicit_cast<TNode<BigInt>>((*bigint_value_291).value()), implicit_cast<TNode<BoolT>>((*littleEndian_289).value()));
+        }
+      } else {
+        // ../../src/builtins/data-view.tq:758:10
+        {
+          // ../../src/builtins/data-view.tq:759:7
+          TNode<Float64T> t1486 = UncheckedCast<Float64T>(ChangeNumberToFloat64(implicit_cast<TNode<Number>>((*num_value_292).value())));
+          USE(implicit_cast<TNode<Float64T>>(t1486));
+          TVARIABLE(Float64T, double_value_301_impl);
+          auto double_value_301 = &double_value_301_impl;
+          USE(double_value_301);
+          *double_value_301 = implicit_cast<TNode<Float64T>>(t1486);
+          // ../../src/builtins/data-view.tq:761:7
+          {
+            Label label__False_400_impl(this);
+            Label* label__False_400 = &label__False_400_impl;
+            USE(label__False_400);
+            bool t1487 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+            USE(implicit_cast<bool>(t1487));
+            bool t1488 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT8_ELEMENTS));
+            USE(implicit_cast<bool>(t1488));
+            if ((implicit_cast<bool>((implicit_cast<bool>(t1487) || implicit_cast<bool>(t1488))))) {
+              // ../../src/builtins/data-view.tq:761:70
+              {
+                // ../../src/builtins/data-view.tq:762:9
+                TNode<Uint32T> t1489 = UncheckedCast<Uint32T>(TruncateFloat64ToWord32(implicit_cast<TNode<Float64T>>((*double_value_301).value())));
+                USE(implicit_cast<TNode<Uint32T>>(t1489));
+                StoreDataView8(implicit_cast<TNode<JSArrayBuffer>>((*buffer_290).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_300).value()), implicit_cast<TNode<Uint32T>>(t1489));
+              }
+            } else {
+              // ../../src/builtins/data-view.tq:765:12
+              {
+                Label label__False_403_impl(this);
+                Label* label__False_403 = &label__False_403_impl;
+                USE(label__False_403);
+                bool t1490 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+                USE(implicit_cast<bool>(t1490));
+                bool t1491 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT16_ELEMENTS));
+                USE(implicit_cast<bool>(t1491));
+                if ((implicit_cast<bool>((implicit_cast<bool>(t1490) || implicit_cast<bool>(t1491))))) {
+                  // ../../src/builtins/data-view.tq:765:77
+                  {
+                    // ../../src/builtins/data-view.tq:766:9
+                    TNode<Uint32T> t1492 = UncheckedCast<Uint32T>(TruncateFloat64ToWord32(implicit_cast<TNode<Float64T>>((*double_value_301).value())));
+                    USE(implicit_cast<TNode<Uint32T>>(t1492));
+                    StoreDataView16(implicit_cast<TNode<JSArrayBuffer>>((*buffer_290).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_300).value()), implicit_cast<TNode<Uint32T>>(t1492), implicit_cast<TNode<BoolT>>((*littleEndian_289).value()));
+                  }
+                } else {
+                  // ../../src/builtins/data-view.tq:769:12
+                  {
+                    Label label__False_406_impl(this);
+                    Label* label__False_406 = &label__False_406_impl;
+                    USE(label__False_406);
+                    bool t1493 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT32_ELEMENTS));
+                    USE(implicit_cast<bool>(t1493));
+                    bool t1494 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(INT32_ELEMENTS));
+                    USE(implicit_cast<bool>(t1494));
+                    if ((implicit_cast<bool>((implicit_cast<bool>(t1493) || implicit_cast<bool>(t1494))))) {
+                      // ../../src/builtins/data-view.tq:769:77
+                      {
+                        // ../../src/builtins/data-view.tq:770:9
+                        TNode<Uint32T> t1495 = UncheckedCast<Uint32T>(TruncateFloat64ToWord32(implicit_cast<TNode<Float64T>>((*double_value_301).value())));
+                        USE(implicit_cast<TNode<Uint32T>>(t1495));
+                        StoreDataView32(implicit_cast<TNode<JSArrayBuffer>>((*buffer_290).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_300).value()), implicit_cast<TNode<Uint32T>>(t1495), implicit_cast<TNode<BoolT>>((*littleEndian_289).value()));
+                      }
+                    } else {
+                      // ../../src/builtins/data-view.tq:773:12
+                      {
+                        bool t1496 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT32_ELEMENTS));
+                        USE(implicit_cast<bool>(t1496));
+                        if ((implicit_cast<bool>(t1496))) {
+                          // ../../src/builtins/data-view.tq:773:52
+                          {
+                            // ../../src/builtins/data-view.tq:774:9
+                            TNode<Float32T> t1497 = UncheckedCast<Float32T>(TruncateFloat64ToFloat32(implicit_cast<TNode<Float64T>>((*double_value_301).value())));
+                            USE(implicit_cast<TNode<Float32T>>(t1497));
+                            TVARIABLE(Float32T, float_value_302_impl);
+                            auto float_value_302 = &float_value_302_impl;
+                            USE(float_value_302);
+                            *float_value_302 = implicit_cast<TNode<Float32T>>(t1497);
+                            // ../../src/builtins/data-view.tq:775:9
+                            TNode<Uint32T> t1498 = UncheckedCast<Uint32T>(BitcastFloat32ToInt32(implicit_cast<TNode<Float32T>>((*float_value_302).value())));
+                            USE(implicit_cast<TNode<Uint32T>>(t1498));
+                            StoreDataView32(implicit_cast<TNode<JSArrayBuffer>>((*buffer_290).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_300).value()), implicit_cast<TNode<Uint32T>>(t1498), implicit_cast<TNode<BoolT>>((*littleEndian_289).value()));
+                          }
+                        } else {
+                          // ../../src/builtins/data-view.tq:778:12
+                          {
+                            bool t1499 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(FLOAT64_ELEMENTS));
+                            USE(implicit_cast<bool>(t1499));
+                            if ((implicit_cast<bool>(t1499))) {
+                              // ../../src/builtins/data-view.tq:778:52
+                              {
+                                // ../../src/builtins/data-view.tq:779:9
+                                TNode<Uint32T> t1500 = UncheckedCast<Uint32T>(Float64ExtractLowWord32(implicit_cast<TNode<Float64T>>((*double_value_301).value())));
+                                USE(implicit_cast<TNode<Uint32T>>(t1500));
+                                TVARIABLE(Uint32T, low_word_303_impl);
+                                auto low_word_303 = &low_word_303_impl;
+                                USE(low_word_303);
+                                *low_word_303 = implicit_cast<TNode<Uint32T>>(t1500);
+                                // ../../src/builtins/data-view.tq:780:9
+                                TNode<Uint32T> t1501 = UncheckedCast<Uint32T>(Float64ExtractHighWord32(implicit_cast<TNode<Float64T>>((*double_value_301).value())));
+                                USE(implicit_cast<TNode<Uint32T>>(t1501));
+                                TVARIABLE(Uint32T, high_word_304_impl);
+                                auto high_word_304 = &high_word_304_impl;
+                                USE(high_word_304);
+                                *high_word_304 = implicit_cast<TNode<Uint32T>>(t1501);
+                                // ../../src/builtins/data-view.tq:781:9
+                                StoreDataView64(implicit_cast<TNode<JSArrayBuffer>>((*buffer_290).value()), implicit_cast<TNode<IntPtrT>>((*bufferIndex_300).value()), implicit_cast<TNode<Uint32T>>((*low_word_303).value()), implicit_cast<TNode<Uint32T>>((*high_word_304).value()), implicit_cast<TNode<BoolT>>((*littleEndian_289).value()));
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    // ../../src/builtins/data-view.tq:785:5
+    *_return_286 = implicit_cast<TNode<Object>>(Undefined());
+    Goto(label_macro_end_1206);
+  }
+  BIND(label_macro_end_1206);
+  return implicit_cast<TNode<Object>>((*_return_286).value());
 }
 
 TF_BUILTIN(DataViewPrototypeSetUint8, DataViewBuiltinsFromDSLAssembler) {
@@ -4043,98 +4253,98 @@ TF_BUILTIN(DataViewPrototypeSetUint8, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:755:62
+  // ../../src/builtins/data-view.tq:789:63
   {
-    // ../../src/builtins/data-view.tq:756:6
-    auto t1376 = [=]() {
-      int31_t t1378 = 0;
-      TNode<IntPtrT> t1379 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1378));
-      TNode<Object> t1380 = UncheckedCast<Object>(GetArgumentValue(arguments, t1379));
-      return t1380;
+    // ../../src/builtins/data-view.tq:790:7
+    auto t1502 = [=]() {
+      int31_t t1504 = 0;
+      TNode<IntPtrT> t1505 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1504)));
+      TNode<Object> t1506 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1505)));
+      return implicit_cast<TNode<Object>>(t1506);
     };
-    auto t1377 = [=]() {
-      return Undefined();
+    auto t1503 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1381_587_impl);
-    auto t1381_587 = &t1381_587_impl;
-    USE(t1381_587);
+    TVARIABLE(Object, t1507_768_impl);
+    auto t1507_768 = &t1507_768_impl;
+    USE(t1507_768);
     {
-      Label label__True_330_impl(this);
-      Label* label__True_330 = &label__True_330_impl;
-      USE(label__True_330);
-      Label label__False_331_impl(this);
-      Label* label__False_331 = &label__False_331_impl;
-      USE(label__False_331);
-      Label label__done_588_727_impl(this, {t1381_587});
-      Label* label__done_588_727 = &label__done_588_727_impl;
-      USE(label__done_588_727);
-      TNode<IntPtrT> t1382 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1383 = 0;
-      TNode<IntPtrT> t1384 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1383));
-      TNode<BoolT> t1385 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1382, t1384));
-      USE(t1385);
-      Branch(t1385, label__True_330, label__False_331);
-      BIND(label__True_330);
-            *t1381_587 = t1376();
-      Goto(label__done_588_727);
-      BIND(label__False_331);
-            *t1381_587 = t1377();
-      Goto(label__done_588_727);
-      BIND(label__done_588_727);
+      Label label__True_411_impl(this);
+      Label* label__True_411 = &label__True_411_impl;
+      USE(label__True_411);
+      Label label__False_412_impl(this);
+      Label* label__False_412 = &label__False_412_impl;
+      USE(label__False_412);
+      Label label__done_769_1209_impl(this, {t1507_768});
+      Label* label__done_769_1209 = &label__done_769_1209_impl;
+      USE(label__done_769_1209);
+      TNode<IntPtrT> t1508 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1509 = 0;
+      TNode<IntPtrT> t1510 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1509)));
+      TNode<BoolT> t1511 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1508), implicit_cast<TNode<IntPtrT>>(t1510)));
+      USE(implicit_cast<TNode<BoolT>>(t1511));
+      Branch(implicit_cast<TNode<BoolT>>(t1511), label__True_411, label__False_412);
+      BIND(label__True_411);
+            *t1507_768 = implicit_cast<TNode<Object>>(t1502());
+      Goto(label__done_769_1209);
+      BIND(label__False_412);
+            *t1507_768 = implicit_cast<TNode<Object>>(t1503());
+      Goto(label__done_769_1209);
+      BIND(label__done_769_1209);
     }
-    TVARIABLE(Object, offset_321_impl);
-    auto offset_321 = &offset_321_impl;
-    USE(offset_321);
-    *offset_321 = (*t1381_587).value();
-    // ../../src/builtins/data-view.tq:759:6
-    auto t1386 = [=]() {
-      int31_t t1388 = 1;
-      TNode<IntPtrT> t1389 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1388));
-      TNode<Object> t1390 = UncheckedCast<Object>(GetArgumentValue(arguments, t1389));
-      return t1390;
+    TVARIABLE(Object, offset_305_impl);
+    auto offset_305 = &offset_305_impl;
+    USE(offset_305);
+    *offset_305 = implicit_cast<TNode<Object>>((*t1507_768).value());
+    // ../../src/builtins/data-view.tq:793:7
+    auto t1512 = [=]() {
+      int31_t t1514 = 1;
+      TNode<IntPtrT> t1515 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1514)));
+      TNode<Object> t1516 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1515)));
+      return implicit_cast<TNode<Object>>(t1516);
     };
-    auto t1387 = [=]() {
-      return Undefined();
+    auto t1513 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1391_589_impl);
-    auto t1391_589 = &t1391_589_impl;
-    USE(t1391_589);
+    TVARIABLE(Object, t1517_770_impl);
+    auto t1517_770 = &t1517_770_impl;
+    USE(t1517_770);
     {
-      Label label__True_332_impl(this);
-      Label* label__True_332 = &label__True_332_impl;
-      USE(label__True_332);
-      Label label__False_333_impl(this);
-      Label* label__False_333 = &label__False_333_impl;
-      USE(label__False_333);
-      Label label__done_590_728_impl(this, {t1391_589});
-      Label* label__done_590_728 = &label__done_590_728_impl;
-      USE(label__done_590_728);
-      TNode<IntPtrT> t1392 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1393 = 1;
-      TNode<IntPtrT> t1394 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1393));
-      TNode<BoolT> t1395 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1392, t1394));
-      USE(t1395);
-      Branch(t1395, label__True_332, label__False_333);
-      BIND(label__True_332);
-            *t1391_589 = t1386();
-      Goto(label__done_590_728);
-      BIND(label__False_333);
-            *t1391_589 = t1387();
-      Goto(label__done_590_728);
-      BIND(label__done_590_728);
+      Label label__True_413_impl(this);
+      Label* label__True_413 = &label__True_413_impl;
+      USE(label__True_413);
+      Label label__False_414_impl(this);
+      Label* label__False_414 = &label__False_414_impl;
+      USE(label__False_414);
+      Label label__done_771_1210_impl(this, {t1517_770});
+      Label* label__done_771_1210 = &label__done_771_1210_impl;
+      USE(label__done_771_1210);
+      TNode<IntPtrT> t1518 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1519 = 1;
+      TNode<IntPtrT> t1520 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1519)));
+      TNode<BoolT> t1521 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1518), implicit_cast<TNode<IntPtrT>>(t1520)));
+      USE(implicit_cast<TNode<BoolT>>(t1521));
+      Branch(implicit_cast<TNode<BoolT>>(t1521), label__True_413, label__False_414);
+      BIND(label__True_413);
+            *t1517_770 = implicit_cast<TNode<Object>>(t1512());
+      Goto(label__done_771_1210);
+      BIND(label__False_414);
+            *t1517_770 = implicit_cast<TNode<Object>>(t1513());
+      Goto(label__done_771_1210);
+      BIND(label__done_771_1210);
     }
-    TVARIABLE(Object, value_322_impl);
-    auto value_322 = &value_322_impl;
-    USE(value_322);
-    *value_322 = (*t1391_589).value();
-    // ../../src/builtins/data-view.tq:762:6
-    TNode<Object> t1396 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_321).value(), (*value_322).value(), Undefined(), UINT8_ELEMENTS));
-    USE(t1396);
-    arguments->PopAndReturn(t1396);
+    TVARIABLE(Object, value_306_impl);
+    auto value_306 = &value_306_impl;
+    USE(value_306);
+    *value_306 = implicit_cast<TNode<Object>>((*t1517_770).value());
+    // ../../src/builtins/data-view.tq:796:7
+    TNode<Object> t1522 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_305).value()), implicit_cast<TNode<Object>>((*value_306).value()), implicit_cast<TNode<Object>>(Undefined()), implicit_cast<ElementsKind>(UINT8_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1522));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1522));
   }
 }
 
-TF_BUILTIN(DataViewPrototypeSetInt16, DataViewBuiltinsFromDSLAssembler) {
+TF_BUILTIN(DataViewPrototypeSetInt8, DataViewBuiltinsFromDSLAssembler) {
   TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(p_context);
   Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
@@ -4143,135 +4353,94 @@ TF_BUILTIN(DataViewPrototypeSetInt16, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:767:62
+  // ../../src/builtins/data-view.tq:801:63
   {
-    // ../../src/builtins/data-view.tq:768:6
-    auto t1397 = [=]() {
-      int31_t t1399 = 0;
-      TNode<IntPtrT> t1400 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1399));
-      TNode<Object> t1401 = UncheckedCast<Object>(GetArgumentValue(arguments, t1400));
-      return t1401;
+    // ../../src/builtins/data-view.tq:802:7
+    auto t1523 = [=]() {
+      int31_t t1525 = 0;
+      TNode<IntPtrT> t1526 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1525)));
+      TNode<Object> t1527 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1526)));
+      return implicit_cast<TNode<Object>>(t1527);
     };
-    auto t1398 = [=]() {
-      return Undefined();
+    auto t1524 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1402_591_impl);
-    auto t1402_591 = &t1402_591_impl;
-    USE(t1402_591);
+    TVARIABLE(Object, t1528_772_impl);
+    auto t1528_772 = &t1528_772_impl;
+    USE(t1528_772);
     {
-      Label label__True_334_impl(this);
-      Label* label__True_334 = &label__True_334_impl;
-      USE(label__True_334);
-      Label label__False_335_impl(this);
-      Label* label__False_335 = &label__False_335_impl;
-      USE(label__False_335);
-      Label label__done_592_729_impl(this, {t1402_591});
-      Label* label__done_592_729 = &label__done_592_729_impl;
-      USE(label__done_592_729);
-      TNode<IntPtrT> t1403 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1404 = 0;
-      TNode<IntPtrT> t1405 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1404));
-      TNode<BoolT> t1406 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1403, t1405));
-      USE(t1406);
-      Branch(t1406, label__True_334, label__False_335);
-      BIND(label__True_334);
-            *t1402_591 = t1397();
-      Goto(label__done_592_729);
-      BIND(label__False_335);
-            *t1402_591 = t1398();
-      Goto(label__done_592_729);
-      BIND(label__done_592_729);
+      Label label__True_415_impl(this);
+      Label* label__True_415 = &label__True_415_impl;
+      USE(label__True_415);
+      Label label__False_416_impl(this);
+      Label* label__False_416 = &label__False_416_impl;
+      USE(label__False_416);
+      Label label__done_773_1211_impl(this, {t1528_772});
+      Label* label__done_773_1211 = &label__done_773_1211_impl;
+      USE(label__done_773_1211);
+      TNode<IntPtrT> t1529 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1530 = 0;
+      TNode<IntPtrT> t1531 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1530)));
+      TNode<BoolT> t1532 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1529), implicit_cast<TNode<IntPtrT>>(t1531)));
+      USE(implicit_cast<TNode<BoolT>>(t1532));
+      Branch(implicit_cast<TNode<BoolT>>(t1532), label__True_415, label__False_416);
+      BIND(label__True_415);
+            *t1528_772 = implicit_cast<TNode<Object>>(t1523());
+      Goto(label__done_773_1211);
+      BIND(label__False_416);
+            *t1528_772 = implicit_cast<TNode<Object>>(t1524());
+      Goto(label__done_773_1211);
+      BIND(label__done_773_1211);
     }
-    TVARIABLE(Object, offset_323_impl);
-    auto offset_323 = &offset_323_impl;
-    USE(offset_323);
-    *offset_323 = (*t1402_591).value();
-    // ../../src/builtins/data-view.tq:771:6
-    auto t1407 = [=]() {
-      int31_t t1409 = 1;
-      TNode<IntPtrT> t1410 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1409));
-      TNode<Object> t1411 = UncheckedCast<Object>(GetArgumentValue(arguments, t1410));
-      return t1411;
+    TVARIABLE(Object, offset_307_impl);
+    auto offset_307 = &offset_307_impl;
+    USE(offset_307);
+    *offset_307 = implicit_cast<TNode<Object>>((*t1528_772).value());
+    // ../../src/builtins/data-view.tq:805:7
+    auto t1533 = [=]() {
+      int31_t t1535 = 1;
+      TNode<IntPtrT> t1536 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1535)));
+      TNode<Object> t1537 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1536)));
+      return implicit_cast<TNode<Object>>(t1537);
     };
-    auto t1408 = [=]() {
-      return Undefined();
+    auto t1534 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1412_593_impl);
-    auto t1412_593 = &t1412_593_impl;
-    USE(t1412_593);
+    TVARIABLE(Object, t1538_774_impl);
+    auto t1538_774 = &t1538_774_impl;
+    USE(t1538_774);
     {
-      Label label__True_336_impl(this);
-      Label* label__True_336 = &label__True_336_impl;
-      USE(label__True_336);
-      Label label__False_337_impl(this);
-      Label* label__False_337 = &label__False_337_impl;
-      USE(label__False_337);
-      Label label__done_594_730_impl(this, {t1412_593});
-      Label* label__done_594_730 = &label__done_594_730_impl;
-      USE(label__done_594_730);
-      TNode<IntPtrT> t1413 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1414 = 1;
-      TNode<IntPtrT> t1415 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1414));
-      TNode<BoolT> t1416 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1413, t1415));
-      USE(t1416);
-      Branch(t1416, label__True_336, label__False_337);
-      BIND(label__True_336);
-            *t1412_593 = t1407();
-      Goto(label__done_594_730);
-      BIND(label__False_337);
-            *t1412_593 = t1408();
-      Goto(label__done_594_730);
-      BIND(label__done_594_730);
+      Label label__True_417_impl(this);
+      Label* label__True_417 = &label__True_417_impl;
+      USE(label__True_417);
+      Label label__False_418_impl(this);
+      Label* label__False_418 = &label__False_418_impl;
+      USE(label__False_418);
+      Label label__done_775_1212_impl(this, {t1538_774});
+      Label* label__done_775_1212 = &label__done_775_1212_impl;
+      USE(label__done_775_1212);
+      TNode<IntPtrT> t1539 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1540 = 1;
+      TNode<IntPtrT> t1541 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1540)));
+      TNode<BoolT> t1542 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1539), implicit_cast<TNode<IntPtrT>>(t1541)));
+      USE(implicit_cast<TNode<BoolT>>(t1542));
+      Branch(implicit_cast<TNode<BoolT>>(t1542), label__True_417, label__False_418);
+      BIND(label__True_417);
+            *t1538_774 = implicit_cast<TNode<Object>>(t1533());
+      Goto(label__done_775_1212);
+      BIND(label__False_418);
+            *t1538_774 = implicit_cast<TNode<Object>>(t1534());
+      Goto(label__done_775_1212);
+      BIND(label__done_775_1212);
     }
-    TVARIABLE(Object, value_324_impl);
-    auto value_324 = &value_324_impl;
-    USE(value_324);
-    *value_324 = (*t1412_593).value();
-    // ../../src/builtins/data-view.tq:774:6
-    auto t1417 = [=]() {
-      int31_t t1419 = 2;
-      TNode<IntPtrT> t1420 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1419));
-      TNode<Object> t1421 = UncheckedCast<Object>(GetArgumentValue(arguments, t1420));
-      return t1421;
-    };
-    auto t1418 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1422_595_impl);
-    auto t1422_595 = &t1422_595_impl;
-    USE(t1422_595);
-    {
-      Label label__True_338_impl(this);
-      Label* label__True_338 = &label__True_338_impl;
-      USE(label__True_338);
-      Label label__False_339_impl(this);
-      Label* label__False_339 = &label__False_339_impl;
-      USE(label__False_339);
-      Label label__done_596_731_impl(this, {t1422_595});
-      Label* label__done_596_731 = &label__done_596_731_impl;
-      USE(label__done_596_731);
-      TNode<IntPtrT> t1423 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1424 = 2;
-      TNode<IntPtrT> t1425 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1424));
-      TNode<BoolT> t1426 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1423, t1425));
-      USE(t1426);
-      Branch(t1426, label__True_338, label__False_339);
-      BIND(label__True_338);
-            *t1422_595 = t1417();
-      Goto(label__done_596_731);
-      BIND(label__False_339);
-            *t1422_595 = t1418();
-      Goto(label__done_596_731);
-      BIND(label__done_596_731);
-    }
-    TVARIABLE(Object, is_little_endian_325_impl);
-    auto is_little_endian_325 = &is_little_endian_325_impl;
-    USE(is_little_endian_325);
-    *is_little_endian_325 = (*t1422_595).value();
-    // ../../src/builtins/data-view.tq:777:6
-    TNode<Object> t1427 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_323).value(), (*value_324).value(), (*is_little_endian_325).value(), INT16_ELEMENTS));
-    USE(t1427);
-    arguments->PopAndReturn(t1427);
+    TVARIABLE(Object, value_308_impl);
+    auto value_308 = &value_308_impl;
+    USE(value_308);
+    *value_308 = implicit_cast<TNode<Object>>((*t1538_774).value());
+    // ../../src/builtins/data-view.tq:808:7
+    TNode<Object> t1543 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_307).value()), implicit_cast<TNode<Object>>((*value_308).value()), implicit_cast<TNode<Object>>(Undefined()), implicit_cast<ElementsKind>(INT8_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1543));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1543));
   }
 }
 
@@ -4284,139 +4453,139 @@ TF_BUILTIN(DataViewPrototypeSetUint16, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:782:62
+  // ../../src/builtins/data-view.tq:813:63
   {
-    // ../../src/builtins/data-view.tq:783:6
-    auto t1428 = [=]() {
-      int31_t t1430 = 0;
-      TNode<IntPtrT> t1431 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1430));
-      TNode<Object> t1432 = UncheckedCast<Object>(GetArgumentValue(arguments, t1431));
-      return t1432;
+    // ../../src/builtins/data-view.tq:814:7
+    auto t1544 = [=]() {
+      int31_t t1546 = 0;
+      TNode<IntPtrT> t1547 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1546)));
+      TNode<Object> t1548 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1547)));
+      return implicit_cast<TNode<Object>>(t1548);
     };
-    auto t1429 = [=]() {
-      return Undefined();
+    auto t1545 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1433_597_impl);
-    auto t1433_597 = &t1433_597_impl;
-    USE(t1433_597);
+    TVARIABLE(Object, t1549_776_impl);
+    auto t1549_776 = &t1549_776_impl;
+    USE(t1549_776);
     {
-      Label label__True_340_impl(this);
-      Label* label__True_340 = &label__True_340_impl;
-      USE(label__True_340);
-      Label label__False_341_impl(this);
-      Label* label__False_341 = &label__False_341_impl;
-      USE(label__False_341);
-      Label label__done_598_732_impl(this, {t1433_597});
-      Label* label__done_598_732 = &label__done_598_732_impl;
-      USE(label__done_598_732);
-      TNode<IntPtrT> t1434 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1435 = 0;
-      TNode<IntPtrT> t1436 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1435));
-      TNode<BoolT> t1437 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1434, t1436));
-      USE(t1437);
-      Branch(t1437, label__True_340, label__False_341);
-      BIND(label__True_340);
-            *t1433_597 = t1428();
-      Goto(label__done_598_732);
-      BIND(label__False_341);
-            *t1433_597 = t1429();
-      Goto(label__done_598_732);
-      BIND(label__done_598_732);
+      Label label__True_419_impl(this);
+      Label* label__True_419 = &label__True_419_impl;
+      USE(label__True_419);
+      Label label__False_420_impl(this);
+      Label* label__False_420 = &label__False_420_impl;
+      USE(label__False_420);
+      Label label__done_777_1213_impl(this, {t1549_776});
+      Label* label__done_777_1213 = &label__done_777_1213_impl;
+      USE(label__done_777_1213);
+      TNode<IntPtrT> t1550 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1551 = 0;
+      TNode<IntPtrT> t1552 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1551)));
+      TNode<BoolT> t1553 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1550), implicit_cast<TNode<IntPtrT>>(t1552)));
+      USE(implicit_cast<TNode<BoolT>>(t1553));
+      Branch(implicit_cast<TNode<BoolT>>(t1553), label__True_419, label__False_420);
+      BIND(label__True_419);
+            *t1549_776 = implicit_cast<TNode<Object>>(t1544());
+      Goto(label__done_777_1213);
+      BIND(label__False_420);
+            *t1549_776 = implicit_cast<TNode<Object>>(t1545());
+      Goto(label__done_777_1213);
+      BIND(label__done_777_1213);
     }
-    TVARIABLE(Object, offset_326_impl);
-    auto offset_326 = &offset_326_impl;
-    USE(offset_326);
-    *offset_326 = (*t1433_597).value();
-    // ../../src/builtins/data-view.tq:786:6
-    auto t1438 = [=]() {
-      int31_t t1440 = 1;
-      TNode<IntPtrT> t1441 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1440));
-      TNode<Object> t1442 = UncheckedCast<Object>(GetArgumentValue(arguments, t1441));
-      return t1442;
+    TVARIABLE(Object, offset_309_impl);
+    auto offset_309 = &offset_309_impl;
+    USE(offset_309);
+    *offset_309 = implicit_cast<TNode<Object>>((*t1549_776).value());
+    // ../../src/builtins/data-view.tq:817:7
+    auto t1554 = [=]() {
+      int31_t t1556 = 1;
+      TNode<IntPtrT> t1557 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1556)));
+      TNode<Object> t1558 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1557)));
+      return implicit_cast<TNode<Object>>(t1558);
     };
-    auto t1439 = [=]() {
-      return Undefined();
+    auto t1555 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1443_599_impl);
-    auto t1443_599 = &t1443_599_impl;
-    USE(t1443_599);
+    TVARIABLE(Object, t1559_778_impl);
+    auto t1559_778 = &t1559_778_impl;
+    USE(t1559_778);
     {
-      Label label__True_342_impl(this);
-      Label* label__True_342 = &label__True_342_impl;
-      USE(label__True_342);
-      Label label__False_343_impl(this);
-      Label* label__False_343 = &label__False_343_impl;
-      USE(label__False_343);
-      Label label__done_600_733_impl(this, {t1443_599});
-      Label* label__done_600_733 = &label__done_600_733_impl;
-      USE(label__done_600_733);
-      TNode<IntPtrT> t1444 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1445 = 1;
-      TNode<IntPtrT> t1446 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1445));
-      TNode<BoolT> t1447 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1444, t1446));
-      USE(t1447);
-      Branch(t1447, label__True_342, label__False_343);
-      BIND(label__True_342);
-            *t1443_599 = t1438();
-      Goto(label__done_600_733);
-      BIND(label__False_343);
-            *t1443_599 = t1439();
-      Goto(label__done_600_733);
-      BIND(label__done_600_733);
+      Label label__True_421_impl(this);
+      Label* label__True_421 = &label__True_421_impl;
+      USE(label__True_421);
+      Label label__False_422_impl(this);
+      Label* label__False_422 = &label__False_422_impl;
+      USE(label__False_422);
+      Label label__done_779_1214_impl(this, {t1559_778});
+      Label* label__done_779_1214 = &label__done_779_1214_impl;
+      USE(label__done_779_1214);
+      TNode<IntPtrT> t1560 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1561 = 1;
+      TNode<IntPtrT> t1562 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1561)));
+      TNode<BoolT> t1563 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1560), implicit_cast<TNode<IntPtrT>>(t1562)));
+      USE(implicit_cast<TNode<BoolT>>(t1563));
+      Branch(implicit_cast<TNode<BoolT>>(t1563), label__True_421, label__False_422);
+      BIND(label__True_421);
+            *t1559_778 = implicit_cast<TNode<Object>>(t1554());
+      Goto(label__done_779_1214);
+      BIND(label__False_422);
+            *t1559_778 = implicit_cast<TNode<Object>>(t1555());
+      Goto(label__done_779_1214);
+      BIND(label__done_779_1214);
     }
-    TVARIABLE(Object, value_327_impl);
-    auto value_327 = &value_327_impl;
-    USE(value_327);
-    *value_327 = (*t1443_599).value();
-    // ../../src/builtins/data-view.tq:789:6
-    auto t1448 = [=]() {
-      int31_t t1450 = 2;
-      TNode<IntPtrT> t1451 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1450));
-      TNode<Object> t1452 = UncheckedCast<Object>(GetArgumentValue(arguments, t1451));
-      return t1452;
+    TVARIABLE(Object, value_310_impl);
+    auto value_310 = &value_310_impl;
+    USE(value_310);
+    *value_310 = implicit_cast<TNode<Object>>((*t1559_778).value());
+    // ../../src/builtins/data-view.tq:820:7
+    auto t1564 = [=]() {
+      int31_t t1566 = 2;
+      TNode<IntPtrT> t1567 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1566)));
+      TNode<Object> t1568 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1567)));
+      return implicit_cast<TNode<Object>>(t1568);
     };
-    auto t1449 = [=]() {
-      return Undefined();
+    auto t1565 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1453_601_impl);
-    auto t1453_601 = &t1453_601_impl;
-    USE(t1453_601);
+    TVARIABLE(Object, t1569_780_impl);
+    auto t1569_780 = &t1569_780_impl;
+    USE(t1569_780);
     {
-      Label label__True_344_impl(this);
-      Label* label__True_344 = &label__True_344_impl;
-      USE(label__True_344);
-      Label label__False_345_impl(this);
-      Label* label__False_345 = &label__False_345_impl;
-      USE(label__False_345);
-      Label label__done_602_734_impl(this, {t1453_601});
-      Label* label__done_602_734 = &label__done_602_734_impl;
-      USE(label__done_602_734);
-      TNode<IntPtrT> t1454 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1455 = 2;
-      TNode<IntPtrT> t1456 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1455));
-      TNode<BoolT> t1457 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1454, t1456));
-      USE(t1457);
-      Branch(t1457, label__True_344, label__False_345);
-      BIND(label__True_344);
-            *t1453_601 = t1448();
-      Goto(label__done_602_734);
-      BIND(label__False_345);
-            *t1453_601 = t1449();
-      Goto(label__done_602_734);
-      BIND(label__done_602_734);
+      Label label__True_423_impl(this);
+      Label* label__True_423 = &label__True_423_impl;
+      USE(label__True_423);
+      Label label__False_424_impl(this);
+      Label* label__False_424 = &label__False_424_impl;
+      USE(label__False_424);
+      Label label__done_781_1215_impl(this, {t1569_780});
+      Label* label__done_781_1215 = &label__done_781_1215_impl;
+      USE(label__done_781_1215);
+      TNode<IntPtrT> t1570 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1571 = 2;
+      TNode<IntPtrT> t1572 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1571)));
+      TNode<BoolT> t1573 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1570), implicit_cast<TNode<IntPtrT>>(t1572)));
+      USE(implicit_cast<TNode<BoolT>>(t1573));
+      Branch(implicit_cast<TNode<BoolT>>(t1573), label__True_423, label__False_424);
+      BIND(label__True_423);
+            *t1569_780 = implicit_cast<TNode<Object>>(t1564());
+      Goto(label__done_781_1215);
+      BIND(label__False_424);
+            *t1569_780 = implicit_cast<TNode<Object>>(t1565());
+      Goto(label__done_781_1215);
+      BIND(label__done_781_1215);
     }
-    TVARIABLE(Object, is_little_endian_328_impl);
-    auto is_little_endian_328 = &is_little_endian_328_impl;
-    USE(is_little_endian_328);
-    *is_little_endian_328 = (*t1453_601).value();
-    // ../../src/builtins/data-view.tq:792:6
-    TNode<Object> t1458 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_326).value(), (*value_327).value(), (*is_little_endian_328).value(), UINT16_ELEMENTS));
-    USE(t1458);
-    arguments->PopAndReturn(t1458);
+    TVARIABLE(Object, is_little_endian_311_impl);
+    auto is_little_endian_311 = &is_little_endian_311_impl;
+    USE(is_little_endian_311);
+    *is_little_endian_311 = implicit_cast<TNode<Object>>((*t1569_780).value());
+    // ../../src/builtins/data-view.tq:823:7
+    TNode<Object> t1574 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_309).value()), implicit_cast<TNode<Object>>((*value_310).value()), implicit_cast<TNode<Object>>((*is_little_endian_311).value()), implicit_cast<ElementsKind>(UINT16_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1574));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1574));
   }
 }
 
-TF_BUILTIN(DataViewPrototypeSetInt32, DataViewBuiltinsFromDSLAssembler) {
+TF_BUILTIN(DataViewPrototypeSetInt16, DataViewBuiltinsFromDSLAssembler) {
   TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(p_context);
   Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
@@ -4425,135 +4594,135 @@ TF_BUILTIN(DataViewPrototypeSetInt32, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:797:62
+  // ../../src/builtins/data-view.tq:828:63
   {
-    // ../../src/builtins/data-view.tq:798:6
-    auto t1459 = [=]() {
-      int31_t t1461 = 0;
-      TNode<IntPtrT> t1462 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1461));
-      TNode<Object> t1463 = UncheckedCast<Object>(GetArgumentValue(arguments, t1462));
-      return t1463;
+    // ../../src/builtins/data-view.tq:829:7
+    auto t1575 = [=]() {
+      int31_t t1577 = 0;
+      TNode<IntPtrT> t1578 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1577)));
+      TNode<Object> t1579 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1578)));
+      return implicit_cast<TNode<Object>>(t1579);
     };
-    auto t1460 = [=]() {
-      return Undefined();
+    auto t1576 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1464_603_impl);
-    auto t1464_603 = &t1464_603_impl;
-    USE(t1464_603);
+    TVARIABLE(Object, t1580_782_impl);
+    auto t1580_782 = &t1580_782_impl;
+    USE(t1580_782);
     {
-      Label label__True_346_impl(this);
-      Label* label__True_346 = &label__True_346_impl;
-      USE(label__True_346);
-      Label label__False_347_impl(this);
-      Label* label__False_347 = &label__False_347_impl;
-      USE(label__False_347);
-      Label label__done_604_735_impl(this, {t1464_603});
-      Label* label__done_604_735 = &label__done_604_735_impl;
-      USE(label__done_604_735);
-      TNode<IntPtrT> t1465 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1466 = 0;
-      TNode<IntPtrT> t1467 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1466));
-      TNode<BoolT> t1468 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1465, t1467));
-      USE(t1468);
-      Branch(t1468, label__True_346, label__False_347);
-      BIND(label__True_346);
-            *t1464_603 = t1459();
-      Goto(label__done_604_735);
-      BIND(label__False_347);
-            *t1464_603 = t1460();
-      Goto(label__done_604_735);
-      BIND(label__done_604_735);
+      Label label__True_425_impl(this);
+      Label* label__True_425 = &label__True_425_impl;
+      USE(label__True_425);
+      Label label__False_426_impl(this);
+      Label* label__False_426 = &label__False_426_impl;
+      USE(label__False_426);
+      Label label__done_783_1216_impl(this, {t1580_782});
+      Label* label__done_783_1216 = &label__done_783_1216_impl;
+      USE(label__done_783_1216);
+      TNode<IntPtrT> t1581 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1582 = 0;
+      TNode<IntPtrT> t1583 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1582)));
+      TNode<BoolT> t1584 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1581), implicit_cast<TNode<IntPtrT>>(t1583)));
+      USE(implicit_cast<TNode<BoolT>>(t1584));
+      Branch(implicit_cast<TNode<BoolT>>(t1584), label__True_425, label__False_426);
+      BIND(label__True_425);
+            *t1580_782 = implicit_cast<TNode<Object>>(t1575());
+      Goto(label__done_783_1216);
+      BIND(label__False_426);
+            *t1580_782 = implicit_cast<TNode<Object>>(t1576());
+      Goto(label__done_783_1216);
+      BIND(label__done_783_1216);
     }
-    TVARIABLE(Object, offset_329_impl);
-    auto offset_329 = &offset_329_impl;
-    USE(offset_329);
-    *offset_329 = (*t1464_603).value();
-    // ../../src/builtins/data-view.tq:801:6
-    auto t1469 = [=]() {
-      int31_t t1471 = 1;
-      TNode<IntPtrT> t1472 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1471));
-      TNode<Object> t1473 = UncheckedCast<Object>(GetArgumentValue(arguments, t1472));
-      return t1473;
+    TVARIABLE(Object, offset_312_impl);
+    auto offset_312 = &offset_312_impl;
+    USE(offset_312);
+    *offset_312 = implicit_cast<TNode<Object>>((*t1580_782).value());
+    // ../../src/builtins/data-view.tq:832:7
+    auto t1585 = [=]() {
+      int31_t t1587 = 1;
+      TNode<IntPtrT> t1588 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1587)));
+      TNode<Object> t1589 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1588)));
+      return implicit_cast<TNode<Object>>(t1589);
     };
-    auto t1470 = [=]() {
-      return Undefined();
+    auto t1586 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1474_605_impl);
-    auto t1474_605 = &t1474_605_impl;
-    USE(t1474_605);
+    TVARIABLE(Object, t1590_784_impl);
+    auto t1590_784 = &t1590_784_impl;
+    USE(t1590_784);
     {
-      Label label__True_348_impl(this);
-      Label* label__True_348 = &label__True_348_impl;
-      USE(label__True_348);
-      Label label__False_349_impl(this);
-      Label* label__False_349 = &label__False_349_impl;
-      USE(label__False_349);
-      Label label__done_606_736_impl(this, {t1474_605});
-      Label* label__done_606_736 = &label__done_606_736_impl;
-      USE(label__done_606_736);
-      TNode<IntPtrT> t1475 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1476 = 1;
-      TNode<IntPtrT> t1477 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1476));
-      TNode<BoolT> t1478 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1475, t1477));
-      USE(t1478);
-      Branch(t1478, label__True_348, label__False_349);
-      BIND(label__True_348);
-            *t1474_605 = t1469();
-      Goto(label__done_606_736);
-      BIND(label__False_349);
-            *t1474_605 = t1470();
-      Goto(label__done_606_736);
-      BIND(label__done_606_736);
+      Label label__True_427_impl(this);
+      Label* label__True_427 = &label__True_427_impl;
+      USE(label__True_427);
+      Label label__False_428_impl(this);
+      Label* label__False_428 = &label__False_428_impl;
+      USE(label__False_428);
+      Label label__done_785_1217_impl(this, {t1590_784});
+      Label* label__done_785_1217 = &label__done_785_1217_impl;
+      USE(label__done_785_1217);
+      TNode<IntPtrT> t1591 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1592 = 1;
+      TNode<IntPtrT> t1593 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1592)));
+      TNode<BoolT> t1594 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1591), implicit_cast<TNode<IntPtrT>>(t1593)));
+      USE(implicit_cast<TNode<BoolT>>(t1594));
+      Branch(implicit_cast<TNode<BoolT>>(t1594), label__True_427, label__False_428);
+      BIND(label__True_427);
+            *t1590_784 = implicit_cast<TNode<Object>>(t1585());
+      Goto(label__done_785_1217);
+      BIND(label__False_428);
+            *t1590_784 = implicit_cast<TNode<Object>>(t1586());
+      Goto(label__done_785_1217);
+      BIND(label__done_785_1217);
     }
-    TVARIABLE(Object, value_330_impl);
-    auto value_330 = &value_330_impl;
-    USE(value_330);
-    *value_330 = (*t1474_605).value();
-    // ../../src/builtins/data-view.tq:804:6
-    auto t1479 = [=]() {
-      int31_t t1481 = 2;
-      TNode<IntPtrT> t1482 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1481));
-      TNode<Object> t1483 = UncheckedCast<Object>(GetArgumentValue(arguments, t1482));
-      return t1483;
+    TVARIABLE(Object, value_313_impl);
+    auto value_313 = &value_313_impl;
+    USE(value_313);
+    *value_313 = implicit_cast<TNode<Object>>((*t1590_784).value());
+    // ../../src/builtins/data-view.tq:835:7
+    auto t1595 = [=]() {
+      int31_t t1597 = 2;
+      TNode<IntPtrT> t1598 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1597)));
+      TNode<Object> t1599 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1598)));
+      return implicit_cast<TNode<Object>>(t1599);
     };
-    auto t1480 = [=]() {
-      return Undefined();
+    auto t1596 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1484_607_impl);
-    auto t1484_607 = &t1484_607_impl;
-    USE(t1484_607);
+    TVARIABLE(Object, t1600_786_impl);
+    auto t1600_786 = &t1600_786_impl;
+    USE(t1600_786);
     {
-      Label label__True_350_impl(this);
-      Label* label__True_350 = &label__True_350_impl;
-      USE(label__True_350);
-      Label label__False_351_impl(this);
-      Label* label__False_351 = &label__False_351_impl;
-      USE(label__False_351);
-      Label label__done_608_737_impl(this, {t1484_607});
-      Label* label__done_608_737 = &label__done_608_737_impl;
-      USE(label__done_608_737);
-      TNode<IntPtrT> t1485 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1486 = 2;
-      TNode<IntPtrT> t1487 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1486));
-      TNode<BoolT> t1488 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1485, t1487));
-      USE(t1488);
-      Branch(t1488, label__True_350, label__False_351);
-      BIND(label__True_350);
-            *t1484_607 = t1479();
-      Goto(label__done_608_737);
-      BIND(label__False_351);
-            *t1484_607 = t1480();
-      Goto(label__done_608_737);
-      BIND(label__done_608_737);
+      Label label__True_429_impl(this);
+      Label* label__True_429 = &label__True_429_impl;
+      USE(label__True_429);
+      Label label__False_430_impl(this);
+      Label* label__False_430 = &label__False_430_impl;
+      USE(label__False_430);
+      Label label__done_787_1218_impl(this, {t1600_786});
+      Label* label__done_787_1218 = &label__done_787_1218_impl;
+      USE(label__done_787_1218);
+      TNode<IntPtrT> t1601 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1602 = 2;
+      TNode<IntPtrT> t1603 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1602)));
+      TNode<BoolT> t1604 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1601), implicit_cast<TNode<IntPtrT>>(t1603)));
+      USE(implicit_cast<TNode<BoolT>>(t1604));
+      Branch(implicit_cast<TNode<BoolT>>(t1604), label__True_429, label__False_430);
+      BIND(label__True_429);
+            *t1600_786 = implicit_cast<TNode<Object>>(t1595());
+      Goto(label__done_787_1218);
+      BIND(label__False_430);
+            *t1600_786 = implicit_cast<TNode<Object>>(t1596());
+      Goto(label__done_787_1218);
+      BIND(label__done_787_1218);
     }
-    TVARIABLE(Object, is_little_endian_331_impl);
-    auto is_little_endian_331 = &is_little_endian_331_impl;
-    USE(is_little_endian_331);
-    *is_little_endian_331 = (*t1484_607).value();
-    // ../../src/builtins/data-view.tq:807:6
-    TNode<Object> t1489 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_329).value(), (*value_330).value(), (*is_little_endian_331).value(), INT32_ELEMENTS));
-    USE(t1489);
-    arguments->PopAndReturn(t1489);
+    TVARIABLE(Object, is_little_endian_314_impl);
+    auto is_little_endian_314 = &is_little_endian_314_impl;
+    USE(is_little_endian_314);
+    *is_little_endian_314 = implicit_cast<TNode<Object>>((*t1600_786).value());
+    // ../../src/builtins/data-view.tq:838:7
+    TNode<Object> t1605 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_312).value()), implicit_cast<TNode<Object>>((*value_313).value()), implicit_cast<TNode<Object>>((*is_little_endian_314).value()), implicit_cast<ElementsKind>(INT16_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1605));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1605));
   }
 }
 
@@ -4566,135 +4735,276 @@ TF_BUILTIN(DataViewPrototypeSetUint32, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:812:62
+  // ../../src/builtins/data-view.tq:843:63
   {
-    // ../../src/builtins/data-view.tq:813:6
-    auto t1490 = [=]() {
-      int31_t t1492 = 0;
-      TNode<IntPtrT> t1493 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1492));
-      TNode<Object> t1494 = UncheckedCast<Object>(GetArgumentValue(arguments, t1493));
-      return t1494;
+    // ../../src/builtins/data-view.tq:844:7
+    auto t1606 = [=]() {
+      int31_t t1608 = 0;
+      TNode<IntPtrT> t1609 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1608)));
+      TNode<Object> t1610 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1609)));
+      return implicit_cast<TNode<Object>>(t1610);
     };
-    auto t1491 = [=]() {
-      return Undefined();
+    auto t1607 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1495_609_impl);
-    auto t1495_609 = &t1495_609_impl;
-    USE(t1495_609);
+    TVARIABLE(Object, t1611_788_impl);
+    auto t1611_788 = &t1611_788_impl;
+    USE(t1611_788);
     {
-      Label label__True_352_impl(this);
-      Label* label__True_352 = &label__True_352_impl;
-      USE(label__True_352);
-      Label label__False_353_impl(this);
-      Label* label__False_353 = &label__False_353_impl;
-      USE(label__False_353);
-      Label label__done_610_738_impl(this, {t1495_609});
-      Label* label__done_610_738 = &label__done_610_738_impl;
-      USE(label__done_610_738);
-      TNode<IntPtrT> t1496 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1497 = 0;
-      TNode<IntPtrT> t1498 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1497));
-      TNode<BoolT> t1499 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1496, t1498));
-      USE(t1499);
-      Branch(t1499, label__True_352, label__False_353);
-      BIND(label__True_352);
-            *t1495_609 = t1490();
-      Goto(label__done_610_738);
-      BIND(label__False_353);
-            *t1495_609 = t1491();
-      Goto(label__done_610_738);
-      BIND(label__done_610_738);
+      Label label__True_431_impl(this);
+      Label* label__True_431 = &label__True_431_impl;
+      USE(label__True_431);
+      Label label__False_432_impl(this);
+      Label* label__False_432 = &label__False_432_impl;
+      USE(label__False_432);
+      Label label__done_789_1219_impl(this, {t1611_788});
+      Label* label__done_789_1219 = &label__done_789_1219_impl;
+      USE(label__done_789_1219);
+      TNode<IntPtrT> t1612 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1613 = 0;
+      TNode<IntPtrT> t1614 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1613)));
+      TNode<BoolT> t1615 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1612), implicit_cast<TNode<IntPtrT>>(t1614)));
+      USE(implicit_cast<TNode<BoolT>>(t1615));
+      Branch(implicit_cast<TNode<BoolT>>(t1615), label__True_431, label__False_432);
+      BIND(label__True_431);
+            *t1611_788 = implicit_cast<TNode<Object>>(t1606());
+      Goto(label__done_789_1219);
+      BIND(label__False_432);
+            *t1611_788 = implicit_cast<TNode<Object>>(t1607());
+      Goto(label__done_789_1219);
+      BIND(label__done_789_1219);
     }
-    TVARIABLE(Object, offset_332_impl);
-    auto offset_332 = &offset_332_impl;
-    USE(offset_332);
-    *offset_332 = (*t1495_609).value();
-    // ../../src/builtins/data-view.tq:816:6
-    auto t1500 = [=]() {
-      int31_t t1502 = 1;
-      TNode<IntPtrT> t1503 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1502));
-      TNode<Object> t1504 = UncheckedCast<Object>(GetArgumentValue(arguments, t1503));
-      return t1504;
+    TVARIABLE(Object, offset_315_impl);
+    auto offset_315 = &offset_315_impl;
+    USE(offset_315);
+    *offset_315 = implicit_cast<TNode<Object>>((*t1611_788).value());
+    // ../../src/builtins/data-view.tq:847:7
+    auto t1616 = [=]() {
+      int31_t t1618 = 1;
+      TNode<IntPtrT> t1619 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1618)));
+      TNode<Object> t1620 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1619)));
+      return implicit_cast<TNode<Object>>(t1620);
     };
-    auto t1501 = [=]() {
-      return Undefined();
+    auto t1617 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1505_611_impl);
-    auto t1505_611 = &t1505_611_impl;
-    USE(t1505_611);
+    TVARIABLE(Object, t1621_790_impl);
+    auto t1621_790 = &t1621_790_impl;
+    USE(t1621_790);
     {
-      Label label__True_354_impl(this);
-      Label* label__True_354 = &label__True_354_impl;
-      USE(label__True_354);
-      Label label__False_355_impl(this);
-      Label* label__False_355 = &label__False_355_impl;
-      USE(label__False_355);
-      Label label__done_612_739_impl(this, {t1505_611});
-      Label* label__done_612_739 = &label__done_612_739_impl;
-      USE(label__done_612_739);
-      TNode<IntPtrT> t1506 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1507 = 1;
-      TNode<IntPtrT> t1508 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1507));
-      TNode<BoolT> t1509 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1506, t1508));
-      USE(t1509);
-      Branch(t1509, label__True_354, label__False_355);
-      BIND(label__True_354);
-            *t1505_611 = t1500();
-      Goto(label__done_612_739);
-      BIND(label__False_355);
-            *t1505_611 = t1501();
-      Goto(label__done_612_739);
-      BIND(label__done_612_739);
+      Label label__True_433_impl(this);
+      Label* label__True_433 = &label__True_433_impl;
+      USE(label__True_433);
+      Label label__False_434_impl(this);
+      Label* label__False_434 = &label__False_434_impl;
+      USE(label__False_434);
+      Label label__done_791_1220_impl(this, {t1621_790});
+      Label* label__done_791_1220 = &label__done_791_1220_impl;
+      USE(label__done_791_1220);
+      TNode<IntPtrT> t1622 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1623 = 1;
+      TNode<IntPtrT> t1624 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1623)));
+      TNode<BoolT> t1625 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1622), implicit_cast<TNode<IntPtrT>>(t1624)));
+      USE(implicit_cast<TNode<BoolT>>(t1625));
+      Branch(implicit_cast<TNode<BoolT>>(t1625), label__True_433, label__False_434);
+      BIND(label__True_433);
+            *t1621_790 = implicit_cast<TNode<Object>>(t1616());
+      Goto(label__done_791_1220);
+      BIND(label__False_434);
+            *t1621_790 = implicit_cast<TNode<Object>>(t1617());
+      Goto(label__done_791_1220);
+      BIND(label__done_791_1220);
     }
-    TVARIABLE(Object, value_333_impl);
-    auto value_333 = &value_333_impl;
-    USE(value_333);
-    *value_333 = (*t1505_611).value();
-    // ../../src/builtins/data-view.tq:819:6
-    auto t1510 = [=]() {
-      int31_t t1512 = 2;
-      TNode<IntPtrT> t1513 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1512));
-      TNode<Object> t1514 = UncheckedCast<Object>(GetArgumentValue(arguments, t1513));
-      return t1514;
+    TVARIABLE(Object, value_316_impl);
+    auto value_316 = &value_316_impl;
+    USE(value_316);
+    *value_316 = implicit_cast<TNode<Object>>((*t1621_790).value());
+    // ../../src/builtins/data-view.tq:850:7
+    auto t1626 = [=]() {
+      int31_t t1628 = 2;
+      TNode<IntPtrT> t1629 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1628)));
+      TNode<Object> t1630 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1629)));
+      return implicit_cast<TNode<Object>>(t1630);
     };
-    auto t1511 = [=]() {
-      return Undefined();
+    auto t1627 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1515_613_impl);
-    auto t1515_613 = &t1515_613_impl;
-    USE(t1515_613);
+    TVARIABLE(Object, t1631_792_impl);
+    auto t1631_792 = &t1631_792_impl;
+    USE(t1631_792);
     {
-      Label label__True_356_impl(this);
-      Label* label__True_356 = &label__True_356_impl;
-      USE(label__True_356);
-      Label label__False_357_impl(this);
-      Label* label__False_357 = &label__False_357_impl;
-      USE(label__False_357);
-      Label label__done_614_740_impl(this, {t1515_613});
-      Label* label__done_614_740 = &label__done_614_740_impl;
-      USE(label__done_614_740);
-      TNode<IntPtrT> t1516 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1517 = 2;
-      TNode<IntPtrT> t1518 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1517));
-      TNode<BoolT> t1519 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1516, t1518));
-      USE(t1519);
-      Branch(t1519, label__True_356, label__False_357);
-      BIND(label__True_356);
-            *t1515_613 = t1510();
-      Goto(label__done_614_740);
-      BIND(label__False_357);
-            *t1515_613 = t1511();
-      Goto(label__done_614_740);
-      BIND(label__done_614_740);
+      Label label__True_435_impl(this);
+      Label* label__True_435 = &label__True_435_impl;
+      USE(label__True_435);
+      Label label__False_436_impl(this);
+      Label* label__False_436 = &label__False_436_impl;
+      USE(label__False_436);
+      Label label__done_793_1221_impl(this, {t1631_792});
+      Label* label__done_793_1221 = &label__done_793_1221_impl;
+      USE(label__done_793_1221);
+      TNode<IntPtrT> t1632 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1633 = 2;
+      TNode<IntPtrT> t1634 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1633)));
+      TNode<BoolT> t1635 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1632), implicit_cast<TNode<IntPtrT>>(t1634)));
+      USE(implicit_cast<TNode<BoolT>>(t1635));
+      Branch(implicit_cast<TNode<BoolT>>(t1635), label__True_435, label__False_436);
+      BIND(label__True_435);
+            *t1631_792 = implicit_cast<TNode<Object>>(t1626());
+      Goto(label__done_793_1221);
+      BIND(label__False_436);
+            *t1631_792 = implicit_cast<TNode<Object>>(t1627());
+      Goto(label__done_793_1221);
+      BIND(label__done_793_1221);
     }
-    TVARIABLE(Object, is_little_endian_334_impl);
-    auto is_little_endian_334 = &is_little_endian_334_impl;
-    USE(is_little_endian_334);
-    *is_little_endian_334 = (*t1515_613).value();
-    // ../../src/builtins/data-view.tq:822:6
-    TNode<Object> t1520 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_332).value(), (*value_333).value(), (*is_little_endian_334).value(), UINT32_ELEMENTS));
-    USE(t1520);
-    arguments->PopAndReturn(t1520);
+    TVARIABLE(Object, is_little_endian_317_impl);
+    auto is_little_endian_317 = &is_little_endian_317_impl;
+    USE(is_little_endian_317);
+    *is_little_endian_317 = implicit_cast<TNode<Object>>((*t1631_792).value());
+    // ../../src/builtins/data-view.tq:853:7
+    TNode<Object> t1636 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_315).value()), implicit_cast<TNode<Object>>((*value_316).value()), implicit_cast<TNode<Object>>((*is_little_endian_317).value()), implicit_cast<ElementsKind>(UINT32_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1636));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1636));
+  }
+}
+
+TF_BUILTIN(DataViewPrototypeSetInt32, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:858:63
+  {
+    // ../../src/builtins/data-view.tq:859:7
+    auto t1637 = [=]() {
+      int31_t t1639 = 0;
+      TNode<IntPtrT> t1640 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1639)));
+      TNode<Object> t1641 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1640)));
+      return implicit_cast<TNode<Object>>(t1641);
+    };
+    auto t1638 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1642_794_impl);
+    auto t1642_794 = &t1642_794_impl;
+    USE(t1642_794);
+    {
+      Label label__True_437_impl(this);
+      Label* label__True_437 = &label__True_437_impl;
+      USE(label__True_437);
+      Label label__False_438_impl(this);
+      Label* label__False_438 = &label__False_438_impl;
+      USE(label__False_438);
+      Label label__done_795_1222_impl(this, {t1642_794});
+      Label* label__done_795_1222 = &label__done_795_1222_impl;
+      USE(label__done_795_1222);
+      TNode<IntPtrT> t1643 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1644 = 0;
+      TNode<IntPtrT> t1645 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1644)));
+      TNode<BoolT> t1646 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1643), implicit_cast<TNode<IntPtrT>>(t1645)));
+      USE(implicit_cast<TNode<BoolT>>(t1646));
+      Branch(implicit_cast<TNode<BoolT>>(t1646), label__True_437, label__False_438);
+      BIND(label__True_437);
+            *t1642_794 = implicit_cast<TNode<Object>>(t1637());
+      Goto(label__done_795_1222);
+      BIND(label__False_438);
+            *t1642_794 = implicit_cast<TNode<Object>>(t1638());
+      Goto(label__done_795_1222);
+      BIND(label__done_795_1222);
+    }
+    TVARIABLE(Object, offset_318_impl);
+    auto offset_318 = &offset_318_impl;
+    USE(offset_318);
+    *offset_318 = implicit_cast<TNode<Object>>((*t1642_794).value());
+    // ../../src/builtins/data-view.tq:862:7
+    auto t1647 = [=]() {
+      int31_t t1649 = 1;
+      TNode<IntPtrT> t1650 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1649)));
+      TNode<Object> t1651 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1650)));
+      return implicit_cast<TNode<Object>>(t1651);
+    };
+    auto t1648 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1652_796_impl);
+    auto t1652_796 = &t1652_796_impl;
+    USE(t1652_796);
+    {
+      Label label__True_439_impl(this);
+      Label* label__True_439 = &label__True_439_impl;
+      USE(label__True_439);
+      Label label__False_440_impl(this);
+      Label* label__False_440 = &label__False_440_impl;
+      USE(label__False_440);
+      Label label__done_797_1223_impl(this, {t1652_796});
+      Label* label__done_797_1223 = &label__done_797_1223_impl;
+      USE(label__done_797_1223);
+      TNode<IntPtrT> t1653 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1654 = 1;
+      TNode<IntPtrT> t1655 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1654)));
+      TNode<BoolT> t1656 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1653), implicit_cast<TNode<IntPtrT>>(t1655)));
+      USE(implicit_cast<TNode<BoolT>>(t1656));
+      Branch(implicit_cast<TNode<BoolT>>(t1656), label__True_439, label__False_440);
+      BIND(label__True_439);
+            *t1652_796 = implicit_cast<TNode<Object>>(t1647());
+      Goto(label__done_797_1223);
+      BIND(label__False_440);
+            *t1652_796 = implicit_cast<TNode<Object>>(t1648());
+      Goto(label__done_797_1223);
+      BIND(label__done_797_1223);
+    }
+    TVARIABLE(Object, value_319_impl);
+    auto value_319 = &value_319_impl;
+    USE(value_319);
+    *value_319 = implicit_cast<TNode<Object>>((*t1652_796).value());
+    // ../../src/builtins/data-view.tq:865:7
+    auto t1657 = [=]() {
+      int31_t t1659 = 2;
+      TNode<IntPtrT> t1660 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1659)));
+      TNode<Object> t1661 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1660)));
+      return implicit_cast<TNode<Object>>(t1661);
+    };
+    auto t1658 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1662_798_impl);
+    auto t1662_798 = &t1662_798_impl;
+    USE(t1662_798);
+    {
+      Label label__True_441_impl(this);
+      Label* label__True_441 = &label__True_441_impl;
+      USE(label__True_441);
+      Label label__False_442_impl(this);
+      Label* label__False_442 = &label__False_442_impl;
+      USE(label__False_442);
+      Label label__done_799_1224_impl(this, {t1662_798});
+      Label* label__done_799_1224 = &label__done_799_1224_impl;
+      USE(label__done_799_1224);
+      TNode<IntPtrT> t1663 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1664 = 2;
+      TNode<IntPtrT> t1665 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1664)));
+      TNode<BoolT> t1666 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1663), implicit_cast<TNode<IntPtrT>>(t1665)));
+      USE(implicit_cast<TNode<BoolT>>(t1666));
+      Branch(implicit_cast<TNode<BoolT>>(t1666), label__True_441, label__False_442);
+      BIND(label__True_441);
+            *t1662_798 = implicit_cast<TNode<Object>>(t1657());
+      Goto(label__done_799_1224);
+      BIND(label__False_442);
+            *t1662_798 = implicit_cast<TNode<Object>>(t1658());
+      Goto(label__done_799_1224);
+      BIND(label__done_799_1224);
+    }
+    TVARIABLE(Object, is_little_endian_320_impl);
+    auto is_little_endian_320 = &is_little_endian_320_impl;
+    USE(is_little_endian_320);
+    *is_little_endian_320 = implicit_cast<TNode<Object>>((*t1662_798).value());
+    // ../../src/builtins/data-view.tq:868:7
+    TNode<Object> t1667 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_318).value()), implicit_cast<TNode<Object>>((*value_319).value()), implicit_cast<TNode<Object>>((*is_little_endian_320).value()), implicit_cast<ElementsKind>(INT32_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1667));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1667));
   }
 }
 
@@ -4707,135 +5017,135 @@ TF_BUILTIN(DataViewPrototypeSetFloat32, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:827:62
+  // ../../src/builtins/data-view.tq:873:63
   {
-    // ../../src/builtins/data-view.tq:828:6
-    auto t1521 = [=]() {
-      int31_t t1523 = 0;
-      TNode<IntPtrT> t1524 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1523));
-      TNode<Object> t1525 = UncheckedCast<Object>(GetArgumentValue(arguments, t1524));
-      return t1525;
+    // ../../src/builtins/data-view.tq:874:7
+    auto t1668 = [=]() {
+      int31_t t1670 = 0;
+      TNode<IntPtrT> t1671 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1670)));
+      TNode<Object> t1672 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1671)));
+      return implicit_cast<TNode<Object>>(t1672);
     };
-    auto t1522 = [=]() {
-      return Undefined();
+    auto t1669 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1526_615_impl);
-    auto t1526_615 = &t1526_615_impl;
-    USE(t1526_615);
+    TVARIABLE(Object, t1673_800_impl);
+    auto t1673_800 = &t1673_800_impl;
+    USE(t1673_800);
     {
-      Label label__True_358_impl(this);
-      Label* label__True_358 = &label__True_358_impl;
-      USE(label__True_358);
-      Label label__False_359_impl(this);
-      Label* label__False_359 = &label__False_359_impl;
-      USE(label__False_359);
-      Label label__done_616_741_impl(this, {t1526_615});
-      Label* label__done_616_741 = &label__done_616_741_impl;
-      USE(label__done_616_741);
-      TNode<IntPtrT> t1527 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1528 = 0;
-      TNode<IntPtrT> t1529 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1528));
-      TNode<BoolT> t1530 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1527, t1529));
-      USE(t1530);
-      Branch(t1530, label__True_358, label__False_359);
-      BIND(label__True_358);
-            *t1526_615 = t1521();
-      Goto(label__done_616_741);
-      BIND(label__False_359);
-            *t1526_615 = t1522();
-      Goto(label__done_616_741);
-      BIND(label__done_616_741);
+      Label label__True_443_impl(this);
+      Label* label__True_443 = &label__True_443_impl;
+      USE(label__True_443);
+      Label label__False_444_impl(this);
+      Label* label__False_444 = &label__False_444_impl;
+      USE(label__False_444);
+      Label label__done_801_1225_impl(this, {t1673_800});
+      Label* label__done_801_1225 = &label__done_801_1225_impl;
+      USE(label__done_801_1225);
+      TNode<IntPtrT> t1674 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1675 = 0;
+      TNode<IntPtrT> t1676 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1675)));
+      TNode<BoolT> t1677 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1674), implicit_cast<TNode<IntPtrT>>(t1676)));
+      USE(implicit_cast<TNode<BoolT>>(t1677));
+      Branch(implicit_cast<TNode<BoolT>>(t1677), label__True_443, label__False_444);
+      BIND(label__True_443);
+            *t1673_800 = implicit_cast<TNode<Object>>(t1668());
+      Goto(label__done_801_1225);
+      BIND(label__False_444);
+            *t1673_800 = implicit_cast<TNode<Object>>(t1669());
+      Goto(label__done_801_1225);
+      BIND(label__done_801_1225);
     }
-    TVARIABLE(Object, offset_335_impl);
-    auto offset_335 = &offset_335_impl;
-    USE(offset_335);
-    *offset_335 = (*t1526_615).value();
-    // ../../src/builtins/data-view.tq:831:6
-    auto t1531 = [=]() {
-      int31_t t1533 = 1;
-      TNode<IntPtrT> t1534 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1533));
-      TNode<Object> t1535 = UncheckedCast<Object>(GetArgumentValue(arguments, t1534));
-      return t1535;
+    TVARIABLE(Object, offset_321_impl);
+    auto offset_321 = &offset_321_impl;
+    USE(offset_321);
+    *offset_321 = implicit_cast<TNode<Object>>((*t1673_800).value());
+    // ../../src/builtins/data-view.tq:877:7
+    auto t1678 = [=]() {
+      int31_t t1680 = 1;
+      TNode<IntPtrT> t1681 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1680)));
+      TNode<Object> t1682 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1681)));
+      return implicit_cast<TNode<Object>>(t1682);
     };
-    auto t1532 = [=]() {
-      return Undefined();
+    auto t1679 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1536_617_impl);
-    auto t1536_617 = &t1536_617_impl;
-    USE(t1536_617);
+    TVARIABLE(Object, t1683_802_impl);
+    auto t1683_802 = &t1683_802_impl;
+    USE(t1683_802);
     {
-      Label label__True_360_impl(this);
-      Label* label__True_360 = &label__True_360_impl;
-      USE(label__True_360);
-      Label label__False_361_impl(this);
-      Label* label__False_361 = &label__False_361_impl;
-      USE(label__False_361);
-      Label label__done_618_742_impl(this, {t1536_617});
-      Label* label__done_618_742 = &label__done_618_742_impl;
-      USE(label__done_618_742);
-      TNode<IntPtrT> t1537 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1538 = 1;
-      TNode<IntPtrT> t1539 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1538));
-      TNode<BoolT> t1540 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1537, t1539));
-      USE(t1540);
-      Branch(t1540, label__True_360, label__False_361);
-      BIND(label__True_360);
-            *t1536_617 = t1531();
-      Goto(label__done_618_742);
-      BIND(label__False_361);
-            *t1536_617 = t1532();
-      Goto(label__done_618_742);
-      BIND(label__done_618_742);
+      Label label__True_445_impl(this);
+      Label* label__True_445 = &label__True_445_impl;
+      USE(label__True_445);
+      Label label__False_446_impl(this);
+      Label* label__False_446 = &label__False_446_impl;
+      USE(label__False_446);
+      Label label__done_803_1226_impl(this, {t1683_802});
+      Label* label__done_803_1226 = &label__done_803_1226_impl;
+      USE(label__done_803_1226);
+      TNode<IntPtrT> t1684 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1685 = 1;
+      TNode<IntPtrT> t1686 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1685)));
+      TNode<BoolT> t1687 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1684), implicit_cast<TNode<IntPtrT>>(t1686)));
+      USE(implicit_cast<TNode<BoolT>>(t1687));
+      Branch(implicit_cast<TNode<BoolT>>(t1687), label__True_445, label__False_446);
+      BIND(label__True_445);
+            *t1683_802 = implicit_cast<TNode<Object>>(t1678());
+      Goto(label__done_803_1226);
+      BIND(label__False_446);
+            *t1683_802 = implicit_cast<TNode<Object>>(t1679());
+      Goto(label__done_803_1226);
+      BIND(label__done_803_1226);
     }
-    TVARIABLE(Object, value_336_impl);
-    auto value_336 = &value_336_impl;
-    USE(value_336);
-    *value_336 = (*t1536_617).value();
-    // ../../src/builtins/data-view.tq:834:6
-    auto t1541 = [=]() {
-      int31_t t1543 = 2;
-      TNode<IntPtrT> t1544 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1543));
-      TNode<Object> t1545 = UncheckedCast<Object>(GetArgumentValue(arguments, t1544));
-      return t1545;
+    TVARIABLE(Object, value_322_impl);
+    auto value_322 = &value_322_impl;
+    USE(value_322);
+    *value_322 = implicit_cast<TNode<Object>>((*t1683_802).value());
+    // ../../src/builtins/data-view.tq:880:7
+    auto t1688 = [=]() {
+      int31_t t1690 = 2;
+      TNode<IntPtrT> t1691 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1690)));
+      TNode<Object> t1692 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1691)));
+      return implicit_cast<TNode<Object>>(t1692);
     };
-    auto t1542 = [=]() {
-      return Undefined();
+    auto t1689 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1546_619_impl);
-    auto t1546_619 = &t1546_619_impl;
-    USE(t1546_619);
+    TVARIABLE(Object, t1693_804_impl);
+    auto t1693_804 = &t1693_804_impl;
+    USE(t1693_804);
     {
-      Label label__True_362_impl(this);
-      Label* label__True_362 = &label__True_362_impl;
-      USE(label__True_362);
-      Label label__False_363_impl(this);
-      Label* label__False_363 = &label__False_363_impl;
-      USE(label__False_363);
-      Label label__done_620_743_impl(this, {t1546_619});
-      Label* label__done_620_743 = &label__done_620_743_impl;
-      USE(label__done_620_743);
-      TNode<IntPtrT> t1547 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1548 = 2;
-      TNode<IntPtrT> t1549 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1548));
-      TNode<BoolT> t1550 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1547, t1549));
-      USE(t1550);
-      Branch(t1550, label__True_362, label__False_363);
-      BIND(label__True_362);
-            *t1546_619 = t1541();
-      Goto(label__done_620_743);
-      BIND(label__False_363);
-            *t1546_619 = t1542();
-      Goto(label__done_620_743);
-      BIND(label__done_620_743);
+      Label label__True_447_impl(this);
+      Label* label__True_447 = &label__True_447_impl;
+      USE(label__True_447);
+      Label label__False_448_impl(this);
+      Label* label__False_448 = &label__False_448_impl;
+      USE(label__False_448);
+      Label label__done_805_1227_impl(this, {t1693_804});
+      Label* label__done_805_1227 = &label__done_805_1227_impl;
+      USE(label__done_805_1227);
+      TNode<IntPtrT> t1694 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1695 = 2;
+      TNode<IntPtrT> t1696 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1695)));
+      TNode<BoolT> t1697 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1694), implicit_cast<TNode<IntPtrT>>(t1696)));
+      USE(implicit_cast<TNode<BoolT>>(t1697));
+      Branch(implicit_cast<TNode<BoolT>>(t1697), label__True_447, label__False_448);
+      BIND(label__True_447);
+            *t1693_804 = implicit_cast<TNode<Object>>(t1688());
+      Goto(label__done_805_1227);
+      BIND(label__False_448);
+            *t1693_804 = implicit_cast<TNode<Object>>(t1689());
+      Goto(label__done_805_1227);
+      BIND(label__done_805_1227);
     }
-    TVARIABLE(Object, is_little_endian_337_impl);
-    auto is_little_endian_337 = &is_little_endian_337_impl;
-    USE(is_little_endian_337);
-    *is_little_endian_337 = (*t1546_619).value();
-    // ../../src/builtins/data-view.tq:837:6
-    TNode<Object> t1551 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_335).value(), (*value_336).value(), (*is_little_endian_337).value(), FLOAT32_ELEMENTS));
-    USE(t1551);
-    arguments->PopAndReturn(t1551);
+    TVARIABLE(Object, is_little_endian_323_impl);
+    auto is_little_endian_323 = &is_little_endian_323_impl;
+    USE(is_little_endian_323);
+    *is_little_endian_323 = implicit_cast<TNode<Object>>((*t1693_804).value());
+    // ../../src/builtins/data-view.tq:883:7
+    TNode<Object> t1698 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_321).value()), implicit_cast<TNode<Object>>((*value_322).value()), implicit_cast<TNode<Object>>((*is_little_endian_323).value()), implicit_cast<ElementsKind>(FLOAT32_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1698));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1698));
   }
 }
 
@@ -4848,276 +5158,135 @@ TF_BUILTIN(DataViewPrototypeSetFloat64, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:842:62
+  // ../../src/builtins/data-view.tq:888:63
   {
-    // ../../src/builtins/data-view.tq:843:6
-    auto t1552 = [=]() {
-      int31_t t1554 = 0;
-      TNode<IntPtrT> t1555 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1554));
-      TNode<Object> t1556 = UncheckedCast<Object>(GetArgumentValue(arguments, t1555));
-      return t1556;
+    // ../../src/builtins/data-view.tq:889:7
+    auto t1699 = [=]() {
+      int31_t t1701 = 0;
+      TNode<IntPtrT> t1702 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1701)));
+      TNode<Object> t1703 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1702)));
+      return implicit_cast<TNode<Object>>(t1703);
     };
-    auto t1553 = [=]() {
-      return Undefined();
+    auto t1700 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1557_621_impl);
-    auto t1557_621 = &t1557_621_impl;
-    USE(t1557_621);
+    TVARIABLE(Object, t1704_806_impl);
+    auto t1704_806 = &t1704_806_impl;
+    USE(t1704_806);
     {
-      Label label__True_364_impl(this);
-      Label* label__True_364 = &label__True_364_impl;
-      USE(label__True_364);
-      Label label__False_365_impl(this);
-      Label* label__False_365 = &label__False_365_impl;
-      USE(label__False_365);
-      Label label__done_622_744_impl(this, {t1557_621});
-      Label* label__done_622_744 = &label__done_622_744_impl;
-      USE(label__done_622_744);
-      TNode<IntPtrT> t1558 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1559 = 0;
-      TNode<IntPtrT> t1560 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1559));
-      TNode<BoolT> t1561 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1558, t1560));
-      USE(t1561);
-      Branch(t1561, label__True_364, label__False_365);
-      BIND(label__True_364);
-            *t1557_621 = t1552();
-      Goto(label__done_622_744);
-      BIND(label__False_365);
-            *t1557_621 = t1553();
-      Goto(label__done_622_744);
-      BIND(label__done_622_744);
+      Label label__True_449_impl(this);
+      Label* label__True_449 = &label__True_449_impl;
+      USE(label__True_449);
+      Label label__False_450_impl(this);
+      Label* label__False_450 = &label__False_450_impl;
+      USE(label__False_450);
+      Label label__done_807_1228_impl(this, {t1704_806});
+      Label* label__done_807_1228 = &label__done_807_1228_impl;
+      USE(label__done_807_1228);
+      TNode<IntPtrT> t1705 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1706 = 0;
+      TNode<IntPtrT> t1707 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1706)));
+      TNode<BoolT> t1708 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1705), implicit_cast<TNode<IntPtrT>>(t1707)));
+      USE(implicit_cast<TNode<BoolT>>(t1708));
+      Branch(implicit_cast<TNode<BoolT>>(t1708), label__True_449, label__False_450);
+      BIND(label__True_449);
+            *t1704_806 = implicit_cast<TNode<Object>>(t1699());
+      Goto(label__done_807_1228);
+      BIND(label__False_450);
+            *t1704_806 = implicit_cast<TNode<Object>>(t1700());
+      Goto(label__done_807_1228);
+      BIND(label__done_807_1228);
     }
-    TVARIABLE(Object, offset_338_impl);
-    auto offset_338 = &offset_338_impl;
-    USE(offset_338);
-    *offset_338 = (*t1557_621).value();
-    // ../../src/builtins/data-view.tq:846:6
-    auto t1562 = [=]() {
-      int31_t t1564 = 1;
-      TNode<IntPtrT> t1565 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1564));
-      TNode<Object> t1566 = UncheckedCast<Object>(GetArgumentValue(arguments, t1565));
-      return t1566;
+    TVARIABLE(Object, offset_324_impl);
+    auto offset_324 = &offset_324_impl;
+    USE(offset_324);
+    *offset_324 = implicit_cast<TNode<Object>>((*t1704_806).value());
+    // ../../src/builtins/data-view.tq:892:7
+    auto t1709 = [=]() {
+      int31_t t1711 = 1;
+      TNode<IntPtrT> t1712 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1711)));
+      TNode<Object> t1713 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1712)));
+      return implicit_cast<TNode<Object>>(t1713);
     };
-    auto t1563 = [=]() {
-      return Undefined();
+    auto t1710 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1567_623_impl);
-    auto t1567_623 = &t1567_623_impl;
-    USE(t1567_623);
+    TVARIABLE(Object, t1714_808_impl);
+    auto t1714_808 = &t1714_808_impl;
+    USE(t1714_808);
     {
-      Label label__True_366_impl(this);
-      Label* label__True_366 = &label__True_366_impl;
-      USE(label__True_366);
-      Label label__False_367_impl(this);
-      Label* label__False_367 = &label__False_367_impl;
-      USE(label__False_367);
-      Label label__done_624_745_impl(this, {t1567_623});
-      Label* label__done_624_745 = &label__done_624_745_impl;
-      USE(label__done_624_745);
-      TNode<IntPtrT> t1568 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1569 = 1;
-      TNode<IntPtrT> t1570 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1569));
-      TNode<BoolT> t1571 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1568, t1570));
-      USE(t1571);
-      Branch(t1571, label__True_366, label__False_367);
-      BIND(label__True_366);
-            *t1567_623 = t1562();
-      Goto(label__done_624_745);
-      BIND(label__False_367);
-            *t1567_623 = t1563();
-      Goto(label__done_624_745);
-      BIND(label__done_624_745);
+      Label label__True_451_impl(this);
+      Label* label__True_451 = &label__True_451_impl;
+      USE(label__True_451);
+      Label label__False_452_impl(this);
+      Label* label__False_452 = &label__False_452_impl;
+      USE(label__False_452);
+      Label label__done_809_1229_impl(this, {t1714_808});
+      Label* label__done_809_1229 = &label__done_809_1229_impl;
+      USE(label__done_809_1229);
+      TNode<IntPtrT> t1715 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1716 = 1;
+      TNode<IntPtrT> t1717 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1716)));
+      TNode<BoolT> t1718 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1715), implicit_cast<TNode<IntPtrT>>(t1717)));
+      USE(implicit_cast<TNode<BoolT>>(t1718));
+      Branch(implicit_cast<TNode<BoolT>>(t1718), label__True_451, label__False_452);
+      BIND(label__True_451);
+            *t1714_808 = implicit_cast<TNode<Object>>(t1709());
+      Goto(label__done_809_1229);
+      BIND(label__False_452);
+            *t1714_808 = implicit_cast<TNode<Object>>(t1710());
+      Goto(label__done_809_1229);
+      BIND(label__done_809_1229);
     }
-    TVARIABLE(Object, value_339_impl);
-    auto value_339 = &value_339_impl;
-    USE(value_339);
-    *value_339 = (*t1567_623).value();
-    // ../../src/builtins/data-view.tq:849:6
-    auto t1572 = [=]() {
-      int31_t t1574 = 2;
-      TNode<IntPtrT> t1575 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1574));
-      TNode<Object> t1576 = UncheckedCast<Object>(GetArgumentValue(arguments, t1575));
-      return t1576;
+    TVARIABLE(Object, value_325_impl);
+    auto value_325 = &value_325_impl;
+    USE(value_325);
+    *value_325 = implicit_cast<TNode<Object>>((*t1714_808).value());
+    // ../../src/builtins/data-view.tq:895:7
+    auto t1719 = [=]() {
+      int31_t t1721 = 2;
+      TNode<IntPtrT> t1722 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1721)));
+      TNode<Object> t1723 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1722)));
+      return implicit_cast<TNode<Object>>(t1723);
     };
-    auto t1573 = [=]() {
-      return Undefined();
+    auto t1720 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1577_625_impl);
-    auto t1577_625 = &t1577_625_impl;
-    USE(t1577_625);
+    TVARIABLE(Object, t1724_810_impl);
+    auto t1724_810 = &t1724_810_impl;
+    USE(t1724_810);
     {
-      Label label__True_368_impl(this);
-      Label* label__True_368 = &label__True_368_impl;
-      USE(label__True_368);
-      Label label__False_369_impl(this);
-      Label* label__False_369 = &label__False_369_impl;
-      USE(label__False_369);
-      Label label__done_626_746_impl(this, {t1577_625});
-      Label* label__done_626_746 = &label__done_626_746_impl;
-      USE(label__done_626_746);
-      TNode<IntPtrT> t1578 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1579 = 2;
-      TNode<IntPtrT> t1580 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1579));
-      TNode<BoolT> t1581 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1578, t1580));
-      USE(t1581);
-      Branch(t1581, label__True_368, label__False_369);
-      BIND(label__True_368);
-            *t1577_625 = t1572();
-      Goto(label__done_626_746);
-      BIND(label__False_369);
-            *t1577_625 = t1573();
-      Goto(label__done_626_746);
-      BIND(label__done_626_746);
+      Label label__True_453_impl(this);
+      Label* label__True_453 = &label__True_453_impl;
+      USE(label__True_453);
+      Label label__False_454_impl(this);
+      Label* label__False_454 = &label__False_454_impl;
+      USE(label__False_454);
+      Label label__done_811_1230_impl(this, {t1724_810});
+      Label* label__done_811_1230 = &label__done_811_1230_impl;
+      USE(label__done_811_1230);
+      TNode<IntPtrT> t1725 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1726 = 2;
+      TNode<IntPtrT> t1727 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1726)));
+      TNode<BoolT> t1728 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1725), implicit_cast<TNode<IntPtrT>>(t1727)));
+      USE(implicit_cast<TNode<BoolT>>(t1728));
+      Branch(implicit_cast<TNode<BoolT>>(t1728), label__True_453, label__False_454);
+      BIND(label__True_453);
+            *t1724_810 = implicit_cast<TNode<Object>>(t1719());
+      Goto(label__done_811_1230);
+      BIND(label__False_454);
+            *t1724_810 = implicit_cast<TNode<Object>>(t1720());
+      Goto(label__done_811_1230);
+      BIND(label__done_811_1230);
     }
-    TVARIABLE(Object, is_little_endian_340_impl);
-    auto is_little_endian_340 = &is_little_endian_340_impl;
-    USE(is_little_endian_340);
-    *is_little_endian_340 = (*t1577_625).value();
-    // ../../src/builtins/data-view.tq:852:6
-    TNode<Object> t1582 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_338).value(), (*value_339).value(), (*is_little_endian_340).value(), FLOAT64_ELEMENTS));
-    USE(t1582);
-    arguments->PopAndReturn(t1582);
-  }
-}
-
-TF_BUILTIN(DataViewPrototypeSetBigInt64, DataViewBuiltinsFromDSLAssembler) {
-  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(p_context);
-  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> p_receiver = arguments_impl.GetReceiver();
-  auto arguments = &arguments_impl;
-  USE(arguments);
-  USE(p_receiver);
-  // ../../src/builtins/data-view.tq:857:62
-  {
-    // ../../src/builtins/data-view.tq:858:6
-    auto t1583 = [=]() {
-      int31_t t1585 = 0;
-      TNode<IntPtrT> t1586 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1585));
-      TNode<Object> t1587 = UncheckedCast<Object>(GetArgumentValue(arguments, t1586));
-      return t1587;
-    };
-    auto t1584 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1588_627_impl);
-    auto t1588_627 = &t1588_627_impl;
-    USE(t1588_627);
-    {
-      Label label__True_370_impl(this);
-      Label* label__True_370 = &label__True_370_impl;
-      USE(label__True_370);
-      Label label__False_371_impl(this);
-      Label* label__False_371 = &label__False_371_impl;
-      USE(label__False_371);
-      Label label__done_628_747_impl(this, {t1588_627});
-      Label* label__done_628_747 = &label__done_628_747_impl;
-      USE(label__done_628_747);
-      TNode<IntPtrT> t1589 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1590 = 0;
-      TNode<IntPtrT> t1591 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1590));
-      TNode<BoolT> t1592 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1589, t1591));
-      USE(t1592);
-      Branch(t1592, label__True_370, label__False_371);
-      BIND(label__True_370);
-            *t1588_627 = t1583();
-      Goto(label__done_628_747);
-      BIND(label__False_371);
-            *t1588_627 = t1584();
-      Goto(label__done_628_747);
-      BIND(label__done_628_747);
-    }
-    TVARIABLE(Object, offset_341_impl);
-    auto offset_341 = &offset_341_impl;
-    USE(offset_341);
-    *offset_341 = (*t1588_627).value();
-    // ../../src/builtins/data-view.tq:861:6
-    auto t1593 = [=]() {
-      int31_t t1595 = 1;
-      TNode<IntPtrT> t1596 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1595));
-      TNode<Object> t1597 = UncheckedCast<Object>(GetArgumentValue(arguments, t1596));
-      return t1597;
-    };
-    auto t1594 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1598_629_impl);
-    auto t1598_629 = &t1598_629_impl;
-    USE(t1598_629);
-    {
-      Label label__True_372_impl(this);
-      Label* label__True_372 = &label__True_372_impl;
-      USE(label__True_372);
-      Label label__False_373_impl(this);
-      Label* label__False_373 = &label__False_373_impl;
-      USE(label__False_373);
-      Label label__done_630_748_impl(this, {t1598_629});
-      Label* label__done_630_748 = &label__done_630_748_impl;
-      USE(label__done_630_748);
-      TNode<IntPtrT> t1599 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1600 = 1;
-      TNode<IntPtrT> t1601 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1600));
-      TNode<BoolT> t1602 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1599, t1601));
-      USE(t1602);
-      Branch(t1602, label__True_372, label__False_373);
-      BIND(label__True_372);
-            *t1598_629 = t1593();
-      Goto(label__done_630_748);
-      BIND(label__False_373);
-            *t1598_629 = t1594();
-      Goto(label__done_630_748);
-      BIND(label__done_630_748);
-    }
-    TVARIABLE(Object, value_342_impl);
-    auto value_342 = &value_342_impl;
-    USE(value_342);
-    *value_342 = (*t1598_629).value();
-    // ../../src/builtins/data-view.tq:864:6
-    auto t1603 = [=]() {
-      int31_t t1605 = 2;
-      TNode<IntPtrT> t1606 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1605));
-      TNode<Object> t1607 = UncheckedCast<Object>(GetArgumentValue(arguments, t1606));
-      return t1607;
-    };
-    auto t1604 = [=]() {
-      return Undefined();
-    };
-    TVARIABLE(Object, t1608_631_impl);
-    auto t1608_631 = &t1608_631_impl;
-    USE(t1608_631);
-    {
-      Label label__True_374_impl(this);
-      Label* label__True_374 = &label__True_374_impl;
-      USE(label__True_374);
-      Label label__False_375_impl(this);
-      Label* label__False_375 = &label__False_375_impl;
-      USE(label__False_375);
-      Label label__done_632_749_impl(this, {t1608_631});
-      Label* label__done_632_749 = &label__done_632_749_impl;
-      USE(label__done_632_749);
-      TNode<IntPtrT> t1609 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1610 = 2;
-      TNode<IntPtrT> t1611 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1610));
-      TNode<BoolT> t1612 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1609, t1611));
-      USE(t1612);
-      Branch(t1612, label__True_374, label__False_375);
-      BIND(label__True_374);
-            *t1608_631 = t1603();
-      Goto(label__done_632_749);
-      BIND(label__False_375);
-            *t1608_631 = t1604();
-      Goto(label__done_632_749);
-      BIND(label__done_632_749);
-    }
-    TVARIABLE(Object, is_little_endian_343_impl);
-    auto is_little_endian_343 = &is_little_endian_343_impl;
-    USE(is_little_endian_343);
-    *is_little_endian_343 = (*t1608_631).value();
-    // ../../src/builtins/data-view.tq:867:6
-    TNode<Object> t1613 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_341).value(), (*value_342).value(), (*is_little_endian_343).value(), BIGINT64_ELEMENTS));
-    USE(t1613);
-    arguments->PopAndReturn(t1613);
+    TVARIABLE(Object, is_little_endian_326_impl);
+    auto is_little_endian_326 = &is_little_endian_326_impl;
+    USE(is_little_endian_326);
+    *is_little_endian_326 = implicit_cast<TNode<Object>>((*t1724_810).value());
+    // ../../src/builtins/data-view.tq:898:7
+    TNode<Object> t1729 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_324).value()), implicit_cast<TNode<Object>>((*value_325).value()), implicit_cast<TNode<Object>>((*is_little_endian_326).value()), implicit_cast<ElementsKind>(FLOAT64_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1729));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1729));
   }
 }
 
@@ -5130,138 +5299,279 @@ TF_BUILTIN(DataViewPrototypeSetBigUint64, DataViewBuiltinsFromDSLAssembler) {
   auto arguments = &arguments_impl;
   USE(arguments);
   USE(p_receiver);
-  // ../../src/builtins/data-view.tq:872:62
+  // ../../src/builtins/data-view.tq:903:63
   {
-    // ../../src/builtins/data-view.tq:873:6
-    auto t1614 = [=]() {
-      int31_t t1616 = 0;
-      TNode<IntPtrT> t1617 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1616));
-      TNode<Object> t1618 = UncheckedCast<Object>(GetArgumentValue(arguments, t1617));
-      return t1618;
+    // ../../src/builtins/data-view.tq:904:7
+    auto t1730 = [=]() {
+      int31_t t1732 = 0;
+      TNode<IntPtrT> t1733 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1732)));
+      TNode<Object> t1734 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1733)));
+      return implicit_cast<TNode<Object>>(t1734);
     };
-    auto t1615 = [=]() {
-      return Undefined();
+    auto t1731 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1619_633_impl);
-    auto t1619_633 = &t1619_633_impl;
-    USE(t1619_633);
+    TVARIABLE(Object, t1735_812_impl);
+    auto t1735_812 = &t1735_812_impl;
+    USE(t1735_812);
     {
-      Label label__True_376_impl(this);
-      Label* label__True_376 = &label__True_376_impl;
-      USE(label__True_376);
-      Label label__False_377_impl(this);
-      Label* label__False_377 = &label__False_377_impl;
-      USE(label__False_377);
-      Label label__done_634_750_impl(this, {t1619_633});
-      Label* label__done_634_750 = &label__done_634_750_impl;
-      USE(label__done_634_750);
-      TNode<IntPtrT> t1620 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1621 = 0;
-      TNode<IntPtrT> t1622 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1621));
-      TNode<BoolT> t1623 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1620, t1622));
-      USE(t1623);
-      Branch(t1623, label__True_376, label__False_377);
-      BIND(label__True_376);
-            *t1619_633 = t1614();
-      Goto(label__done_634_750);
-      BIND(label__False_377);
-            *t1619_633 = t1615();
-      Goto(label__done_634_750);
-      BIND(label__done_634_750);
+      Label label__True_455_impl(this);
+      Label* label__True_455 = &label__True_455_impl;
+      USE(label__True_455);
+      Label label__False_456_impl(this);
+      Label* label__False_456 = &label__False_456_impl;
+      USE(label__False_456);
+      Label label__done_813_1231_impl(this, {t1735_812});
+      Label* label__done_813_1231 = &label__done_813_1231_impl;
+      USE(label__done_813_1231);
+      TNode<IntPtrT> t1736 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1737 = 0;
+      TNode<IntPtrT> t1738 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1737)));
+      TNode<BoolT> t1739 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1736), implicit_cast<TNode<IntPtrT>>(t1738)));
+      USE(implicit_cast<TNode<BoolT>>(t1739));
+      Branch(implicit_cast<TNode<BoolT>>(t1739), label__True_455, label__False_456);
+      BIND(label__True_455);
+            *t1735_812 = implicit_cast<TNode<Object>>(t1730());
+      Goto(label__done_813_1231);
+      BIND(label__False_456);
+            *t1735_812 = implicit_cast<TNode<Object>>(t1731());
+      Goto(label__done_813_1231);
+      BIND(label__done_813_1231);
     }
-    TVARIABLE(Object, offset_344_impl);
-    auto offset_344 = &offset_344_impl;
-    USE(offset_344);
-    *offset_344 = (*t1619_633).value();
-    // ../../src/builtins/data-view.tq:876:6
-    auto t1624 = [=]() {
-      int31_t t1626 = 1;
-      TNode<IntPtrT> t1627 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1626));
-      TNode<Object> t1628 = UncheckedCast<Object>(GetArgumentValue(arguments, t1627));
-      return t1628;
+    TVARIABLE(Object, offset_327_impl);
+    auto offset_327 = &offset_327_impl;
+    USE(offset_327);
+    *offset_327 = implicit_cast<TNode<Object>>((*t1735_812).value());
+    // ../../src/builtins/data-view.tq:907:7
+    auto t1740 = [=]() {
+      int31_t t1742 = 1;
+      TNode<IntPtrT> t1743 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1742)));
+      TNode<Object> t1744 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1743)));
+      return implicit_cast<TNode<Object>>(t1744);
     };
-    auto t1625 = [=]() {
-      return Undefined();
+    auto t1741 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1629_635_impl);
-    auto t1629_635 = &t1629_635_impl;
-    USE(t1629_635);
+    TVARIABLE(Object, t1745_814_impl);
+    auto t1745_814 = &t1745_814_impl;
+    USE(t1745_814);
     {
-      Label label__True_378_impl(this);
-      Label* label__True_378 = &label__True_378_impl;
-      USE(label__True_378);
-      Label label__False_379_impl(this);
-      Label* label__False_379 = &label__False_379_impl;
-      USE(label__False_379);
-      Label label__done_636_751_impl(this, {t1629_635});
-      Label* label__done_636_751 = &label__done_636_751_impl;
-      USE(label__done_636_751);
-      TNode<IntPtrT> t1630 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1631 = 1;
-      TNode<IntPtrT> t1632 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1631));
-      TNode<BoolT> t1633 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1630, t1632));
-      USE(t1633);
-      Branch(t1633, label__True_378, label__False_379);
-      BIND(label__True_378);
-            *t1629_635 = t1624();
-      Goto(label__done_636_751);
-      BIND(label__False_379);
-            *t1629_635 = t1625();
-      Goto(label__done_636_751);
-      BIND(label__done_636_751);
+      Label label__True_457_impl(this);
+      Label* label__True_457 = &label__True_457_impl;
+      USE(label__True_457);
+      Label label__False_458_impl(this);
+      Label* label__False_458 = &label__False_458_impl;
+      USE(label__False_458);
+      Label label__done_815_1232_impl(this, {t1745_814});
+      Label* label__done_815_1232 = &label__done_815_1232_impl;
+      USE(label__done_815_1232);
+      TNode<IntPtrT> t1746 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1747 = 1;
+      TNode<IntPtrT> t1748 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1747)));
+      TNode<BoolT> t1749 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1746), implicit_cast<TNode<IntPtrT>>(t1748)));
+      USE(implicit_cast<TNode<BoolT>>(t1749));
+      Branch(implicit_cast<TNode<BoolT>>(t1749), label__True_457, label__False_458);
+      BIND(label__True_457);
+            *t1745_814 = implicit_cast<TNode<Object>>(t1740());
+      Goto(label__done_815_1232);
+      BIND(label__False_458);
+            *t1745_814 = implicit_cast<TNode<Object>>(t1741());
+      Goto(label__done_815_1232);
+      BIND(label__done_815_1232);
     }
-    TVARIABLE(Object, value_345_impl);
-    auto value_345 = &value_345_impl;
-    USE(value_345);
-    *value_345 = (*t1629_635).value();
-    // ../../src/builtins/data-view.tq:879:6
-    auto t1634 = [=]() {
-      int31_t t1636 = 2;
-      TNode<IntPtrT> t1637 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1636));
-      TNode<Object> t1638 = UncheckedCast<Object>(GetArgumentValue(arguments, t1637));
-      return t1638;
+    TVARIABLE(Object, value_328_impl);
+    auto value_328 = &value_328_impl;
+    USE(value_328);
+    *value_328 = implicit_cast<TNode<Object>>((*t1745_814).value());
+    // ../../src/builtins/data-view.tq:910:7
+    auto t1750 = [=]() {
+      int31_t t1752 = 2;
+      TNode<IntPtrT> t1753 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1752)));
+      TNode<Object> t1754 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1753)));
+      return implicit_cast<TNode<Object>>(t1754);
     };
-    auto t1635 = [=]() {
-      return Undefined();
+    auto t1751 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
     };
-    TVARIABLE(Object, t1639_637_impl);
-    auto t1639_637 = &t1639_637_impl;
-    USE(t1639_637);
+    TVARIABLE(Object, t1755_816_impl);
+    auto t1755_816 = &t1755_816_impl;
+    USE(t1755_816);
     {
-      Label label__True_380_impl(this);
-      Label* label__True_380 = &label__True_380_impl;
-      USE(label__True_380);
-      Label label__False_381_impl(this);
-      Label* label__False_381 = &label__False_381_impl;
-      USE(label__False_381);
-      Label label__done_638_752_impl(this, {t1639_637});
-      Label* label__done_638_752 = &label__done_638_752_impl;
-      USE(label__done_638_752);
-      TNode<IntPtrT> t1640 = UncheckedCast<IntPtrT>(GetArgumentsLength(arguments));
-      int31_t t1641 = 2;
-      TNode<IntPtrT> t1642 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1641));
-      TNode<BoolT> t1643 = UncheckedCast<BoolT>(IntPtrGreaterThan(t1640, t1642));
-      USE(t1643);
-      Branch(t1643, label__True_380, label__False_381);
-      BIND(label__True_380);
-            *t1639_637 = t1634();
-      Goto(label__done_638_752);
-      BIND(label__False_381);
-            *t1639_637 = t1635();
-      Goto(label__done_638_752);
-      BIND(label__done_638_752);
+      Label label__True_459_impl(this);
+      Label* label__True_459 = &label__True_459_impl;
+      USE(label__True_459);
+      Label label__False_460_impl(this);
+      Label* label__False_460 = &label__False_460_impl;
+      USE(label__False_460);
+      Label label__done_817_1233_impl(this, {t1755_816});
+      Label* label__done_817_1233 = &label__done_817_1233_impl;
+      USE(label__done_817_1233);
+      TNode<IntPtrT> t1756 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1757 = 2;
+      TNode<IntPtrT> t1758 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1757)));
+      TNode<BoolT> t1759 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1756), implicit_cast<TNode<IntPtrT>>(t1758)));
+      USE(implicit_cast<TNode<BoolT>>(t1759));
+      Branch(implicit_cast<TNode<BoolT>>(t1759), label__True_459, label__False_460);
+      BIND(label__True_459);
+            *t1755_816 = implicit_cast<TNode<Object>>(t1750());
+      Goto(label__done_817_1233);
+      BIND(label__False_460);
+            *t1755_816 = implicit_cast<TNode<Object>>(t1751());
+      Goto(label__done_817_1233);
+      BIND(label__done_817_1233);
     }
-    TVARIABLE(Object, is_little_endian_346_impl);
-    auto is_little_endian_346 = &is_little_endian_346_impl;
-    USE(is_little_endian_346);
-    *is_little_endian_346 = (*t1639_637).value();
-    // ../../src/builtins/data-view.tq:882:6
-    TNode<Object> t1644 = UncheckedCast<Object>(DataViewSet(p_context, p_receiver, (*offset_344).value(), (*value_345).value(), (*is_little_endian_346).value(), BIGUINT64_ELEMENTS));
-    USE(t1644);
-    arguments->PopAndReturn(t1644);
+    TVARIABLE(Object, is_little_endian_329_impl);
+    auto is_little_endian_329 = &is_little_endian_329_impl;
+    USE(is_little_endian_329);
+    *is_little_endian_329 = implicit_cast<TNode<Object>>((*t1755_816).value());
+    // ../../src/builtins/data-view.tq:913:7
+    TNode<Object> t1760 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_327).value()), implicit_cast<TNode<Object>>((*value_328).value()), implicit_cast<TNode<Object>>((*is_little_endian_329).value()), implicit_cast<ElementsKind>(BIGUINT64_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1760));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1760));
   }
 }
 
-}  // namepsace internal
+TF_BUILTIN(DataViewPrototypeSetBigInt64, DataViewBuiltinsFromDSLAssembler) {
+  TNode<Context> p_context = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(p_context);
+  Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
+  TNode<Object> p_receiver = arguments_impl.GetReceiver();
+  auto arguments = &arguments_impl;
+  USE(arguments);
+  USE(p_receiver);
+  // ../../src/builtins/data-view.tq:918:63
+  {
+    // ../../src/builtins/data-view.tq:919:7
+    auto t1761 = [=]() {
+      int31_t t1763 = 0;
+      TNode<IntPtrT> t1764 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1763)));
+      TNode<Object> t1765 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1764)));
+      return implicit_cast<TNode<Object>>(t1765);
+    };
+    auto t1762 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1766_818_impl);
+    auto t1766_818 = &t1766_818_impl;
+    USE(t1766_818);
+    {
+      Label label__True_461_impl(this);
+      Label* label__True_461 = &label__True_461_impl;
+      USE(label__True_461);
+      Label label__False_462_impl(this);
+      Label* label__False_462 = &label__False_462_impl;
+      USE(label__False_462);
+      Label label__done_819_1234_impl(this, {t1766_818});
+      Label* label__done_819_1234 = &label__done_819_1234_impl;
+      USE(label__done_819_1234);
+      TNode<IntPtrT> t1767 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1768 = 0;
+      TNode<IntPtrT> t1769 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1768)));
+      TNode<BoolT> t1770 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1767), implicit_cast<TNode<IntPtrT>>(t1769)));
+      USE(implicit_cast<TNode<BoolT>>(t1770));
+      Branch(implicit_cast<TNode<BoolT>>(t1770), label__True_461, label__False_462);
+      BIND(label__True_461);
+            *t1766_818 = implicit_cast<TNode<Object>>(t1761());
+      Goto(label__done_819_1234);
+      BIND(label__False_462);
+            *t1766_818 = implicit_cast<TNode<Object>>(t1762());
+      Goto(label__done_819_1234);
+      BIND(label__done_819_1234);
+    }
+    TVARIABLE(Object, offset_330_impl);
+    auto offset_330 = &offset_330_impl;
+    USE(offset_330);
+    *offset_330 = implicit_cast<TNode<Object>>((*t1766_818).value());
+    // ../../src/builtins/data-view.tq:922:7
+    auto t1771 = [=]() {
+      int31_t t1773 = 1;
+      TNode<IntPtrT> t1774 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1773)));
+      TNode<Object> t1775 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1774)));
+      return implicit_cast<TNode<Object>>(t1775);
+    };
+    auto t1772 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1776_820_impl);
+    auto t1776_820 = &t1776_820_impl;
+    USE(t1776_820);
+    {
+      Label label__True_463_impl(this);
+      Label* label__True_463 = &label__True_463_impl;
+      USE(label__True_463);
+      Label label__False_464_impl(this);
+      Label* label__False_464 = &label__False_464_impl;
+      USE(label__False_464);
+      Label label__done_821_1235_impl(this, {t1776_820});
+      Label* label__done_821_1235 = &label__done_821_1235_impl;
+      USE(label__done_821_1235);
+      TNode<IntPtrT> t1777 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1778 = 1;
+      TNode<IntPtrT> t1779 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1778)));
+      TNode<BoolT> t1780 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1777), implicit_cast<TNode<IntPtrT>>(t1779)));
+      USE(implicit_cast<TNode<BoolT>>(t1780));
+      Branch(implicit_cast<TNode<BoolT>>(t1780), label__True_463, label__False_464);
+      BIND(label__True_463);
+            *t1776_820 = implicit_cast<TNode<Object>>(t1771());
+      Goto(label__done_821_1235);
+      BIND(label__False_464);
+            *t1776_820 = implicit_cast<TNode<Object>>(t1772());
+      Goto(label__done_821_1235);
+      BIND(label__done_821_1235);
+    }
+    TVARIABLE(Object, value_331_impl);
+    auto value_331 = &value_331_impl;
+    USE(value_331);
+    *value_331 = implicit_cast<TNode<Object>>((*t1776_820).value());
+    // ../../src/builtins/data-view.tq:925:7
+    auto t1781 = [=]() {
+      int31_t t1783 = 2;
+      TNode<IntPtrT> t1784 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1783)));
+      TNode<Object> t1785 = UncheckedCast<Object>(GetArgumentValue(implicit_cast<CodeStubArguments*>(arguments), implicit_cast<TNode<IntPtrT>>(t1784)));
+      return implicit_cast<TNode<Object>>(t1785);
+    };
+    auto t1782 = [=]() {
+      return implicit_cast<TNode<Oddball>>(Undefined());
+    };
+    TVARIABLE(Object, t1786_822_impl);
+    auto t1786_822 = &t1786_822_impl;
+    USE(t1786_822);
+    {
+      Label label__True_465_impl(this);
+      Label* label__True_465 = &label__True_465_impl;
+      USE(label__True_465);
+      Label label__False_466_impl(this);
+      Label* label__False_466 = &label__False_466_impl;
+      USE(label__False_466);
+      Label label__done_823_1236_impl(this, {t1786_822});
+      Label* label__done_823_1236 = &label__done_823_1236_impl;
+      USE(label__done_823_1236);
+      TNode<IntPtrT> t1787 = UncheckedCast<IntPtrT>(GetArgumentsLength(implicit_cast<CodeStubArguments*>(arguments)));
+      int31_t t1788 = 2;
+      TNode<IntPtrT> t1789 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1788)));
+      TNode<BoolT> t1790 = UncheckedCast<BoolT>(IntPtrGreaterThan(implicit_cast<TNode<IntPtrT>>(t1787), implicit_cast<TNode<IntPtrT>>(t1789)));
+      USE(implicit_cast<TNode<BoolT>>(t1790));
+      Branch(implicit_cast<TNode<BoolT>>(t1790), label__True_465, label__False_466);
+      BIND(label__True_465);
+            *t1786_822 = implicit_cast<TNode<Object>>(t1781());
+      Goto(label__done_823_1236);
+      BIND(label__False_466);
+            *t1786_822 = implicit_cast<TNode<Object>>(t1782());
+      Goto(label__done_823_1236);
+      BIND(label__done_823_1236);
+    }
+    TVARIABLE(Object, is_little_endian_332_impl);
+    auto is_little_endian_332 = &is_little_endian_332_impl;
+    USE(is_little_endian_332);
+    *is_little_endian_332 = implicit_cast<TNode<Object>>((*t1786_822).value());
+    // ../../src/builtins/data-view.tq:928:7
+    TNode<Object> t1791 = UncheckedCast<Object>(DataViewSet(implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Object>>(p_receiver), implicit_cast<TNode<Object>>((*offset_330).value()), implicit_cast<TNode<Object>>((*value_331).value()), implicit_cast<TNode<Object>>((*is_little_endian_332).value()), implicit_cast<ElementsKind>(BIGINT64_ELEMENTS)));
+    USE(implicit_cast<TNode<Object>>(t1791));
+    arguments->PopAndReturn(implicit_cast<TNode<Object>>(t1791));
+  }
+}
+
+}  // namespace internal
 }  // namespace v8
 

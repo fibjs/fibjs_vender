@@ -8,7 +8,7 @@
 
 #if V8_TARGET_ARCH_X64
 
-#include "src/api-arguments.h"
+#include "src/api-arguments-inl.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
 #include "src/counters.h"
@@ -75,8 +75,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
     __ movdqu(Operand(rsp, EntryFrameConstants::kXMMRegisterSize * 9), xmm15);
 #endif
 
-    // Set up the roots and smi constant registers.
-    // Needs to be done before any further smi loads.
     __ InitializeRootRegister();
   }
 

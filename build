@@ -131,7 +131,7 @@ case ${BUILD_TYPE} in
 		;;
 esac
 
-if [ ! -z "${USED_BY_FIBJS}" ]; then
+if [ "${USED_BY_FIBJS}" = "1" ]; then
 	OUT_PATH=${VENDER_PATH}/../out
 else
 	OUT_PATH=${VENDER_PATH}/.dist/out
@@ -212,7 +212,7 @@ echo "TARGET_OS: $TARGET_OS; TARGET_ARCH: $TARGET_ARCH;";
 echo "BUILD_JOBS is $BUILD_JOBS";
 echo "BUILD_TYPE: $BUILD_TYPE";
 
-if [ "$USED_BY_FIBJS" != "" ]; then
+if [ "$USED_BY_FIBJS" == "1" ]; then
 	echo "vender is used by fibjs in parent directory";
 fi
 

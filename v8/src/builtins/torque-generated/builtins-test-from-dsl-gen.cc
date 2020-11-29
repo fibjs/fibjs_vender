@@ -5,6 +5,7 @@
 #include "src/elements-kind.h"
 #include "src/heap/factory-inl.h"
 #include "src/objects.h"
+#include "src/objects/bigint.h"
 #include "builtins-test-from-dsl-gen.h"
 
 namespace v8 {
@@ -13,485 +14,485 @@ namespace internal {
 using Node = compiler::Node;
 
 compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::ElementsKindTestHelper1(ElementsKind p_kind) {
-  TVARIABLE(BoolT, _return_347_impl);
-  auto _return_347 = &_return_347_impl;
-  USE(_return_347);
-  Label label_macro_end_753_impl(this, {_return_347});
-  Label* label_macro_end_753 = &label_macro_end_753_impl;
-  USE(label_macro_end_753);
-  // ../../test/torque/test-torque.tq:6:68
+  TVARIABLE(BoolT, _return_333_impl);
+  auto _return_333 = &_return_333_impl;
+  USE(_return_333);
+  Label label_macro_end_1237_impl(this, {_return_333});
+  Label* label_macro_end_1237 = &label_macro_end_1237_impl;
+  USE(label_macro_end_1237);
+  // ../../test/torque/test-torque.tq:6:69
   {
-    // ../../test/torque/test-torque.tq:7:4
+    // ../../test/torque/test-torque.tq:7:5
     {
-      Label label__False_384_impl(this);
-      Label* label__False_384 = &label__False_384_impl;
-      USE(label__False_384);
-      bool t1645 = ElementsKindEqual(p_kind, UINT8_ELEMENTS);
-      USE(t1645);
-      bool t1646 = ElementsKindEqual(p_kind, UINT16_ELEMENTS);
-      USE(t1646);
-      if (((t1645 || t1646))) {
-        // ../../test/torque/test-torque.tq:7:72
+      Label label__False_469_impl(this);
+      Label* label__False_469 = &label__False_469_impl;
+      USE(label__False_469);
+      bool t1792 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+      USE(implicit_cast<bool>(t1792));
+      bool t1793 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+      USE(implicit_cast<bool>(t1793));
+      if ((implicit_cast<bool>((implicit_cast<bool>(t1792) || implicit_cast<bool>(t1793))))) {
+        // ../../test/torque/test-torque.tq:7:73
         {
-          // ../../test/torque/test-torque.tq:8:8
-          TNode<BoolT> t1647 = UncheckedCast<BoolT>(from_constexpr6ATbool(true));
-          *_return_347 = t1647;
-          Goto(label_macro_end_753);
+          // ../../test/torque/test-torque.tq:8:9
+          TNode<BoolT> t1794 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(true)));
+          *_return_333 = implicit_cast<TNode<BoolT>>(t1794);
+          Goto(label_macro_end_1237);
         }
       } else {
-        // ../../test/torque/test-torque.tq:10:9
+        // ../../test/torque/test-torque.tq:10:10
         {
-          // ../../test/torque/test-torque.tq:11:6
-          TNode<BoolT> t1648 = UncheckedCast<BoolT>(from_constexpr6ATbool(false));
-          *_return_347 = t1648;
-          Goto(label_macro_end_753);
+          // ../../test/torque/test-torque.tq:11:7
+          TNode<BoolT> t1795 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(false)));
+          *_return_333 = implicit_cast<TNode<BoolT>>(t1795);
+          Goto(label_macro_end_1237);
         }
       }
     }
   }
-  BIND(label_macro_end_753);
-  return (*_return_347).value();
+  BIND(label_macro_end_1237);
+  return implicit_cast<TNode<BoolT>>((*_return_333).value());
 }
 
 compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::ElementsKindTestHelper2(ElementsKind p_kind) {
-  TVARIABLE(BoolT, _return_348_impl);
-  auto _return_348 = &_return_348_impl;
-  USE(_return_348);
-  Label label_macro_end_754_impl(this, {_return_348});
-  Label* label_macro_end_754 = &label_macro_end_754_impl;
-  USE(label_macro_end_754);
-  // ../../test/torque/test-torque.tq:15:68
+  TVARIABLE(BoolT, _return_334_impl);
+  auto _return_334 = &_return_334_impl;
+  USE(_return_334);
+  Label label_macro_end_1238_impl(this, {_return_334});
+  Label* label_macro_end_1238 = &label_macro_end_1238_impl;
+  USE(label_macro_end_1238);
+  // ../../test/torque/test-torque.tq:15:69
   {
-    // ../../test/torque/test-torque.tq:16:4
-    Label label__False_385_impl(this);
-    Label* label__False_385 = &label__False_385_impl;
-    USE(label__False_385);
-    bool t1649 = ElementsKindEqual(p_kind, UINT8_ELEMENTS);
-    USE(t1649);
-    bool t1650 = ElementsKindEqual(p_kind, UINT16_ELEMENTS);
-    USE(t1650);
-    TNode<BoolT> t1651 = UncheckedCast<BoolT>(from_constexpr6ATbool((t1649 || t1650)));
-    *_return_348 = t1651;
-    Goto(label_macro_end_754);
+    // ../../test/torque/test-torque.tq:16:5
+    Label label__False_470_impl(this);
+    Label* label__False_470 = &label__False_470_impl;
+    USE(label__False_470);
+    bool t1796 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+    USE(implicit_cast<bool>(t1796));
+    bool t1797 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+    USE(implicit_cast<bool>(t1797));
+    TNode<BoolT> t1798 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>((implicit_cast<bool>(t1796) || implicit_cast<bool>(t1797)))));
+    *_return_334 = implicit_cast<TNode<BoolT>>(t1798);
+    Goto(label_macro_end_1238);
   }
-  BIND(label_macro_end_754);
-  return (*_return_348).value();
+  BIND(label_macro_end_1238);
+  return implicit_cast<TNode<BoolT>>((*_return_334).value());
 }
 
 bool TestBuiltinsFromDSLAssembler::ElementsKindTestHelper3(ElementsKind p_kind) {
-  bool _return_349_impl;
-  auto _return_349 = &_return_349_impl;
-  USE(_return_349);
-  Label label_macro_end_755_impl(this, {});
-  Label* label_macro_end_755 = &label_macro_end_755_impl;
-  USE(label_macro_end_755);
-  // ../../test/torque/test-torque.tq:19:78
+  bool _return_335_impl;
+  auto _return_335 = &_return_335_impl;
+  USE(_return_335);
+  Label label_macro_end_1239_impl(this, {});
+  Label* label_macro_end_1239 = &label_macro_end_1239_impl;
+  USE(label_macro_end_1239);
+  // ../../test/torque/test-torque.tq:19:79
   {
-    // ../../test/torque/test-torque.tq:20:4
-    Label label__False_386_impl(this);
-    Label* label__False_386 = &label__False_386_impl;
-    USE(label__False_386);
-    bool t1652 = ElementsKindEqual(p_kind, UINT8_ELEMENTS);
-    USE(t1652);
-    bool t1653 = ElementsKindEqual(p_kind, UINT16_ELEMENTS);
-    USE(t1653);
-    *_return_349 = (t1652 || t1653);
-    Goto(label_macro_end_755);
+    // ../../test/torque/test-torque.tq:20:5
+    Label label__False_471_impl(this);
+    Label* label__False_471 = &label__False_471_impl;
+    USE(label__False_471);
+    bool t1799 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+    USE(implicit_cast<bool>(t1799));
+    bool t1800 = ElementsKindEqual(implicit_cast<ElementsKind>(p_kind), implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+    USE(implicit_cast<bool>(t1800));
+    *_return_335 = implicit_cast<bool>((implicit_cast<bool>(t1799) || implicit_cast<bool>(t1800)));
+    Goto(label_macro_end_1239);
   }
-  BIND(label_macro_end_755);
-  return (*_return_349);
+  BIND(label_macro_end_1239);
+  return implicit_cast<bool>((*_return_335));
 }
 
-void TestBuiltinsFromDSLAssembler::LabelTestHelper1(Label* label_Label1_387) {
-  Label label_macro_end_756_impl(this, {});
-  Label* label_macro_end_756 = &label_macro_end_756_impl;
-  USE(label_macro_end_756);
-  // ../../test/torque/test-torque.tq:24:16
+void TestBuiltinsFromDSLAssembler::LabelTestHelper1(Label* label_Label1_472) {
+  Label label_macro_end_1240_impl(this, {});
+  Label* label_macro_end_1240 = &label_macro_end_1240_impl;
+  USE(label_macro_end_1240);
+  // ../../test/torque/test-torque.tq:24:17
   {
-    // ../../test/torque/test-torque.tq:25:4
-    Goto(label_Label1_387);
-  }
-}
-
-void TestBuiltinsFromDSLAssembler::LabelTestHelper2(Label* label_Label2_388, TVariable<Smi>* Label20_350) {
-  Label label_macro_end_757_impl(this, {});
-  Label* label_macro_end_757 = &label_macro_end_757_impl;
-  USE(label_macro_end_757);
-  // ../../test/torque/test-torque.tq:29:21
-  {
-    // ../../test/torque/test-torque.tq:30:4
-    int31_t t1654 = 42;
-    TNode<Smi> t1655 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1654));
-    *Label20_350 = t1655;
-    Goto(label_Label2_388);
+    // ../../test/torque/test-torque.tq:25:5
+    Goto(label_Label1_472);
   }
 }
 
-void TestBuiltinsFromDSLAssembler::LabelTestHelper3(Label* label_Label3_389, TVariable<String>* Label30_351, TVariable<Smi>* Label31_352) {
-  Label label_macro_end_758_impl(this, {});
-  Label* label_macro_end_758 = &label_macro_end_758_impl;
-  USE(label_macro_end_758);
-  // ../../test/torque/test-torque.tq:34:29
+void TestBuiltinsFromDSLAssembler::LabelTestHelper2(Label* label_Label2_473, TVariable<Smi>* Label20_336) {
+  Label label_macro_end_1241_impl(this, {});
+  Label* label_macro_end_1241 = &label_macro_end_1241_impl;
+  USE(label_macro_end_1241);
+  // ../../test/torque/test-torque.tq:29:22
   {
-    // ../../test/torque/test-torque.tq:35:4
-    const char* t1656 = "foo";
-    TNode<String> t1657 = UncheckedCast<String>(from_constexpr8ATString(t1656));
-    *Label30_351 = t1657;
-    int31_t t1658 = 7;
-    TNode<Smi> t1659 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1658));
-    *Label31_352 = t1659;
-    Goto(label_Label3_389);
+    // ../../test/torque/test-torque.tq:30:5
+    int31_t t1801 = 42;
+    TNode<Smi> t1802 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1801)));
+    *Label20_336 = implicit_cast<TNode<Smi>>(t1802);
+    Goto(label_Label2_473);
+  }
+}
+
+void TestBuiltinsFromDSLAssembler::LabelTestHelper3(Label* label_Label3_474, TVariable<String>* Label30_337, TVariable<Smi>* Label31_338) {
+  Label label_macro_end_1242_impl(this, {});
+  Label* label_macro_end_1242 = &label_macro_end_1242_impl;
+  USE(label_macro_end_1242);
+  // ../../test/torque/test-torque.tq:34:30
+  {
+    // ../../test/torque/test-torque.tq:35:5
+    const char* t1803 = "foo";
+    TNode<String> t1804 = UncheckedCast<String>(from_constexpr8ATString(implicit_cast<const char*>(t1803)));
+    *Label30_337 = implicit_cast<TNode<String>>(t1804);
+    int31_t t1805 = 7;
+    TNode<Smi> t1806 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1805)));
+    *Label31_338 = implicit_cast<TNode<Smi>>(t1806);
+    Goto(label_Label3_474);
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestConstexpr1() {
-  Label label_macro_end_759_impl(this, {});
-  Label* label_macro_end_759 = &label_macro_end_759_impl;
-  USE(label_macro_end_759);
-  // ../../test/torque/test-torque.tq:38:25
+  Label label_macro_end_1243_impl(this, {});
+  Label* label_macro_end_1243 = &label_macro_end_1243_impl;
+  USE(label_macro_end_1243);
+  // ../../test/torque/test-torque.tq:38:26
   {
-    // ../../test/torque/test-torque.tq:39:4
-    Label label__True_390_impl(this);
-    Label* label__True_390 = &label__True_390_impl;
-    USE(label__True_390);
-    Label label__False_391_impl(this);
-    Label* label__False_391 = &label__False_391_impl;
-    USE(label__False_391);
-    bool t1660 = IsFastElementsKind(PACKED_SMI_ELEMENTS);
-    USE(t1660);
-    TNode<BoolT> t1661 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1660));
-    USE(t1661);
-    Branch(t1661, label__True_390, label__False_391);
-    BIND(label__False_391);
-    Print("assert 'from_constexpr<bool>(IsFastElementsKind(PACKED_SMI_ELEMENTS))' failed at ../../test/torque/test-torque.tq:39:4");
+    // ../../test/torque/test-torque.tq:39:5
+    Label label__True_475_impl(this);
+    Label* label__True_475 = &label__True_475_impl;
+    USE(label__True_475);
+    Label label__False_476_impl(this);
+    Label* label__False_476 = &label__False_476_impl;
+    USE(label__False_476);
+    bool t1807 = IsFastElementsKind(implicit_cast<ElementsKind>(PACKED_SMI_ELEMENTS));
+    USE(implicit_cast<bool>(t1807));
+    TNode<BoolT> t1808 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1807)));
+    USE(implicit_cast<TNode<BoolT>>(t1808));
+    Branch(implicit_cast<TNode<BoolT>>(t1808), label__True_475, label__False_476);
+    BIND(label__False_476);
+    Print("assert 'from_constexpr<bool>(IsFastElementsKind(PACKED_SMI_ELEMENTS))' failed at ../../test/torque/test-torque.tq:39:5");
     Unreachable();
-    BIND(label__True_390);
+    BIND(label__True_475);
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestConstexprIf() {
-  Label label_macro_end_760_impl(this, {});
-  Label* label_macro_end_760 = &label_macro_end_760_impl;
-  USE(label_macro_end_760);
-  // ../../test/torque/test-torque.tq:42:26
+  Label label_macro_end_1244_impl(this, {});
+  Label* label_macro_end_1244 = &label_macro_end_1244_impl;
+  USE(label_macro_end_1244);
+  // ../../test/torque/test-torque.tq:42:27
   {
-    // ../../test/torque/test-torque.tq:43:4
-    Label label__True_392_impl(this);
-    Label* label__True_392 = &label__True_392_impl;
-    USE(label__True_392);
-    Label label__False_393_impl(this);
-    Label* label__False_393 = &label__False_393_impl;
-    USE(label__False_393);
-    TNode<BoolT> t1662 = UncheckedCast<BoolT>(ElementsKindTestHelper1(UINT8_ELEMENTS));
-    USE(t1662);
-    Branch(t1662, label__True_392, label__False_393);
-    BIND(label__False_393);
-    Print("assert 'ElementsKindTestHelper1(UINT8_ELEMENTS)' failed at ../../test/torque/test-torque.tq:43:4");
+    // ../../test/torque/test-torque.tq:43:5
+    Label label__True_477_impl(this);
+    Label* label__True_477 = &label__True_477_impl;
+    USE(label__True_477);
+    Label label__False_478_impl(this);
+    Label* label__False_478 = &label__False_478_impl;
+    USE(label__False_478);
+    TNode<BoolT> t1809 = UncheckedCast<BoolT>(ElementsKindTestHelper1(implicit_cast<ElementsKind>(UINT8_ELEMENTS)));
+    USE(implicit_cast<TNode<BoolT>>(t1809));
+    Branch(implicit_cast<TNode<BoolT>>(t1809), label__True_477, label__False_478);
+    BIND(label__False_478);
+    Print("assert 'ElementsKindTestHelper1(UINT8_ELEMENTS)' failed at ../../test/torque/test-torque.tq:43:5");
     Unreachable();
-    BIND(label__True_392);
-    // ../../test/torque/test-torque.tq:44:4
-    Label label__True_394_impl(this);
-    Label* label__True_394 = &label__True_394_impl;
-    USE(label__True_394);
-    Label label__False_395_impl(this);
-    Label* label__False_395 = &label__False_395_impl;
-    USE(label__False_395);
-    TNode<BoolT> t1663 = UncheckedCast<BoolT>(ElementsKindTestHelper1(UINT16_ELEMENTS));
-    USE(t1663);
-    Branch(t1663, label__True_394, label__False_395);
-    BIND(label__False_395);
-    Print("assert 'ElementsKindTestHelper1(UINT16_ELEMENTS)' failed at ../../test/torque/test-torque.tq:44:4");
+    BIND(label__True_477);
+    // ../../test/torque/test-torque.tq:44:5
+    Label label__True_479_impl(this);
+    Label* label__True_479 = &label__True_479_impl;
+    USE(label__True_479);
+    Label label__False_480_impl(this);
+    Label* label__False_480 = &label__False_480_impl;
+    USE(label__False_480);
+    TNode<BoolT> t1810 = UncheckedCast<BoolT>(ElementsKindTestHelper1(implicit_cast<ElementsKind>(UINT16_ELEMENTS)));
+    USE(implicit_cast<TNode<BoolT>>(t1810));
+    Branch(implicit_cast<TNode<BoolT>>(t1810), label__True_479, label__False_480);
+    BIND(label__False_480);
+    Print("assert 'ElementsKindTestHelper1(UINT16_ELEMENTS)' failed at ../../test/torque/test-torque.tq:44:5");
     Unreachable();
-    BIND(label__True_394);
-    // ../../test/torque/test-torque.tq:45:4
-    Label label__True_396_impl(this);
-    Label* label__True_396 = &label__True_396_impl;
-    USE(label__True_396);
-    Label label__False_397_impl(this);
-    Label* label__False_397 = &label__False_397_impl;
-    USE(label__False_397);
-    TNode<BoolT> t1664 = UncheckedCast<BoolT>(ElementsKindTestHelper1(UINT32_ELEMENTS));
-    USE(t1664);
-    TNode<BoolT> t1665 = UncheckedCast<BoolT>(Word32BinaryNot(t1664));
-    USE(t1665);
-    Branch(t1665, label__True_396, label__False_397);
-    BIND(label__False_397);
-    Print("assert '!ElementsKindTestHelper1(UINT32_ELEMENTS)' failed at ../../test/torque/test-torque.tq:45:4");
+    BIND(label__True_479);
+    // ../../test/torque/test-torque.tq:45:5
+    Label label__True_481_impl(this);
+    Label* label__True_481 = &label__True_481_impl;
+    USE(label__True_481);
+    Label label__False_482_impl(this);
+    Label* label__False_482 = &label__False_482_impl;
+    USE(label__False_482);
+    TNode<BoolT> t1811 = UncheckedCast<BoolT>(ElementsKindTestHelper1(implicit_cast<ElementsKind>(UINT32_ELEMENTS)));
+    USE(implicit_cast<TNode<BoolT>>(t1811));
+    TNode<BoolT> t1812 = UncheckedCast<BoolT>(Word32BinaryNot(implicit_cast<TNode<BoolT>>(t1811)));
+    USE(implicit_cast<TNode<BoolT>>(t1812));
+    Branch(implicit_cast<TNode<BoolT>>(t1812), label__True_481, label__False_482);
+    BIND(label__False_482);
+    Print("assert '!ElementsKindTestHelper1(UINT32_ELEMENTS)' failed at ../../test/torque/test-torque.tq:45:5");
     Unreachable();
-    BIND(label__True_396);
+    BIND(label__True_481);
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestConstexprReturn() {
-  Label label_macro_end_761_impl(this, {});
-  Label* label_macro_end_761 = &label_macro_end_761_impl;
-  USE(label_macro_end_761);
-  // ../../test/torque/test-torque.tq:48:30
+  Label label_macro_end_1245_impl(this, {});
+  Label* label_macro_end_1245 = &label_macro_end_1245_impl;
+  USE(label_macro_end_1245);
+  // ../../test/torque/test-torque.tq:48:31
   {
-    // ../../test/torque/test-torque.tq:49:4
-    Label label__True_398_impl(this);
-    Label* label__True_398 = &label__True_398_impl;
-    USE(label__True_398);
-    Label label__False_399_impl(this);
-    Label* label__False_399 = &label__False_399_impl;
-    USE(label__False_399);
-    bool t1666 = ElementsKindTestHelper3(UINT8_ELEMENTS);
-    USE(t1666);
-    TNode<BoolT> t1667 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1666));
-    USE(t1667);
-    Branch(t1667, label__True_398, label__False_399);
-    BIND(label__False_399);
-    Print("assert 'from_constexpr<bool>(ElementsKindTestHelper3(UINT8_ELEMENTS))' failed at ../../test/torque/test-torque.tq:49:4");
+    // ../../test/torque/test-torque.tq:49:5
+    Label label__True_483_impl(this);
+    Label* label__True_483 = &label__True_483_impl;
+    USE(label__True_483);
+    Label label__False_484_impl(this);
+    Label* label__False_484 = &label__False_484_impl;
+    USE(label__False_484);
+    bool t1813 = ElementsKindTestHelper3(implicit_cast<ElementsKind>(UINT8_ELEMENTS));
+    USE(implicit_cast<bool>(t1813));
+    TNode<BoolT> t1814 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1813)));
+    USE(implicit_cast<TNode<BoolT>>(t1814));
+    Branch(implicit_cast<TNode<BoolT>>(t1814), label__True_483, label__False_484);
+    BIND(label__False_484);
+    Print("assert 'from_constexpr<bool>(ElementsKindTestHelper3(UINT8_ELEMENTS))' failed at ../../test/torque/test-torque.tq:49:5");
     Unreachable();
-    BIND(label__True_398);
-    // ../../test/torque/test-torque.tq:50:4
-    Label label__True_400_impl(this);
-    Label* label__True_400 = &label__True_400_impl;
-    USE(label__True_400);
-    Label label__False_401_impl(this);
-    Label* label__False_401 = &label__False_401_impl;
-    USE(label__False_401);
-    bool t1668 = ElementsKindTestHelper3(UINT16_ELEMENTS);
-    USE(t1668);
-    TNode<BoolT> t1669 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1668));
-    USE(t1669);
-    Branch(t1669, label__True_400, label__False_401);
-    BIND(label__False_401);
-    Print("assert 'from_constexpr<bool>(ElementsKindTestHelper3(UINT16_ELEMENTS))' failed at ../../test/torque/test-torque.tq:50:4");
+    BIND(label__True_483);
+    // ../../test/torque/test-torque.tq:50:5
+    Label label__True_485_impl(this);
+    Label* label__True_485 = &label__True_485_impl;
+    USE(label__True_485);
+    Label label__False_486_impl(this);
+    Label* label__False_486 = &label__False_486_impl;
+    USE(label__False_486);
+    bool t1815 = ElementsKindTestHelper3(implicit_cast<ElementsKind>(UINT16_ELEMENTS));
+    USE(implicit_cast<bool>(t1815));
+    TNode<BoolT> t1816 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1815)));
+    USE(implicit_cast<TNode<BoolT>>(t1816));
+    Branch(implicit_cast<TNode<BoolT>>(t1816), label__True_485, label__False_486);
+    BIND(label__False_486);
+    Print("assert 'from_constexpr<bool>(ElementsKindTestHelper3(UINT16_ELEMENTS))' failed at ../../test/torque/test-torque.tq:50:5");
     Unreachable();
-    BIND(label__True_400);
-    // ../../test/torque/test-torque.tq:51:4
-    Label label__True_402_impl(this);
-    Label* label__True_402 = &label__True_402_impl;
-    USE(label__True_402);
-    Label label__False_403_impl(this);
-    Label* label__False_403 = &label__False_403_impl;
-    USE(label__False_403);
-    bool t1670 = ElementsKindTestHelper3(UINT32_ELEMENTS);
-    USE(t1670);
-    TNode<BoolT> t1671 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1670));
-    USE(t1671);
-    TNode<BoolT> t1672 = UncheckedCast<BoolT>(Word32BinaryNot(t1671));
-    USE(t1672);
-    Branch(t1672, label__True_402, label__False_403);
-    BIND(label__False_403);
-    Print("assert '!from_constexpr<bool>(ElementsKindTestHelper3(UINT32_ELEMENTS))' failed at ../../test/torque/test-torque.tq:51:4");
+    BIND(label__True_485);
+    // ../../test/torque/test-torque.tq:51:5
+    Label label__True_487_impl(this);
+    Label* label__True_487 = &label__True_487_impl;
+    USE(label__True_487);
+    Label label__False_488_impl(this);
+    Label* label__False_488 = &label__False_488_impl;
+    USE(label__False_488);
+    bool t1817 = ElementsKindTestHelper3(implicit_cast<ElementsKind>(UINT32_ELEMENTS));
+    USE(implicit_cast<bool>(t1817));
+    TNode<BoolT> t1818 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1817)));
+    USE(implicit_cast<TNode<BoolT>>(t1818));
+    TNode<BoolT> t1819 = UncheckedCast<BoolT>(Word32BinaryNot(implicit_cast<TNode<BoolT>>(t1818)));
+    USE(implicit_cast<TNode<BoolT>>(t1819));
+    Branch(implicit_cast<TNode<BoolT>>(t1819), label__True_487, label__False_488);
+    BIND(label__False_488);
+    Print("assert '!from_constexpr<bool>(ElementsKindTestHelper3(UINT32_ELEMENTS))' failed at ../../test/torque/test-torque.tq:51:5");
     Unreachable();
-    BIND(label__True_402);
-    // ../../test/torque/test-torque.tq:52:4
-    Label label__True_404_impl(this);
-    Label* label__True_404 = &label__True_404_impl;
-    USE(label__True_404);
-    Label label__False_405_impl(this);
-    Label* label__False_405 = &label__False_405_impl;
-    USE(label__False_405);
-    bool t1673 = ElementsKindTestHelper3(UINT32_ELEMENTS);
-    USE(t1673);
-    bool t1674 = ConstexprBoolNot(t1673);
-    USE(t1674);
-    TNode<BoolT> t1675 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1674));
-    USE(t1675);
-    Branch(t1675, label__True_404, label__False_405);
-    BIND(label__False_405);
-    Print("assert 'from_constexpr<bool>(!ElementsKindTestHelper3(UINT32_ELEMENTS))' failed at ../../test/torque/test-torque.tq:52:4");
+    BIND(label__True_487);
+    // ../../test/torque/test-torque.tq:52:5
+    Label label__True_489_impl(this);
+    Label* label__True_489 = &label__True_489_impl;
+    USE(label__True_489);
+    Label label__False_490_impl(this);
+    Label* label__False_490 = &label__False_490_impl;
+    USE(label__False_490);
+    bool t1820 = ElementsKindTestHelper3(implicit_cast<ElementsKind>(UINT32_ELEMENTS));
+    USE(implicit_cast<bool>(t1820));
+    bool t1821 = ConstexprBoolNot(implicit_cast<bool>(t1820));
+    USE(implicit_cast<bool>(t1821));
+    TNode<BoolT> t1822 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1821)));
+    USE(implicit_cast<TNode<BoolT>>(t1822));
+    Branch(implicit_cast<TNode<BoolT>>(t1822), label__True_489, label__False_490);
+    BIND(label__False_490);
+    Print("assert 'from_constexpr<bool>(!ElementsKindTestHelper3(UINT32_ELEMENTS))' failed at ../../test/torque/test-torque.tq:52:5");
     Unreachable();
-    BIND(label__True_404);
+    BIND(label__True_489);
   }
 }
 
 compiler::TNode<Oddball> TestBuiltinsFromDSLAssembler::TestGotoLabel() {
-  TVARIABLE(Oddball, _return_353_impl);
-  auto _return_353 = &_return_353_impl;
-  USE(_return_353);
-  Label label_macro_end_762_impl(this, {_return_353});
-  Label* label_macro_end_762 = &label_macro_end_762_impl;
-  USE(label_macro_end_762);
-  // ../../test/torque/test-torque.tq:55:33
+  TVARIABLE(Oddball, _return_339_impl);
+  auto _return_339 = &_return_339_impl;
+  USE(_return_339);
+  Label label_macro_end_1246_impl(this, {_return_339});
+  Label* label_macro_end_1246 = &label_macro_end_1246_impl;
+  USE(label_macro_end_1246);
+  // ../../test/torque/test-torque.tq:55:34
   {
-    // ../../test/torque/test-torque.tq:56:4
+    // ../../test/torque/test-torque.tq:56:5
     {
-      Label label_try_done_639_763_impl(this);
-      Label* label_try_done_639_763 = &label_try_done_639_763_impl;
-      USE(label_try_done_639_763);
-      Label label_Label1_406_impl(this);
-      Label* label_Label1_406 = &label_Label1_406_impl;
-      USE(label_Label1_406);
-      Label label_try_begin_640_764_impl(this);
-      Label* label_try_begin_640_764 = &label_try_begin_640_764_impl;
-      USE(label_try_begin_640_764);
-      Goto(label_try_begin_640_764);
-      if (label_try_begin_640_764->is_used())
+      Label label_try_done_824_1247_impl(this);
+      Label* label_try_done_824_1247 = &label_try_done_824_1247_impl;
+      USE(label_try_done_824_1247);
+      Label label_Label1_491_impl(this);
+      Label* label_Label1_491 = &label_Label1_491_impl;
+      USE(label_Label1_491);
+      Label label_try_begin_825_1248_impl(this);
+      Label* label_try_begin_825_1248 = &label_try_begin_825_1248_impl;
+      USE(label_try_begin_825_1248);
+      Goto(label_try_begin_825_1248);
+      if (label_try_begin_825_1248->is_used())
       {
-        BIND(label_try_begin_640_764);
-        // ../../test/torque/test-torque.tq:56:8
+        BIND(label_try_begin_825_1248);
+        // ../../test/torque/test-torque.tq:56:9
         {
-          // ../../test/torque/test-torque.tq:57:6
-          LabelTestHelper1(label_Label1_406);
+          // ../../test/torque/test-torque.tq:57:7
+          LabelTestHelper1(label_Label1_491);
         }
       }
-      if (label_Label1_406->is_used())
+      if (label_Label1_491->is_used())
       {
-        BIND(label_Label1_406);
-        // ../../test/torque/test-torque.tq:59:17
+        BIND(label_Label1_491);
+        // ../../test/torque/test-torque.tq:59:18
         {
-          // ../../test/torque/test-torque.tq:60:6
-          *_return_353 = True();
-          Goto(label_macro_end_762);
+          // ../../test/torque/test-torque.tq:60:7
+          *_return_339 = implicit_cast<TNode<Oddball>>(True());
+          Goto(label_macro_end_1246);
         }
       }
     }
   }
-  BIND(label_macro_end_762);
-  return (*_return_353).value();
+  BIND(label_macro_end_1246);
+  return implicit_cast<TNode<Oddball>>((*_return_339).value());
 }
 
 compiler::TNode<Oddball> TestBuiltinsFromDSLAssembler::TestGotoLabelWithOneParameter() {
-  TVARIABLE(Oddball, _return_354_impl);
-  auto _return_354 = &_return_354_impl;
-  USE(_return_354);
-  Label label_macro_end_765_impl(this, {_return_354});
-  Label* label_macro_end_765 = &label_macro_end_765_impl;
-  USE(label_macro_end_765);
-  // ../../test/torque/test-torque.tq:64:49
+  TVARIABLE(Oddball, _return_340_impl);
+  auto _return_340 = &_return_340_impl;
+  USE(_return_340);
+  Label label_macro_end_1249_impl(this, {_return_340});
+  Label* label_macro_end_1249 = &label_macro_end_1249_impl;
+  USE(label_macro_end_1249);
+  // ../../test/torque/test-torque.tq:64:50
   {
-    // ../../test/torque/test-torque.tq:65:4
+    // ../../test/torque/test-torque.tq:65:5
     {
-      Label label_try_done_641_766_impl(this);
-      Label* label_try_done_641_766 = &label_try_done_641_766_impl;
-      USE(label_try_done_641_766);
-      Label label_Label2_407_impl(this);
-      Label* label_Label2_407 = &label_Label2_407_impl;
-      USE(label_Label2_407);
-      TVARIABLE(Smi, smi_355_impl);
-      auto smi_355 = &smi_355_impl;
-      USE(smi_355);
-      Label label_try_begin_642_767_impl(this);
-      Label* label_try_begin_642_767 = &label_try_begin_642_767_impl;
-      USE(label_try_begin_642_767);
-      Goto(label_try_begin_642_767);
-      if (label_try_begin_642_767->is_used())
+      Label label_try_done_826_1250_impl(this);
+      Label* label_try_done_826_1250 = &label_try_done_826_1250_impl;
+      USE(label_try_done_826_1250);
+      Label label_Label2_492_impl(this);
+      Label* label_Label2_492 = &label_Label2_492_impl;
+      USE(label_Label2_492);
+      TVARIABLE(Smi, smi_341_impl);
+      auto smi_341 = &smi_341_impl;
+      USE(smi_341);
+      Label label_try_begin_827_1251_impl(this);
+      Label* label_try_begin_827_1251 = &label_try_begin_827_1251_impl;
+      USE(label_try_begin_827_1251);
+      Goto(label_try_begin_827_1251);
+      if (label_try_begin_827_1251->is_used())
       {
-        BIND(label_try_begin_642_767);
-        // ../../test/torque/test-torque.tq:65:8
+        BIND(label_try_begin_827_1251);
+        // ../../test/torque/test-torque.tq:65:9
         {
-          // ../../test/torque/test-torque.tq:66:6
-          LabelTestHelper2(label_Label2_407, smi_355);
+          // ../../test/torque/test-torque.tq:66:7
+          LabelTestHelper2(label_Label2_492, smi_341);
         }
       }
-      if (label_Label2_407->is_used())
+      if (label_Label2_492->is_used())
       {
-        BIND(label_Label2_407);
-        // ../../test/torque/test-torque.tq:68:27
+        BIND(label_Label2_492);
+        // ../../test/torque/test-torque.tq:68:28
         {
-          // ../../test/torque/test-torque.tq:69:6
-          Label label__True_408_impl(this);
-          Label* label__True_408 = &label__True_408_impl;
-          USE(label__True_408);
-          Label label__False_409_impl(this);
-          Label* label__False_409 = &label__False_409_impl;
-          USE(label__False_409);
-          int31_t t1676 = 42;
-          TNode<Smi> t1677 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1676));
-          TNode<BoolT> t1678 = UncheckedCast<BoolT>(SmiEqual((*smi_355).value(), t1677));
-          USE(t1678);
-          Branch(t1678, label__True_408, label__False_409);
-          BIND(label__False_409);
-          Print("assert 'smi == 42' failed at ../../test/torque/test-torque.tq:69:6");
+          // ../../test/torque/test-torque.tq:69:7
+          Label label__True_493_impl(this);
+          Label* label__True_493 = &label__True_493_impl;
+          USE(label__True_493);
+          Label label__False_494_impl(this);
+          Label* label__False_494 = &label__False_494_impl;
+          USE(label__False_494);
+          int31_t t1823 = 42;
+          TNode<Smi> t1824 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1823)));
+          TNode<BoolT> t1825 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*smi_341).value()), implicit_cast<TNode<Smi>>(t1824)));
+          USE(implicit_cast<TNode<BoolT>>(t1825));
+          Branch(implicit_cast<TNode<BoolT>>(t1825), label__True_493, label__False_494);
+          BIND(label__False_494);
+          Print("assert 'smi == 42' failed at ../../test/torque/test-torque.tq:69:7");
           Unreachable();
-          BIND(label__True_408);
-          // ../../test/torque/test-torque.tq:70:6
-          *_return_354 = True();
-          Goto(label_macro_end_765);
+          BIND(label__True_493);
+          // ../../test/torque/test-torque.tq:70:7
+          *_return_340 = implicit_cast<TNode<Oddball>>(True());
+          Goto(label_macro_end_1249);
         }
       }
     }
   }
-  BIND(label_macro_end_765);
-  return (*_return_354).value();
+  BIND(label_macro_end_1249);
+  return implicit_cast<TNode<Oddball>>((*_return_340).value());
 }
 
 compiler::TNode<Oddball> TestBuiltinsFromDSLAssembler::TestGotoLabelWithTwoParameters() {
-  TVARIABLE(Oddball, _return_356_impl);
-  auto _return_356 = &_return_356_impl;
-  USE(_return_356);
-  Label label_macro_end_768_impl(this, {_return_356});
-  Label* label_macro_end_768 = &label_macro_end_768_impl;
-  USE(label_macro_end_768);
-  // ../../test/torque/test-torque.tq:74:50
+  TVARIABLE(Oddball, _return_342_impl);
+  auto _return_342 = &_return_342_impl;
+  USE(_return_342);
+  Label label_macro_end_1252_impl(this, {_return_342});
+  Label* label_macro_end_1252 = &label_macro_end_1252_impl;
+  USE(label_macro_end_1252);
+  // ../../test/torque/test-torque.tq:74:51
   {
-    // ../../test/torque/test-torque.tq:75:4
+    // ../../test/torque/test-torque.tq:75:5
     {
-      Label label_try_done_643_769_impl(this);
-      Label* label_try_done_643_769 = &label_try_done_643_769_impl;
-      USE(label_try_done_643_769);
-      Label label_Label3_410_impl(this);
-      Label* label_Label3_410 = &label_Label3_410_impl;
-      USE(label_Label3_410);
-      TVARIABLE(String, str_357_impl);
-      auto str_357 = &str_357_impl;
-      USE(str_357);
-      TVARIABLE(Smi, smi_358_impl);
-      auto smi_358 = &smi_358_impl;
-      USE(smi_358);
-      Label label_try_begin_644_770_impl(this);
-      Label* label_try_begin_644_770 = &label_try_begin_644_770_impl;
-      USE(label_try_begin_644_770);
-      Goto(label_try_begin_644_770);
-      if (label_try_begin_644_770->is_used())
+      Label label_try_done_828_1253_impl(this);
+      Label* label_try_done_828_1253 = &label_try_done_828_1253_impl;
+      USE(label_try_done_828_1253);
+      Label label_Label3_495_impl(this);
+      Label* label_Label3_495 = &label_Label3_495_impl;
+      USE(label_Label3_495);
+      TVARIABLE(String, str_343_impl);
+      auto str_343 = &str_343_impl;
+      USE(str_343);
+      TVARIABLE(Smi, smi_344_impl);
+      auto smi_344 = &smi_344_impl;
+      USE(smi_344);
+      Label label_try_begin_829_1254_impl(this);
+      Label* label_try_begin_829_1254 = &label_try_begin_829_1254_impl;
+      USE(label_try_begin_829_1254);
+      Goto(label_try_begin_829_1254);
+      if (label_try_begin_829_1254->is_used())
       {
-        BIND(label_try_begin_644_770);
-        // ../../test/torque/test-torque.tq:75:8
+        BIND(label_try_begin_829_1254);
+        // ../../test/torque/test-torque.tq:75:9
         {
-          // ../../test/torque/test-torque.tq:76:6
-          LabelTestHelper3(label_Label3_410, str_357, smi_358);
+          // ../../test/torque/test-torque.tq:76:7
+          LabelTestHelper3(label_Label3_495, str_343, smi_344);
         }
       }
-      if (label_Label3_410->is_used())
+      if (label_Label3_495->is_used())
       {
-        BIND(label_Label3_410);
-        // ../../test/torque/test-torque.tq:78:40
+        BIND(label_Label3_495);
+        // ../../test/torque/test-torque.tq:78:41
         {
-          // ../../test/torque/test-torque.tq:79:6
-          Label label__True_411_impl(this);
-          Label* label__True_411 = &label__True_411_impl;
-          USE(label__True_411);
-          Label label__False_412_impl(this);
-          Label* label__False_412 = &label__False_412_impl;
-          USE(label__False_412);
-          const char* t1679 = "foo";
-          TNode<Object> t1680 = UncheckedCast<Object>(from_constexpr22UT12ATHeapObject5ATSmi(t1679));
-          TNode<BoolT> t1681 = UncheckedCast<BoolT>(WordEqual((*str_357).value(), t1680));
-          USE(t1681);
-          Branch(t1681, label__True_411, label__False_412);
-          BIND(label__False_412);
-          Print("assert 'str == 'foo'' failed at ../../test/torque/test-torque.tq:79:6");
+          // ../../test/torque/test-torque.tq:79:7
+          Label label__True_496_impl(this);
+          Label* label__True_496 = &label__True_496_impl;
+          USE(label__True_496);
+          Label label__False_497_impl(this);
+          Label* label__False_497 = &label__False_497_impl;
+          USE(label__False_497);
+          const char* t1826 = "foo";
+          TNode<Object> t1827 = UncheckedCast<Object>(from_constexpr22UT12ATHeapObject5ATSmi(implicit_cast<const char*>(t1826)));
+          TNode<BoolT> t1828 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>((*str_343).value()), implicit_cast<TNode<Object>>(t1827)));
+          USE(implicit_cast<TNode<BoolT>>(t1828));
+          Branch(implicit_cast<TNode<BoolT>>(t1828), label__True_496, label__False_497);
+          BIND(label__False_497);
+          Print("assert 'str == 'foo'' failed at ../../test/torque/test-torque.tq:79:7");
           Unreachable();
-          BIND(label__True_411);
-          // ../../test/torque/test-torque.tq:80:6
-          Label label__True_413_impl(this);
-          Label* label__True_413 = &label__True_413_impl;
-          USE(label__True_413);
-          Label label__False_414_impl(this);
-          Label* label__False_414 = &label__False_414_impl;
-          USE(label__False_414);
-          int31_t t1682 = 7;
-          TNode<Smi> t1683 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1682));
-          TNode<BoolT> t1684 = UncheckedCast<BoolT>(SmiEqual((*smi_358).value(), t1683));
-          USE(t1684);
-          Branch(t1684, label__True_413, label__False_414);
-          BIND(label__False_414);
-          Print("assert 'smi == 7' failed at ../../test/torque/test-torque.tq:80:6");
+          BIND(label__True_496);
+          // ../../test/torque/test-torque.tq:80:7
+          Label label__True_498_impl(this);
+          Label* label__True_498 = &label__True_498_impl;
+          USE(label__True_498);
+          Label label__False_499_impl(this);
+          Label* label__False_499 = &label__False_499_impl;
+          USE(label__False_499);
+          int31_t t1829 = 7;
+          TNode<Smi> t1830 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1829)));
+          TNode<BoolT> t1831 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*smi_344).value()), implicit_cast<TNode<Smi>>(t1830)));
+          USE(implicit_cast<TNode<BoolT>>(t1831));
+          Branch(implicit_cast<TNode<BoolT>>(t1831), label__True_498, label__False_499);
+          BIND(label__False_499);
+          Print("assert 'smi == 7' failed at ../../test/torque/test-torque.tq:80:7");
           Unreachable();
-          BIND(label__True_413);
-          // ../../test/torque/test-torque.tq:81:6
-          *_return_356 = True();
-          Goto(label_macro_end_768);
+          BIND(label__True_498);
+          // ../../test/torque/test-torque.tq:81:7
+          *_return_342 = implicit_cast<TNode<Oddball>>(True());
+          Goto(label_macro_end_1252);
         }
       }
     }
   }
-  BIND(label_macro_end_768);
-  return (*_return_356).value();
+  BIND(label_macro_end_1252);
+  return implicit_cast<TNode<Oddball>>((*_return_342).value());
 }
 
 TF_BUILTIN(GenericBuiltinTest22UT12ATHeapObject5ATSmi, TestBuiltinsFromDSLAssembler) {
@@ -499,453 +500,465 @@ TF_BUILTIN(GenericBuiltinTest22UT12ATHeapObject5ATSmi, TestBuiltinsFromDSLAssemb
   USE(p_c);
   TNode<Object> p_param = UncheckedCast<Object>(Parameter(Descriptor::kParam));
   USE(p_param);
-  // ../../test/torque/test-torque.tq:89:64
+  // ../../test/torque/test-torque.tq:89:65
   {
-    // ../../test/torque/test-torque.tq:90:4
-    Return(p_param);
+    // ../../test/torque/test-torque.tq:90:5
+    Return(implicit_cast<TNode<Object>>(p_param));
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestBuiltinSpecialization(TNode<Context> p_c) {
-  Label label_macro_end_771_impl(this, {});
-  Label* label_macro_end_771 = &label_macro_end_771_impl;
-  USE(label_macro_end_771);
-  // ../../test/torque/test-torque.tq:93:46
+  Label label_macro_end_1255_impl(this, {});
+  Label* label_macro_end_1255 = &label_macro_end_1255_impl;
+  USE(label_macro_end_1255);
+  // ../../test/torque/test-torque.tq:93:47
   {
-    // ../../test/torque/test-torque.tq:94:4
-    Label label__True_415_impl(this);
-    Label* label__True_415 = &label__True_415_impl;
-    USE(label__True_415);
-    Label label__False_416_impl(this);
-    Label* label__False_416 = &label__False_416_impl;
-    USE(label__False_416);
-    int31_t t1685 = 0;
-    TNode<Smi> t1686 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1685));
-    TNode<Object> t1687 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest5ATSmi, p_c, t1686));
-    USE(t1687);
-    TNode<BoolT> t1688 = UncheckedCast<BoolT>(WordEqual(t1687, Null()));
-    USE(t1688);
-    Branch(t1688, label__True_415, label__False_416);
-    BIND(label__False_416);
-    Print("assert 'GenericBuiltinTest<Smi>(c, 0) == Null' failed at ../../test/torque/test-torque.tq:94:4");
+    // ../../test/torque/test-torque.tq:94:5
+    Label label__True_500_impl(this);
+    Label* label__True_500 = &label__True_500_impl;
+    USE(label__True_500);
+    Label label__False_501_impl(this);
+    Label* label__False_501 = &label__False_501_impl;
+    USE(label__False_501);
+    int31_t t1832 = 0;
+    TNode<Smi> t1833 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1832)));
+    TNode<Object> t1834 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest5ATSmi, implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Smi>>(t1833)));
+    USE(implicit_cast<TNode<Object>>(t1834));
+    TNode<BoolT> t1835 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1834), implicit_cast<TNode<Object>>(Null())));
+    USE(implicit_cast<TNode<BoolT>>(t1835));
+    Branch(implicit_cast<TNode<BoolT>>(t1835), label__True_500, label__False_501);
+    BIND(label__False_501);
+    Print("assert 'GenericBuiltinTest<Smi>(c, 0) == Null' failed at ../../test/torque/test-torque.tq:94:5");
     Unreachable();
-    BIND(label__True_415);
-    // ../../test/torque/test-torque.tq:95:4
-    Label label__True_417_impl(this);
-    Label* label__True_417 = &label__True_417_impl;
-    USE(label__True_417);
-    Label label__False_418_impl(this);
-    Label* label__False_418 = &label__False_418_impl;
-    USE(label__False_418);
-    int31_t t1689 = 1;
-    TNode<Smi> t1690 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1689));
-    TNode<Object> t1691 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest5ATSmi, p_c, t1690));
-    USE(t1691);
-    TNode<BoolT> t1692 = UncheckedCast<BoolT>(WordEqual(t1691, Null()));
-    USE(t1692);
-    Branch(t1692, label__True_417, label__False_418);
-    BIND(label__False_418);
-    Print("assert 'GenericBuiltinTest<Smi>(c, 1) == Null' failed at ../../test/torque/test-torque.tq:95:4");
+    BIND(label__True_500);
+    // ../../test/torque/test-torque.tq:95:5
+    Label label__True_502_impl(this);
+    Label* label__True_502 = &label__True_502_impl;
+    USE(label__True_502);
+    Label label__False_503_impl(this);
+    Label* label__False_503 = &label__False_503_impl;
+    USE(label__False_503);
+    int31_t t1836 = 1;
+    TNode<Smi> t1837 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1836)));
+    TNode<Object> t1838 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest5ATSmi, implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Smi>>(t1837)));
+    USE(implicit_cast<TNode<Object>>(t1838));
+    TNode<BoolT> t1839 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1838), implicit_cast<TNode<Object>>(Null())));
+    USE(implicit_cast<TNode<BoolT>>(t1839));
+    Branch(implicit_cast<TNode<BoolT>>(t1839), label__True_502, label__False_503);
+    BIND(label__False_503);
+    Print("assert 'GenericBuiltinTest<Smi>(c, 1) == Null' failed at ../../test/torque/test-torque.tq:95:5");
     Unreachable();
-    BIND(label__True_417);
-    // ../../test/torque/test-torque.tq:96:4
-    Label label__True_419_impl(this);
-    Label* label__True_419 = &label__True_419_impl;
-    USE(label__True_419);
-    Label label__False_420_impl(this);
-    Label* label__False_420 = &label__False_420_impl;
-    USE(label__False_420);
-    TNode<Object> t1693 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi, p_c, Undefined()));
-    USE(t1693);
-    TNode<BoolT> t1694 = UncheckedCast<BoolT>(WordEqual(t1693, Undefined()));
-    USE(t1694);
-    Branch(t1694, label__True_419, label__False_420);
-    BIND(label__False_420);
-    Print("assert 'GenericBuiltinTest<Object>(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:96:4");
+    BIND(label__True_502);
+    // ../../test/torque/test-torque.tq:96:5
+    Label label__True_504_impl(this);
+    Label* label__True_504 = &label__True_504_impl;
+    USE(label__True_504);
+    Label label__False_505_impl(this);
+    Label* label__False_505 = &label__False_505_impl;
+    USE(label__False_505);
+    TNode<Object> t1840 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi, implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<Object>>(t1840));
+    TNode<BoolT> t1841 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1840), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<BoolT>>(t1841));
+    Branch(implicit_cast<TNode<BoolT>>(t1841), label__True_504, label__False_505);
+    BIND(label__False_505);
+    Print("assert 'GenericBuiltinTest<Object>(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:96:5");
     Unreachable();
-    BIND(label__True_419);
-    // ../../test/torque/test-torque.tq:97:4
-    Label label__True_421_impl(this);
-    Label* label__True_421 = &label__True_421_impl;
-    USE(label__True_421);
-    Label label__False_422_impl(this);
-    Label* label__False_422 = &label__False_422_impl;
-    USE(label__False_422);
-    TNode<Object> t1695 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi, p_c, Undefined()));
-    USE(t1695);
-    TNode<BoolT> t1696 = UncheckedCast<BoolT>(WordEqual(t1695, Undefined()));
-    USE(t1696);
-    Branch(t1696, label__True_421, label__False_422);
-    BIND(label__False_422);
-    Print("assert 'GenericBuiltinTest<Object>(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:97:4");
+    BIND(label__True_504);
+    // ../../test/torque/test-torque.tq:97:5
+    Label label__True_506_impl(this);
+    Label* label__True_506 = &label__True_506_impl;
+    USE(label__True_506);
+    Label label__False_507_impl(this);
+    Label* label__False_507 = &label__False_507_impl;
+    USE(label__False_507);
+    TNode<Object> t1842 = UncheckedCast<Object>(CallBuiltin(Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi, implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<Object>>(t1842));
+    TNode<BoolT> t1843 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1842), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<BoolT>>(t1843));
+    Branch(implicit_cast<TNode<BoolT>>(t1843), label__True_506, label__False_507);
+    BIND(label__False_507);
+    Print("assert 'GenericBuiltinTest<Object>(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:97:5");
     Unreachable();
-    BIND(label__True_421);
+    BIND(label__True_506);
   }
 }
 
-void TestBuiltinsFromDSLAssembler::LabelTestHelper4(bool p_flag, Label* label_Label4_423, Label* label_Label5_424) {
-  Label label_macro_end_772_impl(this, {});
-  Label* label_macro_end_772 = &label_macro_end_772_impl;
-  USE(label_macro_end_772);
-  // ../../test/torque/test-torque.tq:100:76
+void TestBuiltinsFromDSLAssembler::LabelTestHelper4(bool p_flag, Label* label_Label4_508, Label* label_Label5_509) {
+  Label label_macro_end_1256_impl(this, {});
+  Label* label_macro_end_1256 = &label_macro_end_1256_impl;
+  USE(label_macro_end_1256);
+  // ../../test/torque/test-torque.tq:100:77
   {
-    // ../../test/torque/test-torque.tq:101:4
+    // ../../test/torque/test-torque.tq:101:5
     {
-      if ((p_flag)) {
-        // ../../test/torque/test-torque.tq:102:22
-        Goto(label_Label4_423);
+      if ((implicit_cast<bool>(p_flag))) {
+        // ../../test/torque/test-torque.tq:101:24
+        {
+          // ../../test/torque/test-torque.tq:102:7
+          Goto(label_Label4_508);
+        }
       } else {
-        // ../../test/torque/test-torque.tq:104:6
-        Goto(label_Label5_424);
+        // ../../test/torque/test-torque.tq:103:12
+        {
+          // ../../test/torque/test-torque.tq:104:7
+          Goto(label_Label5_509);
+        }
       }
     }
   }
 }
 
 compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::CallLabelTestHelper4(bool p_flag) {
-  TVARIABLE(BoolT, _return_359_impl);
-  auto _return_359 = &_return_359_impl;
-  USE(_return_359);
-  Label label_macro_end_773_impl(this, {_return_359});
-  Label* label_macro_end_773 = &label_macro_end_773_impl;
-  USE(label_macro_end_773);
-  // ../../test/torque/test-torque.tq:107:57
+  TVARIABLE(BoolT, _return_345_impl);
+  auto _return_345 = &_return_345_impl;
+  USE(_return_345);
+  Label label_macro_end_1257_impl(this, {_return_345});
+  Label* label_macro_end_1257 = &label_macro_end_1257_impl;
+  USE(label_macro_end_1257);
+  // ../../test/torque/test-torque.tq:108:58
   {
-    // ../../test/torque/test-torque.tq:108:4
+    // ../../test/torque/test-torque.tq:109:5
     {
-      Label label_try_done_645_774_impl(this);
-      Label* label_try_done_645_774 = &label_try_done_645_774_impl;
-      USE(label_try_done_645_774);
-      Label label_Label4_427_impl(this);
-      Label* label_Label4_427 = &label_Label4_427_impl;
-      USE(label_Label4_427);
-      Label label_Label5_428_impl(this);
-      Label* label_Label5_428 = &label_Label5_428_impl;
-      USE(label_Label5_428);
-      Label label_try_begin_646_775_impl(this);
-      Label* label_try_begin_646_775 = &label_try_begin_646_775_impl;
-      USE(label_try_begin_646_775);
-      Goto(label_try_begin_646_775);
-      if (label_try_begin_646_775->is_used())
+      Label label_try_done_830_1258_impl(this);
+      Label* label_try_done_830_1258 = &label_try_done_830_1258_impl;
+      USE(label_try_done_830_1258);
+      Label label_Label4_512_impl(this);
+      Label* label_Label4_512 = &label_Label4_512_impl;
+      USE(label_Label4_512);
+      Label label_Label5_513_impl(this);
+      Label* label_Label5_513 = &label_Label5_513_impl;
+      USE(label_Label5_513);
+      Label label_try_begin_831_1259_impl(this);
+      Label* label_try_begin_831_1259 = &label_try_begin_831_1259_impl;
+      USE(label_try_begin_831_1259);
+      Goto(label_try_begin_831_1259);
+      if (label_try_begin_831_1259->is_used())
       {
-        BIND(label_try_begin_646_775);
-        // ../../test/torque/test-torque.tq:108:8
+        BIND(label_try_begin_831_1259);
+        // ../../test/torque/test-torque.tq:109:9
         {
-          // ../../test/torque/test-torque.tq:109:6
-          LabelTestHelper4(p_flag, label_Label4_427, label_Label5_428);
+          // ../../test/torque/test-torque.tq:110:7
+          LabelTestHelper4(implicit_cast<bool>(p_flag), label_Label4_512, label_Label5_513);
         }
       }
-      if (label_Label4_427->is_used())
+      if (label_Label4_512->is_used())
       {
-        BIND(label_Label4_427);
-        // ../../test/torque/test-torque.tq:111:17
+        BIND(label_Label4_512);
+        // ../../test/torque/test-torque.tq:112:18
         {
-          // ../../test/torque/test-torque.tq:112:6
-          TNode<BoolT> t1697 = UncheckedCast<BoolT>(from_constexpr6ATbool(true));
-          *_return_359 = t1697;
-          Goto(label_macro_end_773);
+          // ../../test/torque/test-torque.tq:113:7
+          TNode<BoolT> t1844 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(true)));
+          *_return_345 = implicit_cast<TNode<BoolT>>(t1844);
+          Goto(label_macro_end_1257);
         }
       }
-      if (label_Label5_428->is_used())
+      if (label_Label5_513->is_used())
       {
-        BIND(label_Label5_428);
-        // ../../test/torque/test-torque.tq:114:17
+        BIND(label_Label5_513);
+        // ../../test/torque/test-torque.tq:115:18
         {
-          // ../../test/torque/test-torque.tq:115:6
-          TNode<BoolT> t1698 = UncheckedCast<BoolT>(from_constexpr6ATbool(false));
-          *_return_359 = t1698;
-          Goto(label_macro_end_773);
+          // ../../test/torque/test-torque.tq:116:7
+          TNode<BoolT> t1845 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(false)));
+          *_return_345 = implicit_cast<TNode<BoolT>>(t1845);
+          Goto(label_macro_end_1257);
         }
       }
     }
   }
-  BIND(label_macro_end_773);
-  return (*_return_359).value();
+  BIND(label_macro_end_1257);
+  return implicit_cast<TNode<BoolT>>((*_return_345).value());
 }
 
 compiler::TNode<Oddball> TestBuiltinsFromDSLAssembler::TestPartiallyUnusedLabel() {
-  TVARIABLE(Oddball, _return_360_impl);
-  auto _return_360 = &_return_360_impl;
-  USE(_return_360);
-  Label label_macro_end_776_impl(this, {_return_360});
-  Label* label_macro_end_776 = &label_macro_end_776_impl;
-  USE(label_macro_end_776);
-  // ../../test/torque/test-torque.tq:119:44
+  TVARIABLE(Oddball, _return_346_impl);
+  auto _return_346 = &_return_346_impl;
+  USE(_return_346);
+  Label label_macro_end_1260_impl(this, {_return_346});
+  Label* label_macro_end_1260 = &label_macro_end_1260_impl;
+  USE(label_macro_end_1260);
+  // ../../test/torque/test-torque.tq:120:45
   {
-    // ../../test/torque/test-torque.tq:120:4
-    TNode<BoolT> t1699 = UncheckedCast<BoolT>(CallLabelTestHelper4(true));
-    USE(t1699);
-    TVARIABLE(BoolT, r1_361_impl);
-    auto r1_361 = &r1_361_impl;
-    USE(r1_361);
-    *r1_361 = t1699;
-    // ../../test/torque/test-torque.tq:121:4
-    TNode<BoolT> t1700 = UncheckedCast<BoolT>(CallLabelTestHelper4(false));
-    USE(t1700);
-    TVARIABLE(BoolT, r2_362_impl);
-    auto r2_362 = &r2_362_impl;
-    USE(r2_362);
-    *r2_362 = t1700;
-    // ../../test/torque/test-torque.tq:123:4
+    // ../../test/torque/test-torque.tq:121:5
+    TNode<BoolT> t1846 = UncheckedCast<BoolT>(CallLabelTestHelper4(implicit_cast<bool>(true)));
+    USE(implicit_cast<TNode<BoolT>>(t1846));
+    TVARIABLE(BoolT, r1_347_impl);
+    auto r1_347 = &r1_347_impl;
+    USE(r1_347);
+    *r1_347 = implicit_cast<TNode<BoolT>>(t1846);
+    // ../../test/torque/test-torque.tq:122:5
+    TNode<BoolT> t1847 = UncheckedCast<BoolT>(CallLabelTestHelper4(implicit_cast<bool>(false)));
+    USE(implicit_cast<TNode<BoolT>>(t1847));
+    TVARIABLE(BoolT, r2_348_impl);
+    auto r2_348 = &r2_348_impl;
+    USE(r2_348);
+    *r2_348 = implicit_cast<TNode<BoolT>>(t1847);
+    // ../../test/torque/test-torque.tq:124:5
     {
-      Label label__True_429_impl(this);
-      Label* label__True_429 = &label__True_429_impl;
-      USE(label__True_429);
-      Label label__False_430_impl(this);
-      Label* label__False_430 = &label__False_430_impl;
-      USE(label__False_430);
-      Label label_if_done_label_647_777_impl(this, {});
-      Label* label_if_done_label_647_777 = &label_if_done_label_647_777_impl;
-      USE(label_if_done_label_647_777);
-      Label label__True_431_impl(this);
-      Label* label__True_431 = &label__True_431_impl;
-      USE(label__True_431);
-      GotoIfNot((*r1_361).value(), label__False_430);
-      TNode<BoolT> t1701 = UncheckedCast<BoolT>(Word32BinaryNot((*r2_362).value()));
-      USE(t1701);
-      Branch(t1701, label__True_429, label__False_430);
-      if (label__True_429->is_used())
+      Label label__True_514_impl(this);
+      Label* label__True_514 = &label__True_514_impl;
+      USE(label__True_514);
+      Label label__False_515_impl(this);
+      Label* label__False_515 = &label__False_515_impl;
+      USE(label__False_515);
+      Label label_if_done_label_832_1261_impl(this, {});
+      Label* label_if_done_label_832_1261 = &label_if_done_label_832_1261_impl;
+      USE(label_if_done_label_832_1261);
+      Label label__True_516_impl(this);
+      Label* label__True_516 = &label__True_516_impl;
+      USE(label__True_516);
+      GotoIfNot(implicit_cast<TNode<BoolT>>((*r1_347).value()), label__False_515);
+      TNode<BoolT> t1848 = UncheckedCast<BoolT>(Word32BinaryNot(implicit_cast<TNode<BoolT>>((*r2_348).value())));
+      USE(implicit_cast<TNode<BoolT>>(t1848));
+      Branch(implicit_cast<TNode<BoolT>>(t1848), label__True_514, label__False_515);
+      if (label__True_514->is_used())
       {
-        BIND(label__True_429);
-        // ../../test/torque/test-torque.tq:124:6
-        *_return_360 = True();
-        Goto(label_macro_end_776);
+        BIND(label__True_514);
+        // ../../test/torque/test-torque.tq:124:20
+        {
+          // ../../test/torque/test-torque.tq:125:7
+          *_return_346 = implicit_cast<TNode<Oddball>>(True());
+          Goto(label_macro_end_1260);
+        }
       }
-      if (label__False_430->is_used())
+      if (label__False_515->is_used())
       {
-        BIND(label__False_430);
-        // ../../test/torque/test-torque.tq:126:6
-        *_return_360 = False();
-        Goto(label_macro_end_776);
+        BIND(label__False_515);
+        // ../../test/torque/test-torque.tq:126:12
+        {
+          // ../../test/torque/test-torque.tq:127:7
+          *_return_346 = implicit_cast<TNode<Oddball>>(False());
+          Goto(label_macro_end_1260);
+        }
       }
     }
   }
-  BIND(label_macro_end_776);
-  return (*_return_360).value();
+  BIND(label_macro_end_1260);
+  return implicit_cast<TNode<Oddball>>((*_return_346).value());
 }
 
 compiler::TNode<Object> TestBuiltinsFromDSLAssembler::GenericMacroTest22UT12ATHeapObject5ATSmi(TNode<Object> p_param2) {
-  TVARIABLE(Object, _return_363_impl);
-  auto _return_363 = &_return_363_impl;
-  USE(_return_363);
-  Label label_macro_end_778_impl(this, {_return_363});
-  Label* label_macro_end_778 = &label_macro_end_778_impl;
-  USE(label_macro_end_778);
-  // ../../test/torque/test-torque.tq:133:51
+  TVARIABLE(Object, _return_349_impl);
+  auto _return_349 = &_return_349_impl;
+  USE(_return_349);
+  Label label_macro_end_1262_impl(this, {_return_349});
+  Label* label_macro_end_1262 = &label_macro_end_1262_impl;
+  USE(label_macro_end_1262);
+  // ../../test/torque/test-torque.tq:135:52
   {
-    // ../../test/torque/test-torque.tq:134:4
-    *_return_363 = p_param2;
-    Goto(label_macro_end_778);
+    // ../../test/torque/test-torque.tq:136:5
+    *_return_349 = implicit_cast<TNode<Object>>(p_param2);
+    Goto(label_macro_end_1262);
   }
-  BIND(label_macro_end_778);
-  return (*_return_363).value();
+  BIND(label_macro_end_1262);
+  return implicit_cast<TNode<Object>>((*_return_349).value());
 }
 
-compiler::TNode<Object> TestBuiltinsFromDSLAssembler::GenericMacroTestWithLabels22UT12ATHeapObject5ATSmi(TNode<Object> p_param2, Label* label_Y_432) {
-  TVARIABLE(Object, _return_364_impl);
-  auto _return_364 = &_return_364_impl;
-  USE(_return_364);
-  Label label_macro_end_779_impl(this, {_return_364});
-  Label* label_macro_end_779 = &label_macro_end_779_impl;
-  USE(label_macro_end_779);
-  // ../../test/torque/test-torque.tq:141:70
+compiler::TNode<Object> TestBuiltinsFromDSLAssembler::GenericMacroTestWithLabels22UT12ATHeapObject5ATSmi(TNode<Object> p_param2, Label* label_Y_517) {
+  TVARIABLE(Object, _return_350_impl);
+  auto _return_350 = &_return_350_impl;
+  USE(_return_350);
+  Label label_macro_end_1263_impl(this, {_return_350});
+  Label* label_macro_end_1263 = &label_macro_end_1263_impl;
+  USE(label_macro_end_1263);
+  // ../../test/torque/test-torque.tq:143:71
   {
-    // ../../test/torque/test-torque.tq:142:4
-    *_return_364 = p_param2;
-    Goto(label_macro_end_779);
+    // ../../test/torque/test-torque.tq:144:5
+    *_return_350 = implicit_cast<TNode<Object>>(p_param2);
+    Goto(label_macro_end_1263);
   }
-  BIND(label_macro_end_779);
-  return (*_return_364).value();
+  BIND(label_macro_end_1263);
+  return implicit_cast<TNode<Object>>((*_return_350).value());
 }
 
 void TestBuiltinsFromDSLAssembler::TestMacroSpecialization() {
-  Label label_macro_end_780_impl(this, {});
-  Label* label_macro_end_780 = &label_macro_end_780_impl;
-  USE(label_macro_end_780);
-  // ../../test/torque/test-torque.tq:145:34
+  Label label_macro_end_1264_impl(this, {});
+  Label* label_macro_end_1264 = &label_macro_end_1264_impl;
+  USE(label_macro_end_1264);
+  // ../../test/torque/test-torque.tq:147:35
   {
-    // ../../test/torque/test-torque.tq:146:4
+    // ../../test/torque/test-torque.tq:148:5
     {
-      Label label_try_done_648_781_impl(this);
-      Label* label_try_done_648_781 = &label_try_done_648_781_impl;
-      USE(label_try_done_648_781);
-      Label label_Fail_433_impl(this);
-      Label* label_Fail_433 = &label_Fail_433_impl;
-      USE(label_Fail_433);
-      Label label_try_begin_649_782_impl(this);
-      Label* label_try_begin_649_782 = &label_try_begin_649_782_impl;
-      USE(label_try_begin_649_782);
-      Goto(label_try_begin_649_782);
-      if (label_try_begin_649_782->is_used())
+      Label label_try_done_833_1265_impl(this);
+      Label* label_try_done_833_1265 = &label_try_done_833_1265_impl;
+      USE(label_try_done_833_1265);
+      Label label_Fail_518_impl(this);
+      Label* label_Fail_518 = &label_Fail_518_impl;
+      USE(label_Fail_518);
+      Label label_try_begin_834_1266_impl(this);
+      Label* label_try_begin_834_1266 = &label_try_begin_834_1266_impl;
+      USE(label_try_begin_834_1266);
+      Goto(label_try_begin_834_1266);
+      if (label_try_begin_834_1266->is_used())
       {
-        BIND(label_try_begin_649_782);
-        // ../../test/torque/test-torque.tq:146:8
+        BIND(label_try_begin_834_1266);
+        // ../../test/torque/test-torque.tq:148:9
         {
-          // ../../test/torque/test-torque.tq:147:6
-          Label label__True_434_impl(this);
-          Label* label__True_434 = &label__True_434_impl;
-          USE(label__True_434);
-          Label label__False_435_impl(this);
-          Label* label__False_435 = &label__False_435_impl;
-          USE(label__False_435);
-          int31_t t1702 = 0;
-          TNode<Smi> t1703 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1702));
-          TNode<Object> t1704 = UncheckedCast<Object>(GenericMacroTest5ATSmi(t1703));
-          USE(t1704);
-          TNode<BoolT> t1705 = UncheckedCast<BoolT>(WordEqual(t1704, Undefined()));
-          USE(t1705);
-          Branch(t1705, label__True_434, label__False_435);
-          BIND(label__False_435);
-          Print("assert 'GenericMacroTest<Smi>(0) == Undefined' failed at ../../test/torque/test-torque.tq:147:6");
+          // ../../test/torque/test-torque.tq:149:7
+          Label label__True_519_impl(this);
+          Label* label__True_519 = &label__True_519_impl;
+          USE(label__True_519);
+          Label label__False_520_impl(this);
+          Label* label__False_520 = &label__False_520_impl;
+          USE(label__False_520);
+          int31_t t1849 = 0;
+          TNode<Smi> t1850 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1849)));
+          TNode<Object> t1851 = UncheckedCast<Object>(GenericMacroTest5ATSmi(implicit_cast<TNode<Smi>>(t1850)));
+          USE(implicit_cast<TNode<Object>>(t1851));
+          TNode<BoolT> t1852 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1851), implicit_cast<TNode<Object>>(Undefined())));
+          USE(implicit_cast<TNode<BoolT>>(t1852));
+          Branch(implicit_cast<TNode<BoolT>>(t1852), label__True_519, label__False_520);
+          BIND(label__False_520);
+          Print("assert 'GenericMacroTest<Smi>(0) == Undefined' failed at ../../test/torque/test-torque.tq:149:7");
           Unreachable();
-          BIND(label__True_434);
-          // ../../test/torque/test-torque.tq:148:6
-          Label label__True_436_impl(this);
-          Label* label__True_436 = &label__True_436_impl;
-          USE(label__True_436);
-          Label label__False_437_impl(this);
-          Label* label__False_437 = &label__False_437_impl;
-          USE(label__False_437);
-          int31_t t1706 = 1;
-          TNode<Smi> t1707 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1706));
-          TNode<Object> t1708 = UncheckedCast<Object>(GenericMacroTest5ATSmi(t1707));
-          USE(t1708);
-          TNode<BoolT> t1709 = UncheckedCast<BoolT>(WordEqual(t1708, Undefined()));
-          USE(t1709);
-          Branch(t1709, label__True_436, label__False_437);
-          BIND(label__False_437);
-          Print("assert 'GenericMacroTest<Smi>(1) == Undefined' failed at ../../test/torque/test-torque.tq:148:6");
+          BIND(label__True_519);
+          // ../../test/torque/test-torque.tq:150:7
+          Label label__True_521_impl(this);
+          Label* label__True_521 = &label__True_521_impl;
+          USE(label__True_521);
+          Label label__False_522_impl(this);
+          Label* label__False_522 = &label__False_522_impl;
+          USE(label__False_522);
+          int31_t t1853 = 1;
+          TNode<Smi> t1854 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1853)));
+          TNode<Object> t1855 = UncheckedCast<Object>(GenericMacroTest5ATSmi(implicit_cast<TNode<Smi>>(t1854)));
+          USE(implicit_cast<TNode<Object>>(t1855));
+          TNode<BoolT> t1856 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1855), implicit_cast<TNode<Object>>(Undefined())));
+          USE(implicit_cast<TNode<BoolT>>(t1856));
+          Branch(implicit_cast<TNode<BoolT>>(t1856), label__True_521, label__False_522);
+          BIND(label__False_522);
+          Print("assert 'GenericMacroTest<Smi>(1) == Undefined' failed at ../../test/torque/test-torque.tq:150:7");
           Unreachable();
-          BIND(label__True_436);
-          // ../../test/torque/test-torque.tq:149:6
-          Label label__True_438_impl(this);
-          Label* label__True_438 = &label__True_438_impl;
-          USE(label__True_438);
-          Label label__False_439_impl(this);
-          Label* label__False_439 = &label__False_439_impl;
-          USE(label__False_439);
-          TNode<Object> t1710 = UncheckedCast<Object>(GenericMacroTest22UT12ATHeapObject5ATSmi(Null()));
-          USE(t1710);
-          TNode<BoolT> t1711 = UncheckedCast<BoolT>(WordEqual(t1710, Null()));
-          USE(t1711);
-          Branch(t1711, label__True_438, label__False_439);
-          BIND(label__False_439);
-          Print("assert 'GenericMacroTest<Object>(Null) == Null' failed at ../../test/torque/test-torque.tq:149:6");
+          BIND(label__True_521);
+          // ../../test/torque/test-torque.tq:151:7
+          Label label__True_523_impl(this);
+          Label* label__True_523 = &label__True_523_impl;
+          USE(label__True_523);
+          Label label__False_524_impl(this);
+          Label* label__False_524 = &label__False_524_impl;
+          USE(label__False_524);
+          TNode<Object> t1857 = UncheckedCast<Object>(GenericMacroTest22UT12ATHeapObject5ATSmi(implicit_cast<TNode<Object>>(Null())));
+          USE(implicit_cast<TNode<Object>>(t1857));
+          TNode<BoolT> t1858 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1857), implicit_cast<TNode<Object>>(Null())));
+          USE(implicit_cast<TNode<BoolT>>(t1858));
+          Branch(implicit_cast<TNode<BoolT>>(t1858), label__True_523, label__False_524);
+          BIND(label__False_524);
+          Print("assert 'GenericMacroTest<Object>(Null) == Null' failed at ../../test/torque/test-torque.tq:151:7");
           Unreachable();
-          BIND(label__True_438);
-          // ../../test/torque/test-torque.tq:150:6
-          Label label__True_440_impl(this);
-          Label* label__True_440 = &label__True_440_impl;
-          USE(label__True_440);
-          Label label__False_441_impl(this);
-          Label* label__False_441 = &label__False_441_impl;
-          USE(label__False_441);
-          TNode<Object> t1712 = UncheckedCast<Object>(GenericMacroTest22UT12ATHeapObject5ATSmi(False()));
-          USE(t1712);
-          TNode<BoolT> t1713 = UncheckedCast<BoolT>(WordEqual(t1712, False()));
-          USE(t1713);
-          Branch(t1713, label__True_440, label__False_441);
-          BIND(label__False_441);
-          Print("assert 'GenericMacroTest<Object>(False) == False' failed at ../../test/torque/test-torque.tq:150:6");
+          BIND(label__True_523);
+          // ../../test/torque/test-torque.tq:152:7
+          Label label__True_525_impl(this);
+          Label* label__True_525 = &label__True_525_impl;
+          USE(label__True_525);
+          Label label__False_526_impl(this);
+          Label* label__False_526 = &label__False_526_impl;
+          USE(label__False_526);
+          TNode<Object> t1859 = UncheckedCast<Object>(GenericMacroTest22UT12ATHeapObject5ATSmi(implicit_cast<TNode<Object>>(False())));
+          USE(implicit_cast<TNode<Object>>(t1859));
+          TNode<BoolT> t1860 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1859), implicit_cast<TNode<Object>>(False())));
+          USE(implicit_cast<TNode<BoolT>>(t1860));
+          Branch(implicit_cast<TNode<BoolT>>(t1860), label__True_525, label__False_526);
+          BIND(label__False_526);
+          Print("assert 'GenericMacroTest<Object>(False) == False' failed at ../../test/torque/test-torque.tq:152:7");
           Unreachable();
-          BIND(label__True_440);
-          // ../../test/torque/test-torque.tq:151:6
-          Label label__True_442_impl(this);
-          Label* label__True_442 = &label__True_442_impl;
-          USE(label__True_442);
-          Label label__False_443_impl(this);
-          Label* label__False_443 = &label__False_443_impl;
-          USE(label__False_443);
-          TNode<Object> t1714 = UncheckedCast<Object>(GenericMacroTest22UT12ATHeapObject5ATSmi(True()));
-          USE(t1714);
-          TNode<BoolT> t1715 = UncheckedCast<BoolT>(WordEqual(t1714, True()));
-          USE(t1715);
-          Branch(t1715, label__True_442, label__False_443);
-          BIND(label__False_443);
-          Print("assert 'GenericMacroTest<Object>(True) == True' failed at ../../test/torque/test-torque.tq:151:6");
+          BIND(label__True_525);
+          // ../../test/torque/test-torque.tq:153:7
+          Label label__True_527_impl(this);
+          Label* label__True_527 = &label__True_527_impl;
+          USE(label__True_527);
+          Label label__False_528_impl(this);
+          Label* label__False_528 = &label__False_528_impl;
+          USE(label__False_528);
+          TNode<Object> t1861 = UncheckedCast<Object>(GenericMacroTest22UT12ATHeapObject5ATSmi(implicit_cast<TNode<Object>>(True())));
+          USE(implicit_cast<TNode<Object>>(t1861));
+          TNode<BoolT> t1862 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1861), implicit_cast<TNode<Object>>(True())));
+          USE(implicit_cast<TNode<BoolT>>(t1862));
+          Branch(implicit_cast<TNode<BoolT>>(t1862), label__True_527, label__False_528);
+          BIND(label__False_528);
+          Print("assert 'GenericMacroTest<Object>(True) == True' failed at ../../test/torque/test-torque.tq:153:7");
           Unreachable();
-          BIND(label__True_442);
-          // ../../test/torque/test-torque.tq:152:6
-          Label label__True_444_impl(this);
-          Label* label__True_444 = &label__True_444_impl;
-          USE(label__True_444);
-          Label label__False_445_impl(this);
-          Label* label__False_445 = &label__False_445_impl;
-          USE(label__False_445);
-          int31_t t1716 = 0;
-          TNode<Smi> t1717 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1716));
-          TNode<Object> t1718 = UncheckedCast<Object>(GenericMacroTestWithLabels5ATSmi(t1717, label_Fail_433));
-          USE(t1718);
-          TNode<BoolT> t1719 = UncheckedCast<BoolT>(WordEqual(t1718, Undefined()));
-          USE(t1719);
-          Branch(t1719, label__True_444, label__False_445);
-          BIND(label__False_445);
-          Print("assert 'GenericMacroTestWithLabels<Smi>(0) otherwise Fail == Undefined' failed at ../../test/torque/test-torque.tq:152:6");
+          BIND(label__True_527);
+          // ../../test/torque/test-torque.tq:154:7
+          Label label__True_529_impl(this);
+          Label* label__True_529 = &label__True_529_impl;
+          USE(label__True_529);
+          Label label__False_530_impl(this);
+          Label* label__False_530 = &label__False_530_impl;
+          USE(label__False_530);
+          int31_t t1863 = 0;
+          TNode<Smi> t1864 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1863)));
+          TNode<Object> t1865 = UncheckedCast<Object>(GenericMacroTestWithLabels5ATSmi(implicit_cast<TNode<Smi>>(t1864), label_Fail_518));
+          USE(implicit_cast<TNode<Object>>(t1865));
+          TNode<BoolT> t1866 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1865), implicit_cast<TNode<Object>>(Undefined())));
+          USE(implicit_cast<TNode<BoolT>>(t1866));
+          Branch(implicit_cast<TNode<BoolT>>(t1866), label__True_529, label__False_530);
+          BIND(label__False_530);
+          Print("assert 'GenericMacroTestWithLabels<Smi>(0) otherwise Fail == Undefined' failed at ../../test/torque/test-torque.tq:154:7");
           Unreachable();
-          BIND(label__True_444);
-          // ../../test/torque/test-torque.tq:153:6
-          Label label__True_446_impl(this);
-          Label* label__True_446 = &label__True_446_impl;
-          USE(label__True_446);
-          Label label__False_447_impl(this);
-          Label* label__False_447 = &label__False_447_impl;
-          USE(label__False_447);
-          int31_t t1720 = 0;
-          TNode<Smi> t1721 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1720));
-          TNode<Object> t1722 = UncheckedCast<Object>(GenericMacroTestWithLabels5ATSmi(t1721, label_Fail_433));
-          USE(t1722);
-          TNode<BoolT> t1723 = UncheckedCast<BoolT>(WordEqual(t1722, Undefined()));
-          USE(t1723);
-          Branch(t1723, label__True_446, label__False_447);
-          BIND(label__False_447);
-          Print("assert 'GenericMacroTestWithLabels<Smi>(0) otherwise Fail == Undefined' failed at ../../test/torque/test-torque.tq:153:6");
+          BIND(label__True_529);
+          // ../../test/torque/test-torque.tq:155:7
+          Label label__True_531_impl(this);
+          Label* label__True_531 = &label__True_531_impl;
+          USE(label__True_531);
+          Label label__False_532_impl(this);
+          Label* label__False_532 = &label__False_532_impl;
+          USE(label__False_532);
+          int31_t t1867 = 0;
+          TNode<Smi> t1868 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1867)));
+          TNode<Object> t1869 = UncheckedCast<Object>(GenericMacroTestWithLabels5ATSmi(implicit_cast<TNode<Smi>>(t1868), label_Fail_518));
+          USE(implicit_cast<TNode<Object>>(t1869));
+          TNode<BoolT> t1870 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1869), implicit_cast<TNode<Object>>(Undefined())));
+          USE(implicit_cast<TNode<BoolT>>(t1870));
+          Branch(implicit_cast<TNode<BoolT>>(t1870), label__True_531, label__False_532);
+          BIND(label__False_532);
+          Print("assert 'GenericMacroTestWithLabels<Smi>(0) otherwise Fail == Undefined' failed at ../../test/torque/test-torque.tq:155:7");
           Unreachable();
-          BIND(label__True_446);
-          // ../../test/torque/test-torque.tq:154:6
-          Label label__True_448_impl(this);
-          Label* label__True_448 = &label__True_448_impl;
-          USE(label__True_448);
-          Label label__False_449_impl(this);
-          Label* label__False_449 = &label__False_449_impl;
-          USE(label__False_449);
-          TNode<Object> t1724 = UncheckedCast<Object>(GenericMacroTestWithLabels22UT12ATHeapObject5ATSmi(Null(), label_Fail_433));
-          USE(t1724);
-          TNode<BoolT> t1725 = UncheckedCast<BoolT>(WordEqual(t1724, Null()));
-          USE(t1725);
-          Branch(t1725, label__True_448, label__False_449);
-          BIND(label__False_449);
-          Print("assert 'GenericMacroTestWithLabels<Object>(Null) otherwise Fail == Null' failed at ../../test/torque/test-torque.tq:154:6");
+          BIND(label__True_531);
+          // ../../test/torque/test-torque.tq:156:7
+          Label label__True_533_impl(this);
+          Label* label__True_533 = &label__True_533_impl;
+          USE(label__True_533);
+          Label label__False_534_impl(this);
+          Label* label__False_534 = &label__False_534_impl;
+          USE(label__False_534);
+          TNode<Object> t1871 = UncheckedCast<Object>(GenericMacroTestWithLabels22UT12ATHeapObject5ATSmi(implicit_cast<TNode<Object>>(Null()), label_Fail_518));
+          USE(implicit_cast<TNode<Object>>(t1871));
+          TNode<BoolT> t1872 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1871), implicit_cast<TNode<Object>>(Null())));
+          USE(implicit_cast<TNode<BoolT>>(t1872));
+          Branch(implicit_cast<TNode<BoolT>>(t1872), label__True_533, label__False_534);
+          BIND(label__False_534);
+          Print("assert 'GenericMacroTestWithLabels<Object>(Null) otherwise Fail == Null' failed at ../../test/torque/test-torque.tq:156:7");
           Unreachable();
-          BIND(label__True_448);
-          // ../../test/torque/test-torque.tq:155:6
-          Label label__True_450_impl(this);
-          Label* label__True_450 = &label__True_450_impl;
-          USE(label__True_450);
-          Label label__False_451_impl(this);
-          Label* label__False_451 = &label__False_451_impl;
-          USE(label__False_451);
-          TNode<Object> t1726 = UncheckedCast<Object>(GenericMacroTestWithLabels22UT12ATHeapObject5ATSmi(False(), label_Fail_433));
-          USE(t1726);
-          TNode<BoolT> t1727 = UncheckedCast<BoolT>(WordEqual(t1726, False()));
-          USE(t1727);
-          Branch(t1727, label__True_450, label__False_451);
-          BIND(label__False_451);
-          Print("assert 'GenericMacroTestWithLabels<Object>(False) otherwise Fail == False' failed at ../../test/torque/test-torque.tq:155:6");
+          BIND(label__True_533);
+          // ../../test/torque/test-torque.tq:157:7
+          Label label__True_535_impl(this);
+          Label* label__True_535 = &label__True_535_impl;
+          USE(label__True_535);
+          Label label__False_536_impl(this);
+          Label* label__False_536 = &label__False_536_impl;
+          USE(label__False_536);
+          TNode<Object> t1873 = UncheckedCast<Object>(GenericMacroTestWithLabels22UT12ATHeapObject5ATSmi(implicit_cast<TNode<Object>>(False()), label_Fail_518));
+          USE(implicit_cast<TNode<Object>>(t1873));
+          TNode<BoolT> t1874 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1873), implicit_cast<TNode<Object>>(False())));
+          USE(implicit_cast<TNode<BoolT>>(t1874));
+          Branch(implicit_cast<TNode<BoolT>>(t1874), label__True_535, label__False_536);
+          BIND(label__False_536);
+          Print("assert 'GenericMacroTestWithLabels<Object>(False) otherwise Fail == False' failed at ../../test/torque/test-torque.tq:157:7");
           Unreachable();
-          BIND(label__True_450);
+          BIND(label__True_535);
         }
-        Goto(label_try_done_648_781);
+        Goto(label_try_done_833_1265);
       }
-      if (label_Fail_433->is_used())
+      if (label_Fail_518->is_used())
       {
-        BIND(label_Fail_433);
-        // ../../test/torque/test-torque.tq:157:15
+        BIND(label_Fail_518);
+        // ../../test/torque/test-torque.tq:159:16
         {
-          // ../../test/torque/test-torque.tq:158:6
+          // ../../test/torque/test-torque.tq:160:7
           Unreachable();
         }
       }
-      BIND(label_try_done_648_781);
+      BIND(label_try_done_833_1265);
     }
   }
 }
@@ -955,14 +968,14 @@ TF_BUILTIN(TestHelperPlus1, TestBuiltinsFromDSLAssembler) {
   USE(p_context);
   TNode<Smi> p_x = UncheckedCast<Smi>(Parameter(Descriptor::kX));
   USE(p_x);
-  // ../../test/torque/test-torque.tq:162:57
+  // ../../test/torque/test-torque.tq:164:58
   {
-    // ../../test/torque/test-torque.tq:163:4
-    int31_t t1728 = 1;
-    TNode<Smi> t1729 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1728));
-    TNode<Smi> t1730 = UncheckedCast<Smi>(SmiAdd(p_x, t1729));
-    USE(t1730);
-    Return(t1730);
+    // ../../test/torque/test-torque.tq:165:5
+    int31_t t1875 = 1;
+    TNode<Smi> t1876 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1875)));
+    TNode<Smi> t1877 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>(p_x), implicit_cast<TNode<Smi>>(t1876)));
+    USE(implicit_cast<TNode<Smi>>(t1877));
+    Return(implicit_cast<TNode<Smi>>(t1877));
   }
 }
 
@@ -971,901 +984,2174 @@ TF_BUILTIN(TestHelperPlus2, TestBuiltinsFromDSLAssembler) {
   USE(p_context);
   TNode<Smi> p_x = UncheckedCast<Smi>(Parameter(Descriptor::kX));
   USE(p_x);
-  // ../../test/torque/test-torque.tq:165:57
+  // ../../test/torque/test-torque.tq:167:58
   {
-    // ../../test/torque/test-torque.tq:166:4
-    int31_t t1731 = 2;
-    TNode<Smi> t1732 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1731));
-    TNode<Smi> t1733 = UncheckedCast<Smi>(SmiAdd(p_x, t1732));
-    USE(t1733);
-    Return(t1733);
+    // ../../test/torque/test-torque.tq:168:5
+    int31_t t1878 = 2;
+    TNode<Smi> t1879 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1878)));
+    TNode<Smi> t1880 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>(p_x), implicit_cast<TNode<Smi>>(t1879)));
+    USE(implicit_cast<TNode<Smi>>(t1880));
+    Return(implicit_cast<TNode<Smi>>(t1880));
   }
 }
 
 compiler::TNode<Oddball> TestBuiltinsFromDSLAssembler::TestFunctionPointers(TNode<Context> p_context) {
-  TVARIABLE(Oddball, _return_365_impl);
-  auto _return_365 = &_return_365_impl;
-  USE(_return_365);
-  Label label_macro_end_783_impl(this, {_return_365});
-  Label* label_macro_end_783 = &label_macro_end_783_impl;
-  USE(label_macro_end_783);
-  // ../../test/torque/test-torque.tq:169:56
+  TVARIABLE(Oddball, _return_351_impl);
+  auto _return_351 = &_return_351_impl;
+  USE(_return_351);
+  Label label_macro_end_1267_impl(this, {_return_351});
+  Label* label_macro_end_1267 = &label_macro_end_1267_impl;
+  USE(label_macro_end_1267);
+  // ../../test/torque/test-torque.tq:171:57
   {
-    // ../../test/torque/test-torque.tq:170:4
-    TVARIABLE(Code, fptr_366_impl);
-    auto fptr_366 = &fptr_366_impl;
-    USE(fptr_366);
-    *fptr_366 = HeapConstant(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus1).code());
-    // ../../test/torque/test-torque.tq:171:4
-    Label label__True_452_impl(this);
-    Label* label__True_452 = &label__True_452_impl;
-    USE(label__True_452);
-    Label label__False_453_impl(this);
-    Label* label__False_453 = &label__False_453_impl;
-    USE(label__False_453);
-    int31_t t1734 = 42;
-    TNode<Smi> t1735 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1734));
-    TNode<Smi> t1736 = UncheckedCast<Smi>(CallStub(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus1).descriptor(), (*fptr_366).value(), p_context, t1735));
-    USE(t1736);
-    int31_t t1737 = 43;
-    TNode<Smi> t1738 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1737));
-    TNode<BoolT> t1739 = UncheckedCast<BoolT>(SmiEqual(t1736, t1738));
-    USE(t1739);
-    Branch(t1739, label__True_452, label__False_453);
-    BIND(label__False_453);
-    Print("assert 'fptr(context, 42) == 43' failed at ../../test/torque/test-torque.tq:171:4");
+    // ../../test/torque/test-torque.tq:172:5
+    TVARIABLE(Code, fptr_352_impl);
+    auto fptr_352 = &fptr_352_impl;
+    USE(fptr_352);
+    *fptr_352 = implicit_cast<TNode<Code>>(HeapConstant(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus1).code()));
+    // ../../test/torque/test-torque.tq:173:5
+    Label label__True_537_impl(this);
+    Label* label__True_537 = &label__True_537_impl;
+    USE(label__True_537);
+    Label label__False_538_impl(this);
+    Label* label__False_538 = &label__False_538_impl;
+    USE(label__False_538);
+    int31_t t1881 = 42;
+    TNode<Smi> t1882 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1881)));
+    TNode<Smi> t1883 = UncheckedCast<Smi>(CallStub(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus1).descriptor(), implicit_cast<TNode<Code>>((*fptr_352).value()), implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Smi>>(t1882)));
+    USE(implicit_cast<TNode<Smi>>(t1883));
+    int31_t t1884 = 43;
+    TNode<Smi> t1885 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1884)));
+    TNode<BoolT> t1886 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>(t1883), implicit_cast<TNode<Smi>>(t1885)));
+    USE(implicit_cast<TNode<BoolT>>(t1886));
+    Branch(implicit_cast<TNode<BoolT>>(t1886), label__True_537, label__False_538);
+    BIND(label__False_538);
+    Print("assert 'fptr(context, 42) == 43' failed at ../../test/torque/test-torque.tq:173:5");
     Unreachable();
-    BIND(label__True_452);
-    // ../../test/torque/test-torque.tq:172:4
-    *fptr_366 = HeapConstant(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus2).code());
-    // ../../test/torque/test-torque.tq:173:4
-    Label label__True_454_impl(this);
-    Label* label__True_454 = &label__True_454_impl;
-    USE(label__True_454);
-    Label label__False_455_impl(this);
-    Label* label__False_455 = &label__False_455_impl;
-    USE(label__False_455);
-    int31_t t1740 = 42;
-    TNode<Smi> t1741 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1740));
-    TNode<Smi> t1742 = UncheckedCast<Smi>(CallStub(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus1).descriptor(), (*fptr_366).value(), p_context, t1741));
-    USE(t1742);
-    int31_t t1743 = 44;
-    TNode<Smi> t1744 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1743));
-    TNode<BoolT> t1745 = UncheckedCast<BoolT>(SmiEqual(t1742, t1744));
-    USE(t1745);
-    Branch(t1745, label__True_454, label__False_455);
-    BIND(label__False_455);
-    Print("assert 'fptr(context, 42) == 44' failed at ../../test/torque/test-torque.tq:173:4");
+    BIND(label__True_537);
+    // ../../test/torque/test-torque.tq:174:5
+    *fptr_352 = implicit_cast<TNode<Code>>(HeapConstant(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus2).code()));
+    // ../../test/torque/test-torque.tq:175:5
+    Label label__True_539_impl(this);
+    Label* label__True_539 = &label__True_539_impl;
+    USE(label__True_539);
+    Label label__False_540_impl(this);
+    Label* label__False_540 = &label__False_540_impl;
+    USE(label__False_540);
+    int31_t t1887 = 42;
+    TNode<Smi> t1888 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1887)));
+    TNode<Smi> t1889 = UncheckedCast<Smi>(CallStub(Builtins::CallableFor(isolate(), Builtins::kTestHelperPlus1).descriptor(), implicit_cast<TNode<Code>>((*fptr_352).value()), implicit_cast<TNode<Context>>(p_context), implicit_cast<TNode<Smi>>(t1888)));
+    USE(implicit_cast<TNode<Smi>>(t1889));
+    int31_t t1890 = 44;
+    TNode<Smi> t1891 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1890)));
+    TNode<BoolT> t1892 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>(t1889), implicit_cast<TNode<Smi>>(t1891)));
+    USE(implicit_cast<TNode<BoolT>>(t1892));
+    Branch(implicit_cast<TNode<BoolT>>(t1892), label__True_539, label__False_540);
+    BIND(label__False_540);
+    Print("assert 'fptr(context, 42) == 44' failed at ../../test/torque/test-torque.tq:175:5");
     Unreachable();
-    BIND(label__True_454);
-    // ../../test/torque/test-torque.tq:174:4
-    *_return_365 = True();
-    Goto(label_macro_end_783);
+    BIND(label__True_539);
+    // ../../test/torque/test-torque.tq:176:5
+    *_return_351 = implicit_cast<TNode<Oddball>>(True());
+    Goto(label_macro_end_1267);
   }
-  BIND(label_macro_end_783);
-  return (*_return_365).value();
+  BIND(label_macro_end_1267);
+  return implicit_cast<TNode<Oddball>>((*_return_351).value());
 }
 
 compiler::TNode<Oddball> TestBuiltinsFromDSLAssembler::TestVariableRedeclaration(TNode<Context> p_context) {
-  TVARIABLE(Oddball, _return_367_impl);
-  auto _return_367 = &_return_367_impl;
-  USE(_return_367);
-  Label label_macro_end_784_impl(this, {_return_367});
-  Label* label_macro_end_784 = &label_macro_end_784_impl;
-  USE(label_macro_end_784);
-  // ../../test/torque/test-torque.tq:177:61
+  TVARIABLE(Oddball, _return_353_impl);
+  auto _return_353 = &_return_353_impl;
+  USE(_return_353);
+  Label label_macro_end_1268_impl(this, {_return_353});
+  Label* label_macro_end_1268 = &label_macro_end_1268_impl;
+  USE(label_macro_end_1268);
+  // ../../test/torque/test-torque.tq:179:62
   {
-    // ../../test/torque/test-torque.tq:178:4
-    auto t1746 = [=]() {
-      int31_t t1748 = 0;
-      return t1748;
+    // ../../test/torque/test-torque.tq:180:5
+    auto t1893 = [=]() {
+      int31_t t1895 = 0;
+      return implicit_cast<int31_t>(t1895);
     };
-    auto t1747 = [=]() {
-      int31_t t1749 = 1;
-      return t1749;
+    auto t1894 = [=]() {
+      int31_t t1896 = 1;
+      return implicit_cast<int31_t>(t1896);
     };
-    TVARIABLE(Int32T, t1750_650_impl);
-    auto t1750_650 = &t1750_650_impl;
-    USE(t1750_650);
+    TVARIABLE(Int32T, t1897_835_impl);
+    auto t1897_835 = &t1897_835_impl;
+    USE(t1897_835);
     {
-      Label label__True_456_impl(this);
-      Label* label__True_456 = &label__True_456_impl;
-      USE(label__True_456);
-      Label label__False_457_impl(this);
-      Label* label__False_457 = &label__False_457_impl;
-      USE(label__False_457);
-      Label label__done_651_785_impl(this, {t1750_650});
-      Label* label__done_651_785 = &label__done_651_785_impl;
-      USE(label__done_651_785);
-      int31_t t1751 = 42;
-      int31_t t1752 = 0;
-      bool t1753 = ConstexprInt31Equal(t1751, t1752);
-      USE(t1753);
-      TNode<BoolT> t1754 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1753));
-      USE(t1754);
-      Branch(t1754, label__True_456, label__False_457);
-      BIND(label__True_456);
-            TNode<Int32T> t1755 = UncheckedCast<Int32T>(from_constexpr7ATint31(t1746()));
-      *t1750_650 = t1755;
-      Goto(label__done_651_785);
-      BIND(label__False_457);
-            TNode<Int32T> t1756 = UncheckedCast<Int32T>(from_constexpr7ATint31(t1747()));
-      *t1750_650 = t1756;
-      Goto(label__done_651_785);
-      BIND(label__done_651_785);
+      Label label__True_541_impl(this);
+      Label* label__True_541 = &label__True_541_impl;
+      USE(label__True_541);
+      Label label__False_542_impl(this);
+      Label* label__False_542 = &label__False_542_impl;
+      USE(label__False_542);
+      Label label__done_836_1269_impl(this, {t1897_835});
+      Label* label__done_836_1269 = &label__done_836_1269_impl;
+      USE(label__done_836_1269);
+      int31_t t1898 = 42;
+      int31_t t1899 = 0;
+      bool t1900 = ConstexprInt31Equal(implicit_cast<int31_t>(t1898), implicit_cast<int31_t>(t1899));
+      USE(implicit_cast<bool>(t1900));
+      TNode<BoolT> t1901 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1900)));
+      USE(implicit_cast<TNode<BoolT>>(t1901));
+      Branch(implicit_cast<TNode<BoolT>>(t1901), label__True_541, label__False_542);
+      BIND(label__True_541);
+            TNode<Int32T> t1902 = UncheckedCast<Int32T>(from_constexpr7ATint31(implicit_cast<int31_t>(t1893())));
+      *t1897_835 = implicit_cast<TNode<Int32T>>(t1902);
+      Goto(label__done_836_1269);
+      BIND(label__False_542);
+            TNode<Int32T> t1903 = UncheckedCast<Int32T>(from_constexpr7ATint31(implicit_cast<int31_t>(t1894())));
+      *t1897_835 = implicit_cast<TNode<Int32T>>(t1903);
+      Goto(label__done_836_1269);
+      BIND(label__done_836_1269);
     }
-    TVARIABLE(Int32T, var1_368_impl);
-    auto var1_368 = &var1_368_impl;
-    USE(var1_368);
-    *var1_368 = (*t1750_650).value();
-    // ../../test/torque/test-torque.tq:179:4
-    auto t1757 = [=]() {
-      int31_t t1759 = 1;
-      return t1759;
+    TVARIABLE(Int32T, var1_354_impl);
+    auto var1_354 = &var1_354_impl;
+    USE(var1_354);
+    *var1_354 = implicit_cast<TNode<Int32T>>((*t1897_835).value());
+    // ../../test/torque/test-torque.tq:181:5
+    auto t1904 = [=]() {
+      int31_t t1906 = 1;
+      return implicit_cast<int31_t>(t1906);
     };
-    auto t1758 = [=]() {
-      int31_t t1760 = 0;
-      return t1760;
+    auto t1905 = [=]() {
+      int31_t t1907 = 0;
+      return implicit_cast<int31_t>(t1907);
     };
-    TVARIABLE(Int32T, t1761_652_impl);
-    auto t1761_652 = &t1761_652_impl;
-    USE(t1761_652);
+    TVARIABLE(Int32T, t1908_837_impl);
+    auto t1908_837 = &t1908_837_impl;
+    USE(t1908_837);
     {
-      Label label__True_458_impl(this);
-      Label* label__True_458 = &label__True_458_impl;
-      USE(label__True_458);
-      Label label__False_459_impl(this);
-      Label* label__False_459 = &label__False_459_impl;
-      USE(label__False_459);
-      Label label__done_653_786_impl(this, {t1761_652});
-      Label* label__done_653_786 = &label__done_653_786_impl;
-      USE(label__done_653_786);
-      int31_t t1762 = 42;
-      int31_t t1763 = 0;
-      bool t1764 = ConstexprInt31Equal(t1762, t1763);
-      USE(t1764);
-      TNode<BoolT> t1765 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1764));
-      USE(t1765);
-      Branch(t1765, label__True_458, label__False_459);
-      BIND(label__True_458);
-            TNode<Int32T> t1766 = UncheckedCast<Int32T>(from_constexpr7ATint31(t1757()));
-      *t1761_652 = t1766;
-      Goto(label__done_653_786);
-      BIND(label__False_459);
-            TNode<Int32T> t1767 = UncheckedCast<Int32T>(from_constexpr7ATint31(t1758()));
-      *t1761_652 = t1767;
-      Goto(label__done_653_786);
-      BIND(label__done_653_786);
+      Label label__True_543_impl(this);
+      Label* label__True_543 = &label__True_543_impl;
+      USE(label__True_543);
+      Label label__False_544_impl(this);
+      Label* label__False_544 = &label__False_544_impl;
+      USE(label__False_544);
+      Label label__done_838_1270_impl(this, {t1908_837});
+      Label* label__done_838_1270 = &label__done_838_1270_impl;
+      USE(label__done_838_1270);
+      int31_t t1909 = 42;
+      int31_t t1910 = 0;
+      bool t1911 = ConstexprInt31Equal(implicit_cast<int31_t>(t1909), implicit_cast<int31_t>(t1910));
+      USE(implicit_cast<bool>(t1911));
+      TNode<BoolT> t1912 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1911)));
+      USE(implicit_cast<TNode<BoolT>>(t1912));
+      Branch(implicit_cast<TNode<BoolT>>(t1912), label__True_543, label__False_544);
+      BIND(label__True_543);
+            TNode<Int32T> t1913 = UncheckedCast<Int32T>(from_constexpr7ATint31(implicit_cast<int31_t>(t1904())));
+      *t1908_837 = implicit_cast<TNode<Int32T>>(t1913);
+      Goto(label__done_838_1270);
+      BIND(label__False_544);
+            TNode<Int32T> t1914 = UncheckedCast<Int32T>(from_constexpr7ATint31(implicit_cast<int31_t>(t1905())));
+      *t1908_837 = implicit_cast<TNode<Int32T>>(t1914);
+      Goto(label__done_838_1270);
+      BIND(label__done_838_1270);
     }
-    TVARIABLE(Int32T, var2_369_impl);
-    auto var2_369 = &var2_369_impl;
-    USE(var2_369);
-    *var2_369 = (*t1761_652).value();
-    // ../../test/torque/test-torque.tq:180:4
-    *_return_367 = True();
-    Goto(label_macro_end_784);
+    TVARIABLE(Int32T, var2_355_impl);
+    auto var2_355 = &var2_355_impl;
+    USE(var2_355);
+    *var2_355 = implicit_cast<TNode<Int32T>>((*t1908_837).value());
+    // ../../test/torque/test-torque.tq:182:5
+    *_return_353 = implicit_cast<TNode<Oddball>>(True());
+    Goto(label_macro_end_1268);
   }
-  BIND(label_macro_end_784);
-  return (*_return_367).value();
+  BIND(label_macro_end_1268);
+  return implicit_cast<TNode<Oddball>>((*_return_353).value());
 }
 
 compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestTernaryOperator(TNode<Smi> p_x) {
-  TVARIABLE(Smi, _return_370_impl);
-  auto _return_370 = &_return_370_impl;
-  USE(_return_370);
-  Label label_macro_end_787_impl(this, {_return_370});
-  Label* label_macro_end_787 = &label_macro_end_787_impl;
-  USE(label_macro_end_787);
-  // ../../test/torque/test-torque.tq:183:41
+  TVARIABLE(Smi, _return_356_impl);
+  auto _return_356 = &_return_356_impl;
+  USE(_return_356);
+  Label label_macro_end_1271_impl(this, {_return_356});
+  Label* label_macro_end_1271 = &label_macro_end_1271_impl;
+  USE(label_macro_end_1271);
+  // ../../test/torque/test-torque.tq:185:42
   {
-    // ../../test/torque/test-torque.tq:184:4
-    auto t1768 = [=]() {
-      return true;
+    // ../../test/torque/test-torque.tq:186:5
+    auto t1915 = [=]() {
+      return implicit_cast<bool>(true);
     };
-    auto t1769 = [=]() {
-      return false;
+    auto t1916 = [=]() {
+      return implicit_cast<bool>(false);
     };
-    TVARIABLE(BoolT, t1770_654_impl);
-    auto t1770_654 = &t1770_654_impl;
-    USE(t1770_654);
+    TVARIABLE(BoolT, t1917_839_impl);
+    auto t1917_839 = &t1917_839_impl;
+    USE(t1917_839);
     {
-      Label label__True_460_impl(this);
-      Label* label__True_460 = &label__True_460_impl;
-      USE(label__True_460);
-      Label label__False_461_impl(this);
-      Label* label__False_461 = &label__False_461_impl;
-      USE(label__False_461);
-      Label label__done_655_788_impl(this, {t1770_654});
-      Label* label__done_655_788 = &label__done_655_788_impl;
-      USE(label__done_655_788);
-      int31_t t1771 = 0;
-      TNode<Smi> t1772 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1771));
-      TNode<BoolT> t1773 = UncheckedCast<BoolT>(SmiLessThan(p_x, t1772));
-      USE(t1773);
-      Branch(t1773, label__True_460, label__False_461);
-      BIND(label__True_460);
-            TNode<BoolT> t1774 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1768()));
-      *t1770_654 = t1774;
-      Goto(label__done_655_788);
-      BIND(label__False_461);
-            TNode<BoolT> t1775 = UncheckedCast<BoolT>(from_constexpr6ATbool(t1769()));
-      *t1770_654 = t1775;
-      Goto(label__done_655_788);
-      BIND(label__done_655_788);
+      Label label__True_545_impl(this);
+      Label* label__True_545 = &label__True_545_impl;
+      USE(label__True_545);
+      Label label__False_546_impl(this);
+      Label* label__False_546 = &label__False_546_impl;
+      USE(label__False_546);
+      Label label__done_840_1272_impl(this, {t1917_839});
+      Label* label__done_840_1272 = &label__done_840_1272_impl;
+      USE(label__done_840_1272);
+      int31_t t1918 = 0;
+      TNode<Smi> t1919 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1918)));
+      TNode<BoolT> t1920 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>(p_x), implicit_cast<TNode<Smi>>(t1919)));
+      USE(implicit_cast<TNode<BoolT>>(t1920));
+      Branch(implicit_cast<TNode<BoolT>>(t1920), label__True_545, label__False_546);
+      BIND(label__True_545);
+            TNode<BoolT> t1921 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1915())));
+      *t1917_839 = implicit_cast<TNode<BoolT>>(t1921);
+      Goto(label__done_840_1272);
+      BIND(label__False_546);
+            TNode<BoolT> t1922 = UncheckedCast<BoolT>(from_constexpr6ATbool(implicit_cast<bool>(t1916())));
+      *t1917_839 = implicit_cast<TNode<BoolT>>(t1922);
+      Goto(label__done_840_1272);
+      BIND(label__done_840_1272);
     }
-    TVARIABLE(BoolT, b_371_impl);
-    auto b_371 = &b_371_impl;
-    USE(b_371);
-    *b_371 = (*t1770_654).value();
-    // ../../test/torque/test-torque.tq:185:4
-    auto t1776 = [=]() {
-      int31_t t1778 = 10;
-      TNode<Smi> t1779 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1778));
-      TNode<Smi> t1780 = UncheckedCast<Smi>(SmiSub(p_x, t1779));
-      USE(t1780);
-      return t1780;
+    TVARIABLE(BoolT, b_357_impl);
+    auto b_357 = &b_357_impl;
+    USE(b_357);
+    *b_357 = implicit_cast<TNode<BoolT>>((*t1917_839).value());
+    // ../../test/torque/test-torque.tq:187:5
+    auto t1923 = [=]() {
+      int31_t t1925 = 10;
+      TNode<Smi> t1926 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1925)));
+      TNode<Smi> t1927 = UncheckedCast<Smi>(SmiSub(implicit_cast<TNode<Smi>>(p_x), implicit_cast<TNode<Smi>>(t1926)));
+      USE(implicit_cast<TNode<Smi>>(t1927));
+      return implicit_cast<TNode<Smi>>(t1927);
     };
-    auto t1777 = [=]() {
-      int31_t t1781 = 100;
-      TNode<Smi> t1782 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1781));
-      TNode<Smi> t1783 = UncheckedCast<Smi>(SmiAdd(p_x, t1782));
-      USE(t1783);
-      return t1783;
+    auto t1924 = [=]() {
+      int31_t t1928 = 100;
+      TNode<Smi> t1929 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1928)));
+      TNode<Smi> t1930 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>(p_x), implicit_cast<TNode<Smi>>(t1929)));
+      USE(implicit_cast<TNode<Smi>>(t1930));
+      return implicit_cast<TNode<Smi>>(t1930);
     };
-    TVARIABLE(Smi, t1784_656_impl);
-    auto t1784_656 = &t1784_656_impl;
-    USE(t1784_656);
+    TVARIABLE(Smi, t1931_841_impl);
+    auto t1931_841 = &t1931_841_impl;
+    USE(t1931_841);
     {
-      Label label__True_462_impl(this);
-      Label* label__True_462 = &label__True_462_impl;
-      USE(label__True_462);
-      Label label__False_463_impl(this);
-      Label* label__False_463 = &label__False_463_impl;
-      USE(label__False_463);
-      Label label__done_657_789_impl(this, {t1784_656});
-      Label* label__done_657_789 = &label__done_657_789_impl;
-      USE(label__done_657_789);
-      Branch((*b_371).value(), label__True_462, label__False_463);
-      BIND(label__True_462);
-            *t1784_656 = t1776();
-      Goto(label__done_657_789);
-      BIND(label__False_463);
-            *t1784_656 = t1777();
-      Goto(label__done_657_789);
-      BIND(label__done_657_789);
+      Label label__True_547_impl(this);
+      Label* label__True_547 = &label__True_547_impl;
+      USE(label__True_547);
+      Label label__False_548_impl(this);
+      Label* label__False_548 = &label__False_548_impl;
+      USE(label__False_548);
+      Label label__done_842_1273_impl(this, {t1931_841});
+      Label* label__done_842_1273 = &label__done_842_1273_impl;
+      USE(label__done_842_1273);
+      Branch(implicit_cast<TNode<BoolT>>((*b_357).value()), label__True_547, label__False_548);
+      BIND(label__True_547);
+            *t1931_841 = implicit_cast<TNode<Smi>>(t1923());
+      Goto(label__done_842_1273);
+      BIND(label__False_548);
+            *t1931_841 = implicit_cast<TNode<Smi>>(t1924());
+      Goto(label__done_842_1273);
+      BIND(label__done_842_1273);
     }
-    *_return_370 = (*t1784_656).value();
-    Goto(label_macro_end_787);
+    *_return_356 = implicit_cast<TNode<Smi>>((*t1931_841).value());
+    Goto(label_macro_end_1271);
   }
-  BIND(label_macro_end_787);
-  return (*_return_370).value();
+  BIND(label_macro_end_1271);
+  return implicit_cast<TNode<Smi>>((*_return_356).value());
 }
 
 void TestBuiltinsFromDSLAssembler::TestFunctionPointerToGeneric(TNode<Context> p_c) {
-  Label label_macro_end_790_impl(this, {});
-  Label* label_macro_end_790 = &label_macro_end_790_impl;
-  USE(label_macro_end_790);
-  // ../../test/torque/test-torque.tq:188:49
+  Label label_macro_end_1274_impl(this, {});
+  Label* label_macro_end_1274 = &label_macro_end_1274_impl;
+  USE(label_macro_end_1274);
+  // ../../test/torque/test-torque.tq:190:50
   {
-    // ../../test/torque/test-torque.tq:189:4
-    TVARIABLE(Code, fptr1_372_impl);
-    auto fptr1_372 = &fptr1_372_impl;
-    USE(fptr1_372);
-    *fptr1_372 = HeapConstant(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest5ATSmi).code());
-    // ../../test/torque/test-torque.tq:190:4
-    TVARIABLE(Code, fptr2_373_impl);
-    auto fptr2_373 = &fptr2_373_impl;
-    USE(fptr2_373);
-    *fptr2_373 = HeapConstant(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi).code());
-    // ../../test/torque/test-torque.tq:192:4
-    Label label__True_464_impl(this);
-    Label* label__True_464 = &label__True_464_impl;
-    USE(label__True_464);
-    Label label__False_465_impl(this);
-    Label* label__False_465 = &label__False_465_impl;
-    USE(label__False_465);
-    int31_t t1785 = 0;
-    TNode<Smi> t1786 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1785));
-    TNode<Object> t1787 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest5ATSmi).descriptor(), (*fptr1_372).value(), p_c, t1786));
-    USE(t1787);
-    TNode<BoolT> t1788 = UncheckedCast<BoolT>(WordEqual(t1787, Null()));
-    USE(t1788);
-    Branch(t1788, label__True_464, label__False_465);
-    BIND(label__False_465);
-    Print("assert 'fptr1(c, 0) == Null' failed at ../../test/torque/test-torque.tq:192:4");
+    // ../../test/torque/test-torque.tq:191:5
+    TVARIABLE(Code, fptr1_358_impl);
+    auto fptr1_358 = &fptr1_358_impl;
+    USE(fptr1_358);
+    *fptr1_358 = implicit_cast<TNode<Code>>(HeapConstant(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest5ATSmi).code()));
+    // ../../test/torque/test-torque.tq:192:5
+    TVARIABLE(Code, fptr2_359_impl);
+    auto fptr2_359 = &fptr2_359_impl;
+    USE(fptr2_359);
+    *fptr2_359 = implicit_cast<TNode<Code>>(HeapConstant(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi).code()));
+    // ../../test/torque/test-torque.tq:194:5
+    Label label__True_549_impl(this);
+    Label* label__True_549 = &label__True_549_impl;
+    USE(label__True_549);
+    Label label__False_550_impl(this);
+    Label* label__False_550 = &label__False_550_impl;
+    USE(label__False_550);
+    int31_t t1932 = 0;
+    TNode<Smi> t1933 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1932)));
+    TNode<Object> t1934 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest5ATSmi).descriptor(), implicit_cast<TNode<Code>>((*fptr1_358).value()), implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Smi>>(t1933)));
+    USE(implicit_cast<TNode<Object>>(t1934));
+    TNode<BoolT> t1935 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1934), implicit_cast<TNode<Object>>(Null())));
+    USE(implicit_cast<TNode<BoolT>>(t1935));
+    Branch(implicit_cast<TNode<BoolT>>(t1935), label__True_549, label__False_550);
+    BIND(label__False_550);
+    Print("assert 'fptr1(c, 0) == Null' failed at ../../test/torque/test-torque.tq:194:5");
     Unreachable();
-    BIND(label__True_464);
-    // ../../test/torque/test-torque.tq:193:4
-    Label label__True_466_impl(this);
-    Label* label__True_466 = &label__True_466_impl;
-    USE(label__True_466);
-    Label label__False_467_impl(this);
-    Label* label__False_467 = &label__False_467_impl;
-    USE(label__False_467);
-    int31_t t1789 = 1;
-    TNode<Smi> t1790 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1789));
-    TNode<Object> t1791 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest5ATSmi).descriptor(), (*fptr1_372).value(), p_c, t1790));
-    USE(t1791);
-    TNode<BoolT> t1792 = UncheckedCast<BoolT>(WordEqual(t1791, Null()));
-    USE(t1792);
-    Branch(t1792, label__True_466, label__False_467);
-    BIND(label__False_467);
-    Print("assert 'fptr1(c, 1) == Null' failed at ../../test/torque/test-torque.tq:193:4");
+    BIND(label__True_549);
+    // ../../test/torque/test-torque.tq:195:5
+    Label label__True_551_impl(this);
+    Label* label__True_551 = &label__True_551_impl;
+    USE(label__True_551);
+    Label label__False_552_impl(this);
+    Label* label__False_552 = &label__False_552_impl;
+    USE(label__False_552);
+    int31_t t1936 = 1;
+    TNode<Smi> t1937 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1936)));
+    TNode<Object> t1938 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest5ATSmi).descriptor(), implicit_cast<TNode<Code>>((*fptr1_358).value()), implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Smi>>(t1937)));
+    USE(implicit_cast<TNode<Object>>(t1938));
+    TNode<BoolT> t1939 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1938), implicit_cast<TNode<Object>>(Null())));
+    USE(implicit_cast<TNode<BoolT>>(t1939));
+    Branch(implicit_cast<TNode<BoolT>>(t1939), label__True_551, label__False_552);
+    BIND(label__False_552);
+    Print("assert 'fptr1(c, 1) == Null' failed at ../../test/torque/test-torque.tq:195:5");
     Unreachable();
-    BIND(label__True_466);
-    // ../../test/torque/test-torque.tq:194:4
-    Label label__True_468_impl(this);
-    Label* label__True_468 = &label__True_468_impl;
-    USE(label__True_468);
-    Label label__False_469_impl(this);
-    Label* label__False_469 = &label__False_469_impl;
-    USE(label__False_469);
-    TNode<Object> t1793 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi).descriptor(), (*fptr2_373).value(), p_c, Undefined()));
-    USE(t1793);
-    TNode<BoolT> t1794 = UncheckedCast<BoolT>(WordEqual(t1793, Undefined()));
-    USE(t1794);
-    Branch(t1794, label__True_468, label__False_469);
-    BIND(label__False_469);
-    Print("assert 'fptr2(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:194:4");
+    BIND(label__True_551);
+    // ../../test/torque/test-torque.tq:196:5
+    Label label__True_553_impl(this);
+    Label* label__True_553 = &label__True_553_impl;
+    USE(label__True_553);
+    Label label__False_554_impl(this);
+    Label* label__False_554 = &label__False_554_impl;
+    USE(label__False_554);
+    TNode<Object> t1940 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi).descriptor(), implicit_cast<TNode<Code>>((*fptr2_359).value()), implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<Object>>(t1940));
+    TNode<BoolT> t1941 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1940), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<BoolT>>(t1941));
+    Branch(implicit_cast<TNode<BoolT>>(t1941), label__True_553, label__False_554);
+    BIND(label__False_554);
+    Print("assert 'fptr2(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:196:5");
     Unreachable();
-    BIND(label__True_468);
-    // ../../test/torque/test-torque.tq:195:4
-    Label label__True_470_impl(this);
-    Label* label__True_470 = &label__True_470_impl;
-    USE(label__True_470);
-    Label label__False_471_impl(this);
-    Label* label__False_471 = &label__False_471_impl;
-    USE(label__False_471);
-    TNode<Object> t1795 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi).descriptor(), (*fptr2_373).value(), p_c, Undefined()));
-    USE(t1795);
-    TNode<BoolT> t1796 = UncheckedCast<BoolT>(WordEqual(t1795, Undefined()));
-    USE(t1796);
-    Branch(t1796, label__True_470, label__False_471);
-    BIND(label__False_471);
-    Print("assert 'fptr2(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:195:4");
+    BIND(label__True_553);
+    // ../../test/torque/test-torque.tq:197:5
+    Label label__True_555_impl(this);
+    Label* label__True_555 = &label__True_555_impl;
+    USE(label__True_555);
+    Label label__False_556_impl(this);
+    Label* label__False_556 = &label__False_556_impl;
+    USE(label__False_556);
+    TNode<Object> t1942 = UncheckedCast<Object>(CallStub(Builtins::CallableFor(isolate(), Builtins::kGenericBuiltinTest22UT12ATHeapObject5ATSmi).descriptor(), implicit_cast<TNode<Code>>((*fptr2_359).value()), implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<Object>>(t1942));
+    TNode<BoolT> t1943 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<Object>>(t1942), implicit_cast<TNode<Object>>(Undefined())));
+    USE(implicit_cast<TNode<BoolT>>(t1943));
+    Branch(implicit_cast<TNode<BoolT>>(t1943), label__True_555, label__False_556);
+    BIND(label__False_556);
+    Print("assert 'fptr2(c, Undefined) == Undefined' failed at ../../test/torque/test-torque.tq:197:5");
     Unreachable();
-    BIND(label__True_470);
+    BIND(label__True_555);
   }
 }
 
 compiler::TNode<Code> TestBuiltinsFromDSLAssembler::TestTypeAlias(TNode<Code> p_x) {
-  TVARIABLE(Code, _return_374_impl);
-  auto _return_374 = &_return_374_impl;
-  USE(_return_374);
-  Label label_macro_end_791_impl(this, {_return_374});
-  Label* label_macro_end_791 = &label_macro_end_791_impl;
-  USE(label_macro_end_791);
-  // ../../test/torque/test-torque.tq:199:41
+  TVARIABLE(Code, _return_360_impl);
+  auto _return_360 = &_return_360_impl;
+  USE(_return_360);
+  Label label_macro_end_1275_impl(this, {_return_360});
+  Label* label_macro_end_1275 = &label_macro_end_1275_impl;
+  USE(label_macro_end_1275);
+  // ../../test/torque/test-torque.tq:201:42
   {
-    // ../../test/torque/test-torque.tq:200:4
-    *_return_374 = p_x;
-    Goto(label_macro_end_791);
+    // ../../test/torque/test-torque.tq:202:5
+    *_return_360 = implicit_cast<TNode<Code>>(p_x);
+    Goto(label_macro_end_1275);
   }
-  BIND(label_macro_end_791);
-  return (*_return_374).value();
+  BIND(label_macro_end_1275);
+  return implicit_cast<TNode<Code>>((*_return_360).value());
 }
 
 compiler::TNode<Oddball> TestBuiltinsFromDSLAssembler::TestUnsafeCast(TNode<Context> p_c, TNode<Number> p_n) {
-  TVARIABLE(Oddball, _return_375_impl);
-  auto _return_375 = &_return_375_impl;
-  USE(_return_375);
-  Label label_macro_end_792_impl(this, {_return_375});
-  Label* label_macro_end_792 = &label_macro_end_792_impl;
-  USE(label_macro_end_792);
-  // ../../test/torque/test-torque.tq:203:55
+  TVARIABLE(Oddball, _return_361_impl);
+  auto _return_361 = &_return_361_impl;
+  USE(_return_361);
+  Label label_macro_end_1276_impl(this, {_return_361});
+  Label* label_macro_end_1276 = &label_macro_end_1276_impl;
+  USE(label_macro_end_1276);
+  // ../../test/torque/test-torque.tq:205:56
   {
-    // ../../test/torque/test-torque.tq:204:4
+    // ../../test/torque/test-torque.tq:206:5
     {
-      Label label__True_472_impl(this);
-      Label* label__True_472 = &label__True_472_impl;
-      USE(label__True_472);
-      Label label__False_473_impl(this, {});
-      Label* label__False_473 = &label__False_473_impl;
-      USE(label__False_473);
-      TNode<BoolT> t1797 = UncheckedCast<BoolT>(TaggedIsSmi(p_n));
-      USE(t1797);
-      Branch(t1797, label__True_472, label__False_473);
-      if (label__True_472->is_used())
+      Label label__True_557_impl(this);
+      Label* label__True_557 = &label__True_557_impl;
+      USE(label__True_557);
+      Label label__False_558_impl(this, {});
+      Label* label__False_558 = &label__False_558_impl;
+      USE(label__False_558);
+      TNode<BoolT> t1944 = UncheckedCast<BoolT>(TaggedIsSmi(implicit_cast<TNode<Object>>(p_n)));
+      USE(implicit_cast<TNode<BoolT>>(t1944));
+      Branch(implicit_cast<TNode<BoolT>>(t1944), label__True_557, label__False_558);
+      if (label__True_557->is_used())
       {
-        BIND(label__True_472);
-        // ../../test/torque/test-torque.tq:204:24
+        BIND(label__True_557);
+        // ../../test/torque/test-torque.tq:206:25
         {
-          // ../../test/torque/test-torque.tq:205:6
-          TNode<Smi> t1798 = UncheckedCast<Smi>(unsafe_cast5ATSmi(p_n));
-          USE(t1798);
-          TVARIABLE(Smi, m_376_impl);
-          auto m_376 = &m_376_impl;
-          USE(m_376);
-          *m_376 = t1798;
-          // ../../test/torque/test-torque.tq:207:6
-          Label label__True_474_impl(this);
-          Label* label__True_474 = &label__True_474_impl;
-          USE(label__True_474);
-          Label label__False_475_impl(this);
-          Label* label__False_475 = &label__False_475_impl;
-          USE(label__False_475);
-          TNode<Smi> t1799 = UncheckedCast<Smi>(CallBuiltin(Builtins::kTestHelperPlus1, p_c, (*m_376).value()));
-          USE(t1799);
-          int31_t t1800 = 11;
-          TNode<Smi> t1801 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1800));
-          TNode<BoolT> t1802 = UncheckedCast<BoolT>(SmiEqual(t1799, t1801));
-          USE(t1802);
-          Branch(t1802, label__True_474, label__False_475);
-          BIND(label__False_475);
-          Print("assert 'TestHelperPlus1(c, m) == 11' failed at ../../test/torque/test-torque.tq:207:6");
+          // ../../test/torque/test-torque.tq:207:7
+          TNode<Smi> t1945 = UncheckedCast<Smi>(unsafe_cast5ATSmi(implicit_cast<TNode<Object>>(p_n)));
+          USE(implicit_cast<TNode<Smi>>(t1945));
+          TVARIABLE(Smi, m_362_impl);
+          auto m_362 = &m_362_impl;
+          USE(m_362);
+          *m_362 = implicit_cast<TNode<Smi>>(t1945);
+          // ../../test/torque/test-torque.tq:209:7
+          Label label__True_559_impl(this);
+          Label* label__True_559 = &label__True_559_impl;
+          USE(label__True_559);
+          Label label__False_560_impl(this);
+          Label* label__False_560 = &label__False_560_impl;
+          USE(label__False_560);
+          TNode<Smi> t1946 = UncheckedCast<Smi>(CallBuiltin(Builtins::kTestHelperPlus1, implicit_cast<TNode<Context>>(p_c), implicit_cast<TNode<Smi>>((*m_362).value())));
+          USE(implicit_cast<TNode<Smi>>(t1946));
+          int31_t t1947 = 11;
+          TNode<Smi> t1948 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1947)));
+          TNode<BoolT> t1949 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>(t1946), implicit_cast<TNode<Smi>>(t1948)));
+          USE(implicit_cast<TNode<BoolT>>(t1949));
+          Branch(implicit_cast<TNode<BoolT>>(t1949), label__True_559, label__False_560);
+          BIND(label__False_560);
+          Print("assert 'TestHelperPlus1(c, m) == 11' failed at ../../test/torque/test-torque.tq:209:7");
           Unreachable();
-          BIND(label__True_474);
-          // ../../test/torque/test-torque.tq:208:6
-          *_return_375 = True();
-          Goto(label_macro_end_792);
+          BIND(label__True_559);
+          // ../../test/torque/test-torque.tq:210:7
+          *_return_361 = implicit_cast<TNode<Oddball>>(True());
+          Goto(label_macro_end_1276);
         }
       }
-      BIND(label__False_473);
+      BIND(label__False_558);
     }
-    // ../../test/torque/test-torque.tq:210:4
-    *_return_375 = False();
-    Goto(label_macro_end_792);
+    // ../../test/torque/test-torque.tq:212:5
+    *_return_361 = implicit_cast<TNode<Oddball>>(False());
+    Goto(label_macro_end_1276);
   }
-  BIND(label_macro_end_792);
-  return (*_return_375).value();
+  BIND(label_macro_end_1276);
+  return implicit_cast<TNode<Oddball>>((*_return_361).value());
 }
 
 void TestBuiltinsFromDSLAssembler::TestHexLiteral() {
-  Label label_macro_end_793_impl(this, {});
-  Label* label_macro_end_793 = &label_macro_end_793_impl;
-  USE(label_macro_end_793);
-  // ../../test/torque/test-torque.tq:213:25
+  Label label_macro_end_1277_impl(this, {});
+  Label* label_macro_end_1277 = &label_macro_end_1277_impl;
+  USE(label_macro_end_1277);
+  // ../../test/torque/test-torque.tq:215:26
   {
-    // ../../test/torque/test-torque.tq:214:4
-    Label label__True_476_impl(this);
-    Label* label__True_476 = &label__True_476_impl;
-    USE(label__True_476);
-    Label label__False_477_impl(this);
-    Label* label__False_477 = &label__False_477_impl;
-    USE(label__False_477);
-    int31_t t1803 = 0xffff;
-    TNode<IntPtrT> t1804 = UncheckedCast<IntPtrT>(convert8ATintptr(t1803));
-    USE(t1804);
-    int31_t t1805 = 1;
-    TNode<IntPtrT> t1806 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1805));
-    TNode<IntPtrT> t1807 = UncheckedCast<IntPtrT>(IntPtrAdd(t1804, t1806));
-    USE(t1807);
-    int31_t t1808 = 0x10000;
-    TNode<IntPtrT> t1809 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1808));
-    TNode<BoolT> t1810 = UncheckedCast<BoolT>(WordEqual(t1807, t1809));
-    USE(t1810);
-    Branch(t1810, label__True_476, label__False_477);
-    BIND(label__False_477);
-    Print("assert 'convert<intptr>(0xffff) + 1 == 0x10000' failed at ../../test/torque/test-torque.tq:214:4");
+    // ../../test/torque/test-torque.tq:216:5
+    Label label__True_561_impl(this);
+    Label* label__True_561 = &label__True_561_impl;
+    USE(label__True_561);
+    Label label__False_562_impl(this);
+    Label* label__False_562 = &label__False_562_impl;
+    USE(label__False_562);
+    int31_t t1950 = 0xffff;
+    TNode<IntPtrT> t1951 = UncheckedCast<IntPtrT>(convert8ATintptr(implicit_cast<int31_t>(t1950)));
+    USE(implicit_cast<TNode<IntPtrT>>(t1951));
+    int31_t t1952 = 1;
+    TNode<IntPtrT> t1953 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1952)));
+    TNode<IntPtrT> t1954 = UncheckedCast<IntPtrT>(IntPtrAdd(implicit_cast<TNode<IntPtrT>>(t1951), implicit_cast<TNode<IntPtrT>>(t1953)));
+    USE(implicit_cast<TNode<IntPtrT>>(t1954));
+    int31_t t1955 = 0x10000;
+    TNode<IntPtrT> t1956 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1955)));
+    TNode<BoolT> t1957 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<IntPtrT>>(t1954), implicit_cast<TNode<IntPtrT>>(t1956)));
+    USE(implicit_cast<TNode<BoolT>>(t1957));
+    Branch(implicit_cast<TNode<BoolT>>(t1957), label__True_561, label__False_562);
+    BIND(label__False_562);
+    Print("assert 'convert<intptr>(0xffff) + 1 == 0x10000' failed at ../../test/torque/test-torque.tq:216:5");
     Unreachable();
-    BIND(label__True_476);
-    // ../../test/torque/test-torque.tq:215:4
-    Label label__True_478_impl(this);
-    Label* label__True_478 = &label__True_478_impl;
-    USE(label__True_478);
-    Label label__False_479_impl(this);
-    Label* label__False_479 = &label__False_479_impl;
-    USE(label__False_479);
-    int31_t t1811 = -0xffff;
-    TNode<IntPtrT> t1812 = UncheckedCast<IntPtrT>(convert8ATintptr(t1811));
-    USE(t1812);
-    int31_t t1813 = -65535;
-    TNode<IntPtrT> t1814 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1813));
-    TNode<BoolT> t1815 = UncheckedCast<BoolT>(WordEqual(t1812, t1814));
-    USE(t1815);
-    Branch(t1815, label__True_478, label__False_479);
-    BIND(label__False_479);
-    Print("assert 'convert<intptr>(-0xffff) == -65535' failed at ../../test/torque/test-torque.tq:215:4");
+    BIND(label__True_561);
+    // ../../test/torque/test-torque.tq:217:5
+    Label label__True_563_impl(this);
+    Label* label__True_563 = &label__True_563_impl;
+    USE(label__True_563);
+    Label label__False_564_impl(this);
+    Label* label__False_564 = &label__False_564_impl;
+    USE(label__False_564);
+    int31_t t1958 = -0xffff;
+    TNode<IntPtrT> t1959 = UncheckedCast<IntPtrT>(convert8ATintptr(implicit_cast<int31_t>(t1958)));
+    USE(implicit_cast<TNode<IntPtrT>>(t1959));
+    int31_t t1960 = -65535;
+    TNode<IntPtrT> t1961 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1960)));
+    TNode<BoolT> t1962 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<IntPtrT>>(t1959), implicit_cast<TNode<IntPtrT>>(t1961)));
+    USE(implicit_cast<TNode<BoolT>>(t1962));
+    Branch(implicit_cast<TNode<BoolT>>(t1962), label__True_563, label__False_564);
+    BIND(label__False_564);
+    Print("assert 'convert<intptr>(-0xffff) == -65535' failed at ../../test/torque/test-torque.tq:217:5");
     Unreachable();
-    BIND(label__True_478);
+    BIND(label__True_563);
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestLargeIntegerLiterals(TNode<Context> p_c) {
-  Label label_macro_end_794_impl(this, {});
-  Label* label_macro_end_794 = &label_macro_end_794_impl;
-  USE(label_macro_end_794);
-  // ../../test/torque/test-torque.tq:218:45
+  Label label_macro_end_1278_impl(this, {});
+  Label* label_macro_end_1278 = &label_macro_end_1278_impl;
+  USE(label_macro_end_1278);
+  // ../../test/torque/test-torque.tq:220:46
   {
-    // ../../test/torque/test-torque.tq:219:4
-    int32_t t1816 = 0x40000000;
-    TVARIABLE(Int32T, x_377_impl);
-    auto x_377 = &x_377_impl;
-    USE(x_377);
-    TNode<Int32T> t1817 = UncheckedCast<Int32T>(from_constexpr7ATint32(t1816));
-    *x_377 = t1817;
-    // ../../test/torque/test-torque.tq:220:4
-    int32_t t1818 = 0x7fffffff;
-    TVARIABLE(Int32T, y_378_impl);
-    auto y_378 = &y_378_impl;
-    USE(y_378);
-    TNode<Int32T> t1819 = UncheckedCast<Int32T>(from_constexpr7ATint32(t1818));
-    *y_378 = t1819;
+    // ../../test/torque/test-torque.tq:221:5
+    int32_t t1963 = 0x40000000;
+    TVARIABLE(Int32T, x_363_impl);
+    auto x_363 = &x_363_impl;
+    USE(x_363);
+    TNode<Int32T> t1964 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int32_t>(t1963)));
+    *x_363 = implicit_cast<TNode<Int32T>>(t1964);
+    // ../../test/torque/test-torque.tq:222:5
+    int32_t t1965 = 0x7fffffff;
+    TVARIABLE(Int32T, y_364_impl);
+    auto y_364 = &y_364_impl;
+    USE(y_364);
+    TNode<Int32T> t1966 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int32_t>(t1965)));
+    *y_364 = implicit_cast<TNode<Int32T>>(t1966);
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestMultilineAssert() {
-  Label label_macro_end_795_impl(this, {});
-  Label* label_macro_end_795 = &label_macro_end_795_impl;
-  USE(label_macro_end_795);
-  // ../../test/torque/test-torque.tq:223:30
+  Label label_macro_end_1279_impl(this, {});
+  Label* label_macro_end_1279 = &label_macro_end_1279_impl;
+  USE(label_macro_end_1279);
+  // ../../test/torque/test-torque.tq:225:31
   {
-    // ../../test/torque/test-torque.tq:224:4
-    int31_t t1820 = 5;
-    TVARIABLE(Smi, someVeryLongVariableNameThatWillCauseLineBreaks_379_impl);
-    auto someVeryLongVariableNameThatWillCauseLineBreaks_379 = &someVeryLongVariableNameThatWillCauseLineBreaks_379_impl;
-    USE(someVeryLongVariableNameThatWillCauseLineBreaks_379);
-    TNode<Smi> t1821 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1820));
-    *someVeryLongVariableNameThatWillCauseLineBreaks_379 = t1821;
-    // ../../test/torque/test-torque.tq:225:4
-    Label label__True_480_impl(this);
-    Label* label__True_480 = &label__True_480_impl;
-    USE(label__True_480);
-    Label label__False_481_impl(this);
-    Label* label__False_481 = &label__False_481_impl;
-    USE(label__False_481);
-    Label label__True_482_impl(this);
-    Label* label__True_482 = &label__True_482_impl;
-    USE(label__True_482);
-    int31_t t1822 = 0;
-    TNode<Smi> t1823 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1822));
-    TNode<BoolT> t1824 = UncheckedCast<BoolT>(SmiGreaterThan((*someVeryLongVariableNameThatWillCauseLineBreaks_379).value(), t1823));
-    USE(t1824);
-    GotoIfNot(t1824, label__False_481);
-    int31_t t1825 = 10;
-    TNode<Smi> t1826 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1825));
-    TNode<BoolT> t1827 = UncheckedCast<BoolT>(SmiLessThan((*someVeryLongVariableNameThatWillCauseLineBreaks_379).value(), t1826));
-    USE(t1827);
-    Branch(t1827, label__True_480, label__False_481);
-    BIND(label__False_481);
-    Print("assert 'someVeryLongVariableNameThatWillCauseLineBreaks > 0 && someVeryLongVariableNameThatWillCauseLineBreaks < 10' failed at ../../test/torque/test-torque.tq:225:4");
+    // ../../test/torque/test-torque.tq:226:5
+    int31_t t1967 = 5;
+    TVARIABLE(Smi, someVeryLongVariableNameThatWillCauseLineBreaks_365_impl);
+    auto someVeryLongVariableNameThatWillCauseLineBreaks_365 = &someVeryLongVariableNameThatWillCauseLineBreaks_365_impl;
+    USE(someVeryLongVariableNameThatWillCauseLineBreaks_365);
+    TNode<Smi> t1968 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1967)));
+    *someVeryLongVariableNameThatWillCauseLineBreaks_365 = implicit_cast<TNode<Smi>>(t1968);
+    // ../../test/torque/test-torque.tq:227:5
+    Label label__True_565_impl(this);
+    Label* label__True_565 = &label__True_565_impl;
+    USE(label__True_565);
+    Label label__False_566_impl(this);
+    Label* label__False_566 = &label__False_566_impl;
+    USE(label__False_566);
+    Label label__True_567_impl(this);
+    Label* label__True_567 = &label__True_567_impl;
+    USE(label__True_567);
+    int31_t t1969 = 0;
+    TNode<Smi> t1970 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1969)));
+    TNode<BoolT> t1971 = UncheckedCast<BoolT>(SmiGreaterThan(implicit_cast<TNode<Smi>>((*someVeryLongVariableNameThatWillCauseLineBreaks_365).value()), implicit_cast<TNode<Smi>>(t1970)));
+    USE(implicit_cast<TNode<BoolT>>(t1971));
+    GotoIfNot(implicit_cast<TNode<BoolT>>(t1971), label__False_566);
+    int31_t t1972 = 10;
+    TNode<Smi> t1973 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1972)));
+    TNode<BoolT> t1974 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>((*someVeryLongVariableNameThatWillCauseLineBreaks_365).value()), implicit_cast<TNode<Smi>>(t1973)));
+    USE(implicit_cast<TNode<BoolT>>(t1974));
+    Branch(implicit_cast<TNode<BoolT>>(t1974), label__True_565, label__False_566);
+    BIND(label__False_566);
+    Print("assert 'someVeryLongVariableNameThatWillCauseLineBreaks > 0 && someVeryLongVariableNameThatWillCauseLineBreaks < 10' failed at ../../test/torque/test-torque.tq:227:5");
     Unreachable();
-    BIND(label__True_480);
+    BIND(label__True_565);
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestNewlineInString() {
-  Label label_macro_end_796_impl(this, {});
-  Label* label_macro_end_796 = &label_macro_end_796_impl;
-  USE(label_macro_end_796);
-  // ../../test/torque/test-torque.tq:230:30
+  Label label_macro_end_1280_impl(this, {});
+  Label* label_macro_end_1280 = &label_macro_end_1280_impl;
+  USE(label_macro_end_1280);
+  // ../../test/torque/test-torque.tq:232:31
   {
-    // ../../test/torque/test-torque.tq:231:4
-    const char* t1828 = "Hello, World!\n";
-    Print(t1828);
+    // ../../test/torque/test-torque.tq:233:5
+    const char* t1975 = "Hello, World!\n";
+    Print(implicit_cast<const char*>(t1975));
   }
 }
 
 int31_t TestBuiltinsFromDSLAssembler::kConstexprConst() {
-  int31_t t1829 = 5;
-  return t1829;
+  int31_t t1976 = 5;
+  return implicit_cast<int31_t>(t1976);
 }
 
 compiler::TNode<IntPtrT> TestBuiltinsFromDSLAssembler::kIntptrConst() {
-  int31_t t1830 = 4;
-  TNode<IntPtrT> t1831 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1830));
-  return t1831;
+  int31_t t1977 = 4;
+  TNode<IntPtrT> t1978 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1977)));
+  return implicit_cast<TNode<IntPtrT>>(t1978);
 }
 
 compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::kSmiConst() {
-  int31_t t1832 = 3;
-  TNode<Smi> t1833 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1832));
-  return t1833;
+  int31_t t1979 = 3;
+  TNode<Smi> t1980 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1979)));
+  return implicit_cast<TNode<Smi>>(t1980);
 }
 
 void TestBuiltinsFromDSLAssembler::TestModuleConstBindings() {
-  Label label_macro_end_797_impl(this, {});
-  Label* label_macro_end_797 = &label_macro_end_797_impl;
-  USE(label_macro_end_797);
-  // ../../test/torque/test-torque.tq:238:34
+  Label label_macro_end_1281_impl(this, {});
+  Label* label_macro_end_1281 = &label_macro_end_1281_impl;
+  USE(label_macro_end_1281);
+  // ../../test/torque/test-torque.tq:240:35
   {
-    // ../../test/torque/test-torque.tq:239:4
-    Label label__True_483_impl(this);
-    Label* label__True_483 = &label__True_483_impl;
-    USE(label__True_483);
-    Label label__False_484_impl(this);
-    Label* label__False_484 = &label__False_484_impl;
-    USE(label__False_484);
-    int31_t t1834 = 5;
-    TNode<Int32T> t1835 = UncheckedCast<Int32T>(Int32Constant(t1834));
-    USE(t1835);
-    TNode<Int32T> t1836 = UncheckedCast<Int32T>(from_constexpr7ATint32(kConstexprConst()));
-    TNode<BoolT> t1837 = UncheckedCast<BoolT>(Word32Equal(t1836, t1835));
-    USE(t1837);
-    Branch(t1837, label__True_483, label__False_484);
-    BIND(label__False_484);
-    Print("assert 'kConstexprConst == Int32Constant(5)' failed at ../../test/torque/test-torque.tq:239:4");
+    // ../../test/torque/test-torque.tq:241:5
+    Label label__True_568_impl(this);
+    Label* label__True_568 = &label__True_568_impl;
+    USE(label__True_568);
+    Label label__False_569_impl(this);
+    Label* label__False_569 = &label__False_569_impl;
+    USE(label__False_569);
+    int31_t t1981 = 5;
+    TNode<Int32T> t1982 = UncheckedCast<Int32T>(Int32Constant(implicit_cast<int31_t>(t1981)));
+    USE(implicit_cast<TNode<Int32T>>(t1982));
+    TNode<Int32T> t1983 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(kConstexprConst())));
+    TNode<BoolT> t1984 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Int32T>>(t1983), implicit_cast<TNode<Int32T>>(t1982)));
+    USE(implicit_cast<TNode<BoolT>>(t1984));
+    Branch(implicit_cast<TNode<BoolT>>(t1984), label__True_568, label__False_569);
+    BIND(label__False_569);
+    Print("assert 'kConstexprConst == Int32Constant(5)' failed at ../../test/torque/test-torque.tq:241:5");
     Unreachable();
-    BIND(label__True_483);
-    // ../../test/torque/test-torque.tq:240:4
-    Label label__True_485_impl(this);
-    Label* label__True_485 = &label__True_485_impl;
-    USE(label__True_485);
-    Label label__False_486_impl(this);
-    Label* label__False_486 = &label__False_486_impl;
-    USE(label__False_486);
-    int31_t t1838 = 4;
-    TNode<IntPtrT> t1839 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(t1838));
-    TNode<BoolT> t1840 = UncheckedCast<BoolT>(WordEqual(kIntptrConst(), t1839));
-    USE(t1840);
-    Branch(t1840, label__True_485, label__False_486);
-    BIND(label__False_486);
-    Print("assert 'kIntptrConst == 4' failed at ../../test/torque/test-torque.tq:240:4");
+    BIND(label__True_568);
+    // ../../test/torque/test-torque.tq:242:5
+    Label label__True_570_impl(this);
+    Label* label__True_570 = &label__True_570_impl;
+    USE(label__True_570);
+    Label label__False_571_impl(this);
+    Label* label__False_571 = &label__False_571_impl;
+    USE(label__False_571);
+    int31_t t1985 = 4;
+    TNode<IntPtrT> t1986 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t1985)));
+    TNode<BoolT> t1987 = UncheckedCast<BoolT>(WordEqual(implicit_cast<TNode<IntPtrT>>(kIntptrConst()), implicit_cast<TNode<IntPtrT>>(t1986)));
+    USE(implicit_cast<TNode<BoolT>>(t1987));
+    Branch(implicit_cast<TNode<BoolT>>(t1987), label__True_570, label__False_571);
+    BIND(label__False_571);
+    Print("assert 'kIntptrConst == 4' failed at ../../test/torque/test-torque.tq:242:5");
     Unreachable();
-    BIND(label__True_485);
-    // ../../test/torque/test-torque.tq:241:4
-    Label label__True_487_impl(this);
-    Label* label__True_487 = &label__True_487_impl;
-    USE(label__True_487);
-    Label label__False_488_impl(this);
-    Label* label__False_488 = &label__False_488_impl;
-    USE(label__False_488);
-    int31_t t1841 = 3;
-    TNode<Smi> t1842 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1841));
-    TNode<BoolT> t1843 = UncheckedCast<BoolT>(SmiEqual(kSmiConst(), t1842));
-    USE(t1843);
-    Branch(t1843, label__True_487, label__False_488);
-    BIND(label__False_488);
-    Print("assert 'kSmiConst == 3' failed at ../../test/torque/test-torque.tq:241:4");
+    BIND(label__True_570);
+    // ../../test/torque/test-torque.tq:243:5
+    Label label__True_572_impl(this);
+    Label* label__True_572 = &label__True_572_impl;
+    USE(label__True_572);
+    Label label__False_573_impl(this);
+    Label* label__False_573 = &label__False_573_impl;
+    USE(label__False_573);
+    int31_t t1988 = 3;
+    TNode<Smi> t1989 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1988)));
+    TNode<BoolT> t1990 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>(kSmiConst()), implicit_cast<TNode<Smi>>(t1989)));
+    USE(implicit_cast<TNode<BoolT>>(t1990));
+    Branch(implicit_cast<TNode<BoolT>>(t1990), label__True_572, label__False_573);
+    BIND(label__False_573);
+    Print("assert 'kSmiConst == 3' failed at ../../test/torque/test-torque.tq:243:5");
     Unreachable();
-    BIND(label__True_487);
+    BIND(label__True_572);
   }
 }
 
 void TestBuiltinsFromDSLAssembler::TestLocalConstBindings() {
-  Label label_macro_end_798_impl(this, {});
-  Label* label_macro_end_798 = &label_macro_end_798_impl;
-  USE(label_macro_end_798);
-  // ../../test/torque/test-torque.tq:244:33
+  Label label_macro_end_1282_impl(this, {});
+  Label* label_macro_end_1282 = &label_macro_end_1282_impl;
+  USE(label_macro_end_1282);
+  // ../../test/torque/test-torque.tq:246:34
   {
-    // ../../test/torque/test-torque.tq:245:4
-    int31_t t1844 = 3;
-    TNode<Smi> kSmi_380_impl;
-    auto kSmi_380 = &kSmi_380_impl;
-    USE(kSmi_380);
-    TNode<Smi> t1845 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1844));
-    *kSmi_380 = t1845;
-    // ../../test/torque/test-torque.tq:246:4
-    Label label__True_489_impl(this);
-    Label* label__True_489 = &label__True_489_impl;
-    USE(label__True_489);
-    Label label__False_490_impl(this);
-    Label* label__False_490 = &label__False_490_impl;
-    USE(label__False_490);
-    int31_t t1846 = 3;
-    TNode<Smi> t1847 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1846));
-    TNode<BoolT> t1848 = UncheckedCast<BoolT>(SmiEqual((*kSmi_380), t1847));
-    USE(t1848);
-    Branch(t1848, label__True_489, label__False_490);
-    BIND(label__False_490);
-    Print("assert 'kSmi == 3' failed at ../../test/torque/test-torque.tq:246:4");
+    // ../../test/torque/test-torque.tq:247:5
+    int31_t t1991 = 3;
+    int31_t x_843_impl;
+    auto x_843 = &x_843_impl;
+    USE(x_843);
+    *x_843 = implicit_cast<int31_t>(t1991);
+    // ../../test/torque/test-torque.tq:248:5
+    TNode<Smi> x_smi_844_impl;
+    auto x_smi_844 = &x_smi_844_impl;
+    USE(x_smi_844);
+    TNode<Smi> t1992 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>((*x_843))));
+    *x_smi_844 = implicit_cast<TNode<Smi>>(t1992);
+    // ../../test/torque/test-torque.tq:249:5
+    {
+      // ../../test/torque/test-torque.tq:250:7
+      int31_t t1993 = 1;
+      TNode<Smi> t1994 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1993)));
+      USE(implicit_cast<TNode<Smi>>(t1994));
+      TNode<Smi> t1995 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>((*x_843))));
+      TNode<Smi> t1996 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>(t1995), implicit_cast<TNode<Smi>>(t1994)));
+      USE(implicit_cast<TNode<Smi>>(t1996));
+      TNode<Smi> x_845_impl;
+      auto x_845 = &x_845_impl;
+      USE(x_845);
+      *x_845 = implicit_cast<TNode<Smi>>(t1996);
+      // ../../test/torque/test-torque.tq:251:7
+      Label label__True_574_impl(this);
+      Label* label__True_574 = &label__True_574_impl;
+      USE(label__True_574);
+      Label label__False_575_impl(this);
+      Label* label__False_575 = &label__False_575_impl;
+      USE(label__False_575);
+      int31_t t1997 = 1;
+      TNode<Smi> t1998 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t1997)));
+      TNode<Smi> t1999 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*x_smi_844)), implicit_cast<TNode<Smi>>(t1998)));
+      USE(implicit_cast<TNode<Smi>>(t1999));
+      TNode<BoolT> t2000 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*x_845)), implicit_cast<TNode<Smi>>(t1999)));
+      USE(implicit_cast<TNode<BoolT>>(t2000));
+      Branch(implicit_cast<TNode<BoolT>>(t2000), label__True_574, label__False_575);
+      BIND(label__False_575);
+      Print("assert 'x == x_smi + 1' failed at ../../test/torque/test-torque.tq:251:7");
+      Unreachable();
+      BIND(label__True_574);
+      // ../../test/torque/test-torque.tq:252:7
+      TNode<Smi> x_smi_846_impl;
+      auto x_smi_846 = &x_smi_846_impl;
+      USE(x_smi_846);
+      *x_smi_846 = implicit_cast<TNode<Smi>>((*x_845));
+      // ../../test/torque/test-torque.tq:253:7
+      Label label__True_576_impl(this);
+      Label* label__True_576 = &label__True_576_impl;
+      USE(label__True_576);
+      Label label__False_577_impl(this);
+      Label* label__False_577 = &label__False_577_impl;
+      USE(label__False_577);
+      TNode<BoolT> t2001 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*x_845)), implicit_cast<TNode<Smi>>((*x_smi_846))));
+      USE(implicit_cast<TNode<BoolT>>(t2001));
+      Branch(implicit_cast<TNode<BoolT>>(t2001), label__True_576, label__False_577);
+      BIND(label__False_577);
+      Print("assert 'x == x_smi' failed at ../../test/torque/test-torque.tq:253:7");
+      Unreachable();
+      BIND(label__True_576);
+      // ../../test/torque/test-torque.tq:254:7
+      Label label__True_578_impl(this);
+      Label* label__True_578 = &label__True_578_impl;
+      USE(label__True_578);
+      Label label__False_579_impl(this);
+      Label* label__False_579 = &label__False_579_impl;
+      USE(label__False_579);
+      int31_t t2002 = 4;
+      TNode<Smi> t2003 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2002)));
+      TNode<BoolT> t2004 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*x_845)), implicit_cast<TNode<Smi>>(t2003)));
+      USE(implicit_cast<TNode<BoolT>>(t2004));
+      Branch(implicit_cast<TNode<BoolT>>(t2004), label__True_578, label__False_579);
+      BIND(label__False_579);
+      Print("assert 'x == 4' failed at ../../test/torque/test-torque.tq:254:7");
+      Unreachable();
+      BIND(label__True_578);
+    }
+    // ../../test/torque/test-torque.tq:256:5
+    Label label__True_580_impl(this);
+    Label* label__True_580 = &label__True_580_impl;
+    USE(label__True_580);
+    Label label__False_581_impl(this);
+    Label* label__False_581 = &label__False_581_impl;
+    USE(label__False_581);
+    int31_t t2005 = 3;
+    TNode<Smi> t2006 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2005)));
+    TNode<BoolT> t2007 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*x_smi_844)), implicit_cast<TNode<Smi>>(t2006)));
+    USE(implicit_cast<TNode<BoolT>>(t2007));
+    Branch(implicit_cast<TNode<BoolT>>(t2007), label__True_580, label__False_581);
+    BIND(label__False_581);
+    Print("assert 'x_smi == 3' failed at ../../test/torque/test-torque.tq:256:5");
     Unreachable();
-    BIND(label__True_489);
+    BIND(label__True_580);
+    // ../../test/torque/test-torque.tq:257:5
+    Label label__True_582_impl(this);
+    Label* label__True_582 = &label__True_582_impl;
+    USE(label__True_582);
+    Label label__False_583_impl(this);
+    Label* label__False_583 = &label__False_583_impl;
+    USE(label__False_583);
+    TNode<Smi> t2008 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>((*x_843))));
+    TNode<BoolT> t2009 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>(t2008), implicit_cast<TNode<Smi>>((*x_smi_844))));
+    USE(implicit_cast<TNode<BoolT>>(t2009));
+    Branch(implicit_cast<TNode<BoolT>>(t2009), label__True_582, label__False_583);
+    BIND(label__False_583);
+    Print("assert 'x == x_smi' failed at ../../test/torque/test-torque.tq:257:5");
+    Unreachable();
+    BIND(label__True_582);
   }
 }
 
 compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestStruct1(TestStructA p_i) {
-  TVARIABLE(Smi, _return_381_impl);
-  auto _return_381 = &_return_381_impl;
-  USE(_return_381);
-  Label label_macro_end_799_impl(this, {_return_381});
-  Label* label_macro_end_799 = &label_macro_end_799_impl;
-  USE(label_macro_end_799);
-  // ../../test/torque/test-torque.tq:260:41
+  TVARIABLE(Smi, _return_366_impl);
+  auto _return_366 = &_return_366_impl;
+  USE(_return_366);
+  Label label_macro_end_1283_impl(this, {_return_366});
+  Label* label_macro_end_1283 = &label_macro_end_1283_impl;
+  USE(label_macro_end_1283);
+  // ../../test/torque/test-torque.tq:271:42
   {
-    // ../../test/torque/test-torque.tq:261:4
-    *_return_381 = p_i.i;
-    Goto(label_macro_end_799);
+    // ../../test/torque/test-torque.tq:272:5
+    *_return_366 = implicit_cast<TNode<Smi>>(p_i.i);
+    Goto(label_macro_end_1283);
   }
-  BIND(label_macro_end_799);
-  return (*_return_381).value();
+  BIND(label_macro_end_1283);
+  return implicit_cast<TNode<Smi>>((*_return_366).value());
 }
 
 TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStruct2() {
-  TVARIABLE(FixedArray, _return_indexes_383_impl);
-  auto _return_indexes_383 = &_return_indexes_383_impl;
-  USE(_return_indexes_383);
-  TVARIABLE(Smi, _return_i_384_impl);
-  auto _return_i_384 = &_return_i_384_impl;
-  USE(_return_i_384);
-  TVARIABLE(Number, _return_k_385_impl);
-  auto _return_k_385 = &_return_k_385_impl;
-  USE(_return_k_385);
-  Label label_macro_end_800_impl(this, {_return_indexes_383, _return_i_384, _return_k_385});
-  Label* label_macro_end_800 = &label_macro_end_800_impl;
-  USE(label_macro_end_800);
-  // ../../test/torque/test-torque.tq:264:35
+  TVARIABLE(FixedArray, _return_indexes_368_impl);
+  auto _return_indexes_368 = &_return_indexes_368_impl;
+  USE(_return_indexes_368);
+  TVARIABLE(Smi, _return_i_369_impl);
+  auto _return_i_369 = &_return_i_369_impl;
+  USE(_return_i_369);
+  TVARIABLE(Number, _return_k_370_impl);
+  auto _return_k_370 = &_return_k_370_impl;
+  USE(_return_k_370);
+  Label label_macro_end_1284_impl(this, {_return_i_369, _return_indexes_368, _return_k_370});
+  Label* label_macro_end_1284 = &label_macro_end_1284_impl;
+  USE(label_macro_end_1284);
+  // ../../test/torque/test-torque.tq:275:36
   {
-    // ../../test/torque/test-torque.tq:265:4
-    TNode<FixedArray> t1849 = UncheckedCast<FixedArray>(unsafe_cast12ATFixedArray(kEmptyFixedArray()));
-    USE(t1849);
-    int31_t t1850 = 27;
-    TNode<Smi> t1851 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1850));
-    int31_t t1852 = 31;
-    TNode<Number> t1853 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(t1852));
-    TestStructA t1854 = {t1849, t1851, t1853};
-    *_return_indexes_383 = t1854.indexes;
-    *_return_i_384 = t1854.i;
-    *_return_k_385 = t1854.k;
-    Goto(label_macro_end_800);
+    // ../../test/torque/test-torque.tq:276:5
+    TNode<FixedArray> t2010 = UncheckedCast<FixedArray>(unsafe_cast12ATFixedArray(implicit_cast<TNode<Object>>(kEmptyFixedArray())));
+    USE(implicit_cast<TNode<FixedArray>>(t2010));
+    int31_t t2011 = 27;
+    TNode<Smi> t2012 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2011)));
+    int31_t t2013 = 31;
+    TNode<Number> t2014 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<int31_t>(t2013)));
+    TestStructA t2015 = {implicit_cast<TNode<FixedArray>>(t2010), implicit_cast<TNode<Smi>>(t2012), implicit_cast<TNode<Number>>(t2014)};
+    *_return_indexes_368 = implicit_cast<TNode<FixedArray>>(implicit_cast<TestStructA>(t2015).indexes);
+    *_return_i_369 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(t2015).i);
+    *_return_k_370 = implicit_cast<TNode<Number>>(implicit_cast<TestStructA>(t2015).k);
+    Goto(label_macro_end_1284);
   }
-  BIND(label_macro_end_800);
-  return TestStructA{(*_return_indexes_383).value(), (*_return_i_384).value(), (*_return_k_385).value()};
+  BIND(label_macro_end_1284);
+  return TestStructA{implicit_cast<TNode<FixedArray>>((*_return_indexes_368).value()), implicit_cast<TNode<Smi>>((*_return_i_369).value()), implicit_cast<TNode<Number>>((*_return_k_370).value())};
 }
 
 TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStruct3() {
-  TVARIABLE(FixedArray, _return_indexes_387_impl);
-  auto _return_indexes_387 = &_return_indexes_387_impl;
-  USE(_return_indexes_387);
-  TVARIABLE(Smi, _return_i_388_impl);
-  auto _return_i_388 = &_return_i_388_impl;
-  USE(_return_i_388);
-  TVARIABLE(Number, _return_k_389_impl);
-  auto _return_k_389 = &_return_k_389_impl;
-  USE(_return_k_389);
-  Label label_macro_end_801_impl(this, {_return_indexes_387, _return_i_388, _return_k_389});
-  Label* label_macro_end_801 = &label_macro_end_801_impl;
-  USE(label_macro_end_801);
-  // ../../test/torque/test-torque.tq:268:35
+  TVARIABLE(FixedArray, _return_indexes_372_impl);
+  auto _return_indexes_372 = &_return_indexes_372_impl;
+  USE(_return_indexes_372);
+  TVARIABLE(Smi, _return_i_373_impl);
+  auto _return_i_373 = &_return_i_373_impl;
+  USE(_return_i_373);
+  TVARIABLE(Number, _return_k_374_impl);
+  auto _return_k_374 = &_return_k_374_impl;
+  USE(_return_k_374);
+  Label label_macro_end_1285_impl(this, {_return_i_373, _return_indexes_372, _return_k_374});
+  Label* label_macro_end_1285 = &label_macro_end_1285_impl;
+  USE(label_macro_end_1285);
+  // ../../test/torque/test-torque.tq:279:36
   {
-    // ../../test/torque/test-torque.tq:269:4
-    TNode<FixedArray> t1855 = UncheckedCast<FixedArray>(unsafe_cast12ATFixedArray(kEmptyFixedArray()));
-    USE(t1855);
-    int31_t t1856 = 13;
-    TNode<Smi> t1857 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1856));
-    int31_t t1858 = 5;
-    TNode<Number> t1859 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(t1858));
-    TestStructA t1860 = {t1855, t1857, t1859};
-    TVARIABLE(FixedArray, a_indexes_391_impl);
-    auto a_indexes_391 = &a_indexes_391_impl;
-    USE(a_indexes_391);
-    TVARIABLE(Smi, a_i_392_impl);
-    auto a_i_392 = &a_i_392_impl;
-    USE(a_i_392);
-    TVARIABLE(Number, a_k_393_impl);
-    auto a_k_393 = &a_k_393_impl;
-    USE(a_k_393);
-    *a_indexes_391 = t1860.indexes;
-    *a_i_392 = t1860.i;
-    *a_k_393 = t1860.k;
-    // ../../test/torque/test-torque.tq:271:4
-    TVARIABLE(FixedArray, b_indexes_395_impl);
-    auto b_indexes_395 = &b_indexes_395_impl;
-    USE(b_indexes_395);
-    TVARIABLE(Smi, b_i_396_impl);
-    auto b_i_396 = &b_i_396_impl;
-    USE(b_i_396);
-    TVARIABLE(Number, b_k_397_impl);
-    auto b_k_397 = &b_k_397_impl;
-    USE(b_k_397);
-    *b_indexes_395 = (*a_indexes_391).value();
-    *b_i_396 = (*a_i_392).value();
-    *b_k_397 = (*a_k_393).value();
-    // ../../test/torque/test-torque.tq:272:4
-    TestStructA t1861 = (TestStruct2());
-    USE(t1861);
-    TVARIABLE(FixedArray, c_indexes_399_impl);
-    auto c_indexes_399 = &c_indexes_399_impl;
-    USE(c_indexes_399);
-    TVARIABLE(Smi, c_i_400_impl);
-    auto c_i_400 = &c_i_400_impl;
-    USE(c_i_400);
-    TVARIABLE(Number, c_k_401_impl);
-    auto c_k_401 = &c_k_401_impl;
-    USE(c_k_401);
-    *c_indexes_399 = t1861.indexes;
-    *c_i_400 = t1861.i;
-    *c_k_401 = t1861.k;
-    // ../../test/torque/test-torque.tq:273:4
-    TNode<Smi> t1862 = UncheckedCast<Smi>(TestStruct1(TestStructA{(*c_indexes_399).value(), (*c_i_400).value(), (*c_k_401).value()}));
-    USE(t1862);
-    *a_i_392 = t1862;
-    // ../../test/torque/test-torque.tq:274:4
-    *a_k_393 = (*a_i_392).value();
-    // ../../test/torque/test-torque.tq:275:4
-    TVARIABLE(FixedArray, d_x_indexes_404_impl);
-    auto d_x_indexes_404 = &d_x_indexes_404_impl;
-    USE(d_x_indexes_404);
-    TVARIABLE(Smi, d_x_i_405_impl);
-    auto d_x_i_405 = &d_x_i_405_impl;
-    USE(d_x_i_405);
-    TVARIABLE(Number, d_x_k_406_impl);
-    auto d_x_k_406 = &d_x_k_406_impl;
-    USE(d_x_k_406);
-    TVARIABLE(Smi, d_y_407_impl);
-    auto d_y_407 = &d_y_407_impl;
-    USE(d_y_407);
-    // ../../test/torque/test-torque.tq:276:4
-    *d_x_indexes_404 = (*a_indexes_391).value();
-    *d_x_i_405 = (*a_i_392).value();
-    *d_x_k_406 = (*a_k_393).value();
-    // ../../test/torque/test-torque.tq:277:4
-    int31_t t1863 = 7;
-    TNode<Smi> t1864 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1863));
-    TestStructB t1865 = {TestStructA{(*a_indexes_391).value(), (*a_i_392).value(), (*a_k_393).value()}, t1864};
-    *d_x_indexes_404 = t1865.x.indexes;
-    *d_x_i_405 = t1865.x.i;
-    *d_x_k_406 = t1865.x.k;
-    *d_y_407 = t1865.y;
-    // ../../test/torque/test-torque.tq:278:4
-    TVARIABLE(FixedArray, e_indexes_409_impl);
-    auto e_indexes_409 = &e_indexes_409_impl;
-    USE(e_indexes_409);
-    TVARIABLE(Smi, e_i_410_impl);
-    auto e_i_410 = &e_i_410_impl;
-    USE(e_i_410);
-    TVARIABLE(Number, e_k_411_impl);
-    auto e_k_411 = &e_k_411_impl;
-    USE(e_k_411);
-    *e_indexes_409 = (*d_x_indexes_404).value();
-    *e_i_410 = (*d_x_i_405).value();
-    *e_k_411 = (*d_x_k_406).value();
-    // ../../test/torque/test-torque.tq:279:4
-    TNode<FixedArray> t1866 = UncheckedCast<FixedArray>(unsafe_cast12ATFixedArray(kEmptyFixedArray()));
-    USE(t1866);
-    int31_t t1867 = 27;
-    TNode<Smi> t1868 = UncheckedCast<Smi>(from_constexpr5ATSmi(t1867));
-    int31_t t1869 = 31;
-    TNode<Number> t1870 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(t1869));
-    TestStructA t1871 = {t1866, t1868, t1870};
-    TVARIABLE(Smi, f_412_impl);
-    auto f_412 = &f_412_impl;
-    USE(f_412);
-    *f_412 = t1871.i;
-    // ../../test/torque/test-torque.tq:280:4
-    TestStructA t1872 = (TestStruct2());
-    USE(t1872);
-    *f_412 = t1872.i;
-    // ../../test/torque/test-torque.tq:281:4
-    *_return_indexes_387 = (*a_indexes_391).value();
-    *_return_i_388 = (*a_i_392).value();
-    *_return_k_389 = (*a_k_393).value();
-    Goto(label_macro_end_801);
+    // ../../test/torque/test-torque.tq:280:5
+    TNode<FixedArray> t2016 = UncheckedCast<FixedArray>(unsafe_cast12ATFixedArray(implicit_cast<TNode<Object>>(kEmptyFixedArray())));
+    USE(implicit_cast<TNode<FixedArray>>(t2016));
+    int31_t t2017 = 13;
+    TNode<Smi> t2018 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2017)));
+    int31_t t2019 = 5;
+    TNode<Number> t2020 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<int31_t>(t2019)));
+    TestStructA t2021 = {implicit_cast<TNode<FixedArray>>(t2016), implicit_cast<TNode<Smi>>(t2018), implicit_cast<TNode<Number>>(t2020)};
+    TVARIABLE(FixedArray, a_indexes_376_impl);
+    auto a_indexes_376 = &a_indexes_376_impl;
+    USE(a_indexes_376);
+    TVARIABLE(Smi, a_i_377_impl);
+    auto a_i_377 = &a_i_377_impl;
+    USE(a_i_377);
+    TVARIABLE(Number, a_k_378_impl);
+    auto a_k_378 = &a_k_378_impl;
+    USE(a_k_378);
+    *a_indexes_376 = implicit_cast<TNode<FixedArray>>(implicit_cast<TestStructA>(t2021).indexes);
+    *a_i_377 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(t2021).i);
+    *a_k_378 = implicit_cast<TNode<Number>>(implicit_cast<TestStructA>(t2021).k);
+    // ../../test/torque/test-torque.tq:282:5
+    TVARIABLE(FixedArray, b_indexes_380_impl);
+    auto b_indexes_380 = &b_indexes_380_impl;
+    USE(b_indexes_380);
+    TVARIABLE(Smi, b_i_381_impl);
+    auto b_i_381 = &b_i_381_impl;
+    USE(b_i_381);
+    TVARIABLE(Number, b_k_382_impl);
+    auto b_k_382 = &b_k_382_impl;
+    USE(b_k_382);
+    *b_indexes_380 = implicit_cast<TNode<FixedArray>>((*a_indexes_376).value());
+    *b_i_381 = implicit_cast<TNode<Smi>>((*a_i_377).value());
+    *b_k_382 = implicit_cast<TNode<Number>>((*a_k_378).value());
+    // ../../test/torque/test-torque.tq:283:5
+    TestStructA t2022 = (TestStruct2());
+    USE(implicit_cast<TestStructA>(t2022));
+    TVARIABLE(FixedArray, c_indexes_384_impl);
+    auto c_indexes_384 = &c_indexes_384_impl;
+    USE(c_indexes_384);
+    TVARIABLE(Smi, c_i_385_impl);
+    auto c_i_385 = &c_i_385_impl;
+    USE(c_i_385);
+    TVARIABLE(Number, c_k_386_impl);
+    auto c_k_386 = &c_k_386_impl;
+    USE(c_k_386);
+    *c_indexes_384 = implicit_cast<TNode<FixedArray>>(implicit_cast<TestStructA>(t2022).indexes);
+    *c_i_385 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(t2022).i);
+    *c_k_386 = implicit_cast<TNode<Number>>(implicit_cast<TestStructA>(t2022).k);
+    // ../../test/torque/test-torque.tq:284:5
+    TNode<Smi> t2023 = UncheckedCast<Smi>(TestStruct1(TestStructA{implicit_cast<TNode<FixedArray>>((*c_indexes_384).value()), implicit_cast<TNode<Smi>>((*c_i_385).value()), implicit_cast<TNode<Number>>((*c_k_386).value())}));
+    USE(implicit_cast<TNode<Smi>>(t2023));
+    *a_i_377 = implicit_cast<TNode<Smi>>(t2023);
+    // ../../test/torque/test-torque.tq:285:5
+    *a_k_378 = implicit_cast<TNode<Number>>((*a_i_377).value());
+    // ../../test/torque/test-torque.tq:286:5
+    TVARIABLE(FixedArray, d_x_indexes_389_impl);
+    auto d_x_indexes_389 = &d_x_indexes_389_impl;
+    USE(d_x_indexes_389);
+    TVARIABLE(Smi, d_x_i_390_impl);
+    auto d_x_i_390 = &d_x_i_390_impl;
+    USE(d_x_i_390);
+    TVARIABLE(Number, d_x_k_391_impl);
+    auto d_x_k_391 = &d_x_k_391_impl;
+    USE(d_x_k_391);
+    TVARIABLE(Smi, d_y_392_impl);
+    auto d_y_392 = &d_y_392_impl;
+    USE(d_y_392);
+    // ../../test/torque/test-torque.tq:287:5
+    *d_x_indexes_389 = implicit_cast<TNode<FixedArray>>((*a_indexes_376).value());
+    *d_x_i_390 = implicit_cast<TNode<Smi>>((*a_i_377).value());
+    *d_x_k_391 = implicit_cast<TNode<Number>>((*a_k_378).value());
+    // ../../test/torque/test-torque.tq:288:5
+    int31_t t2024 = 7;
+    TNode<Smi> t2025 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2024)));
+    TestStructB t2026 = {TestStructA{implicit_cast<TNode<FixedArray>>((*a_indexes_376).value()), implicit_cast<TNode<Smi>>((*a_i_377).value()), implicit_cast<TNode<Number>>((*a_k_378).value())}, implicit_cast<TNode<Smi>>(t2025)};
+    *d_x_indexes_389 = implicit_cast<TNode<FixedArray>>(implicit_cast<TestStructA>(implicit_cast<TestStructB>(t2026).x).indexes);
+    *d_x_i_390 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(implicit_cast<TestStructB>(t2026).x).i);
+    *d_x_k_391 = implicit_cast<TNode<Number>>(implicit_cast<TestStructA>(implicit_cast<TestStructB>(t2026).x).k);
+    *d_y_392 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructB>(t2026).y);
+    // ../../test/torque/test-torque.tq:289:5
+    TVARIABLE(FixedArray, e_indexes_394_impl);
+    auto e_indexes_394 = &e_indexes_394_impl;
+    USE(e_indexes_394);
+    TVARIABLE(Smi, e_i_395_impl);
+    auto e_i_395 = &e_i_395_impl;
+    USE(e_i_395);
+    TVARIABLE(Number, e_k_396_impl);
+    auto e_k_396 = &e_k_396_impl;
+    USE(e_k_396);
+    *e_indexes_394 = implicit_cast<TNode<FixedArray>>((*d_x_indexes_389).value());
+    *e_i_395 = implicit_cast<TNode<Smi>>((*d_x_i_390).value());
+    *e_k_396 = implicit_cast<TNode<Number>>((*d_x_k_391).value());
+    // ../../test/torque/test-torque.tq:290:5
+    TNode<FixedArray> t2027 = UncheckedCast<FixedArray>(unsafe_cast12ATFixedArray(implicit_cast<TNode<Object>>(kEmptyFixedArray())));
+    USE(implicit_cast<TNode<FixedArray>>(t2027));
+    int31_t t2028 = 27;
+    TNode<Smi> t2029 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2028)));
+    int31_t t2030 = 31;
+    TNode<Number> t2031 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<int31_t>(t2030)));
+    TestStructA t2032 = {implicit_cast<TNode<FixedArray>>(t2027), implicit_cast<TNode<Smi>>(t2029), implicit_cast<TNode<Number>>(t2031)};
+    TVARIABLE(Smi, f_397_impl);
+    auto f_397 = &f_397_impl;
+    USE(f_397);
+    *f_397 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(t2032).i);
+    // ../../test/torque/test-torque.tq:291:5
+    TestStructA t2033 = (TestStruct2());
+    USE(implicit_cast<TestStructA>(t2033));
+    *f_397 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(t2033).i);
+    // ../../test/torque/test-torque.tq:292:5
+    *_return_indexes_372 = implicit_cast<TNode<FixedArray>>((*a_indexes_376).value());
+    *_return_i_373 = implicit_cast<TNode<Smi>>((*a_i_377).value());
+    *_return_k_374 = implicit_cast<TNode<Number>>((*a_k_378).value());
+    Goto(label_macro_end_1285);
   }
-  BIND(label_macro_end_801);
-  return TestStructA{(*_return_indexes_387).value(), (*_return_i_388).value(), (*_return_k_389).value()};
+  BIND(label_macro_end_1285);
+  return TestStructA{implicit_cast<TNode<FixedArray>>((*_return_indexes_372).value()), implicit_cast<TNode<Smi>>((*_return_i_373).value()), implicit_cast<TNode<Number>>((*_return_k_374).value())};
 }
 
 TestBuiltinsFromDSLAssembler::TestStructC TestBuiltinsFromDSLAssembler::TestStruct4() {
-  TVARIABLE(FixedArray, _return_x_indexes_415_impl);
-  auto _return_x_indexes_415 = &_return_x_indexes_415_impl;
-  USE(_return_x_indexes_415);
-  TVARIABLE(Smi, _return_x_i_416_impl);
-  auto _return_x_i_416 = &_return_x_i_416_impl;
-  USE(_return_x_i_416);
-  TVARIABLE(Number, _return_x_k_417_impl);
-  auto _return_x_k_417 = &_return_x_k_417_impl;
-  USE(_return_x_k_417);
-  TVARIABLE(FixedArray, _return_y_indexes_419_impl);
-  auto _return_y_indexes_419 = &_return_y_indexes_419_impl;
-  USE(_return_y_indexes_419);
-  TVARIABLE(Smi, _return_y_i_420_impl);
-  auto _return_y_i_420 = &_return_y_i_420_impl;
-  USE(_return_y_i_420);
-  TVARIABLE(Number, _return_y_k_421_impl);
-  auto _return_y_k_421 = &_return_y_k_421_impl;
-  USE(_return_y_k_421);
-  Label label_macro_end_802_impl(this, {_return_x_indexes_415, _return_x_i_416, _return_x_k_417, _return_y_indexes_419, _return_y_i_420, _return_y_k_421});
-  Label* label_macro_end_802 = &label_macro_end_802_impl;
-  USE(label_macro_end_802);
-  // ../../test/torque/test-torque.tq:289:35
+  TVARIABLE(FixedArray, _return_x_indexes_400_impl);
+  auto _return_x_indexes_400 = &_return_x_indexes_400_impl;
+  USE(_return_x_indexes_400);
+  TVARIABLE(Smi, _return_x_i_401_impl);
+  auto _return_x_i_401 = &_return_x_i_401_impl;
+  USE(_return_x_i_401);
+  TVARIABLE(Number, _return_x_k_402_impl);
+  auto _return_x_k_402 = &_return_x_k_402_impl;
+  USE(_return_x_k_402);
+  TVARIABLE(FixedArray, _return_y_indexes_404_impl);
+  auto _return_y_indexes_404 = &_return_y_indexes_404_impl;
+  USE(_return_y_indexes_404);
+  TVARIABLE(Smi, _return_y_i_405_impl);
+  auto _return_y_i_405 = &_return_y_i_405_impl;
+  USE(_return_y_i_405);
+  TVARIABLE(Number, _return_y_k_406_impl);
+  auto _return_y_k_406 = &_return_y_k_406_impl;
+  USE(_return_y_k_406);
+  Label label_macro_end_1286_impl(this, {_return_x_i_401, _return_x_indexes_400, _return_x_k_402, _return_y_i_405, _return_y_indexes_404, _return_y_k_406});
+  Label* label_macro_end_1286 = &label_macro_end_1286_impl;
+  USE(label_macro_end_1286);
+  // ../../test/torque/test-torque.tq:300:36
   {
-    // ../../test/torque/test-torque.tq:290:4
-    TestStructA t1873 = (TestStruct2());
-    USE(t1873);
-    TestStructA t1874 = (TestStruct2());
-    USE(t1874);
-    TestStructC t1875 = {t1873, t1874};
-    *_return_x_indexes_415 = t1875.x.indexes;
-    *_return_x_i_416 = t1875.x.i;
-    *_return_x_k_417 = t1875.x.k;
-    *_return_y_indexes_419 = t1875.y.indexes;
-    *_return_y_i_420 = t1875.y.i;
-    *_return_y_k_421 = t1875.y.k;
-    Goto(label_macro_end_802);
+    // ../../test/torque/test-torque.tq:301:5
+    TestStructA t2034 = (TestStruct2());
+    USE(implicit_cast<TestStructA>(t2034));
+    TestStructA t2035 = (TestStruct2());
+    USE(implicit_cast<TestStructA>(t2035));
+    TestStructC t2036 = {implicit_cast<TestStructA>(t2034), implicit_cast<TestStructA>(t2035)};
+    *_return_x_indexes_400 = implicit_cast<TNode<FixedArray>>(implicit_cast<TestStructA>(implicit_cast<TestStructC>(t2036).x).indexes);
+    *_return_x_i_401 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(implicit_cast<TestStructC>(t2036).x).i);
+    *_return_x_k_402 = implicit_cast<TNode<Number>>(implicit_cast<TestStructA>(implicit_cast<TestStructC>(t2036).x).k);
+    *_return_y_indexes_404 = implicit_cast<TNode<FixedArray>>(implicit_cast<TestStructA>(implicit_cast<TestStructC>(t2036).y).indexes);
+    *_return_y_i_405 = implicit_cast<TNode<Smi>>(implicit_cast<TestStructA>(implicit_cast<TestStructC>(t2036).y).i);
+    *_return_y_k_406 = implicit_cast<TNode<Number>>(implicit_cast<TestStructA>(implicit_cast<TestStructC>(t2036).y).k);
+    Goto(label_macro_end_1286);
   }
-  BIND(label_macro_end_802);
-  return TestStructC{TestStructA{(*_return_x_indexes_415).value(), (*_return_x_i_416).value(), (*_return_x_k_417).value()}, TestStructA{(*_return_y_indexes_419).value(), (*_return_y_i_420).value(), (*_return_y_k_421).value()}};
+  BIND(label_macro_end_1286);
+  return TestStructC{TestStructA{implicit_cast<TNode<FixedArray>>((*_return_x_indexes_400).value()), implicit_cast<TNode<Smi>>((*_return_x_i_401).value()), implicit_cast<TNode<Number>>((*_return_x_k_402).value())}, TestStructA{implicit_cast<TNode<FixedArray>>((*_return_y_indexes_404).value()), implicit_cast<TNode<Smi>>((*_return_y_i_405).value()), implicit_cast<TNode<Number>>((*_return_y_k_406).value())}};
+}
+
+void TestBuiltinsFromDSLAssembler::TestForLoop() {
+  Label label_macro_end_1287_impl(this, {});
+  Label* label_macro_end_1287 = &label_macro_end_1287_impl;
+  USE(label_macro_end_1287);
+  // ../../test/torque/test-torque.tq:306:23
+  {
+    // ../../test/torque/test-torque.tq:307:5
+    int31_t t2037 = 0;
+    TVARIABLE(Smi, sum_407_impl);
+    auto sum_407 = &sum_407_impl;
+    USE(sum_407);
+    TNode<Smi> t2038 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2037)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2038);
+    // ../../test/torque/test-torque.tq:308:5
+    int31_t t2039 = 0;
+    TVARIABLE(Smi, i_408_impl);
+    auto i_408 = &i_408_impl;
+    USE(i_408);
+    TNode<Smi> t2040 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2039)));
+    *i_408 = implicit_cast<TNode<Smi>>(t2040);
+    Label label__True_584_impl(this);
+    Label* label__True_584 = &label__True_584_impl;
+    USE(label__True_584);
+    Label label__False_585_impl(this);
+    Label* label__False_585 = &label__False_585_impl;
+    USE(label__False_585);
+    Label label_header_847_1288_impl(this, {i_408, sum_407});
+    Label* label_header_847_1288 = &label_header_847_1288_impl;
+    USE(label_header_847_1288);
+    Goto(label_header_847_1288);
+    BIND(label_header_847_1288);
+    Label label_action_848_1289_impl(this);
+    Label* label_action_848_1289 = &label_action_848_1289_impl;
+    USE(label_action_848_1289);
+    int31_t t2041 = 5;
+    TNode<Smi> t2042 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2041)));
+    TNode<BoolT> t2043 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>((*i_408).value()), implicit_cast<TNode<Smi>>(t2042)));
+    USE(implicit_cast<TNode<BoolT>>(t2043));
+    Branch(implicit_cast<TNode<BoolT>>(t2043), label__True_584, label__False_585);
+    if (label__True_584->is_used())
+    {
+      BIND(label__True_584);
+      // ../../test/torque/test-torque.tq:308:38
+      TNode<Smi> t2044 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*i_408).value())));
+      *sum_407 = implicit_cast<TNode<Smi>>(t2044);
+      Goto(label_action_848_1289);
+    }
+    {
+      BIND(label_action_848_1289);
+      TNode<Smi> t2045 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+      TNode<Smi> t2046 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*i_408).value()), implicit_cast<TNode<Smi>>(t2045)));
+      *i_408 = implicit_cast<TNode<Smi>>(t2046);
+      Goto(label_header_847_1288);
+    }
+    BIND(label__False_585);
+    // ../../test/torque/test-torque.tq:309:5
+    Label label__True_586_impl(this);
+    Label* label__True_586 = &label__True_586_impl;
+    USE(label__True_586);
+    Label label__False_587_impl(this);
+    Label* label__False_587 = &label__False_587_impl;
+    USE(label__False_587);
+    int31_t t2047 = 10;
+    TNode<Smi> t2048 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2047)));
+    TNode<BoolT> t2049 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2048)));
+    USE(implicit_cast<TNode<BoolT>>(t2049));
+    Branch(implicit_cast<TNode<BoolT>>(t2049), label__True_586, label__False_587);
+    BIND(label__False_587);
+    Print("assert 'sum == 10' failed at ../../test/torque/test-torque.tq:309:5");
+    Unreachable();
+    BIND(label__True_586);
+    // ../../test/torque/test-torque.tq:311:5
+    int31_t t2050 = 0;
+    TNode<Smi> t2051 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2050)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2051);
+    // ../../test/torque/test-torque.tq:312:5
+    int31_t t2052 = 0;
+    TVARIABLE(Smi, j_409_impl);
+    auto j_409 = &j_409_impl;
+    USE(j_409);
+    TNode<Smi> t2053 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2052)));
+    *j_409 = implicit_cast<TNode<Smi>>(t2053);
+    // ../../test/torque/test-torque.tq:313:5
+    Label label__True_588_impl(this);
+    Label* label__True_588 = &label__True_588_impl;
+    USE(label__True_588);
+    Label label__False_589_impl(this);
+    Label* label__False_589 = &label__False_589_impl;
+    USE(label__False_589);
+    Label label_header_849_1290_impl(this, {j_409, sum_407});
+    Label* label_header_849_1290 = &label_header_849_1290_impl;
+    USE(label_header_849_1290);
+    Goto(label_header_849_1290);
+    BIND(label_header_849_1290);
+    Label label_action_850_1291_impl(this);
+    Label* label_action_850_1291 = &label_action_850_1291_impl;
+    USE(label_action_850_1291);
+    int31_t t2054 = 5;
+    TNode<Smi> t2055 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2054)));
+    TNode<BoolT> t2056 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2055)));
+    USE(implicit_cast<TNode<BoolT>>(t2056));
+    Branch(implicit_cast<TNode<BoolT>>(t2056), label__True_588, label__False_589);
+    if (label__True_588->is_used())
+    {
+      BIND(label__True_588);
+      // ../../test/torque/test-torque.tq:313:24
+      TNode<Smi> t2057 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*j_409).value())));
+      *sum_407 = implicit_cast<TNode<Smi>>(t2057);
+      Goto(label_action_850_1291);
+    }
+    {
+      BIND(label_action_850_1291);
+      TNode<Smi> t2058 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+      TNode<Smi> t2059 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2058)));
+      *j_409 = implicit_cast<TNode<Smi>>(t2059);
+      Goto(label_header_849_1290);
+    }
+    BIND(label__False_589);
+    // ../../test/torque/test-torque.tq:314:5
+    Label label__True_590_impl(this);
+    Label* label__True_590 = &label__True_590_impl;
+    USE(label__True_590);
+    Label label__False_591_impl(this);
+    Label* label__False_591 = &label__False_591_impl;
+    USE(label__False_591);
+    int31_t t2060 = 10;
+    TNode<Smi> t2061 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2060)));
+    TNode<BoolT> t2062 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2061)));
+    USE(implicit_cast<TNode<BoolT>>(t2062));
+    Branch(implicit_cast<TNode<BoolT>>(t2062), label__True_590, label__False_591);
+    BIND(label__False_591);
+    Print("assert 'sum == 10' failed at ../../test/torque/test-torque.tq:314:5");
+    Unreachable();
+    BIND(label__True_590);
+    // ../../test/torque/test-torque.tq:316:5
+    int31_t t2063 = 0;
+    TNode<Smi> t2064 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2063)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2064);
+    // ../../test/torque/test-torque.tq:317:5
+    int31_t t2065 = 0;
+    TNode<Smi> t2066 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2065)));
+    *j_409 = implicit_cast<TNode<Smi>>(t2066);
+    // ../../test/torque/test-torque.tq:318:5
+    Label label__True_592_impl(this);
+    Label* label__True_592 = &label__True_592_impl;
+    USE(label__True_592);
+    Label label__False_593_impl(this);
+    Label* label__False_593 = &label__False_593_impl;
+    USE(label__False_593);
+    Label label_header_851_1292_impl(this, {j_409, sum_407});
+    Label* label_header_851_1292 = &label_header_851_1292_impl;
+    USE(label_header_851_1292);
+    Goto(label_header_851_1292);
+    BIND(label_header_851_1292);
+    int31_t t2067 = 5;
+    TNode<Smi> t2068 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2067)));
+    TNode<BoolT> t2069 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2068)));
+    USE(implicit_cast<TNode<BoolT>>(t2069));
+    Branch(implicit_cast<TNode<BoolT>>(t2069), label__True_592, label__False_593);
+    if (label__True_592->is_used())
+    {
+      BIND(label__True_592);
+      // ../../test/torque/test-torque.tq:318:20
+      TNode<Smi> t2070 = implicit_cast<TNode<Smi>>((*j_409).value());
+      USE(t2070);
+      TNode<Smi> t2071 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+      TNode<Smi> t2072 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2071)));
+      *j_409 = implicit_cast<TNode<Smi>>(t2072);
+      TNode<Smi> t2073 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2070)));
+      *sum_407 = implicit_cast<TNode<Smi>>(t2073);
+      Goto(label_header_851_1292);
+    }
+    BIND(label__False_593);
+    // ../../test/torque/test-torque.tq:319:5
+    Label label__True_594_impl(this);
+    Label* label__True_594 = &label__True_594_impl;
+    USE(label__True_594);
+    Label label__False_595_impl(this);
+    Label* label__False_595 = &label__False_595_impl;
+    USE(label__False_595);
+    int31_t t2074 = 10;
+    TNode<Smi> t2075 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2074)));
+    TNode<BoolT> t2076 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2075)));
+    USE(implicit_cast<TNode<BoolT>>(t2076));
+    Branch(implicit_cast<TNode<BoolT>>(t2076), label__True_594, label__False_595);
+    BIND(label__False_595);
+    Print("assert 'sum == 10' failed at ../../test/torque/test-torque.tq:319:5");
+    Unreachable();
+    BIND(label__True_594);
+    // ../../test/torque/test-torque.tq:322:5
+    int31_t t2077 = 0;
+    TNode<Smi> t2078 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2077)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2078);
+    // ../../test/torque/test-torque.tq:323:5
+    int31_t t2079 = 0;
+    TVARIABLE(Smi, i_410_impl);
+    auto i_410 = &i_410_impl;
+    USE(i_410);
+    TNode<Smi> t2080 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2079)));
+    *i_410 = implicit_cast<TNode<Smi>>(t2080);
+    Label label__True_596_impl(this);
+    Label* label__True_596 = &label__True_596_impl;
+    USE(label__True_596);
+    Label label__False_597_impl(this);
+    Label* label__False_597 = &label__False_597_impl;
+    USE(label__False_597);
+    Label label_header_852_1293_impl(this, {i_410, sum_407});
+    Label* label_header_852_1293 = &label_header_852_1293_impl;
+    USE(label_header_852_1293);
+    Goto(label_header_852_1293);
+    BIND(label_header_852_1293);
+    Label label_action_853_1294_impl(this);
+    Label* label_action_853_1294 = &label_action_853_1294_impl;
+    USE(label_action_853_1294);
+    Goto(label__True_596);
+    if (label__True_596->is_used())
+    {
+      BIND(label__True_596);
+      // ../../test/torque/test-torque.tq:323:32
+      {
+        // ../../test/torque/test-torque.tq:324:7
+        {
+          Label label__True_598_impl(this);
+          Label* label__True_598 = &label__True_598_impl;
+          USE(label__True_598);
+          Label label__False_599_impl(this, {});
+          Label* label__False_599 = &label__False_599_impl;
+          USE(label__False_599);
+          int31_t t2081 = 5;
+          TNode<Smi> t2082 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2081)));
+          TNode<BoolT> t2083 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*i_410).value()), implicit_cast<TNode<Smi>>(t2082)));
+          USE(implicit_cast<TNode<BoolT>>(t2083));
+          Branch(implicit_cast<TNode<BoolT>>(t2083), label__True_598, label__False_599);
+          if (label__True_598->is_used())
+          {
+            BIND(label__True_598);
+            // ../../test/torque/test-torque.tq:324:19
+            Goto(label__False_597);
+          }
+          BIND(label__False_599);
+        }
+        // ../../test/torque/test-torque.tq:325:7
+        TNode<Smi> t2084 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*i_410).value())));
+        *sum_407 = implicit_cast<TNode<Smi>>(t2084);
+      }
+      Goto(label_action_853_1294);
+    }
+    {
+      BIND(label_action_853_1294);
+      TNode<Smi> t2085 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+      TNode<Smi> t2086 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*i_410).value()), implicit_cast<TNode<Smi>>(t2085)));
+      *i_410 = implicit_cast<TNode<Smi>>(t2086);
+      Goto(label_header_852_1293);
+    }
+    BIND(label__False_597);
+    // ../../test/torque/test-torque.tq:327:5
+    Label label__True_600_impl(this);
+    Label* label__True_600 = &label__True_600_impl;
+    USE(label__True_600);
+    Label label__False_601_impl(this);
+    Label* label__False_601 = &label__False_601_impl;
+    USE(label__False_601);
+    int31_t t2087 = 10;
+    TNode<Smi> t2088 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2087)));
+    TNode<BoolT> t2089 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2088)));
+    USE(implicit_cast<TNode<BoolT>>(t2089));
+    Branch(implicit_cast<TNode<BoolT>>(t2089), label__True_600, label__False_601);
+    BIND(label__False_601);
+    Print("assert 'sum == 10' failed at ../../test/torque/test-torque.tq:327:5");
+    Unreachable();
+    BIND(label__True_600);
+    // ../../test/torque/test-torque.tq:329:5
+    int31_t t2090 = 0;
+    TNode<Smi> t2091 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2090)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2091);
+    // ../../test/torque/test-torque.tq:330:5
+    int31_t t2092 = 0;
+    TNode<Smi> t2093 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2092)));
+    *j_409 = implicit_cast<TNode<Smi>>(t2093);
+    // ../../test/torque/test-torque.tq:331:5
+    Label label__True_602_impl(this);
+    Label* label__True_602 = &label__True_602_impl;
+    USE(label__True_602);
+    Label label__False_603_impl(this);
+    Label* label__False_603 = &label__False_603_impl;
+    USE(label__False_603);
+    Label label_header_854_1295_impl(this, {j_409, sum_407});
+    Label* label_header_854_1295 = &label_header_854_1295_impl;
+    USE(label_header_854_1295);
+    Goto(label_header_854_1295);
+    BIND(label_header_854_1295);
+    Goto(label__True_602);
+    if (label__True_602->is_used())
+    {
+      BIND(label__True_602);
+      // ../../test/torque/test-torque.tq:331:14
+      {
+        // ../../test/torque/test-torque.tq:332:7
+        {
+          Label label__True_604_impl(this);
+          Label* label__True_604 = &label__True_604_impl;
+          USE(label__True_604);
+          Label label__False_605_impl(this, {});
+          Label* label__False_605 = &label__False_605_impl;
+          USE(label__False_605);
+          int31_t t2094 = 5;
+          TNode<Smi> t2095 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2094)));
+          TNode<BoolT> t2096 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2095)));
+          USE(implicit_cast<TNode<BoolT>>(t2096));
+          Branch(implicit_cast<TNode<BoolT>>(t2096), label__True_604, label__False_605);
+          if (label__True_604->is_used())
+          {
+            BIND(label__True_604);
+            // ../../test/torque/test-torque.tq:332:19
+            Goto(label__False_603);
+          }
+          BIND(label__False_605);
+        }
+        // ../../test/torque/test-torque.tq:333:7
+        TNode<Smi> t2097 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*j_409).value())));
+        *sum_407 = implicit_cast<TNode<Smi>>(t2097);
+        // ../../test/torque/test-torque.tq:334:7
+        TNode<Smi> t2098 = implicit_cast<TNode<Smi>>((*j_409).value());
+        USE(t2098);
+        TNode<Smi> t2099 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+        TNode<Smi> t2100 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2099)));
+        *j_409 = implicit_cast<TNode<Smi>>(t2100);
+      }
+      Goto(label_header_854_1295);
+    }
+    BIND(label__False_603);
+    // ../../test/torque/test-torque.tq:336:5
+    Label label__True_606_impl(this);
+    Label* label__True_606 = &label__True_606_impl;
+    USE(label__True_606);
+    Label label__False_607_impl(this);
+    Label* label__False_607 = &label__False_607_impl;
+    USE(label__False_607);
+    int31_t t2101 = 10;
+    TNode<Smi> t2102 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2101)));
+    TNode<BoolT> t2103 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2102)));
+    USE(implicit_cast<TNode<BoolT>>(t2103));
+    Branch(implicit_cast<TNode<BoolT>>(t2103), label__True_606, label__False_607);
+    BIND(label__False_607);
+    Print("assert 'sum == 10' failed at ../../test/torque/test-torque.tq:336:5");
+    Unreachable();
+    BIND(label__True_606);
+    // ../../test/torque/test-torque.tq:340:5
+    int31_t t2104 = 0;
+    TNode<Smi> t2105 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2104)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2105);
+    // ../../test/torque/test-torque.tq:341:5
+    int31_t t2106 = 0;
+    TVARIABLE(Smi, i_411_impl);
+    auto i_411 = &i_411_impl;
+    USE(i_411);
+    TNode<Smi> t2107 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2106)));
+    *i_411 = implicit_cast<TNode<Smi>>(t2107);
+    Label label__True_608_impl(this);
+    Label* label__True_608 = &label__True_608_impl;
+    USE(label__True_608);
+    Label label__False_609_impl(this);
+    Label* label__False_609 = &label__False_609_impl;
+    USE(label__False_609);
+    Label label_header_855_1296_impl(this, {i_411, sum_407});
+    Label* label_header_855_1296 = &label_header_855_1296_impl;
+    USE(label_header_855_1296);
+    Goto(label_header_855_1296);
+    BIND(label_header_855_1296);
+    Label label_action_856_1297_impl(this);
+    Label* label_action_856_1297 = &label_action_856_1297_impl;
+    USE(label_action_856_1297);
+    int31_t t2108 = 5;
+    TNode<Smi> t2109 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2108)));
+    TNode<BoolT> t2110 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>((*i_411).value()), implicit_cast<TNode<Smi>>(t2109)));
+    USE(implicit_cast<TNode<BoolT>>(t2110));
+    Branch(implicit_cast<TNode<BoolT>>(t2110), label__True_608, label__False_609);
+    if (label__True_608->is_used())
+    {
+      BIND(label__True_608);
+      // ../../test/torque/test-torque.tq:341:38
+      {
+        // ../../test/torque/test-torque.tq:342:7
+        {
+          Label label__True_610_impl(this);
+          Label* label__True_610 = &label__True_610_impl;
+          USE(label__True_610);
+          Label label__False_611_impl(this, {});
+          Label* label__False_611 = &label__False_611_impl;
+          USE(label__False_611);
+          int31_t t2111 = 3;
+          TNode<Smi> t2112 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2111)));
+          TNode<BoolT> t2113 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*i_411).value()), implicit_cast<TNode<Smi>>(t2112)));
+          USE(implicit_cast<TNode<BoolT>>(t2113));
+          Branch(implicit_cast<TNode<BoolT>>(t2113), label__True_610, label__False_611);
+          if (label__True_610->is_used())
+          {
+            BIND(label__True_610);
+            // ../../test/torque/test-torque.tq:342:19
+            Goto(label_action_856_1297);
+          }
+          BIND(label__False_611);
+        }
+        // ../../test/torque/test-torque.tq:343:7
+        TNode<Smi> t2114 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*i_411).value())));
+        *sum_407 = implicit_cast<TNode<Smi>>(t2114);
+      }
+      Goto(label_action_856_1297);
+    }
+    {
+      BIND(label_action_856_1297);
+      TNode<Smi> t2115 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+      TNode<Smi> t2116 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*i_411).value()), implicit_cast<TNode<Smi>>(t2115)));
+      *i_411 = implicit_cast<TNode<Smi>>(t2116);
+      Goto(label_header_855_1296);
+    }
+    BIND(label__False_609);
+    // ../../test/torque/test-torque.tq:345:5
+    Label label__True_612_impl(this);
+    Label* label__True_612 = &label__True_612_impl;
+    USE(label__True_612);
+    Label label__False_613_impl(this);
+    Label* label__False_613 = &label__False_613_impl;
+    USE(label__False_613);
+    int31_t t2117 = 7;
+    TNode<Smi> t2118 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2117)));
+    TNode<BoolT> t2119 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2118)));
+    USE(implicit_cast<TNode<BoolT>>(t2119));
+    Branch(implicit_cast<TNode<BoolT>>(t2119), label__True_612, label__False_613);
+    BIND(label__False_613);
+    Print("assert 'sum == 7' failed at ../../test/torque/test-torque.tq:345:5");
+    Unreachable();
+    BIND(label__True_612);
+    // ../../test/torque/test-torque.tq:347:5
+    int31_t t2120 = 0;
+    TNode<Smi> t2121 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2120)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2121);
+    // ../../test/torque/test-torque.tq:348:5
+    int31_t t2122 = 0;
+    TNode<Smi> t2123 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2122)));
+    *j_409 = implicit_cast<TNode<Smi>>(t2123);
+    // ../../test/torque/test-torque.tq:349:5
+    Label label__True_614_impl(this);
+    Label* label__True_614 = &label__True_614_impl;
+    USE(label__True_614);
+    Label label__False_615_impl(this);
+    Label* label__False_615 = &label__False_615_impl;
+    USE(label__False_615);
+    Label label_header_857_1298_impl(this, {j_409, sum_407});
+    Label* label_header_857_1298 = &label_header_857_1298_impl;
+    USE(label_header_857_1298);
+    Goto(label_header_857_1298);
+    BIND(label_header_857_1298);
+    Label label_action_858_1299_impl(this);
+    Label* label_action_858_1299 = &label_action_858_1299_impl;
+    USE(label_action_858_1299);
+    int31_t t2124 = 5;
+    TNode<Smi> t2125 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2124)));
+    TNode<BoolT> t2126 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2125)));
+    USE(implicit_cast<TNode<BoolT>>(t2126));
+    Branch(implicit_cast<TNode<BoolT>>(t2126), label__True_614, label__False_615);
+    if (label__True_614->is_used())
+    {
+      BIND(label__True_614);
+      // ../../test/torque/test-torque.tq:349:24
+      {
+        // ../../test/torque/test-torque.tq:350:7
+        {
+          Label label__True_616_impl(this);
+          Label* label__True_616 = &label__True_616_impl;
+          USE(label__True_616);
+          Label label__False_617_impl(this, {});
+          Label* label__False_617 = &label__False_617_impl;
+          USE(label__False_617);
+          int31_t t2127 = 3;
+          TNode<Smi> t2128 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2127)));
+          TNode<BoolT> t2129 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2128)));
+          USE(implicit_cast<TNode<BoolT>>(t2129));
+          Branch(implicit_cast<TNode<BoolT>>(t2129), label__True_616, label__False_617);
+          if (label__True_616->is_used())
+          {
+            BIND(label__True_616);
+            // ../../test/torque/test-torque.tq:350:19
+            Goto(label_action_858_1299);
+          }
+          BIND(label__False_617);
+        }
+        // ../../test/torque/test-torque.tq:351:7
+        TNode<Smi> t2130 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*j_409).value())));
+        *sum_407 = implicit_cast<TNode<Smi>>(t2130);
+      }
+      Goto(label_action_858_1299);
+    }
+    {
+      BIND(label_action_858_1299);
+      TNode<Smi> t2131 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+      TNode<Smi> t2132 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2131)));
+      *j_409 = implicit_cast<TNode<Smi>>(t2132);
+      Goto(label_header_857_1298);
+    }
+    BIND(label__False_615);
+    // ../../test/torque/test-torque.tq:353:5
+    Label label__True_618_impl(this);
+    Label* label__True_618 = &label__True_618_impl;
+    USE(label__True_618);
+    Label label__False_619_impl(this);
+    Label* label__False_619 = &label__False_619_impl;
+    USE(label__False_619);
+    int31_t t2133 = 7;
+    TNode<Smi> t2134 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2133)));
+    TNode<BoolT> t2135 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2134)));
+    USE(implicit_cast<TNode<BoolT>>(t2135));
+    Branch(implicit_cast<TNode<BoolT>>(t2135), label__True_618, label__False_619);
+    BIND(label__False_619);
+    Print("assert 'sum == 7' failed at ../../test/torque/test-torque.tq:353:5");
+    Unreachable();
+    BIND(label__True_618);
+    // ../../test/torque/test-torque.tq:355:5
+    int31_t t2136 = 0;
+    TNode<Smi> t2137 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2136)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2137);
+    // ../../test/torque/test-torque.tq:356:5
+    int31_t t2138 = 0;
+    TNode<Smi> t2139 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2138)));
+    *j_409 = implicit_cast<TNode<Smi>>(t2139);
+    // ../../test/torque/test-torque.tq:357:5
+    Label label__True_620_impl(this);
+    Label* label__True_620 = &label__True_620_impl;
+    USE(label__True_620);
+    Label label__False_621_impl(this);
+    Label* label__False_621 = &label__False_621_impl;
+    USE(label__False_621);
+    Label label_header_859_1300_impl(this, {j_409, sum_407});
+    Label* label_header_859_1300 = &label_header_859_1300_impl;
+    USE(label_header_859_1300);
+    Goto(label_header_859_1300);
+    BIND(label_header_859_1300);
+    int31_t t2140 = 5;
+    TNode<Smi> t2141 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2140)));
+    TNode<BoolT> t2142 = UncheckedCast<BoolT>(SmiLessThan(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2141)));
+    USE(implicit_cast<TNode<BoolT>>(t2142));
+    Branch(implicit_cast<TNode<BoolT>>(t2142), label__True_620, label__False_621);
+    if (label__True_620->is_used())
+    {
+      BIND(label__True_620);
+      // ../../test/torque/test-torque.tq:357:20
+      {
+        // ../../test/torque/test-torque.tq:358:7
+        {
+          Label label__True_622_impl(this);
+          Label* label__True_622 = &label__True_622_impl;
+          USE(label__True_622);
+          Label label__False_623_impl(this, {j_409});
+          Label* label__False_623 = &label__False_623_impl;
+          USE(label__False_623);
+          int31_t t2143 = 3;
+          TNode<Smi> t2144 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2143)));
+          TNode<BoolT> t2145 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2144)));
+          USE(implicit_cast<TNode<BoolT>>(t2145));
+          Branch(implicit_cast<TNode<BoolT>>(t2145), label__True_622, label__False_623);
+          if (label__True_622->is_used())
+          {
+            BIND(label__True_622);
+            // ../../test/torque/test-torque.tq:358:19
+            {
+              // ../../test/torque/test-torque.tq:359:9
+              TNode<Smi> t2146 = implicit_cast<TNode<Smi>>((*j_409).value());
+              USE(t2146);
+              TNode<Smi> t2147 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+              TNode<Smi> t2148 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2147)));
+              *j_409 = implicit_cast<TNode<Smi>>(t2148);
+              // ../../test/torque/test-torque.tq:360:9
+              Goto(label_header_859_1300);
+            }
+          }
+          BIND(label__False_623);
+        }
+        // ../../test/torque/test-torque.tq:362:7
+        TNode<Smi> t2149 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*j_409).value())));
+        *sum_407 = implicit_cast<TNode<Smi>>(t2149);
+        // ../../test/torque/test-torque.tq:363:7
+        TNode<Smi> t2150 = implicit_cast<TNode<Smi>>((*j_409).value());
+        USE(t2150);
+        TNode<Smi> t2151 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+        TNode<Smi> t2152 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2151)));
+        *j_409 = implicit_cast<TNode<Smi>>(t2152);
+      }
+      Goto(label_header_859_1300);
+    }
+    BIND(label__False_621);
+    // ../../test/torque/test-torque.tq:365:5
+    Label label__True_624_impl(this);
+    Label* label__True_624 = &label__True_624_impl;
+    USE(label__True_624);
+    Label label__False_625_impl(this);
+    Label* label__False_625 = &label__False_625_impl;
+    USE(label__False_625);
+    int31_t t2153 = 7;
+    TNode<Smi> t2154 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2153)));
+    TNode<BoolT> t2155 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2154)));
+    USE(implicit_cast<TNode<BoolT>>(t2155));
+    Branch(implicit_cast<TNode<BoolT>>(t2155), label__True_624, label__False_625);
+    BIND(label__False_625);
+    Print("assert 'sum == 7' failed at ../../test/torque/test-torque.tq:365:5");
+    Unreachable();
+    BIND(label__True_624);
+    // ../../test/torque/test-torque.tq:367:5
+    int31_t t2156 = 0;
+    TNode<Smi> t2157 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2156)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2157);
+    // ../../test/torque/test-torque.tq:368:5
+    int31_t t2158 = 0;
+    TVARIABLE(Smi, i_412_impl);
+    auto i_412 = &i_412_impl;
+    USE(i_412);
+    TNode<Smi> t2159 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2158)));
+    *i_412 = implicit_cast<TNode<Smi>>(t2159);
+    Label label__True_626_impl(this);
+    Label* label__True_626 = &label__True_626_impl;
+    USE(label__True_626);
+    Label label__False_627_impl(this);
+    Label* label__False_627 = &label__False_627_impl;
+    USE(label__False_627);
+    Label label_header_860_1301_impl(this, {i_412, sum_407});
+    Label* label_header_860_1301 = &label_header_860_1301_impl;
+    USE(label_header_860_1301);
+    Goto(label_header_860_1301);
+    BIND(label_header_860_1301);
+    Label label_action_861_1302_impl(this);
+    Label* label_action_861_1302 = &label_action_861_1302_impl;
+    USE(label_action_861_1302);
+    Goto(label__True_626);
+    if (label__True_626->is_used())
+    {
+      BIND(label__True_626);
+      // ../../test/torque/test-torque.tq:368:32
+      {
+        // ../../test/torque/test-torque.tq:369:7
+        {
+          Label label__True_628_impl(this);
+          Label* label__True_628 = &label__True_628_impl;
+          USE(label__True_628);
+          Label label__False_629_impl(this, {});
+          Label* label__False_629 = &label__False_629_impl;
+          USE(label__False_629);
+          int31_t t2160 = 3;
+          TNode<Smi> t2161 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2160)));
+          TNode<BoolT> t2162 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*i_412).value()), implicit_cast<TNode<Smi>>(t2161)));
+          USE(implicit_cast<TNode<BoolT>>(t2162));
+          Branch(implicit_cast<TNode<BoolT>>(t2162), label__True_628, label__False_629);
+          if (label__True_628->is_used())
+          {
+            BIND(label__True_628);
+            // ../../test/torque/test-torque.tq:369:19
+            Goto(label_action_861_1302);
+          }
+          BIND(label__False_629);
+        }
+        // ../../test/torque/test-torque.tq:370:7
+        {
+          Label label__True_630_impl(this);
+          Label* label__True_630 = &label__True_630_impl;
+          USE(label__True_630);
+          Label label__False_631_impl(this, {});
+          Label* label__False_631 = &label__False_631_impl;
+          USE(label__False_631);
+          int31_t t2163 = 5;
+          TNode<Smi> t2164 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2163)));
+          TNode<BoolT> t2165 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*i_412).value()), implicit_cast<TNode<Smi>>(t2164)));
+          USE(implicit_cast<TNode<BoolT>>(t2165));
+          Branch(implicit_cast<TNode<BoolT>>(t2165), label__True_630, label__False_631);
+          if (label__True_630->is_used())
+          {
+            BIND(label__True_630);
+            // ../../test/torque/test-torque.tq:370:19
+            Goto(label__False_627);
+          }
+          BIND(label__False_631);
+        }
+        // ../../test/torque/test-torque.tq:371:7
+        TNode<Smi> t2166 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*i_412).value())));
+        *sum_407 = implicit_cast<TNode<Smi>>(t2166);
+      }
+      Goto(label_action_861_1302);
+    }
+    {
+      BIND(label_action_861_1302);
+      TNode<Smi> t2167 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+      TNode<Smi> t2168 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*i_412).value()), implicit_cast<TNode<Smi>>(t2167)));
+      *i_412 = implicit_cast<TNode<Smi>>(t2168);
+      Goto(label_header_860_1301);
+    }
+    BIND(label__False_627);
+    // ../../test/torque/test-torque.tq:373:5
+    Label label__True_632_impl(this);
+    Label* label__True_632 = &label__True_632_impl;
+    USE(label__True_632);
+    Label label__False_633_impl(this);
+    Label* label__False_633 = &label__False_633_impl;
+    USE(label__False_633);
+    int31_t t2169 = 7;
+    TNode<Smi> t2170 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2169)));
+    TNode<BoolT> t2171 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2170)));
+    USE(implicit_cast<TNode<BoolT>>(t2171));
+    Branch(implicit_cast<TNode<BoolT>>(t2171), label__True_632, label__False_633);
+    BIND(label__False_633);
+    Print("assert 'sum == 7' failed at ../../test/torque/test-torque.tq:373:5");
+    Unreachable();
+    BIND(label__True_632);
+    // ../../test/torque/test-torque.tq:375:5
+    int31_t t2172 = 0;
+    TNode<Smi> t2173 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2172)));
+    *sum_407 = implicit_cast<TNode<Smi>>(t2173);
+    // ../../test/torque/test-torque.tq:376:5
+    int31_t t2174 = 0;
+    TNode<Smi> t2175 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2174)));
+    *j_409 = implicit_cast<TNode<Smi>>(t2175);
+    // ../../test/torque/test-torque.tq:377:5
+    Label label__True_634_impl(this);
+    Label* label__True_634 = &label__True_634_impl;
+    USE(label__True_634);
+    Label label__False_635_impl(this);
+    Label* label__False_635 = &label__False_635_impl;
+    USE(label__False_635);
+    Label label_header_862_1303_impl(this, {j_409, sum_407});
+    Label* label_header_862_1303 = &label_header_862_1303_impl;
+    USE(label_header_862_1303);
+    Goto(label_header_862_1303);
+    BIND(label_header_862_1303);
+    Goto(label__True_634);
+    if (label__True_634->is_used())
+    {
+      BIND(label__True_634);
+      // ../../test/torque/test-torque.tq:377:14
+      {
+        // ../../test/torque/test-torque.tq:378:7
+        {
+          Label label__True_636_impl(this);
+          Label* label__True_636 = &label__True_636_impl;
+          USE(label__True_636);
+          Label label__False_637_impl(this, {j_409});
+          Label* label__False_637 = &label__False_637_impl;
+          USE(label__False_637);
+          int31_t t2176 = 3;
+          TNode<Smi> t2177 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2176)));
+          TNode<BoolT> t2178 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2177)));
+          USE(implicit_cast<TNode<BoolT>>(t2178));
+          Branch(implicit_cast<TNode<BoolT>>(t2178), label__True_636, label__False_637);
+          if (label__True_636->is_used())
+          {
+            BIND(label__True_636);
+            // ../../test/torque/test-torque.tq:378:19
+            {
+              // ../../test/torque/test-torque.tq:379:9
+              TNode<Smi> t2179 = implicit_cast<TNode<Smi>>((*j_409).value());
+              USE(t2179);
+              TNode<Smi> t2180 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+              TNode<Smi> t2181 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2180)));
+              *j_409 = implicit_cast<TNode<Smi>>(t2181);
+              // ../../test/torque/test-torque.tq:380:9
+              Goto(label_header_862_1303);
+            }
+          }
+          BIND(label__False_637);
+        }
+        // ../../test/torque/test-torque.tq:383:7
+        {
+          Label label__True_638_impl(this);
+          Label* label__True_638 = &label__True_638_impl;
+          USE(label__True_638);
+          Label label__False_639_impl(this, {});
+          Label* label__False_639 = &label__False_639_impl;
+          USE(label__False_639);
+          int31_t t2182 = 5;
+          TNode<Smi> t2183 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2182)));
+          TNode<BoolT> t2184 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2183)));
+          USE(implicit_cast<TNode<BoolT>>(t2184));
+          Branch(implicit_cast<TNode<BoolT>>(t2184), label__True_638, label__False_639);
+          if (label__True_638->is_used())
+          {
+            BIND(label__True_638);
+            // ../../test/torque/test-torque.tq:383:19
+            Goto(label__False_635);
+          }
+          BIND(label__False_639);
+        }
+        // ../../test/torque/test-torque.tq:384:7
+        TNode<Smi> t2185 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>((*j_409).value())));
+        *sum_407 = implicit_cast<TNode<Smi>>(t2185);
+        // ../../test/torque/test-torque.tq:385:7
+        TNode<Smi> t2186 = implicit_cast<TNode<Smi>>((*j_409).value());
+        USE(t2186);
+        TNode<Smi> t2187 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(1)));
+        TNode<Smi> t2188 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*j_409).value()), implicit_cast<TNode<Smi>>(t2187)));
+        *j_409 = implicit_cast<TNode<Smi>>(t2188);
+      }
+      Goto(label_header_862_1303);
+    }
+    BIND(label__False_635);
+    // ../../test/torque/test-torque.tq:387:5
+    Label label__True_640_impl(this);
+    Label* label__True_640 = &label__True_640_impl;
+    USE(label__True_640);
+    Label label__False_641_impl(this);
+    Label* label__False_641 = &label__False_641_impl;
+    USE(label__False_641);
+    int31_t t2189 = 7;
+    TNode<Smi> t2190 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2189)));
+    TNode<BoolT> t2191 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>((*sum_407).value()), implicit_cast<TNode<Smi>>(t2190)));
+    USE(implicit_cast<TNode<BoolT>>(t2191));
+    Branch(implicit_cast<TNode<BoolT>>(t2191), label__True_640, label__False_641);
+    BIND(label__False_641);
+    Print("assert 'sum == 7' failed at ../../test/torque/test-torque.tq:387:5");
+    Unreachable();
+    BIND(label__True_640);
+  }
+}
+
+void TestBuiltinsFromDSLAssembler::TestSubtyping(TNode<Smi> p_x) {
+  Label label_macro_end_1304_impl(this, {});
+  Label* label_macro_end_1304 = &label_macro_end_1304_impl;
+  USE(label_macro_end_1304);
+  // ../../test/torque/test-torque.tq:390:32
+  {
+    // ../../test/torque/test-torque.tq:391:5
+    TNode<Object> foo_863_impl;
+    auto foo_863 = &foo_863_impl;
+    USE(foo_863);
+    *foo_863 = implicit_cast<TNode<Object>>(p_x);
+  }
+}
+
+compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(TNode<Object> p_x) {
+  TVARIABLE(Int32T, _return_413_impl);
+  auto _return_413 = &_return_413_impl;
+  USE(_return_413);
+  Label label_macro_end_1305_impl(this, {_return_413});
+  Label* label_macro_end_1305 = &label_macro_end_1305_impl;
+  USE(label_macro_end_1305);
+  // ../../test/torque/test-torque.tq:404:60
+  {
+    // ../../test/torque/test-torque.tq:405:5
+    int31_t t2192 = 0;
+    TVARIABLE(Int32T, result_414_impl);
+    auto result_414 = &result_414_impl;
+    USE(result_414);
+    TNode<Int32T> t2193 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2192)));
+    *result_414 = implicit_cast<TNode<Int32T>>(t2193);
+    // ../../test/torque/test-torque.tq:406:5
+    {
+      // ../../test/torque/test-torque.tq:406:17
+      TNode<Object> t2194 = UncheckedCast<Object>(IncrementIfSmi36UT12ATFixedArray12ATHeapNumber5ATSmi(implicit_cast<TNode<Object>>(p_x)));
+      USE(implicit_cast<TNode<Object>>(t2194));
+      TNode<Object> _value_864_impl;
+      auto _value_864 = &_value_864_impl;
+      USE(_value_864);
+      *_value_864 = implicit_cast<TNode<Object>>(t2194);
+      // ../../test/torque/test-torque.tq:407:7
+      {
+        Label label_try_done_865_1306_impl(this);
+        Label* label_try_done_865_1306 = &label_try_done_865_1306_impl;
+        USE(label_try_done_865_1306);
+        Label label__NextCase_642_impl(this);
+        Label* label__NextCase_642 = &label__NextCase_642_impl;
+        USE(label__NextCase_642);
+        Label label_try_begin_866_1307_impl(this);
+        Label* label_try_begin_866_1307 = &label_try_begin_866_1307_impl;
+        USE(label_try_begin_866_1307);
+        Goto(label_try_begin_866_1307);
+        if (label_try_begin_866_1307->is_used())
+        {
+          BIND(label_try_begin_866_1307);
+          // ../../test/torque/test-torque.tq:407:7
+          {
+            // ../../test/torque/test-torque.tq:407:7
+            TNode<FixedArray> t2195 = UncheckedCast<FixedArray>(cast12ATFixedArray(implicit_cast<TNode<Object>>((*_value_864)), label__NextCase_642));
+            USE(implicit_cast<TNode<FixedArray>>(t2195));
+            TNode<FixedArray> x_867_impl;
+            auto x_867 = &x_867_impl;
+            USE(x_867);
+            *x_867 = implicit_cast<TNode<FixedArray>>(t2195);
+            // ../../test/torque/test-torque.tq:407:29
+            {
+              // ../../test/torque/test-torque.tq:408:9
+              int31_t t2196 = 1;
+              TNode<Int32T> t2197 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2196)));
+              TNode<Int32T> t2198 = UncheckedCast<Int32T>(Int32Add(implicit_cast<TNode<Int32T>>((*result_414).value()), implicit_cast<TNode<Int32T>>(t2197)));
+              USE(implicit_cast<TNode<Int32T>>(t2198));
+              *result_414 = implicit_cast<TNode<Int32T>>(t2198);
+            }
+          }
+          Goto(label_try_done_865_1306);
+        }
+        if (label__NextCase_642->is_used())
+        {
+          BIND(label__NextCase_642);
+          // ../../test/torque/test-torque.tq:407:7
+          {
+            // ../../test/torque/test-torque.tq:409:9
+            TNode<Number> _case_value_868_impl;
+            auto _case_value_868 = &_case_value_868_impl;
+            USE(_case_value_868);
+            *_case_value_868 = implicit_cast<TNode<Number>>(UncheckedCast<Number>(implicit_cast<TNode<Object>>((*_value_864))));
+            // ../../test/torque/test-torque.tq:409:23
+            {
+              // ../../test/torque/test-torque.tq:410:9
+              int31_t t2199 = 2;
+              TNode<Int32T> t2200 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2199)));
+              TNode<Int32T> t2201 = UncheckedCast<Int32T>(Int32Add(implicit_cast<TNode<Int32T>>((*result_414).value()), implicit_cast<TNode<Int32T>>(t2200)));
+              USE(implicit_cast<TNode<Int32T>>(t2201));
+              *result_414 = implicit_cast<TNode<Int32T>>(t2201);
+            }
+          }
+          Goto(label_try_done_865_1306);
+        }
+        BIND(label_try_done_865_1306);
+      }
+    }
+    // ../../test/torque/test-torque.tq:414:5
+    int31_t t2202 = 10;
+    TNode<Int32T> t2203 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2202)));
+    TNode<Int32T> t2204 = UncheckedCast<Int32T>(Int32Mul(implicit_cast<TNode<Int32T>>((*result_414).value()), implicit_cast<TNode<Int32T>>(t2203)));
+    USE(implicit_cast<TNode<Int32T>>(t2204));
+    *result_414 = implicit_cast<TNode<Int32T>>(t2204);
+    // ../../test/torque/test-torque.tq:416:5
+    {
+      // ../../test/torque/test-torque.tq:416:17
+      TNode<Object> t2205 = UncheckedCast<Object>(IncrementIfSmi36UT12ATFixedArray12ATHeapNumber5ATSmi(implicit_cast<TNode<Object>>(p_x)));
+      USE(implicit_cast<TNode<Object>>(t2205));
+      TNode<Object> _value_869_impl;
+      auto _value_869 = &_value_869_impl;
+      USE(_value_869);
+      *_value_869 = implicit_cast<TNode<Object>>(t2205);
+      // ../../test/torque/test-torque.tq:417:7
+      {
+        Label label_try_done_870_1308_impl(this);
+        Label* label_try_done_870_1308 = &label_try_done_870_1308_impl;
+        USE(label_try_done_870_1308);
+        Label label__NextCase_643_impl(this);
+        Label* label__NextCase_643 = &label__NextCase_643_impl;
+        USE(label__NextCase_643);
+        Label label_try_begin_871_1309_impl(this);
+        Label* label_try_begin_871_1309 = &label_try_begin_871_1309_impl;
+        USE(label_try_begin_871_1309);
+        Goto(label_try_begin_871_1309);
+        if (label_try_begin_871_1309->is_used())
+        {
+          BIND(label_try_begin_871_1309);
+          // ../../test/torque/test-torque.tq:417:7
+          {
+            // ../../test/torque/test-torque.tq:417:7
+            TNode<Smi> t2206 = UncheckedCast<Smi>(cast5ATSmi(implicit_cast<TNode<Object>>((*_value_869)), label__NextCase_643));
+            USE(implicit_cast<TNode<Smi>>(t2206));
+            TNode<Smi> x_872_impl;
+            auto x_872 = &x_872_impl;
+            USE(x_872);
+            *x_872 = implicit_cast<TNode<Smi>>(t2206);
+            // ../../test/torque/test-torque.tq:417:22
+            {
+              // ../../test/torque/test-torque.tq:418:9
+              TNode<Int32T> t2207 = UncheckedCast<Int32T>(convert7ATint32(implicit_cast<TNode<Smi>>((*x_872))));
+              USE(implicit_cast<TNode<Int32T>>(t2207));
+              TNode<Int32T> t2208 = UncheckedCast<Int32T>(Int32Add(implicit_cast<TNode<Int32T>>((*result_414).value()), implicit_cast<TNode<Int32T>>(t2207)));
+              USE(implicit_cast<TNode<Int32T>>(t2208));
+              *result_414 = implicit_cast<TNode<Int32T>>(t2208);
+            }
+          }
+          Goto(label_try_done_870_1308);
+        }
+        if (label__NextCase_643->is_used())
+        {
+          BIND(label__NextCase_643);
+          // ../../test/torque/test-torque.tq:417:7
+          {
+            // ../../test/torque/test-torque.tq:419:9
+            {
+              Label label_try_done_873_1310_impl(this);
+              Label* label_try_done_873_1310 = &label_try_done_873_1310_impl;
+              USE(label_try_done_873_1310);
+              Label label__NextCase_644_impl(this);
+              Label* label__NextCase_644 = &label__NextCase_644_impl;
+              USE(label__NextCase_644);
+              Label label_try_begin_874_1311_impl(this);
+              Label* label_try_begin_874_1311 = &label_try_begin_874_1311_impl;
+              USE(label_try_begin_874_1311);
+              Goto(label_try_begin_874_1311);
+              if (label_try_begin_874_1311->is_used())
+              {
+                BIND(label_try_begin_874_1311);
+                // ../../test/torque/test-torque.tq:419:9
+                {
+                  // ../../test/torque/test-torque.tq:419:9
+                  TNode<FixedArray> t2209 = UncheckedCast<FixedArray>(cast12ATFixedArray(implicit_cast<TNode<HeapObject>>(UncheckedCast<HeapObject>(implicit_cast<TNode<Object>>((*_value_869)))), label__NextCase_644));
+                  USE(implicit_cast<TNode<FixedArray>>(t2209));
+                  TNode<FixedArray> a_875_impl;
+                  auto a_875 = &a_875_impl;
+                  USE(a_875);
+                  *a_875 = implicit_cast<TNode<FixedArray>>(t2209);
+                  // ../../test/torque/test-torque.tq:419:31
+                  {
+                    // ../../test/torque/test-torque.tq:420:9
+                    TNode<Smi> t2210 = UncheckedCast<Smi>(LoadFixedArrayBaseLength(implicit_cast<TNode<FixedArrayBase>>((*a_875))));
+                    TNode<Int32T> t2211 = UncheckedCast<Int32T>(convert7ATint32(implicit_cast<TNode<Smi>>(t2210)));
+                    USE(implicit_cast<TNode<Int32T>>(t2211));
+                    TNode<Int32T> t2212 = UncheckedCast<Int32T>(Int32Add(implicit_cast<TNode<Int32T>>((*result_414).value()), implicit_cast<TNode<Int32T>>(t2211)));
+                    USE(implicit_cast<TNode<Int32T>>(t2212));
+                    *result_414 = implicit_cast<TNode<Int32T>>(t2212);
+                  }
+                }
+                Goto(label_try_done_873_1310);
+              }
+              if (label__NextCase_644->is_used())
+              {
+                BIND(label__NextCase_644);
+                // ../../test/torque/test-torque.tq:419:9
+                {
+                  // ../../test/torque/test-torque.tq:421:9
+                  TNode<HeapNumber> x_876_impl;
+                  auto x_876 = &x_876_impl;
+                  USE(x_876);
+                  *x_876 = implicit_cast<TNode<HeapNumber>>(UncheckedCast<HeapNumber>(implicit_cast<TNode<Object>>((*_value_869))));
+                  // ../../test/torque/test-torque.tq:421:31
+                  {
+                    // ../../test/torque/test-torque.tq:422:9
+                    int31_t t2213 = 7;
+                    TNode<Int32T> t2214 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2213)));
+                    TNode<Int32T> t2215 = UncheckedCast<Int32T>(Int32Add(implicit_cast<TNode<Int32T>>((*result_414).value()), implicit_cast<TNode<Int32T>>(t2214)));
+                    USE(implicit_cast<TNode<Int32T>>(t2215));
+                    *result_414 = implicit_cast<TNode<Int32T>>(t2215);
+                  }
+                }
+                Goto(label_try_done_873_1310);
+              }
+              BIND(label_try_done_873_1310);
+            }
+          }
+          Goto(label_try_done_870_1308);
+        }
+        BIND(label_try_done_870_1308);
+      }
+    }
+    // ../../test/torque/test-torque.tq:426:5
+    *_return_413 = implicit_cast<TNode<Int32T>>((*result_414).value());
+    Goto(label_macro_end_1305);
+  }
+  BIND(label_macro_end_1305);
+  return implicit_cast<TNode<Int32T>>((*_return_413).value());
+}
+
+void TestBuiltinsFromDSLAssembler::TestTypeswitch() {
+  Label label_macro_end_1312_impl(this, {});
+  Label* label_macro_end_1312 = &label_macro_end_1312_impl;
+  USE(label_macro_end_1312);
+  // ../../test/torque/test-torque.tq:429:26
+  {
+    // ../../test/torque/test-torque.tq:430:5
+    Label label__True_645_impl(this);
+    Label* label__True_645 = &label__True_645_impl;
+    USE(label__True_645);
+    Label label__False_646_impl(this);
+    Label* label__False_646 = &label__False_646_impl;
+    USE(label__False_646);
+    int31_t t2216 = 5;
+    TNode<Smi> t2217 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2216)));
+    USE(implicit_cast<TNode<Smi>>(t2217));
+    TNode<Int32T> t2218 = UncheckedCast<Int32T>(TypeswitchExample(implicit_cast<TNode<Object>>(t2217)));
+    USE(implicit_cast<TNode<Int32T>>(t2218));
+    int31_t t2219 = 26;
+    TNode<Int32T> t2220 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2219)));
+    TNode<BoolT> t2221 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Int32T>>(t2218), implicit_cast<TNode<Int32T>>(t2220)));
+    USE(implicit_cast<TNode<BoolT>>(t2221));
+    Branch(implicit_cast<TNode<BoolT>>(t2221), label__True_645, label__False_646);
+    BIND(label__False_646);
+    Print("assert 'TypeswitchExample(from_constexpr<Smi>(5)) == 26' failed at ../../test/torque/test-torque.tq:430:5");
+    Unreachable();
+    BIND(label__True_645);
+    // ../../test/torque/test-torque.tq:431:5
+    int31_t t2222 = 3;
+    TNode<IntPtrT> t2223 = UncheckedCast<IntPtrT>(from_constexpr8ATintptr(implicit_cast<int31_t>(t2222)));
+    TNode<FixedArray> t2224 = UncheckedCast<FixedArray>(AllocateZeroedFixedArray(implicit_cast<TNode<IntPtrT>>(t2223)));
+    USE(implicit_cast<TNode<FixedArray>>(t2224));
+    TNode<FixedArray> a_877_impl;
+    auto a_877 = &a_877_impl;
+    USE(a_877);
+    *a_877 = implicit_cast<TNode<FixedArray>>(t2224);
+    // ../../test/torque/test-torque.tq:432:5
+    Label label__True_647_impl(this);
+    Label* label__True_647 = &label__True_647_impl;
+    USE(label__True_647);
+    Label label__False_648_impl(this);
+    Label* label__False_648 = &label__False_648_impl;
+    USE(label__False_648);
+    TNode<Int32T> t2225 = UncheckedCast<Int32T>(TypeswitchExample(implicit_cast<TNode<Object>>((*a_877))));
+    USE(implicit_cast<TNode<Int32T>>(t2225));
+    int31_t t2226 = 13;
+    TNode<Int32T> t2227 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2226)));
+    TNode<BoolT> t2228 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Int32T>>(t2225), implicit_cast<TNode<Int32T>>(t2227)));
+    USE(implicit_cast<TNode<BoolT>>(t2228));
+    Branch(implicit_cast<TNode<BoolT>>(t2228), label__True_647, label__False_648);
+    BIND(label__False_648);
+    Print("assert 'TypeswitchExample(a) == 13' failed at ../../test/torque/test-torque.tq:432:5");
+    Unreachable();
+    BIND(label__True_647);
+    // ../../test/torque/test-torque.tq:433:5
+    Label label__True_649_impl(this);
+    Label* label__True_649 = &label__True_649_impl;
+    USE(label__True_649);
+    Label label__False_650_impl(this);
+    Label* label__False_650 = &label__False_650_impl;
+    USE(label__False_650);
+    double t2229 = 0.5;
+    TNode<Number> t2230 = UncheckedCast<Number>(from_constexpr22UT12ATHeapNumber5ATSmi(implicit_cast<double>(t2229)));
+    USE(implicit_cast<TNode<Number>>(t2230));
+    TNode<Int32T> t2231 = UncheckedCast<Int32T>(TypeswitchExample(implicit_cast<TNode<Object>>(t2230)));
+    USE(implicit_cast<TNode<Int32T>>(t2231));
+    int31_t t2232 = 27;
+    TNode<Int32T> t2233 = UncheckedCast<Int32T>(from_constexpr7ATint32(implicit_cast<int31_t>(t2232)));
+    TNode<BoolT> t2234 = UncheckedCast<BoolT>(Word32Equal(implicit_cast<TNode<Int32T>>(t2231), implicit_cast<TNode<Int32T>>(t2233)));
+    USE(implicit_cast<TNode<BoolT>>(t2234));
+    Branch(implicit_cast<TNode<BoolT>>(t2234), label__True_649, label__False_650);
+    BIND(label__False_650);
+    Print("assert 'TypeswitchExample(from_constexpr<Number>(0.5)) == 27' failed at ../../test/torque/test-torque.tq:433:5");
+    Unreachable();
+    BIND(label__True_649);
+  }
+}
+
+void TestBuiltinsFromDSLAssembler::TestGenericOverload() {
+  Label label_macro_end_1313_impl(this, {});
+  Label* label_macro_end_1313 = &label_macro_end_1313_impl;
+  USE(label_macro_end_1313);
+  // ../../test/torque/test-torque.tq:443:31
+  {
+    // ../../test/torque/test-torque.tq:444:5
+    int31_t t2235 = 5;
+    TNode<Smi> x_smi_878_impl;
+    auto x_smi_878 = &x_smi_878_impl;
+    USE(x_smi_878);
+    TNode<Smi> t2236 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2235)));
+    *x_smi_878 = implicit_cast<TNode<Smi>>(t2236);
+    // ../../test/torque/test-torque.tq:445:5
+    TNode<Object> x_object_879_impl;
+    auto x_object_879 = &x_object_879_impl;
+    USE(x_object_879);
+    *x_object_879 = implicit_cast<TNode<Object>>((*x_smi_878));
+    // ../../test/torque/test-torque.tq:446:5
+    Label label__True_651_impl(this);
+    Label* label__True_651 = &label__True_651_impl;
+    USE(label__True_651);
+    Label label__False_652_impl(this);
+    Label* label__False_652 = &label__False_652_impl;
+    USE(label__False_652);
+    TNode<Smi> t2237 = UncheckedCast<Smi>(ExampleGenericOverload5ATSmi(implicit_cast<TNode<Smi>>((*x_smi_878))));
+    USE(implicit_cast<TNode<Smi>>(t2237));
+    int31_t t2238 = 6;
+    TNode<Smi> t2239 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2238)));
+    TNode<BoolT> t2240 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>(t2237), implicit_cast<TNode<Smi>>(t2239)));
+    USE(implicit_cast<TNode<BoolT>>(t2240));
+    Branch(implicit_cast<TNode<BoolT>>(t2240), label__True_651, label__False_652);
+    BIND(label__False_652);
+    Print("assert 'ExampleGenericOverload<Smi>(x_smi) == 6' failed at ../../test/torque/test-torque.tq:446:5");
+    Unreachable();
+    BIND(label__True_651);
+    // ../../test/torque/test-torque.tq:447:5
+    Label label__True_653_impl(this);
+    Label* label__True_653 = &label__True_653_impl;
+    USE(label__True_653);
+    Label label__False_654_impl(this);
+    Label* label__False_654 = &label__False_654_impl;
+    USE(label__False_654);
+    TNode<Object> t2241 = UncheckedCast<Object>(ExampleGenericOverload22UT12ATHeapObject5ATSmi(implicit_cast<TNode<Object>>((*x_object_879))));
+    USE(implicit_cast<TNode<Object>>(t2241));
+    TNode<Smi> t2242 = UncheckedCast<Smi>(unsafe_cast5ATSmi(implicit_cast<TNode<Object>>(t2241)));
+    USE(implicit_cast<TNode<Smi>>(t2242));
+    int31_t t2243 = 5;
+    TNode<Smi> t2244 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t2243)));
+    TNode<BoolT> t2245 = UncheckedCast<BoolT>(SmiEqual(implicit_cast<TNode<Smi>>(t2242), implicit_cast<TNode<Smi>>(t2244)));
+    USE(implicit_cast<TNode<BoolT>>(t2245));
+    Branch(implicit_cast<TNode<BoolT>>(t2245), label__True_653, label__False_654);
+    BIND(label__False_654);
+    Print("assert 'unsafe_cast<Smi>(ExampleGenericOverload<Object>(x_object)) == 5' failed at ../../test/torque/test-torque.tq:447:5");
+    Unreachable();
+    BIND(label__True_653);
+  }
 }
 
 TF_BUILTIN(GenericBuiltinTest5ATSmi, TestBuiltinsFromDSLAssembler) {
@@ -1873,47 +3159,162 @@ TF_BUILTIN(GenericBuiltinTest5ATSmi, TestBuiltinsFromDSLAssembler) {
   USE(p_c);
   TNode<Smi> p_param = UncheckedCast<Smi>(Parameter(Descriptor::kParam));
   USE(p_param);
-  // ../../test/torque/test-torque.tq:85:69
+  // ../../test/torque/test-torque.tq:85:70
   {
-    // ../../test/torque/test-torque.tq:86:4
-    Return(Null());
+    // ../../test/torque/test-torque.tq:86:5
+    Return(implicit_cast<TNode<Object>>(Null()));
   }
 }
 
 compiler::TNode<Object> TestBuiltinsFromDSLAssembler::GenericMacroTest5ATSmi(TNode<Smi> p_param) {
-  TVARIABLE(Object, _return_447_impl);
-  auto _return_447 = &_return_447_impl;
-  USE(_return_447);
-  Label label_macro_end_823_impl(this, {_return_447});
-  Label* label_macro_end_823 = &label_macro_end_823_impl;
-  USE(label_macro_end_823);
-  // ../../test/torque/test-torque.tq:129:53
+  TVARIABLE(Object, _return_549_impl);
+  auto _return_549 = &_return_549_impl;
+  USE(_return_549);
+  Label label_macro_end_1456_impl(this, {_return_549});
+  Label* label_macro_end_1456 = &label_macro_end_1456_impl;
+  USE(label_macro_end_1456);
+  // ../../test/torque/test-torque.tq:131:54
   {
-    // ../../test/torque/test-torque.tq:130:4
-    *_return_447 = Undefined();
-    Goto(label_macro_end_823);
+    // ../../test/torque/test-torque.tq:132:5
+    *_return_549 = implicit_cast<TNode<Object>>(Undefined());
+    Goto(label_macro_end_1456);
   }
-  BIND(label_macro_end_823);
-  return (*_return_447).value();
+  BIND(label_macro_end_1456);
+  return implicit_cast<TNode<Object>>((*_return_549).value());
 }
 
-compiler::TNode<Object> TestBuiltinsFromDSLAssembler::GenericMacroTestWithLabels5ATSmi(TNode<Smi> p_param, Label* label_X_513) {
-  TVARIABLE(Object, _return_448_impl);
-  auto _return_448 = &_return_448_impl;
-  USE(_return_448);
-  Label label_macro_end_824_impl(this, {_return_448});
-  Label* label_macro_end_824 = &label_macro_end_824_impl;
-  USE(label_macro_end_824);
-  // ../../test/torque/test-torque.tq:137:72
+compiler::TNode<Object> TestBuiltinsFromDSLAssembler::GenericMacroTestWithLabels5ATSmi(TNode<Smi> p_param, Label* label_X_959) {
+  TVARIABLE(Object, _return_550_impl);
+  auto _return_550 = &_return_550_impl;
+  USE(_return_550);
+  Label label_macro_end_1457_impl(this, {_return_550});
+  Label* label_macro_end_1457 = &label_macro_end_1457_impl;
+  USE(label_macro_end_1457);
+  // ../../test/torque/test-torque.tq:139:73
   {
-    // ../../test/torque/test-torque.tq:138:4
-    *_return_448 = Undefined();
-    Goto(label_macro_end_824);
+    // ../../test/torque/test-torque.tq:140:5
+    *_return_550 = implicit_cast<TNode<Object>>(Undefined());
+    Goto(label_macro_end_1457);
   }
-  BIND(label_macro_end_824);
-  return (*_return_448).value();
+  BIND(label_macro_end_1457);
+  return implicit_cast<TNode<Object>>((*_return_550).value());
 }
 
-}  // namepsace internal
+compiler::TNode<Object> TestBuiltinsFromDSLAssembler::IncrementIfSmi36UT12ATFixedArray12ATHeapNumber5ATSmi(TNode<Object> p_x) {
+  TVARIABLE(Object, _return_551_impl);
+  auto _return_551 = &_return_551_impl;
+  USE(_return_551);
+  Label label_macro_end_1459_impl(this, {_return_551});
+  Label* label_macro_end_1459 = &label_macro_end_1459_impl;
+  USE(label_macro_end_1459);
+  // ../../test/torque/test-torque.tq:394:45
+  {
+    // ../../test/torque/test-torque.tq:395:5
+    {
+      // ../../test/torque/test-torque.tq:395:17
+      TNode<Object> _value_1090_impl;
+      auto _value_1090 = &_value_1090_impl;
+      USE(_value_1090);
+      *_value_1090 = implicit_cast<TNode<Object>>(p_x);
+      // ../../test/torque/test-torque.tq:396:7
+      {
+        Label label_try_done_1091_1460_impl(this);
+        Label* label_try_done_1091_1460 = &label_try_done_1091_1460_impl;
+        USE(label_try_done_1091_1460);
+        Label label__NextCase_960_impl(this);
+        Label* label__NextCase_960 = &label__NextCase_960_impl;
+        USE(label__NextCase_960);
+        Label label_try_begin_1092_1461_impl(this);
+        Label* label_try_begin_1092_1461 = &label_try_begin_1092_1461_impl;
+        USE(label_try_begin_1092_1461);
+        Goto(label_try_begin_1092_1461);
+        if (label_try_begin_1092_1461->is_used())
+        {
+          BIND(label_try_begin_1092_1461);
+          // ../../test/torque/test-torque.tq:396:7
+          {
+            // ../../test/torque/test-torque.tq:396:7
+            TNode<Smi> t3362 = UncheckedCast<Smi>(cast5ATSmi(implicit_cast<TNode<Object>>((*_value_1090)), label__NextCase_960));
+            USE(implicit_cast<TNode<Smi>>(t3362));
+            TNode<Smi> x_1093_impl;
+            auto x_1093 = &x_1093_impl;
+            USE(x_1093);
+            *x_1093 = implicit_cast<TNode<Smi>>(t3362);
+            // ../../test/torque/test-torque.tq:396:22
+            {
+              // ../../test/torque/test-torque.tq:397:9
+              int31_t t3363 = 1;
+              TNode<Smi> t3364 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t3363)));
+              TNode<Smi> t3365 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>((*x_1093)), implicit_cast<TNode<Smi>>(t3364)));
+              USE(implicit_cast<TNode<Smi>>(t3365));
+              *_return_551 = implicit_cast<TNode<Object>>(t3365);
+              Goto(label_macro_end_1459);
+            }
+          }
+        }
+        if (label__NextCase_960->is_used())
+        {
+          BIND(label__NextCase_960);
+          // ../../test/torque/test-torque.tq:396:7
+          {
+            // ../../test/torque/test-torque.tq:398:9
+            TNode<Object> o_1094_impl;
+            auto o_1094 = &o_1094_impl;
+            USE(o_1094);
+            *o_1094 = implicit_cast<TNode<Object>>(UncheckedCast<HeapObject>(implicit_cast<TNode<Object>>((*_value_1090))));
+            // ../../test/torque/test-torque.tq:398:22
+            {
+              // ../../test/torque/test-torque.tq:399:9
+              *_return_551 = implicit_cast<TNode<Object>>((*o_1094));
+              Goto(label_macro_end_1459);
+            }
+          }
+        }
+      }
+    }
+  }
+  BIND(label_macro_end_1459);
+  return implicit_cast<TNode<Object>>((*_return_551).value());
+}
+
+compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::ExampleGenericOverload5ATSmi(TNode<Smi> p_o) {
+  TVARIABLE(Smi, _return_554_impl);
+  auto _return_554 = &_return_554_impl;
+  USE(_return_554);
+  Label label_macro_end_1463_impl(this, {_return_554});
+  Label* label_macro_end_1463 = &label_macro_end_1463_impl;
+  USE(label_macro_end_1463);
+  // ../../test/torque/test-torque.tq:439:54
+  {
+    // ../../test/torque/test-torque.tq:440:5
+    int31_t t3368 = 1;
+    TNode<Smi> t3369 = UncheckedCast<Smi>(from_constexpr5ATSmi(implicit_cast<int31_t>(t3368)));
+    TNode<Smi> t3370 = UncheckedCast<Smi>(SmiAdd(implicit_cast<TNode<Smi>>(p_o), implicit_cast<TNode<Smi>>(t3369)));
+    USE(implicit_cast<TNode<Smi>>(t3370));
+    *_return_554 = implicit_cast<TNode<Smi>>(t3370);
+    Goto(label_macro_end_1463);
+  }
+  BIND(label_macro_end_1463);
+  return implicit_cast<TNode<Smi>>((*_return_554).value());
+}
+
+compiler::TNode<Object> TestBuiltinsFromDSLAssembler::ExampleGenericOverload22UT12ATHeapObject5ATSmi(TNode<Object> p_o) {
+  TVARIABLE(Object, _return_555_impl);
+  auto _return_555 = &_return_555_impl;
+  USE(_return_555);
+  Label label_macro_end_1464_impl(this, {_return_555});
+  Label* label_macro_end_1464 = &label_macro_end_1464_impl;
+  USE(label_macro_end_1464);
+  // ../../test/torque/test-torque.tq:436:57
+  {
+    // ../../test/torque/test-torque.tq:437:5
+    *_return_555 = implicit_cast<TNode<Object>>(p_o);
+    Goto(label_macro_end_1464);
+  }
+  BIND(label_macro_end_1464);
+  return implicit_cast<TNode<Object>>((*_return_555).value());
+}
+
+}  // namespace internal
 }  // namespace v8
 

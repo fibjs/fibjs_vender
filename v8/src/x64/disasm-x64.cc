@@ -16,6 +16,7 @@
 #include "src/base/lazy-instance.h"
 #include "src/base/v8-fallthrough.h"
 #include "src/disasm.h"
+#include "src/macro-assembler.h"
 #include "src/x64/sse-instr.h"
 
 namespace disasm {
@@ -281,23 +282,17 @@ static const InstructionDesc cmov_instructions[16] = {
 //------------------------------------------------------------------------------
 // DisassemblerX64 implementation.
 
-enum UnimplementedOpcodeAction {
-  CONTINUE_ON_UNIMPLEMENTED_OPCODE,
-  ABORT_ON_UNIMPLEMENTED_OPCODE
-};
-
 
 // A new DisassemblerX64 object is created to disassemble each instruction.
 // The object can only disassemble a single instruction.
 class DisassemblerX64 {
  public:
   DisassemblerX64(const NameConverter& converter,
-                  UnimplementedOpcodeAction unimplemented_action =
-                      ABORT_ON_UNIMPLEMENTED_OPCODE)
+                  Disassembler::UnimplementedOpcodeAction unimplemented_action)
       : converter_(converter),
         tmp_buffer_pos_(0),
         abort_on_unimplemented_(unimplemented_action ==
-                                ABORT_ON_UNIMPLEMENTED_OPCODE),
+                                Disassembler::kAbortOnUnimplementedOpcode),
         rex_(0),
         operand_size_(0),
         group_1_prefix_(0),
@@ -307,9 +302,6 @@ class DisassemblerX64 {
         byte_size_operand_(false),
         instruction_table_(instruction_table.Pointer()) {
     tmp_buffer_[0] = '\0';
-  }
-
-  virtual ~DisassemblerX64() {
   }
 
   // Writes one disassembled instruction into 'buffer' (0-terminated).
@@ -463,6 +455,7 @@ class DisassemblerX64 {
 
   typedef const char* (DisassemblerX64::*RegisterNameMapping)(int reg) const;
 
+  void TryAppendRootRelativeName(int offset);
   int PrintRightOperandHelper(byte* modrmp,
                               RegisterNameMapping register_name);
   int PrintRightOperand(byte* modrmp);
@@ -506,6 +499,10 @@ void DisassemblerX64::AppendToBuffer(const char* format, ...) {
   tmp_buffer_pos_ += result;
 }
 
+void DisassemblerX64::TryAppendRootRelativeName(int offset) {
+  const char* maybe_name = converter_.RootRelativeName(offset);
+  if (maybe_name != nullptr) AppendToBuffer(" (%s)", maybe_name);
+}
 
 int DisassemblerX64::PrintRightOperandHelper(
     byte* modrmp,
@@ -585,6 +582,10 @@ int DisassemblerX64::PrintRightOperandHelper(
                        NameOfCPURegister(rm),
                        disp < 0 ? "-" : "+",
                        disp < 0 ? -disp : disp);
+        if (rm == i::kRootRegister.code()) {
+          // For root-relative accesses, try to append a description.
+          TryAppendRootRelativeName(i::kRootRegisterBias + disp);
+        }
         return (mod == 2) ? 5 : 2;
       }
       break;
@@ -1685,6 +1686,18 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
         current += PrintRightXMMOperand(current);
         AppendToBuffer(",0x%x", (*current) & 3);
         current += 1;
+      } else if (third_byte == 0x0E) {
+        get_modrm(*current, &mod, &regop, &rm);
+        AppendToBuffer("pblendw %s,", NameOfXMMRegister(regop));
+        current += PrintRightXMMOperand(data);
+        AppendToBuffer(",0x%x", (*current) & 3);
+        current += 1;
+      } else if (third_byte == 0x0F) {
+        get_modrm(*data, &mod, &regop, &rm);
+        AppendToBuffer("palignr %s,", NameOfXMMRegister(regop));
+        current += PrintRightXMMOperand(data);
+        AppendToBuffer(",0x%x", (*current) & 3);
+        current += 1;
       } else if (third_byte == 0x14) {
         get_modrm(*current, &mod, &regop, &rm);
         AppendToBuffer("pextrb ");  // reg/m32, xmm, imm8
@@ -1816,32 +1829,44 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
           mnemonic = "xorpd";
         } else if (opcode == 0x5B) {
           mnemonic = "cvtps2dq";
-        } else if (opcode == 0x2E) {
-          mnemonic = "ucomisd";
-        } else if (opcode == 0x2F) {
-          mnemonic = "comisd";
+        } else if (opcode == 0x60) {
+          mnemonic = "punpcklbw";
+        } else if (opcode == 0x61) {
+          mnemonic = "punpcklwd";
+        } else if (opcode == 0x62) {
+          mnemonic = "punpckldq";
+        } else if (opcode == 0x63) {
+          mnemonic = "packsswb";
         } else if (opcode == 0x64) {
           mnemonic = "pcmpgtb";
         } else if (opcode == 0x65) {
           mnemonic = "pcmpgtw";
         } else if (opcode == 0x66) {
           mnemonic = "pcmpgtd";
+        } else if (opcode == 0x67) {
+          mnemonic = "packuswb";
+        } else if (opcode == 0x68) {
+          mnemonic = "punpckhbw";
+        } else if (opcode == 0x69) {
+          mnemonic = "punpckhwd";
+        } else if (opcode == 0x6A) {
+          mnemonic = "punpckhdq";
+        } else if (opcode == 0x6B) {
+          mnemonic = "packssdw";
+        } else if (opcode == 0x6C) {
+          mnemonic = "punpcklqdq";
+        } else if (opcode == 0x6D) {
+          mnemonic = "punpckhqdq";
+        } else if (opcode == 0x2E) {
+          mnemonic = "ucomisd";
+        } else if (opcode == 0x2F) {
+          mnemonic = "comisd";
         } else if (opcode == 0x74) {
           mnemonic = "pcmpeqb";
         } else if (opcode == 0x75) {
           mnemonic = "pcmpeqw";
         } else if (opcode == 0x76) {
           mnemonic = "pcmpeqd";
-        } else if (opcode == 0x62) {
-          mnemonic = "punpckldq";
-        } else if (opcode == 0x63) {
-          mnemonic = "packsswb";
-        } else if (opcode == 0x67) {
-          mnemonic = "packuswb";
-        } else if (opcode == 0x6A) {
-          mnemonic = "punpckhdq";
-        } else if (opcode == 0x6B) {
-          mnemonic = "packssdw";
         } else if (opcode == 0xD1) {
           mnemonic = "psrlw";
         } else if (opcode == 0xD2) {
@@ -1952,6 +1977,14 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
       get_modrm(*current, &mod, &regop, &rm);
       AppendToBuffer("cvtsd2si%c %s,",
           operand_size_code(), NameOfCPURegister(regop));
+      current += PrintRightXMMOperand(current);
+    } else if (opcode == 0x5B) {
+      // CVTTPS2DQ: Convert packed single-precision FP values to packed signed
+      // doubleword integer values
+      int mod, regop, rm;
+      get_modrm(*current, &mod, &regop, &rm);
+      AppendToBuffer("cvttps2dq%c %s,", operand_size_code(),
+                     NameOfCPURegister(regop));
       current += PrintRightXMMOperand(current);
     } else if ((opcode & 0xF8) == 0x58 || opcode == 0x51) {
       // XMM arithmetic. Mnemonic was retrieved at the start of this function.
@@ -2175,6 +2208,10 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
     current += PrintRightXMMOperand(current);
     AppendToBuffer(", %d", (*current) & 3);
     current += 1;
+  } else if (opcode >= 0xC8 && opcode <= 0xCF) {
+    // bswap
+    int reg = (opcode - 0xC8) | (rex_r() ? 8 : 0);
+    AppendToBuffer("bswap%c %s", operand_size_code(), NameOfCPURegister(reg));
   } else if (opcode == 0x50) {
     // movmskps reg, xmm
     int mod, regop, rm;
@@ -2240,6 +2277,7 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
 // The argument is the second byte of the two-byte opcode.
 // Returns nullptr if the instruction is not handled here.
 const char* DisassemblerX64::TwoByteMnemonic(byte opcode) {
+  if (opcode >= 0xC8 && opcode <= 0xCF) return "bswap";
   switch (opcode) {
     case 0x1F:
       return "nop";
@@ -2824,21 +2862,9 @@ const char* NameConverter::NameInCode(byte* addr) const {
 
 //------------------------------------------------------------------------------
 
-Disassembler::Disassembler(const NameConverter& converter)
-    : converter_(converter) { }
-
-Disassembler::~Disassembler() { }
-
-
 int Disassembler::InstructionDecode(v8::internal::Vector<char> buffer,
                                     byte* instruction) {
-  DisassemblerX64 d(converter_, CONTINUE_ON_UNIMPLEMENTED_OPCODE);
-  return d.InstructionDecode(buffer, instruction);
-}
-
-int Disassembler::InstructionDecodeForTesting(v8::internal::Vector<char> buffer,
-                                              byte* instruction) {
-  DisassemblerX64 d(converter_, ABORT_ON_UNIMPLEMENTED_OPCODE);
+  DisassemblerX64 d(converter_, unimplemented_opcode_action());
   return d.InstructionDecode(buffer, instruction);
 }
 
@@ -2847,10 +2873,10 @@ int Disassembler::ConstantPoolSizeAt(byte* instruction) {
   return -1;
 }
 
-
-void Disassembler::Disassemble(FILE* f, byte* begin, byte* end) {
+void Disassembler::Disassemble(FILE* f, byte* begin, byte* end,
+                               UnimplementedOpcodeAction unimplemented_action) {
   NameConverter converter;
-  Disassembler d(converter);
+  Disassembler d(converter, unimplemented_action);
   for (byte* pc = begin; pc < end;) {
     v8::internal::EmbeddedVector<char, 128> buffer;
     buffer[0] = '\0';

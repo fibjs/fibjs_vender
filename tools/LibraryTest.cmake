@@ -47,6 +47,13 @@ endif()
 if(${OS} STREQUAL "Windows")
 	add_definitions(-DWIN32 -D_LIB -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -DNOMINMAX)
 	set(flags "${flags} -fms-extensions -fmsc-version=1910 -frtti")
+
+	if(${BUILD_TYPE} STREQUAL "debug")
+		set_property(TARGET ${name}_test PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
+	elseif(${BUILD_TYPE} STREQUAL "release")
+		set_property(TARGET ${name}_test PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
+	endif()
+
 	set(link_flags "${link_flags} -ldbghelp -lwinmm -lshlwapi")
 	
 	if(${ARCH} STREQUAL "amd64")
@@ -79,6 +86,9 @@ if(${BUILD_TYPE} STREQUAL "debug")
 	set(flags "${flags} -g -O0 ${BUILD_OPTION} -Wall")
 	set(link_flags "${link_flags} ${BUILD_OPTION}")
 	add_definitions(-DDEBUG=1)
+	if(${OS} STREQUAL "Windows")
+		add_definitions(-D_DEBUG)
+	endif()
 endif()
 
 set(CMAKE_C_FLAGS "${flags}")

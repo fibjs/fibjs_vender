@@ -3,32 +3,52 @@
 var fs = require('fs');
 var path = require('path');
 var process = require('process');
+var os = require('os');
+
+var mkdirp = require('./update_helpers/mkdirp');
+var readdir2 = require('./update_helpers/readdir');
 
 var workFolder = process.cwd();
-var v8Folder = path.fullpath(process.env.HOME + "/works/source/js/v8/v8");
+var profileFolder = process.env.HOME || process.env.USERPROFILE;
+// for debug
+process.env.V8_DIR = path.fullpath(profileFolder + "./projects/v8/v8");
+process.env.DEPT_TOOLS_DIR = path.resolve("C:\\src\\depot_tools");
 
-console.log(v8Folder);
+var v8Folder = process.env.V8_DIR || path.fullpath(profileFolder + "./works/source/js/v8/v8");
+var deptToolsFolder = process.env.DEPT_TOOLS_DIR || path.fullpath(profileFolder + "./works/source/js/v8/depot_tools");
+
+console.log(`v8 is located in: ${v8Folder}`);
+console.log(`dept_tools is located in: ${deptToolsFolder}`);
 
 process.chdir(v8Folder);
 
-process.run("tools/dev/v8gen.py", [
-    "x64.release",
-    "--",
-    "v8_enable_i18n_support=false",
-    "is_component_build=false",
-    "v8_static_library=true"
-]);
+if (process.env.NO_CODEGEN != '1') {
+    process.run("python", [
+        `tools/dev/v8gen.py`,
+        "x64.release",
+        "--",
+        "is_debug=false",
+        "is_component_build=true",
+        "v8_static_library=false",
+    ]);
 
-process.run("../depot_tools/ninja", [
-    "-C",
-    "out.gn/x64.release",
-    "-j",
-    "4"
-]);
+    /**
+     * @notice you must add dept_tools folder to your environment variable `PATH`
+     */
+    // process.run(`${deptToolsFolder}/ninja`, [
+    process.run(`ninja`, [
+        "-C",
+        "out.gn/x64.release",
+        "d8",
+        "-j",
+        // "64"
+        `${(os.cpuNumbers() || 1) * 4}`,
+    ]);
+}
 
 process.chdir(workFolder);
 
-var paltFolder = 'src/base/platform';
+var platFolder = 'src/base/platform';
 var plats = [
     'platform-fiber.cc',
     'condition-variable.cc',
@@ -43,24 +63,24 @@ var platTxts = [];
 function save_plat() {
     platTxts = [];
     plats.forEach(function (f) {
-        console.log("save", paltFolder + '/' + f);
-        platTxts.push(fs.readTextFile(paltFolder + '/' + f));
+        console.log("save", platFolder + '/' + f);
+        platTxts.push(fs.readTextFile(platFolder + '/' + f));
     });
 }
 
 function update_plat() {
     var i;
-    var a = paltFolder.split('/');
+    var a = platFolder.split('/');
 
     for (i = 1; i < a.length; i++) {
         try {
             fs.mkdir(a.slice(0, i + 1).join('/'));
-        } catch (e) {}
+        } catch (e) { }
     }
 
     for (i = 0; i < plats.length; i++) {
-        console.log("update", paltFolder + '/' + plats[i]);
-        fs.writeFile(paltFolder + '/' + plats[i], platTxts[i]);
+        console.log("update", platFolder + '/' + plats[i]);
+        fs.writeFile(platFolder + '/' + plats[i], platTxts[i]);
     }
 }
 
@@ -97,15 +117,28 @@ var files = {
     'src/char-predicates.cc': 1,
     'src/intl.cc': 1,
     'src/intl.h': 1,
+    'src/objects/intl-objects-inl.h': 1,
     'src/objects/intl-objects.cc': 1,
     'src/objects/intl-objects.h': 1,
+
+    'src/objects/js-collator-inl.h': 1,
+    'src/objects/js-collator.cc': 1,
+    'src/objects/js-collator.h': 1,
     'src/objects/js-locale-inl.h': 1,
     'src/objects/js-locale.cc': 1,
     'src/objects/js-locale.h': 1,
     'src/objects/js-relative-time-format-inl.h': 1,
     'src/objects/js-relative-time-format.cc': 1,
     'src/objects/js-relative-time-format.h': 1,
-    'src/runtime/runtime-intl.cc': 1
+
+    'src/objects/js-list-format-inl.h': 1,
+    'src/objects/js-list-format.cc': 1,
+    'src/objects/js-list-format.h': 1,
+    'src/objects/js-plural-rules-inl.h': 1,
+    'src/objects/js-plural-rules.cc': 1,
+    'src/objects/js-plural-rules.h': 1,
+
+    'src/runtime/runtime-intl.cc': 1,
 };
 
 var re = [
@@ -151,7 +184,7 @@ function cp_folder(path, to) {
                 cp_folder(fname, to);
             } else {
                 if (chk_file(fnameto)) {
-                    console.log("copy", fnameto);
+                    console.log("[cp_folder] copy", fnameto);
                     var txt = fs.readTextFile(v8Folder + '/' + fname);
                     for (var t1 in replaces)
                         txt = txt.replace(t1, replaces[t1]);
@@ -179,13 +212,15 @@ function cp_gen() {
         fs.writeFile('src/gen/' + path.basename(f), fs.readTextFile(v8Folder + f));
     });
 
-    fs.mkdir('src/builtins/torque-generated');
-
-    var dir = fs.readdir(v8Folder + '/out.gn/x64.release/gen/torque-generated');
-    dir.forEach(function (name) {
-        console.log("cp " + 'src/builtins/torque-generated/' + name);
-        fs.copy(v8Folder + '/out.gn/x64.release/gen/torque-generated/' + name,
-            'src/builtins/torque-generated/' + name);
+    mkdirp('src/builtins/torque-generated');
+    var bFolder = path.resolve(v8Folder, './out.gn/x64.release/gen/torque-generated');
+    var fnames = readdir2(bFolder);
+    fnames.forEach(function (name) {
+        var sfile = path.resolve(bFolder, name);
+        var tfile = path.resolve('src/builtins/torque-generated/' + name)
+        console.log(`cp ${sfile} to ${tfile}`);
+        mkdirp(path.dirname(tfile));
+        fs.copy(sfile, tfile);
     });
 }
 
@@ -242,6 +277,10 @@ var plats1 = {
 
 function patch_plat() {
     function patch_plat_file(fname, plat) {
+        if (!fs.exists(fname)) {
+            warning_unexisted_file(fname, 'patch_plat_file')
+            return;
+        }
         var txt = fs.readTextFile(fname);
         var txt1;
 
@@ -262,7 +301,7 @@ function patch_plat() {
     }
 
     for (var f in plats1)
-        patch_plat_file(paltFolder + '/platform-' + f + '.cc', plats1[f]);
+        patch_plat_file(platFolder + '/platform-' + f + '.cc', plats1[f]);
 
     patch_plat_file('src/trap-handler/handler-inside-linux.cc', '#include "src/trap-handler/trap-handler.h"\n\n#if V8_TRAP_HANDLER_SUPPORTED');
     patch_plat_file('src/trap-handler/handler-outside-linux.cc', '#ifdef Linux');
@@ -283,7 +322,8 @@ function patch_trace() {
         var val = traces[f];
 
         console.log("patch", fname);
-        txt1 = txt.replace('#include "src/base/debug/stack_trace.h"\n', '#include "src/base/debug/stack_trace.h"\n#ifdef ' + val);
+        // txt1 = txt.replace(`#include "src/base/debug/stack_trace.h"${os.EOL}`, `#include "src/base/debug/stack_trace.h"\n#ifdef ${val}`);
+        txt1 = toLF(txt).replace(`#include "src/base/debug/stack_trace.h"\n`, `#include "src/base/debug/stack_trace.h"\n#ifdef ${val}`);
 
         fs.writeFile(fname, txt1 + "\n#endif");
     }
@@ -304,10 +344,20 @@ function patch_trace_win() {
     fs.writeFile(fname, txt);
 }
 
+function warning_unexisted_file(fname, _for = '') {
+    console.warn(`[${_for}] file ${fname} doesn't exist.`)
+}
+
 function patch_macro() {
     var fname = "src/macro-assembler.h";
 
     console.log("patch", fname);
+
+    if (!fs.exists(fname)) {
+        warning_unexisted_file(fname, 'patch_macro')
+        return;
+    }
+
     var txt = fs.readTextFile(fname);
     fs.writeFile(fname, '#include "src/v8.h"\n\n' + txt);
 }
@@ -316,6 +366,12 @@ function patch_flag() {
     var fname = "src/flags.cc";
 
     console.log("patch", fname);
+
+    if (!fs.exists(fname)) {
+        warning_unexisted_file(fname, 'patch_flag')
+        return;
+    }
+
     var txt = fs.readTextFile(fname);
 
     var idx1 = txt.lastIndexOf("CpuFeatures::PrintTarget();");
@@ -351,8 +407,15 @@ function patch_serializer() {
 
 function patch_version_hash() {
     var fname = "src/version.h";
+    // var fname = "src/utils/version.h";
 
     console.log("patch", fname);
+
+    if (!fs.exists(fname)) {
+        warning_unexisted_file(fname, 'patch_version_hash')
+        return;
+    }
+
     var txt = fs.readTextFile(fname);
     txt = txt.replace("major_, minor_, build_, patch_", "major_, minor_");
     fs.writeFile(fname, txt);
@@ -397,7 +460,12 @@ function patch_snapshot() {
 
     var oss = ["Windows", "Linux", "FreeBSD", "Darwin"];
 
-    fs.copy(v8Folder + "/src/snapshot/mksnapshot.cc", "test/src/mksnapshot.inl");
+    try {
+        fs.unlink("test/src/mksnapshot.inl")
+        fs.copy(v8Folder + "./src/snapshot/mksnapshot.cc", "test/src/mksnapshot.inl");
+    } catch (error) {
+        console.error(error);
+    }
 
     var txt = fs.readTextFile(v8Folder + "/src/snapshot/snapshot-empty.cc");
 
@@ -411,6 +479,10 @@ function patch_snapshot() {
             fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-Linux.cc`,
                 `#include "src/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}`);
     }
+}
+
+function toLF(str) {
+    return str.replace(/\r\n/g, '\n');
 }
 
 save_plat();
@@ -451,4 +523,4 @@ patch_trap();
 
 patch_snapshot();
 
-run('../tools/vsmake.js');
+// run('../tools/vsmake.js');
