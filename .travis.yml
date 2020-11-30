@@ -9,11 +9,17 @@ env:
   - BUILD_TYPE=release TARGET_ARCH=i386
   - BUILD_TYPE=debug TARGET_ARCH=i386
 os:
-  - osx
   - linux
-osx_image: xcode10.3
 matrix:
   include:
+    - os: osx
+      osx_image: xcode10.3
+      env:
+        - BUILD_TYPE=release TARGET_ARCH=amd64
+    - os: osx
+      osx_image: xcode10.3
+      env:
+        - BUILD_TYPE=debug TARGET_ARCH=amd64
     - os: linux
       env:
         - BUILD_TYPE=release TARGET_ARCH=arm
