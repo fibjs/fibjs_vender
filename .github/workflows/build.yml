@@ -73,13 +73,19 @@ jobs:
           echo "::set-output name=GIT_COMMIT_SHORTCUTS::$GIT_COMMIT_SHORTCUTS"
           export GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S HEAD)
           echo "::set-output name=GIT_COMMIT_TIME::$GIT_COMMIT_TIME"
-          
-          SPEC_SUFFIX=""
-          if [[ "$GIT_BRANCH" == "test_ci" ]]; then
-            SPEC_SUFFIX="-test-ci"
-          fi
 
-          export RELEASE_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS${SPEC_SUFFIX}";
+          if [ "$GITHUB_REPOSITORY" == "fibjs/fibjs_vender" ]; then
+            export IS_MAIN_REPO=1
+          fi
+          if [[ -z "$IS_MAIN_REPO" || "$GIT_BRANCH" == "dev" ]]; then
+            echo "::set-output name=IS_UPLOAD_ASSETS::1"
+          fi
+          
+          export RELEASE_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
+          if [ -z "$IS_MAIN_REPO" ]; then
+            SUFFIX=${GIT_BRANCH//'/'/'-'}
+            RELEASE_TAG="$RELEASE_TAG-$SUFFIX"
+          fi
           echo "::set-output name=RELEASE_TAG::$RELEASE_TAG"
 
           git fetch;
@@ -188,7 +194,7 @@ jobs:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
-        if: ${{ steps.set-env-vars.outputs.TAG_EXISTED == '' }}
+        if: ${{ steps.set-env-vars.outputs.IS_UPLOAD_ASSETS != '' && steps.set-env-vars.outputs.TAG_EXISTED == '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
@@ -202,6 +208,7 @@ jobs:
       - name: Get assets uploadUrl
         id: get-upload-url
         shell: bash
+        if: ${{ steps.set-env-vars.outputs.IS_UPLOAD_ASSETS != '' }}
         run: |
           # Define variables.
           GH_API="https://api.github.com"
@@ -229,6 +236,7 @@ jobs:
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
+        if: ${{ steps.set-env-vars.outputs.IS_UPLOAD_ASSETS != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
