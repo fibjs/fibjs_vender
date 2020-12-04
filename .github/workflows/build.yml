@@ -73,10 +73,15 @@ jobs:
           echo "::set-output name=GIT_COMMIT_SHORTCUTS::$GIT_COMMIT_SHORTCUTS"
           export GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S HEAD)
           echo "::set-output name=GIT_COMMIT_TIME::$GIT_COMMIT_TIME"
-          export RELEASE_TAG=$(echo "$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS")
+          
+          SPEC_SUFFIX=""
+          if [[ "$GIT_BRANCH" == "test_ci" ]]; then
+            SPEC_SUFFIX="-test-ci"
+          fi
+
+          export RELEASE_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS${SPEC_SUFFIX}";
           echo "::set-output name=RELEASE_TAG::$RELEASE_TAG"
 
-          export RELEASE_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
           git fetch;
           if [ $(git tag --list | egrep "^$RELEASE_TAG$") ]; then
             echo "tag $RELEASE_TAG existed";
@@ -99,15 +104,15 @@ jobs:
           esac
 
           if [[ "$RUNNER_OS" == "Linux" ]]; then
-            export DIST_FILE=vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip
+            export DIST_FILE="vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip"
           fi
 
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            export DIST_FILE=vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip
+            export DIST_FILE="vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip"
           fi
 
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            export DIST_FILE=vender-windows-${DIST_ARCH}-$BUILD_TYPE.zip
+            export DIST_FILE="vender-windows-${DIST_ARCH}-$BUILD_TYPE.zip"
           fi
 
           echo "::set-output name=DIST_FILE::$DIST_FILE"
