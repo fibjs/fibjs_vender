@@ -8,7 +8,11 @@ mkdir -p ${RELEASE_TAG};
 CUR=`pwd`
 cd ./.dist/bin
 echo "archiving file: $DIST_FILE"
-zip -r ${CUR}/${RELEASE_TAG}/${DIST_FILE} ./*
+if [[ "$TARGET_OS" == "Windows" ]]; then
+    7z a ${CUR}/${RELEASE_TAG}/${DIST_FILE} ./*
+else
+    zip -r ${CUR}/${RELEASE_TAG}/${DIST_FILE} ./*
+fi
 echo "finish archiving!"
 cd $CUR
 

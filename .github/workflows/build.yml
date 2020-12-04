@@ -12,6 +12,9 @@ on:
     tags:
       - v0.*.*
       - v1.*.*
+  pull_request:
+    branches:
+      - 'dev'
   # release:
   #   # Only use the types keyword to narrow down the activity types that will trigger your workflow.
   #   types: [published, created, edited]
@@ -26,18 +29,24 @@ jobs:
         target_arch: [amd64, i386, arm, arm64, mips, mips64]
         build_type: [release, debug]
         include:
+          - os: windows-2016
+            target_arch: amd64
+            build_type: release
+          - os: windows-2016
+            target_arch: amd64
+            build_type: debug
+          - os: windows-2016
+            target_arch: i386
+            build_type: release
+          - os: windows-2016
+            target_arch: i386
+            build_type: debug
           - os: macos-10.15
             target_arch: amd64
             build_type: release
           - os: macos-10.15
             target_arch: amd64
             build_type: debug
-          # - os: macos-10.15
-          #   target_arch: i386
-          #   build_type: release
-          # - os: macos-10.15
-          #   target_arch: i386
-          #   build_type: debug
 
     steps:
       - name: Switch XCode to 10.3
@@ -89,11 +98,18 @@ jobs:
               ;;
           esac
 
-          if [[ "$TARGET_OS" == "Linux" ]]; then
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
             export DIST_FILE=vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip
-          else
+          fi
+
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
             export DIST_FILE=vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip
           fi
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            export DIST_FILE=vender-windows-${DIST_ARCH}-$BUILD_TYPE.zip
+          fi
+
           echo "::set-output name=DIST_FILE::$DIST_FILE"
 
           export DIST_FILEPATH=$RELEASE_TAG/$DIST_FILE
@@ -102,8 +118,43 @@ jobs:
           TARGET_ARCH: ${{ matrix.target_arch }}
           BUILD_TYPE: ${{ matrix.build_type }}
 
+      - name: Setup LLVM on Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          if NOT EXIST llvm-installer.exe (
+              IF /I "%TARGET_ARCH%" == "amd64" (
+                  curl -Ls -o "llvm-installer.exe" "http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe"
+                  ECHO "install llvm win64 for x64"
+              )
+              IF /I "%TARGET_ARCH%" == "i386" (
+                  curl -Ls -o "llvm-installer.exe" "http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe"
+                  ECHO "install llvm win64 for x86"
+              )
+          )
 
-      - name: Build on Docker
+          START /WAIT llvm-installer.exe /S /D=C:\"Program Files\LLVM"
+        env:
+          TARGET_ARCH: ${{ matrix.target_arch }}
+          BUILD_TYPE: ${{ matrix.build_type }}
+
+      - name: Enhance LLVM on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          # install make.exe
+          CUR_DIR=`pwd`
+          cd "C:/Program Files/Git/mingw64/"
+          if [ ! -e make.zip ]; then
+              curl -sL -o "make.zip" https://netix.dl.sourceforge.net/project/ezwinports/make-4.3-without-guile-w32-bin.zip
+          fi
+          unzip -n "make.zip"
+          cd $CUR_DIR;
+
+          # add LLVM bin to system path
+          echo "C:\Program Files\LLVM\bin" >> $GITHUB_PATH
+
+      - name: Build
         shell: bash
         run: |
           if [[ "$TARGET_OS" == 'Linux' ]]; then
