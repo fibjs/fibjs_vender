@@ -15,10 +15,8 @@ process.env.V8_DIR = path.fullpath(profileFolder + "./projects/v8/v8");
 process.env.DEPT_TOOLS_DIR = path.resolve("C:\\src\\depot_tools");
 
 var v8Folder = process.env.V8_DIR || path.fullpath(profileFolder + "./works/source/js/v8/v8");
-var deptToolsFolder = process.env.DEPT_TOOLS_DIR || path.fullpath(profileFolder + "./works/source/js/v8/depot_tools");
 
 console.log(`v8 is located in: ${v8Folder}`);
-console.log(`dept_tools is located in: ${deptToolsFolder}`);
 
 process.chdir(v8Folder);
 
@@ -30,12 +28,12 @@ if (process.env.NO_CODEGEN != '1') {
         "is_debug=false",
         "is_component_build=true",
         "v8_static_library=false",
+        "v8_enable_i18n_support=false"
     ]);
 
     /**
      * @notice you must add dept_tools folder to your environment variable `PATH`
      */
-    // process.run(`${deptToolsFolder}/ninja`, [
     process.run(`ninja`, [
         "-C",
         "out.gn/x64.release",
