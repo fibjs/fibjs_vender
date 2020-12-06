@@ -5,6 +5,7 @@ on:
     # Sequence of patterns matched against refs/heads
     branches:
       - 'ci/**'
+      - 'ci-**'
       - 'releases/**'
       - 'dev'
       - 'master'
@@ -20,7 +21,7 @@ on:
   #   types: [published, created, edited]
 
 jobs:
-  build-linux:
+  build:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -100,28 +101,43 @@ jobs:
           case "${TARGET_ARCH}" in
             i386)
               DIST_ARCH=x86
+              SNAPSHOT_ARCH=ia32
                 ;;
             amd64)
               DIST_ARCH=x64
+              SNAPSHOT_ARCH=x64
                 ;;
             *)
               DIST_ARCH=$TARGET_ARCH
+              SNAPSHOT_ARCH=$TARGET_ARCH
               ;;
           esac
 
           if [[ "$RUNNER_OS" == "Linux" ]]; then
+            export TARGET_OS_NAME="Linux";
             export DIST_FILE="vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip"
+            export DIST_DIR="${TARGET_OS_NAME}_${TARGET_ARCH}_$BUILD_TYPE"
+            export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Linux.cc"
           fi
 
           if [[ "$RUNNER_OS" == "macOS" ]]; then
+            export TARGET_OS_NAME="Darwin";
             export DIST_FILE="vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip"
+            export DIST_DIR="${TARGET_OS_NAME}_${TARGET_ARCH}_$BUILD_TYPE"
+            export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Darwin.cc"
           fi
 
           if [[ "$RUNNER_OS" == "Windows" ]]; then
+            export TARGET_OS_NAME="Windows";
             export DIST_FILE="vender-windows-${DIST_ARCH}-$BUILD_TYPE.zip"
+            export DIST_DIR="${TARGET_OS_NAME}_${TARGET_ARCH}_$BUILD_TYPE"
+            export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Windows.cc"
           fi
 
+          echo "::set-output name=TARGET_OS_NAME::$TARGET_OS_NAME"
           echo "::set-output name=DIST_FILE::$DIST_FILE"
+          echo "::set-output name=DIST_DIR::$DIST_DIR"
+          echo "::set-output name=SNAPSHOT_FNAME::$SNAPSHOT_FNAME"
 
           export DIST_FILEPATH=$RELEASE_TAG/$DIST_FILE
           echo "::set-output name=DIST_FILEPATH::$DIST_FILEPATH"
@@ -227,11 +243,14 @@ jobs:
           echo "id is $id";
           UPLOAD_URL="https://uploads.github.com/repos/$GITHUB_REPO/releases/$id/assets?name=$DIST_FILE"
           echo "::set-output name=UPLOAD_URL::$UPLOAD_URL"
+          SNAPSHOT_UPLOAD_URL="https://uploads.github.com/repos/$GITHUB_REPO/releases/$id/assets?name=$SNAPSHOT_FNAME"
+          echo "::set-output name=SNAPSHOT_UPLOAD_URL::$SNAPSHOT_UPLOAD_URL"
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ steps.set-env-vars.outputs.RELEASE_TAG }}
           DIST_FILE: ${{ steps.set-env-vars.outputs.DIST_FILE }}
+          SNAPSHOT_FNAME: ${{ steps.set-env-vars.outputs.SNAPSHOT_FNAME }}
 
       - name: Upload Release Asset
         id: upload-release-asset
@@ -244,3 +263,38 @@ jobs:
           asset_path: ${{ github.workspace }}/${{ steps.set-env-vars.outputs.DIST_FILEPATH }}
           upload_url: ${{ steps.get-upload-url.outputs.UPLOAD_URL }}
           asset_content_type: application/zip
+          
+      - name: Test jssdk
+        id: test-jssdk
+        if: ${{ matrix.build_type == 'release' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          ${{ github.workspace }}/.dist/bin/$DIST_DIR/jssdk_test
+        env:
+          DIST_DIR: ${{ steps.set-env-vars.outputs.DIST_DIR }}
+          
+      - name: Generate V8 Snapshot
+        id: generate-v8-snapshot
+        if: ${{ matrix.build_type == 'release' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          bash .github/workflows/gen_snapshot.sh
+        env:
+          DIST_DIR: ${{ steps.set-env-vars.outputs.DIST_DIR }}
+          TARGET_OS_NAME: ${{ steps.set-env-vars.outputs.TARGET_OS_NAME }}
+          TARGET_ARCH: ${{ matrix.target_arch }}
+
+      - name: Upload Snapshot
+        id: upload-v8-snapshot
+        continue-on-error: true
+        uses: actions/upload-release-asset@v1
+        if: ${{ matrix.build_type == 'release' && steps.set-env-vars.outputs.IS_UPLOAD_ASSETS != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_name: ${{ steps.set-env-vars.outputs.SNAPSHOT_FNAME }}
+          asset_path: ${{ github.workspace }}/${{ steps.set-env-vars.outputs.SNAPSHOT_FNAME }}
+          upload_url: ${{ steps.get-upload-url.outputs.SNAPSHOT_UPLOAD_URL }}
+          asset_content_type: text/plain
