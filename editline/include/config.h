@@ -2,6 +2,10 @@
 
 // #define CONFIG_USE_TERMCAP
 
+#define HAVE_STDLIB_H
+
+#define HAVE_STRING_H
+
 #define CONFIG_ANSI_ARROWS
 
 #define CONFIG_SIGINT

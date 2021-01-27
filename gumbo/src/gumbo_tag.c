@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <strings.h>    // For strcasecmp.
+#include <string.h> // For strcasecmp.
 
 // NOTE(jdtang): Keep this in sync with the GumboTag enum in the header.
 // TODO(jdtang): Investigate whether there're efficiency benefits to putting the
