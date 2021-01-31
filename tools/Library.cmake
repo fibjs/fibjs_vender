@@ -1,7 +1,6 @@
-include(../tools/os.cmake)
-include(../tools/arch.cmake)
-include(../tools/platform.cmake)
+include(../tools/option.cmake)
 
+get_filename_component(name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 project(${name})
 
 find_program(CCACHE_FOUND ccache)
@@ -22,9 +21,9 @@ endif()
 set(VENDER_ROOT ${PROJECT_SOURCE_DIR}/../)
 
 if((${USED_BY_FIBJS}) STREQUAL "1")
-	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/../bin/${OS}_${ARCH}_${BUILD_TYPE})
+	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/../bin/${CMAKE_HOST_SYSTEM_NAME}_${ARCH}_${BUILD_TYPE})
 else()
-	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/.dist/bin/${OS}_${ARCH}_${BUILD_TYPE})
+	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/.dist/bin/${CMAKE_HOST_SYSTEM_NAME}_${ARCH}_${BUILD_TYPE})
 endif()
 
 if(NOT flags)
@@ -47,11 +46,11 @@ endif()
 
 set(link_flags " ")
 
-if(${OS} STREQUAL "Darwin")
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
 	set(flags "${flags} -mmacosx-version-min=10.9")
 endif()
 
-if(${OS} STREQUAL "Windows")
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 	add_definitions(-DWIN32 -D_LIB -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -DNOMINMAX)
 	set(flags "${flags} -fms-extensions -fmsc-version=1910 -frtti")
 	
@@ -65,7 +64,7 @@ endif()
 if(${BUILD_TYPE} STREQUAL "release")
 	set(flags "${flags} -O3 -s ${BUILD_OPTION} -w -fvisibility=hidden")
 
-	if(${OS} STREQUAL "FreeBSD")
+	if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "FreeBSD")
 		set(flags "${flags} -fno-omit-frame-pointer")
 	else()
 		set(flags "${flags} -fomit-frame-pointer")
@@ -79,7 +78,7 @@ if(${BUILD_TYPE} STREQUAL "debug")
 	set(flags "${flags} -g -O0 ${BUILD_OPTION} -Wall")
 	set(link_flags "${link_flags} ${BUILD_OPTION}")
 	add_definitions(-DDEBUG=1)
-	if(${OS} STREQUAL "Windows")
+	if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 		add_definitions(-D_DEBUG)
 	endif()
 endif()

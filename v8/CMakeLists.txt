@@ -30,7 +30,7 @@ add_definitions(
 	-DDISABLE_UNTRUSTED_CODE_MITIGATIONS=1
 )
 
-if(${OS} STREQUAL "Windows")
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 	# always disable debug for MSVC(1925, VS 2019) + v8(6.9), maybe cancel in the future
 	# add_definitions(-DNDEBUG)	
 	if(${BUILD_TYPE} STREQUAL "debug")

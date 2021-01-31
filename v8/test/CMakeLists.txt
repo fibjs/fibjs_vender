@@ -4,7 +4,7 @@ set(libs exlib)
 
 include(../../tools/LibraryTest.cmake)
 
-if(${OS} STREQUAL "Windows")
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     add_definitions(
         -DNOMINMAX
         -D_CRT_SECURE_NO_WARNINGS

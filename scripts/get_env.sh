@@ -1,5 +1,27 @@
 #!/bin/bash
 
+usage()
+{
+	echo ""
+	echo "Usage: `basename $0` [options] [-jn] [-v] [-h]"
+	echo "Options:"
+	echo "  release, debug: "
+	echo "      Specifies the build type."
+	echo "  i386, amd64, arm, arm64, mips, mips64, ppc, ppc64:"
+	echo "      Specifies the architecture for code generation."
+	echo "  clean: "
+	echo "      Clean the build folder."
+	echo "  ci: "
+	echo "      Specifies the environment is CI."
+	echo "  -h, --help:"
+	echo "      Print this message and exit."
+	echo "  -j: enable make '-j' option."
+	echo "      if 'n' is not given, will set jobs to auto detected core count, otherwise n is used."
+	echo "  -v: verbose make"
+	echo ""
+	exit 0
+}
+
 get_build_env()
 {
     HOST_OS=`uname`
@@ -9,9 +31,6 @@ get_build_env()
             ;;
         CYGWIN*) HOST_OS="Windows"
             HOST_CYGWIN="true";
-            ;;
-        Linux)
-            GCC_VERSION=`gcc -dumpversion`
             ;;
     esac
 
@@ -46,24 +65,49 @@ get_build_env()
     if [ -z "${BUILD_TYPE}" ]; then
         BUILD_TYPE="release"
     fi
-    BUILD_OPTION=""
 
-    if [ -z "${GCC_VERSION}" ] ; then
-        GCC_VERSION=""
-    fi
-}
+    for i in "$@"
+    do
+        case $i in
+            i386|amd64|arm|arm64|mips|mips64|ppc|ppc64) TARGET_ARCH=$i
+                ;;
+            release|debug|clean) BUILD_TYPE=$i
+                ;;
+            ci) CI="ci"
+                ;;
+            -j*) ENABLE_JOBS=1; BUILD_JOBS="${i#-j}"
+                ;;
+            -v) BUILD_VERBOSE='VERBOSE=1' 
+                ;;
+            --help|-h) usage
+                ;;
+            *) echo "illegal option $i"
+                usage
+                ;;
+        esac
+    done
 
-get_windows_vctool_install_path()
-{
-    if [ -z "${VCToolsInstallDir}" ]; then
-        VS_INSTALLPATH=$("$ProgramW6432 (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -property installationPath -version "[15.0, 16.0)")
-        CUR_MSVC_1900_VER=$(cat "$VS_INSTALLPATH\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt")
+    if [ "$ENABLE_JOBS" = "1" -a "$BUILD_JOBS" = "" ]; then
+        #get cpu core count 
+        CPU_CORE=1
+        case ${HOST_OS} in
+            Darwin)
+                CPU_CORE=$(sysctl hw.ncpu | awk '{print $2}')
+                ;;
+            Linux)
+                CPU_CORE=$(cat /proc/cpuinfo | grep processor | wc -l)
+                ;;
+            Windows)
+                CPU_CORE=$(echo $NUMBER_OF_PROCESSORS)
+                ;;
+        esac
+        echo "host machine has ${CPU_CORE} core"
 
-        # @todo set EnvVar to tell clang use VS2017 rather than newest one if it's not VS2017
-        #
-        # by default, clang/LLVM would find newest VCToolChain, if you install both VS2017 and VS2019
-        # VS2019's VCTools would be used to compile vender, but v8 6.9 cannot be compiled with it, we must
-        # tell clang to use VS2017's VCToolChain
-        VCToolsInstallDir="$VS_INSTALLPATH\VC\Tools\MSVC\\$CUR_MSVC_1900_VER"
+        if [ "$CPU_CORE" = "1" ]; then
+            BUILD_JOBS="2"
+        else
+            # set build jobs with cpu core count
+            BUILD_JOBS=${CPU_CORE}
+        fi
     fi
 }
