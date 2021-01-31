@@ -3,12 +3,27 @@
 get_build_env()
 {
     HOST_OS=`uname`
+    case ${HOST_OS} in
+        MINGW*) HOST_OS="Windows"
+            HOST_MINGW="true";
+            ;;
+        CYGWIN*) HOST_OS="Windows"
+            HOST_CYGWIN="true";
+            ;;
+        Linux)
+            GCC_VERSION=`gcc -dumpversion`
+            ;;
+    esac
+
     HOST_ARCH=`uname -m`
+    if [ ! "$PROCESSOR_ARCHITEW6432" = "" ]; then
+        HOST_ARCH="${PROCESSOR_ARCHITEW6432}"
+    fi
 
     case ${HOST_ARCH} in
-        i386|i686) HOST_ARCH="i386"
+        i386|i686|x86) HOST_ARCH="i386"
             ;;
-        x86_64|amd64) HOST_ARCH="amd64"
+        x86_64|amd64|AMD64) HOST_ARCH="amd64"
             ;;
         armv6|armv7|armv7s|armv7l) HOST_ARCH="arm"
             ;;
@@ -21,18 +36,6 @@ get_build_env()
         powerpc) HOST_ARCH="ppc"
             ;;
         ppc64) HOST_ARCH="ppc64"
-            ;;
-    esac
-
-    case ${HOST_OS} in
-        MINGW*) HOST_OS="Windows"
-            HOST_MINGW="true";
-            ;;
-        CYGWIN*) HOST_OS="Windows"
-            HOST_CYGWIN="true";
-            ;;
-        Linux)
-            GCC_VERSION=`gcc -dumpversion`
             ;;
     esac
 
