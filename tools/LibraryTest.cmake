@@ -10,7 +10,7 @@ add_executable(${name}_test ${src_list})
 
 set(VENDER_ROOT ${PROJECT_SOURCE_DIR}/../../)
 
-if((${USED_BY_FIBJS}) STREQUAL "1")
+if(EXISTS "${VENDER_ROOT}/../build")
 	set(BIN_DIR ${VENDER_ROOT}/../bin/${CMAKE_HOST_SYSTEM_NAME}_${ARCH}_${BUILD_TYPE})
 else()
 	set(BIN_DIR ${VENDER_ROOT}/.dist/bin/${CMAKE_HOST_SYSTEM_NAME}_${ARCH}_${BUILD_TYPE})

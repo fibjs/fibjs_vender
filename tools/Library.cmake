@@ -3,12 +3,6 @@ include(../tools/option.cmake)
 get_filename_component(name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 project(${name})
 
-find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-	set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-	set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-endif(CCACHE_FOUND)
-
 if(NOT DEFINED src_list)
 file(GLOB_RECURSE src_list "src/*.c*")
 endif()
@@ -17,10 +11,10 @@ add_library(${name} ${src_list})
 if(NOT DEFINED BUILD_TYPE)
 set(BUILD_TYPE "release")
 endif()
-
 set(VENDER_ROOT ${PROJECT_SOURCE_DIR}/../)
 
-if((${USED_BY_FIBJS}) STREQUAL "1")
+
+if(EXISTS "${VENDER_ROOT}/../build")
 	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/../bin/${CMAKE_HOST_SYSTEM_NAME}_${ARCH}_${BUILD_TYPE})
 else()
 	set(LIBRARY_OUTPUT_PATH ${VENDER_ROOT}/.dist/bin/${CMAKE_HOST_SYSTEM_NAME}_${ARCH}_${BUILD_TYPE})
