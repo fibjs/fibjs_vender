@@ -12,11 +12,20 @@ function(build src out)
             -DARCH=${BUILD_ARCH}
             -DBUILD_TYPE=${BUILD_TYPE}
             "${src}"
+        RESULT_VARIABLE STATUS
     )
 
+    if(STATUS AND NOT STATUS EQUAL 0)
+        EXIT()
+    endif()
+
     execute_process(WORKING_DIRECTORY "${out}"
-            COMMAND make
-            -j${BUILD_JOBS})
+            COMMAND make -j${BUILD_JOBS}
+            RESULT_VARIABLE STATUS)
+
+    if(STATUS AND NOT STATUS EQUAL 0)
+        EXIT()
+    endif()
 endfunction()
 
 include(ProcessorCount)
