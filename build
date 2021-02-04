@@ -25,7 +25,9 @@ do
     case $i in
         i386|amd64|arm|arm64|mips|mips64|ppc|ppc64) BUILD_ARCH=$i
             ;;
-        release|debug|clean) BUILD_TYPE=$i
+        release|debug) BUILD_TYPE=$i
+            ;;
+        clean) CLEAN_BUILD="true"
             ;;
         ci) CI="ci"
             ;;
@@ -43,5 +45,6 @@ done
 
 cmake -DBUILD_ARCH=${BUILD_ARCH}\
     -DBUILD_TYPE=${BUILD_TYPE}\
+    -DCLEAN_BUILD=${CLEAN_BUILD}\
     -DBUILD_JOBS=${BUILD_JOBS}\
     -P build.cmake
