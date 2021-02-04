@@ -34,6 +34,8 @@ endfunction()
 function(build src out)
     file(MAKE_DIRECTORY "${out}")
 
+    set(cmakeargs "${ARG2}")
+
     if(NOT DEFINED HOST_ARCH)
         message( FATAL_ERROR "[get_env::build] BUILD_TYPE haven't been set, check your input.")
     endif()
@@ -53,6 +55,7 @@ function(build src out)
             -DHOST_ARCH=${HOST_ARCH}
             -DARCH=${BUILD_ARCH}
             -DBUILD_TYPE=${BUILD_TYPE}
+            ${cmakeargs}
             "${src}"
         RESULT_VARIABLE STATUS
         ERROR_VARIABLE BUILD_ERROR
