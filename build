@@ -1,173 +1,47 @@
 #!/bin/bash
 
-. ./scripts/get_env.sh --source-only
+usage()
+{
+	echo ""
+	echo "Usage: `basename $0` [options] [-jn] [-v] [-h]"
+	echo "Options:"
+	echo "  release, debug: "
+	echo "      Specifies the build type."
+	echo "  i386, amd64, arm, arm64, mips, mips64, ppc, ppc64:"
+	echo "      Specifies the architecture for code generation."
+	echo "  clean: "
+	echo "      Clean the build folder."
+	echo "  ci: "
+	echo "      Specifies the environment is CI."
+	echo "  -h, --help:"
+	echo "      Print this message and exit."
+	echo "  -j: enable make '-j' option."
+	echo "      if 'n' is not given, will set jobs to auto detected core count, otherwise n is used."
+	echo ""
+}
 
-get_build_env "$@";
-
-VENDER_PATH=`pwd`
-PARENT_PATH="$(dirname "${VENDER_PATH}")"
-
-# # when used in fibjs
-if [ -z "${USED_BY_FIBJS}" ]; then
-USED_BY_FIBJS=""
-if [ -e "${PARENT_PATH}/build" ]; then
-	USED_BY_FIBJS=1
-fi
-fi
-
-if [ "${USED_BY_FIBJS}" = "1" ]; then
-	OUT_PATH=${VENDER_PATH}/../out
-else
-	OUT_PATH=${VENDER_PATH}/.dist/out
-fi
-
-if [ ${BUILD_TYPE} = 'clean' ]; then
-	if [ -e "${OUT_PATH}" ]; then
-		rm -rf ${OUT_PATH}/${TARGET_OS}_*
-	fi
-
-	exit 0
-fi
-
-if [ ! -e "${OUT_PATH}" ]; then
-	mkdir -p "${OUT_PATH}"
-fi
-
-if [ ! -e "${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}" ]; then
-	mkdir -p "${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
-fi
-
-OUT_PATH="${OUT_PATH}/${TARGET_OS}_${TARGET_ARCH}_${BUILD_TYPE}"
-cd ${OUT_PATH}
-
-libs="exlib
-cares
-gtest
-expat
-gumbo
-gd
-tiff
-jpeg
-png
-webp
-zlib
-leveldb
-snappy
-msgpack
-pcre
-sqlite
-mongo
-umysql
-uuid
-exif
-mbedtls
-v8
-jssdk
-unzip
-uv"
-
-if [ $HOST_OS != "Windows" ]; then
-libs="${libs}
-jemalloc
-editline
-ev
-"
-else
-libs="${libs}
-winiconv"
-fi
-
-if [ -z "$GIT_BRANCH" ]; then
-	GIT_BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
-fi
-
-if [ "$GIT_BRANCH" = "test_ci" ]; then
-	echo "this is ci test branch :)"
-	libs="uuid"
-fi
-
-echo "HOST_OS: $HOST_OS; HOST_ARCH: $HOST_ARCH;"
-echo "TARGET_OS: $TARGET_OS; TARGET_ARCH: $TARGET_ARCH;";
-echo "BUILD_JOBS is $BUILD_JOBS";
-echo "BUILD_TYPE: $BUILD_TYPE";
-
-if [ -z "$USED_BY_FIBJS" ]; then
-	echo "vender is used by fibjs in parent directory";
-fi
-
-for lib in ${libs}
+for i in "$@"
 do
-
-	if [ ! -e ${lib} ]; then
-		mkdir ${lib}
-	fi
-
-	cd ${lib}
-	cmake \
-		-Wno-dev \
-		-DCMAKE_MAKE_PROGRAM=make \
-		-G "Unix Makefiles" \
-		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
-		-DARCH=${TARGET_ARCH} \
-		-DBUILD_TYPE=${BUILD_TYPE} \
-		-DUSED_BY_FIBJS="${USED_BY_FIBJS}" \
-		${VENDER_PATH}/${lib} > CMake.log
-	if [ $? != 0 ]; then
-		exit 1
-	fi
-
-	if [ ! "$BUILD_JOBS" = "" ]; then
-		sh -c "${BUILD_VERBOSE} make -j${BUILD_JOBS}"
-	else
-		sh -c "${BUILD_VERBOSE} make"
-	fi
-
-	if [ $? != 0 ]; then
-		exit 1
-	fi
-
-	cd ..
+    case $i in
+        i386|amd64|arm|arm64|mips|mips64|ppc|ppc64) BUILD_ARCH=$i
+            ;;
+        release|debug|clean) BUILD_TYPE=$i
+            ;;
+        ci) CI="ci"
+            ;;
+        -j*) BUILD_JOBS="${i#-j}"
+            ;;
+        --help|-h) usage
+            exit 0
+            ;;
+        *) echo "illegal option $i"
+            usage
+            exit 1
+            ;;
+    esac
 done
 
-for lib in ${libs}
-do
-
-	if [ -e ${VENDER_PATH}/${lib}/test ]; then
-
-		if [ ! -e ${lib}_test ]; then
-			mkdir ${lib}_test
-		fi
-
-		cd ${lib}_test
-		cmake \
-			-Wno-dev \
-			-DCMAKE_MAKE_PROGRAM=make \
-			-G "Unix Makefiles" \
-			-DCMAKE_C_COMPILER=clang \
-			-DCMAKE_CXX_COMPILER=clang++ \
-			-DARCH=${TARGET_ARCH} \
-			-DBUILD_TYPE=${BUILD_TYPE} \
-			-DUSED_BY_FIBJS="${USED_BY_FIBJS}" \
-			${VENDER_PATH}/${lib}/test > CMake.log
-		if [ $? != 0 ]; then
-			exit 1
-		fi
-		
-		if [ ! "$BUILD_JOBS" = "" ]; then
-			sh -c "${BUILD_VERBOSE} make -j${BUILD_JOBS}"
-		else
-			sh -c "${BUILD_VERBOSE} make"
-		fi
-		
-		if [ $? != 0 ]; then
-			exit 1
-		fi
-
-		cd ..
-
-	fi
-
-done
-
-cd ${VENDER_PATH}
+cmake -DBUILD_ARCH=${BUILD_ARCH}\
+    -DBUILD_TYPE=${BUILD_TYPE}\
+    -DBUILD_JOBS=${BUILD_JOBS}\
+    -P build.cmake
