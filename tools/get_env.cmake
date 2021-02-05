@@ -1,3 +1,70 @@
+function(usechalk)
+    string(ASCII 27 Esc)
+    set(ChalkColorReset     "${Esc}[m"      PARENT_SCOPE)
+    set(ChalkColorBold      "${Esc}[1m"     PARENT_SCOPE)
+    set(ChalkRed            "${Esc}[31m"    PARENT_SCOPE)
+    set(ChalkGreen          "${Esc}[32m"    PARENT_SCOPE)
+    set(ChalkYellow         "${Esc}[33m"    PARENT_SCOPE)
+    set(ChalkBlue           "${Esc}[34m"    PARENT_SCOPE)
+    set(ChalkMagenta        "${Esc}[35m"    PARENT_SCOPE)
+    set(ChalkCyan           "${Esc}[36m"    PARENT_SCOPE)
+    set(ChalkWhite          "${Esc}[37m"    PARENT_SCOPE)
+    set(ChalkBoldRed        "${Esc}[1;31m"  PARENT_SCOPE)
+    set(ChalkBoldGreen      "${Esc}[1;32m"  PARENT_SCOPE)
+    set(ChalkBoldYellow     "${Esc}[1;33m"  PARENT_SCOPE)
+    set(ChalkBoldBlue       "${Esc}[1;34m"  PARENT_SCOPE)
+    set(ChalkBoldMagenta    "${Esc}[1;35m"  PARENT_SCOPE)
+    set(ChalkBoldCyan       "${Esc}[1;36m"  PARENT_SCOPE)
+    set(ChalkBoldWhite      "${Esc}[1;37m"  PARENT_SCOPE)
+endfunction()
+
+# log function, use like this:
+# chalklog("msg...")
+# chalklog("info", "msg")
+# chalklog("info", "msg", "prefix")
+# chalklog("success", "msg", "prefix")
+# chalklog("warn", "msg", "prefix")
+# chalklog("error", "msg", "prefix")
+function(chalklog)
+    if("${ChalkColorReset}" STREQUAL "")
+        usechalk()
+    endif()
+    
+    if(${ARGC} EQUAL 3)
+        set(type "${ARGV0}")
+        set(msg "${ARGV1}")
+        set(prefix "${ARGV2}")
+    elseif(${ARGC} EQUAL 2)
+        set(type "info")
+        set(msg "${ARGV0}")
+        set(prefix "${ARGV1}")
+    else()
+        set(type "info")
+        set(msg "${ARG0}")
+        set(prefix "")
+    endif()
+
+    if("${type}" STREQUAL "")
+        set(type "info")
+    endif()
+    
+    if("${type}" STREQUAL "info")
+        set(coloredPrefix "${prefix}")
+    elseif("${type}" STREQUAL "success")
+        set(coloredPrefix "${ChalkGreen}${prefix}${ChalkColorReset}")
+    elseif("${type}" STREQUAL "warn")
+        set(coloredPrefix "${ChalkYellow}${prefix}${ChalkColorReset}")
+    elseif("${type}" STREQUAL "error")
+        set(coloredPrefix "${ChalkRed}${prefix}${ChalkColorReset}")
+    endif()
+
+    if("${type}" STREQUAL "error")
+        message(FATAL_ERROR "${coloredPrefix} ${msg}")
+    else()
+        message("${coloredPrefix} ${msg}")
+    endif()
+endfunction()
+
 # get host's architecture in cmake script mode
 function(gethostarch RETVAL)
     if("${${RETVAL}}" STREQUAL "")
@@ -34,7 +101,7 @@ endfunction()
 function(build src out)
     file(MAKE_DIRECTORY "${out}")
 
-    set(cmakeargs "${ARG2}")
+    set(cmakeargs "${ARGV2}")
 
     if(NOT DEFINED BUILD_TYPE)
         message( FATAL_ERROR "[get_env::build] BUILD_TYPE haven't been set, check your input.")
@@ -99,20 +166,25 @@ function(prepare_platform)
             else()
                 set(PROGRAM_FILES_X86 "$ENV{ProgramW6432} (x86)")
             endif()
-            message("[win32] PROGRAM_FILES_X86 is ${PROGRAM_FILES_X86}")
+
+            chalklog("success" "PROGRAM_FILES_X86 is ${PROGRAM_FILES_X86}" "[win32]")
             
             execute_process(
                 WORKING_DIRECTORY "${out}"
                 COMMAND "${PROGRAM_FILES_X86}\\Microsoft\ Visual\ Studio\\Installer\\vswhere.exe" -property installationPath -version "[15.0, 16.0)"
-                OUTPUT_VARIABLE VS_INSTALLPATH
+                OUTPUT_VARIABLE VS2017_INSTALLPATH
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
 
-            file(STRINGS "${VS_INSTALLPATH}\\VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt" CUR_MSVC_1900_VER)
-            message("[win32] CUR_MSVC_1900_VER is ${CUR_MSVC_1900_VER}")
+            if("${VS2017_INSTALLPATH}" STREQUAL "")
+                chalklog("error" "make sure you have installed vs2017 with vcruntime headers/libraries" "[win32]")
+            endif()
 
-            set(ENV{VCToolsInstallDir} "${VS_INSTALLPATH}\\VC\\Tools\\MSVC\\${CUR_MSVC_1900_VER}")
-            message("[win32] ENV{VCToolsInstallDir} is $ENV{VCToolsInstallDir}")
+            file(STRINGS "${VS2017_INSTALLPATH}\\VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt" CUR_MSVC_1900_VER)
+            chalklog("success" "CUR_MSVC_1900_VER is ${CUR_MSVC_1900_VER}" "[win32]")
+
+            set(ENV{VCToolsInstallDir} "${VS2017_INSTALLPATH}\\VC\\Tools\\MSVC\\${CUR_MSVC_1900_VER}")
+            chalklog("success" "ENV{VCToolsInstallDir} is $ENV{VCToolsInstallDir}" "[win32]")
         endif()
     endif()
 endfunction()
