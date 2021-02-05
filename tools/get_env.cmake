@@ -36,12 +36,19 @@ function(build src out)
 
     set(cmakeargs "${ARG2}")
 
-    if(NOT DEFINED HOST_ARCH)
+    if(NOT DEFINED BUILD_TYPE)
         message( FATAL_ERROR "[get_env::build] BUILD_TYPE haven't been set, check your input.")
     endif()
 
     if(NOT DEFINED HOST_ARCH)
         message( FATAL_ERROR "[get_env::build] HOST_ARCH haven't been set, call `gethostarch(HOST_ARCH)` before `build()`")
+    endif()
+	
+    # @warning: for cmake/clang on windows, you should always make CMAKE_BUILD_TYPE available, never leave it.
+    if("${BUILD_TYPE}" STREQUAL "debug")
+        set(CMAKE_BUILD_TYPE Debug)
+    elseif("${BUILD_TYPE}" STREQUAL "release")
+        set(CMAKE_BUILD_TYPE Release)
     endif()
 
     execute_process(WORKING_DIRECTORY "${out}"
@@ -50,6 +57,7 @@ function(build src out)
             -Wno-dev
             -DCMAKE_MAKE_PROGRAM=make
             -G "Unix Makefiles"
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DCMAKE_C_COMPILER=clang
             -DCMAKE_CXX_COMPILER=clang++
             -DHOST_ARCH=${HOST_ARCH}
