@@ -1,4 +1,4 @@
-# resove https://sourceforge.net/projects/ezwinports/files/make-4.3-without-guile-w32-bin.zip/download,
+# visit https://sourceforge.net/projects/ezwinports/files/make-4.3-without-guile-w32-bin.zip/download,
 # we got https://netix.dl.sourceforge.net/project/ezwinports/make-4.3-without-guile-w32-bin.zip
 
 CUR_DIR=`pwd`
