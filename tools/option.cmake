@@ -2,6 +2,13 @@ if("${HOST_ARCH}" STREQUAL "amd64" AND "${ARCH}" STREQUAL "i386")
     set(BUILD_OPTION "-m32")
 endif()
 
+# @warning: for cmake/clang on windows, you should always make CMAKE_BUILD_TYPE available, never leave it.
+if("${BUILD_TYPE}" STREQUAL "debug")
+    set(CMAKE_BUILD_TYPE Debug)
+elseif("${BUILD_TYPE}" STREQUAL "release")
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
     message("[Linux] HOST_ARCH is ${HOST_ARCH}, TARGET_ARCH is ${ARCH}")
 
