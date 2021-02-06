@@ -101,14 +101,8 @@ endfunction()
 function(build src out)
     file(MAKE_DIRECTORY "${out}")
 
-    set(cmakeargs "${ARGV2}")
-
     if(NOT DEFINED BUILD_TYPE)
         message( FATAL_ERROR "[get_env::build] BUILD_TYPE haven't been set, check your input.")
-    endif()
-
-    if(NOT DEFINED HOST_ARCH)
-        message( FATAL_ERROR "[get_env::build] HOST_ARCH haven't been set, call `gethostarch(HOST_ARCH)` before `build()`")
     endif()
 
     execute_process(WORKING_DIRECTORY "${out}"
@@ -119,10 +113,8 @@ function(build src out)
             -G "Unix Makefiles"
             -DCMAKE_C_COMPILER=clang
             -DCMAKE_CXX_COMPILER=clang++
-            -DHOST_ARCH=${HOST_ARCH}
             -DARCH=${BUILD_ARCH}
             -DBUILD_TYPE=${BUILD_TYPE}
-            ${cmakeargs}
             "${src}"
         RESULT_VARIABLE STATUS
         ERROR_VARIABLE BUILD_ERROR
@@ -195,7 +187,7 @@ include(ProcessorCount)
 prepare_platform()
 gethostarch(HOST_ARCH)
 if(NOT DEFINED BUILD_ARCH OR "${BUILD_ARCH}" STREQUAL "")
-    gethostarch(BUILD_ARCH)
+    set(BUILD_ARCH ${HOST_ARCH})
 endif()
 
 if("${BUILD_TYPE}" STREQUAL "")
@@ -211,7 +203,6 @@ set(ENV{CLICOLOR_FORCE} 1)
 
 message("")
 message("HOST_OS is ${CMAKE_HOST_SYSTEM_NAME}")
-message("BUILD_OS is ${CMAKE_HOST_SYSTEM_NAME}")
 message("HOST_ARCH is ${HOST_ARCH}")
 message("BUILD_ARCH is ${BUILD_ARCH}")
 message("BUILD_TYPE is ${BUILD_TYPE}")
