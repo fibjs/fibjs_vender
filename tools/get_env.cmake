@@ -126,7 +126,7 @@ function(build src out)
     endif()
 
     execute_process(WORKING_DIRECTORY "${out}"
-        COMMAND make -j${BUILD_JOBS}
+        COMMAND ${CMAKE_COMMAND} --build . -- -j${BUILD_JOBS}
         RESULT_VARIABLE STATUS
         ERROR_VARIABLE BUILD_ERROR
     )
