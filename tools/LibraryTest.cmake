@@ -18,7 +18,7 @@ foreach(lib ${libs})
 	target_link_libraries(${name} "${EXECUTABLE_OUTPUT_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}${lib}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endforeach()
 
-include(${CMAKE_CURRENT_LIST_DIR}/option_libs.cmake)
+link_libraries(${name})
 
 if(link_flags)
 	set_target_properties(${name} PROPERTIES LINK_FLAGS ${link_flags})
