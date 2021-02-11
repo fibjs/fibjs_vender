@@ -105,31 +105,55 @@ function(build src out)
         message( FATAL_ERROR "[get_env::build] BUILD_TYPE haven't been set, check your input.")
     endif()
 
-    execute_process(WORKING_DIRECTORY "${out}"
-        OUTPUT_FILE CMake.log 
-        COMMAND ${CMAKE_COMMAND}
-            -Wno-dev
-            -DCMAKE_MAKE_PROGRAM=make
-            -G "Unix Makefiles"
-            -DCMAKE_C_COMPILER=clang
-            -DCMAKE_CXX_COMPILER=clang++
-            -DARCH=${BUILD_ARCH}
-            -DBUILD_TYPE=${BUILD_TYPE}
-            "${src}"
-        RESULT_VARIABLE STATUS
-        ERROR_VARIABLE BUILD_ERROR
-    )
+    if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+        if("${BUILD_ARCH}" STREQUAL "i386")
+            set(BUILD_MACHINE "Win32")
+        elseif("${BUILD_ARCH}" STREQUAL "amd64")
+            set(BUILD_MACHINE "x64")
+        endif()
 
-    if(STATUS AND NOT STATUS EQUAL 0)
-        message("[get_env::build::error::cmake] for '${out}'")
-        message(FATAL_ERROR "${BUILD_ERROR}")
+        execute_process(WORKING_DIRECTORY "${out}"
+            OUTPUT_FILE CMake.log 
+            COMMAND ${CMAKE_COMMAND}
+                -Wno-dev
+                -DARCH=${BUILD_ARCH}
+                -DBUILD_TYPE=${BUILD_TYPE}
+                -A ${BUILD_MACHINE}
+                "${src}"
+            RESULT_VARIABLE STATUS
+            ERROR_VARIABLE BUILD_ERROR
+        )
+
+        if(STATUS EQUAL 0)
+            execute_process(WORKING_DIRECTORY "${out}"
+                COMMAND ${CMAKE_COMMAND} --build --parallel . 
+                --config ${BUILD_TYPE} -- /nologo /verbosity:minimal
+                RESULT_VARIABLE STATUS
+                ERROR_VARIABLE BUILD_ERROR
+            )
+        endif()
+    else()
+        execute_process(WORKING_DIRECTORY "${out}"
+            OUTPUT_FILE CMake.log 
+            COMMAND ${CMAKE_COMMAND}
+                -Wno-dev
+                -DCMAKE_C_COMPILER=clang
+                -DCMAKE_CXX_COMPILER=clang++
+                -DARCH=${BUILD_ARCH}
+                -DBUILD_TYPE=${BUILD_TYPE}
+                "${src}"
+            RESULT_VARIABLE STATUS
+            ERROR_VARIABLE BUILD_ERROR
+        )
+
+        if(STATUS EQUAL 0)
+            execute_process(WORKING_DIRECTORY "${out}"
+                COMMAND ${CMAKE_COMMAND} --build . -- -j${BUILD_JOBS}
+                RESULT_VARIABLE STATUS
+                ERROR_VARIABLE BUILD_ERROR
+            )
+        endif()
     endif()
-
-    execute_process(WORKING_DIRECTORY "${out}"
-        COMMAND ${CMAKE_COMMAND} --build . -- -j${BUILD_JOBS}
-        RESULT_VARIABLE STATUS
-        ERROR_VARIABLE BUILD_ERROR
-    )
 
     if(STATUS AND NOT STATUS EQUAL 0)
         message("[get_env::build::error::make] for '${out}'")
