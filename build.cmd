@@ -2,23 +2,18 @@
 
 SETLOCAL ENABLEDELAYEDEXPANSION
 
-if defined ProgramFiles(x86) (set HOST_ARCH=amd64) else (set HOST_ARCH=i386)
-set TARGET_ARCH=!HOST_ARCH!
-
-set BUILD_TYPE=release
-set MT=/m
 set ARG_ERROR=no
 
 for %%a in (%*) do (
     set ARG_ERROR=yes
 
     if "%%a"=="amd64" (
-    	set TARGET_ARCH=amd64
+    	set BUILD_ARCH=amd64
         set ARG_ERROR=no
     )
 
     if "%%a"=="i386" (
-    	set TARGET_ARCH=i386
+    	set BUILD_ARCH=i386
         set ARG_ERROR=no
     )
 
@@ -30,7 +25,6 @@ for %%a in (%*) do (
     if "%%a"=="debug" (
     	set BUILD_TYPE=debug
         set ARG_ERROR=no
-        set MT=
     )
 
     if "%%a"=="clean" (
@@ -47,57 +41,27 @@ for %%a in (%*) do (
     )
 )
 
-if "!BUILD_TYPE!"=="clean" (
-    if "!TARGET_ARCH!"=="amd64" (
-        rmdir /S/Q out\Windows_amd64_Debug
-        rmdir /S/Q out\Windows_amd64_Release
-    )
-
-    if "!TARGET_ARCH!"=="i386" (
-        rmdir /S/Q out\Windows_i386_Debug
-        rmdir /S/Q out\Windows_i386_Release
-    )
-    goto out
-)
-
-if "!TARGET_ARCH!"=="amd64" (set TargetPlatform=x64) else (set TargetPlatform=Win32)
-
-SET VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
-@rem Visual Studio 2017
-FOR /f "delims=" %%A IN ('"%VSWHERE%" -property installationPath -prerelease -version [15.0^,16.0^)') DO (
-    SET VSINSTALLPATH=%%A
-    echo "VSINSTALLPATH is !VSINSTALLPATH!"
-)
-
-REM Run vcvars*.bat to set environment variables, to tell clang use vc tool chains on vs 2017 rather than post one(if existed.)
-IF "%__VCVARSALL_VER%" == "" (
-    IF /I "%TargetPlatform%" == "x64" (
-        call "!VSINSTALLPATH!\VC\Auxiliary\Build\vcvars64.bat"
-        ECHO "x64 building..."
-    ) 
-    IF /I "%TargetPlatform%" == "Win32" (
-        call "!VSINSTALLPATH!\VC\Auxiliary\Build\vcvars32.bat"
-        ECHO "x86 building..."
-    )
-)
-
-REM we have set two essential env-vars: BUILD_TYPE, TARGET_ARCH, which would be passed transparently and used in Unix shell file .\build
-"C:\Program Files\Git\bin\sh.exe" .\build
+cmake -DBUILD_ARCH=%BUILD_ARCH% -DBUILD_TYPE=%BUILD_TYPE% -DBUILD_JOBS=%BUILD_JOBS% -P build.cmake
 
 goto finished
 
 :usage
-echo.
-echo Usage: build [release ^| debug ^| i386 ^| amd64 ^| noxp ^| clean] [-h]
-echo Options:
-echo   release, debug: 
-echo       Specifies the build type.
-echo   i386, amd64:
-echo       Specifies the architecture for code generation.
-echo   clean: 
-echo       Clean the build folder.
-echo   -h, --help:
-echo       Print this message and exit.
-echo.
+	echo.
+	echo Usage: `basename $0` [options] [-jn] [-v] [-h]
+	echo Options:
+	echo   release, debug: 
+	echo       Specifies the build type.
+	echo   i386, amd64, arm, arm64, mips, mips64, ppc, ppc64:
+	echo       Specifies the architecture for code generation.
+	echo   clean: 
+	echo       Clean the build folder.
+	echo   ci: 
+	echo       Specifies the environment is CI.
+	echo   -h, --help:
+	echo       Print this message and exit.
+	echo   -j: enable make '-j' option.
+	echo       if 'n' is not given, will set jobs to auto detected core count, otherwise n is used.
+	echo.
+    exit /B 1
 
 :finished

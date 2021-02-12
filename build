@@ -34,7 +34,7 @@ do
         -j*) BUILD_JOBS="${i#-j}"
             ;;
         --help|-h) usage
-            exit 0
+            exit 1
             ;;
         *) echo "illegal option $i"
             usage
