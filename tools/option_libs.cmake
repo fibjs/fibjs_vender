@@ -1,4 +1,4 @@
-function(link_libraries name)
+function(setup_result_library name)
     if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
         target_link_libraries(${name} winmm ws2_32 psapi dbghelp shlwapi urlmon
             userenv advapi32 kernel32 iphlpapi)

@@ -1,4 +1,3 @@
-
 # get host's architecture in cmake script mode
 function(gethostarch RETVAL)
     if("${${RETVAL}}" STREQUAL "")
@@ -50,10 +49,10 @@ if(NOT DEFINED link_flags)
     set(link_flags "")
 endif()
 
-if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
-    include(${CMAKE_CURRENT_LIST_DIR}/option_flags_vc.cmake)
+if(MSVC)
+	include(${CMAKE_CURRENT_LIST_DIR}/option_flags_vc.cmake)
 else()
-    include(${CMAKE_CURRENT_LIST_DIR}/option_flags_clang.cmake)
+	include(${CMAKE_CURRENT_LIST_DIR}/option_flags_clang.cmake)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flags} ${cflags}")

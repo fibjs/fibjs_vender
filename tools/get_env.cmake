@@ -102,57 +102,74 @@ function(build src out)
     file(MAKE_DIRECTORY "${out}")
 
     if(NOT DEFINED BUILD_TYPE)
-        message( FATAL_ERROR "[get_env::build] BUILD_TYPE haven't been set, check your input.")
+        message(FATAL_ERROR "[get_env::build] BUILD_TYPE haven't been set, check your input.")
     endif()
 
-    if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
-        if("${BUILD_ARCH}" STREQUAL "i386")
-            set(BUILD_MACHINE "Win32")
-        elseif("${BUILD_ARCH}" STREQUAL "amd64")
-            set(BUILD_MACHINE "x64")
+    if((${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows") AND (NOT "${BUILD_USE_CLANG}" STREQUAL "true"))
+        if(${BUILD_ARCH} STREQUAL "amd64")
+            set(TargetArch "x64")
+        else()
+            set(TargetArch "Win32")
         endif()
 
         execute_process(WORKING_DIRECTORY "${out}"
             OUTPUT_FILE CMake.log 
             COMMAND ${CMAKE_COMMAND}
                 -Wno-dev
+                -G "Visual Studio 15 2017"
+                -T "v141"
                 -DARCH=${BUILD_ARCH}
                 -DBUILD_TYPE=${BUILD_TYPE}
-                -A ${BUILD_MACHINE}
+                -A ${TargetArch}
                 "${src}"
+            ENCODING UTF8
             RESULT_VARIABLE STATUS
             ERROR_VARIABLE BUILD_ERROR
         )
 
-        if(STATUS EQUAL 0)
-            execute_process(WORKING_DIRECTORY "${out}"
-                COMMAND ${CMAKE_COMMAND} --build --parallel . 
-                --config ${BUILD_TYPE} -- /nologo /verbosity:minimal
-                RESULT_VARIABLE STATUS
-                ERROR_VARIABLE BUILD_ERROR
-            )
+        if(STATUS AND NOT STATUS EQUAL 0)
+            message("[get_env::build::error::cmake] for '${out}'")
+            message(FATAL_ERROR "${BUILD_ERROR}")
         endif()
+
+        execute_process(WORKING_DIRECTORY "${out}"
+            COMMAND ${CMAKE_COMMAND} 
+            --build ./
+            --config ${BUILD_TYPE}
+            -- /nologo /verbosity:minimal
+            /p:CL_MPcount=${BUILD_JOBS}
+            ENCODING UTF8
+            RESULT_VARIABLE STATUS
+            ERROR_VARIABLE BUILD_ERROR
+        )
     else()
         execute_process(WORKING_DIRECTORY "${out}"
             OUTPUT_FILE CMake.log 
             COMMAND ${CMAKE_COMMAND}
                 -Wno-dev
+                -DCMAKE_MAKE_PROGRAM=make
+                -G "Unix Makefiles"
                 -DCMAKE_C_COMPILER=clang
                 -DCMAKE_CXX_COMPILER=clang++
                 -DARCH=${BUILD_ARCH}
                 -DBUILD_TYPE=${BUILD_TYPE}
                 "${src}"
+            ENCODING UTF8
             RESULT_VARIABLE STATUS
             ERROR_VARIABLE BUILD_ERROR
         )
 
-        if(STATUS EQUAL 0)
-            execute_process(WORKING_DIRECTORY "${out}"
-                COMMAND ${CMAKE_COMMAND} --build . -- -j${BUILD_JOBS}
-                RESULT_VARIABLE STATUS
-                ERROR_VARIABLE BUILD_ERROR
-            )
+        if(STATUS AND NOT STATUS EQUAL 0)
+            message("[get_env::build::error::cmake] for '${out}'")
+            message(FATAL_ERROR "${BUILD_ERROR}")
         endif()
+        
+        execute_process(WORKING_DIRECTORY "${out}"
+            COMMAND ${CMAKE_COMMAND} --build . -- -j${BUILD_JOBS}
+            ENCODING UTF8
+            RESULT_VARIABLE STATUS
+            ERROR_VARIABLE BUILD_ERROR
+        )
     endif()
 
     if(STATUS AND NOT STATUS EQUAL 0)

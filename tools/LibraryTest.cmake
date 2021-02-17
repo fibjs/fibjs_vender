@@ -1,6 +1,7 @@
 get_filename_component(src ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 get_filename_component(libname ${src} NAME)
 set(name "${libname}_test")
+
 project(${name})
 
 include(${CMAKE_CURRENT_LIST_DIR}/option.cmake)
@@ -17,7 +18,7 @@ foreach(lib ${libs})
 	target_link_libraries(${name} "${EXECUTABLE_OUTPUT_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}${lib}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endforeach()
 
-link_libraries(${name})
+setup_result_library(${name})
 
 if(link_flags)
 	set_target_properties(${name} PROPERTIES LINK_FLAGS ${link_flags})

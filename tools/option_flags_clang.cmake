@@ -33,6 +33,31 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
 
         message("[Linux] BUILD_OPTION is ${BUILD_OPTION}")
     endif()
+elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+    if(${ARCH} STREQUAL "amd64")
+        set(BUILD_OPTION "${BUILD_OPTION} --target=x86_64-pc-windows-msvc")
+    else()
+        set(BUILD_OPTION "${BUILD_OPTION} --target=i686-pc-windows-msvc")
+    endif()
+
+    # keep same name format with Unix
+    set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+
+    set(CLANG_COMPILE_FLAGS_CXX_STD_VER "-std=c++14")
+
+	add_definitions(-DWIN32 -D_LIB -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -DNOMINMAX)
+	set(flags "${flags} -fms-extensions -fmsc-version=1910 -frtti")
+        
+    # @warning: for cmake/clang on windows, you should always make CMAKE_BUILD_TYPE available, never leave it. Otherwise you would get one library for 'DEBUG'
+	if(${BUILD_TYPE} STREQUAL "debug")
+        set(CMAKE_BUILD_TYPE Debug)
+	elseif(${BUILD_TYPE} STREQUAL "release")
+        set(CMAKE_BUILD_TYPE Release)
+	endif()
+
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+	set(link_flags "${link_flags} -Xlinker //OPT:ICF -Xlinker //ERRORREPORT:PROMPT -Xlinker //NOLOGO -Xlinker //TLBID:1")
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
 	set(flags "${flags} -Wno-nullability-completeness -mmacosx-version-min=10.9 -DOBJC_OLD_DISPATCH_PROTOTYPES=1")
 	set(link_flags "${link_flags} -framework WebKit -framework Cocoa -framework Carbon -framework IOKit -mmacosx-version-min=10.9")
@@ -42,8 +67,12 @@ elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
     endif()
 endif()
 
+if(NOT DEFINED CLANG_COMPILE_FLAGS_CXX_STD_VER)
+    set(CLANG_COMPILE_FLAGS_CXX_STD_VER "-std=c++11")
+endif()
+
 set(flags "${flags} -fsigned-char -fmessage-length=0 -fdata-sections -ffunction-sections -D_FILE_OFFSET_BITS=64")
-set(ccflags "${ccflags} -std=c++11")
+set(ccflags "${ccflags} ${CLANG_COMPILE_FLAGS_CXX_STD_VER}")
 
 if(${BUILD_TYPE} STREQUAL "release")
 	set(flags "${flags} -O3 -s ${BUILD_OPTION} -w -fomit-frame-pointer -fvisibility=hidden")
@@ -64,4 +93,8 @@ elseif(${BUILD_TYPE} STREQUAL "debug")
 	set(flags "${flags} -g -O0 ${BUILD_OPTION} -Wall -Wno-overloaded-virtual")
 	set(link_flags "${link_flags} ${BUILD_OPTION}")
 	add_definitions(-DDEBUG=1)
+
+	if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+		add_definitions(-D_DEBUG)
+	endif()
 endif()
