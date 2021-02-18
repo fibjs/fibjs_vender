@@ -17,3 +17,15 @@
 // #define TIOCGWINSZ
 
 #define CONFIG_TERMINAL_BELL
+
+#define SYS_UNIX
+
+#define HAVE_STDLIB
+
+#define ANSI_ARROWS
+
+#define UNIQUE_HISTORY
+
+#define HAVE_TCGETATTR
+
+#define HAVE_STRDUP
