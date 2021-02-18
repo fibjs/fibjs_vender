@@ -74,7 +74,7 @@ elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     # keep same name format with Unix
     set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
 
-    set(CLANG_COMPILE_FLAGS_CXX_STD_VER "-std=c++14")
+    set(CMAKE_CXX_STANDARD 14)
 
 	add_definitions(-DWIN32 -D_LIB -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -DNOMINMAX)
 	set(flags "${flags} -fms-extensions -fmsc-version=1910 -frtti")
@@ -84,25 +84,21 @@ elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     elseif(${BUILD_TYPE} STREQUAL "release")
         set(flags "${flags} -Xclang --dependent-lib=libcmt")
     endif()
-
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-	set(link_flags "${link_flags} -Xlinker //OPT:ICF -Xlinker //ERRORREPORT:PROMPT -Xlinker //NOLOGO -Xlinker //TLBID:1")
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
 	set(flags "${flags} -Wno-nullability-completeness -mmacosx-version-min=10.9 -DOBJC_OLD_DISPATCH_PROTOTYPES=1")
 	set(link_flags "${link_flags} -framework WebKit -framework Cocoa -framework Carbon -framework IOKit -mmacosx-version-min=10.9")
-
+	
     if(src_platform_list)
 	    set_source_files_properties(${src_platform_list} PROPERTIES COMPILE_FLAGS "-x objective-c++")
     endif()
 endif()
 
-if(NOT DEFINED CLANG_COMPILE_FLAGS_CXX_STD_VER)
-    set(CLANG_COMPILE_FLAGS_CXX_STD_VER "-std=c++11")
+if("${CMAKE_CXX_STANDARD}" STREQUAL "")
+    set(CMAKE_CXX_STANDARD 11)
 endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(flags "${flags} -fsigned-char -fmessage-length=0 -fdata-sections -ffunction-sections -D_FILE_OFFSET_BITS=64")
-set(ccflags "${ccflags} ${CLANG_COMPILE_FLAGS_CXX_STD_VER}")
 
 if(${BUILD_TYPE} STREQUAL "release")
 	set(flags "${flags} -O3 -s ${BUILD_OPTION} -w -fomit-frame-pointer -fvisibility=hidden")
