@@ -1,3 +1,31 @@
+macro(clean_clang_flags)
+    set(variables
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE)
+
+    foreach(variable ${variables})
+        # To use static c runtime from libcmt(d).lib, we could:
+        # 1.remove '-D_DLL' from those CMAKE predefined flags
+        # 2. pass '-D_LIB' instead of '-D_DLL' to clang
+        string(REGEX REPLACE
+            "-D_DLL" ""
+            ${variable} "${${variable}}")
+
+        set(${variable} "${${variable}}" CACHE STRING "CLANG_${variable}" FORCE)
+    endforeach()
+endmacro()
+
+macro(fixup_CMAKE_BUILD_TYPE)
+    # @warning: for cmake/clang on windows, you should always make CMAKE_BUILD_TYPE available, never leave it. Otherwise you would get one library for 'DEBUG'
+    if(${BUILD_TYPE} STREQUAL "debug")
+        set(CMAKE_BUILD_TYPE Debug)
+    elseif(${BUILD_TYPE} STREQUAL "release")
+        set(CMAKE_BUILD_TYPE Release)
+    endif()
+endmacro()
+
 if("${HOST_ARCH}" STREQUAL "amd64" AND "${ARCH}" STREQUAL "i386")
     set(BUILD_OPTION "-m32")
 elseif("${HOST_ARCH}" STREQUAL "i386" AND "${ARCH}" STREQUAL "amd64")
@@ -34,6 +62,9 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
         message("[Linux] BUILD_OPTION is ${BUILD_OPTION}")
     endif()
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+    clean_clang_flags()
+    fixup_CMAKE_BUILD_TYPE()
+
     if(${ARCH} STREQUAL "amd64")
         set(BUILD_OPTION "${BUILD_OPTION} --target=x86_64-pc-windows-msvc")
     else()
@@ -47,13 +78,12 @@ elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 
 	add_definitions(-DWIN32 -D_LIB -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -DNOMINMAX)
 	set(flags "${flags} -fms-extensions -fmsc-version=1910 -frtti")
-        
-    # @warning: for cmake/clang on windows, you should always make CMAKE_BUILD_TYPE available, never leave it. Otherwise you would get one library for 'DEBUG'
-	if(${BUILD_TYPE} STREQUAL "debug")
-        set(CMAKE_BUILD_TYPE Debug)
-	elseif(${BUILD_TYPE} STREQUAL "release")
-        set(CMAKE_BUILD_TYPE Release)
-	endif()
+
+    if(${BUILD_TYPE} STREQUAL "debug")
+        set(flags "${flags} -Xclang --dependent-lib=libcmtd")
+    elseif(${BUILD_TYPE} STREQUAL "release")
+        set(flags "${flags} -Xclang --dependent-lib=libcmt")
+    endif()
 
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
@@ -61,7 +91,7 @@ elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
 	set(flags "${flags} -Wno-nullability-completeness -mmacosx-version-min=10.9 -DOBJC_OLD_DISPATCH_PROTOTYPES=1")
 	set(link_flags "${link_flags} -framework WebKit -framework Cocoa -framework Carbon -framework IOKit -mmacosx-version-min=10.9")
-	
+
     if(src_platform_list)
 	    set_source_files_properties(${src_platform_list} PROPERTIES COMPILE_FLAGS "-x objective-c++")
     endif()
