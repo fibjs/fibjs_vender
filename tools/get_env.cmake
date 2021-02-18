@@ -65,10 +65,24 @@ function(chalklog)
     endif()
 endfunction()
 
+# get host's name in cmake script mode
+function(gethostname)
+    if(WIN32)
+        set(CMAKE_HOST_SYSTEM_NAME "Windows" PARENT_SCOPE)
+    else()
+        execute_process(
+            COMMAND uname
+            OUTPUT_VARIABLE CMAKE_HOST_SYSTEM_NAME
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        set(CMAKE_HOST_SYSTEM_NAME ${CMAKE_HOST_SYSTEM_NAME} PARENT_SCOPE)
+    endif()
+endfunction()
+
 # get host's architecture in cmake script mode
 function(gethostarch RETVAL)
     if("${${RETVAL}}" STREQUAL "")
-        if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+        if(WIN32)
             set(HOST_SYSTEM_PROCESSOR amd64)
         else()
             execute_process(
@@ -154,7 +168,6 @@ function(build src out)
                 -DARCH=${BUILD_ARCH}
                 -DBUILD_TYPE=${BUILD_TYPE}
                 "${src}"
-            ENCODING UTF8
             RESULT_VARIABLE STATUS
             ERROR_VARIABLE BUILD_ERROR
         )
@@ -166,7 +179,6 @@ function(build src out)
         
         execute_process(WORKING_DIRECTORY "${out}"
             COMMAND ${CMAKE_COMMAND} --build . -- -j${BUILD_JOBS}
-            ENCODING UTF8
             RESULT_VARIABLE STATUS
             ERROR_VARIABLE BUILD_ERROR
         )
@@ -222,6 +234,8 @@ function(rimraf TARGET)
         message("path '${TARGET}' didn't existed, no removal required.")
     endif()
 endfunction()
+
+gethostname()
 
 include(ProcessorCount)
 
