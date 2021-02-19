@@ -3,9 +3,6 @@ project(${name})
 
 include(${CMAKE_CURRENT_LIST_DIR}/option.cmake)
 
-if(NOT DEFINED src_list)
-	file(GLOB_RECURSE src_list "src/*.c*")
-endif()
 add_library(${name} ${src_list})
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/../../../bin/${CMAKE_HOST_SYSTEM_NAME}_${ARCH}_${BUILD_TYPE})

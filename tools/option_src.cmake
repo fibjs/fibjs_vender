@@ -1,0 +1,11 @@
+if(NOT DEFINED src_folder)
+	set(src_folder "src")
+endif()
+
+if(NOT DEFINED src_list)
+	file(GLOB_RECURSE src_list "${src_folder}/*.c*")
+	if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin" AND ${ARCH} STREQUAL "amd64")
+		file(GLOB_RECURSE src_platform_list "${src_folder}/*.m*")
+		list(APPEND src_list ${src_platform_list})
+	endif()
+endif()
