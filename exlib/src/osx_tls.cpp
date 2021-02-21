@@ -8,7 +8,7 @@
 
 #include "osconfig.h"
 
-#ifdef Darwin
+#if defined(Darwin) && (defined(i386) || defined(amd64))
 
 #include <stdio.h>
 #include <stdlib.h>

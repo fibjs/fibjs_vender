@@ -29,7 +29,8 @@
 #include "utils.h"
 #include "fiber.h"
 
-#ifdef Darwin
+// for Darwin, only use customized OSTls for non-arm architecture
+#if defined(Darwin) && (defined(i386) || defined(amd64))
 
 class OSTls {
 public:

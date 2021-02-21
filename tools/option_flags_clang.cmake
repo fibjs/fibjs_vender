@@ -87,6 +87,24 @@ elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
 	set(flags "${flags} -Wno-nullability-completeness -mmacosx-version-min=10.9 -DOBJC_OLD_DISPATCH_PROTOTYPES=1")
 	set(link_flags "${link_flags} -framework WebKit -framework Cocoa -framework Carbon -framework IOKit -mmacosx-version-min=10.9")
+
+    if(${ARCH} STREQUAL "amd64")
+        set(BUILD_OPTION "${BUILD_OPTION} --target=x86_64-apple-darwin")
+    elseif(${ARCH} STREQUAL "arm64")
+        set(BUILD_OPTION "${BUILD_OPTION} -arch arm64")
+        set(BUILD_OPTION "${BUILD_OPTION} --target=aarch64-apple-darwin")
+        execute_process(
+            COMMAND xcrun
+            --sdk macosx
+            --show-sdk-path
+            RESULT_VARIABLE SDKROOT
+        )
+        if("${SDKROOT}" STREQUAL "")
+            set(BUILD_OPTION "${BUILD_OPTION} -isysroot ${SDKROOT}")
+        endif()
+    elseif(${ARCH} STREQUAL "arm")
+        set(BUILD_OPTION "${BUILD_OPTION} --target=aarch-apple-darwin")
+    endif()
 	
     if(src_platform_list)
 	    set_source_files_properties(${src_platform_list} PROPERTIES COMPILE_FLAGS "-x objective-c++")
