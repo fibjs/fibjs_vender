@@ -11,14 +11,21 @@ var readdir2 = require('./update_helpers/readdir');
 var workFolder = process.cwd();
 var profileFolder = process.env.HOME || process.env.USERPROFILE;
 // for debug
-process.env.V8_DIR = path.fullpath(profileFolder + "./projects/v8/v8");
-process.env.DEPT_TOOLS_DIR = path.resolve("C:\\src\\depot_tools");
+process.env.V8_DIR = path.resolve(profileFolder, "./projects/v8/v8");
 
 var v8Folder = process.env.V8_DIR || path.fullpath(profileFolder + "./works/source/js/v8/v8");
 
 console.log(`v8 is located in: ${v8Folder}`);
 
 process.chdir(v8Folder);
+
+function joinOriginV8Src(p) {
+    return path.join(v8Folder, p);
+}
+
+function resolveVenderV8(p) {
+    return path.join(path.resolve(workFolder), p);
+}
 
 if (process.env.NO_CODEGEN != '1') {
     process.run("python", [
@@ -137,6 +144,19 @@ var files = {
     'src/objects/js-plural-rules.h': 1,
 
     'src/runtime/runtime-intl.cc': 1,
+
+    'src/objects/js-break-iterator-inl.h': 1,
+    'src/objects/js-break-iterator.cc': 1,
+    'src/objects/js-break-iterator.h': 1,
+    'src/objects/js-number-format-inl.h': 1,
+    'src/objects/js-number-format.cc': 1,
+    'src/objects/js-number-format.h': 1,
+    'src/objects/js-date-time-format-inl.h': 1,
+    'src/objects/js-date-time-format.cc': 1,
+    'src/objects/js-date-time-format.h': 1,
+    'src/objects/js-segmenter-inl.h': 1,
+    'src/objects/js-segmenter.cc': 1,
+    'src/objects/js-segmenter.h': 1,
 };
 
 var re = [
@@ -204,21 +224,27 @@ var gens = [
 ];
 
 function cp_gen() {
-    fs.mkdir('src/gen');
+    mkdirp(resolveVenderV8('./gen'));
     gens.forEach(function (f) {
-        console.log("cp " + f);
-        fs.writeFile('src/gen/' + path.basename(f), fs.readTextFile(v8Folder + f));
+        console.log(`cp f from ${joinOriginV8Src(f)}`);
+        fs.writeFile('gen/' + path.basename(f), fs.readTextFile(joinOriginV8Src(f)));
     });
 
-    mkdirp('src/builtins/torque-generated');
-    var bFolder = path.resolve(v8Folder, './out.gn/x64.release/gen/torque-generated');
-    var fnames = readdir2(bFolder);
-    fnames.forEach(function (name) {
-        var sfile = path.resolve(bFolder, name);
-        var tfile = path.resolve('src/builtins/torque-generated/' + name)
-        console.log(`cp ${sfile} to ${tfile}`);
-        mkdirp(path.dirname(tfile));
-        fs.copy(sfile, tfile);
+    // sub dirs in /gen
+    ;[
+        'torque-generated',
+        'builtins-generated',
+        // 'include/inspector',
+    ].forEach(subdir =>{
+        var bFolder = path.resolve(v8Folder, `./out.gn/x64.release/gen/${subdir}`);
+        var fnames = readdir2(bFolder);
+        fnames.forEach(function (name) {
+            var sfile = path.resolve(bFolder, name);
+            var tfile = path.resolve(`gen/${subdir}/` + name)
+            console.log(`cp ${sfile} to ${tfile}`);
+            mkdirp(path.dirname(tfile));
+            fs.copy(sfile, tfile);
+        });
     });
 }
 
@@ -460,7 +486,7 @@ function patch_snapshot() {
 
     try {
         fs.unlink("test/src/mksnapshot.inl")
-        fs.copy(v8Folder + "./src/snapshot/mksnapshot.cc", "test/src/mksnapshot.inl");
+        fs.copy(joinOriginV8Src("./src/snapshot/mksnapshot.cc"), "test/src/mksnapshot.inl");
     } catch (error) {
         console.error(error);
     }

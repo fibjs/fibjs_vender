@@ -230,7 +230,7 @@ public:
 public:
     bool ValueToBoolean(const Value& v)
     {
-        return v.m_v->BooleanValue();
+        return v.m_v->BooleanValue(v8::Local<v8::Context>::New(m_isolate, m_context)).ToChecked();
     }
 
     bool ValueIsBoolean(const Value& v)
@@ -241,7 +241,7 @@ public:
 public:
     double ValueToNumber(const Value& v)
     {
-        return v.m_v->NumberValue();
+        return v.m_v->NumberValue(v8::Local<v8::Context>::New(m_isolate, m_context)).ToChecked();
     }
 
     bool ValueIsNumber(const Value& v)

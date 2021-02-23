@@ -6,7 +6,15 @@ else()
 	include_directories("/usr/local/include/")
 endif()
 
+file(GLOB_RECURSE src_list "src/*.c*" "gen/*.c*")
+
 include(../tools/Library.cmake)
+
+include_directories(
+	${PROJECT_SOURCE_DIR}
+	"${PROJECT_SOURCE_DIR}/gen"
+	"${PROJECT_SOURCE_DIR}/gen/include"
+)
 
 add_definitions(
 	-DV8_NO_FAST_TLS=1

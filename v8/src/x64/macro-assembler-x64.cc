@@ -25,6 +25,7 @@
 #include "src/objects-inl.h"
 #include "src/register-configuration.h"
 #include "src/snapshot/snapshot.h"
+#include "src/string-constants.h"
 #include "src/x64/assembler-x64.h"
 
 #include "src/x64/macro-assembler-x64.h"  // Cannot be the first include.
@@ -139,8 +140,8 @@ void MacroAssembler::Store(ExternalReference destination, Register source) {
 void TurboAssembler::LoadFromConstantsTable(Register destination,
                                             int constant_index) {
   DCHECK(isolate()->heap()->RootCanBeTreatedAsConstant(
-      Heap::kBuiltinsConstantsTableRootIndex));
-  LoadRoot(destination, Heap::kBuiltinsConstantsTableRootIndex);
+      RootIndex::kBuiltinsConstantsTable));
+  LoadRoot(destination, RootIndex::kBuiltinsConstantsTable);
   movp(destination,
        FieldOperand(destination,
                     FixedArray::kHeaderSize + constant_index * kPointerSize));
@@ -196,22 +197,22 @@ void MacroAssembler::PushAddress(ExternalReference source) {
   Push(kScratchRegister);
 }
 
-void TurboAssembler::LoadRoot(Register destination, Heap::RootListIndex index) {
+void TurboAssembler::LoadRoot(Register destination, RootIndex index) {
   DCHECK(root_array_available_);
   movp(destination, Operand(kRootRegister, RootRegisterOffset(index)));
 }
 
-void MacroAssembler::PushRoot(Heap::RootListIndex index) {
+void MacroAssembler::PushRoot(RootIndex index) {
   DCHECK(root_array_available_);
   Push(Operand(kRootRegister, RootRegisterOffset(index)));
 }
 
-void TurboAssembler::CompareRoot(Register with, Heap::RootListIndex index) {
+void TurboAssembler::CompareRoot(Register with, RootIndex index) {
   DCHECK(root_array_available_);
   cmpp(with, Operand(kRootRegister, RootRegisterOffset(index)));
 }
 
-void TurboAssembler::CompareRoot(Operand with, Heap::RootListIndex index) {
+void TurboAssembler::CompareRoot(Operand with, RootIndex index) {
   DCHECK(root_array_available_);
   DCHECK(!with.AddressUsesRegister(kScratchRegister));
   LoadRoot(kScratchRegister, index);
@@ -289,8 +290,6 @@ void TurboAssembler::CallRecordWriteStub(
       RecordWriteDescriptor::kObject));
   Register slot_parameter(
       callable.descriptor().GetRegisterParameter(RecordWriteDescriptor::kSlot));
-  Register isolate_parameter(callable.descriptor().GetRegisterParameter(
-      RecordWriteDescriptor::kIsolate));
   Register remembered_set_parameter(callable.descriptor().GetRegisterParameter(
       RecordWriteDescriptor::kRememberedSet));
   Register fp_mode_parameter(callable.descriptor().GetRegisterParameter(
@@ -314,8 +313,6 @@ void TurboAssembler::CallRecordWriteStub(
     // object_parameter /\ object
     xchgq(slot_parameter, object_parameter);
   }
-
-  LoadAddress(isolate_parameter, ExternalReference::isolate_address(isolate()));
 
   Smi* smi_rsa = Smi::FromEnum(remembered_set_action);
   Smi* smi_fm = Smi::FromEnum(fp_mode);
@@ -1347,6 +1344,12 @@ void TurboAssembler::Move(Operand dst, Handle<HeapObject> object,
   movp(dst, kScratchRegister);
 }
 
+void TurboAssembler::MoveStringConstant(Register result,
+                                        const StringConstantBase* string,
+                                        RelocInfo::Mode rmode) {
+  movp_string(result, string);
+}
+
 void MacroAssembler::Drop(int stack_elements) {
   if (stack_elements > 0) {
     addp(rsp, Immediate(stack_elements * kPointerSize));
@@ -2177,7 +2180,7 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
 
   // Clear the new.target register if not given.
   if (!new_target.is_valid()) {
-    LoadRoot(rdx, Heap::kUndefinedValueRootIndex);
+    LoadRoot(rdx, RootIndex::kUndefinedValue);
   }
 
   Label done;

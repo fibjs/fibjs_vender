@@ -270,6 +270,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kMipsUlhu:
     case kMipsUlw:
     case kMipsUlwc1:
+    case kMipsWord32AtomicPairLoad:
       return kIsLoadOperation;
 
     case kMipsModD:
@@ -287,6 +288,14 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kMipsUsh:
     case kMipsUsw:
     case kMipsUswc1:
+    case kMipsWord32AtomicPairStore:
+    case kMipsWord32AtomicPairAdd:
+    case kMipsWord32AtomicPairSub:
+    case kMipsWord32AtomicPairAnd:
+    case kMipsWord32AtomicPairOr:
+    case kMipsWord32AtomicPairXor:
+    case kMipsWord32AtomicPairExchange:
+    case kMipsWord32AtomicPairCompareExchange:
       return kHasSideEffect;
 
 #define CASE(Name) case k##Name:

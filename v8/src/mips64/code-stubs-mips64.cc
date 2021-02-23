@@ -122,7 +122,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ li(a4, ExternalReference::Create(
                 IsolateAddressId::kPendingExceptionAddress, isolate));
   __ Sd(v0, MemOperand(a4));  // We come back from 'invoke'. result is in v0.
-  __ LoadRoot(v0, Heap::kExceptionRootIndex);
+  __ LoadRoot(v0, RootIndex::kException);
   __ b(&exit);  // b exposes branch delay slot.
   __ nop();   // Branch delay slot nop.
 
@@ -422,7 +422,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
                     stack_space_offset != kInvalidStackOffset);
 
   // Check if the function scheduled an exception.
-  __ LoadRoot(a4, Heap::kTheHoleValueRootIndex);
+  __ LoadRoot(a4, RootIndex::kTheHoleValue);
   __ li(kScratchReg, ExternalReference::scheduled_exception_address(isolate));
   __ Ld(a5, MemOperand(kScratchReg));
   __ Branch(&promote_scheduled_exception, ne, a4, Operand(a5));
@@ -473,13 +473,13 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(FCA::kHolderIndex == 0);
 
   // new target
-  __ PushRoot(Heap::kUndefinedValueRootIndex);
+  __ PushRoot(RootIndex::kUndefinedValue);
 
   // call data.
   __ Push(call_data);
 
   Register scratch = call_data;
-  __ LoadRoot(scratch, Heap::kUndefinedValueRootIndex);
+  __ LoadRoot(scratch, RootIndex::kUndefinedValue);
   // Push return value and default return value.
   __ Push(scratch, scratch);
   __ li(scratch, ExternalReference::isolate_address(masm->isolate()));
@@ -552,7 +552,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   __ Sd(receiver, MemOperand(sp, (PCA::kThisIndex + 1) * kPointerSize));
   __ Ld(scratch, FieldMemOperand(callback, AccessorInfo::kDataOffset));
   __ Sd(scratch, MemOperand(sp, (PCA::kDataIndex + 1) * kPointerSize));
-  __ LoadRoot(scratch, Heap::kUndefinedValueRootIndex);
+  __ LoadRoot(scratch, RootIndex::kUndefinedValue);
   __ Sd(scratch, MemOperand(sp, (PCA::kReturnValueOffset + 1) * kPointerSize));
   __ Sd(scratch, MemOperand(sp, (PCA::kReturnValueDefaultValueIndex + 1) *
                                     kPointerSize));
