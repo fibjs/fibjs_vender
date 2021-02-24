@@ -3,6 +3,7 @@ include(tools/get_env.cmake)
 set(libs
     exlib
     cares
+    cef
     gtest
     expat
     gumbo
