@@ -108,6 +108,8 @@ namespace base {
 
         DISALLOW_COPY_AND_ASSIGN(LockGuard);
     };
+
+    using MutexGuard = LockGuard<Mutex>;
 }
 } // namespace v8::base
 

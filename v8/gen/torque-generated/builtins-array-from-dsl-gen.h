@@ -1,55 +1,80 @@
 #ifndef V8_TORQUE_ARRAY_FROM_DSL_BASE_H__
 #define V8_TORQUE_ARRAY_FROM_DSL_BASE_H__
 
-#include "src/builtins/builtins-array-gen.h"
+#include "src/compiler/code-assembler.h"
+#include "src/code-stub-assembler.h"
 
-
- namespace v8 {
+namespace v8 {
 namespace internal {
 
-class ArrayBuiltinsFromDSLAssembler: public ArrayBuiltinsAssembler {
+class ArrayBuiltinsFromDSLAssembler {
  public:
-  explicit ArrayBuiltinsFromDSLAssembler(compiler::CodeAssemblerState* state) : ArrayBuiltinsAssembler(state) {}
+  explicit ArrayBuiltinsFromDSLAssembler(compiler::CodeAssemblerState* state) : state_(state), ca_(state) { USE(state_, ca_); }
+  void EnsureWriteableFastElements(compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_array);
+  compiler::TNode<BoolT> IsJSArray(compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+  compiler::TNode<Object> LoadElementOrUndefined(compiler::TNode<FixedArray> p_a, compiler::TNode<Smi> p_i);
+  compiler::TNode<Object> LoadElementOrUndefined(compiler::TNode<FixedArray> p_a, compiler::TNode<IntPtrT> p_i);
+  compiler::TNode<Object> LoadElementOrUndefined(compiler::TNode<FixedArray> p_a, int31_t p_i);
+  compiler::TNode<Object> LoadElementOrUndefined(compiler::TNode<FixedDoubleArray> p_a, compiler::TNode<Smi> p_i);
+  compiler::TNode<Object> LoadElementOrUndefined(compiler::TNode<FixedDoubleArray> p_a, compiler::TNode<IntPtrT> p_i);
+  compiler::TNode<Object> LoadElementOrUndefined(compiler::TNode<FixedDoubleArray> p_a, int31_t p_i);
+  void StoreArrayHole(compiler::TNode<FixedDoubleArray> p_elements, compiler::TNode<Smi> p_k);
+  void StoreArrayHole(compiler::TNode<FixedArray> p_elements, compiler::TNode<Smi> p_k);
+  void CopyArrayElement(compiler::TNode<FixedArray> p_elements, compiler::TNode<FixedArray> p_newElements, compiler::TNode<Smi> p_from, compiler::TNode<Smi> p_to);
+  void CopyArrayElement(compiler::TNode<FixedDoubleArray> p_elements, compiler::TNode<FixedDoubleArray> p_newElements, compiler::TNode<Smi> p_from, compiler::TNode<Smi> p_to);
+  compiler::TNode<Number> ConvertToRelativeIndex(compiler::TNode<Number> p_index, compiler::TNode<Number> p_length);
+  compiler::TNode<Object> ArrayForEachTorqueContinuation(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg, compiler::TNode<Number> p_initialK);
+  compiler::TNode<Object> FastArrayForEach(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0);
+  void CannotUseSameArrayAccessor(compiler::TNode<Context> p_context, compiler::TNode<Object> p_originalMap, compiler::TNode<Object> p_originalLen, compiler::TNode<JSReceiver> p_receiver, compiler::CodeAssemblerLabel* label_Cannot, compiler::CodeAssemblerLabel* label_Can);
+  compiler::TNode<IntPtrT> AddStringLength(compiler::TNode<Context> p_context, compiler::TNode<IntPtrT> p_lenA, compiler::TNode<IntPtrT> p_lenB);
+  struct Buffer {
+    compiler::TNode<FixedArray> fixedArray;
+    compiler::TNode<IntPtrT> index;
+    compiler::TNode<IntPtrT> totalStringLength;
+    compiler::TNode<BoolT> isOneByte;
 
-  using Node = compiler::Node;
-  template <class T>
-  using TNode = compiler::TNode<T>;
-  template <class T>
-  using SloppyTNode = compiler::SloppyTNode<T>;
-
-  void EnsureWriteableFastElements(TNode<JSArray> p_array);
-  TNode<BoolT> IsJSArray(TNode<Object> p_o);
-  void StoreArrayHole(TNode<FixedDoubleArray> p_elements, TNode<Smi> p_k);
-  void StoreArrayHole(TNode<FixedArray> p_elements, TNode<Smi> p_k);
-  void CopyArrayElement(TNode<FixedArray> p_elements, TNode<FixedArray> p_newElements, TNode<Smi> p_from, TNode<Smi> p_to);
-  void CopyArrayElement(TNode<FixedDoubleArray> p_elements, TNode<FixedDoubleArray> p_newElements, TNode<Smi> p_from, TNode<Smi> p_to);
-  TNode<Number> ConvertToRelativeIndex(TNode<Number> p_index, TNode<Number> p_length);
-  TNode<Object> ArrayForEachTorqueContinuation(TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, TNode<Number> p_initialK);
-  TNode<Object> FastArrayForEach(TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, Label* label_Bailout, TVariable<Smi>* label_Bailout_parameter_0);
-  TNode<Object> LoadWithHoleCheck12ATFixedArray(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index, Label* label_IfHole);
-  TNode<Object> LoadWithHoleCheck18ATFixedDoubleArray(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index, Label* label_IfHole);
-  TNode<Number> GetFromIndex(TNode<Context> p_context, TNode<Number> p_length, CodeStubArguments* p_arguments);
-  TNode<Object> TryFastArrayLastIndexOf(TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<Object> p_searchElement, TNode<Number> p_from, Label* label_Slow);
-  TNode<Object> GenericArrayLastIndexOf(TNode<Context> p_context, TNode<JSReceiver> p_object, TNode<Object> p_searchElement, TNode<Number> p_from);
-  TNode<Smi> LoadElement23ATFastPackedSmiElements5ATSmi(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index);
-  TNode<Object> LoadElement26ATFastPackedObjectElements22UT12ATHeapObject5ATSmi(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index);
-  TNode<Float64T> LoadElement26ATFastPackedDoubleElements9ATfloat64(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index);
-  void StoreElement23ATFastPackedSmiElements5ATSmi(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index, TNode<Smi> p_value);
-  void StoreElement26ATFastPackedObjectElements22UT12ATHeapObject5ATSmi(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index, TNode<Object> p_value);
-  void StoreElement26ATFastPackedDoubleElements9ATfloat64(TNode<FixedArrayBase> p_elements, TNode<Smi> p_index, TNode<Float64T> p_value);
-  TNode<Object> GenericArrayReverse(TNode<Context> p_context, TNode<Object> p_receiver);
-  void TryFastPackedArrayReverse(TNode<Object> p_receiver, Label* label_Slow);
-  TNode<FixedArray> Extract12ATFixedArray(TNode<FixedArrayBase> p_elements, TNode<Smi> p_first, TNode<Smi> p_count, TNode<Smi> p_capacity);
-  TNode<FixedDoubleArray> Extract18ATFixedDoubleArray(TNode<FixedArrayBase> p_elements, TNode<Smi> p_first, TNode<Smi> p_count, TNode<Smi> p_capacity);
-  TNode<Object> FastArraySplice(TNode<Context> p_context, CodeStubArguments* p_args, TNode<JSReceiver> p_o, TNode<Number> p_originalLengthNumber, TNode<Number> p_actualStartNumber, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCountNumber, Label* label_Bailout);
-  TNode<Object> FillDeletedElementsArray(TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount, TNode<JSReceiver> p_a);
-  void HandleForwardCase(TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_itemCount, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount);
-  void HandleBackwardCase(TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_itemCount, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount);
-  TNode<Object> SlowSplice(TNode<Context> p_context, CodeStubArguments* p_arguments, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_actualStart, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCount);
-  void TryFastArrayUnshift(TNode<Context> p_context, TNode<Object> p_receiver, CodeStubArguments* p_arguments, Label* label_Slow);
-  TNode<Number> GenericArrayUnshift(TNode<Context> p_context, TNode<Object> p_receiver, CodeStubArguments* p_arguments);
-  TNode<Smi> kGenericElementsAccessorId();
-  TNode<Smi> kFastElementsAccessorId();
+    std::tuple<compiler::TNode<FixedArray>, compiler::TNode<IntPtrT>, compiler::TNode<IntPtrT>, compiler::TNode<BoolT>> Flatten() const {
+      return std::tuple_cat(std::make_tuple(fixedArray), std::make_tuple(index), std::make_tuple(totalStringLength), std::make_tuple(isOneByte));
+    }
+  };
+  ArrayBuiltinsFromDSLAssembler::Buffer BufferInit(compiler::TNode<UintPtrT> p_len, compiler::TNode<String> p_sep);
+  ArrayBuiltinsFromDSLAssembler::Buffer BufferAdd(compiler::TNode<Context> p_context, ArrayBuiltinsFromDSLAssembler::Buffer p_initialBuffer, compiler::TNode<String> p_str, compiler::TNode<IntPtrT> p_nofSeparators, compiler::TNode<IntPtrT> p_separatorLength);
+  ArrayBuiltinsFromDSLAssembler::Buffer BufferAddSeparators(compiler::TNode<Context> p_context, ArrayBuiltinsFromDSLAssembler::Buffer p_buffer, compiler::TNode<IntPtrT> p_nofSeparators, compiler::TNode<IntPtrT> p_separatorLength, compiler::TNode<BoolT> p_write);
+  compiler::TNode<String> BufferJoin(compiler::TNode<Context> p_context, ArrayBuiltinsFromDSLAssembler::Buffer p_buffer, compiler::TNode<String> p_sep);
+  compiler::TNode<String> ArrayJoinImpl(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_receiver, compiler::TNode<String> p_sep, compiler::TNode<Number> p_lengthNumber, bool p_useToLocaleString, compiler::TNode<Object> p_locales, compiler::TNode<Object> p_options, compiler::TNode<Code> p_initialLoadJoinElement);
+  compiler::TNode<Object> ArrayJoin(compiler::TNode<Context> p_context, bool p_useToLocaleString, compiler::TNode<JSReceiver> p_receiver, compiler::TNode<String> p_sep, compiler::TNode<Number> p_lenNumber, compiler::TNode<Object> p_locales, compiler::TNode<Object> p_options);
+  compiler::TNode<FixedArray> LoadJoinStack(compiler::TNode<Context> p_context, compiler::CodeAssemblerLabel* label_IfUninitialized);
+  void SetJoinStack(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_stack);
+  void JoinStackPushInline(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_receiver, compiler::CodeAssemblerLabel* label_ReceiverAdded, compiler::CodeAssemblerLabel* label_ReceiverNotAdded);
+  void JoinStackPopInline(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_receiver);
+  compiler::TNode<Object> CycleProtectedArrayJoin(compiler::TNode<Context> p_context, bool p_useToLocaleString, compiler::TNode<Object> p_receiver, compiler::TNode<Object> p_sepObj, compiler::TNode<Object> p_locales, compiler::TNode<Object> p_options);
+  compiler::TNode<Object> LoadWithHoleCheck12ATFixedArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index, compiler::CodeAssemblerLabel* label_IfHole);
+  compiler::TNode<Object> LoadWithHoleCheck18ATFixedDoubleArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index, compiler::CodeAssemblerLabel* label_IfHole);
+  compiler::TNode<Number> GetFromIndex(compiler::TNode<Context> p_context, compiler::TNode<Number> p_length, CodeStubArguments* p_arguments);
+  compiler::TNode<Object> TryFastArrayLastIndexOf(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_receiver, compiler::TNode<Object> p_searchElement, compiler::TNode<Number> p_from, compiler::CodeAssemblerLabel* label_Slow);
+  compiler::TNode<Object> GenericArrayLastIndexOf(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_object, compiler::TNode<Object> p_searchElement, compiler::TNode<Number> p_from);
+  compiler::TNode<Smi> LoadElement23ATFastPackedSmiElements5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index);
+  compiler::TNode<Object> LoadElement26ATFastPackedObjectElements22UT12ATHeapObject5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index);
+  compiler::TNode<Float64T> LoadElement26ATFastPackedDoubleElements9ATfloat64(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index);
+  void StoreElement23ATFastPackedSmiElements5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index, compiler::TNode<Smi> p_value);
+  void StoreElement26ATFastPackedObjectElements22UT12ATHeapObject5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index, compiler::TNode<Object> p_value);
+  void StoreElement26ATFastPackedDoubleElements9ATfloat64(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_index, compiler::TNode<Float64T> p_value);
+  compiler::TNode<Object> GenericArrayReverse(compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver);
+  void TryFastPackedArrayReverse(compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow);
+  compiler::TNode<JSArray> HandleSimpleArgumentsSlice(compiler::TNode<Context> p_context, compiler::TNode<JSArgumentsObjectWithLength> p_args, compiler::TNode<Smi> p_start, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<JSArray> HandleFastAliasedSloppyArgumentsSlice(compiler::TNode<Context> p_context, compiler::TNode<JSArgumentsObjectWithLength> p_args, compiler::TNode<Smi> p_start, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<JSArray> HandleFastSlice(compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::TNode<Number> p_startNumber, compiler::TNode<Number> p_countNumber, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<FixedArray> Extract12ATFixedArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_first, compiler::TNode<Smi> p_count, compiler::TNode<Smi> p_capacity);
+  compiler::TNode<FixedDoubleArray> Extract18ATFixedDoubleArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_first, compiler::TNode<Smi> p_count, compiler::TNode<Smi> p_capacity);
+  compiler::TNode<Object> FastArraySplice(compiler::TNode<Context> p_context, CodeStubArguments* p_args, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_originalLengthNumber, compiler::TNode<Number> p_actualStartNumber, compiler::TNode<Smi> p_insertCount, compiler::TNode<Number> p_actualDeleteCountNumber, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<Object> FillDeletedElementsArray(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_actualStart, compiler::TNode<Number> p_actualDeleteCount, compiler::TNode<JSReceiver> p_a);
+  void HandleForwardCase(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<Number> p_itemCount, compiler::TNode<Number> p_actualStart, compiler::TNode<Number> p_actualDeleteCount);
+  void HandleBackwardCase(compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<Number> p_itemCount, compiler::TNode<Number> p_actualStart, compiler::TNode<Number> p_actualDeleteCount);
+  compiler::TNode<Object> SlowSplice(compiler::TNode<Context> p_context, CodeStubArguments* p_arguments, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<Number> p_actualStart, compiler::TNode<Smi> p_insertCount, compiler::TNode<Number> p_actualDeleteCount);
+  void TryFastArrayUnshift(compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, CodeStubArguments* p_arguments, compiler::CodeAssemblerLabel* label_Slow);
+  compiler::TNode<Number> GenericArrayUnshift(compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, CodeStubArguments* p_arguments);
+  compiler::TNode<Smi> kGenericElementsAccessorId();
+  compiler::TNode<Smi> kFastElementsAccessorId();
   int31_t kReceiverIdx();
   int31_t kInitialReceiverMapIdx();
   int31_t kInitialReceiverLengthIdx();
@@ -65,71 +90,80 @@ class ArrayBuiltinsFromDSLAssembler: public ArrayBuiltinsAssembler {
   int31_t kTempArraySizeIdx();
   int31_t kTempArrayIdx();
   int31_t kAccessorIdx();
-  TNode<IntPtrT> kSortStateSize();
-  TNode<Smi> kFailure();
-  TNode<Smi> kSuccess();
+  compiler::TNode<IntPtrT> kSortStateSize();
+  compiler::TNode<Smi> kFailure();
+  compiler::TNode<Smi> kSuccess();
   int31_t kMaxMergePending();
   int31_t kMinGallopWins();
-  TNode<Smi> kSortStateTempSize();
-  TNode<Number> CallCompareFn(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Object> p_x, TNode<Object> p_y, Label* label_Bailout);
-  TNode<HeapObject> ReloadElements(TNode<FixedArray> p_sortState);
-  TNode<Code> GetLoadFn(TNode<FixedArray> p_sortState);
-  TNode<Code> GetStoreFn(TNode<FixedArray> p_sortState);
-  TNode<Code> GetCanUseSameAccessorFn(TNode<FixedArray> p_sortState);
-  TNode<JSReceiver> GetReceiver(TNode<FixedArray> p_sortState);
-  TNode<FixedArray> GetTempArray(TNode<FixedArray> p_sortState);
-  TNode<Smi> GetPendingRunsSize(TNode<FixedArray> p_sortState);
-  void SetPendingRunsSize(TNode<FixedArray> p_sortState, TNode<Smi> p_value);
-  TNode<Smi> GetPendingRunBase(TNode<FixedArray> p_pendingRuns, TNode<Smi> p_run);
-  void SetPendingRunBase(TNode<FixedArray> p_pendingRuns, TNode<Smi> p_run, TNode<Smi> p_value);
-  TNode<Smi> GetPendingRunLength(TNode<FixedArray> p_pendingRuns, TNode<Smi> p_run);
-  void SetPendingRunLength(TNode<FixedArray> p_pendingRuns, TNode<Smi> p_run, TNode<Smi> p_value);
-  void PushRun(TNode<FixedArray> p_sortState, TNode<Smi> p_base, TNode<Smi> p_length);
-  TNode<FixedArray> GetTempArray(TNode<FixedArray> p_sortState, TNode<Smi> p_requestedSize);
-  void EnsureSuccess(TNode<FixedArray> p_sortState, Label* label_Bailout);
-  TNode<Smi> Failure(TNode<FixedArray> p_sortState);
-  TNode<Object> CallLoad(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Code> p_load, TNode<HeapObject> p_elements, TNode<Smi> p_index, Label* label_Bailout);
-  void CallStore(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Code> p_store, TNode<HeapObject> p_elements, TNode<Smi> p_index, TNode<Object> p_value, Label* label_Bailout);
-  void CallCopyFromTempArray(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<HeapObject> p_dstElements, TNode<Smi> p_dstPos, TNode<FixedArray> p_tempArray, TNode<Smi> p_srcPos, TNode<Smi> p_length, Label* label_Bailout);
-  void CallCopyWithinSortArray(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<HeapObject> p_elements, TNode<Smi> p_srcPos, TNode<Smi> p_dstPos, TNode<Smi> p_length, Label* label_Bailout);
-  TNode<Smi> CallGallopRight(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Code> p_load, TNode<Object> p_key, TNode<Smi> p_base, TNode<Smi> p_length, TNode<Smi> p_hint, TNode<Oddball> p_useTempArray, Label* label_Bailout);
-  TNode<Smi> CallGallopLeft(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Code> p_load, TNode<Object> p_key, TNode<Smi> p_base, TNode<Smi> p_length, TNode<Smi> p_hint, TNode<Oddball> p_useTempArray, Label* label_Bailout);
-  void CallMergeAt(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Smi> p_i, Label* label_Bailout);
-  TNode<Smi> GetReceiverLengthProperty(TNode<Context> p_context, TNode<FixedArray> p_sortState);
-  void CopyToTempArray(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Code> p_load, TNode<HeapObject> p_srcElements, TNode<Smi> p_srcPos, TNode<FixedArray> p_tempArray, TNode<Smi> p_dstPos, TNode<Smi> p_length, Label* label_Bailout);
-  TNode<Smi> CountAndMakeRun(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Smi> p_lowArg, TNode<Smi> p_high, Label* label_Bailout);
-  void ReverseRange(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Code> p_load, TNode<Code> p_store, TNode<HeapObject> p_elements, TNode<Smi> p_from, TNode<Smi> p_to, Label* label_Bailout);
-  TNode<HeapObject> LoadElementsOrTempArray(TNode<Oddball> p_useTempArray, TNode<FixedArray> p_sortState);
-  void CopyElement(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Code> p_load, TNode<Code> p_store, TNode<HeapObject> p_elements, TNode<Smi> p_from, TNode<Smi> p_to, Label* label_Bailout);
-  void MergeLow(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Smi> p_baseA, TNode<Smi> p_lengthAArg, TNode<Smi> p_baseB, TNode<Smi> p_lengthBArg, Label* label_Bailout);
-  void MergeHigh(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Smi> p_baseA, TNode<Smi> p_lengthAArg, TNode<Smi> p_baseB, TNode<Smi> p_lengthBArg, Label* label_Bailout);
-  TNode<Smi> ComputeMinRunLength(TNode<Smi> p_nArg);
-  TNode<BoolT> RunInvariantEstablished(TNode<FixedArray> p_pendingRuns, TNode<Smi> p_n);
-  void MergeCollapse(TNode<Context> p_context, TNode<FixedArray> p_sortState, Label* label_Bailout);
-  void MergeForceCollapse(TNode<Context> p_context, TNode<FixedArray> p_sortState, Label* label_Bailout);
-  void InitializeSortState(TNode<FixedArray> p_sortState);
-  void InitializeSortStateAccessor25ATGenericElementsAccessor(TNode<FixedArray> p_sortState);
-  void ArrayTimSortImpl(TNode<Context> p_context, TNode<FixedArray> p_sortState, TNode<Smi> p_length, Label* label_Bailout);
-  void VisitAllElements18ATFixedDoubleArray(TNode<Context> p_context, TNode<JSArray> p_a, TNode<Smi> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, Label* label_Bailout, TVariable<Smi>* label_Bailout_parameter_0);
-  void VisitAllElements12ATFixedArray(TNode<Context> p_context, TNode<JSArray> p_a, TNode<Smi> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, Label* label_Bailout, TVariable<Smi>* label_Bailout_parameter_0);
-  TNode<Smi> FastArrayLastIndexOf12ATFixedArray(TNode<Context> p_context, TNode<JSArray> p_array, TNode<Smi> p_from, TNode<Object> p_searchElement);
-  TNode<Smi> FastArrayLastIndexOf18ATFixedDoubleArray(TNode<Context> p_context, TNode<JSArray> p_array, TNode<Smi> p_from, TNode<Object> p_searchElement);
-  void FastPackedArrayReverse23ATFastPackedSmiElements5ATSmi(TNode<FixedArrayBase> p_elements, TNode<Smi> p_length);
-  void FastPackedArrayReverse26ATFastPackedObjectElements22UT12ATHeapObject5ATSmi(TNode<FixedArrayBase> p_elements, TNode<Smi> p_length);
-  void FastPackedArrayReverse26ATFastPackedDoubleElements9ATfloat64(TNode<FixedArrayBase> p_elements, TNode<Smi> p_length);
-  void FastSplice12ATFixedArray22UT12ATHeapObject5ATSmi(CodeStubArguments* p_args, TNode<JSArray> p_a, TNode<Smi> p_length, TNode<Smi> p_newLength, TNode<Smi> p_lengthDelta, TNode<Smi> p_actualStart, TNode<Smi> p_insertCount, TNode<Smi> p_actualDeleteCount, Label* label_Bailout);
-  void FastSplice18ATFixedDoubleArray22UT12ATHeapNumber5ATSmi(CodeStubArguments* p_args, TNode<JSArray> p_a, TNode<Smi> p_length, TNode<Smi> p_newLength, TNode<Smi> p_lengthDelta, TNode<Smi> p_actualStart, TNode<Smi> p_insertCount, TNode<Smi> p_actualDeleteCount, Label* label_Bailout);
-  void InitializeSortStateAccessor20ATFastDoubleElements(TNode<FixedArray> p_sortState);
-  void InitializeSortStateAccessor23ATFastPackedSmiElements(TNode<FixedArray> p_sortState);
-  void InitializeSortStateAccessor25ATFastSmiOrObjectElements(TNode<FixedArray> p_sortState);
-  void InitializeSortStateAccessor20ATDictionaryElements(TNode<FixedArray> p_sortState);
-  void DoMoveElements12ATFixedArray(TNode<FixedArray> p_elements, TNode<Smi> p_dstIndex, TNode<Smi> p_srcIndex, TNode<Smi> p_count);
-  void StoreHoles12ATFixedArray(TNode<FixedArray> p_elements, TNode<Smi> p_holeStartIndex, TNode<Smi> p_holeEndIndex);
-  void DoCopyElements12ATFixedArray(TNode<FixedArray> p_dstElements, TNode<Smi> p_dstIndex, TNode<FixedArray> p_srcElements, TNode<Smi> p_srcIndex, TNode<Smi> p_count);
-  void DoMoveElements18ATFixedDoubleArray(TNode<FixedDoubleArray> p_elements, TNode<Smi> p_dstIndex, TNode<Smi> p_srcIndex, TNode<Smi> p_count);
-  void StoreHoles18ATFixedDoubleArray(TNode<FixedDoubleArray> p_elements, TNode<Smi> p_holeStartIndex, TNode<Smi> p_holeEndIndex);
-  void DoCopyElements18ATFixedDoubleArray(TNode<FixedDoubleArray> p_dstElements, TNode<Smi> p_dstIndex, TNode<FixedDoubleArray> p_srcElements, TNode<Smi> p_srcIndex, TNode<Smi> p_count);
-};
+  compiler::TNode<Smi> kSortStateTempSize();
+  compiler::TNode<Code> UnsafeCast108FT9ATContext22UT12ATHeapObject5ATSmi22UT12ATHeapObject5ATSmi22UT12ATHeapObject5ATSmi22UT12ATHeapNumber5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+  compiler::TNode<Code> UnsafeCast70FT9ATContext12ATFixedArray12ATHeapObject5ATSmi22UT12ATHeapObject5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+  compiler::TNode<Code> UnsafeCast76FT9ATContext12ATFixedArray12ATHeapObject5ATSmi22UT12ATHeapObject5ATSmi5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+  compiler::TNode<Code> UnsafeCast93FT9ATContext12ATJSReceiver22UT12ATHeapObject5ATSmi22UT12ATHeapNumber5ATSmi17UT7ATFalse6ATTrue(compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+  compiler::TNode<Number> CallCompareFn(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Object> p_x, compiler::TNode<Object> p_y, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<HeapObject> ReloadElements(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<Number> GetInitialReceiverLength(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<Code> GetLoadFn(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<Code> GetStoreFn(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<Code> GetCanUseSameAccessorFn(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<JSReceiver> GetReceiver(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<FixedArray> GetTempArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<Smi> GetPendingRunsSize(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState);
+  void SetPendingRunsSize(compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_value);
+  compiler::TNode<Smi> GetPendingRunBase(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_pendingRuns, compiler::TNode<Smi> p_run);
+  void SetPendingRunBase(compiler::TNode<FixedArray> p_pendingRuns, compiler::TNode<Smi> p_run, compiler::TNode<Smi> p_value);
+  compiler::TNode<Smi> GetPendingRunLength(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_pendingRuns, compiler::TNode<Smi> p_run);
+  void SetPendingRunLength(compiler::TNode<FixedArray> p_pendingRuns, compiler::TNode<Smi> p_run, compiler::TNode<Smi> p_value);
+  void PushRun(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_base, compiler::TNode<Smi> p_length);
+  compiler::TNode<FixedArray> GetTempArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_requestedSize);
+  void EnsureSuccess(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<Smi> Failure(compiler::TNode<FixedArray> p_sortState);
+  compiler::TNode<Object> CallLoad(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Code> p_load, compiler::TNode<HeapObject> p_elements, compiler::TNode<Smi> p_index, compiler::CodeAssemblerLabel* label_Bailout);
+  void CallStore(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Code> p_store, compiler::TNode<HeapObject> p_elements, compiler::TNode<Smi> p_index, compiler::TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Bailout);
+  void CallCopyFromTempArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<HeapObject> p_dstElements, compiler::TNode<Smi> p_dstPos, compiler::TNode<FixedArray> p_tempArray, compiler::TNode<Smi> p_srcPos, compiler::TNode<Smi> p_length, compiler::CodeAssemblerLabel* label_Bailout);
+  void CallCopyWithinSortArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<HeapObject> p_elements, compiler::TNode<Smi> p_srcPos, compiler::TNode<Smi> p_dstPos, compiler::TNode<Smi> p_length, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<Smi> CallGallopRight(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Code> p_load, compiler::TNode<Object> p_key, compiler::TNode<Smi> p_base, compiler::TNode<Smi> p_length, compiler::TNode<Smi> p_hint, compiler::TNode<Oddball> p_useTempArray, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<Smi> CallGallopLeft(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Code> p_load, compiler::TNode<Object> p_key, compiler::TNode<Smi> p_base, compiler::TNode<Smi> p_length, compiler::TNode<Smi> p_hint, compiler::TNode<Oddball> p_useTempArray, compiler::CodeAssemblerLabel* label_Bailout);
+  void CallMergeAt(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_i, compiler::CodeAssemblerLabel* label_Bailout);
+  void CopyToTempArray(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Code> p_load, compiler::TNode<HeapObject> p_srcElements, compiler::TNode<Smi> p_srcPos, compiler::TNode<FixedArray> p_tempArray, compiler::TNode<Smi> p_dstPos, compiler::TNode<Smi> p_length, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<Smi> CountAndMakeRun(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_lowArg, compiler::TNode<Smi> p_high, compiler::CodeAssemblerLabel* label_Bailout);
+  void ReverseRange(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Code> p_load, compiler::TNode<Code> p_store, compiler::TNode<HeapObject> p_elements, compiler::TNode<Smi> p_from, compiler::TNode<Smi> p_to, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<HeapObject> LoadElementsOrTempArray(compiler::TNode<Context> p_context, compiler::TNode<Oddball> p_useTempArray, compiler::TNode<FixedArray> p_sortState);
+  void CopyElement(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Code> p_load, compiler::TNode<Code> p_store, compiler::TNode<HeapObject> p_elements, compiler::TNode<Smi> p_from, compiler::TNode<Smi> p_to, compiler::CodeAssemblerLabel* label_Bailout);
+  void MergeLow(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_baseA, compiler::TNode<Smi> p_lengthAArg, compiler::TNode<Smi> p_baseB, compiler::TNode<Smi> p_lengthBArg, compiler::CodeAssemblerLabel* label_Bailout);
+  void MergeHigh(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_baseA, compiler::TNode<Smi> p_lengthAArg, compiler::TNode<Smi> p_baseB, compiler::TNode<Smi> p_lengthBArg, compiler::CodeAssemblerLabel* label_Bailout);
+  compiler::TNode<Smi> ComputeMinRunLength(compiler::TNode<Smi> p_nArg);
+  compiler::TNode<BoolT> RunInvariantEstablished(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_pendingRuns, compiler::TNode<Smi> p_n);
+  void MergeCollapse(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::CodeAssemblerLabel* label_Bailout);
+  void MergeForceCollapse(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::CodeAssemblerLabel* label_Bailout);
+  void InitializeSortState(compiler::TNode<FixedArray> p_sortState);
+  void InitializeSortStateAccessor25ATGenericElementsAccessor(compiler::TNode<FixedArray> p_sortState);
+  void ArrayTimSortImpl(compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_sortState, compiler::TNode<Smi> p_length, compiler::CodeAssemblerLabel* label_Bailout);
+  void VisitAllElements18ATFixedDoubleArray(compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_a, compiler::TNode<Smi> p_len, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0);
+  void VisitAllElements12ATFixedArray(compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_a, compiler::TNode<Smi> p_len, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0);
+  compiler::TNode<FixedArray> StoreAndGrowFixedArray8ATString(compiler::TNode<FixedArray> p_fixedArray, compiler::TNode<IntPtrT> p_index, compiler::TNode<String> p_element);
+  compiler::TNode<FixedArray> StoreAndGrowFixedArray5ATSmi(compiler::TNode<FixedArray> p_fixedArray, compiler::TNode<IntPtrT> p_index, compiler::TNode<Smi> p_element);
+  compiler::TNode<FixedArray> StoreAndGrowFixedArray12ATJSReceiver(compiler::TNode<FixedArray> p_fixedArray, compiler::TNode<IntPtrT> p_index, compiler::TNode<JSReceiver> p_element);
+  compiler::TNode<Smi> FastArrayLastIndexOf12ATFixedArray(compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_array, compiler::TNode<Smi> p_from, compiler::TNode<Object> p_searchElement);
+  compiler::TNode<Smi> FastArrayLastIndexOf18ATFixedDoubleArray(compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_array, compiler::TNode<Smi> p_from, compiler::TNode<Object> p_searchElement);
+  void FastPackedArrayReverse23ATFastPackedSmiElements5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_length);
+  void FastPackedArrayReverse26ATFastPackedObjectElements22UT12ATHeapObject5ATSmi(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_length);
+  void FastPackedArrayReverse26ATFastPackedDoubleElements9ATfloat64(compiler::TNode<Context> p_context, compiler::TNode<FixedArrayBase> p_elements, compiler::TNode<Smi> p_length);
+  void FastSplice12ATFixedArray22UT12ATHeapObject5ATSmi(compiler::TNode<Context> p_context, CodeStubArguments* p_args, compiler::TNode<JSArray> p_a, compiler::TNode<Smi> p_length, compiler::TNode<Smi> p_newLength, compiler::TNode<Smi> p_lengthDelta, compiler::TNode<Smi> p_actualStart, compiler::TNode<Smi> p_insertCount, compiler::TNode<Smi> p_actualDeleteCount, compiler::CodeAssemblerLabel* label_Bailout);
+  void FastSplice18ATFixedDoubleArray22UT12ATHeapNumber5ATSmi(compiler::TNode<Context> p_context, CodeStubArguments* p_args, compiler::TNode<JSArray> p_a, compiler::TNode<Smi> p_length, compiler::TNode<Smi> p_newLength, compiler::TNode<Smi> p_lengthDelta, compiler::TNode<Smi> p_actualStart, compiler::TNode<Smi> p_insertCount, compiler::TNode<Smi> p_actualDeleteCount, compiler::CodeAssemblerLabel* label_Bailout);
+  void InitializeSortStateAccessor20ATFastDoubleElements(compiler::TNode<FixedArray> p_sortState);
+  void InitializeSortStateAccessor23ATFastPackedSmiElements(compiler::TNode<FixedArray> p_sortState);
+  void InitializeSortStateAccessor25ATFastSmiOrObjectElements(compiler::TNode<FixedArray> p_sortState);
+  void InitializeSortStateAccessor20ATDictionaryElements(compiler::TNode<FixedArray> p_sortState);
+  void DoMoveElements12ATFixedArray(compiler::TNode<FixedArray> p_elements, compiler::TNode<Smi> p_dstIndex, compiler::TNode<Smi> p_srcIndex, compiler::TNode<Smi> p_count);
+  void StoreHoles12ATFixedArray(compiler::TNode<FixedArray> p_elements, compiler::TNode<Smi> p_holeStartIndex, compiler::TNode<Smi> p_holeEndIndex);
+  void DoCopyElements12ATFixedArray(compiler::TNode<FixedArray> p_dstElements, compiler::TNode<Smi> p_dstIndex, compiler::TNode<FixedArray> p_srcElements, compiler::TNode<Smi> p_srcIndex, compiler::TNode<Smi> p_count);
+  void DoMoveElements18ATFixedDoubleArray(compiler::TNode<FixedDoubleArray> p_elements, compiler::TNode<Smi> p_dstIndex, compiler::TNode<Smi> p_srcIndex, compiler::TNode<Smi> p_count);
+  void StoreHoles18ATFixedDoubleArray(compiler::TNode<FixedDoubleArray> p_elements, compiler::TNode<Smi> p_holeStartIndex, compiler::TNode<Smi> p_holeEndIndex);
+  void DoCopyElements18ATFixedDoubleArray(compiler::TNode<FixedDoubleArray> p_dstElements, compiler::TNode<Smi> p_dstIndex, compiler::TNode<FixedDoubleArray> p_srcElements, compiler::TNode<Smi> p_srcIndex, compiler::TNode<Smi> p_count);
+ private:
+  compiler::CodeAssemblerState* const state_;
+  compiler::CodeAssembler ca_;}; 
 
 }  // namespace internal
 }  // namespace v8

@@ -145,6 +145,7 @@ var files = {
 
     'src/runtime/runtime-intl.cc': 1,
 
+    // added in 7.1
     'src/objects/js-break-iterator-inl.h': 1,
     'src/objects/js-break-iterator.cc': 1,
     'src/objects/js-break-iterator.h': 1,
@@ -157,6 +158,11 @@ var files = {
     'src/objects/js-segmenter-inl.h': 1,
     'src/objects/js-segmenter.cc': 1,
     'src/objects/js-segmenter.h': 1,
+
+    // added in 7.2
+    'src/objects/js-segment-iterator-inl.h': 1,
+    'src/objects/js-segment-iterator.cc': 1,
+    'src/objects/js-segment-iterator.h': 1,
 };
 
 var re = [
@@ -235,7 +241,7 @@ function cp_gen() {
         'torque-generated',
         'builtins-generated',
         // 'include/inspector',
-    ].forEach(subdir =>{
+    ].forEach(subdir => {
         var bFolder = path.resolve(v8Folder, `./out.gn/x64.release/gen/${subdir}`);
         var fnames = readdir2(bFolder);
         fnames.forEach(function (name) {
@@ -327,8 +333,13 @@ function patch_plat() {
     for (var f in plats1)
         patch_plat_file(platFolder + '/platform-' + f + '.cc', plats1[f]);
 
-    patch_plat_file('src/trap-handler/handler-inside-linux.cc', '#include "src/trap-handler/trap-handler.h"\n\n#if V8_TRAP_HANDLER_SUPPORTED');
-    patch_plat_file('src/trap-handler/handler-outside-linux.cc', '#ifdef Linux');
+    /* deprecated in v8 7.2 :start */
+    // patch_plat_file('src/trap-handler/handler-inside-linux.cc', '#include "src/trap-handler/trap-handler.h"\n\n#if V8_TRAP_HANDLER_SUPPORTED');
+    // patch_plat_file('src/trap-handler/handler-outside-linux.cc', '#ifdef Linux');
+    /* deprecated in v8 7.2 :end */
+
+    patch_plat_file('src/trap-handler/handler-inside-win.h', '#ifdef Windows');
+    patch_plat_file('src/trap-handler/handler-inside-win.cc', '#ifdef Windows');
     patch_plat_file('src/trap-handler/handler-outside-win.cc', '#ifdef Windows');
 }
 
@@ -454,15 +465,6 @@ function patch_ntver() {
     fs.writeFile(fname, txt);
 }
 
-function patch_trap() {
-    var fname = 'src/trap-handler/handler-inside.cc';
-    console.log("patch", fname);
-
-    var txt = fs.readTextFile(fname);
-    txt = "#ifndef _WIN32\n\n" + txt + "\n\n#endif\n";
-    fs.writeFile(fname, txt);
-}
-
 function patch_snapshot() {
     fs.mkdir("src/snapshot/snapshots")
     var archs = {
@@ -543,7 +545,6 @@ patch_flag();
 patch_version_hash();
 patch_serializer();
 patch_ntver();
-patch_trap();
 
 patch_snapshot();
 
