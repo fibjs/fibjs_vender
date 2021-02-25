@@ -3,7 +3,6 @@ include(tools/get_env.cmake)
 set(libs
     exlib
     cares
-    cef
     gtest
     expat
     gumbo
@@ -28,6 +27,13 @@ set(libs
     unzip
     uv
 )
+
+if(NOT ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux" OR (
+    (NOT ${BUILD_ARCH} STREQUAL "mips")
+    AND (NOT ${BUILD_ARCH} STREQUAL "mips64")
+))
+    set(libs cef ${libs})
+endif()
 
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     list(APPEND libs
