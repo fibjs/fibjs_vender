@@ -4,7 +4,26 @@
             "name": "Debug jssdk (lldb)",
             "type": "lldb",
             "request": "launch",
-            "program": "${workSpaceFloader}/.dist/bin/Darwin_amd64_debug/jssdk_test",
+            "windows": {
+                "program": "${workspaceFolder}/.dist/bin/Windows_amd64_debug/jssdk_test",
+            },
+            "osx": {
+                "program": "${workspaceFolder}/.dist/bin/Darwin_amd64_debug/jssdk_test",
+            },
+            "args": [
+                "--use-thread"
+            ]
+        },
+        {
+            "name": "Debug v8test (lldb)",
+            "type": "lldb",
+            "request": "launch",
+            "windows": {
+                "program": "${workspaceFolder}/.dist/bin/Windows_amd64_debug/v8test_test",
+            },
+            "osx": {
+                "program": "${workspaceFolder}/.dist/bin/Darwin_amd64_debug/v8test_test",
+            },
             "args": [
                 "--use-thread"
             ]
