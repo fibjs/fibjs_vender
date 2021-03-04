@@ -18,12 +18,12 @@ inline void* dlopen(const char* file, int mode)
     void* handle = NULL;
 
     if (file) {
-        nbr = MultiByteToWideChar(CP_THREAD_ACP, 0, file, -1, NULL, 0);
+        nbr = MultiByteToWideChar(CP_UTF8, 0, file, -1, NULL, 0);
         if (nbr == 0)
             return NULL;
 
         p = (wchar_t*)malloc(nbr * sizeof(*p));
-        MultiByteToWideChar(CP_THREAD_ACP, 0, file, -1, p, nbr);
+        MultiByteToWideChar(CP_UTF8, 0, file, -1, p, nbr);
     }
 
     HMODULE m = LoadLibraryW(p);
@@ -46,14 +46,17 @@ inline void* dlsym(void* handle, const char* name)
 
 inline char* dlerror(void)
 {
-    static char error_buffer[256];
+    static WCHAR error_buffer[256];
+    static char error_buffer_a[256];
 
-    DWORD msglen = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    DWORD msglen = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), 0, error_buffer, sizeof(error_buffer), NULL);
     if (msglen == 0)
         return "unknown error";
-    else
-        return error_buffer;
+    else {
+        WideCharToMultiByte(CP_UTF8, 0, error_buffer, msglen, error_buffer_a, sizeof(error_buffer_a), NULL, NULL);
+        return error_buffer_a;
+    }
 }
 
 #ifdef __cplusplus
