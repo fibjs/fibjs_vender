@@ -14,7 +14,7 @@ var files = fs.readdirSync(head_file_path);
 
 files.forEach(file => {
     var patt = /sm[2-4]{1}\.h$/
-    if (!patt.test(file)){
+    if (!patt.test(file)) {
         fs.unlinkSync(head_file_path + '/' + file)
     }
 })
@@ -24,7 +24,7 @@ files = fs.readdirSync(c_file_path);
 
 files.forEach(file => {
     var patt = /sm[2-4]{1}\.c$/
-    if (!patt.test(file)){
+    if (!patt.test(file)) {
         fs.unlinkSync(c_file_path + '/' + file)
     }
 })
@@ -73,6 +73,4 @@ old_file_names.forEach(old_file_name => {
 })
 
 process.chdir(__dirname);
-var p = process.run("patch",["-p1", "-i", "./patch-mbedtls-v2.7.12.diff"]);
-
-run('../tools/vsmake.js');
+var p = process.run("patch", ["-p1", "-i", "./patch-mbedtls-v2.7.12.diff"]);
