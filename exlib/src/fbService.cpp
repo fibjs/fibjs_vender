@@ -27,8 +27,7 @@ static Service* s_service = NULL;
 void Service::init(int32_t workers)
 {
     if (!s_service) {
-        static Service _srv(workers);
-        s_service = &_srv;
+        s_service = new Service(workers);
         s_service->m_main.saveStackGuard();
         s_service->bindCurrent();
     }

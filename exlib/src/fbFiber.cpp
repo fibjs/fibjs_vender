@@ -129,7 +129,7 @@ void Fiber::yield()
     m_pService->switchConext(&_cb);
 }
 
-static class _timerThread : public OSThread {
+class _timerThread : public OSThread {
 public:
     void wait()
     {
@@ -207,17 +207,19 @@ private:
     std::multimap<int64_t, Sleeping*> m_tms;
 
     friend class Sleeping;
-} s_timer;
+};
+static _timerThread* s_timer;
 
 void Sleeping::invoke()
 {
-    s_timer.m_acSleep.putTail(this);
-    s_timer.m_sem.Post();
+    s_timer->m_acSleep.putTail(this);
+    s_timer->m_sem.Post();
 }
 
 void init_timer()
 {
-    s_timer.start();
+    s_timer = new _timerThread();
+    s_timer->start();
 }
 
 void Fiber::sleep(int32_t ms, Task_base* now)
@@ -237,18 +239,18 @@ void Fiber::sleep(int32_t ms, Task_base* now)
         if (ms <= 0)
             ms = 0;
 
-        s_timer.post(now, ms);
+        s_timer->post(now, ms);
         now->suspend();
     } else {
         if (ms <= 0)
             ms = 0;
 
-        s_timer.post(now, ms);
+        s_timer->post(now, ms);
     }
 }
 
 void Fiber::cancel_sleep(Task_base* now)
 {
-    s_timer.cancel(now);
+    s_timer->cancel(now);
 }
 }
