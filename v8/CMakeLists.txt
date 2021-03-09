@@ -8,8 +8,10 @@ endif()
 
 file(GLOB_RECURSE src_list "src/*.c*" "gen/*.c*")
 
-list(FILTER src_list EXCLUDE REGEX "src\/snapshot\/snapshots\/snapshot.+\.cc$")
 # on every os, integrate its own snapshots only.
+file(GLOB_RECURSE excluded_snapshots_list "src/snapshot/snapshots/*.c*")
+list(REMOVE_ITEM src_list ${excluded_snapshots_list})
+
 file(GLOB_RECURSE snapshots_list "src/snapshot/snapshots/snapshot-*-${CMAKE_HOST_SYSTEM_NAME}.cc")
 list(APPEND src_list ${snapshots_list})
 
