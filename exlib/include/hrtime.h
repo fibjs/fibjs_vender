@@ -4,6 +4,8 @@
  *  Created on: Jul 12, 2017
  *      Author: lion
  */
+#pragma once
+
 #include "osconfig.h"
 
 #define NANOS_PER_SEC 1000000000LL

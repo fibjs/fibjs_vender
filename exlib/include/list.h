@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef _ex_link_h__
-#define _ex_link_h__
+#pragma once
 
 #include "utils.h"
 #include <assert.h>
@@ -364,5 +363,3 @@ private:
     spinlock m_lock;
 };
 }
-
-#endif

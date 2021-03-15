@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef _ex_qstring_h__
-#define _ex_qstring_h__
+#pragma once
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -804,5 +803,3 @@ typedef basic_string<char> string;
 typedef basic_string<wchar> wstring;
 typedef basic_string<wchar32> wstring32;
 }
-
-#endif

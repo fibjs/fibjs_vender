@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef _db_api_h__
-#define _db_api_h__
+#pragma once
 
 #include <stdlib.h>
 
@@ -20,5 +19,3 @@ void* create_fiber(size_t stacksize, fiber_func proc, void* param);
 void switch_fiber(void* from, void* to);
 void delete_fiber(void* fiber);
 }
-
-#endif // _db_api_h__

@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef _ex_service_h__
-#define _ex_service_h__
+#pragma once
 
 #include "fiber.h"
 #include "thread.h"
@@ -135,5 +134,3 @@ private:
     OSSemaphore m_sem;
 };
 }
-
-#endif

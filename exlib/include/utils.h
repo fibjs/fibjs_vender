@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef _ex_utils_h__
-#define _ex_utils_h__
+#pragma once
 
 #include <stdint.h>
 #include "osconfig.h"
@@ -163,6 +162,4 @@ private:
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(a) \
     ((sizeof(a) / sizeof(*(a))) / static_cast<size_t>(!(sizeof(a) % sizeof(*(a)))))
-#endif
-
 #endif

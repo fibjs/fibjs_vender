@@ -6,6 +6,8 @@
  *  lion@9465.net
  */
 
+#pragma once
+
 namespace exlib {
 
 #pragma pack(1)

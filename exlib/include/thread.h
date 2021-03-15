@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef _ex_thread_h__
-#define _ex_thread_h__
+#pragma once
 
 #include "osconfig.h"
 
@@ -136,7 +135,7 @@ public:
         return !!TryEnterCriticalSection(&cs_);
     }
 
-    void AssertHeld() {}
+    void AssertHeld() { }
 
 public:
     CRITICAL_SECTION cs_;
@@ -220,7 +219,7 @@ public:
         return !pthread_mutex_trylock(&mutex_);
     }
 
-    void AssertHeld() {}
+    void AssertHeld() { }
 
 public:
     pthread_mutex_t mutex_;
@@ -399,7 +398,7 @@ public:
     virtual void join();
     void yield();
 
-    virtual void Run(){};
+    virtual void Run() {};
 
 public:
     static void Create(fiber_func func, void* data, Thread_base** retVal = NULL)
@@ -479,5 +478,3 @@ inline void InitOnce(atomic& once, void (*initializer)())
     }
 }
 }
-
-#endif

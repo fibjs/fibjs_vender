@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef _ex_fiber_h__
-#define _ex_fiber_h__
+#pragma once
 
 #include "osconfig.h"
 #include <stdint.h>
@@ -373,5 +372,3 @@ public:
 #endif
 };
 }
-
-#endif

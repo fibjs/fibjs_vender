@@ -6,8 +6,7 @@
  *  lion@9465.net
  */
 
-#ifndef OSCONFIG_H_
-#define OSCONFIG_H_
+#pragma once
 
 #if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)
 #ifndef Windows
@@ -109,5 +108,3 @@
 #endif
 #endif
 #endif
-
-#endif /* OSCONFIG_H_ */
