@@ -197,7 +197,7 @@ function(prepare_platform)
         # by default, clang/LLVM would find newest VCToolChain, if you install both VS2017 and VS2019
         # VS2019's VCTools would be used to compile vender, but v8 6.9 cannot be compiled with it, we must
         # tell clang to use VS2017's VCToolChain
-        if(NOT DEFINED VCToolsInstallDir)
+        if("$ENV{VCToolsInstallDir}" STREQUAL "")
             if("$ENV{ProgramW6432}" STREQUAL "")
                 set(PROGRAM_FILES_X86 "$ENV{ProgramFiles\(x86\)}")
             else()
