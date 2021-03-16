@@ -111,10 +111,15 @@
 #elif defined(__pnacl__)
 #define ARCH_CPU_32_BITS 1
 #define ARCH_CPU_LITTLE_ENDIAN 1
-#elif defined(__MIPSEL__)
+#elif defined(__MIPSEB__) || defined(__MIPSEL__)
 #define ARCH_CPU_MIPS_FAMILY 1
 #define ARCH_CPU_MIPSEL 1
 #define ARCH_CPU_32_BITS 1
+#define ARCH_CPU_LITTLE_ENDIAN 1
+#elif defined(__mips64)
+#define ARCH_CPU_MIPS64_FAMILY 1
+#define ARCH_CPU_MIPS64 1
+#define ARCH_CPU_64_BITS 1
 #define ARCH_CPU_LITTLE_ENDIAN 1
 #else
 #error Please add support for your architecture in cef_build.h
