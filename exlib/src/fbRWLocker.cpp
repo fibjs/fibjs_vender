@@ -15,47 +15,32 @@
 
 namespace exlib {
 
-void RWLocker::rdlock(Task_base* current)
+void RWLocker::rdlock()
 {
-    if (current == 0)
-        current = Thread_base::current();
-
-    assert(current != 0);
-
     m_reader.lock();
 
     if (++m_count == 1)
-        m_writer.lock(current);
+        m_writer.lock();
 
     m_reader.unlock();
 }
 
-void RWLocker::rdunlock(Task_base* current)
+void RWLocker::rdunlock()
 {
-    if (current == 0)
-        current = Thread_base::current();
-
-    assert(current != 0);
-
     m_reader.lock();
 
     if (--m_count == 0)
-        m_writer.unlock(current);
+        m_writer.unlock();
 
     m_reader.unlock();
 }
 
-bool RWLocker::tryrdlock(Task_base* current)
+bool RWLocker::tryrdlock()
 {
-    if (current == 0)
-        current = Thread_base::current();
-
-    assert(current != 0);
-
     m_reader.lock();
 
     if (++m_count == 1)
-        if (!m_writer.trylock(current)) {
+        if (!m_writer.trylock()) {
             m_count--;
             m_reader.unlock();
 
@@ -67,18 +52,18 @@ bool RWLocker::tryrdlock(Task_base* current)
     return true;
 }
 
-void RWLocker::wrlock(Task_base* current)
+void RWLocker::wrlock()
 {
-    m_writer.lock(current);
+    m_writer.lock();
 }
 
-void RWLocker::wrunlock(Task_base* current)
+void RWLocker::wrunlock()
 {
-    m_writer.unlock(current);
+    m_writer.unlock();
 }
 
-bool RWLocker::trywrlock(Task_base* current)
+bool RWLocker::trywrlock()
 {
-    return m_writer.trylock(current);
+    return m_writer.trylock();
 }
 }

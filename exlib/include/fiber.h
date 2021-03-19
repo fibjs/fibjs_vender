@@ -145,12 +145,12 @@ public:
     }
 
 public:
-    void rdlock(Task_base* current = NULL);
-    void wrlock(Task_base* current = NULL);
-    void rdunlock(Task_base* current = NULL);
-    void wrunlock(Task_base* current = NULL);
-    bool tryrdlock(Task_base* current = NULL);
-    bool trywrlock(Task_base* current = NULL);
+    void rdlock();
+    void wrlock();
+    void rdunlock();
+    void wrunlock();
+    bool tryrdlock();
+    bool trywrlock();
 
 private:
     int32_t m_count;
