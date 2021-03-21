@@ -145,7 +145,7 @@
 /* #undef JEMALLOC_DEBUG */
 
 /* JEMALLOC_STATS enables statistics calculation. */
-#define JEMALLOC_STATS
+/* #undef JEMALLOC_STATS */
 
 /* JEMALLOC_EXPERIMENTAL_SMALLOCX_API enables experimental smallocx API. */
 /* #undef JEMALLOC_EXPERIMENTAL_SMALLOCX_API */
@@ -169,7 +169,7 @@
 /* #undef JEMALLOC_DSS */
 
 /* Support memory filling (junk/zero). */
-#define JEMALLOC_FILL
+/* #undef JEMALLOC_FILL */
 
 /* Support utrace(2)-based tracing. */
 /* #undef JEMALLOC_UTRACE */

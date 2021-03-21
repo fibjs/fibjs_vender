@@ -130,7 +130,7 @@ public:
         static Buffer* New(size_t sz, const T* data = NULL, size_t data_sz = 0)
         {
             size_t blk_size = (sz + 15) & (SIZE_MAX - 15);
-            Buffer* _buffer = (Buffer*)malloc(blk_size * sizeof(T) + sizeof(Buffer));
+            Buffer* _buffer = (Buffer*)new char[blk_size * sizeof(T) + sizeof(Buffer)];
 
             _buffer->refs_ = 1;
             _buffer->blk_size = blk_size;
@@ -152,7 +152,7 @@ public:
         void unref()
         {
             if (refs_.dec() == 0)
-                free(this);
+                delete[]((char*)this);
         }
 
         bool is_shared()
@@ -178,21 +178,9 @@ public:
 
         Buffer* resize(size_t sz)
         {
-            if (is_shared()) {
+            if (is_shared() || sz + 1 > blk_size) {
                 Buffer* _buffer = Buffer::New(sz, m_data, m_length);
                 unref();
-                return _buffer;
-            }
-
-            if (sz + 1 > blk_size) {
-                size_t new_blk_size = (sz + 15) & (SIZE_MAX - 15);
-
-                Buffer* _buffer = (Buffer*)realloc(this, new_blk_size * sizeof(T) + sizeof(Buffer));
-
-                _buffer->blk_size = new_blk_size;
-                _buffer->m_length = sz;
-                _buffer->m_data[sz] = 0;
-
                 return _buffer;
             }
 
