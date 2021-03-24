@@ -67,6 +67,11 @@ inline void qmemset(T* ptr, T value, size_t num)
         *ptr++ = value;
 }
 
+inline void qmemset(char* ptr, char value, size_t num)
+{
+    memset(ptr, value, num);
+}
+
 template <typename T>
 inline void qmemcpy(T* dest, const T* src, size_t count)
 {
@@ -80,20 +85,19 @@ inline int32_t qmemcmp(const T* s1, const T* s2, size_t count)
     if (s1 == s2)
         return 0;
 
-    int32_t n;
+    T n;
 
     while (count--) {
-        n = *s1++ - *s2++;
-        if (n != 0)
-            return n;
+        T ch1 = *s1++;
+        T ch2 = *s2++;
+
+        if (ch1 < ch2)
+            return -1;
+        else if (ch1 > ch2)
+            return 1;
     }
 
     return 0;
-}
-
-inline void qmemset(char* ptr, char value, size_t num)
-{
-    memset(ptr, value, num);
 }
 
 inline int32_t qmemcmp(const char* s1, const char* s2, size_t count)
@@ -105,16 +109,40 @@ inline int32_t qmemcmp(const char* s1, const char* s2, size_t count)
 }
 
 template <typename T>
-inline const T* qmemfind(const T* s1, size_t sz1, const T* s2, size_t sz2)
+inline const T* qmemmem(const T* s1, size_t sz1, const T* s2, size_t sz2)
 {
     while (sz1 >= sz2) {
-        if (qmemcmp(s1, s2, sz2) == 0)
+        if (memcmp(s1, s2, sz2 * sizeof(T)) == 0)
             return s1;
         s1++;
         sz1--;
     }
 
     return NULL;
+}
+
+#ifndef _WIN32
+inline const char* qmemmem(const char* s1, size_t sz1, const char* s2, size_t sz2)
+{
+    return (const char*)memmem(s1, sz1, s2, sz2);
+}
+#endif
+
+template <typename T>
+inline const T* qmemchr(const T* s, T c, size_t sz)
+{
+    while (sz--) {
+        if (*s == c)
+            return s;
+        s++;
+    }
+
+    return NULL;
+}
+
+inline const char* qmemchr(const char* s, char c, size_t sz)
+{
+    return (const char*)memchr(s, c, sz);
 }
 
 #define MAX_SMALL 16
@@ -371,7 +399,11 @@ public:
         if (n > 0) {
             size_t len = length();
             resize(len + n);
-            qmemset(c_buffer() + len, ch, n);
+
+            if (n == 1)
+                c_buffer()[len] = ch;
+            else
+                qmemset(c_buffer() + len, ch, n);
         }
         return *this;
     }
@@ -398,7 +430,10 @@ public:
     basic_string<T>& assign(size_t n, T ch)
     {
         resize(n);
-        qmemset(c_buffer(), ch, n);
+        if (n == 1)
+            *c_buffer() = ch;
+        else
+            qmemset(c_buffer(), ch, n);
         return *this;
     }
 
@@ -478,15 +513,30 @@ public:
         return basic_string<T>(c_str() + pos, len);
     }
 
-    size_t find(const T* s, size_t pos, size_t n) const
+    size_t find(T c, size_t pos = 0) const
     {
         const T* s1 = c_str();
         size_t n1 = length();
 
-        if (n > n1 + pos)
+        if (pos + 1 > n1)
             return npos;
 
-        const T* s2 = qmemfind(s1 + pos, n1 - pos, s, n);
+        const T* s2 = qmemchr(s1 + pos, c, n1 - pos);
+        return s2 ? s2 - s1 : npos;
+    }
+
+    size_t find(const T* s, size_t pos, size_t n) const
+    {
+        if (n == 1)
+            return find(*s, pos);
+
+        const T* s1 = c_str();
+        size_t n1 = length();
+
+        if (n + pos > n1)
+            return npos;
+
+        const T* s2 = qmemmem(s1 + pos, n1 - pos, s, n);
         return s2 ? s2 - s1 : npos;
     }
 
@@ -498,11 +548,6 @@ public:
     size_t find(const basic_string<char>& str, size_t pos = 0) const
     {
         return find(str.c_str(), pos, str.length());
-    }
-
-    size_t find(T c, size_t pos = 0) const
-    {
-        return find(&c, pos, 1);
     }
 
 public:
