@@ -146,7 +146,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
        src/unix/linux-syscalls.c
        src/unix/procfs-exepath.c
        src/unix/random-getrandom.c
-       src/unix/random-sysctl-linux.c)
+       src/unix/random-sysctl-linux.c
+	   src/unix/sysinfo-loadavg.c
+	   src/unix/sysinfo-memory.c)
 endif()
 
 set(c_flags "${uv_cflags}")
