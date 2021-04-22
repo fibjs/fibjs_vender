@@ -609,9 +609,9 @@ public:
     }
 
 public:
-    T& operator[](size_t i)
+    T operator[](size_t i) const
     {
-        return c_buffer()[i];
+        return c_str()[i];
     }
 
     basic_string<T> operator+=(T ch)
