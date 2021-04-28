@@ -1,45 +1,16 @@
 /*
- *  fb_api.cpp
- *  Created on: Jul 28, 2017
- *
- *  Copyright (c) 2017 by Leo Hoo
- *  lion@9465.net
+ *  fb_api_switch.cpp
+ *  Created on: Apr 28, 2021
+ *      Author: lion
  */
 
-#include "osconfig.h"
 #include "fb_api.h"
-#include "utils.h"
-#include <string.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#if !defined(CTX_USE_CONTEXT) && !defined(Windows)
+#include <string.h>
+#include <stdio.h>
 
 namespace exlib {
-
-#ifdef _WIN32
-
-void* convert_Fiber(void* param)
-{
-    return ConvertThreadToFiber(param);
-}
-
-void* create_fiber(size_t stacksize, fiber_func proc, void* param)
-{
-    return CreateFiber(stacksize, (LPFIBER_START_ROUTINE)proc, param);
-}
-
-void switch_fiber(void* from, void* to)
-{
-    SwitchToFiber(to);
-}
-
-void delete_fiber(void* fiber)
-{
-    DeleteFiber(fiber);
-}
-
-#else
 
 #define FB_STK_ALIGN 256
 
@@ -47,12 +18,7 @@ extern "C" void fb_switch(void* from, void* to);
 
 void* convert_Fiber(void* param)
 {
-#ifdef WIN32
-    registers* ctx = (registers*)VirtualAlloc(NULL, sizeof(registers), MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE);
-#else
     registers* ctx = (registers*)malloc(sizeof(registers));
-#endif
-
     memset(ctx, 0, sizeof(registers));
     return ctx;
 }
@@ -60,23 +26,14 @@ void* convert_Fiber(void* param)
 void* create_fiber(size_t stacksize, fiber_func proc, void* param)
 {
     stacksize = (stacksize + FB_STK_ALIGN - 1) & ~(FB_STK_ALIGN - 1);
-#ifdef WIN32
-    registers* ctx = (registers*)VirtualAlloc(NULL, stacksize, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE);
-#else
     registers* ctx = (registers*)malloc(stacksize);
-#endif
-
     void** stack = (void**)ctx + stacksize / sizeof(void*) - 6;
 
     ctx->sp = (intptr_t)stack;
 
 #if defined(amd64)
     stack[0] = (void*)proc;
-#ifdef _WIN32
-    ctx->Rcx = (intptr_t)param;
-#else
     ctx->Rdi = (intptr_t)param;
-#endif
 #elif defined(i386)
     stack[0] = (void*)proc;
     stack[2] = (void*)param;
@@ -104,12 +61,7 @@ void switch_fiber(void* from, void* to)
 
 void delete_fiber(void* fiber)
 {
-#ifdef WIN32
-    VirtualFree(fiber, 0, MEM_RELEASE);
-#else
     free(fiber);
-#endif
 }
-
-#endif
 }
+#endif

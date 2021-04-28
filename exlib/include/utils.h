@@ -12,26 +12,6 @@
 #include "osconfig.h"
 #include <atomic>
 
-#if defined(amd64)
-#include "utils_x64.h"
-#elif defined(i386)
-#include "utils_x86.h"
-#elif defined(arm64)
-#include "utils_arm64.h"
-#elif defined(arm)
-#include "utils_arm.h"
-#elif defined(mips)
-#include "utils_mips.h"
-#elif defined(mips64)
-#include "utils_mips64.h"
-#else
-#error unknoen arch....
-#endif
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 namespace exlib {
 
 class atomic {
