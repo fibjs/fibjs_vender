@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "osconfig.h"
 #include <atomic>
+#include <thread>
 
 namespace exlib {
 
@@ -125,8 +126,8 @@ class spinlock {
 public:
     void lock()
     {
-        while (locked.test_and_set(std::memory_order_acquire)) {
-        }
+        while (locked.test_and_set(std::memory_order_acquire))
+            std::this_thread::yield();
     }
 
     void unlock()
