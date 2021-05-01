@@ -730,6 +730,26 @@ set(LIBCEF_WRAPPER_SRCS
   wrapper/libcef_dll_wrapper.cc
   wrapper/libcef_dll_wrapper2.cc
   )
+set(LIBCEF_WRAPPER_SRCS_MAC
+  wrapper/cef_library_loader_mac.mm
+  wrapper/libcef_dll_dylib.cc
+  )
+LIBCEF_APPEND_PLATFORM_SOURCES(LIBCEF_WRAPPER_SRCS)
+add_path(LIBCEF_WRAPPER_SRCS)
+
+set(LIBCEF_WRAPPER_SRCS
+  wrapper/cef_browser_info_map.h
+  wrapper/cef_byte_read_handler.cc
+  wrapper/cef_closure_task.cc
+  wrapper/cef_message_router.cc
+  wrapper/cef_resource_manager.cc
+  wrapper/cef_scoped_temp_dir.cc
+  wrapper/cef_stream_resource_handler.cc
+  wrapper/cef_xml_object.cc
+  wrapper/cef_zip_archive.cc
+  wrapper/libcef_dll_wrapper.cc
+  wrapper/libcef_dll_wrapper2.cc
+  )
 
 # =============================================
 set(LIBCEF_WRAPPER_SRCS_WINDOWS

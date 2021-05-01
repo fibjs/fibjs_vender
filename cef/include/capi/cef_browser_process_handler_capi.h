@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=f0cd169568e9ea5bcc8bf2aa891691b76c05356d$
+// $hash=ade537f836add7fe0b5fd94ceba26d678abb3e43$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_BROWSER_PROCESS_HANDLER_CAPI_H_
@@ -43,7 +43,6 @@
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_client_capi.h"
 #include "include/capi/cef_command_line_capi.h"
-#include "include/capi/cef_print_handler_capi.h"
 #include "include/capi/cef_values_capi.h"
 
 #ifdef __cplusplus
@@ -62,25 +61,6 @@ typedef struct _cef_browser_process_handler_t {
   cef_base_ref_counted_t base;
 
   ///
-  // Called on the browser process UI thread to retrieve the list of schemes
-  // that should support cookies. If |include_defaults| is true (1) the default
-  // schemes ("http", "https", "ws" and "wss") will also be supported. Providing
-  // an NULL |schemes| value and setting |include_defaults| to false (0) will
-  // disable all loading and saving of cookies.
-  //
-  // This state will apply to the cef_cookie_manager_t associated with the
-  // global cef_request_context_t. It will also be used as the initial state for
-  // any new cef_request_context_ts created by the client. After creating a new
-  // cef_request_context_t the cef_cookie_manager_t::SetSupportedSchemes
-  // function may be called on the associated cef_cookie_manager_t to futher
-  // override these values.
-  ///
-  void(CEF_CALLBACK* get_cookieable_schemes)(
-      struct _cef_browser_process_handler_t* self,
-      cef_string_list_t schemes,
-      int* include_defaults);
-
-  ///
   // Called on the browser process UI thread immediately after the CEF context
   // has been initialized.
   ///
@@ -97,13 +77,6 @@ typedef struct _cef_browser_process_handler_t {
   void(CEF_CALLBACK* on_before_child_process_launch)(
       struct _cef_browser_process_handler_t* self,
       struct _cef_command_line_t* command_line);
-
-  ///
-  // Return the handler for printing on Linux. If a print handler is not
-  // provided then printing will not be supported on the Linux platform.
-  ///
-  struct _cef_print_handler_t*(CEF_CALLBACK* get_print_handler)(
-      struct _cef_browser_process_handler_t* self);
 
   ///
   // Called from any thread when work has been scheduled for the browser process
