@@ -42,7 +42,9 @@
 #endif
 
 /* 1 if CPU_SPINWAIT is defined, 0 otherwise. */
+#ifndef __ARM_ARCH_6__
 #define HAVE_CPU_SPINWAIT 1
+#endif
 
 /*
  * Number of significant bits in virtual addresses.  This may be less than the
