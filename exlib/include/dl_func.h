@@ -15,6 +15,10 @@
 #else
 #include <windows.h>
 
+#define RTLD_LOCAL 0
+#define RTLD_LAZY 0x1
+#define RTLD_FIRST 0x100
+
 inline void* dlopen(const char* file, int mode)
 {
     wchar_t* p = NULL;
