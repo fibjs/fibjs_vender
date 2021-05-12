@@ -53,30 +53,35 @@
 #if defined(i386) || defined(__i386__) || defined(_M_IX86) || defined(_X86_) || defined(x86)
 #ifndef i386
 #define i386
+#define ARCH_BITS 32
 #endif
 #endif
 
 #if defined(__amd64) || defined(__x86_64__) || defined(_M_X64)
 #ifndef amd64
 #define amd64
+#define ARCH_BITS 64
 #endif
 #endif
 
 #if defined(__ia64) || defined(__ia64__) || defined(_M_IA64)
 #ifndef IA64
 #define IA64
+#define ARCH_BITS 64
 #endif
 #endif
 
 #if defined(__AARCH64EL__)
 #ifndef arm64
 #define arm64
+#define ARCH_BITS 64
 #endif
 #endif
 
 #if defined(__ARMEL__)
 #ifndef arm
 #define arm
+#define ARCH_BITS 32
 #endif
 #endif
 
@@ -84,6 +89,7 @@
 #if defined(__mips64)
 #ifndef mips64
 #define mips64
+#define ARCH_BITS 64
 #endif
 #ifdef mips
 #undef mips
@@ -91,6 +97,7 @@
 #else
 #ifndef mips
 #define mips
+#define ARCH_BITS 32
 #endif
 #endif
 #endif
@@ -101,10 +108,12 @@
 #if defined(__ppc64__) || defined(__powerpc64__) || defined(__64BIT__)
 #ifndef ppc64
 #define ppc64
+#define ARCH_BITS 64
 #endif
 #else
 #ifndef ppc
 #define ppc
+#define ARCH_BITS 32
 #endif
 #endif
 #endif
