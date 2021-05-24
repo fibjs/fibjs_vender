@@ -2,8 +2,12 @@ macro(clean_clang_flags)
     set(variables
         CMAKE_C_FLAGS_DEBUG
         CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS_MINSIZEREL
         CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_RELEASE)
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_CXX_FLAGS_MINSIZEREL)
 
     foreach(variable ${variables})
         # To use static c runtime from libcmt(d).lib, we could:
@@ -12,7 +16,11 @@ macro(clean_clang_flags)
         string(REGEX REPLACE
             "-D_DLL" ""
             ${variable} "${${variable}}")
-
+        
+        string(REGEX REPLACE
+            "-Xclang --dependent-lib=msvcrt" "-Xclang --dependent-lib=libcmt"
+            ${variable} "${${variable}}")
+            
         set(${variable} "${${variable}}" CACHE STRING "CLANG_${variable}" FORCE)
     endforeach()
 endmacro()
