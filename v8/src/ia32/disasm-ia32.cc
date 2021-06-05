@@ -15,6 +15,7 @@
 #include "src/base/compiler-specific.h"
 #include "src/disasm.h"
 #include "src/ia32/sse-instr.h"
+#include "src/utils.h"
 
 namespace disasm {
 

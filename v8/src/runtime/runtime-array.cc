@@ -3,14 +3,16 @@
 // found in the LICENSE file.
 
 #include "src/arguments-inl.h"
-#include "src/code-stubs.h"
 #include "src/conversions-inl.h"
 #include "src/counters.h"
 #include "src/debug/debug.h"
 #include "src/elements.h"
 #include "src/heap/factory.h"
+#include "src/heap/heap-inl.h"  // For ToBoolean. TODO(jkummerow): Drop.
+#include "src/heap/heap-write-barrier-inl.h"
 #include "src/isolate-inl.h"
 #include "src/keys.h"
+#include "src/objects/allocation-site-inl.h"
 #include "src/objects/arguments-inl.h"
 #include "src/objects/hash-table-inl.h"
 #include "src/objects/js-array-inl.h"
@@ -48,7 +50,7 @@ Maybe<uint32_t> FindNextFreePosition(Isolate* isolate,
                                      Handle<JSReceiver> receiver,
                                      uint32_t current_pos) {
   for (uint32_t position = current_pos;; ++position) {
-    Maybe<bool> has_element = JSReceiver::HasElement(receiver, position);
+    Maybe<bool> has_element = JSReceiver::HasOwnProperty(receiver, position);
     MAYBE_RETURN(has_element, Nothing<uint32_t>());
     if (!has_element.FromJust()) return Just(position);
 
@@ -64,8 +66,8 @@ Maybe<uint32_t> FindNextFreePosition(Isolate* isolate,
 // Dictionary (requires_slow_elements() is true), proxies and objects that
 // might have accessors.
 V8_WARN_UNUSED_RESULT
-Object* RemoveArrayHolesGeneric(Isolate* isolate, Handle<JSReceiver> receiver,
-                                uint32_t limit) {
+Object RemoveArrayHolesGeneric(Isolate* isolate, Handle<JSReceiver> receiver,
+                               uint32_t limit) {
   HandleScope scope(isolate);
 
   // For proxies, we do not collect the keys, instead we use all indices in
@@ -125,20 +127,35 @@ Object* RemoveArrayHolesGeneric(Isolate* isolate, Handle<JSReceiver> receiver,
       // If the array contains undefineds, the position at 'key' might later
       // bet set to 'undefined'. If we delete the element now and later set it
       // to undefined, the set operation would throw an exception.
+      // Instead, to mark it up as a free space, we set array[key] to undefined.
+      // As 'key' will be incremented afterward, this undefined value will not
+      // affect 'num_undefined', and the logic afterwards will correctly set
+      // the remaining undefineds or delete the remaining properties.
       RETURN_FAILURE_ON_EXCEPTION(
-          isolate, JSReceiver::SetElement(isolate, receiver, current_pos,
-                                          element, LanguageMode::kStrict));
+          isolate, Object::SetElement(isolate, receiver, current_pos, element,
+                                      ShouldThrow::kThrowOnError));
+      RETURN_FAILURE_ON_EXCEPTION(
+          isolate, Object::SetElement(isolate, receiver, key,
+                                      isolate->factory()->undefined_value(),
+                                      ShouldThrow::kThrowOnError));
       ++current_pos;
     }
   }
 
+  // current_pos points to the next free space in the array/object. In most
+  // cases this corresponds to the 'length' or to the number of non-undefined
+  // elements.
+  // In cases where an object is 'packed' and 'length' is smaller, e.g.:
+  //      { 0: 5, 1: 4, 2: 3, length: 2 }
+  // current_pos will be greater than limit, thus, we need to take the minimum.
+  uint32_t result = std::min(current_pos, limit);
+
   // Set [current_pos, current_pos + num_undefined) to undefined.
-  uint32_t result = current_pos;
   for (uint32_t i = 0; i < num_undefined; ++i) {
     RETURN_FAILURE_ON_EXCEPTION(
-        isolate, JSReceiver::SetElement(isolate, receiver, current_pos++,
-                                        isolate->factory()->undefined_value(),
-                                        LanguageMode::kStrict));
+        isolate, Object::SetElement(isolate, receiver, current_pos++,
+                                    isolate->factory()->undefined_value(),
+                                    ShouldThrow::kThrowOnError));
   }
   // TODO(szuend): Re-enable when we also copy from the prototype chain for
   //               JSArrays. Then we can use HasOwnProperty instead of
@@ -155,15 +172,7 @@ Object* RemoveArrayHolesGeneric(Isolate* isolate, Handle<JSReceiver> receiver,
     MAYBE_RETURN(delete_result, ReadOnlyRoots(isolate).exception());
   }
 
-  // TODO(jgruber, szuend, chromium:897512): This is a workaround to prevent
-  // returning a number greater than array.length to Array.p.sort, which could
-  // trigger OOB accesses. There is still a correctness bug here though in
-  // how we shift around undefineds and delete elements in the two blocks above.
-  // This needs to be fixed soon.
-  const uint32_t number_of_non_undefined_elements = std::min(limit, result);
-
-  return *isolate->factory()->NewNumberFromUint(
-      number_of_non_undefined_elements);
+  return *isolate->factory()->NewNumberFromUint(result);
 }
 
 // Collects all defined (non-hole) and non-undefined (array) elements at the
@@ -171,8 +180,8 @@ Object* RemoveArrayHolesGeneric(Isolate* isolate, Handle<JSReceiver> receiver,
 // converted to fast elements mode.  Undefined values are placed after
 // non-undefined values.  Returns the number of non-undefined values.
 V8_WARN_UNUSED_RESULT
-Object* RemoveArrayHoles(Isolate* isolate, Handle<JSReceiver> receiver,
-                         uint32_t limit) {
+Object RemoveArrayHoles(Isolate* isolate, Handle<JSReceiver> receiver,
+                        uint32_t limit) {
   if (receiver->IsJSProxy()) {
     return RemoveArrayHolesGeneric(isolate, receiver, limit);
   }
@@ -201,7 +210,8 @@ Object* RemoveArrayHoles(Isolate* isolate, Handle<JSReceiver> receiver,
     Handle<Map> new_map =
         JSObject::GetElementsTransitionMap(object, HOLEY_ELEMENTS);
 
-    PretenureFlag tenure = Heap::InNewSpace(*object) ? NOT_TENURED : TENURED;
+    PretenureFlag tenure =
+        ObjectInYoungGeneration(*object) ? NOT_TENURED : TENURED;
     Handle<FixedArray> fast_elements =
         isolate->factory()->NewFixedArray(dict->NumberOfElements(), tenure);
     dict->CopyValuesTo(*fast_elements);
@@ -269,7 +279,7 @@ Object* RemoveArrayHoles(Isolate* isolate, Handle<JSReceiver> receiver,
     // Assume most arrays contain no holes and undefined values, so minimize the
     // number of stores of non-undefined, non-the-hole values.
     for (unsigned int i = 0; i < undefs; i++) {
-      Object* current = elements->get(i);
+      Object current = elements->get(i);
       if (current->IsTheHole(isolate)) {
         holes--;
         undefs--;
@@ -329,8 +339,8 @@ Maybe<bool> ConditionalCopy(Isolate* isolate, Handle<JSReceiver> source,
   Handle<Object> set_result;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
       isolate, set_result,
-      JSReceiver::SetElement(isolate, target, index, source_element,
-                             LanguageMode::kStrict),
+      Object::SetElement(isolate, target, index, source_element,
+                         ShouldThrow::kThrowOnError),
       Nothing<bool>());
 
   return Just(true);
@@ -387,10 +397,10 @@ RUNTIME_FUNCTION(Runtime_PrepareElementsForSort) {
   // Counter for sorting arrays that have non-packed elements and where either
   // the ElementsProtector is invalid or the prototype does not match
   // Array.prototype.
+  JSObject initial_array_proto = JSObject::cast(
+      isolate->native_context()->get(Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
   if (object->IsJSArray() &&
       !Handle<JSArray>::cast(object)->HasFastPackedElements()) {
-    JSObject* initial_array_proto = JSObject::cast(
-        isolate->native_context()->get(Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
     if (!isolate->IsNoElementsProtectorIntact() ||
         object->map()->prototype() != initial_array_proto) {
       isolate->CountUsage(
@@ -398,7 +408,10 @@ RUNTIME_FUNCTION(Runtime_PrepareElementsForSort) {
     }
   }
 
-  if (!object->IsJSArray()) {
+  // Skip copying from prototype for JSArrays with ElementsProtector intact and
+  // the original array prototype.
+  if (!object->IsJSArray() || !isolate->IsNoElementsProtectorIntact() ||
+      object->map()->prototype() != initial_array_proto) {
     RETURN_FAILURE_ON_EXCEPTION(isolate,
                                 CopyFromPrototype(isolate, object, length));
   }

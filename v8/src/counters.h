@@ -351,13 +351,6 @@ class AsyncTimedHistogram {
     histogram_->Start(&timer_, nullptr);
   }
 
-  ~AsyncTimedHistogram() = default;
-
-  AsyncTimedHistogram(const AsyncTimedHistogram& other) = default;
-  AsyncTimedHistogram& operator=(const AsyncTimedHistogram& other) = default;
-  AsyncTimedHistogram(AsyncTimedHistogram&& other) = default;
-  AsyncTimedHistogram& operator=(AsyncTimedHistogram&& other) = default;
-
   // Records the time elapsed to |histogram_| and stops |timer_|.
   void RecordDone() { histogram_->Stop(&timer_, nullptr); }
 
@@ -716,24 +709,24 @@ class RuntimeCallTimer final {
 
 #define FOR_EACH_API_COUNTER(V)                            \
   V(ArrayBuffer_Cast)                                      \
-  V(ArrayBuffer_Neuter)                                    \
+  V(ArrayBuffer_Detach)                                    \
   V(ArrayBuffer_New)                                       \
   V(Array_CloneElementAt)                                  \
   V(Array_New)                                             \
-  V(BigInt_NewFromWords)                                   \
   V(BigInt64Array_New)                                     \
-  V(BigUint64Array_New)                                    \
-  V(BigIntObject_New)                                      \
+  V(BigInt_NewFromWords)                                   \
   V(BigIntObject_BigIntValue)                              \
+  V(BigIntObject_New)                                      \
+  V(BigUint64Array_New)                                    \
   V(BooleanObject_BooleanValue)                            \
   V(BooleanObject_New)                                     \
   V(Context_New)                                           \
   V(Context_NewRemoteContext)                              \
   V(DataView_New)                                          \
-  V(Date_DateTimeConfigurationChangeNotification)          \
   V(Date_New)                                              \
   V(Date_NumberValue)                                      \
   V(Debug_Call)                                            \
+  V(debug_GetPrivateFields)                                \
   V(Error_New)                                             \
   V(External_New)                                          \
   V(Float32Array_New)                                      \
@@ -749,6 +742,8 @@ class RuntimeCallTimer final {
   V(Int16Array_New)                                        \
   V(Int32Array_New)                                        \
   V(Int8Array_New)                                         \
+  V(Isolate_DateTimeConfigurationChangeNotification)       \
+  V(Isolate_LocaleConfigurationChangeNotification)         \
   V(JSON_Parse)                                            \
   V(JSON_Stringify)                                        \
   V(Map_AsArray)                                           \
@@ -758,9 +753,6 @@ class RuntimeCallTimer final {
   V(Map_Has)                                               \
   V(Map_New)                                               \
   V(Map_Set)                                               \
-  V(WeakMap_Get)                                           \
-  V(WeakMap_Set)                                           \
-  V(WeakMap_New)                                           \
   V(Message_GetEndColumn)                                  \
   V(Message_GetLineNumber)                                 \
   V(Message_GetSourceLine)                                 \
@@ -815,8 +807,8 @@ class RuntimeCallTimer final {
   V(Promise_Chain)                                         \
   V(Promise_HasRejectHandler)                              \
   V(Promise_Resolver_New)                                  \
-  V(Promise_Resolver_Resolve)                              \
   V(Promise_Resolver_Reject)                               \
+  V(Promise_Resolver_Resolve)                              \
   V(Promise_Result)                                        \
   V(Promise_Status)                                        \
   V(Promise_Then)                                          \
@@ -849,6 +841,7 @@ class RuntimeCallTimer final {
   V(SymbolObject_New)                                      \
   V(SymbolObject_SymbolValue)                              \
   V(SyntaxError_New)                                       \
+  V(TracedGlobal_New)                                      \
   V(TryCatch_StackTrace)                                   \
   V(TypeError_New)                                         \
   V(Uint16Array_New)                                       \
@@ -860,35 +853,39 @@ class RuntimeCallTimer final {
   V(UnboundScript_GetName)                                 \
   V(UnboundScript_GetSourceMappingURL)                     \
   V(UnboundScript_GetSourceURL)                            \
+  V(ValueDeserializer_ReadHeader)                          \
+  V(ValueDeserializer_ReadValue)                           \
+  V(ValueSerializer_WriteValue)                            \
   V(Value_InstanceOf)                                      \
-  V(Value_IntegerValue)                                    \
   V(Value_Int32Value)                                      \
+  V(Value_IntegerValue)                                    \
   V(Value_NumberValue)                                     \
   V(Value_TypeOf)                                          \
   V(Value_Uint32Value)                                     \
-  V(ValueDeserializer_ReadHeader)                          \
-  V(ValueDeserializer_ReadValue)                           \
-  V(ValueSerializer_WriteValue)
+  V(WeakMap_Get)                                           \
+  V(WeakMap_New)                                           \
+  V(WeakMap_Set)
 
 #define FOR_EACH_MANUAL_COUNTER(V)             \
   V(AccessorGetterCallback)                    \
   V(AccessorSetterCallback)                    \
   V(ArrayLengthGetter)                         \
   V(ArrayLengthSetter)                         \
-  V(BoundFunctionNameGetter)                   \
   V(BoundFunctionLengthGetter)                 \
+  V(BoundFunctionNameGetter)                   \
+  V(CompileAnalyse)                            \
   V(CompileBackgroundAnalyse)                  \
   V(CompileBackgroundCompileTask)              \
   V(CompileBackgroundEval)                     \
   V(CompileBackgroundFunction)                 \
   V(CompileBackgroundIgnition)                 \
-  V(CompileBackgroundScript)                   \
   V(CompileBackgroundRewriteReturnResult)      \
   V(CompileBackgroundScopeAnalysis)            \
+  V(CompileBackgroundScript)                   \
+  V(CompileCollectSourcePositions)             \
   V(CompileDeserialize)                        \
-  V(CompileEval)                               \
-  V(CompileAnalyse)                            \
   V(CompileEnqueueOnDispatcher)                \
+  V(CompileEval)                               \
   V(CompileFinalizeBackgroundCompileTask)      \
   V(CompileFinishNowOnDispatcher)              \
   V(CompileFunction)                           \
@@ -901,37 +898,44 @@ class RuntimeCallTimer final {
   V(CompileSerialize)                          \
   V(CompileWaitForDispatcher)                  \
   V(DeoptimizeCode)                            \
+  V(DeserializeContext)                        \
+  V(DeserializeIsolate)                        \
   V(FunctionCallback)                          \
+  V(FunctionLengthGetter)                      \
   V(FunctionPrototypeGetter)                   \
   V(FunctionPrototypeSetter)                   \
-  V(FunctionLengthGetter)                      \
   V(GC_Custom_AllAvailableGarbage)             \
   V(GC_Custom_IncrementalMarkingObserver)      \
   V(GC_Custom_SlowAllocateRaw)                 \
   V(GCEpilogueCallback)                        \
   V(GCPrologueCallback)                        \
+  V(Genesis)                                   \
   V(GetMoreDataCallback)                       \
-  V(NamedDefinerCallback)                      \
-  V(NamedDeleterCallback)                      \
-  V(NamedDescriptorCallback)                   \
-  V(NamedQueryCallback)                        \
-  V(NamedSetterCallback)                       \
-  V(NamedGetterCallback)                       \
-  V(NamedEnumeratorCallback)                   \
   V(IndexedDefinerCallback)                    \
   V(IndexedDeleterCallback)                    \
   V(IndexedDescriptorCallback)                 \
+  V(IndexedEnumeratorCallback)                 \
   V(IndexedGetterCallback)                     \
   V(IndexedQueryCallback)                      \
   V(IndexedSetterCallback)                     \
-  V(IndexedEnumeratorCallback)                 \
+  V(Invoke)                                    \
+  V(InvokeApiFunction)                         \
   V(InvokeApiInterruptCallbacks)               \
   V(InvokeFunctionCallback)                    \
   V(JS_Execution)                              \
   V(Map_SetPrototype)                          \
   V(Map_TransitionToAccessorProperty)          \
   V(Map_TransitionToDataProperty)              \
+  V(MessageListenerCallback)                   \
+  V(NamedDefinerCallback)                      \
+  V(NamedDeleterCallback)                      \
+  V(NamedDescriptorCallback)                   \
+  V(NamedEnumeratorCallback)                   \
+  V(NamedGetterCallback)                       \
+  V(NamedQueryCallback)                        \
+  V(NamedSetterCallback)                       \
   V(Object_DeleteProperty)                     \
+  V(ObjectVerify)                              \
   V(OptimizeCode)                              \
   V(ParseArrowFunctionLiteral)                 \
   V(ParseBackgroundArrowFunctionLiteral)       \
@@ -958,17 +962,16 @@ class RuntimeCallTimer final {
   V(TestCounter3)
 
 #define FOR_EACH_HANDLER_COUNTER(V)               \
-  V(KeyedLoadIC_LoadIndexedInterceptorStub)       \
   V(KeyedLoadIC_KeyedLoadSloppyArgumentsStub)     \
   V(KeyedLoadIC_LoadElementDH)                    \
+  V(KeyedLoadIC_LoadIndexedInterceptorStub)       \
   V(KeyedLoadIC_LoadIndexedStringDH)              \
   V(KeyedLoadIC_SlowStub)                         \
   V(KeyedStoreIC_ElementsTransitionAndStoreStub)  \
   V(KeyedStoreIC_KeyedStoreSloppyArgumentsStub)   \
   V(KeyedStoreIC_SlowStub)                        \
-  V(KeyedStoreIC_StoreFastElementStub)            \
   V(KeyedStoreIC_StoreElementStub)                \
-  V(StoreInArrayLiteralIC_SlowStub)               \
+  V(KeyedStoreIC_StoreFastElementStub)            \
   V(LoadGlobalIC_LoadScriptContextField)          \
   V(LoadGlobalIC_SlowStub)                        \
   V(LoadIC_FunctionPrototypeStub)                 \
@@ -985,11 +988,11 @@ class RuntimeCallTimer final {
   V(LoadIC_LoadGlobalFromPrototypeDH)             \
   V(LoadIC_LoadIntegerIndexedExoticDH)            \
   V(LoadIC_LoadInterceptorDH)                     \
-  V(LoadIC_LoadNonMaskingInterceptorDH)           \
   V(LoadIC_LoadInterceptorFromPrototypeDH)        \
   V(LoadIC_LoadNativeDataPropertyDH)              \
   V(LoadIC_LoadNativeDataPropertyFromPrototypeDH) \
   V(LoadIC_LoadNonexistentDH)                     \
+  V(LoadIC_LoadNonMaskingInterceptorDH)           \
   V(LoadIC_LoadNormalDH)                          \
   V(LoadIC_LoadNormalFromPrototypeDH)             \
   V(LoadIC_NonReceiver)                           \
@@ -997,8 +1000,9 @@ class RuntimeCallTimer final {
   V(LoadIC_SlowStub)                              \
   V(LoadIC_StringLength)                          \
   V(LoadIC_StringWrapperLength)                   \
-  V(StoreGlobalIC_StoreScriptContextField)        \
   V(StoreGlobalIC_SlowStub)                       \
+  V(StoreGlobalIC_StoreScriptContextField)        \
+  V(StoreGlobalIC_Premonomorphic)                 \
   V(StoreIC_HandlerCacheHit_Accessor)             \
   V(StoreIC_NonReceiver)                          \
   V(StoreIC_Premonomorphic)                       \
@@ -1013,7 +1017,8 @@ class RuntimeCallTimer final {
   V(StoreIC_StoreNativeDataPropertyDH)            \
   V(StoreIC_StoreNativeDataPropertyOnPrototypeDH) \
   V(StoreIC_StoreNormalDH)                        \
-  V(StoreIC_StoreTransitionDH)
+  V(StoreIC_StoreTransitionDH)                    \
+  V(StoreInArrayLiteralIC_SlowStub)
 
 enum RuntimeCallCounterId {
 #define CALL_RUNTIME_COUNTER(name) kGC_##name,
@@ -1145,7 +1150,7 @@ class RuntimeCallTimerScope {
                                RuntimeCallCounterId counter_id);
   // This constructor is here just to avoid calling GetIsolate() when the
   // stats are disabled and the isolate is not directly available.
-  inline RuntimeCallTimerScope(Isolate* isolate, HeapObject* heap_object,
+  inline RuntimeCallTimerScope(Isolate* isolate, HeapObject heap_object,
                                RuntimeCallCounterId counter_id);
   inline RuntimeCallTimerScope(RuntimeCallStats* stats,
                                RuntimeCallCounterId counter_id) {
@@ -1244,6 +1249,8 @@ class RuntimeCallTimerScope {
   HT(gc_low_memory_notification, V8.GCLowMemoryNotification, 10000,            \
      MILLISECOND)                                                              \
   /* Compilation times. */                                                     \
+  HT(collect_source_positions, V8.CollectSourcePositions, 1000000,             \
+     MICROSECOND)                                                              \
   HT(compile, V8.CompileMicroSeconds, 1000000, MICROSECOND)                    \
   HT(compile_eval, V8.CompileEvalMicroSeconds, 1000000, MICROSECOND)           \
   /* Serialization as part of compilation (code caching) */                    \
@@ -1323,9 +1330,7 @@ class RuntimeCallTimerScope {
   HT(compile_script_on_background,                                             \
      V8.CompileScriptMicroSeconds.BackgroundThread, 1000000, MICROSECOND)      \
   HT(compile_function_on_background,                                           \
-     V8.CompileFunctionMicroSeconds.BackgroundThread, 1000000, MICROSECOND)    \
-  HT(gc_parallel_task_latency, V8.GC.ParallelTaskLatencyMicroSeconds, 1000000, \
-     MICROSECOND)
+     V8.CompileFunctionMicroSeconds.BackgroundThread, 1000000, MICROSECOND)
 
 #define AGGREGATABLE_HISTOGRAM_TIMER_LIST(AHT) \
   AHT(compile_lazy, V8.CompileLazyMicroSeconds)
@@ -1393,10 +1398,6 @@ class RuntimeCallTimerScope {
   SC(store_buffer_overflows, V8.StoreBufferOverflows)
 
 #define STATS_COUNTER_LIST_2(SC)                                               \
-  /* Number of code stubs. */                                                  \
-  SC(code_stubs, V8.CodeStubs)                                                 \
-  /* Amount of stub code. */                                                   \
-  SC(total_stubs_code_size, V8.TotalStubsCodeSize)                             \
   /* Amount of (JS) compiled code. */                                          \
   SC(total_compiled_code_size, V8.TotalCompiledCodeSize)                       \
   SC(gc_compactor_caused_by_request, V8.GCCompactorCausedByRequest)            \
@@ -1428,7 +1429,6 @@ class RuntimeCallTimerScope {
   SC(fast_new_closure_total, V8.FastNewClosureTotal)                           \
   SC(string_add_runtime, V8.StringAddRuntime)                                  \
   SC(string_add_native, V8.StringAddNative)                                    \
-  SC(string_add_runtime_ext_to_one_byte, V8.StringAddRuntimeExtToOneByte)      \
   SC(sub_string_runtime, V8.SubStringRuntime)                                  \
   SC(sub_string_native, V8.SubStringNative)                                    \
   SC(regexp_entry_runtime, V8.RegExpEntryRuntime)                              \

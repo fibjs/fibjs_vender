@@ -3,6 +3,8 @@
 
 #include "src/compiler/code-assembler.h"
 #include "src/code-stub-assembler.h"
+#include "src/utils.h"
+#include "torque-generated/class-definitions-from-dsl.h"
 
 namespace v8 {
 namespace internal {
@@ -10,11 +12,11 @@ namespace internal {
 class ObjectBuiltinsFromDSLAssembler {
  public:
   explicit ObjectBuiltinsFromDSLAssembler(compiler::CodeAssemblerState* state) : state_(state), ca_(state) { USE(state_, ca_); }
-  compiler::TNode<JSObject> AllocateEmptyJSObject(compiler::TNode<Context> p_context);
   compiler::TNode<JSObject> ObjectFromEntriesFastCase(compiler::TNode<Context> p_context, compiler::TNode<Object> p_iterable, compiler::CodeAssemblerLabel* label_IfSlow);
  private:
   compiler::CodeAssemblerState* const state_;
-  compiler::CodeAssembler ca_;}; 
+  compiler::CodeAssembler ca_;
+};
 
 }  // namespace internal
 }  // namespace v8

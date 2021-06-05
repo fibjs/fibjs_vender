@@ -8,9 +8,12 @@
 
 #include "jssdk-v8.h"
 #include "libplatform/libplatform.h"
+#include "src/allocation.h"
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+
+using namespace v8;
 
 namespace js {
 
@@ -35,10 +38,16 @@ private:
         }
     };
 
+    v8::Local<v8::Context> _getLocalContext()
+    {
+        return v8::Local<v8::Context>::New(m_isolate, m_context);
+    }
+
 public:
     v8_Runtime(class Api* api)
     {
         m_api = api;
+
         create_params.array_buffer_allocator = &array_buffer_allocator;
         m_isolate = v8::Isolate::New(create_params);
 
@@ -101,12 +110,12 @@ public:
         new (scope.m_locker) v8::Locker(m_isolate);
         new (scope.m_handle_scope) _HandleScope(m_isolate);
         m_isolate->Enter();
-        v8::Local<v8::Context>::New(m_isolate, m_context)->Enter();
+        _getLocalContext()->Enter();
     }
 
     void Scope_leave(Scope& scope)
     {
-        v8::Local<v8::Context>::New(m_isolate, m_context)->Exit();
+        _getLocalContext()->Exit();
         m_isolate->Exit();
         ((_HandleScope*)scope.m_handle_scope)->~_HandleScope();
         ((v8::Locker*)scope.m_locker)->~Locker();
@@ -163,7 +172,7 @@ public:
 
     Object GetGlobal()
     {
-        return Object(this, v8::Local<v8::Context>::New(m_isolate, m_context)->Global());
+        return Object(this, _getLocalContext()->Global());
     }
 
     Value execute(exlib::string code, exlib::string soname)
@@ -177,8 +186,12 @@ public:
             (int32_t)soname.length());
 
         v8::ScriptOrigin origin(str_name);
-        v8::Local<v8::Script> script = v8::Script::Compile(context, str_code, &origin).ToLocalChecked();
-        v8::MaybeLocal<v8::Value> result = script->Run(context);
+        v8::MaybeLocal<v8::Script> may_script = v8::Script::Compile(context, str_code, &origin);
+
+        if (may_script.IsEmpty())
+            return Value();
+
+        v8::MaybeLocal<v8::Value> result = may_script.ToLocalChecked()->Run(context);
 
         if (result.IsEmpty())
             return Value();
@@ -218,7 +231,9 @@ public:
 
     Function NewFunction(FunctionCallback callback)
     {
-        return Function(this, v8::Function::New(m_isolate, (v8::FunctionCallback)callback));
+        v8::MaybeLocal<v8::Function> may_v = v8::Function::New(_getLocalContext(), (v8::FunctionCallback)callback);
+
+        return Function(this, may_v.IsEmpty() ? v8::Local<v8::Function>() : may_v.ToLocalChecked());
     }
 
 public:
@@ -230,7 +245,7 @@ public:
 public:
     bool ValueToBoolean(const Value& v)
     {
-        return v.m_v->BooleanValue(v8::Local<v8::Context>::New(m_isolate, m_context)).ToChecked();
+        return v.m_v->BooleanValue(_getLocalContext()).ToChecked();
     }
 
     bool ValueIsBoolean(const Value& v)
@@ -241,7 +256,7 @@ public:
 public:
     double ValueToNumber(const Value& v)
     {
-        return v.m_v->NumberValue(v8::Local<v8::Context>::New(m_isolate, m_context)).ToChecked();
+        return v.m_v->NumberValue(_getLocalContext()).ToChecked();
     }
 
     bool ValueIsNumber(const Value& v)
@@ -267,9 +282,11 @@ public:
     bool ObjectHas(const Object& o, exlib::string key)
     {
         return v8::Local<v8::Object>::Cast(o.m_v)->Has(
-            v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::String::kNormalString,
-                (int32_t)key.length()));
+                                                     _getLocalContext(),
+                                                     v8::String::NewFromUtf8(m_isolate,
+                                                         key.c_str(), v8::String::kNormalString,
+                                                         (int32_t)key.length()))
+            .ToChecked();
     }
 
     Value ObjectGet(const Object& o, exlib::string key)
@@ -289,6 +306,7 @@ public:
     void ObjectRemove(const Object& o, exlib::string key)
     {
         v8::Local<v8::Object>::Cast(o.m_v)->Delete(
+            _getLocalContext(),
             v8::String::NewFromUtf8(m_isolate,
                 key.c_str(), v8::String::kNormalString,
                 (int32_t)key.length()));
@@ -296,7 +314,9 @@ public:
 
     Array ObjectKeys(const Object& o)
     {
-        return Array(this, v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames());
+        v8::MaybeLocal<v8::Array> may_v = v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames(_getLocalContext());
+
+        return Array(this, may_v.IsEmpty() ? v8::Local<v8::Array>() : may_v.ToLocalChecked());
     }
 
     bool ObjectHasPrivate(const Object& o, exlib::string key)
@@ -444,9 +464,8 @@ public:
         if (!s_bInit) {
             s_bInit = true;
 
-            v8::Platform* platform = v8::platform::CreateDefaultPlatform();
-            v8::V8::InitializePlatform(platform);
-
+            static std::unique_ptr<v8::Platform> platform = v8::platform::NewDefaultPlatform();
+            v8::V8::InitializePlatform(platform.get());
             v8::V8::Initialize();
         }
     }

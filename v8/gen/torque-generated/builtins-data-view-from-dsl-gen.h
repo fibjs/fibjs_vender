@@ -3,6 +3,8 @@
 
 #include "src/compiler/code-assembler.h"
 #include "src/code-stub-assembler.h"
+#include "src/utils.h"
+#include "torque-generated/class-definitions-from-dsl.h"
 
 namespace v8 {
 namespace internal {
@@ -37,7 +39,8 @@ class DataViewBuiltinsFromDSLAssembler {
   compiler::TNode<Object> DataViewSet(compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, compiler::TNode<Object> p_offset, compiler::TNode<Object> p_value, compiler::TNode<Object> p_requestedLittleEndian, ElementsKind p_kind);
  private:
   compiler::CodeAssemblerState* const state_;
-  compiler::CodeAssembler ca_;}; 
+  compiler::CodeAssembler ca_;
+};
 
 }  // namespace internal
 }  // namespace v8

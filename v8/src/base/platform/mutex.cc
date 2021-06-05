@@ -54,5 +54,38 @@ namespace base {
     {
         return native_handle_->trylock();
     }
+
+    SharedMutex::SharedMutex() {
+        native_handle_ = new exlib::RWLocker();
+    }
+
+    SharedMutex::~SharedMutex() {
+        delete native_handle_;
+    }
+
+    void SharedMutex::LockShared() {
+        native_handle_->rdlock();
+    }
+
+    void SharedMutex::LockExclusive() {
+        native_handle_->wrlock();
+    }
+
+    void SharedMutex::UnlockShared() {
+        native_handle_->rdunlock();
+    }
+
+    void SharedMutex::UnlockExclusive() {
+        native_handle_->wrunlock();
+    }
+
+    bool SharedMutex::TryLockShared() {
+        return native_handle_->tryrdlock();
+    }
+
+    bool SharedMutex::TryLockExclusive() {
+        // return native_handle_->tryrdlock();
+        return native_handle_->trywrlock();
+    }
 }
 } // namespace v8::base

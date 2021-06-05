@@ -11,6 +11,7 @@
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/simplified-operator.h"
 #include "src/lookup.h"
+#include "src/objects/heap-number.h"
 
 #include "src/field-index-inl.h"
 #include "src/isolate-inl.h"
@@ -31,28 +32,31 @@ SimplifiedOperatorBuilder* PropertyAccessBuilder::simplified() const {
   return jsgraph()->simplified();
 }
 
-bool HasOnlyStringMaps(MapHandles const& maps) {
+bool HasOnlyStringMaps(JSHeapBroker* broker, MapHandles const& maps) {
   for (auto map : maps) {
-    if (!map->IsStringMap()) return false;
+    MapRef map_ref(broker, map);
+    if (!map_ref.IsStringMap()) return false;
   }
   return true;
 }
 
 namespace {
 
-bool HasOnlyNumberMaps(MapHandles const& maps) {
+bool HasOnlyNumberMaps(JSHeapBroker* broker, MapHandles const& maps) {
   for (auto map : maps) {
-    if (map->instance_type() != HEAP_NUMBER_TYPE) return false;
+    MapRef map_ref(broker, map);
+    if (map_ref.instance_type() != HEAP_NUMBER_TYPE) return false;
   }
   return true;
 }
 
 }  // namespace
 
-bool PropertyAccessBuilder::TryBuildStringCheck(MapHandles const& maps,
+bool PropertyAccessBuilder::TryBuildStringCheck(JSHeapBroker* broker,
+                                                MapHandles const& maps,
                                                 Node** receiver, Node** effect,
                                                 Node* control) {
-  if (HasOnlyStringMaps(maps)) {
+  if (HasOnlyStringMaps(broker, maps)) {
     // Monormorphic string access (ignoring the fact that there are multiple
     // String maps).
     *receiver = *effect =
@@ -63,10 +67,11 @@ bool PropertyAccessBuilder::TryBuildStringCheck(MapHandles const& maps,
   return false;
 }
 
-bool PropertyAccessBuilder::TryBuildNumberCheck(MapHandles const& maps,
+bool PropertyAccessBuilder::TryBuildNumberCheck(JSHeapBroker* broker,
+                                                MapHandles const& maps,
                                                 Node** receiver, Node** effect,
                                                 Node* control) {
-  if (HasOnlyNumberMaps(maps)) {
+  if (HasOnlyNumberMaps(broker, maps)) {
     // Monomorphic number access (we also deal with Smis here).
     *receiver = *effect =
         graph()->NewNode(simplified()->CheckNumber(VectorSlotPair()), *receiver,
@@ -82,27 +87,37 @@ bool NeedsCheckHeapObject(Node* receiver) {
   switch (receiver->opcode()) {
     case IrOpcode::kConvertReceiver:
     case IrOpcode::kHeapConstant:
+    case IrOpcode::kJSCloneObject:
+    case IrOpcode::kJSConstruct:
+    case IrOpcode::kJSConstructForwardVarargs:
+    case IrOpcode::kJSConstructWithArrayLike:
+    case IrOpcode::kJSConstructWithSpread:
     case IrOpcode::kJSCreate:
     case IrOpcode::kJSCreateArguments:
     case IrOpcode::kJSCreateArray:
-    case IrOpcode::kJSCreateClosure:
-    case IrOpcode::kJSCreateIterResultObject:
-    case IrOpcode::kJSCreateLiteralArray:
-    case IrOpcode::kJSCreateEmptyLiteralArray:
     case IrOpcode::kJSCreateArrayFromIterable:
-    case IrOpcode::kJSCreateLiteralObject:
+    case IrOpcode::kJSCreateArrayIterator:
+    case IrOpcode::kJSCreateAsyncFunctionObject:
+    case IrOpcode::kJSCreateBoundFunction:
+    case IrOpcode::kJSCreateClosure:
+    case IrOpcode::kJSCreateCollectionIterator:
+    case IrOpcode::kJSCreateEmptyLiteralArray:
     case IrOpcode::kJSCreateEmptyLiteralObject:
-    case IrOpcode::kJSCreateLiteralRegExp:
     case IrOpcode::kJSCreateGeneratorObject:
-    case IrOpcode::kJSConstructForwardVarargs:
-    case IrOpcode::kJSConstruct:
-    case IrOpcode::kJSConstructWithArrayLike:
-    case IrOpcode::kJSConstructWithSpread:
-    case IrOpcode::kJSToName:
-    case IrOpcode::kJSToString:
-    case IrOpcode::kJSToObject:
-    case IrOpcode::kTypeOf:
+    case IrOpcode::kJSCreateIterResultObject:
+    case IrOpcode::kJSCreateKeyValueArray:
+    case IrOpcode::kJSCreateLiteralArray:
+    case IrOpcode::kJSCreateLiteralObject:
+    case IrOpcode::kJSCreateLiteralRegExp:
+    case IrOpcode::kJSCreateObject:
+    case IrOpcode::kJSCreatePromise:
+    case IrOpcode::kJSCreateStringIterator:
+    case IrOpcode::kJSCreateTypedArray:
     case IrOpcode::kJSGetSuperConstructor:
+    case IrOpcode::kJSToName:
+    case IrOpcode::kJSToObject:
+    case IrOpcode::kJSToString:
+    case IrOpcode::kTypeOf:
       return false;
     case IrOpcode::kPhi: {
       Node* control = NodeProperties::GetControlInput(receiver);
@@ -128,16 +143,16 @@ Node* PropertyAccessBuilder::BuildCheckHeapObject(Node* receiver, Node** effect,
   return receiver;
 }
 
-void PropertyAccessBuilder::BuildCheckMaps(
-    Node* receiver, Node** effect, Node* control,
-    std::vector<Handle<Map>> const& receiver_maps) {
+void PropertyAccessBuilder::BuildCheckMaps(Node* receiver, Node** effect,
+                                           Node* control,
+                                           MapHandles const& receiver_maps) {
   HeapObjectMatcher m(receiver);
   if (m.HasValue()) {
-    Handle<Map> receiver_map(m.Value()->map(), isolate());
-    if (receiver_map->is_stable()) {
+    MapRef receiver_map = m.Ref(broker()).AsHeapObject().map();
+    if (receiver_map.is_stable()) {
       for (Handle<Map> map : receiver_maps) {
-        if (map.is_identical_to(receiver_map)) {
-          dependencies()->DependOnStableMap(MapRef(broker(), receiver_map));
+        if (MapRef(broker(), map).equals(receiver_map)) {
+          dependencies()->DependOnStableMap(receiver_map);
           return;
         }
       }
@@ -146,8 +161,9 @@ void PropertyAccessBuilder::BuildCheckMaps(
   ZoneHandleSet<Map> maps;
   CheckMapsFlags flags = CheckMapsFlag::kNone;
   for (Handle<Map> map : receiver_maps) {
-    maps.insert(map, graph()->zone());
-    if (map->is_migration_target()) {
+    MapRef receiver_map(broker(), map);
+    maps.insert(receiver_map.object(), graph()->zone());
+    if (receiver_map.is_migration_target()) {
       flags |= CheckMapsFlag::kTryMigrateInstance;
     }
   }
@@ -209,7 +225,11 @@ Node* PropertyAccessBuilder::TryBuildLoadConstantDataField(
           MapRef map(broker(),
                      handle(it.GetHolder<HeapObject>()->map(), isolate()));
           map.SerializeOwnDescriptors();  // TODO(neis): Remove later.
-          dependencies()->DependOnFieldType(map, it.GetFieldDescriptorIndex());
+          if (dependencies()->DependOnFieldConstness(
+                  map, it.GetFieldDescriptorIndex()) !=
+              PropertyConstness::kConst) {
+            return nullptr;
+          }
         }
         return value;
       }

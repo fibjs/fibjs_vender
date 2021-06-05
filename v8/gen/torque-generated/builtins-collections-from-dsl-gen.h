@@ -3,6 +3,8 @@
 
 #include "src/compiler/code-assembler.h"
 #include "src/code-stub-assembler.h"
+#include "src/utils.h"
+#include "torque-generated/class-definitions-from-dsl.h"
 
 namespace v8 {
 namespace internal {
@@ -14,7 +16,8 @@ class CollectionsBuiltinsFromDSLAssembler {
   BaseBuiltinsFromDSLAssembler::KeyValuePair LoadKeyValuePair(compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
  private:
   compiler::CodeAssemblerState* const state_;
-  compiler::CodeAssembler ca_;}; 
+  compiler::CodeAssembler ca_;
+};
 
 }  // namespace internal
 }  // namespace v8

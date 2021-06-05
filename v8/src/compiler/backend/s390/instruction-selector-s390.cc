@@ -41,7 +41,7 @@ enum class OperandMode : uint32_t {
 };
 
 typedef base::Flags<OperandMode, uint32_t> OperandModes;
-DEFINE_OPERATORS_FOR_FLAGS(OperandModes);
+DEFINE_OPERATORS_FOR_FLAGS(OperandModes)
 OperandModes immediateModeMask =
     OperandMode::kShift32Imm | OperandMode::kShift64Imm |
     OperandMode::kInt32Imm | OperandMode::kInt32Imm_Negate |
@@ -566,7 +566,7 @@ void VisitBinOp(InstructionSelector* selector, Node* node,
     FlagsContinuation cont;                                               \
     Visit##type1##type2##Op(selector, node, opcode, operand_mode, &cont); \
   }
-VISIT_OP_LIST(DECLARE_VISIT_HELPER_FUNCTIONS);
+VISIT_OP_LIST(DECLARE_VISIT_HELPER_FUNCTIONS)
 #undef DECLARE_VISIT_HELPER_FUNCTIONS
 #undef VISIT_OP_LIST_32
 #undef VISIT_OP_LIST
@@ -1548,10 +1548,10 @@ static inline bool TryMatchDoubleConstructFromInsert(
     Visit##type##BinOp(this, node, op, mode);           \
   }
 
-WORD32_BIN_OP_LIST(DECLARE_BIN_OP);
-WORD32_UNARY_OP_LIST(DECLARE_UNARY_OP);
-FLOAT_UNARY_OP_LIST(DECLARE_UNARY_OP);
-FLOAT_BIN_OP_LIST(DECLARE_BIN_OP);
+WORD32_BIN_OP_LIST(DECLARE_BIN_OP)
+WORD32_UNARY_OP_LIST(DECLARE_UNARY_OP)
+FLOAT_UNARY_OP_LIST(DECLARE_UNARY_OP)
+FLOAT_BIN_OP_LIST(DECLARE_BIN_OP)
 
 #if V8_TARGET_ARCH_S390X
 WORD64_UNARY_OP_LIST(DECLARE_UNARY_OP)
@@ -2185,7 +2185,7 @@ void InstructionSelector::EmitPrepareArguments(
       if (input.node == nullptr) continue;
       num_slots += input.location.GetType().representation() ==
                            MachineRepresentation::kFloat64
-                       ? kDoubleSize / kPointerSize
+                       ? kDoubleSize / kSystemPointerSize
                        : 1;
     }
     Emit(kS390_StackClaim, g.NoOutput(), g.TempImmediate(num_slots));
@@ -2196,7 +2196,7 @@ void InstructionSelector::EmitPrepareArguments(
              g.TempImmediate(slot));
         slot += input.location.GetType().representation() ==
                         MachineRepresentation::kFloat64
-                    ? (kDoubleSize / kPointerSize)
+                    ? (kDoubleSize / kSystemPointerSize)
                     : 1;
       }
     }
@@ -2636,7 +2636,24 @@ void InstructionSelector::VisitF32x4ReplaceLane(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::EmitPrepareResults(
     ZoneVector<PushParameter>* results, const CallDescriptor* call_descriptor,
     Node* node) {
-  // TODO(John): Port.
+  S390OperandGenerator g(this);
+
+  int reverse_slot = 0;
+  for (PushParameter output : *results) {
+    if (!output.location.IsCallerFrameSlot()) continue;
+    // Skip any alignment holes in nodes.
+    if (output.node != nullptr) {
+      DCHECK(!call_descriptor->IsCFunctionCall());
+      if (output.location.GetType() == MachineType::Float32()) {
+        MarkAsFloat32(output.node);
+      } else if (output.location.GetType() == MachineType::Float64()) {
+        MarkAsFloat64(output.node);
+      }
+      Emit(kS390_Peek, g.DefineAsRegister(output.node),
+           g.UseImmediate(reverse_slot));
+    }
+    reverse_slot += output.location.GetSizeInPointers();
+  }
 }
 
 void InstructionSelector::VisitF32x4Add(Node* node) { UNIMPLEMENTED(); }
@@ -2747,6 +2764,8 @@ void InstructionSelector::VisitI8x16ShrS(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitI8x16ShrU(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitI8x16Mul(Node* node) { UNIMPLEMENTED(); }
+
+void InstructionSelector::VisitS8x16Shuffle(Node* node) { UNIMPLEMENTED(); }
 
 // static
 MachineOperatorBuilder::Flags

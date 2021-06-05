@@ -298,6 +298,9 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64Ldrsw:
     case kArm64LdrW:
     case kArm64Ldr:
+    case kArm64LdrDecompressTaggedSigned:
+    case kArm64LdrDecompressTaggedPointer:
+    case kArm64LdrDecompressAnyTagged:
     case kArm64Peek:
       return kIsLoadOperation;
 
@@ -311,6 +314,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64Strh:
     case kArm64StrW:
     case kArm64Str:
+    case kArm64StrCompressTagged:
     case kArm64DsbIsb:
       return kHasSideEffect;
 
@@ -419,6 +423,9 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
     case kArm64Ror32:
       return 1;
 
+    case kArm64LdrDecompressTaggedSigned:
+    case kArm64LdrDecompressTaggedPointer:
+    case kArm64LdrDecompressAnyTagged:
     case kArm64Ldr:
     case kArm64LdrD:
     case kArm64LdrS:

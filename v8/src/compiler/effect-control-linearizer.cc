@@ -15,6 +15,8 @@
 #include "src/compiler/node.h"
 #include "src/compiler/schedule.h"
 #include "src/heap/factory-inl.h"
+#include "src/objects/heap-number.h"
+#include "src/objects/oddball.h"
 
 namespace v8 {
 namespace internal {
@@ -386,13 +388,6 @@ void EffectControlLinearizer::Run() {
     Node* effect = effect_phi;
     if (effect == nullptr) {
       // There was no effect phi.
-
-      // Since a loop should have at least a StackCheck, only loops in
-      // unreachable code can have no effect phi.
-      DCHECK_IMPLIES(
-          HasIncomingBackEdges(block),
-          block_effects.For(block->PredecessorAt(0), block)
-                  .current_effect->opcode() == IrOpcode::kUnreachable);
       if (block == schedule()->start()) {
         // Start block => effect is start.
         DCHECK_EQ(graph()->start(), control);
@@ -968,6 +963,12 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
     case IrOpcode::kTransitionElementsKind:
       LowerTransitionElementsKind(node);
       break;
+    case IrOpcode::kLoadMessage:
+      result = LowerLoadMessage(node);
+      break;
+    case IrOpcode::kStoreMessage:
+      LowerStoreMessage(node);
+      break;
     case IrOpcode::kLoadFieldByIndex:
       result = LowerLoadFieldByIndex(node);
       break;
@@ -976,6 +977,9 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
       break;
     case IrOpcode::kLoadDataViewElement:
       result = LowerLoadDataViewElement(node);
+      break;
+    case IrOpcode::kLoadStackArgument:
+      result = LowerLoadStackArgument(node);
       break;
     case IrOpcode::kStoreTypedElement:
       LowerStoreTypedElement(node);
@@ -1277,10 +1281,7 @@ void EffectControlLinearizer::TruncateTaggedPointerToBit(
             &if_heapnumber);
 
   // Check if {value} is a BigInt.
-  Node* value_instance_type =
-      __ LoadField(AccessBuilder::ForMapInstanceType(), value_map);
-  __ GotoIf(__ Word32Equal(value_instance_type, __ Int32Constant(BIGINT_TYPE)),
-            &if_bigint);
+  __ GotoIf(__ WordEqual(value_map, __ BigIntMapConstant()), &if_bigint);
 
   // All other values that reach here are true.
   __ Goto(done, __ Int32Constant(1));
@@ -1297,9 +1298,9 @@ void EffectControlLinearizer::TruncateTaggedPointerToBit(
   __ Bind(&if_bigint);
   {
     Node* bitfield = __ LoadField(AccessBuilder::ForBigIntBitfield(), value);
-    Node* length_is_zero = __ WordEqual(
-        __ WordAnd(bitfield, __ IntPtrConstant(BigInt::LengthBits::kMask)),
-        __ IntPtrConstant(0));
+    Node* length_is_zero = __ Word32Equal(
+        __ Word32And(bitfield, __ Int32Constant(BigInt::LengthBits::kMask)),
+        __ Int32Constant(0));
     __ Goto(done, __ Word32Equal(length_is_zero, zero));
   }
 }
@@ -1543,7 +1544,7 @@ void EffectControlLinearizer::LowerCheckMaps(Node* node, Node* frame_state) {
 }
 
 Node* EffectControlLinearizer::LowerCompareMaps(Node* node) {
-  ZoneHandleSet<Map> const& maps = CompareMapsParametersOf(node->op()).maps();
+  ZoneHandleSet<Map> const& maps = CompareMapsParametersOf(node->op());
   size_t const map_count = maps.size();
   Node* value = node->InputAt(0);
 
@@ -2060,11 +2061,30 @@ Node* EffectControlLinearizer::LowerCheckedUint32Bounds(Node* node,
                                                         Node* frame_state) {
   Node* index = node->InputAt(0);
   Node* limit = node->InputAt(1);
-  const CheckParameters& params = CheckParametersOf(node->op());
+  const CheckBoundsParameters& params = CheckBoundsParametersOf(node->op());
 
   Node* check = __ Uint32LessThan(index, limit);
-  __ DeoptimizeIfNot(DeoptimizeReason::kOutOfBounds, params.feedback(), check,
-                     frame_state, IsSafetyCheck::kCriticalSafetyCheck);
+  switch (params.mode()) {
+    case CheckBoundsParameters::kDeoptOnOutOfBounds:
+      __ DeoptimizeIfNot(DeoptimizeReason::kOutOfBounds,
+                         params.check_parameters().feedback(), check,
+                         frame_state, IsSafetyCheck::kCriticalSafetyCheck);
+      break;
+    case CheckBoundsParameters::kAbortOnOutOfBounds: {
+      auto if_abort = __ MakeDeferredLabel();
+      auto done = __ MakeLabel();
+
+      __ Branch(check, &done, &if_abort);
+
+      __ Bind(&if_abort);
+      __ Unreachable();
+      __ Goto(&done);
+
+      __ Bind(&done);
+      break;
+    }
+  }
+
   return index;
 }
 
@@ -2455,10 +2475,7 @@ Node* EffectControlLinearizer::LowerObjectIsBigInt(Node* node) {
   Node* check = ObjectIsSmi(value);
   __ GotoIf(check, &if_smi);
   Node* value_map = __ LoadField(AccessBuilder::ForMap(), value);
-  Node* value_instance_type =
-      __ LoadField(AccessBuilder::ForMapInstanceType(), value_map);
-  Node* vfalse =
-      __ Word32Equal(value_instance_type, __ Uint32Constant(BIGINT_TYPE));
+  Node* vfalse = __ WordEqual(value_map, __ BigIntMapConstant());
   __ Goto(&done, vfalse);
 
   __ Bind(&if_smi);
@@ -3063,7 +3080,7 @@ Node* EffectControlLinearizer::LowerNewSmiOrObjectElements(Node* node) {
 
   // Compute the effective size of the backing store.
   Node* size =
-      __ Int32Add(__ Word32Shl(length, __ Int32Constant(kPointerSizeLog2)),
+      __ Int32Add(__ Word32Shl(length, __ Int32Constant(kTaggedSizeLog2)),
                   __ Int32Constant(FixedArray::kHeaderSize));
 
   // Allocate the result and initialize the header.
@@ -3087,7 +3104,7 @@ Node* EffectControlLinearizer::LowerNewSmiOrObjectElements(Node* node) {
     // Storing "the_hole" doesn't need a write barrier.
     StoreRepresentation rep(MachineRepresentation::kTagged, kNoWriteBarrier);
     Node* offset =
-        __ IntAdd(__ WordShl(index, __ IntPtrConstant(kPointerSizeLog2)),
+        __ IntAdd(__ WordShl(index, __ IntPtrConstant(kTaggedSizeLog2)),
                   __ IntPtrConstant(FixedArray::kHeaderSize - kHeapObjectTag));
     __ Store(rep, result, offset, the_hole);
 
@@ -3926,6 +3943,9 @@ Node* EffectControlLinearizer::SmiMaxValueConstant() {
 }
 
 Node* EffectControlLinearizer::SmiShiftBitsConstant() {
+  if (machine()->Is64() && SmiValuesAre31Bits()) {
+    return __ Int32Constant(kSmiShiftSize + kSmiTagSize);
+  }
   return __ IntPtrConstant(kSmiShiftSize + kSmiTagSize);
 }
 
@@ -4105,6 +4125,20 @@ void EffectControlLinearizer::LowerTransitionElementsKind(Node* node) {
   __ Bind(&done);
 }
 
+Node* EffectControlLinearizer::LowerLoadMessage(Node* node) {
+  Node* offset = node->InputAt(0);
+  Node* object_pattern =
+      __ LoadField(AccessBuilder::ForExternalIntPtr(), offset);
+  return __ BitcastWordToTagged(object_pattern);
+}
+
+void EffectControlLinearizer::LowerStoreMessage(Node* node) {
+  Node* offset = node->InputAt(0);
+  Node* object = node->InputAt(1);
+  Node* object_pattern = __ BitcastTaggedToWord(object);
+  __ StoreField(AccessBuilder::ForExternalIntPtr(), offset, object_pattern);
+}
+
 Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
   Node* object = node->InputAt(0);
   Node* index = node->InputAt(1);
@@ -4132,7 +4166,7 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
     // The field is located in the {object} itself.
     {
       Node* offset =
-          __ IntAdd(__ WordShl(index, __ IntPtrConstant(kPointerSizeLog2 - 1)),
+          __ IntAdd(__ WordShl(index, __ IntPtrConstant(kTaggedSizeLog2 - 1)),
                     __ IntPtrConstant(JSObject::kHeaderSize - kHeapObjectTag));
       Node* result = __ Load(MachineType::AnyTagged(), object, offset);
       __ Goto(&done, result);
@@ -4146,8 +4180,8 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
           __ LoadField(AccessBuilder::ForJSObjectPropertiesOrHash(), object);
       Node* offset =
           __ IntAdd(__ WordShl(__ IntSub(zero, index),
-                               __ IntPtrConstant(kPointerSizeLog2 - 1)),
-                    __ IntPtrConstant((FixedArray::kHeaderSize - kPointerSize) -
+                               __ IntPtrConstant(kTaggedSizeLog2 - 1)),
+                    __ IntPtrConstant((FixedArray::kHeaderSize - kTaggedSize) -
                                       kHeapObjectTag));
       Node* result = __ Load(MachineType::AnyTagged(), properties, offset);
       __ Goto(&done, result);
@@ -4169,7 +4203,7 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
     // The field is located in the {object} itself.
     {
       Node* offset =
-          __ IntAdd(__ WordShl(index, __ IntPtrConstant(kPointerSizeLog2)),
+          __ IntAdd(__ WordShl(index, __ IntPtrConstant(kTaggedSizeLog2)),
                     __ IntPtrConstant(JSObject::kHeaderSize - kHeapObjectTag));
       if (FLAG_unbox_double_fields) {
         Node* result = __ Load(MachineType::Float64(), object, offset);
@@ -4187,8 +4221,8 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
           __ LoadField(AccessBuilder::ForJSObjectPropertiesOrHash(), object);
       Node* offset =
           __ IntAdd(__ WordShl(__ IntSub(zero, index),
-                               __ IntPtrConstant(kPointerSizeLog2)),
-                    __ IntPtrConstant((FixedArray::kHeaderSize - kPointerSize) -
+                               __ IntPtrConstant(kTaggedSizeLog2)),
+                    __ IntPtrConstant((FixedArray::kHeaderSize - kTaggedSize) -
                                       kHeapObjectTag));
       Node* result = __ Load(MachineType::AnyTagged(), properties, offset);
       result = __ LoadField(AccessBuilder::ForHeapNumberValue(), result);
@@ -4302,6 +4336,16 @@ Node* EffectControlLinearizer::LowerLoadDataViewElement(Node* node) {
   // We're done, return {result}.
   __ Bind(&done);
   return done.PhiAt(0);
+}
+
+Node* EffectControlLinearizer::LowerLoadStackArgument(Node* node) {
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+
+  Node* argument =
+      __ LoadElement(AccessBuilder::ForStackArgument(), base, index);
+
+  return __ BitcastWordToTagged(argument);
 }
 
 void EffectControlLinearizer::LowerStoreDataViewElement(Node* node) {
@@ -4561,7 +4605,7 @@ void EffectControlLinearizer::LowerTransitionAndStoreElement(Node* node) {
       Node* float_value =
           __ LoadField(AccessBuilder::ForHeapNumberValue(), value);
       __ StoreElement(AccessBuilder::ForFixedDoubleArrayElement(), elements,
-                      index, float_value);
+                      index, __ Float64SilenceNaN(float_value));
       __ Goto(&done);
     }
   }
@@ -4627,7 +4671,7 @@ void EffectControlLinearizer::LowerTransitionAndStoreNumberElement(Node* node) {
 
   Node* elements = __ LoadField(AccessBuilder::ForJSObjectElements(), array);
   __ StoreElement(AccessBuilder::ForFixedDoubleArrayElement(), elements, index,
-                  value);
+                  __ Float64SilenceNaN(value));
 }
 
 void EffectControlLinearizer::LowerTransitionAndStoreNonNumberElement(
@@ -5229,8 +5273,8 @@ Node* EffectControlLinearizer::LowerFindOrderedHashMapEntryForInt32Key(
   hash = __ WordAnd(hash, __ IntSub(number_of_buckets, __ IntPtrConstant(1)));
   Node* first_entry = ChangeSmiToIntPtr(__ Load(
       MachineType::TaggedSigned(), table,
-      __ IntAdd(__ WordShl(hash, __ IntPtrConstant(kPointerSizeLog2)),
-                __ IntPtrConstant(OrderedHashMap::kHashTableStartOffset -
+      __ IntAdd(__ WordShl(hash, __ IntPtrConstant(kTaggedSizeLog2)),
+                __ IntPtrConstant(OrderedHashMap::HashTableStartOffset() -
                                   kHeapObjectTag))));
 
   auto loop = __ MakeLoopLabel(MachineType::PointerRepresentation());
@@ -5248,8 +5292,8 @@ Node* EffectControlLinearizer::LowerFindOrderedHashMapEntryForInt32Key(
 
     Node* candidate_key = __ Load(
         MachineType::AnyTagged(), table,
-        __ IntAdd(__ WordShl(entry, __ IntPtrConstant(kPointerSizeLog2)),
-                  __ IntPtrConstant(OrderedHashMap::kHashTableStartOffset -
+        __ IntAdd(__ WordShl(entry, __ IntPtrConstant(kTaggedSizeLog2)),
+                  __ IntPtrConstant(OrderedHashMap::HashTableStartOffset() -
                                     kHeapObjectTag)));
 
     auto if_match = __ MakeLabel();
@@ -5277,9 +5321,9 @@ Node* EffectControlLinearizer::LowerFindOrderedHashMapEntryForInt32Key(
       Node* next_entry = ChangeSmiToIntPtr(__ Load(
           MachineType::TaggedSigned(), table,
           __ IntAdd(
-              __ WordShl(entry, __ IntPtrConstant(kPointerSizeLog2)),
-              __ IntPtrConstant(OrderedHashMap::kHashTableStartOffset +
-                                OrderedHashMap::kChainOffset * kPointerSize -
+              __ WordShl(entry, __ IntPtrConstant(kTaggedSizeLog2)),
+              __ IntPtrConstant(OrderedHashMap::HashTableStartOffset() +
+                                OrderedHashMap::kChainOffset * kTaggedSize -
                                 kHeapObjectTag))));
       __ Goto(&loop, next_entry);
     }

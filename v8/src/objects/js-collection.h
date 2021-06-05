@@ -19,19 +19,13 @@ class JSCollection : public JSObject {
   // [table]: the backing hash table
   DECL_ACCESSORS(table, Object)
 
-// Layout description.
-#define JS_COLLECTION_FIELDS(V) \
-  V(kTableOffset, kTaggedSize)  \
-  /* Header size. */            \
-  V(kSize, 0)
-
-  DEFINE_FIELD_OFFSET_CONSTANTS(JSObject::kHeaderSize, JS_COLLECTION_FIELDS)
-#undef JS_COLLECTION_FIELDS
+  // Layout description.
+  DEFINE_FIELD_OFFSET_CONSTANTS(JSObject::kHeaderSize,
+                                TORQUE_GENERATED_JSCOLLECTION_FIELDS)
 
   static const int kAddFunctionDescriptorIndex = 3;
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSCollection);
+  OBJECT_CONSTRUCTORS(JSCollection, JSObject);
 };
 
 // The JSSet describes EcmaScript Harmony sets
@@ -46,8 +40,7 @@ class JSSet : public JSCollection {
   DECL_PRINTER(JSSet)
   DECL_VERIFIER(JSSet)
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSSet);
+  OBJECT_CONSTRUCTORS(JSSet, JSCollection);
 };
 
 class JSSetIterator
@@ -59,8 +52,8 @@ class JSSetIterator
 
   DECL_CAST(JSSetIterator)
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSSetIterator);
+  OBJECT_CONSTRUCTORS(JSSetIterator,
+                      OrderedHashTableIterator<JSSetIterator, OrderedHashSet>);
 };
 
 // The JSMap describes EcmaScript Harmony maps
@@ -75,8 +68,7 @@ class JSMap : public JSCollection {
   DECL_PRINTER(JSMap)
   DECL_VERIFIER(JSMap)
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSMap);
+  OBJECT_CONSTRUCTORS(JSMap, JSCollection);
 };
 
 class JSMapIterator
@@ -90,10 +82,10 @@ class JSMapIterator
 
   // Returns the current value of the iterator. This should only be called when
   // |HasMore| returns true.
-  inline Object* CurrentValue();
+  inline Object CurrentValue();
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSMapIterator);
+  OBJECT_CONSTRUCTORS(JSMapIterator,
+                      OrderedHashTableIterator<JSMapIterator, OrderedHashMap>);
 };
 
 // Base class for both JSWeakMap and JSWeakSet
@@ -130,8 +122,7 @@ class JSWeakCollection : public JSObject {
   // Visit the whole object.
   typedef BodyDescriptorImpl BodyDescriptor;
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSWeakCollection);
+  OBJECT_CONSTRUCTORS(JSWeakCollection, JSObject);
 };
 
 // The JSWeakMap describes EcmaScript Harmony weak maps
@@ -143,8 +134,7 @@ class JSWeakMap : public JSWeakCollection {
   DECL_PRINTER(JSWeakMap)
   DECL_VERIFIER(JSWeakMap)
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSWeakMap);
+  OBJECT_CONSTRUCTORS(JSWeakMap, JSWeakCollection);
 };
 
 // The JSWeakSet describes EcmaScript Harmony weak sets
@@ -156,8 +146,7 @@ class JSWeakSet : public JSWeakCollection {
   DECL_PRINTER(JSWeakSet)
   DECL_VERIFIER(JSWeakSet)
 
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSWeakSet);
+  OBJECT_CONSTRUCTORS(JSWeakSet, JSWeakCollection);
 };
 
 }  // namespace internal

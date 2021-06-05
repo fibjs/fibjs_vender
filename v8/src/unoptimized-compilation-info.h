@@ -46,6 +46,14 @@ class V8_EXPORT_PRIVATE UnoptimizedCompilationInfo final {
   void MarkAsCollectTypeProfile() { SetFlag(kCollectTypeProfile); }
   bool collect_type_profile() const { return GetFlag(kCollectTypeProfile); }
 
+  void MarkAsForceCollectSourcePositions() { SetFlag(kCollectSourcePositions); }
+  bool collect_source_positions() const {
+    return GetFlag(kCollectSourcePositions);
+  }
+
+  void MarkAsMightAlwaysOpt() { SetFlag(kMightAlwaysOpt); }
+  bool might_always_opt() const { return GetFlag(kMightAlwaysOpt); }
+
   // Accessors for the input data of the function being compiled.
 
   FunctionLiteral* literal() const { return literal_; }
@@ -98,7 +106,8 @@ class V8_EXPORT_PRIVATE UnoptimizedCompilationInfo final {
     kIsEval = 1 << 0,
     kIsNative = 1 << 1,
     kCollectTypeProfile = 1 << 2,
-    kUntrustedCodeMitigations = 1 << 3,
+    kMightAlwaysOpt = 1 << 3,
+    kCollectSourcePositions = 1 << 4,
   };
 
   void SetFlag(Flag flag) { flags_ |= flag; }

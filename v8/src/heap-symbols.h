@@ -11,11 +11,13 @@
   V(_, calendar_string, "calendar")                                 \
   V(_, cardinal_string, "cardinal")                                 \
   V(_, caseFirst_string, "caseFirst")                               \
+  V(_, dateStyle_string, "dateStyle")                               \
   V(_, day_string, "day")                                           \
   V(_, dayPeriod_string, "dayPeriod")                               \
   V(_, decimal_string, "decimal")                                   \
   V(_, era_string, "era")                                           \
   V(_, fraction_string, "fraction")                                 \
+  V(_, full_string, "full")                                         \
   V(_, granularity_string, "granularity")                           \
   V(_, grapheme_string, "grapheme")                                 \
   V(_, group_string, "group")                                       \
@@ -23,7 +25,6 @@
   V(_, h12_string, "h12")                                           \
   V(_, h23_string, "h23")                                           \
   V(_, h24_string, "h24")                                           \
-  V(_, hard_string, "hard")                                         \
   V(_, hour_string, "hour")                                         \
   V(_, hour12_string, "hour12")                                     \
   V(_, hourCycle_string, "hourCycle")                               \
@@ -36,7 +37,6 @@
   V(_, integer_string, "integer")                                   \
   V(_, kana_string, "kana")                                         \
   V(_, letter_string, "letter")                                     \
-  V(_, lineBreakStyle_string, "lineBreakStyle")                     \
   V(_, list_string, "list")                                         \
   V(_, literal_string, "literal")                                   \
   V(_, locale_string, "locale")                                     \
@@ -64,10 +64,10 @@
   V(_, SegmentIterator_string, "Segment Iterator")                  \
   V(_, sensitivity_string, "sensitivity")                           \
   V(_, sep_string, "sep")                                           \
-  V(_, soft_string, "soft")                                         \
   V(_, strict_string, "strict")                                     \
   V(_, style_string, "style")                                       \
   V(_, term_string, "term")                                         \
+  V(_, timeStyle_string, "timeStyle")                               \
   V(_, timeZone_string, "timeZone")                                 \
   V(_, timeZoneName_string, "timeZoneName")                         \
   V(_, type_string, "type")                                         \
@@ -114,6 +114,7 @@
   V(_, buffer_string, "buffer")                                       \
   V(_, byte_length_string, "byteLength")                              \
   V(_, byte_offset_string, "byteOffset")                              \
+  V(_, CompileError_string, "CompileError")                           \
   V(_, call_string, "call")                                           \
   V(_, callee_string, "callee")                                       \
   V(_, caller_string, "caller")                                       \
@@ -121,11 +122,11 @@
   V(_, closure_string, "(closure)")                                   \
   V(_, code_string, "code")                                           \
   V(_, column_string, "column")                                       \
-  V(_, CompileError_string, "CompileError")                           \
+  V(_, computed_string, "<computed>")                                 \
   V(_, configurable_string, "configurable")                           \
+  V(_, conjunction_string, "conjunction")                             \
   V(_, construct_string, "construct")                                 \
   V(_, constructor_string, "constructor")                             \
-  V(_, conjunction_string, "conjunction")                             \
   V(_, create_string, "create")                                       \
   V(_, Date_string, "Date")                                           \
   V(_, date_to_string, "[object Date]")                               \
@@ -136,6 +137,7 @@
   V(_, display_name_string, "displayName")                            \
   V(_, done_string, "done")                                           \
   V(_, dot_catch_string, ".catch")                                    \
+  V(_, dot_default_string, ".default")                                \
   V(_, dot_for_string, ".for")                                        \
   V(_, dot_generator_object_string, ".generator_object")              \
   V(_, dot_iterator_string, ".iterator")                              \
@@ -192,6 +194,7 @@
   V(_, long_string, "long")                                           \
   V(_, Map_string, "Map")                                             \
   V(_, MapIterator_string, "Map Iterator")                            \
+  V(_, medium_string, "medium")                                       \
   V(_, message_string, "message")                                     \
   V(_, meta_string, "meta")                                           \
   V(_, minus_Infinity_string, "-Infinity")                            \
@@ -256,7 +259,6 @@
   V(_, sourceText_string, "sourceText")                               \
   V(_, stack_string, "stack")                                         \
   V(_, stackTraceLimit_string, "stackTraceLimit")                     \
-  V(_, star_default_star_string, "*default*")                         \
   V(_, sticky_string, "sticky")                                       \
   V(_, String_string, "String")                                       \
   V(_, string_string, "string")                                       \
@@ -286,8 +288,6 @@
   V(_, value_string, "value")                                         \
   V(_, valueOf_string, "valueOf")                                     \
   V(_, values_string, "values")                                       \
-  V(_, WeakCell_string, "WeakCell")                                   \
-  V(_, WeakFactory_string, "WeakFactory")                             \
   V(_, WeakMap_string, "WeakMap")                                     \
   V(_, WeakRef_string, "WeakRef")                                     \
   V(_, WeakSet_string, "WeakSet")                                     \
@@ -352,14 +352,15 @@
 #define INCREMENTAL_SCOPES(F)                                      \
   /* MC_INCREMENTAL is the top-level incremental marking scope. */ \
   F(MC_INCREMENTAL)                                                \
-  F(MC_INCREMENTAL_START)                                          \
-  F(MC_INCREMENTAL_SWEEPING)                                       \
   F(MC_INCREMENTAL_EMBEDDER_PROLOGUE)                              \
   F(MC_INCREMENTAL_EMBEDDER_TRACING)                               \
+  F(MC_INCREMENTAL_EXTERNAL_EPILOGUE)                              \
+  F(MC_INCREMENTAL_EXTERNAL_PROLOGUE)                              \
   F(MC_INCREMENTAL_FINALIZE)                                       \
   F(MC_INCREMENTAL_FINALIZE_BODY)                                  \
-  F(MC_INCREMENTAL_EXTERNAL_EPILOGUE)                              \
-  F(MC_INCREMENTAL_EXTERNAL_PROLOGUE)
+  F(MC_INCREMENTAL_LAYOUT_CHANGE)                                  \
+  F(MC_INCREMENTAL_START)                                          \
+  F(MC_INCREMENTAL_SWEEPING)
 
 #define TOP_MC_SCOPES(F) \
   F(MC_CLEAR)            \
@@ -381,6 +382,8 @@
   F(HEAP_PROLOGUE)                                   \
   TOP_MC_SCOPES(F)                                   \
   F(MC_CLEAR_DEPENDENT_CODE)                         \
+  F(MC_CLEAR_FLUSHABLE_BYTECODE)                     \
+  F(MC_CLEAR_FLUSHED_JS_FUNCTIONS)                   \
   F(MC_CLEAR_MAPS)                                   \
   F(MC_CLEAR_SLOTS_BUFFER)                           \
   F(MC_CLEAR_STORE_BUFFER)                           \

@@ -31,6 +31,10 @@ endif()
 
 list(APPEND src_list ${snapshots_list} ${trap_handler_list})
 
+if(${ARCH} STREQUAL "mips" OR ${ARCH} STREQUAL "mips64")
+	set(flags "${flags} -Wno-c++11-narrowing")
+endif()
+
 include(../tools/Library.cmake)
 
 include_directories(
@@ -45,6 +49,7 @@ add_definitions(
 	-DV8_CONCURRENT_MARKING=1
 	-DENABLE_HANDLE_ZAPPING=1
 	-DDISABLE_UNTRUSTED_CODE_MITIGATIONS=1
+	-DV8_TYPED_ARRAY_MAX_SIZE_IN_HEAP=64
 )
 
 if(${BUILD_TYPE} STREQUAL "Debug")

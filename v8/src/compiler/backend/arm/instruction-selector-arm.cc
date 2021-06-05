@@ -8,6 +8,7 @@
 
 #include "src/base/adapters.h"
 #include "src/base/bits.h"
+#include "src/base/enum-set.h"
 #include "src/compiler/backend/instruction-selector-impl.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
@@ -772,6 +773,7 @@ void EmitBic(InstructionSelector* selector, Node* node, Node* left,
 
 void EmitUbfx(InstructionSelector* selector, Node* node, Node* left,
               uint32_t lsb, uint32_t width) {
+  DCHECK_LE(lsb, 31u);
   DCHECK_LE(1u, width);
   DCHECK_LE(width, 32u - lsb);
   ArmOperandGenerator g(selector);
@@ -951,7 +953,7 @@ void InstructionSelector::VisitWord32Shr(Node* node) {
       uint32_t value = (mleft.right().Value() >> lsb) << lsb;
       uint32_t width = base::bits::CountPopulation(value);
       uint32_t msb = base::bits::CountLeadingZeros32(value);
-      if (msb + width + lsb == 32) {
+      if ((width != 0) && (msb + width + lsb == 32)) {
         DCHECK_EQ(lsb, base::bits::CountTrailingZeros32(value));
         return EmitUbfx(this, node, mleft.left().node(), lsb, width);
       }
@@ -2470,7 +2472,7 @@ void InstructionSelector::VisitWord32AtomicPairCompareExchange(Node* node) {
 
 void InstructionSelector::VisitS128Zero(Node* node) {
   ArmOperandGenerator g(this);
-  Emit(kArmS128Zero, g.DefineAsRegister(node), g.DefineAsRegister(node));
+  Emit(kArmS128Zero, g.DefineAsRegister(node));
 }
 
 #define SIMD_VISIT_SPLAT(Type)                               \
@@ -2724,7 +2726,7 @@ InstructionSelector::SupportedMachineOperatorFlags() {
 // static
 MachineOperatorBuilder::AlignmentRequirements
 InstructionSelector::AlignmentRequirements() {
-  EnumSet<MachineRepresentation> req_aligned;
+  base::EnumSet<MachineRepresentation> req_aligned;
   req_aligned.Add(MachineRepresentation::kFloat32);
   req_aligned.Add(MachineRepresentation::kFloat64);
   return MachineOperatorBuilder::AlignmentRequirements::

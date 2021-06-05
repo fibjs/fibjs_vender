@@ -84,6 +84,7 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
   Reduction ReduceJSStoreGlobal(Node* node);
   Reduction ReduceJSLoadNamed(Node* node);
   Reduction ReduceJSStoreNamed(Node* node);
+  Reduction ReduceJSHasProperty(Node* node);
   Reduction ReduceJSLoadProperty(Node* node);
   Reduction ReduceJSStoreProperty(Node* node);
   Reduction ReduceJSStoreNamedOwn(Node* node);
@@ -92,6 +93,7 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
   Reduction ReduceJSToObject(Node* node);
 
   Reduction ReduceElementAccess(Node* node, Node* index, Node* value,
+                                FeedbackNexus const& nexus,
                                 MapHandles const& receiver_maps,
                                 AccessMode access_mode,
                                 KeyedAccessLoadMode load_mode,
@@ -112,9 +114,21 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
   Reduction ReduceGlobalAccess(Node* node, Node* receiver, Node* value,
                                Handle<Name> name, AccessMode access_mode,
                                Node* index = nullptr);
+  Reduction ReduceGlobalAccess(Node* node, Node* receiver, Node* value,
+                               Handle<Name> name, AccessMode access_mode,
+                               Node* index, Handle<PropertyCell> property_cell);
+  Reduction ReduceKeyedLoadFromHeapConstant(Node* node, Node* index,
+                                            FeedbackNexus const& nexus,
+                                            AccessMode access_mode,
+                                            KeyedAccessLoadMode load_mode);
+  Reduction ReduceElementAccessOnString(Node* node, Node* index, Node* value,
+                                        AccessMode access_mode,
+                                        KeyedAccessLoadMode load_mode);
 
   Reduction ReduceSoftDeoptimize(Node* node, DeoptimizeReason reason);
   Reduction ReduceJSToString(Node* node);
+
+  Reduction ReduceJSLoadPropertyWithEnumeratedKey(Node* node);
 
   const StringConstantBase* CreateDelayedStringConstant(Node* node);
 
@@ -158,6 +172,9 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
                                         PropertyAccessInfo const& access_info,
                                         AccessMode access_mode);
 
+  ValueEffectControl BuildPropertyTest(Node* effect, Node* control,
+                                       PropertyAccessInfo const& access_info);
+
   // Helpers for accessor inlining.
   Node* InlinePropertyGetterCall(Node* receiver, Node* context,
                                  Node* frame_state, Node** effect,
@@ -186,7 +203,7 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
                                KeyedAccessLoadMode load_mode);
 
   // Construct appropriate subgraph to extend properties backing store.
-  Node* BuildExtendPropertiesBackingStore(Handle<Map> map, Node* properties,
+  Node* BuildExtendPropertiesBackingStore(const MapRef& map, Node* properties,
                                           Node* effect, Node* control);
 
   // Construct appropriate subgraph to check that the {value} matches
@@ -206,9 +223,6 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
                            MapHandles* receiver_maps);
 
   // Try to infer maps for the given {receiver} at the current {effect}.
-  // If maps are returned then you can be sure that the {receiver} definitely
-  // has one of the returned maps at this point in the program (identified
-  // by {effect}).
   bool InferReceiverMaps(Node* receiver, Node* effect,
                          MapHandles* receiver_maps);
   // Try to infer a root map for the {receiver} independent of the current
@@ -251,7 +265,7 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
   CompilationDependencies* const dependencies_;
   Zone* const zone_;
   Zone* const shared_zone_;
-  TypeCache const& type_cache_;
+  TypeCache const* type_cache_;
 
   DISALLOW_COPY_AND_ASSIGN(JSNativeContextSpecialization);
 };

@@ -10,6 +10,7 @@
 #include "src/objects/js-regexp.h"
 #include "src/regexp/regexp-ast.h"
 #include "src/regexp/regexp-macro-assembler.h"
+#include "src/zone/zone-splay-tree.h"
 
 namespace v8 {
 namespace internal {
@@ -53,14 +54,8 @@ inline bool NeedsUnicodeCaseEquivalents(JSRegExp::Flags flags) {
 
 class RegExpImpl {
  public:
-  // Whether V8 is compiled with native regexp support or not.
-  static bool UsesNativeRegExp() {
-#ifdef V8_INTERPRETED_REGEXP
-    return false;
-#else
-    return true;
-#endif
-  }
+  // Whether the irregexp engine generates native code or interpreter bytecode.
+  static bool UsesNativeRegExp() { return !FLAG_regexp_interpret_all; }
 
   // Returns a string representation of a regular expression.
   // Implements RegExp.prototype.toString, see ECMA-262 section 15.10.6.4.
@@ -1505,10 +1500,10 @@ class RegExpEngine: public AllStatic {
  public:
   struct CompilationResult {
     inline CompilationResult(Isolate* isolate, const char* error_message);
-    CompilationResult(Object* code, int registers)
+    CompilationResult(Object code, int registers)
         : code(code), num_registers(registers) {}
     const char* const error_message = nullptr;
-    Object* const code;
+    Object const code;
     int const num_registers = 0;
   };
 
@@ -1531,8 +1526,8 @@ class RegExpResultsCache : public AllStatic {
 
   // Attempt to retrieve a cached result.  On failure, 0 is returned as a Smi.
   // On success, the returned result is guaranteed to be a COW-array.
-  static Object* Lookup(Heap* heap, String key_string, Object* key_pattern,
-                        FixedArray* last_match_out, ResultsCacheType type);
+  static Object Lookup(Heap* heap, String key_string, Object key_pattern,
+                       FixedArray* last_match_out, ResultsCacheType type);
   // Attempt to add value_array to the cache specified by type.  On success,
   // value_array is turned into a COW-array.
   static void Enter(Isolate* isolate, Handle<String> key_string,

@@ -21,6 +21,7 @@ namespace internal {
 // Forward declarations.
 class AstRawString;
 class BackgroundCompileTask;
+class IsCompiledScope;
 class JavaScriptFrame;
 class OptimizedCompilationInfo;
 class OptimizedCompilationJob;
@@ -57,9 +58,17 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
   // given function holds (except for live-edit, which compiles the world).
 
   static bool Compile(Handle<SharedFunctionInfo> shared,
-                      ClearExceptionFlag flag);
-  static bool Compile(Handle<JSFunction> function, ClearExceptionFlag flag);
+                      ClearExceptionFlag flag,
+                      IsCompiledScope* is_compiled_scope);
+  static bool Compile(Handle<JSFunction> function, ClearExceptionFlag flag,
+                      IsCompiledScope* is_compiled_scope);
   static bool CompileOptimized(Handle<JSFunction> function, ConcurrencyMode);
+
+  // Collect source positions for a function that has already been compiled to
+  // bytecode, but for which source positions were not collected (e.g. because
+  // they were not immediately needed).
+  static bool CollectSourcePositions(Isolate* isolate,
+                                     Handle<SharedFunctionInfo> shared);
 
   V8_WARN_UNUSED_RESULT static MaybeHandle<SharedFunctionInfo>
   CompileForLiveEdit(ParseInfo* parse_info, Isolate* isolate);

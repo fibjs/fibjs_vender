@@ -29,13 +29,11 @@ class ReadOnlySerializer : public RootsSerializer {
   // ReadOnlyObjectCache bytecode into |sink|. Returns whether this was
   // successful.
   bool SerializeUsingReadOnlyObjectCache(SnapshotByteSink* sink,
-                                         HeapObject* obj, HowToCode how_to_code,
-                                         WhereToPoint where_to_point, int skip);
+                                         HeapObject obj);
 
  private:
-  void SerializeObject(HeapObject* o, HowToCode how_to_code,
-                       WhereToPoint where_to_point, int skip) override;
-  bool MustBeDeferred(HeapObject* object) override;
+  void SerializeObject(HeapObject o) override;
+  bool MustBeDeferred(HeapObject object) override;
 
   DISALLOW_COPY_AND_ASSIGN(ReadOnlySerializer);
 };

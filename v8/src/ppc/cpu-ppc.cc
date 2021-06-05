@@ -10,8 +10,9 @@
 
 #if V8_TARGET_ARCH_PPC
 
-#include "src/assembler.h"
-#include "src/macro-assembler.h"
+#include "src/cpu-features.h"
+
+#define INSTR_AND_DATA_CACHE_COHERENCY LWSYNC
 
 namespace v8 {
 namespace internal {
@@ -49,6 +50,7 @@ void CpuFeatures::FlushICache(void* buffer, size_t size) {
 }  // namespace internal
 }  // namespace v8
 
+#undef INSTR_AND_DATA_CACHE_COHERENCY
 #endif  // V8_TARGET_ARCH_PPC
 
 
