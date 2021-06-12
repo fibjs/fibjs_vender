@@ -46,6 +46,19 @@ TEST(ENG(api), Value_Number)
     ASSERT_DOUBLE_EQ(100.5, rt->NewString("100.5").toNumber());
 }
 
+TEST(ENG(api), Value_BigInt)
+{
+    js::Runtime::Scope scope(rt);
+
+    ASSERT_TRUE(rt->NewBigInt(100.5).isBigInt());
+    EXPECT_FALSE(rt->NewBoolean(true).isBigInt());
+    ASSERT_DOUBLE_EQ(100, rt->NewBigInt(100).toBigInt());
+    ASSERT_DOUBLE_EQ(100, rt->NewString("100").toBigInt());
+    ASSERT_DOUBLE_EQ(100, rt->NewString("100.5").toBigInt());
+    // BigInt('100n') is invalid in es
+    ASSERT_DOUBLE_EQ(0, rt->NewString("100n").toBigInt());
+}
+
 TEST(ENG(api), Value_String)
 {
     js::Runtime::Scope scope(rt);
@@ -141,7 +154,7 @@ TEST(ENG(api), Global)
 {
     js::Runtime::Scope scope(rt);
 
-    js::Object g = rt->GetGlobal();
+    js::Object g = rt->GetContextGlobal();
 
     ASSERT_TRUE(rt->execute("global_test_1", "test.js").isEmpty());
     g.set("global_test_1", rt->NewNumber(205));
@@ -208,7 +221,7 @@ TEST(ENG(api), fiber)
 
     js::Runtime::Scope scope(rt);
 
-    js::Object g = rt->GetGlobal();
+    js::Object g = rt->GetContextGlobal();
 
     g.set("my_func_fiber", rt->NewFunction(my_func_fiber));
 

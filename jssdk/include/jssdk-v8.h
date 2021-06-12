@@ -12,91 +12,83 @@
 #include "jssdk.h"
 #include <v8/include/v8.h>
 
-namespace js
-{
+namespace js {
 
 #define _api v8_api
 
 class Api_v8;
 class v8_Runtime;
 
-class Runtime_core::Locker
-{
+class JSThreadCore::Locker {
 public:
-	Locker(Runtime* rt);
-	~Locker();
+    Locker(Runtime* rt);
+    ~Locker();
 
 private:
-	Runtime* m_rt;
-	char m_locker[sizeof(v8::Locker)];
+    Runtime* m_rt;
+    char m_locker[sizeof(v8::Locker)];
 
-	friend class v8_Runtime;
+    friend class v8_Runtime;
 };
 
-class Runtime_core::Unlocker
-{
+class JSThreadCore::Unlocker {
 public:
-	Unlocker(Runtime* rt);
-	~Unlocker();
+    Unlocker(Runtime* rt);
+    ~Unlocker();
 
 private:
-	Runtime* m_rt;
-	char m_unlocker[sizeof(v8::Unlocker)];
+    Runtime* m_rt;
+    char m_unlocker[sizeof(v8::Unlocker)];
 
-	friend class v8_Runtime;
+    friend class v8_Runtime;
 };
 
-class Runtime_core::Scope
-{
+class JSThreadCore::Scope {
 public:
-	Scope(Runtime* rt);
-	~Scope();
+    Scope(Runtime* rt);
+    ~Scope();
 
 private:
-	Runtime* m_rt;
-	char m_locker[sizeof(v8::Locker)];
-	char m_handle_scope[sizeof(v8::HandleScope)];
+    Runtime* m_rt;
+    char m_locker[sizeof(v8::Locker)];
+    char m_handle_scope[sizeof(v8::HandleScope)];
 
-	friend class v8_Runtime;
+    friend class v8_Runtime;
 };
 
-class HandleScope
-{
+class HandleScope {
 public:
-	HandleScope(Runtime* rt);
-	~HandleScope();
+    HandleScope(Runtime* rt);
+    ~HandleScope();
 
 private:
-	Runtime* m_rt;
-	char m_handle_scope[sizeof(v8::HandleScope)];
+    Runtime* m_rt;
+    char m_handle_scope[sizeof(v8::HandleScope)];
 
-	friend class v8_Runtime;
+    friend class v8_Runtime;
 };
 
 typedef v8::Local<v8::Value> js_value;
 
-class EscapableHandleScope
-{
+class EscapableHandleScope {
 public:
-	EscapableHandleScope(Runtime* rt);
-	~EscapableHandleScope();
+    EscapableHandleScope(Runtime* rt);
+    ~EscapableHandleScope();
 
 public:
-	Value escape(Value v);
+    Value escape(Value v);
 
 private:
-	Runtime* m_rt;
-	char m_handle_scope[sizeof(v8::EscapableHandleScope)];
+    Runtime* m_rt;
+    char m_handle_scope[sizeof(v8::EscapableHandleScope)];
 
-	friend class v8_Runtime;
+    friend class v8_Runtime;
 };
 
 class FunctionCallbackInfo;
 typedef void (*FunctionCallback)(const FunctionCallbackInfo& info);
 
-class FunctionCallbackInfo : private v8::FunctionCallbackInfo<v8::Value>
-{
-
+class FunctionCallbackInfo : private v8::FunctionCallbackInfo<v8::Value> {
 };
 
 }
