@@ -385,7 +385,7 @@ public:
     virtual ~OSThread();
 
 public:
-    static const int32_t type = 3;
+    static const int32_t type = kTTOSThread;
     virtual bool is(int32_t t)
     {
         return t == type;

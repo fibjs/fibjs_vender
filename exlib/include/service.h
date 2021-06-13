@@ -20,7 +20,7 @@ private:
     Service(int32_t workers);
 
 public:
-    static const int32_t type = 2;
+    static const int32_t type = kTTService;
     virtual bool is(int32_t t)
     {
         return t == type || OSThread::is(t);

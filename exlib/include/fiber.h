@@ -44,6 +44,12 @@ public:
     }
 };
 
+enum ThreadType {
+    kTTOSThread = 1,
+    kTTService = 2,
+    kTTFiber = 3,
+};
+
 class Thread_base : public Task_base {
 public:
     Thread_base()
@@ -325,7 +331,7 @@ public:
     }
 
 public:
-    static const int32_t type = 3;
+    static const int32_t type = kTTFiber;
     virtual bool is(int32_t t)
     {
         return t == type;
