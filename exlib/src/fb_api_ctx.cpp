@@ -17,7 +17,7 @@ namespace exlib {
 
 extern "C" void fb_switch(void* from, void* to);
 
-void* convert_Fiber(void* param)
+void* convert_fiber(void* param)
 {
     ucontext_t* ctx = (ucontext_t*)malloc(sizeof(ucontext_t));
     getcontext(ctx);

@@ -14,7 +14,7 @@
 
 namespace exlib {
 
-void* convert_Fiber(void* param)
+void* convert_fiber(void* param)
 {
     return ConvertThreadToFiber(param);
 }

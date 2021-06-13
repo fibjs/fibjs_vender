@@ -28,7 +28,7 @@ namespace exlib {
 
 typedef void (*fiber_func)(void*);
 
-void* convert_Fiber(void* param);
+void* convert_fiber(void* param);
 void* create_fiber(size_t stacksize, fiber_func proc, void* param);
 void switch_fiber(void* from, void* to);
 void delete_fiber(void* fiber);

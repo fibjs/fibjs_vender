@@ -16,7 +16,7 @@ namespace exlib {
 
 extern "C" void fb_switch(void* from, void* to);
 
-void* convert_Fiber(void* param)
+void* convert_fiber(void* param)
 {
     registers* ctx = (registers*)malloc(sizeof(registers));
     memset(ctx, 0, sizeof(registers));

@@ -77,7 +77,7 @@ Service::Service(int32_t workers)
     , m_workers(workers - 1)
 {
     m_main.set_name("main");
-    m_main.m_ctx = convert_Fiber(NULL);
+    m_main.m_ctx = convert_fiber(NULL);
     m_main.Ref();
 
     if (!s_service_inited) {
