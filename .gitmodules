@@ -1,0 +1,4 @@
+[submodule "build_tools"]
+	path = build_tools
+	url = https://github.com/fibjs/build_tools.git
+	branch = master

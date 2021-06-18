@@ -1,4 +1,4 @@
-include(tools/get_env.cmake)
+include(build_tools/cmake-scripts/get_env.cmake)
 
 set(libs
     exlib

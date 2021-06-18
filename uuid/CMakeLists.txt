@@ -5,4 +5,4 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     add_definitions(-D__STDC__)
 endif()
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)

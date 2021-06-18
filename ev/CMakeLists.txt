@@ -4,4 +4,4 @@ add_definitions(
 	-DEV_CHILD_ENABLE=0
 )
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)

@@ -35,7 +35,7 @@ if(${ARCH} STREQUAL "mips" OR ${ARCH} STREQUAL "mips64")
 	set(flags "${flags} -Wno-c++11-narrowing")
 endif()
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)
 
 include_directories(
 	${PROJECT_SOURCE_DIR}

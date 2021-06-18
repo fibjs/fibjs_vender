@@ -9,4 +9,4 @@ include_directories(
 	"${PROJECT_SOURCE_DIR}/../webp/include/" 
 	"${PROJECT_SOURCE_DIR}/../zlib/include/")
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)

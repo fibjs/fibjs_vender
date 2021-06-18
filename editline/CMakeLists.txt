@@ -1,3 +1,3 @@
 cmake_minimum_required(VERSION 2.6)
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)

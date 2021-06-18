@@ -4,4 +4,4 @@ if(NOT MSVC)
     set(flags "-msse4.1")
 endif()
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)

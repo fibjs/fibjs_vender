@@ -8,4 +8,4 @@ include_directories(
 
 add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600)
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)

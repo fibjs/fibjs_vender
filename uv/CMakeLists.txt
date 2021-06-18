@@ -154,7 +154,7 @@ endif()
 set(c_flags "${uv_cflags}")
 set(src_list "${uv_sources}")
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${uv_defines})
 target_link_libraries(${PROJECT_NAME} ${uv_libraries})

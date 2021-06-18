@@ -795,4 +795,4 @@ if(WIN32)
   include_directories("${PROJECT_SOURCE_DIR}/libcef_dll/patch")
 endif()
 
-include(../tools/Library.cmake)
+include(../build_tools/cmake/Library.cmake)
