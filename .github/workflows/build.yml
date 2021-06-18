@@ -59,7 +59,9 @@ jobs:
           xcode-version: '10'
           
       - name: Check out Git repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       - name: Set Env Variables
         id: set-env-vars
