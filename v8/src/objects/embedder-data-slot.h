@@ -36,10 +36,10 @@ class EmbedderDataSlot
   V8_INLINE EmbedderDataSlot(EmbedderDataArray array, int entry_index);
   V8_INLINE EmbedderDataSlot(JSObject object, int embedder_field_index);
 
-#ifdef V8_TARGET_LITTLE_ENDIAN
-  static constexpr int kTaggedPayloadOffset = 0;
-#else
+#if defined(V8_TARGET_BIG_ENDIAN) && defined(V8_COMPRESS_POINTERS)
   static constexpr int kTaggedPayloadOffset = kTaggedSize;
+#else
+  static constexpr int kTaggedPayloadOffset = 0;
 #endif
 
 #ifdef V8_COMPRESS_POINTERS
@@ -49,7 +49,7 @@ class EmbedderDataSlot
   static constexpr int kRequiredPtrAlignment = kSmiTagSize;
 
   // Opaque type used for storing raw embedder data.
-  typedef Address RawData;
+  using RawData = Address;
 
   V8_INLINE Object load_tagged() const;
   V8_INLINE void store_smi(Smi value);

@@ -6,18 +6,30 @@
 #include "src/objects.h"
 #include "src/objects/arguments.h"
 #include "src/objects/bigint.h"
+#include "src/objects/free-space.h"
 #include "src/objects/js-generator.h"
 #include "src/objects/js-promise.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/module.h"
 #include "src/objects/stack-frame-info.h"
+#include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
@@ -36,22 +48,32 @@
 #include "torque-generated/builtins-array-of-from-dsl-gen.h"
 #include "torque-generated/builtins-array-map-from-dsl-gen.h"
 #include "torque-generated/builtins-array-reverse-from-dsl-gen.h"
+#include "torque-generated/builtins-array-shift-from-dsl-gen.h"
 #include "torque-generated/builtins-array-slice-from-dsl-gen.h"
 #include "torque-generated/builtins-array-splice-from-dsl-gen.h"
 #include "torque-generated/builtins-array-unshift-from-dsl-gen.h"
 #include "torque-generated/builtins-collections-from-dsl-gen.h"
 #include "torque-generated/builtins-data-view-from-dsl-gen.h"
 #include "torque-generated/builtins-extras-utils-from-dsl-gen.h"
-#include "torque-generated/builtins-object-from-dsl-gen.h"
 #include "torque-generated/builtins-iterator-from-dsl-gen.h"
+#include "torque-generated/builtins-object-from-dsl-gen.h"
+#include "torque-generated/builtins-proxy-from-dsl-gen.h"
+#include "torque-generated/builtins-regexp-from-dsl-gen.h"
+#include "torque-generated/builtins-regexp-replace-from-dsl-gen.h"
 #include "torque-generated/builtins-string-from-dsl-gen.h"
+#include "torque-generated/builtins-string-html-from-dsl-gen.h"
+#include "torque-generated/builtins-string-repeat-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-createtypedarray-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-every-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-filter-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-find-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-findindex-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-foreach-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-reduce-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-reduceright-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-slice-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-some-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-subarray-from-dsl-gen.h"
 #include "torque-generated/builtins-test-from-dsl-gen.h"
 
@@ -2470,19 +2492,20 @@ TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStru
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 281);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 282);
     compiler::TNode<FixedArray> tmp1;
     USE(tmp1);
     tmp1 = BaseBuiltinsFromDSLAssembler(state_).kEmptyFixedArray();
     compiler::TNode<FixedArray> tmp2;
     USE(tmp2);
     tmp2 = ca_.UncheckedCast<FixedArray>(BaseBuiltinsFromDSLAssembler(state_).UnsafeCast10FixedArray(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 281);
     compiler::TNode<Smi> tmp3;
     USE(tmp3);
     tmp3 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(27));
     compiler::TNode<Number> tmp4;
     USE(tmp4);
-    tmp4 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(31));
+    tmp4 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(31));
     ca_.Goto(&block1, tmp0, tmp2, tmp3, tmp4);
   }
 
@@ -2513,7 +2536,7 @@ TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStru
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 286);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 290);
     compiler::TNode<FixedArray> tmp1;
     USE(tmp1);
     tmp1 = BaseBuiltinsFromDSLAssembler(state_).kEmptyFixedArray();
@@ -2525,10 +2548,10 @@ TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStru
     tmp3 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(13));
     compiler::TNode<Number> tmp4;
     USE(tmp4);
-    tmp4 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(5));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 285);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 287);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 288);
+    tmp4 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(5));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 289);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 291);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 292);
     compiler::TNode<FixedArray> tmp5;
     USE(tmp5);
     compiler::TNode<Smi> tmp6;
@@ -2536,33 +2559,33 @@ TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStru
     compiler::TNode<Number> tmp7;
     USE(tmp7);
     std::tie(tmp5, tmp6, tmp7) = TestBuiltinsFromDSLAssembler(state_).TestStruct2(compiler::TNode<Context>{tmp0}).Flatten();
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 289);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 293);
     compiler::TNode<Smi> tmp8;
     USE(tmp8);
     tmp8 = ca_.UncheckedCast<Smi>(TestBuiltinsFromDSLAssembler(state_).TestStruct1(TestBuiltinsFromDSLAssembler::TestStructA{compiler::TNode<FixedArray>{tmp5}, compiler::TNode<Smi>{tmp6}, compiler::TNode<Number>{tmp7}}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 290);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 291);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 292);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 293);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 294);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 295);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 296);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 297);
     compiler::TNode<Smi> tmp9;
     USE(tmp9);
     tmp9 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(7));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 294);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 296);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 298);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 300);
     compiler::TNode<FixedArray> tmp10;
     USE(tmp10);
     tmp10 = BaseBuiltinsFromDSLAssembler(state_).kEmptyFixedArray();
     compiler::TNode<FixedArray> tmp11;
     USE(tmp11);
     tmp11 = ca_.UncheckedCast<FixedArray>(BaseBuiltinsFromDSLAssembler(state_).UnsafeCast10FixedArray(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp10}));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 299);
     compiler::TNode<Smi> tmp12;
     USE(tmp12);
     tmp12 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(27));
     compiler::TNode<Number> tmp13;
     USE(tmp13);
-    tmp13 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(31));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 295);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 297);
+    tmp13 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(31));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 304);
     compiler::TNode<FixedArray> tmp14;
     USE(tmp14);
     compiler::TNode<Smi> tmp15;
@@ -2570,7 +2593,7 @@ TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStru
     compiler::TNode<Number> tmp16;
     USE(tmp16);
     std::tie(tmp14, tmp15, tmp16) = TestBuiltinsFromDSLAssembler(state_).TestStruct2(compiler::TNode<Context>{tmp0}).Flatten();
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 298);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 305);
     ca_.Goto(&block1, tmp0, tmp2, tmp8, tmp8);
   }
 
@@ -2580,7 +2603,7 @@ TestBuiltinsFromDSLAssembler::TestStructA TestBuiltinsFromDSLAssembler::TestStru
     compiler::TNode<Smi> tmp19;
     compiler::TNode<Number> tmp20;
     ca_.Bind(&block1, &tmp17, &tmp18, &tmp19, &tmp20);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 284);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 288);
     ca_.Goto(&block2, tmp17, tmp18, tmp19, tmp20);
   }
 
@@ -2601,7 +2624,7 @@ TestBuiltinsFromDSLAssembler::TestStructC TestBuiltinsFromDSLAssembler::TestStru
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 307);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 314);
     compiler::TNode<FixedArray> tmp1;
     USE(tmp1);
     compiler::TNode<Smi> tmp2;
@@ -2628,7 +2651,7 @@ TestBuiltinsFromDSLAssembler::TestStructC TestBuiltinsFromDSLAssembler::TestStru
     compiler::TNode<Smi> tmp12;
     compiler::TNode<Number> tmp13;
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12, &tmp13);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 306);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 313);
     ca_.Goto(&block2, tmp7, tmp8, tmp9, tmp10, tmp11, tmp12, tmp13);
   }
 
@@ -2654,8 +2677,8 @@ void TestBuiltinsFromDSLAssembler::CallTestStructInLabel(compiler::TNode<Context
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 316);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 312);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 323);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 319);
     compiler::TNode<FixedArray> tmp1;
     USE(tmp1);
     compiler::TNode<Smi> tmp2;
@@ -2672,7 +2695,7 @@ void TestBuiltinsFromDSLAssembler::CallTestStructInLabel(compiler::TNode<Context
     compiler::TNode<Smi> tmp6;
     compiler::TNode<Number> tmp7;
     ca_.Bind(&block3, &tmp4, &tmp5, &tmp6, &tmp7);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 315);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 322);
     ca_.Goto(&block2, tmp4, tmp5, tmp6, tmp7);
   }
 
@@ -2682,7 +2705,7 @@ void TestBuiltinsFromDSLAssembler::CallTestStructInLabel(compiler::TNode<Context
     compiler::TNode<Smi> tmp10;
     compiler::TNode<Number> tmp11;
     ca_.Bind(&block2, &tmp8, &tmp9, &tmp10, &tmp11);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 314);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 321);
     ca_.Goto(&block1, tmp8);
   }
 
@@ -2791,11 +2814,11 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 324);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 331);
     compiler::TNode<Smi> tmp0;
     USE(tmp0);
     tmp0 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 325);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 332);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
@@ -2842,7 +2865,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp13;
     compiler::TNode<Smi> tmp14;
     ca_.Bind(&block3, &tmp13, &tmp14);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 326);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 333);
     compiler::TNode<Smi> tmp15;
     USE(tmp15);
     tmp15 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(10));
@@ -2855,21 +2878,21 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
   if (block7.is_used()) {
     compiler::TNode<Smi> tmp17;
     ca_.Bind(&block7, &tmp17);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 326);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 333);
   }
 
   if (block6.is_used()) {
     compiler::TNode<Smi> tmp18;
     ca_.Bind(&block6, &tmp18);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 328);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 335);
     compiler::TNode<Smi> tmp19;
     USE(tmp19);
     tmp19 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 329);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 336);
     compiler::TNode<Smi> tmp20;
     USE(tmp20);
     tmp20 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 330);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 337);
     ca_.Goto(&block10, tmp19, tmp20);
   }
 
@@ -2913,7 +2936,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp32;
     compiler::TNode<Smi> tmp33;
     ca_.Bind(&block9, &tmp32, &tmp33);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 331);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 338);
     compiler::TNode<Smi> tmp34;
     USE(tmp34);
     tmp34 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(10));
@@ -2927,22 +2950,22 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp36;
     compiler::TNode<Smi> tmp37;
     ca_.Bind(&block13, &tmp36, &tmp37);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 331);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 338);
   }
 
   if (block12.is_used()) {
     compiler::TNode<Smi> tmp38;
     compiler::TNode<Smi> tmp39;
     ca_.Bind(&block12, &tmp38, &tmp39);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 333);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 340);
     compiler::TNode<Smi> tmp40;
     USE(tmp40);
     tmp40 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 334);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 341);
     compiler::TNode<Smi> tmp41;
     USE(tmp41);
     tmp41 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 335);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 342);
     ca_.Goto(&block16, tmp40, tmp41);
   }
 
@@ -2979,7 +3002,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp51;
     compiler::TNode<Smi> tmp52;
     ca_.Bind(&block15, &tmp51, &tmp52);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 336);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 343);
     compiler::TNode<Smi> tmp53;
     USE(tmp53);
     tmp53 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(10));
@@ -2993,18 +3016,18 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp55;
     compiler::TNode<Smi> tmp56;
     ca_.Bind(&block18, &tmp55, &tmp56);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 336);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 343);
   }
 
   if (block17.is_used()) {
     compiler::TNode<Smi> tmp57;
     compiler::TNode<Smi> tmp58;
     ca_.Bind(&block17, &tmp57, &tmp58);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 339);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 346);
     compiler::TNode<Smi> tmp59;
     USE(tmp59);
     tmp59 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 340);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 347);
     compiler::TNode<Smi> tmp60;
     USE(tmp60);
     tmp60 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
@@ -3024,7 +3047,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp65;
     compiler::TNode<Smi> tmp66;
     ca_.Bind(&block19, &tmp64, &tmp65, &tmp66);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 341);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 348);
     compiler::TNode<Smi> tmp67;
     USE(tmp67);
     tmp67 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
@@ -3047,11 +3070,11 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp73;
     compiler::TNode<Smi> tmp74;
     ca_.Bind(&block24, &tmp72, &tmp73, &tmp74);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 342);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 349);
     compiler::TNode<Smi> tmp75;
     USE(tmp75);
     tmp75 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp72}, compiler::TNode<Smi>{tmp74}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 340);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 347);
     ca_.Goto(&block22, tmp75, tmp73, tmp74);
   }
 
@@ -3074,7 +3097,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp82;
     compiler::TNode<Smi> tmp83;
     ca_.Bind(&block20, &tmp81, &tmp82, &tmp83);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 344);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 351);
     compiler::TNode<Smi> tmp84;
     USE(tmp84);
     tmp84 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(10));
@@ -3088,22 +3111,22 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp86;
     compiler::TNode<Smi> tmp87;
     ca_.Bind(&block26, &tmp86, &tmp87);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 344);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 351);
   }
 
   if (block25.is_used()) {
     compiler::TNode<Smi> tmp88;
     compiler::TNode<Smi> tmp89;
     ca_.Bind(&block25, &tmp88, &tmp89);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 346);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 353);
     compiler::TNode<Smi> tmp90;
     USE(tmp90);
     tmp90 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 347);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 354);
     compiler::TNode<Smi> tmp91;
     USE(tmp91);
     tmp91 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 348);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 355);
     ca_.Goto(&block29, tmp90, tmp91);
   }
 
@@ -3118,7 +3141,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp94;
     compiler::TNode<Smi> tmp95;
     ca_.Bind(&block27, &tmp94, &tmp95);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 349);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 356);
     compiler::TNode<Smi> tmp96;
     USE(tmp96);
     tmp96 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
@@ -3139,18 +3162,18 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp100;
     compiler::TNode<Smi> tmp101;
     ca_.Bind(&block31, &tmp100, &tmp101);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 350);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 357);
     compiler::TNode<Smi> tmp102;
     USE(tmp102);
     tmp102 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp100}, compiler::TNode<Smi>{tmp101}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 351);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 358);
     compiler::TNode<Smi> tmp103;
     USE(tmp103);
     tmp103 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
     compiler::TNode<Smi> tmp104;
     USE(tmp104);
     tmp104 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp101}, compiler::TNode<Smi>{tmp103}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 348);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 355);
     ca_.Goto(&block29, tmp102, tmp104);
   }
 
@@ -3158,7 +3181,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp105;
     compiler::TNode<Smi> tmp106;
     ca_.Bind(&block28, &tmp105, &tmp106);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 353);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 360);
     compiler::TNode<Smi> tmp107;
     USE(tmp107);
     tmp107 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(10));
@@ -3172,18 +3195,18 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp109;
     compiler::TNode<Smi> tmp110;
     ca_.Bind(&block33, &tmp109, &tmp110);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 353);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 10\' failed", "../../test/torque/test-torque.tq", 360);
   }
 
   if (block32.is_used()) {
     compiler::TNode<Smi> tmp111;
     compiler::TNode<Smi> tmp112;
     ca_.Bind(&block32, &tmp111, &tmp112);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 357);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 364);
     compiler::TNode<Smi> tmp113;
     USE(tmp113);
     tmp113 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 358);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 365);
     compiler::TNode<Smi> tmp114;
     USE(tmp114);
     tmp114 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
@@ -3209,7 +3232,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp121;
     compiler::TNode<Smi> tmp122;
     ca_.Bind(&block34, &tmp120, &tmp121, &tmp122);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 359);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 366);
     compiler::TNode<Smi> tmp123;
     USE(tmp123);
     tmp123 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(3));
@@ -3232,11 +3255,11 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp129;
     compiler::TNode<Smi> tmp130;
     ca_.Bind(&block39, &tmp128, &tmp129, &tmp130);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 360);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 367);
     compiler::TNode<Smi> tmp131;
     USE(tmp131);
     tmp131 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp128}, compiler::TNode<Smi>{tmp130}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 358);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 365);
     ca_.Goto(&block37, tmp131, tmp129, tmp130);
   }
 
@@ -3259,7 +3282,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp138;
     compiler::TNode<Smi> tmp139;
     ca_.Bind(&block35, &tmp137, &tmp138, &tmp139);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 362);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 369);
     compiler::TNode<Smi> tmp140;
     USE(tmp140);
     tmp140 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(7));
@@ -3273,22 +3296,22 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp142;
     compiler::TNode<Smi> tmp143;
     ca_.Bind(&block41, &tmp142, &tmp143);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 362);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 369);
   }
 
   if (block40.is_used()) {
     compiler::TNode<Smi> tmp144;
     compiler::TNode<Smi> tmp145;
     ca_.Bind(&block40, &tmp144, &tmp145);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 364);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 371);
     compiler::TNode<Smi> tmp146;
     USE(tmp146);
     tmp146 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 365);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 372);
     compiler::TNode<Smi> tmp147;
     USE(tmp147);
     tmp147 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 366);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 373);
     ca_.Goto(&block44, tmp146, tmp147);
   }
 
@@ -3309,7 +3332,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp152;
     compiler::TNode<Smi> tmp153;
     ca_.Bind(&block42, &tmp152, &tmp153);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 367);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 374);
     compiler::TNode<Smi> tmp154;
     USE(tmp154);
     tmp154 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(3));
@@ -3330,11 +3353,11 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp158;
     compiler::TNode<Smi> tmp159;
     ca_.Bind(&block47, &tmp158, &tmp159);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 368);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 375);
     compiler::TNode<Smi> tmp160;
     USE(tmp160);
     tmp160 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp158}, compiler::TNode<Smi>{tmp159}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 366);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 373);
     ca_.Goto(&block45, tmp160, tmp159);
   }
 
@@ -3355,7 +3378,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp165;
     compiler::TNode<Smi> tmp166;
     ca_.Bind(&block43, &tmp165, &tmp166);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 370);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 377);
     compiler::TNode<Smi> tmp167;
     USE(tmp167);
     tmp167 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(7));
@@ -3369,22 +3392,22 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp169;
     compiler::TNode<Smi> tmp170;
     ca_.Bind(&block49, &tmp169, &tmp170);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 370);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 377);
   }
 
   if (block48.is_used()) {
     compiler::TNode<Smi> tmp171;
     compiler::TNode<Smi> tmp172;
     ca_.Bind(&block48, &tmp171, &tmp172);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 372);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 379);
     compiler::TNode<Smi> tmp173;
     USE(tmp173);
     tmp173 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 373);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 380);
     compiler::TNode<Smi> tmp174;
     USE(tmp174);
     tmp174 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 374);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 381);
     ca_.Goto(&block52, tmp173, tmp174);
   }
 
@@ -3405,7 +3428,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp179;
     compiler::TNode<Smi> tmp180;
     ca_.Bind(&block50, &tmp179, &tmp180);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 375);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 382);
     compiler::TNode<Smi> tmp181;
     USE(tmp181);
     tmp181 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(3));
@@ -3419,14 +3442,14 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp183;
     compiler::TNode<Smi> tmp184;
     ca_.Bind(&block53, &tmp183, &tmp184);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 376);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 383);
     compiler::TNode<Smi> tmp185;
     USE(tmp185);
     tmp185 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
     compiler::TNode<Smi> tmp186;
     USE(tmp186);
     tmp186 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp184}, compiler::TNode<Smi>{tmp185}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 377);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 384);
     ca_.Goto(&block52, tmp183, tmp186);
   }
 
@@ -3434,18 +3457,18 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp187;
     compiler::TNode<Smi> tmp188;
     ca_.Bind(&block54, &tmp187, &tmp188);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 379);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 386);
     compiler::TNode<Smi> tmp189;
     USE(tmp189);
     tmp189 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp187}, compiler::TNode<Smi>{tmp188}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 380);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 387);
     compiler::TNode<Smi> tmp190;
     USE(tmp190);
     tmp190 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
     compiler::TNode<Smi> tmp191;
     USE(tmp191);
     tmp191 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp188}, compiler::TNode<Smi>{tmp190}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 374);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 381);
     ca_.Goto(&block52, tmp189, tmp191);
   }
 
@@ -3453,7 +3476,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp192;
     compiler::TNode<Smi> tmp193;
     ca_.Bind(&block51, &tmp192, &tmp193);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 382);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 389);
     compiler::TNode<Smi> tmp194;
     USE(tmp194);
     tmp194 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(7));
@@ -3467,18 +3490,18 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp196;
     compiler::TNode<Smi> tmp197;
     ca_.Bind(&block56, &tmp196, &tmp197);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 382);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 389);
   }
 
   if (block55.is_used()) {
     compiler::TNode<Smi> tmp198;
     compiler::TNode<Smi> tmp199;
     ca_.Bind(&block55, &tmp198, &tmp199);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 384);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 391);
     compiler::TNode<Smi> tmp200;
     USE(tmp200);
     tmp200 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 385);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 392);
     compiler::TNode<Smi> tmp201;
     USE(tmp201);
     tmp201 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
@@ -3498,7 +3521,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp206;
     compiler::TNode<Smi> tmp207;
     ca_.Bind(&block57, &tmp205, &tmp206, &tmp207);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 386);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 393);
     compiler::TNode<Smi> tmp208;
     USE(tmp208);
     tmp208 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(3));
@@ -3521,7 +3544,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp214;
     compiler::TNode<Smi> tmp215;
     ca_.Bind(&block62, &tmp213, &tmp214, &tmp215);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 387);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 394);
     compiler::TNode<Smi> tmp216;
     USE(tmp216);
     tmp216 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
@@ -3544,11 +3567,11 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp222;
     compiler::TNode<Smi> tmp223;
     ca_.Bind(&block64, &tmp221, &tmp222, &tmp223);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 388);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 395);
     compiler::TNode<Smi> tmp224;
     USE(tmp224);
     tmp224 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp221}, compiler::TNode<Smi>{tmp223}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 385);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 392);
     ca_.Goto(&block60, tmp224, tmp222, tmp223);
   }
 
@@ -3571,7 +3594,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp231;
     compiler::TNode<Smi> tmp232;
     ca_.Bind(&block58, &tmp230, &tmp231, &tmp232);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 390);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 397);
     compiler::TNode<Smi> tmp233;
     USE(tmp233);
     tmp233 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(7));
@@ -3585,22 +3608,22 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp235;
     compiler::TNode<Smi> tmp236;
     ca_.Bind(&block66, &tmp235, &tmp236);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 390);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 397);
   }
 
   if (block65.is_used()) {
     compiler::TNode<Smi> tmp237;
     compiler::TNode<Smi> tmp238;
     ca_.Bind(&block65, &tmp237, &tmp238);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 392);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 399);
     compiler::TNode<Smi> tmp239;
     USE(tmp239);
     tmp239 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 393);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 400);
     compiler::TNode<Smi> tmp240;
     USE(tmp240);
     tmp240 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 394);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 401);
     ca_.Goto(&block69, tmp239, tmp240);
   }
 
@@ -3615,7 +3638,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp243;
     compiler::TNode<Smi> tmp244;
     ca_.Bind(&block67, &tmp243, &tmp244);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 395);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 402);
     compiler::TNode<Smi> tmp245;
     USE(tmp245);
     tmp245 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(3));
@@ -3629,14 +3652,14 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp247;
     compiler::TNode<Smi> tmp248;
     ca_.Bind(&block70, &tmp247, &tmp248);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 396);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 403);
     compiler::TNode<Smi> tmp249;
     USE(tmp249);
     tmp249 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
     compiler::TNode<Smi> tmp250;
     USE(tmp250);
     tmp250 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp248}, compiler::TNode<Smi>{tmp249}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 397);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 404);
     ca_.Goto(&block69, tmp247, tmp250);
   }
 
@@ -3644,7 +3667,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp251;
     compiler::TNode<Smi> tmp252;
     ca_.Bind(&block71, &tmp251, &tmp252);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 400);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 407);
     compiler::TNode<Smi> tmp253;
     USE(tmp253);
     tmp253 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
@@ -3665,18 +3688,18 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp257;
     compiler::TNode<Smi> tmp258;
     ca_.Bind(&block73, &tmp257, &tmp258);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 401);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 408);
     compiler::TNode<Smi> tmp259;
     USE(tmp259);
     tmp259 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp257}, compiler::TNode<Smi>{tmp258}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 402);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 409);
     compiler::TNode<Smi> tmp260;
     USE(tmp260);
     tmp260 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
     compiler::TNode<Smi> tmp261;
     USE(tmp261);
     tmp261 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp258}, compiler::TNode<Smi>{tmp260}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 394);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 401);
     ca_.Goto(&block69, tmp259, tmp261);
   }
 
@@ -3684,7 +3707,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp262;
     compiler::TNode<Smi> tmp263;
     ca_.Bind(&block68, &tmp262, &tmp263);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 404);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 411);
     compiler::TNode<Smi> tmp264;
     USE(tmp264);
     tmp264 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(7));
@@ -3698,18 +3721,18 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp266;
     compiler::TNode<Smi> tmp267;
     ca_.Bind(&block75, &tmp266, &tmp267);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 404);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'sum == 7\' failed", "../../test/torque/test-torque.tq", 411);
   }
 
   if (block74.is_used()) {
     compiler::TNode<Smi> tmp268;
     compiler::TNode<Smi> tmp269;
     ca_.Bind(&block74, &tmp268, &tmp269);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 406);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 413);
     compiler::TNode<Smi> tmp270;
     USE(tmp270);
     tmp270 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 408);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 415);
     ca_.Goto(&block80, tmp268, tmp270);
   }
 
@@ -3724,7 +3747,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp273;
     compiler::TNode<Smi> tmp274;
     ca_.Bind(&block78, &tmp273, &tmp274);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 409);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 416);
     compiler::TNode<Smi> tmp275;
     USE(tmp275);
     tmp275 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
@@ -3751,7 +3774,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp281;
     compiler::TNode<Smi> tmp282;
     ca_.Bind(&block82, &tmp281, &tmp282);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 408);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 415);
     ca_.Goto(&block80, tmp281, tmp282);
   }
 
@@ -3759,7 +3782,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp283;
     compiler::TNode<Smi> tmp284;
     ca_.Bind(&block79, &tmp283, &tmp284);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 412);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 419);
     ca_.Goto(&block76, tmp283, tmp284);
   }
 
@@ -3767,7 +3790,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp285;
     compiler::TNode<Smi> tmp286;
     ca_.Bind(&block77, &tmp285, &tmp286);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 413);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 420);
     compiler::TNode<Smi> tmp287;
     USE(tmp287);
     tmp287 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(10));
@@ -3781,14 +3804,14 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp289;
     compiler::TNode<Smi> tmp290;
     ca_.Bind(&block84, &tmp289, &tmp290);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'j == 10\' failed", "../../test/torque/test-torque.tq", 413);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'j == 10\' failed", "../../test/torque/test-torque.tq", 420);
   }
 
   if (block83.is_used()) {
     compiler::TNode<Smi> tmp291;
     compiler::TNode<Smi> tmp292;
     ca_.Bind(&block83, &tmp291, &tmp292);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 407);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 414);
     ca_.Goto(&block76, tmp291, tmp292);
   }
 
@@ -3796,8 +3819,8 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp293;
     compiler::TNode<Smi> tmp294;
     ca_.Bind(&block76, &tmp293, &tmp294);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 417);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 418);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 424);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 425);
     compiler::TNode<Smi> tmp295;
     USE(tmp295);
     tmp295 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
@@ -3849,7 +3872,7 @@ void TestBuiltinsFromDSLAssembler::TestForLoop() {
     compiler::TNode<Smi> tmp314;
     compiler::TNode<Smi> tmp315;
     ca_.Bind(&block86, &tmp312, &tmp313, &tmp314, &tmp315);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 323);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 330);
     ca_.Goto(&block1);
   }
 
@@ -3870,8 +3893,8 @@ void TestBuiltinsFromDSLAssembler::TestSubtyping(compiler::TNode<Smi> p_x) {
   if (block0.is_used()) {
     compiler::TNode<Smi> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 423);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 422);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 430);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 429);
     ca_.Goto(&block1, tmp0);
   }
 
@@ -3907,15 +3930,15 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(compiler
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 440);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 447);
     compiler::TNode<Int32T> tmp2;
     USE(tmp2);
     tmp2 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 441);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 448);
     compiler::TNode<Object> tmp3;
     USE(tmp3);
-    tmp3 = ca_.UncheckedCast<Object>(TestBuiltinsFromDSLAssembler(state_).IncrementIfSmi34UT12ATHeapNumber5ATSmi10FixedArray(compiler::TNode<Object>{tmp1}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 442);
+    tmp3 = ca_.UncheckedCast<Object>(TestBuiltinsFromDSLAssembler(state_).IncrementIfSmi32UT5ATSmi10FixedArray10HeapNumber(compiler::TNode<Object>{tmp1}));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 449);
     compiler::TNode<FixedArray> tmp4;
     USE(tmp4);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -3945,14 +3968,14 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(compiler
     compiler::TNode<Object> tmp14;
     compiler::TNode<FixedArray> tmp15;
     ca_.Bind(&block4, &tmp10, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 443);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 450);
     compiler::TNode<Int32T> tmp16;
     USE(tmp16);
     tmp16 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(1));
     compiler::TNode<Int32T> tmp17;
     USE(tmp17);
     tmp17 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Add(compiler::TNode<Int32T>{tmp12}, compiler::TNode<Int32T>{tmp16}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 442);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 449);
     ca_.Goto(&block2, tmp10, tmp11, tmp17, tmp13);
   }
 
@@ -3962,15 +3985,15 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(compiler
     compiler::TNode<Int32T> tmp20;
     compiler::TNode<Object> tmp21;
     ca_.Bind(&block3, &tmp18, &tmp19, &tmp20, &tmp21);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 445);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 446);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 452);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 453);
     compiler::TNode<Int32T> tmp22;
     USE(tmp22);
     tmp22 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(2));
     compiler::TNode<Int32T> tmp23;
     USE(tmp23);
     tmp23 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Add(compiler::TNode<Int32T>{tmp20}, compiler::TNode<Int32T>{tmp22}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 442);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 449);
     ca_.Goto(&block2, tmp18, tmp19, tmp23, tmp21);
   }
 
@@ -3980,19 +4003,19 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(compiler
     compiler::TNode<Int32T> tmp26;
     compiler::TNode<Object> tmp27;
     ca_.Bind(&block2, &tmp24, &tmp25, &tmp26, &tmp27);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 441);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 450);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 448);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 457);
     compiler::TNode<Int32T> tmp28;
     USE(tmp28);
     tmp28 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(10));
     compiler::TNode<Int32T> tmp29;
     USE(tmp29);
     tmp29 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Mul(compiler::TNode<Int32T>{tmp26}, compiler::TNode<Int32T>{tmp28}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 452);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 459);
     compiler::TNode<Object> tmp30;
     USE(tmp30);
-    tmp30 = ca_.UncheckedCast<Object>(TestBuiltinsFromDSLAssembler(state_).IncrementIfSmi34UT12ATHeapNumber5ATSmi10FixedArray(compiler::TNode<Object>{tmp25}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 453);
+    tmp30 = ca_.UncheckedCast<Object>(TestBuiltinsFromDSLAssembler(state_).IncrementIfSmi32UT5ATSmi10FixedArray10HeapNumber(compiler::TNode<Object>{tmp25}));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 460);
     compiler::TNode<Smi> tmp31;
     USE(tmp31);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -4022,14 +4045,14 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(compiler
     compiler::TNode<Object> tmp41;
     compiler::TNode<Smi> tmp42;
     ca_.Bind(&block8, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 454);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 461);
     compiler::TNode<Int32T> tmp43;
     USE(tmp43);
     tmp43 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).Convert7ATint325ATSmi(compiler::TNode<Smi>{tmp42}));
     compiler::TNode<Int32T> tmp44;
     USE(tmp44);
     tmp44 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Add(compiler::TNode<Int32T>{tmp39}, compiler::TNode<Int32T>{tmp43}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 453);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 460);
     ca_.Goto(&block6, tmp37, tmp38, tmp44, tmp40);
   }
 
@@ -4039,7 +4062,7 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(compiler
     compiler::TNode<Int32T> tmp47;
     compiler::TNode<Object> tmp48;
     ca_.Bind(&block7, &tmp45, &tmp46, &tmp47, &tmp48);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 456);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 463);
     compiler::TNode<FixedArray> tmp49;
     USE(tmp49);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -4069,73 +4092,73 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::TypeswitchExample(compiler
     compiler::TNode<HeapObject> tmp59;
     compiler::TNode<FixedArray> tmp60;
     ca_.Bind(&block12, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 457);
-    compiler::TNode<Smi> tmp61;
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 464);
+    compiler::TNode<IntPtrT> tmp61 = ca_.IntPtrConstant(FixedArrayBase::kLengthOffset);
     USE(tmp61);
-    tmp61 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).LoadFixedArrayBaseLength(compiler::TNode<FixedArrayBase>{tmp60}));
-    compiler::TNode<Int32T> tmp62;
-    USE(tmp62);
-    tmp62 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).Convert7ATint325ATSmi(compiler::TNode<Smi>{tmp61}));
+    compiler::TNode<Smi>tmp62 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp60, tmp61});
     compiler::TNode<Int32T> tmp63;
     USE(tmp63);
-    tmp63 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Add(compiler::TNode<Int32T>{tmp57}, compiler::TNode<Int32T>{tmp62}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 456);
-    ca_.Goto(&block10, tmp55, tmp56, tmp63, tmp58);
+    tmp63 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).Convert7ATint325ATSmi(compiler::TNode<Smi>{tmp62}));
+    compiler::TNode<Int32T> tmp64;
+    USE(tmp64);
+    tmp64 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Add(compiler::TNode<Int32T>{tmp57}, compiler::TNode<Int32T>{tmp63}));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 463);
+    ca_.Goto(&block10, tmp55, tmp56, tmp64, tmp58);
   }
 
   if (block11.is_used()) {
-    compiler::TNode<Context> tmp64;
-    compiler::TNode<Object> tmp65;
-    compiler::TNode<Int32T> tmp66;
-    compiler::TNode<Object> tmp67;
-    ca_.Bind(&block11, &tmp64, &tmp65, &tmp66, &tmp67);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 459);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 460);
-    compiler::TNode<Int32T> tmp68;
-    USE(tmp68);
-    tmp68 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(7));
+    compiler::TNode<Context> tmp65;
+    compiler::TNode<Object> tmp66;
+    compiler::TNode<Int32T> tmp67;
+    compiler::TNode<Object> tmp68;
+    ca_.Bind(&block11, &tmp65, &tmp66, &tmp67, &tmp68);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 466);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 467);
     compiler::TNode<Int32T> tmp69;
     USE(tmp69);
-    tmp69 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Add(compiler::TNode<Int32T>{tmp66}, compiler::TNode<Int32T>{tmp68}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 456);
-    ca_.Goto(&block10, tmp64, tmp65, tmp69, tmp67);
+    tmp69 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(7));
+    compiler::TNode<Int32T> tmp70;
+    USE(tmp70);
+    tmp70 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).Int32Add(compiler::TNode<Int32T>{tmp67}, compiler::TNode<Int32T>{tmp69}));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 463);
+    ca_.Goto(&block10, tmp65, tmp66, tmp70, tmp68);
   }
 
   if (block10.is_used()) {
-    compiler::TNode<Context> tmp70;
-    compiler::TNode<Object> tmp71;
-    compiler::TNode<Int32T> tmp72;
-    compiler::TNode<Object> tmp73;
-    ca_.Bind(&block10, &tmp70, &tmp71, &tmp72, &tmp73);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 453);
-    ca_.Goto(&block6, tmp70, tmp71, tmp72, tmp73);
+    compiler::TNode<Context> tmp71;
+    compiler::TNode<Object> tmp72;
+    compiler::TNode<Int32T> tmp73;
+    compiler::TNode<Object> tmp74;
+    ca_.Bind(&block10, &tmp71, &tmp72, &tmp73, &tmp74);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 460);
+    ca_.Goto(&block6, tmp71, tmp72, tmp73, tmp74);
   }
 
   if (block6.is_used()) {
-    compiler::TNode<Context> tmp74;
-    compiler::TNode<Object> tmp75;
-    compiler::TNode<Int32T> tmp76;
-    compiler::TNode<Object> tmp77;
-    ca_.Bind(&block6, &tmp74, &tmp75, &tmp76, &tmp77);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 452);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 464);
-    ca_.Goto(&block1, tmp74, tmp75, tmp76);
+    compiler::TNode<Context> tmp75;
+    compiler::TNode<Object> tmp76;
+    compiler::TNode<Int32T> tmp77;
+    compiler::TNode<Object> tmp78;
+    ca_.Bind(&block6, &tmp75, &tmp76, &tmp77, &tmp78);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 459);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 471);
+    ca_.Goto(&block1, tmp75, tmp76, tmp77);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp78;
-    compiler::TNode<Object> tmp79;
-    compiler::TNode<Int32T> tmp80;
-    ca_.Bind(&block1, &tmp78, &tmp79, &tmp80);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 438);
-    ca_.Goto(&block14, tmp78, tmp79, tmp80);
+    compiler::TNode<Context> tmp79;
+    compiler::TNode<Object> tmp80;
+    compiler::TNode<Int32T> tmp81;
+    ca_.Bind(&block1, &tmp79, &tmp80, &tmp81);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 445);
+    ca_.Goto(&block14, tmp79, tmp80, tmp81);
   }
 
-    compiler::TNode<Context> tmp81;
-    compiler::TNode<Object> tmp82;
-    compiler::TNode<Int32T> tmp83;
-    ca_.Bind(&block14, &tmp81, &tmp82, &tmp83);
-  return compiler::TNode<Int32T>{tmp83};
+    compiler::TNode<Context> tmp82;
+    compiler::TNode<Object> tmp83;
+    compiler::TNode<Int32T> tmp84;
+    ca_.Bind(&block14, &tmp82, &tmp83, &tmp84);
+  return compiler::TNode<Int32T>{tmp84};
 }
 
 void TestBuiltinsFromDSLAssembler::TestTypeswitch(compiler::TNode<Context> p_context) {
@@ -4153,7 +4176,7 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitch(compiler::TNode<Context> p_con
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 468);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 475);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
@@ -4172,20 +4195,20 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitch(compiler::TNode<Context> p_con
   if (block3.is_used()) {
     compiler::TNode<Context> tmp5;
     ca_.Bind(&block3, &tmp5);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TypeswitchExample(FromConstexpr<Smi>(5)) == 26\' failed", "../../test/torque/test-torque.tq", 468);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TypeswitchExample(FromConstexpr<Smi>(5)) == 26\' failed", "../../test/torque/test-torque.tq", 475);
   }
 
   if (block2.is_used()) {
     compiler::TNode<Context> tmp6;
     ca_.Bind(&block2, &tmp6);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 469);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 476);
     compiler::TNode<IntPtrT> tmp7;
     USE(tmp7);
     tmp7 = ca_.UncheckedCast<IntPtrT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr8ATintptr17ATconstexpr_int31(3));
     compiler::TNode<FixedArray> tmp8;
     USE(tmp8);
     tmp8 = ca_.UncheckedCast<FixedArray>(CodeStubAssembler(state_).AllocateZeroedFixedArray(compiler::TNode<IntPtrT>{tmp7}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 470);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 477);
     compiler::TNode<Int32T> tmp9;
     USE(tmp9);
     tmp9 = ca_.UncheckedCast<Int32T>(TestBuiltinsFromDSLAssembler(state_).TypeswitchExample(compiler::TNode<Context>{tmp6}, compiler::TNode<Object>{tmp8}));
@@ -4202,17 +4225,17 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitch(compiler::TNode<Context> p_con
     compiler::TNode<Context> tmp12;
     compiler::TNode<FixedArray> tmp13;
     ca_.Bind(&block5, &tmp12, &tmp13);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TypeswitchExample(a) == 13\' failed", "../../test/torque/test-torque.tq", 470);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TypeswitchExample(a) == 13\' failed", "../../test/torque/test-torque.tq", 477);
   }
 
   if (block4.is_used()) {
     compiler::TNode<Context> tmp14;
     compiler::TNode<FixedArray> tmp15;
     ca_.Bind(&block4, &tmp14, &tmp15);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 471);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 478);
     compiler::TNode<Number> tmp16;
     USE(tmp16);
-    tmp16 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi19ATconstexpr_float64(0.5));
+    tmp16 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber19ATconstexpr_float64(0.5));
     compiler::TNode<Int32T> tmp17;
     USE(tmp17);
     tmp17 = ca_.UncheckedCast<Int32T>(TestBuiltinsFromDSLAssembler(state_).TypeswitchExample(compiler::TNode<Context>{tmp14}, compiler::TNode<Object>{tmp16}));
@@ -4229,14 +4252,14 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitch(compiler::TNode<Context> p_con
     compiler::TNode<Context> tmp20;
     compiler::TNode<FixedArray> tmp21;
     ca_.Bind(&block7, &tmp20, &tmp21);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TypeswitchExample(FromConstexpr<Number>(0.5)) == 27\' failed", "../../test/torque/test-torque.tq", 471);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TypeswitchExample(FromConstexpr<Number>(0.5)) == 27\' failed", "../../test/torque/test-torque.tq", 478);
   }
 
   if (block6.is_used()) {
     compiler::TNode<Context> tmp22;
     compiler::TNode<FixedArray> tmp23;
     ca_.Bind(&block6, &tmp22, &tmp23);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 467);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 474);
     ca_.Goto(&block1, tmp22);
   }
 
@@ -4272,8 +4295,8 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitchAsanLsanFailure(compiler::TNode
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 475);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 476);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 482);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 483);
     compiler::TNode<Smi> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -4309,7 +4332,7 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitchAsanLsanFailure(compiler::TNode
     compiler::TNode<Object> tmp13;
     compiler::TNode<Object> tmp14;
     ca_.Bind(&block3, &tmp12, &tmp13, &tmp14);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 478);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 485);
     compiler::TNode<JSTypedArray> tmp15;
     USE(tmp15);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -4345,7 +4368,7 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitchAsanLsanFailure(compiler::TNode
     compiler::TNode<Object> tmp26;
     compiler::TNode<Object> tmp27;
     ca_.Bind(&block7, &tmp25, &tmp26, &tmp27);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 480);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 487);
     compiler::TNode<JSReceiver> tmp28;
     USE(tmp28);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -4381,8 +4404,8 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitchAsanLsanFailure(compiler::TNode
     compiler::TNode<Object> tmp39;
     compiler::TNode<Object> tmp40;
     ca_.Bind(&block11, &tmp38, &tmp39, &tmp40);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 482);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 480);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 489);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 487);
     ca_.Goto(&block10, tmp38, tmp39, tmp40);
   }
 
@@ -4391,7 +4414,7 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitchAsanLsanFailure(compiler::TNode
     compiler::TNode<Object> tmp42;
     compiler::TNode<Object> tmp43;
     ca_.Bind(&block10, &tmp41, &tmp42, &tmp43);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 478);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 485);
     ca_.Goto(&block6, tmp41, tmp42, tmp43);
   }
 
@@ -4400,7 +4423,7 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitchAsanLsanFailure(compiler::TNode
     compiler::TNode<Object> tmp45;
     compiler::TNode<Object> tmp46;
     ca_.Bind(&block6, &tmp44, &tmp45, &tmp46);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 476);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 483);
     ca_.Goto(&block2, tmp44, tmp45, tmp46);
   }
 
@@ -4409,8 +4432,8 @@ void TestBuiltinsFromDSLAssembler::TestTypeswitchAsanLsanFailure(compiler::TNode
     compiler::TNode<Object> tmp48;
     compiler::TNode<Object> tmp49;
     ca_.Bind(&block2, &tmp47, &tmp48, &tmp49);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 475);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 474);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 482);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 481);
     ca_.Goto(&block1, tmp47, tmp48);
   }
 
@@ -4439,12 +4462,12 @@ void TestBuiltinsFromDSLAssembler::TestGenericOverload(compiler::TNode<Context> 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 495);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 502);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 496);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 497);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 503);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 504);
     compiler::TNode<Smi> tmp2;
     USE(tmp2);
     tmp2 = ca_.UncheckedCast<Smi>(TestBuiltinsFromDSLAssembler(state_).ExampleGenericOverload5ATSmi(compiler::TNode<Smi>{tmp1}));
@@ -4462,7 +4485,7 @@ void TestBuiltinsFromDSLAssembler::TestGenericOverload(compiler::TNode<Context> 
     compiler::TNode<Smi> tmp6;
     compiler::TNode<Object> tmp7;
     ca_.Bind(&block3, &tmp5, &tmp6, &tmp7);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'ExampleGenericOverload<Smi>(xSmi) == 6\' failed", "../../test/torque/test-torque.tq", 497);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'ExampleGenericOverload<Smi>(xSmi) == 6\' failed", "../../test/torque/test-torque.tq", 504);
   }
 
   if (block2.is_used()) {
@@ -4470,7 +4493,7 @@ void TestBuiltinsFromDSLAssembler::TestGenericOverload(compiler::TNode<Context> 
     compiler::TNode<Smi> tmp9;
     compiler::TNode<Object> tmp10;
     ca_.Bind(&block2, &tmp8, &tmp9, &tmp10);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 498);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 505);
     compiler::TNode<Object> tmp11;
     USE(tmp11);
     tmp11 = ca_.UncheckedCast<Object>(TestBuiltinsFromDSLAssembler(state_).ExampleGenericOverload20UT5ATSmi10HeapObject(compiler::TNode<Object>{tmp10}));
@@ -4491,7 +4514,7 @@ void TestBuiltinsFromDSLAssembler::TestGenericOverload(compiler::TNode<Context> 
     compiler::TNode<Smi> tmp16;
     compiler::TNode<Object> tmp17;
     ca_.Bind(&block5, &tmp15, &tmp16, &tmp17);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'UnsafeCast<Smi>(ExampleGenericOverload<Object>(xObject)) == 5\' failed", "../../test/torque/test-torque.tq", 498);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'UnsafeCast<Smi>(ExampleGenericOverload<Object>(xObject)) == 5\' failed", "../../test/torque/test-torque.tq", 505);
   }
 
   if (block4.is_used()) {
@@ -4499,7 +4522,7 @@ void TestBuiltinsFromDSLAssembler::TestGenericOverload(compiler::TNode<Context> 
     compiler::TNode<Smi> tmp19;
     compiler::TNode<Object> tmp20;
     ca_.Bind(&block4, &tmp18, &tmp19, &tmp20);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 494);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 501);
     ca_.Goto(&block1, tmp18);
   }
 
@@ -4526,7 +4549,7 @@ void TestBuiltinsFromDSLAssembler::TestEquality(compiler::TNode<Context> p_conte
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 503);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 510);
     compiler::TNode<Float64T> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Float64T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr9ATfloat6419ATconstexpr_float64(0.5));
@@ -4542,8 +4565,8 @@ void TestBuiltinsFromDSLAssembler::TestEquality(compiler::TNode<Context> p_conte
     compiler::TNode<BoolT> tmp5;
     USE(tmp5);
     tmp5 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).IsNumberNotEqual(compiler::TNode<Number>{tmp2}, compiler::TNode<Number>{tmp4}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 502);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 504);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 509);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 511);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).Word32BinaryNot(compiler::TNode<BoolT>{tmp5}));
@@ -4554,14 +4577,14 @@ void TestBuiltinsFromDSLAssembler::TestEquality(compiler::TNode<Context> p_conte
     compiler::TNode<Context> tmp7;
     compiler::TNode<BoolT> tmp8;
     ca_.Bind(&block3, &tmp7, &tmp8);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!notEqual\' failed", "../../test/torque/test-torque.tq", 504);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!notEqual\' failed", "../../test/torque/test-torque.tq", 511);
   }
 
   if (block2.is_used()) {
     compiler::TNode<Context> tmp9;
     compiler::TNode<BoolT> tmp10;
     ca_.Bind(&block2, &tmp9, &tmp10);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 506);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 513);
     compiler::TNode<Float64T> tmp11;
     USE(tmp11);
     tmp11 = ca_.UncheckedCast<Float64T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr9ATfloat6419ATconstexpr_float64(0.5));
@@ -4577,8 +4600,8 @@ void TestBuiltinsFromDSLAssembler::TestEquality(compiler::TNode<Context> p_conte
     compiler::TNode<BoolT> tmp15;
     USE(tmp15);
     tmp15 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).IsNumberEqual(compiler::TNode<Number>{tmp12}, compiler::TNode<Number>{tmp14}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 505);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 507);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 512);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 514);
     ca_.Branch(tmp15, &block4, &block5, tmp9, tmp10, tmp15);
   }
 
@@ -4587,7 +4610,7 @@ void TestBuiltinsFromDSLAssembler::TestEquality(compiler::TNode<Context> p_conte
     compiler::TNode<BoolT> tmp17;
     compiler::TNode<BoolT> tmp18;
     ca_.Bind(&block5, &tmp16, &tmp17, &tmp18);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'equal\' failed", "../../test/torque/test-torque.tq", 507);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'equal\' failed", "../../test/torque/test-torque.tq", 514);
   }
 
   if (block4.is_used()) {
@@ -4595,7 +4618,7 @@ void TestBuiltinsFromDSLAssembler::TestEquality(compiler::TNode<Context> p_conte
     compiler::TNode<BoolT> tmp20;
     compiler::TNode<BoolT> tmp21;
     ca_.Bind(&block4, &tmp19, &tmp20, &tmp21);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 501);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 508);
     ca_.Goto(&block1, tmp19);
   }
 
@@ -4620,27 +4643,27 @@ void TestBuiltinsFromDSLAssembler::BoolToBranch(compiler::TNode<BoolT> p_x, comp
   if (block0.is_used()) {
     compiler::TNode<BoolT> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 512);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 519);
     ca_.Branch(tmp0, &block3, &block4, tmp0);
   }
 
   if (block3.is_used()) {
     compiler::TNode<BoolT> tmp1;
     ca_.Bind(&block3, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 513);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 520);
     ca_.Goto(&block1);
   }
 
   if (block4.is_used()) {
     compiler::TNode<BoolT> tmp2;
     ca_.Bind(&block4, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 515);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 522);
     ca_.Goto(&block2);
   }
 
   if (block1.is_used()) {
     ca_.Bind(&block1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 510);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 517);
     ca_.Goto(label_Taken);
   }
 
@@ -4669,7 +4692,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestOrAnd1(compiler::TNode<
     compiler::TNode<BoolT> tmp1;
     compiler::TNode<BoolT> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 520);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 527);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label1(&ca_);
     TestBuiltinsFromDSLAssembler(state_).BoolToBranch(compiler::TNode<BoolT>{tmp0}, &label0, &label1);
@@ -4762,7 +4785,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestOrAnd1(compiler::TNode<
     compiler::TNode<BoolT> tmp34;
     compiler::TNode<BoolT> tmp35;
     ca_.Bind(&block1, &tmp32, &tmp33, &tmp34, &tmp35);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 519);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 526);
     ca_.Goto(&block10, tmp32, tmp33, tmp34, tmp35);
   }
 
@@ -4793,7 +4816,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestOrAnd2(compiler::TNode<
     compiler::TNode<BoolT> tmp1;
     compiler::TNode<BoolT> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 524);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 531);
     ca_.Branch(tmp0, &block2, &block6, tmp0, tmp1, tmp2);
   }
 
@@ -4886,7 +4909,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestOrAnd2(compiler::TNode<
     compiler::TNode<BoolT> tmp34;
     compiler::TNode<BoolT> tmp35;
     ca_.Bind(&block1, &tmp32, &tmp33, &tmp34, &tmp35);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 523);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 530);
     ca_.Goto(&block10, tmp32, tmp33, tmp34, tmp35);
   }
 
@@ -4917,7 +4940,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestOrAnd3(compiler::TNode<
     compiler::TNode<BoolT> tmp1;
     compiler::TNode<BoolT> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 528);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 535);
     ca_.Branch(tmp0, &block2, &block6, tmp0, tmp1, tmp2);
   }
 
@@ -5010,7 +5033,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestOrAnd3(compiler::TNode<
     compiler::TNode<BoolT> tmp34;
     compiler::TNode<BoolT> tmp35;
     ca_.Bind(&block1, &tmp32, &tmp33, &tmp34, &tmp35);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 527);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 534);
     ca_.Goto(&block10, tmp32, tmp33, tmp34, tmp35);
   }
 
@@ -5041,7 +5064,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestAndOr1(compiler::TNode<
     compiler::TNode<BoolT> tmp1;
     compiler::TNode<BoolT> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 532);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 539);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label1(&ca_);
     TestBuiltinsFromDSLAssembler(state_).BoolToBranch(compiler::TNode<BoolT>{tmp0}, &label0, &label1);
@@ -5134,7 +5157,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestAndOr1(compiler::TNode<
     compiler::TNode<BoolT> tmp34;
     compiler::TNode<BoolT> tmp35;
     ca_.Bind(&block1, &tmp32, &tmp33, &tmp34, &tmp35);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 531);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 538);
     ca_.Goto(&block10, tmp32, tmp33, tmp34, tmp35);
   }
 
@@ -5165,7 +5188,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestAndOr2(compiler::TNode<
     compiler::TNode<BoolT> tmp1;
     compiler::TNode<BoolT> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 536);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 543);
     ca_.Branch(tmp0, &block7, &block6, tmp0, tmp1, tmp2);
   }
 
@@ -5258,7 +5281,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestAndOr2(compiler::TNode<
     compiler::TNode<BoolT> tmp34;
     compiler::TNode<BoolT> tmp35;
     ca_.Bind(&block1, &tmp32, &tmp33, &tmp34, &tmp35);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 535);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 542);
     ca_.Goto(&block10, tmp32, tmp33, tmp34, tmp35);
   }
 
@@ -5289,7 +5312,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestAndOr3(compiler::TNode<
     compiler::TNode<BoolT> tmp1;
     compiler::TNode<BoolT> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 540);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 547);
     ca_.Branch(tmp0, &block7, &block6, tmp0, tmp1, tmp2);
   }
 
@@ -5382,7 +5405,7 @@ compiler::TNode<BoolT> TestBuiltinsFromDSLAssembler::TestAndOr3(compiler::TNode<
     compiler::TNode<BoolT> tmp34;
     compiler::TNode<BoolT> tmp35;
     ca_.Bind(&block1, &tmp32, &tmp33, &tmp34, &tmp35);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 539);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 546);
     ca_.Goto(&block10, tmp32, tmp33, tmp34, tmp35);
   }
 
@@ -5498,7 +5521,7 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 544);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 551);
     compiler::TNode<BoolT> tmp0;
     USE(tmp0);
     tmp0 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5516,12 +5539,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(true, true, true)\' failed", "../../test/torque/test-torque.tq", 544);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(true, true, true)\' failed", "../../test/torque/test-torque.tq", 551);
   }
 
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 545);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 552);
     compiler::TNode<BoolT> tmp4;
     USE(tmp4);
     tmp4 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5539,12 +5562,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(true, true, true)\' failed", "../../test/torque/test-torque.tq", 545);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(true, true, true)\' failed", "../../test/torque/test-torque.tq", 552);
   }
 
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 546);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 553);
     compiler::TNode<BoolT> tmp8;
     USE(tmp8);
     tmp8 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5562,12 +5585,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(true, true, true)\' failed", "../../test/torque/test-torque.tq", 546);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(true, true, true)\' failed", "../../test/torque/test-torque.tq", 553);
   }
 
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 547);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 554);
     compiler::TNode<BoolT> tmp12;
     USE(tmp12);
     tmp12 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5585,12 +5608,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(true, true, false)\' failed", "../../test/torque/test-torque.tq", 547);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(true, true, false)\' failed", "../../test/torque/test-torque.tq", 554);
   }
 
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 548);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 555);
     compiler::TNode<BoolT> tmp16;
     USE(tmp16);
     tmp16 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5608,12 +5631,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block11.is_used()) {
     ca_.Bind(&block11);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(true, true, false)\' failed", "../../test/torque/test-torque.tq", 548);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(true, true, false)\' failed", "../../test/torque/test-torque.tq", 555);
   }
 
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 549);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 556);
     compiler::TNode<BoolT> tmp20;
     USE(tmp20);
     tmp20 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5631,12 +5654,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(true, true, false)\' failed", "../../test/torque/test-torque.tq", 549);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(true, true, false)\' failed", "../../test/torque/test-torque.tq", 556);
   }
 
   if (block12.is_used()) {
     ca_.Bind(&block12);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 550);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 557);
     compiler::TNode<BoolT> tmp24;
     USE(tmp24);
     tmp24 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5654,12 +5677,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block15.is_used()) {
     ca_.Bind(&block15);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(true, false, true)\' failed", "../../test/torque/test-torque.tq", 550);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(true, false, true)\' failed", "../../test/torque/test-torque.tq", 557);
   }
 
   if (block14.is_used()) {
     ca_.Bind(&block14);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 551);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 558);
     compiler::TNode<BoolT> tmp28;
     USE(tmp28);
     tmp28 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5677,12 +5700,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(true, false, true)\' failed", "../../test/torque/test-torque.tq", 551);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(true, false, true)\' failed", "../../test/torque/test-torque.tq", 558);
   }
 
   if (block16.is_used()) {
     ca_.Bind(&block16);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 552);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 559);
     compiler::TNode<BoolT> tmp32;
     USE(tmp32);
     tmp32 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5700,12 +5723,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(true, false, true)\' failed", "../../test/torque/test-torque.tq", 552);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(true, false, true)\' failed", "../../test/torque/test-torque.tq", 559);
   }
 
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 553);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 560);
     compiler::TNode<BoolT> tmp36;
     USE(tmp36);
     tmp36 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5726,12 +5749,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr1(true, false, false)\' failed", "../../test/torque/test-torque.tq", 553);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr1(true, false, false)\' failed", "../../test/torque/test-torque.tq", 560);
   }
 
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 554);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 561);
     compiler::TNode<BoolT> tmp41;
     USE(tmp41);
     tmp41 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5752,12 +5775,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr2(true, false, false)\' failed", "../../test/torque/test-torque.tq", 554);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr2(true, false, false)\' failed", "../../test/torque/test-torque.tq", 561);
   }
 
   if (block22.is_used()) {
     ca_.Bind(&block22);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 555);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 562);
     compiler::TNode<BoolT> tmp46;
     USE(tmp46);
     tmp46 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -5778,12 +5801,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr3(true, false, false)\' failed", "../../test/torque/test-torque.tq", 555);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr3(true, false, false)\' failed", "../../test/torque/test-torque.tq", 562);
   }
 
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 556);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 563);
     compiler::TNode<BoolT> tmp51;
     USE(tmp51);
     tmp51 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5801,12 +5824,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(false, true, true)\' failed", "../../test/torque/test-torque.tq", 556);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(false, true, true)\' failed", "../../test/torque/test-torque.tq", 563);
   }
 
   if (block26.is_used()) {
     ca_.Bind(&block26);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 557);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 564);
     compiler::TNode<BoolT> tmp55;
     USE(tmp55);
     tmp55 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5824,12 +5847,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(false, true, true)\' failed", "../../test/torque/test-torque.tq", 557);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(false, true, true)\' failed", "../../test/torque/test-torque.tq", 564);
   }
 
   if (block28.is_used()) {
     ca_.Bind(&block28);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 558);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 565);
     compiler::TNode<BoolT> tmp59;
     USE(tmp59);
     tmp59 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5847,12 +5870,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block31.is_used()) {
     ca_.Bind(&block31);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(false, true, true)\' failed", "../../test/torque/test-torque.tq", 558);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(false, true, true)\' failed", "../../test/torque/test-torque.tq", 565);
   }
 
   if (block30.is_used()) {
     ca_.Bind(&block30);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 559);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 566);
     compiler::TNode<BoolT> tmp63;
     USE(tmp63);
     tmp63 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5873,12 +5896,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block33.is_used()) {
     ca_.Bind(&block33);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr1(false, true, false)\' failed", "../../test/torque/test-torque.tq", 559);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr1(false, true, false)\' failed", "../../test/torque/test-torque.tq", 566);
   }
 
   if (block32.is_used()) {
     ca_.Bind(&block32);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 560);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 567);
     compiler::TNode<BoolT> tmp68;
     USE(tmp68);
     tmp68 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5899,12 +5922,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block35.is_used()) {
     ca_.Bind(&block35);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr2(false, true, false)\' failed", "../../test/torque/test-torque.tq", 560);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr2(false, true, false)\' failed", "../../test/torque/test-torque.tq", 567);
   }
 
   if (block34.is_used()) {
     ca_.Bind(&block34);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 561);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 568);
     compiler::TNode<BoolT> tmp73;
     USE(tmp73);
     tmp73 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5925,12 +5948,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block37.is_used()) {
     ca_.Bind(&block37);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr3(false, true, false)\' failed", "../../test/torque/test-torque.tq", 561);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr3(false, true, false)\' failed", "../../test/torque/test-torque.tq", 568);
   }
 
   if (block36.is_used()) {
     ca_.Bind(&block36);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 562);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 569);
     compiler::TNode<BoolT> tmp78;
     USE(tmp78);
     tmp78 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5948,12 +5971,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block39.is_used()) {
     ca_.Bind(&block39);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(false, false, true)\' failed", "../../test/torque/test-torque.tq", 562);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr1(false, false, true)\' failed", "../../test/torque/test-torque.tq", 569);
   }
 
   if (block38.is_used()) {
     ca_.Bind(&block38);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 563);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 570);
     compiler::TNode<BoolT> tmp82;
     USE(tmp82);
     tmp82 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5971,12 +5994,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block41.is_used()) {
     ca_.Bind(&block41);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(false, false, true)\' failed", "../../test/torque/test-torque.tq", 563);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr2(false, false, true)\' failed", "../../test/torque/test-torque.tq", 570);
   }
 
   if (block40.is_used()) {
     ca_.Bind(&block40);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 564);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 571);
     compiler::TNode<BoolT> tmp86;
     USE(tmp86);
     tmp86 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -5994,12 +6017,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block43.is_used()) {
     ca_.Bind(&block43);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(false, false, true)\' failed", "../../test/torque/test-torque.tq", 564);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestAndOr3(false, false, true)\' failed", "../../test/torque/test-torque.tq", 571);
   }
 
   if (block42.is_used()) {
     ca_.Bind(&block42);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 565);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 572);
     compiler::TNode<BoolT> tmp90;
     USE(tmp90);
     tmp90 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6020,12 +6043,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block45.is_used()) {
     ca_.Bind(&block45);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr1(false, false, false)\' failed", "../../test/torque/test-torque.tq", 565);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr1(false, false, false)\' failed", "../../test/torque/test-torque.tq", 572);
   }
 
   if (block44.is_used()) {
     ca_.Bind(&block44);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 566);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 573);
     compiler::TNode<BoolT> tmp95;
     USE(tmp95);
     tmp95 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6046,12 +6069,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block47.is_used()) {
     ca_.Bind(&block47);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr2(false, false, false)\' failed", "../../test/torque/test-torque.tq", 566);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr2(false, false, false)\' failed", "../../test/torque/test-torque.tq", 573);
   }
 
   if (block46.is_used()) {
     ca_.Bind(&block46);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 567);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 574);
     compiler::TNode<BoolT> tmp100;
     USE(tmp100);
     tmp100 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6072,12 +6095,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block49.is_used()) {
     ca_.Bind(&block49);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr3(false, false, false)\' failed", "../../test/torque/test-torque.tq", 567);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestAndOr3(false, false, false)\' failed", "../../test/torque/test-torque.tq", 574);
   }
 
   if (block48.is_used()) {
     ca_.Bind(&block48);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 568);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 575);
     compiler::TNode<BoolT> tmp105;
     USE(tmp105);
     tmp105 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6095,12 +6118,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block51.is_used()) {
     ca_.Bind(&block51);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, true, true)\' failed", "../../test/torque/test-torque.tq", 568);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, true, true)\' failed", "../../test/torque/test-torque.tq", 575);
   }
 
   if (block50.is_used()) {
     ca_.Bind(&block50);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 569);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 576);
     compiler::TNode<BoolT> tmp109;
     USE(tmp109);
     tmp109 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6118,12 +6141,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block53.is_used()) {
     ca_.Bind(&block53);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, true, true)\' failed", "../../test/torque/test-torque.tq", 569);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, true, true)\' failed", "../../test/torque/test-torque.tq", 576);
   }
 
   if (block52.is_used()) {
     ca_.Bind(&block52);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 570);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 577);
     compiler::TNode<BoolT> tmp113;
     USE(tmp113);
     tmp113 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6141,12 +6164,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block55.is_used()) {
     ca_.Bind(&block55);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, true, true)\' failed", "../../test/torque/test-torque.tq", 570);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, true, true)\' failed", "../../test/torque/test-torque.tq", 577);
   }
 
   if (block54.is_used()) {
     ca_.Bind(&block54);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 571);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 578);
     compiler::TNode<BoolT> tmp117;
     USE(tmp117);
     tmp117 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6164,12 +6187,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block57.is_used()) {
     ca_.Bind(&block57);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, true, false)\' failed", "../../test/torque/test-torque.tq", 571);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, true, false)\' failed", "../../test/torque/test-torque.tq", 578);
   }
 
   if (block56.is_used()) {
     ca_.Bind(&block56);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 572);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 579);
     compiler::TNode<BoolT> tmp121;
     USE(tmp121);
     tmp121 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6187,12 +6210,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block59.is_used()) {
     ca_.Bind(&block59);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, true, false)\' failed", "../../test/torque/test-torque.tq", 572);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, true, false)\' failed", "../../test/torque/test-torque.tq", 579);
   }
 
   if (block58.is_used()) {
     ca_.Bind(&block58);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 573);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 580);
     compiler::TNode<BoolT> tmp125;
     USE(tmp125);
     tmp125 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6210,12 +6233,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block61.is_used()) {
     ca_.Bind(&block61);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, true, false)\' failed", "../../test/torque/test-torque.tq", 573);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, true, false)\' failed", "../../test/torque/test-torque.tq", 580);
   }
 
   if (block60.is_used()) {
     ca_.Bind(&block60);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 574);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 581);
     compiler::TNode<BoolT> tmp129;
     USE(tmp129);
     tmp129 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6233,12 +6256,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block63.is_used()) {
     ca_.Bind(&block63);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, false, true)\' failed", "../../test/torque/test-torque.tq", 574);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, false, true)\' failed", "../../test/torque/test-torque.tq", 581);
   }
 
   if (block62.is_used()) {
     ca_.Bind(&block62);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 575);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 582);
     compiler::TNode<BoolT> tmp133;
     USE(tmp133);
     tmp133 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6256,12 +6279,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block65.is_used()) {
     ca_.Bind(&block65);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, false, true)\' failed", "../../test/torque/test-torque.tq", 575);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, false, true)\' failed", "../../test/torque/test-torque.tq", 582);
   }
 
   if (block64.is_used()) {
     ca_.Bind(&block64);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 576);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 583);
     compiler::TNode<BoolT> tmp137;
     USE(tmp137);
     tmp137 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6279,12 +6302,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block67.is_used()) {
     ca_.Bind(&block67);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, false, true)\' failed", "../../test/torque/test-torque.tq", 576);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, false, true)\' failed", "../../test/torque/test-torque.tq", 583);
   }
 
   if (block66.is_used()) {
     ca_.Bind(&block66);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 577);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 584);
     compiler::TNode<BoolT> tmp141;
     USE(tmp141);
     tmp141 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6302,12 +6325,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block69.is_used()) {
     ca_.Bind(&block69);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, false, false)\' failed", "../../test/torque/test-torque.tq", 577);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(true, false, false)\' failed", "../../test/torque/test-torque.tq", 584);
   }
 
   if (block68.is_used()) {
     ca_.Bind(&block68);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 578);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 585);
     compiler::TNode<BoolT> tmp145;
     USE(tmp145);
     tmp145 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6325,12 +6348,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block71.is_used()) {
     ca_.Bind(&block71);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, false, false)\' failed", "../../test/torque/test-torque.tq", 578);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(true, false, false)\' failed", "../../test/torque/test-torque.tq", 585);
   }
 
   if (block70.is_used()) {
     ca_.Bind(&block70);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 579);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 586);
     compiler::TNode<BoolT> tmp149;
     USE(tmp149);
     tmp149 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(true));
@@ -6348,12 +6371,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block73.is_used()) {
     ca_.Bind(&block73);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, false, false)\' failed", "../../test/torque/test-torque.tq", 579);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(true, false, false)\' failed", "../../test/torque/test-torque.tq", 586);
   }
 
   if (block72.is_used()) {
     ca_.Bind(&block72);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 580);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 587);
     compiler::TNode<BoolT> tmp153;
     USE(tmp153);
     tmp153 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6371,12 +6394,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block75.is_used()) {
     ca_.Bind(&block75);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(false, true, true)\' failed", "../../test/torque/test-torque.tq", 580);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd1(false, true, true)\' failed", "../../test/torque/test-torque.tq", 587);
   }
 
   if (block74.is_used()) {
     ca_.Bind(&block74);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 581);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 588);
     compiler::TNode<BoolT> tmp157;
     USE(tmp157);
     tmp157 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6394,12 +6417,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block77.is_used()) {
     ca_.Bind(&block77);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(false, true, true)\' failed", "../../test/torque/test-torque.tq", 581);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd2(false, true, true)\' failed", "../../test/torque/test-torque.tq", 588);
   }
 
   if (block76.is_used()) {
     ca_.Bind(&block76);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 582);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 589);
     compiler::TNode<BoolT> tmp161;
     USE(tmp161);
     tmp161 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6417,12 +6440,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block79.is_used()) {
     ca_.Bind(&block79);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(false, true, true)\' failed", "../../test/torque/test-torque.tq", 582);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'TestOrAnd3(false, true, true)\' failed", "../../test/torque/test-torque.tq", 589);
   }
 
   if (block78.is_used()) {
     ca_.Bind(&block78);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 583);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 590);
     compiler::TNode<BoolT> tmp165;
     USE(tmp165);
     tmp165 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6443,12 +6466,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block81.is_used()) {
     ca_.Bind(&block81);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd1(false, true, false)\' failed", "../../test/torque/test-torque.tq", 583);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd1(false, true, false)\' failed", "../../test/torque/test-torque.tq", 590);
   }
 
   if (block80.is_used()) {
     ca_.Bind(&block80);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 584);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 591);
     compiler::TNode<BoolT> tmp170;
     USE(tmp170);
     tmp170 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6469,12 +6492,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block83.is_used()) {
     ca_.Bind(&block83);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd2(false, true, false)\' failed", "../../test/torque/test-torque.tq", 584);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd2(false, true, false)\' failed", "../../test/torque/test-torque.tq", 591);
   }
 
   if (block82.is_used()) {
     ca_.Bind(&block82);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 585);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 592);
     compiler::TNode<BoolT> tmp175;
     USE(tmp175);
     tmp175 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6495,12 +6518,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block85.is_used()) {
     ca_.Bind(&block85);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd3(false, true, false)\' failed", "../../test/torque/test-torque.tq", 585);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd3(false, true, false)\' failed", "../../test/torque/test-torque.tq", 592);
   }
 
   if (block84.is_used()) {
     ca_.Bind(&block84);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 586);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 593);
     compiler::TNode<BoolT> tmp180;
     USE(tmp180);
     tmp180 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6521,12 +6544,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block87.is_used()) {
     ca_.Bind(&block87);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd1(false, false, true)\' failed", "../../test/torque/test-torque.tq", 586);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd1(false, false, true)\' failed", "../../test/torque/test-torque.tq", 593);
   }
 
   if (block86.is_used()) {
     ca_.Bind(&block86);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 587);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 594);
     compiler::TNode<BoolT> tmp185;
     USE(tmp185);
     tmp185 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6547,12 +6570,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block89.is_used()) {
     ca_.Bind(&block89);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd2(false, false, true)\' failed", "../../test/torque/test-torque.tq", 587);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd2(false, false, true)\' failed", "../../test/torque/test-torque.tq", 594);
   }
 
   if (block88.is_used()) {
     ca_.Bind(&block88);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 588);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 595);
     compiler::TNode<BoolT> tmp190;
     USE(tmp190);
     tmp190 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6573,12 +6596,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block91.is_used()) {
     ca_.Bind(&block91);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd3(false, false, true)\' failed", "../../test/torque/test-torque.tq", 588);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd3(false, false, true)\' failed", "../../test/torque/test-torque.tq", 595);
   }
 
   if (block90.is_used()) {
     ca_.Bind(&block90);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 589);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 596);
     compiler::TNode<BoolT> tmp195;
     USE(tmp195);
     tmp195 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6599,12 +6622,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block93.is_used()) {
     ca_.Bind(&block93);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd1(false, false, false)\' failed", "../../test/torque/test-torque.tq", 589);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd1(false, false, false)\' failed", "../../test/torque/test-torque.tq", 596);
   }
 
   if (block92.is_used()) {
     ca_.Bind(&block92);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 590);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 597);
     compiler::TNode<BoolT> tmp200;
     USE(tmp200);
     tmp200 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6625,12 +6648,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block95.is_used()) {
     ca_.Bind(&block95);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd2(false, false, false)\' failed", "../../test/torque/test-torque.tq", 590);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd2(false, false, false)\' failed", "../../test/torque/test-torque.tq", 597);
   }
 
   if (block94.is_used()) {
     ca_.Bind(&block94);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 591);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 598);
     compiler::TNode<BoolT> tmp205;
     USE(tmp205);
     tmp205 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr6ATbool16ATconstexpr_bool(false));
@@ -6651,12 +6674,12 @@ void TestBuiltinsFromDSLAssembler::TestLogicalOperators() {
 
   if (block97.is_used()) {
     ca_.Bind(&block97);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd3(false, false, false)\' failed", "../../test/torque/test-torque.tq", 591);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!TestOrAnd3(false, false, false)\' failed", "../../test/torque/test-torque.tq", 598);
   }
 
   if (block96.is_used()) {
     ca_.Bind(&block96);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 543);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 550);
     ca_.Goto(&block1);
   }
 
@@ -6680,7 +6703,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCall(compiler::TNode<Smi>
   if (block0.is_used()) {
     compiler::TNode<Smi> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 596);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 603);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
@@ -6699,7 +6722,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCall(compiler::TNode<Smi>
   if (block4.is_used()) {
     compiler::TNode<Smi> tmp4;
     ca_.Bind(&block4, &tmp4);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 597);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 604);
     ca_.Goto(&block1);
   }
 
@@ -6707,7 +6730,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCall(compiler::TNode<Smi>
     compiler::TNode<Smi> tmp5;
     compiler::TNode<Smi> tmp6;
     ca_.Bind(&block2, &tmp5, &tmp6);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 594);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 601);
     ca_.Goto(&block5, tmp5, tmp6);
   }
 
@@ -6736,15 +6759,15 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode1() {
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 601);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 608);
     compiler::TNode<Smi> tmp0;
     USE(tmp0);
     tmp0 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 602);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 609);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 604);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 611);
     compiler::TNode<Smi> tmp2;
     USE(tmp2);
     tmp2 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(10));
@@ -6792,7 +6815,7 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode1() {
     compiler::TNode<Smi> tmp14;
     compiler::TNode<Smi> tmp15;
     ca_.Bind(&block4, &tmp13, &tmp14, &tmp15);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 606);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 613);
     ca_.Goto(&block2, tmp13, tmp14);
   }
 
@@ -6801,8 +6824,8 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode1() {
     compiler::TNode<Smi> tmp17;
     compiler::TNode<Smi> tmp18;
     ca_.Bind(&block3, &tmp16, &tmp17, &tmp18);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 607);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 603);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 614);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 610);
     ca_.Goto(&block2, tmp18, tmp17);
   }
 
@@ -6810,7 +6833,7 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode1() {
     compiler::TNode<Smi> tmp19;
     compiler::TNode<Smi> tmp20;
     ca_.Bind(&block2, &tmp19, &tmp20);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 600);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 607);
     ca_.Goto(&block1);
   }
 
@@ -6838,11 +6861,11 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode2() {
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 613);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 620);
     compiler::TNode<Smi> tmp0;
     USE(tmp0);
     tmp0 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 614);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 621);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
@@ -6866,7 +6889,7 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode2() {
     compiler::TNode<Smi> tmp6;
     compiler::TNode<Smi> tmp7;
     ca_.Bind(&block2, &tmp6, &tmp7);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 615);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 622);
     compiler::TNode<Smi> tmp8;
     USE(tmp8);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -6907,14 +6930,14 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode2() {
     compiler::TNode<Smi> tmp19;
     compiler::TNode<Smi> tmp20;
     ca_.Bind(&block6, &tmp18, &tmp19, &tmp20);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 616);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 623);
     compiler::TNode<Smi> tmp21;
     USE(tmp21);
     tmp21 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
     compiler::TNode<Smi> tmp22;
     USE(tmp22);
     tmp22 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp18}, compiler::TNode<Smi>{tmp21}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 614);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 621);
     ca_.Goto(&block5, tmp22, tmp19);
   }
 
@@ -6935,7 +6958,7 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode2() {
     compiler::TNode<Smi> tmp27;
     compiler::TNode<Smi> tmp28;
     ca_.Bind(&block3, &tmp27, &tmp28);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 612);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 619);
     ca_.Goto(&block1);
   }
 
@@ -6963,11 +6986,11 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode3() {
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 622);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 629);
     compiler::TNode<Smi> tmp0;
     USE(tmp0);
     tmp0 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 623);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 630);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
@@ -6991,7 +7014,7 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode3() {
     compiler::TNode<Smi> tmp6;
     compiler::TNode<Smi> tmp7;
     ca_.Bind(&block2, &tmp6, &tmp7);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 624);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 631);
     compiler::TNode<Smi> tmp8;
     USE(tmp8);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -7039,7 +7062,7 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode3() {
     compiler::TNode<Smi> tmp25;
     USE(tmp25);
     tmp25 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp23}, compiler::TNode<Smi>{tmp24}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 623);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 630);
     ca_.Goto(&block5, tmp25, tmp22);
   }
 
@@ -7060,7 +7083,7 @@ void TestBuiltinsFromDSLAssembler::TestOtherwiseWithCode3() {
     compiler::TNode<Smi> tmp30;
     compiler::TNode<Smi> tmp31;
     ca_.Bind(&block3, &tmp30, &tmp31);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 621);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 628);
     ca_.Goto(&block1);
   }
 
@@ -7083,13 +7106,13 @@ void TestBuiltinsFromDSLAssembler::TestForwardLabel() {
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 631);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 638);
     ca_.Goto(&block5);
   }
 
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 634);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 641);
     compiler::TNode<Smi> tmp0;
     USE(tmp0);
     tmp0 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
@@ -7099,14 +7122,14 @@ void TestBuiltinsFromDSLAssembler::TestForwardLabel() {
   if (block3.is_used()) {
     compiler::TNode<Smi> tmp1;
     ca_.Bind(&block3, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 630);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 637);
     ca_.Goto(&block2, tmp1);
   }
 
   if (block2.is_used()) {
     compiler::TNode<Smi> tmp2;
     ca_.Bind(&block2, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 629);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 636);
     ca_.Goto(&block1);
   }
 
@@ -7129,11 +7152,11 @@ void TestBuiltinsFromDSLAssembler::TestQualifiedAccess(compiler::TNode<Context> 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 642);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 649);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 643);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 650);
     compiler::TNode<BoolT> tmp2;
     USE(tmp2);
     tmp2 = ca_.UncheckedCast<BoolT>(ArrayBuiltinsFromDSLAssembler(state_).IsJSArray(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}));
@@ -7147,14 +7170,14 @@ void TestBuiltinsFromDSLAssembler::TestQualifiedAccess(compiler::TNode<Context> 
     compiler::TNode<Context> tmp4;
     compiler::TNode<Smi> tmp5;
     ca_.Bind(&block3, &tmp4, &tmp5);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'!array::IsJSArray(s)\' failed", "../../test/torque/test-torque.tq", 643);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'!array::IsJSArray(s)\' failed", "../../test/torque/test-torque.tq", 650);
   }
 
   if (block2.is_used()) {
     compiler::TNode<Context> tmp6;
     compiler::TNode<Smi> tmp7;
     ca_.Bind(&block2, &tmp6, &tmp7);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 641);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 648);
     ca_.Goto(&block1, tmp6);
   }
 
@@ -7179,11 +7202,11 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch1(compiler::TNode<Co
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 647);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 654);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 649);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 656);
     compiler::CodeAssemblerExceptionHandlerLabel catch2_label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::CodeAssemblerScopedExceptionHandler s(&ca_, &catch2_label);
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp0}, MessageTemplate::kInvalidArrayLength);
@@ -7209,11 +7232,11 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch1(compiler::TNode<Co
     compiler::TNode<Smi> tmp7;
     compiler::TNode<Object> tmp8;
     ca_.Bind(&block3, &tmp6, &tmp7, &tmp8);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 651);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 658);
     compiler::TNode<Smi> tmp9;
     USE(tmp9);
     tmp9 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 652);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 659);
     ca_.Goto(&block1, tmp6, tmp9);
   }
 
@@ -7221,7 +7244,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch1(compiler::TNode<Co
     compiler::TNode<Context> tmp10;
     compiler::TNode<Smi> tmp11;
     ca_.Bind(&block1, &tmp10, &tmp11);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 646);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 653);
     ca_.Goto(&block5, tmp10, tmp11);
   }
 
@@ -7238,7 +7261,7 @@ void TestBuiltinsFromDSLAssembler::TestCatch2Wrapper(compiler::TNode<Context> p_
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 657);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 664);
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp0}, MessageTemplate::kInvalidArrayLength);
   }
 }
@@ -7254,11 +7277,11 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch2(compiler::TNode<Co
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 661);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 668);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 663);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 670);
     compiler::CodeAssemblerExceptionHandlerLabel catch2_label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::CodeAssemblerScopedExceptionHandler s(&ca_, &catch2_label);
     TestBuiltinsFromDSLAssembler(state_).TestCatch2Wrapper(compiler::TNode<Context>{tmp0});
@@ -7284,11 +7307,11 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch2(compiler::TNode<Co
     compiler::TNode<Smi> tmp7;
     compiler::TNode<Object> tmp8;
     ca_.Bind(&block3, &tmp6, &tmp7, &tmp8);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 665);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 672);
     compiler::TNode<Smi> tmp9;
     USE(tmp9);
     tmp9 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(2));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 666);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 673);
     ca_.Goto(&block1, tmp6, tmp9);
   }
 
@@ -7296,7 +7319,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch2(compiler::TNode<Co
     compiler::TNode<Context> tmp10;
     compiler::TNode<Smi> tmp11;
     ca_.Bind(&block1, &tmp10, &tmp11);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 660);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 667);
     ca_.Goto(&block5, tmp10, tmp11);
   }
 
@@ -7314,13 +7337,13 @@ void TestBuiltinsFromDSLAssembler::TestCatch3WrapperWithLabel(compiler::TNode<Co
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 672);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 679);
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp0}, MessageTemplate::kInvalidArrayLength);
   }
 
   if (block1.is_used()) {
     ca_.Bind(&block1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 670);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 677);
     ca_.Goto(label_Abort);
   }
 }
@@ -7339,11 +7362,11 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch3(compiler::TNode<Co
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 676);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 683);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 678);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 685);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch2_label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::CodeAssemblerScopedExceptionHandler s(&ca_, &catch2_label);
@@ -7380,7 +7403,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch3(compiler::TNode<Co
     compiler::TNode<Context> tmp8;
     compiler::TNode<Smi> tmp9;
     ca_.Bind(&block5, &tmp8, &tmp9);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 681);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 688);
     compiler::TNode<Smi> tmp10;
     USE(tmp10);
     compiler::CodeAssemblerExceptionHandlerLabel catch11_label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -7411,11 +7434,11 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch3(compiler::TNode<Co
     compiler::TNode<Smi> tmp16;
     compiler::TNode<Object> tmp17;
     ca_.Bind(&block3, &tmp15, &tmp16, &tmp17);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 684);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 691);
     compiler::TNode<Smi> tmp18;
     USE(tmp18);
     tmp18 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(2));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 685);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 692);
     ca_.Goto(&block1, tmp15, tmp18);
   }
 
@@ -7423,7 +7446,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::TestCatch3(compiler::TNode<Co
     compiler::TNode<Context> tmp19;
     compiler::TNode<Smi> tmp20;
     ca_.Bind(&block1, &tmp19, &tmp20);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 675);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 682);
     ca_.Goto(&block9, tmp19, tmp20);
   }
 
@@ -7450,17 +7473,17 @@ void TestBuiltinsFromDSLAssembler::TestIterator(compiler::TNode<Context> p_conte
     compiler::TNode<Object> tmp1;
     compiler::TNode<Map> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 695);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 702);
     compiler::TNode<Object> tmp3;
     USE(tmp3);
     tmp3 = ca_.UncheckedCast<Object>(IteratorBuiltinsAssembler(state_).GetIteratorMethod(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 696);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 703);
     compiler::TNode<JSReceiver> tmp4;
     USE(tmp4);
     compiler::TNode<Object> tmp5;
     USE(tmp5);
     std::tie(tmp4, tmp5) = IteratorBuiltinsAssembler(state_).GetIterator(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}).Flatten();
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 698);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 705);
     compiler::TNode<Object> tmp6;
     USE(tmp6);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -7496,7 +7519,7 @@ void TestBuiltinsFromDSLAssembler::TestIterator(compiler::TNode<Context> p_conte
     compiler::TNode<Object> tmp22;
     compiler::TNode<Object> tmp23;
     ca_.Bind(&block4, &tmp15, &tmp16, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21, &tmp22, &tmp23);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 699);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 706);
     compiler::TNode<Object> tmp24;
     USE(tmp24);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -7536,19 +7559,19 @@ void TestBuiltinsFromDSLAssembler::TestIterator(compiler::TNode<Context> p_conte
     compiler::TNode<Map> tmp44;
     compiler::TNode<Object> tmp45;
     ca_.Bind(&block6, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 701);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 708);
     compiler::TNode<Object> tmp46;
     USE(tmp46);
     tmp46 = ca_.UncheckedCast<Object>(IteratorBuiltinsAssembler(state_).IteratorValue(compiler::TNode<Context>{tmp35}, compiler::TNode<Object>{tmp45}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 702);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 709);
     compiler::TNode<Object> tmp47;
     USE(tmp47);
     tmp47 = ca_.UncheckedCast<Object>(IteratorBuiltinsAssembler(state_).IteratorValue(compiler::TNode<Context>{tmp35}, compiler::TNode<Object>{tmp45}, compiler::TNode<Map>{tmp37}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 704);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 711);
     compiler::TNode<JSArray> tmp48;
     USE(tmp48);
     tmp48 = ca_.UncheckedCast<JSArray>(IteratorBuiltinsAssembler(state_).IterableToList(compiler::TNode<Context>{tmp35}, compiler::TNode<Object>{tmp38}, compiler::TNode<Object>{tmp38}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 706);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 713);
     IteratorBuiltinsAssembler(state_).IteratorCloseOnException(compiler::TNode<Context>{tmp35}, IteratorBuiltinsFromDSLAssembler::IteratorRecord{compiler::TNode<JSReceiver>{tmp39}, compiler::TNode<Object>{tmp40}}, compiler::TNode<Object>{tmp46});
   }
 
@@ -7557,7 +7580,7 @@ void TestBuiltinsFromDSLAssembler::TestIterator(compiler::TNode<Context> p_conte
     compiler::TNode<Object> tmp50;
     compiler::TNode<Map> tmp51;
     ca_.Bind(&block3, &tmp49, &tmp50, &tmp51);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 694);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 701);
     ca_.Goto(&block2, tmp49, tmp50, tmp51);
   }
 
@@ -7566,7 +7589,7 @@ void TestBuiltinsFromDSLAssembler::TestIterator(compiler::TNode<Context> p_conte
     compiler::TNode<Object> tmp53;
     compiler::TNode<Map> tmp54;
     ca_.Bind(&block2, &tmp52, &tmp53, &tmp54);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 693);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 700);
     ca_.Goto(&block1, tmp52, tmp53, tmp54);
   }
 
@@ -7605,11 +7628,11 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 712);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 719);
     compiler::TNode<RawPtrT> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<RawPtrT>(CodeStubAssembler(state_).LoadFramePointer());
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 714);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 721);
     compiler::TNode<Object> tmp2;
     USE(tmp2);
     tmp2 = ca_.UncheckedCast<Object>(BaseBuiltinsFromDSLAssembler(state_).LoadContextOrFrameTypeFromFrame(compiler::TNode<Context>{tmp0}, compiler::TNode<RawPtrT>{tmp1}));
@@ -7653,9 +7676,9 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
     compiler::TNode<RawPtrT> tmp14;
     compiler::TNode<Smi> tmp15;
     ca_.Bind(&block2, &tmp13, &tmp14, &tmp15);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 713);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 717);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 718);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 720);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 724);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 725);
     compiler::TNode<RawPtrT> tmp16;
     USE(tmp16);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -7685,7 +7708,7 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
     compiler::TNode<RawPtrT> tmp26;
     compiler::TNode<RawPtrT> tmp27;
     ca_.Bind(&block8, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 719);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 726);
     CodeStubAssembler(state_).Unreachable();
   }
 
@@ -7695,7 +7718,7 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
     compiler::TNode<Smi> tmp30;
     compiler::TNode<RawPtrT> tmp31;
     ca_.Bind(&block7, &tmp28, &tmp29, &tmp30, &tmp31);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 721);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 728);
     compiler::TNode<RawPtrT> tmp32;
     USE(tmp32);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -7725,7 +7748,7 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
     compiler::TNode<RawPtrT> tmp42;
     compiler::TNode<RawPtrT> tmp43;
     ca_.Bind(&block12, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 722);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 729);
     CodeStubAssembler(state_).Unreachable();
   }
 
@@ -7735,8 +7758,8 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
     compiler::TNode<Smi> tmp46;
     compiler::TNode<RawPtrT> tmp47;
     ca_.Bind(&block11, &tmp44, &tmp45, &tmp46, &tmp47);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 724);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 721);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 731);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 728);
     ca_.Goto(&block10, tmp44, tmp45, tmp46, tmp47);
   }
 
@@ -7746,7 +7769,7 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
     compiler::TNode<Smi> tmp50;
     compiler::TNode<RawPtrT> tmp51;
     ca_.Bind(&block10, &tmp48, &tmp49, &tmp50, &tmp51);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 718);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 725);
     ca_.Goto(&block6, tmp48, tmp49, tmp50, tmp51);
   }
 
@@ -7756,8 +7779,8 @@ void TestBuiltinsFromDSLAssembler::TestFrame1(compiler::TNode<Context> p_context
     compiler::TNode<Smi> tmp54;
     compiler::TNode<RawPtrT> tmp55;
     ca_.Bind(&block6, &tmp52, &tmp53, &tmp54, &tmp55);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 717);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 711);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 724);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 718);
     ca_.Goto(&block1, tmp52);
   }
 
@@ -7780,27 +7803,29 @@ void TestBuiltinsFromDSLAssembler::TestNew(compiler::TNode<Context> p_context) {
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 730);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 737);
     compiler::TNode<JSArray> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<JSArray>(BaseBuiltinsFromDSLAssembler(state_).NewJSArray(compiler::TNode<Context>{tmp0}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 732);
-    compiler::TNode<Number> tmp2;
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 739);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(JSArray::kLengthOffset);
     USE(tmp2);
-    tmp2 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(0));
-    BaseBuiltinsFromDSLAssembler(state_).StoreJSArrayLength(compiler::TNode<JSArray>{tmp1}, compiler::TNode<Number>{tmp2});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 729);
+    compiler::TNode<Number> tmp3;
+    USE(tmp3);
+    tmp3 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(0));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp1, tmp2}, tmp3);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 736);
     ca_.Goto(&block1, tmp0);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp3;
-    ca_.Bind(&block1, &tmp3);
-    ca_.Goto(&block2, tmp3);
+    compiler::TNode<Context> tmp4;
+    ca_.Bind(&block1, &tmp4);
+    ca_.Goto(&block2, tmp4);
   }
 
-    compiler::TNode<Context> tmp4;
-    ca_.Bind(&block2, &tmp4);
+    compiler::TNode<Context> tmp5;
+    ca_.Bind(&block2, &tmp5);
 }
 
 void TestBuiltinsFromDSLAssembler::TestStructConstructor(compiler::TNode<Context> p_context) {
@@ -7813,7 +7838,7 @@ void TestBuiltinsFromDSLAssembler::TestStructConstructor(compiler::TNode<Context
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 754);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 761);
     compiler::TNode<Int32T> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(6));
@@ -7826,16 +7851,16 @@ void TestBuiltinsFromDSLAssembler::TestStructConstructor(compiler::TNode<Context
     compiler::TNode<Int32T> tmp4;
     USE(tmp4);
     tmp4 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(8));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 759);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 766);
     compiler::TNode<Int32T> tmp5;
     USE(tmp5);
     tmp5 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(1));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 761);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 768);
     compiler::TNode<Int32T> tmp6;
     USE(tmp6);
     tmp6 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(2));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 737);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 761);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 744);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 768);
     ca_.Goto(&block2, tmp0, tmp3, tmp6, tmp2, tmp4, tmp6);
   }
 
@@ -7847,7 +7872,7 @@ void TestBuiltinsFromDSLAssembler::TestStructConstructor(compiler::TNode<Context
     compiler::TNode<Int32T> tmp11;
     compiler::TNode<Int32T> tmp12;
     ca_.Bind(&block2, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 752);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 759);
     ca_.Goto(&block1, tmp7);
   }
 
@@ -7861,117 +7886,153 @@ void TestBuiltinsFromDSLAssembler::TestStructConstructor(compiler::TNode<Context
     ca_.Bind(&block3, &tmp14);
 }
 
-void TestBuiltinsFromDSLAssembler::TestClassWithAllTypesLoadsAndStores(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_t, compiler::TNode<RawPtrT> p_r, compiler::TNode<Int32T> p_v1, compiler::TNode<Uint32T> p_v2, compiler::TNode<Int32T> p_v3, compiler::TNode<Uint32T> p_v4) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, RawPtrT, Int32T, Uint32T, Int32T, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, RawPtrT, Int32T, Uint32T, Int32T, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, RawPtrT, Int32T, Uint32T, Int32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+void TestBuiltinsFromDSLAssembler::TestClassWithAllTypesLoadsAndStores(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_t, compiler::TNode<RawPtrT> p_r, compiler::TNode<Int8T> p_v1, compiler::TNode<Uint8T> p_v2, compiler::TNode<Int16T> p_v3, compiler::TNode<Uint16T> p_v4) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, RawPtrT, Int8T, Uint8T, Int16T, Uint16T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, RawPtrT, Int8T, Uint8T, Int16T, Uint16T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, RawPtrT, Int8T, Uint8T, Int16T, Uint16T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_t, p_r, p_v1, p_v2, p_v3, p_v4);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     compiler::TNode<RawPtrT> tmp1;
-    compiler::TNode<Int32T> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    compiler::TNode<Int32T> tmp4;
-    compiler::TNode<Uint32T> tmp5;
+    compiler::TNode<Int8T> tmp2;
+    compiler::TNode<Uint8T> tmp3;
+    compiler::TNode<Int16T> tmp4;
+    compiler::TNode<Uint16T> tmp5;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3, &tmp4, &tmp5);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 783);
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesA(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Int32T>{tmp2});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 784);
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesB(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Uint32T>{tmp3});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 785);
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesC(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Int32T>{tmp4});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 786);
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesD(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Uint32T>{tmp5});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 787);
-    compiler::TNode<Int32T> tmp6;
-    USE(tmp6);
-    tmp6 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(0));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesE(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Int32T>{tmp6});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 788);
-    compiler::TNode<Uint32T> tmp7;
-    USE(tmp7);
-    tmp7 = ca_.UncheckedCast<Uint32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr8ATuint3217ATconstexpr_int31(0));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesF(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Uint32T>{tmp7});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 789);
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesG(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<RawPtrT>{tmp1});
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 790);
-    compiler::TNode<IntPtrT> tmp8;
-    USE(tmp8);
-    tmp8 = ca_.UncheckedCast<IntPtrT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr8ATintptr17ATconstexpr_int31(0));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesH(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<IntPtrT>{tmp8});
+    compiler::TNode<IntPtrT> tmp6 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kAOffset);
+    USE(tmp6);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp6}, tmp2);
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 791);
-    compiler::TNode<UintPtrT> tmp9;
-    USE(tmp9);
-    tmp9 = ca_.UncheckedCast<UintPtrT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr9ATuintptr17ATconstexpr_int31(0));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesI(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<UintPtrT>{tmp9});
+    compiler::TNode<IntPtrT> tmp7 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kBOffset);
+    USE(tmp7);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp7}, tmp3);
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 792);
-    compiler::TNode<Int32T> tmp10;
-    USE(tmp10);
-    tmp10 = ca_.UncheckedCast<Int32T>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesA(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesA(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Int32T>{tmp10});
+    compiler::TNode<IntPtrT> tmp8 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kCOffset);
+    USE(tmp8);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp8}, tmp4);
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 793);
-    compiler::TNode<Uint32T> tmp11;
-    USE(tmp11);
-    tmp11 = ca_.UncheckedCast<Uint32T>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesB(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesB(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Uint32T>{tmp11});
+    compiler::TNode<IntPtrT> tmp9 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kDOffset);
+    USE(tmp9);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp9}, tmp5);
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 794);
-    compiler::TNode<Int32T> tmp12;
-    USE(tmp12);
-    tmp12 = ca_.UncheckedCast<Int32T>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesC(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesC(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Int32T>{tmp12});
+    compiler::TNode<IntPtrT> tmp10 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kEOffset);
+    USE(tmp10);
+    compiler::TNode<Int32T> tmp11;
+    USE(tmp11);
+    tmp11 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(0));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp10}, tmp11);
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 795);
+    compiler::TNode<IntPtrT> tmp12 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kFOffset);
+    USE(tmp12);
     compiler::TNode<Uint32T> tmp13;
     USE(tmp13);
-    tmp13 = ca_.UncheckedCast<Uint32T>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesD(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesD(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Uint32T>{tmp13});
+    tmp13 = ca_.UncheckedCast<Uint32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr8ATuint3217ATconstexpr_int31(0));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp12}, tmp13);
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 796);
-    compiler::TNode<Int32T> tmp14;
+    compiler::TNode<IntPtrT> tmp14 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kGOffset);
     USE(tmp14);
-    tmp14 = ca_.UncheckedCast<Int32T>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesE(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesE(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Int32T>{tmp14});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp14}, tmp1);
     ca_.SetSourcePosition("../../test/torque/test-torque.tq", 797);
-    compiler::TNode<Uint32T> tmp15;
+    compiler::TNode<IntPtrT> tmp15 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kHOffset);
     USE(tmp15);
-    tmp15 = ca_.UncheckedCast<Uint32T>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesF(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesF(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<Uint32T>{tmp15});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 798);
-    compiler::TNode<RawPtrT> tmp16;
+    compiler::TNode<IntPtrT> tmp16;
     USE(tmp16);
-    tmp16 = ca_.UncheckedCast<RawPtrT>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesG(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesG(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<RawPtrT>{tmp16});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 799);
-    compiler::TNode<IntPtrT> tmp17;
+    tmp16 = ca_.UncheckedCast<IntPtrT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr8ATintptr17ATconstexpr_int31(0));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp15}, tmp16);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 798);
+    compiler::TNode<IntPtrT> tmp17 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kIOffset);
     USE(tmp17);
-    tmp17 = ca_.UncheckedCast<IntPtrT>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesH(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesH(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<IntPtrT>{tmp17});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 800);
     compiler::TNode<UintPtrT> tmp18;
     USE(tmp18);
-    tmp18 = ca_.UncheckedCast<UintPtrT>(TestBuiltinsFromDSLAssembler(state_).LoadTestClassWithAllTypesI(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}));
-    TestBuiltinsFromDSLAssembler(state_).StoreTestClassWithAllTypesI(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes>{tmp0}, compiler::TNode<UintPtrT>{tmp18});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 780);
+    tmp18 = ca_.UncheckedCast<UintPtrT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr9ATuintptr17ATconstexpr_int31(0));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp17}, tmp18);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 799);
+    compiler::TNode<IntPtrT> tmp19 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kAOffset);
+    USE(tmp19);
+    compiler::TNode<IntPtrT> tmp20 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kAOffset);
+    USE(tmp20);
+    compiler::TNode<Int8T>tmp21 = CodeStubAssembler(state_).LoadReference<Int8T>(CodeStubAssembler::Reference{tmp0, tmp20});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp19}, tmp21);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 800);
+    compiler::TNode<IntPtrT> tmp22 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kBOffset);
+    USE(tmp22);
+    compiler::TNode<IntPtrT> tmp23 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kBOffset);
+    USE(tmp23);
+    compiler::TNode<Uint8T>tmp24 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp0, tmp23});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp22}, tmp24);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 801);
+    compiler::TNode<IntPtrT> tmp25 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kCOffset);
+    USE(tmp25);
+    compiler::TNode<IntPtrT> tmp26 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kCOffset);
+    USE(tmp26);
+    compiler::TNode<Int16T>tmp27 = CodeStubAssembler(state_).LoadReference<Int16T>(CodeStubAssembler::Reference{tmp0, tmp26});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp25}, tmp27);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 802);
+    compiler::TNode<IntPtrT> tmp28 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kDOffset);
+    USE(tmp28);
+    compiler::TNode<IntPtrT> tmp29 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kDOffset);
+    USE(tmp29);
+    compiler::TNode<Uint16T>tmp30 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp0, tmp29});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp28}, tmp30);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 803);
+    compiler::TNode<IntPtrT> tmp31 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kEOffset);
+    USE(tmp31);
+    compiler::TNode<IntPtrT> tmp32 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kEOffset);
+    USE(tmp32);
+    compiler::TNode<Int32T>tmp33 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{tmp0, tmp32});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp31}, tmp33);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 804);
+    compiler::TNode<IntPtrT> tmp34 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kFOffset);
+    USE(tmp34);
+    compiler::TNode<IntPtrT> tmp35 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kFOffset);
+    USE(tmp35);
+    compiler::TNode<Uint32T>tmp36 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp0, tmp35});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp34}, tmp36);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 805);
+    compiler::TNode<IntPtrT> tmp37 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kGOffset);
+    USE(tmp37);
+    compiler::TNode<IntPtrT> tmp38 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kGOffset);
+    USE(tmp38);
+    compiler::TNode<RawPtrT>tmp39 = CodeStubAssembler(state_).LoadReference<RawPtrT>(CodeStubAssembler::Reference{tmp0, tmp38});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp37}, tmp39);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 806);
+    compiler::TNode<IntPtrT> tmp40 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kHOffset);
+    USE(tmp40);
+    compiler::TNode<IntPtrT> tmp41 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kHOffset);
+    USE(tmp41);
+    compiler::TNode<IntPtrT>tmp42 = CodeStubAssembler(state_).LoadReference<IntPtrT>(CodeStubAssembler::Reference{tmp0, tmp41});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp40}, tmp42);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 807);
+    compiler::TNode<IntPtrT> tmp43 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kIOffset);
+    USE(tmp43);
+    compiler::TNode<IntPtrT> tmp44 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kIOffset);
+    USE(tmp44);
+    compiler::TNode<UintPtrT>tmp45 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp0, tmp44});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp43}, tmp45);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 787);
     ca_.Goto(&block1, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp19;
-    compiler::TNode<RawPtrT> tmp20;
-    compiler::TNode<Int32T> tmp21;
-    compiler::TNode<Uint32T> tmp22;
-    compiler::TNode<Int32T> tmp23;
-    compiler::TNode<Uint32T> tmp24;
-    ca_.Bind(&block1, &tmp19, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24);
-    ca_.Goto(&block2, tmp19, tmp20, tmp21, tmp22, tmp23, tmp24);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp46;
+    compiler::TNode<RawPtrT> tmp47;
+    compiler::TNode<Int8T> tmp48;
+    compiler::TNode<Uint8T> tmp49;
+    compiler::TNode<Int16T> tmp50;
+    compiler::TNode<Uint16T> tmp51;
+    ca_.Bind(&block1, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51);
+    ca_.Goto(&block2, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp25;
-    compiler::TNode<RawPtrT> tmp26;
-    compiler::TNode<Int32T> tmp27;
-    compiler::TNode<Uint32T> tmp28;
-    compiler::TNode<Int32T> tmp29;
-    compiler::TNode<Uint32T> tmp30;
-    ca_.Bind(&block2, &tmp25, &tmp26, &tmp27, &tmp28, &tmp29, &tmp30);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp52;
+    compiler::TNode<RawPtrT> tmp53;
+    compiler::TNode<Int8T> tmp54;
+    compiler::TNode<Uint8T> tmp55;
+    compiler::TNode<Int16T> tmp56;
+    compiler::TNode<Uint16T> tmp57;
+    ca_.Bind(&block2, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57);
 }
 
 compiler::TNode<FixedArray> TestBuiltinsFromDSLAssembler::NewInternalClass(compiler::TNode<Smi> p_x) {
@@ -7983,7 +8044,7 @@ compiler::TNode<FixedArray> TestBuiltinsFromDSLAssembler::NewInternalClass(compi
   if (block0.is_used()) {
     compiler::TNode<Smi> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 814);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 821);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
@@ -7993,23 +8054,27 @@ compiler::TNode<FixedArray> TestBuiltinsFromDSLAssembler::NewInternalClass(compi
     compiler::TNode<FixedArray> tmp3;
     USE(tmp3);
     tmp3 = CodeStubAssembler(state_).AllocateUninitializedFixedArray(2);
-    CodeStubAssembler(state_).UnsafeStoreFixedArrayElement(tmp3, 0, tmp0);
-    CodeStubAssembler(state_).UnsafeStoreFixedArrayElement(tmp3, 1, tmp2);
+    compiler::TNode<IntPtrT> tmp4 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp4);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp3, tmp4}, tmp0);
+    compiler::TNode<IntPtrT> tmp5 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp5);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp3, tmp5}, tmp2);
     ca_.Goto(&block1, tmp0, tmp3);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Smi> tmp4;
-    compiler::TNode<FixedArray> tmp5;
-    ca_.Bind(&block1, &tmp4, &tmp5);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 813);
-    ca_.Goto(&block2, tmp4, tmp5);
-  }
-
     compiler::TNode<Smi> tmp6;
     compiler::TNode<FixedArray> tmp7;
-    ca_.Bind(&block2, &tmp6, &tmp7);
-  return compiler::TNode<FixedArray>{tmp7};
+    ca_.Bind(&block1, &tmp6, &tmp7);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 820);
+    ca_.Goto(&block2, tmp6, tmp7);
+  }
+
+    compiler::TNode<Smi> tmp8;
+    compiler::TNode<FixedArray> tmp9;
+    ca_.Bind(&block2, &tmp8, &tmp9);
+  return compiler::TNode<FixedArray>{tmp9};
 }
 
 void TestBuiltinsFromDSLAssembler::TestInternalClass(compiler::TNode<Context> p_context) {
@@ -8029,14 +8094,14 @@ void TestBuiltinsFromDSLAssembler::TestInternalClass(compiler::TNode<Context> p_
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 818);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 825);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
     compiler::TNode<FixedArray> tmp2;
     USE(tmp2);
     tmp2 = ca_.UncheckedCast<FixedArray>(TestBuiltinsFromDSLAssembler(state_).NewInternalClass(compiler::TNode<Smi>{tmp1}));
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 819);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 826);
     compiler::CodeAssemblerLabel label0(&ca_);
     TestBuiltinsFromDSLAssembler(state_)._method_InternalClass_Flip(compiler::TNode<FixedArray>{tmp2}, &label0);
     ca_.Goto(&block4, tmp0, tmp2, tmp2);
@@ -8073,390 +8138,832 @@ void TestBuiltinsFromDSLAssembler::TestInternalClass(compiler::TNode<Context> p_
     compiler::TNode<Context> tmp11;
     compiler::TNode<FixedArray> tmp12;
     ca_.Bind(&block2, &tmp11, &tmp12);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 820);
-    compiler::TNode<Smi> tmp13;
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 827);
+    compiler::TNode<IntPtrT> tmp13 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
     USE(tmp13);
-    tmp13 = ca_.UncheckedCast<Smi>(TestBuiltinsFromDSLAssembler(state_).LoadInternalClassA(compiler::TNode<FixedArray>{tmp12}));
-    compiler::TNode<Smi> tmp14;
-    USE(tmp14);
-    tmp14 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(6));
-    compiler::TNode<BoolT> tmp15;
+    compiler::TNode<Smi>tmp14 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp12, tmp13});
+    compiler::TNode<Smi> tmp15;
     USE(tmp15);
-    tmp15 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp13}, compiler::TNode<Smi>{tmp14}));
-    ca_.Branch(tmp15, &block6, &block7, tmp11, tmp12);
+    tmp15 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(6));
+    compiler::TNode<BoolT> tmp16;
+    USE(tmp16);
+    tmp16 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp14}, compiler::TNode<Smi>{tmp15}));
+    ca_.Branch(tmp16, &block6, &block7, tmp11, tmp12);
   }
 
   if (block7.is_used()) {
-    compiler::TNode<Context> tmp16;
-    compiler::TNode<FixedArray> tmp17;
-    ca_.Bind(&block7, &tmp16, &tmp17);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'o.a == 6\' failed", "../../test/torque/test-torque.tq", 820);
+    compiler::TNode<Context> tmp17;
+    compiler::TNode<FixedArray> tmp18;
+    ca_.Bind(&block7, &tmp17, &tmp18);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'o.a == 6\' failed", "../../test/torque/test-torque.tq", 827);
   }
 
   if (block6.is_used()) {
-    compiler::TNode<Context> tmp18;
-    compiler::TNode<FixedArray> tmp19;
-    ca_.Bind(&block6, &tmp18, &tmp19);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 821);
-    compiler::TNode<Number> tmp20;
-    USE(tmp20);
-    tmp20 = ca_.UncheckedCast<Number>(TestBuiltinsFromDSLAssembler(state_).LoadInternalClassB(compiler::TNode<FixedArray>{tmp19}));
-    compiler::TNode<Number> tmp21;
+    compiler::TNode<Context> tmp19;
+    compiler::TNode<FixedArray> tmp20;
+    ca_.Bind(&block6, &tmp19, &tmp20);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 828);
+    compiler::TNode<IntPtrT> tmp21 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
     USE(tmp21);
-    tmp21 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(5));
-    compiler::TNode<BoolT> tmp22;
-    USE(tmp22);
-    tmp22 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).IsNumberEqual(compiler::TNode<Number>{tmp20}, compiler::TNode<Number>{tmp21}));
-    ca_.Branch(tmp22, &block8, &block9, tmp18, tmp19);
+    compiler::TNode<Number>tmp22 = CodeStubAssembler(state_).LoadReference<Number>(CodeStubAssembler::Reference{tmp20, tmp21});
+    compiler::TNode<Number> tmp23;
+    USE(tmp23);
+    tmp23 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(5));
+    compiler::TNode<BoolT> tmp24;
+    USE(tmp24);
+    tmp24 = ca_.UncheckedCast<BoolT>(BaseBuiltinsFromDSLAssembler(state_).IsNumberEqual(compiler::TNode<Number>{tmp22}, compiler::TNode<Number>{tmp23}));
+    ca_.Branch(tmp24, &block8, &block9, tmp19, tmp20);
   }
 
   if (block9.is_used()) {
-    compiler::TNode<Context> tmp23;
-    compiler::TNode<FixedArray> tmp24;
-    ca_.Bind(&block9, &tmp23, &tmp24);
-    CodeStubAssembler(state_).FailAssert("Torque assert \'o.b == 5\' failed", "../../test/torque/test-torque.tq", 821);
+    compiler::TNode<Context> tmp25;
+    compiler::TNode<FixedArray> tmp26;
+    ca_.Bind(&block9, &tmp25, &tmp26);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'o.b == 5\' failed", "../../test/torque/test-torque.tq", 828);
   }
 
   if (block8.is_used()) {
-    compiler::TNode<Context> tmp25;
-    compiler::TNode<FixedArray> tmp26;
-    ca_.Bind(&block8, &tmp25, &tmp26);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 817);
-    ca_.Goto(&block1, tmp25);
-  }
-
-  if (block1.is_used()) {
     compiler::TNode<Context> tmp27;
-    ca_.Bind(&block1, &tmp27);
-    ca_.Goto(&block10, tmp27);
-  }
-
-    compiler::TNode<Context> tmp28;
-    ca_.Bind(&block10, &tmp28);
-}
-
-compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesA(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, p_o);
-
-  if (block0.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
-    ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 767);
-compiler::TNode<Int32T> tmp1 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kAOffset, MachineType::Int8()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    compiler::TNode<FixedArray> tmp28;
+    ca_.Bind(&block8, &tmp27, &tmp28);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 824);
+    ca_.Goto(&block1, tmp27);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Int32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<Context> tmp29;
+    ca_.Bind(&block1, &tmp29);
+    ca_.Goto(&block10, tmp29);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Int32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Int32T>{tmp5};
+    compiler::TNode<Context> tmp30;
+    ca_.Bind(&block10, &tmp30);
 }
 
-void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesA(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Int32T> p_v) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, p_o, p_v);
+void TestBuiltinsFromDSLAssembler::TestConstInStructs() {
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
 
   if (block0.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
+    ca_.Bind(&block0);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 843);
+    compiler::TNode<Oddball> tmp0;
+    USE(tmp0);
+    tmp0 = BaseBuiltinsFromDSLAssembler(state_).Null();
     compiler::TNode<Int32T> tmp1;
-    ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 767);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 24, tmp1, MachineType::Int8().representation());
-    ca_.Goto(&block1, tmp0, tmp1);
-  }
-
-  if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
+    USE(tmp1);
+    tmp1 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(1));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 844);
+    compiler::TNode<Oddball> tmp2;
+    USE(tmp2);
+    tmp2 = BaseBuiltinsFromDSLAssembler(state_).Null();
     compiler::TNode<Int32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    USE(tmp3);
+    tmp3 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr7ATint3217ATconstexpr_int31(1));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 845);
+    compiler::TNode<Oddball> tmp4;
+    USE(tmp4);
+    tmp4 = BaseBuiltinsFromDSLAssembler(state_).Undefined();
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 846);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 842);
+    ca_.Goto(&block1);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Int32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
 }
 
-compiler::TNode<Uint32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesB(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
+compiler::TNode<Object> TestBuiltinsFromDSLAssembler::TestNewFixedArrayFromSpread(compiler::TNode<Context> p_context) {
+  compiler::CodeAssemblerParameterizedLabel<Context> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi, Object> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi> block5(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Smi, Map, Smi, IntPtrT, IntPtrT, IntPtrT, IntPtrT, FixedArray, HeapObject, IntPtrT, HeapObject, IntPtrT, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_context);
+
+  if (block0.is_used()) {
+    compiler::TNode<Context> tmp0;
+    ca_.Bind(&block0, &tmp0);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 858);
+    compiler::TNode<Smi> tmp1;
+    USE(tmp1);
+    tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 859);
+    compiler::TNode<Map> tmp2;
+    USE(tmp2);
+    tmp2 = BaseBuiltinsFromDSLAssembler(state_).kFixedArrayMap();
+    compiler::TNode<IntPtrT> tmp3;
+    USE(tmp3);
+    tmp3 = CodeStubAssembler(state_).IntPtrConstant(((16)));
+    compiler::TNode<IntPtrT> tmp4;
+    USE(tmp4);
+    tmp4 = ca_.UncheckedCast<IntPtrT>(BaseBuiltinsFromDSLAssembler(state_).Convert8ATintptr17ATconstexpr_int31(5));
+    compiler::TNode<IntPtrT> tmp5;
+    USE(tmp5);
+    tmp5 = ca_.UncheckedCast<IntPtrT>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr8ATintptr17ATconstexpr_int31(kTaggedSize));
+    compiler::TNode<IntPtrT> tmp6;
+    USE(tmp6);
+    tmp6 = ca_.UncheckedCast<IntPtrT>(CodeStubAssembler(state_).IntPtrMul(compiler::TNode<IntPtrT>{tmp4}, compiler::TNode<IntPtrT>{tmp5}));
+    compiler::TNode<IntPtrT> tmp7;
+    USE(tmp7);
+    tmp7 = ca_.UncheckedCast<IntPtrT>(CodeStubAssembler(state_).IntPtrAdd(compiler::TNode<IntPtrT>{tmp3}, compiler::TNode<IntPtrT>{tmp6}));
+    compiler::TNode<FixedArray> tmp8;
+    USE(tmp8);
+    tmp8 = ca_.UncheckedCast<FixedArray>(CodeStubAssembler(state_).Allocate(compiler::TNode<IntPtrT>{tmp7}));
+    CodeStubAssembler(state_).InitializeFieldsWithRoot(tmp8, CodeStubAssembler(state_).IntPtrConstant(16), compiler::TNode<IntPtrT>{tmp7}, RootIndex::kUndefinedValue);
+    compiler::TNode<IntPtrT> tmp9 = ca_.IntPtrConstant(HeapObject::kMapOffset);
+    USE(tmp9);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp8, tmp9}, tmp2);
+    compiler::TNode<IntPtrT> tmp10 = ca_.IntPtrConstant(FixedArrayBase::kLengthOffset);
+    USE(tmp10);
+    compiler::TNode<Smi> tmp11;
+    USE(tmp11);
+    tmp11 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp8, tmp10}, tmp11);
+    compiler::TNode<Smi> tmp12;
+    USE(tmp12);
+    tmp12 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
+    ca_.Goto(&block6, tmp0, tmp1, tmp2, tmp1, tmp3, tmp4, tmp6, tmp7, tmp8, tmp8, tmp9, tmp8, tmp10, tmp12);
+  }
+
+  if (block6.is_used()) {
+    compiler::TNode<Context> tmp13;
+    compiler::TNode<Smi> tmp14;
+    compiler::TNode<Map> tmp15;
+    compiler::TNode<Smi> tmp16;
+    compiler::TNode<IntPtrT> tmp17;
+    compiler::TNode<IntPtrT> tmp18;
+    compiler::TNode<IntPtrT> tmp19;
+    compiler::TNode<IntPtrT> tmp20;
+    compiler::TNode<FixedArray> tmp21;
+    compiler::TNode<HeapObject> tmp22;
+    compiler::TNode<IntPtrT> tmp23;
+    compiler::TNode<HeapObject> tmp24;
+    compiler::TNode<IntPtrT> tmp25;
+    compiler::TNode<Smi> tmp26;
+    ca_.Bind(&block6, &tmp13, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26);
+    compiler::TNode<Smi> tmp27;
+    USE(tmp27);
+    tmp27 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(5));
+    compiler::TNode<BoolT> tmp28;
+    USE(tmp28);
+    tmp28 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).SmiLessThan(compiler::TNode<Smi>{tmp26}, compiler::TNode<Smi>{tmp27}));
+    ca_.Branch(tmp28, &block4, &block3, tmp13, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19, tmp20, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26);
+  }
+
+  if (block4.is_used()) {
+    compiler::TNode<Context> tmp29;
+    compiler::TNode<Smi> tmp30;
+    compiler::TNode<Map> tmp31;
+    compiler::TNode<Smi> tmp32;
+    compiler::TNode<IntPtrT> tmp33;
+    compiler::TNode<IntPtrT> tmp34;
+    compiler::TNode<IntPtrT> tmp35;
+    compiler::TNode<IntPtrT> tmp36;
+    compiler::TNode<FixedArray> tmp37;
+    compiler::TNode<HeapObject> tmp38;
+    compiler::TNode<IntPtrT> tmp39;
+    compiler::TNode<HeapObject> tmp40;
+    compiler::TNode<IntPtrT> tmp41;
+    compiler::TNode<Smi> tmp42;
+    ca_.Bind(&block4, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 851);
+    compiler::TNode<Smi> tmp43;
+    USE(tmp43);
+    tmp43 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
+    compiler::TNode<Smi> tmp44;
+    USE(tmp44);
+    tmp44 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiSub(compiler::TNode<Smi>{tmp32}, compiler::TNode<Smi>{tmp43}));
+    compiler::TNode<Smi> tmp45;
+    USE(tmp45);
+    tmp45 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(0));
+    compiler::TNode<BoolT> tmp46;
+    USE(tmp46);
+    tmp46 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp32}, compiler::TNode<Smi>{tmp45}));
+    ca_.Branch(tmp46, &block8, &block9, tmp29, tmp30, tmp31, tmp44, tmp33, tmp34, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp42);
+  }
+
+  if (block8.is_used()) {
+    compiler::TNode<Context> tmp47;
+    compiler::TNode<Smi> tmp48;
+    compiler::TNode<Map> tmp49;
+    compiler::TNode<Smi> tmp50;
+    compiler::TNode<IntPtrT> tmp51;
+    compiler::TNode<IntPtrT> tmp52;
+    compiler::TNode<IntPtrT> tmp53;
+    compiler::TNode<IntPtrT> tmp54;
+    compiler::TNode<FixedArray> tmp55;
+    compiler::TNode<HeapObject> tmp56;
+    compiler::TNode<IntPtrT> tmp57;
+    compiler::TNode<HeapObject> tmp58;
+    compiler::TNode<IntPtrT> tmp59;
+    compiler::TNode<Smi> tmp60;
+    ca_.Bind(&block8, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60);
+    ca_.Goto(&block5, tmp47, tmp48, tmp49, tmp50, tmp51, tmp52, tmp53, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60);
+  }
+
+  if (block9.is_used()) {
+    compiler::TNode<Context> tmp61;
+    compiler::TNode<Smi> tmp62;
+    compiler::TNode<Map> tmp63;
+    compiler::TNode<Smi> tmp64;
+    compiler::TNode<IntPtrT> tmp65;
+    compiler::TNode<IntPtrT> tmp66;
+    compiler::TNode<IntPtrT> tmp67;
+    compiler::TNode<IntPtrT> tmp68;
+    compiler::TNode<FixedArray> tmp69;
+    compiler::TNode<HeapObject> tmp70;
+    compiler::TNode<IntPtrT> tmp71;
+    compiler::TNode<HeapObject> tmp72;
+    compiler::TNode<IntPtrT> tmp73;
+    compiler::TNode<Smi> tmp74;
+    ca_.Bind(&block9, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 852);
+    compiler::TNode<Oddball> tmp75;
+    USE(tmp75);
+    tmp75 = BaseBuiltinsFromDSLAssembler(state_).Hole();
+    ca_.Goto(&block7, tmp61, tmp62, tmp63, tmp64, tmp65, tmp66, tmp67, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75);
+  }
+
+  if (block7.is_used()) {
+    compiler::TNode<Context> tmp76;
+    compiler::TNode<Smi> tmp77;
+    compiler::TNode<Map> tmp78;
+    compiler::TNode<Smi> tmp79;
+    compiler::TNode<IntPtrT> tmp80;
+    compiler::TNode<IntPtrT> tmp81;
+    compiler::TNode<IntPtrT> tmp82;
+    compiler::TNode<IntPtrT> tmp83;
+    compiler::TNode<FixedArray> tmp84;
+    compiler::TNode<HeapObject> tmp85;
+    compiler::TNode<IntPtrT> tmp86;
+    compiler::TNode<HeapObject> tmp87;
+    compiler::TNode<IntPtrT> tmp88;
+    compiler::TNode<Smi> tmp89;
+    compiler::TNode<Object> tmp90;
+    ca_.Bind(&block7, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 859);
+    BaseBuiltinsFromDSLAssembler(state_).StoreFixedArrayDirect(compiler::TNode<FixedArray>{tmp84}, compiler::TNode<Smi>{tmp89}, compiler::TNode<Object>{tmp90});
+    compiler::TNode<Smi> tmp91;
+    USE(tmp91);
+    tmp91 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
+    compiler::TNode<Smi> tmp92;
+    USE(tmp92);
+    tmp92 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp89}, compiler::TNode<Smi>{tmp91}));
+    ca_.Goto(&block6, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81, tmp82, tmp83, tmp84, tmp85, tmp86, tmp87, tmp88, tmp92);
+  }
+
+  if (block5.is_used()) {
+    compiler::TNode<Context> tmp93;
+    compiler::TNode<Smi> tmp94;
+    compiler::TNode<Map> tmp95;
+    compiler::TNode<Smi> tmp96;
+    compiler::TNode<IntPtrT> tmp97;
+    compiler::TNode<IntPtrT> tmp98;
+    compiler::TNode<IntPtrT> tmp99;
+    compiler::TNode<IntPtrT> tmp100;
+    compiler::TNode<FixedArray> tmp101;
+    compiler::TNode<HeapObject> tmp102;
+    compiler::TNode<IntPtrT> tmp103;
+    compiler::TNode<HeapObject> tmp104;
+    compiler::TNode<IntPtrT> tmp105;
+    compiler::TNode<Smi> tmp106;
+    ca_.Bind(&block5, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  if (block3.is_used()) {
+    compiler::TNode<Context> tmp107;
+    compiler::TNode<Smi> tmp108;
+    compiler::TNode<Map> tmp109;
+    compiler::TNode<Smi> tmp110;
+    compiler::TNode<IntPtrT> tmp111;
+    compiler::TNode<IntPtrT> tmp112;
+    compiler::TNode<IntPtrT> tmp113;
+    compiler::TNode<IntPtrT> tmp114;
+    compiler::TNode<FixedArray> tmp115;
+    compiler::TNode<HeapObject> tmp116;
+    compiler::TNode<IntPtrT> tmp117;
+    compiler::TNode<HeapObject> tmp118;
+    compiler::TNode<IntPtrT> tmp119;
+    compiler::TNode<Smi> tmp120;
+    ca_.Bind(&block3, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113, &tmp114, &tmp115, &tmp116, &tmp117, &tmp118, &tmp119, &tmp120);
+    ca_.Goto(&block2, tmp107, tmp108, tmp109, tmp110, tmp111, tmp112, tmp113, tmp114, tmp115, tmp116, tmp117, tmp118, tmp119, tmp120);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<Context> tmp121;
+    compiler::TNode<Smi> tmp122;
+    compiler::TNode<Map> tmp123;
+    compiler::TNode<Smi> tmp124;
+    compiler::TNode<IntPtrT> tmp125;
+    compiler::TNode<IntPtrT> tmp126;
+    compiler::TNode<IntPtrT> tmp127;
+    compiler::TNode<IntPtrT> tmp128;
+    compiler::TNode<FixedArray> tmp129;
+    compiler::TNode<HeapObject> tmp130;
+    compiler::TNode<IntPtrT> tmp131;
+    compiler::TNode<HeapObject> tmp132;
+    compiler::TNode<IntPtrT> tmp133;
+    compiler::TNode<Smi> tmp134;
+    ca_.Bind(&block2, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126, &tmp127, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134);
+    ca_.Goto(&block1, tmp121, tmp129);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<Context> tmp135;
+    compiler::TNode<Object> tmp136;
+    ca_.Bind(&block1, &tmp135, &tmp136);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 857);
+    ca_.Goto(&block10, tmp135, tmp136);
+  }
+
+    compiler::TNode<Context> tmp137;
+    compiler::TNode<Object> tmp138;
+    ca_.Bind(&block10, &tmp137, &tmp138);
+  return compiler::TNode<Object>{tmp138};
+}
+
+void TestBuiltinsFromDSLAssembler::TestReferences() {
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, HeapObject, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, HeapObject, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, HeapObject, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, HeapObject, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 877);
+    compiler::TNode<FixedArray> tmp0;
+    USE(tmp0);
+    tmp0 = CodeStubAssembler(state_).AllocateUninitializedFixedArray(2);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp1);
+    compiler::TNode<Smi> tmp2;
+    USE(tmp2);
+    tmp2 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(7));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp1}, tmp2);
+    compiler::TNode<IntPtrT> tmp3 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp3);
+    compiler::TNode<Smi> tmp4;
+    USE(tmp4);
+    tmp4 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(2));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp3}, tmp4);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 878);
+    compiler::TNode<IntPtrT> tmp5 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp5);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 879);
+    compiler::TNode<Smi>tmp6 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp5});
+    compiler::TNode<Smi> tmp7;
+    USE(tmp7);
+    tmp7 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(3));
+    compiler::TNode<Smi> tmp8;
+    USE(tmp8);
+    tmp8 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp7}, compiler::TNode<Smi>{tmp6}));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp5}, tmp8);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 880);
+    compiler::TNode<Smi>tmp9 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp5});
+    compiler::TNode<Smi> tmp10;
+    USE(tmp10);
+    tmp10 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
+    compiler::TNode<Smi> tmp11;
+    USE(tmp11);
+    tmp11 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).SmiSub(compiler::TNode<Smi>{tmp9}, compiler::TNode<Smi>{tmp10}));
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp5}, tmp11);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 881);
+    compiler::TNode<IntPtrT> tmp12 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp12);
+    compiler::TNode<HeapObject> tmp13;
+    USE(tmp13);
+    compiler::TNode<IntPtrT> tmp14;
+    USE(tmp14);
+    std::tie(tmp13, tmp14) = TestBuiltinsFromDSLAssembler(state_)._method_SmiPair_GetA(compiler::TNode<FixedArray>{tmp0}).Flatten();
+    TestBuiltinsFromDSLAssembler(state_).Swap5ATSmi(CodeStubAssembler::Reference{tmp0, tmp12}, CodeStubAssembler::Reference{tmp13, tmp14});
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 882);
+    compiler::TNode<IntPtrT> tmp15 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp15);
+    compiler::TNode<Smi>tmp16 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp15});
+    compiler::TNode<Smi> tmp17;
+    USE(tmp17);
+    tmp17 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(2));
+    compiler::TNode<BoolT> tmp18;
+    USE(tmp18);
+    tmp18 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp16}, compiler::TNode<Smi>{tmp17}));
+    ca_.Branch(tmp18, &block2, &block3, tmp0, tmp0, tmp5);
+  }
+
+  if (block3.is_used()) {
+    compiler::TNode<FixedArray> tmp19;
+    compiler::TNode<HeapObject> tmp20;
+    compiler::TNode<IntPtrT> tmp21;
+    ca_.Bind(&block3, &tmp19, &tmp20, &tmp21);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'array.a == 2\' failed", "../../test/torque/test-torque.tq", 882);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<FixedArray> tmp22;
+    compiler::TNode<HeapObject> tmp23;
+    compiler::TNode<IntPtrT> tmp24;
+    ca_.Bind(&block2, &tmp22, &tmp23, &tmp24);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 883);
+    compiler::TNode<IntPtrT> tmp25 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp25);
+    compiler::TNode<Smi>tmp26 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp22, tmp25});
+    compiler::TNode<Smi> tmp27;
+    USE(tmp27);
+    tmp27 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(9));
+    compiler::TNode<BoolT> tmp28;
+    USE(tmp28);
+    tmp28 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp26}, compiler::TNode<Smi>{tmp27}));
+    ca_.Branch(tmp28, &block4, &block5, tmp22, tmp23, tmp24);
+  }
+
+  if (block5.is_used()) {
+    compiler::TNode<FixedArray> tmp29;
+    compiler::TNode<HeapObject> tmp30;
+    compiler::TNode<IntPtrT> tmp31;
+    ca_.Bind(&block5, &tmp29, &tmp30, &tmp31);
+    CodeStubAssembler(state_).FailAssert("Torque assert \'array.b == 9\' failed", "../../test/torque/test-torque.tq", 883);
+  }
+
+  if (block4.is_used()) {
+    compiler::TNode<FixedArray> tmp32;
+    compiler::TNode<HeapObject> tmp33;
+    compiler::TNode<IntPtrT> tmp34;
+    ca_.Bind(&block4, &tmp32, &tmp33, &tmp34);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 876);
+    ca_.Goto(&block1);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+}
+
+compiler::TNode<Int8T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesA(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
   compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 768);
-compiler::TNode<Uint32T> tmp1 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kBOffset, MachineType::Uint8()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 774);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kAOffset);
+    USE(tmp1);
+    compiler::TNode<Int8T>tmp2 = CodeStubAssembler(state_).LoadReference<Int8T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Int8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Uint32T>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Int8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Int8T>{tmp6};
 }
 
-void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesB(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint32T> p_v) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesA(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Int8T> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int8T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o, p_v);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
-    compiler::TNode<Uint32T> tmp1;
+    compiler::TNode<Int8T> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 768);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 25, tmp1, MachineType::Uint8().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 774);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kAOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Int8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Int8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
-compiler::TNode<Uint32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesB2(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
+compiler::TNode<Uint8T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesB(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
   compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 769);
-compiler::TNode<Uint32T> tmp1 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kB2Offset, MachineType::Uint8()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 775);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kBOffset);
+    USE(tmp1);
+    compiler::TNode<Uint8T>tmp2 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Uint32T>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Uint8T>{tmp6};
 }
 
-void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesB2(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint32T> p_v) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesB(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint8T> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o, p_v);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
-    compiler::TNode<Uint32T> tmp1;
+    compiler::TNode<Uint8T> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 769);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 26, tmp1, MachineType::Uint8().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 775);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kBOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
-compiler::TNode<Uint32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesB3(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
+compiler::TNode<Uint8T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesB2(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
   compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 770);
-compiler::TNode<Uint32T> tmp1 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kB3Offset, MachineType::Uint8()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 776);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kB2Offset);
+    USE(tmp1);
+    compiler::TNode<Uint8T>tmp2 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Uint32T>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Uint8T>{tmp6};
 }
 
-void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesB3(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint32T> p_v) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesB2(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint8T> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o, p_v);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
-    compiler::TNode<Uint32T> tmp1;
+    compiler::TNode<Uint8T> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 770);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 27, tmp1, MachineType::Uint8().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 776);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kB2Offset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
-compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesC(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
+compiler::TNode<Uint8T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesB3(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
   compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 771);
-compiler::TNode<Int32T> tmp1 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kCOffset, MachineType::Int16()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 777);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kB3Offset);
+    USE(tmp1);
+    compiler::TNode<Uint8T>tmp2 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Int32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Int32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Int32T>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Uint8T>{tmp6};
 }
 
-void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesC(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Int32T> p_v) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesB3(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint8T> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint8T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o, p_v);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
-    compiler::TNode<Int32T> tmp1;
+    compiler::TNode<Uint8T> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 771);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 28, tmp1, MachineType::Int16().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 777);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kB3Offset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Int32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint8T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Int32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint8T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
-compiler::TNode<Uint32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesD(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
+compiler::TNode<Int16T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesC(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
   compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int16T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int16T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 772);
-compiler::TNode<Uint32T> tmp1 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kDOffset, MachineType::Uint16()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 778);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kCOffset);
+    USE(tmp1);
+    compiler::TNode<Int16T>tmp2 = CodeStubAssembler(state_).LoadReference<Int16T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Int16T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Uint32T>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Int16T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Int16T>{tmp6};
 }
 
-void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesD(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint32T> p_v) {
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesC(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Int16T> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int16T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int16T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Int16T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_o, p_v);
 
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
-    compiler::TNode<Uint32T> tmp1;
+    compiler::TNode<Int16T> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 772);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 30, tmp1, MachineType::Uint16().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 778);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kCOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Int16T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Int16T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+}
+
+compiler::TNode<Uint16T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesD(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint16T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint16T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_o);
+
+  if (block0.is_used()) {
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
+    ca_.Bind(&block0, &tmp0);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 779);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kDOffset);
+    USE(tmp1);
+    compiler::TNode<Uint16T>tmp2 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint16T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
+  }
+
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint16T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Uint16T>{tmp6};
+}
+
+void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesD(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint16T> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint16T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint16T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes, Uint16T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_o, p_v);
+
+  if (block0.is_used()) {
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
+    compiler::TNode<Uint16T> tmp1;
+    ca_.Bind(&block0, &tmp0, &tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 779);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kDOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
+    ca_.Goto(&block1, tmp0, tmp1);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint16T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
+  }
+
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint16T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesE(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
@@ -8468,22 +8975,24 @@ compiler::TNode<Int32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesE
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 773);
-compiler::TNode<Int32T> tmp1 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kEOffset, MachineType::Int32()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 780);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kEOffset);
+    USE(tmp1);
+    compiler::TNode<Int32T>tmp2 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Int32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Int32T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Int32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Int32T>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Int32T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Int32T>{tmp6};
 }
 
 void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesE(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Int32T> p_v) {
@@ -8496,21 +9005,23 @@ void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesE(compiler::TNode<T
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     compiler::TNode<Int32T> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 773);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 32, tmp1, MachineType::Int32().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 780);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kEOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Int32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Int32T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Int32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Int32T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 compiler::TNode<Uint32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesF(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
@@ -8522,22 +9033,24 @@ compiler::TNode<Uint32T> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypes
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 774);
-compiler::TNode<Uint32T> tmp1 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kFOffset, MachineType::Uint32()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 781);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kFOffset);
+    USE(tmp1);
+    compiler::TNode<Uint32T>tmp2 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint32T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Uint32T>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint32T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Uint32T>{tmp6};
 }
 
 void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesF(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<Uint32T> p_v) {
@@ -8550,21 +9063,23 @@ void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesF(compiler::TNode<T
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     compiler::TNode<Uint32T> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 774);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 36, tmp1, MachineType::Uint32().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 781);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kFOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<Uint32T> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<Uint32T> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<Uint32T> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<Uint32T> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 compiler::TNode<RawPtrT> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesG(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
@@ -8576,22 +9091,24 @@ compiler::TNode<RawPtrT> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypes
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 775);
-compiler::TNode<RawPtrT> tmp1 = ca_.UncheckedCast<RawPtrT>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kGOffset, MachineType::Pointer()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 782);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kGOffset);
+    USE(tmp1);
+    compiler::TNode<RawPtrT>tmp2 = CodeStubAssembler(state_).LoadReference<RawPtrT>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<RawPtrT> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<RawPtrT> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<RawPtrT> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<RawPtrT>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<RawPtrT> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<RawPtrT>{tmp6};
 }
 
 void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesG(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<RawPtrT> p_v) {
@@ -8604,21 +9121,23 @@ void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesG(compiler::TNode<T
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     compiler::TNode<RawPtrT> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 775);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 40, tmp1, MachineType::Pointer().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 782);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kGOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<RawPtrT> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<RawPtrT> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<RawPtrT> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<RawPtrT> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 compiler::TNode<IntPtrT> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesH(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
@@ -8630,22 +9149,24 @@ compiler::TNode<IntPtrT> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypes
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 776);
-compiler::TNode<IntPtrT> tmp1 = ca_.UncheckedCast<IntPtrT>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kHOffset, MachineType::IntPtr()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 783);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kHOffset);
+    USE(tmp1);
+    compiler::TNode<IntPtrT>tmp2 = CodeStubAssembler(state_).LoadReference<IntPtrT>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<IntPtrT> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<IntPtrT> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<IntPtrT> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<IntPtrT>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<IntPtrT> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<IntPtrT>{tmp6};
 }
 
 void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesH(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<IntPtrT> p_v) {
@@ -8658,21 +9179,23 @@ void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesH(compiler::TNode<T
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     compiler::TNode<IntPtrT> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 776);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 48, tmp1, MachineType::IntPtr().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 783);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kHOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<IntPtrT> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<IntPtrT> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<IntPtrT> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<IntPtrT> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 compiler::TNode<UintPtrT> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllTypesI(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o) {
@@ -8684,22 +9207,24 @@ compiler::TNode<UintPtrT> TestBuiltinsFromDSLAssembler::LoadTestClassWithAllType
   if (block0.is_used()) {
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 777);
-compiler::TNode<UintPtrT> tmp1 = ca_.UncheckedCast<UintPtrT>(CodeStubAssembler(state_).LoadObjectField(tmp0, TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kIOffset, MachineType::IntPtr()));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 784);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kIOffset);
+    USE(tmp1);
+    compiler::TNode<UintPtrT>tmp2 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<UintPtrT> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<UintPtrT> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<UintPtrT> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<UintPtrT>{tmp5};
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<UintPtrT> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<UintPtrT>{tmp6};
 }
 
 void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesI(compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> p_o, compiler::TNode<UintPtrT> p_v) {
@@ -8712,21 +9237,23 @@ void TestBuiltinsFromDSLAssembler::StoreTestClassWithAllTypesI(compiler::TNode<T
     compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp0;
     compiler::TNode<UintPtrT> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 777);
-    CodeStubAssembler(state_).StoreObjectFieldNoWriteBarrier(tmp0, 56, tmp1, MachineType::IntPtr().representation());
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 784);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(TestBuiltinsFromDSLAssembler::TestClassWithAllTypes::kIOffset);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp2;
-    compiler::TNode<UintPtrT> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp3;
+    compiler::TNode<UintPtrT> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp4;
-    compiler::TNode<UintPtrT> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<TestBuiltinsFromDSLAssembler::TestClassWithAllTypes> tmp5;
+    compiler::TNode<UintPtrT> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::LoadInternalClassA(compiler::TNode<FixedArray> p_o) {
@@ -8738,22 +9265,24 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::LoadInternalClassA(compiler::
   if (block0.is_used()) {
     compiler::TNode<FixedArray> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 809);
-compiler::TNode<Smi> tmp1 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).UnsafeLoadFixedArrayElement(tmp0, 0));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 816);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp1);
+    compiler::TNode<Smi>tmp2 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<FixedArray> tmp2;
-    compiler::TNode<Smi> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Smi> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<FixedArray> tmp4;
-    compiler::TNode<Smi> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Smi>{tmp5};
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Smi> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Smi>{tmp6};
 }
 
 void TestBuiltinsFromDSLAssembler::StoreInternalClassA(compiler::TNode<FixedArray> p_o, compiler::TNode<Smi> p_v) {
@@ -8766,21 +9295,23 @@ void TestBuiltinsFromDSLAssembler::StoreInternalClassA(compiler::TNode<FixedArra
     compiler::TNode<FixedArray> tmp0;
     compiler::TNode<Smi> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 809);
-    CodeStubAssembler(state_).UnsafeStoreFixedArrayElement(tmp0, 0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 816);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<FixedArray> tmp2;
-    compiler::TNode<Smi> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Smi> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<FixedArray> tmp4;
-    compiler::TNode<Smi> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Smi> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 compiler::TNode<Number> TestBuiltinsFromDSLAssembler::LoadInternalClassB(compiler::TNode<FixedArray> p_o) {
@@ -8792,22 +9323,24 @@ compiler::TNode<Number> TestBuiltinsFromDSLAssembler::LoadInternalClassB(compile
   if (block0.is_used()) {
     compiler::TNode<FixedArray> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 810);
-compiler::TNode<Number> tmp1 = ca_.UncheckedCast<Number>(CodeStubAssembler(state_).UnsafeLoadFixedArrayElement(tmp0, 1));
-    ca_.Goto(&block1, tmp0, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 817);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp1);
+    compiler::TNode<Number>tmp2 = CodeStubAssembler(state_).LoadReference<Number>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<FixedArray> tmp2;
-    compiler::TNode<Number> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Number> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<FixedArray> tmp4;
-    compiler::TNode<Number> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
-  return compiler::TNode<Number>{tmp5};
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Number> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Number>{tmp6};
 }
 
 void TestBuiltinsFromDSLAssembler::StoreInternalClassB(compiler::TNode<FixedArray> p_o, compiler::TNode<Number> p_v) {
@@ -8820,21 +9353,23 @@ void TestBuiltinsFromDSLAssembler::StoreInternalClassB(compiler::TNode<FixedArra
     compiler::TNode<FixedArray> tmp0;
     compiler::TNode<Number> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 810);
-    CodeStubAssembler(state_).UnsafeStoreFixedArrayElement(tmp0, 1, tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 817);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<FixedArray> tmp2;
-    compiler::TNode<Number> tmp3;
-    ca_.Bind(&block1, &tmp2, &tmp3);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Number> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
-    compiler::TNode<FixedArray> tmp4;
-    compiler::TNode<Number> tmp5;
-    ca_.Bind(&block2, &tmp4, &tmp5);
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Number> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
 }
 
 void TestBuiltinsFromDSLAssembler::_method_InternalClass_Flip(compiler::TNode<FixedArray> p_this, compiler::CodeAssemblerLabel* label_NotASmi) {
@@ -8849,48 +9384,52 @@ void TestBuiltinsFromDSLAssembler::_method_InternalClass_Flip(compiler::TNode<Fi
   if (block0.is_used()) {
     compiler::TNode<FixedArray> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 805);
-    compiler::TNode<Number> tmp1;
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 812);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
     USE(tmp1);
-    tmp1 = ca_.UncheckedCast<Number>(TestBuiltinsFromDSLAssembler(state_).LoadInternalClassB(compiler::TNode<FixedArray>{tmp0}));
-    compiler::TNode<Smi> tmp2;
-    USE(tmp2);
+    compiler::TNode<Number>tmp2 = CodeStubAssembler(state_).LoadReference<Number>(CodeStubAssembler::Reference{tmp0, tmp1});
+    compiler::TNode<Smi> tmp3;
+    USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = BaseBuiltinsFromDSLAssembler(state_).Cast5ATSmi(compiler::TNode<Object>{tmp1}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp2);
+    tmp3 = BaseBuiltinsFromDSLAssembler(state_).Cast5ATSmi(compiler::TNode<Object>{tmp2}, &label0);
+    ca_.Goto(&block3, tmp0, tmp2, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1);
+      ca_.Goto(&block4, tmp0, tmp2);
     }
   }
 
   if (block4.is_used()) {
-    compiler::TNode<FixedArray> tmp3;
-    compiler::TNode<Number> tmp4;
-    ca_.Bind(&block4, &tmp3, &tmp4);
+    compiler::TNode<FixedArray> tmp4;
+    compiler::TNode<Number> tmp5;
+    ca_.Bind(&block4, &tmp4, &tmp5);
     ca_.Goto(&block1);
   }
 
   if (block3.is_used()) {
-    compiler::TNode<FixedArray> tmp5;
-    compiler::TNode<Number> tmp6;
-    compiler::TNode<Smi> tmp7;
-    ca_.Bind(&block3, &tmp5, &tmp6, &tmp7);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 806);
+    compiler::TNode<FixedArray> tmp6;
+    compiler::TNode<Number> tmp7;
     compiler::TNode<Smi> tmp8;
-    USE(tmp8);
-    tmp8 = ca_.UncheckedCast<Smi>(TestBuiltinsFromDSLAssembler(state_).LoadInternalClassA(compiler::TNode<FixedArray>{tmp5}));
-    TestBuiltinsFromDSLAssembler(state_).StoreInternalClassB(compiler::TNode<FixedArray>{tmp5}, compiler::TNode<Number>{tmp8});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 807);
-    TestBuiltinsFromDSLAssembler(state_).StoreInternalClassA(compiler::TNode<FixedArray>{tmp5}, compiler::TNode<Smi>{tmp7});
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 804);
-    ca_.Goto(&block2, tmp5);
+    ca_.Bind(&block3, &tmp6, &tmp7, &tmp8);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 813);
+    compiler::TNode<IntPtrT> tmp9 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp9);
+    compiler::TNode<IntPtrT> tmp10 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp10);
+    compiler::TNode<Smi>tmp11 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp6, tmp10});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp6, tmp9}, tmp11);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 814);
+    compiler::TNode<IntPtrT> tmp12 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp12);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp6, tmp12}, tmp8);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 811);
+    ca_.Goto(&block2, tmp6);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<FixedArray> tmp9;
-    ca_.Bind(&block2, &tmp9);
-    ca_.Goto(&block5, tmp9);
+    compiler::TNode<FixedArray> tmp13;
+    ca_.Bind(&block2, &tmp13);
+    ca_.Goto(&block5, tmp13);
   }
 
   if (block1.is_used()) {
@@ -8898,8 +9437,155 @@ void TestBuiltinsFromDSLAssembler::_method_InternalClass_Flip(compiler::TNode<Fi
     ca_.Goto(label_NotASmi);
   }
 
-    compiler::TNode<FixedArray> tmp10;
-    ca_.Bind(&block5, &tmp10);
+    compiler::TNode<FixedArray> tmp14;
+    ca_.Bind(&block5, &tmp14);
+}
+
+compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::LoadSmiPairA(compiler::TNode<FixedArray> p_o) {
+  compiler::CodeAssemblerParameterizedLabel<FixedArray> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_o);
+
+  if (block0.is_used()) {
+    compiler::TNode<FixedArray> tmp0;
+    ca_.Bind(&block0, &tmp0);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 866);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp1);
+    compiler::TNode<Smi>tmp2 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Smi> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
+  }
+
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Smi> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Smi>{tmp6};
+}
+
+void TestBuiltinsFromDSLAssembler::StoreSmiPairA(compiler::TNode<FixedArray> p_o, compiler::TNode<Smi> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_o, p_v);
+
+  if (block0.is_used()) {
+    compiler::TNode<FixedArray> tmp0;
+    compiler::TNode<Smi> tmp1;
+    ca_.Bind(&block0, &tmp0, &tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 866);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
+    ca_.Goto(&block1, tmp0, tmp1);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Smi> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
+  }
+
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Smi> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+}
+
+compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::LoadSmiPairB(compiler::TNode<FixedArray> p_o) {
+  compiler::CodeAssemblerParameterizedLabel<FixedArray> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_o);
+
+  if (block0.is_used()) {
+    compiler::TNode<FixedArray> tmp0;
+    ca_.Bind(&block0, &tmp0);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 867);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp1);
+    compiler::TNode<Smi>tmp2 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.Goto(&block1, tmp0, tmp2);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Smi> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
+  }
+
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Smi> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+  return compiler::TNode<Smi>{tmp6};
+}
+
+void TestBuiltinsFromDSLAssembler::StoreSmiPairB(compiler::TNode<FixedArray> p_o, compiler::TNode<Smi> p_v) {
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_o, p_v);
+
+  if (block0.is_used()) {
+    compiler::TNode<FixedArray> tmp0;
+    compiler::TNode<Smi> tmp1;
+    ca_.Bind(&block0, &tmp0, &tmp1);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 867);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 8);
+    USE(tmp2);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp2}, tmp1);
+    ca_.Goto(&block1, tmp0, tmp1);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<FixedArray> tmp3;
+    compiler::TNode<Smi> tmp4;
+    ca_.Bind(&block1, &tmp3, &tmp4);
+    ca_.Goto(&block2, tmp3, tmp4);
+  }
+
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<Smi> tmp6;
+    ca_.Bind(&block2, &tmp5, &tmp6);
+}
+
+CodeStubAssembler::Reference TestBuiltinsFromDSLAssembler::_method_SmiPair_GetA(compiler::TNode<FixedArray> p_this) {
+  compiler::CodeAssemblerParameterizedLabel<FixedArray> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, HeapObject, IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, HeapObject, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_this);
+
+  if (block0.is_used()) {
+    compiler::TNode<FixedArray> tmp0;
+    ca_.Bind(&block0, &tmp0);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 864);
+    compiler::TNode<IntPtrT> tmp1 = ca_.IntPtrConstant(FixedArray::kHeaderSize + 0);
+    USE(tmp1);
+    ca_.Goto(&block1, tmp0, tmp0, tmp1);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<FixedArray> tmp2;
+    compiler::TNode<HeapObject> tmp3;
+    compiler::TNode<IntPtrT> tmp4;
+    ca_.Bind(&block1, &tmp2, &tmp3, &tmp4);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 863);
+    ca_.Goto(&block2, tmp2, tmp3, tmp4);
+  }
+
+    compiler::TNode<FixedArray> tmp5;
+    compiler::TNode<HeapObject> tmp6;
+    compiler::TNode<IntPtrT> tmp7;
+    ca_.Bind(&block2, &tmp5, &tmp6, &tmp7);
+  return CodeStubAssembler::Reference{tmp6, tmp7};
 }
 
 TF_BUILTIN(GenericBuiltinTest5ATSmi, CodeStubAssembler) {
@@ -8989,7 +9675,7 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::GenericMacroTestWithLabels
   return compiler::TNode<Object>{tmp5};
 }
 
-compiler::TNode<Object> TestBuiltinsFromDSLAssembler::IncrementIfSmi34UT12ATHeapNumber5ATSmi10FixedArray(compiler::TNode<Object> p_x) {
+compiler::TNode<Object> TestBuiltinsFromDSLAssembler::IncrementIfSmi32UT5ATSmi10FixedArray10HeapNumber(compiler::TNode<Object> p_x) {
   compiler::CodeAssemblerParameterizedLabel<Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Object, Object, Object> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Object, Object, Object, Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -9001,8 +9687,8 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::IncrementIfSmi34UT12ATHeap
   if (block0.is_used()) {
     compiler::TNode<Object> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 427);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 428);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 434);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 435);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -9028,7 +9714,7 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::IncrementIfSmi34UT12ATHeap
     compiler::TNode<Object> tmp7;
     compiler::TNode<Smi> tmp8;
     ca_.Bind(&block4, &tmp5, &tmp6, &tmp7, &tmp8);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 429);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 436);
     compiler::TNode<Smi> tmp9;
     USE(tmp9);
     tmp9 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
@@ -9042,8 +9728,8 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::IncrementIfSmi34UT12ATHeap
     compiler::TNode<Object> tmp11;
     compiler::TNode<Object> tmp12;
     ca_.Bind(&block3, &tmp11, &tmp12);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 431);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 432);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 438);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 439);
     ca_.Goto(&block1, tmp11, ca_.UncheckedCast<HeapObject>(tmp12));
   }
 
@@ -9051,7 +9737,7 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::IncrementIfSmi34UT12ATHeap
     compiler::TNode<Object> tmp13;
     compiler::TNode<Object> tmp14;
     ca_.Bind(&block1, &tmp13, &tmp14);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 426);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 433);
     ca_.Goto(&block6, tmp13, tmp14);
   }
 
@@ -9070,7 +9756,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::ExampleGenericOverload5ATSmi(
   if (block0.is_used()) {
     compiler::TNode<Smi> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 491);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 498);
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = ca_.UncheckedCast<Smi>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr5ATSmi17ATconstexpr_int31(1));
@@ -9084,7 +9770,7 @@ compiler::TNode<Smi> TestBuiltinsFromDSLAssembler::ExampleGenericOverload5ATSmi(
     compiler::TNode<Smi> tmp3;
     compiler::TNode<Smi> tmp4;
     ca_.Bind(&block1, &tmp3, &tmp4);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 490);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 497);
     ca_.Goto(&block2, tmp3, tmp4);
   }
 
@@ -9103,7 +9789,7 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::ExampleGenericOverload20UT
   if (block0.is_used()) {
     compiler::TNode<Object> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 488);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 495);
     ca_.Goto(&block1, tmp0, tmp0);
   }
 
@@ -9111,7 +9797,7 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::ExampleGenericOverload20UT
     compiler::TNode<Object> tmp1;
     compiler::TNode<Object> tmp2;
     ca_.Bind(&block1, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 487);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 494);
     ca_.Goto(&block2, tmp1, tmp2);
   }
 
@@ -9119,6 +9805,45 @@ compiler::TNode<Object> TestBuiltinsFromDSLAssembler::ExampleGenericOverload20UT
     compiler::TNode<Object> tmp4;
     ca_.Bind(&block2, &tmp3, &tmp4);
   return compiler::TNode<Object>{tmp4};
+}
+
+void TestBuiltinsFromDSLAssembler::Swap5ATSmi(CodeStubAssembler::Reference p_a, CodeStubAssembler::Reference p_b) {
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT, HeapObject, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT, HeapObject, IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT, HeapObject, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_a.object, p_a.offset, p_b.object, p_b.offset);
+
+  if (block0.is_used()) {
+    compiler::TNode<HeapObject> tmp0;
+    compiler::TNode<IntPtrT> tmp1;
+    compiler::TNode<HeapObject> tmp2;
+    compiler::TNode<IntPtrT> tmp3;
+    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 871);
+    compiler::TNode<Smi>tmp4 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp1});
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 872);
+    compiler::TNode<Smi>tmp5 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp2, tmp3});
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp0, tmp1}, tmp5);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 873);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp2, tmp3}, tmp4);
+    ca_.SetSourcePosition("../../test/torque/test-torque.tq", 870);
+    ca_.Goto(&block1, tmp0, tmp1, tmp2, tmp3);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<HeapObject> tmp6;
+    compiler::TNode<IntPtrT> tmp7;
+    compiler::TNode<HeapObject> tmp8;
+    compiler::TNode<IntPtrT> tmp9;
+    ca_.Bind(&block1, &tmp6, &tmp7, &tmp8, &tmp9);
+    ca_.Goto(&block2, tmp6, tmp7, tmp8, tmp9);
+  }
+
+    compiler::TNode<HeapObject> tmp10;
+    compiler::TNode<IntPtrT> tmp11;
+    compiler::TNode<HeapObject> tmp12;
+    compiler::TNode<IntPtrT> tmp13;
+    ca_.Bind(&block2, &tmp10, &tmp11, &tmp12, &tmp13);
 }
 
 }  // namespace internal

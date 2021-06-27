@@ -6,18 +6,30 @@
 #include "src/objects.h"
 #include "src/objects/arguments.h"
 #include "src/objects/bigint.h"
+#include "src/objects/free-space.h"
 #include "src/objects/js-generator.h"
 #include "src/objects/js-promise.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/module.h"
 #include "src/objects/stack-frame-info.h"
+#include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
@@ -36,22 +48,32 @@
 #include "torque-generated/builtins-array-of-from-dsl-gen.h"
 #include "torque-generated/builtins-array-map-from-dsl-gen.h"
 #include "torque-generated/builtins-array-reverse-from-dsl-gen.h"
+#include "torque-generated/builtins-array-shift-from-dsl-gen.h"
 #include "torque-generated/builtins-array-slice-from-dsl-gen.h"
 #include "torque-generated/builtins-array-splice-from-dsl-gen.h"
 #include "torque-generated/builtins-array-unshift-from-dsl-gen.h"
 #include "torque-generated/builtins-collections-from-dsl-gen.h"
 #include "torque-generated/builtins-data-view-from-dsl-gen.h"
 #include "torque-generated/builtins-extras-utils-from-dsl-gen.h"
-#include "torque-generated/builtins-object-from-dsl-gen.h"
 #include "torque-generated/builtins-iterator-from-dsl-gen.h"
+#include "torque-generated/builtins-object-from-dsl-gen.h"
+#include "torque-generated/builtins-proxy-from-dsl-gen.h"
+#include "torque-generated/builtins-regexp-from-dsl-gen.h"
+#include "torque-generated/builtins-regexp-replace-from-dsl-gen.h"
 #include "torque-generated/builtins-string-from-dsl-gen.h"
+#include "torque-generated/builtins-string-html-from-dsl-gen.h"
+#include "torque-generated/builtins-string-repeat-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-createtypedarray-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-every-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-filter-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-find-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-findindex-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-foreach-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-reduce-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-reduceright-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-slice-from-dsl-gen.h"
+#include "torque-generated/builtins-typed-array-some-from-dsl-gen.h"
 #include "torque-generated/builtins-typed-array-subarray-from-dsl-gen.h"
 #include "torque-generated/builtins-test-from-dsl-gen.h"
 
@@ -392,11 +414,11 @@ compiler::TNode<Object> ArrayReverseBuiltinsFromDSLAssembler::GenericArrayRevers
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 88);
     compiler::TNode<Number> tmp4;
     USE(tmp4);
-    tmp4 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(0));
+    tmp4 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(0));
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 89);
     compiler::TNode<Number> tmp5;
     USE(tmp5);
-    tmp5 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(1));
+    tmp5 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(1));
     compiler::TNode<Number> tmp6;
     USE(tmp6);
     tmp6 = ca_.UncheckedCast<Number>(CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp3}, compiler::TNode<Number>{tmp5}));
@@ -787,14 +809,14 @@ compiler::TNode<Object> ArrayReverseBuiltinsFromDSLAssembler::GenericArrayRevers
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 137);
     compiler::TNode<Number> tmp213;
     USE(tmp213);
-    tmp213 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(1));
+    tmp213 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(1));
     compiler::TNode<Number> tmp214;
     USE(tmp214);
     tmp214 = ca_.UncheckedCast<Number>(CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp207}, compiler::TNode<Number>{tmp213}));
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 138);
     compiler::TNode<Number> tmp215;
     USE(tmp215);
-    tmp215 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr22UT12ATHeapNumber5ATSmi17ATconstexpr_int31(1));
+    tmp215 = ca_.UncheckedCast<Number>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31(1));
     compiler::TNode<Number> tmp216;
     USE(tmp216);
     tmp216 = ca_.UncheckedCast<Number>(CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp208}, compiler::TNode<Number>{tmp215}));
@@ -879,161 +901,161 @@ void ArrayReverseBuiltinsFromDSLAssembler::TryFastPackedArrayReverse(compiler::T
     compiler::TNode<JSArray> tmp9;
     ca_.Bind(&block3, &tmp6, &tmp7, &tmp8, &tmp9);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 149);
-    compiler::TNode<Map> tmp10;
+    compiler::TNode<IntPtrT> tmp10 = ca_.IntPtrConstant(HeapObject::kMapOffset);
     USE(tmp10);
-    tmp10 = ca_.UncheckedCast<Map>(BaseBuiltinsFromDSLAssembler(state_).LoadHeapObjectMap(compiler::TNode<HeapObject>{tmp9}));
-    compiler::TNode<Int32T> tmp11;
-    USE(tmp11);
-    tmp11 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).LoadMapElementsKind(compiler::TNode<Map>{tmp10}));
-    ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 150);
+    compiler::TNode<Map>tmp11 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10});
     compiler::TNode<Int32T> tmp12;
     USE(tmp12);
-    tmp12 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr14ATElementsKind24ATconstexpr_ElementsKind(PACKED_SMI_ELEMENTS));
-    compiler::TNode<BoolT> tmp13;
+    tmp12 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).LoadMapElementsKind(compiler::TNode<Map>{tmp11}));
+    ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 150);
+    compiler::TNode<Int32T> tmp13;
     USE(tmp13);
-    tmp13 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).ElementsKindEqual(compiler::TNode<Int32T>{tmp11}, compiler::TNode<Int32T>{tmp12}));
-    ca_.Branch(tmp13, &block5, &block6, tmp6, tmp7, tmp9, tmp11);
+    tmp13 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr14ATElementsKind24ATconstexpr_ElementsKind(PACKED_SMI_ELEMENTS));
+    compiler::TNode<BoolT> tmp14;
+    USE(tmp14);
+    tmp14 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).ElementsKindEqual(compiler::TNode<Int32T>{tmp12}, compiler::TNode<Int32T>{tmp13}));
+    ca_.Branch(tmp14, &block5, &block6, tmp6, tmp7, tmp9, tmp12);
   }
 
   if (block5.is_used()) {
-    compiler::TNode<Context> tmp14;
-    compiler::TNode<Object> tmp15;
-    compiler::TNode<JSArray> tmp16;
-    compiler::TNode<Int32T> tmp17;
-    ca_.Bind(&block5, &tmp14, &tmp15, &tmp16, &tmp17);
+    compiler::TNode<Context> tmp15;
+    compiler::TNode<Object> tmp16;
+    compiler::TNode<JSArray> tmp17;
+    compiler::TNode<Int32T> tmp18;
+    ca_.Bind(&block5, &tmp15, &tmp16, &tmp17, &tmp18);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 151);
-    ArrayBuiltinsFromDSLAssembler(state_).EnsureWriteableFastElements(compiler::TNode<Context>{tmp14}, compiler::TNode<JSArray>{tmp16});
+    ArrayBuiltinsFromDSLAssembler(state_).EnsureWriteableFastElements(compiler::TNode<Context>{tmp15}, compiler::TNode<JSArray>{tmp17});
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 153);
-    compiler::TNode<FixedArrayBase> tmp18;
-    USE(tmp18);
-    tmp18 = ca_.UncheckedCast<FixedArrayBase>(BaseBuiltinsFromDSLAssembler(state_).LoadJSObjectElements(compiler::TNode<JSObject>{tmp16}));
-    compiler::TNode<Smi> tmp19;
+    compiler::TNode<IntPtrT> tmp19 = ca_.IntPtrConstant(JSObject::kElementsOffset);
     USE(tmp19);
-    tmp19 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp16}));
+    compiler::TNode<FixedArrayBase>tmp20 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp17, tmp19});
+    compiler::TNode<Smi> tmp21;
+    USE(tmp21);
+    tmp21 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp17}));
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 152);
-    ArrayReverseBuiltinsFromDSLAssembler(state_).FastPackedArrayReverse23ATFastPackedSmiElements5ATSmi(compiler::TNode<Context>{tmp14}, compiler::TNode<FixedArrayBase>{tmp18}, compiler::TNode<Smi>{tmp19});
+    ArrayReverseBuiltinsFromDSLAssembler(state_).FastPackedArrayReverse23ATFastPackedSmiElements5ATSmi(compiler::TNode<Context>{tmp15}, compiler::TNode<FixedArrayBase>{tmp20}, compiler::TNode<Smi>{tmp21});
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 150);
-    ca_.Goto(&block7, tmp14, tmp15, tmp16, tmp17);
+    ca_.Goto(&block7, tmp15, tmp16, tmp17, tmp18);
   }
 
   if (block6.is_used()) {
-    compiler::TNode<Context> tmp20;
-    compiler::TNode<Object> tmp21;
-    compiler::TNode<JSArray> tmp22;
-    compiler::TNode<Int32T> tmp23;
-    ca_.Bind(&block6, &tmp20, &tmp21, &tmp22, &tmp23);
+    compiler::TNode<Context> tmp22;
+    compiler::TNode<Object> tmp23;
+    compiler::TNode<JSArray> tmp24;
+    compiler::TNode<Int32T> tmp25;
+    ca_.Bind(&block6, &tmp22, &tmp23, &tmp24, &tmp25);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 154);
-    compiler::TNode<Int32T> tmp24;
-    USE(tmp24);
-    tmp24 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr14ATElementsKind24ATconstexpr_ElementsKind(PACKED_ELEMENTS));
-    compiler::TNode<BoolT> tmp25;
-    USE(tmp25);
-    tmp25 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).ElementsKindEqual(compiler::TNode<Int32T>{tmp23}, compiler::TNode<Int32T>{tmp24}));
-    ca_.Branch(tmp25, &block8, &block9, tmp20, tmp21, tmp22, tmp23);
+    compiler::TNode<Int32T> tmp26;
+    USE(tmp26);
+    tmp26 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr14ATElementsKind24ATconstexpr_ElementsKind(PACKED_ELEMENTS));
+    compiler::TNode<BoolT> tmp27;
+    USE(tmp27);
+    tmp27 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).ElementsKindEqual(compiler::TNode<Int32T>{tmp25}, compiler::TNode<Int32T>{tmp26}));
+    ca_.Branch(tmp27, &block8, &block9, tmp22, tmp23, tmp24, tmp25);
   }
 
   if (block8.is_used()) {
-    compiler::TNode<Context> tmp26;
-    compiler::TNode<Object> tmp27;
-    compiler::TNode<JSArray> tmp28;
-    compiler::TNode<Int32T> tmp29;
-    ca_.Bind(&block8, &tmp26, &tmp27, &tmp28, &tmp29);
+    compiler::TNode<Context> tmp28;
+    compiler::TNode<Object> tmp29;
+    compiler::TNode<JSArray> tmp30;
+    compiler::TNode<Int32T> tmp31;
+    ca_.Bind(&block8, &tmp28, &tmp29, &tmp30, &tmp31);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 155);
-    ArrayBuiltinsFromDSLAssembler(state_).EnsureWriteableFastElements(compiler::TNode<Context>{tmp26}, compiler::TNode<JSArray>{tmp28});
+    ArrayBuiltinsFromDSLAssembler(state_).EnsureWriteableFastElements(compiler::TNode<Context>{tmp28}, compiler::TNode<JSArray>{tmp30});
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 157);
-    compiler::TNode<FixedArrayBase> tmp30;
-    USE(tmp30);
-    tmp30 = ca_.UncheckedCast<FixedArrayBase>(BaseBuiltinsFromDSLAssembler(state_).LoadJSObjectElements(compiler::TNode<JSObject>{tmp28}));
-    compiler::TNode<Smi> tmp31;
-    USE(tmp31);
-    tmp31 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp28}));
+    compiler::TNode<IntPtrT> tmp32 = ca_.IntPtrConstant(JSObject::kElementsOffset);
+    USE(tmp32);
+    compiler::TNode<FixedArrayBase>tmp33 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp30, tmp32});
+    compiler::TNode<Smi> tmp34;
+    USE(tmp34);
+    tmp34 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp30}));
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 156);
-    ArrayReverseBuiltinsFromDSLAssembler(state_).FastPackedArrayReverse26ATFastPackedObjectElements20UT5ATSmi10HeapObject(compiler::TNode<Context>{tmp26}, compiler::TNode<FixedArrayBase>{tmp30}, compiler::TNode<Smi>{tmp31});
+    ArrayReverseBuiltinsFromDSLAssembler(state_).FastPackedArrayReverse26ATFastPackedObjectElements20UT5ATSmi10HeapObject(compiler::TNode<Context>{tmp28}, compiler::TNode<FixedArrayBase>{tmp33}, compiler::TNode<Smi>{tmp34});
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 154);
-    ca_.Goto(&block10, tmp26, tmp27, tmp28, tmp29);
+    ca_.Goto(&block10, tmp28, tmp29, tmp30, tmp31);
   }
 
   if (block9.is_used()) {
-    compiler::TNode<Context> tmp32;
-    compiler::TNode<Object> tmp33;
-    compiler::TNode<JSArray> tmp34;
-    compiler::TNode<Int32T> tmp35;
-    ca_.Bind(&block9, &tmp32, &tmp33, &tmp34, &tmp35);
+    compiler::TNode<Context> tmp35;
+    compiler::TNode<Object> tmp36;
+    compiler::TNode<JSArray> tmp37;
+    compiler::TNode<Int32T> tmp38;
+    ca_.Bind(&block9, &tmp35, &tmp36, &tmp37, &tmp38);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 158);
-    compiler::TNode<Int32T> tmp36;
-    USE(tmp36);
-    tmp36 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr14ATElementsKind24ATconstexpr_ElementsKind(PACKED_DOUBLE_ELEMENTS));
-    compiler::TNode<BoolT> tmp37;
-    USE(tmp37);
-    tmp37 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).ElementsKindEqual(compiler::TNode<Int32T>{tmp35}, compiler::TNode<Int32T>{tmp36}));
-    ca_.Branch(tmp37, &block11, &block12, tmp32, tmp33, tmp34, tmp35);
+    compiler::TNode<Int32T> tmp39;
+    USE(tmp39);
+    tmp39 = ca_.UncheckedCast<Int32T>(BaseBuiltinsFromDSLAssembler(state_).FromConstexpr14ATElementsKind24ATconstexpr_ElementsKind(PACKED_DOUBLE_ELEMENTS));
+    compiler::TNode<BoolT> tmp40;
+    USE(tmp40);
+    tmp40 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).ElementsKindEqual(compiler::TNode<Int32T>{tmp38}, compiler::TNode<Int32T>{tmp39}));
+    ca_.Branch(tmp40, &block11, &block12, tmp35, tmp36, tmp37, tmp38);
   }
 
   if (block11.is_used()) {
-    compiler::TNode<Context> tmp38;
-    compiler::TNode<Object> tmp39;
-    compiler::TNode<JSArray> tmp40;
-    compiler::TNode<Int32T> tmp41;
-    ca_.Bind(&block11, &tmp38, &tmp39, &tmp40, &tmp41);
+    compiler::TNode<Context> tmp41;
+    compiler::TNode<Object> tmp42;
+    compiler::TNode<JSArray> tmp43;
+    compiler::TNode<Int32T> tmp44;
+    ca_.Bind(&block11, &tmp41, &tmp42, &tmp43, &tmp44);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 160);
-    compiler::TNode<FixedArrayBase> tmp42;
-    USE(tmp42);
-    tmp42 = ca_.UncheckedCast<FixedArrayBase>(BaseBuiltinsFromDSLAssembler(state_).LoadJSObjectElements(compiler::TNode<JSObject>{tmp40}));
-    compiler::TNode<Smi> tmp43;
-    USE(tmp43);
-    tmp43 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp40}));
+    compiler::TNode<IntPtrT> tmp45 = ca_.IntPtrConstant(JSObject::kElementsOffset);
+    USE(tmp45);
+    compiler::TNode<FixedArrayBase>tmp46 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp43, tmp45});
+    compiler::TNode<Smi> tmp47;
+    USE(tmp47);
+    tmp47 = ca_.UncheckedCast<Smi>(CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp43}));
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 159);
-    ArrayReverseBuiltinsFromDSLAssembler(state_).FastPackedArrayReverse26ATFastPackedDoubleElements9ATfloat64(compiler::TNode<Context>{tmp38}, compiler::TNode<FixedArrayBase>{tmp42}, compiler::TNode<Smi>{tmp43});
+    ArrayReverseBuiltinsFromDSLAssembler(state_).FastPackedArrayReverse26ATFastPackedDoubleElements9ATfloat64(compiler::TNode<Context>{tmp41}, compiler::TNode<FixedArrayBase>{tmp46}, compiler::TNode<Smi>{tmp47});
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 158);
-    ca_.Goto(&block13, tmp38, tmp39, tmp40, tmp41);
+    ca_.Goto(&block13, tmp41, tmp42, tmp43, tmp44);
   }
 
   if (block12.is_used()) {
-    compiler::TNode<Context> tmp44;
-    compiler::TNode<Object> tmp45;
-    compiler::TNode<JSArray> tmp46;
-    compiler::TNode<Int32T> tmp47;
-    ca_.Bind(&block12, &tmp44, &tmp45, &tmp46, &tmp47);
+    compiler::TNode<Context> tmp48;
+    compiler::TNode<Object> tmp49;
+    compiler::TNode<JSArray> tmp50;
+    compiler::TNode<Int32T> tmp51;
+    ca_.Bind(&block12, &tmp48, &tmp49, &tmp50, &tmp51);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 162);
     ca_.Goto(&block1);
   }
 
   if (block13.is_used()) {
-    compiler::TNode<Context> tmp48;
-    compiler::TNode<Object> tmp49;
-    compiler::TNode<JSArray> tmp50;
-    compiler::TNode<Int32T> tmp51;
-    ca_.Bind(&block13, &tmp48, &tmp49, &tmp50, &tmp51);
-    ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 154);
-    ca_.Goto(&block10, tmp48, tmp49, tmp50, tmp51);
-  }
-
-  if (block10.is_used()) {
     compiler::TNode<Context> tmp52;
     compiler::TNode<Object> tmp53;
     compiler::TNode<JSArray> tmp54;
     compiler::TNode<Int32T> tmp55;
-    ca_.Bind(&block10, &tmp52, &tmp53, &tmp54, &tmp55);
-    ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 150);
-    ca_.Goto(&block7, tmp52, tmp53, tmp54, tmp55);
+    ca_.Bind(&block13, &tmp52, &tmp53, &tmp54, &tmp55);
+    ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 154);
+    ca_.Goto(&block10, tmp52, tmp53, tmp54, tmp55);
   }
 
-  if (block7.is_used()) {
+  if (block10.is_used()) {
     compiler::TNode<Context> tmp56;
     compiler::TNode<Object> tmp57;
     compiler::TNode<JSArray> tmp58;
     compiler::TNode<Int32T> tmp59;
-    ca_.Bind(&block7, &tmp56, &tmp57, &tmp58, &tmp59);
+    ca_.Bind(&block10, &tmp56, &tmp57, &tmp58, &tmp59);
+    ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 150);
+    ca_.Goto(&block7, tmp56, tmp57, tmp58, tmp59);
+  }
+
+  if (block7.is_used()) {
+    compiler::TNode<Context> tmp60;
+    compiler::TNode<Object> tmp61;
+    compiler::TNode<JSArray> tmp62;
+    compiler::TNode<Int32T> tmp63;
+    ca_.Bind(&block7, &tmp60, &tmp61, &tmp62, &tmp63);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 146);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 145);
-    ca_.Goto(&block2, tmp56, tmp57);
+    ca_.Goto(&block2, tmp60, tmp61);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp60;
-    compiler::TNode<Object> tmp61;
-    ca_.Bind(&block2, &tmp60, &tmp61);
-    ca_.Goto(&block14, tmp60, tmp61);
+    compiler::TNode<Context> tmp64;
+    compiler::TNode<Object> tmp65;
+    ca_.Bind(&block2, &tmp64, &tmp65);
+    ca_.Goto(&block14, tmp64, tmp65);
   }
 
   if (block1.is_used()) {
@@ -1041,9 +1063,9 @@ void ArrayReverseBuiltinsFromDSLAssembler::TryFastPackedArrayReverse(compiler::T
     ca_.Goto(label_Slow);
   }
 
-    compiler::TNode<Context> tmp62;
-    compiler::TNode<Object> tmp63;
-    ca_.Bind(&block14, &tmp62, &tmp63);
+    compiler::TNode<Context> tmp66;
+    compiler::TNode<Object> tmp67;
+    ca_.Bind(&block14, &tmp66, &tmp67);
 }
 
 TF_BUILTIN(ArrayPrototypeReverse, CodeStubAssembler) {
@@ -1051,57 +1073,70 @@ TF_BUILTIN(ArrayPrototypeReverse, CodeStubAssembler) {
   TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
   Node* argc = Parameter(Descriptor::kJSActualArgumentsCount);
-  CodeStubArguments arguments_impl(this, ChangeInt32ToIntPtr(argc));
-  TNode<Object> parameter1 = arguments_impl.GetReceiver();
-auto arguments = &arguments_impl;
-USE(arguments);
+  TNode<IntPtrT> arguments_length(ChangeInt32ToIntPtr(argc));
+  TNode<RawPtrT> arguments_frame = UncheckedCast<RawPtrT>(LoadFramePointer());
+  BaseBuiltinsFromDSLAssembler::Arguments torque_arguments(GetFrameArguments(arguments_frame, arguments_length));
+  CodeStubArguments arguments(this, torque_arguments);
+  TNode<Object> parameter1 = arguments.GetReceiver();
 USE(parameter1);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, parameter0, parameter1);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, parameter0, parameter1, torque_arguments.frame, torque_arguments.base, torque_arguments.length);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
-    ca_.Bind(&block0, &tmp0, &tmp1);
+    compiler::TNode<RawPtrT> tmp2;
+    compiler::TNode<RawPtrT> tmp3;
+    compiler::TNode<IntPtrT> tmp4;
+    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3, &tmp4);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 170);
     compiler::CodeAssemblerLabel label0(&ca_);
     ArrayReverseBuiltinsFromDSLAssembler(state_).TryFastPackedArrayReverse(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp1);
+    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp4, tmp1);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp1);
+      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp4, tmp1);
     }
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp2;
-    compiler::TNode<Object> tmp3;
-    compiler::TNode<Object> tmp4;
-    ca_.Bind(&block4, &tmp2, &tmp3, &tmp4);
-    ca_.Goto(&block2, tmp2, tmp3);
+    compiler::TNode<Context> tmp5;
+    compiler::TNode<Object> tmp6;
+    compiler::TNode<RawPtrT> tmp7;
+    compiler::TNode<RawPtrT> tmp8;
+    compiler::TNode<IntPtrT> tmp9;
+    compiler::TNode<Object> tmp10;
+    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7, &tmp8, &tmp9, &tmp10);
+    ca_.Goto(&block2, tmp5, tmp6, tmp7, tmp8, tmp9);
   }
 
   if (block3.is_used()) {
-    compiler::TNode<Context> tmp5;
-    compiler::TNode<Object> tmp6;
-    compiler::TNode<Object> tmp7;
-    ca_.Bind(&block3, &tmp5, &tmp6, &tmp7);
+    compiler::TNode<Context> tmp11;
+    compiler::TNode<Object> tmp12;
+    compiler::TNode<RawPtrT> tmp13;
+    compiler::TNode<RawPtrT> tmp14;
+    compiler::TNode<IntPtrT> tmp15;
+    compiler::TNode<Object> tmp16;
+    ca_.Bind(&block3, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15, &tmp16);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 171);
-    arguments->PopAndReturn(tmp6);
+    arguments.PopAndReturn(tmp12);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp8;
-    compiler::TNode<Object> tmp9;
-    ca_.Bind(&block2, &tmp8, &tmp9);
+    compiler::TNode<Context> tmp17;
+    compiler::TNode<Object> tmp18;
+    compiler::TNode<RawPtrT> tmp19;
+    compiler::TNode<RawPtrT> tmp20;
+    compiler::TNode<IntPtrT> tmp21;
+    ca_.Bind(&block2, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21);
     ca_.SetSourcePosition("../../src/builtins/array-reverse.tq", 174);
-    compiler::TNode<Object> tmp10;
-    USE(tmp10);
-    tmp10 = ca_.UncheckedCast<Object>(ArrayReverseBuiltinsFromDSLAssembler(state_).GenericArrayReverse(compiler::TNode<Context>{tmp8}, compiler::TNode<Object>{tmp9}));
-    arguments->PopAndReturn(tmp10);
+    compiler::TNode<Object> tmp22;
+    USE(tmp22);
+    tmp22 = ca_.UncheckedCast<Object>(ArrayReverseBuiltinsFromDSLAssembler(state_).GenericArrayReverse(compiler::TNode<Context>{tmp17}, compiler::TNode<Object>{tmp18}));
+    arguments.PopAndReturn(tmp22);
   }
 }
 

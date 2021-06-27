@@ -202,6 +202,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   V8_INLINE void RecordWrite(HeapObject obj, ObjectSlot slot, Object value);
   V8_INLINE void RecordMaybeWeakWrite(HeapObject obj, MaybeObjectSlot slot,
                                       MaybeObject value);
+  void RecordWrites(FixedArray array);
   void RevisitObject(HeapObject obj);
   // Ensures that all descriptors int range [0, number_of_own_descripts)
   // are visited.
@@ -221,10 +222,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   void MarkBlackAndVisitObjectDueToLayoutChange(HeapObject obj);
 
   bool IsCompacting() { return IsMarking() && is_compacting_; }
-
-  void NotifyIncompleteScanOfObject(int unscanned_bytes) {
-    unscanned_bytes_of_large_object_ = unscanned_bytes;
-  }
 
   void ProcessBlackAllocatedObject(HeapObject obj);
 
@@ -289,8 +286,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
       intptr_t bytes_to_process,
       ForceCompletionAction completion = DO_NOT_FORCE_COMPLETION);
 
-  V8_INLINE bool IsFixedArrayWithProgressBar(HeapObject object);
-
   // Visits the object and returns its size.
   V8_INLINE int VisitObject(Map map, HeapObject obj);
 
@@ -338,7 +333,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking {
   // incremental marking step. It is used for updating
   // bytes_marked_ahead_of_schedule_ with contribution of concurrent marking.
   size_t bytes_marked_concurrently_;
-  size_t unscanned_bytes_of_large_object_;
 
   // Must use SetState() above to update state_
   State state_;

@@ -67,6 +67,8 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
 
 void OS::SignalCodeMovingGC() {}
 
+void OS::AdjustSchedulingParams() {}
+
 }  // namespace base
 }  // namespace v8
 

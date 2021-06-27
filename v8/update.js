@@ -14,6 +14,7 @@ var profileFolder = process.env.HOME || process.env.USERPROFILE;
 process.env.V8_DIR = path.resolve(profileFolder, "./projects/v8/v8");
 
 var v8Folder = process.env.V8_DIR || path.fullpath(profileFolder + "./works/source/js/v8/v8");
+var v8TargetFolder = path.resolve(__dirname);
 
 console.log(`v8 is located in: ${v8Folder}`);
 
@@ -41,7 +42,7 @@ function joinOriginV8Src(p) {
 }
 
 function resolveVenderV8(p) {
-    return path.join(path.resolve(workFolder), p);
+    return path.join(path.resolve(v8TargetFolder), p);
 }
 
 if (process.env.NO_CODEGEN != '1') {
@@ -343,9 +344,12 @@ function patch_plat() {
             txt1 = txt1.replace('class Thread::PlatformData {', '#if 0\nclass Thread::PlatformData {');
 
             if (txt != txt1) {
-                var idx = txt1.indexOf('}  // namespace base', txt1.lastIndexOf('Thread::'));
+                var endif_insertion_idx = txt1.indexOf('}  // namespace base', txt1.lastIndexOf('Thread::'));
+                if (fname.endsWith('platform-win32.cc')) {
+                    endif_insertion_idx = txt1.indexOf('void OS::AdjustSchedulingParams() {}', txt1.lastIndexOf('Thread::'));
+                }
 
-                txt1 = txt1.substr(0, idx) + '#endif\n\n' + txt1.substr(idx);
+                txt1 = txt1.substr(0, endif_insertion_idx) + '#endif\n\n' + txt1.substr(endif_insertion_idx);
 
                 txt1 = txt1.replace('int GetProtectionFromMemoryPermission', '#endif\n#if 1\nint GetProtectionFromMemoryPermission');
             }
@@ -492,6 +496,15 @@ function patch_ntver() {
     fs.writeFile(fname, txt);
 }
 
+function patch_unwinding_files() {
+    var fname = "src/unwinding-info-win64.cc";
+
+    console.log("patch_unwinding_files", fname);
+    var txt = fs.readTextFile(fname);
+    txt = "#define _WIN32_WINNT 0x0602\n" + txt + "\n#define _WIN32_WINNT 0x0600";
+    fs.writeFile(fname, txt);
+}
+
 function patch_snapshot() {
     fs.mkdir("src/snapshot/snapshots")
     var archs = {
@@ -544,6 +557,10 @@ clean_folder('gen');
 clean_folder('include');
 clean_folder('src');
 
+mkdirp(resolveVenderV8('third_party/wasm-api/'));
+copyFile(joinOriginV8Src('third_party/wasm-api/wasm.hh'), resolveVenderV8('third_party/wasm-api/wasm.hh'))
+copyFile(joinOriginV8Src('third_party/wasm-api/wasm.h'), resolveVenderV8('third_party/wasm-api/wasm.h'))
+
 cp_folder('include');
 cp_folder('src');
 
@@ -573,7 +590,6 @@ patch_flag();
 patch_version_hash();
 patch_serializer();
 patch_ntver();
+patch_unwinding_files();
 
 patch_snapshot();
-
-// run('../tools/vsmake.js');

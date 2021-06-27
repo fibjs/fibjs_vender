@@ -39,7 +39,7 @@ class ArrayJoinBuiltinsFromDSLAssembler {
   compiler::TNode<Object> CycleProtectedArrayJoin7JSArray(compiler::TNode<Context> p_context, bool p_useToLocaleString, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<Object> p_sepObj, compiler::TNode<Object> p_locales, compiler::TNode<Object> p_options);
   compiler::TNode<Object> CycleProtectedArrayJoin12JSTypedArray(compiler::TNode<Context> p_context, bool p_useToLocaleString, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<Object> p_sepObj, compiler::TNode<Object> p_locales, compiler::TNode<Object> p_options);
   compiler::TNode<FixedArray> StoreAndGrowFixedArray5ATSmi(compiler::TNode<FixedArray> p_fixedArray, compiler::TNode<IntPtrT> p_index, compiler::TNode<Smi> p_element);
-  compiler::TNode<FixedArray> StoreAndGrowFixedArray8ATString(compiler::TNode<FixedArray> p_fixedArray, compiler::TNode<IntPtrT> p_index, compiler::TNode<String> p_element);
+  compiler::TNode<FixedArray> StoreAndGrowFixedArray6String(compiler::TNode<FixedArray> p_fixedArray, compiler::TNode<IntPtrT> p_index, compiler::TNode<String> p_element);
  private:
   compiler::CodeAssemblerState* const state_;
   compiler::CodeAssembler ca_;

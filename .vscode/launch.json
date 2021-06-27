@@ -15,14 +15,14 @@
             ]
         },
         {
-            "name": "Debug v8test (lldb)",
+            "name": "Debug v8_test (lldb)",
             "type": "lldb",
             "request": "launch",
             "windows": {
-                "program": "${workspaceFolder}/.dist/bin/Windows_amd64_debug/v8test_test",
+                "program": "${workspaceFolder}/.dist/bin/Windows_amd64_debug/v8_test",
             },
             "osx": {
-                "program": "${workspaceFolder}/.dist/bin/Darwin_amd64_debug/v8test_test",
+                "program": "${workspaceFolder}/.dist/bin/Darwin_amd64_debug/v8_test",
             },
             "args": [
                 "--use-thread"

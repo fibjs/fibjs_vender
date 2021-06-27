@@ -309,6 +309,12 @@ Reduction TypedOptimization::ReducePhi(Node* node) {
   // after lowering based on types, i.e. a SpeculativeNumberAdd has a more
   // precise type than the JSAdd that was in the graph when the Typer was run.
   DCHECK_EQ(IrOpcode::kPhi, node->opcode());
+  // Prevent new types from being propagated through loop-related Phis for now.
+  // This is to avoid slow convergence of type narrowing when we learn very
+  // precise information about loop variables.
+  if (NodeProperties::GetControlInput(node, 0)->opcode() == IrOpcode::kLoop) {
+    return NoChange();
+  }
   int arity = node->op()->ValueInputCount();
   Type type = NodeProperties::GetType(node->InputAt(0));
   for (int i = 1; i < arity; ++i) {
@@ -727,7 +733,7 @@ Reduction TypedOptimization::ReduceSpeculativeNumberAdd(Node* node) {
     Node* const value =
         graph()->NewNode(simplified()->NumberAdd(), toNum_lhs, toNum_rhs);
     ReplaceWithValue(node, value);
-    return Replace(node);
+    return Replace(value);
   }
   return NoChange();
 }
@@ -796,7 +802,7 @@ Reduction TypedOptimization::ReduceSpeculativeNumberBinop(Node* node) {
         NumberOpFromSpeculativeNumberOp(simplified(), node->op()), toNum_lhs,
         toNum_rhs);
     ReplaceWithValue(node, value);
-    return Replace(node);
+    return Replace(value);
   }
   return NoChange();
 }
@@ -811,7 +817,7 @@ Reduction TypedOptimization::ReduceSpeculativeNumberComparison(Node* node) {
     Node* const value = graph()->NewNode(
         NumberOpFromSpeculativeNumberOp(simplified(), node->op()), lhs, rhs);
     ReplaceWithValue(node, value);
-    return Replace(node);
+    return Replace(value);
   }
   return NoChange();
 }

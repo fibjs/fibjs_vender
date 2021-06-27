@@ -4,15 +4,9 @@
 
 #include "src/zone/accounting-allocator.h"
 
-#include <cstdlib>
-
-#if V8_LIBC_BIONIC
-#include <malloc.h>  // NOLINT
-#endif
-
 #include "src/allocation.h"
-#include "src/asan.h"
-#include "src/msan.h"
+#include "src/base/logging.h"
+#include "src/zone/zone-segment.h"
 
 namespace v8 {
 namespace internal {
@@ -24,7 +18,7 @@ Segment* AccountingAllocator::AllocateSegment(size_t bytes) {
   if (memory == nullptr) return nullptr;
 
   size_t current =
-      current_memory_usage_.fetch_add(bytes, std::memory_order_relaxed);
+      current_memory_usage_.fetch_add(bytes, std::memory_order_relaxed) + bytes;
   size_t max = max_memory_usage_.load(std::memory_order_relaxed);
   while (current > max && !max_memory_usage_.compare_exchange_weak(
                               max, current, std::memory_order_relaxed)) {

@@ -8,26 +8,41 @@ endif()
 
 file(GLOB_RECURSE src_list "src/*.c*" "gen/*.c*")
 
-# on every os, integrate its own snapshots only.
-file(GLOB_RECURSE excluded_snapshots_list "src/snapshot/snapshots/*.c*")
-list(REMOVE_ITEM src_list ${excluded_snapshots_list})
-file(GLOB_RECURSE snapshots_list "src/snapshot/snapshots/snapshot-*-${CMAKE_HOST_SYSTEM_NAME}.cc")
+file(GLOB_RECURSE temp_excluded_list
+	"src/trap-handler/handler-inside-*.*"
+	"src/trap-handler/handler-outside-*.*"
+	"src/unwinding-info-win64.h"
+	"src/unwinding-info-win64.cc"
+)
+list(REMOVE_ITEM src_list ${temp_excluded_list})
 
-file(GLOB_RECURSE excluded_trap_handler_list "src/trap-handler/handler-inside-*.*")
-list(REMOVE_ITEM src_list ${excluded_trap_handler_list})
-file(GLOB_RECURSE excluded_trap_handler_list "src/trap-handler/handler-outside-*.*")
-list(REMOVE_ITEM src_list ${excluded_trap_handler_list})
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 	if (${ARCH} STREQUAL "amd64")
-		list(APPEND src_list "src/trap-handler/handler-inside-win.cc")
-		list(APPEND src_list "src/trap-handler/handler-outside-win.cc")
+		list(APPEND src_list
+			"src/trap-handler/handler-inside-win.cc"
+			"src/trap-handler/handler-outside-win.cc"
+			"src/unwinding-info-win64.cc"
+		)
 	endif()
-else()
-	if (${ARCH} STREQUAL "amd64")
-		list(APPEND src_list "src/trap-handler/handler-inside-posix.cc")
-	endif()
-	list(APPEND src_list "src/trap-handler/handler-outside-posix.cc")
+elseif(${ARCH} STREQUAL "amd64")
+	list(APPEND src_list
+		"src/trap-handler/handler-inside-posix.cc"
+		"src/trap-handler/handler-outside-posix.cc"
+	)
 endif()
+
+# if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows" AND ${ARCH} STREQUAL "amd64")
+# 	set_property(SOURCE src/unwinding-info-win64.cc
+# 		APPEND PROPERTY
+# 		COMPILE_DEFINITIONS
+# 		UNICODE
+# 		_WIN32_WINNT=0x0602
+# 	)
+	
+# 	list(APPEND src_list
+# 		"src/unwinding-info-win64.cc"
+# 	)
+# endif()
 
 list(APPEND src_list ${snapshots_list} ${trap_handler_list})
 

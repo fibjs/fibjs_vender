@@ -459,6 +459,9 @@ class BitSetComputer {
 // Size of the field defined by DEFINE_FIELD_OFFSET_CONSTANTS
 #define FIELD_SIZE(Name) (Name##End + 1 - Name)
 
+// Compare two offsets with static cast
+#define STATIC_ASSERT_FIELD_OFFSETS_EQUAL(Offset1, Offset2) \
+  STATIC_ASSERT(static_cast<int>(Offset1) == Offset2)
 // ----------------------------------------------------------------------------
 // Hash function.
 
@@ -837,7 +840,8 @@ class FeedbackSlot {
   bool operator!=(FeedbackSlot that) const { return !(*this == that); }
 
   friend size_t hash_value(FeedbackSlot slot) { return slot.ToInt(); }
-  friend std::ostream& operator<<(std::ostream& os, FeedbackSlot);
+  V8_EXPORT_PRIVATE friend std::ostream& operator<<(std::ostream& os,
+                                                    FeedbackSlot);
 
  private:
   static const int kInvalidSlot = -1;
@@ -845,6 +849,7 @@ class FeedbackSlot {
   int id_;
 };
 
+V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os, FeedbackSlot);
 
 class BailoutId {
  public:
@@ -921,7 +926,8 @@ void PRINTF_FORMAT(2, 3) PrintIsolate(void* isolate, const char* format, ...);
 
 // Safe formatting print. Ensures that str is always null-terminated.
 // Returns the number of chars written, or -1 if output was truncated.
-int PRINTF_FORMAT(2, 3) SNPrintF(Vector<char> str, const char* format, ...);
+V8_EXPORT_PRIVATE int PRINTF_FORMAT(2, 3)
+    SNPrintF(Vector<char> str, const char* format, ...);
 V8_EXPORT_PRIVATE int PRINTF_FORMAT(2, 0)
     VSNPrintF(Vector<char> str, const char* format, va_list args);
 
@@ -976,7 +982,8 @@ int WriteAsCFile(const char* filename, const char* varname,
 // On return, *exits tells whether the file existed.
 V8_EXPORT_PRIVATE std::string ReadFile(const char* filename, bool* exists,
                                        bool verbose = true);
-std::string ReadFile(FILE* file, bool* exists, bool verbose = true);
+V8_EXPORT_PRIVATE std::string ReadFile(FILE* file, bool* exists,
+                                       bool verbose = true);
 
 class StringBuilder : public SimpleStringBuilder {
  public:
@@ -1006,7 +1013,7 @@ bool StringToArrayIndex(Stream* stream, uint32_t* index);
 // GetCurrentStackPosition() should not be inlined, because it works on stack
 // frames if it were inlined into a function with a huge stack frame it would
 // return an address significantly above the actual current stack position.
-V8_NOINLINE uintptr_t GetCurrentStackPosition();
+V8_EXPORT_PRIVATE V8_NOINLINE uintptr_t GetCurrentStackPosition();
 
 static inline uint16_t ByteReverse16(uint16_t value) {
 #if V8_HAS_BUILTIN_BSWAP16

@@ -54,6 +54,7 @@ TFJ(ArrayReduceRightLoopLazyDeoptContinuation, 4, kReceiver, kCallback, kInitial
 TFS(ArrayReduceRightLoopContinuation, kReceiver, kCallbackfn, kInitialAccumulator, kO, kInitialK, kLength) \
 TFJ(ArrayReduceRight, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ArrayPrototypeReverse, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(ArrayPrototypeShift, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ArrayPrototypeSlice, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ArraySomeLoopEagerDeoptContinuation, 4, kReceiver, kCallback, kThisArg, kInitialK, kLength) \
 TFJ(ArraySomeLoopLazyDeoptContinuation, 5, kReceiver, kCallback, kThisArg, kInitialK, kLength, kResult) \
@@ -88,16 +89,41 @@ TFJ(ExtrasUtilsCreatePrivateSymbol, SharedFunctionInfo::kDontAdaptArgumentsSenti
 TFJ(ExtrasUtilsMarkPromiseAsHandled, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ExtrasUtilsPromiseState, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ObjectFromEntries, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(ProxyConstructor, 2, kReceiver, kTarget, kHandler) \
+TFJ(ProxyRevocable, 2, kReceiver, kTarget, kHandler) \
+TFJ(ProxyRevoke, 0, kReceiver) \
+TFS(RegExpReplace, kRegexp, kString, kReplaceValue) \
+TFJ(RegExpPrototypeReplace, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeEndsWith, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFS(CreateHTML, kReceiver, kMethodName, kTagName, kAttr, kAttrValue) \
+TFJ(StringPrototypeAnchor, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeBig, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeBlink, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeBold, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeFontcolor, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeFontsize, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeFixed, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeItalics, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeLink, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeSmall, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeStrike, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeSub, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeSup, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFS(StringRepeat, kString, kCount) \
+TFJ(StringPrototypeRepeat, 1, kReceiver, kCount) \
 TFJ(StringPrototypeStartsWith, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(TypedArrayMergeSort, kArray, kComparefn, kSource, kFrom, kTo, kTarget) \
 TFJ(TypedArrayPrototypeSort, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(CreateTypedArray, kTarget, kNewTarget, kArg1, kArg2, kArg3) \
+TFJ(TypedArrayPrototypeEvery, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeFilter, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(TypedArrayPrototypeFind, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(TypedArrayPrototypeFindIndex, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeForEach, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeReduce, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeReduceRight, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeSlice, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(TypedArrayPrototypeSome, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeSubArray, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(GenericBuiltinTest20UT5ATSmi10HeapObject, kParam) \
 TFS(TestHelperPlus1, kX) \
@@ -115,7 +141,6 @@ TFS(SortCompareUserFn, kComparefn, kX, kY) \
 TFS(CanUseSameAccessor25ATGenericElementsAccessor, kReceiver, kInitialReceiverMap, kInitialReceiverLength) \
 TFS(CanUseSameAccessor20ATDictionaryElements, kReceiver, kInitialReceiverMap, kInitialReceiverLength) \
 TFS(Copy, kSource, kSrcPos, kTarget, kDstPos, kLength) \
-TFS(BinaryInsertionSort, kSortState, kLow, kStartArg, kHigh) \
 TFS(MergeAt, kSortState, kI) \
 TFS(GallopLeft, kSortState, kArray, kKey, kBase, kLength, kHint) \
 TFS(GallopRight, kSortState, kArray, kKey, kBase, kLength, kHint) \

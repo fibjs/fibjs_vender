@@ -176,6 +176,8 @@ void OS::SignalCodeMovingGC() {
   fclose(f);
 }
 
+void OS::AdjustSchedulingParams() {}
+
 }  // namespace base
 }  // namespace v8
 

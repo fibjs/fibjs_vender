@@ -208,6 +208,12 @@ void FixedArray::MoveElements(Heap* heap, int dst_index, int src_index, int len,
   heap->MoveElements(*this, dst_index, src_index, len, mode);
 }
 
+void FixedArray::CopyElements(Heap* heap, int dst_index, FixedArray src,
+                              int src_index, int len, WriteBarrierMode mode) {
+  DisallowHeapAllocation no_gc;
+  heap->CopyElements(*this, src, dst_index, src_index, len, mode);
+}
+
 // Perform a binary search in a fixed array.
 template <SearchMode search_mode, typename T>
 int BinarySearch(T* array, Name name, int valid_entries,
@@ -543,9 +549,9 @@ PodArray<T> PodArray<T>::cast(Object object) {
 // static
 template <class T>
 Handle<PodArray<T>> PodArray<T>::New(Isolate* isolate, int length,
-                                     PretenureFlag pretenure) {
+                                     AllocationType allocation) {
   return Handle<PodArray<T>>::cast(
-      isolate->factory()->NewByteArray(length * sizeof(T), pretenure));
+      isolate->factory()->NewByteArray(length * sizeof(T), allocation));
 }
 
 template <class T>
@@ -653,7 +659,17 @@ typename Traits::ElementType FixedTypedArray<Traits>::get_scalar_from_data_ptr(
   // JavaScript memory model to have tear-free reads of overlapping accesses,
   // and using relaxed atomics may introduce overhead.
   TSAN_ANNOTATE_IGNORE_READS_BEGIN;
-  auto result = ptr[index];
+  ElementType result;
+  if (COMPRESS_POINTERS_BOOL && alignof(ElementType) > kTaggedSize) {
+    // TODO(ishell, v8:8875): When pointer compression is enabled 8-byte size
+    // fields (external pointers, doubles and BigInt data) are only kTaggedSize
+    // aligned so we have to use unaligned pointer friendly way of accessing
+    // them in order to avoid undefined behavior in C++ code.
+    result = ReadUnalignedValue<ElementType>(reinterpret_cast<Address>(ptr) +
+                                             index * sizeof(ElementType));
+  } else {
+    result = ptr[index];
+  }
   TSAN_ANNOTATE_IGNORE_READS_END;
   return result;
 }
@@ -664,7 +680,16 @@ void FixedTypedArray<Traits>::set(int index, ElementType value) {
   // See the comment in FixedTypedArray<Traits>::get_scalar.
   auto* ptr = reinterpret_cast<ElementType*>(DataPtr());
   TSAN_ANNOTATE_IGNORE_WRITES_BEGIN;
-  ptr[index] = value;
+  if (COMPRESS_POINTERS_BOOL && alignof(ElementType) > kTaggedSize) {
+    // TODO(ishell, v8:8875): When pointer compression is enabled 8-byte size
+    // fields (external pointers, doubles and BigInt data) are only kTaggedSize
+    // aligned so we have to use unaligned pointer friendly way of accessing
+    // them in order to avoid undefined behavior in C++ code.
+    WriteUnalignedValue<ElementType>(
+        reinterpret_cast<Address>(ptr) + index * sizeof(ElementType), value);
+  } else {
+    ptr[index] = value;
+  }
   TSAN_ANNOTATE_IGNORE_WRITES_END;
 }
 
