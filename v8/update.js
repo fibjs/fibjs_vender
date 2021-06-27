@@ -27,6 +27,15 @@ function copyFile(s, t) {
     return fs.copyFile(s, t)
 }
 
+function runProcess(...args) {
+    if (process.run) {
+        return process.run(...args)
+    }
+
+    const child_process = require('child_process');
+    return child_process.run(...args)
+}
+
 function joinOriginV8Src(p) {
     return path.join(v8Folder, p);
 }
@@ -36,7 +45,7 @@ function resolveVenderV8(p) {
 }
 
 if (process.env.NO_CODEGEN != '1') {
-    process.run("python", [
+    runProcess("python", [
         `tools/dev/v8gen.py`,
         "x64.release",
         "--",
@@ -49,7 +58,7 @@ if (process.env.NO_CODEGEN != '1') {
     /**
      * @notice you must add dept_tools folder to your environment variable `PATH`
      */
-    process.run(`ninja`, [
+    runProcess(`ninja`, [
         "-C",
         "out.gn/x64.release",
         "d8",
@@ -316,30 +325,38 @@ var plats1 = {
 };
 
 function patch_plat() {
-    function patch_plat_file(fname, plat) {
+    function patch_plat_file(fname, plat_ifmacro) {
         if (!fs.exists(fname)) {
             warning_unexisted_file(fname, 'patch_plat_file')
             return;
         }
         var txt = fs.readTextFile(fname);
-        var txt1;
 
         console.log("patch", fname);
-        txt = '#include <exlib/include/osconfig.h>\n\n' + plat + '\n\n' + txt + '\n\n#endif';
-        txt1 = txt.replace('void OS::Sleep', 'void OS_Sleep');
-        txt1 = txt1.replace('class Thread::PlatformData {', '#if 0\nclass Thread::PlatformData {');
+        txt = '#include <exlib/include/osconfig.h>\n\n' + plat_ifmacro + '\n\n' + txt + '\n\n#endif';
 
-        if (txt != txt1) {
-            var idx = txt1.indexOf('}  // namespace base', txt1.lastIndexOf('Thread::'));
+        // file includes Thread::PlatformData
+        if (txt.includes('class Thread::PlatformData {')) {
+            copyFile(fname, `${fname}.bak`)
+            var txt1;
+            txt1 = txt.replace('void OS::Sleep', 'void OS_Sleep');
+            txt1 = txt1.replace('class Thread::PlatformData {', '#if 0\nclass Thread::PlatformData {');
 
-            txt1 = txt1.substr(0, idx) + '#endif\n\n' + txt1.substr(idx);
+            if (txt != txt1) {
+                var idx = txt1.indexOf('}  // namespace base', txt1.lastIndexOf('Thread::'));
 
-            txt1 = txt1.replace('int GetProtectionFromMemoryPermission', '#endif\n#if 1\nint GetProtectionFromMemoryPermission');
+                txt1 = txt1.substr(0, idx) + '#endif\n\n' + txt1.substr(idx);
+
+                txt1 = txt1.replace('int GetProtectionFromMemoryPermission', '#endif\n#if 1\nint GetProtectionFromMemoryPermission');
+            }
+
+            fs.writeFile(fname, txt1);
+        } else {
+            fs.writeFile(fname, txt);
         }
-
-        fs.writeFile(fname, txt1);
     }
 
+    // disable Thread::PlatformData in it, always platform-fiber.cc we provided
     for (var f in plats1)
         patch_plat_file(platFolder + '/platform-' + f + '.cc', plats1[f]);
 
