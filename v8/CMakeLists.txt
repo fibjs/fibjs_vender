@@ -31,6 +31,57 @@ elseif(${ARCH} STREQUAL "amd64")
 	)
 endif()
 
+list(REMOVE_ITEM src_list
+	# remove files about V8_INTL_SUPPORT :start
+	"${PROJECT_SOURCE_DIR}/src/builtins/builtins-intl.cc",
+	"${PROJECT_SOURCE_DIR}/src/builtins/builtins-intl-gen.cc",
+	"${PROJECT_SOURCE_DIR}/src/char-predicates.cc",
+	"${PROJECT_SOURCE_DIR}/src/intl.cc",
+	"${PROJECT_SOURCE_DIR}/src/intl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/intl-objects-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/intl-objects.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/intl-objects.h",
+
+	"${PROJECT_SOURCE_DIR}/src/objects/js-collator-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-collator.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-collator.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-locale-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-locale.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-locale.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-relative-time-format-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-relative-time-format.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-relative-time-format.h",
+
+	"${PROJECT_SOURCE_DIR}/src/objects/js-list-format-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-list-format.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-list-format.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-plural-rules-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-plural-rules.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-plural-rules.h",
+
+	"${PROJECT_SOURCE_DIR}/src/runtime/runtime-intl.cc",
+
+	# added in 7.1
+	"${PROJECT_SOURCE_DIR}/src/objects/js-break-iterator-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-break-iterator.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-break-iterator.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-number-format-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-number-format.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-number-format.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-date-time-format-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-date-time-format.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-date-time-format.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-segmenter-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-segmenter.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-segmenter.h",
+
+	# added in 7.2
+	"${PROJECT_SOURCE_DIR}/src/objects/js-segment-iterator-inl.h",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-segment-iterator.cc",
+	"${PROJECT_SOURCE_DIR}/src/objects/js-segment-iterator.h",
+	# remove files about V8_INTL_SUPPORT :end
+)
+
 # if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows" AND ${ARCH} STREQUAL "amd64")
 # 	set_property(SOURCE src/unwinding-info-win64.cc
 # 		APPEND PROPERTY

@@ -135,52 +135,6 @@ var files = {
     'src/base/platform/platform-cygwin.cc': 1,
     'src/base/platform/platform-fuchsia.cc': 1,
     'src/base/debug/stack_trace_fuchsia.cc': 1,
-    'src/builtins/builtins-intl.cc': 1,
-    'src/builtins/builtins-intl-gen.cc': 1,
-    'src/char-predicates.cc': 1,
-    'src/intl.cc': 1,
-    'src/intl.h': 1,
-    'src/objects/intl-objects-inl.h': 1,
-    'src/objects/intl-objects.cc': 1,
-    'src/objects/intl-objects.h': 1,
-
-    'src/objects/js-collator-inl.h': 1,
-    'src/objects/js-collator.cc': 1,
-    'src/objects/js-collator.h': 1,
-    'src/objects/js-locale-inl.h': 1,
-    'src/objects/js-locale.cc': 1,
-    'src/objects/js-locale.h': 1,
-    'src/objects/js-relative-time-format-inl.h': 1,
-    'src/objects/js-relative-time-format.cc': 1,
-    'src/objects/js-relative-time-format.h': 1,
-
-    'src/objects/js-list-format-inl.h': 1,
-    'src/objects/js-list-format.cc': 1,
-    'src/objects/js-list-format.h': 1,
-    'src/objects/js-plural-rules-inl.h': 1,
-    'src/objects/js-plural-rules.cc': 1,
-    'src/objects/js-plural-rules.h': 1,
-
-    'src/runtime/runtime-intl.cc': 1,
-
-    // added in 7.1
-    'src/objects/js-break-iterator-inl.h': 1,
-    'src/objects/js-break-iterator.cc': 1,
-    'src/objects/js-break-iterator.h': 1,
-    'src/objects/js-number-format-inl.h': 1,
-    'src/objects/js-number-format.cc': 1,
-    'src/objects/js-number-format.h': 1,
-    'src/objects/js-date-time-format-inl.h': 1,
-    'src/objects/js-date-time-format.cc': 1,
-    'src/objects/js-date-time-format.h': 1,
-    'src/objects/js-segmenter-inl.h': 1,
-    'src/objects/js-segmenter.cc': 1,
-    'src/objects/js-segmenter.h': 1,
-
-    // added in 7.2
-    'src/objects/js-segment-iterator-inl.h': 1,
-    'src/objects/js-segment-iterator.cc': 1,
-    'src/objects/js-segment-iterator.h': 1,
 };
 
 var re = [
