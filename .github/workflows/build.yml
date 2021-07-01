@@ -178,7 +178,6 @@ jobs:
           
       - name: Test jssdk
         id: test-jssdk
-        if: ${{ matrix.build_type == 'release' }}
         shell: bash
         run: |
           bash .github/workflows/jssdk_test.sh
