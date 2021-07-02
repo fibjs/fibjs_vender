@@ -21,12 +21,16 @@ if [[ $TARGET_OS_NAME == 'Linux' ]]; then
         sh init_arm64.sh;
         cp -f ./ci/.dist/bin/$DIST_DIR/jssdk_test ./arm64_root_fs/bin/jssdk_test;
         chroot ./arm64_root_fs jssdk_test"
+    elif [[ $TARGET_ARCH == "mips" || $TARGET_ARCH == "mips64" ]]; then
+        # run jssdk_test on mips/mips64 using qemu
+        DIR=`pwd`;
+        sudo docker run -t \
+            -v ${DIR}:/home/ci fibjs/build-env:clang /bin/sh -c "cd /home/ci; bash ./arch-run ${TARGET_ARCH} ${BUILD_TYPE} -e=jssdk_test;"
     elif [[ $TARGET_ARCH == "i386" ]]; then
-        # libatomic.so.1 required, but not set in ubuntu-16.04/ubuntu-18.04 by default, so we run it in docker
-        DIR=`pwd`;sudo docker run -t -v ${DIR}:/home/ci fibjs/build-env:clang /bin/sh -c "
-        cd /home/ci;
-        ./.dist/bin/$DIST_DIR/jssdk_test
-        "
+        # run jssdk_test on i386 using qemu
+        DIR=`pwd`;
+        sudo docker run -t \
+            -v ${DIR}:/home/ci fibjs/build-env:clang /bin/sh -c "cd /home/ci; bash ./arch-run ${TARGET_ARCH} ${BUILD_TYPE} -e=jssdk_test;"
     else
         .dist/bin/$DIST_DIR/jssdk_test
     fi

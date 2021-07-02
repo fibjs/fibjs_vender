@@ -1,0 +1,79 @@
+#!/bin/bash
+
+usage()
+{
+	echo ""
+	echo "Usage: `basename $0` [options] [-jn] [-e] [-h]"
+	echo "Options:"
+	echo "  release, debug: "
+	echo "      Specifies the build type."
+	echo "  i386, amd64, arm, arm64, mips, mips64, ppc, ppc64:"
+	echo "      Specifies the architecture for code generation."
+	echo "  -e:"
+	echo "      Specifies the binary to execute."
+	echo "  -j: enable make '-j' option."
+	echo "      if 'n' is not given, will set jobs to auto detected core count, otherwise n is used."
+	echo "  -h, --help:"
+	echo "      Print this message and exit."
+	echo ""
+	exit 0
+}
+
+# default value
+BUILD_TYPE=release
+BUILD_JOBS=2
+
+for i in "$@"
+do
+    case $i in
+        i386|amd64|arm|arm64|mips|mips64|ppc|ppc64) TARGET_ARCH=$i
+            ;;
+        release|debug) BUILD_TYPE=$i
+            ;;
+        -j*) BUILD_JOBS="${i#-j}"
+            ;;
+        -e=*) BINARY_EXE="${i#-e=}"
+            ;;
+        --help|-h)
+            usage
+            ;;
+        *) echo "illegal option $i"
+            usage
+            ;;
+    esac
+done
+
+exec()
+{
+    export PS1="\e[1;32m\u\e[0m@\e[1;31mqemu#${TARGET_ARCH}\e[0m:\e[1;34m\w>\e[0m "
+    
+    if [[ "$BINARY_EXE" == "" ]]; then
+        bash --noprofile --norc -c "sh ./build -j${BUILD_JOBS} ${TARGET_ARCH} ${BUILD_TYPE}"
+    else
+        echo "would execute binary ${BINARY_EXE} for (TARGET_ARCH: ${TARGET_ARCH}, BUILD_TYPE: ${BUILD_TYPE})..."
+        bash --noprofile --norc -c "./.dist/bin/Linux_${TARGET_ARCH}_${BUILD_TYPE}/$BINARY_EXE"
+    fi
+}
+
+case $TARGET_ARCH in
+    arm) export QEMU_LD_PREFIX="/usr/arm-linux-gnueabihf"
+        exec;
+        ;;
+    arm64) export QEMU_LD_PREFIX="/usr/aarch64-linux-gnu"
+        exec;
+        ;;
+    armv6) export QEMU_LD_PREFIX="/usr/arm-linux-gnueabi"
+        exec;
+        ;;
+    mips) export QEMU_LD_PREFIX="/usr/mips-linux-gnu"
+        exec;
+        ;;
+    mips64) export QEMU_LD_PREFIX="/usr/mips64-linux-gnuabi64"
+        exec;
+        ;;
+    i386|amd64)
+        exec;
+        ;;
+    *) echo "illegal arch $TARGET_ARCH"
+        ;;
+esac

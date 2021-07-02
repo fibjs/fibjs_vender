@@ -23,6 +23,11 @@ if [[ $TARGET_OS_NAME == 'Linux' ]]; then
         cp -f ./ci/.dist/bin/Linux_arm64_release/v8_test ./arm64_root_fs/bin/v8_test;
         chroot ./arm64_root_fs v8_test
         mv ./arm64_root_fs/snapshot-arm64-Linux.cc /home/ci/"
+    elif [[ $TARGET_ARCH == "mips" || $TARGET_ARCH == "mips64" ]]; then
+        # generate v8-snapshot on mips/mips64 using qemu
+        DIR=`pwd`;
+        sudo docker run -t \
+            -v ${DIR}:/home/ci fibjs/build-env:clang /bin/sh -c "cd /home/ci; bash ./arch-run ${TARGET_ARCH} release -e=v8_test;"
     else
         .dist/bin/$DIST_DIR/v8_test
     fi
