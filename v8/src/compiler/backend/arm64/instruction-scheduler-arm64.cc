@@ -1,4 +1,4 @@
-#include "src/v8.h"
+#include "src/init/v8.h"
 
 #if V8_TARGET_ARCH_ARM64
 
@@ -92,6 +92,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64Float32Abs:
     case kArm64Float32Neg:
     case kArm64Float32Sqrt:
+    case kArm64Float32Fnmul:
     case kArm64Float32RoundDown:
     case kArm64Float32Max:
     case kArm64Float32Min:
@@ -105,6 +106,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64Float64Abs:
     case kArm64Float64Neg:
     case kArm64Float64Sqrt:
+    case kArm64Float64Fnmul:
     case kArm64Float64RoundDown:
     case kArm64Float64RoundTiesAway:
     case kArm64Float64RoundTruncate:

@@ -1,4 +1,4 @@
-#include "src/v8.h"
+#include "src/init/v8.h"
 
 #if V8_TARGET_ARCH_IA32
 
@@ -314,7 +314,6 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord64:             // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
-      return;
   }
 
   IA32OperandGenerator g(this);
@@ -1623,7 +1622,6 @@ void InstructionSelector::VisitWord32AtomicStore(Node* node) {
       break;
     default:
       UNREACHABLE();
-      break;
   }
   VisitAtomicExchange(this, node, opcode, rep);
 }

@@ -4,14 +4,16 @@
 
 #include "exlib/include/service.h"
 #include "exlib/include/qstring.h"
-#include "src/v8.h"
+#include "src/init/v8.h"
 
-int main(int argc, char** argv)
+static exlib::Thread_base* proc;
+
+void fiber_proc(void* p)
 {
-    exlib::Service::init(3);
+    char* argv0 = (char*)p;
 
     char* args[2] = {
-        argv[0], "--startup_src=temp.txt"
+        argv0, "--startup_src=temp.txt"
     };
 
     _main(2, args);
@@ -98,6 +100,16 @@ int main(int argc, char** argv)
     fwrite(src.c_str(), 1, src.length(), fd);
     fclose(fd);
 
+    printf("snapshot file '%s' generated! \n", fname.c_str());
+
     _exit(0);
+}
+
+int main(int argc, char** argv)
+{
+    exlib::Service::init(3);
+    exlib::Service::CreateFiber(fiber_proc, argv[0], 128 * 1024, NULL, &proc);
+    exlib::Service::dispatch();
+
     return 0;
 }

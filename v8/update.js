@@ -45,6 +45,8 @@ function resolveVenderV8(p) {
     return path.join(path.resolve(v8TargetFolder), p);
 }
 
+const v8_output = 'out.gn/x64.release'
+
 if (process.env.NO_CODEGEN != '1') {
     runProcess("python", [
         `tools/dev/v8gen.py`,
@@ -53,7 +55,11 @@ if (process.env.NO_CODEGEN != '1') {
         "is_debug=false",
         "is_component_build=true",
         "v8_static_library=false",
-        "v8_enable_i18n_support=false"
+        "v8_enable_i18n_support=false",
+        "v8_use_snapshot=true",
+        "v8_use_perfetto=false",
+        "v8_use_external_startup_data=false", // enforce use built-in snapshot by generated gen/snapshot.cc
+        "v8_enable_embedded_builtins=false"
     ]);
 
     /**
@@ -61,12 +67,16 @@ if (process.env.NO_CODEGEN != '1') {
      */
     runProcess(`ninja`, [
         "-C",
-        "out.gn/x64.release",
+        v8_output,
         "d8",
         "-j",
         // "64"
         `${(os.cpuNumbers() || 1) * 4}`,
     ]);
+}
+var mksnapshot_exe = path.resolve(v8Folder, v8_output, './mksnapshot');
+if (!fs.exists(mksnapshot_exe)) {
+    throw new Error(`[patch_snapshot] mkspanshot '${mksnapshot_exe}' doesn't existed!`);
 }
 
 process.chdir(workFolder);
@@ -107,11 +117,15 @@ function update_plat() {
     }
 }
 
-function clean_folder(path) {
-    var dir = fs.readdir(path);
-    console.log("clean", path);
-    dir.forEach(function (name) {
-        var fname = path + '/' + name;
+function clean_folder(folder) {
+    if (!fs.exists(folder)) {
+        console.warn(`[clean_folder] try to clean directory ${folder} but it doesn't exist.`);
+        return;
+    }
+    var files = fs.readdir(folder);
+    console.log("clean", folder);
+    files.forEach(function (name) {
+        var fname = folder + '/' + name;
         var f = fs.stat(fname);
         if (f.isDirectory()) {
             clean_folder(fname);
@@ -236,7 +250,7 @@ function fix_src(path, val) {
             var txt = fs.readTextFile(fname);
 
             console.log("fix", fname);
-            fs.writeFile(fname, '#include "src/v8.h"\n\n#if ' + val + '\n\n' + txt + '\n\n#endif  // ' + val);
+            fs.writeFile(fname, '#include "src/init/v8.h"\n\n#if ' + val + '\n\n' + txt + '\n\n#endif  // ' + val);
         }
     });
 }
@@ -369,7 +383,7 @@ function warning_unexisted_file(fname, _for = '') {
 }
 
 function patch_macro() {
-    var fname = "src/macro-assembler.h";
+    var fname = "src/codegen/macro-assembler.h";
 
     console.log("patch", fname);
 
@@ -379,11 +393,11 @@ function patch_macro() {
     }
 
     var txt = fs.readTextFile(fname);
-    fs.writeFile(fname, '#include "src/v8.h"\n\n' + txt);
+    fs.writeFile(fname, '#include "src/init/v8.h"\n\n' + txt);
 }
 
 function patch_flag() {
-    var fname = "src/flags.cc";
+    var fname = "src/flags/flags.cc";
 
     console.log("patch", fname);
 
@@ -426,8 +440,7 @@ function patch_serializer() {
 }
 
 function patch_version_hash() {
-    var fname = "src/version.h";
-    // var fname = "src/utils/version.h";
+    var fname = "src/utils/version.h";
 
     console.log("patch", fname);
 
@@ -451,7 +464,7 @@ function patch_ntver() {
 }
 
 function patch_unwinding_files() {
-    var fname = "src/unwinding-info-win64.cc";
+    var fname = "src/diagnostics/unwinding-info-win64.cc";
 
     console.log("patch_unwinding_files", fname);
     var txt = fs.readTextFile(fname);
@@ -460,7 +473,7 @@ function patch_unwinding_files() {
 }
 
 function patch_snapshot() {
-    fs.mkdir("src/snapshot/snapshots")
+    mkdirp("src/snapshot/snapshots")
     var archs = {
         arm: 'V8_TARGET_ARCH_ARM',
         arm64: 'V8_TARGET_ARCH_ARM64',
@@ -478,7 +491,7 @@ function patch_snapshot() {
         ia32: true
     }
 
-    var oss = ["Windows", "Linux", "FreeBSD", "Darwin"];
+    var osList = ["Windows", "Linux", "FreeBSD", "Darwin"];
 
     try {
         fs.unlink("test/src/mksnapshot.inl")
@@ -488,17 +501,54 @@ function patch_snapshot() {
     }
 
     var txt = fs.readTextFile(v8Folder + "/src/snapshot/snapshot-empty.cc");
+    // fs.writeFile(`src/snapshot/snapshot-empty.cc`, txt);
 
+    // generated files bebow equal to src/snapshot/snapshot-empty.cc, but for every platform/arch
     for (var arch in archs) {
         if (arch_x86[arch])
-            oss.forEach(os => {
-                fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-${os}.cc`,
-                    `#include <exlib/include/osconfig.h>\n#ifdef ${os}\n\n#include "src/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}\n\n#endif // ${os}`);
+            osList.forEach(osName => {
+                fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-${osName}.cc`,
+                    `#include <exlib/include/osconfig.h>\n#ifdef ${osName}\n\n#include "src/init/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}\n\n#endif // ${osName}`);
             });
         else
             fs.writeFile(`src/snapshot/snapshots/snapshot-${arch}-Linux.cc`,
-                `#include "src/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}`);
+                `#include "src/init/v8.h"\n\n#if ${archs[arch]}\n\n${txt}\n\n#endif  // ${archs[arch]}`);
     }
+
+    // var osmksnapshotmap = {
+    //     Windows: 'win',
+    //     Linux: 'linux',
+    //     Darwin: 'mac'
+    // }
+    // for (var arch in archs) {
+    //     var target_arch = arch === 'ia32' ? 'x86' : arch;
+
+    //     if (arch_x86[arch]) {
+    //         osList.forEach(osName => {
+    //             var target_file = path.resolve(v8TargetFolder, `src/snapshot/snapshots/snapshot-${arch}-${osName}.cc`);
+    //             runProcess(mksnapshot_exe, [
+    //                 `--target-os=${osmksnapshotmap[osName]}`,
+    //                 `--target-arch=${target_arch}`,
+    //                 `--startup-src=${target_file}`
+    //             ]);
+    //             fs.writeFile(target_file,
+    //                 `#include <exlib/include/osconfig.h>\n#ifdef ${osName}\n\n#include "src/init/v8.h"\n\n#if ${archs[arch]}\n\n${fs.readTextFile(target_file)}\n\n#endif  // ${archs[arch]}\n\n#endif // ${osName}`);
+
+    //             console.info(`[patch_snapshot] generated snapshot file ${target_file}`);
+    //         });
+    //     } else {
+    //         var target_file = path.resolve(v8TargetFolder, `src/snapshot/snapshots/snapshot-${arch}-${'Linux'}.cc`);
+    //         runProcess(mksnapshot_exe, [
+    //             `--target-os=${osmksnapshotmap['Linux']}`,
+    //             `--target-arch=${target_arch}`,
+    //             `--startup-src=${target_file}`
+    //         ]);
+    //         fs.writeFile(target_file,
+    //             `#include "src/init/v8.h"\n\n#if ${archs[arch]}\n\n${fs.readTextFile(target_file)}\n\n#endif  // ${archs[arch]}`);
+
+    //         console.info(`[patch_snapshot] generated snapshot file ${target_file}`);
+    //     }
+    // }
 }
 
 function toLF(str) {

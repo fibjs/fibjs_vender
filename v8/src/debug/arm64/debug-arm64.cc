@@ -1,4 +1,4 @@
-#include "src/v8.h"
+#include "src/init/v8.h"
 
 #if V8_TARGET_ARCH_ARM64
 
@@ -10,11 +10,11 @@
 
 #include "src/debug/debug.h"
 
-#include "src/arm64/macro-assembler-arm64-inl.h"
+#include "src/codegen/arm64/macro-assembler-arm64-inl.h"
 #include "src/debug/liveedit.h"
-#include "src/frame-constants.h"
-#include "src/frames-inl.h"
-#include "src/objects-inl.h"
+#include "src/execution/frame-constants.h"
+#include "src/execution/frames-inl.h"
+#include "src/objects/objects-inl.h"
 
 namespace v8 {
 namespace internal {

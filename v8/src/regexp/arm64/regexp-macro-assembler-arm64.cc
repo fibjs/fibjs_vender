@@ -1,4 +1,4 @@
-#include "src/v8.h"
+#include "src/init/v8.h"
 
 #if V8_TARGET_ARCH_ARM64
 
@@ -10,14 +10,14 @@
 
 #include "src/regexp/arm64/regexp-macro-assembler-arm64.h"
 
-#include "src/arm64/macro-assembler-arm64-inl.h"
-#include "src/log.h"
-#include "src/macro-assembler.h"
-#include "src/objects-inl.h"
+#include "src/codegen/arm64/macro-assembler-arm64-inl.h"
+#include "src/codegen/macro-assembler.h"
+#include "src/logging/log.h"
+#include "src/objects/objects-inl.h"
 #include "src/regexp/regexp-macro-assembler.h"
 #include "src/regexp/regexp-stack.h"
-#include "src/snapshot/embedded-data.h"
-#include "src/unicode.h"
+#include "src/snapshot/embedded/embedded-data.h"
+#include "src/strings/unicode.h"
 
 namespace v8 {
 namespace internal {
@@ -1072,8 +1072,9 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
 
   CodeDesc code_desc;
   masm_->GetCode(isolate(), &code_desc);
-  Handle<Code> code = isolate()->factory()->NewCode(code_desc, Code::REGEXP,
-                                                    masm_->CodeObject());
+  Handle<Code> code = Factory::CodeBuilder(isolate(), code_desc, Code::REGEXP)
+                          .set_self_reference(masm_->CodeObject())
+                          .Build();
   PROFILE(masm_->isolate(),
           RegExpCodeCreateEvent(AbstractCode::cast(*code), *source));
   return Handle<HeapObject>::cast(code);
@@ -1186,7 +1187,6 @@ void RegExpMacroAssemblerARM64::ReadCurrentPositionFromRegister(int reg) {
       break;
     default:
       UNREACHABLE();
-      break;
   }
 }
 
@@ -1518,7 +1518,6 @@ Register RegExpMacroAssemblerARM64::GetRegister(int register_index,
       break;
     default:
       UNREACHABLE();
-      break;
   }
   DCHECK(result.Is32Bits());
   return result;
@@ -1552,7 +1551,6 @@ void RegExpMacroAssemblerARM64::StoreRegister(int register_index,
     }
     default:
       UNREACHABLE();
-      break;
   }
 }
 

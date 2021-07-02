@@ -1,4 +1,4 @@
-#include "src/v8.h"
+#include "src/init/v8.h"
 
 #if V8_TARGET_ARCH_MIPS64
 
@@ -6,8 +6,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/codegen/macro-assembler.h"
 #include "src/compiler/backend/instruction-scheduler.h"
-#include "src/macro-assembler.h"
 
 namespace v8 {
 namespace internal {

@@ -8,7 +8,7 @@
 
 #include "jssdk-v8.h"
 #include "libplatform/libplatform.h"
-#include "src/allocation.h"
+#include "src/utils/allocation.h"
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
@@ -178,12 +178,15 @@ public:
     Value execute(exlib::string code, exlib::string soname)
     {
         v8::Local<v8::Context> context = m_isolate->GetCurrentContext();
-        v8::Local<v8::String> str_code = v8::String::NewFromUtf8(m_isolate,
-            code.c_str(), v8::String::kNormalString,
-            (int32_t)code.length());
-        v8::Local<v8::String> str_name = v8::String::NewFromUtf8(m_isolate,
-            soname.c_str(), v8::String::kNormalString,
-            (int32_t)soname.length());
+        v8::Local<v8::String> str_code = v8::String::NewFromUtf8(
+            m_isolate, code.c_str(), v8::NewStringType::kNormal,
+            (int32_t)code.length())
+                                             .ToLocalChecked();
+        v8::Local<v8::String> str_name = v8::String::NewFromUtf8(
+            m_isolate,
+            soname.c_str(), v8::NewStringType::kNormal,
+            (int32_t)soname.length())
+                                             .ToLocalChecked();
 
         v8::ScriptOrigin origin(str_name);
         v8::MaybeLocal<v8::Script> may_script = v8::Script::Compile(context, str_code, &origin);
@@ -222,7 +225,7 @@ public:
 
     Value NewString(exlib::string s)
     {
-        return Value(this, v8::String::NewFromUtf8(m_isolate, s.c_str(), v8::String::kNormalString, (int32_t)s.length()));
+        return Value(this, v8::String::NewFromUtf8(m_isolate, s.c_str(), v8::NewStringType::kNormal, (int32_t)s.length()).ToLocalChecked());
     }
 
     Object NewObject()
@@ -295,7 +298,7 @@ public:
 public:
     bool ValueToBoolean(const Value& v)
     {
-        return v.m_v->BooleanValue(_context()).ToChecked();
+        return v.m_v->BooleanValue(m_isolate);
     }
 
 public:
@@ -328,22 +331,24 @@ public:
         return v8::Local<v8::Object>::Cast(o.m_v)->Has(
                                                      _context(),
                                                      v8::String::NewFromUtf8(m_isolate,
-                                                         key.c_str(), v8::String::kNormalString,
-                                                         (int32_t)key.length()))
+                                                         key.c_str(), v8::NewStringType::kNormal,
+                                                         (int32_t)key.length())
+                                                         .ToLocalChecked())
             .ToChecked();
     }
 
     Value ObjectGet(const Object& o, exlib::string key)
     {
-        return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->Get(v8::String::NewFromUtf8(m_isolate, key.c_str(), v8::String::kNormalString, (int32_t)key.length())));
+        return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->Get(v8::String::NewFromUtf8(m_isolate, key.c_str(), v8::NewStringType::kNormal, (int32_t)key.length()).ToLocalChecked()));
     }
 
     void ObjectSet(const Object& o, exlib::string key, const Value& v)
     {
         v8::Local<v8::Object>::Cast(o.m_v)->Set(
             v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::String::kNormalString,
-                (int32_t)key.length()),
+                key.c_str(), v8::NewStringType::kNormal,
+                (int32_t)key.length())
+                .ToLocalChecked(),
             v.m_v);
     }
 
@@ -352,8 +357,9 @@ public:
         v8::Local<v8::Object>::Cast(o.m_v)->Delete(
             _context(),
             v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::String::kNormalString,
-                (int32_t)key.length()));
+                key.c_str(), v8::NewStringType::kNormal,
+                (int32_t)key.length())
+                .ToLocalChecked());
     }
 
     Array ObjectKeys(const Object& o)
@@ -367,8 +373,9 @@ public:
     {
         v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
             v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::String::kNormalString,
-                (int32_t)key.length()));
+                key.c_str(), v8::NewStringType::kNormal,
+                (int32_t)key.length())
+                .ToLocalChecked());
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
         return v8::Local<v8::Object>::Cast(o.m_v)->HasPrivate(context, pkey).FromJust();
@@ -378,8 +385,9 @@ public:
     {
         v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
             v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::String::kNormalString,
-                (int32_t)key.length()));
+                key.c_str(), v8::NewStringType::kNormal,
+                (int32_t)key.length())
+                .ToLocalChecked());
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
 
@@ -395,8 +403,9 @@ public:
     {
         v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
             v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::String::kNormalString,
-                (int32_t)key.length()));
+                key.c_str(), v8::NewStringType::kNormal,
+                (int32_t)key.length())
+                .ToLocalChecked());
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
         v8::Local<v8::Object>::Cast(o.m_v)->SetPrivate(context, pkey, v.m_v);
@@ -406,8 +415,9 @@ public:
     {
         v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
             v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::String::kNormalString,
-                (int32_t)key.length()));
+                key.c_str(), v8::NewStringType::kNormal,
+                (int32_t)key.length())
+                .ToLocalChecked());
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
         v8::Local<v8::Object>::Cast(o.m_v)->DeletePrivate(context, pkey);
