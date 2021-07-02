@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-16.04]
+        os: [ubuntu-18.04]
         target_arch: [amd64, i386, arm, arm64, mips, mips64]
         build_type: [release, debug]
         include:
