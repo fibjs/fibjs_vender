@@ -58,8 +58,10 @@ if (process.env.NO_CODEGEN != '1') {
         "v8_enable_i18n_support=false",
         "v8_use_snapshot=true",
         "v8_use_perfetto=false",
-        "v8_use_external_startup_data=false", // enforce use built-in snapshot by generated gen/snapshot.cc
-        "v8_enable_embedded_builtins=false"
+        // enforce use built-in snapshot by generating files equals to v8/gen/snapshot.cc
+        "v8_use_external_startup_data=false",
+        "v8_enable_embedded_builtins=false",
+        "is_clang=true",
     ]);
 
     /**
@@ -74,7 +76,7 @@ if (process.env.NO_CODEGEN != '1') {
         `${(os.cpuNumbers() || 1) * 4}`,
     ]);
 }
-var mksnapshot_exe = path.resolve(v8Folder, v8_output, './mksnapshot');
+var mksnapshot_exe = path.resolve(v8Folder, v8_output, './mksnapshot.exe');
 if (!fs.exists(mksnapshot_exe)) {
     throw new Error(`[patch_snapshot] mkspanshot '${mksnapshot_exe}' doesn't existed!`);
 }
