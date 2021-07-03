@@ -86,7 +86,7 @@ void fiber_proc(void* p)
 #endif
 #endif
 
-    src += "#include \"src/v8.h\"\n\n#if " + defname + "\n\n";
+    src += "#include \"src/init/v8.h\"\n\n#if " + defname + "\n\n";
     src.append(buffer, lSize);
     src += "\n\n#endif  // " + defname;
 
