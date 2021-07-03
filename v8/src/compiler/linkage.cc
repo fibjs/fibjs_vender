@@ -37,6 +37,9 @@ std::ostream& operator<<(std::ostream& os, const CallDescriptor::Kind& k) {
     case CallDescriptor::kCallAddress:
       os << "Addr";
       break;
+    case CallDescriptor::kCallWasmCapiFunction:
+      os << "WasmExit";
+      break;
     case CallDescriptor::kCallWasmFunction:
       os << "WasmFunction";
       break;
@@ -134,24 +137,28 @@ bool CallDescriptor::CanTailCall(const Node* node) const {
   return HasSameReturnLocationsAs(CallDescriptorOf(node->op()));
 }
 
-int CallDescriptor::CalculateFixedFrameSize() const {
+// TODO(jkummerow, sigurds): Arguably frame size calculation should be
+// keyed on code/frame type, not on CallDescriptor kind. Think about a
+// good way to organize this logic.
+int CallDescriptor::CalculateFixedFrameSize(Code::Kind code_kind) const {
   switch (kind_) {
     case kCallJSFunction:
       return PushArgumentCount()
                  ? OptimizedBuiltinFrameConstants::kFixedSlotCount
                  : StandardFrameConstants::kFixedSlotCount;
     case kCallAddress:
+      if (code_kind == Code::C_WASM_ENTRY) {
+        return CWasmEntryFrameConstants::kFixedSlotCount;
+      }
       return CommonFrameConstants::kFixedSlotCountAboveFp +
              CommonFrameConstants::kCPSlotCount;
     case kCallCodeObject:
     case kCallBuiltinPointer:
       return TypedFrameConstants::kFixedSlotCount;
     case kCallWasmFunction:
-      return WasmCompiledFrameConstants::kFixedSlotCount;
     case kCallWasmImportWrapper:
-      // TODO(jkummerow): Introduce a separate "wasm-to-capi" frame type,
-      // and let other CallWasmImportWrapper frames go back to having the
-      // same size as CallWasmFunction frames.
+      return WasmCompiledFrameConstants::kFixedSlotCount;
+    case kCallWasmCapiFunction:
       return WasmExitFrameConstants::kFixedSlotCount;
   }
   UNREACHABLE();

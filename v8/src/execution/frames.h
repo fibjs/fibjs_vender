@@ -6,6 +6,7 @@
 #define V8_EXECUTION_FRAMES_H_
 
 #include "src/codegen/safepoint-table.h"
+#include "src/common/globals.h"
 #include "src/handles/handles.h"
 #include "src/objects/code.h"
 #include "src/objects/objects.h"
@@ -70,6 +71,7 @@ class StackHandler {
   V(JS_TO_WASM, JsToWasmFrame)                                            \
   V(WASM_INTERPRETER_ENTRY, WasmInterpreterEntryFrame)                    \
   V(C_WASM_ENTRY, CWasmEntryFrame)                                        \
+  V(WASM_EXIT, WasmExitFrame)                                             \
   V(WASM_COMPILE_LAZY, WasmCompileLazyFrame)                              \
   V(INTERPRETED, InterpretedFrame)                                        \
   V(STUB, StubFrame)                                                      \
@@ -97,12 +99,6 @@ class StackFrame {
   };
 #undef DECLARE_TYPE
 
-  // Opaque data type for identifying stack frames. Used extensively
-  // by the debugger.
-  // ID_MIN_VALUE and ID_MAX_VALUE are specified to ensure that enumeration type
-  // has correct value range (see Issue 830 for more details).
-  enum Id { ID_MIN_VALUE = kMinInt, ID_MAX_VALUE = kMaxInt, NO_ID = 0 };
-
   // Used to mark the outermost JS entry frame.
   //
   // The mark is an opaque value that should be pushed onto the stack directly,
@@ -111,7 +107,9 @@ class StackFrame {
     INNER_JSENTRY_FRAME = (0 << kSmiTagSize) | kSmiTag,
     OUTERMOST_JSENTRY_FRAME = (1 << kSmiTagSize) | kSmiTag
   };
+  // NOLINTNEXTLINE(runtime/references) (false positive)
   STATIC_ASSERT((INNER_JSENTRY_FRAME & kHeapObjectTagMask) != kHeapObjectTag);
+  // NOLINTNEXTLINE(runtime/references) (false positive)
   STATIC_ASSERT((OUTERMOST_JSENTRY_FRAME & kHeapObjectTagMask) !=
                 kHeapObjectTag);
 
@@ -144,7 +142,13 @@ class StackFrame {
   // the type of the value on the stack.
   static Type MarkerToType(intptr_t marker) {
     DCHECK(IsTypeMarker(marker));
-    return static_cast<Type>(marker >> kSmiTagSize);
+    intptr_t type = marker >> kSmiTagSize;
+    // TODO(petermarshall): There is a bug in the arm simulators that causes
+    // invalid frame markers.
+#if !(defined(USE_SIMULATOR) && (V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_ARM))
+    DCHECK_LT(static_cast<uintptr_t>(type), Type::NUMBER_OF_TYPES);
+#endif
+    return static_cast<Type>(type);
   }
 
   // Check if a marker is a stack frame type marker or a tagged pointer.
@@ -172,8 +176,6 @@ class StackFrame {
   bool is_interpreted() const { return type() == INTERPRETED; }
   bool is_wasm_compiled() const { return type() == WASM_COMPILED; }
   bool is_wasm_compile_lazy() const { return type() == WASM_COMPILE_LAZY; }
-  bool is_wasm_to_js() const { return type() == WASM_TO_JS; }
-  bool is_js_to_wasm() const { return type() == JS_TO_WASM; }
   bool is_wasm_interpreter_entry() const {
     return type() == WASM_INTERPRETER_ENTRY;
   }
@@ -232,7 +234,7 @@ class StackFrame {
   }
 
   // Get the id of this stack frame.
-  Id id() const { return static_cast<Id>(caller_sp()); }
+  StackFrameId id() const { return static_cast<StackFrameId>(caller_sp()); }
 
   // Get the top handler from the current stack iterator.
   inline StackHandler* top_handler() const;
@@ -925,7 +927,7 @@ class BuiltinFrame final : public JavaScriptFrame {
   friend class StackFrameIteratorBase;
 };
 
-class WasmCompiledFrame final : public StandardFrame {
+class WasmCompiledFrame : public StandardFrame {
  public:
   Type type() const override { return WASM_COMPILED; }
 
@@ -966,6 +968,18 @@ class WasmCompiledFrame final : public StandardFrame {
  private:
   friend class StackFrameIteratorBase;
   WasmModuleObject module_object() const;
+};
+
+class WasmExitFrame : public WasmCompiledFrame {
+ public:
+  Type type() const override { return WASM_EXIT; }
+  static Address ComputeStackPointer(Address fp);
+
+ protected:
+  inline explicit WasmExitFrame(StackFrameIteratorBase* iterator);
+
+ private:
+  friend class StackFrameIteratorBase;
 };
 
 class WasmInterpreterEntryFrame final : public StandardFrame {
@@ -1038,6 +1052,7 @@ class CWasmEntryFrame : public StubFrame {
 
  private:
   friend class StackFrameIteratorBase;
+  Type GetCallerState(State* state) const override;
 };
 
 class WasmCompileLazyFrame : public StandardFrame {
@@ -1245,7 +1260,7 @@ class V8_EXPORT_PRIVATE StackTraceFrameIterator {
  public:
   explicit StackTraceFrameIterator(Isolate* isolate);
   // Skip frames until the frame with the given id is reached.
-  StackTraceFrameIterator(Isolate* isolate, StackFrame::Id id);
+  StackTraceFrameIterator(Isolate* isolate, StackFrameId id);
   bool done() const { return iterator_.done(); }
   void Advance();
   void AdvanceOneFrame() { iterator_.Advance(); }

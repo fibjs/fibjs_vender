@@ -339,12 +339,13 @@ public:
 
     Value ObjectGet(const Object& o, exlib::string key)
     {
-        return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->Get(v8::String::NewFromUtf8(m_isolate, key.c_str(), v8::NewStringType::kNormal, (int32_t)key.length()).ToLocalChecked()));
+        return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->Get(_context(), v8::String::NewFromUtf8(m_isolate, key.c_str(), v8::NewStringType::kNormal, (int32_t)key.length()).ToLocalChecked()).ToLocalChecked());
     }
 
     void ObjectSet(const Object& o, exlib::string key, const Value& v)
     {
         v8::Local<v8::Object>::Cast(o.m_v)->Set(
+            _context(),
             v8::String::NewFromUtf8(m_isolate,
                 key.c_str(), v8::NewStringType::kNormal,
                 (int32_t)key.length())
@@ -431,12 +432,12 @@ public:
 
     Value ArrayGet(const Array& a, int32_t idx)
     {
-        return Value(this, v8::Local<v8::Array>::Cast(a.m_v)->Get(idx));
+        return Value(this, v8::Local<v8::Array>::Cast(a.m_v)->Get(_context(), idx).ToLocalChecked());
     }
 
     void ArraySet(const Array& a, int32_t idx, const Value& v)
     {
-        v8::Local<v8::Array>::Cast(a.m_v)->Set(idx, v.m_v);
+        v8::Local<v8::Array>::Cast(a.m_v)->Set(_context(), idx, v.m_v);
     }
 
     void ArrayRemove(const Array& a, int32_t idx)

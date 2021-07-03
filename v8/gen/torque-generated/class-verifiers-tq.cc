@@ -14,14 +14,22 @@
 #include "src/objects/js-generator.h"
 #include "src/objects/js-promise.h"
 #include "src/objects/js-regexp-string-iterator.h"
-#include "src/objects/module.h"
+#include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
+#include "src/objects/source-text-module.h"
 #include "src/objects/stack-frame-info.h"
+#include "src/objects/synthetic-module.h"
 #include "src/objects/template-objects.h"
+#include "src/builtins/builtins-bigint-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -44,6 +52,7 @@
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "src/builtins/builtins-typed-array-gen.h"
 #include "torque-generated/class-verifiers-tq.h"
+#include "torque-generated/internal-class-definitions-tq-inl.h"
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
@@ -53,34 +62,43 @@ void TorqueGeneratedClassVerifiers::ContextVerify(Context o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsContext());
   {
-    Object length_value = READ_FIELD(o, Context::kLengthOffset);
-    Object::VerifyPointer(isolate, length_value);
-    CHECK(length_value.IsSmi());
+    Object length__value = TaggedField<Object, Context::kLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length__value);
+    CHECK(length__value.IsSmi());
   }
   {
-    Object scope_info_value = READ_FIELD(o, Context::kScopeInfoOffset);
-    Object::VerifyPointer(isolate, scope_info_value);
-    CHECK(scope_info_value.IsScopeInfo());
+    Object scope_info__value = TaggedField<Object, Context::kScopeInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, scope_info__value);
+    CHECK(scope_info__value.IsScopeInfo());
   }
   {
-    Object previous_value = READ_FIELD(o, Context::kPreviousOffset);
-    Object::VerifyPointer(isolate, previous_value);
+    Object previous__value = TaggedField<Object, Context::kPreviousOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, previous__value);
   }
   {
-    Object extension_value = READ_FIELD(o, Context::kExtensionOffset);
-    Object::VerifyPointer(isolate, extension_value);
+    Object extension__value = TaggedField<Object, Context::kExtensionOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, extension__value);
   }
   {
-    Object native_context_value = READ_FIELD(o, Context::kNativeContextOffset);
-    Object::VerifyPointer(isolate, native_context_value);
+    Object native_context__value = TaggedField<Object, Context::kNativeContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, native_context__value);
   }
 }
 void TorqueGeneratedClassVerifiers::HeapObjectVerify(HeapObject o, Isolate* isolate) {
   CHECK(o.IsHeapObject());
   {
-    Object map_value = READ_FIELD(o, HeapObject::kMapOffset);
-    Object::VerifyPointer(isolate, map_value);
-    CHECK(map_value.IsMap());
+    Object map__value = TaggedField<Object, HeapObject::kMapOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, map__value);
+    CHECK(map__value.IsMap());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSReceiverVerify(JSReceiver o, Isolate* isolate) {
+  HeapObjectVerify(o, isolate);
+  CHECK(o.IsJSReceiver());
+  {
+    Object properties_or_hash__value = TaggedField<Object, JSReceiver::kPropertiesOrHashOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, properties_or_hash__value);
+    CHECK(properties_or_hash__value.IsSmi() || properties_or_hash__value.IsFixedArrayBase() || properties_or_hash__value.IsPropertyArray());
   }
 }
 void TorqueGeneratedClassVerifiers::HeapNumberVerify(HeapNumber o, Isolate* isolate) {
@@ -88,131 +106,161 @@ void TorqueGeneratedClassVerifiers::HeapNumberVerify(HeapNumber o, Isolate* isol
   CHECK(o.IsHeapNumber());
 }
 void TorqueGeneratedClassVerifiers::FixedArrayVerify(FixedArray o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.FixedArrayBaseVerify(isolate);
   CHECK(o.IsFixedArray());
-  for (int i = 0; i < Smi::ToInt(READ_FIELD(o, FixedArray::kLengthOffset)); ++i) {
-    Object objects_value = READ_FIELD(o, FixedArray::kObjectsOffset + i * kTaggedSize);
-    Object::VerifyPointer(isolate, objects_value);
+  for (int i = 0; i < TaggedField<Smi, FixedArray::kLengthOffset>::load(o).value(); ++i) {
+    Object objects__value = TaggedField<Object, FixedArray::kObjectsOffset>::load(o, i * kTaggedSize);
+    Object::VerifyPointer(isolate, objects__value);
+  }
+}
+void TorqueGeneratedClassVerifiers::FixedArrayBaseVerify(FixedArrayBase o, Isolate* isolate) {
+  HeapObjectVerify(o, isolate);
+  CHECK(o.IsFixedArrayBase());
+  {
+    Object length__value = TaggedField<Object, FixedArrayBase::kLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length__value);
+    CHECK(length__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::StringVerify(String o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.NameVerify(isolate);
   CHECK(o.IsString());
+}
+void TorqueGeneratedClassVerifiers::NameVerify(Name o, Isolate* isolate) {
+  HeapObjectVerify(o, isolate);
+  CHECK(o.IsName());
 }
 void TorqueGeneratedClassVerifiers::JSArrayVerify(JSArray o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSArray());
   {
-    Object length_value = READ_FIELD(o, JSArray::kLengthOffset);
-    Object::VerifyPointer(isolate, length_value);
-    CHECK(length_value.IsSmi() || length_value.IsHeapNumber() || length_value.IsUndefined(isolate));
+    Object length__value = TaggedField<Object, JSArray::kLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length__value);
+    CHECK(length__value.IsSmi() || length__value.IsHeapNumber());
   }
 }
 void TorqueGeneratedClassVerifiers::JSObjectVerify(JSObject o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.JSReceiverVerify(isolate);
   // Instance type check skipped because
   // it is an instantiated abstract class.
+  {
+    Object elements__value = TaggedField<Object, JSObject::kElementsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, elements__value);
+    CHECK(elements__value.IsFixedArrayBase());
+  }
 }
 void TorqueGeneratedClassVerifiers::OddballVerify(Oddball o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsOddball());
   {
-    Object to_string_value = READ_FIELD(o, Oddball::kToStringOffset);
-    Object::VerifyPointer(isolate, to_string_value);
-    CHECK(to_string_value.IsString());
+    Object to_string__value = TaggedField<Object, Oddball::kToStringOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, to_string__value);
+    CHECK(to_string__value.IsString());
   }
   {
-    Object to_number_value = READ_FIELD(o, Oddball::kToNumberOffset);
-    Object::VerifyPointer(isolate, to_number_value);
-    CHECK(to_number_value.IsSmi() || to_number_value.IsHeapNumber());
+    Object to_number__value = TaggedField<Object, Oddball::kToNumberOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, to_number__value);
+    CHECK(to_number__value.IsSmi() || to_number__value.IsHeapNumber());
   }
   {
-    Object type_of_value = READ_FIELD(o, Oddball::kTypeOfOffset);
-    Object::VerifyPointer(isolate, type_of_value);
-    CHECK(type_of_value.IsString());
+    Object type_of__value = TaggedField<Object, Oddball::kTypeOfOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, type_of__value);
+    CHECK(type_of__value.IsString());
   }
   {
-    Object kind_value = READ_FIELD(o, Oddball::kKindOffset);
-    Object::VerifyPointer(isolate, kind_value);
-    CHECK(kind_value.IsSmi());
+    Object kind__value = TaggedField<Object, Oddball::kKindOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, kind__value);
+    CHECK(kind__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::SymbolVerify(Symbol o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.NameVerify(isolate);
   CHECK(o.IsSymbol());
   {
-    Object name_value = READ_FIELD(o, Symbol::kNameOffset);
-    Object::VerifyPointer(isolate, name_value);
+    Object name__value = TaggedField<Object, Symbol::kNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, name__value);
   }
 }
 void TorqueGeneratedClassVerifiers::ConsStringVerify(ConsString o, Isolate* isolate) {
   o.StringVerify(isolate);
   CHECK(o.IsConsString());
   {
-    Object first_value = READ_FIELD(o, ConsString::kFirstOffset);
-    Object::VerifyPointer(isolate, first_value);
-    CHECK(first_value.IsString());
+    Object first__value = TaggedField<Object, ConsString::kFirstOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, first__value);
+    CHECK(first__value.IsString());
   }
   {
-    Object second_value = READ_FIELD(o, ConsString::kSecondOffset);
-    Object::VerifyPointer(isolate, second_value);
-    CHECK(second_value.IsString());
+    Object second__value = TaggedField<Object, ConsString::kSecondOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, second__value);
+    CHECK(second__value.IsString());
   }
 }
-void TorqueGeneratedClassVerifiers::ExternalOneByteStringVerify(ExternalOneByteString o, Isolate* isolate) {
+void TorqueGeneratedClassVerifiers::ExternalStringVerify(ExternalString o, Isolate* isolate) {
   o.StringVerify(isolate);
+  CHECK(o.IsExternalString());
+}
+void TorqueGeneratedClassVerifiers::ExternalOneByteStringVerify(ExternalOneByteString o, Isolate* isolate) {
+  o.ExternalStringVerify(isolate);
   CHECK(o.IsExternalOneByteString());
 }
 void TorqueGeneratedClassVerifiers::ExternalTwoByteStringVerify(ExternalTwoByteString o, Isolate* isolate) {
-  o.StringVerify(isolate);
+  o.ExternalStringVerify(isolate);
   CHECK(o.IsExternalTwoByteString());
 }
 void TorqueGeneratedClassVerifiers::InternalizedStringVerify(InternalizedString o, Isolate* isolate) {
   o.StringVerify(isolate);
   CHECK(o.IsInternalizedString());
 }
-void TorqueGeneratedClassVerifiers::SeqOneByteStringVerify(SeqOneByteString o, Isolate* isolate) {
+void TorqueGeneratedClassVerifiers::SeqStringVerify(SeqString o, Isolate* isolate) {
   o.StringVerify(isolate);
+  CHECK(o.IsSeqString());
+}
+void TorqueGeneratedClassVerifiers::SeqOneByteStringVerify(SeqOneByteString o, Isolate* isolate) {
+  o.SeqStringVerify(isolate);
   CHECK(o.IsSeqOneByteString());
 }
 void TorqueGeneratedClassVerifiers::SeqTwoByteStringVerify(SeqTwoByteString o, Isolate* isolate) {
-  o.StringVerify(isolate);
+  o.SeqStringVerify(isolate);
   CHECK(o.IsSeqTwoByteString());
 }
 void TorqueGeneratedClassVerifiers::SlicedStringVerify(SlicedString o, Isolate* isolate) {
   o.StringVerify(isolate);
   CHECK(o.IsSlicedString());
   {
-    Object parent_value = READ_FIELD(o, SlicedString::kParentOffset);
-    Object::VerifyPointer(isolate, parent_value);
-    CHECK(parent_value.IsString());
+    Object parent__value = TaggedField<Object, SlicedString::kParentOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, parent__value);
+    CHECK(parent__value.IsString());
   }
   {
-    Object offset_value = READ_FIELD(o, SlicedString::kOffsetOffset);
-    Object::VerifyPointer(isolate, offset_value);
-    CHECK(offset_value.IsSmi());
+    Object offset__value = TaggedField<Object, SlicedString::kOffsetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, offset__value);
+    CHECK(offset__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::ThinStringVerify(ThinString o, Isolate* isolate) {
   o.StringVerify(isolate);
   CHECK(o.IsThinString());
   {
-    Object actual_value = READ_FIELD(o, ThinString::kActualOffset);
-    Object::VerifyPointer(isolate, actual_value);
-    CHECK(actual_value.IsString());
+    Object actual__value = TaggedField<Object, ThinString::kActualOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, actual__value);
+    CHECK(actual__value.IsString());
   }
 }
-void TorqueGeneratedClassVerifiers::Tuple2Verify(Tuple2 o, Isolate* isolate) {
+void TorqueGeneratedClassVerifiers::StructVerify(Struct o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
+  CHECK(o.IsStruct());
+}
+void TorqueGeneratedClassVerifiers::Tuple2Verify(Tuple2 o, Isolate* isolate) {
+  o.StructVerify(isolate);
   // Instance type check skipped because
   // it is an instantiated abstract class.
   {
-    Object value1_value = READ_FIELD(o, Tuple2::kValue1Offset);
-    Object::VerifyPointer(isolate, value1_value);
+    Object value1__value = TaggedField<Object, Tuple2::kValue1Offset>::load(o, 0);
+    Object::VerifyPointer(isolate, value1__value);
   }
   {
-    Object value2_value = READ_FIELD(o, Tuple2::kValue2Offset);
-    Object::VerifyPointer(isolate, value2_value);
+    Object value2__value = TaggedField<Object, Tuple2::kValue2Offset>::load(o, 0);
+    Object::VerifyPointer(isolate, value2__value);
   }
 }
 void TorqueGeneratedClassVerifiers::Tuple3Verify(Tuple3 o, Isolate* isolate) {
@@ -220,151 +268,153 @@ void TorqueGeneratedClassVerifiers::Tuple3Verify(Tuple3 o, Isolate* isolate) {
   // Instance type check skipped because
   // it is an instantiated abstract class.
   {
-    Object value3_value = READ_FIELD(o, Tuple3::kValue3Offset);
-    Object::VerifyPointer(isolate, value3_value);
+    Object value3__value = TaggedField<Object, Tuple3::kValue3Offset>::load(o, 0);
+    Object::VerifyPointer(isolate, value3__value);
   }
 }
 void TorqueGeneratedClassVerifiers::FixedDoubleArrayVerify(FixedDoubleArray o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.FixedArrayBaseVerify(isolate);
   CHECK(o.IsFixedDoubleArray());
 }
 void TorqueGeneratedClassVerifiers::WeakFixedArrayVerify(WeakFixedArray o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsWeakFixedArray());
   {
-    Object length_value = READ_FIELD(o, WeakFixedArray::kLengthOffset);
-    Object::VerifyPointer(isolate, length_value);
-    CHECK(length_value.IsSmi());
+    Object length__value = TaggedField<Object, WeakFixedArray::kLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length__value);
+    CHECK(length__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::ByteArrayVerify(ByteArray o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.FixedArrayBaseVerify(isolate);
   CHECK(o.IsByteArray());
 }
 void TorqueGeneratedClassVerifiers::MapVerify(Map o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsMap());
   {
-    Object prototype_value = READ_FIELD(o, Map::kPrototypeOffset);
-    Object::VerifyPointer(isolate, prototype_value);
-    CHECK(prototype_value.IsHeapObject());
+    Object prototype__value = TaggedField<Object, Map::kPrototypeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, prototype__value);
+    CHECK(prototype__value.IsHeapObject());
   }
   {
-    Object constructor_or_back_pointer_value = READ_FIELD(o, Map::kConstructorOrBackPointerOffset);
-    Object::VerifyPointer(isolate, constructor_or_back_pointer_value);
+    Object constructor_or_back_pointer__value = TaggedField<Object, Map::kConstructorOrBackPointerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, constructor_or_back_pointer__value);
   }
   {
-    Object instance_descriptors_value = READ_FIELD(o, Map::kInstanceDescriptorsOffset);
-    Object::VerifyPointer(isolate, instance_descriptors_value);
-    CHECK(instance_descriptors_value.IsDescriptorArray());
+    Object instance_descriptors__value = TaggedField<Object, Map::kInstanceDescriptorsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, instance_descriptors__value);
+    CHECK(instance_descriptors__value.IsDescriptorArray());
   }
   {
-    Object layout_descriptor_value = READ_FIELD(o, Map::kLayoutDescriptorOffset);
-    Object::VerifyPointer(isolate, layout_descriptor_value);
-    CHECK(layout_descriptor_value.IsLayoutDescriptor());
+    Object layout_descriptor__value = TaggedField<Object, Map::kLayoutDescriptorOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, layout_descriptor__value);
+    CHECK(layout_descriptor__value.IsLayoutDescriptor());
   }
   {
-    Object dependent_code_value = READ_FIELD(o, Map::kDependentCodeOffset);
-    Object::VerifyPointer(isolate, dependent_code_value);
-    CHECK(dependent_code_value.IsDependentCode());
+    Object dependent_code__value = TaggedField<Object, Map::kDependentCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, dependent_code__value);
+    CHECK(dependent_code__value.IsDependentCode());
   }
   {
-    Object prototype_validity_cell_value = READ_FIELD(o, Map::kPrototypeValidityCellOffset);
-    Object::VerifyPointer(isolate, prototype_validity_cell_value);
-    CHECK(prototype_validity_cell_value.IsSmi() || prototype_validity_cell_value.IsCell());
+    Object prototype_validity_cell__value = TaggedField<Object, Map::kPrototypeValidityCellOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, prototype_validity_cell__value);
+    CHECK(prototype_validity_cell__value.IsSmi() || prototype_validity_cell__value.IsCell());
   }
   {
-    MaybeObject transitions_or_prototype_info_value = READ_WEAK_FIELD(o, Map::kTransitionsOrPrototypeInfoOffset);
-    MaybeObject::VerifyMaybeObjectPointer(isolate, transitions_or_prototype_info_value);
-    CHECK(transitions_or_prototype_info_value.IsWeakOrCleared() || transitions_or_prototype_info_value.GetHeapObjectOrSmi().IsSmi() || transitions_or_prototype_info_value.GetHeapObjectOrSmi().IsTransitionArray() || transitions_or_prototype_info_value.GetHeapObjectOrSmi().IsMap() || transitions_or_prototype_info_value.GetHeapObjectOrSmi().IsPrototypeInfo());
+    MaybeObject transitions_or_prototype_info__value = TaggedField<MaybeObject, Map::kTransitionsOrPrototypeInfoOffset>::load(o, 0);
+    MaybeObject::VerifyMaybeObjectPointer(isolate, transitions_or_prototype_info__value);
+    CHECK(transitions_or_prototype_info__value.IsWeakOrCleared() || transitions_or_prototype_info__value.GetHeapObjectOrSmi().IsSmi() || transitions_or_prototype_info__value.GetHeapObjectOrSmi().IsTransitionArray() || transitions_or_prototype_info__value.GetHeapObjectOrSmi().IsMap() || transitions_or_prototype_info__value.GetHeapObjectOrSmi().IsPrototypeInfo());
   }
 }
 void TorqueGeneratedClassVerifiers::EnumCacheVerify(EnumCache o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsEnumCache());
   {
-    Object keys_value = READ_FIELD(o, EnumCache::kKeysOffset);
-    Object::VerifyPointer(isolate, keys_value);
-    CHECK(keys_value.IsFixedArray());
+    Object keys__value = TaggedField<Object, EnumCache::kKeysOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, keys__value);
+    CHECK(keys__value.IsFixedArray());
   }
   {
-    Object indices_value = READ_FIELD(o, EnumCache::kIndicesOffset);
-    Object::VerifyPointer(isolate, indices_value);
-    CHECK(indices_value.IsFixedArray());
+    Object indices__value = TaggedField<Object, EnumCache::kIndicesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, indices__value);
+    CHECK(indices__value.IsFixedArray());
   }
 }
 void TorqueGeneratedClassVerifiers::SourcePositionTableWithFrameCacheVerify(SourcePositionTableWithFrameCache o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsSourcePositionTableWithFrameCache());
   {
-    Object source_position_table_value = READ_FIELD(o, SourcePositionTableWithFrameCache::kSourcePositionTableOffset);
-    Object::VerifyPointer(isolate, source_position_table_value);
-    CHECK(source_position_table_value.IsByteArray());
+    Object source_position_table__value = TaggedField<Object, SourcePositionTableWithFrameCache::kSourcePositionTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, source_position_table__value);
+    CHECK(source_position_table__value.IsByteArray());
   }
   {
-    Object stack_frame_cache_value = READ_FIELD(o, SourcePositionTableWithFrameCache::kStackFrameCacheOffset);
-    Object::VerifyPointer(isolate, stack_frame_cache_value);
+    Object stack_frame_cache__value = TaggedField<Object, SourcePositionTableWithFrameCache::kStackFrameCacheOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, stack_frame_cache__value);
   }
 }
 void TorqueGeneratedClassVerifiers::DescriptorArrayVerify(DescriptorArray o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsDescriptorArray());
   {
-    Object enum_cache_value = READ_FIELD(o, DescriptorArray::kEnumCacheOffset);
-    Object::VerifyPointer(isolate, enum_cache_value);
-    CHECK(enum_cache_value.IsEnumCache());
+    Object enum_cache__value = TaggedField<Object, DescriptorArray::kEnumCacheOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, enum_cache__value);
+    CHECK(enum_cache__value.IsEnumCache());
   }
 }
 void TorqueGeneratedClassVerifiers::JSFunctionVerify(JSFunction o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSFunction());
   {
-    Object shared_function_info_value = READ_FIELD(o, JSFunction::kSharedFunctionInfoOffset);
-    Object::VerifyPointer(isolate, shared_function_info_value);
-    CHECK(shared_function_info_value.IsSharedFunctionInfo() || shared_function_info_value.IsUndefined(isolate));
+    Object shared_function_info__value = TaggedField<Object, JSFunction::kSharedFunctionInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, shared_function_info__value);
+    CHECK(shared_function_info__value.IsSharedFunctionInfo());
   }
   {
-    Object context_value = READ_FIELD(o, JSFunction::kContextOffset);
-    Object::VerifyPointer(isolate, context_value);
-    CHECK(context_value.IsContext() || context_value.IsUndefined(isolate));
+    Object context__value = TaggedField<Object, JSFunction::kContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, context__value);
+    CHECK(context__value.IsContext());
   }
   {
-    Object feedback_cell_value = READ_FIELD(o, JSFunction::kFeedbackCellOffset);
-    Object::VerifyPointer(isolate, feedback_cell_value);
-    CHECK(feedback_cell_value.IsFeedbackCell() || feedback_cell_value.IsUndefined(isolate));
+    Object feedback_cell__value = TaggedField<Object, JSFunction::kFeedbackCellOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, feedback_cell__value);
+    CHECK(feedback_cell__value.IsFeedbackCell());
   }
   {
-    MaybeObject code_value = READ_WEAK_FIELD(o, JSFunction::kCodeOffset);
-    MaybeObject::VerifyMaybeObjectPointer(isolate, code_value);
-    CHECK(code_value.IsWeakOrCleared() || code_value.GetHeapObjectOrSmi().IsCode() || code_value.GetHeapObjectOrSmi().IsUndefined(isolate));
+    MaybeObject code__value = TaggedField<MaybeObject, JSFunction::kCodeOffset>::load(o, 0);
+    MaybeObject::VerifyMaybeObjectPointer(isolate, code__value);
+    CHECK(code__value.IsWeakOrCleared() || code__value.GetHeapObjectOrSmi().IsCode());
   }
 }
 void TorqueGeneratedClassVerifiers::JSProxyVerify(JSProxy o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.JSReceiverVerify(isolate);
   CHECK(o.IsJSProxy());
   {
-    Object target_value = READ_FIELD(o, JSProxy::kTargetOffset);
-    Object::VerifyPointer(isolate, target_value);
+    Object target__value = TaggedField<Object, JSProxy::kTargetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, target__value);
+    CHECK(target__value.IsNull() || target__value.IsJSReceiver());
   }
   {
-    Object handler_value = READ_FIELD(o, JSProxy::kHandlerOffset);
-    Object::VerifyPointer(isolate, handler_value);
+    Object handler__value = TaggedField<Object, JSProxy::kHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, handler__value);
+    CHECK(handler__value.IsNull() || handler__value.IsJSReceiver());
   }
 }
 void TorqueGeneratedClassVerifiers::JSGlobalProxyVerify(JSGlobalProxy o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSGlobalProxy());
   {
-    Object native_context_value = READ_FIELD(o, JSGlobalProxy::kNativeContextOffset);
-    Object::VerifyPointer(isolate, native_context_value);
+    Object native_context__value = TaggedField<Object, JSGlobalProxy::kNativeContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, native_context__value);
   }
 }
-void TorqueGeneratedClassVerifiers::JSValueVerify(JSValue o, Isolate* isolate) {
+void TorqueGeneratedClassVerifiers::JSPrimitiveWrapperVerify(JSPrimitiveWrapper o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
-  CHECK(o.IsJSValue());
+  CHECK(o.IsJSPrimitiveWrapper());
   {
-    Object value_value = READ_FIELD(o, JSValue::kValueOffset);
-    Object::VerifyPointer(isolate, value_value);
+    Object value__value = TaggedField<Object, JSPrimitiveWrapper::kValueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, value__value);
   }
 }
 void TorqueGeneratedClassVerifiers::JSArgumentsObjectVerify(JSArgumentsObject o, Isolate* isolate) {
@@ -375,189 +425,341 @@ void TorqueGeneratedClassVerifiers::JSSloppyArgumentsObjectVerify(JSSloppyArgume
   o.JSArgumentsObjectVerify(isolate);
   CHECK(o.IsJSSloppyArgumentsObject());
   {
-    Object callee_value = READ_FIELD(o, JSSloppyArgumentsObject::kCalleeOffset);
-    Object::VerifyPointer(isolate, callee_value);
+    Object callee__value = TaggedField<Object, JSSloppyArgumentsObject::kCalleeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, callee__value);
   }
 }
 void TorqueGeneratedClassVerifiers::JSArrayIteratorVerify(JSArrayIterator o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSArrayIterator());
   {
-    Object iterated_object_value = READ_FIELD(o, JSArrayIterator::kIteratedObjectOffset);
-    Object::VerifyPointer(isolate, iterated_object_value);
-    CHECK(iterated_object_value.IsJSReceiver() || iterated_object_value.IsUndefined(isolate));
+    Object iterated_object__value = TaggedField<Object, JSArrayIterator::kIteratedObjectOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, iterated_object__value);
+    CHECK(iterated_object__value.IsJSReceiver());
   }
   {
-    Object next_index_value = READ_FIELD(o, JSArrayIterator::kNextIndexOffset);
-    Object::VerifyPointer(isolate, next_index_value);
-    CHECK(next_index_value.IsSmi() || next_index_value.IsHeapNumber() || next_index_value.IsUndefined(isolate));
+    Object next_index__value = TaggedField<Object, JSArrayIterator::kNextIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, next_index__value);
+    CHECK(next_index__value.IsSmi() || next_index__value.IsHeapNumber());
   }
   {
-    Object kind_value = READ_FIELD(o, JSArrayIterator::kKindOffset);
-    Object::VerifyPointer(isolate, kind_value);
-    CHECK(kind_value.IsSmi() || kind_value.IsUndefined(isolate));
+    Object kind__value = TaggedField<Object, JSArrayIterator::kKindOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, kind__value);
+    CHECK(kind__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::CallHandlerInfoVerify(CallHandlerInfo o, Isolate* isolate) {
+  o.StructVerify(isolate);
+  CHECK(o.IsCallHandlerInfo());
+  {
+    Object callback__value = TaggedField<Object, CallHandlerInfo::kCallbackOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, callback__value);
+    CHECK(callback__value.IsUndefined() || callback__value.IsForeign());
+  }
+  {
+    Object js_callback__value = TaggedField<Object, CallHandlerInfo::kJsCallbackOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, js_callback__value);
+    CHECK(js_callback__value.IsUndefined() || js_callback__value.IsForeign());
+  }
+  {
+    Object data__value = TaggedField<Object, CallHandlerInfo::kDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, data__value);
+  }
+}
+void TorqueGeneratedClassVerifiers::ModuleVerify(Module o, Isolate* isolate) {
+  HeapObjectVerify(o, isolate);
+  CHECK(o.IsModule());
+  {
+    Object exports__value = TaggedField<Object, Module::kExportsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, exports__value);
+    CHECK(exports__value.IsObjectHashTable());
+  }
+  {
+    Object hash__value = TaggedField<Object, Module::kHashOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, hash__value);
+    CHECK(hash__value.IsSmi());
+  }
+  {
+    Object status__value = TaggedField<Object, Module::kStatusOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, status__value);
+    CHECK(status__value.IsSmi());
+  }
+  {
+    Object module_namespace__value = TaggedField<Object, Module::kModuleNamespaceOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, module_namespace__value);
+    CHECK(module_namespace__value.IsUndefined() || module_namespace__value.IsJSModuleNamespace());
+  }
+  {
+    Object exception__value = TaggedField<Object, Module::kExceptionOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, exception__value);
+  }
+}
+void TorqueGeneratedClassVerifiers::SourceTextModuleVerify(SourceTextModule o, Isolate* isolate) {
+  o.ModuleVerify(isolate);
+  CHECK(o.IsSourceTextModule());
+  {
+    Object code__value = TaggedField<Object, SourceTextModule::kCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, code__value);
+    CHECK(code__value.IsSourceTextModuleInfo() || code__value.IsJSFunction() || code__value.IsJSGeneratorObject() || code__value.IsSharedFunctionInfo());
+  }
+  {
+    Object regular_exports__value = TaggedField<Object, SourceTextModule::kRegularExportsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, regular_exports__value);
+    CHECK(regular_exports__value.IsFixedArray());
+  }
+  {
+    Object regular_imports__value = TaggedField<Object, SourceTextModule::kRegularImportsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, regular_imports__value);
+    CHECK(regular_imports__value.IsFixedArray());
+  }
+  {
+    Object requested_modules__value = TaggedField<Object, SourceTextModule::kRequestedModulesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, requested_modules__value);
+    CHECK(requested_modules__value.IsFixedArray());
+  }
+  {
+    Object script__value = TaggedField<Object, SourceTextModule::kScriptOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script__value);
+    CHECK(script__value.IsScript());
+  }
+  {
+    Object import_meta__value = TaggedField<Object, SourceTextModule::kImportMetaOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, import_meta__value);
+    CHECK(import_meta__value.IsTheHole() || import_meta__value.IsJSObject());
+  }
+  {
+    Object dfs_index__value = TaggedField<Object, SourceTextModule::kDfsIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, dfs_index__value);
+    CHECK(dfs_index__value.IsSmi());
+  }
+  {
+    Object dfs_ancestor_index__value = TaggedField<Object, SourceTextModule::kDfsAncestorIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, dfs_ancestor_index__value);
+    CHECK(dfs_ancestor_index__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::SyntheticModuleVerify(SyntheticModule o, Isolate* isolate) {
+  o.ModuleVerify(isolate);
+  CHECK(o.IsSyntheticModule());
+  {
+    Object name__value = TaggedField<Object, SyntheticModule::kNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, name__value);
+    CHECK(name__value.IsString());
+  }
+  {
+    Object export_names__value = TaggedField<Object, SyntheticModule::kExportNamesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, export_names__value);
+    CHECK(export_names__value.IsFixedArray());
+  }
+  {
+    Object evaluation_steps__value = TaggedField<Object, SyntheticModule::kEvaluationStepsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, evaluation_steps__value);
+    CHECK(evaluation_steps__value.IsForeign());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSModuleNamespaceVerify(JSModuleNamespace o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSModuleNamespace());
+  {
+    Object module__value = TaggedField<Object, JSModuleNamespace::kModuleOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, module__value);
+    CHECK(module__value.IsModule());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSWeakCollectionVerify(JSWeakCollection o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSWeakCollection());
+  {
+    Object table__value = TaggedField<Object, JSWeakCollection::kTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, table__value);
   }
 }
 void TorqueGeneratedClassVerifiers::JSWeakSetVerify(JSWeakSet o, Isolate* isolate) {
-  o.JSObjectVerify(isolate);
+  o.JSWeakCollectionVerify(isolate);
   CHECK(o.IsJSWeakSet());
 }
 void TorqueGeneratedClassVerifiers::JSWeakMapVerify(JSWeakMap o, Isolate* isolate) {
-  o.JSObjectVerify(isolate);
+  o.JSWeakCollectionVerify(isolate);
   CHECK(o.IsJSWeakMap());
+}
+void TorqueGeneratedClassVerifiers::JSCollectionIteratorVerify(JSCollectionIterator o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSCollectionIterator());
+  {
+    Object table__value = TaggedField<Object, JSCollectionIterator::kTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, table__value);
+  }
+  {
+    Object index__value = TaggedField<Object, JSCollectionIterator::kIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, index__value);
+  }
 }
 void TorqueGeneratedClassVerifiers::JSMessageObjectVerify(JSMessageObject o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSMessageObject());
   {
-    Object message_type_value = READ_FIELD(o, JSMessageObject::kMessageTypeOffset);
-    Object::VerifyPointer(isolate, message_type_value);
-    CHECK(message_type_value.IsSmi() || message_type_value.IsUndefined(isolate));
+    Object message_type__value = TaggedField<Object, JSMessageObject::kMessageTypeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, message_type__value);
+    CHECK(message_type__value.IsSmi());
   }
   {
-    Object arguments_value = READ_FIELD(o, JSMessageObject::kArgumentsOffset);
-    Object::VerifyPointer(isolate, arguments_value);
+    Object arguments__value = TaggedField<Object, JSMessageObject::kArgumentsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, arguments__value);
   }
   {
-    Object script_value = READ_FIELD(o, JSMessageObject::kScriptOffset);
-    Object::VerifyPointer(isolate, script_value);
-    CHECK(script_value.IsScript() || script_value.IsUndefined(isolate));
+    Object script__value = TaggedField<Object, JSMessageObject::kScriptOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script__value);
+    CHECK(script__value.IsScript());
   }
   {
-    Object stack_frames_value = READ_FIELD(o, JSMessageObject::kStackFramesOffset);
-    Object::VerifyPointer(isolate, stack_frames_value);
+    Object stack_frames__value = TaggedField<Object, JSMessageObject::kStackFramesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, stack_frames__value);
   }
   {
-    Object shared_info_value = READ_FIELD(o, JSMessageObject::kSharedInfoOffset);
-    Object::VerifyPointer(isolate, shared_info_value);
-    CHECK(shared_info_value.IsUndefined() || shared_info_value.IsSharedFunctionInfo() || shared_info_value.IsUndefined(isolate));
+    Object shared_info__value = TaggedField<Object, JSMessageObject::kSharedInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, shared_info__value);
+    CHECK(shared_info__value.IsUndefined() || shared_info__value.IsSharedFunctionInfo());
   }
   {
-    Object bytecode_offset_value = READ_FIELD(o, JSMessageObject::kBytecodeOffsetOffset);
-    Object::VerifyPointer(isolate, bytecode_offset_value);
-    CHECK(bytecode_offset_value.IsSmi() || bytecode_offset_value.IsUndefined(isolate));
+    Object bytecode_offset__value = TaggedField<Object, JSMessageObject::kBytecodeOffsetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, bytecode_offset__value);
+    CHECK(bytecode_offset__value.IsSmi());
   }
   {
-    Object start_position_value = READ_FIELD(o, JSMessageObject::kStartPositionOffset);
-    Object::VerifyPointer(isolate, start_position_value);
-    CHECK(start_position_value.IsSmi() || start_position_value.IsUndefined(isolate));
+    Object start_position__value = TaggedField<Object, JSMessageObject::kStartPositionOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, start_position__value);
+    CHECK(start_position__value.IsSmi());
   }
   {
-    Object end_position_value = READ_FIELD(o, JSMessageObject::kEndPositionOffset);
-    Object::VerifyPointer(isolate, end_position_value);
-    CHECK(end_position_value.IsSmi() || end_position_value.IsUndefined(isolate));
+    Object end_position__value = TaggedField<Object, JSMessageObject::kEndPositionOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, end_position__value);
+    CHECK(end_position__value.IsSmi());
   }
   {
-    Object error_level_value = READ_FIELD(o, JSMessageObject::kErrorLevelOffset);
-    Object::VerifyPointer(isolate, error_level_value);
-    CHECK(error_level_value.IsSmi() || error_level_value.IsUndefined(isolate));
+    Object error_level__value = TaggedField<Object, JSMessageObject::kErrorLevelOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, error_level__value);
+    CHECK(error_level__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::WeakArrayListVerify(WeakArrayList o, Isolate* isolate) {
+  HeapObjectVerify(o, isolate);
+  CHECK(o.IsWeakArrayList());
+  {
+    Object capacity__value = TaggedField<Object, WeakArrayList::kCapacityOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, capacity__value);
+    CHECK(capacity__value.IsSmi());
+  }
+  {
+    Object length__value = TaggedField<Object, WeakArrayList::kLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length__value);
+    CHECK(length__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::PrototypeInfoVerify(PrototypeInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsPrototypeInfo());
   {
-    Object js_module_namespace_value = READ_FIELD(o, PrototypeInfo::kJsModuleNamespaceOffset);
-    Object::VerifyPointer(isolate, js_module_namespace_value);
-    CHECK(js_module_namespace_value.IsJSModuleNamespace() || js_module_namespace_value.IsUndefined());
+    Object js_module_namespace__value = TaggedField<Object, PrototypeInfo::kJsModuleNamespaceOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, js_module_namespace__value);
+    CHECK(js_module_namespace__value.IsUndefined() || js_module_namespace__value.IsJSModuleNamespace());
   }
   {
-    Object prototype_users_value = READ_FIELD(o, PrototypeInfo::kPrototypeUsersOffset);
-    Object::VerifyPointer(isolate, prototype_users_value);
-    CHECK(prototype_users_value.IsWeakArrayList() || prototype_users_value.IsZero());
+    Object prototype_users__value = TaggedField<Object, PrototypeInfo::kPrototypeUsersOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, prototype_users__value);
+    CHECK(prototype_users__value.IsZero() || prototype_users__value.IsWeakArrayList());
   }
   {
-    Object registry_slot_value = READ_FIELD(o, PrototypeInfo::kRegistrySlotOffset);
-    Object::VerifyPointer(isolate, registry_slot_value);
-    CHECK(registry_slot_value.IsSmi());
+    Object registry_slot__value = TaggedField<Object, PrototypeInfo::kRegistrySlotOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, registry_slot__value);
+    CHECK(registry_slot__value.IsSmi());
   }
   {
-    Object validity_cell_value = READ_FIELD(o, PrototypeInfo::kValidityCellOffset);
-    Object::VerifyPointer(isolate, validity_cell_value);
+    Object validity_cell__value = TaggedField<Object, PrototypeInfo::kValidityCellOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, validity_cell__value);
   }
   {
-    Object bit_field_value = READ_FIELD(o, PrototypeInfo::kBitFieldOffset);
-    Object::VerifyPointer(isolate, bit_field_value);
-    CHECK(bit_field_value.IsSmi());
+    Object bit_field__value = TaggedField<Object, PrototypeInfo::kBitFieldOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, bit_field__value);
+    CHECK(bit_field__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::ScriptVerify(Script o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsScript());
   {
-    Object source_value = READ_FIELD(o, Script::kSourceOffset);
-    Object::VerifyPointer(isolate, source_value);
+    Object source__value = TaggedField<Object, Script::kSourceOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, source__value);
   }
   {
-    Object name_value = READ_FIELD(o, Script::kNameOffset);
-    Object::VerifyPointer(isolate, name_value);
+    Object name__value = TaggedField<Object, Script::kNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, name__value);
   }
   {
-    Object line_offset_value = READ_FIELD(o, Script::kLineOffsetOffset);
-    Object::VerifyPointer(isolate, line_offset_value);
-    CHECK(line_offset_value.IsSmi());
+    Object line_offset__value = TaggedField<Object, Script::kLineOffsetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, line_offset__value);
+    CHECK(line_offset__value.IsSmi());
   }
   {
-    Object column_offset_value = READ_FIELD(o, Script::kColumnOffsetOffset);
-    Object::VerifyPointer(isolate, column_offset_value);
-    CHECK(column_offset_value.IsSmi());
+    Object column_offset__value = TaggedField<Object, Script::kColumnOffsetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, column_offset__value);
+    CHECK(column_offset__value.IsSmi());
   }
   {
-    Object context_value = READ_FIELD(o, Script::kContextOffset);
-    Object::VerifyPointer(isolate, context_value);
+    Object context__value = TaggedField<Object, Script::kContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, context__value);
   }
   {
-    Object script_type_value = READ_FIELD(o, Script::kScriptTypeOffset);
-    Object::VerifyPointer(isolate, script_type_value);
-    CHECK(script_type_value.IsSmi());
+    Object script_type__value = TaggedField<Object, Script::kScriptTypeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script_type__value);
+    CHECK(script_type__value.IsSmi());
   }
   {
-    Object line_ends_value = READ_FIELD(o, Script::kLineEndsOffset);
-    Object::VerifyPointer(isolate, line_ends_value);
+    Object line_ends__value = TaggedField<Object, Script::kLineEndsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, line_ends__value);
   }
   {
-    Object id_value = READ_FIELD(o, Script::kIdOffset);
-    Object::VerifyPointer(isolate, id_value);
-    CHECK(id_value.IsSmi());
+    Object id__value = TaggedField<Object, Script::kIdOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, id__value);
+    CHECK(id__value.IsSmi());
   }
   {
-    Object eval_from_shared_or_wrapped_arguments_value = READ_FIELD(o, Script::kEvalFromSharedOrWrappedArgumentsOffset);
-    Object::VerifyPointer(isolate, eval_from_shared_or_wrapped_arguments_value);
+    Object eval_from_shared_or_wrapped_arguments__value = TaggedField<Object, Script::kEvalFromSharedOrWrappedArgumentsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, eval_from_shared_or_wrapped_arguments__value);
   }
   {
-    Object eval_from_position_value = READ_FIELD(o, Script::kEvalFromPositionOffset);
-    Object::VerifyPointer(isolate, eval_from_position_value);
-    CHECK(eval_from_position_value.IsSmi());
+    Object eval_from_position__value = TaggedField<Object, Script::kEvalFromPositionOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, eval_from_position__value);
+    CHECK(eval_from_position__value.IsSmi());
   }
   {
-    Object shared_function_infos_value = READ_FIELD(o, Script::kSharedFunctionInfosOffset);
-    Object::VerifyPointer(isolate, shared_function_infos_value);
+    Object shared_function_infos__value = TaggedField<Object, Script::kSharedFunctionInfosOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, shared_function_infos__value);
   }
   {
-    Object flags_value = READ_FIELD(o, Script::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi());
+    Object flags__value = TaggedField<Object, Script::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
   {
-    Object source_url_value = READ_FIELD(o, Script::kSourceUrlOffset);
-    Object::VerifyPointer(isolate, source_url_value);
+    Object source_url__value = TaggedField<Object, Script::kSourceUrlOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, source_url__value);
   }
   {
-    Object source_mapping_url_value = READ_FIELD(o, Script::kSourceMappingUrlOffset);
-    Object::VerifyPointer(isolate, source_mapping_url_value);
+    Object source_mapping_url__value = TaggedField<Object, Script::kSourceMappingUrlOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, source_mapping_url__value);
   }
   {
-    Object host_defined_options_value = READ_FIELD(o, Script::kHostDefinedOptionsOffset);
-    Object::VerifyPointer(isolate, host_defined_options_value);
+    Object host_defined_options__value = TaggedField<Object, Script::kHostDefinedOptionsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, host_defined_options__value);
   }
 }
 void TorqueGeneratedClassVerifiers::EmbedderDataArrayVerify(EmbedderDataArray o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsEmbedderDataArray());
   {
-    Object length_value = READ_FIELD(o, EmbedderDataArray::kLengthOffset);
-    Object::VerifyPointer(isolate, length_value);
-    CHECK(length_value.IsSmi());
+    Object length__value = TaggedField<Object, EmbedderDataArray::kLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length__value);
+    CHECK(length__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::PreparseDataVerify(PreparseData o, Isolate* isolate) {
@@ -565,67 +767,71 @@ void TorqueGeneratedClassVerifiers::PreparseDataVerify(PreparseData o, Isolate* 
   CHECK(o.IsPreparseData());
 }
 void TorqueGeneratedClassVerifiers::InterpreterDataVerify(InterpreterData o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsInterpreterData());
   {
-    Object bytecode_array_value = READ_FIELD(o, InterpreterData::kBytecodeArrayOffset);
-    Object::VerifyPointer(isolate, bytecode_array_value);
-    CHECK(bytecode_array_value.IsBytecodeArray());
+    Object bytecode_array__value = TaggedField<Object, InterpreterData::kBytecodeArrayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, bytecode_array__value);
+    CHECK(bytecode_array__value.IsBytecodeArray());
   }
   {
-    Object interpreter_trampoline_value = READ_FIELD(o, InterpreterData::kInterpreterTrampolineOffset);
-    Object::VerifyPointer(isolate, interpreter_trampoline_value);
-    CHECK(interpreter_trampoline_value.IsCode());
+    Object interpreter_trampoline__value = TaggedField<Object, InterpreterData::kInterpreterTrampolineOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, interpreter_trampoline__value);
+    CHECK(interpreter_trampoline__value.IsCode());
   }
 }
 void TorqueGeneratedClassVerifiers::SharedFunctionInfoVerify(SharedFunctionInfo o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsSharedFunctionInfo());
   {
-    MaybeObject function_data_value = READ_WEAK_FIELD(o, SharedFunctionInfo::kFunctionDataOffset);
-    MaybeObject::VerifyMaybeObjectPointer(isolate, function_data_value);
+    MaybeObject function_data__value = TaggedField<MaybeObject, SharedFunctionInfo::kFunctionDataOffset>::load(o, 0);
+    MaybeObject::VerifyMaybeObjectPointer(isolate, function_data__value);
   }
   {
-    Object name_or_scope_info_value = READ_FIELD(o, SharedFunctionInfo::kNameOrScopeInfoOffset);
-    Object::VerifyPointer(isolate, name_or_scope_info_value);
-    CHECK(name_or_scope_info_value.IsNoSharedNameSentinel() || name_or_scope_info_value.IsScopeInfo() || name_or_scope_info_value.IsString());
+    Object name_or_scope_info__value = TaggedField<Object, SharedFunctionInfo::kNameOrScopeInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, name_or_scope_info__value);
+    CHECK(name_or_scope_info__value.IsNoSharedNameSentinel() || name_or_scope_info__value.IsScopeInfo() || name_or_scope_info__value.IsString());
   }
   {
-    Object outer_scope_info_or_feedback_metadata_value = READ_FIELD(o, SharedFunctionInfo::kOuterScopeInfoOrFeedbackMetadataOffset);
-    Object::VerifyPointer(isolate, outer_scope_info_or_feedback_metadata_value);
-    CHECK(outer_scope_info_or_feedback_metadata_value.IsHeapObject());
+    Object outer_scope_info_or_feedback_metadata__value = TaggedField<Object, SharedFunctionInfo::kOuterScopeInfoOrFeedbackMetadataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, outer_scope_info_or_feedback_metadata__value);
+    CHECK(outer_scope_info_or_feedback_metadata__value.IsHeapObject());
   }
   {
-    Object script_or_debug_info_value = READ_FIELD(o, SharedFunctionInfo::kScriptOrDebugInfoOffset);
-    Object::VerifyPointer(isolate, script_or_debug_info_value);
-    CHECK(script_or_debug_info_value.IsUndefined() || script_or_debug_info_value.IsDebugInfo() || script_or_debug_info_value.IsScript());
+    Object script_or_debug_info__value = TaggedField<Object, SharedFunctionInfo::kScriptOrDebugInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script_or_debug_info__value);
+    CHECK(script_or_debug_info__value.IsUndefined() || script_or_debug_info__value.IsDebugInfo() || script_or_debug_info__value.IsScript());
   }
 }
 void TorqueGeneratedClassVerifiers::JSBoundFunctionVerify(JSBoundFunction o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSBoundFunction());
   {
-    Object bound_target_function_value = READ_FIELD(o, JSBoundFunction::kBoundTargetFunctionOffset);
-    Object::VerifyPointer(isolate, bound_target_function_value);
-    CHECK(bound_target_function_value.IsJSReceiver() || bound_target_function_value.IsUndefined(isolate));
+    Object bound_target_function__value = TaggedField<Object, JSBoundFunction::kBoundTargetFunctionOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, bound_target_function__value);
+    CHECK(bound_target_function__value.IsCallableApiObject() || bound_target_function__value.IsCallableJSProxy() || bound_target_function__value.IsJSBoundFunction() || bound_target_function__value.IsJSFunction());
   }
   {
-    Object bound_this_value = READ_FIELD(o, JSBoundFunction::kBoundThisOffset);
-    Object::VerifyPointer(isolate, bound_this_value);
+    Object bound_this__value = TaggedField<Object, JSBoundFunction::kBoundThisOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, bound_this__value);
   }
   {
-    Object bound_arguments_value = READ_FIELD(o, JSBoundFunction::kBoundArgumentsOffset);
-    Object::VerifyPointer(isolate, bound_arguments_value);
-    CHECK(bound_arguments_value.IsFixedArray() || bound_arguments_value.IsUndefined(isolate));
+    Object bound_arguments__value = TaggedField<Object, JSBoundFunction::kBoundArgumentsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, bound_arguments__value);
+    CHECK(bound_arguments__value.IsFixedArray());
   }
+}
+void TorqueGeneratedClassVerifiers::ForeignVerify(Foreign o, Isolate* isolate) {
+  HeapObjectVerify(o, isolate);
+  CHECK(o.IsForeign());
 }
 void TorqueGeneratedClassVerifiers::FreeSpaceVerify(FreeSpace o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsFreeSpace());
   {
-    Object size_value = READ_FIELD(o, FreeSpace::kSizeOffset);
-    Object::VerifyPointer(isolate, size_value);
-    CHECK(size_value.IsSmi());
+    Object size__value = TaggedField<Object, FreeSpace::kSizeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, size__value);
+    CHECK(size__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::JSArrayBufferVerify(JSArrayBuffer o, Isolate* isolate) {
@@ -636,357 +842,401 @@ void TorqueGeneratedClassVerifiers::JSArrayBufferViewVerify(JSArrayBufferView o,
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSArrayBufferView());
   {
-    Object buffer_value = READ_FIELD(o, JSArrayBufferView::kBufferOffset);
-    Object::VerifyPointer(isolate, buffer_value);
-    CHECK(buffer_value.IsJSArrayBuffer() || buffer_value.IsUndefined(isolate));
+    Object buffer__value = TaggedField<Object, JSArrayBufferView::kBufferOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, buffer__value);
+    CHECK(buffer__value.IsJSArrayBuffer());
   }
 }
 void TorqueGeneratedClassVerifiers::JSTypedArrayVerify(JSTypedArray o, Isolate* isolate) {
   o.JSArrayBufferViewVerify(isolate);
   CHECK(o.IsJSTypedArray());
   {
-    Object base_pointer_value = READ_FIELD(o, JSTypedArray::kBasePointerOffset);
-    Object::VerifyPointer(isolate, base_pointer_value);
-    CHECK(base_pointer_value.IsSmi() || base_pointer_value.IsByteArray() || base_pointer_value.IsUndefined(isolate));
+    Object base_pointer__value = TaggedField<Object, JSTypedArray::kBasePointerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, base_pointer__value);
+    CHECK(base_pointer__value.IsSmi() || base_pointer__value.IsByteArray());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSCollectionVerify(JSCollection o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSCollection());
+  {
+    Object table__value = TaggedField<Object, JSCollection::kTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, table__value);
   }
 }
 void TorqueGeneratedClassVerifiers::JSSetVerify(JSSet o, Isolate* isolate) {
-  o.JSObjectVerify(isolate);
+  o.JSCollectionVerify(isolate);
   CHECK(o.IsJSSet());
 }
 void TorqueGeneratedClassVerifiers::JSMapVerify(JSMap o, Isolate* isolate) {
-  o.JSObjectVerify(isolate);
+  o.JSCollectionVerify(isolate);
   CHECK(o.IsJSMap());
 }
 void TorqueGeneratedClassVerifiers::JSDateVerify(JSDate o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSDate());
   {
-    Object value_value = READ_FIELD(o, JSDate::kValueOffset);
-    Object::VerifyPointer(isolate, value_value);
-    CHECK(value_value.IsSmi() || value_value.IsUndefined() || value_value.IsHeapNumber() || value_value.IsUndefined(isolate));
+    Object value__value = TaggedField<Object, JSDate::kValueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, value__value);
+    CHECK(value__value.IsSmi() || value__value.IsUndefined() || value__value.IsHeapNumber());
   }
   {
-    Object year_value = READ_FIELD(o, JSDate::kYearOffset);
-    Object::VerifyPointer(isolate, year_value);
-    CHECK(year_value.IsNaN() || year_value.IsSmi() || year_value.IsUndefined() || year_value.IsUndefined(isolate));
+    Object year__value = TaggedField<Object, JSDate::kYearOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, year__value);
+    CHECK(year__value.IsNaN() || year__value.IsSmi() || year__value.IsUndefined());
   }
   {
-    Object month_value = READ_FIELD(o, JSDate::kMonthOffset);
-    Object::VerifyPointer(isolate, month_value);
-    CHECK(month_value.IsNaN() || month_value.IsSmi() || month_value.IsUndefined() || month_value.IsUndefined(isolate));
+    Object month__value = TaggedField<Object, JSDate::kMonthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, month__value);
+    CHECK(month__value.IsNaN() || month__value.IsSmi() || month__value.IsUndefined());
   }
   {
-    Object day_value = READ_FIELD(o, JSDate::kDayOffset);
-    Object::VerifyPointer(isolate, day_value);
-    CHECK(day_value.IsNaN() || day_value.IsSmi() || day_value.IsUndefined() || day_value.IsUndefined(isolate));
+    Object day__value = TaggedField<Object, JSDate::kDayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, day__value);
+    CHECK(day__value.IsNaN() || day__value.IsSmi() || day__value.IsUndefined());
   }
   {
-    Object weekday_value = READ_FIELD(o, JSDate::kWeekdayOffset);
-    Object::VerifyPointer(isolate, weekday_value);
-    CHECK(weekday_value.IsNaN() || weekday_value.IsSmi() || weekday_value.IsUndefined() || weekday_value.IsUndefined(isolate));
+    Object weekday__value = TaggedField<Object, JSDate::kWeekdayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, weekday__value);
+    CHECK(weekday__value.IsNaN() || weekday__value.IsSmi() || weekday__value.IsUndefined());
   }
   {
-    Object hour_value = READ_FIELD(o, JSDate::kHourOffset);
-    Object::VerifyPointer(isolate, hour_value);
-    CHECK(hour_value.IsNaN() || hour_value.IsSmi() || hour_value.IsUndefined() || hour_value.IsUndefined(isolate));
+    Object hour__value = TaggedField<Object, JSDate::kHourOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, hour__value);
+    CHECK(hour__value.IsNaN() || hour__value.IsSmi() || hour__value.IsUndefined());
   }
   {
-    Object min_value = READ_FIELD(o, JSDate::kMinOffset);
-    Object::VerifyPointer(isolate, min_value);
-    CHECK(min_value.IsNaN() || min_value.IsSmi() || min_value.IsUndefined() || min_value.IsUndefined(isolate));
+    Object min__value = TaggedField<Object, JSDate::kMinOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, min__value);
+    CHECK(min__value.IsNaN() || min__value.IsSmi() || min__value.IsUndefined());
   }
   {
-    Object sec_value = READ_FIELD(o, JSDate::kSecOffset);
-    Object::VerifyPointer(isolate, sec_value);
-    CHECK(sec_value.IsNaN() || sec_value.IsSmi() || sec_value.IsUndefined() || sec_value.IsUndefined(isolate));
+    Object sec__value = TaggedField<Object, JSDate::kSecOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, sec__value);
+    CHECK(sec__value.IsNaN() || sec__value.IsSmi() || sec__value.IsUndefined());
   }
   {
-    Object cache_stamp_value = READ_FIELD(o, JSDate::kCacheStampOffset);
-    Object::VerifyPointer(isolate, cache_stamp_value);
-    CHECK(cache_stamp_value.IsNaN() || cache_stamp_value.IsSmi() || cache_stamp_value.IsUndefined() || cache_stamp_value.IsUndefined(isolate));
+    Object cache_stamp__value = TaggedField<Object, JSDate::kCacheStampOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, cache_stamp__value);
+    CHECK(cache_stamp__value.IsNaN() || cache_stamp__value.IsSmi() || cache_stamp__value.IsUndefined());
   }
 }
 void TorqueGeneratedClassVerifiers::JSGlobalObjectVerify(JSGlobalObject o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSGlobalObject());
   {
-    Object native_context_value = READ_FIELD(o, JSGlobalObject::kNativeContextOffset);
-    Object::VerifyPointer(isolate, native_context_value);
-    CHECK(native_context_value.IsNativeContext() || native_context_value.IsUndefined(isolate));
+    Object native_context__value = TaggedField<Object, JSGlobalObject::kNativeContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, native_context__value);
+    CHECK(native_context__value.IsNativeContext());
   }
   {
-    Object global_proxy_value = READ_FIELD(o, JSGlobalObject::kGlobalProxyOffset);
-    Object::VerifyPointer(isolate, global_proxy_value);
-    CHECK(global_proxy_value.IsJSGlobalProxy() || global_proxy_value.IsUndefined(isolate));
+    Object global_proxy__value = TaggedField<Object, JSGlobalObject::kGlobalProxyOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, global_proxy__value);
+    CHECK(global_proxy__value.IsJSGlobalProxy());
   }
 }
 void TorqueGeneratedClassVerifiers::JSAsyncFromSyncIteratorVerify(JSAsyncFromSyncIterator o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSAsyncFromSyncIterator());
   {
-    Object sync_iterator_value = READ_FIELD(o, JSAsyncFromSyncIterator::kSyncIteratorOffset);
-    Object::VerifyPointer(isolate, sync_iterator_value);
-    CHECK(sync_iterator_value.IsJSReceiver() || sync_iterator_value.IsUndefined(isolate));
+    Object sync_iterator__value = TaggedField<Object, JSAsyncFromSyncIterator::kSyncIteratorOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, sync_iterator__value);
+    CHECK(sync_iterator__value.IsJSReceiver());
   }
   {
-    Object next_value = READ_FIELD(o, JSAsyncFromSyncIterator::kNextOffset);
-    Object::VerifyPointer(isolate, next_value);
+    Object next__value = TaggedField<Object, JSAsyncFromSyncIterator::kNextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, next__value);
   }
 }
 void TorqueGeneratedClassVerifiers::JSStringIteratorVerify(JSStringIterator o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSStringIterator());
   {
-    Object string_value = READ_FIELD(o, JSStringIterator::kStringOffset);
-    Object::VerifyPointer(isolate, string_value);
-    CHECK(string_value.IsString() || string_value.IsUndefined(isolate));
+    Object string__value = TaggedField<Object, JSStringIterator::kStringOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, string__value);
+    CHECK(string__value.IsString());
   }
   {
-    Object next_index_value = READ_FIELD(o, JSStringIterator::kNextIndexOffset);
-    Object::VerifyPointer(isolate, next_index_value);
-    CHECK(next_index_value.IsSmi() || next_index_value.IsUndefined(isolate));
+    Object next_index__value = TaggedField<Object, JSStringIterator::kNextIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, next_index__value);
+    CHECK(next_index__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::TemplateInfoVerify(TemplateInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsTemplateInfo());
   {
-    Object tag_value = READ_FIELD(o, TemplateInfo::kTagOffset);
-    Object::VerifyPointer(isolate, tag_value);
+    Object tag__value = TaggedField<Object, TemplateInfo::kTagOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, tag__value);
   }
   {
-    Object serial_number_value = READ_FIELD(o, TemplateInfo::kSerialNumberOffset);
-    Object::VerifyPointer(isolate, serial_number_value);
+    Object serial_number__value = TaggedField<Object, TemplateInfo::kSerialNumberOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, serial_number__value);
   }
   {
-    Object number_of_properties_value = READ_FIELD(o, TemplateInfo::kNumberOfPropertiesOffset);
-    Object::VerifyPointer(isolate, number_of_properties_value);
-    CHECK(number_of_properties_value.IsSmi());
+    Object number_of_properties__value = TaggedField<Object, TemplateInfo::kNumberOfPropertiesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, number_of_properties__value);
+    CHECK(number_of_properties__value.IsSmi());
   }
   {
-    Object property_list_value = READ_FIELD(o, TemplateInfo::kPropertyListOffset);
-    Object::VerifyPointer(isolate, property_list_value);
+    Object property_list__value = TaggedField<Object, TemplateInfo::kPropertyListOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, property_list__value);
   }
   {
-    Object property_accessors_value = READ_FIELD(o, TemplateInfo::kPropertyAccessorsOffset);
-    Object::VerifyPointer(isolate, property_accessors_value);
+    Object property_accessors__value = TaggedField<Object, TemplateInfo::kPropertyAccessorsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, property_accessors__value);
   }
 }
 void TorqueGeneratedClassVerifiers::TemplateObjectDescriptionVerify(TemplateObjectDescription o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsTemplateObjectDescription());
   {
-    Object raw_strings_value = READ_FIELD(o, TemplateObjectDescription::kRawStringsOffset);
-    Object::VerifyPointer(isolate, raw_strings_value);
-    CHECK(raw_strings_value.IsFixedArray());
+    Object raw_strings__value = TaggedField<Object, TemplateObjectDescription::kRawStringsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, raw_strings__value);
+    CHECK(raw_strings__value.IsFixedArray());
   }
   {
-    Object cooked_strings_value = READ_FIELD(o, TemplateObjectDescription::kCookedStringsOffset);
-    Object::VerifyPointer(isolate, cooked_strings_value);
-    CHECK(cooked_strings_value.IsFixedArray());
+    Object cooked_strings__value = TaggedField<Object, TemplateObjectDescription::kCookedStringsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, cooked_strings__value);
+    CHECK(cooked_strings__value.IsFixedArray());
   }
 }
 void TorqueGeneratedClassVerifiers::FunctionTemplateRareDataVerify(FunctionTemplateRareData o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsFunctionTemplateRareData());
   {
-    Object prototype_template_value = READ_FIELD(o, FunctionTemplateRareData::kPrototypeTemplateOffset);
-    Object::VerifyPointer(isolate, prototype_template_value);
+    Object prototype_template__value = TaggedField<Object, FunctionTemplateRareData::kPrototypeTemplateOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, prototype_template__value);
   }
   {
-    Object prototype_provider_template_value = READ_FIELD(o, FunctionTemplateRareData::kPrototypeProviderTemplateOffset);
-    Object::VerifyPointer(isolate, prototype_provider_template_value);
+    Object prototype_provider_template__value = TaggedField<Object, FunctionTemplateRareData::kPrototypeProviderTemplateOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, prototype_provider_template__value);
   }
   {
-    Object parent_template_value = READ_FIELD(o, FunctionTemplateRareData::kParentTemplateOffset);
-    Object::VerifyPointer(isolate, parent_template_value);
+    Object parent_template__value = TaggedField<Object, FunctionTemplateRareData::kParentTemplateOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, parent_template__value);
   }
   {
-    Object named_property_handler_value = READ_FIELD(o, FunctionTemplateRareData::kNamedPropertyHandlerOffset);
-    Object::VerifyPointer(isolate, named_property_handler_value);
+    Object named_property_handler__value = TaggedField<Object, FunctionTemplateRareData::kNamedPropertyHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, named_property_handler__value);
   }
   {
-    Object indexed_property_handler_value = READ_FIELD(o, FunctionTemplateRareData::kIndexedPropertyHandlerOffset);
-    Object::VerifyPointer(isolate, indexed_property_handler_value);
+    Object indexed_property_handler__value = TaggedField<Object, FunctionTemplateRareData::kIndexedPropertyHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, indexed_property_handler__value);
   }
   {
-    Object instance_template_value = READ_FIELD(o, FunctionTemplateRareData::kInstanceTemplateOffset);
-    Object::VerifyPointer(isolate, instance_template_value);
+    Object instance_template__value = TaggedField<Object, FunctionTemplateRareData::kInstanceTemplateOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, instance_template__value);
   }
   {
-    Object instance_call_handler_value = READ_FIELD(o, FunctionTemplateRareData::kInstanceCallHandlerOffset);
-    Object::VerifyPointer(isolate, instance_call_handler_value);
+    Object instance_call_handler__value = TaggedField<Object, FunctionTemplateRareData::kInstanceCallHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, instance_call_handler__value);
   }
   {
-    Object access_check_info_value = READ_FIELD(o, FunctionTemplateRareData::kAccessCheckInfoOffset);
-    Object::VerifyPointer(isolate, access_check_info_value);
+    Object access_check_info__value = TaggedField<Object, FunctionTemplateRareData::kAccessCheckInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, access_check_info__value);
   }
 }
 void TorqueGeneratedClassVerifiers::FunctionTemplateInfoVerify(FunctionTemplateInfo o, Isolate* isolate) {
   o.TemplateInfoVerify(isolate);
   CHECK(o.IsFunctionTemplateInfo());
   {
-    Object call_code_value = READ_FIELD(o, FunctionTemplateInfo::kCallCodeOffset);
-    Object::VerifyPointer(isolate, call_code_value);
+    Object call_code__value = TaggedField<Object, FunctionTemplateInfo::kCallCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, call_code__value);
   }
   {
-    Object class_name_value = READ_FIELD(o, FunctionTemplateInfo::kClassNameOffset);
-    Object::VerifyPointer(isolate, class_name_value);
+    Object class_name__value = TaggedField<Object, FunctionTemplateInfo::kClassNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, class_name__value);
   }
   {
-    Object signature_value = READ_FIELD(o, FunctionTemplateInfo::kSignatureOffset);
-    Object::VerifyPointer(isolate, signature_value);
+    Object signature__value = TaggedField<Object, FunctionTemplateInfo::kSignatureOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, signature__value);
   }
   {
-    Object function_template_rare_data_value = READ_FIELD(o, FunctionTemplateInfo::kFunctionTemplateRareDataOffset);
-    Object::VerifyPointer(isolate, function_template_rare_data_value);
+    Object function_template_rare_data__value = TaggedField<Object, FunctionTemplateInfo::kFunctionTemplateRareDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, function_template_rare_data__value);
   }
   {
-    Object shared_function_info_value = READ_FIELD(o, FunctionTemplateInfo::kSharedFunctionInfoOffset);
-    Object::VerifyPointer(isolate, shared_function_info_value);
+    Object shared_function_info__value = TaggedField<Object, FunctionTemplateInfo::kSharedFunctionInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, shared_function_info__value);
   }
   {
-    Object flag_value = READ_FIELD(o, FunctionTemplateInfo::kFlagOffset);
-    Object::VerifyPointer(isolate, flag_value);
-    CHECK(flag_value.IsSmi());
+    Object flag__value = TaggedField<Object, FunctionTemplateInfo::kFlagOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flag__value);
+    CHECK(flag__value.IsSmi());
   }
   {
-    Object cached_property_name_value = READ_FIELD(o, FunctionTemplateInfo::kCachedPropertyNameOffset);
-    Object::VerifyPointer(isolate, cached_property_name_value);
+    Object length__value = TaggedField<Object, FunctionTemplateInfo::kLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length__value);
+    CHECK(length__value.IsSmi());
+  }
+  {
+    Object cached_property_name__value = TaggedField<Object, FunctionTemplateInfo::kCachedPropertyNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, cached_property_name__value);
   }
 }
 void TorqueGeneratedClassVerifiers::ObjectTemplateInfoVerify(ObjectTemplateInfo o, Isolate* isolate) {
   o.TemplateInfoVerify(isolate);
   CHECK(o.IsObjectTemplateInfo());
   {
-    Object constructor_value = READ_FIELD(o, ObjectTemplateInfo::kConstructorOffset);
-    Object::VerifyPointer(isolate, constructor_value);
+    Object constructor__value = TaggedField<Object, ObjectTemplateInfo::kConstructorOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, constructor__value);
   }
   {
-    Object data_value = READ_FIELD(o, ObjectTemplateInfo::kDataOffset);
-    Object::VerifyPointer(isolate, data_value);
+    Object data__value = TaggedField<Object, ObjectTemplateInfo::kDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, data__value);
   }
 }
 void TorqueGeneratedClassVerifiers::PropertyArrayVerify(PropertyArray o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsPropertyArray());
   {
-    Object length_and_hash_value = READ_FIELD(o, PropertyArray::kLengthAndHashOffset);
-    Object::VerifyPointer(isolate, length_and_hash_value);
-    CHECK(length_and_hash_value.IsSmi());
+    Object length_and_hash__value = TaggedField<Object, PropertyArray::kLengthAndHashOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, length_and_hash__value);
+    CHECK(length_and_hash__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::PropertyCellVerify(PropertyCell o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsPropertyCell());
   {
-    Object name_value = READ_FIELD(o, PropertyCell::kNameOffset);
-    Object::VerifyPointer(isolate, name_value);
-    CHECK(name_value.IsName());
+    Object name__value = TaggedField<Object, PropertyCell::kNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, name__value);
+    CHECK(name__value.IsName());
   }
   {
-    Object property_details_raw_value = READ_FIELD(o, PropertyCell::kPropertyDetailsRawOffset);
-    Object::VerifyPointer(isolate, property_details_raw_value);
-    CHECK(property_details_raw_value.IsSmi());
+    Object property_details_raw__value = TaggedField<Object, PropertyCell::kPropertyDetailsRawOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, property_details_raw__value);
+    CHECK(property_details_raw__value.IsSmi());
   }
   {
-    Object value_value = READ_FIELD(o, PropertyCell::kValueOffset);
-    Object::VerifyPointer(isolate, value_value);
+    Object value__value = TaggedField<Object, PropertyCell::kValueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, value__value);
   }
   {
-    Object dependent_code_value = READ_FIELD(o, PropertyCell::kDependentCodeOffset);
-    Object::VerifyPointer(isolate, dependent_code_value);
-    CHECK(dependent_code_value.IsDependentCode());
+    Object dependent_code__value = TaggedField<Object, PropertyCell::kDependentCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, dependent_code__value);
+    CHECK(dependent_code__value.IsDependentCode());
   }
 }
 void TorqueGeneratedClassVerifiers::JSDataViewVerify(JSDataView o, Isolate* isolate) {
   o.JSArrayBufferViewVerify(isolate);
   CHECK(o.IsJSDataView());
 }
-void TorqueGeneratedClassVerifiers::ForeignVerify(Foreign o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
-  CHECK(o.IsForeign());
-}
 void TorqueGeneratedClassVerifiers::InterceptorInfoVerify(InterceptorInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsInterceptorInfo());
   {
-    Object data_value = READ_FIELD(o, InterceptorInfo::kDataOffset);
-    Object::VerifyPointer(isolate, data_value);
+    Object getter__value = TaggedField<Object, InterceptorInfo::kGetterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, getter__value);
+    CHECK(getter__value.IsNonNullForeign() || getter__value.IsUndefined() || getter__value.IsZero());
   }
   {
-    Object flags_value = READ_FIELD(o, InterceptorInfo::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi());
+    Object setter__value = TaggedField<Object, InterceptorInfo::kSetterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, setter__value);
+    CHECK(setter__value.IsNonNullForeign() || setter__value.IsUndefined() || setter__value.IsZero());
+  }
+  {
+    Object query__value = TaggedField<Object, InterceptorInfo::kQueryOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, query__value);
+    CHECK(query__value.IsNonNullForeign() || query__value.IsUndefined() || query__value.IsZero());
+  }
+  {
+    Object descriptor__value = TaggedField<Object, InterceptorInfo::kDescriptorOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, descriptor__value);
+    CHECK(descriptor__value.IsNonNullForeign() || descriptor__value.IsUndefined() || descriptor__value.IsZero());
+  }
+  {
+    Object deleter__value = TaggedField<Object, InterceptorInfo::kDeleterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, deleter__value);
+    CHECK(deleter__value.IsNonNullForeign() || deleter__value.IsUndefined() || deleter__value.IsZero());
+  }
+  {
+    Object enumerator__value = TaggedField<Object, InterceptorInfo::kEnumeratorOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, enumerator__value);
+    CHECK(enumerator__value.IsNonNullForeign() || enumerator__value.IsUndefined() || enumerator__value.IsZero());
+  }
+  {
+    Object definer__value = TaggedField<Object, InterceptorInfo::kDefinerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, definer__value);
+    CHECK(definer__value.IsNonNullForeign() || definer__value.IsUndefined() || definer__value.IsZero());
+  }
+  {
+    Object data__value = TaggedField<Object, InterceptorInfo::kDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, data__value);
+  }
+  {
+    Object flags__value = TaggedField<Object, InterceptorInfo::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::AccessCheckInfoVerify(AccessCheckInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsAccessCheckInfo());
   {
-    Object callback_value = READ_FIELD(o, AccessCheckInfo::kCallbackOffset);
-    Object::VerifyPointer(isolate, callback_value);
-    CHECK(callback_value.IsZero() || callback_value.IsForeign());
+    Object callback__value = TaggedField<Object, AccessCheckInfo::kCallbackOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, callback__value);
+    CHECK(callback__value.IsUndefined() || callback__value.IsZero() || callback__value.IsForeign());
   }
   {
-    Object named_interceptor_value = READ_FIELD(o, AccessCheckInfo::kNamedInterceptorOffset);
-    Object::VerifyPointer(isolate, named_interceptor_value);
-    CHECK(named_interceptor_value.IsZero() || named_interceptor_value.IsInterceptorInfo());
+    Object named_interceptor__value = TaggedField<Object, AccessCheckInfo::kNamedInterceptorOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, named_interceptor__value);
+    CHECK(named_interceptor__value.IsUndefined() || named_interceptor__value.IsZero() || named_interceptor__value.IsInterceptorInfo());
   }
   {
-    Object indexed_interceptor_value = READ_FIELD(o, AccessCheckInfo::kIndexedInterceptorOffset);
-    Object::VerifyPointer(isolate, indexed_interceptor_value);
-    CHECK(indexed_interceptor_value.IsZero() || indexed_interceptor_value.IsInterceptorInfo());
+    Object indexed_interceptor__value = TaggedField<Object, AccessCheckInfo::kIndexedInterceptorOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, indexed_interceptor__value);
+    CHECK(indexed_interceptor__value.IsUndefined() || indexed_interceptor__value.IsZero() || indexed_interceptor__value.IsInterceptorInfo());
   }
   {
-    Object data_value = READ_FIELD(o, AccessCheckInfo::kDataOffset);
-    Object::VerifyPointer(isolate, data_value);
+    Object data__value = TaggedField<Object, AccessCheckInfo::kDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, data__value);
   }
 }
 void TorqueGeneratedClassVerifiers::ArrayBoilerplateDescriptionVerify(ArrayBoilerplateDescription o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsArrayBoilerplateDescription());
   {
-    Object flags_value = READ_FIELD(o, ArrayBoilerplateDescription::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi());
+    Object flags__value = TaggedField<Object, ArrayBoilerplateDescription::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
   {
-    Object constant_elements_value = READ_FIELD(o, ArrayBoilerplateDescription::kConstantElementsOffset);
-    Object::VerifyPointer(isolate, constant_elements_value);
-    CHECK(constant_elements_value.IsFixedArrayBase());
+    Object constant_elements__value = TaggedField<Object, ArrayBoilerplateDescription::kConstantElementsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, constant_elements__value);
+    CHECK(constant_elements__value.IsFixedArrayBase());
   }
 }
 void TorqueGeneratedClassVerifiers::AliasedArgumentsEntryVerify(AliasedArgumentsEntry o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsAliasedArgumentsEntry());
   {
-    Object aliased_context_slot_value = READ_FIELD(o, AliasedArgumentsEntry::kAliasedContextSlotOffset);
-    Object::VerifyPointer(isolate, aliased_context_slot_value);
-    CHECK(aliased_context_slot_value.IsSmi());
+    Object aliased_context_slot__value = TaggedField<Object, AliasedArgumentsEntry::kAliasedContextSlotOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, aliased_context_slot__value);
+    CHECK(aliased_context_slot__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::CellVerify(Cell o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsCell());
   {
-    Object value_value = READ_FIELD(o, Cell::kValueOffset);
-    Object::VerifyPointer(isolate, value_value);
+    Object value__value = TaggedField<Object, Cell::kValueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, value__value);
   }
 }
 void TorqueGeneratedClassVerifiers::DataHandlerVerify(DataHandler o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsDataHandler());
   {
-    Object smi_handler_value = READ_FIELD(o, DataHandler::kSmiHandlerOffset);
-    Object::VerifyPointer(isolate, smi_handler_value);
-    CHECK(smi_handler_value.IsCode() || smi_handler_value.IsSmi());
+    Object smi_handler__value = TaggedField<Object, DataHandler::kSmiHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, smi_handler__value);
+    CHECK(smi_handler__value.IsCode() || smi_handler__value.IsSmi());
   }
   {
-    Object validity_cell_value = READ_FIELD(o, DataHandler::kValidityCellOffset);
-    Object::VerifyPointer(isolate, validity_cell_value);
-    CHECK(validity_cell_value.IsSmi() || validity_cell_value.IsCell());
+    Object validity_cell__value = TaggedField<Object, DataHandler::kValidityCellOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, validity_cell__value);
+    CHECK(validity_cell__value.IsSmi() || validity_cell__value.IsCell());
   }
 }
 void TorqueGeneratedClassVerifiers::JSGeneratorObjectVerify(JSGeneratorObject o, Isolate* isolate) {
@@ -994,407 +1244,466 @@ void TorqueGeneratedClassVerifiers::JSGeneratorObjectVerify(JSGeneratorObject o,
   // Instance type check skipped because
   // it is an instantiated abstract class.
   {
-    Object function_value = READ_FIELD(o, JSGeneratorObject::kFunctionOffset);
-    Object::VerifyPointer(isolate, function_value);
-    CHECK(function_value.IsJSFunction() || function_value.IsUndefined(isolate));
+    Object function__value = TaggedField<Object, JSGeneratorObject::kFunctionOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, function__value);
+    CHECK(function__value.IsJSFunction());
   }
   {
-    Object context_value = READ_FIELD(o, JSGeneratorObject::kContextOffset);
-    Object::VerifyPointer(isolate, context_value);
-    CHECK(context_value.IsContext() || context_value.IsUndefined(isolate));
+    Object context__value = TaggedField<Object, JSGeneratorObject::kContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, context__value);
+    CHECK(context__value.IsContext());
   }
   {
-    Object receiver_value = READ_FIELD(o, JSGeneratorObject::kReceiverOffset);
-    Object::VerifyPointer(isolate, receiver_value);
+    Object receiver__value = TaggedField<Object, JSGeneratorObject::kReceiverOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, receiver__value);
   }
   {
-    Object input_or_debug_pos_value = READ_FIELD(o, JSGeneratorObject::kInputOrDebugPosOffset);
-    Object::VerifyPointer(isolate, input_or_debug_pos_value);
+    Object input_or_debug_pos__value = TaggedField<Object, JSGeneratorObject::kInputOrDebugPosOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, input_or_debug_pos__value);
   }
   {
-    Object resume_mode_value = READ_FIELD(o, JSGeneratorObject::kResumeModeOffset);
-    Object::VerifyPointer(isolate, resume_mode_value);
-    CHECK(resume_mode_value.IsSmi() || resume_mode_value.IsUndefined(isolate));
+    Object resume_mode__value = TaggedField<Object, JSGeneratorObject::kResumeModeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, resume_mode__value);
+    CHECK(resume_mode__value.IsSmi());
   }
   {
-    Object continuation_value = READ_FIELD(o, JSGeneratorObject::kContinuationOffset);
-    Object::VerifyPointer(isolate, continuation_value);
-    CHECK(continuation_value.IsSmi() || continuation_value.IsUndefined(isolate));
+    Object continuation__value = TaggedField<Object, JSGeneratorObject::kContinuationOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, continuation__value);
+    CHECK(continuation__value.IsSmi());
   }
   {
-    Object parameters_and_registers_value = READ_FIELD(o, JSGeneratorObject::kParametersAndRegistersOffset);
-    Object::VerifyPointer(isolate, parameters_and_registers_value);
-    CHECK(parameters_and_registers_value.IsFixedArray() || parameters_and_registers_value.IsUndefined(isolate));
+    Object parameters_and_registers__value = TaggedField<Object, JSGeneratorObject::kParametersAndRegistersOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, parameters_and_registers__value);
+    CHECK(parameters_and_registers__value.IsFixedArray());
   }
 }
 void TorqueGeneratedClassVerifiers::JSAsyncFunctionObjectVerify(JSAsyncFunctionObject o, Isolate* isolate) {
   o.JSGeneratorObjectVerify(isolate);
   CHECK(o.IsJSAsyncFunctionObject());
   {
-    Object promise_value = READ_FIELD(o, JSAsyncFunctionObject::kPromiseOffset);
-    Object::VerifyPointer(isolate, promise_value);
-    CHECK(promise_value.IsJSPromise() || promise_value.IsUndefined(isolate));
+    Object promise__value = TaggedField<Object, JSAsyncFunctionObject::kPromiseOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, promise__value);
+    CHECK(promise__value.IsJSPromise());
   }
 }
 void TorqueGeneratedClassVerifiers::JSAsyncGeneratorObjectVerify(JSAsyncGeneratorObject o, Isolate* isolate) {
   o.JSGeneratorObjectVerify(isolate);
   CHECK(o.IsJSAsyncGeneratorObject());
   {
-    Object queue_value = READ_FIELD(o, JSAsyncGeneratorObject::kQueueOffset);
-    Object::VerifyPointer(isolate, queue_value);
-    CHECK(queue_value.IsHeapObject() || queue_value.IsUndefined(isolate));
+    Object queue__value = TaggedField<Object, JSAsyncGeneratorObject::kQueueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, queue__value);
+    CHECK(queue__value.IsHeapObject());
   }
   {
-    Object is_awaiting_value = READ_FIELD(o, JSAsyncGeneratorObject::kIsAwaitingOffset);
-    Object::VerifyPointer(isolate, is_awaiting_value);
-    CHECK(is_awaiting_value.IsSmi() || is_awaiting_value.IsUndefined(isolate));
+    Object is_awaiting__value = TaggedField<Object, JSAsyncGeneratorObject::kIsAwaitingOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, is_awaiting__value);
+    CHECK(is_awaiting__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::JSPromiseVerify(JSPromise o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSPromise());
   {
-    Object reactions_or_result_value = READ_FIELD(o, JSPromise::kReactionsOrResultOffset);
-    Object::VerifyPointer(isolate, reactions_or_result_value);
+    Object reactions_or_result__value = TaggedField<Object, JSPromise::kReactionsOrResultOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, reactions_or_result__value);
   }
   {
-    Object flags_value = READ_FIELD(o, JSPromise::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi() || flags_value.IsUndefined(isolate));
+    Object flags__value = TaggedField<Object, JSPromise::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::MicrotaskVerify(Microtask o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsMicrotask());
 }
 void TorqueGeneratedClassVerifiers::CallbackTaskVerify(CallbackTask o, Isolate* isolate) {
   o.MicrotaskVerify(isolate);
   CHECK(o.IsCallbackTask());
   {
-    Object callback_value = READ_FIELD(o, CallbackTask::kCallbackOffset);
-    Object::VerifyPointer(isolate, callback_value);
-    CHECK(callback_value.IsForeign());
+    Object callback__value = TaggedField<Object, CallbackTask::kCallbackOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, callback__value);
+    CHECK(callback__value.IsForeign());
   }
   {
-    Object data_value = READ_FIELD(o, CallbackTask::kDataOffset);
-    Object::VerifyPointer(isolate, data_value);
-    CHECK(data_value.IsForeign());
+    Object data__value = TaggedField<Object, CallbackTask::kDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, data__value);
+    CHECK(data__value.IsForeign());
   }
 }
 void TorqueGeneratedClassVerifiers::CallableTaskVerify(CallableTask o, Isolate* isolate) {
   o.MicrotaskVerify(isolate);
   CHECK(o.IsCallableTask());
   {
-    Object callable_value = READ_FIELD(o, CallableTask::kCallableOffset);
-    Object::VerifyPointer(isolate, callable_value);
-    CHECK(callable_value.IsJSReceiver());
+    Object callable__value = TaggedField<Object, CallableTask::kCallableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, callable__value);
+    CHECK(callable__value.IsJSReceiver());
   }
   {
-    Object context_value = READ_FIELD(o, CallableTask::kContextOffset);
-    Object::VerifyPointer(isolate, context_value);
-    CHECK(context_value.IsContext());
+    Object context__value = TaggedField<Object, CallableTask::kContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, context__value);
+    CHECK(context__value.IsContext());
   }
 }
 void TorqueGeneratedClassVerifiers::StackFrameInfoVerify(StackFrameInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsStackFrameInfo());
   {
-    Object line_number_value = READ_FIELD(o, StackFrameInfo::kLineNumberOffset);
-    Object::VerifyPointer(isolate, line_number_value);
-    CHECK(line_number_value.IsSmi());
+    Object line_number__value = TaggedField<Object, StackFrameInfo::kLineNumberOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, line_number__value);
+    CHECK(line_number__value.IsSmi());
   }
   {
-    Object column_number_value = READ_FIELD(o, StackFrameInfo::kColumnNumberOffset);
-    Object::VerifyPointer(isolate, column_number_value);
-    CHECK(column_number_value.IsSmi());
+    Object column_number__value = TaggedField<Object, StackFrameInfo::kColumnNumberOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, column_number__value);
+    CHECK(column_number__value.IsSmi());
   }
   {
-    Object promise_all_index_value = READ_FIELD(o, StackFrameInfo::kPromiseAllIndexOffset);
-    Object::VerifyPointer(isolate, promise_all_index_value);
-    CHECK(promise_all_index_value.IsSmi());
+    Object promise_all_index__value = TaggedField<Object, StackFrameInfo::kPromiseAllIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, promise_all_index__value);
+    CHECK(promise_all_index__value.IsSmi());
   }
   {
-    Object script_id_value = READ_FIELD(o, StackFrameInfo::kScriptIdOffset);
-    Object::VerifyPointer(isolate, script_id_value);
-    CHECK(script_id_value.IsSmi());
+    Object script_id__value = TaggedField<Object, StackFrameInfo::kScriptIdOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script_id__value);
+    CHECK(script_id__value.IsSmi());
   }
   {
-    Object script_name_value = READ_FIELD(o, StackFrameInfo::kScriptNameOffset);
-    Object::VerifyPointer(isolate, script_name_value);
+    Object script_name__value = TaggedField<Object, StackFrameInfo::kScriptNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script_name__value);
+    CHECK(script_name__value.IsNull() || script_name__value.IsUndefined() || script_name__value.IsString());
   }
   {
-    Object script_name_or_source_url_value = READ_FIELD(o, StackFrameInfo::kScriptNameOrSourceUrlOffset);
-    Object::VerifyPointer(isolate, script_name_or_source_url_value);
+    Object script_name_or_source_url__value = TaggedField<Object, StackFrameInfo::kScriptNameOrSourceUrlOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script_name_or_source_url__value);
+    CHECK(script_name_or_source_url__value.IsNull() || script_name_or_source_url__value.IsUndefined() || script_name_or_source_url__value.IsString());
   }
   {
-    Object function_name_value = READ_FIELD(o, StackFrameInfo::kFunctionNameOffset);
-    Object::VerifyPointer(isolate, function_name_value);
+    Object function_name__value = TaggedField<Object, StackFrameInfo::kFunctionNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, function_name__value);
+    CHECK(function_name__value.IsNull() || function_name__value.IsUndefined() || function_name__value.IsString());
   }
   {
-    Object wasm_module_name_value = READ_FIELD(o, StackFrameInfo::kWasmModuleNameOffset);
-    Object::VerifyPointer(isolate, wasm_module_name_value);
+    Object method_name__value = TaggedField<Object, StackFrameInfo::kMethodNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, method_name__value);
+    CHECK(method_name__value.IsNull() || method_name__value.IsUndefined() || method_name__value.IsString());
   }
   {
-    Object flag_value = READ_FIELD(o, StackFrameInfo::kFlagOffset);
-    Object::VerifyPointer(isolate, flag_value);
-    CHECK(flag_value.IsSmi());
+    Object type_name__value = TaggedField<Object, StackFrameInfo::kTypeNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, type_name__value);
+    CHECK(type_name__value.IsNull() || type_name__value.IsUndefined() || type_name__value.IsString());
+  }
+  {
+    Object eval_origin__value = TaggedField<Object, StackFrameInfo::kEvalOriginOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, eval_origin__value);
+    CHECK(eval_origin__value.IsNull() || eval_origin__value.IsUndefined() || eval_origin__value.IsString());
+  }
+  {
+    Object wasm_module_name__value = TaggedField<Object, StackFrameInfo::kWasmModuleNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, wasm_module_name__value);
+    CHECK(wasm_module_name__value.IsNull() || wasm_module_name__value.IsUndefined() || wasm_module_name__value.IsString());
+  }
+  {
+    Object flag__value = TaggedField<Object, StackFrameInfo::kFlagOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flag__value);
+    CHECK(flag__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::StackTraceFrameVerify(StackTraceFrame o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsStackTraceFrame());
   {
-    Object frame_array_value = READ_FIELD(o, StackTraceFrame::kFrameArrayOffset);
-    Object::VerifyPointer(isolate, frame_array_value);
+    Object frame_array__value = TaggedField<Object, StackTraceFrame::kFrameArrayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, frame_array__value);
+    CHECK(frame_array__value.IsFrameArray() || frame_array__value.IsUndefined());
   }
   {
-    Object frame_index_value = READ_FIELD(o, StackTraceFrame::kFrameIndexOffset);
-    Object::VerifyPointer(isolate, frame_index_value);
-    CHECK(frame_index_value.IsSmi());
+    Object frame_index__value = TaggedField<Object, StackTraceFrame::kFrameIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, frame_index__value);
+    CHECK(frame_index__value.IsSmi());
   }
   {
-    Object frame_info_value = READ_FIELD(o, StackTraceFrame::kFrameInfoOffset);
-    Object::VerifyPointer(isolate, frame_info_value);
+    Object frame_info__value = TaggedField<Object, StackTraceFrame::kFrameInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, frame_info__value);
+    CHECK(frame_info__value.IsUndefined() || frame_info__value.IsStackFrameInfo());
   }
   {
-    Object id_value = READ_FIELD(o, StackTraceFrame::kIdOffset);
-    Object::VerifyPointer(isolate, id_value);
-    CHECK(id_value.IsSmi());
+    Object id__value = TaggedField<Object, StackTraceFrame::kIdOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, id__value);
+    CHECK(id__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::ClassPositionsVerify(ClassPositions o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsClassPositions());
   {
-    Object start_value = READ_FIELD(o, ClassPositions::kStartOffset);
-    Object::VerifyPointer(isolate, start_value);
-    CHECK(start_value.IsSmi());
+    Object start__value = TaggedField<Object, ClassPositions::kStartOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, start__value);
+    CHECK(start__value.IsSmi());
   }
   {
-    Object end_value = READ_FIELD(o, ClassPositions::kEndOffset);
-    Object::VerifyPointer(isolate, end_value);
-    CHECK(end_value.IsSmi());
+    Object end__value = TaggedField<Object, ClassPositions::kEndOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, end__value);
+    CHECK(end__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmExportedFunctionDataVerify(WasmExportedFunctionData o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsWasmExportedFunctionData());
   {
-    Object wrapper_code_value = READ_FIELD(o, WasmExportedFunctionData::kWrapperCodeOffset);
-    Object::VerifyPointer(isolate, wrapper_code_value);
-    CHECK(wrapper_code_value.IsCode());
+    Object wrapper_code__value = TaggedField<Object, WasmExportedFunctionData::kWrapperCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, wrapper_code__value);
+    CHECK(wrapper_code__value.IsCode());
   }
   {
-    Object instance_value = READ_FIELD(o, WasmExportedFunctionData::kInstanceOffset);
-    Object::VerifyPointer(isolate, instance_value);
-    CHECK(instance_value.IsWasmInstanceObject());
+    Object instance__value = TaggedField<Object, WasmExportedFunctionData::kInstanceOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, instance__value);
+    CHECK(instance__value.IsWasmInstanceObject());
   }
   {
-    Object jump_table_offset_value = READ_FIELD(o, WasmExportedFunctionData::kJumpTableOffsetOffset);
-    Object::VerifyPointer(isolate, jump_table_offset_value);
-    CHECK(jump_table_offset_value.IsSmi());
+    Object jump_table_offset__value = TaggedField<Object, WasmExportedFunctionData::kJumpTableOffsetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, jump_table_offset__value);
+    CHECK(jump_table_offset__value.IsSmi());
   }
   {
-    Object function_index_value = READ_FIELD(o, WasmExportedFunctionData::kFunctionIndexOffset);
-    Object::VerifyPointer(isolate, function_index_value);
-    CHECK(function_index_value.IsSmi());
+    Object function_index__value = TaggedField<Object, WasmExportedFunctionData::kFunctionIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, function_index__value);
+    CHECK(function_index__value.IsSmi());
+  }
+  {
+    Object c_wrapper_code__value = TaggedField<Object, WasmExportedFunctionData::kCWrapperCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, c_wrapper_code__value);
+  }
+  {
+    Object wasm_call_target__value = TaggedField<Object, WasmExportedFunctionData::kWasmCallTargetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, wasm_call_target__value);
+    CHECK(wasm_call_target__value.IsSmi());
+  }
+  {
+    Object packed_args_size__value = TaggedField<Object, WasmExportedFunctionData::kPackedArgsSizeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, packed_args_size__value);
+    CHECK(packed_args_size__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmJSFunctionDataVerify(WasmJSFunctionData o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsWasmJSFunctionData());
   {
-    Object wrapper_code_value = READ_FIELD(o, WasmJSFunctionData::kWrapperCodeOffset);
-    Object::VerifyPointer(isolate, wrapper_code_value);
-    CHECK(wrapper_code_value.IsCode());
+    Object callable__value = TaggedField<Object, WasmJSFunctionData::kCallableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, callable__value);
+    CHECK(callable__value.IsJSReceiver());
   }
   {
-    Object serialized_return_count_value = READ_FIELD(o, WasmJSFunctionData::kSerializedReturnCountOffset);
-    Object::VerifyPointer(isolate, serialized_return_count_value);
-    CHECK(serialized_return_count_value.IsSmi());
+    Object wrapper_code__value = TaggedField<Object, WasmJSFunctionData::kWrapperCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, wrapper_code__value);
+    CHECK(wrapper_code__value.IsCode());
   }
   {
-    Object serialized_parameter_count_value = READ_FIELD(o, WasmJSFunctionData::kSerializedParameterCountOffset);
-    Object::VerifyPointer(isolate, serialized_parameter_count_value);
-    CHECK(serialized_parameter_count_value.IsSmi());
+    Object serialized_return_count__value = TaggedField<Object, WasmJSFunctionData::kSerializedReturnCountOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, serialized_return_count__value);
+    CHECK(serialized_return_count__value.IsSmi());
   }
   {
-    Object serialized_signature_value = READ_FIELD(o, WasmJSFunctionData::kSerializedSignatureOffset);
-    Object::VerifyPointer(isolate, serialized_signature_value);
-    CHECK(serialized_signature_value.IsByteArray());
+    Object serialized_parameter_count__value = TaggedField<Object, WasmJSFunctionData::kSerializedParameterCountOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, serialized_parameter_count__value);
+    CHECK(serialized_parameter_count__value.IsSmi());
+  }
+  {
+    Object serialized_signature__value = TaggedField<Object, WasmJSFunctionData::kSerializedSignatureOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, serialized_signature__value);
+    CHECK(serialized_signature__value.IsByteArray());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmCapiFunctionDataVerify(WasmCapiFunctionData o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsWasmCapiFunctionData());
   {
-    Object wrapper_code_value = READ_FIELD(o, WasmCapiFunctionData::kWrapperCodeOffset);
-    Object::VerifyPointer(isolate, wrapper_code_value);
-    CHECK(wrapper_code_value.IsCode());
+    Object wrapper_code__value = TaggedField<Object, WasmCapiFunctionData::kWrapperCodeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, wrapper_code__value);
+    CHECK(wrapper_code__value.IsCode());
   }
   {
-    Object serialized_signature_value = READ_FIELD(o, WasmCapiFunctionData::kSerializedSignatureOffset);
-    Object::VerifyPointer(isolate, serialized_signature_value);
-    CHECK(serialized_signature_value.IsByteArray());
+    Object serialized_signature__value = TaggedField<Object, WasmCapiFunctionData::kSerializedSignatureOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, serialized_signature__value);
+    CHECK(serialized_signature__value.IsByteArray());
+  }
+}
+void TorqueGeneratedClassVerifiers::WasmIndirectFunctionTableVerify(WasmIndirectFunctionTable o, Isolate* isolate) {
+  o.StructVerify(isolate);
+  CHECK(o.IsWasmIndirectFunctionTable());
+  {
+    Object managed_native_allocations__value = TaggedField<Object, WasmIndirectFunctionTable::kManagedNativeAllocationsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, managed_native_allocations__value);
+    CHECK(managed_native_allocations__value.IsUndefined() || managed_native_allocations__value.IsForeign());
+  }
+  {
+    Object refs__value = TaggedField<Object, WasmIndirectFunctionTable::kRefsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, refs__value);
+    CHECK(refs__value.IsFixedArray());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmDebugInfoVerify(WasmDebugInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsWasmDebugInfo());
   {
-    Object instance_value = READ_FIELD(o, WasmDebugInfo::kInstanceOffset);
-    Object::VerifyPointer(isolate, instance_value);
-    CHECK(instance_value.IsWasmInstanceObject());
+    Object instance__value = TaggedField<Object, WasmDebugInfo::kInstanceOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, instance__value);
+    CHECK(instance__value.IsWasmInstanceObject());
   }
   {
-    Object interpreter_handle_value = READ_FIELD(o, WasmDebugInfo::kInterpreterHandleOffset);
-    Object::VerifyPointer(isolate, interpreter_handle_value);
-    CHECK(interpreter_handle_value.IsUndefined() || interpreter_handle_value.IsForeign());
+    Object interpreter_handle__value = TaggedField<Object, WasmDebugInfo::kInterpreterHandleOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, interpreter_handle__value);
+    CHECK(interpreter_handle__value.IsUndefined() || interpreter_handle__value.IsForeign());
   }
   {
-    Object locals_names_value = READ_FIELD(o, WasmDebugInfo::kLocalsNamesOffset);
-    Object::VerifyPointer(isolate, locals_names_value);
-    CHECK(locals_names_value.IsUndefined() || locals_names_value.IsFixedArray());
+    Object locals_names__value = TaggedField<Object, WasmDebugInfo::kLocalsNamesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, locals_names__value);
+    CHECK(locals_names__value.IsUndefined() || locals_names__value.IsFixedArray());
   }
   {
-    Object c_wasm_entries_value = READ_FIELD(o, WasmDebugInfo::kCWasmEntriesOffset);
-    Object::VerifyPointer(isolate, c_wasm_entries_value);
-    CHECK(c_wasm_entries_value.IsUndefined() || c_wasm_entries_value.IsFixedArray());
+    Object c_wasm_entries__value = TaggedField<Object, WasmDebugInfo::kCWasmEntriesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, c_wasm_entries__value);
+    CHECK(c_wasm_entries__value.IsUndefined() || c_wasm_entries__value.IsFixedArray());
   }
   {
-    Object c_wasm_entry_map_value = READ_FIELD(o, WasmDebugInfo::kCWasmEntryMapOffset);
-    Object::VerifyPointer(isolate, c_wasm_entry_map_value);
-    CHECK(c_wasm_entry_map_value.IsUndefined() || c_wasm_entry_map_value.IsForeign());
+    Object c_wasm_entry_map__value = TaggedField<Object, WasmDebugInfo::kCWasmEntryMapOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, c_wasm_entry_map__value);
+    CHECK(c_wasm_entry_map__value.IsUndefined() || c_wasm_entry_map__value.IsForeign());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmExceptionTagVerify(WasmExceptionTag o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsWasmExceptionTag());
   {
-    Object index_value = READ_FIELD(o, WasmExceptionTag::kIndexOffset);
-    Object::VerifyPointer(isolate, index_value);
-    CHECK(index_value.IsSmi());
+    Object index__value = TaggedField<Object, WasmExceptionTag::kIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, index__value);
+    CHECK(index__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::AsyncGeneratorRequestVerify(AsyncGeneratorRequest o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsAsyncGeneratorRequest());
   {
-    Object next_value = READ_FIELD(o, AsyncGeneratorRequest::kNextOffset);
-    Object::VerifyPointer(isolate, next_value);
-    CHECK(next_value.IsUndefined() || next_value.IsAsyncGeneratorRequest());
+    Object next__value = TaggedField<Object, AsyncGeneratorRequest::kNextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, next__value);
+    CHECK(next__value.IsUndefined() || next__value.IsAsyncGeneratorRequest());
   }
   {
-    Object resume_mode_value = READ_FIELD(o, AsyncGeneratorRequest::kResumeModeOffset);
-    Object::VerifyPointer(isolate, resume_mode_value);
-    CHECK(resume_mode_value.IsSmi());
+    Object resume_mode__value = TaggedField<Object, AsyncGeneratorRequest::kResumeModeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, resume_mode__value);
+    CHECK(resume_mode__value.IsSmi());
   }
   {
-    Object value_value = READ_FIELD(o, AsyncGeneratorRequest::kValueOffset);
-    Object::VerifyPointer(isolate, value_value);
+    Object value__value = TaggedField<Object, AsyncGeneratorRequest::kValueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, value__value);
   }
   {
-    Object promise_value = READ_FIELD(o, AsyncGeneratorRequest::kPromiseOffset);
-    Object::VerifyPointer(isolate, promise_value);
-    CHECK(promise_value.IsJSPromise());
+    Object promise__value = TaggedField<Object, AsyncGeneratorRequest::kPromiseOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, promise__value);
+    CHECK(promise__value.IsJSPromise());
   }
 }
-void TorqueGeneratedClassVerifiers::ModuleInfoEntryVerify(ModuleInfoEntry o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
-  CHECK(o.IsModuleInfoEntry());
+void TorqueGeneratedClassVerifiers::SourceTextModuleInfoEntryVerify(SourceTextModuleInfoEntry o, Isolate* isolate) {
+  o.StructVerify(isolate);
+  CHECK(o.IsSourceTextModuleInfoEntry());
   {
-    Object export_name_value = READ_FIELD(o, ModuleInfoEntry::kExportNameOffset);
-    Object::VerifyPointer(isolate, export_name_value);
-    CHECK(export_name_value.IsUndefined() || export_name_value.IsString());
+    Object export_name__value = TaggedField<Object, SourceTextModuleInfoEntry::kExportNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, export_name__value);
+    CHECK(export_name__value.IsUndefined() || export_name__value.IsString());
   }
   {
-    Object local_name_value = READ_FIELD(o, ModuleInfoEntry::kLocalNameOffset);
-    Object::VerifyPointer(isolate, local_name_value);
-    CHECK(local_name_value.IsUndefined() || local_name_value.IsString());
+    Object local_name__value = TaggedField<Object, SourceTextModuleInfoEntry::kLocalNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, local_name__value);
+    CHECK(local_name__value.IsUndefined() || local_name__value.IsString());
   }
   {
-    Object import_name_value = READ_FIELD(o, ModuleInfoEntry::kImportNameOffset);
-    Object::VerifyPointer(isolate, import_name_value);
-    CHECK(import_name_value.IsUndefined() || import_name_value.IsString());
+    Object import_name__value = TaggedField<Object, SourceTextModuleInfoEntry::kImportNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, import_name__value);
+    CHECK(import_name__value.IsUndefined() || import_name__value.IsString());
   }
   {
-    Object module_request_value = READ_FIELD(o, ModuleInfoEntry::kModuleRequestOffset);
-    Object::VerifyPointer(isolate, module_request_value);
-    CHECK(module_request_value.IsSmi());
+    Object module_request__value = TaggedField<Object, SourceTextModuleInfoEntry::kModuleRequestOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, module_request__value);
+    CHECK(module_request__value.IsSmi());
   }
   {
-    Object cell_index_value = READ_FIELD(o, ModuleInfoEntry::kCellIndexOffset);
-    Object::VerifyPointer(isolate, cell_index_value);
-    CHECK(cell_index_value.IsSmi());
+    Object cell_index__value = TaggedField<Object, SourceTextModuleInfoEntry::kCellIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, cell_index__value);
+    CHECK(cell_index__value.IsSmi());
   }
   {
-    Object beg_pos_value = READ_FIELD(o, ModuleInfoEntry::kBegPosOffset);
-    Object::VerifyPointer(isolate, beg_pos_value);
-    CHECK(beg_pos_value.IsSmi());
+    Object beg_pos__value = TaggedField<Object, SourceTextModuleInfoEntry::kBegPosOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, beg_pos__value);
+    CHECK(beg_pos__value.IsSmi());
   }
   {
-    Object end_pos_value = READ_FIELD(o, ModuleInfoEntry::kEndPosOffset);
-    Object::VerifyPointer(isolate, end_pos_value);
-    CHECK(end_pos_value.IsSmi());
+    Object end_pos__value = TaggedField<Object, SourceTextModuleInfoEntry::kEndPosOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, end_pos__value);
+    CHECK(end_pos__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::PromiseCapabilityVerify(PromiseCapability o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsPromiseCapability());
   {
-    Object promise_value = READ_FIELD(o, PromiseCapability::kPromiseOffset);
-    Object::VerifyPointer(isolate, promise_value);
-    CHECK(promise_value.IsUndefined() || promise_value.IsJSReceiver());
+    Object promise__value = TaggedField<Object, PromiseCapability::kPromiseOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, promise__value);
+    CHECK(promise__value.IsUndefined() || promise__value.IsJSReceiver());
   }
   {
-    Object resolve_value = READ_FIELD(o, PromiseCapability::kResolveOffset);
-    Object::VerifyPointer(isolate, resolve_value);
+    Object resolve__value = TaggedField<Object, PromiseCapability::kResolveOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, resolve__value);
   }
   {
-    Object reject_value = READ_FIELD(o, PromiseCapability::kRejectOffset);
-    Object::VerifyPointer(isolate, reject_value);
+    Object reject__value = TaggedField<Object, PromiseCapability::kRejectOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, reject__value);
   }
 }
 void TorqueGeneratedClassVerifiers::PromiseReactionVerify(PromiseReaction o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsPromiseReaction());
   {
-    Object next_value = READ_FIELD(o, PromiseReaction::kNextOffset);
-    Object::VerifyPointer(isolate, next_value);
-    CHECK(next_value.IsZero() || next_value.IsPromiseReaction());
+    Object next__value = TaggedField<Object, PromiseReaction::kNextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, next__value);
+    CHECK(next__value.IsZero() || next__value.IsPromiseReaction());
   }
   {
-    Object reject_handler_value = READ_FIELD(o, PromiseReaction::kRejectHandlerOffset);
-    Object::VerifyPointer(isolate, reject_handler_value);
-    CHECK(reject_handler_value.IsUndefined() || reject_handler_value.IsJSBoundFunction() || reject_handler_value.IsJSFunction() || reject_handler_value.IsJSProxy());
+    Object reject_handler__value = TaggedField<Object, PromiseReaction::kRejectHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, reject_handler__value);
+    CHECK(reject_handler__value.IsCallableApiObject() || reject_handler__value.IsCallableJSProxy() || reject_handler__value.IsUndefined() || reject_handler__value.IsJSBoundFunction() || reject_handler__value.IsJSFunction());
   }
   {
-    Object fulfill_handler_value = READ_FIELD(o, PromiseReaction::kFulfillHandlerOffset);
-    Object::VerifyPointer(isolate, fulfill_handler_value);
-    CHECK(fulfill_handler_value.IsUndefined() || fulfill_handler_value.IsJSBoundFunction() || fulfill_handler_value.IsJSFunction() || fulfill_handler_value.IsJSProxy());
+    Object fulfill_handler__value = TaggedField<Object, PromiseReaction::kFulfillHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, fulfill_handler__value);
+    CHECK(fulfill_handler__value.IsCallableApiObject() || fulfill_handler__value.IsCallableJSProxy() || fulfill_handler__value.IsUndefined() || fulfill_handler__value.IsJSBoundFunction() || fulfill_handler__value.IsJSFunction());
   }
   {
-    Object promise_or_capability_value = READ_FIELD(o, PromiseReaction::kPromiseOrCapabilityOffset);
-    Object::VerifyPointer(isolate, promise_or_capability_value);
-    CHECK(promise_or_capability_value.IsUndefined() || promise_or_capability_value.IsJSPromise() || promise_or_capability_value.IsPromiseCapability());
+    Object promise_or_capability__value = TaggedField<Object, PromiseReaction::kPromiseOrCapabilityOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, promise_or_capability__value);
+    CHECK(promise_or_capability__value.IsUndefined() || promise_or_capability__value.IsJSPromise() || promise_or_capability__value.IsPromiseCapability());
   }
 }
 void TorqueGeneratedClassVerifiers::PromiseReactionJobTaskVerify(PromiseReactionJobTask o, Isolate* isolate) {
   o.MicrotaskVerify(isolate);
   CHECK(o.IsPromiseReactionJobTask());
   {
-    Object argument_value = READ_FIELD(o, PromiseReactionJobTask::kArgumentOffset);
-    Object::VerifyPointer(isolate, argument_value);
+    Object argument__value = TaggedField<Object, PromiseReactionJobTask::kArgumentOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, argument__value);
   }
   {
-    Object context_value = READ_FIELD(o, PromiseReactionJobTask::kContextOffset);
-    Object::VerifyPointer(isolate, context_value);
-    CHECK(context_value.IsContext());
+    Object context__value = TaggedField<Object, PromiseReactionJobTask::kContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, context__value);
+    CHECK(context__value.IsContext());
   }
   {
-    Object promise_or_capability_value = READ_FIELD(o, PromiseReactionJobTask::kPromiseOrCapabilityOffset);
-    Object::VerifyPointer(isolate, promise_or_capability_value);
-    CHECK(promise_or_capability_value.IsUndefined() || promise_or_capability_value.IsJSPromise() || promise_or_capability_value.IsPromiseCapability());
+    Object handler__value = TaggedField<Object, PromiseReactionJobTask::kHandlerOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, handler__value);
+    CHECK(handler__value.IsCallableApiObject() || handler__value.IsCallableJSProxy() || handler__value.IsUndefined() || handler__value.IsJSBoundFunction() || handler__value.IsJSFunction());
+  }
+  {
+    Object promise_or_capability__value = TaggedField<Object, PromiseReactionJobTask::kPromiseOrCapabilityOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, promise_or_capability__value);
+    CHECK(promise_or_capability__value.IsUndefined() || promise_or_capability__value.IsJSPromise() || promise_or_capability__value.IsPromiseCapability());
   }
 }
 void TorqueGeneratedClassVerifiers::PromiseFulfillReactionJobTaskVerify(PromiseFulfillReactionJobTask o, Isolate* isolate) {
@@ -1409,77 +1718,77 @@ void TorqueGeneratedClassVerifiers::PromiseResolveThenableJobTaskVerify(PromiseR
   o.MicrotaskVerify(isolate);
   CHECK(o.IsPromiseResolveThenableJobTask());
   {
-    Object context_value = READ_FIELD(o, PromiseResolveThenableJobTask::kContextOffset);
-    Object::VerifyPointer(isolate, context_value);
-    CHECK(context_value.IsContext());
+    Object context__value = TaggedField<Object, PromiseResolveThenableJobTask::kContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, context__value);
+    CHECK(context__value.IsContext());
   }
   {
-    Object promise_to_resolve_value = READ_FIELD(o, PromiseResolveThenableJobTask::kPromiseToResolveOffset);
-    Object::VerifyPointer(isolate, promise_to_resolve_value);
-    CHECK(promise_to_resolve_value.IsJSPromise());
+    Object promise_to_resolve__value = TaggedField<Object, PromiseResolveThenableJobTask::kPromiseToResolveOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, promise_to_resolve__value);
+    CHECK(promise_to_resolve__value.IsJSPromise());
   }
   {
-    Object then_value = READ_FIELD(o, PromiseResolveThenableJobTask::kThenOffset);
-    Object::VerifyPointer(isolate, then_value);
-    CHECK(then_value.IsJSReceiver());
+    Object then__value = TaggedField<Object, PromiseResolveThenableJobTask::kThenOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, then__value);
+    CHECK(then__value.IsJSReceiver());
   }
   {
-    Object thenable_value = READ_FIELD(o, PromiseResolveThenableJobTask::kThenableOffset);
-    Object::VerifyPointer(isolate, thenable_value);
-    CHECK(thenable_value.IsJSReceiver());
+    Object thenable__value = TaggedField<Object, PromiseResolveThenableJobTask::kThenableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, thenable__value);
+    CHECK(thenable__value.IsJSReceiver());
   }
 }
 void TorqueGeneratedClassVerifiers::JSRegExpVerify(JSRegExp o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSRegExp());
   {
-    Object data_value = READ_FIELD(o, JSRegExp::kDataOffset);
-    Object::VerifyPointer(isolate, data_value);
-    CHECK(data_value.IsUndefined() || data_value.IsFixedArray() || data_value.IsUndefined(isolate));
+    Object data__value = TaggedField<Object, JSRegExp::kDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, data__value);
+    CHECK(data__value.IsUndefined() || data__value.IsFixedArray());
   }
   {
-    Object source_value = READ_FIELD(o, JSRegExp::kSourceOffset);
-    Object::VerifyPointer(isolate, source_value);
-    CHECK(source_value.IsUndefined() || source_value.IsString() || source_value.IsUndefined(isolate));
+    Object source__value = TaggedField<Object, JSRegExp::kSourceOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, source__value);
+    CHECK(source__value.IsUndefined() || source__value.IsString());
   }
   {
-    Object flags_value = READ_FIELD(o, JSRegExp::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi() || flags_value.IsUndefined() || flags_value.IsUndefined(isolate));
+    Object flags__value = TaggedField<Object, JSRegExp::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi() || flags__value.IsUndefined());
   }
 }
 void TorqueGeneratedClassVerifiers::JSRegExpResultVerify(JSRegExpResult o, Isolate* isolate) {
   o.JSArrayVerify(isolate);
   CHECK(o.IsJSRegExpResult());
   {
-    Object index_value = READ_FIELD(o, JSRegExpResult::kIndexOffset);
-    Object::VerifyPointer(isolate, index_value);
+    Object index__value = TaggedField<Object, JSRegExpResult::kIndexOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, index__value);
   }
   {
-    Object input_value = READ_FIELD(o, JSRegExpResult::kInputOffset);
-    Object::VerifyPointer(isolate, input_value);
+    Object input__value = TaggedField<Object, JSRegExpResult::kInputOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, input__value);
   }
   {
-    Object groups_value = READ_FIELD(o, JSRegExpResult::kGroupsOffset);
-    Object::VerifyPointer(isolate, groups_value);
+    Object groups__value = TaggedField<Object, JSRegExpResult::kGroupsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, groups__value);
   }
 }
 void TorqueGeneratedClassVerifiers::JSRegExpStringIteratorVerify(JSRegExpStringIterator o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsJSRegExpStringIterator());
   {
-    Object iterating_reg_exp_value = READ_FIELD(o, JSRegExpStringIterator::kIteratingRegExpOffset);
-    Object::VerifyPointer(isolate, iterating_reg_exp_value);
+    Object iterating_reg_exp__value = TaggedField<Object, JSRegExpStringIterator::kIteratingRegExpOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, iterating_reg_exp__value);
   }
   {
-    Object iterated_string_value = READ_FIELD(o, JSRegExpStringIterator::kIteratedStringOffset);
-    Object::VerifyPointer(isolate, iterated_string_value);
-    CHECK(iterated_string_value.IsString() || iterated_string_value.IsUndefined(isolate));
+    Object iterated_string__value = TaggedField<Object, JSRegExpStringIterator::kIteratedStringOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, iterated_string__value);
+    CHECK(iterated_string__value.IsString());
   }
   {
-    Object flags_value = READ_FIELD(o, JSRegExpStringIterator::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi() || flags_value.IsUndefined(isolate));
+    Object flags__value = TaggedField<Object, JSRegExpStringIterator::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::RegExpMatchInfoVerify(RegExpMatchInfo o, Isolate* isolate) {
@@ -1487,36 +1796,51 @@ void TorqueGeneratedClassVerifiers::RegExpMatchInfoVerify(RegExpMatchInfo o, Iso
   CHECK(o.IsRegExpMatchInfo());
 }
 void TorqueGeneratedClassVerifiers::AccessorInfoVerify(AccessorInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsAccessorInfo());
   {
-    Object name_value = READ_FIELD(o, AccessorInfo::kNameOffset);
-    Object::VerifyPointer(isolate, name_value);
+    Object name__value = TaggedField<Object, AccessorInfo::kNameOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, name__value);
   }
   {
-    Object flags_value = READ_FIELD(o, AccessorInfo::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi());
+    Object flags__value = TaggedField<Object, AccessorInfo::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
   {
-    Object expected_receiver_type_value = READ_FIELD(o, AccessorInfo::kExpectedReceiverTypeOffset);
-    Object::VerifyPointer(isolate, expected_receiver_type_value);
+    Object expected_receiver_type__value = TaggedField<Object, AccessorInfo::kExpectedReceiverTypeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, expected_receiver_type__value);
   }
   {
-    Object data_value = READ_FIELD(o, AccessorInfo::kDataOffset);
-    Object::VerifyPointer(isolate, data_value);
+    Object setter__value = TaggedField<Object, AccessorInfo::kSetterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, setter__value);
+    CHECK(setter__value.IsNonNullForeign() || setter__value.IsZero());
+  }
+  {
+    Object getter__value = TaggedField<Object, AccessorInfo::kGetterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, getter__value);
+    CHECK(getter__value.IsNonNullForeign() || getter__value.IsZero());
+  }
+  {
+    Object js_getter__value = TaggedField<Object, AccessorInfo::kJsGetterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, js_getter__value);
+    CHECK(js_getter__value.IsNonNullForeign() || js_getter__value.IsZero());
+  }
+  {
+    Object data__value = TaggedField<Object, AccessorInfo::kDataOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, data__value);
   }
 }
 void TorqueGeneratedClassVerifiers::AccessorPairVerify(AccessorPair o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsAccessorPair());
   {
-    Object getter_value = READ_FIELD(o, AccessorPair::kGetterOffset);
-    Object::VerifyPointer(isolate, getter_value);
+    Object getter__value = TaggedField<Object, AccessorPair::kGetterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, getter__value);
   }
   {
-    Object setter_value = READ_FIELD(o, AccessorPair::kSetterOffset);
-    Object::VerifyPointer(isolate, setter_value);
+    Object setter__value = TaggedField<Object, AccessorPair::kSetterOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, setter__value);
   }
 }
 void TorqueGeneratedClassVerifiers::BreakPointVerify(BreakPoint o, Isolate* isolate) {
@@ -1528,213 +1852,460 @@ void TorqueGeneratedClassVerifiers::BreakPointInfoVerify(BreakPointInfo o, Isola
   CHECK(o.IsBreakPointInfo());
 }
 void TorqueGeneratedClassVerifiers::DebugInfoVerify(DebugInfo o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsDebugInfo());
   {
-    Object shared_function_info_value = READ_FIELD(o, DebugInfo::kSharedFunctionInfoOffset);
-    Object::VerifyPointer(isolate, shared_function_info_value);
-    CHECK(shared_function_info_value.IsSharedFunctionInfo());
+    Object shared_function_info__value = TaggedField<Object, DebugInfo::kSharedFunctionInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, shared_function_info__value);
+    CHECK(shared_function_info__value.IsSharedFunctionInfo());
   }
   {
-    Object debugger_hints_value = READ_FIELD(o, DebugInfo::kDebuggerHintsOffset);
-    Object::VerifyPointer(isolate, debugger_hints_value);
-    CHECK(debugger_hints_value.IsSmi());
+    Object debugger_hints__value = TaggedField<Object, DebugInfo::kDebuggerHintsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, debugger_hints__value);
+    CHECK(debugger_hints__value.IsSmi());
   }
   {
-    Object script_value = READ_FIELD(o, DebugInfo::kScriptOffset);
-    Object::VerifyPointer(isolate, script_value);
-    CHECK(script_value.IsUndefined() || script_value.IsScript());
+    Object script__value = TaggedField<Object, DebugInfo::kScriptOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script__value);
+    CHECK(script__value.IsUndefined() || script__value.IsScript());
   }
   {
-    Object original_bytecode_array_value = READ_FIELD(o, DebugInfo::kOriginalBytecodeArrayOffset);
-    Object::VerifyPointer(isolate, original_bytecode_array_value);
-    CHECK(original_bytecode_array_value.IsBytecodeArray() || original_bytecode_array_value.IsUndefined());
+    Object original_bytecode_array__value = TaggedField<Object, DebugInfo::kOriginalBytecodeArrayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, original_bytecode_array__value);
+    CHECK(original_bytecode_array__value.IsUndefined() || original_bytecode_array__value.IsBytecodeArray());
   }
   {
-    Object debug_bytecode_array_value = READ_FIELD(o, DebugInfo::kDebugBytecodeArrayOffset);
-    Object::VerifyPointer(isolate, debug_bytecode_array_value);
-    CHECK(debug_bytecode_array_value.IsBytecodeArray() || debug_bytecode_array_value.IsUndefined());
+    Object debug_bytecode_array__value = TaggedField<Object, DebugInfo::kDebugBytecodeArrayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, debug_bytecode_array__value);
+    CHECK(debug_bytecode_array__value.IsUndefined() || debug_bytecode_array__value.IsBytecodeArray());
   }
   {
-    Object break_points_value = READ_FIELD(o, DebugInfo::kBreakPointsOffset);
-    Object::VerifyPointer(isolate, break_points_value);
-    CHECK(break_points_value.IsFixedArray());
+    Object break_points__value = TaggedField<Object, DebugInfo::kBreakPointsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, break_points__value);
+    CHECK(break_points__value.IsFixedArray());
   }
   {
-    Object flags_value = READ_FIELD(o, DebugInfo::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi());
+    Object flags__value = TaggedField<Object, DebugInfo::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
   {
-    Object coverage_info_value = READ_FIELD(o, DebugInfo::kCoverageInfoOffset);
-    Object::VerifyPointer(isolate, coverage_info_value);
-    CHECK(coverage_info_value.IsCoverageInfo() || coverage_info_value.IsUndefined());
+    Object coverage_info__value = TaggedField<Object, DebugInfo::kCoverageInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, coverage_info__value);
+    CHECK(coverage_info__value.IsCoverageInfo() || coverage_info__value.IsUndefined());
   }
 }
 void TorqueGeneratedClassVerifiers::FeedbackVectorVerify(FeedbackVector o, Isolate* isolate) {
   HeapObjectVerify(o, isolate);
   CHECK(o.IsFeedbackVector());
   {
-    Object shared_function_info_value = READ_FIELD(o, FeedbackVector::kSharedFunctionInfoOffset);
-    Object::VerifyPointer(isolate, shared_function_info_value);
-    CHECK(shared_function_info_value.IsSharedFunctionInfo());
+    Object shared_function_info__value = TaggedField<Object, FeedbackVector::kSharedFunctionInfoOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, shared_function_info__value);
+    CHECK(shared_function_info__value.IsSharedFunctionInfo());
   }
   {
-    Object closure_feedback_cell_array_value = READ_FIELD(o, FeedbackVector::kClosureFeedbackCellArrayOffset);
-    Object::VerifyPointer(isolate, closure_feedback_cell_array_value);
-    CHECK(closure_feedback_cell_array_value.IsFixedArray());
+    Object closure_feedback_cell_array__value = TaggedField<Object, FeedbackVector::kClosureFeedbackCellArrayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, closure_feedback_cell_array__value);
+    CHECK(closure_feedback_cell_array__value.IsFixedArray());
   }
 }
 void TorqueGeneratedClassVerifiers::FeedbackCellVerify(FeedbackCell o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsFeedbackCell());
   {
-    Object value_value = READ_FIELD(o, FeedbackCell::kValueOffset);
-    Object::VerifyPointer(isolate, value_value);
-    CHECK(value_value.IsUndefined() || value_value.IsFeedbackVector() || value_value.IsFixedArray());
+    Object value__value = TaggedField<Object, FeedbackCell::kValueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, value__value);
+    CHECK(value__value.IsUndefined() || value__value.IsFeedbackVector() || value__value.IsFixedArray());
   }
 }
 void TorqueGeneratedClassVerifiers::AllocationMementoVerify(AllocationMemento o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsAllocationMemento());
+  {
+    Object allocation_site__value = TaggedField<Object, AllocationMemento::kAllocationSiteOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, allocation_site__value);
+    CHECK(allocation_site__value.IsAllocationSite());
+  }
 }
 void TorqueGeneratedClassVerifiers::WasmModuleObjectVerify(WasmModuleObject o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsWasmModuleObject());
   {
-    Object native_module_value = READ_FIELD(o, WasmModuleObject::kNativeModuleOffset);
-    Object::VerifyPointer(isolate, native_module_value);
-    CHECK(native_module_value.IsForeign() || native_module_value.IsUndefined(isolate));
+    Object native_module__value = TaggedField<Object, WasmModuleObject::kNativeModuleOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, native_module__value);
+    CHECK(native_module__value.IsForeign());
   }
   {
-    Object export_wrappers_value = READ_FIELD(o, WasmModuleObject::kExportWrappersOffset);
-    Object::VerifyPointer(isolate, export_wrappers_value);
-    CHECK(export_wrappers_value.IsFixedArray() || export_wrappers_value.IsUndefined(isolate));
+    Object export_wrappers__value = TaggedField<Object, WasmModuleObject::kExportWrappersOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, export_wrappers__value);
+    CHECK(export_wrappers__value.IsFixedArray());
   }
   {
-    Object script_value = READ_FIELD(o, WasmModuleObject::kScriptOffset);
-    Object::VerifyPointer(isolate, script_value);
-    CHECK(script_value.IsScript() || script_value.IsUndefined(isolate));
+    Object script__value = TaggedField<Object, WasmModuleObject::kScriptOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, script__value);
+    CHECK(script__value.IsScript());
   }
   {
-    Object weak_instance_list_value = READ_FIELD(o, WasmModuleObject::kWeakInstanceListOffset);
-    Object::VerifyPointer(isolate, weak_instance_list_value);
-    CHECK(weak_instance_list_value.IsWeakArrayList() || weak_instance_list_value.IsUndefined(isolate));
+    Object weak_instance_list__value = TaggedField<Object, WasmModuleObject::kWeakInstanceListOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, weak_instance_list__value);
+    CHECK(weak_instance_list__value.IsWeakArrayList());
   }
   {
-    Object asm_js_offset_table_value = READ_FIELD(o, WasmModuleObject::kAsmJsOffsetTableOffset);
-    Object::VerifyPointer(isolate, asm_js_offset_table_value);
-    CHECK(asm_js_offset_table_value.IsUndefined() || asm_js_offset_table_value.IsByteArray() || asm_js_offset_table_value.IsUndefined(isolate));
+    Object asm_js_offset_table__value = TaggedField<Object, WasmModuleObject::kAsmJsOffsetTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, asm_js_offset_table__value);
+    CHECK(asm_js_offset_table__value.IsUndefined() || asm_js_offset_table__value.IsByteArray());
   }
   {
-    Object break_point_infos_value = READ_FIELD(o, WasmModuleObject::kBreakPointInfosOffset);
-    Object::VerifyPointer(isolate, break_point_infos_value);
-    CHECK(break_point_infos_value.IsUndefined() || break_point_infos_value.IsFixedArray() || break_point_infos_value.IsUndefined(isolate));
+    Object break_point_infos__value = TaggedField<Object, WasmModuleObject::kBreakPointInfosOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, break_point_infos__value);
+    CHECK(break_point_infos__value.IsUndefined() || break_point_infos__value.IsFixedArray());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmTableObjectVerify(WasmTableObject o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsWasmTableObject());
   {
-    Object entries_value = READ_FIELD(o, WasmTableObject::kEntriesOffset);
-    Object::VerifyPointer(isolate, entries_value);
-    CHECK(entries_value.IsFixedArray() || entries_value.IsUndefined(isolate));
+    Object entries__value = TaggedField<Object, WasmTableObject::kEntriesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, entries__value);
+    CHECK(entries__value.IsFixedArray());
   }
   {
-    Object maximum_length_value = READ_FIELD(o, WasmTableObject::kMaximumLengthOffset);
-    Object::VerifyPointer(isolate, maximum_length_value);
-    CHECK(maximum_length_value.IsSmi() || maximum_length_value.IsUndefined() || maximum_length_value.IsHeapNumber() || maximum_length_value.IsUndefined(isolate));
+    Object maximum_length__value = TaggedField<Object, WasmTableObject::kMaximumLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, maximum_length__value);
+    CHECK(maximum_length__value.IsSmi() || maximum_length__value.IsUndefined() || maximum_length__value.IsHeapNumber());
   }
   {
-    Object dispatch_tables_value = READ_FIELD(o, WasmTableObject::kDispatchTablesOffset);
-    Object::VerifyPointer(isolate, dispatch_tables_value);
-    CHECK(dispatch_tables_value.IsFixedArray() || dispatch_tables_value.IsUndefined(isolate));
+    Object dispatch_tables__value = TaggedField<Object, WasmTableObject::kDispatchTablesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, dispatch_tables__value);
+    CHECK(dispatch_tables__value.IsFixedArray());
   }
   {
-    Object raw_type_value = READ_FIELD(o, WasmTableObject::kRawTypeOffset);
-    Object::VerifyPointer(isolate, raw_type_value);
-    CHECK(raw_type_value.IsSmi() || raw_type_value.IsUndefined(isolate));
+    Object raw_type__value = TaggedField<Object, WasmTableObject::kRawTypeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, raw_type__value);
+    CHECK(raw_type__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmMemoryObjectVerify(WasmMemoryObject o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsWasmMemoryObject());
   {
-    Object array_buffer_value = READ_FIELD(o, WasmMemoryObject::kArrayBufferOffset);
-    Object::VerifyPointer(isolate, array_buffer_value);
-    CHECK(array_buffer_value.IsJSArrayBuffer() || array_buffer_value.IsUndefined(isolate));
+    Object array_buffer__value = TaggedField<Object, WasmMemoryObject::kArrayBufferOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, array_buffer__value);
+    CHECK(array_buffer__value.IsJSArrayBuffer());
   }
   {
-    Object maximum_pages_value = READ_FIELD(o, WasmMemoryObject::kMaximumPagesOffset);
-    Object::VerifyPointer(isolate, maximum_pages_value);
-    CHECK(maximum_pages_value.IsSmi() || maximum_pages_value.IsUndefined(isolate));
+    Object maximum_pages__value = TaggedField<Object, WasmMemoryObject::kMaximumPagesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, maximum_pages__value);
+    CHECK(maximum_pages__value.IsSmi());
   }
   {
-    Object instances_value = READ_FIELD(o, WasmMemoryObject::kInstancesOffset);
-    Object::VerifyPointer(isolate, instances_value);
-    CHECK(instances_value.IsUndefined() || instances_value.IsWeakArrayList() || instances_value.IsUndefined(isolate));
+    Object instances__value = TaggedField<Object, WasmMemoryObject::kInstancesOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, instances__value);
+    CHECK(instances__value.IsUndefined() || instances__value.IsWeakArrayList());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmGlobalObjectVerify(WasmGlobalObject o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsWasmGlobalObject());
   {
-    Object untagged_buffer_value = READ_FIELD(o, WasmGlobalObject::kUntaggedBufferOffset);
-    Object::VerifyPointer(isolate, untagged_buffer_value);
-    CHECK(untagged_buffer_value.IsJSArrayBuffer() || untagged_buffer_value.IsUndefined(isolate));
+    Object untagged_buffer__value = TaggedField<Object, WasmGlobalObject::kUntaggedBufferOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, untagged_buffer__value);
+    CHECK(untagged_buffer__value.IsUndefined() || untagged_buffer__value.IsJSArrayBuffer());
   }
   {
-    Object tagged_buffer_value = READ_FIELD(o, WasmGlobalObject::kTaggedBufferOffset);
-    Object::VerifyPointer(isolate, tagged_buffer_value);
-    CHECK(tagged_buffer_value.IsFixedArray() || tagged_buffer_value.IsUndefined(isolate));
+    Object tagged_buffer__value = TaggedField<Object, WasmGlobalObject::kTaggedBufferOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, tagged_buffer__value);
+    CHECK(tagged_buffer__value.IsUndefined() || tagged_buffer__value.IsFixedArray());
   }
   {
-    Object offset_value = READ_FIELD(o, WasmGlobalObject::kOffsetOffset);
-    Object::VerifyPointer(isolate, offset_value);
-    CHECK(offset_value.IsSmi() || offset_value.IsUndefined(isolate));
+    Object offset__value = TaggedField<Object, WasmGlobalObject::kOffsetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, offset__value);
+    CHECK(offset__value.IsSmi());
   }
   {
-    Object flags_value = READ_FIELD(o, WasmGlobalObject::kFlagsOffset);
-    Object::VerifyPointer(isolate, flags_value);
-    CHECK(flags_value.IsSmi() || flags_value.IsUndefined(isolate));
+    Object flags__value = TaggedField<Object, WasmGlobalObject::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
   }
 }
 void TorqueGeneratedClassVerifiers::WasmExceptionObjectVerify(WasmExceptionObject o, Isolate* isolate) {
   o.JSObjectVerify(isolate);
   CHECK(o.IsWasmExceptionObject());
   {
-    Object serialized_signature_value = READ_FIELD(o, WasmExceptionObject::kSerializedSignatureOffset);
-    Object::VerifyPointer(isolate, serialized_signature_value);
-    CHECK(serialized_signature_value.IsByteArray() || serialized_signature_value.IsUndefined(isolate));
+    Object serialized_signature__value = TaggedField<Object, WasmExceptionObject::kSerializedSignatureOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, serialized_signature__value);
+    CHECK(serialized_signature__value.IsByteArray());
   }
   {
-    Object exception_tag_value = READ_FIELD(o, WasmExceptionObject::kExceptionTagOffset);
-    Object::VerifyPointer(isolate, exception_tag_value);
-    CHECK(exception_tag_value.IsHeapObject() || exception_tag_value.IsUndefined(isolate));
+    Object exception_tag__value = TaggedField<Object, WasmExceptionObject::kExceptionTagOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, exception_tag__value);
+    CHECK(exception_tag__value.IsHeapObject());
   }
 }
 void TorqueGeneratedClassVerifiers::AsmWasmDataVerify(AsmWasmData o, Isolate* isolate) {
-  HeapObjectVerify(o, isolate);
+  o.StructVerify(isolate);
   CHECK(o.IsAsmWasmData());
   {
-    Object managed_native_module_value = READ_FIELD(o, AsmWasmData::kManagedNativeModuleOffset);
-    Object::VerifyPointer(isolate, managed_native_module_value);
-    CHECK(managed_native_module_value.IsForeign());
+    Object managed_native_module__value = TaggedField<Object, AsmWasmData::kManagedNativeModuleOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, managed_native_module__value);
+    CHECK(managed_native_module__value.IsForeign());
   }
   {
-    Object export_wrappers_value = READ_FIELD(o, AsmWasmData::kExportWrappersOffset);
-    Object::VerifyPointer(isolate, export_wrappers_value);
-    CHECK(export_wrappers_value.IsFixedArray());
+    Object export_wrappers__value = TaggedField<Object, AsmWasmData::kExportWrappersOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, export_wrappers__value);
+    CHECK(export_wrappers__value.IsFixedArray());
   }
   {
-    Object asm_js_offset_table_value = READ_FIELD(o, AsmWasmData::kAsmJsOffsetTableOffset);
-    Object::VerifyPointer(isolate, asm_js_offset_table_value);
-    CHECK(asm_js_offset_table_value.IsByteArray());
+    Object asm_js_offset_table__value = TaggedField<Object, AsmWasmData::kAsmJsOffsetTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, asm_js_offset_table__value);
+    CHECK(asm_js_offset_table__value.IsByteArray());
   }
   {
-    Object uses_bitset_value = READ_FIELD(o, AsmWasmData::kUsesBitsetOffset);
-    Object::VerifyPointer(isolate, uses_bitset_value);
-    CHECK(uses_bitset_value.IsHeapNumber());
+    Object uses_bitset__value = TaggedField<Object, AsmWasmData::kUsesBitsetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, uses_bitset__value);
+    CHECK(uses_bitset__value.IsHeapNumber());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSFinalizationGroupVerify(JSFinalizationGroup o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSFinalizationGroup());
+  {
+    Object native_context__value = TaggedField<Object, JSFinalizationGroup::kNativeContextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, native_context__value);
+    CHECK(native_context__value.IsNativeContext());
+  }
+  {
+    Object cleanup__value = TaggedField<Object, JSFinalizationGroup::kCleanupOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, cleanup__value);
+  }
+  {
+    Object active_cells__value = TaggedField<Object, JSFinalizationGroup::kActiveCellsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, active_cells__value);
+    CHECK(active_cells__value.IsUndefined() || active_cells__value.IsWeakCell());
+  }
+  {
+    Object cleared_cells__value = TaggedField<Object, JSFinalizationGroup::kClearedCellsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, cleared_cells__value);
+    CHECK(cleared_cells__value.IsUndefined() || cleared_cells__value.IsWeakCell());
+  }
+  {
+    Object key_map__value = TaggedField<Object, JSFinalizationGroup::kKeyMapOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, key_map__value);
+  }
+  {
+    Object next__value = TaggedField<Object, JSFinalizationGroup::kNextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, next__value);
+    CHECK(next__value.IsUndefined() || next__value.IsJSFinalizationGroup());
+  }
+  {
+    Object flags__value = TaggedField<Object, JSFinalizationGroup::kFlagsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSFinalizationGroupCleanupIteratorVerify(JSFinalizationGroupCleanupIterator o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSFinalizationGroupCleanupIterator());
+  {
+    Object finalization_group__value = TaggedField<Object, JSFinalizationGroupCleanupIterator::kFinalizationGroupOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, finalization_group__value);
+    CHECK(finalization_group__value.IsJSFinalizationGroup());
+  }
+}
+void TorqueGeneratedClassVerifiers::WeakCellVerify(WeakCell o, Isolate* isolate) {
+  HeapObjectVerify(o, isolate);
+  CHECK(o.IsWeakCell());
+  {
+    Object finalization_group__value = TaggedField<Object, WeakCell::kFinalizationGroupOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, finalization_group__value);
+    CHECK(finalization_group__value.IsUndefined() || finalization_group__value.IsJSFinalizationGroup());
+  }
+  {
+    Object target__value = TaggedField<Object, WeakCell::kTargetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, target__value);
+    CHECK(target__value.IsUndefined() || target__value.IsJSReceiver());
+  }
+  {
+    Object holdings__value = TaggedField<Object, WeakCell::kHoldingsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, holdings__value);
+  }
+  {
+    Object prev__value = TaggedField<Object, WeakCell::kPrevOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, prev__value);
+    CHECK(prev__value.IsUndefined() || prev__value.IsWeakCell());
+  }
+  {
+    Object next__value = TaggedField<Object, WeakCell::kNextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, next__value);
+    CHECK(next__value.IsUndefined() || next__value.IsWeakCell());
+  }
+  {
+    Object key__value = TaggedField<Object, WeakCell::kKeyOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, key__value);
+  }
+  {
+    Object key_list_prev__value = TaggedField<Object, WeakCell::kKeyListPrevOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, key_list_prev__value);
+    CHECK(key_list_prev__value.IsUndefined() || key_list_prev__value.IsWeakCell());
+  }
+  {
+    Object key_list_next__value = TaggedField<Object, WeakCell::kKeyListNextOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, key_list_next__value);
+    CHECK(key_list_next__value.IsUndefined() || key_list_next__value.IsWeakCell());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSWeakRefVerify(JSWeakRef o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSWeakRef());
+  {
+    Object target__value = TaggedField<Object, JSWeakRef::kTargetOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, target__value);
+    CHECK(target__value.IsUndefined() || target__value.IsJSReceiver());
+  }
+}
+void TorqueGeneratedClassVerifiers::BytecodeArrayVerify(BytecodeArray o, Isolate* isolate) {
+  o.FixedArrayBaseVerify(isolate);
+  CHECK(o.IsBytecodeArray());
+  {
+    Object constant_pool__value = TaggedField<Object, BytecodeArray::kConstantPoolOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, constant_pool__value);
+    CHECK(constant_pool__value.IsFixedArray());
+  }
+  {
+    Object handler_table__value = TaggedField<Object, BytecodeArray::kHandlerTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, handler_table__value);
+    CHECK(handler_table__value.IsByteArray());
+  }
+  {
+    Object source_position_table__value = TaggedField<Object, BytecodeArray::kSourcePositionTableOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, source_position_table__value);
+    CHECK(source_position_table__value.IsUndefined() || source_position_table__value.IsByteArray() || source_position_table__value.IsSourcePositionTableWithFrameCache());
+  }
+}
+void TorqueGeneratedClassVerifiers::InternalClassVerify(InternalClass o, Isolate* isolate) {
+  o.StructVerify(isolate);
+  CHECK(o.IsInternalClass());
+  {
+    Object a__value = TaggedField<Object, InternalClass::kAOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, a__value);
+    CHECK(a__value.IsSmi());
+  }
+  {
+    Object b__value = TaggedField<Object, InternalClass::kBOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, b__value);
+    CHECK(b__value.IsSmi() || b__value.IsHeapNumber());
+  }
+}
+void TorqueGeneratedClassVerifiers::SmiPairVerify(SmiPair o, Isolate* isolate) {
+  o.StructVerify(isolate);
+  CHECK(o.IsSmiPair());
+  {
+    Object a__value = TaggedField<Object, SmiPair::kAOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, a__value);
+    CHECK(a__value.IsSmi());
+  }
+  {
+    Object b__value = TaggedField<Object, SmiPair::kBOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, b__value);
+    CHECK(b__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::SmiBoxVerify(SmiBox o, Isolate* isolate) {
+  o.StructVerify(isolate);
+  CHECK(o.IsSmiBox());
+  {
+    Object value__value = TaggedField<Object, SmiBox::kValueOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, value__value);
+    CHECK(value__value.IsSmi());
+  }
+  {
+    Object unrelated__value = TaggedField<Object, SmiBox::kUnrelatedOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, unrelated__value);
+    CHECK(unrelated__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::SortStateVerify(SortState o, Isolate* isolate) {
+  o.StructVerify(isolate);
+  CHECK(o.IsSortState());
+  {
+    Object receiver__value = TaggedField<Object, SortState::kReceiverOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, receiver__value);
+    CHECK(receiver__value.IsJSReceiver());
+  }
+  {
+    Object initialReceiverMap__value = TaggedField<Object, SortState::kInitialReceiverMapOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, initialReceiverMap__value);
+    CHECK(initialReceiverMap__value.IsMap());
+  }
+  {
+    Object initialReceiverLength__value = TaggedField<Object, SortState::kInitialReceiverLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, initialReceiverLength__value);
+    CHECK(initialReceiverLength__value.IsSmi() || initialReceiverLength__value.IsHeapNumber());
+  }
+  {
+    Object userCmpFn__value = TaggedField<Object, SortState::kUserCmpFnOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, userCmpFn__value);
+    CHECK(userCmpFn__value.IsCallableApiObject() || userCmpFn__value.IsCallableJSProxy() || userCmpFn__value.IsUndefined() || userCmpFn__value.IsJSBoundFunction() || userCmpFn__value.IsJSFunction());
+  }
+  {
+    Object sortComparePtr__value = TaggedField<Object, SortState::kSortComparePtrOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, sortComparePtr__value);
+    CHECK(sortComparePtr__value.IsSmi());
+  }
+  {
+    Object loadFn__value = TaggedField<Object, SortState::kLoadFnOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, loadFn__value);
+    CHECK(loadFn__value.IsSmi());
+  }
+  {
+    Object storeFn__value = TaggedField<Object, SortState::kStoreFnOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, storeFn__value);
+    CHECK(storeFn__value.IsSmi());
+  }
+  {
+    Object deleteFn__value = TaggedField<Object, SortState::kDeleteFnOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, deleteFn__value);
+    CHECK(deleteFn__value.IsSmi());
+  }
+  {
+    Object canUseSameAccessorFn__value = TaggedField<Object, SortState::kCanUseSameAccessorFnOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, canUseSameAccessorFn__value);
+    CHECK(canUseSameAccessorFn__value.IsSmi());
+  }
+  {
+    Object minGallop__value = TaggedField<Object, SortState::kMinGallopOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, minGallop__value);
+    CHECK(minGallop__value.IsSmi());
+  }
+  {
+    Object pendingRunsSize__value = TaggedField<Object, SortState::kPendingRunsSizeOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, pendingRunsSize__value);
+    CHECK(pendingRunsSize__value.IsSmi());
+  }
+  {
+    Object pendingRuns__value = TaggedField<Object, SortState::kPendingRunsOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, pendingRuns__value);
+    CHECK(pendingRuns__value.IsFixedArray());
+  }
+  {
+    Object workArray__value = TaggedField<Object, SortState::kWorkArrayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, workArray__value);
+    CHECK(workArray__value.IsFixedArray());
+  }
+  {
+    Object tempArray__value = TaggedField<Object, SortState::kTempArrayOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, tempArray__value);
+    CHECK(tempArray__value.IsFixedArray());
+  }
+  {
+    Object sortLength__value = TaggedField<Object, SortState::kSortLengthOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, sortLength__value);
+    CHECK(sortLength__value.IsSmi());
+  }
+  {
+    Object numberOfUndefined__value = TaggedField<Object, SortState::kNumberOfUndefinedOffset>::load(o, 0);
+    Object::VerifyPointer(isolate, numberOfUndefined__value);
+    CHECK(numberOfUndefined__value.IsSmi());
   }
 }
 }  // namespace internal

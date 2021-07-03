@@ -94,20 +94,15 @@ list(REMOVE_ITEM src_list
 	"${PROJECT_SOURCE_DIR}/src/strings/string-builder-inl.h"
 	"${PROJECT_SOURCE_DIR}/src/strings/string-hasher-inl.h"
 	# remove files about V8_INTL_SUPPORT :end
+
+	# added in 7.7~7.8
+	"${PROJECT_SOURCE_DIR}/src/regexp/gen-regexp-special-case.cc" # only used on v8_enable_i18n_support=true
+	# remove files about V8_INTL_SUPPORT :end
 	
 	# remove files required on v8_use_perfetto=true :start
 	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/json-trace-event-listener.cc"
 	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/json-trace-event-listener.h"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-consumer.cc"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-consumer.h"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-producer.cc"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-producer.h"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-shared-memory.cc"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-shared-memory.h"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-tasks.cc"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-tasks.h"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-tracing-controller.cc"
-	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/perfetto-tracing-controller.h"
+	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/trace-event-listener.cc"
 	"${PROJECT_SOURCE_DIR}/src/libplatform/tracing/trace-event-listener.h"
 
 	# files about protobuf, which is required if v8_use_perfetto=true

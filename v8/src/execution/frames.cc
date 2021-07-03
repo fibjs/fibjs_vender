@@ -33,6 +33,23 @@ namespace internal {
 ReturnAddressLocationResolver StackFrame::return_address_location_resolver_ =
     nullptr;
 
+namespace {
+
+Address AddressOf(const StackHandler* handler) {
+  Address raw = handler->address();
+#ifdef V8_USE_ADDRESS_SANITIZER
+  // ASan puts C++-allocated StackHandler markers onto its fake stack.
+  // We work around that by storing the real stack address in the "padding"
+  // field. StackHandlers allocated from generated code have 0 as padding.
+  Address padding =
+      base::Memory<Address>(raw + StackHandlerConstants::kPaddingOffset);
+  if (padding != 0) return padding;
+#endif
+  return raw;
+}
+
+}  // namespace
+
 // Iterator that supports traversing the stack handlers of a
 // particular frame. Needs to know the top of the handler chain.
 class StackHandlerIterator {
@@ -40,12 +57,18 @@ class StackHandlerIterator {
   StackHandlerIterator(const StackFrame* frame, StackHandler* handler)
       : limit_(frame->fp()), handler_(handler) {
     // Make sure the handler has already been unwound to this frame.
-    DCHECK(frame->sp() <= handler->address());
+    DCHECK(frame->sp() <= AddressOf(handler));
+    // For CWasmEntry frames, the handler was registered by the last C++
+    // frame (Execution::CallWasm), so even though its address is already
+    // beyond the limit, we know we always want to unwind one handler.
+    if (frame->type() == StackFrame::C_WASM_ENTRY) {
+      handler_ = handler_->next();
+    }
   }
 
   StackHandler* handler() const { return handler_; }
 
-  bool done() { return handler_ == nullptr || handler_->address() > limit_; }
+  bool done() { return handler_ == nullptr || AddressOf(handler_) > limit_; }
   void Advance() {
     DCHECK(!done());
     handler_ = handler_->next();
@@ -146,7 +169,7 @@ StackTraceFrameIterator::StackTraceFrameIterator(Isolate* isolate)
 }
 
 StackTraceFrameIterator::StackTraceFrameIterator(Isolate* isolate,
-                                                 StackFrame::Id id)
+                                                 StackFrameId id)
     : StackTraceFrameIterator(isolate) {
   while (!done() && frame()->id() != id) Advance();
 }
@@ -163,16 +186,7 @@ bool StackTraceFrameIterator::IsValidFrame(StackFrame* frame) const {
     if (!js_frame->function().IsJSFunction()) return false;
     return js_frame->function().shared().IsSubjectToDebugging();
   }
-  // Apart from JavaScript frames, only Wasm frames are valid, with the
-  // exception of Wasm-to-Capi frames.
-  // TODO(jkummerow): Give Wasm-to-Capi frames their own marker.
-  if (frame->is_wasm_compiled()) {
-    wasm::WasmCodeRefScope scope;
-    if (static_cast<WasmCompiledFrame*>(frame)->wasm_code()->kind() ==
-        wasm::WasmCode::kWasmToCapiWrapper) {
-      return false;
-    }
-  }
+  // Apart from JavaScript frames, only Wasm frames are valid.
   return frame->is_wasm();
 }
 
@@ -264,6 +278,11 @@ SafeStackFrameIterator::SafeStackFrameIterator(Isolate* isolate, Address pc,
   bool advance_frame = true;
 
   Address fast_c_fp = isolate->isolate_data()->fast_c_call_caller_fp();
+  uint8_t stack_is_iterable = isolate->isolate_data()->stack_is_iterable();
+  if (!stack_is_iterable) {
+    frame_ = nullptr;
+    return;
+  }
   // 'Fast C calls' are a special type of C call where we call directly from JS
   // to C without an exit frame inbetween. The CEntryStub is responsible for
   // setting Isolate::c_entry_fp, meaning that it won't be set for fast C calls.
@@ -520,8 +539,9 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
     if (wasm_code != nullptr) {
       switch (wasm_code->kind()) {
         case wasm::WasmCode::kFunction:
-        case wasm::WasmCode::kWasmToCapiWrapper:
           return WASM_COMPILED;
+        case wasm::WasmCode::kWasmToCapiWrapper:
+          return WASM_EXIT;
         case wasm::WasmCode::kWasmToJsWrapper:
           return WASM_TO_JS;
         case wasm::WasmCode::kRuntimeStub:
@@ -559,6 +579,8 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
             return OPTIMIZED;
           case Code::JS_TO_WASM_FUNCTION:
             return JS_TO_WASM;
+          case Code::JS_TO_JS_FUNCTION:
+            return STUB;
           case Code::C_WASM_ENTRY:
             return C_WASM_ENTRY;
           case Code::WASM_FUNCTION:
@@ -593,6 +615,7 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
     case WASM_TO_JS:
     case WASM_COMPILED:
     case WASM_COMPILE_LAZY:
+    case WASM_EXIT:
       return candidate;
     case JS_TO_WASM:
     case OPTIMIZED:
@@ -644,6 +667,12 @@ StackFrame::Type EntryFrame::GetCallerState(State* state) const {
   return ExitFrame::GetStateForFramePointer(fp, state);
 }
 
+StackFrame::Type CWasmEntryFrame::GetCallerState(State* state) const {
+  const int offset = CWasmEntryFrameConstants::kCEntryFPOffset;
+  Address fp = Memory<Address>(this->fp() + offset);
+  return ExitFrame::GetStateForFramePointer(fp, state);
+}
+
 Code ConstructEntryFrame::unchecked_code() const {
   return isolate()->heap()->builtin(Builtins::kJSConstructEntry);
 }
@@ -675,15 +704,9 @@ Address ExitFrame::GetCallerStackPointer() const {
 
 StackFrame::Type ExitFrame::GetStateForFramePointer(Address fp, State* state) {
   if (fp == 0) return NONE;
-  Address sp = ComputeStackPointer(fp);
   StackFrame::Type type = ComputeFrameType(fp);
-  if (type == StackFrame::WASM_COMPILED) {
-    // {sp} is only needed for finding the PC slot, the rest is handled
-    // via safepoint.
-    sp = fp + WasmExitFrameConstants::kWasmInstanceOffset;
-    DCHECK_EQ(sp - 1 * kPCOnStackSize,
-              fp + WasmExitFrameConstants::kCallingPCOffset);
-  }
+  Address sp = (type == WASM_EXIT) ? WasmExitFrame::ComputeStackPointer(fp)
+                                   : ExitFrame::ComputeStackPointer(fp);
   FillState(fp, sp, state);
   DCHECK_NE(*state->pc_address, kNullAddress);
   return type;
@@ -703,7 +726,7 @@ StackFrame::Type ExitFrame::ComputeFrameType(Address fp) {
 
   StackFrame::Type frame_type = static_cast<StackFrame::Type>(marker_int >> 1);
   if (frame_type == EXIT || frame_type == BUILTIN_EXIT ||
-      frame_type == WASM_COMPILED) {
+      frame_type == WASM_EXIT) {
     return frame_type;
   }
 
@@ -714,6 +737,15 @@ Address ExitFrame::ComputeStackPointer(Address fp) {
   MSAN_MEMORY_IS_INITIALIZED(fp + ExitFrameConstants::kSPOffset,
                              kSystemPointerSize);
   return Memory<Address>(fp + ExitFrameConstants::kSPOffset);
+}
+
+Address WasmExitFrame::ComputeStackPointer(Address fp) {
+  // For WASM_EXIT frames, {sp} is only needed for finding the PC slot,
+  // everything else is handled via safepoint information.
+  Address sp = fp + WasmExitFrameConstants::kWasmInstanceOffset;
+  DCHECK_EQ(sp - 1 * kPCOnStackSize,
+            fp + WasmExitFrameConstants::kCallingPCOffset);
+  return sp;
 }
 
 void ExitFrame::FillState(Address fp, Address sp, State* state) {
@@ -938,6 +970,14 @@ void StandardFrame::IterateCompiledFrame(RootVisitor* v) const {
       case WASM_COMPILE_LAZY:
         frame_header_size = WasmCompiledFrameConstants::kFixedFrameSizeFromFp;
         break;
+      case WASM_EXIT:
+        // The last value in the frame header is the calling PC, which should
+        // not be visited.
+        static_assert(WasmExitFrameConstants::kFixedSlotCountFromFp ==
+                          WasmCompiledFrameConstants::kFixedSlotCountFromFp + 1,
+                      "WasmExitFrame has one slot more than WasmCompiledFrame");
+        frame_header_size = WasmCompiledFrameConstants::kFixedFrameSizeFromFp;
+        break;
       case OPTIMIZED:
       case INTERPRETED:
       case BUILTIN:
@@ -968,7 +1008,6 @@ void StandardFrame::IterateCompiledFrame(RootVisitor* v) const {
                          parameters_limit);
   }
 
-  DEFINE_ROOT_VALUE(isolate());
   // Visit pointer spill slots and locals.
   uint8_t* safepoint_bits = safepoint_entry.bits();
   for (unsigned index = 0; index < stack_slots; index++) {
@@ -988,7 +1027,7 @@ void StandardFrame::IterateCompiledFrame(RootVisitor* v) const {
       if (!HAS_SMI_TAG(compressed_value)) {
         // We don't need to update smi values.
         *spill_slot.location() =
-            DecompressTaggedPointer(ROOT_VALUE, compressed_value);
+            DecompressTaggedPointer(isolate(), compressed_value);
       }
 #endif
       v->VisitRootPointer(Root::kTop, nullptr, spill_slot);
@@ -1906,7 +1945,8 @@ int WasmCompiledFrame::LookupExceptionHandlerInTable(int* stack_slots) {
   wasm::WasmCode* code =
       isolate()->wasm_engine()->code_manager()->LookupCode(pc());
   if (!code->IsAnonymous() && code->handler_table_size() > 0) {
-    HandlerTable table(code->handler_table(), code->handler_table_size());
+    HandlerTable table(code->handler_table(), code->handler_table_size(),
+                       HandlerTable::kReturnAddressBasedEncoding);
     int pc_offset = static_cast<int>(pc() - code->instruction_start());
     *stack_slots = static_cast<int>(code->stack_slots());
     return table.LookupReturn(pc_offset);

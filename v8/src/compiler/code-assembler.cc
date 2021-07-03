@@ -226,8 +226,12 @@ void CodeAssembler::GenerateCheckMaybeObjectIsObject(Node* node,
                               IntPtrConstant(kHeapObjectTagMask)),
                       IntPtrConstant(kWeakHeapObjectTag)),
          &ok);
-  Node* message_node = StringConstant(location);
-  DebugAbort(message_node);
+  EmbeddedVector<char, 1024> message;
+  SNPrintF(message, "no Object: %s", location);
+  Node* message_node = StringConstant(message.begin());
+  // This somewhat misuses the AbortCSAAssert runtime function. This will print
+  // "abort: CSA_ASSERT failed: <message>", which is good enough.
+  AbortCSAAssert(message_node);
   Unreachable();
   Bind(&ok);
 }
@@ -299,12 +303,12 @@ TNode<HeapNumber> CodeAssembler::NaNConstant() {
   return UncheckedCast<HeapNumber>(LoadRoot(RootIndex::kNanValue));
 }
 
-bool CodeAssembler::ToInt32Constant(Node* node, int32_t& out_value) {
+bool CodeAssembler::ToInt32Constant(Node* node, int32_t* out_value) {
   {
     Int64Matcher m(node);
     if (m.HasValue() && m.IsInRange(std::numeric_limits<int32_t>::min(),
                                     std::numeric_limits<int32_t>::max())) {
-      out_value = static_cast<int32_t>(m.Value());
+      *out_value = static_cast<int32_t>(m.Value());
       return true;
     }
   }
@@ -312,7 +316,7 @@ bool CodeAssembler::ToInt32Constant(Node* node, int32_t& out_value) {
   {
     Int32Matcher m(node);
     if (m.HasValue()) {
-      out_value = m.Value();
+      *out_value = m.Value();
       return true;
     }
   }
@@ -320,9 +324,9 @@ bool CodeAssembler::ToInt32Constant(Node* node, int32_t& out_value) {
   return false;
 }
 
-bool CodeAssembler::ToInt64Constant(Node* node, int64_t& out_value) {
+bool CodeAssembler::ToInt64Constant(Node* node, int64_t* out_value) {
   Int64Matcher m(node);
-  if (m.HasValue()) out_value = m.Value();
+  if (m.HasValue()) *out_value = m.Value();
   return m.HasValue();
 }
 
@@ -341,13 +345,13 @@ bool CodeAssembler::ToSmiConstant(Node* node, Smi* out_value) {
   return false;
 }
 
-bool CodeAssembler::ToIntPtrConstant(Node* node, intptr_t& out_value) {
+bool CodeAssembler::ToIntPtrConstant(Node* node, intptr_t* out_value) {
   if (node->opcode() == IrOpcode::kBitcastWordToTaggedSigned ||
       node->opcode() == IrOpcode::kBitcastWordToTagged) {
     node = node->InputAt(0);
   }
   IntPtrMatcher m(node);
-  if (m.HasValue()) out_value = m.Value();
+  if (m.HasValue()) *out_value = m.Value();
   return m.HasValue();
 }
 
@@ -409,8 +413,8 @@ void CodeAssembler::ReturnRaw(Node* value) {
   return raw_assembler()->Return(value);
 }
 
-void CodeAssembler::DebugAbort(Node* message) {
-  raw_assembler()->DebugAbort(message);
+void CodeAssembler::AbortCSAAssert(Node* message) {
+  raw_assembler()->AbortCSAAssert(message);
 }
 
 void CodeAssembler::DebugBreak() { raw_assembler()->DebugBreak(); }
@@ -441,16 +445,16 @@ void CodeAssembler::Bind(Label* label, AssemblerDebugInfo debug_info) {
 }
 #endif  // DEBUG
 
-Node* CodeAssembler::LoadFramePointer() {
-  return raw_assembler()->LoadFramePointer();
+TNode<RawPtrT> CodeAssembler::LoadFramePointer() {
+  return UncheckedCast<RawPtrT>(raw_assembler()->LoadFramePointer());
 }
 
-Node* CodeAssembler::LoadParentFramePointer() {
-  return raw_assembler()->LoadParentFramePointer();
+TNode<RawPtrT> CodeAssembler::LoadParentFramePointer() {
+  return UncheckedCast<RawPtrT>(raw_assembler()->LoadParentFramePointer());
 }
 
-Node* CodeAssembler::LoadStackPointer() {
-  return raw_assembler()->LoadStackPointer();
+TNode<RawPtrT> CodeAssembler::LoadStackPointer() {
+  return UncheckedCast<RawPtrT>(raw_assembler()->LoadStackPointer());
 }
 
 TNode<Object> CodeAssembler::TaggedPoisonOnSpeculation(
@@ -474,9 +478,9 @@ CODE_ASSEMBLER_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP)
 TNode<WordT> CodeAssembler::IntPtrAdd(SloppyTNode<WordT> left,
                                       SloppyTNode<WordT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant + right_constant);
@@ -495,9 +499,9 @@ TNode<WordT> CodeAssembler::IntPtrAdd(SloppyTNode<WordT> left,
 TNode<IntPtrT> CodeAssembler::IntPtrDiv(TNode<IntPtrT> left,
                                         TNode<IntPtrT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_right_constant) {
     if (is_left_constant) {
       return IntPtrConstant(left_constant / right_constant);
@@ -512,9 +516,9 @@ TNode<IntPtrT> CodeAssembler::IntPtrDiv(TNode<IntPtrT> left,
 TNode<WordT> CodeAssembler::IntPtrSub(SloppyTNode<WordT> left,
                                       SloppyTNode<WordT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant - right_constant);
@@ -530,9 +534,9 @@ TNode<WordT> CodeAssembler::IntPtrSub(SloppyTNode<WordT> left,
 TNode<WordT> CodeAssembler::IntPtrMul(SloppyTNode<WordT> left,
                                       SloppyTNode<WordT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant * right_constant);
@@ -567,9 +571,9 @@ TNode<Word32T> CodeAssembler::Word32Shr(SloppyTNode<Word32T> value, int shift) {
 TNode<WordT> CodeAssembler::WordOr(SloppyTNode<WordT> left,
                                    SloppyTNode<WordT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant | right_constant);
@@ -588,9 +592,9 @@ TNode<WordT> CodeAssembler::WordOr(SloppyTNode<WordT> left,
 TNode<WordT> CodeAssembler::WordAnd(SloppyTNode<WordT> left,
                                     SloppyTNode<WordT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant & right_constant);
@@ -602,9 +606,9 @@ TNode<WordT> CodeAssembler::WordAnd(SloppyTNode<WordT> left,
 TNode<WordT> CodeAssembler::WordXor(SloppyTNode<WordT> left,
                                     SloppyTNode<WordT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant ^ right_constant);
@@ -616,9 +620,9 @@ TNode<WordT> CodeAssembler::WordXor(SloppyTNode<WordT> left,
 TNode<WordT> CodeAssembler::WordShl(SloppyTNode<WordT> left,
                                     SloppyTNode<IntegralT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant << right_constant);
@@ -634,9 +638,9 @@ TNode<WordT> CodeAssembler::WordShl(SloppyTNode<WordT> left,
 TNode<WordT> CodeAssembler::WordShr(SloppyTNode<WordT> left,
                                     SloppyTNode<IntegralT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(static_cast<uintptr_t>(left_constant) >>
@@ -653,9 +657,9 @@ TNode<WordT> CodeAssembler::WordShr(SloppyTNode<WordT> left,
 TNode<WordT> CodeAssembler::WordSar(SloppyTNode<WordT> left,
                                     SloppyTNode<IntegralT> right) {
   intptr_t left_constant;
-  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  bool is_left_constant = ToIntPtrConstant(left, &left_constant);
   intptr_t right_constant;
-  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  bool is_right_constant = ToIntPtrConstant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return IntPtrConstant(left_constant >> right_constant);
@@ -671,9 +675,9 @@ TNode<WordT> CodeAssembler::WordSar(SloppyTNode<WordT> left,
 TNode<Word32T> CodeAssembler::Word32Or(SloppyTNode<Word32T> left,
                                        SloppyTNode<Word32T> right) {
   int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
+  bool is_left_constant = ToInt32Constant(left, &left_constant);
   int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
+  bool is_right_constant = ToInt32Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int32Constant(left_constant | right_constant);
@@ -692,9 +696,9 @@ TNode<Word32T> CodeAssembler::Word32Or(SloppyTNode<Word32T> left,
 TNode<Word32T> CodeAssembler::Word32And(SloppyTNode<Word32T> left,
                                         SloppyTNode<Word32T> right) {
   int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
+  bool is_left_constant = ToInt32Constant(left, &left_constant);
   int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
+  bool is_right_constant = ToInt32Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int32Constant(left_constant & right_constant);
@@ -706,9 +710,9 @@ TNode<Word32T> CodeAssembler::Word32And(SloppyTNode<Word32T> left,
 TNode<Word32T> CodeAssembler::Word32Xor(SloppyTNode<Word32T> left,
                                         SloppyTNode<Word32T> right) {
   int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
+  bool is_left_constant = ToInt32Constant(left, &left_constant);
   int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
+  bool is_right_constant = ToInt32Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int32Constant(left_constant ^ right_constant);
@@ -720,9 +724,9 @@ TNode<Word32T> CodeAssembler::Word32Xor(SloppyTNode<Word32T> left,
 TNode<Word32T> CodeAssembler::Word32Shl(SloppyTNode<Word32T> left,
                                         SloppyTNode<Word32T> right) {
   int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
+  bool is_left_constant = ToInt32Constant(left, &left_constant);
   int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
+  bool is_right_constant = ToInt32Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int32Constant(left_constant << right_constant);
@@ -738,9 +742,9 @@ TNode<Word32T> CodeAssembler::Word32Shl(SloppyTNode<Word32T> left,
 TNode<Word32T> CodeAssembler::Word32Shr(SloppyTNode<Word32T> left,
                                         SloppyTNode<Word32T> right) {
   int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
+  bool is_left_constant = ToInt32Constant(left, &left_constant);
   int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
+  bool is_right_constant = ToInt32Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int32Constant(static_cast<uint32_t>(left_constant) >>
@@ -757,9 +761,9 @@ TNode<Word32T> CodeAssembler::Word32Shr(SloppyTNode<Word32T> left,
 TNode<Word32T> CodeAssembler::Word32Sar(SloppyTNode<Word32T> left,
                                         SloppyTNode<Word32T> right) {
   int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
+  bool is_left_constant = ToInt32Constant(left, &left_constant);
   int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
+  bool is_right_constant = ToInt32Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int32Constant(left_constant >> right_constant);
@@ -775,9 +779,9 @@ TNode<Word32T> CodeAssembler::Word32Sar(SloppyTNode<Word32T> left,
 TNode<Word64T> CodeAssembler::Word64Or(SloppyTNode<Word64T> left,
                                        SloppyTNode<Word64T> right) {
   int64_t left_constant;
-  bool is_left_constant = ToInt64Constant(left, left_constant);
+  bool is_left_constant = ToInt64Constant(left, &left_constant);
   int64_t right_constant;
-  bool is_right_constant = ToInt64Constant(right, right_constant);
+  bool is_right_constant = ToInt64Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int64Constant(left_constant | right_constant);
@@ -796,9 +800,9 @@ TNode<Word64T> CodeAssembler::Word64Or(SloppyTNode<Word64T> left,
 TNode<Word64T> CodeAssembler::Word64And(SloppyTNode<Word64T> left,
                                         SloppyTNode<Word64T> right) {
   int64_t left_constant;
-  bool is_left_constant = ToInt64Constant(left, left_constant);
+  bool is_left_constant = ToInt64Constant(left, &left_constant);
   int64_t right_constant;
-  bool is_right_constant = ToInt64Constant(right, right_constant);
+  bool is_right_constant = ToInt64Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int64Constant(left_constant & right_constant);
@@ -810,9 +814,9 @@ TNode<Word64T> CodeAssembler::Word64And(SloppyTNode<Word64T> left,
 TNode<Word64T> CodeAssembler::Word64Xor(SloppyTNode<Word64T> left,
                                         SloppyTNode<Word64T> right) {
   int64_t left_constant;
-  bool is_left_constant = ToInt64Constant(left, left_constant);
+  bool is_left_constant = ToInt64Constant(left, &left_constant);
   int64_t right_constant;
-  bool is_right_constant = ToInt64Constant(right, right_constant);
+  bool is_right_constant = ToInt64Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int64Constant(left_constant ^ right_constant);
@@ -824,9 +828,9 @@ TNode<Word64T> CodeAssembler::Word64Xor(SloppyTNode<Word64T> left,
 TNode<Word64T> CodeAssembler::Word64Shl(SloppyTNode<Word64T> left,
                                         SloppyTNode<Word64T> right) {
   int64_t left_constant;
-  bool is_left_constant = ToInt64Constant(left, left_constant);
+  bool is_left_constant = ToInt64Constant(left, &left_constant);
   int64_t right_constant;
-  bool is_right_constant = ToInt64Constant(right, right_constant);
+  bool is_right_constant = ToInt64Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int64Constant(left_constant << right_constant);
@@ -842,9 +846,9 @@ TNode<Word64T> CodeAssembler::Word64Shl(SloppyTNode<Word64T> left,
 TNode<Word64T> CodeAssembler::Word64Shr(SloppyTNode<Word64T> left,
                                         SloppyTNode<Word64T> right) {
   int64_t left_constant;
-  bool is_left_constant = ToInt64Constant(left, left_constant);
+  bool is_left_constant = ToInt64Constant(left, &left_constant);
   int64_t right_constant;
-  bool is_right_constant = ToInt64Constant(right, right_constant);
+  bool is_right_constant = ToInt64Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int64Constant(static_cast<uint64_t>(left_constant) >>
@@ -861,9 +865,9 @@ TNode<Word64T> CodeAssembler::Word64Shr(SloppyTNode<Word64T> left,
 TNode<Word64T> CodeAssembler::Word64Sar(SloppyTNode<Word64T> left,
                                         SloppyTNode<Word64T> right) {
   int64_t left_constant;
-  bool is_left_constant = ToInt64Constant(left, left_constant);
+  bool is_left_constant = ToInt64Constant(left, &left_constant);
   int64_t right_constant;
-  bool is_right_constant = ToInt64Constant(right, right_constant);
+  bool is_right_constant = ToInt64Constant(right, &right_constant);
   if (is_left_constant) {
     if (is_right_constant) {
       return Int64Constant(left_constant >> right_constant);
@@ -880,7 +884,7 @@ TNode<Word64T> CodeAssembler::Word64Sar(SloppyTNode<Word64T> left,
   TNode<BoolT> CodeAssembler::Name(SloppyTNode<ArgT> left,           \
                                    SloppyTNode<ArgT> right) {        \
     VarT lhs, rhs;                                                   \
-    if (ToConstant(left, lhs) && ToConstant(right, rhs)) {           \
+    if (ToConstant(left, &lhs) && ToConstant(right, &rhs)) {         \
       return BoolConstant(lhs op rhs);                               \
     }                                                                \
     return UncheckedCast<BoolT>(raw_assembler()->Name(left, right)); \
@@ -1138,14 +1142,6 @@ Node* CodeAssembler::StoreRoot(RootIndex root_index, Node* value) {
 
 Node* CodeAssembler::Retain(Node* value) {
   return raw_assembler()->Retain(value);
-}
-
-Node* CodeAssembler::ChangeTaggedToCompressed(Node* tagged) {
-  return raw_assembler()->ChangeTaggedToCompressed(tagged);
-}
-
-Node* CodeAssembler::ChangeCompressedToTagged(Node* compressed) {
-  return raw_assembler()->ChangeCompressedToTagged(compressed);
 }
 
 Node* CodeAssembler::Projection(int index, Node* value) {
@@ -1472,7 +1468,7 @@ void CodeAssembler::GotoIfNot(SloppyTNode<IntegralT> condition,
 void CodeAssembler::Branch(SloppyTNode<IntegralT> condition, Label* true_label,
                            Label* false_label) {
   int32_t constant;
-  if (ToInt32Constant(condition, constant)) {
+  if (ToInt32Constant(condition, &constant)) {
     if ((true_label->is_used() || true_label->is_bound()) &&
         (false_label->is_used() || false_label->is_bound())) {
       return Goto(constant ? true_label : false_label);
@@ -1488,7 +1484,7 @@ void CodeAssembler::Branch(TNode<BoolT> condition,
                            const std::function<void()>& true_body,
                            const std::function<void()>& false_body) {
   int32_t constant;
-  if (ToInt32Constant(condition, constant)) {
+  if (ToInt32Constant(condition, &constant)) {
     return constant ? true_body() : false_body();
   }
 
@@ -1505,7 +1501,7 @@ void CodeAssembler::Branch(TNode<BoolT> condition,
 void CodeAssembler::Branch(TNode<BoolT> condition, Label* true_label,
                            const std::function<void()>& false_body) {
   int32_t constant;
-  if (ToInt32Constant(condition, constant)) {
+  if (ToInt32Constant(condition, &constant)) {
     return constant ? Goto(true_label) : false_body();
   }
 
@@ -1519,7 +1515,7 @@ void CodeAssembler::Branch(TNode<BoolT> condition,
                            const std::function<void()>& true_body,
                            Label* false_label) {
   int32_t constant;
-  if (ToInt32Constant(condition, constant)) {
+  if (ToInt32Constant(condition, &constant)) {
     return constant ? true_body() : Goto(false_label);
   }
 

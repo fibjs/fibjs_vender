@@ -7,6 +7,7 @@
 
 #include "src/codegen/label.h"
 #include "src/regexp/regexp-ast.h"
+#include "src/regexp/regexp.h"
 
 namespace v8 {
 namespace internal {
@@ -34,6 +35,8 @@ class RegExpMacroAssembler {
   static const int kTableSizeBits = 7;
   static const int kTableSize = 1 << kTableSizeBits;
   static const int kTableMask = kTableSize - 1;
+
+  static constexpr int kUseCharactersValue = -1;
 
   enum IrregexpImplementation {
     kIA32Implementation,
@@ -132,10 +135,12 @@ class RegExpMacroAssembler {
   // label if it is.
   virtual void IfRegisterEqPos(int reg, Label* if_eq) = 0;
   virtual IrregexpImplementation Implementation() = 0;
-  virtual void LoadCurrentCharacter(int cp_offset,
-                                    Label* on_end_of_input,
-                                    bool check_bounds = true,
-                                    int characters = 1) = 0;
+  V8_EXPORT_PRIVATE void LoadCurrentCharacter(
+      int cp_offset, Label* on_end_of_input, bool check_bounds = true,
+      int characters = 1, int eats_at_least = kUseCharactersValue);
+  virtual void LoadCurrentCharacterImpl(int cp_offset, Label* on_end_of_input,
+                                        bool check_bounds, int characters,
+                                        int eats_at_least) = 0;
   virtual void PopCurrentPosition() = 0;
   virtual void PopRegister(int register_index) = 0;
   // Pushes the label on the backtrack stack, so that a following Backtrack
@@ -206,7 +211,12 @@ class NativeRegExpMacroAssembler: public RegExpMacroAssembler {
   // FAILURE: Matching failed.
   // SUCCESS: Matching succeeded, and the output array has been filled with
   //        capture positions.
-  enum Result { RETRY = -2, EXCEPTION = -1, FAILURE = 0, SUCCESS = 1 };
+  enum Result {
+    FAILURE = RegExp::kInternalRegExpFailure,
+    SUCCESS = RegExp::kInternalRegExpSuccess,
+    EXCEPTION = RegExp::kInternalRegExpException,
+    RETRY = RegExp::kInternalRegExpRetry,
+  };
 
   NativeRegExpMacroAssembler(Isolate* isolate, Zone* zone);
   ~NativeRegExpMacroAssembler() override;
@@ -229,9 +239,9 @@ class NativeRegExpMacroAssembler: public RegExpMacroAssembler {
       String subject, int start_index, const DisallowHeapAllocation& no_gc);
 
   static int CheckStackGuardState(Isolate* isolate, int start_index,
-                                  bool is_direct_call, Address* return_address,
-                                  Code re_code, Address* subject,
-                                  const byte** input_start,
+                                  RegExp::CallOrigin call_origin,
+                                  Address* return_address, Code re_code,
+                                  Address* subject, const byte** input_start,
                                   const byte** input_end);
 
   // Byte map of one byte characters with a 0xff if the character is a word

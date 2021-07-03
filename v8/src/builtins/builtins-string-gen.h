@@ -76,9 +76,6 @@ class StringBuiltinsAssembler : public CodeStubAssembler {
                                TNode<Smi> subject_length,
                                TNode<Number> limit_number);
 
-  void RequireObjectCoercible(Node* const context, Node* const value,
-                              const char* method_name);
-
   TNode<BoolT> SmiIsNegative(TNode<Smi> value) {
     return SmiLessThan(value, SmiConstant(0));
   }
@@ -97,12 +94,13 @@ class StringBuiltinsAssembler : public CodeStubAssembler {
   // Important: {regexp_call} may not contain any code that can call into JS.
   using NodeFunction0 = std::function<void()>;
   using NodeFunction1 = std::function<void(Node* fn)>;
-  void MaybeCallFunctionAtSymbol(Node* const context, Node* const object,
-                                 Node* const maybe_string,
-                                 Handle<Symbol> symbol,
-                                 DescriptorIndexAndName symbol_index,
-                                 const NodeFunction0& regexp_call,
-                                 const NodeFunction1& generic_call);
+  using DescriptorIndexNameValue =
+      PrototypeCheckAssembler::DescriptorIndexNameValue;
+  void MaybeCallFunctionAtSymbol(
+      Node* const context, Node* const object, Node* const maybe_string,
+      Handle<Symbol> symbol,
+      DescriptorIndexNameValue additional_property_to_check,
+      const NodeFunction0& regexp_call, const NodeFunction1& generic_call);
 };
 
 class StringIncludesIndexOfAssembler : public StringBuiltinsAssembler {

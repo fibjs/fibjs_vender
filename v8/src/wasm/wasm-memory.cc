@@ -40,6 +40,9 @@ bool RunWithGCAndRetry(const std::function<bool()>& fn, Heap* heap,
     *did_retry = true;
     if (trial == kAllocationRetries) return false;
     // Otherwise, collect garbage and retry.
+    // TODO(wasm): Since reservation limits are engine-wide, we should do an
+    // engine-wide GC here (i.e. trigger a GC in each isolate using the engine,
+    // and wait for them all to finish). See https://crbug.com/v8/9405.
     heap->MemoryPressureNotification(MemoryPressureLevel::kCritical, true);
   }
 }
@@ -280,6 +283,8 @@ bool WasmMemoryTracker::FreeWasmMemory(Isolate* isolate,
 
 void WasmMemoryTracker::RegisterWasmMemoryAsShared(
     Handle<WasmMemoryObject> object, Isolate* isolate) {
+  // Only register with the tracker if shared grow is enabled.
+  if (!FLAG_wasm_grow_shared_memory) return;
   const void* backing_store = object->array_buffer().backing_store();
   // TODO(V8:8810): This should be a DCHECK, currently some tests do not
   // use a full WebAssembly.Memory, and fail on registering so return early.

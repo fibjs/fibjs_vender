@@ -5,8 +5,10 @@
 #ifndef V8_PARSING_EXPRESSION_SCOPE_H_
 #define V8_PARSING_EXPRESSION_SCOPE_H_
 
+#include <utility>
+
 #include "src/ast/scopes.h"
-#include "src/execution/message-template.h"
+#include "src/common/message-template.h"
 #include "src/objects/function-kind.h"
 #include "src/parsing/scanner.h"
 #include "src/zone/zone.h"  // For ScopedPtrList.
@@ -173,6 +175,14 @@ class ExpressionScope {
     return IsInRange(type_, kParameterDeclaration, kLexicalDeclaration);
   }
 
+  int SetInitializers(int variable_index, int peek_position) {
+    if (CanBeExpression()) {
+      return AsExpressionParsingScope()->SetInitializers(variable_index,
+                                                         peek_position);
+    }
+    return variable_index;
+  }
+
  protected:
   enum ScopeType : uint8_t {
     // Expression or assignment target.
@@ -330,7 +340,7 @@ class VariableDeclarationParsingScope : public ExpressionScope<Types> {
         // This also handles marking of loop variables in for-in and for-of
         // loops, as determined by loop-nesting-depth.
         DCHECK_NOT_NULL(var);
-        var->set_maybe_assigned();
+        var->SetMaybeAssigned();
       }
     }
     return var;
@@ -396,8 +406,8 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
   using ExpressionScopeT = ExpressionScope<Types>;
   using ScopeType = typename ExpressionScopeT::ScopeType;
 
-  ExpressionParsingScope(ParserT* parser,
-                         ScopeType type = ExpressionScopeT::kExpression)
+  explicit ExpressionParsingScope(
+      ParserT* parser, ScopeType type = ExpressionScopeT::kExpression)
       : ExpressionScopeT(parser, type),
         variable_list_(parser->variable_buffer()),
         has_async_arrow_in_scope_chain_(
@@ -437,8 +447,7 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
     }
     this->mark_verified();
     return this->parser()->RewriteInvalidReferenceExpression(
-        expression, beg_pos, end_pos, MessageTemplate::kInvalidLhsInFor,
-        kSyntaxError);
+        expression, beg_pos, end_pos, MessageTemplate::kInvalidLhsInFor);
   }
 
   void RecordExpressionError(const Scanner::Location& loc,
@@ -459,8 +468,8 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
       ExpressionScopeT::Report(Scanner::Location(begin, end),
                                MessageTemplate::kInvalidDestructuringTarget);
     }
-    for (VariableProxy* proxy : variable_list_) {
-      proxy->set_is_assigned();
+    for (auto& variable_initializer_pair : variable_list_) {
+      variable_initializer_pair.first->set_is_assigned();
     }
   }
 
@@ -476,14 +485,30 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
     if (!this->CanBeDeclaration()) {
       this->parser()->scope()->AddUnresolved(variable);
     }
-    variable_list_.Add(variable);
+    variable_list_.Add({variable, kNoSourcePosition});
   }
 
   void MarkIdentifierAsAssigned() {
     // It's possible we're parsing a syntax error. In that case it's not
     // guaranteed that there's a variable in the list.
     if (variable_list_.length() == 0) return;
-    variable_list_.at(variable_list_.length() - 1)->set_is_assigned();
+    variable_list_.at(variable_list_.length() - 1).first->set_is_assigned();
+  }
+
+  int SetInitializers(int first_variable_index, int position) {
+    int len = variable_list_.length();
+    if (len == 0) return 0;
+
+    int end = len - 1;
+    // Loop backwards and abort as soon as we see one that's already set to
+    // avoid a loop on expressions like a,b,c,d,e,f,g (outside of an arrowhead).
+    // TODO(delphick): Look into removing this loop.
+    for (int i = end; i >= first_variable_index &&
+                      variable_list_.at(i).second == kNoSourcePosition;
+         --i) {
+      variable_list_.at(i).second = position;
+    }
+    return end;
   }
 
  protected:
@@ -497,7 +522,9 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
 
   void ValidatePattern() { Validate(kPatternIndex); }
 
-  ScopedPtrList<VariableProxy>* variable_list() { return &variable_list_; }
+  ScopedList<std::pair<VariableProxy*, int>>* variable_list() {
+    return &variable_list_;
+  }
 
  private:
   friend class AccumulationScope<Types>;
@@ -543,7 +570,7 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
   bool verified_ = false;
 #endif
 
-  ScopedPtrList<VariableProxy> variable_list_;
+  ScopedList<std::pair<VariableProxy*, int>> variable_list_;
   MessageTemplate messages_[kNumberOfErrors];
   Scanner::Location locations_[kNumberOfErrors];
   bool has_async_arrow_in_scope_chain_;
@@ -666,7 +693,8 @@ class ArrowHeadParsingScope : public ExpressionParsingScope<Types> {
     // references.
     this->parser()->next_arrow_function_info_.ClearStrictParameterError();
     ExpressionParsingScope<Types>::ValidateExpression();
-    for (VariableProxy* proxy : *this->variable_list()) {
+    for (auto& proxy_initializer_pair : *this->variable_list()) {
+      VariableProxy* proxy = proxy_initializer_pair.first;
       this->parser()->scope()->AddUnresolved(proxy);
     }
   }
@@ -684,21 +712,24 @@ class ArrowHeadParsingScope : public ExpressionParsingScope<Types> {
     VariableKind kind = PARAMETER_VARIABLE;
     VariableMode mode =
         has_simple_parameter_list_ ? VariableMode::kVar : VariableMode::kLet;
-    for (VariableProxy* proxy : *this->variable_list()) {
+    for (auto& proxy_initializer_pair : *this->variable_list()) {
+      VariableProxy* proxy = proxy_initializer_pair.first;
+      int initializer_position = proxy_initializer_pair.second;
       bool was_added;
-      this->parser()->DeclareAndBindVariable(
-          proxy, kind, mode, Variable::DefaultInitializationFlag(mode), result,
-          &was_added, proxy->position());
+      this->parser()->DeclareAndBindVariable(proxy, kind, mode, result,
+                                             &was_added, initializer_position);
       if (!was_added) {
         ExpressionScope<Types>::Report(proxy->location(),
                                        MessageTemplate::kParamDupe);
       }
     }
 
-    int initializer_position = this->parser()->end_position();
+#ifdef DEBUG
     for (auto declaration : *result->declarations()) {
-      declaration->var()->set_initializer_position(initializer_position);
+      DCHECK_NE(declaration->var()->initializer_position(), kNoSourcePosition);
     }
+#endif  // DEBUG
+
     if (uses_this_) result->UsesThis();
     return result;
   }

@@ -419,14 +419,15 @@ bool LoadElimination::AbstractState::Equals(AbstractState const* that) const {
 }
 
 void LoadElimination::AbstractState::FieldsMerge(
-    AbstractFields& this_fields, AbstractFields const& that_fields,
+    AbstractFields* this_fields, AbstractFields const& that_fields,
     Zone* zone) {
-  for (size_t i = 0; i < this_fields.size(); ++i) {
-    if (this_fields[i]) {
+  for (size_t i = 0; i < this_fields->size(); ++i) {
+    AbstractField const*& this_field = (*this_fields)[i];
+    if (this_field) {
       if (that_fields[i]) {
-        this_fields[i] = this_fields[i]->Merge(that_fields[i], zone);
+        this_field = this_field->Merge(that_fields[i], zone);
       } else {
-        this_fields[i] = nullptr;
+        this_field = nullptr;
       }
     }
   }
@@ -442,8 +443,8 @@ void LoadElimination::AbstractState::Merge(AbstractState const* that,
   }
 
   // Merge the information we have about the fields.
-  FieldsMerge(this->fields_, that->fields_, zone);
-  FieldsMerge(this->const_fields_, that->const_fields_, zone);
+  FieldsMerge(&this->fields_, that->fields_, zone);
+  FieldsMerge(&this->const_fields_, that->const_fields_, zone);
 
   // Merge the information we have about the maps.
   if (this->maps_) {
@@ -923,13 +924,18 @@ Reduction LoadElimination::ReduceStoreField(Node* node,
       FieldInfo const* lookup_result =
           state->LookupField(object, field_index, constness);
 
-      if (lookup_result) {
+      if (lookup_result && (constness == PropertyConstness::kMutable ||
+                            V8_ENABLE_DOUBLE_CONST_STORE_CHECK_BOOL)) {
         // At runtime, we should never encounter
         // - any store replacing existing info with a different, incompatible
         //   representation, nor
         // - two consecutive const stores.
         // However, we may see such code statically, so we guard against
         // executing it by emitting Unreachable.
+        // TODO(gsps): Re-enable the double const store check even for
+        //   non-debug builds once we have identified other FieldAccesses
+        //   that should be marked mutable instead of const
+        //   (cf. JSCreateLowering::AllocateFastLiteral).
         bool incompatible_representation =
             !lookup_result->name.is_null() &&
             !IsCompatible(representation, lookup_result->representation);
@@ -1191,9 +1197,12 @@ LoadElimination::AbstractState const* LoadElimination::ComputeLoopState(
     ElementsTransition transition;
     Node* object;
   };
-  ZoneVector<TransitionElementsKindInfo> element_transitions_(zone());
-  ZoneQueue<Node*> queue(zone());
-  ZoneSet<Node*> visited(zone());
+  // Allocate zone data structures in a temporary zone with a lifetime limited
+  // to this function to avoid blowing up the size of the stage-global zone.
+  Zone temp_zone(zone()->allocator(), "Temporary scoped zone");
+  ZoneVector<TransitionElementsKindInfo> element_transitions_(&temp_zone);
+  ZoneQueue<Node*> queue(&temp_zone);
+  ZoneSet<Node*> visited(&temp_zone);
   visited.insert(node);
   for (int i = 1; i < control->InputCount(); ++i) {
     queue.push(node->InputAt(i));
@@ -1242,9 +1251,7 @@ LoadElimination::AbstractState const* LoadElimination::ComputeLoopState(
           }
           case IrOpcode::kStoreField: {
             FieldAccess access = FieldAccessOf(current->op());
-            if (access.constness == PropertyConstness::kMutable) {
-              state = ComputeLoopStateForStoreField(current, state, access);
-            }
+            state = ComputeLoopStateForStoreField(current, state, access);
             break;
           }
           case IrOpcode::kStoreElement: {

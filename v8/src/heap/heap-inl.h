@@ -159,6 +159,7 @@ size_t Heap::NewSpaceAllocationCounter() {
 }
 
 AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationType type,
+                                   AllocationOrigin origin,
                                    AllocationAlignment alignment) {
   DCHECK(AllowHandleAllocation::IsAllowed());
   DCHECK(AllowHeapAllocation::IsAllowed());
@@ -179,6 +180,9 @@ AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationType type,
   HeapObject object;
   AllocationResult allocation;
 
+  if (FLAG_single_generation && type == AllocationType::kYoung)
+    type = AllocationType::kOld;
+
   if (AllocationType::kYoung == type) {
     if (large_object) {
       if (FLAG_young_generation_large_objects) {
@@ -191,13 +195,13 @@ AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationType type,
         allocation = lo_space_->AllocateRaw(size_in_bytes);
       }
     } else {
-      allocation = new_space_->AllocateRaw(size_in_bytes, alignment);
+      allocation = new_space_->AllocateRaw(size_in_bytes, alignment, origin);
     }
   } else if (AllocationType::kOld == type) {
     if (large_object) {
       allocation = lo_space_->AllocateRaw(size_in_bytes);
     } else {
-      allocation = old_space_->AllocateRaw(size_in_bytes, alignment);
+      allocation = old_space_->AllocateRaw(size_in_bytes, alignment, origin);
     }
   } else if (AllocationType::kCode == type) {
     if (size_in_bytes <= code_space()->AreaSize() && !large_object) {
@@ -213,7 +217,9 @@ AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationType type,
 #endif
     DCHECK(!large_object);
     DCHECK(CanAllocateInReadOnlySpace());
-    allocation = read_only_space_->AllocateRaw(size_in_bytes, alignment);
+    DCHECK_EQ(AllocationOrigin::kRuntime, origin);
+    allocation =
+        read_only_space_->AllocateRaw(size_in_bytes, alignment, origin);
   } else {
     UNREACHABLE();
   }
@@ -263,15 +269,13 @@ void Heap::OnAllocationEvent(HeapObject object, int size_in_bytes) {
 }
 
 bool Heap::CanAllocateInReadOnlySpace() {
-  return !deserialization_complete_ &&
-         (isolate()->serializer_enabled() ||
-          !isolate()->initialized_from_snapshot());
+  return read_only_space()->writable();
 }
 
 void Heap::UpdateAllocationsHash(HeapObject object) {
   Address object_address = object.address();
   MemoryChunk* memory_chunk = MemoryChunk::FromAddress(object_address);
-  AllocationSpace allocation_space = memory_chunk->owner()->identity();
+  AllocationSpace allocation_space = memory_chunk->owner_identity();
 
   STATIC_ASSERT(kSpaceTagSize + kPageSizeBits <= 32);
   uint32_t value =
@@ -374,13 +378,12 @@ bool Heap::InToPage(HeapObject heap_object) {
 bool Heap::InOldSpace(Object object) { return old_space_->Contains(object); }
 
 // static
-Heap* Heap::FromWritableHeapObject(const HeapObject obj) {
+Heap* Heap::FromWritableHeapObject(HeapObject obj) {
   MemoryChunk* chunk = MemoryChunk::FromHeapObject(obj);
   // RO_SPACE can be shared between heaps, so we can't use RO_SPACE objects to
   // find a heap. The exception is when the ReadOnlySpace is writeable, during
   // bootstrapping, so explicitly allow this case.
-  SLOW_DCHECK(chunk->owner()->identity() != RO_SPACE ||
-              static_cast<ReadOnlySpace*>(chunk->owner())->writable());
+  SLOW_DCHECK(chunk->IsWritable());
   Heap* heap = chunk->heap();
   SLOW_DCHECK(heap != nullptr);
   return heap;
@@ -408,7 +411,7 @@ AllocationMemento Heap::FindAllocationMemento(Map map, HeapObject object) {
     return AllocationMemento();
   }
   HeapObject candidate = HeapObject::FromAddress(memento_address);
-  MapWordSlot candidate_map_slot = candidate.map_slot();
+  ObjectSlot candidate_map_slot = candidate.map_slot();
   // This fast check may peek at an uninitialized word. However, the slow check
   // below (memento_address == top) ensures that this is safe. Mark the word as
   // initialized to silence MemorySanitizer warnings.
@@ -614,8 +617,8 @@ CodePageMemoryModificationScope::CodePageMemoryModificationScope(
       scope_active_(chunk_->heap()->write_protect_code_memory() &&
                     chunk_->IsFlagSet(MemoryChunk::IS_EXECUTABLE)) {
   if (scope_active_) {
-    DCHECK(chunk_->owner()->identity() == CODE_SPACE ||
-           (chunk_->owner()->identity() == CODE_LO_SPACE));
+    DCHECK(chunk_->owner_identity() == CODE_SPACE ||
+           (chunk_->owner_identity() == CODE_LO_SPACE));
     chunk_->SetReadAndWritable();
   }
 }

@@ -7,11 +7,13 @@
 #include "src/ast/ast.h"
 #include "src/codegen/compiler.h"
 #include "src/codegen/optimized-compilation-info.h"
+#include "src/codegen/tick-counter.h"
 #include "src/compiler/all-nodes.h"
 #include "src/compiler/bytecode-graph-builder.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/compiler-source-position-table.h"
 #include "src/compiler/graph-reducer.h"
+#include "src/compiler/js-heap-broker.h"
 #include "src/compiler/js-operator.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
@@ -330,7 +332,7 @@ base::Optional<SharedFunctionInfoRef> JSInliner::DetermineCallTarget(
 //  - context         : The context (as SSA value) bound by the call target.
 //  - feedback_vector : The target is guaranteed to use this feedback vector.
 FeedbackVectorRef JSInliner::DetermineCallContext(Node* node,
-                                                  Node*& context_out) {
+                                                  Node** context_out) {
   DCHECK(IrOpcode::IsInlineeOpcode(node->opcode()));
   HeapObjectMatcher match(node->InputAt(0));
 
@@ -340,7 +342,7 @@ FeedbackVectorRef JSInliner::DetermineCallContext(Node* node,
     CHECK(function.has_feedback_vector());
 
     // The inlinee specializes to the context from the JSFunction object.
-    context_out = jsgraph()->Constant(function.context());
+    *context_out = jsgraph()->Constant(function.context());
     return function.feedback_vector();
   }
 
@@ -352,7 +354,7 @@ FeedbackVectorRef JSInliner::DetermineCallContext(Node* node,
     FeedbackCellRef cell(FeedbackCellRef(broker(), p.feedback_cell()));
 
     // The inlinee uses the locally provided context at instantiation.
-    context_out = NodeProperties::GetContextInput(match.node());
+    *context_out = NodeProperties::GetContextInput(match.node());
     return cell.value().AsFeedbackVector();
   }
 
@@ -423,14 +425,13 @@ Reduction JSInliner::ReduceJSCall(Node* node) {
                                                       : ""));
   // Determine the targets feedback vector and its context.
   Node* context;
-  FeedbackVectorRef feedback_vector = DetermineCallContext(node, context);
+  FeedbackVectorRef feedback_vector = DetermineCallContext(node, &context);
 
-  if (FLAG_concurrent_inlining) {
-    if (!shared_info.value().IsSerializedForCompilation(feedback_vector)) {
-      TRACE("Missed opportunity to inline a function ("
-            << *shared_info << " with " << feedback_vector << ")");
-      return NoChange();
-    }
+  if (FLAG_concurrent_inlining &&
+      !shared_info.value().IsSerializedForCompilation(feedback_vector)) {
+    TRACE("Missed opportunity to inline a function ("
+          << *shared_info << " with " << feedback_vector << ")");
+    return NoChange();
   }
 
   // ----------------------------------------------------------------
@@ -466,14 +467,13 @@ Reduction JSInliner::ReduceJSCall(Node* node) {
       AllowHandleAllocation allow_handle_alloc;
       AllowHeapAllocation allow_heap_alloc;
       AllowCodeDependencyChange allow_code_dep_change;
-      Handle<Context> native_context =
-          handle(info_->native_context(), isolate());
-
-      BuildGraphFromBytecode(broker(), zone(), bytecode_array.object(),
-                             shared_info.value().object(),
-                             feedback_vector.object(), BailoutId::None(),
-                             jsgraph(), call.frequency(), source_positions_,
-                             native_context, inlining_id, flags);
+      CallFrequency frequency = call.frequency();
+      Handle<NativeContext> native_context(info_->native_context(), isolate());
+      BuildGraphFromBytecode(
+          broker(), zone(), bytecode_array.object(),
+          shared_info.value().object(), feedback_vector.object(),
+          BailoutId::None(), jsgraph(), frequency, source_positions_,
+          native_context, inlining_id, flags, &info_->tick_counter());
     }
 
     // Extract the inlinee start/end nodes.

@@ -66,19 +66,19 @@ class BaseCollectionsAssembler : public CodeStubAssembler {
                                          TNode<Object> iterable);
 
   // Constructs a collection instance. Choosing a fast path when possible.
-  TNode<Object> AllocateJSCollection(TNode<Context> context,
-                                     TNode<JSFunction> constructor,
-                                     TNode<Object> new_target);
+  TNode<JSObject> AllocateJSCollection(TNode<Context> context,
+                                       TNode<JSFunction> constructor,
+                                       TNode<JSReceiver> new_target);
 
   // Fast path for constructing a collection instance if the constructor
   // function has not been modified.
-  TNode<Object> AllocateJSCollectionFast(TNode<HeapObject> constructor);
+  TNode<JSObject> AllocateJSCollectionFast(TNode<JSFunction> constructor);
 
   // Fallback for constructing a collection instance if the constructor function
   // has been modified.
-  TNode<Object> AllocateJSCollectionSlow(TNode<Context> context,
-                                         TNode<JSFunction> constructor,
-                                         TNode<Object> new_target);
+  TNode<JSObject> AllocateJSCollectionSlow(TNode<Context> context,
+                                           TNode<JSFunction> constructor,
+                                           TNode<JSReceiver> new_target);
 
   // Allocates the backing store for a collection.
   virtual TNode<Object> AllocateTable(Variant variant, TNode<Context> context,
@@ -108,8 +108,8 @@ class BaseCollectionsAssembler : public CodeStubAssembler {
   // Checks whether {collection}'s initial add/set function has been modified
   // (depending on {variant}, loaded from {native_context}).
   void GotoIfInitialAddFunctionModified(Variant variant,
-                                        TNode<Context> native_context,
-                                        TNode<Object> collection,
+                                        TNode<NativeContext> native_context,
+                                        TNode<HeapObject> collection,
                                         Label* if_modified);
 
   // Gets root index for the name of the add/set function.
@@ -186,8 +186,8 @@ void BaseCollectionsAssembler::AddConstructorEntries(
     TNode<Object> table = AllocateTable(variant, context, at_least_space_for);
     StoreObjectField(collection, GetTableOffset(variant), table);
     GotoIf(IsNullOrUndefined(initial_entries), &exit);
-    GotoIfInitialAddFunctionModified(variant, native_context, collection,
-                                     &slow_loop);
+    GotoIfInitialAddFunctionModified(variant, CAST(native_context),
+                                     CAST(collection), &slow_loop);
     Branch(use_fast_loop.value(), &fast_loop, &slow_loop);
   }
   BIND(&fast_loop);
@@ -212,8 +212,8 @@ void BaseCollectionsAssembler::AddConstructorEntries(
       {
         // Check that add/set function has not been modified.
         Label if_not_modified(this), if_modified(this);
-        GotoIfInitialAddFunctionModified(variant, native_context, collection,
-                                         &if_modified);
+        GotoIfInitialAddFunctionModified(variant, CAST(native_context),
+                                         CAST(collection), &if_modified);
         Goto(&if_not_modified);
         BIND(&if_modified);
         Unreachable();
@@ -320,17 +320,17 @@ void BaseCollectionsAssembler::AddConstructorEntriesFromIterable(
 
   CSA_ASSERT(this, Word32BinaryNot(IsUndefined(iterator.object)));
 
-  TNode<Object> fast_iterator_result_map =
-      LoadContextElement(native_context, Context::ITERATOR_RESULT_MAP_INDEX);
+  TNode<Map> fast_iterator_result_map = CAST(
+      LoadContextElement(native_context, Context::ITERATOR_RESULT_MAP_INDEX));
   TVARIABLE(Object, var_exception);
 
   Goto(&loop);
   BIND(&loop);
   {
-    TNode<Object> next = iterator_assembler.IteratorStep(
+    TNode<JSReceiver> next = iterator_assembler.IteratorStep(
         context, iterator, &exit, fast_iterator_result_map);
-    TNode<Object> next_value = CAST(iterator_assembler.IteratorValue(
-        context, next, fast_iterator_result_map));
+    TNode<Object> next_value = iterator_assembler.IteratorValue(
+        context, next, fast_iterator_result_map);
     AddConstructorEntry(variant, context, collection, add_func, next_value,
                         nullptr, &if_exception, &var_exception);
     Goto(&loop);
@@ -356,44 +356,67 @@ RootIndex BaseCollectionsAssembler::GetAddFunctionNameIndex(Variant variant) {
 }
 
 void BaseCollectionsAssembler::GotoIfInitialAddFunctionModified(
-    Variant variant, TNode<Context> native_context, TNode<Object> collection,
-    Label* if_modified) {
+    Variant variant, TNode<NativeContext> native_context,
+    TNode<HeapObject> collection, Label* if_modified) {
   STATIC_ASSERT(JSCollection::kAddFunctionDescriptorIndex ==
                 JSWeakCollection::kAddFunctionDescriptorIndex);
-  GotoIfInitialPrototypePropertyModified(
-      LoadMap(CAST(collection)),
-      GetInitialCollectionPrototype(variant, native_context),
+
+  // TODO(jgruber): Investigate if this should also fall back to full prototype
+  // verification.
+  static constexpr PrototypeCheckAssembler::Flags flags{
+      PrototypeCheckAssembler::kCheckPrototypePropertyConstness};
+
+  static constexpr int kNoContextIndex = -1;
+  STATIC_ASSERT(
+      (flags & PrototypeCheckAssembler::kCheckPrototypePropertyIdentity) == 0);
+
+  using DescriptorIndexNameValue =
+      PrototypeCheckAssembler::DescriptorIndexNameValue;
+
+  DescriptorIndexNameValue property_to_check{
       JSCollection::kAddFunctionDescriptorIndex,
-      GetAddFunctionNameIndex(variant), if_modified);
+      GetAddFunctionNameIndex(variant), kNoContextIndex};
+
+  PrototypeCheckAssembler prototype_check_assembler(
+      state(), flags, native_context,
+      GetInitialCollectionPrototype(variant, native_context),
+      Vector<DescriptorIndexNameValue>(&property_to_check, 1));
+
+  TNode<HeapObject> prototype = LoadMapPrototype(LoadMap(collection));
+  Label if_unmodified(this);
+  prototype_check_assembler.CheckAndBranch(prototype, &if_unmodified,
+                                           if_modified);
+
+  BIND(&if_unmodified);
 }
 
-TNode<Object> BaseCollectionsAssembler::AllocateJSCollection(
+TNode<JSObject> BaseCollectionsAssembler::AllocateJSCollection(
     TNode<Context> context, TNode<JSFunction> constructor,
-    TNode<Object> new_target) {
+    TNode<JSReceiver> new_target) {
   TNode<BoolT> is_target_unmodified = WordEqual(constructor, new_target);
 
-  return Select<Object>(is_target_unmodified,
-                        [=] { return AllocateJSCollectionFast(constructor); },
-                        [=] {
-                          return AllocateJSCollectionSlow(context, constructor,
-                                                          new_target);
-                        });
+  return Select<JSObject>(
+      is_target_unmodified,
+      [=] { return AllocateJSCollectionFast(constructor); },
+      [=] {
+        return AllocateJSCollectionSlow(context, constructor, new_target);
+      });
 }
 
-TNode<Object> BaseCollectionsAssembler::AllocateJSCollectionFast(
-    TNode<HeapObject> constructor) {
+TNode<JSObject> BaseCollectionsAssembler::AllocateJSCollectionFast(
+    TNode<JSFunction> constructor) {
   CSA_ASSERT(this, IsConstructorMap(LoadMap(constructor)));
-  TNode<Object> initial_map =
-      LoadObjectField(constructor, JSFunction::kPrototypeOrInitialMapOffset);
-  return CAST(AllocateJSObjectFromMap(initial_map));
+  TNode<Map> initial_map =
+      CAST(LoadJSFunctionPrototypeOrInitialMap(constructor));
+  return AllocateJSObjectFromMap(initial_map);
 }
 
-TNode<Object> BaseCollectionsAssembler::AllocateJSCollectionSlow(
+TNode<JSObject> BaseCollectionsAssembler::AllocateJSCollectionSlow(
     TNode<Context> context, TNode<JSFunction> constructor,
-    TNode<Object> new_target) {
+    TNode<JSReceiver> new_target) {
   ConstructorBuiltinsAssembler constructor_assembler(this->state());
-  return CAST(constructor_assembler.EmitFastNewObject(context, constructor,
-                                                      new_target));
+  return constructor_assembler.EmitFastNewObject(context, constructor,
+                                                 new_target);
 }
 
 void BaseCollectionsAssembler::GenerateConstructor(
@@ -408,7 +431,7 @@ void BaseCollectionsAssembler::GenerateConstructor(
 
   TNode<Context> native_context = LoadNativeContext(context);
   TNode<Object> collection = AllocateJSCollection(
-      context, GetConstructor(variant, native_context), new_target);
+      context, GetConstructor(variant, native_context), CAST(new_target));
 
   AddConstructorEntries(variant, context, native_context, collection, iterable);
   Return(collection);

@@ -85,6 +85,20 @@ void RegExpMacroAssembler::CheckPosition(int cp_offset,
   LoadCurrentCharacter(cp_offset, on_outside_input, true);
 }
 
+void RegExpMacroAssembler::LoadCurrentCharacter(int cp_offset,
+                                                Label* on_end_of_input,
+                                                bool check_bounds,
+                                                int characters,
+                                                int eats_at_least) {
+  // By default, eats_at_least = characters.
+  if (eats_at_least == kUseCharactersValue) {
+    eats_at_least = characters;
+  }
+
+  LoadCurrentCharacterImpl(cp_offset, on_end_of_input, check_bounds, characters,
+                           eats_at_least);
+}
+
 bool RegExpMacroAssembler::CheckSpecialCharacterClass(uc16 type,
                                                       Label* on_no_match) {
   return false;
@@ -129,39 +143,54 @@ const byte* NativeRegExpMacroAssembler::StringCharacterPosition(
   }
 }
 
+// This method may only be called after an interrupt.
 int NativeRegExpMacroAssembler::CheckStackGuardState(
-    Isolate* isolate, int start_index, bool is_direct_call,
+    Isolate* isolate, int start_index, RegExp::CallOrigin call_origin,
     Address* return_address, Code re_code, Address* subject,
     const byte** input_start, const byte** input_end) {
-  AllowHeapAllocation allow_allocation;
+  DisallowHeapAllocation no_gc;
+
   DCHECK(re_code.raw_instruction_start() <= *return_address);
   DCHECK(*return_address <= re_code.raw_instruction_end());
-  int return_value = 0;
-  // Prepare for possible GC.
-  HandleScope handles(isolate);
-  Handle<Code> code_handle(re_code, isolate);
-  Handle<String> subject_handle(String::cast(Object(*subject)), isolate);
-  bool is_one_byte = String::IsOneByteRepresentationUnderneath(*subject_handle);
-
   StackLimitCheck check(isolate);
   bool js_has_overflowed = check.JsHasOverflowed();
 
-  if (is_direct_call) {
+  if (call_origin == RegExp::CallOrigin::kFromJs) {
     // Direct calls from JavaScript can be interrupted in two ways:
     // 1. A real stack overflow, in which case we let the caller throw the
     //    exception.
     // 2. The stack guard was used to interrupt execution for another purpose,
     //    forcing the call through the runtime system.
-    return_value = js_has_overflowed ? EXCEPTION : RETRY;
-  } else if (js_has_overflowed) {
+
+    // Bug(v8:9540) Investigate why this method is called from JS although no
+    // stackoverflow or interrupt is pending on ARM64. We return 0 in this case
+    // to continue execution normally.
+    if (js_has_overflowed) {
+      return EXCEPTION;
+    } else if (check.InterruptRequested()) {
+      return RETRY;
+    } else {
+      return 0;
+    }
+  }
+  DCHECK(call_origin == RegExp::CallOrigin::kFromRuntime);
+
+  // Prepare for possible GC.
+  HandleScope handles(isolate);
+  Handle<Code> code_handle(re_code, isolate);
+  Handle<String> subject_handle(String::cast(Object(*subject)), isolate);
+  bool is_one_byte = String::IsOneByteRepresentationUnderneath(*subject_handle);
+  int return_value = 0;
+
+  if (js_has_overflowed) {
+    AllowHeapAllocation yes_gc;
     isolate->StackOverflow();
     return_value = EXCEPTION;
-  } else {
+  } else if (check.InterruptRequested()) {
+    AllowHeapAllocation yes_gc;
     Object result = isolate->stack_guard()->HandleInterrupts();
     if (result.IsException(isolate)) return_value = EXCEPTION;
   }
-
-  DisallowHeapAllocation no_gc;
 
   if (*code_handle != re_code) {  // Return address no longer valid
     intptr_t delta = code_handle->address() - re_code.address();

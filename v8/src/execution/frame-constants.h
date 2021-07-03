@@ -210,13 +210,13 @@ class TypedFrameConstants : public CommonFrameConstants {
   (TypedFrameConstants::kFirstPushedFrameValueOffset - (x)*kSystemPointerSize)
 #define TYPED_FRAME_SIZE(count) \
   (TypedFrameConstants::kFixedFrameSize + (count)*kSystemPointerSize)
-#define TYPED_FRAME_SIZE_FROM_SP(count) \
+#define TYPED_FRAME_SIZE_FROM_FP(count) \
   (TypedFrameConstants::kFixedFrameSizeFromFp + (count)*kSystemPointerSize)
 #define DEFINE_TYPED_FRAME_SIZES(count)                                        \
   static constexpr int kFixedFrameSize = TYPED_FRAME_SIZE(count);              \
   static constexpr int kFixedSlotCount = kFixedFrameSize / kSystemPointerSize; \
   static constexpr int kFixedFrameSizeFromFp =                                 \
-      TYPED_FRAME_SIZE_FROM_SP(count);                                         \
+      TYPED_FRAME_SIZE_FROM_FP(count);                                         \
   static constexpr int kFixedSlotCountFromFp =                                 \
       kFixedFrameSizeFromFp / kSystemPointerSize
 
@@ -249,6 +249,13 @@ class ConstructFrameConstants : public TypedFrameConstants {
   DEFINE_TYPED_FRAME_SIZES(5);
 };
 
+class CWasmEntryFrameConstants : public TypedFrameConstants {
+ public:
+  // FP-relative:
+  static constexpr int kCEntryFPOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(0);
+  DEFINE_TYPED_FRAME_SIZES(1);
+};
+
 class WasmCompiledFrameConstants : public TypedFrameConstants {
  public:
   // FP-relative.
@@ -271,7 +278,7 @@ class BuiltinContinuationFrameConstants : public TypedFrameConstants {
       TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
   static constexpr int kBuiltinContextOffset =
       TYPED_FRAME_PUSHED_VALUE_OFFSET(2);
-  static constexpr int kBuiltinOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(3);
+  static constexpr int kBuiltinIndexOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(3);
 
   // The argument count is in the first allocatable register, stored below the
   // fixed part of the frame and therefore is not part of the fixed frame size.

@@ -171,6 +171,7 @@ namespace compiler {
   V(Arm64CompressSigned)                    \
   V(Arm64CompressPointer)                   \
   V(Arm64CompressAny)                       \
+  V(Arm64DmbIsh)                            \
   V(Arm64DsbIsb)                            \
   V(Arm64F32x4Splat)                        \
   V(Arm64F32x4ExtractLane)                  \
@@ -191,6 +192,13 @@ namespace compiler {
   V(Arm64F32x4Ne)                           \
   V(Arm64F32x4Lt)                           \
   V(Arm64F32x4Le)                           \
+  V(Arm64I64x2Splat)                        \
+  V(Arm64I64x2ExtractLane)                  \
+  V(Arm64I64x2ReplaceLane)                  \
+  V(Arm64I64x2Neg)                          \
+  V(Arm64I64x2Shl)                          \
+  V(Arm64I64x2ShrS)                         \
+  V(Arm64I64x2ShrU)                         \
   V(Arm64I32x4Splat)                        \
   V(Arm64I32x4ExtractLane)                  \
   V(Arm64I32x4ReplaceLane)                  \

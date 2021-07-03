@@ -8,7 +8,7 @@
 #include "src/heap/factory.h"
 #include "src/objects/js-regexp-inl.h"
 #include "src/objects/objects-inl.h"
-#include "src/regexp/jsregexp.h"
+#include "src/regexp/regexp.h"
 
 namespace v8 {
 namespace internal {
@@ -179,7 +179,15 @@ bool RegExpUtils::IsUnmodifiedRegExp(Isolate* isolate, Handle<Object> obj) {
     return false;
   }
 
-  if (!isolate->IsRegExpSpeciesLookupChainIntact()) return false;
+  // Note: Unlike the more involved check in CSA (see BranchIfFastRegExp), this
+  // does not go on to check the actual value of the exec property. This would
+  // not be valid since this method is called from places that access the flags
+  // property. Similar spots in CSA would use BranchIfFastRegExp_Strict in this
+  // case.
+
+  if (!isolate->IsRegExpSpeciesLookupChainIntact(isolate->native_context())) {
+    return false;
+  }
 
   // The smi check is required to omit ToLength(lastIndex) calls with possible
   // user-code execution on the fast path.

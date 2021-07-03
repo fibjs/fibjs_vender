@@ -64,6 +64,10 @@ TFJ(ArrayPrototypeSplice, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ArrayPrototypeUnshift, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(ToString, kO) \
 TFS(FastCreateDataProperty, kReceiver, kKey, kValue) \
+TFS(CheckNumberInRange, kValue, kMin, kMax) \
+TFS(BigIntAddNoThrow, kX, kY) \
+TFS(BigIntAdd, kXNum, kYNum) \
+TFS(BigIntUnaryMinus, kBigint) \
 TFJ(BooleanConstructor, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetBuffer, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetByteLength, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
@@ -117,12 +121,27 @@ TFJ(MathSqrt, 1, kReceiver, kX) \
 TFJ(MathTan, 1, kReceiver, kX) \
 TFJ(MathTanh, 1, kReceiver, kX) \
 TFJ(ObjectFromEntries, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
-TFJ(ProxyConstructor, 2, kReceiver, kTarget, kHandler) \
+TFJ(ObjectIsExtensible, 1, kReceiver, kObject) \
+TFJ(ObjectPreventExtensions, 1, kReceiver, kObject) \
+TFJ(ObjectGetPrototypeOf, 1, kReceiver, kObject) \
+TFJ(ObjectSetPrototypeOf, 2, kReceiver, kObject, kProto) \
+TFJ(ProxyConstructor, 3, kReceiver, kNewTarget, kTarget, kHandler) \
+TFS(ProxyDeleteProperty, kProxy, kName, kLanguageMode) \
 TFS(ProxyGetProperty, kProxy, kName, kReceiverValue, kOnNonExistent) \
+TFS(ProxyGetPrototypeOf, kProxy) \
 TFS(ProxyHasProperty, kProxy, kName) \
+TFS(ProxyIsExtensible, kProxy) \
+TFS(ProxyPreventExtensions, kProxy, kDoThrow) \
 TFJ(ProxyRevocable, 2, kReceiver, kTarget, kHandler) \
 TFJ(ProxyRevoke, 0, kReceiver) \
 TFS(ProxySetProperty, kProxy, kName, kValue, kReceiverValue) \
+TFS(ProxySetPrototypeOf, kProxy, kProto, kDoThrow) \
+TFJ(ReflectIsExtensible, 1, kReceiver, kObject) \
+TFJ(ReflectPreventExtensions, 1, kReceiver, kObject) \
+TFJ(ReflectGetPrototypeOf, 1, kReceiver, kObject) \
+TFJ(ReflectSetPrototypeOf, 2, kReceiver, kObject, kProto) \
+TFJ(ReflectGet, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(ReflectDeleteProperty, 2, kReceiver, kObject, kKey) \
 TFS(RegExpReplace, kRegexp, kString, kReplaceValue) \
 TFJ(RegExpPrototypeReplace, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeToString, 0, kReceiver) \
@@ -170,6 +189,7 @@ TFJ(TypedArrayPrototypeSort, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(GenericBuiltinTest20UT5ATSmi10HeapObject, kParam) \
 TFS(TestHelperPlus1, kX) \
 TFS(TestHelperPlus2, kX) \
+TFS(NewSmiBox, kValue) \
 TFS(Load17ATFastSmiElements, kSortState, kIndex) \
 TFS(Load20ATFastObjectElements, kSortState, kIndex) \
 TFS(Load20ATFastDoubleElements, kSortState, kIndex) \

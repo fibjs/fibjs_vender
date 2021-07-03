@@ -451,11 +451,13 @@ void VisitTryTruncateDouble(InstructionSelector* selector, ArchOpcode opcode,
 #endif
 
 template <class CanCombineWithLoad>
-void GenerateRightOperands(InstructionSelector* selector, Node* node,
-                           Node* right, InstructionCode& opcode,
-                           OperandModes& operand_mode,
-                           InstructionOperand* inputs, size_t& input_count,
-                           CanCombineWithLoad canCombineWithLoad) {
+void GenerateRightOperands(
+    InstructionSelector* selector, Node* node, Node* right,
+    InstructionCode& opcode,     // NOLINT(runtime/references)
+    OperandModes& operand_mode,  // NOLINT(runtime/references)
+    InstructionOperand* inputs,
+    size_t& input_count,  // NOLINT(runtime/references)
+    CanCombineWithLoad canCombineWithLoad) {
   S390OperandGenerator g(selector);
 
   if ((operand_mode & OperandMode::kAllowImmediate) &&
@@ -495,11 +497,13 @@ void GenerateRightOperands(InstructionSelector* selector, Node* node,
 }
 
 template <class CanCombineWithLoad>
-void GenerateBinOpOperands(InstructionSelector* selector, Node* node,
-                           Node* left, Node* right, InstructionCode& opcode,
-                           OperandModes& operand_mode,
-                           InstructionOperand* inputs, size_t& input_count,
-                           CanCombineWithLoad canCombineWithLoad) {
+void GenerateBinOpOperands(
+    InstructionSelector* selector, Node* node, Node* left, Node* right,
+    InstructionCode& opcode,     // NOLINT(runtime/references)
+    OperandModes& operand_mode,  // NOLINT(runtime/references)
+    InstructionOperand* inputs,
+    size_t& input_count,  // NOLINT(runtime/references)
+    CanCombineWithLoad canCombineWithLoad) {
   S390OperandGenerator g(selector);
   // left is always register
   InstructionOperand const left_input = g.UseRegister(left);
@@ -690,9 +694,9 @@ void InstructionSelector::VisitStackSlot(Node* node) {
        sequence()->AddImmediate(Constant(slot)), 0, nullptr);
 }
 
-void InstructionSelector::VisitDebugAbort(Node* node) {
+void InstructionSelector::VisitAbortCSAAssert(Node* node) {
   S390OperandGenerator g(this);
-  Emit(kArchDebugAbort, g.NoOutput(), g.UseFixed(node->InputAt(0), r3));
+  Emit(kArchAbortCSAAssert, g.NoOutput(), g.UseFixed(node->InputAt(0), r3));
 }
 
 void InstructionSelector::VisitLoad(Node* node) {
@@ -2196,6 +2200,11 @@ void InstructionSelector::EmitPrepareArguments(
     }
     DCHECK(num_slots == slot);
   }
+}
+
+void InstructionSelector::VisitMemoryBarrier(Node* node) {
+  S390OperandGenerator g(this);
+  Emit(kArchNop, g.NoOutput());
 }
 
 bool InstructionSelector::IsTailCallAddressImmediate() { return false; }
