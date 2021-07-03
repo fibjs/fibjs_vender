@@ -76,10 +76,6 @@ if (process.env.NO_CODEGEN != '1') {
         `${(os.cpuNumbers() || 1) * 4}`,
     ]);
 }
-var mksnapshot_exe = path.resolve(v8Folder, v8_output, './mksnapshot.exe');
-if (!fs.exists(mksnapshot_exe)) {
-    throw new Error(`[patch_snapshot] mkspanshot '${mksnapshot_exe}' doesn't existed!`);
-}
 
 process.chdir(workFolder);
 
