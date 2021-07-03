@@ -131,12 +131,18 @@ list(REMOVE_ITEM src_list
 list(REMOVE_ITEM src_list
 	# remove files if snapshot hasn't been generated :start
 	"${PROJECT_SOURCE_DIR}/src/init/setup-isolate-deserialize.cc"
+	# "${PROJECT_SOURCE_DIR}/src/init/setup-isolate-full.cc"
 	# remove files if snapshot hasn't been generated :end
 )
 
 if(${ARCH} STREQUAL "mips" OR ${ARCH} STREQUAL "mips64")
 	set(flags "${flags} -Wno-c++11-narrowing")
 endif()
+
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows" AND ${ARCH} STREQUAL "amd64")
+	add_definitions(-DV8_EMBEDDED_BUILTINS)
+endif()
+	
 
 include(../build_tools/cmake/Library.cmake)
 
