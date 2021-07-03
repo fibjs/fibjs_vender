@@ -122,22 +122,36 @@ list(REMOVE_ITEM src_list
 # - "src/snapshot/snapshot-empty.cc"(equals to default status of "src/snapshot/snapshots/<arch_os_vary_file>.cc")
 # - "src/init/setup-isolate-deserialize.cc"
 #
-# so, if we have generated snapshot for platform-arch, just comment COMMAND next line.
 list(REMOVE_ITEM src_list
-	# remove files if snapshot hasn't been generated :start
+	# remove files when v8_use_snapshot = true :start
 	"${PROJECT_SOURCE_DIR}/src/init/setup-isolate-deserialize.cc"
-	# "${PROJECT_SOURCE_DIR}/src/init/setup-isolate-full.cc"
-	# remove files if snapshot hasn't been generated :end
+	# remove files when v8_use_snapshot = true :end
 )
 
 if(${ARCH} STREQUAL "mips" OR ${ARCH} STREQUAL "mips64")
 	set(flags "${flags} -Wno-c++11-narrowing")
 endif()
 
+# as of BUILD.gn in v8@7.8, on Windows, only clang(with vcruntime) tested by official team,
+# which leads emit_builtins_as_inline_asm( = is_win && is_clang) always true.
+#
+# That is, it's expected to compile v8 source with `gen/out.x64/embedded.cc` (when building d8), which is only geneareted
+# if v8_enable_embedded_builtins=true in `args.gn` before running `ninja -C out.gn/x64.release d8`.
+
+# So we put all important files for x64-Windows in this repo:
+# * (required) gen/embedded.cc
+# * (optional) gen/snapshot.cc --> src/snapshot/snapshots/snapshot-x64-Windows.cc
+#
+# And we provide required compile definitions:
+# * -DV8_EMBEDDED_BUILTINS (due to v8_enable_embedded_builtins=true)
+# 
+# Then, all embedded datas in embedded can be checked at runtime, and snapshot files could be overwritten multiple times ---
+# as long as it's genreated by mksnapshot program.
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows" AND ${ARCH} STREQUAL "amd64")
 	add_definitions(-DV8_EMBEDDED_BUILTINS)
+else()
+	list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/gen/embedded.cc")
 endif()
-	
 
 include(../build_tools/cmake/Library.cmake)
 
