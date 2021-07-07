@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+	enable_language(ASM_MASM)
 	add_definitions(-D_UNICODE -DUNICODE -D_WIN32_WINNT=0x0600)
 else()
 	include_directories("/usr/local/include/")
@@ -149,6 +150,13 @@ endif()
 # as long as it's genreated by mksnapshot program.
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows" AND ${ARCH} STREQUAL "amd64")
 	add_definitions(-DV8_EMBEDDED_BUILTINS)
+	list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/src/snapshot/embedded/embedded-empty.cc")
+
+	# for clang, use embedded.cc, for msvc, use embedded.asm
+	if(MSVC)
+		list(APPEND src_list "${PROJECT_SOURCE_DIR}/gen/embedded.asm")
+		list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/gen/embedded.cc")
+	endif()
 else()
 	list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/gen/embedded.cc")
 endif()
