@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -160,10 +168,10 @@ USE(parameter2);
     ca_.SetSourcePosition("../../src/builtins/proxy-constructor.tq", 17);
     compiler::TNode<Oddball> tmp5;
     USE(tmp5);
-    tmp5 = Undefined_65(state_);
+    tmp5 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
-    tmp6 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp2}, compiler::TNode<HeapObject>{tmp5});
+    tmp6 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<Object>{tmp2}, compiler::TNode<HeapObject>{tmp5});
     ca_.Branch(tmp6, &block5, &block6, tmp0, tmp1, tmp2, tmp3, tmp4);
   }
 
@@ -189,7 +197,7 @@ USE(parameter2);
     compiler::TNode<JSReceiver> tmp17;
     USE(tmp17);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp17 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp15}, &label0);
+    tmp17 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp15}, &label0);
     ca_.Goto(&block7, tmp12, tmp13, tmp14, tmp15, tmp16, tmp15, tmp17);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -220,7 +228,7 @@ USE(parameter2);
     ca_.SetSourcePosition("../../src/builtins/proxy-constructor.tq", 31);
     compiler::TNode<BoolT> tmp31;
     USE(tmp31);
-    tmp31 = IsRevokedProxy_290(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<JSReceiver>{tmp30});
+    tmp31 = IsRevokedProxy_319(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<JSReceiver>{tmp30});
     ca_.Branch(tmp31, &block9, &block10, tmp24, tmp25, tmp26, tmp27, tmp28, tmp30);
   }
 
@@ -248,7 +256,7 @@ USE(parameter2);
     compiler::TNode<JSReceiver> tmp44;
     USE(tmp44);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp44 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp38}, compiler::TNode<Object>{tmp42}, &label0);
+    tmp44 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp38}, compiler::TNode<Object>{tmp42}, &label0);
     ca_.Goto(&block11, tmp38, tmp39, tmp40, tmp41, tmp42, tmp43, tmp42, tmp44);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -281,7 +289,7 @@ USE(parameter2);
     ca_.SetSourcePosition("../../src/builtins/proxy-constructor.tq", 37);
     compiler::TNode<BoolT> tmp60;
     USE(tmp60);
-    tmp60 = IsRevokedProxy_290(state_, compiler::TNode<Context>{tmp52}, compiler::TNode<JSReceiver>{tmp59});
+    tmp60 = IsRevokedProxy_319(state_, compiler::TNode<Context>{tmp52}, compiler::TNode<JSReceiver>{tmp59});
     ca_.Branch(tmp60, &block13, &block14, tmp52, tmp53, tmp54, tmp55, tmp56, tmp57, tmp59);
   }
 

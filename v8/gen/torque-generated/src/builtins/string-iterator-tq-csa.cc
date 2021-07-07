@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<JSStringIterator> NewJSStringIterator_297(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<String> p_string, compiler::TNode<Smi> p_nextIndex) {
+compiler::TNode<JSStringIterator> NewJSStringIterator_333(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<String> p_string, compiler::TNode<Smi> p_nextIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, String, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, String, Smi, JSStringIterator> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -138,15 +146,15 @@ compiler::TNode<JSStringIterator> NewJSStringIterator_297(compiler::CodeAssemble
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 10);
     compiler::TNode<Map> tmp3;
     USE(tmp3);
-    tmp3 = GetInitialStringIteratorMap_200(state_, compiler::TNode<Context>{tmp0});
+    tmp3 = GetInitialStringIteratorMap_226(state_, compiler::TNode<Context>{tmp0});
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 11);
     compiler::TNode<FixedArray> tmp4;
     USE(tmp4);
-    tmp4 = kEmptyFixedArray_186(state_);
+    tmp4 = kEmptyFixedArray_212(state_);
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 12);
     compiler::TNode<FixedArray> tmp5;
     USE(tmp5);
-    tmp5 = kEmptyFixedArray_186(state_);
+    tmp5 = kEmptyFixedArray_212(state_);
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 13);
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 14);
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 9);
@@ -197,8 +205,8 @@ TF_BUILTIN(StringPrototypeIterator, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
-  USE(parameter1);
+  TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, parameter0, parameter1);
 
@@ -209,7 +217,7 @@ TF_BUILTIN(StringPrototypeIterator, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 22);
     compiler::TNode<String> tmp2;
     USE(tmp2);
-    tmp2 = FromConstexpr6String18ATconstexpr_string_128(state_, "String.prototype[Symbol.iterator]");
+    tmp2 = FromConstexpr6String18ATconstexpr_string_154(state_, "String.prototype[Symbol.iterator]");
     compiler::TNode<String> tmp3;
     USE(tmp3);
     tmp3 = CodeStubAssembler(state_).ToThisString(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, compiler::TNode<String>{tmp2});
@@ -217,11 +225,11 @@ TF_BUILTIN(StringPrototypeIterator, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 23);
     compiler::TNode<Smi> tmp4;
     USE(tmp4);
-    tmp4 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp4 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 24);
     compiler::TNode<JSStringIterator> tmp5;
     USE(tmp5);
-    tmp5 = NewJSStringIterator_297(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<String>{tmp3}, compiler::TNode<Smi>{tmp4});
+    tmp5 = NewJSStringIterator_333(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<String>{tmp3}, compiler::TNode<Smi>{tmp4});
     CodeStubAssembler(state_).Return(tmp5);
   }
 }
@@ -230,8 +238,8 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
-  USE(parameter1);
+  TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSStringIterator> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -249,7 +257,7 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
     compiler::TNode<JSStringIterator> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = Cast16JSStringIterator_1347(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    tmp2 = Cast16JSStringIterator_1406(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
     ca_.Goto(&block3, tmp0, tmp1, tmp1, tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -282,7 +290,7 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 30);
     compiler::TNode<Object> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr20UT5ATSmi10HeapObject18ATconstexpr_string_142(state_, "String Iterator.prototype.next");
+    tmp12 = FromConstexpr20UT5ATSmi10HeapObject18ATconstexpr_string_168(state_, "String Iterator.prototype.next");
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp10}, MessageTemplate::kIncompatibleMethodReceiver, compiler::TNode<Object>{tmp12}, compiler::TNode<Object>{tmp11});
   }
 
@@ -324,10 +332,10 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 37);
     compiler::TNode<Oddball> tmp29;
     USE(tmp29);
-    tmp29 = Undefined_65(state_);
+    tmp29 = Undefined_64(state_);
     compiler::TNode<Oddball> tmp30;
     USE(tmp30);
-    tmp30 = True_66(state_);
+    tmp30 = True_65(state_);
     compiler::TNode<JSObject> tmp31;
     USE(tmp31);
     tmp31 = CodeStubAssembler(state_).AllocateJSIteratorResult(compiler::TNode<Context>{tmp23}, compiler::TNode<Object>{tmp29}, compiler::TNode<Oddball>{tmp30});
@@ -366,7 +374,7 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-iterator.tq", 44);
     compiler::TNode<Oddball> tmp44;
     USE(tmp44);
-    tmp44 = False_67(state_);
+    tmp44 = False_66(state_);
     compiler::TNode<JSObject> tmp45;
     USE(tmp45);
     tmp45 = CodeStubAssembler(state_).AllocateJSIteratorResult(compiler::TNode<Context>{tmp32}, compiler::TNode<Object>{tmp39}, compiler::TNode<Oddball>{tmp44});
@@ -374,7 +382,7 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
   }
 }
 
-compiler::TNode<JSStringIterator> Cast16JSStringIterator_1347(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<JSStringIterator> Cast16JSStringIterator_1406(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -390,7 +398,7 @@ compiler::TNode<JSStringIterator> Cast16JSStringIterator_1347(compiler::CodeAsse
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 1823);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2043);
     compiler::TNode<HeapObject> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -419,7 +427,7 @@ compiler::TNode<JSStringIterator> Cast16JSStringIterator_1347(compiler::CodeAsse
     compiler::TNode<JSStringIterator> tmp10;
     USE(tmp10);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp10 = Cast16JSStringIterator_88(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
+    tmp10 = Cast16JSStringIterator_108(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
     ca_.Goto(&block5, tmp6, tmp7, tmp9, tmp10);
     if (label0.is_used()) {
       ca_.Bind(&label0);

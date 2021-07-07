@@ -563,6 +563,9 @@ mkdirp(resolveVenderV8('third_party/wasm-api/'));
 copyFile(joinOriginV8Src('third_party/wasm-api/wasm.hh'), resolveVenderV8('third_party/wasm-api/wasm.hh'))
 copyFile(joinOriginV8Src('third_party/wasm-api/wasm.h'), resolveVenderV8('third_party/wasm-api/wasm.h'))
 
+mkdirp(resolveVenderV8('tools/debug_helper'));
+cp_folder('tools/debug_helper');
+
 cp_folder('include');
 cp_folder('src');
 

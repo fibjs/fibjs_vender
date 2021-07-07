@@ -10,8 +10,8 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<JSStringIterator> NewJSStringIterator_297(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<String> p_string, compiler::TNode<Smi> p_nextIndex);
-compiler::TNode<JSStringIterator> Cast16JSStringIterator_1347(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+compiler::TNode<JSStringIterator> NewJSStringIterator_333(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<String> p_string, compiler::TNode<Smi> p_nextIndex);
+compiler::TNode<JSStringIterator> Cast16JSStringIterator_1406(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 }  // namespace internal
 }  // namespace v8
 

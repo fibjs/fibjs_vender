@@ -596,9 +596,6 @@ Handle<JSFunction> Genesis::CreateEmptyFunction() {
   empty_function_map->set_is_prototype_map(true);
   DCHECK(!empty_function_map->is_dictionary_map());
 
-  // Allocate ScopeInfo for the empty function.
-  Handle<ScopeInfo> scope_info = ScopeInfo::CreateForEmptyFunction(isolate());
-
   // Allocate the empty function as the prototype for function according to
   // ES#sec-properties-of-the-function-prototype-object
   NewFunctionArgs args = NewFunctionArgs::ForBuiltin(
@@ -612,7 +609,8 @@ Handle<JSFunction> Genesis::CreateEmptyFunction() {
   script->set_type(Script::TYPE_NATIVE);
   Handle<WeakFixedArray> infos = factory()->NewWeakFixedArray(2);
   script->set_shared_function_infos(*infos);
-  empty_function->shared().set_scope_info(*scope_info);
+  empty_function->shared().set_raw_scope_info(
+      ReadOnlyRoots(isolate()).empty_function_scope_info());
   empty_function->shared().DontAdaptArguments();
   SharedFunctionInfo::SetScript(handle(empty_function->shared(), isolate()),
                                 script, 1);
@@ -659,17 +657,21 @@ Handle<JSFunction> Genesis::GetThrowTypeErrorIntrinsic() {
   Handle<JSFunction> function = factory()->NewFunction(args);
   function->shared().DontAdaptArguments();
 
-  // %ThrowTypeError% must not have a name property.
-  if (JSReceiver::DeleteProperty(function, factory()->name_string())
-          .IsNothing()) {
-    DCHECK(false);
-  }
+  PropertyAttributes ro_attribs =
+      static_cast<PropertyAttributes>(DONT_ENUM | DONT_DELETE | READ_ONLY);
+
+  // %ThrowTypeError% must have a name property with an empty string value.
+  // Per spec, ThrowTypeError's name must also be non-configurable, otherwise
+  // we could omit explicitly setting a property attribute here and just fall
+  // back to the default name attribute on function.
+  JSObject::SetOwnPropertyIgnoreAttributes(
+      function, factory()->name_string(), factory()->empty_string(), ro_attribs)
+      .Assert();
 
   // length needs to be non configurable.
   Handle<Object> value(Smi::FromInt(function->length()), isolate());
-  JSObject::SetOwnPropertyIgnoreAttributes(
-      function, factory()->length_string(), value,
-      static_cast<PropertyAttributes>(DONT_ENUM | DONT_DELETE | READ_ONLY))
+  JSObject::SetOwnPropertyIgnoreAttributes(function, factory()->length_string(),
+                                           value, ro_attribs)
       .Assert();
 
   if (JSObject::PreventExtensions(function, kThrowOnError).IsNothing()) {
@@ -1154,7 +1156,8 @@ void Genesis::CreateRoots() {
 void Genesis::InstallGlobalThisBinding() {
   Handle<ScriptContextTable> script_contexts(
       native_context()->script_context_table(), isolate());
-  Handle<ScopeInfo> scope_info = ScopeInfo::CreateGlobalThisBinding(isolate());
+  Handle<ScopeInfo> scope_info =
+      ReadOnlyRoots(isolate()).global_this_binding_scope_info_handle();
   Handle<Context> context =
       factory()->NewScriptContext(native_context(), scope_info);
 
@@ -1222,8 +1225,8 @@ Handle<JSGlobalObject> Genesis::CreateNewGlobals(
         FunctionTemplateInfo::cast(js_global_object_template->constructor()),
         isolate());
     js_global_object_function = ApiNatives::CreateApiFunction(
-        isolate(), js_global_object_constructor, factory()->the_hole_value(),
-        JS_GLOBAL_OBJECT_TYPE);
+        isolate(), isolate()->native_context(), js_global_object_constructor,
+        factory()->the_hole_value(), JS_GLOBAL_OBJECT_TYPE);
   }
 
   js_global_object_function->initial_map().set_is_prototype_map(true);
@@ -1248,8 +1251,8 @@ Handle<JSGlobalObject> Genesis::CreateNewGlobals(
     Handle<FunctionTemplateInfo> global_constructor(
         FunctionTemplateInfo::cast(data->constructor()), isolate());
     global_proxy_function = ApiNatives::CreateApiFunction(
-        isolate(), global_constructor, factory()->the_hole_value(),
-        JS_GLOBAL_PROXY_TYPE);
+        isolate(), isolate()->native_context(), global_constructor,
+        factory()->the_hole_value(), JS_GLOBAL_PROXY_TYPE);
   }
   global_proxy_function->initial_map().set_is_access_check_needed(true);
   global_proxy_function->initial_map().set_may_have_interesting_symbols(true);
@@ -4259,8 +4262,9 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_namespace_exports)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_private_methods)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_dynamic_import)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_import_meta)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_numeric_separator)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_sequence)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_optional_chaining)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_nullish)
 
 #ifdef V8_INTL_SUPPORT
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_intl_add_calendar_numbering_system)

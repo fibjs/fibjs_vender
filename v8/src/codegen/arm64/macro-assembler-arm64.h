@@ -83,6 +83,12 @@ inline MemOperand FieldMemOperand(Register object, int offset);
 // ----------------------------------------------------------------------------
 // MacroAssembler
 
+#if defined(V8_OS_WIN)
+// This offset is originated from PushCalleeSavedRegisters.
+static constexpr int kFramePointerOffsetInPushCalleeSavedRegisters =
+    10 * kSystemPointerSize;
+#endif  // V8_OS_WIN
+
 enum BranchType {
   // Copies of architectural conditions.
   // The associated conditions can be used in place of those, the code will
@@ -883,6 +889,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   void Jump(Register target, Condition cond = al);
   void Jump(Address target, RelocInfo::Mode rmode, Condition cond = al);
   void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al);
+  void Jump(const ExternalReference& reference) override;
 
   void Call(Register target);
   void Call(Address target, RelocInfo::Mode rmode);
@@ -896,6 +903,7 @@ class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
   // register.
   void LoadEntryFromBuiltinIndex(Register builtin_index);
   void CallBuiltinByIndex(Register builtin_index) override;
+  void CallBuiltin(int builtin_index);
 
   void LoadCodeObjectEntry(Register destination, Register code_object) override;
   void CallCodeObject(Register code_object) override;

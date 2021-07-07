@@ -49,9 +49,9 @@ void TorqueGeneratedSourcePositionTableWithFrameCache<SourcePositionTableWithFra
   os << "\n";
 }
 
-
-void TemplateObjectDescription::TemplateObjectDescriptionPrint(std::ostream& os) {
-  this->PrintHeader(os, "TemplateObjectDescription");
+template <>
+void TorqueGeneratedTemplateObjectDescription<TemplateObjectDescription, Struct>::TemplateObjectDescriptionPrint(std::ostream& os) {
+  this->PrintHeader(os, "TorqueGeneratedTemplateObjectDescription");
   os << "\n - raw_strings: " << Brief(this->raw_strings());
   os << "\n - cooked_strings: " << Brief(this->cooked_strings());
   os << "\n";

@@ -154,6 +154,7 @@ namespace internal {
   V(JumpIfNotNullConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfNotNullConstant) \
   V(JumpIfUndefinedConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfUndefinedConstant) \
   V(JumpIfNotUndefinedConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfNotUndefinedConstant) \
+  V(JumpIfUndefinedOrNullConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfUndefinedOrNullConstant) \
   V(JumpIfTrueConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfTrueConstant) \
   V(JumpIfFalseConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfFalseConstant) \
   V(JumpIfJSReceiverConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfJSReceiverConstant) \
@@ -167,6 +168,7 @@ namespace internal {
   V(JumpIfNotNullHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfNotNull) \
   V(JumpIfUndefinedHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfUndefined) \
   V(JumpIfNotUndefinedHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfNotUndefined) \
+  V(JumpIfUndefinedOrNullHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfUndefinedOrNull) \
   V(JumpIfJSReceiverHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfJSReceiver) \
   V(SwitchOnSmiNoFeedbackHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kSwitchOnSmiNoFeedback) \
   V(ForInEnumerateHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kForInEnumerate) \
@@ -185,6 +187,7 @@ namespace internal {
   V(SwitchOnGeneratorStateHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kSwitchOnGeneratorState) \
   V(SuspendGeneratorHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kSuspendGenerator) \
   V(ResumeGeneratorHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kResumeGenerator) \
+  V(GetIteratorHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kGetIterator) \
   V(DebuggerHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kDebugger) \
   V(IncBlockCounterHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kIncBlockCounter) \
   V(AbortHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kAbort) \
@@ -310,6 +313,7 @@ namespace internal {
   V(JumpIfNotNullConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfNotNullConstant) \
   V(JumpIfUndefinedConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfUndefinedConstant) \
   V(JumpIfNotUndefinedConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfNotUndefinedConstant) \
+  V(JumpIfUndefinedOrNullConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfUndefinedOrNullConstant) \
   V(JumpIfTrueConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfTrueConstant) \
   V(JumpIfFalseConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfFalseConstant) \
   V(JumpIfJSReceiverConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfJSReceiverConstant) \
@@ -323,6 +327,7 @@ namespace internal {
   V(JumpIfNotNullWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfNotNull) \
   V(JumpIfUndefinedWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfUndefined) \
   V(JumpIfNotUndefinedWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfNotUndefined) \
+  V(JumpIfUndefinedOrNullWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfUndefinedOrNull) \
   V(JumpIfJSReceiverWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfJSReceiver) \
   V(SwitchOnSmiNoFeedbackWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kSwitchOnSmiNoFeedback) \
   V(ForInEnumerateWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kForInEnumerate) \
@@ -334,6 +339,7 @@ namespace internal {
   V(SwitchOnGeneratorStateWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kSwitchOnGeneratorState) \
   V(SuspendGeneratorWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kSuspendGenerator) \
   V(ResumeGeneratorWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kResumeGenerator) \
+  V(GetIteratorWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kGetIterator) \
   V(IncBlockCounterWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kIncBlockCounter) \
   V(AbortWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kAbort) \
   V(DebugBreak1ExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kDebugBreak1) \
@@ -457,6 +463,7 @@ namespace internal {
   V(JumpIfNotNullConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfNotNullConstant) \
   V(JumpIfUndefinedConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfUndefinedConstant) \
   V(JumpIfNotUndefinedConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfNotUndefinedConstant) \
+  V(JumpIfUndefinedOrNullConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfUndefinedOrNullConstant) \
   V(JumpIfTrueConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfTrueConstant) \
   V(JumpIfFalseConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfFalseConstant) \
   V(JumpIfJSReceiverConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfJSReceiverConstant) \
@@ -470,6 +477,7 @@ namespace internal {
   V(JumpIfNotNullExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfNotNull) \
   V(JumpIfUndefinedExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfUndefined) \
   V(JumpIfNotUndefinedExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfNotUndefined) \
+  V(JumpIfUndefinedOrNullExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfUndefinedOrNull) \
   V(JumpIfJSReceiverExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfJSReceiver) \
   V(SwitchOnSmiNoFeedbackExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kSwitchOnSmiNoFeedback) \
   V(ForInEnumerateExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kForInEnumerate) \
@@ -481,19 +489,20 @@ namespace internal {
   V(SwitchOnGeneratorStateExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kSwitchOnGeneratorState) \
   V(SuspendGeneratorExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kSuspendGenerator) \
   V(ResumeGeneratorExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kResumeGenerator) \
+  V(GetIteratorExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kGetIterator) \
   V(IncBlockCounterExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kIncBlockCounter) \
   V(AbortExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kAbort)
 
-const int kNumberOfBytecodeHandlers = 180;
-const int kNumberOfWideBytecodeHandlers = 147;
+const int kNumberOfBytecodeHandlers = 183;
+const int kNumberOfWideBytecodeHandlers = 150;
 
 // Mapping from (Bytecode + OperandScaleAsIndex * |Bytecodes|) to
 // a dense form with all the illegal Bytecode/OperandScale
 // combinations removed. Used to index into the builtins table.
-constexpr int kBytecodeToBuiltinsMapping[540] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 
-    -1, -1, -1, -1, -1, 180, 181, 182, 183, 184, 185, -1, 186, -1, -1, -1, -1, -1, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, -1, -1, -1, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, -1, -1, -1, -1, 278, 279, 280, 281, -1, 282, 283, -1, 284, 285, -1, 286, 287, 288, 289, 290, 291, 292, 293, -1, -1, -1, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, -1, -1, -1, -1, -1, 321, -1, -1, 322, 323, 324, -1, 325, 326, -1, 
-    -1, -1, -1, -1, -1, 327, 328, 329, 330, 331, 332, -1, 333, -1, -1, -1, -1, -1, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, -1, -1, -1, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, -1, -1, -1, -1, 425, 426, 427, 428, -1, 429, 430, -1, 431, 432, -1, 433, 434, 435, 436, 437, 438, 439, 440, -1, -1, -1, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, -1, -1, -1, -1, -1, 468, -1, -1, 469, 470, 471, -1, 472, 473, -1, };
+constexpr int kBytecodeToBuiltinsMapping[549] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 
+    -1, -1, -1, -1, -1, 183, 184, 185, 186, 187, 188, -1, 189, -1, -1, -1, -1, -1, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, -1, -1, -1, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, -1, -1, -1, -1, 281, 282, 283, 284, -1, 285, 286, -1, 287, 288, -1, 289, 290, 291, 292, 293, 294, 295, 296, -1, -1, -1, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, -1, -1, -1, -1, -1, 326, -1, -1, 327, 328, 329, 330, -1, 331, 332, -1, 
+    -1, -1, -1, -1, -1, 333, 334, 335, 336, 337, 338, -1, 339, -1, -1, -1, -1, -1, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, -1, -1, -1, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, -1, -1, -1, -1, 431, 432, 433, 434, -1, 435, 436, -1, 437, 438, -1, 439, 440, 441, 442, 443, 444, 445, 446, -1, -1, -1, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, -1, -1, -1, -1, -1, 476, -1, -1, 477, 478, 479, 480, -1, 481, 482, -1, };
 
 }  // namespace internal
 }  // namespace v8

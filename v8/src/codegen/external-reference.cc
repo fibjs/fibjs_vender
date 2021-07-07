@@ -328,13 +328,18 @@ ExternalReference ExternalReference::allocation_sites_list_address(
   return ExternalReference(isolate->heap()->allocation_sites_list_address());
 }
 
-ExternalReference ExternalReference::address_of_stack_limit(Isolate* isolate) {
-  return ExternalReference(isolate->stack_guard()->address_of_jslimit());
+ExternalReference ExternalReference::address_of_jslimit(Isolate* isolate) {
+  Address address = isolate->stack_guard()->address_of_jslimit();
+  // For efficient generated code, this should be root-register-addressable.
+  DCHECK(isolate->root_register_addressable_region().contains(address));
+  return ExternalReference(address);
 }
 
-ExternalReference ExternalReference::address_of_real_stack_limit(
-    Isolate* isolate) {
-  return ExternalReference(isolate->stack_guard()->address_of_real_jslimit());
+ExternalReference ExternalReference::address_of_real_jslimit(Isolate* isolate) {
+  Address address = isolate->stack_guard()->address_of_real_jslimit();
+  // For efficient generated code, this should be root-register-addressable.
+  DCHECK(isolate->root_register_addressable_region().contains(address));
+  return ExternalReference(address);
 }
 
 ExternalReference ExternalReference::store_buffer_top(Isolate* isolate) {
@@ -500,19 +505,25 @@ ExternalReference ExternalReference::address_of_static_offsets_vector(
       reinterpret_cast<Address>(isolate->jsregexp_static_offsets_vector()));
 }
 
-ExternalReference ExternalReference::address_of_regexp_stack_limit(
+ExternalReference ExternalReference::address_of_regexp_stack_limit_address(
     Isolate* isolate) {
-  return ExternalReference(isolate->regexp_stack()->limit_address());
+  return ExternalReference(isolate->regexp_stack()->limit_address_address());
 }
 
 ExternalReference ExternalReference::address_of_regexp_stack_memory_address(
     Isolate* isolate) {
-  return ExternalReference(isolate->regexp_stack()->memory_address());
+  return ExternalReference(isolate->regexp_stack()->memory_address_address());
 }
 
 ExternalReference ExternalReference::address_of_regexp_stack_memory_size(
     Isolate* isolate) {
   return ExternalReference(isolate->regexp_stack()->memory_size_address());
+}
+
+ExternalReference ExternalReference::address_of_regexp_stack_memory_top_address(
+    Isolate* isolate) {
+  return ExternalReference(
+      isolate->regexp_stack()->memory_top_address_address());
 }
 
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_acos_function, base::ieee754::acos,

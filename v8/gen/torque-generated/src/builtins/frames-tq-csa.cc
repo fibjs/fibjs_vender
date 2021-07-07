@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<Smi> FromConstexpr11ATFrameType21ATconstexpr_FrameType_262(compiler::CodeAssemblerState* state_, StackFrame::Type p_t) {
+compiler::TNode<Smi> FromConstexpr11ATFrameType21ATconstexpr_FrameType_291(compiler::CodeAssemblerState* state_, StackFrame::Type p_t) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -135,7 +143,7 @@ compiler::TNode<Smi> FromConstexpr11ATFrameType21ATconstexpr_FrameType_262(compi
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 21);
     compiler::TNode<UintPtrT> tmp0;
     USE(tmp0);
-    tmp0 = FromConstexpr9ATuintptr19ATconstexpr_uintptr_125(state_, (CodeStubAssembler(state_).ConstexprUintPtrShl(static_cast<uintptr_t>(p_t), kSmiTagSize)));
+    tmp0 = FromConstexpr9ATuintptr19ATconstexpr_uintptr_151(state_, (CodeStubAssembler(state_).ConstexprUintPtrShl(static_cast<uintptr_t>(p_t), kSmiTagSize)));
     compiler::TNode<Smi> tmp1;
     USE(tmp1);
     tmp1 = CodeStubAssembler(state_).BitcastWordToTaggedSigned(compiler::TNode<UintPtrT>{tmp0});
@@ -157,7 +165,7 @@ compiler::TNode<Smi> FromConstexpr11ATFrameType21ATconstexpr_FrameType_262(compi
   return compiler::TNode<Smi>{tmp4};
 }
 
-compiler::TNode<Smi> Cast11ATFrameType_263(compiler::CodeAssemblerState* state_, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<Smi> Cast11ATFrameType_292(compiler::CodeAssemblerState* state_, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -212,7 +220,7 @@ compiler::TNode<Smi> Cast11ATFrameType_263(compiler::CodeAssemblerState* state_,
   return compiler::TNode<Smi>{tmp8};
 }
 
-compiler::TNode<Object> LoadObjectFromFrame_264(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f, int32_t p_o) {
+compiler::TNode<Object> LoadObjectFromFrame_293(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f, int32_t p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -243,7 +251,7 @@ compiler::TNode<Object> LoadObjectFromFrame_264(compiler::CodeAssemblerState* st
   return compiler::TNode<Object>{tmp5};
 }
 
-compiler::TNode<RawPtrT> LoadPointerFromFrame_265(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f, int32_t p_o) {
+compiler::TNode<RawPtrT> LoadPointerFromFrame_294(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f, int32_t p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -274,7 +282,7 @@ compiler::TNode<RawPtrT> LoadPointerFromFrame_265(compiler::CodeAssemblerState* 
   return compiler::TNode<RawPtrT>{tmp5};
 }
 
-compiler::TNode<Smi> LoadSmiFromFrame_266(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f, int32_t p_o) {
+compiler::TNode<Smi> LoadSmiFromFrame_295(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f, int32_t p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -305,7 +313,7 @@ compiler::TNode<Smi> LoadSmiFromFrame_266(compiler::CodeAssemblerState* state_, 
   return compiler::TNode<Smi>{tmp5};
 }
 
-compiler::TNode<JSFunction> LoadFunctionFromFrame_267(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f) {
+compiler::TNode<JSFunction> LoadFunctionFromFrame_296(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, JSFunction> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -318,7 +326,7 @@ compiler::TNode<JSFunction> LoadFunctionFromFrame_267(compiler::CodeAssemblerSta
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 59);
     compiler::TNode<Object> tmp1;
     USE(tmp1);
-    tmp1 = LoadObjectFromFrame_264(state_, compiler::TNode<RawPtrT>{tmp0}, StandardFrameConstants::kFunctionOffset);
+    tmp1 = LoadObjectFromFrame_293(state_, compiler::TNode<RawPtrT>{tmp0}, StandardFrameConstants::kFunctionOffset);
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 60);
     compiler::TNode<JSFunction> tmp2;
     USE(tmp2);
@@ -340,7 +348,7 @@ compiler::TNode<JSFunction> LoadFunctionFromFrame_267(compiler::CodeAssemblerSta
   return compiler::TNode<JSFunction>{tmp6};
 }
 
-compiler::TNode<RawPtrT> LoadCallerFromFrame_268(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f) {
+compiler::TNode<RawPtrT> LoadCallerFromFrame_297(compiler::CodeAssemblerState* state_, compiler::TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -353,7 +361,7 @@ compiler::TNode<RawPtrT> LoadCallerFromFrame_268(compiler::CodeAssemblerState* s
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 66);
     compiler::TNode<RawPtrT> tmp1;
     USE(tmp1);
-    tmp1 = LoadPointerFromFrame_265(state_, compiler::TNode<RawPtrT>{tmp0}, StandardFrameConstants::kCallerFPOffset);
+    tmp1 = LoadPointerFromFrame_294(state_, compiler::TNode<RawPtrT>{tmp0}, StandardFrameConstants::kCallerFPOffset);
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 67);
     compiler::TNode<RawPtrT> tmp2;
     USE(tmp2);
@@ -375,7 +383,7 @@ compiler::TNode<RawPtrT> LoadCallerFromFrame_268(compiler::CodeAssemblerState* s
   return compiler::TNode<RawPtrT>{tmp6};
 }
 
-compiler::TNode<Object> Cast23UT11ATFrameType7Context_269(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<Object> Cast23UT11ATFrameType7Context_298(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -398,7 +406,7 @@ compiler::TNode<Object> Cast23UT11ATFrameType7Context_269(compiler::CodeAssemble
     compiler::TNode<Context> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = Cast7Context_1340(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    tmp2 = Cast7Context_1394(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
     ca_.Goto(&block5, tmp0, tmp1, tmp1, tmp1, tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -435,7 +443,7 @@ compiler::TNode<Object> Cast23UT11ATFrameType7Context_269(compiler::CodeAssemble
     compiler::TNode<Smi> tmp15;
     USE(tmp15);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp15 = Cast11ATFrameType_263(state_, compiler::TNode<Object>{ca_.UncheckedCast<Object>(tmp14)}, &label0);
+    tmp15 = Cast11ATFrameType_292(state_, compiler::TNode<Object>{ca_.UncheckedCast<Object>(tmp14)}, &label0);
     ca_.Goto(&block9, tmp12, tmp13, tmp14, ca_.UncheckedCast<Object>(tmp14), tmp15);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -494,7 +502,7 @@ compiler::TNode<Object> Cast23UT11ATFrameType7Context_269(compiler::CodeAssemble
   return compiler::TNode<Object>{tmp33};
 }
 
-compiler::TNode<Object> LoadContextOrFrameTypeFromFrame_270(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f) {
+compiler::TNode<Object> LoadContextOrFrameTypeFromFrame_299(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -508,11 +516,11 @@ compiler::TNode<Object> LoadContextOrFrameTypeFromFrame_270(compiler::CodeAssemb
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 93);
     compiler::TNode<Object> tmp2;
     USE(tmp2);
-    tmp2 = LoadObjectFromFrame_264(state_, compiler::TNode<RawPtrT>{tmp1}, StandardFrameConstants::kContextOrFrameTypeOffset);
+    tmp2 = LoadObjectFromFrame_293(state_, compiler::TNode<RawPtrT>{tmp1}, StandardFrameConstants::kContextOrFrameTypeOffset);
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 92);
     compiler::TNode<Object> tmp3;
     USE(tmp3);
-    tmp3 = UnsafeCast23UT11ATFrameType7Context_1341(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2});
+    tmp3 = UnsafeCast23UT11ATFrameType7Context_1395(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2});
     ca_.Goto(&block1, tmp0, tmp1, tmp3);
   }
 
@@ -532,7 +540,7 @@ compiler::TNode<Object> LoadContextOrFrameTypeFromFrame_270(compiler::CodeAssemb
   return compiler::TNode<Object>{tmp9};
 }
 
-compiler::TNode<Smi> LoadLengthFromAdapterFrame_271(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f) {
+compiler::TNode<Smi> LoadLengthFromAdapterFrame_300(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -546,7 +554,7 @@ compiler::TNode<Smi> LoadLengthFromAdapterFrame_271(compiler::CodeAssemblerState
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 101);
     compiler::TNode<Smi> tmp2;
     USE(tmp2);
-    tmp2 = LoadSmiFromFrame_266(state_, compiler::TNode<RawPtrT>{tmp1}, ArgumentsAdaptorFrameConstants::kLengthOffset);
+    tmp2 = LoadSmiFromFrame_295(state_, compiler::TNode<RawPtrT>{tmp1}, ArgumentsAdaptorFrameConstants::kLengthOffset);
     ca_.Goto(&block1, tmp0, tmp1, tmp2);
   }
 
@@ -566,7 +574,7 @@ compiler::TNode<Smi> LoadLengthFromAdapterFrame_271(compiler::CodeAssemblerState
   return compiler::TNode<Smi>{tmp8};
 }
 
-compiler::TNode<BoolT> FrameTypeEquals_272(compiler::CodeAssemblerState* state_, compiler::TNode<Smi> p_f1, compiler::TNode<Smi> p_f2) {
+compiler::TNode<BoolT> FrameTypeEquals_301(compiler::CodeAssemblerState* state_, compiler::TNode<Smi> p_f1, compiler::TNode<Smi> p_f2) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi, BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -580,7 +588,7 @@ compiler::TNode<BoolT> FrameTypeEquals_272(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 105);
     compiler::TNode<BoolT> tmp2;
     USE(tmp2);
-    tmp2 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp0}, compiler::TNode<Object>{tmp1});
+    tmp2 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<Object>{tmp0}, compiler::TNode<Object>{tmp1});
     ca_.Goto(&block1, tmp0, tmp1, tmp2);
   }
 
@@ -600,7 +608,7 @@ compiler::TNode<BoolT> FrameTypeEquals_272(compiler::CodeAssemblerState* state_,
   return compiler::TNode<BoolT>{tmp8};
 }
 
-compiler::TNode<RawPtrT> Cast15ATStandardFrame_273(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<RawPtrT> Cast15ATStandardFrame_302(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -619,11 +627,11 @@ compiler::TNode<RawPtrT> Cast15ATStandardFrame_273(compiler::CodeAssemblerState*
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 112);
     compiler::TNode<Object> tmp2;
     USE(tmp2);
-    tmp2 = LoadContextOrFrameTypeFromFrame_270(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<RawPtrT>{tmp1});
+    tmp2 = LoadContextOrFrameTypeFromFrame_299(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<RawPtrT>{tmp1});
     compiler::TNode<HeapObject> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = Cast10HeapObject_1321(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
+    tmp3 = Cast10HeapObject_1375(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
     ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -695,7 +703,7 @@ compiler::TNode<RawPtrT> Cast15ATStandardFrame_273(compiler::CodeAssemblerState*
   return compiler::TNode<RawPtrT>{tmp24};
 }
 
-compiler::TNode<RawPtrT> Cast23ATArgumentsAdaptorFrame_274(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<RawPtrT> Cast23ATArgumentsAdaptorFrame_303(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<RawPtrT> p_f, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, RawPtrT, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -714,11 +722,11 @@ compiler::TNode<RawPtrT> Cast23ATArgumentsAdaptorFrame_274(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 131);
     compiler::TNode<Object> tmp2;
     USE(tmp2);
-    tmp2 = LoadContextOrFrameTypeFromFrame_270(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<RawPtrT>{tmp1});
+    tmp2 = LoadContextOrFrameTypeFromFrame_299(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<RawPtrT>{tmp1});
     compiler::TNode<Smi> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = Cast11ATFrameType_263(state_, compiler::TNode<Object>{tmp2}, &label0);
+    tmp3 = Cast11ATFrameType_292(state_, compiler::TNode<Object>{tmp2}, &label0);
     ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -744,10 +752,10 @@ compiler::TNode<RawPtrT> Cast23ATArgumentsAdaptorFrame_274(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/frames.tq", 132);
     compiler::TNode<Smi> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr11ATFrameType21ATconstexpr_FrameType_262(state_, StackFrame::ARGUMENTS_ADAPTOR);
+    tmp11 = FromConstexpr11ATFrameType21ATconstexpr_FrameType_291(state_, StackFrame::ARGUMENTS_ADAPTOR);
     compiler::TNode<BoolT> tmp12;
     USE(tmp12);
-    tmp12 = FrameTypeEquals_272(state_, compiler::TNode<Smi>{tmp10}, compiler::TNode<Smi>{tmp11});
+    tmp12 = FrameTypeEquals_301(state_, compiler::TNode<Smi>{tmp10}, compiler::TNode<Smi>{tmp11});
     ca_.Branch(tmp12, &block5, &block6, tmp7, tmp8, tmp10);
   }
 
@@ -793,7 +801,7 @@ compiler::TNode<RawPtrT> Cast23ATArgumentsAdaptorFrame_274(compiler::CodeAssembl
   return compiler::TNode<RawPtrT>{tmp25};
 }
 
-compiler::TNode<JSFunction> LoadTargetFromFrame_275(compiler::CodeAssemblerState* state_) {
+compiler::TNode<JSFunction> LoadTargetFromFrame_304(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSFunction> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -808,7 +816,7 @@ compiler::TNode<JSFunction> LoadTargetFromFrame_275(compiler::CodeAssemblerState
     tmp0 = CodeStubAssembler(state_).LoadFramePointer();
     compiler::TNode<JSFunction> tmp1;
     USE(tmp1);
-    tmp1 = LoadFunctionFromFrame_267(state_, compiler::TNode<RawPtrT>{tmp0});
+    tmp1 = LoadFunctionFromFrame_296(state_, compiler::TNode<RawPtrT>{tmp0});
     ca_.Goto(&block1, tmp1);
   }
 
@@ -824,7 +832,7 @@ compiler::TNode<JSFunction> LoadTargetFromFrame_275(compiler::CodeAssemblerState
   return compiler::TNode<JSFunction>{tmp3};
 }
 
-compiler::TNode<Context> Cast7Context_1340(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<Context> Cast7Context_1394(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -840,7 +848,7 @@ compiler::TNode<Context> Cast7Context_1340(compiler::CodeAssemblerState* state_,
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 1823);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2043);
     compiler::TNode<HeapObject> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -869,7 +877,7 @@ compiler::TNode<Context> Cast7Context_1340(compiler::CodeAssemblerState* state_,
     compiler::TNode<Context> tmp10;
     USE(tmp10);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp10 = Cast7Context_95(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
+    tmp10 = Cast7Context_115(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
     ca_.Goto(&block5, tmp6, tmp7, tmp9, tmp10);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -915,7 +923,7 @@ compiler::TNode<Context> Cast7Context_1340(compiler::CodeAssemblerState* state_,
   return compiler::TNode<Context>{tmp23};
 }
 
-compiler::TNode<Object> UnsafeCast23UT11ATFrameType7Context_1341(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
+compiler::TNode<Object> UnsafeCast23UT11ATFrameType7Context_1395(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -926,7 +934,7 @@ compiler::TNode<Object> UnsafeCast23UT11ATFrameType7Context_1341(compiler::CodeA
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2405);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2807);
     compiler::TNode<Object> tmp2;
     USE(tmp2);
     tmp2 = (compiler::TNode<Object>{tmp1});

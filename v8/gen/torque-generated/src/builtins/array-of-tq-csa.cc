@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -151,19 +159,19 @@ USE(parameter1);
     compiler::TNode<Context> tmp3;
     compiler::TNode<Object> tmp4;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3, &tmp4);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 11);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 10);
     compiler::TNode<Smi> tmp5;
     USE(tmp5);
-    tmp5 = Convert5ATSmi8ATintptr_157(state_, compiler::TNode<IntPtrT>{tmp2});
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 14);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 17);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 19);
+    tmp5 = Convert5ATSmi8ATintptr_184(state_, compiler::TNode<IntPtrT>{tmp2});
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 13);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 16);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 18);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 21);
     ca_.SetSourcePosition("../../src/builtins/array-of.tq", 22);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 23);
     compiler::TNode<JSReceiver> tmp6;
     USE(tmp6);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp6 = Cast13ATConstructor_1309(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
+    tmp6 = Cast13ATConstructor_1362(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
     ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp0, tmp1, tmp2, tmp4, ca_.Uninitialized<JSReceiver>(), tmp4, tmp4, tmp6);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -205,11 +213,11 @@ USE(parameter1);
     compiler::TNode<Object> tmp32;
     compiler::TNode<JSReceiver> tmp33;
     ca_.Bind(&block3, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 25);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 24);
     compiler::TNode<JSReceiver> tmp34;
     USE(tmp34);
     tmp34 = CodeStubAssembler(state_).Construct(compiler::TNode<Context>{tmp23}, compiler::TNode<JSReceiver>{tmp33}, compiler::TNode<Object>{tmp25});
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 23);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 22);
     ca_.Goto(&block1, tmp20, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp34, tmp31);
   }
 
@@ -227,12 +235,12 @@ USE(parameter1);
     compiler::TNode<JSReceiver> tmp45;
     compiler::TNode<Object> tmp46;
     ca_.Bind(&block2, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 27);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 29);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 26);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 28);
     compiler::TNode<JSArray> tmp47;
     USE(tmp47);
     tmp47 = CodeStubAssembler(state_).ArrayCreate(compiler::TNode<Context>{tmp38}, compiler::TNode<Number>{tmp40});
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 23);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 22);
     ca_.Goto(&block1, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp42, tmp43, tmp44, tmp47, tmp46);
   }
 
@@ -250,12 +258,12 @@ USE(parameter1);
     compiler::TNode<JSReceiver> tmp58;
     compiler::TNode<Object> tmp59;
     ca_.Bind(&block1, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 22);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 34);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 21);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 33);
     compiler::TNode<Smi> tmp60;
     USE(tmp60);
-    tmp60 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 37);
+    tmp60 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 36);
     ca_.Goto(&block7, tmp48, tmp49, tmp50, tmp51, tmp52, tmp53, tmp54, tmp55, tmp56, tmp57, tmp58, tmp60);
   }
 
@@ -293,25 +301,25 @@ USE(parameter1);
     compiler::TNode<JSReceiver> tmp84;
     compiler::TNode<Smi> tmp85;
     ca_.Bind(&block5, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 39);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 38);
     compiler::TNode<IntPtrT> tmp86;
     USE(tmp86);
-    tmp86 = Convert8ATintptr5ATSmi_159(state_, compiler::TNode<Smi>{tmp85});
+    tmp86 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp85});
     compiler::TNode<Object> tmp87;
     USE(tmp87);
     tmp87 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp80}, compiler::TNode<RawPtrT>{tmp81}, compiler::TNode<IntPtrT>{tmp82}}, compiler::TNode<IntPtrT>{tmp86});
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 43);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 42);
     compiler::TNode<Object> tmp88;
     tmp88 = CodeStubAssembler(state_).CallBuiltin(Builtins::kFastCreateDataProperty, tmp77, tmp84, tmp85, tmp87);
     USE(tmp88);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 46);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 45);
     compiler::TNode<Smi> tmp89;
     USE(tmp89);
-    tmp89 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp89 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<Smi> tmp90;
     USE(tmp90);
     tmp90 = CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp85}, compiler::TNode<Smi>{tmp89});
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 37);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 36);
     ca_.Goto(&block7, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81, tmp82, tmp83, tmp84, tmp90);
   }
 
@@ -329,14 +337,14 @@ USE(parameter1);
     compiler::TNode<JSReceiver> tmp101;
     compiler::TNode<Smi> tmp102;
     ca_.Bind(&block6, &tmp91, &tmp92, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 50);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 49);
     CodeStubAssembler(state_).SetPropertyLength(compiler::TNode<Context>{tmp94}, compiler::TNode<Object>{tmp101}, compiler::TNode<Number>{tmp96});
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 53);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 52);
     arguments.PopAndReturn(tmp101);
   }
 }
 
-compiler::TNode<JSReceiver> Cast13ATConstructor_1309(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<JSReceiver> Cast13ATConstructor_1362(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -352,7 +360,7 @@ compiler::TNode<JSReceiver> Cast13ATConstructor_1309(compiler::CodeAssemblerStat
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 1823);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2043);
     compiler::TNode<HeapObject> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -381,7 +389,7 @@ compiler::TNode<JSReceiver> Cast13ATConstructor_1309(compiler::CodeAssemblerStat
     compiler::TNode<JSReceiver> tmp10;
     USE(tmp10);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp10 = Cast13ATConstructor_102(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
+    tmp10 = Cast13ATConstructor_127(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
     ca_.Goto(&block5, tmp6, tmp7, tmp9, tmp10);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -411,7 +419,7 @@ compiler::TNode<JSReceiver> Cast13ATConstructor_1309(compiler::CodeAssemblerStat
     compiler::TNode<Object> tmp19;
     compiler::TNode<JSReceiver> tmp20;
     ca_.Bind(&block2, &tmp18, &tmp19, &tmp20);
-    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 23);
+    ca_.SetSourcePosition("../../src/builtins/array-of.tq", 22);
     ca_.Goto(&block7, tmp18, tmp19, tmp20);
   }
 

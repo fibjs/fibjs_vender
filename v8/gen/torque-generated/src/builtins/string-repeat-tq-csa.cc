@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-const char* kBuiltinName_298(compiler::CodeAssemblerState* state_) {
+const char* kBuiltinName_337(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -158,12 +166,12 @@ TF_BUILTIN(StringRepeat, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 13);
     compiler::TNode<String> tmp3;
     USE(tmp3);
-    tmp3 = kEmptyString_68(state_);
+    tmp3 = kEmptyString_67(state_);
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 14);
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 15);
     compiler::TNode<IntPtrT> tmp4;
     USE(tmp4);
-    tmp4 = Convert8ATintptr5ATSmi_159(state_, compiler::TNode<Smi>{tmp2});
+    tmp4 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp2});
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 17);
     ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp1, tmp4);
   }
@@ -178,7 +186,7 @@ TF_BUILTIN(StringRepeat, CodeStubAssembler) {
     ca_.Bind(&block3, &tmp5, &tmp6, &tmp7, &tmp8, &tmp9, &tmp10);
     compiler::TNode<BoolT> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, true);
+    tmp11 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
     ca_.Branch(tmp11, &block1, &block2, tmp5, tmp6, tmp7, tmp8, tmp9, tmp10);
   }
 
@@ -193,13 +201,13 @@ TF_BUILTIN(StringRepeat, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 18);
     compiler::TNode<IntPtrT> tmp18;
     USE(tmp18);
-    tmp18 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp18 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<IntPtrT> tmp19;
     USE(tmp19);
     tmp19 = CodeStubAssembler(state_).WordAnd(compiler::TNode<IntPtrT>{tmp17}, compiler::TNode<IntPtrT>{tmp18});
     compiler::TNode<IntPtrT> tmp20;
     USE(tmp20);
-    tmp20 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp20 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp21;
     USE(tmp21);
     tmp21 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp19}, compiler::TNode<IntPtrT>{tmp20});
@@ -216,7 +224,7 @@ TF_BUILTIN(StringRepeat, CodeStubAssembler) {
     ca_.Bind(&block4, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27);
     compiler::TNode<String> tmp28;
     USE(tmp28);
-    tmp28 = StringAdd_77(state_, compiler::TNode<Context>{tmp22}, compiler::TNode<String>{tmp25}, compiler::TNode<String>{tmp26});
+    tmp28 = StringAdd_82(state_, compiler::TNode<Context>{tmp22}, compiler::TNode<String>{tmp25}, compiler::TNode<String>{tmp26});
     ca_.Goto(&block5, tmp22, tmp23, tmp24, tmp28, tmp26, tmp27);
   }
 
@@ -231,14 +239,14 @@ TF_BUILTIN(StringRepeat, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 20);
     compiler::TNode<IntPtrT> tmp35;
     USE(tmp35);
-    tmp35 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp35 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<IntPtrT> tmp36;
     USE(tmp36);
     tmp36 = CodeStubAssembler(state_).WordSar(compiler::TNode<IntPtrT>{tmp34}, compiler::TNode<IntPtrT>{tmp35});
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 21);
     compiler::TNode<IntPtrT> tmp37;
     USE(tmp37);
-    tmp37 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp37 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp38;
     USE(tmp38);
     tmp38 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp36}, compiler::TNode<IntPtrT>{tmp37});
@@ -267,7 +275,7 @@ TF_BUILTIN(StringRepeat, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 23);
     compiler::TNode<String> tmp51;
     USE(tmp51);
-    tmp51 = StringAdd_77(state_, compiler::TNode<Context>{tmp45}, compiler::TNode<String>{tmp49}, compiler::TNode<String>{tmp49});
+    tmp51 = StringAdd_82(state_, compiler::TNode<Context>{tmp45}, compiler::TNode<String>{tmp49}, compiler::TNode<String>{tmp49});
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 17);
     ca_.Goto(&block3, tmp45, tmp46, tmp47, tmp48, tmp51, tmp50);
   }
@@ -298,17 +306,21 @@ USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Number, Smi> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi, BoolT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi, BoolT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi, BoolT, BoolT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, Smi> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T, BoolT> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T, BoolT> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T, BoolT, BoolT> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String, Number, HeapNumber, Float64T> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String> block4(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, String> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -322,7 +334,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 34);
     compiler::TNode<String> tmp3;
     USE(tmp3);
-    tmp3 = FromConstexpr6String18ATconstexpr_string_128(state_, kBuiltinName_298(state_));
+    tmp3 = FromConstexpr6String18ATconstexpr_string_154(state_, kBuiltinName_337(state_));
     compiler::TNode<String> tmp4;
     USE(tmp4);
     tmp4 = CodeStubAssembler(state_).ToThisString(compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, compiler::TNode<String>{tmp3});
@@ -334,7 +346,7 @@ USE(parameter1);
     compiler::TNode<Smi> tmp6;
     USE(tmp6);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp6 = Cast5ATSmi_78(state_, compiler::TNode<Object>{tmp5}, &label0);
+    tmp6 = Cast5ATSmi_83(state_, compiler::TNode<Object>{tmp5}, &label0);
     ca_.Goto(&block9, tmp0, tmp1, tmp2, tmp4, tmp5, tmp5, tmp6);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -365,7 +377,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 41);
     compiler::TNode<Smi> tmp20;
     USE(tmp20);
-    tmp20 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp20 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp21;
     USE(tmp21);
     tmp21 = CodeStubAssembler(state_).SmiLessThan(compiler::TNode<Smi>{tmp19}, compiler::TNode<Smi>{tmp20});
@@ -394,11 +406,11 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 44);
     compiler::TNode<Smi> tmp34;
     USE(tmp34);
-    tmp34 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp34 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp35;
     USE(tmp35);
     tmp35 = CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp33}, compiler::TNode<Smi>{tmp34});
-    ca_.Branch(tmp35, &block13, &block15, tmp28, tmp29, tmp30, tmp31, tmp32, tmp33);
+    ca_.Branch(tmp35, &block15, &block16, tmp28, tmp29, tmp30, tmp31, tmp32, tmp33, tmp35);
   }
 
   if (block15.is_used()) {
@@ -408,149 +420,142 @@ USE(parameter1);
     compiler::TNode<String> tmp39;
     compiler::TNode<Number> tmp40;
     compiler::TNode<Smi> tmp41;
-    ca_.Bind(&block15, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41);
-    compiler::TNode<Uint32T> tmp42;
-    USE(tmp42);
-    tmp42 = CodeStubAssembler(state_).LoadStringLengthAsWord32(compiler::TNode<String>{tmp39});
-    compiler::TNode<Uint32T> tmp43;
+    compiler::TNode<BoolT> tmp42;
+    ca_.Bind(&block15, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42);
+    compiler::TNode<BoolT> tmp43;
     USE(tmp43);
-    tmp43 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
-    compiler::TNode<BoolT> tmp44;
-    USE(tmp44);
-    tmp44 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp42}, compiler::TNode<Uint32T>{tmp43});
-    ca_.Branch(tmp44, &block13, &block14, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41);
-  }
-
-  if (block13.is_used()) {
-    compiler::TNode<Context> tmp45;
-    compiler::TNode<Object> tmp46;
-    compiler::TNode<Object> tmp47;
-    compiler::TNode<String> tmp48;
-    compiler::TNode<Number> tmp49;
-    compiler::TNode<Smi> tmp50;
-    ca_.Bind(&block13, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50);
-    ca_.Goto(&block6, tmp45, tmp46, tmp47, tmp48);
-  }
-
-  if (block14.is_used()) {
-    compiler::TNode<Context> tmp51;
-    compiler::TNode<Object> tmp52;
-    compiler::TNode<Object> tmp53;
-    compiler::TNode<String> tmp54;
-    compiler::TNode<Number> tmp55;
-    compiler::TNode<Smi> tmp56;
-    ca_.Bind(&block14, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56);
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 46);
-    compiler::TNode<Smi> tmp57;
-    USE(tmp57);
-    tmp57 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, String::kMaxLength);
-    compiler::TNode<BoolT> tmp58;
-    USE(tmp58);
-    tmp58 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp56}, compiler::TNode<Smi>{tmp57});
-    ca_.Branch(tmp58, &block16, &block17, tmp51, tmp52, tmp53, tmp54, tmp55, tmp56);
+    tmp43 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
+    ca_.Goto(&block17, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp42, tmp43);
   }
 
   if (block16.is_used()) {
-    compiler::TNode<Context> tmp59;
-    compiler::TNode<Object> tmp60;
-    compiler::TNode<Object> tmp61;
-    compiler::TNode<String> tmp62;
-    compiler::TNode<Number> tmp63;
-    compiler::TNode<Smi> tmp64;
-    ca_.Bind(&block16, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64);
-    ca_.Goto(&block2, tmp59, tmp60, tmp61, tmp62);
+    compiler::TNode<Context> tmp44;
+    compiler::TNode<Object> tmp45;
+    compiler::TNode<Object> tmp46;
+    compiler::TNode<String> tmp47;
+    compiler::TNode<Number> tmp48;
+    compiler::TNode<Smi> tmp49;
+    compiler::TNode<BoolT> tmp50;
+    ca_.Bind(&block16, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50);
+    compiler::TNode<Uint32T> tmp51;
+    USE(tmp51);
+    tmp51 = CodeStubAssembler(state_).LoadStringLengthAsWord32(compiler::TNode<String>{tmp47});
+    compiler::TNode<Uint32T> tmp52;
+    USE(tmp52);
+    tmp52 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
+    compiler::TNode<BoolT> tmp53;
+    USE(tmp53);
+    tmp53 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp51}, compiler::TNode<Uint32T>{tmp52});
+    ca_.Goto(&block17, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp53);
   }
 
   if (block17.is_used()) {
-    compiler::TNode<Context> tmp65;
-    compiler::TNode<Object> tmp66;
-    compiler::TNode<Object> tmp67;
-    compiler::TNode<String> tmp68;
-    compiler::TNode<Number> tmp69;
-    compiler::TNode<Smi> tmp70;
-    ca_.Bind(&block17, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70);
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 50);
+    compiler::TNode<Context> tmp54;
+    compiler::TNode<Object> tmp55;
+    compiler::TNode<Object> tmp56;
+    compiler::TNode<String> tmp57;
+    compiler::TNode<Number> tmp58;
+    compiler::TNode<Smi> tmp59;
+    compiler::TNode<BoolT> tmp60;
+    compiler::TNode<BoolT> tmp61;
+    ca_.Bind(&block17, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61);
+    ca_.Branch(tmp61, &block13, &block14, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59);
+  }
+
+  if (block13.is_used()) {
+    compiler::TNode<Context> tmp62;
+    compiler::TNode<Object> tmp63;
+    compiler::TNode<Object> tmp64;
+    compiler::TNode<String> tmp65;
+    compiler::TNode<Number> tmp66;
+    compiler::TNode<Smi> tmp67;
+    ca_.Bind(&block13, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67);
+    ca_.Goto(&block6, tmp62, tmp63, tmp64, tmp65);
+  }
+
+  if (block14.is_used()) {
+    compiler::TNode<Context> tmp68;
+    compiler::TNode<Object> tmp69;
+    compiler::TNode<Object> tmp70;
     compiler::TNode<String> tmp71;
-    tmp71 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kStringRepeat, tmp65, tmp68, tmp70));
-    USE(tmp71);
-    CodeStubAssembler(state_).Return(tmp71);
-  }
-
-  if (block8.is_used()) {
-    compiler::TNode<Context> tmp72;
-    compiler::TNode<Object> tmp73;
-    compiler::TNode<Object> tmp74;
-    compiler::TNode<String> tmp75;
-    compiler::TNode<Number> tmp76;
-    ca_.Bind(&block8, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76);
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 52);
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 54);
-    compiler::TNode<Float64T> tmp77;
-    USE(tmp77);
-    tmp77 = LoadHeapNumberValue_464(state_, compiler::TNode<HeapNumber>{ca_.UncheckedCast<HeapNumber>(tmp76)});
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 58);
-    compiler::TNode<Float64T> tmp78;
-    USE(tmp78);
-    tmp78 = FromConstexpr9ATfloat6419ATconstexpr_float64_138(state_, V8_INFINITY);
-    compiler::TNode<BoolT> tmp79;
-    USE(tmp79);
-    tmp79 = CodeStubAssembler(state_).Float64Equal(compiler::TNode<Float64T>{tmp77}, compiler::TNode<Float64T>{tmp78});
-    ca_.Branch(tmp79, &block18, &block20, tmp72, tmp73, tmp74, tmp75, tmp76, ca_.UncheckedCast<HeapNumber>(tmp76), tmp77);
-  }
-
-  if (block20.is_used()) {
-    compiler::TNode<Context> tmp80;
-    compiler::TNode<Object> tmp81;
-    compiler::TNode<Object> tmp82;
-    compiler::TNode<String> tmp83;
-    compiler::TNode<Number> tmp84;
-    compiler::TNode<HeapNumber> tmp85;
-    compiler::TNode<Float64T> tmp86;
-    ca_.Bind(&block20, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86);
-    compiler::TNode<Float64T> tmp87;
-    USE(tmp87);
-    tmp87 = FromConstexpr9ATfloat6417ATconstexpr_int31_137(state_, 0.0);
-    compiler::TNode<BoolT> tmp88;
-    USE(tmp88);
-    tmp88 = CodeStubAssembler(state_).Float64LessThan(compiler::TNode<Float64T>{tmp86}, compiler::TNode<Float64T>{tmp87});
-    ca_.Branch(tmp88, &block18, &block19, tmp80, tmp81, tmp82, tmp83, tmp84, tmp85, tmp86);
+    compiler::TNode<Number> tmp72;
+    compiler::TNode<Smi> tmp73;
+    ca_.Bind(&block14, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73);
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 46);
+    compiler::TNode<Smi> tmp74;
+    USE(tmp74);
+    tmp74 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, String::kMaxLength);
+    compiler::TNode<BoolT> tmp75;
+    USE(tmp75);
+    tmp75 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp73}, compiler::TNode<Smi>{tmp74});
+    ca_.Branch(tmp75, &block18, &block19, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73);
   }
 
   if (block18.is_used()) {
+    compiler::TNode<Context> tmp76;
+    compiler::TNode<Object> tmp77;
+    compiler::TNode<Object> tmp78;
+    compiler::TNode<String> tmp79;
+    compiler::TNode<Number> tmp80;
+    compiler::TNode<Smi> tmp81;
+    ca_.Bind(&block18, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81);
+    ca_.Goto(&block2, tmp76, tmp77, tmp78, tmp79);
+  }
+
+  if (block19.is_used()) {
+    compiler::TNode<Context> tmp82;
+    compiler::TNode<Object> tmp83;
+    compiler::TNode<Object> tmp84;
+    compiler::TNode<String> tmp85;
+    compiler::TNode<Number> tmp86;
+    compiler::TNode<Smi> tmp87;
+    ca_.Bind(&block19, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87);
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 50);
+    compiler::TNode<String> tmp88;
+    tmp88 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kStringRepeat, tmp82, tmp85, tmp87));
+    USE(tmp88);
+    CodeStubAssembler(state_).Return(tmp88);
+  }
+
+  if (block8.is_used()) {
     compiler::TNode<Context> tmp89;
     compiler::TNode<Object> tmp90;
     compiler::TNode<Object> tmp91;
     compiler::TNode<String> tmp92;
     compiler::TNode<Number> tmp93;
-    compiler::TNode<HeapNumber> tmp94;
+    ca_.Bind(&block8, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93);
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 52);
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 54);
+    compiler::TNode<Float64T> tmp94;
+    USE(tmp94);
+    tmp94 = LoadHeapNumberValue_504(state_, compiler::TNode<HeapNumber>{ca_.UncheckedCast<HeapNumber>(tmp93)});
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 58);
     compiler::TNode<Float64T> tmp95;
-    ca_.Bind(&block18, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94, &tmp95);
-    ca_.Goto(&block4, tmp89, tmp90, tmp91, tmp92);
+    USE(tmp95);
+    tmp95 = FromConstexpr9ATfloat6419ATconstexpr_float64_164(state_, V8_INFINITY);
+    compiler::TNode<BoolT> tmp96;
+    USE(tmp96);
+    tmp96 = CodeStubAssembler(state_).Float64Equal(compiler::TNode<Float64T>{tmp94}, compiler::TNode<Float64T>{tmp95});
+    ca_.Branch(tmp96, &block22, &block23, tmp89, tmp90, tmp91, tmp92, tmp93, ca_.UncheckedCast<HeapNumber>(tmp93), tmp94, tmp96);
   }
 
-  if (block19.is_used()) {
-    compiler::TNode<Context> tmp96;
-    compiler::TNode<Object> tmp97;
+  if (block22.is_used()) {
+    compiler::TNode<Context> tmp97;
     compiler::TNode<Object> tmp98;
-    compiler::TNode<String> tmp99;
-    compiler::TNode<Number> tmp100;
-    compiler::TNode<HeapNumber> tmp101;
-    compiler::TNode<Float64T> tmp102;
-    ca_.Bind(&block19, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102);
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 61);
-    compiler::TNode<Uint32T> tmp103;
-    USE(tmp103);
-    tmp103 = CodeStubAssembler(state_).LoadStringLengthAsWord32(compiler::TNode<String>{tmp99});
-    compiler::TNode<Uint32T> tmp104;
-    USE(tmp104);
-    tmp104 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    compiler::TNode<Object> tmp99;
+    compiler::TNode<String> tmp100;
+    compiler::TNode<Number> tmp101;
+    compiler::TNode<HeapNumber> tmp102;
+    compiler::TNode<Float64T> tmp103;
+    compiler::TNode<BoolT> tmp104;
+    ca_.Bind(&block22, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104);
     compiler::TNode<BoolT> tmp105;
     USE(tmp105);
-    tmp105 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp103}, compiler::TNode<Uint32T>{tmp104});
-    ca_.Branch(tmp105, &block21, &block22, tmp96, tmp97, tmp98, tmp99, tmp100, tmp101, tmp102);
+    tmp105 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
+    ca_.Goto(&block24, tmp97, tmp98, tmp99, tmp100, tmp101, tmp102, tmp103, tmp104, tmp105);
   }
 
-  if (block21.is_used()) {
+  if (block23.is_used()) {
     compiler::TNode<Context> tmp106;
     compiler::TNode<Object> tmp107;
     compiler::TNode<Object> tmp108;
@@ -558,54 +563,121 @@ USE(parameter1);
     compiler::TNode<Number> tmp110;
     compiler::TNode<HeapNumber> tmp111;
     compiler::TNode<Float64T> tmp112;
-    ca_.Bind(&block21, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112);
-    ca_.Goto(&block6, tmp106, tmp107, tmp108, tmp109);
+    compiler::TNode<BoolT> tmp113;
+    ca_.Bind(&block23, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113);
+    compiler::TNode<Float64T> tmp114;
+    USE(tmp114);
+    tmp114 = FromConstexpr9ATfloat6417ATconstexpr_int31_163(state_, 0.0);
+    compiler::TNode<BoolT> tmp115;
+    USE(tmp115);
+    tmp115 = CodeStubAssembler(state_).Float64LessThan(compiler::TNode<Float64T>{tmp112}, compiler::TNode<Float64T>{tmp114});
+    ca_.Goto(&block24, tmp106, tmp107, tmp108, tmp109, tmp110, tmp111, tmp112, tmp113, tmp115);
   }
 
-  if (block22.is_used()) {
-    compiler::TNode<Context> tmp113;
-    compiler::TNode<Object> tmp114;
-    compiler::TNode<Object> tmp115;
-    compiler::TNode<String> tmp116;
-    compiler::TNode<Number> tmp117;
-    compiler::TNode<HeapNumber> tmp118;
-    compiler::TNode<Float64T> tmp119;
-    ca_.Bind(&block22, &tmp113, &tmp114, &tmp115, &tmp116, &tmp117, &tmp118, &tmp119);
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 63);
-    ca_.Goto(&block2, tmp113, tmp114, tmp115, tmp116);
+  if (block24.is_used()) {
+    compiler::TNode<Context> tmp116;
+    compiler::TNode<Object> tmp117;
+    compiler::TNode<Object> tmp118;
+    compiler::TNode<String> tmp119;
+    compiler::TNode<Number> tmp120;
+    compiler::TNode<HeapNumber> tmp121;
+    compiler::TNode<Float64T> tmp122;
+    compiler::TNode<BoolT> tmp123;
+    compiler::TNode<BoolT> tmp124;
+    ca_.Bind(&block24, &tmp116, &tmp117, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124);
+    ca_.Branch(tmp124, &block20, &block21, tmp116, tmp117, tmp118, tmp119, tmp120, tmp121, tmp122);
   }
 
-  if (block6.is_used()) {
-    compiler::TNode<Context> tmp120;
-    compiler::TNode<Object> tmp121;
-    compiler::TNode<Object> tmp122;
-    compiler::TNode<String> tmp123;
-    ca_.Bind(&block6, &tmp120, &tmp121, &tmp122, &tmp123);
-    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 68);
-    compiler::TNode<String> tmp124;
-    USE(tmp124);
-    tmp124 = kEmptyString_68(state_);
-    CodeStubAssembler(state_).Return(tmp124);
-  }
-
-  if (block4.is_used()) {
+  if (block20.is_used()) {
     compiler::TNode<Context> tmp125;
     compiler::TNode<Object> tmp126;
     compiler::TNode<Object> tmp127;
     compiler::TNode<String> tmp128;
-    ca_.Bind(&block4, &tmp125, &tmp126, &tmp127, &tmp128);
+    compiler::TNode<Number> tmp129;
+    compiler::TNode<HeapNumber> tmp130;
+    compiler::TNode<Float64T> tmp131;
+    ca_.Bind(&block20, &tmp125, &tmp126, &tmp127, &tmp128, &tmp129, &tmp130, &tmp131);
+    ca_.Goto(&block4, tmp125, tmp126, tmp127, tmp128);
+  }
+
+  if (block21.is_used()) {
+    compiler::TNode<Context> tmp132;
+    compiler::TNode<Object> tmp133;
+    compiler::TNode<Object> tmp134;
+    compiler::TNode<String> tmp135;
+    compiler::TNode<Number> tmp136;
+    compiler::TNode<HeapNumber> tmp137;
+    compiler::TNode<Float64T> tmp138;
+    ca_.Bind(&block21, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137, &tmp138);
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 61);
+    compiler::TNode<Uint32T> tmp139;
+    USE(tmp139);
+    tmp139 = CodeStubAssembler(state_).LoadStringLengthAsWord32(compiler::TNode<String>{tmp135});
+    compiler::TNode<Uint32T> tmp140;
+    USE(tmp140);
+    tmp140 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
+    compiler::TNode<BoolT> tmp141;
+    USE(tmp141);
+    tmp141 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp139}, compiler::TNode<Uint32T>{tmp140});
+    ca_.Branch(tmp141, &block25, &block26, tmp132, tmp133, tmp134, tmp135, tmp136, tmp137, tmp138);
+  }
+
+  if (block25.is_used()) {
+    compiler::TNode<Context> tmp142;
+    compiler::TNode<Object> tmp143;
+    compiler::TNode<Object> tmp144;
+    compiler::TNode<String> tmp145;
+    compiler::TNode<Number> tmp146;
+    compiler::TNode<HeapNumber> tmp147;
+    compiler::TNode<Float64T> tmp148;
+    ca_.Bind(&block25, &tmp142, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148);
+    ca_.Goto(&block6, tmp142, tmp143, tmp144, tmp145);
+  }
+
+  if (block26.is_used()) {
+    compiler::TNode<Context> tmp149;
+    compiler::TNode<Object> tmp150;
+    compiler::TNode<Object> tmp151;
+    compiler::TNode<String> tmp152;
+    compiler::TNode<Number> tmp153;
+    compiler::TNode<HeapNumber> tmp154;
+    compiler::TNode<Float64T> tmp155;
+    ca_.Bind(&block26, &tmp149, &tmp150, &tmp151, &tmp152, &tmp153, &tmp154, &tmp155);
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 63);
+    ca_.Goto(&block2, tmp149, tmp150, tmp151, tmp152);
+  }
+
+  if (block6.is_used()) {
+    compiler::TNode<Context> tmp156;
+    compiler::TNode<Object> tmp157;
+    compiler::TNode<Object> tmp158;
+    compiler::TNode<String> tmp159;
+    ca_.Bind(&block6, &tmp156, &tmp157, &tmp158, &tmp159);
+    ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 68);
+    compiler::TNode<String> tmp160;
+    USE(tmp160);
+    tmp160 = kEmptyString_67(state_);
+    CodeStubAssembler(state_).Return(tmp160);
+  }
+
+  if (block4.is_used()) {
+    compiler::TNode<Context> tmp161;
+    compiler::TNode<Object> tmp162;
+    compiler::TNode<Object> tmp163;
+    compiler::TNode<String> tmp164;
+    ca_.Bind(&block4, &tmp161, &tmp162, &tmp163, &tmp164);
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 71);
-    CodeStubAssembler(state_).ThrowRangeError(compiler::TNode<Context>{tmp125}, MessageTemplate::kInvalidCountValue, compiler::TNode<Object>{tmp127});
+    CodeStubAssembler(state_).ThrowRangeError(compiler::TNode<Context>{tmp161}, MessageTemplate::kInvalidCountValue, compiler::TNode<Object>{tmp163});
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp129;
-    compiler::TNode<Object> tmp130;
-    compiler::TNode<Object> tmp131;
-    compiler::TNode<String> tmp132;
-    ca_.Bind(&block2, &tmp129, &tmp130, &tmp131, &tmp132);
+    compiler::TNode<Context> tmp165;
+    compiler::TNode<Object> tmp166;
+    compiler::TNode<Object> tmp167;
+    compiler::TNode<String> tmp168;
+    ca_.Bind(&block2, &tmp165, &tmp166, &tmp167, &tmp168);
     ca_.SetSourcePosition("../../src/builtins/string-repeat.tq", 74);
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, tmp129);
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, tmp165);
     CodeStubAssembler(state_).Unreachable();
   }
 }

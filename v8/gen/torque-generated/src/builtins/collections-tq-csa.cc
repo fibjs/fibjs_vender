@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_MayHaveSideEffects) {
+TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_267(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_MayHaveSideEffects) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -168,7 +176,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     compiler::TNode<JSArray> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = Cast13ATFastJSArray_1310(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    tmp2 = Cast13ATFastJSArray_1363(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
     ca_.Goto(&block5, tmp0, tmp1, tmp1, tmp1, tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -204,7 +212,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     compiler::TNode<FixedArray> tmp15;
     USE(tmp15);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp15 = Cast10FixedArray_83(state_, compiler::TNode<HeapObject>{tmp14}, &label0);
+    tmp15 = Cast10FixedArray_103(state_, compiler::TNode<HeapObject>{tmp14}, &label0);
     ca_.Goto(&block9, tmp7, tmp8, tmp9, tmp11, tmp12, tmp14, tmp14, tmp15);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -237,7 +245,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 17);
     compiler::TNode<Smi> tmp31;
     USE(tmp31);
-    tmp31 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp31 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp32;
     USE(tmp32);
     tmp32 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp27}, compiler::TNode<Smi>{tmp31});
@@ -255,10 +263,10 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.Bind(&block11, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<Smi> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp40 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
-    tmp41 = LoadElementOrUndefined_52(state_, compiler::TNode<FixedArray>{tmp39}, compiler::TNode<Smi>{tmp40});
+    tmp41 = LoadElementOrUndefined_51(state_, compiler::TNode<Context>{tmp33}, compiler::TNode<FixedArray>{tmp39}, compiler::TNode<Smi>{tmp40});
     ca_.Goto(&block14, tmp33, tmp34, tmp35, tmp36, tmp37, tmp38, tmp39, tmp41);
   }
 
@@ -274,7 +282,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 18);
     compiler::TNode<Oddball> tmp49;
     USE(tmp49);
-    tmp49 = Undefined_65(state_);
+    tmp49 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 17);
     ca_.Goto(&block13, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49);
   }
@@ -305,7 +313,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 19);
     compiler::TNode<Smi> tmp66;
     USE(tmp66);
-    tmp66 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp66 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<BoolT> tmp67;
     USE(tmp67);
     tmp67 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp62}, compiler::TNode<Smi>{tmp66});
@@ -324,10 +332,10 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.Bind(&block15, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75);
     compiler::TNode<Smi> tmp76;
     USE(tmp76);
-    tmp76 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp76 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<Object> tmp77;
     USE(tmp77);
-    tmp77 = LoadElementOrUndefined_52(state_, compiler::TNode<FixedArray>{tmp74}, compiler::TNode<Smi>{tmp76});
+    tmp77 = LoadElementOrUndefined_51(state_, compiler::TNode<Context>{tmp68}, compiler::TNode<FixedArray>{tmp74}, compiler::TNode<Smi>{tmp76});
     ca_.Goto(&block18, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp77);
   }
 
@@ -344,7 +352,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 20);
     compiler::TNode<Oddball> tmp86;
     USE(tmp86);
-    tmp86 = Undefined_65(state_);
+    tmp86 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 19);
     ca_.Goto(&block17, tmp78, tmp79, tmp80, tmp81, tmp82, tmp83, tmp84, tmp85, tmp86);
   }
@@ -390,7 +398,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     compiler::TNode<FixedDoubleArray> tmp111;
     USE(tmp111);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp111 = Cast16FixedDoubleArray_84(state_, compiler::TNode<HeapObject>{ca_.UncheckedCast<FixedArrayBase>(tmp110)}, &label0);
+    tmp111 = Cast16FixedDoubleArray_104(state_, compiler::TNode<HeapObject>{ca_.UncheckedCast<FixedArrayBase>(tmp110)}, &label0);
     ca_.Goto(&block21, tmp105, tmp106, tmp107, tmp108, tmp109, tmp110, ca_.UncheckedCast<FixedArrayBase>(tmp110), tmp111);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -423,7 +431,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 25);
     compiler::TNode<Smi> tmp127;
     USE(tmp127);
-    tmp127 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp127 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp128;
     USE(tmp128);
     tmp128 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp123}, compiler::TNode<Smi>{tmp127});
@@ -441,10 +449,10 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.Bind(&block23, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135);
     compiler::TNode<Smi> tmp136;
     USE(tmp136);
-    tmp136 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp136 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<Object> tmp137;
     USE(tmp137);
-    tmp137 = LoadElementOrUndefined_53(state_, compiler::TNode<FixedDoubleArray>{tmp135}, compiler::TNode<Smi>{tmp136});
+    tmp137 = LoadElementOrUndefined_52(state_, compiler::TNode<FixedDoubleArray>{tmp135}, compiler::TNode<Smi>{tmp136});
     ca_.Goto(&block26, tmp129, tmp130, tmp131, tmp132, tmp133, tmp134, tmp135, tmp137);
   }
 
@@ -460,7 +468,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 26);
     compiler::TNode<Oddball> tmp145;
     USE(tmp145);
-    tmp145 = Undefined_65(state_);
+    tmp145 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 25);
     ca_.Goto(&block25, tmp138, tmp139, tmp140, tmp141, tmp142, tmp143, tmp144, tmp145);
   }
@@ -491,7 +499,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 27);
     compiler::TNode<Smi> tmp162;
     USE(tmp162);
-    tmp162 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp162 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<BoolT> tmp163;
     USE(tmp163);
     tmp163 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp158}, compiler::TNode<Smi>{tmp162});
@@ -510,10 +518,10 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.Bind(&block27, &tmp164, &tmp165, &tmp166, &tmp167, &tmp168, &tmp169, &tmp170, &tmp171);
     compiler::TNode<Smi> tmp172;
     USE(tmp172);
-    tmp172 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp172 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<Object> tmp173;
     USE(tmp173);
-    tmp173 = LoadElementOrUndefined_53(state_, compiler::TNode<FixedDoubleArray>{tmp170}, compiler::TNode<Smi>{tmp172});
+    tmp173 = LoadElementOrUndefined_52(state_, compiler::TNode<FixedDoubleArray>{tmp170}, compiler::TNode<Smi>{tmp172});
     ca_.Goto(&block30, tmp164, tmp165, tmp166, tmp167, tmp168, tmp169, tmp170, tmp171, tmp173);
   }
 
@@ -530,7 +538,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 28);
     compiler::TNode<Oddball> tmp182;
     USE(tmp182);
-    tmp182 = Undefined_65(state_);
+    tmp182 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 27);
     ca_.Goto(&block29, tmp174, tmp175, tmp176, tmp177, tmp178, tmp179, tmp180, tmp181, tmp182);
   }
@@ -586,7 +594,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
     compiler::TNode<JSReceiver> tmp210;
     USE(tmp210);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp210 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp207}, compiler::TNode<Object>{ca_.UncheckedCast<Object>(tmp209)}, &label0);
+    tmp210 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp207}, compiler::TNode<Object>{ca_.UncheckedCast<Object>(tmp209)}, &label0);
     ca_.Goto(&block33, tmp207, tmp208, tmp209, ca_.UncheckedCast<Object>(tmp209), tmp210);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -647,7 +655,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssembl
   return TorqueStructKeyValuePair{compiler::TNode<Object>{tmp229}, compiler::TNode<Object>{tmp230}};
 }
 
-TorqueStructKeyValuePair LoadKeyValuePair_239(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
+TorqueStructKeyValuePair LoadKeyValuePair_268(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -667,7 +675,7 @@ TorqueStructKeyValuePair LoadKeyValuePair_239(compiler::CodeAssemblerState* stat
     compiler::TNode<Object> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    std::tie(tmp2, tmp3) = LoadKeyValuePairNoSideEffects_238(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0).Flatten();
+    std::tie(tmp2, tmp3) = LoadKeyValuePairNoSideEffects_267(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0).Flatten();
     ca_.Goto(&block4, tmp0, tmp1, tmp1, tmp2, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -700,14 +708,14 @@ TorqueStructKeyValuePair LoadKeyValuePair_239(compiler::CodeAssemblerState* stat
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 53);
     compiler::TNode<Smi> tmp14;
     USE(tmp14);
-    tmp14 = Convert5ATSmi17ATconstexpr_int31_1292(state_, 0);
+    tmp14 = Convert5ATSmi17ATconstexpr_int31_1340(state_, 0);
     compiler::TNode<Object> tmp15;
     USE(tmp15);
     tmp15 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp13}, compiler::TNode<Object>{tmp14});
     ca_.SetSourcePosition("../../src/builtins/collections.tq", 54);
     compiler::TNode<Smi> tmp16;
     USE(tmp16);
-    tmp16 = Convert5ATSmi17ATconstexpr_int31_1292(state_, 1);
+    tmp16 = Convert5ATSmi17ATconstexpr_int31_1340(state_, 1);
     compiler::TNode<Object> tmp17;
     USE(tmp17);
     tmp17 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp13}, compiler::TNode<Object>{tmp16});

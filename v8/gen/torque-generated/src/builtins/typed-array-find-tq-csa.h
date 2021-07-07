@@ -10,8 +10,8 @@
 namespace v8 {
 namespace internal {
 
-  const char* kBuiltinName_313(compiler::CodeAssemblerState* state_);
-compiler::TNode<Object> FindAllElements_314(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_array, compiler::TNode<HeapObject> p_callbackfn, compiler::TNode<Object> p_thisArg);
+  const char* kBuiltinName_354(compiler::CodeAssemblerState* state_);
+compiler::TNode<Object> FindAllElements_355(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_array, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg);
 }  // namespace internal
 }  // namespace v8
 

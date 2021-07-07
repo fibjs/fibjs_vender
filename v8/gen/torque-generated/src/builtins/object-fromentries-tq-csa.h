@@ -10,9 +10,9 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<JSObject> ObjectFromEntriesFastCase_281(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_iterable, compiler::CodeAssemblerLabel* label_IfSlow);
-compiler::TNode<JSArray> Cast34ATFastJSArrayWithNoCustomIteration_1343(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
-compiler::TNode<BoolT> Is10JSReceiver20UT5ATSmi10HeapObject_1344(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+compiler::TNode<JSObject> ObjectFromEntriesFastCase_310(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_iterable, compiler::CodeAssemblerLabel* label_IfSlow);
+compiler::TNode<JSArray> Cast34ATFastJSArrayWithNoCustomIteration_1397(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+compiler::TNode<BoolT> Is10JSReceiver90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol_1398(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
 }  // namespace internal
 }  // namespace v8
 

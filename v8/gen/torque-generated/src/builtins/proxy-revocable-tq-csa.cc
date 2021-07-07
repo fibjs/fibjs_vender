@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -125,180 +133,167 @@ namespace internal {
 
 TF_BUILTIN(ProxyRevocable, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
-  compiler::TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kTarget));
   USE(parameter1);
-  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kTarget));
+  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kHandler));
   USE(parameter2);
-  compiler::TNode<Object> parameter3 = UncheckedCast<Object>(Parameter(Descriptor::kHandler));
-  USE(parameter3);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSReceiver> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Object> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Object, JSReceiver> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, JSReceiver> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, JSReceiver> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    ca_.Goto(&block0, parameter0, parameter1, parameter2, parameter3);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver, Object> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver, Object, JSReceiver> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver, JSReceiver> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver, JSReceiver> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    ca_.Goto(&block0, parameter0, parameter1, parameter2);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     compiler::TNode<Object> tmp2;
-    compiler::TNode<Object> tmp3;
-    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 20);
-    compiler::TNode<JSReceiver> tmp4;
-    USE(tmp4);
+    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 19);
+    compiler::TNode<JSReceiver> tmp3;
+    USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp4 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
-    ca_.Goto(&block5, tmp0, tmp1, tmp2, tmp3, tmp2, tmp4);
+    tmp3 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    ca_.Goto(&block5, tmp0, tmp1, tmp2, tmp1, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block6, tmp0, tmp1, tmp2, tmp3, tmp2);
+      ca_.Goto(&block6, tmp0, tmp1, tmp2, tmp1);
     }
   }
 
   if (block6.is_used()) {
-    compiler::TNode<Context> tmp5;
+    compiler::TNode<Context> tmp4;
+    compiler::TNode<Object> tmp5;
     compiler::TNode<Object> tmp6;
     compiler::TNode<Object> tmp7;
-    compiler::TNode<Object> tmp8;
-    compiler::TNode<Object> tmp9;
-    ca_.Bind(&block6, &tmp5, &tmp6, &tmp7, &tmp8, &tmp9);
-    ca_.Goto(&block4, tmp5, tmp6, tmp7, tmp8);
+    ca_.Bind(&block6, &tmp4, &tmp5, &tmp6, &tmp7);
+    ca_.Goto(&block4, tmp4, tmp5, tmp6);
   }
 
   if (block5.is_used()) {
-    compiler::TNode<Context> tmp10;
+    compiler::TNode<Context> tmp8;
+    compiler::TNode<Object> tmp9;
+    compiler::TNode<Object> tmp10;
     compiler::TNode<Object> tmp11;
-    compiler::TNode<Object> tmp12;
-    compiler::TNode<Object> tmp13;
-    compiler::TNode<Object> tmp14;
-    compiler::TNode<JSReceiver> tmp15;
-    ca_.Bind(&block5, &tmp10, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 21);
-    compiler::TNode<BoolT> tmp16;
-    USE(tmp16);
-    tmp16 = IsRevokedProxy_290(state_, compiler::TNode<Context>{tmp10}, compiler::TNode<JSReceiver>{tmp15});
-    ca_.Branch(tmp16, &block7, &block8, tmp10, tmp11, tmp12, tmp13, tmp15);
+    compiler::TNode<JSReceiver> tmp12;
+    ca_.Bind(&block5, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 20);
+    compiler::TNode<BoolT> tmp13;
+    USE(tmp13);
+    tmp13 = IsRevokedProxy_319(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<JSReceiver>{tmp12});
+    ca_.Branch(tmp13, &block7, &block8, tmp8, tmp9, tmp10, tmp12);
   }
 
   if (block7.is_used()) {
-    compiler::TNode<Context> tmp17;
-    compiler::TNode<Object> tmp18;
-    compiler::TNode<Object> tmp19;
-    compiler::TNode<Object> tmp20;
-    compiler::TNode<JSReceiver> tmp21;
-    ca_.Bind(&block7, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 22);
-    ca_.Goto(&block2, tmp17, tmp18, tmp19, tmp20);
+    compiler::TNode<Context> tmp14;
+    compiler::TNode<Object> tmp15;
+    compiler::TNode<Object> tmp16;
+    compiler::TNode<JSReceiver> tmp17;
+    ca_.Bind(&block7, &tmp14, &tmp15, &tmp16, &tmp17);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 21);
+    ca_.Goto(&block2, tmp14, tmp15, tmp16);
   }
 
   if (block8.is_used()) {
-    compiler::TNode<Context> tmp22;
-    compiler::TNode<Object> tmp23;
-    compiler::TNode<Object> tmp24;
-    compiler::TNode<Object> tmp25;
-    compiler::TNode<JSReceiver> tmp26;
-    ca_.Bind(&block8, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 26);
-    compiler::TNode<JSReceiver> tmp27;
-    USE(tmp27);
+    compiler::TNode<Context> tmp18;
+    compiler::TNode<Object> tmp19;
+    compiler::TNode<Object> tmp20;
+    compiler::TNode<JSReceiver> tmp21;
+    ca_.Bind(&block8, &tmp18, &tmp19, &tmp20, &tmp21);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 25);
+    compiler::TNode<JSReceiver> tmp22;
+    USE(tmp22);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp27 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp22}, compiler::TNode<Object>{tmp25}, &label0);
-    ca_.Goto(&block9, tmp22, tmp23, tmp24, tmp25, tmp26, tmp25, tmp27);
+    tmp22 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp18}, compiler::TNode<Object>{tmp20}, &label0);
+    ca_.Goto(&block9, tmp18, tmp19, tmp20, tmp21, tmp20, tmp22);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block10, tmp22, tmp23, tmp24, tmp25, tmp26, tmp25);
+      ca_.Goto(&block10, tmp18, tmp19, tmp20, tmp21, tmp20);
     }
   }
 
   if (block10.is_used()) {
-    compiler::TNode<Context> tmp28;
-    compiler::TNode<Object> tmp29;
-    compiler::TNode<Object> tmp30;
-    compiler::TNode<Object> tmp31;
-    compiler::TNode<JSReceiver> tmp32;
-    compiler::TNode<Object> tmp33;
-    ca_.Bind(&block10, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33);
-    ca_.Goto(&block4, tmp28, tmp29, tmp30, tmp31);
+    compiler::TNode<Context> tmp23;
+    compiler::TNode<Object> tmp24;
+    compiler::TNode<Object> tmp25;
+    compiler::TNode<JSReceiver> tmp26;
+    compiler::TNode<Object> tmp27;
+    ca_.Bind(&block10, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27);
+    ca_.Goto(&block4, tmp23, tmp24, tmp25);
   }
 
   if (block9.is_used()) {
-    compiler::TNode<Context> tmp34;
-    compiler::TNode<Object> tmp35;
-    compiler::TNode<Object> tmp36;
-    compiler::TNode<Object> tmp37;
-    compiler::TNode<JSReceiver> tmp38;
-    compiler::TNode<Object> tmp39;
-    compiler::TNode<JSReceiver> tmp40;
-    ca_.Bind(&block9, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 27);
-    compiler::TNode<BoolT> tmp41;
-    USE(tmp41);
-    tmp41 = IsRevokedProxy_290(state_, compiler::TNode<Context>{tmp34}, compiler::TNode<JSReceiver>{tmp40});
-    ca_.Branch(tmp41, &block11, &block12, tmp34, tmp35, tmp36, tmp37, tmp38, tmp40);
+    compiler::TNode<Context> tmp28;
+    compiler::TNode<Object> tmp29;
+    compiler::TNode<Object> tmp30;
+    compiler::TNode<JSReceiver> tmp31;
+    compiler::TNode<Object> tmp32;
+    compiler::TNode<JSReceiver> tmp33;
+    ca_.Bind(&block9, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 26);
+    compiler::TNode<BoolT> tmp34;
+    USE(tmp34);
+    tmp34 = IsRevokedProxy_319(state_, compiler::TNode<Context>{tmp28}, compiler::TNode<JSReceiver>{tmp33});
+    ca_.Branch(tmp34, &block11, &block12, tmp28, tmp29, tmp30, tmp31, tmp33);
   }
 
   if (block11.is_used()) {
-    compiler::TNode<Context> tmp42;
-    compiler::TNode<Object> tmp43;
-    compiler::TNode<Object> tmp44;
-    compiler::TNode<Object> tmp45;
-    compiler::TNode<JSReceiver> tmp46;
-    compiler::TNode<JSReceiver> tmp47;
-    ca_.Bind(&block11, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 28);
-    ca_.Goto(&block2, tmp42, tmp43, tmp44, tmp45);
+    compiler::TNode<Context> tmp35;
+    compiler::TNode<Object> tmp36;
+    compiler::TNode<Object> tmp37;
+    compiler::TNode<JSReceiver> tmp38;
+    compiler::TNode<JSReceiver> tmp39;
+    ca_.Bind(&block11, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 27);
+    ca_.Goto(&block2, tmp35, tmp36, tmp37);
   }
 
   if (block12.is_used()) {
-    compiler::TNode<Context> tmp48;
-    compiler::TNode<Object> tmp49;
-    compiler::TNode<Object> tmp50;
-    compiler::TNode<Object> tmp51;
-    compiler::TNode<JSReceiver> tmp52;
-    compiler::TNode<JSReceiver> tmp53;
-    ca_.Bind(&block12, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 32);
-    compiler::TNode<JSProxy> tmp54;
-    USE(tmp54);
-    tmp54 = ProxiesCodeStubAssembler(state_).AllocateProxy(compiler::TNode<Context>{tmp48}, compiler::TNode<JSReceiver>{tmp52}, compiler::TNode<JSReceiver>{tmp53});
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 38);
-    compiler::TNode<JSFunction> tmp55;
-    USE(tmp55);
-    tmp55 = ProxiesCodeStubAssembler(state_).AllocateProxyRevokeFunction(compiler::TNode<Context>{tmp48}, compiler::TNode<JSProxy>{tmp54});
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 44);
-    compiler::TNode<JSProxyRevocableResult> tmp56;
-    USE(tmp56);
-    tmp56 = NewJSProxyRevocableResult_59(state_, compiler::TNode<Context>{tmp48}, compiler::TNode<JSProxy>{tmp54}, compiler::TNode<JSFunction>{tmp55});
-    CodeStubAssembler(state_).Return(tmp56);
+    compiler::TNode<Context> tmp40;
+    compiler::TNode<Object> tmp41;
+    compiler::TNode<Object> tmp42;
+    compiler::TNode<JSReceiver> tmp43;
+    compiler::TNode<JSReceiver> tmp44;
+    ca_.Bind(&block12, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 31);
+    compiler::TNode<JSProxy> tmp45;
+    USE(tmp45);
+    tmp45 = ProxiesCodeStubAssembler(state_).AllocateProxy(compiler::TNode<Context>{tmp40}, compiler::TNode<JSReceiver>{tmp43}, compiler::TNode<JSReceiver>{tmp44});
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 37);
+    compiler::TNode<JSFunction> tmp46;
+    USE(tmp46);
+    tmp46 = ProxiesCodeStubAssembler(state_).AllocateProxyRevokeFunction(compiler::TNode<Context>{tmp40}, compiler::TNode<JSProxy>{tmp45});
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 43);
+    compiler::TNode<JSProxyRevocableResult> tmp47;
+    USE(tmp47);
+    tmp47 = NewJSProxyRevocableResult_58(state_, compiler::TNode<Context>{tmp40}, compiler::TNode<JSProxy>{tmp45}, compiler::TNode<JSFunction>{tmp46});
+    CodeStubAssembler(state_).Return(tmp47);
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp57;
-    compiler::TNode<Object> tmp58;
-    compiler::TNode<Object> tmp59;
-    compiler::TNode<Object> tmp60;
-    ca_.Bind(&block4, &tmp57, &tmp58, &tmp59, &tmp60);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 47);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp57}, MessageTemplate::kProxyNonObject, "Proxy.revocable");
+    compiler::TNode<Context> tmp48;
+    compiler::TNode<Object> tmp49;
+    compiler::TNode<Object> tmp50;
+    ca_.Bind(&block4, &tmp48, &tmp49, &tmp50);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 46);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp48}, MessageTemplate::kProxyNonObject, "Proxy.revocable");
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp61;
-    compiler::TNode<Object> tmp62;
-    compiler::TNode<Object> tmp63;
-    compiler::TNode<Object> tmp64;
-    ca_.Bind(&block2, &tmp61, &tmp62, &tmp63, &tmp64);
-    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 50);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp61}, MessageTemplate::kProxyHandlerOrTargetRevoked, "Proxy.revocable");
+    compiler::TNode<Context> tmp51;
+    compiler::TNode<Object> tmp52;
+    compiler::TNode<Object> tmp53;
+    ca_.Bind(&block2, &tmp51, &tmp52, &tmp53);
+    ca_.SetSourcePosition("../../src/builtins/proxy-revocable.tq", 49);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp51}, MessageTemplate::kProxyHandlerOrTargetRevoked, "Proxy.revocable");
   }
 }
 

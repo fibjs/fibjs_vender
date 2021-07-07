@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -122,6 +130,92 @@
 
 namespace v8 {
 namespace internal {
+
+TF_BUILTIN(GetIteratorWithFeedback, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(parameter0);
+  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+  USE(parameter1);
+  compiler::TNode<Smi> parameter2 = UncheckedCast<Smi>(Parameter(Descriptor::kFeedbackSlot));
+  USE(parameter2);
+  compiler::TNode<HeapObject> parameter3 = UncheckedCast<HeapObject>(Parameter(Descriptor::kFeedback));
+  USE(parameter3);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Smi, HeapObject> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Smi, HeapObject, HeapObject, HeapObject> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Smi, HeapObject, HeapObject, HeapObject, Oddball> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Smi, HeapObject, HeapObject> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, parameter0, parameter1, parameter2, parameter3);
+
+  if (block0.is_used()) {
+    compiler::TNode<Context> tmp0;
+    compiler::TNode<Object> tmp1;
+    compiler::TNode<Smi> tmp2;
+    compiler::TNode<HeapObject> tmp3;
+    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
+    ca_.SetSourcePosition("../../src/builtins/iterator.tq", 48);
+    ca_.SetSourcePosition("../../src/builtins/iterator.tq", 49);
+    compiler::TNode<Oddball> tmp4;
+    USE(tmp4);
+    compiler::CodeAssemblerLabel label0(&ca_);
+    tmp4 = Cast11ATUndefined_102(state_, compiler::TNode<HeapObject>{tmp3}, &label0);
+    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp3, tmp3, tmp4);
+    if (label0.is_used()) {
+      ca_.Bind(&label0);
+      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp3, tmp3);
+    }
+  }
+
+  if (block4.is_used()) {
+    compiler::TNode<Context> tmp5;
+    compiler::TNode<Object> tmp6;
+    compiler::TNode<Smi> tmp7;
+    compiler::TNode<HeapObject> tmp8;
+    compiler::TNode<HeapObject> tmp9;
+    compiler::TNode<HeapObject> tmp10;
+    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7, &tmp8, &tmp9, &tmp10);
+    ca_.Goto(&block2, tmp5, tmp6, tmp7, tmp8, tmp9);
+  }
+
+  if (block3.is_used()) {
+    compiler::TNode<Context> tmp11;
+    compiler::TNode<Object> tmp12;
+    compiler::TNode<Smi> tmp13;
+    compiler::TNode<HeapObject> tmp14;
+    compiler::TNode<HeapObject> tmp15;
+    compiler::TNode<HeapObject> tmp16;
+    compiler::TNode<Oddball> tmp17;
+    ca_.Bind(&block3, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15, &tmp16, &tmp17);
+    ca_.SetSourcePosition("../../src/builtins/iterator.tq", 50);
+    compiler::TNode<Symbol> tmp18;
+    USE(tmp18);
+    tmp18 = CodeStubAssembler(state_).IteratorSymbolConstant();
+    compiler::TNode<Object> tmp19;
+    USE(tmp19);
+    tmp19 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp11}, compiler::TNode<Object>{tmp12}, compiler::TNode<Object>{tmp18});
+    CodeStubAssembler(state_).Return(tmp19);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<Context> tmp20;
+    compiler::TNode<Object> tmp21;
+    compiler::TNode<Smi> tmp22;
+    compiler::TNode<HeapObject> tmp23;
+    compiler::TNode<HeapObject> tmp24;
+    ca_.Bind(&block2, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24);
+    ca_.SetSourcePosition("../../src/builtins/iterator.tq", 52);
+    ca_.SetSourcePosition("../../src/builtins/iterator.tq", 54);
+    compiler::TNode<Symbol> tmp25;
+    USE(tmp25);
+    tmp25 = CodeStubAssembler(state_).IteratorSymbolConstant();
+    ca_.SetSourcePosition("../../src/builtins/iterator.tq", 55);
+    ca_.SetSourcePosition("../../src/builtins/iterator.tq", 53);
+    compiler::TNode<Object> tmp26;
+    tmp26 = CodeStubAssembler(state_).CallBuiltin(Builtins::kLoadIC, tmp20, tmp21, tmp25, tmp22, ca_.UncheckedCast<FeedbackVector>(tmp24));
+    USE(tmp26);
+    CodeStubAssembler(state_).Return(tmp26);
+  }
+}
 
 }  // namespace internal
 }  // namespace v8

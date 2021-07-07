@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -153,7 +161,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-slice.tq", 15);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr6String18ATconstexpr_string_128(state_, "String.prototype.slice");
+    tmp5 = FromConstexpr6String18ATconstexpr_string_154(state_, "String.prototype.slice");
     compiler::TNode<String> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).ToThisString(compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
@@ -164,7 +172,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-slice.tq", 21);
     compiler::TNode<IntPtrT> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp8 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp9;
     USE(tmp9);
     tmp9 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp8});
@@ -174,17 +182,17 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-slice.tq", 25);
     compiler::TNode<IntPtrT> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp12;
     USE(tmp12);
     tmp12 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp11});
     ca_.SetSourcePosition("../../src/builtins/string-slice.tq", 27);
     compiler::TNode<Oddball> tmp13;
     USE(tmp13);
-    tmp13 = Undefined_65(state_);
+    tmp13 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp14;
     USE(tmp14);
-    tmp14 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp12}, compiler::TNode<HeapObject>{tmp13});
+    tmp14 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<Object>{tmp12}, compiler::TNode<HeapObject>{tmp13});
     ca_.Branch(tmp14, &block1, &block2, tmp0, tmp1, tmp2, tmp3, tmp4, tmp6, tmp7, tmp10, tmp12);
   }
 
@@ -269,7 +277,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-slice.tq", 30);
     compiler::TNode<String> tmp65;
     USE(tmp65);
-    tmp65 = kEmptyString_68(state_);
+    tmp65 = kEmptyString_67(state_);
     arguments.PopAndReturn(tmp65);
   }
 

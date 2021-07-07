@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<Oddball> TryFastStringCompareSequence_296(compiler::CodeAssemblerState* state_, compiler::TNode<String> p_string, compiler::TNode<String> p_searchStr, compiler::TNode<Number> p_start, compiler::TNode<Smi> p_searchLength, compiler::CodeAssemblerLabel* label_Slow);
+compiler::TNode<Oddball> TryFastStringCompareSequence_332(compiler::CodeAssemblerState* state_, compiler::TNode<String> p_string, compiler::TNode<String> p_searchStr, compiler::TNode<Number> p_start, compiler::TNode<Smi> p_searchLength, compiler::CodeAssemblerLabel* label_Slow);
 }  // namespace internal
 }  // namespace v8
 

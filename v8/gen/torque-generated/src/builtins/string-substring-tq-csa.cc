@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<Smi> ToSmiBetweenZeroAnd_299(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_value, compiler::TNode<Smi> p_limit) {
+compiler::TNode<Smi> ToSmiBetweenZeroAnd_338(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_value, compiler::TNode<Smi> p_limit) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Smi, Number, Number, Number> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -158,7 +166,7 @@ compiler::TNode<Smi> ToSmiBetweenZeroAnd_299(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp4;
     USE(tmp4);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp4 = Cast5ATSmi_78(state_, compiler::TNode<Object>{tmp3}, &label0);
+    tmp4 = Cast5ATSmi_83(state_, compiler::TNode<Object>{tmp3}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp3, tmp3, tmp4);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -204,7 +212,7 @@ compiler::TNode<Smi> ToSmiBetweenZeroAnd_299(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 16);
     compiler::TNode<Smi> tmp25;
     USE(tmp25);
-    tmp25 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp25 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp26;
     USE(tmp26);
     tmp26 = CodeStubAssembler(state_).SmiLessThan(compiler::TNode<Smi>{tmp24}, compiler::TNode<Smi>{tmp25});
@@ -243,7 +251,7 @@ compiler::TNode<Smi> ToSmiBetweenZeroAnd_299(compiler::CodeAssemblerState* state
     ca_.Bind(&block11, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44);
     compiler::TNode<Smi> tmp45;
     USE(tmp45);
-    tmp45 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp45 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     ca_.Goto(&block10, tmp39, tmp40, tmp41, tmp42, tmp43, tmp44, tmp45);
   }
 
@@ -282,11 +290,11 @@ compiler::TNode<Smi> ToSmiBetweenZeroAnd_299(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 23);
     compiler::TNode<Float64T> tmp64;
     USE(tmp64);
-    tmp64 = LoadHeapNumberValue_464(state_, compiler::TNode<HeapNumber>{ca_.UncheckedCast<HeapNumber>(tmp63)});
+    tmp64 = LoadHeapNumberValue_504(state_, compiler::TNode<HeapNumber>{ca_.UncheckedCast<HeapNumber>(tmp63)});
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 24);
     compiler::TNode<Float64T> tmp65;
     USE(tmp65);
-    tmp65 = FromConstexpr9ATfloat6417ATconstexpr_int31_137(state_, 0.);
+    tmp65 = FromConstexpr9ATfloat6417ATconstexpr_int31_163(state_, 0.);
     compiler::TNode<BoolT> tmp66;
     USE(tmp66);
     tmp66 = CodeStubAssembler(state_).Float64LessThan(compiler::TNode<Float64T>{tmp64}, compiler::TNode<Float64T>{tmp65});
@@ -328,7 +336,7 @@ compiler::TNode<Smi> ToSmiBetweenZeroAnd_299(compiler::CodeAssemblerState* state
     ca_.Bind(&block15, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87);
     compiler::TNode<Smi> tmp88;
     USE(tmp88);
-    tmp88 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp88 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     ca_.Goto(&block14, tmp81, tmp82, tmp83, tmp84, tmp85, tmp86, tmp87, tmp88);
   }
 
@@ -393,7 +401,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 33);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr6String18ATconstexpr_string_128(state_, "String.prototype.substring");
+    tmp5 = FromConstexpr6String18ATconstexpr_string_154(state_, "String.prototype.substring");
     compiler::TNode<String> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).ToThisString(compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
@@ -404,26 +412,26 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 37);
     compiler::TNode<IntPtrT> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp8 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp9;
     USE(tmp9);
     tmp9 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp8});
     compiler::TNode<Smi> tmp10;
     USE(tmp10);
-    tmp10 = ToSmiBetweenZeroAnd_299(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp9}, compiler::TNode<Smi>{tmp7});
+    tmp10 = ToSmiBetweenZeroAnd_338(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp9}, compiler::TNode<Smi>{tmp7});
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 40);
     compiler::TNode<IntPtrT> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp12;
     USE(tmp12);
     tmp12 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp11});
     compiler::TNode<Oddball> tmp13;
     USE(tmp13);
-    tmp13 = Undefined_65(state_);
+    tmp13 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp14;
     USE(tmp14);
-    tmp14 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp12}, compiler::TNode<HeapObject>{tmp13});
+    tmp14 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<Object>{tmp12}, compiler::TNode<HeapObject>{tmp13});
     ca_.Branch(tmp14, &block1, &block2, tmp0, tmp1, tmp2, tmp3, tmp4, tmp6, tmp7, tmp10);
   }
 
@@ -455,13 +463,13 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 42);
     compiler::TNode<IntPtrT> tmp31;
     USE(tmp31);
-    tmp31 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp31 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp32;
     USE(tmp32);
     tmp32 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp23}, compiler::TNode<RawPtrT>{tmp24}, compiler::TNode<IntPtrT>{tmp25}}, compiler::TNode<IntPtrT>{tmp31});
     compiler::TNode<Smi> tmp33;
     USE(tmp33);
-    tmp33 = ToSmiBetweenZeroAnd_299(state_, compiler::TNode<Context>{tmp26}, compiler::TNode<Object>{tmp32}, compiler::TNode<Smi>{tmp29});
+    tmp33 = ToSmiBetweenZeroAnd_338(state_, compiler::TNode<Context>{tmp26}, compiler::TNode<Object>{tmp32}, compiler::TNode<Smi>{tmp29});
     ca_.SetSourcePosition("../../src/builtins/string-substring.tq", 40);
     ca_.Goto(&block3, tmp23, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp33);
   }

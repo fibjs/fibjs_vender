@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<BoolT> IsRevokedProxy_290(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o) {
+compiler::TNode<BoolT> IsRevokedProxy_319(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, JSReceiver> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSReceiver, JSReceiver> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -146,7 +154,7 @@ compiler::TNode<BoolT> IsRevokedProxy_290(compiler::CodeAssemblerState* state_, 
     compiler::TNode<JSProxy> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = Cast7JSProxy_87(state_, compiler::TNode<HeapObject>{tmp1}, &label0);
+    tmp2 = Cast7JSProxy_107(state_, compiler::TNode<HeapObject>{tmp1}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp1, tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -177,7 +185,7 @@ compiler::TNode<BoolT> IsRevokedProxy_290(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block3, &tmp10, &tmp11);
     compiler::TNode<BoolT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, false);
+    tmp12 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, false);
     ca_.Goto(&block1, tmp10, tmp11, tmp12);
   }
 
@@ -193,7 +201,7 @@ compiler::TNode<BoolT> IsRevokedProxy_290(compiler::CodeAssemblerState* state_, 
     compiler::TNode<JSReceiver> tmp18;
     USE(tmp18);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp18 = Cast10JSReceiver_115(state_, compiler::TNode<Context>{tmp13}, compiler::TNode<HeapObject>{tmp17}, &label0);
+    tmp18 = Cast10JSReceiver_140(state_, compiler::TNode<HeapObject>{tmp17}, &label0);
     ca_.Goto(&block8, tmp13, tmp14, tmp15, tmp17, tmp18);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -227,7 +235,7 @@ compiler::TNode<BoolT> IsRevokedProxy_290(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block7, &tmp28, &tmp29, &tmp30);
     compiler::TNode<BoolT> tmp31;
     USE(tmp31);
-    tmp31 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, true);
+    tmp31 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
     ca_.Goto(&block1, tmp28, tmp29, tmp31);
   }
 
@@ -240,7 +248,7 @@ compiler::TNode<BoolT> IsRevokedProxy_290(compiler::CodeAssemblerState* state_, 
     ca_.SetSourcePosition("../../src/builtins/proxy.tq", 15);
     compiler::TNode<BoolT> tmp36;
     USE(tmp36);
-    tmp36 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, false);
+    tmp36 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, false);
     ca_.Goto(&block1, tmp32, tmp33, tmp36);
   }
 

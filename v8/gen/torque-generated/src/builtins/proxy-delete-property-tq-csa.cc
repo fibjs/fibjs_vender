@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -137,15 +145,13 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, HeapObject> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, HeapObject, JSReceiver> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver, HeapObject> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver, JSReceiver> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, HeapObject> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, HeapObject, Object, Object> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, HeapObject, Object, Object> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, HeapObject, Object> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, HeapObject, Object> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, HeapObject, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, HeapObject, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver, Object> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver, Object> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver, Object> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, JSReceiver, JSReceiver, JSReceiver, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0, parameter0, parameter1, parameter2, parameter3);
@@ -156,14 +162,16 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     compiler::TNode<Name> tmp2;
     compiler::TNode<Smi> tmp3;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 26);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 16);
+    CodeStubAssembler(state_).PerformStackCheck(compiler::TNode<Context>{tmp0});
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 28);
     compiler::TNode<IntPtrT> tmp4 = ca_.IntPtrConstant(JSProxy::kHandlerOffset);
     USE(tmp4);
     compiler::TNode<HeapObject>tmp5 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp1, tmp4});
     compiler::TNode<JSReceiver> tmp6;
     USE(tmp6);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp6 = Cast10JSReceiver_115(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<HeapObject>{tmp5}, &label0);
+    tmp6 = Cast10JSReceiver_140(state_, compiler::TNode<HeapObject>{tmp5}, &label0);
     ca_.Goto(&block5, tmp0, tmp1, tmp2, tmp3, tmp5, tmp6);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -189,18 +197,18 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     compiler::TNode<HeapObject> tmp16;
     compiler::TNode<JSReceiver> tmp17;
     ca_.Bind(&block5, &tmp12, &tmp13, &tmp14, &tmp15, &tmp16, &tmp17);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 29);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 31);
     compiler::TNode<IntPtrT> tmp18 = ca_.IntPtrConstant(JSProxy::kTargetOffset);
     USE(tmp18);
     compiler::TNode<HeapObject>tmp19 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp13, tmp18});
     compiler::TNode<JSReceiver> tmp20;
     USE(tmp20);
-    tmp20 = UnsafeCast10JSReceiver_1337(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp19});
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 33);
-    compiler::TNode<HeapObject> tmp21;
+    tmp20 = UnsafeCast10JSReceiver_1391(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp19});
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 35);
+    compiler::TNode<JSReceiver> tmp21;
     USE(tmp21);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp21 = GetMethod_217(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp17}, "deleteProperty", &label0);
+    tmp21 = GetMethod_245(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp17}, "deleteProperty", &label0);
     ca_.Goto(&block9, tmp12, tmp13, tmp14, tmp15, tmp17, tmp20, tmp17, tmp21);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -228,7 +236,7 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp33;
     compiler::TNode<JSReceiver> tmp34;
     compiler::TNode<JSReceiver> tmp35;
-    compiler::TNode<HeapObject> tmp36;
+    compiler::TNode<JSReceiver> tmp36;
     ca_.Bind(&block9, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36);
     ca_.Goto(&block7, tmp29, tmp30, tmp31, tmp32, tmp33, tmp34, tmp36);
   }
@@ -241,7 +249,7 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp41;
     compiler::TNode<JSReceiver> tmp42;
     ca_.Bind(&block8, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 34);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 36);
     ca_.Goto(&block4, tmp37, tmp38, tmp39, tmp40, tmp42);
   }
 
@@ -252,150 +260,118 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     compiler::TNode<Smi> tmp46;
     compiler::TNode<JSReceiver> tmp47;
     compiler::TNode<JSReceiver> tmp48;
-    compiler::TNode<HeapObject> tmp49;
+    compiler::TNode<JSReceiver> tmp49;
     ca_.Bind(&block7, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 33);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 38);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 35);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 40);
     compiler::TNode<Object> tmp50;
     USE(tmp50);
-    tmp50 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp43}, compiler::TNode<HeapObject>{tmp49}, compiler::TNode<Object>{tmp47}, compiler::TNode<Object>{tmp48}, compiler::TNode<Object>{tmp45});
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 41);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    CodeStubAssembler(state_).BranchIfToBooleanIsFalse(compiler::TNode<Object>{tmp50}, &label0, &label1);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block13, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp50);
-    }
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block14, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp50);
-    }
-  }
-
-  if (block13.is_used()) {
-    compiler::TNode<Context> tmp51;
-    compiler::TNode<JSProxy> tmp52;
-    compiler::TNode<Name> tmp53;
-    compiler::TNode<Smi> tmp54;
-    compiler::TNode<JSReceiver> tmp55;
-    compiler::TNode<JSReceiver> tmp56;
-    compiler::TNode<HeapObject> tmp57;
-    compiler::TNode<Object> tmp58;
-    compiler::TNode<Object> tmp59;
-    ca_.Bind(&block13, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59);
-    ca_.Goto(&block11, tmp51, tmp52, tmp53, tmp54, tmp55, tmp56, tmp57, tmp58);
-  }
-
-  if (block14.is_used()) {
-    compiler::TNode<Context> tmp60;
-    compiler::TNode<JSProxy> tmp61;
-    compiler::TNode<Name> tmp62;
-    compiler::TNode<Smi> tmp63;
-    compiler::TNode<JSReceiver> tmp64;
-    compiler::TNode<JSReceiver> tmp65;
-    compiler::TNode<HeapObject> tmp66;
-    compiler::TNode<Object> tmp67;
-    compiler::TNode<Object> tmp68;
-    ca_.Bind(&block14, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68);
-    ca_.Goto(&block12, tmp60, tmp61, tmp62, tmp63, tmp64, tmp65, tmp66, tmp67);
+    tmp50 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp43}, compiler::TNode<JSReceiver>{tmp49}, compiler::TNode<Object>{tmp47}, compiler::TNode<Object>{tmp48}, compiler::TNode<Object>{tmp45});
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 43);
+    compiler::TNode<BoolT> tmp51;
+    USE(tmp51);
+    tmp51 = ToBoolean_240(state_, compiler::TNode<Object>{tmp50});
+    compiler::TNode<BoolT> tmp52;
+    USE(tmp52);
+    tmp52 = CodeStubAssembler(state_).Word32BinaryNot(compiler::TNode<BoolT>{tmp51});
+    ca_.Branch(tmp52, &block11, &block12, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50);
   }
 
   if (block11.is_used()) {
-    compiler::TNode<Context> tmp69;
-    compiler::TNode<JSProxy> tmp70;
-    compiler::TNode<Name> tmp71;
-    compiler::TNode<Smi> tmp72;
-    compiler::TNode<JSReceiver> tmp73;
-    compiler::TNode<JSReceiver> tmp74;
-    compiler::TNode<HeapObject> tmp75;
-    compiler::TNode<Object> tmp76;
-    ca_.Bind(&block11, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 42);
-    compiler::TNode<Smi> tmp77;
-    USE(tmp77);
-    tmp77 = CodeStubAssembler(state_).SmiConstant(LanguageMode::kStrict);
-    compiler::TNode<BoolT> tmp78;
-    USE(tmp78);
-    tmp78 = CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp72}, compiler::TNode<Smi>{tmp77});
-    ca_.Branch(tmp78, &block15, &block16, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76);
+    compiler::TNode<Context> tmp53;
+    compiler::TNode<JSProxy> tmp54;
+    compiler::TNode<Name> tmp55;
+    compiler::TNode<Smi> tmp56;
+    compiler::TNode<JSReceiver> tmp57;
+    compiler::TNode<JSReceiver> tmp58;
+    compiler::TNode<JSReceiver> tmp59;
+    compiler::TNode<Object> tmp60;
+    ca_.Bind(&block11, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 44);
+    compiler::TNode<Smi> tmp61;
+    USE(tmp61);
+    tmp61 = CodeStubAssembler(state_).SmiConstant(LanguageMode::kStrict);
+    compiler::TNode<BoolT> tmp62;
+    USE(tmp62);
+    tmp62 = CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp56}, compiler::TNode<Smi>{tmp61});
+    ca_.Branch(tmp62, &block13, &block14, tmp53, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60);
   }
 
-  if (block15.is_used()) {
-    compiler::TNode<Context> tmp79;
-    compiler::TNode<JSProxy> tmp80;
-    compiler::TNode<Name> tmp81;
-    compiler::TNode<Smi> tmp82;
-    compiler::TNode<JSReceiver> tmp83;
-    compiler::TNode<JSReceiver> tmp84;
-    compiler::TNode<HeapObject> tmp85;
-    compiler::TNode<Object> tmp86;
-    ca_.Bind(&block15, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 43);
-    compiler::TNode<Object> tmp87;
-    USE(tmp87);
-    tmp87 = FromConstexpr20UT5ATSmi10HeapObject18ATconstexpr_string_142(state_, "deleteProperty");
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp79}, MessageTemplate::kProxyTrapReturnedFalsishFor, compiler::TNode<Object>{tmp87}, compiler::TNode<Object>{tmp81});
-  }
-
-  if (block16.is_used()) {
-    compiler::TNode<Context> tmp88;
-    compiler::TNode<JSProxy> tmp89;
-    compiler::TNode<Name> tmp90;
-    compiler::TNode<Smi> tmp91;
-    compiler::TNode<JSReceiver> tmp92;
-    compiler::TNode<JSReceiver> tmp93;
-    compiler::TNode<HeapObject> tmp94;
-    compiler::TNode<Object> tmp95;
-    ca_.Bind(&block16, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94, &tmp95);
+  if (block13.is_used()) {
+    compiler::TNode<Context> tmp63;
+    compiler::TNode<JSProxy> tmp64;
+    compiler::TNode<Name> tmp65;
+    compiler::TNode<Smi> tmp66;
+    compiler::TNode<JSReceiver> tmp67;
+    compiler::TNode<JSReceiver> tmp68;
+    compiler::TNode<JSReceiver> tmp69;
+    compiler::TNode<Object> tmp70;
+    ca_.Bind(&block13, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70);
     ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 45);
-    compiler::TNode<Oddball> tmp96;
-    USE(tmp96);
-    tmp96 = False_67(state_);
-    CodeStubAssembler(state_).Return(tmp96);
+    compiler::TNode<Object> tmp71;
+    USE(tmp71);
+    tmp71 = FromConstexpr20UT5ATSmi10HeapObject18ATconstexpr_string_168(state_, "deleteProperty");
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp63}, MessageTemplate::kProxyTrapReturnedFalsishFor, compiler::TNode<Object>{tmp71}, compiler::TNode<Object>{tmp65});
+  }
+
+  if (block14.is_used()) {
+    compiler::TNode<Context> tmp72;
+    compiler::TNode<JSProxy> tmp73;
+    compiler::TNode<Name> tmp74;
+    compiler::TNode<Smi> tmp75;
+    compiler::TNode<JSReceiver> tmp76;
+    compiler::TNode<JSReceiver> tmp77;
+    compiler::TNode<JSReceiver> tmp78;
+    compiler::TNode<Object> tmp79;
+    ca_.Bind(&block14, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 47);
+    compiler::TNode<Oddball> tmp80;
+    USE(tmp80);
+    tmp80 = False_66(state_);
+    CodeStubAssembler(state_).Return(tmp80);
   }
 
   if (block12.is_used()) {
-    compiler::TNode<Context> tmp97;
-    compiler::TNode<JSProxy> tmp98;
-    compiler::TNode<Name> tmp99;
-    compiler::TNode<Smi> tmp100;
-    compiler::TNode<JSReceiver> tmp101;
-    compiler::TNode<JSReceiver> tmp102;
-    compiler::TNode<HeapObject> tmp103;
-    compiler::TNode<Object> tmp104;
-    ca_.Bind(&block12, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 54);
-    ProxiesCodeStubAssembler(state_).CheckDeleteTrapResult(compiler::TNode<Context>{tmp97}, compiler::TNode<JSReceiver>{tmp102}, compiler::TNode<JSProxy>{tmp98}, compiler::TNode<Name>{tmp99});
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 57);
-    compiler::TNode<Oddball> tmp105;
-    USE(tmp105);
-    tmp105 = True_66(state_);
-    CodeStubAssembler(state_).Return(tmp105);
+    compiler::TNode<Context> tmp81;
+    compiler::TNode<JSProxy> tmp82;
+    compiler::TNode<Name> tmp83;
+    compiler::TNode<Smi> tmp84;
+    compiler::TNode<JSReceiver> tmp85;
+    compiler::TNode<JSReceiver> tmp86;
+    compiler::TNode<JSReceiver> tmp87;
+    compiler::TNode<Object> tmp88;
+    ca_.Bind(&block12, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 56);
+    ProxiesCodeStubAssembler(state_).CheckDeleteTrapResult(compiler::TNode<Context>{tmp81}, compiler::TNode<JSReceiver>{tmp86}, compiler::TNode<JSProxy>{tmp82}, compiler::TNode<Name>{tmp83});
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 59);
+    compiler::TNode<Oddball> tmp89;
+    USE(tmp89);
+    tmp89 = True_65(state_);
+    CodeStubAssembler(state_).Return(tmp89);
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp106;
-    compiler::TNode<JSProxy> tmp107;
-    compiler::TNode<Name> tmp108;
-    compiler::TNode<Smi> tmp109;
-    compiler::TNode<Object> tmp110;
-    ca_.Bind(&block4, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 61);
-    compiler::TNode<Object> tmp111;
-    tmp111 = CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp106, tmp110, tmp108, tmp109);
-    USE(tmp111);
-    CodeStubAssembler(state_).Return(tmp111);
+    compiler::TNode<Context> tmp90;
+    compiler::TNode<JSProxy> tmp91;
+    compiler::TNode<Name> tmp92;
+    compiler::TNode<Smi> tmp93;
+    compiler::TNode<Object> tmp94;
+    ca_.Bind(&block4, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 63);
+    compiler::TNode<Oddball> tmp95;
+    tmp95 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp90, tmp94, tmp92, tmp93));
+    USE(tmp95);
+    CodeStubAssembler(state_).Return(tmp95);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp112;
-    compiler::TNode<JSProxy> tmp113;
-    compiler::TNode<Name> tmp114;
-    compiler::TNode<Smi> tmp115;
-    ca_.Bind(&block2, &tmp112, &tmp113, &tmp114, &tmp115);
-    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 64);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp112}, MessageTemplate::kProxyRevoked, "deleteProperty");
+    compiler::TNode<Context> tmp96;
+    compiler::TNode<JSProxy> tmp97;
+    compiler::TNode<Name> tmp98;
+    compiler::TNode<Smi> tmp99;
+    ca_.Bind(&block2, &tmp96, &tmp97, &tmp98, &tmp99);
+    ca_.SetSourcePosition("../../src/builtins/proxy-delete-property.tq", 66);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp96}, MessageTemplate::kProxyRevoked, "deleteProperty");
   }
 }
 

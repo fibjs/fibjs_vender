@@ -10,8 +10,8 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<Number> FastArrayFindIndex_6(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<HeapObject> p_callbackfn, compiler::TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0);
-compiler::TNode<Smi> Convert5ATSmi17ATconstexpr_int31_1292(compiler::CodeAssemblerState* state_, int31_t p_i);
+compiler::TNode<Number> FastArrayFindIndex_6(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o, compiler::TNode<Number> p_len, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0);
+compiler::TNode<Smi> Convert5ATSmi17ATconstexpr_int31_1340(compiler::CodeAssemblerState* state_, int31_t p_i);
 }  // namespace internal
 }  // namespace v8
 

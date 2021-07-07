@@ -86,6 +86,8 @@ enum ArrayStorageAllocationMode {
 
 enum class ClearRecordedSlots { kYes, kNo };
 
+enum class InvalidateRecordedSlots { kYes, kNo };
+
 enum class ClearFreedMemoryMode { kClearFreedMemory, kDontClearFreedMemory };
 
 enum ExternalBackingStoreType { kArrayBuffer, kExternalString, kNumTypes };
@@ -585,7 +587,7 @@ class Heap {
 
   V8_INLINE int64_t external_memory();
   V8_INLINE void update_external_memory(int64_t delta);
-  V8_INLINE void update_external_memory_concurrently_freed(intptr_t freed);
+  V8_INLINE void update_external_memory_concurrently_freed(uintptr_t freed);
   V8_INLINE void account_external_memory_concurrently_freed();
 
   size_t backing_store_bytes() const { return backing_store_bytes_; }
@@ -722,15 +724,6 @@ class Heap {
   V8_INLINE void SetMessageListeners(TemplateList value);
   V8_INLINE void SetPendingOptimizeForTestBytecode(Object bytecode);
 
-  // Set the stack limit in the roots table.  Some architectures generate
-  // code that looks here, because it is faster than loading from the static
-  // jslimit_/real_jslimit_ variable in the StackGuard.
-  void SetStackLimits();
-
-  // The stack limit is thread-dependent. To be able to reproduce the same
-  // snapshot blob, we need to reset it before serializing.
-  void ClearStackLimits();
-
   void RegisterStrongRoots(FullObjectSlot start, FullObjectSlot end);
   void UnregisterStrongRoots(FullObjectSlot start);
 
@@ -852,6 +845,8 @@ class Heap {
   static intptr_t store_buffer_mask_constant();
   static Address store_buffer_overflow_function_address();
 
+  void MoveStoreBufferEntriesToRememberedSet();
+
   void ClearRecordedSlot(HeapObject object, ObjectSlot slot);
   void ClearRecordedSlotRange(Address start, Address end);
 
@@ -905,8 +900,13 @@ class Heap {
   // The runtime uses this function to notify potentially unsafe object layout
   // changes that require special synchronization with the concurrent marker.
   // The old size is the size of the object before layout change.
-  void NotifyObjectLayoutChange(HeapObject object, int old_size,
-                                const DisallowHeapAllocation&);
+  // By default recorded slots in the object are invalidated. Pass
+  // InvalidateRecordedSlots::kNo if this is not necessary or to perform this
+  // manually.
+  void NotifyObjectLayoutChange(
+      HeapObject object, int old_size, const DisallowHeapAllocation&,
+      InvalidateRecordedSlots invalidate_recorded_slots =
+          InvalidateRecordedSlots::kYes);
 
 #ifdef VERIFY_HEAP
   // This function checks that either
@@ -1812,7 +1812,7 @@ class Heap {
 #endif  // DEBUG
 
   // The amount of memory that has been freed concurrently.
-  std::atomic<intptr_t> external_memory_concurrently_freed_{0};
+  std::atomic<uintptr_t> external_memory_concurrently_freed_{0};
 
   // This can be calculated directly from a pointer to the heap; however, it is
   // more expedient to get at the isolate directly from within Heap methods.

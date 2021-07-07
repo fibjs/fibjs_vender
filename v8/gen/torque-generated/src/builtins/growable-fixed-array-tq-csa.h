@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-TorqueStructGrowableFixedArray NewGrowableFixedArray_276(compiler::CodeAssemblerState* state_);
+TorqueStructGrowableFixedArray NewGrowableFixedArray_305(compiler::CodeAssemblerState* state_);
 }  // namespace internal
 }  // namespace v8
 

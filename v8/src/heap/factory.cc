@@ -686,16 +686,19 @@ Handle<SmallOrderedNameDictionary> Factory::NewSmallOrderedNameDictionary(
 }
 
 Handle<OrderedHashSet> Factory::NewOrderedHashSet() {
-  return OrderedHashSet::Allocate(isolate(), OrderedHashSet::kMinCapacity);
+  return OrderedHashSet::Allocate(isolate(), OrderedHashSet::kMinCapacity)
+      .ToHandleChecked();
 }
 
 Handle<OrderedHashMap> Factory::NewOrderedHashMap() {
-  return OrderedHashMap::Allocate(isolate(), OrderedHashMap::kMinCapacity);
+  return OrderedHashMap::Allocate(isolate(), OrderedHashMap::kMinCapacity)
+      .ToHandleChecked();
 }
 
 Handle<OrderedNameDictionary> Factory::NewOrderedNameDictionary() {
   return OrderedNameDictionary::Allocate(isolate(),
-                                         OrderedNameDictionary::kMinCapacity);
+                                         OrderedNameDictionary::kMinCapacity)
+      .ToHandleChecked();
 }
 
 Handle<AccessorPair> Factory::NewAccessorPair() {
@@ -1745,16 +1748,6 @@ Handle<PromiseResolveThenableJobTask> Factory::NewPromiseResolveThenableJobTask(
   return microtask;
 }
 
-Handle<FinalizationGroupCleanupJobTask>
-Factory::NewFinalizationGroupCleanupJobTask(
-    Handle<JSFinalizationGroup> finalization_group) {
-  Handle<FinalizationGroupCleanupJobTask> microtask =
-      Handle<FinalizationGroupCleanupJobTask>::cast(
-          NewStruct(FINALIZATION_GROUP_CLEANUP_JOB_TASK_TYPE));
-  microtask->set_finalization_group(*finalization_group);
-  return microtask;
-}
-
 Handle<Foreign> Factory::NewForeign(Address addr, AllocationType allocation) {
   // Statically ensure that it is safe to allocate foreigns in paged spaces.
   STATIC_ASSERT(Foreign::kSize <= kMaxRegularHeapObjectSize);
@@ -2236,13 +2229,10 @@ Handle<HeapNumber> Factory::NewHeapNumber(AllocationType allocation) {
   return handle(HeapNumber::cast(result), isolate());
 }
 
-Handle<MutableHeapNumber> Factory::NewMutableHeapNumber(
-    AllocationType allocation) {
-  STATIC_ASSERT(HeapNumber::kSize <= kMaxRegularHeapObjectSize);
-  Map map = *mutable_heap_number_map();
-  HeapObject result = AllocateRawWithImmortalMap(
-      MutableHeapNumber::kSize, allocation, map, kDoubleUnaligned);
-  return handle(MutableHeapNumber::cast(result), isolate());
+Handle<HeapNumber> Factory::NewHeapNumberForCodeAssembler(double value) {
+  return NewHeapNumber(value, isolate()->heap()->CanAllocateInReadOnlySpace()
+                                  ? AllocationType::kReadOnly
+                                  : AllocationType::kOld);
 }
 
 Handle<FreshlyAllocatedBigInt> Factory::NewBigInt(int length,
@@ -2520,7 +2510,7 @@ Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
       NewFunction(initial_map, info, context, allocation);
 
   // Give compiler a chance to pre-initialize.
-  Compiler::PostInstantiation(result, allocation);
+  Compiler::PostInstantiation(result);
 
   return result;
 }
@@ -2552,14 +2542,15 @@ Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
   result->set_raw_feedback_cell(*feedback_cell);
 
   // Give compiler a chance to pre-initialize.
-  Compiler::PostInstantiation(result, allocation);
+  Compiler::PostInstantiation(result);
 
   return result;
 }
 
-Handle<ScopeInfo> Factory::NewScopeInfo(int length) {
+Handle<ScopeInfo> Factory::NewScopeInfo(int length, AllocationType type) {
+  DCHECK(type == AllocationType::kOld || type == AllocationType::kReadOnly);
   return NewFixedArrayWithMap<ScopeInfo>(RootIndex::kScopeInfoMap, length,
-                                         AllocationType::kOld);
+                                         type);
 }
 
 Handle<SourceTextModuleInfo> Factory::NewSourceTextModuleInfo() {
@@ -3718,6 +3709,7 @@ Handle<StackFrameInfo> Factory::NewStackFrameInfo(
   Handle<Object> type_name = undefined_value();
   Handle<Object> eval_origin = frame->GetEvalOrigin();
   Handle<Object> wasm_module_name = frame->GetWasmModuleName();
+  Handle<Object> wasm_instance = frame->GetWasmInstance();
 
   // MethodName and TypeName are expensive to look up, so they are only
   // included when they are strictly needed by the stack trace
@@ -3753,6 +3745,7 @@ Handle<StackFrameInfo> Factory::NewStackFrameInfo(
   info->set_type_name(*type_name);
   info->set_eval_origin(*eval_origin);
   info->set_wasm_module_name(*wasm_module_name);
+  info->set_wasm_instance(*wasm_instance);
 
   info->set_is_eval(frame->IsEval());
   info->set_is_constructor(is_constructor);
@@ -3906,9 +3899,12 @@ void Factory::SetRegExpIrregexpData(Handle<JSRegExp> regexp,
   store->set(JSRegExp::kFlagsIndex, Smi::FromInt(flags));
   store->set(JSRegExp::kIrregexpLatin1CodeIndex, uninitialized);
   store->set(JSRegExp::kIrregexpUC16CodeIndex, uninitialized);
+  store->set(JSRegExp::kIrregexpLatin1BytecodeIndex, uninitialized);
+  store->set(JSRegExp::kIrregexpUC16BytecodeIndex, uninitialized);
   store->set(JSRegExp::kIrregexpMaxRegisterCountIndex, Smi::kZero);
   store->set(JSRegExp::kIrregexpCaptureCountIndex, Smi::FromInt(capture_count));
   store->set(JSRegExp::kIrregexpCaptureNameMapIndex, uninitialized);
+  store->set(JSRegExp::kIrregexpTierUpTicksIndex, Smi::kZero);
   regexp->set_data(*store);
 }
 

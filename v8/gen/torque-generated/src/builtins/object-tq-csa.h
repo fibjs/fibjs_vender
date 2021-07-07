@@ -10,13 +10,14 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<Object> ObjectIsExtensible_282(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
-compiler::TNode<Object> ObjectPreventExtensionsThrow_283(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
-compiler::TNode<Object> ObjectPreventExtensionsDontThrow_284(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
-compiler::TNode<Object> ObjectGetPrototypeOf_285(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
-compiler::TNode<Object> JSReceiverGetPrototypeOf_286(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_object);
-compiler::TNode<Object> ObjectSetPrototypeOfThrow_287(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object, compiler::TNode<Object> p_proto);
-compiler::TNode<Object> ObjectSetPrototypeOfDontThrow_288(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object, compiler::TNode<Object> p_proto);
+compiler::TNode<Object> ObjectIsExtensible_311(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
+compiler::TNode<Object> ObjectPreventExtensionsThrow_312(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
+compiler::TNode<Object> ObjectPreventExtensionsDontThrow_313(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
+compiler::TNode<Object> ObjectGetPrototypeOf_314(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object);
+compiler::TNode<Object> JSReceiverGetPrototypeOf_315(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_object);
+compiler::TNode<Object> ObjectSetPrototypeOfThrow_316(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object, compiler::TNode<HeapObject> p_proto);
+compiler::TNode<Object> ObjectSetPrototypeOfDontThrow_317(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_object, compiler::TNode<HeapObject> p_proto);
+compiler::TNode<HeapObject> Cast21UT6ATNull10JSReceiver_1399(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 }  // namespace internal
 }  // namespace v8
 

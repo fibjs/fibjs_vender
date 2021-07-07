@@ -34,9 +34,9 @@ namespace compiler {
 
 static_assert(std::is_convertible<TNode<Number>, TNode<Object>>::value,
               "test subtyping");
-static_assert(std::is_convertible<TNode<UnionT<Smi, HeapNumber>>,
-                                  TNode<UnionT<Smi, HeapObject>>>::value,
-              "test subtyping");
+static_assert(
+    std::is_convertible<TNode<Number>, TNode<UnionT<Smi, HeapObject>>>::value,
+    "test subtyping");
 static_assert(
     !std::is_convertible<TNode<UnionT<Smi, HeapObject>>, TNode<Number>>::value,
     "test subtyping");
@@ -188,6 +188,7 @@ Handle<Code> CodeAssembler::GenerateCode(CodeAssemblerState* state,
 }
 
 bool CodeAssembler::Is64() const { return raw_assembler()->machine()->Is64(); }
+bool CodeAssembler::Is32() const { return raw_assembler()->machine()->Is32(); }
 
 bool CodeAssembler::IsFloat64RoundUpSupported() const {
   return raw_assembler()->machine()->Float64RoundUp().IsSupported();
@@ -228,7 +229,7 @@ void CodeAssembler::GenerateCheckMaybeObjectIsObject(Node* node,
          &ok);
   EmbeddedVector<char, 1024> message;
   SNPrintF(message, "no Object: %s", location);
-  Node* message_node = StringConstant(message.begin());
+  TNode<String> message_node = StringConstant(message.begin());
   // This somewhat misuses the AbortCSAAssert runtime function. This will print
   // "abort: CSA_ASSERT failed: <message>", which is good enough.
   AbortCSAAssert(message_node);
@@ -259,7 +260,7 @@ TNode<Number> CodeAssembler::NumberConstant(double value) {
     // (see AllocateAndInstallRequestedHeapObjects) since that makes it easier
     // to generate constant lookups for embedded builtins.
     return UncheckedCast<Number>(HeapConstant(
-        isolate()->factory()->NewHeapNumber(value, AllocationType::kOld)));
+        isolate()->factory()->NewHeapNumberForCodeAssembler(value)));
   }
 }
 
@@ -297,10 +298,6 @@ TNode<ExternalReference> CodeAssembler::ExternalConstant(
 
 TNode<Float64T> CodeAssembler::Float64Constant(double value) {
   return UncheckedCast<Float64T>(raw_assembler()->Float64Constant(value));
-}
-
-TNode<HeapNumber> CodeAssembler::NaNConstant() {
-  return UncheckedCast<HeapNumber>(LoadRoot(RootIndex::kNanValue));
 }
 
 bool CodeAssembler::ToInt32Constant(Node* node, int32_t* out_value) {
@@ -383,6 +380,9 @@ TNode<Context> CodeAssembler::GetJSContextParameter() {
 }
 
 void CodeAssembler::Return(SloppyTNode<Object> value) {
+  // TODO(leszeks): This could also return a non-object, depending on the call
+  // descriptor. We should probably have multiple return overloads with
+  // different TNode types which DCHECK the call descriptor.
   return raw_assembler()->Return(value);
 }
 
@@ -451,10 +451,6 @@ TNode<RawPtrT> CodeAssembler::LoadFramePointer() {
 
 TNode<RawPtrT> CodeAssembler::LoadParentFramePointer() {
   return UncheckedCast<RawPtrT>(raw_assembler()->LoadParentFramePointer());
-}
-
-TNode<RawPtrT> CodeAssembler::LoadStackPointer() {
-  return UncheckedCast<RawPtrT>(raw_assembler()->LoadStackPointer());
 }
 
 TNode<Object> CodeAssembler::TaggedPoisonOnSpeculation(
@@ -566,6 +562,10 @@ TNode<WordT> CodeAssembler::WordSar(SloppyTNode<WordT> value, int shift) {
 
 TNode<Word32T> CodeAssembler::Word32Shr(SloppyTNode<Word32T> value, int shift) {
   return (shift != 0) ? Word32Shr(value, Int32Constant(shift)) : value;
+}
+
+TNode<Word32T> CodeAssembler::Word32Sar(SloppyTNode<Word32T> value, int shift) {
+  return (shift != 0) ? Word32Sar(value, Int32Constant(shift)) : value;
 }
 
 TNode<WordT> CodeAssembler::WordOr(SloppyTNode<WordT> left,
@@ -880,14 +880,13 @@ TNode<Word64T> CodeAssembler::Word64Sar(SloppyTNode<Word64T> left,
   return UncheckedCast<Word64T>(raw_assembler()->Word64Sar(left, right));
 }
 
-#define CODE_ASSEMBLER_COMPARE(Name, ArgT, VarT, ToConstant, op)     \
-  TNode<BoolT> CodeAssembler::Name(SloppyTNode<ArgT> left,           \
-                                   SloppyTNode<ArgT> right) {        \
-    VarT lhs, rhs;                                                   \
-    if (ToConstant(left, &lhs) && ToConstant(right, &rhs)) {         \
-      return BoolConstant(lhs op rhs);                               \
-    }                                                                \
-    return UncheckedCast<BoolT>(raw_assembler()->Name(left, right)); \
+#define CODE_ASSEMBLER_COMPARE(Name, ArgT, VarT, ToConstant, op)          \
+  TNode<BoolT> CodeAssembler::Name(TNode<ArgT> left, TNode<ArgT> right) { \
+    VarT lhs, rhs;                                                        \
+    if (ToConstant(left, &lhs) && ToConstant(right, &rhs)) {              \
+      return BoolConstant(lhs op rhs);                                    \
+    }                                                                     \
+    return UncheckedCast<BoolT>(raw_assembler()->Name(left, right));      \
   }
 
 CODE_ASSEMBLER_COMPARE(IntPtrEqual, WordT, intptr_t, ToIntPtrConstant, ==)
@@ -959,14 +958,14 @@ Node* CodeAssembler::Load(MachineType type, Node* base, Node* offset,
   return raw_assembler()->Load(type, base, offset, needs_poisoning);
 }
 
-Node* CodeAssembler::LoadFullTagged(Node* base,
-                                    LoadSensitivity needs_poisoning) {
+TNode<Object> CodeAssembler::LoadFullTagged(Node* base,
+                                            LoadSensitivity needs_poisoning) {
   return BitcastWordToTagged(
       Load(MachineType::Pointer(), base, needs_poisoning));
 }
 
-Node* CodeAssembler::LoadFullTagged(Node* base, Node* offset,
-                                    LoadSensitivity needs_poisoning) {
+TNode<Object> CodeAssembler::LoadFullTagged(Node* base, Node* offset,
+                                            LoadSensitivity needs_poisoning) {
   return BitcastWordToTagged(
       Load(MachineType::Pointer(), base, offset, needs_poisoning));
 }
@@ -993,7 +992,7 @@ TNode<Object> CodeAssembler::LoadRoot(RootIndex root_index) {
   // TODO(jgruber): In theory we could generate better code for this by
   // letting the macro assembler decide how to load from the roots list. In most
   // cases, it would boil down to loading from a fixed kRootRegister offset.
-  Node* isolate_root =
+  TNode<ExternalReference> isolate_root =
       ExternalConstant(ExternalReference::isolate_root(isolate()));
   int offset = IsolateData::root_slot_offset(root_index);
   return UncheckedCast<Object>(
@@ -1133,7 +1132,7 @@ Node* CodeAssembler::AtomicCompareExchange(MachineType type, Node* base,
 
 Node* CodeAssembler::StoreRoot(RootIndex root_index, Node* value) {
   DCHECK(!RootsTable::IsImmortalImmovable(root_index));
-  Node* isolate_root =
+  TNode<ExternalReference> isolate_root =
       ExternalConstant(ExternalReference::isolate_root(isolate()));
   int offset = IsolateData::root_slot_offset(root_index);
   return StoreFullTaggedNoWriteBarrier(isolate_root, IntPtrConstant(offset),
@@ -1248,8 +1247,9 @@ TNode<Object> CodeAssembler::CallRuntimeWithCEntryImpl(
       Runtime::MayAllocate(function) ? CallDescriptor::kNoFlags
                                      : CallDescriptor::kNoAllocate);
 
-  Node* ref = ExternalConstant(ExternalReference::Create(function));
-  Node* arity = Int32Constant(argc);
+  TNode<ExternalReference> ref =
+      ExternalConstant(ExternalReference::Create(function));
+  TNode<Int32T> arity = Int32Constant(argc);
 
   NodeArray<kMaxNumArgs + 4> inputs;
   inputs.Add(centry);
@@ -1285,7 +1285,8 @@ void CodeAssembler::TailCallRuntimeWithCEntryImpl(
       zone(), function, argc, Operator::kNoProperties,
       CallDescriptor::kNoFlags);
 
-  Node* ref = ExternalConstant(ExternalReference::Create(function));
+  TNode<ExternalReference> ref =
+      ExternalConstant(ExternalReference::Create(function));
 
   NodeArray<kMaxNumArgs + 4> inputs;
   inputs.Add(centry);

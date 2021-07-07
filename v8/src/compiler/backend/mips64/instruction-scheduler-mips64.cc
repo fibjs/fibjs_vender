@@ -1279,7 +1279,6 @@ int InstructionScheduler::GetInstructionLatency(const Instruction* instr) {
       return 0;
     case kArchRet:
       return AssemblerReturnLatency();
-    case kArchStackPointer:
     case kArchFramePointer:
       return 1;
     case kArchParentFramePointer:

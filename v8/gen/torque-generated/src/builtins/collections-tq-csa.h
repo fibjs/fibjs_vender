@@ -10,8 +10,8 @@
 namespace v8 {
 namespace internal {
 
-TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_238(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_MayHaveSideEffects);
-TorqueStructKeyValuePair LoadKeyValuePair_239(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_267(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_MayHaveSideEffects);
+TorqueStructKeyValuePair LoadKeyValuePair_268(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
 }  // namespace internal
 }  // namespace v8
 

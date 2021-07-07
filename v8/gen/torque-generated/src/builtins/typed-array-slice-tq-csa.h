@@ -10,9 +10,9 @@
 namespace v8 {
 namespace internal {
 
-  const char* kBuiltinName_323(compiler::CodeAssemblerState* state_);
-void FastCopy_324(compiler::CodeAssemblerState* state_, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_IfSlow);
-void SlowCopy_325(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<IntPtrT> p_final);
+  const char* kBuiltinName_364(compiler::CodeAssemblerState* state_);
+void FastCopy_365(compiler::CodeAssemblerState* state_, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_IfSlow);
+void SlowCopy_366(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<IntPtrT> p_final);
 }  // namespace internal
 }  // namespace v8
 

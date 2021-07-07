@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -144,14 +152,14 @@ USE(parameter1);
     compiler::TNode<Context> tmp3;
     compiler::TNode<Object> tmp4;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3, &tmp4);
-    ca_.SetSourcePosition("../../src/builtins/extras-utils.tq", 13);
+    ca_.SetSourcePosition("../../src/builtins/extras-utils.tq", 12);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp5});
-    compiler::TNode<HeapObject> tmp7;
+    compiler::TNode<Symbol> tmp7;
     tmp7 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kCreatePrivateSymbol, tmp3, tmp6)); 
     USE(tmp7);
     arguments.PopAndReturn(tmp7);
@@ -179,10 +187,10 @@ USE(parameter1);
     compiler::TNode<Context> tmp3;
     compiler::TNode<Object> tmp4;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3, &tmp4);
-    ca_.SetSourcePosition("../../src/builtins/extras-utils.tq", 18);
+    ca_.SetSourcePosition("../../src/builtins/extras-utils.tq", 17);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp5});
@@ -214,10 +222,10 @@ USE(parameter1);
     compiler::TNode<Context> tmp3;
     compiler::TNode<Object> tmp4;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3, &tmp4);
-    ca_.SetSourcePosition("../../src/builtins/extras-utils.tq", 23);
+    ca_.SetSourcePosition("../../src/builtins/extras-utils.tq", 22);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp5});

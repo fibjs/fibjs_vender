@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -150,10 +158,10 @@ void EnsureWriteableFastElements_50(compiler::CodeAssemblerState* state_, compil
     compiler::TNode<Map>tmp5 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp3, tmp4});
     compiler::TNode<Map> tmp6;
     USE(tmp6);
-    tmp6 = kCOWMap_184(state_);
+    tmp6 = kCOWMap_210(state_);
     compiler::TNode<BoolT> tmp7;
     USE(tmp7);
-    tmp7 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<HeapObject>{tmp5}, compiler::TNode<HeapObject>{tmp6});
+    tmp7 = CodeStubAssembler(state_).TaggedNotEqual(compiler::TNode<HeapObject>{tmp5}, compiler::TNode<HeapObject>{tmp6});
     ca_.Branch(tmp7, &block2, &block3, tmp0, tmp1, tmp3);
   }
 
@@ -177,7 +185,7 @@ void EnsureWriteableFastElements_50(compiler::CodeAssemblerState* state_, compil
     compiler::TNode<Smi> tmp16;
     USE(tmp16);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp16 = Cast5ATSmi_78(state_, compiler::TNode<Object>{tmp15}, &label0);
+    tmp16 = Cast5ATSmi_83(state_, compiler::TNode<Object>{tmp15}, &label0);
     ca_.Goto(&block6, tmp11, tmp12, tmp13, tmp15, tmp16);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -224,7 +232,7 @@ void EnsureWriteableFastElements_50(compiler::CodeAssemblerState* state_, compil
     ca_.SetSourcePosition("../../src/builtins/array.tq", 31);
     compiler::TNode<Smi> tmp34;
     USE(tmp34);
-    tmp34 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp34 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<FixedArrayBase> tmp35;
     USE(tmp35);
     tmp35 = CodeStubAssembler(state_).ExtractFixedArray(compiler::TNode<FixedArrayBase>{tmp31}, compiler::TNode<Smi>{tmp34}, compiler::TNode<Smi>{tmp32}, compiler::TNode<Smi>{tmp32}, CodeStubAssembler::ExtractFixedArrayFlag::kFixedArrays);
@@ -246,173 +254,207 @@ void EnsureWriteableFastElements_50(compiler::CodeAssemblerState* state_, compil
     ca_.Bind(&block8, &tmp38, &tmp39);
 }
 
-compiler::TNode<BoolT> IsJSArray_51(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
+compiler::TNode<Object> LoadElementOrUndefined_51(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_a, compiler::TNode<Smi> p_i) {
   compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSArray> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, BoolT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, p_context, p_o);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT, IntPtrT, IntPtrT, IntPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT, IntPtrT, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT, IntPtrT, IntPtrT, IntPtrT, HeapObject, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, HeapObject, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, FixedArray, Smi, Object> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_context, p_a, p_i);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
-    compiler::TNode<Object> tmp1;
-    ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 36);
+    compiler::TNode<FixedArray> tmp1;
+    compiler::TNode<Smi> tmp2;
+    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
     ca_.SetSourcePosition("../../src/builtins/array.tq", 37);
-    compiler::TNode<JSArray> tmp2;
-    USE(tmp2);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = Cast7JSArray_1320(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
-    ca_.Goto(&block4, tmp0, tmp1, tmp1, tmp1, tmp2);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block5, tmp0, tmp1, tmp1, tmp1);
-    }
+    compiler::TNode<IntPtrT> tmp3 = ca_.IntPtrConstant(FixedArray::kObjectsOffset);
+    USE(tmp3);
+    compiler::TNode<IntPtrT> tmp4 = ca_.IntPtrConstant(FixedArrayBase::kLengthOffset);
+    USE(tmp4);
+    compiler::TNode<Smi>tmp5 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp1, tmp4});
+    compiler::TNode<IntPtrT> tmp6;
+    USE(tmp6);
+    tmp6 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp5});
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 55);
+    compiler::TNode<IntPtrT> tmp7;
+    USE(tmp7);
+    tmp7 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp2});
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 56);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 37);
+    compiler::TNode<UintPtrT> tmp8;
+    USE(tmp8);
+    tmp8 = Convert9ATuintptr8ATintptr_203(state_, compiler::TNode<IntPtrT>{tmp7});
+    compiler::TNode<UintPtrT> tmp9;
+    USE(tmp9);
+    tmp9 = Convert9ATuintptr8ATintptr_203(state_, compiler::TNode<IntPtrT>{tmp6});
+    compiler::TNode<BoolT> tmp10;
+    USE(tmp10);
+    tmp10 = CodeStubAssembler(state_).UintPtrLessThan(compiler::TNode<UintPtrT>{tmp8}, compiler::TNode<UintPtrT>{tmp9});
+    ca_.Branch(tmp10, &block6, &block7, tmp0, tmp1, tmp2, tmp1, tmp3, tmp6, tmp2, tmp2, tmp7, tmp1, tmp3, tmp6, tmp7, tmp7);
+  }
+
+  if (block6.is_used()) {
+    compiler::TNode<Context> tmp11;
+    compiler::TNode<FixedArray> tmp12;
+    compiler::TNode<Smi> tmp13;
+    compiler::TNode<FixedArray> tmp14;
+    compiler::TNode<IntPtrT> tmp15;
+    compiler::TNode<IntPtrT> tmp16;
+    compiler::TNode<Smi> tmp17;
+    compiler::TNode<Smi> tmp18;
+    compiler::TNode<IntPtrT> tmp19;
+    compiler::TNode<HeapObject> tmp20;
+    compiler::TNode<IntPtrT> tmp21;
+    compiler::TNode<IntPtrT> tmp22;
+    compiler::TNode<IntPtrT> tmp23;
+    compiler::TNode<IntPtrT> tmp24;
+    ca_.Bind(&block6, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 39);
+    compiler::TNode<IntPtrT> tmp25;
+    USE(tmp25);
+    tmp25 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, (SizeOf20UT5ATSmi10HeapObject_339(state_)));
+    compiler::TNode<IntPtrT> tmp26;
+    USE(tmp26);
+    tmp26 = CodeStubAssembler(state_).IntPtrMul(compiler::TNode<IntPtrT>{tmp24}, compiler::TNode<IntPtrT>{tmp25});
+    compiler::TNode<IntPtrT> tmp27;
+    USE(tmp27);
+    tmp27 = CodeStubAssembler(state_).IntPtrAdd(compiler::TNode<IntPtrT>{tmp21}, compiler::TNode<IntPtrT>{tmp26});
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 38);
+    compiler::TNode<HeapObject> tmp28;
+    USE(tmp28);
+    compiler::TNode<IntPtrT> tmp29;
+    USE(tmp29);
+    std::tie(tmp28, tmp29) = UnsafeNewReference20UT5ATSmi10HeapObject_1345(state_, compiler::TNode<HeapObject>{tmp20}, compiler::TNode<IntPtrT>{tmp27}).Flatten();
+    ca_.Goto(&block5, tmp11, tmp12, tmp13, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19, tmp20, tmp21, tmp22, tmp23, tmp24, tmp28, tmp29);
+  }
+
+  if (block7.is_used()) {
+    compiler::TNode<Context> tmp30;
+    compiler::TNode<FixedArray> tmp31;
+    compiler::TNode<Smi> tmp32;
+    compiler::TNode<FixedArray> tmp33;
+    compiler::TNode<IntPtrT> tmp34;
+    compiler::TNode<IntPtrT> tmp35;
+    compiler::TNode<Smi> tmp36;
+    compiler::TNode<Smi> tmp37;
+    compiler::TNode<IntPtrT> tmp38;
+    compiler::TNode<HeapObject> tmp39;
+    compiler::TNode<IntPtrT> tmp40;
+    compiler::TNode<IntPtrT> tmp41;
+    compiler::TNode<IntPtrT> tmp42;
+    compiler::TNode<IntPtrT> tmp43;
+    ca_.Bind(&block7, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 41);
+    ca_.Goto(&block4, tmp30, tmp31, tmp32, tmp33, tmp34, tmp35, tmp36, tmp37, tmp38);
   }
 
   if (block5.is_used()) {
-    compiler::TNode<Context> tmp3;
-    compiler::TNode<Object> tmp4;
-    compiler::TNode<Object> tmp5;
-    compiler::TNode<Object> tmp6;
-    ca_.Bind(&block5, &tmp3, &tmp4, &tmp5, &tmp6);
-    ca_.Goto(&block3, tmp3, tmp4, tmp5);
+    compiler::TNode<Context> tmp44;
+    compiler::TNode<FixedArray> tmp45;
+    compiler::TNode<Smi> tmp46;
+    compiler::TNode<FixedArray> tmp47;
+    compiler::TNode<IntPtrT> tmp48;
+    compiler::TNode<IntPtrT> tmp49;
+    compiler::TNode<Smi> tmp50;
+    compiler::TNode<Smi> tmp51;
+    compiler::TNode<IntPtrT> tmp52;
+    compiler::TNode<HeapObject> tmp53;
+    compiler::TNode<IntPtrT> tmp54;
+    compiler::TNode<IntPtrT> tmp55;
+    compiler::TNode<IntPtrT> tmp56;
+    compiler::TNode<IntPtrT> tmp57;
+    compiler::TNode<HeapObject> tmp58;
+    compiler::TNode<IntPtrT> tmp59;
+    ca_.Bind(&block5, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 56);
+    ca_.Goto(&block3, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51, tmp52, tmp58, tmp59);
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp7;
-    compiler::TNode<Object> tmp8;
-    compiler::TNode<Object> tmp9;
-    compiler::TNode<Object> tmp10;
-    compiler::TNode<JSArray> tmp11;
-    ca_.Bind(&block4, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 38);
-    compiler::TNode<BoolT> tmp12;
-    USE(tmp12);
-    tmp12 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, true);
-    ca_.Goto(&block1, tmp7, tmp8, tmp12);
+    compiler::TNode<Context> tmp60;
+    compiler::TNode<FixedArray> tmp61;
+    compiler::TNode<Smi> tmp62;
+    compiler::TNode<FixedArray> tmp63;
+    compiler::TNode<IntPtrT> tmp64;
+    compiler::TNode<IntPtrT> tmp65;
+    compiler::TNode<Smi> tmp66;
+    compiler::TNode<Smi> tmp67;
+    compiler::TNode<IntPtrT> tmp68;
+    ca_.Bind(&block4, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   if (block3.is_used()) {
-    compiler::TNode<Context> tmp13;
-    compiler::TNode<Object> tmp14;
-    compiler::TNode<Object> tmp15;
-    ca_.Bind(&block3, &tmp13, &tmp14, &tmp15);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 40);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 41);
-    compiler::TNode<BoolT> tmp16;
-    USE(tmp16);
-    tmp16 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, false);
-    ca_.Goto(&block1, tmp13, tmp14, tmp16);
-  }
-
-  if (block1.is_used()) {
-    compiler::TNode<Context> tmp17;
-    compiler::TNode<Object> tmp18;
-    compiler::TNode<BoolT> tmp19;
-    ca_.Bind(&block1, &tmp17, &tmp18, &tmp19);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 35);
-    ca_.Goto(&block6, tmp17, tmp18, tmp19);
-  }
-
-    compiler::TNode<Context> tmp20;
-    compiler::TNode<Object> tmp21;
-    compiler::TNode<BoolT> tmp22;
-    ca_.Bind(&block6, &tmp20, &tmp21, &tmp22);
-  return compiler::TNode<BoolT>{tmp22};
-}
-
-compiler::TNode<Object> LoadElementOrUndefined_52(compiler::CodeAssemblerState* state_, compiler::TNode<FixedArray> p_a, compiler::TNode<Smi> p_i) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, Object, Oddball> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, p_a, p_i);
-
-  if (block0.is_used()) {
-    compiler::TNode<FixedArray> tmp0;
-    compiler::TNode<Smi> tmp1;
-    ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 47);
-    compiler::TNode<Object> tmp2;
-    USE(tmp2);
-    tmp2 = CodeStubAssembler(state_).LoadFixedArrayElement(compiler::TNode<FixedArray>{tmp0}, compiler::TNode<Smi>{tmp1});
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 48);
-    compiler::TNode<Oddball> tmp3;
-    USE(tmp3);
-    tmp3 = TheHole_63(state_);
-    compiler::TNode<BoolT> tmp4;
-    USE(tmp4);
-    tmp4 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp2}, compiler::TNode<HeapObject>{tmp3});
-    ca_.Branch(tmp4, &block2, &block3, tmp0, tmp1, tmp2);
+    compiler::TNode<Context> tmp69;
+    compiler::TNode<FixedArray> tmp70;
+    compiler::TNode<Smi> tmp71;
+    compiler::TNode<FixedArray> tmp72;
+    compiler::TNode<IntPtrT> tmp73;
+    compiler::TNode<IntPtrT> tmp74;
+    compiler::TNode<Smi> tmp75;
+    compiler::TNode<Smi> tmp76;
+    compiler::TNode<IntPtrT> tmp77;
+    compiler::TNode<HeapObject> tmp78;
+    compiler::TNode<IntPtrT> tmp79;
+    ca_.Bind(&block3, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79);
+    ca_.Goto(&block2, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp78, tmp79);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<FixedArray> tmp5;
-    compiler::TNode<Smi> tmp6;
-    compiler::TNode<Object> tmp7;
-    ca_.Bind(&block2, &tmp5, &tmp6, &tmp7);
-    compiler::TNode<Oddball> tmp8;
-    USE(tmp8);
-    tmp8 = Undefined_65(state_);
-    ca_.Goto(&block5, tmp5, tmp6, tmp7, tmp8);
-  }
-
-  if (block3.is_used()) {
-    compiler::TNode<FixedArray> tmp9;
-    compiler::TNode<Smi> tmp10;
-    compiler::TNode<Object> tmp11;
-    ca_.Bind(&block3, &tmp9, &tmp10, &tmp11);
-    ca_.Goto(&block4, tmp9, tmp10, tmp11, tmp11);
-  }
-
-  if (block5.is_used()) {
-    compiler::TNode<FixedArray> tmp12;
-    compiler::TNode<Smi> tmp13;
-    compiler::TNode<Object> tmp14;
-    compiler::TNode<Oddball> tmp15;
-    ca_.Bind(&block5, &tmp12, &tmp13, &tmp14, &tmp15);
-    ca_.Goto(&block4, tmp12, tmp13, tmp14, tmp15);
-  }
-
-  if (block4.is_used()) {
-    compiler::TNode<FixedArray> tmp16;
-    compiler::TNode<Smi> tmp17;
-    compiler::TNode<Object> tmp18;
-    compiler::TNode<Object> tmp19;
-    ca_.Bind(&block4, &tmp16, &tmp17, &tmp18, &tmp19);
-    ca_.Goto(&block1, tmp16, tmp17, tmp19);
+    compiler::TNode<Context> tmp80;
+    compiler::TNode<FixedArray> tmp81;
+    compiler::TNode<Smi> tmp82;
+    compiler::TNode<FixedArray> tmp83;
+    compiler::TNode<IntPtrT> tmp84;
+    compiler::TNode<IntPtrT> tmp85;
+    compiler::TNode<Smi> tmp86;
+    compiler::TNode<Smi> tmp87;
+    compiler::TNode<HeapObject> tmp88;
+    compiler::TNode<IntPtrT> tmp89;
+    ca_.Bind(&block2, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 37);
+    compiler::TNode<Object>tmp90 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp88, tmp89});
+    compiler::TNode<Object> tmp91;
+    USE(tmp91);
+    tmp91 = UnsafeCast100UT8ATBigInt7ATFalse6ATNull5ATSmi9ATTheHole6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol_1374(state_, compiler::TNode<Context>{tmp80}, compiler::TNode<Object>{tmp90});
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 38);
+    compiler::TNode<Object> tmp92;
+    USE(tmp92);
+    tmp92 = ReplaceTheHoleWithUndefined_255(state_, compiler::TNode<Object>{tmp91});
+    ca_.Goto(&block1, tmp80, tmp81, tmp82, tmp92);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<FixedArray> tmp20;
-    compiler::TNode<Smi> tmp21;
-    compiler::TNode<Object> tmp22;
-    ca_.Bind(&block1, &tmp20, &tmp21, &tmp22);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 46);
-    ca_.Goto(&block6, tmp20, tmp21, tmp22);
+    compiler::TNode<Context> tmp93;
+    compiler::TNode<FixedArray> tmp94;
+    compiler::TNode<Smi> tmp95;
+    compiler::TNode<Object> tmp96;
+    ca_.Bind(&block1, &tmp93, &tmp94, &tmp95, &tmp96);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 35);
+    ca_.Goto(&block9, tmp93, tmp94, tmp95, tmp96);
   }
 
-    compiler::TNode<FixedArray> tmp23;
-    compiler::TNode<Smi> tmp24;
-    compiler::TNode<Object> tmp25;
-    ca_.Bind(&block6, &tmp23, &tmp24, &tmp25);
-  return compiler::TNode<Object>{tmp25};
+    compiler::TNode<Context> tmp97;
+    compiler::TNode<FixedArray> tmp98;
+    compiler::TNode<Smi> tmp99;
+    compiler::TNode<Object> tmp100;
+    ca_.Bind(&block9, &tmp97, &tmp98, &tmp99, &tmp100);
+  return compiler::TNode<Object>{tmp100};
 }
 
-compiler::TNode<Object> LoadElementOrUndefined_53(compiler::CodeAssemblerState* state_, compiler::TNode<FixedDoubleArray> p_a, compiler::TNode<Smi> p_i) {
+compiler::TNode<Object> LoadElementOrUndefined_52(compiler::CodeAssemblerState* state_, compiler::TNode<FixedDoubleArray> p_a, compiler::TNode<Smi> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi, FixedDoubleArray, Smi> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi, FixedDoubleArray, Smi, Float64T> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi, Float64T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_a, p_i);
@@ -421,7 +463,7 @@ compiler::TNode<Object> LoadElementOrUndefined_53(compiler::CodeAssemblerState* 
     compiler::TNode<FixedDoubleArray> tmp0;
     compiler::TNode<Smi> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 53);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 42);
     compiler::TNode<Float64T> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -449,41 +491,48 @@ compiler::TNode<Object> LoadElementOrUndefined_53(compiler::CodeAssemblerState* 
     compiler::TNode<Smi> tmp10;
     compiler::TNode<Float64T> tmp11;
     ca_.Bind(&block4, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 54);
-    compiler::TNode<HeapNumber> tmp12;
-    USE(tmp12);
-    tmp12 = CodeStubAssembler(state_).AllocateHeapNumberWithValue(compiler::TNode<Float64T>{tmp11});
-    ca_.Goto(&block1, tmp7, tmp8, tmp12);
+    ca_.Goto(&block2, tmp7, tmp8, tmp11);
   }
 
   if (block3.is_used()) {
-    compiler::TNode<FixedDoubleArray> tmp13;
-    compiler::TNode<Smi> tmp14;
-    ca_.Bind(&block3, &tmp13, &tmp14);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 57);
-    compiler::TNode<Oddball> tmp15;
-    USE(tmp15);
-    tmp15 = Undefined_65(state_);
-    ca_.Goto(&block1, tmp13, tmp14, tmp15);
+    compiler::TNode<FixedDoubleArray> tmp12;
+    compiler::TNode<Smi> tmp13;
+    ca_.Bind(&block3, &tmp12, &tmp13);
+    compiler::TNode<Oddball> tmp14;
+    USE(tmp14);
+    tmp14 = Undefined_64(state_);
+    ca_.Goto(&block1, tmp12, tmp13, tmp14);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<FixedDoubleArray> tmp15;
+    compiler::TNode<Smi> tmp16;
+    compiler::TNode<Float64T> tmp17;
+    ca_.Bind(&block2, &tmp15, &tmp16, &tmp17);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 43);
+    compiler::TNode<HeapNumber> tmp18;
+    USE(tmp18);
+    tmp18 = CodeStubAssembler(state_).AllocateHeapNumberWithValue(compiler::TNode<Float64T>{tmp17});
+    ca_.Goto(&block1, tmp15, tmp16, tmp18);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<FixedDoubleArray> tmp16;
-    compiler::TNode<Smi> tmp17;
-    compiler::TNode<Object> tmp18;
-    ca_.Bind(&block1, &tmp16, &tmp17, &tmp18);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 51);
-    ca_.Goto(&block6, tmp16, tmp17, tmp18);
-  }
-
     compiler::TNode<FixedDoubleArray> tmp19;
     compiler::TNode<Smi> tmp20;
     compiler::TNode<Object> tmp21;
-    ca_.Bind(&block6, &tmp19, &tmp20, &tmp21);
-  return compiler::TNode<Object>{tmp21};
+    ca_.Bind(&block1, &tmp19, &tmp20, &tmp21);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 41);
+    ca_.Goto(&block6, tmp19, tmp20, tmp21);
+  }
+
+    compiler::TNode<FixedDoubleArray> tmp22;
+    compiler::TNode<Smi> tmp23;
+    compiler::TNode<Object> tmp24;
+    ca_.Bind(&block6, &tmp22, &tmp23, &tmp24);
+  return compiler::TNode<Object>{tmp24};
 }
 
-void StoreArrayHole_54(compiler::CodeAssemblerState* state_, compiler::TNode<FixedDoubleArray> p_elements, compiler::TNode<Smi> p_k) {
+void StoreArrayHole_53(compiler::CodeAssemblerState* state_, compiler::TNode<FixedDoubleArray> p_elements, compiler::TNode<Smi> p_k) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedDoubleArray, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -494,9 +543,9 @@ void StoreArrayHole_54(compiler::CodeAssemblerState* state_, compiler::TNode<Fix
     compiler::TNode<FixedDoubleArray> tmp0;
     compiler::TNode<Smi> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 62);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 47);
     CodeStubAssembler(state_).StoreFixedDoubleArrayHoleSmi(compiler::TNode<FixedDoubleArray>{tmp0}, compiler::TNode<Smi>{tmp1});
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 61);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 46);
     ca_.Goto(&block1, tmp0, tmp1);
   }
 
@@ -512,127 +561,216 @@ void StoreArrayHole_54(compiler::CodeAssemblerState* state_, compiler::TNode<Fix
     ca_.Bind(&block2, &tmp4, &tmp5);
 }
 
-void StoreArrayHole_55(compiler::CodeAssemblerState* state_, compiler::TNode<FixedArray> p_elements, compiler::TNode<Smi> p_k) {
+void StoreArrayHole_54(compiler::CodeAssemblerState* state_, compiler::TNode<FixedArray> p_elements, compiler::TNode<Smi> p_k) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT, IntPtrT, IntPtrT, IntPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT, IntPtrT, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT, IntPtrT, IntPtrT, IntPtrT, HeapObject, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, IntPtrT, HeapObject, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi, FixedArray, IntPtrT, IntPtrT, Smi, Smi, HeapObject, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, Smi> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_elements, p_k);
 
   if (block0.is_used()) {
     compiler::TNode<FixedArray> tmp0;
     compiler::TNode<Smi> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 66);
-    compiler::TNode<Oddball> tmp2;
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 51);
+    compiler::TNode<IntPtrT> tmp2 = ca_.IntPtrConstant(FixedArray::kObjectsOffset);
     USE(tmp2);
-    tmp2 = TheHole_63(state_);
-    CodeStubAssembler(state_).StoreFixedArrayElement(compiler::TNode<FixedArray>{tmp0}, compiler::TNode<Smi>{tmp1}, compiler::TNode<Object>{tmp2});
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 65);
-    ca_.Goto(&block1, tmp0, tmp1);
+    compiler::TNode<IntPtrT> tmp3 = ca_.IntPtrConstant(FixedArrayBase::kLengthOffset);
+    USE(tmp3);
+    compiler::TNode<Smi>tmp4 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp3});
+    compiler::TNode<IntPtrT> tmp5;
+    USE(tmp5);
+    tmp5 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp4});
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 55);
+    compiler::TNode<IntPtrT> tmp6;
+    USE(tmp6);
+    tmp6 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp1});
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 56);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 37);
+    compiler::TNode<UintPtrT> tmp7;
+    USE(tmp7);
+    tmp7 = Convert9ATuintptr8ATintptr_203(state_, compiler::TNode<IntPtrT>{tmp6});
+    compiler::TNode<UintPtrT> tmp8;
+    USE(tmp8);
+    tmp8 = Convert9ATuintptr8ATintptr_203(state_, compiler::TNode<IntPtrT>{tmp5});
+    compiler::TNode<BoolT> tmp9;
+    USE(tmp9);
+    tmp9 = CodeStubAssembler(state_).UintPtrLessThan(compiler::TNode<UintPtrT>{tmp7}, compiler::TNode<UintPtrT>{tmp8});
+    ca_.Branch(tmp9, &block6, &block7, tmp0, tmp1, tmp0, tmp2, tmp5, tmp1, tmp1, tmp6, tmp0, tmp2, tmp5, tmp6, tmp6);
+  }
+
+  if (block6.is_used()) {
+    compiler::TNode<FixedArray> tmp10;
+    compiler::TNode<Smi> tmp11;
+    compiler::TNode<FixedArray> tmp12;
+    compiler::TNode<IntPtrT> tmp13;
+    compiler::TNode<IntPtrT> tmp14;
+    compiler::TNode<Smi> tmp15;
+    compiler::TNode<Smi> tmp16;
+    compiler::TNode<IntPtrT> tmp17;
+    compiler::TNode<HeapObject> tmp18;
+    compiler::TNode<IntPtrT> tmp19;
+    compiler::TNode<IntPtrT> tmp20;
+    compiler::TNode<IntPtrT> tmp21;
+    compiler::TNode<IntPtrT> tmp22;
+    ca_.Bind(&block6, &tmp10, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21, &tmp22);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 39);
+    compiler::TNode<IntPtrT> tmp23;
+    USE(tmp23);
+    tmp23 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, (SizeOf20UT5ATSmi10HeapObject_339(state_)));
+    compiler::TNode<IntPtrT> tmp24;
+    USE(tmp24);
+    tmp24 = CodeStubAssembler(state_).IntPtrMul(compiler::TNode<IntPtrT>{tmp22}, compiler::TNode<IntPtrT>{tmp23});
+    compiler::TNode<IntPtrT> tmp25;
+    USE(tmp25);
+    tmp25 = CodeStubAssembler(state_).IntPtrAdd(compiler::TNode<IntPtrT>{tmp19}, compiler::TNode<IntPtrT>{tmp24});
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 38);
+    compiler::TNode<HeapObject> tmp26;
+    USE(tmp26);
+    compiler::TNode<IntPtrT> tmp27;
+    USE(tmp27);
+    std::tie(tmp26, tmp27) = UnsafeNewReference20UT5ATSmi10HeapObject_1345(state_, compiler::TNode<HeapObject>{tmp18}, compiler::TNode<IntPtrT>{tmp25}).Flatten();
+    ca_.Goto(&block5, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19, tmp20, tmp21, tmp22, tmp26, tmp27);
+  }
+
+  if (block7.is_used()) {
+    compiler::TNode<FixedArray> tmp28;
+    compiler::TNode<Smi> tmp29;
+    compiler::TNode<FixedArray> tmp30;
+    compiler::TNode<IntPtrT> tmp31;
+    compiler::TNode<IntPtrT> tmp32;
+    compiler::TNode<Smi> tmp33;
+    compiler::TNode<Smi> tmp34;
+    compiler::TNode<IntPtrT> tmp35;
+    compiler::TNode<HeapObject> tmp36;
+    compiler::TNode<IntPtrT> tmp37;
+    compiler::TNode<IntPtrT> tmp38;
+    compiler::TNode<IntPtrT> tmp39;
+    compiler::TNode<IntPtrT> tmp40;
+    ca_.Bind(&block7, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 41);
+    ca_.Goto(&block4, tmp28, tmp29, tmp30, tmp31, tmp32, tmp33, tmp34, tmp35);
+  }
+
+  if (block5.is_used()) {
+    compiler::TNode<FixedArray> tmp41;
+    compiler::TNode<Smi> tmp42;
+    compiler::TNode<FixedArray> tmp43;
+    compiler::TNode<IntPtrT> tmp44;
+    compiler::TNode<IntPtrT> tmp45;
+    compiler::TNode<Smi> tmp46;
+    compiler::TNode<Smi> tmp47;
+    compiler::TNode<IntPtrT> tmp48;
+    compiler::TNode<HeapObject> tmp49;
+    compiler::TNode<IntPtrT> tmp50;
+    compiler::TNode<IntPtrT> tmp51;
+    compiler::TNode<IntPtrT> tmp52;
+    compiler::TNode<IntPtrT> tmp53;
+    compiler::TNode<HeapObject> tmp54;
+    compiler::TNode<IntPtrT> tmp55;
+    ca_.Bind(&block5, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 56);
+    ca_.Goto(&block3, tmp41, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp54, tmp55);
+  }
+
+  if (block4.is_used()) {
+    compiler::TNode<FixedArray> tmp56;
+    compiler::TNode<Smi> tmp57;
+    compiler::TNode<FixedArray> tmp58;
+    compiler::TNode<IntPtrT> tmp59;
+    compiler::TNode<IntPtrT> tmp60;
+    compiler::TNode<Smi> tmp61;
+    compiler::TNode<Smi> tmp62;
+    compiler::TNode<IntPtrT> tmp63;
+    ca_.Bind(&block4, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  if (block3.is_used()) {
+    compiler::TNode<FixedArray> tmp64;
+    compiler::TNode<Smi> tmp65;
+    compiler::TNode<FixedArray> tmp66;
+    compiler::TNode<IntPtrT> tmp67;
+    compiler::TNode<IntPtrT> tmp68;
+    compiler::TNode<Smi> tmp69;
+    compiler::TNode<Smi> tmp70;
+    compiler::TNode<IntPtrT> tmp71;
+    compiler::TNode<HeapObject> tmp72;
+    compiler::TNode<IntPtrT> tmp73;
+    ca_.Bind(&block3, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73);
+    ca_.Goto(&block2, tmp64, tmp65, tmp66, tmp67, tmp68, tmp69, tmp70, tmp72, tmp73);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<FixedArray> tmp74;
+    compiler::TNode<Smi> tmp75;
+    compiler::TNode<FixedArray> tmp76;
+    compiler::TNode<IntPtrT> tmp77;
+    compiler::TNode<IntPtrT> tmp78;
+    compiler::TNode<Smi> tmp79;
+    compiler::TNode<Smi> tmp80;
+    compiler::TNode<HeapObject> tmp81;
+    compiler::TNode<IntPtrT> tmp82;
+    ca_.Bind(&block2, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81, &tmp82);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 51);
+    compiler::TNode<Oddball> tmp83;
+    USE(tmp83);
+    tmp83 = TheHole_62(state_);
+    CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp81, tmp82}, tmp83);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 50);
+    ca_.Goto(&block1, tmp74, tmp75);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<FixedArray> tmp3;
-    compiler::TNode<Smi> tmp4;
-    ca_.Bind(&block1, &tmp3, &tmp4);
-    ca_.Goto(&block2, tmp3, tmp4);
+    compiler::TNode<FixedArray> tmp84;
+    compiler::TNode<Smi> tmp85;
+    ca_.Bind(&block1, &tmp84, &tmp85);
+    ca_.Goto(&block9, tmp84, tmp85);
   }
 
-    compiler::TNode<FixedArray> tmp5;
-    compiler::TNode<Smi> tmp6;
-    ca_.Bind(&block2, &tmp5, &tmp6);
+    compiler::TNode<FixedArray> tmp86;
+    compiler::TNode<Smi> tmp87;
+    ca_.Bind(&block9, &tmp86, &tmp87);
 }
 
-compiler::TNode<JSArray> Cast7JSArray_1320(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<Object> UnsafeCast100UT8ATBigInt7ATFalse6ATNull5ATSmi9ATTheHole6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol_1374(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, HeapObject> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, HeapObject> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, HeapObject, JSArray> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSArray> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSArray> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_o);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 1823);
-    compiler::TNode<HeapObject> tmp2;
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2807);
+    compiler::TNode<Object> tmp2;
     USE(tmp2);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = CodeStubAssembler(state_).TaggedToHeapObject(compiler::TNode<Object>{tmp1}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp1, tmp2);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp1);
-    }
-  }
-
-  if (block4.is_used()) {
-    compiler::TNode<Context> tmp3;
-    compiler::TNode<Object> tmp4;
-    compiler::TNode<Object> tmp5;
-    ca_.Bind(&block4, &tmp3, &tmp4, &tmp5);
-    ca_.Goto(&block1);
-  }
-
-  if (block3.is_used()) {
-    compiler::TNode<Context> tmp6;
-    compiler::TNode<Object> tmp7;
-    compiler::TNode<Object> tmp8;
-    compiler::TNode<HeapObject> tmp9;
-    ca_.Bind(&block3, &tmp6, &tmp7, &tmp8, &tmp9);
-    compiler::TNode<JSArray> tmp10;
-    USE(tmp10);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    tmp10 = Cast7JSArray_93(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
-    ca_.Goto(&block5, tmp6, tmp7, tmp9, tmp10);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block6, tmp6, tmp7, tmp9);
-    }
-  }
-
-  if (block6.is_used()) {
-    compiler::TNode<Context> tmp11;
-    compiler::TNode<Object> tmp12;
-    compiler::TNode<HeapObject> tmp13;
-    ca_.Bind(&block6, &tmp11, &tmp12, &tmp13);
-    ca_.Goto(&block1);
-  }
-
-  if (block5.is_used()) {
-    compiler::TNode<Context> tmp14;
-    compiler::TNode<Object> tmp15;
-    compiler::TNode<HeapObject> tmp16;
-    compiler::TNode<JSArray> tmp17;
-    ca_.Bind(&block5, &tmp14, &tmp15, &tmp16, &tmp17);
-    ca_.Goto(&block2, tmp14, tmp15, tmp17);
-  }
-
-  if (block2.is_used()) {
-    compiler::TNode<Context> tmp18;
-    compiler::TNode<Object> tmp19;
-    compiler::TNode<JSArray> tmp20;
-    ca_.Bind(&block2, &tmp18, &tmp19, &tmp20);
-    ca_.SetSourcePosition("../../src/builtins/array.tq", 37);
-    ca_.Goto(&block7, tmp18, tmp19, tmp20);
+    tmp2 = (compiler::TNode<Object>{tmp1});
+    ca_.Goto(&block1, tmp0, tmp1, tmp2);
   }
 
   if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
+    compiler::TNode<Context> tmp3;
+    compiler::TNode<Object> tmp4;
+    compiler::TNode<Object> tmp5;
+    ca_.Bind(&block1, &tmp3, &tmp4, &tmp5);
+    ca_.SetSourcePosition("../../src/builtins/array.tq", 37);
+    ca_.Goto(&block2, tmp3, tmp4, tmp5);
   }
 
-    compiler::TNode<Context> tmp21;
-    compiler::TNode<Object> tmp22;
-    compiler::TNode<JSArray> tmp23;
-    ca_.Bind(&block7, &tmp21, &tmp22, &tmp23);
-  return compiler::TNode<JSArray>{tmp23};
+    compiler::TNode<Context> tmp6;
+    compiler::TNode<Object> tmp7;
+    compiler::TNode<Object> tmp8;
+    ca_.Bind(&block2, &tmp6, &tmp7, &tmp8);
+  return compiler::TNode<Object>{tmp8};
 }
 
 }  // namespace internal

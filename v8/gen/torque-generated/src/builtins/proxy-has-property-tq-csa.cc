@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -139,13 +147,11 @@ TF_BUILTIN(ProxyHasProperty, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, JSReceiver> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, JSReceiver, HeapObject> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, JSReceiver, JSReceiver> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, HeapObject> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, HeapObject, Object, Object> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, HeapObject, Object, Object> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, HeapObject, Object> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, HeapObject, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, JSReceiver> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, JSReceiver, Object> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, JSReceiver, JSReceiver, JSReceiver, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Name> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0, parameter0, parameter1, parameter2);
@@ -164,7 +170,7 @@ TF_BUILTIN(ProxyHasProperty, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp5;
     USE(tmp5);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp5 = Cast10JSReceiver_115(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<HeapObject>{tmp4}, &label0);
+    tmp5 = Cast10JSReceiver_140(state_, compiler::TNode<HeapObject>{tmp4}, &label0);
     ca_.Goto(&block5, tmp0, tmp1, tmp2, tmp4, tmp5);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -195,7 +201,7 @@ TF_BUILTIN(ProxyHasProperty, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp17;
     USE(tmp17);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp17 = Cast10JSReceiver_115(state_, compiler::TNode<Context>{tmp10}, compiler::TNode<HeapObject>{tmp16}, &label0);
+    tmp17 = Cast10JSReceiver_140(state_, compiler::TNode<HeapObject>{tmp16}, &label0);
     ca_.Goto(&block9, tmp10, tmp11, tmp12, tmp14, tmp16, tmp17);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -241,10 +247,10 @@ TF_BUILTIN(ProxyHasProperty, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp37;
     ca_.Bind(&block7, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37);
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 34);
-    compiler::TNode<HeapObject> tmp38;
+    compiler::TNode<JSReceiver> tmp38;
     USE(tmp38);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp38 = GetMethod_217(state_, compiler::TNode<Context>{tmp33}, compiler::TNode<Object>{tmp36}, "has", &label0);
+    tmp38 = GetMethod_245(state_, compiler::TNode<Context>{tmp33}, compiler::TNode<Object>{tmp36}, "has", &label0);
     ca_.Goto(&block13, tmp33, tmp34, tmp35, tmp36, tmp37, tmp36, tmp38);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -270,7 +276,7 @@ TF_BUILTIN(ProxyHasProperty, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp48;
     compiler::TNode<JSReceiver> tmp49;
     compiler::TNode<JSReceiver> tmp50;
-    compiler::TNode<HeapObject> tmp51;
+    compiler::TNode<JSReceiver> tmp51;
     ca_.Bind(&block13, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51);
     ca_.Goto(&block11, tmp45, tmp46, tmp47, tmp48, tmp49, tmp51);
   }
@@ -292,104 +298,71 @@ TF_BUILTIN(ProxyHasProperty, CodeStubAssembler) {
     compiler::TNode<Name> tmp59;
     compiler::TNode<JSReceiver> tmp60;
     compiler::TNode<JSReceiver> tmp61;
-    compiler::TNode<HeapObject> tmp62;
+    compiler::TNode<JSReceiver> tmp62;
     ca_.Bind(&block11, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62);
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 34);
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 42);
     compiler::TNode<Object> tmp63;
     USE(tmp63);
-    tmp63 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp57}, compiler::TNode<HeapObject>{tmp62}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp59});
+    tmp63 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp57}, compiler::TNode<JSReceiver>{tmp62}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp59});
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 43);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    CodeStubAssembler(state_).BranchIfToBooleanIsTrue(compiler::TNode<Object>{tmp63}, &label0, &label1);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block17, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp63, tmp63);
-    }
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block18, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp63, tmp63);
-    }
-  }
-
-  if (block17.is_used()) {
-    compiler::TNode<Context> tmp64;
-    compiler::TNode<JSProxy> tmp65;
-    compiler::TNode<Name> tmp66;
-    compiler::TNode<JSReceiver> tmp67;
-    compiler::TNode<JSReceiver> tmp68;
-    compiler::TNode<HeapObject> tmp69;
-    compiler::TNode<Object> tmp70;
-    compiler::TNode<Object> tmp71;
-    ca_.Bind(&block17, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
-    ca_.Goto(&block15, tmp64, tmp65, tmp66, tmp67, tmp68, tmp69, tmp70);
-  }
-
-  if (block18.is_used()) {
-    compiler::TNode<Context> tmp72;
-    compiler::TNode<JSProxy> tmp73;
-    compiler::TNode<Name> tmp74;
-    compiler::TNode<JSReceiver> tmp75;
-    compiler::TNode<JSReceiver> tmp76;
-    compiler::TNode<HeapObject> tmp77;
-    compiler::TNode<Object> tmp78;
-    compiler::TNode<Object> tmp79;
-    ca_.Bind(&block18, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79);
-    ca_.Goto(&block16, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp78);
+    compiler::TNode<BoolT> tmp64;
+    USE(tmp64);
+    tmp64 = ToBoolean_240(state_, compiler::TNode<Object>{tmp63});
+    ca_.Branch(tmp64, &block15, &block16, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp63);
   }
 
   if (block15.is_used()) {
-    compiler::TNode<Context> tmp80;
-    compiler::TNode<JSProxy> tmp81;
-    compiler::TNode<Name> tmp82;
-    compiler::TNode<JSReceiver> tmp83;
-    compiler::TNode<JSReceiver> tmp84;
-    compiler::TNode<HeapObject> tmp85;
-    compiler::TNode<Object> tmp86;
-    ca_.Bind(&block15, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86);
+    compiler::TNode<Context> tmp65;
+    compiler::TNode<JSProxy> tmp66;
+    compiler::TNode<Name> tmp67;
+    compiler::TNode<JSReceiver> tmp68;
+    compiler::TNode<JSReceiver> tmp69;
+    compiler::TNode<JSReceiver> tmp70;
+    compiler::TNode<Object> tmp71;
+    ca_.Bind(&block15, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 44);
-    compiler::TNode<Oddball> tmp87;
-    USE(tmp87);
-    tmp87 = True_66(state_);
-    CodeStubAssembler(state_).Return(tmp87);
+    compiler::TNode<Oddball> tmp72;
+    USE(tmp72);
+    tmp72 = True_65(state_);
+    CodeStubAssembler(state_).Return(tmp72);
   }
 
   if (block16.is_used()) {
-    compiler::TNode<Context> tmp88;
-    compiler::TNode<JSProxy> tmp89;
-    compiler::TNode<Name> tmp90;
-    compiler::TNode<JSReceiver> tmp91;
-    compiler::TNode<JSReceiver> tmp92;
-    compiler::TNode<HeapObject> tmp93;
-    compiler::TNode<Object> tmp94;
-    ca_.Bind(&block16, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94);
+    compiler::TNode<Context> tmp73;
+    compiler::TNode<JSProxy> tmp74;
+    compiler::TNode<Name> tmp75;
+    compiler::TNode<JSReceiver> tmp76;
+    compiler::TNode<JSReceiver> tmp77;
+    compiler::TNode<JSReceiver> tmp78;
+    compiler::TNode<Object> tmp79;
+    ca_.Bind(&block16, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79);
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 46);
-    ProxiesCodeStubAssembler(state_).CheckHasTrapResult(compiler::TNode<Context>{tmp88}, compiler::TNode<JSReceiver>{tmp92}, compiler::TNode<JSProxy>{tmp89}, compiler::TNode<Name>{tmp90});
+    ProxiesCodeStubAssembler(state_).CheckHasTrapResult(compiler::TNode<Context>{tmp73}, compiler::TNode<JSReceiver>{tmp77}, compiler::TNode<JSProxy>{tmp74}, compiler::TNode<Name>{tmp75});
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 47);
-    compiler::TNode<Oddball> tmp95;
-    USE(tmp95);
-    tmp95 = False_67(state_);
-    CodeStubAssembler(state_).Return(tmp95);
+    compiler::TNode<Oddball> tmp80;
+    USE(tmp80);
+    tmp80 = False_66(state_);
+    CodeStubAssembler(state_).Return(tmp80);
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp96;
-    compiler::TNode<JSProxy> tmp97;
-    compiler::TNode<Name> tmp98;
-    compiler::TNode<Object> tmp99;
-    ca_.Bind(&block4, &tmp96, &tmp97, &tmp98, &tmp99);
+    compiler::TNode<Context> tmp81;
+    compiler::TNode<JSProxy> tmp82;
+    compiler::TNode<Name> tmp83;
+    compiler::TNode<Object> tmp84;
+    ca_.Bind(&block4, &tmp81, &tmp82, &tmp83, &tmp84);
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 51);
-   CodeStubAssembler(state_).TailCallBuiltin(Builtins::kHasProperty, tmp96, tmp99, tmp98);
+   CodeStubAssembler(state_).TailCallBuiltin(Builtins::kHasProperty, tmp81, tmp84, tmp83);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp100;
-    compiler::TNode<JSProxy> tmp101;
-    compiler::TNode<Name> tmp102;
-    ca_.Bind(&block2, &tmp100, &tmp101, &tmp102);
+    compiler::TNode<Context> tmp85;
+    compiler::TNode<JSProxy> tmp86;
+    compiler::TNode<Name> tmp87;
+    ca_.Bind(&block2, &tmp85, &tmp86, &tmp87);
     ca_.SetSourcePosition("../../src/builtins/proxy-has-property.tq", 54);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp100}, MessageTemplate::kProxyRevoked, "has");
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp85}, MessageTemplate::kProxyRevoked, "has");
   }
 }
 

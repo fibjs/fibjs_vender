@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<JSReceiver> Cast13ATConstructor_1309(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+compiler::TNode<JSReceiver> Cast13ATConstructor_1362(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 }  // namespace internal
 }  // namespace v8
 

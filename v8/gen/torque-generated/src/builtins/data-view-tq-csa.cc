@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssemblerState* state_, ElementsKind p_kind) {
+compiler::TNode<String> MakeDataViewGetterNameString_269(compiler::CodeAssemblerState* state_, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -165,7 +173,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 11);
     compiler::TNode<String> tmp0;
     USE(tmp0);
-    tmp0 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getUint8");
+    tmp0 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getUint8");
     ca_.Goto(&block1, tmp0);
   }
 
@@ -184,7 +192,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 13);
     compiler::TNode<String> tmp1;
     USE(tmp1);
-    tmp1 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getInt8");
+    tmp1 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getInt8");
     ca_.Goto(&block1, tmp1);
   }
 
@@ -203,7 +211,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 15);
     compiler::TNode<String> tmp2;
     USE(tmp2);
-    tmp2 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getUint16");
+    tmp2 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getUint16");
     ca_.Goto(&block1, tmp2);
   }
 
@@ -222,7 +230,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 17);
     compiler::TNode<String> tmp3;
     USE(tmp3);
-    tmp3 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getInt16");
+    tmp3 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getInt16");
     ca_.Goto(&block1, tmp3);
   }
 
@@ -241,7 +249,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 19);
     compiler::TNode<String> tmp4;
     USE(tmp4);
-    tmp4 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getUint32");
+    tmp4 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getUint32");
     ca_.Goto(&block1, tmp4);
   }
 
@@ -260,7 +268,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 21);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getInt32");
+    tmp5 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getInt32");
     ca_.Goto(&block1, tmp5);
   }
 
@@ -279,7 +287,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 23);
     compiler::TNode<String> tmp6;
     USE(tmp6);
-    tmp6 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getFloat32");
+    tmp6 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getFloat32");
     ca_.Goto(&block1, tmp6);
   }
 
@@ -298,7 +306,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 25);
     compiler::TNode<String> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getFloat64");
+    tmp7 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getFloat64");
     ca_.Goto(&block1, tmp7);
   }
 
@@ -317,7 +325,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 27);
     compiler::TNode<String> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getBigInt64");
+    tmp8 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getBigInt64");
     ca_.Goto(&block1, tmp8);
   }
 
@@ -336,7 +344,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 29);
     compiler::TNode<String> tmp9;
     USE(tmp9);
-    tmp9 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.getBigUint64");
+    tmp9 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.getBigUint64");
     ca_.Goto(&block1, tmp9);
   }
 
@@ -358,7 +366,7 @@ compiler::TNode<String> MakeDataViewGetterNameString_240(compiler::CodeAssembler
   return compiler::TNode<String>{tmp11};
 }
 
-compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssemblerState* state_, ElementsKind p_kind) {
+compiler::TNode<String> MakeDataViewSetterNameString_270(compiler::CodeAssemblerState* state_, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -400,7 +408,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 37);
     compiler::TNode<String> tmp0;
     USE(tmp0);
-    tmp0 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setUint8");
+    tmp0 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setUint8");
     ca_.Goto(&block1, tmp0);
   }
 
@@ -419,7 +427,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 39);
     compiler::TNode<String> tmp1;
     USE(tmp1);
-    tmp1 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setInt8");
+    tmp1 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setInt8");
     ca_.Goto(&block1, tmp1);
   }
 
@@ -438,7 +446,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 41);
     compiler::TNode<String> tmp2;
     USE(tmp2);
-    tmp2 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setUint16");
+    tmp2 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setUint16");
     ca_.Goto(&block1, tmp2);
   }
 
@@ -457,7 +465,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 43);
     compiler::TNode<String> tmp3;
     USE(tmp3);
-    tmp3 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setInt16");
+    tmp3 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setInt16");
     ca_.Goto(&block1, tmp3);
   }
 
@@ -476,7 +484,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 45);
     compiler::TNode<String> tmp4;
     USE(tmp4);
-    tmp4 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setUint32");
+    tmp4 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setUint32");
     ca_.Goto(&block1, tmp4);
   }
 
@@ -495,7 +503,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 47);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setInt32");
+    tmp5 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setInt32");
     ca_.Goto(&block1, tmp5);
   }
 
@@ -514,7 +522,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 49);
     compiler::TNode<String> tmp6;
     USE(tmp6);
-    tmp6 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setFloat32");
+    tmp6 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setFloat32");
     ca_.Goto(&block1, tmp6);
   }
 
@@ -533,7 +541,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 51);
     compiler::TNode<String> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setFloat64");
+    tmp7 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setFloat64");
     ca_.Goto(&block1, tmp7);
   }
 
@@ -552,7 +560,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 53);
     compiler::TNode<String> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setBigInt64");
+    tmp8 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setBigInt64");
     ca_.Goto(&block1, tmp8);
   }
 
@@ -571,7 +579,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 55);
     compiler::TNode<String> tmp9;
     USE(tmp9);
-    tmp9 = FromConstexpr6String18ATconstexpr_string_128(state_, "DataView.prototype.setBigUint64");
+    tmp9 = FromConstexpr6String18ATconstexpr_string_154(state_, "DataView.prototype.setBigUint64");
     ca_.Goto(&block1, tmp9);
   }
 
@@ -593,7 +601,7 @@ compiler::TNode<String> MakeDataViewSetterNameString_241(compiler::CodeAssembler
   return compiler::TNode<String>{tmp11};
 }
 
-compiler::TNode<BoolT> WasNeutered_242(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBufferView> p_view) {
+compiler::TNode<BoolT> WasDetached_271(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBufferView> p_view) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBufferView> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBufferView, BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -627,7 +635,7 @@ compiler::TNode<BoolT> WasNeutered_242(compiler::CodeAssemblerState* state_, com
   return compiler::TNode<BoolT>{tmp7};
 }
 
-compiler::TNode<JSDataView> ValidateDataView_243(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::TNode<String> p_method) {
+compiler::TNode<JSDataView> ValidateDataView_272(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::TNode<String> p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, String> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, String, Object> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -646,7 +654,7 @@ compiler::TNode<JSDataView> ValidateDataView_243(compiler::CodeAssemblerState* s
     compiler::TNode<JSDataView> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = Cast10JSDataView_1339(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    tmp3 = Cast10JSDataView_1393(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp1, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -724,10 +732,10 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 80);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr6String18ATconstexpr_string_128(state_, "get DataView.prototype.buffer");
+    tmp5 = FromConstexpr6String18ATconstexpr_string_154(state_, "get DataView.prototype.buffer");
     compiler::TNode<JSDataView> tmp6;
     USE(tmp6);
-    tmp6 = ValidateDataView_243(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
+    tmp6 = ValidateDataView_272(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 79);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 81);
     compiler::TNode<IntPtrT> tmp7 = ca_.IntPtrConstant(JSArrayBufferView::kBufferOffset);
@@ -764,14 +772,14 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 87);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr6String18ATconstexpr_string_128(state_, "get DataView.prototype.byte_length");
+    tmp5 = FromConstexpr6String18ATconstexpr_string_154(state_, "get DataView.prototype.byte_length");
     compiler::TNode<JSDataView> tmp6;
     USE(tmp6);
-    tmp6 = ValidateDataView_243(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
+    tmp6 = ValidateDataView_272(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 89);
     compiler::TNode<BoolT> tmp7;
     USE(tmp7);
-    tmp7 = WasNeutered_242(state_, compiler::TNode<JSArrayBufferView>{tmp6});
+    tmp7 = WasDetached_271(state_, compiler::TNode<JSArrayBufferView>{tmp6});
     ca_.Branch(tmp7, &block1, &block2, tmp0, tmp1, tmp2, tmp3, tmp4, tmp6);
   }
 
@@ -786,7 +794,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 92);
     compiler::TNode<Number> tmp14;
     USE(tmp14);
-    tmp14 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 0);
+    tmp14 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 0);
     arguments.PopAndReturn(tmp14);
   }
 
@@ -804,7 +812,7 @@ USE(parameter1);
     compiler::TNode<UintPtrT>tmp22 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp20, tmp21});
     compiler::TNode<Number> tmp23;
     USE(tmp23);
-    tmp23 = Convert20UT5ATSmi10HeapNumber9ATuintptr_174(state_, compiler::TNode<UintPtrT>{tmp22});
+    tmp23 = Convert20UT5ATSmi10HeapNumber9ATuintptr_201(state_, compiler::TNode<UintPtrT>{tmp22});
     arguments.PopAndReturn(tmp23);
   }
 }
@@ -836,14 +844,14 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 100);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr6String18ATconstexpr_string_128(state_, "get DataView.prototype.byte_offset");
+    tmp5 = FromConstexpr6String18ATconstexpr_string_154(state_, "get DataView.prototype.byte_offset");
     compiler::TNode<JSDataView> tmp6;
     USE(tmp6);
-    tmp6 = ValidateDataView_243(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
+    tmp6 = ValidateDataView_272(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, compiler::TNode<String>{tmp5});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 102);
     compiler::TNode<BoolT> tmp7;
     USE(tmp7);
-    tmp7 = WasNeutered_242(state_, compiler::TNode<JSArrayBufferView>{tmp6});
+    tmp7 = WasDetached_271(state_, compiler::TNode<JSArrayBufferView>{tmp6});
     ca_.Branch(tmp7, &block1, &block2, tmp0, tmp1, tmp2, tmp3, tmp4, tmp6);
   }
 
@@ -858,7 +866,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 105);
     compiler::TNode<Number> tmp14;
     USE(tmp14);
-    tmp14 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 0);
+    tmp14 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 0);
     arguments.PopAndReturn(tmp14);
   }
 
@@ -876,12 +884,12 @@ USE(parameter1);
     compiler::TNode<UintPtrT>tmp22 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp20, tmp21});
     compiler::TNode<Number> tmp23;
     USE(tmp23);
-    tmp23 = Convert20UT5ATSmi10HeapNumber9ATuintptr_174(state_, compiler::TNode<UintPtrT>{tmp22});
+    tmp23 = Convert20UT5ATSmi10HeapNumber9ATuintptr_201(state_, compiler::TNode<UintPtrT>{tmp22});
     arguments.PopAndReturn(tmp23);
   }
 }
 
-compiler::TNode<Smi> LoadDataView8_244(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, bool p_signed) {
+compiler::TNode<Smi> LoadDataView8_273(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -915,7 +923,7 @@ compiler::TNode<Smi> LoadDataView8_244(compiler::CodeAssemblerState* state_, com
     tmp6 = DataViewBuiltinsAssembler(state_).LoadInt8(compiler::TNode<RawPtrT>{tmp5}, compiler::TNode<UintPtrT>{tmp3});
     compiler::TNode<Smi> tmp7;
     USE(tmp7);
-    tmp7 = Convert5ATSmi7ATint32_149(state_, compiler::TNode<Int32T>{tmp6});
+    tmp7 = Convert5ATSmi7ATint32_176(state_, compiler::TNode<Int32T>{tmp6});
     ca_.Goto(&block1, tmp2, tmp3, tmp7);
   }
 
@@ -932,7 +940,7 @@ compiler::TNode<Smi> LoadDataView8_244(compiler::CodeAssemblerState* state_, com
     tmp12 = DataViewBuiltinsAssembler(state_).LoadUint8(compiler::TNode<RawPtrT>{tmp11}, compiler::TNode<UintPtrT>{tmp9});
     compiler::TNode<Smi> tmp13;
     USE(tmp13);
-    tmp13 = Convert5ATSmi8ATuint32_151(state_, compiler::TNode<Uint32T>{tmp12});
+    tmp13 = Convert5ATSmi8ATuint32_178(state_, compiler::TNode<Uint32T>{tmp12});
     ca_.Goto(&block1, tmp8, tmp9, tmp13);
   }
 
@@ -952,7 +960,7 @@ compiler::TNode<Smi> LoadDataView8_244(compiler::CodeAssemblerState* state_, com
   return compiler::TNode<Smi>{tmp19};
 }
 
-compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
+compiler::TNode<Number> LoadDataView16_274(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BoolT, RawPtrT, Int32T, Int32T, Int32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -999,7 +1007,7 @@ compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 141);
     compiler::TNode<UintPtrT> tmp14;
     USE(tmp14);
-    tmp14 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp14 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp15;
     USE(tmp15);
     tmp15 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp6}, compiler::TNode<UintPtrT>{tmp14});
@@ -1009,7 +1017,7 @@ compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 142);
     compiler::TNode<Int32T> tmp17;
     USE(tmp17);
-    tmp17 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 8);
+    tmp17 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 8);
     compiler::TNode<Int32T> tmp18;
     USE(tmp18);
     tmp18 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Int32T>{tmp16}, compiler::TNode<Int32T>{tmp17});
@@ -1036,7 +1044,7 @@ compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 145);
     compiler::TNode<UintPtrT> tmp28;
     USE(tmp28);
-    tmp28 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp28 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp29;
     USE(tmp29);
     tmp29 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp21}, compiler::TNode<UintPtrT>{tmp28});
@@ -1049,7 +1057,7 @@ compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 146);
     compiler::TNode<Int32T> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 8);
+    tmp32 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 8);
     compiler::TNode<Int32T> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Int32T>{tmp27}, compiler::TNode<Int32T>{tmp32});
@@ -1089,7 +1097,7 @@ compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 149);
     compiler::TNode<Smi> tmp49;
     USE(tmp49);
-    tmp49 = Convert5ATSmi7ATint32_149(state_, compiler::TNode<Int32T>{tmp48});
+    tmp49 = Convert5ATSmi7ATint32_176(state_, compiler::TNode<Int32T>{tmp48});
     ca_.Goto(&block1, tmp42, tmp43, tmp44, tmp49);
   }
 
@@ -1105,13 +1113,13 @@ compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 152);
     compiler::TNode<Int32T> tmp57;
     USE(tmp57);
-    tmp57 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0xFFFF);
+    tmp57 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0xFFFF);
     compiler::TNode<Int32T> tmp58;
     USE(tmp58);
     tmp58 = CodeStubAssembler(state_).Word32And(compiler::TNode<Int32T>{tmp56}, compiler::TNode<Int32T>{tmp57});
     compiler::TNode<Smi> tmp59;
     USE(tmp59);
-    tmp59 = Convert5ATSmi7ATint32_149(state_, compiler::TNode<Int32T>{tmp58});
+    tmp59 = Convert5ATSmi7ATint32_176(state_, compiler::TNode<Int32T>{tmp58});
     ca_.Goto(&block1, tmp50, tmp51, tmp52, tmp59);
   }
 
@@ -1133,7 +1141,7 @@ compiler::TNode<Number> LoadDataView16_245(compiler::CodeAssemblerState* state_,
   return compiler::TNode<Number>{tmp67};
 }
 
-compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian, ElementsKind p_kind) {
+compiler::TNode<Number> LoadDataView32_275(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BoolT, RawPtrT, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1165,7 +1173,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 162);
     compiler::TNode<UintPtrT> tmp6;
     USE(tmp6);
-    tmp6 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp6 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp7;
     USE(tmp7);
     tmp7 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp6});
@@ -1175,7 +1183,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 163);
     compiler::TNode<UintPtrT> tmp9;
     USE(tmp9);
-    tmp9 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 2);
+    tmp9 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 2);
     compiler::TNode<UintPtrT> tmp10;
     USE(tmp10);
     tmp10 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp9});
@@ -1185,7 +1193,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 164);
     compiler::TNode<UintPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 3);
+    tmp12 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 3);
     compiler::TNode<UintPtrT> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp12});
@@ -1211,13 +1219,13 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 168);
     compiler::TNode<Uint32T> tmp24;
     USE(tmp24);
-    tmp24 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp24 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp25;
     USE(tmp25);
     tmp25 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp22}, compiler::TNode<Uint32T>{tmp24});
     compiler::TNode<Uint32T> tmp26;
     USE(tmp26);
-    tmp26 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp26 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp27;
     USE(tmp27);
     tmp27 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp21}, compiler::TNode<Uint32T>{tmp26});
@@ -1226,7 +1234,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     tmp28 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp25}, compiler::TNode<Uint32T>{tmp27});
     compiler::TNode<Uint32T> tmp29;
     USE(tmp29);
-    tmp29 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp29 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp30;
     USE(tmp30);
     tmp30 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp20}, compiler::TNode<Uint32T>{tmp29});
@@ -1254,13 +1262,13 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 170);
     compiler::TNode<Uint32T> tmp42;
     USE(tmp42);
-    tmp42 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp42 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp43;
     USE(tmp43);
     tmp43 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp37}, compiler::TNode<Uint32T>{tmp42});
     compiler::TNode<Uint32T> tmp44;
     USE(tmp44);
-    tmp44 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp44 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp45;
     USE(tmp45);
     tmp45 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp38}, compiler::TNode<Uint32T>{tmp44});
@@ -1269,7 +1277,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     tmp46 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp43}, compiler::TNode<Uint32T>{tmp45});
     compiler::TNode<Uint32T> tmp47;
     USE(tmp47);
-    tmp47 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp47 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp48;
     USE(tmp48);
     tmp48 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp39}, compiler::TNode<Uint32T>{tmp47});
@@ -1319,7 +1327,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     tmp69 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp68});
     compiler::TNode<Number> tmp70;
     USE(tmp70);
-    tmp70 = Convert20UT5ATSmi10HeapNumber7ATint32_146(state_, compiler::TNode<Int32T>{tmp69});
+    tmp70 = Convert20UT5ATSmi10HeapNumber7ATint32_173(state_, compiler::TNode<Int32T>{tmp69});
     ca_.Goto(&block1, tmp60, tmp61, tmp62, tmp70);
   }
 
@@ -1356,7 +1364,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 176);
     compiler::TNode<Number> tmp89;
     USE(tmp89);
-    tmp89 = Convert20UT5ATSmi10HeapNumber8ATuint32_150(state_, compiler::TNode<Uint32T>{tmp88});
+    tmp89 = Convert20UT5ATSmi10HeapNumber8ATuint32_177(state_, compiler::TNode<Uint32T>{tmp88});
     ca_.Goto(&block1, tmp80, tmp81, tmp82, tmp89);
   }
 
@@ -1396,11 +1404,11 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
     tmp108 = CodeStubAssembler(state_).BitcastInt32ToFloat32(compiler::TNode<Uint32T>{tmp107});
     compiler::TNode<Float64T> tmp109;
     USE(tmp109);
-    tmp109 = Convert9ATfloat649ATfloat32_169(state_, compiler::TNode<Float32T>{tmp108});
+    tmp109 = Convert9ATfloat649ATfloat32_196(state_, compiler::TNode<Float32T>{tmp108});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 179);
     compiler::TNode<Number> tmp110;
     USE(tmp110);
-    tmp110 = Convert20UT5ATSmi10HeapNumber9ATfloat64_172(state_, compiler::TNode<Float64T>{tmp109});
+    tmp110 = Convert20UT5ATSmi10HeapNumber9ATfloat64_199(state_, compiler::TNode<Float64T>{tmp109});
     ca_.Goto(&block1, tmp99, tmp100, tmp101, tmp110);
   }
 
@@ -1437,7 +1445,7 @@ compiler::TNode<Number> LoadDataView32_246(compiler::CodeAssemblerState* state_,
   return compiler::TNode<Number>{tmp127};
 }
 
-compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian) {
+compiler::TNode<Number> LoadDataViewFloat64_276(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BoolT, RawPtrT, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1463,7 +1471,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 191);
     compiler::TNode<UintPtrT> tmp6;
     USE(tmp6);
-    tmp6 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp6 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp7;
     USE(tmp7);
     tmp7 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp6});
@@ -1473,7 +1481,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 192);
     compiler::TNode<UintPtrT> tmp9;
     USE(tmp9);
-    tmp9 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 2);
+    tmp9 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 2);
     compiler::TNode<UintPtrT> tmp10;
     USE(tmp10);
     tmp10 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp9});
@@ -1483,7 +1491,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 193);
     compiler::TNode<UintPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 3);
+    tmp12 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 3);
     compiler::TNode<UintPtrT> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp12});
@@ -1493,7 +1501,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 194);
     compiler::TNode<UintPtrT> tmp15;
     USE(tmp15);
-    tmp15 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 4);
+    tmp15 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 4);
     compiler::TNode<UintPtrT> tmp16;
     USE(tmp16);
     tmp16 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp15});
@@ -1503,7 +1511,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 195);
     compiler::TNode<UintPtrT> tmp18;
     USE(tmp18);
-    tmp18 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 5);
+    tmp18 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 5);
     compiler::TNode<UintPtrT> tmp19;
     USE(tmp19);
     tmp19 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp18});
@@ -1513,7 +1521,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 196);
     compiler::TNode<UintPtrT> tmp21;
     USE(tmp21);
-    tmp21 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 6);
+    tmp21 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 6);
     compiler::TNode<UintPtrT> tmp22;
     USE(tmp22);
     tmp22 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp21});
@@ -1523,7 +1531,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 197);
     compiler::TNode<UintPtrT> tmp24;
     USE(tmp24);
-    tmp24 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 7);
+    tmp24 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 7);
     compiler::TNode<UintPtrT> tmp25;
     USE(tmp25);
     tmp25 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp1}, compiler::TNode<UintPtrT>{tmp24});
@@ -1555,13 +1563,13 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 202);
     compiler::TNode<Uint32T> tmp41;
     USE(tmp41);
-    tmp41 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp41 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp42;
     USE(tmp42);
     tmp42 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp34}, compiler::TNode<Uint32T>{tmp41});
     compiler::TNode<Uint32T> tmp43;
     USE(tmp43);
-    tmp43 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp43 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp44;
     USE(tmp44);
     tmp44 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp33}, compiler::TNode<Uint32T>{tmp43});
@@ -1570,7 +1578,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     tmp45 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp42}, compiler::TNode<Uint32T>{tmp44});
     compiler::TNode<Uint32T> tmp46;
     USE(tmp46);
-    tmp46 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp46 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp47;
     USE(tmp47);
     tmp47 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp32}, compiler::TNode<Uint32T>{tmp46});
@@ -1583,13 +1591,13 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 203);
     compiler::TNode<Uint32T> tmp50;
     USE(tmp50);
-    tmp50 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp50 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp51;
     USE(tmp51);
     tmp51 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp38}, compiler::TNode<Uint32T>{tmp50});
     compiler::TNode<Uint32T> tmp52;
     USE(tmp52);
-    tmp52 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp52 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp53;
     USE(tmp53);
     tmp53 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp37}, compiler::TNode<Uint32T>{tmp52});
@@ -1598,7 +1606,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     tmp54 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp51}, compiler::TNode<Uint32T>{tmp53});
     compiler::TNode<Uint32T> tmp55;
     USE(tmp55);
-    tmp55 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp55 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp56;
     USE(tmp56);
     tmp56 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp36}, compiler::TNode<Uint32T>{tmp55});
@@ -1631,13 +1639,13 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 205);
     compiler::TNode<Uint32T> tmp73;
     USE(tmp73);
-    tmp73 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp73 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp74;
     USE(tmp74);
     tmp74 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp63}, compiler::TNode<Uint32T>{tmp73});
     compiler::TNode<Uint32T> tmp75;
     USE(tmp75);
-    tmp75 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp75 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp76;
     USE(tmp76);
     tmp76 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp64}, compiler::TNode<Uint32T>{tmp75});
@@ -1646,7 +1654,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     tmp77 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp74}, compiler::TNode<Uint32T>{tmp76});
     compiler::TNode<Uint32T> tmp78;
     USE(tmp78);
-    tmp78 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp78 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp79;
     USE(tmp79);
     tmp79 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp65}, compiler::TNode<Uint32T>{tmp78});
@@ -1659,13 +1667,13 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 206);
     compiler::TNode<Uint32T> tmp82;
     USE(tmp82);
-    tmp82 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp82 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp83;
     USE(tmp83);
     tmp83 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp67}, compiler::TNode<Uint32T>{tmp82});
     compiler::TNode<Uint32T> tmp84;
     USE(tmp84);
-    tmp84 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp84 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp85;
     USE(tmp85);
     tmp85 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp68}, compiler::TNode<Uint32T>{tmp84});
@@ -1674,7 +1682,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     tmp86 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp83}, compiler::TNode<Uint32T>{tmp85});
     compiler::TNode<Uint32T> tmp87;
     USE(tmp87);
-    tmp87 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp87 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp88;
     USE(tmp88);
     tmp88 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp69}, compiler::TNode<Uint32T>{tmp87});
@@ -1707,7 +1715,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 209);
     compiler::TNode<Float64T> tmp105;
     USE(tmp105);
-    tmp105 = FromConstexpr9ATfloat6417ATconstexpr_int31_137(state_, 0);
+    tmp105 = FromConstexpr9ATfloat6417ATconstexpr_int31_163(state_, 0);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 210);
     compiler::TNode<Float64T> tmp106;
     USE(tmp106);
@@ -1719,7 +1727,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 213);
     compiler::TNode<Number> tmp108;
     USE(tmp108);
-    tmp108 = Convert20UT5ATSmi10HeapNumber9ATfloat64_172(state_, compiler::TNode<Float64T>{tmp107});
+    tmp108 = Convert20UT5ATSmi10HeapNumber9ATfloat64_199(state_, compiler::TNode<Float64T>{tmp107});
     ca_.Goto(&block1, tmp91, tmp92, tmp93, tmp108);
   }
 
@@ -1741,7 +1749,7 @@ compiler::TNode<Number> LoadDataViewFloat64_247(compiler::CodeAssemblerState* st
   return compiler::TNode<Number>{tmp116};
 }
 
-int31_t kZeroDigitBigInt_248(compiler::CodeAssemblerState* state_) {
+int31_t kZeroDigitBigInt_277(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1750,7 +1758,7 @@ int31_t kZeroDigitBigInt_248(compiler::CodeAssemblerState* state_) {
 return 0;
 }
 
-int31_t kOneDigitBigInt_249(compiler::CodeAssemblerState* state_) {
+int31_t kOneDigitBigInt_278(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1759,7 +1767,7 @@ int31_t kOneDigitBigInt_249(compiler::CodeAssemblerState* state_) {
 return 1;
 }
 
-int31_t kTwoDigitBigInt_250(compiler::CodeAssemblerState* state_) {
+int31_t kTwoDigitBigInt_279(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1768,19 +1776,21 @@ int31_t kTwoDigitBigInt_250(compiler::CodeAssemblerState* state_) {
 return 2;
 }
 
-compiler::TNode<BigInt> MakeBigIntOn64Bit_251(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, bool p_signed) {
+compiler::TNode<BigInt> MakeBigIntOn64Bit_280(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, BoolT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, Uint32T, IntPtrT, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BigInt> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BigInt> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BigInt> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_lowWord, p_highWord);
 
   if (block0.is_used()) {
@@ -1791,229 +1801,254 @@ compiler::TNode<BigInt> MakeBigIntOn64Bit_251(compiler::CodeAssemblerState* stat
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 224);
     compiler::TNode<Uint32T> tmp3;
     USE(tmp3);
-    tmp3 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp3 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
     compiler::TNode<BoolT> tmp4;
     USE(tmp4);
     tmp4 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp1}, compiler::TNode<Uint32T>{tmp3});
-    ca_.Branch(tmp4, &block4, &block3, tmp0, tmp1, tmp2);
+    ca_.Branch(tmp4, &block4, &block5, tmp0, tmp1, tmp2, tmp4);
   }
 
   if (block4.is_used()) {
     compiler::TNode<Context> tmp5;
     compiler::TNode<Uint32T> tmp6;
     compiler::TNode<Uint32T> tmp7;
-    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7);
-    compiler::TNode<Uint32T> tmp8;
-    USE(tmp8);
-    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
-    compiler::TNode<BoolT> tmp9;
+    compiler::TNode<BoolT> tmp8;
+    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7, &tmp8);
+    compiler::TNode<Uint32T> tmp9;
     USE(tmp9);
-    tmp9 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp7}, compiler::TNode<Uint32T>{tmp8});
-    ca_.Branch(tmp9, &block2, &block3, tmp5, tmp6, tmp7);
-  }
-
-  if (block2.is_used()) {
-    compiler::TNode<Context> tmp10;
-    compiler::TNode<Uint32T> tmp11;
-    compiler::TNode<Uint32T> tmp12;
-    ca_.Bind(&block2, &tmp10, &tmp11, &tmp12);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 225);
-    compiler::TNode<IntPtrT> tmp13;
-    USE(tmp13);
-    tmp13 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, kZeroDigitBigInt_248(state_));
-    compiler::TNode<BigInt> tmp14;
-    USE(tmp14);
-    tmp14 = CodeStubAssembler(state_).AllocateBigInt(compiler::TNode<IntPtrT>{tmp13});
-    compiler::TNode<BigInt> tmp15;
-    USE(tmp15);
-    tmp15 = Convert8ATBigInt13MutableBigInt_227(state_, compiler::TNode<BigInt>{tmp14});
-    ca_.Goto(&block1, tmp10, tmp11, tmp12, tmp15);
-  }
-
-  if (block3.is_used()) {
-    compiler::TNode<Context> tmp16;
-    compiler::TNode<Uint32T> tmp17;
-    compiler::TNode<Uint32T> tmp18;
-    ca_.Bind(&block3, &tmp16, &tmp17, &tmp18);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 228);
-    compiler::TNode<Uint32T> tmp19;
-    USE(tmp19);
-    tmp19 = kPositiveSign_228(state_);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 229);
-    compiler::TNode<UintPtrT> tmp20;
-    USE(tmp20);
-    tmp20 = Convert9ATuintptr8ATuint32_152(state_, compiler::TNode<Uint32T>{tmp18});
-    compiler::TNode<IntPtrT> tmp21;
-    USE(tmp21);
-    tmp21 = CodeStubAssembler(state_).Signed(compiler::TNode<UintPtrT>{tmp20});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 230);
-    compiler::TNode<UintPtrT> tmp22;
-    USE(tmp22);
-    tmp22 = Convert9ATuintptr8ATuint32_152(state_, compiler::TNode<Uint32T>{tmp17});
-    compiler::TNode<IntPtrT> tmp23;
-    USE(tmp23);
-    tmp23 = CodeStubAssembler(state_).Signed(compiler::TNode<UintPtrT>{tmp22});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 231);
-    compiler::TNode<IntPtrT> tmp24;
-    USE(tmp24);
-    tmp24 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 32);
-    compiler::TNode<IntPtrT> tmp25;
-    USE(tmp25);
-    tmp25 = CodeStubAssembler(state_).WordShl(compiler::TNode<IntPtrT>{tmp21}, compiler::TNode<IntPtrT>{tmp24});
-    compiler::TNode<IntPtrT> tmp26;
-    USE(tmp26);
-    tmp26 = CodeStubAssembler(state_).IntPtrAdd(compiler::TNode<IntPtrT>{tmp25}, compiler::TNode<IntPtrT>{tmp23});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 233);
-    if ((p_signed)) {
-      ca_.Goto(&block5, tmp16, tmp17, tmp18, tmp19, tmp21, tmp23, tmp26);
-    } else {
-      ca_.Goto(&block6, tmp16, tmp17, tmp18, tmp19, tmp21, tmp23, tmp26);
-    }
+    tmp9 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
+    compiler::TNode<BoolT> tmp10;
+    USE(tmp10);
+    tmp10 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp7}, compiler::TNode<Uint32T>{tmp9});
+    ca_.Goto(&block6, tmp5, tmp6, tmp7, tmp8, tmp10);
   }
 
   if (block5.is_used()) {
-    compiler::TNode<Context> tmp27;
-    compiler::TNode<Uint32T> tmp28;
-    compiler::TNode<Uint32T> tmp29;
-    compiler::TNode<Uint32T> tmp30;
-    compiler::TNode<IntPtrT> tmp31;
-    compiler::TNode<IntPtrT> tmp32;
-    compiler::TNode<IntPtrT> tmp33;
-    ca_.Bind(&block5, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 234);
-    compiler::TNode<IntPtrT> tmp34;
-    USE(tmp34);
-    tmp34 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
-    compiler::TNode<BoolT> tmp35;
-    USE(tmp35);
-    tmp35 = CodeStubAssembler(state_).IntPtrLessThan(compiler::TNode<IntPtrT>{tmp33}, compiler::TNode<IntPtrT>{tmp34});
-    ca_.Branch(tmp35, &block8, &block9, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32, tmp33);
-  }
-
-  if (block8.is_used()) {
-    compiler::TNode<Context> tmp36;
-    compiler::TNode<Uint32T> tmp37;
-    compiler::TNode<Uint32T> tmp38;
-    compiler::TNode<Uint32T> tmp39;
-    compiler::TNode<IntPtrT> tmp40;
-    compiler::TNode<IntPtrT> tmp41;
-    compiler::TNode<IntPtrT> tmp42;
-    ca_.Bind(&block8, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 235);
-    compiler::TNode<Uint32T> tmp43;
-    USE(tmp43);
-    tmp43 = kNegativeSign_229(state_);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 237);
-    compiler::TNode<IntPtrT> tmp44;
-    USE(tmp44);
-    tmp44 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
-    compiler::TNode<IntPtrT> tmp45;
-    USE(tmp45);
-    tmp45 = CodeStubAssembler(state_).IntPtrSub(compiler::TNode<IntPtrT>{tmp44}, compiler::TNode<IntPtrT>{tmp42});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 234);
-    ca_.Goto(&block9, tmp36, tmp37, tmp38, tmp43, tmp40, tmp41, tmp45);
-  }
-
-  if (block9.is_used()) {
-    compiler::TNode<Context> tmp46;
-    compiler::TNode<Uint32T> tmp47;
-    compiler::TNode<Uint32T> tmp48;
-    compiler::TNode<Uint32T> tmp49;
-    compiler::TNode<IntPtrT> tmp50;
-    compiler::TNode<IntPtrT> tmp51;
-    compiler::TNode<IntPtrT> tmp52;
-    ca_.Bind(&block9, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 233);
-    ca_.Goto(&block7, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51, tmp52);
+    compiler::TNode<Context> tmp11;
+    compiler::TNode<Uint32T> tmp12;
+    compiler::TNode<Uint32T> tmp13;
+    compiler::TNode<BoolT> tmp14;
+    ca_.Bind(&block5, &tmp11, &tmp12, &tmp13, &tmp14);
+    compiler::TNode<BoolT> tmp15;
+    USE(tmp15);
+    tmp15 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, false);
+    ca_.Goto(&block6, tmp11, tmp12, tmp13, tmp14, tmp15);
   }
 
   if (block6.is_used()) {
-    compiler::TNode<Context> tmp53;
-    compiler::TNode<Uint32T> tmp54;
-    compiler::TNode<Uint32T> tmp55;
-    compiler::TNode<Uint32T> tmp56;
-    compiler::TNode<IntPtrT> tmp57;
-    compiler::TNode<IntPtrT> tmp58;
-    compiler::TNode<IntPtrT> tmp59;
-    ca_.Bind(&block6, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59);
-    ca_.Goto(&block7, tmp53, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59);
+    compiler::TNode<Context> tmp16;
+    compiler::TNode<Uint32T> tmp17;
+    compiler::TNode<Uint32T> tmp18;
+    compiler::TNode<BoolT> tmp19;
+    compiler::TNode<BoolT> tmp20;
+    ca_.Bind(&block6, &tmp16, &tmp17, &tmp18, &tmp19, &tmp20);
+    ca_.Branch(tmp20, &block2, &block3, tmp16, tmp17, tmp18);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<Context> tmp21;
+    compiler::TNode<Uint32T> tmp22;
+    compiler::TNode<Uint32T> tmp23;
+    ca_.Bind(&block2, &tmp21, &tmp22, &tmp23);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 225);
+    compiler::TNode<IntPtrT> tmp24;
+    USE(tmp24);
+    tmp24 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, kZeroDigitBigInt_277(state_));
+    compiler::TNode<BigInt> tmp25;
+    USE(tmp25);
+    tmp25 = CodeStubAssembler(state_).AllocateBigInt(compiler::TNode<IntPtrT>{tmp24});
+    compiler::TNode<BigInt> tmp26;
+    USE(tmp26);
+    tmp26 = Convert8ATBigInt13MutableBigInt_256(state_, compiler::TNode<BigInt>{tmp25});
+    ca_.Goto(&block1, tmp21, tmp22, tmp23, tmp26);
+  }
+
+  if (block3.is_used()) {
+    compiler::TNode<Context> tmp27;
+    compiler::TNode<Uint32T> tmp28;
+    compiler::TNode<Uint32T> tmp29;
+    ca_.Bind(&block3, &tmp27, &tmp28, &tmp29);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 228);
+    compiler::TNode<Uint32T> tmp30;
+    USE(tmp30);
+    tmp30 = kPositiveSign_257(state_);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 229);
+    compiler::TNode<UintPtrT> tmp31;
+    USE(tmp31);
+    tmp31 = Convert9ATuintptr8ATuint32_179(state_, compiler::TNode<Uint32T>{tmp29});
+    compiler::TNode<IntPtrT> tmp32;
+    USE(tmp32);
+    tmp32 = CodeStubAssembler(state_).Signed(compiler::TNode<UintPtrT>{tmp31});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 230);
+    compiler::TNode<UintPtrT> tmp33;
+    USE(tmp33);
+    tmp33 = Convert9ATuintptr8ATuint32_179(state_, compiler::TNode<Uint32T>{tmp28});
+    compiler::TNode<IntPtrT> tmp34;
+    USE(tmp34);
+    tmp34 = CodeStubAssembler(state_).Signed(compiler::TNode<UintPtrT>{tmp33});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 231);
+    compiler::TNode<IntPtrT> tmp35;
+    USE(tmp35);
+    tmp35 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 32);
+    compiler::TNode<IntPtrT> tmp36;
+    USE(tmp36);
+    tmp36 = CodeStubAssembler(state_).WordShl(compiler::TNode<IntPtrT>{tmp32}, compiler::TNode<IntPtrT>{tmp35});
+    compiler::TNode<IntPtrT> tmp37;
+    USE(tmp37);
+    tmp37 = CodeStubAssembler(state_).IntPtrAdd(compiler::TNode<IntPtrT>{tmp36}, compiler::TNode<IntPtrT>{tmp34});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 233);
+    if ((p_signed)) {
+      ca_.Goto(&block7, tmp27, tmp28, tmp29, tmp30, tmp32, tmp34, tmp37);
+    } else {
+      ca_.Goto(&block8, tmp27, tmp28, tmp29, tmp30, tmp32, tmp34, tmp37);
+    }
   }
 
   if (block7.is_used()) {
-    compiler::TNode<Context> tmp60;
-    compiler::TNode<Uint32T> tmp61;
-    compiler::TNode<Uint32T> tmp62;
-    compiler::TNode<Uint32T> tmp63;
-    compiler::TNode<IntPtrT> tmp64;
-    compiler::TNode<IntPtrT> tmp65;
-    compiler::TNode<IntPtrT> tmp66;
-    ca_.Bind(&block7, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66);
+    compiler::TNode<Context> tmp38;
+    compiler::TNode<Uint32T> tmp39;
+    compiler::TNode<Uint32T> tmp40;
+    compiler::TNode<Uint32T> tmp41;
+    compiler::TNode<IntPtrT> tmp42;
+    compiler::TNode<IntPtrT> tmp43;
+    compiler::TNode<IntPtrT> tmp44;
+    ca_.Bind(&block7, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 234);
+    compiler::TNode<IntPtrT> tmp45;
+    USE(tmp45);
+    tmp45 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
+    compiler::TNode<BoolT> tmp46;
+    USE(tmp46);
+    tmp46 = CodeStubAssembler(state_).IntPtrLessThan(compiler::TNode<IntPtrT>{tmp44}, compiler::TNode<IntPtrT>{tmp45});
+    ca_.Branch(tmp46, &block10, &block11, tmp38, tmp39, tmp40, tmp41, tmp42, tmp43, tmp44);
+  }
+
+  if (block10.is_used()) {
+    compiler::TNode<Context> tmp47;
+    compiler::TNode<Uint32T> tmp48;
+    compiler::TNode<Uint32T> tmp49;
+    compiler::TNode<Uint32T> tmp50;
+    compiler::TNode<IntPtrT> tmp51;
+    compiler::TNode<IntPtrT> tmp52;
+    compiler::TNode<IntPtrT> tmp53;
+    ca_.Bind(&block10, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 235);
+    compiler::TNode<Uint32T> tmp54;
+    USE(tmp54);
+    tmp54 = kNegativeSign_258(state_);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 237);
+    compiler::TNode<IntPtrT> tmp55;
+    USE(tmp55);
+    tmp55 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
+    compiler::TNode<IntPtrT> tmp56;
+    USE(tmp56);
+    tmp56 = CodeStubAssembler(state_).IntPtrSub(compiler::TNode<IntPtrT>{tmp55}, compiler::TNode<IntPtrT>{tmp53});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 234);
+    ca_.Goto(&block11, tmp47, tmp48, tmp49, tmp54, tmp51, tmp52, tmp56);
+  }
+
+  if (block11.is_used()) {
+    compiler::TNode<Context> tmp57;
+    compiler::TNode<Uint32T> tmp58;
+    compiler::TNode<Uint32T> tmp59;
+    compiler::TNode<Uint32T> tmp60;
+    compiler::TNode<IntPtrT> tmp61;
+    compiler::TNode<IntPtrT> tmp62;
+    compiler::TNode<IntPtrT> tmp63;
+    ca_.Bind(&block11, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 233);
+    ca_.Goto(&block9, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp63);
+  }
+
+  if (block8.is_used()) {
+    compiler::TNode<Context> tmp64;
+    compiler::TNode<Uint32T> tmp65;
+    compiler::TNode<Uint32T> tmp66;
+    compiler::TNode<Uint32T> tmp67;
+    compiler::TNode<IntPtrT> tmp68;
+    compiler::TNode<IntPtrT> tmp69;
+    compiler::TNode<IntPtrT> tmp70;
+    ca_.Bind(&block8, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70);
+    ca_.Goto(&block9, tmp64, tmp65, tmp66, tmp67, tmp68, tmp69, tmp70);
+  }
+
+  if (block9.is_used()) {
+    compiler::TNode<Context> tmp71;
+    compiler::TNode<Uint32T> tmp72;
+    compiler::TNode<Uint32T> tmp73;
+    compiler::TNode<Uint32T> tmp74;
+    compiler::TNode<IntPtrT> tmp75;
+    compiler::TNode<IntPtrT> tmp76;
+    compiler::TNode<IntPtrT> tmp77;
+    ca_.Bind(&block9, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 243);
-    compiler::TNode<IntPtrT> tmp67;
-    USE(tmp67);
-    tmp67 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, kOneDigitBigInt_249(state_));
-    compiler::TNode<BigInt> tmp68;
-    USE(tmp68);
-    tmp68 = AllocateEmptyBigInt_233(state_, compiler::TNode<Context>{tmp60}, compiler::TNode<Uint32T>{tmp63}, compiler::TNode<IntPtrT>{tmp67});
+    compiler::TNode<IntPtrT> tmp78;
+    USE(tmp78);
+    tmp78 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, kOneDigitBigInt_278(state_));
+    compiler::TNode<BigInt> tmp79;
+    USE(tmp79);
+    tmp79 = AllocateEmptyBigInt_262(state_, compiler::TNode<Context>{tmp71}, compiler::TNode<Uint32T>{tmp74}, compiler::TNode<IntPtrT>{tmp78});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 242);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 244);
-    compiler::TNode<UintPtrT> tmp69;
-    USE(tmp69);
-    tmp69 = CodeStubAssembler(state_).Unsigned(compiler::TNode<IntPtrT>{tmp66});
-    compiler::TNode<IntPtrT> tmp70;
-    USE(tmp70);
-    tmp70 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
-    CodeStubAssembler(state_).StoreBigIntDigit(compiler::TNode<BigInt>{tmp68}, compiler::TNode<IntPtrT>{tmp70}, compiler::TNode<UintPtrT>{tmp69});
+    compiler::TNode<UintPtrT> tmp80;
+    USE(tmp80);
+    tmp80 = CodeStubAssembler(state_).Unsigned(compiler::TNode<IntPtrT>{tmp77});
+    compiler::TNode<IntPtrT> tmp81;
+    USE(tmp81);
+    tmp81 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
+    CodeStubAssembler(state_).StoreBigIntDigit(compiler::TNode<BigInt>{tmp79}, compiler::TNode<IntPtrT>{tmp81}, compiler::TNode<UintPtrT>{tmp80});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 245);
-    compiler::TNode<BigInt> tmp71;
-    USE(tmp71);
-    tmp71 = Convert8ATBigInt13MutableBigInt_227(state_, compiler::TNode<BigInt>{tmp68});
-    ca_.Goto(&block1, tmp60, tmp61, tmp62, tmp71);
+    compiler::TNode<BigInt> tmp82;
+    USE(tmp82);
+    tmp82 = Convert8ATBigInt13MutableBigInt_256(state_, compiler::TNode<BigInt>{tmp79});
+    ca_.Goto(&block1, tmp71, tmp72, tmp73, tmp82);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp72;
-    compiler::TNode<Uint32T> tmp73;
-    compiler::TNode<Uint32T> tmp74;
-    compiler::TNode<BigInt> tmp75;
-    ca_.Bind(&block1, &tmp72, &tmp73, &tmp74, &tmp75);
+    compiler::TNode<Context> tmp83;
+    compiler::TNode<Uint32T> tmp84;
+    compiler::TNode<Uint32T> tmp85;
+    compiler::TNode<BigInt> tmp86;
+    ca_.Bind(&block1, &tmp83, &tmp84, &tmp85, &tmp86);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 221);
-    ca_.Goto(&block10, tmp72, tmp73, tmp74, tmp75);
+    ca_.Goto(&block12, tmp83, tmp84, tmp85, tmp86);
   }
 
-    compiler::TNode<Context> tmp76;
-    compiler::TNode<Uint32T> tmp77;
-    compiler::TNode<Uint32T> tmp78;
-    compiler::TNode<BigInt> tmp79;
-    ca_.Bind(&block10, &tmp76, &tmp77, &tmp78, &tmp79);
-  return compiler::TNode<BigInt>{tmp79};
+    compiler::TNode<Context> tmp87;
+    compiler::TNode<Uint32T> tmp88;
+    compiler::TNode<Uint32T> tmp89;
+    compiler::TNode<BigInt> tmp90;
+    ca_.Bind(&block12, &tmp87, &tmp88, &tmp89, &tmp90);
+  return compiler::TNode<BigInt>{tmp90};
 }
 
-compiler::TNode<BigInt> MakeBigIntOn32Bit_252(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, bool p_signed) {
+compiler::TNode<BigInt> MakeBigIntOn32Bit_281(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, BoolT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T, BigInt> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T, BigInt> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T, BigInt> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T, BigInt> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T, BigInt> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T, BigInt> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BoolT, Uint32T, Int32T, Int32T, BigInt> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BigInt> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BigInt> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T, BigInt> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_lowWord, p_highWord);
 
   if (block0.is_used()) {
@@ -2024,189 +2059,186 @@ compiler::TNode<BigInt> MakeBigIntOn32Bit_252(compiler::CodeAssemblerState* stat
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 252);
     compiler::TNode<Uint32T> tmp3;
     USE(tmp3);
-    tmp3 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp3 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
     compiler::TNode<BoolT> tmp4;
     USE(tmp4);
     tmp4 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp1}, compiler::TNode<Uint32T>{tmp3});
-    ca_.Branch(tmp4, &block4, &block3, tmp0, tmp1, tmp2);
+    ca_.Branch(tmp4, &block4, &block5, tmp0, tmp1, tmp2, tmp4);
   }
 
   if (block4.is_used()) {
     compiler::TNode<Context> tmp5;
     compiler::TNode<Uint32T> tmp6;
     compiler::TNode<Uint32T> tmp7;
-    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7);
-    compiler::TNode<Uint32T> tmp8;
-    USE(tmp8);
-    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
-    compiler::TNode<BoolT> tmp9;
+    compiler::TNode<BoolT> tmp8;
+    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7, &tmp8);
+    compiler::TNode<Uint32T> tmp9;
     USE(tmp9);
-    tmp9 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp7}, compiler::TNode<Uint32T>{tmp8});
-    ca_.Branch(tmp9, &block2, &block3, tmp5, tmp6, tmp7);
-  }
-
-  if (block2.is_used()) {
-    compiler::TNode<Context> tmp10;
-    compiler::TNode<Uint32T> tmp11;
-    compiler::TNode<Uint32T> tmp12;
-    ca_.Bind(&block2, &tmp10, &tmp11, &tmp12);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 253);
-    compiler::TNode<IntPtrT> tmp13;
-    USE(tmp13);
-    tmp13 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, kZeroDigitBigInt_248(state_));
-    compiler::TNode<BigInt> tmp14;
-    USE(tmp14);
-    tmp14 = CodeStubAssembler(state_).AllocateBigInt(compiler::TNode<IntPtrT>{tmp13});
-    compiler::TNode<BigInt> tmp15;
-    USE(tmp15);
-    tmp15 = Convert8ATBigInt13MutableBigInt_227(state_, compiler::TNode<BigInt>{tmp14});
-    ca_.Goto(&block1, tmp10, tmp11, tmp12, tmp15);
-  }
-
-  if (block3.is_used()) {
-    compiler::TNode<Context> tmp16;
-    compiler::TNode<Uint32T> tmp17;
-    compiler::TNode<Uint32T> tmp18;
-    ca_.Bind(&block3, &tmp16, &tmp17, &tmp18);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 257);
-    compiler::TNode<BoolT> tmp19;
-    USE(tmp19);
-    tmp19 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, false);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 258);
-    compiler::TNode<Uint32T> tmp20;
-    USE(tmp20);
-    tmp20 = kPositiveSign_228(state_);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 262);
-    compiler::TNode<Int32T> tmp21;
-    USE(tmp21);
-    tmp21 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp17});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 263);
-    compiler::TNode<Int32T> tmp22;
-    USE(tmp22);
-    tmp22 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp18});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 268);
-    compiler::TNode<Uint32T> tmp23;
-    USE(tmp23);
-    tmp23 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
-    compiler::TNode<BoolT> tmp24;
-    USE(tmp24);
-    tmp24 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Uint32T>{tmp18}, compiler::TNode<Uint32T>{tmp23});
-    ca_.Branch(tmp24, &block5, &block6, tmp16, tmp17, tmp18, tmp19, tmp20, tmp21, tmp22);
+    tmp9 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
+    compiler::TNode<BoolT> tmp10;
+    USE(tmp10);
+    tmp10 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp7}, compiler::TNode<Uint32T>{tmp9});
+    ca_.Goto(&block6, tmp5, tmp6, tmp7, tmp8, tmp10);
   }
 
   if (block5.is_used()) {
-    compiler::TNode<Context> tmp25;
-    compiler::TNode<Uint32T> tmp26;
-    compiler::TNode<Uint32T> tmp27;
-    compiler::TNode<BoolT> tmp28;
+    compiler::TNode<Context> tmp11;
+    compiler::TNode<Uint32T> tmp12;
+    compiler::TNode<Uint32T> tmp13;
+    compiler::TNode<BoolT> tmp14;
+    ca_.Bind(&block5, &tmp11, &tmp12, &tmp13, &tmp14);
+    compiler::TNode<BoolT> tmp15;
+    USE(tmp15);
+    tmp15 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, false);
+    ca_.Goto(&block6, tmp11, tmp12, tmp13, tmp14, tmp15);
+  }
+
+  if (block6.is_used()) {
+    compiler::TNode<Context> tmp16;
+    compiler::TNode<Uint32T> tmp17;
+    compiler::TNode<Uint32T> tmp18;
+    compiler::TNode<BoolT> tmp19;
+    compiler::TNode<BoolT> tmp20;
+    ca_.Bind(&block6, &tmp16, &tmp17, &tmp18, &tmp19, &tmp20);
+    ca_.Branch(tmp20, &block2, &block3, tmp16, tmp17, tmp18);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<Context> tmp21;
+    compiler::TNode<Uint32T> tmp22;
+    compiler::TNode<Uint32T> tmp23;
+    ca_.Bind(&block2, &tmp21, &tmp22, &tmp23);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 253);
+    compiler::TNode<IntPtrT> tmp24;
+    USE(tmp24);
+    tmp24 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, kZeroDigitBigInt_277(state_));
+    compiler::TNode<BigInt> tmp25;
+    USE(tmp25);
+    tmp25 = CodeStubAssembler(state_).AllocateBigInt(compiler::TNode<IntPtrT>{tmp24});
+    compiler::TNode<BigInt> tmp26;
+    USE(tmp26);
+    tmp26 = Convert8ATBigInt13MutableBigInt_256(state_, compiler::TNode<BigInt>{tmp25});
+    ca_.Goto(&block1, tmp21, tmp22, tmp23, tmp26);
+  }
+
+  if (block3.is_used()) {
+    compiler::TNode<Context> tmp27;
+    compiler::TNode<Uint32T> tmp28;
     compiler::TNode<Uint32T> tmp29;
-    compiler::TNode<Int32T> tmp30;
-    compiler::TNode<Int32T> tmp31;
-    ca_.Bind(&block5, &tmp25, &tmp26, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 269);
-    if ((p_signed)) {
-      ca_.Goto(&block7, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp31);
-    } else {
-      ca_.Goto(&block8, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp31);
-    }
+    ca_.Bind(&block3, &tmp27, &tmp28, &tmp29);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 257);
+    compiler::TNode<BoolT> tmp30;
+    USE(tmp30);
+    tmp30 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, false);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 258);
+    compiler::TNode<Uint32T> tmp31;
+    USE(tmp31);
+    tmp31 = kPositiveSign_257(state_);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 262);
+    compiler::TNode<Int32T> tmp32;
+    USE(tmp32);
+    tmp32 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp28});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 263);
+    compiler::TNode<Int32T> tmp33;
+    USE(tmp33);
+    tmp33 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp29});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 268);
+    compiler::TNode<Uint32T> tmp34;
+    USE(tmp34);
+    tmp34 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
+    compiler::TNode<BoolT> tmp35;
+    USE(tmp35);
+    tmp35 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Uint32T>{tmp29}, compiler::TNode<Uint32T>{tmp34});
+    ca_.Branch(tmp35, &block7, &block8, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32, tmp33);
   }
 
   if (block7.is_used()) {
-    compiler::TNode<Context> tmp32;
-    compiler::TNode<Uint32T> tmp33;
-    compiler::TNode<Uint32T> tmp34;
-    compiler::TNode<BoolT> tmp35;
-    compiler::TNode<Uint32T> tmp36;
-    compiler::TNode<Int32T> tmp37;
-    compiler::TNode<Int32T> tmp38;
-    ca_.Bind(&block7, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 271);
-    compiler::TNode<Int32T> tmp39;
-    USE(tmp39);
-    tmp39 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
-    compiler::TNode<BoolT> tmp40;
-    USE(tmp40);
-    tmp40 = CodeStubAssembler(state_).Int32LessThan(compiler::TNode<Int32T>{tmp38}, compiler::TNode<Int32T>{tmp39});
-    ca_.Branch(tmp40, &block10, &block11, tmp32, tmp33, tmp34, tmp35, tmp36, tmp37, tmp38);
+    compiler::TNode<Context> tmp36;
+    compiler::TNode<Uint32T> tmp37;
+    compiler::TNode<Uint32T> tmp38;
+    compiler::TNode<BoolT> tmp39;
+    compiler::TNode<Uint32T> tmp40;
+    compiler::TNode<Int32T> tmp41;
+    compiler::TNode<Int32T> tmp42;
+    ca_.Bind(&block7, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 269);
+    if ((p_signed)) {
+      ca_.Goto(&block9, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp42);
+    } else {
+      ca_.Goto(&block10, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp42);
+    }
   }
 
-  if (block10.is_used()) {
-    compiler::TNode<Context> tmp41;
-    compiler::TNode<Uint32T> tmp42;
-    compiler::TNode<Uint32T> tmp43;
-    compiler::TNode<BoolT> tmp44;
+  if (block9.is_used()) {
+    compiler::TNode<Context> tmp43;
+    compiler::TNode<Uint32T> tmp44;
     compiler::TNode<Uint32T> tmp45;
-    compiler::TNode<Int32T> tmp46;
-    compiler::TNode<Int32T> tmp47;
-    ca_.Bind(&block10, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 272);
-    compiler::TNode<Uint32T> tmp48;
-    USE(tmp48);
-    tmp48 = kNegativeSign_229(state_);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 277);
+    compiler::TNode<BoolT> tmp46;
+    compiler::TNode<Uint32T> tmp47;
+    compiler::TNode<Int32T> tmp48;
     compiler::TNode<Int32T> tmp49;
-    USE(tmp49);
-    tmp49 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
+    ca_.Bind(&block9, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 271);
     compiler::TNode<Int32T> tmp50;
     USE(tmp50);
-    tmp50 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp49}, compiler::TNode<Int32T>{tmp47});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 278);
-    compiler::TNode<Int32T> tmp51;
+    tmp50 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
+    compiler::TNode<BoolT> tmp51;
     USE(tmp51);
-    tmp51 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
-    compiler::TNode<BoolT> tmp52;
-    USE(tmp52);
-    tmp52 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Int32T>{tmp46}, compiler::TNode<Int32T>{tmp51});
-    ca_.Branch(tmp52, &block13, &block14, tmp41, tmp42, tmp43, tmp44, tmp48, tmp46, tmp50);
+    tmp51 = CodeStubAssembler(state_).Int32LessThan(compiler::TNode<Int32T>{tmp49}, compiler::TNode<Int32T>{tmp50});
+    ca_.Branch(tmp51, &block12, &block13, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49);
   }
 
-  if (block13.is_used()) {
-    compiler::TNode<Context> tmp53;
+  if (block12.is_used()) {
+    compiler::TNode<Context> tmp52;
+    compiler::TNode<Uint32T> tmp53;
     compiler::TNode<Uint32T> tmp54;
-    compiler::TNode<Uint32T> tmp55;
-    compiler::TNode<BoolT> tmp56;
-    compiler::TNode<Uint32T> tmp57;
+    compiler::TNode<BoolT> tmp55;
+    compiler::TNode<Uint32T> tmp56;
+    compiler::TNode<Int32T> tmp57;
     compiler::TNode<Int32T> tmp58;
-    compiler::TNode<Int32T> tmp59;
-    ca_.Bind(&block13, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 279);
+    ca_.Bind(&block12, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 272);
+    compiler::TNode<Uint32T> tmp59;
+    USE(tmp59);
+    tmp59 = kNegativeSign_258(state_);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 277);
     compiler::TNode<Int32T> tmp60;
     USE(tmp60);
-    tmp60 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 1);
+    tmp60 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
     compiler::TNode<Int32T> tmp61;
     USE(tmp61);
-    tmp61 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp59}, compiler::TNode<Int32T>{tmp60});
+    tmp61 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp60}, compiler::TNode<Int32T>{tmp58});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 278);
-    ca_.Goto(&block14, tmp53, tmp54, tmp55, tmp56, tmp57, tmp58, tmp61);
-  }
-
-  if (block14.is_used()) {
-    compiler::TNode<Context> tmp62;
-    compiler::TNode<Uint32T> tmp63;
-    compiler::TNode<Uint32T> tmp64;
-    compiler::TNode<BoolT> tmp65;
-    compiler::TNode<Uint32T> tmp66;
-    compiler::TNode<Int32T> tmp67;
-    compiler::TNode<Int32T> tmp68;
-    ca_.Bind(&block14, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 281);
-    compiler::TNode<Int32T> tmp69;
-    USE(tmp69);
-    tmp69 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
-    compiler::TNode<Int32T> tmp70;
-    USE(tmp70);
-    tmp70 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp69}, compiler::TNode<Int32T>{tmp67});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 284);
-    compiler::TNode<Int32T> tmp71;
-    USE(tmp71);
-    tmp71 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
-    compiler::TNode<BoolT> tmp72;
-    USE(tmp72);
-    tmp72 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Int32T>{tmp68}, compiler::TNode<Int32T>{tmp71});
-    ca_.Branch(tmp72, &block15, &block16, tmp62, tmp63, tmp64, tmp65, tmp66, tmp70, tmp68);
+    compiler::TNode<Int32T> tmp62;
+    USE(tmp62);
+    tmp62 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
+    compiler::TNode<BoolT> tmp63;
+    USE(tmp63);
+    tmp63 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Int32T>{tmp57}, compiler::TNode<Int32T>{tmp62});
+    ca_.Branch(tmp63, &block15, &block16, tmp52, tmp53, tmp54, tmp55, tmp59, tmp57, tmp61);
   }
 
   if (block15.is_used()) {
+    compiler::TNode<Context> tmp64;
+    compiler::TNode<Uint32T> tmp65;
+    compiler::TNode<Uint32T> tmp66;
+    compiler::TNode<BoolT> tmp67;
+    compiler::TNode<Uint32T> tmp68;
+    compiler::TNode<Int32T> tmp69;
+    compiler::TNode<Int32T> tmp70;
+    ca_.Bind(&block15, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 279);
+    compiler::TNode<Int32T> tmp71;
+    USE(tmp71);
+    tmp71 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 1);
+    compiler::TNode<Int32T> tmp72;
+    USE(tmp72);
+    tmp72 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp70}, compiler::TNode<Int32T>{tmp71});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 278);
+    ca_.Goto(&block16, tmp64, tmp65, tmp66, tmp67, tmp68, tmp69, tmp72);
+  }
+
+  if (block16.is_used()) {
     compiler::TNode<Context> tmp73;
     compiler::TNode<Uint32T> tmp74;
     compiler::TNode<Uint32T> tmp75;
@@ -2214,170 +2246,171 @@ compiler::TNode<BigInt> MakeBigIntOn32Bit_252(compiler::CodeAssemblerState* stat
     compiler::TNode<Uint32T> tmp77;
     compiler::TNode<Int32T> tmp78;
     compiler::TNode<Int32T> tmp79;
-    ca_.Bind(&block15, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 285);
-    compiler::TNode<BoolT> tmp80;
+    ca_.Bind(&block16, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 281);
+    compiler::TNode<Int32T> tmp80;
     USE(tmp80);
-    tmp80 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, true);
+    tmp80 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
+    compiler::TNode<Int32T> tmp81;
+    USE(tmp81);
+    tmp81 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp80}, compiler::TNode<Int32T>{tmp78});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 284);
-    ca_.Goto(&block16, tmp73, tmp74, tmp75, tmp80, tmp77, tmp78, tmp79);
-  }
-
-  if (block16.is_used()) {
-    compiler::TNode<Context> tmp81;
-    compiler::TNode<Uint32T> tmp82;
-    compiler::TNode<Uint32T> tmp83;
-    compiler::TNode<BoolT> tmp84;
-    compiler::TNode<Uint32T> tmp85;
-    compiler::TNode<Int32T> tmp86;
-    compiler::TNode<Int32T> tmp87;
-    ca_.Bind(&block16, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 271);
-    ca_.Goto(&block12, tmp81, tmp82, tmp83, tmp84, tmp85, tmp86, tmp87);
-  }
-
-  if (block11.is_used()) {
-    compiler::TNode<Context> tmp88;
-    compiler::TNode<Uint32T> tmp89;
-    compiler::TNode<Uint32T> tmp90;
-    compiler::TNode<BoolT> tmp91;
-    compiler::TNode<Uint32T> tmp92;
-    compiler::TNode<Int32T> tmp93;
-    compiler::TNode<Int32T> tmp94;
-    ca_.Bind(&block11, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 290);
-    compiler::TNode<BoolT> tmp95;
-    USE(tmp95);
-    tmp95 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, true);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 271);
-    ca_.Goto(&block12, tmp88, tmp89, tmp90, tmp95, tmp92, tmp93, tmp94);
-  }
-
-  if (block12.is_used()) {
-    compiler::TNode<Context> tmp96;
-    compiler::TNode<Uint32T> tmp97;
-    compiler::TNode<Uint32T> tmp98;
-    compiler::TNode<BoolT> tmp99;
-    compiler::TNode<Uint32T> tmp100;
-    compiler::TNode<Int32T> tmp101;
-    compiler::TNode<Int32T> tmp102;
-    ca_.Bind(&block12, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 269);
-    ca_.Goto(&block9, tmp96, tmp97, tmp98, tmp99, tmp100, tmp101, tmp102);
-  }
-
-  if (block8.is_used()) {
-    compiler::TNode<Context> tmp103;
-    compiler::TNode<Uint32T> tmp104;
-    compiler::TNode<Uint32T> tmp105;
-    compiler::TNode<BoolT> tmp106;
-    compiler::TNode<Uint32T> tmp107;
-    compiler::TNode<Int32T> tmp108;
-    compiler::TNode<Int32T> tmp109;
-    ca_.Bind(&block8, &tmp103, &tmp104, &tmp105, &tmp106, &tmp107, &tmp108, &tmp109);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 296);
-    compiler::TNode<BoolT> tmp110;
-    USE(tmp110);
-    tmp110 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, true);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 269);
-    ca_.Goto(&block9, tmp103, tmp104, tmp105, tmp110, tmp107, tmp108, tmp109);
-  }
-
-  if (block9.is_used()) {
-    compiler::TNode<Context> tmp111;
-    compiler::TNode<Uint32T> tmp112;
-    compiler::TNode<Uint32T> tmp113;
-    compiler::TNode<BoolT> tmp114;
-    compiler::TNode<Uint32T> tmp115;
-    compiler::TNode<Int32T> tmp116;
-    compiler::TNode<Int32T> tmp117;
-    ca_.Bind(&block9, &tmp111, &tmp112, &tmp113, &tmp114, &tmp115, &tmp116, &tmp117);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 268);
-    ca_.Goto(&block6, tmp111, tmp112, tmp113, tmp114, tmp115, tmp116, tmp117);
-  }
-
-  if (block6.is_used()) {
-    compiler::TNode<Context> tmp118;
-    compiler::TNode<Uint32T> tmp119;
-    compiler::TNode<Uint32T> tmp120;
-    compiler::TNode<BoolT> tmp121;
-    compiler::TNode<Uint32T> tmp122;
-    compiler::TNode<Int32T> tmp123;
-    compiler::TNode<Int32T> tmp124;
-    ca_.Bind(&block6, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 301);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 302);
-    ca_.Branch(tmp121, &block17, &block18, tmp118, tmp119, tmp120, tmp121, tmp122, tmp123, tmp124, ca_.Uninitialized<BigInt>());
+    compiler::TNode<Int32T> tmp82;
+    USE(tmp82);
+    tmp82 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
+    compiler::TNode<BoolT> tmp83;
+    USE(tmp83);
+    tmp83 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Int32T>{tmp79}, compiler::TNode<Int32T>{tmp82});
+    ca_.Branch(tmp83, &block17, &block18, tmp73, tmp74, tmp75, tmp76, tmp77, tmp81, tmp79);
   }
 
   if (block17.is_used()) {
-    compiler::TNode<Context> tmp125;
-    compiler::TNode<Uint32T> tmp126;
-    compiler::TNode<Uint32T> tmp127;
-    compiler::TNode<BoolT> tmp128;
-    compiler::TNode<Uint32T> tmp129;
-    compiler::TNode<Int32T> tmp130;
-    compiler::TNode<Int32T> tmp131;
-    compiler::TNode<BigInt> tmp132;
-    ca_.Bind(&block17, &tmp125, &tmp126, &tmp127, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 303);
-    compiler::TNode<IntPtrT> tmp133;
-    USE(tmp133);
-    tmp133 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, kTwoDigitBigInt_250(state_));
-    compiler::TNode<BigInt> tmp134;
-    USE(tmp134);
-    tmp134 = AllocateEmptyBigInt_233(state_, compiler::TNode<Context>{tmp125}, compiler::TNode<Uint32T>{tmp129}, compiler::TNode<IntPtrT>{tmp133});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 302);
-    ca_.Goto(&block19, tmp125, tmp126, tmp127, tmp128, tmp129, tmp130, tmp131, tmp134);
+    compiler::TNode<Context> tmp84;
+    compiler::TNode<Uint32T> tmp85;
+    compiler::TNode<Uint32T> tmp86;
+    compiler::TNode<BoolT> tmp87;
+    compiler::TNode<Uint32T> tmp88;
+    compiler::TNode<Int32T> tmp89;
+    compiler::TNode<Int32T> tmp90;
+    ca_.Bind(&block17, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 285);
+    compiler::TNode<BoolT> tmp91;
+    USE(tmp91);
+    tmp91 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 284);
+    ca_.Goto(&block18, tmp84, tmp85, tmp86, tmp91, tmp88, tmp89, tmp90);
   }
 
   if (block18.is_used()) {
-    compiler::TNode<Context> tmp135;
-    compiler::TNode<Uint32T> tmp136;
-    compiler::TNode<Uint32T> tmp137;
-    compiler::TNode<BoolT> tmp138;
-    compiler::TNode<Uint32T> tmp139;
-    compiler::TNode<Int32T> tmp140;
-    compiler::TNode<Int32T> tmp141;
-    compiler::TNode<BigInt> tmp142;
-    ca_.Bind(&block18, &tmp135, &tmp136, &tmp137, &tmp138, &tmp139, &tmp140, &tmp141, &tmp142);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 305);
-    compiler::TNode<IntPtrT> tmp143;
-    USE(tmp143);
-    tmp143 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, kOneDigitBigInt_249(state_));
-    compiler::TNode<BigInt> tmp144;
-    USE(tmp144);
-    tmp144 = AllocateEmptyBigInt_233(state_, compiler::TNode<Context>{tmp135}, compiler::TNode<Uint32T>{tmp139}, compiler::TNode<IntPtrT>{tmp143});
+    compiler::TNode<Context> tmp92;
+    compiler::TNode<Uint32T> tmp93;
+    compiler::TNode<Uint32T> tmp94;
+    compiler::TNode<BoolT> tmp95;
+    compiler::TNode<Uint32T> tmp96;
+    compiler::TNode<Int32T> tmp97;
+    compiler::TNode<Int32T> tmp98;
+    ca_.Bind(&block18, &tmp92, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 271);
+    ca_.Goto(&block14, tmp92, tmp93, tmp94, tmp95, tmp96, tmp97, tmp98);
+  }
+
+  if (block13.is_used()) {
+    compiler::TNode<Context> tmp99;
+    compiler::TNode<Uint32T> tmp100;
+    compiler::TNode<Uint32T> tmp101;
+    compiler::TNode<BoolT> tmp102;
+    compiler::TNode<Uint32T> tmp103;
+    compiler::TNode<Int32T> tmp104;
+    compiler::TNode<Int32T> tmp105;
+    ca_.Bind(&block13, &tmp99, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 290);
+    compiler::TNode<BoolT> tmp106;
+    USE(tmp106);
+    tmp106 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 271);
+    ca_.Goto(&block14, tmp99, tmp100, tmp101, tmp106, tmp103, tmp104, tmp105);
+  }
+
+  if (block14.is_used()) {
+    compiler::TNode<Context> tmp107;
+    compiler::TNode<Uint32T> tmp108;
+    compiler::TNode<Uint32T> tmp109;
+    compiler::TNode<BoolT> tmp110;
+    compiler::TNode<Uint32T> tmp111;
+    compiler::TNode<Int32T> tmp112;
+    compiler::TNode<Int32T> tmp113;
+    ca_.Bind(&block14, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 269);
+    ca_.Goto(&block11, tmp107, tmp108, tmp109, tmp110, tmp111, tmp112, tmp113);
+  }
+
+  if (block10.is_used()) {
+    compiler::TNode<Context> tmp114;
+    compiler::TNode<Uint32T> tmp115;
+    compiler::TNode<Uint32T> tmp116;
+    compiler::TNode<BoolT> tmp117;
+    compiler::TNode<Uint32T> tmp118;
+    compiler::TNode<Int32T> tmp119;
+    compiler::TNode<Int32T> tmp120;
+    ca_.Bind(&block10, &tmp114, &tmp115, &tmp116, &tmp117, &tmp118, &tmp119, &tmp120);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 296);
+    compiler::TNode<BoolT> tmp121;
+    USE(tmp121);
+    tmp121 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 269);
+    ca_.Goto(&block11, tmp114, tmp115, tmp116, tmp121, tmp118, tmp119, tmp120);
+  }
+
+  if (block11.is_used()) {
+    compiler::TNode<Context> tmp122;
+    compiler::TNode<Uint32T> tmp123;
+    compiler::TNode<Uint32T> tmp124;
+    compiler::TNode<BoolT> tmp125;
+    compiler::TNode<Uint32T> tmp126;
+    compiler::TNode<Int32T> tmp127;
+    compiler::TNode<Int32T> tmp128;
+    ca_.Bind(&block11, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126, &tmp127, &tmp128);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 268);
+    ca_.Goto(&block8, tmp122, tmp123, tmp124, tmp125, tmp126, tmp127, tmp128);
+  }
+
+  if (block8.is_used()) {
+    compiler::TNode<Context> tmp129;
+    compiler::TNode<Uint32T> tmp130;
+    compiler::TNode<Uint32T> tmp131;
+    compiler::TNode<BoolT> tmp132;
+    compiler::TNode<Uint32T> tmp133;
+    compiler::TNode<Int32T> tmp134;
+    compiler::TNode<Int32T> tmp135;
+    ca_.Bind(&block8, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 301);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 302);
-    ca_.Goto(&block19, tmp135, tmp136, tmp137, tmp138, tmp139, tmp140, tmp141, tmp144);
+    ca_.Branch(tmp132, &block19, &block20, tmp129, tmp130, tmp131, tmp132, tmp133, tmp134, tmp135, ca_.Uninitialized<BigInt>());
   }
 
   if (block19.is_used()) {
-    compiler::TNode<Context> tmp145;
-    compiler::TNode<Uint32T> tmp146;
-    compiler::TNode<Uint32T> tmp147;
-    compiler::TNode<BoolT> tmp148;
-    compiler::TNode<Uint32T> tmp149;
-    compiler::TNode<Int32T> tmp150;
-    compiler::TNode<Int32T> tmp151;
-    compiler::TNode<BigInt> tmp152;
-    ca_.Bind(&block19, &tmp145, &tmp146, &tmp147, &tmp148, &tmp149, &tmp150, &tmp151, &tmp152);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 309);
-    compiler::TNode<IntPtrT> tmp153;
-    USE(tmp153);
-    tmp153 = Convert8ATintptr7ATint32_147(state_, compiler::TNode<Int32T>{tmp150});
-    compiler::TNode<UintPtrT> tmp154;
-    USE(tmp154);
-    tmp154 = CodeStubAssembler(state_).Unsigned(compiler::TNode<IntPtrT>{tmp153});
-    compiler::TNode<IntPtrT> tmp155;
-    USE(tmp155);
-    tmp155 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
-    CodeStubAssembler(state_).StoreBigIntDigit(compiler::TNode<BigInt>{tmp152}, compiler::TNode<IntPtrT>{tmp155}, compiler::TNode<UintPtrT>{tmp154});
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 310);
-    ca_.Branch(tmp148, &block20, &block21, tmp145, tmp146, tmp147, tmp148, tmp149, tmp150, tmp151, tmp152);
+    compiler::TNode<Context> tmp136;
+    compiler::TNode<Uint32T> tmp137;
+    compiler::TNode<Uint32T> tmp138;
+    compiler::TNode<BoolT> tmp139;
+    compiler::TNode<Uint32T> tmp140;
+    compiler::TNode<Int32T> tmp141;
+    compiler::TNode<Int32T> tmp142;
+    compiler::TNode<BigInt> tmp143;
+    ca_.Bind(&block19, &tmp136, &tmp137, &tmp138, &tmp139, &tmp140, &tmp141, &tmp142, &tmp143);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 303);
+    compiler::TNode<IntPtrT> tmp144;
+    USE(tmp144);
+    tmp144 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, kTwoDigitBigInt_279(state_));
+    compiler::TNode<BigInt> tmp145;
+    USE(tmp145);
+    tmp145 = AllocateEmptyBigInt_262(state_, compiler::TNode<Context>{tmp136}, compiler::TNode<Uint32T>{tmp140}, compiler::TNode<IntPtrT>{tmp144});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 302);
+    ca_.Goto(&block21, tmp136, tmp137, tmp138, tmp139, tmp140, tmp141, tmp142, tmp145);
   }
 
   if (block20.is_used()) {
+    compiler::TNode<Context> tmp146;
+    compiler::TNode<Uint32T> tmp147;
+    compiler::TNode<Uint32T> tmp148;
+    compiler::TNode<BoolT> tmp149;
+    compiler::TNode<Uint32T> tmp150;
+    compiler::TNode<Int32T> tmp151;
+    compiler::TNode<Int32T> tmp152;
+    compiler::TNode<BigInt> tmp153;
+    ca_.Bind(&block20, &tmp146, &tmp147, &tmp148, &tmp149, &tmp150, &tmp151, &tmp152, &tmp153);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 305);
+    compiler::TNode<IntPtrT> tmp154;
+    USE(tmp154);
+    tmp154 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, kOneDigitBigInt_278(state_));
+    compiler::TNode<BigInt> tmp155;
+    USE(tmp155);
+    tmp155 = AllocateEmptyBigInt_262(state_, compiler::TNode<Context>{tmp146}, compiler::TNode<Uint32T>{tmp150}, compiler::TNode<IntPtrT>{tmp154});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 302);
+    ca_.Goto(&block21, tmp146, tmp147, tmp148, tmp149, tmp150, tmp151, tmp152, tmp155);
+  }
+
+  if (block21.is_used()) {
     compiler::TNode<Context> tmp156;
     compiler::TNode<Uint32T> tmp157;
     compiler::TNode<Uint32T> tmp158;
@@ -2386,23 +2419,23 @@ compiler::TNode<BigInt> MakeBigIntOn32Bit_252(compiler::CodeAssemblerState* stat
     compiler::TNode<Int32T> tmp161;
     compiler::TNode<Int32T> tmp162;
     compiler::TNode<BigInt> tmp163;
-    ca_.Bind(&block20, &tmp156, &tmp157, &tmp158, &tmp159, &tmp160, &tmp161, &tmp162, &tmp163);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 311);
+    ca_.Bind(&block21, &tmp156, &tmp157, &tmp158, &tmp159, &tmp160, &tmp161, &tmp162, &tmp163);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 309);
     compiler::TNode<IntPtrT> tmp164;
     USE(tmp164);
-    tmp164 = Convert8ATintptr7ATint32_147(state_, compiler::TNode<Int32T>{tmp162});
+    tmp164 = Convert8ATintptr7ATint32_174(state_, compiler::TNode<Int32T>{tmp161});
     compiler::TNode<UintPtrT> tmp165;
     USE(tmp165);
     tmp165 = CodeStubAssembler(state_).Unsigned(compiler::TNode<IntPtrT>{tmp164});
     compiler::TNode<IntPtrT> tmp166;
     USE(tmp166);
-    tmp166 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp166 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     CodeStubAssembler(state_).StoreBigIntDigit(compiler::TNode<BigInt>{tmp163}, compiler::TNode<IntPtrT>{tmp166}, compiler::TNode<UintPtrT>{tmp165});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 310);
-    ca_.Goto(&block21, tmp156, tmp157, tmp158, tmp159, tmp160, tmp161, tmp162, tmp163);
+    ca_.Branch(tmp159, &block22, &block23, tmp156, tmp157, tmp158, tmp159, tmp160, tmp161, tmp162, tmp163);
   }
 
-  if (block21.is_used()) {
+  if (block22.is_used()) {
     compiler::TNode<Context> tmp167;
     compiler::TNode<Uint32T> tmp168;
     compiler::TNode<Uint32T> tmp169;
@@ -2411,33 +2444,58 @@ compiler::TNode<BigInt> MakeBigIntOn32Bit_252(compiler::CodeAssemblerState* stat
     compiler::TNode<Int32T> tmp172;
     compiler::TNode<Int32T> tmp173;
     compiler::TNode<BigInt> tmp174;
-    ca_.Bind(&block21, &tmp167, &tmp168, &tmp169, &tmp170, &tmp171, &tmp172, &tmp173, &tmp174);
-    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 313);
-    compiler::TNode<BigInt> tmp175;
+    ca_.Bind(&block22, &tmp167, &tmp168, &tmp169, &tmp170, &tmp171, &tmp172, &tmp173, &tmp174);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 311);
+    compiler::TNode<IntPtrT> tmp175;
     USE(tmp175);
-    tmp175 = Convert8ATBigInt13MutableBigInt_227(state_, compiler::TNode<BigInt>{tmp174});
-    ca_.Goto(&block1, tmp167, tmp168, tmp169, tmp175);
+    tmp175 = Convert8ATintptr7ATint32_174(state_, compiler::TNode<Int32T>{tmp173});
+    compiler::TNode<UintPtrT> tmp176;
+    USE(tmp176);
+    tmp176 = CodeStubAssembler(state_).Unsigned(compiler::TNode<IntPtrT>{tmp175});
+    compiler::TNode<IntPtrT> tmp177;
+    USE(tmp177);
+    tmp177 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
+    CodeStubAssembler(state_).StoreBigIntDigit(compiler::TNode<BigInt>{tmp174}, compiler::TNode<IntPtrT>{tmp177}, compiler::TNode<UintPtrT>{tmp176});
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 310);
+    ca_.Goto(&block23, tmp167, tmp168, tmp169, tmp170, tmp171, tmp172, tmp173, tmp174);
+  }
+
+  if (block23.is_used()) {
+    compiler::TNode<Context> tmp178;
+    compiler::TNode<Uint32T> tmp179;
+    compiler::TNode<Uint32T> tmp180;
+    compiler::TNode<BoolT> tmp181;
+    compiler::TNode<Uint32T> tmp182;
+    compiler::TNode<Int32T> tmp183;
+    compiler::TNode<Int32T> tmp184;
+    compiler::TNode<BigInt> tmp185;
+    ca_.Bind(&block23, &tmp178, &tmp179, &tmp180, &tmp181, &tmp182, &tmp183, &tmp184, &tmp185);
+    ca_.SetSourcePosition("../../src/builtins/data-view.tq", 313);
+    compiler::TNode<BigInt> tmp186;
+    USE(tmp186);
+    tmp186 = Convert8ATBigInt13MutableBigInt_256(state_, compiler::TNode<BigInt>{tmp185});
+    ca_.Goto(&block1, tmp178, tmp179, tmp180, tmp186);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp176;
-    compiler::TNode<Uint32T> tmp177;
-    compiler::TNode<Uint32T> tmp178;
-    compiler::TNode<BigInt> tmp179;
-    ca_.Bind(&block1, &tmp176, &tmp177, &tmp178, &tmp179);
+    compiler::TNode<Context> tmp187;
+    compiler::TNode<Uint32T> tmp188;
+    compiler::TNode<Uint32T> tmp189;
+    compiler::TNode<BigInt> tmp190;
+    ca_.Bind(&block1, &tmp187, &tmp188, &tmp189, &tmp190);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 249);
-    ca_.Goto(&block22, tmp176, tmp177, tmp178, tmp179);
+    ca_.Goto(&block24, tmp187, tmp188, tmp189, tmp190);
   }
 
-    compiler::TNode<Context> tmp180;
-    compiler::TNode<Uint32T> tmp181;
-    compiler::TNode<Uint32T> tmp182;
-    compiler::TNode<BigInt> tmp183;
-    ca_.Bind(&block22, &tmp180, &tmp181, &tmp182, &tmp183);
-  return compiler::TNode<BigInt>{tmp183};
+    compiler::TNode<Context> tmp191;
+    compiler::TNode<Uint32T> tmp192;
+    compiler::TNode<Uint32T> tmp193;
+    compiler::TNode<BigInt> tmp194;
+    ca_.Bind(&block24, &tmp191, &tmp192, &tmp193, &tmp194);
+  return compiler::TNode<BigInt>{tmp194};
 }
 
-compiler::TNode<BigInt> MakeBigInt_253(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, bool p_signed) {
+compiler::TNode<BigInt> MakeBigInt_282(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2467,7 +2525,7 @@ compiler::TNode<BigInt> MakeBigInt_253(compiler::CodeAssemblerState* state_, com
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 321);
     compiler::TNode<BigInt> tmp6;
     USE(tmp6);
-    tmp6 = MakeBigIntOn64Bit_251(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Uint32T>{tmp4}, compiler::TNode<Uint32T>{tmp5}, p_signed);
+    tmp6 = MakeBigIntOn64Bit_280(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Uint32T>{tmp4}, compiler::TNode<Uint32T>{tmp5}, p_signed);
     ca_.Goto(&block1, tmp3, tmp4, tmp5, tmp6);
   }
 
@@ -2479,7 +2537,7 @@ compiler::TNode<BigInt> MakeBigInt_253(compiler::CodeAssemblerState* state_, com
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 323);
     compiler::TNode<BigInt> tmp10;
     USE(tmp10);
-    tmp10 = MakeBigIntOn32Bit_252(state_, compiler::TNode<Context>{tmp7}, compiler::TNode<Uint32T>{tmp8}, compiler::TNode<Uint32T>{tmp9}, p_signed);
+    tmp10 = MakeBigIntOn32Bit_281(state_, compiler::TNode<Context>{tmp7}, compiler::TNode<Uint32T>{tmp8}, compiler::TNode<Uint32T>{tmp9}, p_signed);
     ca_.Goto(&block1, tmp7, tmp8, tmp9, tmp10);
   }
 
@@ -2501,7 +2559,7 @@ compiler::TNode<BigInt> MakeBigInt_253(compiler::CodeAssemblerState* state_, com
   return compiler::TNode<BigInt>{tmp18};
 }
 
-compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
+compiler::TNode<BigInt> LoadDataViewBigInt_283(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, JSArrayBuffer, UintPtrT, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSArrayBuffer, UintPtrT, BoolT, RawPtrT, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2528,7 +2586,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 333);
     compiler::TNode<UintPtrT> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp7 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp8;
     USE(tmp8);
     tmp8 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp2}, compiler::TNode<UintPtrT>{tmp7});
@@ -2538,7 +2596,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 334);
     compiler::TNode<UintPtrT> tmp10;
     USE(tmp10);
-    tmp10 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 2);
+    tmp10 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 2);
     compiler::TNode<UintPtrT> tmp11;
     USE(tmp11);
     tmp11 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp2}, compiler::TNode<UintPtrT>{tmp10});
@@ -2548,7 +2606,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 335);
     compiler::TNode<UintPtrT> tmp13;
     USE(tmp13);
-    tmp13 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 3);
+    tmp13 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 3);
     compiler::TNode<UintPtrT> tmp14;
     USE(tmp14);
     tmp14 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp2}, compiler::TNode<UintPtrT>{tmp13});
@@ -2558,7 +2616,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 336);
     compiler::TNode<UintPtrT> tmp16;
     USE(tmp16);
-    tmp16 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 4);
+    tmp16 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 4);
     compiler::TNode<UintPtrT> tmp17;
     USE(tmp17);
     tmp17 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp2}, compiler::TNode<UintPtrT>{tmp16});
@@ -2568,7 +2626,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 337);
     compiler::TNode<UintPtrT> tmp19;
     USE(tmp19);
-    tmp19 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 5);
+    tmp19 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 5);
     compiler::TNode<UintPtrT> tmp20;
     USE(tmp20);
     tmp20 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp2}, compiler::TNode<UintPtrT>{tmp19});
@@ -2578,7 +2636,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 338);
     compiler::TNode<UintPtrT> tmp22;
     USE(tmp22);
-    tmp22 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 6);
+    tmp22 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 6);
     compiler::TNode<UintPtrT> tmp23;
     USE(tmp23);
     tmp23 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp2}, compiler::TNode<UintPtrT>{tmp22});
@@ -2588,7 +2646,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 339);
     compiler::TNode<UintPtrT> tmp25;
     USE(tmp25);
-    tmp25 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 7);
+    tmp25 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 7);
     compiler::TNode<UintPtrT> tmp26;
     USE(tmp26);
     tmp26 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp2}, compiler::TNode<UintPtrT>{tmp25});
@@ -2621,13 +2679,13 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 344);
     compiler::TNode<Uint32T> tmp43;
     USE(tmp43);
-    tmp43 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp43 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp44;
     USE(tmp44);
     tmp44 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp36}, compiler::TNode<Uint32T>{tmp43});
     compiler::TNode<Uint32T> tmp45;
     USE(tmp45);
-    tmp45 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp45 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp46;
     USE(tmp46);
     tmp46 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp35}, compiler::TNode<Uint32T>{tmp45});
@@ -2636,7 +2694,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     tmp47 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp44}, compiler::TNode<Uint32T>{tmp46});
     compiler::TNode<Uint32T> tmp48;
     USE(tmp48);
-    tmp48 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp48 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp49;
     USE(tmp49);
     tmp49 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp34}, compiler::TNode<Uint32T>{tmp48});
@@ -2649,13 +2707,13 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 345);
     compiler::TNode<Uint32T> tmp52;
     USE(tmp52);
-    tmp52 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp52 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp53;
     USE(tmp53);
     tmp53 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp40}, compiler::TNode<Uint32T>{tmp52});
     compiler::TNode<Uint32T> tmp54;
     USE(tmp54);
-    tmp54 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp54 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp55;
     USE(tmp55);
     tmp55 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp39}, compiler::TNode<Uint32T>{tmp54});
@@ -2664,7 +2722,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     tmp56 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp53}, compiler::TNode<Uint32T>{tmp55});
     compiler::TNode<Uint32T> tmp57;
     USE(tmp57);
-    tmp57 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp57 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp58;
     USE(tmp58);
     tmp58 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp38}, compiler::TNode<Uint32T>{tmp57});
@@ -2698,13 +2756,13 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 347);
     compiler::TNode<Uint32T> tmp76;
     USE(tmp76);
-    tmp76 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp76 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp77;
     USE(tmp77);
     tmp77 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp66}, compiler::TNode<Uint32T>{tmp76});
     compiler::TNode<Uint32T> tmp78;
     USE(tmp78);
-    tmp78 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp78 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp79;
     USE(tmp79);
     tmp79 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp67}, compiler::TNode<Uint32T>{tmp78});
@@ -2713,7 +2771,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     tmp80 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp77}, compiler::TNode<Uint32T>{tmp79});
     compiler::TNode<Uint32T> tmp81;
     USE(tmp81);
-    tmp81 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp81 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp82;
     USE(tmp82);
     tmp82 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp68}, compiler::TNode<Uint32T>{tmp81});
@@ -2726,13 +2784,13 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 348);
     compiler::TNode<Uint32T> tmp85;
     USE(tmp85);
-    tmp85 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp85 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp86;
     USE(tmp86);
     tmp86 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp70}, compiler::TNode<Uint32T>{tmp85});
     compiler::TNode<Uint32T> tmp87;
     USE(tmp87);
-    tmp87 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp87 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp88;
     USE(tmp88);
     tmp88 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp71}, compiler::TNode<Uint32T>{tmp87});
@@ -2741,7 +2799,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     tmp89 = CodeStubAssembler(state_).Word32Or(compiler::TNode<Uint32T>{tmp86}, compiler::TNode<Uint32T>{tmp88});
     compiler::TNode<Uint32T> tmp90;
     USE(tmp90);
-    tmp90 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp90 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp91;
     USE(tmp91);
     tmp91 = CodeStubAssembler(state_).Word32Shl(compiler::TNode<Uint32T>{tmp72}, compiler::TNode<Uint32T>{tmp90});
@@ -2775,7 +2833,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 351);
     compiler::TNode<BigInt> tmp109;
     USE(tmp109);
-    tmp109 = MakeBigInt_253(state_, compiler::TNode<Context>{tmp94}, compiler::TNode<Uint32T>{tmp107}, compiler::TNode<Uint32T>{tmp108}, p_signed);
+    tmp109 = MakeBigInt_282(state_, compiler::TNode<Context>{tmp94}, compiler::TNode<Uint32T>{tmp107}, compiler::TNode<Uint32T>{tmp108}, p_signed);
     ca_.Goto(&block1, tmp94, tmp95, tmp96, tmp97, tmp109);
   }
 
@@ -2799,7 +2857,7 @@ compiler::TNode<BigInt> LoadDataViewBigInt_254(compiler::CodeAssemblerState* sta
   return compiler::TNode<BigInt>{tmp119};
 }
 
-compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, compiler::TNode<Object> p_offset, compiler::TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
+compiler::TNode<Numeric> DataViewGet_284(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, compiler::TNode<Object> p_offset, compiler::TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSDataView, Number, Object, Context> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2843,17 +2901,17 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 363);
     compiler::TNode<String> tmp4;
     USE(tmp4);
-    tmp4 = MakeDataViewGetterNameString_240(state_, p_kind);
+    tmp4 = MakeDataViewGetterNameString_269(state_, p_kind);
     compiler::TNode<JSDataView> tmp5;
     USE(tmp5);
-    tmp5 = ValidateDataView_243(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, compiler::TNode<String>{tmp4});
+    tmp5 = ValidateDataView_272(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, compiler::TNode<String>{tmp4});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 362);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 365);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 367);
     compiler::TNode<Number> tmp6;
     USE(tmp6);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp6 = ToIndex_215(state_, compiler::TNode<Object>{tmp2}, compiler::TNode<Context>{tmp0}, &label0);
+    tmp6 = ToIndex_243(state_, compiler::TNode<Object>{tmp2}, compiler::TNode<Context>{tmp0}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp5, ca_.Uninitialized<Number>(), tmp2, tmp0, tmp6);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -2912,7 +2970,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 373);
     compiler::TNode<BoolT> tmp36;
     USE(tmp36);
-    tmp36 = ToBoolean_213(state_, compiler::TNode<Object>{tmp33});
+    tmp36 = ToBoolean_240(state_, compiler::TNode<Object>{tmp33});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 374);
     compiler::TNode<IntPtrT> tmp37 = ca_.IntPtrConstant(JSArrayBufferView::kBufferOffset);
     USE(tmp37);
@@ -2937,7 +2995,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 377);
     compiler::TNode<String> tmp48;
     USE(tmp48);
-    tmp48 = MakeDataViewGetterNameString_240(state_, p_kind);
+    tmp48 = MakeDataViewGetterNameString_269(state_, p_kind);
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp40}, MessageTemplate::kDetachedOperation, compiler::TNode<Object>{tmp48});
   }
 
@@ -2954,11 +3012,11 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 380);
     compiler::TNode<Float64T> tmp57;
     USE(tmp57);
-    tmp57 = Convert9ATfloat6420UT5ATSmi10HeapNumber_167(state_, compiler::TNode<Number>{tmp54});
+    tmp57 = Convert9ATfloat6420UT5ATSmi10HeapNumber_194(state_, compiler::TNode<Number>{tmp54});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 381);
     compiler::TNode<UintPtrT> tmp58;
     USE(tmp58);
-    tmp58 = Convert9ATuintptr9ATfloat64_175(state_, compiler::TNode<Float64T>{tmp57});
+    tmp58 = Convert9ATuintptr9ATfloat64_202(state_, compiler::TNode<Float64T>{tmp57});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 383);
     compiler::TNode<IntPtrT> tmp59 = ca_.IntPtrConstant(JSArrayBufferView::kByteOffsetOffset);
     USE(tmp59);
@@ -2969,11 +3027,11 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     compiler::TNode<UintPtrT>tmp62 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp53, tmp61});
     compiler::TNode<Float64T> tmp63;
     USE(tmp63);
-    tmp63 = Convert9ATfloat649ATuintptr_173(state_, compiler::TNode<UintPtrT>{tmp62});
+    tmp63 = Convert9ATfloat649ATuintptr_200(state_, compiler::TNode<UintPtrT>{tmp62});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 385);
     compiler::TNode<Float64T> tmp64;
     USE(tmp64);
-    tmp64 = FromConstexpr9ATfloat6417ATconstexpr_int31_137(state_, (DataViewBuiltinsAssembler(state_).DataViewElementSize(p_kind)));
+    tmp64 = FromConstexpr9ATfloat6417ATconstexpr_int31_163(state_, (DataViewBuiltinsAssembler(state_).DataViewElementSize(p_kind)));
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 387);
     compiler::TNode<Float64T> tmp65;
     USE(tmp65);
@@ -3049,7 +3107,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 394);
     compiler::TNode<Smi> tmp108;
     USE(tmp108);
-    tmp108 = LoadDataView8_244(state_, compiler::TNode<JSArrayBuffer>{tmp101}, compiler::TNode<UintPtrT>{tmp107}, false);
+    tmp108 = LoadDataView8_273(state_, compiler::TNode<JSArrayBuffer>{tmp101}, compiler::TNode<UintPtrT>{tmp107}, false);
     ca_.Goto(&block1, tmp94, tmp95, tmp96, tmp97, tmp108);
   }
 
@@ -3096,7 +3154,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 396);
     compiler::TNode<Smi> tmp137;
     USE(tmp137);
-    tmp137 = LoadDataView8_244(state_, compiler::TNode<JSArrayBuffer>{tmp130}, compiler::TNode<UintPtrT>{tmp136}, true);
+    tmp137 = LoadDataView8_273(state_, compiler::TNode<JSArrayBuffer>{tmp130}, compiler::TNode<UintPtrT>{tmp136}, true);
     ca_.Goto(&block1, tmp123, tmp124, tmp125, tmp126, tmp137);
   }
 
@@ -3143,7 +3201,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 398);
     compiler::TNode<Number> tmp166;
     USE(tmp166);
-    tmp166 = LoadDataView16_245(state_, compiler::TNode<JSArrayBuffer>{tmp159}, compiler::TNode<UintPtrT>{tmp165}, compiler::TNode<BoolT>{tmp158}, false);
+    tmp166 = LoadDataView16_274(state_, compiler::TNode<JSArrayBuffer>{tmp159}, compiler::TNode<UintPtrT>{tmp165}, compiler::TNode<BoolT>{tmp158}, false);
     ca_.Goto(&block1, tmp152, tmp153, tmp154, tmp155, tmp166);
   }
 
@@ -3190,7 +3248,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 400);
     compiler::TNode<Number> tmp195;
     USE(tmp195);
-    tmp195 = LoadDataView16_245(state_, compiler::TNode<JSArrayBuffer>{tmp188}, compiler::TNode<UintPtrT>{tmp194}, compiler::TNode<BoolT>{tmp187}, true);
+    tmp195 = LoadDataView16_274(state_, compiler::TNode<JSArrayBuffer>{tmp188}, compiler::TNode<UintPtrT>{tmp194}, compiler::TNode<BoolT>{tmp187}, true);
     ca_.Goto(&block1, tmp181, tmp182, tmp183, tmp184, tmp195);
   }
 
@@ -3237,7 +3295,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 402);
     compiler::TNode<Number> tmp224;
     USE(tmp224);
-    tmp224 = LoadDataView32_246(state_, compiler::TNode<JSArrayBuffer>{tmp217}, compiler::TNode<UintPtrT>{tmp223}, compiler::TNode<BoolT>{tmp216}, p_kind);
+    tmp224 = LoadDataView32_275(state_, compiler::TNode<JSArrayBuffer>{tmp217}, compiler::TNode<UintPtrT>{tmp223}, compiler::TNode<BoolT>{tmp216}, p_kind);
     ca_.Goto(&block1, tmp210, tmp211, tmp212, tmp213, tmp224);
   }
 
@@ -3284,7 +3342,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 404);
     compiler::TNode<Number> tmp253;
     USE(tmp253);
-    tmp253 = LoadDataView32_246(state_, compiler::TNode<JSArrayBuffer>{tmp246}, compiler::TNode<UintPtrT>{tmp252}, compiler::TNode<BoolT>{tmp245}, p_kind);
+    tmp253 = LoadDataView32_275(state_, compiler::TNode<JSArrayBuffer>{tmp246}, compiler::TNode<UintPtrT>{tmp252}, compiler::TNode<BoolT>{tmp245}, p_kind);
     ca_.Goto(&block1, tmp239, tmp240, tmp241, tmp242, tmp253);
   }
 
@@ -3331,7 +3389,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 406);
     compiler::TNode<Number> tmp282;
     USE(tmp282);
-    tmp282 = LoadDataView32_246(state_, compiler::TNode<JSArrayBuffer>{tmp275}, compiler::TNode<UintPtrT>{tmp281}, compiler::TNode<BoolT>{tmp274}, p_kind);
+    tmp282 = LoadDataView32_275(state_, compiler::TNode<JSArrayBuffer>{tmp275}, compiler::TNode<UintPtrT>{tmp281}, compiler::TNode<BoolT>{tmp274}, p_kind);
     ca_.Goto(&block1, tmp268, tmp269, tmp270, tmp271, tmp282);
   }
 
@@ -3378,7 +3436,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 408);
     compiler::TNode<Number> tmp311;
     USE(tmp311);
-    tmp311 = LoadDataViewFloat64_247(state_, compiler::TNode<JSArrayBuffer>{tmp304}, compiler::TNode<UintPtrT>{tmp310}, compiler::TNode<BoolT>{tmp303});
+    tmp311 = LoadDataViewFloat64_276(state_, compiler::TNode<JSArrayBuffer>{tmp304}, compiler::TNode<UintPtrT>{tmp310}, compiler::TNode<BoolT>{tmp303});
     ca_.Goto(&block1, tmp297, tmp298, tmp299, tmp300, tmp311);
   }
 
@@ -3425,7 +3483,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 410);
     compiler::TNode<BigInt> tmp340;
     USE(tmp340);
-    tmp340 = LoadDataViewBigInt_254(state_, compiler::TNode<Context>{tmp326}, compiler::TNode<JSArrayBuffer>{tmp333}, compiler::TNode<UintPtrT>{tmp339}, compiler::TNode<BoolT>{tmp332}, false);
+    tmp340 = LoadDataViewBigInt_283(state_, compiler::TNode<Context>{tmp326}, compiler::TNode<JSArrayBuffer>{tmp333}, compiler::TNode<UintPtrT>{tmp339}, compiler::TNode<BoolT>{tmp332}, false);
     ca_.Goto(&block1, tmp326, tmp327, tmp328, tmp329, tmp340);
   }
 
@@ -3472,7 +3530,7 @@ compiler::TNode<Numeric> DataViewGet_255(compiler::CodeAssemblerState* state_, c
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 412);
     compiler::TNode<BigInt> tmp369;
     USE(tmp369);
-    tmp369 = LoadDataViewBigInt_254(state_, compiler::TNode<Context>{tmp355}, compiler::TNode<JSArrayBuffer>{tmp362}, compiler::TNode<UintPtrT>{tmp368}, compiler::TNode<BoolT>{tmp361}, true);
+    tmp369 = LoadDataViewBigInt_283(state_, compiler::TNode<Context>{tmp355}, compiler::TNode<JSArrayBuffer>{tmp362}, compiler::TNode<UintPtrT>{tmp368}, compiler::TNode<BoolT>{tmp361}, true);
     ca_.Goto(&block1, tmp355, tmp356, tmp357, tmp358, tmp369);
   }
 
@@ -3544,7 +3602,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 420);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -3560,7 +3618,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -3576,7 +3634,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -3602,10 +3660,10 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 421);
     compiler::TNode<Oddball> tmp32;
     USE(tmp32);
-    tmp32 = Undefined_65(state_);
+    tmp32 = Undefined_64(state_);
     compiler::TNode<Numeric> tmp33;
     USE(tmp33);
-    tmp33 = DataViewGet_255(state_, compiler::TNode<Context>{tmp29}, compiler::TNode<Object>{tmp30}, compiler::TNode<Object>{tmp31}, compiler::TNode<Object>{tmp32}, UINT8_ELEMENTS);
+    tmp33 = DataViewGet_284(state_, compiler::TNode<Context>{tmp29}, compiler::TNode<Object>{tmp30}, compiler::TNode<Object>{tmp31}, compiler::TNode<Object>{tmp32}, UINT8_ELEMENTS);
     arguments.PopAndReturn(tmp33);
   }
 }
@@ -3638,7 +3696,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 426);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -3654,7 +3712,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -3670,7 +3728,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -3696,10 +3754,10 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 427);
     compiler::TNode<Oddball> tmp32;
     USE(tmp32);
-    tmp32 = Undefined_65(state_);
+    tmp32 = Undefined_64(state_);
     compiler::TNode<Numeric> tmp33;
     USE(tmp33);
-    tmp33 = DataViewGet_255(state_, compiler::TNode<Context>{tmp29}, compiler::TNode<Object>{tmp30}, compiler::TNode<Object>{tmp31}, compiler::TNode<Object>{tmp32}, INT8_ELEMENTS);
+    tmp33 = DataViewGet_284(state_, compiler::TNode<Context>{tmp29}, compiler::TNode<Object>{tmp30}, compiler::TNode<Object>{tmp31}, compiler::TNode<Object>{tmp32}, INT8_ELEMENTS);
     arguments.PopAndReturn(tmp33);
   }
 }
@@ -3736,7 +3794,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 432);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -3752,7 +3810,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -3768,7 +3826,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -3794,7 +3852,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 434);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -3811,7 +3869,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -3828,7 +3886,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -3858,7 +3916,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 435);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, UINT16_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, UINT16_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
@@ -3895,7 +3953,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 441);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -3911,7 +3969,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -3927,7 +3985,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -3953,7 +4011,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 443);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -3970,7 +4028,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -3987,7 +4045,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -4017,7 +4075,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 444);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, INT16_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, INT16_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
@@ -4054,7 +4112,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 450);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -4070,7 +4128,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -4086,7 +4144,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -4112,7 +4170,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 452);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -4129,7 +4187,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -4146,7 +4204,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -4176,7 +4234,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 453);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, UINT32_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, UINT32_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
@@ -4213,7 +4271,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 459);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -4229,7 +4287,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -4245,7 +4303,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -4271,7 +4329,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 461);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -4288,7 +4346,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -4305,7 +4363,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -4335,7 +4393,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 462);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, INT32_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, INT32_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
@@ -4372,7 +4430,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 468);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -4388,7 +4446,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -4404,7 +4462,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -4430,7 +4488,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 470);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -4447,7 +4505,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -4464,7 +4522,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -4494,7 +4552,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 471);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, FLOAT32_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, FLOAT32_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
@@ -4531,7 +4589,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 477);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -4547,7 +4605,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -4563,7 +4621,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -4589,7 +4647,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 479);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -4606,7 +4664,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -4623,7 +4681,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -4653,7 +4711,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 480);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, FLOAT64_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, FLOAT64_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
@@ -4690,7 +4748,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 486);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -4706,7 +4764,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -4722,7 +4780,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -4748,7 +4806,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 488);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -4765,7 +4823,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -4782,7 +4840,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -4812,7 +4870,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 489);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, BIGUINT64_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, BIGUINT64_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
@@ -4849,7 +4907,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 495);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -4865,7 +4923,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -4881,7 +4939,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -4907,7 +4965,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 497);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -4924,7 +4982,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -4941,7 +4999,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -4971,12 +5029,12 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 498);
     compiler::TNode<Numeric> tmp63;
     USE(tmp63);
-    tmp63 = DataViewGet_255(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, BIGINT64_ELEMENTS);
+    tmp63 = DataViewGet_284(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, BIGINT64_ELEMENTS);
     arguments.PopAndReturn(tmp63);
   }
 }
 
-void StoreDataView8_256(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_value) {
+void StoreDataView8_285(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -4994,7 +5052,7 @@ void StoreDataView8_256(compiler::CodeAssemblerState* state_, compiler::TNode<JS
     compiler::TNode<RawPtrT>tmp4 = CodeStubAssembler(state_).LoadReference<RawPtrT>(CodeStubAssembler::Reference{tmp0, tmp3});
     compiler::TNode<Uint32T> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp5 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp5});
@@ -5017,7 +5075,7 @@ void StoreDataView8_256(compiler::CodeAssemblerState* state_, compiler::TNode<JS
     ca_.Bind(&block2, &tmp10, &tmp11, &tmp12);
 }
 
-void StoreDataView16_257(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_value, compiler::TNode<BoolT> p_requestedLittleEndian) {
+void StoreDataView16_286(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_value, compiler::TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T, BoolT, RawPtrT, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -5040,20 +5098,20 @@ void StoreDataView16_257(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 518);
     compiler::TNode<Uint32T> tmp6;
     USE(tmp6);
-    tmp6 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp6 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp7;
     USE(tmp7);
     tmp7 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp6});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 519);
     compiler::TNode<Uint32T> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp9;
     USE(tmp9);
     tmp9 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp8});
     compiler::TNode<Uint32T> tmp10;
     USE(tmp10);
-    tmp10 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp10 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp11;
     USE(tmp11);
     tmp11 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp9}, compiler::TNode<Uint32T>{tmp10});
@@ -5075,7 +5133,7 @@ void StoreDataView16_257(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 523);
     compiler::TNode<UintPtrT> tmp19;
     USE(tmp19);
-    tmp19 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp19 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp20;
     USE(tmp20);
     tmp20 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp13}, compiler::TNode<UintPtrT>{tmp19});
@@ -5098,7 +5156,7 @@ void StoreDataView16_257(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 526);
     compiler::TNode<UintPtrT> tmp28;
     USE(tmp28);
-    tmp28 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp28 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp29;
     USE(tmp29);
     tmp29 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp22}, compiler::TNode<UintPtrT>{tmp28});
@@ -5137,7 +5195,7 @@ void StoreDataView16_257(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.Bind(&block5, &tmp41, &tmp42, &tmp43, &tmp44);
 }
 
-void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_value, compiler::TNode<BoolT> p_requestedLittleEndian) {
+void StoreDataView32_287(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_value, compiler::TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T, BoolT, RawPtrT, Uint32T, Uint32T, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -5160,40 +5218,40 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 535);
     compiler::TNode<Uint32T> tmp6;
     USE(tmp6);
-    tmp6 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp6 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp7;
     USE(tmp7);
     tmp7 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp6});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 536);
     compiler::TNode<Uint32T> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp9;
     USE(tmp9);
     tmp9 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp8});
     compiler::TNode<Uint32T> tmp10;
     USE(tmp10);
-    tmp10 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp10 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp11;
     USE(tmp11);
     tmp11 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp9}, compiler::TNode<Uint32T>{tmp10});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 537);
     compiler::TNode<Uint32T> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp12 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp12});
     compiler::TNode<Uint32T> tmp14;
     USE(tmp14);
-    tmp14 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp14 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp15;
     USE(tmp15);
     tmp15 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp13}, compiler::TNode<Uint32T>{tmp14});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 538);
     compiler::TNode<Uint32T> tmp16;
     USE(tmp16);
-    tmp16 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp16 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp17;
     USE(tmp17);
     tmp17 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp16});
@@ -5217,7 +5275,7 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 542);
     compiler::TNode<UintPtrT> tmp27;
     USE(tmp27);
-    tmp27 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp27 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp28;
     USE(tmp28);
     tmp28 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp19}, compiler::TNode<UintPtrT>{tmp27});
@@ -5225,7 +5283,7 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 543);
     compiler::TNode<UintPtrT> tmp29;
     USE(tmp29);
-    tmp29 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 2);
+    tmp29 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 2);
     compiler::TNode<UintPtrT> tmp30;
     USE(tmp30);
     tmp30 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp19}, compiler::TNode<UintPtrT>{tmp29});
@@ -5233,7 +5291,7 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 544);
     compiler::TNode<UintPtrT> tmp31;
     USE(tmp31);
-    tmp31 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 3);
+    tmp31 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 3);
     compiler::TNode<UintPtrT> tmp32;
     USE(tmp32);
     tmp32 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp19}, compiler::TNode<UintPtrT>{tmp31});
@@ -5258,7 +5316,7 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 547);
     compiler::TNode<UintPtrT> tmp42;
     USE(tmp42);
-    tmp42 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp42 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp43;
     USE(tmp43);
     tmp43 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp34}, compiler::TNode<UintPtrT>{tmp42});
@@ -5266,7 +5324,7 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 548);
     compiler::TNode<UintPtrT> tmp44;
     USE(tmp44);
-    tmp44 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 2);
+    tmp44 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 2);
     compiler::TNode<UintPtrT> tmp45;
     USE(tmp45);
     tmp45 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp34}, compiler::TNode<UintPtrT>{tmp44});
@@ -5274,7 +5332,7 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 549);
     compiler::TNode<UintPtrT> tmp46;
     USE(tmp46);
-    tmp46 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 3);
+    tmp46 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 3);
     compiler::TNode<UintPtrT> tmp47;
     USE(tmp47);
     tmp47 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp34}, compiler::TNode<UintPtrT>{tmp46});
@@ -5315,7 +5373,7 @@ void StoreDataView32_258(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.Bind(&block5, &tmp61, &tmp62, &tmp63, &tmp64);
 }
 
-void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, compiler::TNode<BoolT> p_requestedLittleEndian) {
+void StoreDataView64_288(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<Uint32T> p_lowWord, compiler::TNode<Uint32T> p_highWord, compiler::TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T, Uint32T, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, Uint32T, Uint32T, BoolT, RawPtrT, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -5339,80 +5397,80 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 558);
     compiler::TNode<Uint32T> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp7 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp8;
     USE(tmp8);
     tmp8 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp7});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 559);
     compiler::TNode<Uint32T> tmp9;
     USE(tmp9);
-    tmp9 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp9 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp10;
     USE(tmp10);
     tmp10 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp9});
     compiler::TNode<Uint32T> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp11 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp12;
     USE(tmp12);
     tmp12 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp10}, compiler::TNode<Uint32T>{tmp11});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 560);
     compiler::TNode<Uint32T> tmp13;
     USE(tmp13);
-    tmp13 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp13 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp14;
     USE(tmp14);
     tmp14 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp13});
     compiler::TNode<Uint32T> tmp15;
     USE(tmp15);
-    tmp15 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp15 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp16;
     USE(tmp16);
     tmp16 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp14}, compiler::TNode<Uint32T>{tmp15});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 561);
     compiler::TNode<Uint32T> tmp17;
     USE(tmp17);
-    tmp17 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp17 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp18;
     USE(tmp18);
     tmp18 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp2}, compiler::TNode<Uint32T>{tmp17});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 563);
     compiler::TNode<Uint32T> tmp19;
     USE(tmp19);
-    tmp19 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp19 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp20;
     USE(tmp20);
     tmp20 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp3}, compiler::TNode<Uint32T>{tmp19});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 564);
     compiler::TNode<Uint32T> tmp21;
     USE(tmp21);
-    tmp21 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 8);
+    tmp21 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 8);
     compiler::TNode<Uint32T> tmp22;
     USE(tmp22);
     tmp22 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp3}, compiler::TNode<Uint32T>{tmp21});
     compiler::TNode<Uint32T> tmp23;
     USE(tmp23);
-    tmp23 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp23 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp24;
     USE(tmp24);
     tmp24 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp22}, compiler::TNode<Uint32T>{tmp23});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 565);
     compiler::TNode<Uint32T> tmp25;
     USE(tmp25);
-    tmp25 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 16);
+    tmp25 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 16);
     compiler::TNode<Uint32T> tmp26;
     USE(tmp26);
     tmp26 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp3}, compiler::TNode<Uint32T>{tmp25});
     compiler::TNode<Uint32T> tmp27;
     USE(tmp27);
-    tmp27 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0xFF);
+    tmp27 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0xFF);
     compiler::TNode<Uint32T> tmp28;
     USE(tmp28);
     tmp28 = CodeStubAssembler(state_).Word32And(compiler::TNode<Uint32T>{tmp26}, compiler::TNode<Uint32T>{tmp27});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 566);
     compiler::TNode<Uint32T> tmp29;
     USE(tmp29);
-    tmp29 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 24);
+    tmp29 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 24);
     compiler::TNode<Uint32T> tmp30;
     USE(tmp30);
     tmp30 = CodeStubAssembler(state_).Word32Shr(compiler::TNode<Uint32T>{tmp3}, compiler::TNode<Uint32T>{tmp29});
@@ -5441,7 +5499,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 570);
     compiler::TNode<UintPtrT> tmp45;
     USE(tmp45);
-    tmp45 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp45 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp46;
     USE(tmp46);
     tmp46 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp32}, compiler::TNode<UintPtrT>{tmp45});
@@ -5449,7 +5507,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 571);
     compiler::TNode<UintPtrT> tmp47;
     USE(tmp47);
-    tmp47 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 2);
+    tmp47 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 2);
     compiler::TNode<UintPtrT> tmp48;
     USE(tmp48);
     tmp48 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp32}, compiler::TNode<UintPtrT>{tmp47});
@@ -5457,7 +5515,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 572);
     compiler::TNode<UintPtrT> tmp49;
     USE(tmp49);
-    tmp49 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 3);
+    tmp49 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 3);
     compiler::TNode<UintPtrT> tmp50;
     USE(tmp50);
     tmp50 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp32}, compiler::TNode<UintPtrT>{tmp49});
@@ -5465,7 +5523,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 573);
     compiler::TNode<UintPtrT> tmp51;
     USE(tmp51);
-    tmp51 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 4);
+    tmp51 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 4);
     compiler::TNode<UintPtrT> tmp52;
     USE(tmp52);
     tmp52 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp32}, compiler::TNode<UintPtrT>{tmp51});
@@ -5473,7 +5531,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 574);
     compiler::TNode<UintPtrT> tmp53;
     USE(tmp53);
-    tmp53 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 5);
+    tmp53 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 5);
     compiler::TNode<UintPtrT> tmp54;
     USE(tmp54);
     tmp54 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp32}, compiler::TNode<UintPtrT>{tmp53});
@@ -5481,7 +5539,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 575);
     compiler::TNode<UintPtrT> tmp55;
     USE(tmp55);
-    tmp55 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 6);
+    tmp55 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 6);
     compiler::TNode<UintPtrT> tmp56;
     USE(tmp56);
     tmp56 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp32}, compiler::TNode<UintPtrT>{tmp55});
@@ -5489,7 +5547,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 576);
     compiler::TNode<UintPtrT> tmp57;
     USE(tmp57);
-    tmp57 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 7);
+    tmp57 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 7);
     compiler::TNode<UintPtrT> tmp58;
     USE(tmp58);
     tmp58 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp32}, compiler::TNode<UintPtrT>{tmp57});
@@ -5519,7 +5577,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 579);
     compiler::TNode<UintPtrT> tmp73;
     USE(tmp73);
-    tmp73 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 1);
+    tmp73 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 1);
     compiler::TNode<UintPtrT> tmp74;
     USE(tmp74);
     tmp74 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp60}, compiler::TNode<UintPtrT>{tmp73});
@@ -5527,7 +5585,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 580);
     compiler::TNode<UintPtrT> tmp75;
     USE(tmp75);
-    tmp75 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 2);
+    tmp75 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 2);
     compiler::TNode<UintPtrT> tmp76;
     USE(tmp76);
     tmp76 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp60}, compiler::TNode<UintPtrT>{tmp75});
@@ -5535,7 +5593,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 581);
     compiler::TNode<UintPtrT> tmp77;
     USE(tmp77);
-    tmp77 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 3);
+    tmp77 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 3);
     compiler::TNode<UintPtrT> tmp78;
     USE(tmp78);
     tmp78 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp60}, compiler::TNode<UintPtrT>{tmp77});
@@ -5543,7 +5601,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 582);
     compiler::TNode<UintPtrT> tmp79;
     USE(tmp79);
-    tmp79 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 4);
+    tmp79 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 4);
     compiler::TNode<UintPtrT> tmp80;
     USE(tmp80);
     tmp80 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp60}, compiler::TNode<UintPtrT>{tmp79});
@@ -5551,7 +5609,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 583);
     compiler::TNode<UintPtrT> tmp81;
     USE(tmp81);
-    tmp81 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 5);
+    tmp81 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 5);
     compiler::TNode<UintPtrT> tmp82;
     USE(tmp82);
     tmp82 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp60}, compiler::TNode<UintPtrT>{tmp81});
@@ -5559,7 +5617,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 584);
     compiler::TNode<UintPtrT> tmp83;
     USE(tmp83);
-    tmp83 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 6);
+    tmp83 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 6);
     compiler::TNode<UintPtrT> tmp84;
     USE(tmp84);
     tmp84 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp60}, compiler::TNode<UintPtrT>{tmp83});
@@ -5567,7 +5625,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 585);
     compiler::TNode<UintPtrT> tmp85;
     USE(tmp85);
-    tmp85 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 7);
+    tmp85 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 7);
     compiler::TNode<UintPtrT> tmp86;
     USE(tmp86);
     tmp86 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp60}, compiler::TNode<UintPtrT>{tmp85});
@@ -5615,7 +5673,7 @@ void StoreDataView64_259(compiler::CodeAssemblerState* state_, compiler::TNode<J
     ca_.Bind(&block5, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110);
 }
 
-void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BigInt> p_bigIntValue, compiler::TNode<BoolT> p_requestedLittleEndian) {
+void StoreDataViewBigInt_289(compiler::CodeAssemblerState* state_, compiler::TNode<JSArrayBuffer> p_buffer, compiler::TNode<UintPtrT> p_offset, compiler::TNode<BigInt> p_bigIntValue, compiler::TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BigInt, BoolT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSArrayBuffer, UintPtrT, BigInt, BoolT, Uint32T, Uint32T, Uint32T, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -5650,15 +5708,15 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 605);
     compiler::TNode<Uint32T> tmp6;
     USE(tmp6);
-    tmp6 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp6 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 606);
     compiler::TNode<Uint32T> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp7 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 609);
     compiler::TNode<Uint32T> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp8 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
     compiler::TNode<BoolT> tmp9;
     USE(tmp9);
     tmp9 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Uint32T>{tmp4}, compiler::TNode<Uint32T>{tmp8});
@@ -5696,24 +5754,24 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 612);
     compiler::TNode<IntPtrT> tmp26;
     USE(tmp26);
-    tmp26 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp26 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<UintPtrT> tmp27;
     USE(tmp27);
     tmp27 = CodeStubAssembler(state_).LoadBigIntDigit(compiler::TNode<BigInt>{tmp20}, compiler::TNode<IntPtrT>{tmp26});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 613);
     compiler::TNode<Uint32T> tmp28;
     USE(tmp28);
-    tmp28 = Convert8ATuint329ATuintptr_158(state_, compiler::TNode<UintPtrT>{tmp27});
+    tmp28 = Convert8ATuint329ATuintptr_185(state_, compiler::TNode<UintPtrT>{tmp27});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 614);
     compiler::TNode<UintPtrT> tmp29;
     USE(tmp29);
-    tmp29 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 32);
+    tmp29 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 32);
     compiler::TNode<UintPtrT> tmp30;
     USE(tmp30);
     tmp30 = CodeStubAssembler(state_).WordShr(compiler::TNode<UintPtrT>{tmp27}, compiler::TNode<UintPtrT>{tmp29});
     compiler::TNode<Uint32T> tmp31;
     USE(tmp31);
-    tmp31 = Convert8ATuint329ATuintptr_158(state_, compiler::TNode<UintPtrT>{tmp30});
+    tmp31 = Convert8ATuint329ATuintptr_185(state_, compiler::TNode<UintPtrT>{tmp30});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 610);
     ca_.Goto(&block6, tmp18, tmp19, tmp20, tmp21, tmp22, tmp23, tmp28, tmp31);
   }
@@ -5731,17 +5789,17 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 616);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<UintPtrT> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).LoadBigIntDigit(compiler::TNode<BigInt>{tmp34}, compiler::TNode<IntPtrT>{tmp40});
     compiler::TNode<Uint32T> tmp42;
     USE(tmp42);
-    tmp42 = Convert8ATuint329ATuintptr_158(state_, compiler::TNode<UintPtrT>{tmp41});
+    tmp42 = Convert8ATuint329ATuintptr_185(state_, compiler::TNode<UintPtrT>{tmp41});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 617);
     compiler::TNode<Uint32T> tmp43;
     USE(tmp43);
-    tmp43 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 2);
+    tmp43 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 2);
     compiler::TNode<BoolT> tmp44;
     USE(tmp44);
     tmp44 = CodeStubAssembler(state_).Uint32GreaterThanOrEqual(compiler::TNode<Uint32T>{tmp36}, compiler::TNode<Uint32T>{tmp43});
@@ -5761,13 +5819,13 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 618);
     compiler::TNode<IntPtrT> tmp53;
     USE(tmp53);
-    tmp53 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp53 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<UintPtrT> tmp54;
     USE(tmp54);
     tmp54 = CodeStubAssembler(state_).LoadBigIntDigit(compiler::TNode<BigInt>{tmp47}, compiler::TNode<IntPtrT>{tmp53});
     compiler::TNode<Uint32T> tmp55;
     USE(tmp55);
-    tmp55 = Convert8ATuint329ATuintptr_158(state_, compiler::TNode<UintPtrT>{tmp54});
+    tmp55 = Convert8ATuint329ATuintptr_185(state_, compiler::TNode<UintPtrT>{tmp54});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 617);
     ca_.Goto(&block8, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51, tmp55);
   }
@@ -5813,7 +5871,7 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 623);
     compiler::TNode<Uint32T> tmp80;
     USE(tmp80);
-    tmp80 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp80 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
     compiler::TNode<BoolT> tmp81;
     USE(tmp81);
     tmp81 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Uint32T>{tmp77}, compiler::TNode<Uint32T>{tmp80});
@@ -5836,7 +5894,7 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     tmp90 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp89});
     compiler::TNode<Int32T> tmp91;
     USE(tmp91);
-    tmp91 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
+    tmp91 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
     compiler::TNode<Int32T> tmp92;
     USE(tmp92);
     tmp92 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp91}, compiler::TNode<Int32T>{tmp90});
@@ -5846,7 +5904,7 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 625);
     compiler::TNode<Uint32T> tmp94;
     USE(tmp94);
-    tmp94 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp94 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
     compiler::TNode<BoolT> tmp95;
     USE(tmp95);
     tmp95 = CodeStubAssembler(state_).Word32NotEqual(compiler::TNode<Uint32T>{tmp88}, compiler::TNode<Uint32T>{tmp94});
@@ -5869,7 +5927,7 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     tmp104 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp103});
     compiler::TNode<Int32T> tmp105;
     USE(tmp105);
-    tmp105 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 1);
+    tmp105 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 1);
     compiler::TNode<Int32T> tmp106;
     USE(tmp106);
     tmp106 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp104}, compiler::TNode<Int32T>{tmp105});
@@ -5896,7 +5954,7 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     tmp116 = CodeStubAssembler(state_).Signed(compiler::TNode<Uint32T>{tmp114});
     compiler::TNode<Int32T> tmp117;
     USE(tmp117);
-    tmp117 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
+    tmp117 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
     compiler::TNode<Int32T> tmp118;
     USE(tmp118);
     tmp118 = CodeStubAssembler(state_).Int32Sub(compiler::TNode<Int32T>{tmp117}, compiler::TNode<Int32T>{tmp116});
@@ -5918,7 +5976,7 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     compiler::TNode<Uint32T> tmp127;
     ca_.Bind(&block10, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126, &tmp127);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 631);
-    StoreDataView64_259(state_, compiler::TNode<JSArrayBuffer>{tmp120}, compiler::TNode<UintPtrT>{tmp121}, compiler::TNode<Uint32T>{tmp126}, compiler::TNode<Uint32T>{tmp127}, compiler::TNode<BoolT>{tmp123});
+    StoreDataView64_288(state_, compiler::TNode<JSArrayBuffer>{tmp120}, compiler::TNode<UintPtrT>{tmp121}, compiler::TNode<Uint32T>{tmp126}, compiler::TNode<Uint32T>{tmp127}, compiler::TNode<BoolT>{tmp123});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 599);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 597);
     ca_.Goto(&block1, tmp120, tmp121, tmp122, tmp123);
@@ -5940,41 +5998,41 @@ void StoreDataViewBigInt_260(compiler::CodeAssemblerState* state_, compiler::TNo
     ca_.Bind(&block13, &tmp132, &tmp133, &tmp134, &tmp135);
 }
 
-compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, compiler::TNode<Object> p_offset, compiler::TNode<Object> p_value, compiler::TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
+compiler::TNode<Object> DataViewSet_290(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_receiver, compiler::TNode<Object> p_offset, compiler::TNode<Object> p_value, compiler::TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, Object, Context> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, Object, Context, Number> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, BigInt> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, BigInt> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, BigInt> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, BigInt, Float64T, UintPtrT, UintPtrT, Float64T, Float64T> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, BigInt, Float64T, UintPtrT, UintPtrT, Float64T, Float64T> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, BigInt, Float64T, UintPtrT, UintPtrT, Float64T, Float64T> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer, Number, Float64T, UintPtrT, UintPtrT, Float64T, Float64T, UintPtrT, Float64T> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSDataView, Number, BoolT, JSArrayBuffer> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, Object> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, Object> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_receiver, p_offset, p_value, p_requestedLittleEndian);
 
   if (block0.is_used()) {
@@ -5987,17 +6045,17 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 638);
     compiler::TNode<String> tmp5;
     USE(tmp5);
-    tmp5 = MakeDataViewSetterNameString_241(state_, p_kind);
+    tmp5 = MakeDataViewSetterNameString_270(state_, p_kind);
     compiler::TNode<JSDataView> tmp6;
     USE(tmp6);
-    tmp6 = ValidateDataView_243(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, compiler::TNode<String>{tmp5});
+    tmp6 = ValidateDataView_272(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, compiler::TNode<String>{tmp5});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 637);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 640);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 642);
     compiler::TNode<Number> tmp7;
     USE(tmp7);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp7 = ToIndex_215(state_, compiler::TNode<Object>{tmp2}, compiler::TNode<Context>{tmp0}, &label0);
+    tmp7 = ToIndex_243(state_, compiler::TNode<Object>{tmp2}, compiler::TNode<Context>{tmp0}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp4, tmp6, ca_.Uninitialized<Number>(), tmp2, tmp0, tmp7);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -6060,20 +6118,20 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 648);
     compiler::TNode<BoolT> tmp41;
     USE(tmp41);
-    tmp41 = ToBoolean_213(state_, compiler::TNode<Object>{tmp38});
+    tmp41 = ToBoolean_240(state_, compiler::TNode<Object>{tmp38});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 649);
     compiler::TNode<IntPtrT> tmp42 = ca_.IntPtrConstant(JSArrayBufferView::kBufferOffset);
     USE(tmp42);
     compiler::TNode<JSArrayBuffer>tmp43 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp39, tmp42});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 653);
     if ((((CodeStubAssembler(state_).ElementsKindEqual(p_kind, BIGUINT64_ELEMENTS)) || (CodeStubAssembler(state_).ElementsKindEqual(p_kind, BIGINT64_ELEMENTS))))) {
-      ca_.Goto(&block7, tmp34, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp43);
+      ca_.Goto(&block6, tmp34, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp43);
     } else {
-      ca_.Goto(&block8, tmp34, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp43);
+      ca_.Goto(&block7, tmp34, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp41, tmp43);
     }
   }
 
-  if (block7.is_used()) {
+  if (block6.is_used()) {
     compiler::TNode<Context> tmp44;
     compiler::TNode<Object> tmp45;
     compiler::TNode<Object> tmp46;
@@ -6083,7 +6141,7 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Number> tmp50;
     compiler::TNode<BoolT> tmp51;
     compiler::TNode<JSArrayBuffer> tmp52;
-    ca_.Bind(&block7, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52);
+    ca_.Bind(&block6, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 654);
     compiler::TNode<BigInt> tmp53;
     USE(tmp53);
@@ -6092,10 +6150,10 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp54;
     USE(tmp54);
     tmp54 = CodeStubAssembler(state_).IsDetachedBuffer(compiler::TNode<JSArrayBuffer>{tmp52});
-    ca_.Branch(tmp54, &block10, &block11, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51, tmp52, tmp53);
+    ca_.Branch(tmp54, &block9, &block10, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51, tmp52, tmp53);
   }
 
-  if (block10.is_used()) {
+  if (block9.is_used()) {
     compiler::TNode<Context> tmp55;
     compiler::TNode<Object> tmp56;
     compiler::TNode<Object> tmp57;
@@ -6106,15 +6164,15 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp62;
     compiler::TNode<JSArrayBuffer> tmp63;
     compiler::TNode<BigInt> tmp64;
-    ca_.Bind(&block10, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64);
+    ca_.Bind(&block9, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 657);
     compiler::TNode<String> tmp65;
     USE(tmp65);
-    tmp65 = MakeDataViewSetterNameString_241(state_, p_kind);
+    tmp65 = MakeDataViewSetterNameString_270(state_, p_kind);
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp55}, MessageTemplate::kDetachedOperation, compiler::TNode<Object>{tmp65});
   }
 
-  if (block11.is_used()) {
+  if (block10.is_used()) {
     compiler::TNode<Context> tmp66;
     compiler::TNode<Object> tmp67;
     compiler::TNode<Object> tmp68;
@@ -6125,15 +6183,15 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp73;
     compiler::TNode<JSArrayBuffer> tmp74;
     compiler::TNode<BigInt> tmp75;
-    ca_.Bind(&block11, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75);
+    ca_.Bind(&block10, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 660);
     compiler::TNode<Float64T> tmp76;
     USE(tmp76);
-    tmp76 = Convert9ATfloat6420UT5ATSmi10HeapNumber_167(state_, compiler::TNode<Number>{tmp72});
+    tmp76 = Convert9ATfloat6420UT5ATSmi10HeapNumber_194(state_, compiler::TNode<Number>{tmp72});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 661);
     compiler::TNode<UintPtrT> tmp77;
     USE(tmp77);
-    tmp77 = Convert9ATuintptr9ATfloat64_175(state_, compiler::TNode<Float64T>{tmp76});
+    tmp77 = Convert9ATuintptr9ATfloat64_202(state_, compiler::TNode<Float64T>{tmp76});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 663);
     compiler::TNode<IntPtrT> tmp78 = ca_.IntPtrConstant(JSArrayBufferView::kByteOffsetOffset);
     USE(tmp78);
@@ -6144,11 +6202,11 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<UintPtrT>tmp81 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp71, tmp80});
     compiler::TNode<Float64T> tmp82;
     USE(tmp82);
-    tmp82 = Convert9ATfloat649ATuintptr_173(state_, compiler::TNode<UintPtrT>{tmp81});
+    tmp82 = Convert9ATfloat649ATuintptr_200(state_, compiler::TNode<UintPtrT>{tmp81});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 665);
     compiler::TNode<Float64T> tmp83;
     USE(tmp83);
-    tmp83 = FromConstexpr9ATfloat6417ATconstexpr_int31_137(state_, (DataViewBuiltinsAssembler(state_).DataViewElementSize(p_kind)));
+    tmp83 = FromConstexpr9ATfloat6417ATconstexpr_int31_163(state_, (DataViewBuiltinsAssembler(state_).DataViewElementSize(p_kind)));
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 667);
     compiler::TNode<Float64T> tmp84;
     USE(tmp84);
@@ -6156,10 +6214,10 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp85;
     USE(tmp85);
     tmp85 = CodeStubAssembler(state_).Float64GreaterThan(compiler::TNode<Float64T>{tmp84}, compiler::TNode<Float64T>{tmp82});
-    ca_.Branch(tmp85, &block12, &block13, tmp66, tmp67, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp79, tmp82, tmp83);
+    ca_.Branch(tmp85, &block11, &block12, tmp66, tmp67, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp79, tmp82, tmp83);
   }
 
-  if (block12.is_used()) {
+  if (block11.is_used()) {
     compiler::TNode<Context> tmp86;
     compiler::TNode<Object> tmp87;
     compiler::TNode<Object> tmp88;
@@ -6175,12 +6233,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<UintPtrT> tmp98;
     compiler::TNode<Float64T> tmp99;
     compiler::TNode<Float64T> tmp100;
-    ca_.Bind(&block12, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100);
+    ca_.Bind(&block11, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 668);
     CodeStubAssembler(state_).ThrowRangeError(compiler::TNode<Context>{tmp86}, MessageTemplate::kInvalidDataViewAccessorOffset);
   }
 
-  if (block13.is_used()) {
+  if (block12.is_used()) {
     compiler::TNode<Context> tmp101;
     compiler::TNode<Object> tmp102;
     compiler::TNode<Object> tmp103;
@@ -6196,18 +6254,18 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<UintPtrT> tmp113;
     compiler::TNode<Float64T> tmp114;
     compiler::TNode<Float64T> tmp115;
-    ca_.Bind(&block13, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113, &tmp114, &tmp115);
+    ca_.Bind(&block12, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113, &tmp114, &tmp115);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 671);
     compiler::TNode<UintPtrT> tmp116;
     USE(tmp116);
     tmp116 = CodeStubAssembler(state_).UintPtrAdd(compiler::TNode<UintPtrT>{tmp112}, compiler::TNode<UintPtrT>{tmp113});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 672);
-    StoreDataViewBigInt_260(state_, compiler::TNode<JSArrayBuffer>{tmp109}, compiler::TNode<UintPtrT>{tmp116}, compiler::TNode<BigInt>{tmp110}, compiler::TNode<BoolT>{tmp108});
+    StoreDataViewBigInt_289(state_, compiler::TNode<JSArrayBuffer>{tmp109}, compiler::TNode<UintPtrT>{tmp116}, compiler::TNode<BigInt>{tmp110}, compiler::TNode<BoolT>{tmp108});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 653);
-    ca_.Goto(&block9, tmp101, tmp102, tmp103, tmp104, tmp105, tmp106, tmp107, tmp108, tmp109);
+    ca_.Goto(&block8, tmp101, tmp102, tmp103, tmp104, tmp105, tmp106, tmp107, tmp108, tmp109);
   }
 
-  if (block8.is_used()) {
+  if (block7.is_used()) {
     compiler::TNode<Context> tmp117;
     compiler::TNode<Object> tmp118;
     compiler::TNode<Object> tmp119;
@@ -6217,7 +6275,7 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Number> tmp123;
     compiler::TNode<BoolT> tmp124;
     compiler::TNode<JSArrayBuffer> tmp125;
-    ca_.Bind(&block8, &tmp117, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125);
+    ca_.Bind(&block7, &tmp117, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 674);
     compiler::TNode<Number> tmp126;
     USE(tmp126);
@@ -6226,10 +6284,10 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp127;
     USE(tmp127);
     tmp127 = CodeStubAssembler(state_).IsDetachedBuffer(compiler::TNode<JSArrayBuffer>{tmp125});
-    ca_.Branch(tmp127, &block14, &block15, tmp117, tmp118, tmp119, tmp120, tmp121, tmp122, tmp123, tmp124, tmp125, tmp126);
+    ca_.Branch(tmp127, &block13, &block14, tmp117, tmp118, tmp119, tmp120, tmp121, tmp122, tmp123, tmp124, tmp125, tmp126);
   }
 
-  if (block14.is_used()) {
+  if (block13.is_used()) {
     compiler::TNode<Context> tmp128;
     compiler::TNode<Object> tmp129;
     compiler::TNode<Object> tmp130;
@@ -6240,15 +6298,15 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp135;
     compiler::TNode<JSArrayBuffer> tmp136;
     compiler::TNode<Number> tmp137;
-    ca_.Bind(&block14, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137);
+    ca_.Bind(&block13, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 677);
     compiler::TNode<String> tmp138;
     USE(tmp138);
-    tmp138 = MakeDataViewSetterNameString_241(state_, p_kind);
+    tmp138 = MakeDataViewSetterNameString_270(state_, p_kind);
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp128}, MessageTemplate::kDetachedOperation, compiler::TNode<Object>{tmp138});
   }
 
-  if (block15.is_used()) {
+  if (block14.is_used()) {
     compiler::TNode<Context> tmp139;
     compiler::TNode<Object> tmp140;
     compiler::TNode<Object> tmp141;
@@ -6259,15 +6317,15 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp146;
     compiler::TNode<JSArrayBuffer> tmp147;
     compiler::TNode<Number> tmp148;
-    ca_.Bind(&block15, &tmp139, &tmp140, &tmp141, &tmp142, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148);
+    ca_.Bind(&block14, &tmp139, &tmp140, &tmp141, &tmp142, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 680);
     compiler::TNode<Float64T> tmp149;
     USE(tmp149);
-    tmp149 = Convert9ATfloat6420UT5ATSmi10HeapNumber_167(state_, compiler::TNode<Number>{tmp145});
+    tmp149 = Convert9ATfloat6420UT5ATSmi10HeapNumber_194(state_, compiler::TNode<Number>{tmp145});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 681);
     compiler::TNode<UintPtrT> tmp150;
     USE(tmp150);
-    tmp150 = Convert9ATuintptr9ATfloat64_175(state_, compiler::TNode<Float64T>{tmp149});
+    tmp150 = Convert9ATuintptr9ATfloat64_202(state_, compiler::TNode<Float64T>{tmp149});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 683);
     compiler::TNode<IntPtrT> tmp151 = ca_.IntPtrConstant(JSArrayBufferView::kByteOffsetOffset);
     USE(tmp151);
@@ -6278,11 +6336,11 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<UintPtrT>tmp154 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp144, tmp153});
     compiler::TNode<Float64T> tmp155;
     USE(tmp155);
-    tmp155 = Convert9ATfloat649ATuintptr_173(state_, compiler::TNode<UintPtrT>{tmp154});
+    tmp155 = Convert9ATfloat649ATuintptr_200(state_, compiler::TNode<UintPtrT>{tmp154});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 685);
     compiler::TNode<Float64T> tmp156;
     USE(tmp156);
-    tmp156 = FromConstexpr9ATfloat6417ATconstexpr_int31_137(state_, (DataViewBuiltinsAssembler(state_).DataViewElementSize(p_kind)));
+    tmp156 = FromConstexpr9ATfloat6417ATconstexpr_int31_163(state_, (DataViewBuiltinsAssembler(state_).DataViewElementSize(p_kind)));
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 687);
     compiler::TNode<Float64T> tmp157;
     USE(tmp157);
@@ -6290,10 +6348,10 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<BoolT> tmp158;
     USE(tmp158);
     tmp158 = CodeStubAssembler(state_).Float64GreaterThan(compiler::TNode<Float64T>{tmp157}, compiler::TNode<Float64T>{tmp155});
-    ca_.Branch(tmp158, &block16, &block17, tmp139, tmp140, tmp141, tmp142, tmp143, tmp144, tmp145, tmp146, tmp147, tmp148, tmp149, tmp150, tmp152, tmp155, tmp156);
+    ca_.Branch(tmp158, &block15, &block16, tmp139, tmp140, tmp141, tmp142, tmp143, tmp144, tmp145, tmp146, tmp147, tmp148, tmp149, tmp150, tmp152, tmp155, tmp156);
   }
 
-  if (block16.is_used()) {
+  if (block15.is_used()) {
     compiler::TNode<Context> tmp159;
     compiler::TNode<Object> tmp160;
     compiler::TNode<Object> tmp161;
@@ -6309,12 +6367,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<UintPtrT> tmp171;
     compiler::TNode<Float64T> tmp172;
     compiler::TNode<Float64T> tmp173;
-    ca_.Bind(&block16, &tmp159, &tmp160, &tmp161, &tmp162, &tmp163, &tmp164, &tmp165, &tmp166, &tmp167, &tmp168, &tmp169, &tmp170, &tmp171, &tmp172, &tmp173);
+    ca_.Bind(&block15, &tmp159, &tmp160, &tmp161, &tmp162, &tmp163, &tmp164, &tmp165, &tmp166, &tmp167, &tmp168, &tmp169, &tmp170, &tmp171, &tmp172, &tmp173);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 688);
     CodeStubAssembler(state_).ThrowRangeError(compiler::TNode<Context>{tmp159}, MessageTemplate::kInvalidDataViewAccessorOffset);
   }
 
-  if (block17.is_used()) {
+  if (block16.is_used()) {
     compiler::TNode<Context> tmp174;
     compiler::TNode<Object> tmp175;
     compiler::TNode<Object> tmp176;
@@ -6330,7 +6388,7 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<UintPtrT> tmp186;
     compiler::TNode<Float64T> tmp187;
     compiler::TNode<Float64T> tmp188;
-    ca_.Bind(&block17, &tmp174, &tmp175, &tmp176, &tmp177, &tmp178, &tmp179, &tmp180, &tmp181, &tmp182, &tmp183, &tmp184, &tmp185, &tmp186, &tmp187, &tmp188);
+    ca_.Bind(&block16, &tmp174, &tmp175, &tmp176, &tmp177, &tmp178, &tmp179, &tmp180, &tmp181, &tmp182, &tmp183, &tmp184, &tmp185, &tmp186, &tmp187, &tmp188);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 691);
     compiler::TNode<UintPtrT> tmp189;
     USE(tmp189);
@@ -6341,13 +6399,13 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     tmp190 = CodeStubAssembler(state_).ChangeNumberToFloat64(compiler::TNode<Number>{tmp183});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 695);
     if ((((CodeStubAssembler(state_).ElementsKindEqual(p_kind, UINT8_ELEMENTS)) || (CodeStubAssembler(state_).ElementsKindEqual(p_kind, INT8_ELEMENTS))))) {
-      ca_.Goto(&block19, tmp174, tmp175, tmp176, tmp177, tmp178, tmp179, tmp180, tmp181, tmp182, tmp183, tmp184, tmp185, tmp186, tmp187, tmp188, tmp189, tmp190);
+      ca_.Goto(&block17, tmp174, tmp175, tmp176, tmp177, tmp178, tmp179, tmp180, tmp181, tmp182, tmp183, tmp184, tmp185, tmp186, tmp187, tmp188, tmp189, tmp190);
     } else {
-      ca_.Goto(&block20, tmp174, tmp175, tmp176, tmp177, tmp178, tmp179, tmp180, tmp181, tmp182, tmp183, tmp184, tmp185, tmp186, tmp187, tmp188, tmp189, tmp190);
+      ca_.Goto(&block18, tmp174, tmp175, tmp176, tmp177, tmp178, tmp179, tmp180, tmp181, tmp182, tmp183, tmp184, tmp185, tmp186, tmp187, tmp188, tmp189, tmp190);
     }
   }
 
-  if (block19.is_used()) {
+  if (block17.is_used()) {
     compiler::TNode<Context> tmp191;
     compiler::TNode<Object> tmp192;
     compiler::TNode<Object> tmp193;
@@ -6365,18 +6423,18 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp205;
     compiler::TNode<UintPtrT> tmp206;
     compiler::TNode<Float64T> tmp207;
-    ca_.Bind(&block19, &tmp191, &tmp192, &tmp193, &tmp194, &tmp195, &tmp196, &tmp197, &tmp198, &tmp199, &tmp200, &tmp201, &tmp202, &tmp203, &tmp204, &tmp205, &tmp206, &tmp207);
+    ca_.Bind(&block17, &tmp191, &tmp192, &tmp193, &tmp194, &tmp195, &tmp196, &tmp197, &tmp198, &tmp199, &tmp200, &tmp201, &tmp202, &tmp203, &tmp204, &tmp205, &tmp206, &tmp207);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 697);
     compiler::TNode<Uint32T> tmp208;
     USE(tmp208);
     tmp208 = CodeStubAssembler(state_).TruncateFloat64ToWord32(compiler::TNode<Float64T>{tmp207});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 696);
-    StoreDataView8_256(state_, compiler::TNode<JSArrayBuffer>{tmp199}, compiler::TNode<UintPtrT>{tmp206}, compiler::TNode<Uint32T>{tmp208});
+    StoreDataView8_285(state_, compiler::TNode<JSArrayBuffer>{tmp199}, compiler::TNode<UintPtrT>{tmp206}, compiler::TNode<Uint32T>{tmp208});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 695);
-    ca_.Goto(&block21, tmp191, tmp192, tmp193, tmp194, tmp195, tmp196, tmp197, tmp198, tmp199, tmp200, tmp201, tmp202, tmp203, tmp204, tmp205, tmp206, tmp207);
+    ca_.Goto(&block19, tmp191, tmp192, tmp193, tmp194, tmp195, tmp196, tmp197, tmp198, tmp199, tmp200, tmp201, tmp202, tmp203, tmp204, tmp205, tmp206, tmp207);
   }
 
-  if (block20.is_used()) {
+  if (block18.is_used()) {
     compiler::TNode<Context> tmp209;
     compiler::TNode<Object> tmp210;
     compiler::TNode<Object> tmp211;
@@ -6394,16 +6452,16 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp223;
     compiler::TNode<UintPtrT> tmp224;
     compiler::TNode<Float64T> tmp225;
-    ca_.Bind(&block20, &tmp209, &tmp210, &tmp211, &tmp212, &tmp213, &tmp214, &tmp215, &tmp216, &tmp217, &tmp218, &tmp219, &tmp220, &tmp221, &tmp222, &tmp223, &tmp224, &tmp225);
+    ca_.Bind(&block18, &tmp209, &tmp210, &tmp211, &tmp212, &tmp213, &tmp214, &tmp215, &tmp216, &tmp217, &tmp218, &tmp219, &tmp220, &tmp221, &tmp222, &tmp223, &tmp224, &tmp225);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 698);
     if ((((CodeStubAssembler(state_).ElementsKindEqual(p_kind, UINT16_ELEMENTS)) || (CodeStubAssembler(state_).ElementsKindEqual(p_kind, INT16_ELEMENTS))))) {
-      ca_.Goto(&block23, tmp209, tmp210, tmp211, tmp212, tmp213, tmp214, tmp215, tmp216, tmp217, tmp218, tmp219, tmp220, tmp221, tmp222, tmp223, tmp224, tmp225);
+      ca_.Goto(&block20, tmp209, tmp210, tmp211, tmp212, tmp213, tmp214, tmp215, tmp216, tmp217, tmp218, tmp219, tmp220, tmp221, tmp222, tmp223, tmp224, tmp225);
     } else {
-      ca_.Goto(&block24, tmp209, tmp210, tmp211, tmp212, tmp213, tmp214, tmp215, tmp216, tmp217, tmp218, tmp219, tmp220, tmp221, tmp222, tmp223, tmp224, tmp225);
+      ca_.Goto(&block21, tmp209, tmp210, tmp211, tmp212, tmp213, tmp214, tmp215, tmp216, tmp217, tmp218, tmp219, tmp220, tmp221, tmp222, tmp223, tmp224, tmp225);
     }
   }
 
-  if (block23.is_used()) {
+  if (block20.is_used()) {
     compiler::TNode<Context> tmp226;
     compiler::TNode<Object> tmp227;
     compiler::TNode<Object> tmp228;
@@ -6421,19 +6479,19 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp240;
     compiler::TNode<UintPtrT> tmp241;
     compiler::TNode<Float64T> tmp242;
-    ca_.Bind(&block23, &tmp226, &tmp227, &tmp228, &tmp229, &tmp230, &tmp231, &tmp232, &tmp233, &tmp234, &tmp235, &tmp236, &tmp237, &tmp238, &tmp239, &tmp240, &tmp241, &tmp242);
+    ca_.Bind(&block20, &tmp226, &tmp227, &tmp228, &tmp229, &tmp230, &tmp231, &tmp232, &tmp233, &tmp234, &tmp235, &tmp236, &tmp237, &tmp238, &tmp239, &tmp240, &tmp241, &tmp242);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 700);
     compiler::TNode<Uint32T> tmp243;
     USE(tmp243);
     tmp243 = CodeStubAssembler(state_).TruncateFloat64ToWord32(compiler::TNode<Float64T>{tmp242});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 701);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 699);
-    StoreDataView16_257(state_, compiler::TNode<JSArrayBuffer>{tmp234}, compiler::TNode<UintPtrT>{tmp241}, compiler::TNode<Uint32T>{tmp243}, compiler::TNode<BoolT>{tmp233});
+    StoreDataView16_286(state_, compiler::TNode<JSArrayBuffer>{tmp234}, compiler::TNode<UintPtrT>{tmp241}, compiler::TNode<Uint32T>{tmp243}, compiler::TNode<BoolT>{tmp233});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 698);
-    ca_.Goto(&block25, tmp226, tmp227, tmp228, tmp229, tmp230, tmp231, tmp232, tmp233, tmp234, tmp235, tmp236, tmp237, tmp238, tmp239, tmp240, tmp241, tmp242);
+    ca_.Goto(&block22, tmp226, tmp227, tmp228, tmp229, tmp230, tmp231, tmp232, tmp233, tmp234, tmp235, tmp236, tmp237, tmp238, tmp239, tmp240, tmp241, tmp242);
   }
 
-  if (block24.is_used()) {
+  if (block21.is_used()) {
     compiler::TNode<Context> tmp244;
     compiler::TNode<Object> tmp245;
     compiler::TNode<Object> tmp246;
@@ -6451,16 +6509,16 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp258;
     compiler::TNode<UintPtrT> tmp259;
     compiler::TNode<Float64T> tmp260;
-    ca_.Bind(&block24, &tmp244, &tmp245, &tmp246, &tmp247, &tmp248, &tmp249, &tmp250, &tmp251, &tmp252, &tmp253, &tmp254, &tmp255, &tmp256, &tmp257, &tmp258, &tmp259, &tmp260);
+    ca_.Bind(&block21, &tmp244, &tmp245, &tmp246, &tmp247, &tmp248, &tmp249, &tmp250, &tmp251, &tmp252, &tmp253, &tmp254, &tmp255, &tmp256, &tmp257, &tmp258, &tmp259, &tmp260);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 702);
     if ((((CodeStubAssembler(state_).ElementsKindEqual(p_kind, UINT32_ELEMENTS)) || (CodeStubAssembler(state_).ElementsKindEqual(p_kind, INT32_ELEMENTS))))) {
-      ca_.Goto(&block27, tmp244, tmp245, tmp246, tmp247, tmp248, tmp249, tmp250, tmp251, tmp252, tmp253, tmp254, tmp255, tmp256, tmp257, tmp258, tmp259, tmp260);
+      ca_.Goto(&block23, tmp244, tmp245, tmp246, tmp247, tmp248, tmp249, tmp250, tmp251, tmp252, tmp253, tmp254, tmp255, tmp256, tmp257, tmp258, tmp259, tmp260);
     } else {
-      ca_.Goto(&block28, tmp244, tmp245, tmp246, tmp247, tmp248, tmp249, tmp250, tmp251, tmp252, tmp253, tmp254, tmp255, tmp256, tmp257, tmp258, tmp259, tmp260);
+      ca_.Goto(&block24, tmp244, tmp245, tmp246, tmp247, tmp248, tmp249, tmp250, tmp251, tmp252, tmp253, tmp254, tmp255, tmp256, tmp257, tmp258, tmp259, tmp260);
     }
   }
 
-  if (block27.is_used()) {
+  if (block23.is_used()) {
     compiler::TNode<Context> tmp261;
     compiler::TNode<Object> tmp262;
     compiler::TNode<Object> tmp263;
@@ -6478,19 +6536,19 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp275;
     compiler::TNode<UintPtrT> tmp276;
     compiler::TNode<Float64T> tmp277;
-    ca_.Bind(&block27, &tmp261, &tmp262, &tmp263, &tmp264, &tmp265, &tmp266, &tmp267, &tmp268, &tmp269, &tmp270, &tmp271, &tmp272, &tmp273, &tmp274, &tmp275, &tmp276, &tmp277);
+    ca_.Bind(&block23, &tmp261, &tmp262, &tmp263, &tmp264, &tmp265, &tmp266, &tmp267, &tmp268, &tmp269, &tmp270, &tmp271, &tmp272, &tmp273, &tmp274, &tmp275, &tmp276, &tmp277);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 704);
     compiler::TNode<Uint32T> tmp278;
     USE(tmp278);
     tmp278 = CodeStubAssembler(state_).TruncateFloat64ToWord32(compiler::TNode<Float64T>{tmp277});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 705);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 703);
-    StoreDataView32_258(state_, compiler::TNode<JSArrayBuffer>{tmp269}, compiler::TNode<UintPtrT>{tmp276}, compiler::TNode<Uint32T>{tmp278}, compiler::TNode<BoolT>{tmp268});
+    StoreDataView32_287(state_, compiler::TNode<JSArrayBuffer>{tmp269}, compiler::TNode<UintPtrT>{tmp276}, compiler::TNode<Uint32T>{tmp278}, compiler::TNode<BoolT>{tmp268});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 702);
-    ca_.Goto(&block29, tmp261, tmp262, tmp263, tmp264, tmp265, tmp266, tmp267, tmp268, tmp269, tmp270, tmp271, tmp272, tmp273, tmp274, tmp275, tmp276, tmp277);
+    ca_.Goto(&block25, tmp261, tmp262, tmp263, tmp264, tmp265, tmp266, tmp267, tmp268, tmp269, tmp270, tmp271, tmp272, tmp273, tmp274, tmp275, tmp276, tmp277);
   }
 
-  if (block28.is_used()) {
+  if (block24.is_used()) {
     compiler::TNode<Context> tmp279;
     compiler::TNode<Object> tmp280;
     compiler::TNode<Object> tmp281;
@@ -6508,16 +6566,16 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp293;
     compiler::TNode<UintPtrT> tmp294;
     compiler::TNode<Float64T> tmp295;
-    ca_.Bind(&block28, &tmp279, &tmp280, &tmp281, &tmp282, &tmp283, &tmp284, &tmp285, &tmp286, &tmp287, &tmp288, &tmp289, &tmp290, &tmp291, &tmp292, &tmp293, &tmp294, &tmp295);
+    ca_.Bind(&block24, &tmp279, &tmp280, &tmp281, &tmp282, &tmp283, &tmp284, &tmp285, &tmp286, &tmp287, &tmp288, &tmp289, &tmp290, &tmp291, &tmp292, &tmp293, &tmp294, &tmp295);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 706);
     if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, FLOAT32_ELEMENTS)))) {
-      ca_.Goto(&block30, tmp279, tmp280, tmp281, tmp282, tmp283, tmp284, tmp285, tmp286, tmp287, tmp288, tmp289, tmp290, tmp291, tmp292, tmp293, tmp294, tmp295);
+      ca_.Goto(&block26, tmp279, tmp280, tmp281, tmp282, tmp283, tmp284, tmp285, tmp286, tmp287, tmp288, tmp289, tmp290, tmp291, tmp292, tmp293, tmp294, tmp295);
     } else {
-      ca_.Goto(&block31, tmp279, tmp280, tmp281, tmp282, tmp283, tmp284, tmp285, tmp286, tmp287, tmp288, tmp289, tmp290, tmp291, tmp292, tmp293, tmp294, tmp295);
+      ca_.Goto(&block27, tmp279, tmp280, tmp281, tmp282, tmp283, tmp284, tmp285, tmp286, tmp287, tmp288, tmp289, tmp290, tmp291, tmp292, tmp293, tmp294, tmp295);
     }
   }
 
-  if (block30.is_used()) {
+  if (block26.is_used()) {
     compiler::TNode<Context> tmp296;
     compiler::TNode<Object> tmp297;
     compiler::TNode<Object> tmp298;
@@ -6535,7 +6593,7 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp310;
     compiler::TNode<UintPtrT> tmp311;
     compiler::TNode<Float64T> tmp312;
-    ca_.Bind(&block30, &tmp296, &tmp297, &tmp298, &tmp299, &tmp300, &tmp301, &tmp302, &tmp303, &tmp304, &tmp305, &tmp306, &tmp307, &tmp308, &tmp309, &tmp310, &tmp311, &tmp312);
+    ca_.Bind(&block26, &tmp296, &tmp297, &tmp298, &tmp299, &tmp300, &tmp301, &tmp302, &tmp303, &tmp304, &tmp305, &tmp306, &tmp307, &tmp308, &tmp309, &tmp310, &tmp311, &tmp312);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 707);
     compiler::TNode<Float32T> tmp313;
     USE(tmp313);
@@ -6546,12 +6604,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     tmp314 = CodeStubAssembler(state_).BitcastFloat32ToInt32(compiler::TNode<Float32T>{tmp313});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 710);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 708);
-    StoreDataView32_258(state_, compiler::TNode<JSArrayBuffer>{tmp304}, compiler::TNode<UintPtrT>{tmp311}, compiler::TNode<Uint32T>{tmp314}, compiler::TNode<BoolT>{tmp303});
+    StoreDataView32_287(state_, compiler::TNode<JSArrayBuffer>{tmp304}, compiler::TNode<UintPtrT>{tmp311}, compiler::TNode<Uint32T>{tmp314}, compiler::TNode<BoolT>{tmp303});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 706);
-    ca_.Goto(&block32, tmp296, tmp297, tmp298, tmp299, tmp300, tmp301, tmp302, tmp303, tmp304, tmp305, tmp306, tmp307, tmp308, tmp309, tmp310, tmp311, tmp312);
+    ca_.Goto(&block28, tmp296, tmp297, tmp298, tmp299, tmp300, tmp301, tmp302, tmp303, tmp304, tmp305, tmp306, tmp307, tmp308, tmp309, tmp310, tmp311, tmp312);
   }
 
-  if (block31.is_used()) {
+  if (block27.is_used()) {
     compiler::TNode<Context> tmp315;
     compiler::TNode<Object> tmp316;
     compiler::TNode<Object> tmp317;
@@ -6569,16 +6627,16 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp329;
     compiler::TNode<UintPtrT> tmp330;
     compiler::TNode<Float64T> tmp331;
-    ca_.Bind(&block31, &tmp315, &tmp316, &tmp317, &tmp318, &tmp319, &tmp320, &tmp321, &tmp322, &tmp323, &tmp324, &tmp325, &tmp326, &tmp327, &tmp328, &tmp329, &tmp330, &tmp331);
+    ca_.Bind(&block27, &tmp315, &tmp316, &tmp317, &tmp318, &tmp319, &tmp320, &tmp321, &tmp322, &tmp323, &tmp324, &tmp325, &tmp326, &tmp327, &tmp328, &tmp329, &tmp330, &tmp331);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 711);
     if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, FLOAT64_ELEMENTS)))) {
-      ca_.Goto(&block33, tmp315, tmp316, tmp317, tmp318, tmp319, tmp320, tmp321, tmp322, tmp323, tmp324, tmp325, tmp326, tmp327, tmp328, tmp329, tmp330, tmp331);
+      ca_.Goto(&block29, tmp315, tmp316, tmp317, tmp318, tmp319, tmp320, tmp321, tmp322, tmp323, tmp324, tmp325, tmp326, tmp327, tmp328, tmp329, tmp330, tmp331);
     } else {
-      ca_.Goto(&block34, tmp315, tmp316, tmp317, tmp318, tmp319, tmp320, tmp321, tmp322, tmp323, tmp324, tmp325, tmp326, tmp327, tmp328, tmp329, tmp330, tmp331);
+      ca_.Goto(&block30, tmp315, tmp316, tmp317, tmp318, tmp319, tmp320, tmp321, tmp322, tmp323, tmp324, tmp325, tmp326, tmp327, tmp328, tmp329, tmp330, tmp331);
     }
   }
 
-  if (block33.is_used()) {
+  if (block29.is_used()) {
     compiler::TNode<Context> tmp332;
     compiler::TNode<Object> tmp333;
     compiler::TNode<Object> tmp334;
@@ -6596,7 +6654,7 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp346;
     compiler::TNode<UintPtrT> tmp347;
     compiler::TNode<Float64T> tmp348;
-    ca_.Bind(&block33, &tmp332, &tmp333, &tmp334, &tmp335, &tmp336, &tmp337, &tmp338, &tmp339, &tmp340, &tmp341, &tmp342, &tmp343, &tmp344, &tmp345, &tmp346, &tmp347, &tmp348);
+    ca_.Bind(&block29, &tmp332, &tmp333, &tmp334, &tmp335, &tmp336, &tmp337, &tmp338, &tmp339, &tmp340, &tmp341, &tmp342, &tmp343, &tmp344, &tmp345, &tmp346, &tmp347, &tmp348);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 712);
     compiler::TNode<Uint32T> tmp349;
     USE(tmp349);
@@ -6606,12 +6664,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     USE(tmp350);
     tmp350 = CodeStubAssembler(state_).Float64ExtractHighWord32(compiler::TNode<Float64T>{tmp348});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 714);
-    StoreDataView64_259(state_, compiler::TNode<JSArrayBuffer>{tmp340}, compiler::TNode<UintPtrT>{tmp347}, compiler::TNode<Uint32T>{tmp349}, compiler::TNode<Uint32T>{tmp350}, compiler::TNode<BoolT>{tmp339});
+    StoreDataView64_288(state_, compiler::TNode<JSArrayBuffer>{tmp340}, compiler::TNode<UintPtrT>{tmp347}, compiler::TNode<Uint32T>{tmp349}, compiler::TNode<Uint32T>{tmp350}, compiler::TNode<BoolT>{tmp339});
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 711);
-    ca_.Goto(&block35, tmp332, tmp333, tmp334, tmp335, tmp336, tmp337, tmp338, tmp339, tmp340, tmp341, tmp342, tmp343, tmp344, tmp345, tmp346, tmp347, tmp348);
+    ca_.Goto(&block31, tmp332, tmp333, tmp334, tmp335, tmp336, tmp337, tmp338, tmp339, tmp340, tmp341, tmp342, tmp343, tmp344, tmp345, tmp346, tmp347, tmp348);
   }
 
-  if (block34.is_used()) {
+  if (block30.is_used()) {
     compiler::TNode<Context> tmp351;
     compiler::TNode<Object> tmp352;
     compiler::TNode<Object> tmp353;
@@ -6629,11 +6687,11 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp365;
     compiler::TNode<UintPtrT> tmp366;
     compiler::TNode<Float64T> tmp367;
-    ca_.Bind(&block34, &tmp351, &tmp352, &tmp353, &tmp354, &tmp355, &tmp356, &tmp357, &tmp358, &tmp359, &tmp360, &tmp361, &tmp362, &tmp363, &tmp364, &tmp365, &tmp366, &tmp367);
-    ca_.Goto(&block35, tmp351, tmp352, tmp353, tmp354, tmp355, tmp356, tmp357, tmp358, tmp359, tmp360, tmp361, tmp362, tmp363, tmp364, tmp365, tmp366, tmp367);
+    ca_.Bind(&block30, &tmp351, &tmp352, &tmp353, &tmp354, &tmp355, &tmp356, &tmp357, &tmp358, &tmp359, &tmp360, &tmp361, &tmp362, &tmp363, &tmp364, &tmp365, &tmp366, &tmp367);
+    ca_.Goto(&block31, tmp351, tmp352, tmp353, tmp354, tmp355, tmp356, tmp357, tmp358, tmp359, tmp360, tmp361, tmp362, tmp363, tmp364, tmp365, tmp366, tmp367);
   }
 
-  if (block35.is_used()) {
+  if (block31.is_used()) {
     compiler::TNode<Context> tmp368;
     compiler::TNode<Object> tmp369;
     compiler::TNode<Object> tmp370;
@@ -6651,12 +6709,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp382;
     compiler::TNode<UintPtrT> tmp383;
     compiler::TNode<Float64T> tmp384;
-    ca_.Bind(&block35, &tmp368, &tmp369, &tmp370, &tmp371, &tmp372, &tmp373, &tmp374, &tmp375, &tmp376, &tmp377, &tmp378, &tmp379, &tmp380, &tmp381, &tmp382, &tmp383, &tmp384);
+    ca_.Bind(&block31, &tmp368, &tmp369, &tmp370, &tmp371, &tmp372, &tmp373, &tmp374, &tmp375, &tmp376, &tmp377, &tmp378, &tmp379, &tmp380, &tmp381, &tmp382, &tmp383, &tmp384);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 706);
-    ca_.Goto(&block32, tmp368, tmp369, tmp370, tmp371, tmp372, tmp373, tmp374, tmp375, tmp376, tmp377, tmp378, tmp379, tmp380, tmp381, tmp382, tmp383, tmp384);
+    ca_.Goto(&block28, tmp368, tmp369, tmp370, tmp371, tmp372, tmp373, tmp374, tmp375, tmp376, tmp377, tmp378, tmp379, tmp380, tmp381, tmp382, tmp383, tmp384);
   }
 
-  if (block32.is_used()) {
+  if (block28.is_used()) {
     compiler::TNode<Context> tmp385;
     compiler::TNode<Object> tmp386;
     compiler::TNode<Object> tmp387;
@@ -6674,12 +6732,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp399;
     compiler::TNode<UintPtrT> tmp400;
     compiler::TNode<Float64T> tmp401;
-    ca_.Bind(&block32, &tmp385, &tmp386, &tmp387, &tmp388, &tmp389, &tmp390, &tmp391, &tmp392, &tmp393, &tmp394, &tmp395, &tmp396, &tmp397, &tmp398, &tmp399, &tmp400, &tmp401);
+    ca_.Bind(&block28, &tmp385, &tmp386, &tmp387, &tmp388, &tmp389, &tmp390, &tmp391, &tmp392, &tmp393, &tmp394, &tmp395, &tmp396, &tmp397, &tmp398, &tmp399, &tmp400, &tmp401);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 702);
-    ca_.Goto(&block29, tmp385, tmp386, tmp387, tmp388, tmp389, tmp390, tmp391, tmp392, tmp393, tmp394, tmp395, tmp396, tmp397, tmp398, tmp399, tmp400, tmp401);
+    ca_.Goto(&block25, tmp385, tmp386, tmp387, tmp388, tmp389, tmp390, tmp391, tmp392, tmp393, tmp394, tmp395, tmp396, tmp397, tmp398, tmp399, tmp400, tmp401);
   }
 
-  if (block29.is_used()) {
+  if (block25.is_used()) {
     compiler::TNode<Context> tmp402;
     compiler::TNode<Object> tmp403;
     compiler::TNode<Object> tmp404;
@@ -6697,12 +6755,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp416;
     compiler::TNode<UintPtrT> tmp417;
     compiler::TNode<Float64T> tmp418;
-    ca_.Bind(&block29, &tmp402, &tmp403, &tmp404, &tmp405, &tmp406, &tmp407, &tmp408, &tmp409, &tmp410, &tmp411, &tmp412, &tmp413, &tmp414, &tmp415, &tmp416, &tmp417, &tmp418);
+    ca_.Bind(&block25, &tmp402, &tmp403, &tmp404, &tmp405, &tmp406, &tmp407, &tmp408, &tmp409, &tmp410, &tmp411, &tmp412, &tmp413, &tmp414, &tmp415, &tmp416, &tmp417, &tmp418);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 698);
-    ca_.Goto(&block25, tmp402, tmp403, tmp404, tmp405, tmp406, tmp407, tmp408, tmp409, tmp410, tmp411, tmp412, tmp413, tmp414, tmp415, tmp416, tmp417, tmp418);
+    ca_.Goto(&block22, tmp402, tmp403, tmp404, tmp405, tmp406, tmp407, tmp408, tmp409, tmp410, tmp411, tmp412, tmp413, tmp414, tmp415, tmp416, tmp417, tmp418);
   }
 
-  if (block25.is_used()) {
+  if (block22.is_used()) {
     compiler::TNode<Context> tmp419;
     compiler::TNode<Object> tmp420;
     compiler::TNode<Object> tmp421;
@@ -6720,12 +6778,12 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp433;
     compiler::TNode<UintPtrT> tmp434;
     compiler::TNode<Float64T> tmp435;
-    ca_.Bind(&block25, &tmp419, &tmp420, &tmp421, &tmp422, &tmp423, &tmp424, &tmp425, &tmp426, &tmp427, &tmp428, &tmp429, &tmp430, &tmp431, &tmp432, &tmp433, &tmp434, &tmp435);
+    ca_.Bind(&block22, &tmp419, &tmp420, &tmp421, &tmp422, &tmp423, &tmp424, &tmp425, &tmp426, &tmp427, &tmp428, &tmp429, &tmp430, &tmp431, &tmp432, &tmp433, &tmp434, &tmp435);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 695);
-    ca_.Goto(&block21, tmp419, tmp420, tmp421, tmp422, tmp423, tmp424, tmp425, tmp426, tmp427, tmp428, tmp429, tmp430, tmp431, tmp432, tmp433, tmp434, tmp435);
+    ca_.Goto(&block19, tmp419, tmp420, tmp421, tmp422, tmp423, tmp424, tmp425, tmp426, tmp427, tmp428, tmp429, tmp430, tmp431, tmp432, tmp433, tmp434, tmp435);
   }
 
-  if (block21.is_used()) {
+  if (block19.is_used()) {
     compiler::TNode<Context> tmp436;
     compiler::TNode<Object> tmp437;
     compiler::TNode<Object> tmp438;
@@ -6743,13 +6801,13 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Float64T> tmp450;
     compiler::TNode<UintPtrT> tmp451;
     compiler::TNode<Float64T> tmp452;
-    ca_.Bind(&block21, &tmp436, &tmp437, &tmp438, &tmp439, &tmp440, &tmp441, &tmp442, &tmp443, &tmp444, &tmp445, &tmp446, &tmp447, &tmp448, &tmp449, &tmp450, &tmp451, &tmp452);
+    ca_.Bind(&block19, &tmp436, &tmp437, &tmp438, &tmp439, &tmp440, &tmp441, &tmp442, &tmp443, &tmp444, &tmp445, &tmp446, &tmp447, &tmp448, &tmp449, &tmp450, &tmp451, &tmp452);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 673);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 653);
-    ca_.Goto(&block9, tmp436, tmp437, tmp438, tmp439, tmp440, tmp441, tmp442, tmp443, tmp444);
+    ca_.Goto(&block8, tmp436, tmp437, tmp438, tmp439, tmp440, tmp441, tmp442, tmp443, tmp444);
   }
 
-  if (block9.is_used()) {
+  if (block8.is_used()) {
     compiler::TNode<Context> tmp453;
     compiler::TNode<Object> tmp454;
     compiler::TNode<Object> tmp455;
@@ -6759,11 +6817,11 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Number> tmp459;
     compiler::TNode<BoolT> tmp460;
     compiler::TNode<JSArrayBuffer> tmp461;
-    ca_.Bind(&block9, &tmp453, &tmp454, &tmp455, &tmp456, &tmp457, &tmp458, &tmp459, &tmp460, &tmp461);
+    ca_.Bind(&block8, &tmp453, &tmp454, &tmp455, &tmp456, &tmp457, &tmp458, &tmp459, &tmp460, &tmp461);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 717);
     compiler::TNode<Oddball> tmp462;
     USE(tmp462);
-    tmp462 = Undefined_65(state_);
+    tmp462 = Undefined_64(state_);
     ca_.Goto(&block1, tmp453, tmp454, tmp455, tmp456, tmp457, tmp462);
   }
 
@@ -6776,7 +6834,7 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Object> tmp468;
     ca_.Bind(&block1, &tmp463, &tmp464, &tmp465, &tmp466, &tmp467, &tmp468);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 634);
-    ca_.Goto(&block36, tmp463, tmp464, tmp465, tmp466, tmp467, tmp468);
+    ca_.Goto(&block32, tmp463, tmp464, tmp465, tmp466, tmp467, tmp468);
   }
 
     compiler::TNode<Context> tmp469;
@@ -6785,7 +6843,7 @@ compiler::TNode<Object> DataViewSet_261(compiler::CodeAssemblerState* state_, co
     compiler::TNode<Object> tmp472;
     compiler::TNode<Object> tmp473;
     compiler::TNode<Object> tmp474;
-    ca_.Bind(&block36, &tmp469, &tmp470, &tmp471, &tmp472, &tmp473, &tmp474);
+    ca_.Bind(&block32, &tmp469, &tmp470, &tmp471, &tmp472, &tmp473, &tmp474);
   return compiler::TNode<Object>{tmp474};
 }
 
@@ -6821,7 +6879,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 722);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -6837,7 +6895,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -6853,7 +6911,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -6879,7 +6937,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 723);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -6896,7 +6954,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -6913,7 +6971,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -6941,11 +6999,11 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 725);
     compiler::TNode<Oddball> tmp63;
     USE(tmp63);
-    tmp63 = Undefined_65(state_);
+    tmp63 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 724);
     compiler::TNode<Object> tmp64;
     USE(tmp64);
-    tmp64 = DataViewSet_261(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, compiler::TNode<Object>{tmp63}, UINT8_ELEMENTS);
+    tmp64 = DataViewSet_290(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, compiler::TNode<Object>{tmp63}, UINT8_ELEMENTS);
     arguments.PopAndReturn(tmp64);
   }
 }
@@ -6982,7 +7040,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 730);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -6998,7 +7056,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -7014,7 +7072,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -7040,7 +7098,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 731);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -7057,7 +7115,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -7074,7 +7132,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -7102,11 +7160,11 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 733);
     compiler::TNode<Oddball> tmp63;
     USE(tmp63);
-    tmp63 = Undefined_65(state_);
+    tmp63 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 732);
     compiler::TNode<Object> tmp64;
     USE(tmp64);
-    tmp64 = DataViewSet_261(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, compiler::TNode<Object>{tmp63}, INT8_ELEMENTS);
+    tmp64 = DataViewSet_290(state_, compiler::TNode<Context>{tmp59}, compiler::TNode<Object>{tmp60}, compiler::TNode<Object>{tmp61}, compiler::TNode<Object>{tmp62}, compiler::TNode<Object>{tmp63}, INT8_ELEMENTS);
     arguments.PopAndReturn(tmp64);
   }
 }
@@ -7147,7 +7205,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 738);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -7163,7 +7221,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -7179,7 +7237,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -7205,7 +7263,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 739);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -7222,7 +7280,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -7239,7 +7297,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -7267,7 +7325,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 741);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -7285,7 +7343,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -7303,7 +7361,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -7335,7 +7393,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 742);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, UINT16_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, UINT16_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
@@ -7376,7 +7434,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 748);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -7392,7 +7450,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -7408,7 +7466,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -7434,7 +7492,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 749);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -7451,7 +7509,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -7468,7 +7526,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -7496,7 +7554,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 751);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -7514,7 +7572,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -7532,7 +7590,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -7564,7 +7622,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 752);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, INT16_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, INT16_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
@@ -7605,7 +7663,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 758);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -7621,7 +7679,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -7637,7 +7695,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -7663,7 +7721,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 759);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -7680,7 +7738,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -7697,7 +7755,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -7725,7 +7783,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 761);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -7743,7 +7801,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -7761,7 +7819,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -7793,7 +7851,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 762);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, UINT32_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, UINT32_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
@@ -7834,7 +7892,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 768);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -7850,7 +7908,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -7866,7 +7924,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -7892,7 +7950,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 769);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -7909,7 +7967,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -7926,7 +7984,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -7954,7 +8012,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 771);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -7972,7 +8030,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -7990,7 +8048,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -8022,7 +8080,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 772);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, INT32_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, INT32_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
@@ -8063,7 +8121,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 778);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -8079,7 +8137,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -8095,7 +8153,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -8121,7 +8179,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 779);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -8138,7 +8196,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -8155,7 +8213,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -8183,7 +8241,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 781);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -8201,7 +8259,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -8219,7 +8277,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -8251,7 +8309,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 782);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, FLOAT32_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, FLOAT32_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
@@ -8292,7 +8350,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 788);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -8308,7 +8366,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -8324,7 +8382,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -8350,7 +8408,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 789);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -8367,7 +8425,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -8384,7 +8442,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -8412,7 +8470,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 791);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -8430,7 +8488,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -8448,7 +8506,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -8480,7 +8538,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 792);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, FLOAT64_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, FLOAT64_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
@@ -8521,7 +8579,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 798);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -8537,7 +8595,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -8553,7 +8611,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -8579,7 +8637,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 799);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -8596,7 +8654,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -8613,7 +8671,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -8641,7 +8699,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 801);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -8659,7 +8717,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -8677,7 +8735,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -8709,7 +8767,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 802);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, BIGUINT64_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, BIGUINT64_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
@@ -8750,7 +8808,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 808);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp5});
@@ -8766,7 +8824,7 @@ USE(parameter1);
     ca_.Bind(&block1, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
-    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp12 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp13;
     USE(tmp13);
     tmp13 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<RawPtrT>{tmp8}, compiler::TNode<IntPtrT>{tmp9}}, compiler::TNode<IntPtrT>{tmp12});
@@ -8782,7 +8840,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp14, &tmp15, &tmp16, &tmp17, &tmp18);
     compiler::TNode<Oddball> tmp19;
     USE(tmp19);
-    tmp19 = Undefined_65(state_);
+    tmp19 = Undefined_64(state_);
     ca_.Goto(&block3, tmp14, tmp15, tmp16, tmp17, tmp18, tmp19);
   }
 
@@ -8808,7 +8866,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 809);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp32});
@@ -8825,7 +8883,7 @@ USE(parameter1);
     ca_.Bind(&block5, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     compiler::TNode<IntPtrT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp40 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp41;
     USE(tmp41);
     tmp41 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp34}, compiler::TNode<RawPtrT>{tmp35}, compiler::TNode<IntPtrT>{tmp36}}, compiler::TNode<IntPtrT>{tmp40});
@@ -8842,7 +8900,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
     compiler::TNode<Oddball> tmp48;
     USE(tmp48);
-    tmp48 = Undefined_65(state_);
+    tmp48 = Undefined_64(state_);
     ca_.Goto(&block7, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48);
   }
 
@@ -8870,7 +8928,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 811);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp58}, compiler::TNode<IntPtrT>{tmp63});
@@ -8888,7 +8946,7 @@ USE(parameter1);
     ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
     compiler::TNode<IntPtrT> tmp72;
     USE(tmp72);
-    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp72 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp73;
     USE(tmp73);
     tmp73 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp65}, compiler::TNode<RawPtrT>{tmp66}, compiler::TNode<IntPtrT>{tmp67}}, compiler::TNode<IntPtrT>{tmp72});
@@ -8906,7 +8964,7 @@ USE(parameter1);
     ca_.Bind(&block10, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
     compiler::TNode<Oddball> tmp81;
     USE(tmp81);
-    tmp81 = Undefined_65(state_);
+    tmp81 = Undefined_64(state_);
     ca_.Goto(&block11, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81);
   }
 
@@ -8938,12 +8996,12 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/data-view.tq", 812);
     compiler::TNode<Object> tmp98;
     USE(tmp98);
-    tmp98 = DataViewSet_261(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, BIGINT64_ELEMENTS);
+    tmp98 = DataViewSet_290(state_, compiler::TNode<Context>{tmp93}, compiler::TNode<Object>{tmp94}, compiler::TNode<Object>{tmp95}, compiler::TNode<Object>{tmp96}, compiler::TNode<Object>{tmp97}, BIGINT64_ELEMENTS);
     arguments.PopAndReturn(tmp98);
   }
 }
 
-compiler::TNode<JSDataView> Cast10JSDataView_1339(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<JSDataView> Cast10JSDataView_1393(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -8959,7 +9017,7 @@ compiler::TNode<JSDataView> Cast10JSDataView_1339(compiler::CodeAssemblerState* 
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 1823);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2043);
     compiler::TNode<HeapObject> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -8988,7 +9046,7 @@ compiler::TNode<JSDataView> Cast10JSDataView_1339(compiler::CodeAssemblerState* 
     compiler::TNode<JSDataView> tmp10;
     USE(tmp10);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp10 = Cast10JSDataView_86(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
+    tmp10 = Cast10JSDataView_106(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
     ca_.Goto(&block5, tmp6, tmp7, tmp9, tmp10);
     if (label0.is_used()) {
       ca_.Bind(&label0);

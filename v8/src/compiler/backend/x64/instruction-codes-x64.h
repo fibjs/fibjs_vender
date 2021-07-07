@@ -140,9 +140,6 @@ namespace compiler {
   V(X64DecompressSigned)                  \
   V(X64DecompressPointer)                 \
   V(X64DecompressAny)                     \
-  V(X64CompressSigned)                    \
-  V(X64CompressPointer)                   \
-  V(X64CompressAny)                       \
   V(X64Movq)                              \
   V(X64Movsd)                             \
   V(X64Movss)                             \
@@ -158,7 +155,6 @@ namespace compiler {
   V(X64Push)                              \
   V(X64Poke)                              \
   V(X64Peek)                              \
-  V(X64StackCheck)                        \
   V(X64F64x2Splat)                        \
   V(X64F64x2ExtractLane)                  \
   V(X64F64x2ReplaceLane)                  \
@@ -167,6 +163,9 @@ namespace compiler {
   V(X64F64x2Add)                          \
   V(X64F64x2Sub)                          \
   V(X64F64x2Mul)                          \
+  V(X64F64x2Div)                          \
+  V(X64F64x2Min)                          \
+  V(X64F64x2Max)                          \
   V(X64F64x2Eq)                           \
   V(X64F64x2Ne)                           \
   V(X64F64x2Lt)                           \
@@ -184,6 +183,7 @@ namespace compiler {
   V(X64F32x4AddHoriz)                     \
   V(X64F32x4Sub)                          \
   V(X64F32x4Mul)                          \
+  V(X64F32x4Div)                          \
   V(X64F32x4Min)                          \
   V(X64F32x4Max)                          \
   V(X64F32x4Eq)                           \

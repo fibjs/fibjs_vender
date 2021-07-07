@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<Smi> ToSmiBetweenZeroAnd_299(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_value, compiler::TNode<Smi> p_limit);
+compiler::TNode<Smi> ToSmiBetweenZeroAnd_338(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_value, compiler::TNode<Smi> p_limit);
 }  // namespace internal
 }  // namespace v8
 

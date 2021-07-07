@@ -15,8 +15,8 @@ compiler::TNode<Object> LoadWithHoleCheck16FixedDoubleArray_20(compiler::CodeAss
 compiler::TNode<Number> GetFromIndex_21(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Number> p_length, TorqueStructArguments p_arguments);
 compiler::TNode<Object> TryFastArrayLastIndexOf_22(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_receiver, compiler::TNode<Object> p_searchElement, compiler::TNode<Number> p_from, compiler::CodeAssemblerLabel* label_Slow);
 compiler::TNode<Object> GenericArrayLastIndexOf_23(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_object, compiler::TNode<Object> p_searchElement, compiler::TNode<Number> p_from);
-compiler::TNode<Smi> FastArrayLastIndexOf10FixedArray_1306(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_array, compiler::TNode<Smi> p_from, compiler::TNode<Object> p_searchElement);
-compiler::TNode<Smi> FastArrayLastIndexOf16FixedDoubleArray_1307(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_array, compiler::TNode<Smi> p_from, compiler::TNode<Object> p_searchElement);
+compiler::TNode<Smi> FastArrayLastIndexOf10FixedArray_1357(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_array, compiler::TNode<Smi> p_from, compiler::TNode<Object> p_searchElement);
+compiler::TNode<Smi> FastArrayLastIndexOf16FixedDoubleArray_1358(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArray> p_array, compiler::TNode<Smi> p_from, compiler::TNode<Object> p_searchElement);
 }  // namespace internal
 }  // namespace v8
 

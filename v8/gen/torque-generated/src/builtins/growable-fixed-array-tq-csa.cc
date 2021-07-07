@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-TorqueStructGrowableFixedArray NewGrowableFixedArray_276(compiler::CodeAssemblerState* state_) {
+TorqueStructGrowableFixedArray NewGrowableFixedArray_305(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -135,13 +143,13 @@ TorqueStructGrowableFixedArray NewGrowableFixedArray_276(compiler::CodeAssembler
     ca_.SetSourcePosition("../../src/builtins/growable-fixed-array.tq", 43);
     compiler::TNode<FixedArray> tmp0;
     USE(tmp0);
-    tmp0 = kEmptyFixedArray_186(state_);
+    tmp0 = kEmptyFixedArray_212(state_);
     compiler::TNode<IntPtrT> tmp1;
     USE(tmp1);
-    tmp1 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp1 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<IntPtrT> tmp2;
     USE(tmp2);
-    tmp2 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp2 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     ca_.Goto(&block1, tmp0, tmp1, tmp2);
   }
 

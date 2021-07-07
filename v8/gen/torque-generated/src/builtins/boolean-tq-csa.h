@@ -10,8 +10,8 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<JSReceiver> UnsafeCast10JSReceiver_1337(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
-compiler::TNode<JSPrimitiveWrapper> UnsafeCast18JSPrimitiveWrapper_1338(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+compiler::TNode<JSReceiver> UnsafeCast10JSReceiver_1391(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+compiler::TNode<JSPrimitiveWrapper> UnsafeCast18JSPrimitiveWrapper_1392(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
 }  // namespace internal
 }  // namespace v8
 

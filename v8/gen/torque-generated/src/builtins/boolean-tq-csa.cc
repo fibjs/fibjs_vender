@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -155,23 +163,23 @@ USE(parameter3);
     ca_.SetSourcePosition("../../src/builtins/boolean.tq", 10);
     compiler::TNode<IntPtrT> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp7 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp8;
     USE(tmp8);
     tmp8 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp7});
     compiler::TNode<BoolT> tmp9;
     USE(tmp9);
-    tmp9 = ToBoolean_213(state_, compiler::TNode<Object>{tmp8});
+    tmp9 = ToBoolean_240(state_, compiler::TNode<Object>{tmp8});
     compiler::TNode<Oddball> tmp10;
     USE(tmp10);
     tmp10 = CodeStubAssembler(state_).SelectBooleanConstant(compiler::TNode<BoolT>{tmp9});
     ca_.SetSourcePosition("../../src/builtins/boolean.tq", 12);
     compiler::TNode<Oddball> tmp11;
     USE(tmp11);
-    tmp11 = Undefined_65(state_);
+    tmp11 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp12;
     USE(tmp12);
-    tmp12 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp5}, compiler::TNode<HeapObject>{tmp11});
+    tmp12 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<Object>{tmp5}, compiler::TNode<HeapObject>{tmp11});
     ca_.Branch(tmp12, &block1, &block2, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp10);
   }
 
@@ -202,17 +210,17 @@ USE(parameter3);
     ca_.SetSourcePosition("../../src/builtins/boolean.tq", 16);
     compiler::TNode<JSReceiver> tmp29;
     USE(tmp29);
-    tmp29 = UnsafeCast10JSReceiver_1337(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<Object>{tmp26});
+    tmp29 = UnsafeCast10JSReceiver_1391(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<Object>{tmp26});
     compiler::TNode<Map> tmp30;
     USE(tmp30);
-    tmp30 = GetDerivedMap_57(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<JSFunction>{tmp27}, compiler::TNode<JSReceiver>{tmp29});
+    tmp30 = GetDerivedMap_56(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<JSFunction>{tmp27}, compiler::TNode<JSReceiver>{tmp29});
     ca_.SetSourcePosition("../../src/builtins/boolean.tq", 19);
     compiler::TNode<JSObject> tmp31;
     USE(tmp31);
-    tmp31 = AllocateFastOrSlowJSObjectFromMap_58(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<Map>{tmp30});
+    tmp31 = AllocateFastOrSlowJSObjectFromMap_57(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<Map>{tmp30});
     compiler::TNode<JSPrimitiveWrapper> tmp32;
     USE(tmp32);
-    tmp32 = UnsafeCast18JSPrimitiveWrapper_1338(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<Object>{tmp31});
+    tmp32 = UnsafeCast18JSPrimitiveWrapper_1392(state_, compiler::TNode<Context>{tmp24}, compiler::TNode<Object>{tmp31});
     ca_.SetSourcePosition("../../src/builtins/boolean.tq", 20);
     compiler::TNode<IntPtrT> tmp33 = ca_.IntPtrConstant(JSPrimitiveWrapper::kValueOffset);
     USE(tmp33);
@@ -222,7 +230,7 @@ USE(parameter3);
   }
 }
 
-compiler::TNode<JSReceiver> UnsafeCast10JSReceiver_1337(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
+compiler::TNode<JSReceiver> UnsafeCast10JSReceiver_1391(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -233,7 +241,7 @@ compiler::TNode<JSReceiver> UnsafeCast10JSReceiver_1337(compiler::CodeAssemblerS
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2405);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2807);
     compiler::TNode<JSReceiver> tmp2;
     USE(tmp2);
     tmp2 = TORQUE_CAST(compiler::TNode<Object>{tmp1});
@@ -256,7 +264,7 @@ compiler::TNode<JSReceiver> UnsafeCast10JSReceiver_1337(compiler::CodeAssemblerS
   return compiler::TNode<JSReceiver>{tmp8};
 }
 
-compiler::TNode<JSPrimitiveWrapper> UnsafeCast18JSPrimitiveWrapper_1338(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
+compiler::TNode<JSPrimitiveWrapper> UnsafeCast18JSPrimitiveWrapper_1392(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSPrimitiveWrapper> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -267,7 +275,7 @@ compiler::TNode<JSPrimitiveWrapper> UnsafeCast18JSPrimitiveWrapper_1338(compiler
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2405);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2807);
     compiler::TNode<JSPrimitiveWrapper> tmp2;
     USE(tmp2);
     tmp2 = TORQUE_CAST(compiler::TNode<Object>{tmp1});

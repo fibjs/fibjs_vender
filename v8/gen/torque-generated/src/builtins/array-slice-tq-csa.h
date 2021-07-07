@@ -10,13 +10,14 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<JSArray> HandleSimpleArgumentsSlice_38(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArgumentsObjectWithLength> p_args, compiler::TNode<Smi> p_start, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_Bailout);
-compiler::TNode<JSArray> HandleFastAliasedSloppyArgumentsSlice_39(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSArgumentsObjectWithLength> p_args, compiler::TNode<Smi> p_start, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_Bailout);
-compiler::TNode<JSArray> HandleFastSlice_40(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::TNode<Number> p_startNumber, compiler::TNode<Number> p_countNumber, compiler::CodeAssemblerLabel* label_Bailout);
-compiler::TNode<FixedArray> Cast10FixedArray_1314(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
-compiler::TNode<Context> UnsafeCast7Context_1315(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
-compiler::TNode<JSArray> Cast20ATFastJSArrayForCopy_1316(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
-compiler::TNode<JSArgumentsObjectWithLength> Cast27JSArgumentsObjectWithLength_1317(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+compiler::TNode<JSArray> HandleSimpleArgumentsSlice_38(compiler::CodeAssemblerState* state_, compiler::TNode<NativeContext> p_context, compiler::TNode<JSArgumentsObjectWithLength> p_args, compiler::TNode<Smi> p_start, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_Bailout);
+compiler::TNode<JSArray> HandleFastAliasedSloppyArgumentsSlice_39(compiler::CodeAssemblerState* state_, compiler::TNode<NativeContext> p_context, compiler::TNode<JSArgumentsObjectWithLength> p_args, compiler::TNode<Smi> p_start, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_Bailout);
+compiler::TNode<JSArray> HandleFastSlice_40(compiler::CodeAssemblerState* state_, compiler::TNode<NativeContext> p_context, compiler::TNode<Object> p_o, compiler::TNode<Number> p_startNumber, compiler::TNode<Number> p_countNumber, compiler::CodeAssemblerLabel* label_Bailout);
+compiler::TNode<FixedArray> Cast10FixedArray_1367(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+compiler::TNode<Context> UnsafeCast7Context_1368(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+compiler::TNode<JSArray> Cast20ATFastJSArrayForCopy_1369(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+compiler::TNode<JSArgumentsObjectWithLength> Cast27JSArgumentsObjectWithLength_1370(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+compiler::TNode<NativeContext> UnsafeCast15ATNativeContext_1371(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
 }  // namespace internal
 }  // namespace v8
 

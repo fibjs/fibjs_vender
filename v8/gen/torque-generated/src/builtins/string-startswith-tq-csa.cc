@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -137,13 +145,11 @@ USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi, Number, Number> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi, Number, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi, String, String, Number, Smi> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi, String, String, Number, Smi, Oddball> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi, String, String, Number, Smi> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi, String, String, Number, Smi, Oddball> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, Object, Object, Object, String, String, Number, Number, Number, Smi> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, torque_arguments.frame, torque_arguments.base, torque_arguments.length, parameter0, parameter1);
 
   if (block0.is_used()) {
@@ -156,21 +162,21 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 14);
     compiler::TNode<IntPtrT> tmp5;
     USE(tmp5);
-    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp5 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp6;
     USE(tmp6);
     tmp6 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp5});
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 15);
     compiler::TNode<IntPtrT> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp7 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp8;
     USE(tmp8);
     tmp8 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp7});
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 19);
     compiler::TNode<Object> tmp9;
     USE(tmp9);
-    tmp9 = RequireObjectCoercible_214(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, "String.prototype.startsWith");
+    tmp9 = RequireObjectCoercible_241(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, "String.prototype.startsWith");
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 22);
     compiler::TNode<String> tmp10;
     USE(tmp10);
@@ -223,7 +229,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 41);
     compiler::TNode<Number> tmp33;
     USE(tmp33);
-    tmp33 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 0);
+    tmp33 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 0);
     compiler::TNode<Number> tmp34;
     USE(tmp34);
     tmp34 = CodeStubAssembler(state_).NumberMax(compiler::TNode<Number>{tmp31}, compiler::TNode<Number>{tmp33});
@@ -238,41 +244,35 @@ USE(parameter1);
     compiler::TNode<Number> tmp37;
     USE(tmp37);
     tmp37 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp36}, compiler::TNode<Number>{tmp35});
-    compiler::CodeAssemblerLabel label0(&ca_);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    CodeStubAssembler(state_).BranchIfNumberGreaterThan(compiler::TNode<Number>{tmp37}, compiler::TNode<Number>{tmp32}, &label0, &label1);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block5, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32, tmp35, tmp36, tmp37, tmp32);
-    }
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block6, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32, tmp35, tmp36, tmp37, tmp32);
-    }
+    compiler::TNode<BoolT> tmp38;
+    USE(tmp38);
+    tmp38 = NumberIsGreaterThan_77(state_, compiler::TNode<Number>{tmp37}, compiler::TNode<Number>{tmp32});
+    ca_.Branch(tmp38, &block3, &block4, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32, tmp35, tmp36);
   }
 
-  if (block5.is_used()) {
-    compiler::TNode<RawPtrT> tmp38;
+  if (block3.is_used()) {
     compiler::TNode<RawPtrT> tmp39;
-    compiler::TNode<IntPtrT> tmp40;
-    compiler::TNode<Context> tmp41;
-    compiler::TNode<Object> tmp42;
+    compiler::TNode<RawPtrT> tmp40;
+    compiler::TNode<IntPtrT> tmp41;
+    compiler::TNode<Context> tmp42;
     compiler::TNode<Object> tmp43;
     compiler::TNode<Object> tmp44;
     compiler::TNode<Object> tmp45;
-    compiler::TNode<String> tmp46;
+    compiler::TNode<Object> tmp46;
     compiler::TNode<String> tmp47;
-    compiler::TNode<Number> tmp48;
+    compiler::TNode<String> tmp48;
     compiler::TNode<Number> tmp49;
     compiler::TNode<Number> tmp50;
-    compiler::TNode<Smi> tmp51;
-    compiler::TNode<Number> tmp52;
-    compiler::TNode<Number> tmp53;
-    ca_.Bind(&block5, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53);
-    ca_.Goto(&block3, tmp38, tmp39, tmp40, tmp41, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51);
+    compiler::TNode<Number> tmp51;
+    compiler::TNode<Smi> tmp52;
+    ca_.Bind(&block3, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52);
+    compiler::TNode<Oddball> tmp53;
+    USE(tmp53);
+    tmp53 = False_66(state_);
+    arguments.PopAndReturn(tmp53);
   }
 
-  if (block6.is_used()) {
+  if (block4.is_used()) {
     compiler::TNode<RawPtrT> tmp54;
     compiler::TNode<RawPtrT> tmp55;
     compiler::TNode<IntPtrT> tmp56;
@@ -287,131 +287,88 @@ USE(parameter1);
     compiler::TNode<Number> tmp65;
     compiler::TNode<Number> tmp66;
     compiler::TNode<Smi> tmp67;
-    compiler::TNode<Number> tmp68;
-    compiler::TNode<Number> tmp69;
-    ca_.Bind(&block6, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69);
-    ca_.Goto(&block4, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp63, tmp64, tmp65, tmp66, tmp67);
-  }
-
-  if (block3.is_used()) {
-    compiler::TNode<RawPtrT> tmp70;
-    compiler::TNode<RawPtrT> tmp71;
-    compiler::TNode<IntPtrT> tmp72;
-    compiler::TNode<Context> tmp73;
-    compiler::TNode<Object> tmp74;
-    compiler::TNode<Object> tmp75;
-    compiler::TNode<Object> tmp76;
-    compiler::TNode<Object> tmp77;
-    compiler::TNode<String> tmp78;
-    compiler::TNode<String> tmp79;
-    compiler::TNode<Number> tmp80;
-    compiler::TNode<Number> tmp81;
-    compiler::TNode<Number> tmp82;
-    compiler::TNode<Smi> tmp83;
-    ca_.Bind(&block3, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83);
-    compiler::TNode<Oddball> tmp84;
-    USE(tmp84);
-    tmp84 = False_67(state_);
-    arguments.PopAndReturn(tmp84);
-  }
-
-  if (block4.is_used()) {
-    compiler::TNode<RawPtrT> tmp85;
-    compiler::TNode<RawPtrT> tmp86;
-    compiler::TNode<IntPtrT> tmp87;
-    compiler::TNode<Context> tmp88;
-    compiler::TNode<Object> tmp89;
-    compiler::TNode<Object> tmp90;
-    compiler::TNode<Object> tmp91;
-    compiler::TNode<Object> tmp92;
-    compiler::TNode<String> tmp93;
-    compiler::TNode<String> tmp94;
-    compiler::TNode<Number> tmp95;
-    compiler::TNode<Number> tmp96;
-    compiler::TNode<Number> tmp97;
-    compiler::TNode<Smi> tmp98;
-    ca_.Bind(&block4, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98);
+    ca_.Bind(&block4, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67);
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 56);
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 55);
-    compiler::TNode<Oddball> tmp99;
-    USE(tmp99);
+    compiler::TNode<Oddball> tmp68;
+    USE(tmp68);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp99 = TryFastStringCompareSequence_296(state_, compiler::TNode<String>{tmp93}, compiler::TNode<String>{tmp94}, compiler::TNode<Number>{tmp97}, compiler::TNode<Smi>{tmp98}, &label0);
-    ca_.Goto(&block9, tmp85, tmp86, tmp87, tmp88, tmp89, tmp90, tmp91, tmp92, tmp93, tmp94, tmp95, tmp96, tmp97, tmp98, tmp93, tmp94, tmp97, tmp98, tmp99);
+    tmp68 = TryFastStringCompareSequence_332(state_, compiler::TNode<String>{tmp62}, compiler::TNode<String>{tmp63}, compiler::TNode<Number>{tmp66}, compiler::TNode<Smi>{tmp67}, &label0);
+    ca_.Goto(&block7, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp63, tmp64, tmp65, tmp66, tmp67, tmp62, tmp63, tmp66, tmp67, tmp68);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block10, tmp85, tmp86, tmp87, tmp88, tmp89, tmp90, tmp91, tmp92, tmp93, tmp94, tmp95, tmp96, tmp97, tmp98, tmp93, tmp94, tmp97, tmp98);
+      ca_.Goto(&block8, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp63, tmp64, tmp65, tmp66, tmp67, tmp62, tmp63, tmp66, tmp67);
     }
   }
 
-  if (block10.is_used()) {
-    compiler::TNode<RawPtrT> tmp100;
-    compiler::TNode<RawPtrT> tmp101;
-    compiler::TNode<IntPtrT> tmp102;
-    compiler::TNode<Context> tmp103;
-    compiler::TNode<Object> tmp104;
-    compiler::TNode<Object> tmp105;
-    compiler::TNode<Object> tmp106;
-    compiler::TNode<Object> tmp107;
-    compiler::TNode<String> tmp108;
-    compiler::TNode<String> tmp109;
-    compiler::TNode<Number> tmp110;
-    compiler::TNode<Number> tmp111;
-    compiler::TNode<Number> tmp112;
-    compiler::TNode<Smi> tmp113;
+  if (block8.is_used()) {
+    compiler::TNode<RawPtrT> tmp69;
+    compiler::TNode<RawPtrT> tmp70;
+    compiler::TNode<IntPtrT> tmp71;
+    compiler::TNode<Context> tmp72;
+    compiler::TNode<Object> tmp73;
+    compiler::TNode<Object> tmp74;
+    compiler::TNode<Object> tmp75;
+    compiler::TNode<Object> tmp76;
+    compiler::TNode<String> tmp77;
+    compiler::TNode<String> tmp78;
+    compiler::TNode<Number> tmp79;
+    compiler::TNode<Number> tmp80;
+    compiler::TNode<Number> tmp81;
+    compiler::TNode<Smi> tmp82;
+    compiler::TNode<String> tmp83;
+    compiler::TNode<String> tmp84;
+    compiler::TNode<Number> tmp85;
+    compiler::TNode<Smi> tmp86;
+    ca_.Bind(&block8, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86);
+    ca_.Goto(&block6, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81, tmp82);
+  }
+
+  if (block7.is_used()) {
+    compiler::TNode<RawPtrT> tmp87;
+    compiler::TNode<RawPtrT> tmp88;
+    compiler::TNode<IntPtrT> tmp89;
+    compiler::TNode<Context> tmp90;
+    compiler::TNode<Object> tmp91;
+    compiler::TNode<Object> tmp92;
+    compiler::TNode<Object> tmp93;
+    compiler::TNode<Object> tmp94;
+    compiler::TNode<String> tmp95;
+    compiler::TNode<String> tmp96;
+    compiler::TNode<Number> tmp97;
+    compiler::TNode<Number> tmp98;
+    compiler::TNode<Number> tmp99;
+    compiler::TNode<Smi> tmp100;
+    compiler::TNode<String> tmp101;
+    compiler::TNode<String> tmp102;
+    compiler::TNode<Number> tmp103;
+    compiler::TNode<Smi> tmp104;
+    compiler::TNode<Oddball> tmp105;
+    ca_.Bind(&block7, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105);
+    arguments.PopAndReturn(tmp105);
+  }
+
+  if (block6.is_used()) {
+    compiler::TNode<RawPtrT> tmp106;
+    compiler::TNode<RawPtrT> tmp107;
+    compiler::TNode<IntPtrT> tmp108;
+    compiler::TNode<Context> tmp109;
+    compiler::TNode<Object> tmp110;
+    compiler::TNode<Object> tmp111;
+    compiler::TNode<Object> tmp112;
+    compiler::TNode<Object> tmp113;
     compiler::TNode<String> tmp114;
     compiler::TNode<String> tmp115;
     compiler::TNode<Number> tmp116;
-    compiler::TNode<Smi> tmp117;
-    ca_.Bind(&block10, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113, &tmp114, &tmp115, &tmp116, &tmp117);
-    ca_.Goto(&block8, tmp100, tmp101, tmp102, tmp103, tmp104, tmp105, tmp106, tmp107, tmp108, tmp109, tmp110, tmp111, tmp112, tmp113);
-  }
-
-  if (block9.is_used()) {
-    compiler::TNode<RawPtrT> tmp118;
-    compiler::TNode<RawPtrT> tmp119;
-    compiler::TNode<IntPtrT> tmp120;
-    compiler::TNode<Context> tmp121;
-    compiler::TNode<Object> tmp122;
-    compiler::TNode<Object> tmp123;
-    compiler::TNode<Object> tmp124;
-    compiler::TNode<Object> tmp125;
-    compiler::TNode<String> tmp126;
-    compiler::TNode<String> tmp127;
-    compiler::TNode<Number> tmp128;
-    compiler::TNode<Number> tmp129;
-    compiler::TNode<Number> tmp130;
-    compiler::TNode<Smi> tmp131;
-    compiler::TNode<String> tmp132;
-    compiler::TNode<String> tmp133;
-    compiler::TNode<Number> tmp134;
-    compiler::TNode<Smi> tmp135;
-    compiler::TNode<Oddball> tmp136;
-    ca_.Bind(&block9, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126, &tmp127, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136);
-    arguments.PopAndReturn(tmp136);
-  }
-
-  if (block8.is_used()) {
-    compiler::TNode<RawPtrT> tmp137;
-    compiler::TNode<RawPtrT> tmp138;
-    compiler::TNode<IntPtrT> tmp139;
-    compiler::TNode<Context> tmp140;
-    compiler::TNode<Object> tmp141;
-    compiler::TNode<Object> tmp142;
-    compiler::TNode<Object> tmp143;
-    compiler::TNode<Object> tmp144;
-    compiler::TNode<String> tmp145;
-    compiler::TNode<String> tmp146;
-    compiler::TNode<Number> tmp147;
-    compiler::TNode<Number> tmp148;
-    compiler::TNode<Number> tmp149;
-    compiler::TNode<Smi> tmp150;
-    ca_.Bind(&block8, &tmp137, &tmp138, &tmp139, &tmp140, &tmp141, &tmp142, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148, &tmp149, &tmp150);
+    compiler::TNode<Number> tmp117;
+    compiler::TNode<Number> tmp118;
+    compiler::TNode<Smi> tmp119;
+    ca_.Bind(&block6, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113, &tmp114, &tmp115, &tmp116, &tmp117, &tmp118, &tmp119);
     ca_.SetSourcePosition("../../src/builtins/string-startswith.tq", 60);
-    compiler::TNode<Oddball> tmp151;
-    tmp151 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kStringCompareSequence, tmp140, tmp145, tmp146, tmp149)); 
-    USE(tmp151);
-    arguments.PopAndReturn(tmp151);
+    compiler::TNode<Oddball> tmp120;
+    tmp120 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kStringCompareSequence, tmp109, tmp114, tmp115, tmp118)); 
+    USE(tmp120);
+    arguments.PopAndReturn(tmp120);
   }
 }
 

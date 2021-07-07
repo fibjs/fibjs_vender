@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -127,73 +135,66 @@ TF_BUILTIN(ReflectIsExtensible, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
   USE(parameter1);
-  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
-  USE(parameter2);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, parameter0, parameter1, parameter2);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, parameter0, parameter1);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
-    compiler::TNode<Object> tmp2;
-    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
+    ca_.Bind(&block0, &tmp0, &tmp1);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 13);
-    compiler::TNode<JSReceiver> tmp3;
-    USE(tmp3);
+    compiler::TNode<JSReceiver> tmp2;
+    USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp2, tmp3);
+    tmp2 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    ca_.Goto(&block3, tmp0, tmp1, tmp1, tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp2);
+      ca_.Goto(&block4, tmp0, tmp1, tmp1);
     }
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp4;
+    compiler::TNode<Context> tmp3;
+    compiler::TNode<Object> tmp4;
     compiler::TNode<Object> tmp5;
-    compiler::TNode<Object> tmp6;
-    compiler::TNode<Object> tmp7;
-    ca_.Bind(&block4, &tmp4, &tmp5, &tmp6, &tmp7);
-    ca_.Goto(&block2, tmp4, tmp5, tmp6);
+    ca_.Bind(&block4, &tmp3, &tmp4, &tmp5);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
   if (block3.is_used()) {
-    compiler::TNode<Context> tmp8;
-    compiler::TNode<Object> tmp9;
-    compiler::TNode<Object> tmp10;
-    compiler::TNode<Object> tmp11;
-    compiler::TNode<JSReceiver> tmp12;
-    ca_.Bind(&block3, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12);
-    ca_.Goto(&block1, tmp8, tmp9, tmp10, tmp12);
+    compiler::TNode<Context> tmp6;
+    compiler::TNode<Object> tmp7;
+    compiler::TNode<Object> tmp8;
+    compiler::TNode<JSReceiver> tmp9;
+    ca_.Bind(&block3, &tmp6, &tmp7, &tmp8, &tmp9);
+    ca_.Goto(&block1, tmp6, tmp7, tmp9);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp13;
-    compiler::TNode<Object> tmp14;
-    compiler::TNode<Object> tmp15;
-    ca_.Bind(&block2, &tmp13, &tmp14, &tmp15);
+    compiler::TNode<Context> tmp10;
+    compiler::TNode<Object> tmp11;
+    ca_.Bind(&block2, &tmp10, &tmp11);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 14);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp13}, MessageTemplate::kCalledOnNonObject, "Reflect.isExtensible");
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp10}, MessageTemplate::kCalledOnNonObject, "Reflect.isExtensible");
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp16;
-    compiler::TNode<Object> tmp17;
-    compiler::TNode<Object> tmp18;
-    compiler::TNode<JSReceiver> tmp19;
-    ca_.Bind(&block1, &tmp16, &tmp17, &tmp18, &tmp19);
+    compiler::TNode<Context> tmp12;
+    compiler::TNode<Object> tmp13;
+    compiler::TNode<JSReceiver> tmp14;
+    ca_.Bind(&block1, &tmp12, &tmp13, &tmp14);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 15);
-    compiler::TNode<Object> tmp20;
-    USE(tmp20);
-    tmp20 = ObjectIsExtensible_282(state_, compiler::TNode<Context>{tmp16}, compiler::TNode<Object>{tmp19});
-    CodeStubAssembler(state_).Return(tmp20);
+    compiler::TNode<Object> tmp15;
+    USE(tmp15);
+    tmp15 = ObjectIsExtensible_311(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp14});
+    CodeStubAssembler(state_).Return(tmp15);
   }
 }
 
@@ -201,73 +202,66 @@ TF_BUILTIN(ReflectPreventExtensions, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
   USE(parameter1);
-  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
-  USE(parameter2);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, parameter0, parameter1, parameter2);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, parameter0, parameter1);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
-    compiler::TNode<Object> tmp2;
-    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
+    ca_.Bind(&block0, &tmp0, &tmp1);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 21);
-    compiler::TNode<JSReceiver> tmp3;
-    USE(tmp3);
+    compiler::TNode<JSReceiver> tmp2;
+    USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp2, tmp3);
+    tmp2 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    ca_.Goto(&block3, tmp0, tmp1, tmp1, tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp2);
+      ca_.Goto(&block4, tmp0, tmp1, tmp1);
     }
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp4;
+    compiler::TNode<Context> tmp3;
+    compiler::TNode<Object> tmp4;
     compiler::TNode<Object> tmp5;
-    compiler::TNode<Object> tmp6;
-    compiler::TNode<Object> tmp7;
-    ca_.Bind(&block4, &tmp4, &tmp5, &tmp6, &tmp7);
-    ca_.Goto(&block2, tmp4, tmp5, tmp6);
+    ca_.Bind(&block4, &tmp3, &tmp4, &tmp5);
+    ca_.Goto(&block2, tmp3, tmp4);
   }
 
   if (block3.is_used()) {
-    compiler::TNode<Context> tmp8;
-    compiler::TNode<Object> tmp9;
-    compiler::TNode<Object> tmp10;
-    compiler::TNode<Object> tmp11;
-    compiler::TNode<JSReceiver> tmp12;
-    ca_.Bind(&block3, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12);
-    ca_.Goto(&block1, tmp8, tmp9, tmp10, tmp12);
+    compiler::TNode<Context> tmp6;
+    compiler::TNode<Object> tmp7;
+    compiler::TNode<Object> tmp8;
+    compiler::TNode<JSReceiver> tmp9;
+    ca_.Bind(&block3, &tmp6, &tmp7, &tmp8, &tmp9);
+    ca_.Goto(&block1, tmp6, tmp7, tmp9);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp13;
-    compiler::TNode<Object> tmp14;
-    compiler::TNode<Object> tmp15;
-    ca_.Bind(&block2, &tmp13, &tmp14, &tmp15);
+    compiler::TNode<Context> tmp10;
+    compiler::TNode<Object> tmp11;
+    ca_.Bind(&block2, &tmp10, &tmp11);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 22);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp13}, MessageTemplate::kCalledOnNonObject, "Reflect.preventExtensions");
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp10}, MessageTemplate::kCalledOnNonObject, "Reflect.preventExtensions");
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp16;
-    compiler::TNode<Object> tmp17;
-    compiler::TNode<Object> tmp18;
-    compiler::TNode<JSReceiver> tmp19;
-    ca_.Bind(&block1, &tmp16, &tmp17, &tmp18, &tmp19);
+    compiler::TNode<Context> tmp12;
+    compiler::TNode<Object> tmp13;
+    compiler::TNode<JSReceiver> tmp14;
+    ca_.Bind(&block1, &tmp12, &tmp13, &tmp14);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 23);
-    compiler::TNode<Object> tmp20;
-    USE(tmp20);
-    tmp20 = ObjectPreventExtensionsDontThrow_284(state_, compiler::TNode<Context>{tmp16}, compiler::TNode<Object>{tmp19});
-    CodeStubAssembler(state_).Return(tmp20);
+    compiler::TNode<Object> tmp15;
+    USE(tmp15);
+    tmp15 = ObjectPreventExtensionsDontThrow_313(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<Object>{tmp14});
+    CodeStubAssembler(state_).Return(tmp15);
   }
 }
 
@@ -275,15 +269,85 @@ TF_BUILTIN(ReflectGetPrototypeOf, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
   USE(parameter1);
-  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, parameter0, parameter1);
+
+  if (block0.is_used()) {
+    compiler::TNode<Context> tmp0;
+    compiler::TNode<Object> tmp1;
+    ca_.Bind(&block0, &tmp0, &tmp1);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 29);
+    compiler::TNode<JSReceiver> tmp2;
+    USE(tmp2);
+    compiler::CodeAssemblerLabel label0(&ca_);
+    tmp2 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    ca_.Goto(&block3, tmp0, tmp1, tmp1, tmp2);
+    if (label0.is_used()) {
+      ca_.Bind(&label0);
+      ca_.Goto(&block4, tmp0, tmp1, tmp1);
+    }
+  }
+
+  if (block4.is_used()) {
+    compiler::TNode<Context> tmp3;
+    compiler::TNode<Object> tmp4;
+    compiler::TNode<Object> tmp5;
+    ca_.Bind(&block4, &tmp3, &tmp4, &tmp5);
+    ca_.Goto(&block2, tmp3, tmp4);
+  }
+
+  if (block3.is_used()) {
+    compiler::TNode<Context> tmp6;
+    compiler::TNode<Object> tmp7;
+    compiler::TNode<Object> tmp8;
+    compiler::TNode<JSReceiver> tmp9;
+    ca_.Bind(&block3, &tmp6, &tmp7, &tmp8, &tmp9);
+    ca_.Goto(&block1, tmp6, tmp7, tmp9);
+  }
+
+  if (block2.is_used()) {
+    compiler::TNode<Context> tmp10;
+    compiler::TNode<Object> tmp11;
+    ca_.Bind(&block2, &tmp10, &tmp11);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 30);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp10}, MessageTemplate::kCalledOnNonObject, "Reflect.getPrototypeOf");
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<Context> tmp12;
+    compiler::TNode<Object> tmp13;
+    compiler::TNode<JSReceiver> tmp14;
+    ca_.Bind(&block1, &tmp12, &tmp13, &tmp14);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 31);
+    compiler::TNode<Object> tmp15;
+    USE(tmp15);
+    tmp15 = JSReceiverGetPrototypeOf_315(state_, compiler::TNode<Context>{tmp12}, compiler::TNode<JSReceiver>{tmp14});
+    CodeStubAssembler(state_).Return(tmp15);
+  }
+}
+
+TF_BUILTIN(ReflectSetPrototypeOf, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
+  USE(parameter0);
+  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
+  USE(parameter1);
+  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kProto));
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver, Object, Object> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver, Object, Object, HeapObject> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, parameter0, parameter1, parameter2);
 
   if (block0.is_used()) {
@@ -291,15 +355,15 @@ TF_BUILTIN(ReflectGetPrototypeOf, CodeStubAssembler) {
     compiler::TNode<Object> tmp1;
     compiler::TNode<Object> tmp2;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 29);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 37);
     compiler::TNode<JSReceiver> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp2, tmp3);
+    tmp3 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp1, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp2);
+      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp1);
     }
   }
 
@@ -327,8 +391,8 @@ TF_BUILTIN(ReflectGetPrototypeOf, CodeStubAssembler) {
     compiler::TNode<Object> tmp14;
     compiler::TNode<Object> tmp15;
     ca_.Bind(&block2, &tmp13, &tmp14, &tmp15);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 30);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp13}, MessageTemplate::kCalledOnNonObject, "Reflect.getPrototypeOf");
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 38);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp13}, MessageTemplate::kCalledOnNonObject, "Reflect.setPrototypeOf");
   }
 
   if (block1.is_used()) {
@@ -337,136 +401,56 @@ TF_BUILTIN(ReflectGetPrototypeOf, CodeStubAssembler) {
     compiler::TNode<Object> tmp18;
     compiler::TNode<JSReceiver> tmp19;
     ca_.Bind(&block1, &tmp16, &tmp17, &tmp18, &tmp19);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 31);
-    compiler::TNode<Object> tmp20;
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 39);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 40);
+    compiler::TNode<HeapObject> tmp20;
     USE(tmp20);
-    tmp20 = JSReceiverGetPrototypeOf_286(state_, compiler::TNode<Context>{tmp16}, compiler::TNode<JSReceiver>{tmp19});
-    CodeStubAssembler(state_).Return(tmp20);
-  }
-}
-
-TF_BUILTIN(ReflectSetPrototypeOf, CodeStubAssembler) {
-  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
-  TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
-  USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
-  USE(parameter1);
-  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
-  USE(parameter2);
-  compiler::TNode<Object> parameter3 = UncheckedCast<Object>(Parameter(Descriptor::kProto));
-  USE(parameter3);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, parameter0, parameter1, parameter2, parameter3);
-
-  if (block0.is_used()) {
-    compiler::TNode<Context> tmp0;
-    compiler::TNode<Object> tmp1;
-    compiler::TNode<Object> tmp2;
-    compiler::TNode<Object> tmp3;
-    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 38);
-    compiler::TNode<JSReceiver> tmp4;
-    USE(tmp4);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp4 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp2, tmp4);
+    tmp20 = Cast21UT6ATNull10JSReceiver_1399(state_, compiler::TNode<Context>{tmp16}, compiler::TNode<Object>{tmp18}, &label0);
+    ca_.Goto(&block7, tmp16, tmp17, tmp18, tmp19, tmp18, tmp18, tmp20);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp2);
+      ca_.Goto(&block8, tmp16, tmp17, tmp18, tmp19, tmp18, tmp18);
     }
   }
 
-  if (block4.is_used()) {
-    compiler::TNode<Context> tmp5;
-    compiler::TNode<Object> tmp6;
-    compiler::TNode<Object> tmp7;
-    compiler::TNode<Object> tmp8;
-    compiler::TNode<Object> tmp9;
-    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7, &tmp8, &tmp9);
-    ca_.Goto(&block2, tmp5, tmp6, tmp7, tmp8);
-  }
-
-  if (block3.is_used()) {
-    compiler::TNode<Context> tmp10;
-    compiler::TNode<Object> tmp11;
-    compiler::TNode<Object> tmp12;
-    compiler::TNode<Object> tmp13;
-    compiler::TNode<Object> tmp14;
-    compiler::TNode<JSReceiver> tmp15;
-    ca_.Bind(&block3, &tmp10, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15);
-    ca_.Goto(&block1, tmp10, tmp11, tmp12, tmp13, tmp15);
-  }
-
-  if (block2.is_used()) {
-    compiler::TNode<Context> tmp16;
-    compiler::TNode<Object> tmp17;
-    compiler::TNode<Object> tmp18;
-    compiler::TNode<Object> tmp19;
-    ca_.Bind(&block2, &tmp16, &tmp17, &tmp18, &tmp19);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 39);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp16}, MessageTemplate::kCalledOnNonObject, "Reflect.setPrototypeOf");
-  }
-
-  if (block1.is_used()) {
-    compiler::TNode<Context> tmp20;
-    compiler::TNode<Object> tmp21;
+  if (block8.is_used()) {
+    compiler::TNode<Context> tmp21;
     compiler::TNode<Object> tmp22;
     compiler::TNode<Object> tmp23;
     compiler::TNode<JSReceiver> tmp24;
-    ca_.Bind(&block1, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 40);
-    compiler::TNode<Oddball> tmp25;
-    USE(tmp25);
-    tmp25 = Null_64(state_);
-    compiler::TNode<BoolT> tmp26;
-    USE(tmp26);
-    tmp26 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp23}, compiler::TNode<HeapObject>{tmp25});
-    ca_.Branch(tmp26, &block5, &block7, tmp20, tmp21, tmp22, tmp23, tmp24);
+    compiler::TNode<Object> tmp25;
+    compiler::TNode<Object> tmp26;
+    ca_.Bind(&block8, &tmp21, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26);
+    ca_.Goto(&block6, tmp21, tmp22, tmp23, tmp24, tmp25);
   }
 
   if (block7.is_used()) {
     compiler::TNode<Context> tmp27;
     compiler::TNode<Object> tmp28;
     compiler::TNode<Object> tmp29;
-    compiler::TNode<Object> tmp30;
-    compiler::TNode<JSReceiver> tmp31;
-    ca_.Bind(&block7, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31);
-    compiler::TNode<BoolT> tmp32;
-    USE(tmp32);
-    tmp32 = Is10JSReceiver20UT5ATSmi10HeapObject_1344(state_, compiler::TNode<Context>{tmp27}, compiler::TNode<Object>{tmp30});
-    ca_.Branch(tmp32, &block5, &block6, tmp27, tmp28, tmp29, tmp30, tmp31);
-  }
-
-  if (block5.is_used()) {
-    compiler::TNode<Context> tmp33;
-    compiler::TNode<Object> tmp34;
-    compiler::TNode<Object> tmp35;
-    compiler::TNode<Object> tmp36;
-    compiler::TNode<JSReceiver> tmp37;
-    ca_.Bind(&block5, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37);
+    compiler::TNode<JSReceiver> tmp30;
+    compiler::TNode<Object> tmp31;
+    compiler::TNode<Object> tmp32;
+    compiler::TNode<HeapObject> tmp33;
+    ca_.Bind(&block7, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 41);
-    compiler::TNode<Object> tmp38;
-    USE(tmp38);
-    tmp38 = ObjectSetPrototypeOfDontThrow_288(state_, compiler::TNode<Context>{tmp33}, compiler::TNode<Object>{tmp37}, compiler::TNode<Object>{tmp36});
-    CodeStubAssembler(state_).Return(tmp38);
+    compiler::TNode<Object> tmp34;
+    USE(tmp34);
+    tmp34 = ObjectSetPrototypeOfDontThrow_317(state_, compiler::TNode<Context>{tmp27}, compiler::TNode<Object>{tmp30}, compiler::TNode<HeapObject>{tmp33});
+    CodeStubAssembler(state_).Return(tmp34);
   }
 
   if (block6.is_used()) {
-    compiler::TNode<Context> tmp39;
-    compiler::TNode<Object> tmp40;
-    compiler::TNode<Object> tmp41;
-    compiler::TNode<Object> tmp42;
-    compiler::TNode<JSReceiver> tmp43;
-    ca_.Bind(&block6, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43);
+    compiler::TNode<Context> tmp35;
+    compiler::TNode<Object> tmp36;
+    compiler::TNode<Object> tmp37;
+    compiler::TNode<JSReceiver> tmp38;
+    compiler::TNode<Object> tmp39;
+    ca_.Bind(&block6, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
     ca_.SetSourcePosition("../../src/builtins/reflect.tq", 43);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp39}, MessageTemplate::kProtoObjectOrNull, compiler::TNode<Object>{tmp42});
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 44);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp35}, MessageTemplate::kProtoObjectOrNull, compiler::TNode<Object>{tmp37});
   }
 }
 
@@ -504,11 +488,11 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     compiler::TNode<IntPtrT> tmp2;
     compiler::TNode<Context> tmp3;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 57);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 58);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 61);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 62);
     compiler::TNode<IntPtrT> tmp4;
     USE(tmp4);
-    tmp4 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp4 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp5;
     USE(tmp5);
     tmp5 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp4});
@@ -524,7 +508,7 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     ca_.Bind(&block1, &tmp6, &tmp7, &tmp8, &tmp9, &tmp10);
     compiler::TNode<IntPtrT> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp12;
     USE(tmp12);
     tmp12 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp6}, compiler::TNode<RawPtrT>{tmp7}, compiler::TNode<IntPtrT>{tmp8}}, compiler::TNode<IntPtrT>{tmp11});
@@ -540,7 +524,7 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     ca_.Bind(&block2, &tmp13, &tmp14, &tmp15, &tmp16, &tmp17);
     compiler::TNode<Oddball> tmp18;
     USE(tmp18);
-    tmp18 = Undefined_65(state_);
+    tmp18 = Undefined_64(state_);
     ca_.Goto(&block3, tmp13, tmp14, tmp15, tmp16, tmp17, tmp18);
   }
 
@@ -563,11 +547,11 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     compiler::TNode<IntPtrT> tmp29;
     compiler::TNode<Object> tmp30;
     ca_.Bind(&block3, &tmp25, &tmp26, &tmp27, &tmp28, &tmp29, &tmp30);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 59);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 63);
     compiler::TNode<JSReceiver> tmp31;
     USE(tmp31);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp31 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp28}, compiler::TNode<Object>{tmp30}, &label0);
+    tmp31 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp28}, compiler::TNode<Object>{tmp30}, &label0);
     ca_.Goto(&block7, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp30, tmp31);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -608,7 +592,7 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     compiler::TNode<IntPtrT> tmp51;
     compiler::TNode<Object> tmp52;
     ca_.Bind(&block6, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 60);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 64);
     CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp50}, MessageTemplate::kCalledOnNonObject, "Reflect.get");
   }
 
@@ -621,10 +605,10 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     compiler::TNode<Object> tmp58;
     compiler::TNode<JSReceiver> tmp59;
     ca_.Bind(&block5, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 61);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 65);
     compiler::TNode<IntPtrT> tmp60;
     USE(tmp60);
-    tmp60 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp60 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<BoolT> tmp61;
     USE(tmp61);
     tmp61 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp57}, compiler::TNode<IntPtrT>{tmp60});
@@ -642,7 +626,7 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     ca_.Bind(&block9, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68);
     compiler::TNode<IntPtrT> tmp69;
     USE(tmp69);
-    tmp69 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp69 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp70;
     USE(tmp70);
     tmp70 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp62}, compiler::TNode<RawPtrT>{tmp63}, compiler::TNode<IntPtrT>{tmp64}}, compiler::TNode<IntPtrT>{tmp69});
@@ -660,7 +644,7 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     ca_.Bind(&block10, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77);
     compiler::TNode<Oddball> tmp78;
     USE(tmp78);
-    tmp78 = Undefined_65(state_);
+    tmp78 = Undefined_64(state_);
     ca_.Goto(&block11, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp78);
   }
 
@@ -687,14 +671,14 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp93;
     compiler::TNode<Object> tmp94;
     ca_.Bind(&block11, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93, &tmp94);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 62);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 66);
     compiler::TNode<Name> tmp95;
     tmp95 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kToName, tmp90, tmp94));
     USE(tmp95);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 63);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 67);
     compiler::TNode<IntPtrT> tmp96;
     USE(tmp96);
-    tmp96 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp96 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<BoolT> tmp97;
     USE(tmp97);
     tmp97 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp91}, compiler::TNode<IntPtrT>{tmp96});
@@ -714,7 +698,7 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     ca_.Bind(&block13, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106);
     compiler::TNode<IntPtrT> tmp107;
     USE(tmp107);
-    tmp107 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 2);
+    tmp107 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 2);
     compiler::TNode<Object> tmp108;
     USE(tmp108);
     tmp108 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp98}, compiler::TNode<RawPtrT>{tmp99}, compiler::TNode<IntPtrT>{tmp100}}, compiler::TNode<IntPtrT>{tmp107});
@@ -762,11 +746,11 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     compiler::TNode<Name> tmp136;
     compiler::TNode<Object> tmp137;
     ca_.Bind(&block15, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 65);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 69);
     compiler::TNode<Smi> tmp138;
     USE(tmp138);
     tmp138 = CodeStubAssembler(state_).SmiConstant(OnNonExistent::kReturnUndefined);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 64);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 68);
     compiler::TNode<Object> tmp139;
     tmp139 = CodeStubAssembler(state_).CallBuiltin(Builtins::kGetPropertyWithReceiver, tmp131, tmp134, tmp136, tmp137, tmp138);
     USE(tmp139);
@@ -778,190 +762,76 @@ TF_BUILTIN(ReflectDeleteProperty, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedCast<Context>(Parameter(Descriptor::kContext));
   USE(parameter0);
-  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kReceiver));
+  compiler::TNode<Object> parameter1 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
   USE(parameter1);
-  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kObject));
+  compiler::TNode<Object> parameter2 = UncheckedCast<Object>(Parameter(Descriptor::kKey));
   USE(parameter2);
-  compiler::TNode<Object> parameter3 = UncheckedCast<Object>(Parameter(Descriptor::kKey));
-  USE(parameter3);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Name> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Name> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Name, JSReceiver> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Name, JSReceiver, JSProxy> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Name> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver, Name, JSProxy> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0, parameter0, parameter1, parameter2, parameter3);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, Object, JSReceiver> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object, JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, parameter0, parameter1, parameter2);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     compiler::TNode<Object> tmp2;
-    compiler::TNode<Object> tmp3;
-    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 72);
-    compiler::TNode<JSReceiver> tmp4;
-    USE(tmp4);
+    ca_.Bind(&block0, &tmp0, &tmp1, &tmp2);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 75);
+    compiler::TNode<JSReceiver> tmp3;
+    USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp4 = Cast10JSReceiver_1290(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2}, &label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp2, tmp4);
+    tmp3 = Cast10JSReceiver_1338(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp1, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp2);
+      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp1);
     }
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp5;
+    compiler::TNode<Context> tmp4;
+    compiler::TNode<Object> tmp5;
     compiler::TNode<Object> tmp6;
     compiler::TNode<Object> tmp7;
-    compiler::TNode<Object> tmp8;
-    compiler::TNode<Object> tmp9;
-    ca_.Bind(&block4, &tmp5, &tmp6, &tmp7, &tmp8, &tmp9);
-    ca_.Goto(&block2, tmp5, tmp6, tmp7, tmp8);
+    ca_.Bind(&block4, &tmp4, &tmp5, &tmp6, &tmp7);
+    ca_.Goto(&block2, tmp4, tmp5, tmp6);
   }
 
   if (block3.is_used()) {
-    compiler::TNode<Context> tmp10;
+    compiler::TNode<Context> tmp8;
+    compiler::TNode<Object> tmp9;
+    compiler::TNode<Object> tmp10;
     compiler::TNode<Object> tmp11;
-    compiler::TNode<Object> tmp12;
-    compiler::TNode<Object> tmp13;
-    compiler::TNode<Object> tmp14;
-    compiler::TNode<JSReceiver> tmp15;
-    ca_.Bind(&block3, &tmp10, &tmp11, &tmp12, &tmp13, &tmp14, &tmp15);
-    ca_.Goto(&block1, tmp10, tmp11, tmp12, tmp13, tmp15);
+    compiler::TNode<JSReceiver> tmp12;
+    ca_.Bind(&block3, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12);
+    ca_.Goto(&block1, tmp8, tmp9, tmp10, tmp12);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<Context> tmp16;
-    compiler::TNode<Object> tmp17;
-    compiler::TNode<Object> tmp18;
-    compiler::TNode<Object> tmp19;
-    ca_.Bind(&block2, &tmp16, &tmp17, &tmp18, &tmp19);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 73);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp16}, MessageTemplate::kCalledOnNonObject, "Reflect.deleteProperty");
+    compiler::TNode<Context> tmp13;
+    compiler::TNode<Object> tmp14;
+    compiler::TNode<Object> tmp15;
+    ca_.Bind(&block2, &tmp13, &tmp14, &tmp15);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 76);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp13}, MessageTemplate::kCalledOnNonObject, "Reflect.deleteProperty");
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp20;
-    compiler::TNode<Object> tmp21;
-    compiler::TNode<Object> tmp22;
-    compiler::TNode<Object> tmp23;
-    compiler::TNode<JSReceiver> tmp24;
-    ca_.Bind(&block1, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 74);
-    compiler::TNode<Name> tmp25;
-    tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kToName, tmp20, tmp23));
-    USE(tmp25);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 75);
-    compiler::TNode<BoolT> tmp26;
-    USE(tmp26);
-    tmp26 = CodeStubAssembler(state_).IsPrivateSymbol(compiler::TNode<HeapObject>{tmp25});
-    ca_.Branch(tmp26, &block5, &block6, tmp20, tmp21, tmp22, tmp23, tmp24, tmp25);
-  }
-
-  if (block5.is_used()) {
-    compiler::TNode<Context> tmp27;
-    compiler::TNode<Object> tmp28;
-    compiler::TNode<Object> tmp29;
-    compiler::TNode<Object> tmp30;
-    compiler::TNode<JSReceiver> tmp31;
-    compiler::TNode<Name> tmp32;
-    ca_.Bind(&block5, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 76);
-    compiler::TNode<Smi> tmp33;
-    USE(tmp33);
-    tmp33 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_140(state_, LanguageMode::kSloppy);
-    compiler::TNode<Object> tmp34;
-    tmp34 = CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp27, tmp31, tmp32, tmp33);
-    USE(tmp34);
-    CodeStubAssembler(state_).Return(tmp34);
-  }
-
-  if (block6.is_used()) {
-    compiler::TNode<Context> tmp35;
-    compiler::TNode<Object> tmp36;
-    compiler::TNode<Object> tmp37;
-    compiler::TNode<Object> tmp38;
-    compiler::TNode<JSReceiver> tmp39;
-    compiler::TNode<Name> tmp40;
-    ca_.Bind(&block6, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 78);
-    compiler::TNode<JSProxy> tmp41;
-    USE(tmp41);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    tmp41 = Cast7JSProxy_87(state_, compiler::TNode<HeapObject>{tmp39}, &label0);
-    ca_.Goto(&block9, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp39, tmp41);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block10, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40, tmp39);
-    }
-  }
-
-  if (block10.is_used()) {
-    compiler::TNode<Context> tmp42;
-    compiler::TNode<Object> tmp43;
-    compiler::TNode<Object> tmp44;
-    compiler::TNode<Object> tmp45;
-    compiler::TNode<JSReceiver> tmp46;
-    compiler::TNode<Name> tmp47;
-    compiler::TNode<JSReceiver> tmp48;
-    ca_.Bind(&block10, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48);
-    ca_.Goto(&block8, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47);
-  }
-
-  if (block9.is_used()) {
-    compiler::TNode<Context> tmp49;
-    compiler::TNode<Object> tmp50;
-    compiler::TNode<Object> tmp51;
-    compiler::TNode<Object> tmp52;
-    compiler::TNode<JSReceiver> tmp53;
-    compiler::TNode<Name> tmp54;
-    compiler::TNode<JSReceiver> tmp55;
-    compiler::TNode<JSProxy> tmp56;
-    ca_.Bind(&block9, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56);
-    ca_.Goto(&block7, tmp49, tmp50, tmp51, tmp52, tmp53, tmp54, tmp56);
-  }
-
-  if (block8.is_used()) {
-    compiler::TNode<Context> tmp57;
-    compiler::TNode<Object> tmp58;
-    compiler::TNode<Object> tmp59;
-    compiler::TNode<Object> tmp60;
-    compiler::TNode<JSReceiver> tmp61;
-    compiler::TNode<Name> tmp62;
-    ca_.Bind(&block8, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 79);
-    compiler::TNode<Smi> tmp63;
-    USE(tmp63);
-    tmp63 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_140(state_, LanguageMode::kSloppy);
-    compiler::TNode<Object> tmp64;
-    tmp64 = CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp57, tmp61, tmp62, tmp63);
-    USE(tmp64);
-    CodeStubAssembler(state_).Return(tmp64);
-  }
-
-  if (block7.is_used()) {
-    compiler::TNode<Context> tmp65;
-    compiler::TNode<Object> tmp66;
-    compiler::TNode<Object> tmp67;
-    compiler::TNode<Object> tmp68;
-    compiler::TNode<JSReceiver> tmp69;
-    compiler::TNode<Name> tmp70;
-    compiler::TNode<JSProxy> tmp71;
-    ca_.Bind(&block7, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71);
-    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 80);
-    compiler::TNode<Smi> tmp72;
-    USE(tmp72);
-    tmp72 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_140(state_, LanguageMode::kSloppy);
-    compiler::TNode<Object> tmp73;
-    tmp73 = CodeStubAssembler(state_).CallBuiltin(Builtins::kProxyDeleteProperty, tmp65, tmp71, tmp70, tmp72);
-    USE(tmp73);
-    CodeStubAssembler(state_).Return(tmp73);
+    compiler::TNode<Context> tmp16;
+    compiler::TNode<Object> tmp17;
+    compiler::TNode<Object> tmp18;
+    compiler::TNode<JSReceiver> tmp19;
+    ca_.Bind(&block1, &tmp16, &tmp17, &tmp18, &tmp19);
+    ca_.SetSourcePosition("../../src/builtins/reflect.tq", 77);
+    compiler::TNode<Smi> tmp20;
+    USE(tmp20);
+    tmp20 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_166(state_, LanguageMode::kSloppy);
+    compiler::TNode<Oddball> tmp21;
+    tmp21 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp16, tmp19, tmp18, tmp20));
+    USE(tmp21);
+    CodeStubAssembler(state_).Return(tmp21);
   }
 }
 

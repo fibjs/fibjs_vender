@@ -10,10 +10,10 @@
 namespace v8 {
 namespace internal {
 
-void RegExpReplaceCallableNoExplicitCaptures_291(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_matchesElements, compiler::TNode<IntPtrT> p_matchesLength, compiler::TNode<String> p_string, compiler::TNode<HeapObject> p_replaceFn);
-void RegExpReplaceCallableWithExplicitCaptures_292(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_matchesElements, compiler::TNode<IntPtrT> p_matchesLength, compiler::TNode<HeapObject> p_replaceFn);
-compiler::TNode<String> RegExpReplaceFastGlobalCallable_293(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSRegExp> p_regexp, compiler::TNode<String> p_string, compiler::TNode<HeapObject> p_replaceFn);
-compiler::TNode<String> RegExpReplaceFastString_294(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSRegExp> p_regexp, compiler::TNode<String> p_string, compiler::TNode<String> p_replaceString);
+void RegExpReplaceCallableNoExplicitCaptures_322(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_matchesElements, compiler::TNode<IntPtrT> p_matchesLength, compiler::TNode<String> p_string, compiler::TNode<JSReceiver> p_replaceFn);
+void RegExpReplaceCallableWithExplicitCaptures_323(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<FixedArray> p_matchesElements, compiler::TNode<IntPtrT> p_matchesLength, compiler::TNode<JSReceiver> p_replaceFn);
+compiler::TNode<String> RegExpReplaceFastGlobalCallable_324(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSRegExp> p_regexp, compiler::TNode<String> p_string, compiler::TNode<JSReceiver> p_replaceFn);
+compiler::TNode<String> RegExpReplaceFastString_325(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSRegExp> p_regexp, compiler::TNode<String> p_string, compiler::TNode<String> p_replaceString);
 }  // namespace internal
 }  // namespace v8
 

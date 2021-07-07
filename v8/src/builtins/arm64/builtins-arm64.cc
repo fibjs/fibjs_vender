@@ -28,6 +28,10 @@
 #include "src/runtime/runtime.h"
 #include "src/wasm/wasm-objects.h"
 
+#if defined(V8_OS_WIN)
+#include "src/diagnostics/unwinding-info-win64.h"
+#endif  // V8_OS_WIN
+
 namespace v8 {
 namespace internal {
 
@@ -89,6 +93,17 @@ static void GenerateTailCallToReturnedCode(MacroAssembler* masm,
 
 namespace {
 
+void LoadRealStackLimit(MacroAssembler* masm, Register destination) {
+  DCHECK(masm->root_array_available());
+  Isolate* isolate = masm->isolate();
+  ExternalReference limit = ExternalReference::address_of_real_jslimit(isolate);
+  DCHECK(TurboAssembler::IsAddressableThroughRootRegister(isolate, limit));
+
+  intptr_t offset =
+      TurboAssembler::RootRegisterOffsetForExternalReference(isolate, limit);
+  __ Ldr(destination, MemOperand(kRootRegister, offset));
+}
+
 void Generate_StackOverflowCheck(MacroAssembler* masm, Register num_args,
                                  Label* stack_overflow) {
   UseScratchRegisterScope temps(masm);
@@ -98,7 +113,7 @@ void Generate_StackOverflowCheck(MacroAssembler* masm, Register num_args,
   // We are not trying to catch interruptions (e.g. debug break and
   // preemption) here, so the "real stack limit" is checked.
 
-  __ LoadRoot(scratch, RootIndex::kRealStackLimit);
+  LoadRealStackLimit(masm, scratch);
   // Make scratch the space we have left. The stack might already be overflowed
   // here which will cause scratch to become negative.
   __ Sub(scratch, sp, scratch);
@@ -480,7 +495,8 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   // Check the stack for overflow. We are not trying to catch interruptions
   // (i.e. debug break and preemption) here, so check the "real stack limit".
   Label stack_overflow;
-  __ CompareRoot(sp, RootIndex::kRealStackLimit);
+  LoadRealStackLimit(masm, x10);
+  __ Cmp(sp, x10);
   __ B(lo, &stack_overflow);
 
   // Get number of arguments for generator function.
@@ -626,6 +642,23 @@ void Generate_JSEntryVariant(MacroAssembler* masm, StackFrame::Type type,
     // Enable instruction instrumentation. This only works on the simulator, and
     // will have no effect on the model or real hardware.
     __ EnableInstrumentation();
+
+#if defined(V8_OS_WIN)
+    // Windows ARM64 relies on a frame pointer (fp/x29 which are aliases to each
+    // other) chain to do stack unwinding, but JSEntry breaks that by setting fp
+    // to point to bad_frame_pointer below. To fix unwind information for this
+    // case, JSEntry registers the offset (from current fp to the caller's fp
+    // saved by PushCalleeSavedRegisters on stack) to xdata_encoder which then
+    // emits the offset value as part of result unwind data accordingly. The
+    // current offset is kFramePointerOffset which includes bad_frame_pointer
+    // saved below plus kFramePointerOffsetInPushCalleeSavedRegisters.
+    const int kFramePointerOffset =
+        kFramePointerOffsetInPushCalleeSavedRegisters + kSystemPointerSize;
+    win64_unwindinfo::XdataEncoder* xdata_encoder = masm->GetXdataEncoder();
+    if (xdata_encoder) {
+      xdata_encoder->onFramePointerAdjustment(kFramePointerOffset);
+    }
+#endif
 
     __ PushCalleeSavedRegisters();
 
@@ -1227,7 +1260,12 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     // Do a stack check to ensure we don't go over the limit.
     Label ok;
     __ Sub(x10, sp, Operand(x11));
-    __ CompareRoot(x10, RootIndex::kRealStackLimit);
+    {
+      UseScratchRegisterScope temps(masm);
+      Register scratch = temps.AcquireX();
+      LoadRealStackLimit(masm, scratch);
+      __ Cmp(x10, scratch);
+    }
     __ B(hs, &ok);
     __ CallRuntime(Runtime::kThrowStackOverflow);
     __ Bind(&ok);
@@ -2473,7 +2511,7 @@ void Generate_PushBoundArguments(MacroAssembler* masm) {
       // (i.e. debug break and preemption) here, so check the "real stack
       // limit".
       Label done;
-      __ LoadRoot(x10, RootIndex::kRealStackLimit);
+      LoadRealStackLimit(masm, x10);
       // Make x10 the space we have left. The stack might already be overflowed
       // here which will cause x10 to become negative.
       __ Sub(x10, sp, x10);

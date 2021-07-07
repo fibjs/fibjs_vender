@@ -73,6 +73,7 @@ class StackFrameBase {
   virtual Handle<Object> GetTypeName() = 0;
   virtual Handle<Object> GetEvalOrigin();
   virtual Handle<Object> GetWasmModuleName();
+  virtual Handle<Object> GetWasmInstance();
 
   // Returns the script ID if one is attached, -1 otherwise.
   int GetScriptId() const;
@@ -170,12 +171,13 @@ class WasmStackFrame : public StackFrameBase {
   Handle<Object> GetMethodName() override { return Null(); }
   Handle<Object> GetTypeName() override { return Null(); }
   Handle<Object> GetWasmModuleName() override;
+  Handle<Object> GetWasmInstance() override;
 
   int GetPosition() const override;
   int GetLineNumber() override { return wasm_func_index_; }
   int GetColumnNumber() override;
 
-  int GetPromiseIndex() const override { return kNone; }
+  int GetPromiseIndex() const override { return GetPosition(); }
 
   bool IsNative() override { return false; }
   bool IsToplevel() override { return false; }
@@ -281,6 +283,18 @@ class ErrorUtils : public AllStatic {
   static MaybeHandle<Object> FormatStackTrace(Isolate* isolate,
                                               Handle<JSObject> error,
                                               Handle<Object> stack_trace);
+
+  static Handle<Object> NewIteratorError(Isolate* isolate,
+                                         Handle<Object> source);
+  static Handle<Object> NewCalledNonCallableError(Isolate* isolate,
+                                                  Handle<Object> source);
+  static Handle<Object> NewConstructedNonConstructable(Isolate* isolate,
+                                                       Handle<Object> source);
+  static Object ThrowLoadFromNullOrUndefined(Isolate* isolate,
+                                             Handle<Object> object);
+  static Object ThrowLoadFromNullOrUndefined(Isolate* isolate,
+                                             Handle<Object> object,
+                                             MaybeHandle<Object> key);
 };
 
 class MessageFormatter {

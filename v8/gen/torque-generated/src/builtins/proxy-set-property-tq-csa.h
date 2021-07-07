@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-void CallThrowTypeErrorIfStrict_289(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, MessageTemplate p_message);
+void CallThrowTypeErrorIfStrict_318(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, MessageTemplate p_message);
 }  // namespace internal
 }  // namespace v8
 

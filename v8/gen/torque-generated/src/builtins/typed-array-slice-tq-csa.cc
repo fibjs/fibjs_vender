@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-const char* kBuiltinName_323(compiler::CodeAssemblerState* state_) {
+const char* kBuiltinName_364(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -132,11 +140,11 @@ const char* kBuiltinName_323(compiler::CodeAssemblerState* state_) {
 return "%TypedArray%.prototype.slice";
 }
 
-void FastCopy_324(compiler::CodeAssemblerState* state_, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_IfSlow) {
+void FastCopy_365(compiler::CodeAssemblerState* state_, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<Smi> p_count, compiler::CodeAssemblerLabel* label_IfSlow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<JSTypedArray, JSTypedArray, IntPtrT, Smi> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSTypedArray, JSTypedArray, IntPtrT, Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSTypedArray, JSTypedArray, IntPtrT, Smi> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSTypedArray, JSTypedArray, IntPtrT, Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSTypedArray, JSTypedArray, IntPtrT, Smi, Int32T, UintPtrT, Int32T> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSTypedArray, JSTypedArray, IntPtrT, Smi, Int32T, UintPtrT, Int32T> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSTypedArray, JSTypedArray, IntPtrT, Smi, Int32T, UintPtrT, Int32T> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -163,339 +171,336 @@ void FastCopy_324(compiler::CodeAssemblerState* state_, compiler::TNode<JSTypedA
     compiler::TNode<Smi> tmp3;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 16);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    CodeStubAssembler(state_).GotoIfForceSlowPath(&label0);
-    ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3);
-    }
-  }
-
-  if (block4.is_used()) {
-    compiler::TNode<JSTypedArray> tmp4;
-    compiler::TNode<JSTypedArray> tmp5;
-    compiler::TNode<IntPtrT> tmp6;
-    compiler::TNode<Smi> tmp7;
-    ca_.Bind(&block4, &tmp4, &tmp5, &tmp6, &tmp7);
-    ca_.Goto(&block1);
+    compiler::TNode<BoolT> tmp4;
+    USE(tmp4);
+    tmp4 = IsForceSlowPath_239(state_);
+    ca_.Branch(tmp4, &block3, &block4, tmp0, tmp1, tmp2, tmp3);
   }
 
   if (block3.is_used()) {
-    compiler::TNode<JSTypedArray> tmp8;
+    compiler::TNode<JSTypedArray> tmp5;
+    compiler::TNode<JSTypedArray> tmp6;
+    compiler::TNode<IntPtrT> tmp7;
+    compiler::TNode<Smi> tmp8;
+    ca_.Bind(&block3, &tmp5, &tmp6, &tmp7, &tmp8);
+    ca_.Goto(&block1);
+  }
+
+  if (block4.is_used()) {
     compiler::TNode<JSTypedArray> tmp9;
-    compiler::TNode<IntPtrT> tmp10;
-    compiler::TNode<Smi> tmp11;
-    ca_.Bind(&block3, &tmp8, &tmp9, &tmp10, &tmp11);
+    compiler::TNode<JSTypedArray> tmp10;
+    compiler::TNode<IntPtrT> tmp11;
+    compiler::TNode<Smi> tmp12;
+    ca_.Bind(&block4, &tmp9, &tmp10, &tmp11, &tmp12);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 18);
-    compiler::TNode<Int32T> tmp12;
-    USE(tmp12);
-    tmp12 = CodeStubAssembler(state_).LoadElementsKind(compiler::TNode<JSTypedArray>{tmp8});
-    ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 19);
-    compiler::TNode<UintPtrT> tmp13;
+    compiler::TNode<Int32T> tmp13;
     USE(tmp13);
-    compiler::TNode<Int32T> tmp14;
+    tmp13 = CodeStubAssembler(state_).LoadElementsKind(compiler::TNode<JSTypedArray>{tmp9});
+    ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 19);
+    compiler::TNode<UintPtrT> tmp14;
     USE(tmp14);
-    std::tie(tmp13, tmp14) = TypedArrayBuiltinsAssembler(state_).GetTypedArrayElementsInfo(compiler::TNode<JSTypedArray>{tmp9}).Flatten();
-    ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 25);
-    compiler::TNode<BoolT> tmp15;
+    compiler::TNode<Int32T> tmp15;
     USE(tmp15);
-    tmp15 = ElementsKindNotEqual_72(state_, compiler::TNode<Int32T>{tmp12}, compiler::TNode<Int32T>{tmp14});
-    ca_.Branch(tmp15, &block5, &block6, tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14);
+    std::tie(tmp14, tmp15) = TypedArrayBuiltinsAssembler(state_).GetTypedArrayElementsInfo(compiler::TNode<JSTypedArray>{tmp10}).Flatten();
+    ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 25);
+    compiler::TNode<BoolT> tmp16;
+    USE(tmp16);
+    tmp16 = ElementsKindNotEqual_72(state_, compiler::TNode<Int32T>{tmp13}, compiler::TNode<Int32T>{tmp15});
+    ca_.Branch(tmp16, &block5, &block6, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15);
   }
 
   if (block5.is_used()) {
-    compiler::TNode<JSTypedArray> tmp16;
     compiler::TNode<JSTypedArray> tmp17;
-    compiler::TNode<IntPtrT> tmp18;
-    compiler::TNode<Smi> tmp19;
-    compiler::TNode<Int32T> tmp20;
-    compiler::TNode<UintPtrT> tmp21;
-    compiler::TNode<Int32T> tmp22;
-    ca_.Bind(&block5, &tmp16, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21, &tmp22);
+    compiler::TNode<JSTypedArray> tmp18;
+    compiler::TNode<IntPtrT> tmp19;
+    compiler::TNode<Smi> tmp20;
+    compiler::TNode<Int32T> tmp21;
+    compiler::TNode<UintPtrT> tmp22;
+    compiler::TNode<Int32T> tmp23;
+    ca_.Bind(&block5, &tmp17, &tmp18, &tmp19, &tmp20, &tmp21, &tmp22, &tmp23);
     ca_.Goto(&block1);
   }
 
   if (block6.is_used()) {
-    compiler::TNode<JSTypedArray> tmp23;
     compiler::TNode<JSTypedArray> tmp24;
-    compiler::TNode<IntPtrT> tmp25;
-    compiler::TNode<Smi> tmp26;
-    compiler::TNode<Int32T> tmp27;
-    compiler::TNode<UintPtrT> tmp28;
-    compiler::TNode<Int32T> tmp29;
-    ca_.Bind(&block6, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27, &tmp28, &tmp29);
+    compiler::TNode<JSTypedArray> tmp25;
+    compiler::TNode<IntPtrT> tmp26;
+    compiler::TNode<Smi> tmp27;
+    compiler::TNode<Int32T> tmp28;
+    compiler::TNode<UintPtrT> tmp29;
+    compiler::TNode<Int32T> tmp30;
+    ca_.Bind(&block6, &tmp24, &tmp25, &tmp26, &tmp27, &tmp28, &tmp29, &tmp30);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 26);
-    compiler::TNode<IntPtrT> tmp30 = ca_.IntPtrConstant(JSArrayBufferView::kBufferOffset);
-    USE(tmp30);
-    compiler::TNode<JSArrayBuffer>tmp31 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp24, tmp30});
-    compiler::TNode<IntPtrT> tmp32;
-    USE(tmp32);
-    tmp32 = CodeStubAssembler(state_).BitcastTaggedToWord(compiler::TNode<Object>{tmp31});
-    compiler::TNode<IntPtrT> tmp33 = ca_.IntPtrConstant(JSArrayBufferView::kBufferOffset);
+    compiler::TNode<IntPtrT> tmp31 = ca_.IntPtrConstant(JSArrayBufferView::kBufferOffset);
+    USE(tmp31);
+    compiler::TNode<JSArrayBuffer>tmp32 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp25, tmp31});
+    compiler::TNode<IntPtrT> tmp33;
     USE(tmp33);
-    compiler::TNode<JSArrayBuffer>tmp34 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp23, tmp33});
-    compiler::TNode<IntPtrT> tmp35;
-    USE(tmp35);
-    tmp35 = CodeStubAssembler(state_).BitcastTaggedToWord(compiler::TNode<Object>{tmp34});
-    compiler::TNode<BoolT> tmp36;
+    tmp33 = CodeStubAssembler(state_).BitcastTaggedToWord(compiler::TNode<Object>{tmp32});
+    compiler::TNode<IntPtrT> tmp34 = ca_.IntPtrConstant(JSArrayBufferView::kBufferOffset);
+    USE(tmp34);
+    compiler::TNode<JSArrayBuffer>tmp35 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp24, tmp34});
+    compiler::TNode<IntPtrT> tmp36;
     USE(tmp36);
-    tmp36 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp32}, compiler::TNode<IntPtrT>{tmp35});
-    ca_.Branch(tmp36, &block7, &block8, tmp23, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29);
+    tmp36 = CodeStubAssembler(state_).BitcastTaggedToWord(compiler::TNode<Object>{tmp35});
+    compiler::TNode<BoolT> tmp37;
+    USE(tmp37);
+    tmp37 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp33}, compiler::TNode<IntPtrT>{tmp36});
+    ca_.Branch(tmp37, &block7, &block8, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30);
   }
 
   if (block7.is_used()) {
-    compiler::TNode<JSTypedArray> tmp37;
     compiler::TNode<JSTypedArray> tmp38;
-    compiler::TNode<IntPtrT> tmp39;
-    compiler::TNode<Smi> tmp40;
-    compiler::TNode<Int32T> tmp41;
-    compiler::TNode<UintPtrT> tmp42;
-    compiler::TNode<Int32T> tmp43;
-    ca_.Bind(&block7, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43);
+    compiler::TNode<JSTypedArray> tmp39;
+    compiler::TNode<IntPtrT> tmp40;
+    compiler::TNode<Smi> tmp41;
+    compiler::TNode<Int32T> tmp42;
+    compiler::TNode<UintPtrT> tmp43;
+    compiler::TNode<Int32T> tmp44;
+    ca_.Bind(&block7, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 27);
     ca_.Goto(&block1);
   }
 
   if (block8.is_used()) {
-    compiler::TNode<JSTypedArray> tmp44;
     compiler::TNode<JSTypedArray> tmp45;
-    compiler::TNode<IntPtrT> tmp46;
-    compiler::TNode<Smi> tmp47;
-    compiler::TNode<Int32T> tmp48;
-    compiler::TNode<UintPtrT> tmp49;
-    compiler::TNode<Int32T> tmp50;
-    ca_.Bind(&block8, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50);
+    compiler::TNode<JSTypedArray> tmp46;
+    compiler::TNode<IntPtrT> tmp47;
+    compiler::TNode<Smi> tmp48;
+    compiler::TNode<Int32T> tmp49;
+    compiler::TNode<UintPtrT> tmp50;
+    compiler::TNode<Int32T> tmp51;
+    ca_.Bind(&block8, &tmp45, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 31);
     ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 26);
-    compiler::TNode<UintPtrT> tmp51;
-    USE(tmp51);
-    tmp51 = Convert9ATuintptr13ATPositiveSmi_160(state_, compiler::TNode<Smi>{tmp47});
-    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 27);
     compiler::TNode<UintPtrT> tmp52;
     USE(tmp52);
-    tmp52 = CodeStubAssembler(state_).WordShl(compiler::TNode<UintPtrT>{tmp51}, compiler::TNode<UintPtrT>{tmp49});
-    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 30);
+    tmp52 = Convert9ATuintptr13ATPositiveSmi_187(state_, compiler::TNode<Smi>{tmp48});
+    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 27);
     compiler::TNode<UintPtrT> tmp53;
     USE(tmp53);
-    tmp53 = CodeStubAssembler(state_).WordShr(compiler::TNode<UintPtrT>{tmp52}, compiler::TNode<UintPtrT>{tmp49});
-    compiler::TNode<BoolT> tmp54;
+    tmp53 = CodeStubAssembler(state_).WordShl(compiler::TNode<UintPtrT>{tmp52}, compiler::TNode<UintPtrT>{tmp50});
+    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 30);
+    compiler::TNode<UintPtrT> tmp54;
     USE(tmp54);
-    tmp54 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<UintPtrT>{tmp53}, compiler::TNode<UintPtrT>{tmp51});
-    ca_.Branch(tmp54, &block12, &block13, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp49, tmp50, tmp47, tmp47, tmp51, tmp52);
+    tmp54 = CodeStubAssembler(state_).WordShr(compiler::TNode<UintPtrT>{tmp53}, compiler::TNode<UintPtrT>{tmp50});
+    compiler::TNode<BoolT> tmp55;
+    USE(tmp55);
+    tmp55 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<UintPtrT>{tmp54}, compiler::TNode<UintPtrT>{tmp52});
+    ca_.Branch(tmp55, &block12, &block13, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51, tmp50, tmp51, tmp48, tmp48, tmp52, tmp53);
   }
 
   if (block12.is_used()) {
-    compiler::TNode<JSTypedArray> tmp55;
     compiler::TNode<JSTypedArray> tmp56;
-    compiler::TNode<IntPtrT> tmp57;
-    compiler::TNode<Smi> tmp58;
-    compiler::TNode<Int32T> tmp59;
-    compiler::TNode<UintPtrT> tmp60;
-    compiler::TNode<Int32T> tmp61;
-    compiler::TNode<UintPtrT> tmp62;
-    compiler::TNode<Int32T> tmp63;
-    compiler::TNode<Smi> tmp64;
+    compiler::TNode<JSTypedArray> tmp57;
+    compiler::TNode<IntPtrT> tmp58;
+    compiler::TNode<Smi> tmp59;
+    compiler::TNode<Int32T> tmp60;
+    compiler::TNode<UintPtrT> tmp61;
+    compiler::TNode<Int32T> tmp62;
+    compiler::TNode<UintPtrT> tmp63;
+    compiler::TNode<Int32T> tmp64;
     compiler::TNode<Smi> tmp65;
-    compiler::TNode<UintPtrT> tmp66;
+    compiler::TNode<Smi> tmp66;
     compiler::TNode<UintPtrT> tmp67;
-    ca_.Bind(&block12, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67);
-    ca_.Goto(&block10, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61);
+    compiler::TNode<UintPtrT> tmp68;
+    ca_.Bind(&block12, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68);
+    ca_.Goto(&block10, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62);
   }
 
   if (block13.is_used()) {
-    compiler::TNode<JSTypedArray> tmp68;
     compiler::TNode<JSTypedArray> tmp69;
-    compiler::TNode<IntPtrT> tmp70;
-    compiler::TNode<Smi> tmp71;
-    compiler::TNode<Int32T> tmp72;
-    compiler::TNode<UintPtrT> tmp73;
-    compiler::TNode<Int32T> tmp74;
-    compiler::TNode<UintPtrT> tmp75;
-    compiler::TNode<Int32T> tmp76;
-    compiler::TNode<Smi> tmp77;
+    compiler::TNode<JSTypedArray> tmp70;
+    compiler::TNode<IntPtrT> tmp71;
+    compiler::TNode<Smi> tmp72;
+    compiler::TNode<Int32T> tmp73;
+    compiler::TNode<UintPtrT> tmp74;
+    compiler::TNode<Int32T> tmp75;
+    compiler::TNode<UintPtrT> tmp76;
+    compiler::TNode<Int32T> tmp77;
     compiler::TNode<Smi> tmp78;
-    compiler::TNode<UintPtrT> tmp79;
+    compiler::TNode<Smi> tmp79;
     compiler::TNode<UintPtrT> tmp80;
-    ca_.Bind(&block13, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80);
+    compiler::TNode<UintPtrT> tmp81;
+    ca_.Bind(&block13, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81);
     ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 31);
-    ca_.Goto(&block11, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp78, tmp80);
+    ca_.Goto(&block11, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp81);
   }
 
   if (block11.is_used()) {
-    compiler::TNode<JSTypedArray> tmp81;
     compiler::TNode<JSTypedArray> tmp82;
-    compiler::TNode<IntPtrT> tmp83;
-    compiler::TNode<Smi> tmp84;
-    compiler::TNode<Int32T> tmp85;
-    compiler::TNode<UintPtrT> tmp86;
-    compiler::TNode<Int32T> tmp87;
-    compiler::TNode<UintPtrT> tmp88;
-    compiler::TNode<Int32T> tmp89;
-    compiler::TNode<Smi> tmp90;
+    compiler::TNode<JSTypedArray> tmp83;
+    compiler::TNode<IntPtrT> tmp84;
+    compiler::TNode<Smi> tmp85;
+    compiler::TNode<Int32T> tmp86;
+    compiler::TNode<UintPtrT> tmp87;
+    compiler::TNode<Int32T> tmp88;
+    compiler::TNode<UintPtrT> tmp89;
+    compiler::TNode<Int32T> tmp90;
     compiler::TNode<Smi> tmp91;
-    compiler::TNode<UintPtrT> tmp92;
-    ca_.Bind(&block11, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92);
+    compiler::TNode<Smi> tmp92;
+    compiler::TNode<UintPtrT> tmp93;
+    ca_.Bind(&block11, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92, &tmp93);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 31);
-    ca_.Goto(&block9, tmp81, tmp82, tmp83, tmp84, tmp85, tmp86, tmp87, tmp92);
+    ca_.Goto(&block9, tmp82, tmp83, tmp84, tmp85, tmp86, tmp87, tmp88, tmp93);
   }
 
   if (block10.is_used()) {
-    compiler::TNode<JSTypedArray> tmp93;
     compiler::TNode<JSTypedArray> tmp94;
-    compiler::TNode<IntPtrT> tmp95;
-    compiler::TNode<Smi> tmp96;
-    compiler::TNode<Int32T> tmp97;
-    compiler::TNode<UintPtrT> tmp98;
-    compiler::TNode<Int32T> tmp99;
-    ca_.Bind(&block10, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99);
+    compiler::TNode<JSTypedArray> tmp95;
+    compiler::TNode<IntPtrT> tmp96;
+    compiler::TNode<Smi> tmp97;
+    compiler::TNode<Int32T> tmp98;
+    compiler::TNode<UintPtrT> tmp99;
+    compiler::TNode<Int32T> tmp100;
+    ca_.Bind(&block10, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100);
     CodeStubAssembler(state_).Unreachable();
   }
 
   if (block9.is_used()) {
-    compiler::TNode<JSTypedArray> tmp100;
     compiler::TNode<JSTypedArray> tmp101;
-    compiler::TNode<IntPtrT> tmp102;
-    compiler::TNode<Smi> tmp103;
-    compiler::TNode<Int32T> tmp104;
-    compiler::TNode<UintPtrT> tmp105;
-    compiler::TNode<Int32T> tmp106;
-    compiler::TNode<UintPtrT> tmp107;
-    ca_.Bind(&block9, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106, &tmp107);
+    compiler::TNode<JSTypedArray> tmp102;
+    compiler::TNode<IntPtrT> tmp103;
+    compiler::TNode<Smi> tmp104;
+    compiler::TNode<Int32T> tmp105;
+    compiler::TNode<UintPtrT> tmp106;
+    compiler::TNode<Int32T> tmp107;
+    compiler::TNode<UintPtrT> tmp108;
+    ca_.Bind(&block9, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106, &tmp107, &tmp108);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 30);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 33);
-    compiler::TNode<Smi> tmp108;
-    USE(tmp108);
-    tmp108 = Convert13ATPositiveSmi8ATintptr_162(state_, compiler::TNode<IntPtrT>{tmp102});
-    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 26);
-    compiler::TNode<UintPtrT> tmp109;
+    compiler::TNode<Smi> tmp109;
     USE(tmp109);
-    tmp109 = Convert9ATuintptr13ATPositiveSmi_160(state_, compiler::TNode<Smi>{tmp108});
-    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 27);
+    tmp109 = Convert13ATPositiveSmi8ATintptr_189(state_, compiler::TNode<IntPtrT>{tmp103});
+    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 26);
     compiler::TNode<UintPtrT> tmp110;
     USE(tmp110);
-    tmp110 = CodeStubAssembler(state_).WordShl(compiler::TNode<UintPtrT>{tmp109}, compiler::TNode<UintPtrT>{tmp105});
-    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 30);
+    tmp110 = Convert9ATuintptr13ATPositiveSmi_187(state_, compiler::TNode<Smi>{tmp109});
+    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 27);
     compiler::TNode<UintPtrT> tmp111;
     USE(tmp111);
-    tmp111 = CodeStubAssembler(state_).WordShr(compiler::TNode<UintPtrT>{tmp110}, compiler::TNode<UintPtrT>{tmp105});
-    compiler::TNode<BoolT> tmp112;
+    tmp111 = CodeStubAssembler(state_).WordShl(compiler::TNode<UintPtrT>{tmp110}, compiler::TNode<UintPtrT>{tmp106});
+    ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 30);
+    compiler::TNode<UintPtrT> tmp112;
     USE(tmp112);
-    tmp112 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<UintPtrT>{tmp111}, compiler::TNode<UintPtrT>{tmp109});
-    ca_.Branch(tmp112, &block17, &block18, tmp100, tmp101, tmp102, tmp103, tmp104, tmp105, tmp106, tmp107, tmp105, tmp106, tmp108, tmp108, tmp109, tmp110);
+    tmp112 = CodeStubAssembler(state_).WordShr(compiler::TNode<UintPtrT>{tmp111}, compiler::TNode<UintPtrT>{tmp106});
+    compiler::TNode<BoolT> tmp113;
+    USE(tmp113);
+    tmp113 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<UintPtrT>{tmp112}, compiler::TNode<UintPtrT>{tmp110});
+    ca_.Branch(tmp113, &block17, &block18, tmp101, tmp102, tmp103, tmp104, tmp105, tmp106, tmp107, tmp108, tmp106, tmp107, tmp109, tmp109, tmp110, tmp111);
   }
 
   if (block17.is_used()) {
-    compiler::TNode<JSTypedArray> tmp113;
     compiler::TNode<JSTypedArray> tmp114;
-    compiler::TNode<IntPtrT> tmp115;
-    compiler::TNode<Smi> tmp116;
-    compiler::TNode<Int32T> tmp117;
-    compiler::TNode<UintPtrT> tmp118;
-    compiler::TNode<Int32T> tmp119;
-    compiler::TNode<UintPtrT> tmp120;
+    compiler::TNode<JSTypedArray> tmp115;
+    compiler::TNode<IntPtrT> tmp116;
+    compiler::TNode<Smi> tmp117;
+    compiler::TNode<Int32T> tmp118;
+    compiler::TNode<UintPtrT> tmp119;
+    compiler::TNode<Int32T> tmp120;
     compiler::TNode<UintPtrT> tmp121;
-    compiler::TNode<Int32T> tmp122;
-    compiler::TNode<Smi> tmp123;
+    compiler::TNode<UintPtrT> tmp122;
+    compiler::TNode<Int32T> tmp123;
     compiler::TNode<Smi> tmp124;
-    compiler::TNode<UintPtrT> tmp125;
+    compiler::TNode<Smi> tmp125;
     compiler::TNode<UintPtrT> tmp126;
-    ca_.Bind(&block17, &tmp113, &tmp114, &tmp115, &tmp116, &tmp117, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126);
-    ca_.Goto(&block15, tmp113, tmp114, tmp115, tmp116, tmp117, tmp118, tmp119, tmp120);
+    compiler::TNode<UintPtrT> tmp127;
+    ca_.Bind(&block17, &tmp114, &tmp115, &tmp116, &tmp117, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126, &tmp127);
+    ca_.Goto(&block15, tmp114, tmp115, tmp116, tmp117, tmp118, tmp119, tmp120, tmp121);
   }
 
   if (block18.is_used()) {
-    compiler::TNode<JSTypedArray> tmp127;
     compiler::TNode<JSTypedArray> tmp128;
-    compiler::TNode<IntPtrT> tmp129;
-    compiler::TNode<Smi> tmp130;
-    compiler::TNode<Int32T> tmp131;
-    compiler::TNode<UintPtrT> tmp132;
-    compiler::TNode<Int32T> tmp133;
-    compiler::TNode<UintPtrT> tmp134;
+    compiler::TNode<JSTypedArray> tmp129;
+    compiler::TNode<IntPtrT> tmp130;
+    compiler::TNode<Smi> tmp131;
+    compiler::TNode<Int32T> tmp132;
+    compiler::TNode<UintPtrT> tmp133;
+    compiler::TNode<Int32T> tmp134;
     compiler::TNode<UintPtrT> tmp135;
-    compiler::TNode<Int32T> tmp136;
-    compiler::TNode<Smi> tmp137;
+    compiler::TNode<UintPtrT> tmp136;
+    compiler::TNode<Int32T> tmp137;
     compiler::TNode<Smi> tmp138;
-    compiler::TNode<UintPtrT> tmp139;
+    compiler::TNode<Smi> tmp139;
     compiler::TNode<UintPtrT> tmp140;
-    ca_.Bind(&block18, &tmp127, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137, &tmp138, &tmp139, &tmp140);
+    compiler::TNode<UintPtrT> tmp141;
+    ca_.Bind(&block18, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137, &tmp138, &tmp139, &tmp140, &tmp141);
     ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 31);
-    ca_.Goto(&block16, tmp127, tmp128, tmp129, tmp130, tmp131, tmp132, tmp133, tmp134, tmp135, tmp136, tmp137, tmp138, tmp140);
+    ca_.Goto(&block16, tmp128, tmp129, tmp130, tmp131, tmp132, tmp133, tmp134, tmp135, tmp136, tmp137, tmp138, tmp139, tmp141);
   }
 
   if (block16.is_used()) {
-    compiler::TNode<JSTypedArray> tmp141;
     compiler::TNode<JSTypedArray> tmp142;
-    compiler::TNode<IntPtrT> tmp143;
-    compiler::TNode<Smi> tmp144;
-    compiler::TNode<Int32T> tmp145;
-    compiler::TNode<UintPtrT> tmp146;
-    compiler::TNode<Int32T> tmp147;
-    compiler::TNode<UintPtrT> tmp148;
+    compiler::TNode<JSTypedArray> tmp143;
+    compiler::TNode<IntPtrT> tmp144;
+    compiler::TNode<Smi> tmp145;
+    compiler::TNode<Int32T> tmp146;
+    compiler::TNode<UintPtrT> tmp147;
+    compiler::TNode<Int32T> tmp148;
     compiler::TNode<UintPtrT> tmp149;
-    compiler::TNode<Int32T> tmp150;
-    compiler::TNode<Smi> tmp151;
+    compiler::TNode<UintPtrT> tmp150;
+    compiler::TNode<Int32T> tmp151;
     compiler::TNode<Smi> tmp152;
-    compiler::TNode<UintPtrT> tmp153;
-    ca_.Bind(&block16, &tmp141, &tmp142, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148, &tmp149, &tmp150, &tmp151, &tmp152, &tmp153);
+    compiler::TNode<Smi> tmp153;
+    compiler::TNode<UintPtrT> tmp154;
+    ca_.Bind(&block16, &tmp142, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148, &tmp149, &tmp150, &tmp151, &tmp152, &tmp153, &tmp154);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 33);
-    ca_.Goto(&block14, tmp141, tmp142, tmp143, tmp144, tmp145, tmp146, tmp147, tmp148, tmp153);
+    ca_.Goto(&block14, tmp142, tmp143, tmp144, tmp145, tmp146, tmp147, tmp148, tmp149, tmp154);
   }
 
   if (block15.is_used()) {
-    compiler::TNode<JSTypedArray> tmp154;
     compiler::TNode<JSTypedArray> tmp155;
-    compiler::TNode<IntPtrT> tmp156;
-    compiler::TNode<Smi> tmp157;
-    compiler::TNode<Int32T> tmp158;
-    compiler::TNode<UintPtrT> tmp159;
-    compiler::TNode<Int32T> tmp160;
-    compiler::TNode<UintPtrT> tmp161;
-    ca_.Bind(&block15, &tmp154, &tmp155, &tmp156, &tmp157, &tmp158, &tmp159, &tmp160, &tmp161);
+    compiler::TNode<JSTypedArray> tmp156;
+    compiler::TNode<IntPtrT> tmp157;
+    compiler::TNode<Smi> tmp158;
+    compiler::TNode<Int32T> tmp159;
+    compiler::TNode<UintPtrT> tmp160;
+    compiler::TNode<Int32T> tmp161;
+    compiler::TNode<UintPtrT> tmp162;
+    ca_.Bind(&block15, &tmp155, &tmp156, &tmp157, &tmp158, &tmp159, &tmp160, &tmp161, &tmp162);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 34);
     CodeStubAssembler(state_).Unreachable();
   }
 
   if (block14.is_used()) {
-    compiler::TNode<JSTypedArray> tmp162;
     compiler::TNode<JSTypedArray> tmp163;
-    compiler::TNode<IntPtrT> tmp164;
-    compiler::TNode<Smi> tmp165;
-    compiler::TNode<Int32T> tmp166;
-    compiler::TNode<UintPtrT> tmp167;
-    compiler::TNode<Int32T> tmp168;
-    compiler::TNode<UintPtrT> tmp169;
+    compiler::TNode<JSTypedArray> tmp164;
+    compiler::TNode<IntPtrT> tmp165;
+    compiler::TNode<Smi> tmp166;
+    compiler::TNode<Int32T> tmp167;
+    compiler::TNode<UintPtrT> tmp168;
+    compiler::TNode<Int32T> tmp169;
     compiler::TNode<UintPtrT> tmp170;
-    ca_.Bind(&block14, &tmp162, &tmp163, &tmp164, &tmp165, &tmp166, &tmp167, &tmp168, &tmp169, &tmp170);
+    compiler::TNode<UintPtrT> tmp171;
+    ca_.Bind(&block14, &tmp163, &tmp164, &tmp165, &tmp166, &tmp167, &tmp168, &tmp169, &tmp170, &tmp171);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 32);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 35);
-    compiler::TNode<RawPtrT> tmp171;
-    USE(tmp171);
-    tmp171 = CodeStubAssembler(state_).LoadJSTypedArrayBackingStore(compiler::TNode<JSTypedArray>{tmp162});
-    compiler::TNode<IntPtrT> tmp172;
+    compiler::TNode<RawPtrT> tmp172;
     USE(tmp172);
-    tmp172 = Convert8ATintptr9ATuintptr_161(state_, compiler::TNode<UintPtrT>{tmp170});
-    compiler::TNode<RawPtrT> tmp173;
+    tmp172 = CodeStubAssembler(state_).LoadJSTypedArrayBackingStore(compiler::TNode<JSTypedArray>{tmp163});
+    compiler::TNode<IntPtrT> tmp173;
     USE(tmp173);
-    tmp173 = CodeStubAssembler(state_).RawPtrAdd(compiler::TNode<RawPtrT>{tmp171}, compiler::TNode<IntPtrT>{tmp172});
-    ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 40);
+    tmp173 = Convert8ATintptr9ATuintptr_188(state_, compiler::TNode<UintPtrT>{tmp171});
     compiler::TNode<RawPtrT> tmp174;
     USE(tmp174);
-    tmp174 = CodeStubAssembler(state_).LoadJSTypedArrayBackingStore(compiler::TNode<JSTypedArray>{tmp163});
-    TypedArrayBuiltinsAssembler(state_).CallCMemmove(compiler::TNode<RawPtrT>{tmp174}, compiler::TNode<RawPtrT>{tmp173}, compiler::TNode<UintPtrT>{tmp169});
+    tmp174 = CodeStubAssembler(state_).RawPtrAdd(compiler::TNode<RawPtrT>{tmp172}, compiler::TNode<IntPtrT>{tmp173});
+    ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 40);
+    compiler::TNode<RawPtrT> tmp175;
+    USE(tmp175);
+    tmp175 = CodeStubAssembler(state_).LoadJSTypedArrayBackingStore(compiler::TNode<JSTypedArray>{tmp164});
+    TypedArrayBuiltinsAssembler(state_).CallCMemmove(compiler::TNode<RawPtrT>{tmp175}, compiler::TNode<RawPtrT>{tmp174}, compiler::TNode<UintPtrT>{tmp170});
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 15);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 13);
-    ca_.Goto(&block2, tmp162, tmp163, tmp164, tmp165);
+    ca_.Goto(&block2, tmp163, tmp164, tmp165, tmp166);
   }
 
   if (block2.is_used()) {
-    compiler::TNode<JSTypedArray> tmp175;
     compiler::TNode<JSTypedArray> tmp176;
-    compiler::TNode<IntPtrT> tmp177;
-    compiler::TNode<Smi> tmp178;
-    ca_.Bind(&block2, &tmp175, &tmp176, &tmp177, &tmp178);
-    ca_.Goto(&block19, tmp175, tmp176, tmp177, tmp178);
+    compiler::TNode<JSTypedArray> tmp177;
+    compiler::TNode<IntPtrT> tmp178;
+    compiler::TNode<Smi> tmp179;
+    ca_.Bind(&block2, &tmp176, &tmp177, &tmp178, &tmp179);
+    ca_.Goto(&block19, tmp176, tmp177, tmp178, tmp179);
   }
 
   if (block1.is_used()) {
@@ -503,14 +508,14 @@ void FastCopy_324(compiler::CodeAssemblerState* state_, compiler::TNode<JSTypedA
     ca_.Goto(label_IfSlow);
   }
 
-    compiler::TNode<JSTypedArray> tmp179;
     compiler::TNode<JSTypedArray> tmp180;
-    compiler::TNode<IntPtrT> tmp181;
-    compiler::TNode<Smi> tmp182;
-    ca_.Bind(&block19, &tmp179, &tmp180, &tmp181, &tmp182);
+    compiler::TNode<JSTypedArray> tmp181;
+    compiler::TNode<IntPtrT> tmp182;
+    compiler::TNode<Smi> tmp183;
+    ca_.Bind(&block19, &tmp180, &tmp181, &tmp182, &tmp183);
 }
 
-void SlowCopy_325(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<IntPtrT> p_final) {
+void SlowCopy_366(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_src, compiler::TNode<JSTypedArray> p_dest, compiler::TNode<IntPtrT> p_k, compiler::TNode<IntPtrT> p_final) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSTypedArray, IntPtrT, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSTypedArray, IntPtrT, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -631,7 +636,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 63);
     compiler::TNode<JSTypedArray> tmp5;
     USE(tmp5);
-    tmp5 = TypedArrayBuiltinsAssembler(state_).ValidateTypedArray(compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, kBuiltinName_323(state_));
+    tmp5 = TypedArrayBuiltinsAssembler(state_).ValidateTypedArray(compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, kBuiltinName_364(state_));
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 62);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 66);
     compiler::TNode<IntPtrT> tmp6 = ca_.IntPtrConstant(JSTypedArray::kLengthOffset);
@@ -639,21 +644,21 @@ USE(parameter1);
     compiler::TNode<UintPtrT>tmp7 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp5, tmp6});
     compiler::TNode<IntPtrT> tmp8;
     USE(tmp8);
-    tmp8 = Convert8ATintptr9ATuintptr_161(state_, compiler::TNode<UintPtrT>{tmp7});
+    tmp8 = Convert8ATintptr9ATuintptr_188(state_, compiler::TNode<UintPtrT>{tmp7});
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 71);
     compiler::TNode<IntPtrT> tmp9;
     USE(tmp9);
-    tmp9 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp9 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp10;
     USE(tmp10);
     tmp10 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp0}, compiler::TNode<RawPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2}}, compiler::TNode<IntPtrT>{tmp9});
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 73);
     compiler::TNode<Oddball> tmp11;
     USE(tmp11);
-    tmp11 = Undefined_65(state_);
+    tmp11 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp12;
     USE(tmp12);
-    tmp12 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<Object>{tmp10}, compiler::TNode<HeapObject>{tmp11});
+    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(compiler::TNode<Object>{tmp10}, compiler::TNode<HeapObject>{tmp11});
     ca_.Branch(tmp12, &block1, &block2, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp8, tmp10);
   }
 
@@ -685,7 +690,7 @@ USE(parameter1);
     ca_.Bind(&block2, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27, &tmp28, &tmp29);
     compiler::TNode<IntPtrT> tmp30;
     USE(tmp30);
-    tmp30 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp30 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     ca_.Goto(&block3, tmp22, tmp23, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30);
   }
 
@@ -718,17 +723,17 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 79);
     compiler::TNode<IntPtrT> tmp49;
     USE(tmp49);
-    tmp49 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp49 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp50;
     USE(tmp50);
     tmp50 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp40}, compiler::TNode<RawPtrT>{tmp41}, compiler::TNode<IntPtrT>{tmp42}}, compiler::TNode<IntPtrT>{tmp49});
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 81);
     compiler::TNode<Oddball> tmp51;
     USE(tmp51);
-    tmp51 = Undefined_65(state_);
+    tmp51 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp52;
     USE(tmp52);
-    tmp52 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<Object>{tmp50}, compiler::TNode<HeapObject>{tmp51});
+    tmp52 = CodeStubAssembler(state_).TaggedNotEqual(compiler::TNode<Object>{tmp50}, compiler::TNode<HeapObject>{tmp51});
     ca_.Branch(tmp52, &block5, &block6, tmp40, tmp41, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp50);
   }
 
@@ -801,23 +806,23 @@ USE(parameter1);
     tmp96 = CodeStubAssembler(state_).IntPtrSub(compiler::TNode<IntPtrT>{tmp95}, compiler::TNode<IntPtrT>{tmp93});
     compiler::TNode<IntPtrT> tmp97;
     USE(tmp97);
-    tmp97 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp97 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<IntPtrT> tmp98;
     USE(tmp98);
     tmp98 = CodeStubAssembler(state_).IntPtrMax(compiler::TNode<IntPtrT>{tmp96}, compiler::TNode<IntPtrT>{tmp97});
     compiler::TNode<Smi> tmp99;
     USE(tmp99);
-    tmp99 = Convert13ATPositiveSmi8ATintptr_162(state_, compiler::TNode<IntPtrT>{tmp98});
+    tmp99 = Convert13ATPositiveSmi8ATintptr_189(state_, compiler::TNode<IntPtrT>{tmp98});
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 89);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 88);
     compiler::TNode<JSTypedArray> tmp100;
     USE(tmp100);
-    tmp100 = TypedArraySpeciesCreateByLength_309(state_, compiler::TNode<Context>{tmp88}, kBuiltinName_323(state_), compiler::TNode<JSTypedArray>{tmp90}, compiler::TNode<Smi>{tmp99});
+    tmp100 = TypedArraySpeciesCreateByLength_350(state_, compiler::TNode<Context>{tmp88}, kBuiltinName_364(state_), compiler::TNode<JSTypedArray>{tmp90}, compiler::TNode<Smi>{tmp99});
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 87);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 91);
     compiler::TNode<Smi> tmp101;
     USE(tmp101);
-    tmp101 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp101 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp102;
     USE(tmp102);
     tmp102 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp99}, compiler::TNode<Smi>{tmp101});
@@ -843,7 +848,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp116;
     USE(tmp116);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp116 = EnsureAttached_328(state_, compiler::TNode<JSTypedArray>{tmp108}, &label0);
+    tmp116 = EnsureAttached_369(state_, compiler::TNode<JSTypedArray>{tmp108}, &label0);
     ca_.Goto(&block15, tmp103, tmp104, tmp105, tmp106, tmp107, tmp108, tmp109, tmp110, tmp111, tmp112, tmp113, tmp114, tmp115, tmp108, tmp116);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -889,7 +894,7 @@ USE(parameter1);
     ca_.Bind(&block15, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137, &tmp138, &tmp139, &tmp140, &tmp141, &tmp142, &tmp143, &tmp144, &tmp145);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 95);
     compiler::CodeAssemblerLabel label0(&ca_);
-    FastCopy_324(state_, compiler::TNode<JSTypedArray>{tmp145}, compiler::TNode<JSTypedArray>{tmp143}, compiler::TNode<IntPtrT>{tmp139}, compiler::TNode<Smi>{tmp142}, &label0);
+    FastCopy_365(state_, compiler::TNode<JSTypedArray>{tmp145}, compiler::TNode<JSTypedArray>{tmp143}, compiler::TNode<IntPtrT>{tmp139}, compiler::TNode<Smi>{tmp142}, &label0);
     ca_.Goto(&block17, tmp131, tmp132, tmp133, tmp134, tmp135, tmp136, tmp137, tmp138, tmp139, tmp140, tmp141, tmp142, tmp143, tmp145, tmp145, tmp143, tmp139, tmp142);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -961,7 +966,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp194;
     ca_.Bind(&block14, &tmp182, &tmp183, &tmp184, &tmp185, &tmp186, &tmp187, &tmp188, &tmp189, &tmp190, &tmp191, &tmp192, &tmp193, &tmp194);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 98);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp185}, MessageTemplate::kDetachedOperation, kBuiltinName_323(state_));
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp185}, MessageTemplate::kDetachedOperation, kBuiltinName_364(state_));
   }
 
   if (block13.is_used()) {
@@ -999,7 +1004,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp220;
     ca_.Bind(&block12, &tmp208, &tmp209, &tmp210, &tmp211, &tmp212, &tmp213, &tmp214, &tmp215, &tmp216, &tmp217, &tmp218, &tmp219, &tmp220);
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 101);
-    SlowCopy_325(state_, compiler::TNode<Context>{tmp211}, compiler::TNode<JSTypedArray>{tmp213}, compiler::TNode<JSTypedArray>{tmp220}, compiler::TNode<IntPtrT>{tmp216}, compiler::TNode<IntPtrT>{tmp218});
+    SlowCopy_366(state_, compiler::TNode<Context>{tmp211}, compiler::TNode<JSTypedArray>{tmp213}, compiler::TNode<JSTypedArray>{tmp220}, compiler::TNode<IntPtrT>{tmp216}, compiler::TNode<IntPtrT>{tmp218});
     ca_.SetSourcePosition("../../src/builtins/typed-array-slice.tq", 92);
     ca_.Goto(&block11, tmp208, tmp209, tmp210, tmp211, tmp212, tmp213, tmp214, tmp215, tmp216, tmp217, tmp218, tmp219, tmp220);
   }

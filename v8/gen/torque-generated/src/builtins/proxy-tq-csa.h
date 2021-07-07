@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<BoolT> IsRevokedProxy_290(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o);
+compiler::TNode<BoolT> IsRevokedProxy_319(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSReceiver> p_o);
 }  // namespace internal
 }  // namespace v8
 

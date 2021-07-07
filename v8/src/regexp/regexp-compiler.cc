@@ -5,13 +5,11 @@
 #include "src/regexp/regexp-compiler.h"
 
 #include "src/base/safe_conversions.h"
-#include "src/diagnostics/code-tracer.h"
 #include "src/execution/isolate.h"
 #include "src/objects/objects-inl.h"
 #include "src/regexp/regexp-macro-assembler-arch.h"
 #include "src/regexp/regexp-macro-assembler-tracer.h"
 #include "src/strings/unicode-inl.h"
-#include "src/utils/ostreams.h"
 #include "src/zone/zone-list-inl.h"
 
 #ifdef V8_INTL_SUPPORT
@@ -273,13 +271,7 @@ RegExpCompiler::CompilationResult RegExpCompiler::Assemble(
   Handle<HeapObject> code = macro_assembler_->GetCode(pattern);
   isolate->IncreaseTotalRegexpCodeGenerated(code->Size());
   work_list_ = nullptr;
-#ifdef ENABLE_DISASSEMBLER
-  if (FLAG_print_code && !FLAG_regexp_interpret_all) {
-    CodeTracer::Scope trace_scope(isolate->GetCodeTracer());
-    OFStream os(trace_scope.file());
-    Handle<Code>::cast(code)->Disassemble(pattern->ToCString().get(), os);
-  }
-#endif
+
 #ifdef DEBUG
   if (FLAG_trace_regexp_assembler) {
     delete macro_assembler_;
@@ -423,14 +415,14 @@ void Trace::PerformDeferredActions(RegExpMacroAssembler* assembler,
          action = action->next()) {
       if (action->Mentions(reg)) {
         switch (action->action_type()) {
-          case ActionNode::SET_REGISTER: {
-            Trace::DeferredSetRegister* psr =
-                static_cast<Trace::DeferredSetRegister*>(action);
+          case ActionNode::SET_REGISTER_FOR_LOOP: {
+            Trace::DeferredSetRegisterForLoop* psr =
+                static_cast<Trace::DeferredSetRegisterForLoop*>(action);
             if (!absolute) {
               value += psr->value();
               absolute = true;
             }
-            // SET_REGISTER is currently only used for newly introduced loop
+            // SET_REGISTER_FOR_LOOP is only used for newly introduced loop
             // counters. They can have a significant previous value if they
             // occur in a loop. TODO(lrn): Propagate this information, so
             // we can set undo_action to IGNORE if we know there is no value to
@@ -635,9 +627,10 @@ void GuardedAlternative::AddGuard(Guard* guard, Zone* zone) {
   guards_->Add(guard, zone);
 }
 
-ActionNode* ActionNode::SetRegister(int reg, int val, RegExpNode* on_success) {
+ActionNode* ActionNode::SetRegisterForLoop(int reg, int val,
+                                           RegExpNode* on_success) {
   ActionNode* result =
-      new (on_success->zone()) ActionNode(SET_REGISTER, on_success);
+      new (on_success->zone()) ActionNode(SET_REGISTER_FOR_LOOP, on_success);
   result->data_.u_store_register.reg = reg;
   result->data_.u_store_register.value = val;
   return result;
@@ -1335,6 +1328,18 @@ void ActionNode::FillInBMInfo(Isolate* isolate, int offset, int budget,
   SaveBMInfo(bm, not_at_start, offset);
 }
 
+void ActionNode::GetQuickCheckDetails(QuickCheckDetails* details,
+                                      RegExpCompiler* compiler, int filled_in,
+                                      bool not_at_start) {
+  if (action_type_ == SET_REGISTER_FOR_LOOP) {
+    on_success()->GetQuickCheckDetailsFromLoopEntry(details, compiler,
+                                                    filled_in, not_at_start);
+  } else {
+    on_success()->GetQuickCheckDetails(details, compiler, filled_in,
+                                       not_at_start);
+  }
+}
+
 void AssertionNode::FillInBMInfo(Isolate* isolate, int offset, int budget,
                                  BoyerMooreLookahead* bm, bool not_at_start) {
   // Match the behaviour of EatsAtLeast on this node.
@@ -1386,6 +1391,65 @@ bool QuickCheckDetails::Rationalize(bool asc) {
 int RegExpNode::EatsAtLeast(bool not_at_start) {
   return not_at_start ? eats_at_least_.eats_at_least_from_not_start
                       : eats_at_least_.eats_at_least_from_possibly_start;
+}
+
+EatsAtLeastInfo RegExpNode::EatsAtLeastFromLoopEntry() {
+  // SET_REGISTER_FOR_LOOP is only used to initialize loop counters, and it
+  // implies that the following node must be a LoopChoiceNode. If we need to
+  // set registers to constant values for other reasons, we could introduce a
+  // new action type SET_REGISTER that doesn't imply anything about its
+  // successor.
+  UNREACHABLE();
+}
+
+void RegExpNode::GetQuickCheckDetailsFromLoopEntry(QuickCheckDetails* details,
+                                                   RegExpCompiler* compiler,
+                                                   int characters_filled_in,
+                                                   bool not_at_start) {
+  // See comment in RegExpNode::EatsAtLeastFromLoopEntry.
+  UNREACHABLE();
+}
+
+EatsAtLeastInfo LoopChoiceNode::EatsAtLeastFromLoopEntry() {
+  DCHECK_EQ(alternatives_->length(), 2);  // There's just loop and continue.
+
+  if (read_backward()) {
+    // Can't do anything special for a backward loop, so return the basic values
+    // that we got during analysis.
+    return *eats_at_least_info();
+  }
+
+  // Figure out how much the loop body itself eats, not including anything in
+  // the continuation case. In general, the nodes in the loop body should report
+  // that they eat at least the number eaten by the continuation node, since any
+  // successful match in the loop body must also include the continuation node.
+  // However, in some cases involving positive lookaround, the loop body under-
+  // reports its appetite, so use saturated math here to avoid negative numbers.
+  uint8_t loop_body_from_not_start = base::saturated_cast<uint8_t>(
+      loop_node_->EatsAtLeast(true) - continue_node_->EatsAtLeast(true));
+  uint8_t loop_body_from_possibly_start = base::saturated_cast<uint8_t>(
+      loop_node_->EatsAtLeast(false) - continue_node_->EatsAtLeast(true));
+
+  // Limit the number of loop iterations to avoid overflow in subsequent steps.
+  int loop_iterations = base::saturated_cast<uint8_t>(min_loop_iterations());
+
+  EatsAtLeastInfo result;
+  result.eats_at_least_from_not_start =
+      base::saturated_cast<uint8_t>(loop_iterations * loop_body_from_not_start +
+                                    continue_node_->EatsAtLeast(true));
+  if (loop_iterations > 0 && loop_body_from_possibly_start > 0) {
+    // First loop iteration eats at least one, so all subsequent iterations
+    // and the after-loop chunk are guaranteed to not be at the start.
+    result.eats_at_least_from_possibly_start = base::saturated_cast<uint8_t>(
+        loop_body_from_possibly_start +
+        (loop_iterations - 1) * loop_body_from_not_start +
+        continue_node_->EatsAtLeast(true));
+  } else {
+    // Loop body might eat nothing, so only continue node contributes.
+    result.eats_at_least_from_possibly_start =
+        continue_node_->EatsAtLeast(false);
+  }
+  return result;
 }
 
 bool RegExpNode::EmitQuickCheck(RegExpCompiler* compiler,
@@ -1514,7 +1578,7 @@ void TextNode::GetQuickCheckDetails(QuickCheckDetails* details,
             // and the mask-compare will determine definitely whether we have
             // a match at this character position.
             pos->mask = char_mask;
-            pos->value = c;
+            pos->value = chars[0];
             pos->determines_perfectly = true;
           } else {
             uint32_t common_bits = char_mask;
@@ -1699,6 +1763,37 @@ class VisitMarker {
   NodeInfo* info_;
 };
 
+// Temporarily sets traversed_loop_initialization_node_.
+class LoopInitializationMarker {
+ public:
+  explicit LoopInitializationMarker(LoopChoiceNode* node) : node_(node) {
+    DCHECK(!node_->traversed_loop_initialization_node_);
+    node_->traversed_loop_initialization_node_ = true;
+  }
+  ~LoopInitializationMarker() {
+    DCHECK(node_->traversed_loop_initialization_node_);
+    node_->traversed_loop_initialization_node_ = false;
+  }
+
+ private:
+  LoopChoiceNode* node_;
+  DISALLOW_COPY_AND_ASSIGN(LoopInitializationMarker);
+};
+
+// Temporarily decrements min_loop_iterations_.
+class IterationDecrementer {
+ public:
+  explicit IterationDecrementer(LoopChoiceNode* node) : node_(node) {
+    DCHECK_GT(node_->min_loop_iterations_, 0);
+    --node_->min_loop_iterations_;
+  }
+  ~IterationDecrementer() { ++node_->min_loop_iterations_; }
+
+ private:
+  LoopChoiceNode* node_;
+  DISALLOW_COPY_AND_ASSIGN(IterationDecrementer);
+};
+
 RegExpNode* SeqRegExpNode::FilterOneByte(int depth) {
   if (info()->replacement_calculated) return replacement();
   if (depth < 0) return this;
@@ -1870,9 +1965,48 @@ void LoopChoiceNode::GetQuickCheckDetails(QuickCheckDetails* details,
                                           int characters_filled_in,
                                           bool not_at_start) {
   if (body_can_be_zero_length_ || info()->visited) return;
-  VisitMarker marker(info());
-  return ChoiceNode::GetQuickCheckDetails(details, compiler,
-                                          characters_filled_in, not_at_start);
+  not_at_start = not_at_start || this->not_at_start();
+  DCHECK_EQ(alternatives_->length(), 2);  // There's just loop and continue.
+  if (traversed_loop_initialization_node_ && min_loop_iterations_ > 0 &&
+      loop_node_->EatsAtLeast(not_at_start) >
+          continue_node_->EatsAtLeast(true)) {
+    // Loop body is guaranteed to execute at least once, and consume characters
+    // when it does, meaning the only possible quick checks from this point
+    // begin with the loop body. We may recursively visit this LoopChoiceNode,
+    // but we temporarily decrease its minimum iteration counter so we know when
+    // to check the continue case.
+    IterationDecrementer next_iteration(this);
+    loop_node_->GetQuickCheckDetails(details, compiler, characters_filled_in,
+                                     not_at_start);
+  } else {
+    // Might not consume anything in the loop body, so treat it like a normal
+    // ChoiceNode (and don't recursively visit this node again).
+    VisitMarker marker(info());
+    ChoiceNode::GetQuickCheckDetails(details, compiler, characters_filled_in,
+                                     not_at_start);
+  }
+}
+
+void LoopChoiceNode::GetQuickCheckDetailsFromLoopEntry(
+    QuickCheckDetails* details, RegExpCompiler* compiler,
+    int characters_filled_in, bool not_at_start) {
+  if (traversed_loop_initialization_node_) {
+    // We already entered this loop once, exited via its continuation node, and
+    // followed an outer loop's back-edge to before the loop entry point. We
+    // could try to reset the minimum iteration count to its starting value at
+    // this point, but that seems like more trouble than it's worth. It's safe
+    // to keep going with the current (possibly reduced) minimum iteration
+    // count.
+    GetQuickCheckDetails(details, compiler, characters_filled_in, not_at_start);
+  } else {
+    // We are entering a loop via its counter initialization action, meaning we
+    // are guaranteed to run the loop body at least some minimum number of times
+    // before running the continuation node. Set a flag so that this node knows
+    // (now and any times we visit it again recursively) that it was entered
+    // from the top.
+    LoopInitializationMarker marker(this);
+    GetQuickCheckDetails(details, compiler, characters_filled_in, not_at_start);
+  }
 }
 
 void LoopChoiceNode::FillInBMInfo(Isolate* isolate, int offset, int budget,
@@ -1905,9 +2039,11 @@ void ChoiceNode::GetQuickCheckDetails(QuickCheckDetails* details,
   }
 }
 
+namespace {
+
 // Check for [0-9A-Z_a-z].
-static void EmitWordCheck(RegExpMacroAssembler* assembler, Label* word,
-                          Label* non_word, bool fall_through_on_word) {
+void EmitWordCheck(RegExpMacroAssembler* assembler, Label* word,
+                   Label* non_word, bool fall_through_on_word) {
   if (assembler->CheckSpecialCharacterClass(
           fall_through_on_word ? 'w' : 'W',
           fall_through_on_word ? non_word : word)) {
@@ -1929,24 +2065,32 @@ static void EmitWordCheck(RegExpMacroAssembler* assembler, Label* word,
 
 // Emit the code to check for a ^ in multiline mode (1-character lookbehind
 // that matches newline or the start of input).
-static void EmitHat(RegExpCompiler* compiler, RegExpNode* on_success,
-                    Trace* trace) {
+void EmitHat(RegExpCompiler* compiler, RegExpNode* on_success, Trace* trace) {
   RegExpMacroAssembler* assembler = compiler->macro_assembler();
-  // We will be loading the previous character into the current character
-  // register.
+
+  // We will load the previous character into the current character register.
   Trace new_trace(*trace);
   new_trace.InvalidateCurrentCharacter();
 
+  // A positive (> 0) cp_offset means we've already successfully matched a
+  // non-empty-width part of the pattern, and thus cannot be at or before the
+  // start of the subject string. We can thus skip both at-start and
+  // bounds-checks when loading the one-character lookbehind.
+  const bool may_be_at_or_before_subject_string_start =
+      new_trace.cp_offset() <= 0;
+
   Label ok;
-  if (new_trace.cp_offset() == 0) {
-    // The start of input counts as a newline in this context, so skip to
-    // ok if we are at the start.
-    assembler->CheckAtStart(&ok);
+  if (may_be_at_or_before_subject_string_start) {
+    // The start of input counts as a newline in this context, so skip to ok if
+    // we are at the start.
+    assembler->CheckAtStart(new_trace.cp_offset(), &ok);
   }
-  // We already checked that we are not at the start of input so it must be
-  // OK to load the previous character.
+
+  // If we've already checked that we are not at the start of input, it's okay
+  // to load the previous character without bounds checks.
+  const bool can_skip_bounds_check = !may_be_at_or_before_subject_string_start;
   assembler->LoadCurrentCharacter(new_trace.cp_offset() - 1,
-                                  new_trace.backtrack(), false);
+                                  new_trace.backtrack(), can_skip_bounds_check);
   if (!assembler->CheckSpecialCharacterClass('n', new_trace.backtrack())) {
     // Newline means \n, \r, 0x2028 or 0x2029.
     if (!compiler->one_byte()) {
@@ -1958,6 +2102,8 @@ static void EmitHat(RegExpCompiler* compiler, RegExpNode* on_success,
   assembler->Bind(&ok);
   on_success->Emit(compiler, &new_trace);
 }
+
+}  // namespace
 
 // Emit the code to handle \b and \B (word-boundary or non-word-boundary).
 void AssertionNode::EmitBoundaryCheck(RegExpCompiler* compiler, Trace* trace) {
@@ -2014,21 +2160,30 @@ void AssertionNode::BacktrackIfPrevious(
   Trace new_trace(*trace);
   new_trace.InvalidateCurrentCharacter();
 
-  Label fall_through, dummy;
-
+  Label fall_through;
   Label* non_word = backtrack_if_previous == kIsNonWord ? new_trace.backtrack()
                                                         : &fall_through;
   Label* word = backtrack_if_previous == kIsNonWord ? &fall_through
                                                     : new_trace.backtrack();
 
-  if (new_trace.cp_offset() == 0) {
+  // A positive (> 0) cp_offset means we've already successfully matched a
+  // non-empty-width part of the pattern, and thus cannot be at or before the
+  // start of the subject string. We can thus skip both at-start and
+  // bounds-checks when loading the one-character lookbehind.
+  const bool may_be_at_or_before_subject_string_start =
+      new_trace.cp_offset() <= 0;
+
+  if (may_be_at_or_before_subject_string_start) {
     // The start of input counts as a non-word character, so the question is
     // decided if we are at the start.
-    assembler->CheckAtStart(non_word);
+    assembler->CheckAtStart(new_trace.cp_offset(), non_word);
   }
-  // We already checked that we are not at the start of input so it must be
-  // OK to load the previous character.
-  assembler->LoadCurrentCharacter(new_trace.cp_offset() - 1, &dummy, false);
+
+  // If we've already checked that we are not at the start of input, it's okay
+  // to load the previous character without bounds checks.
+  const bool can_skip_bounds_check = !may_be_at_or_before_subject_string_start;
+  assembler->LoadCurrentCharacter(new_trace.cp_offset() - 1, non_word,
+                                  can_skip_bounds_check);
   EmitWordCheck(assembler, word, non_word, backtrack_if_previous == kIsNonWord);
 
   assembler->Bind(&fall_through);
@@ -3153,9 +3308,9 @@ void ActionNode::Emit(RegExpCompiler* compiler, Trace* trace) {
       on_success()->Emit(compiler, &new_trace);
       break;
     }
-    case SET_REGISTER: {
-      Trace::DeferredSetRegister new_set(data_.u_store_register.reg,
-                                         data_.u_store_register.value);
+    case SET_REGISTER_FOR_LOOP: {
+      Trace::DeferredSetRegisterForLoop new_set(data_.u_store_register.reg,
+                                                data_.u_store_register.value);
       Trace new_trace = *trace;
       new_trace.add_action(&new_set);
       on_success()->Emit(compiler, &new_trace);
@@ -3362,10 +3517,20 @@ class EatsAtLeastPropagator : public AllStatic {
 
   static void VisitAction(ActionNode* that) {
     // POSITIVE_SUBMATCH_SUCCESS rewinds input, so we must not consider
-    // successor nodes for eats_at_least. Otherwise the current node eats at
-    // least as much as its successor.
-    if (that->action_type() != ActionNode::POSITIVE_SUBMATCH_SUCCESS) {
-      that->set_eats_at_least_info(*that->on_success()->eats_at_least_info());
+    // successor nodes for eats_at_least. SET_REGISTER_FOR_LOOP indicates a loop
+    // entry point, which means the loop body will run at least the minimum
+    // number of times before the continuation case can run. Otherwise the
+    // current node eats at least as much as its successor.
+    switch (that->action_type()) {
+      case ActionNode::POSITIVE_SUBMATCH_SUCCESS:
+        break;  // Was already initialized to zero.
+      case ActionNode::SET_REGISTER_FOR_LOOP:
+        that->set_eats_at_least_info(
+            that->on_success()->EatsAtLeastFromLoopEntry());
+        break;
+      default:
+        that->set_eats_at_least_info(*that->on_success()->eats_at_least_info());
+        break;
     }
   }
 

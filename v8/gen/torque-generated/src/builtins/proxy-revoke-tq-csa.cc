@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -138,17 +146,17 @@ TF_BUILTIN(ProxyRevoke, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 14);
     compiler::TNode<IntPtrT> tmp1;
     USE(tmp1);
-    tmp1 = FromConstexpr13ATContextSlot23ATconstexpr_ContextSlot_144(state_, Context::MIN_CONTEXT_SLOTS);
+    tmp1 = FromConstexpr13ATContextSlot23ATconstexpr_ContextSlot_171(state_, Context::MIN_CONTEXT_SLOTS);
     compiler::TNode<Object> tmp2;
     USE(tmp2);
     tmp2 = CodeStubAssembler(state_).LoadContextElement(compiler::TNode<Context>{tmp0}, compiler::TNode<IntPtrT>{tmp1});
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 17);
     compiler::TNode<Oddball> tmp3;
     USE(tmp3);
-    tmp3 = Null_64(state_);
+    tmp3 = Null_63(state_);
     compiler::TNode<BoolT> tmp4;
     USE(tmp4);
-    tmp4 = CodeStubAssembler(state_).WordEqual(compiler::TNode<Object>{tmp2}, compiler::TNode<HeapObject>{tmp3});
+    tmp4 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<Object>{tmp2}, compiler::TNode<HeapObject>{tmp3});
     ca_.Branch(tmp4, &block1, &block2, tmp0, tmp2);
   }
 
@@ -159,7 +167,7 @@ TF_BUILTIN(ProxyRevoke, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 18);
     compiler::TNode<Oddball> tmp7;
     USE(tmp7);
-    tmp7 = Undefined_65(state_);
+    tmp7 = Undefined_64(state_);
     CodeStubAssembler(state_).Return(tmp7);
   }
 
@@ -170,38 +178,38 @@ TF_BUILTIN(ProxyRevoke, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 22);
     compiler::TNode<Oddball> tmp10;
     USE(tmp10);
-    tmp10 = Null_64(state_);
+    tmp10 = Null_63(state_);
     compiler::TNode<IntPtrT> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr13ATContextSlot23ATconstexpr_ContextSlot_144(state_, Context::MIN_CONTEXT_SLOTS);
+    tmp11 = FromConstexpr13ATContextSlot23ATconstexpr_ContextSlot_171(state_, Context::MIN_CONTEXT_SLOTS);
     CodeStubAssembler(state_).StoreContextElement(compiler::TNode<Context>{tmp8}, compiler::TNode<IntPtrT>{tmp11}, compiler::TNode<Object>{tmp10});
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 25);
     compiler::TNode<JSProxy> tmp12;
     USE(tmp12);
-    tmp12 = UnsafeCast7JSProxy_1345(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Object>{tmp9});
+    tmp12 = UnsafeCast7JSProxy_1400(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Object>{tmp9});
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 28);
     compiler::TNode<IntPtrT> tmp13 = ca_.IntPtrConstant(JSProxy::kTargetOffset);
     USE(tmp13);
     compiler::TNode<Oddball> tmp14;
     USE(tmp14);
-    tmp14 = Null_64(state_);
+    tmp14 = Null_63(state_);
     CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp12, tmp13}, tmp14);
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 31);
     compiler::TNode<IntPtrT> tmp15 = ca_.IntPtrConstant(JSProxy::kHandlerOffset);
     USE(tmp15);
     compiler::TNode<Oddball> tmp16;
     USE(tmp16);
-    tmp16 = Null_64(state_);
+    tmp16 = Null_63(state_);
     CodeStubAssembler(state_).StoreReference(CodeStubAssembler::Reference{tmp12, tmp15}, tmp16);
     ca_.SetSourcePosition("../../src/builtins/proxy-revoke.tq", 34);
     compiler::TNode<Oddball> tmp17;
     USE(tmp17);
-    tmp17 = Undefined_65(state_);
+    tmp17 = Undefined_64(state_);
     CodeStubAssembler(state_).Return(tmp17);
   }
 }
 
-compiler::TNode<JSProxy> UnsafeCast7JSProxy_1345(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
+compiler::TNode<JSProxy> UnsafeCast7JSProxy_1400(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSProxy> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -212,7 +220,7 @@ compiler::TNode<JSProxy> UnsafeCast7JSProxy_1345(compiler::CodeAssemblerState* s
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2405);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2807);
     compiler::TNode<JSProxy> tmp2;
     USE(tmp2);
     tmp2 = TORQUE_CAST(compiler::TNode<Object>{tmp1});

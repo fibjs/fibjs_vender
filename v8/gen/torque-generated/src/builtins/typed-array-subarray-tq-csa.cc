@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -165,7 +173,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp5;
     USE(tmp5);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp5 = Cast12JSTypedArray_90(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
+    tmp5 = Cast12JSTypedArray_110(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
     ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp4, tmp4, tmp5);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -225,21 +233,21 @@ USE(parameter1);
     compiler::TNode<UintPtrT>tmp32 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp29, tmp31});
     compiler::TNode<IntPtrT> tmp33;
     USE(tmp33);
-    tmp33 = Convert8ATintptr9ATuintptr_161(state_, compiler::TNode<UintPtrT>{tmp32});
+    tmp33 = Convert8ATintptr9ATuintptr_188(state_, compiler::TNode<UintPtrT>{tmp32});
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 28);
     compiler::TNode<IntPtrT> tmp34;
     USE(tmp34);
-    tmp34 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp34 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp35;
     USE(tmp35);
     tmp35 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp24}, compiler::TNode<RawPtrT>{tmp25}, compiler::TNode<IntPtrT>{tmp26}}, compiler::TNode<IntPtrT>{tmp34});
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 30);
     compiler::TNode<Oddball> tmp36;
     USE(tmp36);
-    tmp36 = Undefined_65(state_);
+    tmp36 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp37;
     USE(tmp37);
-    tmp37 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<Object>{tmp35}, compiler::TNode<HeapObject>{tmp36});
+    tmp37 = CodeStubAssembler(state_).TaggedNotEqual(compiler::TNode<Object>{tmp35}, compiler::TNode<HeapObject>{tmp36});
     ca_.Branch(tmp37, &block5, &block6, tmp24, tmp25, tmp26, tmp27, tmp28, tmp29, tmp30, tmp33, tmp35);
   }
 
@@ -273,7 +281,7 @@ USE(parameter1);
     ca_.Bind(&block6, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56);
     compiler::TNode<IntPtrT> tmp57;
     USE(tmp57);
-    tmp57 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp57 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     ca_.Goto(&block7, tmp48, tmp49, tmp50, tmp51, tmp52, tmp53, tmp54, tmp55, tmp56, tmp57);
   }
 
@@ -308,17 +316,17 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 36);
     compiler::TNode<IntPtrT> tmp78;
     USE(tmp78);
-    tmp78 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp78 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp79;
     USE(tmp79);
     tmp79 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp68}, compiler::TNode<RawPtrT>{tmp69}, compiler::TNode<IntPtrT>{tmp70}}, compiler::TNode<IntPtrT>{tmp78});
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 38);
     compiler::TNode<Oddball> tmp80;
     USE(tmp80);
-    tmp80 = Undefined_65(state_);
+    tmp80 = Undefined_64(state_);
     compiler::TNode<BoolT> tmp81;
     USE(tmp81);
-    tmp81 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<Object>{tmp79}, compiler::TNode<HeapObject>{tmp80});
+    tmp81 = CodeStubAssembler(state_).TaggedNotEqual(compiler::TNode<Object>{tmp79}, compiler::TNode<HeapObject>{tmp80});
     ca_.Branch(tmp81, &block9, &block10, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76, tmp77, tmp79);
   }
 
@@ -395,13 +403,13 @@ USE(parameter1);
     tmp129 = CodeStubAssembler(state_).IntPtrSub(compiler::TNode<IntPtrT>{tmp128}, compiler::TNode<IntPtrT>{tmp126});
     compiler::TNode<IntPtrT> tmp130;
     USE(tmp130);
-    tmp130 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp130 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<IntPtrT> tmp131;
     USE(tmp131);
     tmp131 = CodeStubAssembler(state_).IntPtrMax(compiler::TNode<IntPtrT>{tmp129}, compiler::TNode<IntPtrT>{tmp130});
     compiler::TNode<Smi> tmp132;
     USE(tmp132);
-    tmp132 = Convert13ATPositiveSmi8ATintptr_162(state_, compiler::TNode<IntPtrT>{tmp131});
+    tmp132 = Convert13ATPositiveSmi8ATintptr_189(state_, compiler::TNode<IntPtrT>{tmp131});
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 46);
     compiler::TNode<UintPtrT> tmp133;
     USE(tmp133);
@@ -416,11 +424,11 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 53);
     compiler::TNode<Smi> tmp137;
     USE(tmp137);
-    tmp137 = Convert13ATPositiveSmi8ATintptr_162(state_, compiler::TNode<IntPtrT>{tmp126});
+    tmp137 = Convert13ATPositiveSmi8ATintptr_189(state_, compiler::TNode<IntPtrT>{tmp126});
     ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 26);
     compiler::TNode<UintPtrT> tmp138;
     USE(tmp138);
-    tmp138 = Convert9ATuintptr13ATPositiveSmi_160(state_, compiler::TNode<Smi>{tmp137});
+    tmp138 = Convert9ATuintptr13ATPositiveSmi_187(state_, compiler::TNode<Smi>{tmp137});
     ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 27);
     compiler::TNode<UintPtrT> tmp139;
     USE(tmp139);
@@ -570,12 +578,12 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 57);
     compiler::TNode<Number> tmp246;
     USE(tmp246);
-    tmp246 = Convert20UT5ATSmi10HeapNumber9ATuintptr_174(state_, compiler::TNode<UintPtrT>{tmp245});
+    tmp246 = Convert20UT5ATSmi10HeapNumber9ATuintptr_201(state_, compiler::TNode<UintPtrT>{tmp245});
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 62);
     ca_.SetSourcePosition("../../src/builtins/typed-array-subarray.tq", 61);
     compiler::TNode<JSTypedArray> tmp247;
     USE(tmp247);
-    tmp247 = TypedArraySpeciesCreate_308(state_, compiler::TNode<Context>{tmp230}, "%TypedArray%.prototype.subarray", 3, compiler::TNode<JSTypedArray>{tmp232}, compiler::TNode<Object>{tmp233}, compiler::TNode<Object>{tmp246}, compiler::TNode<Object>{tmp239});
+    tmp247 = TypedArraySpeciesCreate_349(state_, compiler::TNode<Context>{tmp230}, "%TypedArray%.prototype.subarray", 3, compiler::TNode<JSTypedArray>{tmp232}, compiler::TNode<Object>{tmp233}, compiler::TNode<Object>{tmp246}, compiler::TNode<Object>{tmp239});
     arguments.PopAndReturn(tmp247);
   }
 }

@@ -88,6 +88,17 @@ static void GenerateTailCallToReturnedCode(MacroAssembler* masm,
 
 namespace {
 
+void LoadRealStackLimit(MacroAssembler* masm, Register destination) {
+  DCHECK(masm->root_array_available());
+  Isolate* isolate = masm->isolate();
+  ExternalReference limit = ExternalReference::address_of_real_jslimit(isolate);
+  DCHECK(TurboAssembler::IsAddressableThroughRootRegister(isolate, limit));
+
+  intptr_t offset =
+      TurboAssembler::RootRegisterOffsetForExternalReference(isolate, limit);
+  __ Lw(destination, MemOperand(kRootRegister, static_cast<int32_t>(offset)));
+}
+
 void Generate_JSBuiltinsConstructStubHelper(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- a0     : number of arguments
@@ -160,7 +171,7 @@ static void Generate_StackOverflowCheck(MacroAssembler* masm, Register num_args,
   // Check the stack for overflow. We are not trying to catch
   // interruptions (e.g. debug break and preemption) here, so the "real stack
   // limit" is checked.
-  __ LoadRoot(scratch1, RootIndex::kRealStackLimit);
+  LoadRealStackLimit(masm, scratch1);
   // Make scratch1 the space we have left. The stack might already be overflowed
   // here which will cause scratch1 to become negative.
   __ subu(scratch1, sp, scratch1);
@@ -372,7 +383,7 @@ static void Generate_CheckStackOverflow(MacroAssembler* masm, Register argc,
   // interruptions (e.g. debug break and preemption) here, so the "real stack
   // limit" is checked.
   Label okay;
-  __ LoadRoot(scratch1, RootIndex::kRealStackLimit);
+  LoadRealStackLimit(masm, scratch1);
   // Make a2 the space we have left. The stack might already be overflowed
   // here which will cause a2 to become negative.
   __ Subu(scratch1, sp, scratch1);
@@ -719,7 +730,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   // Check the stack for overflow. We are not trying to catch interruptions
   // (i.e. debug break and preemption) here, so check the "real stack limit".
   Label stack_overflow;
-  __ LoadRoot(kScratchReg, RootIndex::kRealStackLimit);
+  LoadRealStackLimit(masm, kScratchReg);
   __ Branch(&stack_overflow, lo, sp, Operand(kScratchReg));
 
   // Push receiver.
@@ -1086,7 +1097,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     // Do a stack check to ensure we don't go over the limit.
     Label ok;
     __ Subu(t1, sp, Operand(t0));
-    __ LoadRoot(a2, RootIndex::kRealStackLimit);
+    LoadRealStackLimit(masm, a2);
     __ Branch(&ok, hs, t1, Operand(a2));
     __ CallRuntime(Runtime::kThrowStackOverflow);
     __ bind(&ok);
@@ -2065,7 +2076,7 @@ void Builtins::Generate_CallBoundFunctionImpl(MacroAssembler* masm) {
     __ Subu(sp, sp, Operand(t1));
     // Check the stack for overflow. We are not trying to catch interruptions
     // (i.e. debug break and preemption) here, so check the "real stack limit".
-    __ LoadRoot(kScratchReg, RootIndex::kRealStackLimit);
+    LoadRealStackLimit(masm, kScratchReg);
     __ Branch(&done, hs, sp, Operand(kScratchReg));
     // Restore the stack pointer.
     __ Addu(sp, sp, Operand(t1));
@@ -2223,7 +2234,7 @@ void Builtins::Generate_ConstructBoundFunction(MacroAssembler* masm) {
     __ Subu(sp, sp, Operand(t1));
     // Check the stack for overflow. We are not trying to catch interruptions
     // (i.e. debug break and preemption) here, so check the "real stack limit".
-    __ LoadRoot(kScratchReg, RootIndex::kRealStackLimit);
+    LoadRealStackLimit(masm, kScratchReg);
     __ Branch(&done, hs, sp, Operand(kScratchReg));
     // Restore the stack pointer.
     __ Addu(sp, sp, Operand(t1));

@@ -218,9 +218,10 @@ void RegExpMacroAssemblerMIPS::CheckCharacterGT(uc16 limit, Label* on_greater) {
 }
 
 
-void RegExpMacroAssemblerMIPS::CheckAtStart(Label* on_at_start) {
+void RegExpMacroAssemblerMIPS::CheckAtStart(int cp_offset, Label* on_at_start) {
   __ Ld(a1, MemOperand(frame_pointer(), kStringStartMinusOne));
-  __ Daddu(a0, current_input_offset(), Operand(-char_size()));
+  __ Daddu(a0, current_input_offset(),
+           Operand(-char_size() + cp_offset * char_size()));
   BranchOrBacktrack(on_at_start, eq, a0, Operand(a1));
 }
 
@@ -687,7 +688,7 @@ Handle<HeapObject> RegExpMacroAssemblerMIPS::GetCode(Handle<String> source) {
     Label stack_ok;
 
     ExternalReference stack_limit =
-        ExternalReference::address_of_stack_limit(masm_->isolate());
+        ExternalReference::address_of_jslimit(masm_->isolate());
     __ li(a0, Operand(stack_limit));
     __ Ld(a0, MemOperand(a0));
     __ Dsubu(a0, sp, a0);
@@ -1313,7 +1314,7 @@ void RegExpMacroAssemblerMIPS::Pop(Register target) {
 void RegExpMacroAssemblerMIPS::CheckPreemption() {
   // Check for preemption.
   ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(masm_->isolate());
+      ExternalReference::address_of_jslimit(masm_->isolate());
   __ li(a0, Operand(stack_limit));
   __ Ld(a0, MemOperand(a0));
   SafeCall(&check_preempt_label_, ls, sp, Operand(a0));
@@ -1322,7 +1323,8 @@ void RegExpMacroAssemblerMIPS::CheckPreemption() {
 
 void RegExpMacroAssemblerMIPS::CheckStackLimit() {
   ExternalReference stack_limit =
-      ExternalReference::address_of_regexp_stack_limit(masm_->isolate());
+      ExternalReference::address_of_regexp_stack_limit_address(
+          masm_->isolate());
 
   __ li(a0, Operand(stack_limit));
   __ Ld(a0, MemOperand(a0));

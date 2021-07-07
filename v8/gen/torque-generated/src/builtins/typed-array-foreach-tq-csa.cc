@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-const char* kBuiltinName_317(compiler::CodeAssemblerState* state_) {
+const char* kBuiltinName_358(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -132,33 +140,33 @@ const char* kBuiltinName_317(compiler::CodeAssemblerState* state_) {
 return "%TypedArray%.prototype.forEach";
 }
 
-compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_array, compiler::TNode<HeapObject> p_callbackfn, compiler::TNode<Object> p_thisArg) {
+compiler::TNode<Oddball> ForEachAllElements_359(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_array, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg) {
   compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, JSTypedArray> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number, Smi> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Smi, Context, Smi, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Context, HeapObject, Object, Object, Smi, JSTypedArray> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, Object> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, JSTypedArray> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number, Smi> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Smi, Context, Smi, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Context, JSReceiver, Object, Object, Smi, JSTypedArray> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, Oddball> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, Oddball> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_array, p_callbackfn, p_thisArg);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<JSTypedArray> tmp1;
-    compiler::TNode<HeapObject> tmp2;
+    compiler::TNode<JSReceiver> tmp2;
     compiler::TNode<Object> tmp3;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 13);
@@ -168,7 +176,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
     USE(tmp5);
     compiler::TNode<BuiltinPtr> tmp6;
     USE(tmp6);
-    std::tie(tmp4, tmp5, tmp6) = NewAttachedJSTypedArrayWitness_329(state_, compiler::TNode<JSTypedArray>{tmp1}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewAttachedJSTypedArrayWitness_370(state_, compiler::TNode<JSTypedArray>{tmp1}).Flatten();
     ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 91);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp5);
   }
@@ -176,7 +184,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block4.is_used()) {
     compiler::TNode<Context> tmp7;
     compiler::TNode<JSTypedArray> tmp8;
-    compiler::TNode<HeapObject> tmp9;
+    compiler::TNode<JSReceiver> tmp9;
     compiler::TNode<Object> tmp10;
     compiler::TNode<JSTypedArray> tmp11;
     compiler::TNode<JSTypedArray> tmp12;
@@ -189,11 +197,11 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
     compiler::TNode<UintPtrT>tmp16 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp14, tmp15});
     compiler::TNode<Number> tmp17;
     USE(tmp17);
-    tmp17 = Convert20UT5ATSmi10HeapNumber9ATuintptr_174(state_, compiler::TNode<UintPtrT>{tmp16});
+    tmp17 = Convert20UT5ATSmi10HeapNumber9ATuintptr_201(state_, compiler::TNode<UintPtrT>{tmp16});
     compiler::TNode<Smi> tmp18;
     USE(tmp18);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp18 = Cast5ATSmi_78(state_, compiler::TNode<Object>{tmp17}, &label0);
+    tmp18 = Cast5ATSmi_83(state_, compiler::TNode<Object>{tmp17}, &label0);
     ca_.Goto(&block5, tmp7, tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp17, tmp18);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -204,7 +212,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block6.is_used()) {
     compiler::TNode<Context> tmp19;
     compiler::TNode<JSTypedArray> tmp20;
-    compiler::TNode<HeapObject> tmp21;
+    compiler::TNode<JSReceiver> tmp21;
     compiler::TNode<Object> tmp22;
     compiler::TNode<JSTypedArray> tmp23;
     compiler::TNode<JSTypedArray> tmp24;
@@ -217,7 +225,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block5.is_used()) {
     compiler::TNode<Context> tmp27;
     compiler::TNode<JSTypedArray> tmp28;
-    compiler::TNode<HeapObject> tmp29;
+    compiler::TNode<JSReceiver> tmp29;
     compiler::TNode<Object> tmp30;
     compiler::TNode<JSTypedArray> tmp31;
     compiler::TNode<JSTypedArray> tmp32;
@@ -231,7 +239,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block3.is_used()) {
     compiler::TNode<Context> tmp36;
     compiler::TNode<JSTypedArray> tmp37;
-    compiler::TNode<HeapObject> tmp38;
+    compiler::TNode<JSReceiver> tmp38;
     compiler::TNode<Object> tmp39;
     compiler::TNode<JSTypedArray> tmp40;
     compiler::TNode<JSTypedArray> tmp41;
@@ -243,7 +251,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block2.is_used()) {
     compiler::TNode<Context> tmp43;
     compiler::TNode<JSTypedArray> tmp44;
-    compiler::TNode<HeapObject> tmp45;
+    compiler::TNode<JSReceiver> tmp45;
     compiler::TNode<Object> tmp46;
     compiler::TNode<JSTypedArray> tmp47;
     compiler::TNode<JSTypedArray> tmp48;
@@ -253,14 +261,14 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 17);
     compiler::TNode<Smi> tmp51;
     USE(tmp51);
-    tmp51 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp51 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     ca_.Goto(&block9, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51);
   }
 
   if (block9.is_used()) {
     compiler::TNode<Context> tmp52;
     compiler::TNode<JSTypedArray> tmp53;
-    compiler::TNode<HeapObject> tmp54;
+    compiler::TNode<JSReceiver> tmp54;
     compiler::TNode<Object> tmp55;
     compiler::TNode<JSTypedArray> tmp56;
     compiler::TNode<JSTypedArray> tmp57;
@@ -277,7 +285,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block7.is_used()) {
     compiler::TNode<Context> tmp62;
     compiler::TNode<JSTypedArray> tmp63;
-    compiler::TNode<HeapObject> tmp64;
+    compiler::TNode<JSReceiver> tmp64;
     compiler::TNode<Object> tmp65;
     compiler::TNode<JSTypedArray> tmp66;
     compiler::TNode<JSTypedArray> tmp67;
@@ -298,7 +306,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block14.is_used()) {
     compiler::TNode<Context> tmp74;
     compiler::TNode<JSTypedArray> tmp75;
-    compiler::TNode<HeapObject> tmp76;
+    compiler::TNode<JSReceiver> tmp76;
     compiler::TNode<Object> tmp77;
     compiler::TNode<JSTypedArray> tmp78;
     compiler::TNode<JSTypedArray> tmp79;
@@ -312,7 +320,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block15.is_used()) {
     compiler::TNode<Context> tmp83;
     compiler::TNode<JSTypedArray> tmp84;
-    compiler::TNode<HeapObject> tmp85;
+    compiler::TNode<JSReceiver> tmp85;
     compiler::TNode<Object> tmp86;
     compiler::TNode<JSTypedArray> tmp87;
     compiler::TNode<JSTypedArray> tmp88;
@@ -331,7 +339,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block13.is_used()) {
     compiler::TNode<Context> tmp93;
     compiler::TNode<JSTypedArray> tmp94;
-    compiler::TNode<HeapObject> tmp95;
+    compiler::TNode<JSReceiver> tmp95;
     compiler::TNode<Object> tmp96;
     compiler::TNode<JSTypedArray> tmp97;
     compiler::TNode<JSTypedArray> tmp98;
@@ -345,7 +353,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block12.is_used()) {
     compiler::TNode<Context> tmp102;
     compiler::TNode<JSTypedArray> tmp103;
-    compiler::TNode<HeapObject> tmp104;
+    compiler::TNode<JSReceiver> tmp104;
     compiler::TNode<Object> tmp105;
     compiler::TNode<JSTypedArray> tmp106;
     compiler::TNode<JSTypedArray> tmp107;
@@ -359,7 +367,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block11.is_used()) {
     compiler::TNode<Context> tmp111;
     compiler::TNode<JSTypedArray> tmp112;
-    compiler::TNode<HeapObject> tmp113;
+    compiler::TNode<JSReceiver> tmp113;
     compiler::TNode<Object> tmp114;
     compiler::TNode<JSTypedArray> tmp115;
     compiler::TNode<JSTypedArray> tmp116;
@@ -378,7 +386,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block16.is_used()) {
     compiler::TNode<Context> tmp121;
     compiler::TNode<JSTypedArray> tmp122;
-    compiler::TNode<HeapObject> tmp123;
+    compiler::TNode<JSReceiver> tmp123;
     compiler::TNode<Object> tmp124;
     compiler::TNode<JSTypedArray> tmp125;
     compiler::TNode<JSTypedArray> tmp126;
@@ -399,7 +407,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block17.is_used()) {
     compiler::TNode<Context> tmp134;
     compiler::TNode<JSTypedArray> tmp135;
-    compiler::TNode<HeapObject> tmp136;
+    compiler::TNode<JSReceiver> tmp136;
     compiler::TNode<Object> tmp137;
     compiler::TNode<JSTypedArray> tmp138;
     compiler::TNode<JSTypedArray> tmp139;
@@ -408,7 +416,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
     compiler::TNode<Smi> tmp142;
     compiler::TNode<Object> tmp143;
     compiler::TNode<Context> tmp144;
-    compiler::TNode<HeapObject> tmp145;
+    compiler::TNode<JSReceiver> tmp145;
     compiler::TNode<Object> tmp146;
     compiler::TNode<Object> tmp147;
     compiler::TNode<Smi> tmp148;
@@ -417,7 +425,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 21);
     compiler::TNode<Object> tmp150;
     USE(tmp150);
-    tmp150 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp144}, compiler::TNode<HeapObject>{tmp145}, compiler::TNode<Object>{tmp146}, compiler::TNode<Object>{tmp147}, compiler::TNode<Object>{tmp148}, compiler::TNode<Object>{tmp149});
+    tmp150 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp144}, compiler::TNode<JSReceiver>{tmp145}, compiler::TNode<Object>{tmp146}, compiler::TNode<Object>{tmp147}, compiler::TNode<Object>{tmp148}, compiler::TNode<Object>{tmp149});
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 17);
     ca_.Goto(&block10, tmp134, tmp135, tmp136, tmp137, tmp138, tmp139, tmp140, tmp141, tmp142);
   }
@@ -425,7 +433,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block10.is_used()) {
     compiler::TNode<Context> tmp151;
     compiler::TNode<JSTypedArray> tmp152;
-    compiler::TNode<HeapObject> tmp153;
+    compiler::TNode<JSReceiver> tmp153;
     compiler::TNode<Object> tmp154;
     compiler::TNode<JSTypedArray> tmp155;
     compiler::TNode<JSTypedArray> tmp156;
@@ -435,7 +443,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
     ca_.Bind(&block10, &tmp151, &tmp152, &tmp153, &tmp154, &tmp155, &tmp156, &tmp157, &tmp158, &tmp159);
     compiler::TNode<Smi> tmp160;
     USE(tmp160);
-    tmp160 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp160 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<Smi> tmp161;
     USE(tmp161);
     tmp161 = CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp159}, compiler::TNode<Smi>{tmp160});
@@ -445,7 +453,7 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
   if (block8.is_used()) {
     compiler::TNode<Context> tmp162;
     compiler::TNode<JSTypedArray> tmp163;
-    compiler::TNode<HeapObject> tmp164;
+    compiler::TNode<JSReceiver> tmp164;
     compiler::TNode<Object> tmp165;
     compiler::TNode<JSTypedArray> tmp166;
     compiler::TNode<JSTypedArray> tmp167;
@@ -456,16 +464,16 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 23);
     compiler::TNode<Oddball> tmp171;
     USE(tmp171);
-    tmp171 = Undefined_65(state_);
+    tmp171 = Undefined_64(state_);
     ca_.Goto(&block1, tmp162, tmp163, tmp164, tmp165, tmp171);
   }
 
   if (block1.is_used()) {
     compiler::TNode<Context> tmp172;
     compiler::TNode<JSTypedArray> tmp173;
-    compiler::TNode<HeapObject> tmp174;
+    compiler::TNode<JSReceiver> tmp174;
     compiler::TNode<Object> tmp175;
-    compiler::TNode<Object> tmp176;
+    compiler::TNode<Oddball> tmp176;
     ca_.Bind(&block1, &tmp172, &tmp173, &tmp174, &tmp175, &tmp176);
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 10);
     ca_.Goto(&block18, tmp172, tmp173, tmp174, tmp175, tmp176);
@@ -473,11 +481,11 @@ compiler::TNode<Object> ForEachAllElements_318(compiler::CodeAssemblerState* sta
 
     compiler::TNode<Context> tmp177;
     compiler::TNode<JSTypedArray> tmp178;
-    compiler::TNode<HeapObject> tmp179;
+    compiler::TNode<JSReceiver> tmp179;
     compiler::TNode<Object> tmp180;
-    compiler::TNode<Object> tmp181;
+    compiler::TNode<Oddball> tmp181;
     ca_.Bind(&block18, &tmp177, &tmp178, &tmp179, &tmp180, &tmp181);
-  return compiler::TNode<Object>{tmp181};
+  return compiler::TNode<Oddball>{tmp181};
 }
 
 TF_BUILTIN(TypedArrayPrototypeForEach, CodeStubAssembler) {
@@ -497,7 +505,7 @@ USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, JSTypedArray> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, Object, HeapObject> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, Object, JSReceiver> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object> block6(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object> block4(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -514,7 +522,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp5;
     USE(tmp5);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp5 = Cast12JSTypedArray_90(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
+    tmp5 = Cast12JSTypedArray_110(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
     ca_.Goto(&block7, tmp0, tmp1, tmp2, tmp3, tmp4, tmp4, tmp5);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -546,7 +554,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp19;
     USE(tmp19);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp19 = EnsureAttached_328(state_, compiler::TNode<JSTypedArray>{tmp18}, &label0);
+    tmp19 = EnsureAttached_369(state_, compiler::TNode<JSTypedArray>{tmp18}, &label0);
     ca_.Goto(&block9, tmp12, tmp13, tmp14, tmp15, tmp16, tmp18, tmp18, tmp19);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -579,14 +587,14 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 38);
     compiler::TNode<IntPtrT> tmp35;
     USE(tmp35);
-    tmp35 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp35 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp36;
     USE(tmp36);
     tmp36 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp27}, compiler::TNode<RawPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp29}}, compiler::TNode<IntPtrT>{tmp35});
-    compiler::TNode<HeapObject> tmp37;
+    compiler::TNode<JSReceiver> tmp37;
     USE(tmp37);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp37 = Cast71UT19ATCallableApiObject17ATCallableJSProxy15JSBoundFunction10JSFunction_1291(state_, compiler::TNode<Context>{tmp30}, compiler::TNode<Object>{tmp36}, &label0);
+    tmp37 = Cast71UT19ATCallableApiObject17ATCallableJSProxy15JSBoundFunction10JSFunction_1339(state_, compiler::TNode<Context>{tmp30}, compiler::TNode<Object>{tmp36}, &label0);
     ca_.Goto(&block11, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32, tmp34, tmp36, tmp37);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -616,19 +624,19 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp51;
     compiler::TNode<JSTypedArray> tmp52;
     compiler::TNode<Object> tmp53;
-    compiler::TNode<HeapObject> tmp54;
+    compiler::TNode<JSReceiver> tmp54;
     ca_.Bind(&block11, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54);
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 39);
     compiler::TNode<IntPtrT> tmp55;
     USE(tmp55);
-    tmp55 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp55 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp56;
     USE(tmp56);
     tmp56 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp46}, compiler::TNode<RawPtrT>{tmp47}, compiler::TNode<IntPtrT>{tmp48}}, compiler::TNode<IntPtrT>{tmp55});
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 40);
-    compiler::TNode<Object> tmp57;
+    compiler::TNode<Oddball> tmp57;
     USE(tmp57);
-    tmp57 = ForEachAllElements_318(state_, compiler::TNode<Context>{tmp49}, compiler::TNode<JSTypedArray>{tmp52}, compiler::TNode<HeapObject>{tmp54}, compiler::TNode<Object>{tmp56});
+    tmp57 = ForEachAllElements_359(state_, compiler::TNode<Context>{tmp49}, compiler::TNode<JSTypedArray>{tmp52}, compiler::TNode<JSReceiver>{tmp54}, compiler::TNode<Object>{tmp56});
     arguments.PopAndReturn(tmp57);
   }
 
@@ -642,7 +650,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 43);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp58}, compiler::TNode<RawPtrT>{tmp59}, compiler::TNode<IntPtrT>{tmp60}}, compiler::TNode<IntPtrT>{tmp63});
@@ -657,7 +665,7 @@ USE(parameter1);
     compiler::TNode<Object> tmp69;
     ca_.Bind(&block4, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69);
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 46);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp68}, MessageTemplate::kNotTypedArray, kBuiltinName_317(state_));
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp68}, MessageTemplate::kNotTypedArray, kBuiltinName_358(state_));
   }
 
   if (block2.is_used()) {
@@ -668,7 +676,7 @@ USE(parameter1);
     compiler::TNode<Object> tmp74;
     ca_.Bind(&block2, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74);
     ca_.SetSourcePosition("../../src/builtins/typed-array-foreach.tq", 49);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp73}, MessageTemplate::kDetachedOperation, kBuiltinName_317(state_));
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp73}, MessageTemplate::kDetachedOperation, kBuiltinName_358(state_));
   }
 }
 

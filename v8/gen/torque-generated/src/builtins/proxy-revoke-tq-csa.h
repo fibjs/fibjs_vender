@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<JSProxy> UnsafeCast7JSProxy_1345(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
+compiler::TNode<JSProxy> UnsafeCast7JSProxy_1400(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o);
 }  // namespace internal
 }  // namespace v8
 

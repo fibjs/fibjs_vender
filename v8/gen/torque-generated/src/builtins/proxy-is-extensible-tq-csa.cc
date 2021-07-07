@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -133,11 +141,11 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, HeapObject> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, HeapObject, JSReceiver> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, JSReceiver> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, JSReceiver, HeapObject> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, JSReceiver, JSReceiver> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, HeapObject> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, HeapObject, BoolT, BoolT> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, HeapObject, BoolT, BoolT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, JSReceiver> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, JSReceiver, BoolT, BoolT> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, JSReceiver, HeapObject, JSReceiver, BoolT, BoolT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, JSProxy> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0, parameter0, parameter1);
@@ -155,7 +163,7 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp4;
     USE(tmp4);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp4 = Cast10JSReceiver_115(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<HeapObject>{tmp3}, &label0);
+    tmp4 = Cast10JSReceiver_140(state_, compiler::TNode<HeapObject>{tmp3}, &label0);
     ca_.Goto(&block5, tmp0, tmp1, tmp3, tmp4);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -182,10 +190,10 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     USE(tmp12);
     compiler::TNode<HeapObject>tmp13 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp12});
     ca_.SetSourcePosition("../../src/builtins/proxy-is-extensible.tq", 28);
-    compiler::TNode<HeapObject> tmp14;
+    compiler::TNode<JSReceiver> tmp14;
     USE(tmp14);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp14 = GetMethod_217(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Object>{tmp11}, "isExtensible", &label0);
+    tmp14 = GetMethod_245(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Object>{tmp11}, "isExtensible", &label0);
     ca_.Goto(&block9, tmp8, tmp9, tmp11, tmp13, tmp11, tmp14);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -209,7 +217,7 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     compiler::TNode<JSReceiver> tmp22;
     compiler::TNode<HeapObject> tmp23;
     compiler::TNode<JSReceiver> tmp24;
-    compiler::TNode<HeapObject> tmp25;
+    compiler::TNode<JSReceiver> tmp25;
     ca_.Bind(&block9, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24, &tmp25);
     ca_.Goto(&block7, tmp20, tmp21, tmp22, tmp23, tmp25);
   }
@@ -229,23 +237,23 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     compiler::TNode<JSProxy> tmp31;
     compiler::TNode<JSReceiver> tmp32;
     compiler::TNode<HeapObject> tmp33;
-    compiler::TNode<HeapObject> tmp34;
+    compiler::TNode<JSReceiver> tmp34;
     ca_.Bind(&block7, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34);
     ca_.SetSourcePosition("../../src/builtins/proxy-is-extensible.tq", 28);
     ca_.SetSourcePosition("../../src/builtins/proxy-is-extensible.tq", 33);
     compiler::TNode<Object> tmp35;
     USE(tmp35);
-    tmp35 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp30}, compiler::TNode<HeapObject>{tmp34}, compiler::TNode<Object>{tmp32}, compiler::TNode<Object>{tmp33});
+    tmp35 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp30}, compiler::TNode<JSReceiver>{tmp34}, compiler::TNode<Object>{tmp32}, compiler::TNode<Object>{tmp33});
     compiler::TNode<BoolT> tmp36;
     USE(tmp36);
-    tmp36 = ToBoolean_213(state_, compiler::TNode<Object>{tmp35});
+    tmp36 = ToBoolean_240(state_, compiler::TNode<Object>{tmp35});
     ca_.SetSourcePosition("../../src/builtins/proxy-is-extensible.tq", 36);
     compiler::TNode<Object> tmp37;
     USE(tmp37);
-    tmp37 = ObjectIsExtensible_282(state_, compiler::TNode<Context>{tmp30}, compiler::TNode<Object>{tmp33});
+    tmp37 = ObjectIsExtensible_311(state_, compiler::TNode<Context>{tmp30}, compiler::TNode<Object>{tmp33});
     compiler::TNode<BoolT> tmp38;
     USE(tmp38);
-    tmp38 = ToBoolean_213(state_, compiler::TNode<Object>{tmp37});
+    tmp38 = ToBoolean_240(state_, compiler::TNode<Object>{tmp37});
     ca_.SetSourcePosition("../../src/builtins/proxy-is-extensible.tq", 40);
     compiler::TNode<BoolT> tmp39;
     USE(tmp39);
@@ -258,7 +266,7 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     compiler::TNode<JSProxy> tmp41;
     compiler::TNode<JSReceiver> tmp42;
     compiler::TNode<HeapObject> tmp43;
-    compiler::TNode<HeapObject> tmp44;
+    compiler::TNode<JSReceiver> tmp44;
     compiler::TNode<BoolT> tmp45;
     compiler::TNode<BoolT> tmp46;
     ca_.Bind(&block11, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46);
@@ -275,7 +283,7 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     compiler::TNode<JSProxy> tmp49;
     compiler::TNode<JSReceiver> tmp50;
     compiler::TNode<HeapObject> tmp51;
-    compiler::TNode<HeapObject> tmp52;
+    compiler::TNode<JSReceiver> tmp52;
     compiler::TNode<BoolT> tmp53;
     compiler::TNode<BoolT> tmp54;
     ca_.Bind(&block12, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54);
@@ -294,7 +302,7 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/proxy-is-extensible.tq", 50);
     compiler::TNode<Object> tmp59;
     USE(tmp59);
-    tmp59 = ObjectIsExtensible_282(state_, compiler::TNode<Context>{tmp56}, compiler::TNode<Object>{tmp58});
+    tmp59 = ObjectIsExtensible_311(state_, compiler::TNode<Context>{tmp56}, compiler::TNode<Object>{tmp58});
     CodeStubAssembler(state_).Return(tmp59);
   }
 

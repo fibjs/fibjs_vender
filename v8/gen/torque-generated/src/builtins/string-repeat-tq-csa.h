@@ -10,7 +10,7 @@
 namespace v8 {
 namespace internal {
 
-  const char* kBuiltinName_298(compiler::CodeAssemblerState* state_);
+  const char* kBuiltinName_337(compiler::CodeAssemblerState* state_);
 }  // namespace internal
 }  // namespace v8
 

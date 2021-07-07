@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-compiler::TNode<BigInt> Convert8ATBigInt13MutableBigInt_227(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_i) {
+compiler::TNode<BigInt> Convert8ATBigInt13MutableBigInt_256(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<BigInt> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BigInt, BigInt> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -136,7 +144,7 @@ compiler::TNode<BigInt> Convert8ATBigInt13MutableBigInt_227(compiler::CodeAssemb
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 22);
     compiler::TNode<BigInt> tmp1;
     USE(tmp1);
-    tmp1 = Convert10BigIntBase13MutableBigInt_1335(state_, compiler::TNode<BigInt>{tmp0});
+    tmp1 = Convert10BigIntBase13MutableBigInt_1389(state_, compiler::TNode<BigInt>{tmp0});
     compiler::TNode<BigInt> tmp2;
     USE(tmp2);
     tmp2 = (compiler::TNode<BigInt>{tmp1});
@@ -157,7 +165,7 @@ compiler::TNode<BigInt> Convert8ATBigInt13MutableBigInt_227(compiler::CodeAssemb
   return compiler::TNode<BigInt>{tmp6};
 }
 
-compiler::TNode<Uint32T> kPositiveSign_228(compiler::CodeAssemblerState* state_) {
+compiler::TNode<Uint32T> kPositiveSign_257(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -166,11 +174,11 @@ compiler::TNode<Uint32T> kPositiveSign_228(compiler::CodeAssemblerState* state_)
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 27);
     compiler::TNode<Uint32T> tmp0;
     USE(tmp0);
-    tmp0 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 0);
+    tmp0 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 0);
 return compiler::TNode<Uint32T>{tmp0};
 }
 
-compiler::TNode<Uint32T> kNegativeSign_229(compiler::CodeAssemblerState* state_) {
+compiler::TNode<Uint32T> kNegativeSign_258(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -179,11 +187,11 @@ compiler::TNode<Uint32T> kNegativeSign_229(compiler::CodeAssemblerState* state_)
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 28);
     compiler::TNode<Uint32T> tmp0;
     USE(tmp0);
-    tmp0 = FromConstexpr8ATuint3217ATconstexpr_int31_135(state_, 1);
+    tmp0 = FromConstexpr8ATuint3217ATconstexpr_int31_161(state_, 1);
 return compiler::TNode<Uint32T>{tmp0};
 }
 
-compiler::TNode<BoolT> IsCanonicalized_230(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_bigint) {
+compiler::TNode<BoolT> IsCanonicalized_259(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_bigint) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<BigInt> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BigInt, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -202,7 +210,7 @@ compiler::TNode<BoolT> IsCanonicalized_230(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 53);
     compiler::TNode<IntPtrT> tmp2;
     USE(tmp2);
-    tmp2 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp2 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp3;
     USE(tmp3);
     tmp3 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp1}, compiler::TNode<IntPtrT>{tmp2});
@@ -219,7 +227,7 @@ compiler::TNode<BoolT> IsCanonicalized_230(compiler::CodeAssemblerState* state_,
     tmp6 = BigIntBuiltinsAssembler(state_).ReadBigIntSign(compiler::TNode<BigInt>{tmp4});
     compiler::TNode<Uint32T> tmp7;
     USE(tmp7);
-    tmp7 = kPositiveSign_228(state_);
+    tmp7 = kPositiveSign_257(state_);
     compiler::TNode<BoolT> tmp8;
     USE(tmp8);
     tmp8 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp6}, compiler::TNode<Uint32T>{tmp7});
@@ -233,7 +241,7 @@ compiler::TNode<BoolT> IsCanonicalized_230(compiler::CodeAssemblerState* state_,
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 57);
     compiler::TNode<IntPtrT> tmp11;
     USE(tmp11);
-    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp11 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<IntPtrT> tmp12;
     USE(tmp12);
     tmp12 = CodeStubAssembler(state_).IntPtrSub(compiler::TNode<IntPtrT>{tmp10}, compiler::TNode<IntPtrT>{tmp11});
@@ -242,7 +250,7 @@ compiler::TNode<BoolT> IsCanonicalized_230(compiler::CodeAssemblerState* state_,
     tmp13 = CodeStubAssembler(state_).LoadBigIntDigit(compiler::TNode<BigInt>{tmp9}, compiler::TNode<IntPtrT>{tmp12});
     compiler::TNode<UintPtrT> tmp14;
     USE(tmp14);
-    tmp14 = FromConstexpr9ATuintptr17ATconstexpr_int31_136(state_, 0);
+    tmp14 = FromConstexpr9ATuintptr17ATconstexpr_int31_162(state_, 0);
     compiler::TNode<BoolT> tmp15;
     USE(tmp15);
     tmp15 = CodeStubAssembler(state_).WordNotEqual(compiler::TNode<UintPtrT>{tmp13}, compiler::TNode<UintPtrT>{tmp14});
@@ -263,7 +271,7 @@ compiler::TNode<BoolT> IsCanonicalized_230(compiler::CodeAssemblerState* state_,
   return compiler::TNode<BoolT>{tmp19};
 }
 
-compiler::TNode<Uint32T> InvertSign_231(compiler::CodeAssemblerState* state_, compiler::TNode<Uint32T> p_sign) {
+compiler::TNode<Uint32T> InvertSign_260(compiler::CodeAssemblerState* state_, compiler::TNode<Uint32T> p_sign) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -280,7 +288,7 @@ compiler::TNode<Uint32T> InvertSign_231(compiler::CodeAssemblerState* state_, co
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 61);
     compiler::TNode<Uint32T> tmp1;
     USE(tmp1);
-    tmp1 = kPositiveSign_228(state_);
+    tmp1 = kPositiveSign_257(state_);
     compiler::TNode<BoolT> tmp2;
     USE(tmp2);
     tmp2 = CodeStubAssembler(state_).Word32Equal(compiler::TNode<Uint32T>{tmp0}, compiler::TNode<Uint32T>{tmp1});
@@ -292,7 +300,7 @@ compiler::TNode<Uint32T> InvertSign_231(compiler::CodeAssemblerState* state_, co
     ca_.Bind(&block2, &tmp3);
     compiler::TNode<Uint32T> tmp4;
     USE(tmp4);
-    tmp4 = kNegativeSign_229(state_);
+    tmp4 = kNegativeSign_258(state_);
     ca_.Goto(&block5, tmp3, tmp4);
   }
 
@@ -301,7 +309,7 @@ compiler::TNode<Uint32T> InvertSign_231(compiler::CodeAssemblerState* state_, co
     ca_.Bind(&block3, &tmp5);
     compiler::TNode<Uint32T> tmp6;
     USE(tmp6);
-    tmp6 = kPositiveSign_228(state_);
+    tmp6 = kPositiveSign_257(state_);
     ca_.Goto(&block4, tmp5, tmp6);
   }
 
@@ -333,7 +341,7 @@ compiler::TNode<Uint32T> InvertSign_231(compiler::CodeAssemblerState* state_, co
   return compiler::TNode<Uint32T>{tmp14};
 }
 
-compiler::TNode<BigInt> AllocateEmptyBigIntNoThrow_232(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_sign, compiler::TNode<IntPtrT> p_length, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
+compiler::TNode<BigInt> AllocateEmptyBigIntNoThrow_261(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_sign, compiler::TNode<IntPtrT> p_length, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -351,7 +359,7 @@ compiler::TNode<BigInt> AllocateEmptyBigIntNoThrow_232(compiler::CodeAssemblerSt
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 66);
     compiler::TNode<IntPtrT> tmp3;
     USE(tmp3);
-    tmp3 = FromConstexpr8ATintptr18ATconstexpr_intptr_124(state_, BigInt::kMaxLength);
+    tmp3 = FromConstexpr8ATintptr18ATconstexpr_intptr_150(state_, BigInt::kMaxLength);
     compiler::TNode<BoolT> tmp4;
     USE(tmp4);
     tmp4 = CodeStubAssembler(state_).IntPtrGreaterThan(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp3});
@@ -405,7 +413,7 @@ compiler::TNode<BigInt> AllocateEmptyBigIntNoThrow_232(compiler::CodeAssemblerSt
   return compiler::TNode<BigInt>{tmp19};
 }
 
-compiler::TNode<BigInt> AllocateEmptyBigInt_233(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_sign, compiler::TNode<IntPtrT> p_length) {
+compiler::TNode<BigInt> AllocateEmptyBigInt_262(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Uint32T> p_sign, compiler::TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Uint32T, IntPtrT, Uint32T, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -424,7 +432,7 @@ compiler::TNode<BigInt> AllocateEmptyBigInt_233(compiler::CodeAssemblerState* st
     compiler::TNode<BigInt> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = AllocateEmptyBigIntNoThrow_232(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Uint32T>{tmp1}, compiler::TNode<IntPtrT>{tmp2}, &label0);
+    tmp3 = AllocateEmptyBigIntNoThrow_261(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Uint32T>{tmp1}, compiler::TNode<IntPtrT>{tmp2}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp1, tmp2, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -480,7 +488,7 @@ compiler::TNode<BigInt> AllocateEmptyBigInt_233(compiler::CodeAssemblerState* st
   return compiler::TNode<BigInt>{tmp25};
 }
 
-compiler::TNode<Int32T> MutableBigIntAbsoluteCompare_234(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_x, compiler::TNode<BigInt> p_y) {
+compiler::TNode<Int32T> MutableBigIntAbsoluteCompare_263(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_x, compiler::TNode<BigInt> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<BigInt, BigInt> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BigInt, BigInt, Int32T> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -514,7 +522,7 @@ compiler::TNode<Int32T> MutableBigIntAbsoluteCompare_234(compiler::CodeAssembler
   return compiler::TNode<Int32T>{tmp8};
 }
 
-compiler::TNode<BigInt> MutableBigIntAbsoluteSub_235(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<BigInt> p_x, compiler::TNode<BigInt> p_y, compiler::TNode<Uint32T> p_resultSign) {
+compiler::TNode<BigInt> MutableBigIntAbsoluteSub_264(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<BigInt> p_x, compiler::TNode<BigInt> p_y, compiler::TNode<Uint32T> p_resultSign) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, BigInt, BigInt, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, BigInt, BigInt, Uint32T, IntPtrT, IntPtrT, Uint32T> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -550,7 +558,7 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteSub_235(compiler::CodeAssemblerStat
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 96);
     compiler::TNode<IntPtrT> tmp7;
     USE(tmp7);
-    tmp7 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp7 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp8;
     USE(tmp8);
     tmp8 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp4}, compiler::TNode<IntPtrT>{tmp7});
@@ -582,7 +590,7 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteSub_235(compiler::CodeAssemblerStat
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 101);
     compiler::TNode<IntPtrT> tmp23;
     USE(tmp23);
-    tmp23 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp23 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp24;
     USE(tmp24);
     tmp24 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp21}, compiler::TNode<IntPtrT>{tmp23});
@@ -670,13 +678,13 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteSub_235(compiler::CodeAssemblerStat
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 105);
     compiler::TNode<BigInt> tmp71;
     USE(tmp71);
-    tmp71 = AllocateEmptyBigInt_233(state_, compiler::TNode<Context>{tmp64}, compiler::TNode<Uint32T>{tmp67}, compiler::TNode<IntPtrT>{tmp68});
+    tmp71 = AllocateEmptyBigInt_262(state_, compiler::TNode<Context>{tmp64}, compiler::TNode<Uint32T>{tmp67}, compiler::TNode<IntPtrT>{tmp68});
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 106);
     BigIntBuiltinsAssembler(state_).CppAbsoluteSubAndCanonicalize(compiler::TNode<BigInt>{tmp71}, compiler::TNode<BigInt>{tmp65}, compiler::TNode<BigInt>{tmp66});
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 107);
     compiler::TNode<BigInt> tmp72;
     USE(tmp72);
-    tmp72 = Convert8ATBigInt13MutableBigInt_227(state_, compiler::TNode<BigInt>{tmp71});
+    tmp72 = Convert8ATBigInt13MutableBigInt_256(state_, compiler::TNode<BigInt>{tmp71});
     ca_.Goto(&block1, tmp64, tmp65, tmp66, tmp67, tmp72);
   }
 
@@ -700,7 +708,7 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteSub_235(compiler::CodeAssemblerStat
   return compiler::TNode<BigInt>{tmp82};
 }
 
-compiler::TNode<BigInt> MutableBigIntAbsoluteAdd_236(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<BigInt> p_xBigint, compiler::TNode<BigInt> p_yBigint, compiler::TNode<Uint32T> p_resultSign, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
+compiler::TNode<BigInt> MutableBigIntAbsoluteAdd_265(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<BigInt> p_xBigint, compiler::TNode<BigInt> p_yBigint, compiler::TNode<Uint32T> p_resultSign, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, BigInt, BigInt, Uint32T> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, BigInt, BigInt, Uint32T, IntPtrT, IntPtrT, BigInt, BigInt> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -775,7 +783,7 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteAdd_236(compiler::CodeAssemblerStat
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 128);
     compiler::TNode<IntPtrT> tmp23;
     USE(tmp23);
-    tmp23 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp23 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp24;
     USE(tmp24);
     tmp24 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp19}, compiler::TNode<IntPtrT>{tmp23});
@@ -809,7 +817,7 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteAdd_236(compiler::CodeAssemblerStat
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 134);
     compiler::TNode<IntPtrT> tmp41;
     USE(tmp41);
-    tmp41 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp41 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp42;
     USE(tmp42);
     tmp42 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp38}, compiler::TNode<IntPtrT>{tmp41});
@@ -906,14 +914,14 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteAdd_236(compiler::CodeAssemblerStat
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 139);
     compiler::TNode<IntPtrT> tmp96;
     USE(tmp96);
-    tmp96 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp96 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<IntPtrT> tmp97;
     USE(tmp97);
     tmp97 = CodeStubAssembler(state_).IntPtrAdd(compiler::TNode<IntPtrT>{tmp92}, compiler::TNode<IntPtrT>{tmp96});
     compiler::TNode<BigInt> tmp98;
     USE(tmp98);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp98 = AllocateEmptyBigIntNoThrow_232(state_, compiler::TNode<Context>{tmp88}, compiler::TNode<Uint32T>{tmp91}, compiler::TNode<IntPtrT>{tmp97}, &label0);
+    tmp98 = AllocateEmptyBigIntNoThrow_261(state_, compiler::TNode<Context>{tmp88}, compiler::TNode<Uint32T>{tmp91}, compiler::TNode<IntPtrT>{tmp97}, &label0);
     ca_.Goto(&block13, tmp88, tmp89, tmp90, tmp91, tmp92, tmp93, tmp94, tmp95, tmp91, tmp97, tmp98);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -954,7 +962,7 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteAdd_236(compiler::CodeAssemblerStat
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 142);
     compiler::TNode<BigInt> tmp120;
     USE(tmp120);
-    tmp120 = Convert8ATBigInt13MutableBigInt_227(state_, compiler::TNode<BigInt>{tmp119});
+    tmp120 = Convert8ATBigInt13MutableBigInt_256(state_, compiler::TNode<BigInt>{tmp119});
     ca_.Goto(&block2, tmp109, tmp110, tmp111, tmp112, tmp120);
   }
 
@@ -983,7 +991,7 @@ compiler::TNode<BigInt> MutableBigIntAbsoluteAdd_236(compiler::CodeAssemblerStat
   return compiler::TNode<BigInt>{tmp130};
 }
 
-compiler::TNode<BigInt> BigIntAddImpl_237(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<BigInt> p_x, compiler::TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
+compiler::TNode<BigInt> BigIntAddImpl_266(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<BigInt> p_x, compiler::TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, BigInt, BigInt> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, BigInt, BigInt, Uint32T, Uint32T> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1028,7 +1036,7 @@ compiler::TNode<BigInt> BigIntAddImpl_237(compiler::CodeAssemblerState* state_, 
     compiler::TNode<BigInt> tmp11;
     USE(tmp11);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp11 = MutableBigIntAbsoluteAdd_236(state_, compiler::TNode<Context>{tmp6}, compiler::TNode<BigInt>{tmp7}, compiler::TNode<BigInt>{tmp8}, compiler::TNode<Uint32T>{tmp9}, &label0);
+    tmp11 = MutableBigIntAbsoluteAdd_265(state_, compiler::TNode<Context>{tmp6}, compiler::TNode<BigInt>{tmp7}, compiler::TNode<BigInt>{tmp8}, compiler::TNode<Uint32T>{tmp9}, &label0);
     ca_.Goto(&block5, tmp6, tmp7, tmp8, tmp9, tmp10, tmp7, tmp8, tmp9, tmp11);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1073,10 +1081,10 @@ compiler::TNode<BigInt> BigIntAddImpl_237(compiler::CodeAssemblerState* state_, 
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 157);
     compiler::TNode<Int32T> tmp34;
     USE(tmp34);
-    tmp34 = MutableBigIntAbsoluteCompare_234(state_, compiler::TNode<BigInt>{tmp30}, compiler::TNode<BigInt>{tmp31});
+    tmp34 = MutableBigIntAbsoluteCompare_263(state_, compiler::TNode<BigInt>{tmp30}, compiler::TNode<BigInt>{tmp31});
     compiler::TNode<Int32T> tmp35;
     USE(tmp35);
-    tmp35 = FromConstexpr7ATint3217ATconstexpr_int31_120(state_, 0);
+    tmp35 = FromConstexpr7ATint3217ATconstexpr_int31_146(state_, 0);
     compiler::TNode<BoolT> tmp36;
     USE(tmp36);
     tmp36 = CodeStubAssembler(state_).Int32GreaterThanOrEqual(compiler::TNode<Int32T>{tmp34}, compiler::TNode<Int32T>{tmp35});
@@ -1093,7 +1101,7 @@ compiler::TNode<BigInt> BigIntAddImpl_237(compiler::CodeAssemblerState* state_, 
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 158);
     compiler::TNode<BigInt> tmp42;
     USE(tmp42);
-    tmp42 = MutableBigIntAbsoluteSub_235(state_, compiler::TNode<Context>{tmp37}, compiler::TNode<BigInt>{tmp38}, compiler::TNode<BigInt>{tmp39}, compiler::TNode<Uint32T>{tmp40});
+    tmp42 = MutableBigIntAbsoluteSub_264(state_, compiler::TNode<Context>{tmp37}, compiler::TNode<BigInt>{tmp38}, compiler::TNode<BigInt>{tmp39}, compiler::TNode<Uint32T>{tmp40});
     ca_.Goto(&block2, tmp37, tmp38, tmp39, tmp42);
   }
 
@@ -1107,10 +1115,10 @@ compiler::TNode<BigInt> BigIntAddImpl_237(compiler::CodeAssemblerState* state_, 
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 160);
     compiler::TNode<Uint32T> tmp48;
     USE(tmp48);
-    tmp48 = InvertSign_231(state_, compiler::TNode<Uint32T>{tmp46});
+    tmp48 = InvertSign_260(state_, compiler::TNode<Uint32T>{tmp46});
     compiler::TNode<BigInt> tmp49;
     USE(tmp49);
-    tmp49 = MutableBigIntAbsoluteSub_235(state_, compiler::TNode<Context>{tmp43}, compiler::TNode<BigInt>{tmp45}, compiler::TNode<BigInt>{tmp44}, compiler::TNode<Uint32T>{tmp48});
+    tmp49 = MutableBigIntAbsoluteSub_264(state_, compiler::TNode<Context>{tmp43}, compiler::TNode<BigInt>{tmp45}, compiler::TNode<BigInt>{tmp44}, compiler::TNode<Uint32T>{tmp48});
     ca_.Goto(&block2, tmp43, tmp44, tmp45, tmp49);
   }
 
@@ -1160,7 +1168,7 @@ TF_BUILTIN(BigIntAddNoThrow, CodeStubAssembler) {
     compiler::TNode<BigInt> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = BigIntAddImpl_237(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<BigInt>{tmp1}, compiler::TNode<BigInt>{tmp2}, &label0);
+    tmp3 = BigIntAddImpl_266(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<BigInt>{tmp1}, compiler::TNode<BigInt>{tmp2}, &label0);
     ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp1, tmp2, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1197,7 +1205,7 @@ TF_BUILTIN(BigIntAddNoThrow, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 170);
     compiler::TNode<Smi> tmp18;
     USE(tmp18);
-    tmp18 = Convert5ATSmi17ATconstexpr_int31_1292(state_, 0);
+    tmp18 = Convert5ATSmi17ATconstexpr_int31_1340(state_, 0);
     CodeStubAssembler(state_).Return(tmp18);
   }
 }
@@ -1230,7 +1238,7 @@ TF_BUILTIN(BigIntAdd, CodeStubAssembler) {
     compiler::TNode<BigInt> tmp3;
     USE(tmp3);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp3 = Cast8ATBigInt_1336(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    tmp3 = Cast8ATBigInt_1390(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
     ca_.Goto(&block5, tmp0, tmp1, tmp2, tmp1, tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1258,7 +1266,7 @@ TF_BUILTIN(BigIntAdd, CodeStubAssembler) {
     compiler::TNode<BigInt> tmp13;
     USE(tmp13);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp13 = Cast8ATBigInt_1336(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Object>{tmp10}, &label0);
+    tmp13 = Cast8ATBigInt_1390(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Object>{tmp10}, &label0);
     ca_.Goto(&block7, tmp8, tmp9, tmp10, tmp12, tmp10, tmp13);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1288,7 +1296,7 @@ TF_BUILTIN(BigIntAdd, CodeStubAssembler) {
     compiler::TNode<BigInt> tmp25;
     USE(tmp25);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp25 = BigIntAddImpl_237(state_, compiler::TNode<Context>{tmp19}, compiler::TNode<BigInt>{tmp22}, compiler::TNode<BigInt>{tmp24}, &label0);
+    tmp25 = BigIntAddImpl_266(state_, compiler::TNode<Context>{tmp19}, compiler::TNode<BigInt>{tmp22}, compiler::TNode<BigInt>{tmp24}, &label0);
     ca_.Goto(&block9, tmp19, tmp20, tmp21, tmp22, tmp24, tmp22, tmp24, tmp25);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1366,7 +1374,7 @@ TF_BUILTIN(BigIntUnaryMinus, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 194);
     compiler::TNode<IntPtrT> tmp3;
     USE(tmp3);
-    tmp3 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp3 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<BoolT> tmp4;
     USE(tmp4);
     tmp4 = CodeStubAssembler(state_).WordEqual(compiler::TNode<IntPtrT>{tmp2}, compiler::TNode<IntPtrT>{tmp3});
@@ -1393,14 +1401,14 @@ TF_BUILTIN(BigIntUnaryMinus, CodeStubAssembler) {
     tmp11 = BigIntBuiltinsAssembler(state_).ReadBigIntSign(compiler::TNode<BigInt>{tmp9});
     compiler::TNode<Uint32T> tmp12;
     USE(tmp12);
-    tmp12 = InvertSign_231(state_, compiler::TNode<Uint32T>{tmp11});
+    tmp12 = InvertSign_260(state_, compiler::TNode<Uint32T>{tmp11});
     compiler::TNode<BigInt> tmp13;
     USE(tmp13);
-    tmp13 = AllocateEmptyBigInt_233(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Uint32T>{tmp12}, compiler::TNode<IntPtrT>{tmp10});
+    tmp13 = AllocateEmptyBigInt_262(state_, compiler::TNode<Context>{tmp8}, compiler::TNode<Uint32T>{tmp12}, compiler::TNode<IntPtrT>{tmp10});
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 200);
     compiler::TNode<IntPtrT> tmp14;
     USE(tmp14);
-    tmp14 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp14 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     ca_.Goto(&block5, tmp8, tmp9, tmp10, tmp13, tmp14);
   }
 
@@ -1442,7 +1450,7 @@ TF_BUILTIN(BigIntUnaryMinus, CodeStubAssembler) {
     ca_.Bind(&block6, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31);
     compiler::TNode<IntPtrT> tmp32;
     USE(tmp32);
-    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp32 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<IntPtrT> tmp33;
     USE(tmp33);
     tmp33 = CodeStubAssembler(state_).IntPtrAdd(compiler::TNode<IntPtrT>{tmp31}, compiler::TNode<IntPtrT>{tmp32});
@@ -1459,12 +1467,12 @@ TF_BUILTIN(BigIntUnaryMinus, CodeStubAssembler) {
     ca_.SetSourcePosition("../../src/builtins/bigint.tq", 203);
     compiler::TNode<BigInt> tmp39;
     USE(tmp39);
-    tmp39 = Convert8ATBigInt13MutableBigInt_227(state_, compiler::TNode<BigInt>{tmp37});
+    tmp39 = Convert8ATBigInt13MutableBigInt_256(state_, compiler::TNode<BigInt>{tmp37});
     CodeStubAssembler(state_).Return(tmp39);
   }
 }
 
-compiler::TNode<BigInt> Convert10BigIntBase13MutableBigInt_1335(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_i) {
+compiler::TNode<BigInt> Convert10BigIntBase13MutableBigInt_1389(compiler::CodeAssemblerState* state_, compiler::TNode<BigInt> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<BigInt> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BigInt, BigInt> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1474,7 +1482,7 @@ compiler::TNode<BigInt> Convert10BigIntBase13MutableBigInt_1335(compiler::CodeAs
   if (block0.is_used()) {
     compiler::TNode<BigInt> tmp0;
     ca_.Bind(&block0, &tmp0);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2254);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2667);
     ca_.Goto(&block1, tmp0, tmp0);
   }
 
@@ -1492,7 +1500,7 @@ compiler::TNode<BigInt> Convert10BigIntBase13MutableBigInt_1335(compiler::CodeAs
   return compiler::TNode<BigInt>{tmp4};
 }
 
-compiler::TNode<BigInt> Cast8ATBigInt_1336(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+compiler::TNode<BigInt> Cast8ATBigInt_1390(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1508,7 +1516,7 @@ compiler::TNode<BigInt> Cast8ATBigInt_1336(compiler::CodeAssemblerState* state_,
     compiler::TNode<Context> tmp0;
     compiler::TNode<Object> tmp1;
     ca_.Bind(&block0, &tmp0, &tmp1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 1823);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2043);
     compiler::TNode<HeapObject> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -1537,7 +1545,7 @@ compiler::TNode<BigInt> Cast8ATBigInt_1336(compiler::CodeAssemblerState* state_,
     compiler::TNode<BigInt> tmp10;
     USE(tmp10);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp10 = Cast8ATBigInt_104(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
+    tmp10 = Cast8ATBigInt_129(state_, compiler::TNode<HeapObject>{tmp9}, &label0);
     ca_.Goto(&block5, tmp6, tmp7, tmp9, tmp10);
     if (label0.is_used()) {
       ca_.Bind(&label0);

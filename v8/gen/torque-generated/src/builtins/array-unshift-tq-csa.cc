@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -127,24 +135,20 @@ compiler::TNode<Number> GenericArrayUnshift_49(compiler::CodeAssemblerState* sta
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number, Number, Oddball> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number, Number, Oddball> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number, Number, Oddball> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Smi> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Smi> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Smi> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number, Number, Oddball> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number, Number, Oddball> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Number, Number, Oddball> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Smi> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi, Number, Smi> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, JSReceiver, Number, Smi> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, Number> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, Number> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, RawPtrT, RawPtrT, IntPtrT, Number> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_receiver, p_arguments.frame, p_arguments.base, p_arguments.length);
 
   if (block0.is_used()) {
@@ -161,15 +165,15 @@ compiler::TNode<Number> GenericArrayUnshift_49(compiler::CodeAssemblerState* sta
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 14);
     compiler::TNode<Number> tmp6;
     USE(tmp6);
-    tmp6 = GetLengthProperty_216(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp5});
+    tmp6 = GetLengthProperty_244(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp5});
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 17);
     compiler::TNode<Smi> tmp7;
     USE(tmp7);
-    tmp7 = Convert5ATSmi8ATintptr_157(state_, compiler::TNode<IntPtrT>{tmp4});
+    tmp7 = Convert5ATSmi8ATintptr_184(state_, compiler::TNode<IntPtrT>{tmp4});
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 20);
     compiler::TNode<Smi> tmp8;
     USE(tmp8);
-    tmp8 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp8 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp9;
     USE(tmp9);
     tmp9 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp7}, compiler::TNode<Smi>{tmp8});
@@ -192,35 +196,28 @@ compiler::TNode<Number> GenericArrayUnshift_49(compiler::CodeAssemblerState* sta
     tmp18 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp16}, compiler::TNode<Number>{tmp17});
     compiler::TNode<Number> tmp19;
     USE(tmp19);
-    tmp19 = FromConstexpr20UT5ATSmi10HeapNumber19ATconstexpr_float64_131(state_, kMaxSafeInteger);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    CodeStubAssembler(state_).BranchIfNumberGreaterThan(compiler::TNode<Number>{tmp18}, compiler::TNode<Number>{tmp19}, &label0, &label1);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block6, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, tmp16, tmp17, tmp18);
-    }
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block7, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, tmp16, tmp17, tmp18);
-    }
+    tmp19 = FromConstexpr20UT5ATSmi10HeapNumber19ATconstexpr_float64_157(state_, kMaxSafeInteger);
+    compiler::TNode<BoolT> tmp20;
+    USE(tmp20);
+    tmp20 = NumberIsGreaterThan_77(state_, compiler::TNode<Number>{tmp18}, compiler::TNode<Number>{tmp19});
+    ca_.Branch(tmp20, &block4, &block5, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, tmp16, tmp17);
   }
 
-  if (block6.is_used()) {
-    compiler::TNode<Context> tmp20;
-    compiler::TNode<Object> tmp21;
-    compiler::TNode<RawPtrT> tmp22;
+  if (block4.is_used()) {
+    compiler::TNode<Context> tmp21;
+    compiler::TNode<Object> tmp22;
     compiler::TNode<RawPtrT> tmp23;
-    compiler::TNode<IntPtrT> tmp24;
-    compiler::TNode<JSReceiver> tmp25;
-    compiler::TNode<Number> tmp26;
-    compiler::TNode<Smi> tmp27;
-    compiler::TNode<Number> tmp28;
-    ca_.Bind(&block6, &tmp20, &tmp21, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27, &tmp28);
-    ca_.Goto(&block4, tmp20, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26, tmp27);
+    compiler::TNode<RawPtrT> tmp24;
+    compiler::TNode<IntPtrT> tmp25;
+    compiler::TNode<JSReceiver> tmp26;
+    compiler::TNode<Number> tmp27;
+    compiler::TNode<Smi> tmp28;
+    ca_.Bind(&block4, &tmp21, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26, &tmp27, &tmp28);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 23);
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp21}, MessageTemplate::kInvalidArrayLength);
   }
 
-  if (block7.is_used()) {
+  if (block5.is_used()) {
     compiler::TNode<Context> tmp29;
     compiler::TNode<Object> tmp30;
     compiler::TNode<RawPtrT> tmp31;
@@ -229,214 +226,217 @@ compiler::TNode<Number> GenericArrayUnshift_49(compiler::CodeAssemblerState* sta
     compiler::TNode<JSReceiver> tmp34;
     compiler::TNode<Number> tmp35;
     compiler::TNode<Smi> tmp36;
-    compiler::TNode<Number> tmp37;
-    ca_.Bind(&block7, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37);
-    ca_.Goto(&block5, tmp29, tmp30, tmp31, tmp32, tmp33, tmp34, tmp35, tmp36);
-  }
-
-  if (block4.is_used()) {
-    compiler::TNode<Context> tmp38;
-    compiler::TNode<Object> tmp39;
-    compiler::TNode<RawPtrT> tmp40;
-    compiler::TNode<RawPtrT> tmp41;
-    compiler::TNode<IntPtrT> tmp42;
-    compiler::TNode<JSReceiver> tmp43;
-    compiler::TNode<Number> tmp44;
-    compiler::TNode<Smi> tmp45;
-    ca_.Bind(&block4, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 23);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp38}, MessageTemplate::kInvalidArrayLength);
-  }
-
-  if (block5.is_used()) {
-    compiler::TNode<Context> tmp46;
-    compiler::TNode<Object> tmp47;
-    compiler::TNode<RawPtrT> tmp48;
-    compiler::TNode<RawPtrT> tmp49;
-    compiler::TNode<IntPtrT> tmp50;
-    compiler::TNode<JSReceiver> tmp51;
-    compiler::TNode<Number> tmp52;
-    compiler::TNode<Smi> tmp53;
-    ca_.Bind(&block5, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53);
+    ca_.Bind(&block5, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36);
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 27);
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 30);
-    ca_.Goto(&block10, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51, tmp52, tmp53, tmp52);
-  }
-
-  if (block10.is_used()) {
-    compiler::TNode<Context> tmp54;
-    compiler::TNode<Object> tmp55;
-    compiler::TNode<RawPtrT> tmp56;
-    compiler::TNode<RawPtrT> tmp57;
-    compiler::TNode<IntPtrT> tmp58;
-    compiler::TNode<JSReceiver> tmp59;
-    compiler::TNode<Number> tmp60;
-    compiler::TNode<Smi> tmp61;
-    compiler::TNode<Number> tmp62;
-    ca_.Bind(&block10, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62);
-    compiler::TNode<Number> tmp63;
-    USE(tmp63);
-    tmp63 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 0);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    CodeStubAssembler(state_).BranchIfNumberGreaterThan(compiler::TNode<Number>{tmp62}, compiler::TNode<Number>{tmp63}, &label0, &label1);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block11, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp62);
-    }
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block12, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62, tmp62);
-    }
-  }
-
-  if (block11.is_used()) {
-    compiler::TNode<Context> tmp64;
-    compiler::TNode<Object> tmp65;
-    compiler::TNode<RawPtrT> tmp66;
-    compiler::TNode<RawPtrT> tmp67;
-    compiler::TNode<IntPtrT> tmp68;
-    compiler::TNode<JSReceiver> tmp69;
-    compiler::TNode<Number> tmp70;
-    compiler::TNode<Smi> tmp71;
-    compiler::TNode<Number> tmp72;
-    compiler::TNode<Number> tmp73;
-    ca_.Bind(&block11, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73);
-    ca_.Goto(&block8, tmp64, tmp65, tmp66, tmp67, tmp68, tmp69, tmp70, tmp71, tmp72);
-  }
-
-  if (block12.is_used()) {
-    compiler::TNode<Context> tmp74;
-    compiler::TNode<Object> tmp75;
-    compiler::TNode<RawPtrT> tmp76;
-    compiler::TNode<RawPtrT> tmp77;
-    compiler::TNode<IntPtrT> tmp78;
-    compiler::TNode<JSReceiver> tmp79;
-    compiler::TNode<Number> tmp80;
-    compiler::TNode<Smi> tmp81;
-    compiler::TNode<Number> tmp82;
-    compiler::TNode<Number> tmp83;
-    ca_.Bind(&block12, &tmp74, &tmp75, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83);
-    ca_.Goto(&block9, tmp74, tmp75, tmp76, tmp77, tmp78, tmp79, tmp80, tmp81, tmp82);
+    ca_.Goto(&block8, tmp29, tmp30, tmp31, tmp32, tmp33, tmp34, tmp35, tmp36, tmp35);
   }
 
   if (block8.is_used()) {
-    compiler::TNode<Context> tmp84;
-    compiler::TNode<Object> tmp85;
-    compiler::TNode<RawPtrT> tmp86;
-    compiler::TNode<RawPtrT> tmp87;
-    compiler::TNode<IntPtrT> tmp88;
-    compiler::TNode<JSReceiver> tmp89;
-    compiler::TNode<Number> tmp90;
-    compiler::TNode<Smi> tmp91;
-    compiler::TNode<Number> tmp92;
-    ca_.Bind(&block8, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92);
+    compiler::TNode<Context> tmp37;
+    compiler::TNode<Object> tmp38;
+    compiler::TNode<RawPtrT> tmp39;
+    compiler::TNode<RawPtrT> tmp40;
+    compiler::TNode<IntPtrT> tmp41;
+    compiler::TNode<JSReceiver> tmp42;
+    compiler::TNode<Number> tmp43;
+    compiler::TNode<Smi> tmp44;
+    compiler::TNode<Number> tmp45;
+    ca_.Bind(&block8, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45);
+    compiler::TNode<Number> tmp46;
+    USE(tmp46);
+    tmp46 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 0);
+    compiler::TNode<BoolT> tmp47;
+    USE(tmp47);
+    tmp47 = NumberIsGreaterThan_77(state_, compiler::TNode<Number>{tmp45}, compiler::TNode<Number>{tmp46});
+    ca_.Branch(tmp47, &block6, &block7, tmp37, tmp38, tmp39, tmp40, tmp41, tmp42, tmp43, tmp44, tmp45);
+  }
+
+  if (block6.is_used()) {
+    compiler::TNode<Context> tmp48;
+    compiler::TNode<Object> tmp49;
+    compiler::TNode<RawPtrT> tmp50;
+    compiler::TNode<RawPtrT> tmp51;
+    compiler::TNode<IntPtrT> tmp52;
+    compiler::TNode<JSReceiver> tmp53;
+    compiler::TNode<Number> tmp54;
+    compiler::TNode<Smi> tmp55;
+    compiler::TNode<Number> tmp56;
+    ca_.Bind(&block6, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56);
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 32);
-    compiler::TNode<Number> tmp93;
-    USE(tmp93);
-    tmp93 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
-    compiler::TNode<Number> tmp94;
-    USE(tmp94);
-    tmp94 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp92}, compiler::TNode<Number>{tmp93});
+    compiler::TNode<Number> tmp57;
+    USE(tmp57);
+    tmp57 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
+    compiler::TNode<Number> tmp58;
+    USE(tmp58);
+    tmp58 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp56}, compiler::TNode<Number>{tmp57});
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 35);
-    compiler::TNode<Number> tmp95;
-    USE(tmp95);
-    tmp95 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp92}, compiler::TNode<Number>{tmp91});
-    compiler::TNode<Number> tmp96;
-    USE(tmp96);
-    tmp96 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
-    compiler::TNode<Number> tmp97;
-    USE(tmp97);
-    tmp97 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp95}, compiler::TNode<Number>{tmp96});
+    compiler::TNode<Number> tmp59;
+    USE(tmp59);
+    tmp59 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp56}, compiler::TNode<Number>{tmp55});
+    compiler::TNode<Number> tmp60;
+    USE(tmp60);
+    tmp60 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
+    compiler::TNode<Number> tmp61;
+    USE(tmp61);
+    tmp61 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp59}, compiler::TNode<Number>{tmp60});
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 38);
-    compiler::TNode<Oddball> tmp98;
-    tmp98 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kHasProperty, tmp84, tmp89, tmp94));
-    USE(tmp98);
+    compiler::TNode<Oddball> tmp62;
+    tmp62 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kHasProperty, tmp48, tmp53, tmp58));
+    USE(tmp62);
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 41);
-    compiler::TNode<Oddball> tmp99;
-    USE(tmp99);
-    tmp99 = True_66(state_);
-    compiler::TNode<BoolT> tmp100;
-    USE(tmp100);
-    tmp100 = CodeStubAssembler(state_).WordEqual(compiler::TNode<HeapObject>{tmp98}, compiler::TNode<HeapObject>{tmp99});
-    ca_.Branch(tmp100, &block13, &block14, tmp84, tmp85, tmp86, tmp87, tmp88, tmp89, tmp90, tmp91, tmp92, tmp94, tmp97, tmp98);
-  }
-
-  if (block13.is_used()) {
-    compiler::TNode<Context> tmp101;
-    compiler::TNode<Object> tmp102;
-    compiler::TNode<RawPtrT> tmp103;
-    compiler::TNode<RawPtrT> tmp104;
-    compiler::TNode<IntPtrT> tmp105;
-    compiler::TNode<JSReceiver> tmp106;
-    compiler::TNode<Number> tmp107;
-    compiler::TNode<Smi> tmp108;
-    compiler::TNode<Number> tmp109;
-    compiler::TNode<Number> tmp110;
-    compiler::TNode<Number> tmp111;
-    compiler::TNode<Oddball> tmp112;
-    ca_.Bind(&block13, &tmp101, &tmp102, &tmp103, &tmp104, &tmp105, &tmp106, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 43);
-    compiler::TNode<Object> tmp113;
-    USE(tmp113);
-    tmp113 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp101}, compiler::TNode<Object>{tmp106}, compiler::TNode<Object>{tmp110});
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 46);
-    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp101, tmp106, tmp111, tmp113);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 41);
-    ca_.Goto(&block15, tmp101, tmp102, tmp103, tmp104, tmp105, tmp106, tmp107, tmp108, tmp109, tmp110, tmp111, tmp112);
-  }
-
-  if (block14.is_used()) {
-    compiler::TNode<Context> tmp115;
-    compiler::TNode<Object> tmp116;
-    compiler::TNode<RawPtrT> tmp117;
-    compiler::TNode<RawPtrT> tmp118;
-    compiler::TNode<IntPtrT> tmp119;
-    compiler::TNode<JSReceiver> tmp120;
-    compiler::TNode<Number> tmp121;
-    compiler::TNode<Smi> tmp122;
-    compiler::TNode<Number> tmp123;
-    compiler::TNode<Number> tmp124;
-    compiler::TNode<Number> tmp125;
-    compiler::TNode<Oddball> tmp126;
-    ca_.Bind(&block14, &tmp115, &tmp116, &tmp117, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 49);
-    compiler::TNode<Smi> tmp127;
-    USE(tmp127);
-    tmp127 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_140(state_, LanguageMode::kStrict);
-    compiler::TNode<Object> tmp128;
-    tmp128 = CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp115, tmp120, tmp125, tmp127);
-    USE(tmp128);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 41);
-    ca_.Goto(&block15, tmp115, tmp116, tmp117, tmp118, tmp119, tmp120, tmp121, tmp122, tmp123, tmp124, tmp125, tmp126);
-  }
-
-  if (block15.is_used()) {
-    compiler::TNode<Context> tmp129;
-    compiler::TNode<Object> tmp130;
-    compiler::TNode<RawPtrT> tmp131;
-    compiler::TNode<RawPtrT> tmp132;
-    compiler::TNode<IntPtrT> tmp133;
-    compiler::TNode<JSReceiver> tmp134;
-    compiler::TNode<Number> tmp135;
-    compiler::TNode<Smi> tmp136;
-    compiler::TNode<Number> tmp137;
-    compiler::TNode<Number> tmp138;
-    compiler::TNode<Number> tmp139;
-    compiler::TNode<Oddball> tmp140;
-    ca_.Bind(&block15, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137, &tmp138, &tmp139, &tmp140);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 53);
-    compiler::TNode<Number> tmp141;
-    USE(tmp141);
-    tmp141 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
-    compiler::TNode<Number> tmp142;
-    USE(tmp142);
-    tmp142 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp137}, compiler::TNode<Number>{tmp141});
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 30);
-    ca_.Goto(&block10, tmp129, tmp130, tmp131, tmp132, tmp133, tmp134, tmp135, tmp136, tmp142);
+    compiler::TNode<Oddball> tmp63;
+    USE(tmp63);
+    tmp63 = True_65(state_);
+    compiler::TNode<BoolT> tmp64;
+    USE(tmp64);
+    tmp64 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<HeapObject>{tmp62}, compiler::TNode<HeapObject>{tmp63});
+    ca_.Branch(tmp64, &block9, &block10, tmp48, tmp49, tmp50, tmp51, tmp52, tmp53, tmp54, tmp55, tmp56, tmp58, tmp61, tmp62);
   }
 
   if (block9.is_used()) {
+    compiler::TNode<Context> tmp65;
+    compiler::TNode<Object> tmp66;
+    compiler::TNode<RawPtrT> tmp67;
+    compiler::TNode<RawPtrT> tmp68;
+    compiler::TNode<IntPtrT> tmp69;
+    compiler::TNode<JSReceiver> tmp70;
+    compiler::TNode<Number> tmp71;
+    compiler::TNode<Smi> tmp72;
+    compiler::TNode<Number> tmp73;
+    compiler::TNode<Number> tmp74;
+    compiler::TNode<Number> tmp75;
+    compiler::TNode<Oddball> tmp76;
+    ca_.Bind(&block9, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 43);
+    compiler::TNode<Object> tmp77;
+    USE(tmp77);
+    tmp77 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp65}, compiler::TNode<Object>{tmp70}, compiler::TNode<Object>{tmp74});
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 46);
+    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp65, tmp70, tmp75, tmp77);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 41);
+    ca_.Goto(&block11, tmp65, tmp66, tmp67, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73, tmp74, tmp75, tmp76);
+  }
+
+  if (block10.is_used()) {
+    compiler::TNode<Context> tmp79;
+    compiler::TNode<Object> tmp80;
+    compiler::TNode<RawPtrT> tmp81;
+    compiler::TNode<RawPtrT> tmp82;
+    compiler::TNode<IntPtrT> tmp83;
+    compiler::TNode<JSReceiver> tmp84;
+    compiler::TNode<Number> tmp85;
+    compiler::TNode<Smi> tmp86;
+    compiler::TNode<Number> tmp87;
+    compiler::TNode<Number> tmp88;
+    compiler::TNode<Number> tmp89;
+    compiler::TNode<Oddball> tmp90;
+    ca_.Bind(&block10, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84, &tmp85, &tmp86, &tmp87, &tmp88, &tmp89, &tmp90);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 49);
+    compiler::TNode<Smi> tmp91;
+    USE(tmp91);
+    tmp91 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_166(state_, LanguageMode::kStrict);
+    compiler::TNode<Oddball> tmp92;
+    tmp92 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp79, tmp84, tmp89, tmp91));
+    USE(tmp92);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 41);
+    ca_.Goto(&block11, tmp79, tmp80, tmp81, tmp82, tmp83, tmp84, tmp85, tmp86, tmp87, tmp88, tmp89, tmp90);
+  }
+
+  if (block11.is_used()) {
+    compiler::TNode<Context> tmp93;
+    compiler::TNode<Object> tmp94;
+    compiler::TNode<RawPtrT> tmp95;
+    compiler::TNode<RawPtrT> tmp96;
+    compiler::TNode<IntPtrT> tmp97;
+    compiler::TNode<JSReceiver> tmp98;
+    compiler::TNode<Number> tmp99;
+    compiler::TNode<Smi> tmp100;
+    compiler::TNode<Number> tmp101;
+    compiler::TNode<Number> tmp102;
+    compiler::TNode<Number> tmp103;
+    compiler::TNode<Oddball> tmp104;
+    ca_.Bind(&block11, &tmp93, &tmp94, &tmp95, &tmp96, &tmp97, &tmp98, &tmp99, &tmp100, &tmp101, &tmp102, &tmp103, &tmp104);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 53);
+    compiler::TNode<Number> tmp105;
+    USE(tmp105);
+    tmp105 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
+    compiler::TNode<Number> tmp106;
+    USE(tmp106);
+    tmp106 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp101}, compiler::TNode<Number>{tmp105});
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 30);
+    ca_.Goto(&block8, tmp93, tmp94, tmp95, tmp96, tmp97, tmp98, tmp99, tmp100, tmp106);
+  }
+
+  if (block7.is_used()) {
+    compiler::TNode<Context> tmp107;
+    compiler::TNode<Object> tmp108;
+    compiler::TNode<RawPtrT> tmp109;
+    compiler::TNode<RawPtrT> tmp110;
+    compiler::TNode<IntPtrT> tmp111;
+    compiler::TNode<JSReceiver> tmp112;
+    compiler::TNode<Number> tmp113;
+    compiler::TNode<Smi> tmp114;
+    compiler::TNode<Number> tmp115;
+    ca_.Bind(&block7, &tmp107, &tmp108, &tmp109, &tmp110, &tmp111, &tmp112, &tmp113, &tmp114, &tmp115);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 57);
+    compiler::TNode<Smi> tmp116;
+    USE(tmp116);
+    tmp116 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 62);
+    ca_.Goto(&block14, tmp107, tmp108, tmp109, tmp110, tmp111, tmp112, tmp113, tmp114, tmp115, tmp116);
+  }
+
+  if (block14.is_used()) {
+    compiler::TNode<Context> tmp117;
+    compiler::TNode<Object> tmp118;
+    compiler::TNode<RawPtrT> tmp119;
+    compiler::TNode<RawPtrT> tmp120;
+    compiler::TNode<IntPtrT> tmp121;
+    compiler::TNode<JSReceiver> tmp122;
+    compiler::TNode<Number> tmp123;
+    compiler::TNode<Smi> tmp124;
+    compiler::TNode<Number> tmp125;
+    compiler::TNode<Smi> tmp126;
+    ca_.Bind(&block14, &tmp117, &tmp118, &tmp119, &tmp120, &tmp121, &tmp122, &tmp123, &tmp124, &tmp125, &tmp126);
+    compiler::TNode<BoolT> tmp127;
+    USE(tmp127);
+    tmp127 = CodeStubAssembler(state_).SmiLessThan(compiler::TNode<Smi>{tmp126}, compiler::TNode<Smi>{tmp124});
+    ca_.Branch(tmp127, &block12, &block13, tmp117, tmp118, tmp119, tmp120, tmp121, tmp122, tmp123, tmp124, tmp125, tmp126);
+  }
+
+  if (block12.is_used()) {
+    compiler::TNode<Context> tmp128;
+    compiler::TNode<Object> tmp129;
+    compiler::TNode<RawPtrT> tmp130;
+    compiler::TNode<RawPtrT> tmp131;
+    compiler::TNode<IntPtrT> tmp132;
+    compiler::TNode<JSReceiver> tmp133;
+    compiler::TNode<Number> tmp134;
+    compiler::TNode<Smi> tmp135;
+    compiler::TNode<Number> tmp136;
+    compiler::TNode<Smi> tmp137;
+    ca_.Bind(&block12, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 64);
+    compiler::TNode<IntPtrT> tmp138;
+    USE(tmp138);
+    tmp138 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp137});
+    compiler::TNode<Object> tmp139;
+    USE(tmp139);
+    tmp139 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp130}, compiler::TNode<RawPtrT>{tmp131}, compiler::TNode<IntPtrT>{tmp132}}, compiler::TNode<IntPtrT>{tmp138});
+    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp128, tmp133, tmp137, tmp139);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 67);
+    compiler::TNode<Smi> tmp141;
+    USE(tmp141);
+    tmp141 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
+    compiler::TNode<Smi> tmp142;
+    USE(tmp142);
+    tmp142 = CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp137}, compiler::TNode<Smi>{tmp141});
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 62);
+    ca_.Goto(&block14, tmp128, tmp129, tmp130, tmp131, tmp132, tmp133, tmp134, tmp135, tmp136, tmp142);
+  }
+
+  if (block13.is_used()) {
     compiler::TNode<Context> tmp143;
     compiler::TNode<Object> tmp144;
     compiler::TNode<RawPtrT> tmp145;
@@ -446,16 +446,13 @@ compiler::TNode<Number> GenericArrayUnshift_49(compiler::CodeAssemblerState* sta
     compiler::TNode<Number> tmp149;
     compiler::TNode<Smi> tmp150;
     compiler::TNode<Number> tmp151;
-    ca_.Bind(&block9, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148, &tmp149, &tmp150, &tmp151);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 57);
     compiler::TNode<Smi> tmp152;
-    USE(tmp152);
-    tmp152 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 62);
-    ca_.Goto(&block18, tmp143, tmp144, tmp145, tmp146, tmp147, tmp148, tmp149, tmp150, tmp151, tmp152);
+    ca_.Bind(&block13, &tmp143, &tmp144, &tmp145, &tmp146, &tmp147, &tmp148, &tmp149, &tmp150, &tmp151, &tmp152);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 20);
+    ca_.Goto(&block3, tmp143, tmp144, tmp145, tmp146, tmp147, tmp148, tmp149, tmp150);
   }
 
-  if (block18.is_used()) {
+  if (block3.is_used()) {
     compiler::TNode<Context> tmp153;
     compiler::TNode<Object> tmp154;
     compiler::TNode<RawPtrT> tmp155;
@@ -464,105 +461,40 @@ compiler::TNode<Number> GenericArrayUnshift_49(compiler::CodeAssemblerState* sta
     compiler::TNode<JSReceiver> tmp158;
     compiler::TNode<Number> tmp159;
     compiler::TNode<Smi> tmp160;
+    ca_.Bind(&block3, &tmp153, &tmp154, &tmp155, &tmp156, &tmp157, &tmp158, &tmp159, &tmp160);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 72);
     compiler::TNode<Number> tmp161;
-    compiler::TNode<Smi> tmp162;
-    ca_.Bind(&block18, &tmp153, &tmp154, &tmp155, &tmp156, &tmp157, &tmp158, &tmp159, &tmp160, &tmp161, &tmp162);
-    compiler::TNode<BoolT> tmp163;
-    USE(tmp163);
-    tmp163 = CodeStubAssembler(state_).SmiLessThan(compiler::TNode<Smi>{tmp162}, compiler::TNode<Smi>{tmp160});
-    ca_.Branch(tmp163, &block16, &block17, tmp153, tmp154, tmp155, tmp156, tmp157, tmp158, tmp159, tmp160, tmp161, tmp162);
+    USE(tmp161);
+    tmp161 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp159}, compiler::TNode<Number>{tmp160});
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 73);
+    compiler::TNode<String> tmp162;
+    USE(tmp162);
+    tmp162 = kLengthString_68(state_);
+    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp153, tmp158, tmp162, tmp161);
+    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 76);
+    ca_.Goto(&block1, tmp153, tmp154, tmp155, tmp156, tmp157, tmp161);
   }
 
-  if (block16.is_used()) {
+  if (block1.is_used()) {
     compiler::TNode<Context> tmp164;
     compiler::TNode<Object> tmp165;
     compiler::TNode<RawPtrT> tmp166;
     compiler::TNode<RawPtrT> tmp167;
     compiler::TNode<IntPtrT> tmp168;
-    compiler::TNode<JSReceiver> tmp169;
-    compiler::TNode<Number> tmp170;
-    compiler::TNode<Smi> tmp171;
-    compiler::TNode<Number> tmp172;
-    compiler::TNode<Smi> tmp173;
-    ca_.Bind(&block16, &tmp164, &tmp165, &tmp166, &tmp167, &tmp168, &tmp169, &tmp170, &tmp171, &tmp172, &tmp173);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 64);
-    compiler::TNode<IntPtrT> tmp174;
-    USE(tmp174);
-    tmp174 = Convert8ATintptr5ATSmi_159(state_, compiler::TNode<Smi>{tmp173});
-    compiler::TNode<Object> tmp175;
-    USE(tmp175);
-    tmp175 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp166}, compiler::TNode<RawPtrT>{tmp167}, compiler::TNode<IntPtrT>{tmp168}}, compiler::TNode<IntPtrT>{tmp174});
-    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp164, tmp169, tmp173, tmp175);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 67);
-    compiler::TNode<Smi> tmp177;
-    USE(tmp177);
-    tmp177 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
-    compiler::TNode<Smi> tmp178;
-    USE(tmp178);
-    tmp178 = CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp173}, compiler::TNode<Smi>{tmp177});
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 62);
-    ca_.Goto(&block18, tmp164, tmp165, tmp166, tmp167, tmp168, tmp169, tmp170, tmp171, tmp172, tmp178);
-  }
-
-  if (block17.is_used()) {
-    compiler::TNode<Context> tmp179;
-    compiler::TNode<Object> tmp180;
-    compiler::TNode<RawPtrT> tmp181;
-    compiler::TNode<RawPtrT> tmp182;
-    compiler::TNode<IntPtrT> tmp183;
-    compiler::TNode<JSReceiver> tmp184;
-    compiler::TNode<Number> tmp185;
-    compiler::TNode<Smi> tmp186;
-    compiler::TNode<Number> tmp187;
-    compiler::TNode<Smi> tmp188;
-    ca_.Bind(&block17, &tmp179, &tmp180, &tmp181, &tmp182, &tmp183, &tmp184, &tmp185, &tmp186, &tmp187, &tmp188);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 20);
-    ca_.Goto(&block3, tmp179, tmp180, tmp181, tmp182, tmp183, tmp184, tmp185, tmp186);
-  }
-
-  if (block3.is_used()) {
-    compiler::TNode<Context> tmp189;
-    compiler::TNode<Object> tmp190;
-    compiler::TNode<RawPtrT> tmp191;
-    compiler::TNode<RawPtrT> tmp192;
-    compiler::TNode<IntPtrT> tmp193;
-    compiler::TNode<JSReceiver> tmp194;
-    compiler::TNode<Number> tmp195;
-    compiler::TNode<Smi> tmp196;
-    ca_.Bind(&block3, &tmp189, &tmp190, &tmp191, &tmp192, &tmp193, &tmp194, &tmp195, &tmp196);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 72);
-    compiler::TNode<Number> tmp197;
-    USE(tmp197);
-    tmp197 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp195}, compiler::TNode<Number>{tmp196});
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 73);
-    compiler::TNode<String> tmp198;
-    USE(tmp198);
-    tmp198 = kLengthString_69(state_);
-    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp189, tmp194, tmp198, tmp197);
-    ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 76);
-    ca_.Goto(&block1, tmp189, tmp190, tmp191, tmp192, tmp193, tmp197);
-  }
-
-  if (block1.is_used()) {
-    compiler::TNode<Context> tmp200;
-    compiler::TNode<Object> tmp201;
-    compiler::TNode<RawPtrT> tmp202;
-    compiler::TNode<RawPtrT> tmp203;
-    compiler::TNode<IntPtrT> tmp204;
-    compiler::TNode<Number> tmp205;
-    ca_.Bind(&block1, &tmp200, &tmp201, &tmp202, &tmp203, &tmp204, &tmp205);
+    compiler::TNode<Number> tmp169;
+    ca_.Bind(&block1, &tmp164, &tmp165, &tmp166, &tmp167, &tmp168, &tmp169);
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 8);
-    ca_.Goto(&block19, tmp200, tmp201, tmp202, tmp203, tmp204, tmp205);
+    ca_.Goto(&block15, tmp164, tmp165, tmp166, tmp167, tmp168, tmp169);
   }
 
-    compiler::TNode<Context> tmp206;
-    compiler::TNode<Object> tmp207;
-    compiler::TNode<RawPtrT> tmp208;
-    compiler::TNode<RawPtrT> tmp209;
-    compiler::TNode<IntPtrT> tmp210;
-    compiler::TNode<Number> tmp211;
-    ca_.Bind(&block19, &tmp206, &tmp207, &tmp208, &tmp209, &tmp210, &tmp211);
-  return compiler::TNode<Number>{tmp211};
+    compiler::TNode<Context> tmp170;
+    compiler::TNode<Object> tmp171;
+    compiler::TNode<RawPtrT> tmp172;
+    compiler::TNode<RawPtrT> tmp173;
+    compiler::TNode<IntPtrT> tmp174;
+    compiler::TNode<Number> tmp175;
+    ca_.Bind(&block15, &tmp170, &tmp171, &tmp172, &tmp173, &tmp174, &tmp175);
+  return compiler::TNode<Number>{tmp175};
 }
 
 TF_BUILTIN(ArrayPrototypeUnshift, CodeStubAssembler) {
@@ -597,7 +529,7 @@ USE(parameter1);
     compiler::TNode<JSArray> tmp5;
     USE(tmp5);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp5 = Cast13ATFastJSArray_1310(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
+    tmp5 = Cast13ATFastJSArray_1363(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
     ca_.Goto(&block3, tmp0, tmp1, tmp2, tmp3, tmp4, tmp4, tmp5);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -698,14 +630,14 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 91);
     compiler::TNode<JSFunction> tmp53;
     USE(tmp53);
-    tmp53 = LoadTargetFromFrame_275(state_);
+    tmp53 = LoadTargetFromFrame_304(state_);
     compiler::TNode<Oddball> tmp54;
     USE(tmp54);
-    tmp54 = Undefined_65(state_);
+    tmp54 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 92);
     compiler::TNode<Int32T> tmp55;
     USE(tmp55);
-    tmp55 = Convert7ATint328ATintptr_156(state_, compiler::TNode<IntPtrT>{tmp47});
+    tmp55 = Convert7ATint328ATintptr_183(state_, compiler::TNode<IntPtrT>{tmp47});
     ca_.SetSourcePosition("../../src/builtins/array-unshift.tq", 90);
    CodeStubAssembler(state_).TailCallBuiltin(Builtins::kArrayUnshift, tmp48, tmp53, tmp54, tmp55);
   }

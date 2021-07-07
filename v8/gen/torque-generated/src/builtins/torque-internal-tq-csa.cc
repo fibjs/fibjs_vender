@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -122,6 +130,150 @@
 
 namespace v8 {
 namespace internal {
+
+int31_t SizeOf20UT5ATSmi10HeapObject_339(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 10);
+    ca_.Goto(&block1);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 9);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return kTaggedSize;
+}
+
+int31_t SizeOf9ATfloat64_340(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 13);
+    ca_.Goto(&block1);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 12);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return kDoubleSize;
+}
+
+TorqueStructReference20UT5ATSmi10HeapObject UnsafeNewReference20UT5ATSmi10HeapObject_1345(compiler::CodeAssemblerState* state_, compiler::TNode<HeapObject> p_object, compiler::TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT, HeapObject, IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT, HeapObject, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_object, p_offset);
+
+  if (block0.is_used()) {
+    compiler::TNode<HeapObject> tmp0;
+    compiler::TNode<IntPtrT> tmp1;
+    ca_.Bind(&block0, &tmp0, &tmp1);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 29);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 30);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 28);
+    ca_.Goto(&block1, tmp0, tmp1, tmp0, tmp1);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<HeapObject> tmp2;
+    compiler::TNode<IntPtrT> tmp3;
+    compiler::TNode<HeapObject> tmp4;
+    compiler::TNode<IntPtrT> tmp5;
+    ca_.Bind(&block1, &tmp2, &tmp3, &tmp4, &tmp5);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 38);
+    ca_.Goto(&block2, tmp2, tmp3, tmp4, tmp5);
+  }
+
+    compiler::TNode<HeapObject> tmp6;
+    compiler::TNode<IntPtrT> tmp7;
+    compiler::TNode<HeapObject> tmp8;
+    compiler::TNode<IntPtrT> tmp9;
+    ca_.Bind(&block2, &tmp6, &tmp7, &tmp8, &tmp9);
+  return TorqueStructReference20UT5ATSmi10HeapObject{compiler::TNode<HeapObject>{tmp8}, compiler::TNode<IntPtrT>{tmp9}, TorqueStructUnsafe{}};
+}
+
+compiler::TNode<IntPtrT> Convert8ATintptr17ATconstexpr_int31_1349(compiler::CodeAssemblerState* state_, int31_t p_i) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 2667);
+    compiler::TNode<IntPtrT> tmp0;
+    USE(tmp0);
+    tmp0 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, p_i);
+    ca_.Goto(&block1, tmp0);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<IntPtrT> tmp1;
+    ca_.Bind(&block1, &tmp1);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 50);
+    ca_.Goto(&block2, tmp1);
+  }
+
+    compiler::TNode<IntPtrT> tmp2;
+    ca_.Bind(&block2, &tmp2);
+  return compiler::TNode<IntPtrT>{tmp2};
+}
+
+TorqueStructReference9ATfloat64 UnsafeNewReference9ATfloat64_1360(compiler::CodeAssemblerState* state_, compiler::TNode<HeapObject> p_object, compiler::TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT, HeapObject, IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject, IntPtrT, HeapObject, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0, p_object, p_offset);
+
+  if (block0.is_used()) {
+    compiler::TNode<HeapObject> tmp0;
+    compiler::TNode<IntPtrT> tmp1;
+    ca_.Bind(&block0, &tmp0, &tmp1);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 29);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 30);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 28);
+    ca_.Goto(&block1, tmp0, tmp1, tmp0, tmp1);
+  }
+
+  if (block1.is_used()) {
+    compiler::TNode<HeapObject> tmp2;
+    compiler::TNode<IntPtrT> tmp3;
+    compiler::TNode<HeapObject> tmp4;
+    compiler::TNode<IntPtrT> tmp5;
+    ca_.Bind(&block1, &tmp2, &tmp3, &tmp4, &tmp5);
+    ca_.SetSourcePosition("../../src/builtins/torque-internal.tq", 38);
+    ca_.Goto(&block2, tmp2, tmp3, tmp4, tmp5);
+  }
+
+    compiler::TNode<HeapObject> tmp6;
+    compiler::TNode<IntPtrT> tmp7;
+    compiler::TNode<HeapObject> tmp8;
+    compiler::TNode<IntPtrT> tmp9;
+    ca_.Bind(&block2, &tmp6, &tmp7, &tmp8, &tmp9);
+  return TorqueStructReference9ATfloat64{compiler::TNode<HeapObject>{tmp8}, compiler::TNode<IntPtrT>{tmp9}, TorqueStructUnsafe{}};
+}
 
 }  // namespace internal
 }  // namespace v8

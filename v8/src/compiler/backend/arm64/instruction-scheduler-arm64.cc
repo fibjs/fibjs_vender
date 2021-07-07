@@ -141,6 +141,21 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64Float64MoveU64:
     case kArm64U64MoveFloat64:
     case kArm64Float64SilenceNaN:
+    case kArm64F64x2Splat:
+    case kArm64F64x2ExtractLane:
+    case kArm64F64x2ReplaceLane:
+    case kArm64F64x2Abs:
+    case kArm64F64x2Neg:
+    case kArm64F64x2Add:
+    case kArm64F64x2Sub:
+    case kArm64F64x2Mul:
+    case kArm64F64x2Div:
+    case kArm64F64x2Min:
+    case kArm64F64x2Max:
+    case kArm64F64x2Eq:
+    case kArm64F64x2Ne:
+    case kArm64F64x2Lt:
+    case kArm64F64x2Le:
     case kArm64F32x4Splat:
     case kArm64F32x4ExtractLane:
     case kArm64F32x4ReplaceLane:
@@ -154,6 +169,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64F32x4AddHoriz:
     case kArm64F32x4Sub:
     case kArm64F32x4Mul:
+    case kArm64F32x4Div:
     case kArm64F32x4Min:
     case kArm64F32x4Max:
     case kArm64F32x4Eq:
@@ -166,7 +182,16 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64I64x2Neg:
     case kArm64I64x2Shl:
     case kArm64I64x2ShrS:
+    case kArm64I64x2Add:
+    case kArm64I64x2Sub:
+    case kArm64I64x2Mul:
+    case kArm64I64x2Eq:
+    case kArm64I64x2Ne:
+    case kArm64I64x2GtS:
+    case kArm64I64x2GeS:
     case kArm64I64x2ShrU:
+    case kArm64I64x2GtU:
+    case kArm64I64x2GeU:
     case kArm64I32x4Splat:
     case kArm64I32x4ExtractLane:
     case kArm64I32x4ReplaceLane:
@@ -285,6 +310,8 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64S8x8Reverse:
     case kArm64S8x4Reverse:
     case kArm64S8x2Reverse:
+    case kArm64S1x2AnyTrue:
+    case kArm64S1x2AllTrue:
     case kArm64S1x4AnyTrue:
     case kArm64S1x4AllTrue:
     case kArm64S1x8AnyTrue:
@@ -298,9 +325,6 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArm64DecompressSigned:
     case kArm64DecompressPointer:
     case kArm64DecompressAny:
-    case kArm64CompressSigned:
-    case kArm64CompressPointer:
-    case kArm64CompressAny:
       return kNoOpcodeFlags;
 
     case kArm64LdrS:

@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -188,7 +196,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<JSArray> tmp2;
     USE(tmp2);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp2 = Cast13ATFastJSArray_1310(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
+    tmp2 = Cast13ATFastJSArray_1363(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp1}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp1, tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -223,9 +231,9 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     USE(tmp14);
     compiler::TNode<BoolT> tmp15;
     USE(tmp15);
-    std::tie(tmp10, tmp11, tmp12, tmp13, tmp14, tmp15) = NewFastJSArrayWitness_210(state_, compiler::TNode<JSArray>{tmp9}).Flatten();
+    std::tie(tmp10, tmp11, tmp12, tmp13, tmp14, tmp15) = NewFastJSArrayWitness_236(state_, compiler::TNode<JSArray>{tmp9}).Flatten();
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 13);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2753);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3158);
     compiler::TNode<Int32T> tmp16;
     USE(tmp16);
     compiler::CodeAssemblerLabel label0(&ca_);
@@ -267,12 +275,12 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Map> tmp38;
     compiler::TNode<Int32T> tmp39;
     ca_.Bind(&block7, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2754);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3159);
     EnsureWriteableFastElements_50(state_, compiler::TNode<Context>{tmp37}, compiler::TNode<JSArray>{tmp32});
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2755);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3160);
     compiler::TNode<BoolT> tmp40;
     USE(tmp40);
-    tmp40 = FromConstexpr6ATbool16ATconstexpr_bool_139(state_, true);
+    tmp40 = FromConstexpr6ATbool16ATconstexpr_bool_165(state_, true);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 13);
     ca_.Goto(&block6, tmp28, tmp29, tmp30, tmp31, tmp32, tmp33, tmp34, tmp35, tmp40, tmp37);
   }
@@ -295,7 +303,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     tmp51 = CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp43});
     compiler::TNode<Smi> tmp52;
     USE(tmp52);
-    tmp52 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp52 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     compiler::TNode<BoolT> tmp53;
     USE(tmp53);
     tmp53 = CodeStubAssembler(state_).SmiEqual(compiler::TNode<Smi>{tmp51}, compiler::TNode<Smi>{tmp52});
@@ -316,7 +324,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 16);
     compiler::TNode<Oddball> tmp63;
     USE(tmp63);
-    tmp63 = Undefined_65(state_);
+    tmp63 = Undefined_64(state_);
     ca_.Goto(&block3, tmp54, tmp55, tmp63);
   }
 
@@ -337,7 +345,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     tmp73 = CodeStubAssembler(state_).LoadFastJSArrayLength(compiler::TNode<JSArray>{tmp66});
     compiler::TNode<Smi> tmp74;
     USE(tmp74);
-    tmp74 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp74 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<Smi> tmp75;
     USE(tmp75);
     tmp75 = CodeStubAssembler(state_).SmiSub(compiler::TNode<Smi>{tmp73}, compiler::TNode<Smi>{tmp74});
@@ -347,7 +355,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     tmp76 = CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp75}, compiler::TNode<Smi>{tmp75});
     compiler::TNode<Smi> tmp77;
     USE(tmp77);
-    tmp77 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, JSObject::kMinAddedElementsCapacity);
+    tmp77 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, JSObject::kMinAddedElementsCapacity);
     compiler::TNode<Smi> tmp78;
     USE(tmp78);
     tmp78 = CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp76}, compiler::TNode<Smi>{tmp77});
@@ -396,7 +404,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 30);
     compiler::TNode<Smi> tmp104;
     USE(tmp104);
-    tmp104 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, JSArray::kMaxCopyElements);
+    tmp104 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, JSArray::kMaxCopyElements);
     compiler::TNode<BoolT> tmp105;
     USE(tmp105);
     tmp105 = CodeStubAssembler(state_).SmiGreaterThan(compiler::TNode<Smi>{tmp103}, compiler::TNode<Smi>{tmp104});
@@ -433,9 +441,9 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 32);
     compiler::TNode<Smi> tmp126;
     USE(tmp126);
-    tmp126 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2745);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2722);
+    tmp126 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3150);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3127);
     ca_.Branch(tmp122, &block19, &block20, tmp116, tmp117, tmp118, tmp119, tmp120, tmp121, tmp122, tmp123, tmp124, tmp125, tmp116, tmp126, tmp126, tmp116, tmp126);
   }
 
@@ -456,11 +464,11 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Context> tmp140;
     compiler::TNode<Smi> tmp141;
     ca_.Bind(&block19, &tmp127, &tmp128, &tmp129, &tmp130, &tmp131, &tmp132, &tmp133, &tmp134, &tmp135, &tmp136, &tmp137, &tmp138, &tmp139, &tmp140, &tmp141);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2723);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3128);
     compiler::TNode<Object> tmp142;
     USE(tmp142);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp142 = LoadElementNoHole16FixedDoubleArray_209(state_, compiler::TNode<Context>{tmp140}, compiler::TNode<JSArray>{tmp131}, compiler::TNode<Smi>{tmp141}, &label0);
+    tmp142 = LoadElementNoHole16FixedDoubleArray_235(state_, compiler::TNode<Context>{tmp140}, compiler::TNode<JSArray>{tmp131}, compiler::TNode<Smi>{tmp141}, &label0);
     ca_.Goto(&block22, tmp127, tmp128, tmp129, tmp130, tmp131, tmp132, tmp133, tmp134, tmp135, tmp136, tmp137, tmp138, tmp139, tmp140, tmp141, tmp131, tmp141, tmp142);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -530,11 +538,11 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Context> tmp191;
     compiler::TNode<Smi> tmp192;
     ca_.Bind(&block20, &tmp178, &tmp179, &tmp180, &tmp181, &tmp182, &tmp183, &tmp184, &tmp185, &tmp186, &tmp187, &tmp188, &tmp189, &tmp190, &tmp191, &tmp192);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2726);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3131);
     compiler::TNode<Object> tmp193;
     USE(tmp193);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp193 = LoadElementNoHole10FixedArray_208(state_, compiler::TNode<Context>{tmp191}, compiler::TNode<JSArray>{tmp182}, compiler::TNode<Smi>{tmp192}, &label0);
+    tmp193 = LoadElementNoHole10FixedArray_234(state_, compiler::TNode<Context>{tmp191}, compiler::TNode<JSArray>{tmp182}, compiler::TNode<Smi>{tmp192}, &label0);
     ca_.Goto(&block24, tmp178, tmp179, tmp180, tmp181, tmp182, tmp183, tmp184, tmp185, tmp186, tmp187, tmp188, tmp189, tmp190, tmp191, tmp192, tmp182, tmp192, tmp193);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -605,7 +613,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp243;
     compiler::TNode<Object> tmp244;
     ca_.Bind(&block18, &tmp229, &tmp230, &tmp231, &tmp232, &tmp233, &tmp234, &tmp235, &tmp236, &tmp237, &tmp238, &tmp239, &tmp240, &tmp241, &tmp242, &tmp243, &tmp244);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2745);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3150);
     ca_.Goto(&block15, tmp229, tmp230, tmp231, tmp232, tmp233, tmp234, tmp235, tmp236, tmp237, tmp238, tmp239, tmp240, tmp244);
   }
 
@@ -623,10 +631,10 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Context> tmp255;
     compiler::TNode<Smi> tmp256;
     ca_.Bind(&block17, &tmp245, &tmp246, &tmp247, &tmp248, &tmp249, &tmp250, &tmp251, &tmp252, &tmp253, &tmp254, &tmp255, &tmp256);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2748);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3153);
     compiler::TNode<Oddball> tmp257;
     USE(tmp257);
-    tmp257 = Undefined_65(state_);
+    tmp257 = Undefined_64(state_);
     ca_.Goto(&block15, tmp245, tmp246, tmp247, tmp248, tmp249, tmp250, tmp251, tmp252, tmp253, tmp254, tmp255, tmp256, tmp257);
   }
 
@@ -647,8 +655,8 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     ca_.Bind(&block15, &tmp258, &tmp259, &tmp260, &tmp261, &tmp262, &tmp263, &tmp264, &tmp265, &tmp266, &tmp267, &tmp268, &tmp269, &tmp270);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 32);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 33);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2760);
-    StoreFastJSArrayLength_187(state_, compiler::TNode<JSArray>{tmp262}, compiler::TNode<Smi>{tmp267});
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3165);
+    StoreFastJSArrayLength_213(state_, compiler::TNode<JSArray>{tmp262}, compiler::TNode<Smi>{tmp267});
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 33);
     ca_.Goto(&block26, tmp258, tmp259, tmp260, tmp261, tmp262, tmp263, tmp264, tmp265, tmp266, tmp267, tmp270, tmp267, tmp267);
   }
@@ -671,14 +679,14 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 34);
     compiler::TNode<IntPtrT> tmp284;
     USE(tmp284);
-    tmp284 = Convert8ATintptr5ATSmi_159(state_, compiler::TNode<Smi>{tmp280});
+    tmp284 = Convert8ATintptr5ATSmi_186(state_, compiler::TNode<Smi>{tmp280});
     compiler::TNode<IntPtrT> tmp285;
     USE(tmp285);
-    tmp285 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp285 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<IntPtrT> tmp286;
     USE(tmp286);
-    tmp286 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2782);
+    tmp286 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3187);
     ca_.Branch(tmp277, &block28, &block29, tmp271, tmp272, tmp273, tmp274, tmp275, tmp276, tmp277, tmp278, tmp279, tmp280, tmp281, tmp284, tmp285, tmp286, tmp284);
   }
 
@@ -699,14 +707,14 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp300;
     compiler::TNode<IntPtrT> tmp301;
     ca_.Bind(&block28, &tmp287, &tmp288, &tmp289, &tmp290, &tmp291, &tmp292, &tmp293, &tmp294, &tmp295, &tmp296, &tmp297, &tmp298, &tmp299, &tmp300, &tmp301);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2784);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3189);
     compiler::TNode<IntPtrT> tmp302 = ca_.IntPtrConstant(JSObject::kElementsOffset);
     USE(tmp302);
     compiler::TNode<FixedArrayBase>tmp303 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp291, tmp302});
     compiler::TNode<FixedDoubleArray> tmp304;
     USE(tmp304);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp304 = Cast16FixedDoubleArray_84(state_, compiler::TNode<HeapObject>{tmp303}, &label0);
+    tmp304 = Cast16FixedDoubleArray_104(state_, compiler::TNode<HeapObject>{tmp303}, &label0);
     ca_.Goto(&block33, tmp287, tmp288, tmp289, tmp290, tmp291, tmp292, tmp293, tmp294, tmp295, tmp296, tmp297, tmp298, tmp299, tmp300, tmp301, tmp303, tmp304);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -774,7 +782,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp351;
     compiler::TNode<IntPtrT> tmp352;
     ca_.Bind(&block32, &tmp338, &tmp339, &tmp340, &tmp341, &tmp342, &tmp343, &tmp344, &tmp345, &tmp346, &tmp347, &tmp348, &tmp349, &tmp350, &tmp351, &tmp352);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2785);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3190);
     CodeStubAssembler(state_).Unreachable();
   }
 
@@ -796,10 +804,10 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp367;
     compiler::TNode<FixedDoubleArray> tmp368;
     ca_.Bind(&block31, &tmp353, &tmp354, &tmp355, &tmp356, &tmp357, &tmp358, &tmp359, &tmp360, &tmp361, &tmp362, &tmp363, &tmp364, &tmp365, &tmp366, &tmp367, &tmp368);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2783);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2786);
-    TorqueMoveElements_205(state_, compiler::TNode<FixedDoubleArray>{tmp368}, compiler::TNode<IntPtrT>{tmp365}, compiler::TNode<IntPtrT>{tmp366}, compiler::TNode<IntPtrT>{tmp367});
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2782);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3188);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3191);
+    TorqueMoveElements_231(state_, compiler::TNode<FixedDoubleArray>{tmp368}, compiler::TNode<IntPtrT>{tmp365}, compiler::TNode<IntPtrT>{tmp366}, compiler::TNode<IntPtrT>{tmp367});
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3187);
     ca_.Goto(&block30, tmp353, tmp354, tmp355, tmp356, tmp357, tmp358, tmp359, tmp360, tmp361, tmp362, tmp363, tmp364, tmp365, tmp366, tmp367);
   }
 
@@ -820,14 +828,14 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp382;
     compiler::TNode<IntPtrT> tmp383;
     ca_.Bind(&block29, &tmp369, &tmp370, &tmp371, &tmp372, &tmp373, &tmp374, &tmp375, &tmp376, &tmp377, &tmp378, &tmp379, &tmp380, &tmp381, &tmp382, &tmp383);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2788);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3193);
     compiler::TNode<IntPtrT> tmp384 = ca_.IntPtrConstant(JSObject::kElementsOffset);
     USE(tmp384);
     compiler::TNode<FixedArrayBase>tmp385 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp373, tmp384});
     compiler::TNode<FixedArray> tmp386;
     USE(tmp386);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp386 = Cast10FixedArray_83(state_, compiler::TNode<HeapObject>{tmp385}, &label0);
+    tmp386 = Cast10FixedArray_103(state_, compiler::TNode<HeapObject>{tmp385}, &label0);
     ca_.Goto(&block37, tmp369, tmp370, tmp371, tmp372, tmp373, tmp374, tmp375, tmp376, tmp377, tmp378, tmp379, tmp380, tmp381, tmp382, tmp383, tmp385, tmp386);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -895,7 +903,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp433;
     compiler::TNode<IntPtrT> tmp434;
     ca_.Bind(&block36, &tmp420, &tmp421, &tmp422, &tmp423, &tmp424, &tmp425, &tmp426, &tmp427, &tmp428, &tmp429, &tmp430, &tmp431, &tmp432, &tmp433, &tmp434);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2789);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3194);
     CodeStubAssembler(state_).Unreachable();
   }
 
@@ -917,8 +925,8 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp449;
     compiler::TNode<FixedArray> tmp450;
     ca_.Bind(&block35, &tmp435, &tmp436, &tmp437, &tmp438, &tmp439, &tmp440, &tmp441, &tmp442, &tmp443, &tmp444, &tmp445, &tmp446, &tmp447, &tmp448, &tmp449, &tmp450);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2788);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2790);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3193);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3195);
     ca_.Branch(tmp442, &block39, &block40, tmp435, tmp436, tmp437, tmp438, tmp439, tmp440, tmp441, tmp442, tmp443, tmp444, tmp445, tmp446, tmp447, tmp448, tmp449, tmp450);
   }
 
@@ -940,9 +948,9 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp465;
     compiler::TNode<FixedArray> tmp466;
     ca_.Bind(&block39, &tmp451, &tmp452, &tmp453, &tmp454, &tmp455, &tmp456, &tmp457, &tmp458, &tmp459, &tmp460, &tmp461, &tmp462, &tmp463, &tmp464, &tmp465, &tmp466);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2791);
-    TorqueMoveElementsSmi_203(state_, compiler::TNode<FixedArray>{tmp466}, compiler::TNode<IntPtrT>{tmp463}, compiler::TNode<IntPtrT>{tmp464}, compiler::TNode<IntPtrT>{tmp465});
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2790);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3196);
+    TorqueMoveElementsSmi_229(state_, compiler::TNode<FixedArray>{tmp466}, compiler::TNode<IntPtrT>{tmp463}, compiler::TNode<IntPtrT>{tmp464}, compiler::TNode<IntPtrT>{tmp465});
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3195);
     ca_.Goto(&block41, tmp451, tmp452, tmp453, tmp454, tmp455, tmp456, tmp457, tmp458, tmp459, tmp460, tmp461, tmp462, tmp463, tmp464, tmp465, tmp466);
   }
 
@@ -964,9 +972,9 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp481;
     compiler::TNode<FixedArray> tmp482;
     ca_.Bind(&block40, &tmp467, &tmp468, &tmp469, &tmp470, &tmp471, &tmp472, &tmp473, &tmp474, &tmp475, &tmp476, &tmp477, &tmp478, &tmp479, &tmp480, &tmp481, &tmp482);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2793);
-    TorqueMoveElements_204(state_, compiler::TNode<FixedArray>{tmp482}, compiler::TNode<IntPtrT>{tmp479}, compiler::TNode<IntPtrT>{tmp480}, compiler::TNode<IntPtrT>{tmp481});
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2790);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3198);
+    TorqueMoveElements_230(state_, compiler::TNode<FixedArray>{tmp482}, compiler::TNode<IntPtrT>{tmp479}, compiler::TNode<IntPtrT>{tmp480}, compiler::TNode<IntPtrT>{tmp481});
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3195);
     ca_.Goto(&block41, tmp467, tmp468, tmp469, tmp470, tmp471, tmp472, tmp473, tmp474, tmp475, tmp476, tmp477, tmp478, tmp479, tmp480, tmp481, tmp482);
   }
 
@@ -988,8 +996,8 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp497;
     compiler::TNode<FixedArray> tmp498;
     ca_.Bind(&block41, &tmp483, &tmp484, &tmp485, &tmp486, &tmp487, &tmp488, &tmp489, &tmp490, &tmp491, &tmp492, &tmp493, &tmp494, &tmp495, &tmp496, &tmp497, &tmp498);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2787);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2782);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3192);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3187);
     ca_.Goto(&block30, tmp483, tmp484, tmp485, tmp486, tmp487, tmp488, tmp489, tmp490, tmp491, tmp492, tmp493, tmp494, tmp495, tmp496, tmp497);
   }
 
@@ -1032,7 +1040,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<IntPtrT> tmp528;
     ca_.Bind(&block27, &tmp514, &tmp515, &tmp516, &tmp517, &tmp518, &tmp519, &tmp520, &tmp521, &tmp522, &tmp523, &tmp524, &tmp525, &tmp526, &tmp527, &tmp528);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 35);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2732);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3137);
     ca_.Branch(tmp520, &block43, &block44, tmp514, tmp515, tmp516, tmp517, tmp518, tmp519, tmp520, tmp521, tmp522, tmp523, tmp524, tmp523, tmp523);
   }
 
@@ -1051,14 +1059,14 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp540;
     compiler::TNode<Smi> tmp541;
     ca_.Bind(&block43, &tmp529, &tmp530, &tmp531, &tmp532, &tmp533, &tmp534, &tmp535, &tmp536, &tmp537, &tmp538, &tmp539, &tmp540, &tmp541);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2733);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3138);
     compiler::TNode<IntPtrT> tmp542 = ca_.IntPtrConstant(JSObject::kElementsOffset);
     USE(tmp542);
     compiler::TNode<FixedArrayBase>tmp543 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp533, tmp542});
     compiler::TNode<FixedDoubleArray> tmp544;
     USE(tmp544);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp544 = Cast16FixedDoubleArray_84(state_, compiler::TNode<HeapObject>{tmp543}, &label0);
+    tmp544 = Cast16FixedDoubleArray_104(state_, compiler::TNode<HeapObject>{tmp543}, &label0);
     ca_.Goto(&block48, tmp529, tmp530, tmp531, tmp532, tmp533, tmp534, tmp535, tmp536, tmp537, tmp538, tmp539, tmp540, tmp541, tmp543, tmp544);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1120,7 +1128,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp585;
     compiler::TNode<Smi> tmp586;
     ca_.Bind(&block47, &tmp574, &tmp575, &tmp576, &tmp577, &tmp578, &tmp579, &tmp580, &tmp581, &tmp582, &tmp583, &tmp584, &tmp585, &tmp586);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2734);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3139);
     CodeStubAssembler(state_).Unreachable();
   }
 
@@ -1140,9 +1148,9 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp599;
     compiler::TNode<FixedDoubleArray> tmp600;
     ca_.Bind(&block46, &tmp587, &tmp588, &tmp589, &tmp590, &tmp591, &tmp592, &tmp593, &tmp594, &tmp595, &tmp596, &tmp597, &tmp598, &tmp599, &tmp600);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2735);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3140);
     CodeStubAssembler(state_).StoreFixedDoubleArrayHoleSmi(compiler::TNode<FixedDoubleArray>{tmp600}, compiler::TNode<Smi>{tmp599});
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2732);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3137);
     ca_.Goto(&block45, tmp587, tmp588, tmp589, tmp590, tmp591, tmp592, tmp593, tmp594, tmp595, tmp596, tmp597, tmp598, tmp599);
   }
 
@@ -1161,14 +1169,14 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp612;
     compiler::TNode<Smi> tmp613;
     ca_.Bind(&block44, &tmp601, &tmp602, &tmp603, &tmp604, &tmp605, &tmp606, &tmp607, &tmp608, &tmp609, &tmp610, &tmp611, &tmp612, &tmp613);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2737);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3142);
     compiler::TNode<IntPtrT> tmp614 = ca_.IntPtrConstant(JSObject::kElementsOffset);
     USE(tmp614);
     compiler::TNode<FixedArrayBase>tmp615 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp605, tmp614});
     compiler::TNode<FixedArray> tmp616;
     USE(tmp616);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp616 = Cast10FixedArray_83(state_, compiler::TNode<HeapObject>{tmp615}, &label0);
+    tmp616 = Cast10FixedArray_103(state_, compiler::TNode<HeapObject>{tmp615}, &label0);
     ca_.Goto(&block52, tmp601, tmp602, tmp603, tmp604, tmp605, tmp606, tmp607, tmp608, tmp609, tmp610, tmp611, tmp612, tmp613, tmp615, tmp616);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1230,7 +1238,7 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp657;
     compiler::TNode<Smi> tmp658;
     ca_.Bind(&block51, &tmp646, &tmp647, &tmp648, &tmp649, &tmp650, &tmp651, &tmp652, &tmp653, &tmp654, &tmp655, &tmp656, &tmp657, &tmp658);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2738);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3143);
     CodeStubAssembler(state_).Unreachable();
   }
 
@@ -1250,13 +1258,13 @@ compiler::TNode<Object> TryFastArrayShift_36(compiler::CodeAssemblerState* state
     compiler::TNode<Smi> tmp671;
     compiler::TNode<FixedArray> tmp672;
     ca_.Bind(&block50, &tmp659, &tmp660, &tmp661, &tmp662, &tmp663, &tmp664, &tmp665, &tmp666, &tmp667, &tmp668, &tmp669, &tmp670, &tmp671, &tmp672);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2739);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3144);
     compiler::TNode<Oddball> tmp673;
     USE(tmp673);
-    tmp673 = TheHole_63(state_);
+    tmp673 = TheHole_62(state_);
     CodeStubAssembler(state_).StoreFixedArrayElement(compiler::TNode<FixedArray>{tmp672}, compiler::TNode<Smi>{tmp671}, compiler::TNode<Object>{tmp673});
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2736);
-    ca_.SetSourcePosition("../../src/builtins/base.tq", 2732);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3141);
+    ca_.SetSourcePosition("../../src/builtins/base.tq", 3137);
     ca_.Goto(&block45, tmp659, tmp660, tmp661, tmp662, tmp663, tmp664, tmp665, tmp666, tmp667, tmp668, tmp669, tmp670, tmp671);
   }
 
@@ -1330,15 +1338,13 @@ compiler::TNode<Object> GenericArrayShift_37(compiler::CodeAssemblerState* state
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number, Number, Number> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number, Number, Number> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number, Number, Number, Oddball> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number, Number, Number, Oddball> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number, Number, Number, Oddball> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number, Number, Number, Oddball> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number, Number, Number, Oddball> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, JSReceiver, Number, Object, Number> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, Object, Object> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_receiver);
 
   if (block0.is_used()) {
@@ -1352,11 +1358,11 @@ compiler::TNode<Object> GenericArrayShift_37(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 45);
     compiler::TNode<Number> tmp3;
     USE(tmp3);
-    tmp3 = GetLengthProperty_216(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2});
+    tmp3 = GetLengthProperty_244(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<Object>{tmp2});
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 48);
     compiler::TNode<Number> tmp4;
     USE(tmp4);
-    tmp4 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 0);
+    tmp4 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 0);
     compiler::TNode<BoolT> tmp5;
     USE(tmp5);
     tmp5 = IsNumberEqual_73(state_, compiler::TNode<Number>{tmp3}, compiler::TNode<Number>{tmp4});
@@ -1372,15 +1378,15 @@ compiler::TNode<Object> GenericArrayShift_37(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 50);
     compiler::TNode<String> tmp10;
     USE(tmp10);
-    tmp10 = kLengthString_69(state_);
+    tmp10 = kLengthString_68(state_);
     compiler::TNode<Smi> tmp11;
     USE(tmp11);
-    tmp11 = Convert5ATSmi17ATconstexpr_int31_1292(state_, 0);
+    tmp11 = Convert5ATSmi17ATconstexpr_int31_1340(state_, 0);
     CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp6, tmp8, tmp10, tmp11);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 52);
     compiler::TNode<Oddball> tmp13;
     USE(tmp13);
-    tmp13 = Undefined_65(state_);
+    tmp13 = Undefined_64(state_);
     ca_.Goto(&block1, tmp6, tmp7, tmp13);
   }
 
@@ -1393,14 +1399,14 @@ compiler::TNode<Object> GenericArrayShift_37(compiler::CodeAssemblerState* state
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 56);
     compiler::TNode<Smi> tmp18;
     USE(tmp18);
-    tmp18 = Convert5ATSmi17ATconstexpr_int31_1292(state_, 0);
+    tmp18 = Convert5ATSmi17ATconstexpr_int31_1340(state_, 0);
     compiler::TNode<Object> tmp19;
     USE(tmp19);
     tmp19 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp14}, compiler::TNode<Object>{tmp16}, compiler::TNode<Object>{tmp18});
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 58);
     compiler::TNode<Number> tmp20;
     USE(tmp20);
-    tmp20 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
+    tmp20 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 60);
     ca_.Goto(&block6, tmp14, tmp15, tmp16, tmp17, tmp19, tmp20);
   }
@@ -1413,190 +1419,157 @@ compiler::TNode<Object> GenericArrayShift_37(compiler::CodeAssemblerState* state
     compiler::TNode<Object> tmp25;
     compiler::TNode<Number> tmp26;
     ca_.Bind(&block6, &tmp21, &tmp22, &tmp23, &tmp24, &tmp25, &tmp26);
-    compiler::CodeAssemblerLabel label0(&ca_);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    CodeStubAssembler(state_).BranchIfNumberLessThan(compiler::TNode<Number>{tmp26}, compiler::TNode<Number>{tmp24}, &label0, &label1);
-    if (label0.is_used()) {
-      ca_.Bind(&label0);
-      ca_.Goto(&block7, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26, tmp26, tmp24);
-    }
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block8, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26, tmp26, tmp24);
-    }
-  }
-
-  if (block7.is_used()) {
-    compiler::TNode<Context> tmp27;
-    compiler::TNode<Object> tmp28;
-    compiler::TNode<JSReceiver> tmp29;
-    compiler::TNode<Number> tmp30;
-    compiler::TNode<Object> tmp31;
-    compiler::TNode<Number> tmp32;
-    compiler::TNode<Number> tmp33;
-    compiler::TNode<Number> tmp34;
-    ca_.Bind(&block7, &tmp27, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33, &tmp34);
-    ca_.Goto(&block4, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32);
-  }
-
-  if (block8.is_used()) {
-    compiler::TNode<Context> tmp35;
-    compiler::TNode<Object> tmp36;
-    compiler::TNode<JSReceiver> tmp37;
-    compiler::TNode<Number> tmp38;
-    compiler::TNode<Object> tmp39;
-    compiler::TNode<Number> tmp40;
-    compiler::TNode<Number> tmp41;
-    compiler::TNode<Number> tmp42;
-    ca_.Bind(&block8, &tmp35, &tmp36, &tmp37, &tmp38, &tmp39, &tmp40, &tmp41, &tmp42);
-    ca_.Goto(&block5, tmp35, tmp36, tmp37, tmp38, tmp39, tmp40);
+    compiler::TNode<BoolT> tmp27;
+    USE(tmp27);
+    tmp27 = NumberIsLessThan_75(state_, compiler::TNode<Number>{tmp26}, compiler::TNode<Number>{tmp24});
+    ca_.Branch(tmp27, &block4, &block5, tmp21, tmp22, tmp23, tmp24, tmp25, tmp26);
   }
 
   if (block4.is_used()) {
-    compiler::TNode<Context> tmp43;
-    compiler::TNode<Object> tmp44;
-    compiler::TNode<JSReceiver> tmp45;
-    compiler::TNode<Number> tmp46;
-    compiler::TNode<Object> tmp47;
-    compiler::TNode<Number> tmp48;
-    ca_.Bind(&block4, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47, &tmp48);
+    compiler::TNode<Context> tmp28;
+    compiler::TNode<Object> tmp29;
+    compiler::TNode<JSReceiver> tmp30;
+    compiler::TNode<Number> tmp31;
+    compiler::TNode<Object> tmp32;
+    compiler::TNode<Number> tmp33;
+    ca_.Bind(&block4, &tmp28, &tmp29, &tmp30, &tmp31, &tmp32, &tmp33);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 62);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 65);
-    compiler::TNode<Number> tmp49;
-    USE(tmp49);
-    tmp49 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
-    compiler::TNode<Number> tmp50;
-    USE(tmp50);
-    tmp50 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp48}, compiler::TNode<Number>{tmp49});
+    compiler::TNode<Number> tmp34;
+    USE(tmp34);
+    tmp34 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
+    compiler::TNode<Number> tmp35;
+    USE(tmp35);
+    tmp35 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp33}, compiler::TNode<Number>{tmp34});
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 68);
-    compiler::TNode<Oddball> tmp51;
-    tmp51 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kHasProperty, tmp43, tmp45, tmp48));
-    USE(tmp51);
+    compiler::TNode<Oddball> tmp36;
+    tmp36 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kHasProperty, tmp28, tmp30, tmp33));
+    USE(tmp36);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 71);
-    compiler::TNode<Oddball> tmp52;
-    USE(tmp52);
-    tmp52 = True_66(state_);
-    compiler::TNode<BoolT> tmp53;
-    USE(tmp53);
-    tmp53 = CodeStubAssembler(state_).WordEqual(compiler::TNode<HeapObject>{tmp51}, compiler::TNode<HeapObject>{tmp52});
-    ca_.Branch(tmp53, &block9, &block10, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp48, tmp50, tmp51);
+    compiler::TNode<Oddball> tmp37;
+    USE(tmp37);
+    tmp37 = True_65(state_);
+    compiler::TNode<BoolT> tmp38;
+    USE(tmp38);
+    tmp38 = CodeStubAssembler(state_).TaggedEqual(compiler::TNode<HeapObject>{tmp36}, compiler::TNode<HeapObject>{tmp37});
+    ca_.Branch(tmp38, &block7, &block8, tmp28, tmp29, tmp30, tmp31, tmp32, tmp33, tmp33, tmp35, tmp36);
+  }
+
+  if (block7.is_used()) {
+    compiler::TNode<Context> tmp39;
+    compiler::TNode<Object> tmp40;
+    compiler::TNode<JSReceiver> tmp41;
+    compiler::TNode<Number> tmp42;
+    compiler::TNode<Object> tmp43;
+    compiler::TNode<Number> tmp44;
+    compiler::TNode<Number> tmp45;
+    compiler::TNode<Number> tmp46;
+    compiler::TNode<Oddball> tmp47;
+    ca_.Bind(&block7, &tmp39, &tmp40, &tmp41, &tmp42, &tmp43, &tmp44, &tmp45, &tmp46, &tmp47);
+    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 73);
+    compiler::TNode<Object> tmp48;
+    USE(tmp48);
+    tmp48 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp39}, compiler::TNode<Object>{tmp41}, compiler::TNode<Object>{tmp45});
+    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 76);
+    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp39, tmp41, tmp46, tmp48);
+    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 71);
+    ca_.Goto(&block9, tmp39, tmp40, tmp41, tmp42, tmp43, tmp44, tmp45, tmp46, tmp47);
+  }
+
+  if (block8.is_used()) {
+    compiler::TNode<Context> tmp50;
+    compiler::TNode<Object> tmp51;
+    compiler::TNode<JSReceiver> tmp52;
+    compiler::TNode<Number> tmp53;
+    compiler::TNode<Object> tmp54;
+    compiler::TNode<Number> tmp55;
+    compiler::TNode<Number> tmp56;
+    compiler::TNode<Number> tmp57;
+    compiler::TNode<Oddball> tmp58;
+    ca_.Bind(&block8, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58);
+    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 79);
+    compiler::TNode<Smi> tmp59;
+    USE(tmp59);
+    tmp59 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_166(state_, LanguageMode::kStrict);
+    compiler::TNode<Oddball> tmp60;
+    tmp60 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp50, tmp52, tmp57, tmp59));
+    USE(tmp60);
+    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 71);
+    ca_.Goto(&block9, tmp50, tmp51, tmp52, tmp53, tmp54, tmp55, tmp56, tmp57, tmp58);
   }
 
   if (block9.is_used()) {
-    compiler::TNode<Context> tmp54;
-    compiler::TNode<Object> tmp55;
-    compiler::TNode<JSReceiver> tmp56;
-    compiler::TNode<Number> tmp57;
-    compiler::TNode<Object> tmp58;
-    compiler::TNode<Number> tmp59;
-    compiler::TNode<Number> tmp60;
-    compiler::TNode<Number> tmp61;
-    compiler::TNode<Oddball> tmp62;
-    ca_.Bind(&block9, &tmp54, &tmp55, &tmp56, &tmp57, &tmp58, &tmp59, &tmp60, &tmp61, &tmp62);
-    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 73);
-    compiler::TNode<Object> tmp63;
-    USE(tmp63);
-    tmp63 = CodeStubAssembler(state_).GetProperty(compiler::TNode<Context>{tmp54}, compiler::TNode<Object>{tmp56}, compiler::TNode<Object>{tmp60});
-    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 76);
-    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp54, tmp56, tmp61, tmp63);
-    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 71);
-    ca_.Goto(&block11, tmp54, tmp55, tmp56, tmp57, tmp58, tmp59, tmp60, tmp61, tmp62);
-  }
-
-  if (block10.is_used()) {
-    compiler::TNode<Context> tmp65;
-    compiler::TNode<Object> tmp66;
-    compiler::TNode<JSReceiver> tmp67;
+    compiler::TNode<Context> tmp61;
+    compiler::TNode<Object> tmp62;
+    compiler::TNode<JSReceiver> tmp63;
+    compiler::TNode<Number> tmp64;
+    compiler::TNode<Object> tmp65;
+    compiler::TNode<Number> tmp66;
+    compiler::TNode<Number> tmp67;
     compiler::TNode<Number> tmp68;
-    compiler::TNode<Object> tmp69;
-    compiler::TNode<Number> tmp70;
-    compiler::TNode<Number> tmp71;
-    compiler::TNode<Number> tmp72;
-    compiler::TNode<Oddball> tmp73;
-    ca_.Bind(&block10, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69, &tmp70, &tmp71, &tmp72, &tmp73);
-    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 79);
-    compiler::TNode<Smi> tmp74;
-    USE(tmp74);
-    tmp74 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_140(state_, LanguageMode::kStrict);
-    compiler::TNode<Object> tmp75;
-    tmp75 = CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp65, tmp67, tmp72, tmp74);
-    USE(tmp75);
-    ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 71);
-    ca_.Goto(&block11, tmp65, tmp66, tmp67, tmp68, tmp69, tmp70, tmp71, tmp72, tmp73);
-  }
-
-  if (block11.is_used()) {
-    compiler::TNode<Context> tmp76;
-    compiler::TNode<Object> tmp77;
-    compiler::TNode<JSReceiver> tmp78;
-    compiler::TNode<Number> tmp79;
-    compiler::TNode<Object> tmp80;
-    compiler::TNode<Number> tmp81;
-    compiler::TNode<Number> tmp82;
-    compiler::TNode<Number> tmp83;
-    compiler::TNode<Oddball> tmp84;
-    ca_.Bind(&block11, &tmp76, &tmp77, &tmp78, &tmp79, &tmp80, &tmp81, &tmp82, &tmp83, &tmp84);
+    compiler::TNode<Oddball> tmp69;
+    ca_.Bind(&block9, &tmp61, &tmp62, &tmp63, &tmp64, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 83);
-    compiler::TNode<Number> tmp85;
-    USE(tmp85);
-    tmp85 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
-    compiler::TNode<Number> tmp86;
-    USE(tmp86);
-    tmp86 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp81}, compiler::TNode<Number>{tmp85});
+    compiler::TNode<Number> tmp70;
+    USE(tmp70);
+    tmp70 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
+    compiler::TNode<Number> tmp71;
+    USE(tmp71);
+    tmp71 = CodeStubAssembler(state_).NumberAdd(compiler::TNode<Number>{tmp66}, compiler::TNode<Number>{tmp70});
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 60);
-    ca_.Goto(&block6, tmp76, tmp77, tmp78, tmp79, tmp80, tmp86);
+    ca_.Goto(&block6, tmp61, tmp62, tmp63, tmp64, tmp65, tmp71);
   }
 
   if (block5.is_used()) {
-    compiler::TNode<Context> tmp87;
-    compiler::TNode<Object> tmp88;
-    compiler::TNode<JSReceiver> tmp89;
-    compiler::TNode<Number> tmp90;
-    compiler::TNode<Object> tmp91;
-    compiler::TNode<Number> tmp92;
-    ca_.Bind(&block5, &tmp87, &tmp88, &tmp89, &tmp90, &tmp91, &tmp92);
+    compiler::TNode<Context> tmp72;
+    compiler::TNode<Object> tmp73;
+    compiler::TNode<JSReceiver> tmp74;
+    compiler::TNode<Number> tmp75;
+    compiler::TNode<Object> tmp76;
+    compiler::TNode<Number> tmp77;
+    ca_.Bind(&block5, &tmp72, &tmp73, &tmp74, &tmp75, &tmp76, &tmp77);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 87);
-    compiler::TNode<Number> tmp93;
-    USE(tmp93);
-    tmp93 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
-    compiler::TNode<Number> tmp94;
-    USE(tmp94);
-    tmp94 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp90}, compiler::TNode<Number>{tmp93});
-    compiler::TNode<Smi> tmp95;
-    USE(tmp95);
-    tmp95 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_140(state_, LanguageMode::kStrict);
-    compiler::TNode<Object> tmp96;
-    tmp96 = CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp87, tmp89, tmp94, tmp95);
-    USE(tmp96);
+    compiler::TNode<Number> tmp78;
+    USE(tmp78);
+    tmp78 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
+    compiler::TNode<Number> tmp79;
+    USE(tmp79);
+    tmp79 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp75}, compiler::TNode<Number>{tmp78});
+    compiler::TNode<Smi> tmp80;
+    USE(tmp80);
+    tmp80 = FromConstexpr14ATLanguageMode24ATconstexpr_LanguageMode_166(state_, LanguageMode::kStrict);
+    compiler::TNode<Oddball> tmp81;
+    tmp81 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltin(Builtins::kDeleteProperty, tmp72, tmp74, tmp79, tmp80));
+    USE(tmp81);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 90);
-    compiler::TNode<String> tmp97;
-    USE(tmp97);
-    tmp97 = kLengthString_69(state_);
-    compiler::TNode<Number> tmp98;
-    USE(tmp98);
-    tmp98 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_132(state_, 1);
-    compiler::TNode<Number> tmp99;
-    USE(tmp99);
-    tmp99 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp90}, compiler::TNode<Number>{tmp98});
-    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp87, tmp89, tmp97, tmp99);
+    compiler::TNode<String> tmp82;
+    USE(tmp82);
+    tmp82 = kLengthString_68(state_);
+    compiler::TNode<Number> tmp83;
+    USE(tmp83);
+    tmp83 = FromConstexpr20UT5ATSmi10HeapNumber17ATconstexpr_int31_158(state_, 1);
+    compiler::TNode<Number> tmp84;
+    USE(tmp84);
+    tmp84 = CodeStubAssembler(state_).NumberSub(compiler::TNode<Number>{tmp75}, compiler::TNode<Number>{tmp83});
+    CodeStubAssembler(state_).CallBuiltin(Builtins::kSetProperty, tmp72, tmp74, tmp82, tmp84);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 93);
-    ca_.Goto(&block1, tmp87, tmp88, tmp91);
+    ca_.Goto(&block1, tmp72, tmp73, tmp76);
   }
 
   if (block1.is_used()) {
-    compiler::TNode<Context> tmp101;
-    compiler::TNode<Object> tmp102;
-    compiler::TNode<Object> tmp103;
-    ca_.Bind(&block1, &tmp101, &tmp102, &tmp103);
+    compiler::TNode<Context> tmp86;
+    compiler::TNode<Object> tmp87;
+    compiler::TNode<Object> tmp88;
+    ca_.Bind(&block1, &tmp86, &tmp87, &tmp88);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 39);
-    ca_.Goto(&block12, tmp101, tmp102, tmp103);
+    ca_.Goto(&block10, tmp86, tmp87, tmp88);
   }
 
-    compiler::TNode<Context> tmp104;
-    compiler::TNode<Object> tmp105;
-    compiler::TNode<Object> tmp106;
-    ca_.Bind(&block12, &tmp104, &tmp105, &tmp106);
-  return compiler::TNode<Object>{tmp106};
+    compiler::TNode<Context> tmp89;
+    compiler::TNode<Object> tmp90;
+    compiler::TNode<Object> tmp91;
+    ca_.Bind(&block10, &tmp89, &tmp90, &tmp91);
+  return compiler::TNode<Object>{tmp91};
 }
 
 TF_BUILTIN(ArrayPrototypeShift, CodeStubAssembler) {
@@ -1700,14 +1673,14 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 107);
     compiler::TNode<JSFunction> tmp36;
     USE(tmp36);
-    tmp36 = LoadTargetFromFrame_275(state_);
+    tmp36 = LoadTargetFromFrame_304(state_);
     compiler::TNode<Oddball> tmp37;
     USE(tmp37);
-    tmp37 = Undefined_65(state_);
+    tmp37 = Undefined_64(state_);
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 108);
     compiler::TNode<Int32T> tmp38;
     USE(tmp38);
-    tmp38 = Convert7ATint328ATintptr_156(state_, compiler::TNode<IntPtrT>{tmp33});
+    tmp38 = Convert7ATint328ATintptr_183(state_, compiler::TNode<IntPtrT>{tmp33});
     ca_.SetSourcePosition("../../src/builtins/array-shift.tq", 106);
    CodeStubAssembler(state_).TailCallBuiltin(Builtins::kArrayShift, tmp34, tmp36, tmp37, tmp38);
   }

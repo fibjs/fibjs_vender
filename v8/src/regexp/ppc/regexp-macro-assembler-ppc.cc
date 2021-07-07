@@ -193,14 +193,13 @@ void RegExpMacroAssemblerPPC::CheckCharacterGT(uc16 limit, Label* on_greater) {
   BranchOrBacktrack(gt, on_greater);
 }
 
-
-void RegExpMacroAssemblerPPC::CheckAtStart(Label* on_at_start) {
+void RegExpMacroAssemblerPPC::CheckAtStart(int cp_offset, Label* on_at_start) {
   __ LoadP(r4, MemOperand(frame_pointer(), kStringStartMinusOne));
-  __ addi(r3, current_input_offset(), Operand(-char_size()));
+  __ addi(r3, current_input_offset(),
+          Operand(-char_size() + cp_offset * char_size()));
   __ cmp(r3, r4);
   BranchOrBacktrack(eq, on_at_start);
 }
-
 
 void RegExpMacroAssemblerPPC::CheckNotAtStart(int cp_offset,
                                               Label* on_not_at_start) {
@@ -693,7 +692,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
     Label stack_ok;
 
     ExternalReference stack_limit =
-        ExternalReference::address_of_stack_limit(isolate());
+        ExternalReference::address_of_jslimit(isolate());
     __ mov(r3, Operand(stack_limit));
     __ LoadP(r3, MemOperand(r3));
     __ sub(r3, sp, r3, LeaveOE, SetRC);
@@ -1276,7 +1275,7 @@ void RegExpMacroAssemblerPPC::Pop(Register target) {
 void RegExpMacroAssemblerPPC::CheckPreemption() {
   // Check for preemption.
   ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(isolate());
+      ExternalReference::address_of_jslimit(isolate());
   __ mov(r3, Operand(stack_limit));
   __ LoadP(r3, MemOperand(r3));
   __ cmpl(sp, r3);
@@ -1286,7 +1285,7 @@ void RegExpMacroAssemblerPPC::CheckPreemption() {
 
 void RegExpMacroAssemblerPPC::CheckStackLimit() {
   ExternalReference stack_limit =
-      ExternalReference::address_of_regexp_stack_limit(isolate());
+      ExternalReference::address_of_regexp_stack_limit_address(isolate());
   __ mov(r3, Operand(stack_limit));
   __ LoadP(r3, MemOperand(r3));
   __ cmpl(backtrack_stackpointer(), r3);

@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -152,20 +160,20 @@ TorqueStructArgumentsInfo GetArgumentsFrameAndCount_0(compiler::CodeAssemblerSta
     compiler::TNode<Uint16T>tmp6 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp4, tmp5});
     compiler::TNode<Int32T> tmp7;
     USE(tmp7);
-    tmp7 = Convert7ATint328ATuint16_154(state_, compiler::TNode<Uint16T>{tmp6});
+    tmp7 = Convert7ATint328ATuint16_181(state_, compiler::TNode<Uint16T>{tmp6});
     compiler::TNode<BInt> tmp8;
     USE(tmp8);
-    tmp8 = Convert6ATbint7ATint32_179(state_, compiler::TNode<Int32T>{tmp7});
+    tmp8 = Convert6ATbint7ATint32_206(state_, compiler::TNode<Int32T>{tmp7});
     ca_.SetSourcePosition("../../src/builtins/arguments.tq", 41);
     ca_.SetSourcePosition("../../src/builtins/arguments.tq", 43);
     ca_.SetSourcePosition("../../src/builtins/arguments.tq", 46);
     compiler::TNode<RawPtrT> tmp9;
     USE(tmp9);
-    tmp9 = LoadCallerFromFrame_268(state_, compiler::TNode<RawPtrT>{tmp2});
+    tmp9 = LoadCallerFromFrame_297(state_, compiler::TNode<RawPtrT>{tmp2});
     compiler::TNode<RawPtrT> tmp10;
     USE(tmp10);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp10 = Cast23ATArgumentsAdaptorFrame_274(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<RawPtrT>{tmp9}, &label0);
+    tmp10 = Cast23ATArgumentsAdaptorFrame_303(state_, compiler::TNode<Context>{tmp0}, compiler::TNode<RawPtrT>{tmp9}, &label0);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp4, tmp8, tmp8, tmp9, tmp10);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -227,10 +235,10 @@ TorqueStructArgumentsInfo GetArgumentsFrameAndCount_0(compiler::CodeAssemblerSta
     ca_.SetSourcePosition("../../src/builtins/arguments.tq", 55);
     compiler::TNode<Smi> tmp39;
     USE(tmp39);
-    tmp39 = LoadLengthFromAdapterFrame_271(state_, compiler::TNode<Context>{tmp32}, compiler::TNode<RawPtrT>{tmp38});
+    tmp39 = LoadLengthFromAdapterFrame_300(state_, compiler::TNode<Context>{tmp32}, compiler::TNode<RawPtrT>{tmp38});
     compiler::TNode<BInt> tmp40;
     USE(tmp40);
-    tmp40 = Convert6ATbint5ATSmi_181(state_, compiler::TNode<Smi>{tmp39});
+    tmp40 = Convert6ATbint5ATSmi_208(state_, compiler::TNode<Smi>{tmp39});
     ca_.SetSourcePosition("../../src/builtins/arguments.tq", 56);
     ca_.SetSourcePosition("../../src/builtins/arguments.tq", 53);
     ca_.Goto(&block1, tmp32, tmp33, tmp38, tmp40, tmp36);

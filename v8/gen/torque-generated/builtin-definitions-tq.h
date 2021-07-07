@@ -96,6 +96,7 @@ TFJ(ExtrasUtilsCreatePrivateSymbol, SharedFunctionInfo::kDontAdaptArgumentsSenti
 TFJ(ExtrasUtilsMarkPromiseAsHandled, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ExtrasUtilsPromiseState, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(IncBlockCounter, kFunction, kCoverageArraySlotIndex) \
+TFS(GetIteratorWithFeedback, kReceiver, kFeedbackSlot, kFeedback) \
 TFJ(MathAcos, 1, kReceiver, kX) \
 TFJ(MathAcosh, 1, kReceiver, kX) \
 TFJ(MathAsin, 1, kReceiver, kX) \
@@ -120,12 +121,13 @@ TFJ(MathSinh, 1, kReceiver, kX) \
 TFJ(MathSqrt, 1, kReceiver, kX) \
 TFJ(MathTan, 1, kReceiver, kX) \
 TFJ(MathTanh, 1, kReceiver, kX) \
+TFJ(MathHypot, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ObjectFromEntries, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ObjectIsExtensible, 1, kReceiver, kObject) \
 TFJ(ObjectPreventExtensions, 1, kReceiver, kObject) \
 TFJ(ObjectGetPrototypeOf, 1, kReceiver, kObject) \
 TFJ(ObjectSetPrototypeOf, 2, kReceiver, kObject, kProto) \
-TFJ(ProxyConstructor, 3, kReceiver, kNewTarget, kTarget, kHandler) \
+TFJ(ProxyConstructor, 2, kReceiver, kTarget, kHandler) \
 TFS(ProxyDeleteProperty, kProxy, kName, kLanguageMode) \
 TFS(ProxyGetProperty, kProxy, kName, kReceiverValue, kOnNonExistent) \
 TFS(ProxyGetPrototypeOf, kProxy) \
@@ -142,8 +144,20 @@ TFJ(ReflectGetPrototypeOf, 1, kReceiver, kObject) \
 TFJ(ReflectSetPrototypeOf, 2, kReceiver, kObject, kProto) \
 TFJ(ReflectGet, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(ReflectDeleteProperty, 2, kReceiver, kObject, kKey) \
+TFS(RegExpMatchFast, kReceiver, kString) \
+TFJ(RegExpPrototypeMatch, 1, kReceiver, kString) \
 TFS(RegExpReplace, kRegexp, kString, kReplaceValue) \
 TFJ(RegExpPrototypeReplace, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(RegExpPrototypeSourceGetter, 0, kReceiver) \
+TFJ(RegExpPrototypeTest, 1, kReceiver, kString) \
+TFS(RegExpPrototypeTestFast, kReceiver, kString) \
+TFJ(RegExpPrototypeGlobalGetter, 0, kReceiver) \
+TFJ(RegExpPrototypeIgnoreCaseGetter, 0, kReceiver) \
+TFJ(RegExpPrototypeMultilineGetter, 0, kReceiver) \
+TFJ(RegExpPrototypeDotAllGetter, 0, kReceiver) \
+TFJ(RegExpPrototypeStickyGetter, 0, kReceiver) \
+TFJ(RegExpPrototypeUnicodeGetter, 0, kReceiver) \
+TFJ(RegExpPrototypeFlagsGetter, 0, kReceiver) \
 TFJ(StringPrototypeToString, 0, kReceiver) \
 TFJ(StringPrototypeValueOf, 0, kReceiver) \
 TFS(StringToList, kString) \
@@ -151,6 +165,9 @@ TFJ(StringPrototypeCharAt, 1, kReceiver, kPosition) \
 TFJ(StringPrototypeCharCodeAt, 1, kReceiver, kPosition) \
 TFJ(StringPrototypeCodePointAt, 1, kReceiver, kPosition) \
 TFJ(StringPrototypeConcat, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringConstructor, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFS(StringAddConvertLeft, kLeft, kRight) \
+TFS(StringAddConvertRight, kLeft, kRight) \
 TFJ(StringPrototypeEndsWith, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(CreateHTML, kReceiver, kMethodName, kTagName, kAttr, kAttrValue) \
 TFJ(StringPrototypeAnchor, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
@@ -168,6 +185,8 @@ TFJ(StringPrototypeSub, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeSup, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeIterator, 0, kReceiver) \
 TFJ(StringIteratorPrototypeNext, 0, kReceiver) \
+TFJ(StringPrototypePadStart, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypePadEnd, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(StringRepeat, kString, kCount) \
 TFJ(StringPrototypeRepeat, 1, kReceiver, kCount) \
 TFJ(StringPrototypeSlice, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
@@ -186,7 +205,7 @@ TFJ(TypedArrayPrototypeSome, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeSubArray, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
 TFS(TypedArrayMergeSort, kArray, kComparefn, kSource, kFrom, kTo, kTarget) \
 TFJ(TypedArrayPrototypeSort, SharedFunctionInfo::kDontAdaptArgumentsSentinel) \
-TFS(GenericBuiltinTest20UT5ATSmi10HeapObject, kParam) \
+TFS(GenericBuiltinTest90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol, kParam) \
 TFS(TestHelperPlus1, kX) \
 TFS(TestHelperPlus2, kX) \
 TFS(NewSmiBox, kValue) \
@@ -254,7 +273,7 @@ TFS(Delete25ATGenericElementsAccessor, kSortState, kIndex) \
   V(0,LoadJoinElement20ATDictionaryElements)\
   V(1,LoadFixedElement15ATInt32Elements)\
   V(2,StoreFixedElement15ATInt32Elements)\
-  V(3,GenericBuiltinTest20UT5ATSmi10HeapObject)\
+  V(3,GenericBuiltinTest90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol)\
   V(4,Load17ATFastSmiElements)\
   V(5,Store17ATFastSmiElements)\
   V(6,Delete17ATFastSmiElements)\

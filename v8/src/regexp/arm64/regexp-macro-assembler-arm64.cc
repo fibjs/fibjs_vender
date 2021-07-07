@@ -59,7 +59,10 @@ namespace internal {
  *              (as referred to in
  *              the code)
  *
- *  - fp[96]   isolate            Address of the current isolate.
+ *  - fp[104]  Address regexp      Address of the JSRegExp object. Unused in
+ *                                 native code, passed to match signature of
+ *                                 the interpreter.
+ *  - fp[96]   isolate             Address of the current isolate.
  *  ^^^ sp when called ^^^
  *  - fp[88]    lr                 Return from the RegExp code.
  *  - fp[80]    r29                Old frame pointer (CalleeSaved).
@@ -97,7 +100,8 @@ namespace internal {
  *              int num_capture_registers,
  *              byte* stack_area_base,
  *              bool direct_call = false,
- *              Isolate* isolate);
+ *              Isolate* isolate,
+ *              Address regexp);
  * The call is performed by NativeRegExpMacroAssembler::Execute()
  * (in regexp-macro-assembler.cc) via the GeneratedCode wrapper.
  */
@@ -205,13 +209,13 @@ void RegExpMacroAssemblerARM64::CheckCharacterGT(uc16 limit,
   CompareAndBranchOrBacktrack(current_character(), limit, hi, on_greater);
 }
 
-
-void RegExpMacroAssemblerARM64::CheckAtStart(Label* on_at_start) {
-  __ Add(w10, current_input_offset(), Operand(-char_size()));
+void RegExpMacroAssemblerARM64::CheckAtStart(int cp_offset,
+                                             Label* on_at_start) {
+  __ Add(w10, current_input_offset(),
+         Operand(-char_size() + cp_offset * char_size()));
   __ Cmp(w10, string_start_minus_one());
   BranchOrBacktrack(eq, on_at_start);
 }
-
 
 void RegExpMacroAssemblerARM64::CheckNotAtStart(int cp_offset,
                                                 Label* on_not_at_start) {
@@ -754,7 +758,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
   Label stack_ok;
 
   ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(isolate());
+      ExternalReference::address_of_jslimit(isolate());
   __ Mov(x10, stack_limit);
   __ Ldr(x10, MemOperand(x10));
   __ Subs(x10, sp, x10);
@@ -1456,7 +1460,7 @@ void RegExpMacroAssemblerARM64::CompareAndBranchOrBacktrack(Register reg,
 void RegExpMacroAssemblerARM64::CheckPreemption() {
   // Check for preemption.
   ExternalReference stack_limit =
-      ExternalReference::address_of_stack_limit(isolate());
+      ExternalReference::address_of_jslimit(isolate());
   __ Mov(x10, stack_limit);
   __ Ldr(x10, MemOperand(x10));
   __ Cmp(sp, x10);
@@ -1466,7 +1470,7 @@ void RegExpMacroAssemblerARM64::CheckPreemption() {
 
 void RegExpMacroAssemblerARM64::CheckStackLimit() {
   ExternalReference stack_limit =
-      ExternalReference::address_of_regexp_stack_limit(isolate());
+      ExternalReference::address_of_regexp_stack_limit_address(isolate());
   __ Mov(x10, stack_limit);
   __ Ldr(x10, MemOperand(x10));
   __ Cmp(backtrack_stackpointer(), x10);

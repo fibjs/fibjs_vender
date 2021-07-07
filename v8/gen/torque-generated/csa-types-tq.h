@@ -90,6 +90,12 @@ struct TorqueStructIteratorRecord {
     return std::tuple_cat(std::make_tuple(object), std::make_tuple(next));
   }
 };
+struct TorqueStructUnsafe {
+
+  std::tuple<> Flatten() const {
+    return std::tuple_cat();
+  }
+};
 struct TorqueStructTypedArrayElementsInfo {
   compiler::TNode<UintPtrT> sizeLog2;
   compiler::TNode<Int32T> kind;
@@ -164,6 +170,14 @@ struct TorqueStructTestIterator {
     return std::tuple_cat(std::make_tuple(count));
   }
 };
+struct TorqueStructTestTuple8ATintptr5ATSmi {
+  compiler::TNode<IntPtrT> fst;
+  compiler::TNode<Smi> snd;
+
+  std::tuple<compiler::TNode<IntPtrT>, compiler::TNode<Smi>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(fst), std::make_tuple(snd));
+  }
+};
 struct TorqueStructTestTuple5ATSmi8ATintptr {
   compiler::TNode<Smi> fst;
   compiler::TNode<IntPtrT> snd;
@@ -172,140 +186,232 @@ struct TorqueStructTestTuple5ATSmi8ATintptr {
     return std::tuple_cat(std::make_tuple(fst), std::make_tuple(snd));
   }
 };
+struct TorqueStructTestTuple24TestTuple8ATintptr5ATSmi24TestTuple5ATSmi8ATintptr {
+  TorqueStructTestTuple8ATintptr5ATSmi fst;
+  TorqueStructTestTuple5ATSmi8ATintptr snd;
+
+  std::tuple<compiler::TNode<IntPtrT>, compiler::TNode<Smi>, compiler::TNode<Smi>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(fst.Flatten(), snd.Flatten());
+  }
+};
 struct TorqueStructReference5ATSmi {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference14FixedArrayBase {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference3Map {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference13JSArrayBuffer {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference18SharedFunctionInfo {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference8ATuint16 {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
-struct TorqueStructReference20UT5ATSmi10HeapNumber {
+struct TorqueStructReference3Map {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
-struct TorqueStructReference9ATuintptr {
+struct TorqueStructReference14FixedArrayBase {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
-struct TorqueStructReference18UT10JSReceiver3Map {
+struct TorqueStructSlice20UT5ATSmi10HeapObject {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  compiler::TNode<IntPtrT> length;
+  TorqueStructUnsafe unsafeMarker;
 
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference39UT5ATSmi14FixedArrayBase13PropertyArray {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), std::make_tuple(length), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference20UT5ATSmi10HeapObject {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructSliceIterator20UT5ATSmi10HeapObject {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> start;
+  compiler::TNode<IntPtrT> end;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(start), std::make_tuple(end), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference20UT5ATSmi10HeapNumber {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference13JSArrayBuffer {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference9ATuintptr {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructSlice9ATfloat64 {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  compiler::TNode<IntPtrT> length;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), std::make_tuple(length), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference9ATfloat64 {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructSliceIterator9ATfloat64 {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> start;
+  compiler::TNode<IntPtrT> end;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(start), std::make_tuple(end), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference18UT10JSReceiver3Map {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference39UT5ATSmi14FixedArrayBase13PropertyArray {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference6String {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference8ATRawPtr {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference32UT11ATUndefined9DebugInfo6Script {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference31UT14ATCoverageInfo11ATUndefined {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference21UT6ATNull10JSReceiver {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference22UT11ATUndefined6String {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference18UT5ATSmi9ByteArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructSBox8ATintptr {
@@ -322,636 +428,715 @@ struct TorqueStructSBox13SBox8ATintptr {
     return std::tuple_cat(value.Flatten());
   }
 };
-struct TorqueStructTestTuple8ATintptr5ATSmi {
-  compiler::TNode<IntPtrT> fst;
-  compiler::TNode<Smi> snd;
-
-  std::tuple<compiler::TNode<IntPtrT>, compiler::TNode<Smi>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(fst), std::make_tuple(snd));
-  }
-};
 struct TorqueStructReference10JSReceiver {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference84UT19ATCallableApiObject17ATCallableJSProxy11ATUndefined15JSBoundFunction10JSFunction {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
-struct TorqueStructReference98FT7Context20UT5ATSmi10HeapObject20UT5ATSmi10HeapObject20UT5ATSmi10HeapObject20UT5ATSmi10HeapNumber {
+struct TorqueStructReference308FT7Context90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol20UT5ATSmi10HeapNumber {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
-struct TorqueStructReference48FT7Context9SortState5ATSmi20UT5ATSmi10HeapObject {
+struct TorqueStructReference129FT7Context9SortState5ATSmi100UT8ATBigInt7ATFalse6ATNull5ATSmi9ATTheHole6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
-struct TorqueStructReference54FT7Context9SortState5ATSmi20UT5ATSmi10HeapObject5ATSmi {
+struct TorqueStructReference124FT7Context9SortState5ATSmi90UT8ATBigInt7ATFalse6ATNull5ATSmi6ATTrue11ATUndefined10HeapNumber10JSReceiver6String6Symbol5ATSmi {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference32FT7Context9SortState5ATSmi5ATSmi {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
-struct TorqueStructReference85FT7Context10JSReceiver20UT5ATSmi10HeapObject20UT5ATSmi10HeapNumber17UT7ATFalse6ATTrue {
+struct TorqueStructReference67FT7Context10JSReceiver3Map20UT5ATSmi10HeapNumber17UT7ATFalse6ATTrue {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference10FixedArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference11ATScopeInfo {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference9ATfloat64 {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference8ATuint32 {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference7ATint32 {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference7ATuint8 {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference14ATInstanceType {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference10HeapObject {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference15DescriptorArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference18ATLayoutDescriptor {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference15ATDependentCode {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference13UT5ATSmi4Cell {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference46UT5ATSmi17ATTransitionArray3Map13PrototypeInfo {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference9ByteArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference9EnumCache {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference7Context {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference12FeedbackCell {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference6ATCode {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference23UT11ATUndefined7Foreign {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference17ATObjectHashTable {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference34UT11ATUndefined17JSModuleNamespace {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference77UT22ATSourceTextModuleInfo10JSFunction17JSGeneratorObject18SharedFunctionInfo {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference6Script {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference21UT9ATTheHole8JSObject {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference7Foreign {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference6Module {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference35UT11ATUndefined18SharedFunctionInfo {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference24UT6ATZero13WeakArrayList {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference19UT11ATUndefined3Map {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference13BytecodeArray {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference46UT22ATNoSharedNameSentinel11ATScopeInfo6String {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference7ATint16 {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference71UT19ATCallableApiObject17ATCallableJSProxy15JSBoundFunction10JSFunction {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference29UT15ATUninitialized9FreeSpace {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference33UT5ATSmi11ATUndefined10HeapNumber {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference27UT5ATNaN5ATSmi11ATUndefined {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference15ATNativeContext {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference13JSGlobalProxy {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference4Name {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference40UT16ATNonNullForeign11ATUndefined6ATZero {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference17ATObjectHashTable {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference34UT11ATUndefined17JSModuleNamespace {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference77UT22ATSourceTextModuleInfo10JSFunction17JSGeneratorObject18SharedFunctionInfo {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference6Script {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference21UT9ATTheHole8JSObject {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference7Foreign {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference6Module {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference35UT11ATUndefined18SharedFunctionInfo {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference24UT6ATZero13WeakArrayList {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference19UT11ATUndefined3Map {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference13BytecodeArray {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference46UT22ATNoSharedNameSentinel11ATScopeInfo6String {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference7ATint16 {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference12PreparseData {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference71UT19ATCallableApiObject17ATCallableJSProxy15JSBoundFunction10JSFunction {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference29UT15ATUninitialized9FreeSpace {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference33UT5ATSmi11ATUndefined10HeapNumber {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference27UT5ATNaN5ATSmi11ATUndefined {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference15ATNativeContext {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference13JSGlobalProxy {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference42UT15ATPrivateSymbol14ATPublicSymbol6String {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference30UT11ATUndefined6ATZero7Foreign {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference39UT11ATUndefined6ATZero15InterceptorInfo {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference15UT6ATCode5ATSmi {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference10JSFunction {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference9JSPromise {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference29UT6ATNull11ATUndefined6String {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference44UT6ATNull11ATUndefined20ATWasmInstanceObject {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference29UT12ATFrameArray11ATUndefined {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference31UT11ATUndefined14StackFrameInfo {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference20ATWasmInstanceObject {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference16UT5ATSmi7Foreign {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
+  }
+};
+struct TorqueStructReference23UT11ATUndefined7Foreign {
+  compiler::TNode<HeapObject> object;
+  compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
+
+  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference27UT11ATUndefined10FixedArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference38UT11ATUndefined21AsyncGeneratorRequest {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
-  }
-};
-struct TorqueStructReference22UT11ATUndefined6String {
-  compiler::TNode<HeapObject> object;
-  compiler::TNode<IntPtrT> offset;
-
-  std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference27UT11ATUndefined10JSReceiver {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference26UT6ATZero15PromiseReaction {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference44UT11ATUndefined9JSPromise17PromiseCapability {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference21UT5ATSmi11ATUndefined {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference27UT16ATNonNullForeign6ATZero {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference22UT11ATUndefined6Script {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference30UT11ATUndefined13BytecodeArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference43UT11ATUndefined14FeedbackVector10FixedArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference16ATAllocationSite {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference13WeakArrayList {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference25UT11ATUndefined9ByteArray {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference30UT11ATUndefined13WeakArrayList {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference30UT11ATUndefined13JSArrayBuffer {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference10HeapNumber {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference24UT11ATUndefined8WeakCell {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference36UT11ATUndefined19JSFinalizationGroup {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference19JSFinalizationGroup {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference60UT11ATUndefined9ByteArray33SourcePositionTableWithFrameCache {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 struct TorqueStructReference6ATint8 {
   compiler::TNode<HeapObject> object;
   compiler::TNode<IntPtrT> offset;
+  TorqueStructUnsafe unsafeMarker;
 
   std::tuple<compiler::TNode<HeapObject>, compiler::TNode<IntPtrT>> Flatten() const {
-    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset));
+    return std::tuple_cat(std::make_tuple(object), std::make_tuple(offset), unsafeMarker.Flatten());
   }
 };
 }  // namespace internal

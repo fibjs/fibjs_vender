@@ -84,6 +84,12 @@ class ExpressionScope {
     AsExpressionParsingScope()->ClearExpressionError();
   }
 
+  void ValidateAsExpression() {
+    if (!CanBeExpression()) return;
+    AsExpressionParsingScope()->ValidateExpression();
+    AsExpressionParsingScope()->ClearPatternError();
+  }
+
   // Record async arrow parameters errors in all ambiguous async arrow scopes in
   // the chain up to the first unambiguous scope.
   void RecordAsyncArrowParametersError(const Scanner::Location& loc,
@@ -481,6 +487,14 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
     clear(kExpressionIndex);
   }
 
+  void ClearPatternError() {
+    DCHECK(verified_);
+#ifdef DEBUG
+    verified_ = false;
+#endif
+    clear(kPatternIndex);
+  }
+
   void TrackVariable(VariableProxy* variable) {
     if (!this->CanBeDeclaration()) {
       this->parser()->scope()->AddUnresolved(variable);
@@ -715,6 +729,9 @@ class ArrowHeadParsingScope : public ExpressionParsingScope<Types> {
     for (auto& proxy_initializer_pair : *this->variable_list()) {
       VariableProxy* proxy = proxy_initializer_pair.first;
       int initializer_position = proxy_initializer_pair.second;
+      // Default values for parameters will have been parsed as assignments so
+      // clear the is_assigned bit as they are not actually assignments.
+      proxy->clear_is_assigned();
       bool was_added;
       this->parser()->DeclareAndBindVariable(proxy, kind, mode, result,
                                              &was_added, initializer_position);

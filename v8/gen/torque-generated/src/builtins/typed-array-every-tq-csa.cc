@@ -36,6 +36,10 @@
 #include "src/builtins/builtins-proxy-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-string-gen.h"
 #include "src/builtins/builtins-regexp-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
@@ -94,12 +98,16 @@
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-source-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/string-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
+#include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -123,7 +131,7 @@
 namespace v8 {
 namespace internal {
 
-const char* kBuiltinName_310(compiler::CodeAssemblerState* state_) {
+const char* kBuiltinName_351(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -132,35 +140,35 @@ const char* kBuiltinName_310(compiler::CodeAssemblerState* state_) {
 return "%TypedArray%.prototype.every";
 }
 
-compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_array, compiler::TNode<HeapObject> p_callbackfn, compiler::TNode<Object> p_thisArg) {
+compiler::TNode<Oddball> EveryAllElements_352(compiler::CodeAssemblerState* state_, compiler::TNode<Context> p_context, compiler::TNode<JSTypedArray> p_array, compiler::TNode<JSReceiver> p_callbackfn, compiler::TNode<Object> p_thisArg) {
   compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, JSTypedArray> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number, Smi> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Smi, Context, Smi, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Context, HeapObject, Object, Object, Smi, JSTypedArray> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Object> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Object> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, Oddball> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, HeapObject, Object, Oddball> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, JSTypedArray> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Number, Smi> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Smi, Context, Smi, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Context, JSReceiver, Object, Object, Smi, JSTypedArray> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Object> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi, Object, Object> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, JSTypedArray, JSTypedArray, BuiltinPtr, Smi, Smi> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, Oddball> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Context, JSTypedArray, JSReceiver, Object, Oddball> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0, p_context, p_array, p_callbackfn, p_thisArg);
 
   if (block0.is_used()) {
     compiler::TNode<Context> tmp0;
     compiler::TNode<JSTypedArray> tmp1;
-    compiler::TNode<HeapObject> tmp2;
+    compiler::TNode<JSReceiver> tmp2;
     compiler::TNode<Object> tmp3;
     ca_.Bind(&block0, &tmp0, &tmp1, &tmp2, &tmp3);
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 13);
@@ -170,7 +178,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     USE(tmp5);
     compiler::TNode<BuiltinPtr> tmp6;
     USE(tmp6);
-    std::tie(tmp4, tmp5, tmp6) = NewAttachedJSTypedArrayWitness_329(state_, compiler::TNode<JSTypedArray>{tmp1}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewAttachedJSTypedArrayWitness_370(state_, compiler::TNode<JSTypedArray>{tmp1}).Flatten();
     ca_.SetSourcePosition("../../src/builtins/typed-array.tq", 91);
     ca_.Goto(&block4, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp5);
   }
@@ -178,7 +186,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block4.is_used()) {
     compiler::TNode<Context> tmp7;
     compiler::TNode<JSTypedArray> tmp8;
-    compiler::TNode<HeapObject> tmp9;
+    compiler::TNode<JSReceiver> tmp9;
     compiler::TNode<Object> tmp10;
     compiler::TNode<JSTypedArray> tmp11;
     compiler::TNode<JSTypedArray> tmp12;
@@ -191,11 +199,11 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     compiler::TNode<UintPtrT>tmp16 = CodeStubAssembler(state_).LoadReference<UintPtrT>(CodeStubAssembler::Reference{tmp14, tmp15});
     compiler::TNode<Number> tmp17;
     USE(tmp17);
-    tmp17 = Convert20UT5ATSmi10HeapNumber9ATuintptr_174(state_, compiler::TNode<UintPtrT>{tmp16});
+    tmp17 = Convert20UT5ATSmi10HeapNumber9ATuintptr_201(state_, compiler::TNode<UintPtrT>{tmp16});
     compiler::TNode<Smi> tmp18;
     USE(tmp18);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp18 = Cast5ATSmi_78(state_, compiler::TNode<Object>{tmp17}, &label0);
+    tmp18 = Cast5ATSmi_83(state_, compiler::TNode<Object>{tmp17}, &label0);
     ca_.Goto(&block5, tmp7, tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp17, tmp18);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -206,7 +214,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block6.is_used()) {
     compiler::TNode<Context> tmp19;
     compiler::TNode<JSTypedArray> tmp20;
-    compiler::TNode<HeapObject> tmp21;
+    compiler::TNode<JSReceiver> tmp21;
     compiler::TNode<Object> tmp22;
     compiler::TNode<JSTypedArray> tmp23;
     compiler::TNode<JSTypedArray> tmp24;
@@ -219,7 +227,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block5.is_used()) {
     compiler::TNode<Context> tmp27;
     compiler::TNode<JSTypedArray> tmp28;
-    compiler::TNode<HeapObject> tmp29;
+    compiler::TNode<JSReceiver> tmp29;
     compiler::TNode<Object> tmp30;
     compiler::TNode<JSTypedArray> tmp31;
     compiler::TNode<JSTypedArray> tmp32;
@@ -233,7 +241,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block3.is_used()) {
     compiler::TNode<Context> tmp36;
     compiler::TNode<JSTypedArray> tmp37;
-    compiler::TNode<HeapObject> tmp38;
+    compiler::TNode<JSReceiver> tmp38;
     compiler::TNode<Object> tmp39;
     compiler::TNode<JSTypedArray> tmp40;
     compiler::TNode<JSTypedArray> tmp41;
@@ -245,7 +253,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block2.is_used()) {
     compiler::TNode<Context> tmp43;
     compiler::TNode<JSTypedArray> tmp44;
-    compiler::TNode<HeapObject> tmp45;
+    compiler::TNode<JSReceiver> tmp45;
     compiler::TNode<Object> tmp46;
     compiler::TNode<JSTypedArray> tmp47;
     compiler::TNode<JSTypedArray> tmp48;
@@ -255,14 +263,14 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 17);
     compiler::TNode<Smi> tmp51;
     USE(tmp51);
-    tmp51 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 0);
+    tmp51 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 0);
     ca_.Goto(&block9, tmp43, tmp44, tmp45, tmp46, tmp47, tmp48, tmp49, tmp50, tmp51);
   }
 
   if (block9.is_used()) {
     compiler::TNode<Context> tmp52;
     compiler::TNode<JSTypedArray> tmp53;
-    compiler::TNode<HeapObject> tmp54;
+    compiler::TNode<JSReceiver> tmp54;
     compiler::TNode<Object> tmp55;
     compiler::TNode<JSTypedArray> tmp56;
     compiler::TNode<JSTypedArray> tmp57;
@@ -279,7 +287,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block7.is_used()) {
     compiler::TNode<Context> tmp62;
     compiler::TNode<JSTypedArray> tmp63;
-    compiler::TNode<HeapObject> tmp64;
+    compiler::TNode<JSReceiver> tmp64;
     compiler::TNode<Object> tmp65;
     compiler::TNode<JSTypedArray> tmp66;
     compiler::TNode<JSTypedArray> tmp67;
@@ -300,7 +308,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block14.is_used()) {
     compiler::TNode<Context> tmp74;
     compiler::TNode<JSTypedArray> tmp75;
-    compiler::TNode<HeapObject> tmp76;
+    compiler::TNode<JSReceiver> tmp76;
     compiler::TNode<Object> tmp77;
     compiler::TNode<JSTypedArray> tmp78;
     compiler::TNode<JSTypedArray> tmp79;
@@ -314,7 +322,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block15.is_used()) {
     compiler::TNode<Context> tmp83;
     compiler::TNode<JSTypedArray> tmp84;
-    compiler::TNode<HeapObject> tmp85;
+    compiler::TNode<JSReceiver> tmp85;
     compiler::TNode<Object> tmp86;
     compiler::TNode<JSTypedArray> tmp87;
     compiler::TNode<JSTypedArray> tmp88;
@@ -333,7 +341,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block13.is_used()) {
     compiler::TNode<Context> tmp93;
     compiler::TNode<JSTypedArray> tmp94;
-    compiler::TNode<HeapObject> tmp95;
+    compiler::TNode<JSReceiver> tmp95;
     compiler::TNode<Object> tmp96;
     compiler::TNode<JSTypedArray> tmp97;
     compiler::TNode<JSTypedArray> tmp98;
@@ -347,7 +355,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block12.is_used()) {
     compiler::TNode<Context> tmp102;
     compiler::TNode<JSTypedArray> tmp103;
-    compiler::TNode<HeapObject> tmp104;
+    compiler::TNode<JSReceiver> tmp104;
     compiler::TNode<Object> tmp105;
     compiler::TNode<JSTypedArray> tmp106;
     compiler::TNode<JSTypedArray> tmp107;
@@ -361,7 +369,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block11.is_used()) {
     compiler::TNode<Context> tmp111;
     compiler::TNode<JSTypedArray> tmp112;
-    compiler::TNode<HeapObject> tmp113;
+    compiler::TNode<JSReceiver> tmp113;
     compiler::TNode<Object> tmp114;
     compiler::TNode<JSTypedArray> tmp115;
     compiler::TNode<JSTypedArray> tmp116;
@@ -380,7 +388,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block16.is_used()) {
     compiler::TNode<Context> tmp121;
     compiler::TNode<JSTypedArray> tmp122;
-    compiler::TNode<HeapObject> tmp123;
+    compiler::TNode<JSReceiver> tmp123;
     compiler::TNode<Object> tmp124;
     compiler::TNode<JSTypedArray> tmp125;
     compiler::TNode<JSTypedArray> tmp126;
@@ -401,7 +409,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block17.is_used()) {
     compiler::TNode<Context> tmp134;
     compiler::TNode<JSTypedArray> tmp135;
-    compiler::TNode<HeapObject> tmp136;
+    compiler::TNode<JSReceiver> tmp136;
     compiler::TNode<Object> tmp137;
     compiler::TNode<JSTypedArray> tmp138;
     compiler::TNode<JSTypedArray> tmp139;
@@ -410,7 +418,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     compiler::TNode<Smi> tmp142;
     compiler::TNode<Object> tmp143;
     compiler::TNode<Context> tmp144;
-    compiler::TNode<HeapObject> tmp145;
+    compiler::TNode<JSReceiver> tmp145;
     compiler::TNode<Object> tmp146;
     compiler::TNode<Object> tmp147;
     compiler::TNode<Smi> tmp148;
@@ -419,11 +427,11 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 22);
     compiler::TNode<Object> tmp150;
     USE(tmp150);
-    tmp150 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp144}, compiler::TNode<HeapObject>{tmp145}, compiler::TNode<Object>{tmp146}, compiler::TNode<Object>{tmp147}, compiler::TNode<Object>{tmp148}, compiler::TNode<Object>{tmp149});
+    tmp150 = CodeStubAssembler(state_).Call(compiler::TNode<Context>{tmp144}, compiler::TNode<JSReceiver>{tmp145}, compiler::TNode<Object>{tmp146}, compiler::TNode<Object>{tmp147}, compiler::TNode<Object>{tmp148}, compiler::TNode<Object>{tmp149});
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 23);
     compiler::TNode<BoolT> tmp151;
     USE(tmp151);
-    tmp151 = ToBoolean_213(state_, compiler::TNode<Object>{tmp150});
+    tmp151 = ToBoolean_240(state_, compiler::TNode<Object>{tmp150});
     compiler::TNode<BoolT> tmp152;
     USE(tmp152);
     tmp152 = CodeStubAssembler(state_).Word32BinaryNot(compiler::TNode<BoolT>{tmp151});
@@ -433,7 +441,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block18.is_used()) {
     compiler::TNode<Context> tmp153;
     compiler::TNode<JSTypedArray> tmp154;
-    compiler::TNode<HeapObject> tmp155;
+    compiler::TNode<JSReceiver> tmp155;
     compiler::TNode<Object> tmp156;
     compiler::TNode<JSTypedArray> tmp157;
     compiler::TNode<JSTypedArray> tmp158;
@@ -446,14 +454,14 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 24);
     compiler::TNode<Oddball> tmp164;
     USE(tmp164);
-    tmp164 = False_67(state_);
+    tmp164 = False_66(state_);
     ca_.Goto(&block1, tmp153, tmp154, tmp155, tmp156, tmp164);
   }
 
   if (block19.is_used()) {
     compiler::TNode<Context> tmp165;
     compiler::TNode<JSTypedArray> tmp166;
-    compiler::TNode<HeapObject> tmp167;
+    compiler::TNode<JSReceiver> tmp167;
     compiler::TNode<Object> tmp168;
     compiler::TNode<JSTypedArray> tmp169;
     compiler::TNode<JSTypedArray> tmp170;
@@ -470,7 +478,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block10.is_used()) {
     compiler::TNode<Context> tmp176;
     compiler::TNode<JSTypedArray> tmp177;
-    compiler::TNode<HeapObject> tmp178;
+    compiler::TNode<JSReceiver> tmp178;
     compiler::TNode<Object> tmp179;
     compiler::TNode<JSTypedArray> tmp180;
     compiler::TNode<JSTypedArray> tmp181;
@@ -480,7 +488,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     ca_.Bind(&block10, &tmp176, &tmp177, &tmp178, &tmp179, &tmp180, &tmp181, &tmp182, &tmp183, &tmp184);
     compiler::TNode<Smi> tmp185;
     USE(tmp185);
-    tmp185 = FromConstexpr5ATSmi17ATconstexpr_int31_126(state_, 1);
+    tmp185 = FromConstexpr5ATSmi17ATconstexpr_int31_152(state_, 1);
     compiler::TNode<Smi> tmp186;
     USE(tmp186);
     tmp186 = CodeStubAssembler(state_).SmiAdd(compiler::TNode<Smi>{tmp184}, compiler::TNode<Smi>{tmp185});
@@ -490,7 +498,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
   if (block8.is_used()) {
     compiler::TNode<Context> tmp187;
     compiler::TNode<JSTypedArray> tmp188;
-    compiler::TNode<HeapObject> tmp189;
+    compiler::TNode<JSReceiver> tmp189;
     compiler::TNode<Object> tmp190;
     compiler::TNode<JSTypedArray> tmp191;
     compiler::TNode<JSTypedArray> tmp192;
@@ -501,14 +509,14 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 27);
     compiler::TNode<Oddball> tmp196;
     USE(tmp196);
-    tmp196 = True_66(state_);
+    tmp196 = True_65(state_);
     ca_.Goto(&block1, tmp187, tmp188, tmp189, tmp190, tmp196);
   }
 
   if (block1.is_used()) {
     compiler::TNode<Context> tmp197;
     compiler::TNode<JSTypedArray> tmp198;
-    compiler::TNode<HeapObject> tmp199;
+    compiler::TNode<JSReceiver> tmp199;
     compiler::TNode<Object> tmp200;
     compiler::TNode<Oddball> tmp201;
     ca_.Bind(&block1, &tmp197, &tmp198, &tmp199, &tmp200, &tmp201);
@@ -518,7 +526,7 @@ compiler::TNode<Oddball> EveryAllElements_311(compiler::CodeAssemblerState* stat
 
     compiler::TNode<Context> tmp202;
     compiler::TNode<JSTypedArray> tmp203;
-    compiler::TNode<HeapObject> tmp204;
+    compiler::TNode<JSReceiver> tmp204;
     compiler::TNode<Object> tmp205;
     compiler::TNode<Oddball> tmp206;
     ca_.Bind(&block20, &tmp202, &tmp203, &tmp204, &tmp205, &tmp206);
@@ -542,7 +550,7 @@ USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, JSTypedArray> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, Object, HeapObject> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object, JSTypedArray, JSTypedArray, Object, JSReceiver> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object> block6(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object> block4(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<RawPtrT, RawPtrT, IntPtrT, Context, Object> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -559,7 +567,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp5;
     USE(tmp5);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp5 = Cast12JSTypedArray_90(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
+    tmp5 = Cast12JSTypedArray_110(state_, compiler::TNode<Context>{tmp3}, compiler::TNode<Object>{tmp4}, &label0);
     ca_.Goto(&block7, tmp0, tmp1, tmp2, tmp3, tmp4, tmp4, tmp5);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -591,7 +599,7 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp19;
     USE(tmp19);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp19 = EnsureAttached_328(state_, compiler::TNode<JSTypedArray>{tmp18}, &label0);
+    tmp19 = EnsureAttached_369(state_, compiler::TNode<JSTypedArray>{tmp18}, &label0);
     ca_.Goto(&block9, tmp12, tmp13, tmp14, tmp15, tmp16, tmp18, tmp18, tmp19);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -624,14 +632,14 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 41);
     compiler::TNode<IntPtrT> tmp35;
     USE(tmp35);
-    tmp35 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp35 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp36;
     USE(tmp36);
     tmp36 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp27}, compiler::TNode<RawPtrT>{tmp28}, compiler::TNode<IntPtrT>{tmp29}}, compiler::TNode<IntPtrT>{tmp35});
-    compiler::TNode<HeapObject> tmp37;
+    compiler::TNode<JSReceiver> tmp37;
     USE(tmp37);
     compiler::CodeAssemblerLabel label0(&ca_);
-    tmp37 = Cast71UT19ATCallableApiObject17ATCallableJSProxy15JSBoundFunction10JSFunction_1291(state_, compiler::TNode<Context>{tmp30}, compiler::TNode<Object>{tmp36}, &label0);
+    tmp37 = Cast71UT19ATCallableApiObject17ATCallableJSProxy15JSBoundFunction10JSFunction_1339(state_, compiler::TNode<Context>{tmp30}, compiler::TNode<Object>{tmp36}, &label0);
     ca_.Goto(&block11, tmp27, tmp28, tmp29, tmp30, tmp31, tmp32, tmp34, tmp36, tmp37);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -661,19 +669,19 @@ USE(parameter1);
     compiler::TNode<JSTypedArray> tmp51;
     compiler::TNode<JSTypedArray> tmp52;
     compiler::TNode<Object> tmp53;
-    compiler::TNode<HeapObject> tmp54;
+    compiler::TNode<JSReceiver> tmp54;
     ca_.Bind(&block11, &tmp46, &tmp47, &tmp48, &tmp49, &tmp50, &tmp51, &tmp52, &tmp53, &tmp54);
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 42);
     compiler::TNode<IntPtrT> tmp55;
     USE(tmp55);
-    tmp55 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 1);
+    tmp55 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 1);
     compiler::TNode<Object> tmp56;
     USE(tmp56);
     tmp56 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp46}, compiler::TNode<RawPtrT>{tmp47}, compiler::TNode<IntPtrT>{tmp48}}, compiler::TNode<IntPtrT>{tmp55});
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 43);
     compiler::TNode<Oddball> tmp57;
     USE(tmp57);
-    tmp57 = EveryAllElements_311(state_, compiler::TNode<Context>{tmp49}, compiler::TNode<JSTypedArray>{tmp52}, compiler::TNode<HeapObject>{tmp54}, compiler::TNode<Object>{tmp56});
+    tmp57 = EveryAllElements_352(state_, compiler::TNode<Context>{tmp49}, compiler::TNode<JSTypedArray>{tmp52}, compiler::TNode<JSReceiver>{tmp54}, compiler::TNode<Object>{tmp56});
     arguments.PopAndReturn(tmp57);
   }
 
@@ -687,7 +695,7 @@ USE(parameter1);
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 46);
     compiler::TNode<IntPtrT> tmp63;
     USE(tmp63);
-    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_122(state_, 0);
+    tmp63 = FromConstexpr8ATintptr17ATconstexpr_int31_148(state_, 0);
     compiler::TNode<Object> tmp64;
     USE(tmp64);
     tmp64 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{compiler::TNode<RawPtrT>{tmp58}, compiler::TNode<RawPtrT>{tmp59}, compiler::TNode<IntPtrT>{tmp60}}, compiler::TNode<IntPtrT>{tmp63});
@@ -702,7 +710,7 @@ USE(parameter1);
     compiler::TNode<Object> tmp69;
     ca_.Bind(&block4, &tmp65, &tmp66, &tmp67, &tmp68, &tmp69);
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 49);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp68}, MessageTemplate::kNotTypedArray, kBuiltinName_310(state_));
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp68}, MessageTemplate::kNotTypedArray, kBuiltinName_351(state_));
   }
 
   if (block2.is_used()) {
@@ -713,7 +721,7 @@ USE(parameter1);
     compiler::TNode<Object> tmp74;
     ca_.Bind(&block2, &tmp70, &tmp71, &tmp72, &tmp73, &tmp74);
     ca_.SetSourcePosition("../../src/builtins/typed-array-every.tq", 52);
-    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp73}, MessageTemplate::kDetachedOperation, kBuiltinName_310(state_));
+    CodeStubAssembler(state_).ThrowTypeError(compiler::TNode<Context>{tmp73}, MessageTemplate::kDetachedOperation, kBuiltinName_351(state_));
   }
 }
 
