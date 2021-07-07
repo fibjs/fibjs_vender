@@ -133,21 +133,32 @@ if(${ARCH} STREQUAL "mips" OR ${ARCH} STREQUAL "mips64")
 	set(flags "${flags} -Wno-c++11-narrowing")
 endif()
 
-# as of BUILD.gn in v8@7.8, on Windows, only clang(with vcruntime) tested by official team,
+# As of BUILD.gn in v8@7.8, on Windows, only clang(with vcruntime) tested by official team,
 # which leads emit_builtins_as_inline_asm( = is_win && is_clang) always true.
 #
-# That is, it's expected to compile v8 source with `gen/out.x64/embedded.cc` (when building d8), which is only geneareted
-# if v8_enable_embedded_builtins=true in `args.gn` before running `ninja -C out.gn/x64.release d8`.
-
-# So we put all important files for x64-Windows in this repo:
-# * (required) gen/embedded.cc
-# * (optional) gen/snapshot.cc --> src/snapshot/snapshots/snapshot-x64-Windows.cc
+# That is, it's expected to compile v8 source with
+# - `gen/out.x64/embedded.cc`
+# - or `gen/out.x64/embedded.S`
+# which is only geneareted if v8_enable_embedded_builtins=true in `args.gn` before running `ninja -C out.gn/x64.release d8`.
+# For other platform, we could use both files above, for clang on windows, it's forced to use
+#`gen/out.x64/embedded.cc`(just c-wrapper for `gen/out.x64/embedded.S`) to speed up compilation(emit_builtins_as_inline_asm enabled).
+#
+# So, we put all important files for x64-Windows in this repo:
+# * (required) v8/gen/embedded.cc
+# * (optional) v8/gen/snapshot.cc --> src/snapshot/snapshots/snapshot-x64-Windows.cc
 #
 # And we provide required compile definitions:
 # * -DV8_EMBEDDED_BUILTINS (due to v8_enable_embedded_builtins=true)
+#
+# That's not finished! If you just use clang as compiler on windows, that works well! But if you use MSVC,
+# it's a trouble to compile for target windows-x64: embedded data (from `embedded.cc` or `embedded.cc`), 
+# which structed with at&t assembly format(That's why the filename ends with extension '.S'), incompatible with ASM_MASM, which used by MSVC.
 # 
-# Then, all embedded datas in embedded can be checked at runtime, and snapshot files could be overwritten multiple times ---
-# as long as it's genreated by mksnapshot program.
+# So xicilion write a convertion program `v8/gen_embedded.js`, to convert `v8/gen/embedded.cc` to 
+# `v8/gen/embedded.asm`, and add it to source when you use MSVC as compiler on Windows, as you can see below.
+#
+# Finally, NOTICE: for embedded data on v8@7.8, you must make sure snapshot generation use same flags with v8 build process.
+# If you don't know clearly the build flags of v8 in this repo, DON'T overwrite the snapshot file for windows x64(v8/src/snapshot/snapshots/snapshot-x64-Windows.cc).
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows" AND ${ARCH} STREQUAL "amd64")
 	add_definitions(-DV8_EMBEDDED_BUILTINS)
 	list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/src/snapshot/embedded/embedded-empty.cc")
@@ -158,6 +169,7 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows" AND ${ARCH} STREQUAL "amd64")
 		list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/gen/embedded.cc")
 	endif()
 else()
+	# it's optional to use embedded.cc on other platforms, we exclude it.
 	list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/gen/embedded.cc")
 endif()
 
