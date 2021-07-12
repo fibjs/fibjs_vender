@@ -1311,6 +1311,8 @@ void InstructionSelector::EmitPrepareResults(
   }
 }
 
+void InstructionSelector::VisitF32x4Div(Node* node) { UNIMPLEMENTED(); }
+
 bool InstructionSelector::IsTailCallAddressImmediate() { return false; }
 
 int InstructionSelector::GetTempsCountForTailCallFromJSFunction() { return 3; }
