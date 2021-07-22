@@ -54,17 +54,13 @@ inline void* dlsym(void* handle, const char* name)
 
 inline char* dlerror(void)
 {
-    static WCHAR error_buffer[256];
     static char error_buffer_a[256];
 
-    DWORD msglen = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, GetLastError(), 0, error_buffer, sizeof(error_buffer), NULL);
+    DWORD msglen = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), 0, error_buffer_a, sizeof(error_buffer_a), NULL);
     if (msglen == 0)
         return "unknown error";
-    else {
-        WideCharToMultiByte(CP_UTF8, 0, error_buffer, msglen, error_buffer_a, sizeof(error_buffer_a), NULL, NULL);
-        return error_buffer_a;
-    }
+    return error_buffer_a;
 }
 #endif
 
