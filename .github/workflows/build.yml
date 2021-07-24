@@ -35,12 +35,22 @@ jobs:
           - os: windows-2016
             target_arch: amd64
             build_type: release
-          - os: windows-2016
-            target_arch: amd64
-            build_type: debug
+            use_clang: "false"
           - os: windows-2016
             target_arch: i386
             build_type: release
+            use_clang: "false"
+          - os: windows-2016
+            target_arch: amd64
+            build_type: release
+            use_clang: "true"
+          - os: windows-2016
+            target_arch: i386
+            build_type: release
+            use_clang: "true"
+          - os: windows-2016
+            target_arch: amd64
+            build_type: debug
           - os: windows-2016
             target_arch: i386
             build_type: debug
@@ -71,6 +81,7 @@ jobs:
         env:
           TARGET_ARCH: ${{ matrix.target_arch }}
           BUILD_TYPE: ${{ matrix.build_type }}
+          BUILD_USE_CLANG: ${{ matrix.use_clang }}
 
       - name: Setup LLVM on Windows
         if: runner.os == 'Windows'
@@ -122,6 +133,7 @@ jobs:
           BUILD_TYPE: ${{ matrix.build_type }}
           TARGET_OS: ${{ steps.set-env-vars.outputs.TARGET_OS }}
           GIT_BRANCH: ${{ steps.set-env-vars.outputs.GIT_BRANCH }}
+          BUILD_USE_CLANG: ${{ steps.set-env-vars.outputs.BUILD_USE_CLANG }}
 
       - name: Package
         shell: bash

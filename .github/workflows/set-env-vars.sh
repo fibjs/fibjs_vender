@@ -2,6 +2,8 @@
 get_build_env;
 echo "::set-output name=TARGET_OS::$TARGET_OS"
 
+echo "::set-output name=BUILD_USE_CLANG::$BUILD_USE_CLANG"
+
 export GIT_BRANCH=${GITHUB_REF#refs/heads/}
 echo "::set-output name=GIT_BRANCH::$GIT_BRANCH"
 export GIT_COMMIT_HEAD_MSG=$(git log --format=%b -1)
@@ -68,6 +70,11 @@ if [[ "$RUNNER_OS" == "Windows" ]]; then
     export DIST_FILE="vender-windows-${DIST_ARCH}-$BUILD_TYPE.zip"
     export DIST_DIR="${TARGET_OS_NAME}_${TARGET_ARCH}_$BUILD_TYPE"
     export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Windows.cc"
+
+    if [[ "$BUILD_USE_CLANG" == "true" ]]; then
+        export DIST_FILE="vender-windows-${DIST_ARCH}-$BUILD_TYPE-clang.zip"
+        export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Windows-avoidtoupload.cc"
+    fi
 fi
 
 echo "::set-output name=TARGET_OS_NAME::$TARGET_OS_NAME"
