@@ -33,7 +33,9 @@
  * Hyper-threaded CPUs may need a special instruction inside spin loops in
  * order to yield to another virtual CPU.
  */
-#if defined(__x86_64__) || defined(__i386__)
+#ifdef _MSC_VER
+#define CPU_SPINWAIT _mm_pause()
+#elif defined(__x86_64__) || defined(__i386__)
 #define CPU_SPINWAIT __asm__ volatile("pause")
 #elif defined(__arm__) || defined(__aarch64__)
 #define CPU_SPINWAIT __asm__ volatile("yield")
@@ -51,7 +53,7 @@
  * total number of bits in a pointer, e.g. on x64, for which the uppermost 16
  * bits are the same as bit 47.
  */
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64) || defined(_WIN64)
 #define LG_VADDR 48
 #else
 #define LG_VADDR 32
@@ -60,6 +62,7 @@
 /* Defined if C11 atomics are available. */
 #define JEMALLOC_C11_ATOMICS 1
 
+#ifndef _MSC_VER
 /* Defined if GCC __atomic atomics are available. */
 #define JEMALLOC_GCC_ATOMIC_ATOMICS 1
 /* and the 8-bit variant support. */
@@ -74,6 +77,7 @@
  * Defined if __builtin_clz() and __builtin_clzl() are available.
  */
 #define JEMALLOC_HAVE_BUILTIN_CLZ
+#endif
 
 /*
  * Defined if os_unfair_lock_*() functions are available, as provided by Darwin.
@@ -138,7 +142,7 @@
 /* #undef JEMALLOC_MUTEX_INIT_CB */
 
 /* Non-empty if the tls_model attribute is supported. */
-#define JEMALLOC_TLS_MODEL __attribute__((tls_model("initial-exec")))
+#define JEMALLOC_TLS_MODEL
 
 /*
  * JEMALLOC_DEBUG enables assertions and other sanity checks, and disables
@@ -205,7 +209,9 @@
  * VirtualAlloc()/VirtualFree() operations must be precisely matched, i.e.
  * mappings do *not* coalesce/fragment.
  */
+#ifndef _MSC_VER
 #define JEMALLOC_MAPS_COALESCE
+#endif
 
 /*
  * If defined, retain memory for later reuse by default rather than using e.g.
@@ -222,27 +228,27 @@
  * Used to mark unreachable code to quiet "end of non-void" compiler warnings.
  * Don't use this directly; instead use unreachable() from util.h
  */
-#define JEMALLOC_INTERNAL_UNREACHABLE __builtin_unreachable
+#define JEMALLOC_INTERNAL_UNREACHABLE abort
 
 /*
  * ffs*() functions to use for bitmapping.  Don't use these directly; instead,
  * use ffs_*() from util.h.
  */
-#define JEMALLOC_INTERNAL_FFSLL __builtin_ffsll
-#define JEMALLOC_INTERNAL_FFSL __builtin_ffsl
-#define JEMALLOC_INTERNAL_FFS __builtin_ffs
+#define JEMALLOC_INTERNAL_FFSLL ffsll
+#define JEMALLOC_INTERNAL_FFSL ffsl
+#define JEMALLOC_INTERNAL_FFS ffs
 
 /*
  * popcount*() functions to use for bitmapping.
  */
-#define JEMALLOC_INTERNAL_POPCOUNTL __builtin_popcountl
-#define JEMALLOC_INTERNAL_POPCOUNT __builtin_popcount
+/* #undef JEMALLOC_INTERNAL_POPCOUNTL */
+/* #undef JEMALLOC_INTERNAL_POPCOUNT */
 
 /*
  * If defined, explicitly attempt to more uniformly distribute large allocation
  * pointer alignments across all cache indices.
  */
-#define JEMALLOC_CACHE_OBLIVIOUS
+#define JEMALLOC_CACHE_OBLIVIOUS 
 
 /*
  * If defined, enable logging facilities.  We make this a configure option to
@@ -271,7 +277,7 @@
 /* #undef JEMALLOC_PROC_SYS_VM_OVERCOMMIT_MEMORY */
 
 /* Defined if madvise(2) is available. */
-#define JEMALLOC_HAVE_MADVISE
+/* #undef JEMALLOC_HAVE_MADVISE */
 
 /*
  * Defined if transparent huge pages are supported via the MADV_[NO]HUGEPAGE
@@ -292,8 +298,8 @@
  *                                 MADV_FREE, though typically with higher
  *                                 system overhead.
  */
-/* #undef #define JEMALLOC_PURGE_MADVISE_FREE */
-#define JEMALLOC_PURGE_MADVISE_DONTNEED
+/* #undef JEMALLOC_PURGE_MADVISE_FREE */
+/* #undef JEMALLOC_PURGE_MADVISE_DONTNEED */
 /* #undef JEMALLOC_PURGE_MADVISE_DONTNEED_ZEROS */
 
 /* Defined if madvise(2) is available but MADV_FREE is not (x86 Linux only). */
@@ -314,7 +320,7 @@
 /* #undef JEMALLOC_HAS_ALLOCA_H */
 
 /* C99 restrict keyword supported. */
-#define JEMALLOC_HAS_RESTRICT 1
+/* #undef JEMALLOC_HAS_RESTRICT */
 
 /* For use by hash code. */
 /* #undef JEMALLOC_BIG_ENDIAN */
@@ -323,7 +329,9 @@
 #define LG_SIZEOF_INT 2
 
 /* sizeof(long) == 2^LG_SIZEOF_LONG. */
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64)
+#ifdef _MSC_VER
+#define LG_SIZEOF_LONG 2
+#elif defined(__x86_64__) || defined(__aarch64__) || defined(__mips64)
 #define LG_SIZEOF_LONG 3
 #else
 #define LG_SIZEOF_LONG 2

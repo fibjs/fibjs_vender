@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#ifndef _MSC_VER
 /* Defined if __attribute__((...)) syntax is supported. */
 #define JEMALLOC_HAVE_ATTR
 
@@ -18,13 +19,14 @@ extern "C" {
 
 /* Defined if format(printf, ...) attribute is supported. */
 #define JEMALLOC_HAVE_ATTR_FORMAT_PRINTF
+#endif
 
 /*
  * Define overrides for non-standard allocator-related functions if they are
  * present on the system.
  */
 /* #undef JEMALLOC_OVERRIDE_MEMALIGN */
-#define JEMALLOC_OVERRIDE_VALLOC
+/* #undef JEMALLOC_OVERRIDE_VALLOC */
 
 /*
  * At least Linux omits the "const" in:
@@ -42,16 +44,8 @@ extern "C" {
  */
 /* #undef JEMALLOC_USE_CXX_THROW */
 
-#ifdef _MSC_VER
-#  ifdef _WIN64
-#    define LG_SIZEOF_PTR_WIN 3
-#  else
-#    define LG_SIZEOF_PTR_WIN 2
-#  endif
-#endif
-
 /* sizeof(void *) == 2^LG_SIZEOF_PTR. */
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64) || defined(_WIN64)
 #define LG_SIZEOF_PTR 3
 #else
 #define LG_SIZEOF_PTR 2
@@ -84,7 +78,6 @@ extern "C" {
 #  define je_sallocx je_sallocx
 #  define je_sdallocx je_sdallocx
 #  define je_xallocx je_xallocx
-#  define je_valloc je_valloc
 #endif
 
 #include <stdlib.h>
@@ -153,9 +146,9 @@ extern "C" {
 #  define JEMALLOC_ALLOC_SIZE2(s1, s2)
 #  ifndef JEMALLOC_EXPORT
 #    ifdef DLLEXPORT
-#      define JEMALLOC_EXPORT __declspec(dllexport)
+#      define JEMALLOC_EXPORT
 #    else
-#      define JEMALLOC_EXPORT __declspec(dllimport)
+#      define JEMALLOC_EXPORT
 #    endif
 #  endif
 #  define JEMALLOC_FORMAT_ARG(i)
@@ -394,7 +387,6 @@ struct extent_hooks_s {
 #  define sallocx je_sallocx
 #  define sdallocx je_sdallocx
 #  define xallocx je_xallocx
-#  define valloc je_valloc
 #endif
 
 /*
@@ -426,7 +418,6 @@ struct extent_hooks_s {
 #  undef je_sallocx
 #  undef je_sdallocx
 #  undef je_xallocx
-#  undef je_valloc
 #endif
 
 #ifdef __cplusplus

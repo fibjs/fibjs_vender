@@ -25,5 +25,4 @@
 #  define je_sallocx je_sallocx
 #  define je_sdallocx je_sdallocx
 #  define je_xallocx je_xallocx
-#  define je_valloc je_valloc
 #endif

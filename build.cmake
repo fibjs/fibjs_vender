@@ -11,6 +11,7 @@ set(libs
     jpeg
     png
     webp
+    jemalloc
     zlib
     leveldb
     snappy
@@ -35,7 +36,6 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     )
 else()
     list(APPEND libs
-        jemalloc
         editline
         ev
     )
