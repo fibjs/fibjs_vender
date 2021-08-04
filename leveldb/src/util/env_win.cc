@@ -90,25 +90,22 @@ class WinRandomAccessFile: public RandomAccessFile {
 
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
                       char* scratch) const {
-    LARGE_INTEGER pos;
-    pos.QuadPart = offset;
-    DWORD res = SetFilePointerEx(file_, pos, NULL, FILE_BEGIN);
-    if (res == 0) {
-        *result = Slice(scratch, 0);
-        return IOError(filename_);
+    Status s;
+    long unsigned int read_bytes = 0;
+
+    OVERLAPPED overlapped = { 0 };
+
+    overlapped.OffsetHigh = (uint32_t)((offset & 0xFFFFFFFF00000000LL) >> 32);
+    overlapped.Offset = (uint32_t)(offset & 0xFFFFFFFFLL);
+
+    SetLastError(0);
+    bool RF = ReadFile(file_, scratch, n, &read_bytes, &overlapped);
+    *result = Slice(scratch, read_bytes);
+    if ((RF == 0) && GetLastError() != ERROR_HANDLE_EOF) {
+        s = IOError(filename_, GetLastError());
     }
 
-    DWORD n2 = n;
-    DWORD r = 0;
-    BOOL ok = ReadFile(file_, (void*)scratch, n2, &r, NULL);
-    *result = Slice(scratch, r);
-    if (!ok) {
-        // We leave status as ok if we hit the end of the file
-        if (GetLastError() != ERROR_HANDLE_EOF) {
-            return IOError(filename_);
-        }
-    }
-    return Status::OK();
+    return s;
   }
 };
 
