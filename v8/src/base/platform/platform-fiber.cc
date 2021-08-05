@@ -87,22 +87,22 @@ namespace base {
 
     Thread::LocalStorageKey Thread::CreateThreadLocalKey()
     {
-        return static_cast<LocalStorageKey>(exlib::Thread_base::tlsAlloc());
+        return static_cast<LocalStorageKey>(exlib::tlsAlloc());
     }
 
     void Thread::DeleteThreadLocalKey(LocalStorageKey key)
     {
-        exlib::Thread_base::tlsFree(static_cast<int>(key));
+        exlib::tlsFree(static_cast<int>(key));
     }
 
     void* Thread::GetThreadLocal(LocalStorageKey key)
     {
-        return exlib::Thread_base::tlsGet(static_cast<int>(key));
+        return exlib::tlsGet(static_cast<int>(key));
     }
 
     void Thread::SetThreadLocal(LocalStorageKey key, void* value)
     {
-        exlib::Thread_base::tlsPut(static_cast<int>(key), value);
+        exlib::tlsPut(static_cast<int>(key), value);
     }
 
     void OS::Sleep(TimeDelta interval)

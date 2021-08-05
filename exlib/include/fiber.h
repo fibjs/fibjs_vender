@@ -13,10 +13,9 @@
 #include <string.h>
 #include <string>
 #include "list.h"
+#include "fbTls.h"
 
 namespace exlib {
-
-#define TLS_SIZE 8
 
 class Locker;
 
@@ -93,18 +92,15 @@ public:
             destroy();
     }
 
-public:
-    typedef void (*tls_free)(void*);
-    static int32_t tlsAlloc(tls_free _free = NULL);
-    static void* tlsGet(int32_t idx);
-    static void tlsPut(int32_t idx, void* v);
-    static void tlsFree(int32_t idx);
-
 protected:
-    virtual void destroy();
+    virtual void destroy()
+    {
+    }
+
+public:
+    void* m_tls[TLS_SIZE];
 
 private:
-    void* m_tls[TLS_SIZE];
     intptr_t m_stackguard;
     atomic refs_;
 };
