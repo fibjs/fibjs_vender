@@ -136,6 +136,12 @@ public:
     }
 
 private:
+    bool canlock(Task_base* current = NULL)
+    {
+        return !(m_locker && (!m_recursive || current != m_locker));
+    }
+
+private:
     bool m_recursive;
     int32_t m_count;
     spinlock m_lock;

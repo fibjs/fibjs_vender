@@ -21,24 +21,17 @@ bool Locker::lock(Task_base* current)
         current = Thread_base::current();
 
     assert(current != 0);
-    assert(m_recursive || current != m_locker);
 
     m_lock.lock();
 
-    if (!m_recursive && current == m_locker) {
-        m_lock.unlock();
-        return true;
-    }
-
-    if (m_locker && current != m_locker) {
+    if (!canlock(current)) {
         m_blocks.putTail(current);
         current->suspend(m_lock);
         return false;
     }
 
-    if (++m_count == 1) {
+    if (++m_count == 1)
         m_locker = current;
-    }
 
     m_lock.unlock();
 
@@ -51,23 +44,16 @@ bool Locker::trylock(Task_base* current)
         current = Thread_base::current();
 
     assert(current != 0);
-    assert(m_recursive || current != m_locker);
 
     m_lock.lock();
 
-    if (!m_recursive && current == m_locker) {
+    if (!canlock(current)) {
         m_lock.unlock();
         return false;
     }
 
-    if (m_locker && current != m_locker) {
-        m_lock.unlock();
-        return false;
-    }
-
-    if (++m_count == 1) {
+    if (++m_count == 1)
         m_locker = current;
-    }
 
     m_lock.unlock();
 
