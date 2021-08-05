@@ -31,6 +31,12 @@ void* tlsGet(int32_t idx)
     return Thread_base::current()->m_tls[idx];
 }
 
+void** tlsGetRef(int32_t idx)
+{
+    assert(Thread_base::current() != 0);
+    return &Thread_base::current()->m_tls[idx];
+}
+
 void tlsPut(int32_t idx, void* v)
 {
     assert(Thread_base::current() != 0);

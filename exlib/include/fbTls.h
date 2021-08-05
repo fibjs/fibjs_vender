@@ -15,13 +15,14 @@ namespace exlib {
 
 int32_t tlsAlloc();
 void* tlsGet(int32_t idx);
+void** tlsGetRef(int32_t idx);
 void tlsPut(int32_t idx, void* v);
 void tlsFree(int32_t idx);
 
 template <typename T>
 class fiber_local {
 public:
-    fiber_local()
+    fiber_local(T lp = 0)
     {
         m_id = tlsAlloc();
     }
@@ -29,12 +30,21 @@ public:
 public:
     void operator=(T lp)
     {
-        tlsPut(m_id, (void*)lp);
+        void* v = 0;
+
+        *(T*)&v = lp;
+        tlsPut(m_id, v);
     }
 
     operator T()
     {
-        return (T)tlsGet(m_id);
+        void* v = tlsGet(m_id);
+        return *(T*)&v;
+    }
+
+    T* operator&()
+    {
+        return (T*)tlsGetRef(m_id);
     }
 
 private:
