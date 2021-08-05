@@ -149,28 +149,6 @@ private:
     Task_base* m_locker;
 };
 
-class RWLocker {
-public:
-    RWLocker()
-        : m_count(0)
-    {
-    }
-
-public:
-    void rdlock();
-    void wrlock();
-    void rdunlock();
-    void wrunlock();
-    bool tryrdlock();
-    bool trywrlock();
-
-private:
-    int32_t m_count;
-    Locker m_reader;
-    Locker m_writer;
-    List<Task_base> m_blocks;
-};
-
 class autoLocker {
 public:
     autoLocker(Locker& l)
@@ -217,6 +195,29 @@ private:
     bool m_set;
     spinlock m_lock;
     List<Task_base> m_blocks;
+};
+
+class RWLocker {
+public:
+    RWLocker()
+        : m_count(0)
+    {
+        m_ready.set();
+    }
+
+public:
+    void rdlock();
+    void wrlock();
+    void rdunlock();
+    void wrunlock();
+    bool tryrdlock();
+    bool trywrlock();
+
+private:
+    int32_t m_count;
+    spinlock m_reader;
+    Locker m_writer;
+    Event m_ready;
 };
 
 class Semaphore {

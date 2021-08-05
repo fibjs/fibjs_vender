@@ -17,12 +17,14 @@ namespace exlib {
 
 void RWLocker::rdlock()
 {
+    m_writer.lock();
     m_reader.lock();
 
     if (++m_count == 1)
-        m_writer.lock();
+        m_ready.reset();
 
     m_reader.unlock();
+    m_writer.unlock();
 }
 
 void RWLocker::rdunlock()
@@ -30,24 +32,23 @@ void RWLocker::rdunlock()
     m_reader.lock();
 
     if (--m_count == 0)
-        m_writer.unlock();
+        m_ready.set();
 
     m_reader.unlock();
 }
 
 bool RWLocker::tryrdlock()
 {
+    if (!m_writer.trylock())
+        return false;
+
     m_reader.lock();
 
     if (++m_count == 1)
-        if (!m_writer.trylock()) {
-            m_count--;
-            m_reader.unlock();
-
-            return false;
-        }
+        m_ready.reset();
 
     m_reader.unlock();
+    m_writer.unlock();
 
     return true;
 }
@@ -55,6 +56,7 @@ bool RWLocker::tryrdlock()
 void RWLocker::wrlock()
 {
     m_writer.lock();
+    m_ready.wait();
 }
 
 void RWLocker::wrunlock()
@@ -64,6 +66,14 @@ void RWLocker::wrunlock()
 
 bool RWLocker::trywrlock()
 {
-    return m_writer.trylock();
+    if (!m_writer.trylock())
+        return false;
+
+    if (!m_ready.isSet()) {
+        m_writer.unlock();
+        return false;
+    }
+
+    return true;
 }
 }
