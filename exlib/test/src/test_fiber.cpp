@@ -23,3 +23,14 @@ TEST(exlib_fiber, counter_on_fiber)
 
     EXPECT_EQ(s_fiber_noop_cnt, kFiberMax);
 }
+
+exlib::fiber_local<int> s_tls_value;
+
+TEST(exlib_fiber, tls)
+{
+    EXPECT_EQ(s_tls_value, 0);
+    s_tls_value = 100;
+    EXPECT_EQ(s_tls_value, 100);
+    int* p = &s_tls_value;
+    EXPECT_EQ(*p, 100);
+}

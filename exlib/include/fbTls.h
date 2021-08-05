@@ -36,7 +36,7 @@ public:
         tlsPut(m_id, v);
     }
 
-    operator T()
+    operator T() const
     {
         void* v = tlsGet(m_id);
         return *(T*)&v;
@@ -50,5 +50,17 @@ public:
 private:
     int32_t m_id;
 };
+
+template <typename T>
+bool operator==(const T& lhs, const exlib::fiber_local<T>& rhs)
+{
+    return lhs == (T)rhs;
+}
+
+template <typename T>
+bool operator==(const exlib::fiber_local<T>& lhs, const T& rhs)
+{
+    return rhs == (T)lhs;
+}
 
 }
