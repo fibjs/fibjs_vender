@@ -1636,7 +1636,7 @@ NativeModuleModificationScope::~NativeModuleModificationScope() {
 }
 
 namespace {
-thread_local WasmCodeRefScope* current_code_refs_scope = nullptr;
+exlib::fiber_local<WasmCodeRefScope*> current_code_refs_scope = nullptr;
 }  // namespace
 
 WasmCodeRefScope::WasmCodeRefScope()

@@ -24,7 +24,7 @@ namespace v8 {
 
 namespace base {
 
-#define V8_STACK_SIZE 64
+#define V8_STACK_SIZE 128
 
     class Thread::PlatformData {
     public:

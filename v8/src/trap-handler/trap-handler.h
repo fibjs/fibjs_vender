@@ -11,6 +11,7 @@
 #include "src/base/build_config.h"
 #include "src/common/globals.h"
 #include "src/flags/flags.h"
+#include <exlib/include/fbTls.h>
 
 namespace v8 {
 namespace internal {
@@ -74,7 +75,7 @@ inline bool IsTrapHandlerEnabled() {
   return g_is_trap_handler_enabled;
 }
 
-extern THREAD_LOCAL int g_thread_in_wasm_code;
+extern exlib::fiber_local<int> g_thread_in_wasm_code;
 
 // Return the address of the thread-local {g_thread_in_wasm_code} variable. This
 // pointer can be accessed and modified as long as the thread calling this
