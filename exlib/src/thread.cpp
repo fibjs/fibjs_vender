@@ -22,7 +22,11 @@
 
 namespace exlib {
 
-OSTls th_current;
+#if defined(_MSC_VER)
+__declspec(thread) void* th_current;
+#else
+__thread void* th_current;
+#endif
 
 void* OSThread::Entry(void* arg)
 {
