@@ -6,100 +6,14 @@
 #define STORAGE_LEVELDB_PORT_PORT_H_
 
 #include <string.h>
-#include <stdio.h>
-#include <utils.h>
-#include <thread.h>
-#include <snappy.h>
 
-namespace leveldb
-{
-namespace port
-{
-
-#if defined(arm) || defined(arm64)
-static const bool kLittleEndian = true;
-#else
-static const bool kLittleEndian = false;
+// Include the appropriate platform specific file below.  If you are
+// porting to a new platform, see "port_example.h" for documentation
+// of what the new port_<platform>.h file must provide.
+#if defined(LEVELDB_PLATFORM_POSIX) || defined(LEVELDB_PLATFORM_WINDOWS)
+#include "port/port_stdcxx.h"
+#elif defined(LEVELDB_PLATFORM_CHROMIUM)
+#include "port/port_chromium.h"
 #endif
-
-#ifdef WIN32
-#define snprintf _snprintf
-#else
-#define fread_unlocked fread
-#define fwrite_unlocked fwrite
-#define fflush_unlocked fflush
-#define fdatasync fsync
-#endif
-
-typedef exlib::OSMutex Mutex;
-typedef exlib::OSCondVar CondVar;
-
-typedef exlib::atomic OnceType;
-#define LEVELDB_ONCE_INIT 0
-inline void InitOnce(port::OnceType *once, void (*initializer)())
-{
-    exlib::InitOnce(*once, initializer);
-}
-
-class AtomicPointer
-{
-private:
-    void *rep_;
-public:
-    AtomicPointer() { }
-    explicit AtomicPointer(void *p) : rep_(p) {}
-    inline void *NoBarrier_Load() const
-    {
-        return rep_;
-    }
-    inline void NoBarrier_Store(void *v)
-    {
-        rep_ = v;
-    }
-    inline void *Acquire_Load() const
-    {
-        void *result = rep_;
-        std::atomic_thread_fence(std::memory_order_seq_cst);
-        return result;
-    }
-    inline void Release_Store(void *v)
-    {
-        std::atomic_thread_fence(std::memory_order_seq_cst);
-        rep_ = v;
-    }
-};
-
-inline bool Snappy_Compress(const char *input, size_t length,
-                            ::std::string *output)
-{
-    output->resize(snappy::MaxCompressedLength(length));
-    size_t outlen;
-    snappy::RawCompress(input, length, &(*output)[0], &outlen);
-    output->resize(outlen);
-    return true;
-}
-
-inline bool Snappy_GetUncompressedLength(const char *input, size_t length,
-        size_t *result)
-{
-    return snappy::GetUncompressedLength(input, length, result);
-}
-
-inline bool Snappy_Uncompress(const char *input, size_t length,
-                              char *output)
-{
-    return snappy::RawUncompress(input, length, output);
-}
-
-inline bool GetHeapProfile(void (*func)(void *, const char *, int), void *arg)
-{
-    return false;
-}
-
-}  // namespace port
-}  // namespace leveldb
-
-
-
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_H_
