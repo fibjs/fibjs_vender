@@ -148,16 +148,22 @@ public:
             Sleeping* p;
             Canceling* p1;
             std::multimap<int64_t, Sleeping*>::iterator e;
+            List<Sleeping> _acSleep;
+            List<Canceling> _acCancel;
 
             wait();
 
             m_tm = _hrtime();
 
-            while ((p = m_acSleep.getHead()) != NULL) {
-                m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
-            }
+            m_lock.lock();
+            m_acSleep.getList(_acSleep);
+            m_acCancel.getList(_acCancel);
+            m_lock.unlock();
 
-            while ((p1 = m_acCancel.getHead()) != NULL) {
+            while ((p = _acSleep.getHead()) != NULL)
+                m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
+
+            while ((p1 = _acCancel.getHead()) != NULL) {
                 e = m_tms.begin();
                 while (e != m_tms.end()) {
                     if (e->second->m_now == p1->m_now) {
@@ -189,21 +195,28 @@ public:
 
     void post(Task_base* now, int32_t ms)
     {
+        m_lock.lock();
         m_acSleep.putTail(new Sleeping(now, ms * NANOS_PER_MICRO));
+        m_lock.unlock();
+
         m_sem.Post();
     }
 
     void cancel(Task_base* now)
     {
+        m_lock.lock();
         m_acCancel.putTail(new Canceling(now));
+        m_lock.unlock();
+
         m_sem.Post();
     }
 
 private:
     OSSemaphore m_sem;
     int64_t m_tm;
-    LockedList<Sleeping> m_acSleep;
-    LockedList<Canceling> m_acCancel;
+    spinlock m_lock;
+    List<Sleeping> m_acSleep;
+    List<Canceling> m_acCancel;
     std::multimap<int64_t, Sleeping*> m_tms;
 
     friend class Sleeping;
