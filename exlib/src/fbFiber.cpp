@@ -41,17 +41,6 @@ public:
     int64_t m_tm;
 };
 
-class Canceling : public linkitem {
-public:
-    Canceling(Task_base* now)
-        : m_now(now)
-    {
-    }
-
-public:
-    Task_base* m_now;
-};
-
 Fiber* Fiber::current()
 {
     Service* pService = Service::current();
@@ -146,38 +135,32 @@ public:
     {
         while (1) {
             Sleeping* p;
-            Canceling* p1;
             std::multimap<int64_t, Sleeping*>::iterator e;
             List<Sleeping> _acSleep;
-            List<Canceling> _acCancel;
 
             wait();
 
             m_tm = _hrtime();
-
-            m_lock.lock();
             m_acSleep.getList(_acSleep);
-            m_acCancel.getList(_acCancel);
-            m_lock.unlock();
 
             while ((p = _acSleep.getHead()) != NULL)
-                m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
+                if (p->m_tm >= 0)
+                    m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
+                else {
+                    e = m_tms.begin();
+                    while (e != m_tms.end()) {
+                        if (e->second->m_now == p->m_now) {
+                            e->second->m_now->resume();
+                            delete e->second;
+                            m_tms.erase(e);
+                            break;
+                        }
 
-            while ((p1 = _acCancel.getHead()) != NULL) {
-                e = m_tms.begin();
-                while (e != m_tms.end()) {
-                    if (e->second->m_now == p1->m_now) {
-                        e->second->m_now->resume();
-                        delete e->second;
-                        m_tms.erase(e);
-                        break;
+                        e++;
                     }
 
-                    e++;
+                    delete p;
                 }
-
-                delete p1;
-            }
 
             while (1) {
                 e = m_tms.begin();
@@ -195,28 +178,20 @@ public:
 
     void post(Task_base* now, int32_t ms)
     {
-        m_lock.lock();
         m_acSleep.putTail(new Sleeping(now, ms * NANOS_PER_MICRO));
-        m_lock.unlock();
-
         m_sem.Post();
     }
 
     void cancel(Task_base* now)
     {
-        m_lock.lock();
-        m_acCancel.putTail(new Canceling(now));
-        m_lock.unlock();
-
+        m_acSleep.putTail(new Sleeping(now, -1));
         m_sem.Post();
     }
 
 private:
     OSSemaphore m_sem;
     int64_t m_tm;
-    spinlock m_lock;
-    List<Sleeping> m_acSleep;
-    List<Canceling> m_acCancel;
+    LockedList<Sleeping> m_acSleep;
     std::multimap<int64_t, Sleeping*> m_tms;
 
     friend class Sleeping;
