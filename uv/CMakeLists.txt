@@ -117,6 +117,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "DragonFly|FreeBSD|NetBSD|OpenBSD")
   list(APPEND uv_sources src/unix/posix-hrtime.c src/unix/bsd-proctitle.c)
 endif()
 
+if(CMAKE_SYSTEM_NAME MATCHES "Android|Linux")
+  list(APPEND uv_sources src/unix/epoll.c)
+endif()
+
 if(APPLE OR CMAKE_SYSTEM_NAME MATCHES "DragonFly|FreeBSD|NetBSD|OpenBSD")
   list(APPEND uv_sources src/unix/bsd-ifaddrs.c src/unix/kqueue.c)
 endif()
