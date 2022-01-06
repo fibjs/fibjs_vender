@@ -23,6 +23,7 @@ set(libs
     uuid
     exif
     mbedtls
+    secp256k1
     v8
     jssdk
     unzip
