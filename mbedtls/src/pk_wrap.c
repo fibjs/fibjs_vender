@@ -78,6 +78,8 @@
 #define mbedtls_free       free
 #endif
 
+#include <secp256k1/include/secp256k1.h>
+
 #include <limits.h>
 #include <stdint.h>
 
@@ -258,11 +260,67 @@ static int ecdsa_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
                    unsigned char *sig, size_t *sig_len,
                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng );
 
+
+#define KEYSIZE_256 32
+
+inline secp256k1_context* secp256k1_ctx( )
+{
+    static secp256k1_context* _ctx = NULL;
+
+    if(!_ctx)
+        _ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
+
+    return _ctx;
+}
+
+#define fix_hash(hash, hash_len, buffer) \
+    if (hash_len > KEYSIZE_256) { \
+        hash += hash_len - KEYSIZE_256; \
+        hash_len = KEYSIZE_256; \
+    } else if (hash_len < KEYSIZE_256) { \
+        memset(buffer, 0, KEYSIZE_256 - hash_len); \
+        memcpy(buffer + KEYSIZE_256 - hash_len, hash, hash_len); \
+        hash = buffer; \
+        hash_len = KEYSIZE_256; \
+    }
+
+inline void mpi_write_key(const mbedtls_mpi* X, unsigned char* buf)
+{
+    mbedtls_mpi_write_binary(X, buf, KEYSIZE_256);
+    for (int32_t i = 0; i < KEYSIZE_256 / 2; i++) {
+        char x = buf[i];
+        buf[i] = buf[KEYSIZE_256 - i - 1];
+        buf[KEYSIZE_256 - i - 1] = x;
+    }
+}
+
 static int eckey_verify_wrap( void *ctx, mbedtls_md_type_t md_alg,
                        const unsigned char *hash, size_t hash_len,
                        const unsigned char *sig, size_t sig_len )
 {
     int ret;
+    ((void)md_alg);
+
+    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
+    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
+        unsigned char buffer[KEYSIZE_256];
+        secp256k1_pubkey pubkey;
+        secp256k1_ecdsa_signature signature;
+
+        fix_hash(hash, hash_len, buffer);
+        mpi_write_key(&ec_ctx->Q.X, pubkey.data);
+        mpi_write_key(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256);
+
+        if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx(), &signature, sig, sig_len))
+            return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
+
+        if (!secp256k1_ecdsa_verify(secp256k1_ctx(), &signature, hash, &pubkey))
+            return MBEDTLS_ERR_ECP_VERIFY_FAILED;
+
+        return 0;
+    }
+
+
     mbedtls_ecdsa_context ecdsa;
 
     mbedtls_ecdsa_init( &ecdsa );
@@ -281,6 +339,28 @@ static int eckey_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
 {
     int ret;
+
+    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
+    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
+
+        if (ec_ctx->grp.id != MBEDTLS_ECP_DP_SECP256K1)
+            return (mbedtls_ecdsa_write_signature(ec_ctx,
+                md_alg, hash, hash_len, sig, sig_len, f_rng, p_rng));
+
+        unsigned char buffer[KEYSIZE_256];
+        unsigned char key[KEYSIZE_256];
+        secp256k1_ecdsa_signature signature;
+
+        fix_hash(hash, hash_len, buffer);
+        mbedtls_mpi_write_binary(&ec_ctx->d, key, KEYSIZE_256);
+
+        secp256k1_ecdsa_sign(secp256k1_ctx(), &signature, hash, key, NULL, NULL);
+        secp256k1_ecdsa_signature_serialize_der(secp256k1_ctx(), sig, sig_len, &signature);
+
+        return 0;
+    }
+
+
     mbedtls_ecdsa_context ecdsa;
 
     mbedtls_ecdsa_init( &ecdsa );
