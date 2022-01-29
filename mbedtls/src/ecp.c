@@ -2349,6 +2349,7 @@ int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
 
         mpi_read_key(&Q->X, pubkey.data);
         mpi_read_key(&Q->Y, pubkey.data + KEYSIZE_256);
+        mbedtls_mpi_lset(&Q->Z, 1);
 
         return 0;
     }
