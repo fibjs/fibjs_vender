@@ -106,6 +106,8 @@
 #endif
 #endif /* MBEDTLS_ECP_NO_INTERNAL_RNG */
 
+#include "secp256k1_api.h"
+
 #if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
     !defined(inline) && !defined(__cplusplus)
 #define inline __inline
@@ -2336,6 +2338,21 @@ int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
     int ret;
 
     MBEDTLS_MPI_CHK( mbedtls_ecp_gen_privkey( grp, d, f_rng, p_rng ) );
+
+    if (grp->id == MBEDTLS_ECP_DP_SECP256K1) {
+        secp256k1_pubkey pubkey;
+        unsigned char key[KEYSIZE_256];
+
+        mbedtls_mpi_write_binary(d, key, KEYSIZE_256);
+
+        secp256k1_ec_pubkey_create(secp256k1_ctx(), &pubkey, key);
+
+        mpi_read_key(&Q->X, pubkey.data);
+        mpi_read_key(&Q->Y, pubkey.data + KEYSIZE_256);
+
+        return 0;
+    }
+
     MBEDTLS_MPI_CHK( mbedtls_ecp_mul( grp, Q, d, G, f_rng, p_rng ) );
 
 cleanup:

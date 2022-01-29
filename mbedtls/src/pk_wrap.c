@@ -78,7 +78,7 @@
 #define mbedtls_free       free
 #endif
 
-#include <secp256k1/include/secp256k1.h>
+#include "secp256k1_api.h"
 
 #include <limits.h>
 #include <stdint.h>
@@ -259,40 +259,6 @@ static int ecdsa_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
                    const unsigned char *hash, size_t hash_len,
                    unsigned char *sig, size_t *sig_len,
                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng );
-
-
-#define KEYSIZE_256 32
-
-inline secp256k1_context* secp256k1_ctx( )
-{
-    static secp256k1_context* _ctx = NULL;
-
-    if(!_ctx)
-        _ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
-
-    return _ctx;
-}
-
-#define fix_hash(hash, hash_len, buffer) \
-    if (hash_len > KEYSIZE_256) { \
-        hash += hash_len - KEYSIZE_256; \
-        hash_len = KEYSIZE_256; \
-    } else if (hash_len < KEYSIZE_256) { \
-        memset(buffer, 0, KEYSIZE_256 - hash_len); \
-        memcpy(buffer + KEYSIZE_256 - hash_len, hash, hash_len); \
-        hash = buffer; \
-        hash_len = KEYSIZE_256; \
-    }
-
-inline void mpi_write_key(const mbedtls_mpi* X, unsigned char* buf)
-{
-    mbedtls_mpi_write_binary(X, buf, KEYSIZE_256);
-    for (int32_t i = 0; i < KEYSIZE_256 / 2; i++) {
-        char x = buf[i];
-        buf[i] = buf[KEYSIZE_256 - i - 1];
-        buf[KEYSIZE_256 - i - 1] = x;
-    }
-}
 
 static int eckey_verify_wrap( void *ctx, mbedtls_md_type_t md_alg,
                        const unsigned char *hash, size_t hash_len,
