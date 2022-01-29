@@ -61,6 +61,8 @@
 
 #include "mbedtls/ecdh.h"
 
+#include "secp256k1_api.h"
+
 #include <string.h>
 
 #if !defined(MBEDTLS_ECDH_GEN_PUBLIC_ALT)
@@ -75,6 +77,15 @@ int mbedtls_ecdh_gen_public( mbedtls_ecp_group *grp, mbedtls_mpi *d, mbedtls_ecp
 }
 #endif /* MBEDTLS_ECDH_GEN_PUBLIC_ALT */
 
+static int ecdh_hash_function_X(unsigned char* output, const unsigned char* x32, const unsigned char* y32,
+    void* data)
+{
+    (void)data;
+    memcpy(output, x32, KEYSIZE_256);
+
+    return 1;
+}
+
 #if !defined(MBEDTLS_ECDH_COMPUTE_SHARED_ALT)
 /*
  * Compute shared secret (SEC1 3.3.1)
@@ -85,6 +96,22 @@ int mbedtls_ecdh_compute_shared( mbedtls_ecp_group *grp, mbedtls_mpi *z,
                          void *p_rng )
 {
     int ret;
+
+    if (grp->id == MBEDTLS_ECP_DP_SECP256K1) {
+        unsigned char key[KEYSIZE_256];
+        secp256k1_pubkey pubkey;
+        unsigned char buffer[KEYSIZE_256];
+
+        mbedtls_mpi_write_binary(d, key, KEYSIZE_256);
+        mpi_write_key(&Q->X, pubkey.data);
+        mpi_write_key(&Q->Y, pubkey.data + KEYSIZE_256);
+
+        ret = secp256k1_ecdh(secp256k1_ctx(), buffer, &pubkey, key, ecdh_hash_function_X, NULL);
+        mbedtls_mpi_read_binary(z, buffer, KEYSIZE_256);
+
+        return 0;
+    }
+
     mbedtls_ecp_point P;
 
     mbedtls_ecp_point_init( &P );
