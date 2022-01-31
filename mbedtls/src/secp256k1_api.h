@@ -15,14 +15,10 @@ static secp256k1_context* secp256k1_ctx()
 }
 
 #define fix_hash(hash, hash_len, buffer)                         \
-    if (hash_len > KEYSIZE_256) {                                \
-        hash += hash_len - KEYSIZE_256;                          \
-        hash_len = KEYSIZE_256;                                  \
-    } else if (hash_len < KEYSIZE_256) {                         \
+    if (hash_len < KEYSIZE_256) {                                \
         memset(buffer, 0, KEYSIZE_256 - hash_len);               \
         memcpy(buffer + KEYSIZE_256 - hash_len, hash, hash_len); \
         hash = buffer;                                           \
-        hash_len = KEYSIZE_256;                                  \
     }
 
 static void mpi_write_key(const mbedtls_mpi* X, unsigned char* buf)

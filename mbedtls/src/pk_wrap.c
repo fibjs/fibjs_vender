@@ -78,8 +78,6 @@
 #define mbedtls_free       free
 #endif
 
-#include "secp256k1_api.h"
-
 #include <limits.h>
 #include <stdint.h>
 
@@ -265,28 +263,6 @@ static int eckey_verify_wrap( void *ctx, mbedtls_md_type_t md_alg,
                        const unsigned char *sig, size_t sig_len )
 {
     int ret;
-    ((void)md_alg);
-
-    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
-    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
-        unsigned char buffer[KEYSIZE_256];
-        secp256k1_pubkey pubkey;
-        secp256k1_ecdsa_signature signature;
-
-        fix_hash(hash, hash_len, buffer);
-        mpi_write_key(&ec_ctx->Q.X, pubkey.data);
-        mpi_write_key(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256);
-
-        if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx(), &signature, sig, sig_len))
-            return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
-
-        if (!secp256k1_ecdsa_verify(secp256k1_ctx(), &signature, hash, &pubkey))
-            return MBEDTLS_ERR_ECP_VERIFY_FAILED;
-
-        return 0;
-    }
-
-
     mbedtls_ecdsa_context ecdsa;
 
     mbedtls_ecdsa_init( &ecdsa );
@@ -305,28 +281,6 @@ static int eckey_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
 {
     int ret;
-
-    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
-    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
-
-        if (ec_ctx->grp.id != MBEDTLS_ECP_DP_SECP256K1)
-            return (mbedtls_ecdsa_write_signature(ec_ctx,
-                md_alg, hash, hash_len, sig, sig_len, f_rng, p_rng));
-
-        unsigned char buffer[KEYSIZE_256];
-        unsigned char key[KEYSIZE_256];
-        secp256k1_ecdsa_signature signature;
-
-        fix_hash(hash, hash_len, buffer);
-        mbedtls_mpi_write_binary(&ec_ctx->d, key, KEYSIZE_256);
-
-        secp256k1_ecdsa_sign(secp256k1_ctx(), &signature, hash, key, NULL, NULL);
-        secp256k1_ecdsa_signature_serialize_der(secp256k1_ctx(), sig, sig_len, &signature);
-
-        return 0;
-    }
-
-
     mbedtls_ecdsa_context ecdsa;
 
     mbedtls_ecdsa_init( &ecdsa );

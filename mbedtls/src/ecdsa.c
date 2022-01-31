@@ -67,6 +67,8 @@
 #include "mbedtls/hmac_drbg.h"
 #endif
 
+#include "secp256k1_api.h"
+
 /*
  * Derive a suitable integer for group grp from a buffer of length len
  * SEC1 4.1.3 step 5 aka SEC1 4.1.4 step 3
@@ -430,6 +432,23 @@ int mbedtls_ecdsa_write_signature( mbedtls_ecdsa_context *ctx, mbedtls_md_type_t
                            int (*f_rng)(void *, unsigned char *, size_t),
                            void *p_rng )
 {
+    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
+    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
+        unsigned char buffer[KEYSIZE_256];
+        unsigned char key[KEYSIZE_256];
+        secp256k1_ecdsa_signature signature;
+
+        fix_hash(hash, hlen, buffer);
+        mbedtls_mpi_write_binary(&ec_ctx->d, key, KEYSIZE_256);
+
+        secp256k1_ecdsa_sign(secp256k1_ctx(), &signature, hash, key, NULL, NULL);
+
+        *slen = 80;
+        secp256k1_ecdsa_signature_serialize_der(secp256k1_ctx(), sig, slen, &signature);
+
+        return 0;
+    }
+
     int ret;
     mbedtls_mpi r, s;
 
@@ -475,6 +494,27 @@ int mbedtls_ecdsa_read_signature( mbedtls_ecdsa_context *ctx,
                           const unsigned char *hash, size_t hlen,
                           const unsigned char *sig, size_t slen )
 {
+    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
+    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
+        unsigned char buffer[KEYSIZE_256];
+        secp256k1_pubkey pubkey;
+        secp256k1_ecdsa_signature signature;
+
+        fix_hash(hash, hlen, buffer);
+
+        mpi_write_key(&ec_ctx->Q.X, pubkey.data);
+        mpi_write_key(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256);
+
+        if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx(), &signature, sig, slen))
+            return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
+
+        secp256k1_ecdsa_signature_normalize(secp256k1_ctx(), &signature, &signature);
+        if (!secp256k1_ecdsa_verify(secp256k1_ctx(), &signature, hash, &pubkey))
+            return MBEDTLS_ERR_ECP_VERIFY_FAILED;
+
+        return 0;
+    }
+
     int ret;
     unsigned char *p = (unsigned char *) sig;
     const unsigned char *end = sig + slen;
