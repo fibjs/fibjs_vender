@@ -441,10 +441,10 @@ int mbedtls_ecdsa_write_signature( mbedtls_ecdsa_context *ctx, mbedtls_md_type_t
         fix_hash(hash, hlen, buffer);
         mbedtls_mpi_write_binary(&ec_ctx->d, key, KEYSIZE_256);
 
-        secp256k1_ecdsa_sign(secp256k1_ctx(), &signature, hash, key, NULL, NULL);
+        secp256k1_ecdsa_sign(secp256k1_ctx, &signature, hash, key, NULL, NULL);
 
         *slen = 80;
-        secp256k1_ecdsa_signature_serialize_der(secp256k1_ctx(), sig, slen, &signature);
+        secp256k1_ecdsa_signature_serialize_der(secp256k1_ctx, sig, slen, &signature);
 
         return 0;
     }
@@ -505,11 +505,11 @@ int mbedtls_ecdsa_read_signature( mbedtls_ecdsa_context *ctx,
         mpi_write_key(&ec_ctx->Q.X, pubkey.data);
         mpi_write_key(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256);
 
-        if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx(), &signature, sig, slen))
+        if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx, &signature, sig, slen))
             return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
 
-        secp256k1_ecdsa_signature_normalize(secp256k1_ctx(), &signature, &signature);
-        if (!secp256k1_ecdsa_verify(secp256k1_ctx(), &signature, hash, &pubkey))
+        secp256k1_ecdsa_signature_normalize(secp256k1_ctx, &signature, &signature);
+        if (!secp256k1_ecdsa_verify(secp256k1_ctx, &signature, hash, &pubkey))
             return MBEDTLS_ERR_ECP_VERIFY_FAILED;
 
         return 0;

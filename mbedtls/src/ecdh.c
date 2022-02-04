@@ -106,7 +106,7 @@ int mbedtls_ecdh_compute_shared( mbedtls_ecp_group *grp, mbedtls_mpi *z,
         mpi_write_key(&Q->X, pubkey.data);
         mpi_write_key(&Q->Y, pubkey.data + KEYSIZE_256);
 
-        ret = secp256k1_ecdh(secp256k1_ctx(), buffer, &pubkey, key, ecdh_hash_function_X, NULL);
+        ret = secp256k1_ecdh(secp256k1_ctx, buffer, &pubkey, key, ecdh_hash_function_X, NULL);
         mbedtls_mpi_read_binary(z, buffer, KEYSIZE_256);
 
         return 0;

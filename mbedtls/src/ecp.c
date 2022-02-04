@@ -395,6 +395,9 @@ typedef enum
  */
 static const mbedtls_ecp_curve_info ecp_supported_curves[] =
 {
+#if defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED)
+    { MBEDTLS_ECP_DP_SECP256K1,    22,     256,    "secp256k1"         },
+#endif
 #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
     { MBEDTLS_ECP_DP_SECP521R1,    25,     521,    "secp521r1"         },
 #endif
@@ -409,9 +412,6 @@ static const mbedtls_ecp_curve_info ecp_supported_curves[] =
 #endif
 #if defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED)
     { MBEDTLS_ECP_DP_SECP256R1,    23,     256,    "secp256r1"         },
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED)
-    { MBEDTLS_ECP_DP_SECP256K1,    22,     256,    "secp256k1"         },
 #endif
 #if defined(MBEDTLS_ECP_DP_BP256R1_ENABLED)
     { MBEDTLS_ECP_DP_BP256R1,      26,     256,    "brainpoolP256r1"   },
@@ -2345,7 +2345,7 @@ int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
 
         mbedtls_mpi_write_binary(d, key, KEYSIZE_256);
 
-        secp256k1_ec_pubkey_create(secp256k1_ctx(), &pubkey, key);
+        secp256k1_ec_pubkey_create(secp256k1_ctx, &pubkey, key);
 
         mpi_read_key(&Q->X, pubkey.data);
         mpi_read_key(&Q->Y, pubkey.data + KEYSIZE_256);

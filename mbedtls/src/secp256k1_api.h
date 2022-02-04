@@ -1,18 +1,15 @@
 
+#include "mbedtls/bignum.h"
 #include <secp256k1/include/secp256k1.h>
 #include <secp256k1/include/secp256k1_ecdh.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define KEYSIZE_256 32
 
-static secp256k1_context* secp256k1_ctx()
-{
-    static secp256k1_context* _ctx = NULL;
-
-    if (!_ctx)
-        _ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
-
-    return _ctx;
-}
+extern secp256k1_context* secp256k1_ctx;
 
 #define fix_hash(hash, hash_len, buffer)                         \
     if (hash_len < KEYSIZE_256) {                                \
@@ -21,22 +18,9 @@ static secp256k1_context* secp256k1_ctx()
         hash = buffer;                                           \
     }
 
-static void mpi_write_key(const mbedtls_mpi* X, unsigned char* buf)
-{
-    mbedtls_mpi_write_binary(X, buf, KEYSIZE_256);
-    for (int32_t i = 0; i < KEYSIZE_256 / 2; i++) {
-        char x = buf[i];
-        buf[i] = buf[KEYSIZE_256 - i - 1];
-        buf[KEYSIZE_256 - i - 1] = x;
-    }
+void mpi_write_key(const mbedtls_mpi* X, unsigned char* buf);
+void mpi_read_key(mbedtls_mpi* X, unsigned char* buf);
+
+#ifdef __cplusplus
 }
-
-static void mpi_read_key(mbedtls_mpi* X, unsigned char* buf)
-{
-    unsigned char buffer[KEYSIZE_256];
-
-    for (int32_t i = 0; i < KEYSIZE_256; i++)
-        buffer[i] = buf[KEYSIZE_256 - i - 1];
-
-    mbedtls_mpi_read_binary(X, buffer, KEYSIZE_256);
-}
+#endif
