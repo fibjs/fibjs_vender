@@ -1991,6 +1991,21 @@ int mbedtls_ecp_mul( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
              const mbedtls_mpi *m, const mbedtls_ecp_point *P,
              int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
 {
+    if (grp->id == MBEDTLS_ECP_DP_SECP256K1) {
+        secp256k1_pubkey pubkey;
+        unsigned char key[KEYSIZE_256];
+
+        mbedtls_mpi_write_binary(m, key, KEYSIZE_256);
+
+        secp256k1_ec_pubkey_create(secp256k1_ctx, &pubkey, key);
+
+        mpi_read_key(&R->X, pubkey.data);
+        mpi_read_key(&R->Y, pubkey.data + KEYSIZE_256);
+        mbedtls_mpi_lset(&R->Z, 1);
+
+        return 0;
+    }
+
     int ret = MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
 #if defined(MBEDTLS_ECP_INTERNAL_ALT)
     char is_grp_capable = 0;
@@ -2338,22 +2353,6 @@ int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
     int ret;
 
     MBEDTLS_MPI_CHK( mbedtls_ecp_gen_privkey( grp, d, f_rng, p_rng ) );
-
-    if (grp->id == MBEDTLS_ECP_DP_SECP256K1) {
-        secp256k1_pubkey pubkey;
-        unsigned char key[KEYSIZE_256];
-
-        mbedtls_mpi_write_binary(d, key, KEYSIZE_256);
-
-        secp256k1_ec_pubkey_create(secp256k1_ctx, &pubkey, key);
-
-        mpi_read_key(&Q->X, pubkey.data);
-        mpi_read_key(&Q->Y, pubkey.data + KEYSIZE_256);
-        mbedtls_mpi_lset(&Q->Z, 1);
-
-        return 0;
-    }
-
     MBEDTLS_MPI_CHK( mbedtls_ecp_mul( grp, Q, d, G, f_rng, p_rng ) );
 
 cleanup:
