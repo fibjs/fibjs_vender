@@ -1984,6 +1984,16 @@ cleanup:
 
 #endif /* ECP_MONTGOMERY */
 
+static int ecdh_hash_function_XY(unsigned char* output, const unsigned char* x32, const unsigned char* y32,
+    void* data)
+{
+    (void)data;
+    memcpy(output, x32, KEYSIZE_256);
+    memcpy(output + KEYSIZE_256, y32, KEYSIZE_256);
+
+    return 1;
+}
+
 /*
  * Multiplication R = m * P
  */
@@ -1991,16 +2001,20 @@ int mbedtls_ecp_mul( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
              const mbedtls_mpi *m, const mbedtls_ecp_point *P,
              int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
 {
-    if (grp->id == MBEDTLS_ECP_DP_SECP256K1) {
-        secp256k1_pubkey pubkey;
+    if ( grp->id == MBEDTLS_ECP_DP_SECP256K1 ) {
         unsigned char key[KEYSIZE_256];
+        secp256k1_pubkey pubkey;
+        unsigned char buffer[KEYSIZE_256 * 2];
 
         mbedtls_mpi_write_binary(m, key, KEYSIZE_256);
 
-        secp256k1_ec_pubkey_create(secp256k1_ctx, &pubkey, key);
+        mpi_write_key(&P->X, pubkey.data);
+        mpi_write_key(&P->Y, pubkey.data + KEYSIZE_256);
 
-        mpi_read_key(&R->X, pubkey.data);
-        mpi_read_key(&R->Y, pubkey.data + KEYSIZE_256);
+        secp256k1_ecdh(secp256k1_ctx, buffer, &pubkey, key, ecdh_hash_function_XY, NULL);
+
+        mbedtls_mpi_read_binary(&R->X, buffer, KEYSIZE_256);
+        mbedtls_mpi_read_binary(&R->Y, buffer + KEYSIZE_256, KEYSIZE_256);
         mbedtls_mpi_lset(&R->Z, 1);
 
         return 0;
