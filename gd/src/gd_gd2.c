@@ -47,16 +47,18 @@
  *  offset - 1 dword
  *  size   - 1 dword
  *
- * There are x_chunk_count * y_chunk_count chunk headers. 
+ * There are x_chunk_count * y_chunk_count chunk headers.
  *
  * Truecolor image color header:
  *  truecolor   - 1 byte (always "\001")
- *  transparent - 1 dword (ARGB color)
+ *  transparent - 1 dword (ARGB color); "\377\377\377\377" means that no
+ *				  transparent color is set
  *
  * Palette image color header:
  *  truecolor   - 1 byte (always "\0")
  *  count       - 1 word (the number of used palette colors)
- *  transparent - 1 dword (ARGB color)
+ *  transparent - 1 dword (palette index); "\377\377\377\377" means that no
+ *				  transparent color is set
  *  palette     - 256 dwords (RGBA colors)
  *
  * Chunk structure:
@@ -74,6 +76,7 @@
 
 /* 2.0.29: no more errno.h, makes windows happy */
 #include <math.h>
+#include <limits.h>
 #include <string.h>
 #include "gd.h"
 #include "gd_errors.h"
@@ -82,7 +85,7 @@
 /* 2.03: gd2 is no longer mandatory */
 /* JCE - test after including gd.h so that HAVE_LIBZ can be set in
  * a config.h file included by gd.h */
-#ifdef HAVE_LIBZ
+#if defined(HAVE_LIBZ) && ENABLE_GD_FORMATS
 #include <zlib.h>
 
 #define TRUE 1
@@ -209,7 +212,7 @@ _gd2GetHeader (gdIOCtxPtr in, int *sx, int *sy,
 	GD2_DBG (printf ("%d Chunks vertically\n", *ncy));
 
 	if (gd2_compressed (*fmt)) {
-		if (*ncx <= 0 || *ncy <= 0 || *ncx > INT_MAX / *ncy) {
+		if (overflow2(*ncx, *ncy)) {
 			GD2_DBG(printf ("Illegal chunk counts: %d * %d\n", *ncx, *ncy));
 			goto fail1;
 		}
@@ -235,7 +238,7 @@ _gd2GetHeader (gdIOCtxPtr in, int *sx, int *sy,
 			if (gdGetInt (&cidx[i].size, in) != 1) {
 				goto fail2;
 			};
-			if (cidx[i].offset < 0 || cidx[i].size < 0)
+			if (cidx[i].offset < 0 || cidx[i].size < 0 || cidx[i].size == INT_MAX)
 				goto fail2;
 		};
 		*chunkIdx = cidx;
@@ -404,7 +407,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ptr (int size, void *data)
   Function: gdImageCreateFromGd2Ctx
 
   Reads in a GD2 image via a <gdIOCtx> struct.  See
-  <gdImageCreateFromGd2>.  
+  <gdImageCreateFromGd2>.
 */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ctx (gdIOCtxPtr in)
 {
@@ -435,7 +438,12 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ctx (gdIOCtxPtr in)
 	}
 
 	bytesPerPixel = im->trueColor ? 4 : 1;
+	if (overflow2(ncx, ncy))
+		goto fail;
 	nc = ncx * ncy;
+
+	if (overflow2(ncy, cs) || overflow2(ncx, cs) || overflow2(bytesPerPixel, cs))
+		goto fail;
 
 	if (gd2_compressed (fmt)) {
 		/* Find the maximum compressed chunk size. */
@@ -508,15 +516,13 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ctx (gdIOCtxPtr in)
 						if (im->trueColor) {
 							if (!gdGetInt (&im->tpixels[y][x], in)) {
 								gd_error("gd2: EOF while reading\n");
-								gdImageDestroy(im);
-								return NULL;
+								goto fail;
 							}
 						} else {
 							int ch;
 							if (!gdGetByte (&ch, in)) {
 								gd_error("gd2: EOF while reading\n");
-								gdImageDestroy(im);
-								return NULL;
+								goto fail;
 							}
 							im->pixels[y][x] = ch;
 						}
@@ -904,9 +910,11 @@ _gd2PutHeader (gdImagePtr im, gdIOCtx * out, int cs, int fmt, int cx, int cy)
 
 }
 
-static void
+/* returns 0 on success, 1 on failure */
+static int
 _gdImageGd2 (gdImagePtr im, gdIOCtx * out, int cs, int fmt)
 {
+	int ret = 0;
 	int ncx, ncy, cx, cy;
 	int x, y, ylo, yhi, xlo, xhi;
 	int chunkLen;
@@ -968,10 +976,12 @@ _gdImageGd2 (gdImagePtr im, gdIOCtx * out, int cs, int fmt)
 		/* */
 		chunkData = gdCalloc (cs * bytesPerPixel * cs, 1);
 		if (!chunkData) {
+			ret = 1;
 			goto fail;
 		}
 		compData = gdCalloc (compMax, 1);
 		if (!compData) {
+			ret = 1;
 			goto fail;
 		}
 
@@ -986,6 +996,7 @@ _gdImageGd2 (gdImagePtr im, gdIOCtx * out, int cs, int fmt)
 
 		chunkIdx = gdCalloc (idxSize * sizeof (t_chunk_info), 1);
 		if (!chunkIdx) {
+			ret = 1;
 			goto fail;
 		}
 	};
@@ -1101,6 +1112,8 @@ fail:
 	}
 	GD2_DBG (printf ("Done\n"));
 
+	return ret;
+
 }
 
 /*
@@ -1122,63 +1135,99 @@ BGD_DECLARE(void *) gdImageGd2Ptr (gdImagePtr im, int cs, int fmt, int *size)
 	void *rv;
 	gdIOCtx *out = gdNewDynamicCtx (2048, NULL);
 	if (out == NULL) return NULL;
-	_gdImageGd2 (im, out, cs, fmt);
-	rv = gdDPExtractData (out, size);
+	
+	if (_gdImageGd2(im, out, cs, fmt)) {
+		rv = NULL;
+	} else {
+		rv = gdDPExtractData(out, size);
+	}
+	
 	out->gd_free (out);
 	return rv;
 }
 
-#else /* no HAVE_LIBZ */
-static void _noLibzError (void)
+#else /* no HAVE_LIBZ or !ENABLE_GD_FORMATS */
+static void _noGd2Error (void)
 {
+#if !ENABLE_GD_FORMATS
+	gd_error("GD2 image support has been disabled\n");
+#else
 	gd_error("GD2 support is not available - no libz\n");
+#endif
 }
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2 (FILE * inFile)
 {
-	_noLibzError();
+	ARG_NOT_USED(inFile);
+	_noGd2Error();
 	return NULL;
 }
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ctx (gdIOCtxPtr in)
 {
-	_noLibzError();
+	ARG_NOT_USED(in);
+	_noGd2Error();
 	return NULL;
 }
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Part (FILE * inFile, int srcx, int srcy, int w, int h)
 {
-	_noLibzError();
+	ARG_NOT_USED(inFile);
+	ARG_NOT_USED(srcx);
+	ARG_NOT_USED(srcy);
+	ARG_NOT_USED(w);
+	ARG_NOT_USED(h);
+	_noGd2Error();
 	return NULL;
 }
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ptr (int size, void *data)
 {
-	_noLibzError();
+	ARG_NOT_USED(size);
+	ARG_NOT_USED(data);
+	_noGd2Error();
 	return NULL;
 }
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2PartCtx (gdIOCtx * in, int srcx, int srcy, int w, int h)
 {
-	_noLibzError();
+	ARG_NOT_USED(in);
+	ARG_NOT_USED(srcx);
+	ARG_NOT_USED(srcy);
+	ARG_NOT_USED(w);
+	ARG_NOT_USED(h);
+	_noGd2Error();
 	return NULL;
 }
 
-BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2PartPtr (int size, void *data, int srcx, int srcy, int w,
-        int h)
+BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2PartPtr (int size, void *data, int srcx, int srcy, int w, int h)
 {
-	_noLibzError();
+	ARG_NOT_USED(size);
+	ARG_NOT_USED(data);
+	ARG_NOT_USED(srcx);
+	ARG_NOT_USED(srcy);
+	ARG_NOT_USED(w);
+	ARG_NOT_USED(h);
+	_noGd2Error();
 	return NULL;
 }
 
 BGD_DECLARE(void) gdImageGd2 (gdImagePtr im, FILE * outFile, int cs, int fmt)
 {
-	_noLibzError();
+	ARG_NOT_USED(im);
+	ARG_NOT_USED(outFile);
+	ARG_NOT_USED(cs);
+	ARG_NOT_USED(fmt);
+	_noGd2Error();
 }
 
 BGD_DECLARE(void *) gdImageGd2Ptr (gdImagePtr im, int cs, int fmt, int *size)
 {
-	_noLibzError();
+	ARG_NOT_USED(im);
+	ARG_NOT_USED(cs);
+	ARG_NOT_USED(fmt);
+	ARG_NOT_USED(size);
+	_noGd2Error();
 	return NULL;
 }
 #endif /* HAVE_LIBZ */

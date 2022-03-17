@@ -1,20 +1,20 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef GD_H
+#define GD_H 1
 
 #include <stdlib.h>
 
-#ifndef GD_H
-#define GD_H 1
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Version information.  This gets parsed by build scripts as well as
  * gcc so each #define line in this group must also be splittable on
  * whitespace, take the form GD_*_VERSION and contain the magical
  * trailing comment. */
 #define GD_MAJOR_VERSION    2           /*version605b5d1778*/
-#define GD_MINOR_VERSION    2           /*version605b5d1778*/
-#define GD_RELEASE_VERSION  4           /*version605b5d1778*/
-#define GD_EXTRA_VERSION    ""          /*version605b5d1778*/
+#define GD_MINOR_VERSION    3           /*version605b5d1778*/
+#define GD_RELEASE_VERSION  3           /*version605b5d1778*/
+#define GD_EXTRA_VERSION    ""      /*version605b5d1778*/
 /* End parsable section. */
 
 /* The version string.  This is constructed from the version number
@@ -29,7 +29,7 @@ extern "C" {
                       GDXXX_STR(GD_RELEASE_VERSION),                    \
                       GD_EXTRA_VERSION)
 
-    
+
 /* Do the DLL dance: dllexport when building the DLL,
    dllimport when importing from it, nothing when
    not on Silly Silly Windows (tm Aardman Productions). */
@@ -46,42 +46,55 @@ extern "C" {
 
 /* http://gcc.gnu.org/wiki/Visibility */
 #if defined(_WIN32) || defined(CYGWIN) || defined(_WIN32_WCE)
-# define BGD_EXPORT_DATA_PROT
-# define BGD_STDCALL
+# ifdef BGDWIN32
+#  ifdef NONDLL
+#   define BGD_EXPORT_DATA_PROT
+#  else
+#   ifdef __GNUC__
+#    define BGD_EXPORT_DATA_PROT __attribute__ ((__dllexport__))
+#   else
+#    define BGD_EXPORT_DATA_PROT __declspec(dllexport)
+#   endif
+#  endif
+# else
+#  ifdef __GNUC__
+#   define BGD_EXPORT_DATA_PROT __attribute__ ((__dllimport__))
+#  else
+#   define BGD_EXPORT_DATA_PROT __declspec(dllimport)
+#  endif
+# endif
+# define BGD_STDCALL __stdcall
 # define BGD_EXPORT_DATA_IMPL
+# define BGD_MALLOC
 #else
-# if defined(HAVE_VISIBILITY) && HAVE_VISIBILITY==1
-#  define BGD_EXPORT_DATA_PROT __attribute__ ((visibility ("default")))
-#  define BGD_EXPORT_DATA_IMPL __attribute__ ((visibility ("hidden")))
+# if defined(__GNUC__) || defined(__clang__)
+#  define BGD_EXPORT_DATA_PROT __attribute__ ((__visibility__ ("default")))
+#  define BGD_EXPORT_DATA_IMPL __attribute__ ((__visibility__ ("hidden")))
 # else
 #  define BGD_EXPORT_DATA_PROT
 #  define BGD_EXPORT_DATA_IMPL
 # endif
 # define BGD_STDCALL
+# define BGD_MALLOC __attribute__ ((__malloc__))
 #endif
 
 #define BGD_DECLARE(rt) BGD_EXPORT_DATA_PROT rt BGD_STDCALL
 
 /* VS2012+ disable keyword macroizing unless _ALLOW_KEYWORD_MACROS is set
-   We define inline, snprintf, and strcasecmp if they're missing 
+   We define inline, and strcasecmp if they're missing
 */
 #ifdef _MSC_VER
 #  define _ALLOW_KEYWORD_MACROS
 #  ifndef inline
 #    define inline __inline
-#  endif 
+#  endif
 #  ifndef strcasecmp
 #    define strcasecmp _stricmp
-#  endif 
-#if _MSC_VER < 1900
-     extern int snprintf(char*, size_t, const char*, ...);
+#  endif
 #endif
-#endif 
 
-#ifdef __cplusplus
-	extern "C"
-	{
-#endif
+#undef ARG_NOT_USED
+#define ARG_NOT_USED(arg) (void) arg
 
 /* gd.h: declarations file for the graphic-draw module.
  * Permission to use, copy, modify, and distribute this software and its
@@ -115,9 +128,9 @@ extern "C" {
    must be 32 bits wide or more.
 
    True colors are repsented as follows:
-   
+
    ARGB
-	
+
    Where 'A' (alpha channel) occupies only the
    LOWER 7 BITS of the MSB. This very small
    loss of alpha channel resolution allows gd 2.x
@@ -193,7 +206,7 @@ extern "C" {
  * Group: Effects
  *
  * The layering effect
- * 
+ *
  * When pixels are drawn the new colors are "mixed" with the background
  * depending on the effect.
  *
@@ -262,7 +275,6 @@ enum gdPaletteQuantizationMethod {
 	GD_QUANT_LIQ = 3
 };
 
-
 /**
  * Group: Transform
  *
@@ -270,7 +282,7 @@ enum gdPaletteQuantizationMethod {
  *
  *  GD_BELL				 - Bell
  *  GD_BESSEL			 - Bessel
- *  GD_BILINEAR_FIXED 	 - fixed point bilinear 
+ *  GD_BILINEAR_FIXED 	 - fixed point bilinear
  *  GD_BICUBIC 			 - Bicubic
  *  GD_BICUBIC_FIXED 	 - fixed point bicubic integer
  *  GD_BLACKMAN			 - Blackman
@@ -287,7 +299,7 @@ enum gdPaletteQuantizationMethod {
  *  GD_POWER			 - Power
  *  GD_QUADRATIC		 - Quadratic
  *  GD_SINC				 - Sinc
- *  GD_TRIANGLE			 - Triangle
+ *  GD_TRIANGLE       - Triangle
  *  GD_WEIGHTED4		 - 4 pixels weighted bilinear interpolation
  *  GD_LINEAR            - bilinear interpolation
  *
@@ -319,18 +331,66 @@ typedef enum {
 	GD_TRIANGLE,
 	GD_WEIGHTED4,
 	GD_LINEAR,
-	GD_METHOD_COUNT = 23
+   GD_LANCZOS3,
+   GD_LANCZOS8,
+   GD_BLACKMAN_BESSEL,
+   GD_BLACKMAN_SINC,
+   GD_QUADRATIC_BSPLINE,
+   GD_CUBIC_SPLINE,
+   GD_COSINE,
+   GD_WELSH,
+	GD_METHOD_COUNT = 30
 } gdInterpolationMethod;
+
+/**
+ * Group: HEIF Coding Format
+ *
+ * Values that select the HEIF coding format.
+ *
+ * Constants: gdHeifCodec
+ *
+ *  GD_HEIF_CODEC_UNKNOWN
+ *  GD_HEIF_CODEC_HEVC
+ *  GD_HEIF_CODEC_AV1
+ *
+ * See also:
+ *  - <gdImageHeif>
+ */
+typedef enum {
+	GD_HEIF_CODEC_UNKNOWN = 0,
+	GD_HEIF_CODEC_HEVC,
+	GD_HEIF_CODEC_AV1 = 4,
+} gdHeifCodec;
+
+/**
+ * Group: HEIF Chroma Subsampling
+ *
+ * Values that select the HEIF chroma subsampling.
+ *
+ * Constants: gdHeifCompression
+ *
+ *  GD_HEIF_CHROMA_420
+ *  GD_HEIF_CHROMA_422
+ *  GD_HEIF_CHROMA_444
+ *
+ * See also:
+ *  - <gdImageHeif>
+ */
+typedef const char *gdHeifChroma;
+
+#define GD_HEIF_CHROMA_420 "420"
+#define GD_HEIF_CHROMA_422 "422"
+#define GD_HEIF_CHROMA_444 "444"
 
 /* define struct with name and func ptr and add it to gdImageStruct gdInterpolationMethod interpolation; */
 
 /* Interpolation function ptr */
-typedef double (* interpolation_method )(double);
+typedef double (* interpolation_method )(double, double);
 
 
 /*
    Group: Types
- 
+
    typedef: gdImage
 
    typedef: gdImagePtr
@@ -497,7 +557,7 @@ gdPointF, *gdPointFPtr;
   structure.
 
   Please see the files gdfontl.c and gdfontl.h for an example of
-  the proper declaration of this structure. 
+  the proper declaration of this structure.
 
   > typedef struct {
   >   // # of characters in font
@@ -596,37 +656,45 @@ BGD_DECLARE(gdImagePtr) gdImageCreateTrueColor (int sx, int sy);
    stays truecolor; palette PNG stays palette-based;
    JPEG is always truecolor. */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromPng (FILE * fd);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromPngCtx (gdIOCtxPtr in);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromPngCtx(gdIOCtxPtr in);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromPngPtr (int size, void *data);
 
 /* These read the first frame only */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGif (FILE * fd);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromGifCtx (gdIOCtxPtr in);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromGifCtx(gdIOCtxPtr in);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGifPtr (int size, void *data);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromWBMP (FILE * inFile);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromWBMPCtx (gdIOCtx * infile);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromWBMPCtx(gdIOCtxPtr infile);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromWBMPPtr (int size, void *data);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromJpeg (FILE * infile);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegEx (FILE * infile, int ignore_warning);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegCtx (gdIOCtx * infile);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegCtxEx (gdIOCtx * infile, int ignore_warning);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegCtx(gdIOCtxPtr infile);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegCtxEx(gdIOCtxPtr infile, int ignore_warning);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegPtr (int size, void *data);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegPtrEx (int size, void *data, int ignore_warning);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromWebp (FILE * inFile);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromWebpPtr (int size, void *data);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromWebpCtx (gdIOCtx * infile);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromWebpCtx(gdIOCtxPtr infile);
+
+BGD_DECLARE(gdImagePtr) gdImageCreateFromHeif(FILE *inFile);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromHeifPtr(int size, void *data);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromHeifCtx(gdIOCtxPtr infile);
+
+BGD_DECLARE(gdImagePtr) gdImageCreateFromAvif(FILE *inFile);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromAvifPtr(int size, void *data);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromAvifCtx(gdIOCtxPtr infile);
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromTiff(FILE *inFile);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtxPtr infile);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffPtr(int size, void *data);
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromTga( FILE * fp );
-BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaCtx(gdIOCtx* ctx);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaCtx(gdIOCtxPtr ctx);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaPtr(int size, void *data);
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromBmp (FILE * inFile);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromBmpPtr (int size, void *data);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromBmpCtx (gdIOCtxPtr infile);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromBmpCtx(gdIOCtxPtr infile);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromFile(const char *filename);
 
 
@@ -667,22 +735,22 @@ gdSource, *gdSourcePtr;
 BGD_DECLARE(gdImagePtr) gdImageCreateFromPngSource (gdSourcePtr in);
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd (FILE * in);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromGdCtx (gdIOCtxPtr in);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromGdCtx(gdIOCtxPtr in);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGdPtr (int size, void *data);
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2 (FILE * in);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ctx (gdIOCtxPtr in);
+BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ctx(gdIOCtxPtr in);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Ptr (int size, void *data);
 
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2Part (FILE * in, int srcx, int srcy, int w,
 						  int h);
-BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2PartCtx (gdIOCtxPtr in, int srcx, int srcy,
+BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2PartCtx(gdIOCtxPtr in, int srcx, int srcy,
 						     int w, int h);
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGd2PartPtr (int size, void *data, int srcx, int srcy,
 						     int w, int h);
 /* 2.0.10: prototype was missing */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromXbm (FILE * in);
-BGD_DECLARE(void) gdImageXbmCtx(gdImagePtr image, char* file_name, int fg, gdIOCtx * out);
+BGD_DECLARE(void) gdImageXbmCtx(gdImagePtr image, char* file_name, int fg, gdIOCtxPtr out);
 
 /* NOTE: filename, not FILE */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm (char *filename);
@@ -694,7 +762,7 @@ BGD_DECLARE(void) gdImageDestroy (gdImagePtr im);
    alpha channel value of 'color'; default is to overwrite.
    Tiling and line styling are also implemented
    here. All other gd drawing functions pass through this call,
-   allowing for many useful effects. 
+   allowing for many useful effects.
    Overlay and multiply effects are used when gdImageAlphaBlending
    is passed gdEffectOverlay and gdEffectMultiply */
 
@@ -752,14 +820,14 @@ BGD_DECLARE(void) gdFontCacheShutdown (void);
 BGD_DECLARE(void) gdFreeFontCache (void);
 
 /* Calls gdImageStringFT. Provided for backwards compatibility only. */
-BGD_DECLARE(char *) gdImageStringTTF (gdImage * im, int *brect, int fg, char *fontlist,
+BGD_DECLARE(char *) gdImageStringTTF (gdImagePtr im, int *brect, int fg, const char *fontlist,
                                       double ptsize, double angle, int x, int y,
-                                      char *string);
+                                      const char *string);
 
 /* FreeType 2 text output */
-BGD_DECLARE(char *) gdImageStringFT (gdImage * im, int *brect, int fg, char *fontlist,
+BGD_DECLARE(char *) gdImageStringFT (gdImagePtr im, int *brect, int fg, const char *fontlist,
                                      double ptsize, double angle, int x, int y,
-                                     char *string);
+                                     const char *string);
 
 
 /*
@@ -792,7 +860,7 @@ typedef struct {
 				    then, on return, xshow is a malloc'ed
 				    string containing xshow position data for
 				    the last string.
-				    
+
 				    NB. The caller is responsible for gdFree'ing
 				    the xshow string.
 				 */
@@ -801,7 +869,7 @@ typedef struct {
 				    string containing the actual font file path name
 				    used, which can be interesting when fontconfig
 				    is in use.
-				    
+
 				    The caller is responsible for gdFree'ing the
 				    fontpath string.
 				 */
@@ -841,9 +909,9 @@ BGD_DECLARE(int) gdFTUseFontConfig(int flag);
 #define gdFTEX_Big5 2
 #define gdFTEX_Adobe_Custom 3
 
-BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *fontlist,
+BGD_DECLARE(char *) gdImageStringFTEx (gdImagePtr im, int *brect, int fg, const char *fontlist,
                                        double ptsize, double angle, int x, int y,
-                                       char *string, gdFTStringExtraPtr strex);
+                                       const char *string, gdFTStringExtraPtr strex);
 
 
 /*
@@ -961,16 +1029,16 @@ BGD_DECLARE(void) gdImageColorDeallocate (gdImagePtr im, int color);
    anything up to 256. If the original source image
    includes photographic information or anything that
    came out of a JPEG, 256 is strongly recommended.
-   
+
    Better yet, don't use these function -- write real
    truecolor PNGs and JPEGs. The disk space gain of
    conversion to palette is not great (for small images
    it can be negative) and the quality loss is ugly.
-   
+
    DIFFERENCES: gdImageCreatePaletteFromTrueColor creates and
    returns a new image. gdImageTrueColorToPalette modifies
    an existing image, and the truecolor pixels are discarded.
-   
+
    gdImageTrueColorToPalette() returns TRUE on success, FALSE on failure.
 */
 
@@ -1028,11 +1096,11 @@ BGD_DECLARE(int) gdImageColorReplaceCallback(gdImagePtr im, gdCallbackImageColor
 
 BGD_DECLARE(void) gdImageGif (gdImagePtr im, FILE * out);
 BGD_DECLARE(void) gdImagePng (gdImagePtr im, FILE * out);
-BGD_DECLARE(void) gdImagePngCtx (gdImagePtr im, gdIOCtx * out);
-BGD_DECLARE(void) gdImageGifCtx (gdImagePtr im, gdIOCtx * out);
+BGD_DECLARE(void) gdImagePngCtx(gdImagePtr im, gdIOCtxPtr out);
+BGD_DECLARE(void) gdImageGifCtx(gdImagePtr im, gdIOCtxPtr out);
 BGD_DECLARE(void) gdImageTiff(gdImagePtr im, FILE *outFile);
 BGD_DECLARE(void *) gdImageTiffPtr(gdImagePtr im, int *size);
-BGD_DECLARE(void) gdImageTiffCtx(gdImagePtr image, gdIOCtx *out);
+BGD_DECLARE(void) gdImageTiffCtx(gdImagePtr image, gdIOCtxPtr out);
 
 BGD_DECLARE(void *) gdImageBmpPtr(gdImagePtr im, int *size, int compression);
 BGD_DECLARE(void) gdImageBmp(gdImagePtr im, FILE *outFile, int compression);
@@ -1043,10 +1111,10 @@ BGD_DECLARE(void) gdImageBmpCtx(gdImagePtr im, gdIOCtxPtr out, int compression);
    compression (smallest files) but takes a long time to compress, and
    -1 selects the default compiled into the zlib library. */
 BGD_DECLARE(void) gdImagePngEx (gdImagePtr im, FILE * out, int level);
-BGD_DECLARE(void) gdImagePngCtxEx (gdImagePtr im, gdIOCtx * out, int level);
+BGD_DECLARE(void) gdImagePngCtxEx(gdImagePtr im, gdIOCtxPtr out, int level);
 
 BGD_DECLARE(void) gdImageWBMP (gdImagePtr image, int fg, FILE * out);
-BGD_DECLARE(void) gdImageWBMPCtx (gdImagePtr image, int fg, gdIOCtx * out);
+BGD_DECLARE(void) gdImageWBMPCtx(gdImagePtr image, int fg, gdIOCtxPtr out);
 
 BGD_DECLARE(int) gdImageFile(gdImagePtr im, const char *filename);
 BGD_DECLARE(int) gdSupportsFileType(const char *filename, int writing);
@@ -1062,21 +1130,45 @@ BGD_DECLARE(void *) gdImageWBMPPtr (gdImagePtr im, int *size, int fg);
 /* 100 is highest quality (there is always a little loss with JPEG).
    0 is lowest. 10 is about the lowest useful setting. */
 BGD_DECLARE(void) gdImageJpeg (gdImagePtr im, FILE * out, int quality);
-BGD_DECLARE(void) gdImageJpegCtx (gdImagePtr im, gdIOCtx * out, int quality);
+BGD_DECLARE(void) gdImageJpegCtx(gdImagePtr im, gdIOCtxPtr out, int quality);
 
 /* Best to free this memory with gdFree(), not free() */
 BGD_DECLARE(void *) gdImageJpegPtr (gdImagePtr im, int *size, int quality);
+
+/**
+ * Group: WebP
+ *
+ * Constant: gdWebpLossless
+ *
+ * Lossless quality threshold. When image quality is greater than or equal to
+ * <gdWebpLossless>, the image will be written in the lossless WebP format.
+ *
+ * See also:
+ *   - <gdImageWebpEx>
+ */
+#define gdWebpLossless 101
 
 BGD_DECLARE(void) gdImageWebpEx (gdImagePtr im, FILE * outFile, int quantization);
 BGD_DECLARE(void) gdImageWebp (gdImagePtr im, FILE * outFile);
 BGD_DECLARE(void *) gdImageWebpPtr (gdImagePtr im, int *size);
 BGD_DECLARE(void *) gdImageWebpPtrEx (gdImagePtr im, int *size, int quantization);
-BGD_DECLARE(void) gdImageWebpCtx (gdImagePtr im, gdIOCtx * outfile, int quantization);
+BGD_DECLARE(void) gdImageWebpCtx(gdImagePtr im, gdIOCtxPtr outfile, int quantization);
 
+BGD_DECLARE(void) gdImageHeifEx(gdImagePtr im, FILE *outFile, int quality, gdHeifCodec codec, gdHeifChroma chroma);
+BGD_DECLARE(void) gdImageHeif(gdImagePtr im, FILE *outFile);
+BGD_DECLARE(void *) gdImageHeifPtr(gdImagePtr im, int *size);
+BGD_DECLARE(void *) gdImageHeifPtrEx(gdImagePtr im, int *size, int quality, gdHeifCodec codec, gdHeifChroma chroma);
+BGD_DECLARE(void) gdImageHeifCtx(gdImagePtr im, gdIOCtxPtr outfile, int quality, gdHeifCodec codec, gdHeifChroma chroma);
+
+BGD_DECLARE(void) gdImageAvif(gdImagePtr im, FILE *outFile);
+BGD_DECLARE(void) gdImageAvifEx(gdImagePtr im, FILE *outFile, int quality, int speed);
+BGD_DECLARE(void *) gdImageAvifPtr(gdImagePtr im, int *size);
+BGD_DECLARE(void *) gdImageAvifPtrEx(gdImagePtr im, int *size, int quality, int speed);
+BGD_DECLARE(void) gdImageAvifCtx(gdImagePtr im, gdIOCtxPtr outfile, int quality, int speed);
 
 /**
  * Group: GifAnim
- * 
+ *
  *   Legal values for Disposal. gdDisposalNone is always used by
  *   the built-in optimizer if previm is passed.
  *
@@ -1100,9 +1192,9 @@ enum {
 BGD_DECLARE(void) gdImageGifAnimBegin(gdImagePtr im, FILE *outFile, int GlobalCM, int Loops);
 BGD_DECLARE(void) gdImageGifAnimAdd(gdImagePtr im, FILE *outFile, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, gdImagePtr previm);
 BGD_DECLARE(void) gdImageGifAnimEnd(FILE *outFile);
-BGD_DECLARE(void) gdImageGifAnimBeginCtx(gdImagePtr im, gdIOCtx *out, int GlobalCM, int Loops);
-BGD_DECLARE(void) gdImageGifAnimAddCtx(gdImagePtr im, gdIOCtx *out, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, gdImagePtr previm);
-BGD_DECLARE(void) gdImageGifAnimEndCtx(gdIOCtx *out);
+BGD_DECLARE(void) gdImageGifAnimBeginCtx(gdImagePtr im, gdIOCtxPtr out, int GlobalCM, int Loops);
+BGD_DECLARE(void) gdImageGifAnimAddCtx(gdImagePtr im, gdIOCtxPtr out, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, gdImagePtr previm);
+BGD_DECLARE(void) gdImageGifAnimEndCtx(gdIOCtxPtr out);
 BGD_DECLARE(void *) gdImageGifAnimBeginPtr(gdImagePtr im, int *size, int GlobalCM, int Loops);
 BGD_DECLARE(void *) gdImageGifAnimAddPtr(gdImagePtr im, int *size, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, gdImagePtr previm);
 BGD_DECLARE(void *) gdImageGifAnimEndPtr(int *size);
@@ -1227,7 +1319,7 @@ BGD_DECLARE(void) gdImageCopyRotated (gdImagePtr dst,
                                       gdImagePtr src,
                                       double dstX, double dstY,
                                       int srcX, int srcY,
-                                      int srcWidth, int srcHeight, double angle);
+                                      int srcWidth, int srcHeight, int angle);
 
 BGD_DECLARE(gdImagePtr) gdImageClone (gdImagePtr src);
 
@@ -1302,7 +1394,7 @@ BGD_DECLARE(gdImagePtr) gdImageCopyGaussianBlurred(gdImagePtr src, int radius,
  * Macro: gdImageSX
  *
  * Gets the width (in pixels) of an image.
- * 
+ *
  * Parameters:
  *   im - The image.
  */
@@ -1475,14 +1567,14 @@ BGD_DECLARE(gdImagePtr) gdImageCopyGaussianBlurred(gdImagePtr src, int radius,
 
 /* I/O Support routines. */
 
-BGD_DECLARE(gdIOCtx *) gdNewFileCtx (FILE *);
+BGD_DECLARE(gdIOCtxPtr) gdNewFileCtx(FILE *);
 /* If data is null, size is ignored and an initial data buffer is
    allocated automatically. NOTE: this function assumes gd has the right
    to free or reallocate "data" at will! Also note that gd will free
    "data" when the IO context is freed. If data is not null, it must point
    to memory allocated with gdMalloc, or by a call to gdImage[something]Ptr.
    If not, see gdNewDynamicCtxEx for an alternative. */
-BGD_DECLARE(gdIOCtx *) gdNewDynamicCtx (int size, void *data);
+BGD_DECLARE(gdIOCtxPtr) gdNewDynamicCtx(int size, void *data);
 /* 2.0.21: if freeFlag is nonzero, gd will free and/or reallocate "data" as
    needed as described above. If freeFlag is zero, gd will never free
    or reallocate "data", which means that the context should only be used
@@ -1491,9 +1583,9 @@ BGD_DECLARE(gdIOCtx *) gdNewDynamicCtx (int size, void *data);
    not large enough and an image write is attempted, the write operation
    will fail. Those wishing to write an image to a buffer in memory have
    a much simpler alternative in the gdImage[something]Ptr functions. */
-BGD_DECLARE(gdIOCtx *) gdNewDynamicCtxEx (int size, void *data, int freeFlag);
-BGD_DECLARE(gdIOCtx *) gdNewSSCtx (gdSourcePtr in, gdSinkPtr out);
-BGD_DECLARE(void *) gdDPExtractData (struct gdIOCtx *ctx, int *size);
+BGD_DECLARE(gdIOCtxPtr) gdNewDynamicCtxEx(int size, void *data, int freeFlag);
+BGD_DECLARE(gdIOCtxPtr) gdNewSSCtx(gdSourcePtr in, gdSinkPtr out);
+BGD_DECLARE(void *) gdDPExtractData(gdIOCtxPtr ctx, int *size);
 
 #define GD2_CHUNKSIZE           128
 #define GD2_CHUNKSIZE_MIN	64
@@ -1512,19 +1604,15 @@ BGD_DECLARE(void) gdImageFlipHorizontal(gdImagePtr im);
 BGD_DECLARE(void) gdImageFlipVertical(gdImagePtr im);
 BGD_DECLARE(void) gdImageFlipBoth(gdImagePtr im);
 
-#define GD_FLIP_HORINZONTAL 1
-#define GD_FLIP_VERTICAL 2
-#define GD_FLIP_BOTH 3
-
 /**
  * Group: Crop
  *
  * Constants: gdCropMode
- *  GD_CROP_DEFAULT - Default crop mode (4 corners or background)
+ *  GD_CROP_DEFAULT     - Same as GD_CROP_TRANSPARENT
  *  GD_CROP_TRANSPARENT - Crop using the transparent color
- *  GD_CROP_BLACK - Crop black borders
- *  GD_CROP_WHITE - Crop white borders
- *  GD_CROP_SIDES - Crop using colors of the 4 corners
+ *  GD_CROP_BLACK       - Crop black borders
+ *  GD_CROP_WHITE       - Crop white borders
+ *  GD_CROP_SIDES       - Crop using colors of the 4 corners
  *
  * See also:
  *   - <gdImageCropAuto>
@@ -1618,16 +1706,11 @@ BGD_DECLARE(int) gdReleaseVersion(void);
 BGD_DECLARE(const char *) gdExtraVersion(void);
 BGD_DECLARE(const char *) gdVersionString(void);
 
-
-#ifdef __cplusplus
-}
-#endif
-
 /* newfangled special effects */
 #include "gdfx.h"
 
-#endif				/* GD_H */
-
 #ifdef __cplusplus
 }
 #endif
+
+#endif				/* GD_H */

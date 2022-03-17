@@ -1,10 +1,9 @@
+/* Internal header for random common utility functions. */
+
 #ifndef GD_INTERN_H
 #define GD_INTERN_H
 
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif
-
 
 #ifndef MAXPATHLEN
 # ifdef PATH_MAX
@@ -30,17 +29,21 @@
 # endif
 #endif
 
+#ifdef _MSC_VER
+#define  ssize_t SSIZE_T
+#define MAXSIZE_T ((SIZE_T)~ ((SIZE_T)0))
+#define MAXSSIZE_T ((SSIZE_T) (MAXSIZE_T >> 1))
+#define MINSSIZE_T ((SSIZE_T)~MAXSSIZE_T)
+#define SSIZE_MAX MAXSSIZE_T
+#endif
+
 #include "gd.h"
 
-#ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
 #define MIN3(a,b,c) ((a)<(b)?(MIN(a,c)):(MIN(b,c)))
-#ifndef MAX
 #define MAX(a,b) ((a)<(b)?(b):(a))
-#endif
 #define MAX3(a,b,c) ((a)<(b)?(MAX(b,c)):(MAX(a,c)))
-
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
 typedef enum {
     HORIZONTAL,
@@ -87,4 +90,3 @@ gdImagePtr gdImageRotate270(gdImagePtr src, int ignoretransparent);
 
 
 #endif
-

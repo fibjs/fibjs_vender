@@ -1,5 +1,4 @@
 /* *****************************************************************************
-** $Id$
 ** Initial file written and documented by:
 ** Kevin Shepherd <kshepherd@php.net> December 2007
 ** of Scarlet Line http://www.scarletline.com/
@@ -20,13 +19,9 @@
 		im.Gif(out);
 		}
 */
-#ifdef __cplusplus
 #ifndef _gdpp_h
 #define _gdpp_h
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifdef __cplusplus
 
 #include "gd_io_stream.h"
 #include <string>
@@ -292,7 +287,7 @@ public:
 		:im(0) {
 		CreateFrom(size, data);
 	}
-#ifdef HAVE_LIBPNG
+
 	/** Construct an image by reading from \p in.
 		The tag is an empty struct which simply tells the compiler which image read function to use.
 		e.g. GD::Image img(input, GD::Png_tag()); // read a png file from input
@@ -316,7 +311,7 @@ public:
 		e.g. GD::Image img(input, GD::Png_tag()); // read a png file from input
 		\param[in] in The io context from which to read the image data
 	*/
-	Image(gdIOCtx * in, Png_tag)
+	Image(gdIOCtxPtr in, Png_tag)
 		:im(0) {
 		CreateFromPng(in);
 	}
@@ -330,7 +325,6 @@ public:
 		:im(0) {
 		CreateFromPng(size, data);
 	}
-#endif
 
 	/** Construct an image by reading from \p in.
 		The tag is an empty struct which simply tells the compiler which image read function to use.
@@ -355,7 +349,7 @@ public:
 		e.g. GD::Image img(input, GD::Gif_tag()); // read a gif file from input
 		\param[in] in The io context from which to read the image data
 	*/
-	Image(gdIOCtx * in, Gif_tag)
+	Image(gdIOCtxPtr in, Gif_tag)
 		:im(0) {
 		CreateFromGif(in);
 	}
@@ -393,7 +387,7 @@ public:
 		e.g. GD::Image img(input, GD::WBMP_tag()); // read a monchrome WBMP file from input
 		\param[in] in The io context from which to read the image data
 	*/
-	Image(gdIOCtx * in, WBMP_tag)
+	Image(gdIOCtxPtr in, WBMP_tag)
 		:im(0) {
 		CreateFromWBMP(in);
 	}
@@ -408,7 +402,6 @@ public:
 		CreateFromWBMP(size, data);
 	}
 
-#ifdef HAVE_LIBJPEG
 	/** Construct an image by reading from \p in.
 		The tag is an empty struct which simply tells the compiler which image read function to use.
 		e.g. GD::Image img(input, GD::Jpeg_tag()); // read a jpeg file from input
@@ -432,7 +425,7 @@ public:
 		e.g. GD::Image img(input, GD::Jpeg_tag()); // read a jpeg file from input
 		\param[in] in The io context from which to read the image data
 	*/
-	Image(gdIOCtx * in, Jpeg_tag)
+	Image(gdIOCtxPtr in, Jpeg_tag)
 		:im(0) {
 		CreateFromJpeg(in);
 	}
@@ -446,7 +439,6 @@ public:
 		:im(0) {
 		CreateFromJpeg(size, data);
 	}
-#endif
 
 	/** Construct an image by reading from \p in.
 		The tag is an empty struct which simply tells the compiler which image read function to use.
@@ -471,7 +463,7 @@ public:
 		e.g. GD::Image img(input, GD::Gd_tag()); // read a gd file from input
 		\param[in] in The io context from which to read the image data
 	*/
-	Image(gdIOCtx * in, Gd_tag)
+	Image(gdIOCtxPtr in, Gd_tag)
 		:im(0) {
 		CreateFromGd(in);
 	}
@@ -509,7 +501,7 @@ public:
 		e.g. GD::Image img(input, GD::Gd2_tag()); // read a gd2 file from input
 		\param[in] in The io context from which to read the image data
 	*/
-	Image(gdIOCtx * in, Gd2_tag)
+	Image(gdIOCtxPtr in, Gd2_tag)
 		:im(0) {
 		CreateFromGd2(in);
 	}
@@ -608,13 +600,12 @@ public:
 	/// Read an image from a memory block, after determining the image format
 	bool CreateFrom(int size, void * data);
 
-#ifdef HAVE_LIBPNG
 	// Png
 	bool CreateFromPng(FILE * in) {
 		clear();
 		return ((im = gdImageCreateFromPng(in)) != 0);
 	}
-	bool CreateFromPng(gdIOCtx * in) {
+	bool CreateFromPng(gdIOCtxPtr in) {
 		clear();
 		return ((im = gdImageCreateFromPngCtx(in)) != 0);
 	}
@@ -627,14 +618,13 @@ public:
 		istreamIOCtx _in_ctx(in);
 		return ((im = gdImageCreateFromPngCtx( & _in_ctx)) != 0);
 	}
-#endif
 
 	// Gif
 	bool CreateFromGif(FILE * in) {
 		clear();
 		return ((im = gdImageCreateFromGif(in)) != 0);
 	}
-	bool CreateFromGif(gdIOCtx * in) {
+	bool CreateFromGif(gdIOCtxPtr in) {
 		clear();
 		return ((im = gdImageCreateFromGifCtx(in)) != 0);
 	}
@@ -652,7 +642,7 @@ public:
 		clear();
 		return ((im = gdImageCreateFromWBMP(in)) != 0);
 	}
-	bool CreateFromWBMP(gdIOCtx * in) {
+	bool CreateFromWBMP(gdIOCtxPtr in) {
 		clear();
 		return ((im = gdImageCreateFromWBMPCtx(in)) != 0);
 	}
@@ -666,7 +656,6 @@ public:
 		return ((im = gdImageCreateFromWBMPCtx( & _in_ctx)) != 0);
 	}
 
-#ifdef HAVE_LIBJPEG
 	// Jpeg
 	/**
 		Load a truecolor image from a JPEG format file.
@@ -691,7 +680,7 @@ public:
 		You can call Width() and Height() member functions of the image to determine its
 		size. The returned image is always a truecolor image.
 	*/
-	bool CreateFromJpeg(gdIOCtx * in) {
+	bool CreateFromJpeg(gdIOCtxPtr in) {
 		clear();
 		return ((im = gdImageCreateFromJpegCtx(in)) != 0);
 	}
@@ -720,14 +709,13 @@ public:
 		istreamIOCtx _in_ctx(in);
 		return ((im = gdImageCreateFromJpegCtx( & _in_ctx)) != 0);
 	}
-#endif
 
 	// Gd
 	bool CreateFromGd(FILE * in) {
 		clear();
 		return ((im = gdImageCreateFromGd(in)) != 0);
 	}
-	bool CreateFromGd(gdIOCtx * in) {
+	bool CreateFromGd(gdIOCtxPtr in) {
 		clear();
 		return ((im = gdImageCreateFromGdCtx(in)) != 0);
 	}
@@ -745,7 +733,7 @@ public:
 		clear();
 		return ((im = gdImageCreateFromGd2(in)) != 0);
 	}
-	bool CreateFromGd2(gdIOCtx * in) {
+	bool CreateFromGd2(gdIOCtxPtr in) {
 		clear();
 		return ((im = gdImageCreateFromGd2Ctx(in)) != 0);
 	}
@@ -763,7 +751,7 @@ public:
 		clear();
 		return ((im = gdImageCreateFromGd2Part(in, srcx, srcy, w, h)) != 0);
 	}
-	bool CreateFromGd2Part(gdIOCtx * in, int srcx, int srcy, int w, int h) {
+	bool CreateFromGd2Part(gdIOCtxPtr in, int srcx, int srcy, int w, int h) {
 		clear();
 		return ((im = gdImageCreateFromGd2PartCtx(in, srcx, srcy, w, h)) != 0);
 	}
@@ -779,7 +767,7 @@ public:
 	bool CreateFromGd2Part(FILE * in, const Point & src, const Size & s) {
 		return CreateFromGd2Part(in, src.X(), src.Y(), s.W(), s.H());
 	}
-	bool CreateFromGd2Part(gdIOCtx * in, const Point & src, const Size & s) {
+	bool CreateFromGd2Part(gdIOCtxPtr in, const Point & src, const Size & s) {
 		return CreateFromGd2Part(in, src.X(), src.Y(), s.W(), s.H());
 	}
 	bool CreateFromGd2Part(int size, void * data, const Point & src, const Size & s) {
@@ -1067,9 +1055,9 @@ public:
 	}
 	/**
 		Write out this image in GIF file format to \p out.
-		\param out A gdIOCtx * handle
+		\param out A gdIOCtxPtr handle
 	*/
-	void Gif(gdIOCtx * out) const {
+	void Gif(gdIOCtxPtr out) const {
 		gdImageGifCtx(im, out);
 	}
 	/**
@@ -1089,7 +1077,6 @@ public:
 		gdImageGifCtx(im, & _out_ctx);
 	}
 
-#ifdef HAVE_LIBPNG
 	/**
 		Write out this image in PNG file format to \p out.
 		\param out A FILE * handle
@@ -1099,9 +1086,9 @@ public:
 	}
 	/**
 		Write out this image in PNG file format to \p out.
-		\param out A gdIOCtx * handle
+		\param out A gdIOCtxPtr handle
 	*/
-	void Png(gdIOCtx * out) const {
+	void Png(gdIOCtxPtr out) const {
 		gdImagePngCtx(im, out);
 	}
 	/**
@@ -1130,10 +1117,10 @@ public:
 	}
 	/**
 		Write out this image in PNG file format to \p out.
-		\param out A gdIOCtx * handle
+		\param out A gdIOCtxPtr handle
 		\param level The level of compression: 0 == "no compression", 1 == "compressed as quickly as possible" --> 9 == "compressed as much as possible", -1 == zlib default compression level
 	*/
-	void Png(gdIOCtx * out, int level) const {
+	void Png(gdIOCtxPtr out, int level) const {
 		gdImagePngCtxEx(im, out, level);
 	}
 	/**
@@ -1154,7 +1141,6 @@ public:
 		ostreamIOCtx _out_ctx(out);
 		gdImagePngCtxEx(im, & _out_ctx, level);
 	}
-#endif
 
 	/**
 		Write out this image in WBMP file format ( black and white only ) to \p out.
@@ -1167,9 +1153,9 @@ public:
 	/**
 		Write out this image in WBMP file format ( black and white only ) to \p out.
 		\param fg The color index of the foreground. All other pixels considered background.
-		\param out A gdIOCtx * handle
+		\param out A gdIOCtxPtr handle
 	*/
-	void WBMP(int fg, gdIOCtx * out) const {
+	void WBMP(int fg, gdIOCtxPtr out) const {
 		gdImageWBMPCtx(im, fg, out);
 	}
 	/**
@@ -1191,7 +1177,6 @@ public:
 		gdImageWBMPCtx(im, fg, & _out_ctx);
 	}
 
-#ifdef HAVE_LIBJPEG
 	/**
 		Write out this image in JPEG file format to \p out.
 		\param out A FILE * handle
@@ -1202,10 +1187,10 @@ public:
 	}
 	/**
 		Write out this image in JPEG file format to \p out.
-		\param out A gdIOCtx * handle
+		\param out A gdIOCtxPtr handle
 		\param quality Should be a value in the range 0-95, higher numbers imply both higher quality and larger image size.  Default value is -1, indicating "use a sensible default value".
 	*/
-	void Jpeg(gdIOCtx * out, int quality = -1) const {
+	void Jpeg(gdIOCtxPtr out, int quality = -1) const {
 		gdImageJpegCtx(im, out, quality);
 	}
 	/**
@@ -1226,7 +1211,6 @@ public:
 		ostreamIOCtx _out_ctx(out);
 		gdImageJpegCtx(im, & _out_ctx, quality);
 	}
-#endif
 
 	void GifAnimBegin(FILE * out, int GlobalCM, int Loops) const {
 		gdImageGifAnimBegin(im, out, GlobalCM, Loops);
@@ -1240,16 +1224,16 @@ public:
 	inline static void GifAnimEnd(FILE * out) {
 		gdImageGifAnimEnd(out);
 	}
-	void GifAnimBegin(gdIOCtx * out, int GlobalCM, int Loops) const {
+	void GifAnimBegin(gdIOCtxPtr out, int GlobalCM, int Loops) const {
 		gdImageGifAnimBeginCtx(im, out, GlobalCM, Loops);
 	}
-	void GifAnimAdd(gdIOCtx * out, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, gdImagePtr previm) const {
+	void GifAnimAdd(gdIOCtxPtr out, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, gdImagePtr previm) const {
 		gdImageGifAnimAddCtx(im, out, LocalCM, LeftOfs, TopOfs, Delay, Disposal, previm);
 	}
-	void GifAnimAdd(gdIOCtx * out, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, const GD::Image & previm) const {
+	void GifAnimAdd(gdIOCtxPtr out, int LocalCM, int LeftOfs, int TopOfs, int Delay, int Disposal, const GD::Image & previm) const {
 		GifAnimAdd(out, LocalCM, LeftOfs, TopOfs, Delay, Disposal, previm.im);
 	}
-	inline static void GifAnimEnd(gdIOCtx * out) {
+	inline static void GifAnimEnd(gdIOCtxPtr out) {
 		gdImageGifAnimEndCtx(out);
 	}
 	void * GifAnimBegin(int * size, int GlobalCM, int Loops) const {
@@ -1542,5 +1526,5 @@ protected:
 /// Read in an image from a standard library input stream
 std::istream & operator>> (std::istream & in, GD::Image & img);
 
-#endif /* _gdpp_h */
 #endif /* __cplusplus */
+#endif /* _gdpp_h */
