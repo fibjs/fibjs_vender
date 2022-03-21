@@ -2,7 +2,7 @@
 #define MBEDTLS_SM2_H
 
 #if !defined(MBEDTLS_CONFIG_FILE)
-#include "config.h"
+#include "mbedtls_config.h"
 #else
 #include MBEDTLS_CONFIG_FILE
 #endif
@@ -12,15 +12,15 @@
 #include "ecp.h"
 #include "md.h"
 
-#define MBEDTLS_ERR_SM2_BAD_INPUT_DATA      -0x4800 /*!< Bad input parameters to function. */
-#define MBEDTLS_ERR_SM2_ALLOC_FAILED        -0x4880 /*!< Memory allocation failed. */
-#define MBEDTLS_ERR_SM2_KDF_FAILED          -0x4900 /*!< KDF got empty result. */
-#define MBEDTLS_ERR_SM2_DECRYPT_BAD_HASH    -0x4980 /*!< Bad C3 in SM2 decrypt */
-#define MBEDTLS_ERR_SM2_RANDOM_FAILED       -0x4A00 /*!< Generation of random value, such as (ephemeral) key, failed. */
-#define MBEDTLS_ERR_SM2_BAD_SIGNATURE       -0x4A80 /*!< Invalid signature */
+#define MBEDTLS_ERR_SM2_BAD_INPUT_DATA -0x4800 /*!< Bad input parameters to function. */
+#define MBEDTLS_ERR_SM2_ALLOC_FAILED -0x4880 /*!< Memory allocation failed. */
+#define MBEDTLS_ERR_SM2_KDF_FAILED -0x4900 /*!< KDF got empty result. */
+#define MBEDTLS_ERR_SM2_DECRYPT_BAD_HASH -0x4980 /*!< Bad C3 in SM2 decrypt */
+#define MBEDTLS_ERR_SM2_RANDOM_FAILED -0x4A00 /*!< Generation of random value, such as (ephemeral) key, failed. */
+#define MBEDTLS_ERR_SM2_BAD_SIGNATURE -0x4A80 /*!< Invalid signature */
 
-#define MBEDTLS_SM2_SPECIFIC_MD_ALGORITHM   MBEDTLS_MD_SM3
-#define MBEDTLS_SM2_GMT09_DEFAULT_ID        "1234567812345678"
+#define MBEDTLS_SM2_SPECIFIC_MD_ALGORITHM MBEDTLS_MD_SM3
+#define MBEDTLS_SM2_GMT09_DEFAULT_ID "1234567812345678"
 
 /**
  *  Enum for the point conversion form as defined in X9.62 (ECDSA)
@@ -61,10 +61,10 @@ typedef mbedtls_ecp_keypair mbedtls_sm2_context;
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
-        const unsigned char *input, size_t ilen,
-        unsigned char *output, size_t *olen,
-        int (*f_rng)(void *, unsigned char *, size_t), void *p_rng);
+int mbedtls_sm2_encrypt(mbedtls_sm2_context* ctx, mbedtls_md_type_t md_alg,
+    const unsigned char* input, size_t ilen,
+    unsigned char* output, size_t* olen,
+    int (*f_rng)(void*, unsigned char*, size_t), void* p_rng);
 
 /**
  * \brief           Perform SM2 decryption
@@ -75,15 +75,18 @@ int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
  * \param ilen      the encrypted data length
  * \param output    buffer that will hold the plaintext
  * \param olen      will contain the plaintext length
+ * \param f_rng     RNG function
+ * \param p_rng     RNG parameter
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_decrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
-        const unsigned char *input, size_t ilen,
-        unsigned char *output, size_t *olen);
+int mbedtls_sm2_decrypt(mbedtls_sm2_context* ctx, mbedtls_md_type_t md_alg,
+    const unsigned char* input, size_t ilen,
+    unsigned char* output, size_t* olen,
+    int (*f_rng)(void*, unsigned char*, size_t), void* p_rng);
 
 /**
- * \brief           Compute SM2 signature of a previously hashed message 
+ * \brief           Compute SM2 signature of a previously hashed message
  *
  * \param grp       The ECP group.
  * \param r         The first output integer.
@@ -96,9 +99,9 @@ int mbedtls_sm2_decrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_sign(mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
-			const mbedtls_mpi *d, const unsigned char *buf, size_t blen,
-			int(*f_rng)(void *, unsigned char *, size_t), void *p_rng);
+int mbedtls_sm2_sign(mbedtls_ecp_group* grp, mbedtls_mpi* r, mbedtls_mpi* s,
+    const mbedtls_mpi* d, const unsigned char* buf, size_t blen,
+    int (*f_rng)(void*, unsigned char*, size_t), void* p_rng);
 
 /**
  * \brief           Verify SM2 signature of a previously hashed message
@@ -112,9 +115,9 @@ int mbedtls_sm2_sign(mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_verify(mbedtls_ecp_group *grp,
-			const unsigned char *buf, size_t blen,
-			const mbedtls_ecp_point *Q, const mbedtls_mpi *r, const mbedtls_mpi *s);
+int mbedtls_sm2_verify(mbedtls_ecp_group* grp,
+    const unsigned char* buf, size_t blen,
+    const mbedtls_ecp_point* Q, const mbedtls_mpi* r, const mbedtls_mpi* s);
 
 /**
  * \brief           Compute SM2 signature of a previously hashed message and writes it
@@ -125,17 +128,18 @@ int mbedtls_sm2_verify(mbedtls_ecp_group *grp,
  * \param hash      Message digest
  * \param hlen      The size of the digest
  * \param sig       Buffer holding the signature data
+ * \param sig_size  The size of the \p sig buffer in bytes.
  * \param slen      The size of the signature
  * \param f_rng     RNG function
  * \param p_rng     RNG parameter
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_write_signature(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
-				const unsigned char *hash, size_t hlen,
-				unsigned char *sig, size_t *slen,
-				int(*f_rng)(void *, unsigned char *, size_t),
-			        void *p_rng);
+int mbedtls_sm2_write_signature(mbedtls_sm2_context* ctx, mbedtls_md_type_t md_alg,
+    const unsigned char* hash, size_t hlen,
+    unsigned char* sig, size_t sig_size, size_t* slen,
+    int (*f_rng)(void*, unsigned char*, size_t),
+    void* p_rng);
 
 /**
  * \brief           This function reads and verifies an SM2 signature.
@@ -148,9 +152,9 @@ int mbedtls_sm2_write_signature(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_a
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_read_signature(mbedtls_sm2_context *ctx,
-				const unsigned char *hash, size_t hlen,
-				const unsigned char *sig, size_t slen);
+int mbedtls_sm2_read_signature(mbedtls_sm2_context* ctx,
+    const unsigned char* hash, size_t hlen,
+    const unsigned char* sig, size_t slen);
 
 /**
  * \brief           Hash Z with ID and public key
@@ -167,8 +171,8 @@ int mbedtls_sm2_read_signature(mbedtls_sm2_context *ctx,
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_hash_z(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
-        const char *id, size_t idlen, unsigned char *z);
+int mbedtls_sm2_hash_z(mbedtls_sm2_context* ctx, mbedtls_md_type_t md_alg,
+    const char* id, size_t idlen, unsigned char* z);
 
 /**
  * \brief           Hash E with Z and message
@@ -181,8 +185,8 @@ int mbedtls_sm2_hash_z(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
  *
  * \return          0 if successful, or a error code
  */
-int mbedtls_sm2_hash_e(mbedtls_md_type_t md_alg, const unsigned char *z,
-        const unsigned char *input, size_t ilen, unsigned char *e);
+int mbedtls_sm2_hash_e(mbedtls_md_type_t md_alg, const unsigned char* z,
+    const unsigned char* input, size_t ilen, unsigned char* e);
 
 /**
  * \brief           Generate an SM2 keypair on the given curve
@@ -195,8 +199,8 @@ int mbedtls_sm2_hash_e(mbedtls_md_type_t md_alg, const unsigned char *z,
  *
  * \return          0 if successful, or a error code.
  */
-int mbedtls_sm2_genkey(mbedtls_sm2_context *ctx, mbedtls_ecp_group_id gid,
-        int (*f_rng)(void *, unsigned char *, size_t), void *p_rng);
+int mbedtls_sm2_genkey(mbedtls_sm2_context* ctx, mbedtls_ecp_group_id gid,
+    int (*f_rng)(void*, unsigned char*, size_t), void* p_rng);
 
 /**
  * \brief           Set an SM2 context from an EC key pair
@@ -206,28 +210,28 @@ int mbedtls_sm2_genkey(mbedtls_sm2_context *ctx, mbedtls_ecp_group_id gid,
  *
  * \return          0 on success, or a MBEDTLS_ERR_ECP_XXX code.
  */
-int mbedtls_sm2_from_keypair(mbedtls_sm2_context *ctx,
-        const mbedtls_ecp_keypair *key);
+int mbedtls_sm2_from_keypair(mbedtls_sm2_context* ctx,
+    const mbedtls_ecp_keypair* key);
 
 /**
  * \brief           Initialize context
  *
  * \param ctx       Context to be initialized
  */
-void mbedtls_sm2_init(mbedtls_sm2_context *ctx);
+void mbedtls_sm2_init(mbedtls_sm2_context* ctx);
 
 /**
  * \brief           Free context
  *
  * \param ctx       Context to free
  */
-void mbedtls_sm2_free(mbedtls_sm2_context *ctx);
+void mbedtls_sm2_free(mbedtls_sm2_context* ctx);
 
 #ifdef __cplusplus
 }
 #endif
 
-#else  /* MBEDTLS_SM2_ALT */
+#else /* MBEDTLS_SM2_ALT */
 #include "sm2_alt.h"
 #endif /* MBEDTLS_SM2_ALT */
 

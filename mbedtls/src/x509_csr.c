@@ -2,13 +2,7 @@
  *  X.509 Certificate Signing Request (CSR) parsing
  *
  *  Copyright The Mbed TLS Contributors
- *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
- *
- *  This file is provided under the Apache License 2.0, or the
- *  GNU General Public License v2.0 or later.
- *
- *  **********
- *  Apache License 2.0:
+ *  SPDX-License-Identifier: Apache-2.0
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
  *  not use this file except in compliance with the License.
@@ -21,27 +15,6 @@
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- *
- *  **********
- *
- *  **********
- *  GNU General Public License v2.0 or later:
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License along
- *  with this program; if not, write to the Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- *  **********
  */
 /*
  *  The ITU-T X.509 standard defines a certificate format for PKI.
@@ -54,16 +27,14 @@
  *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
  */
 
-#if !defined(MBEDTLS_CONFIG_FILE)
-#include "mbedtls/config.h"
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
+#include "common.h"
 
 #if defined(MBEDTLS_X509_CSR_PARSE_C)
 
 #include "mbedtls/x509_csr.h"
+#include "mbedtls/error.h"
 #include "mbedtls/oid.h"
+#include "mbedtls/platform_util.h"
 
 #include <string.h>
 
@@ -85,11 +56,6 @@
 #include <stdio.h>
 #endif
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
-
 /*
  *  Version  ::=  INTEGER  {  v1(0)  }
  */
@@ -97,7 +63,7 @@ static int x509_csr_get_version( unsigned char **p,
                              const unsigned char *end,
                              int *ver )
 {
-    int ret;
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 
     if( ( ret = mbedtls_asn1_get_int( p, end, ver ) ) != 0 )
     {
@@ -107,7 +73,7 @@ static int x509_csr_get_version( unsigned char **p,
             return( 0 );
         }
 
-        return( MBEDTLS_ERR_X509_INVALID_VERSION + ret );
+        return( MBEDTLS_ERROR_ADD( MBEDTLS_ERR_X509_INVALID_VERSION, ret ) );
     }
 
     return( 0 );
@@ -119,7 +85,7 @@ static int x509_csr_get_version( unsigned char **p,
 int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
                         const unsigned char *buf, size_t buflen )
 {
-    int ret;
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t len;
     unsigned char *p, *end;
     mbedtls_x509_buf sig_params;
@@ -165,8 +131,8 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
     if( len != (size_t) ( end - p ) )
     {
         mbedtls_x509_csr_free( csr );
-        return( MBEDTLS_ERR_X509_INVALID_FORMAT +
-                MBEDTLS_ERR_ASN1_LENGTH_MISMATCH );
+        return( MBEDTLS_ERROR_ADD( MBEDTLS_ERR_X509_INVALID_FORMAT,
+                MBEDTLS_ERR_ASN1_LENGTH_MISMATCH ) );
     }
 
     /*
@@ -178,7 +144,7 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) ) != 0 )
     {
         mbedtls_x509_csr_free( csr );
-        return( MBEDTLS_ERR_X509_INVALID_FORMAT + ret );
+        return( MBEDTLS_ERROR_ADD( MBEDTLS_ERR_X509_INVALID_FORMAT, ret ) );
     }
 
     end = p + len;
@@ -210,7 +176,7 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) ) != 0 )
     {
         mbedtls_x509_csr_free( csr );
-        return( MBEDTLS_ERR_X509_INVALID_FORMAT + ret );
+        return( MBEDTLS_ERROR_ADD( MBEDTLS_ERR_X509_INVALID_FORMAT, ret ) );
     }
 
     if( ( ret = mbedtls_x509_get_name( &p, p + len, &csr->subject ) ) != 0 )
@@ -244,7 +210,7 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_CONTEXT_SPECIFIC ) ) != 0 )
     {
         mbedtls_x509_csr_free( csr );
-        return( MBEDTLS_ERR_X509_INVALID_FORMAT + ret );
+        return( MBEDTLS_ERROR_ADD( MBEDTLS_ERR_X509_INVALID_FORMAT, ret ) );
     }
 
     p += len;
@@ -278,8 +244,8 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
     if( p != end )
     {
         mbedtls_x509_csr_free( csr );
-        return( MBEDTLS_ERR_X509_INVALID_FORMAT +
-                MBEDTLS_ERR_ASN1_LENGTH_MISMATCH );
+        return( MBEDTLS_ERROR_ADD( MBEDTLS_ERR_X509_INVALID_FORMAT,
+                MBEDTLS_ERR_ASN1_LENGTH_MISMATCH ) );
     }
 
     return( 0 );
@@ -291,7 +257,7 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
 int mbedtls_x509_csr_parse( mbedtls_x509_csr *csr, const unsigned char *buf, size_t buflen )
 {
 #if defined(MBEDTLS_PEM_PARSE_C)
-    int ret;
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t use_len;
     mbedtls_pem_context pem;
 #endif
@@ -341,7 +307,7 @@ int mbedtls_x509_csr_parse( mbedtls_x509_csr *csr, const unsigned char *buf, siz
  */
 int mbedtls_x509_csr_parse_file( mbedtls_x509_csr *csr, const char *path )
 {
-    int ret;
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t n;
     unsigned char *buf;
 
@@ -350,13 +316,14 @@ int mbedtls_x509_csr_parse_file( mbedtls_x509_csr *csr, const char *path )
 
     ret = mbedtls_x509_csr_parse( csr, buf, n );
 
-    mbedtls_zeroize( buf, n );
+    mbedtls_platform_zeroize( buf, n );
     mbedtls_free( buf );
 
     return( ret );
 }
 #endif /* MBEDTLS_FS_IO */
 
+#if !defined(MBEDTLS_X509_REMOVE_INFO)
 #define BEFORE_COLON    14
 #define BC              "14"
 /*
@@ -365,7 +332,7 @@ int mbedtls_x509_csr_parse_file( mbedtls_x509_csr *csr, const char *path )
 int mbedtls_x509_csr_info( char *buf, size_t size, const char *prefix,
                    const mbedtls_x509_csr *csr )
 {
-    int ret;
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t n;
     char *p;
     char key_size_str[BEFORE_COLON];
@@ -401,6 +368,7 @@ int mbedtls_x509_csr_info( char *buf, size_t size, const char *prefix,
 
     return( (int) ( size - n ) );
 }
+#endif /* MBEDTLS_X509_REMOVE_INFO */
 
 /*
  * Initialize a CSR
@@ -432,17 +400,17 @@ void mbedtls_x509_csr_free( mbedtls_x509_csr *csr )
     {
         name_prv = name_cur;
         name_cur = name_cur->next;
-        mbedtls_zeroize( name_prv, sizeof( mbedtls_x509_name ) );
+        mbedtls_platform_zeroize( name_prv, sizeof( mbedtls_x509_name ) );
         mbedtls_free( name_prv );
     }
 
     if( csr->raw.p != NULL )
     {
-        mbedtls_zeroize( csr->raw.p, csr->raw.len );
+        mbedtls_platform_zeroize( csr->raw.p, csr->raw.len );
         mbedtls_free( csr->raw.p );
     }
 
-    mbedtls_zeroize( csr, sizeof( mbedtls_x509_csr ) );
+    mbedtls_platform_zeroize( csr, sizeof( mbedtls_x509_csr ) );
 }
 
 #endif /* MBEDTLS_X509_CSR_PARSE_C */

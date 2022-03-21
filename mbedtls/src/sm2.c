@@ -10,8 +10,10 @@
  * Thanks to MbedTLS.
  */
 
+#include "common.h"
+
 #if !defined(MBEDTLS_CONFIG_FILE)
-#include "mbedtls/config.h"
+#include "mbedtls/mbedtls_config.h"
 #else
 #include MBEDTLS_CONFIG_FILE
 #endif
@@ -36,6 +38,8 @@
 #define mbedtls_printf      printf
 #define mbedtls_free        free
 #endif /* MBEDTLS_PLATFORM_C */
+
+#include "mbedtls/error.h"
 
 #define ciL    (sizeof(mbedtls_mpi_uint))
 
@@ -111,10 +115,11 @@ static int mbedtls_sm2_pbkdf2(mbedtls_md_context_t *ctx,
 }
 
 static int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
-                                    unsigned char *sig, size_t *slen )
+                                    unsigned char *sig, size_t sig_size,
+                                    size_t *slen )
 {
-    int ret;
-    unsigned char buf[MBEDTLS_ECDSA_MAX_LEN];
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+    unsigned char buf[MBEDTLS_ECDSA_MAX_LEN] = {0};
     unsigned char *p = buf + sizeof( buf );
     size_t len = 0;
 
@@ -124,6 +129,9 @@ static int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
     MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &p, buf, len ) );
     MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &p, buf,
                                        MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) );
+
+    if( len > sig_size )
+        return( MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL );
 
     memcpy( sig, p, len );
     *slen = len;
@@ -213,12 +221,12 @@ int mbedtls_sm2_encrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
         /* A3: check [h]P != O */
         MBEDTLS_MPI_CHK(mbedtls_mpi_lset(&h, 1));
         MBEDTLS_MPI_CHK(mbedtls_ecp_mul(&ctx->grp, &point, &h, &ctx->Q,
-                    NULL, NULL));
+                    f_rng, p_rng));
         MBEDTLS_MPI_CHK(mbedtls_ecp_is_zero(&point));
 
         /* A4: [k]P = (x2, y2) */
         MBEDTLS_MPI_CHK(mbedtls_ecp_mul(&ctx->grp, &point, &k, &ctx->Q,
-                    NULL, NULL));
+                    f_rng, p_rng));
 
         /* A5: t = KDF(x2 || y2, klen) */
         if ((xym = mbedtls_calloc(1, xlen + ylen + ilen)) == NULL) {
@@ -268,7 +276,8 @@ cleanup:
 
 int mbedtls_sm2_decrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
         const unsigned char *input, size_t ilen,
-        unsigned char *output, size_t *olen)
+        unsigned char *output, size_t *olen,
+        int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
 {
     int ret = 0;
     size_t i;
@@ -293,12 +302,12 @@ int mbedtls_sm2_decrypt(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
 
     /* B2: check [h]C1 != O */
     MBEDTLS_MPI_CHK(mbedtls_mpi_lset(&h, 1));
-    MBEDTLS_MPI_CHK(mbedtls_ecp_mul(&ctx->grp, &point, &h, &C1, NULL, NULL));
+    MBEDTLS_MPI_CHK(mbedtls_ecp_mul(&ctx->grp, &point, &h, &C1, f_rng, p_rng));
     MBEDTLS_MPI_CHK(mbedtls_ecp_is_zero(&point));
 
     /* B3: [d]C1 = (x2, y2) */
     MBEDTLS_MPI_CHK(mbedtls_ecp_mul(&ctx->grp, &point, &ctx->d, &C1,
-                NULL, NULL));
+                f_rng, p_rng));
 
     /* B4: t = KDF(x2 || y2, klen) */
     xlen = get_point_size(&point.X);
@@ -510,7 +519,7 @@ cleanup:
 
 int mbedtls_sm2_write_signature(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_alg,
 	const unsigned char *hash, size_t hlen,
-	unsigned char *sig, size_t *slen,
+	unsigned char *sig, size_t sig_size, size_t *slen,
 	int(*f_rng)(void *, unsigned char *, size_t),
 	void *p_rng)
 {
@@ -533,7 +542,7 @@ int mbedtls_sm2_write_signature(mbedtls_sm2_context *ctx, mbedtls_md_type_t md_a
 		hash, hlen, f_rng, p_rng));
 #endif
 
-	MBEDTLS_MPI_CHK(ecdsa_signature_to_asn1(&r, &s, sig, slen));
+	MBEDTLS_MPI_CHK(ecdsa_signature_to_asn1(&r, &s, sig, sig_size, slen));
 
 cleanup:
 	mbedtls_mpi_free(&r);
@@ -902,7 +911,8 @@ int mbedtls_sm2_self_test(int verbose)
 
     if ((ret = mbedtls_sm2_decrypt(&ctx, MBEDTLS_MD_SM3,
                     sm2_test_ciphertext, sizeof(sm2_test_ciphertext),
-                    output, &olen)) != 0) {
+                    output, &olen,
+                    sm2_set_fix_rng, (void *)sm2_test1_rand_fix)) != 0) {
         if (verbose != 0) {
             mbedtls_printf( "failed\n" );
         }
@@ -982,8 +992,8 @@ int mbedtls_sm2_self_test(int verbose)
         mbedtls_printf("passed\n  SM2 sign: ");
     }
 
-    if ((ret = mbedtls_sm2_write_signature(&ctx, MBEDTLS_MD_SM3, sm2_test_md, sizeof(sm2_test_md),output,
-                    sizeof(output),sm2_set_fix_rng, (void *)sm2_test2_rand_fix)) != 0) {
+    if ((ret = mbedtls_sm2_write_signature(&ctx, MBEDTLS_MD_SM3, sm2_test_md, sizeof(sm2_test_md), output,
+                    sizeof(output), &olen , sm2_set_fix_rng, (void *)sm2_test2_rand_fix)) != 0) {
         if (verbose != 0) {
             mbedtls_printf( "failed\n" );
         }

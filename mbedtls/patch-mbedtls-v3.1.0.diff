@@ -1,0 +1,2079 @@
+diff --git a/mbedtls/mbedtls/check_config.h b/mbedtls/mbedtls/check_config.h
+index ce97f6a3..231a3b9d 100644
+--- a/mbedtls/mbedtls/check_config.h
++++ b/mbedtls/mbedtls/check_config.h
+@@ -141,7 +141,9 @@
+     !defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED) &&                  \
+     !defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED) &&                  \
+     !defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED) &&                 \
+-    !defined(MBEDTLS_ECP_DP_CURVE448_ENABLED) ) )
++    !defined(MBEDTLS_ECP_DP_CURVE448_ENABLED) ) &&                 \
++    !defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED) &&                  \
++    !defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED) )
+ #error "MBEDTLS_ECP_C defined, but not all prerequisites"
+ #endif
+ 
+@@ -321,6 +323,22 @@
+ #error "MBEDTLS_PK_C defined, but not all prerequisites"
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C) &&                                       \
++    ( !defined(MBEDTLS_SM3_C) ||                                    \
++      !defined(MBEDTLS_ECP_C) )
++#error "MBEDTLS_SM2_C defined, but not all prerequisites"
++#endif
++
++#if defined(MBEDTLS_KEY_EXCHANGE_SM2_ENABLED) && !defined(MBEDTLS_SM2_C)
++#error "MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED defined, but not all prerequisites"
++#endif
++
++#if defined(MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED) &&             \
++    ( !defined(MBEDTLS_SM2_C) ||                                    \
++      !defined(MBEDTLS_ECDH_C) )
++#error "MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED defined, but not all prerequisites"
++#endif
++
+ #if defined(MBEDTLS_PK_PARSE_C) && !defined(MBEDTLS_PK_C)
+ #error "MBEDTLS_PK_PARSE_C defined, but not all prerequisites"
+ #endif
+diff --git a/mbedtls/mbedtls/cipher.h b/mbedtls/mbedtls/cipher.h
+index c04097da..41b05e6f 100644
+--- a/mbedtls/mbedtls/cipher.h
++++ b/mbedtls/mbedtls/cipher.h
+@@ -89,6 +89,7 @@ typedef enum {
+     MBEDTLS_CIPHER_ID_CAMELLIA,  /**< The Camellia cipher. */
+     MBEDTLS_CIPHER_ID_ARIA,      /**< The Aria cipher. */
+     MBEDTLS_CIPHER_ID_CHACHA20,  /**< The ChaCha20 cipher. */
++    MBEDTLS_CIPHER_ID_SM4,       /**< The SM4 cipher. */
+ } mbedtls_cipher_id_t;
+ 
+ /**
+@@ -183,6 +184,8 @@ typedef enum {
+     MBEDTLS_CIPHER_AES_128_KWP,          /**< AES cipher with 128-bit NIST KWP mode. */
+     MBEDTLS_CIPHER_AES_192_KWP,          /**< AES cipher with 192-bit NIST KWP mode. */
+     MBEDTLS_CIPHER_AES_256_KWP,          /**< AES cipher with 256-bit NIST KWP mode. */
++    MBEDTLS_CIPHER_SM4_ECB,              /**< SM4 cipher in ECB mode. */
++    MBEDTLS_CIPHER_SM4_CBC,              /**< SM4 cipher in CBC mode. */
+ } mbedtls_cipher_type_t;
+ 
+ /** Supported cipher modes. */
+diff --git a/mbedtls/mbedtls/ecp.h b/mbedtls/mbedtls/ecp.h
+index 5b26084d..61f609d2 100644
+--- a/mbedtls/mbedtls/ecp.h
++++ b/mbedtls/mbedtls/ecp.h
+@@ -126,6 +126,8 @@ typedef enum
+     MBEDTLS_ECP_DP_SECP224K1,      /*!< Domain parameters for 224-bit "Koblitz" curve. */
+     MBEDTLS_ECP_DP_SECP256K1,      /*!< Domain parameters for 256-bit "Koblitz" curve. */
+     MBEDTLS_ECP_DP_CURVE448,       /*!< Domain parameters for Curve448. */
++    MBEDTLS_ECP_DP_SM2P256R1,      /*!< Domain parameters for 256-bits "SM2" curve */
++    MBEDTLS_ECP_DP_SM2P256T1,      /*!< Domain parameters for 256-bits "SM2" curve for test */
+ } mbedtls_ecp_group_id;
+ 
+ /**
+diff --git a/mbedtls/mbedtls/error.h b/mbedtls/mbedtls/error.h
+index 8b2b9ea5..2e0f2832 100644
+--- a/mbedtls/mbedtls/error.h
++++ b/mbedtls/mbedtls/error.h
+@@ -92,6 +92,7 @@
+  * DHM       3   11
+  * PK        3   15 (Started from top)
+  * RSA       4   11
++ * SM2       4   6
+  * ECP       4   10 (Started from top)
+  * MD        5   5
+  * HKDF      5   1 (Started from top)
+diff --git a/mbedtls/mbedtls/mbedtls_config.h b/mbedtls/mbedtls/mbedtls_config.h
+index 0558ee00..7c126b5e 100644
+--- a/mbedtls/mbedtls/mbedtls_config.h
++++ b/mbedtls/mbedtls/mbedtls_config.h
+@@ -85,7 +85,7 @@
+  * example, if double-width division is implemented in software, disabling
+  * it can reduce code size in some embedded targets.
+  */
+-//#define MBEDTLS_NO_UDBL_DIVISION
++#define MBEDTLS_NO_UDBL_DIVISION
+ 
+ /**
+  * \def MBEDTLS_NO_64BIT_MULTIPLICATION
+@@ -107,7 +107,7 @@
+  * Note that depending on the compiler, this may decrease performance compared
+  * to using the library function provided by the toolchain.
+  */
+-//#define MBEDTLS_NO_64BIT_MULTIPLICATION
++#define MBEDTLS_NO_64BIT_MULTIPLICATION
+ 
+ /**
+  * \def MBEDTLS_HAVE_SSE2
+@@ -116,7 +116,7 @@
+  *
+  * Uncomment if the CPU supports SSE2 (IA-32 specific).
+  */
+-//#define MBEDTLS_HAVE_SSE2
++#define MBEDTLS_HAVE_SSE2
+ 
+ /**
+  * \def MBEDTLS_HAVE_TIME
+@@ -323,6 +323,9 @@
+ //#define MBEDTLS_SHA1_ALT
+ //#define MBEDTLS_SHA256_ALT
+ //#define MBEDTLS_SHA512_ALT
++//#define MBEDTLS_SM4_ALT
++//#define MBEDTLS_SM3_ALT
++//#define MBEDTLS_SM2_ALT
+ 
+ /*
+  * When replacing the elliptic curve module, pleace consider, that it is
+@@ -656,6 +659,8 @@
+ /* Montgomery curves (supporting ECP) */
+ #define MBEDTLS_ECP_DP_CURVE25519_ENABLED
+ #define MBEDTLS_ECP_DP_CURVE448_ENABLED
++#define MBEDTLS_ECP_DP_SM2P256R1_ENABLED
++#define MBEDTLS_ECP_DP_SM2P256T1_ENABLED
+ 
+ /**
+  * \def MBEDTLS_ECP_NIST_OPTIM
+@@ -704,7 +709,7 @@
+  *
+  * Comment this macro to disable deterministic ECDSA.
+  */
+-#define MBEDTLS_ECDSA_DETERMINISTIC
++//#define MBEDTLS_ECDSA_DETERMINISTIC
+ 
+ /**
+  * \def MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
+@@ -1265,7 +1270,7 @@
+  *
+  * Enable the checkup functions (*_self_test).
+  */
+-#define MBEDTLS_SELF_TEST
++//#define MBEDTLS_SELF_TEST
+ 
+ /**
+  * \def MBEDTLS_SHA256_SMALLER
+@@ -1499,7 +1504,7 @@
+  * Uncomment this macro to enable the support for TLS 1.3.
+  *
+  */
+-//#define MBEDTLS_SSL_PROTO_TLS1_3
++#define MBEDTLS_SSL_PROTO_TLS1_3
+ 
+ /**
+  * \def MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE
+@@ -1521,7 +1526,7 @@
+  * effect on the build.
+  *
+  */
+-//#define MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE
++#define MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE
+ 
+ /**
+  * \def MBEDTLS_SSL_PROTO_DTLS
+@@ -1736,7 +1741,7 @@
+  *
+  * Uncomment this to enable pthread mutexes.
+  */
+-//#define MBEDTLS_THREADING_PTHREAD
++#define MBEDTLS_THREADING_PTHREAD
+ 
+ /**
+  * \def MBEDTLS_USE_PSA_CRYPTO
+@@ -2187,7 +2192,7 @@
+  *
+  * This module provides debugging functions.
+  */
+-#define MBEDTLS_DEBUG_C
++//#define MBEDTLS_DEBUG_C
+ 
+ /**
+  * \def MBEDTLS_DES_C
+@@ -2888,7 +2893,7 @@
+  *
+  * Enable this layer to allow use of mutexes within mbed TLS
+  */
+-//#define MBEDTLS_THREADING_C
++#define MBEDTLS_THREADING_C
+ 
+ /**
+  * \def MBEDTLS_TIMING_C
+@@ -3320,3 +3325,108 @@
+ //#define MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED
+ 
+ /* \} name SECTION: Customisation configuration options */
++
++
++/**
++ * \name SECTION: GM ciphers and features
++ *
++ * \{
++ */
++
++/**
++ * \def MBEDTLS_SM2_C
++ *
++ * Enable the SM2 public key cryptographic algorithm based on elliptic curves.
++ *
++ * Module:  library/sm2.c
++ * Caller:
++ *
++ * Requires: MBEDTLS_SM3_C, MBEDTLS_ECP_C
++ */
++#define MBEDTLS_SM2_C
++
++/**
++ * \def MBEDTLS_SM3_C
++ *
++ * Enable the SM3 cryptographic hash algorithms.
++ *
++ * Module:  library/sm3.c
++ * Caller:  library/sm2.c
++ */
++#define MBEDTLS_SM3_C
++
++/**
++ * \def MBEDTLS_SM4_C
++ *
++ * Enable the SM4 block cipher.
++ *
++ * Module:  library/sm4.c
++ *
++ * Requires:
++ */
++#define MBEDTLS_SM4_C
++
++/**
++ * \def MBEDTLS_GM_PROTO_SSL1_1
++ *
++ * Enable support for GM-TLS 1.1 (no GM-DTLS support temporarily).
++ *
++ * Requires: MBEDTLS_SM3_C
++ *
++ * Comment this macro to disable support for GM-TLS 1.1/GM-DTLS 1.1
++ */
++#define MBEDTLS_GM_PROTO_SSL1_1
++
++/**
++ * \def MBEDTLS_KEY_EXCHANGE_SM2_ENABLED
++ *
++ * Enable the SM2 based ciphersuite modes in SSL / TLS.
++ *
++ * Requires: MBEDTLS_SM2_C
++ *
++ * This enables the following ciphersuites (if other requisites are
++ * enabled as well):
++ *      MBEDTLS_GM_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_SM2_WITH_SM4_CBC_SM3
++ */
++#define MBEDTLS_KEY_EXCHANGE_SM2_ENABLED
++
++/**
++ * \def MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED
++ *
++ * Enable the SM2DHE-SM2 based ciphersuite modes in SSL / TLS.
++ *
++ * Requires: MBEDTLS_SM2_C, MBEDTLS_ECDH_C(@TODO: Need SM2DHE?)
++ *
++ * This enables the following ciphersuites (if other requisites are
++ * enabled as well):
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM4_CBC_SM3
++ */
++#define MBEDTLS_KEY_EXCHANGE_SM2DHE_SM2_ENABLED
++
++/**
++ * \def MBEDTLS_KEY_EXCHANGE_GM_ENABLED
++ *
++ * Enable the GM ciphers based ciphersuite modes in SSL / TLS.
++ *
++ * Requires:
++ *
++ * This enables the following ciphersuites (if other requisites are
++ * enabled as well):
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_SM2_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_IBSDH_IBC_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_IBC_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM1_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM1_CBC_SHA1
++ *      MBEDTLS_GM_SM2DHE_SM2_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_SM2_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_IBSDH_IBC_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_IBC_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM4_CBC_SM3
++ *      MBEDTLS_GM_RSA_WITH_SM4_CBC_SHA1
++ */
++#define MBEDTLS_KEY_EXCHANGE_GM_ENABLED
++
++/* \} name SECTION: GM modules */
+diff --git a/mbedtls/mbedtls/md.h b/mbedtls/mbedtls/md.h
+index 2b668f55..74eabc62 100644
+--- a/mbedtls/mbedtls/md.h
++++ b/mbedtls/mbedtls/md.h
+@@ -61,6 +61,7 @@ typedef enum {
+     MBEDTLS_MD_SHA384,    /**< The SHA-384 message digest. */
+     MBEDTLS_MD_SHA512,    /**< The SHA-512 message digest. */
+     MBEDTLS_MD_RIPEMD160, /**< The RIPEMD-160 message digest. */
++    MBEDTLS_MD_SM3,       /**< The SM3 message digest. */
+ } mbedtls_md_type_t;
+ 
+ #if defined(MBEDTLS_SHA512_C)
+diff --git a/mbedtls/mbedtls/oid.h b/mbedtls/mbedtls/oid.h
+index 836e455b..7f04f034 100644
+--- a/mbedtls/mbedtls/oid.h
++++ b/mbedtls/mbedtls/oid.h
+@@ -258,6 +258,8 @@
+ 
+ #define MBEDTLS_OID_DIGEST_ALG_RIPEMD160        MBEDTLS_OID_TELETRUST "\x03\x02\x01" /**< id-ripemd160 OBJECT IDENTIFIER :: { iso(1) identified-organization(3) teletrust(36) algorithm(3) hashAlgorithm(2) ripemd160(1) } */
+ 
++#define MBEDTLS_OID_DIGEST_ALG_SM3              MBEDTLS_OID_TELETRUST "\x03\x02\x02" /**< id-ripemd160 OBJECT IDENTIFIER :: { iso(1) identified-organization(3) teletrust(36) algorithm(3) hashAlgorithm(2) sm3(2) } */
++
+ #define MBEDTLS_OID_HMAC_SHA1                   MBEDTLS_OID_RSA_COMPANY "\x02\x07" /**< id-hmacWithSHA1 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 7 } */
+ 
+ #define MBEDTLS_OID_HMAC_SHA224                 MBEDTLS_OID_RSA_COMPANY "\x02\x08" /**< id-hmacWithSHA224 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 8 } */
+@@ -422,6 +424,58 @@
+  *   ecdsa-with-SHA2(3) 4 } */
+ #define MBEDTLS_OID_ECDSA_SHA512            MBEDTLS_OID_ANSI_X9_62_SIG_SHA2 "\x04"
+ 
++/*
++ * GM algorithms identifiers, from (GB/T 30277-2013) Information security
++ *      technology - Public key infrastructures - Certification
++ *      authentication institution identity code specification, appendix A.
++ */
++#define MBEDTLS_OID_COUNTRY_CN                  "\x81\x1c"      /* {cn(156)} */
++#define MBEDTLS_OID_ORG_SCA                     "\xcf\x55"      /* {state-cryptography-administration(10197)} */
++#define MBEDTLS_OID_GM_ALGORITHM                "\x01"          /* {gm(1)} */
++#define MBEDTLS_OID_GM                          MBEDTLS_OID_ISO_MEMBER_BODIES \
++    MBEDTLS_OID_COUNTRY_CN MBEDTLS_OID_ORG_SCA MBEDTLS_OID_GM_ALGORITHM
++
++#define MBEDTLS_OID_GM_SM2                  MBEDTLS_OID_GM "\x82\x2d"   /* {sm2(301)} */
++#define MBEDTLS_OID_GM_SM3                  MBEDTLS_OID_GM "\x83\x11"   /* {sm3(401)} */
++#define MBEDTLS_OID_GM_SM4                  MBEDTLS_OID_GM "\x68"       /* {sm4(104)} */
++
++/* sm2p256r1 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2(301) } */
++#define MBEDTLS_OID_EC_SM2P256R1            MBEDTLS_OID_GM_SM2
++/* sm2-with-sm3 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sm3(501) } */
++#define MBEDTLS_OID_SM2_SM3                 MBEDTLS_OID_GM "\x83\x75"
++/* sm2-with-sha1 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha1(502) } */
++#define MBEDTLS_OID_SM2_SHA1                MBEDTLS_OID_GM "\x83\x76"
++/* sm2-with-sha256 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha256(503) } */
++#define MBEDTLS_OID_SM2_SHA256              MBEDTLS_OID_GM "\x83\x77"
++/* sm2-with-sha512 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha512(504) } */
++#define MBEDTLS_OID_SM2_SHA512              MBEDTLS_OID_GM "\x83\x78"
++/* sm2-with-sha224 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha224(505) } */
++#define MBEDTLS_OID_SM2_SHA224              MBEDTLS_OID_GM "\x83\x79"
++/* sm2-with-sha384 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm2-with-sha384(506) } */
++#define MBEDTLS_OID_SM2_SHA384              MBEDTLS_OID_GM "\x83\x7A"
++
++/* sm3 OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm3(401) 1 } */
++#define MBEDTLS_OID_GM_SM3_ECB              MBEDTLS_OID_GM_SM3 "\x01"
++/* sm3-hmac OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm3(401) 2 } */
++#define MBEDTLS_OID_GM_SM3_CBC              MBEDTLS_OID_GM_SM3 "\x02"
++
++/* sm4-ecb OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm4(104) 1 } */
++#define MBEDTLS_OID_GM_SM4_ECB              MBEDTLS_OID_GM_SM4 "\x01"
++/* sm4-cbc OBJECT IDENTIFIER ::= {
++ * iso(1) member-body(2) cn(156) sca(10197) gm(1) sm4(104) 2 } */
++#define MBEDTLS_OID_GM_SM4_CBC              MBEDTLS_OID_GM_SM4 "\x02"
++
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+diff --git a/mbedtls/mbedtls/pk.h b/mbedtls/mbedtls/pk.h
+index 5f9f29ff..b3cc5f78 100644
+--- a/mbedtls/mbedtls/pk.h
++++ b/mbedtls/mbedtls/pk.h
+@@ -44,6 +44,10 @@
+ #include "psa/crypto.h"
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C)
++#include "sm2.h"
++#endif
++
+ #if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
+     !defined(inline) && !defined(__cplusplus)
+ #define inline __inline
+@@ -96,6 +100,7 @@ typedef enum {
+     MBEDTLS_PK_RSA_ALT,
+     MBEDTLS_PK_RSASSA_PSS,
+     MBEDTLS_PK_OPAQUE,
++    MBEDTLS_PK_SM2
+ } mbedtls_pk_type_t;
+ 
+ /**
+@@ -726,6 +731,8 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *ctx,
+ int mbedtls_pk_parse_public_key( mbedtls_pk_context *ctx,
+                          const unsigned char *key, size_t keylen );
+ 
++int upgrade_ecc_to_sm2(mbedtls_pk_context *pk );
++
+ #if defined(MBEDTLS_FS_IO)
+ /** \ingroup pk_module */
+ /**
+diff --git a/mbedtls/mbedtls/threading.h b/mbedtls/mbedtls/threading.h
+index fbc73747..12be45d5 100644
+--- a/mbedtls/mbedtls/threading.h
++++ b/mbedtls/mbedtls/threading.h
+@@ -37,6 +37,12 @@ extern "C" {
+ #define MBEDTLS_ERR_THREADING_MUTEX_ERROR                 -0x001E
+ 
+ #if defined(MBEDTLS_THREADING_PTHREAD)
++#ifdef _WIN32
++#include <winsock2.h>
++#include <windows.h>
++typedef CRITICAL_SECTION mbedtls_threading_mutex_t;
++
++#else
+ #include <pthread.h>
+ typedef struct mbedtls_threading_mutex_t
+ {
+@@ -47,6 +53,7 @@ typedef struct mbedtls_threading_mutex_t
+     char MBEDTLS_PRIVATE(is_valid);
+ } mbedtls_threading_mutex_t;
+ #endif
++#endif
+ 
+ #if defined(MBEDTLS_THREADING_ALT)
+ /* You should define the mbedtls_threading_mutex_t type in your header */
+diff --git a/mbedtls/src/cipher_wrap.c b/mbedtls/src/cipher_wrap.c
+index 7da7d9d5..3d606a8c 100644
+--- a/mbedtls/src/cipher_wrap.c
++++ b/mbedtls/src/cipher_wrap.c
+@@ -64,6 +64,10 @@
+ #include "mbedtls/nist_kw.h"
+ #endif
+ 
++#if defined(MBEDTLS_SM4_C)
++#include "mbedtls/sm4.h"
++#endif
++
+ #if defined(MBEDTLS_CIPHER_NULL_CIPHER)
+ #include <string.h>
+ #endif
+@@ -1921,6 +1925,107 @@ static const mbedtls_cipher_info_t chachapoly_info = {
+ };
+ #endif /* MBEDTLS_CHACHAPOLY_C */
+ 
++
++#if defined(MBEDTLS_SM4_C)
++static void *sm4_ctx_alloc( void )
++{
++    mbedtls_sm4_context *sm4 = mbedtls_calloc( 1, sizeof( mbedtls_sm4_context ) );
++
++    if( sm4 == NULL )
++        return( NULL );
++
++    mbedtls_sm4_init( sm4 );
++
++    return( sm4 );
++}
++
++static void sm4_ctx_free( void *ctx )
++{
++    mbedtls_sm4_free( (mbedtls_sm4_context *) ctx );
++    mbedtls_free( ctx );
++}
++
++static int sm4_setkey_enc_wrap( void *ctx, const unsigned char *key,
++                                unsigned int key_bitlen )
++{
++    if (key_bitlen) { };
++    return mbedtls_sm4_setkey_enc( (mbedtls_sm4_context *) ctx, key );
++}
++
++static int sm4_setkey_dec_wrap( void *ctx, const unsigned char *key,
++                                unsigned int key_bitlen )
++{
++    if (key_bitlen) { };
++    return mbedtls_sm4_setkey_dec( (mbedtls_sm4_context *) ctx, key );
++}
++
++static int sm4_crypt_ecb_wrap( void *ctx, mbedtls_operation_t operation,
++        const unsigned char *input, unsigned char *output )
++{
++    return mbedtls_sm4_crypt_ecb( (mbedtls_sm4_context *) ctx, operation,
++            input, output );
++}
++
++static int sm4_crypt_cbc_wrap( void *ctx, mbedtls_operation_t operation,
++        size_t length, unsigned char *iv,
++        const unsigned char *input, unsigned char *output )
++{
++    return mbedtls_sm4_crypt_cbc( (mbedtls_sm4_context *) ctx, operation,
++            length, iv, input, output );
++}
++
++static const mbedtls_cipher_base_t sm4_base_info = {
++    MBEDTLS_CIPHER_ID_SM4,
++    sm4_crypt_ecb_wrap,
++#if defined(MBEDTLS_CIPHER_MODE_CBC)
++    sm4_crypt_cbc_wrap,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_CFB)
++    NULL,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_OFB)
++    NULL,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_CTR)
++    NULL,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_XTS)
++    NULL,
++#endif
++#if defined(MBEDTLS_CIPHER_MODE_STREAM)
++    chacha20_stream_wrap,
++#endif
++    sm4_setkey_enc_wrap,
++    sm4_setkey_dec_wrap,
++    sm4_ctx_alloc,
++    sm4_ctx_free
++};
++
++static const mbedtls_cipher_info_t sm4_ecb_info = {
++    MBEDTLS_CIPHER_SM4_ECB,
++    MBEDTLS_MODE_ECB,
++    128,
++    "SM4-ECB",
++    16,
++    0,
++    16,
++    &sm4_base_info,
++};
++
++#if defined(MBEDTLS_CIPHER_MODE_CBC)
++static const mbedtls_cipher_info_t sm4_cbc_info = {
++    MBEDTLS_CIPHER_SM4_CBC,
++    MBEDTLS_MODE_CBC,
++    128,
++    "SM4-CBC",
++    16,
++    0,
++    16,
++    &sm4_base_info,
++};
++#endif /* MBEDTLS_CIPHER_MODE_CBC */
++#endif /* MBEDTLS_SM4_C */
++
+ #if defined(MBEDTLS_CIPHER_NULL_CIPHER)
+ static int null_crypt_stream( void *ctx, size_t length,
+                               const unsigned char *input,
+@@ -2256,6 +2361,13 @@ const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] =
+     { MBEDTLS_CIPHER_AES_256_KWP,         &aes_256_nist_kwp_info },
+ #endif
+ 
++#if defined(MBEDTLS_SM4_C)
++    { MBEDTLS_CIPHER_SM4_ECB,              &sm4_ecb_info, },
++#if defined(MBEDTLS_CIPHER_MODE_CBC)
++    { MBEDTLS_CIPHER_SM4_CBC,              &sm4_cbc_info, },
++#endif
++#endif /* MBEDTLS_SM4_C */
++
+ #if defined(MBEDTLS_CIPHER_NULL_CIPHER)
+     { MBEDTLS_CIPHER_NULL,                 &null_cipher_info },
+ #endif /* MBEDTLS_CIPHER_NULL_CIPHER */
+diff --git a/mbedtls/src/ecdsa.c b/mbedtls/src/ecdsa.c
+index 0b612ce8..4442e1f2 100644
+--- a/mbedtls/src/ecdsa.c
++++ b/mbedtls/src/ecdsa.c
+@@ -36,6 +36,8 @@
+ #include "mbedtls/hmac_drbg.h"
+ #endif
+ 
++#include "secp256k1_api.h"
++
+ #if defined(MBEDTLS_PLATFORM_C)
+ #include "mbedtls/platform.h"
+ #else
+@@ -683,6 +685,23 @@ int mbedtls_ecdsa_write_signature_restartable( mbedtls_ecdsa_context *ctx,
+                            void *p_rng,
+                            mbedtls_ecdsa_restart_ctx *rs_ctx )
+ {
++    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
++    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
++        unsigned char buffer[KEYSIZE_256];
++        unsigned char key[KEYSIZE_256];
++        secp256k1_ecdsa_signature signature;
++
++        fix_hash(hash, hlen, buffer);
++        mbedtls_mpi_write_binary(&ec_ctx->d, key, KEYSIZE_256);
++
++        secp256k1_ecdsa_sign(secp256k1_ctx, &signature, hash, key, NULL, NULL);
++
++        *slen = 80;
++        secp256k1_ecdsa_signature_serialize_der(secp256k1_ctx, sig, slen, &signature);
++
++        return 0;
++    }
++
+     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+     mbedtls_mpi r, s;
+     ECDSA_VALIDATE_RET( ctx   != NULL );
+@@ -766,6 +785,27 @@ int mbedtls_ecdsa_read_signature_restartable( mbedtls_ecdsa_context *ctx,
+                           const unsigned char *sig, size_t slen,
+                           mbedtls_ecdsa_restart_ctx *rs_ctx )
+ {
++    mbedtls_ecdsa_context* ec_ctx = (mbedtls_ecdsa_context*)ctx;
++    if (ec_ctx->grp.id == MBEDTLS_ECP_DP_SECP256K1) {
++        unsigned char buffer[KEYSIZE_256];
++        secp256k1_pubkey pubkey;
++        secp256k1_ecdsa_signature signature;
++
++        fix_hash(hash, hlen, buffer);
++
++        mpi_write_key(&ec_ctx->Q.X, pubkey.data);
++        mpi_write_key(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256);
++
++        if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx, &signature, sig, slen))
++            return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
++
++        secp256k1_ecdsa_signature_normalize(secp256k1_ctx, &signature, &signature);
++        if (!secp256k1_ecdsa_verify(secp256k1_ctx, &signature, hash, &pubkey))
++            return MBEDTLS_ERR_ECP_VERIFY_FAILED;
++
++        return 0;
++    }
++
+     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+     unsigned char *p = (unsigned char *) sig;
+     const unsigned char *end = sig + slen;
+diff --git a/mbedtls/src/ecp.c b/mbedtls/src/ecp.c
+index 0212069c..de8d2da6 100644
+--- a/mbedtls/src/ecp.c
++++ b/mbedtls/src/ecp.c
+@@ -80,6 +80,8 @@
+ #include "bn_mul.h"
+ #include "ecp_invasive.h"
+ 
++#include "secp256k1_api.h"
++
+ #include <string.h>
+ 
+ #if !defined(MBEDTLS_ECP_ALT)
+@@ -356,6 +358,9 @@ int mbedtls_ecp_check_budget( const mbedtls_ecp_group *grp,
+  */
+ static const mbedtls_ecp_curve_info ecp_supported_curves[] =
+ {
++#if defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED)
++    { MBEDTLS_ECP_DP_SECP256K1,    22,     256,    "secp256k1"         },
++#endif
+ #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
+     { MBEDTLS_ECP_DP_SECP521R1,    25,     521,    "secp521r1"         },
+ #endif
+@@ -371,9 +376,6 @@ static const mbedtls_ecp_curve_info ecp_supported_curves[] =
+ #if defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED)
+     { MBEDTLS_ECP_DP_SECP256R1,    23,     256,    "secp256r1"         },
+ #endif
+-#if defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED)
+-    { MBEDTLS_ECP_DP_SECP256K1,    22,     256,    "secp256k1"         },
+-#endif
+ #if defined(MBEDTLS_ECP_DP_BP256R1_ENABLED)
+     { MBEDTLS_ECP_DP_BP256R1,      26,     256,    "brainpoolP256r1"   },
+ #endif
+@@ -2443,6 +2445,16 @@ cleanup:
+ 
+ #endif /* MBEDTLS_ECP_MONTGOMERY_ENABLED */
+ 
++static int ecdh_hash_function_XY(unsigned char* output, const unsigned char* x32, const unsigned char* y32,
++    void* data)
++{
++    (void)data;
++    memcpy(output, x32, KEYSIZE_256);
++    memcpy(output + KEYSIZE_256, y32, KEYSIZE_256);
++
++    return 1;
++}
++
+ /*
+  * Restartable multiplication R = m * P
+  *
+@@ -2454,6 +2466,25 @@ static int ecp_mul_restartable_internal( mbedtls_ecp_group *grp, mbedtls_ecp_poi
+              int (*f_rng)(void *, unsigned char *, size_t), void *p_rng,
+              mbedtls_ecp_restart_ctx *rs_ctx )
+ {
++    if ( grp->id == MBEDTLS_ECP_DP_SECP256K1 ) {
++        unsigned char key[KEYSIZE_256];
++        secp256k1_pubkey pubkey;
++        unsigned char buffer[KEYSIZE_256 * 2];
++
++        mbedtls_mpi_write_binary(m, key, KEYSIZE_256);
++
++        mpi_write_key(&P->X, pubkey.data);
++        mpi_write_key(&P->Y, pubkey.data + KEYSIZE_256);
++
++        secp256k1_ecdh(secp256k1_ctx, buffer, &pubkey, key, ecdh_hash_function_XY, NULL);
++
++        mbedtls_mpi_read_binary(&R->X, buffer, KEYSIZE_256);
++        mbedtls_mpi_read_binary(&R->Y, buffer + KEYSIZE_256, KEYSIZE_256);
++        mbedtls_mpi_lset(&R->Z, 1);
++
++        return 0;
++    }
++
+     int ret = MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
+ #if defined(MBEDTLS_ECP_INTERNAL_ALT)
+     char is_grp_capable = 0;
+diff --git a/mbedtls/src/ecp_curves.c b/mbedtls/src/ecp_curves.c
+index 421a067b..6a723054 100644
+--- a/mbedtls/src/ecp_curves.c
++++ b/mbedtls/src/ecp_curves.c
+@@ -4506,6 +4506,518 @@ static const mbedtls_ecp_point brainpoolP512r1_T[32] = {
+ #endif
+ #endif /* MBEDTLS_ECP_DP_BP512R1_ENABLED */
+ 
++/*
++ * Domain parameters for SM2 (http://www.oscca.gov.cn/News/201012/News_1197.htm)
++ */
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++static const mbedtls_mpi_uint SM2P256r1_p[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF ),
++};
++static const mbedtls_mpi_uint SM2P256r1_a[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF ),
++};
++static const mbedtls_mpi_uint SM2P256r1_b[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x93, 0x0E, 0x94, 0x4D, 0x41, 0xBD, 0xBC, 0xDD ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x92, 0x8F, 0xAB, 0x15, 0xF5, 0x89, 0x97, 0xF3 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA7, 0x09, 0x65, 0xCF, 0x4B, 0x9E, 0x5A, 0x4D ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x34, 0x5E, 0x9F, 0x9D, 0x9E, 0xFA, 0xE9, 0x28 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_gx[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC7, 0x74, 0x4C, 0x33, 0x89, 0x45, 0x5A, 0x71 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE1, 0x0B, 0x66, 0xF2, 0xBF, 0x0B, 0xE3, 0x8F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x94, 0xC9, 0x39, 0x6A, 0x46, 0x04, 0x99, 0x5F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x19, 0x81, 0x19, 0x1F, 0x2C, 0xAE, 0xC4, 0x32 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_gy[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA0, 0xF0, 0x39, 0x21, 0xE5, 0x32, 0xDF, 0x02 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x40, 0x47, 0x2A, 0xC6, 0x7C, 0x87, 0xA9, 0xD0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x53, 0x21, 0x69, 0x6B, 0xE3, 0xCE, 0xBD, 0x59 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9C, 0x77, 0xF6, 0xF4, 0xA2, 0x36, 0x37, 0xBC ),
++};
++static const mbedtls_mpi_uint SM2P256r1_n[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x23, 0x41, 0xD5, 0x39, 0x09, 0xF4, 0xBB, 0x53 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2B, 0x05, 0xC6, 0x21, 0x6B, 0xDF, 0x03, 0x72 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF ),
++};
++
++#if MBEDTLS_ECP_FIXED_POINT_OPTIM == 1
++static const mbedtls_mpi_uint SM2P256r1_T_0_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC7, 0x74, 0x4C, 0x33, 0x89, 0x45, 0x5A, 0x71 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE1, 0x0B, 0x66, 0xF2, 0xBF, 0x0B, 0xE3, 0x8F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x94, 0xC9, 0x39, 0x6A, 0x46, 0x04, 0x99, 0x5F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x19, 0x81, 0x19, 0x1F, 0x2C, 0xAE, 0xC4, 0x32 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_0_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA0, 0xF0, 0x39, 0x21, 0xE5, 0x32, 0xDF, 0x02 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x40, 0x47, 0x2A, 0xC6, 0x7C, 0x87, 0xA9, 0xD0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x53, 0x21, 0x69, 0x6B, 0xE3, 0xCE, 0xBD, 0x59 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9C, 0x77, 0xF6, 0xF4, 0xA2, 0x36, 0x37, 0xBC ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_1_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDD, 0x42, 0xA2, 0x95, 0xEA, 0x3B, 0xE8, 0x1F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEE, 0xEC, 0x47, 0x9A, 0xCC, 0x1A, 0x77, 0x8C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x81, 0x0D, 0x2B, 0x6A, 0xBE, 0x65, 0x51, 0x62 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x56, 0x0C, 0x2A, 0xA8, 0x7C, 0x30, 0x3C, 0xD7 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_1_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDA, 0x65, 0xF5, 0xFD, 0x92, 0x8D, 0x68, 0x38 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7E, 0x4E, 0x24, 0x85, 0xDE, 0x1D, 0xDA, 0x12 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x55, 0x4C, 0x9D, 0x5F, 0xC7, 0x91, 0xA1, 0xB6 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x59, 0xC7, 0xB1, 0x4C, 0x2B, 0xBF, 0xE7, 0x0D ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_2_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x29, 0x10, 0x00, 0x45, 0x54, 0xF3, 0x59, 0xAE ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x51, 0xBB, 0x3F, 0x48, 0x96, 0xE2, 0xBF, 0xB6 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDC, 0x9E, 0x52, 0x19, 0x8E, 0x1B, 0x95, 0x41 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7F, 0xDE, 0xB1, 0x1E, 0x24, 0xE8, 0xF1, 0xDF ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_2_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x35, 0x05, 0x01, 0x27, 0x88, 0xC6, 0x71, 0x85 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA3, 0x9C, 0x9E, 0xDE, 0xE6, 0x12, 0x43, 0x9D ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x73, 0x98, 0x5D, 0x7C, 0xC7, 0x89, 0x42, 0x05 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA2, 0xFD, 0xFD, 0x13, 0xFC, 0x27, 0xFB, 0x3D ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_3_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x72, 0x32, 0xA7, 0x8F, 0xCF, 0x87, 0x85, 0xAF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x40, 0xDE, 0x3A, 0x06, 0x26, 0xC9, 0xEC, 0xA8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF6, 0xE5, 0x4D, 0xB7, 0xD1, 0x66, 0xD9, 0x96 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2C, 0x1A, 0xFE, 0x4D, 0x34, 0x8B, 0x34, 0xC5 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_3_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x16, 0xE1, 0x6C, 0x68, 0xDB, 0x0D, 0xA3, 0xB0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x15, 0x93, 0x76, 0x6B, 0x32, 0x4F, 0xF8, 0x2B ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x80, 0x83, 0xB6, 0xB5, 0x22, 0xC7, 0xF6, 0xE8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xCC, 0xB4, 0xFD, 0x2E, 0xF6, 0xD3, 0x9F, 0xAA ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_4_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x26, 0x06, 0xC8, 0x02, 0x98, 0x20, 0x2A, 0xA9 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEB, 0x56, 0x75, 0xB9, 0x4B, 0xDC, 0x21, 0xA6 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xAE, 0x09, 0x43, 0x37, 0x41, 0x74, 0x13, 0x0C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1C, 0x69, 0x77, 0xEC, 0xEC, 0xC5, 0x02, 0x43 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_4_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9D, 0xDB, 0x76, 0x42, 0x4A, 0x60, 0x5A, 0x21 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xBB, 0xDD, 0x0A, 0x36, 0x05, 0x36, 0xB8, 0xB2 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xCB, 0x97, 0xF0, 0x41, 0x09, 0xD2, 0xF4, 0xB7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA2, 0xAF, 0x18, 0xF6, 0xD9, 0xA3, 0x41, 0x2E ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_5_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x89, 0x17, 0xF1, 0x25, 0x3E, 0xB6, 0xFA, 0x26 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC2, 0x9D, 0x85, 0x38, 0x23, 0xE7, 0xE0, 0x9D ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xCF, 0xCA, 0x7B, 0xF9, 0xD2, 0xAC, 0x4D, 0x5F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB2, 0xEF, 0x56, 0x97, 0x61, 0xA4, 0x9A, 0x0A ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_5_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x6E, 0x06, 0xF1, 0x29, 0x69, 0xE6, 0xCD, 0xC8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2E, 0x17, 0x4B, 0x07, 0x30, 0xFD, 0xAB, 0x54 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x08, 0x95, 0x43, 0xEC, 0x01, 0x47, 0xCF, 0x81 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9A, 0x8A, 0x4A, 0x2C, 0xF0, 0xA4, 0xC9, 0x2F ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_6_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDC, 0x71, 0xF5, 0x6A, 0xB1, 0x04, 0x23, 0x1C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE9, 0xDF, 0x9D, 0x20, 0x1A, 0xAC, 0x3D, 0x6F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x41, 0x59, 0xC5, 0xF7, 0xEF, 0xA5, 0xA2, 0x07 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x4B, 0xCE, 0xF2, 0xFA, 0x6E, 0x14, 0xA7, 0x55 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_6_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x27, 0xE6, 0x3E, 0x7D, 0x5F, 0xBA, 0x09, 0x71 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x95, 0x80, 0xE8, 0x12, 0x05, 0xB6, 0xDB, 0xC8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF2, 0x8C, 0xF3, 0x7E, 0x0A, 0x68, 0xB2, 0x63 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7E, 0x0F, 0x53, 0x9E, 0x15, 0x28, 0x11, 0x51 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_7_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xCF, 0xE4, 0x2E, 0x34, 0xAA, 0x4E, 0x42, 0xB7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xCF, 0x4A, 0x64, 0x7E, 0x98, 0xD9, 0x42, 0xB3 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x17, 0xF1, 0x67, 0x5D, 0xD4, 0x31, 0xC7, 0x5C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x5F, 0x9C, 0x80, 0xBF, 0x98, 0x08, 0xC5, 0xD5 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_7_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x16, 0x3C, 0x4A, 0x31, 0xD1, 0x19, 0xCB, 0xF1 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC8, 0x4D, 0xB0, 0x64, 0xDE, 0x46, 0xE3, 0x49 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xBC, 0x30, 0x3D, 0x78, 0xD6, 0xD3, 0xA0, 0x43 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB5, 0x28, 0x00, 0x8C, 0x51, 0x52, 0x58, 0x9A ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_8_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD7, 0xE4, 0x37, 0x09, 0x04, 0x81, 0x15, 0x26 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC6, 0x3D, 0xAE, 0x5E, 0xB8, 0x06, 0xC3, 0xA5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF2, 0xC9, 0x1A, 0xDA, 0x03, 0xE7, 0x00, 0x91 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x25, 0x3C, 0xAE, 0x52, 0x34, 0xBE, 0xB0, 0xEE ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_8_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD2, 0x7C, 0x03, 0xCD, 0xCB, 0x27, 0x28, 0xAF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x8E, 0xAB, 0x12, 0xB2, 0x00, 0xCC, 0xAD, 0x43 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x82, 0x62, 0x80, 0xE8, 0xFB, 0x88, 0x7D, 0x85 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xCF, 0xFF, 0xBC, 0x5D, 0x7C, 0xC8, 0xB1, 0xBC ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_9_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD3, 0xCB, 0xDC, 0xE9, 0x8B, 0x0C, 0x9E, 0xBF ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x46, 0x47, 0x63, 0x4E, 0x25, 0x6C, 0x73, 0x5E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEA, 0x72, 0x77, 0xAC, 0x0A, 0x8C, 0x03, 0x4C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x6E, 0xEF, 0x4B, 0xB4, 0xD6, 0x09, 0xFC, 0xFE ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_9_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC8, 0x10, 0xBE, 0x34, 0xC3, 0x7F, 0x05, 0x51 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x70, 0x69, 0x15, 0x89, 0x3D, 0xCF, 0xFA, 0x74 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x3D, 0x0B, 0x2F, 0x35, 0x3A, 0x4E, 0xE7, 0xFD ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x76, 0xA6, 0x47, 0x01, 0x42, 0x27, 0x89, 0x43 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_10_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x40, 0x05, 0xFB, 0x17, 0x39, 0xEA, 0x4C, 0xB3 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x38, 0xFB, 0xE0, 0x31, 0x7E, 0x58, 0x11, 0xF7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEC, 0x62, 0x78, 0x15, 0xB0, 0x46, 0x22, 0x1B ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA5, 0x45, 0xC9, 0x0C, 0x94, 0xF4, 0x3F, 0x13 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_10_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x97, 0x58, 0x40, 0x52, 0x96, 0xA1, 0xB5, 0xA7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x10, 0xB9, 0xF5, 0x6F, 0xFF, 0x5D, 0xD5, 0x71 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE7, 0x11, 0x96, 0xF0, 0x38, 0x8A, 0x18, 0xF4 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x62, 0xD7, 0x9E, 0x63, 0x02, 0x10, 0xEB, 0xA9 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_11_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x15, 0xC5, 0xED, 0x5A, 0xC3, 0x65, 0x61, 0x9B ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9A, 0x3A, 0x9C, 0xAD, 0x5E, 0x59, 0xD1, 0x74 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB1, 0x92, 0x04, 0xD9, 0x24, 0x58, 0xF5, 0xC0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE0, 0xEE, 0xAE, 0xD1, 0x3D, 0x08, 0xA8, 0xB7 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_11_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x79, 0x16, 0x5E, 0x1A, 0x27, 0x47, 0xA5, 0x72 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA6, 0x71, 0xFD, 0x3C, 0x8B, 0x7A, 0xED, 0xC5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB0, 0xA6, 0x49, 0x2B, 0xC5, 0x30, 0xB6, 0xDE ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2F, 0x19, 0x99, 0x7D, 0xF3, 0xDA, 0x2F, 0x39 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_12_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x4F, 0xF5, 0xA0, 0x08, 0x02, 0x1B, 0xF0, 0x7D ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE1, 0x10, 0xD3, 0x71, 0xC8, 0x5B, 0x51, 0x0D ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE3, 0x45, 0xA9, 0x3B, 0x50, 0x2C, 0x93, 0x51 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1A, 0xEF, 0x6C, 0xB5, 0x95, 0x00, 0x6F, 0x62 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_12_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x14, 0xAA, 0x3E, 0x30, 0xF0, 0x0B, 0x5F, 0x99 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x98, 0xA4, 0x9B, 0xF9, 0x59, 0x85, 0xAC, 0x20 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC0, 0x71, 0x6E, 0x7E, 0x94, 0xD7, 0x31, 0x67 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE5, 0xBE, 0x47, 0x14, 0x13, 0x68, 0xCF, 0x7D ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_13_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE9, 0xF5, 0x5D, 0x18, 0xEA, 0x45, 0x98, 0x5D ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD9, 0x00, 0x28, 0xCC, 0x4A, 0xCC, 0xFB, 0x5D ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA9, 0x66, 0x35, 0xC8, 0xE4, 0x5A, 0x0D, 0x09 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEF, 0x1E, 0x71, 0x22, 0x36, 0x86, 0x30, 0x39 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_13_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x62, 0x20, 0xF9, 0x6B, 0x4B, 0xF3, 0x52, 0xFD ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDB, 0x8B, 0xA8, 0x89, 0x60, 0x19, 0xE1, 0x3E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xAA, 0x0C, 0xFF, 0x0E, 0xC9, 0x78, 0x83, 0x40 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x0D, 0x07, 0x4F, 0xF8, 0x93, 0xFB, 0xBC, 0x19 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_14_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x24, 0x53, 0x7F, 0x57, 0x83, 0x72, 0x3B, 0x01 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD9, 0x53, 0x3D, 0xBB, 0xF0, 0xB5, 0x10, 0x86 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x68, 0x05, 0xA2, 0x68, 0x28, 0xFB, 0xE0, 0x26 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xBE, 0x3A, 0x74, 0x63, 0x62, 0x10, 0x8B, 0x81 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_14_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA6, 0x53, 0x14, 0x64, 0x4F, 0x94, 0x44, 0x47 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x06, 0x17, 0xB5, 0xDA, 0xD3, 0xD7, 0x4F, 0x01 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x74, 0x46, 0x50, 0xE6, 0x07, 0x21, 0x7B, 0xC5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF2, 0xE0, 0x37, 0x6D, 0x85, 0x46, 0x7F, 0xF1 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_15_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD5, 0xF2, 0x1C, 0xDF, 0x44, 0x5B, 0x6F, 0x40 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC8, 0x46, 0xE6, 0x82, 0x42, 0x0C, 0x4B, 0x8E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEC, 0x16, 0x7B, 0xEF, 0xE5, 0x21, 0x32, 0x89 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x3F, 0xE9, 0x76, 0xAE, 0xBE, 0x89, 0x23, 0x28 ),
++};
++static const mbedtls_mpi_uint SM2P256r1_T_15_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x06, 0xA4, 0x0C, 0x1D, 0xBC, 0xFD, 0x23, 0xCC ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA8, 0xB4, 0xDF, 0x0A, 0x35, 0xE9, 0xC7, 0x1C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC9, 0xEA, 0x09, 0x3C, 0x81, 0x24, 0x4F, 0xE1 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB7, 0x14, 0x0E, 0x71, 0xEA, 0x2E, 0x03, 0xC9 ),
++};
++static const mbedtls_ecp_point SM2P256r1_T[16] = {
++    ECP_POINT_INIT_XY_Z1(SM2P256r1_T_0_X, SM2P256r1_T_0_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_1_X, SM2P256r1_T_1_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_2_X, SM2P256r1_T_2_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_3_X, SM2P256r1_T_3_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_4_X, SM2P256r1_T_4_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_5_X, SM2P256r1_T_5_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_6_X, SM2P256r1_T_6_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_7_X, SM2P256r1_T_7_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_8_X, SM2P256r1_T_8_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_9_X, SM2P256r1_T_9_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_10_X, SM2P256r1_T_10_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_11_X, SM2P256r1_T_11_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_12_X, SM2P256r1_T_12_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_13_X, SM2P256r1_T_13_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_14_X, SM2P256r1_T_14_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256r1_T_15_X, SM2P256r1_T_15_Y),
++};
++#else
++#define SM2P256r1_T NULL
++#endif
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
++
++#if defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED)
++static const mbedtls_mpi_uint SM2P256t1_p[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC3, 0xDF, 0xF1, 0x08, 0x8B, 0xDB, 0x2E, 0x72 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7D, 0x51, 0x45, 0x5C, 0x91, 0x83, 0x72, 0x45 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDE, 0xF7, 0x6F, 0xBF, 0x35, 0x24, 0xB9, 0xE8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x18, 0x4F, 0x04, 0x4C, 0x9E, 0xD6, 0x42, 0x85 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_a[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x98, 0xE4, 0x37, 0x39, 0x8B, 0x22, 0x65, 0xEC ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE0, 0xD7, 0x31, 0x68, 0x8B, 0x84, 0x3C, 0x2F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xFE, 0xBB, 0x73, 0x2E, 0x84, 0x17, 0x24 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFD, 0xC3, 0x32, 0xFA, 0xB4, 0x68, 0x79, 0x78 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_b[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9A, 0x24, 0xC5, 0x27, 0xDA, 0xD1, 0x12, 0x6E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x6E, 0xA0, 0x6B, 0xB1, 0xA5, 0x59, 0x1D, 0xF6 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x48, 0xFE, 0x4B, 0x48, 0x41, 0x42, 0xF8, 0x9C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x84, 0x0C, 0x3B, 0xB2, 0xD3, 0xC6, 0xE4, 0x63 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_gx[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x3D, 0xD4, 0xED, 0x7F, 0x14, 0x6C, 0x4E, 0x4C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDC, 0x0B, 0xD5, 0xAD, 0x3B, 0x0B, 0x22, 0x32 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x5E, 0x31, 0xCC, 0xC3, 0xEB, 0x34, 0x64, 0x74 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB6, 0xEA, 0x62, 0x1B, 0xD6, 0xEB, 0x1D, 0x42 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_gy[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA2, 0x09, 0x6E, 0xE4, 0xB9, 0x41, 0x58, 0xA8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA1, 0x6E, 0xA3, 0xBF, 0xFC, 0xFD, 0xD7, 0xE5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC4, 0x70, 0x3B, 0x15, 0xD2, 0x49, 0x73, 0xD4 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x07, 0x2C, 0xB4, 0xCB, 0x2B, 0x51, 0x80, 0x06 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_n[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB7, 0x79, 0x2E, 0xC3, 0xE7, 0x4E, 0xE7, 0x5A ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x8D, 0x62, 0x85, 0x04, 0x63, 0x20, 0x77, 0x29 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDD, 0xF7, 0x6F, 0xBF, 0x35, 0x24, 0xB9, 0xE8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x18, 0x4F, 0x04, 0x4C, 0x9E, 0xD6, 0x42, 0x85 ),
++};
++#if MBEDTLS_ECP_FIXED_POINT_OPTIM == 1
++static const mbedtls_mpi_uint SM2P256t1_T_0_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x3D, 0xD4, 0xED, 0x7F, 0x14, 0x6C, 0x4E, 0x4C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDC, 0x0B, 0xD5, 0xAD, 0x3B, 0x0B, 0x22, 0x32 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x5E, 0x31, 0xCC, 0xC3, 0xEB, 0x34, 0x64, 0x74 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB6, 0xEA, 0x62, 0x1B, 0xD6, 0xEB, 0x1D, 0x42 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_0_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA2, 0x09, 0x6E, 0xE4, 0xB9, 0x41, 0x58, 0xA8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA1, 0x6E, 0xA3, 0xBF, 0xFC, 0xFD, 0xD7, 0xE5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC4, 0x70, 0x3B, 0x15, 0xD2, 0x49, 0x73, 0xD4 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x07, 0x2C, 0xB4, 0xCB, 0x2B, 0x51, 0x80, 0x06 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_1_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB7, 0x4A, 0x6B, 0xD1, 0xFE, 0x5A, 0xD9, 0xAE ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD9, 0x88, 0xFA, 0x2F, 0x19, 0x3F, 0x4D, 0x4E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x11, 0xCF, 0x82, 0xFB, 0xFE, 0x18, 0xF9, 0x57 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9C, 0xAE, 0xF1, 0xE4, 0xCE, 0x0F, 0xCA, 0x7C ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_1_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9D, 0x28, 0xAB, 0x88, 0xD5, 0x59, 0xC5, 0xB4 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x65, 0x80, 0x67, 0x2B, 0xE9, 0x83, 0x5B, 0xC0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1A, 0x3F, 0x27, 0xEA, 0x17, 0xEC, 0x0E, 0x2E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF0, 0xB5, 0x8E, 0xF2, 0x75, 0xB8, 0x47, 0x1A ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_2_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x86, 0xF7, 0xDD, 0x68, 0xF7, 0x3C, 0x6D, 0xE0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB3, 0xC9, 0x76, 0xBB, 0x41, 0x28, 0x3F, 0xF5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xAB, 0xCB, 0x46, 0xB8, 0x23, 0x28, 0x52, 0x45 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7A, 0xC9, 0xCD, 0x49, 0xBF, 0x2D, 0x94, 0x52 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_2_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF8, 0x7F, 0xF8, 0xBB, 0x87, 0xFB, 0x95, 0x97 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9E, 0x44, 0x80, 0x63, 0x65, 0xC4, 0xD0, 0xBA ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEF, 0xC2, 0x35, 0x7A, 0xE4, 0x09, 0x51, 0x8C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9F, 0x59, 0xB0, 0xC4, 0x84, 0x06, 0x55, 0x14 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_3_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x15, 0x55, 0x97, 0xB5, 0x89, 0x95, 0x9C, 0x86 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x26, 0xD0, 0xAF, 0x39, 0x6C, 0x74, 0x48, 0xA7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x29, 0xCF, 0x3B, 0x41, 0x70, 0x37, 0x42, 0x6C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x07, 0x1E, 0x4C, 0xC3, 0x69, 0x78, 0xD2, 0x27 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_3_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD2, 0xE3, 0x62, 0xC0, 0x8A, 0xCF, 0xA9, 0x3E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB8, 0x22, 0x80, 0x20, 0x5D, 0x05, 0x78, 0xBD ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2A, 0xD4, 0xC4, 0xA2, 0xCF, 0x21, 0xB6, 0x18 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x30, 0xBB, 0xDB, 0xE7, 0x16, 0x48, 0x9A, 0x51 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_4_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x5F, 0x70, 0xA3, 0x28, 0xFA, 0x0E, 0xC2, 0xAC ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xBC, 0xCA, 0xFE, 0xAE, 0x14, 0xDA, 0x52, 0x85 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x24, 0x32, 0x34, 0x4A, 0xB8, 0x19, 0xDC, 0x89 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA5, 0x58, 0x93, 0x3C, 0x16, 0xB0, 0xCB, 0x02 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_4_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x92, 0x83, 0x3D, 0xF3, 0x4F, 0x2E, 0xF7, 0xCC ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x06, 0x53, 0x88, 0x0B, 0x5D, 0xD9, 0xF7, 0xA9 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7E, 0x6A, 0xF6, 0x5D, 0x63, 0xC7, 0x06, 0x25 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x3E, 0x5A, 0x5F, 0xAF, 0x27, 0x05, 0x29, 0x06 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_5_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC4, 0x0C, 0x10, 0x93, 0x05, 0x3A, 0xAC, 0x40 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x4C, 0x20, 0xBA, 0x13, 0x27, 0x84, 0x3B, 0x39 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9B, 0x40, 0x0E, 0xBF, 0xE4, 0xBA, 0x0B, 0xE4 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF4, 0xF7, 0x76, 0x56, 0xEA, 0x8A, 0x88, 0x15 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_5_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD5, 0x3E, 0x9D, 0xB3, 0xA8, 0xFD, 0x5E, 0x9E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF7, 0x71, 0x2C, 0x58, 0x79, 0xEF, 0xC1, 0x0A ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x84, 0x30, 0xAE, 0xA6, 0xDE, 0x0D, 0xA6, 0xEA ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC1, 0xFE, 0x0F, 0x87, 0x75, 0xF6, 0x1F, 0x20 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_6_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x91, 0xBF, 0xF8, 0xF8, 0xCF, 0xC8, 0x09, 0x5F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9C, 0x5C, 0xE5, 0xD9, 0x8E, 0x27, 0x2D, 0x01 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD0, 0xC3, 0xDA, 0xF4, 0x2B, 0xDC, 0x29, 0x0E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x4B, 0x9E, 0x21, 0x8B, 0x22, 0x02, 0xE1, 0x7C ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_6_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x5B, 0x42, 0x8D, 0xB3, 0xBB, 0xFF, 0x0C, 0xD1 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x66, 0xC2, 0xF3, 0xF3, 0x18, 0xF6, 0xE4, 0x53 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x05, 0x72, 0x9F, 0x81, 0x55, 0x5B, 0x3F, 0xEB ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x58, 0x6D, 0xF2, 0xEB, 0x39, 0x26, 0x44, 0x63 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_7_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x05, 0x60, 0xAA, 0x56, 0x8A, 0xEB, 0xF5, 0xD1 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x78, 0x39, 0x09, 0x26, 0xD8, 0x7E, 0x67, 0xA0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC3, 0xFB, 0x09, 0x54, 0x67, 0x9F, 0xC9, 0x09 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF3, 0x1F, 0xCD, 0x08, 0x95, 0x4B, 0x5B, 0x2D ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_7_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x6F, 0xAA, 0x9C, 0x33, 0x91, 0xF6, 0x9C, 0xC1 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1F, 0x7B, 0xE1, 0x65, 0xC5, 0x5A, 0xF0, 0x7C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x05, 0xF1, 0x41, 0x89, 0x41, 0x60, 0xF0, 0x2A ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x82, 0x8B, 0x14, 0x4F, 0xFB, 0xD6, 0xF6, 0x55 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_8_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xEB, 0x75, 0x4C, 0xDD, 0x6C, 0x3B, 0x45, 0x00 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x8D, 0x46, 0x93, 0x33, 0x31, 0xE6, 0x5B, 0x98 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x00, 0x6B, 0xD3, 0x7D, 0x71, 0xEF, 0xD7, 0x90 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7C, 0x71, 0x7F, 0x84, 0x0C, 0x18, 0x50, 0x62 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_8_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x26, 0xF7, 0xD9, 0x12, 0x5F, 0x49, 0x30, 0xF7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x20, 0x67, 0xE3, 0xC9, 0x97, 0xF7, 0x74, 0xC5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x3F, 0x13, 0x4C, 0x8F, 0x45, 0x11, 0x02, 0xC2 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB7, 0x61, 0x53, 0x7B, 0xF7, 0x83, 0x98, 0x78 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_9_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x07, 0x1F, 0x0A, 0x59, 0x59, 0x89, 0xBA, 0xC8 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x4A, 0x9F, 0xCB, 0xF4, 0x6C, 0x2B, 0x6E, 0xB5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x57, 0x2A, 0x74, 0xBF, 0x4B, 0xB4, 0xE2, 0xD3 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD7, 0x81, 0x0C, 0x8B, 0xA3, 0x7A, 0x83, 0x62 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_9_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFB, 0x41, 0x33, 0x06, 0x57, 0xE3, 0xE9, 0x1C ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1E, 0xB3, 0xE5, 0x69, 0x82, 0x4D, 0xA4, 0x30 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2C, 0x3E, 0xDF, 0x9F, 0x4F, 0x91, 0xDA, 0x54 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB2, 0xB9, 0x4E, 0xF2, 0x08, 0x01, 0x4C, 0x83 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_10_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x49, 0x62, 0xCA, 0x40, 0x37, 0xA3, 0x3E, 0x3E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x80, 0xF3, 0xA8, 0x74, 0xE6, 0xB5, 0xF8, 0xD9 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE6, 0x09, 0xEB, 0x82, 0xE3, 0xEA, 0x50, 0xA5 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x61, 0x95, 0x9B, 0x31, 0xAB, 0xC0, 0x90, 0x83 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_10_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x8E, 0x81, 0x65, 0x0F, 0x3F, 0x34, 0x12, 0x10 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x9E, 0x35, 0x8B, 0xAC, 0x6B, 0xEC, 0xBB, 0x78 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1F, 0x93, 0x18, 0x87, 0x13, 0x13, 0xBB, 0x59 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x20, 0x65, 0xF1, 0x2A, 0x20, 0xE1, 0x0A, 0x07 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_11_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xA9, 0x7D, 0x9A, 0x07, 0x6F, 0x6F, 0x37, 0x8A ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xBE, 0x4D, 0x06, 0x62, 0x36, 0xAC, 0xD6, 0xDB ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x30, 0x34, 0xB6, 0xE1, 0xA2, 0x5A, 0xD7, 0xCD ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x24, 0x19, 0x83, 0x3E, 0x57, 0xF0, 0x36, 0x56 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_11_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB1, 0x26, 0x95, 0xBE, 0x6B, 0x0F, 0x2A, 0x10 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFF, 0xA3, 0x73, 0x3A, 0x3D, 0xE3, 0x36, 0x83 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x16, 0x60, 0x41, 0x79, 0x77, 0x22, 0x1C, 0xA7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7D, 0xF7, 0xDB, 0x07, 0x20, 0xAA, 0x60, 0x58 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_12_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x67, 0x11, 0xA9, 0x13, 0x0A, 0xC1, 0x43, 0x15 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x33, 0x10, 0xB0, 0x74, 0x58, 0x8C, 0xF1, 0x90 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xDA, 0x95, 0xB6, 0x5E, 0xF4, 0xEE, 0xE7, 0x36 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2C, 0x3C, 0x84, 0xA6, 0x78, 0x9D, 0xD2, 0x3C ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_12_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xAA, 0xC2, 0x27, 0x62, 0x49, 0x68, 0xC6, 0x59 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xE4, 0xCC, 0xF0, 0x2A, 0xAE, 0x16, 0x6C, 0x34 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x71, 0x09, 0xED, 0x23, 0x04, 0x59, 0xBF, 0xA7 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xCA, 0xE3, 0x42, 0xC8, 0xE8, 0xAA, 0x78, 0x68 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_13_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x0D, 0x71, 0x5E, 0xD7, 0x44, 0xF9, 0xFB, 0xBE ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1A, 0xEB, 0xE9, 0x83, 0xFC, 0x0A, 0xD7, 0x66 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF0, 0xD6, 0x93, 0x7A, 0xC3, 0x77, 0x78, 0x18 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x94, 0xAE, 0x5C, 0x2F, 0x28, 0x4E, 0x85, 0x5A ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_13_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x58, 0x45, 0xC4, 0x26, 0xE4, 0xC2, 0x56, 0x49 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x73, 0x4E, 0xE9, 0xDB, 0x6F, 0x97, 0xA4, 0xF6 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB7, 0x87, 0xE7, 0x2A, 0x88, 0xCD, 0xD9, 0x7F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x5D, 0xD2, 0x93, 0xB0, 0x87, 0x6E, 0xF8, 0x54 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_14_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x13, 0xA8, 0xCA, 0x43, 0x79, 0xF4, 0x5B, 0x61 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x59, 0xAD, 0x65, 0xF3, 0x23, 0xFA, 0xD9, 0x99 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xB4, 0x1B, 0x5E, 0x56, 0x84, 0xAA, 0x0E, 0xFA ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x43, 0x63, 0x45, 0xB9, 0xC8, 0xAA, 0x88, 0x40 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_14_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xFC, 0x15, 0x9A, 0xB2, 0x83, 0x85, 0x75, 0x3E ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x27, 0x09, 0x5E, 0x7B, 0x4D, 0x76, 0xF6, 0x6B ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x67, 0x04, 0x9D, 0x4F, 0x4B, 0xC5, 0x2B, 0x55 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x01, 0xD9, 0x57, 0x90, 0xBA, 0x0D, 0x23, 0x1A ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_15_X[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x68, 0x17, 0x01, 0x95, 0x82, 0xA2, 0x28, 0xDC ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x7F, 0x41, 0x7F, 0x55, 0x78, 0x45, 0xDD, 0x65 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xD3, 0x63, 0xAA, 0xF9, 0xDC, 0x39, 0x7A, 0xE0 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xC7, 0x1C, 0xA9, 0x05, 0x2C, 0xAF, 0x0C, 0x15 ),
++};
++static const mbedtls_mpi_uint SM2P256t1_T_15_Y[] = {
++    MBEDTLS_BYTES_TO_T_UINT_8( 0xF7, 0x1E, 0x32, 0x0F, 0xED, 0x07, 0x7E, 0x8F ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x2E, 0xC9, 0xD9, 0xE3, 0xDC, 0x0B, 0x09, 0x06 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x1B, 0x8F, 0xBA, 0x18, 0xA5, 0xA9, 0xCC, 0x32 ),
++    MBEDTLS_BYTES_TO_T_UINT_8( 0x60, 0xB3, 0x23, 0x4F, 0x09, 0x8A, 0xFE, 0x0F ),
++};
++static const mbedtls_ecp_point SM2P256t1_T[16] = {
++    ECP_POINT_INIT_XY_Z1(SM2P256t1_T_0_X, SM2P256t1_T_0_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_1_X, SM2P256t1_T_1_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_2_X, SM2P256t1_T_2_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_3_X, SM2P256t1_T_3_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_4_X, SM2P256t1_T_4_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_5_X, SM2P256t1_T_5_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_6_X, SM2P256t1_T_6_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_7_X, SM2P256t1_T_7_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_8_X, SM2P256t1_T_8_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_9_X, SM2P256t1_T_9_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_10_X, SM2P256t1_T_10_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_11_X, SM2P256t1_T_11_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_12_X, SM2P256t1_T_12_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_13_X, SM2P256t1_T_13_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_14_X, SM2P256t1_T_14_Y),
++    ECP_POINT_INIT_XY_Z0(SM2P256t1_T_15_X, SM2P256t1_T_15_Y),
++};
++
++#else
++#define SM2P256t1_T NULL
++#endif
++#endif /* MBEDTLS_ECP_DP_SM2P256T1_ENABLED */
++
++
+ #if defined(ECP_LOAD_GROUP)
+ /*
+  * Create an MPI from embedded constants
+@@ -4815,6 +5327,16 @@ int mbedtls_ecp_group_load( mbedtls_ecp_group *grp, mbedtls_ecp_group_id id )
+             return( ecp_use_curve448( grp ) );
+ #endif /* MBEDTLS_ECP_DP_CURVE448_ENABLED */
+ 
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++        case MBEDTLS_ECP_DP_SM2P256R1:
++            return( LOAD_GROUP_A( SM2P256r1 ) );
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
++
++#if defined(MBEDTLS_ECP_DP_SM2P256T1_ENABLED)
++        case MBEDTLS_ECP_DP_SM2P256T1:
++            return( LOAD_GROUP_A( SM2P256t1 ) );
++#endif /* MBEDTLS_ECP_DP_SM2P256T1_ENABLED */
++
+         default:
+             grp->id = MBEDTLS_ECP_DP_NONE;
+             return( MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE );
+diff --git a/mbedtls/src/error.c b/mbedtls/src/error.c
+index f992d524..e87757cb 100644
+--- a/mbedtls/src/error.c
++++ b/mbedtls/src/error.c
+@@ -249,6 +249,21 @@ const char * mbedtls_high_level_strerr( int error_code )
+             return( "ECP - Operation in progress, call again with the same parameters to continue" );
+ #endif /* MBEDTLS_ECP_C */
+ 
++#if defined(MBEDTLS_SM2_C)
++        case -(MBEDTLS_ERR_SM2_BAD_INPUT_DATA):
++            return( "SM2 - Bad input parameters to function" );
++        case -(MBEDTLS_ERR_SM2_ALLOC_FAILED):
++            return( "SM2 - The buffer is too small to write to" );
++        case -(MBEDTLS_ERR_SM2_KDF_FAILED):
++            return( "SM2 - KDF got empty result." );
++        case -(MBEDTLS_ERR_SM2_DECRYPT_BAD_HASH):
++            return( "SM2 - Bad C3 in SM2 decrypt" );
++        case -(MBEDTLS_ERR_SM2_RANDOM_FAILED):
++            return( "SM2 - Generation of random value, such as (ephemeral) key, failed" );
++        case -(MBEDTLS_ERR_SM2_BAD_SIGNATURE):
++            return( "SM2 - Invalid signature" );
++#endif /* MBEDTLS_SM2_C */
++
+ #if defined(MBEDTLS_MD_C)
+         case -(MBEDTLS_ERR_MD_FEATURE_UNAVAILABLE):
+             return( "MD - The selected feature is not available" );
+diff --git a/mbedtls/src/md.c b/mbedtls/src/md.c
+index a2287896..45a9f3e0 100644
+--- a/mbedtls/src/md.c
++++ b/mbedtls/src/md.c
+@@ -35,6 +35,7 @@
+ #include "mbedtls/sha1.h"
+ #include "mbedtls/sha256.h"
+ #include "mbedtls/sha512.h"
++#include "mbedtls/sm3.h"
+ 
+ #if defined(MBEDTLS_PLATFORM_C)
+ #include "mbedtls/platform.h"
+@@ -113,11 +114,24 @@ const mbedtls_md_info_t mbedtls_sha512_info = {
+ };
+ #endif
+ 
++#if defined(MBEDTLS_SM3_C)
++const mbedtls_md_info_t mbedtls_sm3_info = {
++    "SM3",
++    MBEDTLS_MD_SM3,
++    32,
++    64,
++};
++#endif
++
+ /*
+  * Reminder: update profiles in x509_crt.c when adding a new hash!
+  */
+ static const int supported_digests[] = {
+ 
++#if defined(MBEDTLS_SM3_C)
++        MBEDTLS_MD_SM3,
++#endif
++
+ #if defined(MBEDTLS_SHA512_C)
+         MBEDTLS_MD_SHA512,
+ #endif
+@@ -186,6 +200,10 @@ const mbedtls_md_info_t *mbedtls_md_info_from_string( const char *md_name )
+ #if defined(MBEDTLS_SHA512_C)
+     if( !strcmp( "SHA512", md_name ) )
+         return mbedtls_md_info_from_type( MBEDTLS_MD_SHA512 );
++#endif
++#if defined(MBEDTLS_SM3_C)
++    if( !strcmp( "SM3", md_name ) )
++        return mbedtls_md_info_from_type( MBEDTLS_MD_SM3 );
+ #endif
+     return( NULL );
+ }
+@@ -221,6 +239,10 @@ const mbedtls_md_info_t *mbedtls_md_info_from_type( mbedtls_md_type_t md_type )
+ #if defined(MBEDTLS_SHA512_C)
+         case MBEDTLS_MD_SHA512:
+             return( &mbedtls_sha512_info );
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            return( &mbedtls_sm3_info );
+ #endif
+         default:
+             return( NULL );
+@@ -275,6 +297,11 @@ void mbedtls_md_free( mbedtls_md_context_t *ctx )
+             case MBEDTLS_MD_SHA512:
+                 mbedtls_sha512_free( ctx->md_ctx );
+                 break;
++#endif
++#if defined(MBEDTLS_SM3_C)
++            case MBEDTLS_MD_SM3:
++                mbedtls_sm3_free( ctx->md_ctx );
++                break;
+ #endif
+             default:
+                 /* Shouldn't happen */
+@@ -339,6 +366,11 @@ int mbedtls_md_clone( mbedtls_md_context_t *dst,
+         case MBEDTLS_MD_SHA512:
+             mbedtls_sha512_clone( dst->md_ctx, src->md_ctx );
+             break;
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            mbedtls_sm3_clone( dst->md_ctx, src->md_ctx );
++            break;
+ #endif
+         default:
+             return( MBEDTLS_ERR_MD_BAD_INPUT_DATA );
+@@ -401,6 +433,11 @@ int mbedtls_md_setup( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_inf
+         case MBEDTLS_MD_SHA512:
+             ALLOC( sha512 );
+             break;
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            ALLOC( sm3 );
++            break;
+ #endif
+         default:
+             return( MBEDTLS_ERR_MD_BAD_INPUT_DATA );
+@@ -454,6 +491,10 @@ int mbedtls_md_starts( mbedtls_md_context_t *ctx )
+ #if defined(MBEDTLS_SHA512_C)
+         case MBEDTLS_MD_SHA512:
+             return( mbedtls_sha512_starts( ctx->md_ctx, 0 ) );
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            return( mbedtls_sm3_starts( ctx->md_ctx ) );
+ #endif
+         default:
+             return( MBEDTLS_ERR_MD_BAD_INPUT_DATA );
+@@ -494,6 +535,10 @@ int mbedtls_md_update( mbedtls_md_context_t *ctx, const unsigned char *input, si
+ #if defined(MBEDTLS_SHA512_C)
+         case MBEDTLS_MD_SHA512:
+             return( mbedtls_sha512_update( ctx->md_ctx, input, ilen ) );
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            return( mbedtls_sm3_update( ctx->md_ctx, input, ilen ) );
+ #endif
+         default:
+             return( MBEDTLS_ERR_MD_BAD_INPUT_DATA );
+@@ -534,6 +579,10 @@ int mbedtls_md_finish( mbedtls_md_context_t *ctx, unsigned char *output )
+ #if defined(MBEDTLS_SHA512_C)
+         case MBEDTLS_MD_SHA512:
+             return( mbedtls_sha512_finish( ctx->md_ctx, output ) );
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            return( mbedtls_sm3_finish( ctx->md_ctx, output ) );
+ #endif
+         default:
+             return( MBEDTLS_ERR_MD_BAD_INPUT_DATA );
+@@ -575,6 +624,10 @@ int mbedtls_md( const mbedtls_md_info_t *md_info, const unsigned char *input, si
+ #if defined(MBEDTLS_SHA512_C)
+         case MBEDTLS_MD_SHA512:
+             return( mbedtls_sha512( input, ilen, output, 0 ) );
++#endif
++#if defined(MBEDTLS_SM3_C)
++        case MBEDTLS_MD_SM3:
++            return( mbedtls_sm3( input, ilen, output ) );
+ #endif
+         default:
+             return( MBEDTLS_ERR_MD_BAD_INPUT_DATA );
+diff --git a/mbedtls/src/md_wrap.h b/mbedtls/src/md_wrap.h
+index 90c79573..11ac12e6 100644
+--- a/mbedtls/src/md_wrap.h
++++ b/mbedtls/src/md_wrap.h
+@@ -74,6 +74,9 @@ extern const mbedtls_md_info_t mbedtls_sha384_info;
+ #if defined(MBEDTLS_SHA512_C)
+ extern const mbedtls_md_info_t mbedtls_sha512_info;
+ #endif
++#if defined(MBEDTLS_SM3_C)
++extern const mbedtls_md_info_t mbedtls_sm3_info;
++#endif
+ 
+ #ifdef __cplusplus
+ }
+diff --git a/mbedtls/src/oid.c b/mbedtls/src/oid.c
+index f70ceea5..8eacf5ed 100644
+--- a/mbedtls/src/oid.c
++++ b/mbedtls/src/oid.c
+@@ -26,6 +26,7 @@
+ #include "mbedtls/oid.h"
+ #include "mbedtls/rsa.h"
+ #include "mbedtls/error.h"
++#include "mbedtls/sm2.h"
+ 
+ #include <stdio.h>
+ #include <string.h>
+@@ -421,6 +422,40 @@ static const oid_sig_alg_t oid_sig_alg[] =
+         MBEDTLS_MD_NONE,     MBEDTLS_PK_RSASSA_PSS,
+     },
+ #endif /* MBEDTLS_RSA_C */
++#if defined(MBEDTLS_SM2_C)
++#if defined(MBEDTLS_SM3_C)
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_SM2_SM3 ,           "sm2-with-sm3",         "SM2 with SM3" ),
++        MBEDTLS_MD_SM3,     MBEDTLS_PK_SM2,
++    },
++#endif/* MBEDTLS_SM3_C */
++#if defined(MBEDTLS_SHA1_C)
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_SM2_SHA1 ,          "sm2-with-sha1",        "SM2 with SHA1" ),
++        MBEDTLS_MD_SHA1,    MBEDTLS_PK_SM2,
++    },
++#endif /* MBEDTLS_SHA1_C */
++#if defined(MBEDTLS_SHA256_C)
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_SM2_SHA224 ,        "sm2-with-sha224",      "SM2 with SHA224" ),
++        MBEDTLS_MD_SHA224,  MBEDTLS_PK_SM2,
++    },
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_SM2_SHA256 ,        "sm2-with-sha256",      "SM2 with SHA256" ),
++        MBEDTLS_MD_SHA256,  MBEDTLS_PK_SM2,
++    },
++#endif /* MBEDTLS_SHA256_C */
++#if defined(MBEDTLS_SHA512_C)
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_SM2_SHA384 ,        "sm2-with-sha384",      "SM2 with SHA384" ),
++        MBEDTLS_MD_SHA384,  MBEDTLS_PK_SM2,
++    },
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_SM2_SHA512 ,        "sm2-with-sha512",      "SM2 with SHA512" ),
++        MBEDTLS_MD_SHA512,  MBEDTLS_PK_SM2,
++    },
++#endif /* MBEDTLS_SHA512_C */
++#endif /* MBEDTLS_SM2_C */
+     {
+         NULL_OID_DESCRIPTOR,
+         MBEDTLS_MD_NONE, MBEDTLS_PK_NONE,
+@@ -459,6 +494,10 @@ static const oid_pk_alg_t oid_pk_alg[] =
+         OID_DESCRIPTOR( MBEDTLS_OID_EC_ALG_ECDH,         "id-ecDH",          "EC key for ECDH" ),
+         MBEDTLS_PK_ECKEY_DH,
+     },
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_EC_ALG_UNRESTRICTED ,  "id-sm2",    "SM2" ),
++        MBEDTLS_PK_SM2,
++    },
+     {
+         NULL_OID_DESCRIPTOR,
+         MBEDTLS_PK_NONE,
+@@ -546,6 +585,12 @@ static const oid_ecp_grp_t oid_ecp_grp[] =
+         MBEDTLS_ECP_DP_BP512R1,
+     },
+ #endif /* MBEDTLS_ECP_DP_BP512R1_ENABLED */
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++    {
++        OID_DESCRIPTOR( MBEDTLS_OID_EC_SM2P256R1 ,      "sm2p256r1",   "sm2p256r1" ),
++        MBEDTLS_ECP_DP_SM2P256R1,
++    },
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
+     {
+         NULL_OID_DESCRIPTOR,
+         MBEDTLS_ECP_DP_NONE,
+@@ -639,6 +684,12 @@ static const oid_md_alg_t oid_md_alg[] =
+         MBEDTLS_MD_RIPEMD160,
+     },
+ #endif /* MBEDTLS_RIPEMD160_C */
++#if defined(MBEDTLS_SM3_C)
++    {
++     OID_DESCRIPTOR( MBEDTLS_OID_DIGEST_ALG_SM3, "id-sm3", "SM3" ),
++        MBEDTLS_MD_SM3,
++    },
++#endif /* MBEDTLS_SM3_C */
+     {
+         NULL_OID_DESCRIPTOR,
+         MBEDTLS_MD_NONE,
+diff --git a/mbedtls/src/pk.c b/mbedtls/src/pk.c
+index ea4869c1..b890d95a 100644
+--- a/mbedtls/src/pk.c
++++ b/mbedtls/src/pk.c
+@@ -39,6 +39,9 @@
+ #if defined(MBEDTLS_USE_PSA_CRYPTO)
+ #include "mbedtls/psa_util.h"
+ #endif
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
+ 
+ #include <limits.h>
+ #include <stdint.h>
+@@ -122,6 +125,10 @@ const mbedtls_pk_info_t * mbedtls_pk_info_from_type( mbedtls_pk_type_t pk_type )
+ #if defined(MBEDTLS_ECDSA_C)
+         case MBEDTLS_PK_ECDSA:
+             return( &mbedtls_ecdsa_info );
++#endif
++#if defined(MBEDTLS_SM2_C)
++        case MBEDTLS_PK_SM2:
++            return( &mbedtls_sm2_info );
+ #endif
+         /* MBEDTLS_PK_RSA_ALT omitted on purpose */
+         default:
+@@ -590,6 +597,34 @@ mbedtls_pk_type_t mbedtls_pk_get_type( const mbedtls_pk_context *ctx )
+     return( ctx->pk_info->type );
+ }
+ 
++/*
++ * Helper for get length of cipher text that encrypted by public key
++ */
++size_t mbedtls_pk_cipherlen_helper( const mbedtls_pk_context *ctx,
++        size_t plain_len, size_t *cipher_len )
++{
++#if defined(MBEDTLS_RSA_C)
++    if( mbedtls_pk_can_do( ctx, MBEDTLS_PK_RSA ) )
++    {
++        size_t keylen = mbedtls_pk_get_len( ctx );
++        *cipher_len = ( ( plain_len + keylen - 1 ) / keylen ) * keylen;
++        return 0;
++    }
++    else
++#endif
++#if defined(MBEDTLS_SM2_C)
++    if( mbedtls_pk_can_do( ctx, MBEDTLS_PK_SM2 ) )
++    {
++        *cipher_len = plain_len + 97;
++        return 0;
++    }
++    else
++#endif
++    {
++        return( MBEDTLS_ERR_PK_INVALID_ALG );
++    }
++}
++
+ #if defined(MBEDTLS_USE_PSA_CRYPTO)
+ /*
+  * Load the key to a PSA key slot,
+diff --git a/mbedtls/src/pk_wrap.c b/mbedtls/src/pk_wrap.c
+index 80c0aad2..e4f1ac5a 100644
+--- a/mbedtls/src/pk_wrap.c
++++ b/mbedtls/src/pk_wrap.c
+@@ -50,6 +50,10 @@
+ #include "mbedtls/asn1.h"
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
++
+ #if defined(MBEDTLS_PLATFORM_C)
+ #include "mbedtls/platform.h"
+ #else
+@@ -756,6 +760,112 @@ const mbedtls_pk_info_t mbedtls_ecdsa_info = {
+ };
+ #endif /* MBEDTLS_ECDSA_C */
+ 
++#if defined(MBEDTLS_SM2_C)
++
++static int sm2_can_do( mbedtls_pk_type_t type )
++{
++    return( type == MBEDTLS_PK_SM2 );
++}
++
++static int sm2_verify_wrap( void *ctx, mbedtls_md_type_t md_alg,
++                       const unsigned char *hash, size_t hash_len,
++                       const unsigned char *sig, size_t sig_len )
++{
++     int ret;
++    ((void) md_alg);
++
++    ret = mbedtls_sm2_read_signature( (mbedtls_ecdsa_context *) ctx,
++                                hash, hash_len, sig, sig_len );
++
++    if( ret == MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH )
++        return( MBEDTLS_ERR_PK_SIG_LEN_MISMATCH );
++
++    return( ret );
++}
++
++static int sm2_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
++                   const unsigned char *hash, size_t hash_len,
++                   unsigned char *sig, size_t sig_size, size_t *sig_len,
++                   int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
++{
++    return( mbedtls_sm2_write_signature( (mbedtls_ecdsa_context *) ctx,
++                md_alg, hash, hash_len, sig, sig_size, sig_len, f_rng, p_rng ) );
++}
++
++static int sm2_decrypt_wrap( void *ctx,
++                    const unsigned char *input, size_t ilen,
++                    unsigned char *output, size_t *olen, size_t osize,
++                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
++{
++    mbedtls_md_type_t md_type = MBEDTLS_SM2_SPECIFIC_MD_ALGORITHM;
++    size_t addlen = 1 +
++        ( ((mbedtls_sm2_context *) ctx)->grp.nbits + 7 ) / 8 * 2 +
++        mbedtls_md_get_size( mbedtls_md_info_from_type( md_type ) );
++    ((void) f_rng);
++    ((void) p_rng);
++
++    if( ilen < addlen || osize < (ilen - addlen) )
++        return( MBEDTLS_ERR_SM2_BAD_INPUT_DATA );
++    return mbedtls_sm2_decrypt( (mbedtls_sm2_context *) ctx, md_type,
++            input, ilen, output, olen, f_rng, p_rng );
++}
++
++static int sm2_encrypt_wrap( void *ctx,
++                    const unsigned char *input, size_t ilen,
++                    unsigned char *output, size_t *olen, size_t osize,
++                    int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
++{
++    mbedtls_md_type_t md_type = MBEDTLS_SM2_SPECIFIC_MD_ALGORITHM;
++    size_t addlen = 1 +
++        ( ((mbedtls_sm2_context *) ctx)->grp.nbits + 7 ) / 8 * 2 +
++        mbedtls_md_get_size( mbedtls_md_info_from_type( md_type ) );
++
++    if( osize < (ilen + addlen) )
++        return( MBEDTLS_ERR_SM2_BAD_INPUT_DATA );
++    return mbedtls_sm2_encrypt( (mbedtls_sm2_context *) ctx, md_type,
++            input, ilen, output, olen, f_rng, p_rng );
++}
++
++static void *sm2_alloc_wrap( void )
++{
++    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_sm2_context ) );
++
++    if( ctx != NULL )
++        mbedtls_sm2_init( (mbedtls_sm2_context *) ctx );
++
++    return( ctx );
++}
++
++static void sm2_free_wrap( void *ctx )
++{
++    mbedtls_sm2_free( (mbedtls_sm2_context *) ctx );
++    mbedtls_free( ctx );
++}
++
++const mbedtls_pk_info_t mbedtls_sm2_info = {
++    MBEDTLS_PK_SM2,
++    "SM2",
++    eckey_get_bitlen,   /* Compatible key structures */
++    sm2_can_do,
++    sm2_verify_wrap,
++    sm2_sign_wrap,
++#if defined(MBEDTLS_ECP_RESTARTABLE)
++    NULL,
++    NULL,
++#endif
++    sm2_decrypt_wrap,
++    sm2_encrypt_wrap,
++    eckey_check_pair,   /* Compatible key structures */
++    sm2_alloc_wrap,
++    sm2_free_wrap,
++#if defined(MBEDTLS_ECP_RESTARTABLE)
++    NULL,
++    NULL,
++#endif
++    eckey_debug,        /* Compatible key structures */
++};
++#endif /* MBEDTLS_SM2_C */
++
+ #if defined(MBEDTLS_PK_RSA_ALT_SUPPORT)
+ /*
+  * Support for alternative RSA-private implementations
+diff --git a/mbedtls/src/pk_wrap.h b/mbedtls/src/pk_wrap.h
+index 6f5addf7..15f66142 100644
+--- a/mbedtls/src/pk_wrap.h
++++ b/mbedtls/src/pk_wrap.h
+@@ -127,6 +127,11 @@ extern const mbedtls_pk_info_t mbedtls_eckeydh_info;
+ extern const mbedtls_pk_info_t mbedtls_ecdsa_info;
+ #endif
+ 
++#if defined(MBEDTLS_SM2_C)
++extern const mbedtls_pk_info_t mbedtls_sm2_info;
++#endif
++
++
+ #if defined(MBEDTLS_PK_RSA_ALT_SUPPORT)
+ extern const mbedtls_pk_info_t mbedtls_rsa_alt_info;
+ #endif
+diff --git a/mbedtls/src/pkparse.c b/mbedtls/src/pkparse.c
+index b2d3bb07..6e99cd8d 100644
+--- a/mbedtls/src/pkparse.c
++++ b/mbedtls/src/pkparse.c
+@@ -38,6 +38,9 @@
+ #if defined(MBEDTLS_ECDSA_C)
+ #include "mbedtls/ecdsa.h"
+ #endif
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
+ #if defined(MBEDTLS_PEM_PARSE_C)
+ #include "mbedtls/pem.h"
+ #endif
+@@ -653,11 +656,14 @@ int mbedtls_pk_parse_subpubkey( unsigned char **p, const unsigned char *end,
+     } else
+ #endif /* MBEDTLS_RSA_C */
+ #if defined(MBEDTLS_ECP_C)
+-    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY )
++    if( pk_alg == MBEDTLS_PK_ECKEY_DH || pk_alg == MBEDTLS_PK_ECKEY ||
++        pk_alg == MBEDTLS_PK_SM2 )
+     {
+         ret = pk_use_ecparams( &alg_params, &mbedtls_pk_ec( *pk )->grp );
+         if( ret == 0 )
+             ret = pk_get_ecpubkey( p, end, mbedtls_pk_ec( *pk ) );
++        if( ret == 0 )
++            upgrade_ecc_to_sm2(pk);
+     } else
+ #endif /* MBEDTLS_ECP_C */
+         ret = MBEDTLS_ERR_PK_UNKNOWN_PK_ALG;
+@@ -1074,7 +1080,8 @@ static int pk_parse_key_pkcs8_unencrypted_der(
+     } else
+ #endif /* MBEDTLS_RSA_C */
+ #if defined(MBEDTLS_ECP_C)
+-    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH )
++    if( pk_alg == MBEDTLS_PK_ECKEY || pk_alg == MBEDTLS_PK_ECKEY_DH ||
++        pk_alg == MBEDTLS_PK_SM2 )
+     {
+         if( ( ret = pk_use_ecparams( &params, &mbedtls_pk_ec( *pk )->grp ) ) != 0 ||
+             ( ret = pk_parse_key_sec1_der( mbedtls_pk_ec( *pk ), p, len, f_rng, p_rng ) ) != 0 )
+@@ -1082,6 +1089,11 @@ static int pk_parse_key_pkcs8_unencrypted_der(
+             mbedtls_pk_free( pk );
+             return( ret );
+         }
++        if( ( ret = upgrade_ecc_to_sm2(pk) ) != 0)
++        {
++            mbedtls_pk_free( pk );
++            return( ret );
++        }
+     } else
+ #endif /* MBEDTLS_ECP_C */
+         return( MBEDTLS_ERR_PK_UNKNOWN_PK_ALG );
+@@ -1274,6 +1286,11 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *pk,
+             mbedtls_pk_free( pk );
+         }
+ 
++        if( ( ret = upgrade_ecc_to_sm2(pk) ) != 0)
++        {
++            mbedtls_pk_free( pk );
++        }
++
+         mbedtls_pem_free( &pem );
+         return( ret );
+     }
+@@ -1396,7 +1413,8 @@ int mbedtls_pk_parse_key( mbedtls_pk_context *pk,
+     pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
+     if( mbedtls_pk_setup( pk, pk_info ) == 0 &&
+         pk_parse_key_sec1_der( mbedtls_pk_ec( *pk ),
+-                               key, keylen, f_rng, p_rng ) == 0 )
++                               key, keylen, f_rng, p_rng ) == 0 &&
++        upgrade_ecc_to_sm2( pk ) == 0)
+     {
+         return( 0 );
+     }
+@@ -1526,4 +1544,17 @@ int mbedtls_pk_parse_public_key( mbedtls_pk_context *ctx,
+     return( ret );
+ }
+ 
++int upgrade_ecc_to_sm2(mbedtls_pk_context *pk )
++{
++#if defined(MBEDTLS_ECP_DP_SM2P256R1_ENABLED)
++    const mbedtls_pk_info_t *pk_info;
++    if ((mbedtls_pk_ec( *pk )->grp.id) != MBEDTLS_ECP_DP_SM2P256R1)
++        return( 0 );
++    if( ( pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_SM2 ) ) == NULL )
++        return( MBEDTLS_ERR_PK_UNKNOWN_PK_ALG );
++    pk->pk_info = pk_info;
++#endif /* MBEDTLS_ECP_DP_SM2P256R1_ENABLED */
++    return ( 0 );
++}
++
+ #endif /* MBEDTLS_PK_PARSE_C */
+diff --git a/mbedtls/src/pkwrite.c b/mbedtls/src/pkwrite.c
+index 71cc0f0c..4f9d1d8c 100644
+--- a/mbedtls/src/pkwrite.c
++++ b/mbedtls/src/pkwrite.c
+@@ -40,6 +40,9 @@
+ #if defined(MBEDTLS_ECDSA_C)
+ #include "mbedtls/ecdsa.h"
+ #endif
++#if defined(MBEDTLS_SM2_C)
++#include "mbedtls/sm2.h"
++#endif
+ #if defined(MBEDTLS_PEM_WRITE_C)
+ #include "mbedtls/pem.h"
+ #endif
+@@ -190,7 +193,8 @@ int mbedtls_pk_write_pubkey( unsigned char **p, unsigned char *start,
+     else
+ #endif
+ #if defined(MBEDTLS_ECP_C)
+-    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY )
++    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY ||
++        mbedtls_pk_get_type( key ) == MBEDTLS_PK_SM2 )
+         MBEDTLS_ASN1_CHK_ADD( len, pk_write_ec_pubkey( p, start, mbedtls_pk_ec( *key ) ) );
+     else
+ #endif
+@@ -255,7 +259,8 @@ int mbedtls_pk_write_pubkey_der( const mbedtls_pk_context *key, unsigned char *b
+ 
+     pk_type = mbedtls_pk_get_type( key );
+ #if defined(MBEDTLS_ECP_C)
+-    if( pk_type == MBEDTLS_PK_ECKEY )
++    if( pk_type == MBEDTLS_PK_ECKEY ||
++        pk_type == MBEDTLS_PK_SM2)
+     {
+         MBEDTLS_ASN1_CHK_ADD( par_len, pk_write_ec_param( &c, buf, mbedtls_pk_ec( *key ) ) );
+     }
+@@ -403,7 +408,8 @@ int mbedtls_pk_write_key_der( const mbedtls_pk_context *key, unsigned char *buf,
+     else
+ #endif /* MBEDTLS_RSA_C */
+ #if defined(MBEDTLS_ECP_C)
+-    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY )
++    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY ||
++        mbedtls_pk_get_type( key ) == MBEDTLS_PK_SM2 )
+     {
+         mbedtls_ecp_keypair *ec = mbedtls_pk_ec( *key );
+         size_t pub_len = 0, par_len = 0;
+@@ -600,7 +606,8 @@ int mbedtls_pk_write_key_pem( const mbedtls_pk_context *key, unsigned char *buf,
+     else
+ #endif
+ #if defined(MBEDTLS_ECP_C)
+-    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY )
++    if( mbedtls_pk_get_type( key ) == MBEDTLS_PK_ECKEY ||
++        mbedtls_pk_get_type( key ) == MBEDTLS_PK_SM2 )
+     {
+         begin = PEM_BEGIN_PRIVATE_KEY_EC;
+         end = PEM_END_PRIVATE_KEY_EC;
+diff --git a/mbedtls/src/ssl_tls.c b/mbedtls/src/ssl_tls.c
+index d868e496..afdad886 100644
+--- a/mbedtls/src/ssl_tls.c
++++ b/mbedtls/src/ssl_tls.c
+@@ -6347,6 +6347,9 @@ static int ssl_preset_default_hashes[] = {
+  * about this list.
+  */
+ static uint16_t ssl_preset_default_groups[] = {
++#if defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED)
++    MBEDTLS_SSL_IANA_TLS_GROUP_SECP256K1,
++#endif
+ #if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
+     MBEDTLS_SSL_IANA_TLS_GROUP_X25519,
+ #endif
+diff --git a/mbedtls/src/threading.c b/mbedtls/src/threading.c
+index bae6644f..31b635d3 100644
+--- a/mbedtls/src/threading.c
++++ b/mbedtls/src/threading.c
+@@ -62,6 +62,44 @@
+ #endif /* MBEDTLS_HAVE_TIME_DATE && !MBEDTLS_PLATFORM_GMTIME_R_ALT */
+ 
+ #if defined(MBEDTLS_THREADING_PTHREAD)
++#ifdef _WIN32
++static void threading_mutex_init_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return;
++    InitializeCriticalSection( mutex );
++}
++
++static void threading_mutex_free_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return;
++
++    DeleteCriticalSection( mutex );
++}
++
++static int threading_mutex_lock_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return ( MBEDTLS_ERR_THREADING_BAD_INPUT_DATA );
++
++    EnterCriticalSection( mutex );
++
++    return ( 0 );
++}
++
++static int threading_mutex_unlock_pthread( mbedtls_threading_mutex_t *mutex )
++{
++    if ( mutex == NULL )
++        return ( MBEDTLS_ERR_THREADING_BAD_INPUT_DATA );
++
++    LeaveCriticalSection( mutex );
++
++    return ( 0 );
++}
++
++#else
++
+ static void threading_mutex_init_pthread( mbedtls_threading_mutex_t *mutex )
+ {
+     if( mutex == NULL )
+@@ -107,6 +145,8 @@ static int threading_mutex_unlock_pthread( mbedtls_threading_mutex_t *mutex )
+     return( 0 );
+ }
+ 
++#endif
++
+ void (*mbedtls_mutex_init)( mbedtls_threading_mutex_t * ) = threading_mutex_init_pthread;
+ void (*mbedtls_mutex_free)( mbedtls_threading_mutex_t * ) = threading_mutex_free_pthread;
+ int (*mbedtls_mutex_lock)( mbedtls_threading_mutex_t * ) = threading_mutex_lock_pthread;
+diff --git a/mbedtls/src/x509_crt.c b/mbedtls/src/x509_crt.c
+index c8654445..0147266b 100644
+--- a/mbedtls/src/x509_crt.c
++++ b/mbedtls/src/x509_crt.c
+@@ -114,6 +114,7 @@ const mbedtls_x509_crt_profile mbedtls_x509_crt_profile_default =
+     MBEDTLS_X509_ID_FLAG( MBEDTLS_ECP_DP_BP256R1 ) |
+     MBEDTLS_X509_ID_FLAG( MBEDTLS_ECP_DP_BP384R1 ) |
+     MBEDTLS_X509_ID_FLAG( MBEDTLS_ECP_DP_BP512R1 ) |
++    MBEDTLS_X509_ID_FLAG( MBEDTLS_ECP_DP_SECP256K1 ) |
+     0,
+ #else
+     0,
+@@ -231,7 +232,8 @@ static int x509_profile_check_key( const mbedtls_x509_crt_profile *profile,
+ #if defined(MBEDTLS_ECP_C)
+     if( pk_alg == MBEDTLS_PK_ECDSA ||
+         pk_alg == MBEDTLS_PK_ECKEY ||
+-        pk_alg == MBEDTLS_PK_ECKEY_DH )
++        pk_alg == MBEDTLS_PK_ECKEY_DH ||
++        pk_alg == MBEDTLS_PK_SM2 )
+     {
+         const mbedtls_ecp_group_id gid = mbedtls_pk_ec( *pk )->grp.id;
+ 
+@@ -2371,6 +2373,7 @@ static int x509_crt_verifycrl( mbedtls_x509_crt *crt, mbedtls_x509_crt *ca,
+             flags |= MBEDTLS_X509_BADCRL_BAD_PK;
+ 
+         md_info = mbedtls_md_info_from_type( crl_list->sig_md );
++
+         if( mbedtls_md( md_info, crl_list->tbs.p, crl_list->tbs.len, hash ) != 0 )
+         {
+             /* Note: this can't happen except after an internal error */
+@@ -2378,6 +2381,25 @@ static int x509_crt_verifycrl( mbedtls_x509_crt *crt, mbedtls_x509_crt *ca,
+             break;
+         }
+ 
++#if defined(MBEDTLS_SM2_C)
++        if( crl_list->sig_pk == MBEDTLS_PK_SM2 )
++        {
++            int ret;
++            unsigned char z[MBEDTLS_MD_MAX_SIZE];
++
++            if( mbedtls_sm2_hash_z( ca->pk.pk_ctx, crl_list->sig_md,
++                            NULL, 0, z ) != 0 ) {
++                flags |= MBEDTLS_X509_BADCRL_NOT_TRUSTED;
++                break;
++            }
++            if( mbedtls_sm2_hash_e( crl_list->sig_md,
++                            z, crl_list->tbs.p, crl_list->tbs.len, hash) != 0 ) {
++                flags |= MBEDTLS_X509_BADCRL_NOT_TRUSTED;
++                break;
++            }
++        }
++#endif /* MBEDTLS_SM2_C */
++
+         if( x509_profile_check_key( profile, &ca->pk ) != 0 )
+             flags |= MBEDTLS_X509_BADCERT_BAD_KEY;
+ 
+@@ -2431,6 +2453,19 @@ static int x509_crt_check_signature( const mbedtls_x509_crt *child,
+     /* Note: hash errors can happen only after an internal error */
+     if( mbedtls_md( md_info, child->tbs.p, child->tbs.len, hash ) != 0 )
+         return( -1 );
++#if defined(MBEDTLS_SM2_C)
++    if( child->sig_pk == MBEDTLS_PK_SM2 )
++    {
++        unsigned char z[MBEDTLS_MD_MAX_SIZE];
++
++        if( (mbedtls_sm2_hash_z( parent->pk.pk_ctx, child->sig_md,
++                        NULL, 0, z ) ) != 0 )
++            return( -1 );
++        if( (mbedtls_sm2_hash_e( child->sig_md,
++                        z, child->tbs.p, child->tbs.len, hash ) ) != 0 )
++            return(-1);
++    }
++#endif /* MBEDTLS_SM2_C */
+ #else
+     psa_hash_operation_t hash_operation = PSA_HASH_OPERATION_INIT;
+     psa_algorithm_t hash_alg = mbedtls_psa_translate_md( child->sig_md );
+diff --git a/mbedtls/src/x509write_crt.c b/mbedtls/src/x509write_crt.c
+index 17b3e796..9a09c51e 100644
+--- a/mbedtls/src/x509write_crt.c
++++ b/mbedtls/src/x509write_crt.c
+@@ -349,6 +349,8 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx,
+         pk_alg = MBEDTLS_PK_RSA;
+     else if( mbedtls_pk_can_do( ctx->issuer_key, MBEDTLS_PK_ECDSA ) )
+         pk_alg = MBEDTLS_PK_ECDSA;
++    else if( mbedtls_pk_can_do( ctx->issuer_key, MBEDTLS_PK_SM2 ) )
++        pk_alg = MBEDTLS_PK_SM2;
+     else
+         return( MBEDTLS_ERR_X509_INVALID_ALG );
+ 
+@@ -466,6 +468,20 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx,
+      */
+ 
+     /* Compute hash of CRT. */
++#if defined(MBEDTLS_SM2_C)
++    if( pk_alg == MBEDTLS_PK_SM2 )
++    {
++        unsigned char z[MBEDTLS_MD_MAX_SIZE];
++
++        if( ( ret = mbedtls_sm2_hash_z( ctx->issuer_key->pk_ctx, ctx->md_alg,
++                        NULL, 0, z ) ) != 0 )
++            return( ret );
++        if( ( ret = mbedtls_sm2_hash_e( ctx->md_alg, z, c, len, hash ) )
++                != 0 )
++            return( ret );
++    }
++    else
++#endif /* MBEDTLS_SM2_C */
+     if( ( ret = mbedtls_md( mbedtls_md_info_from_type( ctx->md_alg ), c,
+                             len, hash ) ) != 0 )
+     {
+diff --git a/mbedtls/src/x509write_csr.c b/mbedtls/src/x509write_csr.c
+index 555f2963..7b0d9f82 100644
+--- a/mbedtls/src/x509write_csr.c
++++ b/mbedtls/src/x509write_csr.c
+@@ -246,6 +246,8 @@ static int x509write_csr_der_internal( mbedtls_x509write_csr *ctx,
+         pk_alg = MBEDTLS_PK_RSA;
+     else if( mbedtls_pk_can_do( ctx->key, MBEDTLS_PK_ECDSA ) )
+         pk_alg = MBEDTLS_PK_ECDSA;
++    else if( mbedtls_pk_can_do( ctx->key, MBEDTLS_PK_SM2 ) )
++        pk_alg = MBEDTLS_PK_SM2;
+     else
+         return( MBEDTLS_ERR_X509_INVALID_ALG );
+ 
