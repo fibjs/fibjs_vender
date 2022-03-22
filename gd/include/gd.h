@@ -46,26 +46,8 @@ extern "C" {
 
 /* http://gcc.gnu.org/wiki/Visibility */
 #if defined(_WIN32) || defined(CYGWIN) || defined(_WIN32_WCE)
-# ifdef BGDWIN32
-#  ifdef NONDLL
-#   define BGD_EXPORT_DATA_PROT
-#  else
-#   ifdef __GNUC__
-#    define BGD_EXPORT_DATA_PROT __attribute__ ((__dllexport__))
-#   else
-#    define BGD_EXPORT_DATA_PROT __declspec(dllexport)
-#   endif
-#  endif
-# else
-#  ifdef __GNUC__
-#   define BGD_EXPORT_DATA_PROT __attribute__ ((__dllimport__))
-#  else
-#   define BGD_EXPORT_DATA_PROT __declspec(dllimport)
-#  endif
-# endif
-# define BGD_STDCALL __stdcall
-# define BGD_EXPORT_DATA_IMPL
-# define BGD_MALLOC
+# define BGD_EXPORT_DATA_PROT
+# define BGD_STDCALL
 #else
 # if defined(__GNUC__) || defined(__clang__)
 #  define BGD_EXPORT_DATA_PROT __attribute__ ((__visibility__ ("default")))

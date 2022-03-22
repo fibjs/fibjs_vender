@@ -105,7 +105,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromWebpCtx (gdIOCtx * infile)
 	uint8_t   *filedata = NULL;
 	uint8_t    *argb = NULL;
 	unsigned char   *read, *temp;
-	ssize_t size = 0, n;
+	size_t size = 0, n;
 	gdImagePtr im;
 	int x, y;
 	uint8_t *p;
