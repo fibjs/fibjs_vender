@@ -83,7 +83,7 @@ index 8b2b9ea5..2e0f2832 100644
   * MD        5   5
   * HKDF      5   1 (Started from top)
 diff --git a/mbedtls/mbedtls/mbedtls_config.h b/mbedtls/mbedtls/mbedtls_config.h
-index 0558ee00..7c126b5e 100644
+index 0558ee00..85f87a97 100644
 --- a/mbedtls/mbedtls/mbedtls_config.h
 +++ b/mbedtls/mbedtls/mbedtls_config.h
 @@ -85,7 +85,7 @@
@@ -141,6 +141,15 @@ index 0558ee00..7c126b5e 100644
  
  /**
   * \def MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
+@@ -1009,7 +1009,7 @@
+  *
+  * Enable functions that use the filesystem.
+  */
+-#define MBEDTLS_FS_IO
++// #define MBEDTLS_FS_IO
+ 
+ /**
+  * \def MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
 @@ -1265,7 +1270,7 @@
   *
   * Enable the checkup functions (*_self_test).
@@ -186,6 +195,24 @@ index 0558ee00..7c126b5e 100644
  
  /**
   * \def MBEDTLS_DES_C
+@@ -2662,7 +2662,7 @@
+  *           either MBEDTLS_PSA_ITS_FILE_C or a native implementation of
+  *           the PSA ITS interface
+  */
+-#define MBEDTLS_PSA_CRYPTO_STORAGE_C
++// #define MBEDTLS_PSA_CRYPTO_STORAGE_C
+ 
+ /**
+  * \def MBEDTLS_PSA_ITS_FILE_C
+@@ -2674,7 +2674,7 @@
+  *
+  * Requires: MBEDTLS_FS_IO
+  */
+-#define MBEDTLS_PSA_ITS_FILE_C
++// #define MBEDTLS_PSA_ITS_FILE_C
+ 
+ /**
+  * \def MBEDTLS_RIPEMD160_C
 @@ -2888,7 +2893,7 @@
   *
   * Enable this layer to allow use of mutexes within mbed TLS
