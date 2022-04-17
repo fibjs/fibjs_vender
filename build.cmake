@@ -24,6 +24,7 @@ set(libs
     exif
     mbedtls
     secp256k1
+    curve25519
     v8
     jssdk
     unzip
