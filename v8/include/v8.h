@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string>
 #include <memory>
 #include <type_traits>
 #include <utility>
