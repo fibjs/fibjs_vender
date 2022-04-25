@@ -75,10 +75,7 @@ void SHA512_Final (unsigned char *md, SHA512_CTX *c)
         SHA512_Transform (c,p);
 
     memset (p+n,0,SHA512_CBLOCK-16-n);
-#ifdef  ECP_CONFIG_BIG_ENDIAN
-    c->u.d[SHA_LBLOCK-2] = c->Nh;
-    c->u.d[SHA_LBLOCK-1] = c->Nl;
-#else
+
     p[SHA512_CBLOCK-1]  = (unsigned char)(c->Nl);
     p[SHA512_CBLOCK-2]  = (unsigned char)(c->Nl>>8);
     p[SHA512_CBLOCK-3]  = (unsigned char)(c->Nl>>16);
@@ -95,7 +92,6 @@ void SHA512_Final (unsigned char *md, SHA512_CTX *c)
     p[SHA512_CBLOCK-14] = (unsigned char)(c->Nh>>40);
     p[SHA512_CBLOCK-15] = (unsigned char)(c->Nh>>48);
     p[SHA512_CBLOCK-16] = (unsigned char)(c->Nh>>56);
-#endif
 
     SHA512_Transform (c,p);
 
