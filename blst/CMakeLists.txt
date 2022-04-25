@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 2.6)
+
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+    if(${ARCH} STREQUAL "amd64")
+        enable_language(ASM_MASM)
+        file(GLOB src_list "src/server.c" "src/asm/win64/*-x86_64.asm")
+    else()
+        file(GLOB src_list "src/server.c")
+    endif()
+else()
+    enable_language(ASM)
+    file(GLOB src_list "src/server.c" "src/asm/assembly.S")
+endif()
+
+include(../build_tools/cmake/Library.cmake)

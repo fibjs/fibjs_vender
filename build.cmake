@@ -25,6 +25,7 @@ set(libs
     mbedtls
     secp256k1
     curve25519
+    blst
     v8
     jssdk
     unzip
