@@ -32,26 +32,26 @@ jobs:
         target_arch: [amd64, i386, arm, arm64, mips, mips64]
         build_type: [release, debug]
         include:
-          - os: windows-2016
+          - os: windows-2019
             target_arch: amd64
             build_type: release
             use_clang: "false"
-          - os: windows-2016
+          - os: windows-2019
             target_arch: i386
             build_type: release
             use_clang: "false"
-          - os: windows-2016
+          - os: windows-2019
             target_arch: amd64
             build_type: release
             use_clang: "true"
-          - os: windows-2016
+          - os: windows-2019
             target_arch: i386
             build_type: release
             use_clang: "true"
-          - os: windows-2016
+          - os: windows-2019
             target_arch: amd64
             build_type: debug
-          - os: windows-2016
+          - os: windows-2019
             target_arch: i386
             build_type: debug
           - os: macos-10.15
