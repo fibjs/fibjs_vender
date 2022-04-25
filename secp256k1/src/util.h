@@ -212,7 +212,7 @@ SECP256K1_INLINE static int secp256k1_clz64_var(uint64_t x) {
      defined(__ARMEL__) || defined(__AARCH64EL__) || \
      (defined(__LITTLE_ENDIAN__) && __LITTLE_ENDIAN__ == 1) || \
      (defined(_LITTLE_ENDIAN) && _LITTLE_ENDIAN == 1) || \
-     defined(_M_IX86) || defined(_M_AMD64) || defined(_M_ARM) /* MSVC */
+     defined(_M_IX86) || defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM) /* MSVC */
 #  define SECP256K1_LITTLE_ENDIAN
 # endif
 # if (defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || \

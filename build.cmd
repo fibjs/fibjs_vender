@@ -17,6 +17,16 @@ for %%a in (%*) do (
         set ARG_ERROR=no
     )
 
+    if "%%a"=="arm64" (
+    	set BUILD_ARCH=arm64
+        set ARG_ERROR=no
+    )
+
+    if "%%a"=="arm" (
+    	set BUILD_ARCH=arm
+        set ARG_ERROR=no
+    )
+
     if "%%a"=="release" (
     	set BUILD_TYPE=release
         set ARG_ERROR=no

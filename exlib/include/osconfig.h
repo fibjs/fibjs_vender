@@ -71,14 +71,14 @@
 #endif
 #endif
 
-#if defined(__AARCH64EL__)
+#if defined(__AARCH64EL__) || defined(_M_ARM64)
 #ifndef arm64
 #define arm64
 #define ARCH_BITS 64
 #endif
 #endif
 
-#if defined(__ARMEL__)
+#if defined(__ARMEL__) || defined(_M_ARM)
 #ifndef arm
 #define arm
 #define ARCH_BITS 32
