@@ -82,6 +82,11 @@ typedef struct SHA512state_st
     unsigned int num, md_len;
 } SHA512_CTX;
 
+#define SHA512_Init ed25519_SHA512_Init
+#define SHA512_Update ed25519_SHA512_Update
+#define SHA512_Final ed25519_SHA512_Final
+#define SHA512_Transform ed25519_SHA512_Transform
+
 void SHA512_Init(SHA512_CTX *c);
 void SHA512_Update(SHA512_CTX *c, const void *data, size_t len);
 void SHA512_Final(unsigned char *md, SHA512_CTX *c);
