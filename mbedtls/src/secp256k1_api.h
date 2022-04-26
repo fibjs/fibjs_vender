@@ -18,9 +18,6 @@ extern secp256k1_context* secp256k1_ctx;
         hash = buffer;                                           \
     }
 
-void mpi_write_key(const mbedtls_mpi* X, unsigned char* buf);
-void mpi_read_key(mbedtls_mpi* X, unsigned char* buf);
-
 #ifdef __cplusplus
 }
 #endif

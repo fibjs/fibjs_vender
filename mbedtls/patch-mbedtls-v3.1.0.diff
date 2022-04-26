@@ -658,8 +658,8 @@ index 0b612ce8..4442e1f2 100644
 +
 +        fix_hash(hash, hlen, buffer);
 +
-+        mpi_write_key(&ec_ctx->Q.X, pubkey.data);
-+        mpi_write_key(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256);
++        mbedtls_mpi_write_binary_le(&ec_ctx->Q.X, pubkey.data, KEYSIZE_256);
++        mbedtls_mpi_write_binary_le(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256, KEYSIZE_256);
 +
 +        if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx, &signature, sig, slen))
 +            return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
@@ -735,8 +735,8 @@ index 0212069c..de8d2da6 100644
 +
 +        mbedtls_mpi_write_binary(m, key, KEYSIZE_256);
 +
-+        mpi_write_key(&P->X, pubkey.data);
-+        mpi_write_key(&P->Y, pubkey.data + KEYSIZE_256);
++        mbedtls_mpi_write_binary_le(&P->X, pubkey.data, KEYSIZE_256);
++        mbedtls_mpi_write_binary_le(&P->Y, pubkey.data + KEYSIZE_256, KEYSIZE_256);
 +
 +        secp256k1_ecdh(secp256k1_ctx, buffer, &pubkey, key, ecdh_hash_function_XY, NULL);
 +

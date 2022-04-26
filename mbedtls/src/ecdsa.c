@@ -793,8 +793,8 @@ int mbedtls_ecdsa_read_signature_restartable( mbedtls_ecdsa_context *ctx,
 
         fix_hash(hash, hlen, buffer);
 
-        mpi_write_key(&ec_ctx->Q.X, pubkey.data);
-        mpi_write_key(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256);
+        mbedtls_mpi_write_binary_le(&ec_ctx->Q.X, pubkey.data, KEYSIZE_256);
+        mbedtls_mpi_write_binary_le(&ec_ctx->Q.Y, pubkey.data + KEYSIZE_256, KEYSIZE_256);
 
         if (!secp256k1_ecdsa_signature_parse_der(secp256k1_ctx, &signature, sig, slen))
             return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;

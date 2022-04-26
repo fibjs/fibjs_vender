@@ -2473,8 +2473,8 @@ static int ecp_mul_restartable_internal( mbedtls_ecp_group *grp, mbedtls_ecp_poi
 
         mbedtls_mpi_write_binary(m, key, KEYSIZE_256);
 
-        mpi_write_key(&P->X, pubkey.data);
-        mpi_write_key(&P->Y, pubkey.data + KEYSIZE_256);
+        mbedtls_mpi_write_binary_le(&P->X, pubkey.data, KEYSIZE_256);
+        mbedtls_mpi_write_binary_le(&P->Y, pubkey.data + KEYSIZE_256, KEYSIZE_256);
 
         secp256k1_ecdh(secp256k1_ctx, buffer, &pubkey, key, ecdh_hash_function_XY, NULL);
 
