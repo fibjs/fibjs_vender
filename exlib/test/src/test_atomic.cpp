@@ -3,6 +3,10 @@
 
 TEST(exlib_atomic, load)
 {
+    std::atomic<int32_t> a2(1000);
+    int32_t b2 = std::atomic_load(&a2);
+    GTEST_ASSERT_EQ(b2, 1000);
+
     std::atomic<double> a(0);
     double b = std::atomic_load(&a);
     GTEST_ASSERT_EQ(b, 0);
