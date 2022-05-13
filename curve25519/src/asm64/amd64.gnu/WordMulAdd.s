@@ -24,46 +24,7 @@
 
 .include "defines.inc"
 
-/* _______________________________________________________________________
-/*
-/*   Z(4) = Y(4) + b*X(4)    mod 2**255-19
-/*   void ecp_WordMulAddReduce(U64 *Z, const U64* Y, U64 b, const U64* X)
-/* _______________________________________________________________________ */
-    PUBPROC ecp_WordMulAddReduce
 
-    SaveArg2
-    SaveArg3
-    SaveArg4
-
-.equ  Z,  ARG1
-.equ  Y,  ARG2M
-.equ  b,  ARG3M
-.equ  X,  ARG4M
-
-    MULADD_W0 A0,(Y),b,(X)
-    MULADD_W1 A1,8(Y),b,8(X)
-    MULADD_W1 A2,16(Y),b,16(X)
-    MULADD_W1 A3,24(Y),b,24(X)
-
-    /* ZF set if ACH == 0 */
-    jz    wma_2
-    MULT    $38,ACH
-    ADDA    $0,$0,ACH,ACL
-    jnc   wma_2
-    
-wma_1:
-    ADDA    $0,$0,$0,$38
-    jc    wma_1
-    
-wma_2:
-    /* return result */
-    STOREA  Z
-
-    RestoreArg4
-    RestoreArg3
-    RestoreArg2
-    ret
-    
 /* _______________________________________________________________________
 /*
 /*   C:Z(5) = Y(5) + b*X(4)
@@ -121,4 +82,45 @@ wma_2:
     RestoreArg2
     ret
     
+    
+/* _______________________________________________________________________
+/*
+/*   Z(4) = Y(4) + b*X(4)    mod 2**255-19
+/*   void ecp_WordMulAddReduce(U64 *Z, const U64* Y, U64 b, const U64* X)
+/* _______________________________________________________________________ */
+    PUBPROC _ecp_WordMulAddReduce
+    PUBPROC ecp_WordMulAddReduce
+
+    SaveArg2
+    SaveArg3
+    SaveArg4
+
+.equ  Z,  ARG1
+.equ  Y,  ARG2M
+.equ  b,  ARG3M
+.equ  X,  ARG4M
+
+    MULADD_W0 A0,(Y),b,(X)
+    MULADD_W1 A1,8(Y),b,8(X)
+    MULADD_W1 A2,16(Y),b,16(X)
+    MULADD_W1 A3,24(Y),b,24(X)
+
+    /* ZF set if ACH == 0 */
+    jz    wma_2
+    MULT    $38,ACH
+    ADDA    $0,$0,ACH,ACL
+    jnc   wma_2
+    
+wma_1:
+    ADDA    $0,$0,$0,$38
+    jc    wma_1
+    
+wma_2:
+    /* return result */
+    STOREA  Z
+
+    RestoreArg4
+    RestoreArg3
+    RestoreArg2
+    ret
     
