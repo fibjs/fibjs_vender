@@ -41,6 +41,14 @@ void curve25519_dh_CreateSharedKey(
     const unsigned char *pk,    /* [32-bytes] IN: Other side's public key */
     unsigned char *sk);         /* [32-bytes] IN/OUT: Your secret key */
 
+void curve25519_dh_ConvertPublicKey(
+    unsigned char* r,           /* [32-bytes] OUT: curve25519 public key */
+    const unsigned char *pk);   /* [32-bytes] IN: Ed25519 public key */
+
+void curve25519_dh_ConvertPrivateKey(
+    unsigned char* r,           /* [32-bytes] OUT: curve25519 secret key */
+    const unsigned char *sk);   /* [32-bytes] IN: Ed25519 secret key */
+
 #ifdef __cplusplus
 }
 #endif
