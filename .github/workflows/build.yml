@@ -42,14 +42,6 @@ jobs:
             use_clang: "false"
           - os: windows-2019
             target_arch: amd64
-            build_type: release
-            use_clang: "true"
-          - os: windows-2019
-            target_arch: i386
-            build_type: release
-            use_clang: "true"
-          - os: windows-2019
-            target_arch: amd64
             build_type: debug
           - os: windows-2019
             target_arch: i386
@@ -83,51 +75,16 @@ jobs:
           BUILD_TYPE: ${{ matrix.build_type }}
           BUILD_USE_CLANG: ${{ matrix.use_clang }}
 
-      - name: Setup LLVM on Windows
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: |
-          if NOT EXIST llvm-installer.exe (
-              IF /I "%TARGET_ARCH%" == "amd64" (
-                  curl -Ls -o "llvm-installer.exe" "http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe"
-                  ECHO "install llvm win64 for x64"
-              )
-              IF /I "%TARGET_ARCH%" == "i386" (
-                  curl -Ls -o "llvm-installer.exe" "http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe"
-                  ECHO "install llvm win64 for x86"
-              )
-          )
-
-          START /WAIT llvm-installer.exe /S /D=C:\"Program Files\LLVM"
-        env:
-          TARGET_ARCH: ${{ matrix.target_arch }}
-          BUILD_TYPE: ${{ matrix.build_type }}
-
-      - name: Enhance LLVM on Windows
-        if: runner.os == 'Windows'
+      - name: Setup ubuntu
+        if: runner.os == 'Linux'
         shell: bash
         run: |
-          # install make.exe
-          CUR_DIR=`pwd`
-          cd "C:/Program Files/Git/mingw64/"
-          if [ ! -e make.zip ]; then
-              curl -sL -o "make.zip" https://netix.dl.sourceforge.net/project/ezwinports/make-4.3-without-guile-w32-bin.zip
-          fi
-          unzip -n "make.zip"
-          cd $CUR_DIR;
-
-          # add LLVM bin to system path
-          echo "C:\Program Files\LLVM\bin" >> $GITHUB_PATH
+          sudo bash .github/workflows/setup_ubuntu.sh
 
       - name: Build
         shell: bash
         run: |
-          if [[ "$TARGET_OS" == 'Linux' ]]; then
-            echo "start docker build..."
-            DIR=`pwd`; docker run -t --env GIT_BRANCH=${GIT_BRANCH} -v ${DIR}:/home/ci fibjs/build-env:clang /bin/sh -c "cd /home/ci; sh build -j2 ${TARGET_ARCH} ${BUILD_TYPE} ci"
-          else
-              sh build -j2 ${TARGET_ARCH} ${BUILD_TYPE} ci
-          fi
+          sh build -j2 ${TARGET_ARCH} ${BUILD_TYPE} ci
         env:
           TARGET_ARCH: ${{ matrix.target_arch }}
           BUILD_TYPE: ${{ matrix.build_type }}
