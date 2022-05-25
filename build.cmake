@@ -26,6 +26,7 @@ set(libs
     secp256k1
     curve25519
     blst
+    blake2
     v8
     jssdk
     unzip
