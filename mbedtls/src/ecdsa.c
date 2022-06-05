@@ -694,7 +694,9 @@ int mbedtls_ecdsa_write_signature_restartable( mbedtls_ecdsa_context *ctx,
         fix_hash(hash, hlen, buffer);
         mbedtls_mpi_write_binary(&ec_ctx->d, key, KEYSIZE_256);
 
-        secp256k1_ecdsa_sign(secp256k1_ctx, &signature, hash, key, NULL, NULL);
+        unsigned char ndata[KEYSIZE_256];
+        f_rng(p_rng, ndata, KEYSIZE_256);
+        secp256k1_ecdsa_sign(secp256k1_ctx, &signature, hash, key, NULL, ndata);
 
         *slen = 80;
         secp256k1_ecdsa_signature_serialize_der(secp256k1_ctx, sig, slen, &signature);
