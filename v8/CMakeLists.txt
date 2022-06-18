@@ -24,6 +24,11 @@ if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 			"src/trap-handler/handler-outside-win.cc"
 			"src/diagnostics/unwinding-info-win64.cc"
 		)
+	elseif(${ARCH} STREQUAL "arm64")
+		list(APPEND src_list
+			"src/trap-handler/handler-outside-win.cc"
+			"src/diagnostics/unwinding-info-win64.cc"
+		)
 	endif()
 	set_property(SOURCE src/diagnostics/unwinding-info-win64.cc
 		APPEND PROPERTY

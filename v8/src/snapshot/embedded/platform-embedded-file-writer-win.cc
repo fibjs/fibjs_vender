@@ -482,6 +482,19 @@ void PlatformEmbeddedFileWriterWin::SectionRoData() {
           ARM64_DATA_ALIGNMENT_POWER);
 }
 
+void PlatformEmbeddedFileWriterWin::StartPdataSection() {}
+
+void PlatformEmbeddedFileWriterWin::EndPdataSection() {}
+
+void PlatformEmbeddedFileWriterWin::StartXdataSection() {}
+
+void PlatformEmbeddedFileWriterWin::EndXdataSection() {}
+
+void PlatformEmbeddedFileWriterWin::DeclareExternalFunction(const char* name) {}
+
+void PlatformEmbeddedFileWriterWin::DeclareRvaToSymbol(const char* name,
+                                                       uint64_t offset) {}
+
 void PlatformEmbeddedFileWriterWin::DeclareUint32(const char* name,
                                                   uint32_t value) {
   DeclareSymbolGlobal(name);
