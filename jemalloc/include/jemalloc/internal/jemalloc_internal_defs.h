@@ -34,7 +34,7 @@
  * order to yield to another virtual CPU.
  */
 #ifdef _MSC_VER
-#define CPU_SPINWAIT _mm_pause()
+#define CPU_SPINWAIT YieldProcessor()
 #elif defined(__x86_64__) || defined(__i386__)
 #define CPU_SPINWAIT __asm__ volatile("pause")
 #elif defined(__arm__) || defined(__aarch64__)
