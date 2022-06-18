@@ -8,7 +8,14 @@
 
 #include <stddef.h>
 
-#if defined(__x86_64__) || defined(__aarch64__)
+#if defined(__BLST_NO_ASM__) || defined(__wasm64__)
+typedef unsigned int limb_t;
+# define LIMB_T_BITS    32
+# ifndef __BLST_NO_ASM__
+#  define __BLST_NO_ASM__
+# endif
+
+#elif defined(__x86_64__) || defined(__aarch64__)
 /* These are available even in ILP32 flavours, but even then they are
  * capable of performing 64-bit operations as efficiently as in *P64. */
 typedef unsigned long long limb_t;
@@ -18,18 +25,12 @@ typedef unsigned long long limb_t;
 typedef unsigned __int64 limb_t;
 # define LIMB_T_BITS    64
 
-#elif defined(__BLST_NO_ASM__) || defined(__wasm64__)
-typedef unsigned int limb_t;
-# define LIMB_T_BITS    32
-# ifndef __BLST_NO_ASM__
-#  define __BLST_NO_ASM__
-# endif
-
 #else                   /* 32 bits on 32-bit platforms, 64 - on 64-bit */
-typedef unsigned long limb_t;
 #  ifdef _LP64
+typedef unsigned long long limb_t;
 #   define LIMB_T_BITS   64
 #  else
+typedef unsigned long limb_t;
 #   define LIMB_T_BITS   32
 #   define __BLST_NO_ASM__
 #  endif

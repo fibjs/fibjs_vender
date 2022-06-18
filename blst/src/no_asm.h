@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#if LIMB_T_BITS==32
+#ifndef __BLS12_NO_ASM_H__
+#define __BLS12_NO_ASM_H__
+
 #ifdef _WIN32
 typedef unsigned __int64 llimb_t;
 #else
 typedef unsigned long long llimb_t;
-#endif
 #endif
 
 #if defined(__clang__)
@@ -1316,3 +1317,5 @@ void blst_sha256_bcopy(void *dst_, const void *src_, size_t len)
     for (i=0; i<len; i++)
         dst[i] = src[i];
 }
+
+#endif
