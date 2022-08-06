@@ -27,6 +27,7 @@
 #define secp256k1_ec_privkey_tweak_add secp256k1_ec_privkey_tweak_add_ex
 #define secp256k1_ec_privkey_tweak_mul secp256k1_ec_privkey_tweak_mul_ex
 #define secp256k1_ec_pubkey_combine secp256k1_ec_pubkey_combine_ex
+#define secp256k1_ec_pubkey_cmp secp256k1_ec_pubkey_cmp_ex
 #define secp256k1_ec_pubkey_create secp256k1_ec_pubkey_create_ex
 #define secp256k1_ec_pubkey_negate secp256k1_ec_pubkey_negate_ex
 #define secp256k1_ec_pubkey_parse secp256k1_ec_pubkey_parse_ex
@@ -53,6 +54,7 @@
 #define secp256k1_nonce_function_rfc6979 secp256k1_nonce_function_rfc6979_ex
 #define secp256k1_scratch_space_create secp256k1_scratch_space_create_ex
 #define secp256k1_scratch_space_destroy secp256k1_scratch_space_destroy_ex
+#define secp256k1_tagged_sha256 secp256k1_tagged_sha256_ex
 
 #include <secp256k1/include/secp256k1.h>
 #include <secp256k1/include/secp256k1_ecdh.h>
