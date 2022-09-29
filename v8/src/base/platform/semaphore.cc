@@ -27,11 +27,7 @@ namespace base {
 
     bool Semaphore::WaitFor(const TimeDelta& rel_time)
     {
-        if (rel_time.InMicroseconds() == 0)
-            return native_handle_->trywait();
-
-        native_handle_->wait();
-        return true;
+        return native_handle_->wait(rel_time.InMicroseconds());
     }
 }
 } // namespace v8::base

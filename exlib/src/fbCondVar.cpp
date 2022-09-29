@@ -11,7 +11,7 @@
 
 namespace exlib {
 
-void CondVar::wait(Locker& mtxExternal)
+bool CondVar::wait(Locker& mtxExternal, int32_t ms)
 {
     int32_t nSignalsWasLeft;
 
@@ -20,7 +20,8 @@ void CondVar::wait(Locker& mtxExternal)
     m_semBlockLock.post();
 
     mtxExternal.unlock();
-    m_semBlockQueue.wait();
+
+    bool result = m_semBlockQueue.wait(ms);
 
     m_mtxUnblockLock.lock();
     if (0 != (nSignalsWasLeft = m_nWaitersToUnblock))
@@ -37,6 +38,8 @@ void CondVar::wait(Locker& mtxExternal)
         m_semBlockLock.post();
 
     mtxExternal.lock();
+
+    return result;
 }
 
 void CondVar::notify(bool bAll)

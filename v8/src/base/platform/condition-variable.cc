@@ -1,5 +1,6 @@
 
 #include "condition-variable.h"
+#include "time.h"
 #include <exlib/include/fiber.h>
 
 namespace v8 {
@@ -32,8 +33,7 @@ namespace base {
 
     bool ConditionVariable::WaitFor(Mutex* mutex, const TimeDelta& rel_time)
     {
-        native_handle_->wait(*mutex->native_handle());
-        return true;
+        return native_handle_->wait(*mutex->native_handle(), rel_time.InMicroseconds());
     }
 }
 } // namespace v8::base

@@ -41,6 +41,9 @@ public:
     {
         return false;
     }
+
+public:
+    Task_base* m_task = NULL;
 };
 
 enum ThreadType {
@@ -224,9 +227,9 @@ public:
     }
 
 public:
-    void wait();
-    void post(int32_t cnt = 1);
+    bool wait(int32_t ms = -1);
     bool trywait();
+    void post(int32_t cnt = 1);
 
     int32_t count()
     {
@@ -237,6 +240,18 @@ public:
         m_lock.unlock();
 
         return cnt;
+    }
+
+    bool remove(Task_base* task)
+    {
+        bool found;
+        m_lock.lock();
+        found = m_blocks.has(task);
+        if (found)
+            m_blocks.remove(task);
+        m_lock.unlock();
+
+        return found;
     }
 
 private:
@@ -254,7 +269,7 @@ public:
     }
 
 public:
-    void wait(Locker& mtxExternal);
+    bool wait(Locker& mtxExternal, int32_t ms = -1);
     void notify(bool bAll);
 
     void notify_one()
