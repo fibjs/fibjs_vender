@@ -13,29 +13,46 @@ namespace exlib {
 
 bool CondVar::wait(Locker& mtxExternal, int32_t ms)
 {
+    bool result;
     int32_t nSignalsWasLeft;
+    int32_t nWaitersWasGone;
 
     m_semBlockLock.wait();
     ++m_nWaitersBlocked;
     m_semBlockLock.post();
 
     mtxExternal.unlock();
-
-    bool result = m_semBlockQueue.wait(ms);
+    result = m_semBlockQueue.wait(ms);
 
     m_mtxUnblockLock.lock();
-    if (0 != (nSignalsWasLeft = m_nWaitersToUnblock))
-        --m_nWaitersToUnblock;
-    else if (INT_MAX / 2 == ++m_nWaitersGone) {
+    if (0 != (nSignalsWasLeft = m_nWaitersToUnblock)) {
+        if (!result)
+            if (0 != m_nWaitersBlocked)
+                m_nWaitersBlocked--;
+            else
+                m_nWaitersGone++;
+
+        if (0 == --m_nWaitersToUnblock)
+            if (0 != m_nWaitersBlocked) {
+                m_semBlockLock.post();
+                nSignalsWasLeft = 0;
+            } else if (0 != (nWaitersWasGone = m_nWaitersGone))
+                m_nWaitersGone = 0;
+    } else if (INT_MAX / 2 == ++m_nWaitersGone) {
         m_semBlockLock.wait();
         m_nWaitersBlocked -= m_nWaitersGone;
+
         m_semBlockLock.post();
         m_nWaitersGone = 0;
     }
     m_mtxUnblockLock.unlock();
 
-    if (1 == nSignalsWasLeft)
+    if (1 == nSignalsWasLeft) {
+        while (nWaitersWasGone--)
+            m_semBlockQueue.wait();
+
         m_semBlockLock.post();
+    }
 
     mtxExternal.lock();
 

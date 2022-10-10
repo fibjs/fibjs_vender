@@ -292,7 +292,7 @@ private:
     Semaphore m_semBlockQueue;
     Locker m_mtxUnblockLock;
     int32_t m_nWaitersGone = 0;
-    std::atomic<int32_t> m_nWaitersBlocked;
+    int32_t m_nWaitersBlocked = 0;
     int32_t m_nWaitersToUnblock = 0;
 };
 

@@ -12,9 +12,9 @@ namespace exlib {
 
 class Timer : public Task_base {
 public:
-    Timer(Semaphore* sem, Task_base* task, int32_t ms, volatile bool& cancel)
+    Timer(Semaphore* sem, Task_base* task, int32_t ms, bool& posted)
         : m_sem(sem)
-        , m_cancel(cancel)
+        , m_posted(posted)
     {
         m_task = task;
         m_task->m_task = this;
@@ -25,32 +25,29 @@ public:
 public:
     virtual void resume()
     {
-        if (m_sem->remove(m_task)) {
-            m_task->m_task = NULL;
-            m_task->resume();
-        }
-
-        delete this;
-    }
-
-    void cancel()
-    {
-        m_cancel = true;
+        if (!m_posted)
+            m_sem->remove(m_task);
 
         m_task->m_task = NULL;
         m_task->resume();
 
+        delete this;
+    }
+
+    void post()
+    {
+        m_posted = true;
         Fiber::cancel_sleep(this);
     }
 
 private:
     Semaphore* m_sem;
-    volatile bool& m_cancel;
+    bool& m_posted;
 };
 
 bool Semaphore::wait(int32_t ms)
 {
-    volatile bool cancel = false;
+    bool posted = true;
 
     if (ms == 0)
         return trywait();
@@ -61,8 +58,10 @@ bool Semaphore::wait(int32_t ms)
         Task_base* current = Thread_base::current();
         assert(current != 0);
 
-        if (ms > 0)
-            new Timer(this, current, ms, cancel);
+        if (ms > 0) {
+            posted = false;
+            new Timer(this, current, ms, posted);
+        }
 
         m_blocks.putTail(current);
         current->suspend(m_lock);
@@ -71,7 +70,7 @@ bool Semaphore::wait(int32_t ms)
         m_lock.unlock();
     }
 
-    return cancel;
+    return posted;
 }
 
 void Semaphore::post(int32_t cnt)
@@ -86,7 +85,7 @@ void Semaphore::post(int32_t cnt)
             m_count++;
         else {
             if (fb->m_task)
-                ((Timer*)fb->m_task)->cancel();
+                ((Timer*)fb->m_task)->post();
             else
                 fb->resume();
         }
