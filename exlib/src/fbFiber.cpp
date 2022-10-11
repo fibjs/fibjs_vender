@@ -143,24 +143,10 @@ public:
             m_tm = _hrtime();
             m_acSleep.getList(_acSleep);
 
+            m_lock.lock();
+
             while ((p = _acSleep.getHead()) != NULL)
-                if (p->m_tm >= 0)
-                    m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
-                else {
-                    e = m_tms.begin();
-                    while (e != m_tms.end()) {
-                        if (e->second->m_now == p->m_now) {
-                            e->second->m_now->resume();
-                            delete e->second;
-                            m_tms.erase(e);
-                            break;
-                        }
-
-                        e++;
-                    }
-
-                    delete p;
-                }
+                m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
 
             while (1) {
                 e = m_tms.begin();
@@ -173,6 +159,8 @@ public:
                 delete e->second;
                 m_tms.erase(e);
             }
+
+            m_lock.unlock();
         }
     }
 
@@ -184,8 +172,23 @@ public:
 
     void cancel(Task_base* now)
     {
-        m_acSleep.putTail(new Sleeping(now, -1));
-        m_sem.Post();
+        std::multimap<int64_t, Sleeping*>::iterator e;
+
+        m_lock.lock();
+
+        e = m_tms.begin();
+        while (e != m_tms.end()) {
+            if (e->second->m_now == now) {
+                e->second->m_now->resume();
+                delete e->second;
+                m_tms.erase(e);
+                break;
+            }
+
+            e++;
+        }
+
+        m_lock.unlock();
     }
 
 private:
@@ -193,6 +196,7 @@ private:
     int64_t m_tm;
     LockedList<Sleeping> m_acSleep;
     std::multimap<int64_t, Sleeping*> m_tms;
+    spinlock m_lock;
 
     friend class Sleeping;
 };
