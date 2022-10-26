@@ -25,8 +25,7 @@ public:
 public:
     virtual void resume()
     {
-        if (!m_posted)
-            m_sem->remove(m_task);
+        m_sem->remove(m_task);
 
         m_task->m_task = NULL;
         m_task->resume();
