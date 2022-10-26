@@ -52,7 +52,6 @@ bool Semaphore::wait(int32_t ms)
         return trywait();
 
     m_lock.lock();
-
     if (m_count == 0) {
         Task_base* current = Thread_base::current();
         assert(current != 0);
@@ -74,11 +73,11 @@ bool Semaphore::wait(int32_t ms)
 
 void Semaphore::post(int32_t cnt)
 {
+    List<Task_base> blocks;
+    Task_base* fb;
+
     m_lock.lock();
-
     while (cnt--) {
-        Task_base* fb;
-
         fb = m_blocks.getHead();
         if (fb == 0)
             m_count++;
@@ -86,11 +85,13 @@ void Semaphore::post(int32_t cnt)
             if (fb->m_task)
                 ((Timer*)fb->m_task)->post();
             else
-                fb->resume();
+                blocks.putTail(fb);
         }
     }
-
     m_lock.unlock();
+
+    while ((fb = blocks.getHead()) != 0)
+        fb->resume();
 }
 
 bool Semaphore::trywait()
