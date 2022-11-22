@@ -53,34 +53,30 @@ esac
 
 if [[ "$RUNNER_OS" == "Linux" ]]; then
     export TARGET_OS_NAME="Linux";
-    export DIST_FILE="vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip"
+
+    if [[ "$BUILD_ALPINE" == "alpine" ]]; then
+        export DIST_FILE="vender-alpine-${DIST_ARCH}-$BUILD_TYPE.zip"
+    else
+        export DIST_FILE="vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip"
+    fi
     export DIST_DIR="${TARGET_OS_NAME}_${TARGET_ARCH}_$BUILD_TYPE"
-    export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Linux.cc"
 fi
 
 if [[ "$RUNNER_OS" == "macOS" ]]; then
     export TARGET_OS_NAME="Darwin";
     export DIST_FILE="vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip"
     export DIST_DIR="${TARGET_OS_NAME}_${TARGET_ARCH}_$BUILD_TYPE"
-    export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Darwin.cc"
 fi
 
 if [[ "$RUNNER_OS" == "Windows" ]]; then
     export TARGET_OS_NAME="Windows";
     export DIST_FILE="vender-windows-${DIST_ARCH}-$BUILD_TYPE.zip"
     export DIST_DIR="${TARGET_OS_NAME}_${TARGET_ARCH}_$BUILD_TYPE"
-    export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Windows.cc"
-
-    if [[ "$BUILD_USE_CLANG" == "true" ]]; then
-        export DIST_FILE="vender-windows-${DIST_ARCH}-$BUILD_TYPE-clang.zip"
-        export SNAPSHOT_FNAME="snapshot-$SNAPSHOT_ARCH-Windows-avoidtoupload.cc"
-    fi
 fi
 
 echo "::set-output name=TARGET_OS_NAME::$TARGET_OS_NAME"
 echo "::set-output name=DIST_FILE::$DIST_FILE"
 echo "::set-output name=DIST_DIR::$DIST_DIR"
-echo "::set-output name=SNAPSHOT_FNAME::$SNAPSHOT_FNAME"
 
 export DIST_FILEPATH=$RELEASE_TAG/$DIST_FILE
 echo "::set-output name=DIST_FILEPATH::$DIST_FILEPATH"
