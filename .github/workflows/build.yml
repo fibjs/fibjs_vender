@@ -158,3 +158,4 @@ jobs:
           TARGET_OS_NAME: ${{ steps.set-env-vars.outputs.TARGET_OS_NAME }}
           TARGET_ARCH: ${{ matrix.target_arch }}
           BUILD_TYPE: ${{ matrix.build_type }}
+          BUILD_ALPINE: ${{ matrix.alpine }}
