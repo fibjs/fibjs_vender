@@ -5,7 +5,12 @@
 set -ev
 
 if [[ $TARGET_OS_NAME == 'Linux' ]]; then
-    bash ./arch-run ${TARGET_ARCH} ${BUILD_TYPE} -e=jssdk_test
+    if [[ "$BUILD_ALPINE" == "alpine" ]]; then
+        CUR=`pwd`
+        docker run --rm -v ${CUR}:/fibjs fibjs/alpine-test-env:${TARGET_ARCH} /fibjs/.dist/bin/${DIST_DIR}/jssdk_test
+    else
+        bash ./arch-run ${TARGET_ARCH} ${BUILD_TYPE} -e=jssdk_test
+    fi
 else # Darwin/Windows
     .dist/bin/$DIST_DIR/jssdk_test
 fi
