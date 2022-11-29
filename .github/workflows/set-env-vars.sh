@@ -62,8 +62,8 @@ esac
 if [[ "$RUNNER_OS" == "Linux" ]]; then
     export TARGET_OS_NAME="Linux";
 
-    if [[ "$BUILD_ALPINE" == "alpine" ]]; then
-        export DIST_FILE="vender-alpine-${DIST_ARCH}-$BUILD_TYPE.zip"
+    if [[ "$BUILD_TARGET" != "" ]]; then
+        export DIST_FILE="vender-${BUILD_TARGET}-${DIST_ARCH}-$BUILD_TYPE.zip"
     else
         export DIST_FILE="vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip"
     fi
