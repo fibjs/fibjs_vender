@@ -1,5 +1,13 @@
-. ./build_tools/scripts/get_env.sh --source-only
-get_build_env;
+TARGET_OS=`uname`
+case ${TARGET_OS} in
+      MINGW*) TARGET_OS="Windows"
+          HOST_MINGW="true";
+          ;;
+      CYGWIN*) TARGET_OS="Windows"
+          HOST_CYGWIN="true";
+          ;;
+esac
+
 echo "::set-output name=TARGET_OS::$TARGET_OS"
 
 echo "::set-output name=BUILD_USE_CLANG::$BUILD_USE_CLANG"
