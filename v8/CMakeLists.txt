@@ -9,6 +9,10 @@ endif()
 
 file(GLOB_RECURSE src_list "src/*.c*" "gen/*.c*")
 
+if(ANDROID)
+	list(REMOVE_ITEM src_list "${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace_posix.cc")
+endif()
+
 file(GLOB_RECURSE temp_excluded_list
 	"src/trap-handler/handler-inside-*.*"
 	"src/trap-handler/handler-outside-*.*"

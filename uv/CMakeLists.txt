@@ -44,11 +44,6 @@ set(uv_sources
 
 if(WIN32)
 	list(APPEND uv_defines WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0600)
-	list(APPEND uv_libraries
-		 psapi
-		 iphlpapi
-		 userenv
-		 ws2_32)
 	list(APPEND uv_sources
 		 src/win/async.c
 		 src/win/core.c
@@ -78,12 +73,6 @@ if(WIN32)
 	list(APPEND uv_test_libraries ws2_32)
 else()
 	list(APPEND uv_defines _FILE_OFFSET_BITS=64 _LARGEFILE_SOURCE)
-	if(NOT CMAKE_SYSTEM_NAME MATCHES "Android|OS390")
-		# TODO: This should be replaced with find_package(Threads) if possible
-		# Android has pthread as part of its c library, not as a separate
-		# libpthread.so.
-		list(APPEND uv_libraries pthread)
-	endif()
 	list(APPEND uv_sources
 			src/unix/async.c
 			src/unix/core.c
@@ -133,6 +122,12 @@ if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
   list(APPEND uv_sources src/unix/random-getentropy.c)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+  list(APPEND uv_sources 
+  	   src/unix/android-ifaddrs.c
+	   src/unix/pthread-fixes.c)
+endif()
+
 if(APPLE)
   list(APPEND uv_defines _DARWIN_UNLIMITED_SELECT=1 _DARWIN_USE_64_BIT_INODE=1)
   list(APPEND uv_sources
@@ -141,9 +136,8 @@ if(APPLE)
        src/unix/fsevents.c)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME MATCHES "Android|Linux")
   list(APPEND uv_defines _GNU_SOURCE _POSIX_C_SOURCE=200112)
-  list(APPEND uv_libraries dl rt)
   list(APPEND uv_sources
        src/unix/linux-core.c
        src/unix/linux-inotify.c
@@ -161,7 +155,6 @@ set(src_list "${uv_sources}")
 include(../build_tools/cmake/Library.cmake)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${uv_defines})
-target_link_libraries(${PROJECT_NAME} ${uv_libraries})
 
 include_directories(
 	PUBLIC
