@@ -16,6 +16,7 @@
  */
 
 #include "fields.h"
+#include "bytes.h"
 
 /*
  * BLS12-381-specifc Fr shortcuts to assembly.
@@ -542,40 +543,14 @@ int blst_scalar_from_be_bytes(pow256 out, const unsigned char *bytes, size_t n)
 /*
  * Test facilitator
  */
-static unsigned char nibble(char c)
+void blst_scalar_from_hexascii(pow256 ret, const char *hex)
+{   bytes_from_hexascii(ret, sizeof(pow256), hex);   }
+
+void blst_fr_from_hexascii(vec256 ret, const char *hex)
 {
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    else if (c >= 'a' && c <= 'f')
-        return 10 + c - 'a';
-    else if (c >= 'A' && c <= 'F')
-        return 10 + c - 'A';
-    else
-        return 16;
+    limbs_from_hexascii(ret, sizeof(vec256), hex);
+    mul_mont_sparse_256(ret, ret, BLS12_381_rRR, BLS12_381_r, r0);
 }
-
-static void limbs_from_hexascii(limb_t *ret, size_t sz, const char *hex)
-{
-    size_t len;
-    limb_t limb = 0;
-
-    if (hex[0]=='0' && (hex[1]=='x' || hex[1]=='X'))
-        hex += 2;
-
-    for (len = 0; len<2*sz && nibble(hex[len])<16; len++) ;
-
-    vec_zero(ret, sz);
-
-    while(len--) {
-        limb <<= 4;
-        limb |= nibble(*hex++);
-        if (len % (2*sizeof(limb_t)) == 0)
-            ret[len / (2*sizeof(limb_t))] = limb;
-    }
-}
-
-void blst_scalar_from_hexascii(vec256 ret, const char *hex)
-{   limbs_from_hexascii(ret, sizeof(vec256), hex);   }
 
 void blst_fp_from_hexascii(vec384 ret, const char *hex)
 {
