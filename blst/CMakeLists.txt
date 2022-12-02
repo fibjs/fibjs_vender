@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
-    if(${ARCH} STREQUAL "amd64")
+    if(${ARCH} STREQUAL "amd64" AND MSVC)
         enable_language(ASM_MASM)
         file(GLOB src_list "src/server.c" "src/asm/win64/*-x86_64.asm")
 #    elseif(${ARCH} STREQUAL "arm64")
