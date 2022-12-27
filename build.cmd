@@ -22,11 +22,6 @@ for %%a in (%*) do (
         set ARG_ERROR=no
     )
 
-    if "%%a"=="arm" (
-    	set BUILD_ARCH=arm
-        set ARG_ERROR=no
-    )
-
     if "%%a"=="release" (
     	set BUILD_TYPE=release
         set ARG_ERROR=no
@@ -66,7 +61,7 @@ goto finished
 	echo Options:
 	echo   release, debug: 
 	echo       Specifies the build type.
-	echo   i386, amd64, arm, arm64, mips, mips64, ppc, ppc64:
+	echo   i386, amd64, arm64:
 	echo       Specifies the architecture for code generation.
 	echo   clean: 
 	echo       Clean the build folder.
