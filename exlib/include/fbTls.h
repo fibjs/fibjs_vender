@@ -13,38 +13,54 @@ namespace exlib {
 
 #define TLS_SIZE 32
 
-int32_t tlsAlloc();
-void* tlsGet(int32_t idx);
-void** tlsGetRef(int32_t idx);
-void tlsPut(int32_t idx, void* v);
+int32_t tlsAlloc(intptr_t* init = NULL, size_t size = 1);
+intptr_t* tlsGetRef(int32_t idx);
+
+inline intptr_t tlsGet(int32_t idx)
+{
+    return *tlsGetRef(idx);
+}
+
+inline void tlsPut(int32_t idx, intptr_t v)
+{
+    *tlsGetRef(idx) = v;
+}
+
 void tlsFree(int32_t idx);
 
 template <typename T>
 class fiber_local {
 public:
-    fiber_local(T lp = 0)
+    fiber_local(T v)
     {
-        m_id = tlsAlloc();
+        m_id = tlsAlloc((intptr_t*)&v, size());
+    }
+
+    fiber_local()
+    {
+        m_id = tlsAlloc(0, size());
     }
 
 public:
-    void operator=(T lp)
+    void operator=(T v)
     {
-        void* v = 0;
-
-        *(T*)&v = lp;
-        tlsPut(m_id, v);
+        *(T*)tlsGetRef(m_id) = v;
     }
 
     operator T() const
     {
-        void* v = tlsGet(m_id);
-        return *(T*)&v;
+        return *(T*)tlsGetRef(m_id);
     }
 
     T* operator&()
     {
         return (T*)tlsGetRef(m_id);
+    }
+
+private:
+    size_t size()
+    {
+        return (sizeof(T) + sizeof(intptr_t) - 1) / sizeof(intptr_t);
     }
 
 private:

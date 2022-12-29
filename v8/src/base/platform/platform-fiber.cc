@@ -97,12 +97,12 @@ namespace base {
 
     void* Thread::GetThreadLocal(LocalStorageKey key)
     {
-        return exlib::tlsGet(static_cast<int>(key));
+        return (void*)exlib::tlsGet(static_cast<int>(key));
     }
 
     void Thread::SetThreadLocal(LocalStorageKey key, void* value)
     {
-        exlib::tlsPut(static_cast<int>(key), value);
+        exlib::tlsPut(static_cast<int>(key), (intptr_t)value);
     }
 
     void OS::Sleep(TimeDelta interval)

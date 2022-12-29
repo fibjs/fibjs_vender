@@ -43,11 +43,7 @@ public:
 
 class Thread_base : public Task_base {
 public:
-    Thread_base()
-        : m_stackguard(0)
-    {
-        memset(&m_tls, 0, sizeof(m_tls));
-    }
+    Thread_base();
 
 public:
     virtual void join()
@@ -88,7 +84,7 @@ protected:
     }
 
 public:
-    void* m_tls[TLS_SIZE];
+    intptr_t m_tls[TLS_SIZE];
 
 private:
     intptr_t m_stackguard;
