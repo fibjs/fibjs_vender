@@ -20,12 +20,6 @@ private:
     Service(int32_t workers);
 
 public:
-    static const int32_t type = kTTService;
-    virtual bool is(int32_t t)
-    {
-        return t == type || OSThread::is(t);
-    }
-
     static void dispatch();
 
     virtual void Run()
@@ -42,7 +36,6 @@ private:
 
 public:
     static void init(int32_t workers);
-    static Service* current();
     static void init();
 
     static void CreateFiber(fiber_func func, void* data, int32_t stacksize,

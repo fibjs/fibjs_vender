@@ -309,12 +309,6 @@ public:
     virtual ~OSThread();
 
 public:
-    static const int32_t type = kTTOSThread;
-    virtual bool is(int32_t t)
-    {
-        return t == type;
-    }
-
     virtual void suspend();
     virtual void suspend(spinlock& lock);
     virtual void resume();

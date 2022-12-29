@@ -41,16 +41,6 @@ public:
     int64_t m_tm;
 };
 
-Fiber* Fiber::current()
-{
-    Service* pService = Service::current();
-
-    if (pService)
-        return pService->running();
-
-    return NULL;
-}
-
 void Fiber::destroy()
 {
     Thread_base::destroy();
@@ -217,13 +207,13 @@ void Fiber::sleep(int32_t ms, Task_base* now)
 
     assert(now != 0);
 
-    if (now->is(Fiber::type)) {
+    if (dynamic_cast<Fiber*>(now)) {
         if (ms <= 0)
             ((Fiber*)now)->yield();
         else {
             ((Fiber*)now)->m_pService->switchConext(new Sleeping(now, ms * NANOS_PER_MICRO));
         }
-    } else if (now->is(OSThread::type)) {
+    } else if (dynamic_cast<OSThread*>(now)) {
         if (ms <= 0)
             ms = 0;
 

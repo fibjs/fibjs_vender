@@ -37,19 +37,8 @@ public:
 
     virtual void resume() = 0;
 
-    virtual bool is(int32_t t)
-    {
-        return false;
-    }
-
 public:
     Task_base* m_task = NULL;
-};
-
-enum ThreadType {
-    kTTOSThread = 1,
-    kTTService = 2,
-    kTTFiber = 3,
 };
 
 class Thread_base : public Task_base {
@@ -64,8 +53,6 @@ public:
     virtual void join()
     {
     }
-
-    virtual bool is(int32_t t) = 0;
 
     void saveStackGuard()
     {
@@ -350,12 +337,6 @@ public:
     }
 
 public:
-    static const int32_t type = kTTFiber;
-    virtual bool is(int32_t t)
-    {
-        return t == type;
-    }
-
     virtual void suspend();
     virtual void suspend(spinlock& lock);
     virtual void resume();
@@ -381,8 +362,6 @@ public:
 public:
     static void sleep(int32_t ms, Task_base* now = 0);
     static void cancel_sleep(Task_base* now);
-
-    static Fiber* current();
 
 public:
     void* m_ctx;

@@ -43,20 +43,9 @@ Thread_base* Thread_base::current()
     if (thread_ == 0)
         return 0;
 
-    if (thread_->is(Service::type))
+    if (dynamic_cast<Service*>(thread_))
         return ((Service*)thread_)->running();
     return thread_;
-}
-
-Service* Service::current()
-{
-    OSThread* thread_ = OSThread::current();
-
-    assert(s_service_inited);
-    assert(thread_ != 0);
-    assert(thread_->is(Service::type));
-
-    return (Service*)thread_;
 }
 
 Service::Service()
