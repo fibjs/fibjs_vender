@@ -6,9 +6,19 @@
 
 #include "fb_api.h"
 
-#if !defined(CTX_USE_CONTEXT) && !defined(Windows)
+#ifdef Darwin
 #include <string.h>
 #include <stdio.h>
+
+#if defined(amd64)
+#include "ctx_x64.h"
+#elif defined(i386)
+#include "ctx_x86.h"
+#elif defined(arm64)
+#include "ctx_arm64.h"
+#elif defined(arm)
+#include "ctx_arm.h"
+#endif
 
 namespace exlib {
 

@@ -10,6 +10,7 @@ asm(".section   .text");
 
 #ifdef amd64
 
+asm(".balign 8");
 asm(".globl fb_switch, _fb_switch");
 asm("fb_switch:");
 asm("_fb_switch:");
