@@ -9,31 +9,29 @@
 
 namespace exlib {
 
-#include <stdint.h>
+#define TLS_SIZE 64
 
-#define TLS_SIZE 32
+int tlsAlloc(void** init = 0, int size = 1);
+void** tlsGetRef(int idx);
 
-int32_t tlsAlloc(intptr_t* init = NULL, size_t size = 1);
-intptr_t* tlsGetRef(int32_t idx);
-
-inline intptr_t tlsGet(int32_t idx)
+inline void* tlsGet(int idx)
 {
     return *tlsGetRef(idx);
 }
 
-inline void tlsPut(int32_t idx, intptr_t v)
+inline void tlsPut(int idx, void* v)
 {
     *tlsGetRef(idx) = v;
 }
 
-void tlsFree(int32_t idx);
+void tlsFree(int idx);
 
 template <typename T>
 class fiber_local {
 public:
     fiber_local(T v)
     {
-        m_id = tlsAlloc((intptr_t*)&v, size());
+        m_id = tlsAlloc((void**)&v, size());
     }
 
     fiber_local()
@@ -42,6 +40,11 @@ public:
     }
 
 public:
+    T& get()
+    {
+        return *(T*)tlsGetRef(m_id);
+    }
+
     void operator=(T v)
     {
         *(T*)tlsGetRef(m_id) = v;
@@ -52,19 +55,69 @@ public:
         return *(T*)tlsGetRef(m_id);
     }
 
+    operator T&()
+    {
+        return *(T*)tlsGetRef(m_id);
+    }
+
+    bool operator!() const
+    {
+        return tlsGetRef(m_id) == 0;
+    }
+
     T* operator&()
     {
         return (T*)tlsGetRef(m_id);
     }
 
-private:
-    size_t size()
+    T& operator*() const
     {
-        return (sizeof(T) + sizeof(intptr_t) - 1) / sizeof(intptr_t);
+        return *(T*)tlsGetRef(m_id);
+    }
+
+    T& operator->()
+    {
+        return *(T*)tlsGetRef(m_id);
+    }
+
+    T operator++()
+    {
+        T* v = (T*)tlsGetRef(m_id);
+        *v += 1;
+        return *v;
+    }
+
+    T operator++(int)
+    {
+        T* v = (T*)tlsGetRef(m_id);
+        T v1 = *v;
+        *v += 1;
+        return v1;
+    }
+
+    T operator--()
+    {
+        T* v = (T*)tlsGetRef(m_id);
+        *v -= 1;
+        return *v;
+    }
+
+    T operator--(int)
+    {
+        T* v = (T*)tlsGetRef(m_id);
+        T v1 = *v;
+        *v -= 1;
+        return v1;
     }
 
 private:
-    int32_t m_id;
+    int size()
+    {
+        return (sizeof(T) + sizeof(void*) - 1) / sizeof(void*);
+    }
+
+private:
+    int m_id;
 };
 
 template <typename T>

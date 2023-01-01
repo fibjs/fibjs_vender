@@ -84,7 +84,7 @@ protected:
     }
 
 public:
-    intptr_t m_tls[TLS_SIZE];
+    void* m_tls[TLS_SIZE];
 
 private:
     intptr_t m_stackguard;

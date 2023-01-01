@@ -11,7 +11,7 @@
 namespace exlib {
 
 static char s_tls[TLS_SIZE];
-static intptr_t s_tls_init[TLS_SIZE];
+static void* s_tls_init[TLS_SIZE];
 
 Thread_base::Thread_base()
     : m_stackguard(0)
@@ -19,9 +19,9 @@ Thread_base::Thread_base()
     memcpy(&m_tls, &s_tls_init, sizeof(m_tls));
 }
 
-int32_t tlsAlloc(intptr_t* init, size_t size)
+int tlsAlloc(void** init, int size)
 {
-    int32_t i, j;
+    int i, j;
 
     for (i = 0; i < TLS_SIZE - size + 1; i++) {
         for (j = 0; j < size; j++)
@@ -38,18 +38,20 @@ int32_t tlsAlloc(intptr_t* init, size_t size)
         }
     }
 
+    assert(i < TLS_SIZE - size + 1);
+
     return -1;
 }
 
-intptr_t* tlsGetRef(int32_t idx)
+void** tlsGetRef(int idx)
 {
     assert(Thread_base::current() != 0);
     return &Thread_base::current()->m_tls[idx];
 }
 
-void tlsFree(int32_t idx)
+void tlsFree(int idx)
 {
-    int32_t i;
+    int i;
 
     for (i = idx; i < TLS_SIZE; i++) {
         if (s_tls[i] == idx + TLS_SIZE) {

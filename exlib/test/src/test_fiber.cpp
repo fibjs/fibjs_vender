@@ -33,6 +33,24 @@ TEST(exlib_fiber, tls)
     EXPECT_EQ(s_tls_value, 100);
     int* p = &s_tls_value;
     EXPECT_EQ(*p, 100);
+
+    int v;
+
+    v = s_tls_value++;
+    EXPECT_EQ(v, 100);
+    EXPECT_EQ(s_tls_value, 101);
+
+    v = ++s_tls_value;
+    EXPECT_EQ(v, 102);
+    EXPECT_EQ(s_tls_value, 102);
+
+    v = s_tls_value--;
+    EXPECT_EQ(v, 102);
+    EXPECT_EQ(s_tls_value, 101);
+
+    v = --s_tls_value;
+    EXPECT_EQ(v, 100);
+    EXPECT_EQ(s_tls_value, 100);
 }
 
 struct TestStruct {
@@ -59,4 +77,13 @@ TEST(exlib_fiber, tls_struct)
     TestStruct* p = &s_tls_value1;
     EXPECT_EQ(p->a, 101);
     EXPECT_EQ(p->b, 201);
+}
+
+TestStruct s_ts({ 200, 300 });
+exlib::fiber_local<TestStruct*> s_tls_value2(&s_ts);
+
+TEST(exlib_fiber, tls_pointer)
+{
+    EXPECT_EQ(s_tls_value2->a, 200);
+    EXPECT_EQ(s_tls_value2->b, 300);
 }
