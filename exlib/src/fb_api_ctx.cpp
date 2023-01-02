@@ -6,7 +6,7 @@
 
 #include "fb_api.h"
 
-#ifdef Linux
+#ifdef CTX_USE_CONTEXT
 #include <string.h>
 #include <stdio.h>
 #include <ucontext.h>
