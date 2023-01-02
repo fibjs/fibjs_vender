@@ -14,8 +14,8 @@ namespace v8 {
 namespace internal {
 
 // These are global assumptions in v8.
-STATIC_ASSERT((static_cast<int32_t>(-1) >> 1) == -1);
-STATIC_ASSERT((static_cast<uint32_t>(-1) >> 1) == 0x7FFFFFFF);
+static_assert((static_cast<int32_t>(-1) >> 1) == -1);
+static_assert((static_cast<uint32_t>(-1) >> 1) == 0x7FFFFFFF);
 
 uint32_t float_sign(float val);
 uint32_t float_exp(float val);
@@ -33,7 +33,6 @@ int float16classify(float16 value);
 // Bit counting.
 int CountLeadingZeros(uint64_t value, int width);
 int CountLeadingSignBits(int64_t value, int width);
-V8_EXPORT_PRIVATE int CountTrailingZeros(uint64_t value, int width);
 V8_EXPORT_PRIVATE int CountSetBits(uint64_t value, int width);
 int LowestSetBitPosition(uint64_t value);
 int HighestSetBitPosition(uint64_t value);
@@ -61,7 +60,7 @@ T ReverseBytes(T value, int block_bytes_log2) {
   static const uint8_t permute_table[3][8] = {{6, 7, 4, 5, 2, 3, 0, 1},
                                               {4, 5, 6, 7, 0, 1, 2, 3},
                                               {0, 1, 2, 3, 4, 5, 6, 7}};
-  T result = 0;
+  typename std::make_unsigned<T>::type result = 0;
   for (int i = 0; i < 8; i++) {
     result <<= 8;
     result |= bytes[permute_table[block_bytes_log2 - 1][i]];
@@ -71,7 +70,7 @@ T ReverseBytes(T value, int block_bytes_log2) {
 
 // NaN tests.
 inline bool IsSignallingNaN(double num) {
-  uint64_t raw = bit_cast<uint64_t>(num);
+  uint64_t raw = base::bit_cast<uint64_t>(num);
   if (std::isnan(num) && ((raw & kDQuietNanMask) == 0)) {
     return true;
   }
@@ -79,7 +78,7 @@ inline bool IsSignallingNaN(double num) {
 }
 
 inline bool IsSignallingNaN(float num) {
-  uint32_t raw = bit_cast<uint32_t>(num);
+  uint32_t raw = base::bit_cast<uint32_t>(num);
   if (std::isnan(num) && ((raw & kSQuietNanMask) == 0)) {
     return true;
   }
@@ -99,13 +98,13 @@ inline bool IsQuietNaN(T num) {
 // Convert the NaN in 'num' to a quiet NaN.
 inline double ToQuietNaN(double num) {
   DCHECK(std::isnan(num));
-  return bit_cast<double>(bit_cast<uint64_t>(num) | kDQuietNanMask);
+  return base::bit_cast<double>(base::bit_cast<uint64_t>(num) | kDQuietNanMask);
 }
 
 inline float ToQuietNaN(float num) {
   DCHECK(std::isnan(num));
-  return bit_cast<float>(bit_cast<uint32_t>(num) |
-                         static_cast<uint32_t>(kSQuietNanMask));
+  return base::bit_cast<float>(base::bit_cast<uint32_t>(num) |
+                               static_cast<uint32_t>(kSQuietNanMask));
 }
 
 // Fused multiply-add.

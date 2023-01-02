@@ -16,12 +16,16 @@ class ExecutionAccess;
 class InterruptsScope;
 class Isolate;
 class Object;
+class RootVisitor;
 
 // StackGuard contains the handling of the limits that are used to limit the
 // number of nested invocations of JavaScript and the stack size used in each
 // invocation.
-class V8_EXPORT_PRIVATE StackGuard final {
+class V8_EXPORT_PRIVATE V8_NODISCARD StackGuard final {
  public:
+  StackGuard(const StackGuard&) = delete;
+  StackGuard& operator=(const StackGuard&) = delete;
+
   explicit StackGuard(Isolate* isolate) : isolate_(isolate) {}
 
   // Pass the address beyond which the stack should not grow.  The stack
@@ -45,11 +49,14 @@ class V8_EXPORT_PRIVATE StackGuard final {
   V(TERMINATE_EXECUTION, TerminateExecution, 0)                   \
   V(GC_REQUEST, GC, 1)                                            \
   V(INSTALL_CODE, InstallCode, 2)                                 \
-  V(API_INTERRUPT, ApiInterrupt, 3)                               \
-  V(DEOPT_MARKED_ALLOCATION_SITES, DeoptMarkedAllocationSites, 4) \
-  V(GROW_SHARED_MEMORY, GrowSharedMemory, 5)                      \
-  V(LOG_WASM_CODE, LogWasmCode, 6)                                \
-  V(WASM_CODE_GC, WasmCodeGC, 7)
+  V(INSTALL_BASELINE_CODE, InstallBaselineCode, 3)                \
+  V(API_INTERRUPT, ApiInterrupt, 4)                               \
+  V(DEOPT_MARKED_ALLOCATION_SITES, DeoptMarkedAllocationSites, 5) \
+  V(GROW_SHARED_MEMORY, GrowSharedMemory, 6)                      \
+  V(LOG_WASM_CODE, LogWasmCode, 7)                                \
+  V(WASM_CODE_GC, WasmCodeGC, 8)                                  \
+  V(INSTALL_MAGLEV_CODE, InstallMaglevCode, 9)                    \
+  V(GLOBAL_SAFEPOINT, GlobalSafepoint, 10)
 
 #define V(NAME, Name, id)                                    \
   inline bool Check##Name() { return CheckInterrupt(NAME); } \
@@ -86,7 +93,16 @@ class V8_EXPORT_PRIVATE StackGuard final {
   // stack overflow, then handle the interruption accordingly.
   Object HandleInterrupts();
 
+  // Special case of {HandleInterrupts}: checks for termination requests only.
+  // This is guaranteed to never cause GC, so can be used to interrupt
+  // long-running computations that are not GC-safe.
+  bool HasTerminationRequest();
+
   static constexpr int kSizeInBytes = 7 * kSystemPointerSize;
+
+  static char* Iterate(RootVisitor* v, char* thread_storage) {
+    return thread_storage + ArchiveSpacePerThread();
+  }
 
  private:
   bool CheckInterrupt(InterruptFlag flag);
@@ -130,7 +146,7 @@ class V8_EXPORT_PRIVATE StackGuard final {
     // The stack limit is split into a JavaScript and a C++ stack limit. These
     // two are the same except when running on a simulator where the C++ and
     // JavaScript stacks are separate. Each of the two stack limits have two
-    // values. The one eith the real_ prefix is the actual stack limit
+    // values. The one with the real_ prefix is the actual stack limit
     // set for the VM. The one without the real_ prefix has the same value as
     // the actual stack limit except when there is an interruption (e.g. debug
     // break or preemption) in which case it is lowered to make stack checks
@@ -148,14 +164,14 @@ class V8_EXPORT_PRIVATE StackGuard final {
     base::AtomicWord climit_ = kIllegalLimit;
 
     uintptr_t jslimit() {
-      return bit_cast<uintptr_t>(base::Relaxed_Load(&jslimit_));
+      return base::bit_cast<uintptr_t>(base::Relaxed_Load(&jslimit_));
     }
     void set_jslimit(uintptr_t limit) {
       return base::Relaxed_Store(&jslimit_,
                                  static_cast<base::AtomicWord>(limit));
     }
     uintptr_t climit() {
-      return bit_cast<uintptr_t>(base::Relaxed_Load(&climit_));
+      return base::bit_cast<uintptr_t>(base::Relaxed_Load(&climit_));
     }
     void set_climit(uintptr_t limit) {
       return base::Relaxed_Store(&climit_,
@@ -174,11 +190,9 @@ class V8_EXPORT_PRIVATE StackGuard final {
   friend class Isolate;
   friend class StackLimitCheck;
   friend class InterruptsScope;
-
-  DISALLOW_COPY_AND_ASSIGN(StackGuard);
 };
 
-STATIC_ASSERT(StackGuard::kSizeInBytes == sizeof(StackGuard));
+static_assert(StackGuard::kSizeInBytes == sizeof(StackGuard));
 
 }  // namespace internal
 }  // namespace v8

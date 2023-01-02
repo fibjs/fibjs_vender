@@ -5,11 +5,12 @@
 #ifndef V8_COMPILER_INT64_LOWERING_H_
 #define V8_COMPILER_INT64_LOWERING_H_
 
-#include "src/common/globals.h"
+#include <memory>
+
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph.h"
 #include "src/compiler/machine-operator.h"
-#include "src/compiler/node-marker.h"
+#include "src/compiler/simplified-operator.h"
 #include "src/zone/zone-containers.h"
 
 namespace v8 {
@@ -22,26 +23,17 @@ namespace compiler {
 
 // Struct for CallDescriptors that need special lowering.
 struct V8_EXPORT_PRIVATE Int64LoweringSpecialCase {
-  Int64LoweringSpecialCase()
-      : bigint_to_i64_call_descriptor(nullptr),
-        i64_to_bigint_call_descriptor(nullptr),
-        bigint_to_i32_pair_call_descriptor(nullptr),
-        i32_pair_to_bigint_call_descriptor(nullptr) {}
-
-  // CallDescriptors that need special lowering.
-  CallDescriptor* bigint_to_i64_call_descriptor;
-  CallDescriptor* i64_to_bigint_call_descriptor;
-
-  // The replacement CallDescriptors.
-  CallDescriptor* bigint_to_i32_pair_call_descriptor;
-  CallDescriptor* i32_pair_to_bigint_call_descriptor;
+  // Map from CallDescriptors that should be replaced, to the replacement
+  // CallDescriptors.
+  std::unordered_map<const CallDescriptor*, const CallDescriptor*> replacements;
 };
 
 class V8_EXPORT_PRIVATE Int64Lowering {
  public:
   Int64Lowering(
       Graph* graph, MachineOperatorBuilder* machine,
-      CommonOperatorBuilder* common, Zone* zone,
+      CommonOperatorBuilder* common, SimplifiedOperatorBuilder* simplified_,
+      Zone* zone, const wasm::WasmModule* module,
       Signature<MachineRepresentation>* signature,
       std::unique_ptr<Int64LoweringSpecialCase> special_case = nullptr);
 
@@ -62,6 +54,7 @@ class V8_EXPORT_PRIVATE Int64Lowering {
   Graph* graph() const { return graph_; }
   MachineOperatorBuilder* machine() const { return machine_; }
   CommonOperatorBuilder* common() const { return common_; }
+  SimplifiedOperatorBuilder* simplified() const { return simplified_; }
   Signature<MachineRepresentation>* signature() const { return signature_; }
 
   void PushNode(Node* node);
@@ -71,8 +64,15 @@ class V8_EXPORT_PRIVATE Int64Lowering {
                        const Operator* unsigned_op);
   void LowerWord64AtomicBinop(Node* node, const Operator* op);
   void LowerWord64AtomicNarrowOp(Node* node, const Operator* op);
+  void LowerLoadOperator(Node* node, MachineRepresentation rep,
+                         const Operator* load_op);
+  void LowerStoreOperator(Node* node, MachineRepresentation rep,
+                          const Operator* store_op);
 
-  CallDescriptor* LowerCallDescriptor(const CallDescriptor* call_descriptor);
+  const CallDescriptor* LowerCallDescriptor(
+      const CallDescriptor* call_descriptor);
+  Node* SetInt32Type(Node* node);
+  Node* SetFloat64Type(Node* node);
 
   void ReplaceNode(Node* old, Node* new_low, Node* new_high);
   bool HasReplacementLow(Node* node);
@@ -89,16 +89,20 @@ class V8_EXPORT_PRIVATE Int64Lowering {
     int input_index;
   };
 
-  Zone* zone_;
   Graph* const graph_;
   MachineOperatorBuilder* machine_;
   CommonOperatorBuilder* common_;
-  NodeMarker<State> state_;
+  SimplifiedOperatorBuilder* simplified_;
+  Zone* zone_;
+  Signature<MachineRepresentation>* signature_;
+  std::unique_ptr<Int64LoweringSpecialCase> special_case_;
+  std::vector<State> state_;
   ZoneDeque<NodeState> stack_;
   Replacement* replacements_;
-  Signature<MachineRepresentation>* signature_;
   Node* placeholder_;
-  std::unique_ptr<Int64LoweringSpecialCase> special_case_;
+  // Caches for node types, so we do not waste memory.
+  Type int32_type_;
+  Type float64_type_;
 };
 
 }  // namespace compiler

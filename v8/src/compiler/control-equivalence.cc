@@ -5,9 +5,9 @@
 #include "src/compiler/control-equivalence.h"
 #include "src/compiler/node-properties.h"
 
-#define TRACE(...)                                 \
-  do {                                             \
-    if (FLAG_trace_turbo_ceq) PrintF(__VA_ARGS__); \
+#define TRACE(...)                                     \
+  do {                                                 \
+    if (v8_flags.trace_turbo_ceq) PrintF(__VA_ARGS__); \
   } while (false)
 
 namespace v8 {
@@ -206,7 +206,7 @@ void ControlEquivalence::DFSPop(DFSStack& stack, Node* node) {
 
 void ControlEquivalence::BracketListDelete(BracketList& blist, Node* to,
                                            DFSDirection direction) {
-  // TODO(mstarzinger): Optimize this to avoid linear search.
+  // TODO(turbofan): Optimize this to avoid linear search.
   for (BracketList::iterator i = blist.begin(); i != blist.end(); /*nop*/) {
     if (i->to == to && i->direction != direction) {
       TRACE("  BList erased: {%d->%d}\n", i->from->id(), i->to->id());
@@ -219,7 +219,7 @@ void ControlEquivalence::BracketListDelete(BracketList& blist, Node* to,
 
 
 void ControlEquivalence::BracketListTRACE(BracketList& blist) {
-  if (FLAG_trace_turbo_ceq) {
+  if (v8_flags.trace_turbo_ceq) {
     TRACE("  BList: ");
     for (Bracket bracket : blist) {
       TRACE("{%d->%d} ", bracket.from->id(), bracket.to->id());

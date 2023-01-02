@@ -16,21 +16,15 @@ namespace internal {
 
 // Forward declarations.
 class JSPromise;
+class StructBodyDescriptor;
+
+#include "torque-generated/src/objects/js-generator-tq.inc"
 
 class JSGeneratorObject
     : public TorqueGeneratedJSGeneratorObject<JSGeneratorObject, JSObject> {
  public:
-  // [resume_mode]: The most recent resume mode.
   enum ResumeMode { kNext, kReturn, kThrow };
-  DECL_INT_ACCESSORS(resume_mode)
 
-  // [continuation]
-  //
-  // A positive value indicates a suspended generator.  The special
-  // kGeneratorExecuting and kGeneratorClosed values indicate that a generator
-  // cannot be resumed.
-  inline int continuation() const;
-  inline void set_continuation(int continuation);
   inline bool is_closed() const;
   inline bool is_executing() const;
   inline bool is_suspended() const;
@@ -38,6 +32,7 @@ class JSGeneratorObject
   // For suspended generators: the source position at which the generator
   // is suspended.
   int source_position() const;
+  int code_offset() const;
 
   // Dispatched behavior.
   DECL_PRINTER(JSGeneratorObject)
@@ -55,6 +50,7 @@ class JSAsyncFunctionObject
  public:
   // Dispatched behavior.
   DECL_VERIFIER(JSAsyncFunctionObject)
+  DECL_PRINTER(JSAsyncFunctionObject)
 
   TQ_OBJECT_CONSTRUCTORS(JSAsyncFunctionObject)
 };
@@ -65,10 +61,7 @@ class JSAsyncGeneratorObject
  public:
   // Dispatched behavior.
   DECL_VERIFIER(JSAsyncGeneratorObject)
-
-  // [is_awaiting]
-  // Whether or not the generator is currently awaiting.
-  DECL_INT_ACCESSORS(is_awaiting)
+  DECL_PRINTER(JSAsyncGeneratorObject)
 
   TQ_OBJECT_CONSTRUCTORS(JSAsyncGeneratorObject)
 };
@@ -77,10 +70,10 @@ class AsyncGeneratorRequest
     : public TorqueGeneratedAsyncGeneratorRequest<AsyncGeneratorRequest,
                                                   Struct> {
  public:
-  DECL_INT_ACCESSORS(resume_mode)
-
   DECL_PRINTER(AsyncGeneratorRequest)
   DECL_VERIFIER(AsyncGeneratorRequest)
+
+  using BodyDescriptor = StructBodyDescriptor;
 
   TQ_OBJECT_CONSTRUCTORS(AsyncGeneratorRequest)
 };

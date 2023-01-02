@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#if !V8_ENABLE_WEBASSEMBLY
+#error This header should only be included if WebAssembly is enabled.
+#endif  // !V8_ENABLE_WEBASSEMBLY
+
 #ifndef V8_WASM_FUNCTION_BODY_DECODER_H_
 #define V8_WASM_FUNCTION_BODY_DECODER_H_
 
@@ -11,34 +15,36 @@
 #include "src/wasm/decoder.h"
 #include "src/wasm/wasm-opcodes.h"
 #include "src/wasm/wasm-result.h"
+#include "src/zone/zone-containers.h"
 
 namespace v8 {
 namespace internal {
 
+class AccountingAllocator;
 class BitVector;  // forward declaration
 
 namespace wasm {
 
+class WasmFeatures;
 struct WasmModule;  // forward declaration of module interface.
-struct WasmFeatures;
 
 // A wrapper around the signature and bytes of a function.
 struct FunctionBody {
-  FunctionSig* sig;   // function signature
-  uint32_t offset;    // offset in the module bytes, for error reporting
-  const byte* start;  // start of the function body
-  const byte* end;    // end of the function body
+  const FunctionSig* sig;  // function signature
+  uint32_t offset;         // offset in the module bytes, for error reporting
+  const byte* start;       // start of the function body
+  const byte* end;         // end of the function body
 
-  FunctionBody(FunctionSig* sig, uint32_t offset, const byte* start,
+  FunctionBody(const FunctionSig* sig, uint32_t offset, const byte* start,
                const byte* end)
       : sig(sig), offset(offset), start(start), end(end) {}
 };
 
-V8_EXPORT_PRIVATE DecodeResult VerifyWasmCode(AccountingAllocator* allocator,
-                                              const WasmFeatures& enabled,
-                                              const WasmModule* module,
-                                              WasmFeatures* detected,
-                                              const FunctionBody& body);
+enum class LoadTransformationKind : uint8_t { kSplat, kExtend, kZeroExtend };
+
+V8_EXPORT_PRIVATE DecodeResult ValidateFunctionBody(
+    AccountingAllocator* allocator, const WasmFeatures& enabled,
+    const WasmModule* module, WasmFeatures* detected, const FunctionBody& body);
 
 enum PrintLocals { kPrintLocals, kOmitLocals };
 V8_EXPORT_PRIVATE
@@ -58,19 +64,23 @@ struct BodyLocalDecls {
   // The size of the encoded declarations.
   uint32_t encoded_size = 0;  // size of encoded declarations
 
-  ZoneVector<ValueType> type_list;
-
-  explicit BodyLocalDecls(Zone* zone) : type_list(zone) {}
+  uint32_t num_locals = 0;
+  ValueType* local_types = nullptr;
 };
 
-V8_EXPORT_PRIVATE bool DecodeLocalDecls(const WasmFeatures& enabled,
+// Decode locals; validation is not performed.
+V8_EXPORT_PRIVATE void DecodeLocalDecls(WasmFeatures enabled,
                                         BodyLocalDecls* decls,
-                                        const byte* start, const byte* end);
+                                        const byte* start, const byte* end,
+                                        Zone* zone);
 
-V8_EXPORT_PRIVATE BitVector* AnalyzeLoopAssignmentForTesting(Zone* zone,
-                                                             size_t num_locals,
-                                                             const byte* start,
-                                                             const byte* end);
+// Decode locals, including validation.
+V8_EXPORT_PRIVATE bool ValidateAndDecodeLocalDeclsForTesting(
+    WasmFeatures enabled, BodyLocalDecls* decls, const WasmModule* module,
+    const byte* start, const byte* end, Zone* zone);
+
+V8_EXPORT_PRIVATE BitVector* AnalyzeLoopAssignmentForTesting(
+    Zone* zone, uint32_t num_locals, const byte* start, const byte* end);
 
 // Computes the length of the opcode at the given address.
 V8_EXPORT_PRIVATE unsigned OpcodeLength(const byte* pc, const byte* end);
@@ -80,24 +90,28 @@ V8_EXPORT_PRIVATE unsigned OpcodeLength(const byte* pc, const byte* end);
 // Be cautious with control opcodes: This function only covers their immediate,
 // local stack effect (e.g. BrIf pops 1, Br pops 0). Those opcodes can have
 // non-local stack effect though, which are not covered here.
-std::pair<uint32_t, uint32_t> StackEffect(const WasmModule* module,
-                                          FunctionSig* sig, const byte* pc,
-                                          const byte* end);
+// TODO(clemensb): This is only used by the interpreter; move there.
+V8_EXPORT_PRIVATE std::pair<uint32_t, uint32_t> StackEffect(
+    const WasmModule* module, const FunctionSig* sig, const byte* pc,
+    const byte* end);
+
+// Checks if the underlying hardware supports the Wasm SIMD proposal.
+V8_EXPORT_PRIVATE bool CheckHardwareSupportsSimd();
 
 // A simple forward iterator for bytecodes.
 class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
   // Base class for both iterators defined below.
   class iterator_base {
    public:
-    inline iterator_base& operator++() {
+    iterator_base& operator++() {
       DCHECK_LT(ptr_, end_);
       ptr_ += OpcodeLength(ptr_, end_);
       return *this;
     }
-    inline bool operator==(const iterator_base& that) {
+    bool operator==(const iterator_base& that) const {
       return this->ptr_ == that.ptr_;
     }
-    inline bool operator!=(const iterator_base& that) {
+    bool operator!=(const iterator_base& that) const {
       return this->ptr_ != that.ptr_;
     }
 
@@ -113,7 +127,7 @@ class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
       : public iterator_base,
         public base::iterator<std::input_iterator_tag, WasmOpcode> {
    public:
-    inline WasmOpcode operator*() {
+    WasmOpcode operator*() {
       DCHECK_LT(ptr_, end_);
       return static_cast<WasmOpcode>(*ptr_);
     }
@@ -129,7 +143,7 @@ class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
       : public iterator_base,
         public base::iterator<std::input_iterator_tag, uint32_t> {
    public:
-    inline uint32_t operator*() {
+    uint32_t operator*() {
       DCHECK_LT(ptr_, end_);
       return static_cast<uint32_t>(ptr_ - start_);
     }
@@ -141,11 +155,12 @@ class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
         : iterator_base(ptr, end), start_(start) {}
   };
 
-  // Create a new {BytecodeIterator}. If the {decls} pointer is non-null,
-  // assume the bytecode starts with local declarations and decode them.
-  // Otherwise, do not decode local decls.
-  BytecodeIterator(const byte* start, const byte* end,
-                   BodyLocalDecls* decls = nullptr);
+  // Create a new {BytecodeIterator}, starting after the locals declarations.
+  BytecodeIterator(const byte* start, const byte* end);
+
+  // Create a new {BytecodeIterator}, starting with locals declarations.
+  BytecodeIterator(const byte* start, const byte* end, BodyLocalDecls* decls,
+                   Zone* zone);
 
   base::iterator_range<opcode_iterator> opcodes() {
     return base::iterator_range<opcode_iterator>(opcode_iterator(pc_, end_),
@@ -160,7 +175,7 @@ class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
 
   WasmOpcode current() {
     return static_cast<WasmOpcode>(
-        read_u8<Decoder::kNoValidate>(pc_, "expected bytecode"));
+        read_u8<Decoder::NoValidationTag>(pc_, "expected bytecode"));
   }
 
   void next() {
@@ -173,9 +188,7 @@ class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
   bool has_next() { return pc_ < end_; }
 
   WasmOpcode prefixed_opcode() {
-    byte prefix = read_u8<Decoder::kNoValidate>(pc_, "expected prefix");
-    byte index = read_u8<Decoder::kNoValidate>(pc_ + 1, "expected index");
-    return static_cast<WasmOpcode>(prefix << 8 | index);
+    return read_prefixed_opcode<Decoder::NoValidationTag>(pc_);
   }
 };
 

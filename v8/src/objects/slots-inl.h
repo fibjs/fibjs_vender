@@ -5,14 +5,16 @@
 #ifndef V8_OBJECTS_SLOTS_INL_H_
 #define V8_OBJECTS_SLOTS_INL_H_
 
-#include "src/objects/slots.h"
-
 #include "src/base/atomic-utils.h"
+#include "src/common/globals.h"
 #include "src/common/ptr-compr-inl.h"
 #include "src/objects/compressed-slots.h"
 #include "src/objects/heap-object.h"
+#include "src/objects/map.h"
 #include "src/objects/maybe-object.h"
 #include "src/objects/objects.h"
+#include "src/objects/slots.h"
+#include "src/sandbox/external-pointer-inl.h"
 #include "src/utils/memcopy.h"
 
 namespace v8 {
@@ -29,16 +31,46 @@ bool FullObjectSlot::contains_value(Address raw_value) const {
   return base::AsAtomicPointer::Relaxed_Load(location()) == raw_value;
 }
 
-const Object FullObjectSlot::operator*() const { return Object(*location()); }
+bool FullObjectSlot::contains_map_value(Address raw_value) const {
+  return load_map().ptr() == raw_value;
+}
+
+Object FullObjectSlot::operator*() const { return Object(*location()); }
+
+Object FullObjectSlot::load(PtrComprCageBase cage_base) const { return **this; }
 
 void FullObjectSlot::store(Object value) const { *location() = value.ptr(); }
+
+void FullObjectSlot::store_map(Map map) const {
+#ifdef V8_MAP_PACKING
+  *location() = MapWord::Pack(map.ptr());
+#else
+  store(map);
+#endif
+}
+
+Map FullObjectSlot::load_map() const {
+#ifdef V8_MAP_PACKING
+  return Map::unchecked_cast(Object(MapWord::Unpack(*location())));
+#else
+  return Map::unchecked_cast(Object(*location()));
+#endif
+}
 
 Object FullObjectSlot::Acquire_Load() const {
   return Object(base::AsAtomicPointer::Acquire_Load(location()));
 }
 
+Object FullObjectSlot::Acquire_Load(PtrComprCageBase cage_base) const {
+  return Acquire_Load();
+}
+
 Object FullObjectSlot::Relaxed_Load() const {
   return Object(base::AsAtomicPointer::Relaxed_Load(location()));
+}
+
+Object FullObjectSlot::Relaxed_Load(PtrComprCageBase cage_base) const {
+  return Relaxed_Load();
 }
 
 void FullObjectSlot::Relaxed_Store(Object value) const {
@@ -47,6 +79,12 @@ void FullObjectSlot::Relaxed_Store(Object value) const {
 
 void FullObjectSlot::Release_Store(Object value) const {
   base::AsAtomicPointer::Release_Store(location(), value.ptr());
+}
+
+Object FullObjectSlot::Relaxed_CompareAndSwap(Object old, Object target) const {
+  Address result = base::AsAtomicPointer::Relaxed_CompareAndSwap(
+      location(), old.ptr(), target.ptr());
+  return Object(result);
 }
 
 Object FullObjectSlot::Release_CompareAndSwap(Object old, Object target) const {
@@ -59,8 +97,12 @@ Object FullObjectSlot::Release_CompareAndSwap(Object old, Object target) const {
 // FullMaybeObjectSlot implementation.
 //
 
-const MaybeObject FullMaybeObjectSlot::operator*() const {
+MaybeObject FullMaybeObjectSlot::operator*() const {
   return MaybeObject(*location());
+}
+
+MaybeObject FullMaybeObjectSlot::load(PtrComprCageBase cage_base) const {
+  return **this;
 }
 
 void FullMaybeObjectSlot::store(MaybeObject value) const {
@@ -69,6 +111,11 @@ void FullMaybeObjectSlot::store(MaybeObject value) const {
 
 MaybeObject FullMaybeObjectSlot::Relaxed_Load() const {
   return MaybeObject(base::AsAtomicPointer::Relaxed_Load(location()));
+}
+
+MaybeObject FullMaybeObjectSlot::Relaxed_Load(
+    PtrComprCageBase cage_base) const {
+  return Relaxed_Load();
 }
 
 void FullMaybeObjectSlot::Relaxed_Store(MaybeObject value) const {
@@ -85,8 +132,12 @@ void FullMaybeObjectSlot::Release_CompareAndSwap(MaybeObject old,
 // FullHeapObjectSlot implementation.
 //
 
-const HeapObjectReference FullHeapObjectSlot::operator*() const {
+HeapObjectReference FullHeapObjectSlot::operator*() const {
   return HeapObjectReference(*location());
+}
+
+HeapObjectReference FullHeapObjectSlot::load(PtrComprCageBase cage_base) const {
+  return **this;
 }
 
 void FullHeapObjectSlot::store(HeapObjectReference value) const {
@@ -94,13 +145,117 @@ void FullHeapObjectSlot::store(HeapObjectReference value) const {
 }
 
 HeapObject FullHeapObjectSlot::ToHeapObject() const {
-  DCHECK((*location() & kHeapObjectTagMask) == kHeapObjectTag);
-  return HeapObject::cast(Object(*location()));
+  TData value = *location();
+  DCHECK(HAS_STRONG_HEAP_OBJECT_TAG(value));
+  return HeapObject::cast(Object(value));
 }
 
 void FullHeapObjectSlot::StoreHeapObject(HeapObject value) const {
   *location() = value.ptr();
 }
+
+void ExternalPointerSlot::init(Isolate* isolate, Address value,
+                               ExternalPointerTag tag) {
+#ifdef V8_ENABLE_SANDBOX
+  if (IsSandboxedExternalPointerType(tag)) {
+    ExternalPointerTable& table = GetExternalPointerTableForTag(isolate, tag);
+    ExternalPointerHandle handle =
+        table.AllocateAndInitializeEntry(isolate, value, tag);
+    // Use a Release_Store to ensure that the store of the pointer into the
+    // table is not reordered after the store of the handle. Otherwise, other
+    // threads may access an uninitialized table entry and crash.
+    Release_StoreHandle(handle);
+    return;
+  }
+#endif  // V8_ENABLE_SANDBOX
+  store(isolate, value, tag);
+}
+
+#ifdef V8_ENABLE_SANDBOX
+ExternalPointerHandle ExternalPointerSlot::Relaxed_LoadHandle() const {
+  // TODO(saelo): here and below: remove cast once ExternalPointerHandle is
+  // always 32 bit large.
+  auto handle_location = reinterpret_cast<ExternalPointerHandle*>(location());
+  return base::AsAtomic32::Relaxed_Load(handle_location);
+}
+
+void ExternalPointerSlot::Relaxed_StoreHandle(
+    ExternalPointerHandle handle) const {
+  auto handle_location = reinterpret_cast<ExternalPointerHandle*>(location());
+  return base::AsAtomic32::Relaxed_Store(handle_location, handle);
+}
+
+void ExternalPointerSlot::Release_StoreHandle(
+    ExternalPointerHandle handle) const {
+  auto handle_location = reinterpret_cast<ExternalPointerHandle*>(location());
+  return base::AsAtomic32::Release_Store(handle_location, handle);
+}
+#endif  // V8_ENABLE_SANDBOX
+
+Address ExternalPointerSlot::load(const Isolate* isolate,
+                                  ExternalPointerTag tag) {
+#ifdef V8_ENABLE_SANDBOX
+  if (IsSandboxedExternalPointerType(tag)) {
+    const ExternalPointerTable& table =
+        GetExternalPointerTableForTag(isolate, tag);
+    ExternalPointerHandle handle = Relaxed_LoadHandle();
+    return table.Get(handle, tag);
+  }
+#endif  // V8_ENABLE_SANDBOX
+  return ReadMaybeUnalignedValue<Address>(address());
+}
+
+void ExternalPointerSlot::store(Isolate* isolate, Address value,
+                                ExternalPointerTag tag) {
+#ifdef V8_ENABLE_SANDBOX
+  if (IsSandboxedExternalPointerType(tag)) {
+    ExternalPointerTable& table = GetExternalPointerTableForTag(isolate, tag);
+    ExternalPointerHandle handle = Relaxed_LoadHandle();
+    table.Set(handle, value, tag);
+    return;
+  }
+#endif  // V8_ENABLE_SANDBOX
+  WriteMaybeUnalignedValue<Address>(address(), value);
+}
+
+ExternalPointerSlot::RawContent
+ExternalPointerSlot::GetAndClearContentForSerialization(
+    const DisallowGarbageCollection& no_gc) {
+#ifdef V8_ENABLE_SANDBOX
+  ExternalPointerHandle content = Relaxed_LoadHandle();
+  Relaxed_StoreHandle(kNullExternalPointerHandle);
+#else
+  Address content = ReadMaybeUnalignedValue<Address>(address());
+  WriteMaybeUnalignedValue<Address>(address(), kNullAddress);
+#endif
+  return content;
+}
+
+void ExternalPointerSlot::RestoreContentAfterSerialization(
+    ExternalPointerSlot::RawContent content,
+    const DisallowGarbageCollection& no_gc) {
+#ifdef V8_ENABLE_SANDBOX
+  return Relaxed_StoreHandle(content);
+#else
+  return WriteMaybeUnalignedValue<Address>(address(), content);
+#endif
+}
+
+#ifdef V8_ENABLE_SANDBOX
+const ExternalPointerTable& ExternalPointerSlot::GetExternalPointerTableForTag(
+    const Isolate* isolate, ExternalPointerTag tag) {
+  return IsSharedExternalPointerType(tag)
+             ? isolate->shared_external_pointer_table()
+             : isolate->external_pointer_table();
+}
+
+ExternalPointerTable& ExternalPointerSlot::GetExternalPointerTableForTag(
+    Isolate* isolate, ExternalPointerTag tag) {
+  return IsSharedExternalPointerType(tag)
+             ? isolate->shared_external_pointer_table()
+             : isolate->external_pointer_table();
+}
+#endif  // V8_ENABLE_SANDBOX
 
 //
 // Utils.
@@ -115,15 +270,21 @@ inline void CopyTagged(Address dst, const Address src, size_t num_tagged) {
 }
 
 // Sets |counter| number of kTaggedSize-sized values starting at |start| slot.
-inline void MemsetTagged(ObjectSlot start, Object value, size_t counter) {
+inline void MemsetTagged(Tagged_t* start, Object value, size_t counter) {
 #ifdef V8_COMPRESS_POINTERS
-  Tagged_t raw_value = CompressTagged(value.ptr());
-  STATIC_ASSERT(kTaggedSize == kInt32Size);
-  MemsetInt32(start.location(), raw_value, counter);
+  Tagged_t raw_value = V8HeapCompressionScheme::CompressTagged(value.ptr());
+  MemsetUint32(start, raw_value, counter);
 #else
   Address raw_value = value.ptr();
-  MemsetPointer(start.location(), raw_value, counter);
+  MemsetPointer(start, raw_value, counter);
 #endif
+}
+
+// Sets |counter| number of kTaggedSize-sized values starting at |start| slot.
+template <typename T>
+inline void MemsetTagged(SlotBase<T, Tagged_t> start, Object value,
+                         size_t counter) {
+  MemsetTagged(start.location(), value, counter);
 }
 
 // Sets |counter| number of kSystemPointerSize-sized values starting at |start|

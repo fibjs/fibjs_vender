@@ -5,6 +5,7 @@
 #ifndef V8_OBJECTS_LITERAL_OBJECTS_H_
 #define V8_OBJECTS_LITERAL_OBJECTS_H_
 
+#include "src/base/bit-field.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/struct.h"
 
@@ -15,6 +16,9 @@ namespace v8 {
 namespace internal {
 
 class ClassLiteral;
+class StructBodyDescriptor;
+
+#include "torque-generated/src/objects/literal-objects-tq.inc"
 
 // ObjectBoilerplateDescription is a list of properties consisting of name value
 // pairs. In addition to the properties, it provides the projected number
@@ -25,10 +29,10 @@ class ClassLiteral;
 class ObjectBoilerplateDescription : public FixedArray {
  public:
   inline Object name(int index) const;
-  inline Object name(Isolate* isolate, int index) const;
+  inline Object name(PtrComprCageBase cage_base, int index) const;
 
   inline Object value(int index) const;
-  inline Object value(Isolate* isolate, int index) const;
+  inline Object value(PtrComprCageBase cage_base, int index) const;
 
   inline void set_key_value(int index, Object key, Object value);
 
@@ -68,22 +72,28 @@ class ArrayBoilerplateDescription
   DECL_PRINTER(ArrayBoilerplateDescription)
   void BriefPrintDetails(std::ostream& os);
 
+  using BodyDescriptor = StructBodyDescriptor;
+
  private:
-  DECL_INT_ACCESSORS(flags)
   TQ_OBJECT_CONSTRUCTORS(ArrayBoilerplateDescription)
+};
+
+class RegExpBoilerplateDescription
+    : public TorqueGeneratedRegExpBoilerplateDescription<
+          RegExpBoilerplateDescription, Struct> {
+ public:
+  // Dispatched behavior.
+  void BriefPrintDetails(std::ostream& os);
+
+  using BodyDescriptor = StructBodyDescriptor;
+
+ private:
+  TQ_OBJECT_CONSTRUCTORS(RegExpBoilerplateDescription)
 };
 
 class ClassBoilerplate : public FixedArray {
  public:
   enum ValueKind { kData, kGetter, kSetter };
-
-  struct Flags {
-#define FLAGS_BIT_FIELDS(V, _)               \
-  V(InstallClassNameAccessorBit, bool, 1, _) \
-  V(ArgumentsCountBits, int, 30, _)
-    DEFINE_BIT_FIELDS(FLAGS_BIT_FIELDS)
-#undef FLAGS_BIT_FIELDS
-  };
 
   struct ComputedEntryFlags {
 #define COMPUTED_ENTRY_BIT_FIELDS(V, _) \
@@ -116,31 +126,32 @@ class ClassBoilerplate : public FixedArray {
   DECL_ACCESSORS(instance_elements_template, Object)
   DECL_ACCESSORS(instance_computed_properties, FixedArray)
 
-  static void AddToPropertiesTemplate(Isolate* isolate,
-                                      Handle<NameDictionary> dictionary,
+  template <typename IsolateT, typename Dictionary>
+  static void AddToPropertiesTemplate(IsolateT* isolate,
+                                      Handle<Dictionary> dictionary,
                                       Handle<Name> name, int key_index,
-                                      ValueKind value_kind, Object value);
+                                      ValueKind value_kind, Smi value);
 
-  static void AddToElementsTemplate(Isolate* isolate,
+  template <typename IsolateT>
+  static void AddToElementsTemplate(IsolateT* isolate,
                                     Handle<NumberDictionary> dictionary,
                                     uint32_t key, int key_index,
-                                    ValueKind value_kind, Object value);
+                                    ValueKind value_kind, Smi value);
 
-  static Handle<ClassBoilerplate> BuildClassBoilerplate(Isolate* isolate,
+  template <typename IsolateT>
+  static Handle<ClassBoilerplate> BuildClassBoilerplate(IsolateT* isolate,
                                                         ClassLiteral* expr);
 
   enum {
-    kFlagsIndex,
+    kArgumentsCountIndex,
     kClassPropertiesTemplateIndex,
     kClassElementsTemplateIndex,
     kClassComputedPropertiesIndex,
     kPrototypePropertiesTemplateIndex,
     kPrototypeElementsTemplateIndex,
     kPrototypeComputedPropertiesIndex,
-    kBoileplateLength  // last element
+    kBoilerplateLength  // last element
   };
-
-  static const int kFullComputedEntrySize = 2;
 
  private:
   DECL_INT_ACCESSORS(flags)

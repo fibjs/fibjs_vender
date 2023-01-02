@@ -36,9 +36,9 @@
 #ifndef V8_CODEGEN_MIPS64_ASSEMBLER_MIPS64_INL_H_
 #define V8_CODEGEN_MIPS64_ASSEMBLER_MIPS64_INL_H_
 
-#include "src/codegen/mips64/assembler-mips64.h"
-
 #include "src/codegen/assembler.h"
+#include "src/codegen/flush-instruction-cache.h"
+#include "src/codegen/mips64/assembler-mips64.h"
 #include "src/debug/debug.h"
 #include "src/objects/objects-inl.h"
 
@@ -47,8 +47,6 @@ namespace internal {
 
 bool CpuFeatures::SupportsOptimizer() { return IsSupported(FPU); }
 
-bool CpuFeatures::SupportsWasmSimd128() { return IsSupported(MIPS_SIMD); }
-
 // -----------------------------------------------------------------------------
 // Operand and MemOperand.
 
@@ -56,7 +54,7 @@ bool Operand::is_reg() const { return rm_.is_valid(); }
 
 int64_t Operand::immediate() const {
   DCHECK(!is_reg());
-  DCHECK(!IsHeapObjectRequest());
+  DCHECK(!IsHeapNumberRequest());
   return value_.immediate;
 }
 
@@ -71,7 +69,7 @@ void RelocInfo::apply(intptr_t delta) {
 }
 
 Address RelocInfo::target_address() {
-  DCHECK(IsCodeTarget(rmode_) || IsRuntimeEntry(rmode_) || IsWasmCall(rmode_));
+  DCHECK(IsCodeTarget(rmode_) || IsWasmCall(rmode_));
   return Assembler::target_address_at(pc_, constant_pool_);
 }
 
@@ -137,14 +135,10 @@ void Assembler::deserialization_set_target_internal_reference_at(
   }
 }
 
-HeapObject RelocInfo::target_object() {
+HeapObject RelocInfo::target_object(PtrComprCageBase cage_base) {
   DCHECK(IsCodeTarget(rmode_) || IsFullEmbeddedObject(rmode_));
   return HeapObject::cast(
       Object(Assembler::target_address_at(pc_, constant_pool_)));
-}
-
-HeapObject RelocInfo::target_object_no_host(Isolate* isolate) {
-  return target_object();
 }
 
 Handle<HeapObject> RelocInfo::target_object_handle(Assembler* origin) {
@@ -159,8 +153,8 @@ void RelocInfo::set_target_object(Heap* heap, HeapObject target,
   DCHECK(IsCodeTarget(rmode_) || IsFullEmbeddedObject(rmode_));
   Assembler::set_target_address_at(pc_, constant_pool_, target.ptr(),
                                    icache_flush_mode);
-  if (write_barrier_mode == UPDATE_WRITE_BARRIER && !host().is_null()) {
-    WriteBarrierForCode(host(), this, target);
+  if (!host().is_null() && !v8_flags.disable_write_barriers) {
+    WriteBarrierForCode(host(), this, target, write_barrier_mode);
   }
 }
 
@@ -195,18 +189,7 @@ Address RelocInfo::target_internal_reference_address() {
   return pc_;
 }
 
-Address RelocInfo::target_runtime_entry(Assembler* origin) {
-  DCHECK(IsRuntimeEntry(rmode_));
-  return target_address();
-}
-
-void RelocInfo::set_target_runtime_entry(Address target,
-                                         WriteBarrierMode write_barrier_mode,
-                                         ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsRuntimeEntry(rmode_));
-  if (target_address() != target)
-    set_target_address(target, write_barrier_mode, icache_flush_mode);
-}
+Builtin RelocInfo::target_builtin_at(Assembler* origin) { UNREACHABLE(); }
 
 Address RelocInfo::target_off_heap_target() {
   DCHECK(IsOffHeapTarget(rmode_));
@@ -215,9 +198,8 @@ Address RelocInfo::target_off_heap_target() {
 
 void RelocInfo::WipeOut() {
   DCHECK(IsFullEmbeddedObject(rmode_) || IsCodeTarget(rmode_) ||
-         IsRuntimeEntry(rmode_) || IsExternalReference(rmode_) ||
-         IsInternalReference(rmode_) || IsInternalReferenceEncoded(rmode_) ||
-         IsOffHeapTarget(rmode_));
+         IsExternalReference(rmode_) || IsInternalReference(rmode_) ||
+         IsInternalReferenceEncoded(rmode_) || IsOffHeapTarget(rmode_));
   if (IsInternalReference(rmode_)) {
     Memory<Address>(pc_) = kNullAddress;
   } else if (IsInternalReferenceEncoded(rmode_)) {

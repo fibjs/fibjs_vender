@@ -10,7 +10,7 @@
 #define _jssdk_v8_h__
 
 #include "jssdk.h"
-#include <v8/include/v8.h>
+#include <v8.h>
 
 namespace js {
 

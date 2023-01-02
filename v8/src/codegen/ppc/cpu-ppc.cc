@@ -1,18 +1,14 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_PPC
-
 // Copyright 2014 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // CPU specific code for ppc independent of OS goes here.
 
-#if V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_PPC64
 
 #include "src/codegen/cpu-features.h"
 
-#define INSTR_AND_DATA_CACHE_COHERENCY LWSYNC
+#define INSTR_AND_DATA_CACHE_COHERENCY PPC_6_PLUS
 
 namespace v8 {
 namespace internal {
@@ -51,7 +47,4 @@ void CpuFeatures::FlushICache(void* buffer, size_t size) {
 }  // namespace v8
 
 #undef INSTR_AND_DATA_CACHE_COHERENCY
-#endif  // V8_TARGET_ARCH_PPC
-
-
-#endif  // V8_TARGET_ARCH_PPC
+#endif  // V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_PPC64

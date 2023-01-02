@@ -74,15 +74,14 @@ class BodyDescriptorBase {
                                              ObjectVisitor* v);
 };
 
-// This class describes a body of an object of a fixed size
-// in which all pointer fields are located in the [start_offset, end_offset)
-// interval.
-template <int start_offset, int end_offset, int size>
-class FixedBodyDescriptor final : public BodyDescriptorBase {
+// This class describes a body of an object in which all pointer fields are
+// located in the [start_offset, end_offset) interval.
+// All pointers have to be strong.
+template <int start_offset, int end_offset>
+class FixedRangeBodyDescriptor : public BodyDescriptorBase {
  public:
   static const int kStartOffset = start_offset;
   static const int kEndOffset = end_offset;
-  static const int kSize = size;
 
   static bool IsValidSlot(Map map, HeapObject obj, int offset) {
     return offset >= kStartOffset && offset < kEndOffset;
@@ -99,14 +98,30 @@ class FixedBodyDescriptor final : public BodyDescriptorBase {
     IterateBody(map, obj, v);
   }
 
+ private:
+  static inline int SizeOf(Map map, HeapObject object) {
+    // Has to be implemented by the subclass.
+    UNREACHABLE();
+  }
+};
+
+// This class describes a body of an object of a fixed size
+// in which all pointer fields are located in the [start_offset, end_offset)
+// interval.
+// All pointers have to be strong.
+template <int start_offset, int end_offset, int size>
+class FixedBodyDescriptor
+    : public FixedRangeBodyDescriptor<start_offset, end_offset> {
+ public:
+  static const int kSize = size;
   static inline int SizeOf(Map map, HeapObject object) { return kSize; }
 };
 
-// This class describes a body of an object of a variable size
-// in which all pointer fields are located in the [start_offset, object_size)
-// interval.
+// This class describes a body of an object in which all pointer fields are
+// located in the [start_offset, object_size) interval.
+// All pointers have to be strong.
 template <int start_offset>
-class FlexibleBodyDescriptor final : public BodyDescriptorBase {
+class SuffixRangeBodyDescriptor : public BodyDescriptorBase {
  public:
   static const int kStartOffset = start_offset;
 
@@ -120,13 +135,34 @@ class FlexibleBodyDescriptor final : public BodyDescriptorBase {
     IteratePointers(obj, start_offset, object_size, v);
   }
 
+ private:
+  static inline int SizeOf(Map map, HeapObject object) {
+    // Has to be implemented by the subclass.
+    UNREACHABLE();
+  }
+};
+
+// This class describes a body of an object of a variable size
+// in which all pointer fields are located in the [start_offset, object_size)
+// interval.
+// All pointers have to be strong.
+template <int start_offset>
+class FlexibleBodyDescriptor : public SuffixRangeBodyDescriptor<start_offset> {
+ public:
   static inline int SizeOf(Map map, HeapObject object);
 };
 
-using StructBodyDescriptor = FlexibleBodyDescriptor<HeapObject::kHeaderSize>;
+// A forward-declacable descriptor body alias for most of the Struct successors.
+class StructBodyDescriptor
+    : public FlexibleBodyDescriptor<HeapObject::kHeaderSize> {
+ public:
+};
 
+// This class describes a body of an object in which all pointer fields are
+// located in the [start_offset, object_size) interval.
+// Pointers may be strong or may be MaybeObject-style weak pointers.
 template <int start_offset>
-class FlexibleWeakBodyDescriptor final : public BodyDescriptorBase {
+class SuffixRangeWeakBodyDescriptor : public BodyDescriptorBase {
  public:
   static const int kStartOffset = start_offset;
 
@@ -140,7 +176,38 @@ class FlexibleWeakBodyDescriptor final : public BodyDescriptorBase {
     IterateMaybeWeakPointers(obj, start_offset, object_size, v);
   }
 
+ private:
+  static inline int SizeOf(Map map, HeapObject object) {
+    // Has to be implemented by the subclass.
+    UNREACHABLE();
+  }
+};
+
+// This class describes a body of an object of a variable size
+// in which all pointer fields are located in the [start_offset, object_size)
+// interval.
+// Pointers may be strong or may be MaybeObject-style weak pointers.
+template <int start_offset>
+class FlexibleWeakBodyDescriptor
+    : public SuffixRangeWeakBodyDescriptor<start_offset> {
+ public:
   static inline int SizeOf(Map map, HeapObject object);
+};
+
+// This class describes a body of an object without any pointers.
+class DataOnlyBodyDescriptor : public BodyDescriptorBase {
+ public:
+  static bool IsValidSlot(Map map, HeapObject obj, int offset) { return false; }
+
+  template <typename ObjectVisitor>
+  static inline void IterateBody(Map map, HeapObject obj, int object_size,
+                                 ObjectVisitor* v) {}
+
+ private:
+  static inline int SizeOf(Map map, HeapObject object) {
+    // Has to be implemented by the subclass.
+    UNREACHABLE();
+  }
 };
 
 // This class describes a body of an object which has a parent class that also
@@ -153,7 +220,7 @@ class SubclassBodyDescriptor final : public BodyDescriptorBase {
  public:
   // The parent must end be before the child's start offset, to make sure that
   // their slots are disjoint.
-  STATIC_ASSERT(ParentBodyDescriptor::kSize <=
+  static_assert(ParentBodyDescriptor::kSize <=
                 ChildBodyDescriptor::kStartOffset);
 
   static bool IsValidSlot(Map map, HeapObject obj, int offset) {

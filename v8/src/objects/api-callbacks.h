@@ -6,13 +6,17 @@
 #define V8_OBJECTS_API_CALLBACKS_H_
 
 #include "src/objects/struct.h"
-#include "torque-generated/class-definitions-tq.h"
+#include "torque-generated/bit-fields.h"
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
 namespace v8 {
 namespace internal {
+
+class StructBodyDescriptor;
+
+#include "torque-generated/src/objects/api-callbacks-tq.inc"
 
 // An accessor must have a getter, but can have no setter.
 //
@@ -23,26 +27,20 @@ namespace internal {
 // If the accessor in the prototype has the READ_ONLY property attribute, then
 // a new value is added to the derived object when the property is set.
 // This shadows the accessor in the prototype.
-class AccessorInfo : public Struct {
+class AccessorInfo
+    : public TorqueGeneratedAccessorInfo<AccessorInfo, HeapObject> {
  public:
-  DECL_ACCESSORS(name, Name)
-  DECL_INT_ACCESSORS(flags)
-  DECL_ACCESSORS(expected_receiver_type, Object)
-  // This directly points at a foreign C function to be used from the runtime.
-  DECL_ACCESSORS(getter, Object)
+  // This is a wrapper around |maybe_redirected_getter| accessor which
+  // returns/accepts C function and converts the value from and to redirected
+  // pointer.
+  DECL_EXTERNAL_POINTER_ACCESSORS(getter, Address)
+  inline void init_getter_redirection(i::Isolate* isolate);
+  inline void remove_getter_redirection(i::Isolate* isolate);
   inline bool has_getter();
-  DECL_ACCESSORS(setter, Object)
+
+  // The field contains the address of the C function.
+  DECL_EXTERNAL_POINTER_ACCESSORS(setter, Address)
   inline bool has_setter();
-  // This either points at the same as above, or a trampoline in case we are
-  // running with the simulator. Use these entries from generated code.
-  DECL_ACCESSORS(js_getter, Object)
-  DECL_ACCESSORS(data, Object)
-
-  static Address redirect(Address address, AccessorComponent component);
-  Address redirected_getter() const;
-
-  // Dispatched behavior.
-  DECL_PRINTER(AccessorInfo)
 
   DECL_BOOLEAN_ACCESSORS(all_can_read)
   DECL_BOOLEAN_ACCESSORS(all_can_write)
@@ -67,48 +65,39 @@ class AccessorInfo : public Struct {
                                       Handle<Map> map);
   inline bool IsCompatibleReceiver(Object receiver);
 
-  DECL_CAST(AccessorInfo)
-
-  // Dispatched behavior.
-  DECL_VERIFIER(AccessorInfo)
-
   // Append all descriptors to the array that are not already there.
   // Return number added.
   static int AppendUnique(Isolate* isolate, Handle<Object> descriptors,
                           Handle<FixedArray> array, int valid_descriptors);
 
-  // Layout description.
-  DEFINE_FIELD_OFFSET_CONSTANTS(HeapObject::kHeaderSize,
-                                TORQUE_GENERATED_ACCESSOR_INFO_FIELDS)
+  DECL_PRINTER(AccessorInfo)
+
+  inline void clear_padding();
+
+  class BodyDescriptor;
 
  private:
-  inline bool HasExpectedReceiverType();
+  // When simulator is enabled the field stores the "redirected" address of the
+  // C function (the one that's callabled from simulated compiled code), in
+  // this case the original address of the C function has to be taken from the
+  // redirection.
+  // For native builds the field contains the address of the C function.
+  // This field is initialized implicitly via respective |getter|-related
+  // methods.
+  DECL_EXTERNAL_POINTER_ACCESSORS(maybe_redirected_getter, Address)
 
-// Bit positions in |flags|.
-#define ACCESSOR_INFO_FLAGS_BIT_FIELDS(V, _)                           \
-  V(AllCanReadBit, bool, 1, _)                                         \
-  V(AllCanWriteBit, bool, 1, _)                                        \
-  V(IsSpecialDataPropertyBit, bool, 1, _)                              \
-  V(IsSloppyBit, bool, 1, _)                                           \
-  V(ReplaceOnAccessBit, bool, 1, _)                                    \
-  V(GetterSideEffectTypeBits, SideEffectType, 2, _)                    \
-  /* We could save a bit from setter side-effect type, if necessary */ \
-  V(SetterSideEffectTypeBits, SideEffectType, 2, _)                    \
-  V(InitialAttributesBits, PropertyAttributes, 3, _)
+  // Bit positions in |flags|.
+  DEFINE_TORQUE_GENERATED_ACCESSOR_INFO_FLAGS()
 
-  DEFINE_BIT_FIELDS(ACCESSOR_INFO_FLAGS_BIT_FIELDS)
-#undef ACCESSOR_INFO_FLAGS_BIT_FIELDS
-
-  OBJECT_CONSTRUCTORS(AccessorInfo, Struct);
+  TQ_OBJECT_CONSTRUCTORS(AccessorInfo)
 };
 
 class AccessCheckInfo
     : public TorqueGeneratedAccessCheckInfo<AccessCheckInfo, Struct> {
  public:
-  // Dispatched behavior.
-  DECL_PRINTER(AccessCheckInfo)
-
   static AccessCheckInfo Get(Isolate* isolate, Handle<JSObject> receiver);
+
+  using BodyDescriptor = StructBodyDescriptor;
 
   TQ_OBJECT_CONSTRUCTORS(AccessCheckInfo)
 };
@@ -122,23 +111,15 @@ class InterceptorInfo
   DECL_BOOLEAN_ACCESSORS(is_named)
   DECL_BOOLEAN_ACCESSORS(has_no_side_effect)
 
-  inline int flags() const;
-  inline void set_flags(int flags);
+  DEFINE_TORQUE_GENERATED_INTERCEPTOR_INFO_FLAGS()
 
-  // Dispatched behavior.
-  DECL_PRINTER(InterceptorInfo)
-
-  static const int kCanInterceptSymbolsBit = 0;
-  static const int kAllCanReadBit = 1;
-  static const int kNonMasking = 2;
-  static const int kNamed = 3;
-  static const int kHasNoSideEffect = 4;
+  using BodyDescriptor = StructBodyDescriptor;
 
   TQ_OBJECT_CONSTRUCTORS(InterceptorInfo)
 };
 
 class CallHandlerInfo
-    : public TorqueGeneratedCallHandlerInfo<CallHandlerInfo, Struct> {
+    : public TorqueGeneratedCallHandlerInfo<CallHandlerInfo, HeapObject> {
  public:
   inline bool IsSideEffectFreeCallHandlerInfo() const;
   inline bool IsSideEffectCallHandlerInfo() const;
@@ -151,7 +132,24 @@ class CallHandlerInfo
   DECL_PRINTER(CallHandlerInfo)
   DECL_VERIFIER(CallHandlerInfo)
 
-  Address redirected_callback() const;
+  // This is a wrapper around |maybe_redirected_callback| accessor which
+  // returns/accepts C function and converts the value from and to redirected
+  // pointer.
+  DECL_EXTERNAL_POINTER_ACCESSORS(callback, Address)
+  inline void init_callback_redirection(i::Isolate* isolate);
+  inline void remove_callback_redirection(i::Isolate* isolate);
+
+  class BodyDescriptor;
+
+ private:
+  // When simulator is enabled the field stores the "redirected" address of the
+  // C function (the one that's callabled from simulated compiled code), in
+  // this case the original address of the C function has to be taken from the
+  // redirection.
+  // For native builds the field contains the address of the C function.
+  // This field is initialized implicitly via respective |callback|-related
+  // methods.
+  DECL_EXTERNAL_POINTER_ACCESSORS(maybe_redirected_callback, Address)
 
   TQ_OBJECT_CONSTRUCTORS(CallHandlerInfo)
 };

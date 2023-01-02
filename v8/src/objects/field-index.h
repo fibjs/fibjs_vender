@@ -5,6 +5,8 @@
 #ifndef V8_OBJECTS_FIELD_INDEX_H_
 #define V8_OBJECTS_FIELD_INDEX_H_
 
+// TODO(jkummerow): Consider forward-declaring instead.
+#include "src/objects/internal-index.h"
 #include "src/objects/property-details.h"
 #include "src/utils/utils.h"
 
@@ -27,9 +29,11 @@ class FieldIndex final {
       Map map, int index,
       Representation representation = Representation::Tagged());
   static inline FieldIndex ForInObjectOffset(int offset, Encoding encoding);
-  static inline FieldIndex ForDescriptor(Map map, int descriptor_index);
-  static inline FieldIndex ForDescriptor(Isolate* isolate, Map map,
-                                         int descriptor_index);
+  static inline FieldIndex ForSmiLoadHandler(Map map, int32_t handler);
+  static inline FieldIndex ForDescriptor(Map map,
+                                         InternalIndex descriptor_index);
+  static inline FieldIndex ForDescriptor(PtrComprCageBase cage_base, Map map,
+                                         InternalIndex descriptor_index);
 
   inline int GetLoadByFieldIndex() const;
 
@@ -38,6 +42,8 @@ class FieldIndex final {
   bool is_double() const { return EncodingBits::decode(bit_field_) == kDouble; }
 
   int offset() const { return OffsetBits::decode(bit_field_); }
+
+  uint64_t bit_field() const { return bit_field_; }
 
   // Zero-indexed from beginning of the object.
   int index() const {
@@ -107,7 +113,7 @@ class FieldIndex final {
       (kDescriptorIndexBitCount + 1 + kTaggedSizeLog2);
 
   // Index from beginning of object.
-  using OffsetBits = BitField64<int, 0, kOffsetBitsSize>;
+  using OffsetBits = base::BitField64<int, 0, kOffsetBitsSize>;
   using IsInObjectBits = OffsetBits::Next<bool, 1>;
   using EncodingBits = IsInObjectBits::Next<Encoding, 2>;
   // Number of inobject properties.
@@ -116,7 +122,7 @@ class FieldIndex final {
   // Offset of first inobject property from beginning of object.
   using FirstInobjectPropertyOffsetBits =
       InObjectPropertyBits::Next<int, kFirstInobjectPropertyOffsetBitCount>;
-  STATIC_ASSERT(FirstInobjectPropertyOffsetBits::kLastUsedBit < 64);
+  static_assert(FirstInobjectPropertyOffsetBits::kLastUsedBit < 64);
 
   uint64_t bit_field_;
 };

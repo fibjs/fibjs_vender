@@ -5,9 +5,10 @@
 #ifndef V8_OBJECTS_NAME_H_
 #define V8_OBJECTS_NAME_H_
 
-#include "src/objects/heap-object.h"
+#include "src/base/bit-field.h"
 #include "src/objects/objects.h"
-#include "torque-generated/class-definitions-tq.h"
+#include "src/objects/primitive-heap-object.h"
+#include "torque-generated/bit-fields.h"
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
@@ -15,15 +16,50 @@
 namespace v8 {
 namespace internal {
 
+#include "torque-generated/src/objects/name-tq.inc"
+
+class SharedStringAccessGuardIfNeeded;
+
 // The Name abstract class captures anything that can be used as a property
 // name, i.e., strings and symbols.  All names store a hash value.
-class Name : public TorqueGeneratedName<Name, HeapObject> {
+class Name : public TorqueGeneratedName<Name, PrimitiveHeapObject> {
  public:
   // Tells whether the hash code has been computed.
-  inline bool HasHashCode();
+  // Note: Use TryGetHash() whenever you want to use the hash, instead of a
+  // combination of HashHashCode() and hash() for thread-safety.
+  inline bool HasHashCode() const;
+  // Tells whether the name contains a forwarding index pointing to a row
+  // in the string forwarding table.
+  inline bool HasForwardingIndex(AcquireLoadTag) const;
+  inline bool HasInternalizedForwardingIndex(AcquireLoadTag) const;
+  inline bool HasExternalForwardingIndex(AcquireLoadTag) const;
 
-  // Returns a hash value used for the property table
-  inline uint32_t Hash();
+  inline uint32_t raw_hash_field() const {
+    return RELAXED_READ_UINT32_FIELD(*this, kRawHashFieldOffset);
+  }
+
+  inline uint32_t raw_hash_field(AcquireLoadTag) const {
+    return ACQUIRE_READ_UINT32_FIELD(*this, kRawHashFieldOffset);
+  }
+
+  inline void set_raw_hash_field(uint32_t hash) {
+    RELAXED_WRITE_UINT32_FIELD(*this, kRawHashFieldOffset, hash);
+  }
+
+  inline void set_raw_hash_field(uint32_t hash, ReleaseStoreTag) {
+    RELEASE_WRITE_UINT32_FIELD(*this, kRawHashFieldOffset, hash);
+  }
+
+  // Sets the hash field only if it is empty. Otherwise does nothing.
+  inline void set_raw_hash_field_if_empty(uint32_t hash);
+
+  // Returns a hash value used for the property table (same as Hash()), assumes
+  // the hash is already computed.
+  inline uint32_t hash() const;
+
+  // Returns true if the hash has been computed, and sets the computed hash
+  // as out-parameter.
+  inline bool TryGetHash(uint32_t* hash) const;
 
   // Equality operations.
   inline bool Equals(Name other);
@@ -32,26 +68,27 @@ class Name : public TorqueGeneratedName<Name, HeapObject> {
 
   // Conversion.
   inline bool AsArrayIndex(uint32_t* index);
+  inline bool AsIntegerIndex(size_t* index);
 
   // An "interesting symbol" is a well-known symbol, like @@toStringTag,
   // that's often looked up on random objects but is usually not present.
   // We optimize this by setting a flag on the object's map when such
   // symbol properties are added, so we can optimize lookups on objects
   // that don't have the flag.
-  inline bool IsInterestingSymbol() const;
-  inline bool IsInterestingSymbol(Isolate* isolate) const;
+  DECL_GETTER(IsInterestingSymbol, bool)
 
   // If the name is private, it can only name own properties.
-  inline bool IsPrivate() const;
-  inline bool IsPrivate(Isolate* isolate) const;
+  DECL_GETTER(IsPrivate, bool)
 
   // If the name is a private name, it should behave like a private
   // symbol but also throw on property access miss.
-  inline bool IsPrivateName() const;
-  inline bool IsPrivateName(Isolate* isolate) const;
+  DECL_GETTER(IsPrivateName, bool)
 
-  inline bool IsUniqueName() const;
-  inline bool IsUniqueName(Isolate* isolate) const;
+  // If the name is a private brand, it should behave like a private name
+  // symbol but is filtered out when generating list of private fields.
+  DECL_GETTER(IsPrivateBrand, bool)
+
+  DECL_GETTER(IsUniqueName, bool)
 
   static inline bool ContainsCachedArrayIndex(uint32_t hash);
 
@@ -64,23 +101,40 @@ class Name : public TorqueGeneratedName<Name, HeapObject> {
 
   DECL_PRINTER(Name)
   void NameShortPrint();
-  int NameShortPrint(Vector<char> str);
+  int NameShortPrint(base::Vector<char> str);
 
-  // Mask constant for checking if a name has a computed hash code
-  // and if it is a string that is an array index.  The least significant bit
-  // indicates whether a hash code has been computed.  If the hash code has
-  // been computed the 2nd bit tells whether the string can be used as an
-  // array index.
-  static const int kHashNotComputedMask = 1;
-  static const int kIsNotArrayIndexMask = 1 << 1;
-  static const int kNofHashBitFields = 2;
+  // Mask constant for checking if a name has a computed hash code and the type
+  // of information stored in the hash field. The least significant bit
+  // indicates whether the value can be used as a hash (i.e. different values
+  // imply different strings).
+  enum class HashFieldType : uint32_t {
+    kHash = 0b10,
+    kIntegerIndex = 0b00,
+    kForwardingIndex = 0b01,
+    kEmpty = 0b11
+  };
 
-  // Shift constant retrieving hash code from hash field.
-  static const int kHashShift = kNofHashBitFields;
+  using HashFieldTypeBits = base::BitField<HashFieldType, 0, 2>;
+  using HashBits =
+      HashFieldTypeBits::Next<uint32_t, kBitsPerInt - HashFieldTypeBits::kSize>;
 
-  // Only these bits are relevant in the hash, since the top two are shifted
-  // out.
-  static const uint32_t kHashBitMask = 0xffffffffu >> kHashShift;
+  static constexpr int kHashNotComputedMask = 1;
+  // Value of empty hash field indicating that the hash is not computed.
+  static constexpr int kEmptyHashField =
+      HashFieldTypeBits::encode(HashFieldType::kEmpty);
+
+  // Empty hash and forwarding indices can not be used as hash.
+  static_assert((kEmptyHashField & kHashNotComputedMask) != 0);
+  static_assert((HashFieldTypeBits::encode(HashFieldType::kForwardingIndex) &
+                 kHashNotComputedMask) != 0);
+
+  using IsInternalizedForwardingIndexBit = HashFieldTypeBits::Next<bool, 1>;
+  using IsExternalForwardingIndexBit =
+      IsInternalizedForwardingIndexBit::Next<bool, 1>;
+  using ForwardingIndexValueBits = IsExternalForwardingIndexBit::Next<
+      unsigned int, kBitsPerInt - HashFieldTypeBits::kSize -
+                        IsInternalizedForwardingIndexBit::kSize -
+                        IsExternalForwardingIndexBit::kSize>;
 
   // Array index strings this short can keep their index in the hash field.
   static const int kMaxCachedArrayIndexLength = 7;
@@ -88,22 +142,28 @@ class Name : public TorqueGeneratedName<Name, HeapObject> {
   // Maximum number of characters to consider when trying to convert a string
   // value into an array index.
   static const int kMaxArrayIndexSize = 10;
+  // Maximum number of characters in a string that can possibly be an
+  // "integer index" in the spec sense, i.e. a canonical representation of a
+  // number in the range up to MAX_SAFE_INTEGER. We parse these into a size_t,
+  // so the size of that type also factors in as a limit: 10 characters per
+  // 32 bits of size_t width.
+  static const int kMaxIntegerIndexSize =
+      std::min(16, int{10 * (sizeof(size_t) / 4)});
 
   // For strings which are array indexes the hash value has the string length
   // mixed into the hash, mainly to avoid a hash value of zero which would be
   // the case for the string '0'. 24 bits are used for the array index value.
   static const int kArrayIndexValueBits = 24;
   static const int kArrayIndexLengthBits =
-      kBitsPerInt - kArrayIndexValueBits - kNofHashBitFields;
+      kBitsPerInt - kArrayIndexValueBits - HashFieldTypeBits::kSize;
 
-  STATIC_ASSERT(kArrayIndexLengthBits > 0);
-  STATIC_ASSERT(kMaxArrayIndexSize < (1 << kArrayIndexLengthBits));
+  static_assert(kArrayIndexLengthBits > 0);
+  static_assert(kMaxArrayIndexSize < (1 << kArrayIndexLengthBits));
 
   using ArrayIndexValueBits =
-      BitField<unsigned int, kNofHashBitFields, kArrayIndexValueBits>;
+      HashFieldTypeBits::Next<unsigned int, kArrayIndexValueBits>;
   using ArrayIndexLengthBits =
-      BitField<unsigned int, kNofHashBitFields + kArrayIndexValueBits,
-               kArrayIndexLengthBits>;
+      ArrayIndexValueBits::Next<unsigned int, kArrayIndexLengthBits>;
 
   // Check that kMaxCachedArrayIndexLength + 1 is a power of two so we
   // could use a mask to test if the length of string is less than or equal to
@@ -113,24 +173,48 @@ class Name : public TorqueGeneratedName<Name, HeapObject> {
 
   // When any of these bits is set then the hash field does not contain a cached
   // array index.
+  static_assert(HashFieldTypeBits::encode(HashFieldType::kIntegerIndex) == 0);
   static const unsigned int kDoesNotContainCachedArrayIndexMask =
       (~static_cast<unsigned>(kMaxCachedArrayIndexLength)
        << ArrayIndexLengthBits::kShift) |
-      kIsNotArrayIndexMask;
+      HashFieldTypeBits::kMask;
 
-  // Value of empty hash field indicating that the hash is not computed.
-  static const int kEmptyHashField =
-      kIsNotArrayIndexMask | kHashNotComputedMask;
+  // Returns a hash value used for the property table. Ensures that the hash
+  // value is computed.
+  //
+  // The overload without SharedStringAccessGuardIfNeeded can only be called on
+  // the main thread.
+  inline uint32_t EnsureHash();
+  inline uint32_t EnsureHash(const SharedStringAccessGuardIfNeeded&);
+  // The value returned is always a computed hash, even if the value stored is
+  // a forwarding index.
+  inline uint32_t EnsureRawHash();
+  inline uint32_t EnsureRawHash(const SharedStringAccessGuardIfNeeded&);
+  inline uint32_t RawHash();
 
- protected:
-  static inline bool IsHashFieldComputed(uint32_t field);
+  static inline bool IsHashFieldComputed(uint32_t raw_hash_field);
+  static inline bool IsHash(uint32_t raw_hash_field);
+  static inline bool IsIntegerIndex(uint32_t raw_hash_field);
+  static inline bool IsForwardingIndex(uint32_t raw_hash_field);
+  static inline bool IsInternalizedForwardingIndex(uint32_t raw_hash_field);
+  static inline bool IsExternalForwardingIndex(uint32_t raw_hash_field);
+
+  static inline uint32_t CreateHashFieldValue(uint32_t hash,
+                                              HashFieldType type);
+  static inline uint32_t CreateInternalizedForwardingIndex(uint32_t index);
+  static inline uint32_t CreateExternalForwardingIndex(uint32_t index);
 
   TQ_OBJECT_CONSTRUCTORS(Name)
+
+ private:
+  inline uint32_t GetRawHashFromForwardingTable(uint32_t raw_hash) const;
 };
 
 // ES6 symbols.
 class Symbol : public TorqueGeneratedSymbol<Symbol, Name> {
  public:
+  DEFINE_TORQUE_GENERATED_SYMBOL_FLAGS()
+
   // [is_private]: Whether this is a private symbol.  Private symbols can only
   // be used to designate own properties of objects.
   DECL_BOOLEAN_ACCESSORS(is_private)
@@ -159,22 +243,19 @@ class Symbol : public TorqueGeneratedSymbol<Symbol, Name> {
   inline bool is_private_name() const;
   inline void set_is_private_name();
 
+  // [is_private_name]: Whether this is a brand symbol.  Brand symbols are
+  // private name symbols that are used for validating access to
+  // private methods and storing information about the private methods.
+  //
+  // This also sets the is_private bit.
+  inline bool is_private_brand() const;
+  inline void set_is_private_brand();
+
   // Dispatched behavior.
   DECL_PRINTER(Symbol)
   DECL_VERIFIER(Symbol)
 
-// Flags layout.
-#define FLAGS_BIT_FIELDS(V, _)            \
-  V(IsPrivateBit, bool, 1, _)             \
-  V(IsWellKnownSymbolBit, bool, 1, _)     \
-  V(IsInPublicSymbolTableBit, bool, 1, _) \
-  V(IsInterestingSymbolBit, bool, 1, _)   \
-  V(IsPrivateNameBit, bool, 1, _)
-
-  DEFINE_BIT_FIELDS(FLAGS_BIT_FIELDS)
-#undef FLAGS_BIT_FIELDS
-
-  using BodyDescriptor = FixedBodyDescriptor<kNameOffset, kSize, kSize>;
+  using BodyDescriptor = FixedBodyDescriptor<kDescriptionOffset, kSize, kSize>;
 
   void SymbolShortPrint(std::ostream& os);
 

@@ -14,7 +14,7 @@ namespace internal {
 class MarkBit {
  public:
   using CellType = uint32_t;
-  STATIC_ASSERT(sizeof(CellType) == sizeof(base::Atomic32));
+  static_assert(sizeof(CellType) == sizeof(base::Atomic32));
 
   inline MarkBit(CellType* cell, CellType mask) : cell_(cell), mask_(mask) {}
 
@@ -58,8 +58,9 @@ class MarkBit {
 template <>
 inline bool MarkBit::Set<AccessMode::NON_ATOMIC>() {
   CellType old_value = *cell_;
+  if ((old_value & mask_) == mask_) return false;
   *cell_ = old_value | mask_;
-  return (old_value & mask_) == 0;
+  return true;
 }
 
 template <>
@@ -98,16 +99,18 @@ class V8_EXPORT_PRIVATE Bitmap {
   static const uint32_t kBytesPerCell = kBitsPerCell / kBitsPerByte;
   static const uint32_t kBytesPerCellLog2 = kBitsPerCellLog2 - kBitsPerByteLog2;
 
-  static const size_t kLength = (1 << kPageSizeBits) >> (kTaggedSizeLog2);
+  // The length is the number of bits in this bitmap. (+1) accounts for
+  // the case where the markbits are queried for a one-word filler at the
+  // end of the page.
+  static const size_t kLength = ((1 << kPageSizeBits) >> kTaggedSizeLog2) + 1;
+  // The size of the bitmap in bytes is CellsCount() * kBytesPerCell.
+  static const size_t kSize;
 
-  static const size_t kSize = (1 << kPageSizeBits) >>
-                              (kTaggedSizeLog2 + kBitsPerByteLog2);
-
-  static int CellsForLength(int length) {
+  static constexpr size_t CellsForLength(int length) {
     return (length + kBitsPerCell - 1) >> kBitsPerCellLog2;
   }
 
-  int CellsCount() { return CellsForLength(kLength); }
+  static constexpr size_t CellsCount() { return CellsForLength(kLength); }
 
   V8_INLINE static uint32_t IndexToCell(uint32_t index) {
     return index >> kBitsPerCellLog2;
@@ -124,6 +127,10 @@ class V8_EXPORT_PRIVATE Bitmap {
 
   V8_INLINE MarkBit::CellType* cells() {
     return reinterpret_cast<MarkBit::CellType*>(this);
+  }
+
+  V8_INLINE const MarkBit::CellType* cells() const {
+    return reinterpret_cast<const MarkBit::CellType*>(this);
   }
 
   V8_INLINE static Bitmap* FromAddress(Address addr) {
@@ -397,7 +404,7 @@ class Marking : public AllStatic {
 
   template <AccessMode mode = AccessMode::NON_ATOMIC>
   V8_INLINE static void MarkWhite(MarkBit markbit) {
-    STATIC_ASSERT(mode == AccessMode::NON_ATOMIC);
+    static_assert(mode == AccessMode::NON_ATOMIC);
     markbit.Clear<mode>();
     markbit.Next().Clear<mode>();
   }

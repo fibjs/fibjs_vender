@@ -1,7 +1,3 @@
-#include <exlib/include/osconfig.h>
-
-#ifdef OpenBSD
-
 // Copyright 2012 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -111,7 +107,7 @@ void OS::SignalCodeMovingGC() {
   // it. This injects a GC marker into the stream of events generated
   // by the kernel and allows us to synchronize V8 code log and the
   // kernel log.
-  int size = sysconf(_SC_PAGESIZE);
+  long size = sysconf(_SC_PAGESIZE);  // NOLINT: type more fit than uint64_t
   FILE* f = fopen(OS::GetGCFakeMMapFile(), "w+");
   if (f == nullptr) {
     OS::PrintError("Failed to open %s\n", OS::GetGCFakeMMapFile());
@@ -126,8 +122,11 @@ void OS::SignalCodeMovingGC() {
 
 void OS::AdjustSchedulingParams() {}
 
+std::vector<OS::MemoryRange> OS::GetFreeMemoryRangesWithin(
+    OS::Address boundary_start, OS::Address boundary_end, size_t minimum_size,
+    size_t alignment) {
+  return {};
+}
+
 }  // namespace base
 }  // namespace v8
-
-
-#endif

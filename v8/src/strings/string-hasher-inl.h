@@ -7,7 +7,10 @@
 
 #include "src/strings/string-hasher.h"
 
-#include "src/objects/objects.h"
+// Comment inserted to prevent header reordering.
+#include <type_traits>
+
+#include "src/objects/name-inl.h"
 #include "src/objects/string-inl.h"
 #include "src/strings/char-predicates-inl.h"
 #include "src/utils/utils-inl.h"
@@ -26,48 +29,97 @@ uint32_t StringHasher::GetHashCore(uint32_t running_hash) {
   running_hash += (running_hash << 3);
   running_hash ^= (running_hash >> 11);
   running_hash += (running_hash << 15);
-  int32_t hash = static_cast<int32_t>(running_hash & String::kHashBitMask);
+  int32_t hash = static_cast<int32_t>(running_hash & String::HashBits::kMax);
+  // Ensure that the hash is kZeroHash, if the computed value is 0.
   int32_t mask = (hash - 1) >> 31;
-  return running_hash | (kZeroHash & mask);
+  running_hash |= (kZeroHash & mask);
+  return running_hash;
 }
 
 uint32_t StringHasher::GetTrivialHash(int length) {
   DCHECK_GT(length, String::kMaxHashCalcLength);
-  // String hash of a large string is simply the length.
-  return (length << String::kHashShift) | String::kIsNotArrayIndexMask;
+  // The hash of a large string is simply computed from the length.
+  // Ensure that the max length is small enough to be encoded without losing
+  // information.
+  static_assert(String::kMaxLength <= String::HashBits::kMax);
+  uint32_t hash = static_cast<uint32_t>(length);
+  return String::CreateHashFieldValue(hash, String::HashFieldType::kHash);
 }
 
-template <typename schar>
-uint32_t StringHasher::HashSequentialString(const schar* chars, int length,
+template <typename char_t>
+uint32_t StringHasher::HashSequentialString(const char_t* chars_raw, int length,
                                             uint64_t seed) {
-  // Check whether the string is a valid array index. In that case, compute the
-  // array index hash. It'll fall through to compute a regular string hash from
-  // the start if it turns out that the string isn't a valid array index.
-  if (IsInRange(length, 1, String::kMaxArrayIndexSize)) {
-    if (IsDecimalDigit(chars[0]) && (length == 1 || chars[0] != '0')) {
-      uint32_t index = chars[0] - '0';
-      int i = 1;
-      do {
-        if (i == length) {
-          return MakeArrayIndexHash(index, length);
-        }
-      } while (TryAddIndexChar(&index, chars[i++]));
-    }
-  } else if (length > String::kMaxHashCalcLength) {
-    return GetTrivialHash(length);
-  }
-
-  // Non-array-index hash.
+  static_assert(std::is_integral<char_t>::value);
+  static_assert(sizeof(char_t) <= 2);
+  using uchar = typename std::make_unsigned<char_t>::type;
+  const uchar* chars = reinterpret_cast<const uchar*>(chars_raw);
   DCHECK_LE(0, length);
   DCHECK_IMPLIES(0 < length, chars != nullptr);
+  if (length >= 1) {
+    if (IsDecimalDigit(chars[0]) && (length == 1 || chars[0] != '0')) {
+      if (length <= String::kMaxArrayIndexSize) {
+        // Possible array index; try to compute the array index hash.
+        uint32_t index = chars[0] - '0';
+        int i = 1;
+        do {
+          if (i == length) {
+            return MakeArrayIndexHash(index, length);
+          }
+        } while (TryAddArrayIndexChar(&index, chars[i++]));
+      }
+      // The following block wouldn't do anything on 32-bit platforms,
+      // because kMaxArrayIndexSize == kMaxIntegerIndexSize there, and
+      // if we wanted to compile it everywhere, then {index_big} would
+      // have to be a {size_t}, which the Mac compiler doesn't like to
+      // implicitly cast to uint64_t for the {TryAddIndexChar} call.
+#if V8_HOST_ARCH_64_BIT
+      // No "else" here: if the block above was entered and fell through,
+      // we'll have to take this branch.
+      if (length <= String::kMaxIntegerIndexSize) {
+        // Not an array index, but it could still be an integer index.
+        // Perform a regular hash computation, and additionally check
+        // if there are non-digit characters.
+        String::HashFieldType type = String::HashFieldType::kIntegerIndex;
+        uint32_t running_hash = static_cast<uint32_t>(seed);
+        uint64_t index_big = 0;
+        const uchar* end = &chars[length];
+        while (chars != end) {
+          if (type == String::HashFieldType::kIntegerIndex &&
+              !TryAddIntegerIndexChar(&index_big, *chars)) {
+            type = String::HashFieldType::kHash;
+          }
+          running_hash = AddCharacterCore(running_hash, *chars++);
+        }
+        uint32_t hash =
+            String::CreateHashFieldValue(GetHashCore(running_hash), type);
+        if (Name::ContainsCachedArrayIndex(hash)) {
+          // The hash accidentally looks like a cached index. Fix that by
+          // setting a bit that looks like a longer-than-cacheable string
+          // length.
+          hash |= (String::kMaxCachedArrayIndexLength + 1)
+                  << String::ArrayIndexLengthBits::kShift;
+        }
+        DCHECK(!Name::ContainsCachedArrayIndex(hash));
+        return hash;
+      }
+#endif
+    }
+    // No "else" here: if the first character was a decimal digit, we might
+    // still have to take this branch.
+    if (length > String::kMaxHashCalcLength) {
+      return GetTrivialHash(length);
+    }
+  }
+
+  // Non-index hash.
   uint32_t running_hash = static_cast<uint32_t>(seed);
-  const schar* end = &chars[length];
+  const uchar* end = &chars[length];
   while (chars != end) {
     running_hash = AddCharacterCore(running_hash, *chars++);
   }
 
-  return (GetHashCore(running_hash) << String::kHashShift) |
-         String::kIsNotArrayIndexMask;
+  return String::CreateHashFieldValue(GetHashCore(running_hash),
+                                      String::HashFieldType::kHash);
 }
 
 std::size_t SeededStringHasher::operator()(const char* name) const {

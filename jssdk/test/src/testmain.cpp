@@ -14,6 +14,8 @@ int main(int argc, char* argv[])
     js::setup_v8();
     // js::setup_spider();
 
+    // exlib::Service::use_thread = true;
+
     exlib::Service::init(3);
     exlib::Service::CreateFiber(fiber_proc, 0, 128 * 1024);
     exlib::Service::dispatch();

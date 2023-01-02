@@ -7,7 +7,6 @@
 
 #include "src/codegen/handler-table.h"
 #include "src/interpreter/bytecode-register.h"
-#include "src/interpreter/bytecodes.h"
 #include "src/objects/fixed-array.h"
 #include "src/zone/zone-containers.h"
 
@@ -25,10 +24,13 @@ namespace interpreter {
 class V8_EXPORT_PRIVATE HandlerTableBuilder final {
  public:
   explicit HandlerTableBuilder(Zone* zone);
+  HandlerTableBuilder(const HandlerTableBuilder&) = delete;
+  HandlerTableBuilder& operator=(const HandlerTableBuilder&) = delete;
 
   // Builds the actual handler table by copying the current values into a heap
   // object. Any further mutations to the builder won't be reflected.
-  Handle<ByteArray> ToHandlerTable(Isolate* isolate);
+  template <typename IsolateT>
+  Handle<ByteArray> ToHandlerTable(IsolateT* isolate);
 
   // Creates a new handler table entry and returns a {hander_id} identifying the
   // entry, so that it can be referenced by below setter functions.
@@ -54,8 +56,6 @@ class V8_EXPORT_PRIVATE HandlerTableBuilder final {
   };
 
   ZoneVector<Entry> entries_;
-
-  DISALLOW_COPY_AND_ASSIGN(HandlerTableBuilder);
 };
 
 }  // namespace interpreter

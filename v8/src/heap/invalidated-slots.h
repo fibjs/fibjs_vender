@@ -5,10 +5,11 @@
 #ifndef V8_HEAP_INVALIDATED_SLOTS_H_
 #define V8_HEAP_INVALIDATED_SLOTS_H_
 
-#include <map>
+#include <set>
 #include <stack>
 
 #include "src/base/atomic-utils.h"
+#include "src/heap/memory-chunk-layout.h"
 #include "src/objects/heap-object.h"
 #include "src/utils/allocation.h"
 #include "src/utils/utils.h"
@@ -22,6 +23,8 @@ namespace internal {
 // change.
 using InvalidatedSlots = std::map<HeapObject, int, Object::Comparer>;
 
+class NonAtomicMarkingState;
+
 // This class provides IsValid predicate that takes into account the set
 // of invalidated objects in the given memory chunk.
 // The sequence of queried slot must be non-decreasing. This allows fast
@@ -30,32 +33,52 @@ using InvalidatedSlots = std::map<HeapObject, int, Object::Comparer>;
 // n is the number of IsValid queries.
 class V8_EXPORT_PRIVATE InvalidatedSlotsFilter {
  public:
-  static InvalidatedSlotsFilter OldToOld(MemoryChunk* chunk);
-  static InvalidatedSlotsFilter OldToNew(MemoryChunk* chunk);
+  enum class LivenessCheck {
+    kYes,
+    kNo,
+  };
 
-  explicit InvalidatedSlotsFilter(MemoryChunk* chunk,
-                                  InvalidatedSlots* invalidated_slots,
-                                  bool slots_in_free_space_are_valid);
+  static InvalidatedSlotsFilter OldToOld(MemoryChunk* chunk,
+                                         LivenessCheck liveness_check);
+  static InvalidatedSlotsFilter OldToNew(MemoryChunk* chunk,
+                                         LivenessCheck liveness_check);
+  static InvalidatedSlotsFilter OldToShared(MemoryChunk* chunk,
+                                            LivenessCheck liveness_check);
+
   inline bool IsValid(Address slot);
 
  private:
+  struct InvalidatedObjectInfo {
+    Address address;
+    int size;
+    bool is_live;
+  };
+
+  explicit InvalidatedSlotsFilter(MemoryChunk* chunk,
+                                  InvalidatedSlots* invalidated_slots,
+                                  RememberedSetType remembered_set_type,
+                                  LivenessCheck liveness_check);
+
   InvalidatedSlots::const_iterator iterator_;
   InvalidatedSlots::const_iterator iterator_end_;
   Address sentinel_;
-  Address invalidated_start_;
-  Address invalidated_end_;
-  HeapObject invalidated_object_;
-  int invalidated_object_size_;
-  bool slots_in_free_space_are_valid_;
+  InvalidatedObjectInfo current_{kNullAddress, 0, false};
+  InvalidatedObjectInfo next_{kNullAddress, 0, false};
+  NonAtomicMarkingState* const marking_state_;
   InvalidatedSlots empty_;
 #ifdef DEBUG
   Address last_slot_;
+  RememberedSetType remembered_set_type_;
 #endif
+
+ private:
+  inline void NextInvalidatedObject();
 };
 
 class V8_EXPORT_PRIVATE InvalidatedSlotsCleanup {
  public:
   static InvalidatedSlotsCleanup OldToNew(MemoryChunk* chunk);
+  static InvalidatedSlotsCleanup OldToShared(MemoryChunk* chunk);
   static InvalidatedSlotsCleanup NoCleanup(MemoryChunk* chunk);
 
   explicit InvalidatedSlotsCleanup(MemoryChunk* chunk,
@@ -71,7 +94,6 @@ class V8_EXPORT_PRIVATE InvalidatedSlotsCleanup {
 
   Address sentinel_;
   Address invalidated_start_;
-  Address invalidated_end_;
 
   inline void NextInvalidatedObject();
 #ifdef DEBUG

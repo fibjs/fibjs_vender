@@ -1,7 +1,3 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_X64
-
 // Copyright 2016 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -55,9 +51,9 @@ void UnwindingInfoWriter::EndInstructionBlock(const InstructionBlock* block) {
       DCHECK_EQ(existing_state->offset_, eh_frame_writer_.base_offset());
       DCHECK_EQ(existing_state->tracking_fp_, tracking_fp_);
     } else {
-      block_initial_states_[successor_index] = new (zone_)
-          BlockInitialState(eh_frame_writer_.base_register(),
-                            eh_frame_writer_.base_offset(), tracking_fp_);
+      block_initial_states_[successor_index] = zone_->New<BlockInitialState>(
+          eh_frame_writer_.base_register(), eh_frame_writer_.base_offset(),
+          tracking_fp_);
     }
   }
 }
@@ -98,6 +94,3 @@ void UnwindingInfoWriter::MarkFrameDeconstructed(int pc_base) {
 }  // namespace compiler
 }  // namespace internal
 }  // namespace v8
-
-
-#endif  // V8_TARGET_ARCH_X64

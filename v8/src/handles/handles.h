@@ -7,7 +7,6 @@
 
 #include <type_traits>
 
-#include "include/v8.h"
 #include "src/base/functional.h"
 #include "src/base/macros.h"
 #include "src/common/checks.h"
@@ -15,22 +14,30 @@
 #include "src/zone/zone.h"
 
 namespace v8 {
+
+class HandleScope;
+
 namespace internal {
 
 // Forward declarations.
-class DeferredHandles;
 class HandleScopeImplementer;
 class Isolate;
+class LocalHeap;
+class LocalIsolate;
 template <typename T>
 class MaybeHandle;
 class Object;
 class OrderedHashMap;
 class OrderedHashSet;
 class OrderedNameDictionary;
+class RootVisitor;
 class SmallOrderedHashMap;
 class SmallOrderedHashSet;
 class SmallOrderedNameDictionary;
+class SwissNameDictionary;
 class WasmExportedFunctionData;
+
+constexpr Address kTaggedNullAddress = 0x1;
 
 // ----------------------------------------------------------------------------
 // Base class for Handle instantiations.  Don't use directly.
@@ -38,41 +45,33 @@ class HandleBase {
  public:
   V8_INLINE explicit HandleBase(Address* location) : location_(location) {}
   V8_INLINE explicit HandleBase(Address object, Isolate* isolate);
+  V8_INLINE explicit HandleBase(Address object, LocalIsolate* isolate);
+  V8_INLINE explicit HandleBase(Address object, LocalHeap* local_heap);
 
   // Check if this handle refers to the exact same object as the other handle.
-  V8_INLINE bool is_identical_to(const HandleBase that) const {
-    // Dereferencing deferred handles to check object equality is safe.
-    SLOW_DCHECK((this->location_ == nullptr ||
-                 this->IsDereferenceAllowed(NO_DEFERRED_CHECK)) &&
-                (that.location_ == nullptr ||
-                 that.IsDereferenceAllowed(NO_DEFERRED_CHECK)));
-    if (this->location_ == that.location_) return true;
-    if (this->location_ == nullptr || that.location_ == nullptr) return false;
-    return *this->location_ == *that.location_;
-  }
-
+  V8_INLINE bool is_identical_to(const HandleBase that) const;
   V8_INLINE bool is_null() const { return location_ == nullptr; }
 
   // Returns the raw address where this handle is stored. This should only be
   // used for hashing handles; do not ever try to dereference it.
-  V8_INLINE Address address() const { return bit_cast<Address>(location_); }
+  V8_INLINE Address address() const {
+    return base::bit_cast<Address>(location_);
+  }
 
   // Returns the address to where the raw pointer is stored.
+  // TODO(leszeks): This should probably be a const Address*, to encourage using
+  // PatchValue for modifying the handle's value.
   V8_INLINE Address* location() const {
-    SLOW_DCHECK(location_ == nullptr ||
-                IsDereferenceAllowed(INCLUDE_DEFERRED_CHECK));
+    SLOW_DCHECK(location_ == nullptr || IsDereferenceAllowed());
     return location_;
   }
 
  protected:
-  enum DereferenceCheckMode { INCLUDE_DEFERRED_CHECK, NO_DEFERRED_CHECK };
 #ifdef DEBUG
-  bool V8_EXPORT_PRIVATE IsDereferenceAllowed(DereferenceCheckMode mode) const;
+  bool V8_EXPORT_PRIVATE IsDereferenceAllowed() const;
 #else
   V8_INLINE
-  bool V8_EXPORT_PRIVATE IsDereferenceAllowed(DereferenceCheckMode mode) const {
-    return true;
-  }
+  bool V8_EXPORT_PRIVATE IsDereferenceAllowed() const { return true; }
 #endif  // DEBUG
 
   // This uses type Address* as opposed to a pointer type to a typed
@@ -105,7 +104,7 @@ class Handle final : public HandleBase {
     T* operator->() { return &object_; }
 
    private:
-    friend class Handle;
+    friend class Handle<T>;
     explicit ObjectRef(T object) : object_(object) {}
 
     T object_;
@@ -125,6 +124,8 @@ class Handle final : public HandleBase {
   }
 
   V8_INLINE Handle(T object, Isolate* isolate);
+  V8_INLINE Handle(T object, LocalIsolate* isolate);
+  V8_INLINE Handle(T object, LocalHeap* local_heap);
 
   // Allocate a new handle for the object, do not canonicalize.
   V8_INLINE static Handle<T> New(T object, Isolate* isolate);
@@ -140,19 +141,26 @@ class Handle final : public HandleBase {
   V8_INLINE T operator*() const {
     // unchecked_cast because we rather trust Handle<T> to contain a T than
     // include all the respective -inl.h headers for SLOW_DCHECKs.
-    SLOW_DCHECK(IsDereferenceAllowed(INCLUDE_DEFERRED_CHECK));
+    SLOW_DCHECK(IsDereferenceAllowed());
     return T::unchecked_cast(Object(*location()));
   }
 
   template <typename S>
   inline static const Handle<T> cast(Handle<S> that);
 
-  // TODO(yangguo): Values that contain empty handles should be declared as
+  // Consider declaring values that contain empty handles as
   // MaybeHandle to force validation before being used as handles.
   static const Handle<T> null() { return Handle<T>(); }
 
   // Location equality.
   bool equals(Handle<T> other) const { return address() == other.address(); }
+
+  // Patches this Handle's value, in-place, with a new value. All handles with
+  // the same location will see this update.
+  void PatchValue(T new_value) {
+    SLOW_DCHECK(location_ != nullptr && IsDereferenceAllowed());
+    *location_ = new_value.ptr();
+  }
 
   // Provide function object for location equality comparison.
   struct equal_to {
@@ -178,7 +186,7 @@ class Handle final : public HandleBase {
 };
 
 template <typename T>
-inline std::ostream& operator<<(std::ostream& os, Handle<T> handle);
+std::ostream& operator<<(std::ostream& os, Handle<T> handle);
 
 // ----------------------------------------------------------------------------
 // A stack-allocated class that governs a number of local handles.
@@ -193,12 +201,23 @@ inline std::ostream& operator<<(std::ostream& os, Handle<T> handle);
 // garbage collector will no longer track the object stored in the
 // handle and may deallocate it.  The behavior of accessing a handle
 // for which the handle scope has been deleted is undefined.
-class HandleScope {
+class V8_NODISCARD HandleScope {
  public:
-  explicit inline HandleScope(Isolate* isolate);
+  explicit V8_INLINE HandleScope(Isolate* isolate);
   inline HandleScope(HandleScope&& other) V8_NOEXCEPT;
+  HandleScope(const HandleScope&) = delete;
+  HandleScope& operator=(const HandleScope&) = delete;
 
-  inline ~HandleScope();
+  // Allow placement new.
+  void* operator new(size_t size, void* storage) {
+    return ::operator new(size, storage);
+  }
+
+  // Prevent heap allocation or illegal handle scopes.
+  void* operator new(size_t size) = delete;
+  void operator delete(void* size_t) = delete;
+
+  V8_INLINE ~HandleScope();
 
   inline HandleScope& operator=(HandleScope&& other) V8_NOEXCEPT;
 
@@ -233,17 +252,13 @@ class HandleScope {
   static const int kCheckHandleThreshold = 30 * 1024;
 
  private:
-  // Prevent heap allocation or illegal handle scopes.
-  void* operator new(size_t size);
-  void operator delete(void* size_t);
-
   Isolate* isolate_;
   Address* prev_next_;
   Address* prev_limit_;
 
   // Close the handle scope resetting limits to a previous state.
-  static inline void CloseScope(Isolate* isolate, Address* prev_next,
-                                Address* prev_limit);
+  static V8_INLINE void CloseScope(Isolate* isolate, Address* prev_next,
+                                   Address* prev_limit);
 
   // Extend the handle scope making room for more handles.
   V8_EXPORT_PRIVATE static Address* Extend(Isolate* isolate);
@@ -254,36 +269,49 @@ class HandleScope {
 #endif
 
   friend class v8::HandleScope;
-  friend class DeferredHandles;
-  friend class DeferredHandleScope;
   friend class HandleScopeImplementer;
   friend class Isolate;
-
-  DISALLOW_COPY_AND_ASSIGN(HandleScope);
+  friend class LocalHandles;
+  friend class LocalHandleScope;
+  friend class PersistentHandles;
 };
 
 // Forward declarations for CanonicalHandleScope.
 template <typename V, class AllocationPolicy>
 class IdentityMap;
 class RootIndexMap;
+class OptimizedCompilationInfo;
+
+namespace maglev {
+class ExportedMaglevCompilationInfo;
+}  // namespace maglev
+
+using CanonicalHandlesMap = IdentityMap<Address*, ZoneAllocationPolicy>;
 
 // A CanonicalHandleScope does not open a new HandleScope. It changes the
 // existing HandleScope so that Handles created within are canonicalized.
 // This does not apply to nested inner HandleScopes unless a nested
 // CanonicalHandleScope is introduced. Handles are only canonicalized within
 // the same CanonicalHandleScope, but not across nested ones.
-class V8_EXPORT_PRIVATE CanonicalHandleScope final {
+class V8_EXPORT_PRIVATE V8_NODISCARD CanonicalHandleScope {
  public:
-  explicit CanonicalHandleScope(Isolate* isolate);
+  // If no Zone is passed to this constructor, we create (and own) a new zone.
+  // To properly dispose of said zone, we need to first free the identity_map_
+  // which is done manually even though identity_map_ is a unique_ptr.
+  explicit CanonicalHandleScope(Isolate* isolate, Zone* zone = nullptr);
   ~CanonicalHandleScope();
+
+ protected:
+  std::unique_ptr<CanonicalHandlesMap> DetachCanonicalHandles();
+
+  Zone* zone_;  // *Not* const, may be mutated by subclasses.
 
  private:
   Address* Lookup(Address object);
 
-  Isolate* isolate_;
-  Zone zone_;
+  Isolate* const isolate_;
   RootIndexMap* root_index_map_;
-  IdentityMap<Address*, ZoneAllocationPolicy>* identity_map_;
+  std::unique_ptr<CanonicalHandlesMap> identity_map_;
   // Ordinary nested handle scopes within the current one are not canonical.
   int canonical_level_;
   // We may have nested canonical scopes. Handles are canonical within each one.
@@ -292,51 +320,30 @@ class V8_EXPORT_PRIVATE CanonicalHandleScope final {
   friend class HandleScope;
 };
 
-// A DeferredHandleScope is a HandleScope in which handles are not destroyed
-// when the DeferredHandleScope is left. Instead the DeferredHandleScope has to
-// be detached with {Detach}, and the result of {Detach} has to be destroyed
-// explicitly. A DeferredHandleScope should only be used with the following
-// design pattern:
-// 1) Open a HandleScope (not a DeferredHandleScope).
-//    HandleScope scope(isolate_);
-// 2) Create handles.
-//    Handle<Object> h1 = handle(object1, isolate);
-//    Handle<Object> h2 = handle(object2, isolate);
-// 3) Open a DeferredHandleScope.
-//    DeferredHandleScope deferred_scope(isolate);
-// 4) Reopen handles which should be in the DeferredHandleScope, e.g only h1.
-//    h1 = handle(*h1, isolate);
-// 5) Detach the DeferredHandleScope.
-//    DeferredHandles* deferred_handles = deferred_scope.Detach();
-// 6) Destroy the deferred handles.
-//    delete deferred_handles;
-//
-// Note: A DeferredHandleScope must not be opened within a DeferredHandleScope.
-class V8_EXPORT_PRIVATE DeferredHandleScope final {
+template <class CompilationInfoT>
+class V8_EXPORT_PRIVATE V8_NODISCARD CanonicalHandleScopeForOptimization final
+    : public CanonicalHandleScope {
  public:
-  explicit DeferredHandleScope(Isolate* isolate);
-  // The DeferredHandles object returned stores the Handles created
-  // since the creation of this DeferredHandleScope.  The Handles are
-  // alive as long as the DeferredHandles object is alive.
-  DeferredHandles* Detach();
-  ~DeferredHandleScope();
+  // We created the
+  // CanonicalHandlesMap on the compilation info's zone(). In the
+  // CanonicalHandleScope destructor we hand off the canonical handle map to the
+  // compilation info. The compilation info is responsible for the disposal.
+  explicit CanonicalHandleScopeForOptimization(Isolate* isolate,
+                                               CompilationInfoT* info);
+  ~CanonicalHandleScopeForOptimization();
 
  private:
-  Address* prev_limit_;
-  Address* prev_next_;
-  HandleScopeImplementer* impl_;
-
-#ifdef DEBUG
-  bool handles_detached_ = false;
-  int prev_level_;
-#endif
-
-  friend class HandleScopeImplementer;
+  CompilationInfoT* const info_;
 };
+
+using CanonicalHandleScopeForTurbofan =
+    CanonicalHandleScopeForOptimization<OptimizedCompilationInfo>;
+using CanonicalHandleScopeForMaglev =
+    CanonicalHandleScopeForOptimization<maglev::ExportedMaglevCompilationInfo>;
 
 // Seal off the current HandleScope so that new handles can only be created
 // if a new HandleScope is entered.
-class SealHandleScope final {
+class V8_NODISCARD SealHandleScope final {
  public:
 #ifndef DEBUG
   explicit SealHandleScope(Isolate* isolate) {}
@@ -365,6 +372,87 @@ struct HandleScopeData final {
     canonical_scope = nullptr;
   }
 };
+
+#ifdef V8_ENABLE_CONSERVATIVE_STACK_SCANNING
+
+// ----------------------------------------------------------------------------
+// A DirectHandle provides a reference to an object without an intermediate
+// pointer.
+//
+// A DirectHandle is a simple wrapper around a tagged pointer to a heap object
+// or a SMI. Its methods are symmetrical with Handle, so that Handles can be
+// easily migrated.
+//
+// DirectHandles are intended to be used with conservative stack scanning, as
+// they do not provide a mechanism for keeping an object alive across a garbage
+// collection.
+//
+// Further motivation is explained in the design doc:
+// https://docs.google.com/document/d/1uRGYQM76vk1fc_aDqDH3pm2qhaJtnK2oyzeVng4cS6I/
+template <typename T>
+class DirectHandle final {
+ public:
+  V8_INLINE explicit DirectHandle() : obj_(kTaggedNullAddress) {
+    // Skip static type check in order to allow DirectHandle<XXX>::null() as
+    // default parameter values in non-inl header files without requiring full
+    // definition of type XXX.
+  }
+
+  V8_INLINE bool is_null() const { return obj_ == kTaggedNullAddress; }
+
+  V8_INLINE explicit DirectHandle(Address object) : obj_(object) {
+    // This static type check also fails for forward class declarations.
+    static_assert(std::is_convertible<T*, Object*>::value,
+                  "static type violation");
+  }
+
+  // Constructor for handling automatic up casting.
+  // Ex. DirectHandle<JSFunction> can be passed when DirectHandle<Object> is
+  // expected.
+  template <typename S, typename = typename std::enable_if<
+                            std::is_convertible<S*, T*>::value>::type>
+  V8_INLINE DirectHandle(DirectHandle<S> handle) : obj_(handle.obj_) {}
+
+  V8_INLINE T operator->() const { return obj_; }
+
+  V8_INLINE T operator*() const {
+    SLOW_DCHECK(IsDereferenceAllowed());
+    return T::unchecked_cast(Object(obj_));
+  }
+
+  template <typename S>
+  inline static const DirectHandle<T> cast(DirectHandle<S> that);
+
+  // Consider declaring values that contain empty handles as
+  // MaybeHandle to force validation before being used as handles.
+  static const DirectHandle<T> null() { return DirectHandle<T>(); }
+
+ protected:
+#ifdef DEBUG
+  bool V8_EXPORT_PRIVATE IsDereferenceAllowed() const;
+#else
+  V8_INLINE
+  bool V8_EXPORT_PRIVATE IsDereferenceAllowed() const { return true; }
+#endif  // DEBUG
+
+ private:
+  // DirectHandles of different classes are allowed to access each other's
+  // obj_.
+  template <typename>
+  friend class DirectHandle;
+  // MaybeDirectHandle is allowed to access obj_.
+  template <typename>
+  friend class MaybeDirectHandle;
+
+  // This is a direct pointer to either a tagged object or SMI. Design overview:
+  // https://docs.google.com/document/d/1uRGYQM76vk1fc_aDqDH3pm2qhaJtnK2oyzeVng4cS6I/
+  T obj_;
+};
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, DirectHandle<T> handle);
+
+#endif
 
 }  // namespace internal
 }  // namespace v8

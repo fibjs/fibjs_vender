@@ -5,13 +5,13 @@
 #ifndef V8_LIBPLATFORM_TASK_QUEUE_H_
 #define V8_LIBPLATFORM_TASK_QUEUE_H_
 
+#include <memory>
 #include <queue>
 
 #include "include/libplatform/libplatform-export.h"
-#include "src/base/macros.h"
 #include "src/base/platform/mutex.h"
 #include "src/base/platform/semaphore.h"
-#include "gtest/gtest_prod.h"  // nogncheck
+#include "testing/gtest/include/gtest/gtest_prod.h"  // nogncheck
 
 namespace v8 {
 
@@ -23,6 +23,9 @@ class V8_PLATFORM_EXPORT TaskQueue {
  public:
   TaskQueue();
   ~TaskQueue();
+
+  TaskQueue(const TaskQueue&) = delete;
+  TaskQueue& operator=(const TaskQueue&) = delete;
 
   // Appends a task to the queue. The queue takes ownership of |task|.
   void Append(std::unique_ptr<Task> task);
@@ -43,8 +46,6 @@ class V8_PLATFORM_EXPORT TaskQueue {
   base::Mutex lock_;
   std::queue<std::unique_ptr<Task>> task_queue_;
   bool terminated_;
-
-  DISALLOW_COPY_AND_ASSIGN(TaskQueue);
 };
 
 }  // namespace platform

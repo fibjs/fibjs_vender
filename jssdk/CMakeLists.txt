@@ -6,6 +6,6 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/.."
 )
 
-add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0600)
+include(../v8/cmake/options.cmake)
 
 include(../build_tools/cmake/Library.cmake)

@@ -5,41 +5,44 @@
 #ifndef V8_CODEGEN_REGLIST_H_
 #define V8_CODEGEN_REGLIST_H_
 
-#include <cstdint>
-
-#include "src/base/bits.h"
-#include "src/base/template-utils.h"
+#if V8_TARGET_ARCH_IA32
+#include "src/codegen/ia32/reglist-ia32.h"
+#elif V8_TARGET_ARCH_X64
+#include "src/codegen/x64/reglist-x64.h"
+#elif V8_TARGET_ARCH_ARM64
+#include "src/codegen/arm64/reglist-arm64.h"
+#elif V8_TARGET_ARCH_ARM
+#include "src/codegen/arm/reglist-arm.h"
+#elif V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_PPC64
+#include "src/codegen/ppc/reglist-ppc.h"
+#elif V8_TARGET_ARCH_MIPS64
+#include "src/codegen/mips64/reglist-mips64.h"
+#elif V8_TARGET_ARCH_LOONG64
+#include "src/codegen/loong64/reglist-loong64.h"
+#elif V8_TARGET_ARCH_S390
+#include "src/codegen/s390/reglist-s390.h"
+#elif V8_TARGET_ARCH_RISCV32 || V8_TARGET_ARCH_RISCV64
+#include "src/codegen/riscv/reglist-riscv.h"
+#else
+#error Unknown architecture.
+#endif
 
 namespace v8 {
 namespace internal {
 
-// Register configurations.
-#if V8_TARGET_ARCH_ARM64
-using RegList = uint64_t;
-#else
-using RegList = uint32_t;
-#endif
+static constexpr RegList kEmptyRegList = {};
 
-// Get the number of registers in a given register list.
-constexpr int NumRegs(RegList list) {
-  return base::bits::CountPopulation(list);
-}
+#define LIST_REG(V) V,
+static constexpr RegList kAllocatableGeneralRegisters = {
+    ALLOCATABLE_GENERAL_REGISTERS(LIST_REG) Register::no_reg()};
+#undef LIST_REG
 
-// Combine two RegLists by building the union of the contained registers.
-// Implemented as a Functor to pass it to base::fold even on gcc < 5 (see
-// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52892).
-// TODO(clemensh): Remove this once we require gcc >= 5.0.
-struct CombineRegListsFunctor {
-  constexpr RegList operator()(RegList list1, RegList list2) const {
-    return list1 | list2;
-  }
-};
+static constexpr DoubleRegList kEmptyDoubleRegList = {};
 
-// Combine several RegLists by building the union of the contained registers.
-template <typename... RegLists>
-constexpr RegList CombineRegLists(RegLists... lists) {
-  return base::fold(CombineRegListsFunctor{}, 0, lists...);
-}
+#define LIST_REG(V) V,
+static constexpr DoubleRegList kAllocatableDoubleRegisters = {
+    ALLOCATABLE_DOUBLE_REGISTERS(LIST_REG) DoubleRegister::no_reg()};
+#undef LIST_REG
 
 }  // namespace internal
 }  // namespace v8

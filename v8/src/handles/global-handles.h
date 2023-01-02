@@ -5,16 +5,19 @@
 #ifndef V8_HANDLES_GLOBAL_HANDLES_H_
 #define V8_HANDLES_GLOBAL_HANDLES_H_
 
+#include <memory>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "include/v8.h"
+#include "include/v8-callbacks.h"
+#include "include/v8-persistent-handle.h"
 #include "include/v8-profiler.h"
-
-#include "src/utils/utils.h"
 #include "src/handles/handles.h"
+#include "src/heap/heap.h"
+#include "src/objects/heap-object.h"
 #include "src/objects/objects.h"
+#include "src/utils/utils.h"
 
 namespace v8 {
 namespace internal {
@@ -22,25 +25,13 @@ namespace internal {
 class HeapStats;
 class RootVisitor;
 
-enum WeaknessType {
-  // Embedder gets a handle to the dying object.
-  FINALIZER_WEAK,
-  // In the following cases, the embedder gets the parameter they passed in
-  // earlier, and 0 or 2 first embedder fields. Note that the internal
-  // fields must contain aligned non-V8 pointers.  Getting pointers to V8
-  // objects through this interface would be GC unsafe so in that case the
-  // embedder gets a null pointer instead.
-  PHANTOM_WEAK,
-  PHANTOM_WEAK_2_EMBEDDER_FIELDS,
-  // The handle is automatically reset by the garbage collector when
-  // the object is no longer reachable.
-  PHANTOM_WEAK_RESET_HANDLE
-};
-
 // Global handles hold handles that are independent of stack-state and can have
 // callbacks and finalizers attached to them.
 class V8_EXPORT_PRIVATE GlobalHandles final {
  public:
+  GlobalHandles(const GlobalHandles&) = delete;
+  GlobalHandles& operator=(const GlobalHandles&) = delete;
+
   template <class NodeType>
   class NodeBlock;
 
@@ -76,17 +67,6 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
   // Tells whether global handle is weak.
   static bool IsWeak(Address* location);
 
-  //
-  // API for traced handles.
-  //
-
-  static void MoveTracedGlobal(Address** from, Address** to);
-  static void CopyTracedGlobal(const Address* const* from, Address** to);
-  static void DestroyTraced(Address* location);
-  static void SetFinalizationCallbackForTraced(
-      Address* location, void* parameter,
-      WeakCallbackInfo<void>::Callback callback);
-
   explicit GlobalHandles(Isolate* isolate);
   ~GlobalHandles();
 
@@ -95,25 +75,15 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
   Handle<Object> Create(Address value);
 
   template <typename T>
-  Handle<T> Create(T value) {
-    static_assert(std::is_base_of<Object, T>::value, "static type violation");
-    // The compiler should only pick this method if T is not Object.
-    static_assert(!std::is_same<Object, T>::value, "compiler error");
-    return Handle<T>::cast(Create(Object(value)));
-  }
-
-  Handle<Object> CreateTraced(Object value, Address* slot, bool has_destructor);
-  Handle<Object> CreateTraced(Address value, Address* slot,
-                              bool has_destructor);
+  inline Handle<T> Create(T value);
 
   void RecordStats(HeapStats* stats);
 
   size_t InvokeFirstPassWeakCallbacks();
   void InvokeSecondPassPhantomCallbacks();
 
-  // Process pending weak handles.
-  // Returns the number of freed nodes.
-  size_t PostGarbageCollectionProcessing(
+  // Schedule or invoke second pass weak callbacks.
+  void PostGarbageCollectionProcessing(
       GarbageCollector collector, const v8::GCCallbackFlags gc_callback_flags);
 
   void IterateStrongRoots(RootVisitor* v);
@@ -121,28 +91,6 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
   void IterateAllRoots(RootVisitor* v);
   void IterateAllYoungRoots(RootVisitor* v);
 
-  // Iterates over all handles that have embedder-assigned class ID.
-  void IterateAllRootsWithClassIds(v8::PersistentHandleVisitor* v);
-
-  // Iterates over all handles in the new space that have embedder-assigned
-  // class ID.
-  void IterateAllYoungRootsWithClassIds(v8::PersistentHandleVisitor* v);
-
-  // Iterate over all handles in the new space that are weak, unmodified
-  // and have class IDs
-  void IterateYoungWeakRootsWithClassIds(v8::PersistentHandleVisitor* v);
-
-  // Iterates over all traces handles represented by TracedGlobal.
-  void IterateTracedNodes(
-      v8::EmbedderHeapTracer::TracedGlobalHandleVisitor* visitor);
-
-  // Marks handles with finalizers on the predicate |should_reset_handle| as
-  // pending.
-  void IterateWeakRootsIdentifyFinalizers(
-      WeakSlotCallbackWithHeap should_reset_handle);
-  // Uses the provided visitor |v| to mark handles with finalizers that are
-  // pending.
-  void IterateWeakRootsForFinalizers(RootVisitor* v);
   // Marks handles that are phantom or have callbacks based on the predicate
   // |should_reset_handle| as pending.
   void IterateWeakRootsForPhantomHandles(
@@ -156,29 +104,26 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
   // Iterates over strong and dependent handles. See the note above.
   void IterateYoungStrongAndDependentRoots(RootVisitor* v);
 
-  // Marks weak unmodified handles satisfying |is_dead| as pending.
-  void MarkYoungWeakUnmodifiedObjectsPending(WeakSlotCallbackWithHeap is_dead);
+  // Processes all young weak objects. Weak objects for which
+  // `should_reset_handle()` returns true are reset and others are passed to the
+  // visitor `v`.
+  void ProcessWeakYoungObjects(RootVisitor* v,
+                               WeakSlotCallbackWithHeap should_reset_handle);
 
-  // Iterates over weak independent or unmodified handles.
-  // See the note above.
-  void IterateYoungWeakUnmodifiedRootsForFinalizers(RootVisitor* v);
-  void IterateYoungWeakUnmodifiedRootsForPhantomHandles(
-      RootVisitor* v, WeakSlotCallbackWithHeap should_reset_handle);
-
-  // Identify unmodified objects that are in weak state and marks them
-  // unmodified
-  void IdentifyWeakUnmodifiedObjects(WeakSlotCallback is_unmodified);
+  // Updates the list of young nodes that is maintained separately.
+  void UpdateListOfYoungNodes();
+  // Clears the list of young nodes, assuming that the young generation is
+  // empty.
+  void ClearListOfYoungNodes();
 
   Isolate* isolate() const { return isolate_; }
 
+  size_t TotalSize() const;
+  size_t UsedSize() const;
   // Number of global handles.
-  size_t handles_count() const { return handles_count_; }
+  size_t handles_count() const;
 
-  size_t GetAndResetGlobalHandleResetCount() {
-    size_t old = number_of_phantom_handle_resets_;
-    number_of_phantom_handle_resets_ = 0;
-    return old;
-  }
+  void IterateAllRootsForTesting(v8::PersistentHandleVisitor* v);
 
 #ifdef DEBUG
   void PrintStats();
@@ -193,25 +138,20 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
   template <class NodeType>
   class NodeSpace;
   class PendingPhantomCallback;
-  class TracedNode;
-
-  bool InRecursiveGC(unsigned gc_processing_counter);
-
-  void InvokeSecondPassPhantomCallbacksFromTask();
-  void InvokeOrScheduleSecondPassPhantomCallbacks(bool synchronous_second_pass);
-  size_t PostScavengeProcessing(unsigned post_processing_count);
-  size_t PostMarkSweepProcessing(unsigned post_processing_count);
 
   template <typename T>
   size_t InvokeFirstPassWeakCallbacks(
       std::vector<std::pair<T*, PendingPhantomCallback>>* pending);
 
-  template <typename T>
-  void UpdateAndCompactListOfYoungNode(std::vector<T*>* node_list);
-  void UpdateListOfYoungNodes();
-
   void ApplyPersistentHandleVisitor(v8::PersistentHandleVisitor* visitor,
                                     Node* node);
+
+  // Clears a weak `node` for which `should_reset_node()` returns true.
+  //
+  // Returns false if a node is weak and alive which requires further
+  // processing, and true in all other cases (e.g. also strong nodes).
+  bool ResetWeakNodeIfDead(Node* node,
+                           WeakSlotCallbackWithHeap should_reset_node);
 
   Isolate* const isolate_;
 
@@ -219,26 +159,10 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
   // Contains all nodes holding young objects. Note: when the list
   // is accessed, some of the objects may have been promoted already.
   std::vector<Node*> young_nodes_;
-
-  std::unique_ptr<NodeSpace<TracedNode>> traced_nodes_;
-  std::vector<TracedNode*> traced_young_nodes_;
-
-  // Field always containing the number of handles to global objects.
-  size_t handles_count_ = 0;
-  size_t number_of_phantom_handle_resets_ = 0;
-
   std::vector<std::pair<Node*, PendingPhantomCallback>>
       regular_pending_phantom_callbacks_;
-  std::vector<std::pair<TracedNode*, PendingPhantomCallback>>
-      traced_pending_phantom_callbacks_;
   std::vector<PendingPhantomCallback> second_pass_callbacks_;
   bool second_pass_callbacks_task_posted_ = false;
-  bool running_second_pass_callbacks_ = false;
-
-  // Counter for recursive garbage collections during callback processing.
-  unsigned post_gc_processing_count_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(GlobalHandles);
 };
 
 class GlobalHandles::PendingPhantomCallback final {
@@ -270,6 +194,8 @@ class EternalHandles final {
  public:
   EternalHandles() = default;
   ~EternalHandles();
+  EternalHandles(const EternalHandles&) = delete;
+  EternalHandles& operator=(const EternalHandles&) = delete;
 
   // Create an EternalHandle, overwriting the index.
   V8_EXPORT_PRIVATE void Create(Isolate* isolate, Object object, int* index);
@@ -304,8 +230,48 @@ class EternalHandles final {
   int size_ = 0;
   std::vector<Address*> blocks_;
   std::vector<int> young_node_indices_;
+};
 
-  DISALLOW_COPY_AND_ASSIGN(EternalHandles);
+// A vector of global Handles which automatically manages the backing of those
+// Handles as a vector of strong-rooted addresses. Handles returned by the
+// vector are valid as long as they are present in the vector.
+template <typename T>
+class GlobalHandleVector {
+ public:
+  class Iterator {
+   public:
+    explicit Iterator(
+        std::vector<Address, StrongRootBlockAllocator>::iterator it)
+        : it_(it) {}
+    Iterator& operator++() {
+      ++it_;
+      return *this;
+    }
+    Handle<T> operator*() { return Handle<T>(&*it_); }
+    bool operator!=(Iterator& that) { return it_ != that.it_; }
+
+   private:
+    std::vector<Address, StrongRootBlockAllocator>::iterator it_;
+  };
+
+  explicit GlobalHandleVector(Heap* heap)
+      : locations_(StrongRootBlockAllocator(heap)) {}
+
+  Handle<T> operator[](size_t i) { return Handle<T>(&locations_[i]); }
+
+  size_t size() const { return locations_.size(); }
+  bool empty() const { return locations_.empty(); }
+
+  void Push(T val) { locations_.push_back(val.ptr()); }
+  // Handles into the GlobalHandleVector become invalid when they are removed,
+  // so "pop" returns a raw object rather than a handle.
+  inline T Pop();
+
+  Iterator begin() { return Iterator(locations_.begin()); }
+  Iterator end() { return Iterator(locations_.end()); }
+
+ private:
+  std::vector<Address, StrongRootBlockAllocator> locations_;
 };
 
 }  // namespace internal

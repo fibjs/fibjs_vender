@@ -5,12 +5,12 @@
 #ifndef V8_CODEGEN_SOURCE_POSITION_H_
 #define V8_CODEGEN_SOURCE_POSITION_H_
 
-#include <ostream>
+#include <iosfwd>
 
+#include "src/base/bit-field.h"
 #include "src/common/globals.h"
 #include "src/flags/flags.h"
 #include "src/handles/handles.h"
-#include "src/utils/utils.h"
 
 namespace v8 {
 namespace internal {
@@ -44,7 +44,8 @@ struct SourcePositionInfo;
 // DeoptimizationData::InliningPositions, depending on the compilation stage.
 class SourcePosition final {
  public:
-  explicit SourcePosition(int script_offset, int inlining_id = kNotInlined)
+  explicit SourcePosition(int script_offset = kNoSourcePosition,
+                          int inlining_id = kNotInlined)
       : value_(0) {
     SetIsExternal(false);
     SetScriptOffset(script_offset);
@@ -57,11 +58,8 @@ class SourcePosition final {
     return SourcePosition(line, file_id, kNotInlined);
   }
 
-  static SourcePosition Unknown() { return SourcePosition(kNoSourcePosition); }
-  bool IsKnown() const {
-    if (IsExternal()) return true;
-    return ScriptOffset() != kNoSourcePosition || InliningId() != kNotInlined;
-  }
+  static SourcePosition Unknown() { return SourcePosition(); }
+  bool IsKnown() const { return raw() != SourcePosition::Unknown().raw(); }
   bool isInlined() const {
     if (IsExternal()) return false;
     return InliningId() != kNotInlined;
@@ -84,6 +82,7 @@ class SourcePosition final {
   std::vector<SourcePositionInfo> InliningStack(Handle<Code> code) const;
   std::vector<SourcePositionInfo> InliningStack(
       OptimizedCompilationInfo* cinfo) const;
+  SourcePositionInfo FirstInfo(Handle<Code> code) const;
 
   void Print(std::ostream& out, Code code) const;
   void PrintJson(std::ostream& out) const;
@@ -121,7 +120,7 @@ class SourcePosition final {
   }
 
   static const int kNotInlined = -1;
-  STATIC_ASSERT(kNoSourcePosition == -1);
+  static_assert(kNoSourcePosition == -1);
 
   int64_t raw() const { return static_cast<int64_t>(value_); }
   static SourcePosition FromRaw(int64_t raw) {
@@ -142,18 +141,18 @@ class SourcePosition final {
 
   void Print(std::ostream& out, SharedFunctionInfo function) const;
 
-  using IsExternalField = BitField64<bool, 0, 1>;
+  using IsExternalField = base::BitField64<bool, 0, 1>;
 
   // The two below are only used if IsExternal() is true.
-  using ExternalLineField = BitField64<int, 1, 20>;
-  using ExternalFileIdField = BitField64<int, 21, 10>;
+  using ExternalLineField = base::BitField64<int, 1, 20>;
+  using ExternalFileIdField = base::BitField64<int, 21, 10>;
 
   // ScriptOffsetField is only used if IsExternal() is false.
-  using ScriptOffsetField = BitField64<int, 1, 30>;
+  using ScriptOffsetField = base::BitField64<int, 1, 30>;
 
   // InliningId is in the high bits for better compression in
   // SourcePositionTable.
-  using InliningIdField = BitField64<int, 31, 16>;
+  using InliningIdField = base::BitField64<int, 31, 16>;
 
   // Leaving the highest bit untouched to allow for signed conversion.
   uint64_t value_;

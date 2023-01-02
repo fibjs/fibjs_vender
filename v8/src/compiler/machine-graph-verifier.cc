@@ -4,11 +4,11 @@
 
 #include "src/compiler/machine-graph-verifier.h"
 
+#include "src/base/v8-fallthrough.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/machine-operator.h"
-#include "src/compiler/node-properties.h"
 #include "src/compiler/node.h"
 #include "src/compiler/schedule.h"
 #include "src/zone/zone.h"
@@ -51,8 +51,14 @@ class MachineRepresentationInferrer {
                           : MachineRepresentation::kBit;
       case IrOpcode::kInt64AddWithOverflow:
       case IrOpcode::kInt64SubWithOverflow:
+      case IrOpcode::kInt64MulWithOverflow:
         CHECK_LE(index, static_cast<size_t>(1));
         return index == 0 ? MachineRepresentation::kWord64
+                          : MachineRepresentation::kBit;
+      case IrOpcode::kTryTruncateFloat64ToInt32:
+      case IrOpcode::kTryTruncateFloat64ToUint32:
+        CHECK_LE(index, static_cast<size_t>(1));
+        return index == 0 ? MachineRepresentation::kWord32
                           : MachineRepresentation::kBit;
       case IrOpcode::kTryTruncateFloat32ToInt64:
       case IrOpcode::kTryTruncateFloat64ToInt64:
@@ -85,6 +91,10 @@ class MachineRepresentationInferrer {
       case MachineRepresentation::kWord16:
       case MachineRepresentation::kWord32:
         return MachineRepresentation::kWord32;
+      case MachineRepresentation::kSandboxedPointer:
+        // A sandboxed pointer is a Word64 that uses an encoded representation
+        // when stored on the heap.
+        return MachineRepresentation::kWord64;
       default:
         break;
     }
@@ -121,9 +131,14 @@ class MachineRepresentationInferrer {
             break;
           case IrOpcode::kWord32AtomicLoad:
           case IrOpcode::kWord64AtomicLoad:
+            representation_vector_[node->id()] =
+                PromoteRepresentation(AtomicLoadParametersOf(node->op())
+                                          .representation()
+                                          .representation());
+            break;
           case IrOpcode::kLoad:
+          case IrOpcode::kLoadImmutable:
           case IrOpcode::kProtectedLoad:
-          case IrOpcode::kPoisonedLoad:
             representation_vector_[node->id()] = PromoteRepresentation(
                 LoadRepresentationOf(node->op()).representation());
             break;
@@ -153,8 +168,8 @@ class MachineRepresentationInferrer {
           }
           case IrOpcode::kWord32AtomicStore:
           case IrOpcode::kWord64AtomicStore:
-            representation_vector_[node->id()] =
-                PromoteRepresentation(AtomicStoreRepresentationOf(node->op()));
+            representation_vector_[node->id()] = PromoteRepresentation(
+                AtomicStoreParametersOf(node->op()).representation());
             break;
           case IrOpcode::kWord32AtomicPairLoad:
           case IrOpcode::kWord32AtomicPairStore:
@@ -194,43 +209,17 @@ class MachineRepresentationInferrer {
                 UnalignedStoreRepresentationOf(node->op()));
             break;
           case IrOpcode::kHeapConstant:
+            representation_vector_[node->id()] =
+                MachineRepresentation::kTaggedPointer;
+            break;
           case IrOpcode::kNumberConstant:
-          case IrOpcode::kDelayedStringConstant:
           case IrOpcode::kChangeBitToTagged:
           case IrOpcode::kIfException:
           case IrOpcode::kOsrValue:
           case IrOpcode::kChangeInt32ToTagged:
           case IrOpcode::kChangeUint32ToTagged:
           case IrOpcode::kBitcastWordToTagged:
-          case IrOpcode::kTaggedPoisonOnSpeculation:
-          case IrOpcode::kChangeCompressedToTagged:
             representation_vector_[node->id()] = MachineRepresentation::kTagged;
-            break;
-          case IrOpcode::kChangeCompressedPointerToTaggedPointer:
-            representation_vector_[node->id()] =
-                MachineRepresentation::kTaggedPointer;
-            break;
-          case IrOpcode::kChangeCompressedSignedToTaggedSigned:
-            representation_vector_[node->id()] =
-                MachineRepresentation::kTaggedSigned;
-            break;
-          case IrOpcode::kChangeTaggedToCompressed:
-            representation_vector_[node->id()] =
-                MachineRepresentation::kCompressed;
-            break;
-          case IrOpcode::kChangeTaggedPointerToCompressedPointer:
-            representation_vector_[node->id()] =
-                MachineRepresentation::kCompressedPointer;
-            break;
-          case IrOpcode::kChangeTaggedSignedToCompressedSigned:
-            representation_vector_[node->id()] =
-                MachineRepresentation::kCompressedSigned;
-            break;
-          case IrOpcode::kWord32PoisonOnSpeculation:
-            representation_vector_[node->id()] = MachineRepresentation::kWord32;
-            break;
-          case IrOpcode::kWord64PoisonOnSpeculation:
-            representation_vector_[node->id()] = MachineRepresentation::kWord64;
             break;
           case IrOpcode::kCompressedHeapConstant:
             representation_vector_[node->id()] =
@@ -241,20 +230,13 @@ class MachineRepresentationInferrer {
                 MachineType::PointerRepresentation();
             break;
           case IrOpcode::kBitcastTaggedToWord:
-          case IrOpcode::kBitcastTaggedSignedToWord:
+          case IrOpcode::kBitcastTaggedToWordForTagAndSmiBits:
             representation_vector_[node->id()] =
                 MachineType::PointerRepresentation();
             break;
           case IrOpcode::kBitcastWordToTaggedSigned:
             representation_vector_[node->id()] =
                 MachineRepresentation::kTaggedSigned;
-            break;
-          case IrOpcode::kBitcastWord32ToCompressedSigned:
-            representation_vector_[node->id()] =
-                MachineRepresentation::kCompressedSigned;
-            break;
-          case IrOpcode::kBitcastCompressedSignedToWord32:
-            representation_vector_[node->id()] = MachineRepresentation::kWord32;
             break;
           case IrOpcode::kWord32Equal:
           case IrOpcode::kInt32LessThan:
@@ -282,8 +264,10 @@ class MachineRepresentationInferrer {
           case IrOpcode::kTruncateFloat32ToUint32:
           case IrOpcode::kBitcastFloat32ToInt32:
           case IrOpcode::kI32x4ExtractLane:
-          case IrOpcode::kI16x8ExtractLane:
-          case IrOpcode::kI8x16ExtractLane:
+          case IrOpcode::kI16x8ExtractLaneU:
+          case IrOpcode::kI16x8ExtractLaneS:
+          case IrOpcode::kI8x16ExtractLaneU:
+          case IrOpcode::kI8x16ExtractLaneS:
           case IrOpcode::kInt32Constant:
           case IrOpcode::kRelocatableInt32Constant:
           case IrOpcode::kTruncateFloat64ToWord32:
@@ -293,6 +277,8 @@ class MachineRepresentationInferrer {
           case IrOpcode::kRoundFloat64ToInt32:
           case IrOpcode::kFloat64ExtractLowWord32:
           case IrOpcode::kFloat64ExtractHighWord32:
+          case IrOpcode::kWord32Popcnt:
+          case IrOpcode::kI8x16BitMask:
             MACHINE_UNOP_32_LIST(LABEL)
             MACHINE_BINOP_32_LIST(LABEL) {
               representation_vector_[node->id()] =
@@ -304,7 +290,11 @@ class MachineRepresentationInferrer {
           case IrOpcode::kInt64Constant:
           case IrOpcode::kRelocatableInt64Constant:
           case IrOpcode::kBitcastFloat64ToInt64:
+          case IrOpcode::kChangeFloat64ToInt64:
           case IrOpcode::kChangeFloat64ToUint64:
+          case IrOpcode::kWord64Popcnt:
+          case IrOpcode::kWord64Ctz:
+          case IrOpcode::kWord64Clz:
             MACHINE_BINOP_64_LIST(LABEL) {
               representation_vector_[node->id()] =
                   MachineRepresentation::kWord64;
@@ -340,6 +330,8 @@ class MachineRepresentationInferrer {
             break;
           case IrOpcode::kI32x4ReplaceLane:
           case IrOpcode::kI32x4Splat:
+          case IrOpcode::kI8x16Splat:
+          case IrOpcode::kI8x16Eq:
             representation_vector_[node->id()] =
                 MachineRepresentation::kSimd128;
             break;
@@ -393,34 +385,14 @@ class MachineRepresentationChecker {
             CHECK_EQ(MachineRepresentation::kTagged,
                      inferrer_->GetRepresentation(node->InputAt(0)));
             break;
-          case IrOpcode::kChangeCompressedToTagged:
-            CHECK(IsAnyCompressed(
-                inferrer_->GetRepresentation(node->InputAt(0))));
-            break;
-          case IrOpcode::kChangeCompressedPointerToTaggedPointer:
-            CHECK(CanBeCompressedPointer(
-                inferrer_->GetRepresentation(node->InputAt(0))));
-            break;
-          case IrOpcode::kChangeCompressedSignedToTaggedSigned:
-            CHECK(CanBeCompressedSigned(
-                inferrer_->GetRepresentation(node->InputAt(0))));
-            break;
-          case IrOpcode::kChangeTaggedToCompressed:
-            CHECK(IsAnyTagged(inferrer_->GetRepresentation(node->InputAt(0))));
-            break;
-          case IrOpcode::kChangeTaggedPointerToCompressedPointer:
-            CHECK(CanBeTaggedPointer(
-                inferrer_->GetRepresentation(node->InputAt(0))));
-            break;
-          case IrOpcode::kChangeTaggedSignedToCompressedSigned:
-            CHECK(CanBeTaggedSigned(
-                inferrer_->GetRepresentation(node->InputAt(0))));
-            break;
           case IrOpcode::kRoundInt64ToFloat64:
           case IrOpcode::kRoundUint64ToFloat64:
           case IrOpcode::kRoundInt64ToFloat32:
           case IrOpcode::kRoundUint64ToFloat32:
           case IrOpcode::kTruncateInt64ToInt32:
+          case IrOpcode::kWord64Ctz:
+          case IrOpcode::kWord64Clz:
+          case IrOpcode::kWord64Popcnt:
             CheckValueInputForInt64Op(node, 0);
             break;
           case IrOpcode::kBitcastWordToTagged:
@@ -428,25 +400,13 @@ class MachineRepresentationChecker {
             CheckValueInputRepresentationIs(
                 node, 0, MachineType::PointerRepresentation());
             break;
-          case IrOpcode::kWord32PoisonOnSpeculation:
-            CheckValueInputRepresentationIs(node, 0,
-                                            MachineRepresentation::kWord32);
-            break;
-          case IrOpcode::kWord64PoisonOnSpeculation:
-            CheckValueInputRepresentationIs(node, 0,
-                                            MachineRepresentation::kWord64);
-            break;
           case IrOpcode::kBitcastTaggedToWord:
-          case IrOpcode::kBitcastTaggedSignedToWord:
-          case IrOpcode::kTaggedPoisonOnSpeculation:
-            CheckValueInputIsTagged(node, 0);
-            break;
-          case IrOpcode::kBitcastWord32ToCompressedSigned:
-            CheckValueInputRepresentationIs(node, 0,
-                                            MachineRepresentation::kWord32);
-            break;
-          case IrOpcode::kBitcastCompressedSignedToWord32:
-            CheckValueInputIsCompressed(node, 0);
+          case IrOpcode::kBitcastTaggedToWordForTagAndSmiBits:
+            if (COMPRESS_POINTERS_BOOL) {
+              CheckValueInputIsCompressedOrTagged(node, 0);
+            } else {
+              CheckValueInputIsTagged(node, 0);
+            }
             break;
           case IrOpcode::kTruncateFloat64ToWord32:
           case IrOpcode::kTruncateFloat64ToUint32:
@@ -458,10 +418,12 @@ class MachineRepresentationChecker {
           case IrOpcode::kFloat64ExtractHighWord32:
           case IrOpcode::kBitcastFloat64ToInt64:
           case IrOpcode::kTryTruncateFloat64ToInt64:
+          case IrOpcode::kTryTruncateFloat64ToInt32:
+          case IrOpcode::kTryTruncateFloat64ToUint32:
             CheckValueInputForFloat64Op(node, 0);
             break;
           case IrOpcode::kWord64Equal:
-            if (Is64()) {
+            if (Is64() && !COMPRESS_POINTERS_BOOL) {
               CheckValueInputIsTaggedOrPointer(node, 0);
               CheckValueInputIsTaggedOrPointer(node, 1);
               if (!is_stub_) {
@@ -481,8 +443,11 @@ class MachineRepresentationChecker {
             CheckValueInputForInt64Op(node, 1);
             break;
           case IrOpcode::kI32x4ExtractLane:
-          case IrOpcode::kI16x8ExtractLane:
-          case IrOpcode::kI8x16ExtractLane:
+          case IrOpcode::kI16x8ExtractLaneU:
+          case IrOpcode::kI16x8ExtractLaneS:
+          case IrOpcode::kI8x16BitMask:
+          case IrOpcode::kI8x16ExtractLaneU:
+          case IrOpcode::kI8x16ExtractLaneS:
             CheckValueInputRepresentationIs(node, 0,
                                             MachineRepresentation::kSimd128);
             break;
@@ -492,8 +457,16 @@ class MachineRepresentationChecker {
             CheckValueInputForInt32Op(node, 1);
             break;
           case IrOpcode::kI32x4Splat:
+          case IrOpcode::kI8x16Splat:
             CheckValueInputForInt32Op(node, 0);
             break;
+          case IrOpcode::kI8x16Eq:
+            CheckValueInputRepresentationIs(node, 0,
+                                            MachineRepresentation::kSimd128);
+            CheckValueInputRepresentationIs(node, 1,
+                                            MachineRepresentation::kSimd128);
+            break;
+
 #define LABEL(opcode) case IrOpcode::k##opcode:
           case IrOpcode::kChangeInt32ToTagged:
           case IrOpcode::kChangeUint32ToTagged:
@@ -502,8 +475,10 @@ class MachineRepresentationChecker {
           case IrOpcode::kRoundInt32ToFloat32:
           case IrOpcode::kRoundUint32ToFloat32:
           case IrOpcode::kBitcastInt32ToFloat32:
+          case IrOpcode::kBitcastWord32ToWord64:
           case IrOpcode::kChangeInt32ToInt64:
           case IrOpcode::kChangeUint32ToUint64:
+          case IrOpcode::kWord32Popcnt:
             MACHINE_UNOP_32_LIST(LABEL) { CheckValueInputForInt32Op(node, 0); }
             break;
           case IrOpcode::kWord32Equal:
@@ -515,8 +490,13 @@ class MachineRepresentationChecker {
                     node, 1, inferrer_->GetRepresentation(node->InputAt(0)));
               }
             } else {
-              CheckValueIsCompressedOrInt32(node, 0);
-              CheckValueIsCompressedOrInt32(node, 1);
+              if (COMPRESS_POINTERS_BOOL) {
+                CheckValueInputIsCompressedOrTaggedOrInt32(node, 0);
+                CheckValueInputIsCompressedOrTaggedOrInt32(node, 1);
+              } else {
+                CheckValueIsTaggedOrInt32(node, 0);
+                CheckValueIsTaggedOrInt32(node, 1);
+              }
             }
             break;
 
@@ -559,6 +539,7 @@ class MachineRepresentationChecker {
             }
             break;
           case IrOpcode::kFloat64SilenceNaN:
+          case IrOpcode::kChangeFloat64ToInt64:
           case IrOpcode::kChangeFloat64ToUint64:
             MACHINE_FLOAT64_UNOP_LIST(LABEL) {
               CheckValueInputForFloat64Op(node, 0);
@@ -573,14 +554,15 @@ class MachineRepresentationChecker {
           case IrOpcode::kParameter:
           case IrOpcode::kProjection:
             break;
-          case IrOpcode::kAbortCSAAssert:
+          case IrOpcode::kAbortCSADcheck:
             CheckValueInputIsTagged(node, 0);
             break;
           case IrOpcode::kLoad:
+          case IrOpcode::kUnalignedLoad:
+          case IrOpcode::kLoadImmutable:
           case IrOpcode::kWord32AtomicLoad:
           case IrOpcode::kWord32AtomicPairLoad:
           case IrOpcode::kWord64AtomicLoad:
-          case IrOpcode::kPoisonedLoad:
             CheckValueInputIsTaggedOrPointer(node, 0);
             CheckValueInputRepresentationIs(
                 node, 1, MachineType::PointerRepresentation());
@@ -596,6 +578,7 @@ class MachineRepresentationChecker {
                                             MachineRepresentation::kWord32);
             V8_FALLTHROUGH;
           case IrOpcode::kStore:
+          case IrOpcode::kUnalignedStore:
           case IrOpcode::kWord32AtomicStore:
           case IrOpcode::kWord32AtomicExchange:
           case IrOpcode::kWord32AtomicAdd:
@@ -617,12 +600,17 @@ class MachineRepresentationChecker {
               case MachineRepresentation::kTagged:
               case MachineRepresentation::kTaggedPointer:
               case MachineRepresentation::kTaggedSigned:
-                CheckValueInputIsTagged(node, 2);
-                break;
-              case MachineRepresentation::kCompressed:
-              case MachineRepresentation::kCompressedPointer:
-              case MachineRepresentation::kCompressedSigned:
-                CheckValueInputIsCompressed(node, 2);
+                if (COMPRESS_POINTERS_BOOL &&
+                    ((node->opcode() == IrOpcode::kStore &&
+                      IsAnyTagged(StoreRepresentationOf(node->op())
+                                      .representation())) ||
+                     (node->opcode() == IrOpcode::kWord32AtomicStore &&
+                      IsAnyTagged(AtomicStoreParametersOf(node->op())
+                                      .representation())))) {
+                  CheckValueInputIsCompressedOrTagged(node, 2);
+                } else {
+                  CheckValueInputIsTagged(node, 2);
+                }
                 break;
               default:
                 CheckValueInputRepresentationIs(
@@ -658,27 +646,34 @@ class MachineRepresentationChecker {
             switch (inferrer_->GetRepresentation(node)) {
               case MachineRepresentation::kTagged:
               case MachineRepresentation::kTaggedPointer:
+                for (int j = 0; j < node->op()->ValueInputCount(); ++j) {
+                  CheckValueInputIsTagged(node, j);
+                }
+                break;
               case MachineRepresentation::kTaggedSigned:
-                for (int i = 0; i < node->op()->ValueInputCount(); ++i) {
-                  CheckValueInputIsTagged(node, i);
+                for (int j = 0; j < node->op()->ValueInputCount(); ++j) {
+                  if (COMPRESS_POINTERS_BOOL) {
+                    CheckValueInputIsCompressedOrTagged(node, j);
+                  } else {
+                    CheckValueInputIsTagged(node, j);
+                  }
                 }
                 break;
               case MachineRepresentation::kCompressed:
               case MachineRepresentation::kCompressedPointer:
-              case MachineRepresentation::kCompressedSigned:
-                for (int i = 0; i < node->op()->ValueInputCount(); ++i) {
-                  CheckValueInputIsCompressed(node, i);
+                for (int j = 0; j < node->op()->ValueInputCount(); ++j) {
+                  CheckValueInputIsCompressedOrTagged(node, j);
                 }
                 break;
               case MachineRepresentation::kWord32:
-                for (int i = 0; i < node->op()->ValueInputCount(); ++i) {
-                  CheckValueInputForInt32Op(node, i);
+                for (int j = 0; j < node->op()->ValueInputCount(); ++j) {
+                  CheckValueInputForInt32Op(node, j);
                 }
                 break;
               default:
-                for (int i = 0; i < node->op()->ValueInputCount(); ++i) {
+                for (int j = 0; j < node->op()->ValueInputCount(); ++j) {
                   CheckValueInputRepresentationIs(
-                      node, i, inferrer_->GetRepresentation(node));
+                      node, j, inferrer_->GetRepresentation(node));
                 }
                 break;
             }
@@ -694,9 +689,9 @@ class MachineRepresentationChecker {
             // CheckValueInputRepresentationIs(
             //     node, 0, MachineType::PointerRepresentation());  // Pop count
             size_t return_count = inferrer_->call_descriptor()->ReturnCount();
-            for (size_t i = 0; i < return_count; i++) {
-              MachineType type = inferrer_->call_descriptor()->GetReturnType(i);
-              int input_index = static_cast<int>(i + 1);
+            for (size_t j = 0; j < return_count; j++) {
+              MachineType type = inferrer_->call_descriptor()->GetReturnType(j);
+              int input_index = static_cast<int>(j + 1);
               switch (type.representation()) {
                 case MachineRepresentation::kTagged:
                 case MachineRepresentation::kTaggedPointer:
@@ -763,24 +758,6 @@ class MachineRepresentationChecker {
     }
   }
 
-  void CheckValueInputIsCompressed(Node const* node, int index) {
-    Node const* input = node->InputAt(index);
-    switch (inferrer_->GetRepresentation(input)) {
-      case MachineRepresentation::kCompressed:
-      case MachineRepresentation::kCompressedPointer:
-      case MachineRepresentation::kCompressedSigned:
-        return;
-      default:
-        break;
-    }
-    std::ostringstream str;
-    str << "TypeError: node #" << node->id() << ":" << *node->op()
-        << " uses node #" << input->id() << ":" << *input->op()
-        << " which doesn't have a compressed representation.";
-    PrintDebugHelp(str, node);
-    FATAL("%s", str.str().c_str());
-  }
-
   void CheckValueInputIsTagged(Node const* node, int index) {
     Node const* input = node->InputAt(index);
     switch (inferrer_->GetRepresentation(input)) {
@@ -799,9 +776,56 @@ class MachineRepresentationChecker {
     FATAL("%s", str.str().c_str());
   }
 
-  void CheckValueInputIsTaggedOrPointer(Node const* node, int index) {
+  void CheckValueInputIsCompressedOrTagged(Node const* node, int index) {
     Node const* input = node->InputAt(index);
     switch (inferrer_->GetRepresentation(input)) {
+      case MachineRepresentation::kCompressed:
+      case MachineRepresentation::kCompressedPointer:
+      case MachineRepresentation::kTagged:
+      case MachineRepresentation::kTaggedPointer:
+      case MachineRepresentation::kTaggedSigned:
+        return;
+      default:
+        break;
+    }
+    std::ostringstream str;
+    str << "TypeError: node #" << node->id() << ":" << *node->op()
+        << " uses node #" << input->id() << ":" << *input->op()
+        << " which doesn't have a compressed or tagged representation.";
+    PrintDebugHelp(str, node);
+    FATAL("%s", str.str().c_str());
+  }
+
+  void CheckValueInputIsCompressedOrTaggedOrInt32(Node const* node, int index) {
+    Node const* input = node->InputAt(index);
+    switch (inferrer_->GetRepresentation(input)) {
+      case MachineRepresentation::kCompressed:
+      case MachineRepresentation::kCompressedPointer:
+        return;
+      case MachineRepresentation::kTagged:
+      case MachineRepresentation::kTaggedPointer:
+      case MachineRepresentation::kTaggedSigned:
+        return;
+      case MachineRepresentation::kBit:
+      case MachineRepresentation::kWord8:
+      case MachineRepresentation::kWord16:
+      case MachineRepresentation::kWord32:
+        return;
+      default:
+        break;
+    }
+    std::ostringstream str;
+    str << "TypeError: node #" << node->id() << ":" << *node->op()
+        << " uses node #" << input->id() << ":" << *input->op()
+        << " which doesn't have a compressed, tagged, or int32 representation.";
+    PrintDebugHelp(str, node);
+    FATAL("%s", str.str().c_str());
+  }
+
+  void CheckValueInputIsTaggedOrPointer(Node const* node, int index) {
+    Node const* input = node->InputAt(index);
+    MachineRepresentation rep = inferrer_->GetRepresentation(input);
+    switch (rep) {
       case MachineRepresentation::kTagged:
       case MachineRepresentation::kTaggedPointer:
       case MachineRepresentation::kTaggedSigned:
@@ -817,6 +841,21 @@ class MachineRepresentationChecker {
       case MachineRepresentation::kWord64:
         if (Is64()) {
           return;
+        }
+        break;
+      default:
+        break;
+    }
+    switch (node->opcode()) {
+      case IrOpcode::kLoad:
+      case IrOpcode::kProtectedLoad:
+      case IrOpcode::kUnalignedLoad:
+      case IrOpcode::kLoadImmutable:
+        if (rep == MachineRepresentation::kCompressed ||
+            rep == MachineRepresentation::kCompressedPointer) {
+          if (DECOMPRESS_POINTER_BY_ADDRESSING_MODE && index == 0) {
+            return;
+          }
         }
         break;
       default:
@@ -847,7 +886,6 @@ class MachineRepresentationChecker {
             << " is untyped.";
         PrintDebugHelp(str, node);
         FATAL("%s", str.str().c_str());
-        break;
       }
       default:
         break;
@@ -860,7 +898,7 @@ class MachineRepresentationChecker {
     FATAL("%s", str.str().c_str());
   }
 
-  void CheckValueIsCompressedOrInt32(Node const* node, int index) {
+  void CheckValueIsTaggedOrInt32(Node const* node, int index) {
     Node const* input = node->InputAt(index);
     switch (inferrer_->GetRepresentation(input)) {
       case MachineRepresentation::kBit:
@@ -868,9 +906,8 @@ class MachineRepresentationChecker {
       case MachineRepresentation::kWord16:
       case MachineRepresentation::kWord32:
         return;
-      case MachineRepresentation::kCompressed:
-      case MachineRepresentation::kCompressedSigned:
-      case MachineRepresentation::kCompressedPointer:
+      case MachineRepresentation::kTagged:
+      case MachineRepresentation::kTaggedPointer:
         return;
       default:
         break;
@@ -878,7 +915,7 @@ class MachineRepresentationChecker {
     std::ostringstream str;
     str << "TypeError: node #" << node->id() << ":" << *node->op()
         << " uses node #" << input->id() << ":" << *input->op()
-        << " which doesn't have a compressed or int32-compatible "
+        << " which doesn't have a tagged or int32-compatible "
            "representation.";
     PrintDebugHelp(str, node);
     FATAL("%s", str.str().c_str());
@@ -897,7 +934,6 @@ class MachineRepresentationChecker {
             << " is untyped.";
         PrintDebugHelp(str, node);
         FATAL("%s", str.str().c_str());
-        break;
       }
 
       default:
@@ -969,35 +1005,6 @@ class MachineRepresentationChecker {
     }
   }
 
-  bool Intersect(MachineRepresentation lhs, MachineRepresentation rhs) {
-    return (GetRepresentationProperties(lhs) &
-            GetRepresentationProperties(rhs)) != 0;
-  }
-
-  enum RepresentationProperties { kIsPointer = 1, kIsTagged = 2 };
-
-  int GetRepresentationProperties(MachineRepresentation representation) {
-    switch (representation) {
-      case MachineRepresentation::kTagged:
-      case MachineRepresentation::kTaggedPointer:
-        return kIsPointer | kIsTagged;
-      case MachineRepresentation::kTaggedSigned:
-        return kIsTagged;
-      case MachineRepresentation::kWord32:
-        return MachineRepresentation::kWord32 ==
-                       MachineType::PointerRepresentation()
-                   ? kIsPointer
-                   : 0;
-      case MachineRepresentation::kWord64:
-        return MachineRepresentation::kWord64 ==
-                       MachineType::PointerRepresentation()
-                   ? kIsPointer
-                   : 0;
-      default:
-        return 0;
-    }
-  }
-
   bool IsCompatible(MachineRepresentation expected,
                     MachineRepresentation actual) {
     switch (expected) {
@@ -1005,19 +1012,27 @@ class MachineRepresentationChecker {
         return IsAnyTagged(actual);
       case MachineRepresentation::kCompressed:
         return IsAnyCompressed(actual);
+      case MachineRepresentation::kMapWord:
       case MachineRepresentation::kTaggedSigned:
       case MachineRepresentation::kTaggedPointer:
-      case MachineRepresentation::kCompressedSigned:
+        // TODO(turbofan): At the moment, the machine graph doesn't contain
+        // reliable information if a node is kTaggedSigned, kTaggedPointer or
+        // kTagged, and often this is context-dependent. We should at least
+        // check for obvious violations: kTaggedSigned where we expect
+        // kTaggedPointer and the other way around, but at the moment, this
+        // happens in dead code.
+        return IsAnyTagged(actual);
       case MachineRepresentation::kCompressedPointer:
+      case MachineRepresentation::kSandboxedPointer:
       case MachineRepresentation::kFloat32:
       case MachineRepresentation::kFloat64:
       case MachineRepresentation::kSimd128:
+      case MachineRepresentation::kSimd256:
       case MachineRepresentation::kBit:
       case MachineRepresentation::kWord8:
       case MachineRepresentation::kWord16:
       case MachineRepresentation::kWord64:
         return expected == actual;
-        break;
       case MachineRepresentation::kWord32:
         return (actual == MachineRepresentation::kBit ||
                 actual == MachineRepresentation::kWord8 ||

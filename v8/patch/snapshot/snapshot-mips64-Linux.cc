@@ -1,0 +1,1 @@
+#include "src/snapshot/snapshot-empty.cc"

@@ -1,7 +1,3 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_ARM64
-
 // Copyright 2018 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -138,6 +134,10 @@ VectorFormat ScalarFormatFromLaneSize(int laneSize) {
     default:
       UNREACHABLE();
   }
+}
+
+VectorFormat VectorFormatFillQ(int laneSize) {
+  return VectorFormatFillQ(ScalarFormatFromLaneSize(laneSize));
 }
 
 VectorFormat ScalarFormatFromFormat(VectorFormat vform) {
@@ -298,8 +298,5 @@ uint64_t MaxUintFromFormat(VectorFormat vform) {
 
 }  // namespace internal
 }  // namespace v8
-
-#endif  // V8_TARGET_ARCH_ARM64
-
 
 #endif  // V8_TARGET_ARCH_ARM64

@@ -5,9 +5,8 @@
 #ifndef V8_CODEGEN_ARM64_DECODER_ARM64_INL_H_
 #define V8_CODEGEN_ARM64_DECODER_ARM64_INL_H_
 
+#include "src/base/v8-fallthrough.h"
 #include "src/codegen/arm64/decoder-arm64.h"
-#include "src/common/globals.h"
-#include "src/utils/utils.h"
 
 namespace v8 {
 namespace internal {
@@ -538,7 +537,6 @@ void Decoder<V>::DecodeFP(Instruction* instr) {
                   (instr->Mask(0x20C60000) == 0x00840000) ||
                   (instr->Mask(0xA0C60000) == 0x80060000) ||
                   (instr->Mask(0xA0C60000) == 0x00860000) ||
-                  (instr->Mask(0xA0C60000) == 0x00460000) ||
                   (instr->Mask(0xA0CE0000) == 0x80860000) ||
                   (instr->Mask(0xA0CE0000) == 0x804E0000) ||
                   (instr->Mask(0xA0CE0000) == 0x000E0000) ||

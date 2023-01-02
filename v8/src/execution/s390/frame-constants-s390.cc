@@ -1,7 +1,3 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_S390
-
 // Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -21,7 +17,7 @@ Register JavaScriptFrame::fp_register() { return v8::internal::fp; }
 Register JavaScriptFrame::context_register() { return cp; }
 Register JavaScriptFrame::constant_pool_pointer_register() { UNREACHABLE(); }
 
-int InterpreterFrameConstants::RegisterStackSlotCount(int register_count) {
+int UnoptimizedFrameConstants::RegisterStackSlotCount(int register_count) {
   return register_count;
 }
 
@@ -32,8 +28,5 @@ int BuiltinContinuationFrameConstants::PaddingSlotCount(int register_count) {
 
 }  // namespace internal
 }  // namespace v8
-
-#endif  // V8_TARGET_ARCH_S390
-
 
 #endif  // V8_TARGET_ARCH_S390

@@ -5,11 +5,11 @@
 #ifndef V8_DEBUG_DEBUG_COVERAGE_H_
 #define V8_DEBUG_DEBUG_COVERAGE_H_
 
+#include <memory>
 #include <vector>
 
 #include "src/debug/debug-interface.h"
 #include "src/handles/handles.h"
-#include "src/objects/objects.h"
 
 namespace v8 {
 namespace internal {

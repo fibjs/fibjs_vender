@@ -6,399 +6,240 @@
 #define V8_HEAP_SLOT_SET_H_
 
 #include <map>
+#include <memory>
 #include <stack>
+#include <vector>
 
-#include "src/base/atomic-utils.h"
-#include "src/base/bits.h"
+#include "src/base/bit-field.h"
+#include "src/heap/base/basic-slot-set.h"
 #include "src/objects/compressed-slots.h"
 #include "src/objects/slots.h"
 #include "src/utils/allocation.h"
 #include "src/utils/utils.h"
+#include "testing/gtest/include/gtest/gtest_prod.h"  // nogncheck
 
 namespace v8 {
 namespace internal {
 
-enum SlotCallbackResult { KEEP_SLOT, REMOVE_SLOT };
+using ::heap::base::KEEP_SLOT;
+using ::heap::base::REMOVE_SLOT;
+using ::heap::base::SlotCallbackResult;
 
-// Data structure for maintaining a set of slots in a standard (non-large)
-// page. The base address of the page must be set with SetPageStart before any
-// operation.
-// The data structure assumes that the slots are pointer size aligned and
-// splits the valid slot offset range into kBuckets buckets.
-// Each bucket is a bitmap with a bit corresponding to a single slot offset.
-class SlotSet : public Malloced {
+// Possibly empty buckets (buckets that do not contain any slots) are discovered
+// by the scavenger. Buckets might become non-empty when promoting objects later
+// or in another thread, so all those buckets need to be revisited.
+// Track possibly empty buckets within a SlotSet in this data structure. The
+// class contains a word-sized bitmap, in case more bits are needed the bitmap
+// is replaced with a pointer to a malloc-allocated bitmap.
+class PossiblyEmptyBuckets {
  public:
-  enum EmptyBucketMode {
-    FREE_EMPTY_BUCKETS,     // An empty bucket will be deallocated immediately.
-    PREFREE_EMPTY_BUCKETS,  // An empty bucket will be unlinked from the slot
-                            // set, but deallocated on demand by a sweeper
-                            // thread.
-    KEEP_EMPTY_BUCKETS      // An empty bucket will be kept.
-  };
+  PossiblyEmptyBuckets() : bitmap_(kNullAddress) {}
+  PossiblyEmptyBuckets(PossiblyEmptyBuckets&& other) V8_NOEXCEPT
+      : bitmap_(other.bitmap_) {
+    other.bitmap_ = kNullAddress;
+  }
 
-  SlotSet() {
-    for (int i = 0; i < kBuckets; i++) {
-      StoreBucket(&buckets_[i], nullptr);
+  ~PossiblyEmptyBuckets() { Release(); }
+
+  PossiblyEmptyBuckets(const PossiblyEmptyBuckets&) = delete;
+  PossiblyEmptyBuckets& operator=(const PossiblyEmptyBuckets&) = delete;
+
+  void Initialize() {
+    bitmap_ = kNullAddress;
+    DCHECK(!IsAllocated());
+  }
+
+  void Release() {
+    if (IsAllocated()) {
+      AlignedFree(BitmapArray());
+    }
+    bitmap_ = kNullAddress;
+    DCHECK(!IsAllocated());
+  }
+
+  void Insert(size_t bucket_index, size_t buckets) {
+    if (IsAllocated()) {
+      InsertAllocated(bucket_index);
+    } else if (bucket_index + 1 < kBitsPerWord) {
+      bitmap_ |= static_cast<uintptr_t>(1) << (bucket_index + 1);
+    } else {
+      Allocate(buckets);
+      InsertAllocated(bucket_index);
     }
   }
 
-  ~SlotSet() {
-    for (int i = 0; i < kBuckets; i++) {
-      ReleaseBucket(i);
-    }
-    FreeToBeFreedBuckets();
-  }
-
-  void SetPageStart(Address page_start) { page_start_ = page_start; }
-
-  // The slot offset specifies a slot at address page_start_ + slot_offset.
-  // AccessMode defines whether there can be concurrent access on the buckets
-  // or not.
-  template <AccessMode access_mode = AccessMode::ATOMIC>
-  void Insert(int slot_offset) {
-    int bucket_index, cell_index, bit_index;
-    SlotToIndices(slot_offset, &bucket_index, &cell_index, &bit_index);
-    Bucket bucket = LoadBucket<access_mode>(&buckets_[bucket_index]);
-    if (bucket == nullptr) {
-      bucket = AllocateBucket();
-      if (!SwapInNewBucket<access_mode>(&buckets_[bucket_index], bucket)) {
-        DeleteArray<uint32_t>(bucket);
-        bucket = LoadBucket<access_mode>(&buckets_[bucket_index]);
-      }
-    }
-    // Check that monotonicity is preserved, i.e., once a bucket is set we do
-    // not free it concurrently.
-    DCHECK_NOT_NULL(bucket);
-    DCHECK_EQ(bucket, LoadBucket<access_mode>(&buckets_[bucket_index]));
-    uint32_t mask = 1u << bit_index;
-    if ((LoadCell<access_mode>(&bucket[cell_index]) & mask) == 0) {
-      SetCellBits<access_mode>(&bucket[cell_index], mask);
+  bool Contains(size_t bucket_index) {
+    if (IsAllocated()) {
+      size_t word_idx = bucket_index / kBitsPerWord;
+      uintptr_t* word = BitmapArray() + word_idx;
+      return *word &
+             (static_cast<uintptr_t>(1) << (bucket_index % kBitsPerWord));
+    } else if (bucket_index + 1 < kBitsPerWord) {
+      return bitmap_ & (static_cast<uintptr_t>(1) << (bucket_index + 1));
+    } else {
+      return false;
     }
   }
 
-  // The slot offset specifies a slot at address page_start_ + slot_offset.
-  // Returns true if the set contains the slot.
-  bool Contains(int slot_offset) {
-    int bucket_index, cell_index, bit_index;
-    SlotToIndices(slot_offset, &bucket_index, &cell_index, &bit_index);
-    Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-    if (bucket == nullptr) return false;
-    return (LoadCell(&bucket[cell_index]) & (1u << bit_index)) != 0;
-  }
-
-  // The slot offset specifies a slot at address page_start_ + slot_offset.
-  void Remove(int slot_offset) {
-    int bucket_index, cell_index, bit_index;
-    SlotToIndices(slot_offset, &bucket_index, &cell_index, &bit_index);
-    Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-    if (bucket != nullptr) {
-      uint32_t cell = LoadCell(&bucket[cell_index]);
-      uint32_t bit_mask = 1u << bit_index;
-      if (cell & bit_mask) {
-        ClearCellBits(&bucket[cell_index], bit_mask);
-      }
-    }
-  }
-
-  // The slot offsets specify a range of slots at addresses:
-  // [page_start_ + start_offset ... page_start_ + end_offset).
-  void RemoveRange(int start_offset, int end_offset, EmptyBucketMode mode) {
-    CHECK_LE(end_offset, 1 << kPageSizeBits);
-    DCHECK_LE(start_offset, end_offset);
-    int start_bucket, start_cell, start_bit;
-    SlotToIndices(start_offset, &start_bucket, &start_cell, &start_bit);
-    int end_bucket, end_cell, end_bit;
-    SlotToIndices(end_offset, &end_bucket, &end_cell, &end_bit);
-    uint32_t start_mask = (1u << start_bit) - 1;
-    uint32_t end_mask = ~((1u << end_bit) - 1);
-    Bucket bucket;
-    if (start_bucket == end_bucket && start_cell == end_cell) {
-      bucket = LoadBucket(&buckets_[start_bucket]);
-      if (bucket != nullptr) {
-        ClearCellBits(&bucket[start_cell], ~(start_mask | end_mask));
-      }
-      return;
-    }
-    int current_bucket = start_bucket;
-    int current_cell = start_cell;
-    bucket = LoadBucket(&buckets_[current_bucket]);
-    if (bucket != nullptr) {
-      ClearCellBits(&bucket[current_cell], ~start_mask);
-    }
-    current_cell++;
-    if (current_bucket < end_bucket) {
-      if (bucket != nullptr) {
-        ClearBucket(bucket, current_cell, kCellsPerBucket);
-      }
-      // The rest of the current bucket is cleared.
-      // Move on to the next bucket.
-      current_bucket++;
-      current_cell = 0;
-    }
-    DCHECK(current_bucket == end_bucket ||
-           (current_bucket < end_bucket && current_cell == 0));
-    while (current_bucket < end_bucket) {
-      if (mode == PREFREE_EMPTY_BUCKETS) {
-        PreFreeEmptyBucket(current_bucket);
-      } else if (mode == FREE_EMPTY_BUCKETS) {
-        ReleaseBucket(current_bucket);
-      } else {
-        DCHECK(mode == KEEP_EMPTY_BUCKETS);
-        bucket = LoadBucket(&buckets_[current_bucket]);
-        if (bucket != nullptr) {
-          ClearBucket(bucket, 0, kCellsPerBucket);
-        }
-      }
-      current_bucket++;
-    }
-    // All buckets between start_bucket and end_bucket are cleared.
-    bucket = LoadBucket(&buckets_[current_bucket]);
-    DCHECK(current_bucket == end_bucket && current_cell <= end_cell);
-    if (current_bucket == kBuckets || bucket == nullptr) {
-      return;
-    }
-    while (current_cell < end_cell) {
-      StoreCell(&bucket[current_cell], 0);
-      current_cell++;
-    }
-    // All cells between start_cell and end_cell are cleared.
-    DCHECK(current_bucket == end_bucket && current_cell == end_cell);
-    ClearCellBits(&bucket[end_cell], ~end_mask);
-  }
-
-  // The slot offset specifies a slot at address page_start_ + slot_offset.
-  bool Lookup(int slot_offset) {
-    int bucket_index, cell_index, bit_index;
-    SlotToIndices(slot_offset, &bucket_index, &cell_index, &bit_index);
-    Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-    if (bucket == nullptr) return false;
-    return (LoadCell(&bucket[cell_index]) & (1u << bit_index)) != 0;
-  }
-
-  // Iterate over all slots in the set and for each slot invoke the callback.
-  // If the callback returns REMOVE_SLOT then the slot is removed from the set.
-  // Returns the new number of slots.
-  //
-  // Iteration can be performed concurrently with other operations that use
-  // atomic access mode such as insertion and removal. However there is no
-  // guarantee about ordering and linearizability.
-  //
-  // Sample usage:
-  // Iterate([](MaybeObjectSlot slot) {
-  //    if (good(slot)) return KEEP_SLOT;
-  //    else return REMOVE_SLOT;
-  // });
-  template <typename Callback>
-  int Iterate(Callback callback, EmptyBucketMode mode) {
-    int new_count = 0;
-    for (int bucket_index = 0; bucket_index < kBuckets; bucket_index++) {
-      Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-      if (bucket != nullptr) {
-        int in_bucket_count = 0;
-        int cell_offset = bucket_index * kBitsPerBucket;
-        for (int i = 0; i < kCellsPerBucket; i++, cell_offset += kBitsPerCell) {
-          uint32_t cell = LoadCell(&bucket[i]);
-          if (cell) {
-            uint32_t old_cell = cell;
-            uint32_t mask = 0;
-            while (cell) {
-              int bit_offset = base::bits::CountTrailingZeros(cell);
-              uint32_t bit_mask = 1u << bit_offset;
-              uint32_t slot = (cell_offset + bit_offset) << kTaggedSizeLog2;
-              if (callback(MaybeObjectSlot(page_start_ + slot)) == KEEP_SLOT) {
-                ++in_bucket_count;
-              } else {
-                mask |= bit_mask;
-              }
-              cell ^= bit_mask;
-            }
-            uint32_t new_cell = old_cell & ~mask;
-            if (old_cell != new_cell) {
-              ClearCellBits(&bucket[i], mask);
-            }
-          }
-        }
-        if (mode == PREFREE_EMPTY_BUCKETS && in_bucket_count == 0) {
-          PreFreeEmptyBucket(bucket_index);
-        }
-        new_count += in_bucket_count;
-      }
-    }
-    return new_count;
-  }
-
-  int NumberOfPreFreedEmptyBuckets() {
-    base::MutexGuard guard(&to_be_freed_buckets_mutex_);
-    return static_cast<int>(to_be_freed_buckets_.size());
-  }
-
-  void PreFreeEmptyBuckets() {
-    for (int bucket_index = 0; bucket_index < kBuckets; bucket_index++) {
-      Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-      if (bucket != nullptr) {
-        if (IsEmptyBucket(bucket)) {
-          PreFreeEmptyBucket(bucket_index);
-        }
-      }
-    }
-  }
-
-  void FreeEmptyBuckets() {
-    for (int bucket_index = 0; bucket_index < kBuckets; bucket_index++) {
-      Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-      if (bucket != nullptr) {
-        if (IsEmptyBucket(bucket)) {
-          ReleaseBucket(bucket_index);
-        }
-      }
-    }
-  }
-
-  void FreeToBeFreedBuckets() {
-    base::MutexGuard guard(&to_be_freed_buckets_mutex_);
-    while (!to_be_freed_buckets_.empty()) {
-      Bucket top = to_be_freed_buckets_.top();
-      to_be_freed_buckets_.pop();
-      DeleteArray<uint32_t>(top);
-    }
-    DCHECK_EQ(0u, to_be_freed_buckets_.size());
-  }
+  bool IsEmpty() { return bitmap_ == kNullAddress; }
 
  private:
-  using Bucket = uint32_t*;
-  static const int kMaxSlots = (1 << kPageSizeBits) / kTaggedSize;
-  static const int kCellsPerBucket = 32;
-  static const int kCellsPerBucketLog2 = 5;
-  static const int kBitsPerCell = 32;
-  static const int kBitsPerCellLog2 = 5;
-  static const int kBitsPerBucket = kCellsPerBucket * kBitsPerCell;
-  static const int kBitsPerBucketLog2 = kCellsPerBucketLog2 + kBitsPerCellLog2;
-  static const int kBuckets = kMaxSlots / kCellsPerBucket / kBitsPerCell;
+  Address bitmap_;
+  static const Address kPointerTag = 1;
+  static const int kWordSize = sizeof(uintptr_t);
+  static const int kBitsPerWord = kWordSize * kBitsPerByte;
 
-  Bucket AllocateBucket() {
-    Bucket result = NewArray<uint32_t>(kCellsPerBucket);
-    for (int i = 0; i < kCellsPerBucket; i++) {
-      result[i] = 0;
+  bool IsAllocated() { return bitmap_ & kPointerTag; }
+
+  void Allocate(size_t buckets) {
+    DCHECK(!IsAllocated());
+    size_t words = WordsForBuckets(buckets);
+    uintptr_t* ptr = reinterpret_cast<uintptr_t*>(
+        AlignedAllocWithRetry(words * kWordSize, kSystemPointerSize));
+    ptr[0] = bitmap_ >> 1;
+
+    for (size_t word_idx = 1; word_idx < words; word_idx++) {
+      ptr[word_idx] = 0;
     }
-    return result;
+    bitmap_ = reinterpret_cast<Address>(ptr) + kPointerTag;
+    DCHECK(IsAllocated());
   }
 
-  void ClearBucket(Bucket bucket, int start_cell, int end_cell) {
-    DCHECK_GE(start_cell, 0);
-    DCHECK_LE(end_cell, kCellsPerBucket);
-    int current_cell = start_cell;
-    while (current_cell < kCellsPerBucket) {
-      StoreCell(&bucket[current_cell], 0);
-      current_cell++;
-    }
+  void InsertAllocated(size_t bucket_index) {
+    DCHECK(IsAllocated());
+    size_t word_idx = bucket_index / kBitsPerWord;
+    uintptr_t* word = BitmapArray() + word_idx;
+    *word |= static_cast<uintptr_t>(1) << (bucket_index % kBitsPerWord);
   }
 
-  void PreFreeEmptyBucket(int bucket_index) {
-    Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-    if (bucket != nullptr) {
-      base::MutexGuard guard(&to_be_freed_buckets_mutex_);
-      to_be_freed_buckets_.push(bucket);
-      StoreBucket(&buckets_[bucket_index], nullptr);
-    }
+  static size_t WordsForBuckets(size_t buckets) {
+    return (buckets + kBitsPerWord - 1) / kBitsPerWord;
   }
 
-  void ReleaseBucket(int bucket_index) {
-    Bucket bucket = LoadBucket(&buckets_[bucket_index]);
-    StoreBucket(&buckets_[bucket_index], nullptr);
-    DeleteArray<uint32_t>(bucket);
+  uintptr_t* BitmapArray() {
+    DCHECK(IsAllocated());
+    return reinterpret_cast<uintptr_t*>(bitmap_ & ~kPointerTag);
   }
 
-  template <AccessMode access_mode = AccessMode::ATOMIC>
-  Bucket LoadBucket(Bucket* bucket) {
-    if (access_mode == AccessMode::ATOMIC)
-      return base::AsAtomicPointer::Acquire_Load(bucket);
-    return *bucket;
-  }
-
-  template <AccessMode access_mode = AccessMode::ATOMIC>
-  void StoreBucket(Bucket* bucket, Bucket value) {
-    if (access_mode == AccessMode::ATOMIC) {
-      base::AsAtomicPointer::Release_Store(bucket, value);
-    } else {
-      *bucket = value;
-    }
-  }
-
-  bool IsEmptyBucket(Bucket bucket) {
-    for (int i = 0; i < kCellsPerBucket; i++) {
-      if (LoadCell(&bucket[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  template <AccessMode access_mode = AccessMode::ATOMIC>
-  bool SwapInNewBucket(Bucket* bucket, Bucket value) {
-    if (access_mode == AccessMode::ATOMIC) {
-      return base::AsAtomicPointer::Release_CompareAndSwap(bucket, nullptr,
-                                                           value) == nullptr;
-    } else {
-      DCHECK_NULL(*bucket);
-      *bucket = value;
-      return true;
-    }
-  }
-
-  template <AccessMode access_mode = AccessMode::ATOMIC>
-  uint32_t LoadCell(uint32_t* cell) {
-    if (access_mode == AccessMode::ATOMIC)
-      return base::AsAtomic32::Acquire_Load(cell);
-    return *cell;
-  }
-
-  void StoreCell(uint32_t* cell, uint32_t value) {
-    base::AsAtomic32::Release_Store(cell, value);
-  }
-
-  void ClearCellBits(uint32_t* cell, uint32_t mask) {
-    base::AsAtomic32::SetBits(cell, 0u, mask);
-  }
-
-  template <AccessMode access_mode = AccessMode::ATOMIC>
-  void SetCellBits(uint32_t* cell, uint32_t mask) {
-    if (access_mode == AccessMode::ATOMIC) {
-      base::AsAtomic32::SetBits(cell, mask, mask);
-    } else {
-      *cell = (*cell & ~mask) | mask;
-    }
-  }
-
-  // Converts the slot offset into bucket/cell/bit index.
-  void SlotToIndices(int slot_offset, int* bucket_index, int* cell_index,
-                     int* bit_index) {
-    DCHECK(IsAligned(slot_offset, kTaggedSize));
-    int slot = slot_offset >> kTaggedSizeLog2;
-    DCHECK(slot >= 0 && slot <= kMaxSlots);
-    *bucket_index = slot >> kBitsPerBucketLog2;
-    *cell_index = (slot >> kBitsPerCellLog2) & (kCellsPerBucket - 1);
-    *bit_index = slot & (kBitsPerCell - 1);
-  }
-
-  Bucket buckets_[kBuckets];
-  Address page_start_;
-  base::Mutex to_be_freed_buckets_mutex_;
-  std::stack<uint32_t*> to_be_freed_buckets_;
+  FRIEND_TEST(PossiblyEmptyBucketsTest, WordsForBuckets);
 };
 
-enum SlotType {
-  FULL_EMBEDDED_OBJECT_SLOT,
-  COMPRESSED_EMBEDDED_OBJECT_SLOT,
-  OBJECT_SLOT,
-  CODE_TARGET_SLOT,
-  CODE_ENTRY_SLOT,
-  CLEARED_SLOT
+static_assert(std::is_standard_layout<PossiblyEmptyBuckets>::value);
+static_assert(sizeof(PossiblyEmptyBuckets) == kSystemPointerSize);
+
+class SlotSet final : public ::heap::base::BasicSlotSet<kTaggedSize> {
+  using BasicSlotSet = ::heap::base::BasicSlotSet<kTaggedSize>;
+
+ public:
+  static const int kBucketsRegularPage =
+      (1 << kPageSizeBits) / kTaggedSize / kCellsPerBucket / kBitsPerCell;
+
+  static SlotSet* Allocate(size_t buckets) {
+    return static_cast<SlotSet*>(BasicSlotSet::Allocate(buckets));
+  }
+
+  // Similar to BasicSlotSet::Iterate() but Callback takes the parameter of type
+  // MaybeObjectSlot.
+  template <typename Callback>
+  size_t Iterate(Address chunk_start, size_t start_bucket, size_t end_bucket,
+                 Callback callback, EmptyBucketMode mode) {
+    return BasicSlotSet::Iterate(
+        chunk_start, start_bucket, end_bucket,
+        [&callback](Address slot) { return callback(MaybeObjectSlot(slot)); },
+        [this, mode](size_t bucket_index) {
+          if (mode == EmptyBucketMode::FREE_EMPTY_BUCKETS) {
+            ReleaseBucket(bucket_index);
+          }
+        });
+  }
+
+  // Similar to SlotSet::Iterate() but marks potentially empty buckets
+  // internally. Stores true in empty_bucket_found in case a potentially empty
+  // bucket was found. Assumes that the possibly empty-array was already cleared
+  // by CheckPossiblyEmptyBuckets.
+  template <typename Callback>
+  size_t IterateAndTrackEmptyBuckets(
+      Address chunk_start, size_t start_bucket, size_t end_bucket,
+      Callback callback, PossiblyEmptyBuckets* possibly_empty_buckets) {
+    return BasicSlotSet::Iterate(
+        chunk_start, start_bucket, end_bucket,
+        [&callback](Address slot) { return callback(MaybeObjectSlot(slot)); },
+        [possibly_empty_buckets, end_bucket](size_t bucket_index) {
+          possibly_empty_buckets->Insert(bucket_index, end_bucket);
+        });
+  }
+
+  // Check whether possibly empty buckets are really empty. Empty buckets are
+  // freed and the possibly empty state is cleared for all buckets.
+  bool CheckPossiblyEmptyBuckets(size_t buckets,
+                                 PossiblyEmptyBuckets* possibly_empty_buckets) {
+    bool empty = true;
+    for (size_t bucket_index = 0; bucket_index < buckets; bucket_index++) {
+      Bucket* bucket = LoadBucket<AccessMode::NON_ATOMIC>(bucket_index);
+      if (bucket) {
+        if (possibly_empty_buckets->Contains(bucket_index)) {
+          if (bucket->IsEmpty()) {
+            ReleaseBucket<AccessMode::NON_ATOMIC>(bucket_index);
+          } else {
+            empty = false;
+          }
+        } else {
+          empty = false;
+        }
+      } else {
+        // Unfortunately we cannot DCHECK here that the corresponding bit in
+        // possibly_empty_buckets is not set. After scavenge, the
+        // MergeOldToNewRememberedSets operation might remove a recorded bucket.
+      }
+    }
+
+    possibly_empty_buckets->Release();
+
+    return empty;
+  }
+};
+
+static_assert(std::is_standard_layout<SlotSet>::value);
+static_assert(std::is_standard_layout<SlotSet::Bucket>::value);
+
+enum class SlotType : uint8_t {
+  // Full pointer sized slot storing an object start address.
+  // RelocInfo::target_object/RelocInfo::set_target_object methods are used for
+  // accessing. Used when pointer is stored in the instruction stream.
+  kEmbeddedObjectFull,
+
+  // Tagged sized slot storing an object start address.
+  // RelocInfo::target_object/RelocInfo::set_target_object methods are used for
+  // accessing. Used when pointer is stored in the instruction stream.
+  kEmbeddedObjectCompressed,
+
+  // Full pointer sized slot storing instruction start of Code object.
+  // RelocInfo::target_address/RelocInfo::set_target_address methods are used
+  // for accessing. Used when pointer is stored in the instruction stream.
+  kCodeEntry,
+
+  // Raw full pointer sized slot. Slot is accessed directly. Used when pointer
+  // is stored in constant pool.
+  kConstPoolEmbeddedObjectFull,
+
+  // Raw tagged sized slot. Slot is accessed directly. Used when pointer is
+  // stored in constant pool.
+  kConstPoolEmbeddedObjectCompressed,
+
+  // Raw full pointer sized slot storing instruction start of Code object. Slot
+  // is accessed directly. Used when pointer is stored in constant pool.
+  kConstPoolCodeEntry,
+
+  // Slot got cleared but has not been removed from the slot set.
+  kCleared,
+
+  kLast = kCleared
 };
 
 // Data structure for maintaining a list of typed slots in a page.
-// Typed slots can only appear in Code and JSFunction objects, so
+// Typed slots can only appear in Code objects, so
 // the maximum possible offset is limited by the LargePage::kMaxCodePageSize.
-// The implementation is a chain of chunks, where each chunks is an array of
+// The implementation is a chain of chunks, where each chunk is an array of
 // encoded (slot type, slot offset) pairs.
 // There is no duplicate detection and we do not expect many duplicates because
 // typed slots contain V8 internal pointers that are not directly exposed to JS.
@@ -411,24 +252,22 @@ class V8_EXPORT_PRIVATE TypedSlots {
   void Merge(TypedSlots* other);
 
  protected:
-  using OffsetField = BitField<int, 0, 29>;
-  using TypeField = BitField<SlotType, 29, 3>;
+  using OffsetField = base::BitField<int, 0, 29>;
+  using TypeField = base::BitField<SlotType, 29, 3>;
   struct TypedSlot {
     uint32_t type_and_offset;
   };
   struct Chunk {
     Chunk* next;
-    TypedSlot* buffer;
-    int32_t capacity;
-    int32_t count;
+    std::vector<TypedSlot> buffer;
   };
-  static const int kInitialBufferSize = 100;
-  static const int kMaxBufferSize = 16 * KB;
-  static int NextCapacity(int capacity) {
-    return Min(kMaxBufferSize, capacity * 2);
+  static const size_t kInitialBufferSize = 100;
+  static const size_t kMaxBufferSize = 16 * KB;
+  static size_t NextCapacity(size_t capacity) {
+    return std::min({kMaxBufferSize, capacity * 2});
   }
   Chunk* EnsureChunk();
-  Chunk* NewChunk(Chunk* next, int capacity);
+  Chunk* NewChunk(Chunk* next, size_t capacity);
   Chunk* head_ = nullptr;
   Chunk* tail_ = nullptr;
 };
@@ -437,14 +276,11 @@ class V8_EXPORT_PRIVATE TypedSlots {
 // clearing of invalid slots.
 class V8_EXPORT_PRIVATE TypedSlotSet : public TypedSlots {
  public:
-  // The PREFREE_EMPTY_CHUNKS indicates that chunks detected as empty
-  // during the iteration are queued in to_be_freed_chunks_, which are
-  // then freed in FreeToBeFreedChunks.
-  enum IterationMode { PREFREE_EMPTY_CHUNKS, KEEP_EMPTY_CHUNKS };
+  using FreeRangesMap = std::map<uint32_t, uint32_t>;
+
+  enum IterationMode { FREE_EMPTY_CHUNKS, KEEP_EMPTY_CHUNKS };
 
   explicit TypedSlotSet(Address page_start) : page_start_(page_start) {}
-
-  ~TypedSlotSet() override;
 
   // Iterate over all slots in the set and for each slot invoke the callback.
   // If the callback returns REMOVE_SLOT then the slot is removed from the set.
@@ -458,30 +294,27 @@ class V8_EXPORT_PRIVATE TypedSlotSet : public TypedSlots {
   // This can run concurrently to ClearInvalidSlots().
   template <typename Callback>
   int Iterate(Callback callback, IterationMode mode) {
-    STATIC_ASSERT(CLEARED_SLOT < 8);
+    static_assert(static_cast<uint8_t>(SlotType::kLast) < 8);
     Chunk* chunk = head_;
     Chunk* previous = nullptr;
     int new_count = 0;
     while (chunk != nullptr) {
-      TypedSlot* buffer = chunk->buffer;
-      int count = chunk->count;
       bool empty = true;
-      for (int i = 0; i < count; i++) {
-        TypedSlot slot = LoadTypedSlot(buffer + i);
+      for (TypedSlot& slot : chunk->buffer) {
         SlotType type = TypeField::decode(slot.type_and_offset);
-        if (type != CLEARED_SLOT) {
+        if (type != SlotType::kCleared) {
           uint32_t offset = OffsetField::decode(slot.type_and_offset);
           Address addr = page_start_ + offset;
           if (callback(type, addr) == KEEP_SLOT) {
             new_count++;
             empty = false;
           } else {
-            ClearTypedSlot(buffer + i);
+            slot = ClearedTypedSlot();
           }
         }
       }
       Chunk* next = chunk->next;
-      if (mode == PREFREE_EMPTY_CHUNKS && empty) {
+      if (mode == FREE_EMPTY_CHUNKS && empty) {
         // We remove the chunk from the list but let it still point its next
         // chunk to allow concurrent iteration.
         if (previous) {
@@ -489,8 +322,8 @@ class V8_EXPORT_PRIVATE TypedSlotSet : public TypedSlots {
         } else {
           StoreHead(next);
         }
-        base::MutexGuard guard(&to_be_freed_chunks_mutex_);
-        to_be_freed_chunks_.push(std::unique_ptr<Chunk>(chunk));
+
+        delete chunk;
       } else {
         previous = chunk;
       }
@@ -501,12 +334,19 @@ class V8_EXPORT_PRIVATE TypedSlotSet : public TypedSlots {
 
   // Clears all slots that have the offset in the specified ranges.
   // This can run concurrently to Iterate().
-  void ClearInvalidSlots(const std::map<uint32_t, uint32_t>& invalid_ranges);
+  void ClearInvalidSlots(const FreeRangesMap& invalid_ranges);
+
+  // Asserts that there are no recorded slots in the specified ranges.
+  void AssertNoInvalidSlots(const FreeRangesMap& invalid_ranges);
 
   // Frees empty chunks accumulated by PREFREE_EMPTY_CHUNKS.
   void FreeToBeFreedChunks();
 
  private:
+  template <typename Callback>
+  void IterateSlotsInRanges(Callback callback,
+                            const FreeRangesMap& invalid_ranges);
+
   // Atomic operations used by Iterate and ClearInvalidSlots;
   Chunk* LoadNext(Chunk* chunk) {
     return base::AsAtomicPointer::Relaxed_Load(&chunk->next);
@@ -518,19 +358,12 @@ class V8_EXPORT_PRIVATE TypedSlotSet : public TypedSlots {
   void StoreHead(Chunk* chunk) {
     base::AsAtomicPointer::Relaxed_Store(&head_, chunk);
   }
-  TypedSlot LoadTypedSlot(TypedSlot* slot) {
-    return TypedSlot{base::AsAtomic32::Relaxed_Load(&slot->type_and_offset)};
-  }
-  void ClearTypedSlot(TypedSlot* slot) {
-    // Order is important here and should match that of LoadTypedSlot.
-    base::AsAtomic32::Relaxed_Store(
-        &slot->type_and_offset,
-        TypeField::encode(CLEARED_SLOT) | OffsetField::encode(0));
+  static TypedSlot ClearedTypedSlot() {
+    return TypedSlot{TypeField::encode(SlotType::kCleared) |
+                     OffsetField::encode(0)};
   }
 
   Address page_start_;
-  base::Mutex to_be_freed_chunks_mutex_;
-  std::stack<std::unique_ptr<Chunk>> to_be_freed_chunks_;
 };
 
 }  // namespace internal

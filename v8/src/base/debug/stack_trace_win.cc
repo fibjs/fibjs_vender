@@ -6,7 +6,7 @@
 // Copyright 2016 the V8 project authors. All rights reserved.
 
 #include "src/base/debug/stack_trace.h"
-#ifdef V8_OS_WIN
+
 // This file can't use "src/base/win32-headers.h" because it defines symbols
 // that lead to compilation errors. But `NOMINMAX` should be defined to disable
 // defining of the `min` and `max` MACROS.
@@ -50,11 +50,6 @@ long WINAPI StackDumpExceptionFilter(EXCEPTION_POINTERS* info) {  // NOLINT
 }
 
 bool InitializeSymbols() {
-  g_init_error = ERROR_SUCCESS;
-  return true;
-}
-
-inline bool InitializeSymbols1() {
   if (g_initialized_symbols) return g_init_error == ERROR_SUCCESS;
   g_initialized_symbols = true;
   // Defer symbol load until they're needed, use undecorated names, and get line
@@ -252,5 +247,3 @@ void StackTrace::OutputToStream(std::ostream* os) const {
 }  // namespace debug
 }  // namespace base
 }  // namespace v8
-
-#endif

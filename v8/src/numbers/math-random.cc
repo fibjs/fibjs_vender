@@ -16,9 +16,8 @@ namespace internal {
 
 void MathRandom::InitializeContext(Isolate* isolate,
                                    Handle<Context> native_context) {
-  Handle<FixedDoubleArray> cache =
-      Handle<FixedDoubleArray>::cast(isolate->factory()->NewFixedDoubleArray(
-          kCacheSize, AllocationType::kOld));
+  Handle<FixedDoubleArray> cache = Handle<FixedDoubleArray>::cast(
+      isolate->factory()->NewFixedDoubleArray(kCacheSize));
   for (int i = 0; i < kCacheSize; i++) cache->set(i, 0);
   native_context->set_math_random_cache(*cache);
   Handle<PodArray<State>> pod =
@@ -35,7 +34,7 @@ void MathRandom::ResetContext(Context native_context) {
 
 Address MathRandom::RefillCache(Isolate* isolate, Address raw_native_context) {
   Context native_context = Context::cast(Object(raw_native_context));
-  DisallowHeapAllocation no_gc;
+  DisallowGarbageCollection no_gc;
   PodArray<State> pod =
       PodArray<State>::cast(native_context.math_random_state());
   State state = pod.get(0);
@@ -45,8 +44,8 @@ Address MathRandom::RefillCache(Isolate* isolate, Address raw_native_context) {
   // sequence.
   if (state.s0 == 0 && state.s1 == 0) {
     uint64_t seed;
-    if (FLAG_random_seed != 0) {
-      seed = FLAG_random_seed;
+    if (v8_flags.random_seed != 0) {
+      seed = v8_flags.random_seed;
     } else {
       isolate->random_number_generator()->NextBytes(&seed, sizeof(seed));
     }

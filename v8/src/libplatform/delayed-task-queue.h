@@ -6,10 +6,10 @@
 #define V8_LIBPLATFORM_DELAYED_TASK_QUEUE_H_
 
 #include <map>
+#include <memory>
 #include <queue>
 
 #include "include/libplatform/libplatform-export.h"
-#include "src/base/macros.h"
 #include "src/base/platform/condition-variable.h"
 #include "src/base/platform/mutex.h"
 
@@ -28,6 +28,9 @@ class V8_PLATFORM_EXPORT DelayedTaskQueue {
 
   explicit DelayedTaskQueue(TimeFunction time_function);
   ~DelayedTaskQueue();
+
+  DelayedTaskQueue(const DelayedTaskQueue&) = delete;
+  DelayedTaskQueue& operator=(const DelayedTaskQueue&) = delete;
 
   double MonotonicallyIncreasingTime();
 
@@ -58,8 +61,6 @@ class V8_PLATFORM_EXPORT DelayedTaskQueue {
   std::multimap<double, std::unique_ptr<Task>> delayed_task_queue_;
   bool terminated_ = false;
   TimeFunction time_function_;
-
-  DISALLOW_COPY_AND_ASSIGN(DelayedTaskQueue);
 };
 
 }  // namespace platform

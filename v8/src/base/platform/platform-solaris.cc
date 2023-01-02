@@ -1,7 +1,3 @@
-#include <exlib/include/osconfig.h>
-
-#ifdef Solaris
-
 // Copyright 2012 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -69,8 +65,29 @@ void OS::SignalCodeMovingGC() {}
 
 void OS::AdjustSchedulingParams() {}
 
+std::vector<OS::MemoryRange> OS::GetFreeMemoryRangesWithin(
+    OS::Address boundary_start, OS::Address boundary_end, size_t minimum_size,
+    size_t alignment) {
+  return {};
+}
+
+// static
+Stack::StackSlot Stack::GetStackStart() {
+  pthread_attr_t attr;
+  int error;
+  pthread_attr_init(&attr);
+  error = pthread_attr_get_np(pthread_self(), &attr);
+  if (!error) {
+    void* base;
+    size_t size;
+    error = pthread_attr_getstack(&attr, &base, &size);
+    CHECK(!error);
+    pthread_attr_destroy(&attr);
+    return reinterpret_cast<uint8_t*>(base) + size;
+  }
+  pthread_attr_destroy(&attr);
+  return nullptr;
+}
+
 }  // namespace base
 }  // namespace v8
-
-
-#endif

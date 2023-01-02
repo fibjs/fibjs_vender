@@ -9,40 +9,34 @@
 #include "src/heap/heap-inl.h"  // crbug.com/v8/8499
 #include "src/heap/read-only-heap.h"
 #include "src/objects/slots.h"
-#include "src/snapshot/snapshot.h"
 
 namespace v8 {
 namespace internal {
 
-void ReadOnlyDeserializer::DeserializeInto(Isolate* isolate) {
-  Initialize(isolate);
+void ReadOnlyDeserializer::DeserializeIntoIsolate() {
+  HandleScope scope(isolate());
 
-  if (!allocator()->ReserveSpace()) {
-    V8::FatalProcessOutOfMemory(isolate, "ReadOnlyDeserializer");
-  }
-
-  ReadOnlyHeap* ro_heap = isolate->read_only_heap();
+  ReadOnlyHeap* ro_heap = isolate()->read_only_heap();
 
   // No active threads.
-  DCHECK_NULL(isolate->thread_manager()->FirstThreadStateInUse());
+  DCHECK_NULL(isolate()->thread_manager()->FirstThreadStateInUse());
   // No active handles.
-  DCHECK(isolate->handle_scope_implementer()->blocks()->empty());
+  DCHECK(isolate()->handle_scope_implementer()->blocks()->empty());
   // Read-only object cache is not yet populated.
   DCHECK(!ro_heap->read_only_object_cache_is_initialized());
-  // Partial snapshot cache is not yet populated.
-  DCHECK(isolate->partial_snapshot_cache()->empty());
+  // Startup object cache is not yet populated.
+  DCHECK(isolate()->startup_object_cache()->empty());
   // Builtins are not yet created.
-  DCHECK(!isolate->builtins()->is_initialized());
+  DCHECK(!isolate()->builtins()->is_initialized());
 
   {
-    DisallowHeapAllocation no_gc;
-    ReadOnlyRoots roots(isolate);
+    ReadOnlyRoots roots(isolate());
 
     roots.Iterate(this);
-    ro_heap->read_only_space()->RepairFreeListsAfterDeserialization();
+    ro_heap->read_only_space()->RepairFreeSpacesAfterDeserialization();
 
     // Deserialize the Read-only Object Cache.
-    for (size_t i = 0;; ++i) {
+    for (;;) {
       Object* object = ro_heap->ExtendReadOnlyObjectCache();
       // During deserialization, the visitor populates the read-only object
       // cache and eventually terminates the cache with undefined.
@@ -51,10 +45,14 @@ void ReadOnlyDeserializer::DeserializeInto(Isolate* isolate) {
       if (object->IsUndefined(roots)) break;
     }
     DeserializeDeferredObjects();
+#ifdef DEBUG
+    roots.VerifyNameForProtectors();
+#endif
+    roots.VerifyNameForProtectorsPages();
   }
 
-  if (FLAG_rehash_snapshot && can_rehash()) {
-    isolate_->heap()->InitializeHashSeed();
+  if (should_rehash()) {
+    isolate()->heap()->InitializeHashSeed();
     Rehash();
   }
 }

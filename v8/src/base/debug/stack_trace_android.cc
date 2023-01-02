@@ -6,7 +6,7 @@
 // Copyright 2016 the V8 project authors. All rights reserved.
 
 #include "src/base/debug/stack_trace.h"
-#ifdef V8_OS_ANDROID
+
 #include <signal.h>
 #include <stddef.h>
 #include <string.h>
@@ -89,5 +89,3 @@ void StackTrace::OutputToStream(std::ostream* os) const {
 }  // namespace debug
 }  // namespace base
 }  // namespace v8
-
-#endif

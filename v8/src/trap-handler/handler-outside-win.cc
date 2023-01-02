@@ -1,7 +1,3 @@
-#include <exlib/include/osconfig.h>
-
-#ifdef Windows
-
 // Copyright 2018 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -44,7 +40,7 @@ void* g_registered_handler = nullptr;
 
 bool RegisterDefaultTrapHandler() {
   constexpr ULONG first = TRUE;
-  CHECK_NULL(g_registered_handler);
+  TH_CHECK(g_registered_handler == nullptr);
   g_registered_handler = AddVectoredExceptionHandler(first, HandleWasmTrap);
 
   return nullptr != g_registered_handler;
@@ -62,6 +58,3 @@ void RemoveTrapHandler() {
 }  // namespace trap_handler
 }  // namespace internal
 }  // namespace v8
-
-
-#endif

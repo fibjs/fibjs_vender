@@ -2,8 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-
 #include "src/snapshot/snapshot-source-sink.h"
+
+#include <vector>
 
 #include "src/base/logging.h"
 #include "src/handles/handles-inl.h"
@@ -11,6 +12,11 @@
 
 namespace v8 {
 namespace internal {
+
+void SnapshotByteSink::PutN(int number_of_bytes, const byte v,
+                            const char* description) {
+  data_.insert(data_.end(), number_of_bytes, v);
+}
 
 void SnapshotByteSink::PutInt(uintptr_t integer, const char* description) {
   DCHECK_LT(integer, 1 << 30);
@@ -20,12 +26,11 @@ void SnapshotByteSink::PutInt(uintptr_t integer, const char* description) {
   if (integer > 0xFFFF) bytes = 3;
   if (integer > 0xFFFFFF) bytes = 4;
   integer |= (bytes - 1);
-  Put(static_cast<int>(integer & 0xFF), "IntPart1");
-  if (bytes > 1) Put(static_cast<int>((integer >> 8) & 0xFF), "IntPart2");
-  if (bytes > 2) Put(static_cast<int>((integer >> 16) & 0xFF), "IntPart3");
-  if (bytes > 3) Put(static_cast<int>((integer >> 24) & 0xFF), "IntPart4");
+  Put(static_cast<byte>(integer & 0xFF), "IntPart1");
+  if (bytes > 1) Put(static_cast<byte>((integer >> 8) & 0xFF), "IntPart2");
+  if (bytes > 2) Put(static_cast<byte>((integer >> 16) & 0xFF), "IntPart3");
+  if (bytes > 3) Put(static_cast<byte>((integer >> 24) & 0xFF), "IntPart4");
 }
-
 
 void SnapshotByteSink::PutRaw(const byte* data, int number_of_bytes,
                               const char* description) {

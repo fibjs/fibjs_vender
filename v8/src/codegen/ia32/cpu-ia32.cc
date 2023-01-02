@@ -1,14 +1,10 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_IA32
-
 // Copyright 2011 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // CPU specific code for ia32 independent of OS goes here.
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(GOOGLE3)
 #include "src/third_party/valgrind/valgrind.h"
 #endif
 
@@ -42,8 +38,5 @@ void CpuFeatures::FlushICache(void* start, size_t size) {
 
 }  // namespace internal
 }  // namespace v8
-
-#endif  // V8_TARGET_ARCH_IA32
-
 
 #endif  // V8_TARGET_ARCH_IA32

@@ -1,7 +1,3 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_ARM64
-
 // Copyright 2016 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -12,6 +8,9 @@
 namespace v8 {
 namespace internal {
 namespace compiler {
+
+// TODO(v8:10026): When using CFI, we need to generate unwinding info to tell
+// the unwinder that return addresses are signed.
 
 void UnwindingInfoWriter::BeginInstructionBlock(int pc_offset,
                                                 const InstructionBlock* block) {
@@ -51,7 +50,7 @@ void UnwindingInfoWriter::EndInstructionBlock(const InstructionBlock* block) {
       DCHECK_EQ(existing_state->saved_lr_, saved_lr_);
     } else {
       block_initial_states_[successor_index] =
-          new (zone_) BlockInitialState(saved_lr_);
+          zone_->New<BlockInitialState>(saved_lr_);
     }
   }
 }
@@ -107,6 +106,3 @@ void UnwindingInfoWriter::MarkPopLinkRegisterFromTopOfStack(int pc_offset) {
 }  // namespace compiler
 }  // namespace internal
 }  // namespace v8
-
-
-#endif  // V8_TARGET_ARCH_ARM64

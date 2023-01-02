@@ -6,9 +6,10 @@
 #define V8_COMPILER_STATE_VALUES_UTILS_H_
 
 #include <array>
-#include "src/common/globals.h"
+
 #include "src/compiler/common-operator.h"
 #include "src/compiler/js-graph.h"
+#include "src/zone/zone-hashmap.h"
 
 namespace v8 {
 namespace internal {
@@ -18,14 +19,14 @@ class BitVector;
 namespace compiler {
 
 class Graph;
+class BytecodeLivenessState;
 
 class V8_EXPORT_PRIVATE StateValuesCache {
  public:
   explicit StateValuesCache(JSGraph* js_graph);
 
   Node* GetNodeForValues(Node** values, size_t count,
-                         const BitVector* liveness = nullptr,
-                         int liveness_offset = 0);
+                         const BytecodeLivenessState* liveness = nullptr);
 
  private:
   static const size_t kMaxInputCount = 8;
@@ -55,15 +56,12 @@ class V8_EXPORT_PRIVATE StateValuesCache {
   // at {values_idx}, sparsely encoding according to {liveness}. {node_count} is
   // updated with the new number of inputs in {node_buffer}, and a bitmask of
   // the sparse encoding is returned.
-  SparseInputMask::BitMaskType FillBufferWithValues(WorkingBuffer* node_buffer,
-                                                    size_t* node_count,
-                                                    size_t* values_idx,
-                                                    Node** values, size_t count,
-                                                    const BitVector* liveness,
-                                                    int liveness_offset);
+  SparseInputMask::BitMaskType FillBufferWithValues(
+      WorkingBuffer* node_buffer, size_t* node_count, size_t* values_idx,
+      Node** values, size_t count, const BytecodeLivenessState* liveness);
 
   Node* BuildTree(size_t* values_idx, Node** values, size_t count,
-                  const BitVector* liveness, int liveness_offset, size_t level);
+                  const BytecodeLivenessState* liveness, size_t level);
 
   WorkingBuffer* GetWorkingSpace(size_t level);
   Node* GetEmptyStateValues();
@@ -91,10 +89,15 @@ class V8_EXPORT_PRIVATE StateValuesAccess {
 
   class V8_EXPORT_PRIVATE iterator {
    public:
-    // Bare minimum of operators needed for range iteration.
-    bool operator!=(iterator const& other);
+    bool operator!=(iterator const& other) const;
     iterator& operator++();
     TypedNode operator*();
+
+    Node* node();
+    bool done() const { return current_depth_ < 0; }
+
+    // Returns the number of empty nodes that were skipped over.
+    size_t AdvanceTillNotEmpty();
 
    private:
     friend class StateValuesAccess;
@@ -102,9 +105,7 @@ class V8_EXPORT_PRIVATE StateValuesAccess {
     iterator() : current_depth_(-1) {}
     explicit iterator(Node* node);
 
-    Node* node();
     MachineType type();
-    bool done() const;
     void Advance();
     void EnsureValid();
 
@@ -119,9 +120,20 @@ class V8_EXPORT_PRIVATE StateValuesAccess {
 
   explicit StateValuesAccess(Node* node) : node_(node) {}
 
-  size_t size();
-  iterator begin() { return iterator(node_); }
-  iterator end() { return iterator(); }
+  size_t size() const;
+  iterator begin() const { return iterator(node_); }
+  iterator begin_without_receiver() const {
+    return ++begin();  // Skip the receiver.
+  }
+  iterator begin_without_receiver_and_skip(int n_skips) {
+    iterator it = begin_without_receiver();
+    while (n_skips > 0 && !it.done()) {
+      ++it;
+      --n_skips;
+    }
+    return it;
+  }
+  iterator end() const { return iterator(); }
 
  private:
   Node* node_;

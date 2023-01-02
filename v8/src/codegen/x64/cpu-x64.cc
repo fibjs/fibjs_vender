@@ -1,14 +1,10 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_X64
-
 // Copyright 2012 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // CPU specific code for x64 independent of OS goes here.
 
-#if defined(__GNUC__) && !defined(__MINGW64__)
+#if defined(__GNUC__) && !defined(__MINGW64__) && !defined(GOOGLE3)
 #include "src/third_party/valgrind/valgrind.h"
 #endif
 
@@ -42,8 +38,5 @@ void CpuFeatures::FlushICache(void* start, size_t size) {
 
 }  // namespace internal
 }  // namespace v8
-
-#endif  // V8_TARGET_ARCH_X64
-
 
 #endif  // V8_TARGET_ARCH_X64

@@ -1,12 +1,8 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_PPC
-
 // Copyright 2014 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#if V8_TARGET_ARCH_PPC
+#if V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_PPC64
 
 #include "src/codegen/ppc/constants-ppc.h"
 
@@ -50,7 +46,4 @@ int Registers::Number(const char* name) {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_TARGET_ARCH_PPC
-
-
-#endif  // V8_TARGET_ARCH_PPC
+#endif  // V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_PPC64

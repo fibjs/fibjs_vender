@@ -1,7 +1,3 @@
-#include "src/init/v8.h"
-
-#if V8_TARGET_ARCH_S390
-
 // Copyright 2015 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -24,8 +20,5 @@ void CpuFeatures::FlushICache(void* buffer, size_t size) {
 
 }  // namespace internal
 }  // namespace v8
-
-#endif  // V8_TARGET_ARCH_S390
-
 
 #endif  // V8_TARGET_ARCH_S390

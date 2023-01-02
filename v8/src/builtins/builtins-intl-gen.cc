@@ -17,9 +17,6 @@
 namespace v8 {
 namespace internal {
 
-template <class T>
-using TNode = compiler::TNode<T>;
-
 class IntlBuiltinsAssembler : public CodeStubAssembler {
  public:
   explicit IntlBuiltinsAssembler(compiler::CodeAssemblerState* state)
@@ -30,15 +27,94 @@ class IntlBuiltinsAssembler : public CodeStubAssembler {
                         const char* method_name);
 
   TNode<JSArray> AllocateEmptyJSArray(TNode<Context> context);
+
+  TNode<IntPtrT> PointerToSeqStringData(TNode<String> seq_string) {
+    CSA_DCHECK(this,
+               IsSequentialStringInstanceType(LoadInstanceType(seq_string)));
+    static_assert(SeqOneByteString::kHeaderSize ==
+                  SeqTwoByteString::kHeaderSize);
+    return IntPtrAdd(
+        BitcastTaggedToWord(seq_string),
+        IntPtrConstant(SeqOneByteString::kHeaderSize - kHeapObjectTag));
+  }
+
+  TNode<Uint8T> GetChar(TNode<SeqOneByteString> seq_string, int index) {
+    int effective_offset =
+        SeqOneByteString::kHeaderSize - kHeapObjectTag + index;
+    return Load<Uint8T>(seq_string, IntPtrConstant(effective_offset));
+  }
+
+  // Jumps to {target} if the first two characters of {seq_string} equal
+  // {pattern} ignoring case.
+  void JumpIfStartsWithIgnoreCase(TNode<SeqOneByteString> seq_string,
+                                  const char* pattern, Label* target) {
+    int effective_offset = SeqOneByteString::kHeaderSize - kHeapObjectTag;
+    TNode<Uint16T> raw =
+        Load<Uint16T>(seq_string, IntPtrConstant(effective_offset));
+    DCHECK_EQ(strlen(pattern), 2);
+#if V8_TARGET_BIG_ENDIAN
+    int raw_pattern = (pattern[0] << 8) + pattern[1];
+#else
+    int raw_pattern = pattern[0] + (pattern[1] << 8);
+#endif
+    GotoIf(Word32Equal(Word32Or(raw, Int32Constant(0x2020)),
+                       Int32Constant(raw_pattern)),
+           target);
+  }
+
+  TNode<BoolT> IsNonAlpha(TNode<Uint8T> character) {
+    return Uint32GreaterThan(
+        Int32Sub(Word32Or(character, Int32Constant(0x20)), Int32Constant('a')),
+        Int32Constant('z' - 'a'));
+  }
+
+  enum class ToLowerCaseKind {
+    kToLowerCase,
+    kToLocaleLowerCase,
+  };
+  void ToLowerCaseImpl(TNode<String> string, TNode<Object> maybe_locales,
+                       TNode<Context> context, ToLowerCaseKind kind,
+                       std::function<void(TNode<Object>)> ReturnFct);
 };
 
 TF_BUILTIN(StringToLowerCaseIntl, IntlBuiltinsAssembler) {
-  TNode<String> const string = CAST(Parameter(Descriptor::kString));
+  const auto string = Parameter<String>(Descriptor::kString);
+  ToLowerCaseImpl(string, TNode<Object>() /*maybe_locales*/, TNode<Context>(),
+                  ToLowerCaseKind::kToLowerCase,
+                  [this](TNode<Object> ret) { Return(ret); });
+}
 
+TF_BUILTIN(StringPrototypeToLowerCaseIntl, IntlBuiltinsAssembler) {
+  auto maybe_string = Parameter<Object>(Descriptor::kReceiver);
+  auto context = Parameter<Context>(Descriptor::kContext);
+
+  TNode<String> string =
+      ToThisString(context, maybe_string, "String.prototype.toLowerCase");
+
+  Return(CallBuiltin(Builtin::kStringToLowerCaseIntl, context, string));
+}
+
+TF_BUILTIN(StringPrototypeToLocaleLowerCase, IntlBuiltinsAssembler) {
+  TNode<Int32T> argc =
+      UncheckedParameter<Int32T>(Descriptor::kJSActualArgumentsCount);
+  CodeStubArguments args(this, argc);
+  TNode<Object> maybe_string = args.GetReceiver();
+  TNode<Context> context = Parameter<Context>(Descriptor::kContext);
+  TNode<Object> maybe_locales = args.GetOptionalArgumentValue(0);
+  TNode<String> string =
+      ToThisString(context, maybe_string, "String.prototype.toLocaleLowerCase");
+  ToLowerCaseImpl(string, maybe_locales, context,
+                  ToLowerCaseKind::kToLocaleLowerCase,
+                  [&args](TNode<Object> ret) { args.PopAndReturn(ret); });
+}
+
+void IntlBuiltinsAssembler::ToLowerCaseImpl(
+    TNode<String> string, TNode<Object> maybe_locales, TNode<Context> context,
+    ToLowerCaseKind kind, std::function<void(TNode<Object>)> ReturnFct) {
   Label call_c(this), return_string(this), runtime(this, Label::kDeferred);
 
   // Early exit on empty strings.
-  TNode<Uint32T> const length = LoadStringLengthAsWord32(string);
+  const TNode<Uint32T> length = LoadStringLengthAsWord32(string);
   GotoIf(Word32Equal(length, Uint32Constant(0)), &return_string);
 
   // Unpack strings if possible, and bail to runtime unless we get a one-byte
@@ -47,102 +123,126 @@ TF_BUILTIN(StringToLowerCaseIntl, IntlBuiltinsAssembler) {
       state(), string, ToDirectStringAssembler::kDontUnpackSlicedStrings);
   to_direct.TryToDirect(&runtime);
 
-  TNode<Int32T> const instance_type = to_direct.instance_type();
-  CSA_ASSERT(this,
+  if (kind == ToLowerCaseKind::kToLocaleLowerCase) {
+    Label fast(this), check_locale(this);
+    // Check for fast locales.
+    GotoIf(IsUndefined(maybe_locales), &fast);
+    // Passing a smi here is equivalent to passing an empty list of locales.
+    GotoIf(TaggedIsSmi(maybe_locales), &fast);
+    GotoIfNot(IsString(CAST(maybe_locales)), &runtime);
+    GotoIfNot(IsSeqOneByteString(CAST(maybe_locales)), &runtime);
+    TNode<SeqOneByteString> locale = CAST(maybe_locales);
+    TNode<Uint32T> locale_length = LoadStringLengthAsWord32(locale);
+    GotoIf(Int32LessThan(locale_length, Int32Constant(2)), &runtime);
+    GotoIf(IsNonAlpha(GetChar(locale, 0)), &runtime);
+    GotoIf(IsNonAlpha(GetChar(locale, 1)), &runtime);
+    GotoIf(Word32Equal(locale_length, Int32Constant(2)), &check_locale);
+    GotoIf(Word32NotEqual(locale_length, Int32Constant(5)), &runtime);
+    GotoIf(Word32NotEqual(GetChar(locale, 2), Int32Constant('-')), &runtime);
+    GotoIf(IsNonAlpha(GetChar(locale, 3)), &runtime);
+    GotoIf(IsNonAlpha(GetChar(locale, 4)), &runtime);
+    Goto(&check_locale);
+
+    Bind(&check_locale);
+    JumpIfStartsWithIgnoreCase(locale, "az", &runtime);
+    JumpIfStartsWithIgnoreCase(locale, "el", &runtime);
+    JumpIfStartsWithIgnoreCase(locale, "lt", &runtime);
+    JumpIfStartsWithIgnoreCase(locale, "tr", &runtime);
+    Goto(&fast);
+
+    Bind(&fast);
+  }
+
+  const TNode<Int32T> instance_type = to_direct.instance_type();
+  CSA_DCHECK(this,
              Word32BinaryNot(IsIndirectStringInstanceType(instance_type)));
+
   GotoIfNot(IsOneByteStringInstanceType(instance_type), &runtime);
 
   // For short strings, do the conversion in CSA through the lookup table.
 
-  TNode<String> const dst = AllocateSeqOneByteString(length);
+  const TNode<String> dst = AllocateSeqOneByteString(length);
 
   const int kMaxShortStringLength = 24;  // Determined empirically.
   GotoIf(Uint32GreaterThan(length, Uint32Constant(kMaxShortStringLength)),
          &call_c);
 
   {
-    Node* const dst_ptr = PointerToSeqStringData(dst);
-    VARIABLE(var_cursor, MachineType::PointerRepresentation(),
-             IntPtrConstant(0));
+    const TNode<IntPtrT> dst_ptr = PointerToSeqStringData(dst);
+    TVARIABLE(IntPtrT, var_cursor, IntPtrConstant(0));
 
-    TNode<RawPtrT> const start_address = to_direct.PointerToData(&call_c);
-    TNode<IntPtrT> const end_address =
+    const TNode<IntPtrT> start_address =
+        ReinterpretCast<IntPtrT>(to_direct.PointerToData(&call_c));
+    const TNode<IntPtrT> end_address =
         Signed(IntPtrAdd(start_address, ChangeUint32ToWord(length)));
 
-    TNode<ExternalReference> const to_lower_table_addr =
+    const TNode<ExternalReference> to_lower_table_addr =
         ExternalConstant(ExternalReference::intl_to_latin1_lower_table());
 
-    VARIABLE(var_did_change, MachineRepresentation::kWord32, Int32Constant(0));
+    TVARIABLE(Word32T, var_did_change, Int32Constant(0));
 
     VariableList push_vars({&var_cursor, &var_did_change}, zone());
-    BuildFastLoop(
+    BuildFastLoop<IntPtrT>(
         push_vars, start_address, end_address,
-        [=, &var_cursor, &var_did_change](Node* current) {
+        [&](TNode<IntPtrT> current) {
           TNode<Uint8T> c = Load<Uint8T>(current);
           TNode<Uint8T> lower =
               Load<Uint8T>(to_lower_table_addr, ChangeInt32ToIntPtr(c));
           StoreNoWriteBarrier(MachineRepresentation::kWord8, dst_ptr,
                               var_cursor.value(), lower);
 
-          var_did_change.Bind(
-              Word32Or(Word32NotEqual(c, lower), var_did_change.value()));
+          var_did_change =
+              Word32Or(Word32NotEqual(c, lower), var_did_change.value());
 
           Increment(&var_cursor);
         },
-        kCharSize, INTPTR_PARAMETERS, IndexAdvanceMode::kPost);
+        kCharSize, IndexAdvanceMode::kPost);
 
     // Return the original string if it remained unchanged in order to preserve
     // e.g. internalization and private symbols (such as the preserved object
     // hash) on the source string.
     GotoIfNot(var_did_change.value(), &return_string);
 
-    Return(dst);
+    ReturnFct(dst);
   }
 
   // Call into C for case conversion. The signature is:
   // String ConvertOneByteToLower(String src, String dst);
   BIND(&call_c);
   {
-    TNode<String> const src = to_direct.string();
+    const TNode<String> src = to_direct.string();
 
-    TNode<ExternalReference> const function_addr =
+    const TNode<ExternalReference> function_addr =
         ExternalConstant(ExternalReference::intl_convert_one_byte_to_lower());
 
     MachineType type_tagged = MachineType::AnyTagged();
 
-    Node* const result = CallCFunction(function_addr, type_tagged,
-                                       std::make_pair(type_tagged, src),
-                                       std::make_pair(type_tagged, dst));
+    const TNode<String> result = CAST(CallCFunction(
+        function_addr, type_tagged, std::make_pair(type_tagged, src),
+        std::make_pair(type_tagged, dst)));
 
-    Return(result);
+    ReturnFct(result);
   }
 
   BIND(&return_string);
-  Return(string);
+  ReturnFct(string);
 
   BIND(&runtime);
-  {
-    TNode<Object> const result = CallRuntime(Runtime::kStringToLowerCaseIntl,
-                                             NoContextConstant(), string);
-    Return(result);
+  if (kind == ToLowerCaseKind::kToLocaleLowerCase) {
+    ReturnFct(CallRuntime(Runtime::kStringToLocaleLowerCase, context, string,
+                          maybe_locales));
+  } else {
+    DCHECK_EQ(kind, ToLowerCaseKind::kToLowerCase);
+    ReturnFct(CallRuntime(Runtime::kStringToLowerCaseIntl, NoContextConstant(),
+                          string));
   }
-}
-
-TF_BUILTIN(StringPrototypeToLowerCaseIntl, IntlBuiltinsAssembler) {
-  TNode<Object> maybe_string = CAST(Parameter(Descriptor::kReceiver));
-  TNode<Context> context = CAST(Parameter(Descriptor::kContext));
-
-  TNode<String> string =
-      ToThisString(context, maybe_string, "String.prototype.toLowerCase");
-
-  Return(CallBuiltin(Builtins::kStringToLowerCaseIntl, context, string));
 }
 
 void IntlBuiltinsAssembler::ListFormatCommon(TNode<Context> context,
                                              TNode<Int32T> argc,
                                              Runtime::FunctionId format_func_id,
                                              const char* method_name) {
-  CodeStubArguments args(this, ChangeInt32ToIntPtr(argc));
+  CodeStubArguments args(this, argc);
 
   // Label has_list(this);
   // 1. Let lf be this value.
@@ -151,32 +251,18 @@ void IntlBuiltinsAssembler::ListFormatCommon(TNode<Context> context,
 
   // 3. If lf does not have an [[InitializedListFormat]] internal slot, throw a
   // TypeError exception.
-  ThrowIfNotInstanceType(context, receiver, JS_INTL_LIST_FORMAT_TYPE,
-                         method_name);
+  ThrowIfNotInstanceType(context, receiver, JS_LIST_FORMAT_TYPE, method_name);
   TNode<JSListFormat> list_format = CAST(receiver);
 
-  // 4. If list is not provided or is undefined, then
   TNode<Object> list = args.GetOptionalArgumentValue(0);
-  Label has_list(this);
   {
-    GotoIfNot(IsUndefined(list), &has_list);
-    if (format_func_id == Runtime::kFormatList) {
-      // a. Return an empty String.
-      args.PopAndReturn(EmptyStringConstant());
-    } else {
-      DCHECK_EQ(format_func_id, Runtime::kFormatListToParts);
-      // a. Return an empty Array.
-      args.PopAndReturn(AllocateEmptyJSArray(context));
-    }
-  }
-  BIND(&has_list);
-  {
-    // 5. Let x be ? IterableToList(list).
-    TNode<Object> x =
-        CallBuiltin(Builtins::kIterableToListWithSymbolLookup, context, list);
+    // 4. Let stringList be ? StringListFromIterable(list).
+    TNode<Object> string_list =
+        CallBuiltin(Builtin::kStringListFromIterable, context, list);
 
-    // 6. Return ? FormatList(lf, x).
-    args.PopAndReturn(CallRuntime(format_func_id, context, list_format, x));
+    // 6. Return ? FormatList(lf, stringList).
+    args.PopAndReturn(
+        CallRuntime(format_func_id, context, list_format, string_list));
   }
 }
 
@@ -185,20 +271,20 @@ TNode<JSArray> IntlBuiltinsAssembler::AllocateEmptyJSArray(
   return CodeStubAssembler::AllocateJSArray(
       PACKED_ELEMENTS,
       LoadJSArrayElementsMap(PACKED_ELEMENTS, LoadNativeContext(context)),
-      SmiConstant(0), SmiConstant(0));
+      IntPtrConstant(0), SmiConstant(0));
 }
 
 TF_BUILTIN(ListFormatPrototypeFormat, IntlBuiltinsAssembler) {
   ListFormatCommon(
-      CAST(Parameter(Descriptor::kContext)),
-      UncheckedCast<Int32T>(Parameter(Descriptor::kJSActualArgumentsCount)),
+      Parameter<Context>(Descriptor::kContext),
+      UncheckedParameter<Int32T>(Descriptor::kJSActualArgumentsCount),
       Runtime::kFormatList, "Intl.ListFormat.prototype.format");
 }
 
 TF_BUILTIN(ListFormatPrototypeFormatToParts, IntlBuiltinsAssembler) {
   ListFormatCommon(
-      CAST(Parameter(Descriptor::kContext)),
-      UncheckedCast<Int32T>(Parameter(Descriptor::kJSActualArgumentsCount)),
+      Parameter<Context>(Descriptor::kContext),
+      UncheckedParameter<Int32T>(Descriptor::kJSActualArgumentsCount),
       Runtime::kFormatListToParts, "Intl.ListFormat.prototype.formatToParts");
 }
 

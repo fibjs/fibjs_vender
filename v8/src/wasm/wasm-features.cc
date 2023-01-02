@@ -11,23 +11,29 @@ namespace v8 {
 namespace internal {
 namespace wasm {
 
-
-void UnionFeaturesInto(WasmFeatures* dst, const WasmFeatures& src) {
-#define DO_UNION(feat, desc, val) dst->feat |= src.feat;
-  FOREACH_WASM_FEATURE(DO_UNION);
-#undef DO_UNION
-}
-
-WasmFeatures WasmFeaturesFromFlags() {
-#define FLAG_REF(feat, desc, val) FLAG_experimental_wasm_##feat,
-  return WasmFeatures(FOREACH_WASM_FEATURE(FLAG_REF){});
+// static
+WasmFeatures WasmFeatures::FromFlags() {
+  WasmFeatures features = WasmFeatures::None();
+#define FLAG_REF(feat, ...) \
+  if (v8_flags.experimental_wasm_##feat) features.Add(kFeature_##feat);
+  FOREACH_WASM_FEATURE_FLAG(FLAG_REF)
 #undef FLAG_REF
+#define NON_FLAG_REF(feat, ...) features.Add(kFeature_##feat);
+  FOREACH_WASM_NON_FLAG_FEATURE(NON_FLAG_REF)
+#undef NON_FLAG_REF
+  return features;
 }
 
-WasmFeatures WasmFeaturesFromIsolate(Isolate* isolate) {
-  WasmFeatures features = WasmFeaturesFromFlags();
-  features.threads |=
-      isolate->AreWasmThreadsEnabled(handle(isolate->context(), isolate));
+// static
+WasmFeatures WasmFeatures::FromIsolate(Isolate* isolate) {
+  return FromContext(isolate, handle(isolate->context(), isolate));
+}
+
+// static
+WasmFeatures WasmFeatures::FromContext(Isolate* isolate,
+                                       Handle<Context> context) {
+  WasmFeatures features = WasmFeatures::FromFlags();
+  // This space intentionally left blank for future Wasm origin trials.
   return features;
 }
 

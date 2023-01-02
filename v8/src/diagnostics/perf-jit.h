@@ -28,22 +28,25 @@
 #ifndef V8_DIAGNOSTICS_PERF_JIT_H_
 #define V8_DIAGNOSTICS_PERF_JIT_H_
 
+#include "include/v8config.h"
+
+// {LinuxPerfJitLogger} is only implemented on Linux.
+#if V8_OS_LINUX
+
 #include "src/logging/log.h"
 
 namespace v8 {
 namespace internal {
 
-#if V8_OS_LINUX
-
-// Linux perf tool logging support
-class PerfJitLogger : public CodeEventLogger {
+// Linux perf tool logging support.
+class LinuxPerfJitLogger : public CodeEventLogger {
  public:
-  explicit PerfJitLogger(Isolate* isolate);
-  ~PerfJitLogger() override;
+  explicit LinuxPerfJitLogger(Isolate* isolate);
+  ~LinuxPerfJitLogger() override;
 
   void CodeMoveEvent(AbstractCode from, AbstractCode to) override;
-  void CodeDisableOptEvent(AbstractCode code,
-                           SharedFunctionInfo shared) override {}
+  void CodeDisableOptEvent(Handle<AbstractCode> code,
+                           Handle<SharedFunctionInfo> shared) override {}
 
  private:
   void OpenJitDumpFile();
@@ -52,10 +55,13 @@ class PerfJitLogger : public CodeEventLogger {
   void CloseMarkerFile(void* marker_address);
 
   uint64_t GetTimestamp();
-  void LogRecordedBuffer(AbstractCode code, SharedFunctionInfo shared,
+  void LogRecordedBuffer(Handle<AbstractCode> code,
+                         MaybeHandle<SharedFunctionInfo> maybe_shared,
                          const char* name, int length) override;
+#if V8_ENABLE_WEBASSEMBLY
   void LogRecordedBuffer(const wasm::WasmCode* code, const char* name,
                          int length) override;
+#endif  // V8_ENABLE_WEBASSEMBLY
 
   // Extension added to V8 log file name to get the low-level log name.
   static const char kFilenameFormatString[];
@@ -70,15 +76,21 @@ class PerfJitLogger : public CodeEventLogger {
 
   void LogWriteBytes(const char* bytes, int size);
   void LogWriteHeader();
-  void LogWriteDebugInfo(Code code, SharedFunctionInfo shared);
+  void LogWriteDebugInfo(Handle<Code> code, Handle<SharedFunctionInfo> shared);
+#if V8_ENABLE_WEBASSEMBLY
   void LogWriteDebugInfo(const wasm::WasmCode* code);
+#endif  // V8_ENABLE_WEBASSEMBLY
   void LogWriteUnwindingInfo(Code code);
 
   static const uint32_t kElfMachIA32 = 3;
   static const uint32_t kElfMachX64 = 62;
   static const uint32_t kElfMachARM = 40;
-  static const uint32_t kElfMachMIPS = 10;
+  static const uint32_t kElfMachMIPS64 = 8;
+  static const uint32_t kElfMachLOONG64 = 258;
   static const uint32_t kElfMachARM64 = 183;
+  static const uint32_t kElfMachS390x = 22;
+  static const uint32_t kElfMachPPC64 = 21;
+  static const uint32_t kElfMachRISCV = 243;
 
   uint32_t GetElfMach() {
 #if V8_TARGET_ARCH_IA32
@@ -87,10 +99,18 @@ class PerfJitLogger : public CodeEventLogger {
     return kElfMachX64;
 #elif V8_TARGET_ARCH_ARM
     return kElfMachARM;
-#elif V8_TARGET_ARCH_MIPS
-    return kElfMachMIPS;
+#elif V8_TARGET_ARCH_MIPS64
+    return kElfMachMIPS64;
+#elif V8_TARGET_ARCH_LOONG64
+    return kElfMachLOONG64;
 #elif V8_TARGET_ARCH_ARM64
     return kElfMachARM64;
+#elif V8_TARGET_ARCH_S390X
+    return kElfMachS390x;
+#elif V8_TARGET_ARCH_PPC64
+    return kElfMachPPC64;
+#elif V8_TARGET_ARCH_RISCV32 || V8_TARGET_ARCH_RISCV64
+    return kElfMachRISCV;
 #else
     UNIMPLEMENTED();
     return 0;
@@ -112,37 +132,12 @@ class PerfJitLogger : public CodeEventLogger {
   static uint64_t reference_count_;
   static void* marker_address_;
   static uint64_t code_index_;
+  static int process_id_;
 };
 
-#else
-
-// PerfJitLogger is only implemented on Linux
-class PerfJitLogger : public CodeEventLogger {
- public:
-  explicit PerfJitLogger(Isolate* isolate) : CodeEventLogger(isolate) {}
-
-  void CodeMoveEvent(AbstractCode from, AbstractCode to) override {
-    UNIMPLEMENTED();
-  }
-
-  void CodeDisableOptEvent(AbstractCode code,
-                           SharedFunctionInfo shared) override {
-    UNIMPLEMENTED();
-  }
-
-  void LogRecordedBuffer(AbstractCode code, SharedFunctionInfo shared,
-                         const char* name, int length) override {
-    UNIMPLEMENTED();
-  }
-
-  void LogRecordedBuffer(const wasm::WasmCode* code, const char* name,
-                         int length) override {
-    UNIMPLEMENTED();
-  }
-};
-
-#endif  // V8_OS_LINUX
 }  // namespace internal
 }  // namespace v8
+
+#endif  // V8_OS_LINUX
 
 #endif  // V8_DIAGNOSTICS_PERF_JIT_H_

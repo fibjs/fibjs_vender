@@ -188,7 +188,7 @@ public:
             (int32_t)soname.length())
                                              .ToLocalChecked();
 
-        v8::ScriptOrigin origin(str_name);
+        v8::ScriptOrigin origin(m_isolate, str_name);
         v8::MaybeLocal<v8::Script> may_script = v8::Script::Compile(context, str_code, &origin);
 
         if (may_script.IsEmpty())

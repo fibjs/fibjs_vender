@@ -6,17 +6,18 @@
 #define V8_DEBUG_INTERFACE_TYPES_H_
 
 #include <cstdint>
-#include <string>
-#include <vector>
 
-#include "include/v8.h"
-#include "src/common/globals.h"
+#include "include/v8-function-callback.h"
+#include "include/v8-local-handle.h"
+#include "src/base/macros.h"
 
 namespace v8 {
 
+class String;
+
 namespace internal {
 class BuiltinArguments;
-}  // internal
+}  // namespace internal
 
 namespace debug {
 
@@ -42,41 +43,13 @@ class V8_EXPORT_PRIVATE Location {
   bool is_empty_;
 };
 
-/**
- * The result of disassembling a wasm function.
- * Consists of the disassembly string and an offset table mapping wasm byte
- * offsets to line and column in the disassembly.
- * The offset table entries are ordered by the byte_offset.
- * All numbers are 0-based.
- */
-struct WasmDisassemblyOffsetTableEntry {
-  WasmDisassemblyOffsetTableEntry(uint32_t byte_offset, int line, int column)
-      : byte_offset(byte_offset), line(line), column(column) {}
-
-  uint32_t byte_offset;
-  int line;
-  int column;
-};
-
-struct WasmDisassembly {
-  using OffsetTable = std::vector<WasmDisassemblyOffsetTableEntry>;
-  WasmDisassembly() = default;
-  WasmDisassembly(std::string disassembly, OffsetTable offset_table)
-      : disassembly(std::move(disassembly)),
-        offset_table(std::move(offset_table)) {}
-
-  std::string disassembly;
-  OffsetTable offset_table;
-};
-
 enum DebugAsyncActionType {
+  kDebugAwait,
   kDebugPromiseThen,
   kDebugPromiseCatch,
   kDebugPromiseFinally,
   kDebugWillHandle,
-  kDebugDidHandle,
-  kAsyncFunctionSuspended,
-  kAsyncFunctionFinished
+  kDebugDidHandle
 };
 
 enum BreakLocationType {
@@ -105,11 +78,6 @@ enum class CoverageMode {
   kBlockBinary,
 };
 
-enum class TypeProfileMode {
-  kNone,
-  kCollect,
-};
-
 class V8_EXPORT_PRIVATE BreakLocation : public Location {
  public:
   BreakLocation(int line_number, int column_number, BreakLocationType type)
@@ -129,7 +97,7 @@ class ConsoleCallArguments : private v8::FunctionCallbackInfo<v8::Value> {
   }
 
   explicit ConsoleCallArguments(const v8::FunctionCallbackInfo<v8::Value>&);
-  explicit ConsoleCallArguments(internal::BuiltinArguments&);
+  explicit ConsoleCallArguments(const internal::BuiltinArguments&);
 };
 
 class ConsoleContext {
