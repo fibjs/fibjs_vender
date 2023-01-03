@@ -24,10 +24,11 @@ if(${BUILD_TYPE} STREQUAL "debug")
 	add_definitions(
 		# enable of this option would make compilation error
 		# -DVERIFY_HEAP=1
-		-DOBJECT_PRINT=1
-		-DENABLE_DISASSEMBLER=1
-		-DV8_ENABLE_CHECKS=1
-		-DTRACE_MAPS=1
+		-DOBJECT_PRINT
+		-DENABLE_DISASSEMBLER
+		-DV8_ENABLE_CHECKS
+		-DTRACE_MAPS
+		-DV8_ENABLE_SWISS_NAME_DICTIONARY
 		# enable of this option would make jssdk::createRuntime suspend
 		# -DENABLE_SLOW_DCHECKS=1
 	)
