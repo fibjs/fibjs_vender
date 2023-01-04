@@ -239,8 +239,7 @@ function gen_list(arch, os) {
     filter_arch();
     filter_os();
 
-    if (os == "Android")
-    {
+    if (os == "Android") {
         skip_name("^src/base/debug/stack_trace_posix.cc");
         src_list.push(
             "src/base/debug/stack_trace_android.cc",
@@ -272,6 +271,7 @@ gen_list("amd64", "Linux");
 gen_list("i386", "Linux");
 gen_list("arm64", "Linux");
 gen_list("arm", "Linux");
+gen_list("mips64", "Linux");
 
 gen_list("amd64", "Darwin");
 gen_list("arm64", "Darwin");

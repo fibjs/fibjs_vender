@@ -30,7 +30,7 @@ if [ "$BUILD_TARGET" == "" ]; then
   fi
 
   if [[ "$TARGET_ARCH" == "mips64" ]]; then
-    sudo apt install g++-mips64-linux-gnuabi64 -y
+    sudo apt install g++-mips64el-linux-gnuabi64 -y
   fi
 fi
 

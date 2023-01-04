@@ -62,13 +62,7 @@ case $TARGET_ARCH in
     arm64) export QEMU_LD_PREFIX="/usr/aarch64-linux-gnu"
         exec;
         ;;
-    armv6) export QEMU_LD_PREFIX="/usr/arm-linux-gnueabi"
-        exec;
-        ;;
-    mips) export QEMU_LD_PREFIX="/usr/mips-linux-gnu"
-        exec;
-        ;;
-    mips64) export QEMU_LD_PREFIX="/usr/mips64-linux-gnuabi64"
+    mips64) export QEMU_LD_PREFIX="/usr/mips64el-linux-gnuabi64"
         exec;
         ;;
     i386|amd64)
