@@ -65,6 +65,9 @@ case $TARGET_ARCH in
     mips64) export QEMU_LD_PREFIX="/usr/mips64el-linux-gnuabi64"
         exec;
         ;;
+    ppc64) export QEMU_LD_PREFIX="/usr/powerpc64le-linux-gnu"
+        exec;
+        ;;
     i386|amd64)
         exec;
         ;;

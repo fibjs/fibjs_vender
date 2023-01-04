@@ -7,13 +7,9 @@ const arch_bits = {
     amd64: 64,
     arm: 32,
     arm64: 64,
-    mips: 32,
-    mipsel: 32,
     mips64: 64,
-    mips64el: 64,
-    ppc: 32,
+    riscv64: 64,
     ppc64: 64,
-    s390: 32,
     s390x: 64,
     loong64: 64
 }
@@ -24,7 +20,6 @@ const arch_opts = {
     arm: "V8_TARGET_ARCH_ARM",
     arm64: "V8_TARGET_ARCH_ARM64",
     mips64: "V8_TARGET_ARCH_MIPS64",
-    ppc: "V8_TARGET_ARCH_PPC",
     ppc64: "V8_TARGET_ARCH_PPC64",
     s390: "V8_TARGET_ARCH_S390",
     riscv64: "V8_TARGET_ARCH_RISCV64",
@@ -161,10 +156,10 @@ function gen_list(arch, os) {
             case "mips64":
                 src_list = src_list.concat(mips64_list);
                 break;
-            case "ppc":
+            case "ppc64":
                 src_list = src_list.concat(ppc_list);
                 break;
-            case "riscv":
+            case "riscv64":
                 src_list = src_list.concat(riscv_list);
                 break;
             case "s390":
@@ -272,6 +267,8 @@ gen_list("i386", "Linux");
 gen_list("arm64", "Linux");
 gen_list("arm", "Linux");
 gen_list("mips64", "Linux");
+gen_list("ppc64", "Linux");
+gen_list("riscv64", "Linux");
 
 gen_list("amd64", "Darwin");
 gen_list("arm64", "Darwin");
