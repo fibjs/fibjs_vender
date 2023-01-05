@@ -624,7 +624,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/register-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/riscv/code-generator-riscv.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/riscv/instruction-scheduler-riscv.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/backend/riscv/instruction-selector-riscv32.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/riscv/instruction-selector-riscv64.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/spill-placer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/basic-block-instrumentor.cc

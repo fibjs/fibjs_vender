@@ -7,7 +7,7 @@ usage()
 	echo "Options:"
 	echo "  release, debug: "
 	echo "      Specifies the build type."
-	echo "  i386, amd64, arm, arm64, mips64, ppc64:"
+	echo "  i386, amd64, arm, arm64, mips64, ppc64, riscv64:"
 	echo "      Specifies the architecture for code generation."
 	echo "  clean: "
 	echo "      Clean the build folder."
@@ -25,7 +25,7 @@ usage()
 for i in "$@"
 do
     case $i in
-        i386|amd64|arm|arm64|armv6|mips64|ppc64) BUILD_ARCH=$i
+        i386|amd64|arm|arm64|mips64|ppc64|riscv64) BUILD_ARCH=$i
             ;;
         alpine) BUILD_ALPINE="alpine"
             ;;

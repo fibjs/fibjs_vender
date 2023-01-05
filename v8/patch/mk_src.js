@@ -161,6 +161,7 @@ function gen_list(arch, os) {
                 break;
             case "riscv64":
                 src_list = src_list.concat(riscv_list);
+                skip_name("^src/compiler/backend/riscv/instruction-selector-riscv32.cc");
                 break;
             case "s390":
                 src_list = src_list.concat(s390_list);
