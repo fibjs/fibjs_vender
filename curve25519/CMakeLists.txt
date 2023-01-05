@@ -24,10 +24,6 @@ else()
     file(GLOB src_list "src/*.c")
 endif()
 
-if(${ARCH} STREQUAL "mips64" OR ${ARCH} STREQUAL "mips")
-    add_definitions(-DECP_CONFIG_BIG_ENDIAN=1)
-endif()
-
 include_directories("${PROJECT_SOURCE_DIR}/src")
 
 include(../build_tools/cmake/Library.cmake)
