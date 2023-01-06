@@ -1,9 +1,12 @@
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(
+	${CMAKE_CURRENT_LIST_DIR}/..
+	${CMAKE_CURRENT_LIST_DIR}/../include
+)
 
 if(${ARCH} MATCHES "64")
-	include_directories(${PROJECT_SOURCE_DIR}/gen/64)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/../gen/64)
 else()
-	include_directories(${PROJECT_SOURCE_DIR}/gen/32)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/../gen/32)
 endif()
 
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
