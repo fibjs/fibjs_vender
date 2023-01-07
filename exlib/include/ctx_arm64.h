@@ -84,6 +84,10 @@ public:
     intptr_t d29;
     intptr_t d30;
     intptr_t d31;
+
+#ifdef Darwin
+    intptr_t sprr;
+#endif
 };
 
 #pragma pack()

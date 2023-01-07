@@ -51,7 +51,18 @@ asm("    stp d26, d27, [x0,#464]");
 asm("    stp d28, d29, [x0,#480]");
 asm("    stp d30, d31, [x0,#496]");
 
+#ifdef Darwin
+asm("    mrs x8, s3_6_c15_c1_5");
+asm("    str x8, [x0,#512]");
+#endif
+
 asm("    mov x0, x1");
+
+#ifdef Darwin
+asm("    ldr x8, [x0,#512]");
+asm("    msr s3_6_c15_c1_5, x8");
+asm("    isb");
+#endif
 
 asm("    ldp x2, x3, [x0,#16]");
 asm("    ldp x4, x5, [x0,#32]");

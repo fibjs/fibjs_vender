@@ -43,6 +43,9 @@ void* create_fiber(size_t stacksize, fiber_func proc, void* param)
 #elif defined(arm64)
     ctx->lr = (intptr_t)proc;
     ctx->x0 = (intptr_t)param;
+#ifdef Darwin
+    ctx->sprr = *(volatile intptr_t*)0xfffffc118;
+#endif
 #elif defined(mips)
     ctx->ra = (intptr_t)proc;
     ctx->a0 = (intptr_t)param;
