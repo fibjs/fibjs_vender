@@ -270,6 +270,7 @@ gen_list("arm", "Linux");
 gen_list("mips64", "Linux");
 gen_list("ppc64", "Linux");
 gen_list("riscv64", "Linux");
+gen_list("loong64", "Linux");
 
 gen_list("amd64", "Darwin");
 gen_list("arm64", "Darwin");

@@ -117,3 +117,10 @@
 #endif
 #endif
 #endif
+
+#ifdef __loongarch64
+#ifndef loong64
+#define loong64
+#define ARCH_BITS 64
+#endif
+#endif

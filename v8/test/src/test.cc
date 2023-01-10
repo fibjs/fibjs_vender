@@ -34,6 +34,8 @@ void fiber_proc(void* p)
     fname = "ppc";
 #elif V8_TARGET_ARCH_S390
     fname = "s390";
+#elif V8_TARGET_ARCH_LOONG64
+    fname = "loong64";
 #endif
 
 #ifdef Windows

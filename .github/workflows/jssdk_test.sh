@@ -8,9 +8,9 @@ if [[ $TARGET_OS_NAME == 'Linux' ]]; then
     CUR=`pwd`
 
     if [[ "$BUILD_TARGET" == "" ]]; then
-        docker run --rm -v ${CUR}:/fibjs fibjs/linux-build-env:${TARGET_ARCH} /fibjs/.dist/bin/${DIST_DIR}/jssdk_test
+        docker run -t --rm -v ${CUR}:/fibjs fibjs/linux-build-env:${TARGET_ARCH} /fibjs/.dist/bin/${DIST_DIR}/jssdk_test
     else
-        docker run --rm -v ${CUR}:/fibjs fibjs/${BUILD_TARGET}-test-env:${TARGET_ARCH} /fibjs/.dist/bin/${DIST_DIR}/jssdk_test
+        docker run -t --rm -v ${CUR}:/fibjs fibjs/${BUILD_TARGET}-test-env:${TARGET_ARCH} /fibjs/.dist/bin/${DIST_DIR}/jssdk_test
     fi
 else # Darwin/Windows
     .dist/bin/$DIST_DIR/jssdk_test
