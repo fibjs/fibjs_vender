@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 if("${BUILD_OS}" STREQUAL "Windows")
+	add_definitions(-DUNICODE)
 	if("${ARCH}" STREQUAL "arm64")
         set(CMAKE_ASM_NASM_SOURCE_FILE_EXTENSIONS asm S)
         set(CMAKE_ASM_NASM_COMPILER ${PROJECT_SOURCE_DIR}/patch/bin/asm.exe)

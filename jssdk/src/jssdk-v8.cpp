@@ -181,25 +181,25 @@ public:
         v8::Local<v8::String> str_code = v8::String::NewFromUtf8(
             m_isolate, code.c_str(), v8::NewStringType::kNormal,
             (int32_t)code.length())
-                                             .ToLocalChecked();
+                                             .FromMaybe(v8::Local<v8::String>());
         v8::Local<v8::String> str_name = v8::String::NewFromUtf8(
             m_isolate,
             soname.c_str(), v8::NewStringType::kNormal,
             (int32_t)soname.length())
-                                             .ToLocalChecked();
+                                             .FromMaybe(v8::Local<v8::String>());
 
         v8::ScriptOrigin origin(m_isolate, str_name);
-        v8::MaybeLocal<v8::Script> may_script = v8::Script::Compile(context, str_code, &origin);
+        v8::Local<v8::Script> script = v8::Script::Compile(context, str_code, &origin).FromMaybe(v8::Local<v8::Script>());
 
-        if (may_script.IsEmpty())
+        if (script.IsEmpty())
             return Value();
 
-        v8::MaybeLocal<v8::Value> result = may_script.ToLocalChecked()->Run(context);
+        v8::Local<v8::Value> result = script->Run(context).FromMaybe(v8::Local<v8::Value>());
 
         if (result.IsEmpty())
             return Value();
 
-        return Value(this, result.ToLocalChecked());
+        return Value(this, result);
     }
 
     Value NewUndefined()
@@ -225,7 +225,7 @@ public:
 
     Value NewString(exlib::string s)
     {
-        return Value(this, v8::String::NewFromUtf8(m_isolate, s.c_str(), v8::NewStringType::kNormal, (int32_t)s.length()).ToLocalChecked());
+        return Value(this, v8::String::NewFromUtf8(m_isolate, s.c_str(), v8::NewStringType::kNormal, (int32_t)s.length()).FromMaybe(v8::Local<v8::String>()));
     }
 
     Object NewObject()
@@ -240,9 +240,7 @@ public:
 
     Function NewFunction(FunctionCallback callback)
     {
-        v8::MaybeLocal<v8::Function> may_v = v8::Function::New(_context(), (v8::FunctionCallback)callback);
-
-        return Function(this, may_v.IsEmpty() ? v8::Local<v8::Function>() : may_v.ToLocalChecked());
+        return Function(this, v8::Function::New(_context(), (v8::FunctionCallback)callback).FromMaybe(v8::Local<v8::Function>()));
     }
 
 public:
@@ -333,41 +331,42 @@ public:
                                                      v8::String::NewFromUtf8(m_isolate,
                                                          key.c_str(), v8::NewStringType::kNormal,
                                                          (int32_t)key.length())
-                                                         .ToLocalChecked())
+                                                         .FromMaybe(v8::Local<v8::String>()))
             .ToChecked();
     }
 
     Value ObjectGet(const Object& o, exlib::string key)
     {
-        return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->Get(_context(), v8::String::NewFromUtf8(m_isolate, key.c_str(), v8::NewStringType::kNormal, (int32_t)key.length()).ToLocalChecked()).ToLocalChecked());
+        v8::Local<v8::String> skey = v8::String::NewFromUtf8(m_isolate, key.c_str(), v8::NewStringType::kNormal, (int32_t)key.length()).FromMaybe(v8::Local<v8::String>());
+        return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->Get(_context(), skey).FromMaybe(v8::Local<v8::Value>()));
     }
 
     void ObjectSet(const Object& o, exlib::string key, const Value& v)
     {
         v8::Local<v8::Object>::Cast(o.m_v)->Set(
-            _context(),
-            v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::NewStringType::kNormal,
-                (int32_t)key.length())
-                .ToLocalChecked(),
-            v.m_v);
+                                              _context(),
+                                              v8::String::NewFromUtf8(m_isolate,
+                                                  key.c_str(), v8::NewStringType::kNormal,
+                                                  (int32_t)key.length())
+                                                  .FromMaybe(v8::Local<v8::String>()),
+                                              v.m_v)
+            .Check();
     }
 
     void ObjectRemove(const Object& o, exlib::string key)
     {
         v8::Local<v8::Object>::Cast(o.m_v)->Delete(
-            _context(),
-            v8::String::NewFromUtf8(m_isolate,
-                key.c_str(), v8::NewStringType::kNormal,
-                (int32_t)key.length())
-                .ToLocalChecked());
+                                              _context(),
+                                              v8::String::NewFromUtf8(m_isolate,
+                                                  key.c_str(), v8::NewStringType::kNormal,
+                                                  (int32_t)key.length())
+                                                  .FromMaybe(v8::Local<v8::String>()))
+            .Check();
     }
 
     Array ObjectKeys(const Object& o)
     {
-        v8::MaybeLocal<v8::Array> may_v = v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames(_context());
-
-        return Array(this, may_v.IsEmpty() ? v8::Local<v8::Array>() : may_v.ToLocalChecked());
+        return Array(this, v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames(_context()).FromMaybe(v8::Local<v8::Array>()));
     }
 
     bool ObjectHasPrivate(const Object& o, exlib::string key)
@@ -376,7 +375,7 @@ public:
             v8::String::NewFromUtf8(m_isolate,
                 key.c_str(), v8::NewStringType::kNormal,
                 (int32_t)key.length())
-                .ToLocalChecked());
+                .FromMaybe(v8::Local<v8::String>()));
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
         return v8::Local<v8::Object>::Cast(o.m_v)->HasPrivate(context, pkey).FromJust();
@@ -388,16 +387,11 @@ public:
             v8::String::NewFromUtf8(m_isolate,
                 key.c_str(), v8::NewStringType::kNormal,
                 (int32_t)key.length())
-                .ToLocalChecked());
+                .FromMaybe(v8::Local<v8::String>()));
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
 
-        v8::MaybeLocal<v8::Value> result = v8::Local<v8::Object>::Cast(o.m_v)->GetPrivate(context, pkey);
-
-        if (result.IsEmpty())
-            return Value();
-
-        return Value(this, result.ToLocalChecked());
+        return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->GetPrivate(context, pkey).FromMaybe(v8::Local<v8::Value>()));
     }
 
     void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v)
@@ -406,7 +400,7 @@ public:
             v8::String::NewFromUtf8(m_isolate,
                 key.c_str(), v8::NewStringType::kNormal,
                 (int32_t)key.length())
-                .ToLocalChecked());
+                .FromMaybe(v8::Local<v8::String>()));
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
         v8::Local<v8::Object>::Cast(o.m_v)->SetPrivate(context, pkey, v.m_v);
@@ -418,7 +412,7 @@ public:
             v8::String::NewFromUtf8(m_isolate,
                 key.c_str(), v8::NewStringType::kNormal,
                 (int32_t)key.length())
-                .ToLocalChecked());
+                .FromMaybe(v8::Local<v8::String>()));
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
         v8::Local<v8::Object>::Cast(o.m_v)->DeletePrivate(context, pkey);
@@ -432,19 +426,19 @@ public:
 
     Value ArrayGet(const Array& a, int32_t idx)
     {
-        return Value(this, v8::Local<v8::Array>::Cast(a.m_v)->Get(_context(), idx).ToLocalChecked());
+        return Value(this, v8::Local<v8::Array>::Cast(a.m_v)->Get(_context(), idx).FromMaybe(v8::Local<v8::Value>()));
     }
 
     void ArraySet(const Array& a, int32_t idx, const Value& v)
     {
-        v8::Local<v8::Array>::Cast(a.m_v)->Set(_context(), idx, v.m_v);
+        v8::Local<v8::Array>::Cast(a.m_v)->Set(_context(), idx, v.m_v).Check();
     }
 
     void ArrayRemove(const Array& a, int32_t idx)
     {
         v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
             m_context);
-        v8::Local<v8::Array>::Cast(a.m_v)->Delete(context, idx);
+        v8::Local<v8::Array>::Cast(a.m_v)->Delete(context, idx).Check();
     }
 
 public:
@@ -466,13 +460,7 @@ public:
         else
             recv = obj.m_v;
 
-        v8::MaybeLocal<v8::Value> result = v8::Local<v8::Function>::Cast(f.m_v)->Call(context,
-            recv, argn, _args.data());
-
-        if (result.IsEmpty())
-            return Value();
-
-        return Value(this, result.ToLocalChecked());
+        return Value(this, v8::Local<v8::Function>::Cast(f.m_v)->Call(context, recv, argn, _args.data()).FromMaybe(v8::Local<v8::Value>()));
     }
 
 private:
