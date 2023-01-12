@@ -70,7 +70,7 @@ if [[ "$RUNNER_OS" == "Linux" ]]; then
         elif [[ "$BUILD_TARGET" == "alpine" ]]; then
             export DIST_DIR="Alpine_${TARGET_ARCH}_$BUILD_TYPE"
         else
-            export DIST_DIR="Linux_${BUILD_TARGET}_${TARGET_ARCH}_$BUILD_TYPE"
+            export DIST_DIR="Linux_${TARGET_ARCH}_$BUILD_TYPE"
         fi
     else
         export DIST_FILE="vender-linux-${DIST_ARCH}-$BUILD_TYPE.zip"
