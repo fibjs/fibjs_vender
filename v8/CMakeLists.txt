@@ -15,6 +15,10 @@ endif()
 
 include(cmake/options.cmake)
 
-include(cmake/v8-${ARCH}-${BUILD_OS}.cmake)
+if("${BUILD_OS}" STREQUAL "Alpine")
+	include(cmake/v8-${ARCH}-Linux.cmake)
+else()
+	include(cmake/v8-${ARCH}-${BUILD_OS}.cmake)
+endif()
 
 include(../build_tools/cmake/Library.cmake)
