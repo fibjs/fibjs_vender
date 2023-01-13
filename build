@@ -33,7 +33,7 @@ do
             ;;
         clean) CLEAN_BUILD="true"
             ;;
-        ci) CI="ci"
+        ci) export CI="ci"
             ;;
         -j*) BUILD_JOBS="${i#-j}"
             ;;
