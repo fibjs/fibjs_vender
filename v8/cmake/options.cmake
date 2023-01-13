@@ -34,8 +34,6 @@ if(${BUILD_TYPE} STREQUAL "debug")
 	if(MSVC)
 		set(flags "${flags} -W0")
 	else()
-		add_definitions(
-			-DENABLE_SLOW_DCHECKS=1
-		)
+		set(flags "${flags} -w")
 	endif()
 endif()
