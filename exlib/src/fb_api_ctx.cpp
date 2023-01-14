@@ -4,7 +4,9 @@
  *      Author: lion
  */
 
-#include "fb_api.h"
+#ifndef _WIN32
+
+#include "fb_api_internal.h"
 
 #ifdef CTX_USE_CONTEXT
 #include <string.h>
@@ -51,4 +53,5 @@ void delete_fiber(void* fiber)
     free(fiber);
 }
 }
+#endif
 #endif

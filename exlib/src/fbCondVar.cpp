@@ -26,18 +26,20 @@ bool CondVar::wait(Locker& mtxExternal, int32_t ms)
 
     m_mtxUnblockLock.lock();
     if (0 != (nSignalsWasLeft = m_nWaitersToUnblock)) {
-        if (!result)
+        if (!result) {
             if (0 != m_nWaitersBlocked)
                 m_nWaitersBlocked--;
             else
                 m_nWaitersGone++;
+        }
 
-        if (0 == --m_nWaitersToUnblock)
+        if (0 == --m_nWaitersToUnblock) {
             if (0 != m_nWaitersBlocked) {
                 m_semBlockLock.post();
                 nSignalsWasLeft = 0;
             } else if (0 != (nWaitersWasGone = m_nWaitersGone))
                 m_nWaitersGone = 0;
+        }
     } else if (INT_MAX / 2 == ++m_nWaitersGone) {
         m_semBlockLock.wait();
         m_nWaitersBlocked -= m_nWaitersGone;

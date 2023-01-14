@@ -6,7 +6,7 @@
 
 #include "fb_api.h"
 
-#ifdef Windows
+#ifdef _WIN32
 #include <string.h>
 #include <stdio.h>
 
