@@ -16,6 +16,11 @@ namespace exlib {
 
 #define FB_STK_ALIGN 256
 
+#define _COMM_PAGE_START_ADDRESS (0x0000000FFFFFC000ULL)
+#define _COMM_PAGE_APRR_SUPPORT (_COMM_PAGE_START_ADDRESS + 0x10C)
+#define _COMM_PAGE_APPR_WRITE_ENABLE (_COMM_PAGE_START_ADDRESS + 0x110)
+#define _COMM_PAGE_APRR_WRITE_DISABLE (_COMM_PAGE_START_ADDRESS + 0x118)
+
 extern "C" void fb_switch(void* from, void* to);
 
 void* convert_fiber(void* param)
@@ -46,7 +51,7 @@ void* create_fiber(size_t stacksize, fiber_func proc, void* param)
     ctx->lr = (intptr_t)proc;
     ctx->x0 = (intptr_t)param;
 #ifdef Darwin
-    ctx->sprr = *(volatile intptr_t*)0xfffffc118;
+    ctx->sprr = *(volatile intptr_t*)_COMM_PAGE_APRR_WRITE_DISABLE;
 #endif
 #elif defined(mips)
     ctx->ra = (intptr_t)proc;
