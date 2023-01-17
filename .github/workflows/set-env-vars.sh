@@ -81,7 +81,7 @@ fi
 if [[ "$RUNNER_OS" == "macOS" ]]; then
     export TARGET_OS_NAME="Darwin";
 
-    if [[ "$BUILD_TARGET" != "iphone" ]]; then
+    if [[ "$BUILD_TARGET" == "iphone" ]]; then
         export DIST_FILE="vender-${BUILD_TARGET}-${DIST_ARCH}-$BUILD_TYPE.zip"
         export DIST_DIR="iPhone_${TARGET_ARCH}_$BUILD_TYPE"
     else
