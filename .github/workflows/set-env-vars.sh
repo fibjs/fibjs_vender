@@ -80,8 +80,14 @@ fi
 
 if [[ "$RUNNER_OS" == "macOS" ]]; then
     export TARGET_OS_NAME="Darwin";
-    export DIST_FILE="vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip"
-    export DIST_DIR="Darwin_${TARGET_ARCH}_$BUILD_TYPE"
+
+    if [[ "$BUILD_TARGET" != "iphone" ]]; then
+        export DIST_FILE="vender-${BUILD_TARGET}-${DIST_ARCH}-$BUILD_TYPE.zip"
+        export DIST_DIR="iPhone_${TARGET_ARCH}_$BUILD_TYPE"
+    else
+        export DIST_FILE="vender-darwin-${DIST_ARCH}-$BUILD_TYPE.zip"
+        export DIST_DIR="Darwin_${TARGET_ARCH}_$BUILD_TYPE"
+    fi
 fi
 
 if [[ "$RUNNER_OS" == "Windows" ]]; then
