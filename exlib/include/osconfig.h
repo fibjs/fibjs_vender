@@ -44,9 +44,14 @@
 #endif
 #endif
 
-#if defined(macosx) || (defined(__APPLE__) && defined(__MACH__))
+#ifdef __APPLE__
 #ifndef Darwin
 #define Darwin
+#endif
+#if __is_target_os(ios)
+#ifndef iPhone
+#define iPhone
+#endif
 #endif
 #endif
 
