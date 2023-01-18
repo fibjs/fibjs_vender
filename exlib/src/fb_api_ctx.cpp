@@ -21,16 +21,13 @@ extern "C" void fb_switch(void* from, void* to);
 
 void* convert_fiber(void* param)
 {
-    ucontext_t* ctx = (ucontext_t*)malloc(sizeof(ucontext_t));
-    getcontext(ctx);
-    return ctx;
+    return malloc(sizeof(ucontext_t));
 }
 
 void* create_fiber(size_t stacksize, fiber_func proc, void* param)
 {
     stacksize = (stacksize + FB_STK_ALIGN - 1) & ~(FB_STK_ALIGN - 1);
     ucontext_t* ctx = (ucontext_t*)malloc(stacksize);
-    void** stack = (void**)ctx + stacksize / sizeof(void*) - 6;
 
     getcontext(ctx);
     ctx->uc_stack.ss_sp = (char*)ctx + sizeof(ucontext_t);
