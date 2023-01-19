@@ -24,13 +24,27 @@
 #include "src/objects/call-site-info.h"
 #include "src/objects/elements-kind.h"
 #include "src/objects/free-space.h"
+#include "src/objects/intl-objects.h"
 #include "src/objects/js-atomics-synchronization.h"
+#include "src/objects/js-break-iterator.h"
+#include "src/objects/js-collator.h"
+#include "src/objects/js-date-time-format.h"
+#include "src/objects/js-display-names.h"
+#include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-list-format.h"
+#include "src/objects/js-locale.h"
+#include "src/objects/js-number-format.h"
 #include "src/objects/js-objects.h"
+#include "src/objects/js-plural-rules.h"
 #include "src/objects/js-promise.h"
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
+#include "src/objects/js-relative-time-format.h"
+#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segmenter.h"
+#include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
@@ -250,6 +264,20 @@
 #include "torque-generated/src/objects/turbofan-types-tq-csa.h"
 #include "torque-generated/test/torque/test-torque-tq-csa.h"
 #include "torque-generated/third_party/v8/builtins/array-sort-tq-csa.h"
+#include "torque-generated/src/objects/intl-objects-tq-csa.h"
+#include "torque-generated/src/objects/js-break-iterator-tq-csa.h"
+#include "torque-generated/src/objects/js-collator-tq-csa.h"
+#include "torque-generated/src/objects/js-date-time-format-tq-csa.h"
+#include "torque-generated/src/objects/js-display-names-tq-csa.h"
+#include "torque-generated/src/objects/js-duration-format-tq-csa.h"
+#include "torque-generated/src/objects/js-list-format-tq-csa.h"
+#include "torque-generated/src/objects/js-locale-tq-csa.h"
+#include "torque-generated/src/objects/js-number-format-tq-csa.h"
+#include "torque-generated/src/objects/js-plural-rules-tq-csa.h"
+#include "torque-generated/src/objects/js-relative-time-format-tq-csa.h"
+#include "torque-generated/src/objects/js-segment-iterator-tq-csa.h"
+#include "torque-generated/src/objects/js-segmenter-tq-csa.h"
+#include "torque-generated/src/objects/js-segments-tq-csa.h"
 #include "torque-generated/src/builtins/wasm-tq-csa.h"
 #include "torque-generated/src/debug/debug-wasm-objects-tq-csa.h"
 #include "torque-generated/src/wasm/wasm-objects-tq-csa.h"
@@ -5338,6 +5366,382 @@ return LoadSortStateNumberOfUndefined_0(state_, p_o);}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=102&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSortStateNumberOfUndefined(TNode<SortState> p_o, TNode<Smi> p_v) {
 return StoreSortStateNumberOfUndefined_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorLocale(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorLocale(TNode<JSV8BreakIterator> p_o, TNode<String> p_v) {
+return StoreJSV8BreakIteratorLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorBreakIterator(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorBreakIterator_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorBreakIterator(TNode<JSV8BreakIterator> p_o, TNode<Foreign> p_v) {
+return StoreJSV8BreakIteratorBreakIterator_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorUnicodeString(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorUnicodeString_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorUnicodeString(TNode<JSV8BreakIterator> p_o, TNode<Foreign> p_v) {
+return StoreJSV8BreakIteratorUnicodeString_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorBoundAdoptText(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorBoundAdoptText_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorBoundAdoptText(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v) {
+return StoreJSV8BreakIteratorBoundAdoptText_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorBoundFirst(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorBoundFirst_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorBoundFirst(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v) {
+return StoreJSV8BreakIteratorBoundFirst_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorBoundNext(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorBoundNext_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorBoundNext(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v) {
+return StoreJSV8BreakIteratorBoundNext_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorBoundCurrent(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorBoundCurrent_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorBoundCurrent(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v) {
+return StoreJSV8BreakIteratorBoundCurrent_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSV8BreakIteratorBoundBreakType(TNode<JSV8BreakIterator> p_o) {
+return LoadJSV8BreakIteratorBoundBreakType_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSV8BreakIteratorBoundBreakType(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v) {
+return StoreJSV8BreakIteratorBoundBreakType_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSCollatorIcuCollator(TNode<JSCollator> p_o) {
+return LoadJSCollatorIcuCollator_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSCollatorIcuCollator(TNode<JSCollator> p_o, TNode<Foreign> p_v) {
+return StoreJSCollatorIcuCollator_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSCollatorBoundCompare(TNode<JSCollator> p_o) {
+return LoadJSCollatorBoundCompare_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSCollatorBoundCompare(TNode<JSCollator> p_o, TNode<HeapObject> p_v) {
+return StoreJSCollatorBoundCompare_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSCollatorLocale(TNode<JSCollator> p_o) {
+return LoadJSCollatorLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSCollatorLocale(TNode<JSCollator> p_o, TNode<String> p_v) {
+return StoreJSCollatorLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=24&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSDateTimeFormatLocale(TNode<JSDateTimeFormat> p_o) {
+return LoadJSDateTimeFormatLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=24&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDateTimeFormatLocale(TNode<JSDateTimeFormat> p_o, TNode<String> p_v) {
+return StoreJSDateTimeFormatLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=25&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSDateTimeFormatIcuLocale(TNode<JSDateTimeFormat> p_o) {
+return LoadJSDateTimeFormatIcuLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=25&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDateTimeFormatIcuLocale(TNode<JSDateTimeFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSDateTimeFormatIcuLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=26&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSDateTimeFormatIcuSimpleDateFormat(TNode<JSDateTimeFormat> p_o) {
+return LoadJSDateTimeFormatIcuSimpleDateFormat_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=26&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDateTimeFormatIcuSimpleDateFormat(TNode<JSDateTimeFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSDateTimeFormatIcuSimpleDateFormat_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=27&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSDateTimeFormatIcuDateIntervalFormat(TNode<JSDateTimeFormat> p_o) {
+return LoadJSDateTimeFormatIcuDateIntervalFormat_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=27&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDateTimeFormatIcuDateIntervalFormat(TNode<JSDateTimeFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSDateTimeFormatIcuDateIntervalFormat_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=28&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSDateTimeFormatBoundFormat(TNode<JSDateTimeFormat> p_o) {
+return LoadJSDateTimeFormatBoundFormat_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=28&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDateTimeFormatBoundFormat(TNode<JSDateTimeFormat> p_o, TNode<HeapObject> p_v) {
+return StoreJSDateTimeFormatBoundFormat_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=29&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSDateTimeFormatFlags(TNode<JSDateTimeFormat> p_o) {
+return LoadJSDateTimeFormatFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=29&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDateTimeFormatFlags(TNode<JSDateTimeFormat> p_o, TNode<Smi> p_v) {
+return StoreJSDateTimeFormatFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSDisplayNamesInternal(TNode<JSDisplayNames> p_o) {
+return LoadJSDisplayNamesInternal_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDisplayNamesInternal(TNode<JSDisplayNames> p_o, TNode<Foreign> p_v) {
+return StoreJSDisplayNamesInternal_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=20&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSDisplayNamesFlags(TNode<JSDisplayNames> p_o) {
+return LoadJSDisplayNamesFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=20&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDisplayNamesFlags(TNode<JSDisplayNames> p_o, TNode<Smi> p_v) {
+return StoreJSDisplayNamesFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSDurationFormatStyleFlags(TNode<JSDurationFormat> p_o) {
+return LoadJSDurationFormatStyleFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDurationFormatStyleFlags(TNode<JSDurationFormat> p_o, TNode<Smi> p_v) {
+return StoreJSDurationFormatStyleFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSDurationFormatDisplayFlags(TNode<JSDurationFormat> p_o) {
+return LoadJSDurationFormatDisplayFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDurationFormatDisplayFlags(TNode<JSDurationFormat> p_o, TNode<Smi> p_v) {
+return StoreJSDurationFormatDisplayFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSDurationFormatIcuLocale(TNode<JSDurationFormat> p_o) {
+return LoadJSDurationFormatIcuLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDurationFormatIcuLocale(TNode<JSDurationFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSDurationFormatIcuLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSDurationFormatIcuNumberFormatter(TNode<JSDurationFormat> p_o) {
+return LoadJSDurationFormatIcuNumberFormatter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDurationFormatIcuNumberFormatter(TNode<JSDurationFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSDurationFormatIcuNumberFormatter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=15&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSListFormatLocale(TNode<JSListFormat> p_o) {
+return LoadJSListFormatLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=15&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSListFormatLocale(TNode<JSListFormat> p_o, TNode<String> p_v) {
+return StoreJSListFormatLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=16&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSListFormatIcuFormatter(TNode<JSListFormat> p_o) {
+return LoadJSListFormatIcuFormatter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=16&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSListFormatIcuFormatter(TNode<JSListFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSListFormatIcuFormatter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=17&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSListFormatFlags(TNode<JSListFormat> p_o) {
+return LoadJSListFormatFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=17&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSListFormatFlags(TNode<JSListFormat> p_o, TNode<Smi> p_v) {
+return StoreJSListFormatFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSLocaleIcuLocale(TNode<JSLocale> p_o) {
+return LoadJSLocaleIcuLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSLocaleIcuLocale(TNode<JSLocale> p_o, TNode<Foreign> p_v) {
+return StoreJSLocaleIcuLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=8&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSNumberFormatLocale(TNode<JSNumberFormat> p_o) {
+return LoadJSNumberFormatLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=8&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSNumberFormatLocale(TNode<JSNumberFormat> p_o, TNode<String> p_v) {
+return StoreJSNumberFormatLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=9&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSNumberFormatIcuNumberFormatter(TNode<JSNumberFormat> p_o) {
+return LoadJSNumberFormatIcuNumberFormatter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=9&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSNumberFormatIcuNumberFormatter(TNode<JSNumberFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSNumberFormatIcuNumberFormatter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSNumberFormatBoundFormat(TNode<JSNumberFormat> p_o) {
+return LoadJSNumberFormatBoundFormat_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSNumberFormatBoundFormat(TNode<JSNumberFormat> p_o, TNode<HeapObject> p_v) {
+return StoreJSNumberFormatBoundFormat_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=13&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSPluralRulesLocale(TNode<JSPluralRules> p_o) {
+return LoadJSPluralRulesLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=13&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSPluralRulesLocale(TNode<JSPluralRules> p_o, TNode<String> p_v) {
+return StoreJSPluralRulesLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=14&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSPluralRulesFlags(TNode<JSPluralRules> p_o) {
+return LoadJSPluralRulesFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=14&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSPluralRulesFlags(TNode<JSPluralRules> p_o, TNode<Smi> p_v) {
+return StoreJSPluralRulesFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=15&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSPluralRulesIcuPluralRules(TNode<JSPluralRules> p_o) {
+return LoadJSPluralRulesIcuPluralRules_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=15&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSPluralRulesIcuPluralRules(TNode<JSPluralRules> p_o, TNode<Foreign> p_v) {
+return StoreJSPluralRulesIcuPluralRules_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=16&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSPluralRulesIcuNumberFormatter(TNode<JSPluralRules> p_o) {
+return LoadJSPluralRulesIcuNumberFormatter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=16&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSPluralRulesIcuNumberFormatter(TNode<JSPluralRules> p_o, TNode<Foreign> p_v) {
+return StoreJSPluralRulesIcuNumberFormatter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSRelativeTimeFormatLocale(TNode<JSRelativeTimeFormat> p_o) {
+return LoadJSRelativeTimeFormatLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSRelativeTimeFormatLocale(TNode<JSRelativeTimeFormat> p_o, TNode<String> p_v) {
+return StoreJSRelativeTimeFormatLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSRelativeTimeFormatNumberingSystem(TNode<JSRelativeTimeFormat> p_o) {
+return LoadJSRelativeTimeFormatNumberingSystem_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSRelativeTimeFormatNumberingSystem(TNode<JSRelativeTimeFormat> p_o, TNode<String> p_v) {
+return StoreJSRelativeTimeFormatNumberingSystem_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSRelativeTimeFormatIcuFormatter(TNode<JSRelativeTimeFormat> p_o) {
+return LoadJSRelativeTimeFormatIcuFormatter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSRelativeTimeFormatIcuFormatter(TNode<JSRelativeTimeFormat> p_o, TNode<Foreign> p_v) {
+return StoreJSRelativeTimeFormatIcuFormatter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=17&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSRelativeTimeFormatFlags(TNode<JSRelativeTimeFormat> p_o) {
+return LoadJSRelativeTimeFormatFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=17&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSRelativeTimeFormatFlags(TNode<JSRelativeTimeFormat> p_o, TNode<Smi> p_v) {
+return StoreJSRelativeTimeFormatFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=12&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmentIteratorIcuBreakIterator(TNode<JSSegmentIterator> p_o) {
+return LoadJSSegmentIteratorIcuBreakIterator_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=12&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmentIteratorIcuBreakIterator(TNode<JSSegmentIterator> p_o, TNode<Foreign> p_v) {
+return StoreJSSegmentIteratorIcuBreakIterator_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=13&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmentIteratorUnicodeString(TNode<JSSegmentIterator> p_o) {
+return LoadJSSegmentIteratorUnicodeString_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=13&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmentIteratorUnicodeString(TNode<JSSegmentIterator> p_o, TNode<Foreign> p_v) {
+return StoreJSSegmentIteratorUnicodeString_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=14&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmentIteratorFlags(TNode<JSSegmentIterator> p_o) {
+return LoadJSSegmentIteratorFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=14&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmentIteratorFlags(TNode<JSSegmentIterator> p_o, TNode<Smi> p_v) {
+return StoreJSSegmentIteratorFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=14&c=3
+TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmenterLocale(TNode<JSSegmenter> p_o) {
+return LoadJSSegmenterLocale_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=14&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmenterLocale(TNode<JSSegmenter> p_o, TNode<String> p_v) {
+return StoreJSSegmenterLocale_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=15&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmenterIcuBreakIterator(TNode<JSSegmenter> p_o) {
+return LoadJSSegmenterIcuBreakIterator_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=15&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmenterIcuBreakIterator(TNode<JSSegmenter> p_o, TNode<Foreign> p_v) {
+return StoreJSSegmenterIcuBreakIterator_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=16&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmenterFlags(TNode<JSSegmenter> p_o) {
+return LoadJSSegmenterFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=16&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmenterFlags(TNode<JSSegmenter> p_o, TNode<Smi> p_v) {
+return StoreJSSegmenterFlags_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmentsIcuBreakIterator(TNode<JSSegments> p_o) {
+return LoadJSSegmentsIcuBreakIterator_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmentsIcuBreakIterator(TNode<JSSegments> p_o, TNode<Foreign> p_v) {
+return StoreJSSegmentsIcuBreakIterator_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
+TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmentsUnicodeString(TNode<JSSegments> p_o) {
+return LoadJSSegmentsUnicodeString_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmentsUnicodeString(TNode<JSSegments> p_o, TNode<Foreign> p_v) {
+return StoreJSSegmentsUnicodeString_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadJSSegmentsFlags(TNode<JSSegments> p_o) {
+return LoadJSSegmentsFlags_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmentsFlags(TNode<JSSegments> p_o, TNode<Smi> p_v) {
+return StoreJSSegmentsFlags_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
 TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadWasmApiFunctionRefIsolateRoot(TNode<WasmApiFunctionRef> p_o) {

@@ -553,6 +553,84 @@ namespace internal {
   using ABit = base::BitField<bool, 19, 1, uint32_t>; \
   using CBit = base::BitField<bool, 20, 1, uint32_t>; \
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=9&c=1
+#define DEFINE_TORQUE_GENERATED_JS_DATE_TIME_FORMAT_FLAGS() \
+  using HourCycleBits = base::BitField<JSDateTimeFormat::HourCycle, 0, 3, uint32_t>; \
+  using DateStyleBits = base::BitField<JSDateTimeFormat::DateTimeStyle, 3, 3, uint32_t>; \
+  using TimeStyleBits = base::BitField<JSDateTimeFormat::DateTimeStyle, 6, 3, uint32_t>; \
+  using AltCalendarBit = base::BitField<bool, 9, 1, uint32_t>; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=12&c=1
+#define DEFINE_TORQUE_GENERATED_JS_DISPLAY_NAMES_FLAGS() \
+  using StyleBits = base::BitField<JSDisplayNames::Style, 0, 2, uint32_t>; \
+  using FallbackBit = base::BitField<JSDisplayNames::Fallback, 2, 1, uint32_t>; \
+  using LanguageDisplayBit = base::BitField<JSDisplayNames::LanguageDisplay, 3, 1, uint32_t>; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=12&c=1
+#define DEFINE_TORQUE_GENERATED_JS_DURATION_FORMAT_STYLE_FLAGS() \
+  using StyleBits = base::BitField<JSDurationFormat::Style, 0, 2, uint32_t>; \
+  using YearsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 2, 2, uint32_t>; \
+  using MonthsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 4, 2, uint32_t>; \
+  using WeeksStyleBits = base::BitField<JSDurationFormat::FieldStyle, 6, 2, uint32_t>; \
+  using DaysStyleBits = base::BitField<JSDurationFormat::FieldStyle, 8, 2, uint32_t>; \
+  using HoursStyleBits = base::BitField<JSDurationFormat::FieldStyle, 10, 3, uint32_t>; \
+  using MinutesStyleBits = base::BitField<JSDurationFormat::FieldStyle, 13, 3, uint32_t>; \
+  using SecondsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 16, 3, uint32_t>; \
+  using MillisecondsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 19, 2, uint32_t>; \
+  using MicrosecondsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 21, 2, uint32_t>; \
+  using NanosecondsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 23, 2, uint32_t>; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=25&c=1
+#define DEFINE_TORQUE_GENERATED_JS_DURATION_FORMAT_DISPLAY_FLAGS() \
+  using YearsDisplayBit = base::BitField<JSDurationFormat::Display, 0, 1, uint32_t>; \
+  using MonthsDisplayBit = base::BitField<JSDurationFormat::Display, 1, 1, uint32_t>; \
+  using WeeksDisplayBit = base::BitField<JSDurationFormat::Display, 2, 1, uint32_t>; \
+  using DaysDisplayBit = base::BitField<JSDurationFormat::Display, 3, 1, uint32_t>; \
+  using HoursDisplayBit = base::BitField<JSDurationFormat::Display, 4, 1, uint32_t>; \
+  using MinutesDisplayBit = base::BitField<JSDurationFormat::Display, 5, 1, uint32_t>; \
+  using SecondsDisplayBit = base::BitField<JSDurationFormat::Display, 6, 1, uint32_t>; \
+  using MillisecondsDisplayBit = base::BitField<JSDurationFormat::Display, 7, 1, uint32_t>; \
+  using MicrosecondsDisplayBit = base::BitField<JSDurationFormat::Display, 8, 1, uint32_t>; \
+  using NanosecondsDisplayBit = base::BitField<JSDurationFormat::Display, 9, 1, uint32_t>; \
+  using FractionalDigitsBits = base::BitField<int32_t, 10, 4, uint32_t>; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=9&c=1
+#define DEFINE_TORQUE_GENERATED_JS_LIST_FORMAT_FLAGS() \
+  using StyleBits = base::BitField<JSListFormat::Style, 0, 2, uint32_t>; \
+  using TypeBits = base::BitField<JSListFormat::Type, 2, 2, uint32_t>; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=8&c=1
+#define DEFINE_TORQUE_GENERATED_JS_PLURAL_RULES_FLAGS() \
+  using TypeBit = base::BitField<JSPluralRules::Type, 0, 1, uint32_t>; \
+  enum Flag: uint32_t { \
+    kNone = 0, \
+    kType = uint32_t{1} << 0, \
+  }; \
+  using Flags = base::Flags<Flag>; \
+  static constexpr int kFlagCount = 1; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=9&c=1
+#define DEFINE_TORQUE_GENERATED_JS_RELATIVE_TIME_FORMAT_FLAGS() \
+  using NumericBit = base::BitField<JSRelativeTimeFormat::Numeric, 0, 1, uint32_t>; \
+  enum Flag: uint32_t { \
+    kNone = 0, \
+    kNumeric = uint32_t{1} << 0, \
+  }; \
+  using Flags = base::Flags<Flag>; \
+  static constexpr int kFlagCount = 1; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=7&c=1
+#define DEFINE_TORQUE_GENERATED_JS_SEGMENT_ITERATOR_FLAGS() \
+  using GranularityBits = base::BitField<JSSegmenter::Granularity, 0, 2, uint32_t>; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=9&c=1
+#define DEFINE_TORQUE_GENERATED_JS_SEGMENTER_FLAGS() \
+  using GranularityBits = base::BitField<JSSegmenter::Granularity, 0, 2, uint32_t>; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=7&c=1
+#define DEFINE_TORQUE_GENERATED_JS_SEGMENTS_FLAGS() \
+  using GranularityBits = base::BitField<JSSegmenter::Granularity, 0, 2, uint32_t>; \
+
 }  // namespace internal
 }  // namespace v8
 #endif  // V8_GEN_TORQUE_GENERATED_BIT_FIELDS_H_

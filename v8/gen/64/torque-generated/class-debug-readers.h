@@ -2921,6 +2921,230 @@ class TqSortState : public TqHeapObject {
   Value<uintptr_t> GetNumberOfUndefinedValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqJSV8BreakIterator : public TqJSObject {
+ public:
+  inline TqJSV8BreakIterator(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBreakIteratorAddress() const;
+  Value<uintptr_t> GetBreakIteratorValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUnicodeStringAddress() const;
+  Value<uintptr_t> GetUnicodeStringValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundAdoptTextAddress() const;
+  Value<uintptr_t> GetBoundAdoptTextValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundFirstAddress() const;
+  Value<uintptr_t> GetBoundFirstValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundNextAddress() const;
+  Value<uintptr_t> GetBoundNextValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundCurrentAddress() const;
+  Value<uintptr_t> GetBoundCurrentValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundBreakTypeAddress() const;
+  Value<uintptr_t> GetBoundBreakTypeValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSCollator : public TqJSObject {
+ public:
+  inline TqJSCollator(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetIcuCollatorAddress() const;
+  Value<uintptr_t> GetIcuCollatorValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundCompareAddress() const;
+  Value<uintptr_t> GetBoundCompareValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSDateTimeFormat : public TqJSObject {
+ public:
+  inline TqJSDateTimeFormat(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuLocaleAddress() const;
+  Value<uintptr_t> GetIcuLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuSimpleDateFormatAddress() const;
+  Value<uintptr_t> GetIcuSimpleDateFormatValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuDateIntervalFormatAddress() const;
+  Value<uintptr_t> GetIcuDateIntervalFormatValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundFormatAddress() const;
+  Value<uintptr_t> GetBoundFormatValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSDisplayNames : public TqJSObject {
+ public:
+  inline TqJSDisplayNames(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetInternalAddress() const;
+  Value<uintptr_t> GetInternalValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSDurationFormat : public TqJSObject {
+ public:
+  inline TqJSDurationFormat(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetStyleFlagsAddress() const;
+  Value<uintptr_t> GetStyleFlagsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetDisplayFlagsAddress() const;
+  Value<uintptr_t> GetDisplayFlagsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuLocaleAddress() const;
+  Value<uintptr_t> GetIcuLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuNumberFormatterAddress() const;
+  Value<uintptr_t> GetIcuNumberFormatterValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSListFormat : public TqJSObject {
+ public:
+  inline TqJSListFormat(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuFormatterAddress() const;
+  Value<uintptr_t> GetIcuFormatterValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSLocale : public TqJSObject {
+ public:
+  inline TqJSLocale(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetIcuLocaleAddress() const;
+  Value<uintptr_t> GetIcuLocaleValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSNumberFormat : public TqJSObject {
+ public:
+  inline TqJSNumberFormat(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuNumberFormatterAddress() const;
+  Value<uintptr_t> GetIcuNumberFormatterValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBoundFormatAddress() const;
+  Value<uintptr_t> GetBoundFormatValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSPluralRules : public TqJSObject {
+ public:
+  inline TqJSPluralRules(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuPluralRulesAddress() const;
+  Value<uintptr_t> GetIcuPluralRulesValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuNumberFormatterAddress() const;
+  Value<uintptr_t> GetIcuNumberFormatterValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSRelativeTimeFormat : public TqJSObject {
+ public:
+  inline TqJSRelativeTimeFormat(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetNumberingSystemAddress() const;
+  Value<uintptr_t> GetNumberingSystemValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuFormatterAddress() const;
+  Value<uintptr_t> GetIcuFormatterValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSSegmentIterator : public TqJSObject {
+ public:
+  inline TqJSSegmentIterator(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetIcuBreakIteratorAddress() const;
+  Value<uintptr_t> GetIcuBreakIteratorValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUnicodeStringAddress() const;
+  Value<uintptr_t> GetUnicodeStringValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSSegmenter : public TqJSObject {
+ public:
+  inline TqJSSegmenter(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLocaleAddress() const;
+  Value<uintptr_t> GetLocaleValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIcuBreakIteratorAddress() const;
+  Value<uintptr_t> GetIcuBreakIteratorValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSSegments : public TqJSObject {
+ public:
+  inline TqJSSegments(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetIcuBreakIteratorAddress() const;
+  Value<uintptr_t> GetIcuBreakIteratorValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUnicodeStringAddress() const;
+  Value<uintptr_t> GetUnicodeStringValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
 class TqWasmApiFunctionRef : public TqHeapObject {
  public:
   inline TqWasmApiFunctionRef(uintptr_t address) : TqHeapObject(address) {}
@@ -3830,6 +4054,45 @@ class TqObjectVisitor {
   }
   virtual void VisitSortState(const TqSortState* object) {
     VisitHeapObject(object);
+  }
+  virtual void VisitJSV8BreakIterator(const TqJSV8BreakIterator* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSCollator(const TqJSCollator* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSDateTimeFormat(const TqJSDateTimeFormat* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSDisplayNames(const TqJSDisplayNames* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSDurationFormat(const TqJSDurationFormat* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSListFormat(const TqJSListFormat* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSLocale(const TqJSLocale* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSNumberFormat(const TqJSNumberFormat* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSPluralRules(const TqJSPluralRules* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSRelativeTimeFormat(const TqJSRelativeTimeFormat* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSSegmentIterator(const TqJSSegmentIterator* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSSegmenter(const TqJSSegmenter* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSSegments(const TqJSSegments* object) {
+    VisitJSObject(object);
   }
   virtual void VisitWasmApiFunctionRef(const TqWasmApiFunctionRef* object) {
     VisitHeapObject(object);

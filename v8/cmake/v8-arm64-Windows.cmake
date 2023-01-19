@@ -1,6 +1,7 @@
 add_definitions(-DV8_TARGET_ARCH_ARM64)
 
 set(src_list
+	${PROJECT_SOURCE_DIR}/gen/64/src/regexp/special-case.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/class-debug-readers.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/class-verifiers.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/debug-macros.cc
@@ -318,22 +319,42 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/heap-number-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/heap-object-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/heap-object-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/intl-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/intl-objects-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-buffer-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-buffer-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-atomics-synchronization-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-atomics-synchronization-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-break-iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-break-iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collator-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-iterator-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-iterator-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-date-time-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-date-time-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-display-names-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-display-names-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-duration-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-duration-format-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-function-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-function-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-generator-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-generator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-list-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-list-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-locale-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-locale-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-number-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-number-format-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-objects-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-plural-rules-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-plural-rules-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-promise-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-promise-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-proxy-tq-csa.cc
@@ -344,6 +365,14 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-regexp-string-iterator-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-regexp-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-regexp-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-relative-time-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-relative-time-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segment-iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segment-iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segmenter-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segmenter-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segments-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segments-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-shadow-realm-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-shadow-realm-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-shared-array-tq-csa.cc
@@ -520,6 +549,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-internal-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-internal.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-interpreter-gen.cc
+	${PROJECT_SOURCE_DIR}/src/builtins/builtins-intl-gen.cc
+	${PROJECT_SOURCE_DIR}/src/builtins/builtins-intl.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-iterator-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-json.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-lazy-gen.cc
@@ -998,12 +1029,26 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/objects/embedder-data-array.cc
 	${PROJECT_SOURCE_DIR}/src/objects/feedback-vector.cc
 	${PROJECT_SOURCE_DIR}/src/objects/field-type.cc
+	${PROJECT_SOURCE_DIR}/src/objects/intl-objects.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-array-buffer.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-atomics-synchronization.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-break-iterator.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-collator.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-date-time-format.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-display-names.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-duration-format.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-function.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-list-format.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-locale.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-number-format.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-objects.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-plural-rules.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-raw-json.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-regexp.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-relative-time-format.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-segment-iterator.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-segmenter.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-segments.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-temporal-objects.cc
 	${PROJECT_SOURCE_DIR}/src/objects/keys.cc
 	${PROJECT_SOURCE_DIR}/src/objects/literal-objects.cc
@@ -1097,6 +1142,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-futex.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-generator.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-internal.cc
+	${PROJECT_SOURCE_DIR}/src/runtime/runtime-intl.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-literals.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-module.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-numbers.cc
@@ -1145,6 +1191,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/snapshot/snapshot.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/startup-deserializer.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/startup-serializer.cc
+	${PROJECT_SOURCE_DIR}/src/strings/char-predicates.cc
 	${PROJECT_SOURCE_DIR}/src/strings/string-builder.cc
 	${PROJECT_SOURCE_DIR}/src/strings/string-case.cc
 	${PROJECT_SOURCE_DIR}/src/strings/string-stream.cc

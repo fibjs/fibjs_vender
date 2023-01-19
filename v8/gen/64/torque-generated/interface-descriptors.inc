@@ -1083,6 +1083,13 @@ class ArrayTimSortDescriptor : public StaticCallInterfaceDescriptor<ArrayTimSort
   DECLARE_DEFAULT_DESCRIPTOR(ArrayTimSortDescriptor)
 };
 
+class StringFastLocaleCompareDescriptor : public StaticCallInterfaceDescriptor<StringFastLocaleCompareDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kLocaleCompareFn, kLeft, kRight, kLocales)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(StringFastLocaleCompareDescriptor)
+};
+
 class WasmInt32ToHeapNumberDescriptor : public StaticCallInterfaceDescriptor<WasmInt32ToHeapNumberDescriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kVal)

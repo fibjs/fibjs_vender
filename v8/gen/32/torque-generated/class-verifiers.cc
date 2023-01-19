@@ -2771,6 +2771,293 @@ void TorqueGeneratedClassVerifiers::SortStateVerify(SortState o, Isolate* isolat
     CHECK(numberOfUndefined__value.IsSmi());
   }
 }
+void TorqueGeneratedClassVerifiers::JSV8BreakIteratorVerify(JSV8BreakIterator o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSV8BreakIterator(isolate));
+  {
+    Object locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+  {
+    Object break_iterator__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, break_iterator__value);
+    CHECK(break_iterator__value.IsForeign());
+  }
+  {
+    Object unicode_string__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, unicode_string__value);
+    CHECK(unicode_string__value.IsForeign());
+  }
+  {
+    Object bound_adopt_text__value = TaggedField<Object>::load(o, 24);
+    Object::VerifyPointer(isolate, bound_adopt_text__value);
+    CHECK(bound_adopt_text__value.IsUndefined() || bound_adopt_text__value.IsJSFunction());
+  }
+  {
+    Object bound_first__value = TaggedField<Object>::load(o, 28);
+    Object::VerifyPointer(isolate, bound_first__value);
+    CHECK(bound_first__value.IsUndefined() || bound_first__value.IsJSFunction());
+  }
+  {
+    Object bound_next__value = TaggedField<Object>::load(o, 32);
+    Object::VerifyPointer(isolate, bound_next__value);
+    CHECK(bound_next__value.IsUndefined() || bound_next__value.IsJSFunction());
+  }
+  {
+    Object bound_current__value = TaggedField<Object>::load(o, 36);
+    Object::VerifyPointer(isolate, bound_current__value);
+    CHECK(bound_current__value.IsUndefined() || bound_current__value.IsJSFunction());
+  }
+  {
+    Object bound_break_type__value = TaggedField<Object>::load(o, 40);
+    Object::VerifyPointer(isolate, bound_break_type__value);
+    CHECK(bound_break_type__value.IsUndefined() || bound_break_type__value.IsJSFunction());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSCollatorVerify(JSCollator o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSCollator(isolate));
+  {
+    Object icu_collator__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, icu_collator__value);
+    CHECK(icu_collator__value.IsForeign());
+  }
+  {
+    Object bound_compare__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, bound_compare__value);
+    CHECK(bound_compare__value.IsUndefined() || bound_compare__value.IsJSFunction());
+  }
+  {
+    Object locale__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSDateTimeFormatVerify(JSDateTimeFormat o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSDateTimeFormat(isolate));
+  {
+    Object locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+  {
+    Object icu_locale__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, icu_locale__value);
+    CHECK(icu_locale__value.IsForeign());
+  }
+  {
+    Object icu_simple_date_format__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, icu_simple_date_format__value);
+    CHECK(icu_simple_date_format__value.IsForeign());
+  }
+  {
+    Object icu_date_interval_format__value = TaggedField<Object>::load(o, 24);
+    Object::VerifyPointer(isolate, icu_date_interval_format__value);
+    CHECK(icu_date_interval_format__value.IsForeign());
+  }
+  {
+    Object bound_format__value = TaggedField<Object>::load(o, 28);
+    Object::VerifyPointer(isolate, bound_format__value);
+    CHECK(bound_format__value.IsUndefined() || bound_format__value.IsJSFunction());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 32);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSDisplayNamesVerify(JSDisplayNames o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSDisplayNames(isolate));
+  {
+    Object internal__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, internal__value);
+    CHECK(internal__value.IsForeign());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSDurationFormatVerify(JSDurationFormat o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSDurationFormat(isolate));
+  {
+    Object style_flags__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, style_flags__value);
+    CHECK(style_flags__value.IsSmi());
+  }
+  {
+    Object display_flags__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, display_flags__value);
+    CHECK(display_flags__value.IsSmi());
+  }
+  {
+    Object icu_locale__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, icu_locale__value);
+    CHECK(icu_locale__value.IsForeign());
+  }
+  {
+    Object icu_number_formatter__value = TaggedField<Object>::load(o, 24);
+    Object::VerifyPointer(isolate, icu_number_formatter__value);
+    CHECK(icu_number_formatter__value.IsForeign());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSListFormatVerify(JSListFormat o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSListFormat(isolate));
+  {
+    Object locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+  {
+    Object icu_formatter__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, icu_formatter__value);
+    CHECK(icu_formatter__value.IsForeign());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSLocaleVerify(JSLocale o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSLocale(isolate));
+  {
+    Object icu_locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, icu_locale__value);
+    CHECK(icu_locale__value.IsForeign());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSNumberFormatVerify(JSNumberFormat o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSNumberFormat(isolate));
+  {
+    Object locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+  {
+    Object icu_number_formatter__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, icu_number_formatter__value);
+    CHECK(icu_number_formatter__value.IsForeign());
+  }
+  {
+    Object bound_format__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, bound_format__value);
+    CHECK(bound_format__value.IsUndefined() || bound_format__value.IsJSFunction());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSPluralRulesVerify(JSPluralRules o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSPluralRules(isolate));
+  {
+    Object locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+  {
+    Object icu_plural_rules__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, icu_plural_rules__value);
+    CHECK(icu_plural_rules__value.IsForeign());
+  }
+  {
+    Object icu_number_formatter__value = TaggedField<Object>::load(o, 24);
+    Object::VerifyPointer(isolate, icu_number_formatter__value);
+    CHECK(icu_number_formatter__value.IsForeign());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSRelativeTimeFormatVerify(JSRelativeTimeFormat o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSRelativeTimeFormat(isolate));
+  {
+    Object locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+  {
+    Object numberingSystem__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, numberingSystem__value);
+    CHECK(numberingSystem__value.IsString());
+  }
+  {
+    Object icu_formatter__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, icu_formatter__value);
+    CHECK(icu_formatter__value.IsForeign());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 24);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSSegmentIteratorVerify(JSSegmentIterator o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSSegmentIterator(isolate));
+  {
+    Object icu_break_iterator__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, icu_break_iterator__value);
+    CHECK(icu_break_iterator__value.IsForeign());
+  }
+  {
+    Object unicode_string__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, unicode_string__value);
+    CHECK(unicode_string__value.IsForeign());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSSegmenterVerify(JSSegmenter o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSSegmenter(isolate));
+  {
+    Object locale__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, locale__value);
+    CHECK(locale__value.IsString());
+  }
+  {
+    Object icu_break_iterator__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, icu_break_iterator__value);
+    CHECK(icu_break_iterator__value.IsForeign());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
+void TorqueGeneratedClassVerifiers::JSSegmentsVerify(JSSegments o, Isolate* isolate) {
+  o.JSObjectVerify(isolate);
+  CHECK(o.IsJSSegments(isolate));
+  {
+    Object icu_break_iterator__value = TaggedField<Object>::load(o, 12);
+    Object::VerifyPointer(isolate, icu_break_iterator__value);
+    CHECK(icu_break_iterator__value.IsForeign());
+  }
+  {
+    Object unicode_string__value = TaggedField<Object>::load(o, 16);
+    Object::VerifyPointer(isolate, unicode_string__value);
+    CHECK(unicode_string__value.IsForeign());
+  }
+  {
+    Object flags__value = TaggedField<Object>::load(o, 20);
+    Object::VerifyPointer(isolate, flags__value);
+    CHECK(flags__value.IsSmi());
+  }
+}
 void TorqueGeneratedClassVerifiers::WasmApiFunctionRefVerify(WasmApiFunctionRef o, Isolate* isolate) {
   CHECK(o.IsWasmApiFunctionRef(isolate));
   {

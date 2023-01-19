@@ -4,6 +4,7 @@ set(libs
     exlib
     cares
     gtest
+    unicode
     expat
     gumbo
     gd

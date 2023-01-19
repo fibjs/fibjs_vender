@@ -15,6 +15,12 @@ gclient sync
 ```
 fibjs mk_gen.js
 ```
-### todo
-* threadlocal variable
-* mips64
+
+### copy gen to gen/64|32
+```
+├── builtins-generated
+├── include
+├── src
+│   └── regexp
+└── torque-generated
+```

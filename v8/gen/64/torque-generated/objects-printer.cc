@@ -1599,6 +1599,157 @@ void TorqueGeneratedSortState<SortState, HeapObject>::SortStatePrint(std::ostrea
 }
 
 template <>
+void TorqueGeneratedJSV8BreakIterator<JSV8BreakIterator, JSObject>::JSV8BreakIteratorPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSV8BreakIterator");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - locale: " << Brief(this->locale());
+  os << "\n - break_iterator: " << Brief(this->break_iterator());
+  os << "\n - unicode_string: " << Brief(this->unicode_string());
+  os << "\n - bound_adopt_text: " << Brief(this->bound_adopt_text());
+  os << "\n - bound_first: " << Brief(this->bound_first());
+  os << "\n - bound_next: " << Brief(this->bound_next());
+  os << "\n - bound_current: " << Brief(this->bound_current());
+  os << "\n - bound_break_type: " << Brief(this->bound_break_type());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSCollator<JSCollator, JSObject>::JSCollatorPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSCollator");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - icu_collator: " << Brief(this->icu_collator());
+  os << "\n - bound_compare: " << Brief(this->bound_compare());
+  os << "\n - locale: " << Brief(this->locale());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSDateTimeFormat<JSDateTimeFormat, JSObject>::JSDateTimeFormatPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSDateTimeFormat");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - locale: " << Brief(this->locale());
+  os << "\n - icu_locale: " << Brief(this->icu_locale());
+  os << "\n - icu_simple_date_format: " << Brief(this->icu_simple_date_format());
+  os << "\n - icu_date_interval_format: " << Brief(this->icu_date_interval_format());
+  os << "\n - bound_format: " << Brief(this->bound_format());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSDisplayNames<JSDisplayNames, JSObject>::JSDisplayNamesPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSDisplayNames");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - internal: " << Brief(this->internal());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSDurationFormat<JSDurationFormat, JSObject>::JSDurationFormatPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSDurationFormat");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - style_flags: " << this->style_flags();
+  os << "\n - display_flags: " << this->display_flags();
+  os << "\n - icu_locale: " << Brief(this->icu_locale());
+  os << "\n - icu_number_formatter: " << Brief(this->icu_number_formatter());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSListFormat<JSListFormat, JSObject>::JSListFormatPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSListFormat");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - locale: " << Brief(this->locale());
+  os << "\n - icu_formatter: " << Brief(this->icu_formatter());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSLocale<JSLocale, JSObject>::JSLocalePrint(std::ostream& os) {
+  this->PrintHeader(os, "JSLocale");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - icu_locale: " << Brief(this->icu_locale());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSNumberFormat<JSNumberFormat, JSObject>::JSNumberFormatPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSNumberFormat");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - locale: " << Brief(this->locale());
+  os << "\n - icu_number_formatter: " << Brief(this->icu_number_formatter());
+  os << "\n - bound_format: " << Brief(this->bound_format());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSPluralRules<JSPluralRules, JSObject>::JSPluralRulesPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSPluralRules");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - locale: " << Brief(this->locale());
+  os << "\n - flags: " << this->flags();
+  os << "\n - icu_plural_rules: " << Brief(this->icu_plural_rules());
+  os << "\n - icu_number_formatter: " << Brief(this->icu_number_formatter());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSRelativeTimeFormat<JSRelativeTimeFormat, JSObject>::JSRelativeTimeFormatPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSRelativeTimeFormat");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - locale: " << Brief(this->locale());
+  os << "\n - numberingSystem: " << Brief(this->numberingSystem());
+  os << "\n - icu_formatter: " << Brief(this->icu_formatter());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSSegmentIterator<JSSegmentIterator, JSObject>::JSSegmentIteratorPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSSegmentIterator");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - icu_break_iterator: " << Brief(this->icu_break_iterator());
+  os << "\n - unicode_string: " << Brief(this->unicode_string());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSSegmenter<JSSegmenter, JSObject>::JSSegmenterPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSSegmenter");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - locale: " << Brief(this->locale());
+  os << "\n - icu_break_iterator: " << Brief(this->icu_break_iterator());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSSegments<JSSegments, JSObject>::JSSegmentsPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSSegments");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - icu_break_iterator: " << Brief(this->icu_break_iterator());
+  os << "\n - unicode_string: " << Brief(this->unicode_string());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
 void TorqueGeneratedWasmApiFunctionRef<WasmApiFunctionRef, HeapObject>::WasmApiFunctionRefPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmApiFunctionRef");
   os << "\n - isolate_root: " << this->isolate_root();

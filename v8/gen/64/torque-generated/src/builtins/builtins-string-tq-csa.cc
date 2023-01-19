@@ -24,13 +24,27 @@
 #include "src/objects/call-site-info.h"
 #include "src/objects/elements-kind.h"
 #include "src/objects/free-space.h"
+#include "src/objects/intl-objects.h"
 #include "src/objects/js-atomics-synchronization.h"
+#include "src/objects/js-break-iterator.h"
+#include "src/objects/js-collator.h"
+#include "src/objects/js-date-time-format.h"
+#include "src/objects/js-display-names.h"
+#include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-list-format.h"
+#include "src/objects/js-locale.h"
+#include "src/objects/js-number-format.h"
 #include "src/objects/js-objects.h"
+#include "src/objects/js-plural-rules.h"
 #include "src/objects/js-promise.h"
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
+#include "src/objects/js-relative-time-format.h"
+#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segmenter.h"
+#include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
@@ -57,6 +71,7 @@
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
+#include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/fixed-array-tq-csa.h"
 #include "torque-generated/src/objects/js-array-tq-csa.h"
 #include "torque-generated/src/objects/js-objects-tq-csa.h"
@@ -919,6 +934,54 @@ TNode<Symbol> Cast_Symbol_1(compiler::CodeAssemblerState* state_, TNode<Context>
 
     ca_.Bind(&block7);
   return TNode<Symbol>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=274&c=14
+TorqueStructReference_char8_0 AddOffset_char8_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char8_0 p_ref, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  TNode<Object> tmp2;
+  TNode<IntPtrT> tmp3;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{p_offset});
+    tmp1 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_ref.offset}, TNode<IntPtrT>{tmp0});
+    std::tie(tmp2, tmp3) = NewReference_char8_0(state_, TNode<Object>{p_ref.object}, TNode<IntPtrT>{tmp1}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_char8_0{TNode<Object>{tmp2}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=276&c=14
+TorqueStructReference_char16_0 AddOffset_char16_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char16_0 p_ref, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  TNode<Object> tmp2;
+  TNode<IntPtrT> tmp3;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{p_offset});
+    tmp1 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_ref.offset}, TNode<IntPtrT>{tmp0});
+    std::tie(tmp2, tmp3) = NewReference_char16_0(state_, TNode<Object>{p_ref.object}, TNode<IntPtrT>{tmp1}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_char16_0{TNode<Object>{tmp2}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}};
 }
 
 } // namespace internal

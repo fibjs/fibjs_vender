@@ -426,6 +426,7 @@ TFC(GallopLeft, GallopLeft) \
 TFC(GallopRight, GallopRight) \
 TFC(ArrayTimSort, ArrayTimSort) \
 TFJ(ArrayPrototypeSort, kDontAdaptArgumentsSentinel) \
+TFC(StringFastLocaleCompare, StringFastLocaleCompare) \
 TFC(WasmInt32ToHeapNumber, WasmInt32ToHeapNumber) \
 TFC(WasmFuncRefToJS, WasmFuncRefToJS) \
 TFC(WasmTaggedNonSmiToInt32, WasmTaggedNonSmiToInt32) \

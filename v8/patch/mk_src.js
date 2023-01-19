@@ -228,7 +228,7 @@ function gen_list(arch, os) {
     }
 
     skip_src(/int main\(/);
-    skip_src('#error Internationalization is expected to be enabled.');
+    // skip_src('#error Internationalization is expected to be enabled.');
 
     skip_list.forEach(skip_name);
 

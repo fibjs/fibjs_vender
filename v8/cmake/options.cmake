@@ -2,6 +2,7 @@ include_directories(
 	${CMAKE_CURRENT_LIST_DIR}/../patch
 	${CMAKE_CURRENT_LIST_DIR}/..
 	${CMAKE_CURRENT_LIST_DIR}/../include
+	${CMAKE_CURRENT_LIST_DIR}/../../unicode/include
 )
 
 if(${ARCH} MATCHES "64")
@@ -17,6 +18,7 @@ endif()
 add_definitions(
 	-DV8_NO_FAST_TLS
 
+	-DV8_INTL_SUPPORT
 	-DV8_ATOMIC_OBJECT_FIELD_WRITES
 	-DV8_SHARED_RO_HEAP
 	-DV8_WIN64_UNWINDING_INFO

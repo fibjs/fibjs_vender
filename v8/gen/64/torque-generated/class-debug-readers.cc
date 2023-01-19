@@ -9803,6 +9803,827 @@ std::vector<std::unique_ptr<ObjectProperty>> TqSortState::GetProperties(d::Memor
   return result;
 }
 
+const char* TqJSV8BreakIterator::GetName() const {
+  return "v8::internal::JSV8BreakIterator";
+}
+
+void TqJSV8BreakIterator::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSV8BreakIterator(this);
+}
+
+bool TqJSV8BreakIterator::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSV8BreakIterator*>(other) != nullptr;
+}
+
+uintptr_t TqJSV8BreakIterator::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSV8BreakIterator::GetBreakIteratorAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetBreakIteratorValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBreakIteratorAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSV8BreakIterator::GetUnicodeStringAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetUnicodeStringValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetUnicodeStringAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSV8BreakIterator::GetBoundAdoptTextAddress() const {
+  return address_ - i::kHeapObjectTag + 48;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetBoundAdoptTextValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundAdoptTextAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSV8BreakIterator::GetBoundFirstAddress() const {
+  return address_ - i::kHeapObjectTag + 56;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetBoundFirstValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundFirstAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSV8BreakIterator::GetBoundNextAddress() const {
+  return address_ - i::kHeapObjectTag + 64;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetBoundNextValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundNextAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSV8BreakIterator::GetBoundCurrentAddress() const {
+  return address_ - i::kHeapObjectTag + 72;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetBoundCurrentValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundCurrentAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSV8BreakIterator::GetBoundBreakTypeAddress() const {
+  return address_ - i::kHeapObjectTag + 80;
+}
+
+Value<uintptr_t> TqJSV8BreakIterator::GetBoundBreakTypeValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundBreakTypeAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSV8BreakIterator::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> break_iterator_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("break_iterator", "v8::internal::Foreign", "v8::internal::Foreign", GetBreakIteratorAddress(), 1, 8, std::move(break_iterator_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> unicode_string_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("unicode_string", "v8::internal::Foreign", "v8::internal::Foreign", GetUnicodeStringAddress(), 1, 8, std::move(unicode_string_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_adopt_text_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_adopt_text", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundAdoptTextAddress(), 1, 8, std::move(bound_adopt_text_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_first_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_first", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundFirstAddress(), 1, 8, std::move(bound_first_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_next_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_next", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundNextAddress(), 1, 8, std::move(bound_next_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_current_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_current", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundCurrentAddress(), 1, 8, std::move(bound_current_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_break_type_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_break_type", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundBreakTypeAddress(), 1, 8, std::move(bound_break_type_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSCollator::GetName() const {
+  return "v8::internal::JSCollator";
+}
+
+void TqJSCollator::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSCollator(this);
+}
+
+bool TqJSCollator::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSCollator*>(other) != nullptr;
+}
+
+uintptr_t TqJSCollator::GetIcuCollatorAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSCollator::GetIcuCollatorValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuCollatorAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSCollator::GetBoundCompareAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSCollator::GetBoundCompareValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundCompareAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSCollator::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSCollator::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSCollator::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> icu_collator_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_collator", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuCollatorAddress(), 1, 8, std::move(icu_collator_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_compare_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_compare", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundCompareAddress(), 1, 8, std::move(bound_compare_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSDateTimeFormat::GetName() const {
+  return "v8::internal::JSDateTimeFormat";
+}
+
+void TqJSDateTimeFormat::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSDateTimeFormat(this);
+}
+
+bool TqJSDateTimeFormat::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSDateTimeFormat*>(other) != nullptr;
+}
+
+uintptr_t TqJSDateTimeFormat::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSDateTimeFormat::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDateTimeFormat::GetIcuLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSDateTimeFormat::GetIcuLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDateTimeFormat::GetIcuSimpleDateFormatAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSDateTimeFormat::GetIcuSimpleDateFormatValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuSimpleDateFormatAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDateTimeFormat::GetIcuDateIntervalFormatAddress() const {
+  return address_ - i::kHeapObjectTag + 48;
+}
+
+Value<uintptr_t> TqJSDateTimeFormat::GetIcuDateIntervalFormatValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuDateIntervalFormatAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDateTimeFormat::GetBoundFormatAddress() const {
+  return address_ - i::kHeapObjectTag + 56;
+}
+
+Value<uintptr_t> TqJSDateTimeFormat::GetBoundFormatValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundFormatAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDateTimeFormat::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 64;
+}
+
+Value<uintptr_t> TqJSDateTimeFormat::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSDateTimeFormat::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_locale", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuLocaleAddress(), 1, 8, std::move(icu_locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_simple_date_format_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_simple_date_format", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuSimpleDateFormatAddress(), 1, 8, std::move(icu_simple_date_format_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_date_interval_format_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_date_interval_format", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuDateIntervalFormatAddress(), 1, 8, std::move(icu_date_interval_format_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_format_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_format", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundFormatAddress(), 1, 8, std::move(bound_format_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("hour_cycle", CheckTypeName<JSDateTimeFormat::HourCycle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDateTimeFormat::HourCycle"), CheckTypeName<JSDateTimeFormat::HourCycle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDateTimeFormat::HourCycle"), 0, 3, 32));
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("date_style", CheckTypeName<JSDateTimeFormat::DateTimeStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDateTimeFormat::DateTimeStyle"), CheckTypeName<JSDateTimeFormat::DateTimeStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDateTimeFormat::DateTimeStyle"), 0, 3, 35));
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("time_style", CheckTypeName<JSDateTimeFormat::DateTimeStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDateTimeFormat::DateTimeStyle"), CheckTypeName<JSDateTimeFormat::DateTimeStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDateTimeFormat::DateTimeStyle"), 0, 3, 38));
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("alt_calendar", CheckTypeName<bool /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("bool"), CheckTypeName<bool /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("bool"), 0, 1, 41));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSDisplayNames::GetName() const {
+  return "v8::internal::JSDisplayNames";
+}
+
+void TqJSDisplayNames::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSDisplayNames(this);
+}
+
+bool TqJSDisplayNames::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSDisplayNames*>(other) != nullptr;
+}
+
+uintptr_t TqJSDisplayNames::GetInternalAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSDisplayNames::GetInternalValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetInternalAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDisplayNames::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSDisplayNames::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSDisplayNames::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> internal_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("internal", "v8::internal::Foreign", "v8::internal::Foreign", GetInternalAddress(), 1, 8, std::move(internal_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("style", CheckTypeName<JSDisplayNames::Style /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDisplayNames::Style"), CheckTypeName<JSDisplayNames::Style /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDisplayNames::Style"), 0, 2, 32));
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("fallback", CheckTypeName<JSDisplayNames::Fallback /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDisplayNames::Fallback"), CheckTypeName<JSDisplayNames::Fallback /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDisplayNames::Fallback"), 0, 1, 34));
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("language_display", CheckTypeName<JSDisplayNames::LanguageDisplay /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDisplayNames::LanguageDisplay"), CheckTypeName<JSDisplayNames::LanguageDisplay /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDisplayNames::LanguageDisplay"), 0, 1, 35));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSDurationFormat::GetName() const {
+  return "v8::internal::JSDurationFormat";
+}
+
+void TqJSDurationFormat::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSDurationFormat(this);
+}
+
+bool TqJSDurationFormat::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSDurationFormat*>(other) != nullptr;
+}
+
+uintptr_t TqJSDurationFormat::GetStyleFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSDurationFormat::GetStyleFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetStyleFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDurationFormat::GetDisplayFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSDurationFormat::GetDisplayFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetDisplayFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDurationFormat::GetIcuLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSDurationFormat::GetIcuLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSDurationFormat::GetIcuNumberFormatterAddress() const {
+  return address_ - i::kHeapObjectTag + 48;
+}
+
+Value<uintptr_t> TqJSDurationFormat::GetIcuNumberFormatterValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuNumberFormatterAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSDurationFormat::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> style_flags_struct_field_list;
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("style", CheckTypeName<JSDurationFormat::Style /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Style"), CheckTypeName<JSDurationFormat::Style /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Style"), 0, 2, 32));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("years_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 2, 34));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("months_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 2, 36));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("weeks_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 2, 38));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("days_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 2, 40));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("hours_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 3, 42));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("minutes_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 3, 45));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("seconds_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 3, 48));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("milliseconds_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 2, 51));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("microseconds_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 2, 53));
+  style_flags_struct_field_list.push_back(std::make_unique<StructProperty>("nanoseconds_style", CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), CheckTypeName<JSDurationFormat::FieldStyle /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::FieldStyle"), 0, 2, 55));
+  result.push_back(std::make_unique<ObjectProperty>("style_flags", "v8::internal::Object", "v8::internal::Object", GetStyleFlagsAddress(), 1, 8, std::move(style_flags_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> display_flags_struct_field_list;
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("years_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 32));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("months_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 33));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("weeks_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 34));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("days_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 35));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("hours_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 36));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("minutes_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 37));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("seconds_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 38));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("milliseconds_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 39));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("microseconds_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 40));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("nanoseconds_display", CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), CheckTypeName<JSDurationFormat::Display /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSDurationFormat::Display"), 0, 1, 41));
+  display_flags_struct_field_list.push_back(std::make_unique<StructProperty>("fractional_digits", CheckTypeName<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("int32_t"), CheckTypeName<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("int32_t"), 0, 4, 42));
+  result.push_back(std::make_unique<ObjectProperty>("display_flags", "v8::internal::Object", "v8::internal::Object", GetDisplayFlagsAddress(), 1, 8, std::move(display_flags_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_locale", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuLocaleAddress(), 1, 8, std::move(icu_locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_number_formatter_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_number_formatter", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuNumberFormatterAddress(), 1, 8, std::move(icu_number_formatter_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSListFormat::GetName() const {
+  return "v8::internal::JSListFormat";
+}
+
+void TqJSListFormat::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSListFormat(this);
+}
+
+bool TqJSListFormat::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSListFormat*>(other) != nullptr;
+}
+
+uintptr_t TqJSListFormat::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSListFormat::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSListFormat::GetIcuFormatterAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSListFormat::GetIcuFormatterValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuFormatterAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSListFormat::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSListFormat::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSListFormat::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_formatter_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_formatter", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuFormatterAddress(), 1, 8, std::move(icu_formatter_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("style", CheckTypeName<JSListFormat::Style /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSListFormat::Style"), CheckTypeName<JSListFormat::Style /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSListFormat::Style"), 0, 2, 32));
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("Type", CheckTypeName<JSListFormat::Type /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSListFormat::Type"), CheckTypeName<JSListFormat::Type /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSListFormat::Type"), 0, 2, 34));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSLocale::GetName() const {
+  return "v8::internal::JSLocale";
+}
+
+void TqJSLocale::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSLocale(this);
+}
+
+bool TqJSLocale::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSLocale*>(other) != nullptr;
+}
+
+uintptr_t TqJSLocale::GetIcuLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSLocale::GetIcuLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSLocale::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> icu_locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_locale", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuLocaleAddress(), 1, 8, std::move(icu_locale_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSNumberFormat::GetName() const {
+  return "v8::internal::JSNumberFormat";
+}
+
+void TqJSNumberFormat::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSNumberFormat(this);
+}
+
+bool TqJSNumberFormat::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSNumberFormat*>(other) != nullptr;
+}
+
+uintptr_t TqJSNumberFormat::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSNumberFormat::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSNumberFormat::GetIcuNumberFormatterAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSNumberFormat::GetIcuNumberFormatterValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuNumberFormatterAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSNumberFormat::GetBoundFormatAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSNumberFormat::GetBoundFormatValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetBoundFormatAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSNumberFormat::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_number_formatter_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_number_formatter", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuNumberFormatterAddress(), 1, 8, std::move(icu_number_formatter_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> bound_format_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("bound_format", "v8::internal::HeapObject", "v8::internal::HeapObject", GetBoundFormatAddress(), 1, 8, std::move(bound_format_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSPluralRules::GetName() const {
+  return "v8::internal::JSPluralRules";
+}
+
+void TqJSPluralRules::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSPluralRules(this);
+}
+
+bool TqJSPluralRules::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSPluralRules*>(other) != nullptr;
+}
+
+uintptr_t TqJSPluralRules::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSPluralRules::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSPluralRules::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSPluralRules::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSPluralRules::GetIcuPluralRulesAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSPluralRules::GetIcuPluralRulesValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuPluralRulesAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSPluralRules::GetIcuNumberFormatterAddress() const {
+  return address_ - i::kHeapObjectTag + 48;
+}
+
+Value<uintptr_t> TqJSPluralRules::GetIcuNumberFormatterValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuNumberFormatterAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSPluralRules::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("Type", CheckTypeName<JSPluralRules::Type /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSPluralRules::Type"), CheckTypeName<JSPluralRules::Type /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSPluralRules::Type"), 0, 1, 32));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_plural_rules_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_plural_rules", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuPluralRulesAddress(), 1, 8, std::move(icu_plural_rules_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_number_formatter_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_number_formatter", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuNumberFormatterAddress(), 1, 8, std::move(icu_number_formatter_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSRelativeTimeFormat::GetName() const {
+  return "v8::internal::JSRelativeTimeFormat";
+}
+
+void TqJSRelativeTimeFormat::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSRelativeTimeFormat(this);
+}
+
+bool TqJSRelativeTimeFormat::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSRelativeTimeFormat*>(other) != nullptr;
+}
+
+uintptr_t TqJSRelativeTimeFormat::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSRelativeTimeFormat::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSRelativeTimeFormat::GetNumberingSystemAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSRelativeTimeFormat::GetNumberingSystemValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetNumberingSystemAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSRelativeTimeFormat::GetIcuFormatterAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSRelativeTimeFormat::GetIcuFormatterValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuFormatterAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSRelativeTimeFormat::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 48;
+}
+
+Value<uintptr_t> TqJSRelativeTimeFormat::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSRelativeTimeFormat::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> numberingSystem_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("numberingSystem", "v8::internal::String", "v8::internal::String", GetNumberingSystemAddress(), 1, 8, std::move(numberingSystem_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_formatter_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_formatter", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuFormatterAddress(), 1, 8, std::move(icu_formatter_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("numeric", CheckTypeName<JSRelativeTimeFormat::Numeric /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSRelativeTimeFormat::Numeric"), CheckTypeName<JSRelativeTimeFormat::Numeric /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSRelativeTimeFormat::Numeric"), 0, 1, 32));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSSegmentIterator::GetName() const {
+  return "v8::internal::JSSegmentIterator";
+}
+
+void TqJSSegmentIterator::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSSegmentIterator(this);
+}
+
+bool TqJSSegmentIterator::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSSegmentIterator*>(other) != nullptr;
+}
+
+uintptr_t TqJSSegmentIterator::GetIcuBreakIteratorAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSSegmentIterator::GetIcuBreakIteratorValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuBreakIteratorAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSSegmentIterator::GetUnicodeStringAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSSegmentIterator::GetUnicodeStringValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetUnicodeStringAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSSegmentIterator::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSSegmentIterator::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSSegmentIterator::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> icu_break_iterator_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_break_iterator", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuBreakIteratorAddress(), 1, 8, std::move(icu_break_iterator_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> unicode_string_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("unicode_string", "v8::internal::Foreign", "v8::internal::Foreign", GetUnicodeStringAddress(), 1, 8, std::move(unicode_string_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("granularity", CheckTypeName<JSSegmenter::Granularity /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSSegmenter::Granularity"), CheckTypeName<JSSegmenter::Granularity /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSSegmenter::Granularity"), 0, 2, 32));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSSegmenter::GetName() const {
+  return "v8::internal::JSSegmenter";
+}
+
+void TqJSSegmenter::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSSegmenter(this);
+}
+
+bool TqJSSegmenter::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSSegmenter*>(other) != nullptr;
+}
+
+uintptr_t TqJSSegmenter::GetLocaleAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSSegmenter::GetLocaleValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetLocaleAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSSegmenter::GetIcuBreakIteratorAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSSegmenter::GetIcuBreakIteratorValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuBreakIteratorAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSSegmenter::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSSegmenter::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSSegmenter::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> locale_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("locale", "v8::internal::String", "v8::internal::String", GetLocaleAddress(), 1, 8, std::move(locale_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> icu_break_iterator_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_break_iterator", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuBreakIteratorAddress(), 1, 8, std::move(icu_break_iterator_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("granularity", CheckTypeName<JSSegmenter::Granularity /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSSegmenter::Granularity"), CheckTypeName<JSSegmenter::Granularity /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSSegmenter::Granularity"), 0, 2, 32));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
+const char* TqJSSegments::GetName() const {
+  return "v8::internal::JSSegments";
+}
+
+void TqJSSegments::Visit(TqObjectVisitor* visitor) const {
+  visitor->VisitJSSegments(this);
+}
+
+bool TqJSSegments::IsSuperclassOf(const TqObject* other) const {
+  return GetName() != other->GetName() && dynamic_cast<const TqJSSegments*>(other) != nullptr;
+}
+
+uintptr_t TqJSSegments::GetIcuBreakIteratorAddress() const {
+  return address_ - i::kHeapObjectTag + 24;
+}
+
+Value<uintptr_t> TqJSSegments::GetIcuBreakIteratorValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetIcuBreakIteratorAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSSegments::GetUnicodeStringAddress() const {
+  return address_ - i::kHeapObjectTag + 32;
+}
+
+Value<uintptr_t> TqJSSegments::GetUnicodeStringValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetUnicodeStringAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+uintptr_t TqJSSegments::GetFlagsAddress() const {
+  return address_ - i::kHeapObjectTag + 40;
+}
+
+Value<uintptr_t> TqJSSegments::GetFlagsValue(d::MemoryAccessor accessor) const {
+  i::Tagged_t value{};
+  d::MemoryAccessResult validity = accessor(GetFlagsAddress(), reinterpret_cast<uint8_t*>(&value), sizeof(value));
+  return {validity, EnsureDecompressed(value, address_)};
+}
+
+std::vector<std::unique_ptr<ObjectProperty>> TqJSSegments::GetProperties(d::MemoryAccessor accessor) const {
+  std::vector<std::unique_ptr<ObjectProperty>> result = TqJSObject::GetProperties(accessor);
+  std::vector<std::unique_ptr<StructProperty>> icu_break_iterator_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("icu_break_iterator", "v8::internal::Foreign", "v8::internal::Foreign", GetIcuBreakIteratorAddress(), 1, 8, std::move(icu_break_iterator_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> unicode_string_struct_field_list;
+  result.push_back(std::make_unique<ObjectProperty>("unicode_string", "v8::internal::Foreign", "v8::internal::Foreign", GetUnicodeStringAddress(), 1, 8, std::move(unicode_string_struct_field_list), d::PropertyKind::kSingle));
+  std::vector<std::unique_ptr<StructProperty>> flags_struct_field_list;
+  flags_struct_field_list.push_back(std::make_unique<StructProperty>("granularity", CheckTypeName<JSSegmenter::Granularity /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSSegmenter::Granularity"), CheckTypeName<JSSegmenter::Granularity /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/>("JSSegmenter::Granularity"), 0, 2, 32));
+  result.push_back(std::make_unique<ObjectProperty>("flags", "v8::internal::Object", "v8::internal::Object", GetFlagsAddress(), 1, 8, std::move(flags_struct_field_list), d::PropertyKind::kSingle));
+  return result;
+}
+
 const char* TqWasmApiFunctionRef::GetName() const {
   return "v8::internal::WasmApiFunctionRef";
 }
@@ -11167,6 +11988,19 @@ const char* kObjectClassNames[] {
   "v8::internal::InternalClassWithStructElements",
   "v8::internal::ExportedSubClass2",
   "v8::internal::SortState",
+  "v8::internal::JSV8BreakIterator",
+  "v8::internal::JSCollator",
+  "v8::internal::JSDateTimeFormat",
+  "v8::internal::JSDisplayNames",
+  "v8::internal::JSDurationFormat",
+  "v8::internal::JSListFormat",
+  "v8::internal::JSLocale",
+  "v8::internal::JSNumberFormat",
+  "v8::internal::JSPluralRules",
+  "v8::internal::JSRelativeTimeFormat",
+  "v8::internal::JSSegmentIterator",
+  "v8::internal::JSSegmenter",
+  "v8::internal::JSSegments",
   "v8::internal::WasmApiFunctionRef",
   "v8::internal::WasmFunctionData",
   "v8::internal::WasmExportedFunctionData",

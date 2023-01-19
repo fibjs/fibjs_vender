@@ -284,42 +284,55 @@
         V(JS_ARRAY_TYPE, 2106) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1 */\
         V(JS_ARRAY_ITERATOR_TYPE, 2107) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1 */\
         V(JS_ASYNC_FROM_SYNC_ITERATOR_TYPE, 2108) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=162&c=1 */\
-        V(JS_CONTEXT_EXTENSION_OBJECT_TYPE, 2109) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=596&c=1 */\
-        V(JS_DATE_TYPE, 2110) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=142&c=1 */\
-        V(JS_ERROR_TYPE, 2111) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=598&c=1 */\
-        V(JS_EXTERNAL_OBJECT_TYPE, 2112) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=43&c=1 */\
-        V(JS_FINALIZATION_REGISTRY_TYPE, 2113) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1 */\
-        V(JS_MESSAGE_OBJECT_TYPE, 2114) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=123&c=1 */\
-        V(JS_RAW_JSON_TYPE, 2115) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1 */\
-        V(JS_REG_EXP_TYPE, 2116) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1 */\
-        V(JS_REG_EXP_STRING_ITERATOR_TYPE, 2117) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1 */\
-        V(JS_SHADOW_REALM_TYPE, 2118) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1 */\
-        V(JS_SHARED_ARRAY_TYPE, 2119) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1 */\
-        V(JS_SHARED_STRUCT_TYPE, 2120) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=5&c=1 */\
-        V(JS_STRING_ITERATOR_TYPE, 2121) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=169&c=1 */\
-        V(JS_TEMPORAL_CALENDAR_TYPE, 2122) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1 */\
-        V(JS_TEMPORAL_DURATION_TYPE, 2123) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1 */\
-        V(JS_TEMPORAL_INSTANT_TYPE, 2124) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1 */\
-        V(JS_TEMPORAL_PLAIN_DATE_TYPE, 2125) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1 */\
-        V(JS_TEMPORAL_PLAIN_DATE_TIME_TYPE, 2126) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1 */\
-        V(JS_TEMPORAL_PLAIN_MONTH_DAY_TYPE, 2127) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1 */\
-        V(JS_TEMPORAL_PLAIN_TIME_TYPE, 2128) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1 */\
-        V(JS_TEMPORAL_PLAIN_YEAR_MONTH_TYPE, 2129) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1 */\
-        V(JS_TEMPORAL_TIME_ZONE_TYPE, 2130) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1 */\
-        V(JS_TEMPORAL_ZONED_DATE_TIME_TYPE, 2131) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1 */\
-        V(JS_WEAK_REF_TYPE, 2132) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=42&c=1 */\
-        V(WASM_EXCEPTION_PACKAGE_TYPE, 2133) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=126&c=1 */\
-        V(WASM_GLOBAL_OBJECT_TYPE, 2134) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=155&c=1 */\
-        V(WASM_INSTANCE_OBJECT_TYPE, 2135) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=12&c=1 */\
-        V(WASM_MEMORY_OBJECT_TYPE, 2136) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=148&c=1 */\
-        V(WASM_MODULE_OBJECT_TYPE, 2137) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=128&c=1 */\
-        V(WASM_SUSPENDER_OBJECT_TYPE, 2138) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=111&c=1 */\
-        V(WASM_TABLE_OBJECT_TYPE, 2139) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=133&c=1 */\
-        V(WASM_TAG_OBJECT_TYPE, 2140) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=170&c=1 */\
-        V(WASM_VALUE_OBJECT_TYPE, 2141) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/debug/debug-wasm-objects.tq?l=7&c=1 */\
-      V(LAST_JS_OBJECT_TYPE, 2141) \
-    V(LAST_JS_RECEIVER_TYPE, 2141) \
-  V(LAST_HEAP_OBJECT_TYPE, 2141) \
+        V(JS_COLLATOR_TYPE, 2109) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1 */\
+        V(JS_CONTEXT_EXTENSION_OBJECT_TYPE, 2110) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=596&c=1 */\
+        V(JS_DATE_TYPE, 2111) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=142&c=1 */\
+        V(JS_DATE_TIME_FORMAT_TYPE, 2112) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=23&c=1 */\
+        V(JS_DISPLAY_NAMES_TYPE, 2113) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1 */\
+        V(JS_DURATION_FORMAT_TYPE, 2114) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=39&c=1 */\
+        V(JS_ERROR_TYPE, 2115) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=598&c=1 */\
+        V(JS_EXTERNAL_OBJECT_TYPE, 2116) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=43&c=1 */\
+        V(JS_FINALIZATION_REGISTRY_TYPE, 2117) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1 */\
+        V(JS_LIST_FORMAT_TYPE, 2118) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=14&c=1 */\
+        V(JS_LOCALE_TYPE, 2119) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1 */\
+        V(JS_MESSAGE_OBJECT_TYPE, 2120) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=123&c=1 */\
+        V(JS_NUMBER_FORMAT_TYPE, 2121) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1 */\
+        V(JS_PLURAL_RULES_TYPE, 2122) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=12&c=1 */\
+        V(JS_RAW_JSON_TYPE, 2123) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1 */\
+        V(JS_REG_EXP_TYPE, 2124) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1 */\
+        V(JS_REG_EXP_STRING_ITERATOR_TYPE, 2125) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1 */\
+        V(JS_RELATIVE_TIME_FORMAT_TYPE, 2126) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=13&c=1 */\
+        V(JS_SEGMENT_ITERATOR_TYPE, 2127) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=11&c=1 */\
+        V(JS_SEGMENTER_TYPE, 2128) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=13&c=1 */\
+        V(JS_SEGMENTS_TYPE, 2129) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1 */\
+        V(JS_SHADOW_REALM_TYPE, 2130) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1 */\
+        V(JS_SHARED_ARRAY_TYPE, 2131) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1 */\
+        V(JS_SHARED_STRUCT_TYPE, 2132) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=5&c=1 */\
+        V(JS_STRING_ITERATOR_TYPE, 2133) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=169&c=1 */\
+        V(JS_TEMPORAL_CALENDAR_TYPE, 2134) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1 */\
+        V(JS_TEMPORAL_DURATION_TYPE, 2135) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1 */\
+        V(JS_TEMPORAL_INSTANT_TYPE, 2136) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1 */\
+        V(JS_TEMPORAL_PLAIN_DATE_TYPE, 2137) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1 */\
+        V(JS_TEMPORAL_PLAIN_DATE_TIME_TYPE, 2138) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1 */\
+        V(JS_TEMPORAL_PLAIN_MONTH_DAY_TYPE, 2139) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1 */\
+        V(JS_TEMPORAL_PLAIN_TIME_TYPE, 2140) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1 */\
+        V(JS_TEMPORAL_PLAIN_YEAR_MONTH_TYPE, 2141) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1 */\
+        V(JS_TEMPORAL_TIME_ZONE_TYPE, 2142) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1 */\
+        V(JS_TEMPORAL_ZONED_DATE_TIME_TYPE, 2143) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1 */\
+        V(JS_V8_BREAK_ITERATOR_TYPE, 2144) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1 */\
+        V(JS_WEAK_REF_TYPE, 2145) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=42&c=1 */\
+        V(WASM_EXCEPTION_PACKAGE_TYPE, 2146) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=126&c=1 */\
+        V(WASM_GLOBAL_OBJECT_TYPE, 2147) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=155&c=1 */\
+        V(WASM_INSTANCE_OBJECT_TYPE, 2148) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=12&c=1 */\
+        V(WASM_MEMORY_OBJECT_TYPE, 2149) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=148&c=1 */\
+        V(WASM_MODULE_OBJECT_TYPE, 2150) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=128&c=1 */\
+        V(WASM_SUSPENDER_OBJECT_TYPE, 2151) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=111&c=1 */\
+        V(WASM_TABLE_OBJECT_TYPE, 2152) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=133&c=1 */\
+        V(WASM_TAG_OBJECT_TYPE, 2153) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=170&c=1 */\
+        V(WASM_VALUE_OBJECT_TYPE, 2154) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/debug/debug-wasm-objects.tq?l=7&c=1 */\
+      V(LAST_JS_OBJECT_TYPE, 2154) \
+    V(LAST_JS_RECEIVER_TYPE, 2154) \
+  V(LAST_HEAP_OBJECT_TYPE, 2154) \
 
 // Instance types for all classes except for those that use
 // InstanceType as flags.
@@ -523,15 +536,27 @@
   V(JS_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1 */\
   V(JS_ARRAY_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1 */\
   V(JS_ASYNC_FROM_SYNC_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=162&c=1 */\
+  V(JS_COLLATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1 */\
   V(JS_CONTEXT_EXTENSION_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=596&c=1 */\
   V(JS_DATE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=142&c=1 */\
+  V(JS_DATE_TIME_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=23&c=1 */\
+  V(JS_DISPLAY_NAMES_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1 */\
+  V(JS_DURATION_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=39&c=1 */\
   V(JS_ERROR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=598&c=1 */\
   V(JS_EXTERNAL_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=43&c=1 */\
   V(JS_FINALIZATION_REGISTRY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1 */\
+  V(JS_LIST_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=14&c=1 */\
+  V(JS_LOCALE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1 */\
   V(JS_MESSAGE_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=123&c=1 */\
+  V(JS_NUMBER_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1 */\
+  V(JS_PLURAL_RULES_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=12&c=1 */\
   V(JS_RAW_JSON_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1 */\
   V(JS_REG_EXP_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1 */\
   V(JS_REG_EXP_STRING_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1 */\
+  V(JS_RELATIVE_TIME_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=13&c=1 */\
+  V(JS_SEGMENT_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=11&c=1 */\
+  V(JS_SEGMENTER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=13&c=1 */\
+  V(JS_SEGMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1 */\
   V(JS_SHADOW_REALM_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1 */\
   V(JS_SHARED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1 */\
   V(JS_SHARED_STRUCT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=5&c=1 */\
@@ -546,6 +571,7 @@
   V(JS_TEMPORAL_PLAIN_YEAR_MONTH_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1 */\
   V(JS_TEMPORAL_TIME_ZONE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1 */\
   V(JS_TEMPORAL_ZONED_DATE_TIME_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1 */\
+  V(JS_V8_BREAK_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1 */\
   V(JS_WEAK_REF_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=42&c=1 */\
   V(WASM_EXCEPTION_PACKAGE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=126&c=1 */\
   V(WASM_GLOBAL_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=155&c=1 */\
@@ -683,13 +709,25 @@
   V(JSArray, JS_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1 */ \
   V(JSArrayIterator, JS_ARRAY_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1 */ \
   V(JSAsyncFromSyncIterator, JS_ASYNC_FROM_SYNC_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=162&c=1 */ \
+  V(JSCollator, JS_COLLATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1 */ \
   V(JSDate, JS_DATE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=142&c=1 */ \
+  V(JSDateTimeFormat, JS_DATE_TIME_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=23&c=1 */ \
+  V(JSDisplayNames, JS_DISPLAY_NAMES_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1 */ \
+  V(JSDurationFormat, JS_DURATION_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=39&c=1 */ \
   V(JSExternalObject, JS_EXTERNAL_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=43&c=1 */ \
   V(JSFinalizationRegistry, JS_FINALIZATION_REGISTRY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1 */ \
+  V(JSListFormat, JS_LIST_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=14&c=1 */ \
+  V(JSLocale, JS_LOCALE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1 */ \
   V(JSMessageObject, JS_MESSAGE_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=123&c=1 */ \
+  V(JSNumberFormat, JS_NUMBER_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1 */ \
+  V(JSPluralRules, JS_PLURAL_RULES_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=12&c=1 */ \
   V(JSRawJson, JS_RAW_JSON_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1 */ \
   V(JSRegExp, JS_REG_EXP_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1 */ \
   V(JSRegExpStringIterator, JS_REG_EXP_STRING_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1 */ \
+  V(JSRelativeTimeFormat, JS_RELATIVE_TIME_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=13&c=1 */ \
+  V(JSSegmentIterator, JS_SEGMENT_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=11&c=1 */ \
+  V(JSSegmenter, JS_SEGMENTER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=13&c=1 */ \
+  V(JSSegments, JS_SEGMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1 */ \
   V(JSShadowRealm, JS_SHADOW_REALM_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1 */ \
   V(JSSharedArray, JS_SHARED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1 */ \
   V(JSSharedStruct, JS_SHARED_STRUCT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=5&c=1 */ \
@@ -704,6 +742,7 @@
   V(JSTemporalPlainYearMonth, JS_TEMPORAL_PLAIN_YEAR_MONTH_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1 */ \
   V(JSTemporalTimeZone, JS_TEMPORAL_TIME_ZONE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1 */ \
   V(JSTemporalZonedDateTime, JS_TEMPORAL_ZONED_DATE_TIME_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1 */ \
+  V(JSV8BreakIterator, JS_V8_BREAK_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1 */ \
   V(JSWeakRef, JS_WEAK_REF_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=42&c=1 */ \
   V(WasmGlobalObject, WASM_GLOBAL_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=155&c=1 */ \
   V(WasmMemoryObject, WASM_MEMORY_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=148&c=1 */ \

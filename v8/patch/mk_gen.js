@@ -2,7 +2,7 @@ var child_process = require("child_process");
 var path = require("path");
 
 var opts = [
-    "v8_enable_i18n_support=false",
+    // "v8_enable_i18n_support=false",
     "v8_use_external_startup_data=false",
     "v8_use_libm_trig_functions=false",
     "v8_enable_pointer_compression=false",

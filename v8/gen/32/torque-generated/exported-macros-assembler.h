@@ -2553,6 +2553,194 @@ class V8_EXPORT_PRIVATE TorqueGeneratedExportedMacrosAssembler {
   TNode<Smi> LoadSortStateNumberOfUndefined(TNode<SortState> p_o);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=102&c=3
   void StoreSortStateNumberOfUndefined(TNode<SortState> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
+  TNode<String> LoadJSV8BreakIteratorLocale(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
+  void StoreJSV8BreakIteratorLocale(TNode<JSV8BreakIterator> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
+  TNode<Foreign> LoadJSV8BreakIteratorBreakIterator(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
+  void StoreJSV8BreakIteratorBreakIterator(TNode<JSV8BreakIterator> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
+  TNode<Foreign> LoadJSV8BreakIteratorUnicodeString(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
+  void StoreJSV8BreakIteratorUnicodeString(TNode<JSV8BreakIterator> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
+  TNode<HeapObject> LoadJSV8BreakIteratorBoundAdoptText(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
+  void StoreJSV8BreakIteratorBoundAdoptText(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
+  TNode<HeapObject> LoadJSV8BreakIteratorBoundFirst(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
+  void StoreJSV8BreakIteratorBoundFirst(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
+  TNode<HeapObject> LoadJSV8BreakIteratorBoundNext(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
+  void StoreJSV8BreakIteratorBoundNext(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
+  TNode<HeapObject> LoadJSV8BreakIteratorBoundCurrent(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
+  void StoreJSV8BreakIteratorBoundCurrent(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
+  TNode<HeapObject> LoadJSV8BreakIteratorBoundBreakType(TNode<JSV8BreakIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
+  void StoreJSV8BreakIteratorBoundBreakType(TNode<JSV8BreakIterator> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
+  TNode<Foreign> LoadJSCollatorIcuCollator(TNode<JSCollator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
+  void StoreJSCollatorIcuCollator(TNode<JSCollator> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
+  TNode<HeapObject> LoadJSCollatorBoundCompare(TNode<JSCollator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
+  void StoreJSCollatorBoundCompare(TNode<JSCollator> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
+  TNode<String> LoadJSCollatorLocale(TNode<JSCollator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
+  void StoreJSCollatorLocale(TNode<JSCollator> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=24&c=3
+  TNode<String> LoadJSDateTimeFormatLocale(TNode<JSDateTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=24&c=3
+  void StoreJSDateTimeFormatLocale(TNode<JSDateTimeFormat> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=25&c=3
+  TNode<Foreign> LoadJSDateTimeFormatIcuLocale(TNode<JSDateTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=25&c=3
+  void StoreJSDateTimeFormatIcuLocale(TNode<JSDateTimeFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=26&c=3
+  TNode<Foreign> LoadJSDateTimeFormatIcuSimpleDateFormat(TNode<JSDateTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=26&c=3
+  void StoreJSDateTimeFormatIcuSimpleDateFormat(TNode<JSDateTimeFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=27&c=3
+  TNode<Foreign> LoadJSDateTimeFormatIcuDateIntervalFormat(TNode<JSDateTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=27&c=3
+  void StoreJSDateTimeFormatIcuDateIntervalFormat(TNode<JSDateTimeFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=28&c=3
+  TNode<HeapObject> LoadJSDateTimeFormatBoundFormat(TNode<JSDateTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=28&c=3
+  void StoreJSDateTimeFormatBoundFormat(TNode<JSDateTimeFormat> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=29&c=3
+  TNode<Smi> LoadJSDateTimeFormatFlags(TNode<JSDateTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=29&c=3
+  void StoreJSDateTimeFormatFlags(TNode<JSDateTimeFormat> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
+  TNode<Foreign> LoadJSDisplayNamesInternal(TNode<JSDisplayNames> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
+  void StoreJSDisplayNamesInternal(TNode<JSDisplayNames> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=20&c=3
+  TNode<Smi> LoadJSDisplayNamesFlags(TNode<JSDisplayNames> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=20&c=3
+  void StoreJSDisplayNamesFlags(TNode<JSDisplayNames> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+  TNode<Smi> LoadJSDurationFormatStyleFlags(TNode<JSDurationFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+  void StoreJSDurationFormatStyleFlags(TNode<JSDurationFormat> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+  TNode<Smi> LoadJSDurationFormatDisplayFlags(TNode<JSDurationFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+  void StoreJSDurationFormatDisplayFlags(TNode<JSDurationFormat> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+  TNode<Foreign> LoadJSDurationFormatIcuLocale(TNode<JSDurationFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+  void StoreJSDurationFormatIcuLocale(TNode<JSDurationFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+  TNode<Foreign> LoadJSDurationFormatIcuNumberFormatter(TNode<JSDurationFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+  void StoreJSDurationFormatIcuNumberFormatter(TNode<JSDurationFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=15&c=3
+  TNode<String> LoadJSListFormatLocale(TNode<JSListFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=15&c=3
+  void StoreJSListFormatLocale(TNode<JSListFormat> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=16&c=3
+  TNode<Foreign> LoadJSListFormatIcuFormatter(TNode<JSListFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=16&c=3
+  void StoreJSListFormatIcuFormatter(TNode<JSListFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=17&c=3
+  TNode<Smi> LoadJSListFormatFlags(TNode<JSListFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=17&c=3
+  void StoreJSListFormatFlags(TNode<JSListFormat> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
+  TNode<Foreign> LoadJSLocaleIcuLocale(TNode<JSLocale> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
+  void StoreJSLocaleIcuLocale(TNode<JSLocale> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=8&c=3
+  TNode<String> LoadJSNumberFormatLocale(TNode<JSNumberFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=8&c=3
+  void StoreJSNumberFormatLocale(TNode<JSNumberFormat> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=9&c=3
+  TNode<Foreign> LoadJSNumberFormatIcuNumberFormatter(TNode<JSNumberFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=9&c=3
+  void StoreJSNumberFormatIcuNumberFormatter(TNode<JSNumberFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
+  TNode<HeapObject> LoadJSNumberFormatBoundFormat(TNode<JSNumberFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
+  void StoreJSNumberFormatBoundFormat(TNode<JSNumberFormat> p_o, TNode<HeapObject> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=13&c=3
+  TNode<String> LoadJSPluralRulesLocale(TNode<JSPluralRules> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=13&c=3
+  void StoreJSPluralRulesLocale(TNode<JSPluralRules> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=14&c=3
+  TNode<Smi> LoadJSPluralRulesFlags(TNode<JSPluralRules> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=14&c=3
+  void StoreJSPluralRulesFlags(TNode<JSPluralRules> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=15&c=3
+  TNode<Foreign> LoadJSPluralRulesIcuPluralRules(TNode<JSPluralRules> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=15&c=3
+  void StoreJSPluralRulesIcuPluralRules(TNode<JSPluralRules> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=16&c=3
+  TNode<Foreign> LoadJSPluralRulesIcuNumberFormatter(TNode<JSPluralRules> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=16&c=3
+  void StoreJSPluralRulesIcuNumberFormatter(TNode<JSPluralRules> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
+  TNode<String> LoadJSRelativeTimeFormatLocale(TNode<JSRelativeTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
+  void StoreJSRelativeTimeFormatLocale(TNode<JSRelativeTimeFormat> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
+  TNode<String> LoadJSRelativeTimeFormatNumberingSystem(TNode<JSRelativeTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
+  void StoreJSRelativeTimeFormatNumberingSystem(TNode<JSRelativeTimeFormat> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
+  TNode<Foreign> LoadJSRelativeTimeFormatIcuFormatter(TNode<JSRelativeTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
+  void StoreJSRelativeTimeFormatIcuFormatter(TNode<JSRelativeTimeFormat> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=17&c=3
+  TNode<Smi> LoadJSRelativeTimeFormatFlags(TNode<JSRelativeTimeFormat> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=17&c=3
+  void StoreJSRelativeTimeFormatFlags(TNode<JSRelativeTimeFormat> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=12&c=3
+  TNode<Foreign> LoadJSSegmentIteratorIcuBreakIterator(TNode<JSSegmentIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=12&c=3
+  void StoreJSSegmentIteratorIcuBreakIterator(TNode<JSSegmentIterator> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=13&c=3
+  TNode<Foreign> LoadJSSegmentIteratorUnicodeString(TNode<JSSegmentIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=13&c=3
+  void StoreJSSegmentIteratorUnicodeString(TNode<JSSegmentIterator> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=14&c=3
+  TNode<Smi> LoadJSSegmentIteratorFlags(TNode<JSSegmentIterator> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=14&c=3
+  void StoreJSSegmentIteratorFlags(TNode<JSSegmentIterator> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=14&c=3
+  TNode<String> LoadJSSegmenterLocale(TNode<JSSegmenter> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=14&c=3
+  void StoreJSSegmenterLocale(TNode<JSSegmenter> p_o, TNode<String> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=15&c=3
+  TNode<Foreign> LoadJSSegmenterIcuBreakIterator(TNode<JSSegmenter> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=15&c=3
+  void StoreJSSegmenterIcuBreakIterator(TNode<JSSegmenter> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=16&c=3
+  TNode<Smi> LoadJSSegmenterFlags(TNode<JSSegmenter> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=16&c=3
+  void StoreJSSegmenterFlags(TNode<JSSegmenter> p_o, TNode<Smi> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
+  TNode<Foreign> LoadJSSegmentsIcuBreakIterator(TNode<JSSegments> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
+  void StoreJSSegmentsIcuBreakIterator(TNode<JSSegments> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
+  TNode<Foreign> LoadJSSegmentsUnicodeString(TNode<JSSegments> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
+  void StoreJSSegmentsUnicodeString(TNode<JSSegments> p_o, TNode<Foreign> p_v);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+  TNode<Smi> LoadJSSegmentsFlags(TNode<JSSegments> p_o);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+  void StoreJSSegmentsFlags(TNode<JSSegments> p_o, TNode<Smi> p_v);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
   TNode<RawPtrT> LoadWasmApiFunctionRefIsolateRoot(TNode<WasmApiFunctionRef> p_o);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3

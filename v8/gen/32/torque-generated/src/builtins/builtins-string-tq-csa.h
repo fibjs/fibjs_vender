@@ -18,6 +18,12 @@ TNode<IntPtrT> Convert_intptr_intptr_0(compiler::CodeAssemblerState* state_, TNo
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=215&c=9
 TNode<Symbol> Cast_Symbol_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=274&c=14
+TorqueStructReference_char8_0 AddOffset_char8_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char8_0 p_ref, TNode<IntPtrT> p_offset);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=276&c=14
+TorqueStructReference_char16_0 AddOffset_char16_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char16_0 p_ref, TNode<IntPtrT> p_offset);
+
 } // namespace internal
 } // namespace v8
 

@@ -66,9 +66,6 @@ TorqueStructSlice_char16_MutableReference_char16_0 NewMutableSlice_char16_0(comp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=790&c=39
 TNode<Uint16T> Convert_uint16_char8_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=1022&c=12
-TNode<Uint32T> Convert_uint32_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i);
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=1170&c=5
 TNode<WasmStruct> Cast_WasmStruct_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 

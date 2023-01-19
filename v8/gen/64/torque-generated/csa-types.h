@@ -587,6 +587,26 @@ struct TorqueStructTestTuple_TestTuple_intptr_Smi_TestTuple_Smi_intptr_0 {
     return std::make_tuple(fst.fst, fst.snd, snd.fst, snd.snd);
   }
 };
+struct TorqueStructSliceIterator_char8_ConstReference_char8_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> start;
+  TNode<IntPtrT> end;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, start, end);
+  }
+};
+struct TorqueStructSliceIterator_char16_ConstReference_char16_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> start;
+  TNode<IntPtrT> end;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, start, end);
+  }
+};
 struct TorqueStructSlice_Object_MutableReference_Object_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
@@ -1008,26 +1028,6 @@ struct TorqueStructSliceIterator_char8_MutableReference_char8_0 {
   }
 };
 struct TorqueStructSliceIterator_char16_MutableReference_char16_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> start;
-  TNode<IntPtrT> end;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, start, end);
-  }
-};
-struct TorqueStructSliceIterator_char8_ConstReference_char8_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> start;
-  TNode<IntPtrT> end;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, start, end);
-  }
-};
-struct TorqueStructSliceIterator_char16_ConstReference_char16_0 {
   TNode<Object> object;
   TNode<IntPtrT> start;
   TNode<IntPtrT> end;
@@ -2791,6 +2791,96 @@ struct TorqueStructReference_SmiTagged_FunctionTemplateInfoFlags_0 {
   }
 };
 struct TorqueStructReference_SmiTagged_ObjectTemplateInfoFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSDateTimeFormatFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSDisplayNamesFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSDurationFormatStyleFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSDurationFormatDisplayFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSListFormatFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSPluralRulesFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSRelativeTimeFormatFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSSegmentIteratorFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSSegmenterFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_SmiTagged_JSSegmentsFlags_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
