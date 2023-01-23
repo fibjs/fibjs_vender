@@ -123,9 +123,7 @@ if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
-  list(APPEND uv_sources 
-  	   src/unix/android-ifaddrs.c
-	   src/unix/pthread-fixes.c)
+  list(APPEND uv_sources src/unix/pthread-fixes.c)
 endif()
 
 if(APPLE)
