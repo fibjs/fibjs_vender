@@ -36,6 +36,7 @@ set(uv_sources
     src/inet.c
     src/random.c
     src/strscpy.c
+	src/strtok.c
     src/threadpool.c
     src/timer.c
     src/uv-common.c
