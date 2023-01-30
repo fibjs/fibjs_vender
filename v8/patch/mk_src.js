@@ -210,6 +210,10 @@ function gen_list(arch, os) {
                     "src/base/platform/platform-darwin.cc",
                     "src/base/platform/platform-macos.cc"
                 )
+            } else if (os == "iPhone") {
+                src_list = util.difference(src_list, win_list, android_list, fuchsia_list);
+
+                src_list.push("src/base/platform/platform-darwin.cc")
             } else if (os == "Linux" || os == "Android") {
                 src_list = util.difference(src_list, win_list, mac_list, android_list, fuchsia_list);
 
@@ -243,6 +247,11 @@ function gen_list(arch, os) {
             `patch/snapshot/snapshot-${arch}-Linux.cc`
         );
     }
+    else if (os == "iPhone")
+        src_list.push(
+            `patch/snapshot/embedded-${arch}-Darwin.S`,
+            `patch/snapshot/snapshot-${arch}-Darwin.cc`
+        );
     else
         src_list.push(
             `patch/snapshot/embedded-${arch}-${os}.${os == "Windows" ? "asm" : "S"}`,
@@ -274,6 +283,8 @@ gen_list("loong64", "Linux");
 
 gen_list("amd64", "Darwin");
 gen_list("arm64", "Darwin");
+
+gen_list("arm64", "iPhone");
 
 gen_list("amd64", "Windows");
 gen_list("i386", "Windows");

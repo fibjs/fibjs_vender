@@ -17,8 +17,6 @@ include(cmake/options.cmake)
 
 if("${BUILD_OS}" STREQUAL "Alpine")
 	include(cmake/v8-${ARCH}-Linux.cmake)
-elseif("${BUILD_OS}" STREQUAL "iPhone")
-	include(cmake/v8-${ARCH}-Darwin.cmake)
 else()
 	include(cmake/v8-${ARCH}-${BUILD_OS}.cmake)
 endif()
